@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054Ab2H1RJT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 13:09:19 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:40049 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751634Ab2H1RJR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 13:09:17 -0400
-Date: Tue, 28 Aug 2012 10:09:08 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Theodore Ts'o" <tytso@mit.edu>, Kees Cook <keescook@chromium.org>,
-        linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>,
-        Rob Landley <rob@landley.net>, Al Viro <viro@zeniv.linux.org.uk>,
-        Ludwig Nussel <ludwig.nussel@suse.de>,
-        Alessandro Rubini <rubini@gnudd.com>, linux-doc@vger.kernel.org
-Subject: Re: Hardening debugfs (Was Re: [PATCH] debugfs: more tightly
- restrict default mount mode)
-Message-ID: <20120828170908.GA14655@kroah.com>
-References: <20120827203215.GA16637@www.outflux.net>
- <20120828144110.GA23035@thunk.org>
+	id S1752180Ab2H1RKU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 13:10:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34212 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751487Ab2H1RKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Aug 2012 13:10:19 -0400
+Date: Tue, 28 Aug 2012 19:12:36 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, rostedt <rostedt@goodmis.org>,
+        dhowells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: lockdep trace from posix timers
+Message-ID: <20120828171236.GA31080@redhat.com>
+References: <20120820154154.GB20258@redhat.com> <1345478211.23018.69.camel@twins> <20120820161012.GC21400@redhat.com> <1345479590.23018.75.camel@twins> <20120820162302.GA22354@redhat.com> <20120821182751.GA11243@redhat.com> <20120821183408.GA11721@redhat.com> <20120824185619.GA16719@redhat.com> <1346171342.2296.4.camel@laptop> <20120828170121.GA30165@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120828144110.GA23035@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120828170121.GA30165@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 28, 2012 at 10:41:10AM -0400, Theodore Ts'o wrote:
-> On Mon, Aug 27, 2012 at 01:32:15PM -0700, Kees Cook wrote:
-> > Since the debugfs is mostly only used by root, make the default mount
-> > mode 0700. Most system owners do not need a more permissive value,
-> > but they can choose to weaken the restrictions via their fstab.
-> > 
-> > Signed-off-by: Kees Cook <keescook@chromium.org>
-> 
-> I agree with this patch, but it would also be good if we could try to
-> harden debugfs in general.  Some ideas that might be worth discussing,
-> for example?
-> 
-> 1) Adding a per-module flag, so things in debugfs only show up if they
-> are explicitly requested (you know, for debugging purposes).  If most
-> people are using debugfs for access to ftrace and powertap (my use
-> case), there's no point making directories for other device drivers
-> and file systems visible.
+On 08/28, Oleg Nesterov wrote:
+>
+> On 08/28, Peter Zijlstra wrote:
+> >
+> > +again:
+> > +	workp = &task->task_works;
+> > +	work = *workp;
+> > +	while (work) {
+> > +		if (work->func == func) {
+>
+> But you can't dereference this pointer. Without some locking this
+> can race with another task_work_cancel() or task_work_run(), this
+> work can be free/unmapped/reused.
+>
+> > +			if (cmpxchg(workp, work, work->next) == work)
+> > +				return work;
+>
+> Or this can race with task_work_cancel(work) + task_work_add(work).
+> cmpxchg() can succeed even if work->func is already different.
 
-The module code is "explicitly requesting" a debugfs file when it makes
-the call to create it.  If you want to depend on a flag for the
-individual modules to do this or not, sure, go ahead, but that's a
-module/driver issue, nothing I can do in the debugfs core itself.
+Even simpler, this can race with another task_work_cancel() which
+is going to remove work->next.
 
-> 2) Can we find a pattern of common security #fail's with debugfs
-> files, and try to sweep through and fix them?
+Oleg.
 
-The only one I know of is the "unload the module with an open file
-handle" issue.  I'm pretty sure this could be fixed up somehow in
-debugfs, much like it was resolved in sysfs, but it would take a lot of
-work, for a very limited benefit (in other words, if someone sends me
-patches for this, great, but it's so low on my TODO list that I'll
-probably never get to it myself.)
-
-thanks,
-
-greg k-h
