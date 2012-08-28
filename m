@@ -1,263 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751576Ab2H1DR1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 23:17:27 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:45514 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751133Ab2H1DRZ (ORCPT
+	id S1751667Ab2H1DWz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 23:22:55 -0400
+Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:50197
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751133Ab2H1DWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 23:17:25 -0400
+	Mon, 27 Aug 2012 23:22:53 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zcb8kz98dI154dM1432Izz1202hzz8275dhz2dh2a8h668h839h944hd25hf0ah107ah1155h)
+Date: Tue, 28 Aug 2012 11:23:10 +0800
+From: Richard Zhao <richard.zhao@freescale.com>
+To: Dong Aisheng <b29396@freescale.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linus.walleij@stericsson.com>, <s.hauer@pengutronix.de>,
+        <shawn.guo@linaro.org>, <kernel@pengutronix.de>,
+        <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
+        <sameo@linux.intel.com>, <lrg@ti.com>,
+        <broonie@opensource.wolfsonmicro.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <swarren@wwwdotorg.org>
+Subject: Re: [PATCH v2 5/7] ARM: imx6q: convert to use syscon to access
+ anatop registers
+Message-ID: <20120828032309.GW4011@b20223-02.ap.freescale.net>
+References: <1346052285-4344-1-git-send-email-b29396@freescale.com>
+ <1346052285-4344-6-git-send-email-b29396@freescale.com>
 MIME-Version: 1.0
-In-Reply-To: <1345904049-26568-1-git-send-email-anish198519851985@gmail.com>
-References: <1345904049-26568-1-git-send-email-anish198519851985@gmail.com>
-Date: Tue, 28 Aug 2012 08:47:22 +0530
-Message-ID: <CAK7N6vrmz_JPkzam68A6O77vR4FsDyu_H_6+ZAvoJLkiz0MOLQ@mail.gmail.com>
-Subject: Re: [PATCH] [RFC]Extcon: Change to add standard cable names in
- individual drivers.
-From: anish singh <anish198519851985@gmail.com>
-To: linux-kernel-mail <linux-kernel@vger.kernel.org>,
-        Neil Brown <neilb@suse.de>
-Cc: linux-input@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1346052285-4344-6-git-send-email-b29396@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Here is the requirement:
-driver has to give the core the list of standard cable names(exported by
-the core) and can also specify the custom cable names.
-
-Something as this :
-char *cable_names_supported = {
-        [0] = EXTCON_USB,   /*defined in extcon core */
-        [1] = EXTCON_HEADSET,/*defined in extcon core */
-        [2] = CUSTOM_CABLE /*Not defined in extcon core */
- }
-As of now this is not possible because of some limitations in the extcon core.
-
-So, I proposed this attached patch(with limitations) and below is the gist:
-In the core( .C file):
-char *cable_name[] = { "USB",
-                                   "Cable1",
-                                   "Cable2",
-                                   ......
-                                }
-In the core ( .h file):
-enum cable_name{
-             USB = 0,
-             CABLE1,
-             CABLE2,
-}
-
-enum cable_name_support{
-             USB_SUPPORT = 1<<USB,
-             CABLE1 = 1 << CABLE1,
-             CABLE2 = 1 << CABLE2,
- }
-
-and driver can use it this way:
-list_of_cable = EXTCON_MIC_IN_SUPPORT |
-                     EXTCON_HEADPHONE_OUT_SUPPORT |
-                     EXTCON_MECHANICAL_SUPPORT;
-
-Limitations of this patch:
-1. We can't specify the custom cable names and
-2. It can't grow beyond 32.
-
-One more approach that comes to mind is using the #defines
-for all the cable names but that looks ugly.
-
-Is there any better approach to make it work?
-
--a-n-i-s-h-
-
-On Sat, Aug 25, 2012 at 7:44 PM, anish kumar
-<anish198519851985@gmail.com> wrote:
-> From: anish kumar <anish198519851985@gmail.com>
->
-> Right now we are forced to define our own cable names instead of what
-> is exported by extcon framework.We should use the standard cable
-> names.With this change, individual drivers can define cable names
-> as below:
->
-> edev.list_of_cable = EXTCON_MIC_IN_SUPPORT |
->                      EXTCON_HEADPHONE_OUT_SUPPORT |
->                      EXTCON_MECHANICAL_SUPPORT;
-> Signed-off-by: anish kumar <anish198519851985@gmail.com>
+On Mon, Aug 27, 2012 at 03:24:43PM +0800, Dong Aisheng wrote:
+> From: Dong Aisheng <dong.aisheng@linaro.org>
+> 
+> Using syscon to access anatop registers.
+> 
+> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
 > ---
->  drivers/extcon/extcon-arizona.c |   11 +++--------
->  drivers/extcon/extcon-class.c   |   35 +++++++++++++++++++++++++----------
->  include/linux/extcon.h          |   29 ++++++++++++++++++++++++++++-
->  3 files changed, 56 insertions(+), 19 deletions(-)
->
-> diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
-> index fa2114f..7a690f2 100644
-> --- a/drivers/extcon/extcon-arizona.c
-> +++ b/drivers/extcon/extcon-arizona.c
-> @@ -74,13 +74,6 @@ static struct {
->  #define ARIZONA_CABLE_MICROPHONE 1
->  #define ARIZONA_CABLE_HEADPHONE  2
->
-> -static const char *arizona_cable[] = {
-> -       "Mechanical",
-> -       "Microphone",
-> -       "Headphone",
-> -       NULL,
-> -};
+> ChangeLog v1->v2:
+>  * update to use generic regmap api
+> ---
+>  arch/arm/mach-imx/Kconfig      |    2 +-
+>  arch/arm/mach-imx/mach-imx6q.c |   43 ++++++++++++++++-----------------------
+>  2 files changed, 19 insertions(+), 26 deletions(-)
+> 
+> diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
+> index afd542a..7bba253 100644
+> --- a/arch/arm/mach-imx/Kconfig
+> +++ b/arch/arm/mach-imx/Kconfig
+> @@ -839,7 +839,7 @@ config SOC_IMX6Q
+>  	select HAVE_IMX_MMDC
+>  	select HAVE_IMX_SRC
+>  	select HAVE_SMP
+> -	select MFD_ANATOP
+> +	select MFD_SYSCON
+>  	select PINCTRL
+>  	select PINCTRL_IMX6Q
+>  
+> diff --git a/arch/arm/mach-imx/mach-imx6q.c b/arch/arm/mach-imx/mach-imx6q.c
+> index 045b3f6..5de869a 100644
+> --- a/arch/arm/mach-imx/mach-imx6q.c
+> +++ b/arch/arm/mach-imx/mach-imx6q.c
+> @@ -24,8 +24,9 @@
+>  #include <linux/of_platform.h>
+>  #include <linux/pinctrl/machine.h>
+>  #include <linux/phy.h>
+> +#include <linux/regmap.h>
+>  #include <linux/micrel_phy.h>
+> -#include <linux/mfd/anatop.h>
+> +#include <linux/mfd/syscon.h>
+>  #include <asm/cpuidle.h>
+>  #include <asm/smp_twd.h>
+>  #include <asm/hardware/cache-l2x0.h>
+> @@ -121,38 +122,30 @@ static void __init imx6q_sabrelite_init(void)
+>  static void __init imx6q_usb_init(void)
+>  {
+>  	struct device_node *np;
+> -	struct platform_device *pdev = NULL;
+> -	struct anatop *adata = NULL;
+> +	struct regmap *anatop;
+>  
+>  	np = of_find_compatible_node(NULL, NULL, "fsl,imx6q-anatop");
+np unused.
+> -	if (np)
+> -		pdev = of_find_device_by_node(np);
+> -	if (pdev)
+> -		adata = platform_get_drvdata(pdev);
+> -	if (!adata) {
+> -		if (np)
+> -			of_node_put(np);
+> -		return;
+> -	}
 > -
->  static void arizona_extcon_set_mode(struct arizona_extcon_info *info, int mode)
->  {
->         struct arizona *arizona = info->arizona;
-> @@ -381,7 +374,9 @@ static int __devinit arizona_extcon_probe(struct platform_device *pdev)
->         }
->
->         info->edev.name = "Headset Jack";
-> -       info->edev.supported_cable = arizona_cable;
-> +       info->edev.list_of_cable = EXTCON_MIC_IN_SUPPORT |
-> +                                       EXTCON_HEADPHONE_OUT_SUPPORT |
-> +                                               EXTCON_MECHANICAL_SUPPORT;
->
->         ret = extcon_dev_register(&info->edev, arizona->dev);
->         if (ret < 0) {
-> diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
-> index 481cfa0..22aa4b8 100644
-> --- a/drivers/extcon/extcon-class.c
-> +++ b/drivers/extcon/extcon-class.c
-> @@ -95,7 +95,7 @@ static int check_mutually_exclusive(struct extcon_dev *edev, u32 new_state)
->                 u32 correspondants = new_state & edev->mutually_exclusive[i];
->                 u32 exp = 1;
->
-> -               for (j = 0; j < 32; j++) {
-> +               for (j = 0; j < SUPPORTED_CABLE_MAX; j++) {
->                         if (exp & correspondants)
->                                 count++;
->                         if (count > 1)
-> @@ -580,6 +580,7 @@ static void extcon_cleanup(struct extcon_dev *edev, bool skip)
->                 put_device(edev->dev);
->         }
->
-> +       kfree(edev->supported_cable);
->         kfree(edev->dev);
+>  #define HW_ANADIG_USB1_CHRG_DETECT		0x000001b0
+>  #define HW_ANADIG_USB2_CHRG_DETECT		0x00000210
+>  
+>  #define BM_ANADIG_USB_CHRG_DETECT_EN_B		0x00100000
+>  #define BM_ANADIG_USB_CHRG_DETECT_CHK_CHRG_B	0x00080000
+>  
+> -	/*
+> -	 * The external charger detector needs to be disabled,
+> -	 * or the signal at DP will be poor
+> -	 */
+> -	anatop_write_reg(adata, HW_ANADIG_USB1_CHRG_DETECT,
+> -			BM_ANADIG_USB_CHRG_DETECT_EN_B
+> -			| BM_ANADIG_USB_CHRG_DETECT_CHK_CHRG_B,
+> -			~0);
+> -	anatop_write_reg(adata, HW_ANADIG_USB2_CHRG_DETECT,
+> -			BM_ANADIG_USB_CHRG_DETECT_EN_B |
+> -			BM_ANADIG_USB_CHRG_DETECT_CHK_CHRG_B,
+> -			~0);
+> +	anatop = syscon_regmap_lookup_by_compatible("fsl,imx6q-anatop");
+> +	if (!IS_ERR(anatop)) {
+> +		/*
+> +		 * The external charger detector needs to be disabled,
+> +		 * or the signal at DP will be poor
+> +		 */
+> +		regmap_write(anatop, HW_ANADIG_USB1_CHRG_DETECT,
+> +				BM_ANADIG_USB_CHRG_DETECT_EN_B
+> +				| BM_ANADIG_USB_CHRG_DETECT_CHK_CHRG_B);
+> +		regmap_write(anatop, HW_ANADIG_USB2_CHRG_DETECT,
+> +				BM_ANADIG_USB_CHRG_DETECT_EN_B |
+> +				BM_ANADIG_USB_CHRG_DETECT_CHK_CHRG_B);
+> +	} else {
+> +		pr_warn("failed to find fsl,imx6q-anatop regmap\n");
+> +	}
+>  
+>  	of_node_put(np);
+unneeded.
+
+Thanks
+Richard
 >  }
->
-> @@ -607,7 +608,7 @@ static void dummy_sysfs_dev_release(struct device *dev)
->   */
->  int extcon_dev_register(struct extcon_dev *edev, struct device *dev)
->  {
-> -       int ret, index = 0;
-> +       int ret, index = 0, i = 0;
->
->         if (!extcon_class) {
->                 ret = create_extcon_class();
-> @@ -615,23 +616,36 @@ int extcon_dev_register(struct extcon_dev *edev, struct device *dev)
->                         return ret;
->         }
->
-> -       if (edev->supported_cable) {
-> -               /* Get size of array */
-> -               for (index = 0; edev->supported_cable[index]; index++)
-> -                       ;
-> -               edev->max_supported = index;
-> -       } else {
-> -               edev->max_supported = 0;
-> +       edev->max_supported = 0;
-> +
-> +       /* get the total number of cables */
-> +       for_each_set_bit(i, &edev->list_of_cable, BITS_PER_LONG) {
-> +               index++;
->         }
-> +       edev->max_supported = index;
->
->         if (index > SUPPORTED_CABLE_MAX) {
->                 dev_err(edev->dev, "extcon: maximum number of supported cables exceeded.\n");
->                 return -EINVAL;
->         }
->
-> +       edev->supported_cable = kzalloc(sizeof(char *) * index, GFP_KERNEL);
-> +       if (!edev->supported_cable) {
-> +               pr_err("extcon supported cable allocation failed\n");
-> +               return -ENOMEM;
-> +       }
-> +
-> +       index = 0;
-> +       for_each_set_bit(i, &edev->list_of_cable, BITS_PER_LONG) {
-> +               edev->supported_cable[index++] = extcon_cable_name[i];
-> +       }
-> +
->         edev->dev = kzalloc(sizeof(struct device), GFP_KERNEL);
-> -       if (!edev->dev)
-> +       if (!edev->dev) {
-> +               pr_err("extcon device allocation failed\n");
->                 return -ENOMEM;
-> +       }
-> +
->         edev->dev->parent = dev;
->         edev->dev->class = extcon_class;
->         edev->dev->release = extcon_dev_release;
-> @@ -799,6 +813,7 @@ err_alloc_cables:
->         if (edev->max_supported)
->                 kfree(edev->cables);
->  err_sysfs_alloc:
-> +       kfree(edev->supported_cable);
->         kfree(edev->dev);
->         return ret;
->  }
-> diff --git a/include/linux/extcon.h b/include/linux/extcon.h
-> index cdd4014..65cc23a 100644
-> --- a/include/linux/extcon.h
-> +++ b/include/linux/extcon.h
-> @@ -70,6 +70,32 @@ enum extcon_cable_name {
->  };
->  extern const char *extcon_cable_name[];
->
-> +/* Please use this enum's to add support for cables in your drivers
-> + * Please add any other "standard" cables used with extcon dev.
-> + */
-> +enum extcon_cable_name_support {
-> +       EXTCON_USB_SUPPORT              = 1 << EXTCON_USB,
-> +       EXTCON_USB_HOST_SUPPORT         = 1 << EXTCON_USB_HOST,
-> +       EXTCON_TA_SUPPORT               = 1 << EXTCON_TA,
-> +       EXTCON_FAST_CHARGER_SUPPORT     = 1 << EXTCON_FAST_CHARGER,
-> +       EXTCON_SLOW_CHARGER_SUPPORT     = 1 << EXTCON_SLOW_CHARGER,
-> +       EXTCON_CHARGE_DOWNSTREAM_SUPPORT = 1 << EXTCON_CHARGE_DOWNSTREAM,
-> +       EXTCON_HDMI_SUPPORT             = 1 << EXTCON_HDMI,
-> +       EXTCON_MHL_SUPPORT              = 1 << EXTCON_MHL,
-> +       EXTCON_DVI_SUPPORT              = 1 << EXTCON_DVI,
-> +       EXTCON_VGA_SUPPORT              = 1 << EXTCON_VGA,
-> +       EXTCON_DOCK_SUPPORT             = 1 << EXTCON_DOCK,
-> +       EXTCON_LINE_IN_SUPPORT          = 1 << EXTCON_LINE_IN,
-> +       EXTCON_LINE_OUT_SUPPORT         = 1 << EXTCON_LINE_OUT,
-> +       EXTCON_MIC_IN_SUPPORT           = 1 << EXTCON_MIC_IN,
-> +       EXTCON_HEADPHONE_OUT_SUPPORT    = 1 << EXTCON_HEADPHONE_OUT,
-> +       EXTCON_SPDIF_IN_SUPPORT         = 1 << EXTCON_SPDIF_IN,
-> +       EXTCON_SPDIF_OUT_SUPPORT        = 1 << EXTCON_SPDIF_OUT,
-> +       EXTCON_VIDEO_IN_SUPPORT         = 1 << EXTCON_VIDEO_IN,
-> +       EXTCON_VIDEO_OUT_SUPPORT        = 1 << EXTCON_VIDEO_OUT,
-> +       EXTCON_MECHANICAL_SUPPORT       = 1 << EXTCON_MECHANICAL,
-> +};
-> +
->  struct extcon_cable;
->
->  /**
-> @@ -111,7 +137,7 @@ struct extcon_cable;
->  struct extcon_dev {
->         /* --- Optional user initializing data --- */
->         const char      *name;
-> -       const char **supported_cable;
-> +       unsigned long   list_of_cable;
->         const u32       *mutually_exclusive;
->
->         /* --- Optional callbacks to override class functions --- */
-> @@ -120,6 +146,7 @@ struct extcon_dev {
->
->         /* --- Internal data. Please do not set. --- */
->         struct device   *dev;
-> +       const char **supported_cable;
->         u32             state;
->         struct raw_notifier_head nh;
->         struct list_head entry;
-> --
-> 1.7.1
->
+> -- 
+> 1.7.0.4
+> 
+
