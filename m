@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753214Ab2H1Lsl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 07:48:41 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38651 "EHLO
+	id S1753175Ab2H1Lsk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 07:48:40 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38661 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752946Ab2H1Lse (ORCPT
+	with ESMTP id S1752963Ab2H1Lsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 07:48:34 -0400
+	Tue, 28 Aug 2012 07:48:35 -0400
 From: Sascha Hauer <s.hauer@pengutronix.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: HACHIMI Samir <shachimi@adeneo-embedded.com>, shawn.guo@linaro.org,
         thierry.reding@avionic-design.de, linux-kernel@vger.kernel.org,
         =?UTF-8?q?Beno=C3=AEt=20Th=C3=A9baudeau?= 
-	<benoit.thebaudeau@advansee.com>
-Subject: i.MX pwm patches
-Date: Tue, 28 Aug 2012 13:48:15 +0200
-Message-Id: <1346154504-5623-1-git-send-email-s.hauer@pengutronix.de>
+	<benoit.thebaudeau@advansee.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: [PATCH 7/9] pwm i.MX: fix clock lookup
+Date: Tue, 28 Aug 2012 13:48:22 +0200
+Message-Id: <1346154504-5623-8-git-send-email-s.hauer@pengutronix.de>
 X-Mailer: git-send-email 1.7.10.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1346154504-5623-1-git-send-email-s.hauer@pengutronix.de>
+References: <1346154504-5623-1-git-send-email-s.hauer@pengutronix.de>
 X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
 X-SA-Exim-Mail-From: sha@pengutronix.de
 X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
@@ -28,43 +29,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+From: Philipp Zabel <p.zabel@pengutronix.de>
 
-The following patches are an overdue work on the i.MX pwm driver.
+The i.MX pwm core has two clocks: The ipg clock and the ipg highfreq
+(peripheral) clock. The ipg clock has to be enabled for this hardware
+to work. The actual pwm output can either be driven by the ipg clock
+or the ipg highfreq. The ipg highfreq has the advantage that it runs
+even when the SoC is in low power modes.
+This patch requests both clocks and enables the ipg clock for accessing
+registers and the peripheral clock to actually turn on the pwm.
 
-- introduce SoC specific functions to make the driver easier to maintain
-- use peripheral clock for pwm output unconditionally
-- separate the two clocks this module has
-- enable ipg clock for register accesses, peripheral clock for enabling
-  the pwm
-- make the driver safe for calling pwm_config before pwm_enable
-- Add devicetree support for i.MX53
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+---
+ drivers/pwm/pwm-imx.c |   33 +++++++++++++++++++++++++--------
+ 1 file changed, 25 insertions(+), 8 deletions(-)
 
-The platform device support is still implemented using cpu_is_*, I think
-this can be dropped completely soon as this driver has no in kernel users
-currently, so there should be no need to keep compatibility for platform
-based boards.
+diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
+index 3834f475..308ab51 100644
+--- a/drivers/pwm/pwm-imx.c
++++ b/drivers/pwm/pwm-imx.c
+@@ -41,7 +41,8 @@
+ #define MX3_PWMCR_EN              (1 << 0)
+ 
+ struct imx_chip {
+-	struct clk	*clk;
++	struct clk	*clk_per;
++	struct clk	*clk_ipg;
+ 
+ 	int		enabled;
+ 	void __iomem	*mmio_base;
+@@ -106,7 +107,7 @@ static int imx_pwm_config_v2(struct pwm_chip *chip,
+ 	unsigned long period_cycles, duty_cycles, prescale;
+ 	u32 cr;
+ 
+-	c = clk_get_rate(imx->clk);
++	c = clk_get_rate(imx->clk_per);
+ 	c = c * period_ns;
+ 	do_div(c, 1000000000);
+ 	period_cycles = c;
+@@ -161,8 +162,15 @@ static int imx_pwm_config(struct pwm_chip *chip,
+ 		struct pwm_device *pwm, int duty_ns, int period_ns)
+ {
+ 	struct imx_chip *imx = to_imx_chip(chip);
++	int ret;
+ 
+-	return imx->config(chip, pwm, duty_ns, period_ns);
++	clk_prepare_enable(imx->clk_ipg);
++
++	ret = imx->config(chip, pwm, duty_ns, period_ns);
++
++	clk_disable_unprepare(imx->clk_ipg);
++
++	return ret;
+ }
+ 
+ static int imx_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
+@@ -170,7 +178,7 @@ static int imx_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
+ 	struct imx_chip *imx = to_imx_chip(chip);
+ 	int rc;
+ 
+-	rc = clk_prepare_enable(imx->clk);
++	rc = clk_prepare_enable(imx->clk_per);
+ 	if (rc)
+ 		return rc;
+ 
+@@ -187,7 +195,7 @@ static void imx_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+ 
+ 	imx->set_enable(chip, false);
+ 
+-	clk_disable_unprepare(imx->clk);
++	clk_disable_unprepare(imx->clk_per);
+ 	imx->enabled = 0;
+ }
+ 
+@@ -219,10 +227,19 @@ static int __devinit imx_pwm_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
+ 
+-	imx->clk = devm_clk_get(&pdev->dev, "pwm");
++	imx->clk_per = devm_clk_get(&pdev->dev, "per");
++	if (IS_ERR(imx->clk_per)) {
++		dev_err(&pdev->dev, "getting per clock failed with %ld\n",
++				PTR_ERR(imx->clk_per));
++		return PTR_ERR(imx->clk_per);
++	}
+ 
+-	if (IS_ERR(imx->clk))
+-		return PTR_ERR(imx->clk);
++	imx->clk_ipg = devm_clk_get(&pdev->dev, "ipg");
++	if (IS_ERR(imx->clk_ipg)) {
++		dev_err(&pdev->dev, "getting ipg clock failed with %ld\n",
++				PTR_ERR(imx->clk_ipg));
++		return PTR_ERR(imx->clk_ipg);
++	}
+ 
+ 	imx->chip.ops = &imx_pwm_ops;
+ 	imx->chip.dev = &pdev->dev;
+-- 
+1.7.10.4
 
-Hopefully this series fixes the issues mentioned by Benoît. It has been
-tested on an i.MX53 only.
-
-Sascha
-
-----------------------------------------------------------------
-Philipp Zabel (3):
-      pwm i.MX: add devicetree support
-      pwm i.MX: fix clock lookup
-      pwm i.MX: add devicetree support
-
-Sascha Hauer (6):
-      pwm i.MX: factor out SoC specific functions
-      pwm i.MX: remove unnecessary if in pwm_[en|dis]able
-      pwm i.MX: add functions to enable/disable pwm.
-      pwm i.MX: Use module_platform_driver
-      pwm i.MX: use per clock unconditionally
-      ARM i.MX53: Add pwms to dtsi
-
- arch/arm/boot/dts/imx53.dtsi        |   14 ++
- arch/arm/mach-imx/clk-imx51-imx53.c |    4 +
- drivers/pwm/pwm-imx.c               |  278 +++++++++++++++++++++++------------
- 3 files changed, 202 insertions(+), 94 deletions(-)
