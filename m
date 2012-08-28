@@ -1,99 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753412Ab2H1UtP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 16:49:15 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34342 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753022Ab2H1UtN (ORCPT
+	id S1753326Ab2H1U50 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 16:57:26 -0400
+Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:56357
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752667Ab2H1U5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 16:49:13 -0400
-Date: Tue, 28 Aug 2012 13:49:10 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, vgoyal@redhat.com, mpatocka@redhat.com,
-        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH v7 9/9] block: Avoid deadlocks with bio allocation by
- stacking drivers
-Message-ID: <20120828204910.GG24608@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
- <1346175456-1572-10-git-send-email-koverstreet@google.com>
+	Tue, 28 Aug 2012 16:57:24 -0400
+X-Forefront-Antispam-Report: CIP:157.56.232.165;KIP:(null);UIP:(null);IPV:NLI;H:BLUPRD0810HT003.namprd08.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: PS-3(zzbb2dI98dI1432Izz1202hzz6d524h8275bhz2fh2a8h668h839hd25he5bhf0ah107ah10d2h1155h)
+Message-ID: <503D30A6.3000800@ozmodevices.com>
+Date: Tue, 28 Aug 2012 21:57:10 +0100
+From: Rupesh Gujare <rgujare@ozmodevices.com>
+Reply-To: <rgujare@ozmodevices.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346175456-1572-10-git-send-email-koverstreet@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Wei Yongjun <weiyj.lk@gmail.com>
+CC: <ckelly@ozmodevices.com>, <gregkh@linuxfoundation.org>,
+        <yongjun_wei@trendmicro.com.cn>, <devel@driverdev.osuosl.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging: ozwpan: remove pointless conditional before
+ kfree_skb()
+References: <CAPgLHd_u2CE7PAhS4Y9MtbY=ZFphZfUrYYiqD_gx6-kf1O0C-w@mail.gmail.com>
+In-Reply-To: <CAPgLHd_u2CE7PAhS4Y9MtbY=ZFphZfUrYYiqD_gx6-kf1O0C-w@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [94.5.61.149]
+X-OriginatorOrg: ozmodevices.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 28/08/2012 14:11, Wei Yongjun wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+>
+> Remove pointless conditional before kfree_skb().
+>
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> ---
+>   drivers/staging/ozwpan/ozpd.c | 3 +--
+>   1 file changed, 1 insertion(+), 2 deletions(-)
+>
+> diff --git a/drivers/staging/ozwpan/ozpd.c b/drivers/staging/ozwpan/ozpd.c
+> index 6c287ac..d515714 100644
+> --- a/drivers/staging/ozwpan/ozpd.c
+> +++ b/drivers/staging/ozwpan/ozpd.c
+> @@ -752,8 +752,7 @@ int oz_isoc_stream_create(struct oz_pd *pd, u8 ep_num)
+>    */
+>   static void oz_isoc_stream_free(struct oz_isoc_stream *st)
+>   {
+> -	if (st->skb)
+> -		kfree_skb(st->skb);
+> +	kfree_skb(st->skb);
+>   	kfree(st);
+>   }
+>   /*------------------------------------------------------------------------------
+>
+>
 
-On Tue, Aug 28, 2012 at 10:37:36AM -0700, Kent Overstreet wrote:
-> @@ -324,13 +342,37 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
->  		front_pad = 0;
->  		inline_vecs = nr_iovecs;
->  	} else {
-> +		/*
-> +		 * generic_make_request() converts recursion to iteration; this
-> +		 * means if we're running beneath it, any bios we allocate and
-> +		 * submit will not be submitted (and thus freed) until after we
-> +		 * return.
-> +		 *
-> +		 * This exposes us to a potential deadlock if we allocate
-> +		 * multiple bios from the same bio_set() while running
-> +		 * underneath generic_make_request(). If we were to allocate
-> +		 * multiple bios (say a stacking block driver that was splitting
-> +		 * bios), we would deadlock if we exhausted the mempool's
-> +		 * reserve.
-> +		 *
-> +		 * We solve this, and guarantee forward progress, with a rescuer
-> +		 * workqueue per bio_set. If we go to allocate and there are
-> +		 * bios on current->bio_list, we first try the allocation
-> +		 * without __GFP_WAIT; if that fails, we punt those bios we
-> +		 * would be blocking to the rescuer workqueue before we retry
-> +		 * with the original gfp_flags.
-> +		 */
-> +
-> +		if (current->bio_list && !bio_list_empty(current->bio_list))
-> +			gfp_mask &= ~__GFP_WAIT;
-> +retry:
->  		p = mempool_alloc(bs->bio_pool, gfp_mask);
->  		front_pad = bs->front_pad;
->  		inline_vecs = BIO_INLINE_VECS;
->  	}
->  
->  	if (unlikely(!p))
-> -		return NULL;
-> +		goto err;
->  
->  	bio = p + front_pad;
->  	bio_init(bio);
-> @@ -351,6 +393,19 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
->  
->  err_free:
->  	mempool_free(p, bs->bio_pool);
-> +err:
-> +	if (gfp_mask != saved_gfp) {
-> +		gfp_mask = saved_gfp;
-> +
-> +		spin_lock(&bs->rescue_lock);
-> +		bio_list_merge(&bs->rescue_list, current->bio_list);
-> +		bio_list_init(current->bio_list);
-> +		spin_unlock(&bs->rescue_lock);
-> +
-> +		queue_work(bs->rescue_workqueue, &bs->rescue_work);
-> +		goto retry;
-> +	}
 
-I wonder whether it would be easier to follow if this part is in-line
-where retry: is.  All that needs to be duplicated is single
-mempool_alloc() call, right?
 
-Overall, I *think* this is correct but need to think more about it to
-be sure.
+Acked-by: Rupesh Gujare <rgujare@ozmodevices.com>
 
-Thanks!
 
--- 
-tejun
