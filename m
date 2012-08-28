@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493Ab2H1KFG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 06:05:06 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:56205 "EHLO song.cn.fujitsu.com"
+	id S1752639Ab2H1J74 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 05:59:56 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56189 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752517Ab2H1J76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 05:59:58 -0400
+	id S1751151Ab2H1J7x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Aug 2012 05:59:53 -0400
 X-IronPort-AV: E=Sophos;i="4.77,841,1336320000"; 
-   d="scan'208";a="5739723"
+   d="scan'208";a="5739718"
 From: wency@cn.fujitsu.com
 To: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
@@ -19,31 +19,25 @@ Cc: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
         minchan.kim@gmail.com, akpm@linux-foundation.org,
         kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
         Wen Congyang <wency@cn.fujitsu.com>
-Subject: [RFC v8 PATCH 10/20] memory-hotplug: add memory_block_release
-Date: Tue, 28 Aug 2012 18:00:17 +0800
-Message-Id: <1346148027-24468-11-git-send-email-wency@cn.fujitsu.com>
+Subject: [RFC v8 PATCH 07/20] memory-hotplug: call acpi_bus_remove() to remove memory device
+Date: Tue, 28 Aug 2012 18:00:14 +0800
+Message-Id: <1346148027-24468-8-git-send-email-wency@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1346148027-24468-1-git-send-email-wency@cn.fujitsu.com>
 References: <1346148027-24468-1-git-send-email-wency@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2012/08/28 17:55:07,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/28 17:55:23,
-	Serialize complete at 2012/08/28 17:55:23
+ 2012/08/28 17:55:17,
+	Serialize complete at 2012/08/28 17:55:17
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+From: Wen Congyang <wency@cn.fujitsu.com>
 
-When calling remove_memory_block(), the function shows following message at
-device_release().
-
-Device 'memory528' does not have a release() function, it is broken and must
-be fixed.
-
-remove_memory_block() calls kfree(mem). I think it shouled be called from
-device_release(). So the patch implements memory_block_release()
+The memory device has been ejected and powoffed, so we can call
+acpi_bus_remove() to remove the memory device from acpi bus.
 
 CC: David Rientjes <rientjes@google.com>
 CC: Jiang Liu <liuj97@gmail.com>
@@ -54,48 +48,27 @@ CC: Christoph Lameter <cl@linux.com>
 Cc: Minchan Kim <minchan.kim@gmail.com>
 CC: Andrew Morton <akpm@linux-foundation.org>
 CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Wen Congyang <wency@cn.fujitsu.com>
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
 ---
- drivers/base/memory.c |   11 ++++++++++-
- 1 files changed, 10 insertions(+), 1 deletions(-)
+ drivers/acpi/acpi_memhotplug.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-index 038be73..1cd3ef3 100644
---- a/drivers/base/memory.c
-+++ b/drivers/base/memory.c
-@@ -109,6 +109,15 @@ bool is_memblk_offline(unsigned long start, unsigned long size)
- }
- EXPORT_SYMBOL(is_memblk_offline);
+diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+index 9d47458..b152767 100644
+--- a/drivers/acpi/acpi_memhotplug.c
++++ b/drivers/acpi/acpi_memhotplug.c
+@@ -425,8 +425,9 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
+ 		}
  
-+#define to_memory_block(device) container_of(device, struct memory_block, dev)
-+
-+static void release_memory_block(struct device *dev)
-+{
-+	struct memory_block *mem = to_memory_block(dev);
-+
-+	kfree(mem);
-+}
-+
- /*
-  * register_memory - Setup a sysfs device for a memory block
-  */
-@@ -119,6 +128,7 @@ int register_memory(struct memory_block *memory)
+ 		/*
+-		 * TBD: Invoke acpi_bus_remove to cleanup data structures
++		 * Invoke acpi_bus_remove() to remove memory device
+ 		 */
++		acpi_bus_remove(device, 1);
  
- 	memory->dev.bus = &memory_subsys;
- 	memory->dev.id = memory->start_section_nr / sections_per_block;
-+	memory->dev.release = release_memory_block;
- 
- 	error = device_register(&memory->dev);
- 	return error;
-@@ -674,7 +684,6 @@ int remove_memory_block(unsigned long node_id, struct mem_section *section,
- 		mem_remove_simple_file(mem, phys_device);
- 		mem_remove_simple_file(mem, removable);
- 		unregister_memory(mem);
--		kfree(mem);
- 	} else
- 		kobject_put(&mem->dev.kobj);
- 
+ 		/* _EJ0 succeeded; _OST is not necessary */
+ 		return;
 -- 
 1.7.1
 
