@@ -1,137 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752101Ab2H1KLy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 06:11:54 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:37309 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750839Ab2H1KLv (ORCPT
+	id S1751801Ab2H1KYB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 06:24:01 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:42456 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750744Ab2H1KX6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 06:11:51 -0400
-Date: Tue, 28 Aug 2012 06:11:48 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
-        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
-        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
-        josh@joshtriplett.org, eric.dumazet@gmail.com, axboe@kernel.dk,
-        agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
-        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
-        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
-        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive
-	hashtable
-Message-ID: <20120828101148.GA21683@Krystal>
-References: <5037DA47.9010306@gmail.com> <20120824195941.GC21325@google.com> <5037E00B.6090606@gmail.com> <20120824203332.GF21325@google.com> <5037E9D9.9000605@gmail.com> <20120824212348.GK21325@google.com> <5038074D.300@gmail.com> <20120824230740.GN21325@google.com> <20120825042419.GA27240@Krystal> <503C95E4.3010000@gmail.com>
+	Tue, 28 Aug 2012 06:23:58 -0400
+From: "Patil, Rachna" <rachna@ti.com>
+To: Matthias Kaehlcke <matthias.list@kaehlcke.net>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Dmitry Torokhov <dtor@mail.ru>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: RE: [PATCH 4/5] IIO : ADC: tiadc: Add support of TI's ADC driver
+Thread-Topic: [PATCH 4/5] IIO : ADC: tiadc: Add support of TI's ADC driver
+Thread-Index: AQHNgR9aRE26ERzA4EG+wpwhAolAU5dnZUiAgAemdOA=
+Date: Tue, 28 Aug 2012 10:23:34 +0000
+Message-ID: <4CE347531D4CA947960AF71FF095B9323E94FA21@DBDE01.ent.ti.com>
+References: <1345719021-22835-1-git-send-email-rachna@ti.com>
+ <20120823190239.GF27787@darwin>
+In-Reply-To: <20120823190239.GF27787@darwin>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <503C95E4.3010000@gmail.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sasha Levin (levinsasha928@gmail.com) wrote:
-> On 08/25/2012 06:24 AM, Mathieu Desnoyers wrote:
-> > * Tejun Heo (tj@kernel.org) wrote:
-> >> Hello,
-> >>
-> >> On Sat, Aug 25, 2012 at 12:59:25AM +0200, Sasha Levin wrote:
-> >>> Thats the thing, the amount of things of things you can do with a given bucket
-> >>> is very limited. You can't add entries to any point besides the head (without
-> >>> walking the entire list).
-> >>
-> >> Kinda my point.  We already have all the hlist*() interface to deal
-> >> with such cases.  Having something which is evidently the trivial
-> >> hlist hashtable and advertises as such in the interface can be
-> >> helpful.  I think we need that more than we need anything fancy.
-> >>
-> >> Heh, this is a debate about which one is less insignificant.  I can
-> >> see your point.  I'd really like to hear what others think on this.
-> >>
-> >> Guys, do we want something which is evidently trivial hlist hashtable
-> >> which can use hlist_*() API directly or do we want something better
-> >> encapsulated?
-> > 
-> > My 2 cents, FWIW: I think this specific effort should target a trivially
-> > understandable API and implementation, for use-cases where one would be
-> > tempted to reimplement his own trivial hash table anyway. So here
-> > exposing hlist internals, with which kernel developers are already
-> > familiar, seems like a good approach in my opinion, because hiding stuff
-> > behind new abstraction might make the target users go away.
-> > 
-> > Then, as we see the need, we can eventually merge a more elaborate hash
-> > table with poneys and whatnot, but I would expect that the trivial hash
-> > table implementation would still be useful. There are of course very
-> > compelling reasons to use a more featureful hash table: automatic
-> > resize, RT-aware updates, scalable updates, etc... but I see a purpose
-> > for a trivial implementation. Its primary strong points being:
-> > 
-> > - it's trivially understandable, so anyone how want to be really sure
-> >   they won't end up debugging the hash table instead of their
-> >   work-in-progress code can have a full understanding of it,
-> > - it has few dependencies, which makes it easier to understand and
-> >   easier to use in some contexts (e.g. early boot).
-> > 
-> > So I'm in favor of not overdoing the abstraction for this trivial hash
-> > table, and honestly I would rather prefer that this trivial hash table
-> > stays trivial. A more elaborate hash table should probably come as a
-> > separate API.
-> > 
-> > Thanks,
-> > 
-> > Mathieu
-> > 
+Hi,
+
+On Fri, Aug 24, 2012 at 00:32:39, Matthias Kaehlcke wrote:
+> Hi,
 > 
-> Alright, let's keep it simple then.
+> El Thu, Aug 23, 2012 at 04:20:21PM +0530 Patil, Rachna ha dit:
 > 
-> I do want to keep the hash_for_each[rcu,safe] family though.
+> > This patch adds support for TI's ADC driver.
+> > This is a multifunctional device.
+> > Analog input lines are provided on which voltage measurements can be 
+> > carried out.
+> > You can have upto 8 input lines.
+> > 
+> > Signed-off-by: Patil, Rachna <rachna@ti.com>
+> > ---
+> >
+> > diff --git a/drivers/iio/adc/ti_adc.c b/drivers/iio/adc/ti_adc.c ...
+> > +static int __devinit tiadc_probe(struct platform_device *pdev) {
+> > +	struct iio_dev		*idev;
+> > +	int			err;
+> > +	struct adc_device	*adc_dev = NULL;
+> > +	struct ti_tscadc_dev	*tscadc_dev = pdev->dev.platform_data;
+> > +	struct mfd_tscadc_board	*board_data;
+> > +
+> > +	board_data = (struct mfd_tscadc_board *)tscadc_dev->dev->platform_data;
+> > +	if (!board_data) {
+> > +		dev_err(tscadc_dev->dev, "Could not find platform data\n");
+> > +		return -EINVAL;
+> > +	}
+> > +
+> > +	idev = iio_device_alloc(sizeof(struct adc_device));
+> > +	if (idev == NULL) {
+> > +		dev_err(&pdev->dev, "failed to allocate iio device.\n");
+> > +		err = -ENOMEM;
+> > +		goto err_ret;
+> > +	}
+> > +	adc_dev = iio_priv(idev);
+> > +
+> > +	tscadc_dev->adc = adc_dev;
+> > +	adc_dev->mfd_tscadc = tscadc_dev;
+> > +	adc_dev->idev = idev;
+> > +	adc_dev->adc_channels = board_data->adc_init->adc_channels;
+> > +
+> > +	idev->dev.parent = &pdev->dev;
+> > +	idev->name = dev_name(&pdev->dev);
+> > +	idev->modes = INDIO_DIRECT_MODE;
+> > +	idev->info = &tiadc_info;
+> > +
+> > +	adc_step_config(adc_dev);
+> > +
+> > +	err = tiadc_channel_init(idev, adc_dev);
+> > +	if (err < 0)
+> > +		goto err_fail;
+> > +
+> > +	err = iio_device_register(idev);
+> > +	if (err)
+> > +		goto err_free_channels;
+> > +
+> > +	dev_info(&pdev->dev, "attached adc driver\n");
+> > +	platform_set_drvdata(pdev, idev);
+> > +
+> > +	return 0;
+> > +
+> > +err_free_channels:
+> > +	tiadc_channel_remove(idev);
+> > +err_fail:
+> > +	iio_device_unregister(idev);
+> > +	iio_device_free(idev);
+> > +err_ret:
+> > +	platform_set_drvdata(pdev, NULL);
+> 
+> not necessary, the platform device doesn't exist anymore
 
-Just a thought: if the API offered by the simple hash table focus on
-providing a mechanism to find the hash bucket to which belongs the hash
-chain containing the key looked up, and then expects the user to use the
-hlist API to iterate on the chain (with or without the hlist _rcu
-variant), then it might seem consistent that a helper providing
-iteration over the entire table would actually just provide iteration on
-all buckets, and let the user call the hlist for each iterator for each
-node within the bucket, e.g.:
+Ok. I will correct this.
 
-struct hlist_head *head;
-struct hlist_node *pos;
+> 
+> > +	iio_device_free(idev);
+> 
+> already done some lines above and could be executed without having allocated the iio device (when iio_device_alloc() fails)
+> 
+> > +static int __devexit tiadc_remove(struct platform_device *pdev) {
+> > +	struct ti_tscadc_dev   *tscadc_dev = pdev->dev.platform_data;
+> > +	struct adc_device	*adc_dev = tscadc_dev->adc;
+> > +	struct iio_dev		*idev = adc_dev->idev;
+> > +
+> > +	iio_device_unregister(idev);
+> > +	tiadc_channel_remove(idev);
+> > +
+> > +	tscadc_dev->adc = NULL;
+> > +
+> > +	iio_device_free(idev);
+> > +	platform_set_drvdata(pdev, NULL);
+> 
+> see above
 
-hash_for_each_bucket(ht, head) {
-        hlist_for_each(pos, head) {
-                ...
-        }
-}
+Yes, will correct this as well.
 
-That way you only have to provide one single macro
-(hash_for_each_bucket), and rely on the already existing:
+> 
+> best regards
+> 
+> --
+> Matthias Kaehlcke
+> Embedded Linux Developer
+> Amsterdam
+> 
+>                If sharing a thing in no way diminishes it,
+>                it is not rightly owned if it is not shared
+>                                                                  .''`.
+>     using free software / Debian GNU/Linux | http://debian.org  : :'  :
+>                                                                 `. `'`
+> gpg --keyserver pgp.mit.edu --recv-keys 47D8E5D4                  `-
+> 
 
-- hlist_for_each_entry
-- hlist_for_each_safe
-- hlist_for_each_entry_rcu
-- hlist_for_each_safe_rcu
-  .....
+Regards,
+Rachna
 
-and various flavors that can appear in the future without duplicating
-this API. So you won't even have to create _rcu, _safe, nor _safe_rcu
-versions of the hash_for_each_bucket macro.
-
-Thoughts ?
-
-Thanks,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
