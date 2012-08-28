@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853Ab2H1Oik (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 10:38:40 -0400
-Received: from mail.ispras.ru ([83.149.199.43]:47664 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751807Ab2H1Oij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 10:38:39 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-scsi@vger.kernel.org,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@lsi.com>,
-        Sreekanth.Reddy@lsi.com, linux-kernel@vger.kernel.org,
-        ldv-project@ispras.ru
-Subject: [PATCH v2] [SCSI] mpt2sas: fix double mutex lock in NON_BLOCKING state
-Date: Tue, 28 Aug 2012 18:38:02 +0400
-Message-Id: <1346164683-9315-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752801Ab2H1Ol3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 10:41:29 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:47406 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751807Ab2H1Ol2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Aug 2012 10:41:28 -0400
+Date: Tue, 28 Aug 2012 10:41:10 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>, Rob Landley <rob@landley.net>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Ludwig Nussel <ludwig.nussel@suse.de>,
+        Alessandro Rubini <rubini@gnudd.com>, linux-doc@vger.kernel.org
+Subject: Hardening debugfs (Was Re: [PATCH] debugfs: more tightly restrict
+ default mount mode)
+Message-ID: <20120828144110.GA23035@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Ben Hutchings <ben@decadent.org.uk>, Rob Landley <rob@landley.net>,
+	Al Viro <viro@zeniv.linux.org.uk>,
+	Ludwig Nussel <ludwig.nussel@suse.de>,
+	Alessandro Rubini <rubini@gnudd.com>, linux-doc@vger.kernel.org
+References: <20120827203215.GA16637@www.outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120827203215.GA16637@www.outflux.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If state is NON_BLOCKING and mutex_trylock is succeed,
-the control flow goes to mutex_lock_interruptible() that is a deadlock.
+On Mon, Aug 27, 2012 at 01:32:15PM -0700, Kees Cook wrote:
+> Since the debugfs is mostly only used by root, make the default mount
+> mode 0700. Most system owners do not need a more permissive value,
+> but they can choose to weaken the restrictions via their fstab.
+> 
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 
-The previous version of the patch becomes obsolete after 
-code movement in commit 913809f6.
+I agree with this patch, but it would also be good if we could try to
+harden debugfs in general.  Some ideas that might be worth discussing,
+for example?
 
-Found by Linux Driver Verification project (linuxtesting.org).
+1) Adding a per-module flag, so things in debugfs only show up if they
+are explicitly requested (you know, for debugging purposes).  If most
+people are using debugfs for access to ftrace and powertap (my use
+case), there's no point making directories for other device drivers
+and file systems visible.
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/scsi/mpt2sas/mpt2sas_ctl.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+2) Can we find a pattern of common security #fail's with debugfs
+files, and try to sweep through and fix them?
 
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_ctl.c b/drivers/scsi/mpt2sas/mpt2sas_ctl.c
-index 49bdd2d..d29ea56 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_ctl.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_ctl.c
-@@ -2181,8 +2181,10 @@ _ctl_ioctl_main(struct file *file, unsigned int cmd, void __user *arg,
- 		return -EAGAIN;
- 
- 	state = (file->f_flags & O_NONBLOCK) ? NON_BLOCKING : BLOCKING;
--	if (state == NON_BLOCKING && !mutex_trylock(&ioc->ctl_cmds.mutex))
--		return -EAGAIN;
-+	if (state == NON_BLOCKING) {
-+		if (!mutex_trylock(&ioc->ctl_cmds.mutex))
-+			return -EAGAIN;
-+	}
- 	else if (mutex_lock_interruptible(&ioc->ctl_cmds.mutex))
- 		return -ERESTARTSYS;
- 
--- 
-1.7.9.5
+There may be other ideas, and again, I'm not saying that this means we
+shouldn't lock down the permissions on debugfs.  But a both/and
+approach might be useful here....
 
+							- Ted
