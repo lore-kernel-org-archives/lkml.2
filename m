@@ -1,109 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286Ab2H1UR3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 16:17:29 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49703 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752083Ab2H1UR1 (ORCPT
+	id S1753111Ab2H1UZP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 16:25:15 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:41805 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752260Ab2H1UZO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 16:17:27 -0400
-Date: Tue, 28 Aug 2012 13:17:25 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3 V2] workqueue: reimplement rebind_workers()
-Message-ID: <20120828201725.GA24608@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <1346153686-3380-1-git-send-email-laijs@cn.fujitsu.com>
+	Tue, 28 Aug 2012 16:25:14 -0400
+Date: Tue, 28 Aug 2012 13:24:59 -0700
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Jim Meyering <jim@meyering.net>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH] kmemleak: avoid buffer overrun: NUL-terminate
+ strncpy-copied command
+Message-ID: <20120828202459.GA13638@mwanda>
+References: <1345481724-30108-1-git-send-email-jim@meyering.net>
+ <1345481724-30108-4-git-send-email-jim@meyering.net>
+ <20120824102725.GH7585@arm.com>
+ <876288o7ny.fsf@rho.meyering.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1346153686-3380-1-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <876288o7ny.fsf@rho.meyering.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Lai.
-
-On Tue, Aug 28, 2012 at 07:34:37PM +0800, Lai Jiangshan wrote:
-> So this implement adds an "all_done", thus rebind_workers() can't leave until
-> idle_worker_rebind() successful wait something until all other idle also done,
-> so this "wait something" will not cause deadlock as the old code.
+On Fri, Aug 24, 2012 at 01:23:29PM +0200, Jim Meyering wrote:
+> In that case, what would you think of a patch to use strcpy instead?
 > 
-> The code of "idle_worker_rebind() wait something until all other idle also done"
-> is also changed. It is changed to wait on "worker_rebind.idle_done". With
-> the help of "all_done" this "worker_rebind" is valid when they wait on
-> "worker_rebind.idle_done".
+>   -		strncpy(object->comm, current->comm, sizeof(object->comm));
+>   +		strcpy(object->comm, current->comm);
+
+Another option would be to use strlcpy().  It's slightly neater than
+the strncpy() followed by a NUL assignment.
+
 > 
-> The busy_worker_rebind_fn() also explicitly wait on all idle done. It adds
-> a small overhead on cold path, but it makes the rebind_workers() as single pass.
-> Clean Code/Readability wins.
-> 
-> "all_cnt" 's decreasing is done without any lock, because this decreasing
-> only happens on the bound CPU, no lock needed. (the bound CPU can't go
-> until we notify on "all_done")
+> Is there a preferred method of adding a static_assert-like statement?
+> I see compile_time_assert and a few similar macros, but I haven't
+> spotted anything that is used project-wide.
 
-I really hope the fix and reimplementation are done in separate steps.
-All we need is an additional completion wait before leaving
-rebind_workers()(), so let's please just add that to fix the immediate
-bug.  If you think it can be further simplified by reimplmenting
-rebind_workers(), that's great but let's please do that as a separate
-step.
+BUILD_BUG_ON().
 
-Also, I asked this previously but have you encounted this problem or
-is it only from code review?
+regards,
+dan carpenter
 
->  static void idle_worker_rebind(struct worker *worker)
->  {
-> -	struct global_cwq *gcwq = worker->pool->gcwq;
-> -
->  	/* CPU must be online at this point */
->  	WARN_ON(!worker_maybe_bind_and_lock(worker));
-> -	if (!--worker->idle_rebind->cnt)
-> -		complete(&worker->idle_rebind->done);
-> +	worker_clr_flags(worker, WORKER_REBIND);
-> +	if (!--worker->worker_rebind->idle_cnt)
-> +		complete_all(&worker->worker_rebind->idle_done);
->  	spin_unlock_irq(&worker->pool->gcwq->lock);
->  
-> -	/* we did our part, wait for rebind_workers() to finish up */
-> -	wait_event(gcwq->rebind_hold, !(worker->flags & WORKER_REBIND));
-> +	/* It did its part, wait for all other idle to finish up */
-> +	wait_for_completion(&worker->worker_rebind->idle_done);
-> +
-> +	/* all_cnt is only accessed by the bound CPU, don't need any lock */
-> +	if (!--worker->worker_rebind->all_cnt)
-
-What if this worker gets preempted by another worker?  There's no
-point in this type of optimization in this path.  Let's please keep
-things straight-forward and robust.
-
->  static void busy_worker_rebind_fn(struct work_struct *work)
->  {
->  	struct worker *worker = container_of(work, struct worker, rebind_work);
->  	struct global_cwq *gcwq = worker->pool->gcwq;
->  
-> -	if (worker_maybe_bind_and_lock(worker))
-> -		worker_clr_flags(worker, WORKER_REBIND);
-> +	/* Wait for all idle to finish up */
-> +	wait_for_completion(&worker->worker_rebind->idle_done);
->  
-> +	/* CPU must be online at this point */
-> +	WARN_ON(!worker_maybe_bind_and_lock(worker));
-> +	worker_clr_flags(worker, WORKER_REBIND);
->  	spin_unlock_irq(&gcwq->lock);
-> +
-> +	/* all_cnt is only accessed by the bound CPU, don't need any lock */
-> +	if (!--worker->worker_rebind->all_cnt)
-> +		complete(&worker->worker_rebind->all_done);
-
-You can't do this.  There is no guarantee that busy worker will
-execute busy_worker_rebind_fn() in definite amount of time.  A given
-work item may run indefinitely.
-
-Let's please fix the discovered issue first.
-
-Thanks.
-
--- 
-tejun
