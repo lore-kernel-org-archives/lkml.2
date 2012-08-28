@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753111Ab2H1KAN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 06:00:13 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:56202 "EHLO song.cn.fujitsu.com"
+	id S1753172Ab2H1KA1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 06:00:27 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56205 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752761Ab2H1KAD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 06:00:03 -0400
+	id S1753009Ab2H1KAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Aug 2012 06:00:12 -0400
 X-IronPort-AV: E=Sophos;i="4.77,841,1336320000"; 
-   d="scan'208";a="5739731"
+   d="scan'208";a="5739751"
 From: wency@cn.fujitsu.com
 To: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
@@ -19,29 +19,37 @@ Cc: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
         minchan.kim@gmail.com, akpm@linux-foundation.org,
         kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
         Wen Congyang <wency@cn.fujitsu.com>
-Subject: [RFC v8 PATCH 08/20] memory-hotplug: remove /sys/firmware/memmap/X sysfs
-Date: Tue, 28 Aug 2012 18:00:15 +0800
-Message-Id: <1346148027-24468-9-git-send-email-wency@cn.fujitsu.com>
+Subject: [RFC v8 PATCH 04/20] memory-hotplug: offline and remove memory when removing the memory device
+Date: Tue, 28 Aug 2012 18:00:11 +0800
+Message-Id: <1346148027-24468-5-git-send-email-wency@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1346148027-24468-1-git-send-email-wency@cn.fujitsu.com>
 References: <1346148027-24468-1-git-send-email-wency@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/28 17:55:07,
+ 2012/08/28 17:55:06,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/28 17:55:22,
-	Serialize complete at 2012/08/28 17:55:22
+ 2012/08/28 17:55:17,
+	Serialize complete at 2012/08/28 17:55:17
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-When (hot)adding memory into system, /sys/firmware/memmap/X/{end, start, type}
-sysfs files are created. But there is no code to remove these files. The patch
-implements the function to remove them.
+We should offline and remove memory when removing the memory device.
+The memory device can be removed by 2 ways:
+1. send eject request by SCI
+2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
 
-Note : The code does not free firmware_map_entry since there is no way to free
-       memory which is allocated by bootmem.
+In the 1st case, acpi_memory_disable_device() will be called. In the 2nd
+case, acpi_memory_device_remove() will be called. acpi_memory_device_remove()
+will also be called when we unbind the memory device from the driver
+acpi_memhotplug. If the type is ACPI_BUS_REMOVAL_EJECT, it means
+that the user wants to eject the memory device, and we should offline
+and remove memory in acpi_memory_device_remove().
+
+The function remove_memory() is not implemeted now. It only check whether
+all memory has been offllined now.
 
 CC: David Rientjes <rientjes@google.com>
 CC: Jiang Liu <liuj97@gmail.com>
@@ -52,193 +60,233 @@ CC: Christoph Lameter <cl@linux.com>
 Cc: Minchan Kim <minchan.kim@gmail.com>
 CC: Andrew Morton <akpm@linux-foundation.org>
 CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Wen Congyang <wency@cn.fujitsu.com>
 Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
 ---
- drivers/firmware/memmap.c    |   78 +++++++++++++++++++++++++++++++++++++++++-
- include/linux/firmware-map.h |    6 +++
- mm/memory_hotplug.c          |    9 ++++-
- 3 files changed, 90 insertions(+), 3 deletions(-)
+ drivers/acpi/acpi_memhotplug.c |   45 +++++++++++++++++++++++++++++++++------
+ drivers/base/memory.c          |   39 ++++++++++++++++++++++++++++++++++
+ include/linux/memory.h         |    5 ++++
+ include/linux/memory_hotplug.h |    5 ++++
+ mm/memory_hotplug.c            |   22 +++++++++++++++++++
+ 5 files changed, 109 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/firmware/memmap.c b/drivers/firmware/memmap.c
-index c1cdc92..b2e7e5e 100644
---- a/drivers/firmware/memmap.c
-+++ b/drivers/firmware/memmap.c
-@@ -21,6 +21,7 @@
+diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+index 7873832..9d47458 100644
+--- a/drivers/acpi/acpi_memhotplug.c
++++ b/drivers/acpi/acpi_memhotplug.c
+@@ -29,6 +29,7 @@
+ #include <linux/module.h>
+ #include <linux/init.h>
  #include <linux/types.h>
- #include <linux/bootmem.h>
++#include <linux/memory.h>
+ #include <linux/memory_hotplug.h>
  #include <linux/slab.h>
-+#include <linux/mm.h>
- 
- /*
-  * Data types ------------------------------------------------------------------
-@@ -79,7 +80,22 @@ static const struct sysfs_ops memmap_attr_ops = {
- 	.show = memmap_attr_show,
- };
- 
-+#define to_memmap_entry(obj) container_of(obj, struct firmware_map_entry, kobj)
-+
-+static void release_firmware_map_entry(struct kobject *kobj)
-+{
-+	struct firmware_map_entry *entry = to_memmap_entry(kobj);
-+	struct page *page;
-+
-+	page = virt_to_page(entry);
-+	if (PageSlab(page) || PageCompound(page))
-+		kfree(entry);
-+
-+	/* There is no way to free memory allocated from bootmem*/
-+}
-+
- static struct kobj_type memmap_ktype = {
-+	.release	= release_firmware_map_entry,
- 	.sysfs_ops	= &memmap_attr_ops,
- 	.default_attrs	= def_attrs,
- };
-@@ -123,6 +139,16 @@ static int firmware_map_add_entry(u64 start, u64 end,
+ #include <acpi/acpi_drivers.h>
+@@ -310,25 +311,44 @@ static int acpi_memory_powerdown_device(struct acpi_memory_device *mem_device)
  	return 0;
  }
  
-+/**
-+ * firmware_map_remove_entry() - Does the real work to remove a firmware
-+ * memmap entry.
-+ * @entry: removed entry.
-+ **/
-+static inline void firmware_map_remove_entry(struct firmware_map_entry *entry)
-+{
-+	list_del(&entry->list);
-+}
-+
- /*
-  * Add memmap entry on sysfs
-  */
-@@ -144,6 +170,31 @@ static int add_sysfs_fw_map_entry(struct firmware_map_entry *entry)
- 	return 0;
- }
- 
-+/*
-+ * Remove memmap entry on sysfs
-+ */
-+static inline void remove_sysfs_fw_map_entry(struct firmware_map_entry *entry)
-+{
-+	kobject_put(&entry->kobj);
-+}
-+
-+/*
-+ * Search memmap entry
-+ */
-+
-+struct firmware_map_entry * __meminit
-+find_firmware_map_entry(u64 start, u64 end, const char *type)
-+{
-+	struct firmware_map_entry *entry;
-+
-+	list_for_each_entry(entry, &map_entries, list)
-+		if ((entry->start == start) && (entry->end == end) &&
-+		    (!strcmp(entry->type, type)))
-+			return entry;
-+
-+	return NULL;
-+}
-+
- /**
-  * firmware_map_add_hotplug() - Adds a firmware mapping entry when we do
-  * memory hotplug.
-@@ -196,6 +247,32 @@ int __init firmware_map_add_early(u64 start, u64 end, const char *type)
- 	return firmware_map_add_entry(start, end, type, entry);
- }
- 
-+/**
-+ * firmware_map_remove() - remove a firmware mapping entry
-+ * @start: Start of the memory range.
-+ * @end:   End of the memory range.
-+ * @type:  Type of the memory range.
-+ *
-+ * removes a firmware mapping entry.
-+ *
-+ * Returns 0 on success, or -EINVAL if no entry.
-+ **/
-+int __meminit firmware_map_remove(u64 start, u64 end, const char *type)
-+{
-+	struct firmware_map_entry *entry;
-+
-+	entry = find_firmware_map_entry(start, end - 1, type);
-+	if (!entry)
-+		return -EINVAL;
-+
-+	firmware_map_remove_entry(entry);
-+
-+	/* remove the memmap entry */
-+	remove_sysfs_fw_map_entry(entry);
-+
-+	return 0;
-+}
-+
- /*
-  * Sysfs functions -------------------------------------------------------------
-  */
-@@ -218,7 +295,6 @@ static ssize_t type_show(struct firmware_map_entry *entry, char *buf)
- }
- 
- #define to_memmap_attr(_attr) container_of(_attr, struct memmap_attribute, attr)
--#define to_memmap_entry(obj) container_of(obj, struct firmware_map_entry, kobj)
- 
- static ssize_t memmap_attr_show(struct kobject *kobj,
- 				struct attribute *attr, char *buf)
-diff --git a/include/linux/firmware-map.h b/include/linux/firmware-map.h
-index 43fe52f..71d4fa7 100644
---- a/include/linux/firmware-map.h
-+++ b/include/linux/firmware-map.h
-@@ -25,6 +25,7 @@
- 
- int firmware_map_add_early(u64 start, u64 end, const char *type);
- int firmware_map_add_hotplug(u64 start, u64 end, const char *type);
-+int firmware_map_remove(u64 start, u64 end, const char *type);
- 
- #else /* CONFIG_FIRMWARE_MEMMAP */
- 
-@@ -38,6 +39,11 @@ static inline int firmware_map_add_hotplug(u64 start, u64 end, const char *type)
- 	return 0;
- }
- 
-+static inline int firmware_map_remove(u64 start, u64 end, const char *type)
-+{
-+	return 0;
-+}
-+
- #endif /* CONFIG_FIRMWARE_MEMMAP */
- 
- #endif /* _LINUX_FIRMWARE_MAP_H */
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 3f1d7c5..45b03b3 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -1052,9 +1052,9 @@ int offline_memory(u64 start, u64 size)
- 	return 0;
- }
- 
--int remove_memory(int nid, u64 start, u64 size)
-+int __ref remove_memory(int nid, u64 start, u64 size)
+-static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
++static int
++acpi_memory_device_remove_memory(struct acpi_memory_device *mem_device)
  {
--	int ret = -EBUSY;
-+	int ret = 0;
- 	lock_memory_hotplug();
- 	/*
- 	 * The memory might become online by other task, even if you offine it.
-@@ -1065,8 +1065,13 @@ int remove_memory(int nid, u64 start, u64 size)
- 			"because the memmory range is online\n",
- 			start, start + size);
- 		ret = -EAGAIN;
-+		goto out;
+ 	int result;
+ 	struct acpi_memory_info *info, *n;
++	int node = mem_device->nid;
+ 
+-
+-	/*
+-	 * Ask the VM to offline this memory range.
+-	 * Note: Assume that this function returns zero on success
+-	 */
+ 	list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
+ 		if (info->enabled) {
+ 			result = offline_memory(info->start_addr, info->length);
+ 			if (result)
+ 				return result;
++
++			result = remove_memory(node, info->start_addr,
++					       info->length);
++			if (result)
++				return result;
+ 		}
++
++		list_del(&info->list);
+ 		kfree(info);
  	}
  
-+	/* remove memmap entry */
-+	firmware_map_remove(start, start + size, "System RAM");
++	return 0;
++}
 +
-+out:
- 	unlock_memory_hotplug();
- 	return ret;
++static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
++{
++	int result;
++
++	/*
++	 * Ask the VM to offline this memory range.
++	 * Note: Assume that this function returns zero on success
++	 */
++	result = acpi_memory_device_remove_memory(mem_device);
++	if (result)
++		return result;
++
+ 	/* Power-off and eject the device */
+ 	result = acpi_memory_powerdown_device(mem_device);
+ 	if (result) {
+@@ -477,12 +497,23 @@ static int acpi_memory_device_add(struct acpi_device *device)
+ static int acpi_memory_device_remove(struct acpi_device *device, int type)
+ {
+ 	struct acpi_memory_device *mem_device = NULL;
+-
++	int result;
  
+ 	if (!device || !acpi_driver_data(device))
+ 		return -EINVAL;
+ 
+ 	mem_device = acpi_driver_data(device);
++
++	if (type == ACPI_BUS_REMOVAL_EJECT) {
++		/*
++		 * offline and remove memory only when the memory device is
++		 * ejected.
++		 */
++		result = acpi_memory_device_remove_memory(mem_device);
++		if (result)
++			return result;
++	}
++
+ 	kfree(mem_device);
+ 
+ 	return 0;
+diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+index 86c8821..038be73 100644
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@ -70,6 +70,45 @@ void unregister_memory_isolate_notifier(struct notifier_block *nb)
+ }
+ EXPORT_SYMBOL(unregister_memory_isolate_notifier);
+ 
++bool is_memblk_offline(unsigned long start, unsigned long size)
++{
++	struct memory_block *mem = NULL;
++	struct mem_section *section;
++	unsigned long start_pfn, end_pfn;
++	unsigned long pfn, section_nr;
++
++	start_pfn = PFN_DOWN(start);
++	end_pfn = PFN_UP(start + size);
++
++	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
++		section_nr = pfn_to_section_nr(pfn);
++		if (!present_section_nr(section_nr))
++			continue;
++
++		section = __nr_to_section(section_nr);
++		/* same memblock? */
++		if (mem)
++			if ((section_nr >= mem->start_section_nr) &&
++			    (section_nr <= mem->end_section_nr))
++				continue;
++
++		mem = find_memory_block_hinted(section, mem);
++		if (!mem)
++			continue;
++		if (mem->state == MEM_OFFLINE)
++			continue;
++
++		kobject_put(&mem->dev.kobj);
++		return false;
++	}
++
++	if (mem)
++		kobject_put(&mem->dev.kobj);
++
++	return true;
++}
++EXPORT_SYMBOL(is_memblk_offline);
++
+ /*
+  * register_memory - Setup a sysfs device for a memory block
+  */
+diff --git a/include/linux/memory.h b/include/linux/memory.h
+index 1ac7f6e..7c66126 100644
+--- a/include/linux/memory.h
++++ b/include/linux/memory.h
+@@ -106,6 +106,10 @@ static inline int memory_isolate_notify(unsigned long val, void *v)
+ {
+ 	return 0;
+ }
++static inline bool is_memblk_offline(unsigned long start, unsigned long size)
++{
++	return false;
++}
+ #else
+ extern int register_memory_notifier(struct notifier_block *nb);
+ extern void unregister_memory_notifier(struct notifier_block *nb);
+@@ -120,6 +124,7 @@ extern int memory_isolate_notify(unsigned long val, void *v);
+ extern struct memory_block *find_memory_block_hinted(struct mem_section *,
+ 							struct memory_block *);
+ extern struct memory_block *find_memory_block(struct mem_section *);
++extern bool is_memblk_offline(unsigned long start, unsigned long size);
+ #define CONFIG_MEM_BLOCK_SIZE	(PAGES_PER_SECTION<<PAGE_SHIFT)
+ enum mem_add_context { BOOT, HOTPLUG };
+ #endif /* CONFIG_MEMORY_HOTPLUG_SPARSE */
+diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+index 0b040bb..fd84ea9 100644
+--- a/include/linux/memory_hotplug.h
++++ b/include/linux/memory_hotplug.h
+@@ -222,6 +222,7 @@ static inline void unlock_memory_hotplug(void) {}
+ #ifdef CONFIG_MEMORY_HOTREMOVE
+ 
+ extern int is_mem_section_removable(unsigned long pfn, unsigned long nr_pages);
++extern int remove_memory(int nid, u64 start, u64 size);
+ 
+ #else
+ static inline int is_mem_section_removable(unsigned long pfn,
+@@ -229,6 +230,10 @@ static inline int is_mem_section_removable(unsigned long pfn,
+ {
+ 	return 0;
+ }
++static inline int remove_memory(int nid, u64 start, u64 size)
++{
++	return -EBUSY;
++}
+ #endif /* CONFIG_MEMORY_HOTREMOVE */
+ 
+ extern int mem_online_node(int nid);
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 3113cd4..80cded7 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -1038,6 +1038,28 @@ int offline_memory(u64 start, u64 size)
+ 
+ 	return 0;
+ }
++
++int remove_memory(int nid, u64 start, u64 size)
++{
++	int ret = -EBUSY;
++	lock_memory_hotplug();
++	/*
++	 * The memory might become online by other task, even if you offine it.
++	 * So we check whether the cpu has been onlined or not.
++	 */
++	if (!is_memblk_offline(start, size)) {
++		pr_warn("memory removing [mem %#010llx-%#010llx] failed, "
++			"because the memmory range is online\n",
++			start, start + size);
++		ret = -EAGAIN;
++	}
++
++	unlock_memory_hotplug();
++	return ret;
++
++}
++EXPORT_SYMBOL_GPL(remove_memory);
++
+ #else
+ int offline_pages(u64 start, u64 size)
+ {
 -- 
 1.7.1
 
