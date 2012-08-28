@@ -1,393 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026Ab2H1JRu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 05:17:50 -0400
-Received: from sd-mail-sa-01.sanoma.fi ([158.127.18.161]:45785 "EHLO
-	sd-mail-sa-01.sanoma.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751151Ab2H1JRs (ORCPT
+	id S1752248Ab2H1JR4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 05:17:56 -0400
+Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:34418
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751151Ab2H1JRv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 05:17:48 -0400
-Message-ID: <20120828121743.27185dq47e19rtwk@www.81.fi>
-Date: Tue, 28 Aug 2012 12:17:43 +0300
-From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Johannes Goetzfried 
-	<Johannes.Goetzfried@informatik.stud.uni-erlangen.de>,
-        linux-crypto@vger.kernel.org,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Tilo =?iso-8859-1?b?TcO8bGxlcg==?= 
-	<tilo.mueller@informatik.uni-erlangen.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] crypto: twofish - add x86_64/avx assembler
- implementation
-References: <20120822133136.GC6899@x1.osrc.amd.com>
- <20120822191516.8483.64529.stgit@localhost6.localdomain6>
- <20120823143614.GA11936@x1.osrc.amd.com>
-In-Reply-To: <20120823143614.GA11936@x1.osrc.amd.com>
+	Tue, 28 Aug 2012 05:17:51 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dI1432Izz1202hzz8275bhz2dh668h839h944hd25hf0ah11b5h1155h)
+X-WSS-ID: 0M9GKH8-01-1M3-02
+X-M-MSG: 
+Date: Tue, 28 Aug 2012 11:17:29 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: <Wei.Yang@windriver.com>
+CC: <mingo@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <oprofile-list@lists.sourceforge.net>
+Subject: Re: [PATCH 1/1] x86/oprofile: Fix the calltrace upon profiling some
+ specified events with oprofile
+Message-ID: <20120828091729.GJ8285@erda.amd.com>
+References: <1346031133-12756-1-git-send-email-Wei.Yang@windriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
+In-Reply-To: <1346031133-12756-1-git-send-email-Wei.Yang@windriver.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Borislav Petkov <bp@alien8.de>:
+On 27.08.12 09:32:13, Wei.Yang@windriver.com wrote:
+> From: Wei Yang <Wei.Yang@windriver.com>
+> 
+> Upon enabling the call-graph functionality of oprofile, A few minutes
+> later the following calltrace will always occur.
+> 
+> BUG: unable to handle kernel paging request at 656d6153
 
-> On Wed, Aug 22, 2012 at 10:20:03PM +0300, Jussi Kivilinna wrote:
->> Actually it does look better, at least for encryption. Decryption  
->> had different
->> ordering for test, which appears to be bad on bulldozer as it is on
->> sandy-bridge.
->>
->> So, yet another patch then :)
->
-> Here you go:
+This is probably the same I found to yesterday. Will test your fix.
 
-Thanks!
+-Robert
 
-With this patch twofish-avx is faster than twofish-3way for 256, 1k  
-and 8k tests.
+> IP: [<c10050f5>] print_context_stack+0x55/0x110
+> *pde = 00000000
+> Oops: 0000 [#1] PREEMPT SMP
+> Modules linked in:
+> Pid: 0, comm: swapper/0 Not tainted 3.6.0-rc3-WR5.0+snapshot-20120820_standard
+> EIP: 0060:[<c10050f5>] EFLAGS: 00010093 CPU: 0
+> EIP is at print_context_stack+0x55/0x110
+> EAX: 656d7ffc EBX: 656d6153 ECX: c1837ee0 EDX: 656d6153
+> ESI: 00000000 EDI: ffffe000 EBP: f600deac ESP: f600de88
+> DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+> CR0: 8005003b CR2: 656d6153 CR3: 01934000 CR4: 000007d0
+> DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+> DR6: ffff0ff0 DR7: 00000400
+> Process swapper/0 (pid: 0, ti=f600c000 task=c18411a0 task.ti=c1836000)
+> Stack:
+> 1a7f76ea 656d7ffc 656d6000 c1837ee0 ffffe000 c1837ee0 656d6153 c188e27c
+> 656d6000 f600dedc c10040f8 c188e27c f600def0 00000000 f600dec8 c1837ee0
+> 00000000 f600ded4 c1837ee0 f600dfc4 0000001f f600df08 c1564d22 00000000
+> Call Trace:
+> [<c10040f8>] dump_trace+0x68/0xf0
+> [<c1564d22>] x86_backtrace+0xb2/0xc0
+> [<c1562dd2>] oprofile_add_sample+0xa2/0xc0
+> [<c1003fbf>] ? do_softirq+0x6f/0xa0
+> [<c1566519>] ppro_check_ctrs+0x79/0x100
+> [<c15664a0>] ? ppro_shutdown+0x60/0x60
+> [<c156552f>] profile_exceptions_notify+0x8f/0xb0
+> [<c1672248>] nmi_handle.isra.0+0x48/0x70
+> [<c1672343>] do_nmi+0xd3/0x3c0
+> [<c1033d39>] ? __local_bh_enable+0x29/0x70
+> [<c1034620>] ? ftrace_define_fields_irq_handler_entry+0x80/0x80
+> [<c1671a0d>] nmi_stack_correct+0x28/0x2d
+> [<c1034620>] ? ftrace_define_fields_irq_handler_entry+0x80/0x80
+> [<c1003fbf>] ? do_softirq+0x6f/0xa0
+> <IRQ>
+> [<c1034ad5>] irq_exit+0x65/0x70
+> [<c16776f9>] smp_apic_timer_interrupt+0x59/0x89
+> [<c16717da>] apic_timer_interrupt+0x2a/0x30
+> [<c135164d>] ? acpi_idle_enter_bm+0x245/0x273
+> [<c14f3a25>] cpuidle_enter+0x15/0x20
+> [<c14f4070>] cpuidle_idle_call+0xa0/0x320
+> [<c1009705>] cpu_idle+0x55/0xb0
+> [<c16519a8>] rest_init+0x6c/0x74
+> [<c18a291b>] start_kernel+0x2ec/0x2f3
+> [<c18a2467>] ? repair_env_string+0x51/0x51
+> [<c18a22a2>] i386_start_kernel+0x78/0x7d
+> Code: e0 ff ff 89 7d ec 74 5a 8d b4 26 00 00 00 00 8d bc 27 00 00
+> 00 00 39 f3 72 0c 8b 45 f0 8d 64 24 18 5b 5e 5f 5d c3 3b 5d ec 72
+> ef <8b> 3b 89 f8 89 7d dc e8 ef 40 04 00 85 c0 74 20 8b 40
+> EIP: [<c10050f5>] print_context_stack+0x55/0x110 SS:ESP 0068:f600de88
+> CR2: 00000000656d6153
+> ---[ end trace 751c9b47c6ff5e29 ]---
+> 
+> Let's assume a scenario that do_softirq() switches the stack to a soft irq
+> stack, and the soft irq stack is totally empty. At this moment, a nmi interrupt
+> occurs, subsequently, CPU does not automatically save SS and SP registers
+> and switch any stack, but instead only stores EFLAGS, CS and IP to the soft irq
+> stack. since the CPU is in kernel mode when the NMI exception occurs.
+> the layout of the current soft irq stack is this:
+> 
+>   +--------------+<-----the top of soft irq
+>   |   EFLAGS     |
+>   +--------------+
+>   |    CS        |
+>   +--------------+
+>   |    IP        |
+>   +--------------+
+>   |   SAVE_ALL   |
+>   +--------------+
+> 
+> but the return value of the function kernel_stack_pointer() is'&regs->sp'
+> (for x86_32 CPU), which is invoked by the x86_backtrace function. Since
+> the type of regs pointer is a pt_regs structure, the return value is not
+> in the range of the soft irq stack, as the SP register is not save in the
+> soft irq stack. Therefore, we need to check if the return value of the function
+> resides in valid range. Additionally, the changes has no impact on the normal
+> NMI exception.
+> 
+> Signed-off-by: Yang Wei <wei.yang@windriver.com>
+> ---
+>  arch/x86/oprofile/backtrace.c |   10 ++++++++++
+>  1 files changed, 10 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/oprofile/backtrace.c b/arch/x86/oprofile/backtrace.c
+> index d6aa6e8..a5fca0b 100644
+> --- a/arch/x86/oprofile/backtrace.c
+> +++ b/arch/x86/oprofile/backtrace.c
+> @@ -17,6 +17,11 @@
+>  #include <asm/ptrace.h>
+>  #include <asm/stacktrace.h>
+>  
+> +static inline int valid_stack_ptr(struct thread_info *tinfo, void *p)
+> +{
+> +	void *t = tinfo;
+> +	return p > t + sizeof(struct thread_info) && p < t + THREAD_SIZE;
+> +}
+>  static int backtrace_stack(void *data, char *name)
+>  {
+>  	/* Yes, we want all stacks */
+> @@ -110,9 +115,14 @@ void
+>  x86_backtrace(struct pt_regs * const regs, unsigned int depth)
+>  {
+>  	struct stack_frame *head = (struct stack_frame *)frame_pointer(regs);
+> +	struct thread_info *context;
+>  
+>  	if (!user_mode_vm(regs)) {
+>  		unsigned long stack = kernel_stack_pointer(regs);
+> +		context = (struct thread_info *)
+> +			(stack & (~(THREAD_SIZE - 1)));
+> +		if (!valid_stack_ptr(context, (void *)stack))
+> +			return;
+>  		if (depth)
+>  			dump_trace(NULL, regs, (unsigned long *)stack, 0,
+>  				   &backtrace_ops, &depth);
+> -- 
+> 1.7.0.2
+> 
+> 
 
-size    old-vs-new      new-vs-3way     old-vs-3way
-         ecb-enc ecb-dec ecb-enc ecb-dec ecb-enc ecb-dec
-256     1.10x   1.11x   1.01x   1.01x   0.92x   0.91x
-1k      1.11x   1.12x   1.08x   1.07x   0.97x   0.96x
-8k      1.11x   1.13x   1.10x   1.08x   0.99x   0.97x
-
--Jussi
-
->
-> [  153.736745]
-> [  153.736745] testing speed of async ecb(twofish) encryption
-> [  153.745806] test 0 (128 bit key, 16 byte blocks): 4832343  
-> operations in 1 seconds (77317488 bytes)
-> [  154.752525] test 1 (128 bit key, 64 byte blocks): 2049979  
-> operations in 1 seconds (131198656 bytes)
-> [  155.755195] test 2 (128 bit key, 256 byte blocks): 620439  
-> operations in 1 seconds (158832384 bytes)
-> [  156.761694] test 3 (128 bit key, 1024 byte blocks): 173900  
-> operations in 1 seconds (178073600 bytes)
-> [  157.768282] test 4 (128 bit key, 8192 byte blocks): 22366  
-> operations in 1 seconds (183222272 bytes)
-> [  158.774815] test 5 (192 bit key, 16 byte blocks): 4850741  
-> operations in 1 seconds (77611856 bytes)
-> [  159.781498] test 6 (192 bit key, 64 byte blocks): 2046772  
-> operations in 1 seconds (130993408 bytes)
-> [  160.788163] test 7 (192 bit key, 256 byte blocks): 619915  
-> operations in 1 seconds (158698240 bytes)
-> [  161.794636] test 8 (192 bit key, 1024 byte blocks): 173442  
-> operations in 1 seconds (177604608 bytes)
-> [  162.801242] test 9 (192 bit key, 8192 byte blocks): 22083  
-> operations in 1 seconds (180903936 bytes)
-> [  163.807793] test 10 (256 bit key, 16 byte blocks): 4862951  
-> operations in 1 seconds (77807216 bytes)
-> [  164.814449] test 11 (256 bit key, 64 byte blocks): 2050036  
-> operations in 1 seconds (131202304 bytes)
-> [  165.821121] test 12 (256 bit key, 256 byte blocks): 620349  
-> operations in 1 seconds (158809344 bytes)
-> [  166.827621] test 13 (256 bit key, 1024 byte blocks): 173917  
-> operations in 1 seconds (178091008 bytes)
-> [  167.834218] test 14 (256 bit key, 8192 byte blocks): 22362  
-> operations in 1 seconds (183189504 bytes)
-> [  168.840798]
-> [  168.840798] testing speed of async ecb(twofish) decryption
-> [  168.849968] test 0 (128 bit key, 16 byte blocks): 4889899  
-> operations in 1 seconds (78238384 bytes)
-> [  169.855439] test 1 (128 bit key, 64 byte blocks): 2052293  
-> operations in 1 seconds (131346752 bytes)
-> [  170.862113] test 2 (128 bit key, 256 byte blocks): 616979  
-> operations in 1 seconds (157946624 bytes)
-> [  171.868631] test 3 (128 bit key, 1024 byte blocks): 172773  
-> operations in 1 seconds (176919552 bytes)
-> [  172.875244] test 4 (128 bit key, 8192 byte blocks): 22224  
-> operations in 1 seconds (182059008 bytes)
-> [  173.881777] test 5 (192 bit key, 16 byte blocks): 4893653  
-> operations in 1 seconds (78298448 bytes)
-> [  174.888451] test 6 (192 bit key, 64 byte blocks): 2048078  
-> operations in 1 seconds (131076992 bytes)
-> [  175.895131] test 7 (192 bit key, 256 byte blocks): 619204  
-> operations in 1 seconds (158516224 bytes)
-> [  176.901651] test 8 (192 bit key, 1024 byte blocks): 172569  
-> operations in 1 seconds (176710656 bytes)
-> [  177.908253] test 9 (192 bit key, 8192 byte blocks): 21888  
-> operations in 1 seconds (179306496 bytes)
-> [  178.914781] test 10 (256 bit key, 16 byte blocks): 4921751  
-> operations in 1 seconds (78748016 bytes)
-> [  179.917481] test 11 (256 bit key, 64 byte blocks): 2051219  
-> operations in 1 seconds (131278016 bytes)
-> [  180.920147] test 12 (256 bit key, 256 byte blocks): 618536  
-> operations in 1 seconds (158345216 bytes)
-> [  181.926637] test 13 (256 bit key, 1024 byte blocks): 172886  
-> operations in 1 seconds (177035264 bytes)
-> [  182.933249] test 14 (256 bit key, 8192 byte blocks): 22222  
-> operations in 1 seconds (182042624 bytes)
-> [  183.939803]
-> [  183.939803] testing speed of async cbc(twofish) encryption
-> [  183.953902] test 0 (128 bit key, 16 byte blocks): 5195403  
-> operations in 1 seconds (83126448 bytes)
-> [  184.962487] test 1 (128 bit key, 64 byte blocks): 1912010  
-> operations in 1 seconds (122368640 bytes)
-> [  185.969150] test 2 (128 bit key, 256 byte blocks): 540125  
-> operations in 1 seconds (138272000 bytes)
-> [  186.975650] test 3 (128 bit key, 1024 byte blocks): 140631  
-> operations in 1 seconds (144006144 bytes)
-> [  187.982411] test 4 (128 bit key, 8192 byte blocks): 17737  
-> operations in 1 seconds (145301504 bytes)
-> [  188.988782] test 5 (192 bit key, 16 byte blocks): 5182287  
-> operations in 1 seconds (82916592 bytes)
-> [  189.995435] test 6 (192 bit key, 64 byte blocks): 1912356  
-> operations in 1 seconds (122390784 bytes)
-> [  191.002093] test 7 (192 bit key, 256 byte blocks): 540991  
-> operations in 1 seconds (138493696 bytes)
-> [  192.008600] test 8 (192 bit key, 1024 byte blocks): 140791  
-> operations in 1 seconds (144169984 bytes)
-> [  193.015197] test 9 (192 bit key, 8192 byte blocks): 17609  
-> operations in 1 seconds (144252928 bytes)
-> [  194.021740] test 10 (256 bit key, 16 byte blocks): 5191521  
-> operations in 1 seconds (83064336 bytes)
-> [  195.028534] test 11 (256 bit key, 64 byte blocks): 1906226  
-> operations in 1 seconds (121998464 bytes)
-> [  196.035069] test 12 (256 bit key, 256 byte blocks): 540479  
-> operations in 1 seconds (138362624 bytes)
-> [  197.041579] test 13 (256 bit key, 1024 byte blocks): 140654  
-> operations in 1 seconds (144029696 bytes)
-> [  198.048164] test 14 (256 bit key, 8192 byte blocks): 17741  
-> operations in 1 seconds (145334272 bytes)
-> [  199.054717]
-> [  199.054717] testing speed of async cbc(twofish) decryption
-> [  199.064019] test 0 (128 bit key, 16 byte blocks): 4783914  
-> operations in 1 seconds (76542624 bytes)
-> [  200.069414] test 1 (128 bit key, 64 byte blocks): 1954641  
-> operations in 1 seconds (125097024 bytes)
-> [  201.076079] test 2 (128 bit key, 256 byte blocks): 604230  
-> operations in 1 seconds (154682880 bytes)
-> [  202.082586] test 3 (128 bit key, 1024 byte blocks): 167613  
-> operations in 1 seconds (171635712 bytes)
-> [  203.089199] test 4 (128 bit key, 8192 byte blocks): 21451  
-> operations in 1 seconds (175726592 bytes)
-> [  204.095716] test 5 (192 bit key, 16 byte blocks): 4795759  
-> operations in 1 seconds (76732144 bytes)
-> [  205.102390] test 6 (192 bit key, 64 byte blocks): 1953134  
-> operations in 1 seconds (125000576 bytes)
-> [  206.109055] test 7 (192 bit key, 256 byte blocks): 599761  
-> operations in 1 seconds (153538816 bytes)
-> [  207.115564] test 8 (192 bit key, 1024 byte blocks): 166437  
-> operations in 1 seconds (170431488 bytes)
-> [  208.122184] test 9 (192 bit key, 8192 byte blocks): 20789  
-> operations in 1 seconds (170303488 bytes)
-> [  209.128728] test 10 (256 bit key, 16 byte blocks): 4794873  
-> operations in 1 seconds (76717968 bytes)
-> [  210.135375] test 11 (256 bit key, 64 byte blocks): 1953978  
-> operations in 1 seconds (125054592 bytes)
-> [  211.142039] test 12 (256 bit key, 256 byte blocks): 604269  
-> operations in 1 seconds (154692864 bytes)
-> [  212.148556] test 13 (256 bit key, 1024 byte blocks): 167571  
-> operations in 1 seconds (171592704 bytes)
-> [  213.155143] test 14 (256 bit key, 8192 byte blocks): 21453  
-> operations in 1 seconds (175742976 bytes)
-> [  214.161698]
-> [  214.161698] testing speed of async ctr(twofish) encryption
-> [  214.175571] test 0 (128 bit key, 16 byte blocks): 4581950  
-> operations in 1 seconds (73311200 bytes)
-> [  215.184354] test 1 (128 bit key, 64 byte blocks): 1944709  
-> operations in 1 seconds (124461376 bytes)
-> [  216.191166] test 2 (128 bit key, 256 byte blocks): 594086  
-> operations in 1 seconds (152086016 bytes)
-> [  217.197536] test 3 (128 bit key, 1024 byte blocks): 163216  
-> operations in 1 seconds (167133184 bytes)
-> [  218.204149] test 4 (128 bit key, 8192 byte blocks): 21075  
-> operations in 1 seconds (172646400 bytes)
-> [  219.210813] test 5 (192 bit key, 16 byte blocks): 4705554  
-> operations in 1 seconds (75288864 bytes)
-> [  220.217330] test 6 (192 bit key, 64 byte blocks): 1963988  
-> operations in 1 seconds (125695232 bytes)
-> [  221.224004] test 7 (192 bit key, 256 byte blocks): 581953  
-> operations in 1 seconds (148979968 bytes)
-> [  222.230513] test 8 (192 bit key, 1024 byte blocks): 162790  
-> operations in 1 seconds (166696960 bytes)
-> [  223.237126] test 9 (192 bit key, 8192 byte blocks): 20706  
-> operations in 1 seconds (169623552 bytes)
-> [  224.243642] test 10 (256 bit key, 16 byte blocks): 4437112  
-> operations in 1 seconds (70993792 bytes)
-> [  225.250324] test 11 (256 bit key, 64 byte blocks): 1963735  
-> operations in 1 seconds (125679040 bytes)
-> [  226.256990] test 12 (256 bit key, 256 byte blocks): 596765  
-> operations in 1 seconds (152771840 bytes)
-> [  227.263498] test 13 (256 bit key, 1024 byte blocks): 163385  
-> operations in 1 seconds (167306240 bytes)
-> [  228.270232] test 14 (256 bit key, 8192 byte blocks): 20950  
-> operations in 1 seconds (171622400 bytes)
-> [  229.276657]
-> [  229.276657] testing speed of async ctr(twofish) decryption
-> [  229.285975] test 0 (128 bit key, 16 byte blocks): 4571340  
-> operations in 1 seconds (73141440 bytes)
-> [  230.291288] test 1 (128 bit key, 64 byte blocks): 1949949  
-> operations in 1 seconds (124796736 bytes)
-> [  231.297951] test 2 (128 bit key, 256 byte blocks): 591529  
-> operations in 1 seconds (151431424 bytes)
-> [  232.304470] test 3 (128 bit key, 1024 byte blocks): 163609  
-> operations in 1 seconds (167535616 bytes)
-> [  233.311073] test 4 (128 bit key, 8192 byte blocks): 20975  
-> operations in 1 seconds (171827200 bytes)
-> [  234.317581] test 5 (192 bit key, 16 byte blocks): 4639461  
-> operations in 1 seconds (74231376 bytes)
-> [  235.324307] test 6 (192 bit key, 64 byte blocks): 1963173  
-> operations in 1 seconds (125643072 bytes)
-> [  236.330929] test 7 (192 bit key, 256 byte blocks): 585030  
-> operations in 1 seconds (149767680 bytes)
-> [  237.337445] test 8 (192 bit key, 1024 byte blocks): 162872  
-> operations in 1 seconds (166780928 bytes)
-> [  238.344050] test 9 (192 bit key, 8192 byte blocks): 20728  
-> operations in 1 seconds (169803776 bytes)
-> [  239.350603] test 10 (256 bit key, 16 byte blocks): 4443427  
-> operations in 1 seconds (71094832 bytes)
-> [  240.357259] test 11 (256 bit key, 64 byte blocks): 1965011  
-> operations in 1 seconds (125760704 bytes)
-> [  241.363914] test 12 (256 bit key, 256 byte blocks): 590193  
-> operations in 1 seconds (151089408 bytes)
-> [  242.370422] test 13 (256 bit key, 1024 byte blocks): 163370  
-> operations in 1 seconds (167290880 bytes)
-> [  243.377018] test 14 (256 bit key, 8192 byte blocks): 20969  
-> operations in 1 seconds (171778048 bytes)
-> [  244.383546]
-> [  244.383546] testing speed of async lrw(twofish) encryption
-> [  244.398118] test 0 (256 bit key, 16 byte blocks): 3582956  
-> operations in 1 seconds (57327296 bytes)
-> [  245.406230] test 1 (256 bit key, 64 byte blocks): 1618011  
-> operations in 1 seconds (103552704 bytes)
-> [  246.412911] test 2 (256 bit key, 256 byte blocks): 502411  
-> operations in 1 seconds (128617216 bytes)
-> [  247.419427] test 3 (256 bit key, 1024 byte blocks): 140501  
-> operations in 1 seconds (143873024 bytes)
-> [  248.422071] test 4 (256 bit key, 8192 byte blocks): 18166  
-> operations in 1 seconds (148815872 bytes)
-> [  249.424613] test 5 (320 bit key, 16 byte blocks): 3576354  
-> operations in 1 seconds (57221664 bytes)
-> [  250.431245] test 6 (320 bit key, 64 byte blocks): 1626817  
-> operations in 1 seconds (104116288 bytes)
-> [  251.437908] test 7 (320 bit key, 256 byte blocks): 504222  
-> operations in 1 seconds (129080832 bytes)
-> [  252.444407] test 8 (320 bit key, 1024 byte blocks): 140962  
-> operations in 1 seconds (144345088 bytes)
-> [  253.451020] test 9 (320 bit key, 8192 byte blocks): 17955  
-> operations in 1 seconds (147087360 bytes)
-> [  254.457555] test 10 (384 bit key, 16 byte blocks): 3558173  
-> operations in 1 seconds (56930768 bytes)
-> [  255.464210] test 11 (384 bit key, 64 byte blocks): 1630951  
-> operations in 1 seconds (104380864 bytes)
-> [  256.470866] test 12 (384 bit key, 256 byte blocks): 504089  
-> operations in 1 seconds (129046784 bytes)
-> [  257.477383] test 13 (384 bit key, 1024 byte blocks): 141065  
-> operations in 1 seconds (144450560 bytes)
-> [  258.483979] test 14 (384 bit key, 8192 byte blocks): 18168  
-> operations in 1 seconds (148832256 bytes)
-> [  259.490542]
-> [  259.490542] testing speed of async lrw(twofish) decryption
-> [  259.499858] test 0 (256 bit key, 16 byte blocks): 3557489  
-> operations in 1 seconds (56919824 bytes)
-> [  260.505175] test 1 (256 bit key, 64 byte blocks): 1630277  
-> operations in 1 seconds (104337728 bytes)
-> [  261.511865] test 2 (256 bit key, 256 byte blocks): 503750  
-> operations in 1 seconds (128960000 bytes)
-> [  262.518383] test 3 (256 bit key, 1024 byte blocks): 140698  
-> operations in 1 seconds (144074752 bytes)
-> [  263.524988] test 4 (256 bit key, 8192 byte blocks): 18124  
-> operations in 1 seconds (148471808 bytes)
-> [  264.531487] test 5 (320 bit key, 16 byte blocks): 3579978  
-> operations in 1 seconds (57279648 bytes)
-> [  265.538179] test 6 (320 bit key, 64 byte blocks): 1632251  
-> operations in 1 seconds (104464064 bytes)
-> [  266.544843] test 7 (320 bit key, 256 byte blocks): 502180  
-> operations in 1 seconds (128558080 bytes)
-> [  267.551350] test 8 (320 bit key, 1024 byte blocks): 139727  
-> operations in 1 seconds (143080448 bytes)
-> [  268.557964] test 9 (320 bit key, 8192 byte blocks): 17731  
-> operations in 1 seconds (145252352 bytes)
-> [  269.564481] test 10 (384 bit key, 16 byte blocks): 3570236  
-> operations in 1 seconds (57123776 bytes)
-> [  270.571162] test 11 (384 bit key, 64 byte blocks): 1623126  
-> operations in 1 seconds (103880064 bytes)
-> [  271.577828] test 12 (384 bit key, 256 byte blocks): 504857  
-> operations in 1 seconds (129243392 bytes)
-> [  272.584346] test 13 (384 bit key, 1024 byte blocks): 140801  
-> operations in 1 seconds (144180224 bytes)
-> [  273.586961] test 14 (384 bit key, 8192 byte blocks): 18139  
-> operations in 1 seconds (148594688 bytes)
-> [  274.589525]
-> [  274.589525] testing speed of async xts(twofish) encryption
-> [  274.603741] test 0 (256 bit key, 16 byte blocks): 3098851  
-> operations in 1 seconds (49581616 bytes)
-> [  275.612164] test 1 (256 bit key, 64 byte blocks): 1577161  
-> operations in 1 seconds (100938304 bytes)
-> [  276.618836] test 2 (256 bit key, 256 byte blocks): 525612  
-> operations in 1 seconds (134556672 bytes)
-> [  277.625459] test 3 (256 bit key, 1024 byte blocks): 150507  
-> operations in 1 seconds (154119168 bytes)
-> [  278.632105] test 4 (256 bit key, 8192 byte blocks): 19633  
-> operations in 1 seconds (160833536 bytes)
-> [  279.638587] test 5 (384 bit key, 16 byte blocks): 3092237  
-> operations in 1 seconds (49475792 bytes)
-> [  280.645261] test 6 (384 bit key, 64 byte blocks): 1576545  
-> operations in 1 seconds (100898880 bytes)
-> [  281.651795] test 7 (384 bit key, 256 byte blocks): 526516  
-> operations in 1 seconds (134788096 bytes)
-> [  282.658305] test 8 (384 bit key, 1024 byte blocks): 150782  
-> operations in 1 seconds (154400768 bytes)
-> [  283.664935] test 9 (384 bit key, 8192 byte blocks): 19632  
-> operations in 1 seconds (160825344 bytes)
-> [  284.671425] test 10 (512 bit key, 16 byte blocks): 3164770  
-> operations in 1 seconds (50636320 bytes)
-> [  285.678254] test 11 (512 bit key, 64 byte blocks): 1586822  
-> operations in 1 seconds (101556608 bytes)
-> [  286.684781] test 12 (512 bit key, 256 byte blocks): 527705  
-> operations in 1 seconds (135092480 bytes)
-> [  287.691290] test 13 (512 bit key, 1024 byte blocks): 150918  
-> operations in 1 seconds (154540032 bytes)
-> [  288.697885] test 14 (512 bit key, 8192 byte blocks): 19640  
-> operations in 1 seconds (160890880 bytes)
-> [  289.704422]
-> [  289.704422] testing speed of async xts(twofish) decryption
-> [  289.713733] test 0 (256 bit key, 16 byte blocks): 3082480  
-> operations in 1 seconds (49319680 bytes)
-> [  290.719098] test 1 (256 bit key, 64 byte blocks): 1571464  
-> operations in 1 seconds (100573696 bytes)
-> [  291.725752] test 2 (256 bit key, 256 byte blocks): 528360  
-> operations in 1 seconds (135260160 bytes)
-> [  292.732271] test 3 (256 bit key, 1024 byte blocks): 150115  
-> operations in 1 seconds (153717760 bytes)
-> [  293.738874] test 4 (256 bit key, 8192 byte blocks): 19513  
-> operations in 1 seconds (159850496 bytes)
-> [  294.745427] test 5 (384 bit key, 16 byte blocks): 3087055  
-> operations in 1 seconds (49392880 bytes)
-> [  295.752083] test 6 (384 bit key, 64 byte blocks): 1572391  
-> operations in 1 seconds (100633024 bytes)
-> [  296.754760] test 7 (384 bit key, 256 byte blocks): 527241  
-> operations in 1 seconds (134973696 bytes)
-> [  297.757259] test 8 (384 bit key, 1024 byte blocks): 150210  
-> operations in 1 seconds (153815040 bytes)
-> [  298.763871] test 9 (384 bit key, 8192 byte blocks): 19504  
-> operations in 1 seconds (159776768 bytes)
-> [  299.770425] test 10 (512 bit key, 16 byte blocks): 3157185  
-> operations in 1 seconds (50514960 bytes)
-> [  300.777072] test 11 (512 bit key, 64 byte blocks): 1579551  
-> operations in 1 seconds (101091264 bytes)
-> [  301.783745] test 12 (512 bit key, 256 byte blocks): 526692  
-> operations in 1 seconds (134833152 bytes)
-> [  302.790244] test 13 (512 bit key, 1024 byte blocks): 150220  
-> operations in 1 seconds (153825280 bytes)
-> [  303.796840] test 14 (512 bit key, 8192 byte blocks): 19498  
-> operations in 1 seconds (159727616 bytes)
->
-> --
-> Regards/Gruss,
-> Boris.
->
->
-
-
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
