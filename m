@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297Ab2H1QxI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 12:53:08 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:61476 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752219Ab2H1QxG (ORCPT
+	id S1753263Ab2H1Qzf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 12:55:35 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:37435 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752984Ab2H1Qze (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 12:53:06 -0400
-Message-ID: <503CF76C.2010105@tilera.com>
-Date: Tue, 28 Aug 2012 12:53:00 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Tue, 28 Aug 2012 12:55:34 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6818"; a="228034553"
+Date: Tue, 28 Aug 2012 09:55:32 -0700
+From: David Brown <davidb@codeaurora.org>
+To: arm@kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <rmk@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] msm fixes for v3.6
+Message-ID: <20120828165532.GA20947@codeaurora.org>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Andrew Morton <akpm@linux-foundation.org>, Jiri Kosina <jkosina@suse.cz>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Mike Frysinger <vapier@gentoo.org>, Mark Salter <msalter@redhat.com>,
-        Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        David Howells <dhowells@redhat.com>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Richard Kuo <rkuo@codeaurora.org>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Michal Simek <monstr@monstr.eu>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        Jonas Bonn <jonas@southpole.se>, Chen Liqin <liqin.chen@sunplusct.com>,
-        Lennox Wu <lennox.wu@gmail.com>, Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Zankel <chris@zankel.net>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] [RFC] cross-arch: don't corrupt personality flags upon
- exec()
-References: <alpine.LNX.2.00.1208031143320.29827@pobox.suse.cz> <alpine.LNX.2.00.1208131518520.29827@pobox.suse.cz> <20120815154520.f9cf4e24.akpm@linux-foundation.org> <201208221927.28993.arnd@arndb.de>
-In-Reply-To: <201208221927.28993.arnd@arndb.de>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/22/2012 3:27 PM, Arnd Bergmann wrote:
-> On tile, the PER_LINUX_32BIT is always set for 32 bit compat tasks in a
-> 64 bit kernel, which is harmless but wrong anyway. Also this, tile never
-> calls set_personality, which is also harmless because it just means that
-> exec_domain switching on tile is broken, but the only non-bogus
-> exec_domain besides the default one is an experimental support for Acorn
-> RISC OS binaries that was last updated in 2002 for for linux-2.5.49.
+The following changes since commit 28a33cbc24e4256c143dce96c7d93bf423229f92:
 
-Arnd, thanks for the drive-by code review.  Is this change the correct fix
-for your observation?
+  Linux 3.5 (2012-07-21 13:58:29 -0700)
 
-diff --git a/arch/tile/include/asm/elf.h b/arch/tile/include/asm/elf.h
-index d16d006..fd31920 100644
---- a/arch/tile/include/asm/elf.h
-+++ b/arch/tile/include/asm/elf.h
-@@ -156,12 +156,12 @@ extern int arch_setup_additional_pages(struct linux_binprm *bprm,
- #undef SET_PERSONALITY
- #define SET_PERSONALITY(ex) \
- do { \
--       current->personality = PER_LINUX; \
-+       set_personality(PER_LINUX);                  \
-        current_thread_info()->status &= ~TS_COMPAT; \
- } while (0)
- #define COMPAT_SET_PERSONALITY(ex) \
- do { \
--       current->personality = PER_LINUX_32BIT; \
-+       set_personality(PER_LINUX);                 \
-        current_thread_info()->status |= TS_COMPAT; \
- } while (0)
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davidb/linux-msm.git tags/msm-fix-for3.6
+
+for you to fetch changes up to e7501de53aa1a551526872f6c95901a00705f942:
+
+  ARM: msm: Remove call to missing FPGA init on 8660 (2012-08-28 09:39:28 -0700)
+
+----------------------------------------------------------------
+Fixes for two problems with MSM:
+
+  - Mapping issue on 7x00 targets.
+  - Compilation problems with devicetree on 8660.
+
+----------------------------------------------------------------
+David Brown (1):
+      ARM: msm: Remove call to missing FPGA init on 8660
+
+Rohit Vaswani (2):
+      ARM: msm: io: Remove 7x30 iomap region from 7x00
+      ARM: msm: io: Change the default static iomappings to be shared
+
+Stephen Boyd (2):
+      ARM: msm: Add handle_irq handler for 8660 DT machine
+      ARM: msm: Add msm8660-surf.dts to Makefile.boot
+
+ arch/arm/mach-msm/Makefile.boot   |  2 ++
+ arch/arm/mach-msm/board-msm8x60.c |  6 +-----
+ arch/arm/mach-msm/io.c            | 28 +++++++++++++++++-----------
+ 3 files changed, 20 insertions(+), 16 deletions(-)
 
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
