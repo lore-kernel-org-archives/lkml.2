@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410Ab2H1LtN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 07:49:13 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38689 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753282Ab2H1Lsn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753277Ab2H1Lsn (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 28 Aug 2012 07:48:43 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38662 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752964Ab2H1Lsf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Aug 2012 07:48:35 -0400
 From: Sascha Hauer <s.hauer@pengutronix.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: HACHIMI Samir <shachimi@adeneo-embedded.com>, shawn.guo@linaro.org,
         thierry.reding@avionic-design.de, linux-kernel@vger.kernel.org,
         =?UTF-8?q?Beno=C3=AEt=20Th=C3=A9baudeau?= 
 	<benoit.thebaudeau@advansee.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
         Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [PATCH 5/9] pwm i.MX: add devicetree support
-Date: Tue, 28 Aug 2012 13:48:20 +0200
-Message-Id: <1346154504-5623-6-git-send-email-s.hauer@pengutronix.de>
+Subject: [PATCH 2/9] pwm i.MX: remove unnecessary if in pwm_[en|dis]able
+Date: Tue, 28 Aug 2012 13:48:17 +0200
+Message-Id: <1346154504-5623-3-git-send-email-s.hauer@pengutronix.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1346154504-5623-1-git-send-email-s.hauer@pengutronix.de>
 References: <1346154504-5623-1-git-send-email-s.hauer@pengutronix.de>
@@ -29,69 +28,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Philipp Zabel <p.zabel@pengutronix.de>
+The pwm core makes sure that pwm_enable/disable are called only
+once. Still keep the enabled state since we will need it in
+pwm_config.
 
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
 Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 ---
- drivers/pwm/pwm-imx.c |   25 +++++++++++++++++++------
- 1 file changed, 19 insertions(+), 6 deletions(-)
+ drivers/pwm/pwm-imx.c |   25 +++++++++++--------------
+ 1 file changed, 11 insertions(+), 14 deletions(-)
 
 diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
-index a689144..dfc1bae 100644
+index 38270f4..0f244e6 100644
 --- a/drivers/pwm/pwm-imx.c
 +++ b/drivers/pwm/pwm-imx.c
-@@ -16,9 +16,9 @@
- #include <linux/clk.h>
- #include <linux/io.h>
- #include <linux/pwm.h>
-+#include <linux/of_device.h>
- #include <mach/hardware.h>
+@@ -42,7 +42,7 @@
+ struct imx_chip {
+ 	struct clk	*clk;
  
--
- /* i.MX1 and i.MX21 share the same PWM function block: */
+-	int		clk_enabled;
++	int		enabled;
+ 	void __iomem	*mmio_base;
  
- #define MX1_PWMC    0x00   /* PWM Control Register */
-@@ -203,8 +203,17 @@ static struct pwm_ops imx_pwm_ops = {
- 	.owner = THIS_MODULE,
- };
- 
-+static const struct of_device_id imx_pwm_dt_ids[] = {
-+	{ .compatible = "fsl,imx1-pwm", .data = &imx_pwm_config_v1, },
-+	{ .compatible = "fsl,imx27-pwm", .data = &imx_pwm_config_v2, },
-+	{ /* sentinel */ }
-+};
-+MODULE_DEVICE_TABLE(of, imx_pwm_of_match);
-+
- static int __devinit imx_pwm_probe(struct platform_device *pdev)
+ 	struct pwm_chip	chip;
+@@ -138,14 +138,15 @@ static int imx_pwm_config(struct pwm_chip *chip,
+ static int imx_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
  {
-+	const struct of_device_id *of_id =
-+			of_match_device(imx_pwm_dt_ids, &pdev->dev);
- 	struct imx_chip *imx;
- 	struct resource *r;
- 	int ret = 0;
-@@ -235,12 +244,16 @@ static int __devinit imx_pwm_probe(struct platform_device *pdev)
- 	if (imx->mmio_base == NULL)
- 		return -EADDRNOTAVAIL;
+ 	struct imx_chip *imx = to_imx_chip(chip);
+-	int rc = 0;
++	int rc;
  
--	if (cpu_is_mx1() || cpu_is_mx21()) {
--		imx->config = imx_pwm_config_v1;
--		imx->set_enable = imx_pwm_set_enable_v1;
-+	if (of_id) {
-+		imx->config = of_id->data;
- 	} else {
--		imx->config = imx_pwm_config_v2;
--		imx->set_enable = imx_pwm_set_enable_v2;
-+		if (cpu_is_mx1() || cpu_is_mx21()) {
-+			imx->config = imx_pwm_config_v1;
-+			imx->set_enable = imx_pwm_set_enable_v1;
-+		} else {
-+			imx->config = imx_pwm_config_v2;
-+			imx->set_enable = imx_pwm_set_enable_v2;
-+		}
- 	}
+-	if (!imx->clk_enabled) {
+-		rc = clk_prepare_enable(imx->clk);
+-		if (!rc)
+-			imx->clk_enabled = 1;
+-	}
+-	return rc;
++	rc = clk_prepare_enable(imx->clk);
++	if (rc)
++		return rc;
++
++	imx->enabled = 1;
++
++	return 0;
+ }
  
- 	ret = pwmchip_add(&imx->chip);
+ static void imx_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+@@ -154,10 +155,8 @@ static void imx_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+ 
+ 	writel(0, imx->mmio_base + MX3_PWMCR);
+ 
+-	if (imx->clk_enabled) {
+-		clk_disable_unprepare(imx->clk);
+-		imx->clk_enabled = 0;
+-	}
++	clk_disable_unprepare(imx->clk);
++	imx->enabled = 0;
+ }
+ 
+ static struct pwm_ops imx_pwm_ops = {
+@@ -189,8 +188,6 @@ static int __devinit imx_pwm_probe(struct platform_device *pdev)
+ 	imx->chip.base = -1;
+ 	imx->chip.npwm = 1;
+ 
+-	imx->clk_enabled = 0;
+-
+ 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (r == NULL) {
+ 		dev_err(&pdev->dev, "no memory resource defined\n");
 -- 
 1.7.10.4
 
