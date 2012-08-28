@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178Ab2H1Rhy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 13:37:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43098 "EHLO
+	id S1753384Ab2H1RiD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 13:38:03 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64377 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752725Ab2H1Rhu (ORCPT
+	with ESMTP id S1753222Ab2H1Rh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 13:37:50 -0400
+	Tue, 28 Aug 2012 13:37:57 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com
 Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, vgoyal@redhat.com,
         mpatocka@redhat.com, bharrosh@panasas.com,
-        Peter Osterlund <petero2@telia.com>
-Subject: [PATCH v7 4/9] pktcdvd: Switch to bio_kmalloc()
-Date: Tue, 28 Aug 2012 10:37:31 -0700
-Message-Id: <1346175456-1572-5-git-send-email-koverstreet@google.com>
+        Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH v7 8/9] block: Reorder struct bio_set
+Date: Tue, 28 Aug 2012 10:37:35 -0700
+Message-Id: <1346175456-1572-9-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1346175456-1572-1-git-send-email-koverstreet@google.com>
 References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
@@ -23,123 +23,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is prep work for killing bi_destructor - previously, pktcdvd had
-its own pkt_bio_alloc which was basically duplication bio_kmalloc(),
-necessitating its own bi_destructor implementation.
-
-v5: Un-reorder some functions, to make the patch easier to review
+This is prep work for the next patch, which embeds a struct bio_list in
+struct bio_set.
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
-CC: Peter Osterlund <petero2@telia.com>
+CC: Jens Axboe <axboe@kernel.dk>
 ---
- drivers/block/pktcdvd.c | 52 +++++++------------------------------------------
- 1 file changed, 7 insertions(+), 45 deletions(-)
+ include/linux/bio.h | 66 ++++++++++++++++++++++++++---------------------------
+ 1 file changed, 33 insertions(+), 33 deletions(-)
 
-diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
-index ba66e44..2e7de7a 100644
---- a/drivers/block/pktcdvd.c
-+++ b/drivers/block/pktcdvd.c
-@@ -522,38 +522,6 @@ static void pkt_bio_finished(struct pktcdvd_device *pd)
- 	}
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index f9b61b4..3a8345e 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -299,39 +299,6 @@ static inline int bio_associate_current(struct bio *bio) { return -ENOENT; }
+ static inline void bio_disassociate_task(struct bio *bio) { }
+ #endif	/* CONFIG_BLK_CGROUP */
+ 
+-/*
+- * bio_set is used to allow other portions of the IO system to
+- * allocate their own private memory pools for bio and iovec structures.
+- * These memory pools in turn all allocate from the bio_slab
+- * and the bvec_slabs[].
+- */
+-#define BIO_POOL_SIZE 2
+-#define BIOVEC_NR_POOLS 6
+-#define BIOVEC_MAX_IDX	(BIOVEC_NR_POOLS - 1)
+-
+-struct bio_set {
+-	struct kmem_cache *bio_slab;
+-	unsigned int front_pad;
+-
+-	mempool_t *bio_pool;
+-#if defined(CONFIG_BLK_DEV_INTEGRITY)
+-	mempool_t *bio_integrity_pool;
+-#endif
+-	mempool_t *bvec_pool;
+-};
+-
+-struct biovec_slab {
+-	int nr_vecs;
+-	char *name;
+-	struct kmem_cache *slab;
+-};
+-
+-/*
+- * a small number of entries is fine, not going to be performance critical.
+- * basically we just need to survive
+- */
+-#define BIO_SPLIT_ENTRIES 2
+-
+ #ifdef CONFIG_HIGHMEM
+ /*
+  * remember never ever reenable interrupts between a bvec_kmap_irq and
+@@ -506,6 +473,39 @@ static inline struct bio *bio_list_get(struct bio_list *bl)
+ 	return bio;
  }
  
--static void pkt_bio_destructor(struct bio *bio)
--{
--	kfree(bio->bi_io_vec);
--	kfree(bio);
--}
--
--static struct bio *pkt_bio_alloc(int nr_iovecs)
--{
--	struct bio_vec *bvl = NULL;
--	struct bio *bio;
--
--	bio = kmalloc(sizeof(struct bio), GFP_KERNEL);
--	if (!bio)
--		goto no_bio;
--	bio_init(bio);
--
--	bvl = kcalloc(nr_iovecs, sizeof(struct bio_vec), GFP_KERNEL);
--	if (!bvl)
--		goto no_bvl;
--
--	bio->bi_max_vecs = nr_iovecs;
--	bio->bi_io_vec = bvl;
--	bio->bi_destructor = pkt_bio_destructor;
--
--	return bio;
--
-- no_bvl:
--	kfree(bio);
-- no_bio:
--	return NULL;
--}
--
- /*
-  * Allocate a packet_data struct
-  */
-@@ -567,7 +535,7 @@ static struct packet_data *pkt_alloc_packet_data(int frames)
- 		goto no_pkt;
- 
- 	pkt->frames = frames;
--	pkt->w_bio = pkt_bio_alloc(frames);
-+	pkt->w_bio = bio_kmalloc(GFP_KERNEL, frames);
- 	if (!pkt->w_bio)
- 		goto no_bio;
- 
-@@ -581,9 +549,10 @@ static struct packet_data *pkt_alloc_packet_data(int frames)
- 	bio_list_init(&pkt->orig_bios);
- 
- 	for (i = 0; i < frames; i++) {
--		struct bio *bio = pkt_bio_alloc(1);
-+		struct bio *bio = bio_kmalloc(GFP_KERNEL, 1);
- 		if (!bio)
- 			goto no_rd_bio;
++/*
++ * bio_set is used to allow other portions of the IO system to
++ * allocate their own private memory pools for bio and iovec structures.
++ * These memory pools in turn all allocate from the bio_slab
++ * and the bvec_slabs[].
++ */
++#define BIO_POOL_SIZE 2
++#define BIOVEC_NR_POOLS 6
++#define BIOVEC_MAX_IDX	(BIOVEC_NR_POOLS - 1)
 +
- 		pkt->r_bios[i] = bio;
- 	}
- 
-@@ -1111,21 +1080,17 @@ static void pkt_gather_data(struct pktcdvd_device *pd, struct packet_data *pkt)
- 	 * Schedule reads for missing parts of the packet.
- 	 */
- 	for (f = 0; f < pkt->frames; f++) {
--		struct bio_vec *vec;
--
- 		int p, offset;
++struct bio_set {
++	struct kmem_cache *bio_slab;
++	unsigned int front_pad;
 +
- 		if (written[f])
- 			continue;
++	mempool_t *bio_pool;
++#if defined(CONFIG_BLK_DEV_INTEGRITY)
++	mempool_t *bio_integrity_pool;
++#endif
++	mempool_t *bvec_pool;
++};
 +
- 		bio = pkt->r_bios[f];
--		vec = bio->bi_io_vec;
--		bio_init(bio);
--		bio->bi_max_vecs = 1;
-+		bio_reset(bio);
- 		bio->bi_sector = pkt->sector + f * (CD_FRAMESIZE >> 9);
- 		bio->bi_bdev = pd->bdev;
- 		bio->bi_end_io = pkt_end_io_read;
- 		bio->bi_private = pkt;
--		bio->bi_io_vec = vec;
--		bio->bi_destructor = pkt_bio_destructor;
++struct biovec_slab {
++	int nr_vecs;
++	char *name;
++	struct kmem_cache *slab;
++};
++
++/*
++ * a small number of entries is fine, not going to be performance critical.
++ * basically we just need to survive
++ */
++#define BIO_SPLIT_ENTRIES 2
++
+ #if defined(CONFIG_BLK_DEV_INTEGRITY)
  
- 		p = (f * CD_FRAMESIZE) / PAGE_SIZE;
- 		offset = (f * CD_FRAMESIZE) % PAGE_SIZE;
-@@ -1418,14 +1383,11 @@ static void pkt_start_write(struct pktcdvd_device *pd, struct packet_data *pkt)
- 	}
- 
- 	/* Start the write request */
--	bio_init(pkt->w_bio);
--	pkt->w_bio->bi_max_vecs = PACKET_MAX_SIZE;
-+	bio_reset(pkt->w_bio);
- 	pkt->w_bio->bi_sector = pkt->sector;
- 	pkt->w_bio->bi_bdev = pd->bdev;
- 	pkt->w_bio->bi_end_io = pkt_end_io_packet_write;
- 	pkt->w_bio->bi_private = pkt;
--	pkt->w_bio->bi_io_vec = bvec;
--	pkt->w_bio->bi_destructor = pkt_bio_destructor;
- 	for (f = 0; f < pkt->frames; f++)
- 		if (!bio_add_page(pkt->w_bio, bvec[f].bv_page, CD_FRAMESIZE, bvec[f].bv_offset))
- 			BUG();
+ #define bip_vec_idx(bip, idx)	(&(bip->bip_vec[(idx)]))
 -- 
 1.7.12
 
