@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752216Ab2H1R3G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 13:29:06 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36146 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751779Ab2H1R3E (ORCPT
+	id S1752162Ab2H1ReI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 13:34:08 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:60717 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751167Ab2H1ReG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 13:29:04 -0400
-Subject: Re: lockdep trace from posix timers
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, rostedt <rostedt@goodmis.org>,
-        dhowells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
-In-Reply-To: <20120828170121.GA30165@redhat.com>
-References: <1345475530.23018.50.camel@twins>
-	 <20120820154154.GB20258@redhat.com> <1345478211.23018.69.camel@twins>
-	 <20120820161012.GC21400@redhat.com> <1345479590.23018.75.camel@twins>
-	 <20120820162302.GA22354@redhat.com> <20120821182751.GA11243@redhat.com>
-	 <20120821183408.GA11721@redhat.com> <20120824185619.GA16719@redhat.com>
-	 <1346171342.2296.4.camel@laptop>  <20120828170121.GA30165@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 28 Aug 2012 19:28:50 +0200
-Message-ID: <1346174930.2296.13.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	Tue, 28 Aug 2012 13:34:06 -0400
+Message-ID: <503D00D1.9070308@fb.com>
+Date: Tue, 28 Aug 2012 10:33:05 -0700
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Benjamin Redelings <benjamin.redelings@nescent.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>, Ulrich Drepper <drepper@gmail.com>
+Subject: Re: perf backtraces off-by-1
+References: <5037FC9F.3090603@fb.com> <1345997415.2296.0.camel@laptop>  <503A6273.9090702@fb.com> <1346171643.2296.8.camel@laptop>
+In-Reply-To: <1346171643.2296.8.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.18.254]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
+ definitions=2012-08-28_06:2012-08-28,2012-08-28,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-08-28 at 19:01 +0200, Oleg Nesterov wrote:
-> >  struct callback_head *
-> >  task_work_cancel(struct task_struct *task, task_work_func_t func)
-> >  {
-> > +     struct callback_head **workp, *work;
-> > +
-> > +again:
-> > +     workp = &task->task_works;
-> > +     work = *workp;
-> > +     while (work) {
-> > +             if (work->func == func) {
-> 
-> But you can't dereference this pointer. Without some locking this
-> can race with another task_work_cancel() or task_work_run(), this
-> work can be free/unmapped/reused.
-> 
-> > +                     if (cmpxchg(workp, work, work->next) == work)
-> > +                             return work;
-> 
-> Or this can race with task_work_cancel(work) + task_work_add(work).
-> cmpxchg() can succeed even if work->func is already different. 
+On 8/28/12 9:34 AM, Peter Zijlstra wrote:
+>> It used to look like this:
+>>
+>> http://git.savannah.gnu.org/gitweb/?p=libunwind.git;a=commitdiff;h=92cc7fd78a5a79c4bb5f85bfb7d7fb025df9cd5a
+>
+> Hmm, that's not too bad, but a long stretch from pretty ;-)
+>
+> How would you 'encode' this in the perf callchain data?
+>
+>> These days we just look at dwarf augmentation string:
+>>
+>> http://git.savannah.gnu.org/gitweb/?p=libunwind.git;a=blob;f=src/dwarf/Gfde.c;h=8659624b0320c514057861a259b6efe1b605bbf3;hb=HEAD#l189
+>
+> Right, except of course we don't have that in kernel..
+>
 
-Bah.. you and your races ;-)
+The ip-- transformation could happen in user space. The kernel doesn't 
+have to know any of this :)
 
-Surely we can do this locklessly.. I'll go try harder still.
+  -Arun
 
