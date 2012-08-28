@@ -1,89 +1,522 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751884Ab2H1MJF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 08:09:05 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:15356 "EHLO mailhub1.si.c-s.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751033Ab2H1MJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 08:09:03 -0400
-Message-ID: <503CB4DC.70507@c-s.fr>
-Date: Tue, 28 Aug 2012 14:09:00 +0200
-From: leroy christophe <christophe.leroy@c-s.fr>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1752144Ab2H1McV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 08:32:21 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:6365 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751744Ab2H1McU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Aug 2012 08:32:20 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Tue, 28 Aug 2012 05:32:19 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: <gregkh@linuxfoundation.org>, <balbi@ti.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        Venu Byravarasu <vbyravarasu@nvidia.com>
+Subject: [PATCH] usb: otg: Move phy interface to separate file.
+Date: Tue, 28 Aug 2012 17:50:11 +0530
+Message-ID: <1346156411-20761-1-git-send-email-vbyravarasu@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org,
-        lm-sensors@lm-sensors.org
-Subject: Re: [PATCH] hwmon/lm70: adding support for NS LM74 chip
-References: <201208231532.q7NFWCQZ023407@localhost.localdomain> <20120823181317.GA5623@roeck-us.net> <20120826174721.GA32334@roeck-us.net>
-In-Reply-To: <20120826174721.GA32334@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+As otg.h is containing lots of phy interface related
+stuff, moving all phy interface related stuff to new
+file named phy.h
 
-Le 26/08/2012 19:47, Guenter Roeck a écrit :
-> On Thu, Aug 23, 2012 at 11:13:17AM -0700, Guenter Roeck wrote:
->> On Thu, Aug 23, 2012 at 05:32:12PM +0200, Christophe Leroy wrote:
->>> Hello,
->>>
->> Hi Christophe,
->>
-> Hi again,
->
-> [ ... ]
-Hi Guenter,
+Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+---
+ include/linux/usb/otg.h |  211 +--------------------------------------------
+ include/linux/usb/phy.h |  222 +++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 223 insertions(+), 210 deletions(-)
+ create mode 100644 include/linux/usb/phy.h
 
->>>   
->>> -	/* 3-wire link (shared SI/SO) for LM70 */
->>> -	if (chip == LM70_CHIP_LM70 && !(spi->mode & SPI_3WIRE))
->>> +	/* 3-wire link (shared SI/SO) for LM70 and LM74 */
->>> +	if ((chip == LM70_CHIP_LM70 || chip == LM70_CHIP_LM74)
->>> +			&& !(spi->mode & SPI_3WIRE))
->> Ok for now, but I'll have to check this. The driver does not really write
->> anything to the chip, so it should be irrelevant which mode the SPI master
->> controller supports (MOSI does not have to be connected). Besides, from the
->> chip specification it looks like it is possible to connect the chip to a
->> standard SPI interface by adding a 10k resistor between MOSI and MISO.
->>
-> After looking into the above, the proper change or fix is really to remove the
-> above check for SPI_3WIRE entirely. The driver works perfectly fine if a LM70 is
-> connected to a controller which does not explicitly support SPI_3WIRE; all that
-> needs to be done is to connect MOSI through a resistor or not at all. This is,
-> however, a board design decision, not a SPI master chip limitation.
-Ok, then I'll prepare a patch for this.
->
-> With that, we don't need to explicitly add any LM74 specific code to the driver,
-> since the TMP121 code does the trick. All we need to do is to update the
-> documentation, adding a note that LM74 is supported as well, and that it can be
-> selected with 'tmp121'.
-Yes, could be the solution, but I'm however a bit puzzled with doing 
-this. The driver is originaly for NS LM70 component. Later on an 
-extension has been added for TMP121 which is from a different family, 
-even if compatible. Now we are talking about the LM74 which is in the 
-same family as the original LM70. Therefore I would expect to be able to 
-handle the LM74 directly from this driver, not through a tricky 
-compatibility with the 'tmp121'. I would expect to handle it the other 
-way round, ie consider the 'tmp121' as compatible with the LM74.
-One of the reasons for that is that the driver reports the component ID 
-through /sys/class/hwmon/hwmonX/name
+diff --git a/include/linux/usb/otg.h b/include/linux/usb/otg.h
+index 45824be..ccd3511 100644
+--- a/include/linux/usb/otg.h
++++ b/include/linux/usb/otg.h
+@@ -10,6 +10,7 @@
+ #define __LINUX_USB_OTG_H
+ 
+ #include <linux/notifier.h>
++#include <linux/usb/phy.h>
+ 
+ /* OTG defines lots of enumeration states before device reset */
+ enum usb_otg_state {
+@@ -35,31 +36,6 @@ enum usb_otg_state {
+ 	OTG_STATE_A_VBUS_ERR,
+ };
+ 
+-enum usb_phy_events {
+-	USB_EVENT_NONE,         /* no events or cable disconnected */
+-	USB_EVENT_VBUS,         /* vbus valid event */
+-	USB_EVENT_ID,           /* id was grounded */
+-	USB_EVENT_CHARGER,      /* usb dedicated charger */
+-	USB_EVENT_ENUMERATED,   /* gadget driver enumerated */
+-};
+-
+-/* associate a type with PHY */
+-enum usb_phy_type {
+-	USB_PHY_TYPE_UNDEFINED,
+-	USB_PHY_TYPE_USB2,
+-	USB_PHY_TYPE_USB3,
+-};
+-
+-struct usb_phy;
+-
+-/* for transceivers connected thru an ULPI interface, the user must
+- * provide access ops
+- */
+-struct usb_phy_io_ops {
+-	int (*read)(struct usb_phy *x, u32 reg);
+-	int (*write)(struct usb_phy *x, u32 val, u32 reg);
+-};
+-
+ struct usb_otg {
+ 	u8			default_a;
+ 
+@@ -85,134 +61,9 @@ struct usb_otg {
+ 
+ };
+ 
+-/*
+- * the otg driver needs to interact with both device side and host side
+- * usb controllers.  it decides which controller is active at a given
+- * moment, using the transceiver, ID signal, HNP and sometimes static
+- * configuration information (including "board isn't wired for otg").
+- */
+-struct usb_phy {
+-	struct device		*dev;
+-	const char		*label;
+-	unsigned int		 flags;
+-
+-	enum usb_phy_type	type;
+-	enum usb_otg_state	state;
+-	enum usb_phy_events	last_event;
+-
+-	struct usb_otg		*otg;
+-
+-	struct device		*io_dev;
+-	struct usb_phy_io_ops	*io_ops;
+-	void __iomem		*io_priv;
+-
+-	/* for notification of usb_phy_events */
+-	struct atomic_notifier_head	notifier;
+-
+-	/* to pass extra port status to the root hub */
+-	u16			port_status;
+-	u16			port_change;
+-
+-	/* to support controllers that have multiple transceivers */
+-	struct list_head	head;
+-
+-	/* initialize/shutdown the OTG controller */
+-	int	(*init)(struct usb_phy *x);
+-	void	(*shutdown)(struct usb_phy *x);
+-
+-	/* effective for B devices, ignored for A-peripheral */
+-	int	(*set_power)(struct usb_phy *x,
+-				unsigned mA);
+-
+-	/* for non-OTG B devices: set transceiver into suspend mode */
+-	int	(*set_suspend)(struct usb_phy *x,
+-				int suspend);
+-
+-	/* notify phy connect status change */
+-	int	(*notify_connect)(struct usb_phy *x, int port);
+-	int	(*notify_disconnect)(struct usb_phy *x, int port);
+-};
+-
+-
+-/* for board-specific init logic */
+-extern int usb_add_phy(struct usb_phy *, enum usb_phy_type type);
+-extern void usb_remove_phy(struct usb_phy *);
+-
+-#if defined(CONFIG_NOP_USB_XCEIV) || (defined(CONFIG_NOP_USB_XCEIV_MODULE) && defined(MODULE))
+-/* sometimes transceivers are accessed only through e.g. ULPI */
+-extern void usb_nop_xceiv_register(void);
+-extern void usb_nop_xceiv_unregister(void);
+-#else
+-static inline void usb_nop_xceiv_register(void)
+-{
+-}
+-
+-static inline void usb_nop_xceiv_unregister(void)
+-{
+-}
+-#endif
+-
+-/* helpers for direct access thru low-level io interface */
+-static inline int usb_phy_io_read(struct usb_phy *x, u32 reg)
+-{
+-	if (x->io_ops && x->io_ops->read)
+-		return x->io_ops->read(x, reg);
+-
+-	return -EINVAL;
+-}
+-
+-static inline int usb_phy_io_write(struct usb_phy *x, u32 val, u32 reg)
+-{
+-	if (x->io_ops && x->io_ops->write)
+-		return x->io_ops->write(x, val, reg);
+-
+-	return -EINVAL;
+-}
+-
+-static inline int
+-usb_phy_init(struct usb_phy *x)
+-{
+-	if (x->init)
+-		return x->init(x);
+-
+-	return 0;
+-}
+-
+-static inline void
+-usb_phy_shutdown(struct usb_phy *x)
+-{
+-	if (x->shutdown)
+-		x->shutdown(x);
+-}
+-
+-/* for usb host and peripheral controller drivers */
+ #ifdef CONFIG_USB_OTG_UTILS
+-extern struct usb_phy *usb_get_phy(enum usb_phy_type type);
+-extern struct usb_phy *devm_usb_get_phy(struct device *dev,
+-	enum usb_phy_type type);
+-extern void usb_put_phy(struct usb_phy *);
+-extern void devm_usb_put_phy(struct device *dev, struct usb_phy *x);
+ extern const char *otg_state_string(enum usb_otg_state state);
+ #else
+-static inline struct usb_phy *usb_get_phy(enum usb_phy_type type)
+-{
+-	return NULL;
+-}
+-
+-static inline struct usb_phy *devm_usb_get_phy(struct device *dev,
+-	enum usb_phy_type type)
+-{
+-	return NULL;
+-}
+-
+-static inline void usb_put_phy(struct usb_phy *x)
+-{
+-}
+-
+-static inline void devm_usb_put_phy(struct device *dev, struct usb_phy *x)
+-{
+-}
+-
+ static inline const char *otg_state_string(enum usb_otg_state state)
+ {
+ 	return NULL;
+@@ -262,42 +113,6 @@ otg_set_peripheral(struct usb_otg *otg, struct usb_gadget *periph)
+ }
+ 
+ static inline int
+-usb_phy_set_power(struct usb_phy *x, unsigned mA)
+-{
+-	if (x && x->set_power)
+-		return x->set_power(x, mA);
+-	return 0;
+-}
+-
+-/* Context: can sleep */
+-static inline int
+-usb_phy_set_suspend(struct usb_phy *x, int suspend)
+-{
+-	if (x->set_suspend != NULL)
+-		return x->set_suspend(x, suspend);
+-	else
+-		return 0;
+-}
+-
+-static inline int
+-usb_phy_notify_connect(struct usb_phy *x, int port)
+-{
+-	if (x->notify_connect)
+-		return x->notify_connect(x, port);
+-	else
+-		return 0;
+-}
+-
+-static inline int
+-usb_phy_notify_disconnect(struct usb_phy *x, int port)
+-{
+-	if (x->notify_disconnect)
+-		return x->notify_disconnect(x, port);
+-	else
+-		return 0;
+-}
+-
+-static inline int
+ otg_start_srp(struct usb_otg *otg)
+ {
+ 	if (otg && otg->start_srp)
+@@ -306,31 +121,7 @@ otg_start_srp(struct usb_otg *otg)
+ 	return -ENOTSUPP;
+ }
+ 
+-/* notifiers */
+-static inline int
+-usb_register_notifier(struct usb_phy *x, struct notifier_block *nb)
+-{
+-	return atomic_notifier_chain_register(&x->notifier, nb);
+-}
+-
+-static inline void
+-usb_unregister_notifier(struct usb_phy *x, struct notifier_block *nb)
+-{
+-	atomic_notifier_chain_unregister(&x->notifier, nb);
+-}
+-
+ /* for OTG controller drivers (and maybe other stuff) */
+ extern int usb_bus_start_enum(struct usb_bus *bus, unsigned port_num);
+ 
+-static inline const char *usb_phy_type_string(enum usb_phy_type type)
+-{
+-	switch (type) {
+-	case USB_PHY_TYPE_USB2:
+-		return "USB2 PHY";
+-	case USB_PHY_TYPE_USB3:
+-		return "USB3 PHY";
+-	default:
+-		return "UNKNOWN PHY TYPE";
+-	}
+-}
+ #endif /* __LINUX_USB_OTG_H */
+diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
+new file mode 100644
+index 0000000..5a2bcbe
+--- /dev/null
++++ b/include/linux/usb/phy.h
+@@ -0,0 +1,222 @@
++/* USB OTG (On The Go) defines */
++/*
++ *
++ * These APIs may be used between USB controllers.  USB device drivers
++ * (for either host or peripheral roles) don't use these calls; they
++ * continue to use just usb_device and usb_gadget.
++ */
++
++#ifndef __LINUX_USB_PHY_H
++#define __LINUX_USB_PHY_H
++
++#include <linux/notifier.h>
++
++enum usb_phy_events {
++	USB_EVENT_NONE,         /* no events or cable disconnected */
++	USB_EVENT_VBUS,         /* vbus valid event */
++	USB_EVENT_ID,           /* id was grounded */
++	USB_EVENT_CHARGER,      /* usb dedicated charger */
++	USB_EVENT_ENUMERATED,   /* gadget driver enumerated */
++};
++
++/* associate a type with PHY */
++enum usb_phy_type {
++	USB_PHY_TYPE_UNDEFINED,
++	USB_PHY_TYPE_USB2,
++	USB_PHY_TYPE_USB3,
++};
++
++struct usb_phy;
++struct usb_otg;
++
++/* for transceivers connected thru an ULPI interface, the user must
++ * provide access ops
++ */
++struct usb_phy_io_ops {
++	int (*read)(struct usb_phy *x, u32 reg);
++	int (*write)(struct usb_phy *x, u32 val, u32 reg);
++};
++
++struct usb_phy {
++	struct device		*dev;
++	const char		*label;
++	unsigned int		 flags;
++
++	enum usb_phy_type	type;
++	enum usb_phy_events	last_event;
++
++	struct usb_otg		*otg;
++
++	struct device		*io_dev;
++	struct usb_phy_io_ops	*io_ops;
++	void __iomem		*io_priv;
++
++	/* for notification of usb_phy_events */
++	struct atomic_notifier_head	notifier;
++
++	/* to pass extra port status to the root hub */
++	u16			port_status;
++	u16			port_change;
++
++	/* to support controllers that have multiple transceivers */
++	struct list_head	head;
++
++	/* initialize/shutdown the OTG controller */
++	int	(*init)(struct usb_phy *x);
++	void	(*shutdown)(struct usb_phy *x);
++
++	/* effective for B devices, ignored for A-peripheral */
++	int	(*set_power)(struct usb_phy *x,
++				unsigned mA);
++
++	/* for non-OTG B devices: set transceiver into suspend mode */
++	int	(*set_suspend)(struct usb_phy *x,
++				int suspend);
++
++	/* notify phy connect status change */
++	int	(*notify_connect)(struct usb_phy *x, int port);
++	int	(*notify_disconnect)(struct usb_phy *x, int port);
++};
++
++
++/* for board-specific init logic */
++extern int usb_add_phy(struct usb_phy *, enum usb_phy_type type);
++extern void usb_remove_phy(struct usb_phy *);
++
++#if defined(CONFIG_NOP_USB_XCEIV) || (defined(CONFIG_NOP_USB_XCEIV_MODULE) && defined(MODULE))
++/* sometimes transceivers are accessed only through e.g. ULPI */
++extern void usb_nop_xceiv_register(void);
++extern void usb_nop_xceiv_unregister(void);
++#else
++static inline void usb_nop_xceiv_register(void)
++{
++}
++
++static inline void usb_nop_xceiv_unregister(void)
++{
++}
++#endif
++
++/* helpers for direct access thru low-level io interface */
++static inline int usb_phy_io_read(struct usb_phy *x, u32 reg)
++{
++	if (x->io_ops && x->io_ops->read)
++		return x->io_ops->read(x, reg);
++
++	return -EINVAL;
++}
++
++static inline int usb_phy_io_write(struct usb_phy *x, u32 val, u32 reg)
++{
++	if (x->io_ops && x->io_ops->write)
++		return x->io_ops->write(x, val, reg);
++
++	return -EINVAL;
++}
++
++static inline int
++usb_phy_init(struct usb_phy *x)
++{
++	if (x->init)
++		return x->init(x);
++
++	return 0;
++}
++
++static inline void
++usb_phy_shutdown(struct usb_phy *x)
++{
++	if (x->shutdown)
++		x->shutdown(x);
++}
++
++/* for usb host and peripheral controller drivers */
++#ifdef CONFIG_USB_OTG_UTILS
++extern struct usb_phy *usb_get_phy(enum usb_phy_type type);
++extern struct usb_phy *devm_usb_get_phy(struct device *dev,
++	enum usb_phy_type type);
++extern void usb_put_phy(struct usb_phy *);
++extern void devm_usb_put_phy(struct device *dev, struct usb_phy *x);
++#else
++static inline struct usb_phy *usb_get_phy(enum usb_phy_type type)
++{
++	return NULL;
++}
++
++static inline struct usb_phy *devm_usb_get_phy(struct device *dev,
++	enum usb_phy_type type)
++{
++	return NULL;
++}
++
++static inline void usb_put_phy(struct usb_phy *x)
++{
++}
++
++static inline void devm_usb_put_phy(struct device *dev, struct usb_phy *x)
++{
++}
++
++#endif
++
++static inline int
++usb_phy_set_power(struct usb_phy *x, unsigned mA)
++{
++	if (x && x->set_power)
++		return x->set_power(x, mA);
++	return 0;
++}
++
++/* Context: can sleep */
++static inline int
++usb_phy_set_suspend(struct usb_phy *x, int suspend)
++{
++	if (x->set_suspend != NULL)
++		return x->set_suspend(x, suspend);
++	else
++		return 0;
++}
++
++static inline int
++usb_phy_notify_connect(struct usb_phy *x, int port)
++{
++	if (x->notify_connect)
++		return x->notify_connect(x, port);
++	else
++		return 0;
++}
++
++static inline int
++usb_phy_notify_disconnect(struct usb_phy *x, int port)
++{
++	if (x->notify_disconnect)
++		return x->notify_disconnect(x, port);
++	else
++		return 0;
++}
++
++/* notifiers */
++static inline int
++usb_register_notifier(struct usb_phy *x, struct notifier_block *nb)
++{
++	return atomic_notifier_chain_register(&x->notifier, nb);
++}
++
++static inline void
++usb_unregister_notifier(struct usb_phy *x, struct notifier_block *nb)
++{
++	atomic_notifier_chain_unregister(&x->notifier, nb);
++}
++
++static inline const char *usb_phy_type_string(enum usb_phy_type type)
++{
++	switch (type) {
++	case USB_PHY_TYPE_USB2:
++		return "USB2 PHY";
++	case USB_PHY_TYPE_USB3:
++		return "USB3 PHY";
++	default:
++		return "UNKNOWN PHY TYPE";
++	}
++}
++#endif /* __LINUX_USB_PHY_H */
+-- 
+1.7.1.1
 
-As the 'tmp121' is already in the driver, it is not a good idea to 
-replace it by LM74, however, I would prefer having the LM74 explicitly 
-addressable by the driver, in additional to the 'tmp121'
-
-I'm preparing a patch to include support for both LM71 and LM74 in the 
-LM70 driver, in order to have a driver handling the complete family. Do 
-you see a problem for that ? It would look strange that the LM70 driver 
-handles LM70 and LM71, but LM74 through the compatible 'tmp121'
-
-Nb, refer to your first answer, implementation for 'tmp122/124' is 
-another story because those have a programmable precision, not a fixed one.
->
-> Thanks,
-> Guenter
->
-Thanks
-Christophe
