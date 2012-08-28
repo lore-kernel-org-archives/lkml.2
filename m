@@ -1,105 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308Ab2H1QBX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 12:01:23 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:60390 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753190Ab2H1QBV (ORCPT
+	id S1753377Ab2H1QGl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 12:06:41 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:36853
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753022Ab2H1QGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 12:01:21 -0400
-From: Anthony Liguori <anthony@codemonkey.ws>
-To: Avi Kivity <avi@redhat.com>, mjw@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, peterz@infradead.org,
-        mtosatti@redhat.com, glommer@parallels.com, mingo@redhat.com
-Subject: Re: [PATCH RFC 0/3] Add guest cpu_entitlement reporting
-In-Reply-To: <503BEC0D.9090409@redhat.com>
-References: <20120823231346.11681.1502.stgit@lambeau> <503BC298.3080306@redhat.com> <1346098984.8623.23.camel@lambeau> <503BD920.20603@redhat.com> <1346102820.8623.32.camel@lambeau> <503BEC0D.9090409@redhat.com>
-User-Agent: Notmuch/0.13.2+93~ged93d79 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Tue, 28 Aug 2012 11:01:16 -0500
-Message-ID: <87ipc3uhtf.fsf@codemonkey.ws>
+	Tue, 28 Aug 2012 12:06:39 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -9
+X-BigFish: VPS-9(zz98dI9371I1432I179dNzz1202hzz8275bhz2dh668h839h944hd25hd2bhf0ah107ah1155h)
+X-WSS-ID: 0M9H3EX-02-KUC-02
+X-M-MSG: 
+Date: Tue, 28 Aug 2012 11:06:31 -0500
+From: Jacob Shin <jacob.shin@amd.com>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        Dave Young <dyoung@redhat.com>, Chao Wang <chaowang@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [PATCH 3/5] x86: Only direct map addresses that are marked as
+ E820_RAM
+Message-ID: <20120828160626.GA21454@jshin-Toonie>
+References: <1345852516-3125-1-git-send-email-jacob.shin@amd.com>
+ <1345852516-3125-4-git-send-email-jacob.shin@amd.com>
+ <CAE9FiQUjaBSn0q=+om7+CPjLXVD9Pemf=mNvgYG7C3bE5XxOSw@mail.gmail.com>
+ <20120825042409.GD26127@jshin-Toonie>
+ <CAE9FiQX2DApN=OU=xTK3VA+p1mDJ=U+qFyyRkaeTiH+xF5dQXw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQX2DApN=OU=xTK3VA+p1mDJ=U+qFyyRkaeTiH+xF5dQXw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avi Kivity <avi@redhat.com> writes:
+On Fri, Aug 24, 2012 at 09:54:04PM -0700, Yinghai Lu wrote:
+> On Fri, Aug 24, 2012 at 9:24 PM, Jacob Shin <jacob.shin@amd.com> wrote:
+> > On Fri, Aug 24, 2012 at 06:07:01PM -0700, Yinghai Lu wrote:
+> >> On Fri, Aug 24, 2012 at 4:55 PM, Jacob Shin <jacob.shin@amd.com> wrote:
+> >>
+> >> looks like you could avoid add pfn_mapped[] array.
+> >>
+> >> pfn_range_is_mapped() should be
+> >> check max_low_pfn_mapped, max_pfn_mapped with
+> >> e820_all_mapped(start, end, E820_RAM).
+> >
+> > Hmm .. I guess that could work .. but what about EFI code that keys off of
+> > EFI memory map? Does the EFI code update e820 and mark as E820_RAM whatever
+> > ranges that it calls init_memory_mapping on (via efi_ioremap?)
+> 
+> they are converted to e820 memmap before init_memory_mapping is called.
 
-> On 08/27/2012 02:27 PM, Michael Wolf wrote:
->> On Mon, 2012-08-27 at 13:31 -0700, Avi Kivity wrote:
->> > On 08/27/2012 01:23 PM, Michael Wolf wrote:
->> > > > 
->> > > > How would a guest know what its entitlement is?
->> > > > 
->> > > > 
->> > >
->> > > Currently the Admin/management tool setting up the guests will put it on
->> > > the qemu commandline.  From this it is passed via an ioctl to the host.
->> > > The guest will get the value from the host via a hypercall.
->> > >
->> > > In the future the host could try and do some of it automatically in some
->> > > cases. 
->> > 
->> > Seems to me it's a meaningless value for the guest.  Suppose it is
->> > migrated to a host that is more powerful, and as a result its relative
->> > entitlement is reduced.  The value needs to be adjusted.
->>
->> This is why I chose to manage the value from the sysctl interface rather
->> than just have it stored as a value in /proc.  Whatever tool was used to
->> migrate the vm could hopefully adjust the sysctl value on the guest.
->
-> We usually try to avoid this type of coupling.  What if the guest is
-> rebooting while this is happening?  What if it's not running Linux at
-> all?
+Yinghai, looking into this further on my EFI enabled machine, there is a
+memory range where:
 
-The guest shouldn't need to know it's entitlement.  Or at least, it's up
-to a management tool to report that in a way that's meaningful for the
-guest.
+- e820 marks it as E820_RESERVED
+- EFI memory map marks it as EFI_RUNTIME_SERVICES_DATA
 
-For instance, with a hosting provider, you may have 3 service levels
-(small, medium, large).  How you present whether the guest is small,
-medium, or large to the guest is up to the hosting provider.
+During EFI init, the range is added (redundantly) to e820 as E820_RESERVED,
+but during efi_enter_virtual_mode, direct mappings are created for the
+range with a call to efi_ioremap.
 
->
->> > 
->> > This is best taken care of from the host side.
->>
->> Not sure what you are getting at here.  If you are running in a cloud
->> environment, you purchase a VM with the understanding that you are
->> getting certain resources.  As this type of user I don't believe you
->> have any access to the host to see this type of information.  So the
->> user still wouldnt have a way to confirm that they are receiving what
->> they should be in the way of processor resources.
->>
->> Would you please elaborate a little more on this?
->
-> I meant not reporting this time as steal time.  But that cripples steal
-> time reporting.
->
-> Looks like for each quanta we need to report how much real time has
-> passed, how much the guest was actually using, and how much the guest
-> was not using due to overcommit (with the reminder being unallocated
-> time).  The guest could then present it any way it wanted to.
+Another such region is EFI_RUNTIME_SERVICES_CODE which is marked as
+ACPI NVS.
 
-What I had previously suggested what splitting entitlement loss out of
-steal time and reporting it as a separate metric (but not reporting a
-fixed notion of entitlement).
+So these are not E820_RAM, but direct mapped by EFI code path .. what do
+we do here? I think we should just stick with keeping the pfn_mapped[]
+array .. no?
 
-You're missing the entitlement loss bit above.  But you need to call
-out entitlement loss in order to report idle time correctly.
+-Jacob
 
-I think changing steal time (as this patch does) is wrong.
+> 
+> Thanks
+> 
+> Yinghai
+> 
 
-Regards,
-
-Anthony Liguori
-
->
-> -- 
-> I have a truly marvellous patch that fixes the bug which this
-> signature is too narrow to contain.
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
