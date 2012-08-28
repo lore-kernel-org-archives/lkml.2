@@ -1,42 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753336Ab2H1PyI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 11:54:08 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:55316 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753068Ab2H1Pxb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 11:53:31 -0400
+	id S1753228Ab2H1Pzc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 11:55:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7480 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751816Ab2H1Pzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Aug 2012 11:55:31 -0400
+Date: Tue, 28 Aug 2012 18:54:10 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v9 3/5] virtio_balloon: introduce migration primitives to
+ balloon pages
+Message-ID: <20120828155410.GE2903@redhat.com>
+References: <cover.1345869378.git.aquini@redhat.com>
+ <a1ceca79d95bc7de2a6b62a2e565b95286dbdf75.1345869378.git.aquini@redhat.com>
+ <20120826074244.GC19551@redhat.com>
+ <20120827194713.GA6517@t510.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <503CB7A8.4050600@nvidia.com>
-References: <1344938848-29606-1-git-send-email-ldewangan@nvidia.com>
- <5034AA28.5050306@nvidia.com> <20120823145308.GA28328@sirena.org.uk>
- <50364179.6070304@nvidia.com> <5037BF45.1070205@nvidia.com>
- <20120824233835.GA29178@ubuntu> <503CB7A8.4050600@nvidia.com>
-From: Rabin Vincent <rabin@rab.in>
-Date: Tue, 28 Aug 2012 17:52:49 +0200
-X-Google-Sender-Auth: hDiIpzUd2j7end8X5StGcSEE8P4
-Message-ID: <CAH+eYFBN01kRHXdHhbzJgLx+JBbz0T4UmbKxJeZ=od3B+rvRqw@mail.gmail.com>
-Subject: Re: [PATCH] regulator: disable supply regulator if it is enabled for boot-on
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "lrg@ti.com" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120827194713.GA6517@t510.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/8/28 Laxman Dewangan <ldewangan@nvidia.com>:
-> I tried to reproduce the lockup issue with the following change but not
-> seeing any lockup issue.
+On Mon, Aug 27, 2012 at 04:47:13PM -0300, Rafael Aquini wrote:
+> On Sun, Aug 26, 2012 at 10:42:44AM +0300, Michael S. Tsirkin wrote:
+> > 
+> > Reading two atomics and doing math? Result can even be negative.
+> > I did not look at use closely but it looks suspicious.
+> Doc on atomic_read says:
+> "
+> The read is atomic in that the return value is guaranteed to be one of the
+> values initialized or modified with the interface operations if a proper
+> implicit or explicit memory barrier is used after possible runtime
+> initialization by any other thread and the value is modified only with the
+> interface operations.
+> "
+> 
+> There's no runtime init by other thread than balloon's itself at device register,
+> and the operations (inc, dec) are made by the proper interface operations
+> only when protected by the spinlock pages_lock. It does not look suspicious, IMHO.
 
-Did you enable CONFIG_PROVE_LOCKING?
+Any use of multiple atomics is suspicious.
+Please just avoid it if you can. What's wrong with locking?
 
-> Also reviewing the change, I am not seeing any call trace where the
-> recursive locking happening.
+> I'm failing to see how it could become a negative on that case, since you cannot
+> isolate more pages than what was previoulsy inflated to balloon's list.
 
-There's probably no actual recursive locking, but the lockdep warning
-itself is a problem which must be eliminated.  You could perhaps do this
-by doing the regulator_disable(rdev->supply); after you mutex unlock the
-rdev->mutex.
+There is no order guarantee. So in
+A - B you can read B long after both A and B has been incremented.
+Maybe it is safe in this case but it needs careful documentation
+to explain how ordering works. Much easier to keep it all simple.
+
+> 
+> > It's already the case everywhere except __wait_on_isolated_pages,
+> > so just fix that, and then we can keep using int instead of atomics.
+> > 
+> Sorry, I quite didn't get you here. fix what?
+
+It's in the text you removed above. Access values under lock.
+
+>  
+> > That's 1K on stack - and can become more if we increase
+> > VIRTIO_BALLOON_ARRAY_PFNS_MAX.  Probably too much - this is the reason
+> > we use vb->pfns.
+> >
+> If we want to use vb->pfns we'll have to make leak_balloon mutual exclusive with
+> page migration (as it was before), but that will inevictably bring us back to
+> the discussion on breaking the loop when isolated pages make leak_balloon find
+> less pages than it wants to release at each leak round.
+> 
+
+I don't think this is an issue. The issue was busy waiting in that case.
+
+-- 
+MST
