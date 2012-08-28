@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753023Ab2H1KFs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 06:05:48 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:56202 "EHLO song.cn.fujitsu.com"
+	id S1753327Ab2H1KGE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 06:06:04 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56189 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751588Ab2H1J74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 05:59:56 -0400
+	id S1751747Ab2H1J7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Aug 2012 05:59:55 -0400
 X-IronPort-AV: E=Sophos;i="4.77,841,1336320000"; 
-   d="scan'208";a="5739722"
+   d="scan'208";a="5739721"
 From: wency@cn.fujitsu.com
 To: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
@@ -19,9 +19,9 @@ Cc: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
         minchan.kim@gmail.com, akpm@linux-foundation.org,
         kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
         Wen Congyang <wency@cn.fujitsu.com>
-Subject: [RFC v8 PATCH 18/20] memory-hotplug: add node_device_release
-Date: Tue, 28 Aug 2012 18:00:25 +0800
-Message-Id: <1346148027-24468-19-git-send-email-wency@cn.fujitsu.com>
+Subject: [RFC v8 PATCH 13/20] memory-hotplug: check page type in get_page_bootmem
+Date: Tue, 28 Aug 2012 18:00:20 +0800
+Message-Id: <1346148027-24468-14-git-send-email-wency@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1346148027-24468-1-git-send-email-wency@cn.fujitsu.com>
 References: <1346148027-24468-1-git-send-email-wency@cn.fujitsu.com>
@@ -36,13 +36,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-When calling unregister_node(), the function shows following message at
-device_release().
-
-Device 'node2' does not have a release() function, it is broken and must be
-fixed.
-
-So the patch implements node_device_release()
+There is a possibility that get_page_bootmem() is called to the same page many
+times. So when get_page_bootmem is called to the same page, the function only
+increments page->_count.
 
 CC: David Rientjes <rientjes@google.com>
 CC: Jiang Liu <liuj97@gmail.com>
@@ -53,41 +49,38 @@ CC: Christoph Lameter <cl@linux.com>
 Cc: Minchan Kim <minchan.kim@gmail.com>
 CC: Andrew Morton <akpm@linux-foundation.org>
 CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Wen Congyang <wency@cn.fujitsu.com>
 Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
 ---
- drivers/base/node.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+ mm/memory_hotplug.c |   15 +++++++++++----
+ 1 files changed, 11 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/base/node.c b/drivers/base/node.c
-index af1a177..07523fb 100644
---- a/drivers/base/node.c
-+++ b/drivers/base/node.c
-@@ -252,6 +252,16 @@ static inline void hugetlb_register_node(struct node *node) {}
- static inline void hugetlb_unregister_node(struct node *node) {}
- #endif
- 
-+static void node_device_release(struct device *dev)
-+{
-+	struct node *node_dev = to_node(dev);
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 5f9f8c7..d85af6d 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -95,10 +95,17 @@ static void release_memory_resource(struct resource *res)
+ static void get_page_bootmem(unsigned long info,  struct page *page,
+ 			     unsigned long type)
+ {
+-	page->lru.next = (struct list_head *) type;
+-	SetPagePrivate(page);
+-	set_page_private(page, info);
+-	atomic_inc(&page->_count);
++	unsigned long page_type;
 +
-+#if defined(CONFIG_MEMORY_HOTPLUG_SPARSE) && defined(CONFIG_HUGETLBFS)
-+	flush_work(&node_dev->node_work);
-+#endif
-+
-+	memset(node_dev, 0, sizeof(struct node));
-+}
++	page_type = (unsigned long) page->lru.next;
++	if (page_type < MEMORY_HOTPLUG_MIN_BOOTMEM_TYPE ||
++	    page_type > MEMORY_HOTPLUG_MAX_BOOTMEM_TYPE){
++		page->lru.next = (struct list_head *) type;
++		SetPagePrivate(page);
++		set_page_private(page, info);
++		atomic_inc(&page->_count);
++	} else
++		atomic_inc(&page->_count);
+ }
  
- /*
-  * register_node - Setup a sysfs device for a node.
-@@ -265,6 +275,7 @@ int register_node(struct node *node, int num, struct node *parent)
- 
- 	node->dev.id = num;
- 	node->dev.bus = &node_subsys;
-+	node->dev.release = node_device_release;
- 	error = device_register(&node->dev);
- 
- 	if (!error){
+ /* reference to __meminit __free_pages_bootmem is valid
 -- 
 1.7.1
 
