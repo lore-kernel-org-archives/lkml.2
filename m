@@ -1,32 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568Ab2H1Wjp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 18:39:45 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:43169 "EHLO
+	id S1753542Ab2H1WyG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 18:54:06 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:35178 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753231Ab2H1Wjn (ORCPT
+	with ESMTP id S1751939Ab2H1WyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 18:39:43 -0400
-Message-ID: <503D48AC.5040509@wwwdotorg.org>
-Date: Tue, 28 Aug 2012 15:39:40 -0700
+	Tue, 28 Aug 2012 18:54:03 -0400
+Message-ID: <503D4C08.8040605@wwwdotorg.org>
+Date: Tue, 28 Aug 2012 15:54:00 -0700
 From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: Franky Lin <frankyl@broadcom.com>
-CC: Wei Ni <wni@nvidia.com>, Arend van Spriel <arend@broadcom.com>,
-        "rvossen@broadcom.com" <rvossen@broadcom.com>,
-        Rakesh Kumar <krakesh@nvidia.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "brcm80211-dev-list@broadcom.com" <brcm80211-dev-list@broadcom.com>
-Subject: Re: [PATCH 2/6] brcmfmac: Handling the interrupt in ISR directly
- for non-OOB
-References: <1346063114-30361-1-git-send-email-wni@nvidia.com> <1346063114-30361-3-git-send-email-wni@nvidia.com> <503B9F31.5050502@broadcom.com> <503BD345.6030501@wwwdotorg.org> <1346152413.3516.211.camel@tegra-chromium-2> <503CF5B3.8040201@broadcom.com>
-In-Reply-To: <503CF5B3.8040201@broadcom.com>
+To: Dong Aisheng <b29396@freescale.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linus.walleij@stericsson.com, s.hauer@pengutronix.de,
+        shawn.guo@linaro.org, kernel@pengutronix.de, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, sameo@linux.intel.com, lrg@ti.com,
+        broonie@opensource.wolfsonmicro.com, richard.zhao@freescale.com,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH v3 1/7] mfd: add syscon driver based on regmap
+References: <1346145005-17961-1-git-send-email-b29396@freescale.com> <1346145005-17961-2-git-send-email-b29396@freescale.com>
+In-Reply-To: <1346145005-17961-2-git-send-email-b29396@freescale.com>
 X-Enigmail-Version: 1.5a1pre
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -34,46 +29,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/28/2012 09:45 AM, Franky Lin wrote:
-> On 08/28/2012 04:13 AM, Wei Ni wrote:
->> On Tue, 2012-08-28 at 04:06 +0800, Stephen Warren wrote:
->>> On 08/27/2012 09:24 AM, Arend van Spriel wrote:
->>>> On 08/27/2012 12:25 PM, Wei Ni wrote:
->>>>> In case of inband interrupts, if we handle the interrupt in dpc
->>>>> thread,
->>>>> two level of thread switching takes place to process wifi interrupts.
->>>>> One in SDHCI driver and the other in Wifi driver. This may cause the
->>>>> system
->>>>> instability.
-...
->>>> Not sure if I can follow this explanation. The isr is called with host
->>>> claimed (by sdio_irq_thread) and all it does is at a linked list member
->>>> and signal the dpc thread. After doing this the host is released.
->>>
->>> Is the issue something like the ISR handler or first level of threading
->>> does:
->>>
->>> * Trigger DPC
->>> * Re-enable interrupt
->>>
->>> So that the interrupt then fires again before the triggered DPC can run
->>> to handle/clear it, thus causing an interrupt storm?
->>>
->>> Whereas handling the interrupt directly prevents this race condition?
->>
->> Above is my understanding.
+On 08/28/2012 02:09 AM, Dong Aisheng wrote:
+> From: Dong Aisheng <dong.aisheng@linaro.org>
 > 
-> I understand the issue here and totally agree that we should treat
-> in-band and out-band interrupts differently. But my concern is that the
-> behavior of releasing the host before calling brcmf_sdbrcm_isr and grab
-> it after is likely error prone. Also we are restructuring the dpc
-> routine internally and it's almost done. I will find a better solution
-> for in-band interrupt and get it the queue as well. So I suggest
-> dropping this patch.
+> Add regmap based syscon driver.
+> This is usually used for access misc bits in registers which does not belong
+> to a specific module, for example, IMX IOMUXC GPR and ANATOP.
+> With this driver, client can use generic regmap API to access registers
+> which are registered into syscon.
 
-Franky, do you know which kernel release the DPC restructuring will make
-it into? I ask because I can't apply the rest of the patches in this
-series without first resolving the stability issues with the Broadcom
-WiFi enabled, since that'd de-stabilize the Tegra platform
-significantly, and I'd like to plan when we can apply these patches to
-Tegra. Thanks!
+> diff --git a/Documentation/devicetree/bindings/mfd/syscon.txt b/Documentation/devicetree/bindings/mfd/syscon.txt
+
+> +* System Controller Registers R/W driver
+
+I think the binding document could use some information about what a
+"syscon" actually is, especially since the compatible value is something
+generic like "syscon" rather than something with a vendor-specific
+prefix. How about:
+
+A system controller node represents a register region containing a set
+of miscellaneous registers. The registers are not cohesive enough to
+represent as any specific type of device. The typical use-case is for
+some other node's driver, or platform-specific code, to acquire a
+reference to the syscon node (e.g. by phandle, node path, or search
+using a specific compatible value), interrogate the node (or associated
+OS driver) to determine the location of the registers, and access the
+registers directly.
+
+> +Required properties:
+> +- compatible: Should contain "syscon".
+> +- reg: the register range can be access from syscon
+> +
+> +Examples:
+> +gpr: iomuxc-gpr@020e0000 {
+> +	compatible = "fsl,imx6q-iomuxc-gpr", "syscon";
+> +	reg = <0x020e0000 0x38>;
+> +};
+
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+
+> +config MFD_SYSCON
+> +        bool "System Controller Register R/W Based on Regmap"
+> +        select REGMAP_MMIO
+> +        help
+> +          Select this option to enable accessing system control registers
+> +	  via regmap.
+
+I think the indentation is off there.
+
+> +static int __devinit syscon_probe(struct platform_device *pdev)
+...
+> +	regcache_cache_only(syscon->regmap, false);
+
+Isn't that the default?
+
+Aside from that, I don't have any particular comments on this series, so
+please consider it,
+
+Acked-by: Stephen Warren <swarren@wwwdotorg.org>
