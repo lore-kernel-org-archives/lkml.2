@@ -1,43 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054Ab2H1JAc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 05:00:32 -0400
-Received: from h1346787.stratoserver.net ([85.214.49.182]:56116 "EHLO
-	h1346787.stratoserver.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256Ab2H1JAb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 05:00:31 -0400
-X-Greylist: delayed 934 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Aug 2012 05:00:31 EDT
-From: Carsten Wolff <carsten@wolffcarsten.de>
-To: Alexander Bergmann <alex@linlab.net>
-Subject: Re: [PATCH 1/1] tcp: Wrong timeout for SYN segments
-Date: Tue, 28 Aug 2012 10:44:35 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.32-5-686; KDE/4.4.5; i686; ; )
-Cc: David Miller <davem@davemloft.net>, eric.dumazet@gmail.com,
-        hkjerry.chu@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1345724123.5904.756.camel@edumazet-glaptop> <20120824.134231.41073001349178209.davem@davemloft.net> <20120825084819.GD430@linlab.net>
-In-Reply-To: <20120825084819.GD430@linlab.net>
+	id S1751965Ab2H1JFu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 05:05:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50217 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751051Ab2H1JFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Aug 2012 05:05:49 -0400
+Date: Tue, 28 Aug 2012 11:05:44 +0200
+From: Jan Kara <jack@suse.cz>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        David Miller <davem@davemloft.net>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>,
+        Dmitry Monakhov <dmonakhov@openvz.org>, Abhijith Das <adas@redhat.com>
+Subject: Re: [PATCH] userns: Add basic quota support v2
+Message-ID: <20120828090544.GC5146@quack.suse.cz>
+References: <87lih2h6i4.fsf@xmission.com>
+ <87harqecvk.fsf@xmission.com>
+ <20120827085034.GA8998@quack.suse.cz>
+ <87wr0j7u3j.fsf_-_@xmission.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208281044.40057.carsten@wolffcarsten.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87wr0j7u3j.fsf_-_@xmission.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Saturday 25 August 2012, Alexander Bergmann wrote:
-> This patch increases the value of TCP_SYN_RETRIES to the value of 6,
-> providing a retransmission window of 63secs.
+On Mon 27-08-12 17:12:16, Eric W. Biederman wrote: 
+> Add the data type struct qown which holds the owning identifier of a
+> quota.  struct qown is a replacement for the implicit union of uid,
+> gid and project stored in an unsigned int and the quota type field
+> that is was used in the quota data structures.  Making the data type
+> explicit allows the kuid_t and kgid_t type safety to propogate more
+> thoroughly through the code, revealing more places where uid/gid
+> conversions need be made.
 > 
-> The comments for SYN and SYNACK retries have also been updated to
-> describe the current settings.
+> Allong with the data type struct qown comes the helper functions
+  ^^^^ Along
 
-wouldn't it be nice, if the description of the corresponding sysctls in 
-Documentation/networking/ip-sysctl.txt could be updated too?
+> qown_eq, qown_lt, from_qown, from_qown_munged, qown_valid, make_qown,
+> make_qown_invalid, make_qown_uid, make_qown_gid.
+> 
+> Replace struct dquot dq_id and dq_type with dq_own a struct qown.
+> 
+> Update the signature of dqget, quota_send_warning, dquot_get_dqblk,
+> and dquot_set_dqblk to use struct qown.
+> 
+> Make minimal changes to ext3, ext4, gfs2, ocfs2, and xfs to deal with
+> the change in quota structures and signatures.  The ocfs2 changes are
+> larger than most because of the extensive tracing throughout the ocfs2
+> quota code that prints out dq_id.
+> 
+> v2:
+>  - Renamed qown_t struct qown
+>  - Added the quota type to struct qown.
+>  - Removed enum quota_type (In this patch it was just noise)
+>  - Added qown_lt, make_qown_invalid, make_qown_uid, make_qown_gid
+>  - Taught qown to handle xfs project ids (but only in init_user_ns). 
+>    Q_XGETQUOTA calls .get_quotblk with project ids.
+  Just a couple one minor comments below...
 
-Cheers
-Carsten
+> @@ -130,13 +130,17 @@ static void copy_to_if_dqblk(struct if_dqblk *dst, struct fs_disk_quota *src)
+>  static int quota_getquota(struct super_block *sb, int type, qid_t id,
+>  			  void __user *addr)
+>  {
+> +	struct qown qown;
+>  	struct fs_disk_quota fdq;
+>  	struct if_dqblk idq;
+>  	int ret;
+>  
+>  	if (!sb->s_qcop->get_dqblk)
+>  		return -ENOSYS;
+> -	ret = sb->s_qcop->get_dqblk(sb, type, id, &fdq);
+> +	qown = make_qown(current_user_ns(), type, id);
+> +	if (qown_valid(qown))
+            ^ missing '!'
+
+> +		return -EINVAL;
+> +	ret = sb->s_qcop->get_dqblk(sb, qown, &fdq);
+>  	if (ret)
+>  		return ret;
+>  	copy_to_if_dqblk(&idq, &fdq);
+...
+> +static inline u32 from_qown(struct user_namespace *user_ns, struct qown qown)
+> +{
+> +	switch (qown.type) {
+> +	case USRQUOTA:
+> +		return from_kuid(user_ns, qown.uid);
+> +	case GRPQUOTA:
+> +		return from_kgid(user_ns, qown.gid);
+> +	case XQM_PRJQUOTA:
+> +		return (user_ns == &init_user_ns) ? qown.prj : -1;
+> +	default:
+> +		BUG();
+> +	}
+> +}
+  I would like a bit more if the function somehow expressed in its name
+that it returns id. id_from_qown() might be a bit too long given how often
+it is used. qown2id() would be OK but it would be inconsistent with how
+names of other functions you've added are formed. So I'm somewhat
+undecided...
+
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
