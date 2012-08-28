@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207Ab2H1FOA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 01:14:00 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:10382 "EHLO
+	id S1752234Ab2H1FOY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 01:14:24 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:10458 "EHLO
 	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751997Ab2H1FNn (ORCPT
+	with ESMTP id S1750928Ab2H1FOW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 01:13:43 -0400
+	Tue, 28 Aug 2012 01:14:22 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 27 Aug 2012 22:13:32 -0700
+	by hqnvupgp05.nvidia.com on Mon, 27 Aug 2012 22:14:20 -0700
 From: Hiroshi Doyu <hdoyu@nvidia.com>
 To: <m.szyprowski@samsung.com>
 CC: Hiroshi Doyu <hdoyu@nvidia.com>, <linux-arm-kernel@lists.infradead.org>,
@@ -18,9 +18,9 @@ CC: Hiroshi Doyu <hdoyu@nvidia.com>, <linux-arm-kernel@lists.infradead.org>,
         <vdumpa@nvidia.com>, <subashrp@gmail.com>, <minchan@kernel.org>,
         <pullip.cho@samsung.com>, <konrad.wilk@oracle.com>,
         <linux-tegra@vger.kernel.org>
-Subject: [v4 4/4] ARM: dma-mapping: IOMMU allocates pages from atomic_pool with GFP_ATOMIC
-Date: Tue, 28 Aug 2012 08:13:04 +0300
-Message-ID: <1346130784-23571-5-git-send-email-hdoyu@nvidia.com>
+Subject: [v4 1/4] ARM: dma-mapping: atomic_pool with struct page **pages
+Date: Tue, 28 Aug 2012 08:13:01 +0300
+Message-ID: <1346130784-23571-2-git-send-email-hdoyu@nvidia.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1346130784-23571-1-git-send-email-hdoyu@nvidia.com>
 References: <1346130784-23571-1-git-send-email-hdoyu@nvidia.com>
@@ -30,76 +30,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make use of the same atomic pool as DMA does, and skip a kernel page
-mapping which can involve sleep'able operations at allocating a kernel
-page table.
+struct page **pages is necessary to align with non atomic path in
+__iommu_get_pages(). atomic_pool() has the intialized **pages instead
+of just *page.
 
 Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
 ---
- arch/arm/mm/dma-mapping.c |   36 ++++++++++++++++++++++++++++++++++++
- 1 files changed, 36 insertions(+), 0 deletions(-)
+ arch/arm/mm/dma-mapping.c |   17 ++++++++++++++---
+ 1 files changed, 14 insertions(+), 3 deletions(-)
 
 diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-index 4ef2d7b..f5024f9 100644
+index 1123808..51d5e2b 100644
 --- a/arch/arm/mm/dma-mapping.c
 +++ b/arch/arm/mm/dma-mapping.c
-@@ -1309,6 +1309,34 @@ static struct page **__iommu_get_pages(void *cpu_addr, struct dma_attrs *attrs)
- 	return NULL;
- }
+@@ -296,7 +296,7 @@ struct dma_pool {
+ 	unsigned long *bitmap;
+ 	unsigned long nr_pages;
+ 	void *vaddr;
+-	struct page *page;
++	struct page **pages;
+ };
  
-+static void *__iommu_alloc_atomic(struct device *dev, size_t size,
-+				  dma_addr_t *handle)
-+{
-+	struct page *page;
-+	void *addr;
-+
-+	addr = __alloc_from_pool(size, &page);
-+	if (!addr)
-+		return NULL;
-+
-+	*handle = __iommu_create_mapping(dev, &page, size);
-+	if (*handle == DMA_ERROR_CODE)
-+		goto err_mapping;
-+
-+	return addr;
-+
-+err_mapping:
-+	__free_from_pool(addr, size);
-+	return NULL;
-+}
-+
-+static void __iommu_free_atomic(struct device *dev, struct page **pages,
-+				dma_addr_t handle, size_t size)
-+{
-+	__iommu_remove_mapping(dev, handle, size);
-+	__free_from_pool(page_address(pages[0]), size);
-+}
-+
- static void *arm_iommu_alloc_attrs(struct device *dev, size_t size,
- 	    dma_addr_t *handle, gfp_t gfp, struct dma_attrs *attrs)
- {
-@@ -1326,6 +1354,9 @@ static void *arm_iommu_alloc_attrs(struct device *dev, size_t size,
- 	*handle = DMA_ERROR_CODE;
- 	size = PAGE_ALIGN(size);
+ static struct dma_pool atomic_pool = {
+@@ -335,6 +335,7 @@ static int __init atomic_pool_init(void)
+ 	unsigned long nr_pages = pool->size >> PAGE_SHIFT;
+ 	unsigned long *bitmap;
+ 	struct page *page;
++	struct page **pages;
+ 	void *ptr;
+ 	int bitmap_size = BITS_TO_LONGS(nr_pages) * sizeof(long);
  
-+	if (gfp & GFP_ATOMIC)
-+		return __iommu_alloc_atomic(dev, size, handle);
+@@ -342,21 +343,31 @@ static int __init atomic_pool_init(void)
+ 	if (!bitmap)
+ 		goto no_bitmap;
+ 
++	pages = kzalloc(nr_pages * sizeof(struct page *), GFP_KERNEL);
++	if (!pages)
++		goto no_pages;
 +
- 	pages = __iommu_alloc_buffer(dev, size, gfp);
- 	if (!pages)
- 		return NULL;
-@@ -1392,6 +1423,11 @@ void arm_iommu_free_attrs(struct device *dev, size_t size, void *cpu_addr,
- 		return;
+ 	if (IS_ENABLED(CONFIG_CMA))
+ 		ptr = __alloc_from_contiguous(NULL, pool->size, prot, &page);
+ 	else
+ 		ptr = __alloc_remap_buffer(NULL, pool->size, GFP_KERNEL, prot,
+ 					   &page, NULL);
+ 	if (ptr) {
++		int i;
++
++		for (i = 0; i < nr_pages; i++)
++			pages[i] = page + i;
++
+ 		spin_lock_init(&pool->lock);
+ 		pool->vaddr = ptr;
+-		pool->page = page;
++		pool->pages = pages;
+ 		pool->bitmap = bitmap;
+ 		pool->nr_pages = nr_pages;
+ 		pr_info("DMA: preallocated %u KiB pool for atomic coherent allocations\n",
+ 		       (unsigned)pool->size / 1024);
+ 		return 0;
  	}
- 
-+	if (__in_atomic_pool(cpu_addr, size)) {
-+		__iommu_free_atomic(dev, pages, handle, size);
-+		return;
-+	}
-+
- 	if (!dma_get_attr(DMA_ATTR_NO_KERNEL_MAPPING, attrs)) {
- 		unmap_kernel_range((unsigned long)cpu_addr, size);
- 		vunmap(cpu_addr);
++no_pages:
+ 	kfree(bitmap);
+ no_bitmap:
+ 	pr_err("DMA: failed to allocate %u KiB pool for atomic coherent allocation\n",
+@@ -481,7 +492,7 @@ static void *__alloc_from_pool(size_t size, struct page **ret_page)
+ 	if (pageno < pool->nr_pages) {
+ 		bitmap_set(pool->bitmap, pageno, count);
+ 		ptr = pool->vaddr + PAGE_SIZE * pageno;
+-		*ret_page = pool->page + pageno;
++		*ret_page = pool->pages[pageno];
+ 	} else {
+ 		pr_err_once("ERROR: %u KiB atomic DMA coherent pool is too small!\n"
+ 			    "Please increase it with coherent_pool= kernel parameter!\n",
 -- 
 1.7.5.4
 
