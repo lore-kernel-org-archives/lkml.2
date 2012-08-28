@@ -1,571 +1,705 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752496Ab2H1OBO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 10:01:14 -0400
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:53673 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751602Ab2H1OBN (ORCPT
+	id S1752693Ab2H1ODS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 10:03:18 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:58230 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751807Ab2H1ODP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 10:01:13 -0400
-Date: Tue, 28 Aug 2012 16:57:00 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-Cc: gregkh@linuxfoundation.org, balbi@ti.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH] usb: otg: Move phy interface to separate file.
-Message-ID: <20120828135657.GA4201@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1346156411-20761-1-git-send-email-vbyravarasu@nvidia.com>
+	Tue, 28 Aug 2012 10:03:15 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2oS5YaxWCcQjTEyO"
-Content-Disposition: inline
-In-Reply-To: <1346156411-20761-1-git-send-email-vbyravarasu@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Tue, 28 Aug 2012 22:03:13 +0800
+Message-ID: <CA+HMz3hLcxbOZ19-yposJd3pQxJXAL_FkrCPmK8pYnj0hJeuAw@mail.gmail.com>
+Subject: [PATCH] Chinese translation of Documentation/gpio.txt
+From: Ninja Tekkaman <tekkamanninja@gmail.com>
+To: Harry Wei <harryxiyou@gmail.com>
+Cc: Greg-Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>, kernel@vger.linux-kernel.cn
+Content-Type: text/plain; charset=GB2312
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7SE3Pb3017925
 
+This is a Chinese translated version of Documentation/gpio.txt
 
---2oS5YaxWCcQjTEyO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Fu Wei <tekkamanninja@gmail.com>
+---
+ Documentation/zh_CN/gpio.txt |  662 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 662 insertions(+)
+ create mode 100644 Documentation/zh_CN/gpio.txt
 
-Hi,
-
-On Tue, Aug 28, 2012 at 05:50:11PM +0530, Venu Byravarasu wrote:
-> As otg.h is containing lots of phy interface related
-> stuff, moving all phy interface related stuff to new
-> file named phy.h
->=20
-> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
-
-this should be ok.. I'll apply it once v3.6-rc4 is out unless someone
-has something against it :-)
-
-> ---
->  include/linux/usb/otg.h |  211 +----------------------------------------=
-----
->  include/linux/usb/phy.h |  222 +++++++++++++++++++++++++++++++++++++++++=
-++++++
->  2 files changed, 223 insertions(+), 210 deletions(-)
->  create mode 100644 include/linux/usb/phy.h
->=20
-> diff --git a/include/linux/usb/otg.h b/include/linux/usb/otg.h
-> index 45824be..ccd3511 100644
-> --- a/include/linux/usb/otg.h
-> +++ b/include/linux/usb/otg.h
-> @@ -10,6 +10,7 @@
->  #define __LINUX_USB_OTG_H
-> =20
->  #include <linux/notifier.h>
-> +#include <linux/usb/phy.h>
-> =20
->  /* OTG defines lots of enumeration states before device reset */
->  enum usb_otg_state {
-> @@ -35,31 +36,6 @@ enum usb_otg_state {
->  	OTG_STATE_A_VBUS_ERR,
->  };
-> =20
-> -enum usb_phy_events {
-> -	USB_EVENT_NONE,         /* no events or cable disconnected */
-> -	USB_EVENT_VBUS,         /* vbus valid event */
-> -	USB_EVENT_ID,           /* id was grounded */
-> -	USB_EVENT_CHARGER,      /* usb dedicated charger */
-> -	USB_EVENT_ENUMERATED,   /* gadget driver enumerated */
-> -};
-> -
-> -/* associate a type with PHY */
-> -enum usb_phy_type {
-> -	USB_PHY_TYPE_UNDEFINED,
-> -	USB_PHY_TYPE_USB2,
-> -	USB_PHY_TYPE_USB3,
-> -};
-> -
-> -struct usb_phy;
-> -
-> -/* for transceivers connected thru an ULPI interface, the user must
-> - * provide access ops
-> - */
-> -struct usb_phy_io_ops {
-> -	int (*read)(struct usb_phy *x, u32 reg);
-> -	int (*write)(struct usb_phy *x, u32 val, u32 reg);
-> -};
-> -
->  struct usb_otg {
->  	u8			default_a;
-> =20
-> @@ -85,134 +61,9 @@ struct usb_otg {
-> =20
->  };
-> =20
-> -/*
-> - * the otg driver needs to interact with both device side and host side
-> - * usb controllers.  it decides which controller is active at a given
-> - * moment, using the transceiver, ID signal, HNP and sometimes static
-> - * configuration information (including "board isn't wired for otg").
-> - */
-> -struct usb_phy {
-> -	struct device		*dev;
-> -	const char		*label;
-> -	unsigned int		 flags;
-> -
-> -	enum usb_phy_type	type;
-> -	enum usb_otg_state	state;
-> -	enum usb_phy_events	last_event;
-> -
-> -	struct usb_otg		*otg;
-> -
-> -	struct device		*io_dev;
-> -	struct usb_phy_io_ops	*io_ops;
-> -	void __iomem		*io_priv;
-> -
-> -	/* for notification of usb_phy_events */
-> -	struct atomic_notifier_head	notifier;
-> -
-> -	/* to pass extra port status to the root hub */
-> -	u16			port_status;
-> -	u16			port_change;
-> -
-> -	/* to support controllers that have multiple transceivers */
-> -	struct list_head	head;
-> -
-> -	/* initialize/shutdown the OTG controller */
-> -	int	(*init)(struct usb_phy *x);
-> -	void	(*shutdown)(struct usb_phy *x);
-> -
-> -	/* effective for B devices, ignored for A-peripheral */
-> -	int	(*set_power)(struct usb_phy *x,
-> -				unsigned mA);
-> -
-> -	/* for non-OTG B devices: set transceiver into suspend mode */
-> -	int	(*set_suspend)(struct usb_phy *x,
-> -				int suspend);
-> -
-> -	/* notify phy connect status change */
-> -	int	(*notify_connect)(struct usb_phy *x, int port);
-> -	int	(*notify_disconnect)(struct usb_phy *x, int port);
-> -};
-> -
-> -
-> -/* for board-specific init logic */
-> -extern int usb_add_phy(struct usb_phy *, enum usb_phy_type type);
-> -extern void usb_remove_phy(struct usb_phy *);
-> -
-> -#if defined(CONFIG_NOP_USB_XCEIV) || (defined(CONFIG_NOP_USB_XCEIV_MODUL=
-E) && defined(MODULE))
-> -/* sometimes transceivers are accessed only through e.g. ULPI */
-> -extern void usb_nop_xceiv_register(void);
-> -extern void usb_nop_xceiv_unregister(void);
-> -#else
-> -static inline void usb_nop_xceiv_register(void)
-> -{
-> -}
-> -
-> -static inline void usb_nop_xceiv_unregister(void)
-> -{
-> -}
-> -#endif
-> -
-> -/* helpers for direct access thru low-level io interface */
-> -static inline int usb_phy_io_read(struct usb_phy *x, u32 reg)
-> -{
-> -	if (x->io_ops && x->io_ops->read)
-> -		return x->io_ops->read(x, reg);
-> -
-> -	return -EINVAL;
-> -}
-> -
-> -static inline int usb_phy_io_write(struct usb_phy *x, u32 val, u32 reg)
-> -{
-> -	if (x->io_ops && x->io_ops->write)
-> -		return x->io_ops->write(x, val, reg);
-> -
-> -	return -EINVAL;
-> -}
-> -
-> -static inline int
-> -usb_phy_init(struct usb_phy *x)
-> -{
-> -	if (x->init)
-> -		return x->init(x);
-> -
-> -	return 0;
-> -}
-> -
-> -static inline void
-> -usb_phy_shutdown(struct usb_phy *x)
-> -{
-> -	if (x->shutdown)
-> -		x->shutdown(x);
-> -}
-> -
-> -/* for usb host and peripheral controller drivers */
->  #ifdef CONFIG_USB_OTG_UTILS
-> -extern struct usb_phy *usb_get_phy(enum usb_phy_type type);
-> -extern struct usb_phy *devm_usb_get_phy(struct device *dev,
-> -	enum usb_phy_type type);
-> -extern void usb_put_phy(struct usb_phy *);
-> -extern void devm_usb_put_phy(struct device *dev, struct usb_phy *x);
->  extern const char *otg_state_string(enum usb_otg_state state);
->  #else
-> -static inline struct usb_phy *usb_get_phy(enum usb_phy_type type)
-> -{
-> -	return NULL;
-> -}
-> -
-> -static inline struct usb_phy *devm_usb_get_phy(struct device *dev,
-> -	enum usb_phy_type type)
-> -{
-> -	return NULL;
-> -}
-> -
-> -static inline void usb_put_phy(struct usb_phy *x)
-> -{
-> -}
-> -
-> -static inline void devm_usb_put_phy(struct device *dev, struct usb_phy *=
-x)
-> -{
-> -}
-> -
->  static inline const char *otg_state_string(enum usb_otg_state state)
->  {
->  	return NULL;
-> @@ -262,42 +113,6 @@ otg_set_peripheral(struct usb_otg *otg, struct usb_g=
-adget *periph)
->  }
-> =20
->  static inline int
-> -usb_phy_set_power(struct usb_phy *x, unsigned mA)
-> -{
-> -	if (x && x->set_power)
-> -		return x->set_power(x, mA);
-> -	return 0;
-> -}
-> -
-> -/* Context: can sleep */
-> -static inline int
-> -usb_phy_set_suspend(struct usb_phy *x, int suspend)
-> -{
-> -	if (x->set_suspend !=3D NULL)
-> -		return x->set_suspend(x, suspend);
-> -	else
-> -		return 0;
-> -}
-> -
-> -static inline int
-> -usb_phy_notify_connect(struct usb_phy *x, int port)
-> -{
-> -	if (x->notify_connect)
-> -		return x->notify_connect(x, port);
-> -	else
-> -		return 0;
-> -}
-> -
-> -static inline int
-> -usb_phy_notify_disconnect(struct usb_phy *x, int port)
-> -{
-> -	if (x->notify_disconnect)
-> -		return x->notify_disconnect(x, port);
-> -	else
-> -		return 0;
-> -}
-> -
-> -static inline int
->  otg_start_srp(struct usb_otg *otg)
->  {
->  	if (otg && otg->start_srp)
-> @@ -306,31 +121,7 @@ otg_start_srp(struct usb_otg *otg)
->  	return -ENOTSUPP;
->  }
-> =20
-> -/* notifiers */
-> -static inline int
-> -usb_register_notifier(struct usb_phy *x, struct notifier_block *nb)
-> -{
-> -	return atomic_notifier_chain_register(&x->notifier, nb);
-> -}
-> -
-> -static inline void
-> -usb_unregister_notifier(struct usb_phy *x, struct notifier_block *nb)
-> -{
-> -	atomic_notifier_chain_unregister(&x->notifier, nb);
-> -}
-> -
->  /* for OTG controller drivers (and maybe other stuff) */
->  extern int usb_bus_start_enum(struct usb_bus *bus, unsigned port_num);
-> =20
-> -static inline const char *usb_phy_type_string(enum usb_phy_type type)
-> -{
-> -	switch (type) {
-> -	case USB_PHY_TYPE_USB2:
-> -		return "USB2 PHY";
-> -	case USB_PHY_TYPE_USB3:
-> -		return "USB3 PHY";
-> -	default:
-> -		return "UNKNOWN PHY TYPE";
-> -	}
-> -}
->  #endif /* __LINUX_USB_OTG_H */
-> diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
-> new file mode 100644
-> index 0000000..5a2bcbe
-> --- /dev/null
-> +++ b/include/linux/usb/phy.h
-> @@ -0,0 +1,222 @@
-> +/* USB OTG (On The Go) defines */
-> +/*
-> + *
-> + * These APIs may be used between USB controllers.  USB device drivers
-> + * (for either host or peripheral roles) don't use these calls; they
-> + * continue to use just usb_device and usb_gadget.
-> + */
-> +
-> +#ifndef __LINUX_USB_PHY_H
-> +#define __LINUX_USB_PHY_H
-> +
-> +#include <linux/notifier.h>
-> +
-> +enum usb_phy_events {
-> +	USB_EVENT_NONE,         /* no events or cable disconnected */
-> +	USB_EVENT_VBUS,         /* vbus valid event */
-> +	USB_EVENT_ID,           /* id was grounded */
-> +	USB_EVENT_CHARGER,      /* usb dedicated charger */
-> +	USB_EVENT_ENUMERATED,   /* gadget driver enumerated */
-> +};
-> +
-> +/* associate a type with PHY */
-> +enum usb_phy_type {
-> +	USB_PHY_TYPE_UNDEFINED,
-> +	USB_PHY_TYPE_USB2,
-> +	USB_PHY_TYPE_USB3,
-> +};
-> +
-> +struct usb_phy;
-> +struct usb_otg;
-> +
-> +/* for transceivers connected thru an ULPI interface, the user must
-> + * provide access ops
-> + */
-> +struct usb_phy_io_ops {
-> +	int (*read)(struct usb_phy *x, u32 reg);
-> +	int (*write)(struct usb_phy *x, u32 val, u32 reg);
-> +};
-> +
-> +struct usb_phy {
-> +	struct device		*dev;
-> +	const char		*label;
-> +	unsigned int		 flags;
-> +
-> +	enum usb_phy_type	type;
-> +	enum usb_phy_events	last_event;
-> +
-> +	struct usb_otg		*otg;
-> +
-> +	struct device		*io_dev;
-> +	struct usb_phy_io_ops	*io_ops;
-> +	void __iomem		*io_priv;
-> +
-> +	/* for notification of usb_phy_events */
-> +	struct atomic_notifier_head	notifier;
-> +
-> +	/* to pass extra port status to the root hub */
-> +	u16			port_status;
-> +	u16			port_change;
-> +
-> +	/* to support controllers that have multiple transceivers */
-> +	struct list_head	head;
-> +
-> +	/* initialize/shutdown the OTG controller */
-> +	int	(*init)(struct usb_phy *x);
-> +	void	(*shutdown)(struct usb_phy *x);
-> +
-> +	/* effective for B devices, ignored for A-peripheral */
-> +	int	(*set_power)(struct usb_phy *x,
-> +				unsigned mA);
-> +
-> +	/* for non-OTG B devices: set transceiver into suspend mode */
-> +	int	(*set_suspend)(struct usb_phy *x,
-> +				int suspend);
-> +
-> +	/* notify phy connect status change */
-> +	int	(*notify_connect)(struct usb_phy *x, int port);
-> +	int	(*notify_disconnect)(struct usb_phy *x, int port);
-> +};
-> +
-> +
-> +/* for board-specific init logic */
-> +extern int usb_add_phy(struct usb_phy *, enum usb_phy_type type);
-> +extern void usb_remove_phy(struct usb_phy *);
-> +
-> +#if defined(CONFIG_NOP_USB_XCEIV) || (defined(CONFIG_NOP_USB_XCEIV_MODUL=
-E) && defined(MODULE))
-> +/* sometimes transceivers are accessed only through e.g. ULPI */
-> +extern void usb_nop_xceiv_register(void);
-> +extern void usb_nop_xceiv_unregister(void);
-> +#else
-> +static inline void usb_nop_xceiv_register(void)
-> +{
-> +}
-> +
-> +static inline void usb_nop_xceiv_unregister(void)
-> +{
-> +}
-> +#endif
-> +
-> +/* helpers for direct access thru low-level io interface */
-> +static inline int usb_phy_io_read(struct usb_phy *x, u32 reg)
-> +{
-> +	if (x->io_ops && x->io_ops->read)
-> +		return x->io_ops->read(x, reg);
-> +
-> +	return -EINVAL;
-> +}
-> +
-> +static inline int usb_phy_io_write(struct usb_phy *x, u32 val, u32 reg)
-> +{
-> +	if (x->io_ops && x->io_ops->write)
-> +		return x->io_ops->write(x, val, reg);
-> +
-> +	return -EINVAL;
-> +}
-> +
-> +static inline int
-> +usb_phy_init(struct usb_phy *x)
-> +{
-> +	if (x->init)
-> +		return x->init(x);
-> +
-> +	return 0;
-> +}
-> +
-> +static inline void
-> +usb_phy_shutdown(struct usb_phy *x)
-> +{
-> +	if (x->shutdown)
-> +		x->shutdown(x);
-> +}
-> +
-> +/* for usb host and peripheral controller drivers */
-> +#ifdef CONFIG_USB_OTG_UTILS
-> +extern struct usb_phy *usb_get_phy(enum usb_phy_type type);
-> +extern struct usb_phy *devm_usb_get_phy(struct device *dev,
-> +	enum usb_phy_type type);
-> +extern void usb_put_phy(struct usb_phy *);
-> +extern void devm_usb_put_phy(struct device *dev, struct usb_phy *x);
-> +#else
-> +static inline struct usb_phy *usb_get_phy(enum usb_phy_type type)
-> +{
-> +	return NULL;
-> +}
-> +
-> +static inline struct usb_phy *devm_usb_get_phy(struct device *dev,
-> +	enum usb_phy_type type)
-> +{
-> +	return NULL;
-> +}
-> +
-> +static inline void usb_put_phy(struct usb_phy *x)
-> +{
-> +}
-> +
-> +static inline void devm_usb_put_phy(struct device *dev, struct usb_phy *=
-x)
-> +{
-> +}
-> +
-> +#endif
-> +
-> +static inline int
-> +usb_phy_set_power(struct usb_phy *x, unsigned mA)
-> +{
-> +	if (x && x->set_power)
-> +		return x->set_power(x, mA);
-> +	return 0;
-> +}
-> +
-> +/* Context: can sleep */
-> +static inline int
-> +usb_phy_set_suspend(struct usb_phy *x, int suspend)
-> +{
-> +	if (x->set_suspend !=3D NULL)
-> +		return x->set_suspend(x, suspend);
-> +	else
-> +		return 0;
-> +}
-> +
-> +static inline int
-> +usb_phy_notify_connect(struct usb_phy *x, int port)
-> +{
-> +	if (x->notify_connect)
-> +		return x->notify_connect(x, port);
-> +	else
-> +		return 0;
-> +}
-> +
-> +static inline int
-> +usb_phy_notify_disconnect(struct usb_phy *x, int port)
-> +{
-> +	if (x->notify_disconnect)
-> +		return x->notify_disconnect(x, port);
-> +	else
-> +		return 0;
-> +}
-> +
-> +/* notifiers */
-> +static inline int
-> +usb_register_notifier(struct usb_phy *x, struct notifier_block *nb)
-> +{
-> +	return atomic_notifier_chain_register(&x->notifier, nb);
-> +}
-> +
-> +static inline void
-> +usb_unregister_notifier(struct usb_phy *x, struct notifier_block *nb)
-> +{
-> +	atomic_notifier_chain_unregister(&x->notifier, nb);
-> +}
-> +
-> +static inline const char *usb_phy_type_string(enum usb_phy_type type)
-> +{
-> +	switch (type) {
-> +	case USB_PHY_TYPE_USB2:
-> +		return "USB2 PHY";
-> +	case USB_PHY_TYPE_USB3:
-> +		return "USB3 PHY";
-> +	default:
-> +		return "UNKNOWN PHY TYPE";
-> +	}
-> +}
-> +#endif /* __LINUX_USB_PHY_H */
-> --=20
-> 1.7.1.1
->=20
-
---=20
-balbi
-
---2oS5YaxWCcQjTEyO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQPM4pAAoJEIaOsuA1yqREUToQAJD6tTxcQrBtUsAcrwgvmIK8
-SU7vXi+QIhLtYkvrdOc4zTztwSD0E61Jp/lx+WuQZJ3d/UgosjkJHB1tAzMCpn77
-IAt3lOoHP7AnR6h8lnd4OfsP03mftcjZPYat6c8CosISmxyvkJdELstl598aECRk
-SZgyPdwj5BYEACohCd6iM6Re+qXcnH/RfPeSlwrIqN1Oe9TmmIQ1YYmi7GkHxMgQ
-ZtcB6PNpqvKdozg+6c+zfye7H8Bu1cG3ppK/oHgeJX5h40TinTl9z0SwF8Xdz+ue
-0nfDhxykoN+ogf2sXU4ph3p4vVlz+mo4D6ww7bkfbJhtvaPxAtAmDKK7OdNsivV+
-c8MpIn57IrvqWXCfy8riC/f7PhuYv3FZRrRFxYjtUCxMNieBwbz0N98+LH3/2/lH
-Wg6kLJKi87qiNRout1hQFsIzDwznrMThqRqW0wOQIhNRLONmM+unH4P4UXhg8AKW
-+RHx+nDEGhxZTFW4CzmKRSOrJLDa4CRWTErNz/7BxKVHv+5jszbR8cGRnIpx+tHv
-R9fbj5S5eCUCnqNB+NUjP7R8m98zlplu5rRQG/kR6wyofIQGoFjsNL57ZazeIsDu
-Snxpd96CLALnwFdgpGFgE4TgvDtiY5Ik7ftPFWBMlczel3Nr54Ikomu//FB+h30f
-DV3tHhVVGM89bsGoOY+D
-=wq4b
------END PGP SIGNATURE-----
-
---2oS5YaxWCcQjTEyO--
+diff --git a/Documentation/zh_CN/gpio.txt b/Documentation/zh_CN/gpio.txt
+new file mode 100644
+index 0000000..0484387
+--- /dev/null
++++ b/Documentation/zh_CN/gpio.txt
+@@ -0,0 +1,662 @@
++Chinese translated version of Documentation/gpio.txt
++
++If you have any comment or update to the content, please contact the
++original document maintainer directly.  However, if you have a problem
++communicating in English you can also ask the Chinese maintainer for
++help.  Contact the Chinese maintainer if this translation is outdated
++or if there is a problem with the translation.
++
++Maintainer: Grant Likely <grant.likely@secretlab.ca>
++		Linus Walleij <linus.walleij@linaro.org>
++Chinese maintainer: Fu Wei <tekkamanninja@gmail.com>
++---------------------------------------------------------------------
++Documentation/gpio.txt µÄÖÐÎÄ·­Òë
++
++Èç¹ûÏëÆÀÂÛ»ò¸üÐÂ±¾ÎÄµÄÄÚÈÝ£¬ÇëÖ±½ÓÁªÏµÔ­ÎÄµµµÄÎ¬»¤Õß¡£Èç¹ûÄãÊ¹ÓÃÓ¢ÎÄ
++½»Á÷ÓÐÀ§ÄÑµÄ»°£¬Ò²¿ÉÒÔÏòÖÐÎÄ°æÎ¬»¤ÕßÇóÖú¡£Èç¹û±¾·­Òë¸üÐÂ²»¼°Ê±»òÕß·­
++Òë´æÔÚÎÊÌâ£¬ÇëÁªÏµÖÐÎÄ°æÎ¬»¤Õß¡£
++Ó¢ÎÄ°æÎ¬»¤Õß£º Grant Likely <grant.likely@secretlab.ca>
++		Linus Walleij <linus.walleij@linaro.org>
++ÖÐÎÄ°æÎ¬»¤Õß£º ¸µì¿ Fu Wei <tekkamanninja@gmail.com>
++ÖÐÎÄ°æ·­ÒëÕß£º ¸µì¿ Fu Wei <tekkamanninja@gmail.com>
++ÖÐÎÄ°æÐ£ÒëÕß£º ¸µì¿ Fu Wei <tekkamanninja@gmail.com>
++
++
++ÒÔÏÂÎªÕýÎÄ
++---------------------------------------------------------------------
++GPIO ½Ó¿Ú
++
++±¾ÎÄµµÌá¹©ÁËÒ»¸öÔÚLinuxÏÂ·ÃÎÊGPIOµÄ¹«Ô¼¸ÅÊö¡£
++
++ÕâÐ©º¯ÊýÒÔ gpio_* ×÷ÎªÇ°×º¡£ÆäËûµÄº¯Êý²»ÔÊÐíÊ¹ÓÃÕâÑùµÄÇ°×º»òÏà¹ØµÄ
++__gpio_* Ç°×º¡£
++
++
++Ê²Ã´ÊÇGPIO?
++==========
++"Í¨ÓÃÊäÈë/Êä³ö¿Ú"(GPIO)ÊÇÒ»¸öÁé»îµÄÓÉÈí¼þ¿ØÖÆµÄÊý×ÖÐÅºÅ¡£ËûÃÇ¿É
++ÓÉ¶àÖÖÐ¾Æ¬Ìá¹©,ÇÒ¶ÔÓÚ´ÓÊÂÇ¶ÈëÊ½ºÍ¶¨ÖÆÓ²¼þµÄ Linux ¿ª·¢ÕßÀ´ËµÊÇ
++±È½ÏÊìÏ¤¡£Ã¿¸öGPIO ¶¼´ú±íÒ»¸öÁ¬½Óµ½ÌØ¶¨Òý½Å»òÇòÕ¤ÕóÁÐ(BGA)·â×°ÖÐ
++¡°ÇòÖé¡±µÄÒ»¸öÎ»¡£µçÂ·°åÔ­ÀíÍ¼ÏÔÊ¾ÁË GPIO ÓëÍâ²¿Ó²¼þµÄÁ¬½Ó¹ØÏµ¡£
++Çý¶¯¿ÉÒÔ±àÐ´³ÉÍ¨ÓÃ´úÂë£¬ÒÔÊ¹°å¼¶Æô¶¯´úÂë¿É´«µÝÒý½ÅÅäÖÃÊý¾Ý¸øÇý¶¯¡£
++
++Æ¬ÉÏÏµÍ³ (SOC) ´¦ÀíÆ÷¶Ô GPIO ÓÐºÜ´óµÄÒÀÀµ¡£ÔÚÄ³Ð©Çé¿öÏÂ,Ã¿¸ö
++·Ç×¨ÓÃÒý½Å¶¼¿ÉÅäÖÃÎª GPIO,ÇÒ´ó¶àÊýÐ¾Æ¬¶¼×îÉÙÓÐÒ»Ð© GPIO¡£
++¿É±à³ÌÂß¼­Æ÷¼þ(ÀàËÆ FPGA) ¿ÉÒÔ·½±ãµØÌá¹© GPIO¡£ÏñµçÔ´¹ÜÀíºÍ
++ÒôÆµ±à½âÂëÆ÷ÕâÑùµÄ¶à¹¦ÄÜÐ¾Æ¬¾­³£ÁôÓÐÒ»Ð©ÕâÑùµÄÒý½ÅÀ´°ïÖúÄÇÐ©Òý½Å
++ØÑ·¦µÄ SOC¡£Í¬Ê±»¹ÓÐÍ¨¹ý I2C »ò SPI ´®ÐÐ×ÜÏßÁ¬½ÓµÄ¡°GPIOÀ©Õ¹Æ÷¡±
++Ð¾Æ¬¡£´ó¶àÊý PC µÄÄÏÇÅÓÐÒ»Ð©ÓµÓÐ GPIO ÄÜÁ¦µÄÒý½Å (Ö»ÓÐBIOS
++¹Ì¼þ²ÅÖªµÀÈçºÎÊ¹ÓÃËûÃÇ)¡£
++
++GPIO µÄÊµ¼Ê¹¦ÄÜÒòÏµÍ³¶øÒì¡£Í¨³£ÓÃ·¨ÓÐ:
++
++  - Êä³öÖµ¿ÉÐ´ (¸ßµçÆ½=1£¬µÍµçÆ½=0)¡£Ò»Ð©Ð¾Æ¬Ò²ÓÐÈçºÎÇý¶¯ÕâÐ©ÖµµÄÑ¡Ïî,
++    ÀýÈçÖ»ÔÊÐíÊä³öÒ»¸öÖµ¡¢Ö§³Ö¡°ÏßÓë¡±¼°ÆäËûÈ¡ÖµÀàËÆµÄÄ£Ê½(ÖµµÃ×¢ÒâµÄÊÇ
++    ¡°¿ªÂ©¡±ÐÅºÅ)
++
++  - ÊäÈëÖµ¿É¶Á(1¡¢0)¡£Ò»Ð©Ð¾Æ¬Ö§³ÖÒý½ÅÔÚÅäÖÃÎª¡°Êä³ö¡±Ê±»Ø¶Á£¬Õâ¶ÔÓÚÀàËÆ
++    ¡°ÏßÓë¡±µÄÇé¿ö(ÒÔÖ§³ÖË«ÏòÐÅºÅ)ÊÇ·Ç³£ÓÐÓÃµÄ¡£GPIO ¿ØÖÆÆ÷¿ÉÄÜÓÐÊäÈë
++    È¥Ã«´Ì/Ïû¶¶Âß¼­,ÕâÓÐÊ±ÐèÒªÈí¼þ¿ØÖÆ¡£
++
++  - ÊäÈëÍ¨³£¿É×÷Îª IRQ ÐÅºÅ,Ò»°ãÊÇÑØ´¥·¢,µ«ÓÐÊ±ÊÇµçÆ½´¥·¢¡£ÕâÑùµÄ IRQ
++    ¿ÉÄÜÅäÖÃÎªÏµÍ³»½ÐÑÊÂ¼þ,ÒÔ½«ÏµÍ³´ÓµÍ¹¦ºÄ×´Ì¬ÏÂ»½ÐÑ¡£
++
++  - Í¨³£Ò»¸ö GPIO ¸ù¾Ý²»Í¬²úÆ·µçÂ·°åµÄÐèÇó,¿ÉÒÔÅäÖÃÎªÊäÈë»òÊä³ö,Ò²ÓÐ½ö
++    Ö§³Öµ¥ÏòµÄ¡£
++
++  - ´ó²¿·Ö GPIO ¿ÉÒÔÔÚ³ÖÓÐ×ÔÐýËøÊ±·ÃÎÊ,µ«ÊÇÍ¨³£ÓÉ´®ÐÐ×ÜÏßÀ©Õ¹µÄ GPIO
++    ²»ÔÊÐí³ÖÓÐ×ÔÐýËø¡£µ«Ä³Ð©ÏµÍ³Ò²Ö§³ÖÕâÖÖÀàÐÍ¡£
++
++¶ÔÓÚ¸ø¶¨µÄµçÂ·°å,Ã¿¸ö GPIO ¶¼ÓÃÓÚÄ³¸öÌØ¶¨µÄÄ¿µÄ,Èç¼à¿Ø MMC/SD ¿¨µÄ
++²åÈë/ÒÆ³ý¡¢¼ì²â¿¨µÄÐ´±£»¤×´Ì¬¡¢Çý¶¯ LED¡¢ÅäÖÃÊÕ·¢Æ÷¡¢Ä£Äâ´®ÐÐ×ÜÏß¡¢
++¸´Î»Ó²¼þ¿´ÃÅ¹·¡¢¸ÐÖª¿ª¹Ø×´Ì¬µÈµÈ¡£
++
++
++GPIO ¹«Ô¼
++=========
++×¢Òâ,Õâ¸ö½Ð×ö¡°¹«Ô¼¡±£¬ÒòÎªÕâ²»ÊÇÇ¿ÖÆÐÔµÄ£¬²»×ñÑ­Õâ¸ö¹«Ô¼ÊÇÎÞÉË´óÑÅµÄ£¬
++ÒòÎª´ËÊ±¿ÉÒÆÖ²ÐÔ²¢²»ÖØÒª¡£GPIO ³£ÓÃÓÚ°å¼¶ÌØ¶¨µÄµçÂ·Âß¼­,ÉõÖÁ¿ÉÄÜ
++Ëæ×ÅµçÂ·°åµÄ°æ±¾¶ø¸Ä±ä£¬ÇÒ²»¿ÉÄÜÔÚ²»Í¬×ßÏßµÄµçÂ·°åÉÏÊ¹ÓÃ¡£½öÓÐÔÚÉÙÊý
++¹¦ÄÜÉÏ²Å¾ßÓÐ¿ÉÒÆÖ²ÐÔ£¬ÆäËû¹¦ÄÜÊÇÆ½Ì¨ÌØ¶¨¡£ÕâÒ²ÊÇÓÉÓÚ¡°½ººÏ¡±µÄÂß¼­Ôì³ÉµÄ¡£
++
++´ËÍâ£¬Õâ²»ÐèÒªÈÎºÎµÄÖ´ÐÐ¿ò¼Ü£¬Ö»ÊÇÒ»¸ö½Ó¿Ú¡£Ä³¸öÆ½Ì¨¿ÉÄÜÍ¨¹ýÒ»¸ö¼òµ¥µØ
++·ÃÎÊÐ¾Æ¬¼Ä´æÆ÷µÄÄÚÁªº¯ÊýÀ´ÊµÏÖËü£¬ÆäËûÆ½Ì¨¿ÉÄÜÍ¨¹ýÎ¯ÍÐÒ»ÏµÁÐ²»Í¬µÄGPIO
++¿ØÖÆÆ÷µÄ³éÏóº¯ÊýÀ´ÊµÏÖËü¡£(ÓÐÒ»Ð©¿ÉÑ¡µÄ´úÂëÄÜÖ§³ÖÕâÖÖ²ßÂÔµÄÊµÏÖ,±¾ÎÄµµ
++ºóÃæ»á½éÉÜ£¬µ«×÷Îª GPIO ½Ó¿ÚµÄ¿Í»§¶ËÇý¶¯³ÌÐò±ØÐëÓëËüµÄÊµÏÖÎÞ¹Ø¡£)
++
++Ò²¾ÍÊÇËµ,Èç¹ûÔÚËûÃÇµÄÆ½Ì¨ÉÏÖ§³ÖÕâ¸ö¹«Ô¼£¬Çý¶¯Ó¦¾¡¿ÉÄÜµÄÊ¹ÓÃËü¡£Æ½Ì¨
++±ØÐëÔÚ Kconfig ÖÐÉùÃ÷¶Ô GENERIC_GPIOµÄÖ§³Ö (²¼¶ûÐÍ true)£¬²¢Ìá¹©
++Ò»¸ö <asm/gpio.h> ÎÄ¼þ¡£ÄÇÐ©µ÷ÓÃ±ê×¼ GPIO º¯ÊýµÄÇý¶¯Ó¦¸ÃÔÚ Kconfig
++Èë¿ÚÖÐÉùÃ÷ÒÀÀµGENERIC_GPIO¡£µ±Çý¶¯°üº¬ÎÄ¼þ:
++
++	#include <linux/gpio.h>
++
++Ôò GPIO º¯ÊýÊÇ¿ÉÓÃ,ÎÞÂÛÊÇ¡°ÕæÊµ´úÂë¡±»¹ÊÇ¾­ÓÅ»¯¹ýµÄÓï¾ä¡£Èç¹ûÄã×ñÊØ
++Õâ¸ö¹«Ô¼£¬µ±ÄãµÄ´úÂëÍê³Éºó£¬¶ÔÆäËûµÄ¿ª·¢ÕßÀ´Ëµ»á¸üÈÝÒ×¿´¶®ºÍÎ¬»¤¡£
++
++×¢Òâ£¬ÕâÐ©²Ù×÷°üº¬ËùÓÃÆ½Ì¨µÄ I/O ÆÁÕÏ´úÂë£¬Çý¶¯ÎÞÐëÏÔÊ½µØµ÷ÓÃËûÃÇ¡£
++
++
++±êÊ¶ GPIO
++---------
++GPIO ÊÇÍ¨¹ýÎÞ·ûºÅÕûÐÍÀ´±êÊ¶µÄ,·¶Î§ÊÇ 0 µ½ MAX_INT¡£±£Áô¡°¸º¡±Êý
++ÓÃÓÚÆäËûÄ¿µÄ,ÀýÈç±êÊ¶ÐÅºÅ¡°ÔÚÕâ¸ö°å×ÓÉÏ²»¿ÉÓÃ¡±»òÖ¸Ê¾´íÎó¡£Î´½Ó´¥µ×²ã
++Ó²¼þµÄ´úÂë»áºöÂÔÕâÐ©ÕûÊý¡£
++
++Æ½Ì¨»á¶¨ÒåÕâÐ©ÕûÊýµÄÓÃ·¨,ÇÒÍ¨³£Ê¹ÓÃ #define À´¶¨Òå GPIO£¬ÕâÑù
++°å¼¶ÌØ¶¨µÄÆô¶¯´úÂë¿ÉÒÔÖ±½Ó¹ØÁªÏàÓ¦µÄÔ­ÀíÍ¼¡£Ïà¶ÔÀ´Ëµ£¬Çý¶¯Ó¦¸Ã½öÊ¹ÓÃ
++Æô¶¯´úÂë´«µÝ¹ýÀ´µÄ GPIO ±àºÅ£¬Ê¹ÓÃ platform_data ±£´æ°å¼¶ÌØ¶¨
++Òý½ÅÅäÖÃÊý¾Ý (Í¬Ê±»¹ÓÐÆäËûÐëÒªµÄ°å¼¶ÌØ¶¨Êý¾Ý)£¬±ÜÃâ¿ÉÄÜ³öÏÖµÄÎÊÌâ¡£
++
++ÀýÈçÒ»¸öÆ½Ì¨Ê¹ÓÃ±àºÅ 32-159 À´±êÊ¶ GPIO,¶øÔÚÁíÒ»¸öÆ½Ì¨Ê¹ÓÃ±àºÅ0-63
++±êÊ¶Ò»×é GPIO ¿ØÖÆÆ÷,64-79±êÊ¶ÁíÒ»Àà GPIO ¿ØÖÆÆ÷,ÇÒÔÚÒ»¸öº¬ÓÐ
++FPGA µÄÌØ¶¨°å×ÓÉÏÊ¹ÓÃ 80-95¡£±àºÅ²»Ò»¶¨ÒªÁ¬Ðø,ÄÇÐ©Æ½Ì¨ÖÐ£¬Ò²¿ÉÒÔ
++Ê¹ÓÃ±àºÅ2000-2063À´±êÊ¶Ò»¸ö I2C ½Ó¿ÚµÄ GPIO À©Õ¹Æ÷ÖÐµÄ GPIO¡£
++
++Èç¹ûÄãÒª³õÊ¼»¯Ò»¸ö´øÓÐÎÞÐ§ GPIO ±àºÅµÄ½á¹¹Ìå,¿ÉÒÔÊ¹ÓÃÒ»Ð©¸º±àÂë
++(Èç"-EINVAL")£¬ÄÇ½«Ê¹ÆäÓÀÔ¶²»»áÊÇÓÐÐ§¡£À´²âÊÔÕâÑùÒ»¸ö½á¹¹ÌåÖÐµÄ±àºÅ
++ÊÇ·ñ¹ØÁªÒ»¸ö GPIO£¬Äã¿ÉÊ¹ÓÃÒÔÏÂ¶ÏÑÔ:
++
++	int gpio_is_valid(int number);
++
++Èç¹û±àºÅ²»´æÔÚ£¬ÔòÇëÇóºÍÊÍ·Å GPIO µÄº¯Êý½«¾Ü¾øÖ´ÐÐÏà¹Ø²Ù×÷(¼ûÏÂÎÄ)¡£
++ÆäËû±àºÅÒ²¿ÉÄÜ±»¾Ü¾ø,±ÈÈçÒ»¸ö±àºÅ¿ÉÄÜ´æÔÚ£¬µ«ÔÝÊ±ÔÚ¸ø¶¨µÄµçÂ·ÉÏ²»¿ÉÓÃ¡£
++
++Ò»¸öÆ½Ì¨ÊÇ·ñÖ§³Ö¶à¸ö GPIO ¿ØÖÆÆ÷ÎªÆ½Ì¨ÌØ¶¨µÄÊµÏÖÎÊÌâ£¬¾ÍÏñÊÇ·ñ¿ÉÒÔ
++ÔÚ GPIO ±àºÅ¿Õ¼äÖÐÓÐ¡°¿Õ¶´¡±ºÍÊÇ·ñ¿ÉÒÔÔÚÔËÐÐÊ±Ìí¼ÓÐÂµÄ¿ØÖÆÆ÷Ò»Ñù¡£
++ÕâÐ©ÎÊÌâ»áÓ°ÏìÆäËûÊÂÇé£¬°üÀ¨ÏàÁÚµÄ GPIO ±àºÅÊÇ·ñ´æÔÚµÈ¡£
++
++Ê¹ÓÃ GPIO
++---------
++¶ÔÓÚÒ»¸ö GPIO£¬ÏµÍ³Ó¦¸Ã×öµÄµÚÒ»¼þÊÂÇé¾ÍÊÇÍ¨¹ý gpio_request()
++º¯Êý·ÖÅäËû£¬¼ûÏÂÎÄ¡£
++
++¶ø½ÓÏÂÀ´Òª×öµÄÊÇ±êÊ¶ËüµÄ·½Ïò£¬ÕâÍ¨³£ÊÇÔÚ°å¼¶Æô¶¯´úÂëÖÐÎª GPIO ÉèÖÃ
++Ò»¸ö platform_device Ê±×öµÄ¡£
++
++	/* ÉèÖÃÎªÊäÈë»òÊä³ö, ·µ»Ø 0 »ò¸ºµÄ´íÎó´úÂë */
++	int gpio_direction_input(unsigned gpio);
++	int gpio_direction_output(unsigned gpio, int value);
++
++·µ»ØÖµÎªÁã´ú±í³É¹¦£¬·ñÔò·µ»ØÒ»¸ö¸ºµÄ´íÎó´úÂë¡£Õâ¸ö·µ»ØÖµÐèÒª¼ì²é£¬ÒòÎª
++get/set(»ñÈ¡/ÉèÖÃ)º¯Êýµ÷ÓÃÃ»·¨·µ»Ø´íÎó,ÇÒÓÐ¿ÉÄÜÊÇÅäÖÃ´íÎó¡£Í¨³££¬
++ÄãÓ¦¸ÃÔÚ½ø³ÌÉÏÏÂÎÄÖÐµ÷ÓÃÕâÐ©º¯Êý¡£È»¶ø,¶ÔÓÚ×ÔÐýËø°²È«µÄ GPIO£¬ÔÚ°å×Ó
++Æô¶¯µÄÔçÆÚ¡¢½ø³ÌÆô¶¯Ç°Ê¹ÓÃËûÃÇÒ²ÊÇ¿ÉÒÔµÄ¡£
++
++¶ÔÓÚ×÷ÎªÊä³öµÄ GPIO£¬ÎªÆäÌá¹©³õÊ¼Êä³öÖµ£¬¶ÔÓÚ±ÜÃâÔÚÏµÍ³Æô¶¯ÆÚ¼ä³öÏÖ
++ÐÅºÅÃ«´ÌÊÇºÜÓÐ°ïÖúµÄ¡£
++
++ÎªÁËÓë´«Í³µÄ GPIO ½Ó¿Ú¼æÈÝ, ÔÚÉèÖÃÒ»¸ö GPIO ·½ÏòÊ±£¬Èç¹ûËü»¹Î´±»ÉêÇë£¬
++ÔòÒþº¬ÁËÉêÇëÄÇ¸ö GPIO µÄ²Ù×÷(¼ûÏÂÎÄ)¡£ÕâÖÖ¼æÈÝÐÔÕýÔÚ´Ó¿ÉÑ¡µÄ gpiolib
++¿ò¼ÜÖÐÒÆ³ý¡£
++
++Èç¹ûÕâ¸ö GPIO ±àÂë²»´æÔÚ£¬»òÕßÌØ¶¨µÄ GPIO ²»ÄÜÓÃÓÚÄÇÖÖÄ£Ê½£¬Ôò·½Ïò
++ÉèÖÃ¿ÉÄÜÊ§°Ü¡£ÒÀÀµÆô¶¯¹Ì¼þÀ´ÕýÈ·µØÉèÖÃ·½ÏòÍ¨³£ÊÇÒ»¸ö»µÖ÷Òâ£¬ÒòÎªËü¿ÉÄÜ
++³ýÁËÆô¶¯Linux£¬²¢Ã»ÓÐ×ö¸ü¶àµÄÑéÖ¤¹¤×÷¡£(Í¬Àí, °å×ÓµÄÆô¶¯´úÂë¿ÉÄÜÐèÒª
++½«Õâ¸ö¸´ÓÃµÄÒý½ÅÉèÖÃÎª GPIO£¬²¢ÕýÈ·µØÅäÖÃÉÏÀ­/ÏÂÀ­µç×è¡£)
++
++
++·ÃÎÊ×ÔÐýËø°²È«µÄ GPIO
++-------------------
++´ó¶àÊý GPIO ¿ØÖÆÆ÷¿ÉÒÔÍ¨¹ýÄÚ´æ¶Á/Ð´Ö¸ÁîÀ´·ÃÎÊ¡£ÕâÐ©Ö¸Áî²»»áÐÝÃß,¿ÉÒÔ
++°²È«µØÔÚÓ²(·ÇÏß³Ì)ÖÐ¶ÏÀý³ÌºÍÀàËÆµÄÉÏÏÂÎÄÖÐÍê³É¡£
++
++¶ÔÓÚÄÇÐ©ÓÃ gpio_cansleep()²âÊÔ×ÜÊÇ·µ»ØÊ§°ÜµÄ GPIO(¼ûÏÂÎÄ)£¬Ê¹ÓÃ
++ÒÔÏÂµÄº¯Êý·ÃÎÊ:
++
++	/* GPIO ÊäÈë:·µ»ØÁã»ò·ÇÁã */
++	int gpio_get_value(unsigned gpio);
++
++	/* GPIO ÊäÈë */
++	void gpio_set_value(unsigned gpio, int value);
++
++·µ»ØÖµÊÇ²¼¶ûÖµ£¬Áã±íÊ¾µÍµçÆ½£¬·ÇÁã±íÊ¾¸ßµçÆ½¡£µ±¶ÁÈ¡Ò»¸öÊä³öÒý½ÅµÄÖµÊ±£¬
++·µ»ØÖµÓ¦¸ÃÊÇÒý½ÅÉÏµÄÖµ¡£Õâ¸öÖµ²»×ÜÊÇºÍÊä³öÖµÏà·û£¬ÒòÎª´æÔÚ¿ªÂ©Êä³öÐÅºÅºÍ
++Êä³öÇ±·üÆÚµÄÎÊÌâ¡£
++
++ÒÔÉÏµÄ get/set º¯Êý²»»á¶ÔÔçÆÚÒÑ¾­Í¨¹ý gpio_direction_*()±¨¸æ¡°ÎÞÐ§µÄ
++GPIO¡±·µ»Ø´íÎó¡£´ËÍâ,»¹ÐèÒª×¢ÒâµÄÊÇ²¢²»ÊÇËùÓÐÆ½Ì¨¶¼¿ÉÒÔ´ÓÊä³öÒý½ÅÖÐ¶ÁÈ¡
++Êý¾ÝµÄ£¬ÄÇÐ©Òý½ÅÒ²²»×ÜÊÇ·µ»ØÁã¡£ÇÒ¶ÔÄÇÐ©ÎÞ·¨°²È«·ÃÎÊ(¿ÉÄÜ»áÐÝÃß)µÄ GPIO
++(¼ûÏÂÎÄ)Ê¹ÓÃÕâÐ©º¯ÊýÊÇ´íÎóµÄ¡£
++
++ÔÚ GPIO ±àºÅ(»¹ÓÐÊä³ö¡¢Öµ)Îª³£ÊýµÄÇé¿öÏÂ,¹ÄÀøÍ¨¹ýÆ½Ì¨ÌØ¶¨µÄÊµÏÖÀ´ÓÅ»¯
++ÕâÁ½¸öº¯ÊýÀ´·ÃÎÊ GPIO Öµ¡£ÕâÖÖÇé¿ö(¶ÁÐ´Ò»¸öÓ²¼þ¼Ä´æÆ÷)ÏÂÖ»ÐèÒª¼¸ÌõÖ¸Áî
++ÊÇºÜÕý³£µÄ,ÇÒÎÞÐë×ÔÐýËø¡£ÕâÖÖÓÅ»¯º¯Êý±ÈÆðÄÇÐ©ÔÚ×Ó³ÌÐòÉÏ»¨·ÑÐí¶àÖ¸ÁîµÄ
++º¯Êý¿ÉÒÔÊ¹µÃÄ£Äâ½Ó¿Ú(ÒëÕß×¢:ÀýÈç GPIO Ä£Äâ I2C¡¢1-wire »ò SPI)µÄ
++Ó¦ÓÃ(ÔÚ¿Õ¼äºÍÊ±¼äÉÏ¶¼)¸ü¾ßÐ§ÂÊ¡£
++
++
++·ÃÎÊ¿ÉÄÜÐÝÃßµÄ GPIO
++-----------------
++Ä³Ð© GPIO ¿ØÖÆÆ÷±ØÐëÍ¨¹ý»ùÓÚ×ÜÏß(Èç I2C »ò SPI)µÄÏûÏ¢·ÃÎÊ¡£¶Á»òÐ´ÕâÐ©
++GPIO ÖµµÄÃüÁîÐèÒªµÈ´ýÆäÐÅÏ¢ÅÅµ½¶ÓÊ×²Å·¢ËÍÃüÁî£¬ÔÙ»ñµÃÆä·´À¡¡£ÆÚ¼äÐèÒª
++ÐÝÃß£¬Õâ²»ÄÜÔÚ IRQ Àý³Ì(ÖÐ¶ÏÉÏÏÂÎÄ)ÖÐÖ´ÐÐ¡£
++
++Ö§³Ö´ËÀà GPIO µÄÆ½Ì¨Í¨¹ýÒÔÏÂº¯Êý·µ»Ø·ÇÁãÖµÀ´Çø·Ö³öÕâÖÖ GPIO¡£(´Ëº¯ÊýÐèÒª
++Ò»¸öÖ®Ç°Í¨¹ý gpio_request ·ÖÅäµ½µÄÓÐÐ§ GPIO ±àºÅ):
++
++	int gpio_cansleep(unsigned gpio);
++
++ÎªÁË·ÃÎÊÕâÖÖ GPIO,ÄÚºË¶¨ÒåÁËÒ»Ì×²»Í¬µÄº¯Êý:
++
++	/* GPIO ÊäÈë:·µ»ØÁã»ò·ÇÁã ,¿ÉÄÜ»áÐÝÃß */
++	int gpio_get_value_cansleep(unsigned gpio);
++
++	/* GPIO ÊäÈë,¿ÉÄÜ»áÐÝÃß */
++	void gpio_set_value_cansleep(unsigned gpio, int value);
++
++
++·ÃÎÊÕâÑùµÄ GPIO ÐèÒªÒ»¸öÔÊÐíÐÝÃßµÄÉÏÏÂÎÄ£¬ÀýÈçÏß³Ì IRQ ´¦ÀíÀý³Ì£¬²¢ÓÃÒÔÉÏµÄ
++·ÃÎÊº¯ÊýÌæ»»ÄÇÐ©Ã»ÓÐ cansleep()ºó×ºµÄ×ÔÐýËø°²È«·ÃÎÊº¯Êý¡£
++
++³ýÁËÕâÐ©·ÃÎÊº¯Êý¿ÉÄÜÐÝÃß£¬ÇÒËüÃÇ²Ù×÷µÄ GPIO ²»ÄÜÔÚÓ²¼þ IRQ ´¦ÀíÀý³ÌÖÐ·ÃÎÊµÄ
++ÊÂÊµ£¬ÕâÐ©´¦ÀíÀý³ÌÊµ¼ÊÉÏºÍ×ÔÐýËø°²È«µÄº¯ÊýÊÇÒ»ÑùµÄ¡£
++
++** ³ý´ËÖ®Íâ ** µ÷ÓÃÉèÖÃºÍÅäÖÃ´ËÀà GPIO µÄº¯ÊýÒ²±ØÐëÔÚÔÊÐíÐÝÃßµÄÉÏÏÂÎÄÖÐ£¬
++ÒòÎªËüÃÇ¿ÉÄÜÒ²ÐèÒª·ÃÎÊ GPIO ¿ØÖÆÆ÷Ð¾Æ¬: (ÕâÐ©ÉèÖÃº¯ÊýÍ¨³£ÔÚ°å¼¶Æô¶¯´úÂë»òÕß
++Çý¶¯Ì½²â/¶Ï¿ª´úÂëÖÐ£¬ËùÒÔÕâÊÇÒ»¸öÈÝÒ×Âú×ãµÄÔ¼ÊøÌõ¼þ¡£)
++
++	gpio_direction_input()
++	gpio_direction_output()
++	gpio_request()
++
++## 	gpio_request_one()
++##	gpio_request_array()
++## 	gpio_free_array()
++
++	gpio_free()
++	gpio_set_debounce()
++
++
++
++ÉùÃ÷ºÍÊÍ·Å GPIO
++----------------------------
++ÎªÁËÓÐÖúÓÚ²¶»ñÏµÍ³ÅäÖÃ´íÎó,¶¨ÒåÁËÁ½¸öº¯Êý¡£
++
++	/* ÉêÇë GPIO, ·µ»Ø 0 »ò¸ºµÄ´íÎó´úÂë.
++	 * ·Ç¿Õ±êÇ©¿ÉÄÜÓÐÖúÓÚÕï¶Ï.
++	 */
++	int gpio_request(unsigned gpio, const char *label);
++
++	/* ÊÍ·ÅÖ®Ç°ÉùÃ÷µÄ GPIO */
++	void gpio_free(unsigned gpio);
++
++½«ÎÞÐ§µÄ GPIO ±àÂë´«µÝ¸ø gpio_request()»áµ¼ÖÂÊ§°Ü£¬ÉêÇëÒ»¸öÒÑÊ¹ÓÃÕâ¸ö
++º¯ÊýÉùÃ÷¹ýµÄ GPIO Ò²»áÊ§°Ü¡£gpio_request()µÄ·µ»ØÖµ±ØÐë¼ì²é¡£ÄãÓ¦¸ÃÔÚ
++½ø³ÌÉÏÏÂÎÄÖÐµ÷ÓÃÕâÐ©º¯Êý¡£È»¶ø,¶ÔÓÚ×ÔÐýËø°²È«µÄ GPIO,ÔÚ°å×ÓÆô¶¯µÄÔçÆÚ¡¢
++½øÈë½ø³ÌÖ®Ç°ÊÇ¿ÉÒÔÉêÇëµÄ¡£
++
++Õâ¸öº¯ÊýÍê³ÉÁ½¸ö»ù±¾µÄÄ¿±ê¡£Ò»ÊÇ±êÊ¶ÄÇÐ©Êµ¼ÊÉÏÒÑ×÷Îª GPIO Ê¹ÓÃµÄÐÅºÅÏß£¬
++ÕâÑù±ãÓÚ¸üºÃµØÕï¶Ï;ÏµÍ³¿ÉÄÜÐèÒª·þÎñ¼¸°Ù¸öÇ±ÔÚµÄ GPIO£¬µ«ÊÇ¶ÔÓÚÈÎºÎÒ»¸ö
++¸ø¶¨µÄµçÂ·°åÍ¨³£Ö»ÓÐÒ»Ð©±»Ê¹ÓÃ¡£ÁíÒ»¸öÄ¿µÄÊÇ²¶»ñ³åÍ»£¬²éÃ÷´íÎó:ÈçÁ½¸ö»ò
++¸ü¶àÇý¶¯´íÎóµØÈÏÎªËûÃÇÒÑ¾­¶ÀÕ¼ÁËÄ³¸öÐÅºÅÏß,»òÊÇ´íÎóµØÈÏÎªÒÆ³ýÒ»¸ö¹ÜÀí×Å
++Ä³¸öÒÑ¼¤»îÐÅºÅµÄÇý¶¯ÊÇ°²È«µÄ¡£Ò²¾ÍÊÇËµ£¬ÉêÇë GPIO µÄ×÷ÓÃÀàËÆÒ»ÖÖËø»úÖÆ¡£
++
++Ä³Ð©Æ½Ì¨¿ÉÄÜÒ²Ê¹ÓÃ GPIO ×÷ÎªµçÔ´¹ÜÀí¼¤»îÐÅºÅ(ÀýÈçÍ¨¹ý¹Ø±ÕÎ´Ê¹ÓÃÐ¾Æ¬ÇøºÍ
++¼òµ¥µØ¹Ø±ÕÎ´Ê¹ÓÃÊ±ÖÓ)¡£
++
++¶ÔÓÚ GPIO Ê¹ÓÃ pinctrl ×ÓÏµÍ³ÒÑÖªµÄÒý½Å£¬×ÓÏµÍ³Ó¦¸Ã±»¸æÖªÆäÊ¹ÓÃÇé¿ö£»
++Ò»¸ö gpiolib Çý¶¯µÄ .request()²Ù×÷Ó¦µ÷ÓÃ pinctrl_request_gpio()£¬
++¶ø gpiolib Çý¶¯µÄ .free()²Ù×÷Ó¦µ÷ÓÃ pinctrl_free_gpio()¡£pinctrl
++×ÓÏµÍ³ÔÊÐí pinctrl_request_gpio()ÔÚÄ³¸öÒý½Å»òÒý½Å×éÒÔ¸´ÓÃÐÎÊ½¡°ÊôÓÚ¡±
++Ò»¸öÉè±¸Ê±¶¼³É¹¦·µ»Ø¡£
++
++ÈÎºÎÐë½« GPIO ÐÅºÅµ¼ÏòÊÊµ±Òý½ÅµÄÒý½Å¸´ÓÃÓ²¼þµÄ±à³ÌÓ¦¸Ã·¢ÉúÔÚ GPIO
++Çý¶¯µÄ .direction_input()»ò .direction_output()º¯ÊýÖÐ£¬ÒÔ¼°
++ÈÎºÎÊä³ö GPIO ÖµµÄÉèÖÃÖ®ºó¡£ÕâÑù¿ÉÊ¹´ÓÒý½ÅÌØÊâ¹¦ÄÜµ½ GPIO µÄ×ª»»
++²»»áÔÚÒý½Å²úÉúÃ«´Ì²¨ÐÎ¡£ÓÐÊ±µ±ÓÃÒ»¸ö GPIO ÊµÏÖÆäÐÅºÅÇý¶¯Ò»¸ö·Ç GPIO
++Ó²¼þÄ£¿éµÄ½â¾ö·½°¸Ê±£¬¾ÍÐèÒªÕâÖÖ»úÖÆ¡£
++
++Ä³Ð©Æ½Ì¨ÔÊÐí²¿·Ö»òËùÓÐ GPIO ÐÅºÅÊ¹ÓÃ²»Í¬µÄÒý½Å¡£ÀàËÆµÄ£¬GPIO »òÒý½ÅµÄ
++ÆäËû·½ÃæÒ²ÐèÒªÅäÖÃ£¬ÈçÉÏÀ­/ÏÂÀ­¡£Æ½Ì¨Èí¼þÓ¦¸ÃÔÚ¶ÔÕâÐ© GPIO µ÷ÓÃ
++gpio_request()Ç°½«ÕâÀàÏ¸½ÚÅäÖÃºÃ£¬ÀýÈçÊ¹ÓÃ pinctrl ×ÓÏµÍ³µÄÓ³Éä±í£¬
++Ê¹µÃ GPIO µÄÓÃ»§ÎÞÐë¹Ø×¢ÕâÐ©Ï¸½Ú¡£
++
++»¹ÓÐÒ»¸öÖµµÃ×¢ÒâµÄÊÇÔÚÊÍ·Å GPIO Ç°£¬Äã±ØÐëÍ£Ö¹Ê¹ÓÃËü¡£
++
++
++×¢Òâ:ÉêÇëÒ»¸ö GPIO ²¢Ã»ÓÐÒÔÈÎºÎ·½Ê½ÅäÖÃËü£¬Ö»²»¹ý±êÊ¶ÄÇ¸ö GPIO ´¦ÓÚÊ¹ÓÃ
++×´Ì¬¡£±ØÐëÓÐÁíÍâµÄ´úÂëÀ´´¦ÀíÒý½ÅÅäÖÃ(Èç¿ØÖÆ GPIO Ê¹ÓÃµÄÒý½Å¡¢ÉÏÀ­/ÏÂÀ­)¡£
++¿¼ÂÇµ½´ó¶àÊýÇé¿öÏÂÉùÃ÷ GPIO Ö®ºó¾Í»áÁ¢¼´ÅäÖÃËüÃÇ,ËùÒÔ¶¨ÒåÁËÒÔÏÂÈý¸ö¸¨Öúº¯Êý:
++
++	/* ÉêÇëÒ»¸ö GPIO ÐÅºÅ, Í¬Ê±Í¨¹ýÌØ¶¨µÄ'flags'³õÊ¼»¯ÅäÖÃ,
++	 * ÆäËûºÍ gpio_request()µÄ²ÎÊýºÍ·µ»ØÖµÏàÍ¬
++	 *
++	 */
++	int gpio_request_one(unsigned gpio, unsigned long flags, const char *label);
++
++	/* ÔÚµ¥¸öº¯ÊýÖÐÉêÇë¶à¸ö GPIO
++	 */
++	int gpio_request_array(struct gpio *array, size_t num);
++
++	/* ÔÚµ¥¸öº¯ÊýÖÐÊÍ·Å¶à¸ö GPIO
++	 */
++	void gpio_free_array(struct gpio *array, size_t num);
++
++ÕâÀï 'flags' µ±Ç°¶¨Òå¿ÉÖ¸¶¨ÒÔÏÂÊôÐÔ:
++
++	* GPIOF_DIR_IN		- ÅäÖÃ·½ÏòÎªÊäÈë
++	* GPIOF_DIR_OUT		- ÅäÖÃ·½ÏòÎªÊä³ö
++
++	* GPIOF_INIT_LOW	- ÔÚ×÷ÎªÊä³öÊ±,³õÊ¼ÖµÎªµÍµçÆ½
++	* GPIOF_INIT_HIGH	- ÔÚ×÷ÎªÊä³öÊ±,³õÊ¼ÖµÎª¸ßµçÆ½
++	* GPIOF_OPEN_DRAIN	- gpioÒý½ÅÎª¿ªÂ©ÐÅºÅ
++	* GPIOF_OPEN_SOURCE	- gpioÒý½ÅÎªÔ´¼«¿ªÂ·ÐÅºÅ
++
++	* GPIOF_EXPORT_DIR_FIXED	- ½« gpio µ¼³öµ½ sysfs£¬²¢±£³Ö·½Ïò
++	* GPIOF_EXPORT_DIR_CHANGEABLE	- Í¬ÑùÊÇµ¼³ö, µ«ÔÊÐí¸Ä±ä·½Ïò
++
++ÒòÎª GPIOF_INIT_* ½öÓÐÔÚÅäÖÃÎªÊä³öµÄÊ±ºò²Å´æÔÚ,ËùÒÔÓÐÐ§µÄ×éºÏÎª:
++
++	* GPIOF_IN		- ÅäÖÃÎªÊäÈë
++	* GPIOF_OUT_INIT_LOW	- ÅäÖÃÎªÊä³ö,²¢³õÊ¼»¯ÎªµÍµçÆ½
++	* GPIOF_OUT_INIT_HIGH	- ÅäÖÃÎªÊä³ö,²¢³õÊ¼»¯Îª¸ßµçÆ½
++
++µ±ÉèÖÃ flag Îª GPIOF_OPEN_DRAIN Ê±£¬Ôò¼ÙÉèÒý½ÅÊÇ¿ªÂ©ÐÅºÅ¡£ÕâÑùµÄÒý½Å
++½«²»»áÔÚÊä³öÄ£Ê½ÏÂÖÃ1¡£ÕâÑùµÄÒý½ÅÐèÒªÁ¬½ÓÉÏÀ­µç×è¡£Í¨¹ýÊ¹ÄÜÕâ¸ö±êÖ¾£¬gpio¿â
++½«»áÔÚ±»ÒªÇóÊä³öÄ£Ê½ÏÂÖÃ1Ê±½«Òý½Å±äÎªÊäÈë×´Ì¬À´Ê¹Òý½ÅÖÃ¸ß¡£Òý½ÅÔÚÊä³öÄ£Ê½ÏÂ
++Í¨¹ýÖÃ0Ê¹ÆäÊä³öµÍµçÆ½¡£
++
++µ±ÉèÖÃ flag Îª GPIOF_OPEN_SOURCE Ê±£¬Ôò¼ÙÉèÒý½ÅÎªÔ´¼«¿ªÂ·ÐÅºÅ¡£ÕâÑùµÄÒý½Å
++½«²»»áÔÚÊä³öÄ£Ê½ÏÂÖÃ0¡£ÕâÑùµÄÒý½ÅÐèÒªÁ¬½ÓÏÂÀ­µç×è¡£Í¨¹ýÊ¹ÄÜÕâ¸ö±êÖ¾£¬gpio¿â
++½«»áÔÚ±»ÒªÇóÊä³öÄ£Ê½ÏÂÖÃ0Ê±½«Òý½Å±äÎªÊäÈë×´Ì¬À´Ê¹Òý½ÅÖÃµÍ¡£Òý½ÅÔÚÊä³öÄ£Ê½ÏÂ
++Í¨¹ýÖÃ1Ê¹ÆäÊä³ö¸ßµçÆ½¡£
++
++½«À´ÕâÐ©±êÖ¾¿ÉÄÜÀ©Õ¹µ½Ö§³Ö¸ü¶àµÄÊôÐÔ¡£
++
++¸ü½øÒ»²½,ÎªÁË¸ü¼òµ¥µØÉùÃ÷/ÊÍ·Å¶à¸ö GPIO,'struct gpio'±»Òý½øÀ´·â×°ËùÓÐ
++ÕâÈý¸öÁìÓò:
++
++	struct gpio {
++		unsigned	gpio;
++		unsigned long	flags;
++		const char	*label;
++	};
++
++Ò»¸öµäÐÍµÄÓÃÀý:
++
++	static struct gpio leds_gpios[] = {
++		{ 32, GPIOF_OUT_INIT_HIGH, "Power LED" }, /* Ä¬ÈÏ¿ªÆô */
++		{ 33, GPIOF_OUT_INIT_LOW,  "Green LED" }, /* Ä¬ÈÏ¹Ø±Õ */
++		{ 34, GPIOF_OUT_INIT_LOW,  "Red LED"   }, /* Ä¬ÈÏ¹Ø±Õ */
++		{ 35, GPIOF_OUT_INIT_LOW,  "Blue LED"  }, /* Ä¬ÈÏ¹Ø±Õ */
++		{ ... },
++	};
++
++	err = gpio_request_one(31, GPIOF_IN, "Reset Button");
++	if (err)
++		...
++
++	err = gpio_request_array(leds_gpios, ARRAY_SIZE(leds_gpios));
++	if (err)
++		...
++
++	gpio_free_array(leds_gpios, ARRAY_SIZE(leds_gpios));
++
++
++GPIO Ó³Éäµ½ IRQ
++--------------------
++GPIO ±àºÅÊÇÎÞ·ûºÅÕûÊý;IRQ ±àºÅÒ²ÊÇ¡£ÕâÐ©¹¹³ÉÁËÁ½¸öÂß¼­ÉÏ²»Í¬µÄÃüÃû¿Õ¼ä
++(GPIO 0 ²»Ò»¶¨Ê¹ÓÃ IRQ 0)¡£Äã¿ÉÒÔÍ¨¹ýÒÔÏÂº¯ÊýÔÚËüÃÇÖ®¼äÊµÏÖÓ³Éä:
++
++	/* Ó³Éä GPIO ±àºÅµ½ IRQ ±àºÅ */
++	int gpio_to_irq(unsigned gpio);
++
++	/* Ó³Éä IRQ ±àºÅµ½ GPIO ±àºÅ (¾¡Á¿±ÜÃâÊ¹ÓÃ) */
++	int irq_to_gpio(unsigned irq);
++
++ËüÃÇµÄ·µ»ØÖµÎª¶ÔÓ¦ÃüÃû¿Õ¼äµÄÏà¹Ø±àºÅ£¬»òÊÇ¸ºµÄ´íÎó´úÂë(Èç¹ûÎÞ·¨Ó³Éä)¡£
++(ÀýÈç,Ä³Ð© GPIO ÎÞ·¨×öÎª IRQ Ê¹ÓÃ¡£)ÒÔÏÂµÄ±àºÅ´íÎóÊÇÎ´¾­¼ì²âµÄ:Ê¹ÓÃÒ»¸ö
++Î´Í¨¹ý gpio_direction_input()ÅäÖÃÎªÊäÈëµÄ GPIO ±àºÅ£¬»òÕßÊ¹ÓÃÒ»¸ö
++²¢·ÇÀ´Ô´ÓÚgpio_to_irq()µÄ IRQ ±àºÅ¡£
++
++ÕâÁ½¸öÓ³Éäº¯Êý¿ÉÄÜ»áÔÚÐÅºÅ±àºÅµÄ¼Ó¼õ¼ÆËã¹ý³ÌÉÏ»¨Ð©Ê±¼ä¡£ËüÃÇ²»¿ÉÐÝÃß¡£
++
++gpio_to_irq()·µ»ØµÄ·Ç´íÎóÖµ¿ÉÒÔ´«µÝ¸ø request_irq()»òÕß free_irq()¡£
++ËüÃÇÍ¨³£Í¨¹ý°å¼¶ÌØ¶¨µÄ³õÊ¼»¯´úÂë´æ·Åµ½Æ½Ì¨Éè±¸µÄ IRQ ×ÊÔ´ÖÐ¡£×¢Òâ:IRQ
++´¥·¢Ñ¡ÏîÊÇ IRQ ½Ó¿ÚµÄÒ»²¿·Ö£¬Èç IRQF_TRIGGER_FALLING£¬ÏµÍ³»½ÐÑÄÜÁ¦
++Ò²ÊÇÈç´Ë¡£
++
++irq_to_gpio()·µ»ØµÄ·Ç´íÎóÖµ´ó¶àÊýÍ¨³£¿ÉÒÔ±» gpio_get_value()ËùÊ¹ÓÃ£¬
++±ÈÈçÔÚ IRQ ÊÇÑØ´¥·¢Ê±³õÊ¼»¯»ò¸üÐÂÇý¶¯×´Ì¬¡£×¢ÒâÄ³Ð©Æ½Ì¨²»Ö§³Ö·´Ó³Éä,ËùÒÔ
++ÄãÓ¦¸Ã¾¡Á¿±ÜÃâÊ¹ÓÃËü¡£
++
++ËüÃÇµÄ·µ»ØÖµÎª¶ÔÓ¦ÃüÃû¿Õ¼äµÄÏà¹Ø±àºÅ£¬»òÊÇ¸ºµÄ´íÎó´úÂë(Èç¹ûÎÞ·¨Ó³Éä)¡£
++(ÀýÈç,Ä³Ð© GPIO ÎÞ·¨×öÎª IRQ Ê¹ÓÃ¡£)ÒÔÏÂµÄ±àºÅ´íÎóÊÇÎ´¾­¼ì²âµÄ£º
++Ê¹ÓÃÒ»¸öÎ´Í¨¹ý gpio_direction_input()ÅäÖÃÎªÊäÈëµÄ GPIO ±àºÅ£¬
++»òÕßÊ¹ÓÃÒ»¸ö²¢·ÇÀ´Ô´ÓÚgpio_to_irq()µÄ IRQ ±àºÅ¡£
++
++
++Ä£Äâ¿ªÂ©ÐÅºÅ
++----------------------------
++ÓÐÊ±ÔÚÖ»ÓÐµÍµçÆ½ÐÅºÅ×÷ÎªÊµ¼ÊÇý¶¯½á¹û(ÒëÕß×¢:¶à¸öÊä³öÁ¬½ÓÓÚÒ»µã£¬Âß¼­µçÆ½
++½á¹ûÎªËùÓÐÊä³öµÄÂß¼­Óë)µÄÊ±ºò,¹²ÏíµÄÐÅºÅÏßÐèÒªÊ¹ÓÃ¡°¿ªÂ©¡±ÐÅºÅ¡£(¸ÃÊõÓï
++ÊÊÓÃÓÚ CMOS ¹Ü£»¶ø TTL ÓÃ¡°¼¯µç¼«¿ªÂ·¡±¡£)Ò»¸öÉÏÀ­µç×èÊ¹ÐÅºÅÎª¸ßµçÆ½¡£Õâ
++ÓÐÊ±±»³ÆÎª¡°ÏßÓë¡±¡£Êµ¼ÊÉÏ£¬´Ó¸ºÂß¼­(µÍµçÆ½ÎªÕæ)µÄ½Ç¶ÈÀ´¿´£¬ÕâÊÇÒ»¸ö¡°Ïß»ò¡±¡£
++
++Ò»¸ö¿ªÂ©ÐÅºÅµÄ³£¼ûÀý×ÓÊÇ¹²ÏíµÄµÍµçÆ½Ê¹ÄÜ IRQ ÐÅºÅÏß¡£´ËÍâ,ÓÐÊ±Ë«ÏòÊý¾Ý×ÜÏß
++ÐÅºÅÒ²Ê¹ÓÃÂ©¼«¿ªÂ·ÐÅºÅ¡£
++
++Ä³Ð© GPIO ¿ØÖÆÆ÷Ö±½ÓÖ§³Ö¿ªÂ©Êä³ö£¬»¹ÓÐÐí¶à²»Ö§³Ö¡£µ±ÄãÐèÒª¿ªÂ©ÐÅºÅ£¬µ«
++Ó²¼þÓÖ²»Ö±½ÓÖ§³ÖµÄÊ±ºò£¬Ò»¸ö³£ÓÃµÄ·½·¨ÊÇÓÃÈÎºÎ¼´¿É×÷ÊäÈëÒ²¿É×÷Êä³öµÄ GPIO
++Òý½ÅÀ´Ä£Äâ:
++
++ LOW:	gpio_direction_output(gpio, 0) ... Õâ´úÂëÇý¶¯ÐÅºÅ²¢¸²¸Ç
++	ÉÏÀ­ÅäÖÃ¡£
++
++ HIGH:	gpio_direction_input(gpio) ... Õâ´úÂë¹Ø±ÕÊä³ö,ËùÒÔÉÏÀ­µç×è
++	(»òÆäËûµÄÒ»Ð©Æ÷¼þ)¿ØÖÆÁËÐÅºÅ¡£
++
++Èç¹ûÄã½«ÐÅºÅÏß¡°Çý¶¯¡±Îª¸ßµçÆ½£¬µ«ÊÇ gpio_get_value(gpio)±¨¸æÁËÒ»¸ö
++µÍµçÆ½(ÔÚÊÊµ±µÄÉÏÉýÊ±¼äºó)£¬Äã¾Í¿ÉÒÔÖªµÀÊÇÆäËûµÄÒ»Ð©×é¼þ½«¹²ÏíÐÅºÅÏßÀ­µÍÁË¡£
++Õâ²»Ò»¶¨ÊÇ´íÎóµÄ¡£Ò»¸ö³£¼ûµÄÀý×Ó¾ÍÊÇ I2C Ê±ÖÓµÄÑÓ³¤£ºÒ»¸öÐèÒª½ÏÂýÊ±ÖÓµÄ
++´ÓÉè±¸ÑÓ³Ù SCK µÄÉÏÉýÑØ£¬¶ø I2C Ö÷Éè±¸ÏàÓ¦µØµ÷ÕûÆäÐÅºÅ´«ÊäËÙÂÊ¡£
++
++
++ÕâÐ©¹«Ô¼ºöÂÔÁËÊ²Ã´?
++================
++ÕâÐ©¹«Ô¼ºöÂÔµÄ×î´óÒ»¼þÊÂ¾ÍÊÇÒý½Å¸´ÓÃ£¬ÒòÎªÕâÊôÓÚ¸ß¶ÈÐ¾Æ¬ÌØ¶¨µÄÊôÐÔÇÒ
++Ã»ÓÐ¿ÉÒÆÖ²ÐÔ¡£Ä³¸öÆ½Ì¨¿ÉÄÜ²»ÐèÒªÃ÷È·µÄ¸´ÓÃÐÅÏ¢£»ÓÐµÄ¶ÔÓÚÈÎÒâ¸ø¶¨µÄÒý½Å
++¿ÉÄÜÖ»ÓÐÁ½¸ö¹¦ÄÜÑ¡Ïî£»ÓÐµÄ¿ÉÄÜÃ¿¸öÒý½ÅÓÐ°Ë¸ö¹¦ÄÜÑ¡Ïî£»ÓÐµÄ¿ÉÄÜ¿ÉÒÔ½«
++¼¸¸öÒý½ÅÖÐµÄÈÎºÎÒ»¸ö×÷Îª¸ø¶¨µÄ GPIO¡£(ÊÇµÄ£¬ÕâÐ©Àý×Ó¶¼À´×ÔÓÚµ±Ç°ÔËÐÐ
++Linux µÄÏµÍ³¡£)
++
++ÔÚÄ³Ð©ÏµÍ³ÖÐ,ÓëÒý½Å¸´ÓÃÏà¹ØµÄÊÇÅäÖÃºÍÊ¹ÄÜ¼¯³ÉµÄÉÏ¡¢ÏÂÀ­Ä£Ê½¡£²¢²»ÊÇËùÓÐ
++Æ½Ì¨¶¼Ö§³ÖÕâÖÖÄ£Ê½,»òÕß²»»áÒÔÏàÍ¬µÄ·½Ê½À´Ö§³ÖÕâÖÖÄ£Ê½£»ÇÒÈÎºÎ¸ø¶¨µÄµçÂ·°å
++¿ÉÄÜÊ¹ÓÃÍâÖÃµÄÉÏÀ­(»òÏÂÀ­)µç×è,ÕâÊ±Ð¾Æ¬ÉÏµÄ¾Í²»Ó¦¸ÃÊ¹ÓÃ¡£(µ±Ò»¸öµçÂ·ÐèÒª
++5kOhm µÄÀ­¶¯µç×è,Ð¾Æ¬ÉÏµÄ 100 kOhm µç×è¾Í²»ÄÜ×öµ½¡£)Í¬ÑùµÄ£¬Çý¶¯ÄÜÁ¦
++(2 mA vs 20 mA)ºÍµçÑ¹(1.8V vs 3.3V)ÊÇÆ½Ì¨ÌØ¶¨ÎÊÌâ,¾ÍÏñÄ£ÐÍÒ»ÑùÔÚ
++¿ÉÅäÖÃÒý½ÅºÍ GPIO Ö®¼ä(Ã»)ÓÐÒ»Ò»¶ÔÓ¦µÄ¹ØÏµ¡£
++
++»¹ÓÐÆäËûÒ»Ð©ÏµÍ³ÌØ¶¨µÄ»úÖÆÃ»ÓÐÔÚÕâÀïÖ¸³ö£¬ÀýÈçÉÏÊöµÄÊäÈëÈ¥Ã«´ÌºÍÏßÓëÊä³ö
++Ñ¡Ïî¡£Ó²¼þ¿ÉÄÜÖ§³ÖÅúÁ¿¶Á»òÐ´ GPIO£¬µ«ÊÇÄÇÒ»°ãÊÇÅäÖÃÏà¹ØµÄ£º¶ÔÓÚ´¦ÓÚÍ¬Ò»
++¿éÇø(bank)µÄGPIO¡£(GPIO Í¨³£ÒÔ 16 »ò 32 ¸ö×é³ÉÒ»¸öÇø¿é£¬Ò»¸ö¸ø¶¨µÄ
++Æ¬ÉÏÏµÍ³Ò»°ãÓÐ¼¸¸öÕâÑùµÄÇø¿é¡£)Ä³Ð©ÏµÍ³¿ÉÒÔÍ¨¹ýÊä³ö GPIO ´¥·¢ IRQ£¬
++»òÕß´Ó²¢·ÇÒÔ GPIO ¹ÜÀíµÄÒý½ÅÈ¡Öµ¡£ÕâÐ©»úÖÆµÄÏà¹Ø´úÂëÃ»ÓÐ±ØÒª¾ßÓÐ¿ÉÒÆÖ²ÐÔ¡£
++
++µ±Ç°£¬¶¯Ì¬¶¨Òå GPIO ²¢²»ÊÇ±ê×¼µÄ£¬ÀýÈç×÷ÎªÅäÖÃÒ»¸ö´øÓÐÄ³Ð© GPIO À©Õ¹Æ÷µÄ
++¸½¼ÓµçÂ·°åµÄ¸±×÷ÓÃ¡£
++
++GPIO ÊµÏÖÕßµÄ¿ò¼Ü (¿ÉÑ¡)
++=====================
++Ç°ÃæÌáµ½ÁË£¬ÓÐÒ»¸ö¿ÉÑ¡µÄÊµÏÖ¿ò¼Ü£¬ÈÃÆ½Ì¨Ê¹ÓÃÏàÍ¬µÄ±à³Ì½Ó¿Ú£¬¸ü¼Ó¼òµ¥µØÖ§³Ö
++²»Í¬ÖÖÀàµÄ GPIO ¿ØÖÆÆ÷¡£Õâ¸ö¿ò¼Ü³ÆÎª"gpiolib"¡£
++
++×÷ÎªÒ»¸ö¸¨Öúµ÷ÊÔ¹¦ÄÜ£¬Èç¹û debugfs ¿ÉÓÃ£¬¾Í»áÓÐÒ»¸ö /sys/kernel/debug/gpio
++ÎÄ¼þ¡£Í¨¹ýÕâ¸ö¿ò¼Ü£¬Ëü¿ÉÒÔÁÐ³öËùÓÐ×¢²áµÄ¿ØÖÆÆ÷,ÒÔ¼°µ±Ç°ÕýÔÚÊ¹ÓÃÖÐµÄ GPIO
++µÄ×´Ì¬¡£
++
++
++¿ØÖÆÆ÷Çý¶¯: gpio_chip
++-------------------
++ÔÚ¿ò¼ÜÖÐÃ¿¸ö GPIO ¿ØÖÆÆ÷¶¼°ü×°ÎªÒ»¸ö "struct gpio_chip"£¬Ëû°üº¬ÁË
++¸ÃÀàÐÍµÄÃ¿¸ö¿ØÖÆÆ÷µÄ³£ÓÃÐÅÏ¢:
++
++ - ÉèÖÃ GPIO ·½ÏòµÄ·½·¨
++ - ÓÃÓÚ·ÃÎÊ GPIO ÖµµÄ·½·¨
++ - ¸æÖªµ÷ÓÃÆä·½·¨ÊÇ·ñ¿ÉÄÜÐÝÃßµÄ±êÖ¾
++ - ¿ÉÑ¡µÄ debugfs ÐÅÏ¢µ¼³ö·½·¨ (ÏÔÊ¾ÀàËÆÉÏÀ­ÅäÖÃÒ»ÑùµÄ¶îÍâ×´Ì¬)
++ - Õï¶Ï±êÇ©
++
++Ò²°üº¬ÁËÀ´×Ô device.platform_data µÄÃ¿¸öÊµÀýµÄÊý¾Ý£ºËüµÚÒ»¸ö GPIO µÄ
++±àºÅºÍËü¿ÉÓÃµÄ GPIO µÄÊýÁ¿¡£
++
++ÊµÏÖ gpio_chip µÄ´úÂëÓ¦Ö§³Ö¶à¿ØÖÆÆ÷ÊµÀý£¬Õâ¿ÉÄÜÊ¹ÓÃÇý¶¯Ä£ÐÍ¡£ÄÇÐ©´úÂëÒª
++ÅäÖÃÃ¿¸ö gpio_chip£¬²¢·¢Æðgpiochip_add()¡£Ð¶ÔØÒ»¸ö GPIO ¿ØÖÆÆ÷ºÜÉÙ¼û£¬
++µ«ÔÚ±ØÒªµÄÊ±ºò¿ÉÒÔÊ¹ÓÃ gpiochip_remove()¡£
++
++´ó²¿·Ö gpio_chip ÊÇÒ»¸öÊµÀýÌØ¶¨½á¹¹ÌåµÄÒ»²¿·Ö£¬¶ø²¢²»½« GPIO ½Ó¿Úµ¥¶À
++±©Â¶³öÀ´,±ÈÈç±àÖ·¡¢µçÔ´¹ÜÀíµÈ¡£ÀàËÆ±à½âÂëÆ÷ÕâÑùµÄÐ¾Æ¬»áÓÐ¸´ÔÓµÄ·Ç GPIO
++×´Ì¬¡£
++
++ÈÎºÎÒ»¸ö debugfs ÐÅÏ¢µ¼³ö·½·¨Í¨³£Ó¦¸ÃºöÂÔ»¹Î´ÉêÇë×÷Îª GPIO µÄÐÅºÅÏß¡£
++ËûÃÇ¿ÉÒÔÊ¹ÓÃ gpiochip_is_requested()²âÊÔ£¬µ±Õâ¸ö GPIO ÒÑ¾­ÉêÇë¹ýÁË
++¾Í·µ»ØÏà¹ØµÄ±êÇ©£¬·ñÔò·µ»Ø NULL¡£
++
++
++Æ½Ì¨Ö§³Ö
++-------
++ÎªÁËÖ§³ÖÕâ¸ö¿ò¼Ü£¬Ò»¸öÆ½Ì¨µÄ Kconfig ÎÄ¼þ½«»á "select"(Ñ¡Ôñ)
++ARCH_REQUIRE_GPIOLIB »ò ARCH_WANT_OPTIONAL_GPIOLIB£¬²¢ÈÃËüµÄ
++<asm/gpio.h> °üº¬ <asm-generic/gpio.h>£¬Í¬Ê±¶¨ÒåÈý¸ö·½·¨:
++gpio_get_value()¡¢gpio_set_value()ºÍ gpio_cansleep()¡£
++
++ËüÒ²Ó¦Ìá¹©Ò»¸ö ARCH_NR_GPIOS µÄ¶¨ÒåÖµ£¬ÕâÑù¿ÉÒÔ¸üºÃµØ·´Ó³¸ÃÆ½Ì¨ GPIO
++µÄÊµ¼ÊÊýÁ¿,½ÚÊ¡¾²Ì¬±íµÄ¿Õ¼ä¡£(Õâ¸ö¶¨ÒåÖµÓ¦¸Ã°üº¬Æ¬ÉÏÏµÍ³ÄÚ½¨ GPIO ºÍ
++GPIO À©Õ¹Æ÷ÖÐµÄÊý¾Ý¡£)
++
++ARCH_REQUIRE_GPIOLIB ÒâÎ¶×Å gpiolib ºËÐÄÔÚÕâ¸ö¹¹¼ÜÖÐ½«×ÜÊÇ±àÒë½øÄÚºË¡£
++
++ARCH_WANT_OPTIONAL_GPIOLIB ÒâÎ¶×Å gpiolib ºËÐÄÄ¬ÈÏ¹Ø±Õ,ÇÒÓÃ»§¿ÉÒÔ
++Ê¹ÄÜËü,²¢½«Æä±àÒë½øÄÚºË(¿ÉÑ¡)¡£
++
++Èç¹ûÕâÐ©Ñ¡Ïî¶¼Ã»±»Ñ¡Ôñ,¸ÃÆ½Ì¨¾Í²»Í¨¹ý GPIO-lib Ö§³Ö GPIO,ÇÒ´úÂë²»¿ÉÒÔ
++±»ÓÃ»§Ê¹ÄÜ¡£
++
++ÒÔÏÂÕâÐ©·½·¨µÄÊµÏÖ¿ÉÒÔÖ±½ÓÊ¹ÓÃ¿ò¼Ü´úÂë,²¢×ÜÊÇÍ¨¹ý gpio_chip µ÷¶È:
++
++  #define gpio_get_value	__gpio_get_value
++  #define gpio_set_value	__gpio_set_value
++  #define gpio_cansleep		__gpio_cansleep
++
++ÕâÐ©¶¨Òå¿ÉÒÔÓÃ¸üÀíÏëµÄÊµÏÖ·½·¨Ìæ´ú£¬ÄÇ¾ÍÊÇÊ¹ÓÃ¾­¹ýÂß¼­ÓÅ»¯µÄÄÚÁªº¯ÊýÀ´·ÃÎÊ
++»ùÓÚÌØ¶¨Æ¬ÉÏÏµÍ³µÄ GPIO¡£ÀýÈç,ÈôÒýÓÃ GPIO µÄ(¼Ä´æÆ÷µØÖ·)ÊÇ³£Á¿¡°12¡±£¬
++¶ÁÈ¡»òÉèÖÃËü¿ÉÄÜÖ»ÐèÉÙÔòÁ½»òÈý¸öÖ¸Áî£¬ÇÒ²»»áÐÝÃß¡£µ±ÕâÑùµÄÓÅ»¯ÎÞ·¨ÊµÏÖÊ±£¬
++ÄÇÐ©º¯Êý±ØÐëÊ¹ÓÃ¿ò¼ÜÌá¹©µÄ´úÂë£¬ÄÇ¾ÍÖÁÉÙÒª¼¸Ê®ÌõÖ¸Áî²Å¿ÉÒÔÊµÏÖ¡£¶ÔÓÚÓÃ GPIO
++Ä£ÄâµÄ I/O ½Ó¿Ú, Èç´Ë¾«¼òÖ¸ÁîÊÇºÜÓÐÒâÒåµÄ¡£
++
++¶ÔÓÚÆ¬ÉÏÏµÍ³£¬Æ½Ì¨ÌØ¶¨´úÂëÎªÆ¬ÉÏ GPIO Ã¿¸öÇø(bank)¶¨Òå²¢×¢²á gpio_chip
++ÊµÀý¡£ÄÇÐ© GPIO Ó¦¸Ã¸ù¾ÝÐ¾Æ¬³§ÉÌµÄÎÄµµ½øÐÐ±àÂë/±êÇ©,²¢Ö±½ÓºÍµçÂ·°åÔ­ÀíÍ¼
++¶ÔÓ¦¡£ËûÃÇÓ¦¸Ã¿ªÊ¼ÓÚÁã²¢ÖÕÖ¹ÓÚÆ½Ì¨ÌØ¶¨µÄÏÞÖÆ¡£ÕâÐ© GPIO(´úÂë)Í¨³£´Ó
++arch_initcall()»òÕß¸üÔçµÄµØ·½¼¯³É½øÆ½Ì¨³õÊ¼»¯´úÂë£¬Ê¹ÕâÐ© GPIO ×ÜÊÇ¿ÉÓÃ£¬
++ÇÒËûÃÇÍ¨³£¿ÉÒÔ×÷Îª IRQ Ê¹ÓÃ¡£
++
++°å¼¶Ö§³Ö
++-------
++¶ÔÓÚÍâ²¿ GPIO ¿ØÖÆÆ÷(ÀýÈç I2C »ò SPI À©Õ¹Æ÷¡¢×¨ÓÃÐ¾Æ¬¡¢¶à¹¦ÄÜÆ÷¼þ¡¢FPGA
++»ò CPLD)£¬´ó¶àÊý³£ÓÃ°å¼¶ÌØ¶¨´úÂë¶¼¿ÉÒÔ×¢²á¿ØÖÆÆ÷Éè±¸£¬²¢±£Ö¤ËûÃÇµÄÇý¶¯ÖªµÀ
++gpiochip_add()ËùÊ¹ÓÃµÄ GPIO ±àºÅ¡£ËûÃÇµÄÆðÊ¼±àºÅÍ¨³£¸úÔÚÆ½Ì¨ÌØ¶¨µÄ GPIO
++±àºÅÖ®ºó¡£
++
++ÀýÈç°å¼¶Æô¶¯´úÂëÓ¦¸Ã´´½¨½á¹¹ÌåÖ¸Ã÷Ð¾Æ¬¹«¿ªµÄ GPIO ·¶Î§£¬²¢Ê¹ÓÃ platform_data
++½«Æä´«µÝ¸øÃ¿¸ö GPIO À©Õ¹Æ÷Ð¾Æ¬¡£È»ºóÐ¾Æ¬Çý¶¯ÖÐµÄ probe()Àý³Ì¿ÉÒÔ½«Õâ¸ö
++Êý¾Ý´«µÝ¸ø gpiochip_add()¡£
++
++³õÊ¼»¯Ë³ÐòºÜÖØÒª¡£ÀýÈç£¬Èç¹ûÒ»¸öÉè±¸ÒÀÀµ»ùÓÚ I2C µÄ(À©Õ¹)GPIO£¬ÄÇÃ´ËüµÄ
++probe()Àý³Ì¾ÍÓ¦¸ÃÔÚÄÇ¸ö GPIO ÓÐÐ§ÒÔºó²Å¿ÉÒÔ±»µ÷ÓÃ¡£ÕâÒâÎ¶×ÅÉè±¸Ó¦¸ÃÔÚ
++GPIO ¿ÉÒÔ¹¤×÷Ö®ºó²Å¿É±»×¢²á¡£½â¾öÕâÀàÒÀÀµµÄµÄÒ»ÖÖ·½·¨ÊÇÈÃÕâÖÖ gpio_chip
++¿ØÖÆÆ÷Ïò°å¼¶ÌØ¶¨´úÂëÌá¹© setup()ºÍ teardown()»Øµ÷º¯Êý¡£Ò»µ©ËùÓÐ±ØÐëµÄ
++×ÊÔ´¿ÉÓÃÖ®ºó£¬ÕâÐ©°å¼¶ÌØ¶¨µÄ»Øµ÷º¯Êý½«»á×¢²áÉè±¸£¬²¢¿ÉÒÔÔÚÕâÐ© GPIO ¿ØÖÆÆ÷
++Éè±¸±ä³ÉÎÞÐ§Ê±ÒÆ³ýËüÃÇ¡£
++
++
++ÓÃ»§¿Õ¼äµÄ Sysfs ½Ó¿Ú(¿ÉÑ¡)
++========================
++Ê¹ÓÃ¡°gpiolib¡±ÊµÏÖ¿ò¼ÜµÄÆ½Ì¨¿ÉÒÔÑ¡ÔñÅäÖÃÒ»¸ö GPIO µÄ sysfs ÓÃ»§½Ó¿Ú¡£
++Õâ²»Í¬ÓÚ debugfs ½Ó¿Ú£¬ÒòÎªËüÌá¹©µÄÊÇ¶Ô GPIO·½ÏòºÍÖµµÄ¿ØÖÆ£¬¶ø²»Ö»ÏÔÊ¾
++Ò»¸öGPIO µÄ×´Ì¬ÕªÒª¡£´ËÍâ,Ëü¿ÉÒÔ³öÏÖÔÚÃ»ÓÐµ÷ÊÔÖ§³ÖµÄ²úÆ·¼¶ÏµÍ³ÖÐ¡£
++
++ÀýÈç£¬Í¨¹ýÊÊµ±µÄÏµÍ³Ó²¼þÎÄµµ£¬ÓÃ»§¿Õ¼ä¿ÉÒÔÖªµÀ GIOP #23 ¿ØÖÆ Flash
++´æ´¢Æ÷µÄÐ´±£»¤(ÓÃÓÚ±£»¤ÆäÖÐ Bootloader ·ÖÇø)¡£²úÆ·µÄÏµÍ³Éý¼¶¿ÉÄÜÐèÒª
++ÁÙÊ±½â³ýÕâ¸ö±£»¤£ºÊ×ÏÈµ¼ÈëÒ»¸ö GPIO£¬¸Ä±äÆäÊä³ö×´Ì¬£¬È»ºóÔÚÖØÐÂÊ¹ÄÜÐ´±£»¤
++Ç°Éý¼¶´úÂë¡£Í¨³£Çé¿öÏÂ,GPIO #23 ÊÇ²»»á±»´¥¼°µÄ£¬²¢ÇÒÄÚºËÒ²²»ÐèÒªÖªµÀËû¡£
++
++¸ù¾ÝÊÊµ±µÄÓ²¼þÎÄµµ£¬Ä³Ð©ÏµÍ³µÄÓÃ»§¿Õ¼ä GPIO ¿ÉÒÔÓÃÓÚÈ·¶¨ÏµÍ³ÅäÖÃÊý¾Ý£¬
++ÕâÐ©Êý¾ÝÊÇ±ê×¼ÄÚºË²»ÖªµÀµÄ¡£ÔÚÄ³Ð©ÈÎÎñÖÐ£¬¼òµ¥µÄÓÃ»§¿Õ¼ä GPIO Çý¶¯¿ÉÄÜÊÇ
++ÏµÍ³ÕæÕýÐèÒªµÄ¡£
++
++×¢Òâ£º±ê×¼ÄÚºËÇý¶¯ÖÐÒÑ¾­´æÔÚÍ¨ÓÃµÄ¡°LED ºÍ°´¼ü¡±GPIO ÈÎÎñ£¬·Ö±ðÊÇ:
++"leds-gpio" ºÍ "gpio_keys"¡£ÇëÊ¹ÓÃÕâÐ©À´Ìæ´úÖ±½Ó·ÃÎÊ GPIO£¬ÒòÎª¼¯³ÉÔÚ
++ÄÚºË¿ò¼ÜÖÐµÄÕâÀàÇý¶¯±ÈÄãÔÚÓÃ»§¿Õ¼äµÄ´úÂë¸üºÃ¡£
++
++
++Sysfs ÖÐµÄÂ·¾¶
++--------------
++ÔÚ/sys/class/gpio ÖÐÓÐ 3 ÀàÈë¿Ú:
++
++   -	ÓÃÓÚÔÚÓÃ»§¿Õ¼ä¿ØÖÆ GPIO µÄ¿ØÖÆ½Ó¿Ú;
++
++   -	GPIOs ±¾Éí;ÒÔ¼°
++
++   -	GPIO ¿ØÖÆÆ÷ ("gpio_chip" ÊµÀý)¡£
++
++³ýÁËÕâÐ©±ê×¼µÄÎÄ¼þ,»¹°üº¬¡°device¡±·ûºÅÁ´½Ó¡£
++
++¿ØÖÆ½Ó¿ÚÊÇÖ»Ð´µÄ:
++
++    /sys/class/gpio/
++
++    	"export" ... ÓÃ»§¿Õ¼ä¿ÉÒÔÍ¨¹ýÐ´Æä±àºÅµ½Õâ¸öÎÄ¼þ£¬ÒªÇóÄÚºËµ¼³ö
++		Ò»¸ö GPIO µÄ¿ØÖÆµ½ÓÃ»§¿Õ¼ä¡£
++
++		ÀýÈç: Èç¹ûÄÚºË´úÂëÃ»ÓÐÉêÇë GPIO #19,"echo 19 > export"
++		½«»áÎª GPIO #19 ´´½¨Ò»¸ö "gpio19" ½Úµã¡£
++
++    	"unexport" ... µ¼³öµ½ÓÃ»§¿Õ¼äµÄÄæ²Ù×÷¡£
++
++		ÀýÈç: "echo 19 > unexport" ½«»áÒÆ³ýÊ¹ÓÃ"export"ÎÄ¼þµ¼³öµÄ
++		"gpio19" ½Úµã¡£
++
++GPIO ÐÅºÅµÄÂ·¾¶ÀàËÆ /sys/class/gpio/gpio42/ (¶ÔÓÚ GPIO #42 À´Ëµ)£¬
++²¢ÓÐÈçÏÂµÄ¶Á/Ð´ÊôÐÔ:
++
++    /sys/class/gpio/gpioN/
++
++	"direction" ... ¶ÁÈ¡µÃµ½ "in" »ò "out"¡£Õâ¸öÖµÍ¨³£ÔËÐÐÐ´Èë¡£
++		Ð´Èë"out" Ê±,ÆäÒý½ÅµÄÄ¬ÈÏÊä³öÎªµÍµçÆ½¡£ÎªÁËÈ·±£ÎÞ¹ÊÕÏÔËÐÐ£¬
++		"low" »ò "high" µÄµçÆ½ÖµÓ¦¸ÃÐ´Èë GPIO µÄÅäÖÃ£¬×÷Îª³õÊ¼Êä³öÖµ¡£
++
++		×¢Òâ:Èç¹ûÄÚºË²»Ö§³Ö¸Ä±ä GPIO µÄ·½Ïò£¬»òÕßÔÚµ¼³öÊ±ÄÚºË´úÂëÃ»ÓÐ
++		Ã÷È·ÔÊÐíÓÃ»§¿Õ¼ä¿ÉÒÔÖØÐÂÅäÖÃ GPIO ·½Ïò£¬ÄÇÃ´Õâ¸öÊôÐÔ½«²»´æÔÚ¡£
++
++	"value" ... ¶ÁÈ¡µÃµ½ 0 (µÍµçÆ½) »ò 1 (¸ßµçÆ½)¡£Èç¹û GPIO ÅäÖÃÎª
++		Êä³ö,Õâ¸öÖµÔÊÐíÐ´²Ù×÷¡£ÈÎºÎ·ÇÁãÖµ¶¼ÒÔ¸ßµçÆ½¿´´ý¡£
++
++		Èç¹ûÒý½Å¿ÉÒÔÅäÖÃÎªÖÐ¶ÏÐÅºÅ£¬ÇÒÈç¹ûÒÑ¾­ÅäÖÃÁË²úÉúÖÐ¶ÏµÄÄ£Ê½
++		£¨¼û"edge"µÄÃèÊö£©£¬Äã¿ÉÒÔ¶ÔÕâ¸öÎÄ¼þÊ¹ÓÃÂÖÑ¯²Ù×÷(poll(2))£¬
++		ÇÒÂÖÑ¯²Ù×÷»áÔÚÈÎºÎÖÐ¶Ï´¥·¢Ê±·µ»Ø¡£Èç¹ûÄãÊ¹ÓÃÂÖÑ¯²Ù×÷(poll(2))£¬
++		ÇëÔÚ events ÖÐÉèÖÃ POLLPRI ºÍ POLLERR¡£Èç¹ûÄãÊ¹ÓÃÂÖÑ¯²Ù×÷
++		(select(2))£¬ÇëÔÚ exceptfds ÉèÖÃÄãÆÚÍûµÄÎÄ¼þÃèÊö·û¡£ÔÚ
++		ÂÖÑ¯²Ù×÷(poll(2))·µ»ØÖ®ºó£¬¼È¿ÉÒÔÍ¨¹ý lseek(2)²Ù×÷¶ÁÈ¡
++		sysfs ÎÄ¼þµÄ¿ªÊ¼²¿·Ö£¬Ò²¿ÉÒÔ¹Ø±ÕÕâ¸öÎÄ¼þ²¢ÖØÐÂ´ò¿ªËüÀ´¶ÁÈ¡Êý¾Ý¡£
++
++	"edge" ... ¶ÁÈ¡µÃµ½¡°none¡±¡¢¡°rising¡±¡¢¡°falling¡±»òÕß¡°both¡±¡£
++		½«ÕâÐ©×Ö·û´®Ð´ÈëÕâ¸öÎÄ¼þ¿ÉÒÔÑ¡ÔñÑØ´¥·¢Ä£Ê½£¬»áÊ¹µÃÂÖÑ¯²Ù×÷
++		(select(2))ÔÚ"value"ÎÄ¼þÖÐ·µ»Ø¡£
++
++		Õâ¸öÎÄ¼þ½öÓÐÔÚÕâ¸öÒý½Å¿ÉÒÔÅäÖÃÎª¿É²úÉúÖÐ¶ÏÊäÈëÒý½ÅÊ±£¬²Å´æÔÚ¡£
++
++	"active_low" ... ¶ÁÈ¡µÃµ½ 0 (¼Ù) »ò 1 (Õæ)¡£Ð´ÈëÈÎºÎ·ÇÁãÖµ¿ÉÒÔ
++		·­×ªÕâ¸öÊôÐÔµÄ(¶ÁÐ´)Öµ¡£ÒÑ´æÔÚ»òÖ®ºóÍ¨¹ý"edge"ÊôÐÔÉèÖÃÁË"rising"
++		ºÍ "falling" ÑØ´¥·¢Ä£Ê½µÄÂÖÑ¯²Ù×÷(poll(2))½«»á×ñÑ­Õâ¸öÉèÖÃ¡£
++
++GPIO ¿ØÖÆÆ÷µÄÂ·¾¶ÀàËÆ /sys/class/gpio/gpiochip42/ (¶ÔÓÚ´Ó#42 GPIO
++¿ªÊ¼ÊµÏÖ¿ØÖÆµÄ¿ØÖÆÆ÷),²¢ÓÐ×ÅÒÔÏÂÖ»¶ÁÊôÐÔ:
++
++    /sys/class/gpio/gpiochipN/
++
++    	"base" ... ÓëÒÔÉÏµÄ N ÏàÍ¬,´ú±í´ËÐ¾Æ¬¹ÜÀíµÄµÚÒ»¸ö GPIO µÄ±àºÅ
++
++    	"label" ... ÓÃÓÚÕï¶Ï (²¢²»×ÜÊÇÖ»ÓÐÎ¨Ò»Öµ)
++
++    	"ngpio" ... ´Ë¿ØÖÆÆ÷Ëù¹ÜÀíµÄ GPIO ÊýÁ¿(¶ø GPIO ±àºÅ´Ó N µ½
++    		N + ngpio - 1)
++
++´ó¶àÊýÇé¿öÏÂ,µçÂ·°åµÄÎÄµµÓ¦µ±±êÃ÷Ã¿¸ö GPIO µÄÊ¹ÓÃÄ¿µÄ¡£µ«ÊÇÄÇÐ©±àºÅ²¢²»×ÜÊÇ
++¹Ì¶¨µÄ,ÀýÈçÔÚÀ©Õ¹¿¨ÉÏµÄ GPIO»á¸ù¾ÝËùÊ¹ÓÃµÄÖ÷°å»òËùÔÚ¶Ñµþ¼Ü¹¹ÖÐÆäËûµÄ°å×Ó¶ø
++ÓÐËù²»Í¬¡£ÔÚÕâÖÖÇé¿öÏÂ,Äã¿ÉÄÜÐèÒªÊ¹ÓÃ gpiochip ½Úµã(¾¡¿ÉÄÜµØ½áºÏµçÂ·Í¼)À´
++È·¶¨¸ø¶¨ÐÅºÅËùÓÃµÄ GPIO ±àºÅ¡£
++
++
++´ÓÄÚºË´úÂëÖÐµ¼³ö
++-------------
++ÄÚºË´úÂë¿ÉÒÔÃ÷È·µØ¹ÜÀíÄÇÐ©ÒÑÍ¨¹ý gpio_request()ÉêÇëµÄ GPIO µÄµ¼³ö:
++
++	/* µ¼³ö GPIO µ½ÓÃ»§¿Õ¼ä */
++	int gpio_export(unsigned gpio, bool direction_may_change);
++
++	/* gpio_export()µÄÄæ²Ù×÷ */
++	void gpio_unexport();
++
++	/* ´´½¨Ò»¸ö sysfs Á¬½Óµ½ÒÑµ¼³öµÄ GPIO ½Úµã */
++	int gpio_export_link(struct device *dev, const char *name,
++		unsigned gpio)
++
++	/* ¸Ä±ä sysfs ÖÐµÄÒ»¸ö GPIO ½ÚµãµÄ¼«ÐÔ */
++	int gpio_sysfs_set_active_low(unsigned gpio, int value);
++
++ÔÚÒ»¸öÄÚºËÇý¶¯ÉêÇëÒ»¸ö GPIO Ö®ºó£¬Ëü¿ÉÒÔÍ¨¹ý gpio_export()Ê¹ÆäÔÚ sysfs
++½Ó¿ÚÖÐ¿É¼û¡£¸ÃÇý¶¯¿ÉÒÔ¿ØÖÆÐÅºÅ·½ÏòÊÇ·ñ¿ÉÐÞ¸Ä¡£ÕâÓÐÖúÓÚ·ÀÖ¹ÓÃ»§¿Õ¼ä´úÂëÎÞÒâ¼ä
++ÆÆ»µÖØÒªµÄÏµÍ³×´Ì¬¡£
++
++Õâ¸öÃ÷È·µÄµ¼³öÓÐÖúÓÚ(Í¨¹ýÊ¹Ä³Ð©ÊµÑé¸üÈÝÒ×À´)µ÷ÊÔ£¬Ò²¿ÉÒÔÌá¹©Ò»¸öÊ¼ÖÕ´æÔÚµÄ½Ó¿Ú£¬
++ÓëÎÄµµÅäºÏ×÷Îª°å¼¶Ö§³Ö°üµÄÒ»²¿·Ö¡£
++
++ÔÚ GPIO ±»µ¼³öÖ®ºó£¬gpio_export_link()ÔÊÐíÔÚ sysfs ÎÄ¼þÏµÍ³µÄÈÎºÎµØ·½
++´´½¨Ò»¸öµ½Õâ¸ö GPIO sysfs ½ÚµãµÄ·ûºÅÁ´½Ó¡£ÕâÑùÇý¶¯¾Í¿ÉÒÔÍ¨¹ýÒ»¸öÃèÊöÐÔµÄ
++Ãû×Ö£¬ÔÚ sysfs ÖÐËûÃÇËùÓµÓÐµÄÉè±¸ÏÂÌá¹©Ò»¸ö(µ½Õâ¸ö GPIO sysfs ½ÚµãµÄ)½Ó¿Ú¡£
++
++Çý¶¯¿ÉÒÔÊ¹ÓÃ gpio_sysfs_set_active_low() À´ÔÚÓÃ»§¿Õ¼äÒþ²ØµçÂ·°åÖ®¼ä
++GPIO ÏßµÄ¼«ÐÔ²îÒì¡£Õâ¸ö½ö¶Ô sysfs ½Ó¿ÚÆð×÷ÓÃ¡£¼«ÐÔµÄ¸Ä±ä¿ÉÒÔÔÚ gpio_export()
++Ç°ºó½øÐÐ,ÇÒÖ®Ç°Ê¹ÄÜµÄÂÖÑ¯²Ù×÷(poll(2))Ö§³Ö(ÉÏÉý»òÏÂ½µÑØ)½«»á±»ÖØÐÂÅäÖÃÀ´×ñÑ­
++Õâ¸öÉèÖÃ¡£
+-- 
+1.7.9.5
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
