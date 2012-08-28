@@ -1,250 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752920Ab2H1LsW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 07:48:22 -0400
-Received: from slimlogic.co.uk ([89.16.172.20]:36819 "EHLO slimlogic.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752666Ab2H1LsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 07:48:19 -0400
-From: Graeme Gregory <gg@slimlogic.co.uk>
-To: linux-kernel@vger.kernel.org
-Cc: broonie@opensource.wolfsonmicro.com, lrg@ti.com, sameo@linux.intel.com,
-        peter.ujfalusi@ti.com, s-guiriec@ti.com,
-        Graeme Gregory <gg@slimlogic.co.uk>,
-        Kishon Vijay Abraham I <kishon@ti.com>
-Subject: [PATCH 6/6] regulator: palmas add DT support
-Date: Tue, 28 Aug 2012 13:47:40 +0200
-Message-Id: <1346154460-20031-7-git-send-email-gg@slimlogic.co.uk>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1346154460-20031-1-git-send-email-gg@slimlogic.co.uk>
-References: <1346154460-20031-1-git-send-email-gg@slimlogic.co.uk>
+	id S1753317Ab2H1Lsp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 07:48:45 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38663 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752965Ab2H1Lsf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Aug 2012 07:48:35 -0400
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: HACHIMI Samir <shachimi@adeneo-embedded.com>, shawn.guo@linaro.org,
+        thierry.reding@avionic-design.de, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Beno=C3=AEt=20Th=C3=A9baudeau?= 
+	<benoit.thebaudeau@advansee.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: [PATCH 3/9] pwm i.MX: add functions to enable/disable pwm.
+Date: Tue, 28 Aug 2012 13:48:18 +0200
+Message-Id: <1346154504-5623-4-git-send-email-s.hauer@pengutronix.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1346154504-5623-1-git-send-email-s.hauer@pengutronix.de>
+References: <1346154504-5623-1-git-send-email-s.hauer@pengutronix.de>
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add DT support to palmas regulator. This involved a little change to
-the platform data structure. Regulator information can now come from
-platform data or DT.
+We used to enable/disable the pwm only by switching the
+clock on or off. Instead, use the dedicated register bits.
+These differ on different SoCs, so introduce a SoC specific
+function for this.
 
-Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 ---
- drivers/regulator/palmas-regulator.c |  130 +++++++++++++++++++++++++++++++---
- 1 file changed, 119 insertions(+), 11 deletions(-)
+ drivers/pwm/pwm-imx.c |   48 ++++++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 44 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
-index 2ba7502..48c318b 100644
---- a/drivers/regulator/palmas-regulator.c
-+++ b/drivers/regulator/palmas-regulator.c
-@@ -22,6 +22,8 @@
- #include <linux/slab.h>
- #include <linux/regmap.h>
- #include <linux/mfd/palmas.h>
-+#include <linux/of_platform.h>
-+#include <linux/regulator/of_regulator.h>
+diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
+index 0f244e6..3fc4ae8 100644
+--- a/drivers/pwm/pwm-imx.c
++++ b/drivers/pwm/pwm-imx.c
+@@ -25,6 +25,7 @@
+ #define MX1_PWMS    0x04   /* PWM Sample Register */
+ #define MX1_PWMP    0x08   /* PWM Period Register */
  
- struct regs_info {
- 	char	*name;
-@@ -568,10 +570,103 @@ static int palmas_ldo_init(struct palmas *palmas, int id,
++#define MX1_PWMC_EN		(1 << 4)
+ 
+ /* i.MX27, i.MX31, i.MX35 share the same PWM function block: */
+ 
+@@ -49,6 +50,7 @@ struct imx_chip {
+ 
+ 	int (*config)(struct pwm_chip *chip,
+ 		struct pwm_device *pwm, int duty_ns, int period_ns);
++	void (*set_enable)(struct pwm_chip *chip, bool enable);
+ };
+ 
+ #define to_imx_chip(chip)	container_of(chip, struct imx_chip, chip)
+@@ -81,6 +83,21 @@ static int imx_pwm_config_v1(struct pwm_chip *chip,
  	return 0;
  }
  
-+static struct of_regulator_match palmas_matches[] = {
-+	{ .name = "smps12", },
-+	{ .name = "smps123", },
-+	{ .name = "smps3", },
-+	{ .name = "smps45", },
-+	{ .name = "smps457", },
-+	{ .name = "smps6", },
-+	{ .name = "smps7", },
-+	{ .name = "smps8", },
-+	{ .name = "smps9", },
-+	{ .name = "smps10", },
-+	{ .name = "ldo1", },
-+	{ .name = "ldo2", },
-+	{ .name = "ldo3", },
-+	{ .name = "ldo4", },
-+	{ .name = "ldo5", },
-+	{ .name = "ldo6", },
-+	{ .name = "ldo7", },
-+	{ .name = "ldo8", },
-+	{ .name = "ldo9", },
-+	{ .name = "ldoln", },
-+	{ .name = "ldousb", },
-+};
-+
-+static void __devinit palmas_dt_to_pdata(struct device *dev,
-+		struct device_node *node,
-+		struct palmas_pmic_platform_data *pdata)
++static void imx_pwm_set_enable_v1(struct pwm_chip *chip, bool enable)
 +{
-+	struct device_node *regulators;
-+	u32 prop;
-+	int idx, ret;
++	struct imx_chip *imx = to_imx_chip(chip);
++	u32 val;
 +
-+	regulators = of_find_node_by_name(node, "regulators");
-+	if (!regulators) {
-+		dev_info(dev, "regulator node not found\n");
-+		return;
-+	}
++	val = readl(imx->mmio_base + MX1_PWMC);
 +
-+	ret = of_regulator_match(dev, regulators, palmas_matches,
-+			PALMAS_NUM_REGS);
-+	if (ret < 0) {
-+		dev_err(dev, "Error parsing regulator init data: %d\n", ret);
-+		return;
-+	}
++	if (enable)
++		val |= MX1_PWMC_EN;
++	else
++		val &= ~MX1_PWMC_EN;
 +
-+	for (idx = 0; idx < PALMAS_NUM_REGS; idx++) {
-+		if (!palmas_matches[idx].init_data ||
-+				!palmas_matches[idx].of_node)
-+			continue;
-+
-+		pdata->reg_data[idx] = palmas_matches[idx].init_data;
-+
-+		pdata->reg_init[idx] = devm_kzalloc(dev,
-+				sizeof(struct palmas_reg_init), GFP_KERNEL);
-+
-+		ret = of_property_read_u32(palmas_matches[idx].of_node,
-+				"ti,warm_reset", &prop);
-+		if (!ret)
-+			pdata->reg_init[idx]->warm_reset = prop;
-+
-+		ret = of_property_read_u32(palmas_matches[idx].of_node,
-+				"ti,roof_floor", &prop);
-+		if (!ret)
-+			pdata->reg_init[idx]->roof_floor = prop;
-+
-+		ret = of_property_read_u32(palmas_matches[idx].of_node,
-+				"ti,mode_sleep", &prop);
-+		if (!ret)
-+			pdata->reg_init[idx]->mode_sleep = prop;
-+
-+		ret = of_property_read_u32(palmas_matches[idx].of_node,
-+				"ti,warm_reset", &prop);
-+		if (!ret)
-+			pdata->reg_init[idx]->warm_reset = prop;
-+
-+		ret = of_property_read_u32(palmas_matches[idx].of_node,
-+				"ti,tstep", &prop);
-+		if (!ret)
-+			pdata->reg_init[idx]->tstep = prop;
-+
-+		ret = of_property_read_u32(palmas_matches[idx].of_node,
-+				"ti,vsel", &prop);
-+		if (!ret)
-+			pdata->reg_init[idx]->vsel = prop;
-+	}
-+
-+	ret = of_property_read_u32(node, "ti,ldo6_vibrator", &prop);
-+	if (!ret)
-+		pdata->ldo6_vibrator = prop;
++	writel(val, imx->mmio_base + MX1_PWMC);
 +}
 +
-+
- static __devinit int palmas_probe(struct platform_device *pdev)
+ static int imx_pwm_config_v2(struct pwm_chip *chip,
+ 		struct pwm_device *pwm, int duty_ns, int period_ns)
  {
- 	struct palmas *palmas = dev_get_drvdata(pdev->dev.parent);
- 	struct palmas_pmic_platform_data *pdata = pdev->dev.platform_data;
-+	struct device_node *node = pdev->dev.of_node;
- 	struct regulator_dev *rdev;
- 	struct regulator_config config = { };
- 	struct palmas_pmic *pmic;
-@@ -579,10 +674,14 @@ static __devinit int palmas_probe(struct platform_device *pdev)
- 	int id = 0, ret;
- 	unsigned int addr, reg;
+@@ -115,7 +132,10 @@ static int imx_pwm_config_v2(struct pwm_chip *chip,
  
--	if (!pdata)
--		return -EINVAL;
--	if (!pdata->reg_data)
--		return -EINVAL;
-+	if (node && !pdata) {
-+		pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
+ 	cr = MX3_PWMCR_PRESCALER(prescale) |
+ 		MX3_PWMCR_DOZEEN | MX3_PWMCR_WAITEN |
+-		MX3_PWMCR_DBGEN | MX3_PWMCR_EN;
++		MX3_PWMCR_DBGEN;
 +
-+		if (!pdata)
-+			return -ENOMEM;
-+
-+		palmas_dt_to_pdata(&pdev->dev, node, pdata);
-+	}
++	if (imx->enabled)
++		cr |= MX3_PWMCR_EN;
  
- 	pmic = devm_kzalloc(&pdev->dev, sizeof(*pmic), GFP_KERNEL);
- 	if (!pmic)
-@@ -661,7 +760,7 @@ static __devinit int palmas_probe(struct platform_device *pdev)
- 		pmic->desc[id].owner = THIS_MODULE;
- 
- 		/* Initialise sleep/init values from platform data */
--		if (pdata && pdata->reg_init) {
-+		if (pdata) {
- 			reg_init = pdata->reg_init[id];
- 			if (reg_init) {
- 				ret = palmas_smps_init(palmas, id, reg_init);
-@@ -685,11 +784,13 @@ static __devinit int palmas_probe(struct platform_device *pdev)
- 				pmic->range[id] = 1;
- 		}
- 
--		if (pdata && pdata->reg_data)
-+		if (pdata)
- 			config.init_data = pdata->reg_data[id];
- 		else
- 			config.init_data = NULL;
- 
-+		config.of_node = palmas_matches[id].of_node;
-+
- 		rdev = regulator_register(&pmic->desc[id], &config);
- 		if (IS_ERR(rdev)) {
- 			dev_err(&pdev->dev,
-@@ -726,11 +827,13 @@ static __devinit int palmas_probe(struct platform_device *pdev)
- 						palmas_regs_info[id].ctrl_addr);
- 		pmic->desc[id].enable_mask = PALMAS_LDO1_CTRL_MODE_ACTIVE;
- 
--		if (pdata && pdata->reg_data)
-+		if (pdata)
- 			config.init_data = pdata->reg_data[id];
- 		else
- 			config.init_data = NULL;
- 
-+		config.of_node = palmas_matches[id].of_node;
-+
- 		rdev = regulator_register(&pmic->desc[id], &config);
- 		if (IS_ERR(rdev)) {
- 			dev_err(&pdev->dev,
-@@ -744,14 +847,12 @@ static __devinit int palmas_probe(struct platform_device *pdev)
- 		pmic->rdev[id] = rdev;
- 
- 		/* Initialise sleep/init values from platform data */
--		if (pdata->reg_init) {
-+		if (pdata) {
- 			reg_init = pdata->reg_init[id];
- 			if (reg_init) {
- 				ret = palmas_ldo_init(palmas, id, reg_init);
--				if (ret) {
--					regulator_unregister(pmic->rdev[id]);
-+				if (ret)
- 					goto err_unregister_regulator;
--				}
- 			}
- 		}
- 	}
-@@ -774,9 +875,15 @@ static int __devexit palmas_remove(struct platform_device *pdev)
+ 	if (cpu_is_mx25())
+ 		cr |= MX3_PWMCR_CLKSRC_IPG;
+@@ -127,6 +147,21 @@ static int imx_pwm_config_v2(struct pwm_chip *chip,
  	return 0;
  }
  
-+static struct of_device_id __devinitdata of_palmas_match_tbl[] = {
-+	{ .compatible = "ti,palmas-pmic", },
-+	{ /* end */ }
-+};
++static void imx_pwm_set_enable_v2(struct pwm_chip *chip, bool enable)
++{
++	struct imx_chip *imx = to_imx_chip(chip);
++	u32 val;
 +
- static struct platform_driver palmas_driver = {
- 	.driver = {
- 		.name = "palmas-pmic",
-+		.of_match_table = of_palmas_match_tbl,
- 		.owner = THIS_MODULE,
- 	},
- 	.probe = palmas_probe,
-@@ -799,3 +906,4 @@ MODULE_AUTHOR("Graeme Gregory <gg@slimlogic.co.uk>");
- MODULE_DESCRIPTION("Palmas voltage regulator driver");
- MODULE_LICENSE("GPL");
- MODULE_ALIAS("platform:palmas-pmic");
-+MODULE_DEVICE_TABLE(of, of_palmas_match_tbl);
++	val = readl(imx->mmio_base + MX3_PWMCR);
++
++	if (enable)
++		val |= MX3_PWMCR_EN;
++	else
++		val &= ~MX3_PWMCR_EN;
++
++	writel(val, imx->mmio_base + MX3_PWMCR);
++}
++
+ static int imx_pwm_config(struct pwm_chip *chip,
+ 		struct pwm_device *pwm, int duty_ns, int period_ns)
+ {
+@@ -144,6 +179,8 @@ static int imx_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
+ 	if (rc)
+ 		return rc;
+ 
++	imx->set_enable(chip, true);
++
+ 	imx->enabled = 1;
+ 
+ 	return 0;
+@@ -153,7 +190,7 @@ static void imx_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+ {
+ 	struct imx_chip *imx = to_imx_chip(chip);
+ 
+-	writel(0, imx->mmio_base + MX3_PWMCR);
++	imx->set_enable(chip, false);
+ 
+ 	clk_disable_unprepare(imx->clk);
+ 	imx->enabled = 0;
+@@ -198,10 +235,13 @@ static int __devinit imx_pwm_probe(struct platform_device *pdev)
+ 	if (imx->mmio_base == NULL)
+ 		return -EADDRNOTAVAIL;
+ 
+-	if (cpu_is_mx1() || cpu_is_mx21())
++	if (cpu_is_mx1() || cpu_is_mx21()) {
+ 		imx->config = imx_pwm_config_v1;
+-	else
++		imx->set_enable = imx_pwm_set_enable_v1;
++	} else {
+ 		imx->config = imx_pwm_config_v2;
++		imx->set_enable = imx_pwm_set_enable_v2;
++	}
+ 
+ 	ret = pwmchip_add(&imx->chip);
+ 	if (ret < 0)
 -- 
-1.7.9.5
+1.7.10.4
 
