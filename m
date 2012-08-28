@@ -1,89 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751575Ab2H1CZZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 22:25:25 -0400
-Received: from relay03.pair.com ([209.68.5.17]:4564 "HELO relay03.pair.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751312Ab2H1CZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 22:25:24 -0400
-X-pair-Authenticated: 108.45.119.98
-Message-ID: <503C2C11.8020202@flaterco.com>
-Date: Mon, 27 Aug 2012 22:25:21 -0400
-From: David Flater <vger@flaterco.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1751495Ab2H1C3t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 22:29:49 -0400
+Received: from [216.32.181.182] ([216.32.181.182]:19525 "EHLO
+	ch1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751002Ab2H1C3r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 22:29:47 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zz98dI1432Izz1202h1082kzzz2dh2a8h668h839h944hd25hf0ah107ah1155h)
+Date: Tue, 28 Aug 2012 10:08:07 +0800
+From: Dong Aisheng <b29396@freescale.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "lrg@ti.com" <lrg@ti.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        Zhao Richard-B20223 <B20223@freescale.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>
+Subject: Re: [PATCH v2 4/7] regulator: anatop-regulator: convert to use
+ syscon to access anatop register
+Message-ID: <20120828020806.GE5822@shlinux2.ap.freescale.net>
+References: <1346052285-4344-1-git-send-email-b29396@freescale.com>
+ <1346052285-4344-5-git-send-email-b29396@freescale.com>
+ <20120827221532.GC2281@r65073-Latitude-D630>
 MIME-Version: 1.0
-To: Alsa Devel <alsa-devel@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCHv2] sound: fix emu8000 DRAM sized 512 KiB too small
-References: <503C1133.7000506@flaterco.com>
-In-Reply-To: <503C1133.7000506@flaterco.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120827221532.GC2281@r65073-Latitude-D630>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v2:  Fixed result still wrong in the case of 512 KiB DRAM.  Oops.
+On Tue, Aug 28, 2012 at 06:15:35AM +0800, Shawn Guo wrote:
+....
+> > +	sreg->anatop = syscon_regmap_lookup_by_phandle(np, "fsl,anatop");
+> > +	if (IS_ERR(sreg->anatop))
+> > +		return PTR_ERR(sreg->anatop);
+> > +
+> 
+> All the anatop regulators are child nodes of anatop.  It looks a little
+> odd to use phandle there.  of_get_parent should just works.
+> 
+Yes, this is a special case.
+It's also ok for me to use of_get_parent if you want.
+Will update it.
 
-Applicable to 3.5.3 mainline.
-
-In emu8000.c, size_dram determines the amount of memory on the sound card by
-doing write/readback tests starting at 512 KiB and incrementing by 512 KiB.
-On success, detected_size is updated to the successful address and testing
-continues.  On failure, the loop is immediately exited.  The resulting
-detected_size is 512 KiB too small except in two special cases:
-
-1. If there is no memory, the initial 0 value of detected_size is used, which
-   is correct.
-2. If the address space wraps around, detected_size is updated before the
-   bailout, so the result is correct.
-
-The patch corrects all cases and was tested with an AWE64 Gold.  Before:
-  EMU8000 [0x620]: 3584 Kb on-board memory detected
-  asfxload 4GMGSMT.SF2 (4174814 B) fails.
-After:
-  EMU8000 [0x620]: 4096 Kb on-board memory detected
-  asfxload 4GMGSMT.SF2 succeeds.
-
-I do not have a card with 512 KiB to test with, but by forcibly enabling the
-added conditional I verified on the AWE64 Gold that it detects 512 KiB
-(successfully reading from the first memory location) and does not hang the
-card.
-
-C.f. Bug 46451 https://bugzilla.kernel.org/show_bug.cgi?id=46451
-
-Signed-off-by: David Flater <dave@flaterco.com>
----
-
---- linux-3.5.3-nameless/sound/isa/sb/emu8000.c.orig	2012-08-25 22:32:13.000000000 -0400
-+++ linux-3.5.3-nameless/sound/isa/sb/emu8000.c	2012-08-27 22:06:15.729510037 -0400
-@@ -417,9 +417,6 @@ size_dram(struct snd_emu8000 *emu)
- 		EMU8000_SMLD_READ(emu); /* discard stale data  */
- 		if (EMU8000_SMLD_READ(emu) != UNIQUE_ID2)
- 			break; /* no memory at this address */
--
--		detected_size = size;
--
- 		snd_emu8000_read_wait(emu);
- 
- 		/*
-@@ -432,6 +429,18 @@ size_dram(struct snd_emu8000 *emu)
- 		if (EMU8000_SMLD_READ(emu) != UNIQUE_ID1)
- 			break; /* we must have wrapped around */
- 		snd_emu8000_read_wait(emu);
-+
-+		/* Otherwise, it's valid memory. */
-+		detected_size = size + 512 * 1024;
-+	}
-+
-+	/* Distinguish 512 KiB from 0. */
-+	if (detected_size == 0) {
-+		snd_emu8000_read_wait(emu);
-+		EMU8000_SMALR_WRITE(emu, EMU8000_DRAM_OFFSET);
-+		EMU8000_SMLD_READ(emu); /* discard stale data  */
-+		if (EMU8000_SMLD_READ(emu) == UNIQUE_ID1)
-+			detected_size = 512 * 1024;
- 	}
- 
- 	/* wait until FULL bit in SMAxW register is false */
+Regards
+Dong Aisheng
 
