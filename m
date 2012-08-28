@@ -1,103 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897Ab2H1OyH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 10:54:07 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:54322 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752188Ab2H1OyF (ORCPT
+	id S1752991Ab2H1O4O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 10:56:14 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45988 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752396Ab2H1O4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 10:54:05 -0400
-X-Originating-IP: 108.223.40.66
-Date: Tue, 28 Aug 2012 07:54:12 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: leroy christophe <christophe.leroy@c-s.fr>
-Cc: Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org,
-        lm-sensors@lm-sensors.org
-Subject: Re: [PATCH] hwmon/lm70: adding support for NS LM74 chip
-Message-ID: <20120828145412.GA28501@roeck-us.net>
-References: <201208231532.q7NFWCQZ023407@localhost.localdomain>
- <20120823181317.GA5623@roeck-us.net>
- <20120826174721.GA32334@roeck-us.net>
- <503CB4DC.70507@c-s.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <503CB4DC.70507@c-s.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 28 Aug 2012 10:56:13 -0400
+Message-ID: <1346165758.15747.7.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: Hardening debugfs (Was Re: [PATCH] debugfs: more tightly
+ restrict default mount mode)
+From: Ben Hutchings <ben@decadent.org.uk>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Landley <rob@landley.net>, Al Viro <viro@zeniv.linux.org.uk>,
+        Ludwig Nussel <ludwig.nussel@suse.de>,
+        Alessandro Rubini <rubini@gnudd.com>, linux-doc@vger.kernel.org
+Date: Tue, 28 Aug 2012 07:55:58 -0700
+In-Reply-To: <20120828144110.GA23035@thunk.org>
+References: <20120827203215.GA16637@www.outflux.net>
+	 <20120828144110.GA23035@thunk.org>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-y79bO+dXAfrUTi8nhRWP"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 12.105.246.2
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 28, 2012 at 02:09:00PM +0200, leroy christophe wrote:
-> 
-> Le 26/08/2012 19:47, Guenter Roeck a écrit :
-> >On Thu, Aug 23, 2012 at 11:13:17AM -0700, Guenter Roeck wrote:
-> >>On Thu, Aug 23, 2012 at 05:32:12PM +0200, Christophe Leroy wrote:
-> >>>Hello,
-> >>>
-> >>Hi Christophe,
-> >>
-> >Hi again,
-> >
-> >[ ... ]
-> Hi Guenter,
-> 
-> >>>-	/* 3-wire link (shared SI/SO) for LM70 */
-> >>>-	if (chip == LM70_CHIP_LM70 && !(spi->mode & SPI_3WIRE))
-> >>>+	/* 3-wire link (shared SI/SO) for LM70 and LM74 */
-> >>>+	if ((chip == LM70_CHIP_LM70 || chip == LM70_CHIP_LM74)
-> >>>+			&& !(spi->mode & SPI_3WIRE))
-> >>Ok for now, but I'll have to check this. The driver does not really write
-> >>anything to the chip, so it should be irrelevant which mode the SPI master
-> >>controller supports (MOSI does not have to be connected). Besides, from the
-> >>chip specification it looks like it is possible to connect the chip to a
-> >>standard SPI interface by adding a 10k resistor between MOSI and MISO.
-> >>
-> >After looking into the above, the proper change or fix is really to remove the
-> >above check for SPI_3WIRE entirely. The driver works perfectly fine if a LM70 is
-> >connected to a controller which does not explicitly support SPI_3WIRE; all that
-> >needs to be done is to connect MOSI through a resistor or not at all. This is,
-> >however, a board design decision, not a SPI master chip limitation.
-> Ok, then I'll prepare a patch for this.
-> >
-> >With that, we don't need to explicitly add any LM74 specific code to the driver,
-> >since the TMP121 code does the trick. All we need to do is to update the
-> >documentation, adding a note that LM74 is supported as well, and that it can be
-> >selected with 'tmp121'.
-> Yes, could be the solution, but I'm however a bit puzzled with doing
-> this. The driver is originaly for NS LM70 component. Later on an
-> extension has been added for TMP121 which is from a different
-> family, even if compatible. Now we are talking about the LM74 which
-> is in the same family as the original LM70. Therefore I would expect
-> to be able to handle the LM74 directly from this driver, not through
-> a tricky compatibility with the 'tmp121'. I would expect to handle
-> it the other way round, ie consider the 'tmp121' as compatible with
-> the LM74.
-> One of the reasons for that is that the driver reports the component
-> ID through /sys/class/hwmon/hwmonX/name
-> 
-> As the 'tmp121' is already in the driver, it is not a good idea to
-> replace it by LM74, however, I would prefer having the LM74
-> explicitly addressable by the driver, in additional to the 'tmp121'
-> 
-> I'm preparing a patch to include support for both LM71 and LM74 in
-> the LM70 driver, in order to have a driver handling the complete
-> family. Do you see a problem for that ? It would look strange that
-> the LM70 driver handles LM70 and LM71, but LM74 through the
-> compatible 'tmp121'
-> 
-Ok, I'll accept that.
 
-> Nb, refer to your first answer, implementation for 'tmp122/124' is
-> another story because those have a programmable precision, not a
-> fixed one.
+--=-y79bO+dXAfrUTi8nhRWP
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-That isn't really a reason - we could just assume the highest precision, since
-the chip returns 0 in the lower bits if it is not configured for it. But then
-we can as well wait until someone asks for it, which will probably never happen.
-The more intersting aspect of the tmp122/124 is that it has limit registers,
-and supporting those would be more interesting anyway.
+On Tue, 2012-08-28 at 10:41 -0400, Theodore Ts'o wrote:
+> On Mon, Aug 27, 2012 at 01:32:15PM -0700, Kees Cook wrote:
+> > Since the debugfs is mostly only used by root, make the default mount
+> > mode 0700. Most system owners do not need a more permissive value,
+> > but they can choose to weaken the restrictions via their fstab.
+> >=20
+> > Signed-off-by: Kees Cook <keescook@chromium.org>
+>=20
+> I agree with this patch, but it would also be good if we could try to
+> harden debugfs in general.  Some ideas that might be worth discussing,
+> for example?
+[...]
 
-Thanks,
-Guenter
+The problems are apparently larger than specific modules:
+http://lists.linux-foundation.org/pipermail/ksummit-2012-discuss/2012-July/=
+000894.html
+
+Ben.
+
+--=20
+Ben Hutchings
+It is a miracle that curiosity survives formal education. - Albert Einstein
+
+--=-y79bO+dXAfrUTi8nhRWP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUDzb/ue/yOyVhhEJAQpnLBAAjrdUSgUEgsXaHR25arAYn9RrAqfq4ya/
+wGqRToa4LvIHfmBk3pX5j3/locH3Ir+eW79euVxiZ/HuVZv+HeRMJXm5leEECmGe
+mQfhDBn4rzBIcLQ64U5RMTNB2oVpQie146/NQfZunfkwXTaX/YJsK/6K/IcAQbxX
+gwaGO4Hj0rXZhaUnz6hOVUWjXkR0/2VoEHozSqr8RU3kUvHTyLyHk1CodorndEEe
+RVaec01c7UCc+873hK1vqhsDk1x+jHacfNQl6QnyCxXZFa0sJ9G1s4tit45xtoah
+7s6uCuVY2grYR8iMZMBgk3QMZasVPaaj018XmysfPTbofJ47S6r/Gu/Id9Fak0m5
+cS2XgsboG/GoevmlgFjU1xo8XqLyK/MwI5epZjCsrhZ2fhHEcU5a3/nWE51E5pdq
+4urnWhHGBKWV5Mq6I2Y9+8DHSaBX1p6erWZC02Amow7kGJzHS6NVUbndQYwEC19l
+RJ37ynKDIHBI4hI7WKmA7se8FDRrXpY98T2uk1drFfJ156V5IaKbVS9xQ6Kxx0xs
+A1/3emR8pjgF2Uj9/DFZNHpR0F91U3FkbBYQCy2P6hnGjjzQrkvJy/UVXCrnWOto
+rhzkw2ewfXeMewN0oA6c8E+/ScdJ+9QR+/hpoTB86af5CZXuITxiJVJ8n68Y5O+a
+BoPvNQi012c=
+=MgRg
+-----END PGP SIGNATURE-----
+
+--=-y79bO+dXAfrUTi8nhRWP--
