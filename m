@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352Ab2H1Pok (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 11:44:40 -0400
+	id S1753400Ab2H1Por (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 11:44:47 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:56281 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752900Ab2H1Poh (ORCPT
+	with ESMTP id S1752900Ab2H1Poo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 11:44:37 -0400
+	Tue, 28 Aug 2012 11:44:44 -0400
 From: Jiang Liu <liuj97@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>, Dave Airlie <airlied@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Scott Murray <scott@spiteful.org>
 Cc: Jiang Liu <jiang.liu@huawei.com>, Don Dutile <ddutile@redhat.com>,
         Yinghai Lu <yinghai@kernel.org>,
         Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
         Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
         linux-pci@vger.kernel.org
-Subject: [PATCH 2/5] PCI/vga: simplify code by hotplug safe pci_get_domain_bus_and_slot()
-Date: Tue, 28 Aug 2012 23:43:55 +0800
-Message-Id: <1346168638-32724-3-git-send-email-jiang.liu@huawei.com>
+Subject: [PATCH 3/5] PCI/cpcihp: simplify code by hotplug safe pci_get_domain_bus_and_slot()
+Date: Tue, 28 Aug 2012 23:43:56 +0800
+Message-Id: <1346168638-32724-4-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1346168638-32724-1-git-send-email-jiang.liu@huawei.com>
 References: <1346168638-32724-1-git-send-email-jiang.liu@huawei.com>
@@ -34,44 +34,28 @@ struct pci_dev *pci_dev = pci_get_slot(pci_bus, devfn);
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 ---
- drivers/gpu/vga/vgaarb.c |   15 +++------------
- 1 file changed, 3 insertions(+), 12 deletions(-)
+ drivers/pci/hotplug/cpcihp_generic.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/gpu/vga/vgaarb.c b/drivers/gpu/vga/vgaarb.c
-index 3df8fc0..b6852b7 100644
---- a/drivers/gpu/vga/vgaarb.c
-+++ b/drivers/gpu/vga/vgaarb.c
-@@ -1066,7 +1066,6 @@ static ssize_t vga_arb_write(struct file *file, const char __user * buf,
- 		}
+diff --git a/drivers/pci/hotplug/cpcihp_generic.c b/drivers/pci/hotplug/cpcihp_generic.c
+index 81af764..a6a71c4 100644
+--- a/drivers/pci/hotplug/cpcihp_generic.c
++++ b/drivers/pci/hotplug/cpcihp_generic.c
+@@ -154,12 +154,8 @@ static int __init cpcihp_generic_init(void)
+ 	if(!r)
+ 		return -EBUSY;
  
- 	} else if (strncmp(curr_pos, "target ", 7) == 0) {
--		struct pci_bus *pbus;
- 		unsigned int domain, bus, devfn;
- 		struct vga_device *vgadev;
- 
-@@ -1085,19 +1084,11 @@ static ssize_t vga_arb_write(struct file *file, const char __user * buf,
- 			pr_debug("vgaarb: %s ==> %x:%x:%x.%x\n", curr_pos,
- 				domain, bus, PCI_SLOT(devfn), PCI_FUNC(devfn));
- 
--			pbus = pci_find_bus(domain, bus);
--			pr_debug("vgaarb: pbus %p\n", pbus);
--			if (pbus == NULL) {
--				pr_err("vgaarb: invalid PCI domain and/or bus address %x:%x\n",
--					domain, bus);
--				ret_val = -ENODEV;
--				goto done;
--			}
--			pdev = pci_get_slot(pbus, devfn);
-+			pdev = pci_get_domain_bus_and_slot(domain, bus, devfn);
- 			pr_debug("vgaarb: pdev %p\n", pdev);
- 			if (!pdev) {
--				pr_err("vgaarb: invalid PCI address %x:%x\n",
--					bus, devfn);
-+				pr_err("vgaarb: invalid PCI address %x:%x:%x\n",
-+					domain, bus, devfn);
- 				ret_val = -ENODEV;
- 				goto done;
- 			}
+-	bus = pci_find_bus(0, bridge_busnr);
+-	if (!bus) {
+-		err("Invalid bus number %d", bridge_busnr);
+-		return -EINVAL;
+-	}
+-	dev = pci_get_slot(bus, PCI_DEVFN(bridge_slot, 0));
++	dev = pci_get_domain_bus_and_slot(0, bridge_busnr,
++					  PCI_DEVFN(bridge_slot, 0));
+ 	if(!dev || dev->hdr_type != PCI_HEADER_TYPE_BRIDGE) {
+ 		err("Invalid bridge device %s", bridge);
+ 		pci_dev_put(dev);
 -- 
 1.7.9.5
 
