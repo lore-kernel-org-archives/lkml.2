@@ -1,66 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753326Ab2H1U50 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 16:57:26 -0400
-Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:56357
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752667Ab2H1U5Y (ORCPT
+	id S1753399Ab2H1VCi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 17:02:38 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:32895 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753097Ab2H1VCh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 16:57:24 -0400
-X-Forefront-Antispam-Report: CIP:157.56.232.165;KIP:(null);UIP:(null);IPV:NLI;H:BLUPRD0810HT003.namprd08.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: PS-3(zzbb2dI98dI1432Izz1202hzz6d524h8275bhz2fh2a8h668h839hd25he5bhf0ah107ah10d2h1155h)
-Message-ID: <503D30A6.3000800@ozmodevices.com>
-Date: Tue, 28 Aug 2012 21:57:10 +0100
-From: Rupesh Gujare <rgujare@ozmodevices.com>
-Reply-To: <rgujare@ozmodevices.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Tue, 28 Aug 2012 17:02:37 -0400
+Date: Wed, 29 Aug 2012 00:00:47 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: [RFC PATCH] x86: use new exception_enter()/exception_exit() API in
+ do_device_not_available()
+Message-ID: <20120828210047.GA22279@swordfish>
 MIME-Version: 1.0
-To: Wei Yongjun <weiyj.lk@gmail.com>
-CC: <ckelly@ozmodevices.com>, <gregkh@linuxfoundation.org>,
-        <yongjun_wei@trendmicro.com.cn>, <devel@driverdev.osuosl.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging: ozwpan: remove pointless conditional before
- kfree_skb()
-References: <CAPgLHd_u2CE7PAhS4Y9MtbY=ZFphZfUrYYiqD_gx6-kf1O0C-w@mail.gmail.com>
-In-Reply-To: <CAPgLHd_u2CE7PAhS4Y9MtbY=ZFphZfUrYYiqD_gx6-kf1O0C-w@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [94.5.61.149]
-X-OriginatorOrg: ozmodevices.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/08/2012 14:11, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
->
-> Remove pointless conditional before kfree_skb().
->
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
->   drivers/staging/ozwpan/ozpd.c | 3 +--
->   1 file changed, 1 insertion(+), 2 deletions(-)
->
-> diff --git a/drivers/staging/ozwpan/ozpd.c b/drivers/staging/ozwpan/ozpd.c
-> index 6c287ac..d515714 100644
-> --- a/drivers/staging/ozwpan/ozpd.c
-> +++ b/drivers/staging/ozwpan/ozpd.c
-> @@ -752,8 +752,7 @@ int oz_isoc_stream_create(struct oz_pd *pd, u8 ep_num)
->    */
->   static void oz_isoc_stream_free(struct oz_isoc_stream *st)
->   {
-> -	if (st->skb)
-> -		kfree_skb(st->skb);
-> +	kfree_skb(st->skb);
->   	kfree(st);
->   }
->   /*------------------------------------------------------------------------------
->
->
+ x86: use new exception_enter()/exception_exit() API in do_device_not_available()
+
+ RCU can be in extended quiescent state when do_device_not_available() called.
+
+[  676.400274] RCU used illegally from idle CPU!
+[  676.400274] rcu_scheduler_active = 1, debug_locks = 0
+[  676.400278] RCU used illegally from extended quiescent state!
+[  676.400282] 2 locks held by sed/9468:
+[  676.400285]  #0:  (&rq->lock){-.-.-.}, at: [<ffffffff814c67cf>] __schedule+0x1c0/0x992
+[  676.400304]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff8106a880>] cpuacct_charge+0x27/0x1e0
+[  676.400321] 
+[  676.400329] Call Trace:
+[  676.400340]  [<ffffffff8108933a>] lockdep_rcu_suspicious+0x109/0x112
+[  676.400347]  [<ffffffff8106a8f7>] cpuacct_charge+0x9e/0x1e0
+[  676.400353]  [<ffffffff8106a880>] ? cpuacct_charge+0x27/0x1e0
+[  676.400359]  [<ffffffff814c67cf>] ? __schedule+0x1c0/0x992
+[  676.400366]  [<ffffffff8106d525>] update_curr+0x159/0x200
+[  676.400375]  [<ffffffff8100a04f>] ? init_fpu+0x4e/0x8f
+[  676.400382]  [<ffffffff8106e0da>] put_prev_task_fair+0x2a/0xac
+[  676.400388]  [<ffffffff814c69a7>] __schedule+0x398/0x992
+[  676.400397]  [<ffffffff810b4f0a>] ? rcu_irq_exit+0x83/0x99
+[  676.400404]  [<ffffffff814c8bf0>] ? retint_restore_args+0x13/0x13
+[  676.400411]  [<ffffffff810889e9>] ? lock_is_held+0x2d/0xa5
+[  676.400414]  [<ffffffff8100a04f>] ? init_fpu+0x4e/0x8f
+[  676.400417]  [<ffffffff81065d0a>] __cond_resched+0x28/0x34
+[  676.400420]  [<ffffffff814c701a>] _cond_resched+0x2e/0x35
+[  676.400425]  [<ffffffff8111cad4>] kmem_cache_alloc+0x4c/0x1c5
+[  676.400430]  [<ffffffff810021ff>] ? math_state_restore+0x1f/0xdc
+[  676.400433]  [<ffffffff8100a04f>] init_fpu+0x4e/0x8f
+[  676.400437]  [<ffffffff8100220e>] math_state_restore+0x2e/0xdc
+[  676.400440]  [<ffffffff814c982e>] do_device_not_available+0xe/0x10
+[  676.400445]  [<ffffffff814d161b>] device_not_available+0x1b/0x20
 
 
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
-Acked-by: Rupesh Gujare <rgujare@ozmodevices.com>
+---
 
+ arch/x86/kernel/traps.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index ab82cbd..dff3e72 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -654,7 +654,9 @@ do_device_not_available(struct pt_regs *regs, long error_code)
+ 		return;
+ 	}
+ #endif
++	exception_enter(regs);
+ 	math_state_restore(); /* interrupts still off */
++	exception_enter(regs);
+ #ifdef CONFIG_X86_32
+ 	conditional_sti(regs);
+ #endif
 
