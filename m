@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360Ab2H1Ltj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 07:49:39 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38685 "EHLO
+	id S1753425Ab2H1Ltw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 07:49:52 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38683 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752993Ab2H1Lsm (ORCPT
+	with ESMTP id S1752946Ab2H1Lsm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 28 Aug 2012 07:48:42 -0400
 From: Sascha Hauer <s.hauer@pengutronix.de>
@@ -14,9 +14,9 @@ Cc: HACHIMI Samir <shachimi@adeneo-embedded.com>, shawn.guo@linaro.org,
         =?UTF-8?q?Beno=C3=AEt=20Th=C3=A9baudeau?= 
 	<benoit.thebaudeau@advansee.com>,
         Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [PATCH 6/9] pwm i.MX: use per clock unconditionally
-Date: Tue, 28 Aug 2012 13:48:21 +0200
-Message-Id: <1346154504-5623-7-git-send-email-s.hauer@pengutronix.de>
+Subject: [PATCH 4/9] pwm i.MX: Use module_platform_driver
+Date: Tue, 28 Aug 2012 13:48:19 +0200
+Message-Id: <1346154504-5623-5-git-send-email-s.hauer@pengutronix.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1346154504-5623-1-git-send-email-s.hauer@pengutronix.de>
 References: <1346154504-5623-1-git-send-email-s.hauer@pengutronix.de>
@@ -28,40 +28,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The i.MX pwm core has two clocks: The ipg clock and the ipg highfreq
-(peripheral) clock. The ipg clock has to be enabled for this hardware
-to work. The actual pwm output can either be driven by the ipg clock
-or the ipg highfreq. The ipg highfreq has the advantage that it runs
-even when the SoC is in low power modes.
-Use the always running clock also on i.MX25.
-
 Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 ---
- drivers/pwm/pwm-imx.c |    7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+ drivers/pwm/pwm-imx.c |   12 +-----------
+ 1 file changed, 1 insertion(+), 11 deletions(-)
 
 diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
-index dfc1bae..3834f475 100644
+index 3fc4ae8..a689144 100644
 --- a/drivers/pwm/pwm-imx.c
 +++ b/drivers/pwm/pwm-imx.c
-@@ -132,16 +132,11 @@ static int imx_pwm_config_v2(struct pwm_chip *chip,
+@@ -270,17 +270,7 @@ static struct platform_driver imx_pwm_driver = {
+ 	.remove		= __devexit_p(imx_pwm_remove),
+ };
  
- 	cr = MX3_PWMCR_PRESCALER(prescale) |
- 		MX3_PWMCR_DOZEEN | MX3_PWMCR_WAITEN |
--		MX3_PWMCR_DBGEN;
-+		MX3_PWMCR_DBGEN | MX3_PWMCR_CLKSRC_IPG_HIGH;
- 
- 	if (imx->enabled)
- 		cr |= MX3_PWMCR_EN;
- 
--	if (cpu_is_mx25())
--		cr |= MX3_PWMCR_CLKSRC_IPG;
--	else
--		cr |= MX3_PWMCR_CLKSRC_IPG_HIGH;
+-static int __init imx_pwm_init(void)
+-{
+-	return platform_driver_register(&imx_pwm_driver);
+-}
+-arch_initcall(imx_pwm_init);
 -
- 	writel(cr, imx->mmio_base + MX3_PWMCR);
+-static void __exit imx_pwm_exit(void)
+-{
+-	platform_driver_unregister(&imx_pwm_driver);
+-}
+-module_exit(imx_pwm_exit);
++module_platform_driver(imx_pwm_driver);
  
- 	return 0;
+ MODULE_LICENSE("GPL v2");
+ MODULE_AUTHOR("Sascha Hauer <s.hauer@pengutronix.de>");
 -- 
 1.7.10.4
 
