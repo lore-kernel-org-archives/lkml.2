@@ -1,167 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752248Ab2H1JR4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 05:17:56 -0400
-Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:34418
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751151Ab2H1JRv (ORCPT
+	id S1752151Ab2H1Jai (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 05:30:38 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:16695 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751151Ab2H1Jah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 05:17:51 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(zz98dI1432Izz1202hzz8275bhz2dh668h839h944hd25hf0ah11b5h1155h)
-X-WSS-ID: 0M9GKH8-01-1M3-02
-X-M-MSG: 
-Date: Tue, 28 Aug 2012 11:17:29 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: <Wei.Yang@windriver.com>
-CC: <mingo@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <oprofile-list@lists.sourceforge.net>
-Subject: Re: [PATCH 1/1] x86/oprofile: Fix the calltrace upon profiling some
- specified events with oprofile
-Message-ID: <20120828091729.GJ8285@erda.amd.com>
-References: <1346031133-12756-1-git-send-email-Wei.Yang@windriver.com>
+	Tue, 28 Aug 2012 05:30:37 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zzzz1202h1082kzzz2dh2a8h668h839hd24he5bhf0ah107ah)
+From: Dong Aisheng <b29396@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linus.walleij@stericsson.com>,
+        <s.hauer@pengutronix.de>, <shawn.guo@linaro.org>,
+        <kernel@pengutronix.de>, <grant.likely@secretlab.ca>,
+        <rob.herring@calxeda.com>, <sameo@linux.intel.com>, <lrg@ti.com>,
+        <broonie@opensource.wolfsonmicro.com>, <richard.zhao@freescale.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <swarren@wwwdotorg.org>
+Subject: [PATCH v3 0/7] add syscon driver based on regmap for general registers access
+Date: Tue, 28 Aug 2012 17:09:58 +0800
+Message-ID: <1346145005-17961-1-git-send-email-b29396@freescale.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1346031133-12756-1-git-send-email-Wei.Yang@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27.08.12 09:32:13, Wei.Yang@windriver.com wrote:
-> From: Wei Yang <Wei.Yang@windriver.com>
-> 
-> Upon enabling the call-graph functionality of oprofile, A few minutes
-> later the following calltrace will always occur.
-> 
-> BUG: unable to handle kernel paging request at 656d6153
+This patch series mainly adds an syscon driver which is used to access
+general system controller registers like FSL IOMUXC GPR and ANATOP,
+after that, we convert all the exist private access general registers code to use
+standard API from regmap to access registers.
+Finally we remove the old mfd anatop driver which is only for anatop register
+access.
 
-This is probably the same I found to yesterday. Will test your fix.
+The patch series is based on linus's tree 3.6-rc3 since commit 9160338.
 
--Robert
+Dong Aisheng (7):
+  mfd: add syscon driver based on regmap
+  ARM: imx6q: add iomuxc gpr support into syscon
+  ARM: imx6q: add anatop support into syscon
+  regulator: anatop-regulator: convert to use syscon to access anatop
+    register
+  ARM: imx6q: convert to use syscon to access anatop registers
+  ARM: dts: imx6q: add simple-bus compatible string for anatop
+  mfd: anatop-mfd: remove anatop driver
 
-> IP: [<c10050f5>] print_context_stack+0x55/0x110
-> *pde = 00000000
-> Oops: 0000 [#1] PREEMPT SMP
-> Modules linked in:
-> Pid: 0, comm: swapper/0 Not tainted 3.6.0-rc3-WR5.0+snapshot-20120820_standard
-> EIP: 0060:[<c10050f5>] EFLAGS: 00010093 CPU: 0
-> EIP is at print_context_stack+0x55/0x110
-> EAX: 656d7ffc EBX: 656d6153 ECX: c1837ee0 EDX: 656d6153
-> ESI: 00000000 EDI: ffffe000 EBP: f600deac ESP: f600de88
-> DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
-> CR0: 8005003b CR2: 656d6153 CR3: 01934000 CR4: 000007d0
-> DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
-> DR6: ffff0ff0 DR7: 00000400
-> Process swapper/0 (pid: 0, ti=f600c000 task=c18411a0 task.ti=c1836000)
-> Stack:
-> 1a7f76ea 656d7ffc 656d6000 c1837ee0 ffffe000 c1837ee0 656d6153 c188e27c
-> 656d6000 f600dedc c10040f8 c188e27c f600def0 00000000 f600dec8 c1837ee0
-> 00000000 f600ded4 c1837ee0 f600dfc4 0000001f f600df08 c1564d22 00000000
-> Call Trace:
-> [<c10040f8>] dump_trace+0x68/0xf0
-> [<c1564d22>] x86_backtrace+0xb2/0xc0
-> [<c1562dd2>] oprofile_add_sample+0xa2/0xc0
-> [<c1003fbf>] ? do_softirq+0x6f/0xa0
-> [<c1566519>] ppro_check_ctrs+0x79/0x100
-> [<c15664a0>] ? ppro_shutdown+0x60/0x60
-> [<c156552f>] profile_exceptions_notify+0x8f/0xb0
-> [<c1672248>] nmi_handle.isra.0+0x48/0x70
-> [<c1672343>] do_nmi+0xd3/0x3c0
-> [<c1033d39>] ? __local_bh_enable+0x29/0x70
-> [<c1034620>] ? ftrace_define_fields_irq_handler_entry+0x80/0x80
-> [<c1671a0d>] nmi_stack_correct+0x28/0x2d
-> [<c1034620>] ? ftrace_define_fields_irq_handler_entry+0x80/0x80
-> [<c1003fbf>] ? do_softirq+0x6f/0xa0
-> <IRQ>
-> [<c1034ad5>] irq_exit+0x65/0x70
-> [<c16776f9>] smp_apic_timer_interrupt+0x59/0x89
-> [<c16717da>] apic_timer_interrupt+0x2a/0x30
-> [<c135164d>] ? acpi_idle_enter_bm+0x245/0x273
-> [<c14f3a25>] cpuidle_enter+0x15/0x20
-> [<c14f4070>] cpuidle_idle_call+0xa0/0x320
-> [<c1009705>] cpu_idle+0x55/0xb0
-> [<c16519a8>] rest_init+0x6c/0x74
-> [<c18a291b>] start_kernel+0x2ec/0x2f3
-> [<c18a2467>] ? repair_env_string+0x51/0x51
-> [<c18a22a2>] i386_start_kernel+0x78/0x7d
-> Code: e0 ff ff 89 7d ec 74 5a 8d b4 26 00 00 00 00 8d bc 27 00 00
-> 00 00 39 f3 72 0c 8b 45 f0 8d 64 24 18 5b 5e 5f 5d c3 3b 5d ec 72
-> ef <8b> 3b 89 f8 89 7d dc e8 ef 40 04 00 85 c0 74 20 8b 40
-> EIP: [<c10050f5>] print_context_stack+0x55/0x110 SS:ESP 0068:f600de88
-> CR2: 00000000656d6153
-> ---[ end trace 751c9b47c6ff5e29 ]---
-> 
-> Let's assume a scenario that do_softirq() switches the stack to a soft irq
-> stack, and the soft irq stack is totally empty. At this moment, a nmi interrupt
-> occurs, subsequently, CPU does not automatically save SS and SP registers
-> and switch any stack, but instead only stores EFLAGS, CS and IP to the soft irq
-> stack. since the CPU is in kernel mode when the NMI exception occurs.
-> the layout of the current soft irq stack is this:
-> 
->   +--------------+<-----the top of soft irq
->   |   EFLAGS     |
->   +--------------+
->   |    CS        |
->   +--------------+
->   |    IP        |
->   +--------------+
->   |   SAVE_ALL   |
->   +--------------+
-> 
-> but the return value of the function kernel_stack_pointer() is'&regs->sp'
-> (for x86_32 CPU), which is invoked by the x86_backtrace function. Since
-> the type of regs pointer is a pt_regs structure, the return value is not
-> in the range of the soft irq stack, as the SP register is not save in the
-> soft irq stack. Therefore, we need to check if the return value of the function
-> resides in valid range. Additionally, the changes has no impact on the normal
-> NMI exception.
-> 
-> Signed-off-by: Yang Wei <wei.yang@windriver.com>
-> ---
->  arch/x86/oprofile/backtrace.c |   10 ++++++++++
->  1 files changed, 10 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/oprofile/backtrace.c b/arch/x86/oprofile/backtrace.c
-> index d6aa6e8..a5fca0b 100644
-> --- a/arch/x86/oprofile/backtrace.c
-> +++ b/arch/x86/oprofile/backtrace.c
-> @@ -17,6 +17,11 @@
->  #include <asm/ptrace.h>
->  #include <asm/stacktrace.h>
->  
-> +static inline int valid_stack_ptr(struct thread_info *tinfo, void *p)
-> +{
-> +	void *t = tinfo;
-> +	return p > t + sizeof(struct thread_info) && p < t + THREAD_SIZE;
-> +}
->  static int backtrace_stack(void *data, char *name)
->  {
->  	/* Yes, we want all stacks */
-> @@ -110,9 +115,14 @@ void
->  x86_backtrace(struct pt_regs * const regs, unsigned int depth)
->  {
->  	struct stack_frame *head = (struct stack_frame *)frame_pointer(regs);
-> +	struct thread_info *context;
->  
->  	if (!user_mode_vm(regs)) {
->  		unsigned long stack = kernel_stack_pointer(regs);
-> +		context = (struct thread_info *)
-> +			(stack & (~(THREAD_SIZE - 1)));
-> +		if (!valid_stack_ptr(context, (void *)stack))
-> +			return;
->  		if (depth)
->  			dump_trace(NULL, regs, (unsigned long *)stack, 0,
->  				   &backtrace_ops, &depth);
-> -- 
-> 1.7.0.2
-> 
-> 
+ Documentation/devicetree/bindings/mfd/syscon.txt |   11 +
+ arch/arm/boot/dts/imx6q.dtsi                     |    9 +-
+ arch/arm/mach-imx/Kconfig                        |    2 +-
+ arch/arm/mach-imx/mach-imx6q.c                   |   47 ++--
+ drivers/mfd/Kconfig                              |   13 +-
+ drivers/mfd/Makefile                             |    2 +-
+ drivers/mfd/anatop-mfd.c                         |  124 ---------
+ drivers/mfd/syscon.c                             |  172 ++++++++++++
+ drivers/regulator/Kconfig                        |    2 +-
+ drivers/regulator/anatop-regulator.c             |   30 ++-
+ include/linux/fsl/imx6q-iomuxc-gpr.h             |  319 ++++++++++++++++++++++
+ include/linux/mfd/anatop.h                       |   40 ---
+ include/linux/mfd/syscon.h                       |   23 ++
+ 13 files changed, 579 insertions(+), 215 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/syscon.txt
+ delete mode 100644 drivers/mfd/anatop-mfd.c
+ create mode 100644 drivers/mfd/syscon.c
+ create mode 100644 include/linux/fsl/imx6q-iomuxc-gpr.h
+ delete mode 100644 include/linux/mfd/anatop.h
+ create mode 100644 include/linux/mfd/syscon.h
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
 
