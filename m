@@ -1,70 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751600Ab2H1CXJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 22:23:09 -0400
-Received: from mga02.intel.com ([134.134.136.20]:38348 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751002Ab2H1CXI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 22:23:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,324,1344236400"; 
-   d="scan'208,223";a="192089581"
-Date: Tue, 28 Aug 2012 10:17:30 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: <mingo@elte.hu>, <a.p.zijlstra@chello.nl>, <namhyung@kernel.org>,
-        <dsahern@gmail.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH  v2 1/3] perf tools: Fix a compiling error in
- trace-event-perl.c for 32 bits machine
-Message-ID: <20120828101730.6b2fd97e@feng-i7>
-In-Reply-To: <20120827153355.GA17634@infradead.org>
-References: <1346053107-11946-1-git-send-email-feng.tang@intel.com>
-	<1346053107-11946-2-git-send-email-feng.tang@intel.com>
-	<20120827153355.GA17634@infradead.org>
-Organization: intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1751575Ab2H1CZZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 22:25:25 -0400
+Received: from relay03.pair.com ([209.68.5.17]:4564 "HELO relay03.pair.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751312Ab2H1CZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 22:25:24 -0400
+X-pair-Authenticated: 108.45.119.98
+Message-ID: <503C2C11.8020202@flaterco.com>
+Date: Mon, 27 Aug 2012 22:25:21 -0400
+From: David Flater <vger@flaterco.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Alsa Devel <alsa-devel@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCHv2] sound: fix emu8000 DRAM sized 512 KiB too small
+References: <503C1133.7000506@flaterco.com>
+In-Reply-To: <503C1133.7000506@flaterco.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 8e2fe258906fc83869be10a1b4a40ef9acc4a2a6 Mon Sep 17 00:00:00 2001
-From: Feng Tang <feng.tang@intel.com>
-Date: Mon, 27 Aug 2012 14:01:33 +0800
-Subject: [PATCH 1/3] perf tools: Fix a compiling error in trace-event-perl.c for 32 bits machine
+v2:  Fixed result still wrong in the case of 512 KiB DRAM.  Oops.
 
-On my x86_32 mahcine, there is a compile error:
+Applicable to 3.5.3 mainline.
 
-	CC util/scripting-engines/trace-event-perl.o
-	cc1: warnings being treated as errors
-	util/scripting-engines/trace-event-perl.c: In function ‘perl_process_tracepoint’:
-	util/scripting-engines/trace-event-perl.c:285: error: format ‘%d’ expects type ‘int’, but argument 2 has type ‘__u64’
-	make: *** [util/scripting-engines/trace-event-perl.o] Error 1
+In emu8000.c, size_dram determines the amount of memory on the sound card by
+doing write/readback tests starting at 512 KiB and incrementing by 512 KiB.
+On success, detected_size is updated to the successful address and testing
+continues.  On failure, the loop is immediately exited.  The resulting
+detected_size is 512 KiB too small except in two special cases:
 
-Fix it by using the "%PRIu64" for __u64.
+1. If there is no memory, the initial 0 value of detected_size is used, which
+   is correct.
+2. If the address space wraps around, detected_size is updated before the
+   bailout, so the result is correct.
 
-v2: use PRIu64 as suggested by Arnaldo.
+The patch corrects all cases and was tested with an AWE64 Gold.  Before:
+  EMU8000 [0x620]: 3584 Kb on-board memory detected
+  asfxload 4GMGSMT.SF2 (4174814 B) fails.
+After:
+  EMU8000 [0x620]: 4096 Kb on-board memory detected
+  asfxload 4GMGSMT.SF2 succeeds.
 
-Signed-off-by: Feng Tang <feng.tang@intel.com>
+I do not have a card with 512 KiB to test with, but by forcibly enabling the
+added conditional I verified on the AWE64 Gold that it detects 512 KiB
+(successfully reading from the first memory location) and does not hang the
+card.
+
+C.f. Bug 46451 https://bugzilla.kernel.org/show_bug.cgi?id=46451
+
+Signed-off-by: David Flater <dave@flaterco.com>
 ---
- .../perf/util/scripting-engines/trace-event-perl.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
-index d280010..09db03f 100644
---- a/tools/perf/util/scripting-engines/trace-event-perl.c
-+++ b/tools/perf/util/scripting-engines/trace-event-perl.c
-@@ -282,7 +282,7 @@ static void perl_process_tracepoint(union perf_event *perf_event __unused,
+--- linux-3.5.3-nameless/sound/isa/sb/emu8000.c.orig	2012-08-25 22:32:13.000000000 -0400
++++ linux-3.5.3-nameless/sound/isa/sb/emu8000.c	2012-08-27 22:06:15.729510037 -0400
+@@ -417,9 +417,6 @@ size_dram(struct snd_emu8000 *emu)
+ 		EMU8000_SMLD_READ(emu); /* discard stale data  */
+ 		if (EMU8000_SMLD_READ(emu) != UNIQUE_ID2)
+ 			break; /* no memory at this address */
+-
+-		detected_size = size;
+-
+ 		snd_emu8000_read_wait(emu);
  
- 	event = find_cache_event(evsel);
- 	if (!event)
--		die("ug! no event found for type %d", evsel->attr.config);
-+		die("ug! no event found for type %" PRIu64, evsel->attr.config);
+ 		/*
+@@ -432,6 +429,18 @@ size_dram(struct snd_emu8000 *emu)
+ 		if (EMU8000_SMLD_READ(emu) != UNIQUE_ID1)
+ 			break; /* we must have wrapped around */
+ 		snd_emu8000_read_wait(emu);
++
++		/* Otherwise, it's valid memory. */
++		detected_size = size + 512 * 1024;
++	}
++
++	/* Distinguish 512 KiB from 0. */
++	if (detected_size == 0) {
++		snd_emu8000_read_wait(emu);
++		EMU8000_SMALR_WRITE(emu, EMU8000_DRAM_OFFSET);
++		EMU8000_SMLD_READ(emu); /* discard stale data  */
++		if (EMU8000_SMLD_READ(emu) == UNIQUE_ID1)
++			detected_size = 512 * 1024;
+ 	}
  
- 	pid = raw_field_value(event, "common_pid", data);
- 
--- 
-1.7.1
+ 	/* wait until FULL bit in SMAxW register is false */
+
