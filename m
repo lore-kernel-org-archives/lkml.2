@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370Ab2H1Lsx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 07:48:53 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38695 "EHLO
+	id S1753410Ab2H1LtN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 07:49:13 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38689 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752965Ab2H1Lsu (ORCPT
+	with ESMTP id S1753282Ab2H1Lsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 07:48:50 -0400
+	Tue, 28 Aug 2012 07:48:43 -0400
 From: Sascha Hauer <s.hauer@pengutronix.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: HACHIMI Samir <shachimi@adeneo-embedded.com>, shawn.guo@linaro.org,
         thierry.reding@avionic-design.de, linux-kernel@vger.kernel.org,
         =?UTF-8?q?Beno=C3=AEt=20Th=C3=A9baudeau?= 
 	<benoit.thebaudeau@advansee.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
         Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [PATCH 1/9] pwm i.MX: factor out SoC specific functions
-Date: Tue, 28 Aug 2012 13:48:16 +0200
-Message-Id: <1346154504-5623-2-git-send-email-s.hauer@pengutronix.de>
+Subject: [PATCH 5/9] pwm i.MX: add devicetree support
+Date: Tue, 28 Aug 2012 13:48:20 +0200
+Message-Id: <1346154504-5623-6-git-send-email-s.hauer@pengutronix.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1346154504-5623-1-git-send-email-s.hauer@pengutronix.de>
 References: <1346154504-5623-1-git-send-email-s.hauer@pengutronix.de>
@@ -28,188 +29,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To make the code more flexible.
+From: Philipp Zabel <p.zabel@pengutronix.de>
 
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
 Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 ---
- drivers/pwm/pwm-imx.c |  145 ++++++++++++++++++++++++++++---------------------
- 1 file changed, 82 insertions(+), 63 deletions(-)
+ drivers/pwm/pwm-imx.c |   25 +++++++++++++++++++------
+ 1 file changed, 19 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
-index 2a0b353..38270f4 100644
+index a689144..dfc1bae 100644
 --- a/drivers/pwm/pwm-imx.c
 +++ b/drivers/pwm/pwm-imx.c
-@@ -46,81 +46,95 @@ struct imx_chip {
- 	void __iomem	*mmio_base;
+@@ -16,9 +16,9 @@
+ #include <linux/clk.h>
+ #include <linux/io.h>
+ #include <linux/pwm.h>
++#include <linux/of_device.h>
+ #include <mach/hardware.h>
  
- 	struct pwm_chip	chip;
-+
-+	int (*config)(struct pwm_chip *chip,
-+		struct pwm_device *pwm, int duty_ns, int period_ns);
+-
+ /* i.MX1 and i.MX21 share the same PWM function block: */
+ 
+ #define MX1_PWMC    0x00   /* PWM Control Register */
+@@ -203,8 +203,17 @@ static struct pwm_ops imx_pwm_ops = {
+ 	.owner = THIS_MODULE,
  };
  
- #define to_imx_chip(chip)	container_of(chip, struct imx_chip, chip)
- 
--static int imx_pwm_config(struct pwm_chip *chip,
-+static int imx_pwm_config_v1(struct pwm_chip *chip,
- 		struct pwm_device *pwm, int duty_ns, int period_ns)
++static const struct of_device_id imx_pwm_dt_ids[] = {
++	{ .compatible = "fsl,imx1-pwm", .data = &imx_pwm_config_v1, },
++	{ .compatible = "fsl,imx27-pwm", .data = &imx_pwm_config_v2, },
++	{ /* sentinel */ }
++};
++MODULE_DEVICE_TABLE(of, imx_pwm_of_match);
++
+ static int __devinit imx_pwm_probe(struct platform_device *pdev)
  {
- 	struct imx_chip *imx = to_imx_chip(chip);
- 
--	if (!(cpu_is_mx1() || cpu_is_mx21())) {
--		unsigned long long c;
--		unsigned long period_cycles, duty_cycles, prescale;
--		u32 cr;
--
--		c = clk_get_rate(imx->clk);
--		c = c * period_ns;
--		do_div(c, 1000000000);
--		period_cycles = c;
--
--		prescale = period_cycles / 0x10000 + 1;
--
--		period_cycles /= prescale;
--		c = (unsigned long long)period_cycles * duty_ns;
--		do_div(c, period_ns);
--		duty_cycles = c;
--
--		/*
--		 * according to imx pwm RM, the real period value should be
--		 * PERIOD value in PWMPR plus 2.
--		 */
--		if (period_cycles > 2)
--			period_cycles -= 2;
--		else
--			period_cycles = 0;
--
--		writel(duty_cycles, imx->mmio_base + MX3_PWMSAR);
--		writel(period_cycles, imx->mmio_base + MX3_PWMPR);
--
--		cr = MX3_PWMCR_PRESCALER(prescale) |
--			MX3_PWMCR_DOZEEN | MX3_PWMCR_WAITEN |
--			MX3_PWMCR_DBGEN | MX3_PWMCR_EN;
--
--		if (cpu_is_mx25())
--			cr |= MX3_PWMCR_CLKSRC_IPG;
--		else
--			cr |= MX3_PWMCR_CLKSRC_IPG_HIGH;
--
--		writel(cr, imx->mmio_base + MX3_PWMCR);
--	} else if (cpu_is_mx1() || cpu_is_mx21()) {
--		/* The PWM subsystem allows for exact frequencies. However,
--		 * I cannot connect a scope on my device to the PWM line and
--		 * thus cannot provide the program the PWM controller
--		 * exactly. Instead, I'm relying on the fact that the
--		 * Bootloader (u-boot or WinCE+haret) has programmed the PWM
--		 * function group already. So I'll just modify the PWM sample
--		 * register to follow the ratio of duty_ns vs. period_ns
--		 * accordingly.
--		 *
--		 * This is good enough for programming the brightness of
--		 * the LCD backlight.
--		 *
--		 * The real implementation would divide PERCLK[0] first by
--		 * both the prescaler (/1 .. /128) and then by CLKSEL
--		 * (/2 .. /16).
--		 */
--		u32 max = readl(imx->mmio_base + MX1_PWMP);
--		u32 p = max * duty_ns / period_ns;
--		writel(max - p, imx->mmio_base + MX1_PWMS);
--	} else {
--		BUG();
--	}
-+	/* The PWM subsystem allows for exact frequencies. However,
-+	 * I cannot connect a scope on my device to the PWM line and
-+	 * thus cannot provide the program the PWM controller
-+	 * exactly. Instead, I'm relying on the fact that the
-+	 * Bootloader (u-boot or WinCE+haret) has programmed the PWM
-+	 * function group already. So I'll just modify the PWM sample
-+	 * register to follow the ratio of duty_ns vs. period_ns
-+	 * accordingly.
-+	 *
-+	 * This is good enough for programming the brightness of
-+	 * the LCD backlight.
-+	 *
-+	 * The real implementation would divide PERCLK[0] first by
-+	 * both the prescaler (/1 .. /128) and then by CLKSEL
-+	 * (/2 .. /16).
-+	 */
-+	u32 max = readl(imx->mmio_base + MX1_PWMP);
-+	u32 p = max * duty_ns / period_ns;
-+	writel(max - p, imx->mmio_base + MX1_PWMS);
-+
-+	return 0;
-+}
-+
-+static int imx_pwm_config_v2(struct pwm_chip *chip,
-+		struct pwm_device *pwm, int duty_ns, int period_ns)
-+{
-+	struct imx_chip *imx = to_imx_chip(chip);
-+	unsigned long long c;
-+	unsigned long period_cycles, duty_cycles, prescale;
-+	u32 cr;
-+
-+	c = clk_get_rate(imx->clk);
-+	c = c * period_ns;
-+	do_div(c, 1000000000);
-+	period_cycles = c;
-+
-+	prescale = period_cycles / 0x10000 + 1;
-+
-+	period_cycles /= prescale;
-+	c = (unsigned long long)period_cycles * duty_ns;
-+	do_div(c, period_ns);
-+	duty_cycles = c;
-+
-+	/*
-+	 * according to imx pwm RM, the real period value should be
-+	 * PERIOD value in PWMPR plus 2.
-+	 */
-+	if (period_cycles > 2)
-+		period_cycles -= 2;
-+	else
-+		period_cycles = 0;
-+
-+	writel(duty_cycles, imx->mmio_base + MX3_PWMSAR);
-+	writel(period_cycles, imx->mmio_base + MX3_PWMPR);
-+
-+	cr = MX3_PWMCR_PRESCALER(prescale) |
-+		MX3_PWMCR_DOZEEN | MX3_PWMCR_WAITEN |
-+		MX3_PWMCR_DBGEN | MX3_PWMCR_EN;
-+
-+	if (cpu_is_mx25())
-+		cr |= MX3_PWMCR_CLKSRC_IPG;
-+	else
-+		cr |= MX3_PWMCR_CLKSRC_IPG_HIGH;
-+
-+	writel(cr, imx->mmio_base + MX3_PWMCR);
- 
- 	return 0;
- }
- 
-+static int imx_pwm_config(struct pwm_chip *chip,
-+		struct pwm_device *pwm, int duty_ns, int period_ns)
-+{
-+	struct imx_chip *imx = to_imx_chip(chip);
-+
-+	return imx->config(chip, pwm, duty_ns, period_ns);
-+}
-+
- static int imx_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
- {
- 	struct imx_chip *imx = to_imx_chip(chip);
-@@ -187,6 +201,11 @@ static int __devinit imx_pwm_probe(struct platform_device *pdev)
++	const struct of_device_id *of_id =
++			of_match_device(imx_pwm_dt_ids, &pdev->dev);
+ 	struct imx_chip *imx;
+ 	struct resource *r;
+ 	int ret = 0;
+@@ -235,12 +244,16 @@ static int __devinit imx_pwm_probe(struct platform_device *pdev)
  	if (imx->mmio_base == NULL)
  		return -EADDRNOTAVAIL;
  
-+	if (cpu_is_mx1() || cpu_is_mx21())
-+		imx->config = imx_pwm_config_v1;
-+	else
-+		imx->config = imx_pwm_config_v2;
-+
+-	if (cpu_is_mx1() || cpu_is_mx21()) {
+-		imx->config = imx_pwm_config_v1;
+-		imx->set_enable = imx_pwm_set_enable_v1;
++	if (of_id) {
++		imx->config = of_id->data;
+ 	} else {
+-		imx->config = imx_pwm_config_v2;
+-		imx->set_enable = imx_pwm_set_enable_v2;
++		if (cpu_is_mx1() || cpu_is_mx21()) {
++			imx->config = imx_pwm_config_v1;
++			imx->set_enable = imx_pwm_set_enable_v1;
++		} else {
++			imx->config = imx_pwm_config_v2;
++			imx->set_enable = imx_pwm_set_enable_v2;
++		}
+ 	}
+ 
  	ret = pwmchip_add(&imx->chip);
- 	if (ret < 0)
- 		return ret;
 -- 
 1.7.10.4
 
