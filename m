@@ -1,109 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549Ab2H1W2g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 18:28:36 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37902 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753395Ab2H1W2e (ORCPT
+	id S1753597Ab2H1WeI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 18:34:08 -0400
+Received: from mail-iy0-f194.google.com ([209.85.210.194]:65040 "EHLO
+	mail-iy0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988Ab2H1WeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 18:28:34 -0400
-Date: Tue, 28 Aug 2012 15:28:00 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, vgoyal@redhat.com, mpatocka@redhat.com,
-        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH v7 9/9] block: Avoid deadlocks with bio allocation by
- stacking drivers
-Message-ID: <20120828222800.GG1048@moria.home.lan>
-References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
- <1346175456-1572-10-git-send-email-koverstreet@google.com>
- <20120828204910.GG24608@dhcp-172-17-108-109.mtv.corp.google.com>
+	Tue, 28 Aug 2012 18:34:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120828204910.GG24608@dhcp-172-17-108-109.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Irina Tirdea <irina.tirdea@gmail.com>
+Date: Wed, 29 Aug 2012 01:33:45 +0300
+Message-ID: <CANg8OWJnDvd28KTZffojhxLds4znjTTq294=H-_frbX6dStaWw@mail.gmail.com>
+Subject: [PATCH 02/13] perf tools: update types definitions for Android
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 28, 2012 at 01:49:10PM -0700, Tejun Heo wrote:
-> Hello,
-> 
-> On Tue, Aug 28, 2012 at 10:37:36AM -0700, Kent Overstreet wrote:
-> > @@ -324,13 +342,37 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
-> >  		front_pad = 0;
-> >  		inline_vecs = nr_iovecs;
-> >  	} else {
-> > +		/*
-> > +		 * generic_make_request() converts recursion to iteration; this
-> > +		 * means if we're running beneath it, any bios we allocate and
-> > +		 * submit will not be submitted (and thus freed) until after we
-> > +		 * return.
-> > +		 *
-> > +		 * This exposes us to a potential deadlock if we allocate
-> > +		 * multiple bios from the same bio_set() while running
-> > +		 * underneath generic_make_request(). If we were to allocate
-> > +		 * multiple bios (say a stacking block driver that was splitting
-> > +		 * bios), we would deadlock if we exhausted the mempool's
-> > +		 * reserve.
-> > +		 *
-> > +		 * We solve this, and guarantee forward progress, with a rescuer
-> > +		 * workqueue per bio_set. If we go to allocate and there are
-> > +		 * bios on current->bio_list, we first try the allocation
-> > +		 * without __GFP_WAIT; if that fails, we punt those bios we
-> > +		 * would be blocking to the rescuer workqueue before we retry
-> > +		 * with the original gfp_flags.
-> > +		 */
-> > +
-> > +		if (current->bio_list && !bio_list_empty(current->bio_list))
-> > +			gfp_mask &= ~__GFP_WAIT;
-> > +retry:
-> >  		p = mempool_alloc(bs->bio_pool, gfp_mask);
-> >  		front_pad = bs->front_pad;
-> >  		inline_vecs = BIO_INLINE_VECS;
-> >  	}
-> >  
-> >  	if (unlikely(!p))
-> > -		return NULL;
-> > +		goto err;
-> >  
-> >  	bio = p + front_pad;
-> >  	bio_init(bio);
-> > @@ -351,6 +393,19 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
-> >  
-> >  err_free:
-> >  	mempool_free(p, bs->bio_pool);
-> > +err:
-> > +	if (gfp_mask != saved_gfp) {
-> > +		gfp_mask = saved_gfp;
-> > +
-> > +		spin_lock(&bs->rescue_lock);
-> > +		bio_list_merge(&bs->rescue_list, current->bio_list);
-> > +		bio_list_init(current->bio_list);
-> > +		spin_unlock(&bs->rescue_lock);
-> > +
-> > +		queue_work(bs->rescue_workqueue, &bs->rescue_work);
-> > +		goto retry;
-> > +	}
-> 
-> I wonder whether it would be easier to follow if this part is in-line
-> where retry: is.  All that needs to be duplicated is single
-> mempool_alloc() call, right?
+Some systems (e.g. Android) define in their libc types.h
+__le16, __be16, etc. Since perf is wrapping
+<linux/types.h> with a local version, we need to define this
+constants in the local version too.
 
-Actually, what might be better than both of those approaches is shoving
-that code into another function. Then it's just:
+Errors in Android:
+In file included from bionic/libc/include/netinet/in.h:34:0,
+                 from util/util.h:73,
+                 from util/cache.h:5,
+                 from util/abspath.c:1:
+bionic/libc/kernel/common/linux/in6.h:20:2: error: unknown type name '__be16'
+bionic/libc/kernel/common/linux/in6.h:21:2: error: unknown type name '__be32'
+bionic/libc/kernel/common/linux/in6.h:30:2: error: unknown type name '__be16'
+bionic/libc/kernel/common/linux/in6.h:31:2: error: unknown type name '__be32'
+bionic/libc/kernel/common/linux/in6.h:47:2: error: unknown type name '__be32'
 
-if (gfp_mask != saved_gfp) {
-	gfp_mask = saved_gfp;
-	shovel_bios_to_rescuer();
-	goto retry;
-}
+roundup() definition is also missing:
+util/symbol.c: In function 'symbols__fixup_end':
+util/symbol.c:106: warning: implicit declaration of function 'roundup'
+util/symbol.c:106: warning: nested extern declaration of 'roundup'
 
-> Overall, I *think* this is correct but need to think more about it to
-> be sure.
+Some macro defined in perf are also defined in libc which
+leads to redefinition errors. In order to avoid these, we
+guard these definitions with #ifndef.
 
-Please do. As much time as I've spent staring at this kind of stuff,
-I'm pretty sure I've got it correct but it still makes my head hurt to
-work out all the various possible deadlocks.
+Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+---
+ tools/perf/util/include/linux/compiler.h |    4 ++++
+ tools/perf/util/include/linux/kernel.h   |   11 +++++++++++
+ tools/perf/util/include/linux/types.h    |   15 +++++++++++++++
+ 3 files changed, 30 insertions(+)
+
+diff --git a/tools/perf/util/include/linux/compiler.h
+b/tools/perf/util/include/linux/compiler.h
+index 2dc8671..ce2367b 100644
+--- a/tools/perf/util/include/linux/compiler.h
++++ b/tools/perf/util/include/linux/compiler.h
+@@ -12,4 +12,8 @@
+ #define __used		__attribute__((__unused__))
+ #define __packed	__attribute__((__packed__))
+
++#ifndef __force
++#define __force
++#endif
++
+ #endif
+diff --git a/tools/perf/util/include/linux/kernel.h
+b/tools/perf/util/include/linux/kernel.h
+index b6842c1..391c425 100644
+--- a/tools/perf/util/include/linux/kernel.h
++++ b/tools/perf/util/include/linux/kernel.h
+@@ -46,6 +46,17 @@
+ 	_min1 < _min2 ? _min1 : _min2; })
+ #endif
+
++#ifndef roundup
++#define roundup(x, y) (                                \
++{                                                      \
++       const typeof(y) __y = y;                        \
++       (((x) + (__y - 1)) / __y) * __y;                \
++}                                                      \
++)
++#endif
++
++
++
+ #ifndef BUG_ON
+ #define BUG_ON(cond) assert(!(cond))
+ #endif
+diff --git a/tools/perf/util/include/linux/types.h
+b/tools/perf/util/include/linux/types.h
+index 12de3b8..60a97bb 100644
+--- a/tools/perf/util/include/linux/types.h
++++ b/tools/perf/util/include/linux/types.h
+@@ -3,6 +3,21 @@
+
+ #include <asm/types.h>
+
++#ifndef __bitwise__
++#define __bitwise__
++#endif
++
++#ifndef __bitwise
++#define __bitwise
++#endif
++
++typedef __u16 __bitwise __le16;
++typedef __u16 __bitwise __be16;
++typedef __u32 __bitwise __le32;
++typedef __u32 __bitwise __be32;
++typedef __u64 __bitwise __le64;
++typedef __u64 __bitwise __be64;
++
+ #define DECLARE_BITMAP(name,bits) \
+ 	unsigned long name[BITS_TO_LONGS(bits)]
+
+-- 
+1.7.9.5
