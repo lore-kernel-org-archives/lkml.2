@@ -1,47 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752334Ab2H1HBw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 03:01:52 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:37622 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834Ab2H1HBv (ORCPT
+	id S1752474Ab2H1HEK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 03:04:10 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:63533 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977Ab2H1HEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 03:01:51 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>
-Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH] dma: tegra: remove useless include of <mach/*.h>
-Date: Tue, 28 Aug 2012 00:01:45 -0700
-Message-Id: <1346137305-7226-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.9.5
-X-NVConfidentiality: public
+	Tue, 28 Aug 2012 03:04:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <CACvQF51fcEr2jMwpA1ec6QeDksEHz-+qDwYnABzDhLO0wX8omg@mail.gmail.com>
+References: <1346090307-3020-1-git-send-email-laijs@cn.fujitsu.com>
+	<1346090307-3020-7-git-send-email-laijs@cn.fujitsu.com>
+	<20120827200510.GB14812@dhcp-172-17-108-109.mtv.corp.google.com>
+	<CACvQF51fcEr2jMwpA1ec6QeDksEHz-+qDwYnABzDhLO0wX8omg@mail.gmail.com>
+Date: Tue, 28 Aug 2012 00:04:07 -0700
+X-Google-Sender-Auth: gf_BA9U-9bTQMKtv2aei0gxt8N8
+Message-ID: <CAOS58YPLYfhSQAGqbZ0i60v0XKqJ15jF9eaEJzk2t+NT5mT=PQ@mail.gmail.com>
+Subject: Re: [PATCH 6/7] workqueue: init 0 for idle_rebind.cnt
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <eag0628@gmail.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+Hello,
 
-Nothing from this file is needed, so remove the include. This helps
-single zImage work by reducing use of the mach-tegra/include/mach/
-directory.
+On Mon, Aug 27, 2012 at 9:36 PM, Lai Jiangshan <eag0628@gmail.com> wrote:
+>> But then the completion could be triggered prematurely, no?
+>
+> No, the idle_worker_rebind() can't be called until rebind_workers()
+> finish counting and release the gcwq->lock.
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
- drivers/dma/tegra20-apb-dma.c |    1 -
- 1 file changed, 1 deletion(-)
+I see but I still wanna keep it counting from 1.  That's an
+established pattern and is more robust.  I really don't see what we're
+gaining by doing it differently.
 
-diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
-index 24acd71..1949e53 100644
---- a/drivers/dma/tegra20-apb-dma.c
-+++ b/drivers/dma/tegra20-apb-dma.c
-@@ -32,7 +32,6 @@
- #include <linux/pm_runtime.h>
- #include <linux/slab.h>
- 
--#include <mach/clk.h>
- #include "dmaengine.h"
- 
- #define TEGRA_APBDMA_GENERAL			0x0
+Thanks.
+
 -- 
-1.7.9.5
-
+tejun
