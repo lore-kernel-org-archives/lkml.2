@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753697Ab2H1WE6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 18:04:58 -0400
+	id S1753613Ab2H1WFG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 18:05:06 -0400
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:54398 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753678Ab2H1WEz (ORCPT
+	with ESMTP id S1753395Ab2H1WFB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 18:04:55 -0400
+	Tue, 28 Aug 2012 18:05:01 -0400
 MIME-Version: 1.0
 From: Irina Tirdea <irina.tirdea@gmail.com>
-Date: Wed, 29 Aug 2012 01:04:34 +0300
-Message-ID: <CANg8OWJLWGYfPmVbb3WJ5-Tbxob4URf49aUo7E_=ahSXKWvJPA@mail.gmail.com>
-Subject: [PATCH 09/13] perf tools: include missing pthread.h header
+Date: Wed, 29 Aug 2012 01:04:40 +0300
+Message-ID: <CANg8OWL8sBQZ-45kikoUEPniosOhay_dxOCCPBXSG+ME05aLqw@mail.gmail.com>
+Subject: [PATCH 10/13] perf tools: fix non-void function without return statement
 To: Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Ingo Molnar <mingo@kernel.org>
@@ -23,42 +23,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pthread variables are used in some files without explicitely
-including pthread.h. This leads to compile errors on
-Android. e.g.: in annotate.h, error: unknown type name 'pthread_mutex_t'
+thread_func in builtin-sched.c has an internal loop and
+never returns. The only return from this thread are
+BUG_ON calls in case return values are not 0.
 
-Including pthread.h explicitely in files that use it to have
-all definitions included.
+The compiler on Android complains that the function
+needs to return a non-void value. Adding the noreturn
+function attribute to fix this error.
+
+Error in Android:
+target C: perf <= builtin-sched.c
+hardware/intel/linu/tools/perf/builtin-sched.c: In function 'thread_func':
+hardware/intel/linux/tools/perf/builtin-sched.c:476: error: no return
+statement in function returning non-void
 
 Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
 ---
- tools/perf/perf.c          |    1 +
- tools/perf/util/annotate.h |    1 +
- 2 files changed, 2 insertions(+)
+ tools/perf/builtin-sched.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index e7840e5..fb8578c 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -14,6 +14,7 @@
- #include "util/run-command.h"
- #include "util/parse-events.h"
- #include "util/debugfs.h"
-+#include <pthread.h>
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index 3d3cab46..da293b8 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -439,7 +439,7 @@ static u64 get_cpu_usage_nsec_self(int fd)
+     return runtime;
+ }
 
- const char perf_usage_string[] =
-     "perf [--version] [--help] COMMAND [ARGS]";
-diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-index d6f1b4b..0c81586 100644
---- a/tools/perf/util/annotate.h
-+++ b/tools/perf/util/annotate.h
-@@ -7,6 +7,7 @@
- #include "symbol.h"
- #include <linux/list.h>
- #include <linux/rbtree.h>
-+#include <pthread.h>
-
- struct ins;
-
+-static void *thread_func(void *ctx)
++static __attribute__ ((noreturn)) void *thread_func(void *ctx)
+ {
+     struct task_desc *this_task = ctx;
+     u64 cpu_usage_0, cpu_usage_1;
 --
 1.7.9.5
