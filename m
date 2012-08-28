@@ -1,91 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389Ab2H1QJi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 12:09:38 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:44553 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753022Ab2H1QJh (ORCPT
+	id S1753473Ab2H1QJw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 12:09:52 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:36558 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753022Ab2H1QJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 12:09:37 -0400
-Date: Tue, 28 Aug 2012 18:09:26 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, lm-sensors@lm-sensors.org
-Subject: Re: [PATCH] kernel.h: Introduce IDIV_ROUND_CLOSEST
-Message-ID: <20120828180926.4d64f99a@endymion.delvare>
-In-Reply-To: <1345855997-9408-1-git-send-email-linux@roeck-us.net>
-References: <1345855997-9408-1-git-send-email-linux@roeck-us.net>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 28 Aug 2012 12:09:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAE9FiQVrUbEzopKfeoQZFNdNszLN96brC+rYuGXQCfZvpi_ETQ@mail.gmail.com>
+References: <1340736849-14875-1-git-send-email-yinghai@kernel.org>
+	<1340736849-14875-3-git-send-email-yinghai@kernel.org>
+	<CAE9FiQVrUbEzopKfeoQZFNdNszLN96brC+rYuGXQCfZvpi_ETQ@mail.gmail.com>
+Date: Tue, 28 Aug 2012 09:09:48 -0700
+X-Google-Sender-Auth: csWiXhAxLKnawnS0sWUjKva2RwU
+Message-ID: <CAE9FiQUXTngUZp2c2dLVRZjFxhXD9e+XYW6Pn0zaHvMt0fB+eA@mail.gmail.com>
+Subject: Re: [PATCH -v12 02/15] resources: Add probe_resource()
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
+        x86 <x86@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dominik Brodowski <linux@dominikbrodowski.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Content-Type: multipart/mixed; boundary=bcaec54ee638ec0b9a04c855abeb
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
+--bcaec54ee638ec0b9a04c855abeb
+Content-Type: text/plain; charset=ISO-8859-1
 
-On Fri, 24 Aug 2012 17:53:17 -0700, Guenter Roeck wrote:
-> DIV_ROUND_CLOSEST returns a bad result for negative dividends:
-> 	DIV_ROUND_CLOSEST(-2, 2) = 0
-> 
-> Most of the time this does not matter. However, in the hardware monitoring
-> subsystem, it is often used on integers which can be negative (such as
-> temperatures). Introduce new macro IDIV_ROUND_CLOSEST which also supports
-> negative dividends.
+On Tue, Jun 26, 2012 at 3:07 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Tue, Jun 26, 2012 at 11:53 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> It is changed from busn_res only version, because Bjorn found that version
+>> was not holding resource_lock.
+>> Even it may be ok for busn_res not holding resource_lock.
+>> It would be better to have it to be generic and use lock and we may
+>> use it for other resources.
+>>
+>> probe_resource() will try to find specified size or more in parent bus.
+>> If can not find current parent resource, and it will try to expand parents
+>> top.
+>> If still can not find that specified on top, it will try to reduce target size
+>> until find one.
+>>
+>> It will return 0, if it find any resource that could be used.
+>>
+>> Returned resource is registered in the tree.
+>> So caller may need to use replace_resource to put real resource in tree.
+>>
+>> -v3: remove two parameters that is for debug purpose.
+>> -v4: fix stop_flags checking.
+>> -v5: adjust stop_flags checking position to avoid not needed calling
+>>        into allocate_resource().
+>
+> please check attached one that is updated after first patch with
+> __allocate_resource changes.
+> except this one and first one are changed. left ones are not needed to
+> be updated.
+> So i'm not going to resend them.
 
-Good catch. It's been broken for years and I never noticed :(
+please check update one. -v7
 
-Acked-by: Jean Delvare <khali@linux-fr.org>
+Thanks
 
-> 
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
-> I can take this patch through my hwmon tree, but would like to get an Ack first.
-> Alternative would be to put it into include/linux/hwmon.h, but I would prefer
-> to avoid that.
+Yinghai
 
-I agree it should sit next to DIV_ROUND_CLOSEST in <linux/kernel.h>.
+--bcaec54ee638ec0b9a04c855abeb
+Content-Type: application/octet-stream; name="probe_resource_2.patch"
+Content-Disposition: attachment; filename="probe_resource_2.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h6f6wspw1
 
-> 
-> Also, if someone has an idea for a simpler implementation, I would really like
-> to know about it.
-
-I can't think of anything better.
-
-Note that your implementation only supports negative dividend not
-divisor. While it won't be a problem for hwmon drivers, and most
-probably not a problem for other drivers either, it might be worth
-putting in a comment so as to prevent false expectations from the
-reader.
-
-> 
->  include/linux/kernel.h |    9 +++++++++
->  1 file changed, 9 insertions(+)
-> 
-> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-> index 6043821..a89483c 100644
-> --- a/include/linux/kernel.h
-> +++ b/include/linux/kernel.h
-> @@ -89,6 +89,15 @@
->  }							\
->  )
->  
-> +#define IDIV_ROUND_CLOSEST(x, divisor)(			\
-> +{							\
-> +	typeof(x) __x = x;				\
-> +	typeof(divisor) __d1 = divisor;			\
-> +	typeof(divisor) __d2 = (__x) < 0 ? -(__d1) : (__d1);\
-> +	(((__x) + ((__d2) / 2)) / (__d1));		\
-> +}							\
-> +)
-> +
->  /*
->   * Multiplies an integer by a fraction, while avoiding unnecessary
->   * overflow or loss of precision.
-
-
--- 
-Jean Delvare
+U3ViamVjdDogW1BBVENIXSByZXNvdXJjZXM6IEFkZCBwcm9iZV9yZXNvdXJjZSgpCgpJdCBpcyBj
+aGFuZ2VkIGZyb20gYnVzbl9yZXMgb25seSB2ZXJzaW9uLCBiZWNhdXNlIEJqb3JuIGZvdW5kIHRo
+YXQgdmVyc2lvbgp3YXMgbm90IGhvbGRpbmcgcmVzb3VyY2VfbG9jay4KRXZlbiBpdCBtYXkgYmUg
+b2sgZm9yIGJ1c25fcmVzIG5vdCBob2xkaW5nIHJlc291cmNlX2xvY2suCkl0IHdvdWxkIGJlIGJl
+dHRlciB0byBoYXZlIGl0IHRvIGJlIGdlbmVyaWMgYW5kIHVzZSBsb2NrIGFuZCB3ZSBtYXkKdXNl
+IGl0IGZvciBvdGhlciByZXNvdXJjZXMuCgpwcm9iZV9yZXNvdXJjZSgpIHdpbGwgdHJ5IHRvIGZp
+bmQgc3BlY2lmaWVkIHNpemUgb3IgbW9yZSBpbiBwYXJlbnQgYnVzLgpJZiBjYW4gbm90IGZpbmQg
+Y3VycmVudCBwYXJlbnQgcmVzb3VyY2UsIGFuZCBpdCB3aWxsIHRyeSB0byBleHBhbmQgcGFyZW50
+cwp0b3AuCklmIHN0aWxsIGNhbiBub3QgZmluZCB0aGF0IHNwZWNpZmllZCBvbiB0b3AsIGl0IHdp
+bGwgdHJ5IHRvIHJlZHVjZSB0YXJnZXQgc2l6ZQp1bnRpbCBmaW5kIG9uZS4KCkl0IHdpbGwgcmV0
+dXJuIDAsIGlmIGl0IGZpbmQgYW55IHJlc291cmNlIHRoYXQgY291bGQgYmUgdXNlZC4KClJldHVy
+bmVkIHJlc291cmNlIGlzIHJlZ2lzdGVyZWQgaW4gdGhlIHRyZWUuClNvIGNhbGxlciBtYXkgbmVl
+ZCB0byB1c2UgcmVwbGFjZV9yZXNvdXJjZSB0byBwdXQgcmVhbCByZXNvdXJjZSBpbiB0cmVlLgoK
+LXYzOiByZW1vdmUgdHdvIHBhcmFtZXRlcnMgdGhhdCBpcyBmb3IgZGVidWcgcHVycG9zZS4KLXY0
+OiBmaXggc3RvcF9mbGFncyBjaGVja2luZy4KLXY1OiBhZGp1c3Qgc3RvcF9mbGFncyBjaGVja2lu
+ZyBwb3NpdGlvbiB0byBhdm9pZCBub3QgbmVlZGVkIGNhbGxpbmcKCWludG8gYWxsb2NhdGVfcmVz
+b3VyY2UoKS4KLXY2OiB1c2UgdXBkYXRlZCBfX2FsbG9jYXRlX3Jlc291cmNlLgotdjc6IExpbnVz
+IHNhaWQ6ICJyZXNvdXJjZV9leHRlbmRfcGFyZW50cygpIiB0aGluZyBpcyB0b28gZGFuZ2Vyb3Vz
+IGFzIGl0CiAgICAgICAgaXMuIEl0IGNhbiBjb3JydXB0IHRoZSByZXNvdXJjZSBsaXN0IGJ5IG1h
+a2luZyB0aGUgcmVzb3VyY2UgZW5kCiAgICAgICAgb3ZlcmxhcCB3aXRoIHRoZSBuZXh0IHJlc291
+cmNlIChmb3IgZXh0ZW5zaW9uKSBvciBub3QgY292ZXIgYWxsIHRoZQogICAgICAgIGNoaWxkIHJl
+c291cmNlcyAoZm9yIHNocmlua2luZykuCiAgICAgVHJ5IHRvIGZvbGQgaW4gcmVzb3VyY2VfZXh0
+ZW5kX3BhcmVudHNfdG9wLCBhbmQgaGF2ZSB1cGRhdGVkIG9uZQoJcmVzb3VyY2Vfc2hyaW5rX3Bh
+cmVudF90b3AoKSB3aXRoIGFkanVzdF9yZXNvdXJjZSB0aGF0IHdpbGwKCWNoZWNraW5nIHBhcmVu
+dCBhbmQgY2hpbGRyZW4gY292ZXJpbmcuCgpTaWduZWQtb2ZmLWJ5OiBZaW5naGFpIEx1IDx5aW5n
+aGFpQGtlcm5lbC5vcmc+CkNjOiBBbmRyZXcgTW9ydG9uIDxha3BtQGxpbnV4LWZvdW5kYXRpb24u
+b3JnPgoKLS0tCiBpbmNsdWRlL2xpbnV4L2lvcG9ydC5oIHwgICAgNiArCiBrZXJuZWwvcmVzb3Vy
+Y2UuYyAgICAgIHwgIDE4OCArKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysr
+KysrKysrKy0tCiAyIGZpbGVzIGNoYW5nZWQsIDE5MCBpbnNlcnRpb25zKCspLCA0IGRlbGV0aW9u
+cygtKQoKSW5kZXg6IGxpbnV4LTIuNi9pbmNsdWRlL2xpbnV4L2lvcG9ydC5oCj09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0K
+LS0tIGxpbnV4LTIuNi5vcmlnL2luY2x1ZGUvbGludXgvaW9wb3J0LmgKKysrIGxpbnV4LTIuNi9p
+bmNsdWRlL2xpbnV4L2lvcG9ydC5oCkBAIC0xNTYsNiArMTU2LDEyIEBAIGV4dGVybiBpbnQgYWxs
+b2NhdGVfcmVzb3VyY2Uoc3RydWN0IHJlc28KIAkJCQkJCSAgICAgICByZXNvdXJjZV9zaXplX3Qs
+CiAJCQkJCQkgICAgICAgcmVzb3VyY2Vfc2l6ZV90KSwKIAkJCSAgICAgdm9pZCAqYWxpZ25mX2Rh
+dGEpOworaW50IHJlc291cmNlX3Nocmlua19wYXJlbnRzX3RvcChzdHJ1Y3QgcmVzb3VyY2UgKmJf
+cmVzLAorCQkJCSBsb25nIHNpemUsIHN0cnVjdCByZXNvdXJjZSAqcGFyZW50X3Jlcyk7CitpbnQg
+cHJvYmVfcmVzb3VyY2Uoc3RydWN0IHJlc291cmNlICpiX3JlcywKKwkJCXN0cnVjdCByZXNvdXJj
+ZSAqYnVzbl9yZXMsCisJCQlyZXNvdXJjZV9zaXplX3QgbmVlZGVkX3NpemUsIHN0cnVjdCByZXNv
+dXJjZSAqKnAsCisJCQlpbnQgc2tpcF9uciwgaW50IGxpbWl0LCBpbnQgZmxhZ3MpOwogc3RydWN0
+IHJlc291cmNlICpsb29rdXBfcmVzb3VyY2Uoc3RydWN0IHJlc291cmNlICpyb290LCByZXNvdXJj
+ZV9zaXplX3Qgc3RhcnQpOwogaW50IGFkanVzdF9yZXNvdXJjZShzdHJ1Y3QgcmVzb3VyY2UgKnJl
+cywgcmVzb3VyY2Vfc2l6ZV90IHN0YXJ0LAogCQkgICAgcmVzb3VyY2Vfc2l6ZV90IHNpemUpOwpJ
+bmRleDogbGludXgtMi42L2tlcm5lbC9yZXNvdXJjZS5jCj09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIu
+Ni5vcmlnL2tlcm5lbC9yZXNvdXJjZS5jCisrKyBsaW51eC0yLjYva2VybmVsL3Jlc291cmNlLmMK
+QEAgLTc0MSwxNCArNzQxLDEzIEBAIHZvaWQgaW5zZXJ0X3Jlc291cmNlX2V4cGFuZF90b19maXQo
+c3RydWMKICAqIGFyZ3VtZW50cy4gIFJldHVybnMgMCBvbiBzdWNjZXNzLCAtRUJVU1kgaWYgaXQg
+Y2FuJ3QgZml0LgogICogRXhpc3RpbmcgY2hpbGRyZW4gb2YgdGhlIHJlc291cmNlIGFyZSBhc3N1
+bWVkIHRvIGJlIGltbXV0YWJsZS4KICAqLwotaW50IGFkanVzdF9yZXNvdXJjZShzdHJ1Y3QgcmVz
+b3VyY2UgKnJlcywgcmVzb3VyY2Vfc2l6ZV90IHN0YXJ0LCByZXNvdXJjZV9zaXplX3Qgc2l6ZSkK
+K3N0YXRpYyBpbnQgX19hZGp1c3RfcmVzb3VyY2Uoc3RydWN0IHJlc291cmNlICpyZXMsIHJlc291
+cmNlX3NpemVfdCBzdGFydCwKKwkJCSAgICAgcmVzb3VyY2Vfc2l6ZV90IHNpemUpCiB7CiAJc3Ry
+dWN0IHJlc291cmNlICp0bXAsICpwYXJlbnQgPSByZXMtPnBhcmVudDsKIAlyZXNvdXJjZV9zaXpl
+X3QgZW5kID0gc3RhcnQgKyBzaXplIC0gMTsKIAlpbnQgcmVzdWx0ID0gLUVCVVNZOwogCi0Jd3Jp
+dGVfbG9jaygmcmVzb3VyY2VfbG9jayk7Ci0KIAlpZiAoIXBhcmVudCkKIAkJZ290byBza2lwOwog
+CkBAIC03NzYsOSArNzc1LDE5IEBAIHNraXA6CiAJcmVzdWx0ID0gMDsKIAogIG91dDoKLQl3cml0
+ZV91bmxvY2soJnJlc291cmNlX2xvY2spOwogCXJldHVybiByZXN1bHQ7CiB9CitpbnQgYWRqdXN0
+X3Jlc291cmNlKHN0cnVjdCByZXNvdXJjZSAqcmVzLCByZXNvdXJjZV9zaXplX3Qgc3RhcnQsCisJ
+CSAgICByZXNvdXJjZV9zaXplX3Qgc2l6ZSkKK3sKKwlpbnQgcmV0OworCisJd3JpdGVfbG9jaygm
+cmVzb3VyY2VfbG9jayk7CisJcmV0ID0gX19hZGp1c3RfcmVzb3VyY2UocmVzLCBzdGFydCwgc2l6
+ZSk7CisJd3JpdGVfdW5sb2NrKCZyZXNvdXJjZV9sb2NrKTsKKworCXJldHVybiByZXQ7Cit9CiBF
+WFBPUlRfU1lNQk9MKGFkanVzdF9yZXNvdXJjZSk7CiAKIHN0YXRpYyB2b2lkIF9faW5pdCBfX3Jl
+c2VydmVfcmVnaW9uX3dpdGhfc3BsaXQoc3RydWN0IHJlc291cmNlICpyb290LApAQCAtMTAxMSw2
+ICsxMDIwLDE3NyBAQCB2b2lkIF9fcmVsZWFzZV9yZWdpb24oc3RydWN0IHJlc291cmNlICpwCiB9
+CiBFWFBPUlRfU1lNQk9MKF9fcmVsZWFzZV9yZWdpb24pOwogCitzdGF0aWMgaW50IF9fcmVzb3Vy
+Y2Vfc2hyaW5rX3BhcmVudHNfdG9wKHN0cnVjdCByZXNvdXJjZSAqYl9yZXMsCisJCSBsb25nIHNp
+emUsIHN0cnVjdCByZXNvdXJjZSAqcGFyZW50X3JlcykKK3sKKwlzdHJ1Y3QgcmVzb3VyY2UgKnJl
+cyA9IGJfcmVzOworCisJaWYgKHNpemUgPD0gMCkKKwkJcmV0dXJuIDA7CisKKwl3aGlsZSAocmVz
+ICYmIHJlcyAhPSBwYXJlbnRfcmVzKSB7CisJCWlmIChfX2FkanVzdF9yZXNvdXJjZShyZXMsIHJl
+cy0+c3RhcnQsCisJCQkgcmVzb3VyY2Vfc2l6ZShyZXMpIC0gc2l6ZSkpIHsKKwkJCXN0cnVjdCBy
+ZXNvdXJjZSAqdG1wID0gYl9yZXM7CisKKwkJCXdoaWxlICh0bXAgIT0gcmVzKSB7CisJCQkJX19h
+ZGp1c3RfcmVzb3VyY2UodG1wLCB0bXAtPnN0YXJ0LAorCQkJCQlyZXNvdXJjZV9zaXplKHRtcCkg
+KyBzaXplKTsKKwkJCQl0bXAgPSB0bXAtPnBhcmVudDsKKwkJCX0KKworCQkJcmV0dXJuIC1FQlVT
+WTsKKworCQl9CisJCXJlcyA9IHJlcy0+cGFyZW50OworCX0KKworCXJldHVybiAwOworfQorCitp
+bnQgcmVzb3VyY2Vfc2hyaW5rX3BhcmVudHNfdG9wKHN0cnVjdCByZXNvdXJjZSAqYl9yZXMsCisJ
+CSBsb25nIHNpemUsIHN0cnVjdCByZXNvdXJjZSAqcGFyZW50X3JlcykKK3sKKwlpbnQgcmV0Owor
+CisJd3JpdGVfbG9jaygmcmVzb3VyY2VfbG9jayk7CisJcmV0ID0gX19yZXNvdXJjZV9zaHJpbmtf
+cGFyZW50c190b3AoYl9yZXMsIHNpemUsIHBhcmVudF9yZXMpOworCXdyaXRlX3VubG9jaygmcmVz
+b3VyY2VfbG9jayk7CisKKwlyZXR1cm4gcmV0OworfQorCitzdGF0aWMgcmVzb3VyY2Vfc2l6ZV90
+IF9fZmluZF9yZXNfdG9wX2ZyZWVfc2l6ZShzdHJ1Y3QgcmVzb3VyY2UgKnJlcywKKwkJCQkJCSBp
+bnQgc2tpcF9ucikKK3sKKwlyZXNvdXJjZV9zaXplX3Qgbl9zaXplOworCXN0cnVjdCByZXNvdXJj
+ZSB0bXBfcmVzOworCisJLyoKKwkgKiAgIGZpbmQgb3V0IGZyZWUgbnVtYmVyIGJlbG93IHJlcy0+
+ZW5kIHRoYXQgd2UgY2FuIHVzZS4KKwkgKglyZXMtPnN0YXJ0IHRvIHJlcy0+c3RhcnQgKyBza2lw
+X25yIC0gMSBjYW4gbm90IGJlIHVzZWQuCisJICovCisJbl9zaXplID0gcmVzb3VyY2Vfc2l6ZShy
+ZXMpOworCWlmIChuX3NpemUgPD0gc2tpcF9ucikKKwkJcmV0dXJuIDA7CisKKwluX3NpemUgLT0g
+c2tpcF9ucjsKKwltZW1zZXQoJnRtcF9yZXMsIDAsIHNpemVvZihzdHJ1Y3QgcmVzb3VyY2UpKTsK
+Kwl3aGlsZSAobl9zaXplID4gMCkgeworCQlpbnQgcmV0OworCisJCXJldCA9IF9fYWxsb2NhdGVf
+cmVzb3VyY2UocmVzLCAmdG1wX3Jlcywgbl9zaXplLAorCQkJcmVzLT5lbmQgLSBuX3NpemUgKyBz
+a2lwX25yLCByZXMtPmVuZCwKKwkJCTEsIE5VTEwsIE5VTEwpOworCQlpZiAocmV0ID09IDApIHsK
+KwkJCV9fcmVsZWFzZV9yZXNvdXJjZSgmdG1wX3Jlcyk7CisJCQlicmVhazsKKwkJfQorCQluX3Np
+emUtLTsKKwl9CisKKwlyZXR1cm4gbl9zaXplOworfQorCisvKioKKyAqIHByb2JlX3Jlc291cmNl
+IC0gUHJvYmUgcmVzb3VyY2UgaW4gcGFyZW50IHJlc291cmNlLgorICogQGJfcmVzOiBwYXJlbnQg
+cmVzb3VyY2UgZGVzY3JpcHRvcgorICogQGJ1c25fcmVzOiByZXR1cm4gcHJvYmVkIHJlc291cmNl
+CisgKiBAbmVlZGVkX3NpemU6IHRhcmdldCBzaXplCisgKiBAcDogcG9pbnRlciB0byBmYXJlc3Qg
+cGFyZW50IHRoYXQgd2UgZXh0ZW5kIHRoZSB0b3AKKyAqIEBza2lwX25yOiBudW1iZXIgaW4gYl9y
+ZXMgc3RhcnQgdGhhdCB3ZSBuZWVkIHRvIHNraXAuCisgKiBAbGltaXQ6IGxvY2FsIGJvdW5kYXJ5
+CisgKiBAc3RvcF9mbGFnczogZmxhZ3MgZm9yIHN0b3BwaW5nIGV4dGVuZCBwYXJlbnQgcmVzCisg
+KgorICogd2lsbCB0cnkgdG8gYWxsb2NhdGUgcmVzb3VyY2UgaW4gYl9yZXMsIGlmIGNhbiBub3Qg
+ZmluZCB0aGUgcmFuZ2UKKyAqICB3aWxsIHRyeSB0byBleHRlbmQgcGFyZW50IHJlc291cmNlcycg
+dG9wLgorICogaWYgc3RpbGwgY2FuIG5vdCBtYWtlIGl0LCB3aWxsIHJlZHVjZSBuZWVkZWRfc2l6
+ZS4KKyAqLworaW50IHByb2JlX3Jlc291cmNlKHN0cnVjdCByZXNvdXJjZSAqYl9yZXMsCisJCQkg
+c3RydWN0IHJlc291cmNlICpidXNuX3JlcywKKwkJCSByZXNvdXJjZV9zaXplX3QgbmVlZGVkX3Np
+emUsIHN0cnVjdCByZXNvdXJjZSAqKnAsCisJCQkgaW50IHNraXBfbnIsIGludCBsaW1pdCwgaW50
+IHN0b3BfZmxhZ3MpCit7CisJaW50IHJldCA9IC1FTk9NRU07CisJcmVzb3VyY2Vfc2l6ZV90IG5f
+c2l6ZTsKKwlzdHJ1Y3QgcmVzb3VyY2UgKnBhcmVudF9yZXMgPSBOVUxMOworCXJlc291cmNlX3Np
+emVfdCB0bXAgPSBiX3Jlcy0+ZW5kICsgMTsKKworYWdhaW46CisJLyoKKwkgKiBXZSBmaXJzdCB0
+cnkgdG8gYWxsb2NhdGUgYmlnZ2VzdCByYW5nZSBpbiBiX3JlcyB0aGF0CisJICogIHdlIGNhbiB1
+c2UgaW4gYl9yZXMgZGlyZWN0bHkuCisJICogIHdlIGFsc28gbmVlZCB0byBza2lwIHNraXBfbnIg
+ZnJvbSBzdGFydCBvZiBiX3Jlcy4KKwkgKi8KKwluX3NpemUgPSByZXNvdXJjZV9zaXplKGJfcmVz
+KTsKKwlpZiAobl9zaXplID4gc2tpcF9ucikKKwkJbl9zaXplIC09IHNraXBfbnI7CisJZWxzZQor
+CQluX3NpemUgPSAwOworCW1lbXNldChidXNuX3JlcywgMCwgc2l6ZW9mKHN0cnVjdCByZXNvdXJj
+ZSkpOworCXdoaWxlIChuX3NpemUgPj0gbmVlZGVkX3NpemUpIHsKKwkJcmV0ID0gYWxsb2NhdGVf
+cmVzb3VyY2UoYl9yZXMsIGJ1c25fcmVzLCBuX3NpemUsCisJCQkJYl9yZXMtPnN0YXJ0ICsgc2tp
+cF9uciwgYl9yZXMtPmVuZCwKKwkJCQkxLCBOVUxMLCBOVUxMKTsKKwkJaWYgKCFyZXQpCisJCQly
+ZXR1cm4gcmV0OworCQluX3NpemUtLTsKKwl9CisKKwkvKiBUcnkgdG8gZXh0ZW5kIHRoZSB0b3Ag
+b2YgcGFyZW50IHJlc291cmNlcyB0byBtZWV0IG5lZWRlZF9zaXplICovCisJd3JpdGVfbG9jaygm
+cmVzb3VyY2VfbG9jayk7CisKKwkvKiBiX3JlcyBjb3VsZCBiZSByb290IGJ1cyByZXNvdXJjZSBh
+bmQgY2FuIG5vdCBiZSBleHRlbmRlZCAqLworCWlmIChiX3Jlcy0+ZmxhZ3MgJiBzdG9wX2ZsYWdz
+KQorCQlnb3RvIHJlZHVjZV9uZWVkZWRfc2l6ZTsKKworCS8qIGZpbmQgb3V0IGZyZWUgcmFuZ2Ug
+dW5kZXIgdG9wIGF0IGZpcnN0ICovCisJbl9zaXplID0gX19maW5kX3Jlc190b3BfZnJlZV9zaXpl
+KGJfcmVzLCBza2lwX25yKTsKKwkvKiBjYW4gbm90IGV4dGVuZCBjcm9zcyBsb2NhbCBib3VuZGFy
+eSAqLworCWlmICgobGltaXQgLSBiX3Jlcy0+ZW5kKSA8IChuZWVkZWRfc2l6ZSAtIG5fc2l6ZSkp
+CisJCWdvdG8gcmVkdWNlX25lZWRlZF9zaXplOworCisJLyogUHJvYmUgZXh0ZW5kZWQgcmFuZ2Ug
+YWJvdmUgdG9wICovCisJbWVtc2V0KGJ1c25fcmVzLCAwLCBzaXplb2Yoc3RydWN0IHJlc291cmNl
+KSk7CisJcGFyZW50X3JlcyA9IGJfcmVzLT5wYXJlbnQ7CisJd2hpbGUgKHBhcmVudF9yZXMgJiYg
+IShwYXJlbnRfcmVzLT5mbGFncyAmIHN0b3BfZmxhZ3MpKSB7CisJCXJldCA9IF9fYWxsb2NhdGVf
+cmVzb3VyY2UocGFyZW50X3JlcywgYnVzbl9yZXMsCisJCQkgbmVlZGVkX3NpemUgLSBuX3NpemUs
+CisJCQkgdG1wLCB0bXAgKyBuZWVkZWRfc2l6ZSAtIG5fc2l6ZSAtIDEsCisJCQkgMSwgTlVMTCwg
+TlVMTCk7CisJCWlmICghcmV0KSB7CisJCQlzdHJ1Y3QgcmVzb3VyY2UgKnJlcyA9IGJfcmVzOwor
+CisJCQkvKiBzYXZlIHBhcmVudF9yZXMsIHdlIG5lZWQgaXQgYXMgc3RvcHBlciBsYXRlciAqLwor
+CQkJKnAgPSBwYXJlbnRfcmVzOworCisJCQkvKiBwcmVwYXJlIGJ1c25fcmVzIGZvciByZXR1cm4g
+Ki8KKwkJCV9fcmVsZWFzZV9yZXNvdXJjZShidXNuX3Jlcyk7CisJCQlidXNuX3Jlcy0+c3RhcnQg
+LT0gbl9zaXplOworCisJCQkvKiBleHRlbmQgcGFyZW50IHJlc291cmNlcyB0b3AgKi8KKwkJCXdo
+aWxlIChyZXMgJiYgcmVzICE9IHBhcmVudF9yZXMpIHsKKwkJCQlyZXMtPmVuZCArPSBuZWVkZWRf
+c2l6ZSAtIG5fc2l6ZTsKKwkJCQlyZXMgPSByZXMtPnBhcmVudDsKKwkJCX0KKwkJCV9fcmVxdWVz
+dF9yZXNvdXJjZShiX3JlcywgYnVzbl9yZXMpOworCisJCQl3cml0ZV91bmxvY2soJnJlc291cmNl
+X2xvY2spOworCQkJcmV0dXJuIHJldDsKKwkJfQorCQlwYXJlbnRfcmVzID0gcGFyZW50X3Jlcy0+
+cGFyZW50OworCX0KKworcmVkdWNlX25lZWRlZF9zaXplOgorCXdyaXRlX3VubG9jaygmcmVzb3Vy
+Y2VfbG9jayk7CisJLyogcmV0IG11c3Qgbm90IGJlIDAgaGVyZSAqLworCW5lZWRlZF9zaXplLS07
+CisJaWYgKG5lZWRlZF9zaXplKQorCQlnb3RvIGFnYWluOworCisJcmV0dXJuIHJldDsKK30KKwog
+LyoKICAqIE1hbmFnZWQgcmVnaW9uIHJlc291cmNlCiAgKi8K
+--bcaec54ee638ec0b9a04c855abeb--
