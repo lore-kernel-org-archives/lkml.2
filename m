@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445Ab2H1Poy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 11:44:54 -0400
+	id S1753499Ab2H1PpA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 11:45:00 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:56281 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753093Ab2H1Pou (ORCPT
+	with ESMTP id S1753093Ab2H1Po6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 11:44:50 -0400
+	Tue, 28 Aug 2012 11:44:58 -0400
 From: Jiang Liu <liuj97@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Cc: Jiang Liu <jiang.liu@huawei.com>, Don Dutile <ddutile@redhat.com>,
         Yinghai Lu <yinghai@kernel.org>,
         Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
         Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
         linux-pci@vger.kernel.org
-Subject: [PATCH 4/5] PCI/IOV: simplify code by hotplug safe pci_get_domain_bus_and_slot()
-Date: Tue, 28 Aug 2012 23:43:57 +0800
-Message-Id: <1346168638-32724-5-git-send-email-jiang.liu@huawei.com>
+Subject: [PATCH 5/5] PCI/xen-pcifront: simplify code by hotplug safe pci_get_domain_bus_and_slot()
+Date: Tue, 28 Aug 2012 23:43:58 +0800
+Message-Id: <1346168638-32724-6-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1346168638-32724-1-git-send-email-jiang.liu@huawei.com>
 References: <1346168638-32724-1-git-send-email-jiang.liu@huawei.com>
@@ -34,31 +35,37 @@ struct pci_dev *pci_dev = pci_get_slot(pci_bus, devfn);
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 ---
- drivers/pci/iov.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ drivers/pci/xen-pcifront.c |   10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
-index aeccc91..b0fe771 100644
---- a/drivers/pci/iov.c
-+++ b/drivers/pci/iov.c
-@@ -152,15 +152,11 @@ failed1:
- static void virtfn_remove(struct pci_dev *dev, int id, int reset)
- {
- 	char buf[VIRTFN_ID_LEN];
--	struct pci_bus *bus;
- 	struct pci_dev *virtfn;
- 	struct pci_sriov *iov = dev->sriov;
+diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
+index d6cc62c..def8d0b 100644
+--- a/drivers/pci/xen-pcifront.c
++++ b/drivers/pci/xen-pcifront.c
+@@ -982,7 +982,6 @@ static int pcifront_detach_devices(struct pcifront_device *pdev)
+ 	int err = 0;
+ 	int i, num_devs;
+ 	unsigned int domain, bus, slot, func;
+-	struct pci_bus *pci_bus;
+ 	struct pci_dev *pci_dev;
+ 	char str[64];
  
--	bus = pci_find_bus(pci_domain_nr(dev->bus), virtfn_bus(dev, id));
--	if (!bus)
--		return;
--
--	virtfn = pci_get_slot(bus, virtfn_devfn(dev, id));
-+	virtfn = pci_get_domain_bus_and_slot(pci_domain_nr(dev->bus),
-+			virtfn_bus(dev, id), virtfn_devfn(dev, id));
- 	if (!virtfn)
- 		return;
+@@ -1032,13 +1031,8 @@ static int pcifront_detach_devices(struct pcifront_device *pdev)
+ 			goto out;
+ 		}
  
+-		pci_bus = pci_find_bus(domain, bus);
+-		if (!pci_bus) {
+-			dev_dbg(&pdev->xdev->dev, "Cannot get bus %04x:%02x\n",
+-				domain, bus);
+-			continue;
+-		}
+-		pci_dev = pci_get_slot(pci_bus, PCI_DEVFN(slot, func));
++		pci_dev = pci_get_domain_bus_and_slot(domain, bus,
++				PCI_DEVFN(slot, func));
+ 		if (!pci_dev) {
+ 			dev_dbg(&pdev->xdev->dev,
+ 				"Cannot get PCI device %04x:%02x:%02x.%d\n",
 -- 
 1.7.9.5
 
