@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751585Ab2H1Ii1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 04:38:27 -0400
-Received: from svenfoo.org ([82.94.215.22]:42906 "EHLO mail.zonque.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750989Ab2H1IiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 04:38:13 -0400
-From: Daniel Mack <zonque@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Daniel Mack <zonque@gmail.com>, Brian Foster <bfoster@redhat.com>,
-        Miklos Szeredi <mszeredi@suse.cz>
-Subject: [PATCH] fuse: mark variables uninitialized
-Date: Tue, 28 Aug 2012 10:38:03 +0200
-Message-Id: <1346143083-30710-1-git-send-email-zonque@gmail.com>
-X-Mailer: git-send-email 1.7.11.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1751676Ab2H1Ijy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 04:39:54 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:33272 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750725Ab2H1Ijw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Aug 2012 04:39:52 -0400
+X-IronPort-AV: E=Sophos;i="4.80,325,1344204000"; 
+   d="scan'208";a="171022468"
+From: Damien Cassou <damien.cassou@lifl.fr>
+To: David Brown <davidb@codeaurora.org>
+Cc: kernel-janitors@vger.kernel.org, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-arm-msm@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/video/msm/mddi_client_dummy.c: use devm_kzalloc function
+Date: Tue, 28 Aug 2012 10:39:57 +0200
+Message-Id: <1346143197-10038-1-git-send-email-damien.cassou@lifl.fr>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gcc 4.6.3 complains about uninitialized variables in fs/fuse/control.c:
+From: Damien Cassou <damien.cassou@lifl.fr>
 
-  CC      fs/fuse/control.o
-fs/fuse/control.c: In function ‘fuse_conn_congestion_threshold_write’:
-fs/fuse/control.c:165:29: warning: ‘val’ may be used uninitialized in this function [-Wuninitialized]
-fs/fuse/control.c: In function ‘fuse_conn_max_background_write’:
-fs/fuse/control.c:128:23: warning: ‘val’ may be used uninitialized in this function [-Wuninitialized]
+The various devm_ functions allocate memory that is released when a driver
+detaches. This patch replaces the use of kzalloc by devm_kzalloc.
 
-fuse_conn_limit_write() will always return non-zero unless the &val
-is modified, so the warning is misleading. Let the compiler know
-about it by marking 'val' with 'uninitialized_var'.
+Signed-off-by: Damien Cassou <damien.cassou@lifl.fr>
 
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Cc: Brian Foster <bfoster@redhat.com>
-Cc: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/fuse/control.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/video/msm/mddi_client_dummy.c |   13 ++-----------
+ 1 file changed, 2 insertions(+), 11 deletions(-)
 
-diff --git a/fs/fuse/control.c b/fs/fuse/control.c
-index 03ff5b1..75a20c0 100644
---- a/fs/fuse/control.c
-+++ b/fs/fuse/control.c
-@@ -117,7 +117,7 @@ static ssize_t fuse_conn_max_background_write(struct file *file,
- 					      const char __user *buf,
- 					      size_t count, loff_t *ppos)
+diff --git a/drivers/video/msm/mddi_client_dummy.c b/drivers/video/msm/mddi_client_dummy.c
+index d2a091c..5faa37f 100644
+--- a/drivers/video/msm/mddi_client_dummy.c
++++ b/drivers/video/msm/mddi_client_dummy.c
+@@ -51,8 +51,7 @@ static int mddi_dummy_probe(struct platform_device *pdev)
  {
--	unsigned val;
-+	unsigned uninitialized_var(val);
- 	ssize_t ret;
- 
- 	ret = fuse_conn_limit_write(file, buf, count, ppos, &val,
-@@ -154,7 +154,7 @@ static ssize_t fuse_conn_congestion_threshold_write(struct file *file,
- 						    const char __user *buf,
- 						    size_t count, loff_t *ppos)
+ 	struct msm_mddi_client_data *client_data = pdev->dev.platform_data;
+ 	struct panel_info *panel =
+-		kzalloc(sizeof(struct panel_info), GFP_KERNEL);
+-	int ret;
++		devm_kzalloc(&pdev->dev, sizeof(struct panel_info), GFP_KERNEL);
+ 	if (!panel)
+ 		return -ENOMEM;
+ 	platform_set_drvdata(pdev, panel);
+@@ -67,18 +66,11 @@ static int mddi_dummy_probe(struct platform_device *pdev)
+ 				      client_data->fb_resource, 1);
+ 	panel->panel_data.fb_data = client_data->private_client_data;
+ 	panel->pdev.dev.platform_data = &panel->panel_data;
+-	ret = platform_device_register(&panel->pdev);
+-	if (ret) {
+-		kfree(panel);
+-		return ret;
+-	}
+-	return 0;
++	return platform_device_register(&panel->pdev);
+ }
+
+ static int mddi_dummy_remove(struct platform_device *pdev)
  {
--	unsigned val;
-+	unsigned uninitialized_var(val);
- 	ssize_t ret;
- 
- 	ret = fuse_conn_limit_write(file, buf, count, ppos, &val,
--- 
-1.7.11.4
+-	struct panel_info *panel = platform_get_drvdata(pdev);
+-	kfree(panel);
+ 	return 0;
+ }
 
