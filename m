@@ -1,55 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752964Ab2H1PCw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 11:02:52 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:47422 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752786Ab2H1PC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 11:02:28 -0400
-Date: Tue, 28 Aug 2012 11:02:15 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Landley <rob@landley.net>, Al Viro <viro@zeniv.linux.org.uk>,
-        Ludwig Nussel <ludwig.nussel@suse.de>,
-        Alessandro Rubini <rubini@gnudd.com>, linux-doc@vger.kernel.org
-Subject: Re: Hardening debugfs (Was Re: [PATCH] debugfs: more tightly
- restrict default mount mode)
-Message-ID: <20120828150215.GB23035@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Ben Hutchings <ben@decadent.org.uk>,
-	Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Rob Landley <rob@landley.net>, Al Viro <viro@zeniv.linux.org.uk>,
-	Ludwig Nussel <ludwig.nussel@suse.de>,
-	Alessandro Rubini <rubini@gnudd.com>, linux-doc@vger.kernel.org
-References: <20120827203215.GA16637@www.outflux.net>
- <20120828144110.GA23035@thunk.org>
- <1346165758.15747.7.camel@deadeye.wl.decadent.org.uk>
+	id S1752948Ab2H1PRx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 11:17:53 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:19584 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751816Ab2H1PRw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Aug 2012 11:17:52 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Tue, 28 Aug 2012 08:17:48 -0700
+Message-ID: <503CDC26.2030701@nvidia.com>
+Date: Tue, 28 Aug 2012 20:26:38 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346165758.15747.7.camel@deadeye.wl.decadent.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "lrg@ti.com" <lrg@ti.com>,
+        "swarren@wwwdotorg.com" <swarren@wwwdotorg.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] regulator: tps6586x: register regulator even if no init
+ data
+References: <1346149767-31602-1-git-send-email-ldewangan@nvidia.com> <503CD31E.6050207@wwwdotorg.org>
+In-Reply-To: <503CD31E.6050207@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 28, 2012 at 07:55:58AM -0700, Ben Hutchings wrote:
-> 
-> The problems are apparently larger than specific modules:
-> http://lists.linux-foundation.org/pipermail/ksummit-2012-discuss/2012-July/000894.html
-> 
+On Tuesday 28 August 2012 07:48 PM, Stephen Warren wrote:
+>
+>>
+>> -		if ((devs[j].id == TPS6586X_ID_LDO_5) ||
+>> -			(devs[j].id == TPS6586X_ID_LDO_RTC))
+>> -			reg_idata->supply_regulator = sys_rail_name;
+>> +		if (tps6586x_matches[i].init_data) {
+> The variable that's being used inside this block is reg_idata.
+> Admittedly the value of that variable is tps6586x_matches[i].init_data,
+> but I think it'd be much cleaner if the if statement checked reg_idata
+> directly; that way, someone reading the code wouldn't have to look above
+> to find out that reg_idata and tps6586x_matches[i].init_data are related.
+>
 
-Sure, but most of those problems require root access, or physical
-access to the hardware.  And a number of the "can oops the kernel"
-assume module disappears out from under the open file descriptor, so
-(a) that's a problem that can be fixed, and (b) if we can suppress a
-random device driver from having its debugfs directory appear by
-default, it certainly helps things.
+OK, will take care in my next patch.
 
-					- Ted
+
+>> +			if (devs[j].id == TPS6586X_ID_SYS)
+>> +				sys_rail_name = reg_idata->constraints.name;
+> In the MAX8907 patch this attempts to duplicate; if there is no init
+> data where the user gives an explicit name, the name from the descriptor
+> is used:
+>
+> if (idata&&  idata->constraints.name)
+>      mbatt_rail_name = idata->constraints.name;
+> else
+>      mbatt_rail_name = pmic->desc[i].name;
+>
+> Shouldn't that same algorithm be used here?
+
+the desc is not available here in mfd file and so not possible. Each 
+regulator register as different platform driver and hence does not have 
+the other instance platform data.
+However, this will be get fixed once my next patch for moving the dt 
+parsing from mfd core to regulator is there. At that time I will take 
+care of this.
+
+>>
+>> +	if (!pdev->dev.platform_data)
+>> +		return 0;
+>> +
+>>   	return tps6586x_regulator_set_slew_rate(pdev);
+>>   }
+> Sorry, I don't immediately see why that's related?
+The function tps6586x_regulator_set_slew_rate() use the platform data 
+which is not available if init_data is not provided by platform.
+
