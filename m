@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751801Ab2H1KYB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 06:24:01 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:42456 "EHLO arroyo.ext.ti.com"
+	id S1752376Ab2H1KZV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 06:25:21 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:42510 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750744Ab2H1KX6 convert rfc822-to-8bit (ORCPT
+	id S1750744Ab2H1KZT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 06:23:58 -0400
+	Tue, 28 Aug 2012 06:25:19 -0400
 From: "Patil, Rachna" <rachna@ti.com>
 To: Matthias Kaehlcke <matthias.list@kaehlcke.net>
 CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
@@ -15,14 +15,16 @@ CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Dmitry Torokhov <dtor@mail.ru>, Jonathan Cameron <jic23@cam.ac.uk>,
         Samuel Ortiz <sameo@linux.intel.com>
-Subject: RE: [PATCH 4/5] IIO : ADC: tiadc: Add support of TI's ADC driver
-Thread-Topic: [PATCH 4/5] IIO : ADC: tiadc: Add support of TI's ADC driver
-Thread-Index: AQHNgR9aRE26ERzA4EG+wpwhAolAU5dnZUiAgAemdOA=
-Date: Tue, 28 Aug 2012 10:23:34 +0000
-Message-ID: <4CE347531D4CA947960AF71FF095B9323E94FA21@DBDE01.ent.ti.com>
-References: <1345719021-22835-1-git-send-email-rachna@ti.com>
- <20120823190239.GF27787@darwin>
-In-Reply-To: <20120823190239.GF27787@darwin>
+Subject: RE: [PATCH 2/5] MFD: ti_tscadc: Add support for TI's TSC/ADC
+ MFDevice
+Thread-Topic: [PATCH 2/5] MFD: ti_tscadc: Add support for TI's TSC/ADC
+ MFDevice
+Thread-Index: AQHNgR9K8DmVvSZm4k+XL7TPEqDyqZdnYVWAgAeqykA=
+Date: Tue, 28 Aug 2012 10:25:04 +0000
+Message-ID: <4CE347531D4CA947960AF71FF095B9323E94FA2D@DBDE01.ent.ti.com>
+References: <1345718997-18304-1-git-send-email-rachna@ti.com>
+ <20120823184830.GE27787@darwin>
+In-Reply-To: <20120823184830.GE27787@darwin>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -37,100 +39,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On Fri, Aug 24, 2012 at 00:32:39, Matthias Kaehlcke wrote:
+On Fri, Aug 24, 2012 at 00:18:31, Matthias Kaehlcke wrote:
 > Hi,
 > 
-> El Thu, Aug 23, 2012 at 04:20:21PM +0530 Patil, Rachna ha dit:
+> El Thu, Aug 23, 2012 at 04:19:57PM +0530 Patil, Rachna ha dit:
 > 
-> > This patch adds support for TI's ADC driver.
-> > This is a multifunctional device.
-> > Analog input lines are provided on which voltage measurements can be 
-> > carried out.
-> > You can have upto 8 input lines.
+> > Add the mfd core driver which supports touchscreen and ADC.
+> > With this patch we are only adding infrastructure to support the MFD 
+> > clients.
 > > 
 > > Signed-off-by: Patil, Rachna <rachna@ti.com>
 > > ---
-> >
-> > diff --git a/drivers/iio/adc/ti_adc.c b/drivers/iio/adc/ti_adc.c ...
-> > +static int __devinit tiadc_probe(struct platform_device *pdev) {
-> > +	struct iio_dev		*idev;
-> > +	int			err;
-> > +	struct adc_device	*adc_dev = NULL;
-> > +	struct ti_tscadc_dev	*tscadc_dev = pdev->dev.platform_data;
-> > +	struct mfd_tscadc_board	*board_data;
+> > diff --git a/drivers/mfd/ti_tscadc.c b/drivers/mfd/ti_tscadc.c ...
+> > +static	int __devinit ti_tscadc_probe(struct platform_device *pdev)
+> > +{
+> > +	struct ti_tscadc_dev		*tscadc;
+> > +	int				err, ctrl;
+> > +	int				clk_value, clock_rate;
+> > +	struct resource			*res;
+> > +	struct clk			*clk;
 > > +
-> > +	board_data = (struct mfd_tscadc_board *)tscadc_dev->dev->platform_data;
-> > +	if (!board_data) {
-> > +		dev_err(tscadc_dev->dev, "Could not find platform data\n");
+> > +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> > +	if (!res) {
+> > +		dev_err(&pdev->dev, "no memory resource defined.\n");
 > > +		return -EINVAL;
 > > +	}
 > > +
-> > +	idev = iio_device_alloc(sizeof(struct adc_device));
-> > +	if (idev == NULL) {
-> > +		dev_err(&pdev->dev, "failed to allocate iio device.\n");
-> > +		err = -ENOMEM;
-> > +		goto err_ret;
+> > +	/* Allocate memory for device */
+> > +	tscadc = kzalloc(sizeof(struct ti_tscadc_dev), GFP_KERNEL);
+> > +	if (!tscadc) {
+> > +		dev_err(&pdev->dev, "failed to allocate memory.\n");
+> > +		return -ENOMEM;
 > > +	}
-> > +	adc_dev = iio_priv(idev);
 > > +
-> > +	tscadc_dev->adc = adc_dev;
-> > +	adc_dev->mfd_tscadc = tscadc_dev;
-> > +	adc_dev->idev = idev;
-> > +	adc_dev->adc_channels = board_data->adc_init->adc_channels;
+> > +	res = request_mem_region(res->start, resource_size(res), pdev->name);
+> > +	if (!res) {
+> > +		dev_err(&pdev->dev, "failed to reserve registers.\n");
+> > +		err = -EBUSY;
+> > +		goto err_free_mem;
+> > +	}
 > > +
-> > +	idev->dev.parent = &pdev->dev;
-> > +	idev->name = dev_name(&pdev->dev);
-> > +	idev->modes = INDIO_DIRECT_MODE;
-> > +	idev->info = &tiadc_info;
+> > +	tscadc->tscadc_base = ioremap(res->start, resource_size(res));
+> > +	if (!tscadc->tscadc_base) {
+> > +		dev_err(&pdev->dev, "failed to map registers.\n");
+> > +		err = -ENOMEM;
+> > +		goto err_release_mem;
+> > +	}
 > > +
-> > +	adc_step_config(adc_dev);
-> > +
-> > +	err = tiadc_channel_init(idev, adc_dev);
-> > +	if (err < 0)
-> > +		goto err_fail;
-> > +
-> > +	err = iio_device_register(idev);
-> > +	if (err)
-> > +		goto err_free_channels;
-> > +
-> > +	dev_info(&pdev->dev, "attached adc driver\n");
-> > +	platform_set_drvdata(pdev, idev);
-> > +
-> > +	return 0;
-> > +
-> > +err_free_channels:
-> > +	tiadc_channel_remove(idev);
+> > +	tscadc->irq = platform_get_irq(pdev, 0);
+> > +	if (tscadc->irq < 0) {
+> > +		dev_err(&pdev->dev, "no irq ID is specified.\n");
+> > +		return -ENODEV;
+> 
+> goto err_iounmap_mem;
+
+Yes. Will add this.
+
+> 
+> > ...
 > > +err_fail:
-> > +	iio_device_unregister(idev);
-> > +	iio_device_free(idev);
-> > +err_ret:
+> > +	pm_runtime_put_sync(&pdev->dev);
+> > +	pm_runtime_disable(&pdev->dev);
+> > +	iounmap(tscadc->tscadc_base);
+> > +err_release_mem:
+> > +	release_mem_region(res->start, resource_size(res));
+> > +	mfd_remove_devices(tscadc->dev);
+> > +err_free_mem:
 > > +	platform_set_drvdata(pdev, NULL);
 > 
-> not necessary, the platform device doesn't exist anymore
+> shouldn't be necessary as the platform device doesn't exist any longer
 
-Ok. I will correct this.
+Ok. Will remove this.
 
 > 
-> > +	iio_device_free(idev);
-> 
-> already done some lines above and could be executed without having allocated the iio device (when iio_device_alloc() fails)
-> 
-> > +static int __devexit tiadc_remove(struct platform_device *pdev) {
-> > +	struct ti_tscadc_dev   *tscadc_dev = pdev->dev.platform_data;
-> > +	struct adc_device	*adc_dev = tscadc_dev->adc;
-> > +	struct iio_dev		*idev = adc_dev->idev;
+> > ...
+> > +static int __devexit ti_tscadc_remove(struct platform_device *pdev) {
+> > +	struct ti_tscadc_dev	*tscadc = platform_get_drvdata(pdev);
+> > +	struct resource		*res;
 > > +
-> > +	iio_device_unregister(idev);
-> > +	tiadc_channel_remove(idev);
+> > +	tscadc_writel(tscadc, REG_SE, 0x00);
+> > +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> > +	iounmap(tscadc->tscadc_base);
+> > +	release_mem_region(res->start, resource_size(res));
 > > +
-> > +	tscadc_dev->adc = NULL;
+> > +	pm_runtime_put_sync(&pdev->dev);
+> > +	pm_runtime_disable(&pdev->dev);
 > > +
-> > +	iio_device_free(idev);
+> > +	mfd_remove_devices(tscadc->dev);
+> > +	kfree(tscadc);
+> > +
 > > +	platform_set_drvdata(pdev, NULL);
 > 
-> see above
+> same as above
 
-Yes, will correct this as well.
+Will correct this as well.
 
 > 
 > best regards
@@ -140,14 +142,13 @@ Yes, will correct this as well.
 > Embedded Linux Developer
 > Amsterdam
 > 
->                If sharing a thing in no way diminishes it,
->                it is not rightly owned if it is not shared
+>          The only way to do great work is to love what you do
+>                             (Steve Jobs)
 >                                                                  .''`.
 >     using free software / Debian GNU/Linux | http://debian.org  : :'  :
 >                                                                 `. `'`
 > gpg --keyserver pgp.mit.edu --recv-keys 47D8E5D4                  `-
 > 
 
-Regards,
+Thanks & Regards,
 Rachna
-
