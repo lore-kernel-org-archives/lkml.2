@@ -1,75 +1,352 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751400Ab2H1Bop (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 21:44:45 -0400
-Received: from fieldses.org ([174.143.236.118]:59497 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750942Ab2H1Boo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 21:44:44 -0400
-Date: Mon, 27 Aug 2012 21:44:36 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: kernel-janitors@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] fs/nfsd/nfs4idmap.c: adjust inconsistent IS_ERR
- and PTR_ERR
-Message-ID: <20120828014436.GB20035@fieldses.org>
-References: <1345924629-16584-1-git-send-email-Julia.Lawall@lip6.fr>
- <1345924629-16584-2-git-send-email-Julia.Lawall@lip6.fr>
+	id S1751487Ab2H1CWL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 22:22:11 -0400
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:43525
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751002Ab2H1CWJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 22:22:09 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VS-1(zz98dI154dM1432Ic8kzz1202h1082kzz8275bh8275dhz2dh2a8h668h839h944hd25hf0ah107ah)
+Date: Tue, 28 Aug 2012 10:01:42 +0800
+From: Dong Aisheng <b29396@freescale.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "lrg@ti.com" <lrg@ti.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        Zhao Richard-B20223 <B20223@freescale.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>
+Subject: Re: [PATCH v2 1/7] mfd: add syscon driver based on regmap
+Message-ID: <20120828020141.GD5822@shlinux2.ap.freescale.net>
+References: <1346052285-4344-1-git-send-email-b29396@freescale.com>
+ <1346052285-4344-2-git-send-email-b29396@freescale.com>
+ <20120827220830.GB2281@r65073-Latitude-D630>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1345924629-16584-2-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <20120827220830.GB2281@r65073-Latitude-D630>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 25, 2012 at 09:57:04PM +0200, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Tue, Aug 28, 2012 at 06:08:32AM +0800, Shawn Guo wrote:
+> On Mon, Aug 27, 2012 at 03:24:39PM +0800, Dong Aisheng wrote:
+> > From: Dong Aisheng <dong.aisheng@linaro.org>
+> > 
+> > Add regmap based syscon driver.
+> > This is usually used for access misc bits in registers which does not belong
+> > to a specific module, for example, IMX IOMUXC GPR and ANATOP.
+> > With this driver, client can use generic regmap API to access registers
+> > which are registered into syscon.
+> > 
+> > Reviwed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> > Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> > ---
+> > ChangeLog:
+> > v1->v2:
+> >  * provide a way of retrieving the regmap, suggested by Mark Brown.
+> >  * delete imx-syscon io accessors and using generic regmap API for client drivers.
+> >  * change to a more generic name for other SoCs to use.
+> > ---
+> >  .../devicetree/bindings/mfd/imx-syscon.txt         |   11 ++
 > 
-> Change the call to PTR_ERR to access the value just tested by IS_ERR.
+> So, this file should be renamed as well.
+> 
+Correct.
+I missed it, thanks for reminder.
 
-Applying for 3.7, thanks.--b.
+> >  drivers/mfd/Kconfig                                |    7 +
+> >  drivers/mfd/Makefile                               |    1 +
+> >  drivers/mfd/syscon.c                               |  169 ++++++++++++++++++++
+> >  include/linux/mfd/syscon.h                         |   22 +++
+> >  5 files changed, 210 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/Documentation/devicetree/bindings/mfd/imx-syscon.txt b/Documentation/devicetree/bindings/mfd/imx-syscon.txt
+> > new file mode 100644
+> > index 0000000..c1a13b4
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/mfd/imx-syscon.txt
+> > @@ -0,0 +1,11 @@
+> > +* System Controller Registers R/W driver
+> > +
+> > +Required properties:
+> > +- compatible: Should contain "syscon".
+> > +- reg: the register range can be access from syscon
+> > +
+> > +Examples:
+> > +gpr: iomuxc-gpr@020e0000 {
+> > +	compatible = "fsl,imx6q-iomuxc", "syscon";
+> > +	reg = <0x020e0000 0x38>;
+> > +};
+> > diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> > index b1a1462..4a6c48e 100644
+> > --- a/drivers/mfd/Kconfig
+> > +++ b/drivers/mfd/Kconfig
+> > @@ -993,6 +993,13 @@ config MFD_ANATOP
+> >  	  MFD controller. This controller embeds regulator and
+> >  	  thermal devices for Freescale i.MX platforms.
+> >  
+> > +config MFD_SYSCON
+> > +        bool "System Controller Register R/W Based on Regmap"
+> > +        select REGMAP_MMIO
+> > +        help
+> > +          Select this option to enable accessing system control registers
+> > +	  via regmap.
+> > +
+> >  config MFD_PALMAS
+> >  	bool "Support for the TI Palmas series chips"
+> >  	select MFD_CORE
+> > diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> > index 79dd22d..8384bc9 100644
+> > --- a/drivers/mfd/Makefile
+> > +++ b/drivers/mfd/Makefile
+> > @@ -131,4 +131,5 @@ obj-$(CONFIG_MFD_PALMAS)	+= palmas.o
+> >  obj-$(CONFIG_MFD_RC5T583)	+= rc5t583.o rc5t583-irq.o
+> >  obj-$(CONFIG_MFD_SEC_CORE)	+= sec-core.o sec-irq.o
+> >  obj-$(CONFIG_MFD_ANATOP)	+= anatop-mfd.o
+> > +obj-$(CONFIG_MFD_SYSCON)	+= syscon.o
+> >  obj-$(CONFIG_MFD_LM3533)	+= lm3533-core.o lm3533-ctrlbank.o
+> > diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
+> > new file mode 100644
+> > index 0000000..da2464f
+> > --- /dev/null
+> > +++ b/drivers/mfd/syscon.c
+> > @@ -0,0 +1,169 @@
+> > +/*
+> > + * System Control Driver
+> > + *
+> > + * Copyright (C) 2012 Freescale Semiconductor, Inc.
+> > + * Copyright (C) 2012 Linaro Ltd.
+> > + *
+> > + * Author: Dong Aisheng <dong.aisheng@linaro.org>
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the GNU General Public License as published by
+> > + * the Free Software Foundation; either version 2 of the License, or
+> > + * (at your option) any later version.
+> > + */
+> > +
+> > +#include <linux/err.h>
+> > +#include <linux/io.h>
+> > +#include <linux/module.h>
+> > +#include <linux/of.h>
+> > +#include <linux/of_address.h>
+> > +#include <linux/of_platform.h>
+> > +#include <linux/platform_device.h>
+> > +#include <linux/regmap.h>
+> > +
+> > +static struct platform_driver syscon_driver;
+> > +
+> > +struct syscon {
+> > +	struct device *dev;
+> > +	void __iomem *base;
+> > +	struct regmap *regmap;
+> > +};
+> > +
+> > +static int syscon_match(struct device *dev, void *data)
+> > +{
+> > +	struct syscon *syscon = dev_get_drvdata(dev);
+> > +	struct device_node *dn = data;
+> > +
+> > +	return (syscon->dev->of_node == dn) ? 1 : 0;
+> > +}
+> > +
+> > +static struct regmap *syscon_node_to_regmap(struct device_node *np)
+> > +{
+> > +	struct syscon *syscon;
+> > +	struct device *dev;
+> > +
+> > +	dev = driver_find_device(&syscon_driver.driver, NULL, np,
+> > +				 syscon_match);
+> > +	of_node_put(np);
+> > +
+> > +	if (!dev)
+> > +		return ERR_PTR(-EPROBE_DEFER);
+> > +
+> > +	syscon = dev_get_drvdata(dev);
+> > +
+> > +	return syscon->regmap;
+> > +}
+> > +
+> > +struct regmap *syscon_regmap_lookup_by_compatible(const char *s)
+> > +{
+> > +	struct device_node *syscon_np;
+> > +
+> > +	syscon_np = of_find_compatible_node(NULL, NULL, s);
+> > +	if (!syscon_np)
+> > +		return ERR_PTR(-ENODEV);
+> > +
+> > +	return syscon_node_to_regmap(syscon_np);
+> > +}
+> > +
+> > +struct regmap *syscon_regmap_lookup_by_phandle(struct device_node *np,
+> > +					const char *property)
+> > +{
+> > +	struct device_node *syscon_np;
+> > +
+> > +	syscon_np = of_parse_phandle(np, property, 0);
+> > +	if (!syscon_np)
+> > +		return ERR_PTR(-ENODEV);
+> > +
+> > +	return syscon_node_to_regmap(syscon_np);
+> > +}
+> 
+> The above two APIs are all about finding the device_node for syscon,
+> and can be done by clients in whatever way that is easy for them.
+> Then we can save these APIs and export syscon_node_to_regmap directly.
+> 
+Yes, we probably should also export syscon_node_to_regmap.
+For other two, since they're common to be used, i prefer to keep them too
+for user to choose to use, it saves client to write duplicate code.
 
+> > +
+> > +static const struct of_device_id of_syscon_match[] = {
+> > +	{ .compatible = "syscon", },
+> > +	{ },
+> > +};
+> > +
+> > +static struct regmap_config syscon_regmap_config = {
+> > +	.reg_bits = 32,
+> > +	.val_bits = 32,
+> > +	.reg_stride = 4,
+> > +};
+> > +
+> > +static int __devinit syscon_probe(struct platform_device *pdev)
+> > +{
+> > +	struct device *dev = &pdev->dev;
+> > +	struct device_node *np = dev->of_node;
+> > +	struct syscon *syscon;
+> > +	struct resource res;
+> > +	int ret;
+> > +
+> > +	if (!np)
+> > +		return -ENOENT;
+> > +
+> > +	syscon = devm_kzalloc(&pdev->dev, sizeof(struct syscon),
+> > +			    GFP_KERNEL);
+> > +	if (!syscon)
+> > +		return -ENOMEM;
+> > +
+> > +	syscon->base = of_iomap(np, 0);
+> > +	if (!syscon->base)
+> > +		return -EADDRNOTAVAIL;
+> > +
+> > +	ret = of_address_to_resource(np, 0, &res);
+> > +	if (ret)
+> > +		return ret;
+> > +
+> > +	syscon_regmap_config.max_register = res.end - res.start - 3;
+> > +	syscon->regmap = devm_regmap_init_mmio(&pdev->dev, syscon->base,
+> > +					&syscon_regmap_config);
+> > +	if (IS_ERR(syscon->regmap)) {
+> > +		dev_err(&pdev->dev, "regmap init failed\n");
+> > +		return PTR_ERR(syscon->regmap);
+> > +	}
+> > +
+> > +	regcache_cache_only(syscon->regmap, false);
+> > +
+> > +	syscon->dev = &pdev->dev;
+> > +	platform_set_drvdata(pdev, syscon);
+> > +
+> > +	dev_info(dev, "syscon regmap start 0x%x end 0x%x registered\n",
+> > +		res.start, res.end);
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static int __devexit syscon_remove(struct platform_device *pdev)
+> > +{
+> > +	struct syscon *syscon;
+> > +
+> > +	syscon = platform_get_drvdata(pdev);
+> > +	iounmap(syscon->base);
+> > +	platform_set_drvdata(pdev, NULL);
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static struct platform_driver syscon_driver = {
+> > +	.driver = {
+> > +		.name = "syscon",
+> > +		.owner = THIS_MODULE,
+> > +		.of_match_table = of_syscon_match,
+> > +	},
+> > +	.probe		= syscon_probe,
+> > +	.remove		= syscon_remove,
+> > +};
+> > +
+> > +static int __init syscon_init(void)
+> > +{
+> > +	return platform_driver_register(&syscon_driver);
+> > +}
+> > +postcore_initcall(syscon_init);
+> > +
+> > +static void __exit anatop_exit(void)
 > 
-> The semantic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
+> s/anatop_exit/syscon_exit
 > 
-> // <smpl>
-> @@
-> expression e,e1;
-> @@
+> > +{
+> > +	platform_driver_unregister(&syscon_driver);
+> > +}
+> > +module_exit(anatop_exit);
 > 
-> (
-> if (IS_ERR(e)) { ... PTR_ERR(e) ... }
-> |
-> if (IS_ERR(e=e1)) { ... PTR_ERR(e) ... }
-> |
-> *if (IS_ERR(e))
->  { ...
-> *  PTR_ERR(e1)
->    ... }
-> )
-> // </smpl>
+> Ditto.
 > 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Correct, Thanks.
+Will fix those typo in updated patches.
+
+Regards
+Dong Aisheng
+> > +
+> > +MODULE_AUTHOR("Dong Aisheng <dong.aisheng@linaro.org>");
+> > +MODULE_DESCRIPTION("System Control driver");
+> > +MODULE_LICENSE("GPL v2");
+> > diff --git a/include/linux/mfd/syscon.h b/include/linux/mfd/syscon.h
+> > new file mode 100644
+> > index 0000000..990d7cf
+> > --- /dev/null
+> > +++ b/include/linux/mfd/syscon.h
+> > @@ -0,0 +1,22 @@
+> > +/*
+> > + * System Control Driver
+> > + *
+> > + * Copyright (C) 2012 Freescale Semiconductor, Inc.
+> > + * Copyright (C) 2012 Linaro Ltd.
+> > + *
+> > + * Author: Dong Aisheng <dong.aisheng@linaro.org>
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the GNU General Public License as published by
+> > + * the Free Software Foundation; either version 2 of the License, or
+> > + * (at your option) any later version.
+> > + */
+> > +
+> > +#ifndef __LINUX_MFD_SYSCON_H__
+> > +#define __LINUX_MFD_SYSCON_H__
+> > +
+> > +extern struct regmap *syscon_regmap_lookup_by_compatible(const char *s);
+> > +extern struct regmap *syscon_regmap_lookup_by_phandle(
+> > +					struct device_node *np,
+> > +					const char *property);
+> > +#endif /* __LINUX_MFD_SYSCON_H__ */
+> > -- 
+> > 1.7.0.4
+> > 
+> > 
 > 
-> ---
->  fs/nfsd/nfs4idmap.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/fs/nfsd/nfs4idmap.c b/fs/nfsd/nfs4idmap.c
-> index fdc91a6..11df4ac 100644
-> --- a/fs/nfsd/nfs4idmap.c
-> +++ b/fs/nfsd/nfs4idmap.c
-> @@ -478,7 +478,7 @@ nfsd_idmap_init(struct net *net)
->  		goto destroy_idtoname_cache;
->  	nn->nametoid_cache = cache_create_net(&nametoid_cache_template, net);
->  	if (IS_ERR(nn->nametoid_cache)) {
-> -		rv = PTR_ERR(nn->idtoname_cache);
-> +		rv = PTR_ERR(nn->nametoid_cache);
->  		goto unregister_idtoname_cache;
->  	}
->  	rv = cache_register_net(nn->nametoid_cache, net);
-> 
+
