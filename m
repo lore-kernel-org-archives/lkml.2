@@ -1,75 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752056Ab2H1GoH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 02:44:07 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39408 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750936Ab2H1GoF (ORCPT
+	id S1752227Ab2H1G5P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 02:57:15 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:39853 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751790Ab2H1G5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 02:44:05 -0400
-Date: Tue, 28 Aug 2012 08:43:53 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: kernel@pengutronix.de, linux@arm.linux.org.uk,
-        yongjun_wei@trendmicro.com.cn, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM i.MX: remove duplicated include from clk-imx21.c
-Message-ID: <20120828064353.GO26594@pengutronix.de>
-References: <CAPgLHd_pYM3otnZBZ=nz7aYTP4dorBSjQtj=x9Z+zz7yr1NgSg@mail.gmail.com>
+	Tue, 28 Aug 2012 02:57:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPgLHd_pYM3otnZBZ=nz7aYTP4dorBSjQtj=x9Z+zz7yr1NgSg@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 08:43:43 up 65 days, 21:55, 28 users,  load average: 0.04, 0.09,
- 0.15
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20120827184435.GA13883@linux.vnet.ibm.com>
+References: <1345124749.31092.2.camel@localhost.localdomain>
+	<1345125384.29668.30.camel@twins>
+	<CADZ9YHjPjExzuJWjziiezBch03Am0imQzDG4EDfG-NTWfz4V8A@mail.gmail.com>
+	<1345128138.29668.42.camel@twins>
+	<CADZ9YHjzNVz6nSqbnTgVYfwi2hz0KYuXC89GHw6UjL2GyGZ64A@mail.gmail.com>
+	<1345139199.29668.46.camel@twins>
+	<CADZ9YHgNhTGWicX0kFfrNoL17JkxfZcXryqqa-wHLVLh05SvAg@mail.gmail.com>
+	<1345454817.23018.27.camel@twins>
+	<20120820162657.GI2435@linux.vnet.ibm.com>
+	<20120827184435.GA13883@linux.vnet.ibm.com>
+Date: Tue, 28 Aug 2012 12:57:09 +0600
+Message-ID: <CADZ9YHi-DGd71jxQpYyRfVUqdr-ks-znSeCtcBAccL7wRd3r5g@mail.gmail.com>
+Subject: Re: Add rq->nr_uninterruptible count to dest cpu's rq while CPU goes down.
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 26, 2012 at 09:48:11AM +0800, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> 
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Hello Paul,
 
-Applied, thanks
+On 8/28/12, Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> On Mon, Aug 20, 2012 at 09:26:57AM -0700, Paul E. McKenney wrote:
+>> On Mon, Aug 20, 2012 at 11:26:57AM +0200, Peter Zijlstra wrote:
+>
+> How about the following updated patch?
+>
+Actually, I was waiting for Peter's update.
 
-Sascha
+> 							Thanx, Paul
+>
+> ------------------------------------------------------------------------
+>
+> sched: Fix load avg vs cpu-hotplug
+>
+> Rabik and Paul reported two different issues related to the same few
+> lines of code.
+>
+> Rabik's issue is that the nr_uninterruptible migration code is wrong in
+> that he sees artifacts due to this (Rabik please do expand in more
+> detail).
+>
+> Paul's issue is that this code as it stands relies on us using
+> stop_machine() for unplug, we all would like to remove this assumption
+> so that eventually we can remove this stop_machine() usage altogether.
+>
+> The only reason we'd have to migrate nr_uninterruptible is so that we
+> could use for_each_online_cpu() loops in favour of
+> for_each_possible_cpu() loops, however since nr_uninterruptible() is the
+> only such loop and its using possible lets not bother at all.
+>
+> The problem Rabik sees is (probably) caused by the fact that by
+> migrating nr_uninterruptible we screw rq->calc_load_active for both rqs
+> involved.
+>
+> So don't bother with fancy migration schemes (meaning we now have to
+> keep using for_each_possible_cpu()) and instead fold any nr_active delta
+> after we migrate all tasks away to make sure we don't have any skewed
+> nr_active accounting.
+>
+> [ paulmck: Move call to calc_load_migration to CPU_DEAD to avoid
+> miscounting noted by Rakib. ]
+>
+> Reported-by: Rakib Mullick <rakib.mullick@gmail.com>
+> Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+>
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index e841dfc..a8807f2 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -5309,27 +5309,17 @@ void idle_task_exit(void)
+>  }
+>
+>  /*
+> - * While a dead CPU has no uninterruptible tasks queued at this point,
+> - * it might still have a nonzero ->nr_uninterruptible counter, because
+> - * for performance reasons the counter is not stricly tracking tasks to
+> - * their home CPUs. So we just add the counter to another CPU's counter,
+> - * to keep the global sum constant after CPU-down:
+> - */
+> -static void migrate_nr_uninterruptible(struct rq *rq_src)
+> -{
+> -	struct rq *rq_dest = cpu_rq(cpumask_any(cpu_active_mask));
+> -
+> -	rq_dest->nr_uninterruptible += rq_src->nr_uninterruptible;
+> -	rq_src->nr_uninterruptible = 0;
+> -}
+> -
+> -/*
+> - * remove the tasks which were accounted by rq from calc_load_tasks.
+> + * Since this CPU is going 'away' for a while, fold any nr_active delta
+> + * we might have. Assumes we're called after migrate_tasks() so that the
+> + * nr_active count is stable.
+> + *
+> + * Also see the comment "Global load-average calculations".
+>   */
+> -static void calc_global_load_remove(struct rq *rq)
+> +static void calc_load_migrate(struct rq *rq)
+>  {
+> -	atomic_long_sub(rq->calc_load_active, &calc_load_tasks);
+> -	rq->calc_load_active = 0;
+> +	long delta = calc_load_fold_active(rq);
+> +	if (delta)
+> +		atomic_long_add(delta, &calc_load_tasks);
+>  }
+>
+>  /*
+> @@ -5622,9 +5612,18 @@ migration_call(struct notifier_block *nfb, unsigned
+> long action, void *hcpu)
+>  		migrate_tasks(cpu);
+>  		BUG_ON(rq->nr_running != 1); /* the migration thread */
+>  		raw_spin_unlock_irqrestore(&rq->lock, flags);
+> +		break;
+>
+> -		migrate_nr_uninterruptible(rq);
+> -		calc_global_load_remove(rq);
+> +	case CPU_DEAD:
+> +		{
+> +			struct rq *dest_rq;
+> +
+> +			local_irq_save(flags);
+> +			dest_rq = cpu_rq(smp_processor_id());
 
-> 
-> Remove duplicated include.
-> 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
->  arch/arm/mach-imx/clk-imx21.c | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/arch/arm/mach-imx/clk-imx21.c b/arch/arm/mach-imx/clk-imx21.c
-> index ea13e61..cf65148 100644
-> --- a/arch/arm/mach-imx/clk-imx21.c
-> +++ b/arch/arm/mach-imx/clk-imx21.c
-> @@ -23,7 +23,6 @@
->  #include <linux/clk-provider.h>
->  #include <linux/io.h>
->  #include <linux/module.h>
-> -#include <linux/clkdev.h>
->  #include <linux/err.h>
->  
->  #include <mach/hardware.h>
-> 
-> 
+Use of smp_processor_id() as dest cpu isn't clear to me, this
+processor is about to get down, isn't it?
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+> +			raw_spin_lock(&dest_rq->lock);
+> +			calc_load_migrate(rq);
+
+Well, calc_load_migrate() has no impact cause rq->nr_running == 1 at
+this point. It's been already pointed out previously.
+
+Thanks,
+Rakib
