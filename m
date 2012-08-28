@@ -1,99 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752094Ab2H1XEf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 19:04:35 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:39876 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750740Ab2H1XEe (ORCPT
+	id S1751895Ab2H1XI2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 19:08:28 -0400
+Received: from mail-iy0-f194.google.com ([209.85.210.194]:53421 "EHLO
+	mail-iy0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784Ab2H1XI1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 19:04:34 -0400
-Message-ID: <503D4E7F.9010205@wwwdotorg.org>
-Date: Tue, 28 Aug 2012 16:04:31 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Tue, 28 Aug 2012 19:08:27 -0400
 MIME-Version: 1.0
-To: Franky Lin <frankyl@broadcom.com>
-CC: Wei Ni <wni@nvidia.com>, Arend van Spriel <arend@broadcom.com>,
-        "rvossen@broadcom.com" <rvossen@broadcom.com>,
-        Rakesh Kumar <krakesh@nvidia.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "brcm80211-dev-list@broadcom.com" <brcm80211-dev-list@broadcom.com>
-Subject: Re: [PATCH 2/6] brcmfmac: Handling the interrupt in ISR directly
- for non-OOB
-References: <1346063114-30361-1-git-send-email-wni@nvidia.com> <1346063114-30361-3-git-send-email-wni@nvidia.com> <503B9F31.5050502@broadcom.com> <503BD345.6030501@wwwdotorg.org> <1346152413.3516.211.camel@tegra-chromium-2> <503CF5B3.8040201@broadcom.com> <503D48AC.5040509@wwwdotorg.org> <503D4DD9.2060808@broadcom.com>
-In-Reply-To: <503D4DD9.2060808@broadcom.com>
-X-Enigmail-Version: 1.5a1pre
+From: Irina Tirdea <irina.tirdea@gmail.com>
+Date: Wed, 29 Aug 2012 00:59:21 +0300
+Message-ID: <CANg8OW+fiW9gho475uW35TcWn9a3nJLrZp+LZv_kZFemeFBH7A@mail.gmail.com>
+Subject: [PATCH 02/13] perf tools: update types definitions for Android
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/28/2012 04:01 PM, Franky Lin wrote:
-> On 08/28/2012 03:39 PM, Stephen Warren wrote:
->> On 08/28/2012 09:45 AM, Franky Lin wrote:
->>> On 08/28/2012 04:13 AM, Wei Ni wrote:
->>>> On Tue, 2012-08-28 at 04:06 +0800, Stephen Warren wrote:
->>>>> On 08/27/2012 09:24 AM, Arend van Spriel wrote:
->>>>>> On 08/27/2012 12:25 PM, Wei Ni wrote:
->>>>>>> In case of inband interrupts, if we handle the interrupt in dpc
->>>>>>> thread,
->>>>>>> two level of thread switching takes place to process wifi
->>>>>>> interrupts.
->>>>>>> One in SDHCI driver and the other in Wifi driver. This may cause the
->>>>>>> system
->>>>>>> instability.
->> ...
->>>>>> Not sure if I can follow this explanation. The isr is called with
->>>>>> host
->>>>>> claimed (by sdio_irq_thread) and all it does is at a linked list
->>>>>> member
->>>>>> and signal the dpc thread. After doing this the host is released.
->>>>>
->>>>> Is the issue something like the ISR handler or first level of
->>>>> threading
->>>>> does:
->>>>>
->>>>> * Trigger DPC
->>>>> * Re-enable interrupt
->>>>>
->>>>> So that the interrupt then fires again before the triggered DPC can
->>>>> run
->>>>> to handle/clear it, thus causing an interrupt storm?
->>>>>
->>>>> Whereas handling the interrupt directly prevents this race condition?
->>>>
->>>> Above is my understanding.
->>>
->>> I understand the issue here and totally agree that we should treat
->>> in-band and out-band interrupts differently. But my concern is that the
->>> behavior of releasing the host before calling brcmf_sdbrcm_isr and grab
->>> it after is likely error prone. Also we are restructuring the dpc
->>> routine internally and it's almost done. I will find a better solution
->>> for in-band interrupt and get it the queue as well. So I suggest
->>> dropping this patch.
->>
->> Franky, do you know which kernel release the DPC restructuring will make
->> it into? I ask because I can't apply the rest of the patches in this
->> series without first resolving the stability issues with the Broadcom
->> WiFi enabled, since that'd de-stabilize the Tegra platform
->> significantly, and I'd like to plan when we can apply these patches to
->> Tegra. Thanks!
->>
-> 
-> Hi Stephen,
-> 
-> Since we submit patches through linux-wireless tree, you may only be
-> able to pick it up at 3.7-rc1. It's quite a big change so I don't think
-> it will qualify as a bug fix to get into 3.6-rcX.
+Some systems (e.g. Android) define in their libc types.h
+__le16, __be16, etc. Since perf is wrapping
+<linux/types.h> with a local version, we need to define this
+constants in the local version too.
 
-That's as quick as I expected it to show up, so that's great. I don't
-suppose you could mail Wei and myself once the patch gets into the
-linux-wireless tree, so we can test it out on Tegra. If the patch could
-possibly go into a topic branch in the wireless tree so it can be merged
-into the Tegra tree before this series, that would be awesome. Thanks.
+Errors in Android:
+In file included from bionic/libc/include/netinet/in.h:34:0,
+                 from util/util.h:73,
+                 from util/cache.h:5,
+                 from util/abspath.c:1:
+bionic/libc/kernel/common/linux/in6.h:20:2: error: unknown type name '__be16'
+bionic/libc/kernel/common/linux/in6.h:21:2: error: unknown type name '__be32'
+bionic/libc/kernel/common/linux/in6.h:30:2: error: unknown type name '__be16'
+bionic/libc/kernel/common/linux/in6.h:31:2: error: unknown type name '__be32'
+bionic/libc/kernel/common/linux/in6.h:47:2: error: unknown type name '__be32'
+
+roundup() definition is also missing:
+util/symbol.c: In function 'symbols__fixup_end':
+util/symbol.c:106: warning: implicit declaration of function 'roundup'
+util/symbol.c:106: warning: nested extern declaration of 'roundup'
+
+Some macro defined in perf are also defined in libc which
+leads to redefinition errors. In order to avoid these, we
+guard these definitions with #ifndef.
+
+Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+---
+ tools/perf/util/include/linux/compiler.h |    4 ++++
+ tools/perf/util/include/linux/kernel.h   |   11 +++++++++++
+ tools/perf/util/include/linux/types.h    |   15 +++++++++++++++
+ 3 files changed, 30 insertions(+)
+
+diff --git a/tools/perf/util/include/linux/compiler.h
+b/tools/perf/util/include/linux/compiler.h
+index 2dc8671..ce2367b 100644
+--- a/tools/perf/util/include/linux/compiler.h
++++ b/tools/perf/util/include/linux/compiler.h
+@@ -12,4 +12,8 @@
+ #define __used        __attribute__((__unused__))
+ #define __packed    __attribute__((__packed__))
+
++#ifndef __force
++#define __force
++#endif
++
+ #endif
+diff --git a/tools/perf/util/include/linux/kernel.h
+b/tools/perf/util/include/linux/kernel.h
+index b6842c1..391c425 100644
+--- a/tools/perf/util/include/linux/kernel.h
++++ b/tools/perf/util/include/linux/kernel.h
+@@ -46,6 +46,17 @@
+     _min1 < _min2 ? _min1 : _min2; })
+ #endif
+
++#ifndef roundup
++#define roundup(x, y) (                                \
++{                                                      \
++       const typeof(y) __y = y;                        \
++       (((x) + (__y - 1)) / __y) * __y;                \
++}                                                      \
++)
++#endif
++
++
++
+ #ifndef BUG_ON
+ #define BUG_ON(cond) assert(!(cond))
+ #endif
+diff --git a/tools/perf/util/include/linux/types.h
+b/tools/perf/util/include/linux/types.h
+index 12de3b8..60a97bb 100644
+--- a/tools/perf/util/include/linux/types.h
++++ b/tools/perf/util/include/linux/types.h
+@@ -3,6 +3,21 @@
+
+ #include <asm/types.h>
+
++#ifndef __bitwise__
++#define __bitwise__
++#endif
++
++#ifndef __bitwise
++#define __bitwise
++#endif
++
++typedef __u16 __bitwise __le16;
++typedef __u16 __bitwise __be16;
++typedef __u32 __bitwise __le32;
++typedef __u32 __bitwise __be32;
++typedef __u64 __bitwise __le64;
++typedef __u64 __bitwise __be64;
++
+ #define DECLARE_BITMAP(name,bits) \
+     unsigned long name[BITS_TO_LONGS(bits)]
+
+--
+1.7.9.5
