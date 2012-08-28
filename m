@@ -1,83 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751814Ab2H1FZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 01:25:56 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:57682 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750932Ab2H1FZy (ORCPT
+	id S1751864Ab2H1Fhv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 01:37:51 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:35073 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751008Ab2H1Fht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 01:25:54 -0400
+	Tue, 28 Aug 2012 01:37:49 -0400
+Message-ID: <1346132253.12384.6.camel@localhost.localdomain>
+Subject: Re: Possible mptsas regression post 3.5.0
+From: Dan Williams <djbw@fb.com>
+To: John Drescher <drescherjm@gmail.com>
+CC: =?UTF-8?Q?=E7=8E=8B=E9=87=91=E6=B5=A6?= <jinpuwang@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        <DL-MPTFusionLinux@lsi.com>
+Date: Mon, 27 Aug 2012 22:37:33 -0700
+In-Reply-To: <CAEhu1-7zGeZ-A0hkJ0=PqJart8f1zGyapWo-DP0fORuNTpj0sg@mail.gmail.com>
+References: <CAEhu1-6wq1YsNiscGMwP4ud0Q+MrViRzv=kcWCQSBNc8c68N5Q@mail.gmail.com>
+	 <CAEhu1-5VLuFsZomDZ1yxixqD7oLEhoXs+N698_VBkdGz5trK8g@mail.gmail.com>
+	 <CAEhu1-5sHQOTZ=KRxkpiAeBFC5BReR+svUGpp=9tk3drqJNg0A@mail.gmail.com>
+	 <CAD9gYJJQ+vsv12+-0e_nMtgs71Snvt4j2s48-HnwkrV2yOiwLQ@mail.gmail.com>
+	 <CAEhu1-7zGeZ-A0hkJ0=PqJart8f1zGyapWo-DP0fORuNTpj0sg@mail.gmail.com>
+Content-Type: multipart/mixed; boundary="=-S924lAQmV7yfbf0zLYMk"
+X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdbVY1mmzb9H4ZfmVScW1ZNf1FTMLdgo5UFgqTftycMyrQ@mail.gmail.com>
-References: <1345060656-32201-1-git-send-email-thomas.abraham@linaro.org>
-	<1345060656-32201-2-git-send-email-thomas.abraham@linaro.org>
-	<CACRpkdYqPYesgE-YxPLZqROw1T2fsPWR6R+aDTTz2=XbP7oe9A@mail.gmail.com>
-	<CAJuYYwQu7OXQEWCumuMeSKJ2RZD7e==pLKDE1=bvPgfXtO=AUw@mail.gmail.com>
-	<CACRpkdbVY1mmzb9H4ZfmVScW1ZNf1FTMLdgo5UFgqTftycMyrQ@mail.gmail.com>
-Date: Tue, 28 Aug 2012 10:55:52 +0530
-Message-ID: <CAJuYYwRRQ-kd3ABrK82x2onFRFvHYnbVznuSssW_hXYhncDNWg@mail.gmail.com>
-Subject: Re: [PATCH v2 1/4] pinctrl: add samsung pinctrl and gpiolib driver
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, kgene.kim@samsung.com,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+X-Originating-IP: [192.168.18.252]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.428,0.0.0000
+ definitions=2012-08-27_02:2012-08-28,2012-08-27,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 August 2012 04:52, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Tue, Aug 21, 2012 at 9:22 PM, Thomas Abraham
-> <thomas.abraham@linaro.org> wrote:
+--=-S924lAQmV7yfbf0zLYMk
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 
-[...]
+On Mon, 2012-08-27 at 12:13 -0400, John Drescher wrote:
+> >> I have bisected it down to the following patch:
+> >>
+> >> Bisecting: 0 revisions left to test after this (roughly 0 steps)
+> >> [10f8d5b86743b33d841a175303e2bf67fd620f42] SCSI: fix hot unplug vs
+> >> async scan race
+> >>
+> >> It appears this patch caused the bad behavior although I have not
+> >> tested that yet. I am rebuilding the array (takes ~2 hours) from the
+> >> previous good bisect.
+> >>
+> 
+> Confirmed. This patch appears to cause the bug in my test setup.
+> 
+> [  339.406778] BUG: soft lockup - CPU#2 stuck for 23s! [kworker/u:8:2202]
+[..]
+> [  339.415268]  [<ffffffff8141782a>] scsi_remove_target+0xda/0x1f0
 
->>>> +/* list of all possible config options supported */
->>>> +struct pin_config {
->>>> +       char            *prop_cfg;
->>>> +       unsigned int    cfg_type;
->>>> +} pcfgs[] = {
->>>> +       { "samsung,pin-pud", PINCFG_TYPE_PUD },
->>>> +       { "samsung,pin-drv", PINCFG_TYPE_DRV },
->>>> +       { "samsung,pin-pud-pdn", PINCFG_TYPE_CON_PND },
->>>> +       { "samsung,pin-drv-pdn", PINCFG_TYPE_PUD_PND },
->>>> +};
->>>
->>> Hmmmmm it looks very much like this controller could make use of
->>> the generic pinconf library, but it's not mandatory so just a suggestion.
->>
->> Ok. The last two entries in the above table are Samsung specific and
->> not covered by generic-pinconf. So, I am not sure if it can be added
->> to generic-pinconf.
->
-> What is so Samsung-specific about them?
->
-> If you tell us the electrical property of setting them we can figure out
-> if they should be generic or not...
->
+I wonder if we are preventing scsi_device_dev_release_usercontext() from
+making forward progress?
 
-The PINCFG_TYPE_CON_PND and PINCFG_TYPE_PUD_PND are "mux function" and
-"pull up/down" settings that are automatically applied to the pin in
-powert-down mode. It is same as the usual "mux function" and "pull
-up/down" settings, but just that it is applied at suspend.
+...the attached patch should confirm this or give more info otherwise.
 
-[...]
+--
+Dan
 
->
-> OK whatever... looking formward to next iteration!
 
-I have posted the updated version of this patch series based on your
-comments (https://lkml.org/lkml/2012/8/23/183).
+--=-S924lAQmV7yfbf0zLYMk
+Content-Disposition: attachment; filename="dbg-scsi-remove-target.patch"
+Content-Type: text/x-patch; name="dbg-scsi-remove-target.patch";
+	charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 
-The only pending comment to be addressed at this point is about the
-use of generic-pinconf as mentioned in the comment above. If
-PINCFG_TYPE_CON_PND and PINCFG_TYPE_PUD_PND is available in
-generic-pinconf, I wil switch to using generic-pinconf. Will that
-qualify this Samsung pinctrl driver to be merged into your -devel
-branch?
+scsi_remove_target: debug softlockup
 
-Thanks,
-Thomas.
+From: Dan Williams <djbw@fb.com>
+
+dump more info in the case where we get stuck trying to remove a device.
+---
+ drivers/scsi/scsi_sysfs.c |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+
+diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
+index 093d4f6..011f8ee 100644
+--- a/drivers/scsi/scsi_sysfs.c
++++ b/drivers/scsi/scsi_sysfs.c
+@@ -1032,8 +1032,11 @@ void scsi_remove_target(struct device *dev)
+ {
+ 	struct Scsi_Host *shost = dev_to_shost(dev->parent);
+ 	struct scsi_target *starget, *found;
++	struct scsi_target *found_log[3];
+ 	unsigned long flags;
+ 
++	memset(found_log, 0, sizeof(found_log));
++
+  restart:
+ 	found = NULL;
+ 	spin_lock_irqsave(shost->host_lock, flags);
+@@ -1041,8 +1044,24 @@ void scsi_remove_target(struct device *dev)
+ 		if (starget->state == STARGET_DEL)
+ 			continue;
+ 		if (starget->dev.parent == dev || &starget->dev == dev) {
++			int i;
++
+ 			found = starget;
+ 			found->reap_ref++;
++			for (i = 0; i < ARRAY_SIZE(found_log); i++)
++				if (!found_log[i]) {
++					found_log[i] = found;
++					break;
++				} else if (found_log[i] == found) {
++					struct scsi_device *sdev = NULL;
++
++					if (!list_empty(&found->devices))
++						sdev = list_entry(found->devices.next, typeof(*sdev), same_target_siblings);
++					pr_err_once("%s[%d]: reap %d:%d state: %d reap: %d dev_del: %d\n",
++						    __func__, i, found->channel, found->id,
++						    found->state, found->reap_ref,
++						    sdev ? work_busy(&sdev->ew.work) ? 2 : 1 : 0);
++				}
+ 			break;
+ 		}
+ 	}
+
+--=-S924lAQmV7yfbf0zLYMk--
