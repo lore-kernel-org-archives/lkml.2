@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752579Ab2H1KvM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 06:51:12 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:35359 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751931Ab2H1KvI (ORCPT
+	id S1752411Ab2H1LEd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 07:04:33 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:60813 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484Ab2H1LEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 06:51:08 -0400
-Date: Tue, 28 Aug 2012 11:55:50 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: mathieu.poirier@linaro.org, linux-kernel@vger.kernel.org, arve@android.com,
-        kernel-team@android.com, dmitry.torokhov@gmail.com,
-        john.stultz@linaro.org
-Subject: Re: [PATCH] drivers/tty: Folding Android's keyreset driver in sysRQ
-Message-ID: <20120828115550.1b9c0293@pyramind.ukuu.org.uk>
-In-Reply-To: <503C03FA.5080803@xenotime.net>
-References: <1346103825-14430-1-git-send-email-mathieu.poirier@linaro.org>
-	<503C03FA.5080803@xenotime.net>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 28 Aug 2012 07:04:32 -0400
+Message-ID: <503CA5BA.2040003@redhat.com>
+Date: Tue, 28 Aug 2012 13:04:26 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: axboe@kernel.dk
+CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] sg_io: allow UNMAP and WRITE SAME without CAP_SYS_RAWIO
+References: <1342801801-15617-1-git-send-email-pbonzini@redhat.com> <50195108.1090105@redhat.com>
+In-Reply-To: <50195108.1090105@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Please document what button/key combinations those are.
-
-It's taken from the platform data. Most phone devices don't have a real
-keyboard let alone an sysrq key so it's device specific button combos in
-general that trigger things like power off.
-
+Il 01/08/2012 17:53, Paolo Bonzini ha scritto:
+> Il 20/07/2012 18:30, Paolo Bonzini ha scritto:
+>> These commands cannot be issued right now without giving CAP_SYS_RAWIO to
+>> the process who wishes to send them.  These commands can be useful also to
+>> non-privileged programs who have access to the block devices.  For example
+>> a virtual machine monitor needs them to forward trim/discard to host disks.
+>>
+>> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+>> ---
+>>  block/scsi_ioctl.c |    3 ++
+>>  1 files changed, 3 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
+>> index 260fa80..dd71f18 100644
+>> --- a/block/scsi_ioctl.c
+>> +++ b/block/scsi_ioctl.c
+>> @@ -168,13 +168,16 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
+>>  	/* Basic writing commands */
+>>  	__set_bit(WRITE_6, filter->write_ok);
+>>  	__set_bit(WRITE_10, filter->write_ok);
+>> +	__set_bit(WRITE_SAME, filter->write_ok);
+>>  	__set_bit(WRITE_VERIFY, filter->write_ok);
+>>  	__set_bit(WRITE_12, filter->write_ok);
+>>  	__set_bit(WRITE_VERIFY_12, filter->write_ok);
+>>  	__set_bit(WRITE_16, filter->write_ok);
+>> +	__set_bit(WRITE_SAME_16, filter->write_ok);
+>>  	__set_bit(WRITE_LONG, filter->write_ok);
+>>  	__set_bit(WRITE_LONG_2, filter->write_ok);
+>>  	__set_bit(ERASE, filter->write_ok);
+>> +	__set_bit(UNMAP, filter->write_ok);
+>>  	__set_bit(GPCMD_MODE_SELECT_10, filter->write_ok);
+>>  	__set_bit(MODE_SELECT, filter->write_ok);
+>>  	__set_bit(LOG_SELECT, filter->write_ok);
+>>
 > 
-> > The first time the key-combo is detected a work function that syncs
-> > the filesystems is scheduled and the kernel rebooted. If all the keys
-> > are released and then pressed again, it calls panic. Reboot on panic
-> > should be set for this to work.  A platform device that specify a
-> > reset key-combo should be added to the board file to trigger the
-> > feature.
+> Jens,
+> 
+> can this go in 3.6 as well?
 
-And it is documented ... ^^^^^^^^^^^^^^^^^^^^^^^^^^
+Another ping...
 
+Paolo
 
-Alan
