@@ -1,33 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417Ab2H1Vmm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 17:42:42 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:58534 "EHLO
+	id S1753438Ab2H1Vnm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 17:43:42 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:35004 "EHLO
 	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753092Ab2H1Vml (ORCPT
+	with ESMTP id S1751939Ab2H1Vnk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 17:42:41 -0400
+	Tue, 28 Aug 2012 17:43:40 -0400
 MIME-Version: 1.0
-Reply-To: paul.clements@us.sios.com
-Date: Tue, 28 Aug 2012 17:42:40 -0400
-Message-ID: <CAECXXi6q_NWpughUkwMCs6XeER-W_pHDz4HhhBGbcAmwBKppjA@mail.gmail.com>
-Subject: [PATCH 0/2] add discard support to nbd
-From: Paul Clements <paul.clements@steeleye.com>
+In-Reply-To: <CAECXXi6q_NWpughUkwMCs6XeER-W_pHDz4HhhBGbcAmwBKppjA@mail.gmail.com>
+References: <CAECXXi6q_NWpughUkwMCs6XeER-W_pHDz4HhhBGbcAmwBKppjA@mail.gmail.com>
+Date: Tue, 28 Aug 2012 17:43:40 -0400
+Message-ID: <CAECXXi7Y72OBN7+D5dGToxf9pcUAbmuwRJ=iY6_N6P4_r2e_-A@mail.gmail.com>
+Subject: [PATCH 1/2] add discard support to nbd
+From: Paul Clements <paul.clements@us.sios.com>
 To: kernel list <linux-kernel@vger.kernel.org>
 Cc: andrew morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/mixed; boundary=bcaec51dd7c5df97d004c85a55d0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset adds discard request support to nbd. This should be good
-for inclusion in next.
+--bcaec51dd7c5df97d004c85a55d0
+Content-Type: text/plain; charset=ISO-8859-1
 
-The first patch adds a set-flags ioctl, allowing various option flags
-to be set on an nbd device. One of the new flags tells the nbd client
-to send discard requests to the server.
-The second patch adds handling of discard requests to nbd when
-NBD_FLAG_SEND_TRIM is set.
 
-Thanks,
-Paul
+
+--bcaec51dd7c5df97d004c85a55d0
+Content-Type: application/octet-stream; name="nbd-set-flags-ioctl.diff"
+Content-Disposition: attachment; filename="nbd-set-flags-ioctl.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h6fiw4eq0
+
+RGVzY3JpcHRpb246IFRoaXMgcGF0Y2ggYWRkcyBhIHNldC1mbGFncyBpb2N0bCwgYWxsb3dpbmcg
+dmFyaW91cyBvcHRpb24KZmxhZ3MgdG8gYmUgc2V0IG9uIGFuIG5iZCBkZXZpY2UuCgpTaWduZWQt
+b2ZmLWJ5OiBQYXVsIENsZW1lbnRzIDxwYXVsLmNsZW1lbnRzQHN0ZWVsZXllLmNvbT4KLS0tCmRp
+ZmYgLS1naXQgYS9kcml2ZXJzL2Jsb2NrL25iZC5jIGIvZHJpdmVycy9ibG9jay9uYmQuYwppbmRl
+eCBkMDdjOWY3Li5jNTQ0YmI0IDEwMDY0NAotLS0gYS9kcml2ZXJzL2Jsb2NrL25iZC5jCisrKyBi
+L2RyaXZlcnMvYmxvY2svbmJkLmMKQEAgLTc4LDYgKzc4LDggQEAgc3RhdGljIGNvbnN0IGNoYXIg
+KmlvY3RsX2NtZF90b19hc2NpaShpbnQgY21kKQogCWNhc2UgTkJEX1NFVF9TT0NLOiByZXR1cm4g
+InNldC1zb2NrIjsKIAljYXNlIE5CRF9TRVRfQkxLU0laRTogcmV0dXJuICJzZXQtYmxrc2l6ZSI7
+CiAJY2FzZSBOQkRfU0VUX1NJWkU6IHJldHVybiAic2V0LXNpemUiOworCWNhc2UgTkJEX1NFVF9U
+SU1FT1VUOiByZXR1cm4gInNldC10aW1lb3V0IjsKKwljYXNlIE5CRF9TRVRfRkxBR1M6IHJldHVy
+biAic2V0LWZsYWdzIjsKIAljYXNlIE5CRF9ET19JVDogcmV0dXJuICJkby1pdCI7CiAJY2FzZSBO
+QkRfQ0xFQVJfU09DSzogcmV0dXJuICJjbGVhci1zb2NrIjsKIAljYXNlIE5CRF9DTEVBUl9RVUU6
+IHJldHVybiAiY2xlYXItcXVlIjsKQEAgLTQ2MCw3ICs0NjIsNyBAQCBzdGF0aWMgdm9pZCBuYmRf
+aGFuZGxlX3JlcShzdHJ1Y3QgbmJkX2RldmljZSAqbmJkLCBzdHJ1Y3QgcmVxdWVzdCAqcmVxKQog
+CW5iZF9jbWQocmVxKSA9IE5CRF9DTURfUkVBRDsKIAlpZiAocnFfZGF0YV9kaXIocmVxKSA9PSBX
+UklURSkgewogCQluYmRfY21kKHJlcSkgPSBOQkRfQ01EX1dSSVRFOwotCQlpZiAobmJkLT5mbGFn
+cyAmIE5CRF9SRUFEX09OTFkpIHsKKwkJaWYgKG5iZC0+ZmxhZ3MgJiBOQkRfRkxBR19SRUFEX09O
+TFkpIHsKIAkJCWRldl9lcnIoZGlza190b19kZXYobmJkLT5kaXNrKSwKIAkJCQkiV3JpdGUgb24g
+cmVhZC1vbmx5XG4iKTsKIAkJCWdvdG8gZXJyb3Jfb3V0OwpAQCAtNjQyLDYgKzY0NCwxMCBAQCBz
+dGF0aWMgaW50IF9fbmJkX2lvY3RsKHN0cnVjdCBibG9ja19kZXZpY2UgKmJkZXYsIHN0cnVjdCBu
+YmRfZGV2aWNlICpuYmQsCiAJCW5iZC0+eG1pdF90aW1lb3V0ID0gYXJnICogSFo7CiAJCXJldHVy
+biAwOwogCisJY2FzZSBOQkRfU0VUX0ZMQUdTOgorCQluYmQtPmZsYWdzID0gYXJnOworCQlyZXR1
+cm4gMDsKKwogCWNhc2UgTkJEX1NFVF9TSVpFX0JMT0NLUzoKIAkJbmJkLT5ieXRlc2l6ZSA9ICgo
+dTY0KSBhcmcpICogbmJkLT5ibGtzaXplOwogCQliZGV2LT5iZF9pbm9kZS0+aV9zaXplID0gbmJk
+LT5ieXRlc2l6ZTsKZGlmZiAtLWdpdCBhL2luY2x1ZGUvbGludXgvbmJkLmggYi9pbmNsdWRlL2xp
+bnV4L25iZC5oCmluZGV4IGQxNDZjYTEuLmJiMzQ5YmUgMTAwNjQ0Ci0tLSBhL2luY2x1ZGUvbGlu
+dXgvbmJkLmgKKysrIGIvaW5jbHVkZS9saW51eC9uYmQuaApAQCAtMjcsNiArMjcsNyBAQAogI2Rl
+ZmluZSBOQkRfU0VUX1NJWkVfQkxPQ0tTCV9JTyggMHhhYiwgNyApCiAjZGVmaW5lIE5CRF9ESVND
+T05ORUNUICBfSU8oIDB4YWIsIDggKQogI2RlZmluZSBOQkRfU0VUX1RJTUVPVVQgX0lPKCAweGFi
+LCA5ICkKKyNkZWZpbmUgTkJEX1NFVF9GTEFHUyAgIF9JTyggMHhhYiwgMTApCiAKIGVudW0gewog
+CU5CRF9DTURfUkVBRCA9IDAsCkBAIC0zNCw2ICszNSwxMCBAQCBlbnVtIHsKIAlOQkRfQ01EX0RJ
+U0MgPSAyCiB9OwogCisvKiB2YWx1ZXMgZm9yIGZsYWdzIGZpZWxkICovCisjZGVmaW5lIE5CRF9G
+TEFHX0hBU19GTEFHUwkoMSA8PCAwKQorI2RlZmluZSBOQkRfRkxBR19SRUFEX09OTFkJKDEgPDwg
+MSkKKwogI2RlZmluZSBuYmRfY21kKHJlcSkgKChyZXEpLT5jbWRbMF0pCiAKIC8qIHVzZXJzcGFj
+ZSBkb2Vzbid0IG5lZWQgdGhlIG5iZF9kZXZpY2Ugc3RydWN0dXJlICovCkBAIC00MiwxMCArNDcs
+NiBAQCBlbnVtIHsKICNpbmNsdWRlIDxsaW51eC93YWl0Lmg+CiAjaW5jbHVkZSA8bGludXgvbXV0
+ZXguaD4KIAotLyogdmFsdWVzIGZvciBmbGFncyBmaWVsZCAqLwotI2RlZmluZSBOQkRfUkVBRF9P
+TkxZIDB4MDAwMQotI2RlZmluZSBOQkRfV1JJVEVfTk9DSEsgMHgwMDAyCi0KIHN0cnVjdCByZXF1
+ZXN0OwogCiBzdHJ1Y3QgbmJkX2RldmljZSB7Cg==
+--bcaec51dd7c5df97d004c85a55d0--
