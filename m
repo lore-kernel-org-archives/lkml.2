@@ -1,151 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752532Ab2H1L1J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 07:27:09 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:45629 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751637Ab2H1L1H (ORCPT
+	id S1752042Ab2H1La6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 07:30:58 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50505 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751008Ab2H1La5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 07:27:07 -0400
-Message-ID: <503CAB1E.5010408@gmail.com>
-Date: Tue, 28 Aug 2012 13:27:26 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120826 Thunderbird/14.0
-MIME-Version: 1.0
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Tejun Heo <tj@kernel.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
-        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
-        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
-        josh@joshtriplett.org, eric.dumazet@gmail.com, axboe@kernel.dk,
-        agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
-        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
-        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
-        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive hashtable
-References: <5037DA47.9010306@gmail.com> <20120824195941.GC21325@google.com> <5037E00B.6090606@gmail.com> <20120824203332.GF21325@google.com> <5037E9D9.9000605@gmail.com> <20120824212348.GK21325@google.com> <5038074D.300@gmail.com> <20120824230740.GN21325@google.com> <20120825042419.GA27240@Krystal> <503C95E4.3010000@gmail.com> <20120828101148.GA21683@Krystal>
-In-Reply-To: <20120828101148.GA21683@Krystal>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 28 Aug 2012 07:30:57 -0400
+Message-ID: <1346153444.11862.1.camel@phoenix>
+Subject: [PATCH] gpio: em: Fix checking return value of irq_alloc_descs
+From: Axel Lin <axel.lin@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: Magnus Damm <damm@opensource.se>, linux-kernel@vger.kernel.org
+Date: Tue, 28 Aug 2012 19:30:44 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/28/2012 12:11 PM, Mathieu Desnoyers wrote:
-> * Sasha Levin (levinsasha928@gmail.com) wrote:
->> On 08/25/2012 06:24 AM, Mathieu Desnoyers wrote:
->>> * Tejun Heo (tj@kernel.org) wrote:
->>>> Hello,
->>>>
->>>> On Sat, Aug 25, 2012 at 12:59:25AM +0200, Sasha Levin wrote:
->>>>> Thats the thing, the amount of things of things you can do with a given bucket
->>>>> is very limited. You can't add entries to any point besides the head (without
->>>>> walking the entire list).
->>>>
->>>> Kinda my point.  We already have all the hlist*() interface to deal
->>>> with such cases.  Having something which is evidently the trivial
->>>> hlist hashtable and advertises as such in the interface can be
->>>> helpful.  I think we need that more than we need anything fancy.
->>>>
->>>> Heh, this is a debate about which one is less insignificant.  I can
->>>> see your point.  I'd really like to hear what others think on this.
->>>>
->>>> Guys, do we want something which is evidently trivial hlist hashtable
->>>> which can use hlist_*() API directly or do we want something better
->>>> encapsulated?
->>>
->>> My 2 cents, FWIW: I think this specific effort should target a trivially
->>> understandable API and implementation, for use-cases where one would be
->>> tempted to reimplement his own trivial hash table anyway. So here
->>> exposing hlist internals, with which kernel developers are already
->>> familiar, seems like a good approach in my opinion, because hiding stuff
->>> behind new abstraction might make the target users go away.
->>>
->>> Then, as we see the need, we can eventually merge a more elaborate hash
->>> table with poneys and whatnot, but I would expect that the trivial hash
->>> table implementation would still be useful. There are of course very
->>> compelling reasons to use a more featureful hash table: automatic
->>> resize, RT-aware updates, scalable updates, etc... but I see a purpose
->>> for a trivial implementation. Its primary strong points being:
->>>
->>> - it's trivially understandable, so anyone how want to be really sure
->>>   they won't end up debugging the hash table instead of their
->>>   work-in-progress code can have a full understanding of it,
->>> - it has few dependencies, which makes it easier to understand and
->>>   easier to use in some contexts (e.g. early boot).
->>>
->>> So I'm in favor of not overdoing the abstraction for this trivial hash
->>> table, and honestly I would rather prefer that this trivial hash table
->>> stays trivial. A more elaborate hash table should probably come as a
->>> separate API.
->>>
->>> Thanks,
->>>
->>> Mathieu
->>>
->>
->> Alright, let's keep it simple then.
->>
->> I do want to keep the hash_for_each[rcu,safe] family though.
-> 
-> Just a thought: if the API offered by the simple hash table focus on
-> providing a mechanism to find the hash bucket to which belongs the hash
-> chain containing the key looked up, and then expects the user to use the
-> hlist API to iterate on the chain (with or without the hlist _rcu
-> variant), then it might seem consistent that a helper providing
-> iteration over the entire table would actually just provide iteration on
-> all buckets, and let the user call the hlist for each iterator for each
-> node within the bucket, e.g.:
-> 
-> struct hlist_head *head;
-> struct hlist_node *pos;
-> 
-> hash_for_each_bucket(ht, head) {
->         hlist_for_each(pos, head) {
->                 ...
->         }
-> }
-> 
-> That way you only have to provide one single macro
-> (hash_for_each_bucket), and rely on the already existing:
-> 
-> - hlist_for_each_entry
-> - hlist_for_each_safe
-> - hlist_for_each_entry_rcu
-> - hlist_for_each_safe_rcu
->   .....
-> 
-> and various flavors that can appear in the future without duplicating
-> this API. So you won't even have to create _rcu, _safe, nor _safe_rcu
-> versions of the hash_for_each_bucket macro.
-> 
-> Thoughts ?
+irq_alloc_descs() returns negative error code on failure.
 
-In my opinion, the downside here is that it'll require 2 function calls and 2
-levels of nesting for a simple hash iteration.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/gpio/gpio-em.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-hash_for_each_bucket() will always be followed by an iteration of that bucket,
-so splitting a hash_for_each() which does both into 2 different functions which
-will almost always must be called in that given order sounds unintuitive to me.
-
-It's also just 3 different possible iterators:
-
- - hlist_for_each_entry
- - hlist_for_each_entry_safe
- - hlist_for_each_entry_rcu
-
-So I think that it's a good price to pay - 2 extra macro definitions in the
-header to save a macro call + nesting level in each place that uses a hashtable.
+diff --git a/drivers/gpio/gpio-em.c b/drivers/gpio/gpio-em.c
+index ae37181..ec48ed5 100644
+--- a/drivers/gpio/gpio-em.c
++++ b/drivers/gpio/gpio-em.c
+@@ -247,9 +247,9 @@ static int __devinit em_gio_irq_domain_init(struct em_gio_priv *p)
+ 
+ 	p->irq_base = irq_alloc_descs(pdata->irq_base, 0,
+ 				      pdata->number_of_pins, numa_node_id());
+-	if (IS_ERR_VALUE(p->irq_base)) {
++	if (p->irq_base < 0) {
+ 		dev_err(&pdev->dev, "cannot get irq_desc\n");
+-		return -ENXIO;
++		return p->irq_base;
+ 	}
+ 	pr_debug("gio: hw base = %d, nr = %d, sw base = %d\n",
+ 		 pdata->gpio_base, pdata->number_of_pins, p->irq_base);
+-- 
+1.7.9.5
 
 
-Thanks,
-Sasha
-
-> Thanks,
-> 
-> Mathieu
-> 
 
