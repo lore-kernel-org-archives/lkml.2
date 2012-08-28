@@ -1,143 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751667Ab2H1DWz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 23:22:55 -0400
-Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:50197
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751133Ab2H1DWx (ORCPT
+	id S1751877Ab2H1DXJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 23:23:09 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56792 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751610Ab2H1DXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 23:22:53 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zcb8kz98dI154dM1432Izz1202hzz8275dhz2dh2a8h668h839h944hd25hf0ah107ah1155h)
-Date: Tue, 28 Aug 2012 11:23:10 +0800
-From: Richard Zhao <richard.zhao@freescale.com>
-To: Dong Aisheng <b29396@freescale.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linus.walleij@stericsson.com>, <s.hauer@pengutronix.de>,
-        <shawn.guo@linaro.org>, <kernel@pengutronix.de>,
-        <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
-        <sameo@linux.intel.com>, <lrg@ti.com>,
-        <broonie@opensource.wolfsonmicro.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <swarren@wwwdotorg.org>
-Subject: Re: [PATCH v2 5/7] ARM: imx6q: convert to use syscon to access
- anatop registers
-Message-ID: <20120828032309.GW4011@b20223-02.ap.freescale.net>
-References: <1346052285-4344-1-git-send-email-b29396@freescale.com>
- <1346052285-4344-6-git-send-email-b29396@freescale.com>
+	Mon, 27 Aug 2012 23:23:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1346052285-4344-6-git-send-email-b29396@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+In-Reply-To: <503B8B26.3050205@yahoo.es>
+References: <503A8CAE.6050606@yahoo.es>
+	<20120827070323.GC28721@samfundet.no>
+	<503B342C.9060300@yahoo.es>
+	<20120827111431.GA27868@samfundet.no>
+	<503B8B26.3050205@yahoo.es>
+Date: Tue, 28 Aug 2012 08:53:06 +0530
+Message-ID: <CAKohpo=ALUNOnQdQjNd1Y2jtocxjixKCiBrRZp8qGErqg1LSKw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] dw_dmac: make driver endianness configurable
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Hein Tibosch <hein_tibosch@yahoo.es>
+Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        spear-devel <spear-devel@list.st.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "ludovic.desroches" <ludovic.desroches@atmel.com>,
+        Havard Skinnemoen <havard@skinnemoen.net>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 27, 2012 at 03:24:43PM +0800, Dong Aisheng wrote:
-> From: Dong Aisheng <dong.aisheng@linaro.org>
-> 
-> Using syscon to access anatop registers.
-> 
-> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
-> ---
-> ChangeLog v1->v2:
->  * update to use generic regmap api
-> ---
->  arch/arm/mach-imx/Kconfig      |    2 +-
->  arch/arm/mach-imx/mach-imx6q.c |   43 ++++++++++++++++-----------------------
->  2 files changed, 19 insertions(+), 26 deletions(-)
-> 
-> diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
-> index afd542a..7bba253 100644
-> --- a/arch/arm/mach-imx/Kconfig
-> +++ b/arch/arm/mach-imx/Kconfig
-> @@ -839,7 +839,7 @@ config SOC_IMX6Q
->  	select HAVE_IMX_MMDC
->  	select HAVE_IMX_SRC
->  	select HAVE_SMP
-> -	select MFD_ANATOP
-> +	select MFD_SYSCON
->  	select PINCTRL
->  	select PINCTRL_IMX6Q
->  
-> diff --git a/arch/arm/mach-imx/mach-imx6q.c b/arch/arm/mach-imx/mach-imx6q.c
-> index 045b3f6..5de869a 100644
-> --- a/arch/arm/mach-imx/mach-imx6q.c
-> +++ b/arch/arm/mach-imx/mach-imx6q.c
-> @@ -24,8 +24,9 @@
->  #include <linux/of_platform.h>
->  #include <linux/pinctrl/machine.h>
->  #include <linux/phy.h>
-> +#include <linux/regmap.h>
->  #include <linux/micrel_phy.h>
-> -#include <linux/mfd/anatop.h>
-> +#include <linux/mfd/syscon.h>
->  #include <asm/cpuidle.h>
->  #include <asm/smp_twd.h>
->  #include <asm/hardware/cache-l2x0.h>
-> @@ -121,38 +122,30 @@ static void __init imx6q_sabrelite_init(void)
->  static void __init imx6q_usb_init(void)
->  {
->  	struct device_node *np;
-> -	struct platform_device *pdev = NULL;
-> -	struct anatop *adata = NULL;
-> +	struct regmap *anatop;
->  
->  	np = of_find_compatible_node(NULL, NULL, "fsl,imx6q-anatop");
-np unused.
-> -	if (np)
-> -		pdev = of_find_device_by_node(np);
-> -	if (pdev)
-> -		adata = platform_get_drvdata(pdev);
-> -	if (!adata) {
-> -		if (np)
-> -			of_node_put(np);
-> -		return;
-> -	}
-> -
->  #define HW_ANADIG_USB1_CHRG_DETECT		0x000001b0
->  #define HW_ANADIG_USB2_CHRG_DETECT		0x00000210
->  
->  #define BM_ANADIG_USB_CHRG_DETECT_EN_B		0x00100000
->  #define BM_ANADIG_USB_CHRG_DETECT_CHK_CHRG_B	0x00080000
->  
-> -	/*
-> -	 * The external charger detector needs to be disabled,
-> -	 * or the signal at DP will be poor
-> -	 */
-> -	anatop_write_reg(adata, HW_ANADIG_USB1_CHRG_DETECT,
-> -			BM_ANADIG_USB_CHRG_DETECT_EN_B
-> -			| BM_ANADIG_USB_CHRG_DETECT_CHK_CHRG_B,
-> -			~0);
-> -	anatop_write_reg(adata, HW_ANADIG_USB2_CHRG_DETECT,
-> -			BM_ANADIG_USB_CHRG_DETECT_EN_B |
-> -			BM_ANADIG_USB_CHRG_DETECT_CHK_CHRG_B,
-> -			~0);
-> +	anatop = syscon_regmap_lookup_by_compatible("fsl,imx6q-anatop");
-> +	if (!IS_ERR(anatop)) {
-> +		/*
-> +		 * The external charger detector needs to be disabled,
-> +		 * or the signal at DP will be poor
-> +		 */
-> +		regmap_write(anatop, HW_ANADIG_USB1_CHRG_DETECT,
-> +				BM_ANADIG_USB_CHRG_DETECT_EN_B
-> +				| BM_ANADIG_USB_CHRG_DETECT_CHK_CHRG_B);
-> +		regmap_write(anatop, HW_ANADIG_USB2_CHRG_DETECT,
-> +				BM_ANADIG_USB_CHRG_DETECT_EN_B |
-> +				BM_ANADIG_USB_CHRG_DETECT_CHK_CHRG_B);
-> +	} else {
-> +		pr_warn("failed to find fsl,imx6q-anatop regmap\n");
-> +	}
->  
->  	of_node_put(np);
-unneeded.
+On 27 August 2012 20:28, Hein Tibosch <hein_tibosch@yahoo.es> wrote:
+>>> +config DW_DMAC_MEM_64_BIT
+>>> +    bool "Allow 64-bit memory transfers"
+>>> +    default y if !AVR32
+>>> +    depends on DW_DMAC
+>>> +    help
+>>> +      Say yes if the DMA controller may do 64-bit memory transfers
+>>> +      For AVR32, say no because only up to 32-bit transfers are
+>>> +      defined
+>> Is this sane to add? Could some non-AVR32 platforms use 64-bit and 32-bit
+>> depending on runtime configuration? E.g. if you build a kernel with support
+>> for multiple boards/processors, and there is a mix of 32-bit and 64-bit wide
+>> DMA support.
+>>
+>> I think it is better to select 32/64-bit at runtime.
+>
+> I did that in the first patch, adding a new property to the dw_dma_slave
+> structure. It had the small disadvantage that some arch code had to be
+> adapted (at32ap700x.c).
+>
+> Viresh, what do you think? Add a property called "mem_64_bit_access" or so?
+>
+> Or should it be passed as a member of 'dw_dma_platform_data', because it
+> is a property of the (entire) DMA controller?
 
-Thanks
-Richard
->  }
-> -- 
-> 1.7.0.4
-> 
+I think second option is better. But can there be some supportive scenarios of
+first option?
 
+We have a system, with two different memory controllers, one supporting 32 bit
+and other 64 bit?
+
+Or what we can do now is: go with option 2, i.e. update dw_dma_platform_data
+and if some platform like what i mentioned above comes, then we can move it
+to slave data.
+
+viresh
