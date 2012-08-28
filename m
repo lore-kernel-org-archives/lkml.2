@@ -1,127 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483Ab2H1QMh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 12:12:37 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:58914 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753022Ab2H1QMg (ORCPT
+	id S1753372Ab2H1QP2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 12:15:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35435 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752891Ab2H1QPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 12:12:36 -0400
-Message-ID: <1346170350.12384.9.camel@localhost.localdomain>
-Subject: Re: Possible mptsas regression post 3.5.0
-From: Dan Williams <djbw@fb.com>
-To: John Drescher <drescherjm@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
-        <DL-MPTFusionLinux@lsi.com>
-Date: Tue, 28 Aug 2012 09:12:30 -0700
-In-Reply-To: <CAEhu1-6nKpX=tqES95AsPn-yFioS8-5+mcU1maSYh0AozVT5PA@mail.gmail.com>
-References: <CAEhu1-6wq1YsNiscGMwP4ud0Q+MrViRzv=kcWCQSBNc8c68N5Q@mail.gmail.com>
-	 <CAEhu1-5VLuFsZomDZ1yxixqD7oLEhoXs+N698_VBkdGz5trK8g@mail.gmail.com>
-	 <CAEhu1-5sHQOTZ=KRxkpiAeBFC5BReR+svUGpp=9tk3drqJNg0A@mail.gmail.com>
-	 <CAD9gYJJQ+vsv12+-0e_nMtgs71Snvt4j2s48-HnwkrV2yOiwLQ@mail.gmail.com>
-	 <CAEhu1-7zGeZ-A0hkJ0=PqJart8f1zGyapWo-DP0fORuNTpj0sg@mail.gmail.com>
-	 <1346132253.12384.6.camel@localhost.localdomain>
-	 <CAEhu1-6nKpX=tqES95AsPn-yFioS8-5+mcU1maSYh0AozVT5PA@mail.gmail.com>
-Content-Type: multipart/mixed; boundary="=-JLjCog8p08IZVNonnz3z"
-X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
+	Tue, 28 Aug 2012 12:15:25 -0400
+Date: Tue, 28 Aug 2012 09:15:22 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Aristeu Rozanski <aris@redhat.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>, Hugh Dickins <hughd@google.com>,
+        Hillf Danton <dhillf@gmail.com>,
+        Lennart Poettering <lpoetter@redhat.com>
+Subject: Re: [PATCH v7 0/4] cgroup: add xattr support
+Message-ID: <20120828161522.GD14812@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <20120823205327.237533518@napanee.usersys.redhat.com>
+ <20120824225839.GM21325@google.com>
+ <20120827130525.GI18688@redhat.com>
 MIME-Version: 1.0
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
- definitions=2012-08-28_06:2012-08-28,2012-08-28,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120827130525.GI18688@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-JLjCog8p08IZVNonnz3z
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Hello,
 
-On Tue, 2012-08-28 at 10:03 -0400, John Drescher wrote:
-> > I wonder if we are preventing scsi_device_dev_release_usercontext() from
-> > making forward progress?
-> >
-> > ...the attached patch should confirm this or give more info otherwise.
-> >
+On Mon, Aug 27, 2012 at 09:05:25AM -0400, Aristeu Rozanski wrote:
+> Hi Tejun,
+> On Fri, Aug 24, 2012 at 03:58:39PM -0700, Tejun Heo wrote:
+> > On Thu, Aug 23, 2012 at 04:53:27PM -0400, aris@redhat.com wrote:
+> > > This series are a refreshed version of a patchset submitted by Li Zefan back
+> > > in march:
+> > > 	https://lkml.org/lkml/2012/3/1/13
+> > 
+> > Applied to cgroup/for-3.7 w/ "Original-Patch-by: Li Zefan" added for
+> > the first three patches.
+> > 
+> > * Can you please update MTA setting so that the From: header contains
+> >   your full name?  Importing the series to git ended up with
+> >   "aris@redhat.com <aris@redhat.com>".
 > 
-> [  174.758218] scsi_remove_target[0]: reap 0:0 state: 2 reap: 1 dev_del: 1
+> sure, will repost with that fixed and including "Original-Patch-by: Li
+> Zefan" on the first three patches
 
-Thanks!  Does the attached patch fix the issue for you?
+Ooh, I already fixed it up myself.  I was mentioning for future
+patches.
 
---
-Dan
+> > * Can you please add some comments and documentation regarding this?
+> 
+> about what exactly?
 
+What xattr support in cgroup does and for what supposed purposes with
+what kind of restrictions and some comments explaining the
+implementation, I suppose.
 
---=-JLjCog8p08IZVNonnz3z
-Content-Disposition: attachment;
-	filename="test-scsi-remove-target-fix.patch"
-Content-Type: text/x-patch; name="test-scsi-remove-target-fix.patch";
-	charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Thanks.
 
-scsi_remove_target: fix softlockup condition
-
-From: Dan Williams <djbw@fb.com>
-
-Don't restart lookup of stargets in the multi-target case, just arrange to
-traverse the list once, on the assumption that new targets are always added at
-the end.  There is no guarantee that the target will change state in
-scsi_target_reap() so we can end up spinning if we restart.
----
- drivers/scsi/scsi_sysfs.c |   30 ++++++++++++++----------------
- 1 file changed, 14 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
-index 093d4f6..ce5224c 100644
---- a/drivers/scsi/scsi_sysfs.c
-+++ b/drivers/scsi/scsi_sysfs.c
-@@ -1031,33 +1031,31 @@ static void __scsi_remove_target(struct scsi_target *starget)
- void scsi_remove_target(struct device *dev)
- {
- 	struct Scsi_Host *shost = dev_to_shost(dev->parent);
--	struct scsi_target *starget, *found;
-+	struct scsi_target *starget, *last = NULL;
- 	unsigned long flags;
- 
-- restart:
--	found = NULL;
-+	/* remove targets being careful to lookup next entry before
-+	 * deleting the last
-+	 */
- 	spin_lock_irqsave(shost->host_lock, flags);
- 	list_for_each_entry(starget, &shost->__targets, siblings) {
- 		if (starget->state == STARGET_DEL)
- 			continue;
- 		if (starget->dev.parent == dev || &starget->dev == dev) {
--			found = starget;
--			found->reap_ref++;
--			break;
-+			/* assuming new targets arrive at the end */
-+			starget->reap_ref++;
-+			spin_unlock_irqrestore(shost->host_lock, flags);
-+			if (last)
-+				scsi_target_reap(last);
-+			last = starget;
-+			__scsi_remove_target(starget);
-+			spin_lock_irqsave(shost->host_lock, flags);
- 		}
- 	}
- 	spin_unlock_irqrestore(shost->host_lock, flags);
- 
--	if (found) {
--		__scsi_remove_target(found);
--		scsi_target_reap(found);
--		/* in the case where @dev has multiple starget children,
--		 * continue removing.
--		 *
--		 * FIXME: does such a case exist?
--		 */
--		goto restart;
--	}
-+	if (last)
-+		scsi_target_reap(last);
- }
- EXPORT_SYMBOL(scsi_remove_target);
- 
-
---=-JLjCog8p08IZVNonnz3z--
+-- 
+tejun
