@@ -1,127 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752604Ab2H1SuQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 14:50:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37506 "EHLO mx2.suse.de"
+	id S1753013Ab2H1S4e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 14:56:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43417 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751236Ab2H1SuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 14:50:14 -0400
-Date: Tue, 28 Aug 2012 11:49:52 -0700 (PDT)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Mike Frysinger <vapier@gentoo.org>, Mark Salter <msalter@redhat.com>,
-        Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        David Howells <dhowells@redhat.com>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Richard Kuo <rkuo@codeaurora.org>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Michal Simek <monstr@monstr.eu>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        Jonas Bonn <jonas@southpole.se>, Chen Liqin <liqin.chen@sunplusct.com>,
-        Lennox Wu <lennox.wu@gmail.com>, Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Zankel <chris@zankel.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [RFC] cross-arch: don't corrupt personality flags upon
- exec()
-In-Reply-To: <503CF76C.2010105@tilera.com>
-Message-ID: <alpine.LNX.2.00.1208281135320.22447@pobox.suse.cz>
-References: <alpine.LNX.2.00.1208031143320.29827@pobox.suse.cz> <alpine.LNX.2.00.1208131518520.29827@pobox.suse.cz> <20120815154520.f9cf4e24.akpm@linux-foundation.org> <201208221927.28993.arnd@arndb.de> <503CF76C.2010105@tilera.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752260Ab2H1S4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Aug 2012 14:56:32 -0400
+Date: Tue, 28 Aug 2012 11:56:27 -0700
+From: Jeff Layton <jlayton@redhat.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] NFS: Fix Oopses in nfs_lookup_revalidate and
+ nfs4_lookup_revalidate
+Message-ID: <20120828115627.46c4626e@corrin.poochiereds.net>
+In-Reply-To: <20120827202311.GA16556@kroah.com>
+References: <1345666097-14815-1-git-send-email-Trond.Myklebust@netapp.com>
+	<20120827200949.GA4732@kroah.com>
+	<4FA345DA4F4AE44899BD2B03EEEC2FA908F6E388@SACEXCMBX04-PRD.hq.netapp.com>
+	<20120827202311.GA16556@kroah.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Aug 2012, Chris Metcalf wrote:
+On Mon, 27 Aug 2012 13:23:11 -0700
+Greg KH <gregkh@linuxfoundation.org> wrote:
 
-> > On tile, the PER_LINUX_32BIT is always set for 32 bit compat tasks in a
-> > 64 bit kernel, which is harmless but wrong anyway. Also this, tile never
-> > calls set_personality, which is also harmless because it just means that
-> > exec_domain switching on tile is broken, but the only non-bogus
-> > exec_domain besides the default one is an experimental support for Acorn
-> > RISC OS binaries that was last updated in 2002 for for linux-2.5.49.
+> On Mon, Aug 27, 2012 at 08:16:09PM +0000, Myklebust, Trond wrote:
+> > On Mon, 2012-08-27 at 13:09 -0700, Greg KH wrote:
+> > > On Wed, Aug 22, 2012 at 04:08:17PM -0400, Trond Myklebust wrote:
+> > > > Fix the following Oops in 3.5.1:
+> > > > 
+> > > >  BUG: unable to handle kernel NULL pointer dereference at 0000000000000038
+> > > >  IP: [<ffffffffa03789cd>] nfs_lookup_revalidate+0x2d/0x480 [nfs]
+> > > >  PGD 337c63067 PUD 0
+> > > >  Oops: 0000 [#1] SMP
+> > > >  CPU 5
+> > > >  Modules linked in: nfs fscache nfsd lockd nfs_acl auth_rpcgss sunrpc af_packet binfmt_misc cpufreq_conservative cpufreq_userspace cpufreq_powersave dm_mod acpi_cpufreq mperf coretemp gpio_ich kvm_intel joydev kvm ioatdma hid_generic igb lpc_ich i7core_edac edac_core ptp serio_raw dca pcspkr i2c_i801 mfd_core sg pps_core usbhid crc32c_intel microcode button autofs4 uhci_hcd ttm drm_kms_helper drm i2c_algo_bit sysimgblt sysfillrect syscopyarea ehci_hcd usbcore usb_common scsi_dh_rdac scsi_dh_emc scsi_dh_hp_sw scsi_dh_alua scsi_dh edd fan ata_piix thermal processor thermal_sys
+> > > > 
+> > > >  Pid: 30431, comm: java Not tainted 3.5.1-2-default #1 Supermicro X8DTT/X8DTT
+> > > >  RIP: 0010:[<ffffffffa03789cd>]  [<ffffffffa03789cd>] nfs_lookup_revalidate+0x2d/0x480 [nfs]
+> > > >  RSP: 0018:ffff8801b418bd38  EFLAGS: 00010292
+> > > >  RAX: 00000000fffffff6 RBX: ffff88032016d800 RCX: 0000000000000020
+> > > >  RDX: ffffffff00000000 RSI: 0000000000000000 RDI: ffff8801824a7b00
+> > > >  RBP: ffff8801b418bdf8 R08: 7fffff0034323030 R09: fffffffff04c03ed
+> > > >  R10: ffff8801824a7b00 R11: 0000000000000002 R12: ffff8801824a7b00
+> > > >  R13: ffff8801824a7b00 R14: 0000000000000000 R15: ffff8803201725d0
+> > > >  FS:  00002b53a46cb700(0000) GS:ffff88033fc20000(0000) knlGS:0000000000000000
+> > > >  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> > > >  CR2: 0000000000000038 CR3: 000000020a426000 CR4: 00000000000007e0
+> > > >  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> > > >  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> > > >  Process java (pid: 30431, threadinfo ffff8801b418a000, task ffff8801b5d20600)
+> > > >  Stack:
+> > > >   ffff8801b418be44 ffff88032016d800 ffff8801b418bdf8 0000000000000000
+> > > >   ffff8801824a7b00 ffff8801b418bdd7 ffff8803201725d0 ffffffff8116a9c0
+> > > >   ffff8801b5c38dc0 0000000000000007 ffff88032016d800 0000000000000000
+> > > >  Call Trace:
+> > > >   [<ffffffff8116a9c0>] lookup_dcache+0x80/0xe0
+> > > >   [<ffffffff8116aa43>] __lookup_hash+0x23/0x90
+> > > >   [<ffffffff8116b4a5>] lookup_one_len+0xc5/0x100
+> > > >   [<ffffffffa03869a3>] nfs_sillyrename+0xe3/0x210 [nfs]
+> > > >   [<ffffffff8116cadf>] vfs_unlink.part.25+0x7f/0xe0
+> > > >   [<ffffffff8116f22c>] do_unlinkat+0x1ac/0x1d0
+> > > >   [<ffffffff815717b9>] system_call_fastpath+0x16/0x1b
+> > > >   [<00002b5348b5f527>] 0x2b5348b5f526
+> > > >  Code: ec 38 b8 f6 ff ff ff 4c 89 64 24 18 4c 89 74 24 28 49 89 fc 48 89 5c 24 08 48 89 6c 24 10 49 89 f6 4c 89 6c 24 20 4c 89 7c 24 30 <f6> 46 38 40 0f 85 d1 00 00 00 e8 c4 c4 df e0 48 8b 58 30 49 89
+> > > >  RIP  [<ffffffffa03789cd>] nfs_lookup_revalidate+0x2d/0x480 [nfs]
+> > > >   RSP <ffff8801b418bd38>
+> > > >  CR2: 0000000000000038
+> > > >  ---[ end trace 845113ed191985dd ]---
+> > > > 
+> > > > This Oops affects 3.5 kernels and older, and is due to lookup_one_len()
+> > > > calling down to the dentry revalidation code with a NULL pointer
+> > > > to struct nameidata.
+> > > > 
+> > > > It is fixed upstream by commit 0b728e1911c (stop passing nameidata *
+> > > > to ->d_revalidate())
+> > > 
+> > > So this is just a nfs-only backport of the larger patch 0b728e1911c,
+> > > right?  Should we also do this for other filesystems as well?  Or just
+> > > backport the whole commit?
+> > 
+> > The larger patch involves a VFS api change (the atomic open code) which
+> > has a bunch of pre- and post-requirements. I'd assume that is a too
+> > large change for stable. I think that the smaller per-filesystem changes
+> > are probably more appropriate. The list of filesystems that care are
+> > likely to be small. Off the top of my head, I can only think of NFS,
+> > CIFS, FUSE and possibly ceph.
 > 
-> Arnd, thanks for the drive-by code review.  Is this change the correct fix
-> for your observation?
+> Ok, I'll take this one for NFS, care to break this up also for FUSE and
+> CIFS and send me a patch for it?
 > 
-> diff --git a/arch/tile/include/asm/elf.h b/arch/tile/include/asm/elf.h
-> index d16d006..fd31920 100644
-> --- a/arch/tile/include/asm/elf.h
-> +++ b/arch/tile/include/asm/elf.h
-> @@ -156,12 +156,12 @@ extern int arch_setup_additional_pages(struct linux_binprm *bprm,
->  #undef SET_PERSONALITY
->  #define SET_PERSONALITY(ex) \
->  do { \
-> -       current->personality = PER_LINUX; \
-> +       set_personality(PER_LINUX);                  \
->         current_thread_info()->status &= ~TS_COMPAT; \
->  } while (0)
->  #define COMPAT_SET_PERSONALITY(ex) \
->  do { \
-> -       current->personality = PER_LINUX_32BIT; \
-> +       set_personality(PER_LINUX);                 \
->         current_thread_info()->status |= TS_COMPAT; \
->  } while (0)
 
-Actually this is also wrong. You should be rather doing
-
-	set_personality(PER_LINUX | (current->personality & (~PER_MASK)))
-
-otherwise you clobber the upper personality bits upon exec().
-
-Something like the patch below. Either you can take it for tile, or I can 
-ask Andrew to fold it into my tree-wide fix currently waiting in -mm. Just 
-let me know.
-
-
-From: Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH] tile: Don't corrupt personality flags upon exec()
-
-Historically, the top three bytes of personality have been used for things
-such as ADDR_NO_RANDOMIZE, which made sense only for specific
-architectures.
-
-We now however have a flag there that is general no matter the
-architecture (UNAME26); generally we have to be careful to preserve the
-personality flags across exec().
-
-This patch fixes tile architecture not to forcefully overwrite
-personality flags during exec().
-
-Plus it fixes exec_domain switching -- set_personality() should always be 
-used instead of directly assigning to current->personality.
-
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
----
- arch/tile/include/asm/elf.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/tile/include/asm/elf.h b/arch/tile/include/asm/elf.h
-index d16d006..cf7f3bd 100644
---- a/arch/tile/include/asm/elf.h
-+++ b/arch/tile/include/asm/elf.h
-@@ -156,12 +156,12 @@ extern int arch_setup_additional_pages(struct linux_binprm *bprm,
- #undef SET_PERSONALITY
- #define SET_PERSONALITY(ex) \
- do { \
--	current->personality = PER_LINUX; \
-+	set_personality(PER_LINUX | (current->personality & (~PER_MASK))); \
- 	current_thread_info()->status &= ~TS_COMPAT; \
- } while (0)
- #define COMPAT_SET_PERSONALITY(ex) \
- do { \
--	current->personality = PER_LINUX_32BIT; \
-+	set_personality(PER_LINUX_32BIT | (current->personality & (~PER_MASK))); \
- 	current_thread_info()->status |= TS_COMPAT; \
- } while (0)
- 
+A similar problem was already fixed quite some time ago in cifs in
+commit f5bc1e755d, shortly after the RCU lookup code went in.
 
 -- 
-Jiri Kosina
-SUSE Labs
+Jeff Layton <jlayton@redhat.com>
