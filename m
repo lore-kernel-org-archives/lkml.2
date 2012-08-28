@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751756Ab2H1Egf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 00:36:35 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:56015 "EHLO
+	id S1751904Ab2H1Ekc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 00:40:32 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:41316 "EHLO
 	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877Ab2H1Ege (ORCPT
+	with ESMTP id S1750876Ab2H1Ekb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 00:36:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120827200510.GB14812@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <1346090307-3020-1-git-send-email-laijs@cn.fujitsu.com>
-	<1346090307-3020-7-git-send-email-laijs@cn.fujitsu.com>
-	<20120827200510.GB14812@dhcp-172-17-108-109.mtv.corp.google.com>
-Date: Tue, 28 Aug 2012 12:36:33 +0800
-Message-ID: <CACvQF51fcEr2jMwpA1ec6QeDksEHz-+qDwYnABzDhLO0wX8omg@mail.gmail.com>
-Subject: Re: [PATCH 6/7] workqueue: init 0 for idle_rebind.cnt
-From: Lai Jiangshan <eag0628@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 28 Aug 2012 00:40:31 -0400
+From: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+To: FlorianSchandinat@gmx.de
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org, rjw@sisk.pl,
+        Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+Subject: [PATCH] drivrs/video/jz4740_fb.c: Use SIMPLE_DEV_PM_OPS instead of dev_pm_ops
+Date: Tue, 28 Aug 2012 01:38:03 -0300
+Message-Id: <1346128683-21487-1-git-send-email-marcos.souza.org@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 28, 2012 at 4:05 AM, Tejun Heo <tj@kernel.org> wrote:
-> On Tue, Aug 28, 2012 at 01:58:26AM +0800, Lai Jiangshan wrote:
->> Access idle_rebind.cnt is always protected by gcwq->lock,
->> don't need to init it as 1.
->
-> But then the completion could be triggered prematurely, no?
+Just a cleanup, not functional changes.
 
-No, the idle_worker_rebind() can't be called until rebind_workers()
-finish counting and release the gcwq->lock.
+Signed-off-by: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+---
 
->
-> Thanks.
->
-> --
-> tejun
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+ Just compile test. Please double check.
+
+ drivers/video/jz4740_fb.c |    7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
+
+diff --git a/drivers/video/jz4740_fb.c b/drivers/video/jz4740_fb.c
+index de36693..a53fb7d 100644
+--- a/drivers/video/jz4740_fb.c
++++ b/drivers/video/jz4740_fb.c
+@@ -807,12 +807,7 @@ static int jzfb_resume(struct device *dev)
+ 	return 0;
+ }
+ 
+-static const struct dev_pm_ops jzfb_pm_ops = {
+-	.suspend	= jzfb_suspend,
+-	.resume		= jzfb_resume,
+-	.poweroff	= jzfb_suspend,
+-	.restore	= jzfb_resume,
+-};
++static SIMPLE_DEV_PM_OPS(jzfb_pm_ops, jzfb_suspend, jzfb_resume);
+ 
+ #define JZFB_PM_OPS (&jzfb_pm_ops)
+ 
+-- 
+1.7.9.5
+
