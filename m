@@ -1,82 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753053Ab2H1Lsh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 07:48:37 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38659 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752956Ab2H1Lsf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 07:48:35 -0400
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: HACHIMI Samir <shachimi@adeneo-embedded.com>, shawn.guo@linaro.org,
-        thierry.reding@avionic-design.de, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Beno=C3=AEt=20Th=C3=A9baudeau?= 
-	<benoit.thebaudeau@advansee.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [PATCH 8/9] ARM i.MX53: Add pwms to dtsi
-Date: Tue, 28 Aug 2012 13:48:23 +0200
-Message-Id: <1346154504-5623-9-git-send-email-s.hauer@pengutronix.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1346154504-5623-1-git-send-email-s.hauer@pengutronix.de>
-References: <1346154504-5623-1-git-send-email-s.hauer@pengutronix.de>
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1753088Ab2H1LvJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 07:51:09 -0400
+Received: from slimlogic.co.uk ([89.16.172.20]:36813 "EHLO slimlogic.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752823Ab2H1LsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Aug 2012 07:48:17 -0400
+From: Graeme Gregory <gg@slimlogic.co.uk>
+To: linux-kernel@vger.kernel.org
+Cc: broonie@opensource.wolfsonmicro.com, lrg@ti.com, sameo@linux.intel.com,
+        peter.ujfalusi@ti.com, s-guiriec@ti.com,
+        Graeme Gregory <gg@slimlogic.co.uk>
+Subject: [PATCH 5/6] mfd: change regulator defns to better suite DT
+Date: Tue, 28 Aug 2012 13:47:39 +0200
+Message-Id: <1346154460-20031-6-git-send-email-gg@slimlogic.co.uk>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1346154460-20031-1-git-send-email-gg@slimlogic.co.uk>
+References: <1346154460-20031-1-git-send-email-gg@slimlogic.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+In order to better fit DT parsing in of regulator definitions re-arrange
+the platform data struct slightly which requires the definitions of
+the regulator IDs earlier in the include file.
 
-Conflicts:
-	arch/arm/mach-imx/clk-imx51-imx53.c
+Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
 ---
- arch/arm/boot/dts/imx53.dtsi        |   14 ++++++++++++++
- arch/arm/mach-imx/clk-imx51-imx53.c |    4 ++++
- 2 files changed, 18 insertions(+)
+ include/linux/mfd/palmas.h |   60 ++++++++++++++++++++++----------------------
+ 1 file changed, 30 insertions(+), 30 deletions(-)
 
-diff --git a/arch/arm/boot/dts/imx53.dtsi b/arch/arm/boot/dts/imx53.dtsi
-index cd37165..7ec17e4 100644
---- a/arch/arm/boot/dts/imx53.dtsi
-+++ b/arch/arm/boot/dts/imx53.dtsi
-@@ -189,6 +189,20 @@
- 				status = "disabled";
- 			};
+diff --git a/include/linux/mfd/palmas.h b/include/linux/mfd/palmas.h
+index cfbf794..29f6616 100644
+--- a/include/linux/mfd/palmas.h
++++ b/include/linux/mfd/palmas.h
+@@ -130,16 +130,44 @@ struct palmas_reg_init {
  
-+			pwm1: pwm@53fb4000 {
-+				#pwm-cells = <3>;
-+				compatible = "fsl,imx53-pwm", "fsl,imx27-pwm";
-+				reg = <0x53fb4000 0x4000>;
-+				interrupts = <61>;
-+			};
-+
-+			pwm2: pwm@53fb8000 {
-+				#pwm-cells = <3>;
-+				compatible = "fsl,imx53-pwm", "fsl,imx27-pwm";
-+				reg = <0x53fb8000 0x4000>;
-+				interrupts = <94>;
-+			};
-+
- 			uart1: serial@53fbc000 {
- 				compatible = "fsl,imx53-uart", "fsl,imx21-uart";
- 				reg = <0x53fbc000 0x4000>;
-diff --git a/arch/arm/mach-imx/clk-imx51-imx53.c b/arch/arm/mach-imx/clk-imx51-imx53.c
-index 4bdcaa9..b522411 100644
---- a/arch/arm/mach-imx/clk-imx51-imx53.c
-+++ b/arch/arm/mach-imx/clk-imx51-imx53.c
-@@ -455,6 +455,10 @@ int __init mx53_clocks_init(unsigned long rate_ckil, unsigned long rate_osc,
- 	clk_register_clkdev(clk[ssi1_ipg_gate], NULL, "63fcc000.ssi");
- 	clk_register_clkdev(clk[ssi2_ipg_gate], NULL, "50014000.ssi");
- 	clk_register_clkdev(clk[ssi3_ipg_gate], NULL, "63fd0000.ssi");
-+	clk_register_clkdev(clk[pwm1_ipg_gate], "ipg", "53fb4000.pwm");
-+	clk_register_clkdev(clk[pwm1_hf_gate], "per", "53fb4000.pwm");
-+	clk_register_clkdev(clk[pwm2_ipg_gate], "ipg", "53fb8000.pwm");
-+	clk_register_clkdev(clk[pwm2_hf_gate], "per", "53fb8000.pwm");
+ };
  
- 	/* set SDHC root clock to 200MHZ*/
- 	clk_set_rate(clk[esdhc_a_podf], 200000000);
++enum palmas_regulators {
++	/* SMPS regulators */
++	PALMAS_REG_SMPS12,
++	PALMAS_REG_SMPS123,
++	PALMAS_REG_SMPS3,
++	PALMAS_REG_SMPS45,
++	PALMAS_REG_SMPS457,
++	PALMAS_REG_SMPS6,
++	PALMAS_REG_SMPS7,
++	PALMAS_REG_SMPS8,
++	PALMAS_REG_SMPS9,
++	PALMAS_REG_SMPS10,
++	/* LDO regulators */
++	PALMAS_REG_LDO1,
++	PALMAS_REG_LDO2,
++	PALMAS_REG_LDO3,
++	PALMAS_REG_LDO4,
++	PALMAS_REG_LDO5,
++	PALMAS_REG_LDO6,
++	PALMAS_REG_LDO7,
++	PALMAS_REG_LDO8,
++	PALMAS_REG_LDO9,
++	PALMAS_REG_LDOLN,
++	PALMAS_REG_LDOUSB,
++	/* Total number of regulators */
++	PALMAS_NUM_REGS,
++};
++
+ struct palmas_pmic_platform_data {
+ 	/* An array of pointers to regulator init data indexed by regulator
+ 	 * ID
+ 	 */
+-	struct regulator_init_data **reg_data;
++	struct regulator_init_data *reg_data[PALMAS_NUM_REGS];
+ 
+ 	/* An array of pointers to structures containing sleep mode and DVS
+ 	 * configuration for regulators indexed by ID
+ 	 */
+-	struct palmas_reg_init **reg_init;
++	struct palmas_reg_init *reg_init[PALMAS_NUM_REGS];
+ 
+ 	/* use LDO6 for vibrator control */
+ 	int ldo6_vibrator;
+@@ -291,34 +319,6 @@ enum palmas_irqs {
+ 	PALMAS_NUM_IRQ,
+ };
+ 
+-enum palmas_regulators {
+-	/* SMPS regulators */
+-	PALMAS_REG_SMPS12,
+-	PALMAS_REG_SMPS123,
+-	PALMAS_REG_SMPS3,
+-	PALMAS_REG_SMPS45,
+-	PALMAS_REG_SMPS457,
+-	PALMAS_REG_SMPS6,
+-	PALMAS_REG_SMPS7,
+-	PALMAS_REG_SMPS8,
+-	PALMAS_REG_SMPS9,
+-	PALMAS_REG_SMPS10,
+-	/* LDO regulators */
+-	PALMAS_REG_LDO1,
+-	PALMAS_REG_LDO2,
+-	PALMAS_REG_LDO3,
+-	PALMAS_REG_LDO4,
+-	PALMAS_REG_LDO5,
+-	PALMAS_REG_LDO6,
+-	PALMAS_REG_LDO7,
+-	PALMAS_REG_LDO8,
+-	PALMAS_REG_LDO9,
+-	PALMAS_REG_LDOLN,
+-	PALMAS_REG_LDOUSB,
+-	/* Total number of regulators */
+-	PALMAS_NUM_REGS,
+-};
+-
+ struct palmas_pmic {
+ 	struct palmas *palmas;
+ 	struct device *dev;
 -- 
-1.7.10.4
+1.7.9.5
 
