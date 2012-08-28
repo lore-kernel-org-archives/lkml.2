@@ -1,194 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752375Ab2H1Jxk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 05:53:40 -0400
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:55880 "EHLO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751869Ab2H1Jxh (ORCPT
+	id S1752502Ab2H1J4h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 05:56:37 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:48135 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751210Ab2H1J4f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 05:53:37 -0400
-Date: Tue, 28 Aug 2012 12:49:26 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-Cc: ccross@android.com, olof@lixom.net, swarren@wwwdotorg.org,
-        linux@arm.linux.org.uk, stern@rowland.harvard.edu,
-        gregkh@linuxfoundation.org, balbi@ti.com, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH] usb: tegra: moving phy driver into drivers directory
-Message-ID: <20120828094924.GT27166@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1346146338-4996-1-git-send-email-vbyravarasu@nvidia.com>
+	Tue, 28 Aug 2012 05:56:35 -0400
+Message-ID: <503C95E4.3010000@gmail.com>
+Date: Tue, 28 Aug 2012 11:56:52 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120826 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="L2YZAWjVjAQ1Un1Q"
-Content-Disposition: inline
-In-Reply-To: <1346146338-4996-1-git-send-email-vbyravarasu@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: Tejun Heo <tj@kernel.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
+        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
+        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
+        josh@joshtriplett.org, eric.dumazet@gmail.com, axboe@kernel.dk,
+        agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
+        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
+        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
+        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive hashtable
+References: <50357840.5020201@gmail.com> <20120823200456.GD14962@google.com> <5037DA47.9010306@gmail.com> <20120824195941.GC21325@google.com> <5037E00B.6090606@gmail.com> <20120824203332.GF21325@google.com> <5037E9D9.9000605@gmail.com> <20120824212348.GK21325@google.com> <5038074D.300@gmail.com> <20120824230740.GN21325@google.com> <20120825042419.GA27240@Krystal>
+In-Reply-To: <20120825042419.GA27240@Krystal>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/25/2012 06:24 AM, Mathieu Desnoyers wrote:
+> * Tejun Heo (tj@kernel.org) wrote:
+>> Hello,
+>>
+>> On Sat, Aug 25, 2012 at 12:59:25AM +0200, Sasha Levin wrote:
+>>> Thats the thing, the amount of things of things you can do with a given bucket
+>>> is very limited. You can't add entries to any point besides the head (without
+>>> walking the entire list).
+>>
+>> Kinda my point.  We already have all the hlist*() interface to deal
+>> with such cases.  Having something which is evidently the trivial
+>> hlist hashtable and advertises as such in the interface can be
+>> helpful.  I think we need that more than we need anything fancy.
+>>
+>> Heh, this is a debate about which one is less insignificant.  I can
+>> see your point.  I'd really like to hear what others think on this.
+>>
+>> Guys, do we want something which is evidently trivial hlist hashtable
+>> which can use hlist_*() API directly or do we want something better
+>> encapsulated?
+> 
+> My 2 cents, FWIW: I think this specific effort should target a trivially
+> understandable API and implementation, for use-cases where one would be
+> tempted to reimplement his own trivial hash table anyway. So here
+> exposing hlist internals, with which kernel developers are already
+> familiar, seems like a good approach in my opinion, because hiding stuff
+> behind new abstraction might make the target users go away.
+> 
+> Then, as we see the need, we can eventually merge a more elaborate hash
+> table with poneys and whatnot, but I would expect that the trivial hash
+> table implementation would still be useful. There are of course very
+> compelling reasons to use a more featureful hash table: automatic
+> resize, RT-aware updates, scalable updates, etc... but I see a purpose
+> for a trivial implementation. Its primary strong points being:
+> 
+> - it's trivially understandable, so anyone how want to be really sure
+>   they won't end up debugging the hash table instead of their
+>   work-in-progress code can have a full understanding of it,
+> - it has few dependencies, which makes it easier to understand and
+>   easier to use in some contexts (e.g. early boot).
+> 
+> So I'm in favor of not overdoing the abstraction for this trivial hash
+> table, and honestly I would rather prefer that this trivial hash table
+> stays trivial. A more elaborate hash table should probably come as a
+> separate API.
+> 
+> Thanks,
+> 
+> Mathieu
+> 
 
---L2YZAWjVjAQ1Un1Q
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Alright, let's keep it simple then.
 
-Hi,
+I do want to keep the hash_for_each[rcu,safe] family though.
 
-On Tue, Aug 28, 2012 at 03:02:18PM +0530, Venu Byravarasu wrote:
-> In order to keep up with the USB driver files organization,
-> moving USB phy driver from mach-tegra to drivers/USB directory.
->=20
-> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
-> ---
->  arch/arm/mach-tegra/Makefile                       |    1 -
->  arch/arm/mach-tegra/devices.c                      |    8 +-------
->  arch/arm/mach-tegra/devices.h                      |    2 --
->  drivers/usb/host/ehci-tegra.c                      |    2 +-
->  drivers/usb/phy/Makefile                           |    1 +
->  .../usb_phy.c =3D> drivers/usb/phy/tegra_usb_phy.c   |    4 +---
->  .../usb_phy.h =3D> drivers/usb/phy/tegra_usb_phy.h   |    2 --
->  7 files changed, 4 insertions(+), 16 deletions(-)
->  rename arch/arm/mach-tegra/usb_phy.c =3D> drivers/usb/phy/tegra_usb_phy.=
-c (99%)
->  rename arch/arm/mach-tegra/include/mach/usb_phy.h =3D> drivers/usb/phy/t=
-egra_usb_phy.h (97%)
->=20
-> diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
-> index b94858f..b542dac 100644
-> --- a/arch/arm/mach-tegra/Makefile
-> +++ b/arch/arm/mach-tegra/Makefile
-> @@ -25,7 +25,6 @@ obj-$(CONFIG_HOTPLUG_CPU)               +=3D hotplug.o
->  obj-$(CONFIG_TEGRA_SYSTEM_DMA)		+=3D dma.o
->  obj-$(CONFIG_CPU_FREQ)                  +=3D cpu-tegra.o
->  obj-$(CONFIG_TEGRA_PCI)			+=3D pcie.o
-> -obj-$(CONFIG_USB_SUPPORT)		+=3D usb_phy.o
-> =20
->  obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+=3D board-dt-tegra20.o
->  obj-$(CONFIG_ARCH_TEGRA_3x_SOC)		+=3D board-dt-tegra30.o
-> diff --git a/arch/arm/mach-tegra/devices.c b/arch/arm/mach-tegra/devices.c
-> index 61e9603..232d7e1 100644
-> --- a/arch/arm/mach-tegra/devices.c
-> +++ b/arch/arm/mach-tegra/devices.c
-> @@ -26,7 +26,6 @@
->  #include <mach/irqs.h>
->  #include <mach/iomap.h>
->  #include <mach/dma.h>
-> -#include <mach/usb_phy.h>
-> =20
->  #include "gpio-names.h"
->  #include "devices.h"
-> @@ -438,11 +437,6 @@ static struct resource tegra_usb3_resources[] =3D {
->  	},
->  };
-> =20
-> -struct tegra_ulpi_config tegra_ehci2_ulpi_phy_config =3D {
-> -	.reset_gpio =3D -1,
-> -	.clk =3D "cdev2",
-> -};
-> -
->  struct tegra_ehci_platform_data tegra_ehci1_pdata =3D {
->  	.operating_mode =3D TEGRA_USB_OTG,
->  	.power_down_on_bus_suspend =3D 1,
-> @@ -450,7 +444,7 @@ struct tegra_ehci_platform_data tegra_ehci1_pdata =3D=
- {
->  };
-> =20
->  struct tegra_ehci_platform_data tegra_ehci2_pdata =3D {
-> -	.phy_config =3D &tegra_ehci2_ulpi_phy_config,
-> +	.phy_config =3D NULL,
->  	.operating_mode =3D TEGRA_USB_HOST,
->  	.power_down_on_bus_suspend =3D 1,
->  	.vbus_gpio =3D -1,
-> diff --git a/arch/arm/mach-tegra/devices.h b/arch/arm/mach-tegra/devices.h
-> index 4f50527..6bac5e6 100644
-> --- a/arch/arm/mach-tegra/devices.h
-> +++ b/arch/arm/mach-tegra/devices.h
-> @@ -22,8 +22,6 @@
->  #include <linux/platform_device.h>
->  #include <linux/platform_data/tegra_usb.h>
-> =20
-> -#include <mach/usb_phy.h>
-> -
->  extern struct tegra_ulpi_config tegra_ehci2_ulpi_phy_config;
-> =20
->  extern struct tegra_ehci_platform_data tegra_ehci1_pdata;
-> diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
-> index 75eca42..a03e279 100644
-> --- a/drivers/usb/host/ehci-tegra.c
-> +++ b/drivers/usb/host/ehci-tegra.c
-> @@ -27,7 +27,7 @@
->  #include <linux/of_gpio.h>
->  #include <linux/pm_runtime.h>
-> =20
-> -#include <mach/usb_phy.h>
-> +#include "../phy/tegra_usb_phy.h"
->  #include <mach/iomap.h>
-> =20
->  #define TEGRA_USB_DMA_ALIGN 32
-> diff --git a/drivers/usb/phy/Makefile b/drivers/usb/phy/Makefile
-> index eca095b..663164f 100644
-> --- a/drivers/usb/phy/Makefile
-> +++ b/drivers/usb/phy/Makefile
-> @@ -5,3 +5,4 @@
->  ccflags-$(CONFIG_USB_DEBUG) :=3D -DDEBUG
-> =20
->  obj-$(CONFIG_USB_ISP1301)		+=3D isp1301.o
-> +obj-$(CONFIG_USB_EHCI_TEGRA)		+=3D tegra_usb_phy.o
-> diff --git a/arch/arm/mach-tegra/usb_phy.c b/drivers/usb/phy/tegra_usb_ph=
-y.c
-> similarity index 99%
-> rename from arch/arm/mach-tegra/usb_phy.c
-> rename to drivers/usb/phy/tegra_usb_phy.c
-> index 022b33a..c856716 100644
-> --- a/arch/arm/mach-tegra/usb_phy.c
-> +++ b/drivers/usb/phy/tegra_usb_phy.c
-> @@ -1,6 +1,4 @@
->  /*
-> - * arch/arm/mach-tegra/usb_phy.c
-> - *
->   * Copyright (C) 2010 Google, Inc.
->   *
->   * Author:
-> @@ -31,7 +29,7 @@
->  #include <linux/usb/ulpi.h>
->  #include <asm/mach-types.h>
->  #include <mach/gpio-tegra.h>
-> -#include <mach/usb_phy.h>
-> +#include "tegra_usb_phy.h"
->  #include <mach/iomap.h>
-> =20
->  #define ULPI_VIEWPORT		0x170
-
-NAK, needs to be converted to proper PHY driver (misnamed as
-include/linux/usb/otg.h). You will need proper phy->init, phy->suspend,
-phy->resume, etc callbacks.
-
---=20
-balbi
-
---L2YZAWjVjAQ1Un1Q
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQPJQkAAoJEIaOsuA1yqREceMP/21DQjQdbSgEPw8/6zS+DQ5E
-EMXf0wtHCBNTl6F57vQa5pmymBmK2kIg9QxjlHx+ARNZuQrU9cITi2xrICGyWPbW
-iIFUkeJiAb4haPCcEGvf0E+8bLYADCT05NDgcEvQ+uGMDkcHH0zVI1BXSMDqrv3C
-wVI1wLPbwxX8jZbd0XSbAY86dFXgIn8UqbUOOLT4scWTSNeOedx5EOTeXQrQM98e
-CeRnnNgRXNXQ3QBTRXYPbZfULzoevMhSZAclBH4/dO8AR3LTAlY/eJMuF37qZAbN
-VsyCORw9ZjtmPUdRX3K61yeUKQTSrpf4MqoDcsWILOD1T/phpqQa5punB067XUOv
-MKScpvzlluo+kEpCOMzUvp9OSowuuhE5FxX4cK/nrqu8r/gZ68FoZ7t38iiBYRf6
-2oZCp/+WuUweDQXiihmSB6JRIdXDucg8Cpx6vwpsE3oyJQkTPRBQrqGeX7rntQfh
-JUtUq2S+6DDBtbJxce4SVaPvMdRCeu4kyNYSYZCyPAf81KK5RM6brrTGETmDikw+
-8AP1a2genhXWwRCUNvk/eZhp0/pC3iNw8yX9MfORtuFJEFu81NmIriEdq0kDxTYy
-TQJRCA1ARzNKLdPnj8qhTL7Tilb9NSuOQRWn+OokqQwTB4AjZF2E3OjZgocwT/EM
-TD2Bg4nNVnbqAAF5Oi0C
-=IFvN
------END PGP SIGNATURE-----
-
---L2YZAWjVjAQ1Un1Q--
