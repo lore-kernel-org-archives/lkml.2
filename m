@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639Ab2H1J74 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 05:59:56 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:56189 "EHLO song.cn.fujitsu.com"
+	id S1753023Ab2H1KFs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 06:05:48 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56202 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751151Ab2H1J7x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 05:59:53 -0400
+	id S1751588Ab2H1J74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Aug 2012 05:59:56 -0400
 X-IronPort-AV: E=Sophos;i="4.77,841,1336320000"; 
-   d="scan'208";a="5739718"
+   d="scan'208";a="5739722"
 From: wency@cn.fujitsu.com
 To: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
@@ -19,25 +19,30 @@ Cc: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
         minchan.kim@gmail.com, akpm@linux-foundation.org,
         kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
         Wen Congyang <wency@cn.fujitsu.com>
-Subject: [RFC v8 PATCH 07/20] memory-hotplug: call acpi_bus_remove() to remove memory device
-Date: Tue, 28 Aug 2012 18:00:14 +0800
-Message-Id: <1346148027-24468-8-git-send-email-wency@cn.fujitsu.com>
+Subject: [RFC v8 PATCH 18/20] memory-hotplug: add node_device_release
+Date: Tue, 28 Aug 2012 18:00:25 +0800
+Message-Id: <1346148027-24468-19-git-send-email-wency@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1346148027-24468-1-git-send-email-wency@cn.fujitsu.com>
 References: <1346148027-24468-1-git-send-email-wency@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2012/08/28 17:55:07,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/28 17:55:17,
-	Serialize complete at 2012/08/28 17:55:17
+ 2012/08/28 17:55:18,
+	Serialize complete at 2012/08/28 17:55:18
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wen Congyang <wency@cn.fujitsu.com>
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-The memory device has been ejected and powoffed, so we can call
-acpi_bus_remove() to remove the memory device from acpi bus.
+When calling unregister_node(), the function shows following message at
+device_release().
+
+Device 'node2' does not have a release() function, it is broken and must be
+fixed.
+
+So the patch implements node_device_release()
 
 CC: David Rientjes <rientjes@google.com>
 CC: Jiang Liu <liuj97@gmail.com>
@@ -48,27 +53,41 @@ CC: Christoph Lameter <cl@linux.com>
 Cc: Minchan Kim <minchan.kim@gmail.com>
 CC: Andrew Morton <akpm@linux-foundation.org>
 CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
 ---
- drivers/acpi/acpi_memhotplug.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ drivers/base/node.c |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-index 9d47458..b152767 100644
---- a/drivers/acpi/acpi_memhotplug.c
-+++ b/drivers/acpi/acpi_memhotplug.c
-@@ -425,8 +425,9 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
- 		}
+diff --git a/drivers/base/node.c b/drivers/base/node.c
+index af1a177..07523fb 100644
+--- a/drivers/base/node.c
++++ b/drivers/base/node.c
+@@ -252,6 +252,16 @@ static inline void hugetlb_register_node(struct node *node) {}
+ static inline void hugetlb_unregister_node(struct node *node) {}
+ #endif
  
- 		/*
--		 * TBD: Invoke acpi_bus_remove to cleanup data structures
-+		 * Invoke acpi_bus_remove() to remove memory device
- 		 */
-+		acpi_bus_remove(device, 1);
++static void node_device_release(struct device *dev)
++{
++	struct node *node_dev = to_node(dev);
++
++#if defined(CONFIG_MEMORY_HOTPLUG_SPARSE) && defined(CONFIG_HUGETLBFS)
++	flush_work(&node_dev->node_work);
++#endif
++
++	memset(node_dev, 0, sizeof(struct node));
++}
  
- 		/* _EJ0 succeeded; _OST is not necessary */
- 		return;
+ /*
+  * register_node - Setup a sysfs device for a node.
+@@ -265,6 +275,7 @@ int register_node(struct node *node, int num, struct node *parent)
+ 
+ 	node->dev.id = num;
+ 	node->dev.bus = &node_subsys;
++	node->dev.release = node_device_release;
+ 	error = device_register(&node->dev);
+ 
+ 	if (!error){
 -- 
 1.7.1
 
