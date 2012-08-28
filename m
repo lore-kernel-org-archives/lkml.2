@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753613Ab2H1WFG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 18:05:06 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54398 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753395Ab2H1WFB (ORCPT
+	id S1753640Ab2H1WGI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 18:06:08 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:39019 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753474Ab2H1WGG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 18:05:01 -0400
+	Tue, 28 Aug 2012 18:06:06 -0400
+Date: Tue, 28 Aug 2012 15:05:32 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, vgoyal@redhat.com, mpatocka@redhat.com,
+        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>,
+        NeilBrown <neilb@suse.de>, Alasdair Kergon <agk@redhat.com>,
+        Jeff Garzik <jeff@garzik.org>
+Subject: Re: [PATCH v7 7/9] block: Add bio_clone_bioset(), bio_clone_kmalloc()
+Message-ID: <20120828220532.GB1048@moria.home.lan>
+References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
+ <1346175456-1572-8-git-send-email-koverstreet@google.com>
+ <20120828204401.GF24608@dhcp-172-17-108-109.mtv.corp.google.com>
 MIME-Version: 1.0
-From: Irina Tirdea <irina.tirdea@gmail.com>
-Date: Wed, 29 Aug 2012 01:04:40 +0300
-Message-ID: <CANg8OWL8sBQZ-45kikoUEPniosOhay_dxOCCPBXSG+ME05aLqw@mail.gmail.com>
-Subject: [PATCH 10/13] perf tools: fix non-void function without return statement
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120828204401.GF24608@dhcp-172-17-108-109.mtv.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-thread_func in builtin-sched.c has an internal loop and
-never returns. The only return from this thread are
-BUG_ON calls in case return values are not 0.
+On Tue, Aug 28, 2012 at 01:44:01PM -0700, Tejun Heo wrote:
+> On Tue, Aug 28, 2012 at 10:37:34AM -0700, Kent Overstreet wrote:
+> > +static inline struct bio *bio_clone(struct bio *bio, gfp_t gfp_mask)
+> > +{
+> > +	return bio_clone_bioset(bio, gfp_mask, fs_bio_set);
+> > +}
+> > +
+> ...
+> > +static inline struct bio *bio_clone_kmalloc(struct bio *bio, gfp_t gfp_mask)
+> > +{
+> > +	return bio_clone_bioset(bio, gfp_mask, NULL);
+> > +
+> > +}
+> 
+> Do we really need these wrappers?  I'd prefer requiring users to
+> explicit choose @bioset when cloning.
 
-The compiler on Android complains that the function
-needs to return a non-void value. Adding the noreturn
-function attribute to fix this error.
-
-Error in Android:
-target C: perf <= builtin-sched.c
-hardware/intel/linu/tools/perf/builtin-sched.c: In function 'thread_func':
-hardware/intel/linux/tools/perf/builtin-sched.c:476: error: no return
-statement in function returning non-void
-
-Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
----
- tools/perf/builtin-sched.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index 3d3cab46..da293b8 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -439,7 +439,7 @@ static u64 get_cpu_usage_nsec_self(int fd)
-     return runtime;
- }
-
--static void *thread_func(void *ctx)
-+static __attribute__ ((noreturn)) void *thread_func(void *ctx)
- {
-     struct task_desc *this_task = ctx;
-     u64 cpu_usage_0, cpu_usage_1;
---
-1.7.9.5
+bio_clone() is an existing api, I agree but I'd prefer to convert
+existing users in a separate patch and when I do that I want to spend
+some time actually looking at the existing code instead of doing the
+conversion blindly (at least some of the existing users are incorrect
+and I'll have to add bio_sets for them).
