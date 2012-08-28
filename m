@@ -1,62 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752955Ab2H1Qvn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 12:51:43 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:32856 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751942Ab2H1Qvl (ORCPT
+	id S1753154Ab2H1Qws (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 12:52:48 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35406 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752162Ab2H1Qwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 12:51:41 -0400
-X-AuditID: cbfee61b-b7faf6d00000476a-77-503cf71c55b6
-Message-id: <503CF6F4.7060702@samsung.com>
-Date: Tue, 28 Aug 2012 18:51:00 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713
- Thunderbird/14.0
-MIME-version: 1.0
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-Cc: linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        kyungmin.park@samsung.com, arnd@arndb.de, linux@arm.linux.org.uk,
-        chunsang.jeong@linaro.org, vdumpa@nvidia.com, subashrp@gmail.com,
-        minchan@kernel.org, pullip.cho@samsung.com, konrad.wilk@oracle.com,
-        linux-tegra@vger.kernel.org
-Subject: Re: [v4 0/4] ARM: dma-mapping: IOMMU atomic allocation
-References: <1346130784-23571-1-git-send-email-hdoyu@nvidia.com>
-In-reply-to: <1346130784-23571-1-git-send-email-hdoyu@nvidia.com>
-Content-type: text/plain; charset=ISO-8859-2; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPLMWRmVeSWpSXmKPExsVy+t9jAV2Z7zYBBr/OCFpc3jWHzaLzyyw2
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDIu9CxhLPjGWnF4ZQt7A+MLli5GTg4JAROJd883MEHY
-	YhIX7q1n62Lk4hASWMQoMattLiuE85pRovtnIyNIFa+AlsTxltWsIDaLgKrElLXnwWw2AUOJ
-	rrddbCC2qECwxNwVR1kg6gUlfky+B2aLCChLvN11A2wos8BzJom7P1cBJTg4hAXsJZZcLgep
-	ERJwkFi8fxPYLk4BR4l1C3Ywg9jMAtYSTfuuQNnyEpvXvGWewCgwC8mKWUjKZiEpW8DIvIpR
-	NLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjOBifSe9gXNVgcYhRgINRiYc3YJd1gBBrYllxZe4h
-	RgkOZiUR3nPXbAKEeFMSK6tSi/Lji0pzUosPMUpzsCiJ8/L3GQYICaQnlqRmp6YWpBbBZJk4
-	OKUaGPV0V5VrF0yXvX/mthhH2fxri94sO7UxmbtIYFeG/IP+zEurmDb95I2v/j7PZ/Y0rtdW
-	Umc8pZ5MSXiStPXW343Vamz7fi6S15zUc3nmXK/WFLZT4TFyb7mNhXk25K989oNZ75V4rfPL
-	L6YeH9ZseP/ddGlNofzbOof9Vz0TDXKt2feXex/OzFRiKc5INNRiLipOBACj8xpzQgIAAA==
+	Tue, 28 Aug 2012 12:52:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120828134206.GH2961@linux.vnet.ibm.com>
+References: <1345125384.29668.30.camel@twins>
+	<CADZ9YHjPjExzuJWjziiezBch03Am0imQzDG4EDfG-NTWfz4V8A@mail.gmail.com>
+	<1345128138.29668.42.camel@twins>
+	<CADZ9YHjzNVz6nSqbnTgVYfwi2hz0KYuXC89GHw6UjL2GyGZ64A@mail.gmail.com>
+	<1345139199.29668.46.camel@twins>
+	<CADZ9YHgNhTGWicX0kFfrNoL17JkxfZcXryqqa-wHLVLh05SvAg@mail.gmail.com>
+	<1345454817.23018.27.camel@twins>
+	<20120820162657.GI2435@linux.vnet.ibm.com>
+	<20120827184435.GA13883@linux.vnet.ibm.com>
+	<CADZ9YHi-DGd71jxQpYyRfVUqdr-ks-znSeCtcBAccL7wRd3r5g@mail.gmail.com>
+	<20120828134206.GH2961@linux.vnet.ibm.com>
+Date: Tue, 28 Aug 2012 22:52:45 +0600
+Message-ID: <CADZ9YHhXspOy9cy--cPqzaZYssDjgwRPztU=pg-Rfj5g2aXDiw@mail.gmail.com>
+Subject: Re: Add rq->nr_uninterruptible count to dest cpu's rq while CPU goes down.
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 8/28/2012 7:13 AM, Hiroshi Doyu wrote:
-> The commit e9da6e9 "ARM: dma-mapping: remove custom consistent dma
-> region" breaks the compatibility with existing drivers. This causes
-> the following kernel oops(*1). That driver has called dma_pool_alloc()
-> to allocate memory from the interrupt context, and it hits
-> BUG_ON(in_interrpt()) in "get_vm_area_caller()". This patch seris
-> fixes this problem with making use of the pre-allocate atomic memory
-> pool which DMA is using in the same way as DMA does now.
+On 8/28/12, Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> On Tue, Aug 28, 2012 at 12:57:09PM +0600, Rakib Mullick wrote:
+>> Hello Paul,
+>>
+>> On 8/28/12, Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+>> > On Mon, Aug 20, 2012 at 09:26:57AM -0700, Paul E. McKenney wrote:
+>> >> On Mon, Aug 20, 2012 at 11:26:57AM +0200, Peter Zijlstra wrote:
+>> >
+>> > How about the following updated patch?
+>> >
+>> Actually, I was waiting for Peter's update.
 >
-> Any comment would be really appreciated.
+> I was too, but chatted with Peter.
+>
+>> > 							Thanx, Paul
+>> >
+>> > ------------------------------------------------------------------------
+>> >
+>> > sched: Fix load avg vs cpu-hotplug
+>> >
+>> > Rabik and Paul reported two different issues related to the same few
+>> > lines of code.
+>> >
+>> > Rabik's issue is that the nr_uninterruptible migration code is wrong in
+>> > that he sees artifacts due to this (Rabik please do expand in more
+>> > detail).
+>> >
+>> > Paul's issue is that this code as it stands relies on us using
+>> > stop_machine() for unplug, we all would like to remove this assumption
+>> > so that eventually we can remove this stop_machine() usage altogether.
+>> >
+>> > The only reason we'd have to migrate nr_uninterruptible is so that we
+>> > could use for_each_online_cpu() loops in favour of
+>> > for_each_possible_cpu() loops, however since nr_uninterruptible() is
+>> > the
+>> > only such loop and its using possible lets not bother at all.
+>> >
+>> > The problem Rabik sees is (probably) caused by the fact that by
+>> > migrating nr_uninterruptible we screw rq->calc_load_active for both rqs
+>> > involved.
+>> >
+>> > So don't bother with fancy migration schemes (meaning we now have to
+>> > keep using for_each_possible_cpu()) and instead fold any nr_active
+>> > delta
+>> > after we migrate all tasks away to make sure we don't have any skewed
+>> > nr_active accounting.
+>> >
+>> > [ paulmck: Move call to calc_load_migration to CPU_DEAD to avoid
+>> > miscounting noted by Rakib. ]
+>> >
+>> > Reported-by: Rakib Mullick <rakib.mullick@gmail.com>
+>> > Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>> > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>> > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+>> >
+>> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>> > index e841dfc..a8807f2 100644
+>> > --- a/kernel/sched/core.c
+>> > +++ b/kernel/sched/core.c
+>> > @@ -5309,27 +5309,17 @@ void idle_task_exit(void)
+>> >  }
+>> >
+>> >  /*
+>> > - * While a dead CPU has no uninterruptible tasks queued at this point,
+>> > - * it might still have a nonzero ->nr_uninterruptible counter, because
+>> > - * for performance reasons the counter is not stricly tracking tasks
+>> > to
+>> > - * their home CPUs. So we just add the counter to another CPU's
+>> > counter,
+>> > - * to keep the global sum constant after CPU-down:
+>> > - */
+>> > -static void migrate_nr_uninterruptible(struct rq *rq_src)
+>> > -{
+>> > -	struct rq *rq_dest = cpu_rq(cpumask_any(cpu_active_mask));
+>> > -
+>> > -	rq_dest->nr_uninterruptible += rq_src->nr_uninterruptible;
+>> > -	rq_src->nr_uninterruptible = 0;
+>> > -}
+>> > -
+>> > -/*
+>> > - * remove the tasks which were accounted by rq from calc_load_tasks.
+>> > + * Since this CPU is going 'away' for a while, fold any nr_active
+>> > delta
+>> > + * we might have. Assumes we're called after migrate_tasks() so that
+>> > the
+>> > + * nr_active count is stable.
+>> > + *
+>> > + * Also see the comment "Global load-average calculations".
+>> >   */
+>> > -static void calc_global_load_remove(struct rq *rq)
+>> > +static void calc_load_migrate(struct rq *rq)
+>> >  {
+>> > -	atomic_long_sub(rq->calc_load_active, &calc_load_tasks);
+>> > -	rq->calc_load_active = 0;
+>> > +	long delta = calc_load_fold_active(rq);
+>> > +	if (delta)
+>> > +		atomic_long_add(delta, &calc_load_tasks);
+>> >  }
+>> >
+>> >  /*
+>> > @@ -5622,9 +5612,18 @@ migration_call(struct notifier_block *nfb,
+>> > unsigned
+>> > long action, void *hcpu)
+>> >  		migrate_tasks(cpu);
+>> >  		BUG_ON(rq->nr_running != 1); /* the migration thread */
+>> >  		raw_spin_unlock_irqrestore(&rq->lock, flags);
+>> > +		break;
+>> >
+>> > -		migrate_nr_uninterruptible(rq);
+>> > -		calc_global_load_remove(rq);
+>> > +	case CPU_DEAD:
+>> > +		{
+>> > +			struct rq *dest_rq;
+>> > +
+>> > +			local_irq_save(flags);
+>> > +			dest_rq = cpu_rq(smp_processor_id());
+>>
+>> Use of smp_processor_id() as dest cpu isn't clear to me, this
+>> processor is about to get down, isn't it?
+>
+> Nope.  The CPU_DEAD notifier happens after the outgoing CPU has been
+> fully offlined, and so it must run on some other CPU.
+>
+>> > +			raw_spin_lock(&dest_rq->lock);
+>> > +			calc_load_migrate(rq);
+>>
+>> Well, calc_load_migrate() has no impact cause rq->nr_running == 1 at
+>> this point. It's been already pointed out previously.
+>
+> Even after the outgoing CPU is fully gone?  I would hope that the value
+> would be zero.
+>
+Perhaps, yes and it doesn't make any difference. And so, at this point
+doing calc_load_migrate()... I'm not sure. But, I'm sure that, this is
+not what I had in my mind.
 
-Looks fine now. I will do some tests and apply them to my fixes-for-3.6
-branch. Thanks for Your contribution!
+The patch I sent it was to move rq->nr_uninterruptible to the dest_rq
+where all the tasks were moved. Then, Peter says that patch isn't
+correct, cause tasks might get spread out amongst more than one CPU
+due to tasks affinity (*if* task was affined). But, we can easily
+expect that, admin is smart enough to not put a CPU offline, where
+s/he put a task to explicitly run on. I agree that, my patch isn't
+100% correct but it's better than current which is almost 100% wrong
+which picks up a random CPU-rq to move rq->nr_uninterruptible count.
+So, simply moving ->nr_uninterruptible to dest_rq (where tasks were
+moved) should be fine. And when dest_rq's time will come to go idle
+i.e calc_load_enter_idle() or calc_load_account_active() (if no_hz=n),
+active count will get folded, we do not need to explicitly fold
+nr_active count when CPU is going to die.
 
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
+Thanks,
+Rakib.
