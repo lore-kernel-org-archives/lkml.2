@@ -1,150 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752227Ab2H1G5P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 02:57:15 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39853 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751790Ab2H1G5K (ORCPT
+	id S1752371Ab2H1G51 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 02:57:27 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:55430 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751291Ab2H1G5R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 02:57:10 -0400
+	Tue, 28 Aug 2012 02:57:17 -0400
+Message-ID: <503C6B5D.9030100@linux.vnet.ibm.com>
+Date: Tue, 28 Aug 2012 12:25:25 +0530
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <20120827184435.GA13883@linux.vnet.ibm.com>
-References: <1345124749.31092.2.camel@localhost.localdomain>
-	<1345125384.29668.30.camel@twins>
-	<CADZ9YHjPjExzuJWjziiezBch03Am0imQzDG4EDfG-NTWfz4V8A@mail.gmail.com>
-	<1345128138.29668.42.camel@twins>
-	<CADZ9YHjzNVz6nSqbnTgVYfwi2hz0KYuXC89GHw6UjL2GyGZ64A@mail.gmail.com>
-	<1345139199.29668.46.camel@twins>
-	<CADZ9YHgNhTGWicX0kFfrNoL17JkxfZcXryqqa-wHLVLh05SvAg@mail.gmail.com>
-	<1345454817.23018.27.camel@twins>
-	<20120820162657.GI2435@linux.vnet.ibm.com>
-	<20120827184435.GA13883@linux.vnet.ibm.com>
-Date: Tue, 28 Aug 2012 12:57:09 +0600
-Message-ID: <CADZ9YHi-DGd71jxQpYyRfVUqdr-ks-znSeCtcBAccL7wRd3r5g@mail.gmail.com>
-Subject: Re: Add rq->nr_uninterruptible count to dest cpu's rq while CPU goes down.
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Borislav Petkov <bp@amd64.org>
+CC: Andi Kleen <andi@firstfloor.org>, tony.luck@intel.com,
+        gong.chen@linux.intel.com, ananth@in.ibm.com,
+        masbock@linux.vnet.ibm.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, lcm@us.ibm.com, mingo@redhat.com,
+        tglx@linutronix.de, linux-edac@vger.kernel.org
+Subject: Re: [PATCH 1/2] x86/mce: Pack boolean MCE boot flags into a structure
+References: <20120827112503.10313.62594.stgit@localhost.localdomain> <20120827135859.GY16230@one.firstfloor.org> <20120827141845.GB27979@aftab.osrc.amd.com>
+In-Reply-To: <20120827141845.GB27979@aftab.osrc.amd.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12082806-3864-0000-0000-0000045C397B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Paul,
+On 08/27/2012 07:48 PM, Borislav Petkov wrote:
+> On Mon, Aug 27, 2012 at 03:58:59PM +0200, Andi Kleen wrote:
+>> On Mon, Aug 27, 2012 at 04:55:03PM +0530, Naveen N. Rao wrote:
+>>> Many MCE boot flags are boolean in nature, but are declared as integers
+>>> currently. We can pack these into a bitfield to save some space.
+>>
+>> Note that this doesn't necessarily save anything because it needs more
+>> code to access, and accesses are more common than the flag
+>>
+>> 	cmpl  $0,foo(%rip)            7 bytes
+>>          testl $1,foo(%rip)           10 bytes
+>
+> I got 7 bytes:
+>
+> 12e9:       f6 05 00 00 00 00 02    testb  $0x2,0x0(%rip)        # 12f0 <mce_start_timer.isra.18+0x30>
+>
+> vs the old:
+>
+> 1654:       83 3d 00 00 00 00 00    cmpl   $0x0,0x0(%rip)        # 165b <mce_start_timer.clone.15+0x37>
+>
+> also 7 bytes.
+>
 
-On 8/28/12, Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> On Mon, Aug 20, 2012 at 09:26:57AM -0700, Paul E. McKenney wrote:
->> On Mon, Aug 20, 2012 at 11:26:57AM +0200, Peter Zijlstra wrote:
->
-> How about the following updated patch?
->
-Actually, I was waiting for Peter's update.
-
-> 							Thanx, Paul
->
-> ------------------------------------------------------------------------
->
-> sched: Fix load avg vs cpu-hotplug
->
-> Rabik and Paul reported two different issues related to the same few
-> lines of code.
->
-> Rabik's issue is that the nr_uninterruptible migration code is wrong in
-> that he sees artifacts due to this (Rabik please do expand in more
-> detail).
->
-> Paul's issue is that this code as it stands relies on us using
-> stop_machine() for unplug, we all would like to remove this assumption
-> so that eventually we can remove this stop_machine() usage altogether.
->
-> The only reason we'd have to migrate nr_uninterruptible is so that we
-> could use for_each_online_cpu() loops in favour of
-> for_each_possible_cpu() loops, however since nr_uninterruptible() is the
-> only such loop and its using possible lets not bother at all.
->
-> The problem Rabik sees is (probably) caused by the fact that by
-> migrating nr_uninterruptible we screw rq->calc_load_active for both rqs
-> involved.
->
-> So don't bother with fancy migration schemes (meaning we now have to
-> keep using for_each_possible_cpu()) and instead fold any nr_active delta
-> after we migrate all tasks away to make sure we don't have any skewed
-> nr_active accounting.
->
-> [ paulmck: Move call to calc_load_migration to CPU_DEAD to avoid
-> miscounting noted by Rakib. ]
->
-> Reported-by: Rakib Mullick <rakib.mullick@gmail.com>
-> Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
->
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index e841dfc..a8807f2 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -5309,27 +5309,17 @@ void idle_task_exit(void)
->  }
->
->  /*
-> - * While a dead CPU has no uninterruptible tasks queued at this point,
-> - * it might still have a nonzero ->nr_uninterruptible counter, because
-> - * for performance reasons the counter is not stricly tracking tasks to
-> - * their home CPUs. So we just add the counter to another CPU's counter,
-> - * to keep the global sum constant after CPU-down:
-> - */
-> -static void migrate_nr_uninterruptible(struct rq *rq_src)
-> -{
-> -	struct rq *rq_dest = cpu_rq(cpumask_any(cpu_active_mask));
-> -
-> -	rq_dest->nr_uninterruptible += rq_src->nr_uninterruptible;
-> -	rq_src->nr_uninterruptible = 0;
-> -}
-> -
-> -/*
-> - * remove the tasks which were accounted by rq from calc_load_tasks.
-> + * Since this CPU is going 'away' for a while, fold any nr_active delta
-> + * we might have. Assumes we're called after migrate_tasks() so that the
-> + * nr_active count is stable.
-> + *
-> + * Also see the comment "Global load-average calculations".
->   */
-> -static void calc_global_load_remove(struct rq *rq)
-> +static void calc_load_migrate(struct rq *rq)
->  {
-> -	atomic_long_sub(rq->calc_load_active, &calc_load_tasks);
-> -	rq->calc_load_active = 0;
-> +	long delta = calc_load_fold_active(rq);
-> +	if (delta)
-> +		atomic_long_add(delta, &calc_load_tasks);
->  }
->
->  /*
-> @@ -5622,9 +5612,18 @@ migration_call(struct notifier_block *nfb, unsigned
-> long action, void *hcpu)
->  		migrate_tasks(cpu);
->  		BUG_ON(rq->nr_running != 1); /* the migration thread */
->  		raw_spin_unlock_irqrestore(&rq->lock, flags);
-> +		break;
->
-> -		migrate_nr_uninterruptible(rq);
-> -		calc_global_load_remove(rq);
-> +	case CPU_DEAD:
-> +		{
-> +			struct rq *dest_rq;
-> +
-> +			local_irq_save(flags);
-> +			dest_rq = cpu_rq(smp_processor_id());
-
-Use of smp_processor_id() as dest cpu isn't clear to me, this
-processor is about to get down, isn't it?
-
-> +			raw_spin_lock(&dest_rq->lock);
-> +			calc_load_migrate(rq);
-
-Well, calc_load_migrate() has no impact cause rq->nr_running == 1 at
-this point. It's been already pointed out previously.
+I'm seeing the same here. GCC v4.7 with -O2 generates testb and cmpb, 
+which are both 7 bytes long.
 
 Thanks,
-Rakib
+Naveen
+
