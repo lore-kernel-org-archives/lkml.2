@@ -1,80 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752939Ab2H1RvK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 13:51:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34416 "EHLO mx2.suse.de"
+	id S1752371Ab2H1R4U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 13:56:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7608 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751957Ab2H1RvI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 13:51:08 -0400
-Date: Tue, 28 Aug 2012 19:51:01 +0200
-From: Jan Kara <jack@suse.cz>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        David Miller <davem@davemloft.net>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>,
-        Dmitry Monakhov <dmonakhov@openvz.org>, Abhijith Das <adas@redhat.com>
-Subject: Re: [PATCH] userns: Add basic quota support v2
-Message-ID: <20120828175101.GF5146@quack.suse.cz>
-References: <87lih2h6i4.fsf@xmission.com>
- <87harqecvk.fsf@xmission.com>
- <20120827085034.GA8998@quack.suse.cz>
- <87wr0j7u3j.fsf_-_@xmission.com>
- <20120828090544.GC5146@quack.suse.cz>
- <87a9xe7wfn.fsf@xmission.com>
+	id S1751167Ab2H1R4S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Aug 2012 13:56:18 -0400
+Date: Tue, 28 Aug 2012 20:57:16 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v9 3/5] virtio_balloon: introduce migration primitives to
+ balloon pages
+Message-ID: <20120828175716.GA4595@redhat.com>
+References: <cover.1345869378.git.aquini@redhat.com>
+ <a1ceca79d95bc7de2a6b62a2e565b95286dbdf75.1345869378.git.aquini@redhat.com>
+ <20120826074244.GC19551@redhat.com>
+ <20120827194713.GA6517@t510.redhat.com>
+ <20120828155410.GE2903@redhat.com>
+ <20120828173713.GA1750@t510.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87a9xe7wfn.fsf@xmission.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120828173713.GA1750@t510.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 28-08-12 10:34:04, Eric W. Biederman wrote:
-> Jan Kara <jack@suse.cz> writes:
-> >> +		return -EINVAL;
-> >> +	ret = sb->s_qcop->get_dqblk(sb, qown, &fdq);
-> >>  	if (ret)
-> >>  		return ret;
-> >>  	copy_to_if_dqblk(&idq, &fdq);
-> > ...
-> >> +static inline u32 from_qown(struct user_namespace *user_ns, struct qown qown)
-> >> +{
-> >> +	switch (qown.type) {
-> >> +	case USRQUOTA:
-> >> +		return from_kuid(user_ns, qown.uid);
-> >> +	case GRPQUOTA:
-> >> +		return from_kgid(user_ns, qown.gid);
-> >> +	case XQM_PRJQUOTA:
-> >> +		return (user_ns == &init_user_ns) ? qown.prj : -1;
-> >> +	default:
-> >> +		BUG();
-> >> +	}
-> >> +}
-> >   I would like a bit more if the function somehow expressed in its name
-> > that it returns id. id_from_qown() might be a bit too long given how often
-> > it is used. qown2id() would be OK but it would be inconsistent with how
-> > names of other functions you've added are formed. So I'm somewhat
-> > undecided...
+On Tue, Aug 28, 2012 at 02:37:13PM -0300, Rafael Aquini wrote:
+> On Tue, Aug 28, 2012 at 06:54:10PM +0300, Michael S. Tsirkin wrote:
+> > On Mon, Aug 27, 2012 at 04:47:13PM -0300, Rafael Aquini wrote:
+> > > On Sun, Aug 26, 2012 at 10:42:44AM +0300, Michael S. Tsirkin wrote:
+> > > > 
+> > > > Reading two atomics and doing math? Result can even be negative.
+> > > > I did not look at use closely but it looks suspicious.
+> > > Doc on atomic_read says:
+> > > "
+> > > The read is atomic in that the return value is guaranteed to be one of the
+> > > values initialized or modified with the interface operations if a proper
+> > > implicit or explicit memory barrier is used after possible runtime
+> > > initialization by any other thread and the value is modified only with the
+> > > interface operations.
+> > > "
+> > > 
+> > > There's no runtime init by other thread than balloon's itself at device register,
+> > > and the operations (inc, dec) are made by the proper interface operations
+> > > only when protected by the spinlock pages_lock. It does not look suspicious, IMHO.
+> > 
+> > Any use of multiple atomics is suspicious.
+> > Please just avoid it if you can. What's wrong with locking?
+> > 
+> > > I'm failing to see how it could become a negative on that case, since you cannot
+> > > isolate more pages than what was previoulsy inflated to balloon's list.
+> > 
+> > There is no order guarantee. So in
+> > A - B you can read B long after both A and B has been incremented.
+> > Maybe it is safe in this case but it needs careful documentation
+> > to explain how ordering works. Much easier to keep it all simple.
+> > 
+> > > 
+> > > > It's already the case everywhere except __wait_on_isolated_pages,
+> > > > so just fix that, and then we can keep using int instead of atomics.
+> > > > 
+> > > Sorry, I quite didn't get you here. fix what?
+> > 
+> > It's in the text you removed above. Access values under lock.
+> >
 > 
-> The qown vs id distinction bothers me a little bit.
+> So, you prefer this way:
 > 
-> I almost want to name it struct kid, and the functions make_kid,
-> from_kid etc.  Where the emphasis is that we are transforming in and out
-> of the kernel internal form.  I don't really like make_kid because id as
-> a base name seems to generic and it barely tells you it is.  Perhaps
-> make_kqid.  Where we call the quota ids and qid for short?
-> 
-> I am a little uncomfortable calling them kqids because the userspace
-> code also places format_ids in a plain qid_t.  But make_kqid and
-> from_kqid seems the best alternate set of names I can come up with.
-  OK, these would seem reasonable to me.
+> /*
+>  * __wait_on_isolated_pages - check if leak_balloon() must wait on isolated
+>  *                            pages before proceeding with the page release.
+>  * @vb         : pointer to the struct virtio_balloon describing this device.
+>  * @leak_target: how many pages we are attempting to release this round.
+>  */
+> static inline void __wait_on_isolated_pages(struct virtio_balloon *vb,
+>                                             size_t leak_target)
+> {
+>         unsigned int num_pages, isolated_pages;
+>         spin_lock(&vb->pages_lock);
+>         num_pages = vb->num_pages;
+>         isolated_pages = vb->num_isolated_pages;
+>         spin_unlock(&vb->pages_lock);
+>         /*
+>          * If isolated pages are making our leak target bigger than the
+>          * total pages that we can release this round. Let's wait for
+>          * migration returning enough pages back to balloon's list.
+>          */
+>         wait_event(vb->config_change,
+>                    (!isolated_pages ||
+>                     leak_target <= (num_pages - isolated_pages)));
 
-								Honza
+This logic looks strange too - it does not 100% match the comment.
+
+> }
+> 
+> ?
+
+Except that it does not work. You need to do the lock/unlock
+dance and retest within wait_event.
+
+
+> > >  
+> > > > That's 1K on stack - and can become more if we increase
+> > > > VIRTIO_BALLOON_ARRAY_PFNS_MAX.  Probably too much - this is the reason
+> > > > we use vb->pfns.
+> > > >
+> > > If we want to use vb->pfns we'll have to make leak_balloon mutual exclusive with
+> > > page migration (as it was before), but that will inevictably bring us back to
+> > > the discussion on breaking the loop when isolated pages make leak_balloon find
+> > > less pages than it wants to release at each leak round.
+> > > 
+> > 
+> > I don't think this is an issue. The issue was busy waiting in that case.
+> >
+> But, in fact, it is. 
+> As we couldn't drop the mutex that prevents migration from happening, otherwise
+> the migration threads would screw up with our vb->pfns array, there will be no point
+> on keep waiting for isolated pages being reinserted on balloon's list, cause the
+> migration threads that will accomplish that task are also waiting on us dropping
+> the mutex.
+> 
+> You may argue that we could flag virtballoon_migratepage() to give up and return
+> before even trying to aquire the mutex, if a leak is ongoing -- deferring work
+> to virtballoon_putbackpage(). However, I'm eager to think that for this case,
+> the CPU time we spent isolating pages for compaction would be simply wasted and,
+>  perhaps, no effective compaction was even reached.
+> And that makes me think it would have been better to stick with the old logics of
+> breaking the loop since leak_balloon(), originally, also remains busy waiting
+> while pursuing its target, anyway.
+> 
+> That's the trade here, IMO. If one really wants to wait on potentially isolated
+> pages getting back to the list before proceeding, we'll have to burn a little
+> more stack space with local variables, unfortunately.
+
+
+Sorry I do not understand what you are saying here. So find
+a different locking strategy.
+
+For example something like:
+
+         wait_event(vb->config_change,
+		({ 
+		   lock
+		   if (target <= (num_pages - isolated_pages))
+			   leak balloon
+		   cond = target <= (num_pages - isolated_pages));
+		   unlock;
+		   cond;
+		})
+		)
+
+seems to have no issues?
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+MST
