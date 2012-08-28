@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426Ab2H1Rie (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 13:38:34 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55852 "EHLO
+	id S1753077Ab2H1Riz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 13:38:55 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64377 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753245Ab2H1Rh6 (ORCPT
+	with ESMTP id S1753051Ab2H1Rhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 13:37:58 -0400
+	Tue, 28 Aug 2012 13:37:53 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com
 Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, vgoyal@redhat.com,
         mpatocka@redhat.com, bharrosh@panasas.com,
         Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH v7 9/9] block: Avoid deadlocks with bio allocation by stacking drivers
-Date: Tue, 28 Aug 2012 10:37:36 -0700
-Message-Id: <1346175456-1572-10-git-send-email-koverstreet@google.com>
+Subject: [PATCH v7 6/9] block: Consolidate bio_alloc_bioset(), bio_kmalloc()
+Date: Tue, 28 Aug 2012 10:37:33 -0700
+Message-Id: <1346175456-1572-7-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1346175456-1572-1-git-send-email-koverstreet@google.com>
 References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
@@ -23,196 +23,224 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously, if we ever try to allocate more than once from the same bio
-set while running under generic_make_request() (i.e. a stacking block
-driver), we risk deadlock.
+Previously, bio_kmalloc() and bio_alloc_bioset() behaved slightly
+different because there was some almost-duplicated code - this fixes
+some of that.
 
-This is because of the code in generic_make_request() that converts
-recursion to iteration; any bios we submit won't actually be submitted
-(so they can complete and eventually be freed) until after we return -
-this means if we allocate a second bio, we're blocking the first one
-from ever being freed.
+The important change is that previously bio_kmalloc() always set
+bi_io_vec = bi_inline_vecs, even if nr_iovecs == 0 - unlike
+bio_alloc_bioset(). This would cause bio_has_data() to return true; I
+don't know if this resulted in any actual bugs but it was certainly
+wrong.
 
-Thus if enough threads call into a stacking block driver at the same
-time with bios that need multiple splits, and the bio_set's reserve gets
-used up, we deadlock.
+bio_kmalloc() and bio_alloc_bioset() also have different arbitrary
+limits on nr_iovecs - 1024 (UIO_MAXIOV) for bio_kmalloc(), 256
+(BIO_MAX_PAGES) for bio_alloc_bioset(). This patch doesn't fix that, but
+at least they're enforced closer together and hopefully they will be
+fixed in a later patch.
 
-This can be worked around in the driver code - we could check if we're
-running under generic_make_request(), then mask out __GFP_WAIT when we
-go to allocate a bio, and if the allocation fails punt to workqueue and
-retry the allocation.
-
-But this is tricky and not a generic solution. This patch solves it for
-all users by inverting the previously described technique. We allocate a
-rescuer workqueue for each bio_set, and then in the allocation code if
-there are bios on current->bio_list we would be blocking, we punt them
-to the rescuer workqueue to be submitted.
-
-Tested it by forcing the rescue codepath to be taken (by disabling the
-first GFP_NOWAIT) attempt, and then ran it with bcache (which does a lot
-of arbitrary bio splitting) and verified that the rescuer was being
-invoked.
+This'll also help with some future cleanups - there are a fair number of
+functions that allocate bios (e.g. bio_clone()), and now they don't have
+to be duplicated for bio_alloc(), bio_alloc_bioset(), and bio_kmalloc().
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 CC: Jens Axboe <axboe@kernel.dk>
+v7: Re-add dropped comments, improv patch description
 ---
- fs/bio.c            | 73 ++++++++++++++++++++++++++++++++++++++++++++++++++---
- include/linux/bio.h |  9 +++++++
- 2 files changed, 79 insertions(+), 3 deletions(-)
+ fs/bio.c            | 111 ++++++++++++++++++----------------------------------
+ include/linux/bio.h |  16 ++++++--
+ 2 files changed, 49 insertions(+), 78 deletions(-)
 
 diff --git a/fs/bio.c b/fs/bio.c
-index 31e637a..5d46318 100644
+index ce829c8..5e947d3 100644
 --- a/fs/bio.c
 +++ b/fs/bio.c
-@@ -285,6 +285,23 @@ void bio_reset(struct bio *bio)
- }
- EXPORT_SYMBOL(bio_reset);
- 
-+static void bio_alloc_rescue(struct work_struct *work)
-+{
-+	struct bio_set *bs = container_of(work, struct bio_set, rescue_work);
-+	struct bio *bio;
-+
-+	while (1) {
-+		spin_lock(&bs->rescue_lock);
-+		bio = bio_list_pop(&bs->rescue_list);
-+		spin_unlock(&bs->rescue_lock);
-+
-+		if (!bio)
-+			break;
-+
-+		generic_make_request(bio);
-+	}
-+}
-+
- /**
-  * bio_alloc_bioset - allocate a bio for I/O
-  * @gfp_mask:   the GFP_ mask given to the slab allocator
-@@ -307,6 +324,7 @@ EXPORT_SYMBOL(bio_reset);
+@@ -55,6 +55,7 @@ static struct biovec_slab bvec_slabs[BIOVEC_NR_POOLS] __read_mostly = {
+  * IO code that does not need private memory pools.
   */
+ struct bio_set *fs_bio_set;
++EXPORT_SYMBOL(fs_bio_set);
+ 
+ /*
+  * Our slab pool management
+@@ -291,39 +292,58 @@ EXPORT_SYMBOL(bio_reset);
+  * @bs:		the bio_set to allocate from.
+  *
+  * Description:
+- *   bio_alloc_bioset will try its own mempool to satisfy the allocation.
+- *   If %__GFP_WAIT is set then we will block on the internal pool waiting
+- *   for a &struct bio to become free.
+- **/
++ *   If @bs is NULL, uses kmalloc() to allocate the bio; else the allocation is
++ *   backed by the @bs's mempool.
++ *
++ *   When @bs is not NULL, if %__GFP_WAIT is set then bio_alloc will always be
++ *   able to allocate a bio. This is due to the mempool guarantees. To make this
++ *   work, callers must never allocate more than 1 bio at a time from this pool.
++ *   Callers that need to allocate more than 1 bio must always submit the
++ *   previously allocated bio for IO before attempting to allocate a new one.
++ *   Failure to do so can cause deadlocks under memory pressure.
++ *
++ *   RETURNS:
++ *   Pointer to new bio on success, NULL on failure.
++ */
  struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
  {
-+	gfp_t saved_gfp = gfp_mask;
- 	unsigned front_pad;
- 	unsigned inline_vecs;
++	unsigned front_pad;
++	unsigned inline_vecs;
  	unsigned long idx = BIO_POOL_NONE;
-@@ -324,13 +342,37 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
- 		front_pad = 0;
- 		inline_vecs = nr_iovecs;
- 	} else {
-+		/*
-+		 * generic_make_request() converts recursion to iteration; this
-+		 * means if we're running beneath it, any bios we allocate and
-+		 * submit will not be submitted (and thus freed) until after we
-+		 * return.
-+		 *
-+		 * This exposes us to a potential deadlock if we allocate
-+		 * multiple bios from the same bio_set() while running
-+		 * underneath generic_make_request(). If we were to allocate
-+		 * multiple bios (say a stacking block driver that was splitting
-+		 * bios), we would deadlock if we exhausted the mempool's
-+		 * reserve.
-+		 *
-+		 * We solve this, and guarantee forward progress, with a rescuer
-+		 * workqueue per bio_set. If we go to allocate and there are
-+		 * bios on current->bio_list, we first try the allocation
-+		 * without __GFP_WAIT; if that fails, we punt those bios we
-+		 * would be blocking to the rescuer workqueue before we retry
-+		 * with the original gfp_flags.
-+		 */
-+
-+		if (current->bio_list && !bio_list_empty(current->bio_list))
-+			gfp_mask &= ~__GFP_WAIT;
-+retry:
- 		p = mempool_alloc(bs->bio_pool, gfp_mask);
- 		front_pad = bs->front_pad;
- 		inline_vecs = BIO_INLINE_VECS;
- 	}
+ 	struct bio_vec *bvl = NULL;
+ 	struct bio *bio;
+ 	void *p;
  
- 	if (unlikely(!p))
--		return NULL;
-+		goto err;
- 
- 	bio = p + front_pad;
- 	bio_init(bio);
-@@ -351,6 +393,19 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
- 
- err_free:
- 	mempool_free(p, bs->bio_pool);
-+err:
-+	if (gfp_mask != saved_gfp) {
-+		gfp_mask = saved_gfp;
+-	p = mempool_alloc(bs->bio_pool, gfp_mask);
++	if (!bs) {
++		if (nr_iovecs > UIO_MAXIOV)
++			return NULL;
 +
-+		spin_lock(&bs->rescue_lock);
-+		bio_list_merge(&bs->rescue_list, current->bio_list);
-+		bio_list_init(current->bio_list);
-+		spin_unlock(&bs->rescue_lock);
-+
-+		queue_work(bs->rescue_workqueue, &bs->rescue_work);
-+		goto retry;
++		p = kmalloc(sizeof(struct bio) +
++			    nr_iovecs * sizeof(struct bio_vec),
++			    gfp_mask);
++		front_pad = 0;
++		inline_vecs = nr_iovecs;
++	} else {
++		p = mempool_alloc(bs->bio_pool, gfp_mask);
++		front_pad = bs->front_pad;
++		inline_vecs = BIO_INLINE_VECS;
 +	}
 +
- 	return NULL;
+ 	if (unlikely(!p))
+ 		return NULL;
+-	bio = p + bs->front_pad;
+ 
++	bio = p + front_pad;
+ 	bio_init(bio);
+-	bio->bi_pool = bs;
+-
+-	if (unlikely(!nr_iovecs))
+-		goto out_set;
+ 
+-	if (nr_iovecs <= BIO_INLINE_VECS) {
+-		bvl = bio->bi_inline_vecs;
+-		nr_iovecs = BIO_INLINE_VECS;
+-	} else {
++	if (nr_iovecs > inline_vecs) {
+ 		bvl = bvec_alloc_bs(gfp_mask, nr_iovecs, &idx, bs);
+ 		if (unlikely(!bvl))
+ 			goto err_free;
+-
+-		nr_iovecs = bvec_nr_vecs(idx);
++	} else if (nr_iovecs) {
++		bvl = bio->bi_inline_vecs;
+ 	}
+-out_set:
++
++	bio->bi_pool = bs;
+ 	bio->bi_flags |= idx << BIO_POOL_OFFSET;
+ 	bio->bi_max_vecs = nr_iovecs;
+ 	bio->bi_io_vec = bvl;
+@@ -335,63 +355,6 @@ err_free:
  }
  EXPORT_SYMBOL(bio_alloc_bioset);
-@@ -1562,6 +1617,9 @@ static void biovec_free_pools(struct bio_set *bs)
  
- void bioset_free(struct bio_set *bs)
+-/**
+- *	bio_alloc - allocate a new bio, memory pool backed
+- *	@gfp_mask: allocation mask to use
+- *	@nr_iovecs: number of iovecs
+- *
+- *	bio_alloc will allocate a bio and associated bio_vec array that can hold
+- *	at least @nr_iovecs entries. Allocations will be done from the
+- *	fs_bio_set. Also see @bio_alloc_bioset and @bio_kmalloc.
+- *
+- *	If %__GFP_WAIT is set, then bio_alloc will always be able to allocate
+- *	a bio. This is due to the mempool guarantees. To make this work, callers
+- *	must never allocate more than 1 bio at a time from this pool. Callers
+- *	that need to allocate more than 1 bio must always submit the previously
+- *	allocated bio for IO before attempting to allocate a new one. Failure to
+- *	do so can cause livelocks under memory pressure.
+- *
+- *	RETURNS:
+- *	Pointer to new bio on success, NULL on failure.
+- */
+-struct bio *bio_alloc(gfp_t gfp_mask, unsigned int nr_iovecs)
+-{
+-	return bio_alloc_bioset(gfp_mask, nr_iovecs, fs_bio_set);
+-}
+-EXPORT_SYMBOL(bio_alloc);
+-
+-/**
+- * bio_kmalloc - allocate a bio for I/O using kmalloc()
+- * @gfp_mask:   the GFP_ mask given to the slab allocator
+- * @nr_iovecs:	number of iovecs to pre-allocate
+- *
+- * Description:
+- *   Allocate a new bio with @nr_iovecs bvecs.  If @gfp_mask contains
+- *   %__GFP_WAIT, the allocation is guaranteed to succeed.
+- *
+- **/
+-struct bio *bio_kmalloc(gfp_t gfp_mask, unsigned int nr_iovecs)
+-{
+-	struct bio *bio;
+-
+-	if (nr_iovecs > UIO_MAXIOV)
+-		return NULL;
+-
+-	bio = kmalloc(sizeof(struct bio) + nr_iovecs * sizeof(struct bio_vec),
+-		      gfp_mask);
+-	if (unlikely(!bio))
+-		return NULL;
+-
+-	bio_init(bio);
+-	bio->bi_flags |= BIO_POOL_NONE << BIO_POOL_OFFSET;
+-	bio->bi_max_vecs = nr_iovecs;
+-	bio->bi_io_vec = bio->bi_inline_vecs;
+-	bio->bi_pool = NULL;
+-
+-	return bio;
+-}
+-EXPORT_SYMBOL(bio_kmalloc);
+-
+ void zero_fill_bio(struct bio *bio)
  {
-+	if (bs->rescue_workqueue)
-+		destroy_workqueue(bs->rescue_workqueue);
-+
- 	if (bs->bio_pool)
- 		mempool_destroy(bs->bio_pool);
- 
-@@ -1597,6 +1655,10 @@ struct bio_set *bioset_create(unsigned int pool_size, unsigned int front_pad)
- 
- 	bs->front_pad = front_pad;
- 
-+	spin_lock_init(&bs->rescue_lock);
-+	bio_list_init(&bs->rescue_list);
-+	INIT_WORK(&bs->rescue_work, bio_alloc_rescue);
-+
- 	bs->bio_slab = bio_find_or_create_slab(front_pad + back_pad);
- 	if (!bs->bio_slab) {
- 		kfree(bs);
-@@ -1607,9 +1669,14 @@ struct bio_set *bioset_create(unsigned int pool_size, unsigned int front_pad)
- 	if (!bs->bio_pool)
- 		goto bad;
- 
--	if (!biovec_create_pools(bs, pool_size))
--		return bs;
-+	if (biovec_create_pools(bs, pool_size))
-+		goto bad;
-+
-+	bs->rescue_workqueue = alloc_workqueue("bioset", WQ_MEM_RECLAIM, 0);
-+	if (!bs->rescue_workqueue)
-+		goto bad;
- 
-+	return bs;
- bad:
- 	bioset_free(bs);
- 	return NULL;
+ 	unsigned long flags;
 diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 3a8345e..84fdaac 100644
+index 393c87e..8bfd572 100644
 --- a/include/linux/bio.h
 +++ b/include/linux/bio.h
-@@ -492,6 +492,15 @@ struct bio_set {
- 	mempool_t *bio_integrity_pool;
- #endif
- 	mempool_t *bvec_pool;
+@@ -212,12 +212,22 @@ extern void bio_pair_release(struct bio_pair *dbio);
+ extern struct bio_set *bioset_create(unsigned int, unsigned int);
+ extern void bioset_free(struct bio_set *);
+ 
+-extern struct bio *bio_alloc(gfp_t, unsigned int);
+-extern struct bio *bio_kmalloc(gfp_t, unsigned int);
+ extern struct bio *bio_alloc_bioset(gfp_t, int, struct bio_set *);
+ extern void bio_put(struct bio *);
+ extern void bio_free(struct bio *);
+ 
++extern struct bio_set *fs_bio_set;
 +
-+	/*
-+	 * Deadlock avoidance for stacking block drivers: see comments in
-+	 * bio_alloc_bioset() for details
-+	 */
-+	spinlock_t		rescue_lock;
-+	struct bio_list		rescue_list;
-+	struct work_struct	rescue_work;
-+	struct workqueue_struct	*rescue_workqueue;
++static inline struct bio *bio_alloc(gfp_t gfp_mask, unsigned int nr_iovecs)
++{
++	return bio_alloc_bioset(gfp_mask, nr_iovecs, fs_bio_set);
++}
++
++static inline struct bio *bio_kmalloc(gfp_t gfp_mask, unsigned int nr_iovecs)
++{
++	return bio_alloc_bioset(gfp_mask, nr_iovecs, NULL);
++}
++
+ extern void bio_endio(struct bio *, int);
+ struct request_queue;
+ extern int bio_phys_segments(struct request_queue *, struct bio *);
+@@ -305,8 +315,6 @@ struct biovec_slab {
+ 	struct kmem_cache *slab;
  };
  
- struct biovec_slab {
+-extern struct bio_set *fs_bio_set;
+-
+ /*
+  * a small number of entries is fine, not going to be performance critical.
+  * basically we just need to survive
 -- 
 1.7.12
 
