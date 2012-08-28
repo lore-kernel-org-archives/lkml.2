@@ -1,41 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751928Ab2H1Fxc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 01:53:32 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:30911 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750932Ab2H1Fxb (ORCPT
+	id S1752180Ab2H1FyV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 01:54:21 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:20872 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751834Ab2H1FyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 01:53:31 -0400
-Message-ID: <503C5CD1.6040300@hp.com>
-Date: Mon, 27 Aug 2012 23:53:21 -0600
-From: Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Tue, 28 Aug 2012 01:54:20 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 4
+X-BigFish: VS4(zcb8kz98dI1432Izz1202h1082kzzz2dh2a8h668h839h944hd25hf0ah107ah)
+Date: Tue, 28 Aug 2012 13:33:37 +0800
+From: Dong Aisheng <b29396@freescale.com>
+To: Zhao Richard-B20223 <B20223@freescale.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "lrg@ti.com" <lrg@ti.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>
+Subject: Re: [PATCH v2 5/7] ARM: imx6q: convert to use syscon to access
+ anatop registers
+Message-ID: <20120828053336.GF5822@shlinux2.ap.freescale.net>
+References: <1346052285-4344-1-git-send-email-b29396@freescale.com>
+ <1346052285-4344-6-git-send-email-b29396@freescale.com>
+ <20120828032309.GW4011@b20223-02.ap.freescale.net>
 MIME-Version: 1.0
-To: Ram Pai <linuxram@us.ibm.com>
-CC: T Makphaibulchoke <tmac@hp.com>, akpm@linux-foundation.org,
-        paul.gortmaker@windriver.com, weiyang@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kernel/resource.c: fix stack overflow in __reserve_region_with_split
-References: <1346114874-6862-1-git-send-email-tmac@hp.com> <20120828043008.GJ20843@ram-ThinkPad-T61>
-In-Reply-To: <20120828043008.GJ20843@ram-ThinkPad-T61>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120828032309.GW4011@b20223-02.ap.freescale.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2012 10:30 PM, Ram Pai wrote:
-> For example:
-> if the region requested is 1 to 100, but 20-30 is already reserved, than
-> the earlier behavior would reserve 1-20 and 30-100. With your
-> patch, it will just reserve 1-20.
-> 
-> RP
-> 
+On Tue, Aug 28, 2012 at 11:23:10AM +0800, Zhao Richard-B20223 wrote:
+...
+> >  	np = of_find_compatible_node(NULL, NULL, "fsl,imx6q-anatop");
+> np unused.
 
-Thanks RP for pointing the problem.  Sorry for missing part of the logic.  I'll fix the problem and resubmit.  Again, thank you very much for your comments.
+Correct.
+Will drop it.
 
-Thanks,
-Mak.
+Regards
+Dong Aisheng
 
