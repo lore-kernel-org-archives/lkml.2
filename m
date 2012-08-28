@@ -1,66 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753141Ab2H1Nm4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 09:42:56 -0400
-Received: from noserose.net ([66.220.18.76]:38228 "HELO noserose.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752849Ab2H1Nmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 09:42:55 -0400
-Message-Id: <e6cc043881cb6255cef2f522603d14a351440cb1.1346158422.git.ecashin@coraid.com>
-In-Reply-To: <cover.1346158422.git.ecashin@coraid.com>
-References: <cover.1346158422.git.ecashin@coraid.com>
-From: Ed Cashin <ecashin@coraid.com>
-Date: Sat, 25 Aug 2012 10:39:57 -0400
-Subject: [PATCH 14/14] aoe: update documentation with new URL and VM settings reference
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, ecashin@coraid.com
+	id S1753031Ab2H1Ntr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 09:49:47 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:33221 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752188Ab2H1Ntq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Aug 2012 09:49:46 -0400
+Date: Tue, 28 Aug 2012 06:42:06 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Rakib Mullick <rakib.mullick@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Add rq->nr_uninterruptible count to dest cpu's rq while CPU goes
+ down.
+Message-ID: <20120828134206.GH2961@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1345125384.29668.30.camel@twins>
+ <CADZ9YHjPjExzuJWjziiezBch03Am0imQzDG4EDfG-NTWfz4V8A@mail.gmail.com>
+ <1345128138.29668.42.camel@twins>
+ <CADZ9YHjzNVz6nSqbnTgVYfwi2hz0KYuXC89GHw6UjL2GyGZ64A@mail.gmail.com>
+ <1345139199.29668.46.camel@twins>
+ <CADZ9YHgNhTGWicX0kFfrNoL17JkxfZcXryqqa-wHLVLh05SvAg@mail.gmail.com>
+ <1345454817.23018.27.camel@twins>
+ <20120820162657.GI2435@linux.vnet.ibm.com>
+ <20120827184435.GA13883@linux.vnet.ibm.com>
+ <CADZ9YHi-DGd71jxQpYyRfVUqdr-ks-znSeCtcBAccL7wRd3r5g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CADZ9YHi-DGd71jxQpYyRfVUqdr-ks-znSeCtcBAccL7wRd3r5g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12082813-7182-0000-0000-00000269A347
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The old area has a new URL.  Also, now that the driver can perform
-better, it is worth mentioning the VM settings that help aoe to sink
-dirty pages out early, avoiding unecessary memory pressure when much
-I/O is going on.
+On Tue, Aug 28, 2012 at 12:57:09PM +0600, Rakib Mullick wrote:
+> Hello Paul,
+> 
+> On 8/28/12, Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> > On Mon, Aug 20, 2012 at 09:26:57AM -0700, Paul E. McKenney wrote:
+> >> On Mon, Aug 20, 2012 at 11:26:57AM +0200, Peter Zijlstra wrote:
+> >
+> > How about the following updated patch?
+> >
+> Actually, I was waiting for Peter's update.
 
-Signed-off-by: Ed Cashin <ecashin@coraid.com>
----
- Documentation/aoe/aoe.txt |    9 ++++++---
- MAINTAINERS               |    2 +-
- 2 files changed, 7 insertions(+), 4 deletions(-)
+I was too, but chatted with Peter.
 
-diff --git a/Documentation/aoe/aoe.txt b/Documentation/aoe/aoe.txt
-index 5f5aa16..b3e4756 100644
---- a/Documentation/aoe/aoe.txt
-+++ b/Documentation/aoe/aoe.txt
-@@ -1,8 +1,11 @@
--The EtherDrive (R) HOWTO for users of 2.6 kernels is found at ...
-+The EtherDrive (R) HOWTO for 2.6 and 3.x kernels is found at ...
- 
--  http://www.coraid.com/SUPPORT/EtherDrive-HBA  
-+  http://support.coraid.com/support/linux/EtherDrive-2.6-HOWTO.html
- 
--  It has many tips and hints!
-+It has many tips and hints!  Please see, especially, recommended
-+tunings for virtual memory:
-+
-+  http://support.coraid.com/support/linux/EtherDrive-2.6-HOWTO-5.html#ss5.19
- 
- The aoetools are userland programs that are designed to work with this
- driver.  The aoetools are on sourceforge.
-diff --git a/MAINTAINERS b/MAINTAINERS
-index fdc0119..917b0d8 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -1250,7 +1250,7 @@ F:	include/linux/i2c/at24.h
- 
- ATA OVER ETHERNET (AOE) DRIVER
- M:	"Ed L. Cashin" <ecashin@coraid.com>
--W:	http://www.coraid.com/support/linux
-+W:	http://support.coraid.com/support/linux
- S:	Supported
- F:	Documentation/aoe/
- F:	drivers/block/aoe/
--- 
-1.7.2.5
+> > 							Thanx, Paul
+> >
+> > ------------------------------------------------------------------------
+> >
+> > sched: Fix load avg vs cpu-hotplug
+> >
+> > Rabik and Paul reported two different issues related to the same few
+> > lines of code.
+> >
+> > Rabik's issue is that the nr_uninterruptible migration code is wrong in
+> > that he sees artifacts due to this (Rabik please do expand in more
+> > detail).
+> >
+> > Paul's issue is that this code as it stands relies on us using
+> > stop_machine() for unplug, we all would like to remove this assumption
+> > so that eventually we can remove this stop_machine() usage altogether.
+> >
+> > The only reason we'd have to migrate nr_uninterruptible is so that we
+> > could use for_each_online_cpu() loops in favour of
+> > for_each_possible_cpu() loops, however since nr_uninterruptible() is the
+> > only such loop and its using possible lets not bother at all.
+> >
+> > The problem Rabik sees is (probably) caused by the fact that by
+> > migrating nr_uninterruptible we screw rq->calc_load_active for both rqs
+> > involved.
+> >
+> > So don't bother with fancy migration schemes (meaning we now have to
+> > keep using for_each_possible_cpu()) and instead fold any nr_active delta
+> > after we migrate all tasks away to make sure we don't have any skewed
+> > nr_active accounting.
+> >
+> > [ paulmck: Move call to calc_load_migration to CPU_DEAD to avoid
+> > miscounting noted by Rakib. ]
+> >
+> > Reported-by: Rakib Mullick <rakib.mullick@gmail.com>
+> > Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> >
+> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> > index e841dfc..a8807f2 100644
+> > --- a/kernel/sched/core.c
+> > +++ b/kernel/sched/core.c
+> > @@ -5309,27 +5309,17 @@ void idle_task_exit(void)
+> >  }
+> >
+> >  /*
+> > - * While a dead CPU has no uninterruptible tasks queued at this point,
+> > - * it might still have a nonzero ->nr_uninterruptible counter, because
+> > - * for performance reasons the counter is not stricly tracking tasks to
+> > - * their home CPUs. So we just add the counter to another CPU's counter,
+> > - * to keep the global sum constant after CPU-down:
+> > - */
+> > -static void migrate_nr_uninterruptible(struct rq *rq_src)
+> > -{
+> > -	struct rq *rq_dest = cpu_rq(cpumask_any(cpu_active_mask));
+> > -
+> > -	rq_dest->nr_uninterruptible += rq_src->nr_uninterruptible;
+> > -	rq_src->nr_uninterruptible = 0;
+> > -}
+> > -
+> > -/*
+> > - * remove the tasks which were accounted by rq from calc_load_tasks.
+> > + * Since this CPU is going 'away' for a while, fold any nr_active delta
+> > + * we might have. Assumes we're called after migrate_tasks() so that the
+> > + * nr_active count is stable.
+> > + *
+> > + * Also see the comment "Global load-average calculations".
+> >   */
+> > -static void calc_global_load_remove(struct rq *rq)
+> > +static void calc_load_migrate(struct rq *rq)
+> >  {
+> > -	atomic_long_sub(rq->calc_load_active, &calc_load_tasks);
+> > -	rq->calc_load_active = 0;
+> > +	long delta = calc_load_fold_active(rq);
+> > +	if (delta)
+> > +		atomic_long_add(delta, &calc_load_tasks);
+> >  }
+> >
+> >  /*
+> > @@ -5622,9 +5612,18 @@ migration_call(struct notifier_block *nfb, unsigned
+> > long action, void *hcpu)
+> >  		migrate_tasks(cpu);
+> >  		BUG_ON(rq->nr_running != 1); /* the migration thread */
+> >  		raw_spin_unlock_irqrestore(&rq->lock, flags);
+> > +		break;
+> >
+> > -		migrate_nr_uninterruptible(rq);
+> > -		calc_global_load_remove(rq);
+> > +	case CPU_DEAD:
+> > +		{
+> > +			struct rq *dest_rq;
+> > +
+> > +			local_irq_save(flags);
+> > +			dest_rq = cpu_rq(smp_processor_id());
+> 
+> Use of smp_processor_id() as dest cpu isn't clear to me, this
+> processor is about to get down, isn't it?
+
+Nope.  The CPU_DEAD notifier happens after the outgoing CPU has been
+fully offlined, and so it must run on some other CPU.
+
+> > +			raw_spin_lock(&dest_rq->lock);
+> > +			calc_load_migrate(rq);
+> 
+> Well, calc_load_migrate() has no impact cause rq->nr_running == 1 at
+> this point. It's been already pointed out previously.
+
+Even after the outgoing CPU is fully gone?  I would hope that the value
+would be zero.
+
+							Thanx, Paul
 
