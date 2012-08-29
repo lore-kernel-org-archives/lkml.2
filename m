@@ -1,71 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753271Ab2H2LVl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 07:21:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64898 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752766Ab2H2LVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 07:21:39 -0400
-Date: Wed, 29 Aug 2012 14:07:48 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, avi@redhat.com, kvm@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] virtio-ring: Allocate indirect buffers from cache
- when possible
-Message-ID: <20120829110748.GB5970@redhat.com>
-References: <1346159043-16446-1-git-send-email-levinsasha928@gmail.com>
- <1346159043-16446-2-git-send-email-levinsasha928@gmail.com>
- <20120828132032.GB2039@redhat.com>
- <503CC904.3050207@gmail.com>
+	id S1753284Ab2H2L0i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 07:26:38 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:33482 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752766Ab2H2L0g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 07:26:36 -0400
+Message-ID: <503DFC61.3000104@gmail.com>
+Date: Wed, 29 Aug 2012 13:26:25 +0200
+From: Daniel Mack <zonque@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <503CC904.3050207@gmail.com>
+To: Josh Boyer <jwboyer@redhat.com>
+CC: Bruno Wolff III <bruno@wolff.to>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Logitech USB headset not working in 3.6-rc3
+References: <20120824190808.GC20043@zod.bos.redhat.com> <5038007E.5060505@gmail.com> <20120825111749.GA17048@wolff.to> <20120825115423.GA14327@wolff.to> <5038BEEB.6090303@gmail.com> <20120825120740.GA19539@wolff.to> <5038C186.7000107@gmail.com> <20120825121758.GF20043@zod.bos.redhat.com>
+In-Reply-To: <20120825121758.GF20043@zod.bos.redhat.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: multipart/mixed;
+ boundary="------------070202060108000404060508"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 28, 2012 at 03:35:00PM +0200, Sasha Levin wrote:
-> On 08/28/2012 03:20 PM, Michael S. Tsirkin wrote:
-> > On Tue, Aug 28, 2012 at 03:04:03PM +0200, Sasha Levin wrote:
-> >> Currently if VIRTIO_RING_F_INDIRECT_DESC is enabled we will
-> >> use indirect descriptors and allocate them using a simple
-> >> kmalloc().
-> >>
-> >> This patch adds a cache which will allow indirect buffers under
-> >> a configurable size to be allocated from that cache instead.
-> >>
-> >> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> > 
-> > I imagine this helps performance? Any numbers?
-> 
-> I ran benchmarks on the original RFC, I've re-tested it now and got similar
-> numbers to the original ones (virtio-net using vhost-net, thresh=16):
-> 
-> Before:
-> 	Recv   Send    Send
-> 	Socket Socket  Message  Elapsed
-> 	Size   Size    Size     Time     Throughput
-> 	bytes  bytes   bytes    secs.    10^6bits/sec
-> 
-> 	 87380  16384  16384    10.00    4512.12
-> 
-> After:
-> 	Recv   Send    Send
-> 	Socket Socket  Message  Elapsed
-> 	Size   Size    Size     Time     Throughput
-> 	bytes  bytes   bytes    secs.    10^6bits/sec
-> 
-> 	 87380  16384  16384    10.00    5399.18
-> 
-> 
-> Thanks,
-> Sasha
+This is a multi-part message in MIME format.
+--------------070202060108000404060508
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-This is with both patches 1 + 2?
-Sorry could you please also test what happens if you apply
-- just patch 1
-- just patch 2
+On 25.08.2012 14:17, Josh Boyer wrote:
+> On Sat, Aug 25, 2012 at 02:13:58PM +0200, Daniel Mack wrote:
+>> On 25.08.2012 14:07, Bruno Wolff III wrote:
+>>> On Sat, Aug 25, 2012 at 14:02:51 +0200,
+>>>    Daniel Mack <zonque@gmail.com> wrote:
+>>>>
+>>>> Can you revert commit e9ba389c5 ("ALSA: usb-audio: Fix
+>>>> scheduling-while-atomic bug in PCM capture stream") and see if that
+>>>
+>>> I can try that, but it takes a long time to build a new kernel on my 
+>>> old hardware.
+>>>
+>>>> helps? If not, can you summarize again which kernels still work for you
+>>>> and which don't?
+>>>
+>>> The latest kernel that works is 3.6.0-0.rc2.git1.2.fc18. The earliest that 
+>>> doesn't work is 3.6.0-0.rc2.git2.1.fc18.
+>>>
+>>
+>> The report you sent doesn't look like it could be caused by e9ba389c5.
+>> It fixes a kernel Ooops. But as it is the only relevant patch in that
+>> area, it would be interesting if reverting it fixes anything.
+> 
+> Yep, agreed.  If this revert kernel doesn't work, we're likely down to a
+> git bisect, Bruno.
+> 
+>> Btw - thanks a lot for testing -rc kernels, much appreciated!
+> 
+> Indeed!
 
-Thanks!
+Could you please try this patch on top of Takashi's? Thanks again!
+
+
+Daniel
+
+
+--------------070202060108000404060508
+Content-Type: text/x-patch;
+ name="0001-ALSA-snd-usb-Fix-URB-cancellation-at-stream-start.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-ALSA-snd-usb-Fix-URB-cancellation-at-stream-start.patch"
+
+>From 6617bb2463ae3fad21390b59cc2a71f96b9e9ca8 Mon Sep 17 00:00:00 2001
+From: Daniel Mack <zonque@gmail.com>
+Date: Wed, 29 Aug 2012 13:17:05 +0200
+Subject: [PATCH] ALSA: snd-usb: Fix URB cancellation at stream start
+
+Commit e9ba389c5 ("ALSA: usb-audio: Fix scheduling-while-atomic bug in
+PCM capture stream") fixed a scheduling-while-atomic bug that happened
+when snd_usb_endpoint_start was called from the trigger callback, which
+is an atmic context. However, the patch breaks the idea of the endpoints
+reference counting, which is the reason why the driver has been
+refactored lately.
+
+Revert that commit and let snd_usb_endpoint_start() take care of the URB
+cancellation again. As this function is called from both atomic and
+non-atomic context, add a flag to denote whether the function may sleep.
+
+Signed-off-by: Daniel Mack <zonque@gmail.com>
+Cc: stable@kernel.org [3.5+]
+---
+ sound/usb/endpoint.c | 10 ++++++++--
+ sound/usb/endpoint.h |  2 +-
+ sound/usb/pcm.c      | 13 +++++--------
+ 3 files changed, 14 insertions(+), 11 deletions(-)
+
+diff --git a/sound/usb/endpoint.c b/sound/usb/endpoint.c
+index c411812..678456c 100644
+--- a/sound/usb/endpoint.c
++++ b/sound/usb/endpoint.c
+@@ -799,7 +799,9 @@ int snd_usb_endpoint_set_params(struct snd_usb_endpoint *ep,
+ /**
+  * snd_usb_endpoint_start: start an snd_usb_endpoint
+  *
+- * @ep: the endpoint to start
++ * @ep:		the endpoint to start
++ * @can_sleep:	flag indicating whether the operation is executed in
++ * 		non-atomic context
+  *
+  * A call to this function will increment the use count of the endpoint.
+  * In case it is not already running, the URBs for this endpoint will be
+@@ -809,7 +811,7 @@ int snd_usb_endpoint_set_params(struct snd_usb_endpoint *ep,
+  *
+  * Returns an error if the URB submission failed, 0 in all other cases.
+  */
+-int snd_usb_endpoint_start(struct snd_usb_endpoint *ep)
++int snd_usb_endpoint_start(struct snd_usb_endpoint *ep, int can_sleep)
+ {
+ 	int err;
+ 	unsigned int i;
+@@ -821,6 +823,10 @@ int snd_usb_endpoint_start(struct snd_usb_endpoint *ep)
+ 	if (++ep->use_count != 1)
+ 		return 0;
+ 
++	/* just to be sure */
++	deactivate_urbs(ep, 0, can_sleep);
++	wait_clear_urbs(ep);
++
+ 	ep->active_mask = 0;
+ 	ep->unlink_mask = 0;
+ 	ep->phase = 0;
+diff --git a/sound/usb/endpoint.h b/sound/usb/endpoint.h
+index ee2723f..a8e60c1 100644
+--- a/sound/usb/endpoint.h
++++ b/sound/usb/endpoint.h
+@@ -13,7 +13,7 @@ int snd_usb_endpoint_set_params(struct snd_usb_endpoint *ep,
+ 				struct audioformat *fmt,
+ 				struct snd_usb_endpoint *sync_ep);
+ 
+-int  snd_usb_endpoint_start(struct snd_usb_endpoint *ep);
++int  snd_usb_endpoint_start(struct snd_usb_endpoint *ep, int can_sleep);
+ void snd_usb_endpoint_stop(struct snd_usb_endpoint *ep,
+ 			   int force, int can_sleep, int wait);
+ int  snd_usb_endpoint_activate(struct snd_usb_endpoint *ep);
+diff --git a/sound/usb/pcm.c b/sound/usb/pcm.c
+index 62ec808..1546577 100644
+--- a/sound/usb/pcm.c
++++ b/sound/usb/pcm.c
+@@ -212,7 +212,7 @@ int snd_usb_init_pitch(struct snd_usb_audio *chip, int iface,
+ 	}
+ }
+ 
+-static int start_endpoints(struct snd_usb_substream *subs)
++static int start_endpoints(struct snd_usb_substream *subs, int can_sleep)
+ {
+ 	int err;
+ 
+@@ -225,7 +225,7 @@ static int start_endpoints(struct snd_usb_substream *subs)
+ 		snd_printdd(KERN_DEBUG "Starting data EP @%p\n", ep);
+ 
+ 		ep->data_subs = subs;
+-		err = snd_usb_endpoint_start(ep);
++		err = snd_usb_endpoint_start(ep, can_sleep);
+ 		if (err < 0) {
+ 			clear_bit(SUBSTREAM_FLAG_DATA_EP_STARTED, &subs->flags);
+ 			return err;
+@@ -239,7 +239,7 @@ static int start_endpoints(struct snd_usb_substream *subs)
+ 		snd_printdd(KERN_DEBUG "Starting sync EP @%p\n", ep);
+ 
+ 		ep->sync_slave = subs->data_endpoint;
+-		err = snd_usb_endpoint_start(ep);
++		err = snd_usb_endpoint_start(ep, can_sleep);
+ 		if (err < 0) {
+ 			clear_bit(SUBSTREAM_FLAG_SYNC_EP_STARTED, &subs->flags);
+ 			return err;
+@@ -544,13 +544,10 @@ static int snd_usb_pcm_prepare(struct snd_pcm_substream *substream)
+ 	subs->last_frame_number = 0;
+ 	runtime->delay = 0;
+ 
+-	/* clear the pending deactivation on the target EPs */
+-	deactivate_endpoints(subs);
+-
+ 	/* for playback, submit the URBs now; otherwise, the first hwptr_done
+ 	 * updates for all URBs would happen at the same time when starting */
+ 	if (subs->direction == SNDRV_PCM_STREAM_PLAYBACK)
+-		return start_endpoints(subs);
++		return start_endpoints(subs, 1);
+ 
+ 	return 0;
+ }
+@@ -1175,7 +1172,7 @@ static int snd_usb_substream_capture_trigger(struct snd_pcm_substream *substream
+ 
+ 	switch (cmd) {
+ 	case SNDRV_PCM_TRIGGER_START:
+-		err = start_endpoints(subs);
++		err = start_endpoints(subs, 0);
+ 		if (err < 0)
+ 			return err;
+ 
+-- 
+1.7.11.4
+
+
+--------------070202060108000404060508--
