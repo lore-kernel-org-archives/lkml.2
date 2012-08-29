@@ -1,70 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752898Ab2H2IJJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 04:09:09 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:57514 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab2H2IJG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 04:09:06 -0400
-X-AuditID: b753bd60-9255dba000007c38-c3-503dce144747
-X-AuditID: b753bd60-9255dba000007c38-c3-503dce144747
-Message-ID: <503DCE13.5030400@hitachi.com>
-Date: Wed, 29 Aug 2012 17:08:51 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: BUG: Kprobe smoke test: 2 out of 6 tests failed
-References: <20120824071512.GA965@localhost>  <1345815698.12440.12.camel@gandalf.local.home> <1345856440.12440.21.camel@gandalf.local.home>
-In-Reply-To: <1345856440.12440.21.camel@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	id S1753263Ab2H2IL0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 04:11:26 -0400
+Received: from mga01.intel.com ([192.55.52.88]:47588 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752801Ab2H2ILH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 04:11:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,332,1344236400"; 
+   d="asc'?scan'208";a="215183538"
+Message-ID: <1346228165.2848.432.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH v2] mtd: cmdlinepart: fix the wrong partitions number
+ when truncating occurs
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+Cc: Huang Shijie <shijie8@gmail.com>, dwmw2@infradead.org,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Wed, 29 Aug 2012 11:16:05 +0300
+In-Reply-To: <20120826090603.6b833e54@pixies.home.jungo.com>
+References: <1345904767-23011-1-git-send-email-shijie8@gmail.com>
+	 <20120825120231.73577d6a@halley>
+	 <CAMiH66HyfNEzEHGyZUcLJ_01PNVHqA44fjAqXsyM2c-HHms8hQ@mail.gmail.com>
+	 <20120826090603.6b833e54@pixies.home.jungo.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-A+mtwrkXg2WY6IeKxnqB"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven and Fengguang,
 
-(2012/08/25 10:00), Steven Rostedt wrote:
-> On Fri, 2012-08-24 at 09:41 -0400, Steven Rostedt wrote:
-> 
->> On Fri, 2012-08-24 at 15:15 +0800, Fengguang Wu wrote:
->>> Hi Steven,
->>>
->>> The following test fails are mostly due to this commit, or one of the
->>> last 4 commits in
->>>
->>> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git tip/perf/core
->>> head:   d57c5d51a30152f3175d2344cb6395f08bf8ee0c
->>> commit: d57c5d51a30152f3175d2344cb6395f08bf8ee0c [100/100] ftrace/x86: Add support for -mfentry to x86_64
->>>
->>> [    9.084881] Kprobe smoke test failed: register_jprobe returned -22
->>> [    9.086786] Kprobe smoke test failed: register_jprobes returned -22
-> 
-> Masami,
-> 
-> Seems that when we use fentry, we break jprobes. I thought the patches
-> that we added would just move the call to the next op, not fail totally?
+--=-A+mtwrkXg2WY6IeKxnqB
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Ah! yes, it would be kprobe-side problem.
+On Sun, 2012-08-26 at 09:06 +0300, Shmulik Ladkani wrote:
+> root	100m@0
+> kernel	100m@100m
+> rootfs	800m@200m (truncated)
+> user	0@1g (truncated)
+> rest	0@1g
 
-Since ftrace_regs_call allows handlers to set regs->ip, it is not necessarily
-to move jprobe onto the next instruction (even it will be the simplest one).
-Instead, I think we can allow it on ftrace entries. Of course, ftrace side
-change is also needed, e.g. sorting handlers for moving such ip-modifying
-handler to the last.
+Who would benefit from having those 2 0-sized partitions and how? How
+many users/scripts would be confused by this (these 2 ghost partitions
+would be visible in /proc/mtd and sysfs)? How much RAM would we spend
+for creating sysfs files and directories for these ghost partitions
+(note, one sysfs file costs a couple KiB I thing, because 'sizeof
+(struct inode)').
 
-Thank you,
+While you suggestion is clever, do we really benefit from this?
 
+--=20
+Best Regards,
+Artem Bityutskiy
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+--=-A+mtwrkXg2WY6IeKxnqB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQPc/FAAoJECmIfjd9wqK0UkMP+wR/EK+hRTJxdG69PRgTae0U
+MD6Ga5bZUbNKsow03roWaikWQMwuStuPvjcJuY7Rjvwgo7ESEnneUCOvm3GUEvEK
+tFgNwpbkc6fNoeXMn05A0R3LSaRnJ/XJLQgbrxhDh+lHKLpIhp8GyCcMpIQonMaL
+tCYJ357bo+85gfWw3b5nfqWjMIfwbARdoGKDIgwKBuFmnnIce7L/hW7Nsf4zjQnz
+z512JD+Jv4vevgUu56I+DIbiDskTBSTMmltYd2A44DYXq5NeRhx3bfVH9ZEwUQNX
+BaMy7/liGwsY8yvD6RMFYKNbTLwFAfidIOOK3KM5pezh05x2GSDeeUKk9DCnWFbN
+jfm4SYv9DyvwBG4/Bejz4nP0INu0lHE1cSEVVfd6jEIKs73DHiiDQNEGon2sgmOM
+D8KJAMNs3Wb8wxoNr+WPl76883Fpl+rvNXvB0KHgNfCZ3DJG1qZlkqbsBerSVeCX
+Y0JNY6Tv5NSFKC2kQ1dSVWFgA/WjQ0wbpJqRgasB8NRndCADXNgMjmdEH3ZYHnDY
+dlHUCcAZoCbZy826RUgAiSxiMvFrjIk4rg7e1snOXYlclGL19WZuTpEvJGCuoy8y
+1h3I6RFnEDqUmt2NEj9UpN7BvJXl6J5E1fqudt2puwgLJzdJ0tZ53iPc5qwE8l0p
+kpQ9yEkOOc069OosnNDo
+=bl+6
+-----END PGP SIGNATURE-----
+
+--=-A+mtwrkXg2WY6IeKxnqB--
 
