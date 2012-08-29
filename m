@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752237Ab2H2Iv0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 04:51:26 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:42274 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866Ab2H2IvZ (ORCPT
+	id S1752607Ab2H2Ivs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 04:51:48 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38957 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751270Ab2H2Ivr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 04:51:25 -0400
-Date: Wed, 29 Aug 2012 11:51:12 +0300
-From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-To: dedekind1@gmail.com
-Cc: Huang Shijie <shijie8@gmail.com>, dwmw2@infradead.org,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] mtd: cmdlinepart: fix the wrong partitions number
- when truncating occurs
-Message-ID: <20120829115112.389fc40c@halley>
-In-Reply-To: <1346228165.2848.432.camel@sauron.fi.intel.com>
-References: <1345904767-23011-1-git-send-email-shijie8@gmail.com>
-	<20120825120231.73577d6a@halley>
-	<CAMiH66HyfNEzEHGyZUcLJ_01PNVHqA44fjAqXsyM2c-HHms8hQ@mail.gmail.com>
-	<20120826090603.6b833e54@pixies.home.jungo.com>
-	<1346228165.2848.432.camel@sauron.fi.intel.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+	Wed, 29 Aug 2012 04:51:47 -0400
+Subject: Re: [PATCH 1/1] tcp: Wrong timeout for SYN segments
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "H.K. Jerry Chu" <hkjerry.chu@gmail.com>
+Cc: Alexander Bergmann <alex@linlab.net>, David Miller <davem@davemloft.net>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <CAFbMe2Pgjbttt+Z3RQ9KL05=GHqZYk5ubNH2G1-EUn_f_RBaEQ@mail.gmail.com>
+References: <1345724123.5904.756.camel@edumazet-glaptop>
+	 <50362407.9070805@linlab.net> <1345726185.5904.835.camel@edumazet-glaptop>
+	 <20120824.134231.41073001349178209.davem@davemloft.net>
+	 <20120825084819.GD430@linlab.net>
+	 <CAFbMe2Pgjbttt+Z3RQ9KL05=GHqZYk5ubNH2G1-EUn_f_RBaEQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 29 Aug 2012 01:51:45 -0700
+Message-ID: <1346230305.2522.15.camel@edumazet-glaptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Aug 2012 11:16:05 +0300 Artem Bityutskiy <dedekind1@gmail.com> wrote:
-> On Sun, 2012-08-26 at 09:06 +0300, Shmulik Ladkani wrote:
-> > root	100m@0
-> > kernel	100m@100m
-> > rootfs	800m@200m (truncated)
-> > user	0@1g (truncated)
-> > rest	0@1g
+On Tue, 2012-08-28 at 21:34 -0700, H.K. Jerry Chu wrote:
+
+> IMHO 31secs seem a little short. Why not change it to 6 as well because 63
+> secs still beats 93secs with 3sec initRTO and 5 retries.
 > 
-> Who would benefit from having those 2 0-sized partitions and how? How
-> many users/scripts would be confused by this (these 2 ghost partitions
-> would be visible in /proc/mtd and sysfs)? How much RAM would we spend
-> for creating sysfs files and directories for these ghost partitions
-> (note, one sysfs file costs a couple KiB I thing, because 'sizeof
-> (struct inode)').
+> Jerry
 > 
-> While you suggestion is clever, do we really benefit from this?
 
-Artem, please note this is just a side effect of what I've suggested
-(that its, continue parsing after first truncated partition), not a real
-use case I'd expect and intentionally wish to support.
+My rationale was that such increase were going to amplify SYN attacks
+impact by 20% (if we count number of useless SYNACK sent)
 
-I am used to specify partitions explicitly using size@offset (specifying
-offset for all parts, even if sometimes adjacent), and sometimes in an
-unsorted fashion.
-I never defined some partition that got truncated, so the whole
-discussion is theoretical to _my_ usecase.
+If the active side sends SYN packets for 180 seconds, do we really want
+to also send SYNACKS for additional 100 seconds ?
 
-The only benefit of continuing to parse, is that if there _are_ later
-partitions which are defined _explicitly_ with an offset, whose location
-is _before_ the truncated partition, these would still be parsed and
-registered.
+Sure, RFC numbers are what they are, but in practice, I doubt someone
+will really miss the extra SYNACK sent after ~32 seconds, since it would
+matter only for the last SYN attempted.
 
-Not so important, and would rarely happen, but simplistic and naive.
 
-And reagrding 0 sized partitions, we can always skip these.
 
-Regards,
-Shmulik
