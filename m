@@ -1,51 +1,527 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753031Ab2H2G56 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 02:57:58 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59743 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185Ab2H2G5z (ORCPT
+	id S1752333Ab2H2G7X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 02:59:23 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:5407 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751694Ab2H2G7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 02:57:55 -0400
-Message-ID: <1346223466.17293.0.camel@phoenix>
-Subject: [PATCH] gpio: Remove broken mark for da9052 gpio driver
-From: Axel Lin <axel.lin@gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: David Dajun Chen <dchen@diasemi.com>,
-        Ashish Jangam <ashish.jangam@kpitcummins.com>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 29 Aug 2012 14:57:46 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 29 Aug 2012 02:59:20 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 28 Aug 2012 23:53:04 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: <gregkh@linuxfoundation.org>, <balbi@ti.com>, <hzpeterchen@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        Venu Byravarasu <vbyravarasu@nvidia.com>
+Subject: [PATCH v2] usb: otg: Move phy interface to separate file.
+Date: Wed, 29 Aug 2012 12:17:01 +0530
+Message-ID: <1346222821-27650-1-git-send-email-vbyravarasu@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The fix for MFD part is merged so remove the broken mark for da9052 gpio driver.
+As otg.h is containing lots of phy interface related
+stuff, moving all phy interface related stuff to new
+file named phy.h
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
 ---
- drivers/gpio/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+delta from v1: 
+Removed notifier.h inclusion from otg.h, as it was
+already included in phy.h
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index ba7926f5..95778f1 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -82,7 +82,7 @@ config GPIO_GENERIC
+ include/linux/usb/otg.h |  212 +--------------------------------------------
+ include/linux/usb/phy.h |  222 +++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 223 insertions(+), 211 deletions(-)
+ create mode 100644 include/linux/usb/phy.h
+
+diff --git a/include/linux/usb/otg.h b/include/linux/usb/otg.h
+index 45824be..65a2b6a 100644
+--- a/include/linux/usb/otg.h
++++ b/include/linux/usb/otg.h
+@@ -9,7 +9,7 @@
+ #ifndef __LINUX_USB_OTG_H
+ #define __LINUX_USB_OTG_H
  
- config GPIO_DA9052
- 	tristate "Dialog DA9052 GPIO"
--	depends on PMIC_DA9052 && BROKEN
-+	depends on PMIC_DA9052
- 	help
- 	  Say yes here to enable the GPIO driver for the DA9052 chip.
+-#include <linux/notifier.h>
++#include <linux/usb/phy.h>
  
+ /* OTG defines lots of enumeration states before device reset */
+ enum usb_otg_state {
+@@ -35,31 +35,6 @@ enum usb_otg_state {
+ 	OTG_STATE_A_VBUS_ERR,
+ };
+ 
+-enum usb_phy_events {
+-	USB_EVENT_NONE,         /* no events or cable disconnected */
+-	USB_EVENT_VBUS,         /* vbus valid event */
+-	USB_EVENT_ID,           /* id was grounded */
+-	USB_EVENT_CHARGER,      /* usb dedicated charger */
+-	USB_EVENT_ENUMERATED,   /* gadget driver enumerated */
+-};
+-
+-/* associate a type with PHY */
+-enum usb_phy_type {
+-	USB_PHY_TYPE_UNDEFINED,
+-	USB_PHY_TYPE_USB2,
+-	USB_PHY_TYPE_USB3,
+-};
+-
+-struct usb_phy;
+-
+-/* for transceivers connected thru an ULPI interface, the user must
+- * provide access ops
+- */
+-struct usb_phy_io_ops {
+-	int (*read)(struct usb_phy *x, u32 reg);
+-	int (*write)(struct usb_phy *x, u32 val, u32 reg);
+-};
+-
+ struct usb_otg {
+ 	u8			default_a;
+ 
+@@ -85,134 +60,9 @@ struct usb_otg {
+ 
+ };
+ 
+-/*
+- * the otg driver needs to interact with both device side and host side
+- * usb controllers.  it decides which controller is active at a given
+- * moment, using the transceiver, ID signal, HNP and sometimes static
+- * configuration information (including "board isn't wired for otg").
+- */
+-struct usb_phy {
+-	struct device		*dev;
+-	const char		*label;
+-	unsigned int		 flags;
+-
+-	enum usb_phy_type	type;
+-	enum usb_otg_state	state;
+-	enum usb_phy_events	last_event;
+-
+-	struct usb_otg		*otg;
+-
+-	struct device		*io_dev;
+-	struct usb_phy_io_ops	*io_ops;
+-	void __iomem		*io_priv;
+-
+-	/* for notification of usb_phy_events */
+-	struct atomic_notifier_head	notifier;
+-
+-	/* to pass extra port status to the root hub */
+-	u16			port_status;
+-	u16			port_change;
+-
+-	/* to support controllers that have multiple transceivers */
+-	struct list_head	head;
+-
+-	/* initialize/shutdown the OTG controller */
+-	int	(*init)(struct usb_phy *x);
+-	void	(*shutdown)(struct usb_phy *x);
+-
+-	/* effective for B devices, ignored for A-peripheral */
+-	int	(*set_power)(struct usb_phy *x,
+-				unsigned mA);
+-
+-	/* for non-OTG B devices: set transceiver into suspend mode */
+-	int	(*set_suspend)(struct usb_phy *x,
+-				int suspend);
+-
+-	/* notify phy connect status change */
+-	int	(*notify_connect)(struct usb_phy *x, int port);
+-	int	(*notify_disconnect)(struct usb_phy *x, int port);
+-};
+-
+-
+-/* for board-specific init logic */
+-extern int usb_add_phy(struct usb_phy *, enum usb_phy_type type);
+-extern void usb_remove_phy(struct usb_phy *);
+-
+-#if defined(CONFIG_NOP_USB_XCEIV) || (defined(CONFIG_NOP_USB_XCEIV_MODULE) && defined(MODULE))
+-/* sometimes transceivers are accessed only through e.g. ULPI */
+-extern void usb_nop_xceiv_register(void);
+-extern void usb_nop_xceiv_unregister(void);
+-#else
+-static inline void usb_nop_xceiv_register(void)
+-{
+-}
+-
+-static inline void usb_nop_xceiv_unregister(void)
+-{
+-}
+-#endif
+-
+-/* helpers for direct access thru low-level io interface */
+-static inline int usb_phy_io_read(struct usb_phy *x, u32 reg)
+-{
+-	if (x->io_ops && x->io_ops->read)
+-		return x->io_ops->read(x, reg);
+-
+-	return -EINVAL;
+-}
+-
+-static inline int usb_phy_io_write(struct usb_phy *x, u32 val, u32 reg)
+-{
+-	if (x->io_ops && x->io_ops->write)
+-		return x->io_ops->write(x, val, reg);
+-
+-	return -EINVAL;
+-}
+-
+-static inline int
+-usb_phy_init(struct usb_phy *x)
+-{
+-	if (x->init)
+-		return x->init(x);
+-
+-	return 0;
+-}
+-
+-static inline void
+-usb_phy_shutdown(struct usb_phy *x)
+-{
+-	if (x->shutdown)
+-		x->shutdown(x);
+-}
+-
+-/* for usb host and peripheral controller drivers */
+ #ifdef CONFIG_USB_OTG_UTILS
+-extern struct usb_phy *usb_get_phy(enum usb_phy_type type);
+-extern struct usb_phy *devm_usb_get_phy(struct device *dev,
+-	enum usb_phy_type type);
+-extern void usb_put_phy(struct usb_phy *);
+-extern void devm_usb_put_phy(struct device *dev, struct usb_phy *x);
+ extern const char *otg_state_string(enum usb_otg_state state);
+ #else
+-static inline struct usb_phy *usb_get_phy(enum usb_phy_type type)
+-{
+-	return NULL;
+-}
+-
+-static inline struct usb_phy *devm_usb_get_phy(struct device *dev,
+-	enum usb_phy_type type)
+-{
+-	return NULL;
+-}
+-
+-static inline void usb_put_phy(struct usb_phy *x)
+-{
+-}
+-
+-static inline void devm_usb_put_phy(struct device *dev, struct usb_phy *x)
+-{
+-}
+-
+ static inline const char *otg_state_string(enum usb_otg_state state)
+ {
+ 	return NULL;
+@@ -262,42 +112,6 @@ otg_set_peripheral(struct usb_otg *otg, struct usb_gadget *periph)
+ }
+ 
+ static inline int
+-usb_phy_set_power(struct usb_phy *x, unsigned mA)
+-{
+-	if (x && x->set_power)
+-		return x->set_power(x, mA);
+-	return 0;
+-}
+-
+-/* Context: can sleep */
+-static inline int
+-usb_phy_set_suspend(struct usb_phy *x, int suspend)
+-{
+-	if (x->set_suspend != NULL)
+-		return x->set_suspend(x, suspend);
+-	else
+-		return 0;
+-}
+-
+-static inline int
+-usb_phy_notify_connect(struct usb_phy *x, int port)
+-{
+-	if (x->notify_connect)
+-		return x->notify_connect(x, port);
+-	else
+-		return 0;
+-}
+-
+-static inline int
+-usb_phy_notify_disconnect(struct usb_phy *x, int port)
+-{
+-	if (x->notify_disconnect)
+-		return x->notify_disconnect(x, port);
+-	else
+-		return 0;
+-}
+-
+-static inline int
+ otg_start_srp(struct usb_otg *otg)
+ {
+ 	if (otg && otg->start_srp)
+@@ -306,31 +120,7 @@ otg_start_srp(struct usb_otg *otg)
+ 	return -ENOTSUPP;
+ }
+ 
+-/* notifiers */
+-static inline int
+-usb_register_notifier(struct usb_phy *x, struct notifier_block *nb)
+-{
+-	return atomic_notifier_chain_register(&x->notifier, nb);
+-}
+-
+-static inline void
+-usb_unregister_notifier(struct usb_phy *x, struct notifier_block *nb)
+-{
+-	atomic_notifier_chain_unregister(&x->notifier, nb);
+-}
+-
+ /* for OTG controller drivers (and maybe other stuff) */
+ extern int usb_bus_start_enum(struct usb_bus *bus, unsigned port_num);
+ 
+-static inline const char *usb_phy_type_string(enum usb_phy_type type)
+-{
+-	switch (type) {
+-	case USB_PHY_TYPE_USB2:
+-		return "USB2 PHY";
+-	case USB_PHY_TYPE_USB3:
+-		return "USB3 PHY";
+-	default:
+-		return "UNKNOWN PHY TYPE";
+-	}
+-}
+ #endif /* __LINUX_USB_OTG_H */
+diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
+new file mode 100644
+index 0000000..5a2bcbe
+--- /dev/null
++++ b/include/linux/usb/phy.h
+@@ -0,0 +1,222 @@
++/* USB OTG (On The Go) defines */
++/*
++ *
++ * These APIs may be used between USB controllers.  USB device drivers
++ * (for either host or peripheral roles) don't use these calls; they
++ * continue to use just usb_device and usb_gadget.
++ */
++
++#ifndef __LINUX_USB_PHY_H
++#define __LINUX_USB_PHY_H
++
++#include <linux/notifier.h>
++
++enum usb_phy_events {
++	USB_EVENT_NONE,         /* no events or cable disconnected */
++	USB_EVENT_VBUS,         /* vbus valid event */
++	USB_EVENT_ID,           /* id was grounded */
++	USB_EVENT_CHARGER,      /* usb dedicated charger */
++	USB_EVENT_ENUMERATED,   /* gadget driver enumerated */
++};
++
++/* associate a type with PHY */
++enum usb_phy_type {
++	USB_PHY_TYPE_UNDEFINED,
++	USB_PHY_TYPE_USB2,
++	USB_PHY_TYPE_USB3,
++};
++
++struct usb_phy;
++struct usb_otg;
++
++/* for transceivers connected thru an ULPI interface, the user must
++ * provide access ops
++ */
++struct usb_phy_io_ops {
++	int (*read)(struct usb_phy *x, u32 reg);
++	int (*write)(struct usb_phy *x, u32 val, u32 reg);
++};
++
++struct usb_phy {
++	struct device		*dev;
++	const char		*label;
++	unsigned int		 flags;
++
++	enum usb_phy_type	type;
++	enum usb_phy_events	last_event;
++
++	struct usb_otg		*otg;
++
++	struct device		*io_dev;
++	struct usb_phy_io_ops	*io_ops;
++	void __iomem		*io_priv;
++
++	/* for notification of usb_phy_events */
++	struct atomic_notifier_head	notifier;
++
++	/* to pass extra port status to the root hub */
++	u16			port_status;
++	u16			port_change;
++
++	/* to support controllers that have multiple transceivers */
++	struct list_head	head;
++
++	/* initialize/shutdown the OTG controller */
++	int	(*init)(struct usb_phy *x);
++	void	(*shutdown)(struct usb_phy *x);
++
++	/* effective for B devices, ignored for A-peripheral */
++	int	(*set_power)(struct usb_phy *x,
++				unsigned mA);
++
++	/* for non-OTG B devices: set transceiver into suspend mode */
++	int	(*set_suspend)(struct usb_phy *x,
++				int suspend);
++
++	/* notify phy connect status change */
++	int	(*notify_connect)(struct usb_phy *x, int port);
++	int	(*notify_disconnect)(struct usb_phy *x, int port);
++};
++
++
++/* for board-specific init logic */
++extern int usb_add_phy(struct usb_phy *, enum usb_phy_type type);
++extern void usb_remove_phy(struct usb_phy *);
++
++#if defined(CONFIG_NOP_USB_XCEIV) || (defined(CONFIG_NOP_USB_XCEIV_MODULE) && defined(MODULE))
++/* sometimes transceivers are accessed only through e.g. ULPI */
++extern void usb_nop_xceiv_register(void);
++extern void usb_nop_xceiv_unregister(void);
++#else
++static inline void usb_nop_xceiv_register(void)
++{
++}
++
++static inline void usb_nop_xceiv_unregister(void)
++{
++}
++#endif
++
++/* helpers for direct access thru low-level io interface */
++static inline int usb_phy_io_read(struct usb_phy *x, u32 reg)
++{
++	if (x->io_ops && x->io_ops->read)
++		return x->io_ops->read(x, reg);
++
++	return -EINVAL;
++}
++
++static inline int usb_phy_io_write(struct usb_phy *x, u32 val, u32 reg)
++{
++	if (x->io_ops && x->io_ops->write)
++		return x->io_ops->write(x, val, reg);
++
++	return -EINVAL;
++}
++
++static inline int
++usb_phy_init(struct usb_phy *x)
++{
++	if (x->init)
++		return x->init(x);
++
++	return 0;
++}
++
++static inline void
++usb_phy_shutdown(struct usb_phy *x)
++{
++	if (x->shutdown)
++		x->shutdown(x);
++}
++
++/* for usb host and peripheral controller drivers */
++#ifdef CONFIG_USB_OTG_UTILS
++extern struct usb_phy *usb_get_phy(enum usb_phy_type type);
++extern struct usb_phy *devm_usb_get_phy(struct device *dev,
++	enum usb_phy_type type);
++extern void usb_put_phy(struct usb_phy *);
++extern void devm_usb_put_phy(struct device *dev, struct usb_phy *x);
++#else
++static inline struct usb_phy *usb_get_phy(enum usb_phy_type type)
++{
++	return NULL;
++}
++
++static inline struct usb_phy *devm_usb_get_phy(struct device *dev,
++	enum usb_phy_type type)
++{
++	return NULL;
++}
++
++static inline void usb_put_phy(struct usb_phy *x)
++{
++}
++
++static inline void devm_usb_put_phy(struct device *dev, struct usb_phy *x)
++{
++}
++
++#endif
++
++static inline int
++usb_phy_set_power(struct usb_phy *x, unsigned mA)
++{
++	if (x && x->set_power)
++		return x->set_power(x, mA);
++	return 0;
++}
++
++/* Context: can sleep */
++static inline int
++usb_phy_set_suspend(struct usb_phy *x, int suspend)
++{
++	if (x->set_suspend != NULL)
++		return x->set_suspend(x, suspend);
++	else
++		return 0;
++}
++
++static inline int
++usb_phy_notify_connect(struct usb_phy *x, int port)
++{
++	if (x->notify_connect)
++		return x->notify_connect(x, port);
++	else
++		return 0;
++}
++
++static inline int
++usb_phy_notify_disconnect(struct usb_phy *x, int port)
++{
++	if (x->notify_disconnect)
++		return x->notify_disconnect(x, port);
++	else
++		return 0;
++}
++
++/* notifiers */
++static inline int
++usb_register_notifier(struct usb_phy *x, struct notifier_block *nb)
++{
++	return atomic_notifier_chain_register(&x->notifier, nb);
++}
++
++static inline void
++usb_unregister_notifier(struct usb_phy *x, struct notifier_block *nb)
++{
++	atomic_notifier_chain_unregister(&x->notifier, nb);
++}
++
++static inline const char *usb_phy_type_string(enum usb_phy_type type)
++{
++	switch (type) {
++	case USB_PHY_TYPE_USB2:
++		return "USB2 PHY";
++	case USB_PHY_TYPE_USB3:
++		return "USB3 PHY";
++	default:
++		return "UNKNOWN PHY TYPE";
++	}
++}
++#endif /* __LINUX_USB_PHY_H */
 -- 
-1.7.9.5
-
-
+1.7.1.1
 
