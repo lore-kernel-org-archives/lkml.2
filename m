@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752862Ab2H2K1L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 06:27:11 -0400
-Received: from void.printf.net ([89.145.121.20]:40703 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751751Ab2H2K1K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 06:27:10 -0400
-From: Chris Ball <cjb@laptop.org>
-To: IAN CHEN <ian.cy.chen@samsung.com>
-Cc: linkinjeon@gmail.com, adrian.hunter@intel.com, subhashj@codeaurora.org,
-        linus.walleij@linaro.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, d.j.shin@samsung.com,
-        jongtae22.kim@samsung.com, kyungmin.park@samsung.com,
-        jh80.chung@samsung.com
-Subject: Re: [PATCH v6] mmc: card: Skip secure option for MoviNAND.
-References: <503DB130.8090807@samsung.com>
-Date: Wed, 29 Aug 2012 06:26:59 -0400
-In-Reply-To: <503DB130.8090807@samsung.com> (IAN CHEN's message of "Wed, 29
-	Aug 2012 15:05:36 +0900")
-Message-ID: <873936vvrg.fsf@octavius.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1752902Ab2H2K2L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 06:28:11 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:60670 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752641Ab2H2K2J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 06:28:09 -0400
+Message-ID: <503DEE3C.6020406@linux.vnet.ibm.com>
+Date: Wed, 29 Aug 2012 15:56:04 +0530
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Borislav Petkov <bp@amd64.org>
+CC: tony.luck@intel.com, andi@firstfloor.org, ananth@in.ibm.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org, mingo@redhat.com,
+        hpa@zytor.com, tglx@linutronix.de, linux-edac@vger.kernel.org
+Subject: Re: [PATCH RFC] x86/mce: Move MCE sysfs attributes out of the per-cpu
+ location
+References: <20120829074154.6755.98941.stgit@localhost.localdomain> <20120829101302.GA26977@aftab.osrc.amd.com>
+In-Reply-To: <20120829101302.GA26977@aftab.osrc.amd.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12082910-7014-0000-0000-000001CE9A6F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Wed, Aug 29 2012, IAN CHEN wrote:
-> For several MoviNAND, there are some known issue with secure option.
-> For these specific MoviNAND device, we skip secure option.
+On 08/29/2012 03:43 PM, Borislav Petkov wrote:
+> On Wed, Aug 29, 2012 at 01:11:55PM +0530, Naveen N. Rao wrote:
+>> All the MCE attributes currently exported via sysfs appear under
+>> /sys/devices/system/machinecheck/machinecheck<n>/. Pretty much all of these
+>> are global in nature and not specific to a processor. We have around 7
+>> attributes duplicated across each processor and on multi-core multi-socket
+>> machines, this amounts to quite a large number. So, move these out under
+>> /sys/devices/system/machinecheck/ where they rightly belong.
+>>
+>> Note: I'm not sure if it's ok to change sysfs entries and this does break
+>> userspace tools that depend on the current path for some of these attributes.
+>> So, they will need to be updated to use the new path. However, if we ever get
+>> to a point where cpu0 can be offlined, these tools will need to be updated
+>> anyway (as they mostly hardcode machinecheck0 currently)
 >
-> You could refer this discussion in XDA developers.
-> http://forum.xda-developers.com/showthread.php?t=1644364
-> https://plus.google.com/111398485184813224730/posts/21pTYfTsCkB#111398485184813224730/posts/21pTYfTsCkB
+> How do you know that for all tools out there?
+
+I don't - I've seen mcelog and related tools and they look in machinecheck0.
+
 >
-> Signed-off-by: Ian Chen <ian.cy.chen@samsung.com>
-> Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
-> Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
-> Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+> I know, I know, moving them to /sys/.../machinecheck/ is the right thing
+> to do but they're exposed to userspace and we're breaking it with this
+> patch. And we don't break userspace so I'd guess we're stuck with the
+> current situation.
 
-Thanks.  We should explain the nature of the bug in the commit message,
-so that users and the stable@ maintainers know how bad the problem is
-by reading the patch.  (This should go to stable@, right?  Do you know
-which kernel versions are affected?)
+Hmmm.. Can't we just deprecate these? ;)
+Perhaps we can consider adding newer tunables in the right place.
 
-I'll add something like this, unless you have a better proposal:
 
-==
-For several MoviNAND, there are some known issues with secure option.
-For these specific MoviNAND device, we skip secure option.
+Thanks,
+Naveen
 
-Specifically, there is a bug in the eMMC firmware that causes 
-unrecoverable corruption when the MMC is erased with MMC_CAP_ERASE
-enabled.
+>
+> Sorry.
+>
 
-You could refer this discussion in XDA developers.
-http://forum.xda-developers.com/showthread.php?t=1644364
-https://plus.google.com/111398485184813224730/posts/21pTYfTsCkB#111398485184813224730/posts/21pTYfTsCkB
-==
-
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
