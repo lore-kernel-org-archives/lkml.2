@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754020Ab2H2Pv3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 11:51:29 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:55067 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752790Ab2H2Pv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 11:51:27 -0400
-Date: Wed, 29 Aug 2012 17:51:35 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] x86: use new exception_enter()/exception_exit() API
- in do_device_not_available()
-Message-ID: <20120829155135.GA18057@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-	x86@kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-	Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	linux-kernel@vger.kernel.org
-References: <20120828210047.GA22279@swordfish>
- <20120828221111.GC9297@liondog.tnic>
- <20120829044255.GA3147@swordfish>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120829044255.GA3147@swordfish>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754029Ab2H2Pzj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 11:55:39 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43621 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752790Ab2H2Pzi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 11:55:38 -0400
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH] perf: remove unneeded include of network header files
+Date: Wed, 29 Aug 2012 09:55:32 -0600
+Message-Id: <1346255732-93246-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.10.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 29, 2012 at 07:42:55AM +0300, Sergey Senozhatsky wrote:
-> OH! NO WAY I did that mistake! That was some last minute
-> in-text-editor changes and somehow I screwed this up. Will re-send in
-> a second.
->
-> Sorry, and thank you.
+perf does not have networking related functionality, and the inclusion of
+these headers is one of the causes of compile failures for Android:
+  https://lkml.org/lkml/2012/8/23/316
+  https://lkml.org/lkml/2012/8/28/293
 
-I wouldn't worry - it can happen to anyone (and I'm talking from
-experience here) :-).
+So, remove them.
 
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+---
+ tools/perf/util/util.h |    5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 00a93a9..67a3713 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -69,11 +69,6 @@
+ #include <sys/poll.h>
+ #include <sys/socket.h>
+ #include <sys/ioctl.h>
+-#include <sys/select.h>
+-#include <netinet/in.h>
+-#include <netinet/tcp.h>
+-#include <arpa/inet.h>
+-#include <netdb.h>
+ #include <inttypes.h>
+ #include "../../../include/linux/magic.h"
+ #include "types.h"
 -- 
-Regards/Gruss,
-Boris.
+1.7.10.1
+
