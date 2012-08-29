@@ -1,60 +1,313 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751842Ab2H2FNH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 01:13:07 -0400
-Received: from d1.icnet.pl ([212.160.220.21]:45865 "EHLO d1.icnet.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751160Ab2H2FNF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 01:13:05 -0400
-From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-To: alsa-devel@alsa-project.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-omap@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel] [PATCH] ASoC: ams-delta: fix card initalization failure
-Date: Wed, 29 Aug 2012 07:04:48 +0200
-Message-ID: <1809544.cvZPIRmRr5@acer>
-Organization: Tele-Info-System, Poznan, PL
-User-Agent: KMail/4.8.3 (Linux/3.3.8-gentoo; KDE/4.8.3; i686; ; )
-In-Reply-To: <20120828181338.GB8796@opensource.wolfsonmicro.com>
-References: <1346102910-8610-1-git-send-email-jkrzyszt@tis.icnet.pl> <3048168.EXxi4fR4e7@acer> <20120828181338.GB8796@opensource.wolfsonmicro.com>
+	id S1752303Ab2H2FNb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 01:13:31 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:6575 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751160Ab2H2FN3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 01:13:29 -0400
+X-IronPort-AV: E=Sophos;i="4.80,332,1344182400"; 
+   d="scan'208";a="5744190"
+Message-ID: <503DA63E.40608@cn.fujitsu.com>
+Date: Wed, 29 Aug 2012 13:18:54 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
-X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
+To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
+        Blue Swirl <blauwirbel@gmail.com>, Eric Blake <eblake@redhat.com>,
+        Andrew Jones <drjones@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: [PATCH v10] kvm: notify host when the guest is panicked
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/29 13:13:14,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/29 13:13:15,
+	Serialize complete at 2012/08/29 13:13:15
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Aug 2012 11:13:39 Mark Brown wrote:
-> On Tue, Aug 28, 2012 at 05:13:05PM +0200, Janusz Krzysztofik wrote:
-> > On Mon, 27 Aug 2012 14:38:35 Mark Brown wrote:
-> > > On Mon, Aug 27, 2012 at 11:28:30PM +0200, Janusz Krzysztofik wrote:
-> 
-> > > > -	platform_set_drvdata(ams_delta_audio_platform_device,
-> > > > -				&ams_delta_audio_card);
-> 
-> > > The real fix here is that you should be using platform data here, 
-not
-> > > driver data.  Is there some reason not to do that?
-> 
-> > Do you think the change you propose is suitable for the rc cycle? 
-I'm 
-> > trying to fix a regression in the first place. Converting the ams-
-delta 
-> > asoc to a platform driver is on my todo list and I'm going to take 
-care 
-> > of this as soon as I have enough spare time.
-> 
-> The above looks like you already have a platform driver?  All I'm
-> suggesting is changing the above to use platform rather than driver
-> data.
+We can know the guest is panicked when the guest runs on xen.
+But we do not have such feature on kvm.
 
-The ams-delta asoc driver doesn't use snd_soc_register_card() so far, 
-but relays solely on soc_probe() doing this for it, which in turn 
-expects to find a snc_soc_card structure in drvdata. How is it supposed 
-to find that structure if I pass it over platform data instead? Am I 
-missing something?
+Another purpose of this feature is: management app(for example:
+libvirt) can do auto dump when the guest is panicked. If management
+app does not do auto dump, the guest's user can do dump by hand if
+he sees the guest is panicked.
 
-Thanks,
-Janusz
+We have three solutions to implement this feature:
+1. use vmcall
+2. use I/O port
+3. use virtio-serial.
+
+We have decided to avoid touching hypervisor. The reason why I choose
+choose the I/O port is:
+1. it is easier to implememt
+2. it does not depend any virtual device
+3. it can work when starting the kernel
+
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+---
+ Documentation/virtual/kvm/pv_event.txt |   32 ++++++++++++++++++++++++++++++++
+ arch/ia64/include/asm/kvm_para.h       |   14 ++++++++++++++
+ arch/powerpc/include/asm/kvm_para.h    |   14 ++++++++++++++
+ arch/s390/include/asm/kvm_para.h       |   14 ++++++++++++++
+ arch/x86/include/asm/kvm_para.h        |   27 +++++++++++++++++++++++++++
+ arch/x86/kernel/kvm.c                  |   25 +++++++++++++++++++++++++
+ include/linux/kvm_para.h               |   23 +++++++++++++++++++++++
+ 7 files changed, 149 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/virtual/kvm/pv_event.txt
+
+diff --git a/Documentation/virtual/kvm/pv_event.txt b/Documentation/virtual/kvm/pv_event.txt
+new file mode 100644
+index 0000000..bb04de0
+--- /dev/null
++++ b/Documentation/virtual/kvm/pv_event.txt
+@@ -0,0 +1,32 @@
++The KVM paravirtual event interface
++=================================
++
++Initializing the paravirtual event interface
++======================
++kvm_pv_event_init()
++Argiments:
++	None
++
++Return Value:
++	0: The guest kernel can use paravirtual event interface.
++	1: The guest kernel can't use paravirtual event interface.
++
++Querying whether the event can be ejected
++======================
++kvm_pv_has_feature()
++Arguments:
++	feature: The bit value of this paravirtual event to query
++
++Return Value:
++	0 : The guest kernel can't eject this paravirtual event.
++	-1: The guest kernel can eject this paravirtual event.
++
++
++Ejecting paravirtual event
++======================
++kvm_pv_eject_event()
++Arguments:
++	event: The event to be ejected.
++
++Return Value:
++	None
+diff --git a/arch/ia64/include/asm/kvm_para.h b/arch/ia64/include/asm/kvm_para.h
+index 2019cb9..b5ec658 100644
+--- a/arch/ia64/include/asm/kvm_para.h
++++ b/arch/ia64/include/asm/kvm_para.h
+@@ -31,6 +31,20 @@ static inline bool kvm_check_and_clear_guest_paused(void)
+ 	return false;
+ }
+ 
++static inline int kvm_arch_pv_event_init(void)
++{
++	return 0;
++}
++
++static inline unsigned int kvm_arch_pv_features(void)
++{
++	return 0;
++}
++
++static inline void kvm_arch_pv_eject_event(unsigned int event)
++{
++}
++
+ #endif
+ 
+ #endif
+diff --git a/arch/powerpc/include/asm/kvm_para.h b/arch/powerpc/include/asm/kvm_para.h
+index c18916b..01b98c7 100644
+--- a/arch/powerpc/include/asm/kvm_para.h
++++ b/arch/powerpc/include/asm/kvm_para.h
+@@ -211,6 +211,20 @@ static inline bool kvm_check_and_clear_guest_paused(void)
+ 	return false;
+ }
+ 
++static inline int kvm_arch_pv_event_init(void)
++{
++	return 0;
++}
++
++static inline unsigned int kvm_arch_pv_features(void)
++{
++	return 0;
++}
++
++static inline void kvm_arch_pv_eject_event(unsigned int event)
++{
++}
++
+ #endif /* __KERNEL__ */
+ 
+ #endif /* __POWERPC_KVM_PARA_H__ */
+diff --git a/arch/s390/include/asm/kvm_para.h b/arch/s390/include/asm/kvm_para.h
+index da44867..00ce058 100644
+--- a/arch/s390/include/asm/kvm_para.h
++++ b/arch/s390/include/asm/kvm_para.h
+@@ -154,6 +154,20 @@ static inline bool kvm_check_and_clear_guest_paused(void)
+ 	return false;
+ }
+ 
++static inline int kvm_arch_pv_event_init(void)
++{
++	return 0;
++}
++
++static inline unsigned int kvm_arch_pv_features(void)
++{
++	return 0;
++}
++
++static inline void kvm_arch_pv_eject_event(unsigned int event)
++{
++}
++
+ #endif
+ 
+ #endif /* __S390_KVM_PARA_H */
+diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+index 2f7712e..7d297f0 100644
+--- a/arch/x86/include/asm/kvm_para.h
++++ b/arch/x86/include/asm/kvm_para.h
+@@ -96,8 +96,11 @@ struct kvm_vcpu_pv_apf_data {
+ #define KVM_PV_EOI_ENABLED KVM_PV_EOI_MASK
+ #define KVM_PV_EOI_DISABLED 0x0
+ 
++#define KVM_PV_EVENT_PORT	(0x505UL)
++
+ #ifdef __KERNEL__
+ #include <asm/processor.h>
++#include <linux/ioport.h>
+ 
+ extern void kvmclock_init(void);
+ extern int kvm_register_clock(char *txt);
+@@ -228,6 +231,30 @@ static inline void kvm_disable_steal_time(void)
+ }
+ #endif
+ 
++static inline int kvm_arch_pv_event_init(void)
++{
++	if (!request_region(KVM_PV_EVENT_PORT, 1, "KVM_PV_EVENT"))
++		return -1;
++
++	return 0;
++}
++
++static inline unsigned int kvm_arch_pv_features(void)
++{
++	unsigned int features = inl(KVM_PV_EVENT_PORT);
++
++	/* Reading from an invalid I/O port will return -1 */
++	if (features == ~0)
++		features = 0;
++
++	return features;
++}
++
++static inline void kvm_arch_pv_eject_event(unsigned int event)
++{
++	outl(event, KVM_PV_EVENT_PORT);
++}
++
+ #endif /* __KERNEL__ */
+ 
+ #endif /* _ASM_X86_KVM_PARA_H */
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index c1d61ee..6129459 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -368,6 +368,17 @@ static struct notifier_block kvm_pv_reboot_nb = {
+ 	.notifier_call = kvm_pv_reboot_notify,
+ };
+ 
++static int
++kvm_pv_panic_notify(struct notifier_block *nb, unsigned long code, void *unused)
++{
++	kvm_pv_eject_event(KVM_PV_EVENT_PANICKED);
++	return NOTIFY_DONE;
++}
++
++static struct notifier_block kvm_pv_panic_nb = {
++	.notifier_call = kvm_pv_panic_notify,
++};
++
+ static u64 kvm_steal_clock(int cpu)
+ {
+ 	u64 steal;
+@@ -447,6 +458,20 @@ static void __init kvm_apf_trap_init(void)
+ 	set_intr_gate(14, &async_page_fault);
+ }
+ 
++static void __init kvm_pv_panicked_event_init(void)
++{
++	if (!kvm_para_available())
++		return;
++
++	if (kvm_pv_event_init())
++		return;
++
++	if (kvm_pv_has_feature(KVM_PV_FEATURE_PANICKED))
++		atomic_notifier_chain_register(&panic_notifier_list,
++			&kvm_pv_panic_nb);
++}
++arch_initcall(kvm_pv_panicked_event_init);
++
+ void __init kvm_guest_init(void)
+ {
+ 	int i;
+diff --git a/include/linux/kvm_para.h b/include/linux/kvm_para.h
+index ff476dd..8e0fb81 100644
+--- a/include/linux/kvm_para.h
++++ b/include/linux/kvm_para.h
+@@ -20,6 +20,12 @@
+ #define KVM_HC_FEATURES			3
+ #define KVM_HC_PPC_MAP_MAGIC_PAGE	4
+ 
++/* The bit of supported pv event */
++#define KVM_PV_FEATURE_PANICKED	0
++
++/* The pv event value */
++#define KVM_PV_EVENT_PANICKED	1
++
+ /*
+  * hypercalls use architecture specific
+  */
+@@ -33,5 +39,22 @@ static inline int kvm_para_has_feature(unsigned int feature)
+ 		return 1;
+ 	return 0;
+ }
++
++static inline int kvm_pv_event_init(void)
++{
++	return kvm_arch_pv_event_init();
++}
++
++static inline int kvm_pv_has_feature(unsigned int feature)
++{
++	if (kvm_arch_pv_features() & (1UL << feature))
++		return 1;
++	return 0;
++}
++
++static inline void kvm_pv_eject_event(unsigned int event)
++{
++	kvm_arch_pv_eject_event(event);
++}
+ #endif /* __KERNEL__ */
+ #endif /* __LINUX_KVM_PARA_H */
+-- 
+1.7.1
+
