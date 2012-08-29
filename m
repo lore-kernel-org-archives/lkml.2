@@ -1,215 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430Ab2H2L4O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 07:56:14 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:44430 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752955Ab2H2L4M (ORCPT
+	id S1753466Ab2H2McW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 08:32:22 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:44929 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532Ab2H2McV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 07:56:12 -0400
-Message-ID: <503E0377.6000107@gmail.com>
-Date: Wed, 29 Aug 2012 13:56:39 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120826 Thunderbird/14.0
+	Wed, 29 Aug 2012 08:32:21 -0400
+From: Prabhakar Lad <prabhakar.lad@ti.com>
+To: LMML <linux-media@vger.kernel.org>
+CC: dlos <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-kernel@vger.kernel.org>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: [PATCH] media: v4l2-ctrls: add control for dpcm predictor
+Date: Wed, 29 Aug 2012 18:01:07 +0530
+Message-ID: <1346243467-17094-1-git-send-email-prabhakar.lad@ti.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
-        Blue Swirl <blauwirbel@gmail.com>, Eric Blake <eblake@redhat.com>,
-        Andrew Jones <drjones@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: Re: [PATCH v10] kvm: notify host when the guest is panicked
-References: <503DA63E.40608@cn.fujitsu.com>
-In-Reply-To: <503DA63E.40608@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2012 07:18 AM, Wen Congyang wrote:
-> We can know the guest is panicked when the guest runs on xen.
-> But we do not have such feature on kvm.
-> 
-> Another purpose of this feature is: management app(for example:
-> libvirt) can do auto dump when the guest is panicked. If management
-> app does not do auto dump, the guest's user can do dump by hand if
-> he sees the guest is panicked.
-> 
-> We have three solutions to implement this feature:
-> 1. use vmcall
-> 2. use I/O port
-> 3. use virtio-serial.
-> 
-> We have decided to avoid touching hypervisor. The reason why I choose
-> choose the I/O port is:
-> 1. it is easier to implememt
-> 2. it does not depend any virtual device
-> 3. it can work when starting the kernel
-> 
-> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> ---
->  Documentation/virtual/kvm/pv_event.txt |   32 ++++++++++++++++++++++++++++++++
->  arch/ia64/include/asm/kvm_para.h       |   14 ++++++++++++++
->  arch/powerpc/include/asm/kvm_para.h    |   14 ++++++++++++++
->  arch/s390/include/asm/kvm_para.h       |   14 ++++++++++++++
->  arch/x86/include/asm/kvm_para.h        |   27 +++++++++++++++++++++++++++
->  arch/x86/kernel/kvm.c                  |   25 +++++++++++++++++++++++++
->  include/linux/kvm_para.h               |   23 +++++++++++++++++++++++
->  7 files changed, 149 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/virtual/kvm/pv_event.txt
-> 
-> diff --git a/Documentation/virtual/kvm/pv_event.txt b/Documentation/virtual/kvm/pv_event.txt
-> new file mode 100644
-> index 0000000..bb04de0
-> --- /dev/null
-> +++ b/Documentation/virtual/kvm/pv_event.txt
-> @@ -0,0 +1,32 @@
-> +The KVM paravirtual event interface
-> +=================================
-> +
-> +Initializing the paravirtual event interface
-> +======================
-> +kvm_pv_event_init()
-> +Argiments:
-> +	None
-> +
-> +Return Value:
-> +	0: The guest kernel can use paravirtual event interface.
-> +	1: The guest kernel can't use paravirtual event interface.
-> +
-> +Querying whether the event can be ejected
-> +======================
-> +kvm_pv_has_feature()
-> +Arguments:
-> +	feature: The bit value of this paravirtual event to query
-> +
-> +Return Value:
-> +	0 : The guest kernel can't eject this paravirtual event.
-> +	-1: The guest kernel can eject this paravirtual event.
-> +
-> +
-> +Ejecting paravirtual event
-> +======================
-> +kvm_pv_eject_event()
-> +Arguments:
-> +	event: The event to be ejected.
-> +
-> +Return Value:
-> +	None
+From: Lad, Prabhakar <prabhakar.lad@ti.com>
 
-What's the protocol for communicating with the hypervisor? What is it supposed
-to do on reads/writes to that ioport?
+add V4L2_CID_DPCM_PREDICTOR control of type menu, which
+determines the dpcm predictor. The predictor can be either
+simple or advanced.
 
-> diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-> index 2f7712e..7d297f0 100644
-> --- a/arch/x86/include/asm/kvm_para.h
-> +++ b/arch/x86/include/asm/kvm_para.h
-> @@ -96,8 +96,11 @@ struct kvm_vcpu_pv_apf_data {
->  #define KVM_PV_EOI_ENABLED KVM_PV_EOI_MASK
->  #define KVM_PV_EOI_DISABLED 0x0
->  
-> +#define KVM_PV_EVENT_PORT	(0x505UL)
-> +
->  #ifdef __KERNEL__
->  #include <asm/processor.h>
-> +#include <linux/ioport.h>
->  
->  extern void kvmclock_init(void);
->  extern int kvm_register_clock(char *txt);
-> @@ -228,6 +231,30 @@ static inline void kvm_disable_steal_time(void)
->  }
->  #endif
->  
-> +static inline int kvm_arch_pv_event_init(void)
-> +{
-> +	if (!request_region(KVM_PV_EVENT_PORT, 1, "KVM_PV_EVENT"))
+Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+Cc: Sakari Ailus <sakari.ailus@iki.fi>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: Hans de Goede <hdegoede@redhat.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ This patches has one checkpatch warning for line over
+ 80 characters altough it can be avoided I have kept it
+ for consistency.
 
-Only one byte is requested here, but the rest of the code is reading/writing longs?
+ drivers/media/v4l2-core/v4l2-ctrls.c |    9 +++++++++
+ include/linux/videodev2.h            |    5 +++++
+ 2 files changed, 14 insertions(+), 0 deletions(-)
 
-The struct resource * returned from request_region is simply being leaked here?
+diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
+index b6a2ee7..2d7bc15 100644
+--- a/drivers/media/v4l2-core/v4l2-ctrls.c
++++ b/drivers/media/v4l2-core/v4l2-ctrls.c
+@@ -425,6 +425,11 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
+ 		"Gray",
+ 		NULL,
+ 	};
++	static const char * const dpcm_predictor[] = {
++		"Simple Predictor",
++		"Advanced Predictor",
++		NULL,
++	};
+ 
+ 	switch (id) {
+ 	case V4L2_CID_MPEG_AUDIO_SAMPLING_FREQ:
+@@ -502,6 +507,8 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
+ 		return mpeg4_profile;
+ 	case V4L2_CID_JPEG_CHROMA_SUBSAMPLING:
+ 		return jpeg_chroma_subsampling;
++	case V4L2_CID_DPCM_PREDICTOR:
++		return dpcm_predictor;
+ 
+ 	default:
+ 		return NULL;
+@@ -732,6 +739,7 @@ const char *v4l2_ctrl_get_name(u32 id)
+ 	case V4L2_CID_IMAGE_PROC_CLASS:		return "Image Processing Controls";
+ 	case V4L2_CID_LINK_FREQ:		return "Link Frequency";
+ 	case V4L2_CID_PIXEL_RATE:		return "Pixel Rate";
++	case V4L2_CID_DPCM_PREDICTOR:		return "DPCM Predictor";
+ 
+ 	default:
+ 		return NULL;
+@@ -832,6 +840,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
+ 	case V4L2_CID_ISO_SENSITIVITY_AUTO:
+ 	case V4L2_CID_EXPOSURE_METERING:
+ 	case V4L2_CID_SCENE_MODE:
++	case V4L2_CID_DPCM_PREDICTOR:
+ 		*type = V4L2_CTRL_TYPE_MENU;
+ 		break;
+ 	case V4L2_CID_LINK_FREQ:
+diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
+index 6d6dfa7..4edb941 100644
+--- a/include/linux/videodev2.h
++++ b/include/linux/videodev2.h
+@@ -2000,6 +2000,11 @@ enum v4l2_jpeg_chroma_subsampling {
+ 
+ #define V4L2_CID_LINK_FREQ			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 1)
+ #define V4L2_CID_PIXEL_RATE			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 2)
++#define V4L2_CID_DPCM_PREDICTOR			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 3)
++enum v4l2_dpcm_predictor {
++	V4L2_DPCM_PREDICTOR_SIMPLE	= 0,
++	V4L2_DPCM_PREDICTOR_ADVANCE	= 1,
++};
+ 
+ /*
+  *	T U N I N G
+-- 
+1.7.0.4
 
-What happens if we go ahead with adding another event (let's say OOM event)?
-request_region() is going to fail for anything but the first call.
-
-> +		return -1;
-
-This return value doesn't correspond with the documentation.
-
-> +
-> +	return 0;
-> +}
-> +
-> +static inline unsigned int kvm_arch_pv_features(void)
-> +{
-> +	unsigned int features = inl(KVM_PV_EVENT_PORT);
-> +
-> +	/* Reading from an invalid I/O port will return -1 */
-
-Just wondering, where is that documented? For lkvm for example the return value
-from an ioport without a device on the other side is undefined, so it's possible
-we're doing something wrong there.
-
-> +	if (features == ~0)
-> +		features = 0;
-> +
-> +	return features;
-> +}
-> +
-> +static inline void kvm_arch_pv_eject_event(unsigned int event)
-> +{
-> +	outl(event, KVM_PV_EVENT_PORT);
-> +}
-> +
->  #endif /* __KERNEL__ */
->  
->  #endif /* _ASM_X86_KVM_PARA_H */
-> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-> index c1d61ee..6129459 100644
-> --- a/arch/x86/kernel/kvm.c
-> +++ b/arch/x86/kernel/kvm.c
-> @@ -368,6 +368,17 @@ static struct notifier_block kvm_pv_reboot_nb = {
->  	.notifier_call = kvm_pv_reboot_notify,
->  };
->  
-> +static int
-> +kvm_pv_panic_notify(struct notifier_block *nb, unsigned long code, void *unused)
-> +{
-> +	kvm_pv_eject_event(KVM_PV_EVENT_PANICKED);
-> +	return NOTIFY_DONE;
-> +}
-> +
-> +static struct notifier_block kvm_pv_panic_nb = {
-> +	.notifier_call = kvm_pv_panic_notify,
-> +};
-> +
->  static u64 kvm_steal_clock(int cpu)
->  {
->  	u64 steal;
-> @@ -447,6 +458,20 @@ static void __init kvm_apf_trap_init(void)
->  	set_intr_gate(14, &async_page_fault);
->  }
->  
-> +static void __init kvm_pv_panicked_event_init(void)
-> +{
-> +	if (!kvm_para_available())
-> +		return;
-> +
-> +	if (kvm_pv_event_init())
-> +		return;
-> +
-> +	if (kvm_pv_has_feature(KVM_PV_FEATURE_PANICKED))
-> +		atomic_notifier_chain_register(&panic_notifier_list,
-> +			&kvm_pv_panic_nb);
-> +}
-> +arch_initcall(kvm_pv_panicked_event_init);
-
-So it starts automatically on boot? Is there a way to disable it?
-
-
-Thanks,
-Sasha
