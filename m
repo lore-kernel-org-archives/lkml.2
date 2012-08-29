@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902Ab2H2K2L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 06:28:11 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:60670 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752641Ab2H2K2J (ORCPT
+	id S1753110Ab2H2KjT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 06:39:19 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:65019 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752541Ab2H2KjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 06:28:09 -0400
-Message-ID: <503DEE3C.6020406@linux.vnet.ibm.com>
-Date: Wed, 29 Aug 2012 15:56:04 +0530
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: tony.luck@intel.com, andi@firstfloor.org, ananth@in.ibm.com,
-        x86@kernel.org, linux-kernel@vger.kernel.org, mingo@redhat.com,
-        hpa@zytor.com, tglx@linutronix.de, linux-edac@vger.kernel.org
-Subject: Re: [PATCH RFC] x86/mce: Move MCE sysfs attributes out of the per-cpu
- location
-References: <20120829074154.6755.98941.stgit@localhost.localdomain> <20120829101302.GA26977@aftab.osrc.amd.com>
-In-Reply-To: <20120829101302.GA26977@aftab.osrc.amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12082910-7014-0000-0000-000001CE9A6F
+	Wed, 29 Aug 2012 06:39:17 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-scsi@vger.kernel.org, kvm@vger.kernel.org, jbottomley@parallels.com,
+        Wang Sen <senwang@linux.vnet.ibm.com>, stable@vger.kernel.org
+Subject: [PATCH for 3.6 1/3] virtio-scsi: fix copying of sg_list in the presence of of HighMem pages
+Date: Wed, 29 Aug 2012 12:39:07 +0200
+Message-Id: <1346236748-12554-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.7.11.2
+In-Reply-To: <1346155154-12915-1-git-send-email-pbonzini@redhat.com>
+References: <1346155154-12915-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2012 03:43 PM, Borislav Petkov wrote:
-> On Wed, Aug 29, 2012 at 01:11:55PM +0530, Naveen N. Rao wrote:
->> All the MCE attributes currently exported via sysfs appear under
->> /sys/devices/system/machinecheck/machinecheck<n>/. Pretty much all of these
->> are global in nature and not specific to a processor. We have around 7
->> attributes duplicated across each processor and on multi-core multi-socket
->> machines, this amounts to quite a large number. So, move these out under
->> /sys/devices/system/machinecheck/ where they rightly belong.
->>
->> Note: I'm not sure if it's ok to change sysfs entries and this does break
->> userspace tools that depend on the current path for some of these attributes.
->> So, they will need to be updated to use the new path. However, if we ever get
->> to a point where cpu0 can be offlined, these tools will need to be updated
->> anyway (as they mostly hardcode machinecheck0 currently)
->
-> How do you know that for all tools out there?
+From: Wang Sen <senwang@linux.vnet.ibm.com>
 
-I don't - I've seen mcelog and related tools and they look in machinecheck0.
+On a 32-bit guest with virtio-scsi devices and more than 1G physical memory,
+QEMU may crash or Linux will fail to boot.
 
->
-> I know, I know, moving them to /sys/.../machinecheck/ is the right thing
-> to do but they're exposed to userspace and we're breaking it with this
-> patch. And we don't break userspace so I'd guess we're stuck with the
-> current situation.
+This bug happens when building the sg_list that is eventually put in the virtqueue.
+Each buffer from the original sg_list is added with sg_set_buf, but this will
+not work for HighMem pages in table->sgl.  In that case, the original sg_list
+elements do not have a valid virtual address, but sg_set_buf will use sg_virt.
 
-Hmmm.. Can't we just deprecate these? ;)
-Perhaps we can consider adding newer tunables in the right place.
+For now, virtio_ring does not care about the form of the scatterlist and
+simply processes the first out_num + in_num consecutive elements of the sg[]
+array.  However, it is better to create a well-formed scatterlist including
+the termination marker.
 
+http://lkml.indiana.edu/hypermail/linux/kernel/1207.3/00675.html discusses
+using value assignment vs. sg_set_page to copy the scatterlist.
 
-Thanks,
-Naveen
+With sg_set_page, the driver would need to drop the marker manually in case
+it was left there by a previous request, and then use sg_mark_end to add the
+marker to the last entry.
 
->
-> Sorry.
->
+Value assignment instead will copy the last entry of the source sg_list
+to the destination list.  The end marker that were set by blk_rq_map_sg()
+is copied too when the last entry of the source sg_list is copied to
+the the last entry in destination list.
+
+Cc: Stable kernel <stable@vger.kernel.org> # 3.4: 4fe74b1: [SCSI] virtio-scsi: SCSI driver
+Signed-off-by: Wang Sen <senwang@linux.vnet.ibm.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ drivers/scsi/virtio_scsi.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+index c7030fb..3e79a2f 100644
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -331,7 +331,7 @@ static void virtscsi_map_sgl(struct scatterlist *sg, unsigned int *p_idx,
+ 	int i;
+ 
+ 	for_each_sg(table->sgl, sg_elem, table->nents, i)
+-		sg_set_buf(&sg[idx++], sg_virt(sg_elem), sg_elem->length);
++		sg[idx++] = *sg_elem;
+ 
+ 	*p_idx = idx;
+ }
+-- 
+1.7.1
+
 
