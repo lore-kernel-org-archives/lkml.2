@@ -1,64 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753059Ab2H2NMn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 09:12:43 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:33826 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751567Ab2H2NMl (ORCPT
+	id S1753370Ab2H2NO5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 09:14:57 -0400
+Received: from [66.192.166.38] ([66.192.166.38]:36965 "EHLO
+	hancock.steeleye.com" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752255Ab2H2NO4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 09:12:41 -0400
-Message-ID: <503E14DC.3060507@linux.vnet.ibm.com>
-Date: Wed, 29 Aug 2012 18:40:52 +0530
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Wed, 29 Aug 2012 09:14:56 -0400
+Date: Wed, 29 Aug 2012 08:41:02 -0400
+From: paul.clements@steeleye.com
+To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] [RESEND] add discard support to nbd
+Message-ID: <503e0dde.ssYktQsJ5nYlhlQB%paul.clements@steeleye.com>
+User-Agent: nail 11.25 7/29/05
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: tony.luck@intel.com, andi@firstfloor.org, ananth@in.ibm.com,
-        x86@kernel.org, linux-kernel@vger.kernel.org, mingo@redhat.com,
-        hpa@zytor.com, tglx@linutronix.de, linux-edac@vger.kernel.org
-Subject: Re: [PATCH RFC] x86/mce: Move MCE sysfs attributes out of the per-cpu
- location
-References: <20120829074154.6755.98941.stgit@localhost.localdomain> <20120829101302.GA26977@aftab.osrc.amd.com> <503DEE3C.6020406@linux.vnet.ibm.com> <20120829104018.GD26977@aftab.osrc.amd.com>
-In-Reply-To: <20120829104018.GD26977@aftab.osrc.amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-x-cbid: 12082913-6102-0000-0000-00000223FDAD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2012 04:10 PM, Borislav Petkov wrote:
-> On Wed, Aug 29, 2012 at 03:56:04PM +0530, Naveen N. Rao wrote:
->> Hmmm.. Can't we just deprecate these? ;) Perhaps we can consider
->> adding newer tunables in the right place.
->
-> In case you haven't noticed yet: I'm all on your side.
+Description: This patch adds discard support to nbd. When the nbd client
+system receives a discard request, this will be passed along to the nbd
+server system, where the nbd-server will respond by performing:
+	fallocate(.. FALLOC_FL_PUNCH_HOLE ..)
 
-Yup, I know :)
+To punch a hole in the backend storage, which is no longer needed.
 
-I had my doubts when I sent this patch (hence the RFC tag) and I was 
-only wondering above if it'll be a good idea to limit such tunables 
-going forward. We could force all _new_ MCE tunables to be global, 
-except where they actually apply on a per-processor basis.
-
->
-> But let me ask you this: these attributes grow to a large number with
-> a large number of cores but why is this a problem? We have a bunch of
-> redundant attributes in sysfs, so what?
->
-> See what I mean?
->
-
-Well, it's ugly and does not make much sense, as I'm sure you noticed. 
-On a 10-core, 8-socket machine with HT, we'll end up with nearly a 
-thousand such entries!
-
-I don't know how much resource this takes up (if any) and like you said, 
-this may just be a "so what?", but I wanted to bring this up and see if 
-we could/want to do anything about this. I'm certainly fine if we want 
-to ignore this.
-
-
-Thanks,
-Naveen
-
+Signed-off-by: Paul Clements <paul.clements@steeleye.com>
+---
+diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
+index c544bb4..a014169 100644
+--- a/drivers/block/nbd.c
++++ b/drivers/block/nbd.c
+@@ -98,6 +98,7 @@ static const char *nbdcmd_to_ascii(int cmd)
+ 	case  NBD_CMD_READ: return "read";
+ 	case NBD_CMD_WRITE: return "write";
+ 	case  NBD_CMD_DISC: return "disconnect";
++	case  NBD_CMD_TRIM: return "trim/discard";
+ 	}
+ 	return "invalid";
+ }
+@@ -461,7 +462,11 @@ static void nbd_handle_req(struct nbd_device *nbd, struct request *req)
+ 
+ 	nbd_cmd(req) = NBD_CMD_READ;
+ 	if (rq_data_dir(req) == WRITE) {
+-		nbd_cmd(req) = NBD_CMD_WRITE;
++		if ((req->cmd_flags & REQ_DISCARD)) {
++			WARN_ON(!(nbd->flags & NBD_FLAG_SEND_TRIM));
++			nbd_cmd(req) = NBD_CMD_TRIM;
++		} else
++			nbd_cmd(req) = NBD_CMD_WRITE;
+ 		if (nbd->flags & NBD_FLAG_READ_ONLY) {
+ 			dev_err(disk_to_dev(nbd->disk),
+ 				"Write on read-only\n");
+@@ -667,6 +672,10 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *nbd,
+ 
+ 		mutex_unlock(&nbd->tx_lock);
+ 
++		if (nbd->flags & NBD_FLAG_SEND_TRIM)
++			queue_flag_set_unlocked(QUEUE_FLAG_DISCARD,
++				nbd->disk->queue);
++
+ 		thread = kthread_create(nbd_thread, nbd, nbd->disk->disk_name);
+ 		if (IS_ERR(thread)) {
+ 			mutex_lock(&nbd->tx_lock);
+@@ -684,6 +693,7 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *nbd,
+ 		nbd->file = NULL;
+ 		nbd_clear_que(nbd);
+ 		dev_warn(disk_to_dev(nbd->disk), "queue cleared\n");
++		queue_flag_clear_unlocked(QUEUE_FLAG_DISCARD, nbd->disk->queue);
+ 		if (file)
+ 			fput(file);
+ 		nbd->bytesize = 0;
+@@ -802,6 +812,9 @@ static int __init nbd_init(void)
+ 		 * Tell the block layer that we are not a rotational device
+ 		 */
+ 		queue_flag_set_unlocked(QUEUE_FLAG_NONROT, disk->queue);
++		disk->queue->limits.discard_granularity = 512;
++		disk->queue->limits.max_discard_sectors = UINT_MAX;
++		disk->queue->limits.discard_zeroes_data = 0;
+ 	}
+ 
+ 	if (register_blkdev(NBD_MAJOR, "nbd")) {
+diff --git a/include/linux/nbd.h b/include/linux/nbd.h
+index bb349be..3b49a63 100644
+--- a/include/linux/nbd.h
++++ b/include/linux/nbd.h
+@@ -32,12 +32,16 @@
+ enum {
+ 	NBD_CMD_READ = 0,
+ 	NBD_CMD_WRITE = 1,
+-	NBD_CMD_DISC = 2
++	NBD_CMD_DISC = 2,
++	/* there is a gap here to match userspace */
++	NBD_CMD_TRIM = 4
+ };
+ 
+ /* values for flags field */
+ #define NBD_FLAG_HAS_FLAGS	(1 << 0)
+ #define NBD_FLAG_READ_ONLY	(1 << 1)
++/* there is a gap here to match userspace */
++#define NBD_FLAG_SEND_TRIM	(1 << 5) /* send trim/discard */
+ 
+ #define nbd_cmd(req) ((req)->cmd[0])
+ 
