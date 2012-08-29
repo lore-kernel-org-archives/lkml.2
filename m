@@ -1,98 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753942Ab2H2PTN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 11:19:13 -0400
-Received: from ns1.pc-advies.be ([83.149.101.17]:58306 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753764Ab2H2PTL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 11:19:11 -0400
-Date: Wed, 29 Aug 2012 17:19:09 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Sachin Kamat <sachin.kamat@linaro.org>
-Subject: [GIT PULL REQUEST] watchdog - v3.6-rc3 Fixes
-Message-ID: <20120829151909.GU27604@spo001.leaseweb.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.1i
+	id S1753922Ab2H2PUV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 11:20:21 -0400
+Received: from antcom.de ([188.40.178.216]:44404 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751658Ab2H2PUU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 11:20:20 -0400
+Message-ID: <503E3331.8050203@antcom.de>
+Date: Wed, 29 Aug 2012 17:20:17 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+MIME-Version: 1.0
+To: Sascha Hauer <s.hauer@pengutronix.de>
+CC: linux-mtd@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: mxc_nand.c on mach-imx/imx53
+References: <5035F84E.3000901@antcom.de> <20120829074122.GV26594@pengutronix.de>
+In-Reply-To: <20120829074122.GV26594@pengutronix.de>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi Sascha,
 
-Please pull from 'master' branch of
-	git://www.linux-watchdog.org/linux-watchdog.git
+On 08/29/2012 09:41 AM, Sascha Hauer wrote:
+> On Thu, Aug 23, 2012 at 11:30:54AM +0200, Roland Stigge wrote:
+>> Hi,
+>>
+>> I'd like to know about the current state of mxc_nand.c on imx53, because
+>> I got an error on probe() because the clock that mxc_nand is requesting
+>> is "nfc" but imx53 only defines the clock "mxc_nand".
+> 
+> The driver generally works on i.MX53, only some pieces are missing. I
+> just resent the corresponding series and put you on Cc.
 
-It will fix a warning for watchdog-test.c and it will remove a duplicate
-inlude of delay.h
+Good - thank you for the patches, didn't know about them.
 
-This will update the following files:
+Now, my flash is detected:
 
- Documentation/watchdog/src/watchdog-test.c |    2 +-
- drivers/watchdog/da9052_wdt.c              |    1 -
- 2 files changed, 1 insertion(+), 2 deletions(-)
+NAND device: Manufacturer ID: 0x2c, Chip ID: 0xdc (Micron NAND 512MiB
+3,3V 8-bit), page size: 4096, OOB size: 128
 
-with these Changes:
+However, when I read a partition, kernel (mxc_nand_correct_data_v2_v3())
+says:
 
-commit 3e5531caffcc07b67452c4a8170ffb4c2bd1c9b7
-Author: Sachin Kamat <sachin.kamat@linaro.org>
-Date:   Tue Aug 7 15:14:12 2012 +0530
+...
+UnCorrectable RS-ECC Error
+UnCorrectable RS-ECC Error
+UnCorrectable RS-ECC Error
+UnCorrectable RS-ECC Error
+UnCorrectable RS-ECC Error
+UnCorrectable RS-ECC Error
+UnCorrectable RS-ECC Error
+...
 
-    watchdog: da9052: Remove duplicate inclusion of delay.h
-    
-    delay.h header file was included twice.
-    
-    Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+I'm using the following dt (on an Emtrion DIMM-MX53 board):
 
-commit 4b1c2f41c2dda158bb7a3dded70775a76b581995
-Author: Randy Dunlap <rdunlap@xenotime.net>
-Date:   Mon Jul 23 10:46:11 2012 -0700
+                        nand@63fdb000 {
+                                status = "okay";
+                                #address-cells = <1>;
+                                #size-cells = <1>;
+                                nand-bus-width = <8>;
+                                nand-ecc-mode = "hw";
 
-    watchdog: fix watchdog-test.c build warning
-    
-    Fix compiler warning by making the function static:
-    
-    Documentation/watchdog/src/watchdog-test.c:34:6: warning: no previous prototype for 'term'
-    
-    Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+                                mtd0@00000000 {
+                                        label = "bootstrap";
+                                        reg = <0x00000000 0x80000>;
+                                        read-only;
+                                };
+                                mtd1@00080000 {
+                                        label = "uboot";
+                                        reg = <0x00080000 0x80000>;
+                                        read-only;
+                                };
+                                mtd2@00100000 {
+                                        label = "NVRAM";
+                                        reg = <0x00100000 0x100000>;
+                                };
+                                mtd3@00200000 {
+                                        label = "bootlogo";
+                                        reg = <0x00200000 0x80000>;
+                                };
+                                mtd4@00280000 {
+                                        label = "linux";
+                                        reg = <0x00280000 0x400000>;
+                                };
+                                mtd5@00680000 {
+                                        label = "rootfs";
+                                        reg = <0x00680000 0x8000000>;
+                                };
+                                mtd6@08680000 {
+                                        label = "appfs";
+                                        reg = <0x08680000 0x17980000>;
+                                };
+                        };
 
-For completeness, I added the overal diff below.
+NAND info from u-boot:
 
-Greetings,
-Wim.
+NAND:  512 MiB
+Manufacturer      : Micron (0x2c)
+Device Code       : 0xdc
+Cell Technology   : SLC
+Chip Size         : 512 MiB
+Pages per Block   : 64
+Page Geometry     : 4096+218
+ECC Strength      : 8 bits
+ECC Size          : 512 B
+Data Setup Time   : 20 ns
+Data Hold Time    : 10 ns
+Address Setup Time: 10 ns
+GPMI Sample Delay : 6 ns
+tREA              : Unknown
+tRLOH             : Unknown
+tRHOH             : Unknown
+Description       : MT29F4G08ABAEA
 
-================================================================================
-diff --git a/Documentation/watchdog/src/watchdog-test.c b/Documentation/watchdog/src/watchdog-test.c
-index 73ff5cc..3da8229 100644
---- a/Documentation/watchdog/src/watchdog-test.c
-+++ b/Documentation/watchdog/src/watchdog-test.c
-@@ -31,7 +31,7 @@ static void keep_alive(void)
-  * or "-e" to enable the card.
-  */
- 
--void term(int sig)
-+static void term(int sig)
- {
-     close(fd);
-     fprintf(stderr, "Stopping watchdog ticks...\n");
-diff --git a/drivers/watchdog/da9052_wdt.c b/drivers/watchdog/da9052_wdt.c
-index 3f75129..f7abbae 100644
---- a/drivers/watchdog/da9052_wdt.c
-+++ b/drivers/watchdog/da9052_wdt.c
-@@ -21,7 +21,6 @@
- #include <linux/types.h>
- #include <linux/kernel.h>
- #include <linux/jiffies.h>
--#include <linux/delay.h>
- 
- #include <linux/mfd/da9052/reg.h>
- #include <linux/mfd/da9052/da9052.h>
+I guess I hit a documented open issue:
+
+/* v3.2b: i.MX53 */
+static const struct mxc_nand_devtype_data imx53_nand_devtype_data = {
+        .preset = preset_v3,
+        .send_cmd = send_cmd_v3,
+        .send_addr = send_addr_v3,
+        .send_page = send_page_v3,
+        .send_read_id = send_read_id_v3,
+        .get_dev_status = get_dev_status_v3,
+        .check_int = check_int_v3,
+        .irq_control = irq_control_v3,
+        .get_ecc_status = get_ecc_status_v3,
+        .ecclayout_512 = &nandv2_hw_eccoob_smallpage,
+        .ecclayout_2k = &nandv2_hw_eccoob_largepage,
+        .ecclayout_4k = &nandv2_hw_eccoob_smallpage, /* XXX: needs fix */
+
+Using  ".ecclayout_4k = &nandv2_hw_eccoob_4k" also doesn't work. So is
+there any hint how I can proceed from here? Any plans or hint regarding
+the "XXX"?
+
+Thanks in advance,
+
+Roland
