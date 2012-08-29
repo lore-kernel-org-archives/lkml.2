@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754646Ab2H2TFo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 15:05:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60790 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754130Ab2H2TFj (ORCPT
+	id S1754594Ab2H2TFI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 15:05:08 -0400
+Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:47874
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754572Ab2H2TFD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 15:05:39 -0400
-From: anish kumar <anish198519851985@gmail.com>
-To: cw00.choi@samsung.com, myungjoo.ham@samsung.com
-Cc: linux-kernel@vger.kernel.org, anish kumar <anish198519851985@gmail.com>
-Subject: [PATCH 2/2] [2/2] extcon: optimising the check_mutually_exclusive function
-Date: Thu, 30 Aug 2012 00:35:10 +0530
-Message-Id: <1346267110-29479-2-git-send-email-anish198519851985@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1346267110-29479-1-git-send-email-anish198519851985@gmail.com>
-References: <1346267110-29479-1-git-send-email-anish198519851985@gmail.com>
+	Wed, 29 Aug 2012 15:05:03 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275dhz2dh668h839hd24he5bhf0ah107ah1155h)
+X-WSS-ID: 0M9J6BA-02-15Y-02
+X-M-MSG: 
+From: Jacob Shin <jacob.shin@amd.com>
+To: X86-ML <x86@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
+        Dave Young <dyoung@redhat.com>, Chao Wang <chaowang@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Jacob Shin <jacob.shin@amd.com>
+Subject: [PATCH V5 0/6] x86: Create direct mappings for E820_RAM only
+Date: Wed, 29 Aug 2012 14:04:00 -0500
+Message-ID: <1346267046-6724-1-git-send-email-jacob.shin@amd.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: anish kumar <anish198519851985@gmail.com>
+This is the 5th revision of the patchset, which aims to create direct
+mappings only for E820_RAM memory ranges. The problem description and
+justification can be found in patch 4/6.
 
-Rather than re-inventing the wheel we can use the hamming function
-to calculate the number of bits set to check for violation of
-exclusivity.
+Previous discussion history can be found in the following threads:
 
-Signed-off-by: anish kumar <anish198519851985@gmail.com>
----
- drivers/extcon/extcon-class.c |   14 +++++---------
- 1 files changed, 5 insertions(+), 9 deletions(-)
+* https://lkml.org/lkml/2012/8/24/474
+* https://lkml.org/lkml/2012/8/22/680
+* https://lkml.org/lkml/2012/8/13/512
+* https://lkml.org/lkml/2012/8/9/536
+* https://lkml.org/lkml/2011/10/20/323
 
-diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
-index e09a6c3..06df95a 100644
---- a/drivers/extcon/extcon-class.c
-+++ b/drivers/extcon/extcon-class.c
-@@ -89,17 +89,13 @@ static int check_mutually_exclusive(struct extcon_dev *edev, u32 new_state)
- 		return 0;
- 
- 	for (i = 0; edev->mutually_exclusive[i]; i++) {
--		int count = 0, j;
-+		int weight;
- 		u32 correspondants = new_state & edev->mutually_exclusive[i];
--		u32 exp = 1;
--
--		for (j = 0; j < 32; j++) {
--			if (exp & correspondants)
--				count++;
--			if (count > 1)
--				return i + 1;
--			exp <<= 1;
--		}
-+
-+		/* calculate the total number of bits set */
-+		weight = hweight32(correspondants);
-+		if (weight > 1)
-+			return i + 1;
- 	}
- 
- 	return 0;
+Jacob Shin (4):
+  x86/mm: find_early_table_space based on memory ranges that are being
+    mapped
+  x86: Only direct map addresses that are marked as E820_RAM
+  x86: Fixup code testing if a pfn is direct mapped
+  x86: if kernel .text .data .bss are not marked as E820_RAM, complain
+    and fix
+
+Yinghai Lu (2):
+  x86, mm: Add page_size_mask()
+  x86, mm: Split out split_mem_range
+
+ arch/x86/include/asm/page_types.h |    9 +++
+ arch/x86/include/asm/pgtable.h    |    1 +
+ arch/x86/kernel/cpu/amd.c         |    6 +-
+ arch/x86/kernel/setup.c           |  115 ++++++++++++++++++++++----
+ arch/x86/mm/init.c                |  162 ++++++++++++++++++++-----------------
+ arch/x86/mm/init_64.c             |    6 +-
+ arch/x86/platform/efi/efi.c       |    8 +-
+ 7 files changed, 207 insertions(+), 100 deletions(-)
+
 -- 
-1.7.1
+1.7.9.5
+
 
