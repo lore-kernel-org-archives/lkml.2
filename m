@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752552Ab2H2Jt0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 05:49:26 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:45110 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751942Ab2H2JtZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 05:49:25 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: <stern@rowland.harvard.edu>, <linux-usb@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <plagnioj@jcrosoft.com>, <gregkh@linuxfoundation.org>,
-        <klaus.falkner@solectrix.de>, <ludovic.desroches@atmel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH] USB: ohci-at91: fix PIO handling in relation with number of ports
-Date: Wed, 29 Aug 2012 11:49:18 +0200
-Message-ID: <1346233758-27009-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.7.10
+	id S1752733Ab2H2KNT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 06:13:19 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:39694 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751751Ab2H2KNR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 06:13:17 -0400
+Date: Wed, 29 Aug 2012 12:13:02 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: tony.luck@intel.com, andi@firstfloor.org, ananth@in.ibm.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org, mingo@redhat.com,
+        hpa@zytor.com, tglx@linutronix.de, linux-edac@vger.kernel.org
+Subject: Re: [PATCH RFC] x86/mce: Move MCE sysfs attributes out of the
+ per-cpu location
+Message-ID: <20120829101302.GA26977@aftab.osrc.amd.com>
+References: <20120829074154.6755.98941.stgit@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.159.245.203]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120829074154.6755.98941.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the number of ports present on the SoC/board is not the maximum
-and that the platform data is not filled with all data, there is
-an easy way to mess the PIO setup for this interface.
-This quick fix addresses mis-configuration in USB host platform data
-that is common in at91 boards since commit 0ee6d1e (USB: ohci-at91:
-change maximum number of ports) that did not modified the associatd
-board files.
+On Wed, Aug 29, 2012 at 01:11:55PM +0530, Naveen N. Rao wrote:
+> All the MCE attributes currently exported via sysfs appear under
+> /sys/devices/system/machinecheck/machinecheck<n>/. Pretty much all of these
+> are global in nature and not specific to a processor. We have around 7
+> attributes duplicated across each processor and on multi-core multi-socket
+> machines, this amounts to quite a large number. So, move these out under
+> /sys/devices/system/machinecheck/ where they rightly belong.
+> 
+> Note: I'm not sure if it's ok to change sysfs entries and this does break
+> userspace tools that depend on the current path for some of these attributes.
+> So, they will need to be updated to use the new path. However, if we ever get
+> to a point where cpu0 can be offlined, these tools will need to be updated
+> anyway (as they mostly hardcode machinecheck0 currently)
 
-Reported-by: Klaus Falkner <klaus.falkner@solectrix.de>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org
-Cc: Stable <stable@vger.kernel.org> [3.4+]
----
- drivers/usb/host/ohci-at91.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+How do you know that for all tools out there?
 
-diff --git a/drivers/usb/host/ohci-at91.c b/drivers/usb/host/ohci-at91.c
-index a665b3e..aaa8d2b 100644
---- a/drivers/usb/host/ohci-at91.c
-+++ b/drivers/usb/host/ohci-at91.c
-@@ -570,6 +570,16 @@ static int __devinit ohci_hcd_at91_drv_probe(struct platform_device *pdev)
- 
- 	if (pdata) {
- 		at91_for_each_port(i) {
-+			/*
-+			 * do not configure PIO if not in relation with
-+			 * real USB port on board
-+			 */
-+			if (i >= pdata->ports) {
-+				pdata->vbus_pin[i] = -EINVAL;
-+				pdata->overcurrent_pin[i] = -EINVAL;
-+				break;
-+			}
-+
- 			if (!gpio_is_valid(pdata->vbus_pin[i]))
- 				continue;
- 			gpio = pdata->vbus_pin[i];
+I know, I know, moving them to /sys/.../machinecheck/ is the right thing
+to do but they're exposed to userspace and we're breaking it with this
+patch. And we don't break userspace so I'd guess we're stuck with the
+current situation.
+
+Sorry.
+
 -- 
-1.7.10
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
