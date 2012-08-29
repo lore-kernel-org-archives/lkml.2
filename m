@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754175Ab2H2RXM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 13:23:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24025 "EHLO mx1.redhat.com"
+	id S1754230Ab2H2RXx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 13:23:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8666 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753918Ab2H2RXK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 13:23:10 -0400
-Date: Wed, 29 Aug 2012 13:22:54 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Daniel Mack <zonque@gmail.com>
-Cc: Takashi Iwai <tiwai@suse.de>, Bruno Wolff III <bruno@wolff.to>,
-        Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Logitech USB headset not working in 3.6-rc3
-Message-ID: <20120829172254.GB1895@zod.bos.redhat.com>
-References: <20120825111749.GA17048@wolff.to>
- <20120825115423.GA14327@wolff.to>
- <5038BEEB.6090303@gmail.com>
- <20120825120740.GA19539@wolff.to>
- <5038C186.7000107@gmail.com>
- <20120825121758.GF20043@zod.bos.redhat.com>
- <503DFC61.3000104@gmail.com>
- <s5hsjb56d40.wl%tiwai@suse.de>
- <503E19F2.3080302@gmail.com>
- <20120829170753.GA1895@zod.bos.redhat.com>
+	id S1753626Ab2H2RXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 13:23:51 -0400
+Date: Wed, 29 Aug 2012 18:23:36 +0100
+From: Alasdair G Kergon <agk@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        dm-devel@redhat.com, linux-kernel@vger.kernel.org,
+        linux-bcache@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
+        bharrosh@panasas.com, tj@kernel.org
+Subject: Re: [dm-devel] [PATCH v7 9/9] block: Avoid deadlocks with bio
+	allocation by stacking drivers
+Message-ID: <20120829172336.GB5576@agk-dp.fab.redhat.com>
+Mail-Followup-To: Kent Overstreet <koverstreet@google.com>,
+	Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+	dm-devel@redhat.com, linux-kernel@vger.kernel.org,
+	linux-bcache@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
+	bharrosh@panasas.com, tj@kernel.org
+References: <1346175456-1572-1-git-send-email-koverstreet@google.com> <1346175456-1572-10-git-send-email-koverstreet@google.com> <Pine.LNX.4.64.1208291210180.774@file.rdu.redhat.com> <20120829165006.GB20312@google.com> <20120829170711.GC12504@redhat.com> <20120829171345.GC20312@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120829170753.GA1895@zod.bos.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120829171345.GC20312@google.com>
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: 64 Baker Street, 4th floor, London,
+	W1U 7DF.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 29, 2012 at 01:07:53PM -0400, Josh Boyer wrote:
-> > Right. New patch attached.
-> 
-> I'll try and get another kernel built with this later today.  I'm at
-> Plumbers so it might have to wait a bit.
+On Wed, Aug 29, 2012 at 10:13:45AM -0700, Kent Overstreet wrote:
+> Only on allocation failure.
+ 
+Which as you already said assumes wrapping together the other mempools in the
+submission path first...
 
-OK, I got impatient with myself and got the kernel building sooner than
-I said.  Bruno, you can find the kernel here when the build finishes:
+Alasdair
 
-http://koji.fedoraproject.org/koji/taskinfo?taskID=4434883
-
-Please test and let us know.
-
-josh
