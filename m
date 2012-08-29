@@ -1,68 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754469Ab2H2SXh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 14:23:37 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:33796 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753324Ab2H2SXf (ORCPT
+	id S1754481Ab2H2SZO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 14:25:14 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58607 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754121Ab2H2SZL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 14:23:35 -0400
-Message-ID: <1346264609.23377.6.camel@aeonflux>
-Subject: Re: [PATCH 4/7] net/bluetooth/rfcomm/core.c: fix error return code
-From: Marcel Holtmann <marcel@holtmann.org>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: kernel-janitors@vger.kernel.org, Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 29 Aug 2012 11:23:29 -0700
-In-Reply-To: <1346258957-7649-5-git-send-email-Julia.Lawall@lip6.fr>
-References: <1346258957-7649-1-git-send-email-Julia.Lawall@lip6.fr>
-	 <1346258957-7649-5-git-send-email-Julia.Lawall@lip6.fr>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 29 Aug 2012 14:25:11 -0400
+Date: Wed, 29 Aug 2012 11:25:10 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/9 V3] workqueue: add
+ non_manager_role_manager_mutex_unlock()
+Message-ID: <20120829182510.GB2258@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <1346259120-6216-1-git-send-email-laijs@cn.fujitsu.com>
+ <1346259120-6216-5-git-send-email-laijs@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346259120-6216-5-git-send-email-laijs@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Julia,
-
-> Initialize return variable before exiting on an error path.
+On Thu, Aug 30, 2012 at 12:51:55AM +0800, Lai Jiangshan wrote:
+> If hotplug code grabbed the manager_mutex and worker_thread try to create
+> a worker, the manage_worker() will return false and worker_thread go to
+> process work items. Now, on the CPU, all workers are processing work items,
+> no idle_worker left/ready for managing. It breaks the concept of workqueue
+> and it is bug.
 > 
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
+> So when this case happens, the last idle should not go to process work,
+> it should go to sleep as usual and wait normal events. but it should
+> also be notified by the event that hotplug code release the manager_mutex.
 > 
-> // <smpl>
-> (
-> if@p1 (\(ret < 0\|ret != 0\))
->  { ... return ret; }
-> |
-> ret@p1 = 0
-> )
-> ... when != ret = e1
->     when != &ret
-> *if(...)
-> {
->   ... when != ret = e2
->       when forall
->  return ret;
-> }
-> 
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> ---
->  net/bluetooth/rfcomm/core.c |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
+> So we add non_manager_role_manager_mutex_unlock() to do this notify.
 
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
+Hmmm... how about just running rebind_workers() from a work item?
+That way, it would be guaranteed that there alwyas will be an extra
+worker available on rebind completion.
 
-Regards
+Thanks.
 
-Marcel
-
-
+-- 
+tejun
