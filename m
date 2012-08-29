@@ -1,37 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753802Ab2H2OHe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 10:07:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34530 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751000Ab2H2OHd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 10:07:33 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH] block: Fix bad range check in bio_sector_offset
-References: <yq1a9xesxll.fsf@sermon.lab.mkp.net>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 29 Aug 2012 10:07:27 -0400
-In-Reply-To: <yq1a9xesxll.fsf@sermon.lab.mkp.net> (Martin K. Petersen's
-	message of "Tue, 28 Aug 2012 14:03:18 -0400")
-Message-ID: <x49wr0hn65c.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753830Ab2H2OK0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 10:10:26 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44890 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753808Ab2H2OKY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 10:10:24 -0400
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: bfields@fieldses.org, viro@zeniv.linux.org.uk, akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        Namjae Jeon <linkinjeon@gmail.com>,
+        Vivek Trivedi <vtrivedi018@gmail.com>
+Subject: [PATCH] exportfs: add FILEID_INVALID to indicate invalid fid_type
+Date: Wed, 29 Aug 2012 10:10:10 -0400
+Message-Id: <1346249410-3515-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Martin K. Petersen" <martin.petersen@oracle.com> writes:
+This commit adds FILEID_INVALID = 0xff in fid_type to
+indicate invalid fid_type
 
-> DM would occasionally end up splitting data integrity-enabled requests
-> incorrectly. The culprit was a bad range check in bio_sector_offset.
+It avoids using magic number 255
 
-The patch looks ok to me, but what is the user visible behavior when
-this happens?
+Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+Signed-off-by: Vivek Trivedi <vtrivedi018@gmail.com>
+---
+ fs/exportfs/expfs.c      |    4 ++--
+ fs/fhandle.c             |    2 +-
+ fs/nfsd/nfsfh.c          |    4 ++--
+ include/linux/exportfs.h |    5 +++++
+ 4 files changed, 10 insertions(+), 5 deletions(-)
 
-Cheers,
-Jeff
+diff --git a/fs/exportfs/expfs.c b/fs/exportfs/expfs.c
+index 29ab099..f1f1c59 100644
+--- a/fs/exportfs/expfs.c
++++ b/fs/exportfs/expfs.c
+@@ -322,10 +322,10 @@ static int export_encode_fh(struct inode *inode, struct fid *fid,
+ 
+ 	if (parent && (len < 4)) {
+ 		*max_len = 4;
+-		return 255;
++		return FILEID_INVALID;
+ 	} else if (len < 2) {
+ 		*max_len = 2;
+-		return 255;
++		return FILEID_INVALID;
+ 	}
+ 
+ 	len = 2;
+diff --git a/fs/fhandle.c b/fs/fhandle.c
+index a48e4a1..78a7879 100644
+--- a/fs/fhandle.c
++++ b/fs/fhandle.c
+@@ -52,7 +52,7 @@ static long do_sys_name_to_handle(struct path *path,
+ 	handle_bytes = handle_dwords * sizeof(u32);
+ 	handle->handle_bytes = handle_bytes;
+ 	if ((handle->handle_bytes > f_handle.handle_bytes) ||
+-	    (retval == 255) || (retval == -ENOSPC)) {
++	    (retval == FILEID_INVALID) || (retval == -ENOSPC)) {
+ 		/* As per old exportfs_encode_fh documentation
+ 		 * we could return ENOSPC to indicate overflow
+ 		 * But file system returned 255 always. So handle
+diff --git a/fs/nfsd/nfsfh.c b/fs/nfsd/nfsfh.c
+index 032af38..814afaa 100644
+--- a/fs/nfsd/nfsfh.c
++++ b/fs/nfsd/nfsfh.c
+@@ -572,7 +572,7 @@ fh_compose(struct svc_fh *fhp, struct svc_export *exp, struct dentry *dentry,
+ 
+ 		if (inode)
+ 			_fh_update(fhp, exp, dentry);
+-		if (fhp->fh_handle.fh_fileid_type == 255) {
++		if (fhp->fh_handle.fh_fileid_type == FILEID_INVALID) {
+ 			fh_put(fhp);
+ 			return nfserr_opnotsupp;
+ 		}
+@@ -603,7 +603,7 @@ fh_update(struct svc_fh *fhp)
+ 			goto out;
+ 
+ 		_fh_update(fhp, fhp->fh_export, dentry);
+-		if (fhp->fh_handle.fh_fileid_type == 255)
++		if (fhp->fh_handle.fh_fileid_type == FILEID_INVALID)
+ 			return nfserr_opnotsupp;
+ 	}
+ out:
+diff --git a/include/linux/exportfs.h b/include/linux/exportfs.h
+index 12291a7..0e14525 100644
+--- a/include/linux/exportfs.h
++++ b/include/linux/exportfs.h
+@@ -83,6 +83,11 @@ enum fid_type {
+ 	 * 64 bit parent inode number.
+ 	 */
+ 	FILEID_NILFS_WITH_PARENT = 0x62,
++
++	/*
++	 * Filesystems must not use 0xff file ID.
++	 */
++	FILEID_INVALID = 0xff,
+ };
+ 
+ struct fid {
+-- 
+1.7.9.5
+
