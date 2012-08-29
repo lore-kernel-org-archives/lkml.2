@@ -1,138 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752163Ab2H2Jfo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 05:35:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59596 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268Ab2H2Jfm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 05:35:42 -0400
-Message-ID: <503DE262.20006@gmail.com>
-Date: Wed, 29 Aug 2012 17:35:30 +0800
-From: qiuxishi <qiuxishi@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1752276Ab2H2Jsf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 05:48:35 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:40850 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750995Ab2H2Jsd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 05:48:33 -0400
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+To: <linux-omap@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        Vaibhav Hiremath <hvaibhav@ti.com>, Benoit Cousson <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>,
+        Kevin Hilman <khilman@ti.com>
+Subject: [RFC PATCH] ARM: OMAP2+: omap-device: Do not overwrite resources allocated by OF layer
+Date: Wed, 29 Aug 2012 15:18:11 +0530
+Message-ID: <1346233691-10294-1-git-send-email-hvaibhav@ti.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Jiang Liu <jiang.liu@huawei.com>, akpm@linux-foundation.org,
-        lliubbo@gmail.com, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
-        mhocko@suse.cz, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        qiuxishi@huawei.com, wujianguo@huawei.com, bessel.wang@huawei.com,
-        guohanjun@huawei.com, chenkeping@huawei.com, yinghai@kernel.org,
-        wency@cn.fujitsu.com
-Subject: [PATCH] memory-hotplug: fix a drain pcp bug when offline pages
-References: <50337B15.2090701@gmail.com> <20120822033441.GB24667@bbox> <503490F9.2050805@gmail.com> <20120822081410.GA5369@bbox> <50349891.7020809@huawei.com> <20120822083745.GB5369@bbox>
-In-Reply-To: <20120822083745.GB5369@bbox>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-8-22 16:37, Minchan Kim wrote:
-> Hi Jiang,
-> 
-> On Wed, Aug 22, 2012 at 04:30:09PM +0800, Jiang Liu wrote:
->> On 2012-8-22 16:14, Minchan Kim wrote:
->>> On Wed, Aug 22, 2012 at 03:57:45PM +0800, qiuxishi wrote:
->>>> On 2012-8-22 11:34, Minchan Kim wrote:
->>>>> Hello Xishi,
->>>>>
->>>>> On Tue, Aug 21, 2012 at 08:12:05PM +0800, qiuxishi wrote:
->>>>>> From: Xishi Qiu <qiuxishi@huawei.com>
->>>>>>
->>>>>> When offline a section, we move all the free pages and pcp into MIGRATE_ISOLATE list first.
->>>>>> start_isolate_page_range()
->>>>>> 	set_migratetype_isolate()
->>>>>> 		drain_all_pages(),
->>>>>>
->>>>>> Here is a problem, it is not sure that pcp will be moved into MIGRATE_ISOLATE list. They may
->>>>>> be moved into MIGRATE_MOVABLE list because page_private() maybe 2. So when finish migrating
->>>>>> pages, the free pages from pcp may be allocated again, and faild in check_pages_isolated().
->>>>>> drain_all_pages()
->>>>>> 	drain_local_pages()
->>>>>> 		drain_pages()
->>>>>> 			free_pcppages_bulk()
->>>>>> 				__free_one_page(page, zone, 0, page_private(page));
->>>>>>
->>>>>> If we add move_freepages_block() after drain_all_pages(), it can not sure that all the pcp
->>>>>> will be moved into MIGRATE_ISOLATE list when the system works on high load. The free pages
->>>>>> which from pcp may immediately be allocated again.
->>>>>>
->>>>>> I think the similar bug described in http://marc.info/?t=134250882300003&r=1&w=2
->>>>>
->>>>> Yes. I reported the problem a few month ago but it's not real bug in practice
->>>>> but found by my eyes during looking the code so I wanted to confirm the problem.
->>>>>
->>>>> Do you find that problem in real practice? or just code review?
->>>>>
->>>>
->>>> I use /sys/devices/system/memory/soft_offline_page to offline a lot of pages when the
->>>> system works on high load, then I find some unknown zero refcount pages, such as
->>>> get_any_page: 0x650422: unknown zero refcount page type 19400c00000000
->>>> get_any_page: 0x650867: unknown zero refcount page type 19400c00000000
->>>>
->>>> soft_offline_page()
->>>> 	get_any_page()
->>>> 		set_migratetype_isolate()
->>>> 			drain_all_pages()
->>>>
->>>> I think after drain_all_pages(), pcp are moved into MIGRATE_MOVABLE list which managed by
->>>> buddy allocator, but they are allocated and becaome pcp again as the system works on high
->>>> load. There will be no this problem by applying this patch.
->>>>
->>>>> Anyway, I don't like your approach which I already considered because it hurts hotpath
->>>>> while the race is really unlikely. Get_pageblock_migratetype is never trivial.
->>>>> We should avoid the overhead in hotpath and move into memory-hotplug itself.
->>>>> Do you see my patch in https://patchwork.kernel.org/patch/1225081/ ?
->>>>
->>>> Yes, you are right, I will try to find another way to fix this problem.
->>>> How about doing this work in set_migratetype_isolate(), find the pcp and change the value
->>>> of private to get_pageblock_migratetype(page)?
->>>>
->>>
->>> Allocator doesn't have any lock when he allocates the page from pcp.
->>> How could you prevent race between allocator and memory-hotplug
->>> routine(ie, set_migratetype_isolate) without hurting hotpath?
->> Hi Minchan,
->> 	I have thought about using a jump label in the hot path, which won't cause big
->> performance drop, but it seems a little dirty. What's your thoughts?
-> 
-> I don't know static_key_false internal well.
-> Questions.
-> 
-> 1. Is it implemented by all archs?
-> 2. How is it work? It's almost zero on all archs?
-> 3. Don't we really have any solution other than hacking the hotpath
->    (ie, order-0 page allocation)?
-> 4. Please see my solution on above URL. Does it has any problem?
-> 
+With the new devices (like, AM33XX and OMAP5) we now only support
+DT boot mode of operation and now it is the time to start killing
+slowly the dependency on hwmod, so with this patch, we are starting
+with device resources.
+The idea here is implemented considering to both boot modes -
+  - DT boot mode
+    OF framework will construct the resource structure (currently
+    does for MEM & IRQ resource) and we should respect/use these
+    resources, killing hwmod dependency.
+    If pdev->num_resources > 0, we assume that MEM & IRQ resources
+    have been allocated by OF layer already (through DTB).
 
-Hi Minchan,
+    Once DMA resource is available from OF layer, we should
+    kill filling any resources from hwmod.
 
-Yes, your patch does resolve this problem, it returns the failed flag in
-__test_page_isolated_in_pageblock(), so memory offline will be failed.
+  - Non-DT boot mode
+    Here, pdev->num_resources = 0, and we should get all the
+    resources from hwmod (following existing steps)
 
-My patch resolve this problem too, it drain pcp to MIGRATE_ISOLATE list,
-so memory offline will be successful, but it causes big performance drop.
+Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
+Cc: Benoit Cousson <b-cousson@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>
+Cc: Paul Walmsley <paul@pwsan.com>
+Cc: Kevin Hilman <khilman@ti.com>
+---
+This patch is tested on BeagleBone and AM37xEVM.
 
-I think Gerry's method looks fine.
+Why RFC?
+Still we have function duplication omap_device_fill_resources() and
+omap_device_fill_dma_resources(), we can actually split the function
+into 3 resources and avoid duplication -
+  - omap_device_fill_dma_resources()
+  - omap_device_fill_mem_resources()
+  - omap_device_fill_irq_resources()
 
-Thanks
-Xishi Qiu
+Actually I wanted to clean it further but thought of getting
+feedback first and then proceed further.
 
->>
->> 	migrate_type = page_private(page);
->> 	if (static_key_false(&memory_hotplug_inprogress))
->> 		migrate_type = get_pageblock_migratetype(page);
->> 	__free_one_page(page, zone, 0, migrate_type);
->>
->> 	Regards!
->> 	Gerry
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+ arch/arm/mach-omap2/omap_hwmod.c             |   27 ++++++++++
+ arch/arm/plat-omap/include/plat/omap_hwmod.h |    1 +
+ arch/arm/plat-omap/omap_device.c             |   72 +++++++++++++++++++++----
+ 3 files changed, 88 insertions(+), 12 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
+index 31ec283..edabfb3 100644
+--- a/arch/arm/mach-omap2/omap_hwmod.c
++++ b/arch/arm/mach-omap2/omap_hwmod.c
+@@ -3330,6 +3330,33 @@ int omap_hwmod_fill_resources(struct omap_hwmod *oh, struct resource *res)
+ }
+
+ /**
++ * omap_hwmod_fill_dma_resources - fill struct resource array with dma data
++ * @oh: struct omap_hwmod *
++ * @res: pointer to the array of struct resource to fill
++ *
++ * Fill the struct resource array @res with dma resource data from the
++ * omap_hwmod @oh.  Intended to be called by code that registers
++ * omap_devices.  See also omap_hwmod_count_resources().  Returns the
++ * number of array elements filled.
++ */
++int omap_hwmod_fill_dma_resources(struct omap_hwmod *oh, struct resource *res)
++{
++	int i, sdma_reqs_cnt;
++	int r = 0;
++
++	sdma_reqs_cnt = _count_sdma_reqs(oh);
++	for (i = 0; i < sdma_reqs_cnt; i++) {
++		(res + r)->name = (oh->sdma_reqs + i)->name;
++		(res + r)->start = (oh->sdma_reqs + i)->dma_req;
++		(res + r)->end = (oh->sdma_reqs + i)->dma_req;
++		(res + r)->flags = IORESOURCE_DMA;
++		r++;
++	}
++
++	return r;
++}
++
++/**
+  * omap_hwmod_get_resource_byname - fetch IP block integration data by name
+  * @oh: struct omap_hwmod * to operate on
+  * @type: one of the IORESOURCE_* constants from include/linux/ioport.h
+diff --git a/arch/arm/plat-omap/include/plat/omap_hwmod.h b/arch/arm/plat-omap/include/plat/omap_hwmod.h
+index 9b9646c..0533073 100644
+--- a/arch/arm/plat-omap/include/plat/omap_hwmod.h
++++ b/arch/arm/plat-omap/include/plat/omap_hwmod.h
+@@ -615,6 +615,7 @@ int omap_hwmod_softreset(struct omap_hwmod *oh);
+
+ int omap_hwmod_count_resources(struct omap_hwmod *oh);
+ int omap_hwmod_fill_resources(struct omap_hwmod *oh, struct resource *res);
++int omap_hwmod_fill_dma_resources(struct omap_hwmod *oh, struct resource *res);
+ int omap_hwmod_get_resource_byname(struct omap_hwmod *oh, unsigned int type,
+ 				   const char *name, struct resource *res);
+
+diff --git a/arch/arm/plat-omap/omap_device.c b/arch/arm/plat-omap/omap_device.c
+index c490240..fd15a3a 100644
+--- a/arch/arm/plat-omap/omap_device.c
++++ b/arch/arm/plat-omap/omap_device.c
+@@ -486,6 +486,33 @@ static int omap_device_fill_resources(struct omap_device *od,
+ }
+
+ /**
++ * omap_device_fill_dma_resources - fill in array of struct resource with dma resources
++ * @od: struct omap_device *
++ * @res: pointer to an array of struct resource to be filled in
++ *
++ * Populate one or more empty struct resource pointed to by @res with
++ * the dma resource data for this omap_device @od.  Used by
++ * omap_device_alloc() after calling omap_device_count_resources().
++ *
++ * Ideally this function would not be needed at all.  If we have
++ * mechanism to get dma resources from DT.
++ *
++ * Returns 0.
++ */
++static int omap_device_fill_dma_resources(struct omap_device *od,
++				      struct resource *res)
++{
++	int i, r;
++
++	for (i = 0; i < od->hwmods_cnt; i++) {
++		r = omap_hwmod_fill_dma_resources(od->hwmods[i], res);
++		res += r;
++	}
++
++	return 0;
++}
++
++/**
+  * omap_device_alloc - allocate an omap_device
+  * @pdev: platform_device that will be included in this omap_device
+  * @oh: ptr to the single omap_hwmod that backs this omap_device
+@@ -524,24 +551,45 @@ struct omap_device *omap_device_alloc(struct platform_device *pdev,
+ 	od->hwmods = hwmods;
+ 	od->pdev = pdev;
+
++	res_count = omap_device_count_resources(od);
+ 	/*
+-	 * HACK: Ideally the resources from DT should match, and hwmod
+-	 * should just add the missing ones. Since the name is not
+-	 * properly populated by DT, stick to hwmod resources only.
++	 * DT Boot:
++	 *   OF framework will construct the resource structure (currently
++	 *   does for MEM & IRQ resource) and we should respect/use these
++	 *   resources, killing hwmod dependency.
++	 *   If pdev->num_resources > 0, we assume that MEM & IRQ resources
++	 *   have been allocated by OF layer already (through DTB).
++	 *
++	 * Non-DT Boot:
++	 *   Here, pdev->num_resources = 0, and we should get all the
++	 *   resources from hwmod.
++	 *
++	 * TODO: Once DMA resource is available from OF layer, we should
++	 *   kill filling any resources from hwmod.
+ 	 */
+-	if (pdev->num_resources && pdev->resource)
+-		dev_warn(&pdev->dev, "%s(): resources already allocated %d\n",
+-			__func__, pdev->num_resources);
+-
+-	res_count = omap_device_count_resources(od);
+-	if (res_count > 0) {
+-		dev_dbg(&pdev->dev, "%s(): resources allocated from hwmod %d\n",
+-			__func__, res_count);
++	if (res_count > pdev->num_resources) {
++		/* Allocate resources memory to account for new resources */
+ 		res = kzalloc(sizeof(struct resource) * res_count, GFP_KERNEL);
+ 		if (!res)
+ 			goto oda_exit3;
+
+-		omap_device_fill_resources(od, res);
++		/*
++		 * If pdev->num_resources > 0, then assume that,
++		 * MEM and IRQ resources will only come from DT and only
++		 * fill DMA resource from hwmod layer.
++		 */
++		if (pdev->num_resources && pdev->resource) {
++			dev_dbg(&pdev->dev, "%s(): resources already allocated %d\n",
++					__func__, res_count);
++			memcpy(res, pdev->resource,
++				sizeof(struct resource) * pdev->num_resources);
++			omap_device_fill_dma_resources(od,
++					&res[pdev->num_resources]);
++		} else {
++			dev_dbg(&pdev->dev, "%s(): using resources from hwmod %d\n",
++					__func__, res_count);
++			omap_device_fill_resources(od, res);
++		}
+
+ 		ret = platform_device_add_resources(pdev, res, res_count);
+ 		kfree(res);
+--
+1.7.0.4
 
