@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753238Ab2H2Iq0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 04:46:26 -0400
-Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:21586
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751522Ab2H2IqZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 04:46:25 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zz98dIc89bh936eI1432Izz1202h1082kzzz2dh2a8h668h839h93fhd25he5bhf0ah107ah1155h)
-Message-ID: <503DD74E.2080204@freescale.com>
-Date: Wed, 29 Aug 2012 16:48:14 +0800
-From: Huang Shijie <b32955@freescale.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	id S1751627Ab2H2ItZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 04:49:25 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:40393 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750732Ab2H2ItY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 04:49:24 -0400
+Date: Wed, 29 Aug 2012 10:49:11 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Laxman Dewangan <ldewangan@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>
+Cc: vinod.koul@intel.com, djbw@fb.com, swarren@wwwdotorg.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        kernel@pengutronix.de
+Subject: Re: [PATCH RESEND] dma: tegra: add const to of_device_id.data's
+ structure
+Message-ID: <20120829084911.GE28643@pengutronix.de>
+References: <1346217447-19730-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-To: <dedekind1@gmail.com>
-CC: Huang Shijie <shijie8@gmail.com>, <linux-mtd@lists.infradead.org>,
-        <dwmw2@infradead.org>, Shmulik Ladkani <shmulik.ladkani@gmail.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] mtd: cmdlinepart: fix the wrong partitions number
- when truncating occurs
-References: <1345904767-23011-1-git-send-email-shijie8@gmail.com> <20120825120231.73577d6a@halley> <CAMiH66HyfNEzEHGyZUcLJ_01PNVHqA44fjAqXsyM2c-HHms8hQ@mail.gmail.com> <20120826090603.6b833e54@pixies.home.jungo.com> <CAMiH66GVNad4dzbA9M66BGxGGb-JxQz8NJjBVWHcqp6FRpNbAQ@mail.gmail.com> <1346228646.2848.437.camel@sauron.fi.intel.com>
-In-Reply-To: <1346228646.2848.437.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1346217447-19730-1-git-send-email-ldewangan@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2012年08月29日 16:24, Artem Bityutskiy 写道:
-> While appreciating Shmulik's attention to details, I vote this way:
->
-> On Sun, 2012-08-26 at 02:47 -0400, Huang Shijie wrote:
->> Could Artem or David point us a direction about this?
->> [1]  Should the unsorted partitions be supported?
-> No, it is asking for troubles.
->
-thanks.
->> [2] And what should we do when we meet a 1GB nand, and the cmdline is
->>        gpmi-nand:100m(root),100m(kernel),1g(rootfs),1g(user),-(rest)
-> Drop 'user' and 'rest' - I've sent some explanations in the previous
-> e-mail.
->
-ok, thanks.
+Hello,
 
-I think this patch is enough to fix this issue.
+On Wed, Aug 29, 2012 at 10:47:27AM +0530, Laxman Dewangan wrote:
+> The member "data" of structure of_device_id is changed to const
+> pointer. Hence initializing this with const type data.
+> This will fix the compilation warning like
+> drivers/dma/tegra20-apb-dma.c:1217:9: warning: assignment discards 'const' qualifier from
+> pointer target type [enabled by default]
+> 
+> This warning came after the change
+> ---------
+> commit 98d7bbb9929bcc14e11ac8a55245a4f2dc174e17
+> Author: Uwe Kleine-K�nig <u.kleine-koenig@pengutronix.de>
+>     of: add const to struct *of_device_id.data
+> ---------
+> 
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> Acked-by: Stephen Warren <swarren@wwwdotorg.org>
+> Acked-by: Vinod Koul <vinod.koul@linux.intel.com>
+I took the patch into my series now and split it in two to prevent
+warnings in the middle of the series. I assumed the two acks for both
+patches and send them in a moment in reply to this mail.
 
+You can find the updated series
 
-Huang Shijie
+	git://git.pengutronix.de/git/ukl/linux.git ofdeviceiddata
 
+Arnd or Olof, can you please update the corresponding branch arm-soc
+from there?
+
+Best regards and thanks
+Uwe
