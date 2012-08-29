@@ -1,208 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284Ab2H2L0i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 07:26:38 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:33482 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752766Ab2H2L0g (ORCPT
+	id S1753372Ab2H2LmE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 07:42:04 -0400
+Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:41345 "HELO
+	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752677Ab2H2LmA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 07:26:36 -0400
-Message-ID: <503DFC61.3000104@gmail.com>
-Date: Wed, 29 Aug 2012 13:26:25 +0200
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Wed, 29 Aug 2012 07:42:00 -0400
+Message-ID: <503DFFF4.4060909@mellanox.com>
+Date: Wed, 29 Aug 2012 14:41:40 +0300
+From: Haggai Eran <haggaie@mellanox.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120824 Thunderbird/15.0
 MIME-Version: 1.0
-To: Josh Boyer <jwboyer@redhat.com>
-CC: Bruno Wolff III <bruno@wolff.to>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Logitech USB headset not working in 3.6-rc3
-References: <20120824190808.GC20043@zod.bos.redhat.com> <5038007E.5060505@gmail.com> <20120825111749.GA17048@wolff.to> <20120825115423.GA14327@wolff.to> <5038BEEB.6090303@gmail.com> <20120825120740.GA19539@wolff.to> <5038C186.7000107@gmail.com> <20120825121758.GF20043@zod.bos.redhat.com>
-In-Reply-To: <20120825121758.GF20043@zod.bos.redhat.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: multipart/mixed;
- boundary="------------070202060108000404060508"
+To: David Rientjes <rientjes@google.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Pekka Enberg <penberg@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Or Gerlitz <ogerlitz@mellanox.com>,
+        Shachar Raindel <raindel@mellanox.com>
+Subject: Re: [patch v3.6] mm, slab: lock the correct nodelist after reenabling
+ irqs
+References: <503CA1A2.90104@mellanox.com> <alpine.DEB.2.00.1208281947100.24229@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1208281947100.24229@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.0.13.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------070202060108000404060508
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-
-On 25.08.2012 14:17, Josh Boyer wrote:
-> On Sat, Aug 25, 2012 at 02:13:58PM +0200, Daniel Mack wrote:
->> On 25.08.2012 14:07, Bruno Wolff III wrote:
->>> On Sat, Aug 25, 2012 at 14:02:51 +0200,
->>>    Daniel Mack <zonque@gmail.com> wrote:
->>>>
->>>> Can you revert commit e9ba389c5 ("ALSA: usb-audio: Fix
->>>> scheduling-while-atomic bug in PCM capture stream") and see if that
->>>
->>> I can try that, but it takes a long time to build a new kernel on my 
->>> old hardware.
->>>
->>>> helps? If not, can you summarize again which kernels still work for you
->>>> and which don't?
->>>
->>> The latest kernel that works is 3.6.0-0.rc2.git1.2.fc18. The earliest that 
->>> doesn't work is 3.6.0-0.rc2.git2.1.fc18.
->>>
+On 29/08/2012 05:57, David Rientjes wrote:
+> On Tue, 28 Aug 2012, Haggai Eran wrote:
+>
+>> Hi,
 >>
->> The report you sent doesn't look like it could be caused by e9ba389c5.
->> It fixes a kernel Ooops. But as it is the only relevant patch in that
->> area, it would be interesting if reverting it fixes anything.
-> 
-> Yep, agreed.  If this revert kernel doesn't work, we're likely down to a
-> git bisect, Bruno.
-> 
->> Btw - thanks a lot for testing -rc kernels, much appreciated!
-> 
-> Indeed!
-
-Could you please try this patch on top of Takashi's? Thanks again!
-
-
-Daniel
-
-
---------------070202060108000404060508
-Content-Type: text/x-patch;
- name="0001-ALSA-snd-usb-Fix-URB-cancellation-at-stream-start.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-ALSA-snd-usb-Fix-URB-cancellation-at-stream-start.patch"
-
->From 6617bb2463ae3fad21390b59cc2a71f96b9e9ca8 Mon Sep 17 00:00:00 2001
-From: Daniel Mack <zonque@gmail.com>
-Date: Wed, 29 Aug 2012 13:17:05 +0200
-Subject: [PATCH] ALSA: snd-usb: Fix URB cancellation at stream start
-
-Commit e9ba389c5 ("ALSA: usb-audio: Fix scheduling-while-atomic bug in
-PCM capture stream") fixed a scheduling-while-atomic bug that happened
-when snd_usb_endpoint_start was called from the trigger callback, which
-is an atmic context. However, the patch breaks the idea of the endpoints
-reference counting, which is the reason why the driver has been
-refactored lately.
-
-Revert that commit and let snd_usb_endpoint_start() take care of the URB
-cancellation again. As this function is called from both atomic and
-non-atomic context, add a flag to denote whether the function may sleep.
-
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Cc: stable@kernel.org [3.5+]
----
- sound/usb/endpoint.c | 10 ++++++++--
- sound/usb/endpoint.h |  2 +-
- sound/usb/pcm.c      | 13 +++++--------
- 3 files changed, 14 insertions(+), 11 deletions(-)
-
-diff --git a/sound/usb/endpoint.c b/sound/usb/endpoint.c
-index c411812..678456c 100644
---- a/sound/usb/endpoint.c
-+++ b/sound/usb/endpoint.c
-@@ -799,7 +799,9 @@ int snd_usb_endpoint_set_params(struct snd_usb_endpoint *ep,
- /**
-  * snd_usb_endpoint_start: start an snd_usb_endpoint
-  *
-- * @ep: the endpoint to start
-+ * @ep:		the endpoint to start
-+ * @can_sleep:	flag indicating whether the operation is executed in
-+ * 		non-atomic context
-  *
-  * A call to this function will increment the use count of the endpoint.
-  * In case it is not already running, the URBs for this endpoint will be
-@@ -809,7 +811,7 @@ int snd_usb_endpoint_set_params(struct snd_usb_endpoint *ep,
-  *
-  * Returns an error if the URB submission failed, 0 in all other cases.
-  */
--int snd_usb_endpoint_start(struct snd_usb_endpoint *ep)
-+int snd_usb_endpoint_start(struct snd_usb_endpoint *ep, int can_sleep)
- {
- 	int err;
- 	unsigned int i;
-@@ -821,6 +823,10 @@ int snd_usb_endpoint_start(struct snd_usb_endpoint *ep)
- 	if (++ep->use_count != 1)
- 		return 0;
- 
-+	/* just to be sure */
-+	deactivate_urbs(ep, 0, can_sleep);
-+	wait_clear_urbs(ep);
-+
- 	ep->active_mask = 0;
- 	ep->unlink_mask = 0;
- 	ep->phase = 0;
-diff --git a/sound/usb/endpoint.h b/sound/usb/endpoint.h
-index ee2723f..a8e60c1 100644
---- a/sound/usb/endpoint.h
-+++ b/sound/usb/endpoint.h
-@@ -13,7 +13,7 @@ int snd_usb_endpoint_set_params(struct snd_usb_endpoint *ep,
- 				struct audioformat *fmt,
- 				struct snd_usb_endpoint *sync_ep);
- 
--int  snd_usb_endpoint_start(struct snd_usb_endpoint *ep);
-+int  snd_usb_endpoint_start(struct snd_usb_endpoint *ep, int can_sleep);
- void snd_usb_endpoint_stop(struct snd_usb_endpoint *ep,
- 			   int force, int can_sleep, int wait);
- int  snd_usb_endpoint_activate(struct snd_usb_endpoint *ep);
-diff --git a/sound/usb/pcm.c b/sound/usb/pcm.c
-index 62ec808..1546577 100644
---- a/sound/usb/pcm.c
-+++ b/sound/usb/pcm.c
-@@ -212,7 +212,7 @@ int snd_usb_init_pitch(struct snd_usb_audio *chip, int iface,
- 	}
- }
- 
--static int start_endpoints(struct snd_usb_substream *subs)
-+static int start_endpoints(struct snd_usb_substream *subs, int can_sleep)
- {
- 	int err;
- 
-@@ -225,7 +225,7 @@ static int start_endpoints(struct snd_usb_substream *subs)
- 		snd_printdd(KERN_DEBUG "Starting data EP @%p\n", ep);
- 
- 		ep->data_subs = subs;
--		err = snd_usb_endpoint_start(ep);
-+		err = snd_usb_endpoint_start(ep, can_sleep);
- 		if (err < 0) {
- 			clear_bit(SUBSTREAM_FLAG_DATA_EP_STARTED, &subs->flags);
- 			return err;
-@@ -239,7 +239,7 @@ static int start_endpoints(struct snd_usb_substream *subs)
- 		snd_printdd(KERN_DEBUG "Starting sync EP @%p\n", ep);
- 
- 		ep->sync_slave = subs->data_endpoint;
--		err = snd_usb_endpoint_start(ep);
-+		err = snd_usb_endpoint_start(ep, can_sleep);
- 		if (err < 0) {
- 			clear_bit(SUBSTREAM_FLAG_SYNC_EP_STARTED, &subs->flags);
- 			return err;
-@@ -544,13 +544,10 @@ static int snd_usb_pcm_prepare(struct snd_pcm_substream *substream)
- 	subs->last_frame_number = 0;
- 	runtime->delay = 0;
- 
--	/* clear the pending deactivation on the target EPs */
--	deactivate_endpoints(subs);
--
- 	/* for playback, submit the URBs now; otherwise, the first hwptr_done
- 	 * updates for all URBs would happen at the same time when starting */
- 	if (subs->direction == SNDRV_PCM_STREAM_PLAYBACK)
--		return start_endpoints(subs);
-+		return start_endpoints(subs, 1);
- 
- 	return 0;
- }
-@@ -1175,7 +1172,7 @@ static int snd_usb_substream_capture_trigger(struct snd_pcm_substream *substream
- 
- 	switch (cmd) {
- 	case SNDRV_PCM_TRIGGER_START:
--		err = start_endpoints(subs);
-+		err = start_endpoints(subs, 0);
- 		if (err < 0)
- 			return err;
- 
--- 
-1.7.11.4
-
-
---------------070202060108000404060508--
+>> I believe I have encountered a bug in kernel 3.6-rc3. It starts with the
+>> assertion in mm/slab.c:2629 failing, and then the system hangs. I can
+>> reproduce this bug by running a large compilation (compiling the kernel
+>> for instance).
+>>
+>> Here's what I see in netconsole:
+>>> ------------[ cut here ]------------
+>>> kernel BUG at mm/slab.c:2629!
+>>> invalid opcode: 0000 [#1] SMP DEBUG_PAGEALLOC
+>> I'm attaching netconsole logs I got with kernel 3.6-rc1, which contain a
+>> little more details after the crash, but for some reason netconsole
+>> didn't capture the full stack trace of the assertion. I caught a glimpse
+>> at the console and I saw RIP was at cache_alloc_refill.
+>>
+> It only gets called from cache_alloc_refill().
+>
+> Looks like a problem in 072bb0aa5e0 ("mm: sl[au]b: add knowledge of 
+> PFMEMALLOC reserve pages").  cache_grow() can reenable irqs which allows 
+> this to be scheduled on a different cpu, possibly with a different node.  
+> So it turns out that we lock the wrong node's list_lock because we don't 
+> check the new node id when irqs are disabled again.
+>
+> I doubt you can reliably reproduce this, but the following should fix the 
+> issue.
+Your patch did solve the issue. Thanks!
