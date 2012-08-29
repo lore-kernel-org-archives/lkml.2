@@ -1,59 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752734Ab2H2HlZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 03:41:25 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43737 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751160Ab2H2HlX (ORCPT
+	id S1752798Ab2H2Hnl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 03:43:41 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:43271 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751160Ab2H2Hnj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 03:41:23 -0400
-Date: Wed, 29 Aug 2012 09:41:22 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Roland Stigge <stigge@antcom.de>
-Cc: linux-mtd@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: mxc_nand.c on mach-imx/imx53
-Message-ID: <20120829074122.GV26594@pengutronix.de>
-References: <5035F84E.3000901@antcom.de>
+	Wed, 29 Aug 2012 03:43:39 -0400
+Subject: [PATCH RFC] x86/mce: Move MCE sysfs attributes out of the per-cpu
+ location
+To: tony.luck@intel.com, andi@firstfloor.org, bp@amd64.org
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: ananth@in.ibm.com, x86@kernel.org, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de,
+        linux-edac@vger.kernel.org
+Date: Wed, 29 Aug 2012 13:11:55 +0530
+Message-ID: <20120829074154.6755.98941.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5035F84E.3000901@antcom.de>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:40:28 up 66 days, 22:52, 45 users,  load average: 0.46, 0.67,
- 0.74
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 12082907-0260-0000-0000-000001C34AEC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Roland,
+All the MCE attributes currently exported via sysfs appear under
+/sys/devices/system/machinecheck/machinecheck<n>/. Pretty much all of these
+are global in nature and not specific to a processor. We have around 7
+attributes duplicated across each processor and on multi-core multi-socket
+machines, this amounts to quite a large number. So, move these out under
+/sys/devices/system/machinecheck/ where they rightly belong.
 
-On Thu, Aug 23, 2012 at 11:30:54AM +0200, Roland Stigge wrote:
-> Hi,
-> 
-> I'd like to know about the current state of mxc_nand.c on imx53, because
-> I got an error on probe() because the clock that mxc_nand is requesting
-> is "nfc" but imx53 only defines the clock "mxc_nand".
+Note: I'm not sure if it's ok to change sysfs entries and this does break
+userspace tools that depend on the current path for some of these attributes.
+So, they will need to be updated to use the new path. However, if we ever get
+to a point where cpu0 can be offlined, these tools will need to be updated
+anyway (as they mostly hardcode machinecheck0 currently)
 
-The driver generally works on i.MX53, only some pieces are missing. I
-just resent the corresponding series and put you on Cc.
+Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
+---
+ arch/x86/kernel/cpu/mcheck/mce.c |   46 ++++++++++++++++++--------------------
+ 1 file changed, 22 insertions(+), 24 deletions(-)
 
-Sascha
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index c311122..c8eeaa6 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -2205,17 +2205,26 @@ static struct dev_ext_attribute dev_attr_cmci_disabled = {
+ 	&mce_cmci_disabled
+ };
+ 
+-static struct device_attribute *mce_device_attrs[] = {
+-	&dev_attr_tolerant.attr,
+-	&dev_attr_check_interval.attr,
+-	&dev_attr_trigger,
+-	&dev_attr_monarch_timeout.attr,
+-	&dev_attr_dont_log_ce.attr,
+-	&dev_attr_ignore_ce.attr,
+-	&dev_attr_cmci_disabled.attr,
++static struct attribute *mce_device_attrs[] = {
++	&dev_attr_tolerant.attr.attr,
++	&dev_attr_check_interval.attr.attr,
++	&dev_attr_trigger.attr,
++	&dev_attr_monarch_timeout.attr.attr,
++	&dev_attr_dont_log_ce.attr.attr,
++	&dev_attr_ignore_ce.attr.attr,
++	&dev_attr_cmci_disabled.attr.attr,
+ 	NULL
+ };
+ 
++static struct attribute_group mce_device_attr_group = {
++	.attrs = mce_device_attrs,
++};
++
++static const struct attribute_group *mce_device_attr_groups[] = {
++	&mce_device_attr_group,
++	NULL,
++};
++
+ static cpumask_var_t mce_device_initialized;
+ 
+ static void mce_device_release(struct device *dev)
+@@ -2228,7 +2237,7 @@ static __cpuinit int mce_device_create(unsigned int cpu)
+ {
+ 	struct device *dev;
+ 	int err;
+-	int i, j;
++	int i;
+ 
+ 	if (!mce_available(&boot_cpu_data))
+ 		return -EIO;
+@@ -2244,26 +2253,18 @@ static __cpuinit int mce_device_create(unsigned int cpu)
+ 	if (err)
+ 		return err;
+ 
+-	for (i = 0; mce_device_attrs[i]; i++) {
+-		err = device_create_file(dev, mce_device_attrs[i]);
++	for (i = 0; i < banks; i++) {
++		err = device_create_file(dev, &mce_banks[i].attr);
+ 		if (err)
+ 			goto error;
+ 	}
+-	for (j = 0; j < banks; j++) {
+-		err = device_create_file(dev, &mce_banks[j].attr);
+-		if (err)
+-			goto error2;
+-	}
+ 	cpumask_set_cpu(cpu, mce_device_initialized);
+ 	per_cpu(mce_device, cpu) = dev;
+ 
+ 	return 0;
+-error2:
+-	while (--j >= 0)
+-		device_remove_file(dev, &mce_banks[j].attr);
+ error:
+ 	while (--i >= 0)
+-		device_remove_file(dev, mce_device_attrs[i]);
++		device_remove_file(dev, &mce_banks[i].attr);
+ 
+ 	device_unregister(dev);
+ 
+@@ -2278,9 +2279,6 @@ static __cpuinit void mce_device_remove(unsigned int cpu)
+ 	if (!cpumask_test_cpu(cpu, mce_device_initialized))
+ 		return;
+ 
+-	for (i = 0; mce_device_attrs[i]; i++)
+-		device_remove_file(dev, mce_device_attrs[i]);
+-
+ 	for (i = 0; i < banks; i++)
+ 		device_remove_file(dev, &mce_banks[i].attr);
+ 
+@@ -2397,7 +2395,7 @@ static __init int mcheck_init_device(void)
+ 
+ 	mce_init_banks();
+ 
+-	err = subsys_system_register(&mce_subsys, NULL);
++	err = subsys_system_register(&mce_subsys, mce_device_attr_groups);
+ 	if (err)
+ 		return err;
+ 
 
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
