@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194Ab2H2ROG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 13:14:06 -0400
-Received: from mail.tpi.com ([70.99.223.143]:4948 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754153Ab2H2ROA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 13:14:00 -0400
-Message-ID: <503E4DBB.4030606@canonical.com>
-Date: Wed, 29 Aug 2012 11:13:31 -0600
-From: Tim Gardner <tim.gardner@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1754092Ab2H2RQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 13:16:27 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38878 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753542Ab2H2RQ0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 13:16:26 -0400
+Message-ID: <503E4E5F.5060003@kernel.dk>
+Date: Wed, 29 Aug 2012 10:16:15 -0700
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-To: Luciano Coelho <coelho@ti.com>
-CC: linux-kernel@vger.kernel.org, "John W. Linville" <linville@tuxdriver.com>,
-        Eliad Peller <eliad@wizery.com>, Arik Nemtsov <arik@wizery.com>,
-        Eyal Shapira <eyal@wizery.com>, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 3.6-rc3] wlcore: Declare MODULE_FIRMWARE usage
-References: <1346251689-37023-1-git-send-email-tim.gardner@canonical.com> <1346259706.3935.2.camel@cumari.coelho.fi>
-In-Reply-To: <1346259706.3935.2.camel@cumari.coelho.fi>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=UTF-8
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] block: Fix bad range check in bio_sector_offset
+References: <yq1a9xesxll.fsf@sermon.lab.mkp.net>
+In-Reply-To: <yq1a9xesxll.fsf@sermon.lab.mkp.net>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2012 11:01 AM, Luciano Coelho wrote:
-> On Wed, 2012-08-29 at 08:48 -0600, Tim Gardner wrote:
->> Cc: Luciano Coelho <coelho@ti.com>
->> Cc: "John W. Linville" <linville@tuxdriver.com>
->> Cc: Eliad Peller <eliad@wizery.com>
->> Cc: Arik Nemtsov <arik@wizery.com>
->> Cc: Eyal Shapira <eyal@wizery.com>
->> Cc: linux-wireless@vger.kernel.org
->> Cc: netdev@vger.kernel.org
->> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
->> ---
+On 2012-08-28 11:03, Martin K. Petersen wrote:
 > 
-> Please add a proper commit message.  And there's no need to put all
-> these people in Cc: in the commit log.  CC'ing when sending the patch is
-> enough (even though for such small patch, the linux-wireless mailing
-> list and myself is enough).
+> DM would occasionally end up splitting data integrity-enabled requests
+> incorrectly. The culprit was a bad range check in bio_sector_offset.
 > 
-> --
-> Luca.
+> Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+> Cc: <stable@vger.kernel.org>
 > 
+> diff --git a/fs/bio.c b/fs/bio.c
+> index 9bfade8..b9a6744 100644
+> --- a/fs/bio.c
+> +++ b/fs/bio.c
+> @@ -1552,8 +1552,8 @@ sector_t bio_sector_offset(struct bio *bio, unsigned short index,
+>  	sector_sz = queue_logical_block_size(bio->bi_bdev->bd_disk->queue);
+>  	sectors = 0;
+>  
+> -	if (index >= bio->bi_idx)
+> -		index = bio->bi_vcnt - 1;
+> +	if (index > bio->bi_vcnt)
+> +		return 0;
+>  
+>  	__bio_for_each_segment(bv, bio, i, 0) {
+>  		if (i == index) {
 
-What more would you like covered in the commit message that isn't
-obvious from the subject?
+Good catch, merged.
 
-The Cc list comes from scripts/get_maintainers.pl as suggested by
-Documentation/SubmittingPatches: "5) Select e-mail destination."
-
-rtg
 -- 
-Tim Gardner tim.gardner@canonical.com
+Jens Axboe
+
