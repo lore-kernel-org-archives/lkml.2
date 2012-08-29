@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752505Ab2H2BcJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 21:32:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29027 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750865Ab2H2BcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 21:32:07 -0400
-Date: Tue, 28 Aug 2012 21:31:50 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-bcache@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com, mpatocka@redhat.com,
-        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH v7 9/9] block: Avoid deadlocks with bio allocation by
- stacking drivers
-Message-ID: <20120829013150.GA9269@redhat.com>
-References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
- <1346175456-1572-10-git-send-email-koverstreet@google.com>
- <20120828204910.GG24608@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120828222800.GG1048@moria.home.lan>
- <20120828230108.GI1048@moria.home.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120828230108.GI1048@moria.home.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752591Ab2H2Bff (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 21:35:35 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:57998 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750881Ab2H2Bfd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Aug 2012 21:35:33 -0400
+Message-ID: <1346204124.13176.0.camel@phoenix>
+Subject: [PATCH 1/2] gpio: mc9s08dz60: Fix build error if I2C=m
+From: Axel Lin <axel.lin@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: Wu Guoxing <b39297@freescale.com>, Sascha Hauer <s.hauer@pengutronix.de>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, linux-kernel@vger.kernel.org
+Date: Wed, 29 Aug 2012 09:35:24 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 28, 2012 at 04:01:08PM -0700, Kent Overstreet wrote:
-> On Tue, Aug 28, 2012 at 03:28:00PM -0700, Kent Overstreet wrote:
-> > On Tue, Aug 28, 2012 at 01:49:10PM -0700, Tejun Heo wrote:
-> > > Overall, I *think* this is correct but need to think more about it to
-> > > be sure.
-> > 
-> > Please do. As much time as I've spent staring at this kind of stuff,
-> > I'm pretty sure I've got it correct but it still makes my head hurt to
-> > work out all the various possible deadlocks.
-> 
-> Hilarious thought: We're punting bios to a rescuer thread that's
-> specific to a certain bio_set, right? What if we happen to punt bios
-> from a different bio_set? And then the rescuer goes to resubmit those
-> bios, and in the process they happen to have dependencies on the
-> original bio_set...
+Make GPIO_MC9S08DZ60 depend on I2C=y, this fixes below build error:
 
-Are they not fully allocated bios and when you submit these to underlying
-device, ideally we should not be sharing memory pool at different layers
-of stack otherwise we will deadlock any way as stack depth increases. So
-there should not be a dependency on original bio_set?
+  LD      init/built-in.o
+drivers/built-in.o: In function `mc9s08dz60_get_value':
+clk-fixed-factor.c:(.text+0x7214): undefined reference to `i2c_smbus_read_byte_data'
+drivers/built-in.o: In function `mc9s08dz60_set':
+clk-fixed-factor.c:(.text+0x727c): undefined reference to `i2c_smbus_read_byte_data'
+clk-fixed-factor.c:(.text+0x72bc): undefined reference to `i2c_smbus_write_byte_data'
+drivers/built-in.o: In function `mc9s08dz60_i2c_driver_init':
+clk-fixed-factor.c:(.init.text+0x290): undefined reference to `i2c_register_driver'
+drivers/built-in.o: In function `mc9s08dz60_i2c_driver_exit':
+clk-fixed-factor.c:(.exit.text+0x2c): undefined reference to `i2c_del_driver'
+make: *** [vmlinux] Error 1
 
-Or, am I missing something. May be an example will help.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/gpio/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks
-Vivek
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index b16c8a7..ba7926f5 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -294,7 +294,7 @@ config GPIO_MAX732X_IRQ
+ 
+ config GPIO_MC9S08DZ60
+ 	bool "MX35 3DS BOARD MC9S08DZ60 GPIO functions"
+-	depends on I2C && MACH_MX35_3DS
++	depends on I2C=y && MACH_MX35_3DS
+ 	help
+ 	  Select this to enable the MC9S08DZ60 GPIO driver
+ 
+-- 
+1.7.9.5
+
+
+
