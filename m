@@ -1,117 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752289Ab2H2GJf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 02:09:35 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:13760 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750914Ab2H2GJd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 02:09:33 -0400
-X-AuditID: cbfee61a-b7fc66d0000043b7-3f-503db21b8c0a
-Message-id: <503DB130.8090807@samsung.com>
-Date: Wed, 29 Aug 2012 15:05:36 +0900
-From: IAN CHEN <ian.cy.chen@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714
- Thunderbird/14.0
-MIME-version: 1.0
-To: cjb@laptop.org, linkinjeon@gmail.com, adrian.hunter@intel.com,
-        subhashj@codeaurora.org, linus.walleij@linaro.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: d.j.shin@samsung.com, jongtae22.kim@samsung.com, kyungmin.park@samsung.com,
-        jh80.chung@samsung.com, ian.cy.chen@samsung.com
-Subject: [PATCH v6] mmc: card: Skip secure option for MoviNAND.
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBLMWRmVeSWpSXmKPExsVy+t9jQV2ZTbYBBksnMFlc3jWHzeLI/35G
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDKenb/CXnBaqqL/1ybGBsYHYl2MnBwSAiYSyzqWMULY
-	YhIX7q1nA7GFBKYzSiy9mN/FyAVkv2aUmLP7AztIgldAS+LUselMIDaLgKrE7AObWEBsNgEN
-	ie8Hn4ANEhUIk1j0/gArRL2gxI/J91hABokIbGSUON2xF8xhFmhklJj3bjpYlbCAvcSaOzPA
-	bGYBHYn9rdPYIGx5ic1r3jJPYOSbhWTYLCRls5CULWBkXsUomlqQXFCclJ5rqFecmFtcmpeu
-	l5yfu4kRHF7PpHYwrmywOMQowMGoxMN7gds2QIg1say4MvcQowQHs5II71NToBBvSmJlVWpR
-	fnxRaU5q8SFGaQ4WJXFe/j7DACGB9MSS1OzU1ILUIpgsEwenVANjTJ9l5MGlCV/Ksuz39Orv
-	s/x8WpFdNS4mgfH+Xj2znyr8SyNTL/8qF//MnNhWKbH3p1jAAUeLqB/tszdKTOKRXc71euuC
-	gOQdOqv730a8qZx89oai6TmzF0m7NWLjFjtPOv237KTDLb+J3SYmq6fceOH/0tv/3YvP/S/+
-	7xNRdLudqjejMdNUiaU4I9FQi7moOBEA36dnzisCAAA=
+	id S1752782Ab2H2GRm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 02:17:42 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:26308 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752475Ab2H2GRj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 02:17:39 -0400
+X-IronPort-AV: E=Sophos;i="4.80,332,1344182400"; 
+   d="scan'208";a="5745432"
+Message-ID: <503DB3E8.1000308@cn.fujitsu.com>
+Date: Wed, 29 Aug 2012 14:17:12 +0800
+From: Miao Xie <miaox@cn.fujitsu.com>
+Reply-To: miaox@cn.fujitsu.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Btrfs <linux-btrfs@vger.kernel.org>,
+        Linux Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Ext4 <linux-ext4@vger.kernel.org>
+CC: viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@infradead.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 1/2 RESEND] vfs: re-implement writeback_inodes_sb(_nr)_if_idle()
+ and rename them
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/29 14:17:25,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/29 14:17:25,
+	Serialize complete at 2012/08/29 14:17:25
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For several MoviNAND, there are some known issue with secure option.
-For these specific MoviNAND device, we skip secure option.
+writeback_inodes_sb(_nr)_if_idle() is re-implemented by replacing down_read()
+with down_read_trylock() because
+- If ->s_umount is write locked, then the sb is not idle. That is
+  writeback_inodes_sb(_nr)_if_idle() needn't wait for the lock.
+- writeback_inodes_sb(_nr)_if_idle() grabs s_umount lock when it want to start
+  writeback, it may bring us deadlock problem when doing umount.
+  (Ex. Btrfs has such a problem, see the following URL
+       http://marc.info/?l=linux-btrfs&m=133540923510561&w=2)
 
-You could refer this discussion in XDA developers.
-http://forum.xda-developers.com/showthread.php?t=1644364
-https://plus.google.com/111398485184813224730/posts/21pTYfTsCkB#111398485184813224730/posts/21pTYfTsCkB
+The name of these two functions is cumbersome, so rename them to
+try_to_writeback_inodes_sb(_nr).
 
-Signed-off-by: Ian Chen <ian.cy.chen@samsung.com>
-Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
-Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+This idea came from Christoph Hellwig.
+Some code is from the patch of Kamal Mostafa.
+
+Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
 ---
- drivers/mmc/card/block.c |   24 +++++++++++++++++++++++-
- include/linux/mmc/card.h |    1 +
- 2 files changed, 24 insertions(+), 1 deletions(-)
+Many users who use btrfs met the deadlock problem caused by writeback_inodes_sb(_nr)_if_idle(),
+so I send this patch again and hope it will be received as soon as possible if nobody objects.
+---
+ fs/btrfs/extent-tree.c    |    4 ++--
+ fs/ext4/inode.c           |    2 +-
+ fs/fs-writeback.c         |   45 ++++++++++++++++++++-------------------------
+ include/linux/writeback.h |    6 +++---
+ 4 files changed, 26 insertions(+), 31 deletions(-)
 
-diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-index f1c84de..0377885 100644
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -1411,7 +1411,8 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
- 		/* complete ongoing async transfer before issuing discard */
- 		if (card->host->areq)
- 			mmc_blk_issue_rw_rq(mq, NULL);
--		if (req->cmd_flags & REQ_SECURE)
-+		if (req->cmd_flags & REQ_SECURE &&
-+			!(card->quirks & MMC_QUIRK_SEC_ERASE_TRIM_BROKEN))
- 			ret = mmc_blk_issue_secdiscard_rq(mq, req);
- 		else
- 			ret = mmc_blk_issue_discard_rq(mq, req);
-@@ -1716,6 +1717,7 @@ force_ro_fail:
- #define CID_MANFID_SANDISK	0x2
- #define CID_MANFID_TOSHIBA	0x11
- #define CID_MANFID_MICRON	0x13
-+#define CID_MANFID_SAMSUNG	0x15
+diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
+index 4e1b153..175d802 100644
+--- a/fs/btrfs/extent-tree.c
++++ b/fs/btrfs/extent-tree.c
+@@ -3706,8 +3706,8 @@ static void shrink_delalloc(struct btrfs_root *root, u64 to_reclaim, u64 orig,
+ 	while (delalloc_bytes && loops < 3) {
+ 		max_reclaim = min(delalloc_bytes, to_reclaim);
+ 		nr_pages = max_reclaim >> PAGE_CACHE_SHIFT;
+-		writeback_inodes_sb_nr_if_idle(root->fs_info->sb, nr_pages,
+-					       WB_REASON_FS_FREE_SPACE);
++		try_to_writeback_inodes_sb_nr(root->fs_info->sb, nr_pages,
++					      WB_REASON_FS_FREE_SPACE);
  
- static const struct mmc_fixup blk_fixups[] =
+ 		spin_lock(&space_info->lock);
+ 		if (space_info->bytes_used + space_info->bytes_reserved +
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index dff171c..33ff5b5 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -2476,7 +2476,7 @@ static int ext4_nonda_switch(struct super_block *sb)
+ 	 * start pushing delalloc when 1/2 of free blocks are dirty.
+ 	 */
+ 	if (free_blocks < 2 * dirty_blocks)
+-		writeback_inodes_sb_if_idle(sb, WB_REASON_FS_FREE_SPACE);
++		try_to_writeback_inodes_sb(sb, WB_REASON_FS_FREE_SPACE);
+ 
+ 	return 0;
+ }
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index be3efc4..20a3509 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -1316,7 +1316,6 @@ void writeback_inodes_sb_nr(struct super_block *sb,
+ 	bdi_queue_work(sb->s_bdi, &work);
+ 	wait_for_completion(&done);
+ }
+-EXPORT_SYMBOL(writeback_inodes_sb_nr);
+ 
+ /**
+  * writeback_inodes_sb	-	writeback dirty inodes from given super_block
+@@ -1334,47 +1333,43 @@ void writeback_inodes_sb(struct super_block *sb, enum wb_reason reason)
+ EXPORT_SYMBOL(writeback_inodes_sb);
+ 
+ /**
+- * writeback_inodes_sb_if_idle	-	start writeback if none underway
++ * try_to_writeback_inodes_sb_nr - try to start writeback if none underway
+  * @sb: the superblock
+- * @reason: reason why some writeback work was initiated
++ * @nr: the number of pages to write
++ * @reason: the reason of writeback
+  *
+- * Invoke writeback_inodes_sb if no writeback is currently underway.
++ * Invoke writeback_inodes_sb_nr if no writeback is currently underway.
+  * Returns 1 if writeback was started, 0 if not.
+  */
+-int writeback_inodes_sb_if_idle(struct super_block *sb, enum wb_reason reason)
++int try_to_writeback_inodes_sb_nr(struct super_block *sb,
++				  unsigned long nr,
++				  enum wb_reason reason)
  {
-@@ -1752,6 +1754,26 @@ static const struct mmc_fixup blk_fixups[] =
- 	MMC_FIXUP(CID_NAME_ANY, CID_MANFID_MICRON, 0x200, add_quirk_mmc,
- 		  MMC_QUIRK_LONG_READ_TIME),
- 
-+	/*
-+	 * Some issue about secure erase/secure trim for Samsung MoviNAND
-+	 */
-+	MMC_FIXUP("M8G2FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("MAG4FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("MBG8FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("MCGAFA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("VAL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("VYL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("KYL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("VZL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
+-	if (!writeback_in_progress(sb->s_bdi)) {
+-		down_read(&sb->s_umount);
+-		writeback_inodes_sb(sb, reason);
+-		up_read(&sb->s_umount);
++	if (writeback_in_progress(sb->s_bdi))
+ 		return 1;
+-	} else
 +
- 	END_FIXUP
- };
++	if (!down_read_trylock(&sb->s_umount))
+ 		return 0;
++
++	writeback_inodes_sb_nr(sb, nr, reason);
++	up_read(&sb->s_umount);
++	return 1;
+ }
+-EXPORT_SYMBOL(writeback_inodes_sb_if_idle);
++EXPORT_SYMBOL(try_to_writeback_inodes_sb_nr);
  
-diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
-index 111aca5..4b27f9f 100644
---- a/include/linux/mmc/card.h
-+++ b/include/linux/mmc/card.h
-@@ -239,6 +239,7 @@ struct mmc_card {
- #define MMC_QUIRK_BLK_NO_CMD23	(1<<7)		/* Avoid CMD23 for regular multiblock */
- #define MMC_QUIRK_BROKEN_BYTE_MODE_512 (1<<8)	/* Avoid sending 512 bytes in */
- #define MMC_QUIRK_LONG_READ_TIME (1<<9)		/* Data read time > CSD says */
-+#define MMC_QUIRK_SEC_ERASE_TRIM_BROKEN (1<<10)	/* Skip secure for erase/trim */
- 						/* byte mode */
- 	unsigned int    poweroff_notify_state;	/* eMMC4.5 notify feature */
- #define MMC_NO_POWER_NOTIFICATION	0
+ /**
+- * writeback_inodes_sb_nr_if_idle	-	start writeback if none underway
++ * try_to_writeback_inodes_sb - try to start writeback if none underway
+  * @sb: the superblock
+- * @nr: the number of pages to write
+  * @reason: reason why some writeback work was initiated
+  *
+- * Invoke writeback_inodes_sb if no writeback is currently underway.
++ * Implement by try_to_writeback_inodes_sb_nr()
+  * Returns 1 if writeback was started, 0 if not.
+  */
+-int writeback_inodes_sb_nr_if_idle(struct super_block *sb,
+-				   unsigned long nr,
+-				   enum wb_reason reason)
++int try_to_writeback_inodes_sb(struct super_block *sb, enum wb_reason reason)
+ {
+-	if (!writeback_in_progress(sb->s_bdi)) {
+-		down_read(&sb->s_umount);
+-		writeback_inodes_sb_nr(sb, nr, reason);
+-		up_read(&sb->s_umount);
+-		return 1;
+-	} else
+-		return 0;
++	return try_to_writeback_inodes_sb_nr(sb, get_nr_dirty_pages(), reason);
+ }
+-EXPORT_SYMBOL(writeback_inodes_sb_nr_if_idle);
++EXPORT_SYMBOL(try_to_writeback_inodes_sb);
+ 
+ /**
+  * sync_inodes_sb	-	sync sb inode pages
+diff --git a/include/linux/writeback.h b/include/linux/writeback.h
+index 50c3e8f..ecdd0e0 100644
+--- a/include/linux/writeback.h
++++ b/include/linux/writeback.h
+@@ -87,9 +87,9 @@ int inode_wait(void *);
+ void writeback_inodes_sb(struct super_block *, enum wb_reason reason);
+ void writeback_inodes_sb_nr(struct super_block *, unsigned long nr,
+ 							enum wb_reason reason);
+-int writeback_inodes_sb_if_idle(struct super_block *, enum wb_reason reason);
+-int writeback_inodes_sb_nr_if_idle(struct super_block *, unsigned long nr,
+-							enum wb_reason reason);
++int try_to_writeback_inodes_sb(struct super_block *, enum wb_reason reason);
++int try_to_writeback_inodes_sb_nr(struct super_block *, unsigned long nr,
++				  enum wb_reason reason);
+ void sync_inodes_sb(struct super_block *);
+ long writeback_inodes_wb(struct bdi_writeback *wb, long nr_pages,
+ 				enum wb_reason reason);
 -- 
-1.7.0.4
+1.6.5.2
