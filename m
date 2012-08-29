@@ -1,284 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917Ab2H2Hve (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 03:51:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17876 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751160Ab2H2Hvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 03:51:32 -0400
-Message-ID: <503DCABC.2010100@redhat.com>
-Date: Wed, 29 Aug 2012 15:54:36 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120210 Thunderbird/10.0.1
+	id S1752898Ab2H2IJJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 04:09:09 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:57514 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751982Ab2H2IJG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 04:09:06 -0400
+X-AuditID: b753bd60-9255dba000007c38-c3-503dce144747
+X-AuditID: b753bd60-9255dba000007c38-c3-503dce144747
+Message-ID: <503DCE13.5030400@hitachi.com>
+Date: Wed, 29 Aug 2012 17:08:51 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        kvm@vger.kernel.org, rusty@rustcorp.com.au, mst@redhat.com,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH 1/5] virtio-ring: move queue_index to vring_virtqueue
-References: <1346154857-12487-1-git-send-email-pbonzini@redhat.com> <1346154857-12487-2-git-send-email-pbonzini@redhat.com>
-In-Reply-To: <1346154857-12487-2-git-send-email-pbonzini@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: BUG: Kprobe smoke test: 2 out of 6 tests failed
+References: <20120824071512.GA965@localhost>  <1345815698.12440.12.camel@gandalf.local.home> <1345856440.12440.21.camel@gandalf.local.home>
+In-Reply-To: <1345856440.12440.21.camel@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/28/2012 07:54 PM, Paolo Bonzini wrote:
-> From: Jason Wang<jasowang@redhat.com>
->
-> Instead of storing the queue index in transport-specific virtio structs,
-> this patch moves them to vring_virtqueue and introduces an helper to get
-> the value.  This lets drivers simplify their management and tracing of
-> virtqueues.
->
-> Signed-off-by: Jason Wang<jasowang@redhat.com>
-> Signed-off-by: Paolo Bonzini<pbonzini@redhat.com>
-> ---
-> 	I fixed the problems in Jason's v5 (posted at
-> 	http://permalink.gmane.org/gmane.linux.kernel.virtualization/15910)
-> 	and switched from virtio_set_queue_index to a new argument of
-> 	vring_new_virtqueue.  This breaks at compile-time any virtio
-> 	transport that is not updated.
+Hi Steven and Fengguang,
 
-Thanks Paolo. I'm fine with this patch.
->
->   drivers/lguest/lguest_device.c         |    2 +-
->   drivers/remoteproc/remoteproc_virtio.c |    2 +-
->   drivers/s390/kvm/kvm_virtio.c          |    2 +-
->   drivers/virtio/virtio_mmio.c           |   12 ++++--------
->   drivers/virtio/virtio_pci.c            |   13 +++++--------
->   drivers/virtio/virtio_ring.c           |   14 +++++++++++++-
->   include/linux/virtio.h                 |    2 ++
->   include/linux/virtio_ring.h            |    3 ++-
->   8 files changed, 29 insertions(+), 21 deletions(-)
->
-> diff --git a/drivers/lguest/lguest_device.c b/drivers/lguest/lguest_device.c
-> index 9e8388e..ccb7dfb 100644
-> --- a/drivers/lguest/lguest_device.c
-> +++ b/drivers/lguest/lguest_device.c
-> @@ -296,7 +296,7 @@ static struct virtqueue *lg_find_vq(struct virtio_device *vdev,
->   	 * to 'true': the host just a(nother) SMP CPU, so we only need inter-cpu
->   	 * barriers.
->   	 */
-> -	vq = vring_new_virtqueue(lvq->config.num, LGUEST_VRING_ALIGN, vdev,
-> +	vq = vring_new_virtqueue(index, lvq->config.num, LGUEST_VRING_ALIGN, vdev,
->   				 true, lvq->pages, lg_notify, callback, name);
->   	if (!vq) {
->   		err = -ENOMEM;
-> diff --git a/drivers/remoteproc/remoteproc_virtio.c b/drivers/remoteproc/remoteproc_virtio.c
-> index 3541b44..343c194 100644
-> --- a/drivers/remoteproc/remoteproc_virtio.c
-> +++ b/drivers/remoteproc/remoteproc_virtio.c
-> @@ -103,7 +103,7 @@ static struct virtqueue *rp_find_vq(struct virtio_device *vdev,
->   	 * Create the new vq, and tell virtio we're not interested in
->   	 * the 'weak' smp barriers, since we're talking with a real device.
->   	 */
-> -	vq = vring_new_virtqueue(len, rvring->align, vdev, false, addr,
-> +	vq = vring_new_virtqueue(id, len, rvring->align, vdev, false, addr,
->   					rproc_virtio_notify, callback, name);
->   	if (!vq) {
->   		dev_err(dev, "vring_new_virtqueue %s failed\n", name);
-> diff --git a/drivers/s390/kvm/kvm_virtio.c b/drivers/s390/kvm/kvm_virtio.c
-> index 47cccd5..5565af2 100644
-> --- a/drivers/s390/kvm/kvm_virtio.c
-> +++ b/drivers/s390/kvm/kvm_virtio.c
-> @@ -198,7 +198,7 @@ static struct virtqueue *kvm_find_vq(struct virtio_device *vdev,
->   	if (err)
->   		goto out;
->
-> -	vq = vring_new_virtqueue(config->num, KVM_S390_VIRTIO_RING_ALIGN,
-> +	vq = vring_new_virtqueue(index, config->num, KVM_S390_VIRTIO_RING_ALIGN,
->   				 vdev, true, (void *) config->address,
->   				 kvm_notify, callback, name);
->   	if (!vq) {
-> diff --git a/drivers/virtio/virtio_mmio.c b/drivers/virtio/virtio_mmio.c
-> index 453db0c..008bf58 100644
-> --- a/drivers/virtio/virtio_mmio.c
-> +++ b/drivers/virtio/virtio_mmio.c
-> @@ -131,9 +131,6 @@ struct virtio_mmio_vq_info {
->   	/* the number of entries in the queue */
->   	unsigned int num;
->
-> -	/* the index of the queue */
-> -	int queue_index;
-> -
->   	/* the virtual address of the ring queue */
->   	void *queue;
->
-> @@ -225,11 +222,10 @@ static void vm_reset(struct virtio_device *vdev)
->   static void vm_notify(struct virtqueue *vq)
->   {
->   	struct virtio_mmio_device *vm_dev = to_virtio_mmio_device(vq->vdev);
-> -	struct virtio_mmio_vq_info *info = vq->priv;
->
->   	/* We write the queue's selector into the notification register to
->   	 * signal the other end */
-> -	writel(info->queue_index, vm_dev->base + VIRTIO_MMIO_QUEUE_NOTIFY);
-> +	writel(virtqueue_get_queue_index(vq), vm_dev->base + VIRTIO_MMIO_QUEUE_NOTIFY);
->   }
->
->   /* Notify all virtqueues on an interrupt. */
-> @@ -270,6 +266,7 @@ static void vm_del_vq(struct virtqueue *vq)
->   	struct virtio_mmio_device *vm_dev = to_virtio_mmio_device(vq->vdev);
->   	struct virtio_mmio_vq_info *info = vq->priv;
->   	unsigned long flags, size;
-> +	unsigned int index = virtqueue_get_queue_index(vq);
->
->   	spin_lock_irqsave(&vm_dev->lock, flags);
->   	list_del(&info->node);
-> @@ -278,7 +275,7 @@ static void vm_del_vq(struct virtqueue *vq)
->   	vring_del_virtqueue(vq);
->
->   	/* Select and deactivate the queue */
-> -	writel(info->queue_index, vm_dev->base + VIRTIO_MMIO_QUEUE_SEL);
-> +	writel(index, vm_dev->base + VIRTIO_MMIO_QUEUE_SEL);
->   	writel(0, vm_dev->base + VIRTIO_MMIO_QUEUE_PFN);
->
->   	size = PAGE_ALIGN(vring_size(info->num, VIRTIO_MMIO_VRING_ALIGN));
-> @@ -324,7 +321,6 @@ static struct virtqueue *vm_setup_vq(struct virtio_device *vdev, unsigned index,
->   		err = -ENOMEM;
->   		goto error_kmalloc;
->   	}
-> -	info->queue_index = index;
->
->   	/* Allocate pages for the queue - start with a queue as big as
->   	 * possible (limited by maximum size allowed by device), drop down
-> @@ -356,7 +352,7 @@ static struct virtqueue *vm_setup_vq(struct virtio_device *vdev, unsigned index,
->   			vm_dev->base + VIRTIO_MMIO_QUEUE_PFN);
->
->   	/* Create the vring */
-> -	vq = vring_new_virtqueue(info->num, VIRTIO_MMIO_VRING_ALIGN, vdev,
-> +	vq = vring_new_virtqueue(index, info->num, VIRTIO_MMIO_VRING_ALIGN, vdev,
->   				 true, info->queue, vm_notify, callback, name);
->   	if (!vq) {
->   		err = -ENOMEM;
-> diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-> index 2e03d41..d902464 100644
-> --- a/drivers/virtio/virtio_pci.c
-> +++ b/drivers/virtio/virtio_pci.c
-> @@ -79,9 +79,6 @@ struct virtio_pci_vq_info
->   	/* the number of entries in the queue */
->   	int num;
->
-> -	/* the index of the queue */
-> -	int queue_index;
-> -
->   	/* the virtual address of the ring queue */
->   	void *queue;
->
-> @@ -202,11 +199,11 @@ static void vp_reset(struct virtio_device *vdev)
->   static void vp_notify(struct virtqueue *vq)
->   {
->   	struct virtio_pci_device *vp_dev = to_vp_device(vq->vdev);
-> -	struct virtio_pci_vq_info *info = vq->priv;
->
->   	/* we write the queue's selector into the notification register to
->   	 * signal the other end */
-> -	iowrite16(info->queue_index, vp_dev->ioaddr + VIRTIO_PCI_QUEUE_NOTIFY);
-> +	iowrite16(virtqueue_get_queue_index(vq),
-> +		  vp_dev->ioaddr + VIRTIO_PCI_QUEUE_NOTIFY);
->   }
->
->   /* Handle a configuration change: Tell driver if it wants to know. */
-> @@ -402,7 +399,6 @@ static struct virtqueue *setup_vq(struct virtio_device *vdev, unsigned index,
->   	if (!info)
->   		return ERR_PTR(-ENOMEM);
->
-> -	info->queue_index = index;
->   	info->num = num;
->   	info->msix_vector = msix_vec;
->
-> @@ -418,7 +414,7 @@ static struct virtqueue *setup_vq(struct virtio_device *vdev, unsigned index,
->   		  vp_dev->ioaddr + VIRTIO_PCI_QUEUE_PFN);
->
->   	/* create the vring */
-> -	vq = vring_new_virtqueue(info->num, VIRTIO_PCI_VRING_ALIGN, vdev,
-> +	vq = vring_new_virtqueue(index, info->num, VIRTIO_PCI_VRING_ALIGN, vdev,
->   				 true, info->queue, vp_notify, callback, name);
->   	if (!vq) {
->   		err = -ENOMEM;
-> @@ -467,7 +463,8 @@ static void vp_del_vq(struct virtqueue *vq)
->   	list_del(&info->node);
->   	spin_unlock_irqrestore(&vp_dev->lock, flags);
->
-> -	iowrite16(info->queue_index, vp_dev->ioaddr + VIRTIO_PCI_QUEUE_SEL);
-> +	iowrite16(virtqueue_get_queue_index(vq),
-> +		vp_dev->ioaddr + VIRTIO_PCI_QUEUE_SEL);
->
->   	if (vp_dev->msix_enabled) {
->   		iowrite16(VIRTIO_MSI_NO_VECTOR,
-> diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-> index 5aa43c3..e639584 100644
-> --- a/drivers/virtio/virtio_ring.c
-> +++ b/drivers/virtio/virtio_ring.c
-> @@ -106,6 +106,9 @@ struct vring_virtqueue
->   	/* How to notify other side. FIXME: commonalize hcalls! */
->   	void (*notify)(struct virtqueue *vq);
->
-> +	/* Index of the queue */
-> +	int queue_index;
-> +
->   #ifdef DEBUG
->   	/* They're supposed to lock for us. */
->   	unsigned int in_use;
-> @@ -171,6 +174,13 @@ static int vring_add_indirect(struct vring_virtqueue *vq,
->   	return head;
->   }
->
-> +int virtqueue_get_queue_index(struct virtqueue *_vq)
-> +{
-> +	struct vring_virtqueue *vq = to_vvq(_vq);
-> +	return vq->queue_index;
-> +}
-> +EXPORT_SYMBOL_GPL(virtqueue_get_queue_index);
-> +
->   /**
->    * virtqueue_add_buf - expose buffer to other end
->    * @vq: the struct virtqueue we're talking about.
-> @@ -616,7 +626,8 @@ irqreturn_t vring_interrupt(int irq, void *_vq)
->   }
->   EXPORT_SYMBOL_GPL(vring_interrupt);
->
-> -struct virtqueue *vring_new_virtqueue(unsigned int num,
-> +struct virtqueue *vring_new_virtqueue(unsigned int index,
-> +				      unsigned int num,
->   				      unsigned int vring_align,
->   				      struct virtio_device *vdev,
->   				      bool weak_barriers,
-> @@ -647,6 +658,7 @@ struct virtqueue *vring_new_virtqueue(unsigned int num,
->   	vq->broken = false;
->   	vq->last_used_idx = 0;
->   	vq->num_added = 0;
-> +	vq->queue_index = index;
->   	list_add_tail(&vq->vq.list,&vdev->vqs);
->   #ifdef DEBUG
->   	vq->in_use = false;
-> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
-> index a1ba8bb..533b115 100644
-> --- a/include/linux/virtio.h
-> +++ b/include/linux/virtio.h
-> @@ -50,6 +50,8 @@ void *virtqueue_detach_unused_buf(struct virtqueue *vq);
->
->   unsigned int virtqueue_get_vring_size(struct virtqueue *vq);
->
-> +int virtqueue_get_queue_index(struct virtqueue *vq);
-> +
->   /**
->    * virtio_device - representation of a device using virtio
->    * @index: unique position on the virtio bus
-> diff --git a/include/linux/virtio_ring.h b/include/linux/virtio_ring.h
-> index e338730..c2d793a 100644
-> --- a/include/linux/virtio_ring.h
-> +++ b/include/linux/virtio_ring.h
-> @@ -165,7 +165,8 @@ static inline int vring_need_event(__u16 event_idx, __u16 new_idx, __u16 old)
->   struct virtio_device;
->   struct virtqueue;
->
-> -struct virtqueue *vring_new_virtqueue(unsigned int num,
-> +struct virtqueue *vring_new_virtqueue(unsigned int index,
-> +				      unsigned int num,
->   				      unsigned int vring_align,
->   				      struct virtio_device *vdev,
->   				      bool weak_barriers,
+(2012/08/25 10:00), Steven Rostedt wrote:
+> On Fri, 2012-08-24 at 09:41 -0400, Steven Rostedt wrote:
+> 
+>> On Fri, 2012-08-24 at 15:15 +0800, Fengguang Wu wrote:
+>>> Hi Steven,
+>>>
+>>> The following test fails are mostly due to this commit, or one of the
+>>> last 4 commits in
+>>>
+>>> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git tip/perf/core
+>>> head:   d57c5d51a30152f3175d2344cb6395f08bf8ee0c
+>>> commit: d57c5d51a30152f3175d2344cb6395f08bf8ee0c [100/100] ftrace/x86: Add support for -mfentry to x86_64
+>>>
+>>> [    9.084881] Kprobe smoke test failed: register_jprobe returned -22
+>>> [    9.086786] Kprobe smoke test failed: register_jprobes returned -22
+> 
+> Masami,
+> 
+> Seems that when we use fentry, we break jprobes. I thought the patches
+> that we added would just move the call to the next op, not fail totally?
+
+Ah! yes, it would be kprobe-side problem.
+
+Since ftrace_regs_call allows handlers to set regs->ip, it is not necessarily
+to move jprobe onto the next instruction (even it will be the simplest one).
+Instead, I think we can allow it on ftrace entries. Of course, ftrace side
+change is also needed, e.g. sorting handlers for moving such ip-modifying
+handler to the last.
+
+Thank you,
+
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
