@@ -1,77 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488Ab2H2AZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 20:25:56 -0400
-Received: from smtp.getmail.no ([84.208.15.66]:57824 "EHLO smtp.getmail.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752623Ab2H2AZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 20:25:55 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=iso-8859-15; format=flowed; delsp=yes
-To: jdow@earthlink.net, linux-kernel@vger.kernel.org
-Subject: Re: System-drivers ported to Windows XP?
-References: <op.wjrltbl46426ze@millennium.getinternet.no>
- <503D4B37.1030202@earthlink.net>
-Date: Wed, 29 Aug 2012 02:25:54 +0200
-From: Uwaysi Bin Kareem <uwaysi.bin.kareem@paradoxuncreated.com>
-Message-id: <op.wjr0tgbs6426ze@millennium.getinternet.no>
-In-reply-to: <503D4B37.1030202@earthlink.net>
-User-Agent: Opera Mail/12.01 (Win32)
+	id S1753477Ab2H2Ad0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 20:33:26 -0400
+Received: from aldebaran.gro-tsen.net ([88.191.60.176]:43391 "EHLO
+	aldebaran.gro-tsen.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751398Ab2H2AdY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Aug 2012 20:33:24 -0400
+X-Greylist: delayed 454 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Aug 2012 20:33:24 EDT
+Date: Wed, 29 Aug 2012 02:25:48 +0200
+From: David Madore <david+ml@madore.org>
+To: linux-kernel@vger.kernel.org
+Subject: kernel 3.2.27 on arm: WARNING: at mm/page_alloc.c:2109
+ __alloc_pages_nodemask+0x1d4/0x68c()
+Message-ID: <20120829002548.GA7063@aldebaran.gro-tsen.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a list of drivers here, many of them dated 2001.  
-http://paradoxuncreated.com/Blog/wordpress/?p=1608 (MS making me upset as  
-usual.)
-I am really just looking for better drivers, and thought maybe someone  
-knew if more current opensource versions existed. I have not found  
-anything online though, so therefore I ask here.
+Dear all,
 
-I have also thought about the ReactOS project, and wonder if they have  
-more current drivers, seeing as they work on the project currently, I am  
-discussing in their forum now, but communication is going slow.
+I hope this is the right place to send this sort of backtrace dump.
 
-Peace Be With You.
+I'm getting the following sort of dumps (below) on a 3.2.27 kernel on
+an arm/kirkwood (actually DreamPlug) machine that's used as a router.
 
-On Wed, 29 Aug 2012 00:50:31 +0200, jdow <jdow@earthlink.net> wrote:
+I imagine it being somehow related to the fact that it operates a
+network bridge (I imagine this because I have another identical
+machine with exactly the same kernel and a very similar config but not
+running a bridge, and the warning never pops up).
 
-> You might look into the ASIO drivers. Although for very heavy audio use
-> 64 byte buffers are a more reliable than the ultra-short buffers you seem
-> to be using. 100 channels with 7 ms latency through an audio matrix is
-> a commercial product for XP and Win 7 for quite some time now. (Although
-> Win 7 has some security policies that reduce performance gains that come
-> through priority elevation somewhat.)
->
-> SoundMan and Richmond are key words that will lead you to it via Google.
->
-> {^_^}
->
-> On 2012/08/28 12:01, Uwaysi Bin Kareem wrote:
->> Some may remember me as commenting on the excellent state of the  
->> linux-kernel,
->> after I achieved 0.3ms reliable latency for audio-streams.
->>
->> I have now decided to try and get as close as possible on Windows XP  
->> though.
->> However some of the drivers on my windows XP install, is from 2001.  
->> Windows
->> update is ofcourse not giving me the available ones from 2012, and they  
->> are hard
->> to track down.
->>
->> I was wondering if anyone had ported generic-system drivers, which then  
->> would
->> probably be more optimized, than the 2001-ones, to windows XP?
->>
->> If anyone wants to read about my findings on Windows XP, please read:
->> http://paradoxuncreated.com/Blog/wordpress/?p=1506
->>
->> Peace Be With You.
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel"  
->> in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+Is this worth investigating?  (I will, of course, provide the config
+file and any other relevant data if the answer is "yes".)  Is this
+potentially serious?  (I'm getting hard lockups on this machine which
+I suspect are due to hardware and unrelated to this, but if someone
+tells me it could be the cause, I'd be more than happy to believe it.)
+
+[24711.204492] ------------[ cut here ]------------
+[24711.209151] WARNING: at mm/page_alloc.c:2109 __alloc_pages_nodemask+0x1d4/0x68c()
+[24711.216667] Modules linked in: 8021q ath9k_htc mac80211 ath9k_common ath9k_hw ath cfg80211 bnep rfcomm sit tunnel4 sch_ingress cls_fw cls_u32 sch_sfq sch_htb pppoe pppox ppp_generic slhc bridge stp llc ip6t_REJECT ip6table_filter ip6table_mangle xt_NOTRACK ip6table_raw ip6_tables nf_conntrack_ipv6 nf_defrag_ipv6 nf_nat_ftp nf_conntrack_ftp ipt_REJECT xt_conntrack iptable_filter ipt_MASQUERADE iptable_nat nf_nat xt_TCPMSS xt_tcpudp xt_mark iptable_mangle ip_tables x_tables nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 orion_wdt ipv6 snd_usb_audio snd_pcm snd_page_alloc snd_hwdep snd_usbmidi_lib snd_seq_midi snd_seq_midi_event snd_rawmidi btmrvl_sdio btmrvl snd_seq snd_timer snd_seq_device snd bluetooth soundcore
+[24711.280663] [<c000d728>] (unwind_backtrace+0x0/0xf0) from [<c0022f74>] (warn_slowpath_common+0x50/0x68)
+[24711.290124] [<c0022f74>] (warn_slowpath_common+0x50/0x68) from [<c0022fa8>] (warn_slowpath_null+0x1c/0x24)
+[24711.299845] [<c0022fa8>] (warn_slowpath_null+0x1c/0x24) from [<c009caec>] (__alloc_pages_nodemask+0x1d4/0x68c)
+[24711.309914] [<c009caec>] (__alloc_pages_nodemask+0x1d4/0x68c) from [<c009cfb4>] (__get_free_pages+0x10/0x3c)
+[24711.319805] [<c009cfb4>] (__get_free_pages+0x10/0x3c) from [<c00c9fd0>] (kmalloc_order_trace+0x24/0xdc)
+[24711.329269] [<c00c9fd0>] (kmalloc_order_trace+0x24/0xdc) from [<c038d638>] (pskb_expand_head+0x68/0x298)
+[24711.338901] [<c038d638>] (pskb_expand_head+0x68/0x298) from [<bf0dd3ec>] (ip6_forward+0x4d4/0x7bc [ipv6])
+[24711.348638] [<bf0dd3ec>] (ip6_forward+0x4d4/0x7bc [ipv6]) from [<bf0dfebc>] (ipv6_rcv+0x2bc/0x3dc [ipv6])
+[24711.358333] [<bf0dfebc>] (ipv6_rcv+0x2bc/0x3dc [ipv6]) from [<c0394870>] (__netif_receive_skb+0x544/0x66c)
+[24711.368106] [<c0394870>] (__netif_receive_skb+0x544/0x66c) from [<bf1cd054>] (br_nf_pre_routing_finish_ipv6+0x10c/0x160 [bridge])
+[24711.379899] [<bf1cd054>] (br_nf_pre_routing_finish_ipv6+0x10c/0x160 [bridge]) from [<bf1cdae8>] (br_nf_pre_routing+0x59c/0x67c [bridge])
+[24711.392271] [<bf1cdae8>] (br_nf_pre_routing+0x59c/0x67c [bridge]) from [<c03bd2a4>] (nf_iterate+0x8c/0xb4)
+[24711.401988] [<c03bd2a4>] (nf_iterate+0x8c/0xb4) from [<c03bd328>] (nf_hook_slow+0x5c/0x118)
+[24711.410540] [<c03bd328>] (nf_hook_slow+0x5c/0x118) from [<bf1c7fa4>] (br_handle_frame+0x1b8/0x290 [bridge])
+[24711.420367] [<bf1c7fa4>] (br_handle_frame+0x1b8/0x290 [bridge]) from [<c03946f8>] (__netif_receive_skb+0x3cc/0x66c)
+[24711.430872] [<c03946f8>] (__netif_receive_skb+0x3cc/0x66c) from [<c031e254>] (mv643xx_eth_poll+0x540/0x734)
+[24711.440680] [<c031e254>] (mv643xx_eth_poll+0x540/0x734) from [<c0397390>] (net_rx_action+0x118/0x314)
+[24711.449970] [<c0397390>] (net_rx_action+0x118/0x314) from [<c0029924>] (__do_softirq+0xac/0x234)
+[24711.458817] [<c0029924>] (__do_softirq+0xac/0x234) from [<c0029f00>] (irq_exit+0x94/0x9c)
+[24711.467046] [<c0029f00>] (irq_exit+0x94/0x9c) from [<c00094b0>] (handle_IRQ+0x34/0x84)
+[24711.475007] [<c00094b0>] (handle_IRQ+0x34/0x84) from [<c04398d4>] (__irq_svc+0x34/0x98)
+[24711.483068] [<c04398d4>] (__irq_svc+0x34/0x98) from [<c0011d6c>] (kirkwood_enter_idle+0x4c/0x94)
+[24711.491908] [<c0011d6c>] (kirkwood_enter_idle+0x4c/0x94) from [<c0357a00>] (cpuidle_idle_call+0xc8/0x35c)
+[24711.501532] [<c0357a00>] (cpuidle_idle_call+0xc8/0x35c) from [<c0009764>] (cpu_idle+0x88/0xdc)
+[24711.510201] [<c0009764>] (cpu_idle+0x88/0xdc) from [<c05d8720>] (start_kernel+0x2a0/0x2f0)
+[24711.518512] ---[ end trace e1776fbe32468909 ]---
+
+-- 
+     David A. Madore
+   ( http://www.madore.org/~david/ )
