@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752530Ab2H2JCg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 05:02:36 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:44189 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751742Ab2H2JCf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 05:02:35 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>,
-        kernel@pengutronix.de, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: [PATCH] MAINTAINERS: add defconfig file to TEGRA section
-Date: Wed, 29 Aug 2012 11:02:29 +0200
-Message-Id: <1346230949-6051-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.10.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1752601Ab2H2JFd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 05:05:33 -0400
+Received: from mga02.intel.com ([134.134.136.20]:20537 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751789Ab2H2JFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 05:05:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,332,1344236400"; 
+   d="asc'?scan'208";a="186613871"
+Message-ID: <1346231430.2848.449.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH v2] mtd: cmdlinepart: fix the wrong partitions number
+ when truncating occurs
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+Cc: Huang Shijie <shijie8@gmail.com>, dwmw2@infradead.org,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Wed, 29 Aug 2012 12:10:30 +0300
+In-Reply-To: <20120829115112.389fc40c@halley>
+References: <1345904767-23011-1-git-send-email-shijie8@gmail.com>
+	 <20120825120231.73577d6a@halley>
+	 <CAMiH66HyfNEzEHGyZUcLJ_01PNVHqA44fjAqXsyM2c-HHms8hQ@mail.gmail.com>
+	 <20120826090603.6b833e54@pixies.home.jungo.com>
+	 <1346228165.2848.432.camel@sauron.fi.intel.com>
+	 <20120829115112.389fc40c@halley>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-gtlvJMTIw7umlN5Uutgm"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
- MAINTAINERS |    1 +
- 1 file changed, 1 insertion(+)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 94b823f..39d8a59 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -6779,6 +6779,7 @@ Q:	http://patchwork.ozlabs.org/project/linux-tegra/list/
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/swarren/linux-tegra.git
- S:	Supported
- F:	arch/arm/mach-tegra
-+F:	arch/arm/configs/tegra_defconfig
- 
- TEHUTI ETHERNET DRIVER
- M:	Andy Gospodarek <andy@greyhouse.net>
--- 
-1.7.10.4
+--=-gtlvJMTIw7umlN5Uutgm
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+On Wed, 2012-08-29 at 11:51 +0300, Shmulik Ladkani wrote:
+> > While you suggestion is clever, do we really benefit from this?
+>=20
+> Artem, please note this is just a side effect of what I've suggested
+> (that its, continue parsing after first truncated partition), not a real
+> use case I'd expect and intentionally wish to support.
+
+Sorry, I was not reading carefully enough. Could you please recap - are
+you fine with Huang's latest patch-set or not :) To me sorting and then
+dropping 0-size partitions looks like a simple and robust approach.
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-gtlvJMTIw7umlN5Uutgm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQPdyGAAoJECmIfjd9wqK0kxwQAJAMK/wQti0bE0QbWAYtb3qv
+7ZzrLPp3EFxxGgsZJv7XzA9QVHITVRG1AzBT4FiV1GIn8EKV1JuA74bvRNen2kex
+WFjQrZlhoUPIR0QcIAklcHrUx6nmYezY3CdDL/mFnAVMg43J8CbSkaFtJeZRSUtL
+3Bs6hd/UngLAjafQ+jPkGDjGzBLoi084C2EPxDyvEe9B5hjTQop3RYK+xQ0s12U8
+0zKnV/OXsm7ur2WFJaS8sw5grdmG64YIdg4bg5L0T01G8g8wYW4hPUnr7VDjtzpH
+lEjlwswdYS7tnZznBB2D0dr/a9jhCPs7uqfU8JCUYolUVyShXLLziu8+8gh4BVcy
+6je/Zpz9jXLYDiC7av6GKlt/RxCiZogz0TNQZq2IIuTWQqnWroXwccgg3Whc/T3V
+kjTEpIzChsbzvzaeQmg2FY9vkKRbnN2quO0uLmi+sVu9T+5GHdwtywdjYb/iPcD+
+6I9TqCw++9s0x5+MXxTlWis4wf+7O4C6b4FsstH/q0iAUOBKX87qdmI1bHQhe+PV
+F0huD4fu/7A2Mc9nx3TjBaU1BnaL51oMdp5ixctoqH3siix9y8M6Lvbk+vz46dSn
+ZUBOnw6o4sOGXNZznzbFrPgS3Qrhw/Bstt9ivO/27wKPHvqEEaMhmb3PVMpXtGmR
+E5+Q3G1WUr66FMNaela+
+=T11e
+-----END PGP SIGNATURE-----
+
+--=-gtlvJMTIw7umlN5Uutgm--
 
