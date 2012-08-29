@@ -1,67 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751881Ab2H2Efh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 00:35:37 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:41994 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751459Ab2H2Eff (ORCPT
+	id S1751563Ab2H2Eos (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 00:44:48 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:47953 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750914Ab2H2Eoq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 00:35:35 -0400
-Date: Wed, 29 Aug 2012 06:35:30 +0200 (CEST)
-From: Peter Osterlund <peterosterlund2@gmail.com>
-X-X-Sender: petero@acer.localdomain
-To: Jiri Kosina <jkosina@suse.cz>
-cc: Tejun Heo <tj@kernel.org>, Kent Overstreet <koverstreet@google.com>,
-        linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, vgoyal@redhat.com, mpatocka@redhat.com,
-        bharrosh@panasas.com
-Subject: Re: [PATCH v6 04/13] pktcdvd: Switch to bio_kmalloc()
-In-Reply-To: <alpine.LNX.2.00.1208281608560.22447@pobox.suse.cz>
-Message-ID: <alpine.LFD.2.02.1208290634360.15468@acer.localdomain>
-References: <1345655050-28199-1-git-send-email-koverstreet@google.com> <1345655050-28199-5-git-send-email-koverstreet@google.com> <20120822195546.GG19212@google.com> <alpine.LNX.2.00.1208281608560.22447@pobox.suse.cz>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 29 Aug 2012 00:44:46 -0400
+Date: Wed, 29 Aug 2012 07:42:55 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Borislav Petkov <bp@alien8.de>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] x86: use new exception_enter()/exception_exit() API
+ in do_device_not_available()
+Message-ID: <20120829044255.GA3147@swordfish>
+References: <20120828210047.GA22279@swordfish>
+ <20120828221111.GC9297@liondog.tnic>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120828221111.GC9297@liondog.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Aug 2012, Jiri Kosina wrote:
+On (08/29/12 00:11), Borislav Petkov wrote:
+> Date: Wed, 29 Aug 2012 00:11:13 +0200
+> From: Borislav Petkov <bp@alien8.de>
+> To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+>  "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, Steven Rostedt
+>  <rostedt@goodmis.org>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+>  Peter Zijlstra <a.p.zijlstra@chello.nl>, "Paul E. McKenney"
+>  <paulmck@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
+> Subject: Re: [RFC PATCH] x86: use new exception_enter()/exception_exit()
+>  API in do_device_not_available()
+> User-Agent: Mutt/1.5.21 (2010-09-15)
+> 
+> On Wed, Aug 29, 2012 at 12:00:47AM +0300, Sergey Senozhatsky wrote:
+> >  x86: use new exception_enter()/exception_exit() API in do_device_not_available()
+> > 
+> >  RCU can be in extended quiescent state when do_device_not_available() called.
+> > 
+> > [  676.400274] RCU used illegally from idle CPU!
+> > [  676.400274] rcu_scheduler_active = 1, debug_locks = 0
+> > [  676.400278] RCU used illegally from extended quiescent state!
+> > [  676.400282] 2 locks held by sed/9468:
+> > [  676.400285]  #0:  (&rq->lock){-.-.-.}, at: [<ffffffff814c67cf>] __schedule+0x1c0/0x992
+> > [  676.400304]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff8106a880>] cpuacct_charge+0x27/0x1e0
+> > [  676.400321] 
+> > [  676.400329] Call Trace:
+> > [  676.400340]  [<ffffffff8108933a>] lockdep_rcu_suspicious+0x109/0x112
+> > [  676.400347]  [<ffffffff8106a8f7>] cpuacct_charge+0x9e/0x1e0
+> > [  676.400353]  [<ffffffff8106a880>] ? cpuacct_charge+0x27/0x1e0
+> > [  676.400359]  [<ffffffff814c67cf>] ? __schedule+0x1c0/0x992
+> > [  676.400366]  [<ffffffff8106d525>] update_curr+0x159/0x200
+> > [  676.400375]  [<ffffffff8100a04f>] ? init_fpu+0x4e/0x8f
+> > [  676.400382]  [<ffffffff8106e0da>] put_prev_task_fair+0x2a/0xac
+> > [  676.400388]  [<ffffffff814c69a7>] __schedule+0x398/0x992
+> > [  676.400397]  [<ffffffff810b4f0a>] ? rcu_irq_exit+0x83/0x99
+> > [  676.400404]  [<ffffffff814c8bf0>] ? retint_restore_args+0x13/0x13
+> > [  676.400411]  [<ffffffff810889e9>] ? lock_is_held+0x2d/0xa5
+> > [  676.400414]  [<ffffffff8100a04f>] ? init_fpu+0x4e/0x8f
+> > [  676.400417]  [<ffffffff81065d0a>] __cond_resched+0x28/0x34
+> > [  676.400420]  [<ffffffff814c701a>] _cond_resched+0x2e/0x35
+> > [  676.400425]  [<ffffffff8111cad4>] kmem_cache_alloc+0x4c/0x1c5
+> > [  676.400430]  [<ffffffff810021ff>] ? math_state_restore+0x1f/0xdc
+> > [  676.400433]  [<ffffffff8100a04f>] init_fpu+0x4e/0x8f
+> > [  676.400437]  [<ffffffff8100220e>] math_state_restore+0x2e/0xdc
+> > [  676.400440]  [<ffffffff814c982e>] do_device_not_available+0xe/0x10
+> > [  676.400445]  [<ffffffff814d161b>] device_not_available+0x1b/0x20
+> > 
+> > 
+> > Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> > 
+> > ---
+> > 
+> >  arch/x86/kernel/traps.c | 2 ++
+> >  1 file changed, 2 insertions(+)
+> > 
+> > diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+> > index ab82cbd..dff3e72 100644
+> > --- a/arch/x86/kernel/traps.c
+> > +++ b/arch/x86/kernel/traps.c
+> > @@ -654,7 +654,9 @@ do_device_not_available(struct pt_regs *regs, long error_code)
+> >  		return;
+> >  	}
+> >  #endif
+> > +	exception_enter(regs);
+> >  	math_state_restore(); /* interrupts still off */
+> > +	exception_enter(regs);
+> 
+> Shouldn't that be exception_exit actually?
+>
 
-> On Wed, 22 Aug 2012, Tejun Heo wrote:
->
->> (cc'ing Jiri, hi!)
->
-> Hi there! :)
->
->> On Wed, Aug 22, 2012 at 10:04:01AM -0700, Kent Overstreet wrote:
->>> This is prep work for killing bi_destructor - previously, pktcdvd had
->>> its own pkt_bio_alloc which was basically duplication bio_kmalloc(),
->>> necessitating its own bi_destructor implementation.
->>>
->>> v5: Un-reorder some functions, to make the patch easier to review
->>>
->>> Signed-off-by: Kent Overstreet <koverstreet@google.com>
->>> CC: Peter Osterlund <petero2@telia.com>
->>
->> Apart from bio_reset() not resetting bi_end_io and bi_private, this
->> looks fine to me but lack of testing makes me a bit hesitant to ack
->> it.
->>
->> Peter doesn't want to be the maintainer of pktcdvd anymore.  Maybe
->> Jiri can be tricked into taking this one too?  :)
->
-> Gah, seems like the floppy saga is going to cause me some more trouble in
-> the future ... :)
->
-> Well, I definitely have hardware back at home that supports this, so I can
-> take it. Doesn't seem to be heavy traffic code either.
->
-> Peter, ok with that? Also, how was this usually fed upstream -- through
-> Jens' tree?
+OH! NO WAY I did that mistake! That was some last minute in-text-editor
+changes and somehow I screwed this up. Will re-send in a second.
 
-Yes, I am ok with that.
-
--- 
-Peter Osterlund - peterosterlund2@gmail.com, petero2@comhem.se
-http://web.comhem.se/petero2home
+Sorry, and thank you.
+ 
+	-ss
