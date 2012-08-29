@@ -1,34 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937Ab2H2Kox (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 06:44:53 -0400
-Received: from mx-01.unifieo.br ([189.8.14.204]:41746 "EHLO mx-01.unifieo.br"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751794Ab2H2Kow (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 06:44:52 -0400
-X-Greylist: delayed 1562 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 Aug 2012 06:44:52 EDT
-Message-ID: <65145.41.138.183.153.1346235414.squirrel@webmail.unifieo.br>
-Date: Wed, 29 Aug 2012 07:16:54 -0300 (BRT)
-Subject: NOTICE EMAIL OWNER!!!
-From: "CHEVRON/TEXACO PROMOTION" <info@promo.com>
-Reply-To: chevrontexaco88@gmail.com
-User-Agent: SquirrelMail/1.4.8-5.el5_7.13
+	id S1753126Ab2H2LQC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 07:16:02 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:18987
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752882Ab2H2LQA convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 07:16:00 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -7
+X-BigFish: VS-7(zz98dI9371I542M1432Izz1202hzz8275bh8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah107ah1220hbe9i1155h)
+From: Liu Qiang-B32616 <B32616@freescale.com>
+To: Dan Williams <djbw@fb.com>
+CC: "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "herbert@gondor.apana.org.au" <herbert@gondor.hengli.com.au>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "Ira W. Snyder" <iws@ovro.caltech.edu>
+Subject: RE: [PATCH v7 0/8] Raid: enable talitos xor offload for improving
+ performance
+Thread-Topic: [PATCH v7 0/8] Raid: enable talitos xor offload for improving
+ performance
+Thread-Index: AQHNdge1qBCFxaP1ski951Lb3NNwmpdSCXOAgAb6eMCAARMaAIAWq2Tg
+Date: Wed, 29 Aug 2012 11:15:53 +0000
+Message-ID: <BCB48C05FCE8BC4D9E61E841ECBE6DB70FC3CA@039-SN2MPN1-011.039d.mgd.msft.net>
+References: <1344500375-8457-1-git-send-email-qiang.liu@freescale.com>
+	<20120809170307.GG14264@ovro.caltech.edu>
+	<BCB48C05FCE8BC4D9E61E841ECBE6DB70E3D47@039-SN2MPN1-013.039d.mgd.msft.net>
+ <CAA9_cme4tHrx14JaSaHwgcGq79qQK5bv8E205fbC3ega5OpUiQ@mail.gmail.com>
+In-Reply-To: <CAA9_cme4tHrx14JaSaHwgcGq79qQK5bv8E205fbC3ega5OpUiQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.208.99]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain;charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Add-Header-Version: 1.0
-X-Mail-Client-Type: Webmail.unifieo.br
-To: undisclosed-recipients:;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Congratulation!!!
-Your Email Address just won for you 1.5 Million (GREAT BRITISH POUNDS) on the on
-going CHEVRON-TEXACO-ONLINE PROMO 2012 For Claims send Email for more details
-to:(chevrontexaco88@gmail.com)
+Hi Dan,
 
+Ping?
+Can you apply these patches? Thanks.
+
+
+- Qiang
+
+> -----Original Message-----
+> From: dan.j.williams@gmail.com [mailto:dan.j.williams@gmail.com] On
+> Behalf Of Dan Williams
+> Sent: Wednesday, August 15, 2012 4:02 AM
+> To: Liu Qiang-B32616
+> Cc: dan.j.williams@intel.com; vinod.koul@intel.com; arnd@arndb.de;
+> herbert@gondor.apana.org.au; gregkh@linuxfoundation.org; linuxppc-
+> dev@lists.ozlabs.org; linux-kernel@vger.kernel.org; linux-
+> crypto@vger.kernel.org; Ira W. Snyder
+> Subject: Re: [PATCH v7 0/8] Raid: enable talitos xor offload for
+> improving performance
+> 
+> On Tue, Aug 14, 2012 at 2:04 AM, Liu Qiang-B32616 <B32616@freescale.com>
+> wrote:
+> > Hi Vinod,
+> >
+> > Would you like to apply this series from patch 2/8 to 7/8) in your tree?
+> > The link as below,
+> > http://patchwork.ozlabs.org/patch/176023/
+> > http://patchwork.ozlabs.org/patch/176024/
+> > http://patchwork.ozlabs.org/patch/176025/
+> > http://patchwork.ozlabs.org/patch/176026/
+> > http://patchwork.ozlabs.org/patch/176027/
+> > http://patchwork.ozlabs.org/patch/176028/
+> >
+> 
+> Hi, sorry for the recent silence I've been transitioning and am now
+> just catching up.  I'll take a look and then it's fine for these to go
+> through Vinod's tree.
+> 
+> --
+> Dan
 
 
