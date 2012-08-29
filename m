@@ -1,89 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917Ab2H2PWw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 11:22:52 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:6444 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752670Ab2H2PWv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 11:22:51 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 29 Aug 2012 08:22:40 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <sameo@linux.intel.com>, <lrg@ti.com>,
-        <broonie@opensource.wolfsonmicro.com>
-CC: <linux-kernel@vger.kernel.org>, <swarren@wwwdotorg.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V2] regulator: tps6586x: register regulator even if no init data
-Date: Wed, 29 Aug 2012 20:31:13 +0530
-Message-ID: <1346252473-30068-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	id S1753964Ab2H2PXh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 11:23:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10915 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753764Ab2H2PXf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 11:23:35 -0400
+Date: Wed, 29 Aug 2012 17:25:55 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, rostedt <rostedt@goodmis.org>,
+        dhowells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: lockdep trace from posix timers
+Message-ID: <20120829152555.GA27704@redhat.com>
+References: <1345478211.23018.69.camel@twins> <20120820161012.GC21400@redhat.com> <1345479590.23018.75.camel@twins> <20120820162302.GA22354@redhat.com> <20120821182751.GA11243@redhat.com> <20120821183408.GA11721@redhat.com> <20120824185619.GA16719@redhat.com> <1346171342.2296.4.camel@laptop> <20120828170121.GA30165@redhat.com> <1346174930.2296.13.camel@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346174930.2296.13.camel@laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register all TPS6586x regulators even if there is no regulator
-init data for platform i.e. without any user-supplied constraints.
+On 08/28, Peter Zijlstra wrote:
+>
+> Surely we can do this locklessly.. I'll go try harder still.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-Changes from V1:
-Stephen pointed out that the pointer in if should be same what it
-is used inside the if statements.
-Making the change to address this.
+I doubt...
 
- drivers/mfd/tps6586x.c                 |   16 ++++++++--------
- drivers/regulator/tps6586x-regulator.c |    3 +++
- 2 files changed, 11 insertions(+), 8 deletions(-)
+Even ignore work->func check, somehow you need to ensure that
+work->next == new can't be changed durung cmpxchg(..., new).
 
-diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
-index 380a3c8..4a91a62 100644
---- a/drivers/mfd/tps6586x.c
-+++ b/drivers/mfd/tps6586x.c
-@@ -396,19 +396,19 @@ static struct tps6586x_platform_data *tps6586x_parse_dt(struct i2c_client *clien
- 	for (i = 0, j = 0; i < num && j < count; i++) {
- 		struct regulator_init_data *reg_idata;
- 
--		if (!tps6586x_matches[i].init_data)
--			continue;
--
- 		reg_idata  = tps6586x_matches[i].init_data;
- 		devs[j].name = "tps6586x-regulator";
- 		devs[j].platform_data = tps6586x_matches[i].init_data;
- 		devs[j].id = (int)tps6586x_matches[i].driver_data;
--		if (devs[j].id == TPS6586X_ID_SYS)
--			sys_rail_name = reg_idata->constraints.name;
- 
--		if ((devs[j].id == TPS6586X_ID_LDO_5) ||
--			(devs[j].id == TPS6586X_ID_LDO_RTC))
--			reg_idata->supply_regulator = sys_rail_name;
-+		if (reg_idata) {
-+			if (devs[j].id == TPS6586X_ID_SYS)
-+				sys_rail_name = reg_idata->constraints.name;
-+
-+			if ((devs[j].id == TPS6586X_ID_LDO_5) ||
-+				(devs[j].id == TPS6586X_ID_LDO_RTC))
-+				reg_idata->supply_regulator = sys_rail_name;
-+		}
- 
- 		devs[j].of_node = tps6586x_matches[i].of_node;
- 		j++;
-diff --git a/drivers/regulator/tps6586x-regulator.c b/drivers/regulator/tps6586x-regulator.c
-index ce1e7cb..4508222 100644
---- a/drivers/regulator/tps6586x-regulator.c
-+++ b/drivers/regulator/tps6586x-regulator.c
-@@ -332,6 +332,9 @@ static int __devinit tps6586x_regulator_probe(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, rdev);
- 
-+	if (!pdev->dev.platform_data)
-+		return 0;
-+
- 	return tps6586x_regulator_set_slew_rate(pdev);
- }
- 
--- 
-1.7.1.1
+Anyway, if this is possible, can't you do this on top of 1-4
+I sent? There are simple, and solve the problems we discusssed.
+
+Off-topic. This is really minor, bur can't we simplify llist_add()?
+
+	static inline bool llist_add(struct llist_node *new, struct llist_head *head)
+	{
+		struct llist_node *old;
+
+		do {
+			old = ACCESS_ONCE(head->first);
+			new->next = old;
+		} while (cmpxchg(&head->first, old, new) != old);
+
+		return old == NULL;
+	}
+
+looks simpler and saves a couple of insns. The likely case should
+assume that cmpxchg() succeeds after the 1st attempt. If it fails,
+another LOAD from head->first should be very cheap.
+
+And note this ACCESS_ONCE(head->first) above. I think that (in theory)
+the current code needs it too. But only in theory, I guess.
+
+Oleg.
 
