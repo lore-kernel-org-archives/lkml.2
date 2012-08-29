@@ -1,143 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798Ab2H2Hnl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 03:43:41 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:43271 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751160Ab2H2Hnj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 03:43:39 -0400
-Subject: [PATCH RFC] x86/mce: Move MCE sysfs attributes out of the per-cpu
- location
-To: tony.luck@intel.com, andi@firstfloor.org, bp@amd64.org
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Cc: ananth@in.ibm.com, x86@kernel.org, linux-kernel@vger.kernel.org,
-        mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de,
-        linux-edac@vger.kernel.org
-Date: Wed, 29 Aug 2012 13:11:55 +0530
-Message-ID: <20120829074154.6755.98941.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+	id S1752917Ab2H2Hve (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 03:51:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17876 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751160Ab2H2Hvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 03:51:32 -0400
+Message-ID: <503DCABC.2010100@redhat.com>
+Date: Wed, 29 Aug 2012 15:54:36 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120210 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        kvm@vger.kernel.org, rusty@rustcorp.com.au, mst@redhat.com,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH 1/5] virtio-ring: move queue_index to vring_virtqueue
+References: <1346154857-12487-1-git-send-email-pbonzini@redhat.com> <1346154857-12487-2-git-send-email-pbonzini@redhat.com>
+In-Reply-To: <1346154857-12487-2-git-send-email-pbonzini@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-x-cbid: 12082907-0260-0000-0000-000001C34AEC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All the MCE attributes currently exported via sysfs appear under
-/sys/devices/system/machinecheck/machinecheck<n>/. Pretty much all of these
-are global in nature and not specific to a processor. We have around 7
-attributes duplicated across each processor and on multi-core multi-socket
-machines, this amounts to quite a large number. So, move these out under
-/sys/devices/system/machinecheck/ where they rightly belong.
+On 08/28/2012 07:54 PM, Paolo Bonzini wrote:
+> From: Jason Wang<jasowang@redhat.com>
+>
+> Instead of storing the queue index in transport-specific virtio structs,
+> this patch moves them to vring_virtqueue and introduces an helper to get
+> the value.  This lets drivers simplify their management and tracing of
+> virtqueues.
+>
+> Signed-off-by: Jason Wang<jasowang@redhat.com>
+> Signed-off-by: Paolo Bonzini<pbonzini@redhat.com>
+> ---
+> 	I fixed the problems in Jason's v5 (posted at
+> 	http://permalink.gmane.org/gmane.linux.kernel.virtualization/15910)
+> 	and switched from virtio_set_queue_index to a new argument of
+> 	vring_new_virtqueue.  This breaks at compile-time any virtio
+> 	transport that is not updated.
 
-Note: I'm not sure if it's ok to change sysfs entries and this does break
-userspace tools that depend on the current path for some of these attributes.
-So, they will need to be updated to use the new path. However, if we ever get
-to a point where cpu0 can be offlined, these tools will need to be updated
-anyway (as they mostly hardcode machinecheck0 currently)
-
-Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
----
- arch/x86/kernel/cpu/mcheck/mce.c |   46 ++++++++++++++++++--------------------
- 1 file changed, 22 insertions(+), 24 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index c311122..c8eeaa6 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -2205,17 +2205,26 @@ static struct dev_ext_attribute dev_attr_cmci_disabled = {
- 	&mce_cmci_disabled
- };
- 
--static struct device_attribute *mce_device_attrs[] = {
--	&dev_attr_tolerant.attr,
--	&dev_attr_check_interval.attr,
--	&dev_attr_trigger,
--	&dev_attr_monarch_timeout.attr,
--	&dev_attr_dont_log_ce.attr,
--	&dev_attr_ignore_ce.attr,
--	&dev_attr_cmci_disabled.attr,
-+static struct attribute *mce_device_attrs[] = {
-+	&dev_attr_tolerant.attr.attr,
-+	&dev_attr_check_interval.attr.attr,
-+	&dev_attr_trigger.attr,
-+	&dev_attr_monarch_timeout.attr.attr,
-+	&dev_attr_dont_log_ce.attr.attr,
-+	&dev_attr_ignore_ce.attr.attr,
-+	&dev_attr_cmci_disabled.attr.attr,
- 	NULL
- };
- 
-+static struct attribute_group mce_device_attr_group = {
-+	.attrs = mce_device_attrs,
-+};
-+
-+static const struct attribute_group *mce_device_attr_groups[] = {
-+	&mce_device_attr_group,
-+	NULL,
-+};
-+
- static cpumask_var_t mce_device_initialized;
- 
- static void mce_device_release(struct device *dev)
-@@ -2228,7 +2237,7 @@ static __cpuinit int mce_device_create(unsigned int cpu)
- {
- 	struct device *dev;
- 	int err;
--	int i, j;
-+	int i;
- 
- 	if (!mce_available(&boot_cpu_data))
- 		return -EIO;
-@@ -2244,26 +2253,18 @@ static __cpuinit int mce_device_create(unsigned int cpu)
- 	if (err)
- 		return err;
- 
--	for (i = 0; mce_device_attrs[i]; i++) {
--		err = device_create_file(dev, mce_device_attrs[i]);
-+	for (i = 0; i < banks; i++) {
-+		err = device_create_file(dev, &mce_banks[i].attr);
- 		if (err)
- 			goto error;
- 	}
--	for (j = 0; j < banks; j++) {
--		err = device_create_file(dev, &mce_banks[j].attr);
--		if (err)
--			goto error2;
--	}
- 	cpumask_set_cpu(cpu, mce_device_initialized);
- 	per_cpu(mce_device, cpu) = dev;
- 
- 	return 0;
--error2:
--	while (--j >= 0)
--		device_remove_file(dev, &mce_banks[j].attr);
- error:
- 	while (--i >= 0)
--		device_remove_file(dev, mce_device_attrs[i]);
-+		device_remove_file(dev, &mce_banks[i].attr);
- 
- 	device_unregister(dev);
- 
-@@ -2278,9 +2279,6 @@ static __cpuinit void mce_device_remove(unsigned int cpu)
- 	if (!cpumask_test_cpu(cpu, mce_device_initialized))
- 		return;
- 
--	for (i = 0; mce_device_attrs[i]; i++)
--		device_remove_file(dev, mce_device_attrs[i]);
--
- 	for (i = 0; i < banks; i++)
- 		device_remove_file(dev, &mce_banks[i].attr);
- 
-@@ -2397,7 +2395,7 @@ static __init int mcheck_init_device(void)
- 
- 	mce_init_banks();
- 
--	err = subsys_system_register(&mce_subsys, NULL);
-+	err = subsys_system_register(&mce_subsys, mce_device_attr_groups);
- 	if (err)
- 		return err;
- 
+Thanks Paolo. I'm fine with this patch.
+>
+>   drivers/lguest/lguest_device.c         |    2 +-
+>   drivers/remoteproc/remoteproc_virtio.c |    2 +-
+>   drivers/s390/kvm/kvm_virtio.c          |    2 +-
+>   drivers/virtio/virtio_mmio.c           |   12 ++++--------
+>   drivers/virtio/virtio_pci.c            |   13 +++++--------
+>   drivers/virtio/virtio_ring.c           |   14 +++++++++++++-
+>   include/linux/virtio.h                 |    2 ++
+>   include/linux/virtio_ring.h            |    3 ++-
+>   8 files changed, 29 insertions(+), 21 deletions(-)
+>
+> diff --git a/drivers/lguest/lguest_device.c b/drivers/lguest/lguest_device.c
+> index 9e8388e..ccb7dfb 100644
+> --- a/drivers/lguest/lguest_device.c
+> +++ b/drivers/lguest/lguest_device.c
+> @@ -296,7 +296,7 @@ static struct virtqueue *lg_find_vq(struct virtio_device *vdev,
+>   	 * to 'true': the host just a(nother) SMP CPU, so we only need inter-cpu
+>   	 * barriers.
+>   	 */
+> -	vq = vring_new_virtqueue(lvq->config.num, LGUEST_VRING_ALIGN, vdev,
+> +	vq = vring_new_virtqueue(index, lvq->config.num, LGUEST_VRING_ALIGN, vdev,
+>   				 true, lvq->pages, lg_notify, callback, name);
+>   	if (!vq) {
+>   		err = -ENOMEM;
+> diff --git a/drivers/remoteproc/remoteproc_virtio.c b/drivers/remoteproc/remoteproc_virtio.c
+> index 3541b44..343c194 100644
+> --- a/drivers/remoteproc/remoteproc_virtio.c
+> +++ b/drivers/remoteproc/remoteproc_virtio.c
+> @@ -103,7 +103,7 @@ static struct virtqueue *rp_find_vq(struct virtio_device *vdev,
+>   	 * Create the new vq, and tell virtio we're not interested in
+>   	 * the 'weak' smp barriers, since we're talking with a real device.
+>   	 */
+> -	vq = vring_new_virtqueue(len, rvring->align, vdev, false, addr,
+> +	vq = vring_new_virtqueue(id, len, rvring->align, vdev, false, addr,
+>   					rproc_virtio_notify, callback, name);
+>   	if (!vq) {
+>   		dev_err(dev, "vring_new_virtqueue %s failed\n", name);
+> diff --git a/drivers/s390/kvm/kvm_virtio.c b/drivers/s390/kvm/kvm_virtio.c
+> index 47cccd5..5565af2 100644
+> --- a/drivers/s390/kvm/kvm_virtio.c
+> +++ b/drivers/s390/kvm/kvm_virtio.c
+> @@ -198,7 +198,7 @@ static struct virtqueue *kvm_find_vq(struct virtio_device *vdev,
+>   	if (err)
+>   		goto out;
+>
+> -	vq = vring_new_virtqueue(config->num, KVM_S390_VIRTIO_RING_ALIGN,
+> +	vq = vring_new_virtqueue(index, config->num, KVM_S390_VIRTIO_RING_ALIGN,
+>   				 vdev, true, (void *) config->address,
+>   				 kvm_notify, callback, name);
+>   	if (!vq) {
+> diff --git a/drivers/virtio/virtio_mmio.c b/drivers/virtio/virtio_mmio.c
+> index 453db0c..008bf58 100644
+> --- a/drivers/virtio/virtio_mmio.c
+> +++ b/drivers/virtio/virtio_mmio.c
+> @@ -131,9 +131,6 @@ struct virtio_mmio_vq_info {
+>   	/* the number of entries in the queue */
+>   	unsigned int num;
+>
+> -	/* the index of the queue */
+> -	int queue_index;
+> -
+>   	/* the virtual address of the ring queue */
+>   	void *queue;
+>
+> @@ -225,11 +222,10 @@ static void vm_reset(struct virtio_device *vdev)
+>   static void vm_notify(struct virtqueue *vq)
+>   {
+>   	struct virtio_mmio_device *vm_dev = to_virtio_mmio_device(vq->vdev);
+> -	struct virtio_mmio_vq_info *info = vq->priv;
+>
+>   	/* We write the queue's selector into the notification register to
+>   	 * signal the other end */
+> -	writel(info->queue_index, vm_dev->base + VIRTIO_MMIO_QUEUE_NOTIFY);
+> +	writel(virtqueue_get_queue_index(vq), vm_dev->base + VIRTIO_MMIO_QUEUE_NOTIFY);
+>   }
+>
+>   /* Notify all virtqueues on an interrupt. */
+> @@ -270,6 +266,7 @@ static void vm_del_vq(struct virtqueue *vq)
+>   	struct virtio_mmio_device *vm_dev = to_virtio_mmio_device(vq->vdev);
+>   	struct virtio_mmio_vq_info *info = vq->priv;
+>   	unsigned long flags, size;
+> +	unsigned int index = virtqueue_get_queue_index(vq);
+>
+>   	spin_lock_irqsave(&vm_dev->lock, flags);
+>   	list_del(&info->node);
+> @@ -278,7 +275,7 @@ static void vm_del_vq(struct virtqueue *vq)
+>   	vring_del_virtqueue(vq);
+>
+>   	/* Select and deactivate the queue */
+> -	writel(info->queue_index, vm_dev->base + VIRTIO_MMIO_QUEUE_SEL);
+> +	writel(index, vm_dev->base + VIRTIO_MMIO_QUEUE_SEL);
+>   	writel(0, vm_dev->base + VIRTIO_MMIO_QUEUE_PFN);
+>
+>   	size = PAGE_ALIGN(vring_size(info->num, VIRTIO_MMIO_VRING_ALIGN));
+> @@ -324,7 +321,6 @@ static struct virtqueue *vm_setup_vq(struct virtio_device *vdev, unsigned index,
+>   		err = -ENOMEM;
+>   		goto error_kmalloc;
+>   	}
+> -	info->queue_index = index;
+>
+>   	/* Allocate pages for the queue - start with a queue as big as
+>   	 * possible (limited by maximum size allowed by device), drop down
+> @@ -356,7 +352,7 @@ static struct virtqueue *vm_setup_vq(struct virtio_device *vdev, unsigned index,
+>   			vm_dev->base + VIRTIO_MMIO_QUEUE_PFN);
+>
+>   	/* Create the vring */
+> -	vq = vring_new_virtqueue(info->num, VIRTIO_MMIO_VRING_ALIGN, vdev,
+> +	vq = vring_new_virtqueue(index, info->num, VIRTIO_MMIO_VRING_ALIGN, vdev,
+>   				 true, info->queue, vm_notify, callback, name);
+>   	if (!vq) {
+>   		err = -ENOMEM;
+> diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
+> index 2e03d41..d902464 100644
+> --- a/drivers/virtio/virtio_pci.c
+> +++ b/drivers/virtio/virtio_pci.c
+> @@ -79,9 +79,6 @@ struct virtio_pci_vq_info
+>   	/* the number of entries in the queue */
+>   	int num;
+>
+> -	/* the index of the queue */
+> -	int queue_index;
+> -
+>   	/* the virtual address of the ring queue */
+>   	void *queue;
+>
+> @@ -202,11 +199,11 @@ static void vp_reset(struct virtio_device *vdev)
+>   static void vp_notify(struct virtqueue *vq)
+>   {
+>   	struct virtio_pci_device *vp_dev = to_vp_device(vq->vdev);
+> -	struct virtio_pci_vq_info *info = vq->priv;
+>
+>   	/* we write the queue's selector into the notification register to
+>   	 * signal the other end */
+> -	iowrite16(info->queue_index, vp_dev->ioaddr + VIRTIO_PCI_QUEUE_NOTIFY);
+> +	iowrite16(virtqueue_get_queue_index(vq),
+> +		  vp_dev->ioaddr + VIRTIO_PCI_QUEUE_NOTIFY);
+>   }
+>
+>   /* Handle a configuration change: Tell driver if it wants to know. */
+> @@ -402,7 +399,6 @@ static struct virtqueue *setup_vq(struct virtio_device *vdev, unsigned index,
+>   	if (!info)
+>   		return ERR_PTR(-ENOMEM);
+>
+> -	info->queue_index = index;
+>   	info->num = num;
+>   	info->msix_vector = msix_vec;
+>
+> @@ -418,7 +414,7 @@ static struct virtqueue *setup_vq(struct virtio_device *vdev, unsigned index,
+>   		  vp_dev->ioaddr + VIRTIO_PCI_QUEUE_PFN);
+>
+>   	/* create the vring */
+> -	vq = vring_new_virtqueue(info->num, VIRTIO_PCI_VRING_ALIGN, vdev,
+> +	vq = vring_new_virtqueue(index, info->num, VIRTIO_PCI_VRING_ALIGN, vdev,
+>   				 true, info->queue, vp_notify, callback, name);
+>   	if (!vq) {
+>   		err = -ENOMEM;
+> @@ -467,7 +463,8 @@ static void vp_del_vq(struct virtqueue *vq)
+>   	list_del(&info->node);
+>   	spin_unlock_irqrestore(&vp_dev->lock, flags);
+>
+> -	iowrite16(info->queue_index, vp_dev->ioaddr + VIRTIO_PCI_QUEUE_SEL);
+> +	iowrite16(virtqueue_get_queue_index(vq),
+> +		vp_dev->ioaddr + VIRTIO_PCI_QUEUE_SEL);
+>
+>   	if (vp_dev->msix_enabled) {
+>   		iowrite16(VIRTIO_MSI_NO_VECTOR,
+> diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+> index 5aa43c3..e639584 100644
+> --- a/drivers/virtio/virtio_ring.c
+> +++ b/drivers/virtio/virtio_ring.c
+> @@ -106,6 +106,9 @@ struct vring_virtqueue
+>   	/* How to notify other side. FIXME: commonalize hcalls! */
+>   	void (*notify)(struct virtqueue *vq);
+>
+> +	/* Index of the queue */
+> +	int queue_index;
+> +
+>   #ifdef DEBUG
+>   	/* They're supposed to lock for us. */
+>   	unsigned int in_use;
+> @@ -171,6 +174,13 @@ static int vring_add_indirect(struct vring_virtqueue *vq,
+>   	return head;
+>   }
+>
+> +int virtqueue_get_queue_index(struct virtqueue *_vq)
+> +{
+> +	struct vring_virtqueue *vq = to_vvq(_vq);
+> +	return vq->queue_index;
+> +}
+> +EXPORT_SYMBOL_GPL(virtqueue_get_queue_index);
+> +
+>   /**
+>    * virtqueue_add_buf - expose buffer to other end
+>    * @vq: the struct virtqueue we're talking about.
+> @@ -616,7 +626,8 @@ irqreturn_t vring_interrupt(int irq, void *_vq)
+>   }
+>   EXPORT_SYMBOL_GPL(vring_interrupt);
+>
+> -struct virtqueue *vring_new_virtqueue(unsigned int num,
+> +struct virtqueue *vring_new_virtqueue(unsigned int index,
+> +				      unsigned int num,
+>   				      unsigned int vring_align,
+>   				      struct virtio_device *vdev,
+>   				      bool weak_barriers,
+> @@ -647,6 +658,7 @@ struct virtqueue *vring_new_virtqueue(unsigned int num,
+>   	vq->broken = false;
+>   	vq->last_used_idx = 0;
+>   	vq->num_added = 0;
+> +	vq->queue_index = index;
+>   	list_add_tail(&vq->vq.list,&vdev->vqs);
+>   #ifdef DEBUG
+>   	vq->in_use = false;
+> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
+> index a1ba8bb..533b115 100644
+> --- a/include/linux/virtio.h
+> +++ b/include/linux/virtio.h
+> @@ -50,6 +50,8 @@ void *virtqueue_detach_unused_buf(struct virtqueue *vq);
+>
+>   unsigned int virtqueue_get_vring_size(struct virtqueue *vq);
+>
+> +int virtqueue_get_queue_index(struct virtqueue *vq);
+> +
+>   /**
+>    * virtio_device - representation of a device using virtio
+>    * @index: unique position on the virtio bus
+> diff --git a/include/linux/virtio_ring.h b/include/linux/virtio_ring.h
+> index e338730..c2d793a 100644
+> --- a/include/linux/virtio_ring.h
+> +++ b/include/linux/virtio_ring.h
+> @@ -165,7 +165,8 @@ static inline int vring_need_event(__u16 event_idx, __u16 new_idx, __u16 old)
+>   struct virtio_device;
+>   struct virtqueue;
+>
+> -struct virtqueue *vring_new_virtqueue(unsigned int num,
+> +struct virtqueue *vring_new_virtqueue(unsigned int index,
+> +				      unsigned int num,
+>   				      unsigned int vring_align,
+>   				      struct virtio_device *vdev,
+>   				      bool weak_barriers,
 
