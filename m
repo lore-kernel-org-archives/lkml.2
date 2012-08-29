@@ -1,65 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753641Ab2H2RH0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 13:07:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12711 "EHLO mx1.redhat.com"
+	id S1754013Ab2H2RIN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 13:08:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15735 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753418Ab2H2RHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 13:07:24 -0400
-Date: Wed, 29 Aug 2012 13:07:11 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: Mikulas Patocka <mpatocka@redhat.com>, linux-bcache@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com, tj@kernel.org,
-        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH v7 9/9] block: Avoid deadlocks with bio allocation by
- stacking drivers
-Message-ID: <20120829170711.GC12504@redhat.com>
-References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
- <1346175456-1572-10-git-send-email-koverstreet@google.com>
- <Pine.LNX.4.64.1208291210180.774@file.rdu.redhat.com>
- <20120829165006.GB20312@google.com>
+	id S1753324Ab2H2RIG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 13:08:06 -0400
+Date: Wed, 29 Aug 2012 13:07:53 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Daniel Mack <zonque@gmail.com>
+Cc: Takashi Iwai <tiwai@suse.de>, Bruno Wolff III <bruno@wolff.to>,
+        Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Logitech USB headset not working in 3.6-rc3
+Message-ID: <20120829170753.GA1895@zod.bos.redhat.com>
+References: <5038007E.5060505@gmail.com>
+ <20120825111749.GA17048@wolff.to>
+ <20120825115423.GA14327@wolff.to>
+ <5038BEEB.6090303@gmail.com>
+ <20120825120740.GA19539@wolff.to>
+ <5038C186.7000107@gmail.com>
+ <20120825121758.GF20043@zod.bos.redhat.com>
+ <503DFC61.3000104@gmail.com>
+ <s5hsjb56d40.wl%tiwai@suse.de>
+ <503E19F2.3080302@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120829165006.GB20312@google.com>
+In-Reply-To: <503E19F2.3080302@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 29, 2012 at 09:50:06AM -0700, Kent Overstreet wrote:
-
-[..]
-> > The problem is that majority of device mapper code assumes that if we 
-> > submit a bio, that bio will be finished in a finite time. The commit 
-> > d89d87965dcbe6fe4f96a2a7e8421b3a75f634d1 in 2.6.22 broke this assumption.
+On Wed, Aug 29, 2012 at 03:32:34PM +0200, Daniel Mack wrote:
+> On 29.08.2012 15:29, Takashi Iwai wrote:
+> > At Wed, 29 Aug 2012 13:26:25 +0200,
+> > Daniel Mack wrote:
+> >>
+> >> [1  <text/plain; ISO-8859-1 (7bit)>]
+> >> On 25.08.2012 14:17, Josh Boyer wrote:
+> >>> On Sat, Aug 25, 2012 at 02:13:58PM +0200, Daniel Mack wrote:
+> >>>> On 25.08.2012 14:07, Bruno Wolff III wrote:
+> >>>>> On Sat, Aug 25, 2012 at 14:02:51 +0200,
+> >>>>>    Daniel Mack <zonque@gmail.com> wrote:
+> >>>>>>
+> >>>>>> Can you revert commit e9ba389c5 ("ALSA: usb-audio: Fix
+> >>>>>> scheduling-while-atomic bug in PCM capture stream") and see if that
+> >>>>>
+> >>>>> I can try that, but it takes a long time to build a new kernel on my 
+> >>>>> old hardware.
+> >>>>>
+> >>>>>> helps? If not, can you summarize again which kernels still work for you
+> >>>>>> and which don't?
+> >>>>>
+> >>>>> The latest kernel that works is 3.6.0-0.rc2.git1.2.fc18. The earliest that 
+> >>>>> doesn't work is 3.6.0-0.rc2.git2.1.fc18.
+> >>>>>
+> >>>>
+> >>>> The report you sent doesn't look like it could be caused by e9ba389c5.
+> >>>> It fixes a kernel Ooops. But as it is the only relevant patch in that
+> >>>> area, it would be interesting if reverting it fixes anything.
+> >>>
+> >>> Yep, agreed.  If this revert kernel doesn't work, we're likely down to a
+> >>> git bisect, Bruno.
+> >>>
+> >>>> Btw - thanks a lot for testing -rc kernels, much appreciated!
+> >>>
+> >>> Indeed!
+> >>
+> >> Could you please try this patch on top of Takashi's? Thanks again!
+> >>
+> >>
+> >> Daniel
+> >>
+> >> [2 0001-ALSA-snd-usb-Fix-URB-cancellation-at-stream-start.patch <text/x-patch (7bit)>]
+> >> >From 6617bb2463ae3fad21390b59cc2a71f96b9e9ca8 Mon Sep 17 00:00:00 2001
+> >> From: Daniel Mack <zonque@gmail.com>
+> >> Date: Wed, 29 Aug 2012 13:17:05 +0200
+> >> Subject: [PATCH] ALSA: snd-usb: Fix URB cancellation at stream start
+> >>
+> >> Commit e9ba389c5 ("ALSA: usb-audio: Fix scheduling-while-atomic bug in
+> >> PCM capture stream") fixed a scheduling-while-atomic bug that happened
+> >> when snd_usb_endpoint_start was called from the trigger callback, which
+> >> is an atmic context. However, the patch breaks the idea of the endpoints
+> >> reference counting, which is the reason why the driver has been
+> >> refactored lately.
+> >>
+> >> Revert that commit and let snd_usb_endpoint_start() take care of the URB
+> >> cancellation again. As this function is called from both atomic and
+> >> non-atomic context, add a flag to denote whether the function may sleep.
+> >>
+> >> Signed-off-by: Daniel Mack <zonque@gmail.com>
+> >> Cc: stable@kernel.org [3.5+]
+> >> ---
+> >>  sound/usb/endpoint.c | 10 ++++++++--
+> >>  sound/usb/endpoint.h |  2 +-
+> >>  sound/usb/pcm.c      | 13 +++++--------
+> >>  3 files changed, 14 insertions(+), 11 deletions(-)
+> >>
+> >> diff --git a/sound/usb/endpoint.c b/sound/usb/endpoint.c
+> >> index c411812..678456c 100644
+> >> --- a/sound/usb/endpoint.c
+> >> +++ b/sound/usb/endpoint.c
+> >> @@ -799,7 +799,9 @@ int snd_usb_endpoint_set_params(struct snd_usb_endpoint *ep,
+> >>  /**
+> >>   * snd_usb_endpoint_start: start an snd_usb_endpoint
+> >>   *
+> >> - * @ep: the endpoint to start
+> >> + * @ep:		the endpoint to start
+> >> + * @can_sleep:	flag indicating whether the operation is executed in
+> >> + * 		non-atomic context
+> >>   *
+> >>   * A call to this function will increment the use count of the endpoint.
+> >>   * In case it is not already running, the URBs for this endpoint will be
+> >> @@ -809,7 +811,7 @@ int snd_usb_endpoint_set_params(struct snd_usb_endpoint *ep,
+> >>   *
+> >>   * Returns an error if the URB submission failed, 0 in all other cases.
+> >>   */
+> >> -int snd_usb_endpoint_start(struct snd_usb_endpoint *ep)
+> >> +int snd_usb_endpoint_start(struct snd_usb_endpoint *ep, int can_sleep)
+> >>  {
+> >>  	int err;
+> >>  	unsigned int i;
+> >> @@ -821,6 +823,10 @@ int snd_usb_endpoint_start(struct snd_usb_endpoint *ep)
+> >>  	if (++ep->use_count != 1)
+> >>  		return 0;
+> >>  
+> >> +	/* just to be sure */
+> >> +	deactivate_urbs(ep, 0, can_sleep);
+> >> +	wait_clear_urbs(ep);
 > > 
-> > I suggest - instead of writing workarounds for this current->bio_list 
-> > misbehavior, why not remove current->bio_list at all? We could revert 
-> > d89d87965dcbe6fe4f96a2a7e8421b3a75f634d1, allocate a per-device workqueue, 
-> > test stack usage in generic_make_request, and if it is too high (more than 
-> > half of the stack used, or so), put the bio to the target device's 
-> > blockqueue.
-> > 
-> > That could be simpler than allocating per-bioset workqueue and it also 
-> > solves more problems (possible deadlocks in dm).
+> > It'd be safer to protect the call of wait_clear_urbs() when
+> > can_sleep=0.
 > 
-> It certainly would be simpler, but honestly the potential for
-> performance regressions scares me (and bcache at least is used on fast
-> enough devices where it's going to matter). Also it's not so much the
-> performance overhead - we can just measure that - it's that if we're
-> just using the workqueue code the scheduler's getting involved and we
-> can't just measure what the effects of that are going to be in
-> production.
+> Right. New patch attached.
 
-Are workqueues not getting involved already in your solution of punting
-to rescuer thread. In the proposal above also, workers get involved
-only if stack depth is too deep. So for normal stack usage performance
-should not be impacted.
+I'll try and get another kernel built with this later today.  I'm at
+Plumbers so it might have to wait a bit.
 
-Performance aside, punting submission to per device worker in case of deep
-stack usage sounds cleaner solution to me.
+Bruno, if you're comfortable adding the patch to the Fedora 18 kernel
+via a spec file, you should be able to do a scratch build by passing an
+SRPM.  If you get tired of waiting for me, give it a shot.
 
-Thanks
-Vivek
+josh
