@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648Ab2H2Xc0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 19:32:26 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62670 "EHLO
+	id S1754757Ab2H2XcW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 19:32:22 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:35263 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754672Ab2H2Xbh (ORCPT
+	with ESMTP id S1754669Ab2H2Xbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 19:31:37 -0400
+	Wed, 29 Aug 2012 19:31:35 -0400
 From: Mathias Krause <minipli@googlemail.com>
 To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
 Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
         Mathias Krause <minipli@googlemail.com>
-Subject: [PATCH 4/8] KVM: x86: constify emulate_ops
-Date: Thu, 30 Aug 2012 01:30:16 +0200
-Message-Id: <1346283020-22385-5-git-send-email-minipli@googlemail.com>
+Subject: [PATCH 3/8] KVM: x86: mark opcode tables const
+Date: Thu, 30 Aug 2012 01:30:15 +0200
+Message-Id: <1346283020-22385-4-git-send-email-minipli@googlemail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1346283020-22385-1-git-send-email-minipli@googlemail.com>
 References: <1346283020-22385-1-git-send-email-minipli@googlemail.com>
@@ -21,144 +21,160 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We never change emulate_ops[] at runtime so it should be r/o.
+The opcode tables never change at runtime, therefor mark them const.
 
 Signed-off-by: Mathias Krause <minipli@googlemail.com>
 ---
- arch/x86/include/asm/kvm_emulate.h |    2 +-
- arch/x86/kvm/emulate.c             |   22 +++++++++++-----------
- arch/x86/kvm/x86.c                 |    2 +-
- 3 files changed, 13 insertions(+), 13 deletions(-)
+ arch/x86/kvm/emulate.c |   40 ++++++++++++++++++++--------------------
+ 1 file changed, 20 insertions(+), 20 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_emulate.h b/arch/x86/include/asm/kvm_emulate.h
-index 282aee5..b5bb73a 100644
---- a/arch/x86/include/asm/kvm_emulate.h
-+++ b/arch/x86/include/asm/kvm_emulate.h
-@@ -250,7 +250,7 @@ struct read_cache {
- };
- 
- struct x86_emulate_ctxt {
--	struct x86_emulate_ops *ops;
-+	const struct x86_emulate_ops *ops;
- 
- 	/* Register state before/after emulation. */
- 	unsigned long eflags;
 diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index fd06f9d..663e958 100644
+index 5a0fee1..fd06f9d 100644
 --- a/arch/x86/kvm/emulate.c
 +++ b/arch/x86/kvm/emulate.c
-@@ -1325,7 +1325,7 @@ static int read_interrupt_descriptor(struct x86_emulate_ctxt *ctxt,
- static void get_descriptor_table_ptr(struct x86_emulate_ctxt *ctxt,
- 				     u16 selector, struct desc_ptr *dt)
- {
--	struct x86_emulate_ops *ops = ctxt->ops;
-+	const struct x86_emulate_ops *ops = ctxt->ops;
+@@ -161,9 +161,9 @@ struct opcode {
+ 	u64 intercept : 8;
+ 	union {
+ 		int (*execute)(struct x86_emulate_ctxt *ctxt);
+-		struct opcode *group;
+-		struct group_dual *gdual;
+-		struct gprefix *gprefix;
++		const struct opcode *group;
++		const struct group_dual *gdual;
++		const struct gprefix *gprefix;
+ 	} u;
+ 	int (*check_perm)(struct x86_emulate_ctxt *ctxt);
+ };
+@@ -3574,13 +3574,13 @@ static int check_perm_out(struct x86_emulate_ctxt *ctxt)
+ 		I2bv(((_f) | DstReg | SrcMem | ModRM) & ~Lock, _e),	\
+ 		I2bv(((_f) & ~Lock) | DstAcc | SrcImm, _e)
  
- 	if (selector & 1 << 2) {
- 		struct desc_struct desc;
-@@ -1747,7 +1747,7 @@ static int em_popa(struct x86_emulate_ctxt *ctxt)
+-static struct opcode group7_rm1[] = {
++static const struct opcode group7_rm1[] = {
+ 	DI(SrcNone | Priv, monitor),
+ 	DI(SrcNone | Priv, mwait),
+ 	N, N, N, N, N, N,
+ };
  
- static int __emulate_int_real(struct x86_emulate_ctxt *ctxt, int irq)
- {
--	struct x86_emulate_ops *ops = ctxt->ops;
-+	const struct x86_emulate_ops *ops = ctxt->ops;
- 	int rc;
- 	struct desc_ptr dt;
- 	gva_t cs_addr;
-@@ -2129,7 +2129,7 @@ static bool vendor_intel(struct x86_emulate_ctxt *ctxt)
+-static struct opcode group7_rm3[] = {
++static const struct opcode group7_rm3[] = {
+ 	DIP(SrcNone | Prot | Priv,		vmrun,		check_svme_pa),
+ 	II(SrcNone  | Prot | VendorSpecific,	em_vmmcall,	vmmcall),
+ 	DIP(SrcNone | Prot | Priv,		vmload,		check_svme_pa),
+@@ -3591,13 +3591,13 @@ static struct opcode group7_rm3[] = {
+ 	DIP(SrcNone | Prot | Priv,		invlpga,	check_svme),
+ };
  
- static bool em_syscall_is_enabled(struct x86_emulate_ctxt *ctxt)
- {
--	struct x86_emulate_ops *ops = ctxt->ops;
-+	const struct x86_emulate_ops *ops = ctxt->ops;
- 	u32 eax, ebx, ecx, edx;
+-static struct opcode group7_rm7[] = {
++static const struct opcode group7_rm7[] = {
+ 	N,
+ 	DIP(SrcNone, rdtscp, check_rdtsc),
+ 	N, N, N, N, N, N,
+ };
  
- 	/*
-@@ -2173,7 +2173,7 @@ static bool em_syscall_is_enabled(struct x86_emulate_ctxt *ctxt)
+-static struct opcode group1[] = {
++static const struct opcode group1[] = {
+ 	I(Lock, em_add),
+ 	I(Lock | PageTable, em_or),
+ 	I(Lock, em_adc),
+@@ -3608,11 +3608,11 @@ static struct opcode group1[] = {
+ 	I(0, em_cmp),
+ };
  
- static int em_syscall(struct x86_emulate_ctxt *ctxt)
- {
--	struct x86_emulate_ops *ops = ctxt->ops;
-+	const struct x86_emulate_ops *ops = ctxt->ops;
- 	struct desc_struct cs, ss;
- 	u64 msr_data;
- 	u16 cs_sel, ss_sel;
-@@ -2231,7 +2231,7 @@ static int em_syscall(struct x86_emulate_ctxt *ctxt)
+-static struct opcode group1A[] = {
++static const struct opcode group1A[] = {
+ 	I(DstMem | SrcNone | Mov | Stack, em_pop), N, N, N, N, N, N, N,
+ };
  
- static int em_sysenter(struct x86_emulate_ctxt *ctxt)
- {
--	struct x86_emulate_ops *ops = ctxt->ops;
-+	const struct x86_emulate_ops *ops = ctxt->ops;
- 	struct desc_struct cs, ss;
- 	u64 msr_data;
- 	u16 cs_sel, ss_sel;
-@@ -2294,7 +2294,7 @@ static int em_sysenter(struct x86_emulate_ctxt *ctxt)
+-static struct opcode group3[] = {
++static const struct opcode group3[] = {
+ 	I(DstMem | SrcImm, em_test),
+ 	I(DstMem | SrcImm, em_test),
+ 	I(DstMem | SrcNone | Lock, em_not),
+@@ -3623,13 +3623,13 @@ static struct opcode group3[] = {
+ 	I(SrcMem, em_idiv_ex),
+ };
  
- static int em_sysexit(struct x86_emulate_ctxt *ctxt)
- {
--	struct x86_emulate_ops *ops = ctxt->ops;
-+	const struct x86_emulate_ops *ops = ctxt->ops;
- 	struct desc_struct cs, ss;
- 	u64 msr_data;
- 	int usermode;
-@@ -2357,7 +2357,7 @@ static bool emulator_bad_iopl(struct x86_emulate_ctxt *ctxt)
- static bool emulator_io_port_access_allowed(struct x86_emulate_ctxt *ctxt,
- 					    u16 port, u16 len)
- {
--	struct x86_emulate_ops *ops = ctxt->ops;
-+	const struct x86_emulate_ops *ops = ctxt->ops;
- 	struct desc_struct tr_seg;
- 	u32 base3;
- 	int r;
-@@ -2476,7 +2476,7 @@ static int task_switch_16(struct x86_emulate_ctxt *ctxt,
- 			  u16 tss_selector, u16 old_tss_sel,
- 			  ulong old_tss_base, struct desc_struct *new_desc)
- {
--	struct x86_emulate_ops *ops = ctxt->ops;
-+	const struct x86_emulate_ops *ops = ctxt->ops;
- 	struct tss_segment_16 tss_seg;
- 	int ret;
- 	u32 new_tss_base = get_desc_base(new_desc);
-@@ -2623,7 +2623,7 @@ static int task_switch_32(struct x86_emulate_ctxt *ctxt,
- 			  u16 tss_selector, u16 old_tss_sel,
- 			  ulong old_tss_base, struct desc_struct *new_desc)
- {
--	struct x86_emulate_ops *ops = ctxt->ops;
-+	const struct x86_emulate_ops *ops = ctxt->ops;
- 	struct tss_segment_32 tss_seg;
- 	int ret;
- 	u32 new_tss_base = get_desc_base(new_desc);
-@@ -2667,7 +2667,7 @@ static int emulator_do_task_switch(struct x86_emulate_ctxt *ctxt,
- 				   u16 tss_selector, int idt_index, int reason,
- 				   bool has_error_code, u32 error_code)
- {
--	struct x86_emulate_ops *ops = ctxt->ops;
-+	const struct x86_emulate_ops *ops = ctxt->ops;
- 	struct desc_struct curr_tss_desc, next_tss_desc;
- 	int ret;
- 	u16 old_tss_sel = get_segment_selector(ctxt, VCPU_SREG_TR);
-@@ -4339,7 +4339,7 @@ static void fetch_possible_mmx_operand(struct x86_emulate_ctxt *ctxt,
+-static struct opcode group4[] = {
++static const struct opcode group4[] = {
+ 	I(ByteOp | DstMem | SrcNone | Lock, em_grp45),
+ 	I(ByteOp | DstMem | SrcNone | Lock, em_grp45),
+ 	N, N, N, N, N, N,
+ };
  
- int x86_emulate_insn(struct x86_emulate_ctxt *ctxt)
- {
--	struct x86_emulate_ops *ops = ctxt->ops;
-+	const struct x86_emulate_ops *ops = ctxt->ops;
- 	int rc = X86EMUL_CONTINUE;
- 	int saved_dst_type = ctxt->dst.type;
+-static struct opcode group5[] = {
++static const struct opcode group5[] = {
+ 	I(DstMem | SrcNone | Lock,		em_grp45),
+ 	I(DstMem | SrcNone | Lock,		em_grp45),
+ 	I(SrcMem | Stack,			em_grp45),
+@@ -3639,7 +3639,7 @@ static struct opcode group5[] = {
+ 	I(SrcMem | Stack,			em_grp45), N,
+ };
  
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index e00050c..f8b0148 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -4323,7 +4323,7 @@ static void emulator_write_gpr(struct x86_emulate_ctxt *ctxt, unsigned reg, ulon
- 	kvm_register_write(emul_to_vcpu(ctxt), reg, val);
- }
+-static struct opcode group6[] = {
++static const struct opcode group6[] = {
+ 	DI(Prot,	sldt),
+ 	DI(Prot,	str),
+ 	II(Prot | Priv | SrcMem16, em_lldt, lldt),
+@@ -3647,7 +3647,7 @@ static struct opcode group6[] = {
+ 	N, N, N, N,
+ };
  
--static struct x86_emulate_ops emulate_ops = {
-+static const struct x86_emulate_ops emulate_ops = {
- 	.read_gpr            = emulator_read_gpr,
- 	.write_gpr           = emulator_write_gpr,
- 	.read_std            = kvm_read_guest_virt_system,
+-static struct group_dual group7 = { {
++static const struct group_dual group7 = { {
+ 	II(Mov | DstMem | Priv,			em_sgdt, sgdt),
+ 	II(Mov | DstMem | Priv,			em_sidt, sidt),
+ 	II(SrcMem | Priv,			em_lgdt, lgdt),
+@@ -3664,7 +3664,7 @@ static struct group_dual group7 = { {
+ 	EXT(0, group7_rm7),
+ } };
+ 
+-static struct opcode group8[] = {
++static const struct opcode group8[] = {
+ 	N, N, N, N,
+ 	I(DstMem | SrcImmByte,				em_bt),
+ 	I(DstMem | SrcImmByte | Lock | PageTable,	em_bts),
+@@ -3672,26 +3672,26 @@ static struct opcode group8[] = {
+ 	I(DstMem | SrcImmByte | Lock | PageTable,	em_btc),
+ };
+ 
+-static struct group_dual group9 = { {
++static const struct group_dual group9 = { {
+ 	N, I(DstMem64 | Lock | PageTable, em_cmpxchg8b), N, N, N, N, N, N,
+ }, {
+ 	N, N, N, N, N, N, N, N,
+ } };
+ 
+-static struct opcode group11[] = {
++static const struct opcode group11[] = {
+ 	I(DstMem | SrcImm | Mov | PageTable, em_mov),
+ 	X7(D(Undefined)),
+ };
+ 
+-static struct gprefix pfx_0f_6f_0f_7f = {
++static const struct gprefix pfx_0f_6f_0f_7f = {
+ 	I(Mmx, em_mov), I(Sse | Aligned, em_mov), N, I(Sse | Unaligned, em_mov),
+ };
+ 
+-static struct gprefix pfx_vmovntpx = {
++static const struct gprefix pfx_vmovntpx = {
+ 	I(0, em_mov), N, N, N,
+ };
+ 
+-static struct opcode opcode_table[256] = {
++static const struct opcode opcode_table[256] = {
+ 	/* 0x00 - 0x07 */
+ 	I6ALU(Lock, em_add),
+ 	I(ImplicitOps | Stack | No64 | Src2ES, em_push_sreg),
+@@ -3808,7 +3808,7 @@ static struct opcode opcode_table[256] = {
+ 	D(ImplicitOps), D(ImplicitOps), G(0, group4), G(0, group5),
+ };
+ 
+-static struct opcode twobyte_table[256] = {
++static const struct opcode twobyte_table[256] = {
+ 	/* 0x00 - 0x0F */
+ 	G(0, group6), GD(0, &group7), N, N,
+ 	N, I(ImplicitOps | VendorSpecific, em_syscall),
 -- 
 1.7.10.4
 
