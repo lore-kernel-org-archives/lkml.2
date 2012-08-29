@@ -1,96 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751866Ab2H2GAk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 02:00:40 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:52812 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751135Ab2H2GAi (ORCPT
+	id S1752046Ab2H2GDU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 02:03:20 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:45757 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750845Ab2H2GDT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 02:00:38 -0400
-From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
-Subject: [PATCH] [perf] Remove the node from rblist in strlist__remove
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, ananth@in.ibm.com,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Date: Wed, 29 Aug 2012 11:30:07 +0530
-Message-ID: <20120829055840.7802.1459.stgit@suzukikp.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	Wed, 29 Aug 2012 02:03:19 -0400
+Message-ID: <503DA954.80009@ce.jp.nec.com>
+Date: Wed, 29 Aug 2012 14:32:04 +0900
+From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Dave Chinner <david@fromorbit.com>
+CC: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi.kleen@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Rik van Riel <riel@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] HWPOISON: prevent inode cache removal to keep AS_HWPOISON
+ sticky
+References: <20120826222607.GD19235@dastard> <1346105106-26033-1-git-send-email-n-horiguchi@ah.jp.nec.com> <20120829025941.GD13691@dastard>
+In-Reply-To: <20120829025941.GD13691@dastard>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-x-cbid: 12082906-8256-0000-0000-000003EFE455
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following commit:
+On 08/29/12 11:59, Dave Chinner wrote:
+> On Mon, Aug 27, 2012 at 06:05:06PM -0400, Naoya Horiguchi wrote:
+>> And yes, I understand it's ideal, but many applications choose not to
+>> do that for performance reason.
+>> So I think it's helpful if we can surely report to such applications.
 
-author	David Ahern <dsahern@gmail.com>
-	Tue, 31 Jul 2012 04:31:33 +0000 (22:31 -0600)
-committer	Arnaldo Carvalho de Melo <acme@redhat.com>
-	Fri, 3 Aug 2012 13:39:51 +0000 (10:39 -0300)
-commit	ee8dd3ca43f151d9fbe1edeef68fb8a77eb9f047
+I suspect "performance vs. integrity" is not a correct
+description of the problem.
 
-causes a double free during a probe deletion as the node is
-never removed from the list via strlist__remove(), even though
-it gets 'deleted' (read free()'d). This causes a double
-free when we do strlist__delete() as the node is already deleted
-but present in the rblist.
+> If performance is chosen over data integrity, we are under no
+> obligation to keep the error around indefinitely.  Fundamentally,
+> ensuring a write completes successfully is the reponsibility of the
+> application, not the kernel. There are so many different filesytem
+> and storage errors that can be lost right now because data is not
+> fsync()d, adding another one to them really doesn't change anything.
+> IOWs, a memory error is no different to a disk failing or the system
+> crashing when it comes to data integrity. If you care, you use
+> fsync().
 
-[suzukikp@suzukikp perf]$ sudo ./perf probe -a do_fork
-Added new event:
-  probe:do_fork        (on do_fork)
+I agree that applications should fsync() or O_SYNC
+when it wants to make sure the written data in on disk.
 
-You can now use it in all perf tools, such as:
+AFAIU, what Naoya is going to address is the case where
+fsync() is not necessarily needed.
 
-	perf record -e probe:do_fork -aR sleep 1
+For example, if someone do:
+  $ patch -p1 < ../a.patch
+  $ tar cf . > ../a.tar
 
-[suzukikp@suzukikp perf]$ sudo ./perf probe -d do_fork
-Removed event: probe:do_fork
-*** glibc detected *** ./perf: double free or corruption (fasttop): 0x000000000133d600 ***
-======= Backtrace: =========
-/lib64/libc.so.6[0x38eec7dda6]
-./perf(rblist__delete+0x5c)[0x47d3dc]
-./perf(del_perf_probe_events+0xb6)[0x47b826]
-./perf(cmd_probe+0x471)[0x42c8d1]
-./perf[0x4150b3]
-./perf(main+0x501)[0x4148e1]
-/lib64/libc.so.6(__libc_start_main+0xed)[0x38eec2169d]
-./perf[0x414a61]
+and disk failure occurred between "patch" and "tar",
+"tar" will either see uptodate data or I/O error.
+OTOH, if the failure was detected on dirty pagecache, the current memory
+failure handler invalidates the dirty page and the "tar" command will
+re-read old contents from disk without error.
 
+(Well, the failures above are permanent failures. IOW, the current
+ memory failure handler turns permanent failure into transient error,
+ which is often more difficult to handle, I think.)
 
-Make sure we remove the node from the rblist before we delete the
-node. The rblist__remove_node() will invoke rblist->node_delete,
-which  will take care of deleting the node with the suitable function
-provided by the user.
+Naoya's patch will keep the failure information and allows the reader
+to get I/O error when it reads from broken pagecache.
 
-Reported-by: Ananth N. Mavinakayanahalli <ananth@in.ibm.com>
-Signed-off-by: Suzuki K. Poulose <suzuki@in.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
----
-
- tools/perf/util/strlist.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/tools/perf/util/strlist.c b/tools/perf/util/strlist.c
-index 95856ff..155d8b7 100644
---- a/tools/perf/util/strlist.c
-+++ b/tools/perf/util/strlist.c
-@@ -93,7 +93,7 @@ out:
- 
- void strlist__remove(struct strlist *slist, struct str_node *snode)
- {
--	str_node__delete(snode, slist->dupstr);
-+	rblist__remove_node(&slist->rblist, &snode->rb_node);
- }
- 
- struct str_node *strlist__find(struct strlist *slist, const char *entry)
-
+-- 
+Jun'ichi Nomura, NEC Corporation
