@@ -1,100 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752605Ab2H2FRW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 01:17:22 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:64134 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751176Ab2H2FRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 01:17:20 -0400
-X-IronPort-AV: E=Sophos;i="4.80,332,1344182400"; 
-   d="scan'208";a="5744214"
-Message-ID: <503DA727.1030801@cn.fujitsu.com>
-Date: Wed, 29 Aug 2012 13:22:47 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+	id S1752674Ab2H2FR7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 01:17:59 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:5669 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750986Ab2H2FR4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 01:17:56 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Tue, 28 Aug 2012 22:17:56 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "ccross@android.com" <ccross@android.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "balbi@ti.com" <balbi@ti.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
-        Blue Swirl <blauwirbel@gmail.com>, Eric Blake <eblake@redhat.com>,
-        Andrew Jones <drjones@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [PATCH v10 6/6] allower the user to disable pv event support
-References: <503DA63E.40608@cn.fujitsu.com>
-In-Reply-To: <503DA63E.40608@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/29 13:17:07,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/29 13:17:07,
-	Serialize complete at 2012/08/29 13:17:07
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Date: Wed, 29 Aug 2012 10:47:51 +0530
+Subject: RE: [PATCH] usb: tegra: moving phy driver into drivers directory
+Thread-Topic: [PATCH] usb: tegra: moving phy driver into drivers directory
+Thread-Index: Ac2FJnvhtsStmlTiQxavcEiC/gsvsQAffpQQ
+Message-ID: <D958900912E20642BCBC71664EFECE3E6DDE14DD7C@BGMAIL02.nvidia.com>
+References: <1346146338-4996-1-git-send-email-vbyravarasu@nvidia.com>
+ <503CD0A0.7080300@wwwdotorg.org>
+In-Reply-To: <503CD0A0.7080300@wwwdotorg.org>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+MIME-Version: 1.0
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
----
- hw/pc_piix.c    |    6 +++++-
- qemu-config.c   |    4 ++++
- qemu-options.hx |    3 ++-
- 3 files changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/hw/pc_piix.c b/hw/pc_piix.c
-index 37eca23..10531a8 100644
---- a/hw/pc_piix.c
-+++ b/hw/pc_piix.c
-@@ -149,6 +149,8 @@ static void pc_init1(MemoryRegion *system_memory,
-     MemoryRegion *pci_memory;
-     MemoryRegion *rom_memory;
-     void *fw_cfg = NULL;
-+    QemuOptsList *list = qemu_find_opts("machine");
-+    bool enable_pv_event;
+> -----Original Message-----
+> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
+> Sent: Tuesday, August 28, 2012 7:37 PM
+> To: Venu Byravarasu
+> Cc: ccross@android.com; olof@lixom.net; linux@arm.linux.org.uk;
+> stern@rowland.harvard.edu; gregkh@linuxfoundation.org; balbi@ti.com;
+> linux-kernel@vger.kernel.org; linux-tegra@vger.kernel.org; linux-arm-
+> kernel@lists.infradead.org; linux-usb@vger.kernel.org
+> Subject: Re: [PATCH] usb: tegra: moving phy driver into drivers directory
+> 
+> On 08/28/2012 02:32 AM, Venu Byravarasu wrote:
+> > In order to keep up with the USB driver files organization,
+> > moving USB phy driver from mach-tegra to drivers/USB directory.
+> >
+> > Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+> 
+> > diff --git a/arch/arm/mach-tegra/devices.c b/arch/arm/mach-
+> tegra/devices.c
+> 
+> > -struct tegra_ulpi_config tegra_ehci2_ulpi_phy_config = {
+> > -	.reset_gpio = -1,
+> > -	.clk = "cdev2",
+> > -};
+> > -
+> >  struct tegra_ehci_platform_data tegra_ehci1_pdata = {
+> >  	.operating_mode = TEGRA_USB_OTG,
+> >  	.power_down_on_bus_suspend = 1,
+> > @@ -450,7 +444,7 @@ struct tegra_ehci_platform_data tegra_ehci1_pdata
+> = {
+> >  };
+> >
+> >  struct tegra_ehci_platform_data tegra_ehci2_pdata = {
+> > -	.phy_config = &tegra_ehci2_ulpi_phy_config,
+> > +	.phy_config = NULL,
+> 
+> The PHY driver checks that field isn't NULL, and fails if it is:
+> 
+> > struct tegra_usb_phy *tegra_usb_phy_open(struct device *dev, int
+> instance,
+> >         void __iomem *regs, void *config, enum tegra_usb_phy_mode
+> phy_mode)
+> > {
+> ...
+> >         phy->config = config;
+> >         phy->mode = phy_mode;
+> >
+> >         if (!phy->config) {
+> >                 if (phy_is_ulpi(phy)) {
+> >                         pr_err("%s: ulpi phy configuration missing", __func__);
+> >                         err = -EINVAL;
+> >                         goto err0;
+> 
+> So, this change will completely break ULPI support, which currently
+> works fine. So, NAK.
+
+My initial plan was to add support for phy interfaces one by one.
+As part of that thought of UTMI only support at first and then add
+ULPI and HSIC in next patches.
+However as you were mentioning that it is not correct way, will
+push ULPI & UTMI support at once in next patches.
+
+> 
+> I also plan on deleting devices.[ch] in kernel 3.7, and moving the USB
+> platform data into board-dt-tegra20.c, since that's the only place it's
+> used right now. So, this patch would conflict with that rather badly. I
+> just posted the patches for that to the linux-tegra mailing list last
+> night. Do you have better proposals for that? Perhaps usb_phy.c should
+> set phy->config to &ulpi_default in a similar fashion to how it works
+> for UTMI; that would remove some of the coupling between the changes.
+> 
+> BTW, in your response to Felipe, you said...
+> 
+> > Thanks Felipe for your comments.
+> > Created a patch to separate out phy related stuff to phy.h with you as a
+> reviewer.
+> > Plz let me know your comments.
+> 
+> ... where is that patch?
+
+Plz see https://lkml.org/lkml/2012/8/28/58 
  
-     pc_cpus_init(cpu_model);
- 
-@@ -287,7 +289,9 @@ static void pc_init1(MemoryRegion *system_memory,
-         pc_pci_device_init(pci_bus);
-     }
- 
--    if (kvm_enabled()) {
-+    enable_pv_event = qemu_opt_get_bool(QTAILQ_FIRST(&list->head),
-+                                        "enable_pv_event", false);
-+    if (kvm_enabled() && enable_pv_event) {
-         kvm_pv_event_init(isa_bus);
-     }
- }
-diff --git a/qemu-config.c b/qemu-config.c
-index c05ffbc..a58bf71 100644
---- a/qemu-config.c
-+++ b/qemu-config.c
-@@ -612,6 +612,10 @@ static QemuOptsList qemu_machine_opts = {
-             .name = "dump-guest-core",
-             .type = QEMU_OPT_BOOL,
-             .help = "Include guest memory in  a core dump",
-+        }, {
-+            .name = "enable_pv_event",
-+            .type = QEMU_OPT_BOOL,
-+            .help = "handle pv event"
-         },
-         { /* End of list */ }
-     },
-diff --git a/qemu-options.hx b/qemu-options.hx
-index 3c411c4..c825d66 100644
---- a/qemu-options.hx
-+++ b/qemu-options.hx
-@@ -38,7 +38,8 @@ DEF("machine", HAS_ARG, QEMU_OPTION_machine, \
-     "                supported accelerators are kvm, xen, tcg (default: tcg)\n"
-     "                kernel_irqchip=on|off controls accelerated irqchip support\n"
-     "                kvm_shadow_mem=size of KVM shadow MMU\n"
--    "                dump-guest-core=on|off include guest memory in a core dump (default=on)\n",
-+    "                dump-guest-core=on|off include guest memory in a core dump (default=on)\n"
-+    "                enable_pv_event=on|off controls pv event support\n",
-     QEMU_ARCH_ALL)
- STEXI
- @item -machine [type=]@var{name}[,prop=@var{value}[,...]]
--- 
-1.7.1
+
