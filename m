@@ -1,44 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754230Ab2H2RXx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 13:23:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8666 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753626Ab2H2RXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 13:23:51 -0400
-Date: Wed, 29 Aug 2012 18:23:36 +0100
-From: Alasdair G Kergon <agk@redhat.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-        linux-bcache@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
-        bharrosh@panasas.com, tj@kernel.org
-Subject: Re: [dm-devel] [PATCH v7 9/9] block: Avoid deadlocks with bio
-	allocation by stacking drivers
-Message-ID: <20120829172336.GB5576@agk-dp.fab.redhat.com>
-Mail-Followup-To: Kent Overstreet <koverstreet@google.com>,
-	Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-	dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-	linux-bcache@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
-	bharrosh@panasas.com, tj@kernel.org
-References: <1346175456-1572-1-git-send-email-koverstreet@google.com> <1346175456-1572-10-git-send-email-koverstreet@google.com> <Pine.LNX.4.64.1208291210180.774@file.rdu.redhat.com> <20120829165006.GB20312@google.com> <20120829170711.GC12504@redhat.com> <20120829171345.GC20312@google.com>
+	id S1754204Ab2H2RZi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 13:25:38 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:60811 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753976Ab2H2RZg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 13:25:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120829171345.GC20312@google.com>
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: 64 Baker Street, 4th floor, London,
-	W1U 7DF.
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1346230305.2522.15.camel@edumazet-glaptop>
+References: <1345724123.5904.756.camel@edumazet-glaptop>
+	<50362407.9070805@linlab.net>
+	<1345726185.5904.835.camel@edumazet-glaptop>
+	<20120824.134231.41073001349178209.davem@davemloft.net>
+	<20120825084819.GD430@linlab.net>
+	<CAFbMe2Pgjbttt+Z3RQ9KL05=GHqZYk5ubNH2G1-EUn_f_RBaEQ@mail.gmail.com>
+	<1346230305.2522.15.camel@edumazet-glaptop>
+Date: Wed, 29 Aug 2012 10:25:34 -0700
+Message-ID: <CAFbMe2PG90X7s6s970+XK3X0Jvzx4p6vhvM+JQCwtULPvs1QLw@mail.gmail.com>
+Subject: Re: [PATCH 1/1] tcp: Wrong timeout for SYN segments
+From: "H.K. Jerry Chu" <hkjerry.chu@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Alexander Bergmann <alex@linlab.net>, David Miller <davem@davemloft.net>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 29, 2012 at 10:13:45AM -0700, Kent Overstreet wrote:
-> Only on allocation failure.
- 
-Which as you already said assumes wrapping together the other mempools in the
-submission path first...
+Eric,
 
-Alasdair
+On Wed, Aug 29, 2012 at 1:51 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> On Tue, 2012-08-28 at 21:34 -0700, H.K. Jerry Chu wrote:
+>
+>> IMHO 31secs seem a little short. Why not change it to 6 as well because 63
+>> secs still beats 93secs with 3sec initRTO and 5 retries.
+>>
+>> Jerry
+>>
+>
+> My rationale was that such increase were going to amplify SYN attacks
+> impact by 20% (if we count number of useless SYNACK sent)
 
+IMHO the main damage caused by SYN attack is DOS resulted from bogus
+SYNs clogging the listener queue. I guess you've had numbers showing
+that generating so many SYNACKs in response to bogus SYNs can be costly
+too. But each bogus SYN that expires earlier will open up space sooner in the
+listener queue for more bogus SYN so I'm not sure which one can induced
+more damage.
+
+Also if syn-cookie is enabled, it will dwarf the cost from
+retransmitting SYN-ACK,
+right?
+
+>
+> If the active side sends SYN packets for 180 seconds, do we really want
+> to also send SYNACKS for additional 100 seconds ?
+
+You have a good point. (I remember some folks in the past even question with
+retransmitting SYN why SYN-ACK retransmit is necessary, other than for expedient
+recovery purpose.)
+
+But it probably matter slightly more for TCP Fast Open (the server
+side patch has
+been completed and will be posted soon, after I finish breaking it up
+into smaller
+pieces for ease of review purpose), when a full socket will be created with data
+passed to the app upon a valid SYN+data. Dropping a fully functioning socket
+won't be the same as dropping a request_sock unknown to the app and letting
+the other side retransmitting SYN (w/o data this time).
+
+>
+> Sure, RFC numbers are what they are, but in practice, I doubt someone
+> will really miss the extra SYNACK sent after ~32 seconds, since it would
+> matter only for the last SYN attempted.
+
+I'd slightly prefer 1 extra retry plus longer wait time just to make
+TCP Fast Open
+a little more robust (even though the app protocol is required to be
+idempotent).
+But this is not a showstopper.
+
+Thanks,
+
+Jerry
+
+>
+>
+>
