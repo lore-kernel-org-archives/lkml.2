@@ -1,113 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751481Ab2H2FPA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 01:15:00 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:54724 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750804Ab2H2FO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 01:14:59 -0400
-X-IronPort-AV: E=Sophos;i="4.80,332,1344182400"; 
-   d="scan'208";a="5744203"
-Message-ID: <503DA699.1030601@cn.fujitsu.com>
-Date: Wed, 29 Aug 2012 13:20:25 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1752203Ab2H2FPP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 01:15:15 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:18738 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751626Ab2H2FPK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 01:15:10 -0400
+Message-ID: <503DA591.4010100@oracle.com>
+Date: Wed, 29 Aug 2012 13:16:01 +0800
+From: "zhenzhong.duan" <zhenzhong.duan@oracle.com>
+Reply-To: zhenzhong.duan@oracle.com
+Organization: oracle
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
-        Blue Swirl <blauwirbel@gmail.com>, Eric Blake <eblake@redhat.com>,
-        Andrew Jones <drjones@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [PATCH v10 1/6] start vm after reseting it
-References: <503DA63E.40608@cn.fujitsu.com>
-In-Reply-To: <503DA63E.40608@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/29 13:14:45,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/29 13:14:46,
-	Serialize complete at 2012/08/29 13:14:46
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Feng Jin <joe.jin@oracle.com>
+Subject: Re: [PATCH] Parallelize mtrr init between cpus
+References: <5020C3D7.2070407@oracle.com> <5021432F.2030907@zytor.com> <5021CA31.7000405@oracle.com> <5021E2A2.8080606@zytor.com>
+In-Reply-To: <5021E2A2.8080606@zytor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The guest should run after reseting it, but it does not run if its
-old state is RUN_STATE_INTERNAL_ERROR or RUN_STATE_PAUSED.
 
-We don't set runstate to RUN_STATE_PAUSED when reseting the guest,
-so the runstate will be changed from RUN_STATE_INTERNAL_ERROR or
-RUN_STATE_PAUSED to RUN_STATE_RUNNING(not RUN_STATE_PAUSED).
 
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
----
- block.h |    2 ++
- qmp.c   |    2 +-
- vl.c    |    7 ++++---
- 3 files changed, 7 insertions(+), 4 deletions(-)
+On 2012-08-08 11:53, H. Peter Anvin wrote:
+> On 08/07/2012 07:08 PM, zhenzhong.duan wrote:
+>>
+>>
+>>   2012-08-08 00:32, H. Peter Anvin wrote:
+>>> On 08/07/2012 12:29 AM, zhenzhong.duan wrote:
+>>>> Current code serialize mtrr init with set_atomicity_lock.
+>>>> Mtrr init is quite slow when we bootup on a hvm with large mem, vcpus
+>>>> and pci passthroughed devices(eg. 24 vcpus + 90G mem).
+>>>> It took about ~30 mins to bootup, after patch, it took ~2 min.
+>>> When you're saying "HVM" do you mean "Xen HVM"?  How does it behave on
+>>> native hardware?
+>>>
+>>>     -hpa
+>> Yes, I mean Xen HVM. Bootup at same speed as before on baremetal.
+>
+> Then I would like to know why Xen HVM takes so infernally long.  It 
+> isn't a good idea to make gratuitous changes in the main kernel to 
+> work around defects in Xen.
+>
+>     -hpa
+Hi,
+Sorrry for late response, I have an opportunity to test the patch on an 
+old G5 with 128 physical CPUS and 1 TB of memory. Arround 0.82 second 
+time saved.
+Depends on cpu count on the system.
+I'm curious what's the usage of set_atomicity_lock here? There may be 
+something I missed. thanks
 
-diff --git a/block.h b/block.h
-index 2e2be11..c3265c2 100644
---- a/block.h
-+++ b/block.h
-@@ -339,6 +339,8 @@ void bdrv_disable_copy_on_read(BlockDriverState *bs);
- void bdrv_set_in_use(BlockDriverState *bs, int in_use);
- int bdrv_in_use(BlockDriverState *bs);
- 
-+void iostatus_bdrv_it(void *opaque, BlockDriverState *bs);
-+
- enum BlockAcctType {
-     BDRV_ACCT_READ,
-     BDRV_ACCT_WRITE,
-diff --git a/qmp.c b/qmp.c
-index 8463922..c5a20f1 100644
---- a/qmp.c
-+++ b/qmp.c
-@@ -125,7 +125,7 @@ SpiceInfo *qmp_query_spice(Error **errp)
- };
- #endif
- 
--static void iostatus_bdrv_it(void *opaque, BlockDriverState *bs)
-+void iostatus_bdrv_it(void *opaque, BlockDriverState *bs)
- {
-     bdrv_iostatus_reset(bs);
- }
-diff --git a/vl.c b/vl.c
-index 7c577fa..316a977 100644
---- a/vl.c
-+++ b/vl.c
-@@ -343,7 +343,7 @@ static const RunStateTransition runstate_transitions_def[] = {
-     { RUN_STATE_INMIGRATE, RUN_STATE_RUNNING },
-     { RUN_STATE_INMIGRATE, RUN_STATE_PRELAUNCH },
- 
--    { RUN_STATE_INTERNAL_ERROR, RUN_STATE_PAUSED },
-+    { RUN_STATE_INTERNAL_ERROR, RUN_STATE_RUNNING },
-     { RUN_STATE_INTERNAL_ERROR, RUN_STATE_FINISH_MIGRATE },
- 
-     { RUN_STATE_IO_ERROR, RUN_STATE_RUNNING },
-@@ -376,7 +376,7 @@ static const RunStateTransition runstate_transitions_def[] = {
- 
-     { RUN_STATE_SAVE_VM, RUN_STATE_RUNNING },
- 
--    { RUN_STATE_SHUTDOWN, RUN_STATE_PAUSED },
-+    { RUN_STATE_SHUTDOWN, RUN_STATE_RUNNING },
-     { RUN_STATE_SHUTDOWN, RUN_STATE_FINISH_MIGRATE },
- 
-     { RUN_STATE_DEBUG, RUN_STATE_SUSPENDED },
-@@ -1608,7 +1608,8 @@ static bool main_loop_should_exit(void)
-         resume_all_vcpus();
-         if (runstate_check(RUN_STATE_INTERNAL_ERROR) ||
-             runstate_check(RUN_STATE_SHUTDOWN)) {
--            runstate_set(RUN_STATE_PAUSED);
-+            bdrv_iterate(iostatus_bdrv_it, NULL);
-+            vm_start();
-         }
-     }
-     if (qemu_wakeup_requested()) {
--- 
-1.7.1
+Before patch:
+[   13.176038] NMI watchdog enabled, takes one hw-pmu counter.
+[   13.176444] Brought up 128 CPUs
+[   13.176688] Total of 128 processors activated (578760.49 BogoMIPS).
+[   14.035223] devtmpfs: initialized
+[   17.277652] PM: Registering ACPI NVS region at 7f76e000 (401408 bytes)
+[   17.279541] print_constraints: dummy:
+[   17.280576] NET: Registered protocol family 16
+After patch:
+[   13.094227] smpboot cpu 127: start_ip = 90000
+[   13.185142] NMI watchdog enabled, takes one hw-pmu counter.
+[   13.185599] Brought up 128 CPUs
+[   13.185851] Total of 128 processors activated (578871.80 BogoMIPS).
+[   13.224783] devtmpfs: initialized
+[   16.468002] PM: Registering ACPI NVS region at 7f76e000 (401408 bytes)
+[   16.469706] print_constraints: dummy:
+[   16.470745] NET: Registered protocol family 16
 
