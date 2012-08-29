@@ -1,42 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091Ab2H2P51 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 11:57:27 -0400
-Received: from csmtp2.one.com ([91.198.169.22]:55062 "EHLO csmtp2.one.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752790Ab2H2P50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 11:57:26 -0400
-From: "Henrik Rydberg" <rydberg@bitmath.se>
-Date: Wed, 29 Aug 2012 18:02:57 +0200
-To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 20/20] HID: multitouch: Remove the redundant touch
- state
-Message-ID: <20120829160257.GA434@polaris.bitmath.org>
-References: <1345985858-445-1-git-send-email-rydberg@euromail.se>
- <1345985858-445-21-git-send-email-rydberg@euromail.se>
- <CAN+gG=H4K2C0fovqv2u2WxcfhxTAH+_et02mFxKCYUaQdMYJMQ@mail.gmail.com>
+	id S1754112Ab2H2P6A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 11:58:00 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:44430 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752790Ab2H2P56 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 11:57:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAN+gG=H4K2C0fovqv2u2WxcfhxTAH+_et02mFxKCYUaQdMYJMQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFyb-g77CQNoR72J0pjw76ZCy_nufP=VavT_X3xBg6=G-Q@mail.gmail.com>
+References: <1340736849-14875-1-git-send-email-yinghai@kernel.org>
+	<1340736849-14875-3-git-send-email-yinghai@kernel.org>
+	<CAE9FiQVrUbEzopKfeoQZFNdNszLN96brC+rYuGXQCfZvpi_ETQ@mail.gmail.com>
+	<CAE9FiQUXTngUZp2c2dLVRZjFxhXD9e+XYW6Pn0zaHvMt0fB+eA@mail.gmail.com>
+	<CA+55aFxLUExCZE1=gQpDT0ip9s+iMRYEVK2QjdCGNk9iympfYA@mail.gmail.com>
+	<CA+55aFyb-g77CQNoR72J0pjw76ZCy_nufP=VavT_X3xBg6=G-Q@mail.gmail.com>
+Date: Wed, 29 Aug 2012 08:57:56 -0700
+X-Google-Sender-Auth: 1szdjKGSi3PzhhGaZoXNNKE0EXU
+Message-ID: <CAE9FiQUKxO5QmuaK5V1-rWzS98aRmyfDgC0Aonk-L5JRG1cd6A@mail.gmail.com>
+Subject: Re: [PATCH -v12 02/15] resources: Add probe_resource()
+From: Yinghai Lu <yinghai@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
+        x86 <x86@kernel.org>, Dominik Brodowski <linux@dominikbrodowski.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Content-Type: multipart/mixed; boundary=bcaec50165e95396b704c8699f75
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> - I don't know if it is my configuration or not, but I'm receiving at
-> each frame (between two EV_SYN) all ABS_MT_SLOT events, even when
-> there are not used.
+--bcaec50165e95396b704c8699f75
+Content-Type: text/plain; charset=ISO-8859-1
 
-Your configuration is fine, I screwed up. Will fix.
+On Tue, Aug 28, 2012 at 5:10 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Tue, Aug 28, 2012 at 10:05 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>>
+>> Ugh. Ok, looking closer at this,
+>
+> Btw, looking at that code, I also found what looks like a potential
+> locking bug in allocate_resource().
+>
+> The code does
+>
+>     if (new->parent)
+>        .. reallocate ..
+>
+> to check whether a resource was already allocated. HOWEVER, it does so
+> without actually holding the resource lock. Which means that
+> "new->parent" might in theory change.
+>
+> I don't really know if we care. Anybody who does a
+> "allocate_resource()" on an existing resource that might already be in
+> the resource tree hopefully does *not* do that in parallel with
+> another user trying to change the resource allocation, so maybe the
+> right thing to do is to just say "whatever, if there is a race with
+> two threads reallocating the same resource at the same time, the bug
+> is a much more serious one at a higher level".
 
-> - After a little bit a playing with some surfaces, I can confuse the
-> input_mt_assign_slot_by_id function: for the very same contact id, I
-> got up to four different slots.... This accumulates the clicks and is
-> not very good.... :-(
+yes, another patch that that split __allocate_resource out have the similar fix.
 
-Sounds odd, what device would that be?
+http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=5d52b21303b7271ba4c5302b387766628f074ae2
 
-Henrik
+but the changelog does not that mention the reason.
+
+also have another version for probe_resource, please check attached version -v8.
+
+Thanks
+
+Yinghai
+
+--bcaec50165e95396b704c8699f75
+Content-Type: application/octet-stream; name="probe_resource_2.patch"
+Content-Disposition: attachment; filename="probe_resource_2.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h6glynhp1
+
+U3ViamVjdDogW1BBVENIXSByZXNvdXJjZXM6IEFkZCBwcm9iZV9yZXNvdXJjZSgpCgpJdCBpcyBj
+aGFuZ2VkIGZyb20gYnVzbl9yZXMgb25seSB2ZXJzaW9uLCBiZWNhdXNlIEJqb3JuIGZvdW5kIHRo
+YXQgdmVyc2lvbgp3YXMgbm90IGhvbGRpbmcgcmVzb3VyY2VfbG9jay4KRXZlbiBpdCBtYXkgYmUg
+b2sgZm9yIGJ1c25fcmVzIG5vdCBob2xkaW5nIHJlc291cmNlX2xvY2suCkl0IHdvdWxkIGJlIGJl
+dHRlciB0byBoYXZlIGl0IHRvIGJlIGdlbmVyaWMgYW5kIHVzZSBsb2NrIGFuZCB3ZSBtYXkKdXNl
+IGl0IGZvciBvdGhlciByZXNvdXJjZXMuCgpwcm9iZV9yZXNvdXJjZSgpIHdpbGwgdHJ5IHRvIGZp
+bmQgc3BlY2lmaWVkIHNpemUgb3IgbW9yZSBpbiBwYXJlbnQgYnVzLgpJZiBjYW4gbm90IGZpbmQg
+Y3VycmVudCBwYXJlbnQgcmVzb3VyY2UsIGFuZCBpdCB3aWxsIHRyeSB0byBleHBhbmQgcGFyZW50
+cwp0b3AuCklmIHN0aWxsIGNhbiBub3QgZmluZCB0aGF0IHNwZWNpZmllZCBvbiB0b3AsIGl0IHdp
+bGwgdHJ5IHRvIHJlZHVjZSB0YXJnZXQgc2l6ZQp1bnRpbCBmaW5kIG9uZS4KCkl0IHdpbGwgcmV0
+dXJuIDAsIGlmIGl0IGZpbmQgYW55IHJlc291cmNlIHRoYXQgY291bGQgYmUgdXNlZC4KClJldHVy
+bmVkIHJlc291cmNlIGlzIHJlZ2lzdGVyZWQgaW4gdGhlIHRyZWUuClNvIGNhbGxlciBtYXkgbmVl
+ZCB0byB1c2UgcmVwbGFjZV9yZXNvdXJjZSB0byBwdXQgcmVhbCByZXNvdXJjZSBpbiB0cmVlLgoK
+LXYzOiByZW1vdmUgdHdvIHBhcmFtZXRlcnMgdGhhdCBpcyBmb3IgZGVidWcgcHVycG9zZS4KLXY0
+OiBmaXggc3RvcF9mbGFncyBjaGVja2luZy4KLXY1OiBhZGp1c3Qgc3RvcF9mbGFncyBjaGVja2lu
+ZyBwb3NpdGlvbiB0byBhdm9pZCBub3QgbmVlZGVkIGNhbGxpbmcKCWludG8gYWxsb2NhdGVfcmVz
+b3VyY2UoKS4KLXY2OiB1c2UgdXBkYXRlZCBfX2FsbG9jYXRlX3Jlc291cmNlLgotdjc6IExpbnVz
+IHNhaWQ6ICJyZXNvdXJjZV9leHRlbmRfcGFyZW50cygpIiB0aGluZyBpcyB0b28gZGFuZ2Vyb3Vz
+IGFzIGl0CiAgICAgICAgaXMuIEl0IGNhbiBjb3JydXB0IHRoZSByZXNvdXJjZSBsaXN0IGJ5IG1h
+a2luZyB0aGUgcmVzb3VyY2UgZW5kCiAgICAgICAgb3ZlcmxhcCB3aXRoIHRoZSBuZXh0IHJlc291
+cmNlIChmb3IgZXh0ZW5zaW9uKSBvciBub3QgY292ZXIgYWxsIHRoZQogICAgICAgIGNoaWxkIHJl
+c291cmNlcyAoZm9yIHNocmlua2luZykuCiAgICAgVHJ5IHRvIGZvbGQgaW4gcmVzb3VyY2VfZXh0
+ZW5kX3BhcmVudHNfdG9wLCBhbmQgaGF2ZSB1cGRhdGVkIG9uZQoJcmVzb3VyY2Vfc2hyaW5rX3Bh
+cmVudF90b3AoKSB3aXRoIGFkanVzdF9yZXNvdXJjZSB0aGF0IHdpbGwKCWNoZWNraW5nIHBhcmVu
+dCBhbmQgY2hpbGRyZW4gY292ZXJpbmcuCi12ODogTGludXMgc2FpZDogYWxsb2NhdGlvbi9yZXR1
+cm4gaXMgbm90IHJpZ2h0LCBhbmQgLTEgc3RlcCB0cmlja3MgbWFrZSBpdAoJbm90IHdvcmsgYXMg
+Z2VuZXJpYyByZXNvdXJjZSBwcm9iZS4KICAgICBTbyB0cnkgdG8gcmVtb3ZlIHRoZSBuZWVkZWRf
+c2l6ZSB0cmlja3MsIGFuZCBhbHNvIHVzZSBfX2FkanVzdF9yZXNvdXJjZQoJZm9yIHByb2Jpbmcg
+aW5zdGVhZC4KClNpZ25lZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVsLm9yZz4K
+Q2M6IEFuZHJldyBNb3J0b24gPGFrcG1AbGludXgtZm91bmRhdGlvbi5vcmc+CgotLS0KIGluY2x1
+ZGUvbGludXgvaW9wb3J0LmggfCAgICA2ICsKIGtlcm5lbC9yZXNvdXJjZS5jICAgICAgfCAgMTY4
+ICsrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrLS0KIDIgZmls
+ZXMgY2hhbmdlZCwgMTcwIGluc2VydGlvbnMoKyksIDQgZGVsZXRpb25zKC0pCgpJbmRleDogbGlu
+dXgtMi42L2luY2x1ZGUvbGludXgvaW9wb3J0LmgKPT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9y
+aWcvaW5jbHVkZS9saW51eC9pb3BvcnQuaAorKysgbGludXgtMi42L2luY2x1ZGUvbGludXgvaW9w
+b3J0LmgKQEAgLTE1Niw2ICsxNTYsMTIgQEAgZXh0ZXJuIGludCBhbGxvY2F0ZV9yZXNvdXJjZShz
+dHJ1Y3QgcmVzbwogCQkJCQkJICAgICAgIHJlc291cmNlX3NpemVfdCwKIAkJCQkJCSAgICAgICBy
+ZXNvdXJjZV9zaXplX3QpLAogCQkJICAgICB2b2lkICphbGlnbmZfZGF0YSk7CitpbnQgcmVzb3Vy
+Y2Vfc2hyaW5rX3BhcmVudHNfdG9wKHN0cnVjdCByZXNvdXJjZSAqYl9yZXMsCisJCQkJIGxvbmcg
+c2l6ZSwgc3RydWN0IHJlc291cmNlICpwYXJlbnRfcmVzKTsKK2ludCBwcm9iZV9yZXNvdXJjZShz
+dHJ1Y3QgcmVzb3VyY2UgKmJfcmVzLAorCQkJc3RydWN0IHJlc291cmNlICpidXNuX3JlcywKKwkJ
+CXJlc291cmNlX3NpemVfdCBuZWVkZWRfc2l6ZSwgc3RydWN0IHJlc291cmNlICoqcCwKKwkJCWlu
+dCBza2lwX25yLCBpbnQgbGltaXQsIGludCBmbGFncyk7CiBzdHJ1Y3QgcmVzb3VyY2UgKmxvb2t1
+cF9yZXNvdXJjZShzdHJ1Y3QgcmVzb3VyY2UgKnJvb3QsIHJlc291cmNlX3NpemVfdCBzdGFydCk7
+CiBpbnQgYWRqdXN0X3Jlc291cmNlKHN0cnVjdCByZXNvdXJjZSAqcmVzLCByZXNvdXJjZV9zaXpl
+X3Qgc3RhcnQsCiAJCSAgICByZXNvdXJjZV9zaXplX3Qgc2l6ZSk7CkluZGV4OiBsaW51eC0yLjYv
+a2VybmVsL3Jlc291cmNlLmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcva2VybmVsL3Jl
+c291cmNlLmMKKysrIGxpbnV4LTIuNi9rZXJuZWwvcmVzb3VyY2UuYwpAQCAtNzQxLDE0ICs3NDEs
+MTMgQEAgdm9pZCBpbnNlcnRfcmVzb3VyY2VfZXhwYW5kX3RvX2ZpdChzdHJ1YwogICogYXJndW1l
+bnRzLiAgUmV0dXJucyAwIG9uIHN1Y2Nlc3MsIC1FQlVTWSBpZiBpdCBjYW4ndCBmaXQuCiAgKiBF
+eGlzdGluZyBjaGlsZHJlbiBvZiB0aGUgcmVzb3VyY2UgYXJlIGFzc3VtZWQgdG8gYmUgaW1tdXRh
+YmxlLgogICovCi1pbnQgYWRqdXN0X3Jlc291cmNlKHN0cnVjdCByZXNvdXJjZSAqcmVzLCByZXNv
+dXJjZV9zaXplX3Qgc3RhcnQsIHJlc291cmNlX3NpemVfdCBzaXplKQorc3RhdGljIGludCBfX2Fk
+anVzdF9yZXNvdXJjZShzdHJ1Y3QgcmVzb3VyY2UgKnJlcywgcmVzb3VyY2Vfc2l6ZV90IHN0YXJ0
+LAorCQkJICAgICByZXNvdXJjZV9zaXplX3Qgc2l6ZSkKIHsKIAlzdHJ1Y3QgcmVzb3VyY2UgKnRt
+cCwgKnBhcmVudCA9IHJlcy0+cGFyZW50OwogCXJlc291cmNlX3NpemVfdCBlbmQgPSBzdGFydCAr
+IHNpemUgLSAxOwogCWludCByZXN1bHQgPSAtRUJVU1k7CiAKLQl3cml0ZV9sb2NrKCZyZXNvdXJj
+ZV9sb2NrKTsKLQogCWlmICghcGFyZW50KQogCQlnb3RvIHNraXA7CiAKQEAgLTc3Niw5ICs3NzUs
+MTkgQEAgc2tpcDoKIAlyZXN1bHQgPSAwOwogCiAgb3V0OgotCXdyaXRlX3VubG9jaygmcmVzb3Vy
+Y2VfbG9jayk7CiAJcmV0dXJuIHJlc3VsdDsKIH0KK2ludCBhZGp1c3RfcmVzb3VyY2Uoc3RydWN0
+IHJlc291cmNlICpyZXMsIHJlc291cmNlX3NpemVfdCBzdGFydCwKKwkJICAgIHJlc291cmNlX3Np
+emVfdCBzaXplKQoreworCWludCByZXQ7CisKKwl3cml0ZV9sb2NrKCZyZXNvdXJjZV9sb2NrKTsK
+KwlyZXQgPSBfX2FkanVzdF9yZXNvdXJjZShyZXMsIHN0YXJ0LCBzaXplKTsKKwl3cml0ZV91bmxv
+Y2soJnJlc291cmNlX2xvY2spOworCisJcmV0dXJuIHJldDsKK30KIEVYUE9SVF9TWU1CT0woYWRq
+dXN0X3Jlc291cmNlKTsKIAogc3RhdGljIHZvaWQgX19pbml0IF9fcmVzZXJ2ZV9yZWdpb25fd2l0
+aF9zcGxpdChzdHJ1Y3QgcmVzb3VyY2UgKnJvb3QsCkBAIC0xMDExLDYgKzEwMjAsMTU3IEBAIHZv
+aWQgX19yZWxlYXNlX3JlZ2lvbihzdHJ1Y3QgcmVzb3VyY2UgKnAKIH0KIEVYUE9SVF9TWU1CT0wo
+X19yZWxlYXNlX3JlZ2lvbik7CiAKK3N0YXRpYyBpbnQgX19yZXNvdXJjZV9zaHJpbmtfcGFyZW50
+c190b3Aoc3RydWN0IHJlc291cmNlICpiX3JlcywKKwkJIGxvbmcgc2l6ZSwgc3RydWN0IHJlc291
+cmNlICpwYXJlbnRfcmVzKQoreworCXN0cnVjdCByZXNvdXJjZSAqcmVzID0gYl9yZXM7CisKKwlp
+ZiAoc2l6ZSA8PSAwKQorCQlyZXR1cm4gMDsKKworCXdoaWxlIChyZXMgJiYgcmVzICE9IHBhcmVu
+dF9yZXMpIHsKKwkJaWYgKF9fYWRqdXN0X3Jlc291cmNlKHJlcywgcmVzLT5zdGFydCwKKwkJCSBy
+ZXNvdXJjZV9zaXplKHJlcykgLSBzaXplKSkgeworCQkJc3RydWN0IHJlc291cmNlICp0bXAgPSBi
+X3JlczsKKworCQkJd2hpbGUgKHRtcCAhPSByZXMpIHsKKwkJCQlfX2FkanVzdF9yZXNvdXJjZSh0
+bXAsIHRtcC0+c3RhcnQsCisJCQkJCXJlc291cmNlX3NpemUodG1wKSArIHNpemUpOworCQkJCXRt
+cCA9IHRtcC0+cGFyZW50OworCQkJfQorCisJCQlyZXR1cm4gLUVCVVNZOworCisJCX0KKwkJcmVz
+ID0gcmVzLT5wYXJlbnQ7CisJfQorCisJcmV0dXJuIDA7Cit9CisKK2ludCByZXNvdXJjZV9zaHJp
+bmtfcGFyZW50c190b3Aoc3RydWN0IHJlc291cmNlICpiX3JlcywKKwkJIGxvbmcgc2l6ZSwgc3Ry
+dWN0IHJlc291cmNlICpwYXJlbnRfcmVzKQoreworCWludCByZXQ7CisKKwl3cml0ZV9sb2NrKCZy
+ZXNvdXJjZV9sb2NrKTsKKwlyZXQgPSBfX3Jlc291cmNlX3Nocmlua19wYXJlbnRzX3RvcChiX3Jl
+cywgc2l6ZSwgcGFyZW50X3Jlcyk7CisJd3JpdGVfdW5sb2NrKCZyZXNvdXJjZV9sb2NrKTsKKwor
+CXJldHVybiByZXQ7Cit9CisKK3N0YXRpYyByZXNvdXJjZV9zaXplX3QgX19maW5kX3Jlc190b3Bf
+ZnJlZV9zaXplKHN0cnVjdCByZXNvdXJjZSAqcmVzLAorCQkJCQkJIGludCBza2lwX25yKQorewor
+CXJlc291cmNlX3NpemVfdCBuX3NpemU7CisKKwkvKgorCSAqICAgZmluZCBvdXQgZnJlZSBudW1i
+ZXIgYmVsb3cgcmVzLT5lbmQgdGhhdCB3ZSBjYW4gdXNlLgorCSAqCXJlcy0+c3RhcnQgdG8gcmVz
+LT5zdGFydCArIHNraXBfbnIgLSAxIGNhbiBub3QgYmUgdXNlZC4KKwkgKi8KKwlpZiAocmVzLT5j
+aGlsZCkgeworCQlzdHJ1Y3QgcmVzb3VyY2UgKmNoaWxkID0gcmVzLT5jaGlsZDsKKworCQl3aGls
+ZSAoY2hpbGQtPnNpYmxpbmcpCisJCQljaGlsZCA9IGNoaWxkLT5zaWJsaW5nOworCisJCS8qIGNo
+ZWNrIGlmIGNoaWxkcmVuIGNvdmVyIHNraXBfbnIgKi8KKwkJaWYgKGNoaWxkLT5lbmQgLSByZXMt
+PnN0YXJ0ICsgMSA+PSBza2lwX25yKQorCQkJcmV0dXJuIHJlcy0+ZW5kIC0gY2hpbGQtPmVuZDsK
+Kwl9CisKKwluX3NpemUgPSByZXNvdXJjZV9zaXplKHJlcyk7CisJaWYgKG5fc2l6ZSA8PSBza2lw
+X25yKQorCQlyZXR1cm4gMDsKKwlyZXR1cm4gbl9zaXplIC0gc2tpcF9ucjsKK30KKworLyoqCisg
+KiBwcm9iZV9yZXNvdXJjZSAtIFByb2JlIHJlc291cmNlIGluIHBhcmVudCByZXNvdXJjZS4KKyAq
+IEBiX3JlczogcGFyZW50IHJlc291cmNlIGRlc2NyaXB0b3IKKyAqIEBidXNuX3JlczogcmV0dXJu
+IHByb2JlZCByZXNvdXJjZQorICogQG5lZWRlZF9zaXplOiB0YXJnZXQgc2l6ZQorICogQHA6IHBv
+aW50ZXIgdG8gZmFyZXN0IHBhcmVudCB0aGF0IHdlIGV4dGVuZCB0aGUgdG9wCisgKiBAc2tpcF9u
+cjogbnVtYmVyIGluIGJfcmVzIHN0YXJ0IHRoYXQgd2UgbmVlZCB0byBza2lwLgorICogQGxpbWl0
+OiBsb2NhbCBib3VuZGFyeQorICogQHN0b3BfZmxhZ3M6IGZsYWdzIGZvciBzdG9wcGluZyBleHRl
+bmQgcGFyZW50IHJlcworICoKKyAqIHdpbGwgdHJ5IHRvIGFsbG9jYXRlIHJlc291cmNlIGluIGJf
+cmVzLCBpZiBjYW4gbm90IGZpbmQgdGhlIHJhbmdlCisgKiAgd2lsbCB0cnkgdG8gZXh0ZW5kIHBh
+cmVudCByZXNvdXJjZXMnIHRvcC4KKyAqLworaW50IHByb2JlX3Jlc291cmNlKHN0cnVjdCByZXNv
+dXJjZSAqYl9yZXMsCisJCQkgc3RydWN0IHJlc291cmNlICpidXNuX3JlcywKKwkJCSByZXNvdXJj
+ZV9zaXplX3QgbmVlZGVkX3NpemUsIHN0cnVjdCByZXNvdXJjZSAqKnAsCisJCQkgaW50IHNraXBf
+bnIsIGludCBsaW1pdCwgaW50IHN0b3BfZmxhZ3MpCit7CisJaW50IHJldCA9IC1FTk9NRU07CisJ
+cmVzb3VyY2Vfc2l6ZV90IG5fc2l6ZTsKKwlzdHJ1Y3QgcmVzb3VyY2UgKnBhcmVudF9yZXM7CisK
+KwkvKgorCSAqIFdlIGZpcnN0IHRyeSB0byBhbGxvY2F0ZSByYW5nZSBpbiBiX3JlcyB0aGF0CisJ
+ICogIHdlIGNhbiB1c2UgaW4gYl9yZXMgZGlyZWN0bHkuCisJICogIHdlIGFsc28gbmVlZCB0byBz
+a2lwIHNraXBfbnIgZnJvbSBzdGFydCBvZiBiX3Jlcy4KKwkgKi8KKwltZW1zZXQoYnVzbl9yZXMs
+IDAsIHNpemVvZihzdHJ1Y3QgcmVzb3VyY2UpKTsKKwlyZXQgPSBhbGxvY2F0ZV9yZXNvdXJjZShi
+X3JlcywgYnVzbl9yZXMsIG5lZWRlZF9zaXplLAorCQkJCWJfcmVzLT5zdGFydCArIHNraXBfbnIs
+IGJfcmVzLT5lbmQsCisJCQkJMSwgTlVMTCwgTlVMTCk7CisJaWYgKCFyZXQpCisJCXJldHVybiBy
+ZXQ7CisKKwkvKiBUcnkgdG8gZXh0ZW5kIHRoZSB0b3Agb2YgcGFyZW50IHJlc291cmNlcyB0byBt
+ZWV0IG5lZWRlZF9zaXplICovCisJd3JpdGVfbG9jaygmcmVzb3VyY2VfbG9jayk7CisKKwkvKiBi
+X3JlcyBjb3VsZCBiZSByb290IGJ1cyByZXNvdXJjZSBhbmQgY2FuIG5vdCBiZSBleHRlbmRlZCAq
+LworCWlmIChiX3Jlcy0+ZmxhZ3MgJiBzdG9wX2ZsYWdzKQorCQlnb3RvIG91dDsKKworCS8qIGZp
+bmQgb3V0IGZyZWUgcmFuZ2UgdW5kZXIgdG9wIGF0IGZpcnN0ICovCisJbl9zaXplID0gX19maW5k
+X3Jlc190b3BfZnJlZV9zaXplKGJfcmVzLCBza2lwX25yKTsKKwkvKiBjYW4gbm90IGV4dGVuZCBj
+cm9zcyBsb2NhbCBib3VuZGFyeSAqLworCWlmICgobGltaXQgLSBiX3Jlcy0+ZW5kKSA8IChuZWVk
+ZWRfc2l6ZSAtIG5fc2l6ZSkpCisJCWdvdG8gb3V0OworCisJLyogUHJvYmUgZXh0ZW5kZWQgcmFu
+Z2UgYWJvdmUgdG9wICovCisJbWVtc2V0KGJ1c25fcmVzLCAwLCBzaXplb2Yoc3RydWN0IHJlc291
+cmNlKSk7CisJcGFyZW50X3JlcyA9IGJfcmVzLT5wYXJlbnQ7CisJd2hpbGUgKHBhcmVudF9yZXMg
+JiYgIShwYXJlbnRfcmVzLT5mbGFncyAmIHN0b3BfZmxhZ3MpKSB7CisJCXJldCA9IF9fYWRqdXN0
+X3Jlc291cmNlKHBhcmVudF9yZXMsIHBhcmVudF9yZXMtPnN0YXJ0LAorCQkJcmVzb3VyY2Vfc2l6
+ZShwYXJlbnRfcmVzKSArIChuZWVkZWRfc2l6ZSAtIG5fc2l6ZSkpOworCQlpZiAoIXJldCkgewor
+CQkJc3RydWN0IHJlc291cmNlICpyZXMgPSBiX3JlczsKKworCQkJLyogc2F2ZSBwYXJlbnRfcmVz
+LCB3ZSBuZWVkIGl0IGFzIHN0b3BwZXIgbGF0ZXIgKi8KKwkJCSpwID0gcGFyZW50X3JlczsKKwor
+CQkJLyogcHJlcGFyZSBidXNuX3JlcyBmb3IgcmV0dXJuICovCisJCQlfX3JlbGVhc2VfcmVzb3Vy
+Y2UoYnVzbl9yZXMpOworCQkJYnVzbl9yZXMtPnN0YXJ0IC09IG5fc2l6ZTsKKworCQkJLyogZXh0
+ZW5kIHBhcmVudCByZXNvdXJjZXMgdG9wICovCisJCQl3aGlsZSAocmVzICYmIHJlcyAhPSBwYXJl
+bnRfcmVzKSB7CisJCQkJcmVzLT5lbmQgKz0gbmVlZGVkX3NpemUgLSBuX3NpemU7CisJCQkJcmVz
+ID0gcmVzLT5wYXJlbnQ7CisJCQl9CisJCQlyZXQgPSBfX2FsbG9jYXRlX3Jlc291cmNlKGJfcmVz
+LCBidXNuX3JlcywgbmVlZGVkX3NpemUsCisJCQkJCWJfcmVzLT5zdGFydCArIHNraXBfbnIsIGJf
+cmVzLT5lbmQsCisJCQkJCTEsIE5VTEwsIE5VTEwpOworCisJCQl3cml0ZV91bmxvY2soJnJlc291
+cmNlX2xvY2spOworCQkJcmV0dXJuIHJldDsKKwkJfQorCQlwYXJlbnRfcmVzID0gcGFyZW50X3Jl
+cy0+cGFyZW50OworCX0KKworb3V0OgorCXdyaXRlX3VubG9jaygmcmVzb3VyY2VfbG9jayk7CisJ
+LyogcmV0IG11c3Qgbm90IGJlIDAgaGVyZSAqLworCisJcmV0dXJuIHJldDsKK30KKwogLyoKICAq
+IE1hbmFnZWQgcmVnaW9uIHJlc291cmNlCiAgKi8K
+--bcaec50165e95396b704c8699f75--
