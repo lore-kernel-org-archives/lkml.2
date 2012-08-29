@@ -1,95 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753402Ab2H2D0f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 23:26:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42363 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753228Ab2H2D0d (ORCPT
+	id S1751103Ab2H2EJl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 00:09:41 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:40519 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750850Ab2H2EJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 23:26:33 -0400
-Date: Tue, 28 Aug 2012 20:25:58 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-bcache@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com, mpatocka@redhat.com,
-        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH v7 9/9] block: Avoid deadlocks with bio allocation by
- stacking drivers
-Message-ID: <20120829032558.GA22214@moria.home.lan>
-References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
- <1346175456-1572-10-git-send-email-koverstreet@google.com>
- <20120828204910.GG24608@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120828222800.GG1048@moria.home.lan>
- <20120828230108.GI1048@moria.home.lan>
- <20120829013150.GA9269@redhat.com>
+	Wed, 29 Aug 2012 00:09:39 -0400
+Date: Tue, 28 Aug 2012 21:09:35 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Rob Landley <rob@landley.net>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Kees Cook <keescook@chromium.org>,
+        linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Ludwig Nussel <ludwig.nussel@suse.de>,
+        Alessandro Rubini <rubini@gnudd.com>, linux-doc@vger.kernel.org
+Subject: Re: Hardening debugfs (Was Re: [PATCH] debugfs: more tightly
+ restrict default mount mode)
+Message-ID: <20120829040935.GB21265@kroah.com>
+References: <20120827203215.GA16637@www.outflux.net>
+ <20120828144110.GA23035@thunk.org>
+ <503D4C71.9040501@landley.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120829013150.GA9269@redhat.com>
+In-Reply-To: <503D4C71.9040501@landley.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 28, 2012 at 09:31:50PM -0400, Vivek Goyal wrote:
-> On Tue, Aug 28, 2012 at 04:01:08PM -0700, Kent Overstreet wrote:
-> > On Tue, Aug 28, 2012 at 03:28:00PM -0700, Kent Overstreet wrote:
-> > > On Tue, Aug 28, 2012 at 01:49:10PM -0700, Tejun Heo wrote:
-> > > > Overall, I *think* this is correct but need to think more about it to
-> > > > be sure.
-> > > 
-> > > Please do. As much time as I've spent staring at this kind of stuff,
-> > > I'm pretty sure I've got it correct but it still makes my head hurt to
-> > > work out all the various possible deadlocks.
-> > 
-> > Hilarious thought: We're punting bios to a rescuer thread that's
-> > specific to a certain bio_set, right? What if we happen to punt bios
-> > from a different bio_set? And then the rescuer goes to resubmit those
-> > bios, and in the process they happen to have dependencies on the
-> > original bio_set...
-> 
-> Are they not fully allocated bios and when you submit these to underlying
-> device, ideally we should not be sharing memory pool at different layers
-> of stack otherwise we will deadlock any way as stack depth increases. So
-> there should not be a dependency on original bio_set?
-> 
-> Or, am I missing something. May be an example will help.
+On Tue, Aug 28, 2012 at 05:55:45PM -0500, Rob Landley wrote:
+> I've always been a bit confused by the debugfs design, which seems a
+> giant compost heap like /proc where we find a specific styrofoam cup
+> useful and the temporary thing becomes permanent. (Why is there _one_
+> debugfs?)
 
-Uh, it's more complicated than that. My brain is too fried right now to
-walk through it in detail, but the problem (if it is a problem; I can't
-convince myself one way or the other) is roughly:
+The rules for debugfs are very simple:
+	There are no rules.
 
-one virt block device stacked on top of another - they both do arbitrary
-splitting:
+That's it.  It's up to the kernel developer to do what they need to do,
+for debugging stuff, how ever they best see fit.
 
-So once they've submitted a bio, that bio needs to make forward progress
-even if the thread goes to allocate another bio and blocks before it
-returns from its make_request fn.
+Yes, it replaces proc for all of the debugging stuff that shouldn't have
+been there before, how it's structured, is up to the developer adding
+the code.
 
-That much my patch solves, with the rescuer thread; if the thread goes
-to block, it punts those blocked bios off to a rescuer thread - and we
-create one rescuer per bio set.
-
-So going back to the stacked block devices, if you've got say dm on top
-of md (or something else since md doesn't really do much splitting) -
-each block device will have its own rescuer and everything should be
-hunky dory.
-
-Except that when thread a goes to punt those blocked bios to its
-rescuer, it punts _all_ the bios on current->bio_list. Even those
-generated by/belonging to other bio_sets.
-
-So thread 1 in device b punts bios to its rescuer, thread 2
-
-But thread 2 ends up with bios for both device a and b - because they're
-stacked.
-
-Thread 2 starts on bios for device a before it gets to those for device
-b. But a is stacked on top of b, so in the process it generates more
-bios for b.
-
-So now it's uhm...
-
-yeah, I'm gonna sleep on this. I'm pretty sure to be rigorously correct
-filtering the right bios when we punt them to the rescuer is needed,
-though.
+greg k-h
