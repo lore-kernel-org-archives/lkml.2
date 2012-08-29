@@ -1,61 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753834Ab2H2ODV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 10:03:21 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40591 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753779Ab2H2ODS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 10:03:18 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>
-Subject: [PATCH 2/2] fat: simplify writeback_inode function
-Date: Wed, 29 Aug 2012 10:03:08 -0400
-Message-Id: <1346248988-3247-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753802Ab2H2OHe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 10:07:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34530 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751000Ab2H2OHd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 10:07:33 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH] block: Fix bad range check in bio_sector_offset
+References: <yq1a9xesxll.fsf@sermon.lab.mkp.net>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Wed, 29 Aug 2012 10:07:27 -0400
+In-Reply-To: <yq1a9xesxll.fsf@sermon.lab.mkp.net> (Martin K. Petersen's
+	message of "Tue, 28 Aug 2012 14:03:18 -0400")
+Message-ID: <x49wr0hn65c.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simplify writeback_inode function.
+"Martin K. Petersen" <martin.petersen@oracle.com> writes:
 
-Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
-Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
-Acked-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
----
- fs/fat/inode.c |   14 +++++---------
- 1 file changed, 5 insertions(+), 9 deletions(-)
+> DM would occasionally end up splitting data integrity-enabled requests
+> incorrectly. The culprit was a bad range check in bio_sector_offset.
 
-diff --git a/fs/fat/inode.c b/fs/fat/inode.c
-index 973296b..c7531b2 100644
---- a/fs/fat/inode.c
-+++ b/fs/fat/inode.c
-@@ -1457,18 +1457,14 @@ static int writeback_inode(struct inode *inode)
- {
- 
- 	int ret;
--	struct address_space *mapping = inode->i_mapping;
--	struct writeback_control wbc = {
--	       .sync_mode = WB_SYNC_NONE,
--	      .nr_to_write = 0,
--	};
--	/* if we used WB_SYNC_ALL, sync_inode waits for the io for the
--	* inode to finish.  So WB_SYNC_NONE is sent down to sync_inode
-+
-+	/* if we used wait=1, sync_inode_metadata waits for the io for the
-+	* inode to finish.  So wait=0 is sent down to sync_inode_metadata
- 	* and filemap_fdatawrite is used for the data blocks
- 	*/
--	ret = sync_inode(inode, &wbc);
-+	ret = sync_inode_metadata(inode, 0);
- 	if (!ret)
--	       ret = filemap_fdatawrite(mapping);
-+	       ret = filemap_fdatawrite(inode->i_mapping);
- 	return ret;
- }
- 
--- 
-1.7.9.5
+The patch looks ok to me, but what is the user visible behavior when
+this happens?
 
+Cheers,
+Jeff
