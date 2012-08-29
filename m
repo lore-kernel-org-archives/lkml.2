@@ -1,79 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585Ab2H2WQv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 18:16:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11122 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752453Ab2H2WQt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 18:16:49 -0400
-Date: Wed, 29 Aug 2012 15:16:41 -0700
-From: Jeff Layton <jlayton@redhat.com>
-To: Nick Pasich <Nick@NickAndBarb.net>, linux-cifs@vger.kernel.org
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: WARNING: at fs/inode.c:280 drop_nlink+0x31/0x33()
-Message-ID: <20120829151641.20cde4bc@corrin.poochiereds.net>
-In-Reply-To: <20120829162527.GA3635@NickAndBarb.net>
-References: <20120829162527.GA3635@NickAndBarb.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754624Ab2H2WrE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 18:47:04 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:38745 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753350Ab2H2WrC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 18:47:02 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hch@infradead.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        apw@canonical.com, nbd@openwrt.org, neilb@suse.de, hramrach@centrum.cz,
+        jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu, ricwheeler@gmail.com,
+        dhowells@redhat.com, hpj@urpla.net, sedat.dilek@googlemail.com,
+        penberg@kernel.org, goran.cetusic@gmail.com, romain@orebokech.com
+Subject: Re: [PATCH 05/13] overlayfs: add statfs support
+References: <1345045700-9062-1-git-send-email-miklos@szeredi.hu>
+	<1345045700-9062-6-git-send-email-miklos@szeredi.hu>
+	<20120817182051.GC29217@decadent.org.uk>
+Date: Thu, 30 Aug 2012 00:48:28 +0200
+In-Reply-To: <20120817182051.GC29217@decadent.org.uk> (Ben Hutchings's message
+	of "Fri, 17 Aug 2012 19:20:51 +0100")
+Message-ID: <87d32971s3.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Aug 2012 09:25:27 -0700
-Nick Pasich <Nick@NickAndBarb.net> wrote:
+Ben Hutchings <ben@decadent.org.uk> writes:
 
-> 
-> I'm using kernel 3.5.3 ... 
-> 
-> It happens on 3.5.1 and 3.5.2 also.
-> 
-> I know that Nick Bowler has already reported this...
-> 
-> I'm experiencing the same thing.
-> 
-> It happens when moving files from one directory to another
-> on the same partition (NFS). 
-> 
->   --( Nick Pasich )--
-> 
-> 
-> #############################################################################
-> ##
-> ## Happens when PSTs are moved from one directory to another on the ISCSI ...
-> ##
-> #############################################################################
-> 
-> Aug 29 08:06:16 localhost kernel: ------------[ cut here ]------------
-> Aug 29 08:06:16 localhost kernel: WARNING: at fs/inode.c:280 drop_nlink+0x31/0x33()
-> Aug 29 08:06:16 localhost kernel: Hardware name: To Be Filled By O.E.M.
-> Aug 29 08:06:16 localhost kernel: Modules linked in: ecb md4 cifs w83627hf eeprom asb100 hwmon_vid hwmon nfsd exportfs ipv6 psmouse usb_storage io_edgeport usbserial sg r8169 mii evdev intel_agp uhci_hcd i2c_i801 i2c_core shpchp intel_gtt agpgart ehci_hcd microcode serio_raw
-> Aug 29 08:06:16 localhost kernel: Pid: 31477, comm: rm Tainted: G        W    3.5.3 #1
-> Aug 29 08:06:16 localhost kernel: Call Trace:
-> Aug 29 08:06:16 localhost kernel:  [<c10a53e2>] ? drop_nlink+0x31/0x33
-> Aug 29 08:06:16 localhost kernel:  [<c1025dd2>] ? warn_slowpath_common+0x7b/0x90
-> Aug 29 08:06:16 localhost kernel:  [<c10a53e2>] ? drop_nlink+0x31/0x33
-> Aug 29 08:06:16 localhost kernel:  [<c1025e02>] ? warn_slowpath_null+0x1b/0x1f
-> Aug 29 08:06:16 localhost kernel:  [<c10a53e2>] ? drop_nlink+0x31/0x33
-> Aug 29 08:06:16 localhost kernel:  [<f83dfa81>] ? cifs_unlink+0x134/0x63d [cifs]
-> Aug 29 08:06:16 localhost kernel:  [<c10a37d4>] ? dput+0x11/0x117
-> Aug 29 08:06:16 localhost kernel:  [<c10a87d4>] ? mntput_no_expire+0xf/0xf7
-> Aug 29 08:06:16 localhost kernel:  [<c109ca9b>] ? vfs_unlink+0x4e/0xb6
-> Aug 29 08:06:16 localhost kernel:  [<c109b333>] ? __lookup_hash+0x54/0xac
-> Aug 29 08:06:16 localhost kernel:  [<c109e8c2>] ? do_unlinkat+0x10a/0x12d
-> Aug 29 08:06:16 localhost kernel:  [<c10a0124>] ? sys_ioctl+0x34/0x57
-> Aug 29 08:06:16 localhost kernel:  [<c140a8ed>] ? syscall_call+0x7/0xb
-> Aug 29 08:06:16 localhost kernel: ---[ end trace 756b427e3bd671f9 ]---
-> 
+> On Wed, Aug 15, 2012 at 05:48:12PM +0200, Miklos Szeredi wrote:
+>> From: Andy Whitcroft <apw@canonical.com>
+>> 
+>> Add support for statfs to the overlayfs filesystem.  As the upper layer
+>> is the target of all write operations assume that the space in that
+>> filesystem is the space in the overlayfs.  There will be some inaccuracy as
+>> overwriting a file will copy it up and consume space we were not expecting,
+>> but it is better than nothing.
+>> 
+>> Use the upper layer dentry and mount from the overlayfs root inode,
+>> passing the statfs call to that filesystem.
+> [...] 
+>> +/**
+>> + * ovl_statfs
+>> + * @sb: The overlayfs super block
+>> + * @buf: The struct kstatfs to fill in with stats
+>> + *
+>> + * Get the filesystem statistics.  As writes always target the upper layer
+>> + * filesystem pass the statfs to the same filesystem.
+>> + */
+>> +static int ovl_statfs(struct dentry *dentry, struct kstatfs *buf)
+>> +{
+>> +	struct dentry *root_dentry = dentry->d_sb->s_root;
+>> +	struct path path;
+>> +	ovl_path_upper(root_dentry, &path);
+>> +
+>> +	if (!path.dentry->d_sb->s_op->statfs)
+>> +		return -ENOSYS;
+>> +	return path.dentry->d_sb->s_op->statfs(path.dentry, buf);
+>> +}
+> [...]
+>
+> In case f_namelen differs between the upper and lower filesystems, you
+> need to return the greater of the two.
 
-(cc'ing linux-cifs ml)
+Maybe.  I've never seen any app use f_namelen for anything useful.
 
-This stack trace comes from cifs, not nfs.
+>
+> Should f_type be overridden to indicate overlayfs?  I'm not sure what
+> userland is likely to do with f_type.  (For presentation to the user,
+> it should get the mount type name with getmntent() or libmount.  And
+> that will just work.)
 
-Steve French has a patch queued in his tree to silence this warning
-that I believe he intends to send to Linus for 3.6. Perhaps we should
-consider backporting it for 3.5.z too?
+Yeah we could do that.
 
--- 
-Jeff Layton <jlayton@redhat.com>
+Thanks,
+Miklos
