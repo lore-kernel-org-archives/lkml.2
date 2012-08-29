@@ -1,50 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607Ab2H2Ivs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 04:51:48 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38957 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751270Ab2H2Ivr (ORCPT
+	id S1752846Ab2H2Iv6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 04:51:58 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:40428 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752645Ab2H2Ivz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 04:51:47 -0400
-Subject: Re: [PATCH 1/1] tcp: Wrong timeout for SYN segments
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "H.K. Jerry Chu" <hkjerry.chu@gmail.com>
-Cc: Alexander Bergmann <alex@linlab.net>, David Miller <davem@davemloft.net>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <CAFbMe2Pgjbttt+Z3RQ9KL05=GHqZYk5ubNH2G1-EUn_f_RBaEQ@mail.gmail.com>
-References: <1345724123.5904.756.camel@edumazet-glaptop>
-	 <50362407.9070805@linlab.net> <1345726185.5904.835.camel@edumazet-glaptop>
-	 <20120824.134231.41073001349178209.davem@davemloft.net>
-	 <20120825084819.GD430@linlab.net>
-	 <CAFbMe2Pgjbttt+Z3RQ9KL05=GHqZYk5ubNH2G1-EUn_f_RBaEQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 29 Aug 2012 01:51:45 -0700
-Message-ID: <1346230305.2522.15.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 29 Aug 2012 04:51:55 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Vinod Koul <vinod.koul@intel.com>, djbw@fb.com,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, kernel@pengutronix.de
+Subject: [PATCH 2/2] dma: tegra: make data used as *of_device_id.data const
+Date: Wed, 29 Aug 2012 10:51:35 +0200
+Message-Id: <1346230295-15898-2-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1346230295-15898-1-git-send-email-u.kleine-koenig@pengutronix.de>
+References: <20120829084911.GE28643@pengutronix.de>
+ <1346230295-15898-1-git-send-email-u.kleine-koenig@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-08-28 at 21:34 -0700, H.K. Jerry Chu wrote:
+From: Laxman Dewangan <ldewangan@nvidia.com>
 
-> IMHO 31secs seem a little short. Why not change it to 6 as well because 63
-> secs still beats 93secs with 3sec initRTO and 5 retries.
-> 
-> Jerry
-> 
+Since of_device_id.data is declared as a pointer to const data a few
+more consts can be added in this driver.
 
-My rationale was that such increase were going to amplify SYN attacks
-impact by 20% (if we count number of useless SYNACK sent)
+[ukl: split Laxman's patch to prevent warnings in the middle of the
+series. Original patch was sent with msgid
+1346217447-19730-1-git-send-email-ldewangan@nvidia.com]
 
-If the active side sends SYN packets for 180 seconds, do we really want
-to also send SYNACKS for additional 100 seconds ?
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Acked-by: Stephen Warren <swarren@wwwdotorg.org>
+Acked-by: Vinod Koul <vinod.koul@linux.intel.com>
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+ drivers/dma/tegra20-apb-dma.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Sure, RFC numbers are what they are, but in practice, I doubt someone
-will really miss the extra SYNACK sent after ~32 seconds, since it would
-matter only for the last SYN attempted.
-
-
+diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
+index 29a39b8..56adcfc 100644
+--- a/drivers/dma/tegra20-apb-dma.c
++++ b/drivers/dma/tegra20-apb-dma.c
+@@ -1166,14 +1166,14 @@ static void tegra_dma_free_chan_resources(struct dma_chan *dc)
+ }
+ 
+ /* Tegra20 specific DMA controller information */
+-static struct tegra_dma_chip_data tegra20_dma_chip_data = {
++static const struct tegra_dma_chip_data tegra20_dma_chip_data = {
+ 	.nr_channels		= 16,
+ 	.max_dma_count		= 1024UL * 64,
+ };
+ 
+ #if defined(CONFIG_OF)
+ /* Tegra30 specific DMA controller information */
+-static struct tegra_dma_chip_data tegra30_dma_chip_data = {
++static const struct tegra_dma_chip_data tegra30_dma_chip_data = {
+ 	.nr_channels		= 32,
+ 	.max_dma_count		= 1024UL * 64,
+ };
+-- 
+1.7.10.4
 
