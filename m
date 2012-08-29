@@ -1,121 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751656Ab2H2FIy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 01:08:54 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:63538 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751099Ab2H2FIw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 01:08:52 -0400
-X-AuditID: cbfee61a-b7fc66d0000043b7-ab-503da3e3179d
-Message-id: <503DA2F1.70601@samsung.com>
-Date: Wed, 29 Aug 2012 14:04:49 +0900
-From: IAN CHEN <ian.cy.chen@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714
- Thunderbird/14.0
-MIME-version: 1.0
-To: cjb@laptop.org, linkinjeon@gmail.com, adrian.hunter@intel.com,
-        subhashj@codeaurora.org, linus.walleij@linaro.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: d.j.shin@samsung.com, jongtae22.kim@samsung.com, kyungmin.park@samsung.com,
-        jh80.chung@samsung.com, ian.cy.chen@samsung.com
-Subject: [PATCH v6] mmc: card: Skip secure option for MoviNAND.
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJLMWRmVeSWpSXmKPExsVy+t9jAd3Hi20DDGbM4rS4vGsOm8WR//2M
-	DkwenzfJBTBGcdmkpOZklqUW6dslcGWc/fiDpeCMVEX/r02MDYwPxLoYOTkkBEwkXu/ezQZh
-	i0lcuLceyObiEBJYxCixZ8dbFgjnNaPE6a0fmECqeAU0JB533WMHsVkEVCVenjoFFmcDin8/
-	+IQRxBYVCJNY9P4AK0S9oMSPyffABokIbAQa1LEXzGEWaGSUmPduOliVsIC9xJo7M8BsZgEd
-	if2t09ggbHmJzWveMk9g5JuFZNgsJGWzkJQtYGRexSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7
-	iREcYM+kdjCubLA4xCjAwajEw3uB2zZAiDWxrLgy9xCjBAezkgjvU1OgEG9KYmVValF+fFFp
-	TmrxIUZpDhYlcV7+PsMAIYH0xJLU7NTUgtQimCwTB6dUA+PCtDfNs89ek1xXPInd/v4mGfYJ
-	NnIxn85ULo3MLTqUwvXO0vyx1N7VnBv2vlgmeX1Ods7fqfv1BCfLOSzaFsbasKduGe/k+IOs
-	S4M3dDxsPdT1ZNkawZO/8jWenC40LNXYeOFy56+2LTsm3r/A26WUUXC7bLVZmYEk+8zvQloL
-	FY88KXC1Sb+kxFKckWioxVxUnAgAlGiHvCwCAAA=
+	id S1751842Ab2H2FNH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 01:13:07 -0400
+Received: from d1.icnet.pl ([212.160.220.21]:45865 "EHLO d1.icnet.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751160Ab2H2FNF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 01:13:05 -0400
+From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+To: alsa-devel@alsa-project.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-omap@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH] ASoC: ams-delta: fix card initalization failure
+Date: Wed, 29 Aug 2012 07:04:48 +0200
+Message-ID: <1809544.cvZPIRmRr5@acer>
+Organization: Tele-Info-System, Poznan, PL
+User-Agent: KMail/4.8.3 (Linux/3.3.8-gentoo; KDE/4.8.3; i686; ; )
+In-Reply-To: <20120828181338.GB8796@opensource.wolfsonmicro.com>
+References: <1346102910-8610-1-git-send-email-jkrzyszt@tis.icnet.pl> <3048168.EXxi4fR4e7@acer> <20120828181338.GB8796@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
+X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For several MoviNAND, there are some known issue with secure option.
-For these specific MoviNAND device, we skip secure option.
+On Tue, 28 Aug 2012 11:13:39 Mark Brown wrote:
+> On Tue, Aug 28, 2012 at 05:13:05PM +0200, Janusz Krzysztofik wrote:
+> > On Mon, 27 Aug 2012 14:38:35 Mark Brown wrote:
+> > > On Mon, Aug 27, 2012 at 11:28:30PM +0200, Janusz Krzysztofik wrote:
+> 
+> > > > -	platform_set_drvdata(ams_delta_audio_platform_device,
+> > > > -				&ams_delta_audio_card);
+> 
+> > > The real fix here is that you should be using platform data here, 
+not
+> > > driver data.  Is there some reason not to do that?
+> 
+> > Do you think the change you propose is suitable for the rc cycle? 
+I'm 
+> > trying to fix a regression in the first place. Converting the ams-
+delta 
+> > asoc to a platform driver is on my todo list and I'm going to take 
+care 
+> > of this as soon as I have enough spare time.
+> 
+> The above looks like you already have a platform driver?  All I'm
+> suggesting is changing the above to use platform rather than driver
+> data.
 
-You could refer this discussion in XDA developers.
-http://forum.xda-developers.com/showthread.php?t=1644364
-https://plus.google.com/111398485184813224730/posts/21pTYfTsCkB#111398485184813224730/posts/21pTYfTsCkB
+The ams-delta asoc driver doesn't use snd_soc_register_card() so far, 
+but relays solely on soc_probe() doing this for it, which in turn 
+expects to find a snc_soc_card structure in drvdata. How is it supposed 
+to find that structure if I pass it over platform data instead? Am I 
+missing something?
 
-Signed-off-by: Ian Chen <ian.cy.chen@samsung.com>
-Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
-Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/mmc/card/block.c |   24 +++++++++++++++++++++++-
- include/linux/mmc/card.h |    1 +
- 2 files changed, 24 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-index f1c84de..0377885 100644
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -1411,7 +1411,8 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq,
-struct request *req)
- 		/* complete ongoing async transfer before issuing discard */
- 		if (card->host->areq)
- 			mmc_blk_issue_rw_rq(mq, NULL);
--		if (req->cmd_flags & REQ_SECURE)
-+		if (req->cmd_flags & REQ_SECURE &&
-+			!(card->quirks & MMC_QUIRK_SEC_ERASE_TRIM_BROKEN))
- 			ret = mmc_blk_issue_secdiscard_rq(mq, req);
- 		else
- 			ret = mmc_blk_issue_discard_rq(mq, req);
-@@ -1716,6 +1717,7 @@ force_ro_fail:
- #define CID_MANFID_SANDISK	0x2
- #define CID_MANFID_TOSHIBA	0x11
- #define CID_MANFID_MICRON	0x13
-+#define CID_MANFID_SAMSUNG	0x15
-
- static const struct mmc_fixup blk_fixups[] =
- {
-@@ -1752,6 +1754,26 @@ static const struct mmc_fixup blk_fixups[] =
- 	MMC_FIXUP(CID_NAME_ANY, CID_MANFID_MICRON, 0x200, add_quirk_mmc,
- 		  MMC_QUIRK_LONG_READ_TIME),
-
-+	/*
-+	 * Some issue about secure erase/secure trim for Samsung MoviNAND
-+	 */
-+	MMC_FIXUP("M8G2FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("MAG4FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("MBG8FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("MCGAFA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("VAL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("VYL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("KYL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("VZL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+
- 	END_FIXUP
- };
-
-diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
-index 111aca5..4b27f9f 100644
---- a/include/linux/mmc/card.h
-+++ b/include/linux/mmc/card.h
-@@ -239,6 +239,7 @@ struct mmc_card {
- #define MMC_QUIRK_BLK_NO_CMD23	(1<<7)		/* Avoid CMD23 for regular
-multiblock */
- #define MMC_QUIRK_BROKEN_BYTE_MODE_512 (1<<8)	/* Avoid sending 512
-bytes in */
- #define MMC_QUIRK_LONG_READ_TIME (1<<9)		/* Data read time > CSD says */
-+#define MMC_QUIRK_SEC_ERASE_TRIM_BROKEN (1<<10)	/* Skip secure for
-erase/trim */
- 						/* byte mode */
- 	unsigned int    poweroff_notify_state;	/* eMMC4.5 notify feature */
- #define MMC_NO_POWER_NOTIFICATION	0
--- 
-1.7.0.4
+Thanks,
+Janusz
