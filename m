@@ -1,78 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753869Ab2H2VQy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 17:16:54 -0400
-Received: from Mycroft.westnet.com ([216.187.52.7]:37351 "EHLO
-	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753350Ab2H2VQx (ORCPT
+	id S1754599Ab2H2VR5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 17:17:57 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:34455 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754510Ab2H2VRw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 17:16:53 -0400
+	Wed, 29 Aug 2012 17:17:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <20542.33557.833272.561494@quad.stoffel.home>
-Date: Wed, 29 Aug 2012 17:01:09 -0400
-From: "John Stoffel" <john@stoffel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-        linux-bcache@vger.kernel.org, mpatocka@redhat.com,
-        bharrosh@panasas.com, Tejun Heo <tj@kernel.org>
-Subject: Re: [dm-devel] [PATCH v7 9/9] block: Avoid deadlocks with bio
- allocation by stacking drivers
-In-Reply-To: <20120829162612.GA20312@google.com>
-References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
-	<1346175456-1572-10-git-send-email-koverstreet@google.com>
-	<20120828204910.GG24608@dhcp-172-17-108-109.mtv.corp.google.com>
-	<20120828222800.GG1048@moria.home.lan>
-	<20120828230108.GI1048@moria.home.lan>
-	<20120829013150.GA9269@redhat.com>
-	<20120829032558.GA22214@moria.home.lan>
-	<20120829125759.GB12504@redhat.com>
-	<20120829143913.GA5500@agk-dp.fab.redhat.com>
-	<20120829162612.GA20312@google.com>
-X-Mailer: VM 8.1.2 under 23.2.1 (x86_64-pc-linux-gnu)
+In-Reply-To: <1346267046-6724-5-git-send-email-jacob.shin@amd.com>
+References: <1346267046-6724-1-git-send-email-jacob.shin@amd.com>
+	<1346267046-6724-5-git-send-email-jacob.shin@amd.com>
+Date: Wed, 29 Aug 2012 14:17:51 -0700
+X-Google-Sender-Auth: 0sqkBqmnmu1f0OhBgjT2kJ-7EmY
+Message-ID: <CAE9FiQWcYmROV1SHzk0_RUQfniDwgbyiCbcbRbXatYvYhuGp7Q@mail.gmail.com>
+Subject: Re: [PATCH 4/6] x86: Only direct map addresses that are marked as E820_RAM
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        Dave Young <dyoung@redhat.com>, Chao Wang <chaowang@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Kent" == Kent Overstreet <koverstreet@google.com> writes:
+On Wed, Aug 29, 2012 at 12:04 PM, Jacob Shin <jacob.shin@amd.com> wrote:
+> Currently direct mappings are created for [ 0 to max_low_pfn<<PAGE_SHIFT )
+> and [ 4GB to max_pfn<<PAGE_SHIFT ), which may include regions that are not
+> backed by actual DRAM. This is fine for holes under 4GB which are covered
+> by fixed and variable range MTRRs to be UC. However, we run into trouble
+> on higher memory addresses which cannot be covered by MTRRs.
+>
+> Our system with 1TB of RAM has an e820 that looks like this:
+>
+>  BIOS-e820: [mem 0x0000000000000000-0x00000000000983ff] usable
+>  BIOS-e820: [mem 0x0000000000098400-0x000000000009ffff] reserved
+>  BIOS-e820: [mem 0x00000000000d0000-0x00000000000fffff] reserved
+>  BIOS-e820: [mem 0x0000000000100000-0x00000000c7ebffff] usable
+>  BIOS-e820: [mem 0x00000000c7ec0000-0x00000000c7ed7fff] ACPI data
+>  BIOS-e820: [mem 0x00000000c7ed8000-0x00000000c7ed9fff] ACPI NVS
+>  BIOS-e820: [mem 0x00000000c7eda000-0x00000000c7ffffff] reserved
+>  BIOS-e820: [mem 0x00000000fec00000-0x00000000fec0ffff] reserved
+>  BIOS-e820: [mem 0x00000000fee00000-0x00000000fee00fff] reserved
+>  BIOS-e820: [mem 0x00000000fff00000-0x00000000ffffffff] reserved
+>  BIOS-e820: [mem 0x0000000100000000-0x000000e037ffffff] usable
+>  BIOS-e820: [mem 0x000000e038000000-0x000000fcffffffff] reserved
+>  BIOS-e820: [mem 0x0000010000000000-0x0000011ffeffffff] usable
+>
+> and so direct mappings are created for huge memory hole between
+> 0x000000e038000000 to 0x0000010000000000. Even though the kernel never
+> generates memory accesses in that region, since the page tables mark
+> them incorrectly as being WB, our (AMD) processor ends up causing a MCE
+> while doing some memory bookkeeping/optimizations around that area.
+>
+> This patch iterates through e820 and only direct maps ranges that are
+> marked as E820_RAM, and keeps track of those pfn ranges. Depending on
+> the alignment of E820 ranges, this may possibly result in using smaller
+> size (i.e. 4K instead of 2M or 1G) page tables.
+>
+> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+> ---
+>  arch/x86/include/asm/page_types.h |    9 ++++
+>  arch/x86/kernel/setup.c           |  100 +++++++++++++++++++++++++++++++------
+>  arch/x86/mm/init.c                |    2 +
+>  arch/x86/mm/init_64.c             |    6 +--
+>  4 files changed, 99 insertions(+), 18 deletions(-)
+>
+> diff --git a/arch/x86/include/asm/page_types.h b/arch/x86/include/asm/page_types.h
+> index e21fdd1..409047a 100644
+> --- a/arch/x86/include/asm/page_types.h
+> +++ b/arch/x86/include/asm/page_types.h
+> @@ -3,6 +3,7 @@
+>
+>  #include <linux/const.h>
+>  #include <linux/types.h>
+> +#include <asm/e820.h>
+>
+>  /* PAGE_SHIFT determines the page size */
+>  #define PAGE_SHIFT     12
+> @@ -40,12 +41,20 @@
+>  #endif /* CONFIG_X86_64 */
+>
+>  #ifndef __ASSEMBLY__
+> +#include <linux/range.h>
+>
+>  extern int devmem_is_allowed(unsigned long pagenr);
+>
+>  extern unsigned long max_low_pfn_mapped;
+>  extern unsigned long max_pfn_mapped;
+>
+> +extern struct range pfn_mapped[E820_X_MAX];
+> +extern int nr_pfn_mapped;
+> +
+> +extern void add_pfn_range_mapped(unsigned long start_pfn, unsigned long end_pfn);
+> +extern bool pfn_range_is_mapped(unsigned long start_pfn, unsigned long end_pfn);
+> +extern bool pfn_is_mapped(unsigned long pfn);
+> +
+>  static inline phys_addr_t get_max_mapped(void)
+>  {
+>         return (phys_addr_t)max_pfn_mapped << PAGE_SHIFT;
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index d6e8c03..a2e392e 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -115,13 +115,47 @@
+>  #include <asm/prom.h>
+>
+>  /*
+> - * end_pfn only includes RAM, while max_pfn_mapped includes all e820 entries.
+> - * The direct mapping extends to max_pfn_mapped, so that we can directly access
+> - * apertures, ACPI and other tables without having to play with fixmaps.
+> + * max_low_pfn_mapped: highest direct mapped pfn under 4GB
+> + * max_pfn_mapped:     highest direct mapped pfn over 4GB
+> + *
+> + * The direct mapping only covers E820_RAM regions, so the ranges and gaps are
+> + * represented by pfn_mapped
+>   */
+>  unsigned long max_low_pfn_mapped;
+>  unsigned long max_pfn_mapped;
+>
+> +struct range pfn_mapped[E820_X_MAX];
+> +int nr_pfn_mapped;
 
-Kent> On Wed, Aug 29, 2012 at 03:39:14PM +0100, Alasdair G Kergon wrote:
->> It's also instructive to remember why the code is the way it is: it used
->> to process bios for underlying devices immediately, but this sometimes
->> meant too much recursive stack growth.  If a per-device rescuer thread
->> is to be made available (as well as the mempool), the option of
->> reinstating recursion is there too - only punting to workqueue when the
->> stack actually becomes "too big".  (Also bear in mind that some dm
->> targets may have dependencies on their own mempools - submission can
->> block there too.)  I find it helpful only to consider splitting into two
->> pieces - it must always be possible to process the first piece (i.e.
->> process it at the next layer down in the stack) and complete it
->> independently of what happens to the second piece (which might require
->> further splitting and block until the first piece has completed).
+change to static?
 
-Kent> I'm sure it could be made to work (and it may well simpler), but it
-Kent> seems problematic from a performance pov.
+> +
+> +void add_pfn_range_mapped(unsigned long start_pfn, unsigned long end_pfn)
+> +{
+> +       nr_pfn_mapped = add_range_with_merge(pfn_mapped, E820_X_MAX,
+> +                                            nr_pfn_mapped, start_pfn, end_pfn);
+> +       nr_pfn_mapped = clean_sort_range(pfn_mapped, E820_X_MAX);
+> +
+> +       max_pfn_mapped = max(max_pfn_mapped, end_pfn);
+> +
+> +       if (end_pfn <= (1UL << (32 - PAGE_SHIFT)))
+> +               max_low_pfn_mapped = max(max_low_pfn_mapped, end_pfn);
+> +}
+> +
+> +bool pfn_range_is_mapped(unsigned long start_pfn, unsigned long end_pfn)
+> +{
+> +       int i;
+> +
+> +       for (i = 0; i < nr_pfn_mapped; i++)
+> +               if ((start_pfn >= pfn_mapped[i].start) &&
+> +                   (end_pfn <= pfn_mapped[i].end))
+> +                       return true;
+> +
+> +       return false;
+> +}
+> +
+> +bool pfn_is_mapped(unsigned long pfn)
+> +{
+> +       return pfn_range_is_mapped(pfn, pfn + 1);
+> +}
 
-Kent> With stacked devices you'd then have to switch stacks on _every_ bio.
-Kent> That could be made fast enough I'm sure, but it wouldn't be free and I
-Kent> don't know of any existing code in the kernel that implements what we'd
-Kent> need (though if you know how you'd go about doing that, I'd love to
-Kent> know! Would be useful for other things).
+wonder if those functions have to be in arch/x86/kernel/setup.c.
 
-Kent> The real problem is that because we'd need these extra stacks for
-Kent> handling all bios we couldn't get by with just one per bio_set. We'd
-Kent> only need one to make forward progress so the rest could be allocated
-Kent> on demand (i.e. what the workqueue code does) but that sounds like it's
-Kent> starting to get expensive.
+also do we need to update the tracking array when we have do memory hot-remove?
 
-Maybe we need to limit the size of BIOs to that of the bottom-most
-underlying device instead?  Or maybe limit BIOs to some small
-multiple?  As you stack up DM targets one on top of each other, they
-should respect the limits of the underlying devices and pass those
-limits up the chain.
+Thanks
 
-Or maybe I'm speaking giberish...
-
-John
+Yinghai
