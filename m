@@ -1,276 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753700Ab2H2Ncn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 09:32:43 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:59746 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753214Ab2H2Ncm (ORCPT
+	id S1753759Ab2H2Nc5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 09:32:57 -0400
+Received: from mailrelay1.diasemi.com ([82.210.246.133]:2437 "EHLO
+	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753714Ab2H2Ncx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 09:32:42 -0400
-Message-ID: <503E19F2.3080302@gmail.com>
-Date: Wed, 29 Aug 2012 15:32:34 +0200
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: Josh Boyer <jwboyer@redhat.com>, Bruno Wolff III <bruno@wolff.to>,
-        Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Logitech USB headset not working in 3.6-rc3
-References: <20120824190808.GC20043@zod.bos.redhat.com> <5038007E.5060505@gmail.com> <20120825111749.GA17048@wolff.to> <20120825115423.GA14327@wolff.to> <5038BEEB.6090303@gmail.com> <20120825120740.GA19539@wolff.to> <5038C186.7000107@gmail.com> <20120825121758.GF20043@zod.bos.redhat.com> <503DFC61.3000104@gmail.com> <s5hsjb56d40.wl%tiwai@suse.de>
-In-Reply-To: <s5hsjb56d40.wl%tiwai@suse.de>
-X-Enigmail-Version: 1.4.4
-Content-Type: multipart/mixed;
- boundary="------------070107020309050408050007"
+	Wed, 29 Aug 2012 09:32:53 -0400
+From: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
+To: Guenter Roeck <linux@roeck-us.net>
+CC: <linux-kernel@vger.kernel.org>, <rtc-linux@googlegroups.com>,
+        <lm-sensors@lm-sensors.org>, <linux-input@vger.kernel.org>,
+        <linux-watchdog@vger.kernel.org>, <linux-leds@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Jean Delvare <khali@linux-fr.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        Andrew Jones <drjones@redhat.com>, Donggeun Kim <dg77.kim@samsung.com>,
+        Philippe =?iso-8859-1?Q?R=E9tornaz?= <philippe.retornaz@epfl.ch>,
+        "Wim Van Sebroeck" <wim@iguana.be>, Bryan Wu <bryan.wu@canonical.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Anthony Olech <anthony.olech@diasemi.com>
+Subject: Re: [PATCH] regulator: Fix bug in regulator_mode_to_status() core function.
+References: <201208241500@sw-eng-lt-dc-vm2>
+	<201208241505@sw-eng-lt-dc-vm2>
+	<20120824184505.GA7275@roeck-us.net>
+In-Reply-To: <20120824184505.GA7275@roeck-us.net>
+Message-ID: <201208291425@sw-eng-lt-dc-vm2>
+Date: Wed, 29 Aug 2012 14:25:00 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------070107020309050408050007
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-
-On 29.08.2012 15:29, Takashi Iwai wrote:
-> At Wed, 29 Aug 2012 13:26:25 +0200,
-> Daniel Mack wrote:
->>
->> [1  <text/plain; ISO-8859-1 (7bit)>]
->> On 25.08.2012 14:17, Josh Boyer wrote:
->>> On Sat, Aug 25, 2012 at 02:13:58PM +0200, Daniel Mack wrote:
->>>> On 25.08.2012 14:07, Bruno Wolff III wrote:
->>>>> On Sat, Aug 25, 2012 at 14:02:51 +0200,
->>>>>    Daniel Mack <zonque@gmail.com> wrote:
->>>>>>
->>>>>> Can you revert commit e9ba389c5 ("ALSA: usb-audio: Fix
->>>>>> scheduling-while-atomic bug in PCM capture stream") and see if that
->>>>>
->>>>> I can try that, but it takes a long time to build a new kernel on my 
->>>>> old hardware.
->>>>>
->>>>>> helps? If not, can you summarize again which kernels still work for you
->>>>>> and which don't?
->>>>>
->>>>> The latest kernel that works is 3.6.0-0.rc2.git1.2.fc18. The earliest that 
->>>>> doesn't work is 3.6.0-0.rc2.git2.1.fc18.
->>>>>
->>>>
->>>> The report you sent doesn't look like it could be caused by e9ba389c5.
->>>> It fixes a kernel Ooops. But as it is the only relevant patch in that
->>>> area, it would be interesting if reverting it fixes anything.
->>>
->>> Yep, agreed.  If this revert kernel doesn't work, we're likely down to a
->>> git bisect, Bruno.
->>>
->>>> Btw - thanks a lot for testing -rc kernels, much appreciated!
->>>
->>> Indeed!
->>
->> Could you please try this patch on top of Takashi's? Thanks again!
->>
->>
->> Daniel
->>
->> [2 0001-ALSA-snd-usb-Fix-URB-cancellation-at-stream-start.patch <text/x-patch (7bit)>]
->> >From 6617bb2463ae3fad21390b59cc2a71f96b9e9ca8 Mon Sep 17 00:00:00 2001
->> From: Daniel Mack <zonque@gmail.com>
->> Date: Wed, 29 Aug 2012 13:17:05 +0200
->> Subject: [PATCH] ALSA: snd-usb: Fix URB cancellation at stream start
->>
->> Commit e9ba389c5 ("ALSA: usb-audio: Fix scheduling-while-atomic bug in
->> PCM capture stream") fixed a scheduling-while-atomic bug that happened
->> when snd_usb_endpoint_start was called from the trigger callback, which
->> is an atmic context. However, the patch breaks the idea of the endpoints
->> reference counting, which is the reason why the driver has been
->> refactored lately.
->>
->> Revert that commit and let snd_usb_endpoint_start() take care of the URB
->> cancellation again. As this function is called from both atomic and
->> non-atomic context, add a flag to denote whether the function may sleep.
->>
->> Signed-off-by: Daniel Mack <zonque@gmail.com>
->> Cc: stable@kernel.org [3.5+]
->> ---
->>  sound/usb/endpoint.c | 10 ++++++++--
->>  sound/usb/endpoint.h |  2 +-
->>  sound/usb/pcm.c      | 13 +++++--------
->>  3 files changed, 14 insertions(+), 11 deletions(-)
->>
->> diff --git a/sound/usb/endpoint.c b/sound/usb/endpoint.c
->> index c411812..678456c 100644
->> --- a/sound/usb/endpoint.c
->> +++ b/sound/usb/endpoint.c
->> @@ -799,7 +799,9 @@ int snd_usb_endpoint_set_params(struct snd_usb_endpoint *ep,
->>  /**
->>   * snd_usb_endpoint_start: start an snd_usb_endpoint
->>   *
->> - * @ep: the endpoint to start
->> + * @ep:		the endpoint to start
->> + * @can_sleep:	flag indicating whether the operation is executed in
->> + * 		non-atomic context
->>   *
->>   * A call to this function will increment the use count of the endpoint.
->>   * In case it is not already running, the URBs for this endpoint will be
->> @@ -809,7 +811,7 @@ int snd_usb_endpoint_set_params(struct snd_usb_endpoint *ep,
->>   *
->>   * Returns an error if the URB submission failed, 0 in all other cases.
->>   */
->> -int snd_usb_endpoint_start(struct snd_usb_endpoint *ep)
->> +int snd_usb_endpoint_start(struct snd_usb_endpoint *ep, int can_sleep)
->>  {
->>  	int err;
->>  	unsigned int i;
->> @@ -821,6 +823,10 @@ int snd_usb_endpoint_start(struct snd_usb_endpoint *ep)
->>  	if (++ep->use_count != 1)
->>  		return 0;
->>  
->> +	/* just to be sure */
->> +	deactivate_urbs(ep, 0, can_sleep);
->> +	wait_clear_urbs(ep);
+> +static const struct i_table vsys_tbl[] = {
+> > +	ILINE(0, DA906X_ADC_MAX, 2500, 5500)
+> > +};
+> > +
+> > +static const struct i_table adcin_tbl[] = {
+> > +	ILINE(0, DA906X_ADC_MAX, 0, 2500)
+> > +};
+> > +
+> > +static const struct i_table tjunc_tbl[] = {
+> > +	ILINE(0, DA906X_ADC_MAX, 333, -86)
+> > +};
+> > +
+> > +static const struct i_table vbbat_tbl[] = {
+> > +	ILINE(0, DA906X_ADC_MAX, 0, 5000)
+> > +};
 > 
-> It'd be safer to protect the call of wait_clear_urbs() when
-> can_sleep=0.
+> Since the first parameter to ILINE is always 0, it is not needed. This means
+> that x0 in itable is also always 0 and thus not needed.
+> 
+> > +
+> > +static const struct channel_info da906x_channels[] = {
+> > +	[DA906X_VSYS]	= { "VSYS",
+> > +			    vsys_tbl, ARRAY_SIZE(vsys_tbl) - 1,
+> > +			    DA906X_REG_VSYS_RES },
+> > +	[DA906X_ADCIN1]	= { "ADCIN1",
+> > +			    adcin_tbl,	ARRAY_SIZE(adcin_tbl) - 1,
+> > +			    DA906X_REG_ADCIN1_RES },
+> > +	[DA906X_ADCIN2]	= { "ADCIN2",
+> > +			    adcin_tbl,	ARRAY_SIZE(adcin_tbl) - 1,
+> > +			    DA906X_REG_ADCIN2_RES },
+> > +	[DA906X_ADCIN3]	= { "ADCIN3",
+> > +			    adcin_tbl,	ARRAY_SIZE(adcin_tbl) - 1,
+> > +			    DA906X_REG_ADCIN3_RES },
+> > +	[DA906X_TJUNC]	= { "TJUNC",
+> > +			    tjunc_tbl,	ARRAY_SIZE(tjunc_tbl) - 1 },
+> > +	[DA906X_VBBAT]	= { "VBBAT",
+> > +			    vbbat_tbl,	ARRAY_SIZE(vbbat_tbl) - 1}
+> 
+> 	s/1}/1 }/
+> 
+> > +};
+> 
+> You lost me here a bit (I am missing something ?).
+> 
+> Seems to be each table has exactly one entry. Since the table size is 1,
+> ARRAY_SIZE(vbbat_tbl) - 1 is 0, and ...
 
-Right. New patch attached.
+An initial idea was to make the interpolation of the channel values using more
+ILINE segments. Eventually, it ended up with one linear segment for every
+channel, so it makes sense to reduce the code as you propose.
 
+As suggested, driver name will be changed from "da906x" to "da9063".
+I will adapt proposed changes and fixes.
 
---------------070107020309050408050007
-Content-Type: text/x-patch;
- name="0001-ALSA-snd-usb-Fix-URB-cancellation-at-stream-start.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-ALSA-snd-usb-Fix-URB-cancellation-at-stream-start.patch"
+Thank you for your comments,
+Krystian
 
->From 42ff3e2d34427dc4c6faa09052a2531f2e71d7d6 Mon Sep 17 00:00:00 2001
-From: Daniel Mack <zonque@gmail.com>
-Date: Wed, 29 Aug 2012 13:17:05 +0200
-Subject: [PATCH] ALSA: snd-usb: Fix URB cancellation at stream start
-
-Commit e9ba389c5 ("ALSA: usb-audio: Fix scheduling-while-atomic bug in
-PCM capture stream") fixed a scheduling-while-atomic bug that happened
-when snd_usb_endpoint_start was called from the trigger callback, which
-is an atmic context. However, the patch breaks the idea of the endpoints
-reference counting, which is the reason why the driver has been
-refactored lately.
-
-Revert that commit and let snd_usb_endpoint_start() take care of the URB
-cancellation again. As this function is called from both atomic and
-non-atomic context, add a flag to denote whether the function may sleep.
-
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Cc: stable@kernel.org [3.5+]
----
- sound/usb/endpoint.c | 11 +++++++++--
- sound/usb/endpoint.h |  2 +-
- sound/usb/pcm.c      | 13 +++++--------
- 3 files changed, 15 insertions(+), 11 deletions(-)
-
-diff --git a/sound/usb/endpoint.c b/sound/usb/endpoint.c
-index c411812..b896c55 100644
---- a/sound/usb/endpoint.c
-+++ b/sound/usb/endpoint.c
-@@ -799,7 +799,9 @@ int snd_usb_endpoint_set_params(struct snd_usb_endpoint *ep,
- /**
-  * snd_usb_endpoint_start: start an snd_usb_endpoint
-  *
-- * @ep: the endpoint to start
-+ * @ep:		the endpoint to start
-+ * @can_sleep:	flag indicating whether the operation is executed in
-+ * 		non-atomic context
-  *
-  * A call to this function will increment the use count of the endpoint.
-  * In case it is not already running, the URBs for this endpoint will be
-@@ -809,7 +811,7 @@ int snd_usb_endpoint_set_params(struct snd_usb_endpoint *ep,
-  *
-  * Returns an error if the URB submission failed, 0 in all other cases.
-  */
--int snd_usb_endpoint_start(struct snd_usb_endpoint *ep)
-+int snd_usb_endpoint_start(struct snd_usb_endpoint *ep, int can_sleep)
- {
- 	int err;
- 	unsigned int i;
-@@ -821,6 +823,11 @@ int snd_usb_endpoint_start(struct snd_usb_endpoint *ep)
- 	if (++ep->use_count != 1)
- 		return 0;
- 
-+	/* just to be sure */
-+	deactivate_urbs(ep, 0, can_sleep);
-+	if (can_sleep)
-+		wait_clear_urbs(ep);
-+
- 	ep->active_mask = 0;
- 	ep->unlink_mask = 0;
- 	ep->phase = 0;
-diff --git a/sound/usb/endpoint.h b/sound/usb/endpoint.h
-index ee2723f..a8e60c1 100644
---- a/sound/usb/endpoint.h
-+++ b/sound/usb/endpoint.h
-@@ -13,7 +13,7 @@ int snd_usb_endpoint_set_params(struct snd_usb_endpoint *ep,
- 				struct audioformat *fmt,
- 				struct snd_usb_endpoint *sync_ep);
- 
--int  snd_usb_endpoint_start(struct snd_usb_endpoint *ep);
-+int  snd_usb_endpoint_start(struct snd_usb_endpoint *ep, int can_sleep);
- void snd_usb_endpoint_stop(struct snd_usb_endpoint *ep,
- 			   int force, int can_sleep, int wait);
- int  snd_usb_endpoint_activate(struct snd_usb_endpoint *ep);
-diff --git a/sound/usb/pcm.c b/sound/usb/pcm.c
-index 62ec808..1546577 100644
---- a/sound/usb/pcm.c
-+++ b/sound/usb/pcm.c
-@@ -212,7 +212,7 @@ int snd_usb_init_pitch(struct snd_usb_audio *chip, int iface,
- 	}
- }
- 
--static int start_endpoints(struct snd_usb_substream *subs)
-+static int start_endpoints(struct snd_usb_substream *subs, int can_sleep)
- {
- 	int err;
- 
-@@ -225,7 +225,7 @@ static int start_endpoints(struct snd_usb_substream *subs)
- 		snd_printdd(KERN_DEBUG "Starting data EP @%p\n", ep);
- 
- 		ep->data_subs = subs;
--		err = snd_usb_endpoint_start(ep);
-+		err = snd_usb_endpoint_start(ep, can_sleep);
- 		if (err < 0) {
- 			clear_bit(SUBSTREAM_FLAG_DATA_EP_STARTED, &subs->flags);
- 			return err;
-@@ -239,7 +239,7 @@ static int start_endpoints(struct snd_usb_substream *subs)
- 		snd_printdd(KERN_DEBUG "Starting sync EP @%p\n", ep);
- 
- 		ep->sync_slave = subs->data_endpoint;
--		err = snd_usb_endpoint_start(ep);
-+		err = snd_usb_endpoint_start(ep, can_sleep);
- 		if (err < 0) {
- 			clear_bit(SUBSTREAM_FLAG_SYNC_EP_STARTED, &subs->flags);
- 			return err;
-@@ -544,13 +544,10 @@ static int snd_usb_pcm_prepare(struct snd_pcm_substream *substream)
- 	subs->last_frame_number = 0;
- 	runtime->delay = 0;
- 
--	/* clear the pending deactivation on the target EPs */
--	deactivate_endpoints(subs);
--
- 	/* for playback, submit the URBs now; otherwise, the first hwptr_done
- 	 * updates for all URBs would happen at the same time when starting */
- 	if (subs->direction == SNDRV_PCM_STREAM_PLAYBACK)
--		return start_endpoints(subs);
-+		return start_endpoints(subs, 1);
- 
- 	return 0;
- }
-@@ -1175,7 +1172,7 @@ static int snd_usb_substream_capture_trigger(struct snd_pcm_substream *substream
- 
- 	switch (cmd) {
- 	case SNDRV_PCM_TRIGGER_START:
--		err = start_endpoints(subs);
-+		err = start_endpoints(subs, 0);
- 		if (err < 0)
- 			return err;
- 
--- 
-1.7.11.4
-
-
---------------070107020309050408050007--
