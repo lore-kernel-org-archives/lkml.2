@@ -1,59 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752921Ab2H2CUO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 22:20:14 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:32526 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752280Ab2H2CUN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 22:20:13 -0400
-X-IronPort-AV: E=Sophos;i="4.80,331,1344182400"; 
-   d="scan'208";a="5742566"
-Message-ID: <503D7CBB.9080301@cn.fujitsu.com>
-Date: Wed, 29 Aug 2012 10:21:47 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1753154Ab2H2CVh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 22:21:37 -0400
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:16419
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752853Ab2H2CVg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Aug 2012 22:21:36 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zzbb2dI98dI9371I1432I1447Izz1202h1082kzz8275dhz2dh2a8h668h839h944hd25hf0ah107ah1220h1155h)
+Date: Wed, 29 Aug 2012 10:00:50 +0800
+From: Dong Aisheng <b29396@freescale.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "lrg@ti.com" <lrg@ti.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        Zhao Richard-B20223 <B20223@freescale.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH v3 1/7] mfd: add syscon driver based on regmap
+Message-ID: <20120829020049.GA29464@shlinux2.ap.freescale.net>
+References: <1346145005-17961-1-git-send-email-b29396@freescale.com>
+ <1346145005-17961-2-git-send-email-b29396@freescale.com>
+ <503D4C08.8040605@wwwdotorg.org>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/7] workqueue: single pass rebind_workers
-References: <1346090307-3020-1-git-send-email-laijs@cn.fujitsu.com> <1346090307-3020-5-git-send-email-laijs@cn.fujitsu.com> <20120827190431.GB13094@dhcp-172-17-108-109.mtv.corp.google.com>
-In-Reply-To: <20120827190431.GB13094@dhcp-172-17-108-109.mtv.corp.google.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/29 10:20:00,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/29 10:20:01,
-	Serialize complete at 2012/08/29 10:20:01
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <503D4C08.8040605@wwwdotorg.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/28/2012 03:04 AM, Tejun Heo wrote:
-> Hello, Lai.
+On Wed, Aug 29, 2012 at 06:54:00AM +0800, Stephen Warren wrote:
+> On 08/28/2012 02:09 AM, Dong Aisheng wrote:
+> > From: Dong Aisheng <dong.aisheng@linaro.org>
+> > 
+> > Add regmap based syscon driver.
+> > This is usually used for access misc bits in registers which does not belong
+> > to a specific module, for example, IMX IOMUXC GPR and ANATOP.
+> > With this driver, client can use generic regmap API to access registers
+> > which are registered into syscon.
 > 
-> On Tue, Aug 28, 2012 at 01:58:24AM +0800, Lai Jiangshan wrote:
->> busy_worker_rebind_fn() can't return until all idle workers are rebound,
->> the code of busy_worker_rebind_fn() ensure this.
->>
->> So we can change the order of the code of rebind_workers(),
->> and make it a single pass do the rebind_workers().
->>
->> It makes the code much clean and better readability.
+> > diff --git a/Documentation/devicetree/bindings/mfd/syscon.txt b/Documentation/devicetree/bindings/mfd/syscon.txt
 > 
-> I can't see how this could be correct.  
-
-Could you elaborate more why it is not correct. 
-
-> What prevents busy worker from
-> grabbing manager_mutex before idle one?
+> > +* System Controller Registers R/W driver
 > 
+> I think the binding document could use some information about what a
+> "syscon" actually is, especially since the compatible value is something
+> generic like "syscon" rather than something with a vendor-specific
+> prefix.
+Yes, we'd better have it.
 
-busy worker still has WORKER_REBIND when it enter busy_worker_rebind_fn(),
-so it can sleep(include grab the manager_mutex). When this mutex_lock()
-returns, it means rebind_workers() are done which means all idle are rebound
-and can be locally woken up. So busy worker can return from busy_worker_rebind_fn()
-and handle other possible-sleeping items.
+> How about:
+> 
+> A system controller node represents a register region containing a set
+> of miscellaneous registers. The registers are not cohesive enough to
+> represent as any specific type of device. The typical use-case is for
+> some other node's driver, or platform-specific code, to acquire a
+> reference to the syscon node (e.g. by phandle, node path, or search
+> using a specific compatible value), interrogate the node (or associated
+> OS driver) to determine the location of the registers, and access the
+> registers directly.
+> 
+It looks very good to me.
+Thanks for the help.
 
-If the CPU is offline again, the busy worker has WORKER_UNBOUND, it is also correct
-when it returns from busy_worker_rebind_fn().
+> > +Required properties:
+> > +- compatible: Should contain "syscon".
+> > +- reg: the register range can be access from syscon
+> > +
+> > +Examples:
+> > +gpr: iomuxc-gpr@020e0000 {
+> > +	compatible = "fsl,imx6q-iomuxc-gpr", "syscon";
+> > +	reg = <0x020e0000 0x38>;
+> > +};
+> 
+> > diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> 
+> > +config MFD_SYSCON
+> > +        bool "System Controller Register R/W Based on Regmap"
+> > +        select REGMAP_MMIO
+> > +        help
+> > +          Select this option to enable accessing system control registers
+> > +	  via regmap.
+> 
+> I think the indentation is off there.
+> 
+You're right.
+Will fix it.
+
+> > +static int __devinit syscon_probe(struct platform_device *pdev)
+> ...
+> > +	regcache_cache_only(syscon->regmap, false);
+> 
+> Isn't that the default?
+> 
+Correct, will remove.
+
+> Aside from that, I don't have any particular comments on this series, so
+> please consider it,
+> 
+> Acked-by: Stephen Warren <swarren@wwwdotorg.org>
+> 
+Thanks a lot.
+
+Regards
+Dong Aisheng
+
