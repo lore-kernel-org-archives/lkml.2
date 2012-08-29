@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106Ab2H2QQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 12:16:28 -0400
-Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:13525 "EHLO
-	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753857Ab2H2QQ1 (ORCPT
+	id S1754123Ab2H2QSO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 12:18:14 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40972 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753857Ab2H2QSN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 12:16:27 -0400
-X-Authority-Analysis: v=2.0 cv=IuCcgcDg c=1 sm=0 a=eLNxRirMhZqJpcA6QlPHQA==:17 a=ThlJJk6wLCEA:10 a=XYJHFtupD_QA:10 a=Bx1SisIdh4YA:10 a=5zrl1c6G2EIA:10 a=kj9zAlcOel0A:10 a=gv3aWt4ZAu4A:10 a=oLb3JtG0AAAA:8 a=lZlbqPBFs-YWfO-CdB8A:9 a=CjuIK1q_8ugA:10 a=eLNxRirMhZqJpcA6QlPHQA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 75.80.152.117
-Date: Wed, 29 Aug 2012 09:16:24 -0700
-From: Nick Pasich <NewsLetters@NickAndBarb.net>
-To: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        Andrea Arcangeli <andrea@suse.de>
-Subject: WARNING: at fs/inode.c:280 drop_nlink+0x31/0x33()
-Message-ID: <20120829161624.GA16901@NickAndBarb.net>
+	Wed, 29 Aug 2012 12:18:13 -0400
+Message-ID: <503E40BF.8090905@gmail.com>
+Date: Wed, 29 Aug 2012 10:18:07 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Irina Tirdea <irina.tirdea@gmail.com>
+CC: Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 02/13] perf tools: update types definitions for Android
+References: <CANg8OWJnDvd28KTZffojhxLds4znjTTq294=H-_frbX6dStaWw@mail.gmail.com>
+In-Reply-To: <CANg8OWJnDvd28KTZffojhxLds4znjTTq294=H-_frbX6dStaWw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 8/28/12 4:33 PM, Irina Tirdea wrote:
+> Some systems (e.g. Android) define in their libc types.h
+> __le16, __be16, etc. Since perf is wrapping
+> <linux/types.h> with a local version, we need to define this
+> constants in the local version too.
+>
+> Errors in Android:
+> In file included from bionic/libc/include/netinet/in.h:34:0,
+>                   from util/util.h:73,
+>                   from util/cache.h:5,
+>                   from util/abspath.c:1:
+> bionic/libc/kernel/common/linux/in6.h:20:2: error: unknown type name '__be16'
+> bionic/libc/kernel/common/linux/in6.h:21:2: error: unknown type name '__be32'
+> bionic/libc/kernel/common/linux/in6.h:30:2: error: unknown type name '__be16'
+> bionic/libc/kernel/common/linux/in6.h:31:2: error: unknown type name '__be32'
+> bionic/libc/kernel/common/linux/in6.h:47:2: error: unknown type name '__be32'
 
-I know that Nick Bowler has already reported this...
+This https://lkml.org/lkml/2012/8/29/150 should fix the netinet/in.h 
+build problem.
 
-I'm experiencing the same thing.
-
-It happens when moving files from one directory to another
-on the same partition (NFS). 
-
-  --( Nick Pasich )--
-
-
-#############################################################################
-##
-## Happens when PSTs are moved from one directory to another on the ISCSI ...
-##
-#############################################################################
-
-Aug 29 08:06:16 localhost kernel: ------------[ cut here ]------------
-Aug 29 08:06:16 localhost kernel: WARNING: at fs/inode.c:280 drop_nlink+0x31/0x33()
-Aug 29 08:06:16 localhost kernel: Hardware name: To Be Filled By O.E.M.
-Aug 29 08:06:16 localhost kernel: Modules linked in: ecb md4 cifs w83627hf eeprom asb100 hwmon_vid hwmon nfsd exportfs ipv6 psmouse usb_storage io_edgeport usbserial sg r8169 mii evdev intel_agp uhci_hcd i2c_i801 i2c_core shpchp intel_gtt agpgart ehci_hcd microcode serio_raw
-Aug 29 08:06:16 localhost kernel: Pid: 31477, comm: rm Tainted: G        W    3.5.3 #1
-Aug 29 08:06:16 localhost kernel: Call Trace:
-Aug 29 08:06:16 localhost kernel:  [<c10a53e2>] ? drop_nlink+0x31/0x33
-Aug 29 08:06:16 localhost kernel:  [<c1025dd2>] ? warn_slowpath_common+0x7b/0x90
-Aug 29 08:06:16 localhost kernel:  [<c10a53e2>] ? drop_nlink+0x31/0x33
-Aug 29 08:06:16 localhost kernel:  [<c1025e02>] ? warn_slowpath_null+0x1b/0x1f
-Aug 29 08:06:16 localhost kernel:  [<c10a53e2>] ? drop_nlink+0x31/0x33
-Aug 29 08:06:16 localhost kernel:  [<f83dfa81>] ? cifs_unlink+0x134/0x63d [cifs]
-Aug 29 08:06:16 localhost kernel:  [<c10a37d4>] ? dput+0x11/0x117
-Aug 29 08:06:16 localhost kernel:  [<c10a87d4>] ? mntput_no_expire+0xf/0xf7
-Aug 29 08:06:16 localhost kernel:  [<c109ca9b>] ? vfs_unlink+0x4e/0xb6
-Aug 29 08:06:16 localhost kernel:  [<c109b333>] ? __lookup_hash+0x54/0xac
-Aug 29 08:06:16 localhost kernel:  [<c109e8c2>] ? do_unlinkat+0x10a/0x12d
-Aug 29 08:06:16 localhost kernel:  [<c10a0124>] ? sys_ioctl+0x34/0x57
-Aug 29 08:06:16 localhost kernel:  [<c140a8ed>] ? syscall_call+0x7/0xb
-Aug 29 08:06:16 localhost kernel: ---[ end trace 756b427e3bd671f9 ]---
-
-
+David
