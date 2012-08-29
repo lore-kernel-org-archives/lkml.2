@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754165Ab2H2RSx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 13:18:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36576 "EHLO mx2.suse.de"
+	id S1754175Ab2H2RXM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 13:23:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24025 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753606Ab2H2RSw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 13:18:52 -0400
-Date: Wed, 29 Aug 2012 10:18:41 -0700 (PDT)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] HID: multitouch: Remove the redundant touch state
-In-Reply-To: <CAN+gG=Gwe5_UBsgp5Vk+5dVEFyC4wwUG2ba=P8QfRwJ6veNm4g@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1208291017290.22447@pobox.suse.cz>
-References: <1344807757-2217-1-git-send-email-rydberg@euromail.se> <1344807757-2217-20-git-send-email-rydberg@euromail.se> <CAN+gG=F6hhOxU--mF2v3sCTzFLHqd6vK5JqcvvDXigss7EkPHQ@mail.gmail.com> <20120822205832.GA18102@polaris.bitmath.org>
- <alpine.LNX.2.00.1208281525060.22447@pobox.suse.cz> <CAN+gG=Gwe5_UBsgp5Vk+5dVEFyC4wwUG2ba=P8QfRwJ6veNm4g@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753918Ab2H2RXK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 13:23:10 -0400
+Date: Wed, 29 Aug 2012 13:22:54 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Daniel Mack <zonque@gmail.com>
+Cc: Takashi Iwai <tiwai@suse.de>, Bruno Wolff III <bruno@wolff.to>,
+        Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Logitech USB headset not working in 3.6-rc3
+Message-ID: <20120829172254.GB1895@zod.bos.redhat.com>
+References: <20120825111749.GA17048@wolff.to>
+ <20120825115423.GA14327@wolff.to>
+ <5038BEEB.6090303@gmail.com>
+ <20120825120740.GA19539@wolff.to>
+ <5038C186.7000107@gmail.com>
+ <20120825121758.GF20043@zod.bos.redhat.com>
+ <503DFC61.3000104@gmail.com>
+ <s5hsjb56d40.wl%tiwai@suse.de>
+ <503E19F2.3080302@gmail.com>
+ <20120829170753.GA1895@zod.bos.redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120829170753.GA1895@zod.bos.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Aug 2012, Benjamin Tissoires wrote:
-
-> >> With the input_mt_sync_frame() function in place, there is no longer
-> >> any need to keep the full touch state in the driver. This patch
-> >> removes the slot state and replaces the lookup code with the input-mt
-> >> equivalent. The initialization code is moved to mt_input_configured(),
-> >> to make sure the full HID report has been seen.
-> >>
-> >> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> >> ---
-> >> Hi Benjamin,
-> >>
-> >> Maybe this patch works better? It has received limited testing so far.
-> >
-> > What is the status of this patch please? Henrik, Benjamin?
+On Wed, Aug 29, 2012 at 01:07:53PM -0400, Josh Boyer wrote:
+> > Right. New patch attached.
 > 
-> Well, Henrik submitted a new release a few days ago (including this version).
-> I just didn't found the time to test the whole thing on our different devices.
-> It's now on the top of my TODO list.
+> I'll try and get another kernel built with this later today.  I'm at
+> Plumbers so it might have to wait a bit.
 
-Ah, I have missed the fact that this one is also part of Henrik's series, 
-sorry for the noise.
+OK, I got impatient with myself and got the kernel building sooner than
+I said.  Bruno, you can find the kernel here when the build finishes:
 
-I haven't unfortunately reviewed the series yet due to kernel summit & 
-related events, but I'll get to it shortly.
+http://koji.fedoraproject.org/koji/taskinfo?taskID=4434883
 
-Thanks,
+Please test and let us know.
 
--- 
-Jiri Kosina
-SUSE Labs
+josh
