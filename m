@@ -1,333 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753709Ab2H2RNh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 13:13:37 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:42590 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753380Ab2H2RNf (ORCPT
+	id S1754150Ab2H2RN7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 13:13:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40802 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753991Ab2H2RNt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 13:13:35 -0400
-Message-ID: <503E4DD9.1020102@gmail.com>
-Date: Wed, 29 Aug 2012 19:14:01 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120826 Thunderbird/14.0
+	Wed, 29 Aug 2012 13:13:49 -0400
+Date: Wed, 29 Aug 2012 10:13:45 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Mikulas Patocka <mpatocka@redhat.com>, linux-bcache@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dm-devel@redhat.com, tj@kernel.org,
+        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH v7 9/9] block: Avoid deadlocks with bio allocation by
+ stacking drivers
+Message-ID: <20120829171345.GC20312@google.com>
+References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
+ <1346175456-1572-10-git-send-email-koverstreet@google.com>
+ <Pine.LNX.4.64.1208291210180.774@file.rdu.redhat.com>
+ <20120829165006.GB20312@google.com>
+ <20120829170711.GC12504@redhat.com>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, avi@redhat.com, kvm@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] virtio-ring: Allocate indirect buffers from cache
- when possible
-References: <1346159043-16446-1-git-send-email-levinsasha928@gmail.com> <1346159043-16446-2-git-send-email-levinsasha928@gmail.com> <20120829153812.GD7407@redhat.com>
-In-Reply-To: <20120829153812.GD7407@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120829170711.GC12504@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2012 05:38 PM, Michael S. Tsirkin wrote:
-> On Tue, Aug 28, 2012 at 03:04:03PM +0200, Sasha Levin wrote:
->> Currently if VIRTIO_RING_F_INDIRECT_DESC is enabled we will
->> use indirect descriptors and allocate them using a simple
->> kmalloc().
->>
->> This patch adds a cache which will allow indirect buffers under
->> a configurable size to be allocated from that cache instead.
->>
->> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+On Wed, Aug 29, 2012 at 01:07:11PM -0400, Vivek Goyal wrote:
+> On Wed, Aug 29, 2012 at 09:50:06AM -0700, Kent Overstreet wrote:
 > 
-> The API is ugly - how does driver know what to set?
-> Is this a typical request size? Then let's call it that.
-
-We've discussed it during the RFC phase, the idea is that we don't know what
-would be a good number to use as threshold - which is why I'd like to keep it
-disabled as default until it gets more serious tests.
-
-The driver doesn't know what to set, the plan was to make it a dynamic
-algorithms which would change it based on current load. Since I can't really do
-testing which will provide the correct values for that, the decision was to do
-it this way as the first stage and modify it later.
-
-> Also this is really per VQ, right?
-
-Right, we keep it per-device at this stage to keep it simple.
-
-> What is a good default for net? I guess max sg?
-
-I think that it depends on the workload. I'd say we should keep the default to 0
-(disabled) unless we can have a good way to adjust it to the load.
-
->> ---
->>
->> Changes in v2:
->>
->>  - Free correctly indirect buffers.
->>
->>  drivers/block/virtio_blk.c          |  4 ++++
->>  drivers/char/hw_random/virtio-rng.c |  4 ++++
->>  drivers/char/virtio_console.c       |  4 ++++
->>  drivers/net/virtio_net.c            |  4 ++++
->>  drivers/virtio/virtio_balloon.c     |  4 ++++
->>  drivers/virtio/virtio_ring.c        | 28 ++++++++++++++++++++++++----
->>  include/linux/virtio.h              |  1 +
->>  net/9p/trans_virtio.c               |  5 +++++
->>  8 files changed, 50 insertions(+), 4 deletions(-)
->>
->> diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
->> index 13b8ae9..7f670af 100644
->> --- a/drivers/block/virtio_blk.c
->> +++ b/drivers/block/virtio_blk.c
->> @@ -25,6 +25,9 @@ struct workqueue_struct *virtblk_wq;
->>  static unsigned int indirect_thresh;
->>  module_param(indirect_thresh, uint, S_IRUGO);
->>  
->> +static unsigned int indirect_alloc_thresh;
->> +module_param(indirect_alloc_thresh, uint, S_IRUGO);
->> +
->>  struct virtio_blk
->>  {
->>  	struct virtio_device *vdev;
->> @@ -739,6 +742,7 @@ static int __devinit virtblk_probe(struct virtio_device *vdev)
->>  	INIT_WORK(&vblk->config_work, virtblk_config_changed_work);
->>  	vblk->config_enable = true;
->>  	vdev->indirect_thresh = indirect_thresh;
->> +	vdev->indirect_alloc_thresh = indirect_alloc_thresh;
->>  
->>  	err = init_vq(vblk);
->>  	if (err)
->> diff --git a/drivers/char/hw_random/virtio-rng.c b/drivers/char/hw_random/virtio-rng.c
->> index 02d8421..8475ece 100644
->> --- a/drivers/char/hw_random/virtio-rng.c
->> +++ b/drivers/char/hw_random/virtio-rng.c
->> @@ -28,6 +28,9 @@
->>  static unsigned int indirect_thresh;
->>  module_param(indirect_thresh, uint, S_IRUGO);
->>  
->> +static unsigned int indirect_alloc_thresh;
->> +module_param(indirect_alloc_thresh, uint, S_IRUGO);
->> +
->>  static struct virtqueue *vq;
->>  static unsigned int data_avail;
->>  static DECLARE_COMPLETION(have_data);
->> @@ -97,6 +100,7 @@ static int probe_common(struct virtio_device *vdev)
->>  
->>  	/* We expect a single virtqueue. */
->>  	vdev->indirect_thresh = indirect_thresh;
->> +	vdev->indirect_alloc_thresh = indirect_alloc_thresh;
->>  	vq = virtio_find_single_vq(vdev, random_recv_done, "input");
->>  	if (IS_ERR(vq))
->>  		return PTR_ERR(vq);
->> diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
->> index fc14e7f..c6f24a7 100644
->> --- a/drivers/char/virtio_console.c
->> +++ b/drivers/char/virtio_console.c
->> @@ -42,6 +42,9 @@
->>  static unsigned int indirect_thresh;
->>  module_param(indirect_thresh, uint, S_IRUGO);
->>  
->> +static unsigned int indirect_alloc_thresh;
->> +module_param(indirect_alloc_thresh, uint, S_IRUGO);
->> +
->>  /*
->>   * This is a global struct for storing common data for all the devices
->>   * this driver handles.
->> @@ -1891,6 +1894,7 @@ static int __devinit virtcons_probe(struct virtio_device *vdev)
->>  			      &portdev->config.max_nr_ports) == 0)
->>  		multiport = true;
->>  	vdev->indirect_thresh = indirect_thresh;
->> +	vdev->indirect_alloc_thresh = indirect_alloc_thresh;
->>  
->>  	err = init_vqs(portdev);
->>  	if (err < 0) {
->> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
->> index 64a8321..c091efd 100644
->> --- a/drivers/net/virtio_net.c
->> +++ b/drivers/net/virtio_net.c
->> @@ -37,6 +37,9 @@ module_param(gso, bool, 0444);
->>  static unsigned int indirect_thresh;
->>  module_param(indirect_thresh, uint, S_IRUGO);
->>  
->> +static unsigned int indirect_alloc_thresh;
->> +module_param(indirect_alloc_thresh, uint, S_IRUGO);
->> +
->>  /* FIXME: MTU in config. */
->>  #define MAX_PACKET_LEN (ETH_HLEN + VLAN_HLEN + ETH_DATA_LEN)
->>  #define GOOD_COPY_LEN	128
->> @@ -1132,6 +1135,7 @@ static int virtnet_probe(struct virtio_device *vdev)
->>  	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
->>  		vi->mergeable_rx_bufs = true;
->>  	vdev->indirect_thresh = indirect_thresh;
->> +	vdev->indirect_alloc_thresh = indirect_alloc_thresh;
->>  
->>  	err = init_vqs(vi);
->>  	if (err)
->> diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
->> index fce7347..ccf87db 100644
->> --- a/drivers/virtio/virtio_balloon.c
->> +++ b/drivers/virtio/virtio_balloon.c
->> @@ -38,6 +38,9 @@
->>  static unsigned int indirect_thresh;
->>  module_param(indirect_thresh, uint, S_IRUGO);
->>  
->> +static unsigned int indirect_alloc_thresh;
->> +module_param(indirect_alloc_thresh, uint, S_IRUGO);
->> +
->>  struct virtio_balloon
->>  {
->>  	struct virtio_device *vdev;
->> @@ -360,6 +363,7 @@ static int virtballoon_probe(struct virtio_device *vdev)
->>  	vb->vdev = vdev;
->>  	vb->need_stats_update = 0;
->>  	vdev->indirect_thresh = indirect_thresh;
->> +	vdev->indirect_alloc_thresh = indirect_alloc_thresh;
->>  
->>  	err = init_vqs(vb);
->>  	if (err)
->> diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
->> index 99a64a7..e8b9c54 100644
->> --- a/drivers/virtio/virtio_ring.c
->> +++ b/drivers/virtio/virtio_ring.c
->> @@ -93,6 +93,10 @@ struct vring_virtqueue
->>  	 */
->>  	unsigned int indirect_thresh;
->>  
->> +	/* Buffers below this size will be allocated from cache */
->> +	unsigned int indirect_alloc_thresh;
->> +	struct kmem_cache *indirect_cache;
->> +
->>  	/* Host publishes avail event idx */
->>  	bool event;
->>  
->> @@ -135,7 +139,10 @@ static int vring_add_indirect(struct vring_virtqueue *vq,
->>  	unsigned head;
->>  	int i;
->>  
->> -	desc = kmalloc((out + in) * sizeof(struct vring_desc), gfp);
->> +	if ((out + in) <= vq->indirect_alloc_thresh)
->> +		desc = kmem_cache_alloc(vq->indirect_cache, gfp);
->> +	else
->> +		desc = kmalloc((out + in) * sizeof(struct vring_desc), gfp);
->>  	if (!desc)
->>  		return -ENOMEM;
+> [..]
+> > > The problem is that majority of device mapper code assumes that if we 
+> > > submit a bio, that bio will be finished in a finite time. The commit 
+> > > d89d87965dcbe6fe4f96a2a7e8421b3a75f634d1 in 2.6.22 broke this assumption.
+> > > 
+> > > I suggest - instead of writing workarounds for this current->bio_list 
+> > > misbehavior, why not remove current->bio_list at all? We could revert 
+> > > d89d87965dcbe6fe4f96a2a7e8421b3a75f634d1, allocate a per-device workqueue, 
+> > > test stack usage in generic_make_request, and if it is too high (more than 
+> > > half of the stack used, or so), put the bio to the target device's 
+> > > blockqueue.
+> > > 
+> > > That could be simpler than allocating per-bioset workqueue and it also 
+> > > solves more problems (possible deadlocks in dm).
+> > 
+> > It certainly would be simpler, but honestly the potential for
+> > performance regressions scares me (and bcache at least is used on fast
+> > enough devices where it's going to matter). Also it's not so much the
+> > performance overhead - we can just measure that - it's that if we're
+> > just using the workqueue code the scheduler's getting involved and we
+> > can't just measure what the effects of that are going to be in
+> > production.
 > 
-> So this means that drivers need to know how large each
-> descriptor is to avoid trying to allocate 32Mbyte chunks :)
+> Are workqueues not getting involved already in your solution of punting
+> to rescuer thread.
 
-Right, this interface isn't perfect and would hopefully be removed in favour of
-a dynamic algorithm in the driver.
+Only on allocation failure.
 
->>  
->> @@ -384,8 +391,13 @@ static void detach_buf(struct vring_virtqueue *vq, unsigned int head)
->>  	i = head;
->>  
->>  	/* Free the indirect table */
->> -	if (vq->vring.desc[i].flags & VRING_DESC_F_INDIRECT)
->> -		kfree(phys_to_virt(vq->vring.desc[i].addr));
->> +	if (vq->vring.desc[i].flags & VRING_DESC_F_INDIRECT) {
->> +		if (vq->vring.desc[i].len > vq->indirect_alloc_thresh)
+> In the proposal above also, workers get involved
+> only if stack depth is too deep. So for normal stack usage performance
+> should not be impacted.
 > 
-> This looks wrong. indirect_alloc_thresh is in entries but len is in
-> bytes, isn't it?
+> Performance aside, punting submission to per device worker in case of deep
+> stack usage sounds cleaner solution to me.
 
-Uh, yes. It's supposed to be '.len/sizeof(struct vring_desc)'.
+Agreed, but performance tends to matter in the real world. And either
+way the tricky bits are going to be confined to a few functions, so I
+don't think it matters that much.
 
->> +			kfree(phys_to_virt(vq->vring.desc[i].addr));
->> +		else
->> +			kmem_cache_free(vq->indirect_cache,
->> +					phys_to_virt(vq->vring.desc[i].addr));
->> +	}
->>  
->>  	while (vq->vring.desc[i].flags & VRING_DESC_F_NEXT) {
->>  		i = vq->vring.desc[i].next;
->> @@ -654,14 +666,20 @@ struct virtqueue *vring_new_virtqueue(unsigned int num,
->>  	vq->last_used_idx = 0;
->>  	vq->num_added = 0;
->>  	vq->indirect_thresh = 0;
->> +	vq->indirect_alloc_thresh = 0;
->> +	vq->indirect_cache = NULL;
->>  	list_add_tail(&vq->vq.list, &vdev->vqs);
->>  #ifdef DEBUG
->>  	vq->in_use = false;
->>  	vq->last_add_time_valid = false;
->>  #endif
->>  
->> -	if (virtio_has_feature(vdev, VIRTIO_RING_F_INDIRECT_DESC))
->> +	if (virtio_has_feature(vdev, VIRTIO_RING_F_INDIRECT_DESC)) {
->>  		vq->indirect_thresh = vdev->indirect_thresh;
->> +		vq->indirect_alloc_thresh = vdev->indirect_alloc_thresh;
->> +		if (vq->indirect_alloc_thresh)
->> +			vq->indirect_cache = KMEM_CACHE(vring_desc[vq->indirect_alloc_thresh],
->> 0);
-> 
-> I am not a purist but this line looks way too long.
-> Also - no need to check cache creation succeeded?
-> On failure - disable caching?
-> 
-> Also - let's check that values are sane before passing them on?
-> They come from user after all.
-
-will fix these two.
-
-> Also - should not threshold be per VQ? E.g. for -net we do not
-> need the cache for RX unless in legacy big packet mode.
-
-We've discussed it two months ago over IRC (at least thats what I have in my
-notes) - the plan was to keep it simple per-device until something more advanced
-to deal with the threshold shows up.
-
-
-Thanks,
-Sasha
-
-> 
->> +	}
->>  
->>  	vq->event = virtio_has_feature(vdev, VIRTIO_RING_F_EVENT_IDX);
->>  
->> @@ -685,6 +703,8 @@ EXPORT_SYMBOL_GPL(vring_new_virtqueue);
->>  void vring_del_virtqueue(struct virtqueue *vq)
->>  {
->>  	list_del(&vq->list);
->> +	if (to_vvq(vq)->indirect_cache)
->> +		kmem_cache_destroy(to_vvq(vq)->indirect_cache);
->>  	kfree(to_vvq(vq));
->>  }
->>  EXPORT_SYMBOL_GPL(vring_del_virtqueue);
->> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
->> index 48bc457..3261c02 100644
->> --- a/include/linux/virtio.h
->> +++ b/include/linux/virtio.h
->> @@ -70,6 +70,7 @@ struct virtio_device {
->>  	unsigned long features[1];
->>  	void *priv;
->>  	unsigned int indirect_thresh;
->> +	unsigned int indirect_alloc_thresh;
->>  };
->>  
->>  #define dev_to_virtio(dev) container_of(dev, struct virtio_device, dev)
->> diff --git a/net/9p/trans_virtio.c b/net/9p/trans_virtio.c
->> index fc93962..3044c86 100644
->> --- a/net/9p/trans_virtio.c
->> +++ b/net/9p/trans_virtio.c
->> @@ -55,6 +55,9 @@
->>  static unsigned int indirect_thresh;
->>  module_param(indirect_thresh, uint, S_IRUGO);
->>  
->> +static unsigned int indirect_alloc_thresh;
->> +module_param(indirect_alloc_thresh, uint, S_IRUGO);
->> +
->>  /* a single mutex to manage channel initialization and attachment */
->>  static DEFINE_MUTEX(virtio_9p_lock);
->>  static DECLARE_WAIT_QUEUE_HEAD(vp_wq);
->> @@ -505,6 +508,8 @@ static int p9_virtio_probe(struct virtio_device *vdev)
->>  
->>  	/* We expect one virtqueue, for requests. */
->>  	vdev->indirect_thresh = indirect_thresh;
->> +	vdev->indirect_alloc_thresh = indirect_alloc_thresh;
->> +
->>  	chan->vq = virtio_find_single_vq(vdev, req_done, "requests");
->>  	if (IS_ERR(chan->vq)) {
->>  		err = PTR_ERR(chan->vq);
->> -- 
->> 1.7.12
-
+If someone wants to code up the workqueue version and test it, they're
+more than welcome...
