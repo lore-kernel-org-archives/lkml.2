@@ -1,128 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754081Ab2H2QBJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 12:01:09 -0400
-Received: from mx1.fusionio.com ([66.114.96.30]:49767 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754011Ab2H2QBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 12:01:07 -0400
-X-ASG-Debug-ID: 1346256066-03d6a5559119660001-xx1T2L
-X-Barracuda-Envelope-From: clmason@fusionio.com
-Date: Wed, 29 Aug 2012 12:01:04 -0400
-From: Chris Mason <chris.mason@fusionio.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Btrfs List <linux-btrfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Btrfs updates
-Message-ID: <20120829160104.GC4697@shiny.sheraton.com>
-X-ASG-Orig-Subj: [GIT PULL] Btrfs updates
-Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Btrfs List <linux-btrfs@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>
+	id S1754118Ab2H2QBX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 12:01:23 -0400
+Received: from astoria.ccjclearline.com ([64.235.106.9]:38266 "EHLO
+	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754011Ab2H2QBV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 12:01:21 -0400
+X-Greylist: delayed 4423 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 Aug 2012 12:01:20 EDT
+Date: Wed, 29 Aug 2012 10:47:27 -0400 (EDT)
+From: "Robert P. J. Day" <rpjday@crashcourse.ca>
+X-X-Sender: rpjday@oneiric
+To: Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] KBUILD: Drop exporting an empty irqnr.h.
+Message-ID: <alpine.DEB.2.02.1208291043310.15542@oneiric>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1346256066
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0060 1.0000 -1.9818
-X-Barracuda-Spam-Score: -1.98
-X-Barracuda-Spam-Status: No, SCORE=-1.98 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.107019
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - crashcourse.ca
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-I've split out the big send/receive update from my last pull request and
-now have just the fixes in my for-linus branch:
+Since the content of irqnr.h is entirely wrapped in a __KERNEL__ test,
+drop exporting it, and remove the single include of that header from
+random.h.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+Signed-off-by: Robert P. J. Day <rpjday@crashcourse.ca>
 
-For anyone who wants send/receive updates, they are maintained as well.
-But it is has enough cleanups (without fixes) that we shouldn't be asking
-Linus to take it right now.  The send/recv branch will wander over to
-linux-next shortly though.
+---
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git send-recv
+diff --git a/include/linux/Kbuild b/include/linux/Kbuild
+index fa21760..b9de555 100644
+--- a/include/linux/Kbuild
++++ b/include/linux/Kbuild
+@@ -209,7 +209,6 @@ header-y += ipv6.h
+ header-y += ipv6_route.h
+ header-y += ipx.h
+ header-y += irda.h
+-header-y += irqnr.h
+ header-y += isdn.h
+ header-y += isdn_divertif.h
+ header-y += isdn_ppp.h
+diff --git a/include/linux/random.h b/include/linux/random.h
+index ac621ce..be982d6 100644
+--- a/include/linux/random.h
++++ b/include/linux/random.h
+@@ -9,7 +9,6 @@
 
-The largest patches in this pull are Josef's patches to fix DIO locking
-problems and his patch to fix a crash during balance.
-They are both well tested.
+ #include <linux/types.h>
+ #include <linux/ioctl.h>
+-#include <linux/irqnr.h>
 
-The rest are smaller fixes that we've had queued.  The last rc came out
-while I was hacking new and exciting ways to recover from a misplaced rm
--rf on my dev box, so these missed rc3.
+ /* ioctl()'s for the random number generator */
 
-Josef Bacik (9) commits (+322/-216):
-    Btrfs: don't allocate a seperate csums array for direct reads (+19/-32)
-    Btrfs: do not use missing devices when showing devname (+2/-0)
-    Btrfs: fix enospc problems when deleting a subvol (+1/-1)
-    Btrfs: increase the size of the free space cache (+7/-8)
-    Btrfs: lock extents as we map them in DIO (+127/-129)
-    Btrfs: fix deadlock with freeze and sync V2 (+9/-4)
-    Btrfs: allow delayed refs to be merged (+142/-27)
-    Btrfs: do not strdup non existent strings (+5/-3)
-    Btrfs: barrier before waitqueue_active (+10/-12)
 
-Stefan Behrens (5) commits (+16/-77):
-    Btrfs: fix that repair code is spuriously executed for transid failures (+6/-2)
-    Btrfs: revert checksum error statistic which can cause a BUG() (+2/-39)
-    Btrfs: fix a misplaced address operator in a condition (+1/-1)
-    Btrfs: remove superblock writing after fatal error (+5/-33)
-    Btrfs: fix that error value is changed by mistake (+2/-2)
+-- 
 
-Dan Carpenter (4) commits (+16/-8):
-    Btrfs: unlock on error in btrfs_delalloc_reserve_metadata() (+3/-1)
-    Btrfs: fix some error codes in btrfs_qgroup_inherit() (+6/-2)
-    Btrfs: fix some endian bugs handling the root times (+4/-4)
-    Btrfs: checking for NULL instead of IS_ERR (+3/-1)
+========================================================================
+Robert P. J. Day                                 Ottawa, Ontario, CANADA
+                        http://crashcourse.ca
 
-Liu Bo (2) commits (+25/-6):
-    Btrfs: fix ordered extent leak when failing to start a transaction (+5/-2)
-    Btrfs: fix a dio write regression (+20/-4)
-
-Arne Jansen (2) commits (+38/-73):
-    Btrfs: fix deadlock in wait_for_more_refs (+21/-73)
-    Btrfs: fix race in run_clustered_refs (+17/-0)
-
-Chris Mason (1) commits (+3/-0):
-    Btrfs: don't run __tree_mod_log_free_eb on leaves
-
-Fengguang Wu (1) commits (+3/-2):
-    btrfs: fix second lock in btrfs_delete_delayed_items()
-
-Miao Xie (1) commits (+1/-0):
-    Btrfs: fix wrong mtime and ctime when creating snapshots
-
-Total: (25) commits (+424/-382)
-
- fs/btrfs/backref.c       |   4 +-
- fs/btrfs/compression.c   |   1 +
- fs/btrfs/ctree.c         |   9 +-
- fs/btrfs/ctree.h         |   3 +-
- fs/btrfs/delayed-inode.c |  12 +-
- fs/btrfs/delayed-ref.c   | 163 +++++++++++++++++++-----
- fs/btrfs/delayed-ref.h   |   4 +
- fs/btrfs/disk-io.c       |  53 ++------
- fs/btrfs/disk-io.h       |   2 +-
- fs/btrfs/extent-tree.c   | 123 +++++++++---------
- fs/btrfs/extent_io.c     |  17 +--
- fs/btrfs/file-item.c     |   4 +-
- fs/btrfs/inode.c         | 326 ++++++++++++++++++++++++-----------------------
- fs/btrfs/ioctl.c         |   2 +-
- fs/btrfs/locking.c       |   2 +-
- fs/btrfs/qgroup.c        |  12 +-
- fs/btrfs/root-tree.c     |   4 +-
- fs/btrfs/super.c         |  15 ++-
- fs/btrfs/transaction.c   |   3 +-
- fs/btrfs/volumes.c       |  33 +----
- fs/btrfs/volumes.h       |   2 -
- 21 files changed, 418 insertions(+), 376 deletions(-)
+Twitter:                                       http://twitter.com/rpjday
+LinkedIn:                               http://ca.linkedin.com/in/rpjday
+========================================================================
