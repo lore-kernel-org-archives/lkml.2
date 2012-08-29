@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753792Ab2H2N6P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 09:58:15 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:47225 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753686Ab2H2N6N (ORCPT
+	id S1753815Ab2H2ODD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 10:03:03 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49016 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753779Ab2H2ODC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 09:58:13 -0400
-MIME-Version: 1.0
-Date: Wed, 29 Aug 2012 22:58:12 +0900
-Message-ID: <CAA5UCLK9Zssct_f_8sSm8bDGeMFaAv_kr2GTFFWSCcP=Xz9ikw@mail.gmail.com>
-Subject: [PATCH] scripts/Makefile.modpost: error in finding modules from .mod files.
-From: =?EUC-KR?B?wMywx8ij?= <urpapa@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 29 Aug 2012 10:03:02 -0400
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>
+Subject: [PATCH 1/2] fat : no need to reset EOF in ent_put for FAT32
+Date: Wed, 29 Aug 2012 10:02:50 -0400
+Message-Id: <1346248970-3213-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This error may happen when the user's id or path includes .ko string.
-For example, user's id is xxx.ko and building test.ko module,
-the test.mod file lists ko name and all object files.
-   /home/xxx.ko/kernel_dev/device/drivers/test.ko
-   /home/xxx.ko/kernel_dev/device/drivers/test_main.o
-/home/xxx.ko/kernel_dev/device/drivers/test_io.o ...
-Current Makefile.modpost and Makefile.modinst find and list up not
-only test.ko but also other object files.
-because all of object file's path includes .ko string.
-This is a patch to fix it.
+#define FAT_ENT_EOF(EOF_FAT32)
 
-Signed-off-by: Gunho Lee <gunho.lee@lge.com>
+there is no need to reset value of 'new' for FAT32 as the values is
+already correct
+
+Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
+Acked-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
 ---
- scripts/Makefile.modinst |    2 +-
- scripts/Makefile.modpost |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ fs/fat/fatent.c |    3 ---
+ 1 file changed, 3 deletions(-)
 
-diff --git a/scripts/Makefile.modinst b/scripts/Makefile.modinst
-index efa5d94..3d13d3a 100644
---- a/scripts/Makefile.modinst
-+++ b/scripts/Makefile.modinst
-@@ -9,7 +9,7 @@ include scripts/Kbuild.include
-
- #
-
--__modules := $(sort $(shell grep -h '\.ko' /dev/null $(wildcard
-$(MODVERDIR)/*.mod)))
-+__modules := $(sort $(shell grep -h '\.ko$$' /dev/null $(wildcard
-$(MODVERDIR)/*.mod)))
- modules := $(patsubst %.o,%.ko,$(wildcard $(__modules:.ko=.o)))
-
- PHONY += $(modules)
-diff --git a/scripts/Makefile.modpost b/scripts/Makefile.modpost
-index 08dce14..a1cb022 100644
---- a/scripts/Makefile.modpost
-+++ b/scripts/Makefile.modpost
-@@ -60,7 +60,7 @@ kernelsymfile := $(objtree)/Module.symvers
- modulesymfile := $(firstword $(KBUILD_EXTMOD))/Module.symvers
-
- # Step 1), find all modules listed in $(MODVERDIR)/
--__modules := $(sort $(shell grep -h '\.ko' /dev/null $(wildcard
-$(MODVERDIR)/*.mod)))
-+__modules := $(sort $(shell grep -h '\.ko$$' /dev/null $(wildcard
-$(MODVERDIR)/*.mod)))
- modules   := $(patsubst %.o,%.ko, $(wildcard $(__modules:.ko=.o)))
-
- # Stop after building .o files if NOFINAL is set. Makes compile tests quicker
+diff --git a/fs/fat/fatent.c b/fs/fat/fatent.c
+index 31f08ab..8d9cf87 100644
+--- a/fs/fat/fatent.c
++++ b/fs/fat/fatent.c
+@@ -186,9 +186,6 @@ static void fat16_ent_put(struct fat_entry *fatent, int new)
+ 
+ static void fat32_ent_put(struct fat_entry *fatent, int new)
+ {
+-	if (new == FAT_ENT_EOF)
+-		new = EOF_FAT32;
+-
+ 	WARN_ON(new & 0xf0000000);
+ 	new |= le32_to_cpu(*fatent->u.ent32_p) & ~0x0fffffff;
+ 	*fatent->u.ent32_p = cpu_to_le32(new);
 -- 
-1.6.3.3
+1.7.9.5
+
