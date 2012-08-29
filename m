@@ -1,134 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752993Ab2H2G5W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 02:57:22 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:5118 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752777Ab2H2G4o (ORCPT
+	id S1753031Ab2H2G56 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 02:57:58 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59743 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751185Ab2H2G5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 02:56:44 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 28 Aug 2012 23:56:09 -0700
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: <m.szyprowski@samsung.com>
-CC: <iommu@lists.linux-foundation.org>, Hiroshi Doyu <hdoyu@nvidia.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <linaro-mm-sig@lists.linaro.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <kyungmin.park@samsung.com>,
-        <arnd@arndb.de>, <linux@arm.linux.org.uk>, <chunsang.jeong@linaro.org>,
-        <vdumpa@nvidia.com>, <subashrp@gmail.com>, <minchan@kernel.org>,
-        <pullip.cho@samsung.com>, <konrad.wilk@oracle.com>,
-        <linux-tegra@vger.kernel.org>
-Subject: [RFC 4/5] ARM: dma-mapping: New dma_map_ops->map_page*_at* function
-Date: Wed, 29 Aug 2012 09:55:34 +0300
-Message-ID: <1346223335-31455-5-git-send-email-hdoyu@nvidia.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1346223335-31455-1-git-send-email-hdoyu@nvidia.com>
-References: <1346223335-31455-1-git-send-email-hdoyu@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 29 Aug 2012 02:57:55 -0400
+Message-ID: <1346223466.17293.0.camel@phoenix>
+Subject: [PATCH] gpio: Remove broken mark for da9052 gpio driver
+From: Axel Lin <axel.lin@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: David Dajun Chen <dchen@diasemi.com>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        linux-kernel@vger.kernel.org
+Date: Wed, 29 Aug 2012 14:57:46 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
----
- arch/arm/mm/dma-mapping.c                |   18 ++++++++++++++++++
- include/asm-generic/dma-mapping-common.h |   19 +++++++++++++++++++
- include/linux/dma-mapping.h              |    7 +++++++
- 3 files changed, 44 insertions(+), 0 deletions(-)
+The fix for MFD part is merged so remove the broken mark for da9052 gpio driver.
 
-diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-index 8ca2d1a..242289f 100644
---- a/arch/arm/mm/dma-mapping.c
-+++ b/arch/arm/mm/dma-mapping.c
-@@ -1715,6 +1715,23 @@ static dma_addr_t arm_iommu_map_page(struct device *dev, struct page *page,
- 	return arm_coherent_iommu_map_page(dev, page, offset, size, dir, attrs);
- }
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/gpio/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index ba7926f5..95778f1 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -82,7 +82,7 @@ config GPIO_GENERIC
  
-+static dma_addr_t arm_iommu_map_page_at(struct device *dev, struct page *page,
-+		 dma_addr_t dma_addr, unsigned long offset, size_t size,
-+		 enum dma_data_direction dir, struct dma_attrs *attrs)
-+{
-+	struct dma_iommu_mapping *mapping = dev->archdata.mapping;
-+	int ret, len = PAGE_ALIGN(size + offset);
-+
-+	if (!dma_get_attr(DMA_ATTR_SKIP_CPU_SYNC, attrs))
-+		__dma_page_cpu_to_dev(page, offset, size, dir);
-+
-+	ret = iommu_map(mapping->domain, dma_addr, page_to_phys(page), len, 0);
-+	if (ret < 0)
-+		return DMA_ERROR_CODE;
-+
-+	return dma_addr + offset;
-+}
-+
- /**
-  * arm_coherent_iommu_unmap_page
-  * @dev: valid struct device pointer
-@@ -1813,6 +1830,7 @@ struct dma_map_ops iommu_ops = {
- 	.get_sgtable	= arm_iommu_get_sgtable,
+ config GPIO_DA9052
+ 	tristate "Dialog DA9052 GPIO"
+-	depends on PMIC_DA9052 && BROKEN
++	depends on PMIC_DA9052
+ 	help
+ 	  Say yes here to enable the GPIO driver for the DA9052 chip.
  
- 	.map_page		= arm_iommu_map_page,
-+	.map_page_at		= arm_iommu_map_page_at,
- 	.unmap_page		= arm_iommu_unmap_page,
- 	.sync_single_for_cpu	= arm_iommu_sync_single_for_cpu,
- 	.sync_single_for_device	= arm_iommu_sync_single_for_device,
-diff --git a/include/asm-generic/dma-mapping-common.h b/include/asm-generic/dma-mapping-common.h
-index de8bf89..eada2d8 100644
---- a/include/asm-generic/dma-mapping-common.h
-+++ b/include/asm-generic/dma-mapping-common.h
-@@ -26,6 +26,23 @@ static inline dma_addr_t dma_map_single_attrs(struct device *dev, void *ptr,
- 	return addr;
- }
- 
-+static inline dma_addr_t dma_map_single_at_attrs(struct device *dev, void *ptr,
-+					      dma_addr_t handle,
-+					      size_t size,
-+					      enum dma_data_direction dir,
-+					      struct dma_attrs *attrs)
-+{
-+	struct dma_map_ops *ops = get_dma_ops(dev);
-+	dma_addr_t addr;
-+
-+	kmemcheck_mark_initialized(ptr, size);
-+	BUG_ON(!valid_dma_direction(dir));
-+	addr = ops->map_page_at(dev, virt_to_page(ptr), handle,
-+			     (unsigned long)ptr & ~PAGE_MASK, size,
-+			     dir, attrs);
-+	return addr;
-+}
-+
- static inline void dma_unmap_single_attrs(struct device *dev, dma_addr_t addr,
- 					  size_t size,
- 					  enum dma_data_direction dir,
-@@ -172,6 +189,8 @@ dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg,
- }
- 
- #define dma_map_single(d, a, s, r) dma_map_single_attrs(d, a, s, r, NULL)
-+#define dma_map_single_at(d, a, h, s, r)		\
-+	dma_map_single_at_attrs(d, a, h, s, r, NULL)
- #define dma_unmap_single(d, a, s, r) dma_unmap_single_attrs(d, a, s, r, NULL)
- #define dma_map_sg(d, s, n, r) dma_map_sg_attrs(d, s, n, r, NULL)
- #define dma_unmap_sg(d, s, n, r) dma_unmap_sg_attrs(d, s, n, r, NULL)
-diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
-index 4cf4427..218bee3 100644
---- a/include/linux/dma-mapping.h
-+++ b/include/linux/dma-mapping.h
-@@ -25,6 +25,13 @@ struct dma_map_ops {
- 			       unsigned long offset, size_t size,
- 			       enum dma_data_direction dir,
- 			       struct dma_attrs *attrs);
-+
-+	dma_addr_t (*map_page_at)(struct device *dev, struct page *page,
-+				  dma_addr_t dma_handle,
-+				  unsigned long offset, size_t size,
-+				  enum dma_data_direction dir,
-+				  struct dma_attrs *attrs);
-+
- 	void (*unmap_page)(struct device *dev, dma_addr_t dma_handle,
- 			   size_t size, enum dma_data_direction dir,
- 			   struct dma_attrs *attrs);
 -- 
-1.7.5.4
+1.7.9.5
+
+
 
