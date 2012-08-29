@@ -1,80 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203Ab2H2FPP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 01:15:15 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:18738 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751626Ab2H2FPK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 01:15:10 -0400
-Message-ID: <503DA591.4010100@oracle.com>
-Date: Wed, 29 Aug 2012 13:16:01 +0800
-From: "zhenzhong.duan" <zhenzhong.duan@oracle.com>
-Reply-To: zhenzhong.duan@oracle.com
-Organization: oracle
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1752512Ab2H2FP2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 01:15:28 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:8109 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750804Ab2H2FPX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 01:15:23 -0400
+X-IronPort-AV: E=Sophos;i="4.80,332,1344182400"; 
+   d="scan'208";a="5744205"
+Message-ID: <503DA6B2.1010604@cn.fujitsu.com>
+Date: Wed, 29 Aug 2012 13:20:50 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Feng Jin <joe.jin@oracle.com>
-Subject: Re: [PATCH] Parallelize mtrr init between cpus
-References: <5020C3D7.2070407@oracle.com> <5021432F.2030907@zytor.com> <5021CA31.7000405@oracle.com> <5021E2A2.8080606@zytor.com>
-In-Reply-To: <5021E2A2.8080606@zytor.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
+        Blue Swirl <blauwirbel@gmail.com>, Eric Blake <eblake@redhat.com>,
+        Andrew Jones <drjones@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: [PATCH v10 2/6] kvm: Update kernel headers
+References: <503DA63E.40608@cn.fujitsu.com>
+In-Reply-To: <503DA63E.40608@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/29 13:15:10,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/29 13:15:10,
+	Serialize complete at 2012/08/29 13:15:10
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Corresponding kvm.git hash: 1d92128f with my patch for kvm
+---
+ linux-headers/asm-s390/kvm.h      |    2 +-
+ linux-headers/asm-s390/kvm_para.h |    2 +-
+ linux-headers/asm-x86/kvm.h       |    1 +
+ linux-headers/asm-x86/kvm_para.h  |    9 +++++++++
+ linux-headers/linux/kvm.h         |    3 +++
+ linux-headers/linux/kvm_para.h    |    6 ++++++
+ 6 files changed, 21 insertions(+), 2 deletions(-)
 
-
-On 2012-08-08 11:53, H. Peter Anvin wrote:
-> On 08/07/2012 07:08 PM, zhenzhong.duan wrote:
->>
->>
->>   2012-08-08 00:32, H. Peter Anvin wrote:
->>> On 08/07/2012 12:29 AM, zhenzhong.duan wrote:
->>>> Current code serialize mtrr init with set_atomicity_lock.
->>>> Mtrr init is quite slow when we bootup on a hvm with large mem, vcpus
->>>> and pci passthroughed devices(eg. 24 vcpus + 90G mem).
->>>> It took about ~30 mins to bootup, after patch, it took ~2 min.
->>> When you're saying "HVM" do you mean "Xen HVM"?  How does it behave on
->>> native hardware?
->>>
->>>     -hpa
->> Yes, I mean Xen HVM. Bootup at same speed as before on baremetal.
->
-> Then I would like to know why Xen HVM takes so infernally long.  It 
-> isn't a good idea to make gratuitous changes in the main kernel to 
-> work around defects in Xen.
->
->     -hpa
-Hi,
-Sorrry for late response, I have an opportunity to test the patch on an 
-old G5 with 128 physical CPUS and 1 TB of memory. Arround 0.82 second 
-time saved.
-Depends on cpu count on the system.
-I'm curious what's the usage of set_atomicity_lock here? There may be 
-something I missed. thanks
-
-Before patch:
-[   13.176038] NMI watchdog enabled, takes one hw-pmu counter.
-[   13.176444] Brought up 128 CPUs
-[   13.176688] Total of 128 processors activated (578760.49 BogoMIPS).
-[   14.035223] devtmpfs: initialized
-[   17.277652] PM: Registering ACPI NVS region at 7f76e000 (401408 bytes)
-[   17.279541] print_constraints: dummy:
-[   17.280576] NET: Registered protocol family 16
-After patch:
-[   13.094227] smpboot cpu 127: start_ip = 90000
-[   13.185142] NMI watchdog enabled, takes one hw-pmu counter.
-[   13.185599] Brought up 128 CPUs
-[   13.185851] Total of 128 processors activated (578871.80 BogoMIPS).
-[   13.224783] devtmpfs: initialized
-[   16.468002] PM: Registering ACPI NVS region at 7f76e000 (401408 bytes)
-[   16.469706] print_constraints: dummy:
-[   16.470745] NET: Registered protocol family 16
+diff --git a/linux-headers/asm-s390/kvm.h b/linux-headers/asm-s390/kvm.h
+index bdcbe0f..d25da59 100644
+--- a/linux-headers/asm-s390/kvm.h
++++ b/linux-headers/asm-s390/kvm.h
+@@ -1,7 +1,7 @@
+ #ifndef __LINUX_KVM_S390_H
+ #define __LINUX_KVM_S390_H
+ /*
+- * asm-s390/kvm.h - KVM s390 specific structures and definitions
++ * KVM s390 specific structures and definitions
+  *
+  * Copyright IBM Corp. 2008
+  *
+diff --git a/linux-headers/asm-s390/kvm_para.h b/linux-headers/asm-s390/kvm_para.h
+index 8e2dd67..870051f 100644
+--- a/linux-headers/asm-s390/kvm_para.h
++++ b/linux-headers/asm-s390/kvm_para.h
+@@ -1,5 +1,5 @@
+ /*
+- * asm-s390/kvm_para.h - definition for paravirtual devices on s390
++ * definition for paravirtual devices on s390
+  *
+  * Copyright IBM Corp. 2008
+  *
+diff --git a/linux-headers/asm-x86/kvm.h b/linux-headers/asm-x86/kvm.h
+index e7d1c19..246617e 100644
+--- a/linux-headers/asm-x86/kvm.h
++++ b/linux-headers/asm-x86/kvm.h
+@@ -12,6 +12,7 @@
+ /* Select x86 specific features in <linux/kvm.h> */
+ #define __KVM_HAVE_PIT
+ #define __KVM_HAVE_IOAPIC
++#define __KVM_HAVE_IRQ_LINE
+ #define __KVM_HAVE_DEVICE_ASSIGNMENT
+ #define __KVM_HAVE_MSI
+ #define __KVM_HAVE_USER_NMI
+diff --git a/linux-headers/asm-x86/kvm_para.h b/linux-headers/asm-x86/kvm_para.h
+index f2ac46a..53aca59 100644
+--- a/linux-headers/asm-x86/kvm_para.h
++++ b/linux-headers/asm-x86/kvm_para.h
+@@ -22,6 +22,7 @@
+ #define KVM_FEATURE_CLOCKSOURCE2        3
+ #define KVM_FEATURE_ASYNC_PF		4
+ #define KVM_FEATURE_STEAL_TIME		5
++#define KVM_FEATURE_PV_EOI		6
+ 
+ /* The last 8 bits are used to indicate how to interpret the flags field
+  * in pvclock structure. If no bits are set, all flags are ignored.
+@@ -37,6 +38,7 @@
+ #define MSR_KVM_SYSTEM_TIME_NEW 0x4b564d01
+ #define MSR_KVM_ASYNC_PF_EN 0x4b564d02
+ #define MSR_KVM_STEAL_TIME  0x4b564d03
++#define MSR_KVM_PV_EOI_EN      0x4b564d04
+ 
+ struct kvm_steal_time {
+ 	__u64 steal;
+@@ -89,5 +91,12 @@ struct kvm_vcpu_pv_apf_data {
+ 	__u32 enabled;
+ };
+ 
++#define KVM_PV_EOI_BIT 0
++#define KVM_PV_EOI_MASK (0x1 << KVM_PV_EOI_BIT)
++#define KVM_PV_EOI_ENABLED KVM_PV_EOI_MASK
++#define KVM_PV_EOI_DISABLED 0x0
++
++#define KVM_PV_EVENT_PORT	(0x505UL)
++
+ 
+ #endif /* _ASM_X86_KVM_PARA_H */
+diff --git a/linux-headers/linux/kvm.h b/linux-headers/linux/kvm.h
+index 5a9d4e3..4b9e575 100644
+--- a/linux-headers/linux/kvm.h
++++ b/linux-headers/linux/kvm.h
+@@ -617,6 +617,7 @@ struct kvm_ppc_smmu_info {
+ #define KVM_CAP_SIGNAL_MSI 77
+ #define KVM_CAP_PPC_GET_SMMU_INFO 78
+ #define KVM_CAP_S390_COW 79
++#define KVM_CAP_PPC_ALLOC_HTAB 80
+ 
+ #ifdef KVM_CAP_IRQ_ROUTING
+ 
+@@ -828,6 +829,8 @@ struct kvm_s390_ucas_mapping {
+ #define KVM_SIGNAL_MSI            _IOW(KVMIO,  0xa5, struct kvm_msi)
+ /* Available with KVM_CAP_PPC_GET_SMMU_INFO */
+ #define KVM_PPC_GET_SMMU_INFO	  _IOR(KVMIO,  0xa6, struct kvm_ppc_smmu_info)
++/* Available with KVM_CAP_PPC_ALLOC_HTAB */
++#define KVM_PPC_ALLOCATE_HTAB	  _IOWR(KVMIO, 0xa7, __u32)
+ 
+ /*
+  * ioctls for vcpu fds
+diff --git a/linux-headers/linux/kvm_para.h b/linux-headers/linux/kvm_para.h
+index 7bdcf93..f6be0bb 100644
+--- a/linux-headers/linux/kvm_para.h
++++ b/linux-headers/linux/kvm_para.h
+@@ -20,6 +20,12 @@
+ #define KVM_HC_FEATURES			3
+ #define KVM_HC_PPC_MAP_MAGIC_PAGE	4
+ 
++/* The bit of supported pv event */
++#define KVM_PV_FEATURE_PANICKED	0
++
++/* The pv event value */
++#define KVM_PV_EVENT_PANICKED	1
++
+ /*
+  * hypercalls use architecture specific
+  */
+-- 
+1.7.1
 
