@@ -1,97 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121Ab2H2G27 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 02:28:59 -0400
-Received: from smtp5-g21.free.fr ([212.27.42.5]:38897 "EHLO smtp5-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750850Ab2H2G26 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 02:28:58 -0400
-From: Jim Meyering <jim@meyering.net>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm\@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH] kmemleak: avoid buffer overrun: NUL-terminate strncpy-copied command
-In-Reply-To: <20120828202459.GA13638@mwanda> (Dan Carpenter's message of "Tue,
-	28 Aug 2012 13:24:59 -0700")
-References: <1345481724-30108-1-git-send-email-jim@meyering.net>
-	<1345481724-30108-4-git-send-email-jim@meyering.net>
-	<20120824102725.GH7585@arm.com> <876288o7ny.fsf@rho.meyering.net>
-	<20120828202459.GA13638@mwanda>
-Date: Wed, 29 Aug 2012 08:28:47 +0200
-Message-ID: <874nnm6wkg.fsf@rho.meyering.net>
+	id S1752693Ab2H2G3h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 02:29:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46270 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751160Ab2H2G3g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 02:29:36 -0400
+Message-ID: <503DB6CD.4070502@gmail.com>
+Date: Wed, 29 Aug 2012 00:29:33 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: "Suzuki K. Poulose" <suzuki@in.ibm.com>
+CC: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, ananth@in.ibm.com,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH] [perf] Remove the node from rblist in strlist__remove
+References: <20120829055840.7802.1459.stgit@suzukikp.in.ibm.com>
+In-Reply-To: <20120829055840.7802.1459.stgit@suzukikp.in.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dan Carpenter wrote:
-> On Fri, Aug 24, 2012 at 01:23:29PM +0200, Jim Meyering wrote:
->> In that case, what would you think of a patch to use strcpy instead?
->>
->>   -		strncpy(object->comm, current->comm, sizeof(object->comm));
->>   +		strcpy(object->comm, current->comm);
+On 8/29/12 12:00 AM, Suzuki K. Poulose wrote:
+> The following commit:
 >
-> Another option would be to use strlcpy().  It's slightly neater than
-> the strncpy() followed by a NUL assignment.
+> author	David Ahern <dsahern@gmail.com>
+> 	Tue, 31 Jul 2012 04:31:33 +0000 (22:31 -0600)
+> committer	Arnaldo Carvalho de Melo <acme@redhat.com>
+> 	Fri, 3 Aug 2012 13:39:51 +0000 (10:39 -0300)
+> commit	ee8dd3ca43f151d9fbe1edeef68fb8a77eb9f047
 >
->> Is there a preferred method of adding a static_assert-like statement?
->> I see compile_time_assert and a few similar macros, but I haven't
->> spotted anything that is used project-wide.
+> causes a double free during a probe deletion as the node is
+> never removed from the list via strlist__remove(), even though
+> it gets 'deleted' (read free()'d). This causes a double
+> free when we do strlist__delete() as the node is already deleted
+> but present in the rblist.
 >
-> BUILD_BUG_ON().
+> [suzukikp@suzukikp perf]$ sudo ./perf probe -a do_fork
+> Added new event:
+>    probe:do_fork        (on do_fork)
+>
+> You can now use it in all perf tools, such as:
+>
+> 	perf record -e probe:do_fork -aR sleep 1
+>
+> [suzukikp@suzukikp perf]$ sudo ./perf probe -d do_fork
+> Removed event: probe:do_fork
+> *** glibc detected *** ./perf: double free or corruption (fasttop): 0x000000000133d600 ***
+> ======= Backtrace: =========
+> /lib64/libc.so.6[0x38eec7dda6]
+> ./perf(rblist__delete+0x5c)[0x47d3dc]
+> ./perf(del_perf_probe_events+0xb6)[0x47b826]
+> ./perf(cmd_probe+0x471)[0x42c8d1]
+> ./perf[0x4150b3]
+> ./perf(main+0x501)[0x4148e1]
+> /lib64/libc.so.6(__libc_start_main+0xed)[0x38eec2169d]
+> ./perf[0x414a61]
+>
+>
+> Make sure we remove the node from the rblist before we delete the
+> node. The rblist__remove_node() will invoke rblist->node_delete,
+> which  will take care of deleting the node with the suitable function
+> provided by the user.
+>
+> Reported-by: Ananth N. Mavinakayanahalli <ananth@in.ibm.com>
+> Signed-off-by: Suzuki K. Poulose <suzuki@in.ibm.com>
+> Cc: David Ahern <dsahern@gmail.com>
+> Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
 
-Hi Dan,
+Acked-by: David Ahern <dsahern@gmail.com>
 
-Thanks for the feedback and tip.  How about this patch?
+Same type of change is needed for util/intlist.c if you want to submit 
+one, otherwise I will take care of it.
 
--- >8 --
-Subject: [PATCH] kmemleak: remove unwarranted uses of strncpy
-
-Use of strncpy was not justified -- was misleading, in fact, since
-none of the three uses could trigger strncpy's truncation feature,
-nor did they require the NUL-padding it can provide.  Replace each
-use with a BUG_ON_BUILD to ensure that the existing constraint
-(source string is no larger than the size of the destination buffer)
-and a use of strcpy.  With the literals, it's easy to see that each
-is shorter than TASK_COMM_LEN (aka, 16).  In the third case, the
-source and destination buffer have the same length, so there is no
-possibility of truncation.
-
-Signed-off-by: Jim Meyering <meyering@redhat.com>
----
- mm/kmemleak.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
-
-diff --git a/mm/kmemleak.c b/mm/kmemleak.c
-index 45eb621..7359ffa 100644
---- a/mm/kmemleak.c
-+++ b/mm/kmemleak.c
-@@ -542,10 +542,12 @@ static struct kmemleak_object *create_object(unsigned long ptr, size_t size,
- 	/* task information */
- 	if (in_irq()) {
- 		object->pid = 0;
--		strncpy(object->comm, "hardirq", sizeof(object->comm));
-+		BUILD_BUG_ON(sizeof "hardirq" > sizeof(current->comm));
-+		strcpy(object->comm, "hardirq");
- 	} else if (in_softirq()) {
- 		object->pid = 0;
--		strncpy(object->comm, "softirq", sizeof(object->comm));
-+		BUILD_BUG_ON(sizeof "softirq" > sizeof(current->comm));
-+		strcpy(object->comm, "softirq");
- 	} else {
- 		object->pid = current->pid;
- 		/*
-@@ -554,7 +556,8 @@ static struct kmemleak_object *create_object(unsigned long ptr, size_t size,
- 		 * dependency issues with current->alloc_lock. In the worst
- 		 * case, the command line is not correct.
- 		 */
--		strncpy(object->comm, current->comm, sizeof(object->comm));
-+		BUILD_BUG_ON(sizeof (object->comm) > sizeof(current->comm));
-+		strcpy(object->comm, current->comm);
- 	}
-
- 	/* kernel backtrace */
---
-1.7.12.116.g31e0100
+David
