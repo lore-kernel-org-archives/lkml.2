@@ -1,46 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352Ab2H2DVt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 23:21:49 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:11324 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752875Ab2H2DVs (ORCPT
+	id S1753402Ab2H2D0f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 23:26:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42363 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753228Ab2H2D0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 23:21:48 -0400
-From: T Makphaibulchoke <tmac@hp.com>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        akpm@linux-foundation.org, yinghai@kernel.org, tiwai@suse.de,
-        dhowells@redhat.com, linux-kernel@vger.kernel.org
-Cc: T Makphaibulchoke <tmac@hp.com>
-Subject: [PATCH] x86/mm/init.c: devmem_is_allowed() off by one
-Date: Tue, 28 Aug 2012 21:21:43 -0600
-Message-Id: <1346210503-14276-1-git-send-email-tmac@hp.com>
-X-Mailer: git-send-email 1.7.1
+	Tue, 28 Aug 2012 23:26:33 -0400
+Date: Tue, 28 Aug 2012 20:25:58 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-bcache@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dm-devel@redhat.com, mpatocka@redhat.com,
+        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH v7 9/9] block: Avoid deadlocks with bio allocation by
+ stacking drivers
+Message-ID: <20120829032558.GA22214@moria.home.lan>
+References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
+ <1346175456-1572-10-git-send-email-koverstreet@google.com>
+ <20120828204910.GG24608@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120828222800.GG1048@moria.home.lan>
+ <20120828230108.GI1048@moria.home.lan>
+ <20120829013150.GA9269@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120829013150.GA9269@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixing an off-by-one error in devmem_is_allowed(), which allows accesses to
-physical addresses 0x100000-0x100fff, an extra page past 1MB.
+On Tue, Aug 28, 2012 at 09:31:50PM -0400, Vivek Goyal wrote:
+> On Tue, Aug 28, 2012 at 04:01:08PM -0700, Kent Overstreet wrote:
+> > On Tue, Aug 28, 2012 at 03:28:00PM -0700, Kent Overstreet wrote:
+> > > On Tue, Aug 28, 2012 at 01:49:10PM -0700, Tejun Heo wrote:
+> > > > Overall, I *think* this is correct but need to think more about it to
+> > > > be sure.
+> > > 
+> > > Please do. As much time as I've spent staring at this kind of stuff,
+> > > I'm pretty sure I've got it correct but it still makes my head hurt to
+> > > work out all the various possible deadlocks.
+> > 
+> > Hilarious thought: We're punting bios to a rescuer thread that's
+> > specific to a certain bio_set, right? What if we happen to punt bios
+> > from a different bio_set? And then the rescuer goes to resubmit those
+> > bios, and in the process they happen to have dependencies on the
+> > original bio_set...
+> 
+> Are they not fully allocated bios and when you submit these to underlying
+> device, ideally we should not be sharing memory pool at different layers
+> of stack otherwise we will deadlock any way as stack depth increases. So
+> there should not be a dependency on original bio_set?
+> 
+> Or, am I missing something. May be an example will help.
 
-Signed-off-by: T Makphaibulchoke <tmac@hp.com>
----
- arch/x86/mm/init.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Uh, it's more complicated than that. My brain is too fried right now to
+walk through it in detail, but the problem (if it is a problem; I can't
+convince myself one way or the other) is roughly:
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index e0e6990..ab1f6a9 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -319,7 +319,7 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
-  */
- int devmem_is_allowed(unsigned long pagenr)
- {
--	if (pagenr <= 256)
-+	if (pagenr < 256)
- 		return 1;
- 	if (iomem_is_exclusive(pagenr << PAGE_SHIFT))
- 		return 0;
--- 
-1.7.1
+one virt block device stacked on top of another - they both do arbitrary
+splitting:
 
+So once they've submitted a bio, that bio needs to make forward progress
+even if the thread goes to allocate another bio and blocks before it
+returns from its make_request fn.
+
+That much my patch solves, with the rescuer thread; if the thread goes
+to block, it punts those blocked bios off to a rescuer thread - and we
+create one rescuer per bio set.
+
+So going back to the stacked block devices, if you've got say dm on top
+of md (or something else since md doesn't really do much splitting) -
+each block device will have its own rescuer and everything should be
+hunky dory.
+
+Except that when thread a goes to punt those blocked bios to its
+rescuer, it punts _all_ the bios on current->bio_list. Even those
+generated by/belonging to other bio_sets.
+
+So thread 1 in device b punts bios to its rescuer, thread 2
+
+But thread 2 ends up with bios for both device a and b - because they're
+stacked.
+
+Thread 2 starts on bios for device a before it gets to those for device
+b. But a is stacked on top of b, so in the process it generates more
+bios for b.
+
+So now it's uhm...
+
+yeah, I'm gonna sleep on this. I'm pretty sure to be rigorously correct
+filtering the right bios when we punt them to the rescuer is needed,
+though.
