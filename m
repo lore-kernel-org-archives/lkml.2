@@ -1,45 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753207Ab2H2BFK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 21:05:10 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59437 "EHLO
+	id S1752503Ab2H2B2D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 21:28:03 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56460 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751593Ab2H2BFI (ORCPT
+	with ESMTP id S1751942Ab2H2B2C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 21:05:08 -0400
+	Tue, 28 Aug 2012 21:28:02 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120828170734.GT2961@linux.vnet.ibm.com>
-References: <1345128138.29668.42.camel@twins>
-	<CADZ9YHjzNVz6nSqbnTgVYfwi2hz0KYuXC89GHw6UjL2GyGZ64A@mail.gmail.com>
-	<1345139199.29668.46.camel@twins>
-	<CADZ9YHgNhTGWicX0kFfrNoL17JkxfZcXryqqa-wHLVLh05SvAg@mail.gmail.com>
-	<1345454817.23018.27.camel@twins>
-	<20120820162657.GI2435@linux.vnet.ibm.com>
-	<20120827184435.GA13883@linux.vnet.ibm.com>
-	<CADZ9YHi-DGd71jxQpYyRfVUqdr-ks-znSeCtcBAccL7wRd3r5g@mail.gmail.com>
-	<20120828134206.GH2961@linux.vnet.ibm.com>
-	<CADZ9YHhXspOy9cy--cPqzaZYssDjgwRPztU=pg-Rfj5g2aXDiw@mail.gmail.com>
-	<20120828170734.GT2961@linux.vnet.ibm.com>
-Date: Wed, 29 Aug 2012 07:05:07 +0600
-Message-ID: <CADZ9YHj9KmWU+A9MnNPDEPsEjzb2_ArCLFvt6d+fsGgXmpLfaQ@mail.gmail.com>
-Subject: Re: Add rq->nr_uninterruptible count to dest cpu's rq while CPU goes down.
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1346091725.19381.10.camel@pippen.local.home>
+References: <1346091725.19381.10.camel@pippen.local.home>
+Date: Wed, 29 Aug 2012 09:28:01 +0800
+Message-ID: <CAM_iQpV9163UKQt8Kvroc6JyMQnv1tqG1rS5M2CBWzbo7XvJXQ@mail.gmail.com>
+Subject: Re: [PATCH] Add feature-removal-schedule.txt removal to feature-removal-schedule.txt
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/28/12, Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+On Tue, Aug 28, 2012 at 2:22 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> The file feature-removal-schedule.txt is ignored by most people except
+> for people that add to it. It's more of a global TODO list for
+> developers than being anything useful by anyone.
 >
-> OK, but I thought that Peter said that ->nr_uninterruptible was
-> meaningful only when summed across all CPUs.  If that is the case,
-> it shouldn't matter where the counts are moved.
+> Add a feature removal of removing the feature-removal-schedule.txt.
 >
-Yes, right. But, nr_uninterruptible is also use to calculate delta.
-Please see calc_load_fold_active().
 
-Thanks,
-Rakib.
+Hi, Steven,
+
+I sometimes remind people to remove features scheduled in this file,
+by sending a proposed patch. ;)
