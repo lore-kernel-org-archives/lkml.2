@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752976Ab2H2Iv7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 04:51:59 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40424 "EHLO
+	id S1752530Ab2H2JCg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 05:02:36 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:44189 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751270Ab2H2Ivy (ORCPT
+	with ESMTP id S1751742Ab2H2JCf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 04:51:54 -0400
+	Wed, 29 Aug 2012 05:02:35 -0400
 From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Vinod Koul <vinod.koul@intel.com>, djbw@fb.com,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, kernel@pengutronix.de
-Subject: [PATCH 1/2] dma: tegra: make tegra_dma.chip_data a pointer to const data
-Date: Wed, 29 Aug 2012 10:51:34 +0200
-Message-Id: <1346230295-15898-1-git-send-email-u.kleine-koenig@pengutronix.de>
+To: linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>,
+        kernel@pengutronix.de, Colin Cross <ccross@android.com>,
+        Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: [PATCH] MAINTAINERS: add defconfig file to TEGRA section
+Date: Wed, 29 Aug 2012 11:02:29 +0200
+Message-Id: <1346230949-6051-1-git-send-email-u.kleine-koenig@pengutronix.de>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20120829084911.GE28643@pengutronix.de>
-References: <20120829084911.GE28643@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -31,48 +29,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Laxman Dewangan <ldewangan@nvidia.com>
-
-This prepares *of_device_id.data becoming const. Without this change
-the following warning would occur:
-
-	drivers/dma/tegra20-apb-dma.c: In function 'tegra_dma_probe':
-	drivers/dma/tegra20-apb-dma.c:1210:9: warning: assignment discards 'const' qualifier from pointer target type [enabled by default]
-
-[ukl: split Laxman's patch to prevent warnings in the middle of the
-series. Original patch was sent with msgid
-1346217447-19730-1-git-send-email-ldewangan@nvidia.com]
-
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-Acked-by: Stephen Warren <swarren@wwwdotorg.org>
-Acked-by: Vinod Koul <vinod.koul@linux.intel.com>
 Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 ---
- drivers/dma/tegra20-apb-dma.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ MAINTAINERS |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
-index d52dbc6..29a39b8 100644
---- a/drivers/dma/tegra20-apb-dma.c
-+++ b/drivers/dma/tegra20-apb-dma.c
-@@ -201,7 +201,7 @@ struct tegra_dma {
- 	struct clk			*dma_clk;
- 	spinlock_t			global_lock;
- 	void __iomem			*base_addr;
--	struct tegra_dma_chip_data	*chip_data;
-+	const struct tegra_dma_chip_data *chip_data;
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 94b823f..39d8a59 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6779,6 +6779,7 @@ Q:	http://patchwork.ozlabs.org/project/linux-tegra/list/
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/swarren/linux-tegra.git
+ S:	Supported
+ F:	arch/arm/mach-tegra
++F:	arch/arm/configs/tegra_defconfig
  
- 	/* Some register need to be cache before suspend */
- 	u32				reg_gen;
-@@ -1197,7 +1197,7 @@ static int __devinit tegra_dma_probe(struct platform_device *pdev)
- 	struct tegra_dma *tdma;
- 	int ret;
- 	int i;
--	struct tegra_dma_chip_data *cdata = NULL;
-+	const struct tegra_dma_chip_data *cdata = NULL;
- 
- 	if (pdev->dev.of_node) {
- 		const struct of_device_id *match;
+ TEHUTI ETHERNET DRIVER
+ M:	Andy Gospodarek <andy@greyhouse.net>
 -- 
 1.7.10.4
 
