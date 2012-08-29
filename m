@@ -1,62 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751639Ab2H2F4s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 01:56:48 -0400
-Received: from cassarossa.samfundet.no ([129.241.93.19]:35397 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750850Ab2H2F4r (ORCPT
+	id S1751866Ab2H2GAk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 02:00:40 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:52812 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751135Ab2H2GAi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 01:56:47 -0400
-Date: Wed, 29 Aug 2012 07:56:25 +0200
-From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH] clk: Make the generic clock API available by default
-Message-ID: <20120829055625.GA17753@samfundet.no>
-References: <1346186104-4083-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Wed, 29 Aug 2012 02:00:38 -0400
+From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
+Subject: [PATCH] [perf] Remove the node from rblist in strlist__remove
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, ananth@in.ibm.com,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Date: Wed, 29 Aug 2012 11:30:07 +0530
+Message-ID: <20120829055840.7802.1459.stgit@suzukikp.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346186104-4083-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 12082906-8256-0000-0000-000003EFE455
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Around Tue 28 Aug 2012 13:35:04 -0700 or thereabout, Mark Brown wrote:
-> Rather than requiring platforms to select the generic clock API to make
-> it available make the API available as a user selectable option unless the
-> user either selects HAVE_CUSTOM_CLK (if they have their own implementation)
-> or selects COMMON_CLK (if they depend on the generic implementation).
-> 
-> All current architectures that HAVE_CLK but don't use the common clock
-> framework have selects of HAVE_CUSTOM_CLK added.
-> 
-> This allows drivers to use the generic API on platforms which have no need
-> for the clock API at platform level.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
-> 
-> This depends on having one of the patches I've sent adding a generic
-> clkdev.h added merged - Arnd was expecting to merge one of those, there
-> was just the lack of clarity about the most practical Kbuild hookup.
-> 
->  arch/arm/Kconfig            |   12 ++++++++++++
->  arch/avr32/Kconfig          |    1 +
+The following commit:
 
-For the AVR32 related changes
+author	David Ahern <dsahern@gmail.com>
+	Tue, 31 Jul 2012 04:31:33 +0000 (22:31 -0600)
+committer	Arnaldo Carvalho de Melo <acme@redhat.com>
+	Fri, 3 Aug 2012 13:39:51 +0000 (10:39 -0300)
+commit	ee8dd3ca43f151d9fbe1edeef68fb8a77eb9f047
 
-Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+causes a double free during a probe deletion as the node is
+never removed from the list via strlist__remove(), even though
+it gets 'deleted' (read free()'d). This causes a double
+free when we do strlist__delete() as the node is already deleted
+but present in the rblist.
 
-<snipp>
+[suzukikp@suzukikp perf]$ sudo ./perf probe -a do_fork
+Added new event:
+  probe:do_fork        (on do_fork)
 
--- 
-mvh
-Hans-Christian Egtvedt
+You can now use it in all perf tools, such as:
+
+	perf record -e probe:do_fork -aR sleep 1
+
+[suzukikp@suzukikp perf]$ sudo ./perf probe -d do_fork
+Removed event: probe:do_fork
+*** glibc detected *** ./perf: double free or corruption (fasttop): 0x000000000133d600 ***
+======= Backtrace: =========
+/lib64/libc.so.6[0x38eec7dda6]
+./perf(rblist__delete+0x5c)[0x47d3dc]
+./perf(del_perf_probe_events+0xb6)[0x47b826]
+./perf(cmd_probe+0x471)[0x42c8d1]
+./perf[0x4150b3]
+./perf(main+0x501)[0x4148e1]
+/lib64/libc.so.6(__libc_start_main+0xed)[0x38eec2169d]
+./perf[0x414a61]
+
+
+Make sure we remove the node from the rblist before we delete the
+node. The rblist__remove_node() will invoke rblist->node_delete,
+which  will take care of deleting the node with the suitable function
+provided by the user.
+
+Reported-by: Ananth N. Mavinakayanahalli <ananth@in.ibm.com>
+Signed-off-by: Suzuki K. Poulose <suzuki@in.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+---
+
+ tools/perf/util/strlist.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/util/strlist.c b/tools/perf/util/strlist.c
+index 95856ff..155d8b7 100644
+--- a/tools/perf/util/strlist.c
++++ b/tools/perf/util/strlist.c
+@@ -93,7 +93,7 @@ out:
+ 
+ void strlist__remove(struct strlist *slist, struct str_node *snode)
+ {
+-	str_node__delete(snode, slist->dupstr);
++	rblist__remove_node(&slist->rblist, &snode->rb_node);
+ }
+ 
+ struct str_node *strlist__find(struct strlist *slist, const char *entry)
+
