@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350Ab2H2Kjl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 06:39:41 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:46773 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752646Ab2H2KjS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 06:39:18 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-scsi@vger.kernel.org, kvm@vger.kernel.org, jbottomley@parallels.com,
-        stable@vger.kernel.org
-Subject: [PATCH for 3.6 3/3] virtio-scsi: fix LUNs greater than 255
-Date: Wed, 29 Aug 2012 12:39:08 +0200
-Message-Id: <1346236748-12554-2-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.7.11.2
-In-Reply-To: <1346155154-12915-1-git-send-email-pbonzini@redhat.com>
-References: <1346155154-12915-1-git-send-email-pbonzini@redhat.com>
+	id S1753085Ab2H2Kke (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 06:40:34 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:39792 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751021Ab2H2Kkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 06:40:32 -0400
+Date: Wed, 29 Aug 2012 12:40:18 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: Borislav Petkov <bp@amd64.org>, tony.luck@intel.com, andi@firstfloor.org,
+        ananth@in.ibm.com, x86@kernel.org, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de,
+        linux-edac@vger.kernel.org
+Subject: Re: [PATCH RFC] x86/mce: Move MCE sysfs attributes out of the
+ per-cpu location
+Message-ID: <20120829104018.GD26977@aftab.osrc.amd.com>
+References: <20120829074154.6755.98941.stgit@localhost.localdomain>
+ <20120829101302.GA26977@aftab.osrc.amd.com>
+ <503DEE3C.6020406@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <503DEE3C.6020406@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-virtio-scsi needs to report LUNs greater than 256 using the "flat"
-format.  Because the Linux SCSI layer just maps the SCSI LUN to
-an u32, without any parsing, these end up in the range from 16640
-to 32767.  Fix max_lun to account for the possibility that logical
-unit numbers are encoded with the "flat" format.
+On Wed, Aug 29, 2012 at 03:56:04PM +0530, Naveen N. Rao wrote:
+> Hmmm.. Can't we just deprecate these? ;) Perhaps we can consider
+> adding newer tunables in the right place.
 
-Cc: Stable kernel <stable@vger.kernel.org> # 3.4: 4fe74b1: [SCSI] virtio-scsi: SCSI driver
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- drivers/scsi/virtio_scsi.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+In case you haven't noticed yet: I'm all on your side.
 
-diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-index 7554d78..a7cf726 100644
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@ -677,7 +677,11 @@ static int __devinit virtscsi_probe(struct virtio_device *vdev)
- 	cmd_per_lun = virtscsi_config_get(vdev, cmd_per_lun) ?: 1;
- 	shost->cmd_per_lun = min_t(u32, cmd_per_lun, shost->can_queue);
- 	shost->max_sectors = virtscsi_config_get(vdev, max_sectors) ?: 0xFFFF;
--	shost->max_lun = virtscsi_config_get(vdev, max_lun) + 1;
-+
-+	/* LUNs > 256 are reported with format 1, so they go in the range
-+	 * 16640-32767.
-+	 */
-+	shost->max_lun = virtscsi_config_get(vdev, max_lun) + 1 + 0x4000;
- 	shost->max_id = num_targets;
- 	shost->max_channel = 0;
- 	shost->max_cmd_len = VIRTIO_SCSI_CDB_SIZE;
+But let me ask you this: these attributes grow to a large number with
+a large number of cores but why is this a problem? We have a bunch of
+redundant attributes in sysfs, so what?
+
+See what I mean?
+
 -- 
-1.7.1
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
