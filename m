@@ -1,166 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865Ab2H3TA3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 15:00:29 -0400
-Received: from www.hansjkoch.de ([178.63.77.200]:50388 "EHLO www.hansjkoch.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751656Ab2H3TAY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 15:00:24 -0400
-Date: Thu, 30 Aug 2012 21:00:19 +0200
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: "Worth, Kevin" <kevin.worth@hp.com>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>
-Subject: Re: Using uio_pdrv to create an platform device for an FPGA, mmap()
- fails
-Message-ID: <20120830190019.GB4819@local>
-References: <B5EF724456FFB24A8C8AE88E26CE8F4B668404B8@G9W0725.americas.hpqcorp.net>
- <20120830032735.GA2599@local>
- <B5EF724456FFB24A8C8AE88E26CE8F4B66840BEE@G9W0725.americas.hpqcorp.net>
+	id S1752145Ab2H3TAv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 15:00:51 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:53330 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751703Ab2H3TA1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 15:00:27 -0400
+X-Originating-IP: 217.70.178.135
+X-Originating-IP: 173.246.103.110
+Date: Thu, 30 Aug 2012 12:00:18 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 2/5] rcu: Track CPU-hotplug duration
+ statistics
+Message-ID: <20120830190017.GC6749@jtriplet-mobl1>
+References: <20120830184448.GA31753@linux.vnet.ibm.com>
+ <1346352312-31987-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346352312-31987-2-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <B5EF724456FFB24A8C8AE88E26CE8F4B66840BEE@G9W0725.americas.hpqcorp.net>
+In-Reply-To: <1346352312-31987-2-git-send-email-paulmck@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 06:36:53PM +0000, Worth, Kevin wrote:
-> Thanks for the reply, Hans. Your question about opening /dev/uio0 O_RDWR
-> prompted me to check out how I was creating /dev/uio0 ... my system
-> isn't using udev, and I was accidentally creating it with major/minor
-> number 254/0 instead of the correct 253/0 (found by looking at
-> /proc/devices). Fixed that and the mmap() call started working.
+On Thu, Aug 30, 2012 at 11:45:09AM -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+> 
+> Many rcutorture runs include CPU-hotplug operations in their stress
+> testing.  This commit accumulates statistics on the durations of these
+> operations in deference to the recent concern about the overhead and
+> latency of these operations.
 
-Good.
+How many jiffies, on average, do these operations take?  Measuring these
+using jiffies seems highly prone to repeated rounding error.
 
+> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
+>  kernel/rcutorture.c |   42 +++++++++++++++++++++++++++++++++++++-----
+>  1 files changed, 37 insertions(+), 5 deletions(-)
 > 
-> Verified that if /dev/uio0 has permissions 0644, root can open it O_RDWR
-> and mmap PROT_READ | PROT_WRITE using the below code and write to an
-> address within my memory map. Of course this contradicts the statement
-> "/dev/uioX is a read-only file" in the UIO howto.
-
-You're right. That wants to be fixed...
-
-> 
-> Including my updated, tested code for completeness.
-> Note I also cleaned up the device registration a little by
-> using a different platform_device_register_ call and removing fields
-> in the struct uio_info that get filled in by uio_pdrv automatically.
-
-If you want to have that included in the mainline, please choose a more
-descriptive name than "myfpga" and send a proper patch.
-
-Thanks,
-Hans
-
-> 
-> -Kevin
-> 
-> # lsuio -m -v
-> uio0: name=uio_myfpga, version=0.1, events=0
->         map[0]: addr=0xD0000000, size=262144, mmap test: OK
->         Device attributes:
->         uevent=DRIVER=uio_pdrv
->         modalias=platform:uio_pdrv
-> 
-> ------Kernelspace------
-> #include <linux/platform_device.h>
-> #include <linux/uio_driver.h>
-> #include <linux/module.h>
-> 
-> #define MYFPGA_BASE     0xd0000000 // 3G
-> #define MYFPGA_SIZE     0x00040000 // 256k
-> 
-> static struct resource myfpga_resources[] = {
->     {
->         .start = MYFPGA_BASE,
->         .end   = MYFPGA_BASE + MYFPGA_SIZE - 1,
->         .name  = "myfpga",
->         .flags = IORESOURCE_MEM
->     }
-> };
-> 
-> static struct uio_info myfpga_uio_info = {
->    .name = "uio_myfpga",
->    .version = "0.1",
-> };
-> 
-> static struct platform_device *myfpga_uio_pdev;
-> 
-> static int __init myfpga_init(void)
-> {
->     myfpga_uio_pdev = platform_device_register_resndata (NULL,
->                                                          "uio_pdrv",
->                                                          -1,
->                                                          myfpga_resources,
->                                                          1,
->                                                          &myfpga_uio_info,
->                                                          sizeof(struct uio_info)
->                                                         );
->     if (IS_ERR(myfpga_uio_pdev)) {
->         return PTR_ERR(myfpga_uio_pdev);
->     }
-> 
->     return 0;
-> }
-> 
-> static void __exit myfpga_exit(void)
-> {
->     platform_device_unregister(myfpga_uio_pdev);
-> }
-> 
-> module_init(myfpga_init);
-> module_exit(myfpga_exit);
-> 
-> ------Userspace-------
-> #include <sys/types.h>
-> #include <sys/mman.h>
-> #include <sys/stat.h>
-> 
-> #include <dirent.h>
-> #include <string.h>
-> #include <stdlib.h>
-> #include <stdio.h>
-> #include <fcntl.h>
-> #include <unistd.h>
-> #include <stdint.h>
-> 
-> #define MYFPGA_BASE     0xd0000000 // 3G
-> #define MYFPGA_SIZE     0x00040000 // 256k
-> #define MYFPGA_MAP_NUM  0 // First and only defined map
-> 
-> #define BIT32(n) (1 << (n))
-> 
-> /* Use mmap()'ped address "iomem", not physical MYFPGA address */
-> #define MYFPGA_REG(iomem) (volatile uint32_t*)(iomem + 0x8) // Third 32-bit reg
-> 
-> int main (int argc, char *argv[])
-> {
->     int fd;
->     void *iomem;
->     fd = open("/dev/uio0", O_RDWR|O_SYNC);
->     if (fd < 0) {
->         printf("failed to open /dev/uio0, quitting\n");
->         return -1;
->     }
->     /* Note offset has a special meaning with uio devices */
->     iomem = mmap(NULL, MYFPGA_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd,
->                  MYFPGA_MAP_NUM * getpagesize());
->     if (iomem == MAP_FAILED) {
->         printf("mmap failed, quitting\n");
->         close(fd);
->         return -2;
->     }
-> 
->     /* Set bit 5 of MYFPGA_REG register */
->     *MYFPGA_REG(iomem) |= BIT32(5);
-> 
->     munmap(iomem, MYFPGA_SIZE);
->     close(fd);
->     return 0;
-> }
+> diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
+> index 86315d3..c6cf6ff 100644
+> --- a/kernel/rcutorture.c
+> +++ b/kernel/rcutorture.c
+> @@ -176,8 +176,14 @@ static long n_rcu_torture_boosts;
+>  static long n_rcu_torture_timers;
+>  static long n_offline_attempts;
+>  static long n_offline_successes;
+> +static unsigned long sum_offline;
+> +static int min_offline = -1;
+> +static int max_offline;
+>  static long n_online_attempts;
+>  static long n_online_successes;
+> +static unsigned long sum_online;
+> +static int min_online = -1;
+> +static int max_online;
+>  static long n_barrier_attempts;
+>  static long n_barrier_successes;
+>  static struct list_head rcu_torture_removed;
+> @@ -1214,11 +1220,13 @@ rcu_torture_printk(char *page)
+>  		       n_rcu_torture_boost_failure,
+>  		       n_rcu_torture_boosts,
+>  		       n_rcu_torture_timers);
+> -	cnt += sprintf(&page[cnt], "onoff: %ld/%ld:%ld/%ld ",
+> -		       n_online_successes,
+> -		       n_online_attempts,
+> -		       n_offline_successes,
+> -		       n_offline_attempts);
+> +	cnt += sprintf(&page[cnt],
+> +		       "onoff: %ld/%ld:%ld/%ld %d,%d:%d,%d %lu:%lu (HZ=%d) ",
+> +		       n_online_successes, n_online_attempts,
+> +		       n_offline_successes, n_offline_attempts,
+> +		       min_online, max_online,
+> +		       min_offline, max_offline,
+> +		       sum_online, sum_offline, HZ);
+>  	cnt += sprintf(&page[cnt], "barrier: %ld/%ld:%ld",
+>  		       n_barrier_successes,
+>  		       n_barrier_attempts,
+> @@ -1490,8 +1498,10 @@ static int __cpuinit
+>  rcu_torture_onoff(void *arg)
+>  {
+>  	int cpu;
+> +	unsigned long delta;
+>  	int maxcpu = -1;
+>  	DEFINE_RCU_RANDOM(rand);
+> +	unsigned long starttime;
 >  
+>  	VERBOSE_PRINTK_STRING("rcu_torture_onoff task started");
+>  	for_each_online_cpu(cpu)
+> @@ -1509,6 +1519,7 @@ rcu_torture_onoff(void *arg)
+>  				printk(KERN_ALERT "%s" TORTURE_FLAG
+>  				       "rcu_torture_onoff task: offlining %d\n",
+>  				       torture_type, cpu);
+> +			starttime = jiffies;
+>  			n_offline_attempts++;
+>  			if (cpu_down(cpu) == 0) {
+>  				if (verbose)
+> @@ -1516,12 +1527,23 @@ rcu_torture_onoff(void *arg)
+>  					       "rcu_torture_onoff task: offlined %d\n",
+>  					       torture_type, cpu);
+>  				n_offline_successes++;
+> +				delta = jiffies - starttime;
+> +				sum_offline += delta;
+> +				if (min_offline < 0) {
+> +					min_offline = delta;
+> +					max_offline = delta;
+> +				}
+> +				if (min_offline > delta)
+> +					min_offline = delta;
+> +				if (max_offline < delta)
+> +					max_offline = delta;
+>  			}
+>  		} else if (cpu_is_hotpluggable(cpu)) {
+>  			if (verbose)
+>  				printk(KERN_ALERT "%s" TORTURE_FLAG
+>  				       "rcu_torture_onoff task: onlining %d\n",
+>  				       torture_type, cpu);
+> +			starttime = jiffies;
+>  			n_online_attempts++;
+>  			if (cpu_up(cpu) == 0) {
+>  				if (verbose)
+> @@ -1529,6 +1551,16 @@ rcu_torture_onoff(void *arg)
+>  					       "rcu_torture_onoff task: onlined %d\n",
+>  					       torture_type, cpu);
+>  				n_online_successes++;
+> +				delta = jiffies - starttime;
+> +				sum_online += delta;
+> +				if (min_online < 0) {
+> +					min_online = delta;
+> +					max_online = delta;
+> +				}
+> +				if (min_online > delta)
+> +					min_online = delta;
+> +				if (max_online < delta)
+> +					max_online = delta;
+>  			}
+>  		}
+>  		schedule_timeout_interruptible(onoff_interval * HZ);
+> -- 
+> 1.7.8
 > 
