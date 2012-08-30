@@ -1,40 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754693Ab2H3RJO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 13:09:14 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:37884 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751997Ab2H3RJM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 13:09:12 -0400
-Date: Thu, 30 Aug 2012 13:09:10 -0400 (EDT)
-Message-Id: <20120830.130910.1673588383256719426.davem@davemloft.net>
-To: Julia.Lawall@lip6.fr
-Cc: netdev@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] drivers/net/ethernet/tundra/tsi108_eth.c: delete
- double assignment
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1345969115-12977-2-git-send-email-Julia.Lawall@lip6.fr>
-References: <1345969115-12977-2-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: Mew version 6.5 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1754723Ab2H3RNS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 13:13:18 -0400
+Received: from seven.inai.de ([5.9.24.206]:48277 "EHLO seven.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753840Ab2H3RNR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 13:13:17 -0400
+Date: Thu, 30 Aug 2012 19:13:15 +0200 (CEST)
+From: Jan Engelhardt <jengelh@inai.de>
+To: Andy Lutomirski <luto@amacapital.net>
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-ide@vger.kernel.org, Bjoern Franke <bjo@nord-west.org>,
+        Borislav Petkov <bp@alien8.de>, Tim Nufire <linux_ide_tim@ibink.com>
+Subject: Re: Which disk is ata4?
+In-Reply-To: <CALCETrVBTWvvJvziAoDzdUyC10jSKHmx38qyNXxJKVVpaB+7Pg@mail.gmail.com>
+Message-ID: <alpine.LNX.2.01.1208301912560.27195@frira.zrqbmnf.qr>
+References: <CALCETrW-LFzcHYgx=thQiuTfU8RdRBrtXwE7QboWpNrjz4An4A@mail.gmail.com> <alpine.LNX.2.01.1208301809370.25988@frira.zrqbmnf.qr> <CALCETrVBTWvvJvziAoDzdUyC10jSKHmx38qyNXxJKVVpaB+7Pg@mail.gmail.com>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-Date: Sun, 26 Aug 2012 10:18:35 +0200
+On Thursday 2012-08-30 18:57, Andy Lutomirski wrote:
 
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> Delete successive assignments to the same location.
-> 
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
- ...
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+>On Thu, Aug 30, 2012 at 9:14 AM, Jan Engelhardt <jengelh@inai.de> wrote:
+>> On Thursday 2012-08-30 06:38, Andy Lutomirski wrote:
+>>
+>>>One of my disks went out to lunch for a while.  Logs below.
+>>>
+>>>[784786.047673] ata4.00: exception Emask 0x10 SAct 0x7800 SErr 0x0
+>>>action 0x6 frozen
+>>>
+>>>Which one is it?  The only useful thing in /sys/class/ata_port/ata4 is
+>>>the device symlink, which points at
+>>>/sys/devices/pci0000:00/0000:00:1f.2/ata4.
+>>
+>> For example, ata2 here:
+>>
+>> $ cd /sys/devices
+>> $ find . -name ata2
+>> ./pci0000:00/0000:00:1f.2/ata2
+>> ./pci0000:00/0000:00:1f.2/ata2/ata_port/ata2
+>> $ cd ./pci0000:00/0000:00:1f.2/ata2
+>> $ ls -dl host*/targ*
+>> drwxr-xr-x 4 root root 0 Aug 30 18:09 host1/target1:0:0
+>
+>Aha!  This works on 3.5 but not on 3.2.
 
-Applied to net-next, thanks Julia.
+3.4.x here..
