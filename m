@@ -1,127 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753092Ab2H3Wyb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 18:54:31 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:53300 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752798Ab2H3Wy3 (ORCPT
+	id S1753154Ab2H3Wzx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 18:55:53 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51994 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752770Ab2H3Wzw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 18:54:29 -0400
+	Thu, 30 Aug 2012 18:55:52 -0400
+Date: Thu, 30 Aug 2012 15:55:47 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Simon Budig <simon.budig@kernelconcepts.de>,
+        Henrik Rydberg <rydberg@euromail.se>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH] Input: Let the FT5x06 driver build without debugfs
+Message-ID: <20120830225547.GB21501@core.coreip.homeip.net>
+References: <87k3wy1ii3.fsf@xmission.com>
+ <502DFC1D.20903@kernelconcepts.de>
+ <87boi91g01.fsf@xmission.com>
+ <20120820135303.GA9278@roeck-us.net>
+ <20120822054919.GB20624@core.coreip.homeip.net>
+ <alpine.DEB.2.00.1208301524560.14189@chino.kir.corp.google.com>
 MIME-Version: 1.0
-In-Reply-To: <20120830203125.GA23478@fieldses.org>
-References: <1346249410-3515-1-git-send-email-linkinjeon@gmail.com>
-	<20120830203125.GA23478@fieldses.org>
-Date: Fri, 31 Aug 2012 07:54:29 +0900
-Message-ID: <CAKYAXd_BNh1FgUoe5k-DJMTs0d-e21zM5Z1R0pbOspyEQ_a7EA@mail.gmail.com>
-Subject: Re: [PATCH] exportfs: add FILEID_INVALID to indicate invalid fid_type
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        Vivek Trivedi <vtrivedi018@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1208301524560.14189@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/8/31, J. Bruce Fields <bfields@fieldses.org>:
-> On Wed, Aug 29, 2012 at 10:10:10AM -0400, Namjae Jeon wrote:
->> This commit adds FILEID_INVALID = 0xff in fid_type to
->> indicate invalid fid_type
->
-> OK, applying for 3.7.
->
-> Looks like this shows up in a lot of filesystems too as just "255".  Are
-> you planning to patch up the filesystems afterwards?
-Hi Bruce.
-Yes, I will fix these from next patches.
+On Thu, Aug 30, 2012 at 03:26:21PM -0700, David Rientjes wrote:
+> On Tue, 21 Aug 2012, Dmitry Torokhov wrote:
+> 
+> > > > > On 08/17/2012 02:15 AM, Eric W. Biederman wrote:
+> > > > >> When testing to make certain my user namespace code works in
+> > > > >> various configurations I tripped over the tf5x06.c not building
+> > > > >> with debugfs disabled.
+> > > > >
+> > > > > Sorry for that.
+> > > > >
+> > > > > There already is a patch for this issue which I slightly prefer. You
+> > > > > can find it in the mail from Guenther Roeck:
+> > > > >    http://www.mail-archive.com/linux-input@vger.kernel.org/msg00646.html
+> > > > 
+> > > > If you guys could get that merged into 3.6 I would appreciate it.
+> > > > 
+> > > Yes, that would be great. I don't recall seeing an e-mail from Dmitry accepting
+> > > it, though.
+> > 
+> > Applied, sorry for the delay.
+> > 
+> 
+> This still affects Linus' tree and causes a build breakage without debugfs 
+> configured.  Considering the driver went into 3.5-rc5, could you please 
+> push this fix for 3.6
+
+I Just sent a pull request to Linus.
+
+> (and mark it for stable backport)?
+
+I am pretty sure it was merged in 3.6 merge window, not 3.5, so no need
+to mark for stable.
+
 Thanks.
->
-> --b.
->
->>
->> It avoids using magic number 255
->>
->> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
->> Signed-off-by: Vivek Trivedi <vtrivedi018@gmail.com>
->> ---
->>  fs/exportfs/expfs.c      |    4 ++--
->>  fs/fhandle.c             |    2 +-
->>  fs/nfsd/nfsfh.c          |    4 ++--
->>  include/linux/exportfs.h |    5 +++++
->>  4 files changed, 10 insertions(+), 5 deletions(-)
->>
->> diff --git a/fs/exportfs/expfs.c b/fs/exportfs/expfs.c
->> index 29ab099..f1f1c59 100644
->> --- a/fs/exportfs/expfs.c
->> +++ b/fs/exportfs/expfs.c
->> @@ -322,10 +322,10 @@ static int export_encode_fh(struct inode *inode,
->> struct fid *fid,
->>
->>  	if (parent && (len < 4)) {
->>  		*max_len = 4;
->> -		return 255;
->> +		return FILEID_INVALID;
->>  	} else if (len < 2) {
->>  		*max_len = 2;
->> -		return 255;
->> +		return FILEID_INVALID;
->>  	}
->>
->>  	len = 2;
->> diff --git a/fs/fhandle.c b/fs/fhandle.c
->> index a48e4a1..78a7879 100644
->> --- a/fs/fhandle.c
->> +++ b/fs/fhandle.c
->> @@ -52,7 +52,7 @@ static long do_sys_name_to_handle(struct path *path,
->>  	handle_bytes = handle_dwords * sizeof(u32);
->>  	handle->handle_bytes = handle_bytes;
->>  	if ((handle->handle_bytes > f_handle.handle_bytes) ||
->> -	    (retval == 255) || (retval == -ENOSPC)) {
->> +	    (retval == FILEID_INVALID) || (retval == -ENOSPC)) {
->>  		/* As per old exportfs_encode_fh documentation
->>  		 * we could return ENOSPC to indicate overflow
->>  		 * But file system returned 255 always. So handle
->> diff --git a/fs/nfsd/nfsfh.c b/fs/nfsd/nfsfh.c
->> index 032af38..814afaa 100644
->> --- a/fs/nfsd/nfsfh.c
->> +++ b/fs/nfsd/nfsfh.c
->> @@ -572,7 +572,7 @@ fh_compose(struct svc_fh *fhp, struct svc_export *exp,
->> struct dentry *dentry,
->>
->>  		if (inode)
->>  			_fh_update(fhp, exp, dentry);
->> -		if (fhp->fh_handle.fh_fileid_type == 255) {
->> +		if (fhp->fh_handle.fh_fileid_type == FILEID_INVALID) {
->>  			fh_put(fhp);
->>  			return nfserr_opnotsupp;
->>  		}
->> @@ -603,7 +603,7 @@ fh_update(struct svc_fh *fhp)
->>  			goto out;
->>
->>  		_fh_update(fhp, fhp->fh_export, dentry);
->> -		if (fhp->fh_handle.fh_fileid_type == 255)
->> +		if (fhp->fh_handle.fh_fileid_type == FILEID_INVALID)
->>  			return nfserr_opnotsupp;
->>  	}
->>  out:
->> diff --git a/include/linux/exportfs.h b/include/linux/exportfs.h
->> index 12291a7..0e14525 100644
->> --- a/include/linux/exportfs.h
->> +++ b/include/linux/exportfs.h
->> @@ -83,6 +83,11 @@ enum fid_type {
->>  	 * 64 bit parent inode number.
->>  	 */
->>  	FILEID_NILFS_WITH_PARENT = 0x62,
->> +
->> +	/*
->> +	 * Filesystems must not use 0xff file ID.
->> +	 */
->> +	FILEID_INVALID = 0xff,
->>  };
->>
->>  struct fid {
->> --
->> 1.7.9.5
->>
->
+
+-- 
+Dmitry
