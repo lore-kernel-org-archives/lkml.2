@@ -1,33 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297Ab2H3Lib (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 07:38:31 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:57453 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752777Ab2H3Li1 convert rfc822-to-8bit (ORCPT
+	id S1752945Ab2H3Ljq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 07:39:46 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:34097 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750935Ab2H3Ljp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 07:38:27 -0400
+	Thu, 30 Aug 2012 07:39:45 -0400
 From: "Kim, Milo" <Milo.Kim@ti.com>
 To: Anton Vorontsov <cbouatmailru@gmail.com>
-CC: Devendra Naga <develkernel412222@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         David Woodhouse <dwmw2@infradead.org>,
         Anton Vorontsov <anton.vorontsov@linaro.org>
-Subject: [PATCH 2/8] lp8727_charger: cleanup _probe() and _remove()
-Thread-Topic: [PATCH 2/8] lp8727_charger: cleanup _probe() and _remove()
-Thread-Index: Ac2Go+8nmkb7hXVVThi/QNLBzK1h6Q==
-Date: Thu, 30 Aug 2012 11:38:20 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF1C87@DQHE02.ent.ti.com>
+Subject: [PATCH 3/8] lp8727_charger: fix buggy code when the platform data
+ is NULL
+Thread-Topic: [PATCH 3/8] lp8727_charger: fix buggy code when the platform
+ data is NULL
+Thread-Index: Ac2GpCKY7Zu8ccJpTFmoMzEOHkb3Wg==
+Date: Thu, 30 Aug 2012 11:39:38 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF1C96@DQHE02.ent.ti.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-cr-hashedpuzzle: pp0= BTyi I/FD JNWR R7cl UTyE YM3G aciY roqq sd6y tKa3
- tg+k tpJD 4Ohf 49hB
- 6I0D;5;YQBuAHQAbwBuAC4AdgBvAHIAbwBuAHQAcwBvAHYAQABsAGkAbgBhAHIAbwAuAG8AcgBnADsAYwBiAG8AdQBhAHQAbQBhAGkAbAByAHUAQABnAG0AYQBpAGwALgBjAG8AbQA7AGQAZQB2AGUAbABrAGUAcgBuAGUAbAA0ADEAMgAyADIAMgBAAGcAbQBhAGkAbAAuAGMAbwBtADsAZAB3AG0AdwAyAEAAaQBuAGYAcgBhAGQAZQBhAGQALgBvAHIAZwA7AGwAaQBuAHUAeAAtAGsAZQByAG4AZQBsAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcA;Sosha1_v1;7;{8B14015F-BA91-4347-B48C-132AEB45E49F};bQBpAGwAbwAuAGsAaQBtAEAAdABpAC4AYwBvAG0A;Thu,
- 30 Aug 2012 11:38:11
- GMT;WwBQAEEAVABDAEgAIAAyAC8AOABdACAAbABwADgANwAyADcAXwBjAGgAYQByAGcAZQByADoAIABjAGwAZQBhAG4AdQBwACAAXwBwAHIAbwBiAGUAKAApACAAYQBuAGQAIABfAHIAZQBtAG8AdgBlACgAKQA=
-x-cr-puzzleid: {8B14015F-BA91-4347-B48C-132AEB45E49F}
 x-originating-ip: [157.87.185.123]
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
@@ -36,70 +31,155 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(a) register the power supply prior to creating irq handler
-    After reordering the sequence, the interrupt issue can be gone
-    when the power supply registration gets failed
-(b) remove unnecessary goto statements
-(c) unregister the power supply after releasing irq resources
-    in reverse order of _probe()
+Even the platform data is not defined, lp8727 driver should be run
+
+(a) change charger platform data type to pointer
+(b) name change: chg_parm -> chg_param
+(c) fix NULL point access problem when getting the battery properties
 
 Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 ---
- drivers/power/lp8727_charger.c |   20 +++++++++-----------
- 1 file changed, 9 insertions(+), 11 deletions(-)
+ drivers/power/lp8727_charger.c       |   38 +++++++++++++++++++++++-----------
+ include/linux/platform_data/lp8727.h |   13 ++++++------
+ 2 files changed, 33 insertions(+), 18 deletions(-)
 
 diff --git a/drivers/power/lp8727_charger.c b/drivers/power/lp8727_charger.c
-index fb3d7ac..4d51909 100644
+index 4d51909..975a4f2 100644
 --- a/drivers/power/lp8727_charger.c
 +++ b/drivers/power/lp8727_charger.c
-@@ -442,35 +442,33 @@ static int lp8727_probe(struct i2c_client *cl, const struct i2c_device_id *id)
- 	ret = lp8727_init_device(pchg);
- 	if (ret) {
- 		dev_err(pchg->dev, "i2c communication err: %d", ret);
--		goto error;
-+		return ret;
- 	}
+@@ -88,7 +88,7 @@ struct lp8727_chg {
+ 	struct workqueue_struct *irqthread;
+ 	struct lp8727_platform_data *pdata;
+ 	struct lp8727_psy *psy;
+-	struct lp8727_chg_param *chg_parm;
++	struct lp8727_chg_param *chg_param;
+ 	enum lp8727_dev_id devid;
+ };
  
--	ret = lp8727_intr_config(pchg);
-+	ret = lp8727_register_psy(pchg);
- 	if (ret) {
--		dev_err(pchg->dev, "irq handler err: %d", ret);
--		goto error;
-+		dev_err(pchg->dev, "power supplies register err: %d", ret);
-+		return ret;
- 	}
+@@ -170,20 +170,21 @@ static void lp8727_ctrl_switch(struct lp8727_chg *pchg, u8 sw)
  
--	ret = lp8727_register_psy(pchg);
-+	ret = lp8727_intr_config(pchg);
- 	if (ret) {
--		dev_err(pchg->dev, "power supplies register err: %d", ret);
--		goto error;
-+		dev_err(pchg->dev, "irq handler err: %d", ret);
-+		lp8727_unregister_psy(pchg);
-+		return ret;
- 	}
- 
- 	return 0;
--
--error:
--	return ret;
- }
- 
- static int __devexit lp8727_remove(struct i2c_client *cl)
+ static void lp8727_id_detection(struct lp8727_chg *pchg, u8 id, int vbusin)
  {
- 	struct lp8727_chg *pchg = i2c_get_clientdata(cl);
++	struct lp8727_platform_data *pdata = pchg->pdata;
+ 	u8 devid = ID_NONE;
+ 	u8 swctrl = SW_DM1_HiZ | SW_DP2_HiZ;
  
--	lp8727_unregister_psy(pchg);
- 	free_irq(pchg->client->irq, pchg);
- 	flush_workqueue(pchg->irqthread);
- 	destroy_workqueue(pchg->irqthread);
-+	lp8727_unregister_psy(pchg);
- 	return 0;
- }
+ 	switch (id) {
+ 	case 0x5:
+ 		devid = ID_TA;
+-		pchg->chg_parm = &pchg->pdata->ac;
++		pchg->chg_param = pdata ? pdata->ac : NULL;
+ 		break;
+ 	case 0xB:
+ 		if (lp8727_is_dedicated_charger(pchg)) {
+-			pchg->chg_parm = &pchg->pdata->ac;
++			pchg->chg_param = pdata ? pdata->ac : NULL;
+ 			devid = ID_DEDICATED_CHG;
+ 		} else if (lp8727_is_usb_charger(pchg)) {
+-			pchg->chg_parm = &pchg->pdata->usb;
++			pchg->chg_param = pdata ? pdata->usb : NULL;
+ 			devid = ID_USB_CHG;
+ 			swctrl = SW_DM1_DM | SW_DP2_DP;
+ 		} else if (vbusin) {
+@@ -193,7 +194,7 @@ static void lp8727_id_detection(struct lp8727_chg *pchg, u8 id, int vbusin)
+ 		break;
+ 	default:
+ 		devid = ID_NONE;
+-		pchg->chg_parm = NULL;
++		pchg->chg_param = NULL;
+ 		break;
+ 	}
  
+@@ -295,6 +296,7 @@ static int lp8727_battery_get_property(struct power_supply *psy,
+ 				       union power_supply_propval *val)
+ {
+ 	struct lp8727_chg *pchg = dev_get_drvdata(psy->dev->parent);
++	struct lp8727_platform_data *pdata = pchg->pdata;
+ 	u8 read;
+ 
+ 	switch (psp) {
+@@ -318,19 +320,31 @@ static int lp8727_battery_get_property(struct power_supply *psy,
+ 			val->intval = POWER_SUPPLY_HEALTH_GOOD;
+ 		break;
+ 	case POWER_SUPPLY_PROP_PRESENT:
+-		if (pchg->pdata->get_batt_present)
++		if (!pdata)
++			return -EINVAL;
++
++		if (pdata->get_batt_present)
+ 			val->intval = pchg->pdata->get_batt_present();
+ 		break;
+ 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
+-		if (pchg->pdata->get_batt_level)
++		if (!pdata)
++			return -EINVAL;
++
++		if (pdata->get_batt_level)
+ 			val->intval = pchg->pdata->get_batt_level();
+ 		break;
+ 	case POWER_SUPPLY_PROP_CAPACITY:
+-		if (pchg->pdata->get_batt_capacity)
++		if (!pdata)
++			return -EINVAL;
++
++		if (pdata->get_batt_capacity)
+ 			val->intval = pchg->pdata->get_batt_capacity();
+ 		break;
+ 	case POWER_SUPPLY_PROP_TEMP:
+-		if (pchg->pdata->get_batt_temp)
++		if (!pdata)
++			return -EINVAL;
++
++		if (pdata->get_batt_temp)
+ 			val->intval = pchg->pdata->get_batt_temp();
+ 		break;
+ 	default:
+@@ -347,9 +361,9 @@ static void lp8727_charger_changed(struct power_supply *psy)
+ 	u8 eoc_level, ichg;
+ 
+ 	if (lp8727_is_charger_attached(psy->name, pchg->devid)) {
+-		if (pchg->chg_parm) {
+-			eoc_level = pchg->chg_parm->eoc_level;
+-			ichg = pchg->chg_parm->ichg;
++		if (pchg->chg_param) {
++			eoc_level = pchg->chg_param->eoc_level;
++			ichg = pchg->chg_param->ichg;
+ 			val = (ichg << 4) | eoc_level;
+ 			lp8727_write_byte(pchg, CHGCTRL2, val);
+ 		}
+diff --git a/include/linux/platform_data/lp8727.h b/include/linux/platform_data/lp8727.h
+index ea98c61..ff14591 100644
+--- a/include/linux/platform_data/lp8727.h
++++ b/include/linux/platform_data/lp8727.h
+@@ -47,19 +47,20 @@ struct lp8727_chg_param {
+ 
+ /**
+  * struct lp8727_platform_data
+- * @get_batt_present : check battery status - exists or not
+- * @get_batt_level : get battery voltage (mV)
++ * @get_batt_present  : check battery status - exists or not
++ * @get_batt_level    : get battery voltage (mV)
+  * @get_batt_capacity : get battery capacity (%)
+- * @get_batt_temp : get battery temperature
+- * @ac, @usb : charging parameters each charger type
++ * @get_batt_temp     : get battery temperature
++ * @ac                : charging parameters for AC type charger
++ * @usb               : charging parameters for USB type charger
+  */
+ struct lp8727_platform_data {
+ 	u8 (*get_batt_present)(void);
+ 	u16 (*get_batt_level)(void);
+ 	u8 (*get_batt_capacity)(void);
+ 	u8 (*get_batt_temp)(void);
+-	struct lp8727_chg_param ac;
+-	struct lp8727_chg_param usb;
++	struct lp8727_chg_param *ac;
++	struct lp8727_chg_param *usb;
+ };
+ 
+ #endif
 -- 
 1.7.9.5
-
 
 Best Regards,
 Milo
