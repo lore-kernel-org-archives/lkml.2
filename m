@@ -1,62 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752925Ab2H3WuU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 18:50:20 -0400
-Received: from smtp.getmail.no ([84.208.15.66]:54084 "EHLO smtp.getmail.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751154Ab2H3WuS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 18:50:18 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=iso-8859-15; format=flowed; delsp=yes
-In-reply-to: <503D4B37.1030202@earthlink.net>
-References: <op.wjrltbl46426ze@millennium.getinternet.no>
- <503D4B37.1030202@earthlink.net>
-Subject: Latency.
-To: linux-kernel@vger.kernel.org
-Date: Fri, 31 Aug 2012 00:50:28 +0200
-From: Uwaysi Bin Kareem <uwaysi.bin.kareem@paradoxuncreated.com>
-Message-id: <op.wjvlqefm6426ze@millennium.getinternet.no>
-User-Agent: Opera Mail/12.01 (Win32)
+	id S1753021Ab2H3WxZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 18:53:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60672 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752524Ab2H3WxX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 18:53:23 -0400
+Date: Thu, 30 Aug 2012 15:53:18 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 3.6-rc4
+Message-ID: <20120830225318.GA21501@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lrZ03NoBR/3+SXJZ"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have done some research on latency. I have config`d a linux kernel to  
-run 0.3ms reliable latency with audiostreams, under normal worksituations.  
-(An audioapp, and maybe some small tasks in between).
 
-This also resulted in an extremely smooth gameplaying experience, like an  
-asm-programmed custom hardware arcade. (Why gamebox-developers isn`t using  
-this, is a mystery).
+--lrZ03NoBR/3+SXJZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Recently I also tried to come as close to that experience on windows, and  
-found that win32priorityseparation on 25, all processes on idle, to avoid  
-cpu2 stalling cpu1, and minimal drivers, services, and processes gave a  
-similar experience. Windows btw, also gives lower latency, if one moves  
-windows, which one can use/abuse in a script/hack.
+Hi Linus,
 
-The feeling from low latency systems brings back the exhilaration of  
-custom hardware and assembly programming. It gives a different feel, and I  
-do believe it sets a high quality expectation to software and I wonder if  
-that is why the Amiga is said to have so much good software, and  
-responsible for it`s reputation.
+Please pull from:
 
-My windows-partition now runs as good as an Amiga, and I managed to make  
-it run even better, reminding me of singletasking systems like Mac OS.
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
 
-Games are just so much more fun with this. And the overall os is so much  
-more responsive.
+to receive updates for the input subsystem.
 
-More optimized stuff like Wayland will ofcourse even improve things more.
+Changelog:
+---------
 
-I do think that for "desktop" the focus should really be on low-latency  
-systems.
-If "desktop" and "server" are the two different profiles you usually  
-config for in linux, how about two different standard configs? Or are  
-these merging aswell, since I would think multi-cpu servers appreciate low  
-os-jitter aswell?
+Dmitry Torokhov (1):
+      Input: i8042 - add Gigabyte T1005 series netbooks to noloop table
 
-Just some thoughts.
+Guenter Roeck (1):
+      Input: edt-ft5x06 - fix build error when compiling wthout CONFIG_DEBU=
+G_FS
 
-Peace Be With You.
+Jason Gerecke (1):
+      Input: wacom - add support for EMR on Cintiq 24HD touch
+
+Michael Grzeschik (1):
+      Input: imx_keypad - reset the hardware before enabling
+
+
+Diffstat:
+--------
+
+ drivers/input/keyboard/imx_keypad.c    |  3 +++
+ drivers/input/serio/i8042-x86ia64io.h  | 14 ++++++++++++++
+ drivers/input/tablet/wacom_wac.c       |  6 +++++-
+ drivers/input/touchscreen/edt-ft5x06.c |  2 +-
+ 4 files changed, 23 insertions(+), 2 deletions(-)
+
+--=20
+Dmitry
+
+
+--lrZ03NoBR/3+SXJZ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQP+7eAAoJEH70+W8r6ZYqnQwQAIlqw8DYMpDaSP+rPuXHNkqk
+wx1Ie5ceVQBFw4JtiHiSypIjhXUuPg8r+69ugu7adaPQu/2wCCyj6SZ+iXt3i2zb
+uCon7KQr7bOHmec9JvSS5e5dL+ttC3t/7WYhRr6ZiMyJp6PUFAsEVqM8RVFdKKU5
+7z5609m1NMVQrq1eakz6iIC9+psaRd9ZiNHbiOIZBIog9EEARFwRsC0Q4xFakGAc
+FaIC6baIAyvRdVByb9rDJZkPK85ILDdBAtylvNeGohIKv3VHveFetG3hF++yhKhc
+QKWn/KJTPG3I6KB+UlqCYriGbO1/c8+9WLQOp+i7h72jXe6GLXRglTLrry/roLpc
+d3gfneRt7VIjVOApJDEtOAwVbMrI7wiFhAiNKrBHRfwVL8DbC64fpVFoLOJjdGqt
+mtVBFWdsE38q03YJ3JYZTnz0pbxckRnz2HlI0eNgXLbtyzIKQ+3RtGiE37vw504O
+IWBSx4980G35V/PfmAiWnfMdW7uYvDXdleDk4ePYjdYNALpH+AHGhlUV5qdwOoAu
+4w060XZ7iRPoUwEj9Dql0jIDBQLwIebFYWHuY58D43TqwJNoxGoZqrig5bOwhNgp
+qDsLrA2bDCqH0v3Px2V88uJagDsudqktEltVpkfi9z5ZcrRLYu4l01RzsQ9iE0xQ
+hPR8KenRCaSd8/+t7eFJ
+=AWMy
+-----END PGP SIGNATURE-----
+
+--lrZ03NoBR/3+SXJZ--
