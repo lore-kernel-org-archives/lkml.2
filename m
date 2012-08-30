@@ -1,121 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751537Ab2H3F3l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 01:29:41 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:53918 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751041Ab2H3F3k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 01:29:40 -0400
-Date: Thu, 30 Aug 2012 06:29:37 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-cc: linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1208300628050.25206@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-1259355809-1346304577=:25206"
+	id S1751626Ab2H3FzR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 01:55:17 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33563 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751187Ab2H3FzO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 01:55:14 -0400
+Message-ID: <1346306092.17040.3.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 05/13] overlayfs: add statfs support
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hch@infradead.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        apw@canonical.com, nbd@openwrt.org, neilb@suse.de, hramrach@centrum.cz,
+        jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu, ricwheeler@gmail.com,
+        dhowells@redhat.com, hpj@urpla.net, sedat.dilek@googlemail.com,
+        penberg@kernel.org, goran.cetusic@gmail.com, romain@orebokech.com
+Date: Wed, 29 Aug 2012 22:54:52 -0700
+In-Reply-To: <87d32971s3.fsf@tucsk.pomaz.szeredi.hu>
+References: <1345045700-9062-1-git-send-email-miklos@szeredi.hu>
+	 <1345045700-9062-6-git-send-email-miklos@szeredi.hu>
+	 <20120817182051.GC29217@decadent.org.uk>
+	 <87d32971s3.fsf@tucsk.pomaz.szeredi.hu>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-AgvoFoIwubN+Yx+faXMV"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 12.105.246.2
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
 
---29444707-1259355809-1346304577=:25206
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+--=-AgvoFoIwubN+Yx+faXMV
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
+On Thu, 2012-08-30 at 00:48 +0200, Miklos Szeredi wrote:
+> Ben Hutchings <ben@decadent.org.uk> writes:
+>=20
+> > On Wed, Aug 15, 2012 at 05:48:12PM +0200, Miklos Szeredi wrote:
+> >> From: Andy Whitcroft <apw@canonical.com>
+> >>=20
+> >> Add support for statfs to the overlayfs filesystem.  As the upper laye=
+r
+> >> is the target of all write operations assume that the space in that
+> >> filesystem is the space in the overlayfs.  There will be some inaccura=
+cy as
+> >> overwriting a file will copy it up and consume space we were not expec=
+ting,
+> >> but it is better than nothing.
+> >>=20
+> >> Use the upper layer dentry and mount from the overlayfs root inode,
+> >> passing the statfs call to that filesystem.
+> > [...]=20
+> >> +/**
+> >> + * ovl_statfs
+> >> + * @sb: The overlayfs super block
+> >> + * @buf: The struct kstatfs to fill in with stats
+> >> + *
+> >> + * Get the filesystem statistics.  As writes always target the upper =
+layer
+> >> + * filesystem pass the statfs to the same filesystem.
+> >> + */
+> >> +static int ovl_statfs(struct dentry *dentry, struct kstatfs *buf)
+> >> +{
+> >> +	struct dentry *root_dentry =3D dentry->d_sb->s_root;
+> >> +	struct path path;
+> >> +	ovl_path_upper(root_dentry, &path);
+> >> +
+> >> +	if (!path.dentry->d_sb->s_op->statfs)
+> >> +		return -ENOSYS;
+> >> +	return path.dentry->d_sb->s_op->statfs(path.dentry, buf);
+> >> +}
+> > [...]
+> >
+> > In case f_namelen differs between the upper and lower filesystems, you
+> > need to return the greater of the two.
+>=20
+> Maybe.  I've never seen any app use f_namelen for anything useful.
+[...]
 
-Hi Linus,
+If I'm not mistaken, glibc uses it to implement pathconf(_PC_NAME_MAX),
+which may be used by applications in conjunction with readdir_r().
 
-a bunch of scattered fixes ati/intel/nouveau, couple of core ones,
-nothing too shocking or different.
+Ben.
 
-Dave.
+--=20
+Ben Hutchings
+Quantity is no substitute for quality, but it's the only one we've got.
 
-The following changes since commit fea7a08acb13524b47711625eebea40a0ede69a0:
+--=-AgvoFoIwubN+Yx+faXMV
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-  Linux 3.6-rc3 (2012-08-22 13:29:06 -0700)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-are available in the git repository at:
+iQIVAwUAUD8ALOe/yOyVhhEJAQrZdBAAzDzHq5d0/S4glu2sUbcaZcu9f62QiNkO
+dm8HJK9g04a20K8wCI3OPrqZDT655RXZcfTRbLMPaC1Cj/5ZNLGKxU1Pr4QayrwI
+QbWxmJ2k8FU5u4o+BH+4PHD7ZZZNyoqHfw9uQsQjntSBaDaZx038SqP/euxqcLo5
+0Ap55/HsCKDtjcxI6DqEHKhSIGFYIRfuyhgOLso0wh+TH4fqMqWqlS8UXYmr1MBr
+AMqjJoiiboDZw01lFtqJ+Nb7Ljr/1ZKxzvl223dNek0kDkQ7AtdBgiZDwOWeolRZ
+XCflj1InNF9jvko3W3OUGD7unyS+wREmJHvltshrd+tFN5GVtIz6/Be926XbjZXV
+cdjehGQ7LrXllfL+Q539BGYeu3qrcxONzGiYo+MyO8/P+K/rznHAi7/SSwyG3DrR
++qU+BHEzxy6k94g7nkk9e3cAzphlAUWCZ7kscLo29pTYfn/gs9wXshN3GGdT8xSl
+Bwgq+UvCXelDoHs/cUhFR2UTkUmIxLWBV23J53qShjfZGeE+T5SpsKVIn36IAwvz
+EAvOGV4zD1cinVxzNriAqveDUSEbjiwRo7YZ60aeYRc5RB1pzfHvNlJe7KUQy0Mt
+2JHSOc3cIta+e6i75mytiCuReKREbr9CInmdMxaEICa6YDwFUZ8gmfDFbMfr5pGu
+ViqlpEIHUb4=
+=FCko
+-----END PGP SIGNATURE-----
 
-  git://people.freedesktop.org/~airlied/linux.git drm-fixes
-
-for you to fetch changes up to 6f33814bd4d9cfe76033a31b1c0c76c960cd8e4b:
-
-  drm: Add EDID_QUIRK_FORCE_REDUCED_BLANKING for ASUS VW222S (2012-08-30 14:14:12 +1000)
-
-----------------------------------------------------------------
-Alex Deucher (5):
-      drm/radeon: don't disable plls that are in use by other crtcs
-      drm/radeon/atom: rework DIG modesetting on DCE3+
-      drm/radeon/atom: powergating fixes for DCE6
-      drm/radeon: rework panel mode setup
-      drm/radeon: fix dig encoder selection on DCE61
-
-Ben Skeggs (1):
-      drm/nvc0/copy: check PUNITS to determine which copy engines are disabled
-
-Calvin Walton (1):
-      i915: Quirk no_lvds on Gigabyte GA-D525TUD ITX motherboard
-
-Chris Wilson (1):
-      drm/i915: Use the correct size of the GTT for placing the per-process entries
-
-Christian König (1):
-      drm/radeon: fix double free in radeon_gpu_reset
-
-Dave Airlie (3):
-      Merge branch 'drm-nouveau-fixes' of git://anongit.freedesktop.org/git/nouveau/linux-2.6 into drm-fixes
-      Merge branch 'drm-intel-fixes' of git://people.freedesktop.org/~danvet/drm-intel into drm-fixes
-      Merge branch 'drm-fixes-3.6' of git://people.freedesktop.org/~agd5f/linux into drm-fixes
-
-Forest Bond (1):
-      gma500: Consider CRTC initially active.
-
-Jakob Bornecrantz (1):
-      drm: Check for invalid cursor flags
-
-Jerome Glisse (1):
-      drm/radeon: force dma32 to fix regression rs4xx,rs6xx,rs740
-
-Marek Ol¨ák (3):
-      drm/radeon: fix reading CB_COLORn_MASK from the CS
-      drm/radeon: initialize tracked CS state
-      drm/radeon: add proper checking of RESOLVE_BOX command for r600-r700
-
-Paul Menzel (1):
-      drm: Add EDID_QUIRK_FORCE_REDUCED_BLANKING for ASUS VW222S
-
-Vijay Purushothaman (1):
-      drm/i915: fix color order for BGR formats on IVB
-
-Ville Syrjälä (1):
-      drm: Initialize object type when using DRM_MODE() macro
-
-Xu, Anhua (1):
-      drm/i915: fix wrong order of parameters in port checking functions
-
- drivers/gpu/drm/drm_crtc.c                 |    2 +-
- drivers/gpu/drm/drm_edid.c                 |    3 +
- drivers/gpu/drm/gma500/psb_intel_display.c |    3 +
- drivers/gpu/drm/i915/i915_gem_gtt.c        |    2 +-
- drivers/gpu/drm/i915/intel_display.c       |   12 +--
- drivers/gpu/drm/i915/intel_lvds.c          |    8 ++
- drivers/gpu/drm/i915/intel_sprite.c        |    4 +-
- drivers/gpu/drm/nouveau/nouveau_state.c    |    6 +-
- drivers/gpu/drm/radeon/atombios_crtc.c     |   36 ++++---
- drivers/gpu/drm/radeon/atombios_dp.c       |   29 +++---
- drivers/gpu/drm/radeon/atombios_encoders.c |  140 +++++++++++++++-------------
- drivers/gpu/drm/radeon/r600_cs.c           |   30 +++++-
- drivers/gpu/drm/radeon/r600d.h             |    8 ++
- drivers/gpu/drm/radeon/radeon_device.c     |    5 +-
- drivers/gpu/drm/radeon/radeon_drv.c        |    3 +-
- drivers/gpu/drm/radeon/reg_srcs/r600       |    1 -
- include/drm/drm_crtc.h                     |    3 +-
- include/drm/drm_mode.h                     |    5 +-
- 18 files changed, 174 insertions(+), 126 deletions(-)
---29444707-1259355809-1346304577=:25206--
+--=-AgvoFoIwubN+Yx+faXMV--
