@@ -1,156 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752381Ab2H3NgY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 09:36:24 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:58682 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752021Ab2H3NgX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 09:36:23 -0400
-Message-ID: <503F6C52.6030100@suse.cz>
-Date: Thu, 30 Aug 2012 15:36:18 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120815 Thunderbird/15.0
+	id S1752642Ab2H3NhK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 09:37:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41769 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752462Ab2H3NhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 09:37:08 -0400
+Date: Thu, 30 Aug 2012 16:38:20 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, avi@redhat.com, kvm@vger.kernel.org
+Subject: Re: [PATCH v3 2/2] virtio-ring: Allocate indirect buffers from cache
+ when possible
+Message-ID: <20120830133820.GC21132@redhat.com>
+References: <1346325718-11151-1-git-send-email-levinsasha928@gmail.com>
+ <1346325718-11151-2-git-send-email-levinsasha928@gmail.com>
 MIME-Version: 1.0
-To: Baodong Chen <chenbdchenbd@gmail.com>
-CC: gregkh@linuxfoundation.org, davem@davemloft.net,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging:fixed code to fit tty_driver's kref filed fixed
- code to fit tty_driver's kref filed for drivers/staging/net/pc300_tty.c
-References: <1346074458-2659-1-git-send-email-chenbdchenbd@gmail.com>
-In-Reply-To: <1346074458-2659-1-git-send-email-chenbdchenbd@gmail.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346325718-11151-2-git-send-email-levinsasha928@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2012 03:34 PM, Baodong Chen wrote:
-
-Sorry, I do not get this change. You should not touch tty_driver.kref at
-all.
-
-And what is the patch good for?
-
-> Signed-off-by: Baodong Chen <chenbdchenbd@gmail.com>
-> ---
->  drivers/staging/net/pc300_tty.c |   55 ++++++++++++++++++++++-----------------
->  1 files changed, 31 insertions(+), 24 deletions(-)
+On Thu, Aug 30, 2012 at 01:21:58PM +0200, Sasha Levin wrote:
+> Currently if VIRTIO_RING_F_INDIRECT_DESC is enabled we will
+> use indirect descriptors and allocate them using a simple
+> kmalloc().
 > 
-> diff --git a/drivers/staging/net/pc300_tty.c b/drivers/staging/net/pc300_tty.c
-> index 4709f42..91ada93 100644
-> --- a/drivers/staging/net/pc300_tty.c
-> +++ b/drivers/staging/net/pc300_tty.c
-> @@ -46,6 +46,8 @@
->  #include <linux/slab.h>
->  #include <linux/if.h>
->  #include <linux/skbuff.h>
-> +#include <linux/kref.h>
-> +
->  /* TTY includes */
->  #include <linux/tty.h>
->  #include <linux/tty_flip.h>
-> @@ -134,12 +136,26 @@ static void cpc_tty_signal_on(pc300dev_t *pc300dev, unsigned char);
->  static int pc300_tiocmset(struct tty_struct *, unsigned int, unsigned int);
->  static int pc300_tiocmget(struct tty_struct *);
+> This patch adds a cache which will allow indirect buffers under
+> a configurable size to be allocated from that cache instead.
+> 
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+
+I am not sure we need these module params.
+But assuming we keep them, we need to validate values - they come from
+user.
+
+
+
+> ---
+>  drivers/block/virtio_blk.c          |  4 ++++
+>  drivers/char/hw_random/virtio-rng.c |  4 ++++
+>  drivers/char/virtio_console.c       |  4 ++++
+>  drivers/net/virtio_net.c            |  4 ++++
+>  drivers/virtio/virtio_balloon.c     |  4 ++++
+>  drivers/virtio/virtio_ring.c        | 34 ++++++++++++++++++++++++++++++----
+>  include/linux/virtio.h              |  1 +
+>  net/9p/trans_virtio.c               |  5 +++++
+>  8 files changed, 56 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+> index 7c63065..e4c6c42 100644
+> --- a/drivers/block/virtio_blk.c
+> +++ b/drivers/block/virtio_blk.c
+> @@ -25,6 +25,9 @@ struct workqueue_struct *virtblk_wq;
+>  static unsigned int indirect_thresh;
+>  module_param(indirect_thresh, uint, S_IRUGO);
 >  
-> +static void cpc_tty_do_unreg_driver(struct kref *ref);
+> +static unsigned int indirect_alloc_thresh;
+> +module_param(indirect_alloc_thresh, uint, S_IRUGO);
 > +
->  /* functions called by PC300 driver */
->  void cpc_tty_init(pc300dev_t *dev);
->  void cpc_tty_unregister_service(pc300dev_t *pc300dev);
->  void cpc_tty_receive(pc300dev_t *pc300dev);
->  void cpc_tty_trigger_poll(pc300dev_t *pc300dev);
+>  struct virtio_blk
+>  {
+>  	struct virtio_device *vdev;
+> @@ -739,6 +742,7 @@ static int __devinit virtblk_probe(struct virtio_device *vdev)
+>  	INIT_WORK(&vblk->config_work, virtblk_config_changed_work);
+>  	vblk->config_enable = true;
+>  	vdev->indirect_thresh = indirect_thresh;
+> +	vdev->indirect_alloc_thresh = indirect_alloc_thresh;
 >  
-> +static void cpc_tty_do_unreg_driver(struct kref *ref)
-> +{
-> +	struct tty_driver *drv = container_of(ref, struct tty_driver, kref);
-> +	int ret;
+>  	err = init_vq(vblk);
+>  	if (err)
+> diff --git a/drivers/char/hw_random/virtio-rng.c b/drivers/char/hw_random/virtio-rng.c
+> index 3a644f1..ed22db8 100644
+> --- a/drivers/char/hw_random/virtio-rng.c
+> +++ b/drivers/char/hw_random/virtio-rng.c
+> @@ -28,6 +28,9 @@
+>  static unsigned int indirect_thresh;
+>  module_param(indirect_thresh, uint, S_IRUGO);
+>  
+> +static unsigned int indirect_alloc_thresh;
+> +module_param(indirect_alloc_thresh, uint, S_IRUGO);
 > +
-> +	cpc_tty_unreg_flag = 0;
-> +
-> +	res = tty_unregister_driver(drv);
-> +	if (res)
-> +		CPC_TTY_DBG("unregister the tty driver error=%d\n", res);
-> +}
+>  static struct virtqueue *vq;
+>  static unsigned int data_avail;
+>  static DECLARE_COMPLETION(have_data);
+> @@ -97,6 +100,7 @@ static int probe_common(struct virtio_device *vdev)
+>  
+>  	/* We expect a single virtqueue. */
+>  	vdev->indirect_thresh = indirect_thresh;
+> +	vdev->indirect_alloc_thresh = indirect_alloc_thresh;
+>  	vq = virtio_find_single_vq(vdev, random_recv_done, "input");
+>  	if (IS_ERR(vq))
+>  		return PTR_ERR(vq);
+> diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+> index da2e44c..8f30732 100644
+> --- a/drivers/char/virtio_console.c
+> +++ b/drivers/char/virtio_console.c
+> @@ -42,6 +42,9 @@
+>  static unsigned int indirect_thresh;
+>  module_param(indirect_thresh, uint, S_IRUGO);
+>  
+> +static unsigned int indirect_alloc_thresh;
+> +module_param(indirect_alloc_thresh, uint, S_IRUGO);
 > +
 >  /*
->   * PC300 TTY clear "signal"
->   */
-> @@ -239,6 +255,8 @@ void cpc_tty_init(pc300dev_t *pc300dev)
->  		/* interface routines from the upper tty layer to the tty driver */
->  		tty_set_operations(&serial_drv, &pc300_ops);
+>   * This is a global struct for storing common data for all the devices
+>   * this driver handles.
+> @@ -1891,6 +1894,7 @@ static int __devinit virtcons_probe(struct virtio_device *vdev)
+>  			      &portdev->config.max_nr_ports) == 0)
+>  		multiport = true;
+>  	vdev->indirect_thresh = indirect_thresh;
+> +	vdev->indirect_alloc_thresh = indirect_alloc_thresh;
 >  
-> +		kref_init(&serial_drv.kref);
+>  	err = init_vqs(portdev);
+>  	if (err < 0) {
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index 949c89e..a00e19d 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -37,6 +37,9 @@ module_param(gso, bool, 0444);
+>  static unsigned int indirect_thresh = 16;
+>  module_param(indirect_thresh, uint, S_IRUGO);
+>  
+> +static unsigned int indirect_alloc_thresh = 16;
+
+Why 16?  Please make is MAX_SG + 1 this makes some sense.
+
+
+> +module_param(indirect_alloc_thresh, uint, S_IRUGO);
 > +
->  		/* register the TTY driver */
->  		if (tty_register_driver(&serial_drv)) { 
->  			printk("%s-tty: Failed to register serial driver! ",
-> @@ -408,13 +426,9 @@ static void cpc_tty_close(struct tty_struct *tty, struct file *flip)
+>  /* FIXME: MTU in config. */
+>  #define MAX_PACKET_LEN (ETH_HLEN + VLAN_HLEN + ETH_DATA_LEN)
+>  #define GOOD_COPY_LEN	128
+> @@ -1132,6 +1135,7 @@ static int virtnet_probe(struct virtio_device *vdev)
+>  	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
+>  		vi->mergeable_rx_bufs = true;
+>  	vdev->indirect_thresh = indirect_thresh;
+> +	vdev->indirect_alloc_thresh = indirect_alloc_thresh;
 >  
->  	CPC_TTY_DBG("%s: TTY closed\n",cpc_tty->name);
->  	
-> -	if (!serial_drv.refcount && cpc_tty_unreg_flag) {
-> -		cpc_tty_unreg_flag = 0;
-> -		CPC_TTY_DBG("%s: unregister the tty driver\n", cpc_tty->name);
-> -		if ((res=tty_unregister_driver(&serial_drv))) { 
-> -			CPC_TTY_DBG("%s: ERROR ->unregister the tty driver error=%d\n",
-> -							cpc_tty->name,res);
-> -		}
-> +	if (cpc_tty_unreg_flag) {
-> +		CPC_TTY_DBG("%s: checking unregister the tty driver...\n", cpc_tty->name);
-> +		kref_put(&serial_drv.kref, cpc_tty_do_unreg_driver);
->  	}
->  	return; 
->  } 
-> @@ -644,13 +658,9 @@ static void cpc_tty_hangup(struct tty_struct *tty)
->  		CPC_TTY_DBG("%s: TTY is not opened\n",cpc_tty->name);
->  		return ;
->  	}
-> -	if (!serial_drv.refcount && cpc_tty_unreg_flag) {
-> -		cpc_tty_unreg_flag = 0;
-> -		CPC_TTY_DBG("%s: unregister the tty driver\n", cpc_tty->name);
-> -		if ((res=tty_unregister_driver(&serial_drv))) { 
-> -			CPC_TTY_DBG("%s: ERROR ->unregister the tty driver error=%d\n",
-> -							cpc_tty->name,res);
-> -		}
-> +	if (cpc_tty_unreg_flag) {
-> +		CPC_TTY_DBG("%s: checking unregister the tty driver...\n", cpc_tty->name);
-> +		kref_put(&serial_drv.kref, cpc_tty_do_unreg_driver);
->  	}
->  	cpc_tty_signal_off(cpc_tty->pc300dev, CTL_DTR);
+>  	err = init_vqs(vi);
+>  	if (err)
+> diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
+> index ca5ae7a..039c4a6 100644
+> --- a/drivers/virtio/virtio_balloon.c
+> +++ b/drivers/virtio/virtio_balloon.c
+> @@ -38,6 +38,9 @@
+>  static unsigned int indirect_thresh;
+>  module_param(indirect_thresh, uint, S_IRUGO);
+>  
+> +static unsigned int indirect_alloc_thresh;
+> +module_param(indirect_alloc_thresh, uint, S_IRUGO);
+> +
+>  struct virtio_balloon
+>  {
+>  	struct virtio_device *vdev;
+> @@ -360,6 +363,7 @@ static int virtballoon_probe(struct virtio_device *vdev)
+>  	vb->vdev = vdev;
+>  	vb->need_stats_update = 0;
+>  	vdev->indirect_thresh = indirect_thresh;
+> +	vdev->indirect_alloc_thresh = indirect_alloc_thresh;
+>  
+>  	err = init_vqs(vb);
+>  	if (err)
+> diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+> index 4063e03..dde867b 100644
+> --- a/drivers/virtio/virtio_ring.c
+> +++ b/drivers/virtio/virtio_ring.c
+> @@ -93,6 +93,10 @@ struct vring_virtqueue
+>  	 */
+>  	unsigned int indirect_thresh;
+>  
+> +	/* Buffers below this size will be allocated from cache */
+> +	unsigned int indirect_alloc_thresh;
+> +	struct kmem_cache *indirect_cache;
+> +
+>  	/* Host publishes avail event idx */
+>  	bool event;
+>  
+> @@ -135,7 +139,10 @@ static int vring_add_indirect(struct vring_virtqueue *vq,
+>  	unsigned head;
+>  	int i;
+>  
+> -	desc = kmalloc((out + in) * sizeof(struct vring_desc), gfp);
+> +	if ((out + in) <= vq->indirect_alloc_thresh)
+> +		desc = kmem_cache_alloc(vq->indirect_cache, gfp);
+> +	else
+> +		desc = kmalloc((out + in) * sizeof(struct vring_desc), gfp);
+>  	if (!desc)
+>  		return -ENOMEM;
+>  
+> @@ -384,8 +391,14 @@ static void detach_buf(struct vring_virtqueue *vq, unsigned int head)
+>  	i = head;
+>  
+>  	/* Free the indirect table */
+> -	if (vq->vring.desc[i].flags & VRING_DESC_F_INDIRECT)
+> -		kfree(phys_to_virt(vq->vring.desc[i].addr));
+> +	if (vq->vring.desc[i].flags & VRING_DESC_F_INDIRECT) {
+> +		u32 descs = vq->vring.desc[i].len / sizeof(struct vring_desc);
+> +		if (descs > vq->indirect_alloc_thresh)
+> +			kfree(phys_to_virt(vq->vring.desc[i].addr));
+> +		else
+> +			kmem_cache_free(vq->indirect_cache,
+> +					phys_to_virt(vq->vring.desc[i].addr));
+> +	}
+
+If logic in two chunks above does not match it all
+blows up. So let's add a helper is_cache(vq, buf)
+and call from both places.
+
+>  
+>  	while (vq->vring.desc[i].flags & VRING_DESC_F_NEXT) {
+>  		i = vq->vring.desc[i].next;
+> @@ -654,14 +667,25 @@ struct virtqueue *vring_new_virtqueue(unsigned int num,
+>  	vq->last_used_idx = 0;
+>  	vq->num_added = 0;
+>  	vq->indirect_thresh = 0;
+> +	vq->indirect_alloc_thresh = 0;
+> +	vq->indirect_cache = NULL;
+>  	list_add_tail(&vq->vq.list, &vdev->vqs);
+>  #ifdef DEBUG
+>  	vq->in_use = false;
+>  	vq->last_add_time_valid = false;
+>  #endif
+>  
+> -	if (virtio_has_feature(vdev, VIRTIO_RING_F_INDIRECT_DESC))
+> +	if (virtio_has_feature(vdev, VIRTIO_RING_F_INDIRECT_DESC)) {
+>  		vq->indirect_thresh = vdev->indirect_thresh;
+> +		vq->indirect_alloc_thresh = vdev->indirect_alloc_thresh;
+
+This means for virtio-net we still create a cache for both
+TX and RX, but it's later unused for RX unless
+big packet mode is set.
+Pls make this flag per vq not per device.
+
+> +		if (vq->indirect_alloc_thresh) {
+> +			vq->indirect_cache =
+> +				KMEM_CACHE(vring_desc[vq->indirect_alloc_thresh], 0);
+> +
+> +			if (vq->indirect_cache == NULL)
+> +				vq->indirect_alloc_thresh = 0;
+> +		}
+> +	}
+>  
+>  	vq->event = virtio_has_feature(vdev, VIRTIO_RING_F_EVENT_IDX);
+>  
+> @@ -685,6 +709,8 @@ EXPORT_SYMBOL_GPL(vring_new_virtqueue);
+>  void vring_del_virtqueue(struct virtqueue *vq)
+>  {
+>  	list_del(&vq->list);
+> +	if (to_vvq(vq)->indirect_cache)
+> +		kmem_cache_destroy(to_vvq(vq)->indirect_cache);
+>  	kfree(to_vvq(vq));
 >  }
-> @@ -1043,19 +1053,16 @@ void cpc_tty_unregister_service(pc300dev_t *pc300dev)
->  		return; 
->  	}
+>  EXPORT_SYMBOL_GPL(vring_del_virtqueue);
+> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
+> index 48bc457..3261c02 100644
+> --- a/include/linux/virtio.h
+> +++ b/include/linux/virtio.h
+> @@ -70,6 +70,7 @@ struct virtio_device {
+>  	unsigned long features[1];
+>  	void *priv;
+>  	unsigned int indirect_thresh;
+> +	unsigned int indirect_alloc_thresh;
+>  };
 >  
-> -	if (--cpc_tty_cnt == 0) { 
-> -		if (serial_drv.refcount) {
-> -			CPC_TTY_DBG("%s: unregister is not possible, refcount=%d",
-> -							cpc_tty->name, serial_drv.refcount);
-> +	if (--cpc_tty_cnt == 0) {
-> +		CPC_TTY_DBG("%s: checking unregister the tty driver...\n",
-> +				cpc_tty->name);
-> +		res = kref_put(&serial_drv.kref, cpc_tty_do_unreg_driver);
-> +		if (0 == res) {
-> +			CPC_TTY_DBG("%s: unregister is not possible\n",
-> +					cpc_tty->name);
->  			cpc_tty_cnt++;
->  			cpc_tty_unreg_flag = 1;
->  			return;
-> -		} else { 
-> -			CPC_TTY_DBG("%s: unregister the tty driver\n", cpc_tty->name);
-> -			if ((res=tty_unregister_driver(&serial_drv))) { 
-> -				CPC_TTY_DBG("%s: ERROR ->unregister the tty driver error=%d\n",
-> -								cpc_tty->name,res);
-> -			}
->  		}
->  	}
->  	CPC_TTY_LOCK(pc300dev->chan->card,flags);
-> 
+>  #define dev_to_virtio(dev) container_of(dev, struct virtio_device, dev)
 
+So what is a reasonable value?
+It would be such that most bufs have # of s/g below it.
+So I think 'expected_sg' would be a better name,
+add documentation explaining what it is.
 
--- 
-js
-suse labs
+> diff --git a/net/9p/trans_virtio.c b/net/9p/trans_virtio.c
+> index 418f933..058b6dd 100644
+> --- a/net/9p/trans_virtio.c
+> +++ b/net/9p/trans_virtio.c
+> @@ -55,6 +55,9 @@
+>  static unsigned int indirect_thresh;
+>  module_param(indirect_thresh, uint, S_IRUGO);
+>  
+> +static unsigned int indirect_alloc_thresh;
+> +module_param(indirect_alloc_thresh, uint, S_IRUGO);
+> +
+>  /* a single mutex to manage channel initialization and attachment */
+>  static DEFINE_MUTEX(virtio_9p_lock);
+>  static DECLARE_WAIT_QUEUE_HEAD(vp_wq);
+> @@ -505,6 +508,8 @@ static int p9_virtio_probe(struct virtio_device *vdev)
+>  
+>  	/* We expect one virtqueue, for requests. */
+>  	vdev->indirect_thresh = indirect_thresh;
+> +	vdev->indirect_alloc_thresh = indirect_alloc_thresh;
+> +
+>  	chan->vq = virtio_find_single_vq(vdev, req_done, "requests");
+>  	if (IS_ERR(chan->vq)) {
+>  		err = PTR_ERR(chan->vq);
+> -- 
+> 1.7.12
