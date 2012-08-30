@@ -1,255 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753393Ab2H3XHs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 19:07:48 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:38156 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752532Ab2H3XHp (ORCPT
+	id S1753476Ab2H3XH5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 19:07:57 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:44445 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753401Ab2H3XHx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 19:07:45 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 8/8] x86: Only direct map addresses that are marked as E820_RAM
-Date: Thu, 30 Aug 2012 16:06:15 -0700
-Message-Id: <1346367975-6446-9-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1346367975-6446-1-git-send-email-yinghai@kernel.org>
-References: <2e8c14cd-b82a-49e6-8d5e-85dbe86da6ca@email.android.com>
- <1346367975-6446-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Thu, 30 Aug 2012 19:07:53 -0400
+From: "Worth, Kevin" <kevin.worth@hp.com>
+To: "Hans J. Koch" <hjk@hansjkoch.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+Subject: RE: Using uio_pdrv to create an platform device for an FPGA, mmap()
+ fails
+Thread-Topic: Using uio_pdrv to create an platform device for an FPGA,
+ mmap() fails
+Thread-Index: Ac2GO7tG6QS6FR2kSHyjyyZF3zS91wAI7NcAAB9odFAAASiZgAACZr2QAAS3hwAAAS6M4A==
+Date: Thu, 30 Aug 2012 23:03:04 +0000
+Message-ID: <B5EF724456FFB24A8C8AE88E26CE8F4B66840DF2@G9W0725.americas.hpqcorp.net>
+References: <B5EF724456FFB24A8C8AE88E26CE8F4B668404B8@G9W0725.americas.hpqcorp.net>
+ <20120830032735.GA2599@local>
+ <B5EF724456FFB24A8C8AE88E26CE8F4B66840BEE@G9W0725.americas.hpqcorp.net>
+ <20120830190019.GB4819@local>
+ <B5EF724456FFB24A8C8AE88E26CE8F4B66840CA2@G9W0725.americas.hpqcorp.net>
+ <20120830222408.GC4819@local>
+In-Reply-To: <20120830222408.GC4819@local>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jacob Shin <jacob.shin@amd.com>
+ >[Added Greg Kroah-Hartman to Cc:]
+>
+>On Thu, Aug 30, 2012 at 08:10:11PM +0000, Worth, Kevin wrote:
+>> >> Thanks for the reply, Hans. Your question about opening /dev/uio0 O_RDWR
+>> >> prompted me to check out how I was creating /dev/uio0 ... my system
+>> >> isn't using udev, and I was accidentally creating it with major/minor
+>> >> number 254/0 instead of the correct 253/0 (found by looking at
+>> >> /proc/devices). Fixed that and the mmap() call started working.
+>> >
+>> >Good.
+>> >
+>> >> 
+>> >> Verified that if /dev/uio0 has permissions 0644, root can open it O_RDWR
+>> >> and mmap PROT_READ | PROT_WRITE using the below code and write to an
+>> >> address within my memory map. Of course this contradicts the statement
+>> >> "/dev/uioX is a read-only file" in the UIO howto.
+>> >
+>> >You're right. That wants to be fixed...
+>> >
+>> >> 
+>> >> Including my updated, tested code for completeness.
+>> >> Note I also cleaned up the device registration a little by
+>> >> using a different platform_device_register_ call and removing fields
+>> >> in the struct uio_info that get filled in by uio_pdrv automatically.
+>> >
+>> >If you want to have that included in the mainline, please choose a more
+>> >descriptive name than "myfpga" and send a proper patch.
+>> 
+>> I wasn't sure about submitting as a patch since it's for a custom FPGA
+>> that I don't expect the community will be using,
+>
+>That doesn't matter. If it helps YOU that the code is maintained in mainline,
+>post it.
+>
+>>  but the code seems like
+>> possibly useful sample/example code.
+>
+>That is another good argument.
 
-Currently direct mappings are created for [ 0 to max_low_pfn<<PAGE_SHIFT )
-and [ 4GB to max_pfn<<PAGE_SHIFT ), which may include regions that are not
-backed by actual DRAM. This is fine for holes under 4GB which are covered
-by fixed and variable range MTRRs to be UC. However, we run into trouble
-on higher memory addresses which cannot be covered by MTRRs.
+Perhaps this could be genericized to be a generic "Memory Map Userspace
+IO Device" that takes a base address and a length in config (since those
+are really the only things that are particular to my device/usage).
+Could be enhanced to allow for additional maps, etc. or just serve as a
+working example. Docs could then also simply refer to this as an example
+of a device that uses the uio_pdrv driver.
 
-Our system with 1TB of RAM has an e820 that looks like this:
+>
+>> Perhaps patching the HOWTO like
+>> http://www.kernel.org/doc/htmldocs/uio-howto.html#uio_pci_generic_example
+>> is the right approach?
+>
+>Oh, if you could hack up a patch for the documentation, that would be great.
+>But please make it a second patch, don't mix it with your driver code.
 
- BIOS-e820: [mem 0x0000000000000000-0x00000000000983ff] usable
- BIOS-e820: [mem 0x0000000000098400-0x000000000009ffff] reserved
- BIOS-e820: [mem 0x00000000000d0000-0x00000000000fffff] reserved
- BIOS-e820: [mem 0x0000000000100000-0x00000000c7ebffff] usable
- BIOS-e820: [mem 0x00000000c7ec0000-0x00000000c7ed7fff] ACPI data
- BIOS-e820: [mem 0x00000000c7ed8000-0x00000000c7ed9fff] ACPI NVS
- BIOS-e820: [mem 0x00000000c7eda000-0x00000000c7ffffff] reserved
- BIOS-e820: [mem 0x00000000fec00000-0x00000000fec0ffff] reserved
- BIOS-e820: [mem 0x00000000fee00000-0x00000000fee00fff] reserved
- BIOS-e820: [mem 0x00000000fff00000-0x00000000ffffffff] reserved
- BIOS-e820: [mem 0x0000000100000000-0x000000e037ffffff] usable
- BIOS-e820: [mem 0x000000e038000000-0x000000fcffffffff] reserved
- BIOS-e820: [mem 0x0000010000000000-0x0000011ffeffffff] usable
+Certainly these would belong in separate patches.
 
-and so direct mappings are created for huge memory hole between
-0x000000e038000000 to 0x0000010000000000. Even though the kernel never
-generates memory accesses in that region, since the page tables mark
-them incorrectly as being WB, our (AMD) processor ends up causing a MCE
-while doing some memory bookkeeping/optimizations around that area.
-
-This patch iterates through e820 and only direct maps ranges that are
-marked as E820_RAM, and keeps track of those pfn ranges. Depending on
-the alignment of E820 ranges, this may possibly result in using smaller
-size (i.e. 4K instead of 2M or 1G) page tables.
-
--v2: move changes from setup.c to mm/init.c, also use for_each_mem_pfn_range
-	instead.  - Yinghai Lu
-
-Signed-off-by: Jacob Shin <jacob.shin@amd.com>
----
- arch/x86/include/asm/page_types.h |   11 +----
- arch/x86/kernel/setup.c           |    8 ++-
- arch/x86/mm/init.c                |   85 ++++++++++++++++++++++++++++++++----
- arch/x86/mm/init_64.c             |    6 +--
- 4 files changed, 85 insertions(+), 25 deletions(-)
-
-diff --git a/arch/x86/include/asm/page_types.h b/arch/x86/include/asm/page_types.h
-index 45aae6e..fbf5cc4 100644
---- a/arch/x86/include/asm/page_types.h
-+++ b/arch/x86/include/asm/page_types.h
-@@ -46,19 +46,14 @@ extern int devmem_is_allowed(unsigned long pagenr);
- extern unsigned long max_low_pfn_mapped;
- extern unsigned long max_pfn_mapped;
- 
-+void add_pfn_range_mapped(unsigned long start_pfn, unsigned long end_pfn);
-+bool pfn_range_is_mapped(unsigned long start_pfn, unsigned long end_pfn);
-+
- static inline phys_addr_t get_max_mapped(void)
- {
- 	return (phys_addr_t)max_pfn_mapped << PAGE_SHIFT;
- }
- 
--static inline bool pfn_range_is_mapped(unsigned long start_pfn,
--					unsigned long end_pfn)
--{
--	return end_pfn <= max_low_pfn_mapped ||
--	       (end_pfn > (1UL << (32 - PAGE_SHIFT)) &&
--		end_pfn <= max_pfn_mapped);
--}
--
- extern unsigned long init_memory_mapping(unsigned long start,
- 					 unsigned long end);
- 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 587dcd9..2eb91b7 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -115,9 +115,11 @@
- #include <asm/prom.h>
- 
- /*
-- * end_pfn only includes RAM, while max_pfn_mapped includes all e820 entries.
-- * The direct mapping extends to max_pfn_mapped, so that we can directly access
-- * apertures, ACPI and other tables without having to play with fixmaps.
-+ * max_low_pfn_mapped: highest direct mapped pfn under 4GB
-+ * max_pfn_mapped:     highest direct mapped pfn over 4GB
-+ *
-+ * The direct mapping only covers E820_RAM regions, so the ranges and gaps are
-+ * represented by pfn_mapped
-  */
- unsigned long max_low_pfn_mapped;
- unsigned long max_pfn_mapped;
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index c3e4341..9b871d0 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -246,6 +246,33 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
- 	return nr_range;
- }
- 
-+static struct range pfn_mapped[E820_X_MAX];
-+static int nr_pfn_mapped;
-+
-+void add_pfn_range_mapped(unsigned long start_pfn, unsigned long end_pfn)
-+{
-+	nr_pfn_mapped = add_range_with_merge(pfn_mapped, E820_X_MAX,
-+					     nr_pfn_mapped, start_pfn, end_pfn);
-+	nr_pfn_mapped = clean_sort_range(pfn_mapped, E820_X_MAX);
-+
-+	max_pfn_mapped = max(max_pfn_mapped, end_pfn);
-+
-+	if (end_pfn <= (1UL << (32 - PAGE_SHIFT)))
-+		max_low_pfn_mapped = max(max_low_pfn_mapped, end_pfn);
-+}
-+
-+bool pfn_range_is_mapped(unsigned long start_pfn, unsigned long end_pfn)
-+{
-+	int i;
-+
-+	for (i = 0; i < nr_pfn_mapped; i++)
-+		if ((start_pfn >= pfn_mapped[i].start) &&
-+		    (end_pfn <= pfn_mapped[i].end))
-+			return true;
-+
-+	return false;
-+}
-+
- /*
-  * Setup the direct mapping of the physical memory at PAGE_OFFSET.
-  * This runs before bootmem is initialized and gets pages directly from
-@@ -278,9 +305,55 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 
- 	__flush_tlb_all();
- 
-+	add_pfn_range_mapped(start >> PAGE_SHIFT, ret >> PAGE_SHIFT);
-+
- 	return ret >> PAGE_SHIFT;
- }
- 
-+/*
-+ * Iterate through E820 memory map and create direct mappings for only E820_RAM
-+ * regions. We cannot simply create direct mappings for all pfns from
-+ * [0 to max_low_pfn) and [4GB to max_pfn) because of possible memory holes in
-+ * high addresses that cannot be marked as UC by fixed/variable range MTRRs.
-+ * Depending on the alignment of E820 ranges, this may possibly result in using
-+ * smaller size (i.e. 4K instead of 2M or 1G) page tables.
-+ */
-+static void __init __init_mem_mapping(void)
-+{
-+        unsigned long start_pfn, end_pfn;
-+        int i;
-+
-+	/* the ISA range is always mapped regardless of memory holes */
-+	init_memory_mapping(0, ISA_END_ADDRESS);
-+
-+        for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, NULL) {
-+		u64 start = start_pfn << PAGE_SHIFT;
-+		u64 end = end_pfn << PAGE_SHIFT;
-+
-+		if (end <= ISA_END_ADDRESS)
-+			continue;
-+
-+		if (start < ISA_END_ADDRESS)
-+			start = ISA_END_ADDRESS;
-+#ifdef CONFIG_X86_32
-+		/* on 32 bit, we only map up to max_low_pfn */
-+		if ((start >> PAGE_SHIFT) >= max_low_pfn)
-+			continue;
-+
-+		if ((end >> PAGE_SHIFT) > max_low_pfn)
-+			end = max_low_pfn << PAGE_SHIFT;
-+#endif
-+		init_memory_mapping(start, end);
-+	}
-+
-+#ifdef CONFIG_X86_64
-+	if (max_pfn > max_low_pfn) {
-+		/* can we preseve max_low_pfn ?*/
-+		max_low_pfn = max_pfn;
-+	}
-+#endif
-+}
-+
- void __init init_mem_mapping(void)
- {
- 	probe_page_size_mask();
-@@ -297,17 +370,9 @@ void __init init_mem_mapping(void)
- #else
- 	find_early_table_space(0, max_low_pfn<<PAGE_SHIFT);
- #endif
--	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
--	max_pfn_mapped = max_low_pfn_mapped;
- 
--#ifdef CONFIG_X86_64
--	if (max_pfn > max_low_pfn) {
--		max_pfn_mapped = init_memory_mapping(1UL<<32,
--						     max_pfn<<PAGE_SHIFT);
--		/* can we preseve max_low_pfn ?*/
--		max_low_pfn = max_pfn;
--	}
--#endif
-+	__init_mem_mapping();
-+
- 	/*
- 	 * Reserve the kernel pagetable pages we used (pgt_buf_start -
- 	 * pgt_buf_end) and free the other ones (pgt_buf_end - pgt_buf_top)
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 2b6b4a3..ab558eb 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -657,13 +657,11 @@ int arch_add_memory(int nid, u64 start, u64 size)
- {
- 	struct pglist_data *pgdat = NODE_DATA(nid);
- 	struct zone *zone = pgdat->node_zones + ZONE_NORMAL;
--	unsigned long last_mapped_pfn, start_pfn = start >> PAGE_SHIFT;
-+	unsigned long start_pfn = start >> PAGE_SHIFT;
- 	unsigned long nr_pages = size >> PAGE_SHIFT;
- 	int ret;
- 
--	last_mapped_pfn = init_memory_mapping(start, start + size);
--	if (last_mapped_pfn > max_pfn_mapped)
--		max_pfn_mapped = last_mapped_pfn;
-+	init_memory_mapping(start, start + size);
- 
- 	ret = __add_pages(nid, zone, start_pfn, nr_pages);
- 	WARN_ON_ONCE(ret);
--- 
-1.7.7
-
+>
+>Thanks,
+>Hans
+>
+>> 
+>> >
+>> >Thanks,
+>> >Hans
+>> >
+>> >> 
+>> >> -Kevin
+>> >> 
+>> >> # lsuio -m -v
+>> >> uio0: name=uio_myfpga, version=0.1, events=0
+>> >>         map[0]: addr=0xD0000000, size=262144, mmap test: OK
+>> >>         Device attributes:
+>> >>         uevent=DRIVER=uio_pdrv
+>> >>         modalias=platform:uio_pdrv
+>> >> 
+>> >> ------Kernelspace------
+>> >> #include <linux/platform_device.h>
+>> >> #include <linux/uio_driver.h>
+>> >> #include <linux/module.h>
+>> >> 
+>> >> #define MYFPGA_BASE     0xd0000000 // 3G
+>> >> #define MYFPGA_SIZE     0x00040000 // 256k
+>> >> 
+>> >> static struct resource myfpga_resources[] = {
+>> >>     {
+>> >>         .start = MYFPGA_BASE,
+>> >>         .end   = MYFPGA_BASE + MYFPGA_SIZE - 1,
+>> >>         .name  = "myfpga",
+>> >>         .flags = IORESOURCE_MEM
+>> >>     }
+>> >> };
+>> >> 
+>> >> static struct uio_info myfpga_uio_info = {
+>> >>    .name = "uio_myfpga",
+>> >>    .version = "0.1",
+>> >> };
+>> >> 
+>> >> static struct platform_device *myfpga_uio_pdev;
+>> >> 
+>> >> static int __init myfpga_init(void)
+>> >> {
+>> >>     myfpga_uio_pdev = platform_device_register_resndata (NULL,
+>> >>                                                          "uio_pdrv",
+>> >>                                                          -1,
+>> >>                                                          myfpga_resources,
+>> >>                                                          1,
+>> >>                                                          &myfpga_uio_info,
+>> >>                                                          sizeof(struct uio_info)
+>> >>                                                         );
+>> >>     if (IS_ERR(myfpga_uio_pdev)) {
+>> >>         return PTR_ERR(myfpga_uio_pdev);
+>> >>     }
+>> >> 
+>> >>     return 0;
+>> >> }
+>> >> 
+>> >> static void __exit myfpga_exit(void)
+>> >> {
+>> >>     platform_device_unregister(myfpga_uio_pdev);
+>> >> }
+>> >> 
+>> >> module_init(myfpga_init);
+>> >> module_exit(myfpga_exit);
+>> >> 
+>> >> ------Userspace-------
+>> >> #include <sys/types.h>
+>> >> #include <sys/mman.h>
+>> >> #include <sys/stat.h>
+>> >> 
+>> >> #include <dirent.h>
+>> >> #include <string.h>
+>> >> #include <stdlib.h>
+>> >> #include <stdio.h>
+>> >> #include <fcntl.h>
+>> >> #include <unistd.h>
+>> >> #include <stdint.h>
+>> >> 
+>> >> #define MYFPGA_BASE     0xd0000000 // 3G
+>> >> #define MYFPGA_SIZE     0x00040000 // 256k
+>> >> #define MYFPGA_MAP_NUM  0 // First and only defined map
+>> >> 
+>> >> #define BIT32(n) (1 << (n))
+>> >> 
+>> >> /* Use mmap()'ped address "iomem", not physical MYFPGA address */
+>> >> #define MYFPGA_REG(iomem) (volatile uint32_t*)(iomem + 0x8) // Third 32-bit reg
+>> >> 
+>> >> int main (int argc, char *argv[])
+>> >> {
+>> >>     int fd;
+>> >>     void *iomem;
+>> >>     fd = open("/dev/uio0", O_RDWR|O_SYNC);
+>> >>     if (fd < 0) {
+>> >>         printf("failed to open /dev/uio0, quitting\n");
+>> >>         return -1;
+>> >>     }
+>> >>     /* Note offset has a special meaning with uio devices */
+>> >>     iomem = mmap(NULL, MYFPGA_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd,
+>> >>                  MYFPGA_MAP_NUM * getpagesize());
+>> >>     if (iomem == MAP_FAILED) {
+>> >>         printf("mmap failed, quitting\n");
+>> >>         close(fd);
+>> >>         return -2;
+>> >>     }
+>> >> 
+>> >>     /* Set bit 5 of MYFPGA_REG register */
+>> >>     *MYFPGA_REG(iomem) |= BIT32(5);
+>> >> 
+>> >>     munmap(iomem, MYFPGA_SIZE);
+>> >>     close(fd);
+>> >>     return 0;
+>> >> }
+>> >>  
+>> >>  
+>>
