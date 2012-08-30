@@ -1,86 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753221Ab2H3PM3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 11:12:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42155 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751041Ab2H3PM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 11:12:27 -0400
-Date: Thu, 30 Aug 2012 17:12:24 +0200
-From: Jan Kara <jack@suse.cz>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Jan Kara <jack@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 2/8] ext3: drop lock/unlock super
-Message-ID: <20120830151224.GA13055@quack.suse.cz>
-References: <503F7F31.10708@gmail.com>
+	id S1752978Ab2H3PRg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 11:17:36 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:57851 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751677Ab2H3PRf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 11:17:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <503F7F31.10708@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1346316580.7727.1.camel@localhost.localdomain>
+References: <CALCETrW-LFzcHYgx=thQiuTfU8RdRBrtXwE7QboWpNrjz4An4A@mail.gmail.com>
+ <1346316580.7727.1.camel@localhost.localdomain>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 30 Aug 2012 08:17:13 -0700
+Message-ID: <CALCETrX6zZdVK9UHqstGNPAiXDbeMUMnLxtNrJ7pR=RYOP8iWw@mail.gmail.com>
+Subject: Re: Which disk is ata4?
+To: Bjoern Franke <bjo@nord-west.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 30-08-12 16:56:49, Marco Stornelli wrote:
-> Removed lock/unlock super.
-> 
-> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
-  You can add: Reviewed-by: Jan Kara <jack@suse.cz>
+On Thu, Aug 30, 2012 at 1:49 AM, Bjoern Franke <bjo@nord-west.org> wrote:
+> Am Mittwoch, den 29.08.2012, 21:38 -0700 schrieb Andy Lutomirski:
+>> One of my disks went out to lunch for a while.  Logs below.
+>
+> dmesg | grep ata4
+>
+> for instance with ata1:
+> [root@ostrea][/]# dmesg | grep ata1
+> ata1.00: ATA-7: SAMSUNG MP0402H, UC200-16, max UDMA/100
 
-								Honza
+I tried that, too.
 
-> ---
->  fs/ext3/super.c |    6 ------
->  1 files changed, 0 insertions(+), 6 deletions(-)
-> 
-> diff --git a/fs/ext3/super.c b/fs/ext3/super.c
-> index 8c892e9..9b3d498 100644
-> --- a/fs/ext3/super.c
-> +++ b/fs/ext3/super.c
-> @@ -2571,11 +2571,9 @@ out:
->  static int ext3_unfreeze(struct super_block *sb)
->  {
->  	if (!(sb->s_flags & MS_RDONLY)) {
-> -		lock_super(sb);
->  		/* Reser the needs_recovery flag before the fs is unlocked. */
->  		EXT3_SET_INCOMPAT_FEATURE(sb, EXT3_FEATURE_INCOMPAT_RECOVER);
->  		ext3_commit_super(sb, EXT3_SB(sb)->s_es, 1);
-> -		unlock_super(sb);
->  		journal_unlock_updates(EXT3_SB(sb)->s_journal);
->  	}
->  	return 0;
-> @@ -2595,7 +2593,6 @@ static int ext3_remount (struct super_block * sb, int * flags, char * data)
->  #endif
->  
->  	/* Store the original options */
-> -	lock_super(sb);
->  	old_sb_flags = sb->s_flags;
->  	old_opts.s_mount_opt = sbi->s_mount_opt;
->  	old_opts.s_resuid = sbi->s_resuid;
-> @@ -2701,8 +2698,6 @@ static int ext3_remount (struct super_block * sb, int * flags, char * data)
->  		    old_opts.s_qf_names[i] != sbi->s_qf_names[i])
->  			kfree(old_opts.s_qf_names[i]);
->  #endif
-> -	unlock_super(sb);
-> -
->  	if (enable_quota)
->  		dquot_resume(sb, -1);
->  	return 0;
-> @@ -2721,7 +2716,6 @@ restore_opts:
->  		sbi->s_qf_names[i] = old_opts.s_qf_names[i];
->  	}
->  #endif
-> -	unlock_super(sb);
->  	return err;
->  }
->  
-> -- 
-> 1.7.3.4
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+$ dmesg |grep ST3000DM001-9YN166
+[    1.064910] ata5.00: ATA-8: ST3000DM001-9YN166, CC4B, max UDMA/133
+[    1.064926] ata3.00: ATA-8: ST3000DM001-9YN166, CC4B, max UDMA/133
+[    1.064986] ata2.00: ATA-8: ST3000DM001-9YN166, CC4B, max UDMA/133
+[    1.065012] ata4.00: ATA-8: ST3000DM001-9YN166, CC4B, max UDMA/133
+[    1.235753] ata7.00: ATA-8: ST3000DM001-9YN166, CC4B, max UDMA/133
+[    1.727000] ata8.00: ATA-8: ST3000DM001-9YN166, CC4B, max UDMA/133
+
+This is unhelpful.
+
+Also, the dmesg lines are nicely interleaved, making it rather hard to
+line up ataN lines with sdX lines.
+
+--Andy
