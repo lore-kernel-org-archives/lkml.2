@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752712Ab2H3PCv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 11:02:51 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:60937 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537Ab2H3PCt (ORCPT
+	id S1752903Ab2H3PDb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 11:03:31 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:39361 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751537Ab2H3PD2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 11:02:49 -0400
-Message-ID: <503F7F0B.4040506@gmail.com>
-Date: Thu, 30 Aug 2012 16:56:11 +0200
+	Thu, 30 Aug 2012 11:03:28 -0400
+Message-ID: <503F7F31.10708@gmail.com>
+Date: Thu, 30 Aug 2012 16:56:49 +0200
 From: Marco Stornelli <marco.stornelli@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
 MIME-Version: 1.0
-To: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-CC: Boaz Harrosh <bharrosh@panasas.com>, artem.bityutskiy@linux.intel.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/8] exofs: drop lock/unlock super
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH 2/8] ext3: drop lock/unlock super
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -25,34 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Removed lock/unlock super.
 
-Acked-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Acked-by: Boaz Harrosh <bharrosh@panasas.com>
 Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
 ---
- fs/exofs/super.c |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
+ fs/ext3/super.c |    6 ------
+ 1 files changed, 0 insertions(+), 6 deletions(-)
 
-diff --git a/fs/exofs/super.c b/fs/exofs/super.c
-index dde41a7..c4360b5 100644
---- a/fs/exofs/super.c
-+++ b/fs/exofs/super.c
-@@ -384,8 +384,6 @@ static int exofs_sync_fs(struct super_block *sb, int wait)
- 	if (unlikely(ret))
- 		goto out;
+diff --git a/fs/ext3/super.c b/fs/ext3/super.c
+index 8c892e9..9b3d498 100644
+--- a/fs/ext3/super.c
++++ b/fs/ext3/super.c
+@@ -2571,11 +2571,9 @@ out:
+ static int ext3_unfreeze(struct super_block *sb)
+ {
+ 	if (!(sb->s_flags & MS_RDONLY)) {
+-		lock_super(sb);
+ 		/* Reser the needs_recovery flag before the fs is unlocked. */
+ 		EXT3_SET_INCOMPAT_FEATURE(sb, EXT3_FEATURE_INCOMPAT_RECOVER);
+ 		ext3_commit_super(sb, EXT3_SB(sb)->s_es, 1);
+-		unlock_super(sb);
+ 		journal_unlock_updates(EXT3_SB(sb)->s_journal);
+ 	}
+ 	return 0;
+@@ -2595,7 +2593,6 @@ static int ext3_remount (struct super_block * sb, int * flags, char * data)
+ #endif
  
+ 	/* Store the original options */
 -	lock_super(sb);
--
- 	ios->length = offsetof(struct exofs_fscb, s_dev_table_oid);
- 	memset(fscb, 0, ios->length);
- 	fscb->s_nextid = cpu_to_le64(sbi->s_nextid);
-@@ -401,8 +399,6 @@ static int exofs_sync_fs(struct super_block *sb, int wait)
- 	if (unlikely(ret))
- 		EXOFS_ERR("%s: ore_write failed.\n", __func__);
- 
--
+ 	old_sb_flags = sb->s_flags;
+ 	old_opts.s_mount_opt = sbi->s_mount_opt;
+ 	old_opts.s_resuid = sbi->s_resuid;
+@@ -2701,8 +2698,6 @@ static int ext3_remount (struct super_block * sb, int * flags, char * data)
+ 		    old_opts.s_qf_names[i] != sbi->s_qf_names[i])
+ 			kfree(old_opts.s_qf_names[i]);
+ #endif
 -	unlock_super(sb);
- out:
- 	EXOFS_DBGMSG("s_nextid=0x%llx ret=%d\n", _LLU(sbi->s_nextid), ret);
- 	ore_put_io_state(ios);
+-
+ 	if (enable_quota)
+ 		dquot_resume(sb, -1);
+ 	return 0;
+@@ -2721,7 +2716,6 @@ restore_opts:
+ 		sbi->s_qf_names[i] = old_opts.s_qf_names[i];
+ 	}
+ #endif
+-	unlock_super(sb);
+ 	return err;
+ }
+ 
 -- 
 1.7.3.4
