@@ -1,183 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751297Ab2H3O7z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 10:59:55 -0400
-Received: from smtp-vbr9.xs4all.nl ([194.109.24.29]:2092 "EHLO
-	smtp-vbr9.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750848Ab2H3O7y (ORCPT
+	id S1752234Ab2H3PCc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 11:02:32 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:60937 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751664Ab2H3PCb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 10:59:54 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Prabhakar Lad <prabhakar.lad@ti.com>
-Subject: Re: [PATCH v2] media: v4l2-ctrls: add control for dpcm predictor
-Date: Thu, 30 Aug 2012 07:57:44 -0700
-User-Agent: KMail/1.13.7 (Linux/3.6.0-rc3-lyonesse; KDE/4.8.4; x86_64; ; )
-Cc: LMML <linux-media@vger.kernel.org>,
-        dlos <davinci-linux-open-source@linux.davincidsp.com>,
-        linux-kernel@vger.kernel.org, Manjunath Hadli <manjunath.hadli@ti.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-References: <1346313496-3652-1-git-send-email-prabhakar.lad@ti.com>
-In-Reply-To: <1346313496-3652-1-git-send-email-prabhakar.lad@ti.com>
+	Thu, 30 Aug 2012 11:02:31 -0400
+Message-ID: <503F7EF5.1030409@gmail.com>
+Date: Thu, 30 Aug 2012 16:55:49 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Boaz Harrosh <bharrosh@panasas.com>, bhalevy@tonian.com,
+        Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        adilger.kernel@dilger.ca, "Theodore Ts'o" <tytso@mit.edu>,
+        hirofumi@mail.parknet.co.jp, mikulas@artax.karlin.mff.cuni.cz,
+        Al Viro <viro@ZenIV.linux.org.uk>, hch@infradead.org,
+        dushistov@mail.ru, osd-dev@open-osd.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH 0/8][RESEND] drop lock/unlock super
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208300757.44775.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar!
+Hi,
 
-I've got some documentation review comments below...
+I resend the patch series to remove the deprecated calls lock_super and 
+unlock_super. I let you decide what to do. At the moment I received 
+positive feedback for ext3/4 and exofs from fs maintainers. I hope 
+someone can say "yes" for the others. Al, in case it's ok, can you apply 
+them in the vfs tree for 3.7? Actually in the Ted's tree there is 
+already the patch for ext4, but however I'm re-sending it because I 
+don't want to break a tree.
+Thanks.
 
-On Thu August 30 2012 00:58:16 Prabhakar Lad wrote:
-> From: Lad, Prabhakar <prabhakar.lad@ti.com>
-> 
-> add V4L2_CID_DPCM_PREDICTOR control of type menu, which
-> determines the dpcm predictor. The predictor can be either
-> simple or advanced.
-> 
-> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-> Cc: Sakari Ailus <sakari.ailus@iki.fi>
-> Cc: Hans Verkuil <hans.verkuil@cisco.com>
-> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> Cc: Hans de Goede <hdegoede@redhat.com>
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
-> This patches has one checkpatch warning for line over
-> 80 characters altough it can be avoided I have kept it
-> for consistency.
-> 
-> Changes for v2: 
-> 1: Added documentaion in controls.xml pointed by Sylwester.
-> 2: Chnaged V4L2_DPCM_PREDICTOR_ADVANCE to V4L2_DPCM_PREDICTOR_ADVANCED
->    pointed by Sakari.
-> 
->  Documentation/DocBook/media/v4l/controls.xml |   25 ++++++++++++++++++++++++-
->  drivers/media/v4l2-core/v4l2-ctrls.c         |    9 +++++++++
->  include/linux/videodev2.h                    |    5 +++++
->  3 files changed, 38 insertions(+), 1 deletions(-)
-> 
-> diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
-> index 93b9c68..84746d0 100644
-> --- a/Documentation/DocBook/media/v4l/controls.xml
-> +++ b/Documentation/DocBook/media/v4l/controls.xml
-> @@ -4267,7 +4267,30 @@ interface and may change in the future.</para>
->  	    pixels / second.
->  	    </entry>
->  	  </row>
-> -	  <row><entry></entry></row>
-> +	  <row>
-> +	    <entry spanname="id"><constant>V4L2_CID_DPCM_PREDICTOR</constant></entry>
-> +	    <entry>menu</entry>
-> +	  </row>
-> +	  <row id="v4l2-dpcm-predictor">
-> +	    <entry spanname="descr"> DPCM Predictor: depicts what type of prediction
-> +	    is used simple or advanced.
+Marco Stornelli (8):
+   exofs: drop lock/unlock super
+   ext3: drop lock/unlock super
+   ext4: drop lock/unlock super
+   fat: drop lock/unlock super
+   hpfs: drop lock/unlock super
+   sysv: drop lock/unlock super
+   ufs: drop lock/unlock super
+   vfs: drop lock/unlock super
 
-This is not useful information. It basically just rephrases the name of the
-define without actually telling me anything.
+  fs/exofs/super.c     |    4 ----
+  fs/ext3/super.c      |    6 ------
+  fs/ext4/super.c      |   11 +----------
+  fs/fat/dir.c         |    4 ++--
+  fs/fat/fat.h         |    1 +
+  fs/fat/inode.c       |    9 +++++----
+  fs/fat/namei_msdos.c |   26 +++++++++++++-------------
+  fs/fat/namei_vfat.c  |   30 +++++++++++++++---------------
+  fs/hpfs/super.c      |    3 ---
+  fs/super.c           |   23 -----------------------
+  fs/sysv/balloc.c     |   18 +++++++++---------
+  fs/sysv/ialloc.c     |   14 +++++++-------
+  fs/sysv/inode.c      |    4 ++--
+  fs/sysv/super.c      |    1 +
+  fs/sysv/sysv.h       |    1 +
+  fs/ufs/balloc.c      |   30 +++++++++++++++---------------
+  fs/ufs/ialloc.c      |   16 ++++++++--------
+  fs/ufs/super.c       |   21 +++++++++++----------
+  fs/ufs/ufs.h         |    1 +
+  include/linux/fs.h   |    1 -
+  20 files changed, 92 insertions(+), 132 deletions(-)
 
-I would expect to see here at least the following:
+-- 
+1.7.3.4
+---
 
-- what the DPCM abbreviation stands for
-- a link or bibliography reference to the relevant standard (if there is any)
-- a high-level explanation of what this do and what the difference is between
- simple and advanced.
-
-If this is part of a video compression standard, then this control would probably
-belong to the MPEG control class as well.
-
-Regards,
-
-    Hans
-
-
-> +	    </entry>
-> +	  </row>
-> +	  <row>
-> +	    <entrytbl spanname="descr" cols="2">
-> +	      <tbody valign="top">
-> +	        <row>
-> +	         <entry><constant>V4L2_DPCM_PREDICTOR_SIMPLE</constant></entry>
-> +	          <entry>Predictor type is simple</entry>
-> +	        </row>
-> +	        <row>
-> +	          <entry><constant>V4L2_DPCM_PREDICTOR_ADVANCED</constant></entry>
-> +	          <entry>Predictor type is advanced</entry>
-> +	        </row>
-> +	      </tbody>
-> +	    </entrytbl>
-> +	  </row>
-> +	<row><entry></entry></row>
->  	</tbody>
->        </tgroup>
->        </table>
-> diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
-> index b6a2ee7..2d7bc15 100644
-> --- a/drivers/media/v4l2-core/v4l2-ctrls.c
-> +++ b/drivers/media/v4l2-core/v4l2-ctrls.c
-> @@ -425,6 +425,11 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
->  		"Gray",
->  		NULL,
->  	};
-> +	static const char * const dpcm_predictor[] = {
-> +		"Simple Predictor",
-> +		"Advanced Predictor",
-> +		NULL,
-> +	};
->  
->  	switch (id) {
->  	case V4L2_CID_MPEG_AUDIO_SAMPLING_FREQ:
-> @@ -502,6 +507,8 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
->  		return mpeg4_profile;
->  	case V4L2_CID_JPEG_CHROMA_SUBSAMPLING:
->  		return jpeg_chroma_subsampling;
-> +	case V4L2_CID_DPCM_PREDICTOR:
-> +		return dpcm_predictor;
->  
->  	default:
->  		return NULL;
-> @@ -732,6 +739,7 @@ const char *v4l2_ctrl_get_name(u32 id)
->  	case V4L2_CID_IMAGE_PROC_CLASS:		return "Image Processing Controls";
->  	case V4L2_CID_LINK_FREQ:		return "Link Frequency";
->  	case V4L2_CID_PIXEL_RATE:		return "Pixel Rate";
-> +	case V4L2_CID_DPCM_PREDICTOR:		return "DPCM Predictor";
->  
->  	default:
->  		return NULL;
-> @@ -832,6 +840,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
->  	case V4L2_CID_ISO_SENSITIVITY_AUTO:
->  	case V4L2_CID_EXPOSURE_METERING:
->  	case V4L2_CID_SCENE_MODE:
-> +	case V4L2_CID_DPCM_PREDICTOR:
->  		*type = V4L2_CTRL_TYPE_MENU;
->  		break;
->  	case V4L2_CID_LINK_FREQ:
-> diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
-> index 6d6dfa7..ca9fb78 100644
-> --- a/include/linux/videodev2.h
-> +++ b/include/linux/videodev2.h
-> @@ -2000,6 +2000,11 @@ enum v4l2_jpeg_chroma_subsampling {
->  
->  #define V4L2_CID_LINK_FREQ			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 1)
->  #define V4L2_CID_PIXEL_RATE			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 2)
-> +#define V4L2_CID_DPCM_PREDICTOR			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 3)
-> +enum v4l2_dpcm_predictor {
-> +	V4L2_DPCM_PREDICTOR_SIMPLE	= 0,
-> +	V4L2_DPCM_PREDICTOR_ADVANCED	= 1,
-> +};
->  
->  /*
->   *	T U N I N G
-> 
