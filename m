@@ -1,88 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209Ab2H3SSo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 14:18:44 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:46378 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752534Ab2H3SSn (ORCPT
+	id S1753850Ab2H3STM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 14:19:12 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:49126 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751737Ab2H3STI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 14:18:43 -0400
-Date: Thu, 30 Aug 2012 11:18:11 -0700
+	Thu, 30 Aug 2012 14:19:08 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
-Subject: [PATCH tip/core/rcu 0/23] Improvements to RT response on big systems
- and expedited functions
-Message-ID: <20120830181811.GA29154@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 20/23] rcu: Remove callback acceleration from grace-period initialization
+Date: Thu, 30 Aug 2012 11:18:35 -0700
+Message-Id: <1346350718-30937-20-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.8
+In-Reply-To: <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20120830181811.GA29154@linux.vnet.ibm.com>
+ <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12083018-6148-0000-0000-000009162A42
+x-cbid: 12083018-7282-0000-0000-00000C74E2DD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This patch series contains additional improvements to latency for
-large systems (beyond those in 3.6), along with improvements to
-synchronize_rcu_expedited().  It also fixes one race introduced by the
-latency improvements and another that was there to start with (but made
-more probable by the latency improvements).  These are in a single
-series due to conflicts that would otherwise occur.  The individual
-patches are as follows:
+Before grace-period initialization was moved to a kthread, the CPU
+invoking this code would have at least one callback that needed
+a grace period, often a newly registered callback.  However, moving
+grace-period initialization means that the CPU with the callback
+that was requesting a grace period is not necessarily the CPU that
+is initializing the grace period, so this acceleration is less
+valuable.  Because it also adds to the complexity of reasoning about
+correctness, this commit removes it.
 
-1-6.	Move RCU grace-period initialization and cleanup into a kthread:
-	1.	Move RCU grace-period initialization into kthread.
-	2.	Allow RCU grace-period initialization to be preempted.
-	3.	Move RCU grace-period cleanup into kthread.
-	4.	Allow RCU grace-period cleanup to be preempted.
-	5.	Prevent offline CPUs from executing RCU core code.
-	6.	Break up rcu_gp_kthread() into subfunctions.
-7.	Provide an OOM handler to allow lazy callbacks to be motivated
-	under memory pressure.
-8.	Segregate rcu_state fields to improve cache locality
-	(Courtesy of Dimitri Sivanich).
-9-12.	Move RCU grace-period forcing into a kthread.
-	9.	Move quiescent-state forcing into kthread.
-	10.	Allow RCU quiescent-state forcing to be preempted.
-	11.	Adjust debugfs tracing for kthread-based quiescent-state
-		forcing.
-	12.	Prevent force_quiescent_state() memory contention.
-13.	Control grace-period duration from sysfs.
-14.	Remove now-unused rcu_state fields.
-15.	Make rcutree module parameters visible in sysfs.
-16.	Prevent initialization-time quiescent-state race.
-17.	Fix day-zero grace-period initialization/cleanup race.
-18.	Add random PROVE_RCU_DELAY to provoke initalization races.
-19.	Adjust for unconditional ->completed assignment.	
-20.	Remove callback acceleration from grace-period initialization
-	due it no longer being safe.
-21.	Eliminate signed overflow in synchronize_rcu_expedited().
-22.	Reduce synchronize_rcu_expedited() latency.
-23.	Simplify quiescent-state detection.
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ kernel/rcutree.c |   19 -------------------
+ 1 files changed, 0 insertions(+), 19 deletions(-)
 
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
- b/Documentation/RCU/trace.txt         |   43 -
- b/Documentation/kernel-parameters.txt |   11 
- b/kernel/rcutree.c                    |  191 +++++---
- b/kernel/rcutree.h                    |    3 
- b/kernel/rcutree_plugin.h             |   80 +++
- b/kernel/rcutree_trace.c              |    3 
- kernel/rcutree.c                      |  805 +++++++++++++++++-----------------
- kernel/rcutree.h                      |   25 -
- kernel/rcutree_plugin.h               |   48 +-
- kernel/rcutree_trace.c                |   12 
- 10 files changed, 690 insertions(+), 531 deletions(-)
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 86903df..44609c3 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1055,25 +1055,6 @@ static int rcu_gp_init(struct rcu_state *rsp)
+ 	rsp->gpnum++;
+ 	trace_rcu_grace_period(rsp->name, rsp->gpnum, "start");
+ 	record_gp_stall_check_time(rsp);
+-
+-	/*
+-	 * Because this CPU just now started the new grace period, we
+-	 * know that all of its callbacks will be covered by this upcoming
+-	 * grace period, even the ones that were registered arbitrarily
+-	 * recently.    Therefore, advance all RCU_NEXT_TAIL callbacks
+-	 * to RCU_NEXT_READY_TAIL.  When the CPU later recognizes the
+-	 * start of the new grace period, it will advance all callbacks
+-	 * one position, which will cause all of its current outstanding
+-	 * callbacks to be handled by the newly started grace period.
+-	 *
+-	 * Other CPUs cannot be sure exactly when the grace period started.
+-	 * Therefore, their recently registered callbacks must pass through
+-	 * an additional RCU_NEXT_READY stage, so that they will be handled
+-	 * by the next RCU grace period.
+-	 */
+-	rdp = __this_cpu_ptr(rsp->rda);
+-	rdp->nxttail[RCU_NEXT_READY_TAIL] = rdp->nxttail[RCU_NEXT_TAIL];
+-
+ 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ 
+ 	/* Exclude any concurrent CPU-hotplug operations. */
+-- 
+1.7.8
 
