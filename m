@@ -1,69 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753287Ab2H3XHd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 19:07:33 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:33921 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752923Ab2H3XH3 (ORCPT
+	id S1753321Ab2H3XHn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 19:07:43 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:38127 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752532Ab2H3XHj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 19:07:29 -0400
+	Thu, 30 Aug 2012 19:07:39 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
         Tejun Heo <tj@kernel.org>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 6/8] x86: if kernel .text .data .bss are not marked as E820_RAM, complain and fix
-Date: Thu, 30 Aug 2012 16:06:13 -0700
-Message-Id: <1346367975-6446-7-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 7/8] x86: Fixup code testing if a pfn is direct mapped
+Date: Thu, 30 Aug 2012 16:06:14 -0700
+Message-Id: <1346367975-6446-8-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1346367975-6446-1-git-send-email-yinghai@kernel.org>
 References: <2e8c14cd-b82a-49e6-8d5e-85dbe86da6ca@email.android.com>
  <1346367975-6446-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jacob Shin <jacob.shin@amd.com>
 
-There could be cases where user supplied memmap=exactmap memory
-mappings do not mark the region where the kernel .text .data and
-.bss reside as E820_RAM, as reported here:
+Update code that previously assumed pfns [ 0 - max_low_pfn_mapped ) and
+[ 4GB - max_pfn_mapped ) were always direct mapped, to now look up
+pfn_mapped ranges instead.
 
-https://lkml.org/lkml/2012/8/14/86
 
-Handle it by complaining, and adding the range back into the e820.
+-v2: change applying sequence to keep git bisecting working.
+     so add dummy pfn_range_is_mapped(). - Yinghai Lu
 
 Signed-off-by: Jacob Shin <jacob.shin@amd.com>
 ---
- arch/x86/kernel/setup.c |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/page_types.h |    8 ++++++++
+ arch/x86/kernel/cpu/amd.c         |    8 +++-----
+ arch/x86/platform/efi/efi.c       |    8 ++++----
+ 3 files changed, 15 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index c30c78c..587dcd9 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -831,6 +831,20 @@ void __init setup_arch(char **cmdline_p)
- 	insert_resource(&iomem_resource, &data_resource);
- 	insert_resource(&iomem_resource, &bss_resource);
+diff --git a/arch/x86/include/asm/page_types.h b/arch/x86/include/asm/page_types.h
+index e21fdd1..45aae6e 100644
+--- a/arch/x86/include/asm/page_types.h
++++ b/arch/x86/include/asm/page_types.h
+@@ -51,6 +51,14 @@ static inline phys_addr_t get_max_mapped(void)
+ 	return (phys_addr_t)max_pfn_mapped << PAGE_SHIFT;
+ }
  
-+	/*
-+	 * Complain if .text .data and .bss are not marked as E820_RAM and
-+	 * attempt to fix it by adding the range. We may have a confused BIOS,
-+	 * or the user may have incorrectly supplied it via memmap=exactmap. If
-+	 * we really are running on top non-RAM, we will crash later anyways.
-+	 */
-+	if (!e820_all_mapped(code_resource.start, __pa(__brk_limit), E820_RAM)) {
-+		pr_warn(".text .data .bss are not marked as E820_RAM!\n");
++static inline bool pfn_range_is_mapped(unsigned long start_pfn,
++					unsigned long end_pfn)
++{
++	return end_pfn <= max_low_pfn_mapped ||
++	       (end_pfn > (1UL << (32 - PAGE_SHIFT)) &&
++		end_pfn <= max_pfn_mapped);
++}
 +
-+		e820_add_region(code_resource.start,
-+				__pa(__brk_limit) - code_resource.start + 1,
-+				E820_RAM);
-+	}
+ extern unsigned long init_memory_mapping(unsigned long start,
+ 					 unsigned long end);
+ 
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 9d92e19..4235553 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -676,12 +676,10 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ 		 * benefit in doing so.
+ 		 */
+ 		if (!rdmsrl_safe(MSR_K8_TSEG_ADDR, &tseg)) {
++			unsigned long pfn = tseg >> PAGE_SHIFT;
 +
- 	trim_bios_range();
- #ifdef CONFIG_X86_32
- 	if (ppro_with_ram_bug()) {
+ 			printk(KERN_DEBUG "tseg: %010llx\n", tseg);
+-			if ((tseg>>PMD_SHIFT) <
+-				(max_low_pfn_mapped>>(PMD_SHIFT-PAGE_SHIFT)) ||
+-				((tseg>>PMD_SHIFT) <
+-				(max_pfn_mapped>>(PMD_SHIFT-PAGE_SHIFT)) &&
+-				(tseg>>PMD_SHIFT) >= (1ULL<<(32 - PMD_SHIFT))))
++			if (pfn_range_is_mapped(pfn, pfn + 1))
+ 				set_memory_4k((unsigned long)__va(tseg), 1);
+ 		}
+ 	}
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 92660eda..f1facde 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -776,7 +776,7 @@ void __init efi_enter_virtual_mode(void)
+ 	efi_memory_desc_t *md, *prev_md = NULL;
+ 	efi_status_t status;
+ 	unsigned long size;
+-	u64 end, systab, addr, npages, end_pfn;
++	u64 end, systab, addr, npages, start_pfn, end_pfn;
+ 	void *p, *va, *new_memmap = NULL;
+ 	int count = 0;
+ 
+@@ -827,10 +827,10 @@ void __init efi_enter_virtual_mode(void)
+ 		size = md->num_pages << EFI_PAGE_SHIFT;
+ 		end = md->phys_addr + size;
+ 
++		start_pfn = PFN_DOWN(md->phys_addr);
+ 		end_pfn = PFN_UP(end);
+-		if (end_pfn <= max_low_pfn_mapped
+-		    || (end_pfn > (1UL << (32 - PAGE_SHIFT))
+-			&& end_pfn <= max_pfn_mapped))
++
++		if (pfn_range_is_mapped(start_pfn, end_pfn))
+ 			va = __va(md->phys_addr);
+ 		else
+ 			va = efi_ioremap(md->phys_addr, size, md->type);
 -- 
 1.7.7
 
