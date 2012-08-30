@@ -1,34 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754669Ab2H3QuW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 12:50:22 -0400
-Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:49039 "EHLO
-	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753693Ab2H3QuU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 12:50:20 -0400
+	id S1754795Ab2H3QvO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 12:51:14 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:58608 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754292Ab2H3QvN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 12:51:13 -0400
+From: Bin Liu <b-liu@ti.com>
+To: <mugunthanvnm@ti.com>, <vaibhav.bedia@ti.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <b-liu@ti.com>
+Subject: [PATCH] net: ethernet: fix kernel OOPS when remove davinci_mdio module
+Date: Thu, 30 Aug 2012 11:37:32 -0500
+Message-ID: <1346344652-28487-1-git-send-email-b-liu@ti.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-In-Reply-To: <1346337826-27232-2-git-send-email-m-karicheri2@ti.com>
-References: <1346337826-27232-1-git-send-email-m-karicheri2@ti.com> <1346337826-27232-2-git-send-email-m-karicheri2@ti.com>
-From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Date: Thu, 30 Aug 2012 09:49:54 -0700
-Message-ID: <CAMQu2gyuVHEz-gUK3Tzqy4DPRwP+NWWjJTCYS=-RzFuszHw9Wg@mail.gmail.com>
-Subject: Re: [PATCH - 2/2] arm: disable caches based on config option
-To: Murali Karicheri <m-karicheri2@ti.com>
-Cc: linux@arm.linux.org.uk, nicolas.pitre@linaro.org, tony@atomide.com,
-        wim@iguana.be, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 7:43 AM, Murali Karicheri <m-karicheri2@ti.com> wrote:
-> CONFIG_CPU_ICACHE_DISABLE and CONFIG_CPU_DCACHE_DISABLE are available
-> to allow disabling of D-Cache and I-Cache. However the compressed version
-> of head.S currently doesn't check these variables. This patch will fix
-> this issue and is written similar to the uncompressed version of head.S
->
-> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-> ---
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+davinci mdio device is not unregistered from mdiobus when removing
+the module, which causes BUG_ON() when free the device from mdiobus.
+
+Calling mdiobus_unregister() before mdiobus_free() fixes the issue.
+
+Signed-off-by: Bin Liu <b-liu@ti.com>
+---
+ drivers/net/ethernet/ti/davinci_mdio.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/net/ethernet/ti/davinci_mdio.c b/drivers/net/ethernet/ti/davinci_mdio.c
+index 0c2fcdd..7de19a5 100644
+--- a/drivers/net/ethernet/ti/davinci_mdio.c
++++ b/drivers/net/ethernet/ti/davinci_mdio.c
+@@ -391,8 +391,10 @@ static int __devexit davinci_mdio_remove(struct platform_device *pdev)
+ 	struct device *dev = &pdev->dev;
+ 	struct davinci_mdio_data *data = dev_get_drvdata(dev);
+ 
+-	if (data->bus)
++	if (data->bus) {
++		mdiobus_unregister(data->bus);
+ 		mdiobus_free(data->bus);
++	}
+ 
+ 	if (data->clk)
+ 		clk_put(data->clk);
+-- 
+1.7.0.4
+
