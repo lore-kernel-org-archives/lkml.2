@@ -1,98 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742Ab2H3SZL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 14:25:11 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5199 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753387Ab2H3SZH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 14:25:07 -0400
-X-Authority-Analysis: v=2.0 cv=Vb91zSV9 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=_ox6tvxmq8gA:10 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=D3aU2I4SVa85xYqhKykA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Subject: [ANNOUNCE] 3.0.41-rt62
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
+	id S1754860Ab2H3SZZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 14:25:25 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:42638 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753528Ab2H3SZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 14:25:22 -0400
+Message-ID: <1346351121.2103.36.camel@joe2Laptop>
+Subject: Re: [PATCH 0/5] dev_<level> and dynamic_debug cleanups
+From: Joe Perches <joe@perches.com>
+To: Jim Cromie <jim.cromie@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jason Baron <jbaron@redhat.com>, Kay Sievers <kay@vrfy.org>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 30 Aug 2012 11:25:21 -0700
+In-Reply-To: <CAJfuBxyQc-XeNHxw0_XDs0JuCrNArNzcgsmrLya4ncDvSojZxQ@mail.gmail.com>
+References: <cover.1345978012.git.joe@perches.com>
+	 <CAJfuBxyQc-XeNHxw0_XDs0JuCrNArNzcgsmrLya4ncDvSojZxQ@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 30 Aug 2012 14:24:57 -0400
-Message-ID: <1346351097.3198.5.camel@acer.local.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2012-08-30 at 11:43 -0600, Jim Cromie wrote:
+> On Sun, Aug 26, 2012 at 5:25 AM, Joe Perches <joe@perches.com> wrote:
+> > The recent commit to fix dynamic_debug was a bit unclean.
+> > Neaten the style for dynamic_debug.
+> > Reduce the stack use of message logging that uses netdev_printk
+> > Add utility functions dev_printk_emit and dev_vprintk_emit for /dev/kmsg.
+> >
+> > Joe Perches (5):
+> >   dev_dbg/dynamic_debug: Update to use printk_emit, optimize stack
+> >   netdev_printk/dynamic_netdev_dbg: Directly call printk_emit
+> >   netdev_printk/netif_printk: Remove a superfluous logging colon
+> >   dev: Add dev_vprintk_emit and dev_printk_emit
+> >   device and dynamic_debug: Use dev_vprintk_emit and dev_printk_emit
+> >
+> 
+> Ive tested this on 2 builds differing only by DYNAMIC_DEBUG
+> It works for me on x86-64
+> 
+> However, I just booted a non-dyndbg build on x86-32, and got this.
+> 
+> 
+> root@voyage:~# dmesg | grep Unknown
+> mac80211: Unknown symbol __dynamic_dev_dbg (err 0)
+> mac80211: Unknown symbol __dynamic_pr_debug (err 0)
+> scx200_acb: Unknown symbol __dynamic_dev_dbg (err 0)
+> scx200_acb: Unknown symbol __dynamic_pr_debug (err 0)
+> hwmon: Unknown symbol __dynamic_dev_dbg (err 0)
+> nsc_gpio: Unknown symbol __dynamic_dev_dbg (err 0)
+> nsc_gpio: Unknown symbol __dynamic_dev_dbg (err 0)
+> root@voyage:~#
+> 
+> It may be my error, will investigate asap,
+> but wanted to report now.
 
-Dear RT Folks,
-
-I'm pleased to announce the 3.0.41-rt62 stable release.
-
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  Head SHA1: 27770766f5425b466d3a61025350f9829840e5e9
-
-
-Or to build 3.0.41-rt62 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.41.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.41-rt62.patch.xz
-
-
-You can also build from 3.0.41-rt61 by applying the incremental patch:
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/incr/patch-3.0.41-rt61-rt62.patch.xz
-
-
-
-Enjoy,
-
--- Steve
-
-
-Changes from 3.0.41-rt61:
-
----
-
-Frank Rowand (1):
-      fix printk flush of messages
-
-Steven Rostedt (1):
-      Linux 3.0.41-rt62
-
-----
- kernel/printk.c |    2 +-
- localversion-rt |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
----------------------------
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 60f4290..f2c459f 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -835,7 +835,7 @@ static int console_trylock_for_printk(unsigned int cpu, unsigned long flags)
- {
- #ifdef CONFIG_PREEMPT_RT_FULL
- 	int lock = (!early_boot_irqs_disabled && !irqs_disabled_flags(flags) &&
--		!preempt_count()) || sysrq_in_progress;
-+		(preempt_count() <= 1)) || sysrq_in_progress;
- #else
- 	int lock = 1;
- #endif
-diff --git a/localversion-rt b/localversion-rt
-index 9b7de93..40d81d8 100644
---- a/localversion-rt
-+++ b/localversion-rt
-@@ -1 +1 @@
---rt61
-+-rt62
-
+Thanks, but I don't know how this is possible.
+There are no 32/64 component tests in this code.
 
