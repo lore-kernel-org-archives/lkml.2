@@ -1,231 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752217Ab2H3TEd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 15:04:33 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:37839 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752024Ab2H3TEb (ORCPT
+	id S1752338Ab2H3TEk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 15:04:40 -0400
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:19420 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752228Ab2H3TEh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 15:04:31 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 1/3] rcu: Remove _rcu_barrier() dependency on __stop_machine()
-Date: Thu, 30 Aug 2012 12:03:01 -0700
-Message-Id: <1346353383-350-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.8
-In-Reply-To: <20120830190245.GA32625@linux.vnet.ibm.com>
-References: <20120830190245.GA32625@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12083019-7282-0000-0000-00000C753FCC
+	Thu, 30 Aug 2012 15:04:37 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/DDaTCFb3CfryALkBJIjE/
+Date: Thu, 30 Aug 2012 12:04:32 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] [RFC] ARM: treewide: manually change more
+ mach-*/*.h includes
+Message-ID: <20120830190431.GU1303@atomide.com>
+References: <201208221253.07278.arnd@arndb.de>
+ <20120822214323.GA12255@n2100.arm.linux.org.uk>
+ <201208231135.11688.arnd@arndb.de>
+ <201208231726.11293.arnd@arndb.de>
+ <20120824203622.GB1303@atomide.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120824203622.GB1303@atomide.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+* Tony Lindgren <tony@atomide.com> [120824 13:37]:
+> * Arnd Bergmann <arnd@arndb.de> [120823 10:27]:
+> > On Thursday 23 August 2012, Arnd Bergmann wrote:
+> > > On Wednesday 22 August 2012, Russell King - ARM Linux wrote:
+> > > > In any case, what we should be doing here as well is moving the headers
+> > > > included by drivers for platform data out of the arch/arm/mach/ subtrees
+> > > > and into include/linux/platform_data.  That will substantially reduce the
+> > > > amount of mach/ headers to deal with.
+> > > 
+> > > I've just looked at the {mach,plat}/*.h files that get included in ARM
+> > > specific drivers. Out of the 342 header files that get used in this way,
+> > > I found 93 that are practically just platform data, and a few that
+> > > are platform_data mixed with something else.
+> > > 
+> > > How about I move all the pure platform data definition files now and
+> > > rebase the other patches on top of that. Here is a list of suggested
+> > > file names in include/linux/platform_data/:
+> > 
+> > I've just scripted this and am running my build testsuite over it now.
+> > 
+> > Please let me know what you think about it.
+> > 
+> > 	Arnd
+> > 
+> > The following changes since commit fea7a08acb13524b47711625eebea40a0ede69a0:
+> > 
+> >   Linux 3.6-rc3 (2012-08-22 13:29:06 -0700)
+> > 
+> > are available in the git repository at:
+> > 
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git 
+> 
+> I'd like to run some checks on this, but branch name missing here for
+> pulling a branch in for testing..
 
-Currently, _rcu_barrier() relies on preempt_disable() to prevent
-any CPU from going offline, which in turn depends on CPU hotplug's
-use of __stop_machine().
+FYI, after talking with Arnd this is the testing/platform-data branch
+in the arm soc tree. Seems to build and work fine on omaps:
 
-This patch therefore makes _rcu_barrier() use get_online_cpus() to
-block CPU-hotplug operations.  This has the added benefit of removing
-the need for _rcu_barrier() to adopt callbacks:  Because CPU-hotplug
-operations are excluded, there can be no callbacks to adopt.  This
-commit simplifies the code accordingly.
+Tested-by: Tony Lindgren <tony@atomide.com>
 
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- kernel/rcutree.c       |   83 ++++++-----------------------------------------
- kernel/rcutree.h       |    3 --
- kernel/rcutree_trace.c |    4 +-
- 3 files changed, 13 insertions(+), 77 deletions(-)
+Arnd, can you please provide a stable branch to use as a base of
+other related header changes?
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index f280e54..9854a00 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -1390,17 +1390,6 @@ static void rcu_adopt_orphan_cbs(struct rcu_state *rsp)
- 	int i;
- 	struct rcu_data *rdp = __this_cpu_ptr(rsp->rda);
- 
--	/*
--	 * If there is an rcu_barrier() operation in progress, then
--	 * only the task doing that operation is permitted to adopt
--	 * callbacks.  To do otherwise breaks rcu_barrier() and friends
--	 * by causing them to fail to wait for the callbacks in the
--	 * orphanage.
--	 */
--	if (rsp->rcu_barrier_in_progress &&
--	    rsp->rcu_barrier_in_progress != current)
--		return;
--
- 	/* Do the accounting first. */
- 	rdp->qlen_lazy += rsp->qlen_lazy;
- 	rdp->qlen += rsp->qlen;
-@@ -1455,9 +1444,8 @@ static void rcu_cleanup_dying_cpu(struct rcu_state *rsp)
-  * The CPU has been completely removed, and some other CPU is reporting
-  * this fact from process context.  Do the remainder of the cleanup,
-  * including orphaning the outgoing CPU's RCU callbacks, and also
-- * adopting them, if there is no _rcu_barrier() instance running.
-- * There can only be one CPU hotplug operation at a time, so no other
-- * CPU can be attempting to update rcu_cpu_kthread_task.
-+ * adopting them.  There can only be one CPU hotplug operation at a time,
-+ * so no other CPU can be attempting to update rcu_cpu_kthread_task.
-  */
- static void rcu_cleanup_dead_cpu(int cpu, struct rcu_state *rsp)
- {
-@@ -1519,10 +1507,6 @@ static void rcu_cleanup_dead_cpu(int cpu, struct rcu_state *rsp)
- 
- #else /* #ifdef CONFIG_HOTPLUG_CPU */
- 
--static void rcu_adopt_orphan_cbs(struct rcu_state *rsp)
--{
--}
--
- static void rcu_cleanup_dying_cpu(struct rcu_state *rsp)
- {
- }
-@@ -2326,13 +2310,10 @@ static void rcu_barrier_func(void *type)
- static void _rcu_barrier(struct rcu_state *rsp)
- {
- 	int cpu;
--	unsigned long flags;
- 	struct rcu_data *rdp;
--	struct rcu_data rd;
- 	unsigned long snap = ACCESS_ONCE(rsp->n_barrier_done);
- 	unsigned long snap_done;
- 
--	init_rcu_head_on_stack(&rd.barrier_head);
- 	_rcu_barrier_trace(rsp, "Begin", -1, snap);
- 
- 	/* Take mutex to serialize concurrent rcu_barrier() requests. */
-@@ -2372,70 +2353,30 @@ static void _rcu_barrier(struct rcu_state *rsp)
- 	/*
- 	 * Initialize the count to one rather than to zero in order to
- 	 * avoid a too-soon return to zero in case of a short grace period
--	 * (or preemption of this task).  Also flag this task as doing
--	 * an rcu_barrier().  This will prevent anyone else from adopting
--	 * orphaned callbacks, which could cause otherwise failure if a
--	 * CPU went offline and quickly came back online.  To see this,
--	 * consider the following sequence of events:
--	 *
--	 * 1.	We cause CPU 0 to post an rcu_barrier_callback() callback.
--	 * 2.	CPU 1 goes offline, orphaning its callbacks.
--	 * 3.	CPU 0 adopts CPU 1's orphaned callbacks.
--	 * 4.	CPU 1 comes back online.
--	 * 5.	We cause CPU 1 to post an rcu_barrier_callback() callback.
--	 * 6.	Both rcu_barrier_callback() callbacks are invoked, awakening
--	 *	us -- but before CPU 1's orphaned callbacks are invoked!!!
-+	 * (or preemption of this task).  Exclude CPU-hotplug operations
-+	 * to ensure that no offline CPU has callbacks queued.
- 	 */
- 	init_completion(&rsp->barrier_completion);
- 	atomic_set(&rsp->barrier_cpu_count, 1);
--	raw_spin_lock_irqsave(&rsp->onofflock, flags);
--	rsp->rcu_barrier_in_progress = current;
--	raw_spin_unlock_irqrestore(&rsp->onofflock, flags);
-+	get_online_cpus();
- 
- 	/*
--	 * Force every CPU with callbacks to register a new callback
--	 * that will tell us when all the preceding callbacks have
--	 * been invoked.  If an offline CPU has callbacks, wait for
--	 * it to either come back online or to finish orphaning those
--	 * callbacks.
-+	 * Force each CPU with callbacks to register a new callback.
-+	 * When that callback is invoked, we will know that all of the
-+	 * corresponding CPU's preceding callbacks have been invoked.
- 	 */
--	for_each_possible_cpu(cpu) {
--		preempt_disable();
-+	for_each_online_cpu(cpu) {
- 		rdp = per_cpu_ptr(rsp->rda, cpu);
--		if (cpu_is_offline(cpu)) {
--			_rcu_barrier_trace(rsp, "Offline", cpu,
--					   rsp->n_barrier_done);
--			preempt_enable();
--			while (cpu_is_offline(cpu) && ACCESS_ONCE(rdp->qlen))
--				schedule_timeout_interruptible(1);
--		} else if (ACCESS_ONCE(rdp->qlen)) {
-+		if (ACCESS_ONCE(rdp->qlen)) {
- 			_rcu_barrier_trace(rsp, "OnlineQ", cpu,
- 					   rsp->n_barrier_done);
- 			smp_call_function_single(cpu, rcu_barrier_func, rsp, 1);
--			preempt_enable();
- 		} else {
- 			_rcu_barrier_trace(rsp, "OnlineNQ", cpu,
- 					   rsp->n_barrier_done);
--			preempt_enable();
- 		}
- 	}
--
--	/*
--	 * Now that all online CPUs have rcu_barrier_callback() callbacks
--	 * posted, we can adopt all of the orphaned callbacks and place
--	 * an rcu_barrier_callback() callback after them.  When that is done,
--	 * we are guaranteed to have an rcu_barrier_callback() callback
--	 * following every callback that could possibly have been
--	 * registered before _rcu_barrier() was called.
--	 */
--	raw_spin_lock_irqsave(&rsp->onofflock, flags);
--	rcu_adopt_orphan_cbs(rsp);
--	rsp->rcu_barrier_in_progress = NULL;
--	raw_spin_unlock_irqrestore(&rsp->onofflock, flags);
--	atomic_inc(&rsp->barrier_cpu_count);
--	smp_mb__after_atomic_inc(); /* Ensure atomic_inc() before callback. */
--	rd.rsp = rsp;
--	rsp->call(&rd.barrier_head, rcu_barrier_callback);
-+	put_online_cpus();
- 
- 	/*
- 	 * Now that we have an rcu_barrier_callback() callback on each
-@@ -2456,8 +2397,6 @@ static void _rcu_barrier(struct rcu_state *rsp)
- 
- 	/* Other rcu_barrier() invocations can now safely proceed. */
- 	mutex_unlock(&rsp->barrier_mutex);
--
--	destroy_rcu_head_on_stack(&rd.barrier_head);
- }
- 
- /**
-diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index 4d29169..94dfdf1 100644
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -398,9 +398,6 @@ struct rcu_state {
- 	struct rcu_head **orphan_donetail;	/* Tail of above. */
- 	long qlen_lazy;				/* Number of lazy callbacks. */
- 	long qlen;				/* Total number of callbacks. */
--	struct task_struct *rcu_barrier_in_progress;
--						/* Task doing rcu_barrier(), */
--						/*  or NULL if no barrier. */
- 	struct mutex barrier_mutex;		/* Guards barrier fields. */
- 	atomic_t barrier_cpu_count;		/* # CPUs waiting on. */
- 	struct completion barrier_completion;	/* Wake at barrier end. */
-diff --git a/kernel/rcutree_trace.c b/kernel/rcutree_trace.c
-index abffb48..6a2e52a 100644
---- a/kernel/rcutree_trace.c
-+++ b/kernel/rcutree_trace.c
-@@ -51,8 +51,8 @@ static int show_rcubarrier(struct seq_file *m, void *unused)
- 	struct rcu_state *rsp;
- 
- 	for_each_rcu_flavor(rsp)
--		seq_printf(m, "%s: %c bcc: %d nbd: %lu\n",
--			   rsp->name, rsp->rcu_barrier_in_progress ? 'B' : '.',
-+		seq_printf(m, "%s: bcc: %d nbd: %lu\n",
-+			   rsp->name,
- 			   atomic_read(&rsp->barrier_cpu_count),
- 			   rsp->n_barrier_done);
- 	return 0;
--- 
-1.7.8
+Regards,
 
+Tony
