@@ -1,43 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247Ab2H3PFa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 11:05:30 -0400
-Received: from wolff.to ([65.117.131.163]:60815 "HELO wolff.to"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752001Ab2H3PF1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 11:05:27 -0400
-Date: Thu, 30 Aug 2012 10:03:38 -0500
-From: Bruno Wolff III <bruno@wolff.to>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Daniel Mack <zonque@gmail.com>, Josh Boyer <jwboyer@redhat.com>,
-        Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Logitech USB headset not working in 3.6-rc3
-Message-ID: <20120830150338.GA17727@wolff.to>
-References: <20120825111749.GA17048@wolff.to>
- <20120825115423.GA14327@wolff.to>
- <5038BEEB.6090303@gmail.com>
- <20120825120740.GA19539@wolff.to>
- <5038C186.7000107@gmail.com>
- <20120825121758.GF20043@zod.bos.redhat.com>
- <503DFC61.3000104@gmail.com>
- <s5hsjb56d40.wl%tiwai@suse.de>
- <503E19F2.3080302@gmail.com>
- <s5hehmo5v3x.wl%tiwai@suse.de>
+	id S1753095Ab2H3PGI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 11:06:08 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:62903 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194Ab2H3PGG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 11:06:06 -0400
+Message-ID: <503F7FCE.5050209@gmail.com>
+Date: Thu, 30 Aug 2012 16:59:26 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <s5hehmo5v3x.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH 6/8] sysv: drop lock/unlock super
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 16:10:10 +0200,
-   Takashi Iwai <tiwai@suse.de> wrote:
->
->As the test result looks positive, I applied it for the next pull
->request.   Thanks.
+Removed lock/unlock super. Added a new private s_lock mutex.
 
-I tested 3.6.0-0.rc3.git3.2.fc18.i686.PAE (which inlcudes the patches) on two 
-more machines last night and it worked on them as well.
+Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+---
+ fs/sysv/balloc.c |   18 +++++++++---------
+ fs/sysv/ialloc.c |   14 +++++++-------
+ fs/sysv/inode.c  |    4 ++--
+ fs/sysv/super.c  |    1 +
+ fs/sysv/sysv.h   |    1 +
+ 5 files changed, 20 insertions(+), 18 deletions(-)
+
+diff --git a/fs/sysv/balloc.c b/fs/sysv/balloc.c
+index 9a6ad96..921c053 100644
+--- a/fs/sysv/balloc.c
++++ b/fs/sysv/balloc.c
+@@ -60,12 +60,12 @@ void sysv_free_block(struct super_block * sb, sysv_zone_t nr)
+ 		return;
+ 	}
+ 
+-	lock_super(sb);
++	mutex_lock(&sbi->s_lock);
+ 	count = fs16_to_cpu(sbi, *sbi->s_bcache_count);
+ 
+ 	if (count > sbi->s_flc_size) {
+ 		printk("sysv_free_block: flc_count > flc_size\n");
+-		unlock_super(sb);
++		mutex_unlock(&sbi->s_lock);
+ 		return;
+ 	}
+ 	/* If the free list head in super-block is full, it is copied
+@@ -77,7 +77,7 @@ void sysv_free_block(struct super_block * sb, sysv_zone_t nr)
+ 		bh = sb_getblk(sb, block);
+ 		if (!bh) {
+ 			printk("sysv_free_block: getblk() failed\n");
+-			unlock_super(sb);
++			mutex_unlock(&sbi->s_lock);
+ 			return;
+ 		}
+ 		memset(bh->b_data, 0, sb->s_blocksize);
+@@ -93,7 +93,7 @@ void sysv_free_block(struct super_block * sb, sysv_zone_t nr)
+ 	*sbi->s_bcache_count = cpu_to_fs16(sbi, count);
+ 	fs32_add(sbi, sbi->s_free_blocks, 1);
+ 	dirty_sb(sb);
+-	unlock_super(sb);
++	mutex_unlock(&sbi->s_lock);
+ }
+ 
+ sysv_zone_t sysv_new_block(struct super_block * sb)
+@@ -104,7 +104,7 @@ sysv_zone_t sysv_new_block(struct super_block * sb)
+ 	struct buffer_head * bh;
+ 	unsigned count;
+ 
+-	lock_super(sb);
++	mutex_lock(&sbi->s_lock);
+ 	count = fs16_to_cpu(sbi, *sbi->s_bcache_count);
+ 
+ 	if (count == 0) /* Applies only to Coherent FS */
+@@ -147,11 +147,11 @@ sysv_zone_t sysv_new_block(struct super_block * sb)
+ 	/* Now the free list head in the superblock is valid again. */
+ 	fs32_add(sbi, sbi->s_free_blocks, -1);
+ 	dirty_sb(sb);
+-	unlock_super(sb);
++	mutex_unlock(&sbi->s_lock);
+ 	return nr;
+ 
+ Enospc:
+-	unlock_super(sb);
++	mutex_unlock(&sbi->s_lock);
+ 	return 0;
+ }
+ 
+@@ -173,7 +173,7 @@ unsigned long sysv_count_free_blocks(struct super_block * sb)
+ 	if (sbi->s_type == FSTYPE_AFS)
+ 		return 0;
+ 
+-	lock_super(sb);
++	mutex_lock(&sbi->s_lock);
+ 	sb_count = fs32_to_cpu(sbi, *sbi->s_free_blocks);
+ 
+ 	if (0)
+@@ -211,7 +211,7 @@ unsigned long sysv_count_free_blocks(struct super_block * sb)
+ 	if (count != sb_count)
+ 		goto Ecount;
+ done:
+-	unlock_super(sb);
++	mutex_unlock(&sbi->s_lock);
+ 	return count;
+ 
+ Einval:
+diff --git a/fs/sysv/ialloc.c b/fs/sysv/ialloc.c
+index 8233b02..f9db4eb 100644
+--- a/fs/sysv/ialloc.c
++++ b/fs/sysv/ialloc.c
+@@ -118,7 +118,7 @@ void sysv_free_inode(struct inode * inode)
+ 		       "%s\n", inode->i_sb->s_id);
+ 		return;
+ 	}
+-	lock_super(sb);
++	mutex_lock(&sbi->s_lock);
+ 	count = fs16_to_cpu(sbi, *sbi->s_sb_fic_count);
+ 	if (count < sbi->s_fic_size) {
+ 		*sv_sb_fic_inode(sb,count++) = cpu_to_fs16(sbi, ino);
+@@ -128,7 +128,7 @@ void sysv_free_inode(struct inode * inode)
+ 	dirty_sb(sb);
+ 	memset(raw_inode, 0, sizeof(struct sysv_inode));
+ 	mark_buffer_dirty(bh);
+-	unlock_super(sb);
++	mutex_unlock(&sbi->s_lock);
+ 	brelse(bh);
+ }
+ 
+@@ -147,13 +147,13 @@ struct inode * sysv_new_inode(const struct inode * dir, umode_t mode)
+ 	if (!inode)
+ 		return ERR_PTR(-ENOMEM);
+ 
+-	lock_super(sb);
++	mutex_lock(&sbi->s_lock);
+ 	count = fs16_to_cpu(sbi, *sbi->s_sb_fic_count);
+ 	if (count == 0 || (*sv_sb_fic_inode(sb,count-1) == 0)) {
+ 		count = refill_free_cache(sb);
+ 		if (count == 0) {
+ 			iput(inode);
+-			unlock_super(sb);
++			mutex_unlock(&sbi->s_lock);
+ 			return ERR_PTR(-ENOSPC);
+ 		}
+ 	}
+@@ -174,7 +174,7 @@ struct inode * sysv_new_inode(const struct inode * dir, umode_t mode)
+ 	sysv_write_inode(inode, &wbc);	/* ensure inode not allocated again */
+ 	mark_inode_dirty(inode);	/* cleared by sysv_write_inode() */
+ 	/* That's it. */
+-	unlock_super(sb);
++	mutex_unlock(&sbi->s_lock);
+ 	return inode;
+ }
+ 
+@@ -185,7 +185,7 @@ unsigned long sysv_count_free_inodes(struct super_block * sb)
+ 	struct sysv_inode * raw_inode;
+ 	int ino, count, sb_count;
+ 
+-	lock_super(sb);
++	mutex_lock(&sbi->s_lock);
+ 
+ 	sb_count = fs16_to_cpu(sbi, *sbi->s_sb_total_free_inodes);
+ 
+@@ -213,7 +213,7 @@ unsigned long sysv_count_free_inodes(struct super_block * sb)
+ 	if (count != sb_count)
+ 		goto Einval;
+ out:
+-	unlock_super(sb);
++	mutex_unlock(&sbi->s_lock);
+ 	return count;
+ 
+ Einval:
+diff --git a/fs/sysv/inode.c b/fs/sysv/inode.c
+index 80e1e2b..c2c5dcf 100644
+--- a/fs/sysv/inode.c
++++ b/fs/sysv/inode.c
+@@ -36,7 +36,7 @@ static int sysv_sync_fs(struct super_block *sb, int wait)
+ 	struct sysv_sb_info *sbi = SYSV_SB(sb);
+ 	unsigned long time = get_seconds(), old_time;
+ 
+-	lock_super(sb);
++	mutex_lock(&sbi->s_lock);
+ 
+ 	/*
+ 	 * If we are going to write out the super block,
+@@ -51,7 +51,7 @@ static int sysv_sync_fs(struct super_block *sb, int wait)
+ 		mark_buffer_dirty(sbi->s_bh2);
+ 	}
+ 
+-	unlock_super(sb);
++	mutex_unlock(&sbi->s_lock);
+ 
+ 	return 0;
+ }
+diff --git a/fs/sysv/super.c b/fs/sysv/super.c
+index 7491c33..a38e87b 100644
+--- a/fs/sysv/super.c
++++ b/fs/sysv/super.c
+@@ -368,6 +368,7 @@ static int sysv_fill_super(struct super_block *sb, void *data, int silent)
+ 
+ 	sbi->s_sb = sb;
+ 	sbi->s_block_base = 0;
++	mutex_init(&sbi->s_lock);
+ 	sb->s_fs_info = sbi;
+ 
+ 	sb_set_blocksize(sb, BLOCK_SIZE);
+diff --git a/fs/sysv/sysv.h b/fs/sysv/sysv.h
+index 0bc35fd..69d4889 100644
+--- a/fs/sysv/sysv.h
++++ b/fs/sysv/sysv.h
+@@ -58,6 +58,7 @@ struct sysv_sb_info {
+ 	u32            s_nzones;	/* same as s_sbd->s_fsize */
+ 	u16	       s_namelen;       /* max length of dir entry */
+ 	int	       s_forced_ro;
++	struct mutex s_lock;
+ };
+ 
+ /*
+-- 
+1.7.3.4
