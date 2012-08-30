@@ -1,39 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312Ab2H3Rr7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 13:47:59 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:35874 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752955Ab2H3Rr6 (ORCPT
+	id S1753612Ab2H3Ryx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 13:54:53 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:65475 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752552Ab2H3Ryu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 13:47:58 -0400
-Message-ID: <1346348875.3512.5.camel@dabdike>
-Subject: Results of the Linux Foundation TAB election
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Tech Board Discuss <Tech-board-discuss@lists.linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        ksummit-2012-discuss@lists.linux-foundation.org
-Date: Thu, 30 Aug 2012 10:47:55 -0700
-In-Reply-To: <1256027994.2905.3.camel@localhost.localdomain>
-References: <1255998022.6006.11.camel@localhost.localdomain>
-	 <1256027994.2905.3.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 30 Aug 2012 13:54:50 -0400
+MIME-Version: 1.0
+Date: Thu, 30 Aug 2012 14:48:33 -0300
+Message-ID: <CAH0vN5Jn1g+zekr-Nd=GizskgbcOGj8zoq+m6OvBiO6Xkw5-UQ@mail.gmail.com>
+Subject: Get the min and max frequency of a processor
+From: Marcos Souza <marcos.souza.org@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As a result of the election at Bali Hai, The five new members of the TAB
-elected to two year terms are:
+Hi people,
 
-Chris Mason <chris.mason@fusionio.com>
-James Bottomley <James.Bottomley@HansenPartnership.com>
-John W. Linville <linville@tuxdriver.com>
-Ric Wheeler <ricwheeler@gmail.com>
-Jesse Barnes <jbarnes@virtuousgeek.org>
+I'm changing an application to get the min and max frequency of a
+processor. The device is using cpufreq, and it will show the user  the
+min and max frequency that we can overclock.
 
-James
+There is a way to get these values, instead of reading the /sys files,
+or is this the solution?
 
+Thanks for your time.
 
+-- 
+Att,
+
+Marcos Paulo de Souza
+Acadêmico de Ciencia da Computação - FURB - SC
+"Uma vida sem desafios é uma vida sem razão"
+"A life without challenges, is a non reason life"
