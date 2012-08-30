@@ -1,10 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242Ab2H3VPr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 17:15:47 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:34841 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753086Ab2H3VO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753104Ab2H3VPq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 17:15:46 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:47845 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753109Ab2H3VO0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 30 Aug 2012 17:14:26 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -24,25 +25,26 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         Stephen Hemminger <shemminger@vyatta.com>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 09/26] x86: Exception hooks for userspace RCU extended QS
-Date: Thu, 30 Aug 2012 14:05:26 -0700
-Message-Id: <1346360743-3628-9-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 04/26] rcu: Settle config for userspace extended quiescent state
+Date: Thu, 30 Aug 2012 14:05:21 -0700
+Message-Id: <1346360743-3628-4-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120830210520.GA2824@linux.vnet.ibm.com>
  <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12083021-5112-0000-0000-00000BA87954
+x-cbid: 12083021-7606-0000-0000-00000334D212
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Frederic Weisbecker <fweisbec@gmail.com>
 
-Add necessary hooks to x86 exception for userspace
-RCU extended quiescent state support.
-
-This includes traps, page fault, debug exceptions, etc...
+Create a new config option under the RCU menu that put
+CPUs under RCU extended quiescent state (as in dynticks
+idle mode) when they run in userspace. This require
+some contribution from architectures to hook into kernel
+and userspace boundaries.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -65,183 +67,119 @@ Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- arch/x86/include/asm/rcu.h |   20 ++++++++++++++++++++
- arch/x86/kernel/traps.c    |   30 ++++++++++++++++++++++--------
- arch/x86/mm/fault.c        |   13 +++++++++++--
- 3 files changed, 53 insertions(+), 10 deletions(-)
- create mode 100644 arch/x86/include/asm/rcu.h
+ arch/Kconfig             |   10 ++++++++++
+ include/linux/rcupdate.h |    8 ++++++++
+ init/Kconfig             |   10 ++++++++++
+ kernel/rcutree.c         |    5 ++++-
+ 4 files changed, 32 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/rcu.h b/arch/x86/include/asm/rcu.h
-new file mode 100644
-index 0000000..439815b
---- /dev/null
-+++ b/arch/x86/include/asm/rcu.h
-@@ -0,0 +1,20 @@
-+#ifndef _ASM_X86_RCU_H
-+#define _ASM_X86_RCU_H
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 72f2fa1..1401a75 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -281,4 +281,14 @@ config SECCOMP_FILTER
+ 
+ 	  See Documentation/prctl/seccomp_filter.txt for details.
+ 
++config HAVE_RCU_USER_QS
++	bool
++	help
++	  Provide kernel entry/exit hooks necessary for userspace
++	  RCU extended quiescent state. Syscalls need to be wrapped inside
++	  rcu_user_exit()-rcu_user_enter() through the slow path using
++	  TIF_NOHZ flag. Exceptions handlers must be wrapped as well. Irqs
++	  are already protected inside rcu_irq_enter/rcu_irq_exit() but
++	  preemption or signal handling on irq exit still need to be protected.
 +
-+#include <linux/rcupdate.h>
-+#include <asm/ptrace.h>
+ source "kernel/gcov/Kconfig"
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 81d3d5c..e411117 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -191,10 +191,18 @@ extern void rcu_idle_enter(void);
+ extern void rcu_idle_exit(void);
+ extern void rcu_irq_enter(void);
+ extern void rcu_irq_exit(void);
 +
-+static inline void exception_enter(struct pt_regs *regs)
-+{
-+	rcu_user_exit();
-+}
-+
-+static inline void exception_exit(struct pt_regs *regs)
-+{
 +#ifdef CONFIG_RCU_USER_QS
-+	if (user_mode(regs))
-+		rcu_user_enter();
+ extern void rcu_user_enter(void);
+ extern void rcu_user_exit(void);
+ extern void rcu_user_enter_irq(void);
+ extern void rcu_user_exit_irq(void);
++#else
++static inline void rcu_user_enter(void) { }
++static inline void rcu_user_exit(void) { }
++#endif /* CONFIG_RCU_USER_QS */
++
++
+ extern void exit_rcu(void);
+ 
+ /**
+diff --git a/init/Kconfig b/init/Kconfig
+index af6c7f8..f6a1830 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -441,6 +441,16 @@ config PREEMPT_RCU
+ 	  This option enables preemptible-RCU code that is common between
+ 	  the TREE_PREEMPT_RCU and TINY_PREEMPT_RCU implementations.
+ 
++config RCU_USER_QS
++	bool "Consider userspace as in RCU extended quiescent state"
++	depends on HAVE_RCU_USER_QS && SMP
++	help
++	  This option sets hooks on kernel / userspace boundaries and
++	  puts RCU in extended quiescent state when the CPU runs in
++	  userspace. It means that when a CPU runs in userspace, it is
++	  excluded from the global RCU state machine and thus doesn't
++	  to keep the timer tick on for RCU.
++
+ config RCU_FANOUT
+ 	int "Tree-based hierarchical RCU fanout value"
+ 	range 2 64 if 64BIT
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 8fdea17..e287c4a 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -424,6 +424,7 @@ void rcu_idle_enter(void)
+ }
+ EXPORT_SYMBOL_GPL(rcu_idle_enter);
+ 
++#ifdef CONFIG_RCU_USER_QS
+ /**
+  * rcu_user_enter - inform RCU that we are resuming userspace.
+  *
+@@ -438,7 +439,6 @@ void rcu_user_enter(void)
+ }
+ EXPORT_SYMBOL_GPL(rcu_user_enter);
+ 
+-
+ /**
+  * rcu_user_enter_irq - inform RCU that we are going to resume userspace
+  * after the current irq returns.
+@@ -459,6 +459,7 @@ void rcu_user_enter_irq(void)
+ 	rdtp->dynticks_nesting = 1;
+ 	local_irq_restore(flags);
+ }
 +#endif
-+}
-+
+ 
+ /**
+  * rcu_irq_exit - inform RCU that current CPU is exiting irq towards idle
+@@ -562,6 +563,7 @@ void rcu_idle_exit(void)
+ }
+ EXPORT_SYMBOL_GPL(rcu_idle_exit);
+ 
++#ifdef CONFIG_RCU_USER_QS
+ /**
+  * rcu_user_exit - inform RCU that we are exiting userspace.
+  *
+@@ -595,6 +597,7 @@ void rcu_user_exit_irq(void)
+ 	rdtp->dynticks_nesting += DYNTICK_TASK_EXIT_IDLE;
+ 	local_irq_restore(flags);
+ }
 +#endif
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index b481341..ab82cbd 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -55,6 +55,7 @@
- #include <asm/i387.h>
- #include <asm/fpu-internal.h>
- #include <asm/mce.h>
-+#include <asm/rcu.h>
  
- #include <asm/mach_traps.h>
- 
-@@ -180,11 +181,15 @@ vm86_trap:
- #define DO_ERROR(trapnr, signr, str, name)				\
- dotraplinkage void do_##name(struct pt_regs *regs, long error_code)	\
- {									\
--	if (notify_die(DIE_TRAP, str, regs, error_code, trapnr, signr)	\
--							== NOTIFY_STOP)	\
-+	exception_enter(regs);						\
-+	if (notify_die(DIE_TRAP, str, regs, error_code,			\
-+			trapnr, signr) == NOTIFY_STOP) {		\
-+		exception_exit(regs);					\
- 		return;							\
-+	}								\
- 	conditional_sti(regs);						\
- 	do_trap(trapnr, signr, str, regs, error_code, NULL);		\
-+	exception_exit(regs);						\
- }
- 
- #define DO_ERROR_INFO(trapnr, signr, str, name, sicode, siaddr)		\
-@@ -195,11 +200,15 @@ dotraplinkage void do_##name(struct pt_regs *regs, long error_code)	\
- 	info.si_errno = 0;						\
- 	info.si_code = sicode;						\
- 	info.si_addr = (void __user *)siaddr;				\
--	if (notify_die(DIE_TRAP, str, regs, error_code, trapnr, signr)	\
--							== NOTIFY_STOP)	\
-+	exception_enter(regs);						\
-+	if (notify_die(DIE_TRAP, str, regs, error_code,			\
-+			trapnr, signr) == NOTIFY_STOP) {		\
-+		exception_exit(regs);					\
- 		return;							\
-+	}								\
- 	conditional_sti(regs);						\
- 	do_trap(trapnr, signr, str, regs, error_code, &info);		\
-+	exception_exit(regs);						\
- }
- 
- DO_ERROR_INFO(X86_TRAP_DE, SIGFPE, "divide error", divide_error, FPE_INTDIV,
-@@ -312,6 +321,7 @@ dotraplinkage void __kprobes notrace do_int3(struct pt_regs *regs, long error_co
- 	    ftrace_int3_handler(regs))
- 		return;
- #endif
-+	exception_enter(regs);
- #ifdef CONFIG_KGDB_LOW_LEVEL_TRAP
- 	if (kgdb_ll_trap(DIE_INT3, "int3", regs, error_code, X86_TRAP_BP,
- 				SIGTRAP) == NOTIFY_STOP)
-@@ -331,6 +341,7 @@ dotraplinkage void __kprobes notrace do_int3(struct pt_regs *regs, long error_co
- 	do_trap(X86_TRAP_BP, SIGTRAP, "int3", regs, error_code, NULL);
- 	preempt_conditional_cli(regs);
- 	debug_stack_usage_dec();
-+	exception_exit(regs);
- }
- 
- #ifdef CONFIG_X86_64
-@@ -391,6 +402,8 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
- 	unsigned long dr6;
- 	int si_code;
- 
-+	exception_enter(regs);
-+
- 	get_debugreg(dr6, 6);
- 
- 	/* Filter out all the reserved bits which are preset to 1 */
-@@ -406,7 +419,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
- 
- 	/* Catch kmemcheck conditions first of all! */
- 	if ((dr6 & DR_STEP) && kmemcheck_trap(regs))
--		return;
-+		goto exit;
- 
- 	/* DR6 may or may not be cleared by the CPU */
- 	set_debugreg(0, 6);
-@@ -421,7 +434,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
- 
- 	if (notify_die(DIE_DEBUG, "debug", regs, PTR_ERR(&dr6), error_code,
- 							SIGTRAP) == NOTIFY_STOP)
--		return;
-+		goto exit;
- 
- 	/*
- 	 * Let others (NMI) know that the debug stack is in use
-@@ -437,7 +450,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
- 					X86_TRAP_DB);
- 		preempt_conditional_cli(regs);
- 		debug_stack_usage_dec();
--		return;
-+		goto exit;
- 	}
- 
- 	/*
-@@ -458,7 +471,8 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
- 	preempt_conditional_cli(regs);
- 	debug_stack_usage_dec();
- 
--	return;
-+exit:
-+	exception_exit(regs);
- }
- 
- /*
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 76dcd9d..7dde46d 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -18,6 +18,7 @@
- #include <asm/pgalloc.h>		/* pgd_*(), ...			*/
- #include <asm/kmemcheck.h>		/* kmemcheck_*(), ...		*/
- #include <asm/fixmap.h>			/* VSYSCALL_START		*/
-+#include <asm/rcu.h>			/* exception_enter(), ...	*/
- 
- /*
-  * Page fault error code bits:
-@@ -1000,8 +1001,8 @@ static int fault_in_kernel_space(unsigned long address)
-  * and the problem, and then passes it off to one of the appropriate
-  * routines.
-  */
--dotraplinkage void __kprobes
--do_page_fault(struct pt_regs *regs, unsigned long error_code)
-+static void __kprobes
-+__do_page_fault(struct pt_regs *regs, unsigned long error_code)
- {
- 	struct vm_area_struct *vma;
- 	struct task_struct *tsk;
-@@ -1209,3 +1210,11 @@ good_area:
- 
- 	up_read(&mm->mmap_sem);
- }
-+
-+dotraplinkage void __kprobes
-+do_page_fault(struct pt_regs *regs, unsigned long error_code)
-+{
-+	exception_enter(regs);
-+	__do_page_fault(regs, error_code);
-+	exception_exit(regs);
-+}
+ /**
+  * rcu_irq_enter - inform RCU that current CPU is entering irq away from idle
 -- 
 1.7.8
 
