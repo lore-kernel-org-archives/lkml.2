@@ -1,83 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754085Ab2H3BMW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 21:12:22 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:38241 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753556Ab2H3BMU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 21:12:20 -0400
-Date: Thu, 30 Aug 2012 10:12:15 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Wensong Zhang <wensong@linux-vs.org>, kernel-janitors@vger.kernel.org,
-        Julian Anastasov <ja@ssi.bg>, Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        lvs-devel@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org, coreteam@netfilter.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/7] ipvs: fix error return code
-Message-ID: <20120830011215.GL4127@verge.net.au>
-References: <1346258957-7649-1-git-send-email-Julia.Lawall@lip6.fr>
- <1346258957-7649-2-git-send-email-Julia.Lawall@lip6.fr>
+	id S1754102Ab2H3BON (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 21:14:13 -0400
+Received: from mail.lang.hm ([64.81.33.126]:35253 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753556Ab2H3BOM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 21:14:12 -0400
+Date: Wed, 29 Aug 2012 18:14:02 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: "Theodore Ts'o" <tytso@mit.edu>
+cc: "H. Peter Anvin" <hpa@zytor.com>, Brian Gerst <brgerst@gmail.com>,
+        wbrana <wbrana@gmail.com>, Martin Nybo Andersen <tweek@tweek.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Drop support for x86-32
+In-Reply-To: <20120824185741.GC5094@thunk.org>
+Message-ID: <alpine.DEB.2.02.1208291812590.13536@asgard.lang.hm>
+References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com> <201208231814.21168.tweek@tweek.dk> <CAJ7jCmmJ4DrGkebgG1a03+grs5PX3D86thdZ5mK361CYNaP6HQ@mail.gmail.com> <CAMzpN2ioV-DjNDKJQwKebSRAuGO=BnYMtutLWPRoUOqx_sA-3g@mail.gmail.com>
+ <5037C530.3000408@zytor.com> <20120824185741.GC5094@thunk.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346258957-7649-2-git-send-email-Julia.Lawall@lip6.fr>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 29, 2012 at 06:49:11PM +0200, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> Initialize return variable before exiting on an error path.
-> 
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> (
-> if@p1 (\(ret < 0\|ret != 0\))
->  { ... return ret; }
-> |
-> ret@p1 = 0
-> )
-> ... when != ret = e1
->     when != &ret
-> *if(...)
-> {
->   ... when != ret = e2
->       when forall
->  return ret;
-> }
-> 
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> ---
->  net/netfilter/ipvs/ip_vs_ctl.c |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
-> index 3c60137..767cc12 100644
-> --- a/net/netfilter/ipvs/ip_vs_ctl.c
-> +++ b/net/netfilter/ipvs/ip_vs_ctl.c
-> @@ -1171,8 +1171,10 @@ ip_vs_add_service(struct net *net, struct ip_vs_service_user_kern *u,
->  		goto out_err;
->  	}
->  	svc->stats.cpustats = alloc_percpu(struct ip_vs_cpu_stats);
-> -	if (!svc->stats.cpustats)
-> +	if (!svc->stats.cpustats) {
-> +		ret = -ENOMEM;
->  		goto out_err;
-> +	}
->  
->  	/* I'm the first user of the service */
->  	atomic_set(&svc->usecnt, 0);
+On Fri, 24 Aug 2012, Theodore Ts'o wrote:
 
-Acked-by: Simon Horman <horms@verge.net.au>
+> On Fri, Aug 24, 2012 at 11:17:20AM -0700, H. Peter Anvin wrote:
+>>
+>> Speaking as one of the x86 maintainers... we are currently deciding the
+>> cost/benefit tradeoff around removing i386 support.  I don't mean
+>> general x86-32 support, I mean i386 as opposed to i486, Pentium, and so on.
+>
+> Random question.  As I recall the Space Shuttle and the International
+> Space Station was only using 80386's because they have to be hardened
+> against radiation/cosmic rays, as well as all of the other mechnical
+> and thermal stresses associated with being in a spacecraft.  Is there
+> any newer generation cpu's which are space-cerified at this point?
+>
+> (Of course, I'm rather doubtful that NASA would ever be willing to use
+> Linux on something like the Curiosity Mars Rover, but I could imagine
+> Linux being used in a non-mission critcal system on the ISS....)
+
+I've heard that there are radiation hardened versions of the 80486 (I 
+could be wrong, it's not something that I've ever needed to investigate)
+
+David Lang
