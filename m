@@ -1,121 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754781Ab2H3Cj1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 22:39:27 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39516 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754726Ab2H3CjP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 22:39:15 -0400
-X-Sasl-enc: BsFfuVqC75dyGxZbAct4qBpwZPVdORlbwcpM5iQgWFRk 1346294354
-From: Alan Ott <alan@signal11.us>
-To: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Tony Cheneau <tony.cheneau@amnesiak.org>
-Cc: linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alan Ott <alan@signal11.us>
-Subject: [PATCH v2 2/2] 6lowpan: handle NETDEV_UNREGISTER event
-Date: Wed, 29 Aug 2012 22:39:01 -0400
-Message-Id: <1346294341-26808-3-git-send-email-alan@signal11.us>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1346294341-26808-1-git-send-email-alan@signal11.us>
-References: <1346294341-26808-1-git-send-email-alan@signal11.us>
+	id S1754738Ab2H3D15 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 23:27:57 -0400
+Received: from www.hansjkoch.de ([178.63.77.200]:50361 "EHLO www.hansjkoch.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754024Ab2H3D14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 23:27:56 -0400
+Date: Thu, 30 Aug 2012 05:27:50 +0200
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: "Worth, Kevin" <kevin.worth@hp.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        u.kleine-koenig@pengutronix.de
+Subject: Re: Using uio_pdrv to create an platform device for an FPGA, mmap()
+ fails
+Message-ID: <20120830032735.GA2599@local>
+References: <B5EF724456FFB24A8C8AE88E26CE8F4B668404B8@G9W0725.americas.hpqcorp.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <B5EF724456FFB24A8C8AE88E26CE8F4B668404B8@G9W0725.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before, it was impossible to remove a wpan device which had lowpan
-attached to it.
+[Added driver author to Cc:]
 
-Signed-off-by: Alan Ott <alan@signal11.us>
----
- net/ieee802154/6lowpan.c |   44 +++++++++++++++++++++++++++++++++++++-------
- 1 files changed, 37 insertions(+), 7 deletions(-)
+On Wed, Aug 29, 2012 at 11:19:00PM +0000, Worth, Kevin wrote:
+> I have below what appears to be a mostly-functional device using the UIO Platform Driver. The /sys entries I'd expect appear,  /proc/iomem contains " d0000000-d0000fff : myfpga", and lsuio sees the properties that I've set. However an mmap() from userspace (either my test program below or lsuio) fails. So close! (at least it would seem)
+> 
+> Finding a good example for this did not come easily (which is why I'm hitting LKML, since I know it'll get a lot of eyeballs and be archived). Maybe there was something obvious I missed, but the only "official" documentation I could locate was http://www.kernel.org/doc/htmldocs/uio-howto.html#using_uio_pdrv , and most everything else was snippets from presentations, papers, and forums that lacked completeness.
+> 
+> Thanks for the help any might be able to offer.
+> Please CC me on replies as I'm not ready to drink from the fire hose that is an LKML subscription.
+> 
+> # lsuio -v -m
+> uio0: name=uio_myfpga, version=0.1, events=0
+>         map[0]: addr=0xD0000000, size=4096, mmap test: FAILED
+>         Device attributes:
+>         uevent=DRIVER=uio_pdrv
+>         modalias=platform:uio_pdrv
+> 
+> ------Kernelspace portion-------
+> 
+> #include <linux/platform_device.h>
+> #include <linux/uio_driver.h>
+> #include <linux/module.h>
+> 
+> #define MYFPGA_BASE     0xd0000000 // 3G
+> #define MYFPGA_SIZE     0x00040000 // 256k
+> 
+> static struct resource myfpga_resources[] = {
+>         {
+>                 .start  = MYFPGA_BASE,
+>                 .end    = MYFPGA_BASE + MYFPGA_SIZE - 1,
+>                 .name   = "myfpga",
+>                 .flags  = IORESOURCE_MEM
+>         }
+> };
+> 
+> static struct uio_info myfpga_uio_info = {
+>    .name = "uio_myfpga",
+>    .version = "0.1",
+>    .irq = UIO_IRQ_CUSTOM,
+>    .mem = {
+>         {
+>             .name = "myfpga",
+>             .memtype = UIO_MEM_PHYS,
+>             .addr = MYFPGA_BASE,
+>             .size = MYFPGA_SIZE
+>         }
+>     }
+> };
+> 
+> static struct platform_device_info myfpga_uio_pdevinfo = {
+>     .name = "uio_pdrv",
+>     .id = -1,
+>     .res = myfpga_resources,
+>     .num_res = 1,
+>     .data = &myfpga_uio_info,
+>     .size_data = sizeof(struct uio_info)
+> };
+> 
+> static struct platform_device *myfpga_uio_pdev;
+> 
+> static int __init myfpga_init(void)
+> {
+>     myfpga_uio_pdev = platform_device_register_full(&myfpga_uio_pdevinfo);
+>     if (IS_ERR(myfpga_uio_pdev)) {
+>         return PTR_ERR(myfpga_uio_pdev);
+>     }
+> 
+>     return 0;
+> }
+> 
+> static void __exit myfpga_exit(void)
+> {
+>     platform_device_unregister(myfpga_uio_pdev);
+> }
+> 
+> module_init(myfpga_init);
+> module_exit(myfpga_exit);
+> 
+> ------Userspace portion-------
+> 
+> #include <sys/types.h>
+> #include <sys/mman.h>
+> #include <sys/stat.h>
+> 
+> #include <dirent.h>
+> #include <string.h>
+> #include <stdlib.h>
+> #include <stdio.h>
+> #include <fcntl.h>
+> #include <unistd.h>
+> 
+> #define MYFPGA_BASE     0xd0000000 // 3G
+> #define MYFPGA_SIZE     0x00040000 // 256k
+> #define MYFPGA_UIO_NUM  0          // uio0
 
-diff --git a/net/ieee802154/6lowpan.c b/net/ieee802154/6lowpan.c
-index ce33b02..fb41e08 100644
---- a/net/ieee802154/6lowpan.c
-+++ b/net/ieee802154/6lowpan.c
-@@ -1063,12 +1063,6 @@ out:
- 	return (err < 0 ? NETDEV_TX_BUSY : NETDEV_TX_OK);
- }
- 
--static void lowpan_dev_free(struct net_device *dev)
--{
--	dev_put(lowpan_dev_info(dev)->real_dev);
--	free_netdev(dev);
--}
--
- static struct wpan_phy *lowpan_get_phy(const struct net_device *dev)
- {
- 	struct net_device *real_dev = lowpan_dev_info(dev)->real_dev;
-@@ -1118,7 +1112,7 @@ static void lowpan_setup(struct net_device *dev)
- 	dev->netdev_ops		= &lowpan_netdev_ops;
- 	dev->header_ops		= &lowpan_header_ops;
- 	dev->ml_priv		= &lowpan_mlme;
--	dev->destructor		= lowpan_dev_free;
-+	dev->destructor		= free_netdev;
- }
- 
- static int lowpan_validate(struct nlattr *tb[], struct nlattr *data[])
-@@ -1244,6 +1238,34 @@ static inline void __init lowpan_netlink_fini(void)
- 	rtnl_link_unregister(&lowpan_link_ops);
- }
- 
-+static int lowpan_device_event(struct notifier_block *unused,
-+				unsigned long event,
-+				void *ptr)
-+{
-+	struct net_device *dev = ptr;
-+	LIST_HEAD(del_list);
-+	struct lowpan_dev_record *entry, *tmp;
-+
-+	if (dev->type != ARPHRD_IEEE802154)
-+		goto out;
-+
-+	if (event == NETDEV_UNREGISTER) {
-+		list_for_each_entry_safe(entry, tmp, &lowpan_devices, list) {
-+			if (lowpan_dev_info(entry->ldev)->real_dev == dev)
-+				lowpan_dellink(entry->ldev, &del_list);
-+		}
-+
-+		unregister_netdevice_many(&del_list);
-+	};
-+
-+out:
-+	return NOTIFY_DONE;
-+}
-+
-+static struct notifier_block lowpan_dev_notifier = {
-+	.notifier_call = lowpan_device_event,
-+};
-+
- static struct packet_type lowpan_packet_type = {
- 	.type = __constant_htons(ETH_P_IEEE802154),
- 	.func = lowpan_rcv,
-@@ -1258,6 +1280,12 @@ static int __init lowpan_init_module(void)
- 		goto out;
- 
- 	dev_add_pack(&lowpan_packet_type);
-+
-+	err = register_netdevice_notifier(&lowpan_dev_notifier);
-+	if (err < 0) {
-+		dev_remove_pack(&lowpan_packet_type);
-+		lowpan_netlink_fini();
-+	}
- out:
- 	return err;
- }
-@@ -1270,6 +1298,8 @@ static void __exit lowpan_cleanup_module(void)
- 
- 	dev_remove_pack(&lowpan_packet_type);
- 
-+	unregister_netdevice_notifier(&lowpan_dev_notifier);
-+
- 	/* Now 6lowpan packet_type is removed, so no new fragments are
- 	 * expected on RX, therefore that's the time to clean incomplete
- 	 * fragments.
--- 
-1.7.0.4
+That's misleading regarding its use below. The factor you need for mmap
+is the number of the mapping, not uio0, uio1...
 
+> 
+> int main (int argc, char *argv[])
+> {
+>     int fd;
+>     void *iomem;
+>     fd = open("/dev/uio0", O_RDWR|O_SYNC);
+
+Does it work with O_RDWR ?
+
+Thanks,
+Hans
+
+>     if (fd < 0) {
+>         printf("failed to open /dev/uio0, quitting\n");
+>         return -1;
+>     }
+>     /* Note offset has a special meaning with uio devices */
+>     iomem = mmap(NULL, MYFPGA_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd,
+>                  MYFPGA_UIO_NUM * getpagesize());
+>     if (iomem == MAP_FAILED) {
+>         printf("mmap failed, quitting\n");
+>         close(fd);
+>         return -2;
+>     }
+>     printf("mmap successful!\n");
+>     munmap(iomem, MYFPGA_SIZE);
+>     close(fd);
+>     return 0;
+> }
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
