@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752355Ab2H3NMf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 09:12:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36071 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752171Ab2H3NMe (ORCPT
+	id S1752220Ab2H3NSP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 09:18:15 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:63341 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751779Ab2H3NSN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 09:12:34 -0400
-Subject: Re: [PATCH 1/1] tcp: Wrong timeout for SYN segments
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "H.K. Jerry Chu" <hkjerry.chu@gmail.com>
-Cc: Alexander Bergmann <alex@linlab.net>, David Miller <davem@davemloft.net>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <CAFbMe2PG90X7s6s970+XK3X0Jvzx4p6vhvM+JQCwtULPvs1QLw@mail.gmail.com>
-References: <1345724123.5904.756.camel@edumazet-glaptop>
-	 <50362407.9070805@linlab.net> <1345726185.5904.835.camel@edumazet-glaptop>
-	 <20120824.134231.41073001349178209.davem@davemloft.net>
-	 <20120825084819.GD430@linlab.net>
-	 <CAFbMe2Pgjbttt+Z3RQ9KL05=GHqZYk5ubNH2G1-EUn_f_RBaEQ@mail.gmail.com>
-	 <1346230305.2522.15.camel@edumazet-glaptop>
-	 <CAFbMe2PG90X7s6s970+XK3X0Jvzx4p6vhvM+JQCwtULPvs1QLw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 30 Aug 2012 06:12:30 -0700
-Message-ID: <1346332350.2586.10.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 30 Aug 2012 09:18:13 -0400
+Date: Thu, 30 Aug 2012 14:18:08 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, linus.walleij@stericsson.com,
+        arnd@arndb.de, broonie@opensource.wolfsonmicro.com,
+        STEricsson_nomadik_linux@list.st.com,
+        Patrice CHOTARD <patrice.chotard@stericsson.com>,
+        Ola LILJA2 <ola.o.lilja@stericsson.com>
+Subject: Re: [PATCH 04/22] ASoC: Ux500: Move MSP pinctrl setup into the MSP
+ driver
+Message-ID: <20120830131807.GI14145@gmail.com>
+References: <1344527268-5964-1-git-send-email-lee.jones@linaro.org>
+ <1344527268-5964-5-git-send-email-lee.jones@linaro.org>
+ <CACRpkda_xOyu9BFGRK4xTsXOO9RCJu7BbU-kPGpttVkR6mDMZg@mail.gmail.com>
+ <20120820115914.GP8450@gmail.com>
+ <CACRpkdZse9Nq1acoAujV8ojhRKxykNX0ymcr51QAoanUbDW14g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdZse9Nq1acoAujV8ojhRKxykNX0ymcr51QAoanUbDW14g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-08-29 at 10:25 -0700, H.K. Jerry Chu wrote:
-
-> But it probably matter slightly more for TCP Fast Open (the server
-> side patch has
-> been completed and will be posted soon, after I finish breaking it up
-> into smaller
-> pieces for ease of review purpose), when a full socket will be created with data
-> passed to the app upon a valid SYN+data. Dropping a fully functioning socket
-> won't be the same as dropping a request_sock unknown to the app and letting
-> the other side retransmitting SYN (w/o data this time).
+On Mon, Aug 27, 2012 at 04:09:46PM -0700, Linus Walleij wrote:
+> On Mon, Aug 20, 2012 at 4:59 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> > On Tue, Aug 14, 2012 at 10:51:02AM +0200, Linus Walleij wrote:
 > 
+> >> But wait. These are just local statics. Surelty you can put these into
+> >> struct ux500_msp instead? Here it looks like these will be used for
+> >> all ports, so MSP2 will enable the pins requested by MSP1 etc
+> >> completely broken. So put it into the struct ux500_msp state
+> >> container from ux500_msp_i2s.h where it belongs.
+> >>
+> >> Refer to drivers/tty/serial/amba-pl011.c when in trouble. This
+> >> one is a good pinctrl example.
 > >
-> > Sure, RFC numbers are what they are, but in practice, I doubt someone
-> > will really miss the extra SYNACK sent after ~32 seconds, since it would
-> > matter only for the last SYN attempted.
+> > How do you see the MSP1 and MSP3 usage protection working if I hide it
+> > all away in MSP specific structs?
 > 
-> I'd slightly prefer 1 extra retry plus longer wait time just to make
-> TCP Fast Open
-> a little more robust (even though the app protocol is required to be
-> idempotent).
-> But this is not a showstopper.
+> Usage protection? Sorry not following. Please elaborate...
 
-Thats very good points indeed, thanks.
+Don't worry about it, I think I sorted it.
 
-Maybe we can increase SYNACK max retrans only if the FastOpen SYN cookie
-was validated.
+Please see the lastest version of the patch (sent on 24th Aug).
 
-This way, we increase reliability without amplifying the effect of wild
-SYN packets.
-
-
-
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
