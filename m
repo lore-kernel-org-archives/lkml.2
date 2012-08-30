@@ -1,143 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751380Ab2H3FQo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 01:16:44 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:8611 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003Ab2H3FQm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 01:16:42 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 29 Aug 2012 22:10:20 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "ccross@android.com" <ccross@android.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Date: Thu, 30 Aug 2012 10:46:35 +0530
-Subject: RE: [PATCH] usb: tegra: moving phy driver into drivers directory
-Thread-Topic: [PATCH] usb: tegra: moving phy driver into drivers directory
-Thread-Index: Ac2GC/3mxs+l0Rh7TRWx3TkhiZJcaAAYoj9Q
-Message-ID: <D958900912E20642BCBC71664EFECE3E6DDE14DF54@BGMAIL02.nvidia.com>
-References: <1346146338-4996-1-git-send-email-vbyravarasu@nvidia.com>
- <503CD0A0.7080300@wwwdotorg.org>
- <D958900912E20642BCBC71664EFECE3E6DDE14DD7C@BGMAIL02.nvidia.com>
- <503E51C9.7000606@wwwdotorg.org>
-In-Reply-To: <503E51C9.7000606@wwwdotorg.org>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751473Ab2H3FTn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 01:19:43 -0400
+Received: from mga02.intel.com ([134.134.136.20]:11681 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751019Ab2H3FTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 01:19:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,337,1344236400"; 
+   d="scan'208";a="193233520"
+From: gang.wei@intel.com
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, gregkh@linuxfoundation.org,
+        joseph.cihula@intel.com, hpa@zytor.com,
+        richard.l.maliszewski@intel.com, shane.wang@intel.com,
+        tboot-devel@lists.sourceforge.net, mingo@redhat.com,
+        tglx@linutronix.de, Gang Wei <gang.wei@intel.com>
+Subject: [PATCH] MAINTAINERS: fix TXT maintainer list and source repo path
+Date: Thu, 30 Aug 2012 13:19:36 +0800
+Message-Id: <1346303976-26721-1-git-send-email-gang.wei@intel.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-tegra-owner@vger.kernel.org [mailto:linux-tegra-
-> owner@vger.kernel.org] On Behalf Of Stephen Warren
-> Sent: Wednesday, August 29, 2012 11:01 PM
-> To: Venu Byravarasu
-> Cc: ccross@android.com; olof@lixom.net; linux@arm.linux.org.uk;
-> stern@rowland.harvard.edu; gregkh@linuxfoundation.org; balbi@ti.com;
-> linux-kernel@vger.kernel.org; linux-tegra@vger.kernel.org; linux-arm-
-> kernel@lists.infradead.org; linux-usb@vger.kernel.org
-> Subject: Re: [PATCH] usb: tegra: moving phy driver into drivers directory
-> 
-> On 08/28/12 22:17, Venu Byravarasu wrote:
-> > Stephen Warren wrote at Tuesday, August 28, 2012 7:37 PM:
-> >> On 08/28/2012 02:32 AM, Venu Byravarasu wrote:
-> >>> In order to keep up with the USB driver files organization,
-> >>> moving USB phy driver from mach-tegra to drivers/USB directory.
-> >>>
-> >>> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
-> >>
-> >>> diff --git a/arch/arm/mach-tegra/devices.c b/arch/arm/mach-
-> >> tegra/devices.c
-> >>
-> >>> -struct tegra_ulpi_config tegra_ehci2_ulpi_phy_config = {
-> >>> -	.reset_gpio = -1,
-> >>> -	.clk = "cdev2",
-> >>> -};
-> >>> -
-> >>>   struct tegra_ehci_platform_data tegra_ehci1_pdata = {
-> >>>   	.operating_mode = TEGRA_USB_OTG,
-> >>>   	.power_down_on_bus_suspend = 1,
-> >>> @@ -450,7 +444,7 @@ struct tegra_ehci_platform_data
-> tegra_ehci1_pdata
-> >> = {
-> >>>   };
-> >>>
-> >>>   struct tegra_ehci_platform_data tegra_ehci2_pdata = {
-> >>> -	.phy_config = &tegra_ehci2_ulpi_phy_config,
-> >>> +	.phy_config = NULL,
-> >>
-> >> The PHY driver checks that field isn't NULL, and fails if it is:
-> >>
-> >>> struct tegra_usb_phy *tegra_usb_phy_open(struct device *dev, int
-> >> instance,
-> >>>          void __iomem *regs, void *config, enum tegra_usb_phy_mode
-> >> phy_mode)
-> >>> {
-> >> ...
-> >>>          phy->config = config;
-> >>>          phy->mode = phy_mode;
-> >>>
-> >>>          if (!phy->config) {
-> >>>                  if (phy_is_ulpi(phy)) {
-> >>>                          pr_err("%s: ulpi phy configuration missing", __func__);
-> >>>                          err = -EINVAL;
-> >>>                          goto err0;
-> >>
-> >> So, this change will completely break ULPI support, which currently
-> >> works fine. So, NAK.
-> >
-> > My initial plan was to add support for phy interfaces one by one.
-> > As part of that thought of UTMI only support at first and then add
-> > ULPI and HSIC in next patches.
-> > However as you were mentioning that it is not correct way, will
-> > push ULPI & UTMI support at once in next patches.
-> 
-> But with the existing code, both ULPI and UTMI work. This patch breaks
-> something that already works.
-> 
-> >> I also plan on deleting devices.[ch] in kernel 3.7, and moving the USB
-> >> platform data into board-dt-tegra20.c, since that's the only place it's
-> >> used right now. So, this patch would conflict with that rather badly. I
-> >> just posted the patches for that to the linux-tegra mailing list last
-> >> night. Do you have better proposals for that? Perhaps usb_phy.c should
-> >> set phy->config to &ulpi_default in a similar fashion to how it works
-> >> for UTMI; that would remove some of the coupling between the changes.
-> >>
-> >> BTW, in your response to Felipe, you said...
-> >>
-> >>> Thanks Felipe for your comments.
-> >>> Created a patch to separate out phy related stuff to phy.h with you as a
-> >> reviewer.
-> >>> Plz let me know your comments.
-> >>
-> >> ... where is that patch?
-> >
-> > Plz see https://lkml.org/lkml/2012/8/28/58
-> 
-> Doesn't that link point at the patch I replied to?
+From: Gang Wei <gang.wei@intel.com>
 
-Sorry, by mistake I sent the wrong one.
-Here is the correct one: https://lkml.org/lkml/2012/8/29/40  
+Signed-off-by: Gang Wei <gang.wei@intel.com>
+---
+ MAINTAINERS |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/MAINTAINERS b/MAINTAINERS
+index fdc0119..987ad0f 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -3666,11 +3666,12 @@ F:	Documentation/networking/README.ipw2200
+ F:	drivers/net/wireless/ipw2x00/
+ 
+ INTEL(R) TRUSTED EXECUTION TECHNOLOGY (TXT)
+-M:	Joseph Cihula <joseph.cihula@intel.com>
++M:	Richard L Maliszewski <richard.l.maliszewski@intel.com>
++M:	Gang Wei <gang.wei@intel.com>
+ M:	Shane Wang <shane.wang@intel.com>
+ L:	tboot-devel@lists.sourceforge.net
+ W:	http://tboot.sourceforge.net
+-T:	Mercurial http://www.bughost.org/repos.hg/tboot.hg
++T:	Mercurial http://tboot.hg.sourceforge.net:8000/hgroot/tboot/tboot
+ S:	Supported
+ F:	Documentation/intel_txt.txt
+ F:	include/linux/tboot.h
+-- 
+1.7.7.6
+
