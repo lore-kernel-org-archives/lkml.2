@@ -1,119 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751626Ab2H3FzR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 01:55:17 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33563 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751187Ab2H3FzO (ORCPT
+	id S1751737Ab2H3GVd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 02:21:33 -0400
+Received: from [216.32.181.182] ([216.32.181.182]:52593 "EHLO
+	ch1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751337Ab2H3GVb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 01:55:14 -0400
-Message-ID: <1346306092.17040.3.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 05/13] overlayfs: add statfs support
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hch@infradead.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        apw@canonical.com, nbd@openwrt.org, neilb@suse.de, hramrach@centrum.cz,
-        jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu, ricwheeler@gmail.com,
-        dhowells@redhat.com, hpj@urpla.net, sedat.dilek@googlemail.com,
-        penberg@kernel.org, goran.cetusic@gmail.com, romain@orebokech.com
-Date: Wed, 29 Aug 2012 22:54:52 -0700
-In-Reply-To: <87d32971s3.fsf@tucsk.pomaz.szeredi.hu>
-References: <1345045700-9062-1-git-send-email-miklos@szeredi.hu>
-	 <1345045700-9062-6-git-send-email-miklos@szeredi.hu>
-	 <20120817182051.GC29217@decadent.org.uk>
-	 <87d32971s3.fsf@tucsk.pomaz.szeredi.hu>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-AgvoFoIwubN+Yx+faXMV"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 12.105.246.2
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Thu, 30 Aug 2012 02:21:31 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -8
+X-BigFish: VS-8(zz98dI9371I936eI542M1432Izz1202hzzz2dh2a8h668h839h8e2h8e3h93fhd25hf0ah107ahbe9i1155h)
+From: Liu Qiang-B32616 <B32616@freescale.com>
+To: Dan Williams <djbw@fb.com>
+CC: "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "herbert@gondor.apana.org.au" <herbert@gondor.hengli.com.au>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "Ira W. Snyder" <iws@ovro.caltech.edu>
+Subject: RE: [PATCH v7 0/8] Raid: enable talitos xor offload for improving
+ performance
+Thread-Topic: [PATCH v7 0/8] Raid: enable talitos xor offload for improving
+ performance
+Thread-Index: AQHNdge1qBCFxaP1ski951Lb3NNwmpdSCXOAgAb6eMCAARMaAIAWq2TggACRSoCAAKiWQA==
+Date: Thu, 30 Aug 2012 06:20:05 +0000
+Message-ID: <BCB48C05FCE8BC4D9E61E841ECBE6DB70FC695@039-SN2MPN1-011.039d.mgd.msft.net>
+References: <1344500375-8457-1-git-send-email-qiang.liu@freescale.com>
+	 <20120809170307.GG14264@ovro.caltech.edu>
+	 <BCB48C05FCE8BC4D9E61E841ECBE6DB70E3D47@039-SN2MPN1-013.039d.mgd.msft.net>
+	 <CAA9_cme4tHrx14JaSaHwgcGq79qQK5bv8E205fbC3ega5OpUiQ@mail.gmail.com>
+	 <BCB48C05FCE8BC4D9E61E841ECBE6DB70FC3CA@039-SN2MPN1-011.039d.mgd.msft.net>
+ <1346251975.27020.2.camel@localhost.localdomain>
+In-Reply-To: <1346251975.27020.2.camel@localhost.localdomain>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.208.99]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7U6MXkT023946
 
-
---=-AgvoFoIwubN+Yx+faXMV
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-On Thu, 2012-08-30 at 00:48 +0200, Miklos Szeredi wrote:
-> Ben Hutchings <ben@decadent.org.uk> writes:
->=20
-> > On Wed, Aug 15, 2012 at 05:48:12PM +0200, Miklos Szeredi wrote:
-> >> From: Andy Whitcroft <apw@canonical.com>
-> >>=20
-> >> Add support for statfs to the overlayfs filesystem.  As the upper laye=
-r
-> >> is the target of all write operations assume that the space in that
-> >> filesystem is the space in the overlayfs.  There will be some inaccura=
-cy as
-> >> overwriting a file will copy it up and consume space we were not expec=
-ting,
-> >> but it is better than nothing.
-> >>=20
-> >> Use the upper layer dentry and mount from the overlayfs root inode,
-> >> passing the statfs call to that filesystem.
-> > [...]=20
-> >> +/**
-> >> + * ovl_statfs
-> >> + * @sb: The overlayfs super block
-> >> + * @buf: The struct kstatfs to fill in with stats
-> >> + *
-> >> + * Get the filesystem statistics.  As writes always target the upper =
-layer
-> >> + * filesystem pass the statfs to the same filesystem.
-> >> + */
-> >> +static int ovl_statfs(struct dentry *dentry, struct kstatfs *buf)
-> >> +{
-> >> +	struct dentry *root_dentry =3D dentry->d_sb->s_root;
-> >> +	struct path path;
-> >> +	ovl_path_upper(root_dentry, &path);
-> >> +
-> >> +	if (!path.dentry->d_sb->s_op->statfs)
-> >> +		return -ENOSYS;
-> >> +	return path.dentry->d_sb->s_op->statfs(path.dentry, buf);
-> >> +}
-> > [...]
+> -----Original Message-----
+> From: Dan Williams [mailto:djbw@fb.com]
+> Sent: Wednesday, August 29, 2012 10:53 PM
+> To: Liu Qiang-B32616
+> Cc: vinod.koul@intel.com; arnd@arndb.de; herbert@gondor.apana.org.au;
+> gregkh@linuxfoundation.org; linuxppc-dev@lists.ozlabs.org; linux-
+> kernel@vger.kernel.org; linux-crypto@vger.kernel.org; Ira W. Snyder
+> Subject: Re: [PATCH v7 0/8] Raid: enable talitos xor offload for
+> improving performance
+> 
+> On Wed, 2012-08-29 at 11:15 +0000, Liu Qiang-B32616 wrote:
+> > Hi Dan,
 > >
-> > In case f_namelen differs between the upper and lower filesystems, you
-> > need to return the greater of the two.
->=20
-> Maybe.  I've never seen any app use f_namelen for anything useful.
-[...]
+> > Ping?
+> > Can you apply these patches? Thanks.
+> >
+> 
+> I'm working my way through them.
+> 
+> The first thing I notice is that xor_chan->desc_lock is taken
+> inconsistently.  I.e. spin_lock_irqsave() in talitos_process_pending()
+> and spin_lock_bh() everywhere else.  Have you run these patches with
+> lockdep?
+Thanks for your reply.
+LOCKDEP is enabled as you suggested, there is not any info about "inconsistent lock state" displayed.
+I don't know whether it's enough.
 
-If I'm not mistaken, glibc uses it to implement pathconf(_PC_NAME_MAX),
-which may be used by applications in conjunction with readdir_r().
+I'm confused about the attribute of DMA_INTERRUPT, my understanding is this interface is only used to trigger an interrupt (make sure all former operations are finished before switching to other channels), but fsl-dma will trigger an interrupt by "Programmed Error". I'm wondering whether other hardware are same with fsl-dma (the interrupt is a normal interrupt, but not an error) i.e. xscale-iop?
+If other hardware also trigger an interrupt by an abnormal error, maybe my patch 2/8 should be reverted because it violates the rules of this attribute.
 
-Ben.
+BTW, could you please reply in the patch if you have any comments. Thanks.
 
---=20
-Ben Hutchings
-Quantity is no substitute for quality, but it's the only one we've got.
+> 
+> --
+> Dan
+> 
+> 
 
---=-AgvoFoIwubN+Yx+faXMV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUD8ALOe/yOyVhhEJAQrZdBAAzDzHq5d0/S4glu2sUbcaZcu9f62QiNkO
-dm8HJK9g04a20K8wCI3OPrqZDT655RXZcfTRbLMPaC1Cj/5ZNLGKxU1Pr4QayrwI
-QbWxmJ2k8FU5u4o+BH+4PHD7ZZZNyoqHfw9uQsQjntSBaDaZx038SqP/euxqcLo5
-0Ap55/HsCKDtjcxI6DqEHKhSIGFYIRfuyhgOLso0wh+TH4fqMqWqlS8UXYmr1MBr
-AMqjJoiiboDZw01lFtqJ+Nb7Ljr/1ZKxzvl223dNek0kDkQ7AtdBgiZDwOWeolRZ
-XCflj1InNF9jvko3W3OUGD7unyS+wREmJHvltshrd+tFN5GVtIz6/Be926XbjZXV
-cdjehGQ7LrXllfL+Q539BGYeu3qrcxONzGiYo+MyO8/P+K/rznHAi7/SSwyG3DrR
-+qU+BHEzxy6k94g7nkk9e3cAzphlAUWCZ7kscLo29pTYfn/gs9wXshN3GGdT8xSl
-Bwgq+UvCXelDoHs/cUhFR2UTkUmIxLWBV23J53qShjfZGeE+T5SpsKVIn36IAwvz
-EAvOGV4zD1cinVxzNriAqveDUSEbjiwRo7YZ60aeYRc5RB1pzfHvNlJe7KUQy0Mt
-2JHSOc3cIta+e6i75mytiCuReKREbr9CInmdMxaEICa6YDwFUZ8gmfDFbMfr5pGu
-ViqlpEIHUb4=
-=FCko
------END PGP SIGNATURE-----
-
---=-AgvoFoIwubN+Yx+faXMV--
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
