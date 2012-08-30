@@ -1,156 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545Ab2H3WJt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 18:09:49 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:43505 "EHLO bear.ext.ti.com"
+	id S1752828Ab2H3WYQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 18:24:16 -0400
+Received: from www.hansjkoch.de ([178.63.77.200]:50392 "EHLO www.hansjkoch.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751598Ab2H3WJs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 18:09:48 -0400
-From: "Karicheri, Muralidharan" <m-karicheri2@ti.com>
-To: Rob Herring <robherring2@gmail.com>
-CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] of: add devres version of of_iomap
-Thread-Topic: [PATCH] of: add devres version of of_iomap
-Thread-Index: AQHNht0PFTEfSZn2K0+pq9hvwRnh6pdy5toQ
-Date: Thu, 30 Aug 2012 22:09:40 +0000
-Message-ID: <3E54258959B69E4282D79E01AB1F32B7041AD91C@DFLE12.ent.ti.com>
-References: <1346340744-22218-1-git-send-email-m-karicheri2@ti.com>
- <503FB074.7080702@gmail.com>
-In-Reply-To: <503FB074.7080702@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [128.247.5.50]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752300Ab2H3WYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 18:24:15 -0400
+Date: Fri, 31 Aug 2012 00:24:08 +0200
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: "Worth, Kevin" <kevin.worth@hp.com>
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: Using uio_pdrv to create an platform device for an FPGA, mmap()
+ fails
+Message-ID: <20120830222408.GC4819@local>
+References: <B5EF724456FFB24A8C8AE88E26CE8F4B668404B8@G9W0725.americas.hpqcorp.net>
+ <20120830032735.GA2599@local>
+ <B5EF724456FFB24A8C8AE88E26CE8F4B66840BEE@G9W0725.americas.hpqcorp.net>
+ <20120830190019.GB4819@local>
+ <B5EF724456FFB24A8C8AE88E26CE8F4B66840CA2@G9W0725.americas.hpqcorp.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <B5EF724456FFB24A8C8AE88E26CE8F4B66840CA2@G9W0725.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> -----Original Message-----
->> From: Rob Herring [mailto:robherring2@gmail.com]
->> Sent: Thursday, August 30, 2012 2:27 PM
->> To: Karicheri, Muralidharan
->> Cc: grant.likely@secretlab.ca; devicetree-discuss@lists.ozlabs.org; linux-
->> kernel@vger.kernel.org
->> Subject: Re: [PATCH] of: add devres version of of_iomap
->> 
->> On 08/30/2012 10:32 AM, Murali Karicheri wrote:
->> > This adds devres version of the of_iomap() to allow resource to be cleaned
->> > through devres.
->> 
->> If you have a struct device, then don't you already have a resource and
->> can just use devm_ioremap in a driver? New drivers should not be using
->> of_iomap.
->> 
+[Added Greg Kroah-Hartman to Cc:]
 
-That is the point. If you do a grep under driver, there are many drivers using the pattern
-like this. This helper function is mean to replace this code.
+On Thu, Aug 30, 2012 at 08:10:11PM +0000, Worth, Kevin wrote:
+> >> Thanks for the reply, Hans. Your question about opening /dev/uio0 O_RDWR
+> >> prompted me to check out how I was creating /dev/uio0 ... my system
+> >> isn't using udev, and I was accidentally creating it with major/minor
+> >> number 254/0 instead of the correct 253/0 (found by looking at
+> >> /proc/devices). Fixed that and the mmap() call started working.
+> >
+> >Good.
+> >
+> >> 
+> >> Verified that if /dev/uio0 has permissions 0644, root can open it O_RDWR
+> >> and mmap PROT_READ | PROT_WRITE using the below code and write to an
+> >> address within my memory map. Of course this contradicts the statement
+> >> "/dev/uioX is a read-only file" in the UIO howto.
+> >
+> >You're right. That wants to be fixed...
+> >
+> >> 
+> >> Including my updated, tested code for completeness.
+> >> Note I also cleaned up the device registration a little by
+> >> using a different platform_device_register_ call and removing fields
+> >> in the struct uio_info that get filled in by uio_pdrv automatically.
+> >
+> >If you want to have that included in the mainline, please choose a more
+> >descriptive name than "myfpga" and send a proper patch.
+> 
+> I wasn't sure about submitting as a patch since it's for a custom FPGA
+> that I don't expect the community will be using,
 
->From dma/sirf-dma.c
+That doesn't matter. If it helps YOU that the code is maintained in mainline,
+post it.
 
-        ret = of_address_to_resource(dn, 0, &res);
-        if (ret) {
-                dev_err(dev, "Error parsing memory region!\n");
-	       goto error;
-        }
+>  but the code seems like
+> possibly useful sample/example code.
 
-        regs_start = res.start;
-        regs_size = resource_size(&res);
+That is another good argument.
 
-        base = devm_ioremap(dev, regs_start, regs_size);
-        if (!base) {
-                dev_err(dev, "Error mapping memory region!\n");
-	       goto error;
-        }
+> Perhaps patching the HOWTO like
+> http://www.kernel.org/doc/htmldocs/uio-howto.html#uio_pci_generic_example
+> is the right approach?
 
-Other instances.
+Oh, if you could hack up a patch for the documentation, that would be great.
+But please make it a second patch, don't mix it with your driver code.
 
-edac/mpc85xx_edac.c
-media/video/fsl-viu.c
-mtd/nand/mpc5121_nfc.c
+Thanks,
+Hans
 
-Some of these code uses devm_request_mem_region() as well. Isn't a good idea to add this helper
-that can be called by new drivers to replace this sequence? I could update the patch to do this call
-as well?
-
->> Rob
->> 
->> >
->> > Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
->> > ---
->> >  drivers/of/address.c       |   26 ++++++++++++++++++++++++--
->> >  include/linux/of_address.h |    2 ++
->> >  2 files changed, 26 insertions(+), 2 deletions(-)
->> >
->> > diff --git a/drivers/of/address.c b/drivers/of/address.c
->> > index 7e262a6..d3da426 100644
->> > --- a/drivers/of/address.c
->> > +++ b/drivers/of/address.c
->> > @@ -602,10 +602,9 @@ struct device_node
->> *of_find_matching_node_by_address(struct device_node *from,
->> >  	return NULL;
->> >  }
->> >
->> > -
->> >  /**
->> >   * of_iomap - Maps the memory mapped IO for a given device_node
->> > - * @device:	the device whose io range will be mapped
->> > + * @device_node: Ptr to the device node that has the reg property
->> >   * @index:	index of the io range
->> >   *
->> >   * Returns a pointer to the mapped memory
->> > @@ -620,3 +619,26 @@ void __iomem *of_iomap(struct device_node *np, int index)
->> >  	return ioremap(res.start, resource_size(&res));
->> >  }
->> >  EXPORT_SYMBOL(of_iomap);
->> > +
->> > +/**
->> > + * of_devm_iomap - devres version of of_iomap
->> > + * @device:	the device whose io range will be mapped
->> > + * @index:	index of the io range
->> > + *
->> > + * Returns a pointer to the mapped memory
->> > + */
->> > +void __iomem *of_devm_iomap(struct device *dev, int index)
->> > +{
->> > +	struct device_node *np;
->> > +	struct resource res;
->> > +
->> > +	if (!dev)
->> > +		return NULL;
->> > +
->> > +	np = dev->of_node;
->> > +	if (of_address_to_resource(np, index, &res))
->> > +		return NULL;
->> > +
->> > +	return devm_ioremap(dev, res.start, resource_size(&res));
->> > +}
->> > +EXPORT_SYMBOL(of_devm_iomap);
->> > diff --git a/include/linux/of_address.h b/include/linux/of_address.h
->> > index 01b925a..67efa5f 100644
->> > --- a/include/linux/of_address.h
->> > +++ b/include/linux/of_address.h
->> > @@ -3,6 +3,7 @@
->> >  #include <linux/ioport.h>
->> >  #include <linux/errno.h>
->> >  #include <linux/of.h>
->> > +#include <linux/device.h>
->> >
->> >  #ifdef CONFIG_OF_ADDRESS
->> >  extern u64 of_translate_address(struct device_node *np, const __be32 *addr);
->> > @@ -13,6 +14,7 @@ extern struct device_node *of_find_matching_node_by_address(
->> >  					const struct of_device_id *matches,
->> >  					u64 base_address);
->> >  extern void __iomem *of_iomap(struct device_node *device, int index);
->> > +extern void __iomem *of_devm_iomap(struct device *dev, int index);
->> >
->> >  /* Extract an address from a device, returns the region size and
->> >   * the address space flags too. The PCI version uses a BAR number
->> >
+> 
+> >
+> >Thanks,
+> >Hans
+> >
+> >> 
+> >> -Kevin
+> >> 
+> >> # lsuio -m -v
+> >> uio0: name=uio_myfpga, version=0.1, events=0
+> >>         map[0]: addr=0xD0000000, size=262144, mmap test: OK
+> >>         Device attributes:
+> >>         uevent=DRIVER=uio_pdrv
+> >>         modalias=platform:uio_pdrv
+> >> 
+> >> ------Kernelspace------
+> >> #include <linux/platform_device.h>
+> >> #include <linux/uio_driver.h>
+> >> #include <linux/module.h>
+> >> 
+> >> #define MYFPGA_BASE     0xd0000000 // 3G
+> >> #define MYFPGA_SIZE     0x00040000 // 256k
+> >> 
+> >> static struct resource myfpga_resources[] = {
+> >>     {
+> >>         .start = MYFPGA_BASE,
+> >>         .end   = MYFPGA_BASE + MYFPGA_SIZE - 1,
+> >>         .name  = "myfpga",
+> >>         .flags = IORESOURCE_MEM
+> >>     }
+> >> };
+> >> 
+> >> static struct uio_info myfpga_uio_info = {
+> >>    .name = "uio_myfpga",
+> >>    .version = "0.1",
+> >> };
+> >> 
+> >> static struct platform_device *myfpga_uio_pdev;
+> >> 
+> >> static int __init myfpga_init(void)
+> >> {
+> >>     myfpga_uio_pdev = platform_device_register_resndata (NULL,
+> >>                                                          "uio_pdrv",
+> >>                                                          -1,
+> >>                                                          myfpga_resources,
+> >>                                                          1,
+> >>                                                          &myfpga_uio_info,
+> >>                                                          sizeof(struct uio_info)
+> >>                                                         );
+> >>     if (IS_ERR(myfpga_uio_pdev)) {
+> >>         return PTR_ERR(myfpga_uio_pdev);
+> >>     }
+> >> 
+> >>     return 0;
+> >> }
+> >> 
+> >> static void __exit myfpga_exit(void)
+> >> {
+> >>     platform_device_unregister(myfpga_uio_pdev);
+> >> }
+> >> 
+> >> module_init(myfpga_init);
+> >> module_exit(myfpga_exit);
+> >> 
+> >> ------Userspace-------
+> >> #include <sys/types.h>
+> >> #include <sys/mman.h>
+> >> #include <sys/stat.h>
+> >> 
+> >> #include <dirent.h>
+> >> #include <string.h>
+> >> #include <stdlib.h>
+> >> #include <stdio.h>
+> >> #include <fcntl.h>
+> >> #include <unistd.h>
+> >> #include <stdint.h>
+> >> 
+> >> #define MYFPGA_BASE     0xd0000000 // 3G
+> >> #define MYFPGA_SIZE     0x00040000 // 256k
+> >> #define MYFPGA_MAP_NUM  0 // First and only defined map
+> >> 
+> >> #define BIT32(n) (1 << (n))
+> >> 
+> >> /* Use mmap()'ped address "iomem", not physical MYFPGA address */
+> >> #define MYFPGA_REG(iomem) (volatile uint32_t*)(iomem + 0x8) // Third 32-bit reg
+> >> 
+> >> int main (int argc, char *argv[])
+> >> {
+> >>     int fd;
+> >>     void *iomem;
+> >>     fd = open("/dev/uio0", O_RDWR|O_SYNC);
+> >>     if (fd < 0) {
+> >>         printf("failed to open /dev/uio0, quitting\n");
+> >>         return -1;
+> >>     }
+> >>     /* Note offset has a special meaning with uio devices */
+> >>     iomem = mmap(NULL, MYFPGA_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd,
+> >>                  MYFPGA_MAP_NUM * getpagesize());
+> >>     if (iomem == MAP_FAILED) {
+> >>         printf("mmap failed, quitting\n");
+> >>         close(fd);
+> >>         return -2;
+> >>     }
+> >> 
+> >>     /* Set bit 5 of MYFPGA_REG register */
+> >>     *MYFPGA_REG(iomem) |= BIT32(5);
+> >> 
+> >>     munmap(iomem, MYFPGA_SIZE);
+> >>     close(fd);
+> >>     return 0;
+> >> }
+> >>  
+> >>  
+> 
