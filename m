@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751281Ab2H3TWb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 15:22:31 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:37036 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750964Ab2H3TW2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 15:22:28 -0400
-Date: Thu, 30 Aug 2012 14:21:55 -0500
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net, kernel-janitors@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH] tpm: fix tpm_acpi sparse warning on different address
- spaces
-Message-ID: <20120830192155.GA25524@linux.vnet.ibm.com>
-References: <20120830143839.GA9589@linux.vnet.ibm.com>
- <20120830174556.GD20741@mwanda>
+	id S1751784Ab2H3TXD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 15:23:03 -0400
+Received: from cassarossa.samfundet.no ([129.241.93.19]:44959 "EHLO
+	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751367Ab2H3TXB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 15:23:01 -0400
+Date: Thu, 30 Aug 2012 21:22:53 +0200
+From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+To: Hein Tibosch <hein_tibosch@yahoo.es>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        "ludovic.desroches" <ludovic.desroches@atmel.com>,
+        Havard Skinnemoen <havard@skinnemoen.net>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Chris Ball <cjb@laptop.org>
+Subject: Re: [PATCH v2] avr32: at32ap700x: set DMA slave properties for MCI
+ dw_dmac
+Message-ID: <20120830192253.GA10588@samfundet.no>
+References: <503F9DC1.9030601@yahoo.es>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120830174556.GD20741@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12083019-5930-0000-0000-00000B6CFF68
+In-Reply-To: <503F9DC1.9030601@yahoo.es>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 10:45:56AM -0700, Dan Carpenter wrote:
-> On Thu, Aug 30, 2012 at 09:38:41AM -0500, Kent Yoder wrote:
-> > acpi_os_map_memory expects its return value to be in the __iomem address
-> > space. Cast it back later when used in a memcpy to avoid the same sparse
-> > warning there.
-> > 
-> > Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
+Around Fri 31 Aug 2012 01:07:13 +0800 or thereabout, Hein Tibosch wrote:
+> The MCI makes use of the dw_dmac driver when DMA is being used.
+> Due to recent changes the driver was broken because:
+> - the SMS field in the CTLL register received the wrong value 0
+> - a patch in dw_dmac (http://lkml.org/lkml/2012/1/18/52)
+> allowed for 64-bit transfers on the memory side, giving an illegal
+> value of 3 in the SRC/DST_TR_WIDTH register.
 > 
-> I can't download linux-next right now but I don't think this is the
-> correct fix.  I don't think you can memcpy() directly from __iomem.
-> The static checker is warning about a valid bug which should be
-> addressed instead of just casted away and silenced.
-
-  I took a look at other uses of the return from acpi_os_map_memory(),
-such as acpi_tb_parse_fadt(), which passes the returned pointer to
-acpi_tb_create_local_fadt(), which uses ACPI_MEMCPY on it, which is just
-memcpy.  This code lives in drivers/acpi.
-
-Kent
-
+> This patch sets the SMS (Source Master Select) to 1 and limits
+> the maximum transfer width to 32 bits.
 > 
-> regards,
-> dan carpenter
+> Note: this can only be applied after my patch:
+> [PATCH v2 2/2] dw_dmac: max_mem_width limits value for
+> SRC/DST_TR_WID register
 > 
-> 
+> Signed-off-by: Hein Tibosch <hein_tibosch@yahoo.es>
 
+Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+
+<snipp diff>
+
+-- 
+mvh
+Hans-Christian Egtvedt
