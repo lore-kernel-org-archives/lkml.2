@@ -1,99 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751076Ab2H3EjR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 00:39:17 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:51946 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821Ab2H3EjP (ORCPT
+	id S1751380Ab2H3FQo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 01:16:44 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:8611 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751003Ab2H3FQm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 00:39:15 -0400
+	Thu, 30 Aug 2012 01:16:42 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 29 Aug 2012 22:10:20 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "ccross@android.com" <ccross@android.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Date: Thu, 30 Aug 2012 10:46:35 +0530
+Subject: RE: [PATCH] usb: tegra: moving phy driver into drivers directory
+Thread-Topic: [PATCH] usb: tegra: moving phy driver into drivers directory
+Thread-Index: Ac2GC/3mxs+l0Rh7TRWx3TkhiZJcaAAYoj9Q
+Message-ID: <D958900912E20642BCBC71664EFECE3E6DDE14DF54@BGMAIL02.nvidia.com>
+References: <1346146338-4996-1-git-send-email-vbyravarasu@nvidia.com>
+ <503CD0A0.7080300@wwwdotorg.org>
+ <D958900912E20642BCBC71664EFECE3E6DDE14DD7C@BGMAIL02.nvidia.com>
+ <503E51C9.7000606@wwwdotorg.org>
+In-Reply-To: <503E51C9.7000606@wwwdotorg.org>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 29 Aug 2012 21:38:52 -0700
-Message-ID: <CALCETrW-LFzcHYgx=thQiuTfU8RdRBrtXwE7QboWpNrjz4An4A@mail.gmail.com>
-Subject: Which disk is ata4?
-To: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One of my disks went out to lunch for a while.  Logs below.
+> -----Original Message-----
+> From: linux-tegra-owner@vger.kernel.org [mailto:linux-tegra-
+> owner@vger.kernel.org] On Behalf Of Stephen Warren
+> Sent: Wednesday, August 29, 2012 11:01 PM
+> To: Venu Byravarasu
+> Cc: ccross@android.com; olof@lixom.net; linux@arm.linux.org.uk;
+> stern@rowland.harvard.edu; gregkh@linuxfoundation.org; balbi@ti.com;
+> linux-kernel@vger.kernel.org; linux-tegra@vger.kernel.org; linux-arm-
+> kernel@lists.infradead.org; linux-usb@vger.kernel.org
+> Subject: Re: [PATCH] usb: tegra: moving phy driver into drivers directory
+> 
+> On 08/28/12 22:17, Venu Byravarasu wrote:
+> > Stephen Warren wrote at Tuesday, August 28, 2012 7:37 PM:
+> >> On 08/28/2012 02:32 AM, Venu Byravarasu wrote:
+> >>> In order to keep up with the USB driver files organization,
+> >>> moving USB phy driver from mach-tegra to drivers/USB directory.
+> >>>
+> >>> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+> >>
+> >>> diff --git a/arch/arm/mach-tegra/devices.c b/arch/arm/mach-
+> >> tegra/devices.c
+> >>
+> >>> -struct tegra_ulpi_config tegra_ehci2_ulpi_phy_config = {
+> >>> -	.reset_gpio = -1,
+> >>> -	.clk = "cdev2",
+> >>> -};
+> >>> -
+> >>>   struct tegra_ehci_platform_data tegra_ehci1_pdata = {
+> >>>   	.operating_mode = TEGRA_USB_OTG,
+> >>>   	.power_down_on_bus_suspend = 1,
+> >>> @@ -450,7 +444,7 @@ struct tegra_ehci_platform_data
+> tegra_ehci1_pdata
+> >> = {
+> >>>   };
+> >>>
+> >>>   struct tegra_ehci_platform_data tegra_ehci2_pdata = {
+> >>> -	.phy_config = &tegra_ehci2_ulpi_phy_config,
+> >>> +	.phy_config = NULL,
+> >>
+> >> The PHY driver checks that field isn't NULL, and fails if it is:
+> >>
+> >>> struct tegra_usb_phy *tegra_usb_phy_open(struct device *dev, int
+> >> instance,
+> >>>          void __iomem *regs, void *config, enum tegra_usb_phy_mode
+> >> phy_mode)
+> >>> {
+> >> ...
+> >>>          phy->config = config;
+> >>>          phy->mode = phy_mode;
+> >>>
+> >>>          if (!phy->config) {
+> >>>                  if (phy_is_ulpi(phy)) {
+> >>>                          pr_err("%s: ulpi phy configuration missing", __func__);
+> >>>                          err = -EINVAL;
+> >>>                          goto err0;
+> >>
+> >> So, this change will completely break ULPI support, which currently
+> >> works fine. So, NAK.
+> >
+> > My initial plan was to add support for phy interfaces one by one.
+> > As part of that thought of UTMI only support at first and then add
+> > ULPI and HSIC in next patches.
+> > However as you were mentioning that it is not correct way, will
+> > push ULPI & UTMI support at once in next patches.
+> 
+> But with the existing code, both ULPI and UTMI work. This patch breaks
+> something that already works.
+> 
+> >> I also plan on deleting devices.[ch] in kernel 3.7, and moving the USB
+> >> platform data into board-dt-tegra20.c, since that's the only place it's
+> >> used right now. So, this patch would conflict with that rather badly. I
+> >> just posted the patches for that to the linux-tegra mailing list last
+> >> night. Do you have better proposals for that? Perhaps usb_phy.c should
+> >> set phy->config to &ulpi_default in a similar fashion to how it works
+> >> for UTMI; that would remove some of the coupling between the changes.
+> >>
+> >> BTW, in your response to Felipe, you said...
+> >>
+> >>> Thanks Felipe for your comments.
+> >>> Created a patch to separate out phy related stuff to phy.h with you as a
+> >> reviewer.
+> >>> Plz let me know your comments.
+> >>
+> >> ... where is that patch?
+> >
+> > Plz see https://lkml.org/lkml/2012/8/28/58
+> 
+> Doesn't that link point at the patch I replied to?
 
-Which one is it?  The only useful thing in /sys/class/ata_port/ata4 is
-the device symlink, which points at
-/sys/devices/pci0000:00/0000:00:1f.2/ata4.  That, in turn, has an
-ata_port directory (contains nothing I don't already know) and a link4
-directory.  The ata_link directory is unhelpful, as is
-/sys/devices/pci0000:00/0000:00:1f.2/ata4/link4/dev4.0/ata_device/dev4.0.
+Sorry, by mistake I sent the wrong one.
+Here is the correct one: https://lkml.org/lkml/2012/8/29/40  
 
-Taking a leap of faith, /sys/devices/pci0000:00/0000:00:1f.2 contains
-ata1-6 and host0-5.  So maybe ata4 is host3.  Following lots of
-symlinks through host3 leads me to the block device sdd.  Maybe that's
-correct?  I'm really not sure.  Am I missing something obvious?
-
-I even tried looking for symlinks the other way, like this:
-
-/sys$ find -type l -exec echo -n {} ' ' \; -exec readlink {} \; |grep ata4
-./devices/pci0000:00/0000:00:1f.2/ata4/ata_port/ata4/subsystem
-../../../../../../class/ata_port
-./devices/pci0000:00/0000:00:1f.2/ata4/ata_port/ata4/device  ../../../ata4
-./devices/pci0000:00/0000:00:1f.2/ata4/link4/ata_link/link4/subsystem
-../../../../../../../class/ata_link
-./devices/pci0000:00/0000:00:1f.2/ata4/link4/ata_link/link4/device
-../../../link4
-./devices/pci0000:00/0000:00:1f.2/ata4/link4/dev4.0/ata_device/dev4.0/subsystem
- ../../../../../../../../class/ata_device
-./devices/pci0000:00/0000:00:1f.2/ata4/link4/dev4.0/ata_device/dev4.0/device
- ../../../dev4.0
-./class/ata_link/link4
-../../devices/pci0000:00/0000:00:1f.2/ata4/link4/ata_link/link4
-./class/ata_port/ata4  ../../devices/pci0000:00/0000:00:1f.2/ata4/ata_port/ata4
-./class/ata_device/dev4.0
-../../devices/pci0000:00/0000:00:1f.2/ata4/link4/dev4.0/ata_device/dev4.0
-
-No luck.
-
-[784786.047673] ata4.00: exception Emask 0x10 SAct 0x7800 SErr 0x0
-action 0x6 frozen
-[784786.047707] ata4.00: irq_stat 0x08000000, interface fatal error
-[784786.047730] ata4.00: failed command: READ FPDMA QUEUED
-[784786.047752] ata4.00: cmd 60/40:58:80:a9:48/00:00:86:00:00/40 tag
-11 ncq 32768 in
-[784786.047753]          res c0/00:40:80:15:8d/00:00:86:00:00/40 Emask
-0x12 (ATA bus error)
-[784786.047805] ata4.00: status: { Busy }
-[784786.047819] ata4.00: failed command: READ FPDMA QUEUED
-[784786.047840] ata4.00: cmd 60/40:60:80:aa:48/00:00:86:00:00/40 tag
-12 ncq 32768 in
-[784786.047841]          res c0/00:40:80:15:8d/00:00:86:00:00/40 Emask
-0x12 (ATA bus error)
-[784786.047893] ata4.00: status: { Busy }
-[784786.047907] ata4.00: failed command: READ FPDMA QUEUED
-[784786.047928] ata4.00: cmd 60/40:68:c0:aa:48/00:00:86:00:00/40 tag
-13 ncq 32768 in
-[784786.047929]          res c0/00:40:80:15:8d/00:00:86:00:00/40 Emask
-0x12 (ATA bus error)
-[784786.047981] ata4.00: status: { Busy }
-[784786.047996] ata4.00: failed command: READ FPDMA QUEUED
-[784786.048016] ata4.00: cmd 60/40:70:00:ab:48/00:00:86:00:00/40 tag
-14 ncq 32768 in
-[784786.048017]          res c0/00:40:80:15:8d/00:00:86:00:00/40 Emask
-0x12 (ATA bus error)
-[784786.048067] ata4.00: status: { Busy }
-[784786.048085] ata4: hard resetting link
-[784786.365119] ata4: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-[784786.380854] ata4.00: ACPI cmd ef/10:06:00:00:00:00 (SET FEATURES) succeeded
-[784786.380860] ata4.00: ACPI cmd f5/00:00:00:00:00:00 (SECURITY
-FREEZE LOCK) filtered out
-[784786.380864] ata4.00: ACPI cmd b1/c1:00:00:00:00:00 (DEVICE
-CONFIGURATION OVERLAY) filtered out
-[784786.382279] ata4.00: ACPI cmd ef/10:06:00:00:00:00 (SET FEATURES) succeeded
-[784786.382283] ata4.00: ACPI cmd f5/00:00:00:00:00:00 (SECURITY
-FREEZE LOCK) filtered out
-[784786.382287] ata4.00: ACPI cmd b1/c1:00:00:00:00:00 (DEVICE
-CONFIGURATION OVERLAY) filtered out
-[784786.382747] ata4.00: configured for UDMA/133
-[784786.382761] ata4: EH complete
-
---Andy
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
