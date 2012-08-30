@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753416Ab2H3JRl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 05:17:41 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51673 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753154Ab2H3JRk (ORCPT
+	id S1753387Ab2H3JTM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 05:19:12 -0400
+Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:58711 "EHLO
+	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751814Ab2H3JTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 05:17:40 -0400
-Date: Thu, 30 Aug 2012 02:17:39 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/9 V3] workqueue: add
- non_manager_role_manager_mutex_unlock()
-Message-ID: <20120830091739.GA10874@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <1346259120-6216-1-git-send-email-laijs@cn.fujitsu.com>
- <1346259120-6216-5-git-send-email-laijs@cn.fujitsu.com>
- <20120829182510.GB2258@dhcp-172-17-108-109.mtv.corp.google.com>
- <503F2F51.8000301@cn.fujitsu.com>
+	Thu, 30 Aug 2012 05:19:10 -0400
+Message-ID: <503F301A.1090200@ti.com>
+Date: Thu, 30 Aug 2012 12:19:22 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120723 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <503F2F51.8000301@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: t-kristo@ti.com
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, alsa-devel@alsa-project.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, Benoit Cousson <b-cousson@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 02/14] MFD: twl4030-audio: Convert to use devm_kzalloc
+References: <1344954162-7985-1-git-send-email-peter.ujfalusi@ti.com>  <1344954162-7985-3-git-send-email-peter.ujfalusi@ti.com> <1346147410.2182.96.camel@sokoban>
+In-Reply-To: <1346147410.2182.96.camel@sokoban>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Lai.
+Hi Tero,
 
-On Thu, Aug 30, 2012 at 05:16:01PM +0800, Lai Jiangshan wrote:
-> gcwq_unbind_fn() is unsafe even it is called from a work item.
-> so we need non_manager_role_manager_mutex_unlock().
+On 08/28/2012 12:50 PM, Tero Kristo wrote:
+> On Tue, 2012-08-14 at 17:22 +0300, Peter Ujfalusi wrote:
+>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 > 
-> If rebind_workers() is called from a work item, it is safe when there is
-> no CPU_INTENSIVE items. but we can't disable CPU_INTENSIVE items,
-> so it is still unsafe, we need non_manager_role_manager_mutex_unlock() too.
+> I think this one could use a short commit message, also about why
+> kfree():s are dropped (handled internally by devm_* etc.)
 
-Can you please elaborate?  Why is it not safe if there are
-CPU_INTENSIVE items?
-
-Thanks.
+I don't like empty commit messages either but this patch is self explaining I
+would think that the commit title explains it.
 
 -- 
-tejun
+Péter
