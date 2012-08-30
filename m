@@ -1,65 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559Ab2H3Qps (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 12:45:48 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:37706 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752544Ab2H3Qpq (ORCPT
+	id S1754669Ab2H3QuW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 12:50:22 -0400
+Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:49039 "EHLO
+	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753693Ab2H3QuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 12:45:46 -0400
-Date: Thu, 30 Aug 2012 12:45:43 -0400 (EDT)
-Message-Id: <20120830.124543.1590020152319166487.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: hkjerry.chu@gmail.com, alex@linlab.net, netdev@vger.kernel.org,
+	Thu, 30 Aug 2012 12:50:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <1346337826-27232-2-git-send-email-m-karicheri2@ti.com>
+References: <1346337826-27232-1-git-send-email-m-karicheri2@ti.com> <1346337826-27232-2-git-send-email-m-karicheri2@ti.com>
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Thu, 30 Aug 2012 09:49:54 -0700
+Message-ID: <CAMQu2gyuVHEz-gUK3Tzqy4DPRwP+NWWjJTCYS=-RzFuszHw9Wg@mail.gmail.com>
+Subject: Re: [PATCH - 2/2] arm: disable caches based on config option
+To: Murali Karicheri <m-karicheri2@ti.com>
+Cc: linux@arm.linux.org.uk, nicolas.pitre@linaro.org, tony@atomide.com,
+        wim@iguana.be, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] tcp: Wrong timeout for SYN segments
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1346332350.2586.10.camel@edumazet-glaptop>
-References: <1346230305.2522.15.camel@edumazet-glaptop>
-	<CAFbMe2PG90X7s6s970+XK3X0Jvzx4p6vhvM+JQCwtULPvs1QLw@mail.gmail.com>
-	<1346332350.2586.10.camel@edumazet-glaptop>
-X-Mailer: Mew version 6.5 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Thu, 30 Aug 2012 06:12:30 -0700
-
-> On Wed, 2012-08-29 at 10:25 -0700, H.K. Jerry Chu wrote:
-> 
->> But it probably matter slightly more for TCP Fast Open (the server
->> side patch has
->> been completed and will be posted soon, after I finish breaking it up
->> into smaller
->> pieces for ease of review purpose), when a full socket will be created with data
->> passed to the app upon a valid SYN+data. Dropping a fully functioning socket
->> won't be the same as dropping a request_sock unknown to the app and letting
->> the other side retransmitting SYN (w/o data this time).
->> 
->> >
->> > Sure, RFC numbers are what they are, but in practice, I doubt someone
->> > will really miss the extra SYNACK sent after ~32 seconds, since it would
->> > matter only for the last SYN attempted.
->> 
->> I'd slightly prefer 1 extra retry plus longer wait time just to make
->> TCP Fast Open
->> a little more robust (even though the app protocol is required to be
->> idempotent).
->> But this is not a showstopper.
-> 
-> Thats very good points indeed, thanks.
-> 
-> Maybe we can increase SYNACK max retrans only if the FastOpen SYN cookie
-> was validated.
-> 
-> This way, we increase reliability without amplifying the effect of wild
-> SYN packets.
-
-Can we come to a final conclusion on this last point and arrive at a final
-patch?
-
-Thanks.
+On Thu, Aug 30, 2012 at 7:43 AM, Murali Karicheri <m-karicheri2@ti.com> wrote:
+> CONFIG_CPU_ICACHE_DISABLE and CONFIG_CPU_DCACHE_DISABLE are available
+> to allow disabling of D-Cache and I-Cache. However the compressed version
+> of head.S currently doesn't check these variables. This patch will fix
+> this issue and is written similar to the uncompressed version of head.S
+>
+> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+> ---
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
