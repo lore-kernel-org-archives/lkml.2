@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966Ab2H3VOR (ORCPT <rfc822;w@1wt.eu>);
+	id S1753124Ab2H3VO1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 17:14:27 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:38812 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752959Ab2H3VOR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 30 Aug 2012 17:14:17 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:59618 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752565Ab2H3VOH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 17:14:07 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -24,26 +25,25 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         Stephen Hemminger <shemminger@vyatta.com>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 07/26] rcu: Switch task's syscall hooks on context switch
-Date: Thu, 30 Aug 2012 14:05:24 -0700
-Message-Id: <1346360743-3628-7-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 14/26] rcu: Userspace RCU extended QS selftest
+Date: Thu, 30 Aug 2012 14:05:31 -0700
+Message-Id: <1346360743-3628-14-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120830210520.GA2824@linux.vnet.ibm.com>
  <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12083021-9360-0000-0000-00000A065B2C
+x-cbid: 12083021-7282-0000-0000-00000C76618A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Frederic Weisbecker <fweisbec@gmail.com>
 
-Clear the syscalls hook of a task when it's scheduled out so that if
-the task migrates, it doesn't run the syscall slow path on a CPU
-that might not need it.
+Provide a config option that enables the userspace
+RCU extended quiescent state on every CPUs by default.
 
-Also set the syscalls hook on the next task if needed.
+This is for testing purpose.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -66,95 +66,42 @@ Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- arch/um/drivers/mconsole_kern.c |    1 +
- include/linux/rcupdate.h        |    2 ++
- include/linux/sched.h           |    8 ++++++++
- kernel/rcutree.c                |   15 +++++++++++++++
- kernel/sched/core.c             |    1 +
- 5 files changed, 27 insertions(+), 0 deletions(-)
+ init/Kconfig     |    8 ++++++++
+ kernel/rcutree.c |    2 +-
+ 2 files changed, 9 insertions(+), 1 deletions(-)
 
-diff --git a/arch/um/drivers/mconsole_kern.c b/arch/um/drivers/mconsole_kern.c
-index 664a60e..c17de0d 100644
---- a/arch/um/drivers/mconsole_kern.c
-+++ b/arch/um/drivers/mconsole_kern.c
-@@ -705,6 +705,7 @@ static void stack_proc(void *arg)
- 	struct task_struct *from = current, *to = arg;
+diff --git a/init/Kconfig b/init/Kconfig
+index f6a1830..c26b8a1 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -451,6 +451,14 @@ config RCU_USER_QS
+ 	  excluded from the global RCU state machine and thus doesn't
+ 	  to keep the timer tick on for RCU.
  
- 	to->thread.saved_task = from;
-+	rcu_switch(from, to);
- 	switch_to(from, to, from);
- }
- 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index e411117..1fc0a0e 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -197,6 +197,8 @@ extern void rcu_user_enter(void);
- extern void rcu_user_exit(void);
- extern void rcu_user_enter_irq(void);
- extern void rcu_user_exit_irq(void);
-+extern void rcu_user_hooks_switch(struct task_struct *prev,
-+				  struct task_struct *next);
- #else
- static inline void rcu_user_enter(void) { }
- static inline void rcu_user_exit(void) { }
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index c147e70..e4d5936 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1894,6 +1894,14 @@ static inline void rcu_copy_process(struct task_struct *p)
- 
- #endif
- 
-+static inline void rcu_switch(struct task_struct *prev,
-+			      struct task_struct *next)
-+{
-+#ifdef CONFIG_RCU_USER_QS
-+	rcu_user_hooks_switch(prev, next);
-+#endif
-+}
++config RCU_USER_QS_FORCE
++	bool "Force userspace extended QS by default"
++	depends on RCU_USER_QS
++	help
++	  Set the hooks in user/kernel boundaries by default in order to
++	  test this feature that treats userspace as an extended quiescent
++	  state until we have a real user like a full adaptive nohz option.
 +
- static inline void tsk_restore_flags(struct task_struct *task,
- 				unsigned long orig_flags, unsigned long flags)
- {
+ config RCU_FANOUT
+ 	int "Tree-based hierarchical RCU fanout value"
+ 	range 2 64 if 64BIT
 diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index e2fd370..af92681 100644
+index af92681..ccf3cbf 100644
 --- a/kernel/rcutree.c
 +++ b/kernel/rcutree.c
-@@ -721,6 +721,21 @@ int rcu_is_cpu_idle(void)
- }
- EXPORT_SYMBOL(rcu_is_cpu_idle);
- 
-+#ifdef CONFIG_RCU_USER_QS
-+void rcu_user_hooks_switch(struct task_struct *prev,
-+			   struct task_struct *next)
-+{
-+	struct rcu_dynticks *rdtp;
-+
-+	/* Interrupts are disabled in context switch */
-+	rdtp = &__get_cpu_var(rcu_dynticks);
-+	if (!rdtp->ignore_user_qs) {
-+		clear_tsk_thread_flag(prev, TIF_NOHZ);
-+		set_tsk_thread_flag(next, TIF_NOHZ);
-+	}
-+}
-+#endif /* #ifdef CONFIG_RCU_USER_QS */
-+
- #if defined(CONFIG_PROVE_RCU) && defined(CONFIG_HOTPLUG_CPU)
- 
- /*
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index d325c4b..07c6d9a 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2081,6 +2081,7 @@ context_switch(struct rq *rq, struct task_struct *prev,
+@@ -210,7 +210,7 @@ EXPORT_SYMBOL_GPL(rcu_note_context_switch);
+ DEFINE_PER_CPU(struct rcu_dynticks, rcu_dynticks) = {
+ 	.dynticks_nesting = DYNTICK_TASK_EXIT_IDLE,
+ 	.dynticks = ATOMIC_INIT(1),
+-#ifdef CONFIG_RCU_USER_QS
++#if defined(CONFIG_RCU_USER_QS) && !defined(CONFIG_RCU_USER_QS_FORCE)
+ 	.ignore_user_qs = true,
  #endif
- 
- 	/* Here we just switch the register state and the stack. */
-+	rcu_switch(prev, next);
- 	switch_to(prev, next, prev);
- 
- 	barrier();
+ };
 -- 
 1.7.8
 
