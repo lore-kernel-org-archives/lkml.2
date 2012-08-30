@@ -1,48 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751179Ab2H3JeQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 05:34:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46814 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750882Ab2H3JeP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 05:34:15 -0400
-From: Thomas Renninger <trenn@suse.de>
-Organization: SUSE Products GmbH
-To: hpa@zytor.com, initramfs@vger.kernel.org
-Subject: Re: [PATCH 2/2] ACPI: Override arbitrary ACPI tables via initrd for debugging
-Date: Thu, 30 Aug 2012 11:34:11 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.20-desktop; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, lenb@kernel.org, robert.moore@intel.com,
-        bigeasy@linutronix.de, vojcek@tlen.pl, eric.piel@tremplin-utc.net,
-        linux-acpi@vger.kernel.org, yinghai@kernel.org
-References: <1346318957-5831-1-git-send-email-trenn@suse.de> <1346318957-5831-3-git-send-email-trenn@suse.de>
-In-Reply-To: <1346318957-5831-3-git-send-email-trenn@suse.de>
+	id S1752173Ab2H3Jth (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 05:49:37 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:41281 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751103Ab2H3Jtf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 05:49:35 -0400
+Message-ID: <503F36C4.50004@linux.vnet.ibm.com>
+Date: Thu, 30 Aug 2012 15:17:48 +0530
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-6"
+To: "Luck, Tony" <tony.luck@intel.com>, Borislav Petkov <bp@amd64.org>
+CC: "andi@firstfloor.org" <andi@firstfloor.org>,
+        "ananth@in.ibm.com" <ananth@in.ibm.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>
+Subject: Re: [PATCH RFC] x86/mce: Move MCE sysfs attributes out of the per-cpu
+ location
+References: <20120829074154.6755.98941.stgit@localhost.localdomain> <20120829101302.GA26977@aftab.osrc.amd.com> <3908561D78D1C84285E8C5FCA982C28F193989D6@ORSMSX104.amr.corp.intel.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F193989D6@ORSMSX104.amr.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208301134.12717.trenn@suse.de>
+x-cbid: 12083009-5816-0000-0000-000004379573
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, August 30, 2012 11:29:17 AM Thomas Renninger wrote:
-> Details can be found in:
-> Documentation/acpi/initrd_table_override.txt
-> 
-> Signed-off-by: Thomas Renninger <trenn@suse.de>
-> CC: eric.piel@tremplin-utc.net
-> CC: vojcek@tlen.pl
-> CC: Lin Ming <ming.m.lin@intel.com>
-Lin Ming's address is not valid anymore?:
-<ming.m.lin@intel.com>: host mga01.intel.com[192.55.52.88] said: 550 #5.1.0
-    Address rejected. (in reply to RCPT TO command)
+On 08/29/2012 08:13 PM, Luck, Tony wrote:
+>> Note: I'm not sure if it's ok to change sysfs entries and this does break
+>> userspace tools that depend on the current path for some of these attributes.
+>> So, they will need to be updated to use the new path. However, if we ever get
+>> to a point where cpu0 can be offlined, these tools will need to be updated
+>> anyway (as they mostly hardcode machinecheck0 currently)
+>
+> Linus' clarified his "never break user space" edict at the kernel summit
+> on Monday. Paraphrasing:
+>
+>    If nobody notices, or nobody complains, then we can make changes. But
+>    if anyone does complain, then the patch gets reverted.
+>
+> So if you want to do this, the right approach would be to change the
+> utilities that use this to look in the new location for these sysfs files
+> first, and fall back to looking in the old per-cpu place.
+>
+> Next (or in parallel) have the kernel provide both interfaces.
+>
+> Wait a long[1] time so that most people have updated utilities.
+>
+> Delete the per-cpu interfaces from the kernel.
+>
+> Delete the per-cpu references from the utilities.
+>
+> -Tony
+>
+> [1] Long enough that there are no complaints. At least a year, probably two or more.
+>
 
-Please remove it from CC list if you reply on one of these.
+Makes sense. Thanks for the explanation. I will send a new patch for this.
 
-Would be great if it can get removed from CC list in the patch
-without the need of resending (if the patches are fine).
 
 Thanks,
+Naveen
 
-   Thomas
