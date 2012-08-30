@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154Ab2H3Wzx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 18:55:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51994 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752770Ab2H3Wzw (ORCPT
+	id S1753121Ab2H3W7R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 18:59:17 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:38426 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752524Ab2H3W7P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 18:55:52 -0400
-Date: Thu, 30 Aug 2012 15:55:47 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Simon Budig <simon.budig@kernelconcepts.de>,
-        Henrik Rydberg <rydberg@euromail.se>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH] Input: Let the FT5x06 driver build without debugfs
-Message-ID: <20120830225547.GB21501@core.coreip.homeip.net>
-References: <87k3wy1ii3.fsf@xmission.com>
- <502DFC1D.20903@kernelconcepts.de>
- <87boi91g01.fsf@xmission.com>
- <20120820135303.GA9278@roeck-us.net>
- <20120822054919.GB20624@core.coreip.homeip.net>
- <alpine.DEB.2.00.1208301524560.14189@chino.kir.corp.google.com>
+	Thu, 30 Aug 2012 18:59:15 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: RE: [PATCH 0/8] lp8727_charger: cleanup code
+Thread-Topic: [PATCH 0/8] lp8727_charger: cleanup code
+Thread-Index: Ac2Go69seS4U+KqpTO+wdMwOBAY4NP//hMWA//7HbwA=
+Date: Thu, 30 Aug 2012 22:59:06 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF1D3B@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F41EF1C6B@DQHE02.ent.ti.com>
+ <20120830121521.GC11289@lizard>
+In-Reply-To: <20120830121521.GC11289@lizard>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.87.185.123]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1208301524560.14189@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7UMxMss027141
 
-On Thu, Aug 30, 2012 at 03:26:21PM -0700, David Rientjes wrote:
-> On Tue, 21 Aug 2012, Dmitry Torokhov wrote:
+> -----Original Message-----
+> From: Anton Vorontsov [mailto:anton.vorontsov@linaro.org]
+> Sent: Thursday, August 30, 2012 9:15 PM
+> To: Kim, Milo
+> Cc: linux-kernel@vger.kernel.org; David Woodhouse
+> Subject: Re: [PATCH 0/8] lp8727_charger: cleanup code
 > 
-> > > > > On 08/17/2012 02:15 AM, Eric W. Biederman wrote:
-> > > > >> When testing to make certain my user namespace code works in
-> > > > >> various configurations I tripped over the tf5x06.c not building
-> > > > >> with debugfs disabled.
-> > > > >
-> > > > > Sorry for that.
-> > > > >
-> > > > > There already is a patch for this issue which I slightly prefer. You
-> > > > > can find it in the mail from Guenther Roeck:
-> > > > >    http://www.mail-archive.com/linux-input@vger.kernel.org/msg00646.html
-> > > > 
-> > > > If you guys could get that merged into 3.6 I would appreciate it.
-> > > > 
-> > > Yes, that would be great. I don't recall seeing an e-mail from Dmitry accepting
-> > > it, though.
-> > 
-> > Applied, sorry for the delay.
-> > 
+> On Thu, Aug 30, 2012 at 11:37:16AM +0000, Kim, Milo wrote:
+> > LP8727 driver should be patched for several reasons.
+> >
+> > (a) Need to clean up _probe()/_remove()
+> > (b) Not secure code when the platform data is NULL
+> > (c) Interrupt handling
+> >     Two threads are running for handling one IRQ.
+> >     One is for the IRQ pin, the other is used for delayed processing.
+> >     This is unusual and can be enhanced.
+> > (d) Misuse of mutex code
+> > (e) Lots of definitions should be fixed
+> > (f) Others..
 > 
-> This still affects Linus' tree and causes a build breakage without debugfs 
-> configured.  Considering the driver went into 3.5-rc5, could you please 
-> push this fix for 3.6
+> Thanks a lot for the cleanups, this is much appreciated! The cleanups
+> themselves look great, but I'd really like to see them more separated.
+> 
+> Thanks,
+> Anton.
 
-I Just sent a pull request to Linus.
+Sorry to bother you.
+I'll resend the patch-set separately.
+Thanks a lot for detailed review.
 
-> (and mark it for stable backport)?
-
-I am pretty sure it was merged in 3.6 merge window, not 3.5, so no need
-to mark for stable.
-
-Thanks.
-
--- 
-Dmitry
+Best Regards,
+Milo
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
