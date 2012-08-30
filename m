@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754853Ab2H3SVD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 14:21:03 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:54615 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753247Ab2H3STz (ORCPT
+	id S1754875Ab2H3SVj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 14:21:39 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:47213 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754714Ab2H3STq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 14:19:55 -0400
+	Thu, 30 Aug 2012 14:19:46 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -16,99 +16,132 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 02/23] rcu: Allow RCU grace-period initialization to be preempted
-Date: Thu, 30 Aug 2012 11:18:17 -0700
-Message-Id: <1346350718-30937-2-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 18/23] rcu: Add random PROVE_RCU_DELAY to grace-period initialization
+Date: Thu, 30 Aug 2012 11:18:33 -0700
+Message-Id: <1346350718-30937-18-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120830181811.GA29154@linux.vnet.ibm.com>
  <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12083018-7606-0000-0000-00000333B9AB
+x-cbid: 12083018-6148-0000-0000-000009162D06
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-RCU grace-period initialization is currently carried out with interrupts
-disabled, which can result in 200-microsecond latency spikes on systems
-on which RCU has been configured for 4096 CPUs.  This patch therefore
-makes the RCU grace-period initialization be preemptible, which should
-eliminate those latency spikes.  Similar spikes from grace-period cleanup
-and the forcing of quiescent states will be dealt with similarly by later
-patches.
+There are some additional potential grace-period initialization races
+on systems with more than one rcu_node structure, for example:
 
-Reported-by: Mike Galbraith <mgalbraith@suse.de>
-Reported-by: Dimitri Sivanich <sivanich@sgi.com>
+1.	CPU 0 completes a grace period, but needs an additional
+	grace period, so starts initializing one, initializing all
+	the non-leaf rcu_node strcutures and the first leaf rcu_node
+	structure.  Because CPU 0 is both completing the old grace
+	period and starting a new one, it marks the completion of
+	the old grace period and the start of the new grace period
+	in a single traversal of the rcu_node structures.
+
+	Therefore, CPUs corresponding to the first rcu_node structure
+	can become aware that the prior grace period has ended, but
+	CPUs corresponding to the other rcu_node structures cannot
+	yet become aware of this.
+
+2.	CPU 1 passes through a quiescent state, and therefore informs
+	the RCU core.  Because its leaf rcu_node structure has already
+	been initialized, so this CPU's quiescent state is applied to
+	the new (and only partially initialized) grace period.
+
+3.	CPU 1 enters an RCU read-side critical section and acquires
+	a reference to data item A.  Note that this critical section
+	will not block the new grace period.
+
+4.	CPU 16 exits dyntick-idle mode.  Because it was in dyntick-idle
+	mode, some other CPU informed the RCU core of its extended
+	quiescent state for the past several grace periods.  This means
+	that CPU 16 is not yet aware that these grace periods have ended.
+
+5.	CPU 16 on the second leaf rcu_node structure removes data item A
+	from its enclosing data structure and passes it to call_rcu(),
+	which queues a callback in the RCU_NEXT_TAIL segment of the
+	callback queue.
+
+6.	CPU 16 enters the RCU core, possibly because it has taken a
+	scheduling-clock interrupt, or alternatively because it has
+	more than 10,000 callbacks queued.  It notes that the second
+	most recent grace period has ended (recall that it cannot yet
+	become aware that the most recent grace period has completed),
+	and therefore advances its callbacks.  The callback for data
+	item A is therefore in the RCU_NEXT_READY_TAIL segment of the
+	callback queue.
+
+7.	CPU 0 completes initialization of the remaining leaf rcu_node
+	structures for the new grace period, including the structure
+	corresponding to CPU 16.
+
+8.	CPU 16 again enters the RCU core, again, possibly because it has
+	taken a scheduling-clock interrupt, or alternatively because
+	it now has more than 10,000 callbacks queued.	It notes that
+	the most recent grace period has ended, and therefore advances
+	its callbacks.	The callback for data item A is therefore in
+	the RCU_NEXT_TAIL segment of the callback queue.
+
+9.	All CPUs other than CPU 1 pass through quiescent states, so that
+	the new grace period completes.  Note that CPU 1 is still in
+	its RCU read-side critical section, still referencing data item A.
+
+10.	Suppose that CPU 2 is the last CPU to pass through a quiescent
+	state for the new grace period, and suppose further that CPU 2
+	does not have any callbacks queued.  It therefore traverses
+	all of the rcu_node structures, marking the new grace period
+	as completed, but does not initialize a new grace period.
+
+11.	CPU 16 yet again enters the RCU core, yet again possibly because
+	it has taken a scheduling-clock interrupt, or alternatively
+	because it now has more than 10,000 callbacks queued.	It notes
+	that the new grace period has ended, and therefore advances
+	its callbacks.	The callback for data item A is therefore in
+	the RCU_DONE_TAIL segment of the callback queue.  This means
+	that this callback is now considered ready to be invoked.
+
+12.	CPU 16 invokes the callback, freeing data item A while CPU 1
+	is still referencing it.
+
+This sort of scenario represents a day-one bug for TREE_RCU, however,
+the recent changes that permit RCU grace-period initialization to
+be preempted made it much more probable.  Still, it is sufficiently
+improbable to make validation lengthy and inconvenient, so this commit
+adds an anti-heisenbug to greatly increase the collision cross section,
+also known as the probability of occurrence.
+
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutree.c |   17 ++++++++++-------
- 1 files changed, 10 insertions(+), 7 deletions(-)
+ kernel/rcutree.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
 diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index e1c5868..ef56aa3 100644
+index 4cfe488..1373388 100644
 --- a/kernel/rcutree.c
 +++ b/kernel/rcutree.c
-@@ -1069,6 +1069,7 @@ static int rcu_gp_kthread(void *arg)
- 			 * don't start another one.
- 			 */
- 			raw_spin_unlock_irqrestore(&rnp->lock, flags);
-+			cond_resched();
- 			continue;
- 		}
+@@ -52,6 +52,7 @@
+ #include <linux/prefetch.h>
+ #include <linux/delay.h>
+ #include <linux/stop_machine.h>
++#include <linux/random.h>
  
-@@ -1079,6 +1080,7 @@ static int rcu_gp_kthread(void *arg)
- 			 */
- 			rsp->fqs_need_gp = 1;
- 			raw_spin_unlock_irqrestore(&rnp->lock, flags);
-+			cond_resched();
- 			continue;
- 		}
- 
-@@ -1089,10 +1091,10 @@ static int rcu_gp_kthread(void *arg)
- 		rsp->fqs_state = RCU_GP_INIT; /* Stop force_quiescent_state. */
- 		rsp->jiffies_force_qs = jiffies + RCU_JIFFIES_TILL_FORCE_QS;
- 		record_gp_stall_check_time(rsp);
--		raw_spin_unlock(&rnp->lock);  /* leave irqs disabled. */
-+		raw_spin_unlock_irqrestore(&rnp->lock, flags);
- 
- 		/* Exclude any concurrent CPU-hotplug operations. */
--		raw_spin_lock(&rsp->onofflock);  /* irqs already disabled. */
-+		get_online_cpus();
- 
- 		/*
- 		 * Set the quiescent-state-needed bits in all the rcu_node
-@@ -1112,7 +1114,7 @@ static int rcu_gp_kthread(void *arg)
- 		 * due to the fact that we have irqs disabled.
- 		 */
- 		rcu_for_each_node_breadth_first(rsp, rnp) {
--			raw_spin_lock(&rnp->lock); /* irqs already disabled. */
-+			raw_spin_lock_irqsave(&rnp->lock, flags);
- 			rcu_preempt_check_blocked_tasks(rnp);
- 			rnp->qsmask = rnp->qsmaskinit;
- 			rnp->gpnum = rsp->gpnum;
-@@ -1123,15 +1125,16 @@ static int rcu_gp_kthread(void *arg)
- 			trace_rcu_grace_period_init(rsp->name, rnp->gpnum,
- 						    rnp->level, rnp->grplo,
- 						    rnp->grphi, rnp->qsmask);
--			raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
-+			raw_spin_unlock_irqrestore(&rnp->lock, flags);
-+			cond_resched();
- 		}
- 
- 		rnp = rcu_get_root(rsp);
--		raw_spin_lock(&rnp->lock); /* irqs already disabled. */
-+		raw_spin_lock_irqsave(&rnp->lock, flags);
- 		/* force_quiescent_state() now OK. */
- 		rsp->fqs_state = RCU_SIGNAL_INIT;
--		raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
--		raw_spin_unlock_irqrestore(&rsp->onofflock, flags);
-+		raw_spin_unlock_irqrestore(&rnp->lock, flags);
-+		put_online_cpus();
+ #include "rcutree.h"
+ #include <trace/events/rcu.h>
+@@ -1105,6 +1106,10 @@ static int rcu_gp_init(struct rcu_state *rsp)
+ 					    rnp->level, rnp->grplo,
+ 					    rnp->grphi, rnp->qsmask);
+ 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
++#ifdef CONFIG_PROVE_RCU_DELAY
++		if ((random32() % (rcu_num_nodes * 8)) == 0)
++			schedule_timeout_uninterruptible(2);
++#endif /* #ifdef CONFIG_PROVE_RCU_DELAY */
+ 		cond_resched();
  	}
- 	return 0;
- }
+ 
 -- 
 1.7.8
 
