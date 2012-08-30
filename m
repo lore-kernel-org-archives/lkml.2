@@ -1,122 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847Ab2H3WAX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 18:00:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44237 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752227Ab2H3WAJ (ORCPT
+	id S1752294Ab2H3WBN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 18:01:13 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:49587 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751458Ab2H3WBL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 18:00:09 -0400
-Date: Thu, 30 Aug 2012 15:00:08 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: paul.clements@steeleye.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] [RESEND] add discard support to nbd
-Message-Id: <20120830150008.c6a5cd37.akpm@linux-foundation.org>
-In-Reply-To: <503e0dcd.6eub+7cESkENGK2l%paul.clements@steeleye.com>
-References: <503e0dcd.6eub+7cESkENGK2l%paul.clements@steeleye.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 30 Aug 2012 18:01:11 -0400
+MIME-Version: 1.0
+Date: Thu, 30 Aug 2012 15:01:10 -0700
+Message-ID: <CAOdLEaqkpKzbJY33jakQQpqvFtwtVP4wgNAB=r6VA9Xnd5k-yA@mail.gmail.com>
+Subject: Continuous warn slow path warning messages from top of the kernel tree
+From: Sam Gandhi <samgandhi9@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I am using the latest git repo (3.6.-rc3) to boot my ARM mx28 based board.
 
-> Subject: [PATCH 1/2] [RESEND] add discard support to nbd
+When I boot this board via nfs I see continuous messages shown below.
 
-Please don't send multiple patches with the same title.  And please
-prefix the patch titles with text which identifies the affected
-subsystem.  Documentation/SubmittingPatches goes into details.
+I looked at ip_auto_config net/ipv4/ipconfig.c and I don't see
+explicit prink() call although there are DBG() or pr_info/pr_err calls
+but I thought those functions were slow path safe?
 
+I was wondering if this some new regression that anybody else has seen?
 
-On Wed, 29 Aug 2012 08:40:45 -0400
-paul.clements@steeleye.com wrote:
+-Sam
 
-> Description: This patch adds a set-flags ioctl, allowing various option
-> flags to be set on an nbd device.
-
-That tells us what it does, but omits the all-important "why it does it".  
-What's the requirement here?  What value does this change add to NBD users?
-
-What does the interface do and how are users to use it?
-
-Are the nbd ioctls documented anywhere?
-
-> Signed-off-by: Paul Clements <paul.clements@steeleye.com>
-> ---
-> diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
-> index d07c9f7..c544bb4 100644
-> --- a/drivers/block/nbd.c
-> +++ b/drivers/block/nbd.c
-> @@ -78,6 +78,8 @@ static const char *ioctl_cmd_to_ascii(int cmd)
->  	case NBD_SET_SOCK: return "set-sock";
->  	case NBD_SET_BLKSIZE: return "set-blksize";
->  	case NBD_SET_SIZE: return "set-size";
-> +	case NBD_SET_TIMEOUT: return "set-timeout";
-
-That was an unchangelogged bugfix.
-
-> +	case NBD_SET_FLAGS: return "set-flags";
->  	case NBD_DO_IT: return "do-it";
->  	case NBD_CLEAR_SOCK: return "clear-sock";
->  	case NBD_CLEAR_QUE: return "clear-que";
-> @@ -460,7 +462,7 @@ static void nbd_handle_req(struct nbd_device *nbd, struct request *req)
->  	nbd_cmd(req) = NBD_CMD_READ;
->  	if (rq_data_dir(req) == WRITE) {
->  		nbd_cmd(req) = NBD_CMD_WRITE;
-> -		if (nbd->flags & NBD_READ_ONLY) {
-> +		if (nbd->flags & NBD_FLAG_READ_ONLY) {
->  			dev_err(disk_to_dev(nbd->disk),
->  				"Write on read-only\n");
->  			goto error_out;
-> @@ -642,6 +644,10 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *nbd,
->  		nbd->xmit_timeout = arg * HZ;
->  		return 0;
->  
-> +	case NBD_SET_FLAGS:
-> +		nbd->flags = arg;
-> +		return 0;
-> +
->  	case NBD_SET_SIZE_BLOCKS:
->  		nbd->bytesize = ((u64) arg) * nbd->blksize;
->  		bdev->bd_inode->i_size = nbd->bytesize;
-> diff --git a/include/linux/nbd.h b/include/linux/nbd.h
-> index d146ca1..bb349be 100644
-> --- a/include/linux/nbd.h
-> +++ b/include/linux/nbd.h
-> @@ -27,6 +27,7 @@
->  #define NBD_SET_SIZE_BLOCKS	_IO( 0xab, 7 )
->  #define NBD_DISCONNECT  _IO( 0xab, 8 )
->  #define NBD_SET_TIMEOUT _IO( 0xab, 9 )
-> +#define NBD_SET_FLAGS   _IO( 0xab, 10)
->  
->  enum {
->  	NBD_CMD_READ = 0,
-> @@ -34,6 +35,10 @@ enum {
->  	NBD_CMD_DISC = 2
->  };
->  
-> +/* values for flags field */
-> +#define NBD_FLAG_HAS_FLAGS	(1 << 0)
-> +#define NBD_FLAG_READ_ONLY	(1 << 1)
-
-These could be individually documented right here, at their definition
-site.
-
-
->  #define nbd_cmd(req) ((req)->cmd[0])
->  
->  /* userspace doesn't need the nbd_device structure */
-> @@ -42,10 +47,6 @@ enum {
->  #include <linux/wait.h>
->  #include <linux/mutex.h>
->  
-> -/* values for flags field */
-> -#define NBD_READ_ONLY 0x0001
-> -#define NBD_WRITE_NOCHK 0x0002
-> -
->  struct request;
->  
->  struct nbd_device {
+---
+[    4.180000]      device=eth0, addr=192.168.137.1,
+mask=255.255.255.0, gw=192.168.137.254
+[    4.180000] Dumping ftrace buffer:
+[    4.180000]    (ftrace buffer empty)
+[    4.180000] ------------[ cut here ]------------
+[    4.180000] WARNING: at /src/git/kernel/kernel/rcutiny.c:135
+rcu_idle_exit_common+0x88/0xa0()
+[    4.180000] Current pid: 1 comm: swapper / Idle pid: 0 comm: swapper
+[    4.180000] Modules linked in:
+[    4.180000] [<c0014fec>] (unwind_backtrace+0x0/0xf0) from
+[<c001eb80>] (warn_slowpath_common+0x4c/0x64)
+[    4.180000] [<c001eb80>] (warn_slowpath_common+0x4c/0x64) from
+[<c001ec2c>] (warn_slowpath_fmt+0x30/0x40)
+[    4.180000] [<c001ec2c>] (warn_slowpath_fmt+0x30/0x40) from
+[<c0076908>] (rcu_idle_exit_common+0x88/0xa0)
+[    4.180000] [<c0076908>] (rcu_idle_exit_common+0x88/0xa0) from
+[<c0076a24>] (rcu_irq_enter+0x40/0x7c)
+[    4.180000] [<c0076a24>] (rcu_irq_enter+0x40/0x7c) from
+[<c0027584>] (irq_enter+0x8/0x64)
+[    4.180000] [<c0027584>] (irq_enter+0x8/0x64) from [<c000fe94>]
+(handle_IRQ+0x18/0x84)
+[    4.180000] [<c000fe94>] (handle_IRQ+0x18/0x84) from [<c000ec54>]
+(__irq_svc+0x34/0x58)
+[    4.180000] [<c000ec54>] (__irq_svc+0x34/0x58) from [<c0021588>]
+(vprintk_emit+0x134/0x504)
+[    4.180000] [<c0021588>] (vprintk_emit+0x134/0x504) from
+[<c03ff59c>] (printk+0x34/0x44)
+[    4.180000] [<c03ff59c>] (printk+0x34/0x44) from [<c05925e8>]
+(ip_auto_config+0xda0/0xf4c)
+[    4.180000] [<c05925e8>] (ip_auto_config+0xda0/0xf4c) from
+[<c0008870>] (do_one_initcall+0x30/0x16c)
+[    4.180000] [<c0008870>] (do_one_initcall+0x30/0x16c) from
+[<c0576828>] (kernel_init+0xf0/0x1b8)
+[    4.180000] [<c0576828>] (kernel_init+0xf0/0x1b8) from [<c000ff90>]
+(kernel_thread_exit+0x0/0x8)
+[    4.180000] ---[ end trace 837047ef750231b9 ]---
+[    4.340000] ------------[ cut here ]------------
+[    4.340000] WARNING: at /src/git/kernel/kernel/rcutiny.c:75
+rcu_idle_enter_common.clone.6+0x9c/0x)
+[    4.340000] Current pid: 1 comm: swapper / Idle pid: 0 comm: swapper
+[    4.340000] Modules linked in:
+[    4.340000] [<c0014fec>] (unwind_backtrace+0x0/0xf0) from
+[<c001eb80>] (warn_slowpath_common+0x4c/0x64)
+[    4.340000] [<c001eb80>] (warn_slowpath_common+0x4c/0x64) from
+[<c001ec2c>] (warn_slowpath_fmt+0x30/0x40)
+[    4.340000] [<c001ec2c>] (warn_slowpath_fmt+0x30/0x40) from
+[<c0076ba4>] (rcu_idle_enter_common.clone.6+0x)
+[    4.340000] [<c0076ba4>] (rcu_idle_enter_common.clone.6+0x9c/0xb8)
+from [<c0076bfc>] (rcu_irq_exit+0x3c/0x)
+[    4.340000] [<c0076bfc>] (rcu_irq_exit+0x3c/0x78) from [<c000feb0>]
+(handle_IRQ+0x34/0x84)
+[    4.340000] [<c000feb0>] (handle_IRQ+0x34/0x84) from [<c000ec54>]
+(__irq_svc+0x34/0x58)
+[    4.340000] [<c000ec54>] (__irq_svc+0x34/0x58) from [<c0021588>]
+(vprintk_emit+0x134/0x504)
+[    4.340000] [<c0021588>] (vprintk_emit+0x134/0x504) from
+[<c03ff59c>] (printk+0x34/0x44)
+[    4.340000] [<c03ff59c>] (printk+0x34/0x44) from [<c05925e8>]
+(ip_auto_config+0xda0/0xf4c)
+[    4.340000] [<c05925e8>] (ip_auto_config+0xda0/0xf4c) from
+[<c0008870>] (do_one_initcall+0x30/0x16c)
+[    4.340000] [<c0008870>] (do_one_initcall+0x30/0x16c) from
+[<c0576828>] (kernel_init+0xf0/0x1b8)
+[    4.340000] [<c0576828>] (kernel_init+0xf0/0x1b8) from [<c000ff90>]
+(kernel_thread_exit+0x0/0x8)
+[    4.340000] ---[ end trace 837047ef750231ba ]---
+[    4.470000]      host=192.168.137.1, domain=, nis-domain=(none)
+[    4.480000]      bootserver=255.255.255.255,
+rootserver=192.168.137.254, rootpath=
+[    4.490000] ------------[ cut here ]------------
