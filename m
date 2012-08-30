@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751176Ab2H3MJT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 08:09:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53933 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750797Ab2H3MJR (ORCPT
+	id S1751493Ab2H3MKe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 08:10:34 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36338 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892Ab2H3MKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 08:09:17 -0400
-Date: Thu, 30 Aug 2012 05:06:51 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
+	Thu, 30 Aug 2012 08:10:33 -0400
+Date: Thu, 30 Aug 2012 05:07:48 -0700
+From: Anton Vorontsov <cbouatmailru@gmail.com>
 To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: Axel Lin <axel.lin@gmail.com>, David Woodhouse <dwmw2@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>,
         Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH] lp8727_charger: use IRQF_ONESHOT
-Message-ID: <20120830120651.GA10779@lizard>
-References: <20120823114229.GA16789@localhost>
- <A874F61F95741C4A9BA573A70FE3998F41EF1CF9@DQHE02.ent.ti.com>
+Subject: Re: [PATCH 4/8] lp8727_charger: cleanup the interrupt handler code
+Message-ID: <20120830120747.GA11289@lizard>
+References: <A874F61F95741C4A9BA573A70FE3998F41EF1CA4@DQHE02.ent.ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F41EF1CF9@DQHE02.ent.ti.com>
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F41EF1CA4@DQHE02.ent.ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 11:41:54AM +0000, Kim, Milo wrote:
-> > > ERROR: Threaded IRQ with no primary handler requested without
-> > > IRQF_ONESHOT
-> > >
-> > > Make sure threaded IRQs without a primary handler are always request
-> > > with IRQF_ONESHOT
-> > >
-> > > Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
-> > > ---
-> > >
-> > > Note: I don't really know much about the situation, feel free to
-> > > ignore it if it's an false warning.
-> > >
-> > >  cocci-output-25411-2ae2e0-lp8727_charger.c |    2 +-
-> > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > >
-> > > --- a/drivers/power/lp8727_charger.c
-> > > +++ b/drivers/power/lp8727_charger.c
-> > > @@ -255,7 +255,7 @@ static int lp8727_intr_config(struct lp8
-> > >  	return request_threaded_irq(pchg->client->irq,
-> > >  				NULL,
-> > >  				lp8727_isr_func,
-> > > -				IRQF_TRIGGER_FALLING,
-> > > +				IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
-> > >  				"lp8727_irq",
-> > >  				pchg);
-> > >  }
-> > Thanks for the update.
-> > 
-> > Acked-by: Milo(Woogyom) Kim <milo.kim@ti.com>
-> > 
-> 
-> Please refer to the patch below.
-> [PATCH 4/8] lp8727_charger: cleanup the interrupt handler code
-> This includes previous Fengguang' patch.
+On Thu, Aug 30, 2012 at 11:39:57AM +0000, Kim, Milo wrote:
+> (a) add configurable debounce timer in the platform data
+>     : if it is not defined, default time(270ms) is set.
+> (b) use schedule_delay_work() and remove unnecessary workqueue resource
+>     : for delayed interrupt handling, use the schedule_delay_work()
+> (c) add lp8727_release_irq() for clearing the irq
+> (c) clear interrupts while loading the driver
 
-Nope, I'll include Fengguang's patch (he posted it first), and then
-will try to apply the rest of your cleanups on top of it. If it helps,
-your can incorporate the fix in your series, preserving the authorship.
+It seems to me that all of the issues desire their own separate
+patches. A few benefits for this:
 
-Thanks.
+- It helps reviewing changes;
+- In case of regressions, that would help bisecting a lot, plus we will
+  not need to revert the whole thing, if we'd have to fall back to
+  revert.
+
+Thanks,
+Anton.
