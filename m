@@ -1,135 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865Ab2HaKlR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 06:41:17 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:20618
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752300Ab2HaKlP convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 06:41:15 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -7
-X-BigFish: VS-7(zz98dI9371I542M1432Izz1202hzz8275ch8275bh8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah107ah1220hbe9i1155h)
-From: Liu Qiang-B32616 <B32616@freescale.com>
-To: Geanta Neag Horia Ioan-B05471 <B05471@freescale.com>,
-        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
-        "dan.j.williams@gmail.com" <dan.j.williams@gmail.com>,
-        "herbert@gondor.hengli.com.au" <herbert@gondor.hengli.com.au>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-CC: Li Yang-R58472 <r58472@freescale.com>,
-        Phillips Kim-R1AAHA <R1AAHA@freescale.com>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>, "arnd@arndb.de" <arnd@arndb.de>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: RE: [PATCH v7 1/8] Talitos: Support for async_tx XOR offload
-Thread-Topic: [PATCH v7 1/8] Talitos: Support for async_tx XOR offload
-Thread-Index: AQHNdgub00M+ZZ203UWQ+rzcgDFksJdy3ceAgAB0wPCAAN7MAP//rKLA
-Date: Fri, 31 Aug 2012 10:41:08 +0000
-Message-ID: <BCB48C05FCE8BC4D9E61E841ECBE6DB70FDD90@039-SN2MPN1-011.039d.mgd.msft.net>
-References: <1344500448-10927-1-git-send-email-qiang.liu@freescale.com>
- <FD18E5D573A8AB48A365D4D78185DE992E5C0D@039-SN1MPN1-001.039d.mgd.msft.net>
- <BCB48C05FCE8BC4D9E61E841ECBE6DB70FDB13@039-SN2MPN1-011.039d.mgd.msft.net>
- <FD18E5D573A8AB48A365D4D78185DE992E9EFF@039-SN1MPN1-001.039d.mgd.msft.net>
-In-Reply-To: <FD18E5D573A8AB48A365D4D78185DE992E9EFF@039-SN1MPN1-001.039d.mgd.msft.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.208.99]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752726Ab2HaKp6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 06:45:58 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:39653 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752539Ab2HaKp5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Aug 2012 06:45:57 -0400
+Date: Fri, 31 Aug 2012 05:45:49 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        HACHIMI Samir <shachimi@adeneo-embedded.com>,
+        thierry.reding@avionic-design.de, linux-kernel@vger.kernel.org,
+        =?iso-8859-1?Q?Beno=EEt_Th=E9baudeau?= 
+	<benoit.thebaudeau@advansee.com>
+Subject: Re: i.MX pwm patches
+Message-ID: <20120830214547.GC3613@r65073-Latitude-D630>
+References: <1346154504-5623-1-git-send-email-s.hauer@pengutronix.de>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1346154504-5623-1-git-send-email-s.hauer@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Geanta Neag Horia Ioan-B05471
-> Sent: Friday, August 31, 2012 6:39 PM
-> To: Liu Qiang-B32616; linux-crypto@vger.kernel.org;
-> dan.j.williams@gmail.com; herbert@gondor.hengli.com.au;
-> davem@davemloft.net; linux-kernel@vger.kernel.org; linuxppc-
-> dev@lists.ozlabs.org
-> Cc: Li Yang-R58472; Phillips Kim-R1AAHA; vinod.koul@intel.com; Dan
-> Williams; arnd@arndb.de; gregkh@linuxfoundation.org
-> Subject: RE: [PATCH v7 1/8] Talitos: Support for async_tx XOR offload
+On Tue, Aug 28, 2012 at 01:48:15PM +0200, Sascha Hauer wrote:
+> Hi All,
 > 
-> On Fri, 31 Aug 2012 06:08:05 +0300, Liu Qiang-B32616
-> <B32616@freescale.com>
-> wrote:
-> > > -----Original Message-----
-> > > From: Geanta Neag Horia Ioan-B05471
-> > > Sent: Thursday, August 30, 2012 10:23 PM
-> > > To: Liu Qiang-B32616; linux-crypto@vger.kernel.org;
-> > > dan.j.williams@gmail.com; herbert@gondor.hengli.com.au;
-> > > davem@davemloft.net; linux-kernel@vger.kernel.org; linuxppc-
-> > > dev@lists.ozlabs.org
-> > > Cc: Li Yang-R58472; Phillips Kim-R1AAHA; vinod.koul@intel.com;
-> > > dan.j.williams@intel.com; arnd@arndb.de; gregkh@linuxfoundation.org;
-> Liu
-> > > Qiang-B32616
-> > > Subject: RE: [PATCH v7 1/8] Talitos: Support for async_tx XOR offload
-> > >
-> > > On Thu, 9 Aug 2012 11:20:48 +0300, qiang.liu@freescale.com wrote:
-> > > > From: Qiang Liu <qiang.liu@freescale.com>
-> > > >
-> > > > Expose Talitos's XOR functionality to be used for RAID parity
-> > > > calculation via the Async_tx layer.
-> > > >
-> > > > Cc: Herbert Xu <herbert@gondor.apana.org.au>
-> > > > Cc: David S. Miller <davem@davemloft.net>
-> > > > Signed-off-by: Dipen Dudhat <Dipen.Dudhat@freescale.com>
-> > > > Signed-off-by: Maneesh Gupta <Maneesh.Gupta@freescale.com>
-> > > > Signed-off-by: Kim Phillips <kim.phillips@freescale.com>
-> > > > Signed-off-by: Vishnu Suresh <Vishnu@freescale.com>
-> > > > Signed-off-by: Qiang Liu <qiang.liu@freescale.com>
-> > > > ---
-> > > >  drivers/crypto/Kconfig   |    9 +
-> > > >  drivers/crypto/talitos.c |  413
-> > > ++++++++++++++++++++++++++++++++++++++++++++++
-> > > >  drivers/crypto/talitos.h |   53 ++++++
-> > > >  3 files changed, 475 insertions(+), 0 deletions(-)
-> > >
+> The following patches are an overdue work on the i.MX pwm driver.
 > 
-> > > > +static int talitos_alloc_chan_resources(struct dma_chan *chan)
-> > > > +{
-> > > > +	struct talitos_xor_chan *xor_chan;
-> > > > +	struct talitos_xor_desc *desc;
-> > > > +	LIST_HEAD(tmp_list);
-> > > > +	int i;
-> > > > +
-> > > > +	xor_chan = container_of(chan, struct talitos_xor_chan,
-> common);
-> > > > +
-> > > > +	if (!list_empty(&xor_chan->free_desc))
-> > > > +		return xor_chan->total_desc;
-> > > > +
-> > > > +	for (i = 0; i < TALITOS_MAX_DESCRIPTOR_NR; i++) {
-> > > > +		desc = talitos_xor_alloc_descriptor(xor_chan,
-> > > > +				GFP_KERNEL | GFP_DMA);
-> > >
-> > > talitos_xor_alloc_descriptor() is called here without holding
-> > > the xor_chan->desc_lock and it increments xor_chan->total_desc.
-> > > Isn't this an issue ?
-> >
-> > No, please refer to the code as below,
-> > +	list_add_tail(&desc->node, &tmp_list);
-> >
-> > The list is temporary list, it will be merged to xor_chan->free_desc in
-> next step, here is protected
-> > by lock,
-> > +	spin_lock_bh(&xor_chan->desc_lock);
-> > +	list_splice_init(&tmp_list, &xor_chan->free_desc);
-> > +	spin_unlock_bh(&xor_chan->desc_lock);
+> - introduce SoC specific functions to make the driver easier to maintain
+> - use peripheral clock for pwm output unconditionally
+> - separate the two clocks this module has
+> - enable ipg clock for register accesses, peripheral clock for enabling
+>   the pwm
+> - make the driver safe for calling pwm_config before pwm_enable
+> - Add devicetree support for i.MX53
 > 
-> I was not referring to the list, but to xor_chan->total_desc variable.
-> The following access:
-> talitos_alloc_chan_resources()->talitos_xor_alloc_descriptor()-
-> >total_desc++
-> is not protected by the xor_chan->desc_lock.
-Ok, I will correct it in next series. Thanks.
+> The platform device support is still implemented using cpu_is_*, I think
+> this can be dropped completely soon
 
+Anything stops us from doing this right now?  The bonus point of
+cleaning this is that we can remove the #include <mach/hardware.h>
+from the driver, which is helpful for single-kernel project.
 
+Regards,
+Shawn
+
+> as this driver has no in kernel users
+> currently, so there should be no need to keep compatibility for platform
+> based boards.
+> 
+> Hopefully this series fixes the issues mentioned by Benoît. It has been
+> tested on an i.MX53 only.
+> 
+> Sascha
+> 
+> ----------------------------------------------------------------
+> Philipp Zabel (3):
+>       pwm i.MX: add devicetree support
+>       pwm i.MX: fix clock lookup
+>       pwm i.MX: add devicetree support
+> 
+> Sascha Hauer (6):
+>       pwm i.MX: factor out SoC specific functions
+>       pwm i.MX: remove unnecessary if in pwm_[en|dis]able
+>       pwm i.MX: add functions to enable/disable pwm.
+>       pwm i.MX: Use module_platform_driver
+>       pwm i.MX: use per clock unconditionally
+>       ARM i.MX53: Add pwms to dtsi
+> 
+>  arch/arm/boot/dts/imx53.dtsi        |   14 ++
+>  arch/arm/mach-imx/clk-imx51-imx53.c |    4 +
+>  drivers/pwm/pwm-imx.c               |  278 +++++++++++++++++++++++------------
+>  3 files changed, 202 insertions(+), 94 deletions(-)
