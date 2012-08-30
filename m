@@ -1,10 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753476Ab2H3VRz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 17:17:55 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:48618 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753011Ab2H3VOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753293Ab2H3VRx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 17:17:53 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:47575 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753031Ab2H3VOW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 30 Aug 2012 17:14:22 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -24,33 +25,24 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         Stephen Hemminger <shemminger@vyatta.com>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 11/26] rcu: Exit RCU extended QS on user preemption
-Date: Thu, 30 Aug 2012 14:05:28 -0700
-Message-Id: <1346360743-3628-11-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 08/26] x86: Syscall hooks for userspace RCU extended QS
+Date: Thu, 30 Aug 2012 14:05:25 -0700
+Message-Id: <1346360743-3628-8-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120830210520.GA2824@linux.vnet.ibm.com>
  <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12083021-6078-0000-0000-00000ED8C60C
+x-cbid: 12083021-7606-0000-0000-00000334D1D1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Frederic Weisbecker <fweisbec@gmail.com>
 
-When exceptions or irq are about to resume userspace, if
-the task needs to be rescheduled, the arch low level code
-calls schedule() directly.
-
-At that time we may be in extended quiescent state from RCU
-POV: the exception is not anymore protected inside
-rcu_user_exit() - rcu_user_enter() and the irq has called
-rcu_irq_exit() already.
-
-Create a new API schedule_user() that calls schedule() inside
-rcu_user_exit()-rcu_user_enter() in order to protect it. Archs
-will need to rely on it now to implement user preemption safely.
+Add syscall slow path hooks to notify syscall entry
+and exit on CPUs that want to support userspace RCU
+extended quiescent state.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -73,27 +65,84 @@ Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/sched/core.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/thread_info.h |   10 +++++++---
+ arch/x86/kernel/ptrace.c           |    5 +++++
+ 2 files changed, 12 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 0bd599b..e841dfc 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3463,6 +3463,13 @@ asmlinkage void __sched schedule(void)
- }
- EXPORT_SYMBOL(schedule);
+diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
+index 89f794f..c535d84 100644
+--- a/arch/x86/include/asm/thread_info.h
++++ b/arch/x86/include/asm/thread_info.h
+@@ -89,6 +89,7 @@ struct thread_info {
+ #define TIF_NOTSC		16	/* TSC is not accessible in userland */
+ #define TIF_IA32		17	/* IA32 compatibility process */
+ #define TIF_FORK		18	/* ret_from_fork */
++#define TIF_NOHZ		19	/* in adaptive nohz mode */
+ #define TIF_MEMDIE		20	/* is terminating due to OOM killer */
+ #define TIF_DEBUG		21	/* uses debug registers */
+ #define TIF_IO_BITMAP		22	/* uses I/O bitmap */
+@@ -114,6 +115,7 @@ struct thread_info {
+ #define _TIF_NOTSC		(1 << TIF_NOTSC)
+ #define _TIF_IA32		(1 << TIF_IA32)
+ #define _TIF_FORK		(1 << TIF_FORK)
++#define _TIF_NOHZ		(1 << TIF_NOHZ)
+ #define _TIF_DEBUG		(1 << TIF_DEBUG)
+ #define _TIF_IO_BITMAP		(1 << TIF_IO_BITMAP)
+ #define _TIF_FORCED_TF		(1 << TIF_FORCED_TF)
+@@ -126,12 +128,13 @@ struct thread_info {
+ /* work to do in syscall_trace_enter() */
+ #define _TIF_WORK_SYSCALL_ENTRY	\
+ 	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_EMU | _TIF_SYSCALL_AUDIT |	\
+-	 _TIF_SECCOMP | _TIF_SINGLESTEP | _TIF_SYSCALL_TRACEPOINT)
++	 _TIF_SECCOMP | _TIF_SINGLESTEP | _TIF_SYSCALL_TRACEPOINT |	\
++	 _TIF_NOHZ)
  
-+asmlinkage void __sched schedule_user(void)
-+{
+ /* work to do in syscall_trace_leave() */
+ #define _TIF_WORK_SYSCALL_EXIT	\
+ 	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT | _TIF_SINGLESTEP |	\
+-	 _TIF_SYSCALL_TRACEPOINT)
++	 _TIF_SYSCALL_TRACEPOINT | _TIF_NOHZ)
+ 
+ /* work to do on interrupt/exception return */
+ #define _TIF_WORK_MASK							\
+@@ -141,7 +144,8 @@ struct thread_info {
+ 
+ /* work to do on any return to user space */
+ #define _TIF_ALLWORK_MASK						\
+-	((0x0000FFFF & ~_TIF_SECCOMP) | _TIF_SYSCALL_TRACEPOINT)
++	((0x0000FFFF & ~_TIF_SECCOMP) | _TIF_SYSCALL_TRACEPOINT |	\
++	_TIF_NOHZ)
+ 
+ /* Only used for 64 bit */
+ #define _TIF_DO_NOTIFY_MASK						\
+diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
+index c4c6a5c..9f94f8e 100644
+--- a/arch/x86/kernel/ptrace.c
++++ b/arch/x86/kernel/ptrace.c
+@@ -21,6 +21,7 @@
+ #include <linux/signal.h>
+ #include <linux/perf_event.h>
+ #include <linux/hw_breakpoint.h>
++#include <linux/rcupdate.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/pgtable.h>
+@@ -1463,6 +1464,8 @@ long syscall_trace_enter(struct pt_regs *regs)
+ {
+ 	long ret = 0;
+ 
 +	rcu_user_exit();
-+	schedule();
-+	rcu_user_enter();
-+}
 +
- /**
-  * schedule_preempt_disabled - called with preemption disabled
-  *
+ 	/*
+ 	 * If we stepped into a sysenter/syscall insn, it trapped in
+ 	 * kernel mode; do_debug() cleared TF and set TIF_SINGLESTEP.
+@@ -1526,4 +1529,6 @@ void syscall_trace_leave(struct pt_regs *regs)
+ 			!test_thread_flag(TIF_SYSCALL_EMU);
+ 	if (step || test_thread_flag(TIF_SYSCALL_TRACE))
+ 		tracehook_report_syscall_exit(regs, step);
++
++	rcu_user_enter();
+ }
 -- 
 1.7.8
 
