@@ -1,121 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132Ab2H3Bep (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 21:34:45 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40045 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753846Ab2H3Ben (ORCPT
+	id S1754727Ab2H3BgD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 21:36:03 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:28682 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754249Ab2H3Bfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 21:34:43 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <503EC30B.2070900@jp.fujitsu.com>
-Date: Thu, 30 Aug 2012 10:34:03 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120824 Thunderbird/15.0
-MIME-Version: 1.0
-To: <lenb@kernel.org>
-CC: <toshi.kani@hp.com>, <liuj97@gmail.com>, <linux-acpi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4] create sun sysfs file
-References: <502062FB.7030502@jp.fujitsu.com>
-In-Reply-To: <502062FB.7030502@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+	Wed, 29 Aug 2012 21:35:44 -0400
+X-AuditID: cbfee61a-b7fc66d0000043b7-30-503ec36e2782
+From: IAN CHEN <ian.cy.chen@samsung.com>
+To: "'Chris Ball'" <cjb@laptop.org>
+Cc: linkinjeon@gmail.com, adrian.hunter@intel.com, subhashj@codeaurora.org,
+        linus.walleij@linaro.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, d.j.shin@samsung.com,
+        jongtae22.kim@samsung.com, kyungmin.park@samsung.com,
+        jh80.chung@samsung.com
+References: <503DB130.8090807@samsung.com> <873936vvrg.fsf@octavius.laptop.org>
+In-reply-to: <873936vvrg.fsf@octavius.laptop.org>
+Subject: RE: [PATCH v6] mmc: card: Skip secure option for MoviNAND.
+Date: Thu, 30 Aug 2012 10:36:42 +0900
+Message-id: <000401cd864f$e881a000$b984e000$%cy.chen@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac2F0Nzv/m0p0X1hQW67tiQ6mWfOJwAfCLMQ
+Content-language: en-us
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrILMWRmVeSWpSXmKPExsVy+t9jAd28w3YBBkc7RSwu75rDZnHkfz+j
+	A5PH501yAYxRXDYpqTmZZalF+nYJXBmPL15lL5grUHF2+wXGBsajvF2MnBwSAiYSi/e9ZoGw
+	xSQu3FvP1sXIxSEksIhRYs2RfywQzl9GiWeHzrGBVLEJaEh8P/iEEcQWEVCU2PL9ODtIEbNA
+	O5PEl94TYEVCAv4Si670gRVxChhKrLl6m6mLkYNDWMBZ4u33IJAwi4CqxIRTf8E28wo4Stzb
+	2sAOYQtK/Jh8DyzOLKAlsX7ncSYIW15i85q3zCBjJATUJR791QUxRQSMJJ49V4WoEJeY9OAh
+	+wRGoVlIBs1CMmgWkkGzkLQsYGRZxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iREc0M+kdjCu
+	bLA4xCjAwajEw8uRaRcgxJpYVlyZe4hRgoNZSYT300qgEG9KYmVValF+fFFpTmrxIUZpDhYl
+	cV7+PsMAIYH0xJLU7NTUgtQimCwTB6dUA6NO/PQ5atyHrn96e3rOcW7fK/wNj+7dXXQn4KSl
+	4TxNw1368hln3CYlTPjpk7pClXOC/ZvXJ3b2KqulGnEXc8T7h679IWkdNNWua0K5pESzxKZP
+	cXPstZJT5nBZl788uPLpYq9PaZLNYaWCM/cwXPv+gc9CUtXDwiX1iOY9G749u/14S7ceeazE
+	UpyRaKjFXFScCAA/uWZMZAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Len,
+Hi,
 
-Three weeks passed after I post the patch.
-All comments have already been applied to it. And I think there is no
-comments about it. So I want you to merge it into your tree.
+Thanks for your help.
+The effected kernel will be all the version with MMC_CAP_ERASE & SECURE
+option enabled.
+As commit content mentioned, the problem is unrecoverable corruption after
+SECURE ERASE or SECURE TRIM.
+For devices using defective eMMC with kernel supporting MMC_CAP_ERASE &
+SECURE option, this issue might cause damage.
+Therefore, we skip secure for these known devices.
 
-Thanks,
-Yasuaki Ishimatsu
+Regards,
+Ian
 
-2012/08/07 9:36, Yasuaki Ishimatsu wrote:
-> Even if a device has _SUN method, there is no way to know the slot unique-ID.
-> Thus the patch creates "sun" file in sysfs so that we can recognize it.
-> 
-> Reviewed-by: Toshi Kani <toshi.kani@hp.com>
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> 
-> ---
->   drivers/acpi/scan.c     |   24 ++++++++++++++++++++++++
->   include/acpi/acpi_bus.h |    1 +
->   2 files changed, 25 insertions(+)
-> 
-> Index: linux-3.5/include/acpi/acpi_bus.h
-> ===================================================================
-> --- linux-3.5.orig/include/acpi/acpi_bus.h	2012-07-30 10:06:49.722171575 +0900
-> +++ linux-3.5/include/acpi/acpi_bus.h	2012-08-07 08:57:45.678204360 +0900
-> @@ -209,6 +209,7 @@ struct acpi_device_pnp {
->   	struct list_head ids;		/* _HID and _CIDs */
->   	acpi_device_name device_name;	/* Driver-determined */
->   	acpi_device_class device_class;	/*        "          */
-> +	unsigned long sun;		/* _SUN */
->   };
->   
->   #define acpi_device_bid(d)	((d)->pnp.bus_id)
-> Index: linux-3.5/drivers/acpi/scan.c
-> ===================================================================
-> --- linux-3.5.orig/drivers/acpi/scan.c	2012-07-30 10:06:49.713171688 +0900
-> +++ linux-3.5/drivers/acpi/scan.c	2012-08-07 09:01:38.196203659 +0900
-> @@ -192,10 +192,20 @@ end:
->   }
->   static DEVICE_ATTR(path, 0444, acpi_device_path_show, NULL);
->   
-> +static ssize_t
-> +acpi_device_sun_show(struct device *dev, struct device_attribute *attr,
-> +		     char *buf) {
-> +	struct acpi_device *acpi_dev = to_acpi_device(dev);
-> +
-> +	return sprintf(buf, "%lu\n", acpi_dev->pnp.sun);
-> +}
-> +static DEVICE_ATTR(sun, 0444, acpi_device_sun_show, NULL);
-> +
->   static int acpi_device_setup_files(struct acpi_device *dev)
->   {
->   	acpi_status status;
->   	acpi_handle temp;
-> +	unsigned long long sun;
->   	int result = 0;
->   
->   	/*
-> @@ -217,6 +227,16 @@ static int acpi_device_setup_files(struc
->   			goto end;
->   	}
->   
-> +	status = acpi_evaluate_integer(dev->handle, "_SUN", NULL, &sun);
-> +	if (ACPI_SUCCESS(status)) {
-> +		dev->pnp.sun = (unsigned long)sun;
-> +		result = device_create_file(&dev->dev, &dev_attr_sun);
-> +		if (result)
-> +			goto end;
-> +	} else {
-> +		dev->pnp.sun = (unsigned long)-1;
-> +	}
-> +
->           /*
->            * If device has _EJ0, 'eject' file is created that is used to trigger
->            * hot-removal function from userland.
-> @@ -241,6 +261,10 @@ static void acpi_device_remove_files(str
->   	if (ACPI_SUCCESS(status))
->   		device_remove_file(&dev->dev, &dev_attr_eject);
->   
-> +	status = acpi_get_handle(dev->handle, "_SUN", &temp);
-> +	if (ACPI_SUCCESS(status))
-> +		device_remove_file(&dev->dev, &dev_attr_sun);
-> +
->   	device_remove_file(&dev->dev, &dev_attr_modalias);
->   	device_remove_file(&dev->dev, &dev_attr_hid);
->   	if (dev->handle)
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+-----Original Message-----
+From: Chris Ball [mailto:cjb@laptop.org] 
+Sent: Wednesday, August 29, 2012 7:27 PM
 
+Hi,
+
+On Wed, Aug 29 2012, IAN CHEN wrote:
+> For several MoviNAND, there are some known issue with secure option.
+> For these specific MoviNAND device, we skip secure option.
+>
+> You could refer this discussion in XDA developers.
+> http://forum.xda-developers.com/showthread.php?t=1644364
+>
+https://plus.google.com/111398485184813224730/posts/21pTYfTsCkB#111398485184
+813224730/posts/21pTYfTsCkB
+>
+> Signed-off-by: Ian Chen <ian.cy.chen@samsung.com>
+> Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
+> Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
+> Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+
+Thanks.  We should explain the nature of the bug in the commit message,
+so that users and the stable@ maintainers know how bad the problem is
+by reading the patch.  (This should go to stable@, right?  Do you know
+which kernel versions are affected?)
+
+I'll add something like this, unless you have a better proposal:
+
+==
+For several MoviNAND, there are some known issues with secure option.
+For these specific MoviNAND device, we skip secure option.
+
+Specifically, there is a bug in the eMMC firmware that causes 
+unrecoverable corruption when the MMC is erased with MMC_CAP_ERASE
+enabled.
+
+You could refer this discussion in XDA developers.
+http://forum.xda-developers.com/showthread.php?t=1644364
+https://plus.google.com/111398485184813224730/posts/21pTYfTsCkB#111398485184
+813224730/posts/21pTYfTsCkB
+==
+
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
 
