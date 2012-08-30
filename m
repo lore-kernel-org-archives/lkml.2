@@ -1,130 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753122Ab2H3Vre (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 17:47:34 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:40514 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752376Ab2H3Vnk (ORCPT
+	id S1752847Ab2H3WAX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 18:00:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44237 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752227Ab2H3WAJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 17:43:40 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 02/15] rcu: Pull TINY_RCU dyntick-idle tracing into non-idle region
-Date: Thu, 30 Aug 2012 11:56:15 -0700
-Message-Id: <1346352988-32444-2-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.8
-In-Reply-To: <1346352988-32444-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20120830185607.GA32148@linux.vnet.ibm.com>
- <1346352988-32444-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12083021-4242-0000-0000-000002BA06FE
+	Thu, 30 Aug 2012 18:00:09 -0400
+Date: Thu, 30 Aug 2012 15:00:08 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: paul.clements@steeleye.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] [RESEND] add discard support to nbd
+Message-Id: <20120830150008.c6a5cd37.akpm@linux-foundation.org>
+In-Reply-To: <503e0dcd.6eub+7cESkENGK2l%paul.clements@steeleye.com>
+References: <503e0dcd.6eub+7cESkENGK2l%paul.clements@steeleye.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-Because TINY_RCU's idle detection keys directly off of the nesting
-level, rather than from a separate variable as in TREE_RCU, the
-TINY_RCU dyntick-idle tracing on transition to idle must happen
-before the change to the nesting level.  This commit therefore makes
-this change by passing the desired new value (rather than the old value)
-of the nesting level in to rcu_idle_enter_common().
+> Subject: [PATCH 1/2] [RESEND] add discard support to nbd
 
-[ paulmck: Add fix for wrong-variable bug spotted by
-  Michael Wang <wangyun@linux.vnet.ibm.com>. ]
+Please don't send multiple patches with the same title.  And please
+prefix the patch titles with text which identifies the affected
+subsystem.  Documentation/SubmittingPatches goes into details.
 
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- kernel/rcutiny.c |   31 ++++++++++++++++---------------
- 1 files changed, 16 insertions(+), 15 deletions(-)
 
-diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-index 547b1fe..e4163c5 100644
---- a/kernel/rcutiny.c
-+++ b/kernel/rcutiny.c
-@@ -56,24 +56,27 @@ static void __call_rcu(struct rcu_head *head,
- static long long rcu_dynticks_nesting = DYNTICK_TASK_EXIT_IDLE;
- 
- /* Common code for rcu_idle_enter() and rcu_irq_exit(), see kernel/rcutree.c. */
--static void rcu_idle_enter_common(long long oldval)
-+static void rcu_idle_enter_common(long long newval)
- {
--	if (rcu_dynticks_nesting) {
-+	if (newval) {
- 		RCU_TRACE(trace_rcu_dyntick("--=",
--					    oldval, rcu_dynticks_nesting));
-+					    rcu_dynticks_nesting, newval));
-+		rcu_dynticks_nesting = newval;
- 		return;
- 	}
--	RCU_TRACE(trace_rcu_dyntick("Start", oldval, rcu_dynticks_nesting));
-+	RCU_TRACE(trace_rcu_dyntick("Start", rcu_dynticks_nesting, newval));
- 	if (!is_idle_task(current)) {
- 		struct task_struct *idle = idle_task(smp_processor_id());
- 
- 		RCU_TRACE(trace_rcu_dyntick("Error on entry: not idle task",
--					    oldval, rcu_dynticks_nesting));
-+					    rcu_dynticks_nesting, newval));
- 		ftrace_dump(DUMP_ALL);
- 		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
- 			  current->pid, current->comm,
- 			  idle->pid, idle->comm); /* must be idle task! */
- 	}
-+	barrier();
-+	rcu_dynticks_nesting = newval;
- 	rcu_sched_qs(0); /* implies rcu_bh_qsctr_inc(0) */
- }
- 
-@@ -84,17 +87,16 @@ static void rcu_idle_enter_common(long long oldval)
- void rcu_idle_enter(void)
- {
- 	unsigned long flags;
--	long long oldval;
-+	long long newval;
- 
- 	local_irq_save(flags);
--	oldval = rcu_dynticks_nesting;
- 	WARN_ON_ONCE((rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK) == 0);
- 	if ((rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK) ==
- 	    DYNTICK_TASK_NEST_VALUE)
--		rcu_dynticks_nesting = 0;
-+		newval = 0;
- 	else
--		rcu_dynticks_nesting  -= DYNTICK_TASK_NEST_VALUE;
--	rcu_idle_enter_common(oldval);
-+		newval = rcu_dynticks_nesting - DYNTICK_TASK_NEST_VALUE;
-+	rcu_idle_enter_common(newval);
- 	local_irq_restore(flags);
- }
- EXPORT_SYMBOL_GPL(rcu_idle_enter);
-@@ -105,13 +107,12 @@ EXPORT_SYMBOL_GPL(rcu_idle_enter);
- void rcu_irq_exit(void)
- {
- 	unsigned long flags;
--	long long oldval;
-+	long long newval;
- 
- 	local_irq_save(flags);
--	oldval = rcu_dynticks_nesting;
--	rcu_dynticks_nesting--;
--	WARN_ON_ONCE(rcu_dynticks_nesting < 0);
--	rcu_idle_enter_common(oldval);
-+	newval = rcu_dynticks_nesting - 1;
-+	WARN_ON_ONCE(newval < 0);
-+	rcu_idle_enter_common(newval);
- 	local_irq_restore(flags);
- }
- 
--- 
-1.7.8
+On Wed, 29 Aug 2012 08:40:45 -0400
+paul.clements@steeleye.com wrote:
 
+> Description: This patch adds a set-flags ioctl, allowing various option
+> flags to be set on an nbd device.
+
+That tells us what it does, but omits the all-important "why it does it".  
+What's the requirement here?  What value does this change add to NBD users?
+
+What does the interface do and how are users to use it?
+
+Are the nbd ioctls documented anywhere?
+
+> Signed-off-by: Paul Clements <paul.clements@steeleye.com>
+> ---
+> diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
+> index d07c9f7..c544bb4 100644
+> --- a/drivers/block/nbd.c
+> +++ b/drivers/block/nbd.c
+> @@ -78,6 +78,8 @@ static const char *ioctl_cmd_to_ascii(int cmd)
+>  	case NBD_SET_SOCK: return "set-sock";
+>  	case NBD_SET_BLKSIZE: return "set-blksize";
+>  	case NBD_SET_SIZE: return "set-size";
+> +	case NBD_SET_TIMEOUT: return "set-timeout";
+
+That was an unchangelogged bugfix.
+
+> +	case NBD_SET_FLAGS: return "set-flags";
+>  	case NBD_DO_IT: return "do-it";
+>  	case NBD_CLEAR_SOCK: return "clear-sock";
+>  	case NBD_CLEAR_QUE: return "clear-que";
+> @@ -460,7 +462,7 @@ static void nbd_handle_req(struct nbd_device *nbd, struct request *req)
+>  	nbd_cmd(req) = NBD_CMD_READ;
+>  	if (rq_data_dir(req) == WRITE) {
+>  		nbd_cmd(req) = NBD_CMD_WRITE;
+> -		if (nbd->flags & NBD_READ_ONLY) {
+> +		if (nbd->flags & NBD_FLAG_READ_ONLY) {
+>  			dev_err(disk_to_dev(nbd->disk),
+>  				"Write on read-only\n");
+>  			goto error_out;
+> @@ -642,6 +644,10 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *nbd,
+>  		nbd->xmit_timeout = arg * HZ;
+>  		return 0;
+>  
+> +	case NBD_SET_FLAGS:
+> +		nbd->flags = arg;
+> +		return 0;
+> +
+>  	case NBD_SET_SIZE_BLOCKS:
+>  		nbd->bytesize = ((u64) arg) * nbd->blksize;
+>  		bdev->bd_inode->i_size = nbd->bytesize;
+> diff --git a/include/linux/nbd.h b/include/linux/nbd.h
+> index d146ca1..bb349be 100644
+> --- a/include/linux/nbd.h
+> +++ b/include/linux/nbd.h
+> @@ -27,6 +27,7 @@
+>  #define NBD_SET_SIZE_BLOCKS	_IO( 0xab, 7 )
+>  #define NBD_DISCONNECT  _IO( 0xab, 8 )
+>  #define NBD_SET_TIMEOUT _IO( 0xab, 9 )
+> +#define NBD_SET_FLAGS   _IO( 0xab, 10)
+>  
+>  enum {
+>  	NBD_CMD_READ = 0,
+> @@ -34,6 +35,10 @@ enum {
+>  	NBD_CMD_DISC = 2
+>  };
+>  
+> +/* values for flags field */
+> +#define NBD_FLAG_HAS_FLAGS	(1 << 0)
+> +#define NBD_FLAG_READ_ONLY	(1 << 1)
+
+These could be individually documented right here, at their definition
+site.
+
+
+>  #define nbd_cmd(req) ((req)->cmd[0])
+>  
+>  /* userspace doesn't need the nbd_device structure */
+> @@ -42,10 +47,6 @@ enum {
+>  #include <linux/wait.h>
+>  #include <linux/mutex.h>
+>  
+> -/* values for flags field */
+> -#define NBD_READ_ONLY 0x0001
+> -#define NBD_WRITE_NOCHK 0x0002
+> -
+>  struct request;
+>  
+>  struct nbd_device {
