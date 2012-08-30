@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917Ab2H3RoS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 13:44:18 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54794 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750797Ab2H3RoQ (ORCPT
+	id S1752774Ab2H3RqP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 13:46:15 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:28698 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275Ab2H3RqM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 13:44:16 -0400
+	Thu, 30 Aug 2012 13:46:12 -0400
+Date: Thu, 30 Aug 2012 10:45:56 -0700
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Kent Yoder <key@linux.vnet.ibm.com>
+Cc: James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net, kernel-janitors@vger.kernel.org,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH] tpm: fix tpm_acpi sparse warning on different address
+ spaces
+Message-ID: <20120830174556.GD20741@mwanda>
+References: <20120830143839.GA9589@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <cover.1345978012.git.joe@perches.com>
-References: <cover.1345978012.git.joe@perches.com>
-From: Jim Cromie <jim.cromie@gmail.com>
-Date: Thu, 30 Aug 2012 11:43:45 -0600
-Message-ID: <CAJfuBxyQc-XeNHxw0_XDs0JuCrNArNzcgsmrLya4ncDvSojZxQ@mail.gmail.com>
-Subject: Re: [PATCH 0/5] dev_<level> and dynamic_debug cleanups
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jason Baron <jbaron@redhat.com>, Kay Sievers <kay@vrfy.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120830143839.GA9589@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 26, 2012 at 5:25 AM, Joe Perches <joe@perches.com> wrote:
-> The recent commit to fix dynamic_debug was a bit unclean.
-> Neaten the style for dynamic_debug.
-> Reduce the stack use of message logging that uses netdev_printk
-> Add utility functions dev_printk_emit and dev_vprintk_emit for /dev/kmsg.
->
-> Joe Perches (5):
->   dev_dbg/dynamic_debug: Update to use printk_emit, optimize stack
->   netdev_printk/dynamic_netdev_dbg: Directly call printk_emit
->   netdev_printk/netif_printk: Remove a superfluous logging colon
->   dev: Add dev_vprintk_emit and dev_printk_emit
->   device and dynamic_debug: Use dev_vprintk_emit and dev_printk_emit
->
+On Thu, Aug 30, 2012 at 09:38:41AM -0500, Kent Yoder wrote:
+> acpi_os_map_memory expects its return value to be in the __iomem address
+> space. Cast it back later when used in a memcpy to avoid the same sparse
+> warning there.
+> 
+> Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
 
-Ive tested this on 2 builds differing only by DYNAMIC_DEBUG
-It works for me on x86-64
+I can't download linux-next right now but I don't think this is the
+correct fix.  I don't think you can memcpy() directly from __iomem.
+The static checker is warning about a valid bug which should be
+addressed instead of just casted away and silenced.
 
-However, I just booted a non-dyndbg build on x86-32, and got this.
+regards,
+dan carpenter
 
 
-root@voyage:~# dmesg | grep Unknown
-mac80211: Unknown symbol __dynamic_dev_dbg (err 0)
-mac80211: Unknown symbol __dynamic_pr_debug (err 0)
-scx200_acb: Unknown symbol __dynamic_dev_dbg (err 0)
-scx200_acb: Unknown symbol __dynamic_pr_debug (err 0)
-hwmon: Unknown symbol __dynamic_dev_dbg (err 0)
-nsc_gpio: Unknown symbol __dynamic_dev_dbg (err 0)
-nsc_gpio: Unknown symbol __dynamic_dev_dbg (err 0)
-root@voyage:~#
-
-It may be my error, will investigate asap,
-but wanted to report now.
-
-thanks
