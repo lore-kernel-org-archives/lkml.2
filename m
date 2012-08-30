@@ -1,36 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753800Ab2H3ScN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 14:32:13 -0400
-Received: from bosmailout09.eigbox.net ([66.96.187.9]:47748 "EHLO
-	bosmailout09.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752648Ab2H3ScL (ORCPT
+	id S1754281Ab2H3SeX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 14:34:23 -0400
+Received: from bosmailout06.eigbox.net ([66.96.189.6]:35901 "EHLO
+	bosmailout06.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752534Ab2H3SeW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 14:32:11 -0400
+	Thu, 30 Aug 2012 14:34:22 -0400
+X-Greylist: delayed 2676 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 Aug 2012 14:34:22 EDT
 X-Authority-Analysis: v=2.0 cv=LI/Rtuq9 c=1 sm=1
  a=EVDLJLhrg0sUKeqAW2r0xw==:17 a=bc2JKO6qiGsA:10 a=tW0haWE2Y5YA:10
- a=5SWCv1JCYfwA:10 a=8nJEP1OIZ-IA:10 a=LjGfLD6JS_4A:10
- a=bJ0fqD8TFZgqkSadqForXVIPBlU=:19 a=D19gQVrFAAAA:8 a=fUsd2VqqzTs3fo_v_LkA:9
- a=wPNLvfGTeEIA:10 a=Emj6vpyMtVheBqHv:21 a=x6D1_-4xNbzhenjE:21
- a=Kpo39fPXdbgqDwiI3/AEUA==:117
-X-EN-OrigOutIP: 10.20.18.10
-X-EN-IMPSID: t5oe1j0020D2CUy015oeNs
-Message-ID: <503F961A.8050702@yahoo.es>
-Date: Fri, 31 Aug 2012 00:34:34 +0800
+ a=uaSN-30Wp1AA:10 a=8nJEP1OIZ-IA:10 a=U-KOib2bZE0A:10
+ a=bJ0fqD8TFZgqkSadqForXVIPBlU=:19 a=GpLXe_uxwL8xOnI39DIA:9 a=wPNLvfGTeEIA:10
+ a=BF10AaGwQl41phDg7WSPyA==:117
+X-EN-OrigOutIP: 10.20.18.8
+X-EN-IMPSID: t5pj1j0010ASroS015pjjz
+Message-ID: <503F9F72.9020301@yahoo.es>
+Date: Fri, 31 Aug 2012 01:14:26 +0800
 From: Hein Tibosch <hein_tibosch@yahoo.es>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120824 Thunderbird/15.0
 MIME-Version: 1.0
-To: viresh kumar <viresh.kumar@linaro.org>,
-        spear-devel <spear-devel@list.st.com>,
+To: viresh kumar <viresh.kumar@linaro.org>
+CC: spear-devel <spear-devel@list.st.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         "ludovic.desroches" <ludovic.desroches@atmel.com>,
         Havard Skinnemoen <havard@skinnemoen.net>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, egtvedt@samfundet.no,
         Andrew Morton <akpm@linux-foundation.org>,
         Arnd Bergmann <arnd.bergmann@linaro.org>
-Subject: [PATCH v2 2/2] dw_dmac: max_mem_width limits value for SRC/DST_TR_WID
- register
+Subject: [PATCH v2 0/2] dw_dmac: repair driver for use with AVR32 (AP7000)
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-EN-UserInfo: 3946c951b80c12a8be5482963a0b1232:e0ae43bc192b431f8b69f09a37527cbc
@@ -41,81 +39,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dw_dmac driver was earlier adapted to do 64-bit transfers
-on the memory side (https://lkml.org/lkml/2012/1/18/52)
-This works on ARM platforms but for AVR32 (AP700x) the maximum
-allowed transfer size is 32-bits.
-This patch allows the arch to set a new slave property
-max_mem_width to limit the size.
-Allowable values are:
+After some recent changes to dw_dmac, the driver got broken
+for the AVR32 platform for two reasons:
 
-#define	DW_MEM_WIDTH_64		0
-#define	DW_MEM_WIDTH_32		1	/* e.g. for avr32 */
+The accessors to i/o memory had become little-endian.
+The maximum transfer width on the memory side was increased
+from 32 to 64 bits. This led to undefined behavior on the
+avr32 platform.
 
+These patches repair the driver by:
+1. making the endianness configurable through Kconfig,
+for AVR32 it will become big-endian
+2. making the maximum memory transfer width configurable
+It can be set in the code within arch
 
-Signed-off-by: Hein Tibosch <hein_tibosch@yahoo.es>
----
- drivers/dma/dw_dmac.c   |   10 +++++++---
- include/linux/dw_dmac.h |    3 +++
- 2 files changed, 10 insertions(+), 3 deletions(-)
+For non-avr32 (ARM) platforms, nothing has to be changed.
 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 7212961..11f8542 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -618,6 +618,7 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
- 		size_t len, unsigned long flags)
- {
- 	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
-+	struct dw_dma_slave	*dws = chan->private;
- 	struct dw_desc		*desc;
- 	struct dw_desc		*first;
- 	struct dw_desc		*prev;
-@@ -639,7 +640,8 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
- 	 * We can be a lot more clever here, but this should take care
- 	 * of the most common optimization.
- 	 */
--	if (!((src | dest  | len) & 7))
-+	if (dws->max_mem_width == DW_MEM_WIDTH_64 &&
-+		!((src | dest  | len) & 7))
- 		src_width = dst_width = 3;
- 	else if (!((src | dest  | len) & 3))
- 		src_width = dst_width = 2;
-@@ -746,7 +748,8 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
- 			mem = sg_dma_address(sg);
- 			len = sg_dma_len(sg);
- 
--			if (!((mem | len) & 7))
-+			if (dws->max_mem_width == DW_MEM_WIDTH_64 &&
-+				!((mem | len) & 7))
- 				mem_width = 3;
- 			else if (!((mem | len) & 3))
- 				mem_width = 2;
-@@ -813,7 +816,8 @@ slave_sg_todev_fill_desc:
- 			mem = sg_dma_address(sg);
- 			len = sg_dma_len(sg);
- 
--			if (!((mem | len) & 7))
-+			if (dws->max_mem_width == DW_MEM_WIDTH_64 &&
-+				!((mem | len) & 7))
- 				mem_width = 3;
- 			else if (!((mem | len) & 3))
- 				mem_width = 2;
-diff --git a/include/linux/dw_dmac.h b/include/linux/dw_dmac.h
-index 2412e02..330afb2 100644
---- a/include/linux/dw_dmac.h
-+++ b/include/linux/dw_dmac.h
-@@ -58,6 +58,9 @@ struct dw_dma_slave {
- 	u32			cfg_lo;
- 	u8			src_master;
- 	u8			dst_master;
-+#define	DW_MEM_WIDTH_64		0
-+#define	DW_MEM_WIDTH_32		1	/* e.g. for avr32 */
-+	u8			max_mem_width;
- };
- 
- /* Platform-configurable bits in CFG_HI */
+Thanks to all for reviewing
+
+Hein Tibosch (2):
+
+ drivers/dma/Kconfig        |   11 +++++++++++
+ drivers/dma/dw_dmac.c      |   10 +++++++---
+ drivers/dma/dw_dmac_regs.h |   14 ++++++++++++++
+ include/linux/dw_dmac.h    |    3 +++
+ 4 files changed, 35 insertions(+), 3 deletions(-)
+
 -- 
-1.7.8.0
-
 
