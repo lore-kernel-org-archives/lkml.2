@@ -1,49 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102Ab2H3BON (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 21:14:13 -0400
-Received: from mail.lang.hm ([64.81.33.126]:35253 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753556Ab2H3BOM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 21:14:12 -0400
-Date: Wed, 29 Aug 2012 18:14:02 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: "Theodore Ts'o" <tytso@mit.edu>
-cc: "H. Peter Anvin" <hpa@zytor.com>, Brian Gerst <brgerst@gmail.com>,
-        wbrana <wbrana@gmail.com>, Martin Nybo Andersen <tweek@tweek.dk>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Drop support for x86-32
-In-Reply-To: <20120824185741.GC5094@thunk.org>
-Message-ID: <alpine.DEB.2.02.1208291812590.13536@asgard.lang.hm>
-References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com> <201208231814.21168.tweek@tweek.dk> <CAJ7jCmmJ4DrGkebgG1a03+grs5PX3D86thdZ5mK361CYNaP6HQ@mail.gmail.com> <CAMzpN2ioV-DjNDKJQwKebSRAuGO=BnYMtutLWPRoUOqx_sA-3g@mail.gmail.com>
- <5037C530.3000408@zytor.com> <20120824185741.GC5094@thunk.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754132Ab2H3Bep (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 21:34:45 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40045 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753846Ab2H3Ben (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 21:34:43 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <503EC30B.2070900@jp.fujitsu.com>
+Date: Thu, 30 Aug 2012 10:34:03 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120824 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: <lenb@kernel.org>
+CC: <toshi.kani@hp.com>, <liuj97@gmail.com>, <linux-acpi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] create sun sysfs file
+References: <502062FB.7030502@jp.fujitsu.com>
+In-Reply-To: <502062FB.7030502@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Aug 2012, Theodore Ts'o wrote:
+Hi Len,
 
-> On Fri, Aug 24, 2012 at 11:17:20AM -0700, H. Peter Anvin wrote:
->>
->> Speaking as one of the x86 maintainers... we are currently deciding the
->> cost/benefit tradeoff around removing i386 support.  I don't mean
->> general x86-32 support, I mean i386 as opposed to i486, Pentium, and so on.
->
-> Random question.  As I recall the Space Shuttle and the International
-> Space Station was only using 80386's because they have to be hardened
-> against radiation/cosmic rays, as well as all of the other mechnical
-> and thermal stresses associated with being in a spacecraft.  Is there
-> any newer generation cpu's which are space-cerified at this point?
->
-> (Of course, I'm rather doubtful that NASA would ever be willing to use
-> Linux on something like the Curiosity Mars Rover, but I could imagine
-> Linux being used in a non-mission critcal system on the ISS....)
+Three weeks passed after I post the patch.
+All comments have already been applied to it. And I think there is no
+comments about it. So I want you to merge it into your tree.
 
-I've heard that there are radiation hardened versions of the 80486 (I 
-could be wrong, it's not something that I've ever needed to investigate)
+Thanks,
+Yasuaki Ishimatsu
 
-David Lang
+2012/08/07 9:36, Yasuaki Ishimatsu wrote:
+> Even if a device has _SUN method, there is no way to know the slot unique-ID.
+> Thus the patch creates "sun" file in sysfs so that we can recognize it.
+> 
+> Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> 
+> ---
+>   drivers/acpi/scan.c     |   24 ++++++++++++++++++++++++
+>   include/acpi/acpi_bus.h |    1 +
+>   2 files changed, 25 insertions(+)
+> 
+> Index: linux-3.5/include/acpi/acpi_bus.h
+> ===================================================================
+> --- linux-3.5.orig/include/acpi/acpi_bus.h	2012-07-30 10:06:49.722171575 +0900
+> +++ linux-3.5/include/acpi/acpi_bus.h	2012-08-07 08:57:45.678204360 +0900
+> @@ -209,6 +209,7 @@ struct acpi_device_pnp {
+>   	struct list_head ids;		/* _HID and _CIDs */
+>   	acpi_device_name device_name;	/* Driver-determined */
+>   	acpi_device_class device_class;	/*        "          */
+> +	unsigned long sun;		/* _SUN */
+>   };
+>   
+>   #define acpi_device_bid(d)	((d)->pnp.bus_id)
+> Index: linux-3.5/drivers/acpi/scan.c
+> ===================================================================
+> --- linux-3.5.orig/drivers/acpi/scan.c	2012-07-30 10:06:49.713171688 +0900
+> +++ linux-3.5/drivers/acpi/scan.c	2012-08-07 09:01:38.196203659 +0900
+> @@ -192,10 +192,20 @@ end:
+>   }
+>   static DEVICE_ATTR(path, 0444, acpi_device_path_show, NULL);
+>   
+> +static ssize_t
+> +acpi_device_sun_show(struct device *dev, struct device_attribute *attr,
+> +		     char *buf) {
+> +	struct acpi_device *acpi_dev = to_acpi_device(dev);
+> +
+> +	return sprintf(buf, "%lu\n", acpi_dev->pnp.sun);
+> +}
+> +static DEVICE_ATTR(sun, 0444, acpi_device_sun_show, NULL);
+> +
+>   static int acpi_device_setup_files(struct acpi_device *dev)
+>   {
+>   	acpi_status status;
+>   	acpi_handle temp;
+> +	unsigned long long sun;
+>   	int result = 0;
+>   
+>   	/*
+> @@ -217,6 +227,16 @@ static int acpi_device_setup_files(struc
+>   			goto end;
+>   	}
+>   
+> +	status = acpi_evaluate_integer(dev->handle, "_SUN", NULL, &sun);
+> +	if (ACPI_SUCCESS(status)) {
+> +		dev->pnp.sun = (unsigned long)sun;
+> +		result = device_create_file(&dev->dev, &dev_attr_sun);
+> +		if (result)
+> +			goto end;
+> +	} else {
+> +		dev->pnp.sun = (unsigned long)-1;
+> +	}
+> +
+>           /*
+>            * If device has _EJ0, 'eject' file is created that is used to trigger
+>            * hot-removal function from userland.
+> @@ -241,6 +261,10 @@ static void acpi_device_remove_files(str
+>   	if (ACPI_SUCCESS(status))
+>   		device_remove_file(&dev->dev, &dev_attr_eject);
+>   
+> +	status = acpi_get_handle(dev->handle, "_SUN", &temp);
+> +	if (ACPI_SUCCESS(status))
+> +		device_remove_file(&dev->dev, &dev_attr_sun);
+> +
+>   	device_remove_file(&dev->dev, &dev_attr_modalias);
+>   	device_remove_file(&dev->dev, &dev_attr_hid);
+>   	if (dev->handle)
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
+
