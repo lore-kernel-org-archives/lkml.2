@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752938Ab2H3Ica (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 04:32:30 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:63735 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752681Ab2H3Ic2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 04:32:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <2132522857.5273.1346300120620.JavaMail.root@mailstore2.iitkgp.ac.in>
-References: <377703089.3951.1346238221003.JavaMail.root@mailstore2.iitkgp.ac.in>
-	<2132522857.5273.1346300120620.JavaMail.root@mailstore2.iitkgp.ac.in>
-Date: Thu, 30 Aug 2012 14:02:28 +0530
-Message-ID: <CAK7N6vrfHr1YKzZoVs1NBLZfOn7qa_993zQinfGx8uN-j+Gwig@mail.gmail.com>
-Subject: Re: need help on development of linux kernel
-From: anish singh <anish198519851985@gmail.com>
-To: Sachin Agarwalla <sachin.agarwalla@cse.iitkgp.ernet.in>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753025Ab2H3Idy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 04:33:54 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:49017 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751358Ab2H3Idw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 04:33:52 -0400
+Message-ID: <1346315631.2103.35.camel@joe2Laptop>
+Subject: Re: [PATCH] MAINTAINERS: fix TXT maintainer list and source repo
+ path
+From: Joe Perches <joe@perches.com>
+To: gang.wei@intel.com
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        gregkh@linuxfoundation.org, joseph.cihula@intel.com, hpa@zytor.com,
+        richard.l.maliszewski@intel.com, shane.wang@intel.com,
+        tboot-devel@lists.sourceforge.net, mingo@redhat.com,
+        tglx@linutronix.de
+Date: Thu, 30 Aug 2012 01:33:51 -0700
+In-Reply-To: <1346303976-26721-1-git-send-email-gang.wei@intel.com>
+References: <1346303976-26721-1-git-send-email-gang.wei@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 9:45 AM, Sachin Agarwalla
-<sachin.agarwalla@cse.iitkgp.ernet.in> wrote:
-> Dear Sir/Madam,
->   I have some questions on development of linux kernel as follows:-
-> 1.I want to know the location of files in linux kernel source code that contains timer initialization and scheduler part.
-Documentation/timers
-Documentation/Schedulers
-> 2.Also I want to know location of header files(or library files) that are present in the above files.
-> 3.Is there any version of linux kernel that uses openmp or inteltbb or parallelc tool.
-> I have downloaded linux kernel source code and search in that also search in net but could not find out.
-> thanking you,
+On Thu, 2012-08-30 at 13:19 +0800, gang.wei@intel.com wrote:
+> diff --git a/MAINTAINERS b/MAINTAINERS
+[]
+>  INTEL(R) TRUSTED EXECUTION TECHNOLOGY (TXT)
+[]
+> -T:	Mercurial http://www.bughost.org/repos.hg/tboot.hg
+> +T:	Mercurial http://tboot.hg.sourceforge.net:8000/hgroot/tboot/tboot
 
-> waiting for your reply,
-> yours faithfully,
-> sachinagarwalla
->
->
->
->
->
->
->
->
->
->
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Perhaps this would be better as:
+T:	hg http://tboot.hg.sourceforge.net:8000/hgroot/tboot/tboot
+
+>From the MAINTAINERS introduction:
+
+Descriptions of section entries:
+[]
+T: SCM tree type and location.  Type is one of: git, hg, quilt, stgit, topgit.
+
+
