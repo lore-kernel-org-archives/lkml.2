@@ -1,129 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442Ab2H3XI5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 19:08:57 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:33825 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752498Ab2H3XHK (ORCPT
+	id S1753011Ab2H3XOw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 19:14:52 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:45118 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752663Ab2H3XOv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 19:07:10 -0400
+	Thu, 30 Aug 2012 19:14:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <1346367975-6446-1-git-send-email-yinghai@kernel.org>
+References: <2e8c14cd-b82a-49e6-8d5e-85dbe86da6ca@email.android.com>
+	<1346367975-6446-1-git-send-email-yinghai@kernel.org>
+Date: Thu, 30 Aug 2012 16:14:50 -0700
+X-Google-Sender-Auth: JXL3qdUxbhdVUNUwGHNDoZ1XvBQ
+Message-ID: <CAE9FiQXNgXCTRMvfsFCwQe5kqgpOK7d+FkNAiuuMtjsDxaBo+A@mail.gmail.com>
+Subject: Re: [PATCH 0/8] x86, mm: init_memory_mapping cleanup
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
         Tejun Heo <tj@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 3/8] x86, mm: Moving init_memory_mapping calling
-Date: Thu, 30 Aug 2012 16:06:10 -0700
-Message-Id: <1346367975-6446-4-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1346367975-6446-1-git-send-email-yinghai@kernel.org>
-References: <2e8c14cd-b82a-49e6-8d5e-85dbe86da6ca@email.android.com>
- <1346367975-6446-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-from setup.c to mm/init.c
+On Thu, Aug 30, 2012 at 4:06 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> Only create mapping for E820_820 and E820_RESERVED_KERN.
+>
+> Also seperate find_early_page_table out with init_memory_mapping.
+>
+> Jacob Shin (3):
+>   x86: if kernel .text .data .bss are not marked as E820_RAM, complain
+>     and fix
+>   x86: Fixup code testing if a pfn is direct mapped
+>   x86: Only direct map addresses that are marked as E820_RAM
+>
+> Yinghai Lu (5):
+>   x86, mm: Add global page_size_mask
+>   x86, mm: Split out split_mem_range
+>   x86, mm: Moving init_memory_mapping calling
+>   x86, mm: Revert back good_end setting for 64bit
+>   x86, mm: Find early page table only one time
+>
+>  arch/x86/include/asm/init.h       |    1 -
+>  arch/x86/include/asm/page_types.h |    3 +
+>  arch/x86/include/asm/pgtable.h    |    1 +
+>  arch/x86/kernel/cpu/amd.c         |    8 +-
+>  arch/x86/kernel/setup.c           |   34 ++++---
+>  arch/x86/mm/init.c                |  225 ++++++++++++++++++++++++++-----------
+>  arch/x86/mm/init_64.c             |    6 +-
+>  arch/x86/platform/efi/efi.c       |    8 +-
+>  8 files changed, 191 insertions(+), 95 deletions(-)
 
-So could update all related calling together.
+could be found at
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- arch/x86/include/asm/init.h    |    1 -
- arch/x86/include/asm/pgtable.h |    2 +-
- arch/x86/kernel/setup.c        |   13 +------------
- arch/x86/mm/init.c             |   19 ++++++++++++++++++-
- 4 files changed, 20 insertions(+), 15 deletions(-)
-
-diff --git a/arch/x86/include/asm/init.h b/arch/x86/include/asm/init.h
-index adcc0ae..4f13998 100644
---- a/arch/x86/include/asm/init.h
-+++ b/arch/x86/include/asm/init.h
-@@ -12,7 +12,6 @@ kernel_physical_mapping_init(unsigned long start,
- 			     unsigned long end,
- 			     unsigned long page_size_mask);
- 
--
- extern unsigned long __initdata pgt_buf_start;
- extern unsigned long __meminitdata pgt_buf_end;
- extern unsigned long __meminitdata pgt_buf_top;
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index e47e4db..ae2cabb 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -597,7 +597,7 @@ static inline int pgd_none(pgd_t pgd)
- #ifndef __ASSEMBLY__
- 
- extern int direct_gbpages;
--void probe_page_size_mask(void);
-+void init_mem_mapping(void);
- 
- /* local pte updates need not use xchg for locking */
- static inline pte_t native_local_ptep_get_and_clear(pte_t *ptep)
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index d6e8c03..c30c78c 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -912,20 +912,9 @@ void __init setup_arch(char **cmdline_p)
- 	setup_real_mode();
- 
- 	init_gbpages();
--	probe_page_size_mask();
- 
--	/* max_pfn_mapped is updated here */
--	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
--	max_pfn_mapped = max_low_pfn_mapped;
-+	init_mem_mapping();
- 
--#ifdef CONFIG_X86_64
--	if (max_pfn > max_low_pfn) {
--		max_pfn_mapped = init_memory_mapping(1UL<<32,
--						     max_pfn<<PAGE_SHIFT);
--		/* can we preseve max_low_pfn ?*/
--		max_low_pfn = max_pfn;
--	}
--#endif
- 	memblock.current_limit = get_max_mapped();
- 	dma_contiguous_reserve(0);
- 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 7d05e28..15a6a38 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -92,7 +92,7 @@ static void __init find_early_table_space(struct map_range *mr,
- 		(pgt_buf_top << PAGE_SHIFT) - 1);
- }
- 
--void probe_page_size_mask(void)
-+static void __init probe_page_size_mask(void)
- {
- #if !defined(CONFIG_DEBUG_PAGEALLOC) && !defined(CONFIG_KMEMCHECK)
- 	/*
-@@ -312,6 +312,23 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 	return ret >> PAGE_SHIFT;
- }
- 
-+void __init init_mem_mapping(void)
-+{
-+	probe_page_size_mask();
-+
-+	/* max_pfn_mapped is updated here */
-+	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
-+	max_pfn_mapped = max_low_pfn_mapped;
-+
-+#ifdef CONFIG_X86_64
-+	if (max_pfn > max_low_pfn) {
-+		max_pfn_mapped = init_memory_mapping(1UL<<32,
-+						     max_pfn<<PAGE_SHIFT);
-+		/* can we preseve max_low_pfn ?*/
-+		max_low_pfn = max_pfn;
-+	}
-+#endif
-+}
- 
- /*
-  * devmem_is_allowed() checks to see if /dev/mem access to a certain address
--- 
-1.7.7
-
+git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+for-x86-mm
