@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753303Ab2H3VOf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 17:14:35 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:47877 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753146Ab2H3VO2 (ORCPT
+	id S1753281Ab2H3VOd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 17:14:33 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:47596 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752959Ab2H3VO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 30 Aug 2012 17:14:28 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -15,125 +15,81 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Cris <linux-cris-kernel@axis.com>, "3.2.x.." <stable@vger.kernel.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 02/26] rcu: New rcu_user_enter_irq() and rcu_user_exit_irq() APIs
-Date: Thu, 30 Aug 2012 14:05:19 -0700
-Message-Id: <1346360743-3628-2-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 17/26] cris: Add missing RCU idle APIs on idle loop
+Date: Thu, 30 Aug 2012 14:05:34 -0700
+Message-Id: <1346360743-3628-17-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120830210520.GA2824@linux.vnet.ibm.com>
  <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12083021-7606-0000-0000-00000334D234
+x-cbid: 12083021-7408-0000-0000-0000080B577E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Frederic Weisbecker <fweisbec@gmail.com>
 
-In some cases, it is necessary to enter or exit userspace-RCU-idle mode
-from an interrupt handler, for example, if some other CPU sends this
-CPU a resched IPI.  In this case, the current CPU would enter the IPI
-handler in userspace-RCU-idle mode, but would need to exit the IPI handler
-after having exited that mode.
+In the old times, the whole idle task was considered
+as an RCU quiescent state. But as RCU became more and
+more successful overtime, some RCU read side critical
+section have been added even in the code of some
+architectures idle tasks, for tracing for example.
 
-To allow this to work, this commit adds two new APIs to TREE_RCU:
+So nowadays, rcu_idle_enter() and rcu_idle_exit() must
+be called by the architecture to tell RCU about the part
+in the idle loop that doesn't make use of rcu read side
+critical sections, typically the part that puts the CPU
+in low power mode.
 
-- rcu_user_enter_irq(). This must be called from an interrupt between
-rcu_irq_enter() and rcu_irq_exit().  After the irq calls rcu_irq_exit(),
-the irq handler will return into an RCU extended quiescent state.
-In theory, this interrupt is never a nested interrupt, but in practice
-it might interrupt softirq, which looks to RCU like a nested interrupt.
+This is necessary for RCU to find the quiescent states in
+idle in order to complete grace periods.
 
-- rcu_user_exit_irq(). This must be called from a non-nesting
-interrupt, interrupting an RCU extended quiescent state, also
-between rcu_irq_enter() and rcu_irq_exit(). After the irq calls
-rcu_irq_exit(), the irq handler will return in an RCU non-quiescent
-state.
+Add this missing pair of calls in the Cris's idle loop.
 
-[ Combined with "Allow calls to rcu_exit_user_irq from nesting irqs." ]
-
+Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Mikael Starvik <starvik@axis.com>
+Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+Cc: Cris <linux-cris-kernel@axis.com>
+Cc: 3.2.x.. <stable@vger.kernel.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/linux/rcupdate.h |    2 ++
- kernel/rcutree.c         |   43 +++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 45 insertions(+), 0 deletions(-)
+ arch/cris/kernel/process.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 2a7549c..81d3d5c 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -193,6 +193,8 @@ extern void rcu_irq_enter(void);
- extern void rcu_irq_exit(void);
- extern void rcu_user_enter(void);
- extern void rcu_user_exit(void);
-+extern void rcu_user_enter_irq(void);
-+extern void rcu_user_exit_irq(void);
- extern void exit_rcu(void);
+diff --git a/arch/cris/kernel/process.c b/arch/cris/kernel/process.c
+index 66fd017..7f65be6 100644
+--- a/arch/cris/kernel/process.c
++++ b/arch/cris/kernel/process.c
+@@ -25,6 +25,7 @@
+ #include <linux/elfcore.h>
+ #include <linux/mqueue.h>
+ #include <linux/reboot.h>
++#include <linux/rcupdate.h>
  
- /**
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index c0507b7..8fdea17 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -440,6 +440,27 @@ EXPORT_SYMBOL_GPL(rcu_user_enter);
+ //#define DEBUG
  
- 
- /**
-+ * rcu_user_enter_irq - inform RCU that we are going to resume userspace
-+ * after the current irq returns.
-+ *
-+ * This is similar to rcu_user_enter() but in the context of a non-nesting
-+ * irq. After this call, RCU enters into idle mode when the interrupt
-+ * returns.
-+ */
-+void rcu_user_enter_irq(void)
-+{
-+	unsigned long flags;
-+	struct rcu_dynticks *rdtp;
-+
-+	local_irq_save(flags);
-+	rdtp = &__get_cpu_var(rcu_dynticks);
-+	/* Ensure this irq is interrupting a non-idle RCU state.  */
-+	WARN_ON_ONCE(!(rdtp->dynticks_nesting & DYNTICK_TASK_MASK));
-+	rdtp->dynticks_nesting = 1;
-+	local_irq_restore(flags);
-+}
-+
-+/**
-  * rcu_irq_exit - inform RCU that current CPU is exiting irq towards idle
-  *
-  * Exit from an interrupt handler, which might possibly result in entering
-@@ -554,6 +575,28 @@ void rcu_user_exit(void)
- EXPORT_SYMBOL_GPL(rcu_user_exit);
- 
- /**
-+ * rcu_user_exit_irq - inform RCU that we won't resume to userspace
-+ * idle mode after the current non-nesting irq returns.
-+ *
-+ * This is similar to rcu_user_exit() but in the context of an irq.
-+ * This is called when the irq has interrupted a userspace RCU idle mode
-+ * context. When the current non-nesting interrupt returns after this call,
-+ * the CPU won't restore the RCU idle mode.
-+ */
-+void rcu_user_exit_irq(void)
-+{
-+	unsigned long flags;
-+	struct rcu_dynticks *rdtp;
-+
-+	local_irq_save(flags);
-+	rdtp = &__get_cpu_var(rcu_dynticks);
-+	/* Ensure we are interrupting an RCU idle mode. */
-+	WARN_ON_ONCE(rdtp->dynticks_nesting & DYNTICK_TASK_NEST_MASK);
-+	rdtp->dynticks_nesting += DYNTICK_TASK_EXIT_IDLE;
-+	local_irq_restore(flags);
-+}
-+
-+/**
-  * rcu_irq_enter - inform RCU that current CPU is entering irq away from idle
-  *
-  * Enter an interrupt handler, which might possibly result in exiting
+@@ -74,6 +75,7 @@ void cpu_idle (void)
+ {
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
++		rcu_idle_enter();
+ 		while (!need_resched()) {
+ 			void (*idle)(void);
+ 			/*
+@@ -86,6 +88,7 @@ void cpu_idle (void)
+ 				idle = default_idle;
+ 			idle();
+ 		}
++		rcu_idle_exit();
+ 		schedule_preempt_disabled();
+ 	}
+ }
 -- 
 1.7.8
 
