@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751811Ab2H3NMM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 09:12:12 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:54937 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751327Ab2H3NMJ (ORCPT
+	id S1752355Ab2H3NMf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 09:12:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36071 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752171Ab2H3NMe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 09:12:09 -0400
-Date: Thu, 30 Aug 2012 14:12:04 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, broonie@opensource.wolfsonmicro.com,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH 8/8] input: ab8500-ponkey: Rely on MFD core to convert
- IRQs to virtual
-Message-ID: <20120830131202.GG14145@gmail.com>
-References: <1344527635-6163-1-git-send-email-lee.jones@linaro.org>
- <1344527635-6163-9-git-send-email-lee.jones@linaro.org>
- <CACRpkdZ-HOGy_sdsCQSNOdYTDzHFszk0OySM88TjO-neSJUz0A@mail.gmail.com>
- <20120821092328.GC26899@gmail.com>
- <20120821164244.GA4672@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120821164244.GA4672@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 30 Aug 2012 09:12:34 -0400
+Subject: Re: [PATCH 1/1] tcp: Wrong timeout for SYN segments
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "H.K. Jerry Chu" <hkjerry.chu@gmail.com>
+Cc: Alexander Bergmann <alex@linlab.net>, David Miller <davem@davemloft.net>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <CAFbMe2PG90X7s6s970+XK3X0Jvzx4p6vhvM+JQCwtULPvs1QLw@mail.gmail.com>
+References: <1345724123.5904.756.camel@edumazet-glaptop>
+	 <50362407.9070805@linlab.net> <1345726185.5904.835.camel@edumazet-glaptop>
+	 <20120824.134231.41073001349178209.davem@davemloft.net>
+	 <20120825084819.GD430@linlab.net>
+	 <CAFbMe2Pgjbttt+Z3RQ9KL05=GHqZYk5ubNH2G1-EUn_f_RBaEQ@mail.gmail.com>
+	 <1346230305.2522.15.camel@edumazet-glaptop>
+	 <CAFbMe2PG90X7s6s970+XK3X0Jvzx4p6vhvM+JQCwtULPvs1QLw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 30 Aug 2012 06:12:30 -0700
+Message-ID: <1346332350.2586.10.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Sorry for the delay. Yes, this shoudl be fine, but since it is
-> essentially a revert of the original patch it should be pushed in as
-> such.
+On Wed, 2012-08-29 at 10:25 -0700, H.K. Jerry Chu wrote:
 
-How's this?
+> But it probably matter slightly more for TCP Fast Open (the server
+> side patch has
+> been completed and will be posted soon, after I finish breaking it up
+> into smaller
+> pieces for ease of review purpose), when a full socket will be created with data
+> passed to the app upon a valid SYN+data. Dropping a fully functioning socket
+> won't be the same as dropping a request_sock unknown to the app and letting
+> the other side retransmitting SYN (w/o data this time).
+> 
+> >
+> > Sure, RFC numbers are what they are, but in practice, I doubt someone
+> > will really miss the extra SYNACK sent after ~32 seconds, since it would
+> > matter only for the last SYN attempted.
+> 
+> I'd slightly prefer 1 extra retry plus longer wait time just to make
+> TCP Fast Open
+> a little more robust (even though the app protocol is required to be
+> idempotent).
+> But this is not a showstopper.
 
-Author: Lee Jones <lee.jones@linaro.org>
-Date:   Thu Aug 30 14:08:19 2012 +0100
+Thats very good points indeed, thanks.
 
-    Revert "input: ab8500-ponkey: Create AB8500 domain IRQ mapping"
-    
-    This reverts commit ca3b3faf9bee4dc5df4f10eae2d1e48f7de0a8ad.
-    
-    There was a plan to place ab8500_irq_get_virq() calls in each AB8500
-    child device prior to requesting an IRQ, but as we're no longer using
-    Device Tree to collect our IRQ numbers, it's actually better to allow
-    the core to do this during device registration time. So the IRQ number
-    we pull from its resource has already been converted to a virtual IRQ.
-    
-    CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-    CC: linux-input@vger.kernel.org
-    Acked-by: Linus Walleij <linus.walleij@linaro.org>
-    Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Maybe we can increase SYNACK max retrans only if the FastOpen SYN cookie
+was validated.
 
-diff --git a/drivers/input/misc/ab8500-ponkey.c b/drivers/input/misc/ab8500-ponkey.c
-index f06231b..84ec691 100644
---- a/drivers/input/misc/ab8500-ponkey.c
-+++ b/drivers/input/misc/ab8500-ponkey.c
-@@ -74,8 +74,8 @@ static int __devinit ab8500_ponkey_probe(struct platform_device *pdev)
- 
-        ponkey->idev = input;
-        ponkey->ab8500 = ab8500;
--       ponkey->irq_dbf = ab8500_irq_get_virq(ab8500, irq_dbf);
--       ponkey->irq_dbr = ab8500_irq_get_virq(ab8500, irq_dbr);
-+       ponkey->irq_dbf = irq_dbf;
-+       ponkey->irq_dbr = irq_dbr;
- 
-        input->name = "AB8500 POn(PowerOn) Key";
-        input->dev.parent = &pdev->dev;
+This way, we increase reliability without amplifying the effect of wild
+SYN packets.
+
+
+
