@@ -1,100 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753045Ab2H3XHL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 19:07:11 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:33800 "EHLO
+	id S1753121Ab2H3XHS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 19:07:18 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:33842 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752532Ab2H3XHH (ORCPT
+	with ESMTP id S1753058Ab2H3XHP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 19:07:07 -0400
+	Thu, 30 Aug 2012 19:07:15 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
         Tejun Heo <tj@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 2/8] x86, mm: Split out split_mem_range
-Date: Thu, 30 Aug 2012 16:06:09 -0700
-Message-Id: <1346367975-6446-3-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 4/8] x86, mm: Revert back good_end setting for 64bit
+Date: Thu, 30 Aug 2012 16:06:11 -0700
+Message-Id: <1346367975-6446-5-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1346367975-6446-1-git-send-email-yinghai@kernel.org>
 References: <2e8c14cd-b82a-49e6-8d5e-85dbe86da6ca@email.android.com>
  <1346367975-6446-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-from init_memory_mapping, so make init_memory_mapping readable.
+So we could put page table high again for 64bit.
 
-Suggested-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/mm/init.c |   42 ++++++++++++++++++++++++++----------------
- 1 files changed, 26 insertions(+), 16 deletions(-)
+ arch/x86/mm/init.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 838e9bc..7d05e28 100644
+index 15a6a38..cca9b7d 100644
 --- a/arch/x86/mm/init.c
 +++ b/arch/x86/mm/init.c
-@@ -143,25 +143,13 @@ static int __meminit save_mr(struct map_range *mr, int nr_range,
- 	return nr_range;
- }
+@@ -76,8 +76,8 @@ static void __init find_early_table_space(struct map_range *mr,
+ #ifdef CONFIG_X86_32
+ 	/* for fixmap */
+ 	tables += roundup(__end_of_fixed_addresses * sizeof(pte_t), PAGE_SIZE);
+-#endif
+ 	good_end = max_pfn_mapped << PAGE_SHIFT;
++#endif
  
--/*
-- * Setup the direct mapping of the physical memory at PAGE_OFFSET.
-- * This runs before bootmem is initialized and gets pages directly from
-- * the physical memory. To access them they are temporarily mapped.
-- */
--unsigned long __init_refok init_memory_mapping(unsigned long start,
--					       unsigned long end)
-+static int __meminit split_mem_range(struct map_range *mr, int nr_range,
-+				     unsigned long start,
-+				     unsigned long end)
- {
- 	unsigned long start_pfn, end_pfn;
--	unsigned long ret = 0;
- 	unsigned long pos;
--	struct map_range mr[NR_RANGE_MR];
--	int nr_range, i;
--
--	printk(KERN_INFO "init_memory_mapping: [mem %#010lx-%#010lx]\n",
--	       start, end - 1);
--
--	memset(mr, 0, sizeof(mr));
--	nr_range = 0;
-+	int i;
- 
- 	/* head if not big page alignment ? */
- 	start_pfn = start >> PAGE_SHIFT;
-@@ -255,6 +243,28 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 			(mr[i].page_size_mask & (1<<PG_LEVEL_1G))?"1G":(
- 			 (mr[i].page_size_mask & (1<<PG_LEVEL_2M))?"2M":"4k"));
- 
-+	return nr_range;
-+}
-+
-+/*
-+ * Setup the direct mapping of the physical memory at PAGE_OFFSET.
-+ * This runs before bootmem is initialized and gets pages directly from
-+ * the physical memory. To access them they are temporarily mapped.
-+ */
-+unsigned long __init_refok init_memory_mapping(unsigned long start,
-+					       unsigned long end)
-+{
-+	struct map_range mr[NR_RANGE_MR];
-+	unsigned long ret = 0;
-+	int nr_range, i;
-+
-+	pr_info("init_memory_mapping: [mem %#010lx-%#010lx]\n",
-+	       start, end - 1);
-+
-+	memset(mr, 0, sizeof(mr));
-+	nr_range = 0;
-+	nr_range = split_mem_range(mr, nr_range, start, end);
-+
- 	/*
- 	 * Find space for the kernel direct mapping tables.
- 	 *
+ 	base = memblock_find_in_range(start, good_end, tables, PAGE_SIZE);
+ 	if (!base)
 -- 
 1.7.7
 
