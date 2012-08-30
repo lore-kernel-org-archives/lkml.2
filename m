@@ -1,82 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338Ab2H3TEk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 15:04:40 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:19420 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752228Ab2H3TEh (ORCPT
+	id S1751458Ab2H3TF5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 15:05:57 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:47085 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750752Ab2H3TF4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 15:04:37 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/DDaTCFb3CfryALkBJIjE/
-Date: Thu, 30 Aug 2012 12:04:32 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] [RFC] ARM: treewide: manually change more
- mach-*/*.h includes
-Message-ID: <20120830190431.GU1303@atomide.com>
-References: <201208221253.07278.arnd@arndb.de>
- <20120822214323.GA12255@n2100.arm.linux.org.uk>
- <201208231135.11688.arnd@arndb.de>
- <201208231726.11293.arnd@arndb.de>
- <20120824203622.GB1303@atomide.com>
+	Thu, 30 Aug 2012 15:05:56 -0400
+X-Originating-IP: 217.70.178.145
+X-Originating-IP: 173.246.103.110
+Date: Thu, 30 Aug 2012 12:05:48 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 4/5] rcu: Switch rcutorture to pr_alert()
+ and friends
+Message-ID: <20120830190548.GE6749@jtriplet-mobl1>
+References: <20120830184448.GA31753@linux.vnet.ibm.com>
+ <1346352312-31987-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346352312-31987-4-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120824203622.GB1303@atomide.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1346352312-31987-4-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tony Lindgren <tony@atomide.com> [120824 13:37]:
-> * Arnd Bergmann <arnd@arndb.de> [120823 10:27]:
-> > On Thursday 23 August 2012, Arnd Bergmann wrote:
-> > > On Wednesday 22 August 2012, Russell King - ARM Linux wrote:
-> > > > In any case, what we should be doing here as well is moving the headers
-> > > > included by drivers for platform data out of the arch/arm/mach/ subtrees
-> > > > and into include/linux/platform_data.  That will substantially reduce the
-> > > > amount of mach/ headers to deal with.
-> > > 
-> > > I've just looked at the {mach,plat}/*.h files that get included in ARM
-> > > specific drivers. Out of the 342 header files that get used in this way,
-> > > I found 93 that are practically just platform data, and a few that
-> > > are platform_data mixed with something else.
-> > > 
-> > > How about I move all the pure platform data definition files now and
-> > > rebase the other patches on top of that. Here is a list of suggested
-> > > file names in include/linux/platform_data/:
-> > 
-> > I've just scripted this and am running my build testsuite over it now.
-> > 
-> > Please let me know what you think about it.
-> > 
-> > 	Arnd
-> > 
-> > The following changes since commit fea7a08acb13524b47711625eebea40a0ede69a0:
-> > 
-> >   Linux 3.6-rc3 (2012-08-22 13:29:06 -0700)
-> > 
-> > are available in the git repository at:
-> > 
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git 
+On Thu, Aug 30, 2012 at 11:45:11AM -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > 
-> I'd like to run some checks on this, but branch name missing here for
-> pulling a branch in for testing..
+> Drop a few characters by switching kernel/rcutorture.c from
+> "printk(KERN_ALERT" to "pr_alert(".
+> 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-FYI, after talking with Arnd this is the testing/platform-data branch
-in the arm soc tree. Seems to build and work fine on omaps:
+How about setting pr_fmt as well, and dropping the various "rcutorture:"
+prefixes?  You'd still potentially want to add the torture type, though
+you could do that with pr_fmt as well.
 
-Tested-by: Tony Lindgren <tony@atomide.com>
+In any case:
 
-Arnd, can you please provide a stable branch to use as a base of
-other related header changes?
-
-Regards,
-
-Tony
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
