@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754325Ab2H3STc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 14:19:32 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:52706 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754204Ab2H3ST3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 14:19:29 -0400
+	id S1754746Ab2H3SXN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 14:23:13 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:38508 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754204Ab2H3STd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 14:19:33 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -16,276 +15,120 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 01/23] rcu: Move RCU grace-period initialization into a kthread
-Date: Thu, 30 Aug 2012 11:18:16 -0700
-Message-Id: <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 11/23] rcu: Adjust debugfs tracing for kthread-based quiescent-state forcing
+Date: Thu, 30 Aug 2012 11:18:26 -0700
+Message-Id: <1346350718-30937-11-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
-In-Reply-To: <20120830181811.GA29154@linux.vnet.ibm.com>
+In-Reply-To: <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120830181811.GA29154@linux.vnet.ibm.com>
+ <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12083018-4242-0000-0000-000002B997E6
+x-cbid: 12083018-1976-0000-0000-000010BDD2FD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-As the first step towards allowing grace-period initialization to be
-preemptible, this commit moves the RCU grace-period initialization
-into its own kthread.  This is needed to keep large-system scheduling
-latency at reasonable levels.
+Moving quiescent-state forcing into a kthread dispenses with the need
+for the ->n_rp_need_fqs field, so this commit removes it.
 
-Reported-by: Mike Galbraith <mgalbraith@suse.de>
-Reported-by: Dimitri Sivanich <sivanich@sgi.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutree.c |  191 ++++++++++++++++++++++++++++++++++++------------------
- kernel/rcutree.h |    3 +
- 2 files changed, 130 insertions(+), 64 deletions(-)
+ Documentation/RCU/trace.txt |   43 ++++++++++++++++---------------------------
+ kernel/rcutree.h            |    1 -
+ kernel/rcutree_trace.c      |    3 +--
+ 3 files changed, 17 insertions(+), 30 deletions(-)
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index f280e54..e1c5868 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -1040,6 +1040,103 @@ rcu_start_gp_per_cpu(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_dat
- }
+diff --git a/Documentation/RCU/trace.txt b/Documentation/RCU/trace.txt
+index f6f15ce..672d190 100644
+--- a/Documentation/RCU/trace.txt
++++ b/Documentation/RCU/trace.txt
+@@ -333,23 +333,23 @@ o	Each element of the form "1/1 0:127 ^0" represents one struct
+ The output of "cat rcu/rcu_pending" looks as follows:
  
- /*
-+ * Body of kthread that handles grace periods.
-+ */
-+static int rcu_gp_kthread(void *arg)
-+{
-+	unsigned long flags;
-+	struct rcu_data *rdp;
-+	struct rcu_node *rnp;
-+	struct rcu_state *rsp = arg;
-+
-+	for (;;) {
-+
-+		/* Handle grace-period start. */
-+		rnp = rcu_get_root(rsp);
-+		for (;;) {
-+			wait_event_interruptible(rsp->gp_wq, rsp->gp_flags);
-+			if (rsp->gp_flags)
-+				break;
-+			flush_signals(current);
-+		}
-+		raw_spin_lock_irqsave(&rnp->lock, flags);
-+		rsp->gp_flags = 0;
-+		rdp = this_cpu_ptr(rsp->rda);
-+
-+		if (rcu_gp_in_progress(rsp)) {
-+			/*
-+			 * A grace period is already in progress, so
-+			 * don't start another one.
-+			 */
-+			raw_spin_unlock_irqrestore(&rnp->lock, flags);
-+			continue;
-+		}
-+
-+		if (rsp->fqs_active) {
-+			/*
-+			 * We need a grace period, but force_quiescent_state()
-+			 * is running.  Tell it to start one on our behalf.
-+			 */
-+			rsp->fqs_need_gp = 1;
-+			raw_spin_unlock_irqrestore(&rnp->lock, flags);
-+			continue;
-+		}
-+
-+		/* Advance to a new grace period and initialize state. */
-+		rsp->gpnum++;
-+		trace_rcu_grace_period(rsp->name, rsp->gpnum, "start");
-+		WARN_ON_ONCE(rsp->fqs_state == RCU_GP_INIT);
-+		rsp->fqs_state = RCU_GP_INIT; /* Stop force_quiescent_state. */
-+		rsp->jiffies_force_qs = jiffies + RCU_JIFFIES_TILL_FORCE_QS;
-+		record_gp_stall_check_time(rsp);
-+		raw_spin_unlock(&rnp->lock);  /* leave irqs disabled. */
-+
-+		/* Exclude any concurrent CPU-hotplug operations. */
-+		raw_spin_lock(&rsp->onofflock);  /* irqs already disabled. */
-+
-+		/*
-+		 * Set the quiescent-state-needed bits in all the rcu_node
-+		 * structures for all currently online CPUs in breadth-first
-+		 * order, starting from the root rcu_node structure.
-+		 * This operation relies on the layout of the hierarchy
-+		 * within the rsp->node[] array.  Note that other CPUs will
-+		 * access only the leaves of the hierarchy, which still
-+		 * indicate that no grace period is in progress, at least
-+		 * until the corresponding leaf node has been initialized.
-+		 * In addition, we have excluded CPU-hotplug operations.
-+		 *
-+		 * Note that the grace period cannot complete until
-+		 * we finish the initialization process, as there will
-+		 * be at least one qsmask bit set in the root node until
-+		 * that time, namely the one corresponding to this CPU,
-+		 * due to the fact that we have irqs disabled.
-+		 */
-+		rcu_for_each_node_breadth_first(rsp, rnp) {
-+			raw_spin_lock(&rnp->lock); /* irqs already disabled. */
-+			rcu_preempt_check_blocked_tasks(rnp);
-+			rnp->qsmask = rnp->qsmaskinit;
-+			rnp->gpnum = rsp->gpnum;
-+			rnp->completed = rsp->completed;
-+			if (rnp == rdp->mynode)
-+				rcu_start_gp_per_cpu(rsp, rnp, rdp);
-+			rcu_preempt_boost_start_gp(rnp);
-+			trace_rcu_grace_period_init(rsp->name, rnp->gpnum,
-+						    rnp->level, rnp->grplo,
-+						    rnp->grphi, rnp->qsmask);
-+			raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
-+		}
-+
-+		rnp = rcu_get_root(rsp);
-+		raw_spin_lock(&rnp->lock); /* irqs already disabled. */
-+		/* force_quiescent_state() now OK. */
-+		rsp->fqs_state = RCU_SIGNAL_INIT;
-+		raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
-+		raw_spin_unlock_irqrestore(&rsp->onofflock, flags);
-+	}
-+	return 0;
-+}
-+
-+/*
-  * Start a new RCU grace period if warranted, re-initializing the hierarchy
-  * in preparation for detecting the next grace period.  The caller must hold
-  * the root node's ->lock, which is released before return.  Hard irqs must
-@@ -1056,77 +1153,20 @@ rcu_start_gp(struct rcu_state *rsp, unsigned long flags)
- 	struct rcu_data *rdp = this_cpu_ptr(rsp->rda);
- 	struct rcu_node *rnp = rcu_get_root(rsp);
+ rcu_sched:
+-  0 np=255892 qsp=53936 rpq=85 cbr=0 cng=14417 gpc=10033 gps=24320 nf=6445 nn=146741
+-  1 np=261224 qsp=54638 rpq=33 cbr=0 cng=25723 gpc=16310 gps=2849 nf=5912 nn=155792
+-  2 np=237496 qsp=49664 rpq=23 cbr=0 cng=2762 gpc=45478 gps=1762 nf=1201 nn=136629
+-  3 np=236249 qsp=48766 rpq=98 cbr=0 cng=286 gpc=48049 gps=1218 nf=207 nn=137723
+-  4 np=221310 qsp=46850 rpq=7 cbr=0 cng=26 gpc=43161 gps=4634 nf=3529 nn=123110
+-  5 np=237332 qsp=48449 rpq=9 cbr=0 cng=54 gpc=47920 gps=3252 nf=201 nn=137456
+-  6 np=219995 qsp=46718 rpq=12 cbr=0 cng=50 gpc=42098 gps=6093 nf=4202 nn=120834
+-  7 np=249893 qsp=49390 rpq=42 cbr=0 cng=72 gpc=38400 gps=17102 nf=41 nn=144888
++  0 np=255892 qsp=53936 rpq=85 cbr=0 cng=14417 gpc=10033 gps=24320 nn=146741
++  1 np=261224 qsp=54638 rpq=33 cbr=0 cng=25723 gpc=16310 gps=2849 nn=155792
++  2 np=237496 qsp=49664 rpq=23 cbr=0 cng=2762 gpc=45478 gps=1762 nn=136629
++  3 np=236249 qsp=48766 rpq=98 cbr=0 cng=286 gpc=48049 gps=1218 nn=137723
++  4 np=221310 qsp=46850 rpq=7 cbr=0 cng=26 gpc=43161 gps=4634 nn=123110
++  5 np=237332 qsp=48449 rpq=9 cbr=0 cng=54 gpc=47920 gps=3252 nn=137456
++  6 np=219995 qsp=46718 rpq=12 cbr=0 cng=50 gpc=42098 gps=6093 nn=120834
++  7 np=249893 qsp=49390 rpq=42 cbr=0 cng=72 gpc=38400 gps=17102 nn=144888
+ rcu_bh:
+-  0 np=146741 qsp=1419 rpq=6 cbr=0 cng=6 gpc=0 gps=0 nf=2 nn=145314
+-  1 np=155792 qsp=12597 rpq=3 cbr=0 cng=0 gpc=4 gps=8 nf=3 nn=143180
+-  2 np=136629 qsp=18680 rpq=1 cbr=0 cng=0 gpc=7 gps=6 nf=0 nn=117936
+-  3 np=137723 qsp=2843 rpq=0 cbr=0 cng=0 gpc=10 gps=7 nf=0 nn=134863
+-  4 np=123110 qsp=12433 rpq=0 cbr=0 cng=0 gpc=4 gps=2 nf=0 nn=110671
+-  5 np=137456 qsp=4210 rpq=1 cbr=0 cng=0 gpc=6 gps=5 nf=0 nn=133235
+-  6 np=120834 qsp=9902 rpq=2 cbr=0 cng=0 gpc=6 gps=3 nf=2 nn=110921
+-  7 np=144888 qsp=26336 rpq=0 cbr=0 cng=0 gpc=8 gps=2 nf=0 nn=118542
++  0 np=146741 qsp=1419 rpq=6 cbr=0 cng=6 gpc=0 gps=0 nn=145314
++  1 np=155792 qsp=12597 rpq=3 cbr=0 cng=0 gpc=4 gps=8 nn=143180
++  2 np=136629 qsp=18680 rpq=1 cbr=0 cng=0 gpc=7 gps=6 nn=117936
++  3 np=137723 qsp=2843 rpq=0 cbr=0 cng=0 gpc=10 gps=7 nn=134863
++  4 np=123110 qsp=12433 rpq=0 cbr=0 cng=0 gpc=4 gps=2 nn=110671
++  5 np=137456 qsp=4210 rpq=1 cbr=0 cng=0 gpc=6 gps=5 nn=133235
++  6 np=120834 qsp=9902 rpq=2 cbr=0 cng=0 gpc=6 gps=3 nn=110921
++  7 np=144888 qsp=26336 rpq=0 cbr=0 cng=0 gpc=8 gps=2 nn=118542
  
--	if (!rcu_scheduler_fully_active ||
-+	if (!rsp->gp_kthread ||
- 	    !cpu_needs_another_gp(rsp, rdp)) {
- 		/*
--		 * Either the scheduler hasn't yet spawned the first
--		 * non-idle task or this CPU does not need another
--		 * grace period.  Either way, don't start a new grace
--		 * period.
--		 */
--		raw_spin_unlock_irqrestore(&rnp->lock, flags);
--		return;
--	}
+ As always, this is once again split into "rcu_sched" and "rcu_bh"
+ portions, with CONFIG_TREE_PREEMPT_RCU kernels having an additional
+@@ -377,17 +377,6 @@ o	"gpc" is the number of times that an old grace period had
+ o	"gps" is the number of times that a new grace period had started,
+ 	but this CPU was not yet aware of it.
+ 
+-o	"nf" is the number of times that this CPU suspected that the
+-	current grace period had run for too long, and thus needed to
+-	be forced.
 -
--	if (rsp->fqs_active) {
--		/*
--		 * This CPU needs a grace period, but force_quiescent_state()
--		 * is running.  Tell it to start one on this CPU's behalf.
-+		 * Either we have not yet spawned the grace-period
-+		 * task or this CPU does not need another grace period.
-+		 * Either way, don't start a new grace period.
- 		 */
--		rsp->fqs_need_gp = 1;
- 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
- 		return;
- 	}
- 
--	/* Advance to a new grace period and initialize state. */
--	rsp->gpnum++;
--	trace_rcu_grace_period(rsp->name, rsp->gpnum, "start");
--	WARN_ON_ONCE(rsp->fqs_state == RCU_GP_INIT);
--	rsp->fqs_state = RCU_GP_INIT; /* Hold off force_quiescent_state. */
--	rsp->jiffies_force_qs = jiffies + RCU_JIFFIES_TILL_FORCE_QS;
--	record_gp_stall_check_time(rsp);
--	raw_spin_unlock(&rnp->lock);  /* leave irqs disabled. */
+-	Please note that "forcing" consists of sending resched IPIs
+-	to holdout CPUs.  If that CPU really still is in an old RCU
+-	read-side critical section, then we really do have to wait for it.
+-	The assumption behing "forcing" is that the CPU is not still in
+-	an old RCU read-side critical section, but has not yet responded
+-	for some other reason.
 -
--	/* Exclude any concurrent CPU-hotplug operations. */
--	raw_spin_lock(&rsp->onofflock);  /* irqs already disabled. */
--
--	/*
--	 * Set the quiescent-state-needed bits in all the rcu_node
--	 * structures for all currently online CPUs in breadth-first
--	 * order, starting from the root rcu_node structure.  This
--	 * operation relies on the layout of the hierarchy within the
--	 * rsp->node[] array.  Note that other CPUs will access only
--	 * the leaves of the hierarchy, which still indicate that no
--	 * grace period is in progress, at least until the corresponding
--	 * leaf node has been initialized.  In addition, we have excluded
--	 * CPU-hotplug operations.
--	 *
--	 * Note that the grace period cannot complete until we finish
--	 * the initialization process, as there will be at least one
--	 * qsmask bit set in the root node until that time, namely the
--	 * one corresponding to this CPU, due to the fact that we have
--	 * irqs disabled.
--	 */
--	rcu_for_each_node_breadth_first(rsp, rnp) {
--		raw_spin_lock(&rnp->lock);	/* irqs already disabled. */
--		rcu_preempt_check_blocked_tasks(rnp);
--		rnp->qsmask = rnp->qsmaskinit;
--		rnp->gpnum = rsp->gpnum;
--		rnp->completed = rsp->completed;
--		if (rnp == rdp->mynode)
--			rcu_start_gp_per_cpu(rsp, rnp, rdp);
--		rcu_preempt_boost_start_gp(rnp);
--		trace_rcu_grace_period_init(rsp->name, rnp->gpnum,
--					    rnp->level, rnp->grplo,
--					    rnp->grphi, rnp->qsmask);
--		raw_spin_unlock(&rnp->lock);	/* irqs remain disabled. */
--	}
--
--	rnp = rcu_get_root(rsp);
--	raw_spin_lock(&rnp->lock);		/* irqs already disabled. */
--	rsp->fqs_state = RCU_SIGNAL_INIT; /* force_quiescent_state now OK. */
--	raw_spin_unlock(&rnp->lock);		/* irqs remain disabled. */
--	raw_spin_unlock_irqrestore(&rsp->onofflock, flags);
-+	rsp->gp_flags = 1;
-+	raw_spin_unlock_irqrestore(&rnp->lock, flags);
-+	wake_up(&rsp->gp_wq);
- }
- 
- /*
-@@ -2627,6 +2667,28 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
- }
- 
- /*
-+ * Spawn the kthread that handles this RCU flavor's grace periods.
-+ */
-+static int __init rcu_spawn_gp_kthread(void)
-+{
-+	unsigned long flags;
-+	struct rcu_node *rnp;
-+	struct rcu_state *rsp;
-+	struct task_struct *t;
-+
-+	for_each_rcu_flavor(rsp) {
-+		t = kthread_run(rcu_gp_kthread, rsp, rsp->name);
-+		BUG_ON(IS_ERR(t));
-+		rnp = rcu_get_root(rsp);
-+		raw_spin_lock_irqsave(&rnp->lock, flags);
-+		rsp->gp_kthread = t;
-+		raw_spin_unlock_irqrestore(&rnp->lock, flags);
-+	}
-+	return 0;
-+}
-+early_initcall(rcu_spawn_gp_kthread);
-+
-+/*
-  * This function is invoked towards the end of the scheduler's initialization
-  * process.  Before this is called, the idle task might contain
-  * RCU read-side critical sections (during which time, this idle
-@@ -2727,6 +2789,7 @@ static void __init rcu_init_one(struct rcu_state *rsp,
- 	}
- 
- 	rsp->rda = rda;
-+	init_waitqueue_head(&rsp->gp_wq);
- 	rnp = rsp->level[rcu_num_lvls - 1];
- 	for_each_possible_cpu(i) {
- 		while (i > rnp->grphi)
+ o	"nn" is the number of times that this CPU needed nothing.  Alert
+ 	readers will note that the rcu "nn" number for a given CPU very
+ 	closely matches the rcu_bh "np" number for that same CPU.  This
 diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index 4d29169..117a150 100644
+index 1f26b1f..36916df 100644
 --- a/kernel/rcutree.h
 +++ b/kernel/rcutree.h
-@@ -385,6 +385,9 @@ struct rcu_state {
- 	u8	boost;				/* Subject to priority boost. */
- 	unsigned long gpnum;			/* Current gp number. */
- 	unsigned long completed;		/* # of last completed gp. */
-+	struct task_struct *gp_kthread;		/* Task for grace periods. */
-+	wait_queue_head_t gp_wq;		/* Where GP task waits. */
-+	int gp_flags;				/* Commands for GP task. */
+@@ -312,7 +312,6 @@ struct rcu_data {
+ 	unsigned long n_rp_cpu_needs_gp;
+ 	unsigned long n_rp_gp_completed;
+ 	unsigned long n_rp_gp_started;
+-	unsigned long n_rp_need_fqs;
+ 	unsigned long n_rp_need_nothing;
  
- 	/* End of fields guarded by root rcu_node's lock. */
+ 	/* 6) _rcu_barrier() and OOM callbacks. */
+diff --git a/kernel/rcutree_trace.c b/kernel/rcutree_trace.c
+index abffb48..f54f0ce 100644
+--- a/kernel/rcutree_trace.c
++++ b/kernel/rcutree_trace.c
+@@ -386,10 +386,9 @@ static void print_one_rcu_pending(struct seq_file *m, struct rcu_data *rdp)
+ 		   rdp->n_rp_report_qs,
+ 		   rdp->n_rp_cb_ready,
+ 		   rdp->n_rp_cpu_needs_gp);
+-	seq_printf(m, "gpc=%ld gps=%ld nf=%ld nn=%ld\n",
++	seq_printf(m, "gpc=%ld gps=%ld nn=%ld\n",
+ 		   rdp->n_rp_gp_completed,
+ 		   rdp->n_rp_gp_started,
+-		   rdp->n_rp_need_fqs,
+ 		   rdp->n_rp_need_nothing);
+ }
  
 -- 
 1.7.8
