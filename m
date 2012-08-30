@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab2H3S3r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 14:29:47 -0400
-Received: from bosmailout13.eigbox.net ([66.96.188.13]:35575 "EHLO
-	bosmailout13.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754920Ab2H3S3n (ORCPT
+	id S1753800Ab2H3ScN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 14:32:13 -0400
+Received: from bosmailout09.eigbox.net ([66.96.187.9]:47748 "EHLO
+	bosmailout09.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752648Ab2H3ScL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 14:29:43 -0400
-X-Greylist: delayed 2375 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 Aug 2012 14:29:43 EDT
-X-Authority-Analysis: v=2.0 cv=aPZHX8Bm c=1 sm=1
+	Thu, 30 Aug 2012 14:32:11 -0400
+X-Authority-Analysis: v=2.0 cv=LI/Rtuq9 c=1 sm=1
  a=EVDLJLhrg0sUKeqAW2r0xw==:17 a=bc2JKO6qiGsA:10 a=tW0haWE2Y5YA:10
- a=W6MEt8fMaIAA:10 a=8nJEP1OIZ-IA:10 a=B_w90FyZ_4cA:10
- a=bJ0fqD8TFZgqkSadqForXVIPBlU=:19 a=LfFflyyhb7Rfm_sXAqwA:9 a=wPNLvfGTeEIA:10
- a=jcMFiYeD4Gz02xRQ37rMPA==:117
-X-EN-OrigOutIP: 10.20.18.4
-X-EN-IMPSID: t5q61j00H05GATN015q65f
-Message-ID: <503FA259.3090602@yahoo.es>
-Date: Fri, 31 Aug 2012 01:26:49 +0800
+ a=5SWCv1JCYfwA:10 a=8nJEP1OIZ-IA:10 a=LjGfLD6JS_4A:10
+ a=bJ0fqD8TFZgqkSadqForXVIPBlU=:19 a=D19gQVrFAAAA:8 a=fUsd2VqqzTs3fo_v_LkA:9
+ a=wPNLvfGTeEIA:10 a=Emj6vpyMtVheBqHv:21 a=x6D1_-4xNbzhenjE:21
+ a=Kpo39fPXdbgqDwiI3/AEUA==:117
+X-EN-OrigOutIP: 10.20.18.10
+X-EN-IMPSID: t5oe1j0020D2CUy015oeNs
+Message-ID: <503F961A.8050702@yahoo.es>
+Date: Fri, 31 Aug 2012 00:34:34 +0800
 From: Hein Tibosch <hein_tibosch@yahoo.es>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120824 Thunderbird/15.0
 MIME-Version: 1.0
-To: viresh kumar <viresh.kumar@linaro.org>
-CC: spear-devel <spear-devel@list.st.com>,
+To: viresh kumar <viresh.kumar@linaro.org>,
+        spear-devel <spear-devel@list.st.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         "ludovic.desroches" <ludovic.desroches@atmel.com>,
         Havard Skinnemoen <havard@skinnemoen.net>,
@@ -29,7 +29,8 @@ CC: spear-devel <spear-devel@list.st.com>,
         Hans-Christian Egtvedt <egtvedt@samfundet.no>,
         Andrew Morton <akpm@linux-foundation.org>,
         Arnd Bergmann <arnd.bergmann@linaro.org>
-Subject: [PATCH v2 1/2] dw_dmac: make driver endianness configurable
+Subject: [PATCH v2 2/2] dw_dmac: max_mem_width limits value for SRC/DST_TR_WID
+ register
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-EN-UserInfo: 3946c951b80c12a8be5482963a0b1232:e0ae43bc192b431f8b69f09a37527cbc
@@ -40,82 +41,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dw_dmac was originally developed for avr32 to be used with the
-Synopsys DesignWare AHB DMA controller. After 2.6.38, device access was done
-with the little-endian readl/writel functions. This didn't work on the
-avr32 platform, because it needs native-endian (i.e. big-endian) accessors.
-This patch makes the endianness configurable using 'DW_DMAC_BIG_ENDIAN_IO',
-which will default be true for AVR32
+The dw_dmac driver was earlier adapted to do 64-bit transfers
+on the memory side (https://lkml.org/lkml/2012/1/18/52)
+This works on ARM platforms but for AVR32 (AP700x) the maximum
+allowed transfer size is 32-bits.
+This patch allows the arch to set a new slave property
+max_mem_width to limit the size.
+Allowable values are:
+
+#define	DW_MEM_WIDTH_64		0
+#define	DW_MEM_WIDTH_32		1	/* e.g. for avr32 */
 
 
 Signed-off-by: Hein Tibosch <hein_tibosch@yahoo.es>
 ---
- drivers/dma/Kconfig        |   11 +++++++++++
- drivers/dma/dw_dmac_regs.h |   14 ++++++++++++++
- 2 files changed, 25 insertions(+), 0 deletions(-)
+ drivers/dma/dw_dmac.c   |   10 +++++++---
+ include/linux/dw_dmac.h |    3 +++
+ 2 files changed, 10 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-index aadeb5b..a9f6781 100644
---- a/drivers/dma/Kconfig
-+++ b/drivers/dma/Kconfig
-@@ -89,6 +89,17 @@ config DW_DMAC
- 	  Support the Synopsys DesignWare AHB DMA controller.  This
- 	  can be integrated in chips such as the Atmel AT32ap7000.
- 
-+config DW_DMAC_BIG_ENDIAN_IO
-+	bool "Use big endian I/O register access"
-+	default y if AVR32
-+	depends on DW_DMAC
-+	help
-+	  Say yes here to use big endian I/O access when reading and writing
-+	  to the DMA controller registers. This is needed on some platforms,
-+	  like the Atmel AVR32 architecture.
-+
-+	  If unsure, use the default setting.
-+
- config AT_HDMAC
- 	tristate "Atmel AHB DMA support"
- 	depends on ARCH_AT91
-diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
-index f298f69..9758651 100644
---- a/drivers/dma/dw_dmac_regs.h
-+++ b/drivers/dma/dw_dmac_regs.h
-@@ -175,10 +175,17 @@ __dwc_regs(struct dw_dma_chan *dwc)
- 	return dwc->ch_regs;
- }
- 
-+#ifdef CONFIG_DW_DMAC_BIG_ENDIAN_IO
-+#define channel_readl(dwc, name) \
-+	ioread32be(&(__dwc_regs(dwc)->name))
-+#define channel_writel(dwc, name, val) \
-+	iowrite32be((val), &(__dwc_regs(dwc)->name))
-+#else
- #define channel_readl(dwc, name) \
- 	readl(&(__dwc_regs(dwc)->name))
- #define channel_writel(dwc, name, val) \
- 	writel((val), &(__dwc_regs(dwc)->name))
-+#endif
- 
- static inline struct dw_dma_chan *to_dw_dma_chan(struct dma_chan *chan)
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+index 7212961..11f8542 100644
+--- a/drivers/dma/dw_dmac.c
++++ b/drivers/dma/dw_dmac.c
+@@ -618,6 +618,7 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
+ 		size_t len, unsigned long flags)
  {
-@@ -201,10 +208,17 @@ static inline struct dw_dma_regs __iomem *__dw_regs(struct dw_dma *dw)
- 	return dw->regs;
- }
+ 	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
++	struct dw_dma_slave	*dws = chan->private;
+ 	struct dw_desc		*desc;
+ 	struct dw_desc		*first;
+ 	struct dw_desc		*prev;
+@@ -639,7 +640,8 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
+ 	 * We can be a lot more clever here, but this should take care
+ 	 * of the most common optimization.
+ 	 */
+-	if (!((src | dest  | len) & 7))
++	if (dws->max_mem_width == DW_MEM_WIDTH_64 &&
++		!((src | dest  | len) & 7))
+ 		src_width = dst_width = 3;
+ 	else if (!((src | dest  | len) & 3))
+ 		src_width = dst_width = 2;
+@@ -746,7 +748,8 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 			mem = sg_dma_address(sg);
+ 			len = sg_dma_len(sg);
  
-+#ifdef CONFIG_DW_DMAC_BIG_ENDIAN_IO
-+#define dma_readl(dwc, name) \
-+	ioread32be(&(__dw_regs(dw)->name))
-+#define dma_writel(dwc, name, val) \
-+	iowrite32be((val), &(__dw_regs(dw)->name))
-+#else
- #define dma_readl(dw, name) \
- 	readl(&(__dw_regs(dw)->name))
- #define dma_writel(dw, name, val) \
- 	writel((val), &(__dw_regs(dw)->name))
-+#endif
+-			if (!((mem | len) & 7))
++			if (dws->max_mem_width == DW_MEM_WIDTH_64 &&
++				!((mem | len) & 7))
+ 				mem_width = 3;
+ 			else if (!((mem | len) & 3))
+ 				mem_width = 2;
+@@ -813,7 +816,8 @@ slave_sg_todev_fill_desc:
+ 			mem = sg_dma_address(sg);
+ 			len = sg_dma_len(sg);
  
- #define channel_set_bit(dw, reg, mask) \
- 	dma_writel(dw, reg, ((mask) << 8) | (mask))
+-			if (!((mem | len) & 7))
++			if (dws->max_mem_width == DW_MEM_WIDTH_64 &&
++				!((mem | len) & 7))
+ 				mem_width = 3;
+ 			else if (!((mem | len) & 3))
+ 				mem_width = 2;
+diff --git a/include/linux/dw_dmac.h b/include/linux/dw_dmac.h
+index 2412e02..330afb2 100644
+--- a/include/linux/dw_dmac.h
++++ b/include/linux/dw_dmac.h
+@@ -58,6 +58,9 @@ struct dw_dma_slave {
+ 	u32			cfg_lo;
+ 	u8			src_master;
+ 	u8			dst_master;
++#define	DW_MEM_WIDTH_64		0
++#define	DW_MEM_WIDTH_32		1	/* e.g. for avr32 */
++	u8			max_mem_width;
+ };
+ 
+ /* Platform-configurable bits in CFG_HI */
 -- 
 1.7.8.0
+
 
