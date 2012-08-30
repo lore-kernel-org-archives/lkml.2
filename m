@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab2H3QkA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 12:40:00 -0400
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:43175 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753472Ab2H3Qj6 convert rfc822-to-8bit
+	id S1754231Ab2H3Qkb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 12:40:31 -0400
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:53296 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752544Ab2H3Qka convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 12:39:58 -0400
+	Thu, 30 Aug 2012 12:40:30 -0400
 From: George Zhang <georgezhang@vmware.com>
 To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "virtualization@lists.linux-foundation.org" 
 	<virtualization@lists.linux-foundation.org>
 CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Date: Thu, 30 Aug 2012 09:39:19 -0700
-Subject: [PATCH 02/11] vmci_datagram.patch: VMCI datagram entity handling.
-Thread-Topic: [PATCH 02/11] vmci_datagram.patch: VMCI datagram entity
+Date: Thu, 30 Aug 2012 09:40:08 -0700
+Subject: [PATCH 03/11] vmci_doorbell.patch: VMCI doorbell notification
  handling.
-Thread-Index: Ac2CHCAP1yBEJ3aQSFaSfVIMQxyP7AEseDTg
-Message-ID: <15333E71B3DDCB48A90165AD57993F285685DB43D8@exch-mbx-114.vmware.com>
-References: <20120824171042.4775.36871.stgit@promb-2n-dhcp175.eng.vmware.com>,<20120824171556.4775.64978.stgit@promb-2n-dhcp175.eng.vmware.com>
-In-Reply-To: <20120824171556.4775.64978.stgit@promb-2n-dhcp175.eng.vmware.com>
+Thread-Topic: [PATCH 03/11] vmci_doorbell.patch: VMCI doorbell notification
+ handling.
+Thread-Index: AQHNhs4pBJHOACR+8kGAhaxOApxE0A==
+Message-ID: <15333E71B3DDCB48A90165AD57993F285685DB43D9@exch-mbx-114.vmware.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -36,18 +35,18 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: George Zhang <georgezhang@vmware.com>
 ---
- drivers/misc/vmw_vmci/vmci_datagram.c |  583 +++++++++++++++++++++++++++++++++
- drivers/misc/vmw_vmci/vmci_datagram.h |   55 +++
- 2 files changed, 638 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/vmw_vmci/vmci_datagram.c
- create mode 100644 drivers/misc/vmw_vmci/vmci_datagram.h
+ drivers/misc/vmw_vmci/vmci_doorbell.c |  749 +++++++++++++++++++++++++++++++++
+ drivers/misc/vmw_vmci/vmci_doorbell.h |   54 ++
+ 2 files changed, 803 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/vmw_vmci/vmci_doorbell.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_doorbell.h
 
-diff --git a/drivers/misc/vmw_vmci/vmci_datagram.c b/drivers/misc/vmw_vmci/vmci_datagram.c
+diff --git a/drivers/misc/vmw_vmci/vmci_doorbell.c b/drivers/misc/vmw_vmci/vmci_doorbell.c
 new file mode 100644
-index 0000000..21ee66d
+index 0000000..d67bfc7
 --- /dev/null
-+++ b/drivers/misc/vmw_vmci/vmci_datagram.c
-@@ -0,0 +1,583 @@
++++ b/drivers/misc/vmw_vmci/vmci_doorbell.c
+@@ -0,0 +1,749 @@
 +/*
 + * VMware VMCI Driver
 + *
@@ -65,100 +64,542 @@ index 0000000..21ee66d
 +
 +#include <linux/vmw_vmci_defs.h>
 +#include <linux/vmw_vmci_api.h>
++#include <linux/kernel.h>
 +#include <linux/module.h>
 +#include <linux/sched.h>
 +#include <linux/slab.h>
-+#include <linux/bug.h>
 +
 +#include "vmci_common_int.h"
-+#include "vmci_hash_table.h"
 +#include "vmci_datagram.h"
++#include "vmci_doorbell.h"
 +#include "vmci_resource.h"
-+#include "vmci_context.h"
 +#include "vmci_driver.h"
-+#include "vmci_event.h"
 +#include "vmci_route.h"
 +
++#define VMCI_DOORBELL_INDEX_TABLE_SIZE (1 << 6)
++#define VMCI_DOORBELL_HASH(_idx)                               \
++       vmci_hash_calc((_idx), VMCI_DOORBELL_INDEX_TABLE_SIZE)
++
 +/*
-+ * struct datagram_entry describes the datagram entity. It is used for datagram
-+ * entities created only on the host.
++ * DoorbellEntry describes the a doorbell notification handle allocated by the
++ * host.
 + */
-+struct datagram_entry {
++struct dbell_entry {
 +       struct vmci_resource resource;
-+       u32 flags;
++       uint32_t idx;
++       struct list_head idxListItem;
++       uint32_t privFlags;
 +       bool runDelayed;
-+       vmci_datagram_recv_cb recvCB;
++       vmci_callback notifyCB;
 +       void *clientData;
 +       wait_queue_head_t destroyEvent;
-+       u32 privFlags;
++       atomic_t active;        /* Only used by guest personality */
 +};
 +
-+struct delayed_datagram_info {
-+       bool inDGHostQueue;
-+       struct datagram_entry *entry;
-+       struct vmci_datagram msg;
-+};
++/* The VMCI index table keeps track of currently registered doorbells. */
++static struct dbell_index_table {
++       spinlock_t lock; /* Index table lock */
++       struct list_head entries[VMCI_DOORBELL_INDEX_TABLE_SIZE];
++} vmciDoorbellIT;
 +
-+static atomic_t delayedDGHostQueueSize;
++/*
++ * The maxNotifyIdx is one larger than the currently known bitmap index in
++ * use, and is used to determine how much of the bitmap needs to be scanned.
++ */
++static uint32_t maxNotifyIdx;
 +
-+static void dg_free_cb(void *clientData)
++/*
++ * The notifyIdxCount is used for determining whether there are free entries
++ * within the bitmap (if notifyIdxCount + 1 < maxNotifyIdx).
++ */
++static uint32_t notifyIdxCount;
++
++/*
++ * The lastNotifyIdxReserved is used to track the last index handed out - in
++ * the case where multiple handles share a notification index, we hand out
++ * indexes round robin based on lastNotifyIdxReserved.
++ */
++static uint32_t lastNotifyIdxReserved;
++
++/* This is a one entry cache used to by the index allocation. */
++static uint32_t lastNotifyIdxReleased = PAGE_SIZE;
++
++/*
++ * General init code.
++ */
++int __init vmci_dbell_init(void)
 +{
-+       struct datagram_entry *entry = (struct datagram_entry *)clientData;
-+       ASSERT(entry);
++       uint32_t bucket;
 +
-+       /*
-+        * Entry is freed in VMCIDatagram_DestroyHnd, who waits for
-+        * the signal.
-+        */
++       for (bucket = 0; bucket < ARRAY_SIZE(vmciDoorbellIT.entries); ++bucket)
++               INIT_LIST_HEAD(&vmciDoorbellIT.entries[bucket]);
++
++       spin_lock_init(&vmciDoorbellIT.lock);
++       return VMCI_SUCCESS;
++}
++
++/*
++ * Callback to free doorbell entry structure when resource is no longer used,
++ * The entry is freed in VMCIDoorbell_Destroy(), which is waiting on the
++ * signal that gets fired here.
++ */
++static void dbell_free_cb(void *clientData)
++{
++       struct dbell_entry *entry = (struct dbell_entry *)clientData;
++       ASSERT(entry);
 +       wake_up(&entry->destroyEvent);
 +}
 +
-+static int dg_release_cb(void *clientData)
++static int dbell_release_cb(void *clientData)
 +{
-+       struct datagram_entry *entry = (struct datagram_entry *)clientData;
++       struct dbell_entry *entry = (struct dbell_entry *)clientData;
 +       ASSERT(entry);
 +       vmci_resource_release(&entry->resource);
 +       return 0;
 +}
 +
 +/*
-+ * Create a datagram entry given a handle pointer.
++ * Utility function that retrieves the privilege flags associated
++ * with a given doorbell handle. For guest endpoints, the
++ * privileges are determined by the context ID, but for host
++ * endpoints privileges are associated with the complete
++ * handle. Hypervisor endpoints are not yet supported.
 + */
-+static int dg_create_handle(u32 resourceID,
-+                           u32 flags,
-+                           u32 privFlags,
-+                           vmci_datagram_recv_cb recvCB,
-+                           void *clientData,
-+                           struct vmci_handle *outHandle)
++int vmci_dbell_get_priv_flags(struct vmci_handle handle,
++                             uint32_t *privFlags)
 +{
-+       int result;
-+       u32 contextID;
-+       struct vmci_handle handle;
-+       struct datagram_entry *entry;
++       if (privFlags == NULL || handle.context == VMCI_INVALID_ID)
++               return VMCI_ERROR_INVALID_ARGS;
 +
-+       ASSERT(recvCB != NULL);
-+       ASSERT(outHandle != NULL);
-+       ASSERT(!(privFlags & ~VMCI_PRIVILEGE_ALL_FLAGS));
++       if (handle.context == VMCI_HOST_CONTEXT_ID) {
++               struct dbell_entry *entry;
++               struct vmci_resource *resource;
 +
-+       if ((flags & VMCI_FLAG_WELLKNOWN_DG_HND) != 0) {
++               resource =
++                       vmci_resource_get(handle, VMCI_RESOURCE_TYPE_DOORBELL);
++               if (resource == NULL)
++                       return VMCI_ERROR_NOT_FOUND;
++
++               entry =
++                       container_of(resource, struct dbell_entry,
++                                    resource);
++               *privFlags = entry->privFlags;
++               vmci_resource_release(resource);
++       } else if (handle.context == VMCI_HYPERVISOR_CONTEXT_ID) {
++               /*
++                * Hypervisor endpoints for notifications are not
++                * supported (yet).
++                */
 +               return VMCI_ERROR_INVALID_ARGS;
 +       } else {
-+               if ((flags & VMCI_FLAG_ANYCID_DG_HND) != 0) {
-+                       contextID = VMCI_INVALID_ID;
-+               } else {
-+                       contextID = vmci_get_context_id();
-+                       if (contextID == VMCI_INVALID_ID)
-+                               return VMCI_ERROR_NO_RESOURCES;
-+               }
-+
-+               if (resourceID == VMCI_INVALID_ID) {
-+                       resourceID = vmci_resource_get_id(contextID);
-+                       if (resourceID == VMCI_INVALID_ID)
-+                               return VMCI_ERROR_NO_HANDLE;
-+               }
-+
-+               handle = vmci_make_handle(contextID, resourceID);
++               *privFlags = vmci_context_get_priv_flags(handle.context);
 +       }
++
++       return VMCI_SUCCESS;
++}
++
++/*
++ * Find doorbell entry by bitmap index.
++ */
++static struct dbell_entry *dbell_index_table_find(uint32_t idx)
++{
++       uint32_t bucket = VMCI_DOORBELL_HASH(idx);
++       struct dbell_entry *cur;
++
++       ASSERT(vmci_guest_code_active());
++
++       list_for_each_entry(cur, &vmciDoorbellIT.entries[bucket], idxListItem) {
++               if (idx == cur->idx)
++                       return cur;
++       }
++
++       return NULL;
++}
++
++/*
++ * Add the given entry to the index table.  This will hold() the entry's
++ * resource so that the entry is not deleted before it is removed from the
++ * table.
++ */
++static void dbell_index_table_add(struct dbell_entry *entry)
++{
++       uint32_t bucket;
++       uint32_t newNotifyIdx;
++
++       ASSERT(entry);
++       ASSERT(vmci_guest_code_active());
++
++       vmci_resource_hold(&entry->resource);
++
++       spin_lock_bh(&vmciDoorbellIT.lock);
++
++       /*
++        * Below we try to allocate an index in the notification
++        * bitmap with "not too much" sharing between resources. If we
++        * use less that the full bitmap, we either add to the end if
++        * there are no unused flags within the currently used area,
++        * or we search for unused ones. If we use the full bitmap, we
++        * allocate the index round robin.
++        */
++       if (maxNotifyIdx < PAGE_SIZE || notifyIdxCount < PAGE_SIZE) {
++               if (lastNotifyIdxReleased < maxNotifyIdx &&
++                   !dbell_index_table_find(lastNotifyIdxReleased)) {
++                       newNotifyIdx = lastNotifyIdxReleased;
++                       lastNotifyIdxReleased = PAGE_SIZE;
++               } else {
++                       bool reused = false;
++                       newNotifyIdx = lastNotifyIdxReserved;
++                       if (notifyIdxCount + 1 < maxNotifyIdx) {
++                               do {
++                                       if (!dbell_index_table_find
++                                           (newNotifyIdx)) {
++                                               reused = true;
++                                               break;
++                                       }
++                                       newNotifyIdx = (newNotifyIdx + 1) %
++                                               maxNotifyIdx;
++                               } while (newNotifyIdx != lastNotifyIdxReleased);
++                       }
++                       if (!reused) {
++                               newNotifyIdx = maxNotifyIdx;
++                               maxNotifyIdx++;
++                       }
++               }
++       } else {
++               newNotifyIdx = (lastNotifyIdxReserved + 1) % PAGE_SIZE;
++       }
++
++       lastNotifyIdxReserved = newNotifyIdx;
++       notifyIdxCount++;
++
++       entry->idx = newNotifyIdx;
++       bucket = VMCI_DOORBELL_HASH(entry->idx);
++       list_add(&entry->idxListItem, &vmciDoorbellIT.entries[bucket]);
++
++       spin_unlock_bh(&vmciDoorbellIT.lock);
++}
++
++/*
++ * Remove the given entry from the index table.  This will release() the
++ * entry's resource.
++ */
++static void dbell_index_table_remove(struct dbell_entry *entry)
++{
++       ASSERT(entry);
++       ASSERT(vmci_guest_code_active());
++
++       spin_lock_bh(&vmciDoorbellIT.lock);
++
++       list_del(&entry->idxListItem);
++
++       notifyIdxCount--;
++       if (entry->idx == maxNotifyIdx - 1) {
++               /*
++                * If we delete an entry with the maximum known
++                * notification index, we take the opportunity to
++                * prune the current max. As there might be other
++                * unused indices immediately below, we lower the
++                * maximum until we hit an index in use.
++                */
++               while (maxNotifyIdx > 0 &&
++                      !dbell_index_table_find(maxNotifyIdx - 1)) {
++                       maxNotifyIdx--;
++               }
++       }
++
++       lastNotifyIdxReleased = entry->idx;
++
++       spin_unlock_bh(&vmciDoorbellIT.lock);
++
++       vmci_resource_release(&entry->resource);
++}
++
++/*
++ * Creates a link between the given doorbell handle and the given
++ * index in the bitmap in the device backend. A notification state
++ * is created in hypervisor.
++ */
++static int dbell_link(struct vmci_handle handle,
++                     uint32_t notifyIdx)
++{
++       struct vmci_doorbell_link_msg linkMsg;
++
++       ASSERT(!VMCI_HANDLE_INVALID(handle));
++       ASSERT(vmci_guest_code_active());
++
++       linkMsg.hdr.dst = vmci_make_handle(VMCI_HYPERVISOR_CONTEXT_ID,
++                                          VMCI_DOORBELL_LINK);
++       linkMsg.hdr.src = VMCI_ANON_SRC_HANDLE;
++       linkMsg.hdr.payloadSize = sizeof(linkMsg) - VMCI_DG_HEADERSIZE;
++       linkMsg.handle = handle;
++       linkMsg.notifyIdx = notifyIdx;
++
++       return vmci_send_datagram((struct vmci_datagram *)&linkMsg);
++}
++
++/*
++ * Unlinks the given doorbell handle from an index in the bitmap in
++ * the device backend. The notification state is destroyed in hypervisor.
++ */
++static int dbell_unlink(struct vmci_handle handle)
++{
++       struct vmci_doorbell_unlink_msg unlinkMsg;
++
++       ASSERT(!VMCI_HANDLE_INVALID(handle));
++       ASSERT(vmci_guest_code_active());
++
++       unlinkMsg.hdr.dst = vmci_make_handle(VMCI_HYPERVISOR_CONTEXT_ID,
++                                            VMCI_DOORBELL_UNLINK);
++       unlinkMsg.hdr.src = VMCI_ANON_SRC_HANDLE;
++       unlinkMsg.hdr.payloadSize = sizeof(unlinkMsg) - VMCI_DG_HEADERSIZE;
++       unlinkMsg.handle = handle;
++
++       return vmci_send_datagram((struct vmci_datagram *)&unlinkMsg);
++}
++
++/*
++ * Notify another guest or the host.  We send a datagram down to the
++ * host via the hypervisor with the notification info.
++ */
++static int dbell_notify_as_guest(struct vmci_handle handle,
++                                uint32_t privFlags)
++{
++       struct vmci_doorbell_notify_msg notifyMsg;
++
++       ASSERT(vmci_guest_code_active());
++
++       notifyMsg.hdr.dst = vmci_make_handle(VMCI_HYPERVISOR_CONTEXT_ID,
++                                            VMCI_DOORBELL_NOTIFY);
++       notifyMsg.hdr.src = VMCI_ANON_SRC_HANDLE;
++       notifyMsg.hdr.payloadSize = sizeof(notifyMsg) - VMCI_DG_HEADERSIZE;
++       notifyMsg.handle = handle;
++
++       return vmci_send_datagram((struct vmci_datagram *)&notifyMsg);
++}
++
++/*
++ * Calls the specified callback in a delayed context.
++ */
++static void dbell_delayed_dispatch_cb(void *data)
++{
++       struct dbell_entry *entry = (struct dbell_entry *)data;
++
++       ASSERT(data);
++
++       entry->notifyCB(entry->clientData);
++       vmci_resource_release(&entry->resource);
++}
++
++/*
++ * Dispatches a doorbell notification to the host context.
++ */
++int vmci_dbell_host_context_notify(uint32_t srcCID,
++                                  struct vmci_handle handle)
++{
++       struct dbell_entry *entry;
++       struct vmci_resource *resource;
++       int result;
++
++       ASSERT(vmci_host_code_active());
++
++       if (VMCI_HANDLE_INVALID(handle)) {
++               pr_devel("Notifying an invalid doorbell " \
++                        "(handle=0x%x:0x%x).", handle.context,
++                        handle.resource);
++               return VMCI_ERROR_INVALID_ARGS;
++       }
++
++       resource = vmci_resource_get(handle, VMCI_RESOURCE_TYPE_DOORBELL);
++       if (resource == NULL) {
++               pr_devel("Notifying an unknown doorbell " \
++                        "(handle=0x%x:0x%x).", handle.context,
++                        handle.resource);
++               return VMCI_ERROR_NOT_FOUND;
++       }
++       entry = container_of(resource, struct dbell_entry, resource);
++
++       if (entry->runDelayed) {
++               result = vmci_drv_schedule_delayed_work(
++                       dbell_delayed_dispatch_cb,
++                       entry);
++
++               if (result < VMCI_SUCCESS) {
++                       /*
++                        * If we failed to schedule the delayed work,
++                        * we need to release the resource
++                        * immediately. Otherwise, the resource will
++                        * be released once the delayed callback has
++                        * been completed.
++                        */
++                       pr_devel("Failed to schedule delayed doorbell " \
++                                "notification (result=%d).", result);
++                       vmci_resource_release(resource);
++               }
++       } else {
++               entry->notifyCB(entry->clientData);
++               vmci_resource_release(resource);
++               result = VMCI_SUCCESS;
++       }
++       return result;
++}
++
++/*
++ * When a guest leaves hibernation, the device driver state is out of sync
++ * with the device state, since the driver state has doorbells registered
++ * that aren't known to the device.  This function takes care of
++ * reregistering any doorbells. In case an error occurs during
++ * reregistration (this is highly unlikely since 1) it succeeded the first
++ * time 2) the device driver is the only source of doorbell registrations),
++ * we simply log the error.  The doorbell can still be destroyed using
++ * VMCIDoorbell_Destroy.
++ */
++void vmci_dbell_hibernate(bool enterHibernate)
++{
++       uint32_t bucket;
++       struct dbell_entry *cur;
++
++       if (!vmci_guest_code_active() || enterHibernate)
++               return;
++
++       spin_lock_bh(&vmciDoorbellIT.lock);
++
++       for (bucket = 0; bucket < ARRAY_SIZE(vmciDoorbellIT.entries);
++            bucket++) {
++               list_for_each_entry(cur, &vmciDoorbellIT.entries[bucket],
++                                   idxListItem) {
++                       int result;
++                       struct vmci_handle h;
++
++                       h = vmci_resource_handle(&cur->resource);
++                       result = dbell_link(h, cur->idx);
++                       if (result != VMCI_SUCCESS &&
++                           result != VMCI_ERROR_DUPLICATE_ENTRY) {
++                               pr_warn("Failed to reregister doorbell " \
++                                       "(handle=0x%x:0x%x) to index " \
++                                       "(error=%d).", h.context, h.resource,
++                                       result);
++                       }
++               }
++       }
++
++       spin_unlock_bh(&vmciDoorbellIT.lock);
++}
++
++/*
++ * Register the notification bitmap with the host.
++ */
++bool vmci_dbell_register_notification_bitmap(uint32_t bitmapPPN)
++{
++       int result;
++       struct vmci_notify_bm_set_msg bitmapSetMsg;
++
++       /*
++        * Do not ASSERT() on the guest device here.  This function
++        * can get called during device initialization, so the
++        * ASSERT() will fail even though the device is (almost) up.
++        */
++       bitmapSetMsg.hdr.dst = vmci_make_handle(VMCI_HYPERVISOR_CONTEXT_ID,
++                                               VMCI_SET_NOTIFY_BITMAP);
++       bitmapSetMsg.hdr.src = VMCI_ANON_SRC_HANDLE;
++       bitmapSetMsg.hdr.payloadSize = sizeof(bitmapSetMsg) -
++               VMCI_DG_HEADERSIZE;
++       bitmapSetMsg.bitmapPPN = bitmapPPN;
++
++       result = vmci_send_datagram((struct vmci_datagram *)&bitmapSetMsg);
++       if (result != VMCI_SUCCESS) {
++               pr_devel("Failed to register (PPN=%u) as " \
++                        "notification bitmap (error=%d).",
++                        bitmapPPN, result);
++               return false;
++       }
++       return true;
++}
++
++/*
++ * Executes or schedules the handlers for a given notify index.
++ */
++static void dbell_fire_entries(uint32_t notifyIdx)
++{
++       uint32_t bucket = VMCI_DOORBELL_HASH(notifyIdx);
++       struct dbell_entry *cur;
++
++       ASSERT(vmci_guest_code_active());
++
++       spin_lock_bh(&vmciDoorbellIT.lock);
++
++       list_for_each_entry(cur, &vmciDoorbellIT.entries[bucket], idxListItem) {
++               if (cur->idx == notifyIdx && atomic_read(&cur->active) == 1) {
++                       ASSERT(cur->notifyCB);
++                       if (cur->runDelayed) {
++                               int err;
++
++                               vmci_resource_hold(&cur->resource);
++                               err =
++                                       vmci_drv_schedule_delayed_work
++                                       (dbell_delayed_dispatch_cb, cur);
++                               if (err != VMCI_SUCCESS) {
++                                       vmci_resource_release(&cur->resource);
++                                       goto out;
++                               }
++                       } else {
++                               cur->notifyCB(cur->clientData);
++                       }
++               }
++       }
++
++out:
++       spin_unlock_bh(&vmciDoorbellIT.lock);
++}
++
++/*
++ * Scans the notification bitmap, collects pending notifications,
++ * resets the bitmap and invokes appropriate callbacks.
++ */
++void vmci_dbell_scan_notification_entries(uint8_t *bitmap)
++{
++       uint32_t idx;
++
++       ASSERT(bitmap);
++       ASSERT(vmci_guest_code_active());
++
++       for (idx = 0; idx < maxNotifyIdx; idx++) {
++               if (bitmap[idx] & 0x1) {
++                       bitmap[idx] &= ~1;
++                       dbell_fire_entries(idx);
++               }
++       }
++}
++
++/**
++ * vmci_doorbell_create() - Creates a doorbell
++ * @handle:    A handle used to track the resource.  Can be invalid.
++ * @flags:     Flag that determines context of callback.
++ * @priv_flags:        Privileges flags.
++ * @notify_cb: The callback to be ivoked when the doorbell fires.
++ * @client_data:       A parameter to be passed to the callback.
++ *
++ * Creates a doorbell with the given callback. If the handle is
++ * VMCI_INVALID_HANDLE, a free handle will be assigned, if
++ * possible. The callback can be run immediately (potentially with
++ * locks held - the default) or delayed (in a kernel thread) by
++ * specifying the flag VMCI_FLAG_DELAYED_CB. If delayed execution
++ * is selected, a given callback may not be run if the kernel is
++ * unable to allocate memory for the delayed execution (highly
++ * unlikely).
++ */
++int vmci_doorbell_create(struct vmci_handle *handle,
++                        uint32_t flags,
++                        uint32_t priv_flags,
++                        vmci_callback notify_cb,
++                        void *client_data)
++{
++       struct dbell_entry *entry;
++       struct vmci_handle newHandle;
++       int result;
++
++       if (!handle || !notify_cb || flags & ~VMCI_FLAG_DELAYED_CB ||
++           priv_flags & ~VMCI_PRIVILEGE_ALL_FLAGS)
++               return VMCI_ERROR_INVALID_ARGS;
 +
 +       entry = kmalloc(sizeof(*entry), GFP_KERNEL);
 +       if (entry == NULL) {
@@ -166,477 +607,201 @@ index 0000000..21ee66d
 +               return VMCI_ERROR_NO_MEM;
 +       }
 +
-+       entry->runDelayed = (flags & VMCI_FLAG_DG_DELAYED_CB) ? true : false;
-+       entry->flags = flags;
-+       entry->recvCB = recvCB;
-+       entry->clientData = clientData;
-+       init_waitqueue_head(&entry->destroyEvent);
-+       entry->privFlags = privFlags;
-+
-+       /* Make datagram resource live. */
-+       result = vmci_resource_add(&entry->resource,
-+                                  VMCI_RESOURCE_TYPE_DATAGRAM,
-+                                  handle, dg_free_cb, entry);
-+       if (result != VMCI_SUCCESS) {
-+               pr_warn("Failed to add new resource (handle=0x%x:0x%x).",
-+                       handle.context, handle.resource);
-+               kfree(entry);
-+               return result;
-+       }
-+       *outHandle = handle;
-+
-+       return VMCI_SUCCESS;
-+}
-+
-+int __init vmci_datagram_init(void)
-+{
-+       atomic_set(&delayedDGHostQueueSize, 0);
-+       return VMCI_SUCCESS;
-+}
-+
-+/*
-+ * Internal utilility function with the same purpose as
-+ * vmci_datagram_get_priv_flags that also takes a contextID.
-+ */
-+static int vmci_datagram_get_priv_flags(u32 contextID,
-+                                 struct vmci_handle handle,
-+                                 u32 *privFlags)
-+{
-+       ASSERT(privFlags);
-+       ASSERT(contextID != VMCI_INVALID_ID);
-+
-+       if (contextID == VMCI_HOST_CONTEXT_ID) {
-+               struct datagram_entry *srcEntry;
-+               struct vmci_resource *resource;
-+
-+               resource =
-+                       vmci_resource_get(handle, VMCI_RESOURCE_TYPE_DATAGRAM);
-+               if (resource == NULL)
-+                       return VMCI_ERROR_INVALID_ARGS;
-+
-+               srcEntry = container_of(resource, struct datagram_entry,
-+                                       resource);
-+               *privFlags = srcEntry->privFlags;
-+               vmci_resource_release(resource);
-+       } else if (contextID == VMCI_HYPERVISOR_CONTEXT_ID) {
-+               *privFlags = VMCI_MAX_PRIVILEGE_FLAGS;
++       if (VMCI_HANDLE_INVALID(*handle)) {
++               uint32_t contextID = vmci_get_context_id();
++               uint32_t resourceID = vmci_resource_get_id(contextID);
++               if (resourceID == VMCI_INVALID_ID) {
++                       result = VMCI_ERROR_NO_HANDLE;
++                       goto freeMem;
++               }
++               newHandle = vmci_make_handle(contextID, resourceID);
 +       } else {
-+               *privFlags = vmci_context_get_priv_flags(contextID);
-+       }
-+
-+       return VMCI_SUCCESS;
-+}
-+
-+/*
-+ * Calls the specified callback in a delayed context.
-+ */
-+static void dg_delayed_dispatch_cb(void *data)
-+{
-+       bool inDGHostQueue;
-+       struct delayed_datagram_info *dgInfo =
-+               (struct delayed_datagram_info *)data;
-+
-+       ASSERT(data);
-+
-+       dgInfo->entry->recvCB(dgInfo->entry->clientData, &dgInfo->msg);
-+
-+       vmci_resource_release(&dgInfo->entry->resource);
-+
-+       inDGHostQueue = dgInfo->inDGHostQueue;
-+       kfree(dgInfo);
-+
-+       if (inDGHostQueue)
-+               atomic_dec(&delayedDGHostQueueSize);
-+}
-+
-+/*
-+ * Dispatch datagram as a host, to the host, or other vm context. This
-+ * function cannot dispatch to hypervisor context handlers. This should
-+ * have been handled before we get here by VMCIDatagramDispatch.
-+ * Returns number of bytes sent on success, error code otherwise.
-+ */
-+static int dg_dispatch_as_host(u32 contextID,
-+                              struct vmci_datagram *dg)
-+{
-+       int retval;
-+       size_t dgSize;
-+       u32 srcPrivFlags;
-+
-+       ASSERT(dg);
-+       ASSERT(vmci_host_code_active());
-+
-+       dgSize = VMCI_DG_SIZE(dg);
-+
-+       if (contextID == VMCI_HOST_CONTEXT_ID &&
-+           dg->dst.context == VMCI_HYPERVISOR_CONTEXT_ID)
-+               return VMCI_ERROR_DST_UNREACHABLE;
-+
-+       ASSERT(dg->dst.context != VMCI_HYPERVISOR_CONTEXT_ID);
-+
-+       /* Check that source handle matches sending context. */
-+       if (dg->src.context != contextID) {
-+               pr_devel("Sender context (ID=0x%x) is not owner of src " \
-+                        "datagram entry (handle=0x%x:0x%x).",
-+                        contextID, dg->src.context, dg->src.resource);
-+               return VMCI_ERROR_NO_ACCESS;
-+       }
-+
-+       /* Get hold of privileges of sending endpoint. */
-+       retval = vmci_datagram_get_priv_flags(contextID, dg->src, &srcPrivFlags);
-+       if (retval != VMCI_SUCCESS) {
-+               pr_warn("Couldn't get privileges (handle=0x%x:0x%x).",
-+                       dg->src.context, dg->src.resource);
-+               return retval;
-+       }
-+
-+       /* Determine if we should route to host or guest destination. */
-+       if (dg->dst.context == VMCI_HOST_CONTEXT_ID) {
-+               /* Route to host datagram entry. */
-+               struct datagram_entry *dstEntry;
-+               struct vmci_resource *resource;
-+
-+               if (dg->src.context == VMCI_HYPERVISOR_CONTEXT_ID &&
-+                   dg->dst.resource == VMCI_EVENT_HANDLER) {
-+                       return vmci_event_dispatch(dg);
-+               }
-+
-+               resource = vmci_resource_get(dg->dst,
-+                                            VMCI_RESOURCE_TYPE_DATAGRAM);
-+               if (resource == NULL) {
-+                       pr_devel("Sending to invalid destination " \
-+                                "(handle=0x%x:0x%x).", dg->dst.context,
-+                                dg->dst.resource);
-+                       return VMCI_ERROR_INVALID_RESOURCE;
-+               }
-+               dstEntry =
-+                       container_of(resource, struct datagram_entry,
-+                                    resource);
-+               if (vmci_deny_interaction(srcPrivFlags, dstEntry->privFlags)) {
-+                       vmci_resource_release(resource);
-+                       return VMCI_ERROR_NO_ACCESS;
-+               }
-+               ASSERT(dstEntry->recvCB);
++               bool validContext = false;
 +
 +               /*
-+                * If a VMCI datagram destined for the host is also sent by the
-+                * host, we always run it delayed. This ensures that no locks
-+                * are held when the datagram callback runs.
++                * Validate the handle.  We must do both of the checks below
++                * because we can be acting as both a host and a guest at the
++                * same time. We always allow the host context ID, since the
++                * host functionality is in practice always there with the
++                * unified driver.
 +                */
-+               if (dstEntry->runDelayed ||
-+                   dg->src.context == VMCI_HOST_CONTEXT_ID) {
-+                       struct delayed_datagram_info *dgInfo;
++               if (VMCI_HOST_CONTEXT_ID == handle->context ||
++                   (vmci_guest_code_active() &&
++                    vmci_get_context_id() == handle->context))
++                       validContext = true;
 +
-+                       if (atomic_add_return(1, &delayedDGHostQueueSize)
-+                           == VMCI_MAX_DELAYED_DG_HOST_QUEUE_SIZE) {
-+                               atomic_dec(&delayedDGHostQueueSize);
-+                               vmci_resource_release(resource);
-+                               return VMCI_ERROR_NO_MEM;
-+                       }
-+
-+                       dgInfo =
-+                               kmalloc(sizeof(*dgInfo) +
-+                                       (size_t) dg->payloadSize, GFP_ATOMIC);
-+                       if (NULL == dgInfo) {
-+                               atomic_dec(&delayedDGHostQueueSize);
-+                               vmci_resource_release(resource);
-+                               return VMCI_ERROR_NO_MEM;
-+                       }
-+
-+                       dgInfo->inDGHostQueue = true;
-+                       dgInfo->entry = dstEntry;
-+                       memcpy(&dgInfo->msg, dg, dgSize);
-+                       retval =
-+                         vmci_drv_schedule_delayed_work(dg_delayed_dispatch_cb,
-+                                                        dgInfo);
-+                       if (retval < VMCI_SUCCESS) {
-+                               pr_warn("Failed to schedule delayed " \
-+                                       "work for datagram (result=%d).",
-+                                       retval);
-+                               kfree(dgInfo);
-+                               vmci_resource_release(resource);
-+                               atomic_dec(&delayedDGHostQueueSize);
-+                               return retval;
-+                       }
-+               } else {
-+                       retval = dstEntry->recvCB(dstEntry->clientData, dg);
-+                       vmci_resource_release(resource);
-+                       if (retval < VMCI_SUCCESS)
-+                               return retval;
-+               }
-+       } else {
-+               /* Route to destination VM context. */
-+               struct vmci_datagram *newDG;
-+
-+               if (contextID != dg->dst.context) {
-+                       if (vmci_deny_interaction(srcPrivFlags,
-+                                                 vmci_context_get_priv_flags
-+                                                 (dg->dst.context))) {
-+                               return VMCI_ERROR_NO_ACCESS;
-+                       } else if (VMCI_CONTEXT_IS_VM(contextID)) {
-+                               /*
-+                                * If the sending context is a VM, it
-+                                * cannot reach another VM.
-+                                */
-+
-+                               pr_devel("Datagram communication between VMs " \
-+                                        "not supported (src=0x%x, dst=0x%x).",
-+                                        contextID, dg->dst.context);
-+                               return VMCI_ERROR_DST_UNREACHABLE;
-+                       }
++               if (!validContext || VMCI_INVALID_ID == handle->resource) {
++                       pr_devel("Invalid argument (handle=0x%x:0x%x).",
++                                handle->context, handle->resource);
++                       result = VMCI_ERROR_INVALID_ARGS;
++                       goto freeMem;
 +               }
 +
-+               /* We make a copy to enqueue. */
-+               newDG = kmalloc(dgSize, GFP_KERNEL);
-+               if (newDG == NULL)
-+                       return VMCI_ERROR_NO_MEM;
++               newHandle = *handle;
++       }
 +
-+               memcpy(newDG, dg, dgSize);
-+               retval = vmci_ctx_enqueue_datagram(dg->dst.context, newDG);
-+               if (retval < VMCI_SUCCESS) {
-+                       kfree(newDG);
-+                       return retval;
++       entry->idx = 0;
++       INIT_LIST_HEAD(&entry->idxListItem);
++       entry->privFlags = priv_flags;
++       entry->runDelayed = (flags & VMCI_FLAG_DELAYED_CB) ? true : false;
++       entry->notifyCB = notify_cb;
++       entry->clientData = client_data;
++       atomic_set(&entry->active, 0);
++       init_waitqueue_head(&entry->destroyEvent);
++
++       result =
++               vmci_resource_add(&entry->resource, VMCI_RESOURCE_TYPE_DOORBELL,
++                                 newHandle, dbell_free_cb, entry);
++       if (result != VMCI_SUCCESS) {
++               pr_warn("Failed to add new resource (handle=0x%x:0x%x).",
++                       newHandle.context, newHandle.resource);
++               if (result == VMCI_ERROR_DUPLICATE_ENTRY)
++                       result = VMCI_ERROR_ALREADY_EXISTS;
++
++               goto freeMem;
++       }
++
++       if (vmci_guest_code_active()) {
++               dbell_index_table_add(entry);
++               result = dbell_link(newHandle, entry->idx);
++               if (VMCI_SUCCESS != result)
++                       goto destroyResource;
++
++               atomic_set(&entry->active, 1);
++       }
++
++       if (VMCI_HANDLE_INVALID(*handle))
++               *handle = newHandle;
++
++       return result;
++
++destroyResource:
++       dbell_index_table_remove(entry);
++       vmci_resource_remove(newHandle, VMCI_RESOURCE_TYPE_DOORBELL);
++freeMem:
++       kfree(entry);
++       return result;
++}
++EXPORT_SYMBOL(vmci_doorbell_create);
++
++/**
++ * vmci_doorbell_destroy() - Destroy a doorbell.
++ * @handle:    The handle tracking the resource.
++ *
++ * Destroys a doorbell previously created with VMCIDoorbell_Create. This
++ * operation may block waiting for a callback to finish.
++ */
++int vmci_doorbell_destroy(struct vmci_handle handle)
++{
++       struct dbell_entry *entry;
++       struct vmci_resource *resource;
++
++       if (VMCI_HANDLE_INVALID(handle))
++               return VMCI_ERROR_INVALID_ARGS;
++
++       resource = vmci_resource_get(handle, VMCI_RESOURCE_TYPE_DOORBELL);
++       if (resource == NULL) {
++               pr_devel("Failed to destroy doorbell " \
++                        "(handle=0x%x:0x%x).", handle.context,
++                        handle.resource);
++               return VMCI_ERROR_NOT_FOUND;
++       }
++
++       entry = container_of(resource, struct dbell_entry, resource);
++
++       if (vmci_guest_code_active()) {
++               int result;
++
++               dbell_index_table_remove(entry);
++
++               result = dbell_unlink(handle);
++               if (VMCI_SUCCESS != result) {
++
++                       /*
++                        * The only reason this should fail would be
++                        * an inconsistency between guest and
++                        * hypervisor state, where the guest believes
++                        * it has an active registration whereas the
++                        * hypervisor doesn't. One case where this may
++                        * happen is if a doorbell is unregistered
++                        * following a hibernation at a time where the
++                        * doorbell state hasn't been restored on the
++                        * hypervisor side yet. Since the handle has
++                        * now been removed in the guest, we just
++                        * print a warning and return success.
++                        */
++                       pr_devel("Unlink of doorbell (handle=0x%x:0x%x) " \
++                                "unknown by hypervisor (error=%d).",
++                                handle.context, handle.resource,
++                                result);
 +               }
 +       }
 +
 +       /*
-+        * We currently truncate the size to signed 32 bits. This doesn't
-+        * matter for this handler as it only support 4Kb messages.
++        * Now remove the resource from the table.  It might still be in use
++        * after this, in a callback or still on the delayed work queue.
 +        */
-+       return (int)dgSize;
-+}
-+
-+/*
-+ * Dispatch datagram as a guest, down through the VMX and potentially to
-+ * the host.
-+ * Returns number of bytes sent on success, error code otherwise.
-+ */
-+static int dg_dispatch_as_guest(struct vmci_datagram *dg)
-+{
-+       int retval;
-+       struct vmci_resource *resource;
-+
-+       resource = vmci_resource_get(dg->src, VMCI_RESOURCE_TYPE_DATAGRAM);
-+       if (NULL == resource)
-+               return VMCI_ERROR_NO_HANDLE;
-+
-+       retval = vmci_send_datagram(dg);
-+       vmci_resource_release(resource);
-+       return retval;
-+}
-+
-+/*
-+ * Dispatch datagram.  This will determine the routing for the datagram
-+ * and dispatch it accordingly.
-+ * Returns number of bytes sent on success, error code otherwise.
-+ */
-+int vmci_datagram_dispatch(u32 contextID,
-+                    struct vmci_datagram *dg, bool fromGuest)
-+{
-+       int retval;
-+       enum vmci_route route;
-+
-+       ASSERT(dg);
-+       BUILD_BUG_ON(sizeof(struct vmci_datagram) != 24);
-+
-+       if (VMCI_DG_SIZE(dg) > VMCI_MAX_DG_SIZE) {
-+               pr_devel("Payload (size=%llu bytes) too big to " \
-+                        "send.", (unsigned long long) dg->payloadSize);
-+               return VMCI_ERROR_INVALID_ARGS;
-+       }
-+
-+       retval = vmci_route(&dg->src, &dg->dst, fromGuest, &route);
-+       if (retval < VMCI_SUCCESS) {
-+               pr_devel("Failed to route datagram (src=0x%x, dst=0x%x, " \
-+                        "err=%d).", dg->src.context, dg->dst.context,
-+                        retval);
-+               return retval;
-+       }
-+
-+       if (VMCI_ROUTE_AS_HOST == route) {
-+               if (VMCI_INVALID_ID == contextID)
-+                       contextID = VMCI_HOST_CONTEXT_ID;
-+               return dg_dispatch_as_host(contextID, dg);
-+       }
-+
-+       if (VMCI_ROUTE_AS_GUEST == route)
-+               return dg_dispatch_as_guest(dg);
-+
-+       pr_warn("Unknown route (%d) for datagram.", route);
-+       return VMCI_ERROR_DST_UNREACHABLE;
-+}
-+
-+/*
-+ * Invoke the handler for the given datagram.  This is intended to be
-+ * called only when acting as a guest and receiving a datagram from the
-+ * virtual device.
-+ */
-+int vmci_datagram_invoke_guest_handler(struct vmci_datagram *dg)
-+{
-+       int retval;
-+       struct vmci_resource *resource;
-+       struct datagram_entry *dstEntry;
-+
-+       ASSERT(dg);
-+
-+       resource = vmci_resource_get(dg->dst, VMCI_RESOURCE_TYPE_DATAGRAM);
-+       if (NULL == resource) {
-+               pr_devel("destination (handle=0x%x:0x%x) doesn't exist.",
-+                        dg->dst.context, dg->dst.resource);
-+               return VMCI_ERROR_NO_HANDLE;
-+       }
-+
-+       dstEntry =
-+               container_of(resource, struct datagram_entry, resource);
-+       if (dstEntry->runDelayed) {
-+               struct delayed_datagram_info *dgInfo;
-+
-+               dgInfo =
-+                       kmalloc(sizeof(*dgInfo) + (size_t) dg->payloadSize,
-+                               GFP_ATOMIC);
-+               if (NULL == dgInfo) {
-+                       vmci_resource_release(resource);
-+                       retval = VMCI_ERROR_NO_MEM;
-+                       goto exit;
-+               }
-+
-+               dgInfo->inDGHostQueue = false;
-+               dgInfo->entry = dstEntry;
-+               memcpy(&dgInfo->msg, dg, VMCI_DG_SIZE(dg));
-+
-+               retval =
-+                       vmci_drv_schedule_delayed_work(dg_delayed_dispatch_cb,
-+                                                      dgInfo);
-+               if (retval < VMCI_SUCCESS) {
-+                       pr_warn("Failed to schedule delayed work for " \
-+                               "datagram (result=%d).", retval);
-+                       kfree(dgInfo);
-+                       vmci_resource_release(resource);
-+                       dgInfo = NULL;
-+                       goto exit;
-+               }
-+       } else {
-+               dstEntry->recvCB(dstEntry->clientData, dg);
-+               vmci_resource_release(resource);
-+               retval = VMCI_SUCCESS;
-+       }
-+
-+exit:
-+       return retval;
-+}
-+
-+/**
-+ * vmci_datagram_create_handle_priv() - Create host context datagram endpoint
-+ * @resource_id:       The resource ID.
-+ * @flags:     Datagram Flags.
-+ * @priv_flags:        Privilege Flags.
-+ * @recv_cb:   Callback when receiving datagrams.
-+ * @client_data:       Pointer for a datagram_entry struct
-+ * @out_handle:        vmci_handle that is populated as a result of this function.
-+ *
-+ * Creates a host context datagram endpoint and returns a handle to it.
-+ */
-+int vmci_datagram_create_handle_priv(u32 resource_id,
-+                                    u32 flags,
-+                                    u32 priv_flags,
-+                                    vmci_datagram_recv_cb recv_cb,
-+                                    void *client_data,
-+                                    struct vmci_handle *out_handle)
-+{
-+       if (out_handle == NULL)
-+               return VMCI_ERROR_INVALID_ARGS;
-+
-+       if (recv_cb == NULL) {
-+               pr_devel("Client callback needed when creating " \
-+                        "datagram.");
-+               return VMCI_ERROR_INVALID_ARGS;
-+       }
-+
-+       if (priv_flags & ~VMCI_PRIVILEGE_ALL_FLAGS)
-+               return VMCI_ERROR_INVALID_ARGS;
-+
-+       return dg_create_handle(resource_id, flags, priv_flags, recv_cb,
-+                               client_data, out_handle);
-+}
-+EXPORT_SYMBOL(vmci_datagram_create_handle_priv);
-+
-+/**
-+ * vmci_datagram_create_handle() - Create host context datagram endpoint
-+ * @resource_id:       Resource ID.
-+ * @flags:     Datagram Flags.
-+ * @recv_cb:   Callback when receiving datagrams.
-+ * @client_ata:        Pointer for a datagram_entry struct
-+ * @out_handle:        vmci_handle that is populated as a result of this function.
-+ *
-+ * Creates a host context datagram endpoint and returns a handle to
-+ * it.  Same as vmci_datagram_create_handle_priv without the priviledge
-+ * flags argument.
-+ */
-+int vmci_datagram_create_handle(u32 resource_id,
-+                               u32 flags,
-+                               vmci_datagram_recv_cb recv_cb,
-+                               void *client_data,
-+                               struct vmci_handle *out_handle)
-+{
-+       return vmci_datagram_create_handle_priv(resource_id, flags,
-+                              VMCI_DEFAULT_PROC_PRIVILEGE_FLAGS,
-+                              recv_cb, client_data, out_handle);
-+}
-+EXPORT_SYMBOL(vmci_datagram_create_handle);
-+
-+/**
-+ * vmci_datagram_destroy_handle() - Destroys datagram handle
-+ * @handle:    vmci_handle to be destroyed and reaped.
-+ *
-+ * Use this function to destroy any datagram handles created by
-+ * vmci_datagram_create_handle{,Priv} functions.
-+ */
-+int vmci_datagram_destroy_handle(struct vmci_handle handle)
-+{
-+       struct datagram_entry *entry;
-+       struct vmci_resource *resource;
-+
-+       resource = vmci_resource_get(handle, VMCI_RESOURCE_TYPE_DATAGRAM);
-+       if (resource == NULL) {
-+               pr_devel("Failed to destroy datagram (handle=0x%x:0x%x)" \
-+                        ".", handle.context, handle.resource);
-+               return VMCI_ERROR_NOT_FOUND;
-+       }
-+
-+       entry = container_of(resource, struct datagram_entry, resource);
-+       vmci_resource_remove(handle, VMCI_RESOURCE_TYPE_DATAGRAM);
++       vmci_resource_remove(handle, VMCI_RESOURCE_TYPE_DOORBELL);
 +
 +       /*
 +        * We now wait on the destroyEvent and release the reference we got
 +        * above.
 +        */
-+       vmci_drv_wait_on_event_intr(&entry->destroyEvent, dg_release_cb,
-+                                   entry);
++       vmci_drv_wait_on_event_intr(&entry->destroyEvent,
++                                   dbell_release_cb, entry);
++
++       /*
++        * We know that we are now the only reference to the above entry so
++        * can safely free it.
++        */
 +       kfree(entry);
 +
 +       return VMCI_SUCCESS;
 +}
-+EXPORT_SYMBOL(vmci_datagram_destroy_handle);
++EXPORT_SYMBOL(vmci_doorbell_destroy);
 +
 +/**
-+ * vmci_datagram_send() - Send a datagram
-+ * @msg:       The datagram to send.
++ * vmci_doorbell_notify() - Ring the doorbell (and hide in the bushes).
++ * @dst:       The handlle identifying the doorbell resource
++ * @priv_flags:        Priviledge flags.
 + *
-+ * Sends the provided datagram on its merry way.
++ * Generates a notification on the doorbell identified by the
++ * handle. For host side generation of notifications, the caller
++ * can specify what the privilege of the calling side is.
 + */
-+int vmci_datagram_send(struct vmci_datagram *msg)
++int vmci_doorbell_notify(struct vmci_handle dst,
++                        u32 priv_flags)
 +{
-+       if (msg == NULL)
++       int retval;
++       enum vmci_route route;
++       struct vmci_handle src;
++
++       if (VMCI_HANDLE_INVALID(dst) ||
++           (priv_flags & ~VMCI_PRIVILEGE_ALL_FLAGS))
 +               return VMCI_ERROR_INVALID_ARGS;
 +
-+       return vmci_datagram_dispatch(VMCI_INVALID_ID, msg, false);
++       src = VMCI_INVALID_HANDLE;
++       retval = vmci_route(&src, &dst, false, &route);
++       if (retval < VMCI_SUCCESS)
++               return retval;
++
++       if (VMCI_ROUTE_AS_HOST == route)
++               return vmci_ctx_notify_dbell(VMCI_HOST_CONTEXT_ID,
++                                            dst, priv_flags);
++
++       if (VMCI_ROUTE_AS_GUEST == route)
++               return dbell_notify_as_guest(dst, priv_flags);
++
++       pr_warn("Unknown route (%d) for doorbell.", route);
++       return VMCI_ERROR_DST_UNREACHABLE;
 +}
-+EXPORT_SYMBOL(vmci_datagram_send);
-diff --git a/drivers/misc/vmw_vmci/vmci_datagram.h b/drivers/misc/vmw_vmci/vmci_datagram.h
++EXPORT_SYMBOL(vmci_doorbell_notify);
+diff --git a/drivers/misc/vmw_vmci/vmci_doorbell.h b/drivers/misc/vmw_vmci/vmci_doorbell.h
 new file mode 100644
-index 0000000..d88fe7d
+index 0000000..47cc657
 --- /dev/null
-+++ b/drivers/misc/vmw_vmci/vmci_datagram.h
-@@ -0,0 +1,55 @@
++++ b/drivers/misc/vmw_vmci/vmci_doorbell.h
+@@ -0,0 +1,54 @@
 +/*
 + * VMware VMCI Driver
 + *
@@ -652,44 +817,43 @@ index 0000000..d88fe7d
 + * for more details.
 + */
 +
-+#ifndef _VMCI_DATAGRAM_H_
-+#define _VMCI_DATAGRAM_H_
++#ifndef VMCI_DOORBELL_H
++#define VMCI_DOORBELL_H
 +
++#include <linux/vmw_vmci_defs.h>
 +#include <linux/types.h>
-+#include <linux/list.h>
 +
-+#include "vmci_context.h"
-+
-+#define VMCI_MAX_DELAYED_DG_HOST_QUEUE_SIZE 256
++#include "vmci_driver.h"
 +
 +/*
-+ * The struct vmci_datagram_queue_entry is a queue header for the in-kernel VMCI
-+ * datagram queues. It is allocated in non-paged memory, as the
-+ * content is accessed while holding a spinlock. The pending datagram
-+ * itself may be allocated from paged memory. We shadow the size of
-+ * the datagram in the non-paged queue entry as this size is used
-+ * while holding the same spinlock as above.
++ * VMCINotifyResourceInfo: Used to create and destroy doorbells, and
++ * generate a notification for a doorbell or queue pair.
 + */
-+struct vmci_datagram_queue_entry {
-+       struct list_head listItem;      /* For queuing. */
-+       size_t dgSize;          /* Size of datagram. */
-+       struct vmci_datagram *dg;       /* Pending datagram. */
-+};
-+
-+/* VMCIDatagramSendRecvInfo */
-+struct vmci_datagram_snd_rcv_info {
-+       uint64_t addr;
-+       uint32_t len;
++struct vmci_dbell_notify_resource_info {
++       struct vmci_handle handle;
++       uint16_t resource;
++       uint16_t action;
 +       int32_t result;
 +};
 +
-+/* Init functions. */
-+int vmci_datagram_init(void);
++/*
++ * Structure used for checkpointing the doorbell mappings. It is
++ * written to the checkpoint as is, so changing this structure will
++ * break checkpoint compatibility.
++ */
++struct dbell_cpt_state {
++       struct vmci_handle handle;
++       uint64_t bitmapIdx;
++};
 +
-+/* Datagram API for non-public use. */
-+int vmci_datagram_dispatch(uint32_t contextID, struct vmci_datagram *dg,
-+                          bool fromGuest);
-+int vmci_datagram_invoke_guest_handler(struct vmci_datagram *dg);
++int vmci_dbell_init(void);
++void vmci_dbell_hibernate(bool enterHibernation);
 +
-+#endif /* _VMCI_DATAGRAM_H_ */
++int vmci_dbell_host_context_notify(uint32_t srcCID, struct vmci_handle handle);
++int vmci_dbell_get_priv_flags(struct vmci_handle handle, uint32_t *privFlags);
++
++bool vmci_dbell_register_notification_bitmap(uint32_t bitmapPPN);
++void vmci_dbell_scan_notification_entries(uint8_t *bitmap);
++
++#endif /* VMCI_DOORBELL_H */
 
