@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753121Ab2H3W7R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 18:59:17 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:38426 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752524Ab2H3W7P (ORCPT
+	id S1753117Ab2H3XBf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 19:01:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61535 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751660Ab2H3XBe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 18:59:15 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: RE: [PATCH 0/8] lp8727_charger: cleanup code
-Thread-Topic: [PATCH 0/8] lp8727_charger: cleanup code
-Thread-Index: Ac2Go69seS4U+KqpTO+wdMwOBAY4NP//hMWA//7HbwA=
-Date: Thu, 30 Aug 2012 22:59:06 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF1D3B@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998F41EF1C6B@DQHE02.ent.ti.com>
- <20120830121521.GC11289@lizard>
-In-Reply-To: <20120830121521.GC11289@lizard>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.87.185.123]
-Content-Type: text/plain; charset="utf-8"
+	Thu, 30 Aug 2012 19:01:34 -0400
+Date: Thu, 30 Aug 2012 16:01:29 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: mathieu.poirier@linaro.org
+Cc: linux-kernel@vger.kernel.org, rdunlap@xenotime.net, arve@android.com,
+        kernel-team@android.com, john.stultz@linaro.org
+Subject: Re: [PATCH v2] drivers/tty: Folding Android's keyreset driver in
+ sysRQ
+Message-ID: <20120830230129.GC21501@core.coreip.homeip.net>
+References: <1346365854-28441-1-git-send-email-mathieu.poirier@linaro.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346365854-28441-1-git-send-email-mathieu.poirier@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7UMxMss027141
 
-> -----Original Message-----
-> From: Anton Vorontsov [mailto:anton.vorontsov@linaro.org]
-> Sent: Thursday, August 30, 2012 9:15 PM
-> To: Kim, Milo
-> Cc: linux-kernel@vger.kernel.org; David Woodhouse
-> Subject: Re: [PATCH 0/8] lp8727_charger: cleanup code
-> 
-> On Thu, Aug 30, 2012 at 11:37:16AM +0000, Kim, Milo wrote:
-> > LP8727 driver should be patched for several reasons.
-> >
-> > (a) Need to clean up _probe()/_remove()
-> > (b) Not secure code when the platform data is NULL
-> > (c) Interrupt handling
-> >     Two threads are running for handling one IRQ.
-> >     One is for the IRQ pin, the other is used for delayed processing.
-> >     This is unusual and can be enhanced.
-> > (d) Misuse of mutex code
-> > (e) Lots of definitions should be fixed
-> > (f) Others..
-> 
-> Thanks a lot for the cleanups, this is much appreciated! The cleanups
-> themselves look great, but I'd really like to see them more separated.
-> 
-> Thanks,
-> Anton.
+Hi Matthieu,
 
-Sorry to bother you.
-I'll resend the patch-set separately.
-Thanks a lot for detailed review.
+On Thu, Aug 30, 2012 at 04:30:54PM -0600, mathieu.poirier@linaro.org wrote:
+> From: "Mathieu J. Poirier" <mathieu.poirier@linaro.org>
+> 
+> This patch adds keyreset functionality to the sysrq driver. It
+> allows certain button/key combinations to be used in order to
+> trigger device resets.
+> 
+> The first time the key-combo is detected a work function that syncs
+> the filesystems is scheduled and the kernel rebooted. If all the keys
+> are released and then pressed again, it calls panic. Reboot on panic
+> should be set for this to work.  A platform device that specify a
+> reset key-combo should be added to the board file to trigger the
+> feature.
 
-Best Regards,
-Milo
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Why do we need to involve a platform device and not use, for example, a module
+parameter, that could be set up from userspace?
+
+Also, why do we need reset_fn() and not simply invoke SysRq-B handler
+that should call ctrl_alt_del() for us?
+
+Thanks.
+
+-- 
+Dmitry
