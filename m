@@ -1,67 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753500Ab2H3SEY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 14:04:24 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:35786 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752051Ab2H3SEX (ORCPT
+	id S1753041Ab2H3SOI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 14:14:08 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49751 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750848Ab2H3SOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 14:04:23 -0400
+	Thu, 30 Aug 2012 14:14:05 -0400
+Date: Thu, 30 Aug 2012 11:14:01 -0700
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Xiaofan Tian <tianxf@marvell.com>
+Cc: linux-kernel@vger.kernel.org, Qing Xu <qingx@marvell.com>
+Subject: Re: [PATCH] regmap-irq: Add mask invert flag for enable register
+Message-ID: <20120830181400.GK4356@opensource.wolfsonmicro.com>
+References: <1346317415-12276-1-git-send-email-tianxf@marvell.com>
 MIME-Version: 1.0
-In-Reply-To: <20120830.124543.1590020152319166487.davem@davemloft.net>
-References: <1346230305.2522.15.camel@edumazet-glaptop>
-	<CAFbMe2PG90X7s6s970+XK3X0Jvzx4p6vhvM+JQCwtULPvs1QLw@mail.gmail.com>
-	<1346332350.2586.10.camel@edumazet-glaptop>
-	<20120830.124543.1590020152319166487.davem@davemloft.net>
-Date: Thu, 30 Aug 2012 11:04:21 -0700
-Message-ID: <CAFbMe2P-QhdkGGp=K6mdiW=g3CB_Z0C=Q8y=nz-nV6h2Q6WkcQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] tcp: Wrong timeout for SYN segments
-From: "H.K. Jerry Chu" <hkjerry.chu@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: eric.dumazet@gmail.com, alex@linlab.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346317415-12276-1-git-send-email-tianxf@marvell.com>
+X-Cookie: Stay away from flying saucers today.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 9:45 AM, David Miller <davem@davemloft.net> wrote:
-> From: Eric Dumazet <eric.dumazet@gmail.com>
-> Date: Thu, 30 Aug 2012 06:12:30 -0700
->
->> On Wed, 2012-08-29 at 10:25 -0700, H.K. Jerry Chu wrote:
->>
->>> But it probably matter slightly more for TCP Fast Open (the server
->>> side patch has
->>> been completed and will be posted soon, after I finish breaking it up
->>> into smaller
->>> pieces for ease of review purpose), when a full socket will be created with data
->>> passed to the app upon a valid SYN+data. Dropping a fully functioning socket
->>> won't be the same as dropping a request_sock unknown to the app and letting
->>> the other side retransmitting SYN (w/o data this time).
->>>
->>> >
->>> > Sure, RFC numbers are what they are, but in practice, I doubt someone
->>> > will really miss the extra SYNACK sent after ~32 seconds, since it would
->>> > matter only for the last SYN attempted.
->>>
->>> I'd slightly prefer 1 extra retry plus longer wait time just to make
->>> TCP Fast Open
->>> a little more robust (even though the app protocol is required to be
->>> idempotent).
->>> But this is not a showstopper.
->>
->> Thats very good points indeed, thanks.
->>
->> Maybe we can increase SYNACK max retrans only if the FastOpen SYN cookie
->> was validated.
->>
->> This way, we increase reliability without amplifying the effect of wild
->> SYN packets.
->
-> Can we come to a final conclusion on this last point and arrive at a final
-> patch?
->
-> Thanks.
+On Thu, Aug 30, 2012 at 05:03:35PM +0800, Xiaofan Tian wrote:
+> Currently, regmap will write 1 to mask_base to mask
+> an interrupt and write 0 to unmask it.
 
-Acked-by: H.K. Jerry Chu <hkchu@google.com>
+Applied, thanks.
