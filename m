@@ -1,301 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752642Ab2H3NhK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 09:37:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41769 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752462Ab2H3NhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 09:37:08 -0400
-Date: Thu, 30 Aug 2012 16:38:20 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, avi@redhat.com, kvm@vger.kernel.org
-Subject: Re: [PATCH v3 2/2] virtio-ring: Allocate indirect buffers from cache
- when possible
-Message-ID: <20120830133820.GC21132@redhat.com>
-References: <1346325718-11151-1-git-send-email-levinsasha928@gmail.com>
- <1346325718-11151-2-git-send-email-levinsasha928@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346325718-11151-2-git-send-email-levinsasha928@gmail.com>
+	id S1752428Ab2H3NpV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 09:45:21 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46966 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751978Ab2H3NpT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 09:45:19 -0400
+From: Toshiaki Yamane <yamanetoshi@gmail.com>
+To: Greg Kroah-Hartman <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org, Toshiaki Yamane <yamanetoshi@gmail.com>
+Subject: [PATCH] staging/rts_pstor: remove braces {} in rtsx_transport.c
+Date: Thu, 30 Aug 2012 22:45:11 +0900
+Message-Id: <1346334311-20771-1-git-send-email-yamanetoshi@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 01:21:58PM +0200, Sasha Levin wrote:
-> Currently if VIRTIO_RING_F_INDIRECT_DESC is enabled we will
-> use indirect descriptors and allocate them using a simple
-> kmalloc().
-> 
-> This patch adds a cache which will allow indirect buffers under
-> a configurable size to be allocated from that cache instead.
-> 
-> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+fixed below checkpatch warnings.
+-WARNING: braces {} are not necessary for single statement blocks
+-WARNING: braces {} are not necessary for any arm of this statement
 
-I am not sure we need these module params.
-But assuming we keep them, we need to validate values - they come from
-user.
+Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
+---
+ drivers/staging/rts_pstor/rtsx_transport.c |  100 +++++++++++++---------------
+ 1 file changed, 45 insertions(+), 55 deletions(-)
 
+diff --git a/drivers/staging/rts_pstor/rtsx_transport.c b/drivers/staging/rts_pstor/rtsx_transport.c
+index 54a4742..1f9a424 100644
+--- a/drivers/staging/rts_pstor/rtsx_transport.c
++++ b/drivers/staging/rts_pstor/rtsx_transport.c
+@@ -218,9 +218,9 @@ void rtsx_add_cmd(struct rtsx_chip *chip,
+ 	val |= (u32)data;
+ 
+ 	spin_lock_irq(&chip->rtsx->reg_lock);
+-	if (chip->ci < (HOST_CMDS_BUF_LEN / 4)) {
++	if (chip->ci < (HOST_CMDS_BUF_LEN / 4))
+ 		cb[(chip->ci)++] = cpu_to_le32(val);
+-	}
++
+ 	spin_unlock_irq(&chip->rtsx->reg_lock);
+ }
+ 
+@@ -244,15 +244,14 @@ int rtsx_send_cmd(struct rtsx_chip *chip, u8 card, int timeout)
+ 	long timeleft;
+ 	int err = 0;
+ 
+-	if (card == SD_CARD) {
++	if (card == SD_CARD)
+ 		rtsx->check_card_cd = SD_EXIST;
+-	} else if (card == MS_CARD) {
++	else if (card == MS_CARD)
+ 		rtsx->check_card_cd = MS_EXIST;
+-	} else if (card == XD_CARD) {
++	else if (card == XD_CARD)
+ 		rtsx->check_card_cd = XD_EXIST;
+-	} else {
++	else
+ 		rtsx->check_card_cd = 0;
+-	}
+ 
+ 	spin_lock_irq(&rtsx->reg_lock);
+ 
+@@ -281,11 +280,11 @@ int rtsx_send_cmd(struct rtsx_chip *chip, u8 card, int timeout)
+ 	}
+ 
+ 	spin_lock_irq(&rtsx->reg_lock);
+-	if (rtsx->trans_result == TRANS_RESULT_FAIL) {
++	if (rtsx->trans_result == TRANS_RESULT_FAIL)
+ 		err = -EIO;
+-	} else if (rtsx->trans_result == TRANS_RESULT_OK) {
++	else if (rtsx->trans_result == TRANS_RESULT_OK)
+ 		err = 0;
+-	}
++
+ 	spin_unlock_irq(&rtsx->reg_lock);
+ 
+ finish_send_cmd:
+@@ -341,23 +340,21 @@ static int rtsx_transfer_sglist_adma_partial(struct rtsx_chip *chip, u8 card,
+ 	if ((sg == NULL) || (num_sg <= 0) || !offset || !index)
+ 		return -EIO;
+ 
+-	if (dma_dir == DMA_TO_DEVICE) {
++	if (dma_dir == DMA_TO_DEVICE)
+ 		dir = HOST_TO_DEVICE;
+-	} else if (dma_dir == DMA_FROM_DEVICE) {
++	else if (dma_dir == DMA_FROM_DEVICE)
+ 		dir = DEVICE_TO_HOST;
+-	} else {
++	else
+ 		return -ENXIO;
+-	}
+ 
+-	if (card == SD_CARD) {
++	if (card == SD_CARD)
+ 		rtsx->check_card_cd = SD_EXIST;
+-	} else if (card == MS_CARD) {
++	else if (card == MS_CARD)
+ 		rtsx->check_card_cd = MS_EXIST;
+-	} else if (card == XD_CARD) {
++	else if (card == XD_CARD)
+ 		rtsx->check_card_cd = XD_EXIST;
+-	} else {
++	else
+ 		rtsx->check_card_cd = 0;
+-	}
+ 
+ 	spin_lock_irq(&rtsx->reg_lock);
+ 
+@@ -405,11 +402,10 @@ static int rtsx_transfer_sglist_adma_partial(struct rtsx_chip *chip, u8 card,
+ 			*offset = 0;
+ 			*index = *index + 1;
+ 		}
+-		if ((i == (sg_cnt - 1)) || !resid) {
++		if ((i == (sg_cnt - 1)) || !resid)
+ 			option = SG_VALID | SG_END | SG_TRANS_DATA;
+-		} else {
++		else
+ 			option = SG_VALID | SG_TRANS_DATA;
+-		}
+ 
+ 		rtsx_add_sg_tbl(chip, (u32)addr, (u32)len, option);
+ 
+@@ -468,11 +464,11 @@ static int rtsx_transfer_sglist_adma_partial(struct rtsx_chip *chip, u8 card,
+ 	}
+ 
+ 	spin_lock_irq(&rtsx->reg_lock);
+-	if (rtsx->trans_result == TRANS_RESULT_FAIL) {
++	if (rtsx->trans_result == TRANS_RESULT_FAIL)
+ 		err = -EIO;
+-	} else if (rtsx->trans_result == TRANS_RESULT_OK) {
++	else if (rtsx->trans_result == TRANS_RESULT_OK)
+ 		err = 0;
+-	}
++
+ 	spin_unlock_irq(&rtsx->reg_lock);
+ 
+ out:
+@@ -501,23 +497,21 @@ static int rtsx_transfer_sglist_adma(struct rtsx_chip *chip, u8 card,
+ 	if ((sg == NULL) || (num_sg <= 0))
+ 		return -EIO;
+ 
+-	if (dma_dir == DMA_TO_DEVICE) {
++	if (dma_dir == DMA_TO_DEVICE)
+ 		dir = HOST_TO_DEVICE;
+-	} else if (dma_dir == DMA_FROM_DEVICE) {
++	else if (dma_dir == DMA_FROM_DEVICE)
+ 		dir = DEVICE_TO_HOST;
+-	} else {
++	else
+ 		return -ENXIO;
+-	}
+ 
+-	if (card == SD_CARD) {
++	if (card == SD_CARD)
+ 		rtsx->check_card_cd = SD_EXIST;
+-	} else if (card == MS_CARD) {
++	else if (card == MS_CARD)
+ 		rtsx->check_card_cd = MS_EXIST;
+-	} else if (card == XD_CARD) {
++	else if (card == XD_CARD)
+ 		rtsx->check_card_cd = XD_EXIST;
+-	} else {
++	else
+ 		rtsx->check_card_cd = 0;
+-	}
+ 
+ 	spin_lock_irq(&rtsx->reg_lock);
+ 
+@@ -537,11 +531,10 @@ static int rtsx_transfer_sglist_adma(struct rtsx_chip *chip, u8 card,
+ 		u32 val = TRIG_DMA;
+ 		int sg_cnt, j;
+ 
+-		if (i == buf_cnt / (HOST_SG_TBL_BUF_LEN / 8)) {
++		if (i == buf_cnt / (HOST_SG_TBL_BUF_LEN / 8))
+ 			sg_cnt = buf_cnt % (HOST_SG_TBL_BUF_LEN / 8);
+-		} else {
++		else
+ 			sg_cnt = (HOST_SG_TBL_BUF_LEN / 8);
+-		}
+ 
+ 		chip->sgi = 0;
+ 		for (j = 0; j < sg_cnt; j++) {
+@@ -552,11 +545,10 @@ static int rtsx_transfer_sglist_adma(struct rtsx_chip *chip, u8 card,
+ 			RTSX_DEBUGP("DMA addr: 0x%x, Len: 0x%x\n",
+ 				     (unsigned int)addr, len);
+ 
+-			if (j == (sg_cnt - 1)) {
++			if (j == (sg_cnt - 1))
+ 				option = SG_VALID | SG_END | SG_TRANS_DATA;
+-			} else {
++			else
+ 				option = SG_VALID | SG_TRANS_DATA;
+-			}
+ 
+ 			rtsx_add_sg_tbl(chip, (u32)addr, (u32)len, option);
+ 
+@@ -615,11 +607,11 @@ static int rtsx_transfer_sglist_adma(struct rtsx_chip *chip, u8 card,
+ 	}
+ 
+ 	spin_lock_irq(&rtsx->reg_lock);
+-	if (rtsx->trans_result == TRANS_RESULT_FAIL) {
++	if (rtsx->trans_result == TRANS_RESULT_FAIL)
+ 		err = -EIO;
+-	} else if (rtsx->trans_result == TRANS_RESULT_OK) {
++	else if (rtsx->trans_result == TRANS_RESULT_OK)
+ 		err = 0;
+-	}
++
+ 	spin_unlock_irq(&rtsx->reg_lock);
+ 
+ out:
+@@ -647,27 +639,25 @@ static int rtsx_transfer_buf(struct rtsx_chip *chip, u8 card, void *buf, size_t
+ 	if ((buf == NULL) || (len <= 0))
+ 		return -EIO;
+ 
+-	if (dma_dir == DMA_TO_DEVICE) {
++	if (dma_dir == DMA_TO_DEVICE)
+ 		dir = HOST_TO_DEVICE;
+-	} else if (dma_dir == DMA_FROM_DEVICE) {
++	else if (dma_dir == DMA_FROM_DEVICE)
+ 		dir = DEVICE_TO_HOST;
+-	} else {
++	else
+ 		return -ENXIO;
+-	}
+ 
+ 	addr = dma_map_single(&(rtsx->pci->dev), buf, len, dma_dir);
+ 	if (!addr)
+ 		return -ENOMEM;
+ 
+-	if (card == SD_CARD) {
++	if (card == SD_CARD)
+ 		rtsx->check_card_cd = SD_EXIST;
+-	} else if (card == MS_CARD) {
++	else if (card == MS_CARD)
+ 		rtsx->check_card_cd = MS_EXIST;
+-	} else if (card == XD_CARD) {
++	else if (card == XD_CARD)
+ 		rtsx->check_card_cd = XD_EXIST;
+-	} else {
++	else
+ 		rtsx->check_card_cd = 0;
+-	}
+ 
+ 	val |= (u32)(dir & 0x01) << 29;
+ 	val |= (u32)(len & 0x00FFFFFF);
+@@ -698,11 +688,11 @@ static int rtsx_transfer_buf(struct rtsx_chip *chip, u8 card, void *buf, size_t
+ 	}
+ 
+ 	spin_lock_irq(&rtsx->reg_lock);
+-	if (rtsx->trans_result == TRANS_RESULT_FAIL) {
++	if (rtsx->trans_result == TRANS_RESULT_FAIL)
+ 		err = -EIO;
+-	} else if (rtsx->trans_result == TRANS_RESULT_OK) {
++	else if (rtsx->trans_result == TRANS_RESULT_OK)
+ 		err = 0;
+-	}
++
+ 	spin_unlock_irq(&rtsx->reg_lock);
+ 
+ out:
+-- 
+1.7.9.5
 
-
-> ---
->  drivers/block/virtio_blk.c          |  4 ++++
->  drivers/char/hw_random/virtio-rng.c |  4 ++++
->  drivers/char/virtio_console.c       |  4 ++++
->  drivers/net/virtio_net.c            |  4 ++++
->  drivers/virtio/virtio_balloon.c     |  4 ++++
->  drivers/virtio/virtio_ring.c        | 34 ++++++++++++++++++++++++++++++----
->  include/linux/virtio.h              |  1 +
->  net/9p/trans_virtio.c               |  5 +++++
->  8 files changed, 56 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-> index 7c63065..e4c6c42 100644
-> --- a/drivers/block/virtio_blk.c
-> +++ b/drivers/block/virtio_blk.c
-> @@ -25,6 +25,9 @@ struct workqueue_struct *virtblk_wq;
->  static unsigned int indirect_thresh;
->  module_param(indirect_thresh, uint, S_IRUGO);
->  
-> +static unsigned int indirect_alloc_thresh;
-> +module_param(indirect_alloc_thresh, uint, S_IRUGO);
-> +
->  struct virtio_blk
->  {
->  	struct virtio_device *vdev;
-> @@ -739,6 +742,7 @@ static int __devinit virtblk_probe(struct virtio_device *vdev)
->  	INIT_WORK(&vblk->config_work, virtblk_config_changed_work);
->  	vblk->config_enable = true;
->  	vdev->indirect_thresh = indirect_thresh;
-> +	vdev->indirect_alloc_thresh = indirect_alloc_thresh;
->  
->  	err = init_vq(vblk);
->  	if (err)
-> diff --git a/drivers/char/hw_random/virtio-rng.c b/drivers/char/hw_random/virtio-rng.c
-> index 3a644f1..ed22db8 100644
-> --- a/drivers/char/hw_random/virtio-rng.c
-> +++ b/drivers/char/hw_random/virtio-rng.c
-> @@ -28,6 +28,9 @@
->  static unsigned int indirect_thresh;
->  module_param(indirect_thresh, uint, S_IRUGO);
->  
-> +static unsigned int indirect_alloc_thresh;
-> +module_param(indirect_alloc_thresh, uint, S_IRUGO);
-> +
->  static struct virtqueue *vq;
->  static unsigned int data_avail;
->  static DECLARE_COMPLETION(have_data);
-> @@ -97,6 +100,7 @@ static int probe_common(struct virtio_device *vdev)
->  
->  	/* We expect a single virtqueue. */
->  	vdev->indirect_thresh = indirect_thresh;
-> +	vdev->indirect_alloc_thresh = indirect_alloc_thresh;
->  	vq = virtio_find_single_vq(vdev, random_recv_done, "input");
->  	if (IS_ERR(vq))
->  		return PTR_ERR(vq);
-> diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-> index da2e44c..8f30732 100644
-> --- a/drivers/char/virtio_console.c
-> +++ b/drivers/char/virtio_console.c
-> @@ -42,6 +42,9 @@
->  static unsigned int indirect_thresh;
->  module_param(indirect_thresh, uint, S_IRUGO);
->  
-> +static unsigned int indirect_alloc_thresh;
-> +module_param(indirect_alloc_thresh, uint, S_IRUGO);
-> +
->  /*
->   * This is a global struct for storing common data for all the devices
->   * this driver handles.
-> @@ -1891,6 +1894,7 @@ static int __devinit virtcons_probe(struct virtio_device *vdev)
->  			      &portdev->config.max_nr_ports) == 0)
->  		multiport = true;
->  	vdev->indirect_thresh = indirect_thresh;
-> +	vdev->indirect_alloc_thresh = indirect_alloc_thresh;
->  
->  	err = init_vqs(portdev);
->  	if (err < 0) {
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index 949c89e..a00e19d 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -37,6 +37,9 @@ module_param(gso, bool, 0444);
->  static unsigned int indirect_thresh = 16;
->  module_param(indirect_thresh, uint, S_IRUGO);
->  
-> +static unsigned int indirect_alloc_thresh = 16;
-
-Why 16?  Please make is MAX_SG + 1 this makes some sense.
-
-
-> +module_param(indirect_alloc_thresh, uint, S_IRUGO);
-> +
->  /* FIXME: MTU in config. */
->  #define MAX_PACKET_LEN (ETH_HLEN + VLAN_HLEN + ETH_DATA_LEN)
->  #define GOOD_COPY_LEN	128
-> @@ -1132,6 +1135,7 @@ static int virtnet_probe(struct virtio_device *vdev)
->  	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
->  		vi->mergeable_rx_bufs = true;
->  	vdev->indirect_thresh = indirect_thresh;
-> +	vdev->indirect_alloc_thresh = indirect_alloc_thresh;
->  
->  	err = init_vqs(vi);
->  	if (err)
-> diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
-> index ca5ae7a..039c4a6 100644
-> --- a/drivers/virtio/virtio_balloon.c
-> +++ b/drivers/virtio/virtio_balloon.c
-> @@ -38,6 +38,9 @@
->  static unsigned int indirect_thresh;
->  module_param(indirect_thresh, uint, S_IRUGO);
->  
-> +static unsigned int indirect_alloc_thresh;
-> +module_param(indirect_alloc_thresh, uint, S_IRUGO);
-> +
->  struct virtio_balloon
->  {
->  	struct virtio_device *vdev;
-> @@ -360,6 +363,7 @@ static int virtballoon_probe(struct virtio_device *vdev)
->  	vb->vdev = vdev;
->  	vb->need_stats_update = 0;
->  	vdev->indirect_thresh = indirect_thresh;
-> +	vdev->indirect_alloc_thresh = indirect_alloc_thresh;
->  
->  	err = init_vqs(vb);
->  	if (err)
-> diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-> index 4063e03..dde867b 100644
-> --- a/drivers/virtio/virtio_ring.c
-> +++ b/drivers/virtio/virtio_ring.c
-> @@ -93,6 +93,10 @@ struct vring_virtqueue
->  	 */
->  	unsigned int indirect_thresh;
->  
-> +	/* Buffers below this size will be allocated from cache */
-> +	unsigned int indirect_alloc_thresh;
-> +	struct kmem_cache *indirect_cache;
-> +
->  	/* Host publishes avail event idx */
->  	bool event;
->  
-> @@ -135,7 +139,10 @@ static int vring_add_indirect(struct vring_virtqueue *vq,
->  	unsigned head;
->  	int i;
->  
-> -	desc = kmalloc((out + in) * sizeof(struct vring_desc), gfp);
-> +	if ((out + in) <= vq->indirect_alloc_thresh)
-> +		desc = kmem_cache_alloc(vq->indirect_cache, gfp);
-> +	else
-> +		desc = kmalloc((out + in) * sizeof(struct vring_desc), gfp);
->  	if (!desc)
->  		return -ENOMEM;
->  
-> @@ -384,8 +391,14 @@ static void detach_buf(struct vring_virtqueue *vq, unsigned int head)
->  	i = head;
->  
->  	/* Free the indirect table */
-> -	if (vq->vring.desc[i].flags & VRING_DESC_F_INDIRECT)
-> -		kfree(phys_to_virt(vq->vring.desc[i].addr));
-> +	if (vq->vring.desc[i].flags & VRING_DESC_F_INDIRECT) {
-> +		u32 descs = vq->vring.desc[i].len / sizeof(struct vring_desc);
-> +		if (descs > vq->indirect_alloc_thresh)
-> +			kfree(phys_to_virt(vq->vring.desc[i].addr));
-> +		else
-> +			kmem_cache_free(vq->indirect_cache,
-> +					phys_to_virt(vq->vring.desc[i].addr));
-> +	}
-
-If logic in two chunks above does not match it all
-blows up. So let's add a helper is_cache(vq, buf)
-and call from both places.
-
->  
->  	while (vq->vring.desc[i].flags & VRING_DESC_F_NEXT) {
->  		i = vq->vring.desc[i].next;
-> @@ -654,14 +667,25 @@ struct virtqueue *vring_new_virtqueue(unsigned int num,
->  	vq->last_used_idx = 0;
->  	vq->num_added = 0;
->  	vq->indirect_thresh = 0;
-> +	vq->indirect_alloc_thresh = 0;
-> +	vq->indirect_cache = NULL;
->  	list_add_tail(&vq->vq.list, &vdev->vqs);
->  #ifdef DEBUG
->  	vq->in_use = false;
->  	vq->last_add_time_valid = false;
->  #endif
->  
-> -	if (virtio_has_feature(vdev, VIRTIO_RING_F_INDIRECT_DESC))
-> +	if (virtio_has_feature(vdev, VIRTIO_RING_F_INDIRECT_DESC)) {
->  		vq->indirect_thresh = vdev->indirect_thresh;
-> +		vq->indirect_alloc_thresh = vdev->indirect_alloc_thresh;
-
-This means for virtio-net we still create a cache for both
-TX and RX, but it's later unused for RX unless
-big packet mode is set.
-Pls make this flag per vq not per device.
-
-> +		if (vq->indirect_alloc_thresh) {
-> +			vq->indirect_cache =
-> +				KMEM_CACHE(vring_desc[vq->indirect_alloc_thresh], 0);
-> +
-> +			if (vq->indirect_cache == NULL)
-> +				vq->indirect_alloc_thresh = 0;
-> +		}
-> +	}
->  
->  	vq->event = virtio_has_feature(vdev, VIRTIO_RING_F_EVENT_IDX);
->  
-> @@ -685,6 +709,8 @@ EXPORT_SYMBOL_GPL(vring_new_virtqueue);
->  void vring_del_virtqueue(struct virtqueue *vq)
->  {
->  	list_del(&vq->list);
-> +	if (to_vvq(vq)->indirect_cache)
-> +		kmem_cache_destroy(to_vvq(vq)->indirect_cache);
->  	kfree(to_vvq(vq));
->  }
->  EXPORT_SYMBOL_GPL(vring_del_virtqueue);
-> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
-> index 48bc457..3261c02 100644
-> --- a/include/linux/virtio.h
-> +++ b/include/linux/virtio.h
-> @@ -70,6 +70,7 @@ struct virtio_device {
->  	unsigned long features[1];
->  	void *priv;
->  	unsigned int indirect_thresh;
-> +	unsigned int indirect_alloc_thresh;
->  };
->  
->  #define dev_to_virtio(dev) container_of(dev, struct virtio_device, dev)
-
-So what is a reasonable value?
-It would be such that most bufs have # of s/g below it.
-So I think 'expected_sg' would be a better name,
-add documentation explaining what it is.
-
-> diff --git a/net/9p/trans_virtio.c b/net/9p/trans_virtio.c
-> index 418f933..058b6dd 100644
-> --- a/net/9p/trans_virtio.c
-> +++ b/net/9p/trans_virtio.c
-> @@ -55,6 +55,9 @@
->  static unsigned int indirect_thresh;
->  module_param(indirect_thresh, uint, S_IRUGO);
->  
-> +static unsigned int indirect_alloc_thresh;
-> +module_param(indirect_alloc_thresh, uint, S_IRUGO);
-> +
->  /* a single mutex to manage channel initialization and attachment */
->  static DEFINE_MUTEX(virtio_9p_lock);
->  static DECLARE_WAIT_QUEUE_HEAD(vp_wq);
-> @@ -505,6 +508,8 @@ static int p9_virtio_probe(struct virtio_device *vdev)
->  
->  	/* We expect one virtqueue, for requests. */
->  	vdev->indirect_thresh = indirect_thresh;
-> +	vdev->indirect_alloc_thresh = indirect_alloc_thresh;
-> +
->  	chan->vq = virtio_find_single_vq(vdev, req_done, "requests");
->  	if (IS_ERR(chan->vq)) {
->  		err = PTR_ERR(chan->vq);
-> -- 
-> 1.7.12
