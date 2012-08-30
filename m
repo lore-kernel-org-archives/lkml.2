@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860Ab2H3SZZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 14:25:25 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:42638 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753528Ab2H3SZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 14:25:22 -0400
-Message-ID: <1346351121.2103.36.camel@joe2Laptop>
-Subject: Re: [PATCH 0/5] dev_<level> and dynamic_debug cleanups
-From: Joe Perches <joe@perches.com>
-To: Jim Cromie <jim.cromie@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jason Baron <jbaron@redhat.com>, Kay Sievers <kay@vrfy.org>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 30 Aug 2012 11:25:21 -0700
-In-Reply-To: <CAJfuBxyQc-XeNHxw0_XDs0JuCrNArNzcgsmrLya4ncDvSojZxQ@mail.gmail.com>
-References: <cover.1345978012.git.joe@perches.com>
-	 <CAJfuBxyQc-XeNHxw0_XDs0JuCrNArNzcgsmrLya4ncDvSojZxQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754311Ab2H3S0b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 14:26:31 -0400
+Received: from na3sys009aog138.obsmtp.com ([74.125.149.19]:33601 "EHLO
+	na3sys009aog138.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753420Ab2H3S0a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 14:26:30 -0400
+From: Fernando Guzman Lugo <fernando.lugo@ti.com>
+To: <ohad@wizery.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Cc: Fernando Guzman Lugo <fernando.lugo@ti.com>
+Subject: [PATCHv2 0/3] remoteproc: introduce rproc recovery
+Date: Thu, 30 Aug 2012 13:26:11 -0500
+Message-Id: <1346351174-28441-1-git-send-email-fernando.lugo@ti.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-30 at 11:43 -0600, Jim Cromie wrote:
-> On Sun, Aug 26, 2012 at 5:25 AM, Joe Perches <joe@perches.com> wrote:
-> > The recent commit to fix dynamic_debug was a bit unclean.
-> > Neaten the style for dynamic_debug.
-> > Reduce the stack use of message logging that uses netdev_printk
-> > Add utility functions dev_printk_emit and dev_vprintk_emit for /dev/kmsg.
-> >
-> > Joe Perches (5):
-> >   dev_dbg/dynamic_debug: Update to use printk_emit, optimize stack
-> >   netdev_printk/dynamic_netdev_dbg: Directly call printk_emit
-> >   netdev_printk/netif_printk: Remove a superfluous logging colon
-> >   dev: Add dev_vprintk_emit and dev_printk_emit
-> >   device and dynamic_debug: Use dev_vprintk_emit and dev_printk_emit
-> >
-> 
-> Ive tested this on 2 builds differing only by DYNAMIC_DEBUG
-> It works for me on x86-64
-> 
-> However, I just booted a non-dyndbg build on x86-32, and got this.
-> 
-> 
-> root@voyage:~# dmesg | grep Unknown
-> mac80211: Unknown symbol __dynamic_dev_dbg (err 0)
-> mac80211: Unknown symbol __dynamic_pr_debug (err 0)
-> scx200_acb: Unknown symbol __dynamic_dev_dbg (err 0)
-> scx200_acb: Unknown symbol __dynamic_pr_debug (err 0)
-> hwmon: Unknown symbol __dynamic_dev_dbg (err 0)
-> nsc_gpio: Unknown symbol __dynamic_dev_dbg (err 0)
-> nsc_gpio: Unknown symbol __dynamic_dev_dbg (err 0)
-> root@voyage:~#
-> 
-> It may be my error, will investigate asap,
-> but wanted to report now.
+These set of patches make possible the remoteproc recover after a crash.
+This is a hard recovery, that means the remoteproc is reset and it will
+start from the beginning. When a crash happen all the virtio devices are
+destroyed. Therefore, both rpmsg drivers and devices are gracefully
+removed which also cause rproc users become 0 and the remoteproc is turned
+off. After the virtio devices are destroyed the crash handler function
+will read the virtio information from the firmware in order to recreate
+the virtio devices that will boot the remoteproc and everything will be
+functional again.
 
-Thanks, but I don't know how this is possible.
-There are no 32/64 component tests in this code.
+-Version 2
+* Wait untill there is no more rproc users before realoding the FW again
+  in order to make sure the recovery will work fine. As suggested by
+  Sjur BRENDELAND
+
+Fernando Guzman Lugo (3):
+  remoteproc: add rproc_report_crash function to notify rproc crashes
+  remoteproc: recover a remoteproc when it has crashed
+  remoteproc: create debugfs entry to disable/enable recovery
+    dynamically
+
+ Documentation/remoteproc.txt             |    7 ++
+ drivers/remoteproc/remoteproc_core.c     |  116 ++++++++++++++++++++++++++++--
+ drivers/remoteproc/remoteproc_debugfs.c  |   83 +++++++++++++++++++++
+ drivers/remoteproc/remoteproc_internal.h |    1 +
+ include/linux/remoteproc.h               |   22 ++++++
+ 5 files changed, 222 insertions(+), 7 deletions(-)
 
