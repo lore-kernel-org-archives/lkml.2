@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140Ab2H3VOa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 17:14:30 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:47599 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753002Ab2H3VO2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 17:14:28 -0400
+	id S1753242Ab2H3VPr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 17:15:47 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:34841 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753086Ab2H3VO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 17:14:26 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,76 +14,234 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "3.2.x.." <stable@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@ti.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 18/26] frv: Add missing RCU idle APIs on idle loop
-Date: Thu, 30 Aug 2012 14:05:35 -0700
-Message-Id: <1346360743-3628-18-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 09/26] x86: Exception hooks for userspace RCU extended QS
+Date: Thu, 30 Aug 2012 14:05:26 -0700
+Message-Id: <1346360743-3628-9-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120830210520.GA2824@linux.vnet.ibm.com>
  <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12083021-7408-0000-0000-0000080B5783
+x-cbid: 12083021-5112-0000-0000-00000BA87954
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Frederic Weisbecker <fweisbec@gmail.com>
 
-In the old times, the whole idle task was considered
-as an RCU quiescent state. But as RCU became more and
-more successful overtime, some RCU read side critical
-section have been added even in the code of some
-architectures idle tasks, for tracing for example.
+Add necessary hooks to x86 exception for userspace
+RCU extended quiescent state support.
 
-So nowadays, rcu_idle_enter() and rcu_idle_exit() must
-be called by the architecture to tell RCU about the part
-in the idle loop that doesn't make use of rcu read side
-critical sections, typically the part that puts the CPU
-in low power mode.
+This includes traps, page fault, debug exceptions, etc...
 
-This is necessary for RCU to find the quiescent states in
-idle in order to complete grace periods.
-
-Add this missing pair of calls in the Frv's idle loop.
-
-Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: 3.2.x.. <stable@vger.kernel.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Alessio Igor Bogani <abogani@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Geoff Levand <geoff@infradead.org>
+Cc: Gilad Ben Yossef <gilad@benyossef.com>
+Cc: Hakan Akkan <hakanakkan@gmail.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Josh Triplett <josh@joshtriplett.org>
+Cc: Kevin Hilman <khilman@ti.com>
+Cc: Max Krasnyansky <maxk@qualcomm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- arch/frv/kernel/process.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/rcu.h |   20 ++++++++++++++++++++
+ arch/x86/kernel/traps.c    |   30 ++++++++++++++++++++++--------
+ arch/x86/mm/fault.c        |   13 +++++++++++--
+ 3 files changed, 53 insertions(+), 10 deletions(-)
+ create mode 100644 arch/x86/include/asm/rcu.h
 
-diff --git a/arch/frv/kernel/process.c b/arch/frv/kernel/process.c
-index ff95f50..2eb7fa5 100644
---- a/arch/frv/kernel/process.c
-+++ b/arch/frv/kernel/process.c
-@@ -25,6 +25,7 @@
- #include <linux/reboot.h>
- #include <linux/interrupt.h>
- #include <linux/pagemap.h>
+diff --git a/arch/x86/include/asm/rcu.h b/arch/x86/include/asm/rcu.h
+new file mode 100644
+index 0000000..439815b
+--- /dev/null
++++ b/arch/x86/include/asm/rcu.h
+@@ -0,0 +1,20 @@
++#ifndef _ASM_X86_RCU_H
++#define _ASM_X86_RCU_H
++
 +#include <linux/rcupdate.h>
++#include <asm/ptrace.h>
++
++static inline void exception_enter(struct pt_regs *regs)
++{
++	rcu_user_exit();
++}
++
++static inline void exception_exit(struct pt_regs *regs)
++{
++#ifdef CONFIG_RCU_USER_QS
++	if (user_mode(regs))
++		rcu_user_enter();
++#endif
++}
++
++#endif
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index b481341..ab82cbd 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -55,6 +55,7 @@
+ #include <asm/i387.h>
+ #include <asm/fpu-internal.h>
+ #include <asm/mce.h>
++#include <asm/rcu.h>
  
- #include <asm/asm-offsets.h>
- #include <asm/uaccess.h>
-@@ -69,12 +70,14 @@ void cpu_idle(void)
- {
- 	/* endless idle loop with no priority at all */
- 	while (1) {
-+		rcu_idle_enter();
- 		while (!need_resched()) {
- 			check_pgt_cache();
+ #include <asm/mach_traps.h>
  
- 			if (!frv_dma_inprogress && idle)
- 				idle();
- 		}
-+		rcu_idle_exit();
+@@ -180,11 +181,15 @@ vm86_trap:
+ #define DO_ERROR(trapnr, signr, str, name)				\
+ dotraplinkage void do_##name(struct pt_regs *regs, long error_code)	\
+ {									\
+-	if (notify_die(DIE_TRAP, str, regs, error_code, trapnr, signr)	\
+-							== NOTIFY_STOP)	\
++	exception_enter(regs);						\
++	if (notify_die(DIE_TRAP, str, regs, error_code,			\
++			trapnr, signr) == NOTIFY_STOP) {		\
++		exception_exit(regs);					\
+ 		return;							\
++	}								\
+ 	conditional_sti(regs);						\
+ 	do_trap(trapnr, signr, str, regs, error_code, NULL);		\
++	exception_exit(regs);						\
+ }
  
- 		schedule_preempt_disabled();
+ #define DO_ERROR_INFO(trapnr, signr, str, name, sicode, siaddr)		\
+@@ -195,11 +200,15 @@ dotraplinkage void do_##name(struct pt_regs *regs, long error_code)	\
+ 	info.si_errno = 0;						\
+ 	info.si_code = sicode;						\
+ 	info.si_addr = (void __user *)siaddr;				\
+-	if (notify_die(DIE_TRAP, str, regs, error_code, trapnr, signr)	\
+-							== NOTIFY_STOP)	\
++	exception_enter(regs);						\
++	if (notify_die(DIE_TRAP, str, regs, error_code,			\
++			trapnr, signr) == NOTIFY_STOP) {		\
++		exception_exit(regs);					\
+ 		return;							\
++	}								\
+ 	conditional_sti(regs);						\
+ 	do_trap(trapnr, signr, str, regs, error_code, &info);		\
++	exception_exit(regs);						\
+ }
+ 
+ DO_ERROR_INFO(X86_TRAP_DE, SIGFPE, "divide error", divide_error, FPE_INTDIV,
+@@ -312,6 +321,7 @@ dotraplinkage void __kprobes notrace do_int3(struct pt_regs *regs, long error_co
+ 	    ftrace_int3_handler(regs))
+ 		return;
+ #endif
++	exception_enter(regs);
+ #ifdef CONFIG_KGDB_LOW_LEVEL_TRAP
+ 	if (kgdb_ll_trap(DIE_INT3, "int3", regs, error_code, X86_TRAP_BP,
+ 				SIGTRAP) == NOTIFY_STOP)
+@@ -331,6 +341,7 @@ dotraplinkage void __kprobes notrace do_int3(struct pt_regs *regs, long error_co
+ 	do_trap(X86_TRAP_BP, SIGTRAP, "int3", regs, error_code, NULL);
+ 	preempt_conditional_cli(regs);
+ 	debug_stack_usage_dec();
++	exception_exit(regs);
+ }
+ 
+ #ifdef CONFIG_X86_64
+@@ -391,6 +402,8 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
+ 	unsigned long dr6;
+ 	int si_code;
+ 
++	exception_enter(regs);
++
+ 	get_debugreg(dr6, 6);
+ 
+ 	/* Filter out all the reserved bits which are preset to 1 */
+@@ -406,7 +419,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
+ 
+ 	/* Catch kmemcheck conditions first of all! */
+ 	if ((dr6 & DR_STEP) && kmemcheck_trap(regs))
+-		return;
++		goto exit;
+ 
+ 	/* DR6 may or may not be cleared by the CPU */
+ 	set_debugreg(0, 6);
+@@ -421,7 +434,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
+ 
+ 	if (notify_die(DIE_DEBUG, "debug", regs, PTR_ERR(&dr6), error_code,
+ 							SIGTRAP) == NOTIFY_STOP)
+-		return;
++		goto exit;
+ 
+ 	/*
+ 	 * Let others (NMI) know that the debug stack is in use
+@@ -437,7 +450,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
+ 					X86_TRAP_DB);
+ 		preempt_conditional_cli(regs);
+ 		debug_stack_usage_dec();
+-		return;
++		goto exit;
  	}
+ 
+ 	/*
+@@ -458,7 +471,8 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
+ 	preempt_conditional_cli(regs);
+ 	debug_stack_usage_dec();
+ 
+-	return;
++exit:
++	exception_exit(regs);
+ }
+ 
+ /*
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 76dcd9d..7dde46d 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -18,6 +18,7 @@
+ #include <asm/pgalloc.h>		/* pgd_*(), ...			*/
+ #include <asm/kmemcheck.h>		/* kmemcheck_*(), ...		*/
+ #include <asm/fixmap.h>			/* VSYSCALL_START		*/
++#include <asm/rcu.h>			/* exception_enter(), ...	*/
+ 
+ /*
+  * Page fault error code bits:
+@@ -1000,8 +1001,8 @@ static int fault_in_kernel_space(unsigned long address)
+  * and the problem, and then passes it off to one of the appropriate
+  * routines.
+  */
+-dotraplinkage void __kprobes
+-do_page_fault(struct pt_regs *regs, unsigned long error_code)
++static void __kprobes
++__do_page_fault(struct pt_regs *regs, unsigned long error_code)
+ {
+ 	struct vm_area_struct *vma;
+ 	struct task_struct *tsk;
+@@ -1209,3 +1210,11 @@ good_area:
+ 
+ 	up_read(&mm->mmap_sem);
+ }
++
++dotraplinkage void __kprobes
++do_page_fault(struct pt_regs *regs, unsigned long error_code)
++{
++	exception_enter(regs);
++	__do_page_fault(regs, error_code);
++	exception_exit(regs);
++}
 -- 
 1.7.8
 
