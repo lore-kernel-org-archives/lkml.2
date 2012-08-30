@@ -1,39 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753051Ab2H3Kdj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 06:33:39 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:44003 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852Ab2H3Kdi (ORCPT
+	id S1753560Ab2H3LIN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 07:08:13 -0400
+Received: from webbox1416.server-home.net ([77.236.96.61]:57813 "EHLO
+	webbox1416.server-home.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751032Ab2H3LIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 06:33:38 -0400
-Message-ID: <503F419F.5040800@gmail.com>
-Date: Thu, 30 Aug 2012 12:34:07 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120826 Thunderbird/14.0
+	Thu, 30 Aug 2012 07:08:12 -0400
+From: Alexander Stein <alexander.stein@systec-electronic.com>
+To: Feng Tang <feng.tang@intel.com>
+Cc: Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Subject: Re: i2c-eg20t: regression since i2c_add_numbered_adapter change
+Date: Thu, 30 Aug 2012 13:08:09 +0200
+Message-ID: <6208908.ZjG7eB9lJn@ws-stein>
+User-Agent: KMail/4.8.5 (Linux/3.4.9-gentoo; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <20120830171915.36b6d10b@feng-i7>
+References: <4401854.hVfHzgeqjT@ws-stein> <4378288.tkkLiQ5MQ7@ws-stein> <20120830171915.36b6d10b@feng-i7>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, avi@redhat.com, kvm@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] virtio-ring: Allocate indirect buffers from cache
- when possible
-References: <1346159043-16446-1-git-send-email-levinsasha928@gmail.com> <1346159043-16446-2-git-send-email-levinsasha928@gmail.com> <20120828132032.GB2039@redhat.com> <503CC904.3050207@gmail.com> <20120829110748.GB5970@redhat.com> <503E2F27.5060904@gmail.com> <20120829151445.GC7407@redhat.com>
-In-Reply-To: <20120829151445.GC7407@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2012 05:14 PM, Michael S. Tsirkin wrote:
->> > Note that these are simple tests with netperf listening on one end and a simple
->> > 'netperf -H [host]' within the guest. If there are other tests which may be
->> > interesting please let me know.
-> Checking that host CPU utilization did not jump would be nice.
-> E.g. measure BW/host CPU.
+On Thursday 30 August 2012 17:19:15, Feng Tang wrote:
+> > IMO the i2c_register_board_info only works in quite static setups. Especially with I2C-Busses attached to hotplugable PCI devices this way doesn't work reliable any more.
+> > The device come and go dynamically so you can't assume fixed mapping.
+> 
+> Can you specify the hotplugable?
+> 1. A hotplugable i2c bus controller (say i2c_eg20t) with all fixed i2c
+>  devices connecting to it
+> 2. i2c bus controller is fixed, while the i2c devices will be dynamically
+>  connected to it.
+> 3. Both the bus controller and devices are dynamically hotplugged
 
-Tested it now, no change in CPU between the original, patch 1 and patch 2.
+I had scenario 1 in mind, but with more than 1 bus controller (say 2x i2c_eg20t). How can you set a fixed numbering if there are more controllers, each with maybe more than 1 bus?
+Anyway, how can you provide a static bus numbering if there are more than one driver or more than one device per driver if the devices are hotplugable?
 
+Best regards,
+Alexander
 
-Thanks,
-Sasha
