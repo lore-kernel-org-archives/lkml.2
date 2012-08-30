@@ -1,121 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754686Ab2H3CT4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 22:19:56 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:56644 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754004Ab2H3CTx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 22:19:53 -0400
-X-Sasl-enc: qlCAVnA6EWKyi18hdzTpf5iiGKf1c98NaQ/M+fGpuOJQ 1346293192
-From: Alan Ott <alan@signal11.us>
-To: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Alan Ott <alan@signal11.us>
-Subject: [PATCH 2/2] 6lowpan: handle NETDEV_UNREGISTER event
-Date: Wed, 29 Aug 2012 22:19:28 -0400
-Message-Id: <1346293168-26498-2-git-send-email-alan@signal11.us>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1346293168-26498-1-git-send-email-alan@signal11.us>
-References: <1346293168-26498-1-git-send-email-alan@signal11.us>
+	id S1754428Ab2H3ChJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 22:37:09 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:53721 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753638Ab2H3ChH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 22:37:07 -0400
+X-IronPort-AV: E=Sophos;i="4.80,337,1344182400"; 
+   d="scan'208";a="5750390"
+Message-ID: <503ED232.3010501@cn.fujitsu.com>
+Date: Thu, 30 Aug 2012 10:38:42 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/9 V3] workqueue: add POOL_MANAGING_WORKERS
+References: <1346259120-6216-1-git-send-email-laijs@cn.fujitsu.com> <1346259120-6216-4-git-send-email-laijs@cn.fujitsu.com> <20120829182102.GA2258@dhcp-172-17-108-109.mtv.corp.google.com>
+In-Reply-To: <20120829182102.GA2258@dhcp-172-17-108-109.mtv.corp.google.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/30 10:36:52,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/30 10:36:52,
+	Serialize complete at 2012/08/30 10:36:52
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before, it was impossible to remove a wpan device which had lowpan
-attached to it.
+On 08/30/2012 02:21 AM, Tejun Heo wrote:
+> Hello, Lai.
+> 
+> On Thu, Aug 30, 2012 at 12:51:54AM +0800, Lai Jiangshan wrote:
+>> When hotplug happens, the plug code will also grab the manager_mutex,
+>> it will break too_many_workers()'s assumption, and make too_many_workers()
+>> ugly(kick the timer wrongly, no found bug).
+>>
+>> To avoid assumption-coruption, we add the original POOL_MANAGING_WORKERS back.
+> 
+> I don't think we're gaining anything with this and I'd like to confine
+> management state within the mutex only.  If too_many_workers() firing
+> spuriously while CPU up/down is in progress, just add a comment
+> explaining why it's a non-problem
 
-Signed-off-by: Alan Ott <alan@signal11.us>
----
- net/ieee802154/6lowpan.c |   44 +++++++++++++++++++++++++++++++++++++-------
- 1 files changed, 37 insertions(+), 7 deletions(-)
+OK, I drop this patch, Could you add the comment, I'm not good at English.
 
-diff --git a/net/ieee802154/6lowpan.c b/net/ieee802154/6lowpan.c
-index ce33b02..fb41e08 100644
---- a/net/ieee802154/6lowpan.c
-+++ b/net/ieee802154/6lowpan.c
-@@ -1063,12 +1063,6 @@ out:
- 	return (err < 0 ? NETDEV_TX_BUSY : NETDEV_TX_OK);
- }
- 
--static void lowpan_dev_free(struct net_device *dev)
--{
--	dev_put(lowpan_dev_info(dev)->real_dev);
--	free_netdev(dev);
--}
--
- static struct wpan_phy *lowpan_get_phy(const struct net_device *dev)
- {
- 	struct net_device *real_dev = lowpan_dev_info(dev)->real_dev;
-@@ -1118,7 +1112,7 @@ static void lowpan_setup(struct net_device *dev)
- 	dev->netdev_ops		= &lowpan_netdev_ops;
- 	dev->header_ops		= &lowpan_header_ops;
- 	dev->ml_priv		= &lowpan_mlme;
--	dev->destructor		= lowpan_dev_free;
-+	dev->destructor		= free_netdev;
- }
- 
- static int lowpan_validate(struct nlattr *tb[], struct nlattr *data[])
-@@ -1244,6 +1238,34 @@ static inline void __init lowpan_netlink_fini(void)
- 	rtnl_link_unregister(&lowpan_link_ops);
- }
- 
-+static int lowpan_device_event(struct notifier_block *unused,
-+				unsigned long event,
-+				void *ptr)
-+{
-+	struct net_device *dev = ptr;
-+	LIST_HEAD(del_list);
-+	struct lowpan_dev_record *entry, *tmp;
-+
-+	if (dev->type != ARPHRD_IEEE802154)
-+		goto out;
-+
-+	if (event == NETDEV_UNREGISTER) {
-+		list_for_each_entry_safe(entry, tmp, &lowpan_devices, list) {
-+			if (lowpan_dev_info(entry->ldev)->real_dev == dev)
-+				lowpan_dellink(entry->ldev, &del_list);
-+		}
-+
-+		unregister_netdevice_many(&del_list);
-+	};
-+
-+out:
-+	return NOTIFY_DONE;
-+}
-+
-+static struct notifier_block lowpan_dev_notifier = {
-+	.notifier_call = lowpan_device_event,
-+};
-+
- static struct packet_type lowpan_packet_type = {
- 	.type = __constant_htons(ETH_P_IEEE802154),
- 	.func = lowpan_rcv,
-@@ -1258,6 +1280,12 @@ static int __init lowpan_init_module(void)
- 		goto out;
- 
- 	dev_add_pack(&lowpan_packet_type);
-+
-+	err = register_netdevice_notifier(&lowpan_dev_notifier);
-+	if (err < 0) {
-+		dev_remove_pack(&lowpan_packet_type);
-+		lowpan_netlink_fini();
-+	}
- out:
- 	return err;
- }
-@@ -1270,6 +1298,8 @@ static void __exit lowpan_cleanup_module(void)
- 
- 	dev_remove_pack(&lowpan_packet_type);
- 
-+	unregister_netdevice_notifier(&lowpan_dev_notifier);
-+
- 	/* Now 6lowpan packet_type is removed, so no new fragments are
- 	 * expected on RX, therefore that's the time to clean incomplete
- 	 * fragments.
--- 
-1.7.0.4
+> (actual worker management never
+> happens while cpu up/down holds manager positions).
+> 
 
+I don't agree this claim. It happens "rarely", not "never", otherwise I missed something.
+
+
+Thanks,
+Lai
