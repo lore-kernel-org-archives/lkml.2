@@ -1,96 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949Ab2H3AUM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 20:20:12 -0400
-Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:14070 "EHLO
-	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752415Ab2H3AUK (ORCPT
+	id S1753968Ab2H3AZF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 20:25:05 -0400
+Received: from na3sys009aog129.obsmtp.com ([74.125.149.142]:59922 "EHLO
+	na3sys009aog129.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752415Ab2H3AZC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 20:20:10 -0400
-X-Authority-Analysis: v=2.0 cv=IuCcgcDg c=1 sm=0 a=eLNxRirMhZqJpcA6QlPHQA==:17 a=ThlJJk6wLCEA:10 a=XYJHFtupD_QA:10 a=kkZ7j0ruBUIA:10 a=5zrl1c6G2EIA:10 a=kj9zAlcOel0A:10 a=87YopaQtWS4A:10 a=oLb3JtG0AAAA:8 a=20KFwNOVAAAA:8 a=S9bQXYb5-wz_5trz0m8A:9 a=CjuIK1q_8ugA:10 a=gwLygPzupVwA:10 a=jEp0ucaQiEUA:10 a=eLNxRirMhZqJpcA6QlPHQA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 75.80.152.117
-Date: Wed, 29 Aug 2012 17:20:06 -0700
-From: Nick Pasich <Nick@NickAndBarb.net>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: WARNING: at fs/inode.c:280 drop_nlink+0x31/0x33()
-Message-ID: <20120830002006.GA23484@NickAndBarb.net>
-References: <20120829162527.GA3635@NickAndBarb.net>
- <20120829151641.20cde4bc@corrin.poochiereds.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120829151641.20cde4bc@corrin.poochiereds.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 29 Aug 2012 20:25:02 -0400
+From: Fernando Guzman Lugo <fernando.lugo@ti.com>
+To: <ohad@wizery.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Cc: Fernando Guzman Lugo <fernando.lugo@ti.com>
+Subject: [PATCH] rpmsg: use right device paramter when calling dma_free_coherent function
+Date: Wed, 29 Aug 2012 19:24:52 -0500
+Message-Id: <1346286292-21773-1-git-send-email-fernando.lugo@ti.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for replying Jeff...
+dma_alloc/free_coherent APIs requires the platform specific remoteproc
+device as the device parameter. We are passing vdev->dev.parent to the
+dma_free_coherent function which is the generic rproc device and it is
+wrong, it has to be vdev->dev.parent->parent instead, same as when we
+call dma_alloc_coherent function.
 
-Yes, it sure would be great to have 3.5.z  patch...
+Signed-off-by: Fernando Guzman Lugo <fernando.lugo@ti.com>
+---
+ drivers/rpmsg/virtio_rpmsg_bus.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-
---( Nick Pasich )--
-
-
-
-On Wed, Aug 29, 2012 at 03:16:41PM -0700, Jeff Layton wrote:
-> On Wed, 29 Aug 2012 09:25:27 -0700
-> Nick Pasich <Nick@NickAndBarb.net> wrote:
-> 
-> > 
-> > I'm using kernel 3.5.3 ... 
-> > 
-> > It happens on 3.5.1 and 3.5.2 also.
-> > 
-> > I know that Nick Bowler has already reported this...
-> > 
-> > I'm experiencing the same thing.
-> > 
-> > It happens when moving files from one directory to another
-> > on the same partition (NFS). 
-> > 
-> >   --( Nick Pasich )--
-> > 
-> > 
-> > #############################################################################
-> > ##
-> > ## Happens when PSTs are moved from one directory to another on the ISCSI ...
-> > ##
-> > #############################################################################
-> > 
-> > Aug 29 08:06:16 localhost kernel: ------------[ cut here ]------------
-> > Aug 29 08:06:16 localhost kernel: WARNING: at fs/inode.c:280 drop_nlink+0x31/0x33()
-> > Aug 29 08:06:16 localhost kernel: Hardware name: To Be Filled By O.E.M.
-> > Aug 29 08:06:16 localhost kernel: Modules linked in: ecb md4 cifs w83627hf eeprom asb100 hwmon_vid hwmon nfsd exportfs ipv6 psmouse usb_storage io_edgeport usbserial sg r8169 mii evdev intel_agp uhci_hcd i2c_i801 i2c_core shpchp intel_gtt agpgart ehci_hcd microcode serio_raw
-> > Aug 29 08:06:16 localhost kernel: Pid: 31477, comm: rm Tainted: G        W    3.5.3 #1
-> > Aug 29 08:06:16 localhost kernel: Call Trace:
-> > Aug 29 08:06:16 localhost kernel:  [<c10a53e2>] ? drop_nlink+0x31/0x33
-> > Aug 29 08:06:16 localhost kernel:  [<c1025dd2>] ? warn_slowpath_common+0x7b/0x90
-> > Aug 29 08:06:16 localhost kernel:  [<c10a53e2>] ? drop_nlink+0x31/0x33
-> > Aug 29 08:06:16 localhost kernel:  [<c1025e02>] ? warn_slowpath_null+0x1b/0x1f
-> > Aug 29 08:06:16 localhost kernel:  [<c10a53e2>] ? drop_nlink+0x31/0x33
-> > Aug 29 08:06:16 localhost kernel:  [<f83dfa81>] ? cifs_unlink+0x134/0x63d [cifs]
-> > Aug 29 08:06:16 localhost kernel:  [<c10a37d4>] ? dput+0x11/0x117
-> > Aug 29 08:06:16 localhost kernel:  [<c10a87d4>] ? mntput_no_expire+0xf/0xf7
-> > Aug 29 08:06:16 localhost kernel:  [<c109ca9b>] ? vfs_unlink+0x4e/0xb6
-> > Aug 29 08:06:16 localhost kernel:  [<c109b333>] ? __lookup_hash+0x54/0xac
-> > Aug 29 08:06:16 localhost kernel:  [<c109e8c2>] ? do_unlinkat+0x10a/0x12d
-> > Aug 29 08:06:16 localhost kernel:  [<c10a0124>] ? sys_ioctl+0x34/0x57
-> > Aug 29 08:06:16 localhost kernel:  [<c140a8ed>] ? syscall_call+0x7/0xb
-> > Aug 29 08:06:16 localhost kernel: ---[ end trace 756b427e3bd671f9 ]---
-> > 
-> 
-> (cc'ing linux-cifs ml)
-> 
-> This stack trace comes from cifs, not nfs.
-> 
-> Steve French has a patch queued in his tree to silence this warning
-> that I believe he intends to send to Linus for 3.6. Perhaps we should
-> consider backporting it for 3.5.z too?
-> 
-> -- 
-> Jeff Layton <jlayton@redhat.com>
+diff --git a/drivers/rpmsg/virtio_rpmsg_bus.c b/drivers/rpmsg/virtio_rpmsg_bus.c
+index 590cfaf..1859f71 100644
+--- a/drivers/rpmsg/virtio_rpmsg_bus.c
++++ b/drivers/rpmsg/virtio_rpmsg_bus.c
+@@ -1008,8 +1008,8 @@ static int rpmsg_probe(struct virtio_device *vdev)
+ 	return 0;
+ 
+ free_coherent:
+-	dma_free_coherent(vdev->dev.parent, RPMSG_TOTAL_BUF_SPACE, bufs_va,
+-					vrp->bufs_dma);
++	dma_free_coherent(vdev->dev.parent->parent, RPMSG_TOTAL_BUF_SPACE,
++					bufs_va, vrp->bufs_dma);
+ vqs_del:
+ 	vdev->config->del_vqs(vrp->vdev);
+ free_vrp:
+@@ -1043,7 +1043,7 @@ static void __devexit rpmsg_remove(struct virtio_device *vdev)
+ 
+ 	vdev->config->del_vqs(vrp->vdev);
+ 
+-	dma_free_coherent(vdev->dev.parent, RPMSG_TOTAL_BUF_SPACE,
++	dma_free_coherent(vdev->dev.parent->parent, RPMSG_TOTAL_BUF_SPACE,
+ 					vrp->rbufs, vrp->bufs_dma);
+ 
+ 	kfree(vrp);
+-- 
+1.7.1
 
