@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545Ab2H3Uww (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 16:52:52 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8822 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752376Ab2H3Uwu (ORCPT
+	id S1752591Ab2H3U5f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 16:57:35 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:58585 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752010Ab2H3U5e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 16:52:50 -0400
-X-Authority-Analysis: v=2.0 cv=Hsb06jvS c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=boZEXH4cdGUA:10 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=MKBt8cWxkYF3avq9XsoA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Subject: [ANNOUNCE] 3.0.42-rt63
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 30 Aug 2012 16:52:40 -0400
-Message-ID: <1346359960.3198.7.camel@acer.local.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 30 Aug 2012 16:57:34 -0400
+Date: Thu, 30 Aug 2012 13:57:29 -0700
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: George Zhang <georgezhang@vmware.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>
+Subject: Re: [PATCH 01/11] vmci_context.patch: VMCI context list operations.
+Message-ID: <20120830205729.GA3276@kroah.com>
+References: <20120824171042.4775.36871.stgit@promb-2n-dhcp175.eng.vmware.com>
+ <20120824171551.4775.87175.stgit@promb-2n-dhcp175.eng.vmware.com>
+ <15333E71B3DDCB48A90165AD57993F285685DB43D7@exch-mbx-114.vmware.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <15333E71B3DDCB48A90165AD57993F285685DB43D7@exch-mbx-114.vmware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Aug 30, 2012 at 09:38:08AM -0700, George Zhang wrote:
+> +/* VMCICptBufInfo: Used to set/get current context's checkpoint state. */
+> +struct vmci_ctx_chkpt_buf_info {
+> +       uint64_t cptBuf;
+> +       uint32_t cptType;
+> +       uint32_t bufSize;
+> +       int32_t result;
+> +       uint32_t _pad;
+> +};
 
-Dear RT Folks,
+Please use the proper kernel types when you are passing structures
+across the kernel/user boundry (hint, you should NEVER be using the
+uint*_t types in the kernel).  You need to fix up all of the structures
+that you pass through your ioctl, to use the correct __ types, and fix
+up everything else to use the other types.
 
-I'm pleased to announce the 3.0.42-rt63 stable release.
+Also, you have a crazy variable naming scheme everywhere, remember, you
+can use vowels and '_' characters :)
 
-
-This release is just an update to the new stable 3.0.42 version
-and no RT specific changes have been made.
-
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  Head SHA1: 57b80d6c1ad24d540107911c1112299ba652c2af
-
-
-Or to build 3.0.42-rt63 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.42.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.42-rt63.patch.xz
-
-
-
-Enjoy,
-
--- Steve
-
-
-
+greg k-h
