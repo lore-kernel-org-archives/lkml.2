@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293Ab2H3VRx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 17:17:53 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:47575 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753031Ab2H3VOW (ORCPT
+	id S1753039Ab2H3VS1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 17:18:27 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:47514 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752979Ab2H3VOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 17:14:22 -0400
+	Thu, 30 Aug 2012 17:14:21 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,134 +15,67 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@ti.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 08/26] x86: Syscall hooks for userspace RCU extended QS
-Date: Thu, 30 Aug 2012 14:05:25 -0700
-Message-Id: <1346360743-3628-8-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 03/26] rcu: Make RCU_FAST_NO_HZ handle adaptive ticks
+Date: Thu, 30 Aug 2012 14:05:20 -0700
+Message-Id: <1346360743-3628-3-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120830210520.GA2824@linux.vnet.ibm.com>
  <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12083021-7606-0000-0000-00000334D1D1
+x-cbid: 12083021-7408-0000-0000-0000080B574A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-Add syscall slow path hooks to notify syscall entry
-and exit on CPUs that want to support userspace RCU
-extended quiescent state.
+The current implementation of RCU_FAST_NO_HZ tries reasonably hard to rid
+the current CPU of RCU callbacks.  This is appropriate when the CPU is
+entering idle, where it doesn't have much useful to do anyway, but is most
+definitely not what you want when transitioning to user-mode execution.
+This commit therefore detects the adaptive-tick case, and refrains from
+burning CPU time getting rid of RCU callbacks in that case.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Alessio Igor Bogani <abogani@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Geoff Levand <geoff@infradead.org>
-Cc: Gilad Ben Yossef <gilad@benyossef.com>
-Cc: Hakan Akkan <hakanakkan@gmail.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Josh Triplett <josh@joshtriplett.org>
-Cc: Kevin Hilman <khilman@ti.com>
-Cc: Max Krasnyansky <maxk@qualcomm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephen Hemminger <shemminger@vyatta.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- arch/x86/include/asm/thread_info.h |   10 +++++++---
- arch/x86/kernel/ptrace.c           |    5 +++++
- 2 files changed, 12 insertions(+), 3 deletions(-)
+ kernel/rcutree_plugin.h |   20 ++++++++++++++++++++
+ 1 files changed, 20 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
-index 89f794f..c535d84 100644
---- a/arch/x86/include/asm/thread_info.h
-+++ b/arch/x86/include/asm/thread_info.h
-@@ -89,6 +89,7 @@ struct thread_info {
- #define TIF_NOTSC		16	/* TSC is not accessible in userland */
- #define TIF_IA32		17	/* IA32 compatibility process */
- #define TIF_FORK		18	/* ret_from_fork */
-+#define TIF_NOHZ		19	/* in adaptive nohz mode */
- #define TIF_MEMDIE		20	/* is terminating due to OOM killer */
- #define TIF_DEBUG		21	/* uses debug registers */
- #define TIF_IO_BITMAP		22	/* uses I/O bitmap */
-@@ -114,6 +115,7 @@ struct thread_info {
- #define _TIF_NOTSC		(1 << TIF_NOTSC)
- #define _TIF_IA32		(1 << TIF_IA32)
- #define _TIF_FORK		(1 << TIF_FORK)
-+#define _TIF_NOHZ		(1 << TIF_NOHZ)
- #define _TIF_DEBUG		(1 << TIF_DEBUG)
- #define _TIF_IO_BITMAP		(1 << TIF_IO_BITMAP)
- #define _TIF_FORCED_TF		(1 << TIF_FORCED_TF)
-@@ -126,12 +128,13 @@ struct thread_info {
- /* work to do in syscall_trace_enter() */
- #define _TIF_WORK_SYSCALL_ENTRY	\
- 	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_EMU | _TIF_SYSCALL_AUDIT |	\
--	 _TIF_SECCOMP | _TIF_SINGLESTEP | _TIF_SYSCALL_TRACEPOINT)
-+	 _TIF_SECCOMP | _TIF_SINGLESTEP | _TIF_SYSCALL_TRACEPOINT |	\
-+	 _TIF_NOHZ)
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 7f3244c..b0f09d6 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -1997,6 +1997,26 @@ static void rcu_prepare_for_idle(int cpu)
+ 	if (!tne)
+ 		return;
  
- /* work to do in syscall_trace_leave() */
- #define _TIF_WORK_SYSCALL_EXIT	\
- 	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT | _TIF_SINGLESTEP |	\
--	 _TIF_SYSCALL_TRACEPOINT)
-+	 _TIF_SYSCALL_TRACEPOINT | _TIF_NOHZ)
- 
- /* work to do on interrupt/exception return */
- #define _TIF_WORK_MASK							\
-@@ -141,7 +144,8 @@ struct thread_info {
- 
- /* work to do on any return to user space */
- #define _TIF_ALLWORK_MASK						\
--	((0x0000FFFF & ~_TIF_SECCOMP) | _TIF_SYSCALL_TRACEPOINT)
-+	((0x0000FFFF & ~_TIF_SECCOMP) | _TIF_SYSCALL_TRACEPOINT |	\
-+	_TIF_NOHZ)
- 
- /* Only used for 64 bit */
- #define _TIF_DO_NOTIFY_MASK						\
-diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
-index c4c6a5c..9f94f8e 100644
---- a/arch/x86/kernel/ptrace.c
-+++ b/arch/x86/kernel/ptrace.c
-@@ -21,6 +21,7 @@
- #include <linux/signal.h>
- #include <linux/perf_event.h>
- #include <linux/hw_breakpoint.h>
-+#include <linux/rcupdate.h>
- 
- #include <asm/uaccess.h>
- #include <asm/pgtable.h>
-@@ -1463,6 +1464,8 @@ long syscall_trace_enter(struct pt_regs *regs)
- {
- 	long ret = 0;
- 
-+	rcu_user_exit();
++	/* Adaptive-tick mode, where usermode execution is idle to RCU. */
++	if (!is_idle_task(current)) {
++		rdtp->dyntick_holdoff = jiffies - 1;
++		if (rcu_cpu_has_nonlazy_callbacks(cpu)) {
++			trace_rcu_prep_idle("User dyntick with callbacks");
++			rdtp->idle_gp_timer_expires =
++				round_up(jiffies + RCU_IDLE_GP_DELAY,
++					 RCU_IDLE_GP_DELAY);
++		} else if (rcu_cpu_has_callbacks(cpu)) {
++			rdtp->idle_gp_timer_expires =
++				round_jiffies(jiffies + RCU_IDLE_LAZY_GP_DELAY);
++			trace_rcu_prep_idle("User dyntick with lazy callbacks");
++		} else {
++			return;
++		}
++		tp = &rdtp->idle_gp_timer;
++		mod_timer_pinned(tp, rdtp->idle_gp_timer_expires);
++		return;
++	}
 +
  	/*
- 	 * If we stepped into a sysenter/syscall insn, it trapped in
- 	 * kernel mode; do_debug() cleared TF and set TIF_SINGLESTEP.
-@@ -1526,4 +1529,6 @@ void syscall_trace_leave(struct pt_regs *regs)
- 			!test_thread_flag(TIF_SYSCALL_EMU);
- 	if (step || test_thread_flag(TIF_SYSCALL_TRACE))
- 		tracehook_report_syscall_exit(regs, step);
-+
-+	rcu_user_enter();
- }
+ 	 * If this is an idle re-entry, for example, due to use of
+ 	 * RCU_NONIDLE() or the new idle-loop tracing API within the idle
 -- 
 1.7.8
 
