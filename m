@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754455Ab2H3Qkx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 12:40:53 -0400
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:43235 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754058Ab2H3Qkt convert rfc822-to-8bit
+	id S1754696Ab2H3QlR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 12:41:17 -0400
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:53348 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754325Ab2H3QlO convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 12:40:49 -0400
+	Thu, 30 Aug 2012 12:41:14 -0400
 From: George Zhang <georgezhang@vmware.com>
 To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "virtualization@lists.linux-foundation.org" 
 	<virtualization@lists.linux-foundation.org>
 CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Date: Thu, 30 Aug 2012 09:40:34 -0700
-Subject: [PATCH 04/11] vmci_driver.patch: VMCI device driver.
-Thread-Topic: [PATCH 04/11] vmci_driver.patch: VMCI device driver.
-Thread-Index: Ac2CHCY5pis9jednRd+WYjadKV9MsQEsgdAY
-Message-ID: <15333E71B3DDCB48A90165AD57993F285685DB43DA@exch-mbx-114.vmware.com>
-References: <20120824171042.4775.36871.stgit@promb-2n-dhcp175.eng.vmware.com>,<20120824171607.4775.41134.stgit@promb-2n-dhcp175.eng.vmware.com>
-In-Reply-To: <20120824171607.4775.41134.stgit@promb-2n-dhcp175.eng.vmware.com>
+Date: Thu, 30 Aug 2012 09:40:57 -0700
+Subject: [PATCH 05/11] vmci_event.patch: VMCI kernel events handling.
+Thread-Topic: [PATCH 05/11] vmci_event.patch: VMCI kernel events handling.
+Thread-Index: AQHNhs5ErYT1zSFdCU+2PkFH+nnY4Q==
+Message-ID: <15333E71B3DDCB48A90165AD57993F285685DB43DB@exch-mbx-114.vmware.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -35,18 +33,18 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: George Zhang <georgezhang@vmware.com>
 ---
- drivers/misc/vmw_vmci/vmci_driver.c | 2293 +++++++++++++++++++++++++++++++++++
- drivers/misc/vmw_vmci/vmci_driver.h |   48 +
- 2 files changed, 2341 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/vmw_vmci/vmci_driver.c
- create mode 100644 drivers/misc/vmw_vmci/vmci_driver.h
+ drivers/misc/vmw_vmci/vmci_event.c |  448 ++++++++++++++++++++++++++++++++++++
+ drivers/misc/vmw_vmci/vmci_event.h |   25 ++
+ 2 files changed, 473 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/vmw_vmci/vmci_event.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_event.h
 
-diff --git a/drivers/misc/vmw_vmci/vmci_driver.c b/drivers/misc/vmw_vmci/vmci_driver.c
+diff --git a/drivers/misc/vmw_vmci/vmci_event.c b/drivers/misc/vmw_vmci/vmci_event.c
 new file mode 100644
-index 0000000..ab19651
+index 0000000..4c7c68e
 --- /dev/null
-+++ b/drivers/misc/vmw_vmci/vmci_driver.c
-@@ -0,0 +1,2293 @@
++++ b/drivers/misc/vmw_vmci/vmci_event.c
+@@ -0,0 +1,448 @@
 +/*
 + * VMware VMCI Driver
 + *
@@ -64,2288 +62,443 @@ index 0000000..ab19651
 +
 +#include <linux/vmw_vmci_defs.h>
 +#include <linux/vmw_vmci_api.h>
-+#include <linux/moduleparam.h>
-+#include <linux/miscdevice.h>
-+#include <linux/interrupt.h>
-+#include <linux/highmem.h>
-+#include <linux/atomic.h>
-+#include <linux/kernel.h>
++#include <linux/list.h>
 +#include <linux/module.h>
-+#include <linux/mutex.h>
 +#include <linux/sched.h>
-+#include <linux/file.h>
-+#include <linux/init.h>
-+#include <linux/poll.h>
-+#include <linux/pci.h>
-+#include <linux/smp.h>
-+#include <linux/fs.h>
-+#include <linux/io.h>
++#include <linux/slab.h>
 +
-+#include "vmci_handle_array.h"
-+#include "vmci_common_int.h"
-+#include "vmci_hash_table.h"
-+#include "vmci_queue_pair.h"
-+#include "vmci_datagram.h"
-+#include "vmci_doorbell.h"
-+#include "vmci_resource.h"
-+#include "vmci_context.h"
 +#include "vmci_driver.h"
 +#include "vmci_event.h"
 +
-+#define VMCI_UTIL_NUM_RESOURCES 1
++#define EVENT_MAGIC 0xEABE0000
++#define VMCI_EVENT_MAX_ATTEMPTS 10
 +
-+enum {
-+       VMCI_NOTIFY_RESOURCE_QUEUE_PAIR = 0,
-+       VMCI_NOTIFY_RESOURCE_DOOR_BELL = 1,
++struct vmci_subscription {
++       uint32_t id;
++       int refCount;
++       bool runDelayed;
++       wait_queue_head_t destroyEvent;
++       uint32_t event;
++       vmci_event_cb callback;
++       void *callbackData;
++       struct list_head subscriberListItem;
 +};
 +
-+enum {
-+       VMCI_NOTIFY_RESOURCE_ACTION_NOTIFY = 0,
-+       VMCI_NOTIFY_RESOURCE_ACTION_CREATE = 1,
-+       VMCI_NOTIFY_RESOURCE_ACTION_DESTROY = 2,
++static struct list_head subscriberArray[VMCI_EVENT_MAX];
++static spinlock_t subscriberLock;
++
++struct delayed_event_info {
++       struct vmci_subscription *sub;
++       uint8_t eventPayload[sizeof(struct vmci_event_data_max)];
 +};
 +
-+static u32 ctxUpdateSubID = VMCI_INVALID_ID;
-+static struct vmci_ctx *hostContext;
-+static atomic_t vmContextID = { VMCI_INVALID_ID };
-+
-+struct vmci_delayed_work_info {
-+       struct work_struct work;
-+       VMCIWorkFn *workFn;
-+       void *data;
++struct event_ref {
++       struct vmci_subscription *sub;
++       struct list_head listItem;
 +};
 +
-+/*
-+ * VMCI driver initialization. This block can also be used to
-+ * pass initial group membership etc.
-+ */
-+struct vmci_init_blk {
-+       u32 cid;
-+       u32 flags;
-+};
-+
-+/* VMCIQueuePairAllocInfo_VMToVM */
-+struct vmci_qp_alloc_info_vmvm {
-+       struct vmci_handle handle;
-+       u32 peer;
-+       u32 flags;
-+       uint64_t produceSize;
-+       uint64_t consumeSize;
-+       uint64_t producePageFile;       /* User VA. */
-+       uint64_t consumePageFile;       /* User VA. */
-+       uint64_t producePageFileSize;   /* Size of the file name array. */
-+       uint64_t consumePageFileSize;   /* Size of the file name array. */
-+       int32_t result;
-+       u32 _pad;
-+};
-+
-+/* VMCISetNotifyInfo: Used to pass notify flag's address to the host driver. */
-+struct vmci_set_notify_info {
-+       uint64_t notifyUVA;
-+       int32_t result;
-+       u32 _pad;
-+};
-+
-+struct vmci_device {
-+       struct mutex lock; /* Device access mutex */
-+
-+       unsigned int ioaddr;
-+       unsigned int ioaddr_size;
-+       unsigned int irq;
-+       unsigned int intr_type;
-+       bool exclusive_vectors;
-+       struct msix_entry msix_entries[VMCI_MAX_INTRS];
-+
-+       bool enabled;
-+       spinlock_t dev_spinlock; /* Lock for datagram access synchronization */
-+       atomic_t datagrams_allowed;
-+};
-+
-+static DEFINE_PCI_DEVICE_TABLE(vmci_ids) = {
-+       {PCI_DEVICE(PCI_VENDOR_ID_VMWARE, PCI_DEVICE_ID_VMWARE_VMCI),},
-+       {0},
-+};
-+
-+static struct vmci_device vmci_dev;
-+
-+/* These options are false (0) by default */
-+static bool vmci_disable_host;
-+static bool vmci_disable_guest;
-+static bool vmci_disable_msi;
-+static bool vmci_disable_msix;
-+
-+/*
-+ * Allocate a buffer for incoming datagrams globally to avoid repeated
-+ * allocation in the interrupt handler's atomic context.
-+ */
-+static uint8_t *data_buffer;
-+static u32 data_buffer_size = VMCI_MAX_DG_SIZE;
-+
-+/*
-+ * If the VMCI hardware supports the notification bitmap, we allocate
-+ * and register a page with the device.
-+ */
-+static uint8_t *notification_bitmap;
-+
-+/*
-+ * Per-instance host state
-+ */
-+struct vmci_linux {
-+       struct vmci_ctx *context;
-+       int userVersion;
-+       enum vmci_obj_type ctType;
-+       struct mutex lock; /* Mutex lock for vmci context access */
-+};
-+
-+/*
-+ * Static driver state.
-+ */
-+struct vmci_linux_state {
-+       struct miscdevice misc;
-+       char buf[1024];
-+       atomic_t activeContexts;
-+};
-+
-+/*
-+ * Types and variables shared by both host and guest personality
-+ */
-+static bool guestDeviceInit;
-+static atomic_t guestDeviceActive;
-+static bool hostDeviceInit;
-+
-+static void drv_delayed_work_cb(struct work_struct *work)
-+{
-+       struct vmci_delayed_work_info *delayedWorkInfo;
-+
-+       delayedWorkInfo = container_of(work, struct vmci_delayed_work_info,
-+                                      work);
-+       ASSERT(delayedWorkInfo);
-+       ASSERT(delayedWorkInfo->workFn);
-+
-+       delayedWorkInfo->workFn(delayedWorkInfo->data);
-+
-+       kfree(delayedWorkInfo);
-+}
-+
-+/*
-+ * Schedule the specified callback.
-+ */
-+int vmci_drv_schedule_delayed_work(VMCIWorkFn *workFn,
-+                                  void *data)
-+{
-+       struct vmci_delayed_work_info *delayedWorkInfo;
-+
-+       ASSERT(workFn);
-+
-+       delayedWorkInfo = kmalloc(sizeof(*delayedWorkInfo), GFP_ATOMIC);
-+       if (!delayedWorkInfo)
-+               return VMCI_ERROR_NO_MEM;
-+
-+       delayedWorkInfo->workFn = workFn;
-+       delayedWorkInfo->data = data;
-+
-+       INIT_WORK(&delayedWorkInfo->work, drv_delayed_work_cb);
-+
-+       schedule_work(&delayedWorkInfo->work);
-+
-+       return VMCI_SUCCESS;
-+}
-+
-+/*
-+ * True if the wait was interrupted by a signal, false otherwise.
-+ */
-+bool vmci_drv_wait_on_event_intr(wait_queue_head_t *event,
-+                                VMCIEventReleaseCB releaseCB,
-+                                void *clientData)
-+{
-+       DECLARE_WAITQUEUE(wait, current);
-+
-+       if (event == NULL || releaseCB == NULL)
-+               return false;
-+
-+       add_wait_queue(event, &wait);
-+       current->state = TASK_INTERRUPTIBLE;
-+
-+       /*
-+        * Release the lock or other primitive that makes it possible for us to
-+        * put the current thread on the wait queue without missing the signal.
-+        * Ie. on Linux we need to put ourselves on the wait queue and set our
-+        * stateto TASK_INTERRUPTIBLE without another thread signalling us.
-+        * The releaseCB is used to synchronize this.
-+        */
-+       releaseCB(clientData);
-+
-+       schedule();
-+       current->state = TASK_RUNNING;
-+       remove_wait_queue(event, &wait);
-+
-+       return signal_pending(current);
-+}
-+
-+/*
-+ * Cleans up the host specific components of the VMCI module.
-+ */
-+static void drv_host_cleanup(void)
-+{
-+       vmci_ctx_release_ctx(hostContext);
-+       vmci_qp_broker_exit();
-+}
-+
-+/*
-+ * Checks whether the VMCI device is enabled.
-+ */
-+static bool drv_device_enabled(void)
-+{
-+       return vmci_guest_code_active() ||
-+               vmci_host_code_active();
-+}
-+
-+/*
-+ * Gets called with the new context id if updated or resumed.
-+ * Context id.
-+ */
-+static void drv_util_cid_update(u32 subID,
-+                               struct vmci_event_data *eventData,
-+                               void *clientData)
-+{
-+       struct vmci_event_payld_ctx *evPayload =
-+               vmci_event_data_payload(eventData);
-+
-+       if (subID != ctxUpdateSubID) {
-+               pr_devel("Invalid subscriber (ID=0x%x).", subID);
-+               return;
-+       }
-+
-+       if (eventData == NULL || evPayload->contextID == VMCI_INVALID_ID) {
-+               pr_devel("Invalid event data.");
-+               return;
-+       }
-+
-+       pr_devel("Updating context from (ID=0x%x) to (ID=0x%x) on event " \
-+                "(type=%d).", atomic_read(&vmContextID), evPayload->contextID,
-+                eventData->event);
-+
-+       atomic_set(&vmContextID, evPayload->contextID);
-+}
-+
-+/*
-+ * Subscribe to context id update event.
-+ */
-+static void __devinit drv_util_init(void)
-+{
-+       /*
-+        * We subscribe to the VMCI_EVENT_CTX_ID_UPDATE here so we can
-+        * update the internal context id when needed.
-+        */
-+       if (vmci_event_subscribe
-+           (VMCI_EVENT_CTX_ID_UPDATE, VMCI_FLAG_EVENT_NONE,
-+            drv_util_cid_update, NULL, &ctxUpdateSubID) < VMCI_SUCCESS) {
-+               pr_warn("Failed to subscribe to event (type=%d).",
-+                       VMCI_EVENT_CTX_ID_UPDATE);
-+       }
-+}
-+
-+static void vmci_util_exit(void)
-+{
-+       if (vmci_event_unsubscribe(ctxUpdateSubID) < VMCI_SUCCESS) {
-+               pr_warn("Failed to unsubscribe to event (type=%d) with " \
-+                       "subscriber (ID=0x%x).", VMCI_EVENT_CTX_ID_UPDATE,
-+                       ctxUpdateSubID);
-+       }
-+}
-+
-+/*
-+ * Verify that the host supports the hypercalls we need. If it does not,
-+ * try to find fallback hypercalls and use those instead.  Returns
-+ * true if required hypercalls (or fallback hypercalls) are
-+ * supported by the host, false otherwise.
-+ */
-+static bool drv_check_host_caps(void)
-+{
-+       bool result;
-+       struct vmci_resource_query_msg *msg;
-+       u32 msgSize = sizeof(struct vmci_resource_query_hdr) +
-+               VMCI_UTIL_NUM_RESOURCES * sizeof(u32);
-+       struct vmci_datagram *checkMsg = kmalloc(msgSize, GFP_KERNEL);
-+
-+       if (checkMsg == NULL) {
-+               pr_warn("Check host: Insufficient memory.");
-+               return false;
-+       }
-+
-+       checkMsg->dst = vmci_make_handle(VMCI_HYPERVISOR_CONTEXT_ID,
-+                                        VMCI_RESOURCES_QUERY);
-+       checkMsg->src = VMCI_ANON_SRC_HANDLE;
-+       checkMsg->payloadSize = msgSize - VMCI_DG_HEADERSIZE;
-+       msg = (struct vmci_resource_query_msg *)VMCI_DG_PAYLOAD(checkMsg);
-+
-+       msg->numResources = VMCI_UTIL_NUM_RESOURCES;
-+       msg->resources[0] = VMCI_GET_CONTEXT_ID;
-+
-+       /* Checks that hyper calls are supported */
-+       result = (0x1 == vmci_send_datagram(checkMsg));
-+       kfree(checkMsg);
-+
-+       pr_info("Host capability check: %s.",
-+               result ? "PASSED" : "FAILED");
-+
-+       /* We need the vector. There are no fallbacks. */
-+       return result;
-+}
-+
-+/*
-+ * Reads datagrams from the data in port and dispatches them. We
-+ * always start reading datagrams into only the first page of the
-+ * datagram buffer. If the datagrams don't fit into one page, we
-+ * use the maximum datagram buffer size for the remainder of the
-+ * invocation. This is a simple heuristic for not penalizing
-+ * small datagrams.
-+ *
-+ * This function assumes that it has exclusive access to the data
-+ * in port for the duration of the call.
-+ */
-+static void drv_read_dgs_from_port(int ioHandle,
-+                                  unsigned short int dgInPort,
-+                                  uint8_t *dgInBuffer,
-+                                  size_t dgInBufferSize)
-+{
-+       struct vmci_datagram *dg;
-+       size_t currentDgInBufferSize = PAGE_SIZE;
-+       size_t remainingBytes;
-+
-+       ASSERT(dgInBufferSize >= PAGE_SIZE);
-+
-+       insb(dgInPort, dgInBuffer, currentDgInBufferSize);
-+       dg = (struct vmci_datagram *)dgInBuffer;
-+       remainingBytes = currentDgInBufferSize;
-+
-+       while (dg->dst.resource != VMCI_INVALID_ID ||
-+              remainingBytes > PAGE_SIZE) {
-+               unsigned dgInSize;
-+
-+               /*
-+                * When the input buffer spans multiple pages, a datagram can
-+                * start on any page boundary in the buffer.
-+                */
-+               if (dg->dst.resource == VMCI_INVALID_ID) {
-+                       ASSERT(remainingBytes > PAGE_SIZE);
-+                       dg = (struct vmci_datagram *)roundup((uintptr_t)
-+                                                      dg + 1, PAGE_SIZE);
-+                       ASSERT((uint8_t *)dg <
-+                              dgInBuffer + currentDgInBufferSize);
-+                       remainingBytes =
-+                               (size_t) (dgInBuffer + currentDgInBufferSize -
-+                                         (uint8_t *)dg);
-+                       continue;
-+               }
-+
-+               dgInSize = VMCI_DG_SIZE_ALIGNED(dg);
-+
-+               if (dgInSize <= dgInBufferSize) {
-+                       int result;
-+
-+                       /*
-+                        * If the remaining bytes in the datagram
-+                        * buffer doesn't contain the complete
-+                        * datagram, we first make sure we have enough
-+                        * room for it and then we read the reminder
-+                        * of the datagram and possibly any following
-+                        * datagrams.
-+                        */
-+                       if (dgInSize > remainingBytes) {
-+                               if (remainingBytes != currentDgInBufferSize) {
-+
-+                                       /*
-+                                        * We move the partial
-+                                        * datagram to the front and
-+                                        * read the reminder of the
-+                                        * datagram and possibly
-+                                        * following calls into the
-+                                        * following bytes.
-+                                        */
-+                                       memmove(dgInBuffer, dgInBuffer +
-+                                               currentDgInBufferSize -
-+                                               remainingBytes, remainingBytes);
-+                                       dg = (struct vmci_datagram *)
-+                                               dgInBuffer;
-+                               }
-+
-+                               if (currentDgInBufferSize != dgInBufferSize)
-+                                       currentDgInBufferSize = dgInBufferSize;
-+
-+                               insb(dgInPort, dgInBuffer + remainingBytes,
-+                                    currentDgInBufferSize - remainingBytes);
-+                       }
-+
-+                       /*
-+                        * We special case event datagrams from the
-+                        * hypervisor.
-+                        */
-+                       if (dg->src.context == VMCI_HYPERVISOR_CONTEXT_ID &&
-+                           dg->dst.resource == VMCI_EVENT_HANDLER) {
-+                               result = vmci_event_dispatch(dg);
-+                       } else {
-+                               result = vmci_datagram_invoke_guest_handler(dg);
-+                       }
-+                       if (result < VMCI_SUCCESS) {
-+                               pr_devel("Datagram with resource " \
-+                                        "(ID=0x%x) failed (err=%d).",
-+                                        dg->dst.resource, result);
-+                       }
-+
-+                       /* On to the next datagram. */
-+                       dg = (struct vmci_datagram *)((uint8_t *)dg +
-+                                               dgInSize);
-+               } else {
-+                       size_t bytesToSkip;
-+
-+                       /*
-+                        * Datagram doesn't fit in datagram buffer of maximal
-+                        * size. We drop it.
-+                        */
-+                       pr_devel("Failed to receive datagram (size=%u bytes).",
-+                                dgInSize);
-+
-+                       bytesToSkip = dgInSize - remainingBytes;
-+                       if (currentDgInBufferSize != dgInBufferSize)
-+                               currentDgInBufferSize = dgInBufferSize;
-+
-+                       for (;;) {
-+                               insb(dgInPort, dgInBuffer,
-+                                    currentDgInBufferSize);
-+                               if (bytesToSkip <= currentDgInBufferSize)
-+                                       break;
-+
-+                               bytesToSkip -= currentDgInBufferSize;
-+                       }
-+                       dg = (struct vmci_datagram *)(dgInBuffer + bytesToSkip);
-+               }
-+
-+               remainingBytes =
-+                       (size_t) (dgInBuffer + currentDgInBufferSize -
-+                                 (uint8_t *)dg);
-+
-+               if (remainingBytes < VMCI_DG_HEADERSIZE) {
-+                       /* Get the next batch of datagrams. */
-+
-+                       insb(dgInPort, dgInBuffer, currentDgInBufferSize);
-+                       dg = (struct vmci_datagram *)dgInBuffer;
-+                       remainingBytes = currentDgInBufferSize;
-+               }
-+       }
-+}
-+
-+/*
-+ * Initializes VMCI components shared between guest and host
-+ * driver. This registers core hypercalls.
-+ */
-+static int __init drv_shared_init(void)
-+{
-+       int result;
-+
-+       result = vmci_resource_init();
-+       if (result < VMCI_SUCCESS) {
-+               pr_warn("Failed to initialize VMCIResource (result=%d).",
-+                       result);
-+               goto errorExit;
-+       }
-+
-+       result = vmci_ctx_init();
-+       if (result < VMCI_SUCCESS) {
-+               pr_warn("Failed to initialize VMCIContext (result=%d).",
-+                       result);
-+               goto resourceExit;
-+       }
-+
-+       result = vmci_datagram_init();
-+       if (result < VMCI_SUCCESS) {
-+               pr_warn("Failed to initialize VMCIDatagram (result=%d).",
-+                       result);
-+               goto resourceExit;
-+       }
-+
-+       result = vmci_event_init();
-+       if (result < VMCI_SUCCESS) {
-+               pr_warn("Failed to initialize VMCIEvent (result=%d).",
-+                       result);
-+               goto resourceExit;
-+       }
-+
-+       result = vmci_dbell_init();
-+       if (result < VMCI_SUCCESS) {
-+               pr_warn("Failed to initialize VMCIDoorbell (result=%d).",
-+                       result);
-+               goto eventExit;
-+       }
-+
-+       pr_notice("shared components initialized.");
-+       return VMCI_SUCCESS;
-+
-+eventExit:
-+       vmci_event_exit();
-+resourceExit:
-+       vmci_resource_exit();
-+errorExit:
-+       return result;
-+}
-+
-+/*
-+ * Cleans up VMCI components shared between guest and host
-+ * driver.
-+ */
-+static void drv_shared_cleanup(void)
-+{
-+       vmci_event_exit();
-+       vmci_resource_exit();
-+}
-+
-+static const struct file_operations vmuser_fops;
-+static struct vmci_linux_state linuxState = {
-+       .misc = {
-+               .name = MODULE_NAME,
-+               .minor = MISC_DYNAMIC_MINOR,
-+               .fops = &vmuser_fops,
-+       },
-+       .activeContexts = ATOMIC_INIT(0),
-+};
-+
-+/*
-+ * Called on open of /dev/vmci.
-+ */
-+static int drv_driver_open(struct inode *inode,
-+                          struct file *filp)
-+{
-+       struct vmci_linux *vmciLinux;
-+
-+       vmciLinux = kzalloc(sizeof(struct vmci_linux), GFP_KERNEL);
-+       if (vmciLinux == NULL)
-+               return -ENOMEM;
-+
-+       vmciLinux->ctType = VMCIOBJ_NOT_SET;
-+       mutex_init(&vmciLinux->lock);
-+       filp->private_data = vmciLinux;
-+
-+       return 0;
-+}
-+
-+/*
-+ * Called on close of /dev/vmci, most often when the process
-+ * exits.
-+ */
-+static int drv_driver_close(struct inode *inode,
-+                           struct file *filp)
-+{
-+       struct vmci_linux *vmciLinux;
-+
-+       vmciLinux = (struct vmci_linux *)filp->private_data;
-+       ASSERT(vmciLinux);
-+
-+       if (vmciLinux->ctType == VMCIOBJ_CONTEXT) {
-+               ASSERT(vmciLinux->context);
-+
-+               vmci_ctx_release_ctx(vmciLinux->context);
-+               vmciLinux->context = NULL;
-+
-+               /*
-+                * The number of active contexts is used to track whether any
-+                * VMX'en are using the host personality. It is incremented when
-+                * a context is created through the IOCTL_VMCI_INIT_CONTEXT
-+                * ioctl.
-+                */
-+               atomic_dec(&linuxState.activeContexts);
-+       }
-+       vmciLinux->ctType = VMCIOBJ_NOT_SET;
-+
-+       kfree(vmciLinux);
-+       filp->private_data = NULL;
-+       return 0;
-+}
-+
-+/*
-+ * This is used to wake up the VMX when a VMCI call arrives, or
-+ * to wake up select() or poll() at the next clock tick.
-+ */
-+static unsigned int drv_driver_poll(struct file *filp, poll_table *wait)
-+{
-+       struct vmci_linux *vmciLinux = (struct vmci_linux *)filp->private_data;
-+       unsigned int mask = 0;
-+
-+       if (vmciLinux->ctType == VMCIOBJ_CONTEXT) {
-+               ASSERT(vmciLinux->context != NULL);
-+
-+               /* Check for VMCI calls to this VM context. */
-+               if (wait != NULL) {
-+                       poll_wait(filp,
-+                                 &vmciLinux->context->hostContext.waitQueue,
-+                                 wait);
-+               }
-+
-+               spin_lock(&vmciLinux->context->lock);
-+               if (vmciLinux->context->pendingDatagrams > 0 ||
-+                   vmci_handle_arr_get_size(vmciLinux->context->
-+                                            pendingDoorbellArray) > 0) {
-+                       mask = POLLIN;
-+               }
-+               spin_unlock(&vmciLinux->context->lock);
-+       }
-+       return mask;
-+}
-+
-+static int __init drv_host_init(void)
-+{
-+       int error;
-+       int result;
-+
-+       result = vmci_ctx_init_ctx(VMCI_HOST_CONTEXT_ID,
-+                                  VMCI_DEFAULT_PROC_PRIVILEGE_FLAGS,
-+                                  -1, VMCI_VERSION, NULL, &hostContext);
-+       if (result < VMCI_SUCCESS) {
-+               pr_warn("Failed to initialize VMCIContext (result=%d).",
-+                       result);
-+               return -ENOMEM;
-+       }
-+
-+       result = vmci_qp_broker_init();
-+       if (result < VMCI_SUCCESS) {
-+               pr_warn("Failed to initialize broker (result=%d).",
-+                       result);
-+               vmci_ctx_release_ctx(hostContext);
-+               return -ENOMEM;
-+       }
-+
-+       error = misc_register(&linuxState.misc);
-+       if (error) {
-+               pr_warn("Module registration error " \
-+                       "(name=%s, major=%d, minor=%d, err=%d).",
-+                       linuxState.misc.name, MISC_MAJOR, linuxState.misc.minor,
-+                       error);
-+               drv_host_cleanup();
-+               return error;
-+       }
-+
-+       pr_notice("Module registered (name=%s, major=%d, minor=%d).", \
-+                 linuxState.misc.name, MISC_MAJOR, linuxState.misc.minor);
-+
-+       return 0;
-+}
-+
-+/*
-+ * Copies the handles of a handle array into a user buffer, and
-+ * returns the new length in userBufferSize. If the copy to the
-+ * user buffer fails, the functions still returns VMCI_SUCCESS,
-+ * but retval != 0.
-+ */
-+static int drv_cp_harray_to_user(void __user *userBufUVA,
-+                                uint64_t *userBufSize,
-+                                struct vmci_handle_arr *handleArray,
-+                                int *retval)
-+{
-+       u32 arraySize = 0;
-+       struct vmci_handle *handles;
-+
-+       if (handleArray)
-+               arraySize = vmci_handle_arr_get_size(handleArray);
-+
-+       if (arraySize * sizeof(*handles) > *userBufSize)
-+               return VMCI_ERROR_MORE_DATA;
-+
-+       *userBufSize = arraySize * sizeof(*handles);
-+       if (*userBufSize)
-+               *retval = copy_to_user(userBufUVA,
-+                                      vmci_handle_arr_get_handles
-+                                      (handleArray), *userBufSize);
-+
-+       return VMCI_SUCCESS;
-+}
-+
-+/*
-+ * Helper function for creating queue pair and copying the result
-+ * to user memory.
-+ */
-+static int drv_qp_broker_alloc(struct vmci_handle handle,
-+                              u32 peer,
-+                              u32 flags,
-+                              uint64_t produceSize,
-+                              uint64_t consumeSize,
-+                              struct vmci_qp_page_store *pageStore,
-+                              struct vmci_ctx *context,
-+                              bool vmToVm,
-+                              void __user *resultUVA)
-+{
-+       u32 cid;
-+       int result;
-+       int retval;
-+
-+       cid = vmci_ctx_get_id(context);
-+
-+       result =
-+               vmci_qp_broker_alloc(handle, peer, flags,
-+                                    VMCI_NO_PRIVILEGE_FLAGS, produceSize,
-+                                    consumeSize, pageStore, context);
-+       if (result == VMCI_SUCCESS && vmToVm)
-+               result = VMCI_SUCCESS_QUEUEPAIR_CREATE;
-+
-+       retval = copy_to_user(resultUVA, &result, sizeof(result));
-+       if (retval) {
-+               retval = -EFAULT;
-+               if (result >= VMCI_SUCCESS) {
-+                       result = vmci_qp_broker_detach(handle, context);
-+                       ASSERT(result >= VMCI_SUCCESS);
-+               }
-+       }
-+
-+       return retval;
-+}
-+
-+/*
-+ * Lock physical page backing a given user VA.
-+ */
-+static struct page *drv_user_va_lock_page(uintptr_t addr)
-+{
-+       struct page *page = NULL;
-+       int retval;
-+
-+       down_read(&current->mm->mmap_sem);
-+       retval = get_user_pages(current, current->mm, addr,
-+                               1, 1, 0, &page, NULL);
-+       up_read(&current->mm->mmap_sem);
-+
-+       if (retval != 1)
-+               return NULL;
-+
-+       return page;
-+}
-+
-+/*
-+ * Lock physical page backing a given user VA and maps it to kernel
-+ * address space.  The range of the mapped memory should be within a
-+ * single page otherwise an error is returned.
-+ */
-+static int drv_map_bool_ptr(uintptr_t notifyUVA,
-+                           struct page **p,
-+                           bool **notifyPtr)
-+{
-+       if (!access_ok(VERIFY_WRITE, (void __user *)notifyUVA,
-+                      sizeof(**notifyPtr)) ||
-+           (((notifyUVA + sizeof(**notifyPtr) - 1) & ~(PAGE_SIZE - 1)) !=
-+            (notifyUVA & ~(PAGE_SIZE - 1)))) {
-+               return -EINVAL;
-+       }
-+
-+       *p = drv_user_va_lock_page(notifyUVA);
-+       if (*p == NULL)
-+               return -EAGAIN;
-+
-+       *notifyPtr =
-+               (bool *)((uint8_t *)kmap(*p) + (notifyUVA & (PAGE_SIZE - 1)));
-+       return 0;
-+}
-+
-+/*
-+ * Sets up a given context for notify to work.  Calls drv_map_bool_ptr()
-+ * which maps the notify boolean in user VA in kernel space.
-+ */
-+static int drv_setup_notify(struct vmci_ctx *context,
-+                           uintptr_t notifyUVA)
-+{
-+       int retval;
-+
-+       if (context->notify) {
-+               pr_warn("Notify mechanism is already set up.");
-+               return VMCI_ERROR_DUPLICATE_ENTRY;
-+       }
-+
-+       retval = drv_map_bool_ptr(notifyUVA, &context->notifyPage,
-+                                 &context->notify);
-+       if (retval == 0) {
-+               vmci_ctx_check_signal_notify(context);
-+               return VMCI_SUCCESS;
-+       }
-+
-+       return VMCI_ERROR_GENERIC;
-+}
-+
-+static long drv_driver_unlocked_ioctl(struct file *filp,
-+                                     u_int iocmd,
-+                                     unsigned long ioarg)
-+{
-+       struct vmci_linux *vmciLinux = (struct vmci_linux *)filp->private_data;
-+       int retval = 0;
-+
-+       switch (iocmd) {
-+       case IOCTL_VMCI_VERSION2:{
-+               int verFromUser;
-+
-+               if (copy_from_user
-+                   (&verFromUser, (void *)ioarg, sizeof(verFromUser))) {
-+                       retval = -EFAULT;
-+                       break;
-+               }
-+
-+               vmciLinux->userVersion = verFromUser;
-+       }
-+               /* Fall through. */
-+       case IOCTL_VMCI_VERSION:
-+               /*
-+                * The basic logic here is:
-+                *
-+                * If the user sends in a version of 0 tell it our version.
-+                * If the user didn't send in a version, tell it our version.
-+                * If the user sent in an old version, tell it -its- version.
-+                * If the user sent in an newer version, tell it our version.
-+                *
-+                * The rationale behind telling the caller its version is that
-+                * Workstation 6.5 required that VMX and VMCI kernel module were
-+                * version sync'd.  All new VMX users will be programmed to
-+                * handle the VMCI kernel module version.
-+                */
-+
-+               if (vmciLinux->userVersion > 0 &&
-+                   vmciLinux->userVersion < VMCI_VERSION_HOSTQP) {
-+                       retval = vmciLinux->userVersion;
-+               } else {
-+                       retval = VMCI_VERSION;
-+               }
-+               break;
-+
-+       case IOCTL_VMCI_INIT_CONTEXT:{
-+               struct vmci_init_blk initBlock;
-+               const struct cred *cred;
-+
-+               retval = copy_from_user(&initBlock, (void *)ioarg,
-+                                       sizeof(initBlock));
-+               if (retval != 0) {
-+                       pr_info("Error reading init block.");
-+                       retval = -EFAULT;
-+                       break;
-+               }
-+
-+               mutex_lock(&vmciLinux->lock);
-+               if (vmciLinux->ctType != VMCIOBJ_NOT_SET) {
-+                       pr_info("Received VMCI init on initialized handle.");
-+                       retval = -EINVAL;
-+                       goto init_release;
-+               }
-+
-+               if (initBlock.flags & ~VMCI_PRIVILEGE_FLAG_RESTRICTED) {
-+                       pr_info("Unsupported VMCI restriction flag.");
-+                       retval = -EINVAL;
-+                       goto init_release;
-+               }
-+
-+               cred = get_current_cred();
-+               retval = vmci_ctx_init_ctx(initBlock.cid,
-+                                          initBlock.flags,
-+                                          0, vmciLinux->userVersion,
-+                                          cred, &vmciLinux->context);
-+               put_cred(cred);
-+               if (retval < VMCI_SUCCESS) {
-+                       pr_info("Error initializing context.");
-+                       retval = (retval == VMCI_ERROR_DUPLICATE_ENTRY) ?
-+                               -EEXIST : -EINVAL;
-+                       goto init_release;
-+               }
-+
-+               /*
-+                * Copy cid to userlevel, we do this to allow the VMX
-+                * to enforce its policy on cid generation.
-+                */
-+               initBlock.cid = vmci_ctx_get_id(vmciLinux->context);
-+               retval = copy_to_user((void *)ioarg, &initBlock,
-+                                     sizeof(initBlock));
-+               if (retval != 0) {
-+                       vmci_ctx_release_ctx(vmciLinux->context);
-+                       vmciLinux->context = NULL;
-+                       pr_info("Error writing init block.");
-+                       retval = -EFAULT;
-+                       goto init_release;
-+               }
-+
-+               ASSERT(initBlock.cid != VMCI_INVALID_ID);
-+               vmciLinux->ctType = VMCIOBJ_CONTEXT;
-+               atomic_inc(&linuxState.activeContexts);
-+
-+init_release:
-+               mutex_unlock(&vmciLinux->lock);
-+               break;
-+       }
-+
-+       case IOCTL_VMCI_DATAGRAM_SEND:{
-+               struct vmci_datagram_snd_rcv_info sendInfo;
-+               struct vmci_datagram *dg = NULL;
-+               u32 cid;
-+
-+               if (vmciLinux->ctType != VMCIOBJ_CONTEXT) {
-+                       pr_warn("Ioctl only valid for context handle (iocmd=%d).",
-+                               iocmd);
-+                       retval = -EINVAL;
-+                       break;
-+               }
-+
-+               retval = copy_from_user(&sendInfo, (void *)ioarg,
-+                                       sizeof(sendInfo));
-+               if (retval) {
-+                       pr_warn("copy_from_user failed.");
-+                       retval = -EFAULT;
-+                       break;
-+               }
-+
-+               if (sendInfo.len > VMCI_MAX_DG_SIZE) {
-+                       pr_warn("Datagram too big (size=%d).",
-+                               sendInfo.len);
-+                       retval = -EINVAL;
-+                       break;
-+               }
-+
-+               if (sendInfo.len < sizeof(*dg)) {
-+                       pr_warn("Datagram too small (size=%d).",
-+                               sendInfo.len);
-+                       retval = -EINVAL;
-+                       break;
-+               }
-+
-+               dg = kmalloc(sendInfo.len, GFP_KERNEL);
-+               if (dg == NULL) {
-+                       pr_info("Cannot allocate memory to dispatch datagram.");
-+                       retval = -ENOMEM;
-+                       break;
-+               }
-+
-+               retval = copy_from_user(dg,
-+                                       (char *)(uintptr_t) sendInfo.addr,
-+                                       sendInfo.len);
-+               if (retval != 0) {
-+                       pr_info("Error getting datagram (err=%d).",
-+                               retval);
-+                       kfree(dg);
-+                       retval = -EFAULT;
-+                       break;
-+               }
-+
-+               pr_devel("Datagram dst (handle=0x%x:0x%x) src " \
-+                        "(handle=0x%x:0x%x), payload " \
-+                        "(size=%llu bytes).",
-+                        dg->dst.context, dg->dst.resource,
-+                        dg->src.context, dg->src.resource,
-+                        (unsigned long long) dg->payloadSize);
-+
-+               /* Get source context id. */
-+               ASSERT(vmciLinux->context);
-+               cid = vmci_ctx_get_id(vmciLinux->context);
-+               ASSERT(cid != VMCI_INVALID_ID);
-+               sendInfo.result = vmci_datagram_dispatch(cid, dg, true);
-+               kfree(dg);
-+               retval =
-+                       copy_to_user((void *)ioarg, &sendInfo,
-+                                    sizeof(sendInfo));
-+               break;
-+       }
-+
-+       case IOCTL_VMCI_DATAGRAM_RECEIVE:{
-+               struct vmci_datagram_snd_rcv_info recvInfo;
-+               struct vmci_datagram *dg = NULL;
-+               size_t size;
-+
-+               if (vmciLinux->ctType != VMCIOBJ_CONTEXT) {
-+                       pr_warn("Ioctl only valid for context handle (iocmd=%d).",
-+                               iocmd);
-+                       retval = -EINVAL;
-+                       break;
-+               }
-+
-+               retval = copy_from_user(&recvInfo, (void *)ioarg,
-+                                       sizeof(recvInfo));
-+               if (retval) {
-+                       pr_warn("copy_from_user failed.");
-+                       retval = -EFAULT;
-+                       break;
-+               }
-+
-+               ASSERT(vmciLinux->ctType == VMCIOBJ_CONTEXT);
-+               ASSERT(vmciLinux->context);
-+               size = recvInfo.len;
-+               recvInfo.result =
-+                       vmci_ctx_dequeue_datagram(vmciLinux->context,
-+                                                 &size, &dg);
-+
-+               if (recvInfo.result >= VMCI_SUCCESS) {
-+                       ASSERT(dg);
-+                       retval = copy_to_user((void *)((uintptr_t)
-+                                                      recvInfo.addr),
-+                                             dg, VMCI_DG_SIZE(dg));
-+                       kfree(dg);
-+                       if (retval != 0)
-+                               break;
-+               }
-+               retval = copy_to_user((void *)ioarg, &recvInfo,
-+                                     sizeof(recvInfo));
-+               break;
-+       }
-+
-+       case IOCTL_VMCI_QUEUEPAIR_ALLOC:{
-+               if (vmciLinux->ctType != VMCIOBJ_CONTEXT) {
-+                       pr_info("IOCTL_VMCI_QUEUEPAIR_ALLOC only valid for contexts.");
-+                       retval = -EINVAL;
-+                       break;
-+               }
-+
-+               if (vmciLinux->userVersion < VMCI_VERSION_NOVMVM) {
-+                       struct vmci_qp_alloc_info_vmvm queuePairAllocInfo;
-+                       struct vmci_qp_alloc_info_vmvm *info =
-+                               (struct vmci_qp_alloc_info_vmvm *)ioarg;
-+
-+                       retval = copy_from_user(&queuePairAllocInfo,
-+                                               (void *)ioarg,
-+                                               sizeof(queuePairAllocInfo));
-+                       if (retval) {
-+                               retval = -EFAULT;
-+                               break;
-+                       }
-+
-+                       retval = drv_qp_broker_alloc(
-+                               queuePairAllocInfo.handle,
-+                               queuePairAllocInfo.peer,
-+                               queuePairAllocInfo.flags,
-+                               queuePairAllocInfo.produceSize,
-+                               queuePairAllocInfo.consumeSize,
-+                               NULL, vmciLinux->context,
-+                               true, &info->result);
-+               } else {
-+                       struct vmci_qp_alloc_info
-+                               queuePairAllocInfo;
-+                       struct vmci_qp_alloc_info *info =
-+                               (struct vmci_qp_alloc_info *)ioarg;
-+                       struct vmci_qp_page_store pageStore;
-+
-+                       retval = copy_from_user(&queuePairAllocInfo,
-+                                               (void *)ioarg,
-+                                               sizeof(queuePairAllocInfo));
-+                       if (retval) {
-+                               retval = -EFAULT;
-+                               break;
-+                       }
-+
-+                       pageStore.pages = queuePairAllocInfo.ppnVA;
-+                       pageStore.len = queuePairAllocInfo.numPPNs;
-+
-+                       retval = drv_qp_broker_alloc(
-+                               queuePairAllocInfo.handle,
-+                               queuePairAllocInfo.peer,
-+                               queuePairAllocInfo.flags,
-+                               queuePairAllocInfo.produceSize,
-+                               queuePairAllocInfo.consumeSize,
-+                               &pageStore, vmciLinux->context,
-+                               false, &info->result);
-+               }
-+               break;
-+       }
-+
-+       case IOCTL_VMCI_QUEUEPAIR_SETVA:{
-+               struct vmci_qp_set_va_info setVAInfo;
-+               struct vmci_qp_set_va_info *info =
-+                       (struct vmci_qp_set_va_info *)ioarg;
-+               int32_t result;
-+
-+               if (vmciLinux->ctType != VMCIOBJ_CONTEXT) {
-+                       pr_info("IOCTL_VMCI_QUEUEPAIR_SETVA only valid for contexts.");
-+                       retval = -EINVAL;
-+                       break;
-+               }
-+
-+               if (vmciLinux->userVersion < VMCI_VERSION_NOVMVM) {
-+                       pr_info("IOCTL_VMCI_QUEUEPAIR_SETVA not supported for this VMX version.");
-+                       retval = -EINVAL;
-+                       break;
-+               }
-+
-+               retval = copy_from_user(&setVAInfo, (void *)ioarg,
-+                                       sizeof(setVAInfo));
-+               if (retval) {
-+                       retval = -EFAULT;
-+                       break;
-+               }
-+
-+               if (setVAInfo.va) {
-+                       /*
-+                        * VMX is passing down a new VA for the queue
-+                        * pair mapping.
-+                        */
-+                       result = vmci_qp_broker_map(setVAInfo.handle,
-+                                                   vmciLinux->context,
-+                                                   setVAInfo.va);
-+               } else {
-+                       /*
-+                        * The queue pair is about to be unmapped by
-+                        * the VMX.
-+                        */
-+                       result = vmci_qp_broker_unmap(setVAInfo.handle,
-+                                                     vmciLinux->context, 0);
-+               }
-+
-+               retval = copy_to_user(&info->result, &result, sizeof(result));
-+               if (retval)
-+                       retval = -EFAULT;
-+
-+               break;
-+       }
-+
-+       case IOCTL_VMCI_QUEUEPAIR_SETPAGEFILE:{
-+               struct vmci_qp_page_file_info pageFileInfo;
-+               struct vmci_qp_page_file_info *info =
-+                       (struct vmci_qp_page_file_info *)ioarg;
-+               int32_t result;
-+
-+               if (vmciLinux->userVersion < VMCI_VERSION_HOSTQP ||
-+                   vmciLinux->userVersion >= VMCI_VERSION_NOVMVM) {
-+                       pr_info("IOCTL_VMCI_QUEUEPAIR_SETPAGEFILE not " \
-+                               "supported this VMX (version=%d).",
-+                               vmciLinux->userVersion);
-+                       retval = -EINVAL;
-+                       break;
-+               }
-+
-+               if (vmciLinux->ctType != VMCIOBJ_CONTEXT) {
-+                       pr_info("IOCTL_VMCI_QUEUEPAIR_SETPAGEFILE only " \
-+                               "valid for contexts.");
-+                       retval = -EINVAL;
-+                       break;
-+               }
-+
-+               retval = copy_from_user(&pageFileInfo, (void *)ioarg,
-+                                       sizeof(*info));
-+               if (retval) {
-+                       retval = -EFAULT;
-+                       break;
-+               }
-+
-+               /*
-+                * Communicate success pre-emptively to the caller.
-+                * Note that the basic premise is that it is incumbent
-+                * upon the caller not to look at the info.result
-+                * field until after the ioctl() returns.  And then,
-+                * only if the ioctl() result indicates no error.  We
-+                * send up the SUCCESS status before calling
-+                * SetPageStore() store because failing to copy up the
-+                * result code means unwinding the SetPageStore().
-+                *
-+                * It turns out the logic to unwind a SetPageStore()
-+                * opens a can of worms.  For example, if a host had
-+                * created the QueuePair and a guest attaches and
-+                * SetPageStore() is successful but writing success
-+                * fails, then ... the host has to be stopped from
-+                * writing (anymore) data into the QueuePair.  That
-+                * means an additional test in the VMCI_Enqueue() code
-+                * path.  Ugh.
-+                */
-+
-+               result = VMCI_SUCCESS;
-+               retval = copy_to_user(&info->result, &result, sizeof(result));
-+               if (retval == 0) {
-+                       result = vmci_qp_broker_set_page_store(
-+                               pageFileInfo.handle,
-+                               pageFileInfo.produceVA,
-+                               pageFileInfo.consumeVA,
-+                               vmciLinux->context);
-+                       if (result < VMCI_SUCCESS) {
-+                               retval = copy_to_user(&info->result,
-+                                                     &result,
-+                                                     sizeof(result));
-+                               if (retval != 0) {
-+                                       /*
-+                                        * Note that in this case the
-+                                        * SetPageStore() call failed
-+                                        * but we were unable to
-+                                        * communicate that to the
-+                                        * caller (because the
-+                                        * copy_to_user() call
-+                                        * failed).  So, if we simply
-+                                        * return an error (in this
-+                                        * case -EFAULT) then the
-+                                        * caller will know that the
-+                                        * SetPageStore failed even
-+                                        * though we couldn't put the
-+                                        * result code in the result
-+                                        * field and indicate exactly
-+                                        * why it failed.
-+                                        *
-+                                        * That says nothing about the
-+                                        * issue where we were once
-+                                        * able to write to the
-+                                        * caller's info memory and
-+                                        * now can't.  Something more
-+                                        * serious is probably going
-+                                        * on than the fact that
-+                                        * SetPageStore() didn't work.
-+                                        */
-+                                       retval = -EFAULT;
-+                               }
-+                       }
-+
-+               } else {
-+                       /*
-+                        * In this case, we can't write a result field of the
-+                        * caller's info block.  So, we don't even try to
-+                        * SetPageStore().
-+                        */
-+                       retval = -EFAULT;
-+               }
-+
-+               break;
-+       }
-+
-+       case IOCTL_VMCI_QUEUEPAIR_DETACH:{
-+               struct vmci_qp_dtch_info detachInfo;
-+               struct vmci_qp_dtch_info *info =
-+                       (struct vmci_qp_dtch_info *)ioarg;
-+               int32_t result;
-+
-+               if (vmciLinux->ctType != VMCIOBJ_CONTEXT) {
-+                       pr_info("IOCTL_VMCI_QUEUEPAIR_DETACH only valid for contexts.");
-+                       retval = -EINVAL;
-+                       break;
-+               }
-+
-+               retval = copy_from_user(&detachInfo, (void *)ioarg,
-+                                       sizeof(detachInfo));
-+               if (retval) {
-+                       retval = -EFAULT;
-+                       break;
-+               }
-+
-+               result = vmci_qp_broker_detach(detachInfo.handle,
-+                                              vmciLinux->context);
-+               if (result == VMCI_SUCCESS &&
-+                   vmciLinux->userVersion < VMCI_VERSION_NOVMVM)
-+                       result = VMCI_SUCCESS_LAST_DETACH;
-+
-+               retval = copy_to_user(&info->result, &result, sizeof(result));
-+               if (retval)
-+                       retval = -EFAULT;
-+
-+               break;
-+       }
-+
-+       case IOCTL_VMCI_CTX_ADD_NOTIFICATION:{
-+               struct vmci_ctx_info arInfo;
-+               struct vmci_ctx_info *info =
-+                       (struct vmci_ctx_info *)ioarg;
-+               int32_t result;
-+               u32 cid;
-+
-+               if (vmciLinux->ctType != VMCIOBJ_CONTEXT) {
-+                       pr_info("IOCTL_VMCI_CTX_ADD_NOTIFICATION only " \
-+                               "valid for contexts.");
-+                       retval = -EINVAL;
-+                       break;
-+               }
-+
-+               retval = copy_from_user(&arInfo, (void *)ioarg,
-+                                       sizeof(arInfo));
-+               if (retval) {
-+                       retval = -EFAULT;
-+                       break;
-+               }
-+
-+               cid = vmci_ctx_get_id(vmciLinux->context);
-+               result = vmci_ctx_add_notification(cid, arInfo.remoteCID);
-+               retval = copy_to_user(&info->result, &result, sizeof(result));
-+               if (retval) {
-+                       retval = -EFAULT;
-+                       break;
-+               }
-+               break;
-+       }
-+
-+       case IOCTL_VMCI_CTX_REMOVE_NOTIFICATION:{
-+               struct vmci_ctx_info arInfo;
-+               struct vmci_ctx_info *info =
-+                       (struct vmci_ctx_info *)ioarg;
-+               int32_t result;
-+               u32 cid;
-+
-+               if (vmciLinux->ctType != VMCIOBJ_CONTEXT) {
-+                       pr_info("IOCTL_VMCI_CTX_REMOVE_NOTIFICATION only " \
-+                               "valid for contexts.");
-+                       retval = -EINVAL;
-+                       break;
-+               }
-+
-+               retval = copy_from_user(&arInfo, (void *)ioarg,
-+                                       sizeof(arInfo));
-+               if (retval) {
-+                       retval = -EFAULT;
-+                       break;
-+               }
-+
-+               cid = vmci_ctx_get_id(vmciLinux->context);
-+               result = vmci_ctx_remove_notification(cid,
-+                                                     arInfo.remoteCID);
-+               retval = copy_to_user(&info->result, &result, sizeof(result));
-+               if (retval) {
-+                       retval = -EFAULT;
-+                       break;
-+               }
-+
-+               break;
-+       }
-+
-+       case IOCTL_VMCI_CTX_GET_CPT_STATE:{
-+               struct vmci_ctx_chkpt_buf_info getInfo;
-+               u32 cid;
-+               char *cptBuf;
-+
-+               if (vmciLinux->ctType != VMCIOBJ_CONTEXT) {
-+                       pr_info("IOCTL_VMCI_CTX_GET_CPT_STATE only valid for contexts.");
-+                       retval = -EINVAL;
-+                       break;
-+               }
-+
-+               retval = copy_from_user(&getInfo, (void *)ioarg,
-+                                       sizeof(getInfo));
-+               if (retval) {
-+                       retval = -EFAULT;
-+                       break;
-+               }
-+
-+               cid = vmci_ctx_get_id(vmciLinux->context);
-+               getInfo.result =
-+                       vmci_ctx_get_chkpt_state(cid,
-+                                                getInfo.cptType,
-+                                                &getInfo.bufSize,
-+                                                &cptBuf);
-+               if (getInfo.result == VMCI_SUCCESS && getInfo.bufSize) {
-+                       retval = copy_to_user((void *)(uintptr_t)
-+                                             getInfo.cptBuf, cptBuf,
-+                                             getInfo.bufSize);
-+                       kfree(cptBuf);
-+                       if (retval) {
-+                               retval = -EFAULT;
-+                               break;
-+                       }
-+               }
-+               retval = copy_to_user((void *)ioarg, &getInfo,
-+                                     sizeof(getInfo));
-+               if (retval)
-+                       retval = -EFAULT;
-+
-+               break;
-+       }
-+
-+       case IOCTL_VMCI_CTX_SET_CPT_STATE:{
-+               struct vmci_ctx_chkpt_buf_info setInfo;
-+               u32 cid;
-+               char *cptBuf;
-+
-+               if (vmciLinux->ctType != VMCIOBJ_CONTEXT) {
-+                       pr_info("IOCTL_VMCI_CTX_SET_CPT_STATE only valid for contexts.");
-+                       retval = -EINVAL;
-+                       break;
-+               }
-+
-+               retval = copy_from_user(&setInfo, (void *)ioarg,
-+                                       sizeof(setInfo));
-+               if (retval) {
-+                       retval = -EFAULT;
-+                       break;
-+               }
-+
-+               cptBuf = kmalloc(setInfo.bufSize, GFP_KERNEL);
-+               if (cptBuf == NULL) {
-+                       pr_info("Cannot allocate memory to set cpt state (type=%d).",
-+                               setInfo.cptType);
-+                       retval = -ENOMEM;
-+                       break;
-+               }
-+               retval = copy_from_user(cptBuf,
-+                                       (void *)(uintptr_t) setInfo.cptBuf,
-+                                       setInfo.bufSize);
-+               if (retval) {
-+                       kfree(cptBuf);
-+                       retval = -EFAULT;
-+                       break;
-+               }
-+
-+               cid = vmci_ctx_get_id(vmciLinux->context);
-+               setInfo.result =
-+                       vmci_ctx_set_chkpt_state(cid,
-+                                                setInfo.cptType,
-+                                                setInfo.bufSize,
-+                                                cptBuf);
-+               kfree(cptBuf);
-+               retval = copy_to_user((void *)ioarg, &setInfo,
-+                                     sizeof(setInfo));
-+               if (retval)
-+                       retval = -EFAULT;
-+
-+               break;
-+       }
-+
-+       case IOCTL_VMCI_GET_CONTEXT_ID:{
-+               u32 cid = VMCI_HOST_CONTEXT_ID;
-+
-+               retval = copy_to_user((void *)ioarg, &cid, sizeof(cid));
-+               break;
-+       }
-+
-+       case IOCTL_VMCI_SET_NOTIFY:{
-+               struct vmci_set_notify_info notifyInfo;
-+
-+               if (vmciLinux->ctType != VMCIOBJ_CONTEXT) {
-+                       pr_info("IOCTL_VMCI_SET_NOTIFY only valid for contexts.");
-+                       retval = -EINVAL;
-+                       break;
-+               }
-+
-+               retval = copy_from_user(&notifyInfo, (void *)ioarg,
-+                                       sizeof(notifyInfo));
-+               if (retval) {
-+                       retval = -EFAULT;
-+                       break;
-+               }
-+
-+               if ((uintptr_t) notifyInfo.notifyUVA !=
-+                   (uintptr_t) NULL) {
-+                       notifyInfo.result =
-+                               drv_setup_notify(vmciLinux->context,
-+                                                (uintptr_t)
-+                                                notifyInfo.notifyUVA);
-+               } else {
-+                       spin_lock(&vmciLinux->context->lock);
-+                       vmci_ctx_unset_notify(vmciLinux->context);
-+                       spin_unlock(&vmciLinux->context->lock);
-+                       notifyInfo.result = VMCI_SUCCESS;
-+               }
-+
-+               retval = copy_to_user((void *)ioarg, &notifyInfo,
-+                                     sizeof(notifyInfo));
-+               if (retval)
-+                       retval = -EFAULT;
-+
-+               break;
-+       }
-+
-+       case IOCTL_VMCI_NOTIFY_RESOURCE:{
-+               struct vmci_dbell_notify_resource_info info;
-+               u32 cid;
-+
-+               if (vmciLinux->userVersion < VMCI_VERSION_NOTIFY) {
-+                       pr_info("IOCTL_VMCI_NOTIFY_RESOURCE is invalid " \
-+                               "for current VMX versions.");
-+                       retval = -EINVAL;
-+                       break;
-+               }
-+
-+               if (vmciLinux->ctType != VMCIOBJ_CONTEXT) {
-+                       pr_info("IOCTL_VMCI_NOTIFY_RESOURCE is only valid " \
-+                               "for contexts.");
-+                       retval = -EINVAL;
-+                       break;
-+               }
-+
-+               retval = copy_from_user(&info, (void *)ioarg, sizeof(info));
-+               if (retval) {
-+                       retval = -EFAULT;
-+                       break;
-+               }
-+
-+               cid = vmci_ctx_get_id(vmciLinux->context);
-+               switch (info.action) {
-+               case VMCI_NOTIFY_RESOURCE_ACTION_NOTIFY:
-+                       if (info.resource ==
-+                           VMCI_NOTIFY_RESOURCE_DOOR_BELL) {
-+                               u32 flags = VMCI_NO_PRIVILEGE_FLAGS;
-+                               info.result =
-+                                       vmci_ctx_notify_dbell(cid,
-+                                                             info.handle,
-+                                                             flags);
-+                       } else {
-+                               info.result = VMCI_ERROR_UNAVAILABLE;
-+                       }
-+                       break;
-+               case VMCI_NOTIFY_RESOURCE_ACTION_CREATE:
-+                       info.result =
-+                               vmci_ctx_dbell_create(cid,
-+                                                     info.handle);
-+                       break;
-+               case VMCI_NOTIFY_RESOURCE_ACTION_DESTROY:
-+                       info.result =
-+                               vmci_ctx_dbell_destroy(cid,
-+                                                      info.handle);
-+                       break;
-+               default:
-+                       pr_info("IOCTL_VMCI_NOTIFY_RESOURCE got unknown " \
-+                               "action (action=%d).", info.action);
-+                       info.result = VMCI_ERROR_INVALID_ARGS;
-+               }
-+               retval = copy_to_user((void *)ioarg, &info,
-+                                     sizeof(info));
-+               if (retval)
-+                       retval = -EFAULT;
-+
-+               break;
-+       }
-+
-+       case IOCTL_VMCI_NOTIFICATIONS_RECEIVE:{
-+               struct vmci_ctx_notify_recv_info info;
-+               struct vmci_handle_arr *dbHandleArray;
-+               struct vmci_handle_arr *qpHandleArray;
-+               u32 cid;
-+
-+               if (vmciLinux->ctType != VMCIOBJ_CONTEXT) {
-+                       pr_info("IOCTL_VMCI_NOTIFICATIONS_RECEIVE is only " \
-+                               "valid for contexts.");
-+                       retval = -EINVAL;
-+                       break;
-+               }
-+
-+               if (vmciLinux->userVersion < VMCI_VERSION_NOTIFY) {
-+                       pr_info("IOCTL_VMCI_NOTIFICATIONS_RECEIVE is not " \
-+                               "supported for the current vmx version.");
-+                       retval = -EINVAL;
-+                       break;
-+               }
-+
-+               retval =
-+                       copy_from_user(&info, (void *)ioarg, sizeof(info));
-+               if (retval) {
-+                       retval = -EFAULT;
-+                       break;
-+               }
-+
-+               if ((info.dbHandleBufSize && !info.dbHandleBufUVA) ||
-+                   (info.qpHandleBufSize && !info.qpHandleBufUVA)) {
-+                       retval = -EINVAL;
-+                       break;
-+               }
-+
-+               cid = vmci_ctx_get_id(vmciLinux->context);
-+               info.result =
-+                       vmci_ctx_rcv_notifications_get(cid,
-+                                                      &dbHandleArray,
-+                                                      &qpHandleArray);
-+               if (info.result == VMCI_SUCCESS) {
-+                       info.result = drv_cp_harray_to_user((void *)
-+                                                           (uintptr_t)
-+                                                           info.
-+                                                           dbHandleBufUVA,
-+                                                           &info.
-+                                                           dbHandleBufSize,
-+                                                           dbHandleArray,
-+                                                           &retval);
-+                       if (info.result == VMCI_SUCCESS && !retval) {
-+                               info.result =
-+                                       drv_cp_harray_to_user((void *)
-+                                                             (uintptr_t)
-+                                                             info.
-+                                                             qpHandleBufUVA,
-+                                                             &info.
-+                                                             qpHandleBufSize,
-+                                                             qpHandleArray,
-+                                                             &retval);
-+                       }
-+                       if (!retval) {
-+                               retval = copy_to_user((void *)ioarg,
-+                                                     &info, sizeof(info));
-+                       }
-+                       vmci_ctx_rcv_notifications_release
-+                               (cid, dbHandleArray, qpHandleArray,
-+                                info.result == VMCI_SUCCESS && !retval);
-+               } else {
-+                       retval = copy_to_user((void *)ioarg, &info,
-+                                             sizeof(info));
-+               }
-+               break;
-+       }
-+
-+       default:
-+               pr_warn("Unknown ioctl (iocmd=%d).", iocmd);
-+               retval = -EINVAL;
-+       }
-+
-+       return retval;
-+}
-+
-+/*
-+ * Reads and dispatches incoming datagrams.
-+ */
-+static void drv_dispatch_dgs(unsigned long data)
-+{
-+       struct vmci_device *dev = (struct vmci_device *)data;
-+
-+       if (dev == NULL) {
-+               pr_devel("No virtual device present in %s.", __func__);
-+               return;
-+       }
-+
-+       if (data_buffer == NULL) {
-+               pr_devel("No buffer present in %s.", __func__);
-+               return;
-+       }
-+
-+       drv_read_dgs_from_port((int)0,
-+                              dev->ioaddr + VMCI_DATA_IN_ADDR,
-+                              data_buffer, data_buffer_size);
-+}
-+DECLARE_TASKLET(vmci_datagram_tasklet, drv_dispatch_dgs, (unsigned long)&vmci_dev);
-+
-+/*
-+ * Scans the notification bitmap for raised flags, clears them
-+ * and handles the notifications.
-+ */
-+static void drv_process_bitmap(unsigned long data)
-+{
-+       struct vmci_device *dev = (struct vmci_device *)data;
-+
-+       if (dev == NULL) {
-+               pr_devel("No virtual device present in %s.", __func__);
-+               return;
-+       }
-+
-+       if (notification_bitmap == NULL) {
-+               pr_devel("No bitmap present in %s.", __func__);
-+               return;
-+       }
-+
-+       vmci_dbell_scan_notification_entries(notification_bitmap);
-+}
-+DECLARE_TASKLET(vmci_bm_tasklet, drv_process_bitmap, (unsigned long)&vmci_dev);
-+
-+/*
-+ * Enable MSI-X.  Try exclusive vectors first, then shared vectors.
-+ */
-+static int drv_enable_msix(struct pci_dev *pdev)
++int __init vmci_event_init(void)
 +{
 +       int i;
-+       int result;
 +
-+       for (i = 0; i < VMCI_MAX_INTRS; ++i) {
-+               vmci_dev.msix_entries[i].entry = i;
-+               vmci_dev.msix_entries[i].vector = i;
++       for (i = 0; i < VMCI_EVENT_MAX; i++)
++               INIT_LIST_HEAD(&subscriberArray[i]);
++
++       spin_lock_init(&subscriberLock);
++       return VMCI_SUCCESS;
++}
++
++void vmci_event_exit(void)
++{
++       int e;
++
++       /* We free all memory at exit. */
++       for (e = 0; e < VMCI_EVENT_MAX; e++) {
++               struct vmci_subscription *cur, *p2;
++               list_for_each_entry_safe(cur, p2, &subscriberArray[e],
++                                        subscriberListItem) {
++
++                       /*
++                        * We should never get here because all events
++                        * should have been unregistered before we try
++                        * to unload the driver module.  Also, delayed
++                        * callbacks could still be firing so this
++                        * cleanup would not be safe.  Still it is
++                        * better to free the memory than not ... so
++                        * we leave this code in just in case....
++                        */
++                       pr_warn("Unexpected free events occuring.");
++                       kfree(cur);
++               }
 +       }
 +
-+       result = pci_enable_msix(pdev, vmci_dev.msix_entries, VMCI_MAX_INTRS);
-+       if (result == 0)
-+               vmci_dev.exclusive_vectors = true;
-+       else if (result > 0)
-+               result = pci_enable_msix(pdev, vmci_dev.msix_entries, 1);
++}
 +
++/*
++ * Gets a reference to the given VMCISubscription.
++ */
++static void event_get(struct vmci_subscription *entry)
++{
++       ASSERT(entry);
++
++       entry->refCount++;
++}
++
++/*
++ * Releases the given VMCISubscription.
++ * Fires the destroy event if the reference count has gone to zero.
++ */
++static void event_release(struct vmci_subscription *entry)
++{
++       ASSERT(entry);
++       ASSERT(entry->refCount > 0);
++
++       entry->refCount--;
++       if (entry->refCount == 0)
++               wake_up(&entry->destroyEvent);
++}
++
++/*
++ * Callback to release the event entry reference. It is called by the
++ * VMCI_WaitOnEvent function before it blocks.
++ */
++static int event_release_cb(void *clientData)
++{
++       struct vmci_subscription *sub = (struct vmci_subscription *)clientData;
++
++       ASSERT(sub);
++
++       spin_lock_bh(&subscriberLock);
++       event_release(sub);
++       spin_unlock_bh(&subscriberLock);
++
++       return 0;
++}
++
++/*
++ * Find entry. Assumes lock is held.
++ * Increments the VMCISubscription refcount if an entry is found.
++ */
++static struct vmci_subscription *event_find(uint32_t subID)
++{
++       int e;
++
++       for (e = 0; e < VMCI_EVENT_MAX; e++) {
++               struct vmci_subscription *cur;
++               list_for_each_entry(cur, &subscriberArray[e],
++                                   subscriberListItem) {
++                       if (cur->id == subID) {
++                               event_get(cur);
++                               return cur;
++                       }
++               }
++       }
++       return NULL;
++}
++
++/*
++ * Calls the specified callback in a delayed context.
++ */
++static void event_delayed_dispatch_cb(void *data)
++{
++       struct delayed_event_info *eventInfo;
++       struct vmci_subscription *sub;
++       struct vmci_event_data *ed;
++
++       eventInfo = data;
++
++       ASSERT(eventInfo);
++       ASSERT(eventInfo->sub);
++
++       sub = eventInfo->sub;
++       ed = (struct vmci_event_data *)eventInfo->eventPayload;
++
++       sub->callback(sub->id, ed, sub->callbackData);
++
++       spin_lock_bh(&subscriberLock);
++       event_release(sub);
++       spin_unlock_bh(&subscriberLock);
++
++       kfree(eventInfo);
++}
++
++/*
++ * Actually delivers the events to the subscribers.
++ * The callback function for each subscriber is invoked.
++ */
++static int event_deliver(struct vmci_event_msg *eventMsg)
++{
++       int err = VMCI_SUCCESS;
++       struct vmci_subscription *cur;
++       struct list_head noDelayList;
++       struct vmci_event_data *ed;
++       struct event_ref *eventRef, *p2;
++
++       ASSERT(eventMsg);
++
++       INIT_LIST_HEAD(&noDelayList);
++
++       spin_lock_bh(&subscriberLock);
++       list_for_each_entry(cur, &subscriberArray[eventMsg->eventData.event],
++                           subscriberListItem) {
++               ASSERT(cur && cur->event == eventMsg->eventData.event);
++
++               if (cur->runDelayed) {
++                       struct delayed_event_info *eventInfo;
++                       eventInfo = kzalloc(sizeof(*eventInfo), GFP_ATOMIC);
++                       if (!eventInfo) {
++                               err = VMCI_ERROR_NO_MEM;
++                               goto out;
++                       }
++
++                       event_get(cur);
++                       memcpy(eventInfo->eventPayload,
++                              VMCI_DG_PAYLOAD(eventMsg),
++                              (size_t) eventMsg->hdr.payloadSize);
++                       eventInfo->sub = cur;
++                       err = vmci_drv_schedule_delayed_work(
++                               event_delayed_dispatch_cb,
++                               eventInfo);
++                       if (err != VMCI_SUCCESS) {
++                               event_release(cur);
++                               kfree(eventInfo);
++                               goto out;
++                       }
++
++               } else {
++                       /*
++                        * To avoid possible lock rank voilation when holding
++                        * subscriberLock, we construct a local list of
++                        * subscribers and release subscriberLock before
++                        * invokes the callbacks. This is similar to delayed
++                        * callbacks, but callbacks is invoked right away here.
++                        */
++                       eventRef = kzalloc(sizeof(*eventRef), GFP_ATOMIC);
++                       if (!eventRef) {
++                               err = VMCI_ERROR_NO_MEM;
++                               goto out;
++                       }
++
++                       event_get(cur);
++                       eventRef->sub = cur;
++                       INIT_LIST_HEAD(&eventRef->listItem);
++                       list_add(&eventRef->listItem, &noDelayList);
++               }
++       }
++
++out:
++       spin_unlock_bh(&subscriberLock);
++
++       list_for_each_entry_safe(eventRef, p2, &noDelayList, listItem) {
++               uint8_t eventPayload[sizeof(struct vmci_event_data_max)]
++                       = { 0 };
++
++               /*
++                * We set event data before each callback to ensure
++                * isolation.
++                */
++               memcpy(eventPayload, VMCI_DG_PAYLOAD(eventMsg),
++                      (size_t) eventMsg->hdr.payloadSize);
++               ed = (struct vmci_event_data *)eventPayload;
++               cur = eventRef->sub;
++               cur->callback(cur->id, ed, cur->callbackData);
++
++               spin_lock_bh(&subscriberLock);
++               event_release(cur);
++               spin_unlock_bh(&subscriberLock);
++               kfree(eventRef);
++       }
++
++       return err;
++}
++
++/*
++ * Dispatcher for the VMCI_EVENT_RECEIVE datagrams. Calls all
++ * subscribers for given event.
++ */
++int vmci_event_dispatch(struct vmci_datagram *msg)
++{
++       struct vmci_event_msg *eventMsg = (struct vmci_event_msg *)msg;
++
++       ASSERT(msg &&
++              msg->src.context == VMCI_HYPERVISOR_CONTEXT_ID &&
++              msg->dst.resource == VMCI_EVENT_HANDLER);
++
++       if (msg->payloadSize < sizeof(uint32_t) ||
++           msg->payloadSize > sizeof(struct vmci_event_data_max))
++               return VMCI_ERROR_INVALID_ARGS;
++
++       if (!VMCI_EVENT_VALID(eventMsg->eventData.event))
++               return VMCI_ERROR_EVENT_UNKNOWN;
++
++       event_deliver(eventMsg);
++       return VMCI_SUCCESS;
++}
++
++/*
++ * Initialize and add subscription to subscriber list.
++ */
++static int event_register_subscription(struct vmci_subscription *sub,
++                                      uint32_t event,
++                                      uint32_t flags,
++                                      vmci_event_cb callback,
++                                      void *callbackData)
++{
++       static uint32_t subscriptionID;
++       uint32_t attempts = 0;
++       int result;
++       bool success;
++
++       ASSERT(sub);
++
++       if (!VMCI_EVENT_VALID(event) || callback == NULL) {
++               pr_devel("Failed to subscribe to event (type=%d) " \
++                        "(callback=%p) (data=%p).", event,
++                        callback, callbackData);
++               return VMCI_ERROR_INVALID_ARGS;
++       }
++
++       sub->runDelayed = !!(flags & VMCI_FLAG_EVENT_DELAYED_CB);
++       sub->refCount = 1;
++       sub->event = event;
++       sub->callback = callback;
++       sub->callbackData = callbackData;
++       INIT_LIST_HEAD(&sub->subscriberListItem);
++
++       spin_lock_bh(&subscriberLock);
++
++       /* Creation of a new event is always allowed. */
++       for (success = false, attempts = 0;
++            success == false && attempts < VMCI_EVENT_MAX_ATTEMPTS;
++            attempts++) {
++               struct vmci_subscription *existingSub = NULL;
++
++               /*
++                * We try to get an id a couple of time before
++                * claiming we are out of resources.
++                */
++               sub->id = ++subscriptionID;
++
++               /* Test for duplicate id. */
++               existingSub = event_find(sub->id);
++               if (existingSub == NULL)
++                       success = true;
++               else
++                       event_release(existingSub);
++       }
++
++       if (success) {
++               init_waitqueue_head(&sub->destroyEvent);
++               list_add(&sub->subscriberListItem, &subscriberArray[event]);
++               result = VMCI_SUCCESS;
++       } else {
++               result = VMCI_ERROR_NO_RESOURCES;
++       }
++
++       spin_unlock_bh(&subscriberLock);
 +       return result;
 +}
 +
 +/*
-+ * Interrupt handler for legacy or MSI interrupt, or for first MSI-X
-+ * interrupt (vector VMCI_INTR_DATAGRAM).
++ * Remove subscription from subscriber list.
 + */
-+static irqreturn_t drv_interrupt(int irq,
-+                                void *clientdata)
++static struct vmci_subscription *event_unregister_subscription(uint32_t subID)
 +{
-+       struct vmci_device *dev = clientdata;
++       struct vmci_subscription *s;
 +
-+       if (dev == NULL) {
-+               pr_devel("Irq %d for unknown device in %s.", irq, __func__);
-+               return IRQ_NONE;
++       spin_lock_bh(&subscriberLock);
++       s = event_find(subID);
++       if (s != NULL) {
++               event_release(s);
++               list_del(&s->subscriberListItem);
 +       }
++       spin_unlock_bh(&subscriberLock);
 +
-+       /*
-+        * If we are using MSI-X with exclusive vectors then we simply schedule
-+        * the datagram tasklet, since we know the interrupt was meant for us.
-+        * Otherwise we must read the ICR to determine what to do.
-+        */
++       if (s != NULL)
++               vmci_drv_wait_on_event_intr(&s->destroyEvent,
++                                           event_release_cb, s);
 +
-+       if (dev->intr_type == VMCI_INTR_TYPE_MSIX && dev->exclusive_vectors) {
-+               tasklet_schedule(&vmci_datagram_tasklet);
-+       } else {
-+               unsigned int icr;
-+
-+               ASSERT(dev->intr_type == VMCI_INTR_TYPE_INTX ||
-+                      dev->intr_type == VMCI_INTR_TYPE_MSI);
-+
-+               /* Acknowledge interrupt and determine what needs doing. */
-+               icr = inl(dev->ioaddr + VMCI_ICR_ADDR);
-+               if (icr == 0 || icr == ~0)
-+                       return IRQ_NONE;
-+
-+               if (icr & VMCI_ICR_DATAGRAM) {
-+                       tasklet_schedule(&vmci_datagram_tasklet);
-+                       icr &= ~VMCI_ICR_DATAGRAM;
-+               }
-+
-+               if (icr & VMCI_ICR_NOTIFICATION) {
-+                       tasklet_schedule(&vmci_bm_tasklet);
-+                       icr &= ~VMCI_ICR_NOTIFICATION;
-+               }
-+
-+               if (icr != 0)
-+                       pr_info("Ignoring unknown interrupt cause (%d).", icr);
-+       }
-+
-+       return IRQ_HANDLED;
++       return s;
 +}
 +
-+/*
-+ * Interrupt handler for MSI-X interrupt vector VMCI_INTR_NOTIFICATION,
-+ * which is for the notification bitmap.  Will only get called if we are
-+ * using MSI-X with exclusive vectors.
++/**
++ * vmci_event_subscribe() - Subscribe to a given event.
++ * @event:     The event to subscribe to.
++ * @flags:     Event flags.  VMCI_FLAG_EVENT_*
++ * @callback:  The callback to invoke upon the event.
++ * @callback_data:     Data to pass to the callback.
++ * @subscription_id:   ID used to track subscription.  Used with
++ *             vmci_event_unscribe()
++ *
++ * Subscribes to the provided event.  The callback specified can be fired
++ * in different contexts depending on what flag is specified while
++ * registering. If flags contains VMCI_FLAG_EVENT_NONE then the
++ * callback is fired with the subscriber lock held (and BH context
++ * on the guest). If flags contain VMCI_FLAG_EVENT_DELAYED_CB then
++ * the callback is fired with no locks held in thread context.
++ * This is useful because other VMCIEvent functions can be called,
++ * but it also increases the chances that an event will be dropped.
 + */
-+static irqreturn_t drv_interrupt_bm(int irq,
-+                                   void *clientdata)
-+{
-+       struct vmci_device *dev = clientdata;
-+
-+       if (dev == NULL) {
-+               pr_devel("Irq %d for unknown device in %s.", irq, __func__);
-+               return IRQ_NONE;
-+       }
-+
-+       /* For MSI-X we can just assume it was meant for us. */
-+       ASSERT(dev->intr_type == VMCI_INTR_TYPE_MSIX && dev->exclusive_vectors);
-+       tasklet_schedule(&vmci_bm_tasklet);
-+
-+       return IRQ_HANDLED;
-+}
-+
-+/*
-+ * Most of the initialization at module load time is done here.
-+ */
-+static int __devinit drv_probe_device(struct pci_dev *pdev,
-+                                     const struct pci_device_id *id)
-+{
-+       unsigned int ioaddr;
-+       unsigned int ioaddr_size;
-+       unsigned int capabilities;
-+       int result;
-+
-+       pr_info("Probing for vmci/PCI.");
-+
-+       result = pci_enable_device(pdev);
-+       if (result) {
-+               pr_err("Cannot enable VMCI device %s: error %d",
-+                      pci_name(pdev), result);
-+               return result;
-+       }
-+       pci_set_master(pdev);   /* To enable QueuePair functionality. */
-+       ioaddr = pci_resource_start(pdev, 0);
-+       ioaddr_size = pci_resource_len(pdev, 0);
-+
-+       /*
-+        * Request I/O region with adjusted base address and size. The
-+        * adjusted values are needed and used if we release the
-+        * region in case of failure.
-+        */
-+       if (!request_region(ioaddr, ioaddr_size, MODULE_NAME)) {
-+               pr_info(MODULE_NAME ": Another driver already loaded " \
-+                       "for device in slot %s.", pci_name(pdev));
-+               goto pci_disable;
-+       }
-+
-+       pr_info("Found VMCI PCI device at %#x, irq %u.", ioaddr, pdev->irq);
-+
-+       /*
-+        * Verify that the VMCI Device supports the capabilities that
-+        * we need. If the device is missing capabilities that we would
-+        * like to use, check for fallback capabilities and use those
-+        * instead (so we can run a new VM on old hosts). Fail the load if
-+        * a required capability is missing and there is no fallback.
-+        *
-+        * Right now, we need datagrams. There are no fallbacks.
-+        */
-+       capabilities = inl(ioaddr + VMCI_CAPS_ADDR);
-+
-+       if ((capabilities & VMCI_CAPS_DATAGRAM) == 0) {
-+               pr_err("Device does not support datagrams.");
-+               goto release;
-+       }
-+
-+       /*
-+        * If the hardware supports notifications, we will use that as
-+        * well.
-+        */
-+       if (capabilities & VMCI_CAPS_NOTIFICATIONS) {
-+               capabilities = VMCI_CAPS_DATAGRAM;
-+               notification_bitmap = vmalloc(PAGE_SIZE);
-+               if (notification_bitmap == NULL) {
-+                       pr_err("Device unable to allocate notification " \
-+                              "bitmap.");
-+               } else {
-+                       memset(notification_bitmap, 0, PAGE_SIZE);
-+                       capabilities |= VMCI_CAPS_NOTIFICATIONS;
-+               }
-+       } else {
-+               capabilities = VMCI_CAPS_DATAGRAM;
-+       }
-+       pr_info("Using capabilities 0x%x.", capabilities);
-+
-+       /* Let the host know which capabilities we intend to use. */
-+       outl(capabilities, ioaddr + VMCI_CAPS_ADDR);
-+
-+       /* Device struct initialization. */
-+       mutex_lock(&vmci_dev.lock);
-+       if (vmci_dev.enabled) {
-+               pr_err("Device already enabled.");
-+               goto unlock;
-+       }
-+
-+       vmci_dev.ioaddr = ioaddr;
-+       vmci_dev.ioaddr_size = ioaddr_size;
-+       atomic_set(&vmci_dev.datagrams_allowed, 1);
-+
-+       /*
-+        * Register notification bitmap with device if that capability is
-+        * used
-+        */
-+       if (capabilities & VMCI_CAPS_NOTIFICATIONS) {
-+               unsigned long bitmapPPN;
-+               bitmapPPN = page_to_pfn(vmalloc_to_page(notification_bitmap));
-+               if (!vmci_dbell_register_notification_bitmap(bitmapPPN)) {
-+                       pr_err("VMCI device unable to register notification " \
-+                              "bitmap with PPN 0x%x.", (u32) bitmapPPN);
-+                       goto datagram_disallow;
-+               }
-+       }
-+
-+       /* Check host capabilities. */
-+       if (!drv_check_host_caps())
-+               goto remove_bitmap;
-+
-+       /* Enable device. */
-+       vmci_dev.enabled = true;
-+       pci_set_drvdata(pdev, &vmci_dev);
-+
-+       /*
-+        * We do global initialization here because we need datagrams
-+        * during drv_util_init, since it registers for VMCI
-+        * events. If we ever support more than one VMCI device we
-+        * will have to create seperate LateInit/EarlyExit functions
-+        * that can be used to do initialization/cleanup that depends
-+        * on the device being accessible.  We need to initialize VMCI
-+        * components before requesting an irq - the VMCI interrupt
-+        * handler uses these components, and it may be invoked once
-+        * request_irq() has registered the handler (as the irq line
-+        * may be shared).
-+        */
-+       drv_util_init();
-+
-+       if (vmci_qp_guest_endpoints_init() < VMCI_SUCCESS)
-+               goto util_exit;
-+
-+       /*
-+        * Enable interrupts.  Try MSI-X first, then MSI, and then fallback on
-+        * legacy interrupts.
-+        */
-+       if (!vmci_disable_msix && !drv_enable_msix(pdev)) {
-+               vmci_dev.intr_type = VMCI_INTR_TYPE_MSIX;
-+               vmci_dev.irq = vmci_dev.msix_entries[0].vector;
-+       } else if (!vmci_disable_msi && !pci_enable_msi(pdev)) {
-+               vmci_dev.intr_type = VMCI_INTR_TYPE_MSI;
-+               vmci_dev.irq = pdev->irq;
-+       } else {
-+               vmci_dev.intr_type = VMCI_INTR_TYPE_INTX;
-+               vmci_dev.irq = pdev->irq;
-+       }
-+
-+       /*
-+        * Request IRQ for legacy or MSI interrupts, or for first
-+        * MSI-X vector.
-+        */
-+       result = request_irq(vmci_dev.irq, drv_interrupt, IRQF_SHARED,
-+                            MODULE_NAME, &vmci_dev);
-+       if (result) {
-+               pr_err("Irq %u in use: %d", vmci_dev.irq, result);
-+               goto components_exit;
-+       }
-+
-+       /*
-+        * For MSI-X with exclusive vectors we need to request an
-+        * interrupt for each vector so that we get a separate
-+        * interrupt handler routine.  This allows us to distinguish
-+        * between the vectors.
-+        */
-+       if (vmci_dev.exclusive_vectors) {
-+               ASSERT(vmci_dev.intr_type == VMCI_INTR_TYPE_MSIX);
-+               result = request_irq(vmci_dev.msix_entries[1].vector,
-+                                    drv_interrupt_bm, 0, MODULE_NAME,
-+                                    &vmci_dev);
-+               if (result) {
-+                       pr_err("Irq %u in use: %d",
-+                              vmci_dev.msix_entries[1].vector, result);
-+                       free_irq(vmci_dev.irq, &vmci_dev);
-+                       goto components_exit;
-+               }
-+       }
-+
-+       pr_info("Registered device.");
-+       atomic_inc(&guestDeviceActive);
-+       mutex_unlock(&vmci_dev.lock);
-+
-+       /* Enable specific interrupt bits. */
-+       if (capabilities & VMCI_CAPS_NOTIFICATIONS) {
-+               outl(VMCI_IMR_DATAGRAM | VMCI_IMR_NOTIFICATION,
-+                    vmci_dev.ioaddr + VMCI_IMR_ADDR);
-+       } else {
-+               outl(VMCI_IMR_DATAGRAM, vmci_dev.ioaddr + VMCI_IMR_ADDR);
-+       }
-+
-+       /* Enable interrupts. */
-+       outl(VMCI_CONTROL_INT_ENABLE, vmci_dev.ioaddr + VMCI_CONTROL_ADDR);
-+
-+       return 0;
-+
-+components_exit:
-+       vmci_qp_guest_endpoints_exit();
-+util_exit:
-+       vmci_util_exit();
-+       vmci_dev.enabled = false;
-+       if (vmci_dev.intr_type == VMCI_INTR_TYPE_MSIX)
-+               pci_disable_msix(pdev);
-+       else if (vmci_dev.intr_type == VMCI_INTR_TYPE_MSI)
-+               pci_disable_msi(pdev);
-+
-+remove_bitmap:
-+       if (notification_bitmap)
-+               outl(VMCI_CONTROL_RESET, vmci_dev.ioaddr + VMCI_CONTROL_ADDR);
-+
-+datagram_disallow:
-+       atomic_set(&vmci_dev.datagrams_allowed, 0);
-+unlock:
-+       mutex_unlock(&vmci_dev.lock);
-+release:
-+       if (notification_bitmap) {
-+               vfree(notification_bitmap);
-+               notification_bitmap = NULL;
-+       }
-+       release_region(ioaddr, ioaddr_size);
-+pci_disable:
-+       pci_disable_device(pdev);
-+       return -EBUSY;
-+}
-+
-+static void __devexit drv_remove_device(struct pci_dev *pdev)
-+{
-+       struct vmci_device *dev = pci_get_drvdata(pdev);
-+
-+       pr_info("Removing device");
-+       atomic_dec(&guestDeviceActive);
-+       vmci_qp_guest_endpoints_exit();
-+       vmci_util_exit();
-+       mutex_lock(&dev->lock);
-+       atomic_set(&vmci_dev.datagrams_allowed, 0);
-+       pr_info("Resetting vmci device");
-+       outl(VMCI_CONTROL_RESET, vmci_dev.ioaddr + VMCI_CONTROL_ADDR);
-+
-+       /*
-+        * Free IRQ and then disable MSI/MSI-X as appropriate.  For
-+        * MSI-X, we might have multiple vectors, each with their own
-+        * IRQ, which we must free too.
-+        */
-+       free_irq(dev->irq, dev);
-+       if (dev->intr_type == VMCI_INTR_TYPE_MSIX) {
-+               if (dev->exclusive_vectors)
-+                       free_irq(dev->msix_entries[1].vector, dev);
-+
-+               pci_disable_msix(pdev);
-+       } else if (dev->intr_type == VMCI_INTR_TYPE_MSI) {
-+               pci_disable_msi(pdev);
-+       }
-+       dev->exclusive_vectors = false;
-+       dev->intr_type = VMCI_INTR_TYPE_INTX;
-+
-+       release_region(dev->ioaddr, dev->ioaddr_size);
-+       dev->enabled = false;
-+       if (notification_bitmap) {
-+               /*
-+                * The device reset above cleared the bitmap state of the
-+                * device, so we can safely free it here.
-+                */
-+
-+               vfree(notification_bitmap);
-+               notification_bitmap = NULL;
-+       }
-+
-+       pr_info("Unregistered device.");
-+       mutex_unlock(&dev->lock);
-+
-+       pci_disable_device(pdev);
-+}
-+
-+static struct pci_driver vmci_driver = {
-+       .name = MODULE_NAME,
-+       .id_table = vmci_ids,
-+       .probe = drv_probe_device,
-+       .remove = __devexit_p(drv_remove_device),
-+};
-+
-+/*
-+ * Initializes the VMCI PCI device. The initialization might fail
-+ * if there is no VMCI PCI device.
-+ */
-+static int __init dev_guest_init(void)
++int vmci_event_subscribe(u32 event,
++                        u32 flags,
++                        vmci_event_cb callback,
++                        void *callback_data,
++                        u32 *subscription_id)
 +{
 +       int retval;
++       struct vmci_subscription *s = NULL;
 +
-+       /* Initialize guest device data. */
-+       mutex_init(&vmci_dev.lock);
-+       vmci_dev.intr_type = VMCI_INTR_TYPE_INTX;
-+       vmci_dev.exclusive_vectors = false;
-+       spin_lock_init(&vmci_dev.dev_spinlock);
-+       vmci_dev.enabled = false;
-+       atomic_set(&vmci_dev.datagrams_allowed, 0);
-+       atomic_set(&guestDeviceActive, 0);
++       if (subscription_id == NULL) {
++               pr_devel("Invalid subscription (NULL).");
++               return VMCI_ERROR_INVALID_ARGS;
++       }
 +
-+       data_buffer = vmalloc(data_buffer_size);
-+       if (!data_buffer)
-+               return -ENOMEM;
++       s = kmalloc(sizeof(*s), GFP_KERNEL);
++       if (s == NULL)
++               return VMCI_ERROR_NO_MEM;
 +
-+       /* This should be last to make sure we are done initializing. */
-+       retval = pci_register_driver(&vmci_driver);
-+       if (retval < 0) {
-+               vfree(data_buffer);
-+               data_buffer = NULL;
++       retval = event_register_subscription(s, event, flags,
++                                            callback, callback_data);
++       if (retval < VMCI_SUCCESS) {
++               kfree(s);
 +               return retval;
 +       }
 +
-+       return 0;
++       *subscription_id = s->id;
++       return retval;
 +}
++EXPORT_SYMBOL(vmci_event_subscribe);
 +
-+static const struct file_operations vmuser_fops = {
-+       .owner = THIS_MODULE,
-+       .open = drv_driver_open,
-+       .release = drv_driver_close,
-+       .poll = drv_driver_poll,
-+       .unlocked_ioctl = drv_driver_unlocked_ioctl,
-+       .compat_ioctl = drv_driver_unlocked_ioctl,
-+};
-+
-+/*
-+ * VM to hypervisor call mechanism. We use the standard VMware naming
-+ * convention since shared code is calling this function as well.
++/**
++ * vmci_event_unsubscribe() - Unsubscribe to an event.
++ * @sub_id:    A subscription ID ad provided by vmci_event_subscribe()
++ *
++ * Unsubscribe to given event. Removes it from list and frees it.
++ * Will return callbackData if requested by caller.
 + */
-+int vmci_send_datagram(struct vmci_datagram *dg)
++int vmci_event_unsubscribe(u32 sub_id)
 +{
-+       unsigned long flags;
-+       int result;
-+
-+       /* Check args. */
-+       if (dg == NULL)
-+               return VMCI_ERROR_INVALID_ARGS;
-+
-+       if (atomic_read(&vmci_dev.datagrams_allowed) == 0)
-+               return VMCI_ERROR_UNAVAILABLE;
++       struct vmci_subscription *s;
 +
 +       /*
-+        * Need to acquire spinlock on the device because the datagram
-+        * data may be spread over multiple pages and the monitor may
-+        * interleave device user rpc calls from multiple
-+        * VCPUs. Acquiring the spinlock precludes that
-+        * possibility. Disabling interrupts to avoid incoming
-+        * datagrams during a "rep out" and possibly landing up in
-+        * this function.
++        * Return subscription. At this point we know noone else is accessing
++        * the subscription so we can free it.
 +        */
-+       spin_lock_irqsave(&vmci_dev.dev_spinlock, flags);
++       s = event_unregister_subscription(sub_id);
++       if (s == NULL)
++               return VMCI_ERROR_NOT_FOUND;
 +
-+       __asm__ __volatile__("cld\n\t" \
-+                            "rep outsb\n\t"
-+                            : /* No output. */
-+                            : "d"(vmci_dev.ioaddr + VMCI_DATA_OUT_ADDR),
-+                              "c"(VMCI_DG_SIZE(dg)), "S"(dg)
-+               );
++       kfree(s);
 +
-+       result = inl(vmci_dev.ioaddr + VMCI_RESULT_LOW_ADDR);
-+       spin_unlock_irqrestore(&vmci_dev.dev_spinlock, flags);
-+
-+       return result;
++       return VMCI_SUCCESS;
 +}
-+
-+bool vmci_guest_code_active(void)
-+{
-+       return guestDeviceInit && atomic_read(&guestDeviceActive) > 0;
-+}
-+
-+/*
-+ * Determines whether the VMCI host personality is
-+ * available. Since the core functionality of the host driver is
-+ * always present, all guests could possibly use the host
-+ * personality. However, to minimize the deviation from the
-+ * pre-unified driver state of affairs, we only consider the host
-+ * device active if there is no active guest device or if there
-+ * are VMX'en with active VMCI contexts using the host device.
-+ */
-+bool vmci_host_code_active(void)
-+{
-+       return hostDeviceInit &&
-+               (!vmci_guest_code_active() ||
-+                atomic_read(&linuxState.activeContexts) > 0);
-+}
-+
-+static int __init drv_init(void)
-+{
-+       int retval;
-+
-+       retval = drv_shared_init();
-+       if (retval != VMCI_SUCCESS) {
-+               pr_warn("Failed to initialize common " \
-+                       "components (err=%d).", retval);
-+               return -ENOMEM;
-+       }
-+
-+       if (!vmci_disable_guest) {
-+               retval = dev_guest_init();
-+               if (retval != 0) {
-+                       pr_warn("Failed to initialize guest " \
-+                               "personality (err=%d).", retval);
-+               } else {
-+                       const char *state = vmci_guest_code_active() ?
-+                               "active" : "inactive";
-+                       guestDeviceInit = true;
-+                       pr_info("Guest personality initialized and is %s",
-+                               state);
-+               }
-+       }
-+
-+       if (!vmci_disable_host) {
-+               retval = drv_host_init();
-+               if (retval != 0) {
-+                       pr_warn("Unable to initialize host " \
-+                               "personality (err=%d).", retval);
-+               } else {
-+                       hostDeviceInit = true;
-+                       pr_info("Initialized host personality");
-+               }
-+       }
-+
-+       if (!guestDeviceInit && !hostDeviceInit) {
-+               drv_shared_cleanup();
-+               return -ENODEV;
-+       }
-+
-+       pr_info("Module is initialized");
-+       return 0;
-+}
-+
-+static void __exit drv_exit(void)
-+{
-+       if (guestDeviceInit) {
-+               pci_unregister_driver(&vmci_driver);
-+               vfree(data_buffer);
-+               guestDeviceInit = false;
-+       }
-+
-+       if (hostDeviceInit) {
-+               drv_host_cleanup();
-+
-+               if (misc_deregister(&linuxState.misc))
-+                       pr_warn("Error unregistering");
-+               else
-+                       pr_info("Module unloaded");
-+
-+               hostDeviceInit = false;
-+       }
-+
-+       drv_shared_cleanup();
-+}
-+
-+/**
-+ * vmci_device_get() - Checks for VMCI device.
-+ * @api_version:       The API version to use
-+ * @device_shutdown_cb:        Callback used when shutdown happens (Unused)
-+ * @user_data: Data to be passed to the callback (Unused)
-+ * @device_registration:       A device registration handle. (Unused)
-+ *
-+ * Verifies that a valid VMCI device is present, and indicates
-+ * the callers intention to use the device until it calls
-+ * vmci_device_release().
-+ */
-+bool vmci_device_get(u32 *api_version,
-+                    vmci_device_shutdown_fn *device_shutdown_cb,
-+                    void *user_data,
-+                    void **device_registration)
-+{
-+       if (*api_version > VMCI_KERNEL_API_VERSION) {
-+               *api_version = VMCI_KERNEL_API_VERSION;
-+               return false;
-+       }
-+
-+       return drv_device_enabled();
-+}
-+EXPORT_SYMBOL(vmci_device_get);
-+
-+/**
-+ * vmci_device_release() - Releases the device (Unused)
-+ * @device_registration:       The device registration handle.
-+ *
-+ * Indicates that the caller is done using the VMCI device.  This
-+ * function is a noop on Linux systems.
-+ */
-+void vmci_device_release(void *device_registration)
-+{
-+}
-+EXPORT_SYMBOL(vmci_device_release);
-+
-+/**
-+ * vmci_get_context_id() - Gets the current context ID.
-+ *
-+ * Returns the current context ID.  Note that since this is accessed only
-+ * from code running in the host, this always returns the host context ID.
-+ */
-+u32 vmci_get_context_id(void)
-+{
-+       if (vmci_guest_code_active()) {
-+               if (atomic_read(&vmContextID) == VMCI_INVALID_ID) {
-+                       u32 result;
-+                       struct vmci_datagram getCidMsg;
-+                       getCidMsg.dst =
-+                               vmci_make_handle(VMCI_HYPERVISOR_CONTEXT_ID,
-+                                                VMCI_GET_CONTEXT_ID);
-+                       getCidMsg.src = VMCI_ANON_SRC_HANDLE;
-+                       getCidMsg.payloadSize = 0;
-+                       result = vmci_send_datagram(&getCidMsg);
-+                       atomic_set(&vmContextID, result);
-+               }
-+               return atomic_read(&vmContextID);
-+       } else if (vmci_host_code_active()) {
-+               return VMCI_HOST_CONTEXT_ID;
-+       }
-+       return VMCI_INVALID_ID;
-+}
-+EXPORT_SYMBOL(vmci_get_context_id);
-+
-+/**
-+ * vmci_version() - Returns the version of the driver.
-+ *
-+ * Returns the version of the VMCI driver.
-+ */
-+u32 vmci_version(void)
-+{
-+       return VMCI_VERSION;
-+}
-+EXPORT_SYMBOL(vmci_version);
-+
-+module_init(drv_init);
-+module_exit(drv_exit);
-+MODULE_DEVICE_TABLE(pci, vmci_ids);
-+
-+MODULE_AUTHOR("VMware, Inc.");
-+MODULE_DESCRIPTION("VMware Virtual Machine Communication Interface.");
-+MODULE_VERSION(VMCI_DRIVER_VERSION_STRING);
-+MODULE_LICENSE("GPL v2");
-+
-+module_param_named(disable_host, vmci_disable_host, bool, 0);
-+MODULE_PARM_DESC(disable_host, "Disable driver host personality - (default=0)");
-+
-+module_param_named(disable_guest, vmci_disable_guest, bool, 0);
-+MODULE_PARM_DESC(disable_guest,
-+                "Disable driver guest personality - (default=0)");
-+
-+module_param_named(disable_msi, vmci_disable_msi, bool, 0);
-+MODULE_PARM_DESC(disable_msi, "Disable MSI use in driver - (default=0)");
-+
-+module_param_named(disable_msix, vmci_disable_msix, bool, 0);
-+MODULE_PARM_DESC(disable_msix, "Disable MSI-X use in driver - (default=0)");
-diff --git a/drivers/misc/vmw_vmci/vmci_driver.h b/drivers/misc/vmw_vmci/vmci_driver.h
++EXPORT_SYMBOL(vmci_event_unsubscribe);
+diff --git a/drivers/misc/vmw_vmci/vmci_event.h b/drivers/misc/vmw_vmci/vmci_event.h
 new file mode 100644
-index 0000000..66138bb
+index 0000000..7df9b1c
 --- /dev/null
-+++ b/drivers/misc/vmw_vmci/vmci_driver.h
-@@ -0,0 +1,48 @@
++++ b/drivers/misc/vmw_vmci/vmci_event.h
+@@ -0,0 +1,25 @@
 +/*
 + * VMware VMCI Driver
 + *
@@ -2361,37 +514,14 @@ index 0000000..66138bb
 + * for more details.
 + */
 +
-+#ifndef _VMCI_DRIVER_H_
-+#define _VMCI_DRIVER_H_
++#ifndef __VMCI_EVENT_H__
++#define __VMCI_EVENT_H__
 +
-+#include <linux/vmw_vmci_defs.h>
-+#include <linux/wait.h>
++#include <linux/vmw_vmci_api.h>
 +
-+#include "vmci_queue_pair.h"
-+#include "vmci_context.h"
++int vmci_event_init(void);
++void vmci_event_exit(void);
++int vmci_event_dispatch(struct vmci_datagram *msg);
 +
-+enum vmci_obj_type {
-+       VMCIOBJ_VMX_VM = 10,
-+       VMCIOBJ_CONTEXT,
-+       VMCIOBJ_SOCKET,
-+       VMCIOBJ_NOT_SET,
-+};
-+
-+/* For storing VMCI structures in file handles. */
-+struct vmci_obj {
-+       void *ptr;
-+       enum vmci_obj_type type;
-+};
-+
-+typedef void (VMCIWorkFn) (void *data);
-+bool vmci_host_code_active(void);
-+bool vmci_guest_code_active(void);
-+bool vmci_drv_wait_on_event_intr(wait_queue_head_t *event,
-+                                VMCIEventReleaseCB releaseCB,
-+                                void *clientData);
-+int vmci_drv_schedule_delayed_work(VMCIWorkFn *workFn, void *data);
-+u32 vmci_get_context_id(void);
-+int vmci_send_datagram(struct vmci_datagram *dg);
-+
-+#endif /* _VMCI_DRIVER_H_ */
++#endif /*__VMCI_EVENT_H__ */
 
