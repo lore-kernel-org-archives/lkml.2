@@ -1,246 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751980Ab2H3UKN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 16:10:13 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:53185 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750964Ab2H3UKL (ORCPT
+	id S1752145Ab2H3UN4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 16:13:56 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:36179 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751121Ab2H3UNy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 16:10:11 -0400
-X-Originating-IP: 108.223.40.66
-Date: Thu, 30 Aug 2012 13:10:19 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-Cc: lm-sensors@lm-sensors.org, Jean Delvare <khali@linux-fr.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hwmon: add Maxim MAX197 support
-Message-ID: <20120830201019.GA3875@roeck-us.net>
-References: <1346351995-9038-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+	Thu, 30 Aug 2012 16:13:54 -0400
+From: "Worth, Kevin" <kevin.worth@hp.com>
+To: "Hans J. Koch" <hjk@hansjkoch.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>
+Subject: RE: Using uio_pdrv to create an platform device for an FPGA, mmap()
+ fails
+Thread-Topic: Using uio_pdrv to create an platform device for an FPGA,
+ mmap() fails
+Thread-Index: Ac2GO7tG6QS6FR2kSHyjyyZF3zS91wAI7NcAAB9odFAAASiZgAACZr2Q
+Date: Thu, 30 Aug 2012 20:10:11 +0000
+Message-ID: <B5EF724456FFB24A8C8AE88E26CE8F4B66840CA2@G9W0725.americas.hpqcorp.net>
+References: <B5EF724456FFB24A8C8AE88E26CE8F4B668404B8@G9W0725.americas.hpqcorp.net>
+ <20120830032735.GA2599@local>
+ <B5EF724456FFB24A8C8AE88E26CE8F4B66840BEE@G9W0725.americas.hpqcorp.net>
+ <20120830190019.GB4819@local>
+In-Reply-To: <20120830190019.GB4819@local>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346351995-9038-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 02:39:55PM -0400, Vivien Didelot wrote:
-> The MAX197 is an A/D converter, made by Maxim. This driver currently
-> supports the MAX197, and MAX199. They are both 8-Channel, Multi-Range,
-> 5V, 12-Bit DAS with 8+4 Bus Interface and Fault Protection.
-> 
-> The available ranges for the MAX197 are {0,-5V} to 5V, and {0,-10V} to
-> 10V, while they are {0,-2V} to 2V, and {0,-4V} to 4V on the MAX199.
-> 
-> Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+>> Thanks for the reply, Hans. Your question about opening /dev/uio0 O_RDWR
+>> prompted me to check out how I was creating /dev/uio0 ... my system
+>> isn't using udev, and I was accidentally creating it with major/minor
+>> number 254/0 instead of the correct 253/0 (found by looking at
+>> /proc/devices). Fixed that and the mmap() call started working.
+>
+>Good.
+>
+>> 
+>> Verified that if /dev/uio0 has permissions 0644, root can open it O_RDWR
+>> and mmap PROT_READ | PROT_WRITE using the below code and write to an
+>> address within my memory map. Of course this contradicts the statement
+>> "/dev/uioX is a read-only file" in the UIO howto.
+>
+>You're right. That wants to be fixed...
+>
+>> 
+>> Including my updated, tested code for completeness.
+>> Note I also cleaned up the device registration a little by
+>> using a different platform_device_register_ call and removing fields
+>> in the struct uio_info that get filled in by uio_pdrv automatically.
+>
+>If you want to have that included in the mainline, please choose a more
+>descriptive name than "myfpga" and send a proper patch.
 
-Hi Vivien,
+I wasn't sure about submitting as a patch since it's for a custom FPGA
+that I don't expect the community will be using, but the code seems like
+possibly useful sample/example code. Perhaps patching the HOWTO like
+http://www.kernel.org/doc/htmldocs/uio-howto.html#uio_pci_generic_example
+is the right approach?
 
-[ ... ]
-
->  
-> +config SENSORS_MAX197
-> +	tristate "Maxim MAX197 and compatibles"
-> +	help
-> +	  Support for the Maxim MAX197 A/D converter.
-> +	  Support will include, but not be limited to, MAX197, and MAX199.
-> +
-> +	  This driver can also be built as a module. If so, the module
-> +	  will be called max197.
-> +
-
-Please move this a bit further down to retain alphabetical order.
-
->  config SENSORS_MAX1111
->  	tristate "Maxim MAX1111 Multichannel, Serial 8-bit ADC chip"
->  	depends on SPI_MASTER
-> diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-> index 7aa9811..b9e202a 100644
-> --- a/drivers/hwmon/Makefile
-> +++ b/drivers/hwmon/Makefile
-> @@ -90,6 +90,7 @@ obj-$(CONFIG_SENSORS_LTC4151)	+= ltc4151.o
->  obj-$(CONFIG_SENSORS_LTC4215)	+= ltc4215.o
->  obj-$(CONFIG_SENSORS_LTC4245)	+= ltc4245.o
->  obj-$(CONFIG_SENSORS_LTC4261)	+= ltc4261.o
-> +obj-$(CONFIG_SENSORS_MAX197)	+= max197.o
-
-Same here.
-
->  obj-$(CONFIG_SENSORS_MAX1111)	+= max1111.o
->  obj-$(CONFIG_SENSORS_MAX16065)	+= max16065.o
->  obj-$(CONFIG_SENSORS_MAX1619)	+= max1619.o
-> diff --git a/drivers/hwmon/max197.c b/drivers/hwmon/max197.c
-> new file mode 100644
-> index 0000000..6cc045a
-> --- /dev/null
-> +++ b/drivers/hwmon/max197.c
-> @@ -0,0 +1,378 @@
-> +/*
-> + * Maxim MAX197 A/D Converter driver
-> + *
-> + * Copyright (c) 2012 Savoir-faire Linux Inc.
-> + *          Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * For further information, see the Documentation/hwmon/max197 file.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/init.h>
-> +#include <linux/err.h>
-> +#include <linux/slab.h>
-> +#include <linux/mutex.h>
-> +#include <linux/device.h>
-> +#include <linux/sysfs.h>
-> +#include <linux/hwmon.h>
-> +#include <linux/hwmon-sysfs.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/platform_data/max197.h>
-> +
-> +#define MAX199_LIMIT	4000	/* 4V */
-> +#define MAX197_LIMIT	10000	/* 10V */
-> +
-> +#define MAX197_NUM_CH	8	/* 8 Analog Input Channels */
-> +
-> +/* Control byte format */
-> +#define MAX197_A0	0x01	/* Channel bit 0 */
-> +#define MAX197_A1	0x02	/* Channel bit 1 */
-> +#define MAX197_A2	0x04	/* Channel bit 2 */
-> +#define MAX197_BIP	0x08	/* Bipolarity */
-> +#define MAX197_RNG	0x10	/* Full range */
-> +#define MAX197_ACQMOD	0x20	/* Internal/External controlled acquisition */
-> +#define MAX197_PD0	0x40	/* Clock/Power-Down modes bit 1 */
-> +#define MAX197_PD1	0x80	/* Clock/Power-Down modes bit 2 */
-> +
-
-Most of the above defines are not used. Please remove the unused ones.
-For the ones you do use, please use (1 << x) to show that it is a bit.
-
-[ ... ]
-> +
-> +static int __devinit max197_probe(struct platform_device *pdev)
-> +{
-> +	struct max197_chip *chip;
-> +	struct max197_platform_data *pdata;
-> +	int ch, ret;
-> +
-> +	if (pdev->dev.platform_data == NULL) {
-> +		dev_err(&pdev->dev, "no platform data supplied\n");
-> +		return -EINVAL;
-> +	}
-> +	pdata = pdev->dev.platform_data;
-> +
-> +	if (pdata->convert == NULL) {
-> +		dev_err(&pdev->dev, "no convert function supplied\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	chip = devm_kzalloc(&pdev->dev, sizeof(struct max197_chip), GFP_KERNEL);
-> +	if (!chip) {
-> +		dev_err(&pdev->dev, "devm_kzalloc failed\n");
-> +		return -ENOMEM;
-> +	}
-> +
-> +	chip->pdata = pdata;
-> +	mutex_init(&chip->lock);
-> +
-> +	if (strcmp("max197", pdev->name) == 0) {
-> +		chip->limit = MAX197_LIMIT;
-> +		chip->scale = true;
-> +	} else {
-> +		chip->limit = MAX199_LIMIT;
-> +		chip->scale = false;
-> +	}
-> +
-> +	for (ch = 0; ch < MAX197_NUM_CH; ch++)
-> +		chip->ctrl_bytes[ch] = (u8) ch;
-> +
-> +	ret = sysfs_create_group(&pdev->dev.kobj, &max197_sysfs_group);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "sysfs create group failed\n");
-> +		return ret;
-> +	}
-> +
-> +	chip->hwmon_dev = hwmon_device_register(&pdev->dev);
-> +	if (IS_ERR(chip->hwmon_dev)) {
-> +		ret = PTR_ERR(chip->hwmon_dev);
-> +		dev_err(&pdev->dev, "hwmon device register failed\n");
-> +		sysfs_remove_group(&pdev->dev.kobj, &max197_sysfs_group);
-> +		return ret;
-
-Please follow CodingStyle, chapter 7. Specifically, create a single error exit
-point and use goto to jump to it.
-
-		goto error;
-
-error:
-	sysfs_remove_group(...);
-	return ret;
-}
-
-> +	}
-> +
-> +	platform_set_drvdata(pdev, chip);
-> +
-This causes a race condition; the access functions reference it, and can be
-called after the sysfs files are created. You'll have to move it further up,
-before the call to sysfs_create_group().
-
-> +	return 0;
-> +}
-> +
-> +static int __devexit max197_remove(struct platform_device *pdev)
-> +{
-> +	struct max197_chip *chip = platform_get_drvdata(pdev);
-> +
-> +	hwmon_device_unregister(chip->hwmon_dev);
-> +	sysfs_remove_group(&pdev->dev.kobj, &max197_sysfs_group);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver __refdata maxim_drivers[] = {
-> +	{
-> +		.driver = {
-> +			.name = "max197",
-> +			.owner = THIS_MODULE,
-> +		},
-> +		.probe = max197_probe,
-> +		.remove = __devexit_p(max197_remove),
-> +	}, {
-> +		.driver = {
-> +			.name = "max199",
-> +			.owner = THIS_MODULE,
-> +		},
-> +		.probe = max197_probe,
-> +		.remove = __devexit_p(max197_remove),
-> +	}
-> +};
-> +
-> +static int __init max197_init(void)
-> +{
-> +	int ret;
-> +	int i;
-> +
-> +	for (i = 0; i < ARRAY_SIZE(maxim_drivers); i++) {
-> +		ret = platform_driver_register(&maxim_drivers[i]);
-> +		if (ret)
-> +			goto error_unregister;
-> +	}
-
-I keep thinking about this; there must be a better way where we only need one
-platform driver instance. After all, there is just one driver, only there can
-be multiple devices. No idea how to do that right now, though. If I find out,
-I'll let you know.
-
-Anyway, you'll need to add:
-
-MODULE_ALIAS("platform:max197");
-MODULE_ALIAS("platform:max199");
-
-Guenter
+>
+>Thanks,
+>Hans
+>
+>> 
+>> -Kevin
+>> 
+>> # lsuio -m -v
+>> uio0: name=uio_myfpga, version=0.1, events=0
+>>         map[0]: addr=0xD0000000, size=262144, mmap test: OK
+>>         Device attributes:
+>>         uevent=DRIVER=uio_pdrv
+>>         modalias=platform:uio_pdrv
+>> 
+>> ------Kernelspace------
+>> #include <linux/platform_device.h>
+>> #include <linux/uio_driver.h>
+>> #include <linux/module.h>
+>> 
+>> #define MYFPGA_BASE     0xd0000000 // 3G
+>> #define MYFPGA_SIZE     0x00040000 // 256k
+>> 
+>> static struct resource myfpga_resources[] = {
+>>     {
+>>         .start = MYFPGA_BASE,
+>>         .end   = MYFPGA_BASE + MYFPGA_SIZE - 1,
+>>         .name  = "myfpga",
+>>         .flags = IORESOURCE_MEM
+>>     }
+>> };
+>> 
+>> static struct uio_info myfpga_uio_info = {
+>>    .name = "uio_myfpga",
+>>    .version = "0.1",
+>> };
+>> 
+>> static struct platform_device *myfpga_uio_pdev;
+>> 
+>> static int __init myfpga_init(void)
+>> {
+>>     myfpga_uio_pdev = platform_device_register_resndata (NULL,
+>>                                                          "uio_pdrv",
+>>                                                          -1,
+>>                                                          myfpga_resources,
+>>                                                          1,
+>>                                                          &myfpga_uio_info,
+>>                                                          sizeof(struct uio_info)
+>>                                                         );
+>>     if (IS_ERR(myfpga_uio_pdev)) {
+>>         return PTR_ERR(myfpga_uio_pdev);
+>>     }
+>> 
+>>     return 0;
+>> }
+>> 
+>> static void __exit myfpga_exit(void)
+>> {
+>>     platform_device_unregister(myfpga_uio_pdev);
+>> }
+>> 
+>> module_init(myfpga_init);
+>> module_exit(myfpga_exit);
+>> 
+>> ------Userspace-------
+>> #include <sys/types.h>
+>> #include <sys/mman.h>
+>> #include <sys/stat.h>
+>> 
+>> #include <dirent.h>
+>> #include <string.h>
+>> #include <stdlib.h>
+>> #include <stdio.h>
+>> #include <fcntl.h>
+>> #include <unistd.h>
+>> #include <stdint.h>
+>> 
+>> #define MYFPGA_BASE     0xd0000000 // 3G
+>> #define MYFPGA_SIZE     0x00040000 // 256k
+>> #define MYFPGA_MAP_NUM  0 // First and only defined map
+>> 
+>> #define BIT32(n) (1 << (n))
+>> 
+>> /* Use mmap()'ped address "iomem", not physical MYFPGA address */
+>> #define MYFPGA_REG(iomem) (volatile uint32_t*)(iomem + 0x8) // Third 32-bit reg
+>> 
+>> int main (int argc, char *argv[])
+>> {
+>>     int fd;
+>>     void *iomem;
+>>     fd = open("/dev/uio0", O_RDWR|O_SYNC);
+>>     if (fd < 0) {
+>>         printf("failed to open /dev/uio0, quitting\n");
+>>         return -1;
+>>     }
+>>     /* Note offset has a special meaning with uio devices */
+>>     iomem = mmap(NULL, MYFPGA_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd,
+>>                  MYFPGA_MAP_NUM * getpagesize());
+>>     if (iomem == MAP_FAILED) {
+>>         printf("mmap failed, quitting\n");
+>>         close(fd);
+>>         return -2;
+>>     }
+>> 
+>>     /* Set bit 5 of MYFPGA_REG register */
+>>     *MYFPGA_REG(iomem) |= BIT32(5);
+>> 
+>>     munmap(iomem, MYFPGA_SIZE);
+>>     close(fd);
+>>     return 0;
+>> }
+>>  
+>>  
