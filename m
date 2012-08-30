@@ -1,76 +1,368 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753041Ab2H3PEK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 11:04:10 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:45742 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750947Ab2H3PEI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 11:04:08 -0400
-Date: Thu, 30 Aug 2012 20:33:35 +0530
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Roland McGrath <roland@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>, stan_shebs@mentor.com
-Subject: Re: [PATCH v3] x86/uprobes: implement x86 specific
-	arch_uprobe_*_step
-Message-ID: <20120830150335.GA15868@in.ibm.com>
-Reply-To: ananth@in.ibm.com
-References: <20120813132443.GB5269@redhat.com> <502A0C43.2000906@linutronix.de> <20120814142736.GA8123@redhat.com> <20120820104734.GA17034@linutronix.de> <20120822140337.GB28878@redhat.com> <5034E8A5.2060701@linutronix.de> <20120822155943.GA4237@redhat.com> <20120829173748.GA1121@redhat.com> <20120830084724.GC27415@in.ibm.com> <20120830143724.GA24514@redhat.com>
+	id S1753223Ab2H3PE1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 11:04:27 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:61322 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752681Ab2H3PEY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 11:04:24 -0400
+Message-ID: <503F7F6A.5020102@gmail.com>
+Date: Thu, 30 Aug 2012 16:57:46 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120830143724.GA24514@redhat.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12083015-5806-0000-0000-000018F990B9
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>, linux-kernel@vger.kernel.org,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH 4/8] fat: drop lock/unlock super
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 04:37:24PM +0200, Oleg Nesterov wrote:
-> On 08/30, Ananth N Mavinakayanahalli wrote:
-> >
-> > On Wed, Aug 29, 2012 at 07:37:48PM +0200, Oleg Nesterov wrote:
-> > >
-> > > Ananth, Sebastian, what if we start with the patch below? Then
-> > > we can change arch/x86/kernel/uprobes.c to use the static
-> > > uprobe_*_step() helpers from the 2nd patch.
-> >
-> > In principle I am fine with the change.
-> 
-> OK, good.
-> 
-> > > If we agree this code should be per-arch, then why do need other
-> > > hooks? This is just ugly, we already have arch_pre/post_xol.
-> > >
-> > > The only problem is the pending powerpc patches, the change below
-> > > obviously breaks them. Were they already applied? If not, then
-> > > probably Ananth can do v6 on top of the patch below ;) The necessary
-> > > fixup is trivial.
-> >
-> > They are under review.
-> 
-> OK, I understand that v6 can confuse the maintainer and complicate the
-> merging process, please forget about v6.
-> 
-> And yes, this is really minor problem, still it would be nice to avoid
-> the unnecessary hooks/complications...
-> 
-> So. We can add "weak arch_uprobe" hooks, fix x86, and after powerpc is
-> merged change both powerpc and x86 in one patch (remove "weak" hooks
-> and move enable/disable into arch_pre/post_xol).
-> 
-> Or. We can apply the patch I sent right now, you can fix powerpc later,
-> when it is merged. This all is for 3.7 anyway, and fixup is trivial.
-> 
-> I agree either way. Which way do you prefer?
+Removed lock/unlock super. Added a new private s_lock mutex.
 
-I prefer fixing both together later, just so nothing breaks while intial
-testing, etc.
+Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+---
+ fs/fat/dir.c         |    4 ++--
+ fs/fat/fat.h         |    1 +
+ fs/fat/inode.c       |    9 +++++----
+ fs/fat/namei_msdos.c |   26 +++++++++++++-------------
+ fs/fat/namei_vfat.c  |   30 +++++++++++++++---------------
+ 5 files changed, 36 insertions(+), 34 deletions(-)
 
-Ananth
-
+diff --git a/fs/fat/dir.c b/fs/fat/dir.c
+index dc49ed2..b324a5b 100644
+--- a/fs/fat/dir.c
++++ b/fs/fat/dir.c
+@@ -568,7 +568,7 @@ static int __fat_readdir(struct inode *inode, struct file *filp, void *dirent,
+ 	int short_len = 0, fill_len = 0;
+ 	int ret = 0;
+ 
+-	lock_super(sb);
++	mutex_lock(&sbi->s_lock);
+ 
+ 	cpos = filp->f_pos;
+ 	/* Fake . and .. for the root directory. */
+@@ -689,7 +689,7 @@ fill_failed:
+ 	if (unicode)
+ 		__putname(unicode);
+ out:
+-	unlock_super(sb);
++	mutex_unlock(&sbi->s_lock);
+ 	return ret;
+ }
+ 
+diff --git a/fs/fat/fat.h b/fs/fat/fat.h
+index 2deeeb8..22b9e63 100644
+--- a/fs/fat/fat.h
++++ b/fs/fat/fat.h
+@@ -69,6 +69,7 @@ struct msdos_sb_info {
+ 	unsigned long root_cluster;  /* first cluster of the root directory */
+ 	unsigned long fsinfo_sector; /* sector number of FAT32 fsinfo */
+ 	struct mutex fat_lock;
++	struct mutex s_lock;
+ 	unsigned int prev_free;      /* previously allocated cluster number */
+ 	unsigned int free_clusters;  /* -1 if undefined */
+ 	unsigned int free_clus_valid; /* is free_clusters valid? */
+diff --git a/fs/fat/inode.c b/fs/fat/inode.c
+index 05e897f..6a14e6a 100644
+--- a/fs/fat/inode.c
++++ b/fs/fat/inode.c
+@@ -634,9 +634,9 @@ static int fat_write_inode(struct inode *inode, struct writeback_control *wbc)
+ 	if (inode->i_ino == MSDOS_FSINFO_INO) {
+ 		struct super_block *sb = inode->i_sb;
+ 
+-		lock_super(sb);
++		mutex_lock(&MSDOS_SB(sb)->s_lock);
+ 		err = fat_clusters_flush(sb);
+-		unlock_super(sb);
++		mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 	} else
+ 		err = __fat_write_inode(inode, wbc->sync_mode == WB_SYNC_ALL);
+ 
+@@ -762,7 +762,7 @@ static struct dentry *fat_get_parent(struct dentry *child)
+ 	struct inode *inode;
+ 	int err;
+ 
+-	lock_super(sb);
++	mutex_lock(&MSDOS_SB(sb)->s_lock);
+ 
+ 	err = fat_get_dotdot_entry(child->d_inode, &bh, &de, &i_pos);
+ 	if (err) {
+@@ -774,7 +774,7 @@ static struct dentry *fat_get_parent(struct dentry *child)
+ 
+ 	parent = d_obtain_alias(inode);
+ out:
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 
+ 	return parent;
+ }
+@@ -1332,6 +1332,7 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
+ 		b = (struct fat_boot_sector *) bh->b_data;
+ 	}
+ 
++	mutex_init(&sbi->s_lock);
+ 	sbi->cluster_size = sb->s_blocksize * sbi->sec_per_clus;
+ 	sbi->cluster_bits = ffs(sbi->cluster_size) - 1;
+ 	sbi->fats = b->fats;
+diff --git a/fs/fat/namei_msdos.c b/fs/fat/namei_msdos.c
+index b0e12bf..9eb47a9 100644
+--- a/fs/fat/namei_msdos.c
++++ b/fs/fat/namei_msdos.c
+@@ -208,7 +208,7 @@ static struct dentry *msdos_lookup(struct inode *dir, struct dentry *dentry,
+ 	struct inode *inode;
+ 	int err;
+ 
+-	lock_super(sb);
++	mutex_lock(&MSDOS_SB(sb)->s_lock);
+ 	err = msdos_find(dir, dentry->d_name.name, dentry->d_name.len, &sinfo);
+ 	switch (err) {
+ 	case -ENOENT:
+@@ -221,7 +221,7 @@ static struct dentry *msdos_lookup(struct inode *dir, struct dentry *dentry,
+ 	default:
+ 		inode = ERR_PTR(err);
+ 	}
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 	return d_splice_alias(inode, dentry);
+ }
+ 
+@@ -273,7 +273,7 @@ static int msdos_create(struct inode *dir, struct dentry *dentry, umode_t mode,
+ 	unsigned char msdos_name[MSDOS_NAME];
+ 	int err, is_hid;
+ 
+-	lock_super(sb);
++	mutex_lock(&MSDOS_SB(sb)->s_lock);
+ 
+ 	err = msdos_format_name(dentry->d_name.name, dentry->d_name.len,
+ 				msdos_name, &MSDOS_SB(sb)->options);
+@@ -302,7 +302,7 @@ static int msdos_create(struct inode *dir, struct dentry *dentry, umode_t mode,
+ 
+ 	d_instantiate(dentry, inode);
+ out:
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 	if (!err)
+ 		err = fat_flush_inodes(sb, dir, inode);
+ 	return err;
+@@ -316,7 +316,7 @@ static int msdos_rmdir(struct inode *dir, struct dentry *dentry)
+ 	struct fat_slot_info sinfo;
+ 	int err;
+ 
+-	lock_super(sb);
++	mutex_lock(&MSDOS_SB(sb)->s_lock);
+ 	/*
+ 	 * Check whether the directory is not in use, then check
+ 	 * whether it is empty.
+@@ -337,7 +337,7 @@ static int msdos_rmdir(struct inode *dir, struct dentry *dentry)
+ 	inode->i_ctime = CURRENT_TIME_SEC;
+ 	fat_detach(inode);
+ out:
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 	if (!err)
+ 		err = fat_flush_inodes(sb, dir, inode);
+ 
+@@ -354,7 +354,7 @@ static int msdos_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
+ 	struct timespec ts;
+ 	int err, is_hid, cluster;
+ 
+-	lock_super(sb);
++	mutex_lock(&MSDOS_SB(sb)->s_lock);
+ 
+ 	err = msdos_format_name(dentry->d_name.name, dentry->d_name.len,
+ 				msdos_name, &MSDOS_SB(sb)->options);
+@@ -392,14 +392,14 @@ static int msdos_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
+ 
+ 	d_instantiate(dentry, inode);
+ 
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 	fat_flush_inodes(sb, dir, inode);
+ 	return 0;
+ 
+ out_free:
+ 	fat_free_clusters(dir, cluster);
+ out:
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 	return err;
+ }
+ 
+@@ -411,7 +411,7 @@ static int msdos_unlink(struct inode *dir, struct dentry *dentry)
+ 	struct fat_slot_info sinfo;
+ 	int err;
+ 
+-	lock_super(sb);
++	mutex_lock(&MSDOS_SB(sb)->s_lock);
+ 	err = msdos_find(dir, dentry->d_name.name, dentry->d_name.len, &sinfo);
+ 	if (err)
+ 		goto out;
+@@ -423,7 +423,7 @@ static int msdos_unlink(struct inode *dir, struct dentry *dentry)
+ 	inode->i_ctime = CURRENT_TIME_SEC;
+ 	fat_detach(inode);
+ out:
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 	if (!err)
+ 		err = fat_flush_inodes(sb, dir, inode);
+ 
+@@ -607,7 +607,7 @@ static int msdos_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	unsigned char old_msdos_name[MSDOS_NAME], new_msdos_name[MSDOS_NAME];
+ 	int err, is_hid;
+ 
+-	lock_super(sb);
++	mutex_lock(&MSDOS_SB(sb)->s_lock);
+ 
+ 	err = msdos_format_name(old_dentry->d_name.name,
+ 				old_dentry->d_name.len, old_msdos_name,
+@@ -626,7 +626,7 @@ static int msdos_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	err = do_msdos_rename(old_dir, old_msdos_name, old_dentry,
+ 			      new_dir, new_msdos_name, new_dentry, is_hid);
+ out:
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 	if (!err)
+ 		err = fat_flush_inodes(sb, old_dir, new_dir);
+ 	return err;
+diff --git a/fs/fat/namei_vfat.c b/fs/fat/namei_vfat.c
+index 6a6d8c0..b67f616 100644
+--- a/fs/fat/namei_vfat.c
++++ b/fs/fat/namei_vfat.c
+@@ -721,7 +721,7 @@ static struct dentry *vfat_lookup(struct inode *dir, struct dentry *dentry,
+ 	struct dentry *alias;
+ 	int err;
+ 
+-	lock_super(sb);
++	mutex_lock(&MSDOS_SB(sb)->s_lock);
+ 
+ 	err = vfat_find(dir, &dentry->d_name, &sinfo);
+ 	if (err) {
+@@ -752,13 +752,13 @@ static struct dentry *vfat_lookup(struct inode *dir, struct dentry *dentry,
+ 		if (!S_ISDIR(inode->i_mode))
+ 			d_move(alias, dentry);
+ 		iput(inode);
+-		unlock_super(sb);
++		mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 		return alias;
+ 	} else
+ 		dput(alias);
+ 
+ out:
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 	dentry->d_time = dentry->d_parent->d_inode->i_version;
+ 	dentry = d_splice_alias(inode, dentry);
+ 	if (dentry)
+@@ -766,7 +766,7 @@ out:
+ 	return dentry;
+ 
+ error:
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 	return ERR_PTR(err);
+ }
+ 
+@@ -779,7 +779,7 @@ static int vfat_create(struct inode *dir, struct dentry *dentry, umode_t mode,
+ 	struct timespec ts;
+ 	int err;
+ 
+-	lock_super(sb);
++	mutex_lock(&MSDOS_SB(sb)->s_lock);
+ 
+ 	ts = CURRENT_TIME_SEC;
+ 	err = vfat_add_entry(dir, &dentry->d_name, 0, 0, &ts, &sinfo);
+@@ -800,7 +800,7 @@ static int vfat_create(struct inode *dir, struct dentry *dentry, umode_t mode,
+ 	dentry->d_time = dentry->d_parent->d_inode->i_version;
+ 	d_instantiate(dentry, inode);
+ out:
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 	return err;
+ }
+ 
+@@ -811,7 +811,7 @@ static int vfat_rmdir(struct inode *dir, struct dentry *dentry)
+ 	struct fat_slot_info sinfo;
+ 	int err;
+ 
+-	lock_super(sb);
++	mutex_lock(&MSDOS_SB(sb)->s_lock);
+ 
+ 	err = fat_dir_empty(inode);
+ 	if (err)
+@@ -829,7 +829,7 @@ static int vfat_rmdir(struct inode *dir, struct dentry *dentry)
+ 	inode->i_mtime = inode->i_atime = CURRENT_TIME_SEC;
+ 	fat_detach(inode);
+ out:
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 
+ 	return err;
+ }
+@@ -841,7 +841,7 @@ static int vfat_unlink(struct inode *dir, struct dentry *dentry)
+ 	struct fat_slot_info sinfo;
+ 	int err;
+ 
+-	lock_super(sb);
++	mutex_lock(&MSDOS_SB(sb)->s_lock);
+ 
+ 	err = vfat_find(dir, &dentry->d_name, &sinfo);
+ 	if (err)
+@@ -854,7 +854,7 @@ static int vfat_unlink(struct inode *dir, struct dentry *dentry)
+ 	inode->i_mtime = inode->i_atime = CURRENT_TIME_SEC;
+ 	fat_detach(inode);
+ out:
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 
+ 	return err;
+ }
+@@ -867,7 +867,7 @@ static int vfat_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
+ 	struct timespec ts;
+ 	int err, cluster;
+ 
+-	lock_super(sb);
++	mutex_lock(&MSDOS_SB(sb)->s_lock);
+ 
+ 	ts = CURRENT_TIME_SEC;
+ 	cluster = fat_alloc_new_dir(dir, &ts);
+@@ -896,13 +896,13 @@ static int vfat_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
+ 	dentry->d_time = dentry->d_parent->d_inode->i_version;
+ 	d_instantiate(dentry, inode);
+ 
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 	return 0;
+ 
+ out_free:
+ 	fat_free_clusters(dir, cluster);
+ out:
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 	return err;
+ }
+ 
+@@ -921,7 +921,7 @@ static int vfat_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	old_sinfo.bh = sinfo.bh = dotdot_bh = NULL;
+ 	old_inode = old_dentry->d_inode;
+ 	new_inode = new_dentry->d_inode;
+-	lock_super(sb);
++	mutex_lock(&MSDOS_SB(sb)->s_lock);
+ 	err = vfat_find(old_dir, &old_dentry->d_name, &old_sinfo);
+ 	if (err)
+ 		goto out;
+@@ -997,7 +997,7 @@ out:
+ 	brelse(sinfo.bh);
+ 	brelse(dotdot_bh);
+ 	brelse(old_sinfo.bh);
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 
+ 	return err;
+ 
+-- 
+1.7.3.4
