@@ -1,39 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753659Ab2H2XyZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 19:54:25 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47706 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752341Ab2H2XyI (ORCPT
+	id S1753949Ab2H3AUM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 20:20:12 -0400
+Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:14070 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752415Ab2H3AUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 19:54:08 -0400
-Date: Thu, 30 Aug 2012 00:53:53 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC/PATCH] ARM: smp: Fix cpu_up() racing with sys_reboot
-Message-ID: <20120829235353.GW18957@n2100.arm.linux.org.uk>
-References: <1345608229-5707-1-git-send-email-sboyd@codeaurora.org>
+	Wed, 29 Aug 2012 20:20:10 -0400
+X-Authority-Analysis: v=2.0 cv=IuCcgcDg c=1 sm=0 a=eLNxRirMhZqJpcA6QlPHQA==:17 a=ThlJJk6wLCEA:10 a=XYJHFtupD_QA:10 a=kkZ7j0ruBUIA:10 a=5zrl1c6G2EIA:10 a=kj9zAlcOel0A:10 a=87YopaQtWS4A:10 a=oLb3JtG0AAAA:8 a=20KFwNOVAAAA:8 a=S9bQXYb5-wz_5trz0m8A:9 a=CjuIK1q_8ugA:10 a=gwLygPzupVwA:10 a=jEp0ucaQiEUA:10 a=eLNxRirMhZqJpcA6QlPHQA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 75.80.152.117
+Date: Wed, 29 Aug 2012 17:20:06 -0700
+From: Nick Pasich <Nick@NickAndBarb.net>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: WARNING: at fs/inode.c:280 drop_nlink+0x31/0x33()
+Message-ID: <20120830002006.GA23484@NickAndBarb.net>
+References: <20120829162527.GA3635@NickAndBarb.net>
+ <20120829151641.20cde4bc@corrin.poochiereds.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1345608229-5707-1-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20120829151641.20cde4bc@corrin.poochiereds.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 09:03:49PM -0700, Stephen Boyd wrote:
-> Nothing stops a process from hotplugging in a CPU concurrently
-> with a sys_reboot() call. In such a situation we could have
-> ipi_cpu_stop() mark a cpu as 'offline' and _cpu_up() ignore the
-> fact that the CPU is not really offline and call the
-> CPU_UP_PREPARE notifier. When this happens stop_machine code will
-> complain that the cpu thread already exists and BUG_ON().
+Thanks for replying Jeff...
 
-This puts us at odds with x86, which is a bad thing without first
-investigating whether a generic solution which fixes all arches would
-be more appropriate.
+Yes, it sure would be great to have 3.5.z  patch...
 
-A better solution may be to mark those CPUs as being not-present,
-which will prevent them being hot-plugged back.
+
+--( Nick Pasich )--
+
+
+
+On Wed, Aug 29, 2012 at 03:16:41PM -0700, Jeff Layton wrote:
+> On Wed, 29 Aug 2012 09:25:27 -0700
+> Nick Pasich <Nick@NickAndBarb.net> wrote:
+> 
+> > 
+> > I'm using kernel 3.5.3 ... 
+> > 
+> > It happens on 3.5.1 and 3.5.2 also.
+> > 
+> > I know that Nick Bowler has already reported this...
+> > 
+> > I'm experiencing the same thing.
+> > 
+> > It happens when moving files from one directory to another
+> > on the same partition (NFS). 
+> > 
+> >   --( Nick Pasich )--
+> > 
+> > 
+> > #############################################################################
+> > ##
+> > ## Happens when PSTs are moved from one directory to another on the ISCSI ...
+> > ##
+> > #############################################################################
+> > 
+> > Aug 29 08:06:16 localhost kernel: ------------[ cut here ]------------
+> > Aug 29 08:06:16 localhost kernel: WARNING: at fs/inode.c:280 drop_nlink+0x31/0x33()
+> > Aug 29 08:06:16 localhost kernel: Hardware name: To Be Filled By O.E.M.
+> > Aug 29 08:06:16 localhost kernel: Modules linked in: ecb md4 cifs w83627hf eeprom asb100 hwmon_vid hwmon nfsd exportfs ipv6 psmouse usb_storage io_edgeport usbserial sg r8169 mii evdev intel_agp uhci_hcd i2c_i801 i2c_core shpchp intel_gtt agpgart ehci_hcd microcode serio_raw
+> > Aug 29 08:06:16 localhost kernel: Pid: 31477, comm: rm Tainted: G        W    3.5.3 #1
+> > Aug 29 08:06:16 localhost kernel: Call Trace:
+> > Aug 29 08:06:16 localhost kernel:  [<c10a53e2>] ? drop_nlink+0x31/0x33
+> > Aug 29 08:06:16 localhost kernel:  [<c1025dd2>] ? warn_slowpath_common+0x7b/0x90
+> > Aug 29 08:06:16 localhost kernel:  [<c10a53e2>] ? drop_nlink+0x31/0x33
+> > Aug 29 08:06:16 localhost kernel:  [<c1025e02>] ? warn_slowpath_null+0x1b/0x1f
+> > Aug 29 08:06:16 localhost kernel:  [<c10a53e2>] ? drop_nlink+0x31/0x33
+> > Aug 29 08:06:16 localhost kernel:  [<f83dfa81>] ? cifs_unlink+0x134/0x63d [cifs]
+> > Aug 29 08:06:16 localhost kernel:  [<c10a37d4>] ? dput+0x11/0x117
+> > Aug 29 08:06:16 localhost kernel:  [<c10a87d4>] ? mntput_no_expire+0xf/0xf7
+> > Aug 29 08:06:16 localhost kernel:  [<c109ca9b>] ? vfs_unlink+0x4e/0xb6
+> > Aug 29 08:06:16 localhost kernel:  [<c109b333>] ? __lookup_hash+0x54/0xac
+> > Aug 29 08:06:16 localhost kernel:  [<c109e8c2>] ? do_unlinkat+0x10a/0x12d
+> > Aug 29 08:06:16 localhost kernel:  [<c10a0124>] ? sys_ioctl+0x34/0x57
+> > Aug 29 08:06:16 localhost kernel:  [<c140a8ed>] ? syscall_call+0x7/0xb
+> > Aug 29 08:06:16 localhost kernel: ---[ end trace 756b427e3bd671f9 ]---
+> > 
+> 
+> (cc'ing linux-cifs ml)
+> 
+> This stack trace comes from cifs, not nfs.
+> 
+> Steve French has a patch queued in his tree to silence this warning
+> that I believe he intends to send to Linus for 3.6. Perhaps we should
+> consider backporting it for 3.5.z too?
+> 
+> -- 
+> Jeff Layton <jlayton@redhat.com>
+
