@@ -1,85 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247Ab2H3JFS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 05:05:18 -0400
-Received: from na3sys009aog129.obsmtp.com ([74.125.149.142]:53624 "EHLO
-	na3sys009aog129.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753060Ab2H3JFQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 05:05:16 -0400
-From: Xiaofan Tian <tianxf@marvell.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        <linux-kernel@vger.kernel.org>
-Cc: Qing Xu <qingx@marvell.com>, Xiaofan Tian <tianxf@marvell.com>
-Subject: [PATCH] regmap-irq: Add mask invert flag for enable register
-Date: Thu, 30 Aug 2012 17:03:35 +0800
-Message-Id: <1346317415-12276-1-git-send-email-tianxf@marvell.com>
-X-Mailer: git-send-email 1.7.0.4
-X-OriginalArrivalTime: 30 Aug 2012 09:04:02.0958 (UTC) FILETIME=[66AB1AE0:01CD868E]
+	id S1753200Ab2H3JLN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 05:11:13 -0400
+Received: from mga09.intel.com ([134.134.136.24]:19801 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751748Ab2H3JLM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 05:11:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,338,1344236400"; 
+   d="scan'208";a="187063362"
+Message-ID: <503F2E2D.9000803@intel.com>
+Date: Thu, 30 Aug 2012 17:11:09 +0800
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Stephane Eranian <eranian@google.com>
+CC: linux-kernel@vger.kernel.org, peterz@infradead.org, andi@firstfloor.org,
+        mingo@elte.hu
+Subject: Re: [PATCH] perf/x86: export Sandy Bridge uncore clockticks event
+ in sysfs
+References: <20120829130122.GA32336@quad>
+In-Reply-To: <20120829130122.GA32336@quad>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, regmap will write 1 to mask_base to mask
-an interrupt and write 0 to unmask it.
+On 08/29/2012 09:01 PM, Stephane Eranian wrote:
+> 
+> This patch exports the clockticks event and its encoding to user level.
+> The clockticks event was exported for Nehalem/Westmere but not for Sandy
+> Bridge (client). Given that it uses a special encoding, it needs to be
+> exported to user tools, so users can do:
+> 
+>   # perf stat -a -C 0 -e uncore_cbox_0/clockticks/ sleep 1
+> 
+> Signed-off-by: Stephane Eranian <eranian@google.com>
 
-But some chips do not have an interrupt mask register,
-and only have interrupt enable register.
-Then we should write 0 to disable interrupt and 1 to enable.
+The Sandy Bridge uncore only contains a few events that are similar to offcore event.
+That's why I didn't add any generic event for Sandy Bridge uncore. But thanks anyway.
 
-So add an mask_invert flag to handle this.
-If it is not set, behavior is same as previous.
-If set it to 1, the mask value will be inverted
-before written to mask_base
+Acked-by: Yan, Zheng <zheng.z.yan@intel.com>
 
-Signed-off-by: Xiaofan Tian <tianxf@marvell.com>
----
- drivers/base/regmap/regmap-irq.c |   12 ++++++++++--
- include/linux/regmap.h           |    1 +
- 2 files changed, 11 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/base/regmap/regmap-irq.c b/drivers/base/regmap/regmap-irq.c
-index bb5e103..094f998 100644
---- a/drivers/base/regmap/regmap-irq.c
-+++ b/drivers/base/regmap/regmap-irq.c
-@@ -78,7 +78,11 @@ static void regmap_irq_sync_unlock(struct irq_data *data)
- 	for (i = 0; i < d->chip->num_regs; i++) {
- 		reg = d->chip->mask_base +
- 			(i * map->reg_stride * d->irq_reg_stride);
--		ret = regmap_update_bits(d->map, reg,
-+		if (d->chip->mask_invert)
-+			ret = regmap_update_bits(d->map, reg,
-+					 d->mask_buf_def[i], ~d->mask_buf[i]);
-+		else
-+			ret = regmap_update_bits(d->map, reg,
- 					 d->mask_buf_def[i], d->mask_buf[i]);
- 		if (ret != 0)
- 			dev_err(d->map->dev, "Failed to sync masks in %x\n",
-@@ -338,7 +342,11 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
- 		d->mask_buf[i] = d->mask_buf_def[i];
- 		reg = chip->mask_base +
- 			(i * map->reg_stride * d->irq_reg_stride);
--		ret = regmap_update_bits(map, reg,
-+		if (chip->mask_invert)
-+			ret = regmap_update_bits(map, reg,
-+					 d->mask_buf[i], ~d->mask_buf[i]);
-+		else
-+			ret = regmap_update_bits(map, reg,
- 					 d->mask_buf[i], d->mask_buf[i]);
- 		if (ret != 0) {
- 			dev_err(map->dev, "Failed to set masks in 0x%x: %d\n",
-diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-index 9c4c9c6..e3bcc3f 100644
---- a/include/linux/regmap.h
-+++ b/include/linux/regmap.h
-@@ -300,6 +300,7 @@ struct regmap_irq_chip {
- 	unsigned int ack_base;
- 	unsigned int wake_base;
- 	unsigned int irq_reg_stride;
-+	unsigned int mask_invert;
- 	bool runtime_pm;
- 
- 	int num_regs;
--- 
-1.7.0.4
+> ---
+> 
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> index 0a55710..38e4894 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> @@ -661,6 +661,11 @@ static void snb_uncore_msr_init_box(struct intel_uncore_box *box)
+>  	}
+>  }
+>  
+> +static struct uncore_event_desc snb_uncore_events[] = {
+> +	INTEL_UNCORE_EVENT_DESC(clockticks, "event=0xff,umask=0x00"),
+> +	{ /* end: all zeroes */ },
+> +};
+> +
+>  static struct attribute *snb_uncore_formats_attr[] = {
+>  	&format_attr_event.attr,
+>  	&format_attr_umask.attr,
+> @@ -704,6 +709,7 @@ static struct intel_uncore_type snb_uncore_cbox = {
+>  	.constraints	= snb_uncore_cbox_constraints,
+>  	.ops		= &snb_uncore_msr_ops,
+>  	.format_group	= &snb_uncore_format_group,
+> +	.event_descs	= snb_uncore_events,
+>  };
+>  
+>  static struct intel_uncore_type *snb_msr_uncores[] = {
+> 
 
