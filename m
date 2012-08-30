@@ -1,75 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147Ab2H3XWV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 19:22:21 -0400
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:10877
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752889Ab2H3XWT (ORCPT
+	id S1753420Ab2H3XXQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 19:23:16 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:46249 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753167Ab2H3XWZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 19:22:19 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -11
-X-BigFish: VPS-11(zz98dI1818P1432I4015Izz1202hzzz2dh668h839h944hd25hd2bhf0ah107ah1220h1155h)
-X-WSS-ID: 0M9LCWZ-01-35H-02
-X-M-MSG: 
-Date: Thu, 30 Aug 2012 18:22:09 -0500
-From: Jacob Shin <jacob.shin@amd.com>
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <andreas.hermann3@amd.com>,
-        <borislav.petkov@amd.com>
-Subject: Re: [PATCH 0/8] x86, mm: init_memory_mapping cleanup
-Message-ID: <20120830232203.GA15056@jshin-Toonie>
-References: <2e8c14cd-b82a-49e6-8d5e-85dbe86da6ca@email.android.com>
- <1346367975-6446-1-git-send-email-yinghai@kernel.org>
+	Thu, 30 Aug 2012 19:22:25 -0400
+X-Originating-IP: 217.70.178.133
+X-Originating-IP: 173.246.103.110
+Date: Thu, 30 Aug 2012 16:22:16 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: git@vger.kernel.org, linux-kernel@vger.kernel.org, mingo@elte.hu,
+        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 0/5] Documentation and rcutorture changes
+Message-ID: <20120830232216.GC11928@jtriplet-mobl1>
+References: <20120830184448.GA31753@linux.vnet.ibm.com>
+ <20120830185608.GA6749@jtriplet-mobl1>
+ <20120830214603.GJ30381@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1346367975-6446-1-git-send-email-yinghai@kernel.org>
+In-Reply-To: <20120830214603.GJ30381@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 04:06:07PM -0700, Yinghai Lu wrote:
-> Only create mapping for E820_820 and E820_RESERVED_KERN.
+On Thu, Aug 30, 2012 at 02:46:03PM -0700, Paul E. McKenney wrote:
+> On Thu, Aug 30, 2012 at 11:56:09AM -0700, Josh Triplett wrote:
+> > On Thu, Aug 30, 2012 at 11:44:48AM -0700, Paul E. McKenney wrote:
+> > > Hello!
+> > > 
+> > > This series covers changes to rcutorture and documentation updates.
+> > > The individual patches in this series are as follows:
+> > > 
+> > > 1.	Update rcutorture default values so that casual rcutorture
+> > > 	users will do more aggressive testing.
+> > > 2.	Make rcutorture track CPU-hotplug latency statistics.
+> > > 3.	Document SRCU's new-found ability to be used by offline and
+> > > 	idle CPUs, and also emphasize SRCU's limitations.
+> > > 4.	Use the new pr_*() interfaces in rcutorture.
+> > > 5.	Prevent kthread-initialization races in rcutorture.
+> > > 
+> > > 							Thanx, Paul
+> > > 
+> > > ------------------------------------------------------------------------
+> > > 
+> > >  b/Documentation/RCU/checklist.txt |    6 +
+> > >  b/Documentation/RCU/whatisRCU.txt |    9 +-
+> > >  b/kernel/rcutorture.c             |    4 -
+> > >  kernel/rcutorture.c               |  152 +++++++++++++++++++++++---------------
+> > >  4 files changed, 108 insertions(+), 63 deletions(-)
+> > 
+> > Something seems wrong with this diffstat; how'd the b/ prefixes get
+> > there, and why does it list kernel/rcutorture.c twice, once with and
+> > once without?
 > 
-> Also seperate find_early_page_table out with init_memory_mapping.
+> Hmmm...  It seems quite reproducible.  I did the usual git-format-patch
+> and ran the resulting set of patches through diffstat.  I seem to have a
+> broken diffstat...
 > 
-> Jacob Shin (3):
->   x86: if kernel .text .data .bss are not marked as E820_RAM, complain
->     and fix
->   x86: Fixup code testing if a pfn is direct mapped
->   x86: Only direct map addresses that are marked as E820_RAM
+> However, git diff --stat v3.6-rc1..hotplug.2012.08.28a generates the
+> following:
 > 
-> Yinghai Lu (5):
->   x86, mm: Add global page_size_mask
->   x86, mm: Split out split_mem_range
->   x86, mm: Moving init_memory_mapping calling
->   x86, mm: Revert back good_end setting for 64bit
->   x86, mm: Find early page table only one time
+>  kernel/rcutree.c       |   93 +++++++++++-------------------------------------
+>  kernel/rcutree.h       |    3 --
+>  kernel/rcutree_trace.c |    4 +-
+>  kernel/sched/core.c    |   41 ++++++++++-----------
+>  4 files changed, 43 insertions(+), 98 deletions(-)
 > 
->  arch/x86/include/asm/init.h       |    1 -
->  arch/x86/include/asm/page_types.h |    3 +
->  arch/x86/include/asm/pgtable.h    |    1 +
->  arch/x86/kernel/cpu/amd.c         |    8 +-
->  arch/x86/kernel/setup.c           |   34 ++++---
->  arch/x86/mm/init.c                |  225 ++++++++++++++++++++++++++-----------
->  arch/x86/mm/init_64.c             |    6 +-
->  arch/x86/platform/efi/efi.c       |    8 +-
->  8 files changed, 191 insertions(+), 95 deletions(-)
-> 
-> -- 
-> 1.7.7
-> 
-> 
+> Which does look much better.
 
-I'll be out of office tomorrow, and Monday is a holiday, so I'll test it
-on our machines on Tuesday,
+You might try generating your cover letter template via git format-patch
+--cover-letter, which will automatically give you a list of patches and
+a git-produced diffstat; much easier than trying to format a cover
+letter by hand.  Meanwhile, you might consider sending your patches as a
+bug report to diffstat upstream: Thomas E. Dickey
+<dickey@invisible-island.net>.
 
-Thanks,
-
--Jacob
-
+- Josh Triplett
