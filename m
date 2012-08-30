@@ -1,121 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752323Ab2H3Ub3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 16:31:29 -0400
-Received: from fieldses.org ([174.143.236.118]:43988 "EHLO fieldses.org"
+	id S1752498Ab2H3Ucg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 16:32:36 -0400
+Received: from fieldses.org ([174.143.236.118]:43990 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751221Ab2H3Ub2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 16:31:28 -0400
-Date: Thu, 30 Aug 2012 16:31:26 -0400
+	id S1752173Ab2H3Ucf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 16:32:35 -0400
+Date: Thu, 30 Aug 2012 16:32:34 -0400
 From: "J. Bruce Fields" <bfields@fieldses.org>
 To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        Vivek Trivedi <vtrivedi018@gmail.com>
-Subject: Re: [PATCH] exportfs: add FILEID_INVALID to indicate invalid
- fid_type
-Message-ID: <20120830203125.GA23478@fieldses.org>
-References: <1346249410-3515-1-git-send-email-linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, Vivek Trivedi <vtrivedi018@gmail.com>
+Subject: Re: [PATCH] nfsd: remove duplicate init in nfsd4_cb_recall
+Message-ID: <20120830203234.GB23478@fieldses.org>
+References: <1346249453-3549-1-git-send-email-linkinjeon@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1346249410-3515-1-git-send-email-linkinjeon@gmail.com>
+In-Reply-To: <1346249453-3549-1-git-send-email-linkinjeon@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 29, 2012 at 10:10:10AM -0400, Namjae Jeon wrote:
-> This commit adds FILEID_INVALID = 0xff in fid_type to
-> indicate invalid fid_type
+On Wed, Aug 29, 2012 at 10:10:53AM -0400, Namjae Jeon wrote:
+> remove duplicate init in nfsd4_cb_recall
 
-OK, applying for 3.7.
+Thanks, applying for 3.7.--b.
 
-Looks like this shows up in a lot of filesystems too as just "255".  Are
-you planning to patch up the filesystems afterwards?
-
---b.
-
-> 
-> It avoids using magic number 255
 > 
 > Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
 > Signed-off-by: Vivek Trivedi <vtrivedi018@gmail.com>
 > ---
->  fs/exportfs/expfs.c      |    4 ++--
->  fs/fhandle.c             |    2 +-
->  fs/nfsd/nfsfh.c          |    4 ++--
->  include/linux/exportfs.h |    5 +++++
->  4 files changed, 10 insertions(+), 5 deletions(-)
+>  fs/nfsd/nfs4callback.c |    1 -
+>  1 file changed, 1 deletion(-)
 > 
-> diff --git a/fs/exportfs/expfs.c b/fs/exportfs/expfs.c
-> index 29ab099..f1f1c59 100644
-> --- a/fs/exportfs/expfs.c
-> +++ b/fs/exportfs/expfs.c
-> @@ -322,10 +322,10 @@ static int export_encode_fh(struct inode *inode, struct fid *fid,
+> diff --git a/fs/nfsd/nfs4callback.c b/fs/nfsd/nfs4callback.c
+> index 4c7bd35..bdf29c9 100644
+> --- a/fs/nfsd/nfs4callback.c
+> +++ b/fs/nfsd/nfs4callback.c
+> @@ -1028,7 +1028,6 @@ void nfsd4_cb_recall(struct nfs4_delegation *dp)
+>  	cb->cb_msg.rpc_cred = callback_cred;
 >  
->  	if (parent && (len < 4)) {
->  		*max_len = 4;
-> -		return 255;
-> +		return FILEID_INVALID;
->  	} else if (len < 2) {
->  		*max_len = 2;
-> -		return 255;
-> +		return FILEID_INVALID;
->  	}
+>  	cb->cb_ops = &nfsd4_cb_recall_ops;
+> -	dp->dl_retries = 1;
 >  
->  	len = 2;
-> diff --git a/fs/fhandle.c b/fs/fhandle.c
-> index a48e4a1..78a7879 100644
-> --- a/fs/fhandle.c
-> +++ b/fs/fhandle.c
-> @@ -52,7 +52,7 @@ static long do_sys_name_to_handle(struct path *path,
->  	handle_bytes = handle_dwords * sizeof(u32);
->  	handle->handle_bytes = handle_bytes;
->  	if ((handle->handle_bytes > f_handle.handle_bytes) ||
-> -	    (retval == 255) || (retval == -ENOSPC)) {
-> +	    (retval == FILEID_INVALID) || (retval == -ENOSPC)) {
->  		/* As per old exportfs_encode_fh documentation
->  		 * we could return ENOSPC to indicate overflow
->  		 * But file system returned 255 always. So handle
-> diff --git a/fs/nfsd/nfsfh.c b/fs/nfsd/nfsfh.c
-> index 032af38..814afaa 100644
-> --- a/fs/nfsd/nfsfh.c
-> +++ b/fs/nfsd/nfsfh.c
-> @@ -572,7 +572,7 @@ fh_compose(struct svc_fh *fhp, struct svc_export *exp, struct dentry *dentry,
->  
->  		if (inode)
->  			_fh_update(fhp, exp, dentry);
-> -		if (fhp->fh_handle.fh_fileid_type == 255) {
-> +		if (fhp->fh_handle.fh_fileid_type == FILEID_INVALID) {
->  			fh_put(fhp);
->  			return nfserr_opnotsupp;
->  		}
-> @@ -603,7 +603,7 @@ fh_update(struct svc_fh *fhp)
->  			goto out;
->  
->  		_fh_update(fhp, fhp->fh_export, dentry);
-> -		if (fhp->fh_handle.fh_fileid_type == 255)
-> +		if (fhp->fh_handle.fh_fileid_type == FILEID_INVALID)
->  			return nfserr_opnotsupp;
->  	}
->  out:
-> diff --git a/include/linux/exportfs.h b/include/linux/exportfs.h
-> index 12291a7..0e14525 100644
-> --- a/include/linux/exportfs.h
-> +++ b/include/linux/exportfs.h
-> @@ -83,6 +83,11 @@ enum fid_type {
->  	 * 64 bit parent inode number.
->  	 */
->  	FILEID_NILFS_WITH_PARENT = 0x62,
-> +
-> +	/*
-> +	 * Filesystems must not use 0xff file ID.
-> +	 */
-> +	FILEID_INVALID = 0xff,
->  };
->  
->  struct fid {
+>  	INIT_LIST_HEAD(&cb->cb_per_client);
+>  	cb->cb_done = true;
 > -- 
 > 1.7.9.5
 > 
