@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752648Ab2H3UWK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 16:22:10 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:13798 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752445Ab2H3UWG (ORCPT
+	id S1752651Ab2H3UWg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 16:22:36 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:48127 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752448Ab2H3UWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 16:22:06 -0400
+	Thu, 30 Aug 2012 16:22:04 -0400
 From: Toshi Kani <toshi.kani@hp.com>
 To: linux-acpi@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, lenb@kernel.org, bhelgaas@google.com,
         liuj97@gmail.com, isimatu.yasuaki@jp.fujitsu.com,
         Toshi Kani <toshi.kani@hp.com>
-Subject: [RFC PATCH 5/5] ACPI: Update container to use .sys_notify
-Date: Thu, 30 Aug 2012 14:16:06 -0600
-Message-Id: <1346357766-14030-6-git-send-email-toshi.kani@hp.com>
+Subject: [RFC PATCH 4/5] ACPI: Update acpi_memhotplug to use .sys_notify
+Date: Thu, 30 Aug 2012 14:16:05 -0600
+Message-Id: <1346357766-14030-5-git-send-email-toshi.kani@hp.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1346357766-14030-1-git-send-email-toshi.kani@hp.com>
 References: <1346357766-14030-1-git-send-email-toshi.kani@hp.com>
@@ -22,126 +22,147 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changed the ACPI container driver to use .sys_notify.  Removed
-ACPI namespace walks and their call-back function that register
-and unregister the hotplug handler to all container objects
-through acpi_[install|remove]_notify_handler().
+Changed the ACPI memory hotplug driver to use .sys_notify.  Removed
+ACPI namespace walks and their call-back functions that register and
+unregister the hotplug handler to all memory device objects through
+acpi_[install|remove]_notify_handler().
 
 Signed-off-by: Toshi Kani <toshi.kani@hp.com>
 ---
- drivers/acpi/container.c |   66 ++-------------------------------------------
- 1 files changed, 3 insertions(+), 63 deletions(-)
+ drivers/acpi/acpi_memhotplug.c |   93 +--------------------------------------
+ 1 files changed, 3 insertions(+), 90 deletions(-)
 
-diff --git a/drivers/acpi/container.c b/drivers/acpi/container.c
-index 1f9f7d7..d4e8b71 100644
---- a/drivers/acpi/container.c
-+++ b/drivers/acpi/container.c
-@@ -53,6 +53,7 @@ MODULE_LICENSE("GPL");
+diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+index 24c807f..1f62686 100644
+--- a/drivers/acpi/acpi_memhotplug.c
++++ b/drivers/acpi/acpi_memhotplug.c
+@@ -54,6 +54,8 @@ MODULE_LICENSE("GPL");
  
- static int acpi_container_add(struct acpi_device *device);
- static int acpi_container_remove(struct acpi_device *device, int type);
-+static void container_notify(acpi_handle handle, u32 type, void *context);
+ static int acpi_memory_device_add(struct acpi_device *device);
+ static int acpi_memory_device_remove(struct acpi_device *device, int type);
++static void acpi_memory_device_notify(acpi_handle handle, u32 event,
++	void *data);
  
- static const struct acpi_device_id container_device_ids[] = {
- 	{"ACPI0004", 0},
-@@ -69,6 +70,7 @@ static struct acpi_driver acpi_container_driver = {
+ static const struct acpi_device_id memory_device_ids[] = {
+ 	{ACPI_MEMORY_DEVICE_HID, 0},
+@@ -68,6 +70,7 @@ static struct acpi_driver acpi_memory_device_driver = {
  	.ops = {
- 		.add = acpi_container_add,
- 		.remove = acpi_container_remove,
-+		.sys_notify = container_notify,
+ 		.add = acpi_memory_device_add,
+ 		.remove = acpi_memory_device_remove,
++		.sys_notify = acpi_memory_device_notify,
  		},
  };
  
-@@ -152,7 +154,7 @@ static int container_device_add(struct acpi_device **device, acpi_handle handle)
- 	return result;
+@@ -484,111 +487,21 @@ static int acpi_memory_device_remove(struct acpi_device *device, int type)
+ 	return 0;
  }
  
--static void container_notify_cb(acpi_handle handle, u32 type, void *context)
-+static void container_notify(acpi_handle handle, u32 type, void *context)
- {
- 	struct acpi_device *device = NULL;
- 	int result;
-@@ -211,82 +213,20 @@ static void container_notify_cb(acpi_handle handle, u32 type, void *context)
- 	return;
- }
- 
--static acpi_status
--container_walk_namespace_cb(acpi_handle handle,
--			    u32 lvl, void *context, void **rv)
+-/*
+- * Helper function to check for memory device
+- */
+-static acpi_status is_memory_device(acpi_handle handle)
 -{
--	char *hid = NULL;
--	struct acpi_device_info *info;
+-	char *hardware_id;
 -	acpi_status status;
--	int *action = context;
+-	struct acpi_device_info *info;
 -
 -	status = acpi_get_object_info(handle, &info);
--	if (ACPI_FAILURE(status)) {
--		return AE_OK;
+-	if (ACPI_FAILURE(status))
+-		return status;
+-
+-	if (!(info->valid & ACPI_VALID_HID)) {
+-		kfree(info);
+-		return AE_ERROR;
 -	}
 -
--	if (info->valid & ACPI_VALID_HID)
--		hid = info->hardware_id.string;
+-	hardware_id = info->hardware_id.string;
+-	if ((hardware_id == NULL) ||
+-	    (strcmp(hardware_id, ACPI_MEMORY_DEVICE_HID)))
+-		status = AE_ERROR;
 -
--	if (hid == NULL) {
--		goto end;
--	}
--
--	if (strcmp(hid, "ACPI0004") && strcmp(hid, "PNP0A05") &&
--	    strcmp(hid, "PNP0A06")) {
--		goto end;
--	}
--
--	switch (*action) {
--	case INSTALL_NOTIFY_HANDLER:
--		acpi_install_notify_handler(handle,
--					    ACPI_SYSTEM_NOTIFY,
--					    container_notify_cb, NULL);
--		break;
--	case UNINSTALL_NOTIFY_HANDLER:
--		acpi_remove_notify_handler(handle,
--					   ACPI_SYSTEM_NOTIFY,
--					   container_notify_cb);
--		break;
--	default:
--		break;
--	}
--
--      end:
 -	kfree(info);
+-	return status;
+-}
 -
+-static acpi_status
+-acpi_memory_register_notify_handler(acpi_handle handle,
+-				    u32 level, void *ctxt, void **retv)
+-{
+-	acpi_status status;
+-
+-
+-	status = is_memory_device(handle);
+-	if (ACPI_FAILURE(status))
+-		return AE_OK;	/* continue */
+-
+-	status = acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
+-					     acpi_memory_device_notify, NULL);
+-	/* continue */
 -	return AE_OK;
 -}
 -
- static int __init acpi_container_init(void)
- {
- 	int result = 0;
--	int action = INSTALL_NOTIFY_HANDLER;
- 
- 	result = acpi_bus_register_driver(&acpi_container_driver);
- 	if (result < 0) {
- 		return (result);
- 	}
- 
--	/* register notify handler to every container device */
--	acpi_walk_namespace(ACPI_TYPE_DEVICE,
--			    ACPI_ROOT_OBJECT,
--			    ACPI_UINT32_MAX,
--			    container_walk_namespace_cb, NULL, &action, NULL);
+-static acpi_status
+-acpi_memory_deregister_notify_handler(acpi_handle handle,
+-				      u32 level, void *ctxt, void **retv)
+-{
+-	acpi_status status;
 -
- 	return (0);
+-
+-	status = is_memory_device(handle);
+-	if (ACPI_FAILURE(status))
+-		return AE_OK;	/* continue */
+-
+-	status = acpi_remove_notify_handler(handle,
+-					    ACPI_SYSTEM_NOTIFY,
+-					    acpi_memory_device_notify);
+-
+-	return AE_OK;	/* continue */
+-}
+-
+ static int __init acpi_memory_device_init(void)
+ {
+ 	int result;
+-	acpi_status status;
+-
+ 
+ 	result = acpi_bus_register_driver(&acpi_memory_device_driver);
+ 
+ 	if (result < 0)
+ 		return -ENODEV;
+ 
+-	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
+-				     ACPI_UINT32_MAX,
+-				     acpi_memory_register_notify_handler, NULL,
+-				     NULL, NULL);
+-
+-	if (ACPI_FAILURE(status)) {
+-		ACPI_EXCEPTION((AE_INFO, status, "walk_namespace failed"));
+-		acpi_bus_unregister_driver(&acpi_memory_device_driver);
+-		return -ENODEV;
+-	}
+-
+ 	acpi_hotmem_initialized = 1;
+ 	return 0;
  }
  
- static void __exit acpi_container_exit(void)
+ static void __exit acpi_memory_device_exit(void)
  {
--	int action = UNINSTALL_NOTIFY_HANDLER;
+-	acpi_status status;
 -
 -
--	acpi_walk_namespace(ACPI_TYPE_DEVICE,
--			    ACPI_ROOT_OBJECT,
--			    ACPI_UINT32_MAX,
--			    container_walk_namespace_cb, NULL, &action, NULL);
+-	/*
+-	 * Adding this to un-install notification handlers for all the device
+-	 * handles.
+-	 */
+-	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
+-				     ACPI_UINT32_MAX,
+-				     acpi_memory_deregister_notify_handler, NULL,
+-				     NULL, NULL);
 -
- 	acpi_bus_unregister_driver(&acpi_container_driver);
+-	if (ACPI_FAILURE(status))
+-		ACPI_EXCEPTION((AE_INFO, status, "walk_namespace failed"));
+-
+ 	acpi_bus_unregister_driver(&acpi_memory_device_driver);
  
  	return;
 -- 
