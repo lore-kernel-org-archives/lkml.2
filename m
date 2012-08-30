@@ -1,73 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752504Ab2H3Gu2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 02:50:28 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:24228 "EHLO
+	id S1752576Ab2H3HKQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 03:10:16 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:28658 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751916Ab2H3Gu1 (ORCPT
+	with ESMTP id S1751925Ab2H3HKM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 02:50:27 -0400
-X-AuditID: cbfee611-b7fd76d00000288b-21-503f0d31df29
-Date: Thu, 30 Aug 2012 06:50:25 +0000 (GMT)
-From: =?euc-kr?B?x9S47cHW?= <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH] PM/devfreq: Use devm_* functions in exynos4_bus.c
-To: Sachin Kamat <sachin.kamat@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: "patches@linaro.org" <patches@linaro.org>,
-        "myungjoo.ham@gmail.com" <myungjoo.ham@gmail.com>
-Reply-to: myungjoo.ham@samsung.com
+	Thu, 30 Aug 2012 03:10:12 -0400
+X-AuditID: cbfee61a-b7fc66d0000043b7-0b-503f11d358e3
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Lars-Peter Clausen'" <lars@metafoo.de>
+Cc: "'Thierry Reding'" <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org, "'Sascha Hauer'" <kernel@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        "'Dmitry Torokhov'" <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, "'Bryan Wu'" <bryan.wu@canonical.com>,
+        "'Richard Purdie'" <rpurdie@rpsys.net>, linux-leds@vger.kernel.org,
+        "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org,
+        "=?utf-8?Q?'Beno=C3=AEt_Th=C3=A9baudeau'?=" 
+	<benoit.thebaudeau@advansee.com>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <217877237.2758643.1345731587941.JavaMail.root@advansee.com>
+ <50364FA4.7000401@metafoo.de>
+In-reply-to: <50364FA4.7000401@metafoo.de>
+Subject: Re: [PATCH] pwm: Call pwm_enable() before pwm_config()
+Date: Thu, 30 Aug 2012 16:10:11 +0900
+Message-id: <002001cd867e$7e964130$7bc2c390$%han@samsung.com>
 MIME-version: 1.0
-X-MTR: 20120830064843019@myungjoo.ham
-Msgkey: 20120830064843019@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20120830064843019@myungjoo.ham
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <22771352.55091346309425371.JavaMail.weblogic@epml19>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFIsWRmVeSWpSXmKPExsVy+t/t6bqGvPYBBp0/bSwu75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfG8f0zmAvesFRsP7mdpYHxBksXIyeHkIC6xKIlJ9lAbAkBE4lv
-	f/8zQthiEhfurQeKcwHVzGeU+HhpHTNIgkVAVeLmix7WLkYODjYBc4n7M4JAwsICbhJP7n9m
-	B7FFBHIlXu39DTaTWSBJ4vqFiVC7lCTW7HsFZvMKCEqcnPmEBWKXqsTLhb2MEHE1ievbVkLd
-	ICExa/oFVgibV2JG+1OoejmJaV/XMEPY0hLnZ22Au3nx98dQcX6JY7d3MIGcCdL75H4wzJjd
-	m79AvSsgMfXMQahWLYnf7/ZAreKTWLPwLQvMmF2nljPD9N7fMpcJ4i1FiSndD9khbC2JLz/2
-	saF6iwPIdpQ4sI1vAqPcLCSZWUi6ZyHpRlazgJFlFaNoakFyQXFSeqq5XnFibnFpXrpecn7u
-	JkZwjD8T3MG4tMHiEKMAB6MSDy9Hpl2AEGtiWXFl7iFGCQ5mJRHeHXeBQrwpiZVVqUX58UWl
-	OanFhxilOViUxHnnvPjiLySQnliSmp2aWpBaBJNl4uCUamB0lL1fZ5j2sDz0ela6ekDTobui
-	wQfsequr/3zWfVq2LdfhWPOJKo8PgpZz+Pf8XZf4q5bV7nyg3NN9p2528u4wfs8q48Sy6Y+x
-	l/b8r+kaAuVOk2/MFWdkuSclHV+5Ury09+ufsBkPj081nmGzYu+e3YevSc6rzZmy+1makrG2
-	6sLsZ8z+TZJKLMUZiYZazEXFiQDjx1kJ7QIAAA==
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac2BR2Mq93YkOxlERIyQgCbVgluCwgFNkDtw
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJLMWRmVeSWpSXmKPExsVy+t9jAd3LgvYBBq+eSFuc6PvAanHz0zdW
+	i8u75rBZbH2zjtGBxePzJrkAxigum5TUnMyy1CJ9uwSujIefAwoWcFf0NJ9ha2B8wdHFyMkh
+	IWAi8bnvFDuELSZx4d56ti5GLg4hgUWMEjumbWOBcH4xSpz8dp4VpIpNQE3iy5fDYB0iAloS
+	U7+9ZQUpYhZYzSJx+v9rsISQQIbE698H2UBsTqCirZ33WUBsYQF7iRsr5zCC2CwCqhKTzvaC
+	xXkFbCWu7ZvHDmELSvyYfA8ozgE0VF1iypRckDCzgLbEk3cXWEHCEkDhR391QUwRASOJ4yeF
+	ISpEJPa9eMc4gVFoFpI5sxDmzEIyZxaSjgWMLKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcx
+	ggP8mdQOxpUNFocYBTgYlXh4OTLtAoRYE8uKK3MPMUpwMCuJ8LLz2wcI8aYkVlalFuXHF5Xm
+	pBYfYpTmYFES53U6B1QtkJ5YkpqdmlqQWgSTZeLglGpg7K0scns2PYm1dWVB8kOlj43rFmSV
+	63x6MiPQ4XlgXNMluad2qgard19k5dy8pyt24VbPjAWflet4xBxevuNQX5YpEyf2+Np0+5op
+	8emVmeKynAdXxylM3z41d9uvecwVh0JyzOY6h31ZkH37eKht1yzZve39Vj7LmKcfn3j58OM0
+	rZQZ+yXblViKMxINtZiLihMBSqkvQ2wCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7U6olD6024002
 
-> devm_* functions are device managed functions and make cleanup code
-> simpler and smaller.
-> devm_kzalloc and devm_regulator_get functions are used.
+On Friday, August 24, 2012 12:44 AM, Lars-Peter Clausen wrote:
 > 
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> ---
+> On 08/23/2012 04:19 PM, BenoÃ®t ThÃ©baudeau wrote:
+> > Some PWM drivers enable the clock of the PWM peripheral in pwm_enable(). Hence,
+> > for these drivers, a call to pwm_config() does not have any effect before
+> > pwm_enable() has been called.
+> >
+> > This patch fixes the PWM users to make sure that they call pwm_enable() before
+> > pwm_config().
+> >
+> > This fixes the first setting of brightness through sysfs that had no effect with
+> > leds-pwm and the i.MX PWM driver.
+> 
+> But isn't this a bug in the PWM peripheral driver? With this change the PWM
+> will start with the old settings first. While this is not so much of a problem
+> for a backlight (although it might cause a short flickering) it might cause
+> problems for other applications, like using the PWM pin as a timing generator.
+> In my opinion it's better to fix the PWM peripheral drivers which have this
+> problem instead of trying to work around it in every user of the PWM API.
 
-Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Hi Lars-Peter Clausen,
 
-Applied to http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/devfreq-for-next
-It will appear in some hours.
-
-Thanks.
+I think so.
+It would be better to fix the PWM peripheral drivers.
 
 
-Cheers!
-MyungJoo
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Best regards,
+Jingoo Han
+
+> 
+> - Lars
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
