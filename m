@@ -1,164 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903Ab2H3Ivz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 04:51:55 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:60188 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751858Ab2H3Ivx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 04:51:53 -0400
-From: Kelvin Cheung <keguang.zhang@gmail.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Mike Turquette <mturquette@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: linux-mips@linux-mips.org, Kelvin Cheung <keguang.zhang@gmail.com>
-Subject: [PATCH v3] clk: add Loongson1B clock support
-Date: Thu, 30 Aug 2012 16:51:34 +0800
-Message-Id: <1346316694-5270-1-git-send-email-keguang.zhang@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	id S1753149Ab2H3I4N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 04:56:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59834 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752699Ab2H3I4M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 04:56:12 -0400
+Date: Thu, 30 Aug 2012 11:57:24 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Frank Swiderski <fes@google.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, riel@redhat.com,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mikew@google.com
+Subject: Re: [PATCH] Add a page cache-backed balloon device driver.
+Message-ID: <20120830085724.GF10269@redhat.com>
+References: <1340742778-11282-1-git-send-email-fes@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340742778-11282-1-git-send-email-fes@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds clock support to Loongson1B SoC using the common clock
-infrastructure.
+On Tue, Jun 26, 2012 at 01:32:58PM -0700, Frank Swiderski wrote:
+> +static void fill_balloon(struct virtio_balloon *vb, size_t num)
+> +{
+> +	int err;
+> +
+> +	/* We can only do one array worth at a time. */
+> +	num = min(num, ARRAY_SIZE(vb->pfns));
+> +
+> +	for (vb->num_pfns = 0; vb->num_pfns < num; vb->num_pfns++) {
+> +		struct page *page;
+> +		unsigned long inode_pfn = find_available_inode_page(vb);
+> +		/* Should always be able to find a page. */
+> +		BUG_ON(!inode_pfn);
+> +		page = read_mapping_page(the_inode.inode.i_mapping, inode_pfn,
+> +					 NULL);
+> +		if (IS_ERR(page)) {
+> +			if (printk_ratelimit())
+> +				dev_printk(KERN_INFO, &vb->vdev->dev,
+> +					   "Out of puff! Can't get %zu pages\n",
+> +					   num);
+> +			break;
+> +		}
+> +
+> +		/* Set the page to be dirty */
+> +		set_page_dirty(page);
+> +
+> +		vb->pfns[vb->num_pfns] = page_to_pfn(page);
+> +	}
+> +
+> +	/* Didn't get any?  Oh well. */
+> +	if (vb->num_pfns == 0)
+> +		return;
 
-Signed-off-by: Kelvin Cheung <keguang.zhang@gmail.com>
----
- drivers/clk/Makefile   |    1 +
- drivers/clk/clk-ls1x.c |  111 ++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 112 insertions(+), 0 deletions(-)
- create mode 100644 drivers/clk/clk-ls1x.c
+Went to look at this driver, and noticed caller will re-invoke
+this immediately if this triggers, so we busy-wait
+re-trying this. When does read_mapping_page fail?
+Is there any condition we could wait on?
 
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index 5869ea3..018ec57 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -10,6 +10,7 @@ obj-$(CONFIG_ARCH_SOCFPGA)	+= socfpga/
- obj-$(CONFIG_PLAT_SPEAR)	+= spear/
- obj-$(CONFIG_ARCH_U300)		+= clk-u300.o
- obj-$(CONFIG_ARCH_INTEGRATOR)	+= versatile/
-+obj-$(CONFIG_MACH_LOONGSON1)	+= clk-ls1x.o
- 
- # Chip specific
- obj-$(CONFIG_COMMON_CLK_WM831X) += clk-wm831x.o
-diff --git a/drivers/clk/clk-ls1x.c b/drivers/clk/clk-ls1x.c
-new file mode 100644
-index 0000000..f20b750
---- /dev/null
-+++ b/drivers/clk/clk-ls1x.c
-@@ -0,0 +1,111 @@
-+/*
-+ * Copyright (c) 2012 Zhang, Keguang <keguang.zhang@gmail.com>
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ */
-+
-+#include <linux/clkdev.h>
-+#include <linux/clk-provider.h>
-+#include <linux/io.h>
-+#include <linux/slab.h>
-+#include <linux/err.h>
-+
-+#include <loongson1.h>
-+
-+#define OSC	33
-+
-+static DEFINE_SPINLOCK(_lock);
-+
-+static int ls1x_pll_clk_enable(struct clk_hw *hw)
-+{
-+	return 0;
-+}
-+
-+static void ls1x_pll_clk_disable(struct clk_hw *hw)
-+{
-+}
-+
-+static unsigned long ls1x_pll_recalc_rate(struct clk_hw *hw,
-+					     unsigned long parent_rate)
-+{
-+	u32 pll, rate;
-+
-+	pll = __raw_readl(LS1X_CLK_PLL_FREQ);
-+	rate = ((12 + (pll & 0x3f)) * 1000000) +
-+		((((pll >> 8) & 0x3ff) * 1000000) >> 10);
-+	rate *= OSC;
-+	rate >>= 1;
-+
-+	return rate;
-+}
-+
-+static const struct clk_ops ls1x_pll_clk_ops = {
-+	.enable = ls1x_pll_clk_enable,
-+	.disable = ls1x_pll_clk_disable,
-+	.recalc_rate = ls1x_pll_recalc_rate,
-+};
-+
-+static struct clk * __init clk_register_pll(struct device *dev,
-+	 const char *name, const char *parent_name, unsigned long flags)
-+{
-+	struct clk_hw *hw;
-+	struct clk *clk;
-+	struct clk_init_data init;
-+
-+	/* allocate the divider */
-+	hw = kzalloc(sizeof(struct clk_hw), GFP_KERNEL);
-+	if (!hw) {
-+		pr_err("%s: could not allocate clk_hw\n", __func__);
-+		return ERR_PTR(-ENOMEM);
-+	}
-+
-+	init.name = name;
-+	init.ops = &ls1x_pll_clk_ops;
-+	init.flags = flags | CLK_IS_BASIC;
-+	init.parent_names = (parent_name ? &parent_name : NULL);
-+	init.num_parents = (parent_name ? 1 : 0);
-+	hw->init = &init;
-+
-+	/* register the clock */
-+	clk = clk_register(dev, hw);
-+
-+	if (IS_ERR(clk))
-+		kfree(hw);
-+
-+	return clk;
-+}
-+
-+void __init ls1x_clk_init(void)
-+{
-+	struct clk *clk;
-+
-+	clk = clk_register_pll(NULL, "pll_clk", NULL, CLK_IS_ROOT);
-+	clk_prepare_enable(clk);
-+
-+	clk = clk_register_divider(NULL, "cpu_clk", "pll_clk",
-+			CLK_SET_RATE_PARENT, LS1X_CLK_PLL_DIV, DIV_CPU_SHIFT,
-+			DIV_CPU_WIDTH, CLK_DIVIDER_ONE_BASED, &_lock);
-+	clk_prepare_enable(clk);
-+	clk_register_clkdev(clk, "cpu", NULL);
-+
-+	clk = clk_register_divider(NULL, "dc_clk", "pll_clk",
-+			CLK_SET_RATE_PARENT, LS1X_CLK_PLL_DIV, DIV_DC_SHIFT,
-+			DIV_DC_WIDTH, CLK_DIVIDER_ONE_BASED, &_lock);
-+	clk_prepare_enable(clk);
-+	clk_register_clkdev(clk, "dc", NULL);
-+
-+	clk = clk_register_divider(NULL, "ahb_clk", "pll_clk",
-+			CLK_SET_RATE_PARENT, LS1X_CLK_PLL_DIV, DIV_DDR_SHIFT,
-+			DIV_DDR_WIDTH, CLK_DIVIDER_ONE_BASED, &_lock);
-+	clk_prepare_enable(clk);
-+	clk_register_clkdev(clk, "ahb", NULL);
-+	clk_register_clkdev(clk, "stmmaceth", NULL);
-+
-+	clk = clk_register_fixed_factor(NULL, "apb_clk", "ahb_clk", 0, 1, 2);
-+	clk_prepare_enable(clk);
-+	clk_register_clkdev(clk, "apb", NULL);
-+	clk_register_clkdev(clk, "serial8250", NULL);
-+}
 -- 
-1.7.1
-
+MST
