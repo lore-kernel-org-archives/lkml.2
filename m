@@ -1,164 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488Ab2H3Pwa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 11:52:30 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:36482 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752736Ab2H3Pw2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 11:52:28 -0400
-Date: Thu, 30 Aug 2012 10:52:48 -0500
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: xiaoyan.zhang@intel.com
-Cc: linux-kernel@vger.kernel.org, joseph.cihula@intel.com, gang.wei@intel.com,
-        tpmdd-devel@lists.sourceforge.net, m.selhorst@sirrix.com,
-        shpedoikal@gmail.com, linux-security-module@vger.kernel.org,
-        james.l.morris@oracle.com, hpa@zytor.com, linux-api@vger.kernel.org,
-        fengguang.wu@intel.com
-Subject: Re: [PATCH] driver/char/tpm: declare internal symbols as static
-Message-ID: <20120830155247.GA4574@linux.vnet.ibm.com>
-References: <1377779951-1687-1-git-send-email-xiaoyan.zhang@intel.com>
+	id S1753327Ab2H3P7T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 11:59:19 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:33697 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750848Ab2H3P7R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 11:59:17 -0400
+Date: Thu, 30 Aug 2012 11:59:14 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Murali Karicheri <m-karicheri2@ti.com>
+cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, tony@atomide.com,
+        santosh.shilimkar@ti.com, wim@iguana.be,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH - 2/2] arm: disable caches based on config option
+In-Reply-To: <1346337826-27232-2-git-send-email-m-karicheri2@ti.com>
+Message-ID: <alpine.LFD.2.02.1208301156390.1784@xanadu.home>
+References: <1346337826-27232-1-git-send-email-m-karicheri2@ti.com> <1346337826-27232-2-git-send-email-m-karicheri2@ti.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377779951-1687-1-git-send-email-xiaoyan.zhang@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12083015-7182-0000-0000-00000273A0B0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 29, 2013 at 08:39:11PM +0800, xiaoyan.zhang@intel.com wrote:
-> From: Xiaoyan Zhang <xiaoyan.zhang@intel.com>
+On Thu, 30 Aug 2012, Murali Karicheri wrote:
+
+> CONFIG_CPU_ICACHE_DISABLE and CONFIG_CPU_DCACHE_DISABLE are available
+> to allow disabling of D-Cache and I-Cache. However the compressed version
+> of head.S currently doesn't check these variables. This patch will fix
+> this issue and is written similar to the uncompressed version of head.S
 > 
-> This patch declares the internal struct and functions as static to provide
-> more security.
+> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
 
-  Thanks, this looks good to me.  James, can you apply this directly to
-security-next?
+Acked-by: nicolas Pitre <nico@linaro.org>
 
-Kent
+You may submit your patch to http://www.arm.linux.org.uk/developer/patches/.
 
-Reviewed-by: Kent Yoder <key@linux.vnet.ibm.com>
 
-> 
-> Signed-off-by: Xiaoyan Zhang <xiaoyan.zhang@intel.com>
-> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
 > ---
->  drivers/char/tpm/tpm.c     |    4 ++--
->  drivers/char/tpm/tpm_ppi.c |   37 +++++++++++++++++++------------------
->  2 files changed, 21 insertions(+), 20 deletions(-)
+>  arch/arm/boot/compressed/head.S |    6 ++++++
+>  1 file changed, 6 insertions(+)
 > 
-> diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
-> index 39526c0..6724615 100644
-> --- a/drivers/char/tpm/tpm.c
-> +++ b/drivers/char/tpm/tpm.c
-> @@ -915,7 +915,7 @@ EXPORT_SYMBOL_GPL(tpm_show_pcrs);
-> 
->  #define  READ_PUBEK_RESULT_SIZE 314
->  #define TPM_ORD_READPUBEK cpu_to_be32(124)
-> -struct tpm_input_header tpm_readpubek_header = {
-> +static struct tpm_input_header tpm_readpubek_header = {
->  	.tag = TPM_TAG_RQU_COMMAND,
->  	.length = cpu_to_be32(30),
->  	.ordinal = TPM_ORD_READPUBEK
-> @@ -1395,7 +1395,7 @@ EXPORT_SYMBOL_GPL(tpm_dev_vendor_release);
->   * Once all references to platform device are down to 0,
->   * release all allocated structures.
->   */
-> -void tpm_dev_release(struct device *dev)
-> +static void tpm_dev_release(struct device *dev)
->  {
->  	struct tpm_chip *chip = dev_get_drvdata(dev);
-> 
-> diff --git a/drivers/char/tpm/tpm_ppi.c b/drivers/char/tpm/tpm_ppi.c
-> index 440fa1c..f27b58c 100644
-> --- a/drivers/char/tpm/tpm_ppi.c
-> +++ b/drivers/char/tpm/tpm_ppi.c
-> @@ -53,8 +53,8 @@ static inline void ppi_assign_params(union acpi_object params[4],
->  	params[3].package.elements = NULL;
->  }
-> 
-> -ssize_t tpm_show_ppi_version(struct device *dev, struct device_attribute *attr,
-> -			     char *buf)
-> +static ssize_t tpm_show_ppi_version(struct device *dev,
-> +				    struct device_attribute *attr, char *buf)
->  {
->  	acpi_handle handle;
->  	acpi_status status;
-> @@ -82,9 +82,8 @@ ssize_t tpm_show_ppi_version(struct device *dev, struct device_attribute *attr,
->  	return status;
->  }
-> 
-> -ssize_t tpm_show_ppi_request(struct device *dev,
-> -			     struct device_attribute *attr,
-> -			     char *buf)
-> +static ssize_t tpm_show_ppi_request(struct device *dev,
-> +				    struct device_attribute *attr, char *buf)
->  {
->  	acpi_handle handle;
->  	acpi_status status;
-> @@ -132,9 +131,9 @@ cleanup:
->  	return status;
->  }
-> 
-> -ssize_t tpm_store_ppi_request(struct device *dev,
-> -			      struct device_attribute *attr,
-> -			      const char *buf, size_t count)
-> +static ssize_t tpm_store_ppi_request(struct device *dev,
-> +				     struct device_attribute *attr,
-> +				     const char *buf, size_t count)
->  {
->  	char version[PPI_VERSION_LEN + 1];
->  	acpi_handle handle;
-> @@ -207,9 +206,9 @@ ssize_t tpm_store_ppi_request(struct device *dev,
->  	return status;
->  }
-> 
-> -ssize_t tpm_show_ppi_transition_action(struct device *dev,
-> -				       struct device_attribute *attr,
-> -				       char *buf)
-> +static ssize_t tpm_show_ppi_transition_action(struct device *dev,
-> +					      struct device_attribute *attr,
-> +					      char *buf)
->  {
->  	char version[PPI_VERSION_LEN + 1];
->  	acpi_handle handle;
-> @@ -269,9 +268,9 @@ ssize_t tpm_show_ppi_transition_action(struct device *dev,
->  	return status;
->  }
-> 
-> -ssize_t tpm_show_ppi_response(struct device *dev,
-> -			      struct device_attribute *attr,
-> -			      char *buf)
-> +static ssize_t tpm_show_ppi_response(struct device *dev,
-> +				     struct device_attribute *attr,
-> +				     char *buf)
->  {
->  	acpi_handle handle;
->  	acpi_status status;
-> @@ -413,14 +412,16 @@ static ssize_t show_ppi_operations(char *buf, u32 start, u32 end)
->  	return str - buf;
->  }
-> 
-> -ssize_t tpm_show_ppi_tcg_operations(struct device *dev,
-> -				   struct device_attribute *attr, char *buf)
-> +static ssize_t tpm_show_ppi_tcg_operations(struct device *dev,
-> +					   struct device_attribute *attr,
-> +					   char *buf)
->  {
->  	return show_ppi_operations(buf, 0, PPI_TPM_REQ_MAX);
->  }
-> 
-> -ssize_t tpm_show_ppi_vs_operations(struct device *dev,
-> -				  struct device_attribute *attr, char *buf)
-> +static ssize_t tpm_show_ppi_vs_operations(struct device *dev,
-> +					  struct device_attribute *attr,
-> +					  char *buf)
->  {
->  	return show_ppi_operations(buf, PPI_VS_REQ_START, PPI_VS_REQ_END);
->  }
+> diff --git a/arch/arm/boot/compressed/head.S b/arch/arm/boot/compressed/head.S
+> index b8c64b8..e1d2124 100644
+> --- a/arch/arm/boot/compressed/head.S
+> +++ b/arch/arm/boot/compressed/head.S
+> @@ -659,6 +659,12 @@ __armv7_mmu_cache_on:
+>  #ifdef CONFIG_CPU_ENDIAN_BE8
+>  		orr	r0, r0, #1 << 25	@ big-endian page tables
+>  #endif
+> +#ifdef CONFIG_CPU_DCACHE_DISABLE
+> +		bic	r0, r0, #1 << 2
+> +#endif
+> +#ifdef CONFIG_CPU_ICACHE_DISABLE
+> +		bic	r0, r0, #1 << 12
+> +#endif
+>  		orrne	r0, r0, #1		@ MMU enabled
+>  		movne	r1, #0xfffffffd		@ domain 0 = client
+>  		mcrne	p15, 0, r3, c2, c0, 0	@ load page table pointer
 > -- 
-> 1.7.7.6
+> 1.7.9.5
 > 
-
