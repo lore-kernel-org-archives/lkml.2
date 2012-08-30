@@ -1,147 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526Ab2H3UWE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 16:22:04 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:43535 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752448Ab2H3UWA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 16:22:00 -0400
-From: Toshi Kani <toshi.kani@hp.com>
-To: linux-acpi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, lenb@kernel.org, bhelgaas@google.com,
-        liuj97@gmail.com, isimatu.yasuaki@jp.fujitsu.com,
-        Toshi Kani <toshi.kani@hp.com>
-Subject: [RFC PATCH 2/5] ACPI: Support system notify handler via .sys_notify
-Date: Thu, 30 Aug 2012 14:16:03 -0600
-Message-Id: <1346357766-14030-3-git-send-email-toshi.kani@hp.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1346357766-14030-1-git-send-email-toshi.kani@hp.com>
-References: <1346357766-14030-1-git-send-email-toshi.kani@hp.com>
+	id S1752323Ab2H3Ub3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 16:31:29 -0400
+Received: from fieldses.org ([174.143.236.118]:43988 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751221Ab2H3Ub2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 16:31:28 -0400
+Date: Thu, 30 Aug 2012 16:31:26 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        Vivek Trivedi <vtrivedi018@gmail.com>
+Subject: Re: [PATCH] exportfs: add FILEID_INVALID to indicate invalid
+ fid_type
+Message-ID: <20120830203125.GA23478@fieldses.org>
+References: <1346249410-3515-1-git-send-email-linkinjeon@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346249410-3515-1-git-send-email-linkinjeon@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added a new .sys_notify interface, which allows ACPI drivers to
-register their system-level (ex. hotplug) notify handlers in their
-acpi_driver table.  The global notify handler acpi_bus_notify()
-is called for all system-level ACPI notification, which is changed
-to call an appropriate driver's handler if any.  With .sys_notify,
-ACPI drivers no longer need to register or unregister driver's
-handler to each ACPI device object.  It also supports dynamic ACPI
-namespace with LoadTable & Unload opcode without any modification.
+On Wed, Aug 29, 2012 at 10:10:10AM -0400, Namjae Jeon wrote:
+> This commit adds FILEID_INVALID = 0xff in fid_type to
+> indicate invalid fid_type
 
-Added a common system notify handler acpi_bus_sys_notify(), which
-allows ACPI drivers to set it to .sys_notify when this function is
-fully implemented.
+OK, applying for 3.7.
 
-Note that the changes maintain the backward compatibility of ACPI
-drivers.  Any ACPI driver registered its hotplug handler through
-the existing interfaces, such as acpi_install_notify_handler() and
-register_acpi_bus_notifier(), will continue to work as before.
+Looks like this shows up in a lot of filesystems too as just "255".  Are
+you planning to patch up the filesystems afterwards?
 
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
----
- drivers/acpi/bus.c      |   48 ++++++++++++++++++++++++++++++++++------------
- include/acpi/acpi_bus.h |    2 +
- 2 files changed, 37 insertions(+), 13 deletions(-)
+--b.
 
-diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
-index 9628652..4b941c9 100644
---- a/drivers/acpi/bus.c
-+++ b/drivers/acpi/bus.c
-@@ -760,21 +760,16 @@ void unregister_acpi_bus_notifier(struct notifier_block *nb)
- EXPORT_SYMBOL_GPL(unregister_acpi_bus_notifier);
- 
- /**
-- * acpi_bus_notify
-- * ---------------
-- * Callback for all 'system-level' device notifications (values 0x00-0x7F).
-+ * acpi_bus_sys_notify: Common system notify handler
-+ *
-+ * ACPI drivers may specify this common handler to its sys_notify entry.
-+ * TBD: This handler is not implemented yet.
-  */
--static void acpi_bus_notify(acpi_handle handle, u32 type, void *data)
-+void acpi_bus_sys_notify(acpi_handle handle, u32 type, void *data)
- {
--	struct acpi_device *device = NULL;
--	struct acpi_driver *driver;
--
- 	ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Notification %#02x to handle %p\n",
- 			  type, handle));
- 
--	blocking_notifier_call_chain(&acpi_bus_notify_list,
--		type, (void *)handle);
--
- 	switch (type) {
- 
- 	case ACPI_NOTIFY_BUS_CHECK:
-@@ -823,14 +818,41 @@ static void acpi_bus_notify(acpi_handle handle, u32 type, void *data)
- 				  type));
- 		break;
- 	}
-+}
- 
-+/**
-+ * acpi_bus_notify: The system global notify handler
-+ * 
-+ * The global notify handler for all 'system-level' device notifications
-+ * (values 0x00-0x7F).  This handler calls a driver's notify handler for
-+ * the notified ACPI device.
-+ */
-+static void acpi_bus_notify(acpi_handle handle, u32 type, void *data)
-+{
-+	struct acpi_device *device = NULL;
-+	struct acpi_driver *driver;
-+
-+	/* obtain associated driver object */
- 	acpi_bus_get_device(handle, &device);
--	if (device) {
-+	if (device && device->driver)
- 		driver = device->driver;
--		if (driver && driver->ops.notify &&
--		    (driver->flags & ACPI_DRIVER_ALL_NOTIFY_EVENTS))
-+	else
-+		driver = acpi_lookup_driver(handle, type);
-+
-+	/* call a driver's handler */
-+	if (driver) {
-+		if (driver->ops.sys_notify)
-+			driver->ops.sys_notify(handle, type, data);
-+		else if (device && driver->ops.notify &&
-+			 (driver->flags & ACPI_DRIVER_ALL_NOTIFY_EVENTS))
- 			driver->ops.notify(device, type);
- 	}
-+
-+	/* call handlers in the bus notify list */
-+	blocking_notifier_call_chain(&acpi_bus_notify_list,
-+		type, (void *)handle);
-+
-+	return;
- }
- 
- /* --------------------------------------------------------------------------
-diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-index a773b46..575fd2f 100644
---- a/include/acpi/acpi_bus.h
-+++ b/include/acpi/acpi_bus.h
-@@ -123,6 +123,7 @@ typedef int (*acpi_op_start) (struct acpi_device * device);
- typedef int (*acpi_op_bind) (struct acpi_device * device);
- typedef int (*acpi_op_unbind) (struct acpi_device * device);
- typedef void (*acpi_op_notify) (struct acpi_device * device, u32 event);
-+typedef void (*acpi_op_sys_notify) (acpi_handle handle, u32 event, void *data);
- 
- struct acpi_bus_ops {
- 	u32 acpi_op_add:1;
-@@ -136,6 +137,7 @@ struct acpi_device_ops {
- 	acpi_op_bind bind;
- 	acpi_op_unbind unbind;
- 	acpi_op_notify notify;
-+	acpi_op_sys_notify sys_notify;
- };
- 
- #define ACPI_DRIVER_ALL_NOTIFY_EVENTS	0x1	/* system AND device events */
--- 
-1.7.7.6
-
+> 
+> It avoids using magic number 255
+> 
+> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+> Signed-off-by: Vivek Trivedi <vtrivedi018@gmail.com>
+> ---
+>  fs/exportfs/expfs.c      |    4 ++--
+>  fs/fhandle.c             |    2 +-
+>  fs/nfsd/nfsfh.c          |    4 ++--
+>  include/linux/exportfs.h |    5 +++++
+>  4 files changed, 10 insertions(+), 5 deletions(-)
+> 
+> diff --git a/fs/exportfs/expfs.c b/fs/exportfs/expfs.c
+> index 29ab099..f1f1c59 100644
+> --- a/fs/exportfs/expfs.c
+> +++ b/fs/exportfs/expfs.c
+> @@ -322,10 +322,10 @@ static int export_encode_fh(struct inode *inode, struct fid *fid,
+>  
+>  	if (parent && (len < 4)) {
+>  		*max_len = 4;
+> -		return 255;
+> +		return FILEID_INVALID;
+>  	} else if (len < 2) {
+>  		*max_len = 2;
+> -		return 255;
+> +		return FILEID_INVALID;
+>  	}
+>  
+>  	len = 2;
+> diff --git a/fs/fhandle.c b/fs/fhandle.c
+> index a48e4a1..78a7879 100644
+> --- a/fs/fhandle.c
+> +++ b/fs/fhandle.c
+> @@ -52,7 +52,7 @@ static long do_sys_name_to_handle(struct path *path,
+>  	handle_bytes = handle_dwords * sizeof(u32);
+>  	handle->handle_bytes = handle_bytes;
+>  	if ((handle->handle_bytes > f_handle.handle_bytes) ||
+> -	    (retval == 255) || (retval == -ENOSPC)) {
+> +	    (retval == FILEID_INVALID) || (retval == -ENOSPC)) {
+>  		/* As per old exportfs_encode_fh documentation
+>  		 * we could return ENOSPC to indicate overflow
+>  		 * But file system returned 255 always. So handle
+> diff --git a/fs/nfsd/nfsfh.c b/fs/nfsd/nfsfh.c
+> index 032af38..814afaa 100644
+> --- a/fs/nfsd/nfsfh.c
+> +++ b/fs/nfsd/nfsfh.c
+> @@ -572,7 +572,7 @@ fh_compose(struct svc_fh *fhp, struct svc_export *exp, struct dentry *dentry,
+>  
+>  		if (inode)
+>  			_fh_update(fhp, exp, dentry);
+> -		if (fhp->fh_handle.fh_fileid_type == 255) {
+> +		if (fhp->fh_handle.fh_fileid_type == FILEID_INVALID) {
+>  			fh_put(fhp);
+>  			return nfserr_opnotsupp;
+>  		}
+> @@ -603,7 +603,7 @@ fh_update(struct svc_fh *fhp)
+>  			goto out;
+>  
+>  		_fh_update(fhp, fhp->fh_export, dentry);
+> -		if (fhp->fh_handle.fh_fileid_type == 255)
+> +		if (fhp->fh_handle.fh_fileid_type == FILEID_INVALID)
+>  			return nfserr_opnotsupp;
+>  	}
+>  out:
+> diff --git a/include/linux/exportfs.h b/include/linux/exportfs.h
+> index 12291a7..0e14525 100644
+> --- a/include/linux/exportfs.h
+> +++ b/include/linux/exportfs.h
+> @@ -83,6 +83,11 @@ enum fid_type {
+>  	 * 64 bit parent inode number.
+>  	 */
+>  	FILEID_NILFS_WITH_PARENT = 0x62,
+> +
+> +	/*
+> +	 * Filesystems must not use 0xff file ID.
+> +	 */
+> +	FILEID_INVALID = 0xff,
+>  };
+>  
+>  struct fid {
+> -- 
+> 1.7.9.5
+> 
