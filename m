@@ -1,76 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903Ab2H3PDb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 11:03:31 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:39361 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537Ab2H3PD2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 11:03:28 -0400
-Message-ID: <503F7F31.10708@gmail.com>
-Date: Thu, 30 Aug 2012 16:56:49 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
+	id S1753041Ab2H3PEK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 11:04:10 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:45742 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750947Ab2H3PEI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 11:04:08 -0400
+Date: Thu, 30 Aug 2012 20:33:35 +0530
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Roland McGrath <roland@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>, stan_shebs@mentor.com
+Subject: Re: [PATCH v3] x86/uprobes: implement x86 specific
+	arch_uprobe_*_step
+Message-ID: <20120830150335.GA15868@in.ibm.com>
+Reply-To: ananth@in.ibm.com
+References: <20120813132443.GB5269@redhat.com> <502A0C43.2000906@linutronix.de> <20120814142736.GA8123@redhat.com> <20120820104734.GA17034@linutronix.de> <20120822140337.GB28878@redhat.com> <5034E8A5.2060701@linutronix.de> <20120822155943.GA4237@redhat.com> <20120829173748.GA1121@redhat.com> <20120830084724.GC27415@in.ibm.com> <20120830143724.GA24514@redhat.com>
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Subject: [PATCH 2/8] ext3: drop lock/unlock super
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120830143724.GA24514@redhat.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12083015-5806-0000-0000-000018F990B9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed lock/unlock super.
+On Thu, Aug 30, 2012 at 04:37:24PM +0200, Oleg Nesterov wrote:
+> On 08/30, Ananth N Mavinakayanahalli wrote:
+> >
+> > On Wed, Aug 29, 2012 at 07:37:48PM +0200, Oleg Nesterov wrote:
+> > >
+> > > Ananth, Sebastian, what if we start with the patch below? Then
+> > > we can change arch/x86/kernel/uprobes.c to use the static
+> > > uprobe_*_step() helpers from the 2nd patch.
+> >
+> > In principle I am fine with the change.
+> 
+> OK, good.
+> 
+> > > If we agree this code should be per-arch, then why do need other
+> > > hooks? This is just ugly, we already have arch_pre/post_xol.
+> > >
+> > > The only problem is the pending powerpc patches, the change below
+> > > obviously breaks them. Were they already applied? If not, then
+> > > probably Ananth can do v6 on top of the patch below ;) The necessary
+> > > fixup is trivial.
+> >
+> > They are under review.
+> 
+> OK, I understand that v6 can confuse the maintainer and complicate the
+> merging process, please forget about v6.
+> 
+> And yes, this is really minor problem, still it would be nice to avoid
+> the unnecessary hooks/complications...
+> 
+> So. We can add "weak arch_uprobe" hooks, fix x86, and after powerpc is
+> merged change both powerpc and x86 in one patch (remove "weak" hooks
+> and move enable/disable into arch_pre/post_xol).
+> 
+> Or. We can apply the patch I sent right now, you can fix powerpc later,
+> when it is merged. This all is for 3.7 anyway, and fixup is trivial.
+> 
+> I agree either way. Which way do you prefer?
 
-Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
----
- fs/ext3/super.c |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
+I prefer fixing both together later, just so nothing breaks while intial
+testing, etc.
 
-diff --git a/fs/ext3/super.c b/fs/ext3/super.c
-index 8c892e9..9b3d498 100644
---- a/fs/ext3/super.c
-+++ b/fs/ext3/super.c
-@@ -2571,11 +2571,9 @@ out:
- static int ext3_unfreeze(struct super_block *sb)
- {
- 	if (!(sb->s_flags & MS_RDONLY)) {
--		lock_super(sb);
- 		/* Reser the needs_recovery flag before the fs is unlocked. */
- 		EXT3_SET_INCOMPAT_FEATURE(sb, EXT3_FEATURE_INCOMPAT_RECOVER);
- 		ext3_commit_super(sb, EXT3_SB(sb)->s_es, 1);
--		unlock_super(sb);
- 		journal_unlock_updates(EXT3_SB(sb)->s_journal);
- 	}
- 	return 0;
-@@ -2595,7 +2593,6 @@ static int ext3_remount (struct super_block * sb, int * flags, char * data)
- #endif
- 
- 	/* Store the original options */
--	lock_super(sb);
- 	old_sb_flags = sb->s_flags;
- 	old_opts.s_mount_opt = sbi->s_mount_opt;
- 	old_opts.s_resuid = sbi->s_resuid;
-@@ -2701,8 +2698,6 @@ static int ext3_remount (struct super_block * sb, int * flags, char * data)
- 		    old_opts.s_qf_names[i] != sbi->s_qf_names[i])
- 			kfree(old_opts.s_qf_names[i]);
- #endif
--	unlock_super(sb);
--
- 	if (enable_quota)
- 		dquot_resume(sb, -1);
- 	return 0;
-@@ -2721,7 +2716,6 @@ restore_opts:
- 		sbi->s_qf_names[i] = old_opts.s_qf_names[i];
- 	}
- #endif
--	unlock_super(sb);
- 	return err;
- }
- 
--- 
-1.7.3.4
+Ananth
+
