@@ -1,63 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220Ab2H3NSP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 09:18:15 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:63341 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751779Ab2H3NSN (ORCPT
+	id S1752381Ab2H3NgY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 09:36:24 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:58682 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752021Ab2H3NgX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 09:18:13 -0400
-Date: Thu, 30 Aug 2012 14:18:08 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, linus.walleij@stericsson.com,
-        arnd@arndb.de, broonie@opensource.wolfsonmicro.com,
-        STEricsson_nomadik_linux@list.st.com,
-        Patrice CHOTARD <patrice.chotard@stericsson.com>,
-        Ola LILJA2 <ola.o.lilja@stericsson.com>
-Subject: Re: [PATCH 04/22] ASoC: Ux500: Move MSP pinctrl setup into the MSP
- driver
-Message-ID: <20120830131807.GI14145@gmail.com>
-References: <1344527268-5964-1-git-send-email-lee.jones@linaro.org>
- <1344527268-5964-5-git-send-email-lee.jones@linaro.org>
- <CACRpkda_xOyu9BFGRK4xTsXOO9RCJu7BbU-kPGpttVkR6mDMZg@mail.gmail.com>
- <20120820115914.GP8450@gmail.com>
- <CACRpkdZse9Nq1acoAujV8ojhRKxykNX0ymcr51QAoanUbDW14g@mail.gmail.com>
+	Thu, 30 Aug 2012 09:36:23 -0400
+Message-ID: <503F6C52.6030100@suse.cz>
+Date: Thu, 30 Aug 2012 15:36:18 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120815 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdZse9Nq1acoAujV8ojhRKxykNX0ymcr51QAoanUbDW14g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Baodong Chen <chenbdchenbd@gmail.com>
+CC: gregkh@linuxfoundation.org, davem@davemloft.net,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging:fixed code to fit tty_driver's kref filed fixed
+ code to fit tty_driver's kref filed for drivers/staging/net/pc300_tty.c
+References: <1346074458-2659-1-git-send-email-chenbdchenbd@gmail.com>
+In-Reply-To: <1346074458-2659-1-git-send-email-chenbdchenbd@gmail.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 27, 2012 at 04:09:46PM -0700, Linus Walleij wrote:
-> On Mon, Aug 20, 2012 at 4:59 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> > On Tue, Aug 14, 2012 at 10:51:02AM +0200, Linus Walleij wrote:
-> 
-> >> But wait. These are just local statics. Surelty you can put these into
-> >> struct ux500_msp instead? Here it looks like these will be used for
-> >> all ports, so MSP2 will enable the pins requested by MSP1 etc
-> >> completely broken. So put it into the struct ux500_msp state
-> >> container from ux500_msp_i2s.h where it belongs.
-> >>
-> >> Refer to drivers/tty/serial/amba-pl011.c when in trouble. This
-> >> one is a good pinctrl example.
-> >
-> > How do you see the MSP1 and MSP3 usage protection working if I hide it
-> > all away in MSP specific structs?
-> 
-> Usage protection? Sorry not following. Please elaborate...
+On 08/27/2012 03:34 PM, Baodong Chen wrote:
 
-Don't worry about it, I think I sorted it.
+Sorry, I do not get this change. You should not touch tty_driver.kref at
+all.
 
-Please see the lastest version of the patch (sent on 24th Aug).
+And what is the patch good for?
+
+> Signed-off-by: Baodong Chen <chenbdchenbd@gmail.com>
+> ---
+>  drivers/staging/net/pc300_tty.c |   55 ++++++++++++++++++++++-----------------
+>  1 files changed, 31 insertions(+), 24 deletions(-)
+> 
+> diff --git a/drivers/staging/net/pc300_tty.c b/drivers/staging/net/pc300_tty.c
+> index 4709f42..91ada93 100644
+> --- a/drivers/staging/net/pc300_tty.c
+> +++ b/drivers/staging/net/pc300_tty.c
+> @@ -46,6 +46,8 @@
+>  #include <linux/slab.h>
+>  #include <linux/if.h>
+>  #include <linux/skbuff.h>
+> +#include <linux/kref.h>
+> +
+>  /* TTY includes */
+>  #include <linux/tty.h>
+>  #include <linux/tty_flip.h>
+> @@ -134,12 +136,26 @@ static void cpc_tty_signal_on(pc300dev_t *pc300dev, unsigned char);
+>  static int pc300_tiocmset(struct tty_struct *, unsigned int, unsigned int);
+>  static int pc300_tiocmget(struct tty_struct *);
+>  
+> +static void cpc_tty_do_unreg_driver(struct kref *ref);
+> +
+>  /* functions called by PC300 driver */
+>  void cpc_tty_init(pc300dev_t *dev);
+>  void cpc_tty_unregister_service(pc300dev_t *pc300dev);
+>  void cpc_tty_receive(pc300dev_t *pc300dev);
+>  void cpc_tty_trigger_poll(pc300dev_t *pc300dev);
+>  
+> +static void cpc_tty_do_unreg_driver(struct kref *ref)
+> +{
+> +	struct tty_driver *drv = container_of(ref, struct tty_driver, kref);
+> +	int ret;
+> +
+> +	cpc_tty_unreg_flag = 0;
+> +
+> +	res = tty_unregister_driver(drv);
+> +	if (res)
+> +		CPC_TTY_DBG("unregister the tty driver error=%d\n", res);
+> +}
+> +
+>  /*
+>   * PC300 TTY clear "signal"
+>   */
+> @@ -239,6 +255,8 @@ void cpc_tty_init(pc300dev_t *pc300dev)
+>  		/* interface routines from the upper tty layer to the tty driver */
+>  		tty_set_operations(&serial_drv, &pc300_ops);
+>  
+> +		kref_init(&serial_drv.kref);
+> +
+>  		/* register the TTY driver */
+>  		if (tty_register_driver(&serial_drv)) { 
+>  			printk("%s-tty: Failed to register serial driver! ",
+> @@ -408,13 +426,9 @@ static void cpc_tty_close(struct tty_struct *tty, struct file *flip)
+>  
+>  	CPC_TTY_DBG("%s: TTY closed\n",cpc_tty->name);
+>  	
+> -	if (!serial_drv.refcount && cpc_tty_unreg_flag) {
+> -		cpc_tty_unreg_flag = 0;
+> -		CPC_TTY_DBG("%s: unregister the tty driver\n", cpc_tty->name);
+> -		if ((res=tty_unregister_driver(&serial_drv))) { 
+> -			CPC_TTY_DBG("%s: ERROR ->unregister the tty driver error=%d\n",
+> -							cpc_tty->name,res);
+> -		}
+> +	if (cpc_tty_unreg_flag) {
+> +		CPC_TTY_DBG("%s: checking unregister the tty driver...\n", cpc_tty->name);
+> +		kref_put(&serial_drv.kref, cpc_tty_do_unreg_driver);
+>  	}
+>  	return; 
+>  } 
+> @@ -644,13 +658,9 @@ static void cpc_tty_hangup(struct tty_struct *tty)
+>  		CPC_TTY_DBG("%s: TTY is not opened\n",cpc_tty->name);
+>  		return ;
+>  	}
+> -	if (!serial_drv.refcount && cpc_tty_unreg_flag) {
+> -		cpc_tty_unreg_flag = 0;
+> -		CPC_TTY_DBG("%s: unregister the tty driver\n", cpc_tty->name);
+> -		if ((res=tty_unregister_driver(&serial_drv))) { 
+> -			CPC_TTY_DBG("%s: ERROR ->unregister the tty driver error=%d\n",
+> -							cpc_tty->name,res);
+> -		}
+> +	if (cpc_tty_unreg_flag) {
+> +		CPC_TTY_DBG("%s: checking unregister the tty driver...\n", cpc_tty->name);
+> +		kref_put(&serial_drv.kref, cpc_tty_do_unreg_driver);
+>  	}
+>  	cpc_tty_signal_off(cpc_tty->pc300dev, CTL_DTR);
+>  }
+> @@ -1043,19 +1053,16 @@ void cpc_tty_unregister_service(pc300dev_t *pc300dev)
+>  		return; 
+>  	}
+>  
+> -	if (--cpc_tty_cnt == 0) { 
+> -		if (serial_drv.refcount) {
+> -			CPC_TTY_DBG("%s: unregister is not possible, refcount=%d",
+> -							cpc_tty->name, serial_drv.refcount);
+> +	if (--cpc_tty_cnt == 0) {
+> +		CPC_TTY_DBG("%s: checking unregister the tty driver...\n",
+> +				cpc_tty->name);
+> +		res = kref_put(&serial_drv.kref, cpc_tty_do_unreg_driver);
+> +		if (0 == res) {
+> +			CPC_TTY_DBG("%s: unregister is not possible\n",
+> +					cpc_tty->name);
+>  			cpc_tty_cnt++;
+>  			cpc_tty_unreg_flag = 1;
+>  			return;
+> -		} else { 
+> -			CPC_TTY_DBG("%s: unregister the tty driver\n", cpc_tty->name);
+> -			if ((res=tty_unregister_driver(&serial_drv))) { 
+> -				CPC_TTY_DBG("%s: ERROR ->unregister the tty driver error=%d\n",
+> -								cpc_tty->name,res);
+> -			}
+>  		}
+>  	}
+>  	CPC_TTY_LOCK(pc300dev->chan->card,flags);
+> 
+
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+js
+suse labs
