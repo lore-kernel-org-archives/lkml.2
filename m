@@ -1,100 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751748Ab2H3TB4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 15:01:56 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:53423 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910Ab2H3TBz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 15:01:55 -0400
-X-Originating-IP: 217.70.178.151
-X-Originating-IP: 173.246.103.110
-Date: Thu, 30 Aug 2012 12:01:46 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+	id S1751563Ab2H3TEG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 15:04:06 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:47432 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750913Ab2H3TEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 15:04:04 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 3/5] rcu: Document SRCU dead-CPU
- capabilities, emphasize read-side limits
-Message-ID: <20120830190146.GD6749@jtriplet-mobl1>
-References: <20120830184448.GA31753@linux.vnet.ibm.com>
- <1346352312-31987-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346352312-31987-3-git-send-email-paulmck@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346352312-31987-3-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 2/3] rcu: Disallow callback registry on offline CPUs
+Date: Thu, 30 Aug 2012 12:03:02 -0700
+Message-Id: <1346353383-350-2-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.8
+In-Reply-To: <1346353383-350-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20120830190245.GA32625@linux.vnet.ibm.com>
+ <1346353383-350-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12083019-3534-0000-0000-00000C0AF46B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 11:45:10AM -0700, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> 
-> The current documentation did not help someone grepping for SRCU to
-> learn that disabling preemption is not a replacement for srcu_read_lock(),
-> so upgrade the documentation to bring this out, not just for SRCU,
-> but also for RCU-bh.  Also document the fact that SRCU readers are
-> respected on CPUs executing in user mode, idle CPUs, and even on
-> offline CPUs.
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Posting a callback after the CPU_DEAD notifier effectively leaks
+that callback unless/until that CPU comes back online.  Silence is
+unhelpful when attempting to track down such leaks, so this commit emits
+a WARN_ON_ONCE() and unconditionally leaks the callback when an offline
+CPU attempts to register a callback.  The rdp->nxttail[RCU_NEXT_TAIL] is
+set to NULL in the CPU_DEAD notifier and restored in the CPU_UP_PREPARE
+notifier, allowing _call_rcu() to determine exactly when posting callbacks
+is illegal.
 
->  Documentation/RCU/checklist.txt |    6 ++++++
->  Documentation/RCU/whatisRCU.txt |    9 +++++++--
->  2 files changed, 13 insertions(+), 2 deletions(-)
-> 
-> diff --git a/Documentation/RCU/checklist.txt b/Documentation/RCU/checklist.txt
-> index fc103d7..cdb20d4 100644
-> --- a/Documentation/RCU/checklist.txt
-> +++ b/Documentation/RCU/checklist.txt
-> @@ -310,6 +310,12 @@ over a rather long period of time, but improvements are always welcome!
->  	code under the influence of preempt_disable(), you instead
->  	need to use synchronize_irq() or synchronize_sched().
->  
-> +	This same limitation also applies to synchronize_rcu_bh()
-> +	and synchronize_srcu(), as well as to the asynchronous and
-> +	expedited forms of the three primitives, namely call_rcu(),
-> +	call_rcu_bh(), call_srcu(), synchronize_rcu_expedited(),
-> +	synchronize_rcu_bh_expedited(), and synchronize_srcu_expedited().
-> +
->  12.	Any lock acquired by an RCU callback must be acquired elsewhere
->  	with softirq disabled, e.g., via spin_lock_irqsave(),
->  	spin_lock_bh(), etc.  Failing to disable irq on a given
-> diff --git a/Documentation/RCU/whatisRCU.txt b/Documentation/RCU/whatisRCU.txt
-> index 69ee188..bf0f6de 100644
-> --- a/Documentation/RCU/whatisRCU.txt
-> +++ b/Documentation/RCU/whatisRCU.txt
-> @@ -873,7 +873,7 @@ d.	Do you need to treat NMI handlers, hardirq handlers,
->  	and code segments with preemption disabled (whether
->  	via preempt_disable(), local_irq_save(), local_bh_disable(),
->  	or some other mechanism) as if they were explicit RCU readers?
-> -	If so, you need RCU-sched.
-> +	If so, RCU-sched is the only choice that will work for you.
->  
->  e.	Do you need RCU grace periods to complete even in the face
->  	of softirq monopolization of one or more of the CPUs?  For
-> @@ -884,7 +884,12 @@ f.	Is your workload too update-intensive for normal use of
->  	RCU, but inappropriate for other synchronization mechanisms?
->  	If so, consider SLAB_DESTROY_BY_RCU.  But please be careful!
->  
-> -g.	Otherwise, use RCU.
-> +g.	Do you need read-side critical sections that are respected
-> +	even though they are in the middle of the idle loop, during
-> +	user-mode execution, or on an offlined CPU?  If so, SRCU is the
-> +	only choice that will work for you.
-> +
-> +h.	Otherwise, use RCU.
->  
->  Of course, this all assumes that you have determined that RCU is in fact
->  the right tool for your job.
-> -- 
-> 1.7.8
-> 
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ kernel/rcutree.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 9854a00..5f8c4dd 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1503,6 +1503,9 @@ static void rcu_cleanup_dead_cpu(int cpu, struct rcu_state *rsp)
+ 	WARN_ONCE(rdp->qlen != 0 || rdp->nxtlist != NULL,
+ 		  "rcu_cleanup_dead_cpu: Callbacks on offline CPU %d: qlen=%lu, nxtlist=%p\n",
+ 		  cpu, rdp->qlen, rdp->nxtlist);
++	init_callback_list(rdp);
++	/* Disallow further callbacks on this CPU. */
++	rdp->nxttail[RCU_NEXT_TAIL] = NULL;
+ }
+ 
+ #else /* #ifdef CONFIG_HOTPLUG_CPU */
+@@ -1925,6 +1928,12 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
+ 	rdp = this_cpu_ptr(rsp->rda);
+ 
+ 	/* Add the callback to our list. */
++	if (unlikely(rdp->nxttail[RCU_NEXT_TAIL] == NULL)) {
++		/* _call_rcu() is illegal on offline CPU; leak the callback. */
++		WARN_ON_ONCE(1);
++		local_irq_restore(flags);
++		return;
++	}
+ 	ACCESS_ONCE(rdp->qlen)++;
+ 	if (lazy)
+ 		rdp->qlen_lazy++;
+@@ -2462,6 +2471,7 @@ rcu_init_percpu_data(int cpu, struct rcu_state *rsp, int preemptible)
+ 	rdp->qlen_last_fqs_check = 0;
+ 	rdp->n_force_qs_snap = rsp->n_force_qs;
+ 	rdp->blimit = blimit;
++	init_callback_list(rdp);  /* Re-enable callbacks on this CPU. */
+ 	rdp->dynticks->dynticks_nesting = DYNTICK_TASK_EXIT_IDLE;
+ 	atomic_set(&rdp->dynticks->dynticks,
+ 		   (atomic_read(&rdp->dynticks->dynticks) & ~0x1) + 1);
+-- 
+1.7.8
+
