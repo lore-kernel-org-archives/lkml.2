@@ -1,214 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753476Ab2H3XH5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 19:07:57 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:44445 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753401Ab2H3XHx convert rfc822-to-8bit (ORCPT
+	id S1753442Ab2H3XI5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 19:08:57 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:33825 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752498Ab2H3XHK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 19:07:53 -0400
-From: "Worth, Kevin" <kevin.worth@hp.com>
-To: "Hans J. Koch" <hjk@hansjkoch.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-Subject: RE: Using uio_pdrv to create an platform device for an FPGA, mmap()
- fails
-Thread-Topic: Using uio_pdrv to create an platform device for an FPGA,
- mmap() fails
-Thread-Index: Ac2GO7tG6QS6FR2kSHyjyyZF3zS91wAI7NcAAB9odFAAASiZgAACZr2QAAS3hwAAAS6M4A==
-Date: Thu, 30 Aug 2012 23:03:04 +0000
-Message-ID: <B5EF724456FFB24A8C8AE88E26CE8F4B66840DF2@G9W0725.americas.hpqcorp.net>
-References: <B5EF724456FFB24A8C8AE88E26CE8F4B668404B8@G9W0725.americas.hpqcorp.net>
- <20120830032735.GA2599@local>
- <B5EF724456FFB24A8C8AE88E26CE8F4B66840BEE@G9W0725.americas.hpqcorp.net>
- <20120830190019.GB4819@local>
- <B5EF724456FFB24A8C8AE88E26CE8F4B66840CA2@G9W0725.americas.hpqcorp.net>
- <20120830222408.GC4819@local>
-In-Reply-To: <20120830222408.GC4819@local>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 30 Aug 2012 19:07:10 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+        Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 3/8] x86, mm: Moving init_memory_mapping calling
+Date: Thu, 30 Aug 2012 16:06:10 -0700
+Message-Id: <1346367975-6446-4-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1346367975-6446-1-git-send-email-yinghai@kernel.org>
+References: <2e8c14cd-b82a-49e6-8d5e-85dbe86da6ca@email.android.com>
+ <1346367975-6446-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- >[Added Greg Kroah-Hartman to Cc:]
->
->On Thu, Aug 30, 2012 at 08:10:11PM +0000, Worth, Kevin wrote:
->> >> Thanks for the reply, Hans. Your question about opening /dev/uio0 O_RDWR
->> >> prompted me to check out how I was creating /dev/uio0 ... my system
->> >> isn't using udev, and I was accidentally creating it with major/minor
->> >> number 254/0 instead of the correct 253/0 (found by looking at
->> >> /proc/devices). Fixed that and the mmap() call started working.
->> >
->> >Good.
->> >
->> >> 
->> >> Verified that if /dev/uio0 has permissions 0644, root can open it O_RDWR
->> >> and mmap PROT_READ | PROT_WRITE using the below code and write to an
->> >> address within my memory map. Of course this contradicts the statement
->> >> "/dev/uioX is a read-only file" in the UIO howto.
->> >
->> >You're right. That wants to be fixed...
->> >
->> >> 
->> >> Including my updated, tested code for completeness.
->> >> Note I also cleaned up the device registration a little by
->> >> using a different platform_device_register_ call and removing fields
->> >> in the struct uio_info that get filled in by uio_pdrv automatically.
->> >
->> >If you want to have that included in the mainline, please choose a more
->> >descriptive name than "myfpga" and send a proper patch.
->> 
->> I wasn't sure about submitting as a patch since it's for a custom FPGA
->> that I don't expect the community will be using,
->
->That doesn't matter. If it helps YOU that the code is maintained in mainline,
->post it.
->
->>  but the code seems like
->> possibly useful sample/example code.
->
->That is another good argument.
+from setup.c to mm/init.c
 
-Perhaps this could be genericized to be a generic "Memory Map Userspace
-IO Device" that takes a base address and a length in config (since those
-are really the only things that are particular to my device/usage).
-Could be enhanced to allow for additional maps, etc. or just serve as a
-working example. Docs could then also simply refer to this as an example
-of a device that uses the uio_pdrv driver.
+So could update all related calling together.
 
->
->> Perhaps patching the HOWTO like
->> http://www.kernel.org/doc/htmldocs/uio-howto.html#uio_pci_generic_example
->> is the right approach?
->
->Oh, if you could hack up a patch for the documentation, that would be great.
->But please make it a second patch, don't mix it with your driver code.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ arch/x86/include/asm/init.h    |    1 -
+ arch/x86/include/asm/pgtable.h |    2 +-
+ arch/x86/kernel/setup.c        |   13 +------------
+ arch/x86/mm/init.c             |   19 ++++++++++++++++++-
+ 4 files changed, 20 insertions(+), 15 deletions(-)
 
-Certainly these would belong in separate patches.
+diff --git a/arch/x86/include/asm/init.h b/arch/x86/include/asm/init.h
+index adcc0ae..4f13998 100644
+--- a/arch/x86/include/asm/init.h
++++ b/arch/x86/include/asm/init.h
+@@ -12,7 +12,6 @@ kernel_physical_mapping_init(unsigned long start,
+ 			     unsigned long end,
+ 			     unsigned long page_size_mask);
+ 
+-
+ extern unsigned long __initdata pgt_buf_start;
+ extern unsigned long __meminitdata pgt_buf_end;
+ extern unsigned long __meminitdata pgt_buf_top;
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index e47e4db..ae2cabb 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -597,7 +597,7 @@ static inline int pgd_none(pgd_t pgd)
+ #ifndef __ASSEMBLY__
+ 
+ extern int direct_gbpages;
+-void probe_page_size_mask(void);
++void init_mem_mapping(void);
+ 
+ /* local pte updates need not use xchg for locking */
+ static inline pte_t native_local_ptep_get_and_clear(pte_t *ptep)
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index d6e8c03..c30c78c 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -912,20 +912,9 @@ void __init setup_arch(char **cmdline_p)
+ 	setup_real_mode();
+ 
+ 	init_gbpages();
+-	probe_page_size_mask();
+ 
+-	/* max_pfn_mapped is updated here */
+-	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
+-	max_pfn_mapped = max_low_pfn_mapped;
++	init_mem_mapping();
+ 
+-#ifdef CONFIG_X86_64
+-	if (max_pfn > max_low_pfn) {
+-		max_pfn_mapped = init_memory_mapping(1UL<<32,
+-						     max_pfn<<PAGE_SHIFT);
+-		/* can we preseve max_low_pfn ?*/
+-		max_low_pfn = max_pfn;
+-	}
+-#endif
+ 	memblock.current_limit = get_max_mapped();
+ 	dma_contiguous_reserve(0);
+ 
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 7d05e28..15a6a38 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -92,7 +92,7 @@ static void __init find_early_table_space(struct map_range *mr,
+ 		(pgt_buf_top << PAGE_SHIFT) - 1);
+ }
+ 
+-void probe_page_size_mask(void)
++static void __init probe_page_size_mask(void)
+ {
+ #if !defined(CONFIG_DEBUG_PAGEALLOC) && !defined(CONFIG_KMEMCHECK)
+ 	/*
+@@ -312,6 +312,23 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+ 	return ret >> PAGE_SHIFT;
+ }
+ 
++void __init init_mem_mapping(void)
++{
++	probe_page_size_mask();
++
++	/* max_pfn_mapped is updated here */
++	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
++	max_pfn_mapped = max_low_pfn_mapped;
++
++#ifdef CONFIG_X86_64
++	if (max_pfn > max_low_pfn) {
++		max_pfn_mapped = init_memory_mapping(1UL<<32,
++						     max_pfn<<PAGE_SHIFT);
++		/* can we preseve max_low_pfn ?*/
++		max_low_pfn = max_pfn;
++	}
++#endif
++}
+ 
+ /*
+  * devmem_is_allowed() checks to see if /dev/mem access to a certain address
+-- 
+1.7.7
 
->
->Thanks,
->Hans
->
->> 
->> >
->> >Thanks,
->> >Hans
->> >
->> >> 
->> >> -Kevin
->> >> 
->> >> # lsuio -m -v
->> >> uio0: name=uio_myfpga, version=0.1, events=0
->> >>         map[0]: addr=0xD0000000, size=262144, mmap test: OK
->> >>         Device attributes:
->> >>         uevent=DRIVER=uio_pdrv
->> >>         modalias=platform:uio_pdrv
->> >> 
->> >> ------Kernelspace------
->> >> #include <linux/platform_device.h>
->> >> #include <linux/uio_driver.h>
->> >> #include <linux/module.h>
->> >> 
->> >> #define MYFPGA_BASE     0xd0000000 // 3G
->> >> #define MYFPGA_SIZE     0x00040000 // 256k
->> >> 
->> >> static struct resource myfpga_resources[] = {
->> >>     {
->> >>         .start = MYFPGA_BASE,
->> >>         .end   = MYFPGA_BASE + MYFPGA_SIZE - 1,
->> >>         .name  = "myfpga",
->> >>         .flags = IORESOURCE_MEM
->> >>     }
->> >> };
->> >> 
->> >> static struct uio_info myfpga_uio_info = {
->> >>    .name = "uio_myfpga",
->> >>    .version = "0.1",
->> >> };
->> >> 
->> >> static struct platform_device *myfpga_uio_pdev;
->> >> 
->> >> static int __init myfpga_init(void)
->> >> {
->> >>     myfpga_uio_pdev = platform_device_register_resndata (NULL,
->> >>                                                          "uio_pdrv",
->> >>                                                          -1,
->> >>                                                          myfpga_resources,
->> >>                                                          1,
->> >>                                                          &myfpga_uio_info,
->> >>                                                          sizeof(struct uio_info)
->> >>                                                         );
->> >>     if (IS_ERR(myfpga_uio_pdev)) {
->> >>         return PTR_ERR(myfpga_uio_pdev);
->> >>     }
->> >> 
->> >>     return 0;
->> >> }
->> >> 
->> >> static void __exit myfpga_exit(void)
->> >> {
->> >>     platform_device_unregister(myfpga_uio_pdev);
->> >> }
->> >> 
->> >> module_init(myfpga_init);
->> >> module_exit(myfpga_exit);
->> >> 
->> >> ------Userspace-------
->> >> #include <sys/types.h>
->> >> #include <sys/mman.h>
->> >> #include <sys/stat.h>
->> >> 
->> >> #include <dirent.h>
->> >> #include <string.h>
->> >> #include <stdlib.h>
->> >> #include <stdio.h>
->> >> #include <fcntl.h>
->> >> #include <unistd.h>
->> >> #include <stdint.h>
->> >> 
->> >> #define MYFPGA_BASE     0xd0000000 // 3G
->> >> #define MYFPGA_SIZE     0x00040000 // 256k
->> >> #define MYFPGA_MAP_NUM  0 // First and only defined map
->> >> 
->> >> #define BIT32(n) (1 << (n))
->> >> 
->> >> /* Use mmap()'ped address "iomem", not physical MYFPGA address */
->> >> #define MYFPGA_REG(iomem) (volatile uint32_t*)(iomem + 0x8) // Third 32-bit reg
->> >> 
->> >> int main (int argc, char *argv[])
->> >> {
->> >>     int fd;
->> >>     void *iomem;
->> >>     fd = open("/dev/uio0", O_RDWR|O_SYNC);
->> >>     if (fd < 0) {
->> >>         printf("failed to open /dev/uio0, quitting\n");
->> >>         return -1;
->> >>     }
->> >>     /* Note offset has a special meaning with uio devices */
->> >>     iomem = mmap(NULL, MYFPGA_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd,
->> >>                  MYFPGA_MAP_NUM * getpagesize());
->> >>     if (iomem == MAP_FAILED) {
->> >>         printf("mmap failed, quitting\n");
->> >>         close(fd);
->> >>         return -2;
->> >>     }
->> >> 
->> >>     /* Set bit 5 of MYFPGA_REG register */
->> >>     *MYFPGA_REG(iomem) |= BIT32(5);
->> >> 
->> >>     munmap(iomem, MYFPGA_SIZE);
->> >>     close(fd);
->> >>     return 0;
->> >> }
->> >>  
->> >>  
->>
