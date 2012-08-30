@@ -1,33 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752145Ab2H3UN4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 16:13:56 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:36179 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751121Ab2H3UNy convert rfc822-to-8bit (ORCPT
+	id S1752182Ab2H3UTC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 16:19:02 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:37169 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751121Ab2H3UTA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 16:13:54 -0400
-From: "Worth, Kevin" <kevin.worth@hp.com>
-To: "Hans J. Koch" <hjk@hansjkoch.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>
-Subject: RE: Using uio_pdrv to create an platform device for an FPGA, mmap()
- fails
-Thread-Topic: Using uio_pdrv to create an platform device for an FPGA,
- mmap() fails
-Thread-Index: Ac2GO7tG6QS6FR2kSHyjyyZF3zS91wAI7NcAAB9odFAAASiZgAACZr2Q
-Date: Thu, 30 Aug 2012 20:10:11 +0000
-Message-ID: <B5EF724456FFB24A8C8AE88E26CE8F4B66840CA2@G9W0725.americas.hpqcorp.net>
-References: <B5EF724456FFB24A8C8AE88E26CE8F4B668404B8@G9W0725.americas.hpqcorp.net>
- <20120830032735.GA2599@local>
- <B5EF724456FFB24A8C8AE88E26CE8F4B66840BEE@G9W0725.americas.hpqcorp.net>
- <20120830190019.GB4819@local>
-In-Reply-To: <20120830190019.GB4819@local>
+	Thu, 30 Aug 2012 16:19:00 -0400
+From: "Karicheri, Muralidharan" <m-karicheri2@ti.com>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        "wim@iguana.be" <wim@iguana.be>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH - 2/2] arm: disable caches based on config option
+Thread-Topic: [PATCH - 2/2] arm: disable caches based on config option
+Thread-Index: AQHNhr3i9cZ4a9phT0aLvKNYKf/eSZdy1yMA///0omA=
+Date: Thu, 30 Aug 2012 20:18:49 +0000
+Message-ID: <3E54258959B69E4282D79E01AB1F32B7041AD7AD@DFLE12.ent.ti.com>
+References: <1346337826-27232-1-git-send-email-m-karicheri2@ti.com>
+ <1346337826-27232-2-git-send-email-m-karicheri2@ti.com>
+ <alpine.LFD.2.02.1208301156390.1784@xanadu.home>
+In-Reply-To: <alpine.LFD.2.02.1208301156390.1784@xanadu.home>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.13]
+x-originating-ip: [128.247.5.50]
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
@@ -35,146 +37,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Thanks for the reply, Hans. Your question about opening /dev/uio0 O_RDWR
->> prompted me to check out how I was creating /dev/uio0 ... my system
->> isn't using udev, and I was accidentally creating it with major/minor
->> number 254/0 instead of the correct 253/0 (found by looking at
->> /proc/devices). Fixed that and the mmap() call started working.
->
->Good.
->
->> 
->> Verified that if /dev/uio0 has permissions 0644, root can open it O_RDWR
->> and mmap PROT_READ | PROT_WRITE using the below code and write to an
->> address within my memory map. Of course this contradicts the statement
->> "/dev/uioX is a read-only file" in the UIO howto.
->
->You're right. That wants to be fixed...
->
->> 
->> Including my updated, tested code for completeness.
->> Note I also cleaned up the device registration a little by
->> using a different platform_device_register_ call and removing fields
->> in the struct uio_info that get filled in by uio_pdrv automatically.
->
->If you want to have that included in the mainline, please choose a more
->descriptive name than "myfpga" and send a proper patch.
+Submitted. Thanks.
 
-I wasn't sure about submitting as a patch since it's for a custom FPGA
-that I don't expect the community will be using, but the code seems like
-possibly useful sample/example code. Perhaps patching the HOWTO like
-http://www.kernel.org/doc/htmldocs/uio-howto.html#uio_pci_generic_example
-is the right approach?
+Murali Karicheri
+Software Design Engineer
 
->
->Thanks,
->Hans
->
+
+>> -----Original Message-----
+>> From: Nicolas Pitre [mailto:nicolas.pitre@linaro.org]
+>> Sent: Thursday, August 30, 2012 11:59 AM
+>> To: Karicheri, Muralidharan
+>> Cc: Russell King - ARM Linux; tony@atomide.com; Shilimkar, Santosh; wim@iguana.be;
+>> linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org
+>> Subject: Re: [PATCH - 2/2] arm: disable caches based on config option
 >> 
->> -Kevin
+>> On Thu, 30 Aug 2012, Murali Karicheri wrote:
 >> 
->> # lsuio -m -v
->> uio0: name=uio_myfpga, version=0.1, events=0
->>         map[0]: addr=0xD0000000, size=262144, mmap test: OK
->>         Device attributes:
->>         uevent=DRIVER=uio_pdrv
->>         modalias=platform:uio_pdrv
+>> > CONFIG_CPU_ICACHE_DISABLE and CONFIG_CPU_DCACHE_DISABLE are available
+>> > to allow disabling of D-Cache and I-Cache. However the compressed version
+>> > of head.S currently doesn't check these variables. This patch will fix
+>> > this issue and is written similar to the uncompressed version of head.S
+>> >
+>> > Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
 >> 
->> ------Kernelspace------
->> #include <linux/platform_device.h>
->> #include <linux/uio_driver.h>
->> #include <linux/module.h>
+>> Acked-by: nicolas Pitre <nico@linaro.org>
 >> 
->> #define MYFPGA_BASE     0xd0000000 // 3G
->> #define MYFPGA_SIZE     0x00040000 // 256k
+>> You may submit your patch to http://www.arm.linux.org.uk/developer/patches/.
 >> 
->> static struct resource myfpga_resources[] = {
->>     {
->>         .start = MYFPGA_BASE,
->>         .end   = MYFPGA_BASE + MYFPGA_SIZE - 1,
->>         .name  = "myfpga",
->>         .flags = IORESOURCE_MEM
->>     }
->> };
 >> 
->> static struct uio_info myfpga_uio_info = {
->>    .name = "uio_myfpga",
->>    .version = "0.1",
->> };
->> 
->> static struct platform_device *myfpga_uio_pdev;
->> 
->> static int __init myfpga_init(void)
->> {
->>     myfpga_uio_pdev = platform_device_register_resndata (NULL,
->>                                                          "uio_pdrv",
->>                                                          -1,
->>                                                          myfpga_resources,
->>                                                          1,
->>                                                          &myfpga_uio_info,
->>                                                          sizeof(struct uio_info)
->>                                                         );
->>     if (IS_ERR(myfpga_uio_pdev)) {
->>         return PTR_ERR(myfpga_uio_pdev);
->>     }
->> 
->>     return 0;
->> }
->> 
->> static void __exit myfpga_exit(void)
->> {
->>     platform_device_unregister(myfpga_uio_pdev);
->> }
->> 
->> module_init(myfpga_init);
->> module_exit(myfpga_exit);
->> 
->> ------Userspace-------
->> #include <sys/types.h>
->> #include <sys/mman.h>
->> #include <sys/stat.h>
->> 
->> #include <dirent.h>
->> #include <string.h>
->> #include <stdlib.h>
->> #include <stdio.h>
->> #include <fcntl.h>
->> #include <unistd.h>
->> #include <stdint.h>
->> 
->> #define MYFPGA_BASE     0xd0000000 // 3G
->> #define MYFPGA_SIZE     0x00040000 // 256k
->> #define MYFPGA_MAP_NUM  0 // First and only defined map
->> 
->> #define BIT32(n) (1 << (n))
->> 
->> /* Use mmap()'ped address "iomem", not physical MYFPGA address */
->> #define MYFPGA_REG(iomem) (volatile uint32_t*)(iomem + 0x8) // Third 32-bit reg
->> 
->> int main (int argc, char *argv[])
->> {
->>     int fd;
->>     void *iomem;
->>     fd = open("/dev/uio0", O_RDWR|O_SYNC);
->>     if (fd < 0) {
->>         printf("failed to open /dev/uio0, quitting\n");
->>         return -1;
->>     }
->>     /* Note offset has a special meaning with uio devices */
->>     iomem = mmap(NULL, MYFPGA_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd,
->>                  MYFPGA_MAP_NUM * getpagesize());
->>     if (iomem == MAP_FAILED) {
->>         printf("mmap failed, quitting\n");
->>         close(fd);
->>         return -2;
->>     }
->> 
->>     /* Set bit 5 of MYFPGA_REG register */
->>     *MYFPGA_REG(iomem) |= BIT32(5);
->> 
->>     munmap(iomem, MYFPGA_SIZE);
->>     close(fd);
->>     return 0;
->> }
->>  
->>  
+>> > ---
+>> >  arch/arm/boot/compressed/head.S |    6 ++++++
+>> >  1 file changed, 6 insertions(+)
+>> >
+>> > diff --git a/arch/arm/boot/compressed/head.S b/arch/arm/boot/compressed/head.S
+>> > index b8c64b8..e1d2124 100644
+>> > --- a/arch/arm/boot/compressed/head.S
+>> > +++ b/arch/arm/boot/compressed/head.S
+>> > @@ -659,6 +659,12 @@ __armv7_mmu_cache_on:
+>> >  #ifdef CONFIG_CPU_ENDIAN_BE8
+>> >  		orr	r0, r0, #1 << 25	@ big-endian page tables
+>> >  #endif
+>> > +#ifdef CONFIG_CPU_DCACHE_DISABLE
+>> > +		bic	r0, r0, #1 << 2
+>> > +#endif
+>> > +#ifdef CONFIG_CPU_ICACHE_DISABLE
+>> > +		bic	r0, r0, #1 << 12
+>> > +#endif
+>> >  		orrne	r0, r0, #1		@ MMU enabled
+>> >  		movne	r1, #0xfffffffd		@ domain 0 = client
+>> >  		mcrne	p15, 0, r3, c2, c0, 0	@ load page table pointer
+>> > --
+>> > 1.7.9.5
+>> >
