@@ -1,44 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752524Ab2H3WDu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 18:03:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44240 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751660Ab2H3WDt (ORCPT
+	id S1752495Ab2H3WHM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 18:07:12 -0400
+Received: from quickstop.soohrt.org ([85.131.246.152]:54158 "EHLO
+	quickstop.soohrt.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751558Ab2H3WHK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 18:03:49 -0400
-Date: Thu, 30 Aug 2012 15:03:48 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: paul.clements@steeleye.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] [RESEND] add discard support to nbd
-Message-Id: <20120830150348.287bfa2f.akpm@linux-foundation.org>
-In-Reply-To: <503e0dde.ssYktQsJ5nYlhlQB%paul.clements@steeleye.com>
-References: <503e0dde.ssYktQsJ5nYlhlQB%paul.clements@steeleye.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 30 Aug 2012 18:07:10 -0400
+Date: Fri, 31 Aug 2012 00:00:28 +0200
+From: Horst Schirmeier <horst@schirmeier.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, jhovold@gmail.com
+Cc: USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ftdi_sio: PID for NZR SEM 16+ USB
+Message-ID: <20120830220026.GS5326@quickstop.soohrt.org>
+Mail-Followup-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	jhovold@gmail.com, USB list <linux-usb@vger.kernel.org>,
+	Kernel development list <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EkxpYdHiqGHPYbUt"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Aug 2012 08:41:02 -0400
-paul.clements@steeleye.com wrote:
 
-> Description: This patch adds discard support to nbd. When the nbd client
-> system receives a discard request, this will be passed along to the nbd
-> server system, where the nbd-server will respond by performing:
-> 	fallocate(.. FALLOC_FL_PUNCH_HOLE ..)
-> 
-> To punch a hole in the backend storage, which is no longer needed.
-> 
+--EkxpYdHiqGHPYbUt
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-What happens if the user is running an older server?
+This adds the USB PID for the NZR SEM 16+ USB energy monitor device
+<http://www.nzr.de>.  It works perfectly with the GPL software on
+<http://schou.dk/linux/sparometer/>.
 
-I is it possible that because the old server didn't set
-NBD_FLAG_SEND_TRIM, the user's screen gets filled with WARN_ONs?
+Signed-off-by: Horst Schirmeier <horst@schirmeier.com>
 
-Anyway, please make sure this combination was tested!
+---
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    3 +++
+ 2 files changed, 4 insertions(+)
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index 5620db6..5cae2a1 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -704,6 +704,7 @@ static struct usb_device_id id_table_combined [] =3D {
+ 	{ USB_DEVICE(FTDI_VID, FTDI_PCDJ_DAC2_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_RRCIRKITS_LOCOBUFFER_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ASK_RDR400_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_NZR_SEM_USB_PID) },
+ 	{ USB_DEVICE(ICOM_VID, ICOM_ID_1_PID) },
+ 	{ USB_DEVICE(ICOM_VID, ICOM_OPC_U_UC_PID) },
+ 	{ USB_DEVICE(ICOM_VID, ICOM_ID_RP2C1_PID) },
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_si=
+o_ids.h
+index 5dd96ca..117f42b 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -75,6 +75,9 @@
+ #define FTDI_OPENDCC_GATEWAY_PID	0xBFDB
+ #define FTDI_OPENDCC_GBM_PID	0xBFDC
+=20
++/* NZR SEM 16+ USB (http://www.nzr.de) */
++#define FTDI_NZR_SEM_USB_PID	0xC1E0	/* NZR SEM-LOG16+ */
++
+ /*
+  * RR-CirKits LocoBuffer USB (http://www.rr-cirkits.com)
+  */
 
+--=20
+PGP-Key 0xD40E0E7A
 
+--EkxpYdHiqGHPYbUt
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAlA/4noACgkQB6mkGNQODnpC7wCg7MCY5LRtZDYktcOqKU++zYy6
+vE0AnjYgs0OtdfNo+sMF47qvDyd7QSoQ
+=CVzV
+-----END PGP SIGNATURE-----
+
+--EkxpYdHiqGHPYbUt--
