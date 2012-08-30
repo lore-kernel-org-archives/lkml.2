@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752628Ab2H3VJs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 17:09:48 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:63481 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752419Ab2H3VJr (ORCPT
+	id S1752603Ab2H3VKf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 17:10:35 -0400
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:37319 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751628Ab2H3VKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 17:09:47 -0400
-X-Originating-IP: 108.223.40.66
-Date: Thu, 30 Aug 2012 14:09:59 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+	Thu, 30 Aug 2012 17:10:33 -0400
+Date: Thu, 30 Aug 2012 17:10:32 -0400 (EDT)
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+To: Guenter Roeck <linux@roeck-us.net>
 Cc: lm-sensors@lm-sensors.org, Jean Delvare <khali@linux-fr.org>,
         linux-kernel@vger.kernel.org
+Message-ID: <1040994502.402858.1346361031972.JavaMail.root@mail.savoirfairelinux.com>
+In-Reply-To: <20120830201019.GA3875@roeck-us.net>
 Subject: Re: [PATCH] hwmon: add Maxim MAX197 support
-Message-ID: <20120830210959.GA11153@roeck-us.net>
-References: <1346351995-9038-1-git-send-email-vivien.didelot@savoirfairelinux.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346351995-9038-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [208.88.110.46]
+X-Mailer: Zimbra 7.1.4_GA_2555 (ZimbraWebClient - FF3.0 (Linux)/7.1.4_GA_2555)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 02:39:55PM -0400, Vivien Didelot wrote:
-> The MAX197 is an A/D converter, made by Maxim. This driver currently
-> supports the MAX197, and MAX199. They are both 8-Channel, Multi-Range,
-> 5V, 12-Bit DAS with 8+4 Bus Interface and Fault Protection.
-> 
-> The available ranges for the MAX197 are {0,-5V} to 5V, and {0,-10V} to
-> 10V, while they are {0,-2V} to 2V, and {0,-4V} to 4V on the MAX199.
-> 
-> Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Hi Guenter,
 
-Hi Vivien,
+Thanks for your detailed comments. I'll send a new version soon.
 
-I have the solution for the platform driver.
+About the following comment, I agree with you. However as there is no convention for this case, for now I would prefer to stick with the model as seen in drivers such as sht15.
 
-enum chips { max197, max199 };
+In the future, I think we could add a field in the platform_data, something like .chip = "max199", or .variant = 199, and update the hwmon drivers.
 
-[ ... ]
+Thanks,
+Vivien
 
-static struct platform_device_id max197_driver_ids[] = {
-        {
-		.name = "max197",
-		.driver_data = max197,
-	}, {
-		.name = "max199",
-		.driver_data = max199,
-	}
-};
-MODULE_DEVICE_TABLE(platform, max197_driver_ids);
+> +static int __devexit max197_remove(struct platform_device *pdev)
+> +{
+> +	struct max197_chip *chip = platform_get_drvdata(pdev);
+> +
+> +	hwmon_device_unregister(chip->hwmon_dev);
+> +	sysfs_remove_group(&pdev->dev.kobj, &max197_sysfs_group);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver __refdata maxim_drivers[] = {
+> +	{
+> +		.driver = {
+> +			.name = "max197",
+> +			.owner = THIS_MODULE,
+> +		},
+> +		.probe = max197_probe,
+> +		.remove = __devexit_p(max197_remove),
+> +	}, {
+> +		.driver = {
+> +			.name = "max199",
+> +			.owner = THIS_MODULE,
+> +		},
+> +		.probe = max197_probe,
+> +		.remove = __devexit_p(max197_remove),
+> +	}
+> +};
+> +
+> +static int __init max197_init(void)
+> +{
+> +	int ret;
+> +	int i;
+> +
+> +	for (i = 0; i < ARRAY_SIZE(maxim_drivers); i++) {
+> +		ret = platform_driver_register(&maxim_drivers[i]);
+> +		if (ret)
+> +			goto error_unregister;
+> +	}
 
-In the probe function:
-
-	enum chips chip = platform_get_device_id(pdev)->driver_data;
-
-This way you only need a single platform driver, no module alias, and you don't
-need strcmp() in the probe function to detect the chip type.
-
-Guenter
+I keep thinking about this; there must be a better way where we only need one
+platform driver instance. After all, there is just one driver, only there can
+be multiple devices. No idea how to do that right now, though. If I find out,
+I'll let you know.
