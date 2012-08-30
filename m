@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753212Ab2H3Xjv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 19:39:51 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:45869 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753062Ab2H3Xju (ORCPT
+	id S1753154Ab2H3XqU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 19:46:20 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:44346 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752923Ab2H3XqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 19:39:50 -0400
-Message-ID: <503FF9E9.4020701@wwwdotorg.org>
-Date: Thu, 30 Aug 2012 16:40:25 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux armv7l; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Thu, 30 Aug 2012 19:46:19 -0400
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH] clk: Make the generic clock API available by default
-References: <1346186104-4083-1-git-send-email-broonie@opensource.wolfsonmicro.com> <503E8E6E.1010101@wwwdotorg.org> <20120830171918.GE4356@opensource.wolfsonmicro.com>
-In-Reply-To: <20120830171918.GE4356@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1345816913-4113-2-git-send-email-lee.jones@linaro.org>
+References: <1345816913-4113-1-git-send-email-lee.jones@linaro.org>
+	<1345816913-4113-2-git-send-email-lee.jones@linaro.org>
+Date: Thu, 30 Aug 2012 16:46:17 -0700
+Message-ID: <CACRpkdai+RObHsq7xe0+Fk24K7r-Wzoc8o3RbvHT78=EeHkjSQ@mail.gmail.com>
+Subject: Re: [PATCH 01/17] ASoC: Ux500: Move MSP pinctrl setup into the MSP driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org,
+        linus.walleij@stericsson.com, arnd@arndb.de,
+        roger.xr.nilsson@stericsson.com, broonie@opensource.wolfsonmicro.com,
+        STEricsson_nomadik_linux@list.st.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/30/12 10:19, Mark Brown wrote:
-> On Wed, Aug 29, 2012 at 02:49:34PM -0700, Stephen Warren wrote:
->> On 08/28/12 13:35, Mark Brown wrote:
->
->>> @@ -674,6 +676,7 @@ config ARCH_TEGRA
->>>   	select GENERIC_CLOCKEVENTS
->>>   	select GENERIC_GPIO
->>>   	select HAVE_CLK
->>> +	select HAVE_CUSTOM_CLK
->
->> For 3.7, Tegra will switch to the common clock framework. I think
->> this patch would then disable that. How should we resolve this -
->> rebase the Tegra common-clk tree on top of any branch containing
->> this patch in order to remove that select statement?
->
-> I'd expect this to be applied on a separate branch so you should be able
-> to rebase your conversion on top of it or merge it into your branch
-> which should deal with things well enough I think?
+On Fri, Aug 24, 2012 at 7:01 AM, Lee Jones <lee.jones@linaro.org> wrote:
 
-That should work.
+> In the initial submission of the MSP driver msp1 and msp3's associated
+> pinctrl mechanism was passed back to platform code using a plat_init()
+> call-back routine, but it has no place in platform code. The MSP driver
+> should set this up for the appropriate ports. Instead we use a use_pinctrl
+> identifier which is passed from platform_data/Device Tree which indicates
+> which ports should use pinctrl.
+>
+> CC: alsa-devel@alsa-project.org
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
+Looks good to me, so Acked-by: Linus Walleij <linus.walleij@linaro.org>
+for the ux500 mach part.
+
+However I'd request Ola/Roger to ACK it too on the ALSA side.
+
+Yours,
+Linus Walleij
