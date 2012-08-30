@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115Ab2H3Rzw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 13:55:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41694 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751737Ab2H3Rzt (ORCPT
+	id S1753420Ab2H3R7n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 13:59:43 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:36534 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275Ab2H3R7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 13:55:49 -0400
-Date: Fri, 31 Aug 2012 02:55:43 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCH] staging: zcache: fix cleancache race condition with
- shrinker
-Message-ID: <20120830175543.GA3534@barrios>
-References: <1346277525-22062-1-git-send-email-sjenning@linux.vnet.ibm.com>
+	Thu, 30 Aug 2012 13:59:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346277525-22062-1-git-send-email-sjenning@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1346332350.2586.10.camel@edumazet-glaptop>
+References: <1345724123.5904.756.camel@edumazet-glaptop>
+	<50362407.9070805@linlab.net>
+	<1345726185.5904.835.camel@edumazet-glaptop>
+	<20120824.134231.41073001349178209.davem@davemloft.net>
+	<20120825084819.GD430@linlab.net>
+	<CAFbMe2Pgjbttt+Z3RQ9KL05=GHqZYk5ubNH2G1-EUn_f_RBaEQ@mail.gmail.com>
+	<1346230305.2522.15.camel@edumazet-glaptop>
+	<CAFbMe2PG90X7s6s970+XK3X0Jvzx4p6vhvM+JQCwtULPvs1QLw@mail.gmail.com>
+	<1346332350.2586.10.camel@edumazet-glaptop>
+Date: Thu, 30 Aug 2012 10:59:39 -0700
+Message-ID: <CAFbMe2OtGmon9iWdC89T3RkWp526XCbNo-3SFAZ+nBmQRgT0Vg@mail.gmail.com>
+Subject: Re: [PATCH 1/1] tcp: Wrong timeout for SYN segments
+From: "H.K. Jerry Chu" <hkjerry.chu@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Alexander Bergmann <alex@linlab.net>, David Miller <davem@davemloft.net>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 29, 2012 at 04:58:45PM -0500, Seth Jennings wrote:
-> This patch fixes a race condition that results in memory
-> corruption when using cleancache.
-> 
-> The race exists between the zcache shrinker handler,
-> shrink_zcache_memory() and cleancache_get_page().
-> 
-> In most cases, the shrinker will both evict a zbpg
-> from its buddy list and flush it from tmem before a
-> cleancache_get_page() occurs on that page. A subsequent
-> cleancache_get_page() will fail in the tmem layer.
-> 
-> In the rare case that two occur together and the
-> cleancache_get_page() path gets through the tmem
-> layer before the shrinker path can flush tmem,
-> zbud_decompress() does a check to see if the zbpg is a
-> "zombie", i.e. not on a buddy list, which means the shrinker
-> is in the process of reclaiming it. If the zbpg is a zombie,
-> zbud_decompress() returns -EINVAL.
-> 
-> However, this return code is being ignored by the caller,
-> zcache_pampd_get_data_and_free(), which results in the
-> caller of cleancache_get_page() thinking that the page has
-> been properly retrieved when it has not.
-> 
-> This patch modifies zcache_pampd_get_data_and_free() to
-> convey the failure up the stack so that the caller of
-> cleancache_get_page() knows the page retrieval failed.
-> 
-> ---
-> Based on v3.6-rc3.
-> 
-> This needs to be applied to stable trees as well.
-> zcache-main.c was named zcache.c before v3.1, so
-> I'm not sure how you want to handle trees earlier
-> than that.
-> 
-> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Reviewed-by: Minchan Kim <minchan@kernel.org>
+On Thu, Aug 30, 2012 at 6:12 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> On Wed, 2012-08-29 at 10:25 -0700, H.K. Jerry Chu wrote:
+>
+>> But it probably matter slightly more for TCP Fast Open (the server
+>> side patch has
+>> been completed and will be posted soon, after I finish breaking it up
+>> into smaller
+>> pieces for ease of review purpose), when a full socket will be created with data
+>> passed to the app upon a valid SYN+data. Dropping a fully functioning socket
+>> won't be the same as dropping a request_sock unknown to the app and letting
+>> the other side retransmitting SYN (w/o data this time).
+>>
+>> >
+>> > Sure, RFC numbers are what they are, but in practice, I doubt someone
+>> > will really miss the extra SYNACK sent after ~32 seconds, since it would
+>> > matter only for the last SYN attempted.
+>>
+>> I'd slightly prefer 1 extra retry plus longer wait time just to make
+>> TCP Fast Open
+>> a little more robust (even though the app protocol is required to be
+>> idempotent).
+>> But this is not a showstopper.
+>
+> Thats very good points indeed, thanks.
+>
+> Maybe we can increase SYNACK max retrans only if the FastOpen SYN cookie
+> was validated.
+>
+> This way, we increase reliability without amplifying the effect of wild
+> SYN packets.
 
-Thanks!
+Ok, will use sysctl_tcp_synack_retries + 1 in tcp_fastopen_synack_timer() of my
+upcoming TCP Fast Open server patch (hope to submit today).
+
+Jerry
+
+>
+>
+>
