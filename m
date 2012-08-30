@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753039Ab2H3VS1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 17:18:27 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:47514 "EHLO
+	id S1753429Ab2H3VSp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 17:18:45 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:47251 "EHLO
 	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752979Ab2H3VOV (ORCPT
+	with ESMTP id S1752903Ab2H3VOQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 17:14:21 -0400
+	Thu, 30 Aug 2012 17:14:16 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,67 +15,72 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Chris Zankel <chris@zankel.net>, "3.2.x.." <stable@vger.kernel.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 03/26] rcu: Make RCU_FAST_NO_HZ handle adaptive ticks
-Date: Thu, 30 Aug 2012 14:05:20 -0700
-Message-Id: <1346360743-3628-3-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 25/26] xtensa: Add missing RCU idle APIs on idle loop
+Date: Thu, 30 Aug 2012 14:05:42 -0700
+Message-Id: <1346360743-3628-25-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120830210520.GA2824@linux.vnet.ibm.com>
  <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12083021-7408-0000-0000-0000080B574A
+x-cbid: 12083021-7408-0000-0000-0000080B56E5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-The current implementation of RCU_FAST_NO_HZ tries reasonably hard to rid
-the current CPU of RCU callbacks.  This is appropriate when the CPU is
-entering idle, where it doesn't have much useful to do anyway, but is most
-definitely not what you want when transitioning to user-mode execution.
-This commit therefore detects the adaptive-tick case, and refrains from
-burning CPU time getting rid of RCU callbacks in that case.
+In the old times, the whole idle task was considered
+as an RCU quiescent state. But as RCU became more and
+more successful overtime, some RCU read side critical
+section have been added even in the code of some
+architectures idle tasks, for tracing for example.
 
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+So nowadays, rcu_idle_enter() and rcu_idle_exit() must
+be called by the architecture to tell RCU about the part
+in the idle loop that doesn't make use of rcu read side
+critical sections, typically the part that puts the CPU
+in low power mode.
+
+This is necessary for RCU to find the quiescent states in
+idle in order to complete grace periods.
+
+Add this missing pair of calls in the xtensa's idle loop.
+
+Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Chris Zankel <chris@zankel.net>
+Cc: 3.2.x.. <stable@vger.kernel.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutree_plugin.h |   20 ++++++++++++++++++++
- 1 files changed, 20 insertions(+), 0 deletions(-)
+ arch/xtensa/kernel/process.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 7f3244c..b0f09d6 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -1997,6 +1997,26 @@ static void rcu_prepare_for_idle(int cpu)
- 	if (!tne)
- 		return;
+diff --git a/arch/xtensa/kernel/process.c b/arch/xtensa/kernel/process.c
+index 2c8d6a3..bc44311 100644
+--- a/arch/xtensa/kernel/process.c
++++ b/arch/xtensa/kernel/process.c
+@@ -31,6 +31,7 @@
+ #include <linux/mqueue.h>
+ #include <linux/fs.h>
+ #include <linux/slab.h>
++#include <linux/rcupdate.h>
  
-+	/* Adaptive-tick mode, where usermode execution is idle to RCU. */
-+	if (!is_idle_task(current)) {
-+		rdtp->dyntick_holdoff = jiffies - 1;
-+		if (rcu_cpu_has_nonlazy_callbacks(cpu)) {
-+			trace_rcu_prep_idle("User dyntick with callbacks");
-+			rdtp->idle_gp_timer_expires =
-+				round_up(jiffies + RCU_IDLE_GP_DELAY,
-+					 RCU_IDLE_GP_DELAY);
-+		} else if (rcu_cpu_has_callbacks(cpu)) {
-+			rdtp->idle_gp_timer_expires =
-+				round_jiffies(jiffies + RCU_IDLE_LAZY_GP_DELAY);
-+			trace_rcu_prep_idle("User dyntick with lazy callbacks");
-+		} else {
-+			return;
-+		}
-+		tp = &rdtp->idle_gp_timer;
-+		mod_timer_pinned(tp, rdtp->idle_gp_timer_expires);
-+		return;
-+	}
-+
- 	/*
- 	 * If this is an idle re-entry, for example, due to use of
- 	 * RCU_NONIDLE() or the new idle-loop tracing API within the idle
+ #include <asm/pgtable.h>
+ #include <asm/uaccess.h>
+@@ -110,8 +111,10 @@ void cpu_idle(void)
+ 
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
++		rcu_idle_enter();
+ 		while (!need_resched())
+ 			platform_idle();
++		rcu_idle_exit();
+ 		schedule_preempt_disabled();
+ 	}
+ }
 -- 
 1.7.8
 
