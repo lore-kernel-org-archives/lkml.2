@@ -1,120 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752234Ab2H3PbL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 11:31:11 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:49724 "EHLO bear.ext.ti.com"
+	id S1752618Ab2H3Pbn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 11:31:43 -0400
+Received: from mga11.intel.com ([192.55.52.93]:22261 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750848Ab2H3PbJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 11:31:09 -0400
-From: "Karicheri, Muralidharan" <m-karicheri2@ti.com>
-To: "Karicheri, Muralidharan" <m-karicheri2@ti.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] of: adding devres version of of_iomap
-Thread-Topic: [PATCH] of: adding devres version of of_iomap
-Thread-Index: AQHNhsRJftm2sIBs6USoCKBp4Nz80Zdye0TQ
-Date: Thu, 30 Aug 2012 15:31:02 +0000
-Message-ID: <3E54258959B69E4282D79E01AB1F32B7041AD2CC@DFLE12.ent.ti.com>
-References: <1346340581-21967-1-git-send-email-m-karicheri2@ti.com>
-In-Reply-To: <1346340581-21967-1-git-send-email-m-karicheri2@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [128.247.5.50]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1750913Ab2H3Pbl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 11:31:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,341,1344236400"; 
+   d="scan'208";a="216256346"
+Date: Thu, 30 Aug 2012 08:22:36 -0700
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
+Subject: Re: INFO: suspicious RCU usage in rcu_torture_writer()
+Message-ID: <20120830152236.GC11964@localhost>
+References: <20120825033623.GA19330@localhost>
+ <20120826000149.GG3436@linux.vnet.ibm.com>
+ <20120827044052.GA16267@localhost>
+ <20120827181750.GJ6122@linux.vnet.ibm.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120827181750.GJ6122@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please ignore this patch. I am re-sending this with a minor typo fixed.
+On Mon, Aug 27, 2012 at 11:17:51AM -0700, Paul E. McKenney wrote:
+> On Mon, Aug 27, 2012 at 12:40:52PM +0800, Fengguang Wu wrote:
+> > On Sat, Aug 25, 2012 at 05:01:49PM -0700, Paul E. McKenney wrote:
+> > > On Sat, Aug 25, 2012 at 11:36:23AM +0800, Fengguang Wu wrote:
+> > > > Greetings,
+> > > > 
+> > > > I got this warning on 3.6.0-rc2. Full dmesg/config attached.
+> > > > 
+> > > > [    3.051375] Initializing RT-Tester: OK
+> > > > [    3.052491] rcu-torture:--- Start of test: nreaders=2 nfakewriters=4 stat_interval=0 verbose=0 test_no_idle_hz=0 shuffle_interval=3 stut
+> > > > ter=5 irqreader=1 fqs_duration=0 fqs_holdoff=0 fqs_stutter=3 test_boost=1/1 test_boost_interval=7 test_boost_duration=4 shutdown_secs=0 onoff_interval=0 onoff_holdoff=0
+> > > > [    3.059084] 
+> > > > [    3.059451] ===============================
+> > > > [    3.060454] [ INFO: suspicious RCU usage. ]
+> > > > [    3.061482] 3.6.0-rc2-00010-g4c58c42 #59 Not tainted
+> > > > [    3.062686] -------------------------------
+> > > > [    3.063744] /c/kernel-tests/src/stable/kernel/rcutorture.c:990 suspicious rcu_dereference_check() usage!
+> > > > 
+> > > >  982         do {
+> > > >  983                 schedule_timeout_uninterruptible(1);
+> > > >  984                 rp = rcu_torture_alloc();
+> > > >  985                 if (rp == NULL)
+> > > >  986                         continue;
+> > > >  987                 rp->rtort_pipe_count = 0;
+> > > >  988                 udelay(rcu_random(&rand) & 0x3ff);
+> > > >  989                 old_rp = rcu_dereference_check(rcu_torture_current,
+> > > > >990                                                current == writer_task);
+> > > >  991                 rp->rtort_mbtest = 1;
+> > > >  992                 rcu_assign_pointer(rcu_torture_current, rp);
+> > > >  993                 smp_wmb(); /* Mods to old_rp must follow rcu_assign_pointer() */
+> > > >  994                 if (old_rp) {
+> > > 
+> > > 
+> > > Does the following clear this up?
+> > 
+> > Sorry I'm still trying to reproduce this. It must be a rare bug
+> > because it only showed up in several of the tens of thousands of test
+> > boots. To reproduce it, I've done near 1000 boots however still not
+> > caught it yet. Let's run it for more time...
+> 
+> I will push the fix up for 3.7, if something else is happening, we can
+> debug when it comes up.  ;-)
 
-Murali Karicheri
-Software Design Engineer
+Good idea! Since it's a really hard to reproduce problem that only
+shows up after thousands of boots, it's easier to push the obvious fix
+first. If ever it's not really fixed, the bug will show up again some
+day and caught by the test system ;-)
 
->> -----Original Message-----
->> From: Karicheri, Muralidharan
->> Sent: Thursday, August 30, 2012 11:30 AM
->> To: grant.likely@secretlab.ca; rob.herring@calxeda.com; devicetree-
->> discuss@lists.ozlabs.org; linux-kernel@vger.kernel.org
->> Cc: Karicheri, Muralidharan
->> Subject: [PATCH] of: adding devres version of of_iomap
->> 
->> This adds devres version of the of_iomap() to allow resource to be cleaned
->> through devres.
->> 
->> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
->> 
->> diff --git a/drivers/of/address.c b/drivers/of/address.c
->> index 7e262a6..d3da426 100644
->> --- a/drivers/of/address.c
->> +++ b/drivers/of/address.c
->> @@ -602,10 +602,9 @@ struct device_node
->> *of_find_matching_node_by_address(struct device_node *from,
->>  	return NULL;
->>  }
->> 
->> -
->>  /**
->>   * of_iomap - Maps the memory mapped IO for a given device_node
->> - * @device:	the device whose io range will be mapped
->> + * @device_node: Ptr to the device node that has the reg property
->>   * @index:	index of the io range
->>   *
->>   * Returns a pointer to the mapped memory
->> @@ -620,3 +619,26 @@ void __iomem *of_iomap(struct device_node *np, int index)
->>  	return ioremap(res.start, resource_size(&res));
->>  }
->>  EXPORT_SYMBOL(of_iomap);
->> +
->> +/**
->> + * of_devm_iomap - devres version of of_iomap
->> + * @device:	the device whose io range will be mapped
->> + * @index:	index of the io range
->> + *
->> + * Returns a pointer to the mapped memory
->> + */
->> +void __iomem *of_devm_iomap(struct device *dev, int index)
->> +{
->> +	struct device_node *np;
->> +	struct resource res;
->> +
->> +	if (!dev)
->> +		return NULL;
->> +
->> +	np = dev->of_node;
->> +	if (of_address_to_resource(np, index, &res))
->> +		return NULL;
->> +
->> +	return devm_ioremap(dev, res.start, resource_size(&res));
->> +}
->> +EXPORT_SYMBOL(of_devm_iomap);
->> diff --git a/include/linux/of_address.h b/include/linux/of_address.h
->> index 01b925a..67efa5f 100644
->> --- a/include/linux/of_address.h
->> +++ b/include/linux/of_address.h
->> @@ -3,6 +3,7 @@
->>  #include <linux/ioport.h>
->>  #include <linux/errno.h>
->>  #include <linux/of.h>
->> +#include <linux/device.h>
->> 
->>  #ifdef CONFIG_OF_ADDRESS
->>  extern u64 of_translate_address(struct device_node *np, const __be32 *addr);
->> @@ -13,6 +14,7 @@ extern struct device_node *of_find_matching_node_by_address(
->>  					const struct of_device_id *matches,
->>  					u64 base_address);
->>  extern void __iomem *of_iomap(struct device_node *device, int index);
->> +extern void __iomem *of_devm_iomap(struct device *dev, int index);
->> 
->>  /* Extract an address from a device, returns the region size and
->>   * the address space flags too. The PCI version uses a BAR number
->> --
->> 1.7.9.5
-
+Thanks,
+Fengguang
