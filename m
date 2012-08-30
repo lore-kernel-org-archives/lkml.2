@@ -1,93 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753021Ab2H3WxZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 18:53:25 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60672 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752524Ab2H3WxX (ORCPT
+	id S1753092Ab2H3Wyb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 18:54:31 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:53300 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752798Ab2H3Wy3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 18:53:23 -0400
-Date: Thu, 30 Aug 2012 15:53:18 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: [git pull] Input updates for 3.6-rc4
-Message-ID: <20120830225318.GA21501@core.coreip.homeip.net>
+	Thu, 30 Aug 2012 18:54:29 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lrZ03NoBR/3+SXJZ"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120830203125.GA23478@fieldses.org>
+References: <1346249410-3515-1-git-send-email-linkinjeon@gmail.com>
+	<20120830203125.GA23478@fieldses.org>
+Date: Fri, 31 Aug 2012 07:54:29 +0900
+Message-ID: <CAKYAXd_BNh1FgUoe5k-DJMTs0d-e21zM5Z1R0pbOspyEQ_a7EA@mail.gmail.com>
+Subject: Re: [PATCH] exportfs: add FILEID_INVALID to indicate invalid fid_type
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        Vivek Trivedi <vtrivedi018@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---lrZ03NoBR/3+SXJZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Linus,
-
-Please pull from:
-
-	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
-or
-	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
-
-to receive updates for the input subsystem.
-
-Changelog:
----------
-
-Dmitry Torokhov (1):
-      Input: i8042 - add Gigabyte T1005 series netbooks to noloop table
-
-Guenter Roeck (1):
-      Input: edt-ft5x06 - fix build error when compiling wthout CONFIG_DEBU=
-G_FS
-
-Jason Gerecke (1):
-      Input: wacom - add support for EMR on Cintiq 24HD touch
-
-Michael Grzeschik (1):
-      Input: imx_keypad - reset the hardware before enabling
-
-
-Diffstat:
---------
-
- drivers/input/keyboard/imx_keypad.c    |  3 +++
- drivers/input/serio/i8042-x86ia64io.h  | 14 ++++++++++++++
- drivers/input/tablet/wacom_wac.c       |  6 +++++-
- drivers/input/touchscreen/edt-ft5x06.c |  2 +-
- 4 files changed, 23 insertions(+), 2 deletions(-)
-
---=20
-Dmitry
-
-
---lrZ03NoBR/3+SXJZ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQP+7eAAoJEH70+W8r6ZYqnQwQAIlqw8DYMpDaSP+rPuXHNkqk
-wx1Ie5ceVQBFw4JtiHiSypIjhXUuPg8r+69ugu7adaPQu/2wCCyj6SZ+iXt3i2zb
-uCon7KQr7bOHmec9JvSS5e5dL+ttC3t/7WYhRr6ZiMyJp6PUFAsEVqM8RVFdKKU5
-7z5609m1NMVQrq1eakz6iIC9+psaRd9ZiNHbiOIZBIog9EEARFwRsC0Q4xFakGAc
-FaIC6baIAyvRdVByb9rDJZkPK85ILDdBAtylvNeGohIKv3VHveFetG3hF++yhKhc
-QKWn/KJTPG3I6KB+UlqCYriGbO1/c8+9WLQOp+i7h72jXe6GLXRglTLrry/roLpc
-d3gfneRt7VIjVOApJDEtOAwVbMrI7wiFhAiNKrBHRfwVL8DbC64fpVFoLOJjdGqt
-mtVBFWdsE38q03YJ3JYZTnz0pbxckRnz2HlI0eNgXLbtyzIKQ+3RtGiE37vw504O
-IWBSx4980G35V/PfmAiWnfMdW7uYvDXdleDk4ePYjdYNALpH+AHGhlUV5qdwOoAu
-4w060XZ7iRPoUwEj9Dql0jIDBQLwIebFYWHuY58D43TqwJNoxGoZqrig5bOwhNgp
-qDsLrA2bDCqH0v3Px2V88uJagDsudqktEltVpkfi9z5ZcrRLYu4l01RzsQ9iE0xQ
-hPR8KenRCaSd8/+t7eFJ
-=AWMy
------END PGP SIGNATURE-----
-
---lrZ03NoBR/3+SXJZ--
+2012/8/31, J. Bruce Fields <bfields@fieldses.org>:
+> On Wed, Aug 29, 2012 at 10:10:10AM -0400, Namjae Jeon wrote:
+>> This commit adds FILEID_INVALID = 0xff in fid_type to
+>> indicate invalid fid_type
+>
+> OK, applying for 3.7.
+>
+> Looks like this shows up in a lot of filesystems too as just "255".  Are
+> you planning to patch up the filesystems afterwards?
+Hi Bruce.
+Yes, I will fix these from next patches.
+Thanks.
+>
+> --b.
+>
+>>
+>> It avoids using magic number 255
+>>
+>> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+>> Signed-off-by: Vivek Trivedi <vtrivedi018@gmail.com>
+>> ---
+>>  fs/exportfs/expfs.c      |    4 ++--
+>>  fs/fhandle.c             |    2 +-
+>>  fs/nfsd/nfsfh.c          |    4 ++--
+>>  include/linux/exportfs.h |    5 +++++
+>>  4 files changed, 10 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/fs/exportfs/expfs.c b/fs/exportfs/expfs.c
+>> index 29ab099..f1f1c59 100644
+>> --- a/fs/exportfs/expfs.c
+>> +++ b/fs/exportfs/expfs.c
+>> @@ -322,10 +322,10 @@ static int export_encode_fh(struct inode *inode,
+>> struct fid *fid,
+>>
+>>  	if (parent && (len < 4)) {
+>>  		*max_len = 4;
+>> -		return 255;
+>> +		return FILEID_INVALID;
+>>  	} else if (len < 2) {
+>>  		*max_len = 2;
+>> -		return 255;
+>> +		return FILEID_INVALID;
+>>  	}
+>>
+>>  	len = 2;
+>> diff --git a/fs/fhandle.c b/fs/fhandle.c
+>> index a48e4a1..78a7879 100644
+>> --- a/fs/fhandle.c
+>> +++ b/fs/fhandle.c
+>> @@ -52,7 +52,7 @@ static long do_sys_name_to_handle(struct path *path,
+>>  	handle_bytes = handle_dwords * sizeof(u32);
+>>  	handle->handle_bytes = handle_bytes;
+>>  	if ((handle->handle_bytes > f_handle.handle_bytes) ||
+>> -	    (retval == 255) || (retval == -ENOSPC)) {
+>> +	    (retval == FILEID_INVALID) || (retval == -ENOSPC)) {
+>>  		/* As per old exportfs_encode_fh documentation
+>>  		 * we could return ENOSPC to indicate overflow
+>>  		 * But file system returned 255 always. So handle
+>> diff --git a/fs/nfsd/nfsfh.c b/fs/nfsd/nfsfh.c
+>> index 032af38..814afaa 100644
+>> --- a/fs/nfsd/nfsfh.c
+>> +++ b/fs/nfsd/nfsfh.c
+>> @@ -572,7 +572,7 @@ fh_compose(struct svc_fh *fhp, struct svc_export *exp,
+>> struct dentry *dentry,
+>>
+>>  		if (inode)
+>>  			_fh_update(fhp, exp, dentry);
+>> -		if (fhp->fh_handle.fh_fileid_type == 255) {
+>> +		if (fhp->fh_handle.fh_fileid_type == FILEID_INVALID) {
+>>  			fh_put(fhp);
+>>  			return nfserr_opnotsupp;
+>>  		}
+>> @@ -603,7 +603,7 @@ fh_update(struct svc_fh *fhp)
+>>  			goto out;
+>>
+>>  		_fh_update(fhp, fhp->fh_export, dentry);
+>> -		if (fhp->fh_handle.fh_fileid_type == 255)
+>> +		if (fhp->fh_handle.fh_fileid_type == FILEID_INVALID)
+>>  			return nfserr_opnotsupp;
+>>  	}
+>>  out:
+>> diff --git a/include/linux/exportfs.h b/include/linux/exportfs.h
+>> index 12291a7..0e14525 100644
+>> --- a/include/linux/exportfs.h
+>> +++ b/include/linux/exportfs.h
+>> @@ -83,6 +83,11 @@ enum fid_type {
+>>  	 * 64 bit parent inode number.
+>>  	 */
+>>  	FILEID_NILFS_WITH_PARENT = 0x62,
+>> +
+>> +	/*
+>> +	 * Filesystems must not use 0xff file ID.
+>> +	 */
+>> +	FILEID_INVALID = 0xff,
+>>  };
+>>
+>>  struct fid {
+>> --
+>> 1.7.9.5
+>>
+>
