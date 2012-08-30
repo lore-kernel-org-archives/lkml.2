@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149Ab2H3I4N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 04:56:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59834 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752699Ab2H3I4M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 04:56:12 -0400
-Date: Thu, 30 Aug 2012 11:57:24 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Frank Swiderski <fes@google.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, riel@redhat.com,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mikew@google.com
-Subject: Re: [PATCH] Add a page cache-backed balloon device driver.
-Message-ID: <20120830085724.GF10269@redhat.com>
-References: <1340742778-11282-1-git-send-email-fes@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340742778-11282-1-git-send-email-fes@google.com>
+	id S1753190Ab2H3I7x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 04:59:53 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:57269 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752334Ab2H3I7v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 04:59:51 -0400
+X-AuditID: cbfee61a-b7fc66d0000043b7-ea-503f2b86e628
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: myungjoo.ham@gmail.com, rjw@sisk.pl, kyungmin.park@samsung.com,
+        khilman@ti.com, markgross@thegnar.org, jean.pihet@newoldbits.com,
+        mturquette@ti.com, jonghwa3.lee@samsung.com
+Subject: [PATCH v3 0/2] PM / devfreq: support PM-QoS at devfreq core.
+Date: Thu, 30 Aug 2012 18:00:01 +0900
+Message-id: <1346317203-7357-1-git-send-email-myungjoo.ham@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPJMWRmVeSWpSXmKPExsVy+t9jQd02bfsAgyfzVC0u75rDZvG59wij
+	A5PH501yAYxRXDYpqTmZZalF+nYJXBltZ+4wFvxjrdj14R5jA+M3li5GDg4JAROJmfNCuhg5
+	gUwxiQv31rN1MXJxCAlMZ5TY2bEKymlhkjj3+yYzSBWbgK7E1g13WUBsEQEridP/O5hBipgF
+	tjJKXDvRwAqSEBZwlThw4gJYA4uAqsTE95/BbF4Bd4nm+c8YIdYpSCy495ZtAiP3AkaGVYyi
+	qQXJBcVJ6bmGesWJucWleel6yfm5mxjB3nwmtYNxZYPFIUYBDkYlHl6OTLsAIdbEsuLK3EOM
+	EhzMSiK87Pz2AUK8KYmVValF+fFFpTmpxYcYpTlYlMR5nc4BVQukJ5akZqemFqQWwWSZODil
+	GhhPX17143rgh+mRs6vOO6wXiXrFzJPG65u+RvTXpsKXL5My/i/v2Prtavatz1rqp/PfxOV9
+	+mgaM3uRgMoEnxeHZoY9Pz0h5o3VT/4nbXJ8TzounrDjDuve3Jed8vjng5+bT27Z2PqirZ2V
+	65r1gknXZoc+z/QUY/Ux+arx+ruI1Ka7n5QDXpQtVGIpzkg01GIuKk4EAPQQQWbiAQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 26, 2012 at 01:32:58PM -0700, Frank Swiderski wrote:
-> +static void fill_balloon(struct virtio_balloon *vb, size_t num)
-> +{
-> +	int err;
-> +
-> +	/* We can only do one array worth at a time. */
-> +	num = min(num, ARRAY_SIZE(vb->pfns));
-> +
-> +	for (vb->num_pfns = 0; vb->num_pfns < num; vb->num_pfns++) {
-> +		struct page *page;
-> +		unsigned long inode_pfn = find_available_inode_page(vb);
-> +		/* Should always be able to find a page. */
-> +		BUG_ON(!inode_pfn);
-> +		page = read_mapping_page(the_inode.inode.i_mapping, inode_pfn,
-> +					 NULL);
-> +		if (IS_ERR(page)) {
-> +			if (printk_ratelimit())
-> +				dev_printk(KERN_INFO, &vb->vdev->dev,
-> +					   "Out of puff! Can't get %zu pages\n",
-> +					   num);
-> +			break;
-> +		}
-> +
-> +		/* Set the page to be dirty */
-> +		set_page_dirty(page);
-> +
-> +		vb->pfns[vb->num_pfns] = page_to_pfn(page);
-> +	}
-> +
-> +	/* Didn't get any?  Oh well. */
-> +	if (vb->num_pfns == 0)
-> +		return;
+This patchset enabled devfreq devices to handle QoS requests by simply
+supplying a table of QoS values and minimum frequencies to support the
+QoS values.
 
-Went to look at this driver, and noticed caller will re-invoke
-this immediately if this triggers, so we busy-wait
-re-trying this. When does read_mapping_page fail?
-Is there any condition we could wait on?
+Major changes since the last patchset (v2-resend)
+- Support per-dev QoS requests
+- Removed dependencies on the QoS class definitions
+
+The patchset is going to be shown at
+http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/devfreq-for-next
+within hours as well.
+
+MyungJoo Ham (2):
+  PM / devfreq: add global PM QoS support
+  PM / devfreq: support per-dev PM-QoS in devfreq
+
+ drivers/devfreq/devfreq.c |  135 +++++++++++++++++++++++++++++++++++++++++++-
+ include/linux/devfreq.h   |   41 ++++++++++++++
+ 2 files changed, 172 insertions(+), 4 deletions(-)
 
 -- 
-MST
+1.7.4.1
+
