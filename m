@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753212Ab2H3Vnz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 17:43:55 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:40630 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753164Ab2H3Vnv (ORCPT
+	id S1753300Ab2H3VoF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 17:44:05 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:33282 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753010Ab2H3VoA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 17:43:51 -0400
+	Thu, 30 Aug 2012 17:44:00 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -17,102 +17,87 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
         "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 04/15] rcu: Permit RCU_NONIDLE() to be used from interrupt context
-Date: Thu, 30 Aug 2012 11:56:17 -0700
-Message-Id: <1346352988-32444-4-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 01/15] rcu: Add PROVE_RCU_DELAY to provoke difficult races
+Date: Thu, 30 Aug 2012 11:56:14 -0700
+Message-Id: <1346352988-32444-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
-In-Reply-To: <1346352988-32444-1-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20120830185607.GA32148@linux.vnet.ibm.com>
 References: <20120830185607.GA32148@linux.vnet.ibm.com>
- <1346352988-32444-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12083021-4242-0000-0000-000002BA0758
+x-cbid: 12083021-1780-0000-0000-000008E024FA
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000293; HX=3.00000196; KW=3.00000007;
+ PH=3.00000001; SC=3.00000007; SDB=6.00169896; UDB=6.00038517; UTC=2012-08-30
+ 21:43:58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-There is a need to use RCU from interrupt context, but either before
-rcu_irq_enter() is called or after rcu_irq_exit() is called.  If the
-interrupt occurs from idle, then lockdep-RCU will complain about such
-uses, as they appear to be illegal uses of RCU from the idle loop.
-In other environments, RCU_NONIDLE() could be used to properly protect
-the use of RCU, but RCU_NONIDLE() currently cannot be invoked except
-from process context.
+There have been some recent bugs that were triggered only when
+preemptible RCU's __rcu_read_unlock() was preempted just after setting
+->rcu_read_lock_nesting to INT_MIN, which is a low-probability event.
+Therefore, reproducing those bugs (to say nothing of gaining confidence
+in alleged fixes) was quite difficult.  This commit therefore creates
+a new debug-only RCU kernel config option that forces a short delay
+in __rcu_read_unlock() to increase the probability of those sorts of
+bugs occurring.
 
-This commit therefore modifies RCU_NONIDLE() to permit its use more
-globally.
-
-Reported-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/linux/rcupdate.h |    6 ++----
- kernel/rcutiny.c         |    2 ++
- kernel/rcutree.c         |    2 ++
- 3 files changed, 6 insertions(+), 4 deletions(-)
+ kernel/rcupdate.c |    4 ++++
+ lib/Kconfig.debug |   14 ++++++++++++++
+ 2 files changed, 18 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 115ead2..0fbbd52 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -210,14 +210,12 @@ extern void exit_rcu(void);
-  * to nest RCU_NONIDLE() wrappers, but the nesting level is currently
-  * quite limited.  If deeper nesting is required, it will be necessary
-  * to adjust DYNTICK_TASK_NESTING_VALUE accordingly.
-- *
-- * This macro may be used from process-level code only.
-  */
- #define RCU_NONIDLE(a) \
- 	do { \
--		rcu_idle_exit(); \
-+		rcu_irq_enter(); \
- 		do { a; } while (0); \
--		rcu_idle_enter(); \
-+		rcu_irq_exit(); \
- 	} while (0)
+diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
+index 4e6a61b..29ca1c6 100644
+--- a/kernel/rcupdate.c
++++ b/kernel/rcupdate.c
+@@ -45,6 +45,7 @@
+ #include <linux/mutex.h>
+ #include <linux/export.h>
+ #include <linux/hardirq.h>
++#include <linux/delay.h>
  
- /*
-diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-index e4163c5..2e073a2 100644
---- a/kernel/rcutiny.c
-+++ b/kernel/rcutiny.c
-@@ -115,6 +115,7 @@ void rcu_irq_exit(void)
- 	rcu_idle_enter_common(newval);
- 	local_irq_restore(flags);
- }
-+EXPORT_SYMBOL_GPL(rcu_irq_exit);
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/rcu.h>
+@@ -81,6 +82,9 @@ void __rcu_read_unlock(void)
+ 	} else {
+ 		barrier();  /* critical section before exit code. */
+ 		t->rcu_read_lock_nesting = INT_MIN;
++#ifdef CONFIG_PROVE_RCU_DELAY
++		udelay(10); /* Make preemption more probable. */
++#endif /* #ifdef CONFIG_PROVE_RCU_DELAY */
+ 		barrier();  /* assign before ->rcu_read_unlock_special load */
+ 		if (unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
+ 			rcu_read_unlock_special(t);
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 2403a63..dacbbe4 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -629,6 +629,20 @@ config PROVE_RCU_REPEATEDLY
  
- /* Common code for rcu_idle_exit() and rcu_irq_enter(), see kernel/rcutree.c. */
- static void rcu_idle_exit_common(long long oldval)
-@@ -172,6 +173,7 @@ void rcu_irq_enter(void)
- 	rcu_idle_exit_common(oldval);
- 	local_irq_restore(flags);
- }
-+EXPORT_SYMBOL_GPL(rcu_irq_enter);
+ 	 Say N if you are unsure.
  
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index f280e54..96b8aff 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -447,6 +447,7 @@ void rcu_irq_exit(void)
- 		rcu_idle_enter_common(rdtp, oldval);
- 	local_irq_restore(flags);
- }
-+EXPORT_SYMBOL_GPL(rcu_irq_exit);
- 
- /*
-  * rcu_idle_exit_common - inform RCU that current CPU is moving away from idle
-@@ -542,6 +543,7 @@ void rcu_irq_enter(void)
- 		rcu_idle_exit_common(rdtp, oldval);
- 	local_irq_restore(flags);
- }
-+EXPORT_SYMBOL_GPL(rcu_irq_enter);
- 
- /**
-  * rcu_nmi_enter - inform RCU of entry to NMI context
++config PROVE_RCU_DELAY
++	bool "RCU debugging: preemptible RCU race provocation"
++	depends on DEBUG_KERNEL && PREEMPT_RCU
++	default n
++	help
++	 There is a class of races that involve an unlikely preemption
++	 of __rcu_read_unlock() just after ->rcu_read_lock_nesting has
++	 been set to INT_MIN.  This feature inserts a delay at that
++	 point to increase the probability of these races.
++
++	 Say Y to increase probability of preemption of __rcu_read_unlock().
++
++	 Say N if you are unsure.
++
+ config SPARSE_RCU_POINTER
+ 	bool "RCU debugging: sparse-based checks for pointer usage"
+ 	default n
 -- 
 1.7.8
 
