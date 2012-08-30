@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751900Ab2H3S41 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 14:56:27 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:55111 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751012Ab2H3S4S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 14:56:18 -0400
-X-Originating-IP: 217.70.178.151
-X-Originating-IP: 173.246.103.110
-Date: Thu, 30 Aug 2012 11:56:09 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+	id S1751530Ab2H3S5L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 14:57:11 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:58321 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750728Ab2H3S5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 14:57:09 -0400
+Date: Thu, 30 Aug 2012 11:56:07 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 0/5] Documentation and rcutorture changes
-Message-ID: <20120830185608.GA6749@jtriplet-mobl1>
-References: <20120830184448.GA31753@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 0/15] Miscellaneous fixes
+Message-ID: <20120830185607.GA32148@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120830184448.GA31753@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12083018-1976-0000-0000-000010BE14BB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 11:44:48AM -0700, Paul E. McKenney wrote:
-> Hello!
-> 
-> This series covers changes to rcutorture and documentation updates.
-> The individual patches in this series are as follows:
-> 
-> 1.	Update rcutorture default values so that casual rcutorture
-> 	users will do more aggressive testing.
-> 2.	Make rcutorture track CPU-hotplug latency statistics.
-> 3.	Document SRCU's new-found ability to be used by offline and
-> 	idle CPUs, and also emphasize SRCU's limitations.
-> 4.	Use the new pr_*() interfaces in rcutorture.
-> 5.	Prevent kthread-initialization races in rcutorture.
-> 
-> 							Thanx, Paul
-> 
-> ------------------------------------------------------------------------
-> 
->  b/Documentation/RCU/checklist.txt |    6 +
->  b/Documentation/RCU/whatisRCU.txt |    9 +-
->  b/kernel/rcutorture.c             |    4 -
->  kernel/rcutorture.c               |  152 +++++++++++++++++++++++---------------
->  4 files changed, 108 insertions(+), 63 deletions(-)
+Hello!
 
-Something seems wrong with this diffstat; how'd the b/ prefixes get
-there, and why does it list kernel/rcutorture.c twice, once with and
-once without?
+This series contains miscellaneous fixes.  The individual fixes are as
+follows:
 
-- Josh Triplett
+1.	Add PROVE_RCU_DELAY Kconfig parameter to add delays as needed to
+	provoke difficult races.
+2.	Pull TINY_RCU dyntick-idle tracing into non-idle region.
+3.	Properly initialize ->boost_tasks on CPU offline.
+4.	Permit RCU_NONIDLE() to be used from interrupt context.
+5.	Improve boost selection when moving tasks to root rcu_node.
+6.	Make offline-CPU checking allow for indefinite delays.
+7.	Fix obsolete rcu_initiate_boost() header comment.
+8.	Apply for_each_rcu_flavor() to increment_cpu_stall_ticks().
+9.	Avoid segfault in rcu_print_detail_task_stall_rnp().
+10.	Protect rcu_node accesses during CPU stall warnings.
+11.	Avoid spurious RCU CPU stall warnings.
+12.	Remove redundant memory barrier from __call_rcu().
+13.	Move TINY_PREEMPT_RCU away from raw_local_irq_save().
+14.	RCU permitted to stop idle entry via softirq.
+15.	Replace kmemleak use of list_for_each_continue_rcu() with
+	list_for_each_entry_continue_rcu() (courtesy of Michael Wang).
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+ b/include/linux/interrupt.h |    2 +
+ b/include/linux/rcupdate.h  |    6 +---
+ b/kernel/rcupdate.c         |    4 ++
+ b/kernel/rcutiny.c          |   31 +++++++++++----------
+ b/kernel/rcutiny_plugin.h   |   10 +++---
+ b/kernel/rcutree.c          |    2 +
+ b/kernel/rcutree_plugin.h   |    7 ++--
+ b/kernel/time/tick-sched.c  |    3 +-
+ b/lib/Kconfig.debug         |   14 +++++++++
+ b/mm/kmemleak.c             |    6 +---
+ kernel/rcutiny.c            |    2 +
+ kernel/rcutree.c            |   64 ++++++++++++++++++--------------------------
+ kernel/rcutree_plugin.h     |   24 ++++++++--------
+ 13 files changed, 95 insertions(+), 80 deletions(-)
+
