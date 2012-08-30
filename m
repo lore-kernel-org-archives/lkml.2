@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752891Ab2H3I1H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 04:27:07 -0400
-Received: from mga01.intel.com ([192.55.52.88]:25358 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752375Ab2H3I1F convert rfc822-to-8bit (ORCPT
+	id S1752938Ab2H3Ica (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 04:32:30 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:63735 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752681Ab2H3Ic2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 04:27:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,338,1344236400"; 
-   d="scan'208";a="215673729"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "airlied@linux.ie" <airlied@linux.ie>,
-        "Shi, Yang A" <yang.a.shi@intel.com>
-Subject: drm: Adding the option IRQ_ONESHOT to support irq oneshot
-Thread-Topic: drm: Adding the option IRQ_ONESHOT to support irq oneshot
-Thread-Index: Ac2GiTRA4atAo+8LSdC3HwZnlXLsOg==
-Date: Thu, 30 Aug 2012 08:27:01 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A172DCC@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 30 Aug 2012 04:32:28 -0400
 MIME-Version: 1.0
+In-Reply-To: <2132522857.5273.1346300120620.JavaMail.root@mailstore2.iitkgp.ac.in>
+References: <377703089.3951.1346238221003.JavaMail.root@mailstore2.iitkgp.ac.in>
+	<2132522857.5273.1346300120620.JavaMail.root@mailstore2.iitkgp.ac.in>
+Date: Thu, 30 Aug 2012 14:02:28 +0530
+Message-ID: <CAK7N6vrfHr1YKzZoVs1NBLZfOn7qa_993zQinfGx8uN-j+Gwig@mail.gmail.com>
+Subject: Re: need help on development of linux kernel
+From: anish singh <anish198519851985@gmail.com>
+To: Sachin Agarwalla <sachin.agarwalla@cse.iitkgp.ernet.in>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: liu chuansheng <chuansheng.liu@intel.com>
-Subject: [PATCH] drm: Adding the option IRQ_ONESHOT to support irq oneshot
+On Thu, Aug 30, 2012 at 9:45 AM, Sachin Agarwalla
+<sachin.agarwalla@cse.iitkgp.ernet.in> wrote:
+> Dear Sir/Madam,
+>   I have some questions on development of linux kernel as follows:-
+> 1.I want to know the location of files in linux kernel source code that contains timer initialization and scheduler part.
+Documentation/timers
+Documentation/Schedulers
+> 2.Also I want to know location of header files(or library files) that are present in the above files.
+> 3.Is there any version of linux kernel that uses openmp or inteltbb or parallelc tool.
+> I have downloaded linux kernel source code and search in that also search in net but could not find out.
+> thanking you,
 
-For some platforms, we want the irq is handled as one shot,
-then even when we use the irq thread, with this option, the new
-irq will come until the irq thread finished.
-
-So we have the requirement for IRQ_ONESHOT.
-
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
----
- drivers/gpu/drm/drm_irq.c |    3 +++
- include/drm/drmP.h        |    1 +
- 2 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/gpu/drm/drm_irq.c b/drivers/gpu/drm/drm_irq.c
-index 03f16f3..7a8a581 100644
---- a/drivers/gpu/drm/drm_irq.c
-+++ b/drivers/gpu/drm/drm_irq.c
-@@ -345,6 +345,9 @@ int drm_irq_install(struct drm_device *dev)
-        if (drm_core_check_feature(dev, DRIVER_IRQ_SHARED))
-                sh_flags = IRQF_SHARED;
- 
-+        if (drm_core_check_feature(dev, DRIVER_IRQ_ONESHOT))
-+                sh_flags |= IRQF_ONESHOT;
-+
-        if (dev->devname)
-                irqname = dev->devname;
-        else
-diff --git a/include/drm/drmP.h b/include/drm/drmP.h
-index d6b67bb..dfede31 100644
---- a/include/drm/drmP.h
-+++ b/include/drm/drmP.h
-@@ -152,6 +152,7 @@ int drm_err(const char *func, const char *format, ...);
- #define DRIVER_GEM         0x1000
- #define DRIVER_MODESET     0x2000
- #define DRIVER_PRIME       0x4000
-+#define DRIVER_IRQ_ONESHOT 0x8000
- 
- #define DRIVER_BUS_PCI 0x1
- #define DRIVER_BUS_PLATFORM 0x2
--- 
-1.7.0.4
+> waiting for your reply,
+> yours faithfully,
+> sachinagarwalla
+>
+>
+>
+>
+>
+>
+>
+>
+>
+>
+>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
