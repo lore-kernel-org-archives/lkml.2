@@ -1,93 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752460Ab2H3UmZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 16:42:25 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33429 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884Ab2H3UmY (ORCPT
+	id S1752524Ab2H3Usm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 16:48:42 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:57665 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751884Ab2H3Usk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 16:42:24 -0400
-Message-ID: <503FD021.6060804@linutronix.de>
-Date: Thu, 30 Aug 2012 22:42:09 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.6esrpre) Gecko/20120817 Icedove/10.0.6
+	Thu, 30 Aug 2012 16:48:40 -0400
+Date: Thu, 30 Aug 2012 13:38:42 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 2/5] rcu: Track CPU-hotplug duration
+ statistics
+Message-ID: <20120830203842.GH30381@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120830184448.GA31753@linux.vnet.ibm.com>
+ <1346352312-31987-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346352312-31987-2-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20120830190017.GC6749@jtriplet-mobl1>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakaynahalli <ananth@in.ibm.com>, stan_shebs@mentor.com,
-        gdb-patches@sourceware.org
-Subject: Re: [RFC 5/5 v2] uprobes: add global breakpoints
-References: <1344355952-2382-1-git-send-email-bigeasy@linutronix.de> <1344355952-2382-6-git-send-email-bigeasy@linutronix.de> <1344857686.31459.25.camel@twins> <20120821194200.GA32293@linutronix.de> <20120822134837.GA28878@redhat.com> <503BC2F1.5060003@linutronix.de> <20120829154952.GA29101@redhat.com>
-In-Reply-To: <20120829154952.GA29101@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120830190017.GC6749@jtriplet-mobl1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12083020-6148-0000-0000-0000091737B4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2012 05:49 PM, Oleg Nesterov wrote:
->> That would help but would require a change in ptrace_attach() or
->> something in gdb/strace/…
->
-> Well, I still think you should not touch ptrace_attach() at all.
+On Thu, Aug 30, 2012 at 12:00:18PM -0700, Josh Triplett wrote:
+> On Thu, Aug 30, 2012 at 11:45:09AM -0700, Paul E. McKenney wrote:
+> > From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+> > 
+> > Many rcutorture runs include CPU-hotplug operations in their stress
+> > testing.  This commit accumulates statistics on the durations of these
+> > operations in deference to the recent concern about the overhead and
+> > latency of these operations.
+> 
+> How many jiffies, on average, do these operations take?  Measuring these
+> using jiffies seems highly prone to repeated rounding error.
 
-Okay.
+On my laptop, 30-140 depending on what hotplug patches I have in place.
+Some users have reported as few as 2-3 jiffies, but they don't use
+rcutorture.
 
->> One thing I just noticed: If I don't register a handler for SIGUSR1 and
->> send one to the application while it is in TASK_KILLABLE then the
->> signal gets delivered.
->
-> Not really delivered... OK, it can be delivered (dequeued) before
-> the task sees SIGKILL, but this can be changed.
->
-> In short: in this case the task is correctly SIGKILL'ed. See sig_fatal()
-> in complete_signal().
->
->> If I register a signal handler for it than it
->> gets blocked and delivered once I resume the task.
->
-> Sure, if you have a handler, the signal is not fatal.
->
->> Shouldn't it get blocked even if I don't register a handler for it?
->
-> No.
+I eagerly look forward to the time when I need to change the timebase for
+my own use.  ;-)
 
-Now, that I read again it looks like a brain fart on my side.
+							Thanx, Paul
 
->> ach, those signals make everything complicated. I though signals are
->> blocked until the single step is done
->
-> Yes, see uprobe_deny_signal().
->
->> but my test just showed my
->> something different.
->
-> I guess you missed the UTASK_SSTEP_TRAPPED logic.
->
-> But this doesn't matter. Surely we must not "block" signals _after_
-> the single step is done, and this is the problem.
->
->> Okay, what now?
->
-> IMHO: don't do this ;)
->
->> Blocking signals isn't probably a good idea.
->
-> This is bad and wrong idea, I think.
->
-> And, once again. Whatever you do, you can race with uprobe_register().
-> I mean, you must never expect that the task will hit the same uprobe
-> again, even if you are going to re-execute the same insn.
+> > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > ---
+> >  kernel/rcutorture.c |   42 +++++++++++++++++++++++++++++++++++++-----
+> >  1 files changed, 37 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
+> > index 86315d3..c6cf6ff 100644
+> > --- a/kernel/rcutorture.c
+> > +++ b/kernel/rcutorture.c
+> > @@ -176,8 +176,14 @@ static long n_rcu_torture_boosts;
+> >  static long n_rcu_torture_timers;
+> >  static long n_offline_attempts;
+> >  static long n_offline_successes;
+> > +static unsigned long sum_offline;
+> > +static int min_offline = -1;
+> > +static int max_offline;
+> >  static long n_online_attempts;
+> >  static long n_online_successes;
+> > +static unsigned long sum_online;
+> > +static int min_online = -1;
+> > +static int max_online;
+> >  static long n_barrier_attempts;
+> >  static long n_barrier_successes;
+> >  static struct list_head rcu_torture_removed;
+> > @@ -1214,11 +1220,13 @@ rcu_torture_printk(char *page)
+> >  		       n_rcu_torture_boost_failure,
+> >  		       n_rcu_torture_boosts,
+> >  		       n_rcu_torture_timers);
+> > -	cnt += sprintf(&page[cnt], "onoff: %ld/%ld:%ld/%ld ",
+> > -		       n_online_successes,
+> > -		       n_online_attempts,
+> > -		       n_offline_successes,
+> > -		       n_offline_attempts);
+> > +	cnt += sprintf(&page[cnt],
+> > +		       "onoff: %ld/%ld:%ld/%ld %d,%d:%d,%d %lu:%lu (HZ=%d) ",
+> > +		       n_online_successes, n_online_attempts,
+> > +		       n_offline_successes, n_offline_attempts,
+> > +		       min_online, max_online,
+> > +		       min_offline, max_offline,
+> > +		       sum_online, sum_offline, HZ);
+> >  	cnt += sprintf(&page[cnt], "barrier: %ld/%ld:%ld",
+> >  		       n_barrier_successes,
+> >  		       n_barrier_attempts,
+> > @@ -1490,8 +1498,10 @@ static int __cpuinit
+> >  rcu_torture_onoff(void *arg)
+> >  {
+> >  	int cpu;
+> > +	unsigned long delta;
+> >  	int maxcpu = -1;
+> >  	DEFINE_RCU_RANDOM(rand);
+> > +	unsigned long starttime;
+> >  
+> >  	VERBOSE_PRINTK_STRING("rcu_torture_onoff task started");
+> >  	for_each_online_cpu(cpu)
+> > @@ -1509,6 +1519,7 @@ rcu_torture_onoff(void *arg)
+> >  				printk(KERN_ALERT "%s" TORTURE_FLAG
+> >  				       "rcu_torture_onoff task: offlining %d\n",
+> >  				       torture_type, cpu);
+> > +			starttime = jiffies;
+> >  			n_offline_attempts++;
+> >  			if (cpu_down(cpu) == 0) {
+> >  				if (verbose)
+> > @@ -1516,12 +1527,23 @@ rcu_torture_onoff(void *arg)
+> >  					       "rcu_torture_onoff task: offlined %d\n",
+> >  					       torture_type, cpu);
+> >  				n_offline_successes++;
+> > +				delta = jiffies - starttime;
+> > +				sum_offline += delta;
+> > +				if (min_offline < 0) {
+> > +					min_offline = delta;
+> > +					max_offline = delta;
+> > +				}
+> > +				if (min_offline > delta)
+> > +					min_offline = delta;
+> > +				if (max_offline < delta)
+> > +					max_offline = delta;
+> >  			}
+> >  		} else if (cpu_is_hotpluggable(cpu)) {
+> >  			if (verbose)
+> >  				printk(KERN_ALERT "%s" TORTURE_FLAG
+> >  				       "rcu_torture_onoff task: onlining %d\n",
+> >  				       torture_type, cpu);
+> > +			starttime = jiffies;
+> >  			n_online_attempts++;
+> >  			if (cpu_up(cpu) == 0) {
+> >  				if (verbose)
+> > @@ -1529,6 +1551,16 @@ rcu_torture_onoff(void *arg)
+> >  					       "rcu_torture_onoff task: onlined %d\n",
+> >  					       torture_type, cpu);
+> >  				n_online_successes++;
+> > +				delta = jiffies - starttime;
+> > +				sum_online += delta;
+> > +				if (min_online < 0) {
+> > +					min_online = delta;
+> > +					max_online = delta;
+> > +				}
+> > +				if (min_online > delta)
+> > +					min_online = delta;
+> > +				if (max_online < delta)
+> > +					max_online = delta;
+> >  			}
+> >  		}
+> >  		schedule_timeout_interruptible(onoff_interval * HZ);
+> > -- 
+> > 1.7.8
+> > 
+> 
 
-After witting why I think you are wrong I understood what you meant :)
-So let me try to get this right…
-
->
-> Oleg.
-
-Sebastian
