@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850Ab2H3STM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 14:19:12 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:49126 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751737Ab2H3STI (ORCPT
+	id S1753631Ab2H3STK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 14:19:10 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:46706 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275Ab2H3STI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 30 Aug 2012 14:19:08 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -15,66 +15,51 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        Dimitri Sivanich <sivanich@sgi.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 20/23] rcu: Remove callback acceleration from grace-period initialization
-Date: Thu, 30 Aug 2012 11:18:35 -0700
-Message-Id: <1346350718-30937-20-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 08/23] rcu: Segregate rcu_state fields to improve cache locality
+Date: Thu, 30 Aug 2012 11:18:23 -0700
+Message-Id: <1346350718-30937-8-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120830181811.GA29154@linux.vnet.ibm.com>
  <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12083018-7282-0000-0000-00000C74E2DD
+x-cbid: 12083018-6148-0000-0000-000009162B5C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+From: Dimitri Sivanich <sivanich@sgi.com>
 
-Before grace-period initialization was moved to a kthread, the CPU
-invoking this code would have at least one callback that needed
-a grace period, often a newly registered callback.  However, moving
-grace-period initialization means that the CPU with the callback
-that was requesting a grace period is not necessarily the CPU that
-is initializing the grace period, so this acceleration is less
-valuable.  Because it also adds to the complexity of reasoning about
-correctness, this commit removes it.
+The fields in the rcu_state structure that are protected by the
+root rcu_node structure's ->lock can share a cache line with the
+fields protected by ->onofflock.  This can result in excessive
+memory contention on large systems, so this commit applies
+____cacheline_internodealigned_in_smp to the ->onofflock field in
+order to segregate them.
 
+Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Tested-by: Dimitri Sivanich <sivanich@sgi.com>
 ---
- kernel/rcutree.c |   19 -------------------
- 1 files changed, 0 insertions(+), 19 deletions(-)
+ kernel/rcutree.h |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 86903df..44609c3 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -1055,25 +1055,6 @@ static int rcu_gp_init(struct rcu_state *rsp)
- 	rsp->gpnum++;
- 	trace_rcu_grace_period(rsp->name, rsp->gpnum, "start");
- 	record_gp_stall_check_time(rsp);
--
--	/*
--	 * Because this CPU just now started the new grace period, we
--	 * know that all of its callbacks will be covered by this upcoming
--	 * grace period, even the ones that were registered arbitrarily
--	 * recently.    Therefore, advance all RCU_NEXT_TAIL callbacks
--	 * to RCU_NEXT_READY_TAIL.  When the CPU later recognizes the
--	 * start of the new grace period, it will advance all callbacks
--	 * one position, which will cause all of its current outstanding
--	 * callbacks to be handled by the newly started grace period.
--	 *
--	 * Other CPUs cannot be sure exactly when the grace period started.
--	 * Therefore, their recently registered callbacks must pass through
--	 * an additional RCU_NEXT_READY stage, so that they will be handled
--	 * by the next RCU grace period.
--	 */
--	rdp = __this_cpu_ptr(rsp->rda);
--	rdp->nxttail[RCU_NEXT_READY_TAIL] = rdp->nxttail[RCU_NEXT_TAIL];
--
- 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index effb273..5d92b80 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -394,7 +394,8 @@ struct rcu_state {
  
- 	/* Exclude any concurrent CPU-hotplug operations. */
+ 	/* End of fields guarded by root rcu_node's lock. */
+ 
+-	raw_spinlock_t onofflock;		/* exclude on/offline and */
++	raw_spinlock_t onofflock ____cacheline_internodealigned_in_smp;
++						/* exclude on/offline and */
+ 						/*  starting new GP. */
+ 	struct rcu_head *orphan_nxtlist;	/* Orphaned callbacks that */
+ 						/*  need a grace period. */
 -- 
 1.7.8
 
