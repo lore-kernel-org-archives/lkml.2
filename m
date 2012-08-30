@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752742Ab2H3R0d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 13:26:33 -0400
-Received: from www.linutronix.de ([62.245.132.108]:60890 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751997Ab2H3R0c (ORCPT
+	id S1752917Ab2H3RoS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 13:44:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54794 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750797Ab2H3RoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 13:26:32 -0400
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: ananth@in.ibm.com
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
-        oleg@redhat.com, Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH] uprobes: don't put NULL pointer in uprobe_register()
-Date: Thu, 30 Aug 2012 19:26:22 +0200
-Message-Id: <1346347582-20945-1-git-send-email-bigeasy@linutronix.de>
-X-Mailer: git-send-email 1.7.10.4
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 30 Aug 2012 13:44:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <cover.1345978012.git.joe@perches.com>
+References: <cover.1345978012.git.joe@perches.com>
+From: Jim Cromie <jim.cromie@gmail.com>
+Date: Thu, 30 Aug 2012 11:43:45 -0600
+Message-ID: <CAJfuBxyQc-XeNHxw0_XDs0JuCrNArNzcgsmrLya4ncDvSojZxQ@mail.gmail.com>
+Subject: Re: [PATCH 0/5] dev_<level> and dynamic_debug cleanups
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jason Baron <jbaron@redhat.com>, Kay Sievers <kay@vrfy.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-alloc_uprobe() might return a NULL pointer, put_uprobe() can't deal with
-this.
+On Sun, Aug 26, 2012 at 5:25 AM, Joe Perches <joe@perches.com> wrote:
+> The recent commit to fix dynamic_debug was a bit unclean.
+> Neaten the style for dynamic_debug.
+> Reduce the stack use of message logging that uses netdev_printk
+> Add utility functions dev_printk_emit and dev_vprintk_emit for /dev/kmsg.
+>
+> Joe Perches (5):
+>   dev_dbg/dynamic_debug: Update to use printk_emit, optimize stack
+>   netdev_printk/dynamic_netdev_dbg: Directly call printk_emit
+>   netdev_printk/netif_printk: Remove a superfluous logging colon
+>   dev: Add dev_vprintk_emit and dev_printk_emit
+>   device and dynamic_debug: Use dev_vprintk_emit and dev_printk_emit
+>
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- kernel/events/uprobes.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Ive tested this on 2 builds differing only by DYNAMIC_DEBUG
+It works for me on x86-64
 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 7b3112c..30f3e23 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -897,7 +897,8 @@ int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *
- 	}
- 
- 	mutex_unlock(uprobes_hash(inode));
--	put_uprobe(uprobe);
-+	if (uprobe)
-+		put_uprobe(uprobe);
- 
- 	return ret;
- }
--- 
-1.7.10.4
+However, I just booted a non-dyndbg build on x86-32, and got this.
 
+
+root@voyage:~# dmesg | grep Unknown
+mac80211: Unknown symbol __dynamic_dev_dbg (err 0)
+mac80211: Unknown symbol __dynamic_pr_debug (err 0)
+scx200_acb: Unknown symbol __dynamic_dev_dbg (err 0)
+scx200_acb: Unknown symbol __dynamic_pr_debug (err 0)
+hwmon: Unknown symbol __dynamic_dev_dbg (err 0)
+nsc_gpio: Unknown symbol __dynamic_dev_dbg (err 0)
+nsc_gpio: Unknown symbol __dynamic_dev_dbg (err 0)
+root@voyage:~#
+
+It may be my error, will investigate asap,
+but wanted to report now.
+
+thanks
