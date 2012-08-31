@@ -1,85 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753500Ab2HaAag (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 20:30:36 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44010 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753327Ab2HaAaN (ORCPT
+	id S1753325Ab2HaAcC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 20:32:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45357 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753010Ab2HaAcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 20:30:13 -0400
-Message-ID: <1346373442.15463.3.camel@vkoul-mobl4>
-Subject: Re: [PATCH] ioat: Adding Ivy Bridge IOATDMA PCI device IDs
-From: Vinod Koul <vkoul@infradead.org>
-To: Dave Jiang <dave.jiang@intel.com>
-Cc: vinod.koul@intel.com, djbw@fb.com, linux-kernel@vger.kernel.org
-Date: Fri, 31 Aug 2012 06:07:22 +0530
-In-Reply-To: <20120824233619.9218.25014.stgit@djiang5-linux.ch.intel.com>
-References: <20120824233619.9218.25014.stgit@djiang5-linux.ch.intel.com>
-Organization: 
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	Thu, 30 Aug 2012 20:32:01 -0400
+Date: Thu, 30 Aug 2012 17:35:31 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jean Delvare <khali@linux-fr.org>, lm-sensors@lm-sensors.org
+Subject: Re: [PATCH v3] linux/kernel.h: Fix DIV_ROUND_CLOSEST to support
+ negative operands
+Message-Id: <20120830173531.291e7b6d.akpm@linux-foundation.org>
+In-Reply-To: <1346371847-21384-1-git-send-email-linux@roeck-us.net>
+References: <1346371847-21384-1-git-send-email-linux@roeck-us.net>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-08-24 at 16:36 -0700, Dave Jiang wrote:
-> Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-Sounds okay to me, I can carry it once Dan acks it
-> ---
-> 
->  drivers/dma/ioat/pci.c |   22 ++++++++++++++++++++++
->  1 files changed, 22 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/dma/ioat/pci.c b/drivers/dma/ioat/pci.c
-> index 5e3a40f..c057306 100644
-> --- a/drivers/dma/ioat/pci.c
-> +++ b/drivers/dma/ioat/pci.c
-> @@ -40,6 +40,17 @@ MODULE_VERSION(IOAT_DMA_VERSION);
->  MODULE_LICENSE("Dual BSD/GPL");
->  MODULE_AUTHOR("Intel Corporation");
->  
-> +#define PCI_DEVICE_ID_INTEL_IOAT_IVB0	0x0e20
-> +#define PCI_DEVICE_ID_INTEL_IOAT_IVB1	0x0e21
-> +#define PCI_DEVICE_ID_INTEL_IOAT_IVB2	0x0e22
-> +#define PCI_DEVICE_ID_INTEL_IOAT_IVB3	0x0e23
-> +#define PCI_DEVICE_ID_INTEL_IOAT_IVB4	0x0e24
-> +#define PCI_DEVICE_ID_INTEL_IOAT_IVB5	0x0e25
-> +#define PCI_DEVICE_ID_INTEL_IOAT_IVB6	0x0e26
-> +#define PCI_DEVICE_ID_INTEL_IOAT_IVB7	0x0e27
-> +#define PCI_DEVICE_ID_INTEL_IOAT_IVB8	0x0e2e
-> +#define PCI_DEVICE_ID_INTEL_IOAT_IVB9	0x0e2f
-> +
->  static struct pci_device_id ioat_pci_tbl[] = {
->  	/* I/OAT v1 platforms */
->  	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT) },
-> @@ -83,6 +94,17 @@ static struct pci_device_id ioat_pci_tbl[] = {
->  	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_SNB8) },
->  	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_SNB9) },
->  
-> +	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB0) },
-> +	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB1) },
-> +	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB2) },
-> +	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB3) },
-> +	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB4) },
-> +	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB5) },
-> +	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB6) },
-> +	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB7) },
-> +	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB8) },
-> +	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB9) },
-> +
->  	{ 0, }
->  };
->  MODULE_DEVICE_TABLE(pci, ioat_pci_tbl);
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+On Thu, 30 Aug 2012 17:10:47 -0700 Guenter Roeck <linux@roeck-us.net> wrote:
 
--- 
-~Vinod Koul
-Intel Corp.
+> DIV_ROUND_CLOSEST returns a bad result for dividends with different sign:
+> 	DIV_ROUND_CLOSEST(-2, 2) = 0
+> 
+> Most of the time this does not matter. However, in the hardware monitoring
+> subsystem, DIV_ROUND_CLOSEST is sometimes used on integers which can be
+> negative (such as temperatures).
+> 
+> ...
+>
+> --- a/include/linux/kernel.h
+> +++ b/include/linux/kernel.h
+> @@ -84,8 +84,11 @@
+>  )
+>  #define DIV_ROUND_CLOSEST(x, divisor)(			\
+>  {							\
+> -	typeof(divisor) __divisor = divisor;		\
+> -	(((x) + ((__divisor) / 2)) / (__divisor));	\
+> +	typeof(x) __x = x;				\
+> +	typeof(divisor) __d = divisor;			\
+> +	((__x) < 0) == ((__d) < 0) ?			\
+> +		(((__x) + ((__d) / 2)) / (__d)) :	\
+> +		(((__x) - ((__d) / 2)) / (__d));	\
+>  }							\
+>  )
 
+Your v2 had that sneaky little "(typeof(x))-1 >= 0" trick in it, so
+half the code gets elided at compile time if `x' (why isn't this called
+"dividend") has an unsigned type.
+
+Would retaining that be of any benefit?  We do want to avoid doing the
+compare-and-branch in as many cases as possible.
+
+Also, this would be a great opportunity to document the macro's beahviour
+(I do go on).  That would be a useful thing to do, given that we're now
+handling the four +/+, +/-, -/+, -/- cases and the behaviour for each
+case isn't terribly obvious.
