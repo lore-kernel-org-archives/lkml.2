@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754192Ab2HaPmS (ORCPT <rfc822;w@1wt.eu>);
+	id S1754246Ab2HaPmU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 11:42:20 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:37042 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754188Ab2HaPmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 31 Aug 2012 11:42:18 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:35783 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753966Ab2HaPmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 11:42:17 -0400
-Message-ID: <1346427736.31659.13.camel@joe2Laptop>
-Subject: Re: [PATCH 2/4] scripts/checkincludes.pl: Simplify and shorten
- argument logic
-From: Joe Perches <joe@perches.com>
-To: Cruz Julian Bishop <cruzjbishop@gmail.com>
-Cc: mcgrof@gmail.com, linux-kernel@vger.kernel.org
-Date: Fri, 31 Aug 2012 08:42:16 -0700
-In-Reply-To: <1346419090-3808-3-git-send-email-cruzjbishop@gmail.com>
-References: <1346419090-3808-1-git-send-email-cruzjbishop@gmail.com>
-	 <1346419090-3808-3-git-send-email-cruzjbishop@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+Message-ID: <5040DB49.9000403@ti.com>
+Date: Fri, 31 Aug 2012 17:42:01 +0200
+From: Benoit Cousson <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: "Hiremath, Vaibhav" <hvaibhav@ti.com>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>,
+        "Hilman, Kevin" <khilman@ti.com>
+Subject: Re: [RFC PATCH] ARM: OMAP2+: omap-device: Do not overwrite resources
+ allocated by OF layer
+References: <1346233691-10294-1-git-send-email-hvaibhav@ti.com> <5040D745.5010909@ti.com> <79CD15C6BA57404B839C016229A409A83EA9EA8E@DBDE01.ent.ti.com>
+In-Reply-To: <79CD15C6BA57404B839C016229A409A83EA9EA8E@DBDE01.ent.ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-08-31 at 23:18 +1000, Cruz Julian Bishop wrote:
-> This patch allows for much easier implementation of arguments
-> when modifying checkincludes.pl
-> 
-> The variable $file is also initially named $arg - I wasn't sure
-> if memory would be a problem (I know it would be in Java/C#) if
-> another $file variable was initialized with the value of $arg,
-> so I just left it.
-> 
-> Overall, this still works nicely. There are some more
-> potential simplifications, but I will cover those in another
-> patch if I decide to implement them tonight.
+On 08/31/2012 05:36 PM, Hiremath, Vaibhav wrote:
+> On Fri, Aug 31, 2012 at 20:54:53, Cousson, Benoit wrote:
+...
+> I think you are getting confused between Vaibhav B and Vaibhav H :)
+> We have two Vaibhav's roaming around here ;-)
 
-perl argument processing is normally done via Getopt::Long.
+Oops, sorry, this is the very first time I realized that two different
+Vaibhav were sending patches on very similar topic...
+That's why you were so good generating a lot of patches :-) You have a
+dual channel of patches :-)
 
-http://perldoc.perl.org/Getopt/Long.html
+> I was not there during LPC this time, it was Vaibhav B who attended it.
+> I will sync up with him and try to get more info on it.
 
+Sorry again for the confusion.
+
+Thanks,
+Benoit
