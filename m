@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755221Ab2HaXwg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 19:52:36 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:48735 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752319Ab2HaXwf (ORCPT
+	id S1755102Ab2HaXx6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 19:53:58 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:53473 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752319Ab2HaXx4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 19:52:35 -0400
-X-Originating-IP: 217.70.178.133
+	Fri, 31 Aug 2012 19:53:56 -0400
+X-Originating-IP: 217.70.178.131
 X-Originating-IP: 173.246.103.110
-Date: Fri, 31 Aug 2012 16:52:25 -0700
+Date: Fri, 31 Aug 2012 16:53:47 -0700
 From: Josh Triplett <josh@joshtriplett.org>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
@@ -27,36 +27,26 @@ Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
         Max Krasnyansky <maxk@qualcomm.com>,
         Stephen Hemminger <shemminger@vyatta.com>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-Subject: Re: [PATCH tip/core/rcu 11/26] rcu: Exit RCU extended QS on user
- preemption
-Message-ID: <20120831235225.GH11771@jtriplet-mobl1>
+Subject: Re: [PATCH tip/core/rcu 12/26] x86: Use the new schedule_user API on
+ userspace preemption
+Message-ID: <20120831235346.GI11771@jtriplet-mobl1>
 References: <20120830210520.GA2824@linux.vnet.ibm.com>
  <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346360743-3628-11-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346360743-3628-12-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1346360743-3628-11-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1346360743-3628-12-git-send-email-paulmck@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 02:05:28PM -0700, Paul E. McKenney wrote:
+On Thu, Aug 30, 2012 at 02:05:29PM -0700, Paul E. McKenney wrote:
 > From: Frederic Weisbecker <fweisbec@gmail.com>
 > 
-> When exceptions or irq are about to resume userspace, if
-> the task needs to be rescheduled, the arch low level code
-> calls schedule() directly.
-> 
-> At that time we may be in extended quiescent state from RCU
-> POV: the exception is not anymore protected inside
-> rcu_user_exit() - rcu_user_enter() and the irq has called
-> rcu_irq_exit() already.
-> 
-> Create a new API schedule_user() that calls schedule() inside
-> rcu_user_exit()-rcu_user_enter() in order to protect it. Archs
-> will need to rely on it now to implement user preemption safely.
+> This way we can exit the RCU extended quiescent state before
+> we schedule a new task from irq/exception exit.
 > 
 > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 > Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -81,27 +71,49 @@ On Thu, Aug 30, 2012 at 02:05:28PM -0700, Paul E. McKenney wrote:
 
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
->  kernel/sched/core.c |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
+>  arch/x86/kernel/entry_64.S |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
 > 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 0bd599b..e841dfc 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -3463,6 +3463,13 @@ asmlinkage void __sched schedule(void)
->  }
->  EXPORT_SYMBOL(schedule);
+> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+> index 69babd8..6230487 100644
+> --- a/arch/x86/kernel/entry_64.S
+> +++ b/arch/x86/kernel/entry_64.S
+> @@ -565,7 +565,7 @@ sysret_careful:
+>  	TRACE_IRQS_ON
+>  	ENABLE_INTERRUPTS(CLBR_NONE)
+>  	pushq_cfi %rdi
+> -	call schedule
+> +	call schedule_user
+>  	popq_cfi %rdi
+>  	jmp sysret_check
 >  
-> +asmlinkage void __sched schedule_user(void)
-> +{
-> +	rcu_user_exit();
-> +	schedule();
-> +	rcu_user_enter();
-> +}
-> +
->  /**
->   * schedule_preempt_disabled - called with preemption disabled
->   *
+> @@ -678,7 +678,7 @@ int_careful:
+>  	TRACE_IRQS_ON
+>  	ENABLE_INTERRUPTS(CLBR_NONE)
+>  	pushq_cfi %rdi
+> -	call schedule
+> +	call schedule_user
+>  	popq_cfi %rdi
+>  	DISABLE_INTERRUPTS(CLBR_NONE)
+>  	TRACE_IRQS_OFF
+> @@ -974,7 +974,7 @@ retint_careful:
+>  	TRACE_IRQS_ON
+>  	ENABLE_INTERRUPTS(CLBR_NONE)
+>  	pushq_cfi %rdi
+> -	call  schedule
+> +	call  schedule_user
+>  	popq_cfi %rdi
+>  	GET_THREAD_INFO(%rcx)
+>  	DISABLE_INTERRUPTS(CLBR_NONE)
+> @@ -1449,7 +1449,7 @@ paranoid_userspace:
+>  paranoid_schedule:
+>  	TRACE_IRQS_ON
+>  	ENABLE_INTERRUPTS(CLBR_ANY)
+> -	call schedule
+> +	call schedule_user
+>  	DISABLE_INTERRUPTS(CLBR_ANY)
+>  	TRACE_IRQS_OFF
+>  	jmp paranoid_userspace
 > -- 
 > 1.7.8
 > 
