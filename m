@@ -1,99 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751227Ab2HaIAZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 04:00:25 -0400
-Received: from mga01.intel.com ([192.55.52.88]:15266 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750801Ab2HaIAY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 04:00:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,346,1344236400"; 
-   d="scan'208";a="216566646"
-Message-ID: <50406F60.5040707@intel.com>
-Date: Fri, 31 Aug 2012 11:01:36 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1751468Ab2HaIAa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 04:00:30 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:32975 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751315Ab2HaIA1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Aug 2012 04:00:27 -0400
 MIME-Version: 1.0
-To: akpm@linux-foundation.org
-CC: Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com
-Subject: Re: [PATCH v2 07/12] rbtree: adjust root color in rb_insert_color()
- only when necessary
-References: <1342139517-3451-1-git-send-email-walken@google.com> <1342139517-3451-8-git-send-email-walken@google.com>
-In-Reply-To: <1342139517-3451-8-git-send-email-walken@google.com>
+In-Reply-To: <20120831043352.GA23663@NickAndBarb.net>
+References: <20120829162527.GA3635@NickAndBarb.net>
+	<20120829151641.20cde4bc@corrin.poochiereds.net>
+	<20120831043352.GA23663@NickAndBarb.net>
+Date: Fri, 31 Aug 2012 12:00:26 +0400
+Message-ID: <CAKywueSY+NOV3irDm9YxepeCyJJhh82o2mgmDLogr+hJPbaYig@mail.gmail.com>
+Subject: Re: WARNING: at fs/inode.c:280 drop_nlink+0x31/0x33()
+From: Pavel Shilovsky <piastryyy@gmail.com>
+To: Nick Pasich <Nick@nickandbarb.net>
+Cc: Jeff Layton <jlayton@redhat.com>, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/07/12 03:31, Michel Lespinasse wrote:
-> The root node of an rbtree must always be black. However, rb_insert_color()
-> only needs to maintain this invariant when it has been broken - that is,
-> when it exits the loop due to the current (red) node being the root.
-> In all other cases (exiting after tree rotations, or exiting due to
-> an existing black parent) the invariant is already satisfied, so there
-> is no need to adjust the root node color.
-> 
-> Signed-off-by: Michel Lespinasse <walken@google.com>
+2012/8/31 Nick Pasich <Nick@nickandbarb.net>:
+> Jeff,
+>
+> I applied this patch to Kernel 3.5.3 from Pavel and the
+> the warning is gone with no problems.
+>
+> Thanks,
+>
+> --( Nick Pasich
+>
+> ##########################################################
+>
+> From df2d6b1fbf2401c5ee04f2ac143ea0954e3a87a6 Mon Sep 17 00:00:00 2001
+> From: Pavel Shilovsky <pshilovsky@samba.org>
+> Date: Fri, 13 Jul 2012 11:59:45 +0400
+> Subject: [PATCH] CIFS: Protect i_nlink from being negative
+>
+> that can cause warning messages.
+>
+> Signed-off-by: Pavel Shilovsky <pshilovsky@samba.org>
 > ---
->  lib/rbtree.c |   19 +++++++++++++++----
->  1 files changed, 15 insertions(+), 4 deletions(-)
-> 
-> diff --git a/lib/rbtree.c b/lib/rbtree.c
-> index 12abb8a..d0be5fc 100644
-> --- a/lib/rbtree.c
-> +++ b/lib/rbtree.c
-> @@ -91,8 +91,21 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
->  {
->  	struct rb_node *parent, *gparent;
->  
-> -	while ((parent = rb_parent(node)) && rb_is_red(parent))
-> -	{
-> +	while (true) {
+>  fs/cifs/inode.c |   13 +++++++++++--
+>  1 files changed, 11 insertions(+), 2 deletions(-)
+>
+> diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
+> index 7354877..88afb1a 100644
+> --- a/fs/cifs/inode.c
+> +++ b/fs/cifs/inode.c
+> @@ -1110,6 +1110,15 @@ undo_setattr:
+>                 goto out_close;
+>  }
+>
+> +/* copied from fs/nfs/dir.c with small changes */
+> +static void
+> +cifs_drop_nlink(struct inode *inode)
+> +{
+> +       spin_lock(&inode->i_lock);
+> +       if (inode->i_nlink > 0)
+> +               drop_nlink(inode);
+> +       spin_unlock(&inode->i_lock);
+> +}
+>
+>  /*
+>   * If dentry->d_inode is null (usually meaning the cached dentry
+> @@ -1166,13 +1175,13 @@ retry_std_delete:
+>  psx_del_no_retry:
+>                 if (!rc) {
+>                                 if (inode)
+> -                       drop_nlink(inode);
+> +                       cifs_drop_nlink(inode);
+>                 } else if (rc == -ENOENT) {
+>                                 d_drop(dentry);
+>                 } else if (rc == -ETXTBSY) {
+>                                 rc = cifs_rename_pending_delete(full_path, dentry, xid);
+>                                 if (rc == 0)
+> -                       drop_nlink(inode);
+> +                       cifs_drop_nlink(inode);
+>                 } else if ((rc == -EACCES) && (dosattr == 0) && inode) {
+>                                 attrs = kzalloc(sizeof(*attrs), GFP_KERNEL);
+>                                 if (attrs == NULL) {
+> --
+> 1.7.3.3
+>
+> ##########################################################
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-cifs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-This breaks tools/perf build in linux-next:
+This one fixes only a part of the problem. Now we have another patch
+for this problem:
 
-../../lib/rbtree.c: In function 'rb_insert_color':
-../../lib/rbtree.c:95:9: error: 'true' undeclared (first use in this function)
-../../lib/rbtree.c:95:9: note: each undeclared identifier is reported only once for each function it appears in
-../../lib/rbtree.c: In function '__rb_erase_color':
-../../lib/rbtree.c:216:9: error: 'true' undeclared (first use in this function)
-../../lib/rbtree.c: In function 'rb_erase':
-../../lib/rbtree.c:368:2: error: unknown type name 'bool'
-make: *** [util/rbtree.o] Error 1
+https://git.samba.org/sfrench/?p=sfrench/cifs-2.6.git;a=commitdiff;h=b7ca69289680cf631fb20b7d436467c4ec1153cd;hp=6dab7ede9390d4d937cb89feca932e4fd575d2da
 
-How about:
-
-From: Adrian Hunter <adrian.hunter@intel.com>
-Date: Fri, 31 Aug 2012 10:49:27 +0300
-Subject: [PATCH] perf tools: fix build for another rbtree.c change
-
-Fixes:
-
-../../lib/rbtree.c: In function 'rb_insert_color':
-../../lib/rbtree.c:95:9: error: 'true' undeclared (first use in this function)
-../../lib/rbtree.c:95:9: note: each undeclared identifier is reported only once for each function it appears in
-../../lib/rbtree.c: In function '__rb_erase_color':
-../../lib/rbtree.c:216:9: error: 'true' undeclared (first use in this function)
-../../lib/rbtree.c: In function 'rb_erase':
-../../lib/rbtree.c:368:2: error: unknown type name 'bool'
-make: *** [util/rbtree.o] Error 1
-
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/util/include/linux/rbtree.h | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/tools/perf/util/include/linux/rbtree.h b/tools/perf/util/include/linux/rbtree.h
-index 7a243a1..2a030c5 100644
---- a/tools/perf/util/include/linux/rbtree.h
-+++ b/tools/perf/util/include/linux/rbtree.h
-@@ -1 +1,2 @@
-+#include <stdbool.h>
- #include "../../../../include/linux/rbtree.h"
 -- 
-1.7.11.4
-
+Best regards,
+Pavel Shilovsky.
