@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502Ab2HaJ3k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 05:29:40 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54713 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752234Ab2HaJ1M (ORCPT
+	id S1752033Ab2HaJXE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 05:23:04 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:37504 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751957Ab2HaJWw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 05:27:12 -0400
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Richard Zhao <richard.zhao@freescale.com>,
-        Huang Shijie <shijie8@gmail.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>, kernel@pengutronix.de,
-        devicetree-discuss@lists.ozlabs.org
-Cc: Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH v2 2/9] ARM i.MX53: Add OCRAM to device tree
-Date: Fri, 31 Aug 2012 11:26:57 +0200
-Message-Id: <1346405224-20399-3-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1346405224-20399-1-git-send-email-p.zabel@pengutronix.de>
-References: <1346405224-20399-1-git-send-email-p.zabel@pengutronix.de>
-X-SA-Exim-Connect-IP: 10.1.0.7
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 31 Aug 2012 05:22:52 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+CC: David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 00/22] lp8727_charger: clean up code
+Thread-Topic: [PATCH 00/22] lp8727_charger: clean up code
+Thread-Index: Ac2HWiTGzGSZWrkyT6muTzV78e5bWQ==
+Date: Fri, 31 Aug 2012 09:22:39 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF1E58@DQHE02.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.87.185.123]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
----
- - Renamed "iram" to "ocram" as it appears in the processor
-   reference manuals.
----
- arch/arm/boot/dts/imx53.dtsi |    5 +++++
- 1 file changed, 5 insertions(+)
+LP8727 driver should be fixed for several reasons.
 
-diff --git a/arch/arm/boot/dts/imx53.dtsi b/arch/arm/boot/dts/imx53.dtsi
-index cd37165..5da342a 100644
---- a/arch/arm/boot/dts/imx53.dtsi
-+++ b/arch/arm/boot/dts/imx53.dtsi
-@@ -337,5 +337,10 @@
- 				status = "disabled";
- 			};
- 		};
-+
-+		ocram@f8000000 {
-+			compatible = "fsl,imx-ocram";
-+			reg = <0xf8000000 0x20000>;
-+		};
- 	};
- };
--- 
-1.7.10.4
+(a) Need to clean up _probe() and _remove()
+(b) Not secure code when the platform data is NULL
+(c) Improved the interrupt handling
+(d) Lots of definitions should be unique.
+(e) Others...
+
+Patch v2.
+These patches are submitted more separately.
+
+[PATCH 01/22] lp8727_charger: use devm_kzalloc()
+[PATCH 02/22] lp8727_charger: cleanup _probe() and _remove()
+[PATCH 03/22] lp8727_charger: fix buggy code of NULL pdata
+[PATCH 04/22] lp8727_charger: add configurable debouce timer
+[PATCH 05/22] lp8727_charger: remove unnecessary workqueue thread
+[PATCH 06/22] lp8727_charger: clean up the interrupt handler
+[PATCH 07/22] lp8727_charger: clear interrrupts at inital time
+[PATCH 08/22] lp8727_charger: fix code for getting battery temp
+[PATCH 09/22] lp8727_charger: use the definition rather than enum
+[PATCH 10/22] lp8727_charger: clean up lp8727 definitions
+[PATCH 11/22] lp8727_charger: use specific definition
+[PATCH 12/22] lp8727_charger: clean up lp8727_is_charger_attached()
+[PATCH 13/22] lp8727_charger: make lp8727_init_device() shorter
+[PATCH 14/22] lp8727_charger: make lp8727_ctrl_switch() inline
+[PATCH 15/22] lp8727_charger: make lp8727_charger_get_propery() simpler
+[PATCH 16/22] lp8727_charger: return if the battery is discharging
+[PATCH 17/22] lp8727_charger: clean up lp8727_charger_changed()
+[PATCH 18/22] lp8727_charger: make cosmetic code on lp8727_delayed_func()
+[PATCH 19/22] lp8727_charger: fix typo - chg_parm to chg_param
+[PATCH 20/22] lp8727_charger: add description in the private data
+[PATCH 21/22] lp8727_charger: fix checkpatch warning
+[PATCH 22/22] lp8727_charger: make cosmetic code
+
+
+Best Regards,
+Milo
+
 
