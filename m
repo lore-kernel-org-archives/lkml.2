@@ -1,156 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752102Ab2HaLXF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 07:23:05 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:36326 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751679Ab2HaLXD (ORCPT
+	id S1752373Ab2HaLYH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 07:24:07 -0400
+Received: from mailrelay1.diasemi.com ([82.210.246.133]:11957 "EHLO
+	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751780Ab2HaLXc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 07:23:03 -0400
-Date: Fri, 31 Aug 2012 13:22:58 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH 3/3] i2c: nomadik: Add Device Tree support to the
- Nomadik I2C driver
-Message-ID: <20120831112258.GA2624@pengutronix.de>
-References: <1345734087-21803-1-git-send-email-lee.jones@linaro.org>
- <1345734087-21803-3-git-send-email-lee.jones@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YiEDa0DAkWCtVeE4"
-Content-Disposition: inline
-In-Reply-To: <1345734087-21803-3-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 31 Aug 2012 07:23:32 -0400
+From: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: <linux-kernel@vger.kernel.org>, <rtc-linux@googlegroups.com>,
+        <lm-sensors@lm-sensors.org>, <linux-input@vger.kernel.org>,
+        <linux-watchdog@vger.kernel.org>, <linux-leds@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Jean Delvare <khali@linux-fr.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        Andrew Jones <drjones@redhat.com>, Donggeun Kim <dg77.kim@samsung.com>,
+        Philippe =?iso-8859-1?Q?R=E9tornaz?= <philippe.retornaz@epfl.ch>,
+        "Wim Van Sebroeck" <wim@iguana.be>, Bryan Wu <bryan.wu@canonical.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Anthony Olech <anthony.olech@diasemi.com>
+References: <201208241445@sw-eng-lt-dc-vm2>
+ <201208241450@sw-eng-lt-dc-vm2>
+ <20120825183113.GE6520@opensource.wolfsonmicro.com>
+In-Reply-To: <20120825183113.GE6520@opensource.wolfsonmicro.com>
+Message-ID: <201208311220@sw-eng-lt-dc-vm2>
+Date: Fri, 31 Aug 2012 12:20:00 +0100
+Subject: Re: [PATCH 1/8] mfd: Add Dialog DA906x core driver.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> On Fri, Aug 24, 2012 at 02:50:00PM +0100, Krystian Garbaciak wrote:
+> 
+> > This is MFD module providing access to registers and interrupts of DA906x
+> > series PMIC. It is used by other functional modules, registered as MFD cells.
+> > Driver uses regmap with paging to access extended register list. Register map
+> > is divided into two pages, where the second page is used during initialisation.
+> 
+> Your selection of people to CC here appears both large and random...
 
---YiEDa0DAkWCtVeE4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I've added any maintainer for my modules from maintainer list.
 
-On Thu, Aug 23, 2012 at 04:01:27PM +0100, Lee Jones wrote:
-> Here we apply the bindings required for successful Device Tree
-> probing of the i2c-nomadik driver.
->=20
-> Cc: linux-i2c@vger.kernel.org
-> Acked-by: srinidhi kasagar <srinidhi.kasagar@stericsson.com>
+> > +inline unsigned int da906x_to_range_reg(u16 reg)
+> > +{
+> > +	return reg + DA906X_MAPPING_BASE;
+> > +}
+> 
+> I've no real idea what this stuff is all about, it at least needs some
+> comments somewhere.  The fact that you're just adding a constant offset
+> to all registers is at best odd.
 
-Two acks? I'd think this cannot work for multiple reasons.
+I will comment it precisely for next version:
 
-BTW, patch 2 and 3 should be merged. It is a lot easier to review the
-code with the binding description together.
++/* Adding virtual register range starting from address DA9063_MAPPING_BASE.
++   It will be used for registers requiring page switching, which in our case
++   are virtually all PMIC registers.
++   Registers from 0 to 255 are used only as a page window and are volatile,
++   except DA9063_REG_PAGE_CON register (page selector), which is cachable. */
++static const struct regmap_range_cfg da9063_range_cfg[] = {
++	{
++		.range_min = DA9063_MAPPING_BASE,
++		.range_max = DA9063_MAPPING_BASE +
++			     ARRAY_SIZE(da9063_reg_flg) - 1,
++		.selector_reg = DA9063_REG_PAGE_CON,
++		.selector_mask = 1 << DA9063_I2C_PAGE_SEL_SHIFT,
++		.selector_shift = DA9063_I2C_PAGE_SEL_SHIFT,
++		.window_start = 0,
++		.window_len = 256,
++	}
++};
 
-Is there some dependency other than updating the dts files? If not, I'd
-like to pick up the patch via I2C.
+.. and here:
 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  drivers/i2c/busses/i2c-nomadik.c |   28 ++++++++++++++++++++++++++++
->  1 file changed, 28 insertions(+)
->=20
-> diff --git a/drivers/i2c/busses/i2c-nomadik.c b/drivers/i2c/busses/i2c-no=
-madik.c
-> index 61b00ed..8168389 100644
-> --- a/drivers/i2c/busses/i2c-nomadik.c
-> +++ b/drivers/i2c/busses/i2c-nomadik.c
-> @@ -25,6 +25,7 @@
->  #include <linux/regulator/consumer.h>
->  #include <linux/pm_runtime.h>
->  #include <linux/platform_data/i2c-nomadik.h>
-> +#include <linux/of.h>
-> =20
->  #define DRIVER_NAME "nmk-i2c"
-> =20
-> @@ -920,15 +921,42 @@ static struct nmk_i2c_controller u8500_i2c =3D {
->  	.sm             =3D I2C_FREQ_MODE_FAST,
->  };
-> =20
-> +static void nmk_i2c_of_probe(struct device_node *np,
-> +			struct nmk_i2c_controller *pdata)
-> +{
-> +	/* Provide the default configuration as a base. */
-> +	pdata =3D &u8500_i2c;
++/* Access to any PMIC register is passed through virtual register range,
++   starting at DA9063_MAPPING_BASE. For those registers, paging is required. */
++inline unsigned int da9063_to_range_reg(u16 reg)
++{
++	return reg + DA9063_MAPPING_BASE;
++}
 
-?????? I wonder how that could work... have you tested the patch?
-
-> +
-> +	of_property_read_u32(np, "clock-frequency", (u32*)&pdata->clk_freq);
-
-Might be worth changing clk_freq to u32?
-
-> +
-> +	/* This driver only supports 'standard' and 'fast' modes of operation. =
-*/
-> +	if (pdata->clk_freq <=3D 100000)
-> +		pdata->sm =3D I2C_FREQ_MODE_STANDARD;
-
-Is standard =3D=3D 100000 Hz?
-
-
-> +	else
-> +		pdata->sm =3D I2C_FREQ_MODE_FAST;
-
-If those two are fixed frequencies, you should omit a warning if the
-devicetree has a different frequency set and report which one is going
-to be used actually.
-
-
-> +}
-> +
->  static atomic_t adapter_id =3D ATOMIC_INIT(0);
-> =20
->  static int nmk_i2c_probe(struct amba_device *adev, const struct amba_id =
-*id)
->  {
->  	int ret =3D 0;
->  	struct nmk_i2c_controller *pdata =3D adev->dev.platform_data;
-> +	struct device_node *np =3D adev->dev.of_node;
->  	struct nmk_i2c_dev	*dev;
->  	struct i2c_adapter *adap;
-> =20
-> +	if (np) {
-> +		if (!pdata) {
-> +			pdata =3D devm_kzalloc(&adev->dev, sizeof(*pdata), GFP_KERNEL);
-> +			if (!pdata) {
-> +				ret =3D -ENOMEM;
-> +				goto err_no_mem;
-> +			}
-> +		}
-> +		nmk_i2c_of_probe(np, pdata);
-> +	}
-> +
->  	if (!pdata)
->  		/* No i2c configuration found, using the default. */
->  		pdata =3D &u8500_i2c;
-> --=20
-> 1.7.9.5
->=20
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---YiEDa0DAkWCtVeE4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAlBAnpIACgkQD27XaX1/VRt03ACgohnOUAd/yK2V/jZKVJeEu3K+
-88kAoKYYDgEMyIZ2a+jNa85vStPkEBZz
-=SvfE
------END PGP SIGNATURE-----
-
---YiEDa0DAkWCtVeE4--
