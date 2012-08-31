@@ -1,158 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755289Ab2HaX7V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 19:59:21 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:54977 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754706Ab2HaX7U (ORCPT
+	id S1755323Ab2HaX7w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 19:59:52 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:35623 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755261Ab2HaX7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 19:59:20 -0400
-X-Originating-IP: 217.70.178.148
-X-Originating-IP: 173.246.103.110
-Date: Fri, 31 Aug 2012 16:59:10 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@ti.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-Subject: Re: [PATCH tip/core/rcu 08/26] x86: Syscall hooks for userspace RCU
- extended QS
-Message-ID: <20120831235909.GM11771@jtriplet-mobl1>
-References: <20120830210520.GA2824@linux.vnet.ibm.com>
- <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346360743-3628-8-git-send-email-paulmck@linux.vnet.ibm.com>
+	Fri, 31 Aug 2012 19:59:48 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Eric Paris <eparis@parisplace.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Kees Cook <keescook@chromium.org>,
+        linux-kernel@vger.kernel.org, James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        John Johansen <john.johansen@canonical.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        linux-security-module@vger.kernel.org
+References: <20120831213126.GA19688@www.outflux.net>
+	<20120831223908.4aa5574d@pyramind.ukuu.org.uk>
+	<CACLa4pv75-HaPEas=aOMySbMm-YdSJZdc6qtNUnTM+Ev2Rp7rg@mail.gmail.com>
+Date: Fri, 31 Aug 2012 16:59:36 -0700
+In-Reply-To: <CACLa4pv75-HaPEas=aOMySbMm-YdSJZdc6qtNUnTM+Ev2Rp7rg@mail.gmail.com>
+	(Eric Paris's message of "Fri, 31 Aug 2012 15:49:00 -0700")
+Message-ID: <87ipbyfw9j.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346360743-3628-8-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19G4inQzqqH6L+KPNLlShCWhkpPK+GehIA=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0001]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Eric Paris <eparis@parisplace.org>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] security: unconditionally call Yama
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 02:05:25PM -0700, Paul E. McKenney wrote:
-> From: Frederic Weisbecker <fweisbec@gmail.com>
-> 
-> Add syscall slow path hooks to notify syscall entry
-> and exit on CPUs that want to support userspace RCU
-> extended quiescent state.
-> 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Alessio Igor Bogani <abogani@kernel.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Avi Kivity <avi@redhat.com>
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Geoff Levand <geoff@infradead.org>
-> Cc: Gilad Ben Yossef <gilad@benyossef.com>
-> Cc: Hakan Akkan <hakanakkan@gmail.com>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Josh Triplett <josh@joshtriplett.org>
-> Cc: Kevin Hilman <khilman@ti.com>
-> Cc: Max Krasnyansky <maxk@qualcomm.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Stephen Hemminger <shemminger@vyatta.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Eric Paris <eparis@parisplace.org> writes:
 
-This seems reasonable; presumably you plan to add something actually
-setting TIF_NOHZ in a subsequent patch series?
+> On Fri, Aug 31, 2012 at 2:39 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> On Fri, 31 Aug 2012 14:31:26 -0700
+>> Kees Cook <keescook@chromium.org> wrote:
+>>
+>>> Unconditionally call Yama, no matter what LSM module is selected.
+>
+>> Not a good plan. What happens when everyone decides to stack every module
+>> by ifdeffing in the kernel - mayhem. I'm all for it being possible but
+>> done right - espeicall as I believe a proper proposal now for stacking
+>> modules, and it should be done as part of that.
+>
+> I think a lot of us agree it's a 'difficult' plan going forward.  Kees
+> wrote this patch after we (James, SELinux, AppArmor people) talked at
+> the Security Summit earlier today.  From my PoV we have a couple of
+> 'classes' of LSMs.
+>
+> Big with Labels: SELinux and SMACK
+> Big without Labels: AppArmor and TOMOYO
+> Small and stateless: Capabilities and Yama (and maybe integrity)
+>
+> Those small and stateless LSMs can easily stack.  We don't have object
+> lifetime issues.  We don't have difficult technical details.  We all
+> here seem to want to stack 'small and stateless' with 'big boy'.
+> Outside one little capabilities and selinux setxattr issue I can't
+> think of anything even quirky.  So the fast path forward, in my mind,
+> is to start here with Yama.  Our choice *today* is adding these static
+> hooks inside the 'big boy' LSMs (which I think all of us are willing
+> to do) vs adding it one time in the LSM and not having to worry about
+> it all over the place.  Getting the big guys and the little guys to
+> play together is not going to lead to a mess of crazy.
+>
+> Stacking the big boys is a future goal most of us are happy with
+> seeing done, if it turns out to be reasonable.  We know it's close to
+> possible.  Dave Howell's gave us an implementation about 2 years ago.
+> Casey Schaufler demo'd another stacking interface today.  No code from
+> the latter, but the only limitation he really mentioned today was that
+> two big guys with labels can't stack together.  I don't know how/if
+> Dave's implementation wanted to handle that case.
+>
+> I really think this patch is good.
+>
+> Acked-by: Eric Paris <eparis@redhat.com>
+>
+> I think I even want to do the same thing with capabilities so I don't
+> have to make sure I'm getting those right in SELinux.  And everyone
+> else probably doesn't want to keep those hooks themselves either.  I
+> should send that patch to Linus.  I bet I can give him a large
+> negative diff.  He did just say two days ago that he'll take any -1000
+> line diff after -rc6   :)
+>
+> I think Casey and Dave need to both get their larger stacking
+> solutions posted and we should go with the best one.  It'll let us
+> pull out the static code, but for now, I like the static coding
+> between the big boys and the little guys.  Lets fix today what's easy
+> and fix tomorrow what we can't fix today.
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+>From a overal kernel maintenance and use perspective the unconditional
+enablement is a pain.
 
->  arch/x86/include/asm/thread_info.h |   10 +++++++---
->  arch/x86/kernel/ptrace.c           |    5 +++++
->  2 files changed, 12 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
-> index 89f794f..c535d84 100644
-> --- a/arch/x86/include/asm/thread_info.h
-> +++ b/arch/x86/include/asm/thread_info.h
-> @@ -89,6 +89,7 @@ struct thread_info {
->  #define TIF_NOTSC		16	/* TSC is not accessible in userland */
->  #define TIF_IA32		17	/* IA32 compatibility process */
->  #define TIF_FORK		18	/* ret_from_fork */
-> +#define TIF_NOHZ		19	/* in adaptive nohz mode */
->  #define TIF_MEMDIE		20	/* is terminating due to OOM killer */
->  #define TIF_DEBUG		21	/* uses debug registers */
->  #define TIF_IO_BITMAP		22	/* uses I/O bitmap */
-> @@ -114,6 +115,7 @@ struct thread_info {
->  #define _TIF_NOTSC		(1 << TIF_NOTSC)
->  #define _TIF_IA32		(1 << TIF_IA32)
->  #define _TIF_FORK		(1 << TIF_FORK)
-> +#define _TIF_NOHZ		(1 << TIF_NOHZ)
->  #define _TIF_DEBUG		(1 << TIF_DEBUG)
->  #define _TIF_IO_BITMAP		(1 << TIF_IO_BITMAP)
->  #define _TIF_FORCED_TF		(1 << TIF_FORCED_TF)
-> @@ -126,12 +128,13 @@ struct thread_info {
->  /* work to do in syscall_trace_enter() */
->  #define _TIF_WORK_SYSCALL_ENTRY	\
->  	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_EMU | _TIF_SYSCALL_AUDIT |	\
-> -	 _TIF_SECCOMP | _TIF_SINGLESTEP | _TIF_SYSCALL_TRACEPOINT)
-> +	 _TIF_SECCOMP | _TIF_SINGLESTEP | _TIF_SYSCALL_TRACEPOINT |	\
-> +	 _TIF_NOHZ)
->  
->  /* work to do in syscall_trace_leave() */
->  #define _TIF_WORK_SYSCALL_EXIT	\
->  	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT | _TIF_SINGLESTEP |	\
-> -	 _TIF_SYSCALL_TRACEPOINT)
-> +	 _TIF_SYSCALL_TRACEPOINT | _TIF_NOHZ)
->  
->  /* work to do on interrupt/exception return */
->  #define _TIF_WORK_MASK							\
-> @@ -141,7 +144,8 @@ struct thread_info {
->  
->  /* work to do on any return to user space */
->  #define _TIF_ALLWORK_MASK						\
-> -	((0x0000FFFF & ~_TIF_SECCOMP) | _TIF_SYSCALL_TRACEPOINT)
-> +	((0x0000FFFF & ~_TIF_SECCOMP) | _TIF_SYSCALL_TRACEPOINT |	\
-> +	_TIF_NOHZ)
->  
->  /* Only used for 64 bit */
->  #define _TIF_DO_NOTIFY_MASK						\
-> diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
-> index c4c6a5c..9f94f8e 100644
-> --- a/arch/x86/kernel/ptrace.c
-> +++ b/arch/x86/kernel/ptrace.c
-> @@ -21,6 +21,7 @@
->  #include <linux/signal.h>
->  #include <linux/perf_event.h>
->  #include <linux/hw_breakpoint.h>
-> +#include <linux/rcupdate.h>
->  
->  #include <asm/uaccess.h>
->  #include <asm/pgtable.h>
-> @@ -1463,6 +1464,8 @@ long syscall_trace_enter(struct pt_regs *regs)
->  {
->  	long ret = 0;
->  
-> +	rcu_user_exit();
-> +
->  	/*
->  	 * If we stepped into a sysenter/syscall insn, it trapped in
->  	 * kernel mode; do_debug() cleared TF and set TIF_SINGLESTEP.
-> @@ -1526,4 +1529,6 @@ void syscall_trace_leave(struct pt_regs *regs)
->  			!test_thread_flag(TIF_SYSCALL_EMU);
->  	if (step || test_thread_flag(TIF_SYSCALL_TRACE))
->  		tracehook_report_syscall_exit(regs, step);
-> +
-> +	rcu_user_enter();
->  }
-> -- 
-> 1.7.8
-> 
+We long ago established the principle that compiling additional code
+into the kernel should not change the semenatics of the kernel.
+
+So this code needs to come with a command line or sysctl on/off switch
+not an unconditional enable.
+
+Eric
