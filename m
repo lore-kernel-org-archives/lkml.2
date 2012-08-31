@@ -1,63 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755021Ab2HaUzT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 16:55:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50621 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752326Ab2HaUzQ (ORCPT
+	id S1755039Ab2HaVEa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 17:04:30 -0400
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:36223 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752326Ab2HaVE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 16:55:16 -0400
-Date: Fri, 31 Aug 2012 13:55:14 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: wency@cn.fujitsu.com
-Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
-        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
-        cl@linux.com, minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com
-Subject: Re: [RFC v8 PATCH 04/20] memory-hotplug: offline and remove memory
- when removing the memory device
-Message-Id: <20120831135514.2a2dc0d4.akpm@linux-foundation.org>
-In-Reply-To: <1346148027-24468-5-git-send-email-wency@cn.fujitsu.com>
-References: <1346148027-24468-1-git-send-email-wency@cn.fujitsu.com>
-	<1346148027-24468-5-git-send-email-wency@cn.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 31 Aug 2012 17:04:28 -0400
+From: T Makphaibulchoke <tmac@hp.com>
+To: akpm@linux-foundation.org, linuxram@us.ibm.com,
+        paul.gortmaker@windriver.com, weiyang@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Cc: T Makphaibulchoke <tmac@hp.com>
+Subject: [PATCH v2] kernel/resource.c: fix stack overflow in __reserve_region_with_split
+Date: Fri, 31 Aug 2012 15:04:25 -0600
+Message-Id: <1346447065-15399-1-git-send-email-tmac@hp.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Aug 2012 18:00:11 +0800
-wency@cn.fujitsu.com wrote:
+Using recurvise call to try adding a non-conflicting region in the function
+__reserve_region_with_split() could result in a stack overflow in the case
+that the recursive calls are too deep.  Convert the recursive calls to
+an iterative loop to avoid the problem.
 
-> +int remove_memory(int nid, u64 start, u64 size)
-> +{
-> +	int ret = -EBUSY;
-> +	lock_memory_hotplug();
-> +	/*
-> +	 * The memory might become online by other task, even if you offine it.
-> +	 * So we check whether the cpu has been onlined or not.
+Signed-off-by: T Makphaibulchoke <tmac@hp.com>
 
-I think you meant "memory", not "cpu".
+--
+Change since v1:
+* Fixing __resrve_region_with_split() to ensure a reqioon reserve request is
+  satisfied to the fullest extent, minus any overlapping conflicting regions.
+---
+ kernel/resource.c |   47 +++++++++++++++++++++++++++++++++++------------
+ 1 files changed, 35 insertions(+), 12 deletions(-)
 
-Actually, "check whether any part of this memory range has been
-onlined" would be better.  If that is accurate ;)
+diff --git a/kernel/resource.c b/kernel/resource.c
+index 34d4588..f0cdeb6 100644
+--- a/kernel/resource.c
++++ b/kernel/resource.c
+@@ -763,6 +763,7 @@ static void __init __reserve_region_with_split(struct resource *root,
+ 	struct resource *parent = root;
+ 	struct resource *conflict;
+ 	struct resource *res = kzalloc(sizeof(*res), GFP_ATOMIC);
++	struct resource *next_res = NULL;
+ 
+ 	if (!res)
+ 		return;
+@@ -772,21 +773,43 @@ static void __init __reserve_region_with_split(struct resource *root,
+ 	res->end = end;
+ 	res->flags = IORESOURCE_BUSY;
+ 
+-	conflict = __request_resource(parent, res);
+-	if (!conflict)
+-		return;
++	while (1) {
+ 
+-	/* failed, split and try again */
+-	kfree(res);
++		conflict = __request_resource(parent, res);
++		if (!conflict) {
++			if (!next_res)
++				break;
++			res = next_res;
++			next_res = NULL;
++			continue;
++		}
+ 
+-	/* conflict covered whole area */
+-	if (conflict->start <= start && conflict->end >= end)
+-		return;
++		/* conflict covered whole area */
++		if (conflict->start <= res->start &&
++				conflict->end >= res->end) {
++			kfree(res);
++			WARN_ON(next_res);
++			break;
++		}
++
++		/* failed, split and try again */
++		if (conflict->start > res->start) {
++			end = res->end;
++			res->end = conflict->start - 1;
++			if (conflict->end < end) {
++				next_res = kzalloc(sizeof(*res), GFP_ATOMIC);
++				if (!next_res) {
++					kfree(res);
++					break;
++				}
++				next_res->start = conflict->end + 1;
++				next_res->end = end;
++			}
++		} else {
++			res->start = conflict->end + 1;
++		}
++	}
+ 
+-	if (conflict->start > start)
+-		__reserve_region_with_split(root, start, conflict->start-1, name);
+-	if (conflict->end < end)
+-		__reserve_region_with_split(root, conflict->end+1, end, name);
+ }
+ 
+ void __init reserve_region_with_split(struct resource *root,
+-- 
+1.7.1
 
-> +	 */
-> +	if (!is_memblk_offline(start, size)) {
-> +		pr_warn("memory removing [mem %#010llx-%#010llx] failed, "
-> +			"because the memmory range is online\n",
-> +			start, start + size);
-> +		ret = -EAGAIN;
-> +	}
-> +
-> +	unlock_memory_hotplug();
-> +	return ret;
-> +
-> +}
-> +EXPORT_SYMBOL_GPL(remove_memory);
