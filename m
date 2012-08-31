@@ -1,275 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab2HaPgO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 11:36:14 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:37165 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753977Ab2HaPgM convert rfc822-to-8bit (ORCPT
+	id S1754194Ab2HaPiW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 11:38:22 -0400
+Received: from cpe-75-80-152-117.san.res.rr.com ([75.80.152.117]:60106 "EHLO
+	NickAndBarb2.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754007Ab2HaPiS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 11:36:12 -0400
-From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
-To: "Cousson, Benoit" <b-cousson@ti.com>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>,
-        "Hilman, Kevin" <khilman@ti.com>
-Subject: RE: [RFC PATCH] ARM: OMAP2+: omap-device: Do not overwrite
- resources allocated by OF layer
-Thread-Topic: [RFC PATCH] ARM: OMAP2+: omap-device: Do not overwrite
- resources allocated by OF layer
-Thread-Index: AQHNhct3siNrQU74r0KbLTMYDg+TrZdzsb+AgABdITA=
-Date: Fri, 31 Aug 2012 15:36:00 +0000
-Message-ID: <79CD15C6BA57404B839C016229A409A83EA9EA8E@DBDE01.ent.ti.com>
-References: <1346233691-10294-1-git-send-email-hvaibhav@ti.com>
- <5040D745.5010909@ti.com>
-In-Reply-To: <5040D745.5010909@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.133.105]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 31 Aug 2012 11:38:18 -0400
+X-Greylist: delayed 367 seconds by postgrey-1.27 at vger.kernel.org; Fri, 31 Aug 2012 11:38:18 EDT
+Date: Fri, 31 Aug 2012 08:32:06 -0700
+From: Nick Pasich <Nick@NickAndBarb.net>
+To: Pavel Shilovsky <piastryyy@gmail.com>
+Cc: Jeff Layton <jlayton@redhat.com>, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: WARNING: at fs/inode.c:280 drop_nlink+0x31/0x33()
+Message-ID: <20120831153206.GA28908@NICK2>
+References: <20120829162527.GA3635@NickAndBarb.net> <20120829151641.20cde4bc@corrin.poochiereds.net> <20120831043352.GA23663@NickAndBarb.net> <CAKywueSY+NOV3irDm9YxepeCyJJhh82o2mgmDLogr+hJPbaYig@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKywueSY+NOV3irDm9YxepeCyJJhh82o2mgmDLogr+hJPbaYig@mail.gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 31, 2012 at 20:54:53, Cousson, Benoit wrote:
-> Hi Vaibhav,
-> 
-> On 08/29/2012 11:48 AM, Vaibhav Hiremath wrote:
-> > With the new devices (like, AM33XX and OMAP5) we now only support
-> > DT boot mode of operation and now it is the time to start killing
-> > slowly the dependency on hwmod, so with this patch, we are starting
-> > with device resources.
-> 
-> Thanks for working on that.
-> 
-> > The idea here is implemented considering to both boot modes -
-> >   - DT boot mode
-> >     OF framework will construct the resource structure (currently
-> >     does for MEM & IRQ resource) and we should respect/use these
-> >     resources, killing hwmod dependency.
-> >     If pdev->num_resources > 0, we assume that MEM & IRQ resources
-> >     have been allocated by OF layer already (through DTB).
-> > 
-> >     Once DMA resource is available from OF layer, we should
-> >     kill filling any resources from hwmod.
-> 
-> Yeap, I did a similar patch some months ago and decided to drop it
-> because I was expected the DMA binding to be there and wanted to avoid
-> adding more code that we are going to remove later.
-> 
-> The other potential issue is that when the binding will be there, we
-> will have to update all the drivers and DTS first before being able to
-> change the hwmod code from hwmod DMA to DTS DMA.
-> I was thinking of something smoother that will check if DMA is in DTS
-> and fall back to hwmod if not to avoid that.
-> But again, I'm not sure it worth the effort.
-> 
-> >   - Non-DT boot mode
-> >     Here, pdev->num_resources = 0, and we should get all the
-> >     resources from hwmod (following existing steps)
-> > 
-> > Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
-> > Cc: Benoit Cousson <b-cousson@ti.com>
-> > Cc: Tony Lindgren <tony@atomide.com>
-> > Cc: Paul Walmsley <paul@pwsan.com>
-> > Cc: Kevin Hilman <khilman@ti.com>
+On Fri, Aug 31, 2012 at 12:00:26PM +0400, Pavel Shilovsky wrote:
+> 2012/8/31 Nick Pasich <Nick@nickandbarb.net>:
+> > Jeff,
+> >
+> > I applied this patch to Kernel 3.5.3 from Pavel and the
+> > the warning is gone with no problems.
+> >
+> > Thanks,
+> >
+> > --( Nick Pasich
+> >
+> > ##########################################################
+> >
+> > From df2d6b1fbf2401c5ee04f2ac143ea0954e3a87a6 Mon Sep 17 00:00:00 2001
+> > From: Pavel Shilovsky <pshilovsky@samba.org>
+> > Date: Fri, 13 Jul 2012 11:59:45 +0400
+> > Subject: [PATCH] CIFS: Protect i_nlink from being negative
+> >
+> > that can cause warning messages.
+> >
+> > Signed-off-by: Pavel Shilovsky <pshilovsky@samba.org>
 > > ---
-> > This patch is tested on BeagleBone and AM37xEVM.
-> 
-> I'll try to do more testing on Panda next week.
-> 
-
-Thanks a lot.
-
-> > Why RFC?
-> > Still we have function duplication omap_device_fill_resources() and
-> > omap_device_fill_dma_resources(), we can actually split the function
-> > into 3 resources and avoid duplication -
-> >   - omap_device_fill_dma_resources()
-> >   - omap_device_fill_mem_resources()
-> >   - omap_device_fill_irq_resources()
-> > 
-> > Actually I wanted to clean it further but thought of getting
-> > feedback first and then proceed further.
-> 
-> Well, that's anyway temporary code that should be gone in 6 months from
-> now (ideally). So that looks pretty good to me.
-> 
-> >  arch/arm/mach-omap2/omap_hwmod.c             |   27 ++++++++++
-> >  arch/arm/plat-omap/include/plat/omap_hwmod.h |    1 +
-> >  arch/arm/plat-omap/omap_device.c             |   72 +++++++++++++++++++++----
-> >  3 files changed, 88 insertions(+), 12 deletions(-)
-> > 
-> > diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
-> > index 31ec283..edabfb3 100644
-> > --- a/arch/arm/mach-omap2/omap_hwmod.c
-> > +++ b/arch/arm/mach-omap2/omap_hwmod.c
-> > @@ -3330,6 +3330,33 @@ int omap_hwmod_fill_resources(struct omap_hwmod *oh, struct resource *res)
+> >  fs/cifs/inode.c |   13 +++++++++++--
+> >  1 files changed, 11 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
+> > index 7354877..88afb1a 100644
+> > --- a/fs/cifs/inode.c
+> > +++ b/fs/cifs/inode.c
+> > @@ -1110,6 +1110,15 @@ undo_setattr:
+> >                 goto out_close;
 > >  }
-> > 
-> >  /**
-> > + * omap_hwmod_fill_dma_resources - fill struct resource array with dma data
-> > + * @oh: struct omap_hwmod *
-> > + * @res: pointer to the array of struct resource to fill
-> > + *
-> > + * Fill the struct resource array @res with dma resource data from the
-> > + * omap_hwmod @oh.  Intended to be called by code that registers
-> > + * omap_devices.  See also omap_hwmod_count_resources().  Returns the
-> > + * number of array elements filled.
-> > + */
-> > +int omap_hwmod_fill_dma_resources(struct omap_hwmod *oh, struct resource *res)
+> >
+> > +/* copied from fs/nfs/dir.c with small changes */
+> > +static void
+> > +cifs_drop_nlink(struct inode *inode)
 > > +{
-> > +	int i, sdma_reqs_cnt;
-> > +	int r = 0;
-> > +
-> > +	sdma_reqs_cnt = _count_sdma_reqs(oh);
-> > +	for (i = 0; i < sdma_reqs_cnt; i++) {
-> > +		(res + r)->name = (oh->sdma_reqs + i)->name;
-> > +		(res + r)->start = (oh->sdma_reqs + i)->dma_req;
-> > +		(res + r)->end = (oh->sdma_reqs + i)->dma_req;
-> > +		(res + r)->flags = IORESOURCE_DMA;
-> > +		r++;
-> > +	}
-> > +
-> > +	return r;
+> > +       spin_lock(&inode->i_lock);
+> > +       if (inode->i_nlink > 0)
+> > +               drop_nlink(inode);
+> > +       spin_unlock(&inode->i_lock);
 > > +}
-> > +
-> > +/**
-> >   * omap_hwmod_get_resource_byname - fetch IP block integration data by name
-> >   * @oh: struct omap_hwmod * to operate on
-> >   * @type: one of the IORESOURCE_* constants from include/linux/ioport.h
-> > diff --git a/arch/arm/plat-omap/include/plat/omap_hwmod.h b/arch/arm/plat-omap/include/plat/omap_hwmod.h
-> > index 9b9646c..0533073 100644
-> > --- a/arch/arm/plat-omap/include/plat/omap_hwmod.h
-> > +++ b/arch/arm/plat-omap/include/plat/omap_hwmod.h
-> > @@ -615,6 +615,7 @@ int omap_hwmod_softreset(struct omap_hwmod *oh);
-> > 
-> >  int omap_hwmod_count_resources(struct omap_hwmod *oh);
-> >  int omap_hwmod_fill_resources(struct omap_hwmod *oh, struct resource *res);
-> > +int omap_hwmod_fill_dma_resources(struct omap_hwmod *oh, struct resource *res);
-> >  int omap_hwmod_get_resource_byname(struct omap_hwmod *oh, unsigned int type,
-> >  				   const char *name, struct resource *res);
-> > 
-> > diff --git a/arch/arm/plat-omap/omap_device.c b/arch/arm/plat-omap/omap_device.c
-> > index c490240..fd15a3a 100644
-> > --- a/arch/arm/plat-omap/omap_device.c
-> > +++ b/arch/arm/plat-omap/omap_device.c
-> > @@ -486,6 +486,33 @@ static int omap_device_fill_resources(struct omap_device *od,
-> >  }
-> > 
-> >  /**
-> > + * omap_device_fill_dma_resources - fill in array of struct resource with dma resources
-> > + * @od: struct omap_device *
-> > + * @res: pointer to an array of struct resource to be filled in
-> > + *
-> > + * Populate one or more empty struct resource pointed to by @res with
-> > + * the dma resource data for this omap_device @od.  Used by
-> > + * omap_device_alloc() after calling omap_device_count_resources().
-> > + *
-> > + * Ideally this function would not be needed at all.  If we have
-> > + * mechanism to get dma resources from DT.
-> > + *
-> > + * Returns 0.
-> > + */
-> > +static int omap_device_fill_dma_resources(struct omap_device *od,
-> > +				      struct resource *res)
-> > +{
-> > +	int i, r;
-> > +
-> > +	for (i = 0; i < od->hwmods_cnt; i++) {
-> > +		r = omap_hwmod_fill_dma_resources(od->hwmods[i], res);
-> > +		res += r;
-> > +	}
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +/**
-> >   * omap_device_alloc - allocate an omap_device
-> >   * @pdev: platform_device that will be included in this omap_device
-> >   * @oh: ptr to the single omap_hwmod that backs this omap_device
-> > @@ -524,24 +551,45 @@ struct omap_device *omap_device_alloc(struct platform_device *pdev,
-> >  	od->hwmods = hwmods;
-> >  	od->pdev = pdev;
-> > 
-> > +	res_count = omap_device_count_resources(od);
-> >  	/*
-> > -	 * HACK: Ideally the resources from DT should match, and hwmod
-> > -	 * should just add the missing ones. Since the name is not
-> > -	 * properly populated by DT, stick to hwmod resources only.
-> > +	 * DT Boot:
-> > +	 *   OF framework will construct the resource structure (currently
-> > +	 *   does for MEM & IRQ resource) and we should respect/use these
-> > +	 *   resources, killing hwmod dependency.
-> > +	 *   If pdev->num_resources > 0, we assume that MEM & IRQ resources
-> > +	 *   have been allocated by OF layer already (through DTB).
-> > +	 *
-> > +	 * Non-DT Boot:
-> > +	 *   Here, pdev->num_resources = 0, and we should get all the
-> > +	 *   resources from hwmod.
-> > +	 *
-> > +	 * TODO: Once DMA resource is available from OF layer, we should
-> > +	 *   kill filling any resources from hwmod.
-> >  	 */
-> > -	if (pdev->num_resources && pdev->resource)
-> > -		dev_warn(&pdev->dev, "%s(): resources already allocated %d\n",
-> > -			__func__, pdev->num_resources);
-> > -
-> > -	res_count = omap_device_count_resources(od);
-> > -	if (res_count > 0) {
-> > -		dev_dbg(&pdev->dev, "%s(): resources allocated from hwmod %d\n",
-> > -			__func__, res_count);
-> > +	if (res_count > pdev->num_resources) {
-> > +		/* Allocate resources memory to account for new resources */
-> >  		res = kzalloc(sizeof(struct resource) * res_count, GFP_KERNEL);
-> >  		if (!res)
-> >  			goto oda_exit3;
-> > 
-> > -		omap_device_fill_resources(od, res);
-> > +		/*
-> > +		 * If pdev->num_resources > 0, then assume that,
-> > +		 * MEM and IRQ resources will only come from DT and only
-> > +		 * fill DMA resource from hwmod layer.
-> > +		 */
-> > +		if (pdev->num_resources && pdev->resource) {
-> > +			dev_dbg(&pdev->dev, "%s(): resources already allocated %d\n",
-> > +					__func__, res_count);
-> > +			memcpy(res, pdev->resource,
-> > +				sizeof(struct resource) * pdev->num_resources);
-> > +			omap_device_fill_dma_resources(od,
-> > +					&res[pdev->num_resources]);
-> > +		} else {
-> > +			dev_dbg(&pdev->dev, "%s(): using resources from hwmod %d\n",
-> > +					__func__, res_count);
-> > +			omap_device_fill_resources(od, res);
-> > +		}
+> >
+> >  /*
+> >   * If dentry->d_inode is null (usually meaning the cached dentry
+> > @@ -1166,13 +1175,13 @@ retry_std_delete:
+> >  psx_del_no_retry:
+> >                 if (!rc) {
+> >                                 if (inode)
+> > -                       drop_nlink(inode);
+> > +                       cifs_drop_nlink(inode);
+> >                 } else if (rc == -ENOENT) {
+> >                                 d_drop(dentry);
+> >                 } else if (rc == -ETXTBSY) {
+> >                                 rc = cifs_rename_pending_delete(full_path, dentry, xid);
+> >                                 if (rc == 0)
+> > -                       drop_nlink(inode);
+> > +                       cifs_drop_nlink(inode);
+> >                 } else if ((rc == -EACCES) && (dosattr == 0) && inode) {
+> >                                 attrs = kzalloc(sizeof(*attrs), GFP_KERNEL);
+> >                                 if (attrs == NULL) {
+> > --
+> > 1.7.3.3
+> >
+> > ##########################################################
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-cifs" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
-> Considering the temporary aspect of that, I'm more than fine with that
-> approach.
+> This one fixes only a part of the problem. Now we have another patch
+> for this problem:
 > 
-
-Thanks, once you test it on other platforms and based on observation we can 
-merge this patch.
-
-> BTW, did you attend the discussion about the DMA binding during PLC?
-> Is this going to be finalized soon?
+> https://git.samba.org/sfrench/?p=sfrench/cifs-2.6.git;a=commitdiff;h=b7ca69289680cf631fb20b7d436467c4ec1153cd;hp=6dab7ede9390d4d937cb89feca932e4fd575d2da
 > 
+> -- 
+> Best regards,
+> Pavel Shilovsky.
 
-I think you are getting confused between Vaibhav B and Vaibhav H :)
-We have two Vaibhav's roaming around here ;-)
 
 
-I was not there during LPC this time, it was Vaibhav B who attended it.
-I will sync up with him and try to get more info on it.
+Since I'm using kernel 3.5.3 , I get an error on hunk 7 of the patch.
+
+I can do it by hand... But I want to check with you first.
 
 Thanks,
-Vaibhav
+
+--( Nick Pasich )--
+
+
+####################################################################
+
+Hmm...  Looks like a unified diff to me...
+The text leading up to this was:
+--------------------------
+|From b7ca69289680cf631fb20b7d436467c4ec1153cd Mon Sep 17 00:00:00 2001
+|From: Steve French <smfrench@gmail.com>
+|Date: Fri, 3 Aug 2012 08:43:01 -0500
+|Subject: [PATCH 1/1] CIFS: Protect i_nlink from being negative
+|
+|that can cause warning messages.  Pavel had initially
+|suggested a smaller patch around drop_nlink, after
+|a similar problem was discovered NFS.  Protecting
+|additional places where nlink is touched was
+|suggested by Jeff Layton and is included in this.
+|
+|Reviewed-by: Pavel Shilovsky <pshilovsky@samba.org>
+|Reviewed-by: Jeff Layton <jlayton@redhat.com>
+|Signed-off-by: Steve French <sfrench@us.ibm.com>
+|Signed-off-by: Steve French <smfrench@gmail.com>
+|---
+| fs/cifs/inode.c |   24 ++++++++++++++++--------
+| fs/cifs/link.c  |    2 ++
+| 2 files changed, 18 insertions(+), 8 deletions(-)
+|
+|diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
+|index 7354877..cb79c7e 100644
+|--- a/fs/cifs/inode.c
+|+++ b/fs/cifs/inode.c
+--------------------------
+Patching file fs/cifs/inode.c using Plan A...
+Hunk #1 succeeded at 124.
+Hunk #2 succeeded at 148.
+Hunk #3 succeeded at 155.
+Hunk #4 succeeded at 905 (offset 50 lines).
+Hunk #5 succeeded at 1107 (offset -1 lines).
+Hunk #6 succeeded at 1224 (offset 51 lines).
+Hunk #7 FAILED at 1299.
+1 out of 7 hunks FAILED -- saving rejects to file fs/cifs/inode.c.rej
+Hmm...  The next patch looks like a unified diff to me...
+The text leading up to this was:
+--------------------------
+|diff --git a/fs/cifs/link.c b/fs/cifs/link.c
+|index 09e4b3a..e6ce3b1 100644
+|--- a/fs/cifs/link.c
+|+++ b/fs/cifs/link.c
+--------------------------
+Patching file fs/cifs/link.c using Plan A...
+Hunk #1 succeeded at 433.
+Hmm...  Ignoring the trailing garbage.
+done
+
 
