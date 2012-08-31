@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549Ab2HaJ3l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 05:29:41 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54718 "EHLO
+	id S1753502Ab2HaJ3k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 05:29:40 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54713 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752370Ab2HaJ1M (ORCPT
+	with ESMTP id S1752234Ab2HaJ1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 31 Aug 2012 05:27:12 -0400
 From: Philipp Zabel <p.zabel@pengutronix.de>
@@ -18,9 +18,9 @@ To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Dong Aisheng <dong.aisheng@linaro.org>, kernel@pengutronix.de,
         devicetree-discuss@lists.ozlabs.org
 Cc: Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH v2 3/9] ARM i.MX6: Add OCRAM to device tree
-Date: Fri, 31 Aug 2012 11:26:58 +0200
-Message-Id: <1346405224-20399-4-git-send-email-p.zabel@pengutronix.de>
+Subject: [PATCH v2 2/9] ARM i.MX53: Add OCRAM to device tree
+Date: Fri, 31 Aug 2012 11:26:57 +0200
+Message-Id: <1346405224-20399-3-git-send-email-p.zabel@pengutronix.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1346405224-20399-1-git-send-email-p.zabel@pengutronix.de>
 References: <1346405224-20399-1-git-send-email-p.zabel@pengutronix.de>
@@ -34,29 +34,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
 ---
-Changes since v1:
  - Renamed "iram" to "ocram" as it appears in the processor
    reference manuals.
 ---
- arch/arm/boot/dts/imx6q.dtsi |    5 +++++
+ arch/arm/boot/dts/imx53.dtsi |    5 +++++
  1 file changed, 5 insertions(+)
 
-diff --git a/arch/arm/boot/dts/imx6q.dtsi b/arch/arm/boot/dts/imx6q.dtsi
-index fd57079..9cb0b50 100644
---- a/arch/arm/boot/dts/imx6q.dtsi
-+++ b/arch/arm/boot/dts/imx6q.dtsi
-@@ -111,6 +111,11 @@
- 		       status = "disabled";
+diff --git a/arch/arm/boot/dts/imx53.dtsi b/arch/arm/boot/dts/imx53.dtsi
+index cd37165..5da342a 100644
+--- a/arch/arm/boot/dts/imx53.dtsi
++++ b/arch/arm/boot/dts/imx53.dtsi
+@@ -337,5 +337,10 @@
+ 				status = "disabled";
+ 			};
  		};
- 
-+		ocram@00900000 {
-+			compatible = "fsl,imx-ocram";
-+			reg = <0x00900000 0x3f000>;
-+		};
 +
- 		timer@00a00600 {
- 			compatible = "arm,cortex-a9-twd-timer";
- 			reg = <0x00a00600 0x20>;
++		ocram@f8000000 {
++			compatible = "fsl,imx-ocram";
++			reg = <0xf8000000 0x20000>;
++		};
+ 	};
+ };
 -- 
 1.7.10.4
 
