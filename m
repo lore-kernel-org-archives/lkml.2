@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754763Ab2HaTHr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 15:07:47 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:47292 "EHLO
+	id S1754800Ab2HaTNb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 15:13:31 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:36342 "EHLO
 	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754570Ab2HaTHp (ORCPT
+	with ESMTP id S1754570Ab2HaTNa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 15:07:45 -0400
-X-Originating-IP: 217.70.178.145
+	Fri, 31 Aug 2012 15:13:30 -0400
+X-Originating-IP: 217.70.178.138
 X-Originating-IP: 173.246.103.110
-Date: Fri, 31 Aug 2012 12:07:33 -0700
+Date: Fri, 31 Aug 2012 12:13:21 -0700
 From: Josh Triplett <josh@joshtriplett.org>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
@@ -17,136 +17,55 @@ Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
         mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-Subject: Re: [PATCH tip/core/rcu 01/26] rcu: New rcu_user_enter() and
- rcu_user_exit() APIs
-Message-ID: <20120831190733.GP4259@jtriplet-mobl1>
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 02/26] rcu: New rcu_user_enter_irq() and
+ rcu_user_exit_irq() APIs
+Message-ID: <20120831191321.GQ4259@jtriplet-mobl1>
 References: <20120830210520.GA2824@linux.vnet.ibm.com>
  <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346360743-3628-2-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1346360743-3628-2-git-send-email-paulmck@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 02:05:18PM -0700, Paul E. McKenney wrote:
+On Thu, Aug 30, 2012 at 02:05:19PM -0700, Paul E. McKenney wrote:
 > From: Frederic Weisbecker <fweisbec@gmail.com>
 > 
-> RCU currently insists that only idle tasks can enter RCU idle mode, which
-> prohibits an adaptive tickless kernel (AKA nohz cpusets), which in turn
-> would mean that usermode execution would always take scheduling-clock
-> interrupts, even when there is only one task runnable on the CPU in
-> question.
+> In some cases, it is necessary to enter or exit userspace-RCU-idle mode
+> from an interrupt handler, for example, if some other CPU sends this
+> CPU a resched IPI.  In this case, the current CPU would enter the IPI
+> handler in userspace-RCU-idle mode, but would need to exit the IPI handler
+> after having exited that mode.
 > 
-> This commit therefore adds rcu_user_enter() and rcu_user_exit(), which
-> allow non-idle tasks to enter RCU idle mode.  These are quite similar
-> to rcu_idle_enter() and rcu_idle_exit(), respectively, except that they
-> omit the idle-task checks.
+> To allow this to work, this commit adds two new APIs to TREE_RCU:
 > 
-> [ Updated to use "user" flag rather than separate check functions. ]
+> - rcu_user_enter_irq(). This must be called from an interrupt between
+> rcu_irq_enter() and rcu_irq_exit().  After the irq calls rcu_irq_exit(),
+> the irq handler will return into an RCU extended quiescent state.
+> In theory, this interrupt is never a nested interrupt, but in practice
+> it might interrupt softirq, which looks to RCU like a nested interrupt.
 > 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Alessio Igor Bogani <abogani@kernel.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Avi Kivity <avi@redhat.com>
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-> Cc: Geoff Levand <geoff@infradead.org>
-> Cc: Gilad Ben Yossef <gilad@benyossef.com>
-> Cc: Hakan Akkan <hakanakkan@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Kevin Hilman <khilman@ti.com>
-> Cc: Max Krasnyansky <maxk@qualcomm.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Stephen Hemminger <shemminger@vyatta.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
+> - rcu_user_exit_irq(). This must be called from a non-nesting
+> interrupt, interrupting an RCU extended quiescent state, also
+> between rcu_irq_enter() and rcu_irq_exit(). After the irq calls
+> rcu_irq_exit(), the irq handler will return in an RCU non-quiescent
+> state.
 
-A few suggestions below: an optional microoptimization and some bugfixes.
-With the bugfixes, and with or without the microoptimization:
+These names seem a bit confusing.  From the descriptions, it sounds like
+you don't always need to pair them; rcu_irq_exit() will return to a
+non-quiescent state, unless you call rcu_user_enter_irq and *don't* call
+rcu_user_exit_irq.  Did I get that semantic right?
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Given that, the "enter" and "exit" names seem confusing.  This seems
+more like a flag you can set and clear, rather than a delimited region
+as suggested by an enter/exit pair.
 
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-[...]
-> -static void rcu_idle_enter_common(struct rcu_dynticks *rdtp, long long oldval)
-> +static void rcu_eqs_enter_common(struct rcu_dynticks *rdtp, long long oldval,
-> +				bool user)
->  {
->  	trace_rcu_dyntick("Start", oldval, 0);
-> -	if (!is_idle_task(current)) {
-> +	if (!is_idle_task(current) && !user) {
-
-Microoptimization: putting the !user check first (here and in the exit
-function) would allow the compiler to partially inline rcu_eqs_*_common
-into the two trivial wrappers and constant-fold away the test for !user.
-
-> +void rcu_idle_enter(void)
-> +{
-> +	rcu_eqs_enter(0);
-> +}
-
-s/0/false/
-
-> +void rcu_user_enter(void)
-> +{
-> +	rcu_eqs_enter(1);
-> +}
-
-s/1/true/
-
-> -static void rcu_idle_exit_common(struct rcu_dynticks *rdtp, long long oldval)
-> +static void rcu_eqs_exit_common(struct rcu_dynticks *rdtp, long long oldval,
-> +			       int user)
->  {
->  	smp_mb__before_atomic_inc();  /* Force ordering w/previous sojourn. */
->  	atomic_inc(&rdtp->dynticks);
-> @@ -464,7 +490,7 @@ static void rcu_idle_exit_common(struct rcu_dynticks *rdtp, long long oldval)
->  	WARN_ON_ONCE(!(atomic_read(&rdtp->dynticks) & 0x1));
->  	rcu_cleanup_after_idle(smp_processor_id());
->  	trace_rcu_dyntick("End", oldval, rdtp->dynticks_nesting);
-> -	if (!is_idle_task(current)) {
-> +	if (!is_idle_task(current) && !user) {
-
-Same micro-optimization as the enter function.
-
-> +void rcu_idle_exit(void)
-> +{
-> +	rcu_eqs_exit(0);
-> +}
-
-s/0/false/
-
-> +void rcu_user_exit(void)
-> +{
-> +	rcu_eqs_exit(1);
-> +}
-
-s/1/true/
-
-> @@ -539,7 +586,7 @@ void rcu_irq_enter(void)
->  	if (oldval)
->  		trace_rcu_dyntick("++=", oldval, rdtp->dynticks_nesting);
->  	else
-> -		rcu_idle_exit_common(rdtp, oldval);
-> +		rcu_eqs_exit_common(rdtp, oldval, 1);
-
-s/1/true/, and likewise in rcu_irq_exit.
+How about something vaguely like rcu_user_irq_set_eqs and
+rcu_user_irq_clear_eqs?
 
 - Josh Triplett
