@@ -1,66 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754672Ab2HaRRE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 13:17:04 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55804 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754365Ab2HaRRA (ORCPT
+	id S1754698Ab2HaRYG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 13:24:06 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:24204 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754224Ab2HaRYE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 13:17:00 -0400
-Date: Fri, 31 Aug 2012 10:16:56 -0700
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
-Cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        lm-sensors@lm-sensors.org, linux-input@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, linux-leds@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lrg@ti.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Jean Delvare <khali@linux-fr.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Ashish Jangam <ashish.jangam@kpitcummins.com>,
-        Andrew Jones <drjones@redhat.com>, Donggeun Kim <dg77.kim@samsung.com>,
-        Philippe =?iso-8859-1?Q?R=E9tornaz?= <philippe.retornaz@epfl.ch>,
-        Wim Van Sebroeck <wim@iguana.be>, Bryan Wu <bryan.wu@canonical.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Anthony Olech <anthony.olech@diasemi.com>
-Subject: Re: [PATCH 1/8] mfd: Add Dialog DA906x core driver.
-Message-ID: <20120831171655.GC25575@opensource.wolfsonmicro.com>
-References: <201208241445@sw-eng-lt-dc-vm2>
- <201208241450@sw-eng-lt-dc-vm2>
- <20120825183113.GE6520@opensource.wolfsonmicro.com>
- <201208311220@sw-eng-lt-dc-vm2>
+	Fri, 31 Aug 2012 13:24:04 -0400
 MIME-Version: 1.0
+Message-ID: <89702248-0c3f-465c-bc1f-2115a21c8c89@default>
+Date: Fri, 31 Aug 2012 10:23:21 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Konrad Wilk <konrad.wilk@oracle.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>
+Subject: RE: [PATCH] frontswap: support exclusive gets if tmem backend is
+ capable
+References: <5557ec97-daa1-41a6-b3db-671f116ddc50@default>
+ <20120831170814.GF18929@localhost.localdomain>
+In-Reply-To: <20120831170814.GF18929@localhost.localdomain>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6661.5003 (x86)]
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201208311220@sw-eng-lt-dc-vm2>
-X-Cookie: You dialed 5483.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 31, 2012 at 12:20:00PM +0100, Krystian Garbaciak wrote:
-> > On Fri, Aug 24, 2012 at 02:50:00PM +0100, Krystian Garbaciak wrote:
+> From: Konrad Rzeszutek Wilk
 
-> > Your selection of people to CC here appears both large and random...
+Hi Konrad --
 
-> I've added any maintainer for my modules from maintainer list.
+Thanks for the fast feedback!
 
-You don't need to CC every single persojn on every single patch, and
-quite a few of these people are clearly not active in development.
+> > +#define FRONTSWAP_HAS_EXCLUSIVE_GETS
+> > +extern void frontswap_tmem_exclusive_gets(bool);
+> 
+> I don't think you need the #define here..
 
-> > > +inline unsigned int da906x_to_range_reg(u16 reg)
-> > > +{
-> > > +	return reg + DA906X_MAPPING_BASE;
-> > > +}
+The #define is used by an ifdef in the backend to ensure
+that it is using a version of frontswap that has this feature,
+so avoids the need for the frontend (frontswap) and
+the backend (e.g. zcache2) to merge in lockstep.
 
-> > I've no real idea what this stuff is all about, it at least needs some
-> > comments somewhere.  The fact that you're just adding a constant offset
-> > to all registers is at best odd.
+> > +EXPORT_SYMBOL(frontswap_tmem_exclusive_gets);
+> 
+> We got two of these now - the writethrough and this one. Merging
+> them in one function and one flag might be better. So something like:
+> static int frontswap_mode = 0;
+>
+> void frontswap_set_mode(int set_mode)
+> {
+> 	if (mode & (FRONTSWAP_WRITETH | FRONTSWAP_EXCLUS..)
+> 		mode |= set_mode;
+> }
 
-> I will comment it precisely for next version:
+IMHO, it's too soon to try to optimize this.  One or
+both of these may go away.   Or the mode may become
+more fine-grained in the future (e.g. to allow individual
+gets to be exclusive).
 
-This still makes very little sense - this function appears to be
-accomplishing very little.  You're adding a constant offset to every
-single register address that gets used.  Why are we doing this
-dynamically at runtime?
+So unless you object strongly, let's just leave this
+as is for now and revisit in the future if more "modes"
+are needed.
+ 
+> ... and
+> > +
+> > +/*
+> >   * Called when a swap device is swapon'd.
+> >   */
+> >  void __frontswap_init(unsigned type)
+> > @@ -174,8 +190,13 @@ int __frontswap_load(struct page *page)
+> >  	BUG_ON(sis == NULL);
+> >  	if (frontswap_test(sis, offset))
+> >  		ret = (*frontswap_ops.load)(type, offset, page);
+> > -	if (ret == 0)
+> > +	if (ret == 0) {
+> >  		inc_frontswap_loads();
+> > +		if (frontswap_tmem_exclusive_gets_enabled) {
+> 
+> For these perhaps use asm goto for optimization? Is this showing up in
+> perf as a hotspot? The asm goto might be a bit too much.
+
+This is definitely not a performance hotspot.  Frontswap code
+only is ever executed in situations where a swap-to-disk would
+otherwise have occurred.  And in this case, this code only
+gets executed after the frontswap_test has confirmed that
+tmem does already contain the page of data, in which case
+there is thousands of cycles spent copying and/or decompressing.
+
+Dan
