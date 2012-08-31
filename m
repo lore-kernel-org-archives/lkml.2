@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755102Ab2HaXx6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 19:53:58 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:53473 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752319Ab2HaXx4 (ORCPT
+	id S1755298Ab2HaXyX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 19:54:23 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:41472 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754995Ab2HaXyW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 19:53:56 -0400
-X-Originating-IP: 217.70.178.131
+	Fri, 31 Aug 2012 19:54:22 -0400
+X-Originating-IP: 217.70.178.146
 X-Originating-IP: 173.246.103.110
-Date: Fri, 31 Aug 2012 16:53:47 -0700
+Date: Fri, 31 Aug 2012 16:54:12 -0700
 From: Josh Triplett <josh@joshtriplett.org>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
@@ -27,26 +27,35 @@ Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
         Max Krasnyansky <maxk@qualcomm.com>,
         Stephen Hemminger <shemminger@vyatta.com>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-Subject: Re: [PATCH tip/core/rcu 12/26] x86: Use the new schedule_user API on
- userspace preemption
-Message-ID: <20120831235346.GI11771@jtriplet-mobl1>
+Subject: Re: [PATCH tip/core/rcu 13/26] x86: Exit RCU extended QS on notify
+ resume
+Message-ID: <20120831235412.GJ11771@jtriplet-mobl1>
 References: <20120830210520.GA2824@linux.vnet.ibm.com>
  <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346360743-3628-12-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346360743-3628-13-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1346360743-3628-12-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1346360743-3628-13-git-send-email-paulmck@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 02:05:29PM -0700, Paul E. McKenney wrote:
+On Thu, Aug 30, 2012 at 02:05:30PM -0700, Paul E. McKenney wrote:
 > From: Frederic Weisbecker <fweisbec@gmail.com>
 > 
-> This way we can exit the RCU extended quiescent state before
-> we schedule a new task from irq/exception exit.
+> do_notify_resume() may be called on irq or exception
+> exit. But at that time the exception has already called
+> rcu_user_enter() and the irq has already called rcu_irq_exit().
+> 
+> Since it can use RCU read side critical section, we must call
+> rcu_user_exit() before doing anything there. Then we must call
+> back rcu_user_enter() after this function because we know we are
+> going to userspace from there.
+> 
+> This complete support for userspace RCU extended quiescent state
+> in x86-64.
 > 
 > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 > Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -71,49 +80,44 @@ On Thu, Aug 30, 2012 at 02:05:29PM -0700, Paul E. McKenney wrote:
 
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
->  arch/x86/kernel/entry_64.S |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
+>  arch/x86/Kconfig         |    1 +
+>  arch/x86/kernel/signal.c |    4 ++++
+>  2 files changed, 5 insertions(+), 0 deletions(-)
 > 
-> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-> index 69babd8..6230487 100644
-> --- a/arch/x86/kernel/entry_64.S
-> +++ b/arch/x86/kernel/entry_64.S
-> @@ -565,7 +565,7 @@ sysret_careful:
->  	TRACE_IRQS_ON
->  	ENABLE_INTERRUPTS(CLBR_NONE)
->  	pushq_cfi %rdi
-> -	call schedule
-> +	call schedule_user
->  	popq_cfi %rdi
->  	jmp sysret_check
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index ba2657c..5cd953a 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -97,6 +97,7 @@ config X86
+>  	select KTIME_SCALAR if X86_32
+>  	select GENERIC_STRNCPY_FROM_USER
+>  	select GENERIC_STRNLEN_USER
+> +	select HAVE_RCU_USER_QS if X86_64
 >  
-> @@ -678,7 +678,7 @@ int_careful:
->  	TRACE_IRQS_ON
->  	ENABLE_INTERRUPTS(CLBR_NONE)
->  	pushq_cfi %rdi
-> -	call schedule
-> +	call schedule_user
->  	popq_cfi %rdi
->  	DISABLE_INTERRUPTS(CLBR_NONE)
->  	TRACE_IRQS_OFF
-> @@ -974,7 +974,7 @@ retint_careful:
->  	TRACE_IRQS_ON
->  	ENABLE_INTERRUPTS(CLBR_NONE)
->  	pushq_cfi %rdi
-> -	call  schedule
-> +	call  schedule_user
->  	popq_cfi %rdi
->  	GET_THREAD_INFO(%rcx)
->  	DISABLE_INTERRUPTS(CLBR_NONE)
-> @@ -1449,7 +1449,7 @@ paranoid_userspace:
->  paranoid_schedule:
->  	TRACE_IRQS_ON
->  	ENABLE_INTERRUPTS(CLBR_ANY)
-> -	call schedule
-> +	call schedule_user
->  	DISABLE_INTERRUPTS(CLBR_ANY)
->  	TRACE_IRQS_OFF
->  	jmp paranoid_userspace
+>  config INSTRUCTION_DECODER
+>  	def_bool (KPROBES || PERF_EVENTS || UPROBES)
+> diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
+> index b280908..bca0ab9 100644
+> --- a/arch/x86/kernel/signal.c
+> +++ b/arch/x86/kernel/signal.c
+> @@ -779,6 +779,8 @@ static void do_signal(struct pt_regs *regs)
+>  void
+>  do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flags)
+>  {
+> +	rcu_user_exit();
+> +
+>  #ifdef CONFIG_X86_MCE
+>  	/* notify userspace of pending MCEs */
+>  	if (thread_info_flags & _TIF_MCE_NOTIFY)
+> @@ -804,6 +806,8 @@ do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flags)
+>  #ifdef CONFIG_X86_32
+>  	clear_thread_flag(TIF_IRET);
+>  #endif /* CONFIG_X86_32 */
+> +
+> +	rcu_user_enter();
+>  }
+>  
+>  void signal_fault(struct pt_regs *regs, void __user *frame, char *where)
 > -- 
 > 1.7.8
 > 
