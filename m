@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755226Ab2HaXWl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 19:22:41 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64996 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755170Ab2HaXWk (ORCPT
+	id S1755225Ab2HaX1a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 19:27:30 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:41658 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755170Ab2HaX13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 19:22:40 -0400
-Date: Fri, 31 Aug 2012 16:22:34 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Mathieu Poirier <mathieu.poirier@linaro.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        rdunlap@xenotime.net, arve@android.com, kernel-team@android.com,
-        john.stultz@linaro.org
-Subject: Re: [PATCH v2] drivers/tty: Folding Android's keyreset driver in
- sysRQ
-Message-ID: <20120831232234.GB22142@core.coreip.homeip.net>
-References: <1346365854-28441-1-git-send-email-mathieu.poirier@linaro.org>
- <20120830230129.GC21501@core.coreip.homeip.net>
- <50413200.5010104@linaro.org>
- <20120831230227.6e5008b5@pyramind.ukuu.org.uk>
- <20120831224128.GA22073@core.coreip.homeip.net>
- <50414140.60102@linaro.org>
+	Fri, 31 Aug 2012 19:27:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50414140.60102@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120831110818.GA5962@gmail.com>
+References: <1344527828-6283-1-git-send-email-lee.jones@linaro.org>
+	<1344527828-6283-3-git-send-email-lee.jones@linaro.org>
+	<CACRpkdZa-72QogrZ-P5jbDHTTX64babZo3ydjzfgC-4LWUBfMg@mail.gmail.com>
+	<20120831110818.GA5962@gmail.com>
+Date: Sat, 1 Sep 2012 01:27:28 +0200
+Message-ID: <CACRpkdat3zj_47r7ENz7Qv3N8cNOSKDV+k5em9DjOhkNycy9gQ@mail.gmail.com>
+Subject: Re: [rtc-linux] [PATCH 1/1] drivers/rtc/rtc-ab8500.c: Revoke Device
+ Tree enablement
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 31, 2012 at 04:57:04PM -0600, Mathieu Poirier wrote:
-> On 12-08-31 04:41 PM, Dmitry Torokhov wrote:
-> > On Fri, Aug 31, 2012 at 11:02:27PM +0100, Alan Cox wrote:
-> >>>> Why do we need to involve a platform device and not use, for example, a module
-> >>>> parameter, that could be set up from userspace?
-> >>>
-> >>> The platform device comes from the original design and was included to
-> >>> minimise the amount of changes in code that make use of the current
-> >>> keyreset driver.
-> >>
-> >> The platform device is IMHO the right answer. In this class of devices
-> >> the stuff is compiled in, the userspace is Android, there are no modules
-> >> and there is no reason for it to be configurable.
-> > 
-> > It does not matter if it is built in or not, /sys/module/XXX/parameters
-> > is still there, and while havig it in kernel is "easy" you could as
-> > easily stuff needed data into a sysfs attribute during booting.
-> > 
-> > And we should be able to get this from DT even without the platform
-> > device (this was the next step, wasn't it?).
-> 
-> Correct - my hope was to get the main functionality accepted before
-> adding DT support.  Do you think the lack of DT support is a blocker for
-> acceptance ?  Please confirm.
-> 
+On Fri, Aug 31, 2012 at 1:08 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> On Tue, Aug 14, 2012 at 10:32:02AM +0200, Linus Walleij wrote:
+>> On Thu, Aug 9, 2012 at 5:57 PM, Lee Jones <lee.jones@linaro.org> wrote:
+>>
+>> > All AB8500 devices are now registered via MFD core, so Device Tree
+>> > capability is no longer required for probing. Here we pull the DT
+>> > match table to ensure we're no longer probed during Device Tree
+>> > start-up.
+>> >
+>> > CC: Alessandro Zummo <a.zummo@towertech.it>
+>> > CC: rtc-linux@googlegroups.com
+>> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>>
+>> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>
+> I'm guessing we still need Alessandro's Ack?
 
-No, lack of DT is not a blocker, but I am unconvinced that we need
-platform device.
+Well, usually we have Andrew Morton merging patches for RTC, so
+put him on CC.
 
-Thanks,
+If I was the MFD maintainer I'd just merge this though, it's quite
+obvious.
 
--- 
-Dmitry
+Sam: do you agree?
+
+Yours,
+Linus Walleij
