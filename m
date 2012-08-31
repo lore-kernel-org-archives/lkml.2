@@ -1,111 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751168Ab2HaH7U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 03:59:20 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:24283 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765Ab2HaH7T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 03:59:19 -0400
-X-AuditID: cbfee60b-b7f256d000005308-eb-50406ed6c654
-Date: Fri, 31 Aug 2012 07:59:18 +0000 (GMT)
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH 2/2] [2/2] extcon: optimising the check_mutually_exclusive
- function
-To: anish kumar <anish198519851985@gmail.com>,
-        =?euc-kr?Q?=C3=D6=C2=F9=BF=EC?= <cw00.choi@samsung.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20120831075900111@myungjoo.ham
-Msgkey: 20120831075900111@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20120831075900111@myungjoo.ham
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <7520099.93351346399957499.JavaMail.weblogic@epml19>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFIsWRmVeSWpSXmKPExsVy+t/t6brX8hwCDK4fZLO4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZUzt2shW846tYP+kGSwPjDr4uRk4OIQF1iUVLTrKB2BICJhJb
-	ds1ngbDFJC7cWw8U5wKqmc8ocXDPVSaQBIuAqsSbj7eYuxg5ONgE9CRmfk4GCQsLhEvM/LsT
-	rEREIEdi1spmMJtZwFHi0eU7zBC7lCTW7HsFNp9XQFDi5MwnULtUJZ5e2AU2kldATaL3FhNE
-	WEJi1vQLrBA2r8SM9qdQ5XIS076uYYawpSXOz9rACHPy4u+PoeL8Esdu72ACGQnS++R+MMyY
-	3Zu/QH0rIDH1zEGoVi2JpXuboGw+iTUL37LAjNl1ajkzTO/9LXOhvlKUmNL9kB3C1pL48mMf
-	G7qveAUcJCaemcgygVFuFpLULCTts5C0I6tZwMiyilE0tSC5oDgpPdVQrzgxt7g0L10vOT93
-	EyM4xp9x72Cc1WBxiFGAg1GJh7djl32AEGtiWXFl7iFGCQ5mJRFeNiuHACHelMTKqtSi/Pii
-	0pzU4kOM0hwsSuK8n72++gsJpCeWpGanphakFsFkmTg4pRoYC7tDsqYUii3l4rzama15dE9M
-	XHDsbu/O1bGrHgdPcLzPLjI7S/Q/x4bCpXVZgraHmbbtPRq0bKndrWMCE5fNzdjlcGBf8l+2
-	oo/rr2/nms99Y8ffh6p16fKBMuKeUjZzThfwzX+1tIlX98jee8cfWnMaBPOzrFjF8fvLU4fI
-	u0FFW44ot6+Yp8RSnJFoqMVcVJwIAJQistDtAgAA
+	id S1751227Ab2HaIAZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 04:00:25 -0400
+Received: from mga01.intel.com ([192.55.52.88]:15266 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750801Ab2HaIAY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Aug 2012 04:00:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,346,1344236400"; 
+   d="scan'208";a="216566646"
+Message-ID: <50406F60.5040707@intel.com>
+Date: Fri, 31 Aug 2012 11:01:36 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: akpm@linux-foundation.org
+CC: Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com
+Subject: Re: [PATCH v2 07/12] rbtree: adjust root color in rb_insert_color()
+ only when necessary
+References: <1342139517-3451-1-git-send-email-walken@google.com> <1342139517-3451-8-git-send-email-walken@google.com>
+In-Reply-To: <1342139517-3451-8-git-send-email-walken@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7V7xQw8028304
 
-> From: anish kumar <anish198519851985@gmail.com>
+On 13/07/12 03:31, Michel Lespinasse wrote:
+> The root node of an rbtree must always be black. However, rb_insert_color()
+> only needs to maintain this invariant when it has been broken - that is,
+> when it exits the loop due to the current (red) node being the root.
+> In all other cases (exiting after tree rotations, or exiting due to
+> an existing black parent) the invariant is already satisfied, so there
+> is no need to adjust the root node color.
 > 
-> Rather than re-inventing the wheel we can use the hamming function
-> to calculate the number of bits set to check for violation of
-> exclusivity.
-> 
-> Signed-off-by: anish kumar <anish198519851985@gmail.com>
-
-Ah.. we've got such a convinient one. Thanks.
-
-Singed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-
-
+> Signed-off-by: Michel Lespinasse <walken@google.com>
 > ---
->  drivers/extcon/extcon-class.c |   14 +++++---------
->  1 files changed, 5 insertions(+), 9 deletions(-)
+>  lib/rbtree.c |   19 +++++++++++++++----
+>  1 files changed, 15 insertions(+), 4 deletions(-)
 > 
-> diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
-> index e09a6c3..06df95a 100644
-> --- a/drivers/extcon/extcon-class.c
-> +++ b/drivers/extcon/extcon-class.c
-> @@ -89,17 +89,13 @@ static int check_mutually_exclusive(struct extcon_dev *edev, u32 new_state)
->  		return 0;
+> diff --git a/lib/rbtree.c b/lib/rbtree.c
+> index 12abb8a..d0be5fc 100644
+> --- a/lib/rbtree.c
+> +++ b/lib/rbtree.c
+> @@ -91,8 +91,21 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
+>  {
+>  	struct rb_node *parent, *gparent;
 >  
->  	for (i = 0; edev->mutually_exclusive[i]; i++) {
-> -		int count = 0, j;
-> +		int weight;
->  		u32 correspondants = new_state & edev->mutually_exclusive[i];
-> -		u32 exp = 1;
-> -
-> -		for (j = 0; j < 32; j++) {
-> -			if (exp & correspondants)
-> -				count++;
-> -			if (count > 1)
-> -				return i + 1;
-> -			exp <<= 1;
-> -		}
-> +
-> +		/* calculate the total number of bits set */
-> +		weight = hweight32(correspondants);
-> +		if (weight > 1)
-> +			return i + 1;
->  	}
->  
->  	return 0;
-> -- 
-> 1.7.1
-> 
-> 
-> 
-> 
->        
->   
->          
-> 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> -	while ((parent = rb_parent(node)) && rb_is_red(parent))
+> -	{
+> +	while (true) {
+
+This breaks tools/perf build in linux-next:
+
+../../lib/rbtree.c: In function 'rb_insert_color':
+../../lib/rbtree.c:95:9: error: 'true' undeclared (first use in this function)
+../../lib/rbtree.c:95:9: note: each undeclared identifier is reported only once for each function it appears in
+../../lib/rbtree.c: In function '__rb_erase_color':
+../../lib/rbtree.c:216:9: error: 'true' undeclared (first use in this function)
+../../lib/rbtree.c: In function 'rb_erase':
+../../lib/rbtree.c:368:2: error: unknown type name 'bool'
+make: *** [util/rbtree.o] Error 1
+
+How about:
+
+From: Adrian Hunter <adrian.hunter@intel.com>
+Date: Fri, 31 Aug 2012 10:49:27 +0300
+Subject: [PATCH] perf tools: fix build for another rbtree.c change
+
+Fixes:
+
+../../lib/rbtree.c: In function 'rb_insert_color':
+../../lib/rbtree.c:95:9: error: 'true' undeclared (first use in this function)
+../../lib/rbtree.c:95:9: note: each undeclared identifier is reported only once for each function it appears in
+../../lib/rbtree.c: In function '__rb_erase_color':
+../../lib/rbtree.c:216:9: error: 'true' undeclared (first use in this function)
+../../lib/rbtree.c: In function 'rb_erase':
+../../lib/rbtree.c:368:2: error: unknown type name 'bool'
+make: *** [util/rbtree.o] Error 1
+
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/util/include/linux/rbtree.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/tools/perf/util/include/linux/rbtree.h b/tools/perf/util/include/linux/rbtree.h
+index 7a243a1..2a030c5 100644
+--- a/tools/perf/util/include/linux/rbtree.h
++++ b/tools/perf/util/include/linux/rbtree.h
+@@ -1 +1,2 @@
++#include <stdbool.h>
+ #include "../../../../include/linux/rbtree.h"
+-- 
+1.7.11.4
+
