@@ -1,108 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754511Ab2HaQLd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 12:11:33 -0400
-Received: from hapkido.dreamhost.com ([66.33.216.122]:34657 "EHLO
-	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753829Ab2HaQLc (ORCPT
+	id S1754156Ab2HaQVl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 12:21:41 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:42871 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753275Ab2HaQVk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 12:11:32 -0400
-Subject: [PATCH] KVM: VMX: invalidate vpid for invlpg instruction
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
-Cc: KVM <kvm@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: GNU
-Date: Fri, 31 Aug 2012 18:10:48 +0200
-Message-ID: <1346429448.2823.1.camel@offbook>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Fri, 31 Aug 2012 12:21:40 -0400
+X-Originating-IP: 217.70.178.143
+X-Originating-IP: 50.43.46.74
+Date: Fri, 31 Aug 2012 09:21:30 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 2/3] rcu: Disallow callback registry on
+ offline CPUs
+Message-ID: <20120831162130.GB21673@leaf>
+References: <20120830190245.GA32625@linux.vnet.ibm.com>
+ <1346353383-350-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346353383-350-2-git-send-email-paulmck@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346353383-350-2-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For processors that support VPIDs we should invalidate the page table entry
-specified by the lineal address. For this purpose add support for individual
-address invalidations.
+On Thu, Aug 30, 2012 at 12:03:02PM -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+> 
+> Posting a callback after the CPU_DEAD notifier effectively leaks
+> that callback unless/until that CPU comes back online.  Silence is
+> unhelpful when attempting to track down such leaks, so this commit emits
+> a WARN_ON_ONCE() and unconditionally leaks the callback when an offline
+> CPU attempts to register a callback.  The rdp->nxttail[RCU_NEXT_TAIL] is
+> set to NULL in the CPU_DEAD notifier and restored in the CPU_UP_PREPARE
+> notifier, allowing _call_rcu() to determine exactly when posting callbacks
+> is illegal.
+> 
+> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Signed-off-by: Davidlohr Bueso <dave@gnu.org>
----
- arch/x86/include/asm/vmx.h |    6 ++++--
- arch/x86/kvm/vmx.c         |   15 +++++++++++++++
- 2 files changed, 19 insertions(+), 2 deletions(-)
+One suggestion below; with or without that change:
 
-diff --git a/arch/x86/include/asm/vmx.h b/arch/x86/include/asm/vmx.h
-index 74fcb96..20abb18 100644
---- a/arch/x86/include/asm/vmx.h
-+++ b/arch/x86/include/asm/vmx.h
-@@ -393,6 +393,7 @@ enum vmcs_field {
- #define IDENTITY_PAGETABLE_PRIVATE_MEMSLOT	(KVM_MEMORY_SLOTS + 2)
- 
- #define VMX_NR_VPIDS				(1 << 16)
-+#define VMX_VPID_EXTENT_INDIVIDUAL_ADDR         0
- #define VMX_VPID_EXTENT_SINGLE_CONTEXT		1
- #define VMX_VPID_EXTENT_ALL_CONTEXT		2
- 
-@@ -406,12 +407,13 @@ enum vmcs_field {
- #define VMX_EPTP_WB_BIT				(1ull << 14)
- #define VMX_EPT_2MB_PAGE_BIT			(1ull << 16)
- #define VMX_EPT_1GB_PAGE_BIT			(1ull << 17)
--#define VMX_EPT_AD_BIT					(1ull << 21)
-+#define VMX_EPT_AD_BIT				(1ull << 21)
- #define VMX_EPT_EXTENT_INDIVIDUAL_BIT		(1ull << 24)
- #define VMX_EPT_EXTENT_CONTEXT_BIT		(1ull << 25)
- #define VMX_EPT_EXTENT_GLOBAL_BIT		(1ull << 26)
- 
--#define VMX_VPID_EXTENT_SINGLE_CONTEXT_BIT      (1ull << 9) /* (41 - 32) */
-+#define VMX_VPID_EXTENT_INDIVIDUAL_ADDR_BIT     (1ull << 8)  /* (40 - 32) */
-+#define VMX_VPID_EXTENT_SINGLE_CONTEXT_BIT      (1ull << 9)  /* (41 - 32) */
- #define VMX_VPID_EXTENT_GLOBAL_CONTEXT_BIT      (1ull << 10) /* (42 - 32) */
- 
- #define VMX_EPT_DEFAULT_GAW			3
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index c00f03d..d87b22c 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -816,6 +816,11 @@ static inline bool cpu_has_vmx_invept_global(void)
- 	return vmx_capability.ept & VMX_EPT_EXTENT_GLOBAL_BIT;
- }
- 
-+static inline bool cpu_has_vmx_invvpid_individual_addr(void)
-+{
-+	return vmx_capability.vpid & VMX_VPID_EXTENT_INDIVIDUAL_ADDR_BIT;
-+}
-+
- static inline bool cpu_has_vmx_invvpid_single(void)
- {
- 	return vmx_capability.vpid & VMX_VPID_EXTENT_SINGLE_CONTEXT_BIT;
-@@ -1011,6 +1016,15 @@ static void loaded_vmcs_clear(struct loaded_vmcs *loaded_vmcs)
- 			loaded_vmcs->cpu, __loaded_vmcs_clear, loaded_vmcs, 1);
- }
- 
-+static inline void vpid_sync_vcpu_individual_addr(struct vcpu_vmx *vmx, gpa_t gpa)
-+{
-+	if (vmx->vpid == 0)
-+		return;
-+
-+	if (cpu_has_vmx_invvpid_individual_addr())
-+		__invvpid(VMX_VPID_EXTENT_INDIVIDUAL_ADDR, vmx->vpid, gpa);
-+}
-+
- static inline void vpid_sync_vcpu_single(struct vcpu_vmx *vmx)
- {
- 	if (vmx->vpid == 0)
-@@ -4719,6 +4733,7 @@ static int handle_invlpg(struct kvm_vcpu *vcpu)
- 	unsigned long exit_qualification = vmcs_readl(EXIT_QUALIFICATION);
- 
- 	kvm_mmu_invlpg(vcpu, exit_qualification);
-+	vpid_sync_vcpu_individual_addr(to_vmx(vcpu), exit_qualification);
- 	skip_emulated_instruction(vcpu);
- 	return 1;
- }
--- 
-1.7.4.1
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
+> ---
+>  kernel/rcutree.c |   10 ++++++++++
+>  1 files changed, 10 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index 9854a00..5f8c4dd 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -1503,6 +1503,9 @@ static void rcu_cleanup_dead_cpu(int cpu, struct rcu_state *rsp)
+>  	WARN_ONCE(rdp->qlen != 0 || rdp->nxtlist != NULL,
+>  		  "rcu_cleanup_dead_cpu: Callbacks on offline CPU %d: qlen=%lu, nxtlist=%p\n",
+>  		  cpu, rdp->qlen, rdp->nxtlist);
+> +	init_callback_list(rdp);
+> +	/* Disallow further callbacks on this CPU. */
+> +	rdp->nxttail[RCU_NEXT_TAIL] = NULL;
+>  }
+>  
+>  #else /* #ifdef CONFIG_HOTPLUG_CPU */
+> @@ -1925,6 +1928,12 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
+>  	rdp = this_cpu_ptr(rsp->rda);
+>  
+>  	/* Add the callback to our list. */
+> +	if (unlikely(rdp->nxttail[RCU_NEXT_TAIL] == NULL)) {
+> +		/* _call_rcu() is illegal on offline CPU; leak the callback. */
+> +		WARN_ON_ONCE(1);
 
+You can write this as:
 
+if (WARN_ON_ONCE(rdp->nxttail[RCU_NEXT_TAIL] == NULL))
+
+WARN_ON_ONCE also has a built-in unlikely() already.
+
+> +		local_irq_restore(flags);
+> +		return;
+> +	}
+>  	ACCESS_ONCE(rdp->qlen)++;
+>  	if (lazy)
+>  		rdp->qlen_lazy++;
+> @@ -2462,6 +2471,7 @@ rcu_init_percpu_data(int cpu, struct rcu_state *rsp, int preemptible)
+>  	rdp->qlen_last_fqs_check = 0;
+>  	rdp->n_force_qs_snap = rsp->n_force_qs;
+>  	rdp->blimit = blimit;
+> +	init_callback_list(rdp);  /* Re-enable callbacks on this CPU. */
+>  	rdp->dynticks->dynticks_nesting = DYNTICK_TASK_EXIT_IDLE;
+>  	atomic_set(&rdp->dynticks->dynticks,
+>  		   (atomic_read(&rdp->dynticks->dynticks) & ~0x1) + 1);
+> -- 
+> 1.7.8
+> 
