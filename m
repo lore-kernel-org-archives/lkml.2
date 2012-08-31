@@ -1,87 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176Ab2HaWtE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 18:49:04 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:55238 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755144Ab2HaWtB (ORCPT
+	id S1755172Ab2HaWvv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 18:51:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50925 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753714Ab2HaWvt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 18:49:01 -0400
+	Fri, 31 Aug 2012 18:51:49 -0400
+Message-ID: <50414002.8040905@linaro.org>
+Date: Fri, 31 Aug 2012 16:51:46 -0600
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <20120831223908.4aa5574d@pyramind.ukuu.org.uk>
-References: <20120831213126.GA19688@www.outflux.net>
-	<20120831223908.4aa5574d@pyramind.ukuu.org.uk>
-Date: Fri, 31 Aug 2012 15:49:00 -0700
-Message-ID: <CACLa4pv75-HaPEas=aOMySbMm-YdSJZdc6qtNUnTM+Ev2Rp7rg@mail.gmail.com>
-Subject: Re: [PATCH] security: unconditionally call Yama
-From: Eric Paris <eparis@parisplace.org>
 To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        James Morris <james.l.morris@oracle.com>,
-        Eric Paris <eparis@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        John Johansen <john.johansen@canonical.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        linux-security-module@vger.kernel.org
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org,
+        rdunlap@xenotime.net, arve@android.com, kernel-team@android.com,
+        john.stultz@linaro.org
+Subject: Re: [PATCH v2] drivers/tty: Folding Android's keyreset driver in
+ sysRQ
+References: <1346365854-28441-1-git-send-email-mathieu.poirier@linaro.org> <20120830230129.GC21501@core.coreip.homeip.net> <50413200.5010104@linaro.org> <20120831230227.6e5008b5@pyramind.ukuu.org.uk>
+In-Reply-To: <20120831230227.6e5008b5@pyramind.ukuu.org.uk>
+X-Enigmail-Version: 1.5a1pre
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 31, 2012 at 2:39 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> On Fri, 31 Aug 2012 14:31:26 -0700
-> Kees Cook <keescook@chromium.org> wrote:
->
->> Unconditionally call Yama, no matter what LSM module is selected.
+On 12-08-31 04:02 PM, Alan Cox wrote:
+>>> Why do we need to involve a platform device and not use, for example, a module
+>>> parameter, that could be set up from userspace?
+>>
+>> The platform device comes from the original design and was included to
+>> minimise the amount of changes in code that make use of the current
+>> keyreset driver.
+> 
+> The platform device is IMHO the right answer. In this class of devices
+> the stuff is compiled in, the userspace is Android, there are no modules
+> and there is no reason for it to be configurable.
+> 
+>> I am definitely willing to explore the possibility of adding module
+>> parameter to complement the platform data but again, to avoid impacting
+>> board code I'm in favour of keeping the platform data/device - get back
+>> to me if you disagree.
+>>
+>> Thinking back on this it may be better to call 'platform_driver_probe'
+>> rather than 'platform_driver_register'.  That way one wouldn't have to
+>> instantiate a platform_device.
+>>
+>>>
+>>> Also, why do we need reset_fn() and not simply invoke SysRq-B handler
+>>> that should call ctrl_alt_del() for us?
+>>
+>> The reset_fn() gives an implementer the chance of calling some custom
+>> function before the reset sequence is started and in my opinion should
 
-> Not a good plan. What happens when everyone decides to stack every module
-> by ifdeffing in the kernel - mayhem. I'm all for it being possible but
-> done right - espeicall as I believe a proper proposal now for stacking
-> modules, and it should be done as part of that.
+I did not express myself clearly - with reset_fn() a system can do
+whatever it wants when a specific series of keys is pressed.
 
-I think a lot of us agree it's a 'difficult' plan going forward.  Kees
-wrote this patch after we (James, SELinux, AppArmor people) talked at
-the Security Summit earlier today.  From my PoV we have a couple of
-'classes' of LSMs.
+Granted that the next steps are most likely converging toward rebooting
+the system - but it may not be right away and depending on the
+circumstances a reboot could be avoided altogether.
 
-Big with Labels: SELinux and SMACK
-Big without Labels: AppArmor and TOMOYO
-Small and stateless: Capabilities and Yama (and maybe integrity)
+> 
+> So why wouldn't that already be using the reset notifiers ?
 
-Those small and stateless LSMs can easily stack.  We don't have object
-lifetime issues.  We don't have difficult technical details.  We all
-here seem to want to stack 'small and stateless' with 'big boy'.
-Outside one little capabilities and selinux setxattr issue I can't
-think of anything even quirky.  So the fast path forward, in my mind,
-is to start here with Yama.  Our choice *today* is adding these static
-hooks inside the 'big boy' LSMs (which I think all of us are willing
-to do) vs adding it one time in the LSM and not having to worry about
-it all over the place.  Getting the big guys and the little guys to
-play together is not going to lead to a mess of crazy.
+I am not familiar with the "reset notifiers" that have been referred to
+but a little bit of research indicate that a registering subsystem gets
+notified when the event of interest (in this case a reboot) happens.
 
-Stacking the big boys is a future goal most of us are happy with
-seeing done, if it turns out to be reasonable.  We know it's close to
-possible.  Dave Howell's gave us an implementation about 2 years ago.
-Casey Schaufler demo'd another stacking interface today.  No code from
-the latter, but the only limitation he really mentioned today was that
-two big guys with labels can't stack together.  I don't know how/if
-Dave's implementation wanted to handle that case.
+I understand your proposition here but aren't we loosing flexibility in
+what we can achieve when the event has been triggered ?
 
-I really think this patch is good.
+What do you think of adding a keyreset event that would be fired (and
+caught by a registering subsystem) instead of calling reset_fn() ?
 
-Acked-by: Eric Paris <eparis@redhat.com>
+Thanks,
+Mathieu.
 
-I think I even want to do the same thing with capabilities so I don't
-have to make sure I'm getting those right in SELinux.  And everyone
-else probably doesn't want to keep those hooks themselves either.  I
-should send that patch to Linus.  I bet I can give him a large
-negative diff.  He did just say two days ago that he'll take any -1000
-line diff after -rc6   :)
+> 
+> Alan
+> 
 
-I think Casey and Dave need to both get their larger stacking
-solutions posted and we should go with the best one.  It'll let us
-pull out the static code, but for now, I like the static coding
-between the big boys and the little guys.  Lets fix today what's easy
-and fix tomorrow what we can't fix today.
-
--Eric
