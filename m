@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753546Ab2HaNg3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 09:36:29 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:37555 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751923Ab2HaNg2 (ORCPT
+	id S1753463Ab2HaNjP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 09:39:15 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65132 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752836Ab2HaNjO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 09:36:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <1346413543.9709.45.camel@sauron.fi.intel.com>
-References: <1346001700-26895-1-git-send-email-shijie8@gmail.com>
-	<1346413543.9709.45.camel@sauron.fi.intel.com>
-Date: Fri, 31 Aug 2012 09:36:27 -0400
-Message-ID: <CAMiH66GrVNV1DjAjYDwUQqyi7sP13pi+A2HYvmWdCpxgmT-GRA@mail.gmail.com>
-Subject: Re: [PATCH 1/3] mtd: cmdlinepart: make the partitions rule more strict
-From: Huang Shijie <shijie8@gmail.com>
-To: dedekind1@gmail.com
-Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, shmulik.ladkani@gmail.com
-Content-Type: text/plain; charset=UTF-8
+	Fri, 31 Aug 2012 09:39:14 -0400
+Message-ID: <1346420343.3107.0.camel@phoenix>
+Subject: [PATCH] video: mbxfb: Include linux/io.h instead of asm/io.h
+From: Axel Lin <axel.lin@gmail.com>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Damien Cassou <damien.cassou@lifl.fr>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 31 Aug 2012 21:39:03 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 31, 2012 at 7:45 AM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
-> On Sun, 2012-08-26 at 13:21 -0400, Huang Shijie wrote:
->> There are typically two types to set the mtd partitions:
->>
->> <1> set with the `size`, such as
->>     gpmi-nand:100m(boot),100m(kernel),1g(rootfs)
->>
->> <2> set with the `offset`, such as
->>     gpmi-nand:100m@0(boot),100m@100m(kernel),1g@200m(rootfs)
->>     gpmi-nand:1g@200m(rootfs),100m@0(boot),100m@100m(kernel)
->>
->> If we mix these two types, such as:
->>      gpmi-nand:100m@0(boot),100m(kernel),1g@200m(rootfs)
->>      gpmi-nand:1g@200m(rootfs),100m@0(boot),100m(kernel)
->>
->> It's hard to understand the cmdline. And also it is hard to sort the
->> partitions in this mixed type. So we explicitly forbid the mixed type.
->
-> So "explicitly forbid" is just to add a "do not do this" comment?
->
+This fixes below build error:
 
-This is the simplest way. ;)
+  CC [M]  drivers/video/mbx/mbxfb.o
+drivers/video/mbx/mbxfb.c: In function 'mbxfb_probe':
+drivers/video/mbx/mbxfb.c:942:2: error: implicit declaration of function 'devm_ioremap_nocache' [-Werror=implicit-function-declaration]
+drivers/video/mbx/mbxfb.c:942:22: warning: assignment makes pointer from integer without a cast [enabled by default]
+drivers/video/mbx/mbxfb.c:952:21: warning: assignment makes pointer from integer without a cast [enabled by default]
+cc1: some warnings being treated as errors
 
-It's make code complicated if we change the code to forbid this mixed type.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/video/mbx/mbxfb.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Best Regards
-Huang Shijie
+diff --git a/drivers/video/mbx/mbxfb.c b/drivers/video/mbx/mbxfb.c
+index 9229acf..6563e50 100644
+--- a/drivers/video/mbx/mbxfb.c
++++ b/drivers/video/mbx/mbxfb.c
+@@ -26,8 +26,7 @@
+ #include <linux/module.h>
+ #include <linux/platform_device.h>
+ #include <linux/uaccess.h>
+-
+-#include <asm/io.h>
++#include <linux/io.h>
+ 
+ #include <video/mbxfb.h>
+ 
+-- 
+1.7.9.5
+
+
+
+
