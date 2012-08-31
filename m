@@ -1,212 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754330Ab2HaPy6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 11:54:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36755 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751614Ab2HaPy4 (ORCPT
+	id S1754324Ab2HaP7i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 11:59:38 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:2401 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753918Ab2HaP7h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 11:54:56 -0400
-From: Adam Lee <adam8157@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Michal Marek <mmarek@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Yaakov Selkowitz <yselkowitz@users.sourceforge.net> (commit_signer:2/7=29%),
-        Peter Foley <pefoley2@verizon.net> (commit_signer:1/7=14%),
-        Paul Bolle <pebolle@tiscali.nl> (commit_signer:1/7=14%),
-        "Eric W. Biederman" <ebiederm@xmission.com> (commit_signer:2/4=50%),
-        linux-kbuild@vger.kernel.org (open list:KCONFIG)
-Subject: [PATCH v2] kconfig: replace 'oldnoconfig' with 'olddefconfig', and keep the old name as an alias
-Date: Fri, 31 Aug 2012 23:54:31 +0800
-Message-Id: <1346428476-12061-1-git-send-email-adam8157@gmail.com>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <5040D021.50607@suse.cz>
-References: <5040D021.50607@suse.cz>
+	Fri, 31 Aug 2012 11:59:37 -0400
+Message-ID: <1346428774.2864.16.camel@lorien2>
+Subject: Re: crash dump memory reservation regression
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, CAI Qian <caiqian@redhat.com>,
+        Takashi Iwai <tiwai@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Vivek Goyal <vgoyal@redhat.com>,
+        linux-kernel@vger.kernel.org
+Date: Fri, 31 Aug 2012 09:59:34 -0600
+In-Reply-To: <4F5EDE5B.7070207@zytor.com>
+References: <5535e246-b7c0-4f69-a27b-1abbadd42db0@zmail14.collab.prod.int.phx2.redhat.com>
+	 <65a23329-d843-4859-8b7b-430f12882492@zmail14.collab.prod.int.phx2.redhat.com>
+	 <CAE9FiQU9C=5YAa3DPcx8E9yVckSX5JbLdS=TC90jA8wz1pjzmw@mail.gmail.com>
+	 <4F5EDE5B.7070207@zytor.com>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As 67d34a6a391369269a2e5dba8a5f42cc4cd50231 said, 'oldnoconfig' doesn't
-set new symbols to 'n', but instead sets it to their default values.
+On Mon, 2012-03-12 at 22:42 -0700, H. Peter Anvin wrote:
+> On 03/12/2012 10:31 PM, Yinghai Lu wrote:
+> > 
+> > Solution will be:
+> > 1.  remove the good_end setting for 64 bit again. and root cause S4 resume.
+> 
+> This would by far be the best.
+> 
+> 	-hpa
+> 
 
-So, this patch replaces 'oldnoconfig' with 'olddefconfig', stop making
-people confused, and keep the old name 'oldnoconfig' as an alias,
-because people already are dependent on its behavior with the
-counter-intuitive name.
+Any resolution on this issue. Has this been fixed? I haven't seen this
+message on the systems I am running the upstream kernel on, and would
+like to get a commit ID (if any) that fixed the problem.
 
-Signed-off-by: Adam Lee <adam8157@gmail.com>
----
- scripts/kconfig/Makefile     | 12 +++++++++---
- scripts/kconfig/conf.c       | 12 ++++++++++--
- tools/testing/ktest/ktest.pl | 15 +++++++--------
- 3 files changed, 26 insertions(+), 13 deletions(-)
+Thanks,
+-- Shuah
 
-diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-index 77d5399..3091794 100644
---- a/scripts/kconfig/Makefile
-+++ b/scripts/kconfig/Makefile
-@@ -76,11 +76,17 @@ PHONY += allnoconfig allyesconfig allmodconfig alldefconfig randconfig
- allnoconfig allyesconfig allmodconfig alldefconfig randconfig: $(obj)/conf
- 	$< --$@ $(Kconfig)
- 
--PHONY += listnewconfig oldnoconfig savedefconfig defconfig
-+PHONY += listnewconfig olddefconfig oldnoconfig savedefconfig defconfig
- 
--listnewconfig oldnoconfig: $(obj)/conf
-+listnewconfig olddefconfig: $(obj)/conf
- 	$< --$@ $(Kconfig)
- 
-+# oldnoconfig is an alias of olddefconfig, because people already are dependent
-+# on its behavior(sets new symbols to their default value but not 'n') with the
-+# counter-intuitive name.
-+oldnoconfig: $(obj)/conf
-+	$< --olddefconfig $(Kconfig)
-+
- savedefconfig: $(obj)/conf
- 	$< --$@=defconfig $(Kconfig)
- 
-@@ -114,7 +120,7 @@ help:
- 	@echo  '  alldefconfig    - New config with all symbols set to default'
- 	@echo  '  randconfig	  - New config with random answer to all options'
- 	@echo  '  listnewconfig   - List new options'
--	@echo  '  oldnoconfig     - Same as silentoldconfig but sets new symbols to their default value'
-+	@echo  '  olddefconfig	  - Same as silentoldconfig but sets new symbols to their default value'
- 
- # lxdialog stuff
- check-lxdialog  := $(srctree)/$(src)/lxdialog/check-lxdialog.sh
-diff --git a/scripts/kconfig/conf.c b/scripts/kconfig/conf.c
-index 6875680..46290d3 100644
---- a/scripts/kconfig/conf.c
-+++ b/scripts/kconfig/conf.c
-@@ -32,6 +32,7 @@ enum input_mode {
- 	defconfig,
- 	savedefconfig,
- 	listnewconfig,
-+	olddefconfig,
- 	oldnoconfig,
- } input_mode = oldaskconfig;
- 
-@@ -365,6 +366,7 @@ static void conf(struct menu *menu)
- 		case P_MENU:
- 			if ((input_mode == silentoldconfig ||
- 			     input_mode == listnewconfig ||
-+			     input_mode == olddefconfig ||
- 			     input_mode == oldnoconfig) &&
- 			    rootEntry != menu) {
- 				check_conf(menu);
-@@ -429,7 +431,8 @@ static void check_conf(struct menu *menu)
- 				if (sym->name && !sym_is_choice_value(sym)) {
- 					printf("%s%s\n", CONFIG_, sym->name);
- 				}
--			} else if (input_mode != oldnoconfig) {
-+			} else if ((input_mode != olddefconfig) &&
-+				   (input_mode != oldnoconfig)) {
- 				if (!conf_cnt++)
- 					printf(_("*\n* Restart config...\n*\n"));
- 				rootEntry = menu_get_parent_menu(menu);
-@@ -454,6 +457,7 @@ static struct option long_opts[] = {
- 	{"alldefconfig",    no_argument,       NULL, alldefconfig},
- 	{"randconfig",      no_argument,       NULL, randconfig},
- 	{"listnewconfig",   no_argument,       NULL, listnewconfig},
-+	{"olddefconfig",    no_argument,       NULL, olddefconfig},
- 	{"oldnoconfig",     no_argument,       NULL, oldnoconfig},
- 	{NULL, 0, NULL, 0}
- };
-@@ -467,7 +471,7 @@ static void conf_usage(const char *progname)
- 	printf("  --oldaskconfig          Start a new configuration using a line-oriented program\n");
- 	printf("  --oldconfig             Update a configuration using a provided .config as base\n");
- 	printf("  --silentoldconfig       Same as oldconfig, but quietly, additionally update deps\n");
--	printf("  --oldnoconfig           Same as silentoldconfig but sets new symbols to their default value\n");
-+	printf("  --olddefconfig          Same as silentoldconfig but sets new symbols to their default value\n");
- 	printf("  --defconfig <file>      New config with default defined in <file>\n");
- 	printf("  --savedefconfig <file>  Save the minimal current configuration to <file>\n");
- 	printf("  --allnoconfig           New config where all options are answered with no\n");
-@@ -520,6 +524,7 @@ int main(int ac, char **av)
- 		case allmodconfig:
- 		case alldefconfig:
- 		case listnewconfig:
-+		case olddefconfig:
- 		case oldnoconfig:
- 			break;
- 		case '?':
-@@ -565,6 +570,7 @@ int main(int ac, char **av)
- 	case oldaskconfig:
- 	case oldconfig:
- 	case listnewconfig:
-+	case olddefconfig:
- 	case oldnoconfig:
- 		conf_read(NULL);
- 		break;
-@@ -645,6 +651,7 @@ int main(int ac, char **av)
- 		/* fall through */
- 	case oldconfig:
- 	case listnewconfig:
-+	case olddefconfig:
- 	case oldnoconfig:
- 	case silentoldconfig:
- 		/* Update until a loop caused no more changes */
-@@ -653,6 +660,7 @@ int main(int ac, char **av)
- 			check_conf(&rootmenu);
- 		} while (conf_cnt &&
- 			 (input_mode != listnewconfig &&
-+			  input_mode != olddefconfig &&
- 			  input_mode != oldnoconfig));
- 		break;
- 	}
-diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index 52b7959..0ed73b5 100755
---- a/tools/testing/ktest/ktest.pl
-+++ b/tools/testing/ktest/ktest.pl
-@@ -1871,10 +1871,10 @@ sub make_oldconfig {
- 	apply_min_config;
-     }
- 
--    if (!run_command "$make oldnoconfig") {
--	# Perhaps oldnoconfig doesn't exist in this version of the kernel
-+    if (!run_command "$make olddefconfig") {
-+	# Perhaps olddefconfig doesn't exist in this version of the kernel
- 	# try a yes '' | oldconfig
--	doprint "oldnoconfig failed, trying yes '' | make oldconfig\n";
-+	doprint "olddefconfig failed, trying yes '' | make oldconfig\n";
- 	run_command "yes '' | $make oldconfig" or
- 	    dodie "failed make config oldconfig";
-     }
-@@ -1927,7 +1927,7 @@ sub build {
- 
-     # old config can ask questions
-     if ($type eq "oldconfig") {
--	$type = "oldnoconfig";
-+	$type = "olddefconfig";
- 
- 	# allow for empty configs
- 	run_command "touch $output_config";
-@@ -1957,7 +1957,7 @@ sub build {
- 	load_force_config($minconfig);
-     }
- 
--    if ($type ne "oldnoconfig") {
-+    if ($type ne "olddefconfig") {
- 	run_command "$make $type" or
- 	    dodie "failed make config";
-     }
-@@ -2456,8 +2456,7 @@ my %config_set;
- 
- # config_off holds the set of configs that the bad config had disabled.
- # We need to record them and set them in the .config when running
--# oldnoconfig, because oldnoconfig does not turn off new symbols, but
--# instead just keeps the defaults.
-+# olddefconfig, because olddefconfig keeps the defaults.
- my %config_off;
- 
- # config_off_tmp holds a set of configs to turn off for now
-@@ -3248,7 +3247,7 @@ sub test_this_config {
-     }
- 
-     # Remove this config from the list of configs
--    # do a make oldnoconfig and then read the resulting
-+    # do a make olddefconfig and then read the resulting
-     # .config to make sure it is missing the config that
-     # we had before
-     my %configs = %min_configs;
--- 
-1.7.11.4
 
