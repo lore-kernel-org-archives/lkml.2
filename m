@@ -1,68 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752310Ab2HaJ6G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 05:58:06 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:47119 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752033Ab2HaJ6E (ORCPT
+	id S1752401Ab2HaKA4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 06:00:56 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:39096 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752071Ab2HaKAz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 05:58:04 -0400
-X-IronPort-AV: E=Sophos;i="4.80,346,1344211200"; 
-   d="scan'208";a="14284817"
-From: Stefano Panella <stefano.panella@citrix.com>
-To: <linux-kernel@vger.kernel.org>, <konrad.wilk@oracle.com>,
-        <xen-devel@lists.xensource.com>
-CC: Stefano Panella <stefano.panella@citrix.com>
-Subject: [PATCH 1/1] XEN: Use correct masking in xen_swiotlb_alloc_coherent.
-Date: Fri, 31 Aug 2012 10:57:52 +0100
-Message-ID: <1346407072-6405-1-git-send-email-stefano.panella@citrix.com>
-X-Mailer: git-send-email 1.7.4.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 31 Aug 2012 06:00:55 -0400
+Date: Fri, 31 Aug 2012 11:04:44 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Matthieu CASTET <castet.matthieu@free.fr>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        gregkh@suse.de, sboyd@codeaurora.org, arnd@arndb.de,
+        Matthieu Castet <matthieu.castet@parrot.com>
+Subject: Re: [PATCH] hvc_dcc : add support to armv4 and armv5 core
+Message-ID: <20120831110444.25d9b9fe@pyramind.ukuu.org.uk>
+In-Reply-To: <1346404916-27616-1-git-send-email-castet.matthieu@free.fr>
+References: <1346404916-27616-1-git-send-email-castet.matthieu@free.fr>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When running 32-bit pvops-dom0 and a driver tries to allocate a coherent
-DMA-memory the xen swiotlb-implementation returned memory beyond 4GB.
+On Fri, 31 Aug 2012 11:21:56 +0200
+Matthieu CASTET <castet.matthieu@free.fr> wrote:
 
-This caused for example not working sound on a system with 4 GB and a 64-bit
-compatible sound-card with sets the DMA-mask to 64bit.
+> Signed-off-by: Matthieu Castet <matthieu.castet@parrot.com>
+> ---
+>  drivers/tty/hvc/hvc_dcc.c |   34 ++++++++++++++++++++++++++++++++++
+>  1 file changed, 34 insertions(+)
 
-On bare-metal and the forward-ported xen-dom0 patches from OpenSuse a coherent
-DMA-memory is always allocated inside the 32-bit address-range by calling
-dma_alloc_coherent_mask.
+This is a step in the wrong direction. This should all be runtime handled
 
-This patch adds the same functionality to xen swiotlb and is a rebase of the
-original patch from Ronny Hegewald which never got upstream for some reason.
-
-The original email with the original patch is in:
-
-http://old-list-archives.xen.org/archives/html/xen-devel/2010-02/msg00038.html
-
-the original thread from where the deiscussion started is in:
-
-http://old-list-archives.xen.org/archives/html/xen-devel/2010-01/msg00928.html
-
-Signed-off-by: Ronny Hegewald
-Signed-off-by: Stefano Panella <stefano.panella@citrix.com>
----
- drivers/xen/swiotlb-xen.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index 1afb4fb..4d51948 100644
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -232,7 +232,7 @@ xen_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
- 		return ret;
- 
- 	if (hwdev && hwdev->coherent_dma_mask)
--		dma_mask = hwdev->coherent_dma_mask;
-+		dma_mask = dma_alloc_coherent_mask(hwdev, flags);
- 
- 	phys = virt_to_phys(ret);
- 	dev_addr = xen_phys_to_bus(phys);
--- 
-1.7.4.1
-
+NAK.
