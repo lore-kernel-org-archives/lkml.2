@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751965Ab2HaHKW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 03:10:22 -0400
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:47358 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366Ab2HaHKT (ORCPT
+	id S1751908Ab2HaHM1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 03:12:27 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:56477 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751366Ab2HaHM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 03:10:19 -0400
-Date: Fri, 31 Aug 2012 09:10:12 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>, Hugh Dickins <hughd@google.com>,
-        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: [RFC v2 PATCH 1/7] thp: remove assumptions on pgtable_t type
-Message-ID: <20120831091012.7b710326@de.ibm.com>
-In-Reply-To: <877gsf633x.fsf@linux.vnet.ibm.com>
-References: <1346254384-30046-1-git-send-email-gerald.schaefer@de.ibm.com>
-	<1346254384-30046-2-git-send-email-gerald.schaefer@de.ibm.com>
-	<877gsf633x.fsf@linux.vnet.ibm.com>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-x-cbid: 12083107-1948-0000-0000-000002D16110
+	Fri, 31 Aug 2012 03:12:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAOJsxLEPh4PH-jV-S7jPZExg0r_YsqL+2tHErRtA7bpygbP6iQ@mail.gmail.com>
+References: <1345540117-14164-1-git-send-email-zheng.z.yan@intel.com>
+	<CAOJsxLEPh4PH-jV-S7jPZExg0r_YsqL+2tHErRtA7bpygbP6iQ@mail.gmail.com>
+Date: Fri, 31 Aug 2012 10:12:24 +0300
+X-Google-Sender-Auth: BWlLGQ09C3q83gVc-7jSxaCAn9I
+Message-ID: <CAOJsxLG7K=Xua+=EVCDmT1JJ1MAudHGEz123EHX2CsHmasBooQ@mail.gmail.com>
+Subject: Re: [PATCH] perf/x86: Disable uncore on virtualized CPU.
+From: Pekka Enberg <penberg@kernel.org>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: a.p.zijlstra@chello.nl, eranian@google.com, mingo@elte.hu,
+        andi@firstfloor.org, avi@redhat.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 Aug 2012 10:59:38 +0530
-"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+On Tue, Aug 21, 2012 at 12:08 PM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+>> From: "Yan, Zheng" <zheng.z.yan@intel.com>
+>>
+>> Initializing uncore PMU on virtualized CPU may hang the kernel.
+>> This is because kvm does not emulate the entire hardware. Thers
+>> are lots of uncore related MSRs, making kvm enumerate them all
+>> is a non-trival task. So just disable uncore on virtualized CPU.
+>>
+>> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+>> ---
+>>  arch/x86/kernel/cpu/perf_event_intel_uncore.c | 3 +++
+>>  1 file changed, 3 insertions(+)
+>>
+>> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+>> index 0a55710..2f005ba 100644
+>> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+>> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+>> @@ -2898,6 +2898,9 @@ static int __init intel_uncore_init(void)
+>>         if (boot_cpu_data.x86_vendor != X86_VENDOR_INTEL)
+>>                 return -ENODEV;
+>>
+>> +       if (cpu_has_hypervisor)
+>> +               return -ENODEV;
+>> +
+>>         ret = uncore_pci_init();
+>>         if (ret)
+>>                 goto fail;
 
-> Gerald Schaefer <gerald.schaefer@de.ibm.com> writes:
-> 
-> > The thp page table pre-allocation code currently assumes that pgtable_t
-> > is of type "struct page *". This may not be true for all architectures,
-> > so this patch removes that assumption by replacing the functions
-> > prepare_pmd_huge_pte() and get_pmd_huge_pte() with two new functions
-> > that can be defined architecture-specific.
-> >
-> > It also removes two VM_BUG_ON checks for page_count() and page_mapcount()
-> > operating on a pgtable_t. Apart from the VM_BUG_ON removal, there will
-> > be no functional change introduced by this patch.
-> 
-> Why is that VM_BUG_ON not needed any more ? What is that changed which break
-> that requirement ?
+On Tue, Aug 21, 2012 at 3:55 PM, Pekka Enberg <penberg@kernel.org> wrote:
+> Tested-by: Pekka Enberg <penberg@kernel.org>
 
-Because pgtable_t for s390 is not a page and there simply is no page_count or
-page_mapcount.
-
--- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
-
+Ping? I have not seen a tip bot email for this. Is the patch queued?
