@@ -1,81 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab2HaR41 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 13:56:27 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:41775 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754378Ab2HaR40 (ORCPT
+	id S1754822Ab2HaR4w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 13:56:52 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:64383 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754378Ab2HaR4v convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 13:56:26 -0400
-X-Originating-IP: 217.70.178.144
-X-Originating-IP: 173.246.103.110
-Date: Fri, 31 Aug 2012 10:56:17 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH tip/core/rcu 03/15] rcu: Properly initialize
- ->boost_tasks on CPU offline
-Message-ID: <20120831175617.GA4259@jtriplet-mobl1>
-References: <20120830185607.GA32148@linux.vnet.ibm.com>
- <1346352988-32444-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346352988-32444-3-git-send-email-paulmck@linux.vnet.ibm.com>
+	Fri, 31 Aug 2012 13:56:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346352988-32444-3-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120831174119.GA6690@amos.fritz.box>
+References: <20120831040500.GA6090@amos.fritz.box> <CA+55aFxuruMmrhgz9OGZcxyJ_tSp5rj9gSfxTYkjirSO7nvoxQ@mail.gmail.com>
+ <20120831174119.GA6690@amos.fritz.box>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 31 Aug 2012 10:56:29 -0700
+X-Google-Sender-Auth: R1T7Dk9Bj_qRZqjOzjXp9_rH3Mg
+Message-ID: <CA+55aFx6aW66E=cLsa6oYUD=EaV_0v+=4auEy7b6pbaYMifKxA@mail.gmail.com>
+Subject: Re: [REGRESSION] Xorg doesn't like 4e8b14526 "time: Improve sanity
+ checking of timekeeping inputs"
+To: Andreas Bombe <aeb@debian.org>
+Cc: linux-kernel@vger.kernel.org, John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 11:56:16AM -0700, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paul.mckenney@linaro.org>
-> 
-> When rcu_preempt_offline_tasks() clears tasks from a leaf rcu_node
-> structure, it does not NULL out the structure's ->boost_tasks field.
-> This commit therefore fixes this issue.
-> 
-> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+On Fri, Aug 31, 2012 at 10:41 AM, Andreas Bombe <aeb@debian.org> wrote:
+>
+> It triggers on ((unsigned long long)ts->tv_sec >= KTIME_SEC_MAX).
+> Looking at some straces (I could have thought of that earlier…) X does
+> in fact call select with unreasonable timeouts:
+>
+> | 17:46:55 select(256, [1 3 6 9 10 11 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 37 38 39], NULL, NULL, {0, 20000}) = 1 (in [24], left {0, 19988})
+> | 17:46:55 select(256, [1 3 6 9 10 11 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 37 38 39], NULL, NULL, {0, 19000}) = 1 (in [24], left {0, 18988})
+> | 17:46:55 select(256, [1 3 6 9 10 11 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 37 38 39], NULL, NULL, {0, 19000}) = 1 (in [24], left {0, 16804})
+> | 17:46:55 select(256, [1 3 6 9 10 11 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 37 38 39], NULL, NULL, {0, 16000}) = 1 (in [24], left {0, 15988})
+> | 17:46:55 select(256, [1 3 6 9 10 11 18 19 20 21 22 23 25 26 27 28 29 30 31 32 33 34 35 37 38 39], NULL, NULL, {0, 16000}) = 1 (in [9], left {0, 3649})
+> | 17:46:55 select(256, [1 3 6 9 10 11 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 37 38 39], NULL, NULL, {0, 3000}) = 1 (in [24], left {0, 2988})
+> | 17:46:55 select(256, [1 3 6 9 10 11 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 37 38 39], NULL, NULL, {0, 2000}) = 1 (in [24], left {0, 1988})
+> | 17:46:55 select(256, [1 3 6 9 10 11 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 37 38 39], NULL, NULL, {0, 2000}) = 0 (Timeout)
+> | 17:46:55 select(256, [1 3 6 9 10 11 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 37 38 39], NULL, NULL, {18446744073709551, 615000}) = -1 EINVAL (Invalid argument)
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Ok, X clearly *is* doing something wrong, and as you point out, it
+looks like X has taken a negative milliseconds value, treated it as
+positive, and then done a (unsigned) divide by 1000 on that to create
+a large positive seconds value.
 
-> ---
->  kernel/rcutree_plugin.h |    7 ++++---
->  1 files changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> index 7f3244c..b1b4851 100644
-> --- a/kernel/rcutree_plugin.h
-> +++ b/kernel/rcutree_plugin.h
-> @@ -584,8 +584,11 @@ static int rcu_preempt_offline_tasks(struct rcu_state *rsp,
->  		raw_spin_unlock(&rnp_root->lock); /* irqs still disabled */
->  	}
->  
-> +	rnp->gp_tasks = NULL;
-> +	rnp->exp_tasks = NULL;
->  #ifdef CONFIG_RCU_BOOST
-> -	/* In case root is being boosted and leaf is not. */
-> +	rnp->boost_tasks = NULL;
-> +	/* In case root is being boosted and leaf was not. */
->  	raw_spin_lock(&rnp_root->lock); /* irqs already disabled */
->  	if (rnp_root->boost_tasks != NULL &&
->  	    rnp_root->boost_tasks != rnp_root->gp_tasks)
-> @@ -593,8 +596,6 @@ static int rcu_preempt_offline_tasks(struct rcu_state *rsp,
->  	raw_spin_unlock(&rnp_root->lock); /* irqs still disabled */
->  #endif /* #ifdef CONFIG_RCU_BOOST */
->  
-> -	rnp->gp_tasks = NULL;
-> -	rnp->exp_tasks = NULL;
->  	return retval;
->  }
->  
-> -- 
-> 1.7.8
-> 
+It's a fairly "natural" error to make if you keep timeouts as
+milliseconds, and then convert those to a timeval or timespec.
+
+At the same time, that value is not really "invalid". It's a
+crazy-long timeout, but it's a valid timeout. The fact that it doesn't
+happen to fit into our "jiffies" value is an internal kernel
+implementation issue that we shouldn't be exposing to user space as an
+error. Turning the crazy-long timeout into "forever" (or
+alternatively, into the longest timeout we support) should be the
+right fix.
+
+Andreas, can you check whether John Stultz patch works for you? It
+looks like it should.
+
+Also, letting the X people know that they are doing something crazy
+sounds like a good idea. Looking at that strace, I'm also struct by
+the fact that always giving "256" as the number of fds is going to be
+a performance thing. It would be much better if X actually knew how
+many bits it really needs, as that means the kernel isn't going to
+need to look at the bits. So opening a bugzilla for this sounds like a
+good idea.
+
+               Linus
