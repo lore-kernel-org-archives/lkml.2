@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678Ab2HaKeS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 06:34:18 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48502 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752186Ab2HaKeR (ORCPT
+	id S1752687Ab2HaKgo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 06:36:44 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:64015 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752217Ab2HaKgm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 06:34:17 -0400
-Date: Fri, 31 Aug 2012 11:33:51 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Matthieu CASTET <matthieu.castet@parrot.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, "arnd@arndb.de" <arnd@arndb.de>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthieu CASTET <castet.matthieu@free.fr>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] hvc_dcc : add support to armv4 and armv5 core
-Message-ID: <20120831103351.GE18957@n2100.arm.linux.org.uk>
-References: <1346404916-27616-1-git-send-email-castet.matthieu@free.fr> <20120831110444.25d9b9fe@pyramind.ukuu.org.uk> <504091F0.1090703@parrot.com>
+	Fri, 31 Aug 2012 06:36:42 -0400
+Date: Fri, 31 Aug 2012 11:36:36 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>, w.sang@pengutronix.de
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH 3/3] i2c: nomadik: Add Device Tree support to the Nomadik
+ I2C driver
+Message-ID: <20120831103633.GA5569@gmail.com>
+References: <1345734087-21803-1-git-send-email-lee.jones@linaro.org>
+ <1345734087-21803-3-git-send-email-lee.jones@linaro.org>
+ <CACRpkdapY3JvZmLxK7dX917O-E+aDgVE9ELnysjqAyETXMZHNw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <504091F0.1090703@parrot.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <CACRpkdapY3JvZmLxK7dX917O-E+aDgVE9ELnysjqAyETXMZHNw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 31, 2012 at 12:29:04PM +0200, Matthieu CASTET wrote:
-> Alan Cox a écrit :
-> > On Fri, 31 Aug 2012 11:21:56 +0200
-> > Matthieu CASTET <castet.matthieu@free.fr> wrote:
-> > 
-> >> Signed-off-by: Matthieu Castet <matthieu.castet@parrot.com>
-> >> ---
-> >>  drivers/tty/hvc/hvc_dcc.c |   34 ++++++++++++++++++++++++++++++++++
-> >>  1 file changed, 34 insertions(+)
-> > 
-> > This is a step in the wrong direction. This should all be runtime handled
-> > 
-> > NAK.
-> > 
+On Mon, Aug 27, 2012 at 04:42:49PM -0700, Linus Walleij wrote:
+> On Thu, Aug 23, 2012 at 8:01 AM, Lee Jones <lee.jones@linaro.org> wrote:
 > 
-> AFAIK you can't build a arm kernel that support arm6/armv7 and armv5.
-> And I am not sure it will be possible one day.
+> > Here we apply the bindings required for successful Device Tree
+> > probing of the i2c-nomadik driver.
+> >
+> > Cc: linux-i2c@vger.kernel.org
+> > Acked-by: srinidhi kasagar <srinidhi.kasagar@stericsson.com>
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> 
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-There are no plans to ever make it possible; there are too many significant
-differences between ARMv4, v5 architectures and ARMv6,v7 architectures
-to warrant making this runtime selectable.
+I'm assuming I still need Wolfram's Ack on this?
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org â”‚ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
