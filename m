@@ -1,77 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753808Ab2HaN6M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 09:58:12 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:39775 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753442Ab2HaN6J (ORCPT
+	id S1753840Ab2HaN6g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 09:58:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46531 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753822Ab2HaN6e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 09:58:09 -0400
-Message-ID: <5040C164.3040901@gmail.com>
-Date: Fri, 31 Aug 2012 15:51:32 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
+	Fri, 31 Aug 2012 09:58:34 -0400
+Date: Fri, 31 Aug 2012 08:58:25 -0500
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        James Morris <james.l.morris@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH 1/2] module: allow loading module from fd
+Message-ID: <20120831135825.GB24262@amd1>
+References: <1346275747-8936-1-git-send-email-keescook@chromium.org>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: linux-kernel@vger.kernel.org,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Subject: [PATCH 02/21] sysv: drop vmtruncate
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346275747-8936-1-git-send-email-keescook@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed vmtruncate.
+Quoting Kees Cook (keescook@chromium.org):
+> Instead of (or in addition to) kernel module signing, being able to reason
+> about the origin of a kernel module would be valuable in situations
+> where an OS already trusts a specific file system, file, etc, due to
+> things like security labels or an existing root of trust to a partition
+> through things like dm-verity.
+> 
+> This changes the init_module syscall so that when the first argument
+> (blob address) is NULL, the second argument is used as a file descriptor
+> to the module (instead of length). The third argument (module arguments)
+> remains unchanged.
+> 
+> Some alternatives to overloading the existing syscall are:
+>  - write a new syscall (seemed unnecessary)
+>  - add an fd ioctl (awful)
+>  - enhance the ELF binfmt loader (complex)
+> 
+> It seemed most sensible to avoid introducing new or crazy interfaces
+> or further complicating the ELF loader. Instead, just use the existing
+> syscall in a new way. Tools using the fd argument style can trivially
+> downgrade to the blob argument style when they see an EFAULT error.
+> 
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 
-Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
----
- fs/sysv/file.c  |    5 +++--
- fs/sysv/itree.c |    7 +++++--
- 2 files changed, 8 insertions(+), 4 deletions(-)
+Acked-by: Serge E. Hallyn <serge.hallyn@canonical.com>
 
-diff --git a/fs/sysv/file.c b/fs/sysv/file.c
-index 0a65939..9d4dc68 100644
---- a/fs/sysv/file.c
-+++ b/fs/sysv/file.c
-@@ -41,9 +41,11 @@ static int sysv_setattr(struct dentry *dentry, struct iattr *attr)
- 
- 	if ((attr->ia_valid & ATTR_SIZE) &&
- 	    attr->ia_size != i_size_read(inode)) {
--		error = vmtruncate(inode, attr->ia_size);
-+		error = inode_newsize_ok(inode, attr->ia_size);
- 		if (error)
- 			return error;
-+		truncate_setsize(inode, attr->ia_size);
-+		sysv_truncate(inode);
- 	}
- 
- 	setattr_copy(inode, attr);
-@@ -52,7 +54,6 @@ static int sysv_setattr(struct dentry *dentry, struct iattr *attr)
- }
- 
- const struct inode_operations sysv_file_inode_operations = {
--	.truncate	= sysv_truncate,
- 	.setattr	= sysv_setattr,
- 	.getattr	= sysv_getattr,
- };
-diff --git a/fs/sysv/itree.c b/fs/sysv/itree.c
-index 90b54b4..0d9c9c8 100644
---- a/fs/sysv/itree.c
-+++ b/fs/sysv/itree.c
-@@ -473,8 +473,11 @@ static int sysv_write_begin(struct file *file, struct address_space *mapping,
- 	ret = block_write_begin(mapping, pos, len, flags, pagep, get_block);
- 	if (unlikely(ret)) {
- 		loff_t isize = mapping->host->i_size;
--		if (pos + len > isize)
--			vmtruncate(mapping->host, isize);
-+		if ((pos + len > isize) &&
-+			inode_newsize_ok(mapping->host, isize) == 0) {
-+			truncate_setsize(mapping->host, isize);
-+			sysv_truncate(mapping->host);
-+		}
- 	}
- 
- 	return ret;
--- 
-1.7.3.4
+> ---
+>  kernel/module.c |   97 +++++++++++++++++++++++++++++++++++++++++++++++++------
+>  1 files changed, 87 insertions(+), 10 deletions(-)
+> 
+> diff --git a/kernel/module.c b/kernel/module.c
+> index 4edbd9c..0be8c11 100644
+> --- a/kernel/module.c
+> +++ b/kernel/module.c
+> @@ -21,6 +21,7 @@
+>  #include <linux/ftrace_event.h>
+>  #include <linux/init.h>
+>  #include <linux/kallsyms.h>
+> +#include <linux/file.h>
+>  #include <linux/fs.h>
+>  #include <linux/sysfs.h>
+>  #include <linux/kernel.h>
+> @@ -2399,23 +2400,99 @@ static inline void kmemleak_load_module(const struct module *mod,
+>  }
+>  #endif
+>  
+> -/* Sets info->hdr and info->len. */
+> -static int copy_and_check(struct load_info *info,
+> -			  const void __user *umod, unsigned long len,
+> -			  const char __user *uargs)
+> +static Elf_Ehdr *copy_module_from_user(const void __user *umod,
+> +				       unsigned long len)
+>  {
+> -	int err;
+>  	Elf_Ehdr *hdr;
+>  
+>  	if (len < sizeof(*hdr))
+> -		return -ENOEXEC;
+> +		return ERR_PTR(-ENOEXEC);
+>  
+>  	/* Suck in entire file: we'll want most of it. */
+> -	if ((hdr = vmalloc(len)) == NULL)
+> -		return -ENOMEM;
+> +	hdr = vmalloc(len);
+> +	if (!hdr)
+> +		return ERR_PTR(-ENOMEM);
+>  
+>  	if (copy_from_user(hdr, umod, len) != 0) {
+> -		err = -EFAULT;
+> +		vfree(hdr);
+> +		return ERR_PTR(-EFAULT);
+> +	}
+> +
+> +	return hdr;
+> +}
+> +
+> +static Elf_Ehdr *copy_module_from_fd(unsigned int fd, unsigned long *len)
+> +{
+> +	struct file *file;
+> +	int err;
+> +	Elf_Ehdr *hdr;
+> +	struct kstat stat;
+> +	unsigned long size;
+> +	off_t pos;
+> +	ssize_t bytes = 0;
+> +
+> +	file = fget(fd);
+> +	if (!file)
+> +		return ERR_PTR(-ENOEXEC);
+> +
+> +	err = vfs_getattr(file->f_vfsmnt, file->f_dentry, &stat);
+> +	if (err) {
+> +		hdr = ERR_PTR(err);
+> +		goto out;
+> +	}
+> +
+> +	if (stat.size > INT_MAX) {
+> +		hdr = ERR_PTR(-ENOMEM);
+> +		goto out;
+> +	}
+> +	size = stat.size;
+> +
+> +	hdr = vmalloc(size);
+> +	if (!hdr) {
+> +		hdr = ERR_PTR(-ENOMEM);
+> +		goto out;
+> +	}
+> +
+> +	pos = 0;
+> +	while (pos < size) {
+> +		bytes = kernel_read(file, pos, (char *)hdr + pos, size - pos);
+> +		if (bytes < 0) {
+> +			vfree(hdr);
+> +			hdr = ERR_PTR(bytes);
+> +			goto out;
+> +		}
+> +		if (bytes == 0)
+> +			break;
+> +		pos += bytes;
+> +	}
+> +	*len = pos;
+> +
+> +out:
+> +	fput(file);
+> +	return hdr;
+> +}
+> +
+> +/* Sets info->hdr and info->len. */
+> +static int copy_and_check(struct load_info *info,
+> +			  const void __user *umod, unsigned long len)
+> +{
+> +	int err;
+> +	Elf_Ehdr *hdr;
+> +
+> +	if (umod == NULL) {
+> +		unsigned int fd;
+> +
+> +		if (len < 0 || len > INT_MAX)
+> +			return -ENOEXEC;
+> +		fd = len;
+> +
+> +		hdr = copy_module_from_fd(fd, &len);
+> +	} else
+> +		hdr = copy_module_from_user(umod, len);
+> +	if (IS_ERR(hdr))
+> +		return PTR_ERR(hdr);
+> +	if (len < sizeof(*hdr)) {
+> +		err = -ENOEXEC;
+>  		goto free_hdr;
+>  	}
+>  
+> @@ -2875,7 +2952,7 @@ static struct module *load_module(void __user *umod,
+>  	       umod, len, uargs);
+>  
+>  	/* Copy in the blobs from userspace, check they are vaguely sane. */
+> -	err = copy_and_check(&info, umod, len, uargs);
+> +	err = copy_and_check(&info, umod, len);
+>  	if (err)
+>  		return ERR_PTR(err);
+>  
+> -- 
+> 1.7.0.4
+> 
