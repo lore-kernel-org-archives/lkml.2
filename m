@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752058Ab2HaJc4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 05:32:56 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:45024 "EHLO comal.ext.ti.com"
+	id S1751999Ab2HaJe0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 05:34:26 -0400
+Received: from smtp.getmail.no ([84.208.15.66]:50151 "EHLO smtp.getmail.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751429Ab2HaJcy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 05:32:54 -0400
-Message-ID: <504084B9.3000701@ti.com>
-Date: Fri, 31 Aug 2012 11:32:41 +0200
-From: Benoit Cousson <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: "Poddar, Sourav" <sourav.poddar@ti.com>
-CC: <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Felipe Balbi <balbi@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: [PATCHv3 0/4] Add device tree data for omap5
-References: <1344961473-13675-1-git-send-email-sourav.poddar@ti.com> <CAKdam57L8txFtE9ahy3u3vLW0XRP5z4QaNQKVFj9KaEFZE1qvg@mail.gmail.com> <503229F5.4030405@ti.com> <CAKdam543ATO96rbhgCWKtGUGRQ_+=KSyAk-nGBknjC+BvJSmOw@mail.gmail.com>
-In-Reply-To: <CAKdam543ATO96rbhgCWKtGUGRQ_+=KSyAk-nGBknjC+BvJSmOw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1751429Ab2HaJeY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Aug 2012 05:34:24 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=iso-8859-15; format=flowed; delsp=yes
+To: linux-kernel@vger.kernel.org
+Subject: Re: Latency.
+References: <op.wjrltbl46426ze@millennium.getinternet.no>
+ <503D4B37.1030202@earthlink.net> <op.wjvlqefm6426ze@millennium.getinternet.no>
+Date: Fri, 31 Aug 2012 11:34:26 +0200
+From: Uwaysi Bin Kareem <uwaysi.bin.kareem@paradoxuncreated.com>
+Message-id: <op.wjwfjoc96426ze@millennium.getinternet.no>
+In-reply-to: <op.wjvlqefm6426ze@millennium.getinternet.no>
+User-Agent: Opera Mail/12.01 (Win32)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sourav,
+There is a whole thread on phoronix, regarding this, where many people  
+have similar sentiments.
+Good to see others who understand the same. :)
 
-While rebasing your series on top of Tony's lo/devel-dt, I realized that the keypad nodes are not located at the correct place :-(
+http://phoronix.com/forums/showthread.php?71741-A-Low-Latency-Kernel-For-Linux-Gaming
 
-At the moment they are just floating at the top level of the dts while they belong to the ocp bus and thus should be put there.
+Some people don`t seem to be noticing it. They are fewer in the thread  
+though, but quite common.
+Please also read my response to this:  
+http://phoronix.com/forums/showthread.php?71741-A-Low-Latency-Kernel-For-Linux-Gaming&p=284229#post284229
 
-I fixed that since it was trivial and cleaned as well the changelog and the comments to aligned then properly. I added as well the physical address to the node name and a label for easy reference at board level.
+Peace Be With You.
 
-I did some basic test on my OMAP4 sdp, but that all I can do so far.
+On Fri, 31 Aug 2012 00:50:28 +0200, Uwaysi Bin Kareem  
+<uwaysi.bin.kareem@paradoxuncreated.com> wrote:
 
-Could you just check if this is still fine for OMAP5 before I ask Tony to pull that.
-
-I based that on top of Tony's DT patches due to conflict with the existing MMC patch in it.
-
-
-
-The following changes since commit 85d7ff9b907685b6469058888f1d961b3e8d47ad:
-  Olof Johansson (1):
-        ARM: omap: add dtb targets
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/bcousson/linux-omap-dt.git for_3.7/dts
-
-Sourav Poddar (6):
-      arm/dts: omap5-evm: Add I2C support
-      arm/dts: omap5-evm: Add tmp102 sensor support
-      arm/dts: omap5-evm: Add keypad data
-      arm/dts: omap5-evm: Add bmp085 sensor support
-      arm/dts: omap4-sdp: Add keypad data
-      Documentation: dt: i2c: trivial-devices: Update for tmp102
-
- .../devicetree/bindings/i2c/trivial-devices.txt    |    1 +
- arch/arm/boot/dts/omap4-sdp.dts                    |   70 ++++++++++++++++++++
- arch/arm/boot/dts/omap4.dtsi                       |    5 ++
- arch/arm/boot/dts/omap5-evm.dts                    |   33 +++++++++
- arch/arm/boot/dts/omap5.dtsi                       |   40 +++++++++++
- 5 files changed, 149 insertions(+), 0 deletions(-)
-
-Regards,
-Benoit
-
+> I have done some research on latency. I have config`d a linux kernel to  
+> run 0.3ms reliable latency with audiostreams, under normal  
+> worksituations. (An audioapp, and maybe some small tasks in between).
+>
+> This also resulted in an extremely smooth gameplaying experience, like  
+> an asm-programmed custom hardware arcade. (Why gamebox-developers isn`t  
+> using this, is a mystery).
+>
+> Recently I also tried to come as close to that experience on windows,  
+> and found that win32priorityseparation on 25, all processes on idle, to  
+> avoid cpu2 stalling cpu1, and minimal drivers, services, and processes  
+> gave a similar experience. Windows btw, also gives lower latency, if one  
+> moves windows, which one can use/abuse in a script/hack.
+>
+> The feeling from low latency systems brings back the exhilaration of  
+> custom hardware and assembly programming. It gives a different feel, and  
+> I do believe it sets a high quality expectation to software and I wonder  
+> if that is why the Amiga is said to have so much good software, and  
+> responsible for it`s reputation.
+>
+> My windows-partition now runs as good as an Amiga, and I managed to make  
+> it run even better, reminding me of singletasking systems like Mac OS.
+>
+> Games are just so much more fun with this. And the overall os is so much  
+> more responsive.
+>
+> More optimized stuff like Wayland will ofcourse even improve things more.
+>
+> I do think that for "desktop" the focus should really be on low-latency  
+> systems.
+> If "desktop" and "server" are the two different profiles you usually  
+> config for in linux, how about two different standard configs? Or are  
+> these merging aswell, since I would think multi-cpu servers appreciate  
+> low os-jitter aswell?
+>
+> Just some thoughts.
+>
+> Peace Be With You.
