@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755295Ab2HaXwJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 19:52:09 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:44945 "EHLO
+	id S1755221Ab2HaXwg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 19:52:36 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:48735 "EHLO
 	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752319Ab2HaXwG (ORCPT
+	with ESMTP id S1752319Ab2HaXwf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 19:52:06 -0400
-X-Originating-IP: 217.70.178.129
+	Fri, 31 Aug 2012 19:52:35 -0400
+X-Originating-IP: 217.70.178.133
 X-Originating-IP: 173.246.103.110
-Date: Fri, 31 Aug 2012 16:51:57 -0700
+Date: Fri, 31 Aug 2012 16:52:25 -0700
 From: Josh Triplett <josh@joshtriplett.org>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
@@ -27,38 +27,36 @@ Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
         Max Krasnyansky <maxk@qualcomm.com>,
         Stephen Hemminger <shemminger@vyatta.com>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-Subject: Re: [PATCH tip/core/rcu 10/26] rcu: Exit RCU extended QS on kernel
- preemption after irq/exception
-Message-ID: <20120831235157.GG11771@jtriplet-mobl1>
+Subject: Re: [PATCH tip/core/rcu 11/26] rcu: Exit RCU extended QS on user
+ preemption
+Message-ID: <20120831235225.GH11771@jtriplet-mobl1>
 References: <20120830210520.GA2824@linux.vnet.ibm.com>
  <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346360743-3628-10-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346360743-3628-11-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1346360743-3628-10-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1346360743-3628-11-git-send-email-paulmck@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 02:05:27PM -0700, Paul E. McKenney wrote:
+On Thu, Aug 30, 2012 at 02:05:28PM -0700, Paul E. McKenney wrote:
 > From: Frederic Weisbecker <fweisbec@gmail.com>
 > 
-> When an exception or an irq exits, and we are going to resume into
-> interrupted kernel code, the low level architecture code calls
-> preempt_schedule_irq() if there is a need to reschedule.
+> When exceptions or irq are about to resume userspace, if
+> the task needs to be rescheduled, the arch low level code
+> calls schedule() directly.
 > 
-> If the interrupt/exception occured between a call to rcu_user_enter()
-> (from syscall exit, exception exit, do_notify_resume exit, ...) and
-> a real resume to userspace (iret,...), preempt_schedule_irq() can be
-> called whereas RCU thinks we are in userspace. But preempt_schedule_irq()
-> is going to run kernel code and may be some RCU read side critical
-> section. We must exit the userspace extended quiescent state before
-> we call it.
+> At that time we may be in extended quiescent state from RCU
+> POV: the exception is not anymore protected inside
+> rcu_user_exit() - rcu_user_enter() and the irq has called
+> rcu_irq_exit() already.
 > 
-> To solve this, just call rcu_user_exit() in the beginning of
-> preempt_schedule_irq().
+> Create a new API schedule_user() that calls schedule() inside
+> rcu_user_exit()-rcu_user_enter() in order to protect it. Archs
+> will need to rely on it now to implement user preemption safely.
 > 
 > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 > Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -83,21 +81,27 @@ On Thu, Aug 30, 2012 at 02:05:27PM -0700, Paul E. McKenney wrote:
 
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
->  kernel/sched/core.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+>  kernel/sched/core.c |    7 +++++++
+>  1 files changed, 7 insertions(+), 0 deletions(-)
 > 
 > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 07c6d9a..0bd599b 100644
+> index 0bd599b..e841dfc 100644
 > --- a/kernel/sched/core.c
 > +++ b/kernel/sched/core.c
-> @@ -3564,6 +3564,7 @@ asmlinkage void __sched preempt_schedule_irq(void)
->  	/* Catch callers which need to be fixed */
->  	BUG_ON(ti->preempt_count || !irqs_disabled());
+> @@ -3463,6 +3463,13 @@ asmlinkage void __sched schedule(void)
+>  }
+>  EXPORT_SYMBOL(schedule);
 >  
+> +asmlinkage void __sched schedule_user(void)
+> +{
 > +	rcu_user_exit();
->  	do {
->  		add_preempt_count(PREEMPT_ACTIVE);
->  		local_irq_enable();
+> +	schedule();
+> +	rcu_user_enter();
+> +}
+> +
+>  /**
+>   * schedule_preempt_disabled - called with preemption disabled
+>   *
 > -- 
 > 1.7.8
 > 
