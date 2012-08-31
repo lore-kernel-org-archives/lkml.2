@@ -1,67 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639Ab2HaNuT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 09:50:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40413 "EHLO mx2.suse.de"
+	id S1753598Ab2HaNyR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 09:54:17 -0400
+Received: from mga01.intel.com ([192.55.52.88]:35964 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752162Ab2HaNuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 09:50:17 -0400
-Message-ID: <5040C112.70501@suse.cz>
-Date: Fri, 31 Aug 2012 15:50:10 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Tzafrir Cohen <tzafrir.cohen@xorcom.com>
-Cc: Linux Kbuild <linux-kbuild@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] builddeb: remove unneeded explicit Architecture
-References: <1344941092-31312-1-git-send-email-tzafrir.cohen@xorcom.com>
-In-Reply-To: <1344941092-31312-1-git-send-email-tzafrir.cohen@xorcom.com>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+	id S1753163Ab2HaNyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Aug 2012 09:54:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,347,1344236400"; 
+   d="asc'?scan'208";a="216304556"
+Message-ID: <1346421558.9709.51.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 2/3] mtd: cmdlinepart: sort the unsorted partitions
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Huang Shijie <shijie8@gmail.com>
+Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, shmulik.ladkani@gmail.com
+Date: Fri, 31 Aug 2012 16:59:18 +0300
+In-Reply-To: <1346001700-26895-2-git-send-email-shijie8@gmail.com>
+References: <1346001700-26895-1-git-send-email-shijie8@gmail.com>
+	 <1346001700-26895-2-git-send-email-shijie8@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-UZkn5sQF3/o227WRBB0G"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding Max to CC.
 
-On 14.8.2012 12:44, Tzafrir Cohen wrote:
-> Architecture was set explicitly in debian/control for one of the three
-> packages (linux-libc-dev) but not for the other two. When cross-building
-> it gives me an error:
-> 
->   dpkg-gencontrol: error: current host architecture 'armhf' does not
->   appear in package's architecture list (amd64)
-> 
-> Also note that if used, dpkg --print-architecture should have been
-> replaced with dpkg-architecture.
-> 
-> Signed-off-by: Tzafrir Cohen <tzafrir.cohen@xorcom.com>
-> ---
->  scripts/package/builddeb |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-> index acb8650..d9c71a6 100644
-> --- a/scripts/package/builddeb
-> +++ b/scripts/package/builddeb
-> @@ -252,13 +252,12 @@ mkdir -p "$destdir"
->  (cd $objtree; tar -c -f - -T "$objtree/debian/hdrobjfiles") | (cd $destdir; tar -xf -)
->  ln -sf "/usr/src/linux-headers-$version" "$kernel_headers_dir/lib/modules/$version/build"
->  rm -f "$objtree/debian/hdrsrcfiles" "$objtree/debian/hdrobjfiles"
-> -arch=$(dpkg --print-architecture)
->  
->  cat <<EOF >> debian/control
->  
->  Package: $kernel_headers_packagename
->  Provides: linux-headers, linux-headers-2.6
-> -Architecture: $arch
-> +Architecture: any
->  Description: Linux kernel headers for $KERNELRELEASE on $arch
->   This package provides kernel header files for $KERNELRELEASE on $arch
->   .
+--=-UZkn5sQF3/o227WRBB0G
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-As the package contains files from arch/$SRCARCH/include, I doubt that
-this is a valid change.
+On Sun, 2012-08-26 at 13:21 -0400, Huang Shijie wrote:
+> Assume we have a 1GB(8Gb) nand chip.
+> It is legit if we set the partitions as the following:
+>     gpmi-nand:1g@200m(rootfs),100m@0(boot),100m@100m(kernel)
+>=20
+> But the current code can not parse out any partition with this
+> cmdline.
+>=20
+> This patch sorts the unsorted partitions by the @offset.
+> For there are maybe only several partitions, i use the simple
+> Bubble sort algorithm.
+>=20
+> Signed-off-by: Huang Shijie <shijie8@gmail.com>
 
-Michal
+I still cannot find time to actually think about this carefully, but the
+commit message does not sound convincing, it does not explain why
+sorting is the right way to fix the issue, and what would be the
+alternatives. It actually also does not explain why exactly we currently
+cannot parse the example string.
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-UZkn5sQF3/o227WRBB0G
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQQMM2AAoJECmIfjd9wqK0SN4QAJL9lqZnDJbjpjMTdm2t5wTQ
+pv8D4w0s2I2m+KqD4XhpDFzkzW03H4U3iGyjO4ovCTGhxuF47NVsY/ynH9nF5aMn
+sFnq5L/i2lWGzdIM9HLnzYxj4ID9Uf02Xcb4Q6yt5H/5zBK1EH2JMATz/0JulhKR
+nAJUufMISL6prv0M7WtKiBWGYcNXmIfrXQALS6UkDspKDTnc9Vf+hWL3wqM1FO/N
+yxa5yvkto4K5UG+GedUPm0xt7CeuSZIb0/PrwsQw3ZR03sGKXaRbC9fcxv2rm634
+S6kqwXNOxs32Rx8cCKuT5deJqwzh9YmCND9wkVi0MNrH6/PfZciLqF5UvZ/Iuay1
+SEgGgRLrt+pR5D+FlP1NUwLpN+22v6Y+P8j28A2mg9KnqOoeQV97zTn5xCmEr4hw
+GqRo3BdH8XkgVDWw51+mXMkrf5xJOVmDUr3ZJCShaSXQVgBbNr5b2H8J8y/XZfRS
++JR1qEzHgg9drqj70rCQRm7HruhJwByUaWqPSmoBDRygxj6Ao04+gpF6njYyD+zP
+5ByewOdmka5oR2z358/hoF5LM/qWL6nIis+F0eifONy7BiuAMokms/Jn6z6incP9
+c8LW5z45UPtrORvANkJoAIP47zLxzSj50fM3zzhMY7OFIBcEoM6NHAP7BfnBSsil
+vbAysWK44o84RE8Kqrbv
+=9J8d
+-----END PGP SIGNATURE-----
+
+--=-UZkn5sQF3/o227WRBB0G--
+
