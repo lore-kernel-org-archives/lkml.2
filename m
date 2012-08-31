@@ -1,152 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750997Ab2HaEd6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 00:33:58 -0400
-Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:2691 "EHLO
-	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750801Ab2HaEd4 (ORCPT
+	id S1751144Ab2HaFLD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 01:11:03 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:34747 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750898Ab2HaFLB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 00:33:56 -0400
-X-Authority-Analysis: v=2.0 cv=IuCcgcDg c=1 sm=0 a=eLNxRirMhZqJpcA6QlPHQA==:17 a=ThlJJk6wLCEA:10 a=XYJHFtupD_QA:10 a=kkZ7j0ruBUIA:10 a=5zrl1c6G2EIA:10 a=kj9zAlcOel0A:10 a=87YopaQtWS4A:10 a=oLb3JtG0AAAA:8 a=20KFwNOVAAAA:8 a=hGzw-44bAAAA:8 a=i3SF_7DDpn0FGySTAfUA:9 a=CjuIK1q_8ugA:10 a=gwLygPzupVwA:10 a=jEp0ucaQiEUA:10 a=dowx1zmaLagA:10 a=BeIBq6fdpVNfIlXd:21 a=89-OSVD3jNClSZ8A:21 a=eLNxRirMhZqJpcA6QlPHQA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 75.80.152.117
-Date: Thu, 30 Aug 2012 21:33:52 -0700
-From: Nick Pasich <Nick@NickAndBarb.net>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: WARNING: at fs/inode.c:280 drop_nlink+0x31/0x33()
-Message-ID: <20120831043352.GA23663@NickAndBarb.net>
-References: <20120829162527.GA3635@NickAndBarb.net>
- <20120829151641.20cde4bc@corrin.poochiereds.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120829151641.20cde4bc@corrin.poochiereds.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 31 Aug 2012 01:11:01 -0400
+From: Tao Ma <tm@tao.ma>
+To: linux-kernel@vger.kernel.org
+Cc: Tejun Heo <tj@kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH] block/throttle: Call throtl_update_dispatch_stats with throtl_grp directly.
+Date: Fri, 31 Aug 2012 13:08:23 +0800
+Message-Id: <1346389703-2927-1-git-send-email-tm@tao.ma>
+X-Mailer: git-send-email 1.7.4.1
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 221.219.226.154 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 29, 2012 at 03:16:41PM -0700, Jeff Layton wrote:
-> On Wed, 29 Aug 2012 09:25:27 -0700
-> Nick Pasich <Nick@NickAndBarb.net> wrote:
-> 
-> > 
-> > I'm using kernel 3.5.3 ... 
-> > 
-> > It happens on 3.5.1 and 3.5.2 also.
-> > 
-> > I know that Nick Bowler has already reported this...
-> > 
-> > I'm experiencing the same thing.
-> > 
-> > It happens when moving files from one directory to another
-> > on the same partition (NFS). 
-> > 
-> >   --( Nick Pasich )--
-> > 
-> > 
-> > #############################################################################
-> > ##
-> > ## Happens when PSTs are moved from one directory to another on the ISCSI ...
-> > ##
-> > #############################################################################
-> > 
-> > Aug 29 08:06:16 localhost kernel: ------------[ cut here ]------------
-> > Aug 29 08:06:16 localhost kernel: WARNING: at fs/inode.c:280 drop_nlink+0x31/0x33()
-> > Aug 29 08:06:16 localhost kernel: Hardware name: To Be Filled By O.E.M.
-> > Aug 29 08:06:16 localhost kernel: Modules linked in: ecb md4 cifs w83627hf eeprom asb100 hwmon_vid hwmon nfsd exportfs ipv6 psmouse usb_storage io_edgeport usbserial sg r8169 mii evdev intel_agp uhci_hcd i2c_i801 i2c_core shpchp intel_gtt agpgart ehci_hcd microcode serio_raw
-> > Aug 29 08:06:16 localhost kernel: Pid: 31477, comm: rm Tainted: G        W    3.5.3 #1
-> > Aug 29 08:06:16 localhost kernel: Call Trace:
-> > Aug 29 08:06:16 localhost kernel:  [<c10a53e2>] ? drop_nlink+0x31/0x33
-> > Aug 29 08:06:16 localhost kernel:  [<c1025dd2>] ? warn_slowpath_common+0x7b/0x90
-> > Aug 29 08:06:16 localhost kernel:  [<c10a53e2>] ? drop_nlink+0x31/0x33
-> > Aug 29 08:06:16 localhost kernel:  [<c1025e02>] ? warn_slowpath_null+0x1b/0x1f
-> > Aug 29 08:06:16 localhost kernel:  [<c10a53e2>] ? drop_nlink+0x31/0x33
-> > Aug 29 08:06:16 localhost kernel:  [<f83dfa81>] ? cifs_unlink+0x134/0x63d [cifs]
-> > Aug 29 08:06:16 localhost kernel:  [<c10a37d4>] ? dput+0x11/0x117
-> > Aug 29 08:06:16 localhost kernel:  [<c10a87d4>] ? mntput_no_expire+0xf/0xf7
-> > Aug 29 08:06:16 localhost kernel:  [<c109ca9b>] ? vfs_unlink+0x4e/0xb6
-> > Aug 29 08:06:16 localhost kernel:  [<c109b333>] ? __lookup_hash+0x54/0xac
-> > Aug 29 08:06:16 localhost kernel:  [<c109e8c2>] ? do_unlinkat+0x10a/0x12d
-> > Aug 29 08:06:16 localhost kernel:  [<c10a0124>] ? sys_ioctl+0x34/0x57
-> > Aug 29 08:06:16 localhost kernel:  [<c140a8ed>] ? syscall_call+0x7/0xb
-> > Aug 29 08:06:16 localhost kernel: ---[ end trace 756b427e3bd671f9 ]---
-> > 
-> 
-> (cc'ing linux-cifs ml)
-> 
-> This stack trace comes from cifs, not nfs.
-> 
-> Steve French has a patch queued in his tree to silence this warning
-> that I believe he intends to send to Linus for 3.6. Perhaps we should
-> consider backporting it for 3.5.z too?
-> 
-> -- 
-> Jeff Layton <jlayton@redhat.com>
+From: Tao Ma <boyu.mt@taobao.com>
 
-Jeff,
+All callers of throtl_update_dispatch_stats uses tg_to_blkg and then
+in this function we use blkg_to_tg again to change it back. So remove
+all these useless conversion and use throtl_grp directly to call
+throtl_update_dispatch_stats.
 
-I applied this patch to Kernel 3.5.3 from Pavel and the 
-the warning is gone with no problems.
-
-Thanks,
- 
---( Nick Pasich
-
-##########################################################
-
->From df2d6b1fbf2401c5ee04f2ac143ea0954e3a87a6 Mon Sep 17 00:00:00 2001
-From: Pavel Shilovsky <pshilovsky@samba.org>
-Date: Fri, 13 Jul 2012 11:59:45 +0400
-Subject: [PATCH] CIFS: Protect i_nlink from being negative
-
-that can cause warning messages.
-
-Signed-off-by: Pavel Shilovsky <pshilovsky@samba.org>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Tao Ma <boyu.mt@taobao.com>
 ---
- fs/cifs/inode.c |   13 +++++++++++--
- 1 files changed, 11 insertions(+), 2 deletions(-)
+ block/blk-throttle.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
-index 7354877..88afb1a 100644
---- a/fs/cifs/inode.c
-+++ b/fs/cifs/inode.c
-@@ -1110,6 +1110,15 @@ undo_setattr:
-		goto out_close;
+diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+index e287c19..1588c2d 100644
+--- a/block/blk-throttle.c
++++ b/block/blk-throttle.c
+@@ -675,10 +675,9 @@ static bool tg_may_dispatch(struct throtl_data *td, struct throtl_grp *tg,
+ 	return 0;
  }
  
-+/* copied from fs/nfs/dir.c with small changes */
-+static void
-+cifs_drop_nlink(struct inode *inode)
-+{
-+	spin_lock(&inode->i_lock);
-+	if (inode->i_nlink > 0)
-+		drop_nlink(inode);
-+	spin_unlock(&inode->i_lock);
-+}
+-static void throtl_update_dispatch_stats(struct blkcg_gq *blkg, u64 bytes,
++static void throtl_update_dispatch_stats(struct throtl_grp *tg, u64 bytes,
+ 					 int rw)
+ {
+-	struct throtl_grp *tg = blkg_to_tg(blkg);
+ 	struct tg_stats_cpu *stats_cpu;
+ 	unsigned long flags;
  
- /*
-  * If dentry->d_inode is null (usually meaning the cached dentry
-@@ -1166,13 +1175,13 @@ retry_std_delete:
- psx_del_no_retry:
-		if (!rc) {
-				if (inode)
--			drop_nlink(inode);
-+			cifs_drop_nlink(inode);
-		} else if (rc == -ENOENT) {
-				d_drop(dentry);
-		} else if (rc == -ETXTBSY) {
-				rc = cifs_rename_pending_delete(full_path, dentry, xid);
-				if (rc == 0)
--			drop_nlink(inode);
-+			cifs_drop_nlink(inode);
-		} else if ((rc == -EACCES) && (dosattr == 0) && inode) {
-				attrs = kzalloc(sizeof(*attrs), GFP_KERNEL);
-				if (attrs == NULL) {
+@@ -709,7 +708,7 @@ static void throtl_charge_bio(struct throtl_grp *tg, struct bio *bio)
+ 	tg->bytes_disp[rw] += bio->bi_size;
+ 	tg->io_disp[rw]++;
+ 
+-	throtl_update_dispatch_stats(tg_to_blkg(tg), bio->bi_size, bio->bi_rw);
++	throtl_update_dispatch_stats(tg, bio->bi_size, bio->bi_rw);
+ }
+ 
+ static void throtl_add_bio_tg(struct throtl_data *td, struct throtl_grp *tg,
+@@ -1133,7 +1132,7 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
+ 	tg = throtl_lookup_tg(td, blkcg);
+ 	if (tg) {
+ 		if (tg_no_rule_group(tg, rw)) {
+-			throtl_update_dispatch_stats(tg_to_blkg(tg),
++			throtl_update_dispatch_stats(tg,
+ 						     bio->bi_size, bio->bi_rw);
+ 			goto out_unlock_rcu;
+ 		}
 -- 
-1.7.3.3
-
-##########################################################
+1.7.0.4
 
