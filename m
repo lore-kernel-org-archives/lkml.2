@@ -1,100 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754837Ab2HaT1y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 15:27:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24134 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754678Ab2HaT1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 15:27:52 -0400
-Date: Fri, 31 Aug 2012 15:27:38 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Jens Axboe <axboe@kernel.dk>, Andrea Arcangeli <aarcange@redhat.com>,
-        Jan Kara <jack@suse.cz>, dm-devel@redhat.com,
-        linux-kernel@vger.kernel.org, Jeff Moyer <jmoyer@redhat.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        kosaki.motohiro@jp.fujitsu.com, linux-fsdevel@vger.kernel.org,
-        lwoodman@redhat.com, "Alasdair G. Kergon" <agk@redhat.com>
-Subject: Re: [PATCH 0/4] Fix a crash when block device is read and block size
- is changed at the same time
-In-Reply-To: <Pine.LNX.4.64.1208311433480.2212@file.rdu.redhat.com>
-Message-ID: <Pine.LNX.4.64.1208311518340.16960@file.rdu.redhat.com>
-References: <Pine.LNX.4.64.1206272226050.22857@file.rdu.redhat.com> 
- <20120628111541.GB17515@quack.suse.cz>  <Pine.LNX.4.64.1207152051490.4240@file.rdu.redhat.com>
-  <x49ipdmyz4q.fsf@segfault.boston.devel.redhat.com> 
- <Pine.LNX.4.64.1207181512530.10923@file.rdu.redhat.com> 
- <x49k3xzq3jc.fsf@segfault.boston.devel.redhat.com> 
- <Pine.LNX.4.64.1207281236230.30415@file.rdu.redhat.com> 
- <Pine.LNX.4.64.1207281240270.30415@file.rdu.redhat.com> 
- <1343508252.2626.13184.camel@edumazet-glaptop> 
- <Pine.LNX.4.64.1207290107460.29910@file.rdu.redhat.com> 
- <1343556630.2626.13257.camel@edumazet-glaptop> <1343586962.2626.13266.camel@edumazet-glaptop>
- <Pine.LNX.4.64.1208011601280.21832@file.rdu.redhat.com>
- <Pine.LNX.4.64.1208311433480.2212@file.rdu.redhat.com>
+	id S1754844Ab2HaT30 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 15:29:26 -0400
+Received: from na3sys009aog128.obsmtp.com ([74.125.149.141]:54086 "EHLO
+	na3sys009aog128.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754678Ab2HaT3Z convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Aug 2012 15:29:25 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+To: Ulf Hansson <ulf.hansson@stericsson.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
+From: Mike Turquette <mturquette@ti.com>
+In-Reply-To: <1346415691-13371-2-git-send-email-ulf.hansson@stericsson.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Lee Jones <lee.jones@linaro.org>,
+        Philippe Begnic <philippe.begnic@st.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+References: <1346415691-13371-1-git-send-email-ulf.hansson@stericsson.com>
+ <1346415691-13371-2-git-send-email-ulf.hansson@stericsson.com>
+Message-ID: <20120831192906.31162.97714@nucleus>
+User-Agent: alot/0.3.2+
+Subject: Re: [PATCH 1/4] clk: Provide option for clk_get_rate to issue hw for new rate
+Date: Fri, 31 Aug 2012 12:29:06 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Fri, 31 Aug 2012, Mikulas Patocka wrote:
-
-> Hi
+Quoting Ulf Hansson (2012-08-31 05:21:28)
+> From: Ulf Hansson <ulf.hansson@linaro.org>
 > 
-> This is a series of patches to prevent a crash when when someone is 
-> reading block device and block size is changed simultaneously. (the crash 
-> is already happening in the production environment)
+> By using CLK_GET_RATE_NOCACHE flag, we tell the clk_get_rate API to
+> issue the hw for an updated clock rate. This can be used for a clock
+> which rate may be updated without a client necessary modifying it.
 > 
-> The first patch adds a rw-lock to struct block_device, but doesn't use the 
-> lock anywhere. The reason why I submit this as a separate patch is that on 
-> my computer adding an unused field to this structure affects performance 
-> much more than any locking changes.
+
+I'm glad to see this.  We discussed whether the default behavior should
+be cached or from the hardware at length some time back, so having a
+flag to support the non-default is great.
+
+> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+> ---
+>  drivers/clk/clk.c            |   43 +++++++++++++++++++++++-------------------
+>  include/linux/clk-provider.h |    1 +
+>  2 files changed, 25 insertions(+), 19 deletions(-)
 > 
-> The second patch uses the rw-lock. The lock is locked for read when doing 
-> I/O on the block device and it is locked for write when changing block 
-> size.
-> 
-> The third patch converts the rw-lock to a percpu rw-lock for better 
-> performance, to avoid cache line bouncing.
-> 
-> The fourth patch is an alternate percpu rw-lock implementation using RCU 
-> by Eric Dumazet. It avoids any atomic instruction in the hot path.
-> 
-> Mikulas
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index efdfd00..d9cbae0 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -558,25 +558,6 @@ int clk_enable(struct clk *clk)
+>  EXPORT_SYMBOL_GPL(clk_enable);
+>  
+>  /**
+> - * clk_get_rate - return the rate of clk
+> - * @clk: the clk whose rate is being returned
+> - *
+> - * Simply returns the cached rate of the clk.  Does not query the hardware.  If
+> - * clk is NULL then returns 0.
+> - */
+> -unsigned long clk_get_rate(struct clk *clk)
+> -{
+> -       unsigned long rate;
+> -
+> -       mutex_lock(&prepare_lock);
+> -       rate = __clk_get_rate(clk);
+> -       mutex_unlock(&prepare_lock);
+> -
+> -       return rate;
+> -}
+> -EXPORT_SYMBOL_GPL(clk_get_rate);
+> -
+> -/**
+>   * __clk_round_rate - round the given rate for a clk
+>   * @clk: round the rate of this clock
+>   *
+> @@ -702,6 +683,30 @@ static void __clk_recalc_rates(struct clk *clk, unsigned long msg)
+>  }
+>  
+>  /**
+> + * clk_get_rate - return the rate of clk
+> + * @clk: the clk whose rate is being returned
+> + *
+> + * Simply returns the cached rate of the clk, unless CLK_GET_RATE_NOCACHE flag
+> + * is set, which means a recalc_rate will be issued.
+> + * If clk is NULL then returns 0.
+> + */
+> +unsigned long clk_get_rate(struct clk *clk)
+> +{
+> +       unsigned long rate;
+> +
+> +       mutex_lock(&prepare_lock);
+> +
+> +       if (clk && (clk->flags & CLK_GET_RATE_NOCACHE))
+> +               __clk_recalc_rates(clk, 0);
 
-I tested performance of patches. I created 4GB ramdisk, I initially filled 
-it with zeros (so that ramdisk allocation-on-demand doesn't affect the 
-results).
+This is a bit subtle.  Calling __clk_recalc_rates will walk the subtree
+of children recalculating rates as well as firing off notifiers.  Is
+this what you want?  If your clock changes rates behind your back AND
+has chilren then this is probably the right thing to do.  However you
+might be better off with:
 
-I ran fio to perform 8 concurrent accesses on 8 core machine (two 
-Barcelona Opterons):
-time fio --rw=randrw --size=4G --bs=512 --filename=/dev/ram0 --direct=1 
---name=job1 --name=job2 --name=job3 --name=job4 --name=job5 --name=job6 
---name=job7 --name=job8
+	if (clk && (clk->flags & CLK_GET_RATE_NOCACHE))
+		rate = clk->ops->recalc_rate(clk->hw, clk->parent->rate);
 
-The results actually show that the size of struct block_device and 
-alignment of subsequent fields in struct inode have far more effect on 
-result that the type of locking used. (struct inode is placed just after 
-struct block_device in "struct bdev_inode" in fs/block-dev.c)
+This doesn't update children or fire off notifiers.  What is best for
+your platform?
 
-plain kernel 3.5.3: 57.9s
-patch 1: 43.4s
-patches 1,2: 43.7s
-patches 1,2,3: 38.5s
-patches 1,2,3,4: 58.6s
+Regards,
+Mike
 
-You can see that patch 1 improves the time by 14.5 seconds, but all that 
-patch 1 does is adding an unused structure field.
-
-Patch 3 is 4.9 seconds faster than patch 1, althogh patch 1 does no 
-locking at all and patch 3 does per-cpu locking. So, the reason for the 
-speedup is different sizeof of struct block_device (and subsequently, 
-different alignment of struct inode), rather than locking improvement.
-
-I would be interested if other people did performance testing of the 
-patches too.
-
-Mikulas
+> +
+> +       rate = __clk_get_rate(clk);
+> +       mutex_unlock(&prepare_lock);
+> +
+> +       return rate;
+> +}
+> +EXPORT_SYMBOL_GPL(clk_get_rate);
+> +
+> +/**
+>   * __clk_speculate_rates
+>   * @clk: first clk in the subtree
+>   * @parent_rate: the "future" rate of clk's parent
+> diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+> index 77335fa..1b15307 100644
+> --- a/include/linux/clk-provider.h
+> +++ b/include/linux/clk-provider.h
+> @@ -26,6 +26,7 @@
+>  #define CLK_IGNORE_UNUSED      BIT(3) /* do not gate even if unused */
+>  #define CLK_IS_ROOT            BIT(4) /* root clk, has no parent */
+>  #define CLK_IS_BASIC           BIT(5) /* Basic clk, can't do a to_clk_foo() */
+> +#define CLK_GET_RATE_NOCACHE   BIT(6) /* do not use the cached clk rate */
+>  
+>  struct clk_hw;
+>  
+> -- 
+> 1.7.10
