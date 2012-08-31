@@ -1,77 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753681Ab2HaN41 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 09:56:27 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33225 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753255Ab2HaN4Z (ORCPT
+	id S1753720Ab2HaN47 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 09:56:59 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:43912 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753283Ab2HaN46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 09:56:25 -0400
-X-Sasl-enc: VMPGSAC3eBUdw6yfw54aC11syOCM2nuycLpZV5iN54C4 1346421384
-Message-ID: <5040C283.7040809@signal11.us>
-Date: Fri, 31 Aug 2012 09:56:19 -0400
-From: Alan Ott <alan@signal11.us>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Fri, 31 Aug 2012 09:56:58 -0400
+Message-ID: <5040C11C.4060505@gmail.com>
+Date: Fri, 31 Aug 2012 15:50:20 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Tony Cheneau <tony.cheneau@amnesiak.org>,
-        linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] 6lowpan: Make a copy of skb's delivered to 6lowpan
-References: <1346294341-26808-1-git-send-email-alan@signal11.us>  <1346294341-26808-2-git-send-email-alan@signal11.us> <1346396485.2586.307.camel@edumazet-glaptop>
-In-Reply-To: <1346396485.2586.307.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8
+To: Linux FS Devel <linux-fsdevel@vger.kernel.org>, linux-mm@kvack.org
+CC: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 00/21] drop vmtruncate
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/31/2012 03:01 AM, Eric Dumazet wrote:
-> On Wed, 2012-08-29 at 22:39 -0400, Alan Ott wrote:
->> Since lowpan_process_data() modifies the skb (by calling skb_pull()), we
->> need our own copy so that it doesn't affect the data received by other
->> protcols (in this case, af_ieee802154).
->>
->> Signed-off-by: Alan Ott <alan@signal11.us>
->> ---
->>  net/ieee802154/6lowpan.c |    9 ++++++++-
->>  1 files changed, 8 insertions(+), 1 deletions(-)
->>
->> diff --git a/net/ieee802154/6lowpan.c b/net/ieee802154/6lowpan.c
->> index 6a09522..ce33b02 100644
->> --- a/net/ieee802154/6lowpan.c
->> +++ b/net/ieee802154/6lowpan.c
->> @@ -1133,6 +1133,8 @@ static int lowpan_validate(struct nlattr *tb[], struct nlattr *data[])
->>  static int lowpan_rcv(struct sk_buff *skb, struct net_device *dev,
->>  	struct packet_type *pt, struct net_device *orig_dev)
->>  {
->> +	struct sk_buff *local_skb;
->> +
->>  	if (!netif_running(dev))
->>  		goto drop;
->>  
->> @@ -1144,7 +1146,12 @@ static int lowpan_rcv(struct sk_buff *skb, struct net_device *dev,
->>  	case LOWPAN_DISPATCH_IPHC:	/* ipv6 datagram */
->>  	case LOWPAN_DISPATCH_FRAG1:	/* first fragment header */
->>  	case LOWPAN_DISPATCH_FRAGN:	/* next fragments headers */
->> -		lowpan_process_data(skb);
->> +		local_skb = skb_copy(skb, GFP_ATOMIC);
->> +		if (!local_skb)
->> +			goto drop;
->> +		lowpan_process_data(local_skb);
->> +
->> +		kfree_skb(skb);
->>  		break;
->>  	default:
->>  		break;
-> Its not clear to me why skb_copy() is needed here.
->
-> >From patch description, I would say skb_clone() would be enough (and
-> faster) ?
+Hi all,
 
-You're probably right. I'll check it out. Thanks.
+with this patch series I try to clean the vmtruncate code. The theory of 
+operation:
 
-Alan.
+old               new
+vmtruncate() =>   inode_newsize_ok+truncate_setsize+fs truncate
+
+Where vmtruncate was used without any error check, the code now is:
+
+if (inode_newsize_ok() == 0) {
+	truncate_setsize();
+	fs truncate();
+}
+
+So, performance and semantic nothing change at all. I think that maybe 
+in some point we can skip inode_newsize_ok (where the error check of 
+vmtruncate wasn't used) but since there is a swap check in case of 
+no-extension, maybe it's better to avoid regressions. After this clean, 
+of course, each fs can clean in a deeply way.
+
+With these patches even the inode truncate callback is deleted.
+
+Any comments/feedback/bugs are welcome.
+
+Marco Stornelli (21):
+   ufs: drop vmtruncate
+   sysv: drop vmtruncate
+   reiserfs: drop vmtruncate
+   procfs: drop vmtruncate
+   omfs: drop vmtruncate
+   ocfs2: drop vmtruncate
+   adfs: drop vmtruncate
+   affs: drop vmtruncate
+   bfs: drop vmtruncate
+   hfs: drop vmtruncate
+   hpfs: drop vmtruncate
+   jfs: drop vmtruncate
+   hfsplus: drop vmtruncate
+   hostfs: drop vmtruncate
+   logfs: drop vmtruncate
+   minix: drop vmtruncate
+   ncpfs: drop vmtruncate
+   nilfs2: drop vmtruncate
+   ntfs: drop vmtruncate
+   vfs: drop vmtruncate
+   mm: drop vmtruncate
+
+  fs/adfs/inode.c         |    5 +++--
+  fs/affs/file.c          |    8 +++++---
+  fs/affs/inode.c         |    5 ++++-
+  fs/bfs/file.c           |    5 +++--
+  fs/hfs/inode.c          |   19 +++++++++++++------
+  fs/hfsplus/inode.c      |   19 +++++++++++++------
+  fs/hostfs/hostfs_kern.c |    8 +++++---
+  fs/hpfs/file.c          |    8 +++++---
+  fs/hpfs/inode.c         |    5 ++++-
+  fs/jfs/file.c           |    6 ++++--
+  fs/jfs/inode.c          |   13 +++++++++----
+  fs/libfs.c              |    2 --
+  fs/logfs/readwrite.c    |   10 ++++++++--
+  fs/minix/file.c         |    6 ++++--
+  fs/minix/inode.c        |    7 +++++--
+  fs/ncpfs/inode.c        |    4 +++-
+  fs/nilfs2/file.c        |    1 -
+  fs/nilfs2/inode.c       |   18 +++++++++++++-----
+  fs/nilfs2/recovery.c    |    7 +++++--
+  fs/ntfs/file.c          |    8 +++++---
+  fs/ntfs/inode.c         |   11 +++++++++--
+  fs/ntfs/inode.h         |    4 ++++
+  fs/ocfs2/file.c         |    3 ++-
+  fs/omfs/file.c          |   12 ++++++++----
+  fs/proc/base.c          |    3 ++-
+  fs/proc/generic.c       |    3 ++-
+  fs/proc/proc_sysctl.c   |    3 ++-
+  fs/reiserfs/file.c      |    3 +--
+  fs/reiserfs/inode.c     |   15 +++++++++++----
+  fs/reiserfs/reiserfs.h  |    1 +
+  fs/sysv/file.c          |    5 +++--
+  fs/sysv/itree.c         |    7 +++++--
+  fs/ufs/inode.c          |    5 +++--
+  include/linux/fs.h      |    1 -
+  include/linux/mm.h      |    1 -
+  mm/truncate.c           |   23 -----------------------
+  36 files changed, 164 insertions(+), 100 deletions(-)
+
+-- 
+1.7.3.4
+---
+
