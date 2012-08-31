@@ -1,245 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561Ab2HaSDu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 14:03:50 -0400
-Received: from cpe-75-80-152-117.san.res.rr.com ([75.80.152.117]:60151 "EHLO
-	NickAndBarb2.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754275Ab2HaSDs (ORCPT
+	id S1754470Ab2HaSJX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 14:09:23 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:51470 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752150Ab2HaSJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 14:03:48 -0400
-Date: Fri, 31 Aug 2012 11:03:45 -0700
-From: Nick Pasich <Nick@NickAndBarb.net>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Pavel Shilovsky <piastryyy@gmail.com>, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: WARNING: at fs/inode.c:280 drop_nlink+0x31/0x33()
-Message-ID: <20120831180345.GA10907@NICK2>
-References: <20120829162527.GA3635@NickAndBarb.net> <20120829151641.20cde4bc@corrin.poochiereds.net> <20120831043352.GA23663@NickAndBarb.net> <CAKywueSY+NOV3irDm9YxepeCyJJhh82o2mgmDLogr+hJPbaYig@mail.gmail.com> <20120831153206.GA28908@NICK2> <20120831092138.47668603@corrin.poochiereds.net>
+	Fri, 31 Aug 2012 14:09:21 -0400
+X-Originating-IP: 217.70.178.144
+X-Originating-IP: 173.246.103.110
+Date: Fri, 31 Aug 2012 11:09:12 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 05/15] rcu: Improve boost selection when
+ moving tasks to root rcu_node
+Message-ID: <20120831180912.GC4259@jtriplet-mobl1>
+References: <20120830185607.GA32148@linux.vnet.ibm.com>
+ <1346352988-32444-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346352988-32444-5-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120831092138.47668603@corrin.poochiereds.net>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <1346352988-32444-5-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 31, 2012 at 09:21:38AM -0700, Jeff Layton wrote:
-> On Fri, 31 Aug 2012 08:32:06 -0700
-> Nick Pasich <Nick@NickAndBarb.net> wrote:
+On Thu, Aug 30, 2012 at 11:56:18AM -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 > 
-> > On Fri, Aug 31, 2012 at 12:00:26PM +0400, Pavel Shilovsky wrote:
-> > > 2012/8/31 Nick Pasich <Nick@nickandbarb.net>:
-> > > > Jeff,
-> > > >
-> > > > I applied this patch to Kernel 3.5.3 from Pavel and the
-> > > > the warning is gone with no problems.
-> > > >
-> > > > Thanks,
-> > > >
-> > > > --( Nick Pasich
-> > > >
-> > > > ##########################################################
-> > > >
-> > > > From df2d6b1fbf2401c5ee04f2ac143ea0954e3a87a6 Mon Sep 17 00:00:00 2001
-> > > > From: Pavel Shilovsky <pshilovsky@samba.org>
-> > > > Date: Fri, 13 Jul 2012 11:59:45 +0400
-> > > > Subject: [PATCH] CIFS: Protect i_nlink from being negative
-> > > >
-> > > > that can cause warning messages.
-> > > >
-> > > > Signed-off-by: Pavel Shilovsky <pshilovsky@samba.org>
-> > > > ---
-> > > >  fs/cifs/inode.c |   13 +++++++++++--
-> > > >  1 files changed, 11 insertions(+), 2 deletions(-)
-> > > >
-> > > > diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
-> > > > index 7354877..88afb1a 100644
-> > > > --- a/fs/cifs/inode.c
-> > > > +++ b/fs/cifs/inode.c
-> > > > @@ -1110,6 +1110,15 @@ undo_setattr:
-> > > >                 goto out_close;
-> > > >  }
-> > > >
-> > > > +/* copied from fs/nfs/dir.c with small changes */
-> > > > +static void
-> > > > +cifs_drop_nlink(struct inode *inode)
-> > > > +{
-> > > > +       spin_lock(&inode->i_lock);
-> > > > +       if (inode->i_nlink > 0)
-> > > > +               drop_nlink(inode);
-> > > > +       spin_unlock(&inode->i_lock);
-> > > > +}
-> > > >
-> > > >  /*
-> > > >   * If dentry->d_inode is null (usually meaning the cached dentry
-> > > > @@ -1166,13 +1175,13 @@ retry_std_delete:
-> > > >  psx_del_no_retry:
-> > > >                 if (!rc) {
-> > > >                                 if (inode)
-> > > > -                       drop_nlink(inode);
-> > > > +                       cifs_drop_nlink(inode);
-> > > >                 } else if (rc == -ENOENT) {
-> > > >                                 d_drop(dentry);
-> > > >                 } else if (rc == -ETXTBSY) {
-> > > >                                 rc = cifs_rename_pending_delete(full_path, dentry, xid);
-> > > >                                 if (rc == 0)
-> > > > -                       drop_nlink(inode);
-> > > > +                       cifs_drop_nlink(inode);
-> > > >                 } else if ((rc == -EACCES) && (dosattr == 0) && inode) {
-> > > >                                 attrs = kzalloc(sizeof(*attrs), GFP_KERNEL);
-> > > >                                 if (attrs == NULL) {
-> > > > --
-> > > > 1.7.3.3
-> > > >
-> > > > ##########################################################
-> > > >
-> > > > --
-> > > > To unsubscribe from this list: send the line "unsubscribe linux-cifs" in
-> > > > the body of a message to majordomo@vger.kernel.org
-> > > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > > 
-> > > This one fixes only a part of the problem. Now we have another patch
-> > > for this problem:
-> > > 
-> > > https://git.samba.org/sfrench/?p=sfrench/cifs-2.6.git;a=commitdiff;h=b7ca69289680cf631fb20b7d436467c4ec1153cd;hp=6dab7ede9390d4d937cb89feca932e4fd575d2da
-> > > 
-> > > -- 
-> > > Best regards,
-> > > Pavel Shilovsky.
-> > 
-> > 
-> > 
-> > Since I'm using kernel 3.5.3 , I get an error on hunk 7 of the patch.
-> > 
-> > I can do it by hand... But I want to check with you first.
-> > 
-> > Thanks,
-> > 
-> > --( Nick Pasich )--
-> > 
+> The rcu_preempt_offline_tasks() moves all tasks queued on a given leaf
+> rcu_node structure to the root rcu_node, which is done when the last CPU
+> corresponding the the leaf rcu_node structure goes offline.  Now that
+> RCU-preempt's synchronize_rcu_expedited() implementation blocks CPU-hotplug
+> operations during the initialization of each rcu_node structure's
+> ->boost_tasks pointer, rcu_preempt_offline_tasks() can do a better job
+> of setting the root rcu_node's ->boost_tasks pointer.
 > 
-> If you fix it up by hand, consider submitting it as a backport for the
-> stable series as well.
+> The key point is that rcu_preempt_offline_tasks() runs as part of the
+> CPU-hotplug process, so that a concurrent synchronize_rcu_expedited() is
+> guaranteed to either have not started on the one hand (in which case there
+> is no boosting on behalf of the expedited grace period) to be completely
+
+Missing word: s/to be/or to be/
+
+> initialized on the other (in which case, in absence of other priority
+
+s/absence/the absence/
+
+> boosting, all ->boost_tasks pointers will be initialized).  Therefore,
+> if rcu_preempt_offline_tasks() finds that the ->boost_tasks pointer is
+> equal to the ->exp_tasks pointer, it can be sure that it is correcty
+> placed.
 > 
+> The case where there was boosting ongoing at the time that the
+
+s/The/In the/
+
+> synchronize_rcu_expedited() function started, different nodes might
+> start boosting the tasks blocking the expedited grace period at different
+> times.  In this mixed case, the root node will either be boosting tasks
+> for the expedited grace period already, or it will start as soon as it
+> gets done boosting for the normal grace period -- but in this latter
+> case, the root node's tasks needed to be boosted in any case.
+> 
+> This commit therefore adds a check of the ->boost_tasks pointer against
+> the ->exp_tasks pointer to the list that prevents updating ->boost_tasks.
+
+Seems like some hint of this explanation really ought to end up in a
+comment somewhere...
+
+> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+
+> ---
+>  kernel/rcutree_plugin.h |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+> index b1b4851..c930a47 100644
+> --- a/kernel/rcutree_plugin.h
+> +++ b/kernel/rcutree_plugin.h
+> @@ -591,7 +591,8 @@ static int rcu_preempt_offline_tasks(struct rcu_state *rsp,
+>  	/* In case root is being boosted and leaf was not. */
+>  	raw_spin_lock(&rnp_root->lock); /* irqs already disabled */
+>  	if (rnp_root->boost_tasks != NULL &&
+> -	    rnp_root->boost_tasks != rnp_root->gp_tasks)
+> +	    rnp_root->boost_tasks != rnp_root->gp_tasks &&
+> +	    rnp_root->boost_tasks != rnp_root->exp_tasks)
+>  		rnp_root->boost_tasks = rnp_root->gp_tasks;
+>  	raw_spin_unlock(&rnp_root->lock); /* irqs still disabled */
+>  #endif /* #ifdef CONFIG_RCU_BOOST */
 > -- 
-> Jeff Layton <jlayton@redhat.com>
-
-Jeff / Pavel,
-
-Here are my changes on hunk #7 that allow patching 3.5.3
-
-Check it out....
-
---( Nick Pasich )--
-
-
-
-##############################################################################
-
-diff -u a/fs/cifs/inode.c b/fs/cifs/inode.c
---- a/fs/cifs/inode.c
-+++ b/fs/cifs/inode.c
-@@ -124,10 +124,10 @@
- {
- 	struct cifsInodeInfo *cifs_i = CIFS_I(inode);
- 	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
--	unsigned long oldtime = cifs_i->time;
- 
- 	cifs_revalidate_cache(inode, fattr);
- 
-+	spin_lock(&inode->i_lock);
- 	inode->i_atime = fattr->cf_atime;
- 	inode->i_mtime = fattr->cf_mtime;
- 	inode->i_ctime = fattr->cf_ctime;
-@@ -148,9 +148,6 @@
- 	else
- 		cifs_i->time = jiffies;
- 
--	cFYI(1, "inode 0x%p old_time=%ld new_time=%ld", inode,
--		 oldtime, cifs_i->time);
--
- 	cifs_i->delete_pending = fattr->cf_flags & CIFS_FATTR_DELETE_PENDING;
- 
- 	cifs_i->server_eof = fattr->cf_eof;
-@@ -158,7 +155,6 @@
- 	 * Can't safely change the file size here if the client is writing to
- 	 * it due to potential races.
- 	 */
--	spin_lock(&inode->i_lock);
- 	if (is_size_safe_to_change(cifs_i, fattr->cf_eof)) {
- 		i_size_write(inode, fattr->cf_eof);
- 
-@@ -909,12 +905,14 @@
- 
- 	if (rc && tcon->ipc) {
- 		cFYI(1, "ipc connection - fake read inode");
-+		spin_lock(&inode->i_lock);
- 		inode->i_mode |= S_IFDIR;
- 		set_nlink(inode, 2);
- 		inode->i_op = &cifs_ipc_inode_ops;
- 		inode->i_fop = &simple_dir_operations;
- 		inode->i_uid = cifs_sb->mnt_uid;
- 		inode->i_gid = cifs_sb->mnt_gid;
-+		spin_unlock(&inode->i_lock);
- 	} else if (rc) {
- 		iget_failed(inode);
- 		inode = ERR_PTR(rc);
-@@ -1159,6 +1157,15 @@
- 	goto out_close;
- }
- 
-+/* copied from fs/nfs/dir.c with small changes */
-+static void
-+cifs_drop_nlink(struct inode *inode)
-+{
-+	spin_lock(&inode->i_lock);
-+	if (inode->i_nlink > 0)
-+		drop_nlink(inode);
-+	spin_unlock(&inode->i_lock);
-+}
- 
- /*
-  * If dentry->d_inode is null (usually meaning the cached dentry
-@@ -1216,13 +1223,13 @@
- psx_del_no_retry:
- 	if (!rc) {
- 		if (inode)
--			drop_nlink(inode);
-+			cifs_drop_nlink(inode);
- 	} else if (rc == -ENOENT) {
- 		d_drop(dentry);
- 	} else if (rc == -ETXTBSY) {
- 		rc = cifs_rename_pending_delete(full_path, dentry, xid);
- 		if (rc == 0)
--			drop_nlink(inode);
-+			cifs_drop_nlink(inode);
- 	} else if ((rc == -EACCES) && (dosattr == 0) && inode) {
- 		attrs = kzalloc(sizeof(*attrs), GFP_KERNEL);
- 		if (attrs == NULL) {
-@@ -1369,9 +1376,10 @@
- 		d_instantiate(direntry, newinode);
- 		 /* setting nlink not necessary except in cases where we
- 		  * failed to get it from the server or was set bogus */
-+	 	spin_lock(&direntry->d_inode->i_lock);
- 		if ((direntry->d_inode) && (direntry->d_inode->i_nlink < 2))
- 			set_nlink(direntry->d_inode, 2);
--
-+	 	spin_unlock(&direntry->d_inode->i_lock);
- 		mode &= ~current_umask();
- 		/* must turn on setgid bit if parent dir has it */
- 		if (inode->i_mode & S_ISGID)
-diff -u a/fs/cifs/link.c b/fs/cifs/link.c
---- a/fs/cifs/link.c
-+++ b/fs/cifs/link.c
-@@ -433,7 +433,9 @@
- 	if (old_file->d_inode) {
- 		cifsInode = CIFS_I(old_file->d_inode);
- 		if (rc == 0) {
-+			spin_lock(&old_file->d_inode->i_lock);
- 			inc_nlink(old_file->d_inode);
-+			spin_unlock(&old_file->d_inode->i_lock);
- /* BB should we make this contingent on superblock flag NOATIME? */
- /*			old_file->d_inode->i_ctime = CURRENT_TIME;*/
- 			/* parent dir timestamps will update from srv
-##############################################################################
+> 1.7.8
+> 
