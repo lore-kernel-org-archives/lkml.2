@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753830Ab2HaN7n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 09:59:43 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:53849 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753673Ab2HaN7l (ORCPT
+	id S1753851Ab2HaOAW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 10:00:22 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:40618 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753666Ab2HaOAV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 09:59:41 -0400
-Message-ID: <5040C1BC.4080102@gmail.com>
-Date: Fri, 31 Aug 2012 15:53:00 +0200
+	Fri, 31 Aug 2012 10:00:21 -0400
+Message-ID: <5040C1E7.4060108@gmail.com>
+Date: Fri, 31 Aug 2012 15:53:43 +0200
 From: Marco Stornelli <marco.stornelli@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
 MIME-Version: 1.0
 To: Linux FS Devel <linux-fsdevel@vger.kernel.org>
-CC: Guenter Roeck <linux@roeck-us.net>, Luca Tettamanti <kronos.it@gmail.com>,
+CC: Bob Copeland <me@bobcopeland.com>, linux-karma-devel@lists.sourceforge.net,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 04/21] procfs: drop vmtruncate
+Subject: [PATCH 05/21] omfs: drop vmtruncate
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -26,16 +26,28 @@ Removed vmtruncate.
 
 Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
 ---
- fs/proc/base.c        |    3 ++-
- fs/proc/generic.c     |    3 ++-
- fs/proc/proc_sysctl.c |    3 ++-
- 3 files changed, 6 insertions(+), 3 deletions(-)
+ fs/omfs/file.c |   12 ++++++++----
+ 1 files changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 1b6c84c..36fa9dd 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -545,9 +545,10 @@ int proc_setattr(struct dentry *dentry, struct iattr *attr)
+diff --git a/fs/omfs/file.c b/fs/omfs/file.c
+index 2c6d952..2139ee9 100644
+--- a/fs/omfs/file.c
++++ b/fs/omfs/file.c
+@@ -317,8 +317,11 @@ static int omfs_write_begin(struct file *file, struct address_space *mapping,
+ 				omfs_get_block);
+ 	if (unlikely(ret)) {
+ 		loff_t isize = mapping->host->i_size;
+-		if (pos + len > isize)
+-			vmtruncate(mapping->host, isize);
++		if ((pos + len > isize) &&
++			inode_newsize_ok(mapping->host, isize) == 0) {
++			truncate_setsize(mapping->host, isize);
++			omfs_truncate(mapping->host);
++		}
+ 	}
+ 
+ 	return ret;
+@@ -351,9 +354,11 @@ static int omfs_setattr(struct dentry *dentry, struct iattr *attr)
  
  	if ((attr->ia_valid & ATTR_SIZE) &&
  	    attr->ia_size != i_size_read(inode)) {
@@ -44,40 +56,17 @@ index 1b6c84c..36fa9dd 100644
  		if (error)
  			return error;
 +		truncate_setsize(inode, attr->ia_size);
++		omfs_truncate(inode);
  	}
  
  	setattr_copy(inode, attr);
-diff --git a/fs/proc/generic.c b/fs/proc/generic.c
-index b3647fe..d471d2f 100644
---- a/fs/proc/generic.c
-+++ b/fs/proc/generic.c
-@@ -263,9 +263,10 @@ static int proc_notify_change(struct dentry *dentry, struct iattr *iattr)
+@@ -363,7 +368,6 @@ static int omfs_setattr(struct dentry *dentry, struct iattr *attr)
  
- 	if ((iattr->ia_valid & ATTR_SIZE) &&
- 	    iattr->ia_size != i_size_read(inode)) {
--		error = vmtruncate(inode, iattr->ia_size);
-+		error = inode_newsize_ok(inode, iattr->ia_size);
- 		if (error)
- 			return error;
-+		truncate_setsize(inode, iattr->ia_size);
- 	}
+ const struct inode_operations omfs_file_inops = {
+ 	.setattr = omfs_setattr,
+-	.truncate = omfs_truncate
+ };
  
- 	setattr_copy(inode, iattr);
-diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
-index dfafeb2..5c484f8 100644
---- a/fs/proc/proc_sysctl.c
-+++ b/fs/proc/proc_sysctl.c
-@@ -740,9 +740,10 @@ static int proc_sys_setattr(struct dentry *dentry, struct iattr *attr)
- 
- 	if ((attr->ia_valid & ATTR_SIZE) &&
- 	    attr->ia_size != i_size_read(inode)) {
--		error = vmtruncate(inode, attr->ia_size);
-+		error = inode_newsize_ok(inode, attr->ia_size);
- 		if (error)
- 			return error;
-+		truncate_setsize(inode, attr->ia_size);
- 	}
- 
- 	setattr_copy(inode, attr);
+ const struct address_space_operations omfs_aops = {
 -- 
 1.7.3.4
