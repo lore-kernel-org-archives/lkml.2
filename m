@@ -1,53 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754324Ab2HaP7i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 11:59:38 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:2401 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753918Ab2HaP7h (ORCPT
+	id S1754406Ab2HaQBP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 12:01:15 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:38700 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754278Ab2HaQBN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 11:59:37 -0400
-Message-ID: <1346428774.2864.16.camel@lorien2>
-Subject: Re: crash dump memory reservation regression
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, CAI Qian <caiqian@redhat.com>,
-        Takashi Iwai <tiwai@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Vivek Goyal <vgoyal@redhat.com>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 31 Aug 2012 09:59:34 -0600
-In-Reply-To: <4F5EDE5B.7070207@zytor.com>
-References: <5535e246-b7c0-4f69-a27b-1abbadd42db0@zmail14.collab.prod.int.phx2.redhat.com>
-	 <65a23329-d843-4859-8b7b-430f12882492@zmail14.collab.prod.int.phx2.redhat.com>
-	 <CAE9FiQU9C=5YAa3DPcx8E9yVckSX5JbLdS=TC90jA8wz1pjzmw@mail.gmail.com>
-	 <4F5EDE5B.7070207@zytor.com>
-Organization: ISS-Linux
+	Fri, 31 Aug 2012 12:01:13 -0400
+Message-ID: <1346428871.3512.21.camel@dabdike>
+Subject: [GIT PULL] parisc fixes for 3.4-rc1
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Parisc List <linux-parisc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Fri, 31 Aug 2012 09:01:11 -0700
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-12 at 22:42 -0700, H. Peter Anvin wrote:
-> On 03/12/2012 10:31 PM, Yinghai Lu wrote:
-> > 
-> > Solution will be:
-> > 1.  remove the good_end setting for 64 bit again. and root cause S4 resume.
-> 
-> This would by far be the best.
-> 
-> 	-hpa
-> 
+This is a set of two bug fixes.  One is the ATOMIC problem which is now
+causing a compile failure in certain situations.  The other is
+mishandling of PER_LINUX32 which may also cause user visible effects.
 
-Any resolution on this issue. Has this been fixed? I haven't seen this
-message on the systems I am running the upstream kernel on, and would
-like to get a commit ID (if any) that fixed the problem.
+The patches are here:
 
-Thanks,
--- Shuah
+git://git.kernel.org/pub/scm/linux/kernel/git/jejb/parisc-2.6.git parisc-fixes
+
+The short changelog is:
+
+Jiri Kosina (1):
+      fix personality flag check in copy_thread()
+
+Mel Gorman (1):
+      Redefine ATOMIC_INIT and ATOMIC64_INIT to drop the casts
+
+And the diffstat:
+
+ arch/parisc/include/asm/atomic.h | 4 ++--
+ arch/parisc/kernel/process.c     | 2 +-
+ arch/parisc/kernel/sys_parisc.c  | 8 ++++----
+ 3 files changed, 7 insertions(+), 7 deletions(-)
+
+Full diff below.
+
+James
+
+---
+
+diff --git a/arch/parisc/include/asm/atomic.h b/arch/parisc/include/asm/atomic.h
+index 6c6defc..af9cf30 100644
+--- a/arch/parisc/include/asm/atomic.h
++++ b/arch/parisc/include/asm/atomic.h
+@@ -141,7 +141,7 @@ static __inline__ int __atomic_add_unless(atomic_t *v, int a, int u)
+ 
+ #define atomic_sub_and_test(i,v)	(atomic_sub_return((i),(v)) == 0)
+ 
+-#define ATOMIC_INIT(i)	((atomic_t) { (i) })
++#define ATOMIC_INIT(i)	{ (i) }
+ 
+ #define smp_mb__before_atomic_dec()	smp_mb()
+ #define smp_mb__after_atomic_dec()	smp_mb()
+@@ -150,7 +150,7 @@ static __inline__ int __atomic_add_unless(atomic_t *v, int a, int u)
+ 
+ #ifdef CONFIG_64BIT
+ 
+-#define ATOMIC64_INIT(i) ((atomic64_t) { (i) })
++#define ATOMIC64_INIT(i) { (i) }
+ 
+ static __inline__ s64
+ __atomic64_add_return(s64 i, atomic64_t *v)
+diff --git a/arch/parisc/kernel/process.c b/arch/parisc/kernel/process.c
+index d4b94b3..2c05a92 100644
+--- a/arch/parisc/kernel/process.c
++++ b/arch/parisc/kernel/process.c
+@@ -309,7 +309,7 @@ copy_thread(unsigned long clone_flags, unsigned long usp,
+ 		cregs->ksp = (unsigned long)stack
+ 			+ (pregs->gr[21] & (THREAD_SIZE - 1));
+ 		cregs->gr[30] = usp;
+-		if (p->personality == PER_HPUX) {
++		if (personality(p->personality) == PER_HPUX) {
+ #ifdef CONFIG_HPUX
+ 			cregs->kpc = (unsigned long) &hpux_child_return;
+ #else
+diff --git a/arch/parisc/kernel/sys_parisc.c b/arch/parisc/kernel/sys_parisc.c
+index c9b9322..7426e40 100644
+--- a/arch/parisc/kernel/sys_parisc.c
++++ b/arch/parisc/kernel/sys_parisc.c
+@@ -225,12 +225,12 @@ long parisc_personality(unsigned long personality)
+ 	long err;
+ 
+ 	if (personality(current->personality) == PER_LINUX32
+-	    && personality == PER_LINUX)
+-		personality = PER_LINUX32;
++	    && personality(personality) == PER_LINUX)
++		personality = (personality & ~PER_MASK) | PER_LINUX32;
+ 
+ 	err = sys_personality(personality);
+-	if (err == PER_LINUX32)
+-		err = PER_LINUX;
++	if (personality(err) == PER_LINUX32)
++		err = (err & ~PER_MASK) | PER_LINUX;
+ 
+ 	return err;
+ }
 
 
