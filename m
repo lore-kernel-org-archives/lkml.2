@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754708Ab2HaSko (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 14:40:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5883 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753449Ab2HaSkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 14:40:43 -0400
-Date: Fri, 31 Aug 2012 14:40:26 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Jens Axboe <axboe@kernel.dk>, Andrea Arcangeli <aarcange@redhat.com>,
-        Jan Kara <jack@suse.cz>, dm-devel@redhat.com,
-        linux-kernel@vger.kernel.org, Jeff Moyer <jmoyer@redhat.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        kosaki.motohiro@jp.fujitsu.com, linux-fsdevel@vger.kernel.org,
-        lwoodman@redhat.com, "Alasdair G. Kergon" <agk@redhat.com>
-Subject: [PATCH 0/4] Fix a crash when block device is read and block size is
- changed at the same time
-In-Reply-To: <Pine.LNX.4.64.1208011601280.21832@file.rdu.redhat.com>
-Message-ID: <Pine.LNX.4.64.1208311433480.2212@file.rdu.redhat.com>
-References: <Pine.LNX.4.64.1206272226050.22857@file.rdu.redhat.com> 
- <20120628111541.GB17515@quack.suse.cz>  <Pine.LNX.4.64.1207152051490.4240@file.rdu.redhat.com>
-  <x49ipdmyz4q.fsf@segfault.boston.devel.redhat.com> 
- <Pine.LNX.4.64.1207181512530.10923@file.rdu.redhat.com> 
- <x49k3xzq3jc.fsf@segfault.boston.devel.redhat.com> 
- <Pine.LNX.4.64.1207281236230.30415@file.rdu.redhat.com> 
- <Pine.LNX.4.64.1207281240270.30415@file.rdu.redhat.com> 
- <1343508252.2626.13184.camel@edumazet-glaptop> 
- <Pine.LNX.4.64.1207290107460.29910@file.rdu.redhat.com> 
- <1343556630.2626.13257.camel@edumazet-glaptop> <1343586962.2626.13266.camel@edumazet-glaptop>
- <Pine.LNX.4.64.1208011601280.21832@file.rdu.redhat.com>
+	id S1754780Ab2HaSlH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 14:41:07 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:48044 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754723Ab2HaSlE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Aug 2012 14:41:04 -0400
+X-Originating-IP: 217.70.178.150
+X-Originating-IP: 173.246.103.110
+Date: Fri, 31 Aug 2012 11:40:56 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 12/15] rcu: Remove redundant memory barrier
+ from __call_rcu()
+Message-ID: <20120831184055.GL4259@jtriplet-mobl1>
+References: <20120830185607.GA32148@linux.vnet.ibm.com>
+ <1346352988-32444-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346352988-32444-12-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20120831183035.GJ4259@jtriplet-mobl1>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120831183035.GJ4259@jtriplet-mobl1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Fri, Aug 31, 2012 at 11:30:35AM -0700, Josh Triplett wrote:
+> On Thu, Aug 30, 2012 at 11:56:25AM -0700, Paul E. McKenney wrote:
+> > From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+> > 
+> > The first memory barrier in __call_rcu() is supposed to order any
+> > updates done beforehand by the caller against the actual queuing
+> > of the callback.  However, the second memory barrier (which is intended
+> > to order incrementing the queue lengths before queuing the callback)
+> > is also between the caller's updates and the queuing of the callback.
+> > The second memory barrier can therefore serve both purposes.
+> > 
+> > This commit therefore removes the first memory barrier.
+> 
+> I don't see any such second memory barrier in __call_rcu(), at least not
+> in current master.  Right after this smp_mb(), __call_rcu() enqueues the
+> callback and increments the queue length.
+> 
+> Did you add a second memory barrier in some other patch that hasn't made
+> it upstream yet?  If so, could you note that patch dependency explicitly
+> in the commit message?
 
-This is a series of patches to prevent a crash when when someone is 
-reading block device and block size is changed simultaneously. (the crash 
-is already happening in the production environment)
+Argh, nevermind.  Looked at the wrong branch, not master.  Looking at
+master, I do indeed see the second smp_mb().
 
-The first patch adds a rw-lock to struct block_device, but doesn't use the 
-lock anywhere. The reason why I submit this as a separate patch is that on 
-my computer adding an unused field to this structure affects performance 
-much more than any locking changes.
-
-The second patch uses the rw-lock. The lock is locked for read when doing 
-I/O on the block device and it is locked for write when changing block 
-size.
-
-The third patch converts the rw-lock to a percpu rw-lock for better 
-performance, to avoid cache line bouncing.
-
-The fourth patch is an alternate percpu rw-lock implementation using RCU 
-by Eric Dumazet. It avoids any atomic instruction in the hot path.
-
-Mikulas
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
