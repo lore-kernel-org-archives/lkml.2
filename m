@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753Ab2HaM0J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 08:26:09 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:59752 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752081Ab2HaM0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 08:26:07 -0400
-Date: Fri, 31 Aug 2012 14:26:17 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Marcos Souza <marcos.souza.org@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Get the min and max frequency of a processor
-Message-ID: <20120831122616.GA4083@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Marcos Souza <marcos.souza.org@gmail.com>,
-	linux-kernel@vger.kernel.org
-References: <CAH0vN5Jn1g+zekr-Nd=GizskgbcOGj8zoq+m6OvBiO6Xkw5-UQ@mail.gmail.com>
- <20120831083727.GA2903@liondog.tnic>
- <CAH0vN5J0_3B2e_dmLk1yaKfCde79egkG-s7THrKtEwzcLnmm5Q@mail.gmail.com>
+	id S1753129Ab2HaM1L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 08:27:11 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40844 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751366Ab2HaM1K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Aug 2012 08:27:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAH0vN5J0_3B2e_dmLk1yaKfCde79egkG-s7THrKtEwzcLnmm5Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5040AAAE.30501@gmail.com>
+References: <5040AAAE.30501@gmail.com>
+Date: Fri, 31 Aug 2012 14:27:09 +0200
+Message-ID: <CAFLxGvxh962CZxgF86nL2ULsy-a2BRXFszDHceeSsZm0DTJgfg@mail.gmail.com>
+Subject: Re: 3.6rc-3 doesn't compile um arch
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Marco Stornelli <marco.stornelli@gmail.com>
+Cc: Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        torvalds@linux-foundation.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net, martin.partel@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 31, 2012 at 06:52:46AM -0300, Marcos Souza wrote:
-> Nothing is wrong with access /sys, but I thought there was another
-> way, like an API or something else.
+On Fri, Aug 31, 2012 at 2:14 PM, Marco Stornelli
+<marco.stornelli@gmail.com> wrote:
+> Hi,
+>
+> I'm trying to compile the latest kernel for arch um, using the latest
+> Linus's tree, but it doesn't compile due to the commit:
+>
+> um: pass siginfo to the guest process.
+>
+> I think the fix is trivial. At line 117 of os-Linux/time.c you find
+> this line:
+>
+>   alarm_handler(SIGVTALRM, NULL);
+>
+> but it should be:
+>
+>   alarm_handler(SIGVTALRM, NULL, NULL);
+>
+> Is it already fixed?
 
-Ah, there's no API, AFAICT.
+It's known but nobody cared to send a fix for that.
+Who wants the credit?
 
-Also, tools/power/cpupower/ uses sysfs too - you could reuse that
-code if you don't feel like writing it yourself. The function is
-cpufreq_get_hardware_limits()
-
-Ok, technically, there is also a way to query the CPU's MSRs directly
-but this is a bit more involved than reading sysfs nodes.
-
-HTH.
+Otherwise I'll fix it in -rc4 or 5.
+(Currently I'm on holiday...)
 
 -- 
-Regards/Gruss,
-Boris.
+Thanks,
+//richard
