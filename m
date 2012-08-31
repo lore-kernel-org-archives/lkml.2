@@ -1,62 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753860Ab2HaN7F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 09:59:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49337 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753789Ab2HaN7A (ORCPT
+	id S1753830Ab2HaN7n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 09:59:43 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:53849 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753673Ab2HaN7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 09:59:00 -0400
-Message-ID: <5040C319.5080704@gmail.com>
-Date: Fri, 31 Aug 2012 08:58:49 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Fri, 31 Aug 2012 09:59:41 -0400
+Message-ID: <5040C1BC.4080102@gmail.com>
+Date: Fri, 31 Aug 2012 15:53:00 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: Linus Walleij <linus.walleij@linaro.org>, linus.walleij@stericsson.com,
-        arnd@arndb.de, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        STEricsson_nomadik_linux@list.st.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/8] irqdomain: Take interrupt-parent property into account
- if specified
-References: <1344527635-6163-1-git-send-email-lee.jones@linaro.org> <1344527635-6163-3-git-send-email-lee.jones@linaro.org> <CACRpkdZMoisfUD_NSkVy2w-jZVUDGn0E8LmvKSWnJ0YRGZO-tQ@mail.gmail.com> <20120831094434.GF13298@gmail.com>
-In-Reply-To: <20120831094434.GF13298@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Linux FS Devel <linux-fsdevel@vger.kernel.org>
+CC: Guenter Roeck <linux@roeck-us.net>, Luca Tettamanti <kronos.it@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 04/21] procfs: drop vmtruncate
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/31/2012 04:44 AM, Lee Jones wrote:
-> On Tue, Aug 14, 2012 at 10:19:08AM +0200, Linus Walleij wrote:
->> On Thu, Aug 9, 2012 at 5:53 PM, Lee Jones <lee.jones@linaro.org> wrote:
->>
->>> irq_find_host() currently ignores the 'interrupt-parent' property
->>> even if it's specified in the Device Tree. Meaning that a node can
->>> match to a domain in its hierarchy even if it doesn't belong to it.
->>> By searching for the parent first using of_irq_find_parent() we
->>> insist that the 'interrupt-parent' property is taken into account
->>> ensuring a greater chance of returning the correct domain.
->>>
->>> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->>> CC: Grant Likely <grant.likely@secretlab.ca>
->>> Signed-off-by: Lee Jones <lee.jones@linaro.org>
->>
->> This (with 1/8) is the right solution. Thanks, and I think
->> Mark may want to look at this too since I recognize he asked
->> you to work in this direction.
->>
->> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> 
-> Rob, did this get your Ack too?
+Removed vmtruncate.
 
-Acked-by: Rob Herring <rob.herring@calxeda.com>
+Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+---
+ fs/proc/base.c        |    3 ++-
+ fs/proc/generic.c     |    3 ++-
+ fs/proc/proc_sysctl.c |    3 ++-
+ 3 files changed, 6 insertions(+), 3 deletions(-)
 
-Rob
-
-> 
-> Ben, Grant, Mark, would you like to take a look also?
-> 
-
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 1b6c84c..36fa9dd 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -545,9 +545,10 @@ int proc_setattr(struct dentry *dentry, struct iattr *attr)
+ 
+ 	if ((attr->ia_valid & ATTR_SIZE) &&
+ 	    attr->ia_size != i_size_read(inode)) {
+-		error = vmtruncate(inode, attr->ia_size);
++		error = inode_newsize_ok(inode, attr->ia_size);
+ 		if (error)
+ 			return error;
++		truncate_setsize(inode, attr->ia_size);
+ 	}
+ 
+ 	setattr_copy(inode, attr);
+diff --git a/fs/proc/generic.c b/fs/proc/generic.c
+index b3647fe..d471d2f 100644
+--- a/fs/proc/generic.c
++++ b/fs/proc/generic.c
+@@ -263,9 +263,10 @@ static int proc_notify_change(struct dentry *dentry, struct iattr *iattr)
+ 
+ 	if ((iattr->ia_valid & ATTR_SIZE) &&
+ 	    iattr->ia_size != i_size_read(inode)) {
+-		error = vmtruncate(inode, iattr->ia_size);
++		error = inode_newsize_ok(inode, iattr->ia_size);
+ 		if (error)
+ 			return error;
++		truncate_setsize(inode, iattr->ia_size);
+ 	}
+ 
+ 	setattr_copy(inode, iattr);
+diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
+index dfafeb2..5c484f8 100644
+--- a/fs/proc/proc_sysctl.c
++++ b/fs/proc/proc_sysctl.c
+@@ -740,9 +740,10 @@ static int proc_sys_setattr(struct dentry *dentry, struct iattr *attr)
+ 
+ 	if ((attr->ia_valid & ATTR_SIZE) &&
+ 	    attr->ia_size != i_size_read(inode)) {
+-		error = vmtruncate(inode, attr->ia_size);
++		error = inode_newsize_ok(inode, attr->ia_size);
+ 		if (error)
+ 			return error;
++		truncate_setsize(inode, attr->ia_size);
+ 	}
+ 
+ 	setattr_copy(inode, attr);
+-- 
+1.7.3.4
