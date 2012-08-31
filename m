@@ -1,113 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754355Ab2HaPtp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 11:49:45 -0400
-Received: from [66.192.166.38] ([66.192.166.38]:54852 "EHLO
-	hancock.steeleye.com" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754234Ab2HaPto (ORCPT
+	id S1754330Ab2HaPy6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 11:54:58 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36755 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751614Ab2HaPy4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 11:49:44 -0400
-Date: Fri, 31 Aug 2012 11:49:44 -0400
-From: paul.clements@steeleye.com
-To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv2 2/2] nbd: handle discard requests
-Message-ID: <5040dd18.agN3daJs+JyKfGjC%paul.clements@steeleye.com>
-User-Agent: nail 11.25 7/29/05
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 31 Aug 2012 11:54:56 -0400
+From: Adam Lee <adam8157@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Michal Marek <mmarek@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Yaakov Selkowitz <yselkowitz@users.sourceforge.net> (commit_signer:2/7=29%),
+        Peter Foley <pefoley2@verizon.net> (commit_signer:1/7=14%),
+        Paul Bolle <pebolle@tiscali.nl> (commit_signer:1/7=14%),
+        "Eric W. Biederman" <ebiederm@xmission.com> (commit_signer:2/4=50%),
+        linux-kbuild@vger.kernel.org (open list:KCONFIG)
+Subject: [PATCH v2] kconfig: replace 'oldnoconfig' with 'olddefconfig', and keep the old name as an alias
+Date: Fri, 31 Aug 2012 23:54:31 +0800
+Message-Id: <1346428476-12061-1-git-send-email-adam8157@gmail.com>
+X-Mailer: git-send-email 1.7.11.4
+In-Reply-To: <5040D021.50607@suse.cz>
+References: <5040D021.50607@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Description: This patch adds discard support to nbd. If the nbd-server
-supports discard, it will send NBD_FLAG_SEND_TRIM to the client. The client
-will then set the flag in the kernel via NBD_SET_FLAGS, which tells the
-kernel to enable discards for the device (QUEUE_FLAG_DISCARD).
+As 67d34a6a391369269a2e5dba8a5f42cc4cd50231 said, 'oldnoconfig' doesn't
+set new symbols to 'n', but instead sets it to their default values.
 
-If discard support is enabled, then when the nbd client system receives
-a discard request, this will be passed along to the nbd-server. When the
-discard request is received by the nbd-server, it will perform:
+So, this patch replaces 'oldnoconfig' with 'olddefconfig', stop making
+people confused, and keep the old name 'oldnoconfig' as an alias,
+because people already are dependent on its behavior with the
+counter-intuitive name.
 
-	fallocate(.. FALLOC_FL_PUNCH_HOLE ..)
-
-To punch a hole in the backend storage, which is no longer needed.
-
-Signed-off-by: Paul Clements <paul.clements@steeleye.com>
+Signed-off-by: Adam Lee <adam8157@gmail.com>
 ---
-diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
-index c544bb4..a014169 100644
---- a/drivers/block/nbd.c
-+++ b/drivers/block/nbd.c
-@@ -98,6 +98,7 @@ static const char *nbdcmd_to_ascii(int cmd)
- 	case  NBD_CMD_READ: return "read";
- 	case NBD_CMD_WRITE: return "write";
- 	case  NBD_CMD_DISC: return "disconnect";
-+	case  NBD_CMD_TRIM: return "trim/discard";
- 	}
- 	return "invalid";
- }
-@@ -461,7 +462,11 @@ static void nbd_handle_req(struct nbd_device *nbd, struct request *req)
+ scripts/kconfig/Makefile     | 12 +++++++++---
+ scripts/kconfig/conf.c       | 12 ++++++++++--
+ tools/testing/ktest/ktest.pl | 15 +++++++--------
+ 3 files changed, 26 insertions(+), 13 deletions(-)
+
+diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
+index 77d5399..3091794 100644
+--- a/scripts/kconfig/Makefile
++++ b/scripts/kconfig/Makefile
+@@ -76,11 +76,17 @@ PHONY += allnoconfig allyesconfig allmodconfig alldefconfig randconfig
+ allnoconfig allyesconfig allmodconfig alldefconfig randconfig: $(obj)/conf
+ 	$< --$@ $(Kconfig)
  
- 	nbd_cmd(req) = NBD_CMD_READ;
- 	if (rq_data_dir(req) == WRITE) {
--		nbd_cmd(req) = NBD_CMD_WRITE;
-+		if ((req->cmd_flags & REQ_DISCARD)) {
-+			WARN_ON(!(nbd->flags & NBD_FLAG_SEND_TRIM));
-+			nbd_cmd(req) = NBD_CMD_TRIM;
-+		} else
-+			nbd_cmd(req) = NBD_CMD_WRITE;
- 		if (nbd->flags & NBD_FLAG_READ_ONLY) {
- 			dev_err(disk_to_dev(nbd->disk),
- 				"Write on read-only\n");
-@@ -667,6 +672,10 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *nbd,
+-PHONY += listnewconfig oldnoconfig savedefconfig defconfig
++PHONY += listnewconfig olddefconfig oldnoconfig savedefconfig defconfig
  
- 		mutex_unlock(&nbd->tx_lock);
+-listnewconfig oldnoconfig: $(obj)/conf
++listnewconfig olddefconfig: $(obj)/conf
+ 	$< --$@ $(Kconfig)
  
-+		if (nbd->flags & NBD_FLAG_SEND_TRIM)
-+			queue_flag_set_unlocked(QUEUE_FLAG_DISCARD,
-+				nbd->disk->queue);
++# oldnoconfig is an alias of olddefconfig, because people already are dependent
++# on its behavior(sets new symbols to their default value but not 'n') with the
++# counter-intuitive name.
++oldnoconfig: $(obj)/conf
++	$< --olddefconfig $(Kconfig)
 +
- 		thread = kthread_create(nbd_thread, nbd, nbd->disk->disk_name);
- 		if (IS_ERR(thread)) {
- 			mutex_lock(&nbd->tx_lock);
-@@ -684,6 +693,7 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *nbd,
- 		nbd->file = NULL;
- 		nbd_clear_que(nbd);
- 		dev_warn(disk_to_dev(nbd->disk), "queue cleared\n");
-+		queue_flag_clear_unlocked(QUEUE_FLAG_DISCARD, nbd->disk->queue);
- 		if (file)
- 			fput(file);
- 		nbd->bytesize = 0;
-@@ -802,6 +812,9 @@ static int __init nbd_init(void)
- 		 * Tell the block layer that we are not a rotational device
- 		 */
- 		queue_flag_set_unlocked(QUEUE_FLAG_NONROT, disk->queue);
-+		disk->queue->limits.discard_granularity = 512;
-+		disk->queue->limits.max_discard_sectors = UINT_MAX;
-+		disk->queue->limits.discard_zeroes_data = 0;
- 	}
+ savedefconfig: $(obj)/conf
+ 	$< --$@=defconfig $(Kconfig)
  
- 	if (register_blkdev(NBD_MAJOR, "nbd")) {
-diff --git a/include/linux/nbd.h b/include/linux/nbd.h
-index bb349be..3b49a63 100644
---- a/include/linux/nbd.h
-+++ b/include/linux/nbd.h
-@@ -32,12 +32,16 @@
- enum {
- 	NBD_CMD_READ = 0,
- 	NBD_CMD_WRITE = 1,
--	NBD_CMD_DISC = 2
-+	NBD_CMD_DISC = 2,
-+	/* there is a gap here to match userspace */
-+	NBD_CMD_TRIM = 4
+@@ -114,7 +120,7 @@ help:
+ 	@echo  '  alldefconfig    - New config with all symbols set to default'
+ 	@echo  '  randconfig	  - New config with random answer to all options'
+ 	@echo  '  listnewconfig   - List new options'
+-	@echo  '  oldnoconfig     - Same as silentoldconfig but sets new symbols to their default value'
++	@echo  '  olddefconfig	  - Same as silentoldconfig but sets new symbols to their default value'
+ 
+ # lxdialog stuff
+ check-lxdialog  := $(srctree)/$(src)/lxdialog/check-lxdialog.sh
+diff --git a/scripts/kconfig/conf.c b/scripts/kconfig/conf.c
+index 6875680..46290d3 100644
+--- a/scripts/kconfig/conf.c
++++ b/scripts/kconfig/conf.c
+@@ -32,6 +32,7 @@ enum input_mode {
+ 	defconfig,
+ 	savedefconfig,
+ 	listnewconfig,
++	olddefconfig,
+ 	oldnoconfig,
+ } input_mode = oldaskconfig;
+ 
+@@ -365,6 +366,7 @@ static void conf(struct menu *menu)
+ 		case P_MENU:
+ 			if ((input_mode == silentoldconfig ||
+ 			     input_mode == listnewconfig ||
++			     input_mode == olddefconfig ||
+ 			     input_mode == oldnoconfig) &&
+ 			    rootEntry != menu) {
+ 				check_conf(menu);
+@@ -429,7 +431,8 @@ static void check_conf(struct menu *menu)
+ 				if (sym->name && !sym_is_choice_value(sym)) {
+ 					printf("%s%s\n", CONFIG_, sym->name);
+ 				}
+-			} else if (input_mode != oldnoconfig) {
++			} else if ((input_mode != olddefconfig) &&
++				   (input_mode != oldnoconfig)) {
+ 				if (!conf_cnt++)
+ 					printf(_("*\n* Restart config...\n*\n"));
+ 				rootEntry = menu_get_parent_menu(menu);
+@@ -454,6 +457,7 @@ static struct option long_opts[] = {
+ 	{"alldefconfig",    no_argument,       NULL, alldefconfig},
+ 	{"randconfig",      no_argument,       NULL, randconfig},
+ 	{"listnewconfig",   no_argument,       NULL, listnewconfig},
++	{"olddefconfig",    no_argument,       NULL, olddefconfig},
+ 	{"oldnoconfig",     no_argument,       NULL, oldnoconfig},
+ 	{NULL, 0, NULL, 0}
  };
+@@ -467,7 +471,7 @@ static void conf_usage(const char *progname)
+ 	printf("  --oldaskconfig          Start a new configuration using a line-oriented program\n");
+ 	printf("  --oldconfig             Update a configuration using a provided .config as base\n");
+ 	printf("  --silentoldconfig       Same as oldconfig, but quietly, additionally update deps\n");
+-	printf("  --oldnoconfig           Same as silentoldconfig but sets new symbols to their default value\n");
++	printf("  --olddefconfig          Same as silentoldconfig but sets new symbols to their default value\n");
+ 	printf("  --defconfig <file>      New config with default defined in <file>\n");
+ 	printf("  --savedefconfig <file>  Save the minimal current configuration to <file>\n");
+ 	printf("  --allnoconfig           New config where all options are answered with no\n");
+@@ -520,6 +524,7 @@ int main(int ac, char **av)
+ 		case allmodconfig:
+ 		case alldefconfig:
+ 		case listnewconfig:
++		case olddefconfig:
+ 		case oldnoconfig:
+ 			break;
+ 		case '?':
+@@ -565,6 +570,7 @@ int main(int ac, char **av)
+ 	case oldaskconfig:
+ 	case oldconfig:
+ 	case listnewconfig:
++	case olddefconfig:
+ 	case oldnoconfig:
+ 		conf_read(NULL);
+ 		break;
+@@ -645,6 +651,7 @@ int main(int ac, char **av)
+ 		/* fall through */
+ 	case oldconfig:
+ 	case listnewconfig:
++	case olddefconfig:
+ 	case oldnoconfig:
+ 	case silentoldconfig:
+ 		/* Update until a loop caused no more changes */
+@@ -653,6 +660,7 @@ int main(int ac, char **av)
+ 			check_conf(&rootmenu);
+ 		} while (conf_cnt &&
+ 			 (input_mode != listnewconfig &&
++			  input_mode != olddefconfig &&
+ 			  input_mode != oldnoconfig));
+ 		break;
+ 	}
+diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
+index 52b7959..0ed73b5 100755
+--- a/tools/testing/ktest/ktest.pl
++++ b/tools/testing/ktest/ktest.pl
+@@ -1871,10 +1871,10 @@ sub make_oldconfig {
+ 	apply_min_config;
+     }
  
- /* values for flags field */
- #define NBD_FLAG_HAS_FLAGS    (1 << 0) /* nbd-server supports flags */
- #define NBD_FLAG_READ_ONLY    (1 << 1) /* device is read-only */
-+/* there is a gap here to match userspace */
-+#define NBD_FLAG_SEND_TRIM    (1 << 5) /* send trim/discard */
+-    if (!run_command "$make oldnoconfig") {
+-	# Perhaps oldnoconfig doesn't exist in this version of the kernel
++    if (!run_command "$make olddefconfig") {
++	# Perhaps olddefconfig doesn't exist in this version of the kernel
+ 	# try a yes '' | oldconfig
+-	doprint "oldnoconfig failed, trying yes '' | make oldconfig\n";
++	doprint "olddefconfig failed, trying yes '' | make oldconfig\n";
+ 	run_command "yes '' | $make oldconfig" or
+ 	    dodie "failed make config oldconfig";
+     }
+@@ -1927,7 +1927,7 @@ sub build {
  
- #define nbd_cmd(req) ((req)->cmd[0])
+     # old config can ask questions
+     if ($type eq "oldconfig") {
+-	$type = "oldnoconfig";
++	$type = "olddefconfig";
  
+ 	# allow for empty configs
+ 	run_command "touch $output_config";
+@@ -1957,7 +1957,7 @@ sub build {
+ 	load_force_config($minconfig);
+     }
+ 
+-    if ($type ne "oldnoconfig") {
++    if ($type ne "olddefconfig") {
+ 	run_command "$make $type" or
+ 	    dodie "failed make config";
+     }
+@@ -2456,8 +2456,7 @@ my %config_set;
+ 
+ # config_off holds the set of configs that the bad config had disabled.
+ # We need to record them and set them in the .config when running
+-# oldnoconfig, because oldnoconfig does not turn off new symbols, but
+-# instead just keeps the defaults.
++# olddefconfig, because olddefconfig keeps the defaults.
+ my %config_off;
+ 
+ # config_off_tmp holds a set of configs to turn off for now
+@@ -3248,7 +3247,7 @@ sub test_this_config {
+     }
+ 
+     # Remove this config from the list of configs
+-    # do a make oldnoconfig and then read the resulting
++    # do a make olddefconfig and then read the resulting
+     # .config to make sure it is missing the config that
+     # we had before
+     my %configs = %min_configs;
+-- 
+1.7.11.4
+
