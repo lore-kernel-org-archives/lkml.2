@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755298Ab2HaXyX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 19:54:23 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:41472 "EHLO
+	id S1755291Ab2HaXy5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 19:54:57 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:37265 "EHLO
 	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754995Ab2HaXyW (ORCPT
+	with ESMTP id S1754942Ab2HaXy4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 19:54:22 -0400
-X-Originating-IP: 217.70.178.146
+	Fri, 31 Aug 2012 19:54:56 -0400
+X-Originating-IP: 217.70.178.139
 X-Originating-IP: 173.246.103.110
-Date: Fri, 31 Aug 2012 16:54:12 -0700
+Date: Fri, 31 Aug 2012 16:54:46 -0700
 From: Josh Triplett <josh@joshtriplett.org>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
@@ -27,35 +27,28 @@ Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
         Max Krasnyansky <maxk@qualcomm.com>,
         Stephen Hemminger <shemminger@vyatta.com>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-Subject: Re: [PATCH tip/core/rcu 13/26] x86: Exit RCU extended QS on notify
- resume
-Message-ID: <20120831235412.GJ11771@jtriplet-mobl1>
+Subject: Re: [PATCH tip/core/rcu 14/26] rcu: Userspace RCU extended QS
+ selftest
+Message-ID: <20120831235446.GK11771@jtriplet-mobl1>
 References: <20120830210520.GA2824@linux.vnet.ibm.com>
  <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346360743-3628-13-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346360743-3628-14-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1346360743-3628-13-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1346360743-3628-14-git-send-email-paulmck@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 02:05:30PM -0700, Paul E. McKenney wrote:
+On Thu, Aug 30, 2012 at 02:05:31PM -0700, Paul E. McKenney wrote:
 > From: Frederic Weisbecker <fweisbec@gmail.com>
 > 
-> do_notify_resume() may be called on irq or exception
-> exit. But at that time the exception has already called
-> rcu_user_enter() and the irq has already called rcu_irq_exit().
+> Provide a config option that enables the userspace
+> RCU extended quiescent state on every CPUs by default.
 > 
-> Since it can use RCU read side critical section, we must call
-> rcu_user_exit() before doing anything there. Then we must call
-> back rcu_user_enter() after this function because we know we are
-> going to userspace from there.
-> 
-> This complete support for userspace RCU extended quiescent state
-> in x86-64.
+> This is for testing purpose.
 > 
 > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 > Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -80,44 +73,42 @@ On Thu, Aug 30, 2012 at 02:05:30PM -0700, Paul E. McKenney wrote:
 
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
->  arch/x86/Kconfig         |    1 +
->  arch/x86/kernel/signal.c |    4 ++++
->  2 files changed, 5 insertions(+), 0 deletions(-)
+>  init/Kconfig     |    8 ++++++++
+>  kernel/rcutree.c |    2 +-
+>  2 files changed, 9 insertions(+), 1 deletions(-)
 > 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index ba2657c..5cd953a 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -97,6 +97,7 @@ config X86
->  	select KTIME_SCALAR if X86_32
->  	select GENERIC_STRNCPY_FROM_USER
->  	select GENERIC_STRNLEN_USER
-> +	select HAVE_RCU_USER_QS if X86_64
+> diff --git a/init/Kconfig b/init/Kconfig
+> index f6a1830..c26b8a1 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -451,6 +451,14 @@ config RCU_USER_QS
+>  	  excluded from the global RCU state machine and thus doesn't
+>  	  to keep the timer tick on for RCU.
 >  
->  config INSTRUCTION_DECODER
->  	def_bool (KPROBES || PERF_EVENTS || UPROBES)
-> diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-> index b280908..bca0ab9 100644
-> --- a/arch/x86/kernel/signal.c
-> +++ b/arch/x86/kernel/signal.c
-> @@ -779,6 +779,8 @@ static void do_signal(struct pt_regs *regs)
->  void
->  do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flags)
->  {
-> +	rcu_user_exit();
+> +config RCU_USER_QS_FORCE
+> +	bool "Force userspace extended QS by default"
+> +	depends on RCU_USER_QS
+> +	help
+> +	  Set the hooks in user/kernel boundaries by default in order to
+> +	  test this feature that treats userspace as an extended quiescent
+> +	  state until we have a real user like a full adaptive nohz option.
 > +
->  #ifdef CONFIG_X86_MCE
->  	/* notify userspace of pending MCEs */
->  	if (thread_info_flags & _TIF_MCE_NOTIFY)
-> @@ -804,6 +806,8 @@ do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flags)
->  #ifdef CONFIG_X86_32
->  	clear_thread_flag(TIF_IRET);
->  #endif /* CONFIG_X86_32 */
-> +
-> +	rcu_user_enter();
->  }
->  
->  void signal_fault(struct pt_regs *regs, void __user *frame, char *where)
+>  config RCU_FANOUT
+>  	int "Tree-based hierarchical RCU fanout value"
+>  	range 2 64 if 64BIT
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index af92681..ccf3cbf 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -210,7 +210,7 @@ EXPORT_SYMBOL_GPL(rcu_note_context_switch);
+>  DEFINE_PER_CPU(struct rcu_dynticks, rcu_dynticks) = {
+>  	.dynticks_nesting = DYNTICK_TASK_EXIT_IDLE,
+>  	.dynticks = ATOMIC_INIT(1),
+> -#ifdef CONFIG_RCU_USER_QS
+> +#if defined(CONFIG_RCU_USER_QS) && !defined(CONFIG_RCU_USER_QS_FORCE)
+>  	.ignore_user_qs = true,
+>  #endif
+>  };
 > -- 
 > 1.7.8
 > 
