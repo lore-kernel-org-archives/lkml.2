@@ -1,94 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754698Ab2HaRYG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 13:24:06 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:24204 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754224Ab2HaRYE convert rfc822-to-8bit (ORCPT
+	id S1754716Ab2HaR3I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 13:29:08 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:34288 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754224Ab2HaR3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 13:24:04 -0400
+	Fri, 31 Aug 2012 13:29:06 -0400
+Date: Fri, 31 Aug 2012 18:29:00 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>
+Subject: Re: [PATCH] fat: remove redundent call to fat_detach in vfat_unlink
+Message-ID: <20120831172900.GC23464@ZenIV.linux.org.uk>
+References: <1346431688-3544-1-git-send-email-linkinjeon@gmail.com>
 MIME-Version: 1.0
-Message-ID: <89702248-0c3f-465c-bc1f-2115a21c8c89@default>
-Date: Fri, 31 Aug 2012 10:23:21 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Konrad Wilk <konrad.wilk@oracle.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Hugh Dickins <hughd@google.com>
-Subject: RE: [PATCH] frontswap: support exclusive gets if tmem backend is
- capable
-References: <5557ec97-daa1-41a6-b3db-671f116ddc50@default>
- <20120831170814.GF18929@localhost.localdomain>
-In-Reply-To: <20120831170814.GF18929@localhost.localdomain>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6661.5003 (x86)]
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Disposition: inline
+In-Reply-To: <1346431688-3544-1-git-send-email-linkinjeon@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Konrad Rzeszutek Wilk
+On Fri, Aug 31, 2012 at 12:48:07PM -0400, Namjae Jeon wrote:
+> As after file is removed fat_evict_inode will be called and fat_detach will be called from that place. So, fat_detach can be removed from vfat_unlink
 
-Hi Konrad --
+NAK.  Please, realize that unlink and destruction of file are separate
+operations.  ->evict_inode() may be called long after ->unlink(); moreover,
+during that time you might have another file created, getting the
+same directory entry our file used to have.
 
-Thanks for the fast feedback!
-
-> > +#define FRONTSWAP_HAS_EXCLUSIVE_GETS
-> > +extern void frontswap_tmem_exclusive_gets(bool);
-> 
-> I don't think you need the #define here..
-
-The #define is used by an ifdef in the backend to ensure
-that it is using a version of frontswap that has this feature,
-so avoids the need for the frontend (frontswap) and
-the backend (e.g. zcache2) to merge in lockstep.
-
-> > +EXPORT_SYMBOL(frontswap_tmem_exclusive_gets);
-> 
-> We got two of these now - the writethrough and this one. Merging
-> them in one function and one flag might be better. So something like:
-> static int frontswap_mode = 0;
->
-> void frontswap_set_mode(int set_mode)
-> {
-> 	if (mode & (FRONTSWAP_WRITETH | FRONTSWAP_EXCLUS..)
-> 		mode |= set_mode;
-> }
-
-IMHO, it's too soon to try to optimize this.  One or
-both of these may go away.   Or the mode may become
-more fine-grained in the future (e.g. to allow individual
-gets to be exclusive).
-
-So unless you object strongly, let's just leave this
-as is for now and revisit in the future if more "modes"
-are needed.
- 
-> ... and
-> > +
-> > +/*
-> >   * Called when a swap device is swapon'd.
-> >   */
-> >  void __frontswap_init(unsigned type)
-> > @@ -174,8 +190,13 @@ int __frontswap_load(struct page *page)
-> >  	BUG_ON(sis == NULL);
-> >  	if (frontswap_test(sis, offset))
-> >  		ret = (*frontswap_ops.load)(type, offset, page);
-> > -	if (ret == 0)
-> > +	if (ret == 0) {
-> >  		inc_frontswap_loads();
-> > +		if (frontswap_tmem_exclusive_gets_enabled) {
-> 
-> For these perhaps use asm goto for optimization? Is this showing up in
-> perf as a hotspot? The asm goto might be a bit too much.
-
-This is definitely not a performance hotspot.  Frontswap code
-only is ever executed in situations where a swap-to-disk would
-otherwise have occurred.  And in this case, this code only
-gets executed after the frontswap_test has confirmed that
-tmem does already contain the page of data, in which case
-there is thousands of cycles spent copying and/or decompressing.
-
-Dan
+This is Unix, damnit.  You *can* open file, then unlink it and that file
+will keep existing (i.e. you can write to that descriptor, read, etc.)
+until it's closed.
