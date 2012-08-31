@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754999Ab2HaUuA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 16:50:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50521 "EHLO
+	id S1755021Ab2HaUzT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 16:55:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50621 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751855Ab2HaUt6 (ORCPT
+	with ESMTP id S1752326Ab2HaUzQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 16:49:58 -0400
-Date: Fri, 31 Aug 2012 13:49:56 -0700
+	Fri, 31 Aug 2012 16:55:16 -0400
+Date: Fri, 31 Aug 2012 13:55:14 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
 To: wency@cn.fujitsu.com
 Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
@@ -18,10 +18,12 @@ Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
         cl@linux.com, minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
         isimatu.yasuaki@jp.fujitsu.com
-Subject: Re: [RFC v8 PATCH 00/20] memory-hotplug: hot-remove physical memory
-Message-Id: <20120831134956.fec0f681.akpm@linux-foundation.org>
-In-Reply-To: <1346148027-24468-1-git-send-email-wency@cn.fujitsu.com>
+Subject: Re: [RFC v8 PATCH 04/20] memory-hotplug: offline and remove memory
+ when removing the memory device
+Message-Id: <20120831135514.2a2dc0d4.akpm@linux-foundation.org>
+In-Reply-To: <1346148027-24468-5-git-send-email-wency@cn.fujitsu.com>
 References: <1346148027-24468-1-git-send-email-wency@cn.fujitsu.com>
+	<1346148027-24468-5-git-send-email-wency@cn.fujitsu.com>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -30,32 +32,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Aug 2012 18:00:07 +0800
+On Tue, 28 Aug 2012 18:00:11 +0800
 wency@cn.fujitsu.com wrote:
 
-> This patch series aims to support physical memory hot-remove.
+> +int remove_memory(int nid, u64 start, u64 size)
+> +{
+> +	int ret = -EBUSY;
+> +	lock_memory_hotplug();
+> +	/*
+> +	 * The memory might become online by other task, even if you offine it.
+> +	 * So we check whether the cpu has been onlined or not.
 
-Have you had much review and testing feedback yet?
+I think you meant "memory", not "cpu".
 
-> The patches can free/remove the following things:
-> 
->   - acpi_memory_info                          : [RFC PATCH 4/19]
->   - /sys/firmware/memmap/X/{end, start, type} : [RFC PATCH 8/19]
->   - iomem_resource                            : [RFC PATCH 9/19]
->   - mem_section and related sysfs files       : [RFC PATCH 10-11, 13-16/19]
->   - page table of removed memory              : [RFC PATCH 12/19]
->   - node and related sysfs files              : [RFC PATCH 18-19/19]
-> 
-> If you find lack of function for physical memory hot-remove, please let me
-> know.
+Actually, "check whether any part of this memory range has been
+onlined" would be better.  If that is accurate ;)
 
-I doubt if many people have hardware which permits physical memory
-removal?  How would you suggest that people with regular hardware can
-test these chagnes?
-
-> Known problems:
-> 1. memory can't be offlined when CONFIG_MEMCG is selected.
-
-That's quite a problem!  Do you have a description of why this is the
-case, and a plan for fixing it?
-
+> +	 */
+> +	if (!is_memblk_offline(start, size)) {
+> +		pr_warn("memory removing [mem %#010llx-%#010llx] failed, "
+> +			"because the memmory range is online\n",
+> +			start, start + size);
+> +		ret = -EAGAIN;
+> +	}
+> +
+> +	unlock_memory_hotplug();
+> +	return ret;
+> +
+> +}
+> +EXPORT_SYMBOL_GPL(remove_memory);
