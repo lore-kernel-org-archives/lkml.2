@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223Ab2HaNQP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 09:16:15 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:50685 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752641Ab2HaNQO (ORCPT
+	id S1753368Ab2HaNSM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 09:18:12 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:33402 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752641Ab2HaNSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 09:16:14 -0400
-Date: Fri, 31 Aug 2012 08:16:06 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        HACHIMI Samir <shachimi@adeneo-embedded.com>,
-        thierry.reding@avionic-design.de, linux-kernel@vger.kernel.org,
-        =?iso-8859-1?Q?Beno=EEt_Th=E9baudeau?= 
-	<benoit.thebaudeau@advansee.com>
-Subject: Re: [PATCH 8/9] ARM i.MX53: Add pwms to dtsi
-Message-ID: <20120831001604.GG3613@r65073-Latitude-D630>
-References: <1346154504-5623-1-git-send-email-s.hauer@pengutronix.de>
- <1346154504-5623-9-git-send-email-s.hauer@pengutronix.de>
- <20120830223219.GF3613@r65073-Latitude-D630>
- <20120831130723.GS26594@pengutronix.de>
+	Fri, 31 Aug 2012 09:18:07 -0400
+Message-ID: <5040B98A.8090304@suse.cz>
+Date: Fri, 31 Aug 2012 15:18:02 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120825 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120831130723.GS26594@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jean Delvare <khali@linux-fr.org>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>, linux-kernel@vger.kernel.org,
+        dirk.brandewie@gmail.com, linux-i2c@vger.kernel.org,
+        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        jbaron@redhat.com, ben-linux@fluff.org,
+        Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: i2c-designware-core: KBUILD_MODNAME undeclared [was: Build regressions/improvements
+  in v3.6-rc1]
+References: <1344072256-13170-1-git-send-email-geert@linux-m68k.org> <502C0022.2020106@suse.cz> <20120831144429.554345d0@endymion.delvare>
+In-Reply-To: <20120831144429.554345d0@endymion.delvare>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 31, 2012 at 03:07:23PM +0200, Sascha Hauer wrote:
-> > >  	clk_register_clkdev(clk[ssi1_ipg_gate], NULL, "63fcc000.ssi");
-> > >  	clk_register_clkdev(clk[ssi2_ipg_gate], NULL, "50014000.ssi");
-> > >  	clk_register_clkdev(clk[ssi3_ipg_gate], NULL, "63fd0000.ssi");
-> > > +	clk_register_clkdev(clk[pwm1_ipg_gate], "ipg", "53fb4000.pwm");
-> > > +	clk_register_clkdev(clk[pwm1_hf_gate], "per", "53fb4000.pwm");
-> > > +	clk_register_clkdev(clk[pwm2_ipg_gate], "ipg", "53fb8000.pwm");
-> > > +	clk_register_clkdev(clk[pwm2_hf_gate], "per", "53fb8000.pwm");
-> > 
-> > It should be in a separate patch?
+On 08/31/2012 02:44 PM, Jean Delvare wrote:
+> Hi Jiri, Geert,
 > 
-> Should it? Surely I can do this, I had the feeling though that it
-> belongs together.
+> On Wed, 15 Aug 2012 22:01:38 +0200, Jiri Slaby wrote:
+>> On 08/04/2012 11:24 AM, Geert Uytterhoeven wrote:
+>>> Below is the list of build error/warning regressions/improvements in
+>>> v3.6-rc1[1] compared to v3.5[2].
+>> ...
+>>>   + drivers/i2c/busses/i2c-designware-core.c: error: 'KBUILD_MODNAME' undeclared (first use in this function):
+>>
+>> This is a real problem we are facing here. It happens on PPC when all
+>> I2C_DESIGNWARE_PLATFORM, I2C_DESIGNWARE_PCI and DYNAMIC_DEBUG are set.
+>>
+>> It's because i2c-designware-core.c is used in two modules
+>> (i2c-designware-platform and i2c-designware-pci) and KBUILD_MODNAME is
+>> not defined for those because (scripts/Makefile.lib):
+>> # $(modname_flags) #defines KBUILD_MODNAME as the name of the module
+>> # it will end up in (or would, if it gets compiled in)
+>> # Note: Files that end up in two or more modules are compiled
+>> #       without the KBUILD_MODNAME definition. The reason is
+>> #       that any made-up name would differ in different configs.
+>>
+>> But DYNAMIC_DEBUG needs KBUILD_MODNAME for dev_dbg used in that source.
+>>
+>> Any ideas? Why is it not a separate module for example?
 > 
->From patch subject, I do not expect these changes in the patch.  It's
-okay to have it but we need a more proper patch subject then.  
+> It should be. Axel Lin has posted a patch which does that and it should
+> fix your problem:
+> https://lkml.org/lkml/2012/6/13/233
+> 
+> Please test and confirm it does the right thing. I'll push the patch
+> upstream if it does.
 
+Yes, it does.
+
+thanks,
 -- 
-Regards,
-Shawn
+js
+suse labs
