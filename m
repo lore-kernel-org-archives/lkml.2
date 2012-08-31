@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754788Ab2HaSz0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 14:55:26 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:36865 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754616Ab2HaSzZ (ORCPT
+	id S1754763Ab2HaTHr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 15:07:47 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:47292 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754570Ab2HaTHp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 14:55:25 -0400
-X-Originating-IP: 217.70.178.148
+	Fri, 31 Aug 2012 15:07:45 -0400
+X-Originating-IP: 217.70.178.145
 X-Originating-IP: 173.246.103.110
-Date: Fri, 31 Aug 2012 11:55:16 -0700
+Date: Fri, 31 Aug 2012 12:07:33 -0700
 From: Josh Triplett <josh@joshtriplett.org>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
@@ -18,59 +18,135 @@ Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        Michael Wang <wangyun@linux.vnet.ibm.com>
-Subject: Re: [PATCH tip/core/rcu 15/15] kmemleak: Replace
- list_for_each_continue_rcu with new interface
-Message-ID: <20120831185516.GO4259@jtriplet-mobl1>
-References: <20120830185607.GA32148@linux.vnet.ibm.com>
- <1346352988-32444-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346352988-32444-15-git-send-email-paulmck@linux.vnet.ibm.com>
+        Alessio Igor Bogani <abogani@kernel.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
+Subject: Re: [PATCH tip/core/rcu 01/26] rcu: New rcu_user_enter() and
+ rcu_user_exit() APIs
+Message-ID: <20120831190733.GP4259@jtriplet-mobl1>
+References: <20120830210520.GA2824@linux.vnet.ibm.com>
+ <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1346352988-32444-15-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 11:56:28AM -0700, Paul E. McKenney wrote:
-> From: Michael Wang <wangyun@linux.vnet.ibm.com>
+On Thu, Aug 30, 2012 at 02:05:18PM -0700, Paul E. McKenney wrote:
+> From: Frederic Weisbecker <fweisbec@gmail.com>
 > 
-> This patch replaces list_for_each_continue_rcu() with
-> list_for_each_entry_continue_rcu() to save a few lines
-> of code and allow removing list_for_each_continue_rcu().
+> RCU currently insists that only idle tasks can enter RCU idle mode, which
+> prohibits an adaptive tickless kernel (AKA nohz cpusets), which in turn
+> would mean that usermode execution would always take scheduling-clock
+> interrupts, even when there is only one task runnable on the CPU in
+> question.
 > 
-> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
-> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+> This commit therefore adds rcu_user_enter() and rcu_user_exit(), which
+> allow non-idle tasks to enter RCU idle mode.  These are quite similar
+> to rcu_idle_enter() and rcu_idle_exit(), respectively, except that they
+> omit the idle-task checks.
+> 
+> [ Updated to use "user" flag rather than separate check functions. ]
+> 
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Alessio Igor Bogani <abogani@kernel.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Avi Kivity <avi@redhat.com>
+> Cc: Chris Metcalf <cmetcalf@tilera.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Cc: Geoff Levand <geoff@infradead.org>
+> Cc: Gilad Ben Yossef <gilad@benyossef.com>
+> Cc: Hakan Akkan <hakanakkan@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Kevin Hilman <khilman@ti.com>
+> Cc: Max Krasnyansky <maxk@qualcomm.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Stephen Hemminger <shemminger@vyatta.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+
+A few suggestions below: an optional microoptimization and some bugfixes.
+With the bugfixes, and with or without the microoptimization:
 
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-> ---
->  mm/kmemleak.c |    6 ++----
->  1 files changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/mm/kmemleak.c b/mm/kmemleak.c
-> index 45eb621..0de83b4 100644
-> --- a/mm/kmemleak.c
-> +++ b/mm/kmemleak.c
-> @@ -1483,13 +1483,11 @@ static void *kmemleak_seq_next(struct seq_file *seq, void *v, loff_t *pos)
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+[...]
+> -static void rcu_idle_enter_common(struct rcu_dynticks *rdtp, long long oldval)
+> +static void rcu_eqs_enter_common(struct rcu_dynticks *rdtp, long long oldval,
+> +				bool user)
 >  {
->  	struct kmemleak_object *prev_obj = v;
->  	struct kmemleak_object *next_obj = NULL;
-> -	struct list_head *n = &prev_obj->object_list;
-> +	struct kmemleak_object *obj = prev_obj;
->  
->  	++(*pos);
->  
-> -	list_for_each_continue_rcu(n, &object_list) {
-> -		struct kmemleak_object *obj =
-> -			list_entry(n, struct kmemleak_object, object_list);
-> +	list_for_each_entry_continue_rcu(obj, &object_list, object_list) {
->  		if (get_object(obj)) {
->  			next_obj = obj;
->  			break;
-> -- 
-> 1.7.8
-> 
+>  	trace_rcu_dyntick("Start", oldval, 0);
+> -	if (!is_idle_task(current)) {
+> +	if (!is_idle_task(current) && !user) {
+
+Microoptimization: putting the !user check first (here and in the exit
+function) would allow the compiler to partially inline rcu_eqs_*_common
+into the two trivial wrappers and constant-fold away the test for !user.
+
+> +void rcu_idle_enter(void)
+> +{
+> +	rcu_eqs_enter(0);
+> +}
+
+s/0/false/
+
+> +void rcu_user_enter(void)
+> +{
+> +	rcu_eqs_enter(1);
+> +}
+
+s/1/true/
+
+> -static void rcu_idle_exit_common(struct rcu_dynticks *rdtp, long long oldval)
+> +static void rcu_eqs_exit_common(struct rcu_dynticks *rdtp, long long oldval,
+> +			       int user)
+>  {
+>  	smp_mb__before_atomic_inc();  /* Force ordering w/previous sojourn. */
+>  	atomic_inc(&rdtp->dynticks);
+> @@ -464,7 +490,7 @@ static void rcu_idle_exit_common(struct rcu_dynticks *rdtp, long long oldval)
+>  	WARN_ON_ONCE(!(atomic_read(&rdtp->dynticks) & 0x1));
+>  	rcu_cleanup_after_idle(smp_processor_id());
+>  	trace_rcu_dyntick("End", oldval, rdtp->dynticks_nesting);
+> -	if (!is_idle_task(current)) {
+> +	if (!is_idle_task(current) && !user) {
+
+Same micro-optimization as the enter function.
+
+> +void rcu_idle_exit(void)
+> +{
+> +	rcu_eqs_exit(0);
+> +}
+
+s/0/false/
+
+> +void rcu_user_exit(void)
+> +{
+> +	rcu_eqs_exit(1);
+> +}
+
+s/1/true/
+
+> @@ -539,7 +586,7 @@ void rcu_irq_enter(void)
+>  	if (oldval)
+>  		trace_rcu_dyntick("++=", oldval, rdtp->dynticks_nesting);
+>  	else
+> -		rcu_idle_exit_common(rdtp, oldval);
+> +		rcu_eqs_exit_common(rdtp, oldval, 1);
+
+s/1/true/, and likewise in rcu_irq_exit.
+
+- Josh Triplett
