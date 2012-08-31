@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754034Ab2HaOKJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 10:10:09 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:49486 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753276Ab2HaOKG (ORCPT
+	id S1754115Ab2HaOK4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 10:10:56 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51048 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753746Ab2HaOKy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 10:10:06 -0400
-Message-ID: <5040C431.4020509@gmail.com>
-Date: Fri, 31 Aug 2012 16:03:29 +0200
+	Fri, 31 Aug 2012 10:10:54 -0400
+Message-ID: <5040C461.4030409@gmail.com>
+Date: Fri, 31 Aug 2012 16:04:17 +0200
 From: Marco Stornelli <marco.stornelli@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
 MIME-Version: 1.0
-To: linux-fsdevel@vger.kernel.org
-CC: Alexander Viro <viro@zeniv.linux.org.uk>, Matthew Wilcox <matthew@wil.cx>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 20/21] vfs: drop vmtruncate
+To: Linux FS Devel <linux-fsdevel@vger.kernel.org>
+CC: Guenter Roeck <linux@roeck-us.net>, Luca Tettamanti <kronos.it@gmail.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 21/21] mm: drop vmtruncate
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -26,34 +26,55 @@ Removed vmtruncate.
 
 Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
 ---
- fs/libfs.c         |    2 --
- include/linux/fs.h |    1 -
- 2 files changed, 0 insertions(+), 3 deletions(-)
+ include/linux/mm.h |    1 -
+ mm/truncate.c      |   23 -----------------------
+ 2 files changed, 0 insertions(+), 24 deletions(-)
 
-diff --git a/fs/libfs.c b/fs/libfs.c
-index a74cb17..69cf30d 100644
---- a/fs/libfs.c
-+++ b/fs/libfs.c
-@@ -369,8 +369,6 @@ int simple_setattr(struct dentry *dentry, struct iattr *iattr)
- 	struct inode *inode = dentry->d_inode;
- 	int error;
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 311be90..7eebde6 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -975,7 +975,6 @@ static inline void unmap_shared_mapping_range(struct address_space *mapping,
  
--	WARN_ON_ONCE(inode->i_op->truncate);
+ extern void truncate_pagecache(struct inode *inode, loff_t old, loff_t new);
+ extern void truncate_setsize(struct inode *inode, loff_t newsize);
+-extern int vmtruncate(struct inode *inode, loff_t offset);
+ void truncate_pagecache_range(struct inode *inode, loff_t offset, loff_t end);
+ int truncate_inode_page(struct address_space *mapping, struct page *page);
+ int generic_error_remove_page(struct address_space *mapping, struct page *page);
+diff --git a/mm/truncate.c b/mm/truncate.c
+index 75801ac..4e96354 100644
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -580,29 +580,6 @@ void truncate_setsize(struct inode *inode, loff_t newsize)
+ EXPORT_SYMBOL(truncate_setsize);
+ 
+ /**
+- * vmtruncate - unmap mappings "freed" by truncate() syscall
+- * @inode: inode of the file used
+- * @newsize: file offset to start truncating
+- *
+- * This function is deprecated and truncate_setsize or truncate_pagecache
+- * should be used instead, together with filesystem specific block truncation.
+- */
+-int vmtruncate(struct inode *inode, loff_t newsize)
+-{
+-	int error;
 -
- 	error = inode_change_ok(inode, iattr);
- 	if (error)
- 		return error;
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index aa11047..419b25b 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1822,7 +1822,6 @@ struct inode_operations {
- 	int (*mknod) (struct inode *,struct dentry *,umode_t,dev_t);
- 	int (*rename) (struct inode *, struct dentry *,
- 			struct inode *, struct dentry *);
--	void (*truncate) (struct inode *);
- 	int (*setattr) (struct dentry *, struct iattr *);
- 	int (*getattr) (struct vfsmount *mnt, struct dentry *, struct kstat *);
- 	int (*setxattr) (struct dentry *, const char *,const void *,size_t,int);
+-	error = inode_newsize_ok(inode, newsize);
+-	if (error)
+-		return error;
+-
+-	truncate_setsize(inode, newsize);
+-	if (inode->i_op->truncate)
+-		inode->i_op->truncate(inode);
+-	return 0;
+-}
+-EXPORT_SYMBOL(vmtruncate);
+-
+-/**
+  * truncate_pagecache_range - unmap and remove pagecache that is hole-punched
+  * @inode: inode
+  * @lstart: offset of beginning of hole
 -- 
 1.7.3.4
