@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026Ab2HaJlN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 05:41:13 -0400
-Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:49667 "EHLO
-	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751780Ab2HaJlM convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 05:41:12 -0400
+	id S1752648Ab2HaJoq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 05:44:46 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:48441 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752232Ab2HaJop (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Aug 2012 05:44:45 -0400
+Date: Fri, 31 Aug 2012 10:44:38 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, broonie@opensource.wolfsonmicro.com,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 2/8] irqdomain: Take interrupt-parent property into
+ account if specified
+Message-ID: <20120831094434.GF13298@gmail.com>
+References: <1344527635-6163-1-git-send-email-lee.jones@linaro.org>
+ <1344527635-6163-3-git-send-email-lee.jones@linaro.org>
+ <CACRpkdZMoisfUD_NSkVy2w-jZVUDGn0E8LmvKSWnJ0YRGZO-tQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1346405848.5316.11.camel@coredoba.hi.pengutronix.de>
-References: <1346405224-20399-1-git-send-email-p.zabel@pengutronix.de>
- <1346405224-20399-7-git-send-email-p.zabel@pengutronix.de> <1346405848.5316.11.camel@coredoba.hi.pengutronix.de>
-From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Date: Fri, 31 Aug 2012 02:40:50 -0700
-Message-ID: <CAMQu2gxsdeX4z2Zrnb2NW7-gnh2Tyjcxkd2pOMOagkdkHGsgWQ@mail.gmail.com>
-Subject: Re: [PATCH v2 6/9] misc: Generic on-chip SRAM allocation driver
-To: =?ISO-8859-1?Q?Jan_L=FCbbe?= <jlu@pengutronix.de>
-Cc: Philipp Zabel <p.zabel@pengutronix.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Richard Zhao <richard.zhao@freescale.com>,
-        Huang Shijie <shijie8@gmail.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>, kernel@pengutronix.de,
-        devicetree-discuss@lists.ozlabs.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdZMoisfUD_NSkVy2w-jZVUDGn0E8LmvKSWnJ0YRGZO-tQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 31, 2012 at 2:37 AM, Jan Lübbe <jlu@pengutronix.de> wrote:
->
-> On Fri, 2012-08-31 at 11:27 +0200, Philipp Zabel wrote:
-> > This driver requests and remaps a memory region as configured in the
-> > device tree. It serves memory from this region via the genalloc API.
+On Tue, Aug 14, 2012 at 10:19:08AM +0200, Linus Walleij wrote:
+> On Thu, Aug 9, 2012 at 5:53 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> 
+> > irq_find_host() currently ignores the 'interrupt-parent' property
+> > even if it's specified in the Device Tree. Meaning that a node can
+> > match to a domain in its hierarchy even if it doesn't belong to it.
+> > By searching for the parent first using of_irq_find_parent() we
+> > insist that the 'interrupt-parent' property is taken into account
+> > ensuring a greater chance of returning the correct domain.
 > >
-> > Other drivers can retrieve the genalloc pool from a phandle pointing
-> > to this drivers' device node in the device tree.
-> >
-> > Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-> > ---
-> >  drivers/misc/Kconfig  |    8 ++++
-> >  drivers/misc/Makefile |    1 +
-> >  drivers/misc/sram.c   |  105
-> > +++++++++++++++++++++++++++++++++++++++++++++++++
-> >  3 files changed, 114 insertions(+)
-> >  create mode 100644 drivers/misc/sram.c
->
-> We now have drivers/memory, which seems to be a good place for this.
->
-drivers/memory is created for Memory controller device drivers. SRAM is
-just pool of memory and should belong to some other place.
+> > CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> > CC: Grant Likely <grant.likely@secretlab.ca>
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> 
+> This (with 1/8) is the right solution. Thanks, and I think
+> Mark may want to look at this too since I recognize he asked
+> you to work in this direction.
+> 
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-Regards
-Santosh
+Rob, did this get your Ack too?
+
+Ben, Grant, Mark, would you like to take a look also?
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org â”‚ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
