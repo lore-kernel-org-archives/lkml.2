@@ -1,55 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751494Ab2HaGFJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 02:05:09 -0400
-Received: from mga02.intel.com ([134.134.136.20]:23513 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751120Ab2HaGFH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 02:05:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,345,1344236400"; 
-   d="scan'208";a="193934032"
-From: gang.wei@intel.com
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, gregkh@linuxfoundation.org,
-        joseph.cihula@intel.com, hpa@zytor.com,
-        richard.l.maliszewski@intel.com, shane.wang@intel.com,
-        tboot-devel@lists.sourceforge.net, mingo@redhat.com,
-        tglx@linutronix.de, joe@perches.com, Gang Wei <gang.wei@intel.com>
-Subject: [PATCH V2] MAINTAINERS: fix TXT maintainer list and source repo path
-Date: Fri, 31 Aug 2012 14:05:59 +0800
-Message-Id: <1346393159-29731-1-git-send-email-gang.wei@intel.com>
-X-Mailer: git-send-email 1.7.7.6
+	id S1751580Ab2HaGGe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 02:06:34 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:29422 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751120Ab2HaGGd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Aug 2012 02:06:33 -0400
+X-Greylist: delayed 1647 seconds by postgrey-1.27 at vger.kernel.org; Fri, 31 Aug 2012 02:06:33 EDT
+X-Spam-Score: -100.7
+Message-ID: <50404E40.3070702@asianux.com>
+Date: Fri, 31 Aug 2012 13:40:16 +0800
+From: gchen <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: linux-nfs@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, jlayton@redhat.com
+Subject: [QUESTION] about NFS sub system between Public Kernel and Red Hat
+ Kernel.
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gang Wei <gang.wei@intel.com>
+Hi linux-nfs@vger.kernel.org
 
-Signed-off-by: Gang Wei <gang.wei@intel.com>
----
- MAINTAINERS |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+I have 1 question, and also 2 conclusions which need confirm.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index fdc0119..987ad0f 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -3666,11 +3666,12 @@ F:	Documentation/networking/README.ipw2200
- F:	drivers/net/wireless/ipw2x00/
- 
- INTEL(R) TRUSTED EXECUTION TECHNOLOGY (TXT)
--M:	Joseph Cihula <joseph.cihula@intel.com>
-+M:	Richard L Maliszewski <richard.l.maliszewski@intel.com>
-+M:	Gang Wei <gang.wei@intel.com>
- M:	Shane Wang <shane.wang@intel.com>
- L:	tboot-devel@lists.sourceforge.net
- W:	http://tboot.sourceforge.net
--T:	Mercurial http://www.bughost.org/repos.hg/tboot.hg
-+T:	hg http://tboot.hg.sourceforge.net:8000/hgroot/tboot/tboot
- S:	Supported
- F:	Documentation/intel_txt.txt
- F:	include/linux/tboot.h
--- 
-1.7.7.6
 
+1) Question:
+
+Jeff Layton said in Red Hat Bugzilla (bug 848706):
+"Have configuration where the same host is acting as both NFS client
+and server. That's a configuration known to cause deadlocks."
+
+Does it mean that the public Linux kernel (not Red Hat) also can cause
+deadlocks if NFS client and server are under the same machine ?
+
+
+2) Confirm 1: (better by Jeff Layton)
+
+For function nfs_commit_set_lock in ./fs/nfs/write.c
+
+for latest public kernel version:
+the parameters of out_of_line_wait_on_bit_lock() are
+(&nfsi->flags, NFS_INO_COMMIT, nfs_wait_killable, TASK_KILLABLE)
+for Red Hat kernel version: kernel-2.6.18-308.4.1.el5
+the parameters of out_of_line_wait_on_bit_lock() are
+(&nfsi->flags, NFS_INO_COMMIT,
+nfs_wait_bit_uninterruptible, TASK_UNINTERRUPTIBLE)
+
+It means for red hat version:
+when deadlock occurs, we can not boot machine in normal way
+(it is true for my test machine, the deadlock task can not be killed)
+It means for public kernel version:
+"Assume deadlock occurs", we can still boot machine in normal way,
+because the task can be killed.
+
+Is what I said above correct ?
+
+
+3) Confirm 2:
+
+Is LTP (Linux Test Project) still a suitable test tools for public kernel ?
+(for ltp-full-20100331.gz stress test, it mounts NFS on local machine,
+and the latest LTP ltp-full-20120401.bz2 also seems the same).
+
+
+
+thanks.
+
+gchen
+
+Asianux Corporation
