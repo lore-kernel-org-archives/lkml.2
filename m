@@ -1,138 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754608Ab2HaQxp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 12:53:45 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:47284 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754505Ab2HaQxn (ORCPT
+	id S1754597Ab2HaQzr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 12:55:47 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48177 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754040Ab2HaQzq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 12:53:43 -0400
-X-Originating-IP: 217.70.178.152
-X-Originating-IP: 50.43.46.74
-Date: Fri, 31 Aug 2012 09:53:34 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH tip/core/rcu 02/15] rcu: Pull TINY_RCU dyntick-idle
- tracing into non-idle region
-Message-ID: <20120831165334.GB22564@leaf>
-References: <20120830185607.GA32148@linux.vnet.ibm.com>
- <1346352988-32444-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346352988-32444-2-git-send-email-paulmck@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346352988-32444-2-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 31 Aug 2012 12:55:46 -0400
+Message-ID: <1346432577.15463.16.camel@vkoul-mobl4>
+Subject: Re: [PATCH v3 3/3] spi: spi-davinci: convert to DMA engine API
+From: Vinod Koul <vkoul@infradead.org>
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: vinod.koul@intel.com, Matt Porter <mporter@ti.com>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        grant.likely@secretlab.ca,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        cjb@laptop.org,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Date: Fri, 31 Aug 2012 22:32:57 +0530
+In-Reply-To: <5040E6C7.6030106@ti.com>
+References: <1345684176-21472-1-git-send-email-mporter@ti.com>
+	  <1345684176-21472-4-git-send-email-mporter@ti.com>
+	  <503F75C0.1050507@ti.com> <20120830144307.GA26737@beef>
+	  <5040E00A.3080600@ti.com> <1346430709.15463.15.camel@vkoul-mobl4>
+	 <5040E6C7.6030106@ti.com>
+Organization: 
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 11:56:15AM -0700, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+On Fri, 2012-08-31 at 22:01 +0530, Sekhar Nori wrote:
+> >> Yes, this was the problem. Since the SPI driver now depends on
+> >> CONFIG_TI_EDMA for basic operation may be select CONFIG_TI_EDMA in
+> >> Kconfig if SPI is enabled? That should do until the fallback to PIO
+> is
+> >> implemented.
+> > Then this should be enabled for SPI. Care to send a patch
 > 
-> Because TINY_RCU's idle detection keys directly off of the nesting
-> level, rather than from a separate variable as in TREE_RCU, the
-> TINY_RCU dyntick-idle tracing on transition to idle must happen
-> before the change to the nesting level.  This commit therefore makes
-> this change by passing the desired new value (rather than the old value)
-> of the nesting level in to rcu_idle_enter_common().
-> 
-> [ paulmck: Add fix for wrong-variable bug spotted by
->   Michael Wang <wangyun@linux.vnet.ibm.com>. ]
-> 
-> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> By 'this' you mean the Kconfig select? Then there should be no need of
+> a
+> new patch for this. It can be part of this patch itself, no? 
+Either way is okay for me.
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+-- 
+~Vinod Koul
+Intel Corp.
 
-> ---
->  kernel/rcutiny.c |   31 ++++++++++++++++---------------
->  1 files changed, 16 insertions(+), 15 deletions(-)
-> 
-> diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-> index 547b1fe..e4163c5 100644
-> --- a/kernel/rcutiny.c
-> +++ b/kernel/rcutiny.c
-> @@ -56,24 +56,27 @@ static void __call_rcu(struct rcu_head *head,
->  static long long rcu_dynticks_nesting = DYNTICK_TASK_EXIT_IDLE;
->  
->  /* Common code for rcu_idle_enter() and rcu_irq_exit(), see kernel/rcutree.c. */
-> -static void rcu_idle_enter_common(long long oldval)
-> +static void rcu_idle_enter_common(long long newval)
->  {
-> -	if (rcu_dynticks_nesting) {
-> +	if (newval) {
->  		RCU_TRACE(trace_rcu_dyntick("--=",
-> -					    oldval, rcu_dynticks_nesting));
-> +					    rcu_dynticks_nesting, newval));
-> +		rcu_dynticks_nesting = newval;
->  		return;
->  	}
-> -	RCU_TRACE(trace_rcu_dyntick("Start", oldval, rcu_dynticks_nesting));
-> +	RCU_TRACE(trace_rcu_dyntick("Start", rcu_dynticks_nesting, newval));
->  	if (!is_idle_task(current)) {
->  		struct task_struct *idle = idle_task(smp_processor_id());
->  
->  		RCU_TRACE(trace_rcu_dyntick("Error on entry: not idle task",
-> -					    oldval, rcu_dynticks_nesting));
-> +					    rcu_dynticks_nesting, newval));
->  		ftrace_dump(DUMP_ALL);
->  		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
->  			  current->pid, current->comm,
->  			  idle->pid, idle->comm); /* must be idle task! */
->  	}
-> +	barrier();
-> +	rcu_dynticks_nesting = newval;
->  	rcu_sched_qs(0); /* implies rcu_bh_qsctr_inc(0) */
->  }
->  
-> @@ -84,17 +87,16 @@ static void rcu_idle_enter_common(long long oldval)
->  void rcu_idle_enter(void)
->  {
->  	unsigned long flags;
-> -	long long oldval;
-> +	long long newval;
->  
->  	local_irq_save(flags);
-> -	oldval = rcu_dynticks_nesting;
->  	WARN_ON_ONCE((rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK) == 0);
->  	if ((rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK) ==
->  	    DYNTICK_TASK_NEST_VALUE)
-> -		rcu_dynticks_nesting = 0;
-> +		newval = 0;
->  	else
-> -		rcu_dynticks_nesting  -= DYNTICK_TASK_NEST_VALUE;
-> -	rcu_idle_enter_common(oldval);
-> +		newval = rcu_dynticks_nesting - DYNTICK_TASK_NEST_VALUE;
-> +	rcu_idle_enter_common(newval);
->  	local_irq_restore(flags);
->  }
->  EXPORT_SYMBOL_GPL(rcu_idle_enter);
-> @@ -105,13 +107,12 @@ EXPORT_SYMBOL_GPL(rcu_idle_enter);
->  void rcu_irq_exit(void)
->  {
->  	unsigned long flags;
-> -	long long oldval;
-> +	long long newval;
->  
->  	local_irq_save(flags);
-> -	oldval = rcu_dynticks_nesting;
-> -	rcu_dynticks_nesting--;
-> -	WARN_ON_ONCE(rcu_dynticks_nesting < 0);
-> -	rcu_idle_enter_common(oldval);
-> +	newval = rcu_dynticks_nesting - 1;
-> +	WARN_ON_ONCE(newval < 0);
-> +	rcu_idle_enter_common(newval);
->  	local_irq_restore(flags);
->  }
->  
-> -- 
-> 1.7.8
-> 
