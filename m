@@ -1,91 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752455Ab2HaJYp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 05:24:45 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:45106 "EHLO bear.ext.ti.com"
+	id S1752470Ab2HaJYu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 05:24:50 -0400
+Received: from mga02.intel.com ([134.134.136.20]:46349 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752104Ab2HaJYn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 05:24:43 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-CC: David Woodhouse <dwmw2@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 09/22] lp8727_charger: use the definition rather than enum
-Thread-Topic: [PATCH 09/22] lp8727_charger: use the definition rather than
- enum
-Thread-Index: Ac2HWnChNt9htvjkRgm663axNBoqaw==
-Date: Fri, 31 Aug 2012 09:24:37 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF1ED3@DQHE02.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.87.185.123]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751842Ab2HaJYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Aug 2012 05:24:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,346,1344236400"; 
+   d="scan'208";a="194017643"
+From: Alexander Shishkin <alexander.shishkin@intel.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com
+Subject: Re: [PATCH v2 07/12] rbtree: adjust root color in rb_insert_color() only when necessary
+In-Reply-To: <5040775C.3070205@intel.com>
+References: <1342139517-3451-1-git-send-email-walken@google.com> <1342139517-3451-8-git-send-email-walken@google.com> <50406F60.5040707@intel.com> <CANN689EBA6yPk3pS-yXZ1-ticG7eU3mY1mWMWp2S3xhJ73ODFA@mail.gmail.com> <20120831011541.ddf8ed78.akpm@linux-foundation.org> <5040775C.3070205@intel.com>
+User-Agent: Notmuch/0.12+187~ga2502b0 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
+Date: Fri, 31 Aug 2012 12:25:10 +0300
+Message-ID: <87txvjifbd.fsf@ashishki-desk.ger.corp.intel.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Enum lp8727_chg_state can be removed because only one charger status
- is used - EOC(End Of Charge).
+Adrian Hunter <adrian.hunter@intel.com> writes:
 
- To check whether the EOC is reached or not, use simple comparison
- rather than shift-operation.
+> On 31/08/12 11:15, Andrew Morton wrote:
+>> On Fri, 31 Aug 2012 01:07:24 -0700 Michel Lespinasse <walken@google.com> wrote:
+>> 
+>>> On Fri, Aug 31, 2012 at 1:01 AM, Adrian Hunter <adrian.hunter@intel.com> wrote:
+>>>> This breaks tools/perf build in linux-next:
+>>>>
+>>>> ../../lib/rbtree.c: In function 'rb_insert_color':
+>>>> ../../lib/rbtree.c:95:9: error: 'true' undeclared (first use in this function)
+>>>> ../../lib/rbtree.c:95:9: note: each undeclared identifier is reported only once for each function it appears in
+>>>> ../../lib/rbtree.c: In function '__rb_erase_color':
+>>>> ../../lib/rbtree.c:216:9: error: 'true' undeclared (first use in this function)
+>>>> ../../lib/rbtree.c: In function 'rb_erase':
+>>>> ../../lib/rbtree.c:368:2: error: unknown type name 'bool'
+>>>> make: *** [util/rbtree.o] Error 1
+>>>
+>>> I thought Andrew had a patch
+>>> rbtree-adjust-root-color-in-rb_insert_color-only-when-necessary-fix-perf-compilation
+>>> that fixed this though a Makefile change ?
+>> 
+>> Yup.  But it's unclear why we should include the header via the cc
+>> command line?
+>
+> Dunno
+>
+> AFAICS tools/perf/util/include/linux is for fixing up the
+> differences between kernel headers and exported kernel headers.
+> Hence my change:
+>
+> diff --git a/tools/perf/util/include/linux/rbtree.h b/tools/perf/util/include/linux/rbtree.h
+> index 7a243a1..2a030c5 100644
+> --- a/tools/perf/util/include/linux/rbtree.h
+> +++ b/tools/perf/util/include/linux/rbtree.h
+> @@ -1 +1,2 @@
+> +#include <stdbool.h>
+>  #include "../../../../include/linux/rbtree.h"
+>
+> Alex?
 
-Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
----
- drivers/power/lp8727_charger.c |   16 +++++-----------
- 1 file changed, 5 insertions(+), 11 deletions(-)
+Whichever color like best. :) Consider my initial patch a bugreport.
 
-diff --git a/drivers/power/lp8727_charger.c b/drivers/power/lp8727_charger.c
-index 1a5f4b2..32bf157 100644
---- a/drivers/power/lp8727_charger.c
-+++ b/drivers/power/lp8727_charger.c
-@@ -55,6 +55,7 @@
- #define CHGSTAT		(3 << 4)
- #define CHPORT		(1 << 6)
- #define DCPORT		(1 << 7)
-+#define LP8727_STAT_EOC			0x30
- 
- /* STATUS2 register */
- #define TEMP_STAT	(3 << 5)
-@@ -69,13 +70,6 @@ enum lp8727_dev_id {
- 	ID_MAX,
- };
- 
--enum lp8727_chg_stat {
--	PRECHG,
--	CC,
--	CV,
--	EOC,
--};
--
- enum lp8727_die_temp {
- 	LP8788_TEMP_75C,
- 	LP8788_TEMP_95C,
-@@ -348,10 +342,10 @@ static int lp8727_battery_get_property(struct power_supply *psy,
- 	case POWER_SUPPLY_PROP_STATUS:
- 		if (lp8727_is_charger_attached(psy->name, pchg->devid)) {
- 			lp8727_read_byte(pchg, STATUS1, &read);
--			if (((read & CHGSTAT) >> 4) == EOC)
--				val->intval = POWER_SUPPLY_STATUS_FULL;
--			else
--				val->intval = POWER_SUPPLY_STATUS_CHARGING;
-+
-+			val->intval = (read & CHGSTAT) == LP8727_STAT_EOC ?
-+				POWER_SUPPLY_STATUS_FULL :
-+				POWER_SUPPLY_STATUS_CHARGING;
- 		} else {
- 			val->intval = POWER_SUPPLY_STATUS_DISCHARGING;
- 		}
--- 
-1.7.9.5
-
-
-Best Regards,
-Milo
-
-
+Regards,
+--
+Alex
