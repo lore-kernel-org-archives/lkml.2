@@ -1,104 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156Ab2HaQVl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 12:21:41 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:42871 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753275Ab2HaQVk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 12:21:40 -0400
-X-Originating-IP: 217.70.178.143
-X-Originating-IP: 50.43.46.74
-Date: Fri, 31 Aug 2012 09:21:30 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH tip/core/rcu 2/3] rcu: Disallow callback registry on
- offline CPUs
-Message-ID: <20120831162130.GB21673@leaf>
-References: <20120830190245.GA32625@linux.vnet.ibm.com>
- <1346353383-350-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346353383-350-2-git-send-email-paulmck@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346353383-350-2-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754255Ab2HaQWT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 12:22:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43070 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753275Ab2HaQVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Aug 2012 12:21:45 -0400
+Date: Fri, 31 Aug 2012 09:21:38 -0700
+From: Jeff Layton <jlayton@redhat.com>
+To: Nick Pasich <Nick@NickAndBarb.net>
+Cc: Pavel Shilovsky <piastryyy@gmail.com>, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: WARNING: at fs/inode.c:280 drop_nlink+0x31/0x33()
+Message-ID: <20120831092138.47668603@corrin.poochiereds.net>
+In-Reply-To: <20120831153206.GA28908@NICK2>
+References: <20120829162527.GA3635@NickAndBarb.net>
+	<20120829151641.20cde4bc@corrin.poochiereds.net>
+	<20120831043352.GA23663@NickAndBarb.net>
+	<CAKywueSY+NOV3irDm9YxepeCyJJhh82o2mgmDLogr+hJPbaYig@mail.gmail.com>
+	<20120831153206.GA28908@NICK2>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 12:03:02PM -0700, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+On Fri, 31 Aug 2012 08:32:06 -0700
+Nick Pasich <Nick@NickAndBarb.net> wrote:
+
+> On Fri, Aug 31, 2012 at 12:00:26PM +0400, Pavel Shilovsky wrote:
+> > 2012/8/31 Nick Pasich <Nick@nickandbarb.net>:
+> > > Jeff,
+> > >
+> > > I applied this patch to Kernel 3.5.3 from Pavel and the
+> > > the warning is gone with no problems.
+> > >
+> > > Thanks,
+> > >
+> > > --( Nick Pasich
+> > >
+> > > ##########################################################
+> > >
+> > > From df2d6b1fbf2401c5ee04f2ac143ea0954e3a87a6 Mon Sep 17 00:00:00 2001
+> > > From: Pavel Shilovsky <pshilovsky@samba.org>
+> > > Date: Fri, 13 Jul 2012 11:59:45 +0400
+> > > Subject: [PATCH] CIFS: Protect i_nlink from being negative
+> > >
+> > > that can cause warning messages.
+> > >
+> > > Signed-off-by: Pavel Shilovsky <pshilovsky@samba.org>
+> > > ---
+> > >  fs/cifs/inode.c |   13 +++++++++++--
+> > >  1 files changed, 11 insertions(+), 2 deletions(-)
+> > >
+> > > diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
+> > > index 7354877..88afb1a 100644
+> > > --- a/fs/cifs/inode.c
+> > > +++ b/fs/cifs/inode.c
+> > > @@ -1110,6 +1110,15 @@ undo_setattr:
+> > >                 goto out_close;
+> > >  }
+> > >
+> > > +/* copied from fs/nfs/dir.c with small changes */
+> > > +static void
+> > > +cifs_drop_nlink(struct inode *inode)
+> > > +{
+> > > +       spin_lock(&inode->i_lock);
+> > > +       if (inode->i_nlink > 0)
+> > > +               drop_nlink(inode);
+> > > +       spin_unlock(&inode->i_lock);
+> > > +}
+> > >
+> > >  /*
+> > >   * If dentry->d_inode is null (usually meaning the cached dentry
+> > > @@ -1166,13 +1175,13 @@ retry_std_delete:
+> > >  psx_del_no_retry:
+> > >                 if (!rc) {
+> > >                                 if (inode)
+> > > -                       drop_nlink(inode);
+> > > +                       cifs_drop_nlink(inode);
+> > >                 } else if (rc == -ENOENT) {
+> > >                                 d_drop(dentry);
+> > >                 } else if (rc == -ETXTBSY) {
+> > >                                 rc = cifs_rename_pending_delete(full_path, dentry, xid);
+> > >                                 if (rc == 0)
+> > > -                       drop_nlink(inode);
+> > > +                       cifs_drop_nlink(inode);
+> > >                 } else if ((rc == -EACCES) && (dosattr == 0) && inode) {
+> > >                                 attrs = kzalloc(sizeof(*attrs), GFP_KERNEL);
+> > >                                 if (attrs == NULL) {
+> > > --
+> > > 1.7.3.3
+> > >
+> > > ##########################################################
+> > >
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe linux-cifs" in
+> > > the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > 
+> > This one fixes only a part of the problem. Now we have another patch
+> > for this problem:
+> > 
+> > https://git.samba.org/sfrench/?p=sfrench/cifs-2.6.git;a=commitdiff;h=b7ca69289680cf631fb20b7d436467c4ec1153cd;hp=6dab7ede9390d4d937cb89feca932e4fd575d2da
+> > 
+> > -- 
+> > Best regards,
+> > Pavel Shilovsky.
 > 
-> Posting a callback after the CPU_DEAD notifier effectively leaks
-> that callback unless/until that CPU comes back online.  Silence is
-> unhelpful when attempting to track down such leaks, so this commit emits
-> a WARN_ON_ONCE() and unconditionally leaks the callback when an offline
-> CPU attempts to register a callback.  The rdp->nxttail[RCU_NEXT_TAIL] is
-> set to NULL in the CPU_DEAD notifier and restored in the CPU_UP_PREPARE
-> notifier, allowing _call_rcu() to determine exactly when posting callbacks
-> is illegal.
 > 
-> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-One suggestion below; with or without that change:
-
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-
-> ---
->  kernel/rcutree.c |   10 ++++++++++
->  1 files changed, 10 insertions(+), 0 deletions(-)
 > 
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index 9854a00..5f8c4dd 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -1503,6 +1503,9 @@ static void rcu_cleanup_dead_cpu(int cpu, struct rcu_state *rsp)
->  	WARN_ONCE(rdp->qlen != 0 || rdp->nxtlist != NULL,
->  		  "rcu_cleanup_dead_cpu: Callbacks on offline CPU %d: qlen=%lu, nxtlist=%p\n",
->  		  cpu, rdp->qlen, rdp->nxtlist);
-> +	init_callback_list(rdp);
-> +	/* Disallow further callbacks on this CPU. */
-> +	rdp->nxttail[RCU_NEXT_TAIL] = NULL;
->  }
->  
->  #else /* #ifdef CONFIG_HOTPLUG_CPU */
-> @@ -1925,6 +1928,12 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
->  	rdp = this_cpu_ptr(rsp->rda);
->  
->  	/* Add the callback to our list. */
-> +	if (unlikely(rdp->nxttail[RCU_NEXT_TAIL] == NULL)) {
-> +		/* _call_rcu() is illegal on offline CPU; leak the callback. */
-> +		WARN_ON_ONCE(1);
-
-You can write this as:
-
-if (WARN_ON_ONCE(rdp->nxttail[RCU_NEXT_TAIL] == NULL))
-
-WARN_ON_ONCE also has a built-in unlikely() already.
-
-> +		local_irq_restore(flags);
-> +		return;
-> +	}
->  	ACCESS_ONCE(rdp->qlen)++;
->  	if (lazy)
->  		rdp->qlen_lazy++;
-> @@ -2462,6 +2471,7 @@ rcu_init_percpu_data(int cpu, struct rcu_state *rsp, int preemptible)
->  	rdp->qlen_last_fqs_check = 0;
->  	rdp->n_force_qs_snap = rsp->n_force_qs;
->  	rdp->blimit = blimit;
-> +	init_callback_list(rdp);  /* Re-enable callbacks on this CPU. */
->  	rdp->dynticks->dynticks_nesting = DYNTICK_TASK_EXIT_IDLE;
->  	atomic_set(&rdp->dynticks->dynticks,
->  		   (atomic_read(&rdp->dynticks->dynticks) & ~0x1) + 1);
-> -- 
-> 1.7.8
+> Since I'm using kernel 3.5.3 , I get an error on hunk 7 of the patch.
 > 
+> I can do it by hand... But I want to check with you first.
+> 
+> Thanks,
+> 
+> --( Nick Pasich )--
+> 
+
+If you fix it up by hand, consider submitting it as a backport for the
+stable series as well.
+
+-- 
+Jeff Layton <jlayton@redhat.com>
