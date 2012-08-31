@@ -1,62 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754543Ab2HaQKk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 12:10:40 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59545 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754473Ab2HaQKj (ORCPT
+	id S1754511Ab2HaQLd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 12:11:33 -0400
+Received: from hapkido.dreamhost.com ([66.33.216.122]:34657 "EHLO
+	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753829Ab2HaQLc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 12:10:39 -0400
-Message-ID: <5040E1FD.3060009@gmail.com>
-Date: Fri, 31 Aug 2012 10:10:37 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: "Suzuki K. Poulose" <suzuki@in.ibm.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [perf] Fix intlist node removal
-References: <503DB6CD.4070502@gmail.com> <20120831065840.5167.90318.stgit@suzukikp.in.ibm.com>
-In-Reply-To: <20120831065840.5167.90318.stgit@suzukikp.in.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Fri, 31 Aug 2012 12:11:32 -0400
+Subject: [PATCH] KVM: VMX: invalidate vpid for invlpg instruction
+From: Davidlohr Bueso <dave@gnu.org>
+Reply-To: dave@gnu.org
+To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
+Cc: KVM <kvm@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: GNU
+Date: Fri, 31 Aug 2012 18:10:48 +0200
+Message-ID: <1346429448.2823.1.camel@offbook>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/31/12 12:58 AM, Suzuki K. Poulose wrote:
-> Similar to the one in :
-> 	https://lkml.org/lkml/2012/8/29/27
->
->
-> Make sure we remove the node from the rblist before we delete the
-> node. The rblist__remove_node() will invoke rblist->node_delete,
-> which  will take care of deleting the node with the suitable function
-> provided by the user.
->
-> Signed-off-by: Suzuki K Poulose <suzuki@in.ibm.com>
-> Cc: David Ahern <dsahern@gmail.com>
-> ---
->
->   tools/perf/util/intlist.c |    4 ++--
->   1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/tools/perf/util/intlist.c b/tools/perf/util/intlist.c
-> index fd530dc..77c504f 100644
-> --- a/tools/perf/util/intlist.c
-> +++ b/tools/perf/util/intlist.c
-> @@ -52,9 +52,9 @@ int intlist__add(struct intlist *ilist, int i)
->   	return rblist__add_node(&ilist->rblist, (void *)((long)i));
->   }
->
-> -void intlist__remove(struct intlist *ilist __used, struct int_node *node)
-> +void intlist__remove(struct intlist *ilist, struct int_node *node)
->   {
-> -	int_node__delete(node);
-> +	rblist__remove_node(&ilist->rblist, &node->rb_node);
->   }
->
->   struct int_node *intlist__find(struct intlist *ilist, int i)
->
+For processors that support VPIDs we should invalidate the page table entry
+specified by the lineal address. For this purpose add support for individual
+address invalidations.
 
-Acked-by: David Ahern <dsahern@gmail.com>
+Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+---
+ arch/x86/include/asm/vmx.h |    6 ++++--
+ arch/x86/kvm/vmx.c         |   15 +++++++++++++++
+ 2 files changed, 19 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/include/asm/vmx.h b/arch/x86/include/asm/vmx.h
+index 74fcb96..20abb18 100644
+--- a/arch/x86/include/asm/vmx.h
++++ b/arch/x86/include/asm/vmx.h
+@@ -393,6 +393,7 @@ enum vmcs_field {
+ #define IDENTITY_PAGETABLE_PRIVATE_MEMSLOT	(KVM_MEMORY_SLOTS + 2)
+ 
+ #define VMX_NR_VPIDS				(1 << 16)
++#define VMX_VPID_EXTENT_INDIVIDUAL_ADDR         0
+ #define VMX_VPID_EXTENT_SINGLE_CONTEXT		1
+ #define VMX_VPID_EXTENT_ALL_CONTEXT		2
+ 
+@@ -406,12 +407,13 @@ enum vmcs_field {
+ #define VMX_EPTP_WB_BIT				(1ull << 14)
+ #define VMX_EPT_2MB_PAGE_BIT			(1ull << 16)
+ #define VMX_EPT_1GB_PAGE_BIT			(1ull << 17)
+-#define VMX_EPT_AD_BIT					(1ull << 21)
++#define VMX_EPT_AD_BIT				(1ull << 21)
+ #define VMX_EPT_EXTENT_INDIVIDUAL_BIT		(1ull << 24)
+ #define VMX_EPT_EXTENT_CONTEXT_BIT		(1ull << 25)
+ #define VMX_EPT_EXTENT_GLOBAL_BIT		(1ull << 26)
+ 
+-#define VMX_VPID_EXTENT_SINGLE_CONTEXT_BIT      (1ull << 9) /* (41 - 32) */
++#define VMX_VPID_EXTENT_INDIVIDUAL_ADDR_BIT     (1ull << 8)  /* (40 - 32) */
++#define VMX_VPID_EXTENT_SINGLE_CONTEXT_BIT      (1ull << 9)  /* (41 - 32) */
+ #define VMX_VPID_EXTENT_GLOBAL_CONTEXT_BIT      (1ull << 10) /* (42 - 32) */
+ 
+ #define VMX_EPT_DEFAULT_GAW			3
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index c00f03d..d87b22c 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -816,6 +816,11 @@ static inline bool cpu_has_vmx_invept_global(void)
+ 	return vmx_capability.ept & VMX_EPT_EXTENT_GLOBAL_BIT;
+ }
+ 
++static inline bool cpu_has_vmx_invvpid_individual_addr(void)
++{
++	return vmx_capability.vpid & VMX_VPID_EXTENT_INDIVIDUAL_ADDR_BIT;
++}
++
+ static inline bool cpu_has_vmx_invvpid_single(void)
+ {
+ 	return vmx_capability.vpid & VMX_VPID_EXTENT_SINGLE_CONTEXT_BIT;
+@@ -1011,6 +1016,15 @@ static void loaded_vmcs_clear(struct loaded_vmcs *loaded_vmcs)
+ 			loaded_vmcs->cpu, __loaded_vmcs_clear, loaded_vmcs, 1);
+ }
+ 
++static inline void vpid_sync_vcpu_individual_addr(struct vcpu_vmx *vmx, gpa_t gpa)
++{
++	if (vmx->vpid == 0)
++		return;
++
++	if (cpu_has_vmx_invvpid_individual_addr())
++		__invvpid(VMX_VPID_EXTENT_INDIVIDUAL_ADDR, vmx->vpid, gpa);
++}
++
+ static inline void vpid_sync_vcpu_single(struct vcpu_vmx *vmx)
+ {
+ 	if (vmx->vpid == 0)
+@@ -4719,6 +4733,7 @@ static int handle_invlpg(struct kvm_vcpu *vcpu)
+ 	unsigned long exit_qualification = vmcs_readl(EXIT_QUALIFICATION);
+ 
+ 	kvm_mmu_invlpg(vcpu, exit_qualification);
++	vpid_sync_vcpu_individual_addr(to_vmx(vcpu), exit_qualification);
+ 	skip_emulated_instruction(vcpu);
+ 	return 1;
+ }
+-- 
+1.7.4.1
+
+
+
