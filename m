@@ -1,112 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754951Ab2HaUMR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 16:12:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21939 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754892Ab2HaUMN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 16:12:13 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Jens Axboe <axboe@kernel.dk>,
-        Andrea Arcangeli <aarcange@redhat.com>, Jan Kara <jack@suse.cz>,
-        dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        kosaki.motohiro@jp.fujitsu.com, linux-fsdevel@vger.kernel.org,
-        lwoodman@redhat.com, "Alasdair G. Kergon" <agk@redhat.com>
-Subject: Re: [PATCH 0/4] Fix a crash when block device is read and block size is changed at the same time
-References: <Pine.LNX.4.64.1206272226050.22857@file.rdu.redhat.com>
-	<20120628111541.GB17515@quack.suse.cz>
-	<Pine.LNX.4.64.1207152051490.4240@file.rdu.redhat.com>
-	<x49ipdmyz4q.fsf@segfault.boston.devel.redhat.com>
-	<Pine.LNX.4.64.1207181512530.10923@file.rdu.redhat.com>
-	<x49k3xzq3jc.fsf@segfault.boston.devel.redhat.com>
-	<Pine.LNX.4.64.1207281236230.30415@file.rdu.redhat.com>
-	<Pine.LNX.4.64.1207281240270.30415@file.rdu.redhat.com>
-	<1343508252.2626.13184.camel@edumazet-glaptop>
-	<Pine.LNX.4.64.1207290107460.29910@file.rdu.redhat.com>
-	<1343556630.2626.13257.camel@edumazet-glaptop>
-	<1343586962.2626.13266.camel@edumazet-glaptop>
-	<Pine.LNX.4.64.1208011601280.21832@file.rdu.redhat.com>
-	<Pine.LNX.4.64.1208311433480.2212@file.rdu.redhat.com>
-	<Pine.LNX.4.64.1208311518340.16960@file.rdu.redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Fri, 31 Aug 2012 16:11:56 -0400
-In-Reply-To: <Pine.LNX.4.64.1208311518340.16960@file.rdu.redhat.com> (Mikulas
-	Patocka's message of "Fri, 31 Aug 2012 15:27:38 -0400 (EDT)")
-Message-ID: <x49liguyg6r.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754980Ab2HaUOr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 16:14:47 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:53205 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754870Ab2HaUOq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Aug 2012 16:14:46 -0400
+Date: Fri, 31 Aug 2012 16:14:43 -0400 (EDT)
+Message-Id: <20120831.161443.124994431345620659.davem@davemloft.net>
+To: gaowanlong@cn.fujitsu.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 2/5] net:atm:fix up ENOIOCTLCMD error handling
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1346052196-32682-3-git-send-email-gaowanlong@cn.fujitsu.com>
+References: <1346052196-32682-1-git-send-email-gaowanlong@cn.fujitsu.com>
+	<1346052196-32682-3-git-send-email-gaowanlong@cn.fujitsu.com>
+X-Mailer: Mew version 6.5 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mikulas Patocka <mpatocka@redhat.com> writes:
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Date: Mon, 27 Aug 2012 15:23:13 +0800
 
-> On Fri, 31 Aug 2012, Mikulas Patocka wrote:
->
->> Hi
->> 
->> This is a series of patches to prevent a crash when when someone is 
->> reading block device and block size is changed simultaneously. (the crash 
->> is already happening in the production environment)
->> 
->> The first patch adds a rw-lock to struct block_device, but doesn't use the 
->> lock anywhere. The reason why I submit this as a separate patch is that on 
->> my computer adding an unused field to this structure affects performance 
->> much more than any locking changes.
->> 
->> The second patch uses the rw-lock. The lock is locked for read when doing 
->> I/O on the block device and it is locked for write when changing block 
->> size.
->> 
->> The third patch converts the rw-lock to a percpu rw-lock for better 
->> performance, to avoid cache line bouncing.
->> 
->> The fourth patch is an alternate percpu rw-lock implementation using RCU 
->> by Eric Dumazet. It avoids any atomic instruction in the hot path.
->> 
->> Mikulas
->
-> I tested performance of patches. I created 4GB ramdisk, I initially filled 
-> it with zeros (so that ramdisk allocation-on-demand doesn't affect the 
-> results).
->
-> I ran fio to perform 8 concurrent accesses on 8 core machine (two 
-> Barcelona Opterons):
-> time fio --rw=randrw --size=4G --bs=512 --filename=/dev/ram0 --direct=1 
-> --name=job1 --name=job2 --name=job3 --name=job4 --name=job5 --name=job6 
-> --name=job7 --name=job8
->
-> The results actually show that the size of struct block_device and 
-> alignment of subsequent fields in struct inode have far more effect on 
-> result that the type of locking used. (struct inode is placed just after 
-> struct block_device in "struct bdev_inode" in fs/block-dev.c)
->
-> plain kernel 3.5.3: 57.9s
-> patch 1: 43.4s
-> patches 1,2: 43.7s
-> patches 1,2,3: 38.5s
-> patches 1,2,3,4: 58.6s
->
-> You can see that patch 1 improves the time by 14.5 seconds, but all that 
-> patch 1 does is adding an unused structure field.
->
-> Patch 3 is 4.9 seconds faster than patch 1, althogh patch 1 does no 
-> locking at all and patch 3 does per-cpu locking. So, the reason for the 
-> speedup is different sizeof of struct block_device (and subsequently, 
-> different alignment of struct inode), rather than locking improvement.
+> At commit 07d106d0, Linus pointed out that ENOIOCTLCMD should be
+> translated as ENOTTY to user mode.
+> 
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: netdev@vger.kernel.org
+> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
 
-How many runs did you do?  Did you see much run to run variation?
-
-> I would be interested if other people did performance testing of the 
-> patches too.
-
-I'll do some testing next week, but don't expect to get to it before
-Wednesday.
-
-Cheers,
-Jeff
+Applied to net-next, thanks.
