@@ -1,76 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751580Ab2HaGGe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 02:06:34 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:29422 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751120Ab2HaGGd (ORCPT
+	id S1751506Ab2HaGSy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 02:18:54 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43047 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751137Ab2HaGSx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 02:06:33 -0400
-X-Greylist: delayed 1647 seconds by postgrey-1.27 at vger.kernel.org; Fri, 31 Aug 2012 02:06:33 EDT
-X-Spam-Score: -100.7
-Message-ID: <50404E40.3070702@asianux.com>
-Date: Fri, 31 Aug 2012 13:40:16 +0800
-From: gchen <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: linux-nfs@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, jlayton@redhat.com
-Subject: [QUESTION] about NFS sub system between Public Kernel and Red Hat
- Kernel.
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+	Fri, 31 Aug 2012 02:18:53 -0400
+From: Jim Cromie <jim.cromie@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jim Cromie <jim.cromie@gmail.com>, Jianpeng Ma <majianpeng@gmail.com>
+Subject: [PATCH] dyndbg: fix usability bug by adding pr_errs for -EINVALs
+Date: Fri, 31 Aug 2012 00:18:24 -0600
+Message-Id: <1346393904-4569-1-git-send-email-jim.cromie@gmail.com>
+X-Mailer: git-send-email 1.7.10.1.487.ga3935e6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi linux-nfs@vger.kernel.org
+A recent usability grumble on LKML prompted a review of error
+reporting when writing dyndbg queries.  For each -EINVAL, this adds
+pr_err()s to explain the error.
 
-I have 1 question, and also 2 conclusions which need confirm.
+To: Jason Baron <jbaron@redhat.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Jianpeng Ma <majianpeng@gmail.com>
+Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+---
+ lib/dynamic_debug.c | 40 ++++++++++++++++++++++++++++++----------
+ 1 file changed, 30 insertions(+), 10 deletions(-)
 
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index 7ca29a0..dd477ab 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -222,8 +222,10 @@ static int ddebug_tokenize(char *buf, char *words[], int maxwords)
+ 			int quote = *buf++;
+ 			for (end = buf ; *end && *end != quote ; end++)
+ 				;
+-			if (!*end)
++			if (!*end) {
++				pr_err("unclosed quote: %s\n", buf);
+ 				return -EINVAL;	/* unclosed quote */
++			}
+ 		} else {
+ 			for (end = buf ; *end && !isspace(*end) ; end++)
+ 				;
+@@ -231,8 +233,10 @@ static int ddebug_tokenize(char *buf, char *words[], int maxwords)
+ 		}
+ 
+ 		/* `buf' is start of word, `end' is one past its end */
+-		if (nwords == maxwords)
++		if (nwords == maxwords) {
++			pr_err("too many words, legal max <=%d\n", maxwords);
+ 			return -EINVAL;	/* ran out of words[] before bytes */
++		}
+ 		if (*end)
+ 			*end++ = '\0';	/* terminate the word */
+ 		words[nwords++] = buf;
+@@ -264,7 +268,11 @@ static inline int parse_lineno(const char *str, unsigned int *val)
+ 		return 0;
+ 	}
+ 	*val = simple_strtoul(str, &end, 10);
+-	return end == NULL || end == str || *end != '\0' ? -EINVAL : 0;
++	if (end == NULL || end == str || *end != '\0') {
++		pr_err("illegal line-number: %s\n", str);
++		return -EINVAL;
++	}
++	return 0;
+ }
+ 
+ /*
+@@ -344,8 +352,10 @@ static int ddebug_parse_query(char *words[], int nwords,
+ 	int rc;
+ 
+ 	/* check we have an even number of words */
+-	if (nwords % 2 != 0)
++	if (nwords % 2 != 0) {
++		pr_err("legal query spec is pairs of: spec value\n");
+ 		return -EINVAL;
++	}
+ 	memset(query, 0, sizeof(*query));
+ 
+ 	if (modname)
+@@ -371,8 +381,10 @@ static int ddebug_parse_query(char *words[], int nwords,
+ 			}
+ 			if (last)
+ 				*last++ = '\0';
+-			if (parse_lineno(first, &query->first_lineno) < 0)
++			if (parse_lineno(first, &query->first_lineno) < 0) {
++				pr_err("line-number is <0\n");
+ 				return -EINVAL;
++			}
+ 			if (last) {
+ 				/* range <first>-<last> */
+ 				if (parse_lineno(last, &query->last_lineno)
+@@ -413,6 +425,7 @@ static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
+ 		op = *str++;
+ 		break;
+ 	default:
++		pr_err("bad flags-op, expecting [+-=], not %c\n", *str);
+ 		return -EINVAL;
+ 	}
+ 	vpr_info("op='%c'\n", op);
+@@ -424,8 +437,10 @@ static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
+ 				break;
+ 			}
+ 		}
+-		if (i < 0)
++		if (i < 0) {
++			pr_err("unknown flag: %c\n", *str);
+ 			return -EINVAL;
++		}
+ 	}
+ 	vpr_info("flags=0x%x\n", flags);
+ 
+@@ -457,13 +472,18 @@ static int ddebug_exec_query(char *query_string, const char *modname)
+ 	char *words[MAXWORDS];
+ 
+ 	nwords = ddebug_tokenize(query_string, words, MAXWORDS);
+-	if (nwords <= 0)
++	if (nwords <= 0) {
++		pr_err("tokenize failed\n");
+ 		return -EINVAL;
+-	if (ddebug_parse_query(words, nwords-1, &query, modname))
++	}
++	if (ddebug_parse_query(words, nwords-1, &query, modname)) {
++		pr_err("query spec parse failed\n");
+ 		return -EINVAL;
+-	if (ddebug_parse_flags(words[nwords-1], &flags, &mask))
++	}
++	if (ddebug_parse_flags(words[nwords-1], &flags, &mask)) {
++		pr_err("flags parse failed\n");
+ 		return -EINVAL;
+-
++	}
+ 	/* actually go and implement the change */
+ 	nfound = ddebug_change(&query, flags, mask);
+ 	vpr_info_dq((&query), (nfound) ? "applied" : "no-match");
+-- 
+1.7.10.1.487.ga3935e6
 
-1) Question:
-
-Jeff Layton said in Red Hat Bugzilla (bug 848706):
-"Have configuration where the same host is acting as both NFS client
-and server. That's a configuration known to cause deadlocks."
-
-Does it mean that the public Linux kernel (not Red Hat) also can cause
-deadlocks if NFS client and server are under the same machine ?
-
-
-2) Confirm 1: (better by Jeff Layton)
-
-For function nfs_commit_set_lock in ./fs/nfs/write.c
-
-for latest public kernel version:
-the parameters of out_of_line_wait_on_bit_lock() are
-(&nfsi->flags, NFS_INO_COMMIT, nfs_wait_killable, TASK_KILLABLE)
-for Red Hat kernel version: kernel-2.6.18-308.4.1.el5
-the parameters of out_of_line_wait_on_bit_lock() are
-(&nfsi->flags, NFS_INO_COMMIT,
-nfs_wait_bit_uninterruptible, TASK_UNINTERRUPTIBLE)
-
-It means for red hat version:
-when deadlock occurs, we can not boot machine in normal way
-(it is true for my test machine, the deadlock task can not be killed)
-It means for public kernel version:
-"Assume deadlock occurs", we can still boot machine in normal way,
-because the task can be killed.
-
-Is what I said above correct ?
-
-
-3) Confirm 2:
-
-Is LTP (Linux Test Project) still a suitable test tools for public kernel ?
-(for ltp-full-20100331.gz stress test, it mounts NFS on local machine,
-and the latest LTP ltp-full-20120401.bz2 also seems the same).
-
-
-
-thanks.
-
-gchen
-
-Asianux Corporation
