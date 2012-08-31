@@ -1,118 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754939Ab2HaUrO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 16:47:14 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:26947 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751855Ab2HaUrL (ORCPT
+	id S1754999Ab2HaUuA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 16:50:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50521 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751855Ab2HaUt6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 16:47:11 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6821"; a="231838834"
-Message-ID: <504122BE.8080706@codeaurora.org>
-Date: Fri, 31 Aug 2012 13:46:54 -0700
-From: Laura Abbott <lauraa@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120824 Thunderbird/15.0
-MIME-Version: 1.0
-To: linux-fsdevel@vger.kernel.org, Marek Szyprowski <m.szyprowski@samsung.com>
-CC: linaro-mm-sig@lists.linaro.org,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        linux-kernel@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: CMA page migration failure due to buffers on bh_lru
-References: <503EBBD6.5080504@codeaurora.org>
-In-Reply-To: <503EBBD6.5080504@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 31 Aug 2012 16:49:58 -0400
+Date: Fri, 31 Aug 2012 13:49:56 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: wency@cn.fujitsu.com
+Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
+        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
+        cl@linux.com, minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com
+Subject: Re: [RFC v8 PATCH 00/20] memory-hotplug: hot-remove physical memory
+Message-Id: <20120831134956.fec0f681.akpm@linux-foundation.org>
+In-Reply-To: <1346148027-24468-1-git-send-email-wency@cn.fujitsu.com>
+References: <1346148027-24468-1-git-send-email-wency@cn.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/29/2012 6:03 PM, Laura Abbott wrote:
+On Tue, 28 Aug 2012 18:00:07 +0800
+wency@cn.fujitsu.com wrote:
 
-> My quick and dirty workaround for testing is to remove the GFP_MOVABLE
-> flag from find_or_create_page but this seems significantly less than
-> optimal. Ideally, it seems like the buffers should be evicted from the
-> LRU when trying to drop (expand on invalid_bh_lru?) but I'm not familiar
-> enough with the code path to know if this is a good approach.
->
-> Any suggestions/feedback is appreciated. Thanks.
->
-> Laura
+> This patch series aims to support physical memory hot-remove.
 
-I came up with what I think is a reasonable fix to this. Feedback is 
-appreciated. Thanks.
+Have you had much review and testing feedback yet?
 
-Laura
+> The patches can free/remove the following things:
+> 
+>   - acpi_memory_info                          : [RFC PATCH 4/19]
+>   - /sys/firmware/memmap/X/{end, start, type} : [RFC PATCH 8/19]
+>   - iomem_resource                            : [RFC PATCH 9/19]
+>   - mem_section and related sysfs files       : [RFC PATCH 10-11, 13-16/19]
+>   - page table of removed memory              : [RFC PATCH 12/19]
+>   - node and related sysfs files              : [RFC PATCH 18-19/19]
+> 
+> If you find lack of function for physical memory hot-remove, please let me
+> know.
 
+I doubt if many people have hardware which permits physical memory
+removal?  How would you suggest that people with regular hardware can
+test these chagnes?
 
-8<---
+> Known problems:
+> 1. memory can't be offlined when CONFIG_MEMCG is selected.
 
-diff --git a/fs/buffer.c b/fs/buffer.c
-index ad5938c..daa0c3d 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -1399,12 +1399,49 @@ static bool has_bh_in_lru(int cpu, void *dummy)
-  	return 0;
-  }
+That's quite a problem!  Do you have a description of why this is the
+case, and a plan for fixing it?
 
-+static void __evict_bh_lru(void *arg)
-+{
-+	struct bh_lru *b = &get_cpu_var(bh_lrus);
-+	struct buffer_head *bh = arg;
-+	int i;
-+
-+	for (i = 0; i < BH_LRU_SIZE; i++) {
-+		if (b->bhs[i] == bh) {
-+			brelse(b->bhs[i]);
-+			b->bhs[i] = NULL;
-+			goto out;
-+		}
-+	}
-+out:
-+	put_cpu_var(bh_lrus);
-+}
-+
-+static bool bh_exists_in_lru(int cpu, void *arg)
-+{
-+	struct bh_lru *b = per_cpu_ptr(&bh_lrus, cpu);
-+	struct buffer_head *bh = arg;
-+	int i;
-+
-+	for (i = 0; i < BH_LRU_SIZE; i++) {
-+		if (b->bhs[i] == bh)
-+			return 1;
-+	}
-+
-+	return 0;
-+
-+}
-  void invalidate_bh_lrus(void)
-  {
-  	on_each_cpu_cond(has_bh_in_lru, invalidate_bh_lru, NULL, 1, GFP_KERNEL);
-  }
-  EXPORT_SYMBOL_GPL(invalidate_bh_lrus);
-
-+void evict_bh_lrus(struct buffer_head *bh)
-+{
-+	on_each_cpu_cond(bh_exists_in_lru, __evict_bh_lru, bh, 1, GFP_ATOMIC);
-+}
-+EXPORT_SYMBOL_GPL(evict_bh_lrus);
-+
-  void set_bh_page(struct buffer_head *bh,
-  		struct page *page, unsigned long offset)
-  {
-@@ -3052,6 +3089,7 @@ drop_buffers(struct page *page, struct buffer_head 
-**buffers_to_free)
-
-  	bh = head;
-  	do {
-+		evict_bh_lrus(bh);
-  		if (buffer_write_io_error(bh) && page->mapping)
-  			set_bit(AS_EIO, &page->mapping->flags);
-  		if (buffer_busy(bh))
--- 
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
