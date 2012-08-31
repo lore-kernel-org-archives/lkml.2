@@ -1,140 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754844Ab2HaT30 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 15:29:26 -0400
-Received: from na3sys009aog128.obsmtp.com ([74.125.149.141]:54086 "EHLO
-	na3sys009aog128.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754678Ab2HaT3Z convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 15:29:25 -0400
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Ulf Hansson <ulf.hansson@stericsson.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
-From: Mike Turquette <mturquette@ti.com>
-In-Reply-To: <1346415691-13371-2-git-send-email-ulf.hansson@stericsson.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Lee Jones <lee.jones@linaro.org>,
-        Philippe Begnic <philippe.begnic@st.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-References: <1346415691-13371-1-git-send-email-ulf.hansson@stericsson.com>
- <1346415691-13371-2-git-send-email-ulf.hansson@stericsson.com>
-Message-ID: <20120831192906.31162.97714@nucleus>
-User-Agent: alot/0.3.2+
-Subject: Re: [PATCH 1/4] clk: Provide option for clk_get_rate to issue hw for new rate
-Date: Fri, 31 Aug 2012 12:29:06 -0700
+	id S1754841Ab2HaTiP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 15:38:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50258 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754570Ab2HaTiO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Aug 2012 15:38:14 -0400
+Date: Fri, 31 Aug 2012 12:38:12 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jean Delvare <khali@linux-fr.org>, lm-sensors@lm-sensors.org
+Subject: Re: [PATCH v4] linux/kernel.h: Fix DIV_ROUND_CLOSEST to support
+ negative dividends
+Message-Id: <20120831123812.62729e1c.akpm@linux-foundation.org>
+In-Reply-To: <1346425339-17138-1-git-send-email-linux@roeck-us.net>
+References: <1346425339-17138-1-git-send-email-linux@roeck-us.net>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Ulf Hansson (2012-08-31 05:21:28)
-> From: Ulf Hansson <ulf.hansson@linaro.org>
-> 
-> By using CLK_GET_RATE_NOCACHE flag, we tell the clk_get_rate API to
-> issue the hw for an updated clock rate. This can be used for a clock
-> which rate may be updated without a client necessary modifying it.
-> 
+On Fri, 31 Aug 2012 08:02:19 -0700
+Guenter Roeck <linux@roeck-us.net> wrote:
 
-I'm glad to see this.  We discussed whether the default behavior should
-be cached or from the hardware at length some time back, so having a
-flag to support the non-default is great.
-
-> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
-> ---
->  drivers/clk/clk.c            |   43 +++++++++++++++++++++++-------------------
->  include/linux/clk-provider.h |    1 +
->  2 files changed, 25 insertions(+), 19 deletions(-)
+> DIV_ROUND_CLOSEST returns a bad result for negative dividends:
+> 	DIV_ROUND_CLOSEST(-2, 2) = 0
 > 
-> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> index efdfd00..d9cbae0 100644
-> --- a/drivers/clk/clk.c
-> +++ b/drivers/clk/clk.c
-> @@ -558,25 +558,6 @@ int clk_enable(struct clk *clk)
->  EXPORT_SYMBOL_GPL(clk_enable);
->  
->  /**
-> - * clk_get_rate - return the rate of clk
-> - * @clk: the clk whose rate is being returned
-> - *
-> - * Simply returns the cached rate of the clk.  Does not query the hardware.  If
-> - * clk is NULL then returns 0.
-> - */
-> -unsigned long clk_get_rate(struct clk *clk)
-> -{
-> -       unsigned long rate;
-> -
-> -       mutex_lock(&prepare_lock);
-> -       rate = __clk_get_rate(clk);
-> -       mutex_unlock(&prepare_lock);
-> -
-> -       return rate;
-> -}
-> -EXPORT_SYMBOL_GPL(clk_get_rate);
-> -
-> -/**
->   * __clk_round_rate - round the given rate for a clk
->   * @clk: round the rate of this clock
->   *
-> @@ -702,6 +683,30 @@ static void __clk_recalc_rates(struct clk *clk, unsigned long msg)
->  }
->  
->  /**
-> + * clk_get_rate - return the rate of clk
-> + * @clk: the clk whose rate is being returned
-> + *
-> + * Simply returns the cached rate of the clk, unless CLK_GET_RATE_NOCACHE flag
-> + * is set, which means a recalc_rate will be issued.
-> + * If clk is NULL then returns 0.
+> Most of the time this does not matter. However, in the hardware monitoring
+> subsystem, DIV_ROUND_CLOSEST is sometimes used on integers which can be
+> negative (such as temperatures).
+> 
+> ...
+>
+> +
+> +/*
+> + * Divide positive or negative dividend by positive divisor and round
+> + * to closest integer. Result is undefined for negative divisors.
 > + */
-> +unsigned long clk_get_rate(struct clk *clk)
-> +{
-> +       unsigned long rate;
-> +
-> +       mutex_lock(&prepare_lock);
-> +
-> +       if (clk && (clk->flags & CLK_GET_RATE_NOCACHE))
-> +               __clk_recalc_rates(clk, 0);
+>  #define DIV_ROUND_CLOSEST(x, divisor)(			\
+>  {							\
+> -	typeof(divisor) __divisor = divisor;		\
+> -	(((x) + ((__divisor) / 2)) / (__divisor));	\
+> +	typeof(x) __x = x;				\
+> +	typeof(divisor) __d = divisor;			\
+> +	(((typeof(x))-1) >= 0 || (__x) >= 0) ?		\
+> +		(((__x) + ((__d) / 2)) / (__d)) :	\
+> +		(((__x) - ((__d) / 2)) / (__d));	\
+>  }							\
 
-This is a bit subtle.  Calling __clk_recalc_rates will walk the subtree
-of children recalculating rates as well as firing off notifiers.  Is
-this what you want?  If your clock changes rates behind your back AND
-has chilren then this is probably the right thing to do.  However you
-might be better off with:
+Looks good to me.  The patch causes no change in text size for
+kernel/sched/fair.o and drivers/cpuidle/governors/menu.o, so it seems
+that the cc trickery is working.
 
-	if (clk && (clk->flags & CLK_GET_RATE_NOCACHE))
-		rate = clk->ops->recalc_rate(clk->hw, clk->parent->rate);
-
-This doesn't update children or fire off notifiers.  What is best for
-your platform?
-
-Regards,
-Mike
-
-> +
-> +       rate = __clk_get_rate(clk);
-> +       mutex_unlock(&prepare_lock);
-> +
-> +       return rate;
-> +}
-> +EXPORT_SYMBOL_GPL(clk_get_rate);
-> +
-> +/**
->   * __clk_speculate_rates
->   * @clk: first clk in the subtree
->   * @parent_rate: the "future" rate of clk's parent
-> diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-> index 77335fa..1b15307 100644
-> --- a/include/linux/clk-provider.h
-> +++ b/include/linux/clk-provider.h
-> @@ -26,6 +26,7 @@
->  #define CLK_IGNORE_UNUSED      BIT(3) /* do not gate even if unused */
->  #define CLK_IS_ROOT            BIT(4) /* root clk, has no parent */
->  #define CLK_IS_BASIC           BIT(5) /* Basic clk, can't do a to_clk_foo() */
-> +#define CLK_GET_RATE_NOCACHE   BIT(6) /* do not use the cached clk rate */
->  
->  struct clk_hw;
->  
-> -- 
-> 1.7.10
+I'll add it to my tree for testing - please merge this via your tree.
