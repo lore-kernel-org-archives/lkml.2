@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754230Ab2HaPnQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 11:43:16 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47494 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754017Ab2HaPnP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 11:43:15 -0400
-Message-ID: <1346428227.15463.12.camel@vkoul-mobl4>
-Subject: Re: [PATCH] ioat: Adding Ivy Bridge IOATDMA PCI device IDs
-From: Vinod Koul <vkoul@infradead.org>
-To: Dan Williams <djbw@fb.com>
-Cc: vinod.koul@intel.com, Dave Jiang <dave.jiang@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 31 Aug 2012 21:20:27 +0530
-In-Reply-To: <DAE5C78D-CE3F-4E17-A897-B618FF9A24DD@fb.com>
-References: <20120824233619.9218.25014.stgit@djiang5-linux.ch.intel.com>
-	,<1346373442.15463.3.camel@vkoul-mobl4>
-	 <DAE5C78D-CE3F-4E17-A897-B618FF9A24DD@fb.com>
-Organization: 
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754311Ab2HaPrs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 11:47:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50051 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754285Ab2HaPrr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Aug 2012 11:47:47 -0400
+Date: Fri, 31 Aug 2012 17:47:45 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: =?utf-8?B?7J206rG07Zi4?= <urpapa@gmail.com>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scripts/Makefile.modpost: error in finding modules from
+ .mod files.
+Message-ID: <20120831154745.GG11531@sepie.suse.cz>
+References: <CAA5UCLK9Zssct_f_8sSm8bDGeMFaAv_kr2GTFFWSCcP=Xz9ikw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAA5UCLK9Zssct_f_8sSm8bDGeMFaAv_kr2GTFFWSCcP=Xz9ikw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-08-31 at 15:28 +0000, Dan Williams wrote:
+On Wed, Aug 29, 2012 at 10:58:12PM +0900, 이건호 wrote:
+> This error may happen when the user's id or path includes .ko string.
+> For example, user's id is xxx.ko and building test.ko module,
+> the test.mod file lists ko name and all object files.
+>    /home/xxx.ko/kernel_dev/device/drivers/test.ko
+>    /home/xxx.ko/kernel_dev/device/drivers/test_main.o
+> /home/xxx.ko/kernel_dev/device/drivers/test_io.o ...
+> Current Makefile.modpost and Makefile.modinst find and list up not
+> only test.ko but also other object files.
+> because all of object file's path includes .ko string.
+> This is a patch to fix it.
 > 
-> On Aug 30, 2012, at 5:30 PM, "Vinod Koul" <vkoul@infradead.org> wrote:
-> 
-> > On Fri, 2012-08-24 at 16:36 -0700, Dave Jiang wrote:
-> >> Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-> > Sounds okay to me, I can carry it once Dan acks it
-> 
-> Thanks Vinod.
-> 
-> Acked-by: Dan Williams <djbw@db.com>
-Applied, now
+> Signed-off-by: Gunho Lee <gunho.lee@lge.com>
 
--- 
-~Vinod Koul
-Intel Corp.
+Good catch, applied to kbuild.git#kbuild. BTW, your mailer (gmail?)
+broke the log lines into two. I fixed it manually, but it makes the
+recipient's life easier if you send your patches either using
+git-send-email or a mailer that does not mangle the message (see
+Documentation/email-clients.txt).
 
+Michal
