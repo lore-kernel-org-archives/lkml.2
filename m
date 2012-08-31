@@ -1,68 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753476Ab2H3X7N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 19:59:13 -0400
-Received: from artax.karlin.mff.cuni.cz ([195.113.26.195]:57782 "EHLO
-	artax.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753108Ab2H3X7M (ORCPT
+	id S1753501Ab2HaAAi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 20:00:38 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:44876 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753109Ab2HaAAh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 19:59:12 -0400
-X-Greylist: delayed 571 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 Aug 2012 19:59:12 EDT
-Date: Fri, 31 Aug 2012 01:49:37 +0200 (CEST)
-From: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 5/8] hpfs: drop lock/unlock super
-In-Reply-To: <503F7F9A.3070402@gmail.com>
-Message-ID: <alpine.DEB.2.00.1208310149320.27929@artax.karlin.mff.cuni.cz>
-References: <503F7F9A.3070402@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-X-Personality-Disorder: Schizoid
+	Thu, 30 Aug 2012 20:00:37 -0400
+Date: Thu, 30 Aug 2012 20:00:20 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, linux-mm@kvack.org, ngupta@vflare.org,
+        sjenning@linux.vnet.ibm.com, minchan@kernel.org
+Subject: Re: [PATCH 0/3] staging: ramster: move to new zcache2 code base
+Message-ID: <20120831000020.GA14628@localhost.localdomain>
+References: <1346366764-31717-1-git-send-email-dan.magenheimer@oracle.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346366764-31717-1-git-send-email-dan.magenheimer@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It looks ok.
-
-Mikulas
-
-On Thu, 30 Aug 2012, Marco Stornelli wrote:
-
-> Removed lock/unlock super.
+On Thu, Aug 30, 2012 at 03:46:01PM -0700, Dan Magenheimer wrote:
+> Hi Greg --
 > 
-> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+> gregkh> If you feel that the existing code needs to be dropped
+> gregkh> and replaced with a totally new version, that's fine with
+> gregkh> me.  It's forward progress, which is all that I ask for. 
+> (http://lkml.indiana.edu/hypermail/linux/kernel/1208.0/02240.html,
+> in reference to zcache, assuming applies to ramster as well)
+> 
+> Please apply for staging-next for the 3.7 window to move ramster forward.
+> Since AFAICT there have been no patches or contributions from others to
+> drivers/staging/ramster since it was merged, this totally new version
+> of ramster should not run afoul and the patches should apply to
+> 3.5 or 3.6-rcN.
+> 
+> Thanks,
+> Dan
+> 
+> When ramster was merged into staging at 3.4, it used a "temporarily" forked
+> version of zcache.  Code was proposed to merge zcache and ramster into
+> a new common redesigned codebase which both resolves various serious design
+> flaws and eliminates all code duplication between zcache and ramster, with
+> the result to replace "zcache".  Sadly, that proposal was blocked, so the
+> zcache (and tmem) code in drivers/staging/zcache and the zcache (and tmem)
+> code in drivers/staging/ramster continue to be different.
+
+Right. They will diverge for now.
+> 
+> This patchset moves ramster to the new redesigned codebase and calls that
+> new codebase "zcache2".  Most, if not all, of the redesign will eventually
+> need to be merged with "zcache1" before zcache functionality should be
+> promoted out of staging.
+
+Or as part of ramster unstaging  'zcache1' can be made more in a
+library so that ramster can use it. Naturally this also requires some
+modifications in zcache1 to have the infrastructure functionality for
+ramster. But that is something we can worry about later.
+
+> 
+> An overview of the zcache2 rewrite is provided in a git commit comment
+> later in this series.
+> 
+> A significant item of debate in the new codebase is the removal of zsmalloc.
+
+Just clarifying since what you mean is that in your ramster's version
+of zcache (so zcache2), as you are not using it.
+
+> This removal may be temporary if zsmalloc is enhanced with necessary
+> features to meet the needs of the new zcache codebase.  Justification
+> for the change can be found at http://lkml.org/lkml/2012/8/15/292
+> Such zsmalloc enhancments will almost certainly necessitate a major
+> rework, not a small patch.
+
+Or have the zcache be able to select whether its going to use zbud
+or xsmalloc for any type of pages (so you could use xsmalloc for
+both cleancache and frontswap pages, or be more selective like
+zcache1 is).
+> 
+> While this zcache2 codebase is far from perfect (and thus remains in staging),
+> the foundation is now cleaner, more stable, more maintainable, and much
+> better commented.
+> 
+> Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+> 
 > ---
->  fs/hpfs/super.c |    3 ---
->  1 files changed, 0 insertions(+), 3 deletions(-)
+> Diffstat:
 > 
-> diff --git a/fs/hpfs/super.c b/fs/hpfs/super.c
-> index 706a12c..8af2cdc 100644
-> --- a/fs/hpfs/super.c
-> +++ b/fs/hpfs/super.c
-> @@ -389,7 +389,6 @@ static int hpfs_remount_fs(struct super_block *s, int *flags, char *data)
->  	*flags |= MS_NOATIME;
->  	
->  	hpfs_lock(s);
-> -	lock_super(s);
->  	uid = sbi->sb_uid; gid = sbi->sb_gid;
->  	umask = 0777 & ~sbi->sb_mode;
->  	lowercase = sbi->sb_lowercase;
-> @@ -422,12 +421,10 @@ static int hpfs_remount_fs(struct super_block *s, int *flags, char *data)
->  
->  	replace_mount_options(s, new_opts);
->  
-> -	unlock_super(s);
->  	hpfs_unlock(s);
->  	return 0;
->  
->  out_err:
-> -	unlock_super(s);
->  	hpfs_unlock(s);
->  	kfree(new_opts);
->  	return -EINVAL;
-> -- 
-> 1.7.3.4
-> 
+>  drivers/staging/Kconfig                            |    4 +-
+>  drivers/staging/Makefile                           |    2 +-
+>  drivers/staging/ramster/Kconfig                    |   25 +-
+>  drivers/staging/ramster/Makefile                   |    7 +-
+>  drivers/staging/ramster/TODO                       |   13 -
+>  drivers/staging/ramster/cluster/Makefile           |    3 -
+>  drivers/staging/ramster/cluster/heartbeat.c        |  464 ---
+>  drivers/staging/ramster/cluster/heartbeat.h        |   87 -
+>  drivers/staging/ramster/cluster/masklog.c          |  155 -
+>  drivers/staging/ramster/cluster/masklog.h          |  220 --
+>  drivers/staging/ramster/cluster/nodemanager.c      |  992 ------
+>  drivers/staging/ramster/cluster/nodemanager.h      |   88 -
+>  .../staging/ramster/cluster/ramster_nodemanager.h  |   39 -
+>  drivers/staging/ramster/cluster/tcp.c              | 2256 -------------
+>  drivers/staging/ramster/cluster/tcp.h              |  159 -
+>  drivers/staging/ramster/cluster/tcp_internal.h     |  248 --
+>  drivers/staging/ramster/r2net.c                    |  401 ---
+>  drivers/staging/ramster/ramster.h                  |  113 +-
+>  drivers/staging/ramster/ramster/heartbeat.c        |  462 +++
+>  drivers/staging/ramster/ramster/heartbeat.h        |   87 +
+>  drivers/staging/ramster/ramster/masklog.c          |  155 +
+>  drivers/staging/ramster/ramster/masklog.h          |  220 ++
+>  drivers/staging/ramster/ramster/nodemanager.c      |  995 ++++++
+>  drivers/staging/ramster/ramster/nodemanager.h      |   88 +
+>  drivers/staging/ramster/ramster/r2net.c            |  414 +++
+>  drivers/staging/ramster/ramster/ramster.c          |  985 ++++++
+>  drivers/staging/ramster/ramster/ramster.h          |  161 +
+>  .../staging/ramster/ramster/ramster_nodemanager.h  |   39 +
+>  drivers/staging/ramster/ramster/tcp.c              | 2253 +++++++++++++
+>  drivers/staging/ramster/ramster/tcp.h              |  159 +
+>  drivers/staging/ramster/ramster/tcp_internal.h     |  248 ++
+>  drivers/staging/ramster/tmem.c                     |  313 +-
+>  drivers/staging/ramster/tmem.h                     |  109 +-
+>  drivers/staging/ramster/xvmalloc.c                 |  509 ---
+>  drivers/staging/ramster/xvmalloc.h                 |   30 -
+>  drivers/staging/ramster/xvmalloc_int.h             |   95 -
+>  drivers/staging/ramster/zbud.c                     | 1060 ++++++
+>  drivers/staging/ramster/zbud.h                     |   33 +
+>  drivers/staging/ramster/zcache-main.c              | 3532 ++++++--------------
+>  drivers/staging/ramster/zcache.h                   |   55 +-
+>  40 files changed, 8711 insertions(+), 8567 deletions(-)
+
