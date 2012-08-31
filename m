@@ -1,91 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753583Ab2HaMWw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 08:22:52 -0400
-Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:55657 "EHLO
-	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751679Ab2HaMWO (ORCPT
+	id S1753324Ab2HaMXe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 08:23:34 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:56731 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752229Ab2HaMXb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 08:22:14 -0400
-From: Ulf Hansson <ulf.hansson@stericsson.com>
-To: <linux-arm-kernel@lists.infradead.org>, Mike Turquette <mturquette@ti.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Lee Jones <lee.jones@linaro.org>,
-        Philippe Begnic <philippe.begnic@st.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: [PATCH 2/4] clk: ux500: Support for prmcu_rate clock
-Date: Fri, 31 Aug 2012 14:21:29 +0200
-Message-ID: <1346415691-13371-3-git-send-email-ulf.hansson@stericsson.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1346415691-13371-1-git-send-email-ulf.hansson@stericsson.com>
-References: <1346415691-13371-1-git-send-email-ulf.hansson@stericsson.com>
+	Fri, 31 Aug 2012 08:23:31 -0400
+Date: Fri, 31 Aug 2012 13:23:27 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH 3/3] i2c: nomadik: Add Device Tree support to the Nomadik
+ I2C driver
+Message-ID: <20120831122323.GC5962@gmail.com>
+References: <1345734087-21803-1-git-send-email-lee.jones@linaro.org>
+ <1345734087-21803-3-git-send-email-lee.jones@linaro.org>
+ <20120831112258.GA2624@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120831112258.GA2624@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ulf Hansson <ulf.hansson@linaro.org>
+Hopefully this is more to your liking:
 
-The prmcu_rate clock is not gateable and has a rate which
-only can be fetched.
+Author: Lee Jones <lee.jones@linaro.org>
+Date:   Mon Aug 6 11:09:57 2012 +0100
 
-Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
----
- drivers/clk/ux500/clk-prcmu.c |   14 ++++++++++++++
- drivers/clk/ux500/clk.h       |    5 +++++
- 2 files changed, 19 insertions(+)
+    i2c: nomadik: Add Device Tree support to the Nomadik I2C driver
+    
+    Here we apply the bindings required for successful Device Tree
+    probing of the i2c-nomadik driver.
+    
+    Cc: linux-i2c@vger.kernel.org
+    Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-diff --git a/drivers/clk/ux500/clk-prcmu.c b/drivers/clk/ux500/clk-prcmu.c
-index 1d779ad..930cdfe 100644
---- a/drivers/clk/ux500/clk-prcmu.c
-+++ b/drivers/clk/ux500/clk-prcmu.c
-@@ -153,6 +153,11 @@ static struct clk_ops clk_prcmu_gate_ops = {
- 	.recalc_rate = clk_prcmu_recalc_rate,
+diff --git a/drivers/i2c/busses/i2c-nomadik.c b/drivers/i2c/busses/i2c-nomadik.c
+index 61b00ed..2c85de1 100644
+--- a/drivers/i2c/busses/i2c-nomadik.c
++++ b/drivers/i2c/busses/i2c-nomadik.c
+@@ -25,6 +25,7 @@
+ #include <linux/regulator/consumer.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/platform_data/i2c-nomadik.h>
++#include <linux/of.h>
+ 
+ #define DRIVER_NAME "nmk-i2c"
+ 
+@@ -920,15 +921,41 @@ static struct nmk_i2c_controller u8500_i2c = {
+        .sm             = I2C_FREQ_MODE_FAST,
  };
  
-+static struct clk_ops clk_prcmu_rate_ops = {
-+	.is_enabled = clk_prcmu_is_enabled,
-+	.recalc_rate = clk_prcmu_recalc_rate,
-+};
-+
- static struct clk_ops clk_prcmu_opp_gate_ops = {
- 	.prepare = clk_prcmu_opp_prepare,
- 	.unprepare = clk_prcmu_opp_unprepare,
-@@ -228,6 +233,15 @@ struct clk *clk_reg_prcmu_gate(const char *name,
- 			&clk_prcmu_gate_ops);
- }
- 
-+struct clk *clk_reg_prcmu_rate(const char *name,
-+			       const char *parent_name,
-+			       u8 cg_sel,
-+			       unsigned long flags)
++static void nmk_i2c_of_probe(struct device_node *np,
++                       struct nmk_i2c_controller *pdata)
 +{
-+	return clk_reg_prcmu(name, parent_name, cg_sel, 0, flags,
-+			&clk_prcmu_rate_ops);
++       of_property_read_u32(np, "clock-frequency", &pdata->clk_freq);
++
++       /* This driver only supports 'standard' and 'fast' modes of operation. */
++       if (pdata->clk_freq <= 100000)
++               pdata->sm = I2C_FREQ_MODE_STANDARD;
++       else
++               pdata->sm = I2C_FREQ_MODE_FAST;
 +}
 +
- struct clk *clk_reg_prcmu_opp_gate(const char *name,
- 				   const char *parent_name,
- 				   u8 cg_sel,
-diff --git a/drivers/clk/ux500/clk.h b/drivers/clk/ux500/clk.h
-index 32085aa..836d7d1 100644
---- a/drivers/clk/ux500/clk.h
-+++ b/drivers/clk/ux500/clk.h
-@@ -35,6 +35,11 @@ struct clk *clk_reg_prcmu_gate(const char *name,
- 			       u8 cg_sel,
- 			       unsigned long flags);
+ static atomic_t adapter_id = ATOMIC_INIT(0);
  
-+struct clk *clk_reg_prcmu_rate(const char *name,
-+			       const char *parent_name,
-+			       u8 cg_sel,
-+			       unsigned long flags);
+ static int nmk_i2c_probe(struct amba_device *adev, const struct amba_id *id)
+ {
+        int ret = 0;
+        struct nmk_i2c_controller *pdata = adev->dev.platform_data;
++       struct device_node *np = adev->dev.of_node;
+        struct nmk_i2c_dev      *dev;
+        struct i2c_adapter *adap;
+ 
++       if (np) {
++               if (!pdata) {
++                       pdata = devm_kzalloc(&adev->dev, sizeof(*pdata), GFP_KERNEL);
++                       if (!pdata) {
++                               ret = -ENOMEM;
++                               goto err_no_mem;
++                       }
++               }
++               /* Provide the default configuration as a base. */
++               pdata = &u8500_i2c;
++               nmk_i2c_of_probe(np, pdata);
++       }
 +
- struct clk *clk_reg_prcmu_opp_gate(const char *name,
- 				   const char *parent_name,
- 				   u8 cg_sel,
--- 
-1.7.10
-
+        if (!pdata)
+                /* No i2c configuration found, using the default. */
+                pdata = &u8500_i2c;
+diff --git a/include/linux/platform_data/i2c-nomadik.h b/include/linux/platform_data/i2c-nomadik.h
+index c2303c3..3a8be9c 100644
+--- a/include/linux/platform_data/i2c-nomadik.h
++++ b/include/linux/platform_data/i2c-nomadik.h
+@@ -28,7 +28,7 @@ enum i2c_freq_mode {
+  * @sm:                speed mode
+  */
+ struct nmk_i2c_controller {
+-       unsigned long   clk_freq;
++       u32             clk_freq;
+        unsigned short  slsu;
+        unsigned char   tft;
+        unsigned char   rft;
