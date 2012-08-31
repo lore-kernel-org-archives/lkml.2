@@ -1,43 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755217Ab2HaXOM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 19:14:12 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:63296 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755091Ab2HaXOL (ORCPT
+	id S1755219Ab2HaXTR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 19:19:17 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:57554 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755170Ab2HaXTQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 19:14:11 -0400
+	Fri, 31 Aug 2012 19:19:16 -0400
 MIME-Version: 1.0
-In-Reply-To: <1346349837-10521-1-git-send-email-m-karicheri2@ti.com>
-References: <1346349837-10521-1-git-send-email-m-karicheri2@ti.com>
-Date: Sat, 1 Sep 2012 01:14:09 +0200
-Message-ID: <CACRpkdZ_jN6SmuzGnKeopHbohHn9bK8tRgrMKBVLatfJDBKsqw@mail.gmail.com>
-Subject: Re: [PATCH] gpio:clk: preparation for switch to common clock framework
+In-Reply-To: <1346153444.11862.1.camel@phoenix>
+References: <1346153444.11862.1.camel@phoenix>
+Date: Sat, 1 Sep 2012 01:19:15 +0200
+Message-ID: <CACRpkdY8KnJp6PkKyuq-kVQdn3kZhH3fH_ujHcAXVnT1SBVxfg@mail.gmail.com>
+Subject: Re: [PATCH] gpio: em: Fix checking return value of irq_alloc_descs
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Murali Karicheri <m-karicheri2@ti.com>, Kevin Hilman <khilman@ti.com>,
-        Sekhar Nori <nsekhar@ti.com>
-Cc: grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
-        mturquette@linaro.org
+To: Axel Lin <axel.lin@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Magnus Damm <damm@opensource.se>,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 8:03 PM, Murali Karicheri <m-karicheri2@ti.com> wrote:
+On Tue, Aug 28, 2012 at 1:30 PM, Axel Lin <axel.lin@gmail.com> wrote:
 
-> As a first step towards migrating davinci platforms to use common clock
-> framework, replace all instances of clk_enable() with clk_prepare_enable()
-> and clk_disable() with clk_disable_unprepare(). Until the platform is
-> switched to use the CONFIG_HAVE_CLK_PREPARE Kconfig variable, this just
-> adds a might_sleep() call and would work without any issues.
+> irq_alloc_descs() returns negative error code on failure.
 >
-> This will make it easy later to switch to common clk based implementation
-> of clk driver from DaVinci specific driver.
->
-> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-OK the patch is so obviously correct so I just applied it, DaVinci folks,
-scream if you still don't want it for some reason...
+Applied with Magnus' ACK.
 
 Yours,
 Linus Walleij
