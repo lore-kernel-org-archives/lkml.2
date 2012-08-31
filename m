@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753129Ab2HaM1L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 08:27:11 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40844 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366Ab2HaM1K (ORCPT
+	id S1752865Ab2HaMoo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 08:44:44 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:2953 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751366Ab2HaMol (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 08:27:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <5040AAAE.30501@gmail.com>
-References: <5040AAAE.30501@gmail.com>
-Date: Fri, 31 Aug 2012 14:27:09 +0200
-Message-ID: <CAFLxGvxh962CZxgF86nL2ULsy-a2BRXFszDHceeSsZm0DTJgfg@mail.gmail.com>
-Subject: Re: 3.6rc-3 doesn't compile um arch
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        torvalds@linux-foundation.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        user-mode-linux-devel@lists.sourceforge.net, martin.partel@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 31 Aug 2012 08:44:41 -0400
+Date: Fri, 31 Aug 2012 14:44:29 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-kernel@vger.kernel.org,
+        dirk.brandewie@gmail.com, linux-i2c@vger.kernel.org,
+        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        jbaron@redhat.com, ben-linux@fluff.org,
+        Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: i2c-designware-core: KBUILD_MODNAME undeclared [was: Build
+ regressions/improvements  in v3.6-rc1]
+Message-ID: <20120831144429.554345d0@endymion.delvare>
+In-Reply-To: <502C0022.2020106@suse.cz>
+References: <1344072256-13170-1-git-send-email-geert@linux-m68k.org>
+	<502C0022.2020106@suse.cz>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 31, 2012 at 2:14 PM, Marco Stornelli
-<marco.stornelli@gmail.com> wrote:
-> Hi,
->
-> I'm trying to compile the latest kernel for arch um, using the latest
-> Linus's tree, but it doesn't compile due to the commit:
->
-> um: pass siginfo to the guest process.
->
-> I think the fix is trivial. At line 117 of os-Linux/time.c you find
-> this line:
->
->   alarm_handler(SIGVTALRM, NULL);
->
-> but it should be:
->
->   alarm_handler(SIGVTALRM, NULL, NULL);
->
-> Is it already fixed?
+Hi Jiri, Geert,
 
-It's known but nobody cared to send a fix for that.
-Who wants the credit?
+On Wed, 15 Aug 2012 22:01:38 +0200, Jiri Slaby wrote:
+> On 08/04/2012 11:24 AM, Geert Uytterhoeven wrote:
+> > Below is the list of build error/warning regressions/improvements in
+> > v3.6-rc1[1] compared to v3.5[2].
+> ...
+> >   + drivers/i2c/busses/i2c-designware-core.c: error: 'KBUILD_MODNAME' undeclared (first use in this function):
+> 
+> This is a real problem we are facing here. It happens on PPC when all
+> I2C_DESIGNWARE_PLATFORM, I2C_DESIGNWARE_PCI and DYNAMIC_DEBUG are set.
+> 
+> It's because i2c-designware-core.c is used in two modules
+> (i2c-designware-platform and i2c-designware-pci) and KBUILD_MODNAME is
+> not defined for those because (scripts/Makefile.lib):
+> # $(modname_flags) #defines KBUILD_MODNAME as the name of the module
+> # it will end up in (or would, if it gets compiled in)
+> # Note: Files that end up in two or more modules are compiled
+> #       without the KBUILD_MODNAME definition. The reason is
+> #       that any made-up name would differ in different configs.
+> 
+> But DYNAMIC_DEBUG needs KBUILD_MODNAME for dev_dbg used in that source.
+> 
+> Any ideas? Why is it not a separate module for example?
 
-Otherwise I'll fix it in -rc4 or 5.
-(Currently I'm on holiday...)
+It should be. Axel Lin has posted a patch which does that and it should
+fix your problem:
+https://lkml.org/lkml/2012/6/13/233
+
+Please test and confirm it does the right thing. I'll push the patch
+upstream if it does.
 
 -- 
-Thanks,
-//richard
+Jean Delvare
