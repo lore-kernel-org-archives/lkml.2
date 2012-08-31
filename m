@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752229Ab2HaBzv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 21:55:51 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:43940 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751627Ab2HaBzt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 21:55:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120831014359.GB15218@moria.home.lan>
-References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
-	<1346175456-1572-10-git-send-email-koverstreet@google.com>
-	<Pine.LNX.4.64.1208291210180.774@file.rdu.redhat.com>
-	<20120829165006.GB20312@google.com>
-	<20120829170711.GC12504@redhat.com>
-	<20120829171345.GC20312@google.com>
-	<20120830220745.GI27257@redhat.com>
-	<20120831014359.GB15218@moria.home.lan>
-Date: Thu, 30 Aug 2012 18:55:48 -0700
-Message-ID: <CAH+dOxLgXxhE7h3bboBczy4stn5k-Rbky7mDHYN4nnmismcq4g@mail.gmail.com>
-Subject: Re: [PATCH v7 9/9] block: Avoid deadlocks with bio allocation by
- stacking drivers
-From: Kent Overstreet <koverstreet@google.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Mikulas Patocka <mpatocka@redhat.com>, linux-bcache@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com, tj@kernel.org,
-        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	id S1751916Ab2HaCWm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 22:22:42 -0400
+Received: from mga14.intel.com ([143.182.124.37]:41689 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751051Ab2HaCWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 22:22:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,344,1344236400"; 
+   d="scan'208";a="139957180"
+Date: Fri, 31 Aug 2012 10:16:58 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Alexander Stein <alexander.stein@systec-electronic.com>
+Cc: Jean Delvare <khali@linux-fr.org>, <linux-i2c@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Subject: Re: i2c-eg20t: regression since i2c_add_numbered_adapter change
+Message-ID: <20120831101658.5ec81fa2@feng-i7>
+In-Reply-To: <6208908.ZjG7eB9lJn@ws-stein>
+References: <4401854.hVfHzgeqjT@ws-stein>
+	<4378288.tkkLiQ5MQ7@ws-stein>
+	<20120830171915.36b6d10b@feng-i7>
+	<6208908.ZjG7eB9lJn@ws-stein>
+Organization: intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 6:43 PM, Kent Overstreet <koverstreet@google.com> wrote:
-> On Thu, Aug 30, 2012 at 06:07:45PM -0400, Vivek Goyal wrote:
->> On Wed, Aug 29, 2012 at 10:13:45AM -0700, Kent Overstreet wrote:
->>
->> [..]
->> > > Performance aside, punting submission to per device worker in case of deep
->> > > stack usage sounds cleaner solution to me.
->> >
->> > Agreed, but performance tends to matter in the real world. And either
->> > way the tricky bits are going to be confined to a few functions, so I
->> > don't think it matters that much.
->> >
->> > If someone wants to code up the workqueue version and test it, they're
->> > more than welcome...
->>
->> Here is one quick and dirty proof of concept patch. It checks for stack
->> depth and if remaining space is less than 20% of stack size, then it
->> defers the bio submission to per queue worker.
->
-> I can't think of any correctness issues. I see some stuff that could be
-> simplified (blk_drain_deferred_bios() is redundant, just make it a
-> wrapper around blk_deffered_bio_work()).
->
-> Still skeptical about the performance impact, though - frankly, on some
-> of the hardware I've been running bcache on this would be a visible
-> performance regression - probably double digit percentages but I'd have
-> to benchmark it.  That kind of of hardware/usage is not normal today,
-> but I've put a lot of work into performance and I don't want to make
-> things worse without good reason.
+Hi Alexander,
 
-Here's another crazy idea - we don't really need another thread, just
-more stack space.
+On Thu, 30 Aug 2012 13:08:09 +0200
+Alexander Stein <alexander.stein@systec-electronic.com> wrote:
 
-We could check if we're running out of stack space, then if we are
-just allocate another two pages and memcpy the struct thread_info
-over.
+> On Thursday 30 August 2012 17:19:15, Feng Tang wrote:
+> > > IMO the i2c_register_board_info only works in quite static setups. Especially with I2C-Busses attached to hotplugable PCI devices this way doesn't work reliable any more.
+> > > The device come and go dynamically so you can't assume fixed mapping.
+> > 
+> > Can you specify the hotplugable?
+> > 1. A hotplugable i2c bus controller (say i2c_eg20t) with all fixed i2c
+> >  devices connecting to it
+> > 2. i2c bus controller is fixed, while the i2c devices will be dynamically
+> >  connected to it.
+> > 3. Both the bus controller and devices are dynamically hotplugged
+> 
+> I had scenario 1 in mind, but with more than 1 bus controller (say 2x i2c_eg20t). How can you set a fixed numbering if there are more controllers, each with maybe more than 1 bus?
+> Anyway, how can you provide a static bus numbering if there are more than one driver or more than one device per driver if the devices are hotplugable?
 
-I think the main obstacle is that we'd need some per arch code for
-mucking with the stack pointer. And it'd break backtraces, but that's
-fixable.
+There is no problem for one pci driver to support multiple devices with
+same HW, if you check i2c-eg20t.c you can check the pch_pcidev_id[], there
+is a ML7213 platform which has 2 i2c controllers already. With current
+in tree driver, they will get fixed bus number 0 and 1.
+
+For the scenario 1, if you have really have another hotplugable pci eg20t
+controller, it surely will have its unique PCI id, and then we can use
+the "driver_data" of struct pci_device_id to point to a platform info
+structure like
+
+struct i2c_eg20t_platform_info {
+	u16	bus_base_num;
+	u16	total_hw_num;
+}
+
+And for EG20T compatible platform, I don't think it will have too many
+fancy hotplugable different type of i2c controller other than i2c_eg20t
+and i2c_sch.
+
+Thanks,
+Feng
