@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137Ab2HaJXV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 05:23:21 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:37527 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751398Ab2HaJXT convert rfc822-to-8bit (ORCPT
+	id S1752173Ab2HaJXf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 05:23:35 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:44397 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751667Ab2HaJXc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 05:23:19 -0400
+	Fri, 31 Aug 2012 05:23:32 -0400
 From: "Kim, Milo" <Milo.Kim@ti.com>
 To: Anton Vorontsov <anton.vorontsov@linaro.org>
 CC: David Woodhouse <dwmw2@infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 03/22] lp8727_charger: fix buggy code of NULL pdata
-Thread-Topic: [PATCH 03/22] lp8727_charger: fix buggy code of NULL pdata
-Thread-Index: Ac2HWj3v323rZybeQcCBArUvh9E7Mg==
-Date: Fri, 31 Aug 2012 09:23:12 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF1E7D@DQHE02.ent.ti.com>
+Subject: [PATCH 04/22] lp8727_charger: add configurable debouce timer
+Thread-Topic: [PATCH 04/22] lp8727_charger: add configurable debouce timer
+Thread-Index: Ac2HWkV8gk4MkhebRxaYsLnPRatW7A==
+Date: Fri, 31 Aug 2012 09:23:25 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF1E85@DQHE02.ent.ti.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -28,115 +28,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- LP8727 platform data is optional, so the driver should work even
- the platform data is NULL.
+ Debounce time is configurable in the platform side.
+ If it is not defined, the default value is 270ms.
 
- To check the platform data, charging parameter data should be changed
- to the pointer type.
-
- Fix NULL point access problem when getting the battery properties.
- When the data is NULL, just return as invalid value.
+ Platform data is msec unit, and this time is converted to jiffies internally.
+ The workqueue uses this jiffies time in the interrupt handling.
+ So debounce_jiffies is added in the private data.
 
 Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 ---
- drivers/power/lp8727_charger.c       |   28 +++++++++++++++++++++-------
- include/linux/platform_data/lp8727.h |    7 ++++---
- 2 files changed, 25 insertions(+), 10 deletions(-)
+ drivers/power/lp8727_charger.c       |   12 +++++++++---
+ include/linux/platform_data/lp8727.h |    2 ++
+ 2 files changed, 11 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/power/lp8727_charger.c b/drivers/power/lp8727_charger.c
-index b2df114..7c19c09 100644
+index 7c19c09..1907b1f 100644
 --- a/drivers/power/lp8727_charger.c
 +++ b/drivers/power/lp8727_charger.c
-@@ -170,20 +170,21 @@ static void lp8727_ctrl_switch(struct lp8727_chg *pchg, u8 sw)
+@@ -17,7 +17,7 @@
+ #include <linux/power_supply.h>
+ #include <linux/platform_data/lp8727.h>
  
- static void lp8727_id_detection(struct lp8727_chg *pchg, u8 id, int vbusin)
+-#define DEBOUNCE_MSEC	270
++#define DEFAULT_DEBOUNCE_MSEC	270
+ 
+ /* Registers */
+ #define CTRL1		0x1
+@@ -90,6 +90,7 @@ struct lp8727_chg {
+ 	struct lp8727_psy *psy;
+ 	struct lp8727_chg_param *chg_parm;
+ 	enum lp8727_dev_id devid;
++	unsigned long debounce_jiffies;
+ };
+ 
+ static int lp8727_read_bytes(struct lp8727_chg *pchg, u8 reg, u8 *data, u8 len)
+@@ -236,15 +237,18 @@ static void lp8727_delayed_func(struct work_struct *_work)
+ static irqreturn_t lp8727_isr_func(int irq, void *ptr)
  {
-+	struct lp8727_platform_data *pdata = pchg->pdata;
- 	u8 devid = ID_NONE;
- 	u8 swctrl = SW_DM1_HiZ | SW_DP2_HiZ;
+ 	struct lp8727_chg *pchg = ptr;
+-	unsigned long delay = msecs_to_jiffies(DEBOUNCE_MSEC);
  
- 	switch (id) {
- 	case 0x5:
- 		devid = ID_TA;
--		pchg->chg_parm = &pchg->pdata->ac;
-+		pchg->chg_parm = pdata ? pdata->ac : NULL;
- 		break;
- 	case 0xB:
- 		if (lp8727_is_dedicated_charger(pchg)) {
--			pchg->chg_parm = &pchg->pdata->ac;
-+			pchg->chg_parm = pdata ? pdata->ac : NULL;
- 			devid = ID_DEDICATED_CHG;
- 		} else if (lp8727_is_usb_charger(pchg)) {
--			pchg->chg_parm = &pchg->pdata->usb;
-+			pchg->chg_parm = pdata ? pdata->usb : NULL;
- 			devid = ID_USB_CHG;
- 			swctrl = SW_DM1_DM | SW_DP2_DP;
- 		} else if (vbusin) {
-@@ -295,6 +296,7 @@ static int lp8727_battery_get_property(struct power_supply *psy,
- 				       union power_supply_propval *val)
+-	queue_delayed_work(pchg->irqthread, &pchg->work, delay);
++	queue_delayed_work(pchg->irqthread, &pchg->work,
++					pchg->debounce_jiffies);
+ 
+ 	return IRQ_HANDLED;
+ }
+ 
+ static int lp8727_intr_config(struct lp8727_chg *pchg)
  {
- 	struct lp8727_chg *pchg = dev_get_drvdata(psy->dev->parent);
-+	struct lp8727_platform_data *pdata = pchg->pdata;
- 	u8 read;
++	unsigned delay_msec = pchg->pdata ? pchg->pdata->debounce_msec :
++						DEFAULT_DEBOUNCE_MSEC;
++
+ 	INIT_DELAYED_WORK(&pchg->work, lp8727_delayed_func);
  
- 	switch (psp) {
-@@ -318,19 +320,31 @@ static int lp8727_battery_get_property(struct power_supply *psy,
- 			val->intval = POWER_SUPPLY_HEALTH_GOOD;
- 		break;
- 	case POWER_SUPPLY_PROP_PRESENT:
--		if (pchg->pdata->get_batt_present)
-+		if (!pdata)
-+			return -EINVAL;
+ 	pchg->irqthread = create_singlethread_workqueue("lp8727-irqthd");
+@@ -253,6 +257,8 @@ static int lp8727_intr_config(struct lp8727_chg *pchg)
+ 		return -ENOMEM;
+ 	}
+ 
++	pchg->debounce_jiffies = msecs_to_jiffies(delay_msec);
 +
-+		if (pdata->get_batt_present)
- 			val->intval = pchg->pdata->get_batt_present();
- 		break;
- 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
--		if (pchg->pdata->get_batt_level)
-+		if (!pdata)
-+			return -EINVAL;
-+
-+		if (pdata->get_batt_level)
- 			val->intval = pchg->pdata->get_batt_level();
- 		break;
- 	case POWER_SUPPLY_PROP_CAPACITY:
--		if (pchg->pdata->get_batt_capacity)
-+		if (!pdata)
-+			return -EINVAL;
-+
-+		if (pdata->get_batt_capacity)
- 			val->intval = pchg->pdata->get_batt_capacity();
- 		break;
- 	case POWER_SUPPLY_PROP_TEMP:
--		if (pchg->pdata->get_batt_temp)
-+		if (!pdata)
-+			return -EINVAL;
-+
-+		if (pdata->get_batt_temp)
- 			val->intval = pchg->pdata->get_batt_temp();
- 		break;
- 	default:
+ 	return request_threaded_irq(pchg->client->irq,
+ 				NULL,
+ 				lp8727_isr_func,
 diff --git a/include/linux/platform_data/lp8727.h b/include/linux/platform_data/lp8727.h
-index ea98c61..f4bcdd5 100644
+index f4bcdd5..54b7788 100644
 --- a/include/linux/platform_data/lp8727.h
 +++ b/include/linux/platform_data/lp8727.h
-@@ -51,15 +51,16 @@ struct lp8727_chg_param {
-  * @get_batt_level : get battery voltage (mV)
-  * @get_batt_capacity : get battery capacity (%)
+@@ -53,6 +53,7 @@ struct lp8727_chg_param {
   * @get_batt_temp : get battery temperature
-- * @ac, @usb : charging parameters each charger type
-+ * @ac                : charging parameters for AC type charger
-+ * @usb               : charging parameters for USB type charger
+  * @ac                : charging parameters for AC type charger
+  * @usb               : charging parameters for USB type charger
++ * @debounce_msec     : interrupt debounce time
   */
  struct lp8727_platform_data {
  	u8 (*get_batt_present)(void);
- 	u16 (*get_batt_level)(void);
- 	u8 (*get_batt_capacity)(void);
+@@ -61,6 +62,7 @@ struct lp8727_platform_data {
  	u8 (*get_batt_temp)(void);
--	struct lp8727_chg_param ac;
--	struct lp8727_chg_param usb;
-+	struct lp8727_chg_param *ac;
-+	struct lp8727_chg_param *usb;
+ 	struct lp8727_chg_param *ac;
+ 	struct lp8727_chg_param *usb;
++	unsigned int debounce_msec;
  };
  
  #endif
