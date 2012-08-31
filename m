@@ -1,108 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753765Ab2HaO05 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 10:26:57 -0400
-Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:20265
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752075Ab2HaO04 (ORCPT
+	id S1753796Ab2HaO3h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 10:29:37 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:33631 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752075Ab2HaO3g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 10:26:56 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1202hzzz2dh87h2a8h668h839h944hd25hd2bhe96hf0ah107ah1220h1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Fri, 31 Aug 2012 09:26:29 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Dong Aisheng <b29396@freescale.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linus.walleij@stericsson.com>, <s.hauer@pengutronix.de>,
-        <kernel@pengutronix.de>, <grant.likely@secretlab.ca>,
-        <rob.herring@calxeda.com>, <sameo@linux.intel.com>, <lrg@ti.com>,
-        <broonie@opensource.wolfsonmicro.com>, <richard.zhao@freescale.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <swarren@wwwdotorg.org>
-Subject: Re: [PATCH v4 1/7] mfd: add syscon driver based on regmap
-Message-ID: <20120831012626.GA7726@r65073-Latitude-D630>
-References: <1346237818-9498-1-git-send-email-b29396@freescale.com>
- <1346237818-9498-2-git-send-email-b29396@freescale.com>
+	Fri, 31 Aug 2012 10:29:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1346237818-9498-2-git-send-email-b29396@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
+In-Reply-To: <1346421558.9709.51.camel@sauron.fi.intel.com>
+References: <1346001700-26895-1-git-send-email-shijie8@gmail.com>
+	<1346001700-26895-2-git-send-email-shijie8@gmail.com>
+	<1346421558.9709.51.camel@sauron.fi.intel.com>
+Date: Fri, 31 Aug 2012 10:29:35 -0400
+Message-ID: <CAMiH66FOQezc6_AFfsMmBtmkcxUEV2781_AvdASmC80izxzeNw@mail.gmail.com>
+Subject: Re: [PATCH 2/3] mtd: cmdlinepart: sort the unsorted partitions
+From: Huang Shijie <shijie8@gmail.com>
+To: dedekind1@gmail.com
+Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, shmulik.ladkani@gmail.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 29, 2012 at 06:56:52PM +0800, Dong Aisheng wrote:
-> +config MFD_SYSCON
-> +        bool "System Controller Register R/W Based on Regmap"
+On Fri, Aug 31, 2012 at 9:59 AM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
+> On Sun, 2012-08-26 at 13:21 -0400, Huang Shijie wrote:
+>> Assume we have a 1GB(8Gb) nand chip.
+>> It is legit if we set the partitions as the following:
+>>     gpmi-nand:1g@200m(rootfs),100m@0(boot),100m@100m(kernel)
+>>
+>> But the current code can not parse out any partition with this
+>> cmdline.
+>>
+>> This patch sorts the unsorted partitions by the @offset.
+>> For there are maybe only several partitions, i use the simple
+>> Bubble sort algorithm.
+>>
+>> Signed-off-by: Huang Shijie <shijie8@gmail.com>
+>
+> I still cannot find time to actually think about this carefully, but the
+> commit message does not sound convincing, it does not explain why
+> sorting is the right way to fix the issue, and what would be the
+> alternatives. It actually also does not explain why exactly we currently
+> cannot parse the example string.
+>
+thanks .
 
-If the driver only compiles and works for device tree probe, we should
-have the following?
+I will add more comment in the next version.
 
-	depends on OF
-
-> +        select REGMAP_MMIO
-> +        help
-> +	  Select this option to enable accessing system control registers
-> +	  via regmap.
-> +
-
-<snip>
-
-> +struct regmap *syscon_node_to_regmap(struct device_node *np)
-> +{
-> +	struct syscon *syscon;
-> +	struct device *dev;
-> +
-> +	dev = driver_find_device(&syscon_driver.driver, NULL, np,
-> +				 syscon_match);
-> +	of_node_put(np);
-
-This looks a little unnatural to me.  Function syscon_node_to_regmap
-becomes an API visible to clients, who might never know that np will
-be put inside the API.  I'm saying the client may also call of_node_put
-to put the node they get.
-
-I think of_node_put should be moved out from here and put into
-syscon_node_to_regmap and syscon_regmap_lookup_by_compatible.
-
-Regards,
-Shawn
-
-> +
-> +	if (!dev)
-> +		return ERR_PTR(-EPROBE_DEFER);
-> +
-> +	syscon = dev_get_drvdata(dev);
-> +
-> +	return syscon->regmap;
-> +}
-> +EXPORT_SYMBOL_GPL(syscon_node_to_regmap);
-> +
-> +struct regmap *syscon_regmap_lookup_by_compatible(const char *s)
-> +{
-> +	struct device_node *syscon_np;
-> +
-> +	syscon_np = of_find_compatible_node(NULL, NULL, s);
-> +	if (!syscon_np)
-> +		return ERR_PTR(-ENODEV);
-> +
-> +	return syscon_node_to_regmap(syscon_np);
-> +}
-> +EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_compatible);
-> +
-> +struct regmap *syscon_regmap_lookup_by_phandle(struct device_node *np,
-> +					const char *property)
-> +{
-> +	struct device_node *syscon_np;
-> +
-> +	syscon_np = of_parse_phandle(np, property, 0);
-> +	if (!syscon_np)
-> +		return ERR_PTR(-ENODEV);
-> +
-> +	return syscon_node_to_regmap(syscon_np);
-> +}
-> +EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_phandle);
-
+Best Regards
+Huang Shijie
