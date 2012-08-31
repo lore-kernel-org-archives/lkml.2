@@ -1,151 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751510Ab2H2EkN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 00:40:13 -0400
-Received: from mga01.intel.com ([192.55.52.88]:56938 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750845Ab2H2EkK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 00:40:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,330,1344236400"; 
-   d="scan'208";a="215203558"
-From: xiaoyan.zhang@intel.com
-To: linux-kernel@vger.kernel.org
-Cc: xiaoyan.zhang@intel.com, joseph.cihula@intel.com, gang.wei@intel.com,
-        tpmdd-devel@lists.sourceforge.net, debora@linux.vnet.ibm.com,
-        srajiv@linux.vnet.ibm.com, m.selhorst@sirrix.com, shpedoikal@gmail.com,
-        linux-security-module@vger.kernel.org, james.l.morris@oracle.com,
-        hpa@zytor.com, linux-api@vger.kernel.org, yoder1@us.ibm.com,
-        key@linux.vnet.ibm.com, fengguang.wu@intel.com
-Subject: [PATCH] driver/char/tpm: declare internal symbols as static
-Date: Thu, 29 Aug 2013 20:39:11 +0800
-Message-Id: <1377779951-1687-1-git-send-email-xiaoyan.zhang@intel.com>
-X-Mailer: git-send-email 1.7.7.6
+	id S1755151Ab2HaV5q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 17:57:46 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:40027 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755121Ab2HaV5p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Aug 2012 17:57:45 -0400
+Date: Fri, 31 Aug 2012 23:02:27 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Mathieu Poirier <mathieu.poirier@linaro.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org,
+        rdunlap@xenotime.net, arve@android.com, kernel-team@android.com,
+        john.stultz@linaro.org
+Subject: Re: [PATCH v2] drivers/tty: Folding Android's keyreset driver in
+ sysRQ
+Message-ID: <20120831230227.6e5008b5@pyramind.ukuu.org.uk>
+In-Reply-To: <50413200.5010104@linaro.org>
+References: <1346365854-28441-1-git-send-email-mathieu.poirier@linaro.org>
+	<20120830230129.GC21501@core.coreip.homeip.net>
+	<50413200.5010104@linaro.org>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiaoyan Zhang <xiaoyan.zhang@intel.com>
+> > Why do we need to involve a platform device and not use, for example, a module
+> > parameter, that could be set up from userspace?
+> 
+> The platform device comes from the original design and was included to
+> minimise the amount of changes in code that make use of the current
+> keyreset driver.
 
-This patch declares the internal struct and functions as static to provide
-more security.
+The platform device is IMHO the right answer. In this class of devices
+the stuff is compiled in, the userspace is Android, there are no modules
+and there is no reason for it to be configurable.
 
-Signed-off-by: Xiaoyan Zhang <xiaoyan.zhang@intel.com>
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
----
- drivers/char/tpm/tpm.c     |    4 ++--
- drivers/char/tpm/tpm_ppi.c |   37 +++++++++++++++++++------------------
- 2 files changed, 21 insertions(+), 20 deletions(-)
+> I am definitely willing to explore the possibility of adding module
+> parameter to complement the platform data but again, to avoid impacting
+> board code I'm in favour of keeping the platform data/device - get back
+> to me if you disagree.
+> 
+> Thinking back on this it may be better to call 'platform_driver_probe'
+> rather than 'platform_driver_register'.  That way one wouldn't have to
+> instantiate a platform_device.
+> 
+> > 
+> > Also, why do we need reset_fn() and not simply invoke SysRq-B handler
+> > that should call ctrl_alt_del() for us?
+> 
+> The reset_fn() gives an implementer the chance of calling some custom
+> function before the reset sequence is started and in my opinion should
 
-diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
-index 39526c0..6724615 100644
---- a/drivers/char/tpm/tpm.c
-+++ b/drivers/char/tpm/tpm.c
-@@ -915,7 +915,7 @@ EXPORT_SYMBOL_GPL(tpm_show_pcrs);
- 
- #define  READ_PUBEK_RESULT_SIZE 314
- #define TPM_ORD_READPUBEK cpu_to_be32(124)
--struct tpm_input_header tpm_readpubek_header = {
-+static struct tpm_input_header tpm_readpubek_header = {
- 	.tag = TPM_TAG_RQU_COMMAND,
- 	.length = cpu_to_be32(30),
- 	.ordinal = TPM_ORD_READPUBEK
-@@ -1395,7 +1395,7 @@ EXPORT_SYMBOL_GPL(tpm_dev_vendor_release);
-  * Once all references to platform device are down to 0,
-  * release all allocated structures.
-  */
--void tpm_dev_release(struct device *dev)
-+static void tpm_dev_release(struct device *dev)
- {
- 	struct tpm_chip *chip = dev_get_drvdata(dev);
- 
-diff --git a/drivers/char/tpm/tpm_ppi.c b/drivers/char/tpm/tpm_ppi.c
-index 440fa1c..f27b58c 100644
---- a/drivers/char/tpm/tpm_ppi.c
-+++ b/drivers/char/tpm/tpm_ppi.c
-@@ -53,8 +53,8 @@ static inline void ppi_assign_params(union acpi_object params[4],
- 	params[3].package.elements = NULL;
- }
- 
--ssize_t tpm_show_ppi_version(struct device *dev, struct device_attribute *attr,
--			     char *buf)
-+static ssize_t tpm_show_ppi_version(struct device *dev,
-+				    struct device_attribute *attr, char *buf)
- {
- 	acpi_handle handle;
- 	acpi_status status;
-@@ -82,9 +82,8 @@ ssize_t tpm_show_ppi_version(struct device *dev, struct device_attribute *attr,
- 	return status;
- }
- 
--ssize_t tpm_show_ppi_request(struct device *dev,
--			     struct device_attribute *attr,
--			     char *buf)
-+static ssize_t tpm_show_ppi_request(struct device *dev,
-+				    struct device_attribute *attr, char *buf)
- {
- 	acpi_handle handle;
- 	acpi_status status;
-@@ -132,9 +131,9 @@ cleanup:
- 	return status;
- }
- 
--ssize_t tpm_store_ppi_request(struct device *dev,
--			      struct device_attribute *attr,
--			      const char *buf, size_t count)
-+static ssize_t tpm_store_ppi_request(struct device *dev,
-+				     struct device_attribute *attr,
-+				     const char *buf, size_t count)
- {
- 	char version[PPI_VERSION_LEN + 1];
- 	acpi_handle handle;
-@@ -207,9 +206,9 @@ ssize_t tpm_store_ppi_request(struct device *dev,
- 	return status;
- }
- 
--ssize_t tpm_show_ppi_transition_action(struct device *dev,
--				       struct device_attribute *attr,
--				       char *buf)
-+static ssize_t tpm_show_ppi_transition_action(struct device *dev,
-+					      struct device_attribute *attr,
-+					      char *buf)
- {
- 	char version[PPI_VERSION_LEN + 1];
- 	acpi_handle handle;
-@@ -269,9 +268,9 @@ ssize_t tpm_show_ppi_transition_action(struct device *dev,
- 	return status;
- }
- 
--ssize_t tpm_show_ppi_response(struct device *dev,
--			      struct device_attribute *attr,
--			      char *buf)
-+static ssize_t tpm_show_ppi_response(struct device *dev,
-+				     struct device_attribute *attr,
-+				     char *buf)
- {
- 	acpi_handle handle;
- 	acpi_status status;
-@@ -413,14 +412,16 @@ static ssize_t show_ppi_operations(char *buf, u32 start, u32 end)
- 	return str - buf;
- }
- 
--ssize_t tpm_show_ppi_tcg_operations(struct device *dev,
--				   struct device_attribute *attr, char *buf)
-+static ssize_t tpm_show_ppi_tcg_operations(struct device *dev,
-+					   struct device_attribute *attr,
-+					   char *buf)
- {
- 	return show_ppi_operations(buf, 0, PPI_TPM_REQ_MAX);
- }
- 
--ssize_t tpm_show_ppi_vs_operations(struct device *dev,
--				  struct device_attribute *attr, char *buf)
-+static ssize_t tpm_show_ppi_vs_operations(struct device *dev,
-+					  struct device_attribute *attr,
-+					  char *buf)
- {
- 	return show_ppi_operations(buf, PPI_VS_REQ_START, PPI_VS_REQ_END);
- }
--- 
-1.7.7.6
+So why wouldn't that already be using the reset notifiers ?
 
+Alan
