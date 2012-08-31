@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752033Ab2HaJXE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 05:23:04 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:37504 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751957Ab2HaJWw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 05:22:52 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-CC: David Woodhouse <dwmw2@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 00/22] lp8727_charger: clean up code
-Thread-Topic: [PATCH 00/22] lp8727_charger: clean up code
-Thread-Index: Ac2HWiTGzGSZWrkyT6muTzV78e5bWQ==
-Date: Fri, 31 Aug 2012 09:22:39 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF1E58@DQHE02.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.87.185.123]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752058Ab2HaJc4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 05:32:56 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:45024 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751429Ab2HaJcy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Aug 2012 05:32:54 -0400
+Message-ID: <504084B9.3000701@ti.com>
+Date: Fri, 31 Aug 2012 11:32:41 +0200
+From: Benoit Cousson <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
+To: "Poddar, Sourav" <sourav.poddar@ti.com>
+CC: <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Felipe Balbi <balbi@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Re: [PATCHv3 0/4] Add device tree data for omap5
+References: <1344961473-13675-1-git-send-email-sourav.poddar@ti.com> <CAKdam57L8txFtE9ahy3u3vLW0XRP5z4QaNQKVFj9KaEFZE1qvg@mail.gmail.com> <503229F5.4030405@ti.com> <CAKdam543ATO96rbhgCWKtGUGRQ_+=KSyAk-nGBknjC+BvJSmOw@mail.gmail.com>
+In-Reply-To: <CAKdam543ATO96rbhgCWKtGUGRQ_+=KSyAk-nGBknjC+BvJSmOw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LP8727 driver should be fixed for several reasons.
+Hi Sourav,
 
-(a) Need to clean up _probe() and _remove()
-(b) Not secure code when the platform data is NULL
-(c) Improved the interrupt handling
-(d) Lots of definitions should be unique.
-(e) Others...
+While rebasing your series on top of Tony's lo/devel-dt, I realized that the keypad nodes are not located at the correct place :-(
 
-Patch v2.
-These patches are submitted more separately.
+At the moment they are just floating at the top level of the dts while they belong to the ocp bus and thus should be put there.
 
-[PATCH 01/22] lp8727_charger: use devm_kzalloc()
-[PATCH 02/22] lp8727_charger: cleanup _probe() and _remove()
-[PATCH 03/22] lp8727_charger: fix buggy code of NULL pdata
-[PATCH 04/22] lp8727_charger: add configurable debouce timer
-[PATCH 05/22] lp8727_charger: remove unnecessary workqueue thread
-[PATCH 06/22] lp8727_charger: clean up the interrupt handler
-[PATCH 07/22] lp8727_charger: clear interrrupts at inital time
-[PATCH 08/22] lp8727_charger: fix code for getting battery temp
-[PATCH 09/22] lp8727_charger: use the definition rather than enum
-[PATCH 10/22] lp8727_charger: clean up lp8727 definitions
-[PATCH 11/22] lp8727_charger: use specific definition
-[PATCH 12/22] lp8727_charger: clean up lp8727_is_charger_attached()
-[PATCH 13/22] lp8727_charger: make lp8727_init_device() shorter
-[PATCH 14/22] lp8727_charger: make lp8727_ctrl_switch() inline
-[PATCH 15/22] lp8727_charger: make lp8727_charger_get_propery() simpler
-[PATCH 16/22] lp8727_charger: return if the battery is discharging
-[PATCH 17/22] lp8727_charger: clean up lp8727_charger_changed()
-[PATCH 18/22] lp8727_charger: make cosmetic code on lp8727_delayed_func()
-[PATCH 19/22] lp8727_charger: fix typo - chg_parm to chg_param
-[PATCH 20/22] lp8727_charger: add description in the private data
-[PATCH 21/22] lp8727_charger: fix checkpatch warning
-[PATCH 22/22] lp8727_charger: make cosmetic code
+I fixed that since it was trivial and cleaned as well the changelog and the comments to aligned then properly. I added as well the physical address to the node name and a label for easy reference at board level.
+
+I did some basic test on my OMAP4 sdp, but that all I can do so far.
+
+Could you just check if this is still fine for OMAP5 before I ask Tony to pull that.
+
+I based that on top of Tony's DT patches due to conflict with the existing MMC patch in it.
 
 
-Best Regards,
-Milo
 
+The following changes since commit 85d7ff9b907685b6469058888f1d961b3e8d47ad:
+  Olof Johansson (1):
+        ARM: omap: add dtb targets
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bcousson/linux-omap-dt.git for_3.7/dts
+
+Sourav Poddar (6):
+      arm/dts: omap5-evm: Add I2C support
+      arm/dts: omap5-evm: Add tmp102 sensor support
+      arm/dts: omap5-evm: Add keypad data
+      arm/dts: omap5-evm: Add bmp085 sensor support
+      arm/dts: omap4-sdp: Add keypad data
+      Documentation: dt: i2c: trivial-devices: Update for tmp102
+
+ .../devicetree/bindings/i2c/trivial-devices.txt    |    1 +
+ arch/arm/boot/dts/omap4-sdp.dts                    |   70 ++++++++++++++++++++
+ arch/arm/boot/dts/omap4.dtsi                       |    5 ++
+ arch/arm/boot/dts/omap5-evm.dts                    |   33 +++++++++
+ arch/arm/boot/dts/omap5.dtsi                       |   40 +++++++++++
+ 5 files changed, 149 insertions(+), 0 deletions(-)
+
+Regards,
+Benoit
 
