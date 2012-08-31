@@ -1,68 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751532Ab2HaIaW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 04:30:22 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:35314 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751168Ab2HaIaU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 04:30:20 -0400
+	id S1751429Ab2HaIea (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 04:34:30 -0400
+Received: from mga14.intel.com ([143.182.124.37]:15529 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750935Ab2HaIe2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Aug 2012 04:34:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,346,1344236400"; 
+   d="scan'208";a="187280965"
+Message-ID: <5040775C.3070205@intel.com>
+Date: Fri, 31 Aug 2012 11:35:40 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <1345013391-22521-1-git-send-email-develkernel412222@gmail.com>
-References: <1345013391-22521-1-git-send-email-develkernel412222@gmail.com>
-Date: Fri, 31 Aug 2012 14:00:19 +0530
-Message-ID: <CA+C2MxQkSF8oOWgRENSJ_UeQUJuwXo8_JHNhokpizVqHtFrSEg@mail.gmail.com>
-Subject: Re: [PATCH] extcon-max8997: remove usage of ret in max8997_muic_handle_charger_type_detach
-From: Devendra Naga <develkernel412222@gmail.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>, linux-kernel@vger.kernel.org
-Cc: Devendra Naga <develkernel412222@gmail.com>
+To: "Shishkin, Alexander" <alexander.shishkin@intel.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com
+Subject: Re: [PATCH v2 07/12] rbtree: adjust root color in rb_insert_color()
+ only when necessary
+References: <1342139517-3451-1-git-send-email-walken@google.com> <1342139517-3451-8-git-send-email-walken@google.com> <50406F60.5040707@intel.com> <CANN689EBA6yPk3pS-yXZ1-ticG7eU3mY1mWMWp2S3xhJ73ODFA@mail.gmail.com> <20120831011541.ddf8ed78.akpm@linux-foundation.org>
+In-Reply-To: <20120831011541.ddf8ed78.akpm@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-any comments ?
+On 31/08/12 11:15, Andrew Morton wrote:
+> On Fri, 31 Aug 2012 01:07:24 -0700 Michel Lespinasse <walken@google.com> wrote:
+> 
+>> On Fri, Aug 31, 2012 at 1:01 AM, Adrian Hunter <adrian.hunter@intel.com> wrote:
+>>> This breaks tools/perf build in linux-next:
+>>>
+>>> ../../lib/rbtree.c: In function 'rb_insert_color':
+>>> ../../lib/rbtree.c:95:9: error: 'true' undeclared (first use in this function)
+>>> ../../lib/rbtree.c:95:9: note: each undeclared identifier is reported only once for each function it appears in
+>>> ../../lib/rbtree.c: In function '__rb_erase_color':
+>>> ../../lib/rbtree.c:216:9: error: 'true' undeclared (first use in this function)
+>>> ../../lib/rbtree.c: In function 'rb_erase':
+>>> ../../lib/rbtree.c:368:2: error: unknown type name 'bool'
+>>> make: *** [util/rbtree.o] Error 1
+>>
+>> I thought Andrew had a patch
+>> rbtree-adjust-root-color-in-rb_insert_color-only-when-necessary-fix-perf-compilation
+>> that fixed this though a Makefile change ?
+> 
+> Yup.  But it's unclear why we should include the header via the cc
+> command line?
 
-On Wed, Aug 15, 2012 at 12:19 PM, Devendra Naga
-<develkernel412222@gmail.com> wrote:
-> actually we can do returns with error or success with out ret in this function,
-> so remove the ret variable, and reduce a very little (4byte) space on stack of this function
->
-> Signed-off-by: Devendra Naga <develkernel412222@gmail.com>
+Dunno
+
+AFAICS tools/perf/util/include/linux is for fixing up the
+differences between kernel headers and exported kernel headers.
+Hence my change:
+
+diff --git a/tools/perf/util/include/linux/rbtree.h b/tools/perf/util/include/linux/rbtree.h
+index 7a243a1..2a030c5 100644
+--- a/tools/perf/util/include/linux/rbtree.h
++++ b/tools/perf/util/include/linux/rbtree.h
+@@ -1 +1,2 @@
++#include <stdbool.h>
+ #include "../../../../include/linux/rbtree.h"
+
+Alex?
+
+> 
+> 
+> From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+> Subject: rbtree-adjust-root-color-in-rb_insert_color-only-when-necessary-fix-perf-compilation
+> 
+> Commit 2cfaf9cc68190c24fdd05e4d104099b3f27c7a44 (rbtree: adjust root color
+> in rb_insert_color() only when necessary) introduces bool type and constants
+> to the rbtree.c, and breaks compilation of tools/perf:
+> 
+> ../../lib/rbtree.c: In function `rb_insert_color':
+> ../../lib/rbtree.c:95:9: error: `true' undeclared (first use in this function)
+> ../../lib/rbtree.c:95:9: note: each undeclared identifier is reported only once
+> or each function it appears in
+> ../../lib/rbtree.c: In function `__rb_erase_color':
+> ../../lib/rbtree.c:216:9: error: `true' undeclared (first use in this function)
+> ../../lib/rbtree.c: In function `rb_erase':
+> ../../lib/rbtree.c:368:2: error: unknown type name `bool'
+> make: *** [util/rbtree.o] Error 1
+> 
+> This patch is the easiest solution I can think of.
+> 
+> Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+> Acked-by: Michel Lespinasse <walken@google.com>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 > ---
->  compile tested.
->
->  drivers/extcon/extcon-max8997.c | 6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/extcon/extcon-max8997.c b/drivers/extcon/extcon-max8997.c
-> index ef9090a..77b66b0 100644
-> --- a/drivers/extcon/extcon-max8997.c
-> +++ b/drivers/extcon/extcon-max8997.c
-> @@ -271,8 +271,6 @@ out:
->  static int max8997_muic_handle_charger_type_detach(
->                                 struct max8997_muic_info *info)
->  {
-> -       int ret = 0;
-> -
->         switch (info->pre_charger_type) {
->         case MAX8997_CHARGER_TYPE_USB:
->                 extcon_set_cable_state(info->edev, "USB", false);
-> @@ -290,11 +288,11 @@ static int max8997_muic_handle_charger_type_detach(
->                 extcon_set_cable_state(info->edev, "Fast-charger", false);
->                 break;
->         default:
-> -               ret = -EINVAL;
-> +               return -EINVAL;
->                 break;
->         }
->
-> -       return ret;
-> +       return 0;
->  }
->
->  static int max8997_muic_handle_charger_type(struct max8997_muic_info *info,
-> --
-> 1.7.12.rc2
->
+> 
+>  tools/perf/Makefile |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff -puN tools/perf/Makefile~rbtree-adjust-root-color-in-rb_insert_color-only-when-necessary-fix-perf-compilation tools/perf/Makefile
+> --- a/tools/perf/Makefile~rbtree-adjust-root-color-in-rb_insert_color-only-when-necessary-fix-perf-compilation
+> +++ a/tools/perf/Makefile
+> @@ -806,7 +806,7 @@ $(OUTPUT)ui/browsers/map.o: ui/browsers/
+>  	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
+>  
+>  $(OUTPUT)util/rbtree.o: ../../lib/rbtree.c $(OUTPUT)PERF-CFLAGS
+> -	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
+> +	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' -include stdbool.h $<
+>  
+>  $(OUTPUT)util/parse-events.o: util/parse-events.c $(OUTPUT)PERF-CFLAGS
+>  	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Wno-redundant-decls $<
+> _
+> 
+> 
+> 
+
