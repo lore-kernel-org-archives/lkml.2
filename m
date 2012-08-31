@@ -1,135 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751506Ab2HaFnA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 01:43:00 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:36026 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751229Ab2HaFm6 (ORCPT
+	id S1751758Ab2HaFoP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 01:44:15 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:36961 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751229Ab2HaFoN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 01:42:58 -0400
+	Fri, 31 Aug 2012 01:44:13 -0400
 MIME-Version: 1.0
-In-Reply-To: <1346357766-14030-2-git-send-email-toshi.kani@hp.com>
-References: <1346357766-14030-1-git-send-email-toshi.kani@hp.com> <1346357766-14030-2-git-send-email-toshi.kani@hp.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 30 Aug 2012 22:42:37 -0700
-Message-ID: <CAErSpo4nKzwFb6UfM068fqzW6J5ysKsP2cnngMnTA9GQaTmeXw@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/5] ACPI: Add acpi_lookup_driver() function
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org, lenb@kernel.org,
-        liuj97@gmail.com, isimatu.yasuaki@jp.fujitsu.com
+In-Reply-To: <5040488E.307@yahoo.es>
+References: <503F9F72.9020301@yahoo.es>
+	<CAKohponRJHD_7PkQ_W2AF_9YtcRs1sJuQWwZtqmFTSQ-+bQcnQ@mail.gmail.com>
+	<5040488E.307@yahoo.es>
+Date: Fri, 31 Aug 2012 11:14:13 +0530
+Message-ID: <CAKohponnS5PtkqJwvaMfTYvQ6tWgDFuqA_6+uOmvFWSA0R=Kzw@mail.gmail.com>
+Subject: Re: [PATCH v2 0/2] dw_dmac: repair driver for use with AVR32 (AP7000)
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Hein Tibosch <hein_tibosch@yahoo.es>
+Cc: "ludovic.desroches" <ludovic.desroches@atmel.com>, egtvedt@samfundet.no,
+        spear-devel <spear-devel@list.st.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Havard Skinnemoen <havard@skinnemoen.net>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 1:16 PM, Toshi Kani <toshi.kani@hp.com> wrote:
-> Added acpi_lookup_driver(), which looks up an associated driver
-> for the notified ACPI device object by walking through the list
-> of ACPI drivers.
+On 31 August 2012 10:45, Hein Tibosch <hein_tibosch@yahoo.es> wrote:
+> On 8/31/2012 12:26 PM, Viresh Kumar wrote:
+>> BTW, Ideally speaking the fix for AVR32 which will enable 32bit mem
+>> support and enable BIG endian support should have been part of this
+>> patchset. That code can go through DMA tree as these patches are
+>> very closely related. Otherwise now you have to wait till these patches
+>> are included in linux-next, then only you can send AVR32 patches for
+>> inclusion.
+>>
+>> So, maybe you can just add Acked-by from me and Arnd and include
+>> AVR patches (Only changes related to these two patches) in the same series.
+>> That will make life easier for you.
 >
-> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> ---
->  drivers/acpi/scan.c     |   65 +++++++++++++++++++++++++++++++++++++++++++++++
->  include/acpi/acpi_bus.h |    2 +
->  2 files changed, 67 insertions(+), 0 deletions(-)
+> Good idea, I already wondered how these 5 patches can be kept together:
 >
-> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> index d1ecca2..d0e0d18 100644
-> --- a/drivers/acpi/scan.c
-> +++ b/drivers/acpi/scan.c
-> @@ -1630,3 +1630,68 @@ int __init acpi_scan_init(void)
+> 1 [PATCH v2 1/2] dw_dmac: make driver endianness configurable
+> 2 [PATCH v2 2/2] dw_dmac: max_mem_width limits value for SRC/DST_TR_WID register
+> 3 [PATCH v2] avr32: at32ap700x: set DMA slave properties for MCI dw_dmac
+> 4 [PATCH v2 1/2] mmc: atmel-mci: DMA can be used with other controller
+> 5 [PATCH v2 2/2] mmc: atmel-mci: AP700x PDC is not connected to MCI
 >
->         return result;
->  }
-> +
-> +static int acpi_match_driver(struct device_driver *drv, void *data)
-> +{
-> +       struct acpi_driver *driver = to_acpi_driver(drv);
-> +       struct acpi_device *device = (struct acpi_device *) data;
-> +       int ret;
-> +
-> +       ret = acpi_match_device_ids(device, driver->ids);
-> +       if (!ret)
-> +               device->driver = driver;
-> +
-> +       return !ret;
-> +}
-> +
-> +/**
-> + * acpi_lookup_driver: Look up a driver for the notified ACPI device
-> + * @handle: ACPI handle of the notified device object
-> + * @event: Notify event
-> + *
-> + * Look up an associated driver for the notified ACPI device object
-> + * by walking through the list of ACPI drivers.
-> + */
-> +struct acpi_driver *acpi_lookup_driver(acpi_handle handle, u32 event)
-> +{
-> +       struct acpi_device *device;
-> +       struct acpi_driver *driver = NULL;
-> +       unsigned long long sta;
-> +       int type;
-> +       int ret;
-> +
-> +       /* allocate a temporary device object */
-> +       device = kzalloc(sizeof(struct acpi_device), GFP_KERNEL);
-> +       if (!device) {
-> +               pr_err(PREFIX "No memory to allocate a tmp device\n");
-> +               return NULL;
-> +       }
-> +
-> +       ret = acpi_bus_type_and_status(handle, &type, &sta);
-> +       if (ret) {
-> +               pr_err(PREFIX "Failed to get type of device\n");
-> +               goto out;
-> +       }
-> +
-> +       /* setup this temporary device object */
-> +       INIT_LIST_HEAD(&device->pnp.ids);
-> +       device->device_type = type;
-> +       device->handle = handle;
-> +       device->parent = acpi_bus_get_parent(handle);
-> +       device->dev.bus = &acpi_bus_type;
-> +       device->driver = NULL;
-> +       STRUCT_TO_INT(device->status) = sta;
-> +       device->status.present = 1;
-> +
-> +       /* set HID to this device object */
-> +       acpi_device_set_id(device);
-> +
-> +       /* lookup a matching driver */
-> +       (void) bus_for_each_drv(device->dev.bus, NULL,
-> +                                       device, acpi_match_driver);
-> +       driver = device->driver;
+> Patch 3 will only compile after patch 2 has been applied.
+>
+> Patch 4 and 5 will compile but they will only result in a working mci+dma
+> after patches 1, 2 and 3 have been applied.
+>
+> I'm a mere  developer, not a MAINTAINER. But sure it would be good to keep
+> these together as much as possible. It would also be easier for fellow
+> avr32/mci users who want to upgrade to 3.5.2 without problems.
+>
+> So I assume that you want patches 1 to 3, packed as [PATCH v3 3/3] ?
+>
+> The atmel-mci patches will be handled by Ludovic Desroches.
 
-This path is used when we receive a Notify to a device and a matching
-driver has been registered, but the driver is not bound to the device.
- For example, it may be a newly-added device where we haven't bound a
-driver to it yet.
-
-Is there anything that prevents us from unloading the driver between
-here (the point where we capture the "struct acpi_driver *") and the
-point where we call "driver->ops.sys_notify"?
-
-> +
-> +out:
-> +       kfree(device);
-> +       return driver;
-> +}
-> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-> index bde976e..a773b46 100644
-> --- a/include/acpi/acpi_bus.h
-> +++ b/include/acpi/acpi_bus.h
-> @@ -345,6 +345,8 @@ extern int unregister_acpi_notifier(struct notifier_block *);
->
->  extern int register_acpi_bus_notifier(struct notifier_block *nb);
->  extern void unregister_acpi_bus_notifier(struct notifier_block *nb);
-> +extern struct acpi_driver *acpi_lookup_driver(acpi_handle handle, u32 event);
-> +
->  /*
->   * External Functions
->   */
-> --
-> 1.7.7.6
->
+Perfect !!
