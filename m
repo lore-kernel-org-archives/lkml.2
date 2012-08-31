@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752355Ab2HaJYT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 05:24:19 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:44444 "EHLO comal.ext.ti.com"
+	id S1752409Ab2HaJYf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 05:24:35 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:44468 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752287Ab2HaJYQ convert rfc822-to-8bit (ORCPT
+	id S1751858Ab2HaJYe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 05:24:16 -0400
+	Fri, 31 Aug 2012 05:24:34 -0400
 From: "Kim, Milo" <Milo.Kim@ti.com>
 To: Anton Vorontsov <anton.vorontsov@linaro.org>
 CC: David Woodhouse <dwmw2@infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 07/22] lp8727_charger: clear interrrupts at inital time
-Thread-Topic: [PATCH 07/22] lp8727_charger: clear interrrupts at inital time
-Thread-Index: Ac2HWmAQc/KMNYhHRwqUI4lP8TzQpQ==
-Date: Fri, 31 Aug 2012 09:24:09 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF1EBA@DQHE02.ent.ti.com>
+Subject: [PATCH 08/22] lp8727_charger: fix code for getting battery temp
+Thread-Topic: [PATCH 08/22] lp8727_charger: fix code for getting battery temp
+Thread-Index: Ac2HWmhH9VLxESg+QByQBW1wlNN2Rg==
+Date: Fri, 31 Aug 2012 09:24:28 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF1EC6@DQHE02.ent.ti.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -28,40 +28,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- To initialize the device, previous interrupts need to be cleared
- while loading the driver.
+ For better understanding, use specific function and definitions
+ rather than magic numbers.
+ New enum type for die temperature is matched with hex codes.
+ Specific temperature names are better than 0x1, 0x2 and 0x3.
+
+ And lp8727_is_high_temperature() function has better readability than
+ comparing raw register values.
 
 Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 ---
- drivers/power/lp8727_charger.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/power/lp8727_charger.c |   31 ++++++++++++++++++++++++++-----
+ 1 file changed, 26 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/power/lp8727_charger.c b/drivers/power/lp8727_charger.c
-index 134ed5c..b5567bc 100644
+index b5567bc..1a5f4b2 100644
 --- a/drivers/power/lp8727_charger.c
 +++ b/drivers/power/lp8727_charger.c
-@@ -17,6 +17,7 @@
- #include <linux/power_supply.h>
- #include <linux/platform_data/lp8727.h>
+@@ -58,6 +58,7 @@
  
-+#define LP8788_NUM_INTREGS	2
- #define DEFAULT_DEBOUNCE_MSEC	270
+ /* STATUS2 register */
+ #define TEMP_STAT	(3 << 5)
++#define TEMP_SHIFT	5
  
- /* Registers */
-@@ -136,6 +137,13 @@ static int lp8727_init_device(struct lp8727_chg *pchg)
+ enum lp8727_dev_id {
+ 	ID_NONE,
+@@ -75,6 +76,13 @@ enum lp8727_chg_stat {
+ 	EOC,
+ };
+ 
++enum lp8727_die_temp {
++	LP8788_TEMP_75C,
++	LP8788_TEMP_95C,
++	LP8788_TEMP_115C,
++	LP8788_TEMP_135C,
++};
++
+ struct lp8727_psy {
+ 	struct power_supply ac;
+ 	struct power_supply usb;
+@@ -315,12 +323,25 @@ static int lp8727_charger_get_property(struct power_supply *psy,
+ 	return 0;
+ }
+ 
++static bool lp8727_is_high_temperature(enum lp8727_die_temp temp)
++{
++	switch (temp) {
++	case LP8788_TEMP_95C:
++	case LP8788_TEMP_115C:
++	case LP8788_TEMP_135C:
++		return true;
++	default:
++		return false;
++	}
++}
++
+ static int lp8727_battery_get_property(struct power_supply *psy,
+ 				       enum power_supply_property psp,
+ 				       union power_supply_propval *val)
  {
- 	u8 val;
- 	int ret;
-+	u8 intstat[LP8788_NUM_INTREGS];
-+
-+	/* clear interrupts */
-+	ret = lp8727_read_bytes(pchg, INT1, intstat, LP8788_NUM_INTREGS);
-+	if (ret)
-+		return ret;
-+
+ 	struct lp8727_chg *pchg = dev_get_drvdata(psy->dev->parent);
+ 	struct lp8727_platform_data *pdata = pchg->pdata;
++	enum lp8727_die_temp temp;
+ 	u8 read;
  
- 	val = ID200_EN | ADC_EN | CP_EN;
- 	ret = lp8727_write_byte(pchg, CTRL1, val);
+ 	switch (psp) {
+@@ -337,11 +358,11 @@ static int lp8727_battery_get_property(struct power_supply *psy,
+ 		break;
+ 	case POWER_SUPPLY_PROP_HEALTH:
+ 		lp8727_read_byte(pchg, STATUS2, &read);
+-		read = (read & TEMP_STAT) >> 5;
+-		if (read >= 0x1 && read <= 0x3)
+-			val->intval = POWER_SUPPLY_HEALTH_OVERHEAT;
+-		else
+-			val->intval = POWER_SUPPLY_HEALTH_GOOD;
++		temp = (read & TEMP_STAT) >> TEMP_SHIFT;
++
++		val->intval = lp8727_is_high_temperature(temp) ?
++			POWER_SUPPLY_HEALTH_OVERHEAT :
++			POWER_SUPPLY_HEALTH_GOOD;
+ 		break;
+ 	case POWER_SUPPLY_PROP_PRESENT:
+ 		if (!pdata)
 -- 
 1.7.9.5
 
