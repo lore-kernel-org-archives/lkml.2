@@ -1,102 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876Ab2HaHGi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 03:06:38 -0400
-Received: from bosmailout11.eigbox.net ([66.96.186.11]:46721 "EHLO
-	bosmailout11.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751336Ab2HaHGg (ORCPT
+	id S1751737Ab2HaHIP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 03:08:15 -0400
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:60492 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751147Ab2HaHIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 03:06:36 -0400
-X-Greylist: delayed 2375 seconds by postgrey-1.27 at vger.kernel.org; Fri, 31 Aug 2012 03:06:36 EDT
-X-Authority-Analysis: v=2.0 cv=aPZHX8Bm c=1 sm=1
- a=EVDLJLhrg0sUKeqAW2r0xw==:17 a=bc2JKO6qiGsA:10 a=tW0haWE2Y5YA:10
- a=KKK01639J3UA:10 a=8nJEP1OIZ-IA:10 a=mLKWYZFlQ1UA:10
- a=bJ0fqD8TFZgqkSadqForXVIPBlU=:19 a=gfktABbqsrHBgD1PsWcA:9 a=wPNLvfGTeEIA:10
- a=AnsiuLKgxXFeB68GILQVjQ==:117
-X-EN-OrigOutIP: 10.20.18.14
-X-EN-IMPSID: tJSz1j0060JCtq201JSzKP
-Message-ID: <504058B2.2080901@yahoo.es>
-Date: Fri, 31 Aug 2012 14:24:50 +0800
-From: Hein Tibosch <hein_tibosch@yahoo.es>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120824 Thunderbird/15.0
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: linux-embedded@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
-        Phillip Lougher <phillip@lougher.demon.co.uk>, hpa@linux.intel.com
-Subject: [PATCH]  lib/decompress.c adding __init to decompress_method and
- data
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 31 Aug 2012 03:08:13 -0400
+Date: Fri, 31 Aug 2012 09:07:57 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>, Hugh Dickins <hughd@google.com>,
+        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [RFC v2 PATCH 0/7] thp: transparent hugepages on s390
+Message-ID: <20120831090757.2e29c834@de.ibm.com>
+In-Reply-To: <20120830125444.86925ef3.akpm@linux-foundation.org>
+References: <1346254384-30046-1-git-send-email-gerald.schaefer@de.ibm.com>
+	<20120830125444.86925ef3.akpm@linux-foundation.org>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-EN-UserInfo: 3946c951b80c12a8be5482963a0b1232:e0ae43bc192b431f8b69f09a37527cbc
-X-EN-AuthUser: hein@htibosch.net
-X-EN-OrigIP: 114.79.60.254
-X-EN-OrigHost: unknown
+x-cbid: 12083107-3548-0000-0000-000002F9B41E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Every time when compiling a new Linux kernel, I'm surprised that
-this warning still occurs:
+On Thu, 30 Aug 2012 12:54:44 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-WARNING: vmlinux.o(.text+0x14cfd8): Section mismatch in
-reference from the variable compressed_formats to the function
-.init.text:gunzip()
-The function compressed_formats() references
-the function __init gunzip().
-etc..
+> On Wed, 29 Aug 2012 17:32:57 +0200
+> Gerald Schaefer <gerald.schaefer@de.ibm.com> wrote:
+> 
+> > This patch series adds support for transparent hugepages on System z.
+> > Small changes to common code are necessary with regard to a different
+> > pgtable_t, tlb flushing and kvm behaviour on s390, see patches 1 to 3.
+> 
+> "RFC" always worries me.  I read it as "Really Flakey Code" ;) Is it
+> still appropriate to this patchset?
 
-This patch should solve it:
+The code quality is IMHO already good. We do change common mm code though
+and we want to get some feedback on that.
 
-Within decompress.c, compressed_formats[] needs 'a __initdata annotation', because
-some of it's data members refer to functions which will be unloaded after init.
+> I grabbed them all.  Patches 1-3 look sane to me and I cheerfully
+> didn't read the s390 changes at all.  Hopefully Andrea will be able to
+> review at least patches 1-3 for us.
+> 
+> If that all goes well, how do we play this?  I'd prefer to merge 1-3
+> myself, as they do interact with ongoing MM development.  I can also
+> merge 4-7 if appropriate s390 maintainer acks are seen.  Or I can drop
+> them and the s390 parts can be merged via the s390 tree at a later
+> date?
 
-Consequently, it's user decompress_method() will get the __init prefix.
+I would really appreciate if Andrea could have a look at the code. I've
+read the patches and I am fine with them but it is very easy to miss some
+important bit.
 
-Signed-off-by: Hein Tibosch <hein_tibosch@yahoo.es>
----
- lib/decompress.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+As far as upstreaming is concerned: I can deal with the pure s390 parts
+via the s390 tree if that helps you. If you prefer the carry all of them,
+that is fine with me as well.
 
-diff --git a/lib/decompress.c b/lib/decompress.c
-index 3d766b7..31a8042 100644
---- a/lib/decompress.c
-+++ b/lib/decompress.c
-@@ -14,6 +14,7 @@
- 
- #include <linux/types.h>
- #include <linux/string.h>
-+#include <linux/init.h>
- 
- #ifndef CONFIG_DECOMPRESS_GZIP
- # define gunzip NULL
-@@ -31,11 +32,13 @@
- # define unlzo NULL
- #endif
- 
--static const struct compress_format {
-+struct compress_format {
- 	unsigned char magic[2];
- 	const char *name;
- 	decompress_fn decompressor;
--} compressed_formats[] = {
-+};
-+
-+static const struct compress_format compressed_formats[] __initdata = {
- 	{ {037, 0213}, "gzip", gunzip },
- 	{ {037, 0236}, "gzip", gunzip },
- 	{ {0x42, 0x5a}, "bzip2", bunzip2 },
-@@ -45,7 +48,7 @@ static const struct compress_format {
- 	{ {0, 0}, NULL, NULL }
- };
- 
--decompress_fn decompress_method(const unsigned char *inbuf, int len,
-+decompress_fn __init decompress_method(const unsigned char *inbuf, int len,
- 				const char **name)
- {
- 	const struct compress_format *cf;
 -- 
-1.7.8.0
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
 
