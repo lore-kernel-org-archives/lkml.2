@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726Ab2HaKp6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 06:45:58 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:39653 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752539Ab2HaKp5 (ORCPT
+	id S1752620Ab2HaKtV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 06:49:21 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:39150 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751780Ab2HaKtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 06:45:57 -0400
-Date: Fri, 31 Aug 2012 05:45:49 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        HACHIMI Samir <shachimi@adeneo-embedded.com>,
-        thierry.reding@avionic-design.de, linux-kernel@vger.kernel.org,
-        =?iso-8859-1?Q?Beno=EEt_Th=E9baudeau?= 
-	<benoit.thebaudeau@advansee.com>
-Subject: Re: i.MX pwm patches
-Message-ID: <20120830214547.GC3613@r65073-Latitude-D630>
-References: <1346154504-5623-1-git-send-email-s.hauer@pengutronix.de>
+	Fri, 31 Aug 2012 06:49:20 -0400
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH RESEND #2] dj: memory scribble in logi_dj
+To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 31 Aug 2012 12:06:59 +0100
+Message-ID: <20120831110637.16039.45040.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1346154504-5623-1-git-send-email-s.hauer@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 28, 2012 at 01:48:15PM +0200, Sascha Hauer wrote:
-> Hi All,
-> 
-> The following patches are an overdue work on the i.MX pwm driver.
-> 
-> - introduce SoC specific functions to make the driver easier to maintain
-> - use peripheral clock for pwm output unconditionally
-> - separate the two clocks this module has
-> - enable ipg clock for register accesses, peripheral clock for enabling
->   the pwm
-> - make the driver safe for calling pwm_config before pwm_enable
-> - Add devicetree support for i.MX53
-> 
-> The platform device support is still implemented using cpu_is_*, I think
-> this can be dropped completely soon
+From: Alan Cox <alan@linux.intel.com>
 
-Anything stops us from doing this right now?  The bonus point of
-cleaning this is that we can remove the #include <mach/hardware.h>
-from the driver, which is helpful for single-kernel project.
+Resending as it's not in the input updates for -rc4
 
-Regards,
-Shawn
+Allocate a structure not a pointer to it !
 
-> as this driver has no in kernel users
-> currently, so there should be no need to keep compatibility for platform
-> based boards.
-> 
-> Hopefully this series fixes the issues mentioned by Benoît. It has been
-> tested on an i.MX53 only.
-> 
-> Sascha
-> 
-> ----------------------------------------------------------------
-> Philipp Zabel (3):
->       pwm i.MX: add devicetree support
->       pwm i.MX: fix clock lookup
->       pwm i.MX: add devicetree support
-> 
-> Sascha Hauer (6):
->       pwm i.MX: factor out SoC specific functions
->       pwm i.MX: remove unnecessary if in pwm_[en|dis]able
->       pwm i.MX: add functions to enable/disable pwm.
->       pwm i.MX: Use module_platform_driver
->       pwm i.MX: use per clock unconditionally
->       ARM i.MX53: Add pwms to dtsi
-> 
->  arch/arm/boot/dts/imx53.dtsi        |   14 ++
->  arch/arm/mach-imx/clk-imx51-imx53.c |    4 +
->  drivers/pwm/pwm-imx.c               |  278 +++++++++++++++++++++++------------
->  3 files changed, 202 insertions(+), 94 deletions(-)
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
+
+ drivers/hid/hid-logitech-dj.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
+index 0f9c146..4d524b5 100644
+--- a/drivers/hid/hid-logitech-dj.c
++++ b/drivers/hid/hid-logitech-dj.c
+@@ -439,7 +439,7 @@ static int logi_dj_recv_query_paired_devices(struct dj_receiver_dev *djrcv_dev)
+ 	struct dj_report *dj_report;
+ 	int retval;
+ 
+-	dj_report = kzalloc(sizeof(dj_report), GFP_KERNEL);
++	dj_report = kzalloc(sizeof(struct dj_report), GFP_KERNEL);
+ 	if (!dj_report)
+ 		return -ENOMEM;
+ 	dj_report->report_id = REPORT_ID_DJ_SHORT;
+@@ -456,7 +456,7 @@ static int logi_dj_recv_switch_to_dj_mode(struct dj_receiver_dev *djrcv_dev,
+ 	struct dj_report *dj_report;
+ 	int retval;
+ 
+-	dj_report = kzalloc(sizeof(dj_report), GFP_KERNEL);
++	dj_report = kzalloc(sizeof(struct dj_report), GFP_KERNEL);
+ 	if (!dj_report)
+ 		return -ENOMEM;
+ 	dj_report->report_id = REPORT_ID_DJ_SHORT;
+
