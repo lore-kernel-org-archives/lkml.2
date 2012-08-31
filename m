@@ -1,63 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753576Ab2HaBGq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 21:06:46 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:53138 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753082Ab2HaBGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 21:06:45 -0400
-X-IronPort-AV: E=Sophos;i="4.80,344,1344182400"; 
-   d="scan'208";a="5756467"
-Message-ID: <50400E86.8090500@cn.fujitsu.com>
-Date: Fri, 31 Aug 2012 09:08:22 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1753619Ab2HaBMF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Aug 2012 21:12:05 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:63818 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753393Ab2HaBME (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Aug 2012 21:12:04 -0400
+X-Originating-IP: 108.223.40.66
+Date: Thu, 30 Aug 2012 18:12:16 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jean Delvare <khali@linux-fr.org>, lm-sensors@lm-sensors.org
+Subject: Re: [PATCH v3] linux/kernel.h: Fix DIV_ROUND_CLOSEST to support
+ negative operands
+Message-ID: <20120831011216.GA22010@roeck-us.net>
+References: <1346371847-21384-1-git-send-email-linux@roeck-us.net>
+ <20120830173531.291e7b6d.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/9 V3] workqueue: add non_manager_role_manager_mutex_unlock()
-References: <1346259120-6216-1-git-send-email-laijs@cn.fujitsu.com> <1346259120-6216-5-git-send-email-laijs@cn.fujitsu.com> <20120829182510.GB2258@dhcp-172-17-108-109.mtv.corp.google.com> <503F2F51.8000301@cn.fujitsu.com> <20120830091739.GA10874@dhcp-172-17-108-109.mtv.corp.google.com>
-In-Reply-To: <20120830091739.GA10874@dhcp-172-17-108-109.mtv.corp.google.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/31 09:06:29,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/31 09:06:29,
-	Serialize complete at 2012/08/31 09:06:29
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120830173531.291e7b6d.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/30/2012 05:17 PM, Tejun Heo wrote:
-> Hello, Lai.
+On Thu, Aug 30, 2012 at 05:35:31PM -0700, Andrew Morton wrote:
+> On Thu, 30 Aug 2012 17:10:47 -0700 Guenter Roeck <linux@roeck-us.net> wrote:
 > 
-> On Thu, Aug 30, 2012 at 05:16:01PM +0800, Lai Jiangshan wrote:
->> gcwq_unbind_fn() is unsafe even it is called from a work item.
->> so we need non_manager_role_manager_mutex_unlock().
->>
->> If rebind_workers() is called from a work item, it is safe when there is
->> no CPU_INTENSIVE items. but we can't disable CPU_INTENSIVE items,
->> so it is still unsafe, we need non_manager_role_manager_mutex_unlock() too.
+> > DIV_ROUND_CLOSEST returns a bad result for dividends with different sign:
+> > 	DIV_ROUND_CLOSEST(-2, 2) = 0
+> > 
+> > Most of the time this does not matter. However, in the hardware monitoring
+> > subsystem, DIV_ROUND_CLOSEST is sometimes used on integers which can be
+> > negative (such as temperatures).
+> > 
+> > ...
+> >
+> > --- a/include/linux/kernel.h
+> > +++ b/include/linux/kernel.h
+> > @@ -84,8 +84,11 @@
+> >  )
+> >  #define DIV_ROUND_CLOSEST(x, divisor)(			\
+> >  {							\
+> > -	typeof(divisor) __divisor = divisor;		\
+> > -	(((x) + ((__divisor) / 2)) / (__divisor));	\
+> > +	typeof(x) __x = x;				\
+> > +	typeof(divisor) __d = divisor;			\
+> > +	((__x) < 0) == ((__d) < 0) ?			\
+> > +		(((__x) + ((__d) / 2)) / (__d)) :	\
+> > +		(((__x) - ((__d) / 2)) / (__d));	\
+> >  }							\
+> >  )
 > 
-> Can you please elaborate?  Why is it not safe if there are
-> CPU_INTENSIVE items?
+> Your v2 had that sneaky little "(typeof(x))-1 >= 0" trick in it, so
+> half the code gets elided at compile time if `x' (why isn't this called
+> "dividend") has an unsigned type.
 > 
-> Thanks.
+> Would retaining that be of any benefit?  We do want to avoid doing the
+> compare-and-branch in as many cases as possible.
 > 
+DIV_ROUND_CLOSEST(0,-2)=1
 
-Imaging there only two workers, they all have UNBOUND bit because the rebind_workers()
-has not been called. The First one is processing work items, the second one is idle,
-when the first one encounter the work item of rebind_workers() and handle it, at the same
-the second one try to create workers and failed and go to process work items too.
-but unlikely the second one encounters a CPU_INTENSIVE items, the nr_running is still
-<=1 after the first one finish rebind_workers().
+This also happens if I keep the sneaky code. The v3 code does not have this
+problem. I know it is a bit theoretic, but still there. Of course, I could
+simply ignore the divisor's sign entirely, assuming (and documenting) that
+negative divisors are just too odd to deal with. Commentss welcome ...
 
-								nr_running.
-first one:	process work item endless			+0 or +1
-second one:	process the CPU_INTENSIVE item endless		+0
+> Also, this would be a great opportunity to document the macro's beahviour
+> (I do go on).  That would be a useful thing to do, given that we're now
+> handling the four +/+, +/-, -/+, -/- cases and the behaviour for each
+> case isn't terribly obvious.
+> 
+Ok.
 
-No one can service for manager role.
-
-Thanks.
-Lai
+Guenter
