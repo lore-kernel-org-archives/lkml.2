@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752334Ab2HaDsp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Aug 2012 23:48:45 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:61452 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890Ab2HaDsn (ORCPT
+	id S1750900Ab2HaEZi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 00:25:38 -0400
+Received: from infernal.debian.net ([176.28.9.132]:36804 "EHLO
+	infernal.debian.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774Ab2HaEZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Aug 2012 23:48:43 -0400
+	Fri, 31 Aug 2012 00:25:37 -0400
+X-Greylist: delayed 1232 seconds by postgrey-1.27 at vger.kernel.org; Fri, 31 Aug 2012 00:25:37 EDT
+Date: Fri, 31 Aug 2012 06:05:00 +0200
+From: Andreas Bombe <aeb@debian.org>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [REGRESSION] Xorg doesn't like 4e8b14526 "time: Improve sanity
+ checking of timekeeping inputs"
+Message-ID: <20120831040500.GA6090@amos.fritz.box>
 MIME-Version: 1.0
-In-Reply-To: <CAJfuBxyQc-XeNHxw0_XDs0JuCrNArNzcgsmrLya4ncDvSojZxQ@mail.gmail.com>
-References: <cover.1345978012.git.joe@perches.com> <CAJfuBxyQc-XeNHxw0_XDs0JuCrNArNzcgsmrLya4ncDvSojZxQ@mail.gmail.com>
-From: Jim Cromie <jim.cromie@gmail.com>
-Date: Thu, 30 Aug 2012 21:48:12 -0600
-Message-ID: <CAJfuBxyToA9-=c3H88GGba3GFX64kdbP4OCEC0f4trnBnjpU-w@mail.gmail.com>
-Subject: Re: [PATCH 0/5] dev_<level> and dynamic_debug cleanups
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jason Baron <jbaron@redhat.com>, Kay Sievers <kay@vrfy.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 11:43 AM, Jim Cromie <jim.cromie@gmail.com> wrote:
-> On Sun, Aug 26, 2012 at 5:25 AM, Joe Perches <joe@perches.com> wrote:
->> The recent commit to fix dynamic_debug was a bit unclean.
->> Neaten the style for dynamic_debug.
->> Reduce the stack use of message logging that uses netdev_printk
->> Add utility functions dev_printk_emit and dev_vprintk_emit for /dev/kmsg.
->>
->> Joe Perches (5):
->>   dev_dbg/dynamic_debug: Update to use printk_emit, optimize stack
->>   netdev_printk/dynamic_netdev_dbg: Directly call printk_emit
->>   netdev_printk/netif_printk: Remove a superfluous logging colon
->>   dev: Add dev_vprintk_emit and dev_printk_emit
->>   device and dynamic_debug: Use dev_vprintk_emit and dev_printk_emit
->>
->
-> Ive tested this on 2 builds differing only by DYNAMIC_DEBUG
-> It works for me on x86-64
->
-> However, I just booted a non-dyndbg build on x86-32, and got this.
->
+I have recently started to get problems with X simply shutting itself
+down and returning to the login screen. In the X logs I find:
 
-Ok, transient error, went away with a clean build.
+> [  1492.936] 
+> Fatal server error:
+> [  1492.936] WaitForSomething(): select: Invalid argument
 
-tested-by: Jim Cromie <jim.cromie@gmail.com>
+No messages whatsoever is found in the kernel logs. This error happens
+randomly without any correlation to user input, but with a high
+likelihood (within a few minutes at most) when a video is playing. It
+doesn't matter if the video is in Flash in a browser window or in a
+video player playing a local file.
 
-thanks
+With that somewhat easy test I bisected it down to 4e8b14526 "time:
+Improve sanity checking of timekeeping inputs". The latest Linus git
+(155e36d40) with a revert of the bisected commit does not show the
+problem.
+
+Video is Radeon HD 6950 with open source drivers. Xorg version is the
+one currently in Debian unstable (xserver-xorg-core: 2:1.12.3.902-1,
+xserver-xorg-video-radeon: 1:6.14.4-5, libdrm: 2.4.33-3).
+
+-- 
+Andreas Bombe
