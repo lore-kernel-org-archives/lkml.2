@@ -1,132 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754810Ab2HaSBD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 14:01:03 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:58091 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754350Ab2HaSBA (ORCPT
+	id S1754561Ab2HaSDu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 14:03:50 -0400
+Received: from cpe-75-80-152-117.san.res.rr.com ([75.80.152.117]:60151 "EHLO
+	NickAndBarb2.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754275Ab2HaSDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 14:01:00 -0400
-X-Originating-IP: 217.70.178.136
-X-Originating-IP: 173.246.103.110
-Date: Fri, 31 Aug 2012 11:00:52 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH tip/core/rcu 04/15] rcu: Permit RCU_NONIDLE() to be used
- from interrupt context
-Message-ID: <20120831180052.GB4259@jtriplet-mobl1>
-References: <20120830185607.GA32148@linux.vnet.ibm.com>
- <1346352988-32444-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346352988-32444-4-git-send-email-paulmck@linux.vnet.ibm.com>
+	Fri, 31 Aug 2012 14:03:48 -0400
+Date: Fri, 31 Aug 2012 11:03:45 -0700
+From: Nick Pasich <Nick@NickAndBarb.net>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Pavel Shilovsky <piastryyy@gmail.com>, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: WARNING: at fs/inode.c:280 drop_nlink+0x31/0x33()
+Message-ID: <20120831180345.GA10907@NICK2>
+References: <20120829162527.GA3635@NickAndBarb.net> <20120829151641.20cde4bc@corrin.poochiereds.net> <20120831043352.GA23663@NickAndBarb.net> <CAKywueSY+NOV3irDm9YxepeCyJJhh82o2mgmDLogr+hJPbaYig@mail.gmail.com> <20120831153206.GA28908@NICK2> <20120831092138.47668603@corrin.poochiereds.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1346352988-32444-4-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120831092138.47668603@corrin.poochiereds.net>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 11:56:17AM -0700, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+On Fri, Aug 31, 2012 at 09:21:38AM -0700, Jeff Layton wrote:
+> On Fri, 31 Aug 2012 08:32:06 -0700
+> Nick Pasich <Nick@NickAndBarb.net> wrote:
 > 
-> There is a need to use RCU from interrupt context, but either before
-> rcu_irq_enter() is called or after rcu_irq_exit() is called.  If the
-> interrupt occurs from idle, then lockdep-RCU will complain about such
-> uses, as they appear to be illegal uses of RCU from the idle loop.
-> In other environments, RCU_NONIDLE() could be used to properly protect
-> the use of RCU, but RCU_NONIDLE() currently cannot be invoked except
-> from process context.
+> > On Fri, Aug 31, 2012 at 12:00:26PM +0400, Pavel Shilovsky wrote:
+> > > 2012/8/31 Nick Pasich <Nick@nickandbarb.net>:
+> > > > Jeff,
+> > > >
+> > > > I applied this patch to Kernel 3.5.3 from Pavel and the
+> > > > the warning is gone with no problems.
+> > > >
+> > > > Thanks,
+> > > >
+> > > > --( Nick Pasich
+> > > >
+> > > > ##########################################################
+> > > >
+> > > > From df2d6b1fbf2401c5ee04f2ac143ea0954e3a87a6 Mon Sep 17 00:00:00 2001
+> > > > From: Pavel Shilovsky <pshilovsky@samba.org>
+> > > > Date: Fri, 13 Jul 2012 11:59:45 +0400
+> > > > Subject: [PATCH] CIFS: Protect i_nlink from being negative
+> > > >
+> > > > that can cause warning messages.
+> > > >
+> > > > Signed-off-by: Pavel Shilovsky <pshilovsky@samba.org>
+> > > > ---
+> > > >  fs/cifs/inode.c |   13 +++++++++++--
+> > > >  1 files changed, 11 insertions(+), 2 deletions(-)
+> > > >
+> > > > diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
+> > > > index 7354877..88afb1a 100644
+> > > > --- a/fs/cifs/inode.c
+> > > > +++ b/fs/cifs/inode.c
+> > > > @@ -1110,6 +1110,15 @@ undo_setattr:
+> > > >                 goto out_close;
+> > > >  }
+> > > >
+> > > > +/* copied from fs/nfs/dir.c with small changes */
+> > > > +static void
+> > > > +cifs_drop_nlink(struct inode *inode)
+> > > > +{
+> > > > +       spin_lock(&inode->i_lock);
+> > > > +       if (inode->i_nlink > 0)
+> > > > +               drop_nlink(inode);
+> > > > +       spin_unlock(&inode->i_lock);
+> > > > +}
+> > > >
+> > > >  /*
+> > > >   * If dentry->d_inode is null (usually meaning the cached dentry
+> > > > @@ -1166,13 +1175,13 @@ retry_std_delete:
+> > > >  psx_del_no_retry:
+> > > >                 if (!rc) {
+> > > >                                 if (inode)
+> > > > -                       drop_nlink(inode);
+> > > > +                       cifs_drop_nlink(inode);
+> > > >                 } else if (rc == -ENOENT) {
+> > > >                                 d_drop(dentry);
+> > > >                 } else if (rc == -ETXTBSY) {
+> > > >                                 rc = cifs_rename_pending_delete(full_path, dentry, xid);
+> > > >                                 if (rc == 0)
+> > > > -                       drop_nlink(inode);
+> > > > +                       cifs_drop_nlink(inode);
+> > > >                 } else if ((rc == -EACCES) && (dosattr == 0) && inode) {
+> > > >                                 attrs = kzalloc(sizeof(*attrs), GFP_KERNEL);
+> > > >                                 if (attrs == NULL) {
+> > > > --
+> > > > 1.7.3.3
+> > > >
+> > > > ##########################################################
+> > > >
+> > > > --
+> > > > To unsubscribe from this list: send the line "unsubscribe linux-cifs" in
+> > > > the body of a message to majordomo@vger.kernel.org
+> > > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > 
+> > > This one fixes only a part of the problem. Now we have another patch
+> > > for this problem:
+> > > 
+> > > https://git.samba.org/sfrench/?p=sfrench/cifs-2.6.git;a=commitdiff;h=b7ca69289680cf631fb20b7d436467c4ec1153cd;hp=6dab7ede9390d4d937cb89feca932e4fd575d2da
+> > > 
+> > > -- 
+> > > Best regards,
+> > > Pavel Shilovsky.
+> > 
+> > 
+> > 
+> > Since I'm using kernel 3.5.3 , I get an error on hunk 7 of the patch.
+> > 
+> > I can do it by hand... But I want to check with you first.
+> > 
+> > Thanks,
+> > 
+> > --( Nick Pasich )--
+> > 
 > 
-> This commit therefore modifies RCU_NONIDLE() to permit its use more
-> globally.
+> If you fix it up by hand, consider submitting it as a backport for the
+> stable series as well.
 > 
-> Reported-by: Steven Rostedt <rostedt@goodmis.org>
-> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-Something seems wrong about this.  The addition of EXPORT_SYMBOL_GPL
-suggests that such interrupt handlers might live in modules.  In what
-situation might a module interrupt handler get called from the idle
-loop, before rcu_irq_enter or after rcu_irq_exit, and need to know that
-when using RCU?
-
-- Josh Triplett
-
-> ---
->  include/linux/rcupdate.h |    6 ++----
->  kernel/rcutiny.c         |    2 ++
->  kernel/rcutree.c         |    2 ++
->  3 files changed, 6 insertions(+), 4 deletions(-)
-> 
-> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> index 115ead2..0fbbd52 100644
-> --- a/include/linux/rcupdate.h
-> +++ b/include/linux/rcupdate.h
-> @@ -210,14 +210,12 @@ extern void exit_rcu(void);
->   * to nest RCU_NONIDLE() wrappers, but the nesting level is currently
->   * quite limited.  If deeper nesting is required, it will be necessary
->   * to adjust DYNTICK_TASK_NESTING_VALUE accordingly.
-> - *
-> - * This macro may be used from process-level code only.
->   */
->  #define RCU_NONIDLE(a) \
->  	do { \
-> -		rcu_idle_exit(); \
-> +		rcu_irq_enter(); \
->  		do { a; } while (0); \
-> -		rcu_idle_enter(); \
-> +		rcu_irq_exit(); \
->  	} while (0)
->  
->  /*
-> diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-> index e4163c5..2e073a2 100644
-> --- a/kernel/rcutiny.c
-> +++ b/kernel/rcutiny.c
-> @@ -115,6 +115,7 @@ void rcu_irq_exit(void)
->  	rcu_idle_enter_common(newval);
->  	local_irq_restore(flags);
->  }
-> +EXPORT_SYMBOL_GPL(rcu_irq_exit);
->  
->  /* Common code for rcu_idle_exit() and rcu_irq_enter(), see kernel/rcutree.c. */
->  static void rcu_idle_exit_common(long long oldval)
-> @@ -172,6 +173,7 @@ void rcu_irq_enter(void)
->  	rcu_idle_exit_common(oldval);
->  	local_irq_restore(flags);
->  }
-> +EXPORT_SYMBOL_GPL(rcu_irq_enter);
->  
->  #ifdef CONFIG_DEBUG_LOCK_ALLOC
->  
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index f280e54..96b8aff 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -447,6 +447,7 @@ void rcu_irq_exit(void)
->  		rcu_idle_enter_common(rdtp, oldval);
->  	local_irq_restore(flags);
->  }
-> +EXPORT_SYMBOL_GPL(rcu_irq_exit);
->  
->  /*
->   * rcu_idle_exit_common - inform RCU that current CPU is moving away from idle
-> @@ -542,6 +543,7 @@ void rcu_irq_enter(void)
->  		rcu_idle_exit_common(rdtp, oldval);
->  	local_irq_restore(flags);
->  }
-> +EXPORT_SYMBOL_GPL(rcu_irq_enter);
->  
->  /**
->   * rcu_nmi_enter - inform RCU of entry to NMI context
 > -- 
-> 1.7.8
-> 
+> Jeff Layton <jlayton@redhat.com>
+
+Jeff / Pavel,
+
+Here are my changes on hunk #7 that allow patching 3.5.3
+
+Check it out....
+
+--( Nick Pasich )--
+
+
+
+##############################################################################
+
+diff -u a/fs/cifs/inode.c b/fs/cifs/inode.c
+--- a/fs/cifs/inode.c
++++ b/fs/cifs/inode.c
+@@ -124,10 +124,10 @@
+ {
+ 	struct cifsInodeInfo *cifs_i = CIFS_I(inode);
+ 	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
+-	unsigned long oldtime = cifs_i->time;
+ 
+ 	cifs_revalidate_cache(inode, fattr);
+ 
++	spin_lock(&inode->i_lock);
+ 	inode->i_atime = fattr->cf_atime;
+ 	inode->i_mtime = fattr->cf_mtime;
+ 	inode->i_ctime = fattr->cf_ctime;
+@@ -148,9 +148,6 @@
+ 	else
+ 		cifs_i->time = jiffies;
+ 
+-	cFYI(1, "inode 0x%p old_time=%ld new_time=%ld", inode,
+-		 oldtime, cifs_i->time);
+-
+ 	cifs_i->delete_pending = fattr->cf_flags & CIFS_FATTR_DELETE_PENDING;
+ 
+ 	cifs_i->server_eof = fattr->cf_eof;
+@@ -158,7 +155,6 @@
+ 	 * Can't safely change the file size here if the client is writing to
+ 	 * it due to potential races.
+ 	 */
+-	spin_lock(&inode->i_lock);
+ 	if (is_size_safe_to_change(cifs_i, fattr->cf_eof)) {
+ 		i_size_write(inode, fattr->cf_eof);
+ 
+@@ -909,12 +905,14 @@
+ 
+ 	if (rc && tcon->ipc) {
+ 		cFYI(1, "ipc connection - fake read inode");
++		spin_lock(&inode->i_lock);
+ 		inode->i_mode |= S_IFDIR;
+ 		set_nlink(inode, 2);
+ 		inode->i_op = &cifs_ipc_inode_ops;
+ 		inode->i_fop = &simple_dir_operations;
+ 		inode->i_uid = cifs_sb->mnt_uid;
+ 		inode->i_gid = cifs_sb->mnt_gid;
++		spin_unlock(&inode->i_lock);
+ 	} else if (rc) {
+ 		iget_failed(inode);
+ 		inode = ERR_PTR(rc);
+@@ -1159,6 +1157,15 @@
+ 	goto out_close;
+ }
+ 
++/* copied from fs/nfs/dir.c with small changes */
++static void
++cifs_drop_nlink(struct inode *inode)
++{
++	spin_lock(&inode->i_lock);
++	if (inode->i_nlink > 0)
++		drop_nlink(inode);
++	spin_unlock(&inode->i_lock);
++}
+ 
+ /*
+  * If dentry->d_inode is null (usually meaning the cached dentry
+@@ -1216,13 +1223,13 @@
+ psx_del_no_retry:
+ 	if (!rc) {
+ 		if (inode)
+-			drop_nlink(inode);
++			cifs_drop_nlink(inode);
+ 	} else if (rc == -ENOENT) {
+ 		d_drop(dentry);
+ 	} else if (rc == -ETXTBSY) {
+ 		rc = cifs_rename_pending_delete(full_path, dentry, xid);
+ 		if (rc == 0)
+-			drop_nlink(inode);
++			cifs_drop_nlink(inode);
+ 	} else if ((rc == -EACCES) && (dosattr == 0) && inode) {
+ 		attrs = kzalloc(sizeof(*attrs), GFP_KERNEL);
+ 		if (attrs == NULL) {
+@@ -1369,9 +1376,10 @@
+ 		d_instantiate(direntry, newinode);
+ 		 /* setting nlink not necessary except in cases where we
+ 		  * failed to get it from the server or was set bogus */
++	 	spin_lock(&direntry->d_inode->i_lock);
+ 		if ((direntry->d_inode) && (direntry->d_inode->i_nlink < 2))
+ 			set_nlink(direntry->d_inode, 2);
+-
++	 	spin_unlock(&direntry->d_inode->i_lock);
+ 		mode &= ~current_umask();
+ 		/* must turn on setgid bit if parent dir has it */
+ 		if (inode->i_mode & S_ISGID)
+diff -u a/fs/cifs/link.c b/fs/cifs/link.c
+--- a/fs/cifs/link.c
++++ b/fs/cifs/link.c
+@@ -433,7 +433,9 @@
+ 	if (old_file->d_inode) {
+ 		cifsInode = CIFS_I(old_file->d_inode);
+ 		if (rc == 0) {
++			spin_lock(&old_file->d_inode->i_lock);
+ 			inc_nlink(old_file->d_inode);
++			spin_unlock(&old_file->d_inode->i_lock);
+ /* BB should we make this contingent on superblock flag NOATIME? */
+ /*			old_file->d_inode->i_ctime = CURRENT_TIME;*/
+ 			/* parent dir timestamps will update from srv
+##############################################################################
