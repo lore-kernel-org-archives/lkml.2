@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753142Ab2HaJ1R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 05:27:17 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54736 "EHLO
+	id S1752776Ab2HaJ2n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 05:28:43 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54746 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752926Ab2HaJ1O (ORCPT
+	with ESMTP id S1752984Ab2HaJ1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 31 Aug 2012 05:27:14 -0400
 From: Philipp Zabel <p.zabel@pengutronix.de>
@@ -18,9 +18,9 @@ To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Dong Aisheng <dong.aisheng@linaro.org>, kernel@pengutronix.de,
         devicetree-discuss@lists.ozlabs.org
 Cc: Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH v2 6/9] misc: Generic on-chip SRAM allocation driver
-Date: Fri, 31 Aug 2012 11:27:01 +0200
-Message-Id: <1346405224-20399-7-git-send-email-p.zabel@pengutronix.de>
+Subject: [PATCH v2 9/9] ARM i.MX: remove IRAM_ALLOC facility
+Date: Fri, 31 Aug 2012 11:27:04 +0200
+Message-Id: <1346405224-20399-10-git-send-email-p.zabel@pengutronix.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1346405224-20399-1-git-send-email-p.zabel@pengutronix.de>
 References: <1346405224-20399-1-git-send-email-p.zabel@pengutronix.de>
@@ -32,159 +32,214 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver requests and remaps a memory region as configured in the
-device tree. It serves memory from this region via the genalloc API.
+A generic on-chip SRAM allocator driver can be used instead.
+Users of the iram_alloc/free API should convert to the genalloc API:
 
-Other drivers can retrieve the genalloc pool from a phandle pointing
-to this drivers' device node in the device tree.
+-	virt = iram_alloc(SIZE, &phys);
++	gen_pool_alloc(iram_pool, SIZE);
++	phys = gen_pool_virt_to_phys(iram_pool, virt);
+ 	/* ... */
+-	iram_free(virt, SIZE);
++	gen_pool_free(iram_pool, virt, SIZE);
 
 Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
 ---
- drivers/misc/Kconfig  |    8 ++++
- drivers/misc/Makefile |    1 +
- drivers/misc/sram.c   |  105 +++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 114 insertions(+)
- create mode 100644 drivers/misc/sram.c
+ arch/arm/plat-mxc/Kconfig             |    4 --
+ arch/arm/plat-mxc/Makefile            |    1 -
+ arch/arm/plat-mxc/include/mach/iram.h |   35 ----------
+ arch/arm/plat-mxc/iram_alloc.c        |  116 ---------------------------------
+ 4 files changed, 156 deletions(-)
+ delete mode 100644 arch/arm/plat-mxc/include/mach/iram.h
+ delete mode 100644 arch/arm/plat-mxc/iram_alloc.c
 
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index 98a442d..8a55284 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -509,6 +509,14 @@ config USB_SWITCH_FSA9480
- 	  stereo and mono audio, video, microphone and UART data to use
- 	  a common connector port.
+diff --git a/arch/arm/plat-mxc/Kconfig b/arch/arm/plat-mxc/Kconfig
+index baf9064..8e63f10 100644
+--- a/arch/arm/plat-mxc/Kconfig
++++ b/arch/arm/plat-mxc/Kconfig
+@@ -82,8 +82,4 @@ config IMX_HAVE_IOMUX_V1
+ config ARCH_MXC_IOMUX_V3
+ 	bool
  
-+config SRAM
-+	bool "Generic on-chip SRAM driver\n"
-+	select GENERIC_ALLOCATOR
-+	help
-+	  This driver allows to declare a memory region to be managed
-+	  by the genalloc API. It is supposed to be used for small
-+	  on-chip SRAM areas found on many ARM SoCs.
-+
- source "drivers/misc/c2port/Kconfig"
- source "drivers/misc/eeprom/Kconfig"
- source "drivers/misc/cb710/Kconfig"
-diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-index b88df7a..ccc759a 100644
---- a/drivers/misc/Makefile
-+++ b/drivers/misc/Makefile
-@@ -50,3 +50,4 @@ obj-y				+= carma/
- obj-$(CONFIG_USB_SWITCH_FSA9480) += fsa9480.o
- obj-$(CONFIG_ALTERA_STAPL)	+=altera-stapl/
- obj-$(CONFIG_INTEL_MEI)		+= mei/
-+obj-$(CONFIG_SRAM)		+= sram.o
-diff --git a/drivers/misc/sram.c b/drivers/misc/sram.c
-new file mode 100644
-index 0000000..c5cf67e
---- /dev/null
-+++ b/drivers/misc/sram.c
-@@ -0,0 +1,105 @@
-+/*
-+ * Generic on-chip SRAM allocation driver
-+ *
-+ * Copyright (C) 2012 Philipp Zabel, Pengutronix
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version 2
-+ * of the License, or (at your option) any later version.
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-+ * MA 02110-1301, USA.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/io.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/spinlock.h>
-+#include <linux/genalloc.h>
-+
-+struct sram_dev {
-+	struct gen_pool *pool;
-+};
-+
-+static int __devinit sram_probe(struct platform_device *pdev)
-+{
-+	void __iomem *virt_base;
-+	struct sram_dev *sram;
-+	struct resource *res;
-+	unsigned long size;
-+	int ret;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res)
-+		return -EINVAL;
-+
-+	size = resource_size(res);
-+
-+	virt_base = devm_request_and_ioremap(&pdev->dev, res);
-+	if (!virt_base)
-+		return -ENOMEM;
-+
-+	sram = devm_kzalloc(&pdev->dev, sizeof(*sram), GFP_KERNEL);
-+	if (!sram)
-+		return -ENOMEM;
-+
-+	sram->pool = gen_pool_create(PAGE_SHIFT, -1);
-+	if (!sram->pool)
-+		return -ENOMEM;
-+
-+	ret = gen_pool_add_virt(sram->pool, (unsigned long)virt_base,
-+				res->start, size, -1);
-+	if (ret < 0) {
-+		gen_pool_destroy(sram->pool);
-+		return ret;
-+	}
-+
-+	platform_set_drvdata(pdev, sram);
-+
-+	dev_dbg(&pdev->dev, "SRAM pool: %ld KiB @ 0x%p\n", size / 1024, virt_base);
-+
-+	return 0;
-+}
-+
-+static int __devexit sram_remove(struct platform_device *pdev)
-+{
-+	struct sram_dev *sram = platform_get_drvdata(pdev);
-+
-+	if (gen_pool_avail(sram->pool) < gen_pool_size(sram->pool))
-+		dev_dbg(&pdev->dev, "removed while SRAM allocated\n");
-+
-+	gen_pool_destroy(sram->pool);
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_OF
-+static struct of_device_id sram_dt_ids[] = {
-+	{ .compatible = "sram" },
-+	{ /* sentinel */ }
-+};
-+#endif
-+
-+static struct platform_driver sram_driver = {
-+	.driver = {
-+		.name = "sram",
-+		.of_match_table = of_match_ptr(sram_dt_ids),
-+	},
-+	.probe = sram_probe,
-+	.remove = __devexit_p(sram_remove),
-+};
-+
-+module_platform_driver(sram_driver);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Philipp Zabel, Pengutronix");
-+MODULE_DESCRIPTION("Generic SRAM allocator driver");
+-config IRAM_ALLOC
+-	bool
+-	select GENERIC_ALLOCATOR
+-
+ endif
+diff --git a/arch/arm/plat-mxc/Makefile b/arch/arm/plat-mxc/Makefile
+index 6ac7200..bdf370f 100644
+--- a/arch/arm/plat-mxc/Makefile
++++ b/arch/arm/plat-mxc/Makefile
+@@ -10,7 +10,6 @@ obj-$(CONFIG_MXC_AVIC) += avic.o
+ 
+ obj-$(CONFIG_IMX_HAVE_IOMUX_V1) += iomux-v1.o
+ obj-$(CONFIG_ARCH_MXC_IOMUX_V3) += iomux-v3.o
+-obj-$(CONFIG_IRAM_ALLOC) += iram_alloc.o
+ obj-$(CONFIG_MXC_ULPI) += ulpi.o
+ obj-$(CONFIG_MXC_USE_EPIT) += epit.o
+ obj-$(CONFIG_MXC_DEBUG_BOARD) += 3ds_debugboard.o
+diff --git a/arch/arm/plat-mxc/include/mach/iram.h b/arch/arm/plat-mxc/include/mach/iram.h
+deleted file mode 100644
+index d5c863f..0000000
+--- a/arch/arm/plat-mxc/include/mach/iram.h
++++ /dev/null
+@@ -1,35 +0,0 @@
+-/*
+- * Copyright (C) 2010 Freescale Semiconductor, Inc. All Rights Reserved.
+- *
+- * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public License
+- * as published by the Free Software Foundation; either version 2
+- * of the License, or (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+- * MA 02110-1301, USA.
+- */
+-#include <linux/errno.h>
+-
+-#ifdef CONFIG_IRAM_ALLOC
+-
+-void __iomem *iram_alloc(unsigned int size, unsigned long *dma_addr);
+-void iram_free(unsigned long dma_addr, unsigned int size);
+-
+-#else
+-
+-static inline void __iomem *iram_alloc(unsigned int size, unsigned long *dma_addr)
+-{
+-	return NULL;
+-}
+-
+-static inline void iram_free(unsigned long base, unsigned long size) {}
+-
+-#endif
+diff --git a/arch/arm/plat-mxc/iram_alloc.c b/arch/arm/plat-mxc/iram_alloc.c
+deleted file mode 100644
+index 343e96d..0000000
+--- a/arch/arm/plat-mxc/iram_alloc.c
++++ /dev/null
+@@ -1,116 +0,0 @@
+-/*
+- * Copyright (C) 2010 Freescale Semiconductor, Inc. All Rights Reserved.
+- *
+- * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public License
+- * as published by the Free Software Foundation; either version 2
+- * of the License, or (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+- * MA 02110-1301, USA.
+- */
+-
+-#include <linux/kernel.h>
+-#include <linux/io.h>
+-#include <linux/module.h>
+-#include <linux/spinlock.h>
+-#include <linux/genalloc.h>
+-#include <linux/of.h>
+-#include <linux/platform_device.h>
+-#include <mach/iram.h>
+-
+-static struct gen_pool *iram_pool;
+-
+-void __iomem *iram_alloc(unsigned int size, unsigned long *dma_addr)
+-{
+-	unsigned long virt;
+-
+-	if (!iram_pool)
+-		return NULL;
+-
+-	virt = gen_pool_alloc(iram_pool, size);
+-	pr_debug("iram alloc - %dB@0x%lX\n", size, *dma_addr);
+-	if (!virt)
+-		return NULL;
+-
+-	*dma_addr = gen_pool_virt_to_phys(iram_pool, virt);
+-	return (void __iomem *)virt;
+-}
+-EXPORT_SYMBOL(iram_alloc);
+-
+-void iram_free(unsigned long addr, unsigned int size)
+-{
+-	if (!iram_pool)
+-		return;
+-
+-	gen_pool_free(iram_pool, addr, size);
+-}
+-EXPORT_SYMBOL(iram_free);
+-
+-static int __devinit iram_probe(struct platform_device *pdev)
+-{
+-	void __iomem *virt_base;
+-	struct resource *res;
+-	unsigned long size;
+-	int ret;
+-
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res)
+-		return -EINVAL;
+-
+-	if (iram_pool)
+-		return -EBUSY;
+-
+-	size = resource_size(res);
+-
+-	virt_base = devm_ioremap(&pdev->dev, res->start, size);
+-	if (!virt_base)
+-		return -ENOMEM;
+-
+-	iram_pool = gen_pool_create(PAGE_SHIFT, -1);
+-	if (!iram_pool)
+-		return -ENOMEM;
+-
+-	ret = gen_pool_add_virt(iram_pool, (unsigned long)virt_base,
+-				res->start, size, -1);
+-	if (ret < 0) {
+-		gen_pool_destroy(iram_pool);
+-		iram_pool = NULL;
+-		return ret;
+-	}
+-
+-	pr_debug("i.MX IRAM pool: %ld KB@0x%p\n", size / 1024, virt_base);
+-	return 0;
+-}
+-
+-static int __devexit iram_remove(struct platform_device *pdev)
+-{
+-	gen_pool_destroy(iram_pool);
+-	iram_pool = NULL;
+-	return 0;
+-}
+-
+-#ifdef CONFIG_OF
+-static struct of_device_id iram_dt_ids[] = {
+-	{ .compatible = "fsl,imx-iram" },
+-	{ /* sentinel */ }
+-};
+-#endif
+-
+-static struct platform_driver iram_driver = {
+-	.driver = {
+-		.name = "imx-iram",
+-		.of_match_table = of_match_ptr(iram_dt_ids),
+-	},
+-	.probe = iram_probe,
+-	.remove = __devexit_p(iram_remove),
+-};
+-
+-module_platform_driver(iram_driver);
 -- 
 1.7.10.4
 
