@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754406Ab2HaQBP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 12:01:15 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:38700 "EHLO
+	id S1754441Ab2HaQBj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 12:01:39 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:38708 "EHLO
 	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754278Ab2HaQBN (ORCPT
+	by vger.kernel.org with ESMTP id S1754203Ab2HaQBi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 12:01:13 -0400
-Message-ID: <1346428871.3512.21.camel@dabdike>
-Subject: [GIT PULL] parisc fixes for 3.4-rc1
+	Fri, 31 Aug 2012 12:01:38 -0400
+Message-ID: <1346428895.3512.23.camel@dabdike>
+Subject: [GIT PULL] parisc fixes for 3.6-rc3
 From: James Bottomley <James.Bottomley@HansenPartnership.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Parisc List <linux-parisc@vger.kernel.org>,
         linux-kernel <linux-kernel@vger.kernel.org>
-Date: Fri, 31 Aug 2012 09:01:11 -0700
+Date: Fri, 31 Aug 2012 09:01:35 -0700
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
