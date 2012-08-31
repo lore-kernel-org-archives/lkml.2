@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753277Ab2HaMVW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 08:21:22 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:39271 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752965Ab2HaMVU (ORCPT
+	id S1752909Ab2HaMVR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 08:21:17 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:60707 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752470Ab2HaMVP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 08:21:20 -0400
-Date: Fri, 31 Aug 2012 13:25:19 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Matthieu CASTET <matthieu.castet@parrot.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "arnd@arndb.de" <arnd@arndb.de>, "gregkh@suse.de" <gregkh@suse.de>,
-        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthieu CASTET <castet.matthieu@free.fr>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] hvc_dcc : add support to armv4 and armv5 core
-Message-ID: <20120831132519.7c33f648@pyramind.ukuu.org.uk>
-In-Reply-To: <5040A481.7020403@parrot.com>
-References: <1346404916-27616-1-git-send-email-castet.matthieu@free.fr>
-	<20120831110444.25d9b9fe@pyramind.ukuu.org.uk>
-	<504091F0.1090703@parrot.com>
-	<20120831103351.GE18957@n2100.arm.linux.org.uk>
-	<20120831115939.23fd4a08@pyramind.ukuu.org.uk>
-	<5040A481.7020403@parrot.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 31 Aug 2012 08:21:15 -0400
+Message-ID: <5040AAAE.30501@gmail.com>
+Date: Fri, 31 Aug 2012 14:14:38 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
+MIME-Version: 1.0
+To: Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        torvalds@linux-foundation.org
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net
+Subject: 3.6rc-3 doesn't compile um arch
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Then bury this crap in platform files please not in the drivers/tty layer
-> > code. Make it a platform driver provided callback or something.
-> > 
-> I posted a new v2 patch that make the selection dynamic.
+Hi,
 
-Thanks - fine with that one - or with burying it in headers etc in the arm
-subdirs.
+I'm trying to compile the latest kernel for arch um, using the latest 
+Linus's tree, but it doesn't compile due to the commit:
 
-Greg's email address btw has changed - you want his current one as
-suse.de bounces.
+um: pass siginfo to the guest process.
 
-Alan
+I think the fix is trivial. At line 117 of os-Linux/time.c you find
+this line:
+
+   alarm_handler(SIGVTALRM, NULL);
+
+but it should be:
+
+   alarm_handler(SIGVTALRM, NULL, NULL);
+
+Is it already fixed?
+
+Marco
