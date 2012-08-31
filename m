@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755108Ab2HaVvH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 17:51:07 -0400
-Received: from [66.192.166.38] ([66.192.166.38]:44826 "EHLO
+	id S1755148Ab2HaVwB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 17:52:01 -0400
+Received: from [66.192.166.38] ([66.192.166.38]:44830 "EHLO
 	hancock.steeleye.com" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755060Ab2HaVvF (ORCPT
+	by vger.kernel.org with ESMTP id S1755128Ab2HaVvj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 17:51:05 -0400
-Date: Fri, 31 Aug 2012 17:51:03 -0400
+	Fri, 31 Aug 2012 17:51:39 -0400
+Date: Fri, 31 Aug 2012 17:51:38 -0400
 From: paul.clements@steeleye.com
 To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/1] nbd: fix dangling requests bug
-Message-ID: <504131c7.p28zUs/mwtoKlH34%paul.clements@steeleye.com>
+Subject: [PATCH 1/1] nbd: clear waiting_queue on shutdown
+Message-ID: <504131ea.3+adybT2Cu/nzX3r%paul.clements@steeleye.com>
 User-Agent: nail 11.25 7/29/05
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -20,20 +20,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a serious, but uncommon bug in nbd. This should probably
-be considered for backport to one or more stable branches.
 
-The bug occurs when there is heavy I/O going to the nbd device while, at the
-same time, a failure (server, network) or manual disconnect of the nbd
-connection occurs.
+From: Paul Clements <paul.clements@steeleye.com>
 
-There is a small window between the time that the nbd_thread is stopped and the
-socket is shutdown where requests can continue to be queued to nbd's
-internal waiting_queue. When this happens, those requests are never completed
-or freed.
 
-The fix is to clear the waiting_queue on shutdown of the nbd device, in
-the same way that the nbd request queue (queue_head) is already being cleared.
+Signed-off-by: Paul Clements <paul.clements@steeleye.com>
+---
 
---
-Paul
+ nbd.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
+index d07c9f7..0c03411 100644
+--- a/drivers/block/nbd.c
++++ b/drivers/block/nbd.c
+@@ -449,6 +449,14 @@ static void nbd_clear_que(struct nbd_device *nbd)
+ 		req->errors++;
+ 		nbd_end_request(req);
+ 	}
++
++	while (!list_empty(&nbd->waiting_queue)) {
++		req = list_entry(nbd->waiting_queue.next, struct request,
++				 queuelist);
++		list_del_init(&req->queuelist);
++		req->errors++;
++		nbd_end_request(req);
++	}
+ }
+ 
+ 
+@@ -598,6 +606,7 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *nbd,
+ 		nbd->file = NULL;
+ 		nbd_clear_que(nbd);
+ 		BUG_ON(!list_empty(&nbd->queue_head));
++		BUG_ON(!list_empty(&nbd->waiting_queue));
+ 		if (file)
+ 			fput(file);
+ 		return 0;
