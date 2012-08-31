@@ -1,69 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755047Ab2HaVFo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 17:05:44 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:64754 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752326Ab2HaVFn (ORCPT
+	id S1755063Ab2HaVG2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 17:06:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50640 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752326Ab2HaVGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 17:05:43 -0400
-X-Originating-IP: 108.223.40.66
-Date: Fri, 31 Aug 2012 14:05:57 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jean Delvare <khali@linux-fr.org>, lm-sensors@lm-sensors.org
-Subject: Re: [PATCH v4] linux/kernel.h: Fix DIV_ROUND_CLOSEST to support
- negative dividends
-Message-ID: <20120831210557.GA3645@roeck-us.net>
-References: <1346425339-17138-1-git-send-email-linux@roeck-us.net>
- <20120831123812.62729e1c.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120831123812.62729e1c.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 31 Aug 2012 17:06:25 -0400
+Date: Fri, 31 Aug 2012 14:06:23 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: wency@cn.fujitsu.com
+Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
+        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
+        cl@linux.com, minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com
+Subject: Re: [RFC v8 PATCH 08/20] memory-hotplug: remove
+ /sys/firmware/memmap/X sysfs
+Message-Id: <20120831140623.8d13bd2c.akpm@linux-foundation.org>
+In-Reply-To: <1346148027-24468-9-git-send-email-wency@cn.fujitsu.com>
+References: <1346148027-24468-1-git-send-email-wency@cn.fujitsu.com>
+	<1346148027-24468-9-git-send-email-wency@cn.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 31, 2012 at 12:38:12PM -0700, Andrew Morton wrote:
-> On Fri, 31 Aug 2012 08:02:19 -0700
-> Guenter Roeck <linux@roeck-us.net> wrote:
-> 
-> > DIV_ROUND_CLOSEST returns a bad result for negative dividends:
-> > 	DIV_ROUND_CLOSEST(-2, 2) = 0
-> > 
-> > Most of the time this does not matter. However, in the hardware monitoring
-> > subsystem, DIV_ROUND_CLOSEST is sometimes used on integers which can be
-> > negative (such as temperatures).
-> > 
-> > ...
-> >
-> > +
-> > +/*
-> > + * Divide positive or negative dividend by positive divisor and round
-> > + * to closest integer. Result is undefined for negative divisors.
-> > + */
-> >  #define DIV_ROUND_CLOSEST(x, divisor)(			\
-> >  {							\
-> > -	typeof(divisor) __divisor = divisor;		\
-> > -	(((x) + ((__divisor) / 2)) / (__divisor));	\
-> > +	typeof(x) __x = x;				\
-> > +	typeof(divisor) __d = divisor;			\
-> > +	(((typeof(x))-1) >= 0 || (__x) >= 0) ?		\
-> > +		(((__x) + ((__d) / 2)) / (__d)) :	\
-> > +		(((__x) - ((__d) / 2)) / (__d));	\
-> >  }							\
-> 
-> Looks good to me.  The patch causes no change in text size for
-> kernel/sched/fair.o and drivers/cpuidle/governors/menu.o, so it seems
-> that the cc trickery is working.
-> 
-> I'll add it to my tree for testing - please merge this via your tree.
-> 
-Will do.
+On Tue, 28 Aug 2012 18:00:15 +0800
+wency@cn.fujitsu.com wrote:
 
-Thanks,
-Guenter
+> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> 
+> When (hot)adding memory into system, /sys/firmware/memmap/X/{end, start, type}
+> sysfs files are created. But there is no code to remove these files. The patch
+> implements the function to remove them.
+> 
+> Note : The code does not free firmware_map_entry since there is no way to free
+>        memory which is allocated by bootmem.
+> 
+> ....
+>
+> +#define to_memmap_entry(obj) container_of(obj, struct firmware_map_entry, kobj)
+
+It would be better to implement this as an inlined C function.  That
+has improved type safety and improved readability.
+
+> +static void release_firmware_map_entry(struct kobject *kobj)
+> +{
+> +	struct firmware_map_entry *entry = to_memmap_entry(kobj);
+> +	struct page *page;
+> +
+> +	page = virt_to_page(entry);
+> +	if (PageSlab(page) || PageCompound(page))
+
+That PageCompound() test looks rather odd.  Why is this done?
+
+> +		kfree(entry);
+> +
+> +	/* There is no way to free memory allocated from bootmem*/
+> +}
+
+This function is a bit ugly - poking around in page flags to determine
+whether or not the memory came from bootmem.  It would be cleaner to
+use a separate boolean.  Although I guess we can live with it as you
+have it here.
+
+>  static struct kobj_type memmap_ktype = {
+> +	.release	= release_firmware_map_entry,
+>  	.sysfs_ops	= &memmap_attr_ops,
+>  	.default_attrs	= def_attrs,
+>  };
+> @@ -123,6 +139,16 @@ static int firmware_map_add_entry(u64 start, u64 end,
+>  	return 0;
+>  }
+>  
+> +/**
+> + * firmware_map_remove_entry() - Does the real work to remove a firmware
+> + * memmap entry.
+> + * @entry: removed entry.
+> + **/
+> +static inline void firmware_map_remove_entry(struct firmware_map_entry *entry)
+> +{
+> +	list_del(&entry->list);
+> +}
+
+Is there no locking  to protect that list?
+
+>  /*
+>   * Add memmap entry on sysfs
+>   */
+> @@ -144,6 +170,31 @@ static int add_sysfs_fw_map_entry(struct firmware_map_entry *entry)
+>  	return 0;
+>  }
+>  
+> +/*
+> + * Remove memmap entry on sysfs
+> + */
+> +static inline void remove_sysfs_fw_map_entry(struct firmware_map_entry *entry)
+> +{
+> +	kobject_put(&entry->kobj);
+> +}
+> +
+> +/*
+> + * Search memmap entry
+> + */
+> +
+> +struct firmware_map_entry * __meminit
+> +find_firmware_map_entry(u64 start, u64 end, const char *type)
+
+A better name would be firmware_map_find_entry().  To retain the (good)
+convention that symbols exported from here all start with
+"firmware_map_".
+
+> +{
+> +	struct firmware_map_entry *entry;
+> +
+> +	list_for_each_entry(entry, &map_entries, list)
+> +		if ((entry->start == start) && (entry->end == end) &&
+> +		    (!strcmp(entry->type, type)))
+> +			return entry;
+> +
+> +	return NULL;
+> +}
+> +
+>  /**
+>   * firmware_map_add_hotplug() - Adds a firmware mapping entry when we do
+>   * memory hotplug.
+> @@ -196,6 +247,32 @@ int __init firmware_map_add_early(u64 start, u64 end, const char *type)
+>  	return firmware_map_add_entry(start, end, type, entry);
+>  }
+>  
+> +/**
+> + * firmware_map_remove() - remove a firmware mapping entry
+> + * @start: Start of the memory range.
+> + * @end:   End of the memory range.
+> + * @type:  Type of the memory range.
+> + *
+> + * removes a firmware mapping entry.
+> + *
+> + * Returns 0 on success, or -EINVAL if no entry.
+> + **/
+> +int __meminit firmware_map_remove(u64 start, u64 end, const char *type)
+> +{
+> +	struct firmware_map_entry *entry;
+> +
+> +	entry = find_firmware_map_entry(start, end - 1, type);
+> +	if (!entry)
+> +		return -EINVAL;
+> +
+> +	firmware_map_remove_entry(entry);
+> +
+> +	/* remove the memmap entry */
+> +	remove_sysfs_fw_map_entry(entry);
+> +
+> +	return 0;
+> +}
+
+Again, the lack of locking looks bad.
+
+> ...
+>
+> --- a/mm/memory_hotplug.c
+> +++ b/mm/memory_hotplug.c
+> @@ -1052,9 +1052,9 @@ int offline_memory(u64 start, u64 size)
+>  	return 0;
+>  }
+>  
+> -int remove_memory(int nid, u64 start, u64 size)
+> +int __ref remove_memory(int nid, u64 start, u64 size)
+
+Why was __ref added?
+
+>  {
+> -	int ret = -EBUSY;
+> +	int ret = 0;
+>  	lock_memory_hotplug();
+>  	/*
+>  	 * The memory might become online by other task, even if you offine it.
+>
+> ...
+>
