@@ -1,41 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753033Ab2HaLzt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 07:55:49 -0400
-Received: from hulk.biessmann.org ([62.75.166.25]:36323 "EHLO
-	hulk.biessmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752493Ab2HaLzc (ORCPT
+	id S1752706Ab2HaMEV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 08:04:21 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:65472 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752264Ab2HaMEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 07:55:32 -0400
-From: =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>
-To: linux-kernel@vger.kernel.org
-Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        linux-omap@vger.kernel.org,
-        =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>
-Subject: [PATCH 0/2] fixes for omap2 nand driver
-Date: Fri, 31 Aug 2012 13:35:40 +0200
-Message-Id: <1346412942-4015-1-git-send-email-andreas@biessmann.de>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 31 Aug 2012 08:04:20 -0400
+Date: Fri, 31 Aug 2012 13:04:15 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH 3/3] i2c: nomadik: Add Device Tree support to the Nomadik
+ I2C driver
+Message-ID: <20120831120411.GB5962@gmail.com>
+References: <1345734087-21803-1-git-send-email-lee.jones@linaro.org>
+ <1345734087-21803-3-git-send-email-lee.jones@linaro.org>
+ <20120831112258.GA2624@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-X-SPAM_bar: --
-X-SPAM_score: -28
-X-ChkData-Signature: 3f6bca98659a95ed08cd8d7b849a93b4
+In-Reply-To: <20120831112258.GA2624@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These two patches fixes the omap_nand_remove function to release all resources
-properly and be able to re-load the driver later on.
+> Is there some dependency other than updating the dts files? If not, I'd
+> like to pick up the patch via I2C.
 
-Andreas Bießmann (2):
-  mtd/nand/omap2: fix omap_nand_remove segfault
-  mtd/nand/omap2: fix module loading
+There's no other dependency. Feel free to take them into your tree.
 
- drivers/mtd/nand/omap2.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+> > +static void nmk_i2c_of_probe(struct device_node *np,
+> > +			struct nmk_i2c_controller *pdata)
+> > +{
+> > +	/* Provide the default configuration as a base. */
+> > +	pdata = &u8500_i2c;
+> 
+> ?????? I wonder how that could work... have you tested the patch?
+
+Wow, that's a great spot!
+
+I have tested the patch, but I don't have any i2c devices, so can't
+test full functionality. I, wrongly it seems, assumed there would be
+a complaint from the I2C subsystem if any of the values seemed wrong.
+What I will do before next submission is print out the entire pdata
+structure to ensure it's populated in the correct way.
+
+> > +
+> > +	of_property_read_u32(np, "clock-frequency", (u32*)&pdata->clk_freq);
+> 
+> Might be worth changing clk_freq to u32?
+
+Yes, makes sense. 
+
+> > +
+> > +	/* This driver only supports 'standard' and 'fast' modes of operation. */
+> > +	if (pdata->clk_freq <= 100000)
+> > +		pdata->sm = I2C_FREQ_MODE_STANDARD;
+> 
+> Is standard == 100000 Hz?
+
+Well it depends on how you interpret the comments in:
+     include/linux/platform_data/i2c-nomadik.h
+
+enum i2c_freq_mode {
+        I2C_FREQ_MODE_STANDARD,         /* up to 100 Kb/s */
+        I2C_FREQ_MODE_FAST,             /* up to 400 Kb/s */
+        I2C_FREQ_MODE_HIGH_SPEED,       /* up to 3.4 Mb/s */
+        I2C_FREQ_MODE_FAST_PLUS,        /* up to 1 Mb/s */
+};
+
+I guess your guess would be better than mine.
+
+> > +	else
+> > +		pdata->sm = I2C_FREQ_MODE_FAST;
+> 
+> If those two are fixed frequencies, you should omit a warning if the
+> devicetree has a different frequency set and report which one is going
+> to be used actually.
+
+Well, again by the comments above I would say that in between values
+were valid, but I'm willing to bow down to your knowledge if you think
+they are fixed values?
+
+Thanks for reviewing.
 
 -- 
-1.7.10.4
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
