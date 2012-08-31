@@ -1,267 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754573Ab2HaQwp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 12:52:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39341 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754040Ab2HaQwn (ORCPT
+	id S1754608Ab2HaQxp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 12:53:45 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:47284 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754505Ab2HaQxn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 12:52:43 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: jack@suse.cz
-Cc: linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ashish Sangwan <a.sangwan@samsung.com>,
-        Bonggil Bak <bgbak@samsung.com>
-Subject: [PATCH v2] udf: extent cache implementation for manipulating block map
-Date: Fri, 31 Aug 2012 12:51:58 -0400
-Message-Id: <1346431918-3691-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 31 Aug 2012 12:53:43 -0400
+X-Originating-IP: 217.70.178.152
+X-Originating-IP: 50.43.46.74
+Date: Fri, 31 Aug 2012 09:53:34 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 02/15] rcu: Pull TINY_RCU dyntick-idle
+ tracing into non-idle region
+Message-ID: <20120831165334.GB22564@leaf>
+References: <20120830185607.GA32148@linux.vnet.ibm.com>
+ <1346352988-32444-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346352988-32444-2-git-send-email-paulmck@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346352988-32444-2-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+On Thu, Aug 30, 2012 at 11:56:15AM -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+> 
+> Because TINY_RCU's idle detection keys directly off of the nesting
+> level, rather than from a separate variable as in TREE_RCU, the
+> TINY_RCU dyntick-idle tracing on transition to idle must happen
+> before the change to the nesting level.  This commit therefore makes
+> this change by passing the desired new value (rather than the old value)
+> of the nesting level in to rcu_idle_enter_common().
+> 
+> [ paulmck: Add fix for wrong-variable bug spotted by
+>   Michael Wang <wangyun@linux.vnet.ibm.com>. ]
+> 
+> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-While mapping logical blocks of a file to physical blocks on the partition,
-everytime UDF read file metadata from the begining which decrease preformance.
-The drawback of this scheme is more prominent while reading large files.
-For example, while reading a large file of ~5GB, read speed will
-gradually become less as we near the end of file because of the time
-taken in calculating the corresponding physical block.
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-This patch implements caching and remembers the location of the last read
-extent. Instead of reading file metadata from begining, start from the
-cached location.
-
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
-Signed-off-by: Bonggil Bak <bgbak@samsung.com>
----
- fs/udf/ialloc.c  |    2 ++
- fs/udf/inode.c   |   77 +++++++++++++++++++++++++++++++++++++++++++++++++-----
- fs/udf/udf_i.h   |   17 ++++++++++++
- fs/udf/udfdecl.h |   10 +++----
- 4 files changed, 94 insertions(+), 12 deletions(-)
-
-diff --git a/fs/udf/ialloc.c b/fs/udf/ialloc.c
-index 7e5aae4..7dd86a4 100644
---- a/fs/udf/ialloc.c
-+++ b/fs/udf/ialloc.c
-@@ -117,6 +117,8 @@ struct inode *udf_new_inode(struct inode *dir, umode_t mode, int *err)
- 	iinfo->i_lenAlloc = 0;
- 	iinfo->i_use = 0;
- 	iinfo->i_checkpoint = 1;
-+	memset(&iinfo->cached_extent, 0, sizeof(struct udf_ext_cache));
-+	mutex_init(&(iinfo->i_extent_cache_lock));
- 	if (UDF_QUERY_FLAG(inode->i_sb, UDF_FLAG_USE_AD_IN_ICB))
- 		iinfo->i_alloc_type = ICBTAG_FLAG_AD_IN_ICB;
- 	else if (UDF_QUERY_FLAG(inode->i_sb, UDF_FLAG_USE_SHORT_AD))
-diff --git a/fs/udf/inode.c b/fs/udf/inode.c
-index 1a0588e..f4cc4e0 100644
---- a/fs/udf/inode.c
-+++ b/fs/udf/inode.c
-@@ -90,6 +90,7 @@ void udf_evict_inode(struct inode *inode)
- 	}
- 	kfree(iinfo->i_ext.i_data);
- 	iinfo->i_ext.i_data = NULL;
-+	udf_clear_extent_cache(iinfo);
- 	if (want_delete) {
- 		udf_free_inode(inode);
- 	}
-@@ -133,6 +134,7 @@ static int udf_write_begin(struct file *file, struct address_space *mapping,
- 			truncate_pagecache(inode, pos + len, isize);
- 			if (iinfo->i_alloc_type != ICBTAG_FLAG_AD_IN_ICB) {
- 				down_write(&iinfo->i_data_sem);
-+				udf_clear_extent_cache(iinfo);
- 				udf_truncate_extents(inode);
- 				up_write(&iinfo->i_data_sem);
- 			}
-@@ -357,8 +359,14 @@ static int udf_get_block(struct inode *inode, sector_t block,
- 	if (!phys)
- 		goto abort;
- 
--	if (new)
-+	if (new) {
-+		unsigned char lshift = inode->i_sb->s_blocksize_bits;
- 		set_buffer_new(bh_result);
-+		if (iinfo->cached_extent.sanity &&
-+		    (iinfo->cached_extent.eblock > (block << lshift)))
-+			/* Block allocated for hole, invalidate cache */
-+			udf_clear_extent_cache(iinfo);
-+	}
- 	map_bh(bh_result, inode->i_sb, phys);
- 
- abort:
-@@ -1147,6 +1155,7 @@ set_size:
- 	} else {
- 		if (iinfo->i_alloc_type == ICBTAG_FLAG_AD_IN_ICB) {
- 			down_write(&iinfo->i_data_sem);
-+			udf_clear_extent_cache(iinfo);
- 			memset(iinfo->i_ext.i_data + iinfo->i_lenEAttr + newsize,
- 			       0x00, bsize - newsize -
- 			       udf_file_entry_alloc_offset(inode));
-@@ -1160,6 +1169,7 @@ set_size:
- 		if (err)
- 			return err;
- 		down_write(&iinfo->i_data_sem);
-+		udf_clear_extent_cache(iinfo);
- 		truncate_setsize(inode, newsize);
- 		udf_truncate_extents(inode);
- 		up_write(&iinfo->i_data_sem);
-@@ -1277,6 +1287,8 @@ static void udf_fill_inode(struct inode *inode, struct buffer_head *bh)
- 	iinfo->i_lenAlloc = 0;
- 	iinfo->i_next_alloc_block = 0;
- 	iinfo->i_next_alloc_goal = 0;
-+	memset(&iinfo->cached_extent, 0, sizeof(struct udf_ext_cache));
-+	mutex_init(&(iinfo->i_extent_cache_lock));
- 	if (fe->descTag.tagIdent == cpu_to_le16(TAG_IDENT_EFE)) {
- 		iinfo->i_efe = 1;
- 		iinfo->i_use = 0;
-@@ -2132,11 +2144,12 @@ int8_t inode_bmap(struct inode *inode, sector_t block,
- 	struct udf_inode_info *iinfo;
- 
- 	iinfo = UDF_I(inode);
--	pos->offset = 0;
--	pos->block = iinfo->i_location;
--	pos->bh = NULL;
--	*elen = 0;
--
-+	if (!udf_read_extent_cache(inode, bcount, &lbcount, pos)) {
-+		pos->offset = 0;
-+		pos->block = iinfo->i_location;
-+		pos->bh = NULL;
-+	}
-+		*elen = 0;
- 	do {
- 		etype = udf_next_aext(inode, pos, eloc, elen, 1);
- 		if (etype == -1) {
-@@ -2146,7 +2159,8 @@ int8_t inode_bmap(struct inode *inode, sector_t block,
- 		}
- 		lbcount += *elen;
- 	} while (lbcount <= bcount);
--
-+	/* update extent cache */
-+	udf_update_extent_cache(inode, lbcount - *elen, pos);
- 	*offset = (bcount + *elen - lbcount) >> blocksize_bits;
- 
- 	return etype;
-@@ -2176,3 +2190,52 @@ long udf_block_map(struct inode *inode, sector_t block)
- 	else
- 		return ret;
- }
-+int udf_read_extent_cache(struct inode *inode, loff_t bcount,
-+			  loff_t *lbcount, struct extent_position *pos)
-+{
-+	struct udf_inode_info *iinfo = UDF_I(inode);
-+	mutex_lock(&iinfo->i_extent_cache_lock);
-+	if ((iinfo->cached_extent.eblock <= bcount) &&
-+	    (iinfo->cached_extent.sanity)) {
-+		/* Cache hit */
-+		*lbcount = iinfo->cached_extent.eblock;
-+		memcpy(pos, &iinfo->cached_extent.epos,
-+		       sizeof(struct extent_position));
-+		mutex_unlock(&iinfo->i_extent_cache_lock);
-+		return 1;
-+	} else
-+		udf_clear_extent_cache(iinfo);
-+
-+	mutex_unlock(&iinfo->i_extent_cache_lock);
-+	return 0;
-+}
-+void udf_update_extent_cache(struct inode *inode, loff_t estart,
-+			     struct extent_position *pos)
-+{
-+	struct udf_inode_info *iinfo = UDF_I(inode);
-+	mutex_lock(&iinfo->i_extent_cache_lock);
-+	if (pos->bh != NULL)
-+		/* Increase ref count */
-+		get_bh(pos->bh);
-+	memcpy(&iinfo->cached_extent.epos, pos,
-+	       sizeof(struct extent_position));
-+	iinfo->cached_extent.eblock = estart;
-+	iinfo->cached_extent.sanity = 1;
-+	switch (iinfo->i_alloc_type) {
-+	case ICBTAG_FLAG_AD_SHORT:
-+		iinfo->cached_extent.epos.offset -= sizeof(struct short_ad);
-+		break;
-+	case ICBTAG_FLAG_AD_LONG:
-+		iinfo->cached_extent.epos.offset -= sizeof(struct long_ad);
-+	}
-+	mutex_unlock(&iinfo->i_extent_cache_lock);
-+}
-+
-+void udf_clear_extent_cache(struct udf_inode_info *iinfo)
-+{
-+	if (iinfo->cached_extent.sanity) {
-+		brelse(iinfo->cached_extent.epos.bh);
-+		memset(&iinfo->cached_extent, 0, sizeof(struct udf_ext_cache));
-+	}
-+}
-+
-diff --git a/fs/udf/udf_i.h b/fs/udf/udf_i.h
-index bb8309d..ec3878a 100644
---- a/fs/udf/udf_i.h
-+++ b/fs/udf/udf_i.h
-@@ -1,6 +1,20 @@
- #ifndef _UDF_I_H
- #define _UDF_I_H
- 
-+struct extent_position {
-+	struct buffer_head *bh;
-+	uint32_t offset;
-+	struct kernel_lb_addr block;
-+};
-+
-+struct udf_ext_cache {
-+	/* Extent position */
-+	struct extent_position epos;
-+	/* Start logical block */
-+	loff_t eblock;
-+	int8_t sanity;
-+};
-+
- /*
-  * The i_data_sem and i_mutex serve for protection of allocation information
-  * of a regular files and symlinks. This includes all extents belonging to
-@@ -35,6 +49,9 @@ struct udf_inode_info {
- 		__u8		*i_data;
- 	} i_ext;
- 	struct rw_semaphore	i_data_sem;
-+	struct udf_ext_cache cached_extent;
-+	/* Mutex for protecting extent cache */
-+	struct mutex i_extent_cache_lock;
- 	struct inode vfs_inode;
- };
- 
-diff --git a/fs/udf/udfdecl.h b/fs/udf/udfdecl.h
-index de038da..46eadd3 100644
---- a/fs/udf/udfdecl.h
-+++ b/fs/udf/udfdecl.h
-@@ -113,11 +113,6 @@ struct ustr {
- 	uint8_t u_len;
- };
- 
--struct extent_position {
--	struct buffer_head *bh;
--	uint32_t offset;
--	struct kernel_lb_addr block;
--};
- 
- /* super.c */
- 
-@@ -164,6 +159,11 @@ extern int8_t udf_next_aext(struct inode *, struct extent_position *,
- 			    struct kernel_lb_addr *, uint32_t *, int);
- extern int8_t udf_current_aext(struct inode *, struct extent_position *,
- 			       struct kernel_lb_addr *, uint32_t *, int);
-+int udf_read_extent_cache(struct inode *inode, loff_t bcount, loff_t *lbcount,
-+			  struct extent_position *pos);
-+void udf_update_extent_cache(struct inode *inode, loff_t estart,
-+			     struct extent_position *pos);
-+void udf_clear_extent_cache(struct udf_inode_info *iinfo);
- 
- /* misc.c */
- extern struct buffer_head *udf_tgetblk(struct super_block *, int);
--- 
-1.7.9.5
-
+> ---
+>  kernel/rcutiny.c |   31 ++++++++++++++++---------------
+>  1 files changed, 16 insertions(+), 15 deletions(-)
+> 
+> diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+> index 547b1fe..e4163c5 100644
+> --- a/kernel/rcutiny.c
+> +++ b/kernel/rcutiny.c
+> @@ -56,24 +56,27 @@ static void __call_rcu(struct rcu_head *head,
+>  static long long rcu_dynticks_nesting = DYNTICK_TASK_EXIT_IDLE;
+>  
+>  /* Common code for rcu_idle_enter() and rcu_irq_exit(), see kernel/rcutree.c. */
+> -static void rcu_idle_enter_common(long long oldval)
+> +static void rcu_idle_enter_common(long long newval)
+>  {
+> -	if (rcu_dynticks_nesting) {
+> +	if (newval) {
+>  		RCU_TRACE(trace_rcu_dyntick("--=",
+> -					    oldval, rcu_dynticks_nesting));
+> +					    rcu_dynticks_nesting, newval));
+> +		rcu_dynticks_nesting = newval;
+>  		return;
+>  	}
+> -	RCU_TRACE(trace_rcu_dyntick("Start", oldval, rcu_dynticks_nesting));
+> +	RCU_TRACE(trace_rcu_dyntick("Start", rcu_dynticks_nesting, newval));
+>  	if (!is_idle_task(current)) {
+>  		struct task_struct *idle = idle_task(smp_processor_id());
+>  
+>  		RCU_TRACE(trace_rcu_dyntick("Error on entry: not idle task",
+> -					    oldval, rcu_dynticks_nesting));
+> +					    rcu_dynticks_nesting, newval));
+>  		ftrace_dump(DUMP_ALL);
+>  		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
+>  			  current->pid, current->comm,
+>  			  idle->pid, idle->comm); /* must be idle task! */
+>  	}
+> +	barrier();
+> +	rcu_dynticks_nesting = newval;
+>  	rcu_sched_qs(0); /* implies rcu_bh_qsctr_inc(0) */
+>  }
+>  
+> @@ -84,17 +87,16 @@ static void rcu_idle_enter_common(long long oldval)
+>  void rcu_idle_enter(void)
+>  {
+>  	unsigned long flags;
+> -	long long oldval;
+> +	long long newval;
+>  
+>  	local_irq_save(flags);
+> -	oldval = rcu_dynticks_nesting;
+>  	WARN_ON_ONCE((rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK) == 0);
+>  	if ((rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK) ==
+>  	    DYNTICK_TASK_NEST_VALUE)
+> -		rcu_dynticks_nesting = 0;
+> +		newval = 0;
+>  	else
+> -		rcu_dynticks_nesting  -= DYNTICK_TASK_NEST_VALUE;
+> -	rcu_idle_enter_common(oldval);
+> +		newval = rcu_dynticks_nesting - DYNTICK_TASK_NEST_VALUE;
+> +	rcu_idle_enter_common(newval);
+>  	local_irq_restore(flags);
+>  }
+>  EXPORT_SYMBOL_GPL(rcu_idle_enter);
+> @@ -105,13 +107,12 @@ EXPORT_SYMBOL_GPL(rcu_idle_enter);
+>  void rcu_irq_exit(void)
+>  {
+>  	unsigned long flags;
+> -	long long oldval;
+> +	long long newval;
+>  
+>  	local_irq_save(flags);
+> -	oldval = rcu_dynticks_nesting;
+> -	rcu_dynticks_nesting--;
+> -	WARN_ON_ONCE(rcu_dynticks_nesting < 0);
+> -	rcu_idle_enter_common(oldval);
+> +	newval = rcu_dynticks_nesting - 1;
+> +	WARN_ON_ONCE(newval < 0);
+> +	rcu_idle_enter_common(newval);
+>  	local_irq_restore(flags);
+>  }
+>  
+> -- 
+> 1.7.8
+> 
