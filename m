@@ -1,105 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832Ab2IAN67 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Sep 2012 09:58:59 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:60186 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752097Ab2IAN66 (ORCPT
+	id S1754479Ab2IAOBe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Sep 2012 10:01:34 -0400
+Received: from hurricane.eginity.com ([138.210.133.129]:47935 "EHLO
+	zazu.eginity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752553Ab2IAOBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Sep 2012 09:58:58 -0400
-Message-ID: <50421493.1020703@tao.ma>
-Date: Sat, 01 Sep 2012 21:58:43 +0800
-From: Tao Ma <tm@tao.ma>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Sat, 1 Sep 2012 10:01:32 -0400
+X-Greylist: delayed 1189 seconds by postgrey-1.27 at vger.kernel.org; Sat, 01 Sep 2012 10:01:32 EDT
+Message-ID: <50421091.4030902@gmail.com>
+Date: Sat, 01 Sep 2012 09:41:37 -0400
+From: Dan Merillat <dan.merillat@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH V2] block/throttle: Add IO throttled information in blkio.throttle.
-References: <1346390109-3169-1-git-send-email-tm@tao.ma> <20120901010540.GA19535@dhcp-172-17-108-109.mtv.corp.google.com>
-In-Reply-To: <20120901010540.GA19535@dhcp-172-17-108-109.mtv.corp.google.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: IO stalls on one disk stall entire system
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 114.254.77.70 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
-On 09/01/2012 09:05 AM, Tejun Heo wrote:
-> On Fri, Aug 31, 2012 at 01:15:09PM +0800, Tao Ma wrote:
->> From: Tao Ma <boyu.mt@taobao.com>
->>
->> Currently, if the IO is throttled by io-throttle, the SA has no idea of
-> 
-> What's SA?
-system admin.
-> 
->> the situation and can't report it to the real application user about
->> that he/she has to do something. So this patch adds a new interface
-> 
-> Why does the application user "has to" do something?  There's nothing
-> the upper layer "must" do.  I'm not necessarily objecting to adding
-> the stat but the description seems a bit misleading.
-> 
->> named blkio.throttle.io_queued which indicates how many IOs are
->> currently throttled.
-> 
-> Also, the suggested stat is rather lacking for such purposes.  There's
-> no way other than keeping polling to find out the condition, which is
-> rather sad.  What's the actual use case here?
-Vivek and I have talked about its usage in my first try. See the thread
-here. https://lkml.org/lkml/2012/5/22/81
-And I am OK to say it again here. In our case, we use flashcache as a
-block device and the bad thing is that flashcache is a bio-based dm
-target and we can't use block io controller here to control the weight
-of different cgroups. So io throttle is chosen. But as io throttle can
-only set a hard upper limit for different instances, it makes the
-control not flexible enough. Say with io controller, if there is no
-requests form the cgroup with weight 1000, a cgroup with 500 can use the
-whole bandwidth of the underlying device. But if we set 1000 iops for
-cgroup A and 500 iops for cgroup B in io throttle, cgroup B can't exceed
-its limit even if cgroup A has no request pending. So if we can export
-the io_queued information out to the system admin, they can write some
-daemon and in the above case, increase the upper limit of cgroup B to
-some number say 1000. It helps us to utilize the device more
-efficiently. Does it make sense to you?
+I have a known-broken WD15EADS, which has the hilariously terrible
+1000ms IO response time.  Yes, that's the right number of zeros.  I'm
+using it as a convenient way to hunt down a general feeling of
+unresponsiveness under disk load
+
+In this case, the failing drive is mounted to /backup, and I'm copying
+large random files to it.  Firefox is operating on my normal system
+drives, and takes up to two-minute stalls:
+
+Aug 26 17:41:13 fileserver kernel: [919921.115258] INFO: task
+firefox-bin:17616 blocked for more than 120 seconds.
+Aug 26 17:41:13 fileserver kernel: [919921.115261] "echo 0 >
+/proc/sys/kernel/hung_task_timeout_secs" disables this message.
+Aug 26 17:41:13 fileserver kernel: [919921.115264] firefox-bin     D
+ffff88012fd12440     0 17616  17525 0x00000000
+Aug 26 17:41:13 fileserver kernel: [919921.115270]  ffff8800ba87dd60
+0000000000000082 00007f5d00000000 ffff8800ba87dfd8
+Aug 26 17:41:13 fileserver kernel: [919921.115277]  0000000000004000
+0000000000012440 ffff88012aeb96a0 ffff8800ba952d40
+Aug 26 17:41:13 fileserver kernel: [919921.115283]  700401208b000000
+0000000014040800 0000000002000000 000000005cdbbb01
+Aug 26 17:41:13 fileserver kernel: [919921.115289] Call Trace:
+Aug 26 17:41:13 fileserver kernel: [919921.115296]  [<ffffffff81508453>]
+? inet_sendmsg+0x93/0x9c
+Aug 26 17:41:13 fileserver kernel: [919921.115301]  [<ffffffff8159a155>]
+schedule+0x5f/0x61
+Aug 26 17:41:13 fileserver kernel: [919921.115305]  [<ffffffff8159ac3b>]
+rwsem_down_failed_common+0xdb/0x10d
+Aug 26 17:41:13 fileserver kernel: [919921.115310]  [<ffffffff8159ac94>]
+rwsem_down_read_failed+0x12/0x14
+Aug 26 17:41:13 fileserver kernel: [919921.115314]  [<ffffffff81369fc4>]
+call_rwsem_down_read_failed+0x14/0x30
+Aug 26 17:41:13 fileserver kernel: [919921.115318]  [<ffffffff815991f0>]
+? down_read+0x12/0x14
+Aug 26 17:41:13 fileserver kernel: [919921.115326]  [<ffffffff8159db2f>]
+do_page_fault+0x259/0x45d
+Aug 26 17:41:13 fileserver kernel: [919921.115332]  [<ffffffff8110acc2>]
+? vfsmount_lock_local_unlock+0x21/0x3c
+Aug 26 17:41:13 fileserver kernel: [919921.115337]  [<ffffffff8110b6dd>]
+? mntput_no_expire+0x2a/0x101
+Aug 26 17:41:13 fileserver kernel: [919921.115343]  [<ffffffff81104d19>]
+? __d_free+0x4e/0x53
+Aug 26 17:41:13 fileserver kernel: [919921.115347]  [<ffffffff8110b7dc>]
+? mntput+0x28/0x2a
+Aug 26 17:41:13 fileserver kernel: [919921.115351]  [<ffffffff8136a0ca>]
+? trace_hardirqs_off_thunk+0x3a/0x6c
+Aug 26 17:41:13 fileserver kernel: [919921.115356]  [<ffffffff8159b61f>]
+page_fault+0x1f/0x30
+
+Linux fileserver 3.4.0-dan-00002-ga84219d #2 SMP PREEMPT Mon May 21
+09:36:23 EDT 2012 x86_64 GNU/Linux
+
+The only hardware shared between the bad drive and the rest of the
+system is the first AHCI controller:
+> 00:11.0 SATA controller: Advanced Micro Devices [AMD] nee ATI SB7x0/SB8x0/SB9x0 SATA Controller [AHCI mode]
+
+Some other drives are on this one:
+> 02:00.0 SATA controller: JMicron Technology Corp. JMB363 SATA/IDE Controller (rev 03)
 
 
-> 
->> Also another function blkg_rwstat_dec is added since the number of throttled
->> IOs can be either added or decreased.
-> 
-> Maybe just make blkg_rwstat_add() to take int64_t instead of uint64_t?
-sure, will change it in the later version.
-> 
->> +static void throtl_update_queued_stats(struct throtl_grp *tg, int rw, int add)
->> +{
->> +	struct tg_stats_cpu *stats_cpu;
->> +	unsigned long flags;
->> +
->> +	/* If per cpu stats are not allocated yet, don't do any accounting. */
->> +	if (tg->stats_cpu == NULL)
->> +		return;
->> +
->> +	/*
->> +	 * Disabling interrupts to provide mutual exclusion between two
->> +	 * writes on same cpu. It probably is not needed for 64bit. Not
->> +	 * optimizing that case yet.
->> +	 */
->> +	local_irq_save(flags);
->> +
->> +	stats_cpu = this_cpu_ptr(tg->stats_cpu);
->> +	if (add)
->> +		blkg_rwstat_add(&stats_cpu->io_queued, rw, 1);
->> +	else
->> +		blkg_rwstat_dec(&stats_cpu->io_queued, rw, 1);
->> +
->> +	local_irq_restore(flags);
-> 
-> Adding throttle.io_queued could be a bit more consistent?
-sorry, I don't know what is your meaning here. You mean some codes like
-	blkg_rwstat_add(&stats_cpu->throttle.io_queude, rw, 1)?
+This is obviously an extreme case, but I've felt this IO stalling in
+other contexts, like doing a recursive shasum on large bodies of data.
+ I purposely have /home and /root on separate spindles from the bulk
+data, but I still get IO stalls when /largevol is being used.
 
-Thanks
-Tao
+It's pretty easy to reproduce, just a pain to work on it when I do.
+That's a two minute failure to satisfy a pagefault on an otherwise idle
+drive (I.E. not the slow one), so it really bogs down badly when it
+fails.  This continues until I ^C the rsync process - and wait for it to
+finish flushing the current set of dirtied pages.
+
+This may involve btrfs, as that's the underlying filesystem on the
+target drive and on /largevol.  Root on a LV, physically located on yet
+another, separate drive (lots of disks here).
+
+2x250gb SATA MD-raid1 LVM - / (reiserfs), swap
+1x40gb IDE - LVM /home/me/.mozilla btrfs,
+4x2tb MD-raid5 - (no LVM) /largevol, btrfs
+1x1.5TB SLOW ESATA - /backup
+
+So I should have tons of spindle independence, but I'm just not seeing it.
