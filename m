@@ -1,90 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755398Ab2IAAFd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 20:05:33 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:48710 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754706Ab2IAAFc (ORCPT
+	id S1755400Ab2IAAzT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 20:55:19 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41932 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755353Ab2IAAzS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 20:05:32 -0400
-X-Originating-IP: 217.70.178.142
-X-Originating-IP: 173.246.103.110
-Date: Fri, 31 Aug 2012 17:05:25 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH tip/core/rcu 26/26] ia64: Add missing RCU idle APIs on
- idle loop
-Message-ID: <20120901000525.GX11771@jtriplet-mobl1>
-References: <20120830210520.GA2824@linux.vnet.ibm.com>
- <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346360743-3628-26-git-send-email-paulmck@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346360743-3628-26-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 31 Aug 2012 20:55:18 -0400
+Message-ID: <1346461349.2806.4.camel@vkoul-mobl4>
+Subject: Re: [PATCH v3 3/3] spi: spi-davinci: convert to DMA engine API
+From: Vinod Koul <vkoul@infradead.org>
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: vinod.koul@intel.com, Matt Porter <mporter@ti.com>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        grant.likely@secretlab.ca,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        cjb@laptop.org,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Date: Sat, 01 Sep 2012 06:32:29 +0530
+In-Reply-To: <1346432577.15463.16.camel@vkoul-mobl4>
+References: <1345684176-21472-1-git-send-email-mporter@ti.com>
+	 <1345684176-21472-4-git-send-email-mporter@ti.com>
+	 <503F75C0.1050507@ti.com> <20120830144307.GA26737@beef>
+	 <5040E00A.3080600@ti.com> <1346430709.15463.15.camel@vkoul-mobl4>
+	 <5040E6C7.6030106@ti.com> <1346432577.15463.16.camel@vkoul-mobl4>
+Organization: 
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 02:05:43PM -0700, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paul.mckenney@linaro.org>
-> 
-> Traditionally, the entire idle task served as an RCU quiescent state.
-> But when RCU read side critical sections started appearing within the
-> idle loop, this traditional strategy became untenable.  The fix was to
-> create new RCU APIs named rcu_idle_enter() and rcu_idle_exit(), which
-> must be called by each architecture's idle loop so that RCU can tell
-> when it is safe to ignore a given idle CPU.
-> 
-> Unfortunately, this fix was never applied to ia64, a shortcoming remedied
-> by this commit.
-> 
-> Reported by: Tony Luck <tony.luck@intel.com>
-> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Tested by: Tony Luck <tony.luck@intel.com>
+On Fri, 2012-08-31 at 22:32 +0530, Vinod Koul wrote:
+> On Fri, 2012-08-31 at 22:01 +0530, Sekhar Nori wrote:
+> > >> Yes, this was the problem. Since the SPI driver now depends on
+> > >> CONFIG_TI_EDMA for basic operation may be select CONFIG_TI_EDMA in
+> > >> Kconfig if SPI is enabled? That should do until the fallback to PIO
+> > is
+> > >> implemented.
+> > > Then this should be enabled for SPI. Care to send a patch
+> > 
+> > By 'this' you mean the Kconfig select? Then there should be no need of
+> > a
+> > new patch for this. It can be part of this patch itself, no? 
+> Either way is okay for me.
+And am in good mood :)
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Applied all with this as well
 
->  arch/ia64/kernel/process.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/ia64/kernel/process.c b/arch/ia64/kernel/process.c
-> index dd6fc14..3e316ec 100644
-> --- a/arch/ia64/kernel/process.c
-> +++ b/arch/ia64/kernel/process.c
-> @@ -29,6 +29,7 @@
->  #include <linux/kdebug.h>
->  #include <linux/utsname.h>
->  #include <linux/tracehook.h>
-> +#include <linux/rcupdate.h>
->  
->  #include <asm/cpu.h>
->  #include <asm/delay.h>
-> @@ -279,6 +280,7 @@ cpu_idle (void)
->  
->  	/* endless idle loop with no priority at all */
->  	while (1) {
-> +		rcu_idle_enter();
->  		if (can_do_pal_halt) {
->  			current_thread_info()->status &= ~TS_POLLING;
->  			/*
-> @@ -309,6 +311,7 @@ cpu_idle (void)
->  			normal_xtp();
->  #endif
->  		}
-> +		rcu_idle_exit();
->  		schedule_preempt_disabled();
->  		check_pgt_cache();
->  		if (cpu_is_offline(cpu))
-> -- 
-> 1.7.8
-> 
+>From b5f14330590118e6a0659255476c0f24ab681e05 Mon Sep 17 00:00:00 2001
+From: Vinod Koul <vinod.koul@linux.intel.com>
+Date: Sat, 1 Sep 2012 06:29:22 +0530
+Subject: [PATCH] spi: davici - make davinci select edma
+
+Reported-by: Sekhar Nori <nsekhar@ti.com>
+Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
+---
+ drivers/spi/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
+index 5f84b55..b9fb9a1 100644
+--- a/drivers/spi/Kconfig
++++ b/drivers/spi/Kconfig
+@@ -134,6 +134,7 @@ config SPI_DAVINCI
+ 	tristate "Texas Instruments DaVinci/DA8x/OMAP-L/AM1x SoC SPI
+controller"
+ 	depends on ARCH_DAVINCI
+ 	select SPI_BITBANG
++	select TI_EDMA
+ 	help
+ 	  SPI master controller for DaVinci/DA8x/OMAP-L/AM1x SPI modules.
+ 
+-- 
+1.7.9.5
+
+
+
+-- 
+~Vinod Koul
+Intel Corp.
+
