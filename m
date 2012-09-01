@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751860Ab2IAGkI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Sep 2012 02:40:08 -0400
-Received: from ext190.halfdog.net ([88.116.147.190]:51068 "EHLO
-	mail.halfdog.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751350Ab2IAGkG (ORCPT
+	id S1752762Ab2IAIKI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Sep 2012 04:10:08 -0400
+Received: from juliette.telenet-ops.be ([195.130.137.74]:41986 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752194Ab2IAIKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Sep 2012 02:40:06 -0400
-Message-ID: <5041AD8C.1040606@halfdog.net>
-Date: Sat, 01 Sep 2012 06:39:08 +0000
-From: halfdog <me@halfdog.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Firefox/17.0 SeaMonkey/2.14a1
+	Sat, 1 Sep 2012 04:10:00 -0400
+Message-ID: <5041C2D5.1040503@acm.org>
+Date: Sat, 01 Sep 2012 08:09:57 +0000
+From: Bart Van Assche <bvanassche@acm.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120825 Thunderbird/15.0
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Software interrupt 0x8 guest crash from userspace: virtualbox
- emulation or guest kernel bug?
-References: <502EAB4D.90807@halfdog.net>
-In-Reply-To: <502EAB4D.90807@halfdog.net>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=UTF-8
+To: dongsu.park@profitbricks.com
+CC: dillowda@ornl.gov, roland@kernel.org, sean.hefty@intel.com,
+        hal.rosenstock@gmail.com, JBottomley@parallels.com,
+        linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 0/5] Fix bugs in ib_srp patches for H.A. purposes
+References: <1346443241-24844-1-git-send-email-dongsu.park@profitbricks.com>
+In-Reply-To: <1346443241-24844-1-git-send-email-dongsu.park@profitbricks.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On 08/31/12 20:00, dongsu.park@profitbricks.com wrote:
+> This patchset aims at fixing bugs that have been discovered in our own
+> SRP test environment so far. These patches are based on your patchset v4,
+> "Make ib_srp better suited for H.A. purposes",(09 Aug 2012).
+> 
+> The 5th patch, "fix an error accessing invalid memory in
+> rport_dev_loss_timedout" is including your suggestion (30 Aug 2012).
+> 
+> You can also pull the following git repo to get the patches.
+> 
+>   git://github.com/advance38/linux.git srp-ha
+> 
+> Our test setup consists of two systems.
+> Kernel 3.2.15 with SCST v4193 on the target,
+> and Kernel 3.2.8 with ib_srp-ha on the initiator.
+> Although I rebased the patches again onto 3.6-rc3,
+> I suppose there will be no significant differences.
+> 
+> All of the known critical issues seem to have been resolved
+> according to our internal tests in the last weeks.
 
-halfdog wrote:
-> I have observed a strange guest kernel crash in virtualbox and are 
-> currently trying to understand it. Since I have no real 32-bit
-> Intel platform any more, I cannot verify that this crash would
-> happen on native 32bit also, so perhaps someone could check that.
-> ...
+Thanks for the testing and the feedback. Let's hope that the ib_srp
+maintainer will be able to review these patches soon. For the linux-scsi
+and LKML readers: I've sent my feedback about this patch series to the
+linux-rdma mailing list only.
 
-For the records: no checks needed any more, root cause of issue
-already found.
-
-- -- 
-http://www.halfdog.net/
-PGP: 156A AE98 B91F 0114 FE88  2BD8 C459 9386 feed a bee
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAlBBrXEACgkQxFmThv7tq+6JHQCfaC1tCY2iLFcmoVwtA0UUZXpx
-5TcAn1KhhpvgkaLGQ80AlErXzv6bN8SJ
-=uJvv
------END PGP SIGNATURE-----
+Bart.
