@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754405Ab2IAJ3t (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Sep 2012 05:29:49 -0400
-Received: from d1.icnet.pl ([212.160.220.21]:47708 "EHLO d1.icnet.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753102Ab2IAJ3s convert rfc822-to-8bit (ORCPT
+	id S1755050Ab2IAJbr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Sep 2012 05:31:47 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:65533 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753102Ab2IAJbq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Sep 2012 05:29:48 -0400
-From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-To: alsa-devel@alsa-project.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-omap@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel] [PATCH] ASoC: ams-delta: fix card initalization failure
-Date: Sat, 01 Sep 2012 11:09:18 +0200
-Message-ID: <1939338.OUN9Uq58XY@vclass>
-Organization: Tele-Info-System, Poznan, PL
-User-Agent: KMail/4.8.3 (Linux/3.1.10-gentoo-r1; KDE/4.8.3; i686; ; )
-In-Reply-To: <20120831213103.GC5495@opensource.wolfsonmicro.com>
-References: <1346102910-8610-1-git-send-email-jkrzyszt@tis.icnet.pl> <1809544.cvZPIRmRr5@acer> <20120831213103.GC5495@opensource.wolfsonmicro.com>
+	Sat, 1 Sep 2012 05:31:46 -0400
+Message-ID: <5041D5DF.7060402@metafoo.de>
+Date: Sat, 01 Sep 2012 11:31:11 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120724 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
-X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
+        lm-sensors@lm-sensors.org, Jean Delvare <khali@linux-fr.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] hwmon: add Maxim MAX197 support
+References: <1346377377-24717-1-git-send-email-vivien.didelot@savoirfairelinux.com> <20120831160439.GA5756@roeck-us.net>
+In-Reply-To: <20120831160439.GA5756@roeck-us.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dnia piątek, 31 sierpnia 2012 14:31:04 Mark Brown pisze:
-> On Wed, Aug 29, 2012 at 07:04:48AM +0200, Janusz Krzysztofik wrote:
-> > On Tue, 28 Aug 2012 11:13:39 Mark Brown wrote:
+On 08/31/2012 06:04 PM, Guenter Roeck wrote:
+> On Thu, Aug 30, 2012 at 09:42:57PM -0400, Vivien Didelot wrote:
+>> The MAX197 is an A/D converter, made by Maxim. This driver currently
+>> supports the MAX197, and MAX199. They are both 8-Channel, Multi-Range,
+>> 5V, 12-Bit DAS with 8+4 Bus Interface and Fault Protection.
+>>
+>> The available ranges for the MAX197 are {0,-5V} to 5V, and {0,-10V} to
+>> 10V, while they are {0,-2V} to 2V, and {0,-4V} to 4V on the MAX199.
+>>
+>> Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
 > 
-> > > The above looks like you already have a platform driver? 
+> Applied to -next.
+> 
 
-Mark,
-I should have rather answered: No, ams-delta.c is not a platform driver, 
-only a module which registeres a soc-audio device and provides device 
-specific data and callbacks to the soc-audio platform driver.
+Hm, now it's probably to late, but for this kind of general purpose ADC the IIO
+framework is in my opinion the better place to add support for it.
 
-> > > All I'm
-> > > suggesting is changing the above to use platform rather than 
-driver
-> > > data.
-> ...
-> s/drvdata/platdata/ in the code. 
-
-Taking the above into account, I would have to apply this substitue to 
-the soc-core.c, which is actually the platform driver for the ams-delta 
-ASoC device, and this would break a lot of other cards.
-
-> If you can't do this then just
-> referencing the data directly in the code would be better than this
-> bodge, it'd be much less fragile.
-
-I see your point, however for now I can see no better way of referencing 
-the data (of type struct snd_soc_card) then passing it to 
-snd_soc_register_card(). But for this to work, I would have to register 
-successfully an ams-delta specific platform device first, not the soc-
-audio. This, even if still done from the sound/soc/omap/ams-delta.c, not 
-from an arch board file, would require now not existing ams-delta ASoC 
-platform driver probe/remove callbacks at least. I'm still not convinced 
-if such modification would be acceptable in the middle of the rc cycle.
-
-If there is a simpler, less intrusive way to do this, then sorry, I 
-still can't see it.
-
-Thanks,
-Janusz
+- Lars
