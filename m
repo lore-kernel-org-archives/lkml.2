@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755469Ab2IAD6F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 23:58:05 -0400
-Received: from bosmailout14.eigbox.net ([66.96.186.14]:41748 "EHLO
-	bosmailout14.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755413Ab2IAD5r (ORCPT
+	id S1755449Ab2IAD6B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 23:58:01 -0400
+Received: from bosmailout05.eigbox.net ([66.96.187.5]:41232 "EHLO
+	bosmailout05.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755249Ab2IAD5j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 23:57:47 -0400
-X-Greylist: delayed 2389 seconds by postgrey-1.27 at vger.kernel.org; Fri, 31 Aug 2012 23:57:46 EDT
-X-Authority-Analysis: v=2.0 cv=Ha6juF48 c=1 sm=1
+	Fri, 31 Aug 2012 23:57:39 -0400
+X-Greylist: delayed 2399 seconds by postgrey-1.27 at vger.kernel.org; Fri, 31 Aug 2012 23:57:39 EDT
+X-Authority-Analysis: v=2.0 cv=aPZHX8Bm c=1 sm=1
  a=Z/nPm8Wi6vkzxh11zJE/RA==:17 a=bc2JKO6qiGsA:10 a=tW0haWE2Y5YA:10
- a=5dyqpnoOPUoA:10 a=8nJEP1OIZ-IA:10 a=aVJx4HrAOpwA:10
- a=bJ0fqD8TFZgqkSadqForXVIPBlU=:19 a=D19gQVrFAAAA:8 a=ujnD75z6dN5Qym19t2gA:9
- a=wPNLvfGTeEIA:10 a=wx0GOVZTcu8EuaXTIXj3VQ==:117
-X-EN-OrigOutIP: 10.20.18.12
-X-EN-IMPSID: tfJC1j0030FdZ9W01fJCih
-Message-ID: <50417BB6.3020300@yahoo.es>
-Date: Sat, 01 Sep 2012 11:06:30 +0800
+ a=pwQJmwAge4AA:10 a=8nJEP1OIZ-IA:10 a=iIzMtcZSCJUA:10
+ a=bJ0fqD8TFZgqkSadqForXVIPBlU=:19 a=VwQbUJbxAAAA:8 a=KKAkSRfTAAAA:8
+ a=sXByejFr6yngx_-pCvAA:9 a=wPNLvfGTeEIA:10 a=WwgC8nHKvroA:10
+ a=6thTdk0GfRoQwv0zj4iWMg==:117
+X-EN-OrigOutIP: 10.20.18.15
+X-EN-IMPSID: tfHe1j0010KWaAJ01fHeWe
+Message-ID: <50417B2E.1030806@yahoo.es>
+Date: Sat, 01 Sep 2012 11:04:14 +0800
 From: Hein Tibosch <hein_tibosch@yahoo.es>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120824 Thunderbird/15.0
 MIME-Version: 1.0
@@ -24,13 +25,12 @@ To: Andrew Morton <akpm@linux-foundation.org>,
         viresh kumar <viresh.kumar@linaro.org>,
         Hans-Christian Egtvedt <egtvedt@samfundet.no>
 CC: Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         "ludovic.desroches" <ludovic.desroches@atmel.com>,
         Havard Skinnemoen <havard@skinnemoen.net>,
-        spear-devel <spear-devel@list.st.com>,
         Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 3/3] avr32: at32ap700x: set DMA slave properties for MCI
- dw_dmac
+        spear-devel <spear-devel@list.st.com>
+Subject: [PATCH v3 1/3] dw_dmac: make driver endianness configurable
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-EN-UserInfo: 3946c951b80c12a8be5482963a0b1232:e0ae43bc192b431f8b69f09a37527cbc
@@ -41,40 +41,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MCI makes use of the dw_dmac driver when DMA is being used.
-Due to recent changes to dw_dmac the MCI+DMA driver was broken because:
-- a patch in dw_dmac allowed for 64-bit transfers on the memory side, giving
-an illegal value of 3 in the SRC/DST_TR_WIDTH register
-(http://lkml.org/lkml/2012/1/18/52)
-- the SMS field in the CTLL register received the wrong value 0
+The dw_dmac was originally developed for avr32 to be used with the Synopsys
+DesignWare AHB DMA controller. After 2.6.38, access to the device's i/o
+memory was done with the little-endian readl/writel functions
+(https://patchwork.kernel.org/patch/608211)
 
-This patch sets the SMS (Source Master Select) to 1 and limits
-the maximum transfer width to 32 bits.
-
-Note: this can only be applied after the previous:
-[PATCH v3 2/3] dw_dmac: max_mem_width limits value for SRC/DST_TR_WID register
+This didn't work on the avr32 platform, because it needs native-endian
+(i.e. big-endian) accessors.
+This patch makes the endianness configurable using 'DW_DMAC_BIG_ENDIAN_IO',
+which will default be true for AVR32
 
 Signed-off-by: Hein Tibosch <hein_tibosch@yahoo.es>
-Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
----
- arch/avr32/mach-at32ap/at32ap700x.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Acked-by: Arnd Bergmann <arnd.bergmann@linaro.org>
+Reviewed-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
 
-diff --git a/arch/avr32/mach-at32ap/at32ap700x.c b/arch/avr32/mach-at32ap/at32ap700x.c
-index 0445c4f..7250c70 100644
---- a/arch/avr32/mach-at32ap/at32ap700x.c
-+++ b/arch/avr32/mach-at32ap/at32ap700x.c
-@@ -1356,6 +1356,11 @@ at32_add_device_mci(unsigned int id, struct mci_platform_data *data)
- 	slave->sdata.cfg_lo &= ~(DWC_CFGL_HS_DST_POL
- 				| DWC_CFGL_HS_SRC_POL);
+---
+ drivers/dma/Kconfig        |   11 +++++++++++
+ drivers/dma/dw_dmac_regs.h |   14 ++++++++++++++
+ 2 files changed, 25 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+index aadeb5b..a9f6781 100644
+--- a/drivers/dma/Kconfig
++++ b/drivers/dma/Kconfig
+@@ -89,6 +89,17 @@ config DW_DMAC
+ 	  Support the Synopsys DesignWare AHB DMA controller.  This
+ 	  can be integrated in chips such as the Atmel AT32ap7000.
  
-+	/* Setup DMA controller: let source be master */
-+	slave->sdata.src_master = 1;
-+	/* Limit maximum transfer width to 32-bit */
-+	slave->sdata.max_mem_width = DW_MEM_WIDTH_32;
++config DW_DMAC_BIG_ENDIAN_IO
++	bool "Use big endian I/O register access"
++	default y if AVR32
++	depends on DW_DMAC
++	help
++	  Say yes here to use big endian I/O access when reading and writing
++	  to the DMA controller registers. This is needed on some platforms,
++	  like the Atmel AVR32 architecture.
 +
- 	data->dma_slave = slave;
++	  If unsure, use the default setting.
++
+ config AT_HDMAC
+ 	tristate "Atmel AHB DMA support"
+ 	depends on ARCH_AT91
+diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
+index f298f69..9758651 100644
+--- a/drivers/dma/dw_dmac_regs.h
++++ b/drivers/dma/dw_dmac_regs.h
+@@ -175,10 +175,17 @@ __dwc_regs(struct dw_dma_chan *dwc)
+ 	return dwc->ch_regs;
+ }
  
- 	if (platform_device_add_data(pdev, data,
++#ifdef CONFIG_DW_DMAC_BIG_ENDIAN_IO
++#define channel_readl(dwc, name) \
++	ioread32be(&(__dwc_regs(dwc)->name))
++#define channel_writel(dwc, name, val) \
++	iowrite32be((val), &(__dwc_regs(dwc)->name))
++#else
+ #define channel_readl(dwc, name) \
+ 	readl(&(__dwc_regs(dwc)->name))
+ #define channel_writel(dwc, name, val) \
+ 	writel((val), &(__dwc_regs(dwc)->name))
++#endif
+ 
+ static inline struct dw_dma_chan *to_dw_dma_chan(struct dma_chan *chan)
+ {
+@@ -201,10 +208,17 @@ static inline struct dw_dma_regs __iomem *__dw_regs(struct dw_dma *dw)
+ 	return dw->regs;
+ }
+ 
++#ifdef CONFIG_DW_DMAC_BIG_ENDIAN_IO
++#define dma_readl(dwc, name) \
++	ioread32be(&(__dw_regs(dw)->name))
++#define dma_writel(dwc, name, val) \
++	iowrite32be((val), &(__dw_regs(dw)->name))
++#else
+ #define dma_readl(dw, name) \
+ 	readl(&(__dw_regs(dw)->name))
+ #define dma_writel(dw, name, val) \
+ 	writel((val), &(__dw_regs(dw)->name))
++#endif
+ 
+ #define channel_set_bit(dw, reg, mask) \
+ 	dma_writel(dw, reg, ((mask) << 8) | (mask))
 -- 
 1.7.8.0
