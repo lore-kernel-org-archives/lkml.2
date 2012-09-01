@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751672Ab2IAGLb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Sep 2012 02:11:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:65094 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305Ab2IAGLa (ORCPT
+	id S1751860Ab2IAGkI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Sep 2012 02:40:08 -0400
+Received: from ext190.halfdog.net ([88.116.147.190]:51068 "EHLO
+	mail.halfdog.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751350Ab2IAGkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Sep 2012 02:11:30 -0400
-Message-ID: <1346479882.3272.1.camel@phoenix>
-Subject: [PATCH] gpio: rdc321x: Prevent removal of modules exporting active
- GPIOs
-From: Axel Lin <axel.lin@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Florian Fainelli <florian@openwrt.org>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
-Date: Sat, 01 Sep 2012 14:11:22 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Sat, 1 Sep 2012 02:40:06 -0400
+Message-ID: <5041AD8C.1040606@halfdog.net>
+Date: Sat, 01 Sep 2012 06:39:08 +0000
+From: halfdog <me@halfdog.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Firefox/17.0 SeaMonkey/2.14a1
+MIME-Version: 1.0
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Software interrupt 0x8 guest crash from userspace: virtualbox
+ emulation or guest kernel bug?
+References: <502EAB4D.90807@halfdog.net>
+In-Reply-To: <502EAB4D.90807@halfdog.net>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver can be built as a module, set the missing owner field of
-struct gpio_chip to prevent removal of modules exporting active GPIOs.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/gpio/gpio-rdc321x.c |    1 +
- 1 file changed, 1 insertion(+)
+halfdog wrote:
+> I have observed a strange guest kernel crash in virtualbox and are 
+> currently trying to understand it. Since I have no real 32-bit
+> Intel platform any more, I cannot verify that this crash would
+> happen on native 32bit also, so perhaps someone could check that.
+> ...
 
-diff --git a/drivers/gpio/gpio-rdc321x.c b/drivers/gpio/gpio-rdc321x.c
-index e97016a..b62d443 100644
---- a/drivers/gpio/gpio-rdc321x.c
-+++ b/drivers/gpio/gpio-rdc321x.c
-@@ -170,6 +170,7 @@ static int __devinit rdc321x_gpio_probe(struct platform_device *pdev)
- 	rdc321x_gpio_dev->reg2_data_base = r->start + 0x4;
- 
- 	rdc321x_gpio_dev->chip.label = "rdc321x-gpio";
-+	rdc321x_gpio_dev->chip.owner = THIS_MODULE;
- 	rdc321x_gpio_dev->chip.direction_input = rdc_gpio_direction_input;
- 	rdc321x_gpio_dev->chip.direction_output = rdc_gpio_config;
- 	rdc321x_gpio_dev->chip.get = rdc_gpio_get_value;
--- 
-1.7.9.5
+For the records: no checks needed any more, root cause of issue
+already found.
 
+- -- 
+http://www.halfdog.net/
+PGP: 156A AE98 B91F 0114 FE88  2BD8 C459 9386 feed a bee
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-
+iEYEARECAAYFAlBBrXEACgkQxFmThv7tq+6JHQCfaC1tCY2iLFcmoVwtA0UUZXpx
+5TcAn1KhhpvgkaLGQ80AlErXzv6bN8SJ
+=uJvv
+-----END PGP SIGNATURE-----
