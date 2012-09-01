@@ -1,45 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755772Ab2IAUi1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Sep 2012 16:38:27 -0400
-Received: from mail.acc.umu.se ([130.239.18.156]:36692 "EHLO mail.acc.umu.se"
+	id S1755771Ab2IAVhv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Sep 2012 17:37:51 -0400
+Received: from mail.ispras.ru ([83.149.199.43]:46232 "EHLO mail.ispras.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755632Ab2IAUi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Sep 2012 16:38:26 -0400
-X-Greylist: delayed 510 seconds by postgrey-1.27 at vger.kernel.org; Sat, 01 Sep 2012 16:38:26 EDT
-From: Marcus Karlsson <mk@acc.umu.se>
-To: gregkh@linuxfoundation.org
-Cc: xiaoguangrong@linux.vnet.ibm.com, konrad.wilk@oracle.com, mk@acc.umu.se,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: zcache: fix spelling of comment
-Date: Sat,  1 Sep 2012 22:29:46 +0200
-Message-Id: <1346531386-9524-1-git-send-email-mk@acc.umu.se>
-X-Mailer: git-send-email 1.7.10
+	id S1754191Ab2IAVhu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Sep 2012 17:37:50 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
+Subject: [PATCH] staging: bcm: fix error handling in bcm_init()
+Date: Sun,  2 Sep 2012 01:37:36 +0400
+Message-Id: <1346535456-28941-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix spelling in tmem.c:
-Transcedent -> Transcendent
+bcm_init() does not have proper error handling of usb_register().
+The patch implements one.
 
-Signed-off-by: Marcus Karlsson <mk@acc.umu.se>
+Found by Linux Driver Verification project (linuxtesting.org).
+
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 ---
- drivers/staging/zcache/tmem.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/bcm/InterfaceInit.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/staging/zcache/tmem.c b/drivers/staging/zcache/tmem.c
-index eaa9021..56c8e60 100644
---- a/drivers/staging/zcache/tmem.c
-+++ b/drivers/staging/zcache/tmem.c
-@@ -3,7 +3,7 @@
-  *
-  * Copyright (c) 2009-2011, Dan Magenheimer, Oracle Corp.
-  *
-- * The primary purpose of Transcedent Memory ("tmem") is to map object-oriented
-+ * The primary purpose of Transcendent Memory ("tmem") is to map object-oriented
-  * "handles" (triples containing a pool id, and object id, and an index), to
-  * pages in a page-accessible memory (PAM).  Tmem references the PAM pages via
-  * an abstract "pampd" (PAM page-descriptor), which can be operated on by a
+diff --git a/drivers/staging/bcm/InterfaceInit.c b/drivers/staging/bcm/InterfaceInit.c
+index 8f85de6..0049890 100644
+--- a/drivers/staging/bcm/InterfaceInit.c
++++ b/drivers/staging/bcm/InterfaceInit.c
+@@ -669,6 +669,8 @@ struct class *bcm_class;
+ 
+ static __init int bcm_init(void)
+ {
++	int retval;
++
+ 	printk(KERN_INFO "%s: %s, %s\n", DRV_NAME, DRV_DESCRIPTION, DRV_VERSION);
+ 	printk(KERN_INFO "%s\n", DRV_COPYRIGHT);
+ 
+@@ -678,7 +680,15 @@ static __init int bcm_init(void)
+ 		return PTR_ERR(bcm_class);
+ 	}
+ 
+-	return usb_register(&usbbcm_driver);
++	retval = usb_register(&usbbcm_driver);
++	if (retval < 0) {
++		printk(KERN_ERR DRV_NAME ": could not register usb driver\n");
++		goto out_class;
++	}
++	return 0;
++out_class:
++	class_destroy(bcm_class);
++	return retval;
+ }
+ 
+ static __exit void bcm_exit(void)
 -- 
-1.7.12
+1.7.9.5
 
