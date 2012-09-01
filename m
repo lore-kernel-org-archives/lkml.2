@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755436Ab2IAJSR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Sep 2012 05:18:17 -0400
-Received: from gn237.zone.eu ([217.146.67.237]:54743 "EHLO gn237.zone.eu"
+	id S1755324Ab2IAJSQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Sep 2012 05:18:16 -0400
+Received: from gn237.zone.eu ([217.146.67.237]:54742 "EHLO gn237.zone.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753378Ab2IAJRL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753396Ab2IAJRL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 1 Sep 2012 05:17:11 -0400
 From: Priit Laes <plaes@plaes.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Priit Laes <plaes@plaes.org>
-Subject: [PATCH 01/14] staging: csr: netdev.c: Clean up KERNEL_VERSION checks: <=2.6.25
-Date: Sat,  1 Sep 2012 12:05:57 +0300
-Message-Id: <1346490370-32438-2-git-send-email-plaes@plaes.org>
+Subject: [PATCH 04/14] staging: csr: netdev.c: Clean up KERNEL_VERSION checks: 2.6.29
+Date: Sat,  1 Sep 2012 12:06:00 +0300
+Message-Id: <1346490370-32438-5-git-send-email-plaes@plaes.org>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1346490370-32438-1-git-send-email-plaes@plaes.org>
 References: <1346490370-32438-1-git-send-email-plaes@plaes.org>
@@ -23,82 +23,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Priit Laes <plaes@plaes.org>
 ---
- drivers/staging/csr/netdev.c | 21 ---------------------
- 1 file changed, 21 deletions(-)
+ drivers/staging/csr/netdev.c | 27 ---------------------------
+ 1 file changed, 27 deletions(-)
 
 diff --git a/drivers/staging/csr/netdev.c b/drivers/staging/csr/netdev.c
-index 1e6e111..7b7d3fd 100644
+index 6a5a483..763edfc 100644
 --- a/drivers/staging/csr/netdev.c
 +++ b/drivers/staging/csr/netdev.c
-@@ -53,9 +53,6 @@
- #include "csr_wifi_hip_unifi.h"
- #include "csr_wifi_hip_conversions.h"
- #include "unifi_priv.h"
--#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,13)
--#include <net/iw_handler.h>
--#endif
- #include <net/pkt_sched.h>
+@@ -163,7 +163,6 @@ struct uf_tx_packet_data {
  
+ #endif /* CONFIG_NET_SCHED */
  
-@@ -189,13 +186,8 @@ static struct sk_buff *uf_qdiscop_dequeue(struct Qdisc* qd);
- static void uf_qdiscop_reset(struct Qdisc* qd);
- static void uf_qdiscop_destroy(struct Qdisc* qd);
- static int uf_qdiscop_dump(struct Qdisc *qd, struct sk_buff *skb);
--#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,25)
- static int uf_qdiscop_tune(struct Qdisc *qd, struct nlattr *opt);
- static int uf_qdiscop_init(struct Qdisc *qd, struct nlattr *opt);
--#else
--static int uf_qdiscop_tune(struct Qdisc *qd, struct rtattr *opt);
--static int uf_qdiscop_init(struct Qdisc *qd, struct rtattr *opt);
--#endif
- #endif
- 
- 
-@@ -227,9 +219,6 @@ static struct Qdisc_ops uf_qdisc_ops =
- #elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,27)
- #define UF_QDISC_CREATE_DFLT(_dev, _ops, _root)         \
-     qdisc_create_dflt(dev, netdev_get_tx_queue(_dev, 0), _ops, _root)
--#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,20)
--#define UF_QDISC_CREATE_DFLT(_dev, _ops, _root)         \
--    qdisc_create_dflt(dev, _ops, _root)
- #else
- #define UF_QDISC_CREATE_DFLT(_dev, _ops, _root)         \
-     qdisc_create_dflt(dev, _ops)
-@@ -700,10 +689,8 @@ uf_free_netdevice(unifi_priv_t *priv)
- 
- #ifdef CSR_SUPPORT_SME
-     /* Cancel work items and destroy the workqueue */
--#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
-     cancel_work_sync(&priv->multicast_list_task);
- #endif
--#endif
- /* Destroy the workqueues. */
-     flush_workqueue(priv->unifi_workqueue);
-     destroy_workqueue(priv->unifi_workqueue);
-@@ -3480,11 +3467,7 @@ static void uf_qdiscop_destroy(struct Qdisc* qd)
- 
- 
- /* called whenever parameters are updated on existing qdisc */
--#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,25)
- static int uf_qdiscop_tune(struct Qdisc *qd, struct nlattr *opt)
--#else
--static int uf_qdiscop_tune(struct Qdisc *qd, struct rtattr *opt)
--#endif
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,29)
+ static const struct net_device_ops uf_netdev_ops =
  {
-     func_enter();
-     func_exit();
-@@ -3493,11 +3476,7 @@ static int uf_qdiscop_tune(struct Qdisc *qd, struct rtattr *opt)
- 
- 
- /* called during initial creation of qdisc on device */
--#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,25)
- static int uf_qdiscop_init(struct Qdisc *qd, struct nlattr *opt)
--#else
--static int uf_qdiscop_init(struct Qdisc *qd, struct rtattr *opt)
+     .ndo_open = uf_net_open,
+@@ -174,7 +173,6 @@ static const struct net_device_ops uf_netdev_ops =
+     .ndo_set_rx_mode = uf_set_multicast_list,
+     .ndo_select_queue = uf_net_select_queue,
+ };
 -#endif
- {
- #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,27)
-     struct net_device *dev = qd->dev_queue->dev;
+ 
+ static u8 oui_rfc1042[P80211_OUI_LEN] = { 0x00, 0x00, 0x00 };
+ static u8 oui_8021h[P80211_OUI_LEN]   = { 0x00, 0x00, 0xf8 };
+@@ -258,20 +256,7 @@ uf_alloc_netdevice(CsrSdioFunction *sdio_dev, int bus_id)
+     priv->interfacePriv[0] = interfacePriv;
+ 
+     /* Setup / override net_device fields */
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,29)
+     dev->netdev_ops = &uf_netdev_ops;
+-#else
+-    dev->open             = uf_net_open;
+-    dev->stop             = uf_net_stop;
+-    dev->hard_start_xmit  = uf_net_xmit;
+-    dev->do_ioctl         = uf_net_ioctl;
+-
+-    /* called by /proc/net/dev */
+-    dev->get_stats = uf_net_get_stats;
+-
+-    dev->set_multicast_list = uf_set_multicast_list;
+-    dev->select_queue       = uf_net_select_queue;
+-#endif
+ 
+ #ifdef CSR_SUPPORT_WEXT
+     dev->wireless_handlers = &unifi_iw_handler_def;
+@@ -505,19 +490,7 @@ uf_alloc_netdevice_for_other_interfaces(unifi_priv_t *priv, u16 interfaceTag)
+     INIT_LIST_HEAD(&interfacePriv->rx_controlled_list);
+ 
+     /* Setup / override net_device fields */
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,29)
+     dev->netdev_ops = &uf_netdev_ops;
+-#else
+-    dev->open             = uf_net_open;
+-    dev->stop             = uf_net_stop;
+-    dev->hard_start_xmit  = uf_net_xmit;
+-    dev->do_ioctl         = uf_net_ioctl;
+-
+-    /* called by /proc/net/dev */
+-    dev->get_stats = uf_net_get_stats;
+-
+-    dev->set_multicast_list = uf_set_multicast_list;
+-#endif
+ 
+ #ifdef CSR_SUPPORT_WEXT
+     dev->wireless_handlers = &unifi_iw_handler_def;
 -- 
 1.7.12
 
