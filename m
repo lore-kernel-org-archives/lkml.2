@@ -1,170 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755630Ab2IARpu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Sep 2012 13:45:50 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:59081 "EHLO song.cn.fujitsu.com"
+	id S1755614Ab2IARps (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Sep 2012 13:45:48 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:3195 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755560Ab2IARof (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755554Ab2IARof (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 1 Sep 2012 13:44:35 -0400
 X-IronPort-AV: E=Sophos;i="4.80,353,1344182400"; 
-   d="scan'208";a="5764906"
+   d="scan'208";a="5764905"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
 Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH 04/10 V4] workqueue: add manage_workers_slowpath()
-Date: Sun, 2 Sep 2012 00:28:22 +0800
-Message-Id: <1346516916-1991-5-git-send-email-laijs@cn.fujitsu.com>
+Subject: [PATCH 02/10 V4] workqueue: fix deadlock in rebind_workers()
+Date: Sun, 2 Sep 2012 00:28:20 +0800
+Message-Id: <1346516916-1991-3-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1346516916-1991-1-git-send-email-laijs@cn.fujitsu.com>
 References: <1346516916-1991-1-git-send-email-laijs@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2012/09/02 00:27:25,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/02 00:28:31,
-	Serialize complete at 2012/09/02 00:28:31
+ 2012/09/02 00:28:30,
+	Serialize complete at 2012/09/02 00:28:30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If hotplug code grabbed the manager_mutex and worker_thread try to create
-a worker, the manage_worker() will return false and worker_thread go to
-process work items. Now, on the CPU, all workers are processing work items,
-no idle_worker left/ready for managing. It breaks the concept of workqueue
-and it is bug.
+Current idle_worker_rebind() has a bug.
 
-So when manage_worker() failed to grab the manager_mutex, it should
-try to enter normal process contex and then compete on the manager_mutex
-instead of return false.
+idle_worker_rebind() path			HOTPLUG path
+						online
+							rebind_workers()
+wait_event(gcwq->rebind_hold)
+	woken up but no scheduled			rebind_workers() returns (*)
+						the same cpu offline
+						the same cpu online again
+							rebind_workers()
+								set WORKER_REBIND
+	scheduled,see the WORKER_REBIND
+	wait rebind_workers() clear it    <--bug-->		wait idle_worker_rebind()
+								rebound.
 
-To safely do this, we add manage_workers_slowpath() and the worker
-go to process work items mode to do the managing jobs. thus
-managing jobs are processed via work item and can free to compete
-on manager_mutex.
+The two thread wait each other. It is bug.
 
-After this patch, manager_mutex can be grabbed anywhere if needed,
-it will not cause the CPU consumes all the idle worker_threads.
+This fix focuses in (*), rebind_workers() can't returns until all idles
+finish waiting on gcwq->rebind_hold(aka: until all idles release the reference
+of gcwq->rebind_hold). We add a ref_done to do it. rebind_workers() will
+waits on ref_done for all idles to finish wait.
 
-By the way, POOL_MANAGING_WORKERS is still need to tell us
-why manage_workers() failed to grab the manage_mutex.
-
-This slowpath is hard to trigger, so I change
-"if (unlikely(!mutex_trylock(&pool->manager_mutex)))"
-to "if (1 || unlikely(!mutex_trylock(&pool->manager_mutex)))"
-when testing, it uses manage_workers_slowpath() always.
-
+It is now tree-times-hand-shake.
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- kernel/workqueue.c |   89 ++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 87 insertions(+), 2 deletions(-)
+ kernel/workqueue.c |   61 ++++++++++++++++++++++++++++++++++++++++-----------
+ 1 files changed, 48 insertions(+), 13 deletions(-)
 
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 979ef4f..d40e8d7 100644
+index 4f252d0..1bfe407 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -1808,6 +1808,81 @@ static bool maybe_destroy_workers(struct worker_pool *pool)
- 	return ret;
+@@ -1305,8 +1305,22 @@ __acquires(&gcwq->lock)
  }
  
-+/* manage workers via work item */
-+static void manage_workers_slowpath_fn(struct work_struct *work)
-+{
-+	struct worker *worker = kthread_data(current);
-+	struct worker_pool *pool = worker->pool;
-+
-+	mutex_lock(&pool->manager_mutex);
-+	spin_lock_irq(&pool->gcwq->lock);
-+
-+	pool->flags &= ~POOL_MANAGE_WORKERS;
-+	maybe_destroy_workers(pool);
-+	maybe_create_worker(pool);
-+
-+	spin_unlock_irq(&pool->gcwq->lock);
-+	mutex_unlock(&pool->manager_mutex);
-+}
-+
-+static void process_scheduled_works(struct worker *worker);
-+
-+/*
-+ * manage_workers_slowpath - manage worker pool via work item
-+ * @worker: self
-+ *
-+ * manage workers when rebind_workers() or gcwq_unbind_fn() beat us down
-+ * on manage_mutex. The worker can't release the gcwq->lock and then
-+ * compete on manage_mutex, because any worker must have at least one of:
-+ * 	1) with gcwq->lock held
-+ * 	2) with pool->manage_mutex held (manage_workers() fast path)
-+ * 	3) queued on idle_list
-+ * 	4) processing work item and queued on busy hash table
-+ *
-+ * So we move the managing worker job to a work item and process it,
-+ * thus the manage_workers_slowpath_fn() has full ability to compete
-+ * on manage_mutex.
-+ *
-+ * CONTEXT:
-+ * with WORKER_PREP bit set
-+ * spin_lock_irq(gcwq->lock) which will be released and regrabbed
-+ * multiple times.  Does GFP_KERNEL allocations.
-+ */
-+static void manage_workers_slowpath(struct worker *worker)
-+{
-+	struct worker_pool *pool = worker->pool;
-+	struct work_struct manage_work;
-+	int cpu = pool->gcwq->cpu;
-+	struct cpu_workqueue_struct *cwq;
-+
-+	pool->flags |= POOL_MANAGING_WORKERS;
-+
-+	INIT_WORK_ONSTACK(&manage_work, manage_workers_slowpath_fn);
-+	__set_bit(WORK_STRUCT_PENDING_BIT, work_data_bits(&manage_work));
-+
-+	/* see the comment of the same statement of worker_thread() */
-+	BUG_ON(!list_empty(&worker->scheduled));
-+
-+	/* wq doesn't matter, use the default one */
-+	if (cpu == WORK_CPU_UNBOUND)
-+		cwq = get_cwq(cpu, system_unbound_wq);
-+	else
-+		cwq = get_cwq(cpu, system_wq);
-+
-+	/* insert the work to the worker's own scheduled list */
-+	debug_work_activate(&manage_work);
-+	insert_work(cwq, &manage_work, &worker->scheduled,
-+		    work_color_to_flags(WORK_NO_COLOR));
+ struct idle_rebind {
+-	int			cnt;		/* # workers to be rebound */
+-	struct completion	done;		/* all workers rebound */
++	int		  idle_cnt;	/* # idle workers to be rebound */
++	struct completion idle_done;	/* all idle workers rebound */
 +
 +	/*
-+	 * Do manage workers. And may also proccess busy_worker_rebind_fn()
-+	 * queued by rebind_workers().
++	 * notify the rebind_workers() that:
++	 * 0. All worker leave rebind_hold:
++	 * 1. All idle workers are rebound.
++	 * 2. No idle worker has ref to this struct
++	 *
++	 * @ref_cnt: # idle workers which has ref to this struct
++	 * @ref_done: any idle workers has no ref to this struct,
++	 *	      nor rebind_hold.
++	 *	      it also implies that all idle workers are rebound.
 +	 */
-+	process_scheduled_works(worker);
-+
-+	pool->flags &= ~POOL_MANAGING_WORKERS;
-+}
-+
- /**
-  * manage_workers - manage worker pool
-  * @worker: self
-@@ -1833,8 +1908,18 @@ static bool manage_workers(struct worker *worker)
- 	struct worker_pool *pool = worker->pool;
- 	bool ret = false;
++	int		  ref_cnt;
++	struct completion ref_done;
+ };
  
--	if (!mutex_trylock(&pool->manager_mutex))
--		return ret;
-+	if (pool->flags & POOL_MANAGING_WORKERS)
-+		return false;
+ /*
+@@ -1320,12 +1334,19 @@ static void idle_worker_rebind(struct worker *worker)
+ 
+ 	/* CPU must be online at this point */
+ 	WARN_ON(!worker_maybe_bind_and_lock(worker));
+-	if (!--worker->idle_rebind->cnt)
+-		complete(&worker->idle_rebind->done);
++	++worker->idle_rebind->ref_cnt;
++	if (!--worker->idle_rebind->idle_cnt)
++		complete(&worker->idle_rebind->idle_done);
+ 	spin_unlock_irq(&worker->pool->gcwq->lock);
+ 
+ 	/* we did our part, wait for rebind_workers() to finish up */
+ 	wait_event(gcwq->rebind_hold, !(worker->flags & WORKER_REBIND));
 +
-+	if (unlikely(!mutex_trylock(&pool->manager_mutex))) {
-+		/*
-+		 * Ouch! rebind_workers() or gcwq_unbind_fn() beats we,
-+		 * but we can't return without making any progress.
-+		 * Fall back to manage_workers_slowpath().
-+		 */
-+		manage_workers_slowpath(worker);
-+		return true;
++	/* noify if all idle worker are done(rebond & wait) */
++	spin_lock_irq(&worker->pool->gcwq->lock);
++	if (!--worker->idle_rebind->ref_cnt)
++		complete(&worker->idle_rebind->ref_done);
++	spin_unlock_irq(&worker->pool->gcwq->lock);
+ }
+ 
+ /*
+@@ -1384,14 +1405,18 @@ static void rebind_workers(struct global_cwq *gcwq)
+ 		lockdep_assert_held(&pool->manager_mutex);
+ 
+ 	/*
+-	 * Rebind idle workers.  Interlocked both ways.  We wait for
+-	 * workers to rebind via @idle_rebind.done.  Workers will wait for
+-	 * us to finish up by watching %WORKER_REBIND.
++	 * Rebind idle workers.  Interlocked both ways in triple waits.
++	 * We wait for workers to rebind via @idle_rebind.idle_done.
++	 * Workers will wait for us to finish up by watching %WORKER_REBIND.
++	 * And them we wait for workers to leave rebind_hold
++	 * via @idle_rebind.ref_done.
+ 	 */
+-	init_completion(&idle_rebind.done);
++	init_completion(&idle_rebind.idle_done);
++	init_completion(&idle_rebind.ref_done);
++	idle_rebind.ref_cnt = 1;
+ retry:
+-	idle_rebind.cnt = 1;
+-	INIT_COMPLETION(idle_rebind.done);
++	idle_rebind.idle_cnt = 1;
++	INIT_COMPLETION(idle_rebind.idle_done);
+ 
+ 	/* set REBIND and kick idle ones, we'll wait for these later */
+ 	for_each_worker_pool(pool, gcwq) {
+@@ -1403,7 +1428,7 @@ retry:
+ 			worker->flags &= ~WORKER_UNBOUND;
+ 			worker->flags |= WORKER_REBIND;
+ 
+-			idle_rebind.cnt++;
++			idle_rebind.idle_cnt++;
+ 			worker->idle_rebind = &idle_rebind;
+ 
+ 			/* worker_thread() will call idle_worker_rebind() */
+@@ -1411,9 +1436,9 @@ retry:
+ 		}
+ 	}
+ 
+-	if (--idle_rebind.cnt) {
++	if (--idle_rebind.idle_cnt) {
+ 		spin_unlock_irq(&gcwq->lock);
+-		wait_for_completion(&idle_rebind.done);
++		wait_for_completion(&idle_rebind.idle_done);
+ 		spin_lock_irq(&gcwq->lock);
+ 		/* busy ones might have become idle while waiting, retry */
+ 		goto retry;
+@@ -1452,6 +1477,16 @@ retry:
+ 			    worker->scheduled.next,
+ 			    work_color_to_flags(WORK_NO_COLOR));
+ 	}
++
++	/*
++	 * we will leave rebind_workers(), have to wait until no worker
++	 * has ref to this idle_rebind nor rebind_hold.
++	 */
++	if (--idle_rebind.ref_cnt) {
++		spin_unlock_irq(&gcwq->lock);
++		wait_for_completion(&idle_rebind.ref_done);
++		spin_lock_irq(&gcwq->lock);
 +	}
+ }
  
- 	pool->flags &= ~POOL_MANAGE_WORKERS;
- 	pool->flags |= POOL_MANAGING_WORKERS;
+ static struct worker *alloc_worker(void)
 -- 
 1.7.4.4
 
