@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755749Ab2IAUef (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Sep 2012 16:34:35 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:59383 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755488Ab2IAUee convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Sep 2012 16:34:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120831122616.GA4083@x1.osrc.amd.com>
-References: <CAH0vN5Jn1g+zekr-Nd=GizskgbcOGj8zoq+m6OvBiO6Xkw5-UQ@mail.gmail.com>
-	<20120831083727.GA2903@liondog.tnic>
-	<CAH0vN5J0_3B2e_dmLk1yaKfCde79egkG-s7THrKtEwzcLnmm5Q@mail.gmail.com>
-	<20120831122616.GA4083@x1.osrc.amd.com>
-Date: Sat, 1 Sep 2012 17:26:58 -0300
-Message-ID: <CAH0vN5KS1UpxFHx0L_9btY_P0TKnNst74uBqZo+CGt4qWOdYsQ@mail.gmail.com>
-Subject: Re: Get the min and max frequency of a processor
-From: Marcos Souza <marcos.souza.org@gmail.com>
-To: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755772Ab2IAUi1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Sep 2012 16:38:27 -0400
+Received: from mail.acc.umu.se ([130.239.18.156]:36692 "EHLO mail.acc.umu.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755632Ab2IAUi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Sep 2012 16:38:26 -0400
+X-Greylist: delayed 510 seconds by postgrey-1.27 at vger.kernel.org; Sat, 01 Sep 2012 16:38:26 EDT
+From: Marcus Karlsson <mk@acc.umu.se>
+To: gregkh@linuxfoundation.org
+Cc: xiaoguangrong@linux.vnet.ibm.com, konrad.wilk@oracle.com, mk@acc.umu.se,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: zcache: fix spelling of comment
+Date: Sat,  1 Sep 2012 22:29:46 +0200
+Message-Id: <1346531386-9524-1-git-send-email-mk@acc.umu.se>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/8/31 Borislav Petkov <bp@alien8.de>:
-> On Fri, Aug 31, 2012 at 06:52:46AM -0300, Marcos Souza wrote:
->> Nothing is wrong with access /sys, but I thought there was another
->> way, like an API or something else.
->
-> Ah, there's no API, AFAICT.
->
-> Also, tools/power/cpupower/ uses sysfs too - you could reuse that
-> code if you don't feel like writing it yourself. The function is
-> cpufreq_get_hardware_limits()
+Fix spelling in tmem.c:
+Transcedent -> Transcendent
 
-I will take a look in the cpupower.
+Signed-off-by: Marcus Karlsson <mk@acc.umu.se>
+---
+ drivers/staging/zcache/tmem.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> Ok, technically, there is also a way to query the CPU's MSRs directly
-> but this is a bit more involved than reading sysfs nodes.
-
-My application don't need this complexity. I believe the /sys nodes
-ould help me.
-
-> HTH.
->
-> --
-> Regards/Gruss,
-> Boris.
-
-Thanks Borislav for showing to me all available choises to do this job!
-
-
+diff --git a/drivers/staging/zcache/tmem.c b/drivers/staging/zcache/tmem.c
+index eaa9021..56c8e60 100644
+--- a/drivers/staging/zcache/tmem.c
++++ b/drivers/staging/zcache/tmem.c
+@@ -3,7 +3,7 @@
+  *
+  * Copyright (c) 2009-2011, Dan Magenheimer, Oracle Corp.
+  *
+- * The primary purpose of Transcedent Memory ("tmem") is to map object-oriented
++ * The primary purpose of Transcendent Memory ("tmem") is to map object-oriented
+  * "handles" (triples containing a pool id, and object id, and an index), to
+  * pages in a page-accessible memory (PAM).  Tmem references the PAM pages via
+  * an abstract "pampd" (PAM page-descriptor), which can be operated on by a
 -- 
-Att,
+1.7.12
 
-Marcos Paulo de Souza
-Acadêmico de Ciencia da Computação - FURB - SC
-"Uma vida sem desafios é uma vida sem razão"
-"A life without challenges, is a non reason life"
