@@ -1,95 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755373Ab2IADnB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 23:43:01 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:60413 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755099Ab2IADm6 (ORCPT
+	id S1755394Ab2IAD5d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 23:57:33 -0400
+Received: from bosmailout12.eigbox.net ([66.96.184.12]:54100 "EHLO
+	bosmailout12.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755249Ab2IAD5b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 23:42:58 -0400
+	Fri, 31 Aug 2012 23:57:31 -0400
+X-Greylist: delayed 2408 seconds by postgrey-1.27 at vger.kernel.org; Fri, 31 Aug 2012 23:57:31 EDT
+X-Authority-Analysis: v=2.0 cv=aPZHX8Bm c=1 sm=1
+ a=Z/nPm8Wi6vkzxh11zJE/RA==:17 a=bc2JKO6qiGsA:10 a=tW0haWE2Y5YA:10
+ a=c45YJJ6LQmIA:10 a=8nJEP1OIZ-IA:10 a=qpcE2FqCzjQA:10
+ a=bJ0fqD8TFZgqkSadqForXVIPBlU=:19 a=HDMV31SwfDG0Q99VZ8wA:9 a=wPNLvfGTeEIA:10
+ a=9UqFsMnAB6EOkiq4MrOclQ==:117
+X-EN-OrigOutIP: 10.20.18.19
+X-EN-IMPSID: tfHL1j0070QhFXN01fHLUt
+Message-ID: <504179BB.2090007@yahoo.es>
+Date: Sat, 01 Sep 2012 10:58:03 +0800
+From: Hein Tibosch <hein_tibosch@yahoo.es>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120824 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <87627ye7vh.fsf@xmission.com>
-References: <20120831213126.GA19688@www.outflux.net>
-	<20120831223908.4aa5574d@pyramind.ukuu.org.uk>
-	<CACLa4pv75-HaPEas=aOMySbMm-YdSJZdc6qtNUnTM+Ev2Rp7rg@mail.gmail.com>
-	<87ipbyfw9j.fsf@xmission.com>
-	<CACLa4ptpGJ7YDTqmOvtHq_Ts9f72SBV6Q_HDDw1OebhxVOzU9w@mail.gmail.com>
-	<87627ye7vh.fsf@xmission.com>
-Date: Fri, 31 Aug 2012 20:42:58 -0700
-X-Google-Sender-Auth: OiVwG0gXobEtF2WjmQ32NwkoT7E
-Message-ID: <CAGXu5jKD0MDetYuavSmXjDB3t3cYEkiEoEY-bAMyhFrmTaA6FA@mail.gmail.com>
-Subject: Re: [PATCH] security: unconditionally call Yama
-From: Kees Cook <keescook@chromium.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Eric Paris <eparis@parisplace.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        linux-kernel@vger.kernel.org, James Morris <james.l.morris@oracle.com>,
-        Eric Paris <eparis@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        John Johansen <john.johansen@canonical.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        linux-security-module@vger.kernel.org
+To: Andrew Morton <akpm@linux-foundation.org>,
+        viresh kumar <viresh.kumar@linaro.org>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>
+CC: Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "ludovic.desroches" <ludovic.desroches@atmel.com>,
+        Havard Skinnemoen <havard@skinnemoen.net>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        spear-devel <spear-devel@list.st.com>
+Subject: [PATCH v3 0/3] dw_dmac: repair driver for use with AVR32 (AP7000)
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
+X-EN-UserInfo: 3946c951b80c12a8be5482963a0b1232:e0ae43bc192b431f8b69f09a37527cbc
+X-EN-AuthUser: hein@htibosch.net
+X-EN-OrigIP: 114.79.63.40
+X-EN-OrigHost: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 31, 2012 at 8:31 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> Eric Paris <eparis@parisplace.org> writes:
->
->> On Fri, Aug 31, 2012 at 4:59 PM, Eric W. Biederman
->> <ebiederm@xmission.com> wrote:
->>
->>> From a overal kernel maintenance and use perspective the unconditional
->>> enablement is a pain.
->>>
->>> We long ago established the principle that compiling additional code
->>> into the kernel should not change the semenatics of the kernel.
->>>
->>> So this code needs to come with a command line or sysctl on/off switch
->>> not an unconditional enable.
->>
->> Your argument makes zero sense.  If I decide to build new code, that
->> new code can do something.
->
-> Sure but it should not change the existing behavior without being
-> configured to.
->
-> This comes out of the practice that kernels that need to support a
-> wide variety of use cases enable everything by default.
->
-> Having to vet kernel options for will this make my kernel do strange
-> things if this option is enabled, massively increase the burden on
-> people building and supporting kernels.
->
->> It happens all the time.  If you don't like Yama, don't build Yama.
->> If you don't like the only thing that Yama does (it only implements
->> one protection), disable that protection from sysctl.  I don't get it.
->
-> Having taken the time now to vet Yama ugh.  Having Yama enabled if
-> simply compiled in breaks using gdb to attach to a process runing
-> in another window.
->
-> Talk about something you don't want to surprise someone with.
->
-> It is very much not ok to have that be enabled by default just
-> because it happens to be compiled in.
+@Andrew: This is the third and hopefully final version of the dw_dmac patches.
+Now the small Atmel patch is included because of its dependency on
+the second dw_dmac patch. Sorry for the earlier confusion.
 
-I think it is better to look at the kernel's defaults from the
-perspective of the user, not the developer. If we only looked to the
-developer, we'd turn on all the debugging by default. No end user
-wants that. It's much easier for a developer to twiddle configs and
-sysctls.
 
-Given that several distros use (or want to use) Yama, I think that's
-reason enough for this. I think it's important for us to take a
-practical approach here, and having the big LSMs each hook Yama
-instead of doing this in a single global place will make it needlessly
-duplicated code.
+After some recent changes to dw_dmac, the driver got broken for the
+AVR32 platform for several reasons:
 
--Kees
+The accessors to i/o memory had become little-endian.
+The maximum transfer width on the memory side was increased from 32 to 64 bits.
+This led to undefined behavior on the avr32 platform.
+
+These patches will repair the driver so it can be used again on avr32. For
+other users of dw_dmac (ARM platform), nothing will change and no code has
+to be adapted.
+
+The small patch for Atmel (at32ap700x.c) is included here because of its
+dependency on the second dw_dmac patch.
+
+Thanks to all for reviewing, both people from Atmel and Linaro
+
+Hein Tibosch (3):
+  dw_dmac: make driver endianness configurable
+  dw_dmac: max_mem_width limits value for SRC/DST_TR_WID register
+  avr32: at32ap700x: set DMA slave properties for MCI dw_dmac
+
+ arch/avr32/mach-at32ap/at32ap700x.c |    5 +++++
+ drivers/dma/Kconfig                 |   11 +++++++++++
+ drivers/dma/dw_dmac.c               |   10 +++++++---
+ drivers/dma/dw_dmac_regs.h          |   14 ++++++++++++++
+ include/linux/dw_dmac.h             |    3 +++
+ 5 files changed, 40 insertions(+), 3 deletions(-)
 
 -- 
-Kees Cook
-Chrome OS Security
+
