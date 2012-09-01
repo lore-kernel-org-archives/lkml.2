@@ -1,124 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755265Ab2IAJkX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Sep 2012 05:40:23 -0400
-Received: from mga03.intel.com ([143.182.124.21]:59133 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752577Ab2IAJkV convert rfc822-to-8bit (ORCPT
+	id S1755376Ab2IAJod (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Sep 2012 05:44:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54204 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752854Ab2IAJoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Sep 2012 05:40:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,351,1344236400"; 
-   d="scan'208";a="140441743"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-Subject: [PATCH] USB/host: Cleanup unneccessary irq disable code
-Thread-Topic: [PATCH] USB/host: Cleanup unneccessary irq disable code
-Thread-Index: Ac2IJbXeLKg66PL6STS4jBWPwSuDaQ==
-Date: Sat, 1 Sep 2012 09:39:56 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A174713@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Sat, 1 Sep 2012 05:44:32 -0400
+Message-ID: <1346492667.10234.3.camel@phoenix>
+Subject: [PATCH] gpio: tps65912: Convert to use devm_kzalloc API
+From: Axel Lin <axel.lin@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: Margarita Olaya <magi@slimlogic.co.uk>, linux-kernel@vger.kernel.org
+Date: Sat, 01 Sep 2012 17:44:27 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: liu chuansheng <chuansheng.liu@intel.com>
-Subject: [PATCH] USB/host: Cleanup unneccessary irq disable code
-
-Because the IRQF_DISABLED as the flag is now a NOOP and has been
-deprecated and in hardirq context the interrupt is disabled.
-
-so in usb/host code:
-Removing the usage of flag IRQF_DISABLED;
-Removing the calling local_irq save/restore actions in irq
-handler usb_hcd_irq();
-
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/usb/core/hcd.c       |   15 ---------------
- drivers/usb/host/ehci-ls1x.c |    2 +-
- drivers/usb/host/ohci-xls.c  |    2 +-
- 3 files changed, 2 insertions(+), 17 deletions(-)
+ drivers/gpio/gpio-tps65912.c |   17 ++++-------------
+ 1 file changed, 4 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-index bc84106..f84ddea 100644
---- a/drivers/usb/core/hcd.c
-+++ b/drivers/usb/core/hcd.c
-@@ -2153,15 +2153,8 @@ EXPORT_SYMBOL_GPL(usb_bus_start_enum);
- irqreturn_t usb_hcd_irq (int irq, void *__hcd)
- {
-        struct usb_hcd          *hcd = __hcd;
--       unsigned long           flags;
-        irqreturn_t             rc;
+diff --git a/drivers/gpio/gpio-tps65912.c b/drivers/gpio/gpio-tps65912.c
+index 79e66c0..99106d1 100644
+--- a/drivers/gpio/gpio-tps65912.c
++++ b/drivers/gpio/gpio-tps65912.c
+@@ -70,7 +70,6 @@ static int tps65912_gpio_input(struct gpio_chip *gc, unsigned offset)
  
--       /* IRQF_DISABLED doesn't work correctly with shared IRQs
--        * when the first handler doesn't use it.  So let's just
--        * assume it's never used.
--        */
--       local_irq_save(flags);
+ 	return tps65912_clear_bits(tps65912, TPS65912_GPIO1 + offset,
+ 								GPIO_CFG_MASK);
 -
-        if (unlikely(HCD_DEAD(hcd) || !HCD_HW_ACCESSIBLE(hcd)))
-                rc = IRQ_NONE;
-        else if (hcd->driver->irq(hcd) == IRQ_NONE)
-@@ -2169,7 +2162,6 @@ irqreturn_t usb_hcd_irq (int irq, void *__hcd)
-        else
-                rc = IRQ_HANDLED;
- 
--       local_irq_restore(flags);
-        return rc;
  }
- EXPORT_SYMBOL_GPL(usb_hcd_irq);
-@@ -2358,13 +2350,6 @@ static int usb_hcd_request_irqs(struct usb_hcd *hcd,
  
-        if (hcd->driver->irq) {
+ static struct gpio_chip template_chip = {
+@@ -92,7 +91,8 @@ static int __devinit tps65912_gpio_probe(struct platform_device *pdev)
+ 	struct tps65912_gpio_data *tps65912_gpio;
+ 	int ret;
  
--               /* IRQF_DISABLED doesn't work as advertised when used together
--                * with IRQF_SHARED. As usb_hcd_irq() will always disable
--                * interrupts we can remove it here.
--                */
--               if (irqflags & IRQF_SHARED)
--                       irqflags &= ~IRQF_DISABLED;
+-	tps65912_gpio = kzalloc(sizeof(*tps65912_gpio), GFP_KERNEL);
++	tps65912_gpio = devm_kzalloc(&pdev->dev, sizeof(*tps65912_gpio),
++				     GFP_KERNEL);
+ 	if (tps65912_gpio == NULL)
+ 		return -ENOMEM;
+ 
+@@ -105,28 +105,19 @@ static int __devinit tps65912_gpio_probe(struct platform_device *pdev)
+ 	ret = gpiochip_add(&tps65912_gpio->gpio_chip);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "Failed to register gpiochip, %d\n", ret);
+-		goto err;
++		return ret;
+ 	}
+ 
+ 	platform_set_drvdata(pdev, tps65912_gpio);
+ 
+ 	return ret;
 -
-                snprintf(hcd->irq_descr, sizeof(hcd->irq_descr), "%s:usb%d",
-                                hcd->driver->description, hcd->self.busnum);
-                retval = request_irq(irqnum, &usb_hcd_irq, irqflags,
-diff --git a/drivers/usb/host/ehci-ls1x.c b/drivers/usb/host/ehci-ls1x.c
-index a283e59..425cb4a 100644
---- a/drivers/usb/host/ehci-ls1x.c
-+++ b/drivers/usb/host/ehci-ls1x.c
-@@ -119,7 +119,7 @@ static int ehci_hcd_ls1x_probe(struct platform_device *pdev)
-                goto err_release_region;
-        }
+-err:
+-	kfree(tps65912_gpio);
+-	return ret;
+ }
  
--       ret = usb_add_hcd(hcd, irq, IRQF_DISABLED | IRQF_SHARED);
-+       ret = usb_add_hcd(hcd, irq, IRQF_SHARED);
-        if (ret)
-                goto err_iounmap;
+ static int __devexit tps65912_gpio_remove(struct platform_device *pdev)
+ {
+ 	struct tps65912_gpio_data  *tps65912_gpio = platform_get_drvdata(pdev);
+-	int ret;
+-
+-	ret = gpiochip_remove(&tps65912_gpio->gpio_chip);
+-	if (ret == 0)
+-		kfree(tps65912_gpio);
  
-diff --git a/drivers/usb/host/ohci-xls.c b/drivers/usb/host/ohci-xls.c
-index 41e378f..84201cd 100644
---- a/drivers/usb/host/ohci-xls.c
-+++ b/drivers/usb/host/ohci-xls.c
-@@ -56,7 +56,7 @@ static int ohci_xls_probe_internal(const struct hc_driver *driver,
-                goto err3;
-        }
+-	return ret;
++	return gpiochip_remove(&tps65912_gpio->gpio_chip);
+ }
  
--       retval = usb_add_hcd(hcd, irq, IRQF_DISABLED | IRQF_SHARED);
-+       retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
-        if (retval != 0)
-                goto err4;
-        return retval;
+ static struct platform_driver tps65912_gpio_driver = {
 -- 
-1.7.0.4
+1.7.9.5
+
+
 
