@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755850Ab2IATn5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Sep 2012 15:43:57 -0400
-Received: from smtprelay-b22.telenor.se ([195.54.99.213]:37008 "EHLO
-	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755646Ab2IATny (ORCPT
+	id S1755862Ab2IATnV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Sep 2012 15:43:21 -0400
+Received: from smtprelay-b21.telenor.se ([195.54.99.212]:59378 "EHLO
+	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755604Ab2IATnQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Sep 2012 15:43:54 -0400
+	Sat, 1 Sep 2012 15:43:16 -0400
 X-SENDER-IP: [85.230.170.20]
 X-LISTENER: [smtp.bredband.net]
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnxPADRlQlBV5qoUPGdsb2JhbABEhRyFI7BfGQEBAQEeGQ0ngiEBBScvEwEPEAhJOQoUBgESiBG6OBSSHAObR40R
+X-IronPort-Anti-Spam-Result: An1PADRlQlBV5qoUPGdsb2JhbABEhRyFI7BfGQEBAQEeGQ0ngiEBBScvEwEPEAhJOQoUBgEJCYgRujgUkhwDm0eNEQ
 X-IronPort-AV: E=Sophos;i="4.80,353,1344204000"; 
-   d="scan'208";a="404070778"
+   d="scan'208";a="184931745"
 From: "Henrik Rydberg" <rydberg@euromail.se>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Subject: [PATCH v3 19/20] HID: hid-multitouch: Remove the redundant touch state
-Date: Sat,  1 Sep 2012 21:47:14 +0200
-Message-Id: <1346528835-363-20-git-send-email-rydberg@euromail.se>
+        Henrik Rydberg <rydberg@euromail.se>
+Subject: [PATCH v3 14/20] Input: bcm5974 - Drop the logical dimensions
+Date: Sat,  1 Sep 2012 21:47:09 +0200
+Message-Id: <1346528835-363-15-git-send-email-rydberg@euromail.se>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1346528835-363-1-git-send-email-rydberg@euromail.se>
 References: <1346528835-363-1-git-send-email-rydberg@euromail.se>
@@ -28,205 +27,369 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the input_mt_sync_frame() function in place, there is no longer
-any need to keep the full touch state in the driver. This patch
-removes the slot state and replaces the lookup code with the input-mt
-equivalent.
+The logical scale was previously used to produce special width values
+to userspace, and its only present use is to put "pressure" hysteresis
+on a common scale. However, bcm5974 trackpads are very accurate and
+work well without hysteresis.
 
-Cc: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+This patch simplifies the driver and device data by removing the logical
+scale altogether. While at it, the fake pressure range is replaced by the
+orientation range, which will be used in a subsequent patch.
+
 Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 ---
- drivers/hid/hid-multitouch.c | 88 ++++++++++++--------------------------------
- 1 file changed, 23 insertions(+), 65 deletions(-)
+ drivers/input/mouse/bcm5974.c | 193 ++++++++++++++++--------------------------
+ 1 file changed, 75 insertions(+), 118 deletions(-)
 
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index 1df86a7..eee19c9 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -56,7 +56,6 @@ struct mt_slot {
- 	__s32 x, y, p, w, h;
- 	__s32 contactid;	/* the device ContactID assigned to this slot */
- 	bool touch_state;	/* is the touch valid? */
--	bool seen_in_this_frame;/* has this slot been updated */
+diff --git a/drivers/input/mouse/bcm5974.c b/drivers/input/mouse/bcm5974.c
+index e033d3a..7f7ea62 100644
+--- a/drivers/input/mouse/bcm5974.c
++++ b/drivers/input/mouse/bcm5974.c
+@@ -200,10 +200,9 @@ struct tp_finger {
+ 
+ /* device-specific parameters */
+ struct bcm5974_param {
+-	int dim;		/* logical dimension */
+-	int fuzz;		/* logical noise value */
+-	int devmin;		/* device minimum reading */
+-	int devmax;		/* device maximum reading */
++	int snratio;		/* signal-to-noise ratio */
++	int min;		/* device minimum reading */
++	int max;		/* device maximum reading */
  };
  
- struct mt_class {
-@@ -94,7 +93,6 @@ struct mt_device {
- 				* > 1 means hybrid (multitouch) protocol */
- 	bool serial_maybe;	/* need to check for serial protocol */
- 	bool curvalid;		/* is the current contact valid? */
--	struct mt_slot *slots;
- 	unsigned mt_flags;	/* flags to pass to input-mt */
+ /* device-specific configuration */
+@@ -216,7 +215,7 @@ struct bcm5974_config {
+ 	enum tp_type tp_type;	/* type of trackpad interface */
+ 	int tp_offset;		/* offset to trackpad finger data */
+ 	int tp_datalen;		/* data length of the trackpad interface */
+-	struct bcm5974_param p;	/* finger pressure limits */
++	struct bcm5974_param o;	/* orientation limits */
+ 	struct bcm5974_param w;	/* finger width limits */
+ 	struct bcm5974_param x;	/* horizontal limits */
+ 	struct bcm5974_param y;	/* vertical limits */
+@@ -235,24 +234,13 @@ struct bcm5974 {
+ 	struct bt_data *bt_data;	/* button transferred data */
+ 	struct urb *tp_urb;		/* trackpad usb request block */
+ 	u8 *tp_data;			/* trackpad transferred data */
+-	int fingers;			/* number of fingers on trackpad */
  };
  
-@@ -136,25 +134,6 @@ static int cypress_compute_slot(struct mt_device *td)
- 		return -1;
+-/* logical dimensions */
+-#define DIM_PRESSURE	256		/* maximum finger pressure */
+-#define DIM_WIDTH	16		/* maximum finger width */
+-#define DIM_X		1280		/* maximum trackpad x value */
+-#define DIM_Y		800		/* maximum trackpad y value */
+-
+ /* logical signal quality */
+-#define SN_PRESSURE	45		/* pressure signal-to-noise ratio */
++#define SN_ORIENT	10		/* orientation signal-to-noise ratio */
+ #define SN_WIDTH	100		/* width signal-to-noise ratio */
+ #define SN_COORD	250		/* coordinate signal-to-noise ratio */
+ 
+-/* pressure thresholds */
+-#define PRESSURE_LOW	(2 * DIM_PRESSURE / SN_PRESSURE)
+-#define PRESSURE_HIGH	(3 * PRESSURE_LOW)
+-
+ /* device constants */
+ static const struct bcm5974_config bcm5974_config_table[] = {
+ 	{
+@@ -262,10 +250,10 @@ static const struct bcm5974_config bcm5974_config_table[] = {
+ 		0,
+ 		0x84, sizeof(struct bt_data),
+ 		0x81, TYPE1, FINGER_TYPE1, FINGER_TYPE1 + SIZEOF_ALL_FINGERS,
+-		{ DIM_PRESSURE, DIM_PRESSURE / SN_PRESSURE, 0, 256 },
+-		{ DIM_WIDTH, DIM_WIDTH / SN_WIDTH, 0, 2048 },
+-		{ DIM_X, DIM_X / SN_COORD, -4824, 5342 },
+-		{ DIM_Y, DIM_Y / SN_COORD, -172, 5820 }
++		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION },
++		{ SN_WIDTH, 0, 2048 },
++		{ SN_COORD, -4824, 5342 },
++		{ SN_COORD, -172, 5820 }
+ 	},
+ 	{
+ 		USB_DEVICE_ID_APPLE_WELLSPRING2_ANSI,
+@@ -274,10 +262,10 @@ static const struct bcm5974_config bcm5974_config_table[] = {
+ 		0,
+ 		0x84, sizeof(struct bt_data),
+ 		0x81, TYPE1, FINGER_TYPE1, FINGER_TYPE1 + SIZEOF_ALL_FINGERS,
+-		{ DIM_PRESSURE, DIM_PRESSURE / SN_PRESSURE, 0, 256 },
+-		{ DIM_WIDTH, DIM_WIDTH / SN_WIDTH, 0, 2048 },
+-		{ DIM_X, DIM_X / SN_COORD, -4824, 4824 },
+-		{ DIM_Y, DIM_Y / SN_COORD, -172, 4290 }
++		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION },
++		{ SN_WIDTH, 0, 2048 },
++		{ SN_COORD, -4824, 4824 },
++		{ SN_COORD, -172, 4290 }
+ 	},
+ 	{
+ 		USB_DEVICE_ID_APPLE_WELLSPRING3_ANSI,
+@@ -286,10 +274,10 @@ static const struct bcm5974_config bcm5974_config_table[] = {
+ 		HAS_INTEGRATED_BUTTON,
+ 		0x84, sizeof(struct bt_data),
+ 		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
+-		{ DIM_PRESSURE, DIM_PRESSURE / SN_PRESSURE, 0, 300 },
+-		{ DIM_WIDTH, DIM_WIDTH / SN_WIDTH, 0, 2048 },
+-		{ DIM_X, DIM_X / SN_COORD, -4460, 5166 },
+-		{ DIM_Y, DIM_Y / SN_COORD, -75, 6700 }
++		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION },
++		{ SN_WIDTH, 0, 2048 },
++		{ SN_COORD, -4460, 5166 },
++		{ SN_COORD, -75, 6700 }
+ 	},
+ 	{
+ 		USB_DEVICE_ID_APPLE_WELLSPRING4_ANSI,
+@@ -298,10 +286,10 @@ static const struct bcm5974_config bcm5974_config_table[] = {
+ 		HAS_INTEGRATED_BUTTON,
+ 		0x84, sizeof(struct bt_data),
+ 		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
+-		{ DIM_PRESSURE, DIM_PRESSURE / SN_PRESSURE, 0, 300 },
+-		{ DIM_WIDTH, DIM_WIDTH / SN_WIDTH, 0, 2048 },
+-		{ DIM_X, DIM_X / SN_COORD, -4620, 5140 },
+-		{ DIM_Y, DIM_Y / SN_COORD, -150, 6600 }
++		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION },
++		{ SN_WIDTH, 0, 2048 },
++		{ SN_COORD, -4620, 5140 },
++		{ SN_COORD, -150, 6600 }
+ 	},
+ 	{
+ 		USB_DEVICE_ID_APPLE_WELLSPRING4A_ANSI,
+@@ -310,10 +298,10 @@ static const struct bcm5974_config bcm5974_config_table[] = {
+ 		HAS_INTEGRATED_BUTTON,
+ 		0x84, sizeof(struct bt_data),
+ 		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
+-		{ DIM_PRESSURE, DIM_PRESSURE / SN_PRESSURE, 0, 300 },
+-		{ DIM_WIDTH, DIM_WIDTH / SN_WIDTH, 0, 2048 },
+-		{ DIM_X, DIM_X / SN_COORD, -4616, 5112 },
+-		{ DIM_Y, DIM_Y / SN_COORD, -142, 5234 }
++		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION },
++		{ SN_WIDTH, 0, 2048 },
++		{ SN_COORD, -4616, 5112 },
++		{ SN_COORD, -142, 5234 }
+ 	},
+ 	{
+ 		USB_DEVICE_ID_APPLE_WELLSPRING5_ANSI,
+@@ -322,10 +310,10 @@ static const struct bcm5974_config bcm5974_config_table[] = {
+ 		HAS_INTEGRATED_BUTTON,
+ 		0x84, sizeof(struct bt_data),
+ 		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
+-		{ DIM_PRESSURE, DIM_PRESSURE / SN_PRESSURE, 0, 300 },
+-		{ DIM_WIDTH, DIM_WIDTH / SN_WIDTH, 0, 2048 },
+-		{ DIM_X, DIM_X / SN_COORD, -4415, 5050 },
+-		{ DIM_Y, DIM_Y / SN_COORD, -55, 6680 }
++		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION },
++		{ SN_WIDTH, 0, 2048 },
++		{ SN_COORD, -4415, 5050 },
++		{ SN_COORD, -55, 6680 }
+ 	},
+ 	{
+ 		USB_DEVICE_ID_APPLE_WELLSPRING6_ANSI,
+@@ -334,10 +322,10 @@ static const struct bcm5974_config bcm5974_config_table[] = {
+ 		HAS_INTEGRATED_BUTTON,
+ 		0x84, sizeof(struct bt_data),
+ 		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
+-		{ DIM_PRESSURE, DIM_PRESSURE / SN_PRESSURE, 0, 300 },
+-		{ DIM_WIDTH, DIM_WIDTH / SN_WIDTH, 0, 2048 },
+-		{ DIM_X, DIM_X / SN_COORD, -4620, 5140 },
+-		{ DIM_Y, DIM_Y / SN_COORD, -150, 6600 }
++		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION },
++		{ SN_WIDTH, 0, 2048 },
++		{ SN_COORD, -4620, 5140 },
++		{ SN_COORD, -150, 6600 }
+ 	},
+ 	{
+ 		USB_DEVICE_ID_APPLE_WELLSPRING5A_ANSI,
+@@ -346,10 +334,10 @@ static const struct bcm5974_config bcm5974_config_table[] = {
+ 		HAS_INTEGRATED_BUTTON,
+ 		0x84, sizeof(struct bt_data),
+ 		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
+-		{ DIM_PRESSURE, DIM_PRESSURE / SN_PRESSURE, 0, 300 },
+-		{ DIM_WIDTH, DIM_WIDTH / SN_WIDTH, 0, 2048 },
+-		{ DIM_X, DIM_X / SN_COORD, -4750, 5280 },
+-		{ DIM_Y, DIM_Y / SN_COORD, -150, 6730 }
++		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION },
++		{ SN_WIDTH, 0, 2048 },
++		{ SN_COORD, -4750, 5280 },
++		{ SN_COORD, -150, 6730 }
+ 	},
+ 	{
+ 		USB_DEVICE_ID_APPLE_WELLSPRING6A_ANSI,
+@@ -358,10 +346,10 @@ static const struct bcm5974_config bcm5974_config_table[] = {
+ 		HAS_INTEGRATED_BUTTON,
+ 		0x84, sizeof(struct bt_data),
+ 		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
+-		{ DIM_PRESSURE, DIM_PRESSURE / SN_PRESSURE, 0, 300 },
+-		{ DIM_WIDTH, DIM_WIDTH / SN_WIDTH, 0, 2048 },
+-		{ DIM_X, DIM_X / SN_COORD, -4620, 5140 },
+-		{ DIM_Y, DIM_Y / SN_COORD, -150, 6600 }
++		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION },
++		{ SN_WIDTH, 0, 2048 },
++		{ SN_COORD, -4620, 5140 },
++		{ SN_COORD, -150, 6600 }
+ 	},
+ 	{
+ 		USB_DEVICE_ID_APPLE_WELLSPRING7_ANSI,
+@@ -370,10 +358,10 @@ static const struct bcm5974_config bcm5974_config_table[] = {
+ 		HAS_INTEGRATED_BUTTON,
+ 		0x84, sizeof(struct bt_data),
+ 		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
+-		{ DIM_PRESSURE, DIM_PRESSURE / SN_PRESSURE, 0, 300 },
+-		{ DIM_WIDTH, DIM_WIDTH / SN_WIDTH, 0, 2048 },
+-		{ DIM_X, DIM_X / SN_COORD, -4750, 5280 },
+-		{ DIM_Y, DIM_Y / SN_COORD, -150, 6730 }
++		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION },
++		{ SN_WIDTH, 0, 2048 },
++		{ SN_COORD, -4750, 5280 },
++		{ SN_COORD, -150, 6730 }
+ 	},
+ 	{}
+ };
+@@ -397,18 +385,11 @@ static inline int raw2int(__le16 x)
+ 	return (signed short)le16_to_cpu(x);
  }
  
--static int find_slot_from_contactid(struct mt_device *td)
+-/* scale device data to logical dimensions (asserts devmin < devmax) */
+-static inline int int2scale(const struct bcm5974_param *p, int x)
 -{
--	int i;
--	for (i = 0; i < td->maxcontacts; ++i) {
--		if (td->slots[i].contactid == td->curdata.contactid &&
--			td->slots[i].touch_state)
--			return i;
--	}
--	for (i = 0; i < td->maxcontacts; ++i) {
--		if (!td->slots[i].seen_in_this_frame &&
--			!td->slots[i].touch_state)
--			return i;
--	}
--	/* should not occurs. If this happens that means
--	 * that the device sent more touches that it says
--	 * in the report descriptor. It is ignored then. */
--	return -1;
+-	return x * p->dim / (p->devmax - p->devmin);
 -}
 -
- static struct mt_class mt_classes[] = {
- 	{ .name = MT_CLS_DEFAULT,
- 		.quirks = MT_QUIRK_NOT_SEEN_MEANS_UP },
-@@ -448,7 +427,7 @@ static int mt_input_mapped(struct hid_device *hdev, struct hid_input *hi,
- 	return -1;
+-/* all logical value ranges are [0,dim). */
+-static inline int int2bound(const struct bcm5974_param *p, int x)
++static void set_abs(struct input_dev *input, unsigned int code,
++		    const struct bcm5974_param *p)
+ {
+-	int s = int2scale(p, x);
+-
+-	return clamp_val(s, 0, p->dim - 1);
++	int fuzz = p->snratio ? (p->max - p->min) / p->snratio : 0;
++	input_set_abs_params(input, code, p->min, p->max, fuzz, 0);
  }
  
--static int mt_compute_slot(struct mt_device *td)
-+static int mt_compute_slot(struct mt_device *td, struct input_dev *input)
+ /* setup which logical events to report */
+@@ -417,30 +398,21 @@ static void setup_events_to_report(struct input_dev *input_dev,
  {
- 	__s32 quirks = td->mtclass.quirks;
+ 	__set_bit(EV_ABS, input_dev->evbit);
  
-@@ -464,42 +443,23 @@ static int mt_compute_slot(struct mt_device *td)
- 	if (quirks & MT_QUIRK_SLOT_IS_CONTACTID_MINUS_ONE)
- 		return td->curdata.contactid - 1;
+-	input_set_abs_params(input_dev, ABS_X,
+-				0, cfg->x.dim, cfg->x.fuzz, 0);
+-	input_set_abs_params(input_dev, ABS_Y,
+-				0, cfg->y.dim, cfg->y.fuzz, 0);
++	/* pointer emulation */
++	set_abs(input_dev, ABS_X, &cfg->w);
++	set_abs(input_dev, ABS_Y, &cfg->w);
  
--	return find_slot_from_contactid(td);
-+	return input_mt_get_slot_by_key(input, td->curdata.contactid);
+ 	/* finger touch area */
+-	input_set_abs_params(input_dev, ABS_MT_TOUCH_MAJOR,
+-			     cfg->w.devmin, cfg->w.devmax, 0, 0);
+-	input_set_abs_params(input_dev, ABS_MT_TOUCH_MINOR,
+-			     cfg->w.devmin, cfg->w.devmax, 0, 0);
++	set_abs(input_dev, ABS_MT_TOUCH_MAJOR, &cfg->w);
++	set_abs(input_dev, ABS_MT_TOUCH_MINOR, &cfg->w);
+ 	/* finger approach area */
+-	input_set_abs_params(input_dev, ABS_MT_WIDTH_MAJOR,
+-			     cfg->w.devmin, cfg->w.devmax, 0, 0);
+-	input_set_abs_params(input_dev, ABS_MT_WIDTH_MINOR,
+-			     cfg->w.devmin, cfg->w.devmax, 0, 0);
++	set_abs(input_dev, ABS_MT_WIDTH_MAJOR, &cfg->w);
++	set_abs(input_dev, ABS_MT_WIDTH_MINOR, &cfg->w);
+ 	/* finger orientation */
+-	input_set_abs_params(input_dev, ABS_MT_ORIENTATION,
+-			     -MAX_FINGER_ORIENTATION,
+-			     MAX_FINGER_ORIENTATION, 0, 0);
++	set_abs(input_dev, ABS_MT_ORIENTATION, &cfg->o);
+ 	/* finger position */
+-	input_set_abs_params(input_dev, ABS_MT_POSITION_X,
+-			     cfg->x.devmin, cfg->x.devmax, 0, 0);
+-	input_set_abs_params(input_dev, ABS_MT_POSITION_Y,
+-			     cfg->y.devmin, cfg->y.devmax, 0, 0);
++	set_abs(input_dev, ABS_MT_POSITION_X, &cfg->x);
++	set_abs(input_dev, ABS_MT_POSITION_Y, &cfg->y);
+ 
+ 	__set_bit(EV_KEY, input_dev->evbit);
+ 	__set_bit(BTN_TOUCH, input_dev->keybit);
+@@ -490,7 +462,7 @@ static void report_finger_data(struct input_dev *input,
+ 			 MAX_FINGER_ORIENTATION - raw2int(f->orientation));
+ 	input_report_abs(input, ABS_MT_POSITION_X, raw2int(f->abs_x));
+ 	input_report_abs(input, ABS_MT_POSITION_Y,
+-			 cfg->y.devmin + cfg->y.devmax - raw2int(f->abs_y));
++			 cfg->y.min + cfg->y.max - raw2int(f->abs_y));
+ 	input_mt_sync(input);
  }
  
- /*
-  * this function is called when a whole contact has been processed,
-  * so that it can assign it to a slot and store the data there
-  */
--static void mt_complete_slot(struct mt_device *td)
-+static void mt_complete_slot(struct mt_device *td, struct input_dev *input)
- {
--	td->curdata.seen_in_this_frame = true;
- 	if (td->curvalid) {
--		int slotnum = mt_compute_slot(td);
--
--		if (slotnum >= 0 && slotnum < td->maxcontacts)
--			td->slots[slotnum] = td->curdata;
--	}
--	td->num_received++;
--}
--
--
--/*
-- * this function is called when a whole packet has been received and processed,
-- * so that it can decide what to send to the input layer.
-- */
--static void mt_emit_event(struct mt_device *td, struct input_dev *input)
--{
--	int i;
-+		int slotnum = mt_compute_slot(td, input);
-+		struct mt_slot *s = &td->curdata;
+@@ -501,8 +473,7 @@ static int report_tp_state(struct bcm5974 *dev, int size)
+ 	const struct tp_finger *f;
+ 	struct input_dev *input = dev->input;
+ 	int raw_p, raw_x, raw_y, raw_n, i;
+-	int ptest, origin, ibt = 0, nmin = 0, nmax = 0;
+-	int abs_x = 0, abs_y = 0;
++	int abs_x = 0, abs_y = 0, n = 0;
  
--	for (i = 0; i < td->maxcontacts; ++i) {
--		struct mt_slot *s = &(td->slots[i]);
--		if ((td->mtclass.quirks & MT_QUIRK_NOT_SEEN_MEANS_UP) &&
--			!s->seen_in_this_frame) {
--			s->touch_state = false;
--		}
-+		if (slotnum < 0 || slotnum >= td->maxcontacts)
-+			return;
+ 	if (size < c->tp_offset || (size - c->tp_offset) % SIZEOF_FINGER != 0)
+ 		return -EIO;
+@@ -527,48 +498,34 @@ static int report_tp_state(struct bcm5974 *dev, int size)
+ 			"raw: p: %+05d x: %+05d y: %+05d n: %d\n",
+ 			raw_p, raw_x, raw_y, raw_n);
  
--		input_mt_slot(input, i);
-+		input_mt_slot(input, slotnum);
- 		input_mt_report_slot_state(input, MT_TOOL_FINGER,
- 			s->touch_state);
- 		if (s->touch_state) {
-@@ -516,24 +476,29 @@ static void mt_emit_event(struct mt_device *td, struct input_dev *input)
- 			input_event(input, EV_ABS, ABS_MT_TOUCH_MAJOR, major);
- 			input_event(input, EV_ABS, ABS_MT_TOUCH_MINOR, minor);
+-		ptest = int2bound(&c->p, raw_p);
+-		origin = raw2int(f->origin);
+-
+ 		/* while tracking finger still valid, count all fingers */
+-		if (ptest > PRESSURE_LOW && origin) {
+-			abs_x = int2bound(&c->x, raw_x - c->x.devmin);
+-			abs_y = int2bound(&c->y, c->y.devmax - raw_y);
++		if (raw_p > 0 && raw2int(f->origin)) {
++			abs_x = raw_x;
++			abs_y = c->y.min + c->y.max - raw_y;
+ 			while (raw_n--) {
+-				ptest = int2bound(&c->p,
+-						  raw2int(f->touch_major));
+-				if (ptest > PRESSURE_LOW)
+-					nmax++;
+-				if (ptest > PRESSURE_HIGH)
+-					nmin++;
++				if (raw2int(f->touch_major) > 0)
++					n++;
+ 				f++;
+ 			}
  		}
--		s->seen_in_this_frame = false;
--
  	}
  
-+	td->num_received++;
-+}
-+
-+/*
-+ * this function is called when a whole packet has been received and processed,
-+ * so that it can decide what to send to the input layer.
-+ */
-+static void mt_sync_frame(struct mt_device *td, struct input_dev *input)
-+{
- 	input_mt_sync_frame(input);
+-	/* set the integrated button if applicable */
+-	if (c->tp_type == TYPE2)
+-		ibt = raw2int(dev->tp_data[BUTTON_TYPE2]);
+-
+-	if (dev->fingers < nmin)
+-		dev->fingers = nmin;
+-	if (dev->fingers > nmax)
+-		dev->fingers = nmax;
++	input_report_key(input, BTN_TOUCH, n > 0);
++	input_report_key(input, BTN_TOOL_FINGER, n == 1);
++	input_report_key(input, BTN_TOOL_DOUBLETAP, n == 2);
++	input_report_key(input, BTN_TOOL_TRIPLETAP, n == 3);
++	input_report_key(input, BTN_TOOL_QUADTAP, n > 3);
+ 
+-	input_report_key(input, BTN_TOUCH, dev->fingers > 0);
+-	input_report_key(input, BTN_TOOL_FINGER, dev->fingers == 1);
+-	input_report_key(input, BTN_TOOL_DOUBLETAP, dev->fingers == 2);
+-	input_report_key(input, BTN_TOOL_TRIPLETAP, dev->fingers == 3);
+-	input_report_key(input, BTN_TOOL_QUADTAP, dev->fingers > 3);
+-
+-	if (dev->fingers > 0) {
++	if (n > 0) {
+ 		input_report_abs(input, ABS_X, abs_x);
+ 		input_report_abs(input, ABS_Y, abs_y);
+ 	}
+ 
+ 	/* type 2 reports button events via ibt only */
+-	if (c->tp_type == TYPE2)
++	if (c->tp_type == TYPE2) {
++		int ibt = raw2int(dev->tp_data[BUTTON_TYPE2]);
+ 		input_report_key(input, BTN_LEFT, ibt);
++	}
+ 
  	input_sync(input);
- 	td->num_received = 0;
- }
  
--
--
- static int mt_event(struct hid_device *hid, struct hid_field *field,
- 				struct hid_usage *usage, __s32 value)
- {
- 	struct mt_device *td = hid_get_drvdata(hid);
- 	__s32 quirks = td->mtclass.quirks;
- 
--	if (hid->claimed & HID_CLAIMED_INPUT && td->slots) {
-+	if (hid->claimed & HID_CLAIMED_INPUT) {
- 		switch (usage->hid) {
- 		case HID_DG_INRANGE:
- 			if (quirks & MT_QUIRK_ALWAYS_VALID)
-@@ -586,11 +551,11 @@ static int mt_event(struct hid_device *hid, struct hid_field *field,
- 		}
- 
- 		if (usage->hid == td->last_slot_field)
--			mt_complete_slot(td);
-+			mt_complete_slot(td, field->hidinput->input);
- 
- 		if (field->index == td->last_field_index
- 			&& td->num_received >= td->num_expected)
--			mt_emit_event(td, field->hidinput->input);
-+			mt_sync_frame(td, field->hidinput->input);
- 
- 	}
- 
-@@ -690,6 +655,9 @@ static void mt_input_configured(struct hid_device *hdev, struct hid_input *hi)
- 	if (cls->is_indirect)
- 		td->mt_flags |= INPUT_MT_POINTER;
- 
-+	if (cls->quirks & MT_QUIRK_NOT_SEEN_MEANS_UP)
-+		td->mt_flags |= INPUT_MT_DROP_UNUSED;
-+
- 	input_mt_init_slots(input, td->maxcontacts, td->mt_flags);
- 
- 	td->mt_flags = 0;
-@@ -743,15 +711,6 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
- 	if (ret)
- 		goto fail;
- 
--	td->slots = kzalloc(td->maxcontacts * sizeof(struct mt_slot),
--				GFP_KERNEL);
--	if (!td->slots) {
--		dev_err(&hdev->dev, "cannot allocate multitouch slots\n");
--		hid_hw_stop(hdev);
--		ret = -ENOMEM;
--		goto fail;
--	}
--
- 	ret = sysfs_create_group(&hdev->dev.kobj, &mt_attribute_group);
- 
- 	mt_set_maxcontacts(hdev);
-@@ -782,7 +741,6 @@ static void mt_remove(struct hid_device *hdev)
- 	struct mt_device *td = hid_get_drvdata(hdev);
- 	sysfs_remove_group(&hdev->dev.kobj, &mt_attribute_group);
- 	hid_hw_stop(hdev);
--	kfree(td->slots);
- 	kfree(td);
- 	hid_set_drvdata(hdev, NULL);
- }
 -- 
 1.7.12
 
