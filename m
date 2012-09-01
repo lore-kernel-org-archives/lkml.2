@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755357Ab2IAACa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 20:02:30 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:47144 "EHLO
+	id S1755365Ab2IAACx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 20:02:53 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:45564 "EHLO
 	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755256Ab2IAAC2 (ORCPT
+	with ESMTP id S1755256Ab2IAACv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 20:02:28 -0400
-X-Originating-IP: 217.70.178.147
+	Fri, 31 Aug 2012 20:02:51 -0400
+X-Originating-IP: 217.70.178.134
 X-Originating-IP: 173.246.103.110
-Date: Fri, 31 Aug 2012 17:02:21 -0700
+Date: Fri, 31 Aug 2012 17:02:43 -0700
 From: Josh Triplett <josh@joshtriplett.org>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
@@ -18,24 +18,23 @@ Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        "3.2.x.." <stable@vger.kernel.org>
-Subject: Re: [PATCH tip/core/rcu 20/26] m32r: Add missing RCU idle APIs on
+        m68k <linux-m68k@vger.kernel.org>, "3.2.x.." <stable@vger.kernel.org>
+Subject: Re: [PATCH tip/core/rcu 21/26] m68k: Add missing RCU idle APIs on
  idle loop
-Message-ID: <20120901000221.GR11771@jtriplet-mobl1>
+Message-ID: <20120901000243.GS11771@jtriplet-mobl1>
 References: <20120830210520.GA2824@linux.vnet.ibm.com>
  <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346360743-3628-20-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346360743-3628-21-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1346360743-3628-20-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1346360743-3628-21-git-send-email-paulmck@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 02:05:37PM -0700, Paul E. McKenney wrote:
+On Thu, Aug 30, 2012 at 02:05:38PM -0700, Paul E. McKenney wrote:
 > From: Frederic Weisbecker <fweisbec@gmail.com>
 > 
 > In the old times, the whole idle task was considered
@@ -53,43 +52,39 @@ On Thu, Aug 30, 2012 at 02:05:37PM -0700, Paul E. McKenney wrote:
 > This is necessary for RCU to find the quiescent states in
 > idle in order to complete grace periods.
 > 
-> Add this missing pair of calls in the m32r's idle loop.
+> Add this missing pair of calls in the m68k's idle loop.
 > 
 > Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Hirokazu Takata <takata@linux-m32r.org>
+> Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: m68k <linux-m68k@lists.linux-m68k.org>
 > Cc: 3.2.x.. <stable@vger.kernel.org>
 > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
->  arch/m32r/kernel/process.c |    3 +++
+>  arch/m68k/kernel/process.c |    3 +++
 >  1 files changed, 3 insertions(+), 0 deletions(-)
 > 
-> diff --git a/arch/m32r/kernel/process.c b/arch/m32r/kernel/process.c
-> index 3a4a32b..384e63f 100644
-> --- a/arch/m32r/kernel/process.c
-> +++ b/arch/m32r/kernel/process.c
-> @@ -26,6 +26,7 @@
->  #include <linux/ptrace.h>
->  #include <linux/unistd.h>
->  #include <linux/hardirq.h>
+> diff --git a/arch/m68k/kernel/process.c b/arch/m68k/kernel/process.c
+> index c488e3c..ac2892e 100644
+> --- a/arch/m68k/kernel/process.c
+> +++ b/arch/m68k/kernel/process.c
+> @@ -25,6 +25,7 @@
+>  #include <linux/reboot.h>
+>  #include <linux/init_task.h>
+>  #include <linux/mqueue.h>
 > +#include <linux/rcupdate.h>
 >  
->  #include <asm/io.h>
 >  #include <asm/uaccess.h>
-> @@ -82,6 +83,7 @@ void cpu_idle (void)
+>  #include <asm/traps.h>
+> @@ -75,8 +76,10 @@ void cpu_idle(void)
 >  {
 >  	/* endless idle loop with no priority at all */
 >  	while (1) {
 > +		rcu_idle_enter();
->  		while (!need_resched()) {
->  			void (*idle)(void) = pm_idle;
->  
-> @@ -90,6 +92,7 @@ void cpu_idle (void)
->  
+>  		while (!need_resched())
 >  			idle();
->  		}
 > +		rcu_idle_exit();
 >  		schedule_preempt_disabled();
 >  	}
