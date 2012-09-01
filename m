@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755704Ab2IATmc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Sep 2012 15:42:32 -0400
-Received: from smtprelay-b11.telenor.se ([62.127.194.20]:51523 "EHLO
-	smtprelay-b11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755637Ab2IATmR (ORCPT
+	id S1755799Ab2IATq6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Sep 2012 15:46:58 -0400
+Received: from smtprelay-b21.telenor.se ([195.54.99.212]:59344 "EHLO
+	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755685Ab2IATma (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Sep 2012 15:42:17 -0400
+	Sat, 1 Sep 2012 15:42:30 -0400
 X-SENDER-IP: [85.230.170.20]
 X-LISTENER: [smtp.bredband.net]
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnxPAJVjQlBV5qoUPGdsb2JhbABEhRyFI7BfGQEBAQEeGQ0ngiEBBScvEwEPEAhJOQoUBgESiBG6NxSSHAObR40R
+X-IronPort-Anti-Spam-Result: AnxPAG1kQlBV5qoUPGdsb2JhbABEhRyFI7BfGQEBAQEeGQ0ngiEBBScvEwEPEAhJOQoUBgESiBG6NxSSHAObR40R
 X-IronPort-AV: E=Sophos;i="4.80,353,1344204000"; 
-   d="scan'208";a="180547510"
+   d="scan'208";a="401145288"
 From: "Henrik Rydberg" <rydberg@euromail.se>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH v3 06/20] Input: evdev - Add the events() callback
-Date: Sat,  1 Sep 2012 21:47:01 +0200
-Message-Id: <1346528835-363-7-git-send-email-rydberg@euromail.se>
+        Henrik Rydberg <rydberg@euromail.se>,
+        Benjamin Tissoires <benjamin.tissoires@enac.fr>
+Subject: [PATCH v3 08/20] Input: MT - Handle frame synchronization in core
+Date: Sat,  1 Sep 2012 21:47:03 +0200
+Message-Id: <1346528835-363-9-git-send-email-rydberg@euromail.se>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1346528835-363-1-git-send-email-rydberg@euromail.se>
 References: <1346528835-363-1-git-send-email-rydberg@euromail.se>
@@ -27,132 +28,170 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By sending a full frame of events at the same time, the irqsoff
-latency at heavy load is brought down from 200 us to 100 us.
+Most MT drivers perform the same actions on frame synchronization.
+Some actions, like dropping unseen contacts, are also unnecessarily
+complex. Collect common frame synchronization tasks in a new function,
+input_mt_sync_frame(). Depending on the flags set, it drops unseen
+contacts and performs pointer emulation.
 
+With init flags and frame synchronization in place, most MT drivers
+can be simplified. First out are the bcm5974 and hid-multitouch
+drivers, following this patch.
+
+Cc: Benjamin Tissoires <benjamin.tissoires@enac.fr>
 Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 ---
- drivers/input/evdev.c | 68 +++++++++++++++++++++++++++++++++++----------------
- 1 file changed, 47 insertions(+), 21 deletions(-)
+ drivers/input/input-mt.c | 70 ++++++++++++++++++++++++++++++++++++++++++++++--
+ include/linux/input/mt.h |  9 +++++++
+ 2 files changed, 77 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
-index a0692c5..118d030 100644
---- a/drivers/input/evdev.c
-+++ b/drivers/input/evdev.c
-@@ -54,16 +54,9 @@ struct evdev_client {
- static struct evdev *evdev_table[EVDEV_MINORS];
- static DEFINE_MUTEX(evdev_table_mutex);
+diff --git a/drivers/input/input-mt.c b/drivers/input/input-mt.c
+index 7041737..769c76d 100644
+--- a/drivers/input/input-mt.c
++++ b/drivers/input/input-mt.c
+@@ -14,6 +14,14 @@
  
--static void evdev_pass_event(struct evdev_client *client,
--			     struct input_event *event,
--			     ktime_t mono, ktime_t real)
-+static void __pass_event(struct evdev_client *client,
-+			 const struct input_event *event)
- {
--	event->time = ktime_to_timeval(client->clkid == CLOCK_MONOTONIC ?
--					mono : real);
--
--	/* Interrupts are disabled, just acquire the lock. */
--	spin_lock(&client->buffer_lock);
--
- 	client->buffer[client->head++] = *event;
- 	client->head &= client->bufsize - 1;
+ #define TRKID_SGN	((TRKID_MAX + 1) >> 1)
  
-@@ -86,42 +79,74 @@ static void evdev_pass_event(struct evdev_client *client,
- 		client->packet_head = client->head;
- 		kill_fasync(&client->fasync, SIGIO, POLL_IN);
- 	}
-+}
-+
-+static void evdev_pass_values(struct evdev_client *client,
-+			const struct input_value *vals, unsigned int count,
-+			ktime_t mono, ktime_t real)
++static void copy_abs(struct input_dev *dev, unsigned int dst, unsigned int src)
 +{
-+	struct evdev *evdev = client->evdev;
-+	const struct input_value *v;
-+	struct input_event event;
-+	bool wakeup = false;
-+
-+	event.time = ktime_to_timeval(client->clkid == CLOCK_MONOTONIC ?
-+				      mono : real);
-+
-+	/* Interrupts are disabled, just acquire the lock. */
-+	spin_lock(&client->buffer_lock);
-+
-+	for (v = vals; v != vals + count; v++) {
-+		event.type = v->type;
-+		event.code = v->code;
-+		event.value = v->value;
-+		__pass_event(client, &event);
-+		if (v->type == EV_SYN && v->code == SYN_REPORT)
-+			wakeup = true;
++	if (dev->absinfo && test_bit(src, dev->absbit)) {
++		dev->absinfo[dst] = dev->absinfo[src];
++		dev->absbit[BIT_WORD(dst)] |= BIT_MASK(dst);
 +	}
- 
- 	spin_unlock(&client->buffer_lock);
-+
-+	if (wakeup)
-+		wake_up_interruptible(&evdev->wait);
- }
- 
- /*
-- * Pass incoming event to all connected clients.
-+ * Pass incoming events to all connected clients.
-  */
--static void evdev_event(struct input_handle *handle,
--			unsigned int type, unsigned int code, int value)
-+static void evdev_events(struct input_handle *handle,
-+			 const struct input_value *vals, unsigned int count)
- {
- 	struct evdev *evdev = handle->private;
- 	struct evdev_client *client;
--	struct input_event event;
- 	ktime_t time_mono, time_real;
- 
- 	time_mono = ktime_get();
- 	time_real = ktime_sub(time_mono, ktime_get_monotonic_offset());
- 
--	event.type = type;
--	event.code = code;
--	event.value = value;
--
- 	rcu_read_lock();
- 
- 	client = rcu_dereference(evdev->grab);
- 
- 	if (client)
--		evdev_pass_event(client, &event, time_mono, time_real);
-+		evdev_pass_values(client, vals, count, time_mono, time_real);
- 	else
- 		list_for_each_entry_rcu(client, &evdev->client_list, node)
--			evdev_pass_event(client, &event, time_mono, time_real);
-+			evdev_pass_values(client, vals, count,
-+					  time_mono, time_real);
- 
- 	rcu_read_unlock();
 +}
- 
--	if (type == EV_SYN && code == SYN_REPORT)
--		wake_up_interruptible(&evdev->wait);
-+/*
-+ * Pass incoming event to all connected clients.
-+ */
-+static void evdev_event(struct input_handle *handle,
-+			unsigned int type, unsigned int code, int value)
-+{
-+	struct input_value vals[] = { { type, code, value } };
 +
-+	evdev_events(handle, vals, 1);
+ /**
+  * input_mt_init_slots() - initialize MT input slots
+  * @dev: input device supporting MT events and finger tracking
+@@ -45,6 +53,28 @@ int input_mt_init_slots(struct input_dev *dev, unsigned int num_slots,
+ 	input_set_abs_params(dev, ABS_MT_SLOT, 0, num_slots - 1, 0, 0);
+ 	input_set_abs_params(dev, ABS_MT_TRACKING_ID, 0, TRKID_MAX, 0, 0);
+ 
++	if (flags & (INPUT_MT_POINTER | INPUT_MT_DIRECT)) {
++		__set_bit(EV_KEY, dev->evbit);
++		__set_bit(BTN_TOUCH, dev->keybit);
++
++		copy_abs(dev, ABS_X, ABS_MT_POSITION_X);
++		copy_abs(dev, ABS_Y, ABS_MT_POSITION_Y);
++		copy_abs(dev, ABS_PRESSURE, ABS_MT_PRESSURE);
++	}
++	if (flags & INPUT_MT_POINTER) {
++		__set_bit(BTN_TOOL_FINGER, dev->keybit);
++		__set_bit(BTN_TOOL_DOUBLETAP, dev->keybit);
++		if (num_slots >= 3)
++			__set_bit(BTN_TOOL_TRIPLETAP, dev->keybit);
++		if (num_slots >= 4)
++			__set_bit(BTN_TOOL_QUADTAP, dev->keybit);
++		if (num_slots >= 5)
++			__set_bit(BTN_TOOL_QUINTTAP, dev->keybit);
++		__set_bit(INPUT_PROP_POINTER, dev->propbit);
++	}
++	if (flags & INPUT_MT_DIRECT)
++		__set_bit(INPUT_PROP_DIRECT, dev->propbit);
++
+ 	/* Mark slots as 'unused' */
+ 	for (i = 0; i < num_slots; i++)
+ 		input_mt_set_value(&mt->slots[i], ABS_MT_TRACKING_ID, -1);
+@@ -88,12 +118,17 @@ void input_mt_report_slot_state(struct input_dev *dev,
+ 	struct input_mt_slot *slot;
+ 	int id;
+ 
+-	if (!mt || !active) {
++	if (!mt)
++		return;
++
++	slot = &mt->slots[dev->slot];
++	slot->frame = mt->frame;
++
++	if (!active) {
+ 		input_event(dev, EV_ABS, ABS_MT_TRACKING_ID, -1);
+ 		return;
+ 	}
+ 
+-	slot = &mt->slots[dev->slot];
+ 	id = input_mt_get_value(slot, ABS_MT_TRACKING_ID);
+ 	if (id < 0 || input_mt_get_value(slot, ABS_MT_TOOL_TYPE) != tool_type)
+ 		id = input_mt_new_trkid(mt);
+@@ -178,3 +213,34 @@ void input_mt_report_pointer_emulation(struct input_dev *dev, bool use_count)
+ 	}
  }
+ EXPORT_SYMBOL(input_mt_report_pointer_emulation);
++
++/**
++ * input_mt_sync_frame() - synchronize mt frame
++ * @dev: input device with allocated MT slots
++ *
++ * Close the frame and prepare the internal state for a new one.
++ * Depending on the flags, marks unused slots as inactive and performs
++ * pointer emulation.
++ */
++void input_mt_sync_frame(struct input_dev *dev)
++{
++	struct input_mt *mt = dev->mt;
++	struct input_mt_slot *s;
++
++	if (!mt)
++		return;
++
++	if (mt->flags & INPUT_MT_DROP_UNUSED) {
++		for (s = mt->slots; s != mt->slots + mt->num_slots; s++) {
++			if (s->frame == mt->frame)
++				continue;
++			input_mt_slot(dev, s - mt->slots);
++			input_event(dev, EV_ABS, ABS_MT_TRACKING_ID, -1);
++		}
++	}
++
++	input_mt_report_pointer_emulation(dev, (mt->flags & INPUT_MT_POINTER));
++
++	mt->frame++;
++}
++EXPORT_SYMBOL(input_mt_sync_frame);
+diff --git a/include/linux/input/mt.h b/include/linux/input/mt.h
+index 03c52ce..a11d485 100644
+--- a/include/linux/input/mt.h
++++ b/include/linux/input/mt.h
+@@ -15,12 +15,17 @@
  
- static int evdev_fasync(int fd, struct file *file, int on)
-@@ -1050,6 +1075,7 @@ MODULE_DEVICE_TABLE(input, evdev_ids);
+ #define TRKID_MAX	0xffff
  
- static struct input_handler evdev_handler = {
- 	.event		= evdev_event,
-+	.events		= evdev_events,
- 	.connect	= evdev_connect,
- 	.disconnect	= evdev_disconnect,
- 	.fops		= &evdev_fops,
++#define INPUT_MT_POINTER	0x0001	/* pointer device, e.g. trackpad */
++#define INPUT_MT_DIRECT		0x0002	/* direct device, e.g. touchscreen */
++#define INPUT_MT_DROP_UNUSED	0x0004	/* drop contacts not seen in frame */
+ /**
+  * struct input_mt_slot - represents the state of an input MT slot
+  * @abs: holds current values of ABS_MT axes for this slot
++ * @frame: last frame at which input_mt_report_slot_state() was called
+  */
+ struct input_mt_slot {
+ 	int abs[ABS_MT_LAST - ABS_MT_FIRST + 1];
++	unsigned int frame;
+ };
+ 
+ /**
+@@ -28,12 +33,14 @@ struct input_mt_slot {
+  * @trkid: stores MT tracking ID for the next contact
+  * @num_slots: number of MT slots the device uses
+  * @flags: input_mt operation flags
++ * @frame: increases every time input_mt_sync_frame() is called
+  * @slots: array of slots holding current values of tracked contacts
+  */
+ struct input_mt {
+ 	int trkid;
+ 	int num_slots;
+ 	unsigned int flags;
++	unsigned int frame;
+ 	struct input_mt_slot slots[];
+ };
+ 
+@@ -79,4 +86,6 @@ void input_mt_report_slot_state(struct input_dev *dev,
+ void input_mt_report_finger_count(struct input_dev *dev, int count);
+ void input_mt_report_pointer_emulation(struct input_dev *dev, bool use_count);
+ 
++void input_mt_sync_frame(struct input_dev *dev);
++
+ #endif
 -- 
 1.7.12
 
