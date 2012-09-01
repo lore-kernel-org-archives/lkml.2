@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932070Ab2IATnZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Sep 2012 15:43:25 -0400
-Received: from smtprelay-b11.telenor.se ([62.127.194.20]:42930 "EHLO
-	smtprelay-b11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755818Ab2IATnV (ORCPT
+	id S932088Ab2IATnb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Sep 2012 15:43:31 -0400
+Received: from smtprelay-b21.telenor.se ([195.54.99.212]:59388 "EHLO
+	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932073Ab2IATn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Sep 2012 15:43:21 -0400
+	Sat, 1 Sep 2012 15:43:28 -0400
 X-SENDER-IP: [85.230.170.20]
 X-LISTENER: [smtp.bredband.net]
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: An1PAG1kQlBV5qoUPGdsb2JhbABEhRyFI7BfGQEBAQEeGQ0ngiEBBScvEwENAhAISTkKFAYBEogRujcUkhwDm0eNEYFWIg
+X-IronPort-Anti-Spam-Result: An1PAAlkQlBV5qoUPGdsb2JhbABEhRyFI7BfGQEBAQEeGQ0ngiEBBScvEwENAhAISTkKFAYBEogRujcUkhwDm0eNEQ
 X-IronPort-AV: E=Sophos;i="4.80,353,1344204000"; 
-   d="scan'208";a="107233845"
+   d="scan'208";a="404070740"
 From: "Henrik Rydberg" <rydberg@euromail.se>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Benjamin Tissoires <benjamin.tissoires@enac.fr>,
         Henrik Rydberg <rydberg@euromail.se>
 Subject: [PATCH v3 17/20] HID: Add an input configured notification callback
-Date: Sat,  1 Sep 2012 21:47:12 +0200
-Message-Id: <1346528835-363-18-git-send-email-rydberg@euromail.se>
+Date: Sat,  1 Sep 2012 21:47:13 +0200
+Message-Id: <1346528835-363-19-git-send-email-rydberg@euromail.se>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1346528835-363-1-git-send-email-rydberg@euromail.se>
 References: <1346528835-363-1-git-send-email-rydberg@euromail.se>
@@ -27,74 +28,172 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A hid device may create several input devices, and a driver may need
-to prepare or finalize the configuration per input device. Currently,
-there is no sane way for a driver to know when a device has been
-configured. This patch adds a callback providing that information.
+With the input_configured() callback in place, the setup and frame
+synchronization can be simplified. The input device initialization is
+moved to mt_input_configured(), to make sure the full HID report has been
+seen.
 
+Cc: Benjamin Tissoires <benjamin.tissoires@enac.fr>
 Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 ---
- drivers/hid/hid-input.c | 11 +++++++++--
- include/linux/hid.h     |  3 +++
- 2 files changed, 12 insertions(+), 2 deletions(-)
+ drivers/hid/hid-multitouch.c | 67 +++++++++++++++++++++++++-------------------
+ 1 file changed, 38 insertions(+), 29 deletions(-)
 
-diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-index 811bfad..d917c0d 100644
---- a/drivers/hid/hid-input.c
-+++ b/drivers/hid/hid-input.c
-@@ -1154,6 +1154,7 @@ static void report_features(struct hid_device *hid)
+diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+index c400d90..1df86a7 100644
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -92,8 +92,10 @@ struct mt_device {
+ 	__u8 touches_by_report;	/* how many touches are present in one report:
+ 				* 1 means we should use a serial protocol
+ 				* > 1 means hybrid (multitouch) protocol */
++	bool serial_maybe;	/* need to check for serial protocol */
+ 	bool curvalid;		/* is the current contact valid? */
+ 	struct mt_slot *slots;
++	unsigned mt_flags;	/* flags to pass to input-mt */
+ };
  
- int hidinput_connect(struct hid_device *hid, unsigned int force)
- {
-+	struct hid_driver *drv = hid->driver;
- 	struct hid_report *report;
- 	struct hid_input *hidinput = NULL;
- 	struct input_dev *input_dev;
-@@ -1228,6 +1229,8 @@ int hidinput_connect(struct hid_device *hid, unsigned int force)
- 				 * UGCI) cram a lot of unrelated inputs into the
- 				 * same interface. */
- 				hidinput->report = report;
-+				if (drv->input_configured)
-+					drv->input_configured(hid, hidinput);
- 				if (input_register_device(hidinput->input))
- 					goto out_cleanup;
- 				hidinput = NULL;
-@@ -1235,8 +1238,12 @@ int hidinput_connect(struct hid_device *hid, unsigned int force)
- 		}
+ /* classes of device behavior */
+@@ -319,24 +321,16 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+ 	* We need to ignore fields that belong to other collections
+ 	* such as Mouse that might have the same GenericDesktop usages. */
+ 	if (field->application == HID_DG_TOUCHSCREEN)
+-		set_bit(INPUT_PROP_DIRECT, hi->input->propbit);
++		td->mt_flags |= INPUT_MT_DIRECT;
+ 	else if (field->application != HID_DG_TOUCHPAD)
+ 		return 0;
+ 
+-	/* In case of an indirect device (touchpad), we need to add
+-	 * specific BTN_TOOL_* to be handled by the synaptics xorg
+-	 * driver.
+-	 * We also consider that touchscreens providing buttons are touchpads.
++	/*
++	 * Model touchscreens providing buttons as touchpads.
+ 	 */
+ 	if (field->application == HID_DG_TOUCHPAD ||
+-	    (usage->hid & HID_USAGE_PAGE) == HID_UP_BUTTON ||
+-	    cls->is_indirect) {
+-		set_bit(INPUT_PROP_POINTER, hi->input->propbit);
+-		set_bit(BTN_TOOL_FINGER, hi->input->keybit);
+-		set_bit(BTN_TOOL_DOUBLETAP, hi->input->keybit);
+-		set_bit(BTN_TOOL_TRIPLETAP, hi->input->keybit);
+-		set_bit(BTN_TOOL_QUADTAP, hi->input->keybit);
+-	}
++	    (usage->hid & HID_USAGE_PAGE) == HID_UP_BUTTON)
++		td->mt_flags |= INPUT_MT_POINTER;
+ 
+ 	/* eGalax devices provide a Digitizer.Stylus input which overrides
+ 	 * the correct Digitizers.Finger X/Y ranges.
+@@ -353,8 +347,6 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+ 					EV_ABS, ABS_MT_POSITION_X);
+ 			set_abs(hi->input, ABS_MT_POSITION_X, field,
+ 				cls->sn_move);
+-			/* touchscreen emulation */
+-			set_abs(hi->input, ABS_X, field, cls->sn_move);
+ 			mt_store_field(usage, td, hi);
+ 			td->last_field_index = field->index;
+ 			return 1;
+@@ -363,8 +355,6 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+ 					EV_ABS, ABS_MT_POSITION_Y);
+ 			set_abs(hi->input, ABS_MT_POSITION_Y, field,
+ 				cls->sn_move);
+-			/* touchscreen emulation */
+-			set_abs(hi->input, ABS_Y, field, cls->sn_move);
+ 			mt_store_field(usage, td, hi);
+ 			td->last_field_index = field->index;
+ 			return 1;
+@@ -388,9 +378,6 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+ 			td->last_field_index = field->index;
+ 			return 1;
+ 		case HID_DG_CONTACTID:
+-			if (!td->maxcontacts)
+-				td->maxcontacts = MT_DEFAULT_MAXCONTACT;
+-			input_mt_init_slots(hi->input, td->maxcontacts, 0);
+ 			mt_store_field(usage, td, hi);
+ 			td->last_field_index = field->index;
+ 			td->touches_by_report++;
+@@ -418,9 +405,6 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+ 					EV_ABS, ABS_MT_PRESSURE);
+ 			set_abs(hi->input, ABS_MT_PRESSURE, field,
+ 				cls->sn_pressure);
+-			/* touchscreen emulation */
+-			set_abs(hi->input, ABS_PRESSURE, field,
+-				cls->sn_pressure);
+ 			mt_store_field(usage, td, hi);
+ 			td->last_field_index = field->index;
+ 			return 1;
+@@ -536,7 +520,7 @@ static void mt_emit_event(struct mt_device *td, struct input_dev *input)
+ 
  	}
  
--	if (hidinput && input_register_device(hidinput->input))
--		goto out_cleanup;
-+	if (hidinput) {
-+		if (drv->input_configured)
-+			drv->input_configured(hid, hidinput);
-+		if (input_register_device(hidinput->input))
-+			goto out_cleanup;
-+	}
+-	input_mt_report_pointer_emulation(input, true);
++	input_mt_sync_frame(input);
+ 	input_sync(input);
+ 	td->num_received = 0;
+ }
+@@ -685,6 +669,32 @@ static void mt_post_parse(struct mt_device *td)
+ 	}
+ }
  
- 	return 0;
++static void mt_input_configured(struct hid_device *hdev, struct hid_input *hi)
++
++{
++	struct mt_device *td = hid_get_drvdata(hdev);
++	struct mt_class *cls = &td->mtclass;
++	struct input_dev *input = hi->input;
++
++	/* Only initialize slots for MT input devices */
++	if (!test_bit(ABS_MT_POSITION_X, input->absbit))
++		return;
++
++	if (!td->maxcontacts)
++		td->maxcontacts = MT_DEFAULT_MAXCONTACT;
++
++	mt_post_parse(td);
++	if (td->serial_maybe)
++		mt_post_parse_default_settings(td);
++
++	if (cls->is_indirect)
++		td->mt_flags |= INPUT_MT_POINTER;
++
++	input_mt_init_slots(input, td->maxcontacts, td->mt_flags);
++
++	td->mt_flags = 0;
++}
++
+ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ {
+ 	int ret, i;
+@@ -722,6 +732,9 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 		goto fail;
+ 	}
  
-diff --git a/include/linux/hid.h b/include/linux/hid.h
-index 42970de..f37da28 100644
---- a/include/linux/hid.h
-+++ b/include/linux/hid.h
-@@ -626,6 +626,7 @@ struct hid_usage_id {
-  * @report_fixup: called before report descriptor parsing (NULL means nop)
-  * @input_mapping: invoked on input registering before mapping an usage
-  * @input_mapped: invoked on input registering after mapping an usage
-+ * @input_configured: invoked just before the device is registered
-  * @feature_mapping: invoked on feature registering
-  * @suspend: invoked on suspend (NULL means nop)
-  * @resume: invoked on resume if device was not reset (NULL means nop)
-@@ -670,6 +671,8 @@ struct hid_driver {
- 	int (*input_mapped)(struct hid_device *hdev,
- 			struct hid_input *hidinput, struct hid_field *field,
- 			struct hid_usage *usage, unsigned long **bit, int *max);
-+	void (*input_configured)(struct hid_device *hdev,
-+				 struct hid_input *hidinput);
- 	void (*feature_mapping)(struct hid_device *hdev,
- 			struct hid_field *field,
- 			struct hid_usage *usage);
++	if (id->vendor == HID_ANY_ID && id->product == HID_ANY_ID)
++		td->serial_maybe = true;
++
+ 	ret = hid_parse(hdev);
+ 	if (ret != 0)
+ 		goto fail;
+@@ -730,11 +743,6 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 	if (ret)
+ 		goto fail;
+ 
+-	mt_post_parse(td);
+-
+-	if (id->vendor == HID_ANY_ID && id->product == HID_ANY_ID)
+-		mt_post_parse_default_settings(td);
+-
+ 	td->slots = kzalloc(td->maxcontacts * sizeof(struct mt_slot),
+ 				GFP_KERNEL);
+ 	if (!td->slots) {
+@@ -1087,6 +1095,7 @@ static struct hid_driver mt_driver = {
+ 	.remove = mt_remove,
+ 	.input_mapping = mt_input_mapping,
+ 	.input_mapped = mt_input_mapped,
++	.input_configured = mt_input_configured,
+ 	.feature_mapping = mt_feature_mapping,
+ 	.usage_table = mt_grabbed_usages,
+ 	.event = mt_event,
 -- 
 1.7.12
 
