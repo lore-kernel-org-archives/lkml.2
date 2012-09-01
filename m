@@ -1,94 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755683Ab2IATyA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Sep 2012 15:54:00 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:57307 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755604Ab2IATx7 (ORCPT
+	id S1755701Ab2IAUBz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Sep 2012 16:01:55 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:33988 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755615Ab2IAUBy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Sep 2012 15:53:59 -0400
+	Sat, 1 Sep 2012 16:01:54 -0400
 MIME-Version: 1.0
-X-Google-Sender-Delegation: a3at.mail@gmail.com
-In-Reply-To: <CAAW1UO-q5uUe4zG5BnB0z9dyKCqRRWH4sriyu7Fj6XinE7GKzA@mail.gmail.com>
-References: <CAAW1UO-q5uUe4zG5BnB0z9dyKCqRRWH4sriyu7Fj6XinE7GKzA@mail.gmail.com>
-Date: Sat, 1 Sep 2012 23:53:58 +0400
-X-Google-Sender-Auth: 9NFZAesHHFqdIRWVdxsM9O4IvgY
-Message-ID: <CAAW1UO9yLVi8JnYBc8UP_1FDU0wUWSS33x62H-tk0qkK_PWWwA@mail.gmail.com>
-Subject: Re: western digital caviar black. EXT4-fs error
-From: Azat Khuzhin <dohardgopro@gmail.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <CALKntY00bG_wVpOGM_L9ENLqROgSO_TttXJeTkgkERdtpnwi_A@mail.gmail.com>
+References: <CALKntY00bG_wVpOGM_L9ENLqROgSO_TttXJeTkgkERdtpnwi_A@mail.gmail.com>
+From: Shentino <shentino@gmail.com>
+Date: Sat, 1 Sep 2012 13:01:13 -0700
+Message-ID: <CAGDaZ_p5B-=Uf9PuHer9OiuUdAkRKy4aGt90T=FnKqE3M3sgwA@mail.gmail.com>
+Subject: Re: linux page table
+To: Xin Tong <xerox.time.tech@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'v also post question here
+On Sat, Sep 1, 2012 at 12:30 PM, Xin Tong <xerox.time.tech@gmail.com> wrote:
+> When a process is created in Linux, corresponding page table is
+> implemented. In the current x86 linux, the page table is a multi-level
+> page table and CR3 points to the first level of the page table.  I
+> have 2 questions.
+>
+> 1. is the value in CR3 virtual address or physical address ?
 
-http://serverfault.com/questions/423565/western-digital-caviar-black-ext4-fs-error
+It's a physical address.  It points the CPU to it in physical memory.
 
-On Sat, Sep 1, 2012 at 11:48 PM, Azat Khuzhin <dohardgopro@gmail.com> wrote:
-> Recently I update my HDD on desktop machine, and bought WD Caviar Black.
-> But after I format & copy information to it (using dd), and fix
-> partitions size: I have next errors in kern.log:
+More generally, all addresses in page tables, directories, etc are
+physical addresses.
+
+> 2. can the address of the first level of the page table during a
+> process's lifetime change ?
+
+This I don't know.
+
+> 3. can two different processes have their CR3 being the same value
+> even though they have different first level page tables ?
+
+I'm not sure about this, but I think CR3 is actually bound to the
+mm_struct and not the process.
+
+Think about separate processes with the same address space, such as
+multithreaded processes.
+
 >
-> Aug 28 01:49:03 home-spb kernel: [183245.030897] EXT4-fs error (device
-> sdc2): ext4_mb_generate_buddy:739: group 3675, 32254 clusters in
-> bitmap, 32258 in gd
-> Aug 28 01:49:03 home-spb kernel: [183245.030956] EXT4-fs error (device
-> sdc2): ext4_mb_generate_buddy:739: group 4181, 32254 clusters in
-> bitmap, 32258 in gd
-> Aug 28 01:49:03 home-spb kernel: [183245.030980] EXT4-fs error (device
-> sdc2): ext4_mb_generate_buddy:739: group 2600, 32254 clusters in
-> bitmap, 32258 in gd
-> Aug 28 01:49:03 home-spb kernel: [183245.061866] EXT4-fs error (device
-> sdc2): ext4_mb_generate_buddy:739: group 9305, 32254 clusters in
-> bitmap, 32258 in gd
-> Aug 28 01:49:03 home-spb kernel: [183245.061892] EXT4-fs error (device
-> sdc2): ext4_mb_generate_buddy:739: group 8230, 32254 clusters in
-> bitmap, 32258 in gd
-> Aug 28 01:49:40 home-spb kernel: [183281.733813] EXT4-fs error (device
-> sdc2): ext4_mb_generate_buddy:739: group 2477, 32254 clusters in
-> bitmap, 32258 in gd
-> Aug 28 01:49:40 home-spb kernel: [183281.743131] JBD2: Spotted dirty
-> metadata buffer (dev = sdc2, blocknr = 0). There's a risk of
-> filesystem corruption in case of system crash.
-> Aug 28 01:50:13 home-spb kernel: [183314.898637] EXT4-fs error (device
-> sdc2): ext4_mb_generate_buddy:739: group 3139, 32254 clusters in
-> bitmap, 32258 in gd
-> Aug 28 01:50:58 home-spb kernel: [183359.783544] EXT4-fs error (device
-> sdc2): ext4_mb_generate_buddy:739: group 4061, 32254 clusters in
-> bitmap, 32258 in gd
-> Aug 28 01:50:58 home-spb kernel: [183359.783577] EXT4-fs error (device
-> sdc2): ext4_mb_generate_buddy:739: group 8166, 32254 clusters in
-> bitmap, 32258 in gd
-> Aug 28 01:51:08 home-spb kernel: [183369.757927] EXT4-fs error (device
-> sdc2): ext4_mb_generate_buddy:739: group 8171, 32254 clusters in
-> bitmap, 32258 in gd
-> Aug 28 16:06:54 home-spb kernel: [234584.906721] EXT4-fs (sdc2): error count: 26
-> Aug 28 16:06:54 home-spb kernel: [234584.906725] EXT4-fs (sdc2):
-> initial error at 1346069075: ext4_mb_generate_buddy:739
-> Aug 28 16:06:54 home-spb kernel: [234584.906727] EXT4-fs (sdc2): last
-> error at 1346104268: ext4_mb_generate_buddy:739
->
-> One time, machine rebooted (not manually), when I turn it on, it runs
-> fsck on /dev/sdc2 and fix some errors and some files are missing on
-> /dev/sdc2
->
-> I'v check /dev/sdc2 for badblocks, it doesn't have it ( using e2fsck
-> -c /dev/sdc2 )
-> Here is the output of fsck http://pastebin.com/D5LmLVBY
->
-> What else I can do to understand what's wrong here?
->
-> BTW for /dev/sdc1 no message like that, in kern.log
->
-> Linux version: 3.3.0
-> Distributive: Debian wheezy
->
+> Thanks
 > --
-> Azat Khuzhin
-
-
-
--- 
-Azat Khuzhin
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
