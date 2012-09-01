@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755541Ab2IAQeB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Sep 2012 12:34:01 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:46619
+	id S1755602Ab2IAQer (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Sep 2012 12:34:47 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:51673
 	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754128Ab2IAQdk (ORCPT
+	by vger.kernel.org with ESMTP id S1755364Ab2IAQdm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Sep 2012 12:33:40 -0400
+	Sat, 1 Sep 2012 12:33:42 -0400
 X-IronPort-AV: E=Sophos;i="4.80,353,1344204000"; 
-   d="scan'208";a="154399776"
+   d="scan'208";a="154399779"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        broonie@opensource.wolfsonmicro.com
-Cc: kernel-janitors@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: kernel-janitors@vger.kernel.org, linux-mtd@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] drivers/spi/spi-sh-hspi.c: drop frees of devm_ alloc'd data
-Date: Sat,  1 Sep 2012 18:33:08 +0200
-Message-Id: <1346517191-8794-2-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 3/4] drivers/mtd/maps/autcpu12-nvram.c: drop frees of devm_ alloc'd data
+Date: Sat,  1 Sep 2012 18:33:11 +0200
+Message-Id: <1346517191-8794-5-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1346517191-8794-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1346517191-8794-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -51,36 +50,70 @@ A semantic match that finds this problem is as follows:
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/spi/spi-sh-hspi.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ drivers/mtd/maps/autcpu12-nvram.c |   18 ++++--------------
+ 1 file changed, 4 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/spi/spi-sh-hspi.c b/drivers/spi/spi-sh-hspi.c
-index 934138c..796c077 100644
---- a/drivers/spi/spi-sh-hspi.c
-+++ b/drivers/spi/spi-sh-hspi.c
-@@ -283,7 +283,7 @@ static int __devinit hspi_probe(struct platform_device *pdev)
- 	ret = spi_register_master(master);
- 	if (ret < 0) {
- 		dev_err(&pdev->dev, "spi_register_master error.\n");
--		goto error2;
-+		goto error1;
+diff --git a/drivers/mtd/maps/autcpu12-nvram.c b/drivers/mtd/maps/autcpu12-nvram.c
+index ef420d9..76fb594 100644
+--- a/drivers/mtd/maps/autcpu12-nvram.c
++++ b/drivers/mtd/maps/autcpu12-nvram.c
+@@ -38,7 +38,6 @@ static int __devinit autcpu12_nvram_probe(struct platform_device *pdev)
+ 	map_word tmp, save0, save1;
+ 	struct resource *res;
+ 	struct autcpu12_nvram_priv *priv;
+-	int err;
+ 
+ 	priv = devm_kzalloc(&pdev->dev,
+ 			    sizeof(struct autcpu12_nvram_priv), GFP_KERNEL);
+@@ -50,8 +49,7 @@ static int __devinit autcpu12_nvram_probe(struct platform_device *pdev)
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!res) {
+ 		dev_err(&pdev->dev, "failed to get memory resource\n");
+-		err = -ENOENT;
+-		goto out;
++		return -ENOENT;
  	}
  
- 	pm_runtime_enable(&pdev->dev);
-@@ -292,8 +292,6 @@ static int __devinit hspi_probe(struct platform_device *pdev)
+ 	priv->map.bankwidth	= 4;
+@@ -61,8 +59,7 @@ static int __devinit autcpu12_nvram_probe(struct platform_device *pdev)
+ 	strcpy((char *)priv->map.name, res->name);
+ 	if (!priv->map.virt) {
+ 		dev_err(&pdev->dev, "failed to remap mem resource\n");
+-		err = -EBUSY;
+-		goto out;
++		return -EBUSY;
+ 	}
  
- 	return 0;
+ 	simple_map_init(&priv->map);
+@@ -90,8 +87,7 @@ static int __devinit autcpu12_nvram_probe(struct platform_device *pdev)
+ 	priv->mtd = do_map_probe("map_ram", &priv->map);
+ 	if (!priv->mtd) {
+ 		dev_err(&pdev->dev, "probing failed\n");
+-		err = -ENXIO;
+-		goto out;
++		return -ENXIO;
+ 	}
  
-- error2:
--	devm_iounmap(hspi->dev, hspi->addr);
-  error1:
- 	clk_put(clk);
-  error0:
-@@ -310,7 +308,6 @@ static int __devexit hspi_remove(struct platform_device *pdev)
+ 	priv->mtd->owner	= THIS_MODULE;
+@@ -106,12 +102,7 @@ static int __devinit autcpu12_nvram_probe(struct platform_device *pdev)
  
- 	clk_put(hspi->clk);
- 	spi_unregister_master(hspi->master);
--	devm_iounmap(hspi->dev, hspi->addr);
+ 	map_destroy(priv->mtd);
+ 	dev_err(&pdev->dev, "NV-RAM device addition failed\n");
+-	err = -ENOMEM;
+-
+-out:
+-	devm_kfree(&pdev->dev, priv);
+-
+-	return err;
++	return -ENOMEM;
+ }
+ 
+ static int __devexit autcpu12_nvram_remove(struct platform_device *pdev)
+@@ -120,7 +111,6 @@ static int __devexit autcpu12_nvram_remove(struct platform_device *pdev)
+ 
+ 	mtd_device_unregister(priv->mtd);
+ 	map_destroy(priv->mtd);
+-	devm_kfree(&pdev->dev, priv);
  
  	return 0;
  }
