@@ -1,83 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755489Ab2IACXI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Aug 2012 22:23:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47777 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755352Ab2IACXF (ORCPT
+	id S1755322Ab2IADDv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Aug 2012 23:03:51 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:44936 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755241Ab2IADDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Aug 2012 22:23:05 -0400
-Date: Fri, 31 Aug 2012 19:23:05 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, vgoyal@redhat.com, mpatocka@redhat.com,
-        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH v7 3/9] block: Add bio_reset()
-Message-ID: <20120901022305.GE19535@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
- <1346175456-1572-4-git-send-email-koverstreet@google.com>
- <20120828203148.GB24608@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120828221715.GD1048@moria.home.lan>
+	Fri, 31 Aug 2012 23:03:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120828221715.GD1048@moria.home.lan>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <87ipbyfw9j.fsf@xmission.com>
+References: <20120831213126.GA19688@www.outflux.net>
+	<20120831223908.4aa5574d@pyramind.ukuu.org.uk>
+	<CACLa4pv75-HaPEas=aOMySbMm-YdSJZdc6qtNUnTM+Ev2Rp7rg@mail.gmail.com>
+	<87ipbyfw9j.fsf@xmission.com>
+Date: Fri, 31 Aug 2012 20:03:46 -0700
+Message-ID: <CACLa4ptpGJ7YDTqmOvtHq_Ts9f72SBV6Q_HDDw1OebhxVOzU9w@mail.gmail.com>
+Subject: Re: [PATCH] security: unconditionally call Yama
+From: Eric Paris <eparis@parisplace.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Kees Cook <keescook@chromium.org>,
+        linux-kernel@vger.kernel.org, James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        John Johansen <john.johansen@canonical.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Aug 31, 2012 at 4:59 PM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
 
-On Tue, Aug 28, 2012 at 03:17:15PM -0700, Kent Overstreet wrote:
-> > Better to explain why some bio fields are re-ordered and why that
-> > shouldn't make things worse cacheline-wise?
-> 
-> Well it may (struct bio is what, 3 or 4 cachelines now?) but even on
-> ridiculous million iop devices struct bio just isn't hot enough for this
-> kind of stuff to show up in the profiles... and I've done enough
-> profiling to be pretty confident of that.
-> 
-> So um, if there was anything to say performance wise I would, but to me
-> it seems more that there isn't.
-> 
-> (pruning struct bio would have more of an effect performance wise, which
-> you know is something I'd like to do.)
+> From a overal kernel maintenance and use perspective the unconditional
+> enablement is a pain.
+>
+> We long ago established the principle that compiling additional code
+> into the kernel should not change the semenatics of the kernel.
+>
+> So this code needs to come with a command line or sysctl on/off switch
+> not an unconditional enable.
 
-Yeah, please put something like the above in the patch description.
+Your argument makes zero sense.  If I decide to build new code, that
+new code can do something.  It happens all the time.  If you don't
+like Yama, don't build Yama.  If you don't like the only thing that
+Yama does (it only implements one protection), disable that protection
+from sysctl.  I don't get it.
 
-> > > +	unsigned long flags = bio->bi_flags & (~0UL << BIO_RESET_BITS);
-> > > +
-> > > +	if (bio_integrity(bio))
-> > > +		bio_integrity_free(bio, bio->bi_pool);
-> > > +
-> > > +	bio_disassociate_task(bio);
-> > 
-> > Is this desirable?  Why?
-> 
-> *twitch* I should've thought more when I made that change.
-> 
-> It occurs to me now that we specifically talked about that and decided
-> to do it the other way - when I changed that I was just looking at
-> bio_free() and decided they needed to be symmetrical.
-> 
-> I still think they should be symmetrical, but if that's true bi_ioc and
-> bi_css need to be moved, and also bio_disassociate_task() should be
-> getting called from bio_free(), not bio_put().
-> 
-> Were you the one that added that call? I know you've been working on
-> that area of the code recently. Sticking it in bio_put() instead of
-> bio_free() seems odd to be, and they're completely equivalent now that
-> bio_free() is only called from bio_put() (save one instance I should
-> probably fix).
-
-Maybe I botched symmetry but anyways I *suspect* it probably would be
-better to keep css association across bio_reset() give the current
-usages of both mechanisms.  css association indicates the ownership of
-the bio which isn't likely to change while recycling the bio.
-
-Thanks.
-
--- 
-tejun
+-Eric
