@@ -1,185 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756062Ab2IBHtV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 03:49:21 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:40959 "EHLO
+	id S1756026Ab2IBHtT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 03:49:19 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:40961 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755865Ab2IBHr1 (ORCPT
+	with ESMTP id S1755870Ab2IBHr2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 03:47:27 -0400
+	Sun, 2 Sep 2012 03:47:28 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
         Tejun Heo <tj@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH -v2 01/13] x86, mm: Add global page_size_mask
-Date: Sun,  2 Sep 2012 00:46:47 -0700
-Message-Id: <1346572019-15806-2-git-send-email-yinghai@kernel.org>
+Subject: [PATCH -v2 03/13] x86, mm: Moving init_memory_mapping calling
+Date: Sun,  2 Sep 2012 00:46:49 -0700
+Message-Id: <1346572019-15806-4-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1346572019-15806-1-git-send-email-yinghai@kernel.org>
 References: <1346572019-15806-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-detect if need to use 1G or 2M and store them in page_size_mask.
+from setup.c to mm/init.c
 
-Only probe them one time.
+So could update all related calling together later
 
-Suggested-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/include/asm/pgtable.h |    1 +
- arch/x86/kernel/setup.c        |    1 +
- arch/x86/mm/init.c             |   66 +++++++++++++++++++---------------------
- 3 files changed, 33 insertions(+), 35 deletions(-)
+ arch/x86/include/asm/init.h    |    1 -
+ arch/x86/include/asm/pgtable.h |    2 +-
+ arch/x86/kernel/setup.c        |   13 +------------
+ arch/x86/mm/init.c             |   19 ++++++++++++++++++-
+ 4 files changed, 20 insertions(+), 15 deletions(-)
 
+diff --git a/arch/x86/include/asm/init.h b/arch/x86/include/asm/init.h
+index adcc0ae..4f13998 100644
+--- a/arch/x86/include/asm/init.h
++++ b/arch/x86/include/asm/init.h
+@@ -12,7 +12,6 @@ kernel_physical_mapping_init(unsigned long start,
+ 			     unsigned long end,
+ 			     unsigned long page_size_mask);
+ 
+-
+ extern unsigned long __initdata pgt_buf_start;
+ extern unsigned long __meminitdata pgt_buf_end;
+ extern unsigned long __meminitdata pgt_buf_top;
 diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index 49afb3f..e47e4db 100644
+index e47e4db..ae2cabb 100644
 --- a/arch/x86/include/asm/pgtable.h
 +++ b/arch/x86/include/asm/pgtable.h
-@@ -597,6 +597,7 @@ static inline int pgd_none(pgd_t pgd)
+@@ -597,7 +597,7 @@ static inline int pgd_none(pgd_t pgd)
  #ifndef __ASSEMBLY__
  
  extern int direct_gbpages;
-+void probe_page_size_mask(void);
+-void probe_page_size_mask(void);
++void init_mem_mapping(void);
  
  /* local pte updates need not use xchg for locking */
  static inline pte_t native_local_ptep_get_and_clear(pte_t *ptep)
 diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index f4b9b80..d6e8c03 100644
+index d6e8c03..c30c78c 100644
 --- a/arch/x86/kernel/setup.c
 +++ b/arch/x86/kernel/setup.c
-@@ -912,6 +912,7 @@ void __init setup_arch(char **cmdline_p)
+@@ -912,20 +912,9 @@ void __init setup_arch(char **cmdline_p)
  	setup_real_mode();
  
  	init_gbpages();
-+	probe_page_size_mask();
+-	probe_page_size_mask();
  
- 	/* max_pfn_mapped is updated here */
- 	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
+-	/* max_pfn_mapped is updated here */
+-	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
+-	max_pfn_mapped = max_low_pfn_mapped;
++	init_mem_mapping();
+ 
+-#ifdef CONFIG_X86_64
+-	if (max_pfn > max_low_pfn) {
+-		max_pfn_mapped = init_memory_mapping(1UL<<32,
+-						     max_pfn<<PAGE_SHIFT);
+-		/* can we preseve max_low_pfn ?*/
+-		max_low_pfn = max_pfn;
+-	}
+-#endif
+ 	memblock.current_limit = get_max_mapped();
+ 	dma_contiguous_reserve(0);
+ 
 diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index e0e6990..838e9bc 100644
+index 7d05e28..15a6a38 100644
 --- a/arch/x86/mm/init.c
 +++ b/arch/x86/mm/init.c
-@@ -35,8 +35,10 @@ struct map_range {
- 	unsigned page_size_mask;
- };
- 
--static void __init find_early_table_space(struct map_range *mr, unsigned long end,
--					  int use_pse, int use_gbpages)
-+static int page_size_mask;
-+
-+static void __init find_early_table_space(struct map_range *mr,
-+					  unsigned long end)
- {
- 	unsigned long puds, pmds, ptes, tables, start = 0, good_end = end;
- 	phys_addr_t base;
-@@ -44,7 +46,7 @@ static void __init find_early_table_space(struct map_range *mr, unsigned long en
- 	puds = (end + PUD_SIZE - 1) >> PUD_SHIFT;
- 	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
- 
--	if (use_gbpages) {
-+	if (page_size_mask & (1 << PG_LEVEL_1G)) {
- 		unsigned long extra;
- 
- 		extra = end - ((end>>PUD_SHIFT) << PUD_SHIFT);
-@@ -54,7 +56,7 @@ static void __init find_early_table_space(struct map_range *mr, unsigned long en
- 
- 	tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
- 
--	if (use_pse) {
-+	if (page_size_mask & (1 << PG_LEVEL_2M)) {
- 		unsigned long extra;
- 
- 		extra = end - ((end>>PMD_SHIFT) << PMD_SHIFT);
-@@ -90,6 +92,30 @@ static void __init find_early_table_space(struct map_range *mr, unsigned long en
+@@ -92,7 +92,7 @@ static void __init find_early_table_space(struct map_range *mr,
  		(pgt_buf_top << PAGE_SHIFT) - 1);
  }
  
-+void probe_page_size_mask(void)
+-void probe_page_size_mask(void)
++static void __init probe_page_size_mask(void)
+ {
+ #if !defined(CONFIG_DEBUG_PAGEALLOC) && !defined(CONFIG_KMEMCHECK)
+ 	/*
+@@ -312,6 +312,23 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+ 	return ret >> PAGE_SHIFT;
+ }
+ 
++void __init init_mem_mapping(void)
 +{
-+#if !defined(CONFIG_DEBUG_PAGEALLOC) && !defined(CONFIG_KMEMCHECK)
-+	/*
-+	 * For CONFIG_DEBUG_PAGEALLOC, identity mapping will use small pages.
-+	 * This will simplify cpa(), which otherwise needs to support splitting
-+	 * large pages into small in interrupt context, etc.
-+	 */
-+	if (direct_gbpages)
-+		page_size_mask |= 1 << PG_LEVEL_1G;
-+	if (cpu_has_pse)
-+		page_size_mask |= 1 << PG_LEVEL_2M;
-+#endif
++	probe_page_size_mask();
 +
-+	/* Enable PSE if available */
-+	if (cpu_has_pse)
-+		set_in_cr4(X86_CR4_PSE);
++	/* max_pfn_mapped is updated here */
++	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
++	max_pfn_mapped = max_low_pfn_mapped;
 +
-+	/* Enable PGE if available */
-+	if (cpu_has_pge) {
-+		set_in_cr4(X86_CR4_PGE);
-+		__supported_pte_mask |= _PAGE_GLOBAL;
++#ifdef CONFIG_X86_64
++	if (max_pfn > max_low_pfn) {
++		max_pfn_mapped = init_memory_mapping(1UL<<32,
++						     max_pfn<<PAGE_SHIFT);
++		/* can we preseve max_low_pfn ?*/
++		max_low_pfn = max_pfn;
 +	}
++#endif
 +}
- void __init native_pagetable_reserve(u64 start, u64 end)
- {
- 	memblock_reserve(start, end - start);
-@@ -125,45 +151,15 @@ static int __meminit save_mr(struct map_range *mr, int nr_range,
- unsigned long __init_refok init_memory_mapping(unsigned long start,
- 					       unsigned long end)
- {
--	unsigned long page_size_mask = 0;
- 	unsigned long start_pfn, end_pfn;
- 	unsigned long ret = 0;
- 	unsigned long pos;
--
- 	struct map_range mr[NR_RANGE_MR];
- 	int nr_range, i;
--	int use_pse, use_gbpages;
  
- 	printk(KERN_INFO "init_memory_mapping: [mem %#010lx-%#010lx]\n",
- 	       start, end - 1);
- 
--#if defined(CONFIG_DEBUG_PAGEALLOC) || defined(CONFIG_KMEMCHECK)
--	/*
--	 * For CONFIG_DEBUG_PAGEALLOC, identity mapping will use small pages.
--	 * This will simplify cpa(), which otherwise needs to support splitting
--	 * large pages into small in interrupt context, etc.
--	 */
--	use_pse = use_gbpages = 0;
--#else
--	use_pse = cpu_has_pse;
--	use_gbpages = direct_gbpages;
--#endif
--
--	/* Enable PSE if available */
--	if (cpu_has_pse)
--		set_in_cr4(X86_CR4_PSE);
--
--	/* Enable PGE if available */
--	if (cpu_has_pge) {
--		set_in_cr4(X86_CR4_PGE);
--		__supported_pte_mask |= _PAGE_GLOBAL;
--	}
--
--	if (use_gbpages)
--		page_size_mask |= 1 << PG_LEVEL_1G;
--	if (use_pse)
--		page_size_mask |= 1 << PG_LEVEL_2M;
--
- 	memset(mr, 0, sizeof(mr));
- 	nr_range = 0;
- 
-@@ -267,7 +263,7 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 	 * nodes are discovered.
- 	 */
- 	if (!after_bootmem)
--		find_early_table_space(&mr[0], end, use_pse, use_gbpages);
-+		find_early_table_space(&mr[0], end);
- 
- 	for (i = 0; i < nr_range; i++)
- 		ret = kernel_physical_mapping_init(mr[i].start, mr[i].end,
+ /*
+  * devmem_is_allowed() checks to see if /dev/mem access to a certain address
 -- 
 1.7.7
 
