@@ -1,81 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754297Ab2IBQii (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 12:38:38 -0400
-Received: from mga11.intel.com ([192.55.52.93]:65296 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754128Ab2IBQih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 12:38:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,356,1344236400"; 
-   d="scan'208";a="217292855"
-Date: Mon, 3 Sep 2012 00:38:31 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: =?utf-8?B?QmrDuHJu?= Mork <bjorn@mork.no>
-Cc: linux-input@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        chunkeey@googlemail.com, linville@tuxdriver.com,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: input0: bad kobj_uevent_env content in show_uevent()
-Message-ID: <20120902163831.GA26191@localhost>
-References: <20120902075946.GA21198@localhost>
- <87harg35kh.fsf@nemi.mork.no>
+	id S1754317Ab2IBQvg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 12:51:36 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:33564 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754128Ab2IBQvf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Sep 2012 12:51:35 -0400
+Date: Sun, 2 Sep 2012 12:51:31 -0400
+From: Kevin McKinney <klmckinney1@gmail.com>
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, ldv-project@ispras.ru,
+        linux-kernel@vger.kernel.org, klmckinney1@gmail.com,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: [PATCH] staging: bcm: fix error handling in bcm_init()
+Message-ID: <20120902165130.GA3952@gmail.com>
+References: <1346535456-28941-1-git-send-email-khoroshilov@ispras.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <87harg35kh.fsf@nemi.mork.no>
+In-Reply-To: <1346535456-28941-1-git-send-email-khoroshilov@ispras.ru>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 02, 2012 at 03:41:34PM +0200, Bjørn Mork wrote:
-> Fengguang Wu <fengguang.wu@intel.com> writes:
+On Sun, Sep 02, 2012 at 01:37:36AM +0400, Alexey Khoroshilov wrote:
+> bcm_init() does not have proper error handling of usb_register().
+> The patch implements one.
 > 
-> > After the __devinit* removal series, I can still get kernel panic in
-> > show_uevent(). So there are more sources of bug..
-> >
-> > Debug patch:
-> >
-> > @@ -343,8 +343,11 @@ static ssize_t show_uevent(struct device
-> >                 goto out;
-> >
-> >         /* copy keys to file */
-> > -       for (i = 0; i < env->envp_idx; i++)
-> > +       dev_err(dev, "uevent %d env[%d]: %s/.../%s\n", env->buflen, env->envp_idx, top_kobj->name, dev->kobj.name);
-> > +       for (i = 0; i < env->envp_idx; i++) {
-> > +               printk(KERN_ERR "uevent %d env[%d]: %s\n", (int)count, i, env->envp[i]);
-> >                 count += sprintf(&buf[count], "%s\n", env->envp[i]);
-> > +       }
-> >
-> > Oops message, the env[] is again not properly initilized:
-> >
-> > [   44.068623] input input0: uevent 61 env[805306368]: input0/.../input0
-> > [   44.069552] uevent 0 env[0]: (null)
+> Found by Linux Driver Verification project (linuxtesting.org).
 > 
-> This is a completely different CONFIG_HOTPLUG problem, only
-> demonstrating another reason why CONFIG_HOTPLUG should go away.  I had a
-> hard time trying to disable it anyway ;-)
+> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+> ---
+>  drivers/staging/bcm/InterfaceInit.c |   12 +++++++++++-
+>  1 file changed, 11 insertions(+), 1 deletion(-)
 > 
-> The problem this time is lots of code assuming that a call to
-> add_uevent_var() will guarantee that env->buflen > 0.  This is not true
-> if CONFIG_HOTPLUG is unset.  So things like this end up overwriting
-> env->envp_idx because the array index is -1:
-> 
-> 	if (add_uevent_var(env, "MODALIAS="))
-> 		return -ENOMEM;
->         len = input_print_modalias(&env->buf[env->buflen - 1],
-> 				   sizeof(env->buf) - env->buflen,
-> 				   dev, 0);
-> 
-> 
-> Don't know what the best action is, given that there seem to be a *lot*
-> of this around the kernel.  This patch "fixes" the problem for me, but I
+> diff --git a/drivers/staging/bcm/InterfaceInit.c b/drivers/staging/bcm/InterfaceInit.c
+> index 8f85de6..0049890 100644
+> --- a/drivers/staging/bcm/InterfaceInit.c
+> +++ b/drivers/staging/bcm/InterfaceInit.c
+> @@ -669,6 +669,8 @@ struct class *bcm_class;
+>  
+>  static __init int bcm_init(void)
+>  {
+> +	int retval;
+> +
+>  	printk(KERN_INFO "%s: %s, %s\n", DRV_NAME, DRV_DESCRIPTION, DRV_VERSION);
+>  	printk(KERN_INFO "%s\n", DRV_COPYRIGHT);
+>  
+> @@ -678,7 +680,15 @@ static __init int bcm_init(void)
+>  		return PTR_ERR(bcm_class);
+>  	}
+>  
+> -	return usb_register(&usbbcm_driver);
+> +	retval = usb_register(&usbbcm_driver);
+> +	if (retval < 0) {
+> +		printk(KERN_ERR DRV_NAME ": could not register usb driver\n");
+> +		goto out_class;
+> +	}
+> +	return 0;
+> +out_class:
+> +	class_destroy(bcm_class);
+> +	return retval;
+>  }
+>  
+Hi Alexey,
 
-It also works reliably for me: 300 boots without a single failure.
+Instead of using a goto statement, can we just: (1) destory the class and (2) return retval within the if statement? i.e:
 
-Tested-by: Fengguang Wu <fengguang.wu@intel.com> 
+if (retval < 0) {
+	printk(KERN_ERR DRV_NAME ": could not register usb driver\n");
+	+class_destroy(bcm_class);
+	+return retval;
+}
 
-Thanks!
-Fengguang
+goto statements are very useful and handy when a function exits from multiple locations because they provide a 
+common exit point. The compiler will translate this into a "jump" instruction. However in this case I am not sure
+it is simplifying our logic because we only have one usage. lets just call the two lines of code directly within the
+if statement.
+
+In addition, while you are in this code can you replace the "printk" statements with the preferred "pr_info" in a separate patch?  
+
+Thanks,
+Kevin
