@@ -1,120 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756074Ab2IBM46 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 08:56:58 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:45564 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751391Ab2IBM45 (ORCPT
+	id S1756097Ab2IBM6D (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 08:58:03 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:44283 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751744Ab2IBM5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 08:56:57 -0400
-Message-ID: <5043578F.60602@linux.vnet.ibm.com>
-Date: Sun, 02 Sep 2012 20:56:47 +0800
+	Sun, 2 Sep 2012 08:57:25 -0400
+Message-ID: <504357AD.3070405@linux.vnet.ibm.com>
+Date: Sun, 02 Sep 2012 20:57:17 +0800
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: [PATCH 1/6] KVM: MMU: release noslot pfn on the fail path properly
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: [PATCH 2/6] KVM: fix release error page
+References: <5043578F.60602@linux.vnet.ibm.com>
+In-Reply-To: <5043578F.60602@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-x-cbid: 12090212-1618-0000-0000-000002632858
+x-cbid: 12090212-5140-0000-0000-00000202E3E6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can not directly call kvm_release_pfn_clean to release the pfn
-since we can meet noslot pfn which is used to cache mmio info into
-spte
+This bug was triggered:
+[ 4220.198458] BUG: unable to handle kernel paging request at fffffffffffffffe
+[ 4220.203907] IP: [<ffffffff81104d85>] put_page+0xf/0x34
+......
+[ 4220.237326] Call Trace:
+[ 4220.237361]  [<ffffffffa03830d0>] kvm_arch_destroy_vm+0xf9/0x101 [kvm]
+[ 4220.237382]  [<ffffffffa036fe53>] kvm_put_kvm+0xcc/0x127 [kvm]
+[ 4220.237401]  [<ffffffffa03702bc>] kvm_vcpu_release+0x18/0x1c [kvm]
+[ 4220.237407]  [<ffffffff81145425>] __fput+0x111/0x1ed
+[ 4220.237411]  [<ffffffff8114550f>] ____fput+0xe/0x10
+[ 4220.237418]  [<ffffffff81063511>] task_work_run+0x5d/0x88
+[ 4220.237424]  [<ffffffff8104c3f7>] do_exit+0x2bf/0x7ca
 
-Introduce mmu_release_pfn_clean to do this kind of thing
+The test case:
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/ioctl.h>
+#include <sys/mman.h>
+
+#include <linux/kvm.h>
+
+#define die(fmt, args...)	do {	\
+	printf(fmt, ##args);		\
+	exit(-1);} while (0)
+
+static int create_vm(void)
+{
+	int sys_fd, vm_fd;
+
+	sys_fd = open("/dev/kvm", O_RDWR);
+	if (sys_fd < 0)
+		die("open /dev/kvm fail.\n");
+
+	vm_fd = ioctl(sys_fd, KVM_CREATE_VM, 0);
+	if (vm_fd < 0)
+		die("KVM_CREATE_VM fail.\n");
+
+	return vm_fd;
+}
+
+static int create_vcpu(int vm_fd)
+{
+	int vcpu_fd;
+
+	vcpu_fd = ioctl(vm_fd, KVM_CREATE_VCPU, 0);
+	if (vcpu_fd < 0)
+		die("KVM_CREATE_VCPU ioctl.\n");
+	printf("Create vcpu.\n");
+	return vcpu_fd;
+}
+
+static void *vcpu_thread(void *arg)
+{
+	int vm_fd = (int)(long)arg;
+
+	create_vcpu(vm_fd);
+	return NULL;
+}
+
+int main(int argc, char *argv[])
+{
+	pthread_t thread;
+	int vm_fd;
+
+	(void)argc;
+	(void)argv;
+
+	vm_fd = create_vm();
+	pthread_create(&thread, NULL, vcpu_thread, (void *)(long)vm_fd);
+	printf("Exit.\n");
+	return 0;
+}
+
+It is caused by release kvm->arch.ept_identity_map_addr which is the
+error page.
+
+The parent thread can send KILL signal to the vcpu thread when it was
+exiting which stops faulting pages and potentially allocating memory.
+So gfn_to_pfn/gfn_to_page may fail at this time
+
+Fixed by checking the page before it is used
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/kvm/mmu.c         |   19 ++++++++++++++-----
- arch/x86/kvm/paging_tmpl.h |    4 ++--
- 2 files changed, 16 insertions(+), 7 deletions(-)
+ arch/x86/kvm/vmx.c |   19 ++++++++++++++++---
+ arch/x86/kvm/x86.c |   13 ++++++++++---
+ 2 files changed, 26 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 399c177..3c10bca 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -2432,6 +2432,16 @@ done:
- 	return ret;
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 248c2b4..ccea20a 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -3590,6 +3590,7 @@ static void seg_setup(int seg)
+
+ static int alloc_apic_access_page(struct kvm *kvm)
+ {
++	struct page *page;
+ 	struct kvm_userspace_memory_region kvm_userspace_mem;
+ 	int r = 0;
+
+@@ -3604,7 +3605,13 @@ static int alloc_apic_access_page(struct kvm *kvm)
+ 	if (r)
+ 		goto out;
+
+-	kvm->arch.apic_access_page = gfn_to_page(kvm, 0xfee00);
++	page = gfn_to_page(kvm, 0xfee00);
++	if (is_error_page(page)) {
++		r = -EFAULT;
++		goto out;
++	}
++
++	kvm->arch.apic_access_page = page;
+ out:
+ 	mutex_unlock(&kvm->slots_lock);
+ 	return r;
+@@ -3612,6 +3619,7 @@ out:
+
+ static int alloc_identity_pagetable(struct kvm *kvm)
+ {
++	struct page *page;
+ 	struct kvm_userspace_memory_region kvm_userspace_mem;
+ 	int r = 0;
+
+@@ -3627,8 +3635,13 @@ static int alloc_identity_pagetable(struct kvm *kvm)
+ 	if (r)
+ 		goto out;
+
+-	kvm->arch.ept_identity_pagetable = gfn_to_page(kvm,
+-			kvm->arch.ept_identity_map_addr >> PAGE_SHIFT);
++	page = gfn_to_page(kvm, kvm->arch.ept_identity_map_addr >> PAGE_SHIFT);
++	if (is_error_page(page)) {
++		r = -EFAULT;
++		goto out;
++	}
++
++	kvm->arch.ept_identity_pagetable = page;
+ out:
+ 	mutex_unlock(&kvm->slots_lock);
+ 	return r;
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index d8fba22..d44edaa 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -5101,17 +5101,20 @@ static void post_kvm_run_save(struct kvm_vcpu *vcpu)
+ 			!kvm_event_needs_reinjection(vcpu);
  }
 
-+/*
-+ * The primary user is page fault path which call it to properly
-+ * release noslot_pfn.
-+ */
-+static void mmu_release_pfn_clean(pfn_t pfn)
-+{
-+	if (!is_error_pfn(pfn))
-+		kvm_release_pfn_clean(pfn);
-+}
-+
- static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
- 			 unsigned pt_access, unsigned pte_access,
- 			 int user_fault, int write_fault,
-@@ -2497,8 +2507,7 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
- 		}
+-static void vapic_enter(struct kvm_vcpu *vcpu)
++static int vapic_enter(struct kvm_vcpu *vcpu)
+ {
+ 	struct kvm_lapic *apic = vcpu->arch.apic;
+ 	struct page *page;
+
+ 	if (!apic || !apic->vapic_addr)
+-		return;
++		return 0;
+
+ 	page = gfn_to_page(vcpu->kvm, apic->vapic_addr >> PAGE_SHIFT);
++	if (is_error_page(page))
++		return -EFAULT;
+
+ 	vcpu->arch.apic->vapic_page = page;
++	return 0;
+ }
+
+ static void vapic_exit(struct kvm_vcpu *vcpu)
+@@ -5418,7 +5421,11 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
  	}
 
--	if (!is_error_pfn(pfn))
--		kvm_release_pfn_clean(pfn);
-+	mmu_release_pfn_clean(pfn);
- }
+ 	vcpu->srcu_idx = srcu_read_lock(&kvm->srcu);
+-	vapic_enter(vcpu);
++	r = vapic_enter(vcpu);
++	if (r) {
++		srcu_read_unlock(&kvm->srcu, vcpu->srcu_idx);
++		return r;
++	}
 
- static void nonpaging_new_cr3(struct kvm_vcpu *vcpu)
-@@ -2618,7 +2627,7 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
- 					      1, ACC_ALL, iterator.sptep);
- 			if (!sp) {
- 				pgprintk("nonpaging_map: ENOMEM\n");
--				kvm_release_pfn_clean(pfn);
-+				mmu_release_pfn_clean(pfn);
- 				return -ENOMEM;
- 			}
-
-@@ -2882,7 +2891,7 @@ static int nonpaging_map(struct kvm_vcpu *vcpu, gva_t v, u32 error_code,
-
- out_unlock:
- 	spin_unlock(&vcpu->kvm->mmu_lock);
--	kvm_release_pfn_clean(pfn);
-+	mmu_release_pfn_clean(pfn);
- 	return 0;
- }
-
-@@ -3350,7 +3359,7 @@ static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa, u32 error_code,
-
- out_unlock:
- 	spin_unlock(&vcpu->kvm->mmu_lock);
--	kvm_release_pfn_clean(pfn);
-+	mmu_release_pfn_clean(pfn);
- 	return 0;
- }
-
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index bf8c42b..f075259 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -544,7 +544,7 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
- out_gpte_changed:
- 	if (sp)
- 		kvm_mmu_put_page(sp, it.sptep);
--	kvm_release_pfn_clean(pfn);
-+	mmu_release_pfn_clean(pfn);
- 	return NULL;
- }
-
-@@ -645,7 +645,7 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
-
- out_unlock:
- 	spin_unlock(&vcpu->kvm->mmu_lock);
--	kvm_release_pfn_clean(pfn);
-+	mmu_release_pfn_clean(pfn);
- 	return 0;
- }
-
+ 	r = 1;
+ 	while (r > 0) {
 -- 
 1.7.7.6
 
