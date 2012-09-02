@@ -1,294 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756017Ab2IBHtN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 03:49:13 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:37781 "EHLO
+	id S1756009Ab2IBHtK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 03:49:10 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:37778 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755964Ab2IBHrm (ORCPT
+	with ESMTP id S1755963Ab2IBHrk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 03:47:42 -0400
+	Sun, 2 Sep 2012 03:47:40 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
         Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH -v2 10/13] x86: Only direct map addresses that are marked as E820_RAM
-Date: Sun,  2 Sep 2012 00:46:56 -0700
-Message-Id: <1346572019-15806-11-git-send-email-yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH -v2 13/13] x86, 64bit: Map first 1M ram early before memblock_x86_fill()
+Date: Sun,  2 Sep 2012 00:46:59 -0700
+Message-Id: <1346572019-15806-14-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1346572019-15806-1-git-send-email-yinghai@kernel.org>
 References: <1346572019-15806-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jacob Shin <jacob.shin@amd.com>
+This one intend to fix bugs:
+when efi booting have too many memmap entries, will need to double memblock
+memory array or reserved array.
 
-Currently direct mappings are created for [ 0 to max_low_pfn<<PAGE_SHIFT )
-and [ 4GB to max_pfn<<PAGE_SHIFT ), which may include regions that are not
-backed by actual DRAM. This is fine for holes under 4GB which are covered
-by fixed and variable range MTRRs to be UC. However, we run into trouble
-on higher memory addresses which cannot be covered by MTRRs.
+For 64bit, We have low kernel mapping, and high kernel mapping.
+high kernel mapping is done early in head_64.S.
+low kernel mapping is done in init_memory_mapping.
 
-Our system with 1TB of RAM has an e820 that looks like this:
+Now we have max_pfn_mapped actually is for high mapping, so later we
+need to get buff for the doubling memblock, but we can not use it.
+as __va will return virtual address with low kernel mapping.
 
- BIOS-e820: [mem 0x0000000000000000-0x00000000000983ff] usable
- BIOS-e820: [mem 0x0000000000098400-0x000000000009ffff] reserved
- BIOS-e820: [mem 0x00000000000d0000-0x00000000000fffff] reserved
- BIOS-e820: [mem 0x0000000000100000-0x00000000c7ebffff] usable
- BIOS-e820: [mem 0x00000000c7ec0000-0x00000000c7ed7fff] ACPI data
- BIOS-e820: [mem 0x00000000c7ed8000-0x00000000c7ed9fff] ACPI NVS
- BIOS-e820: [mem 0x00000000c7eda000-0x00000000c7ffffff] reserved
- BIOS-e820: [mem 0x00000000fec00000-0x00000000fec0ffff] reserved
- BIOS-e820: [mem 0x00000000fee00000-0x00000000fee00fff] reserved
- BIOS-e820: [mem 0x00000000fff00000-0x00000000ffffffff] reserved
- BIOS-e820: [mem 0x0000000100000000-0x000000e037ffffff] usable
- BIOS-e820: [mem 0x000000e038000000-0x000000fcffffffff] reserved
- BIOS-e820: [mem 0x0000010000000000-0x0000011ffeffffff] usable
+The patch will try to map first 1M range, and find early page table space
+from BRK.
 
-and so direct mappings are created for huge memory hole between
-0x000000e038000000 to 0x0000010000000000. Even though the kernel never
-generates memory accesses in that region, since the page tables mark
-them incorrectly as being WB, our (AMD) processor ends up causing a MCE
-while doing some memory bookkeeping/optimizations around that area.
+Also add max_pfn_high_mapped to track high mapped range.
 
-This patch iterates through e820 and only direct maps ranges that are
-marked as E820_RAM, and keeps track of those pfn ranges. Depending on
-the alignment of E820 ranges, this may possibly result in using smaller
-size (i.e. 4K instead of 2M or 1G) page tables.
-
--v2: move changes from setup.c to mm/init.c, also use for_each_mem_pfn_range
-	instead.  - Yinghai Lu
--v3: add calculate_all_table_space_size() to get correct needed page table
-	size. - Yinghai Lu
-
-Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/include/asm/page_types.h |    8 +--
- arch/x86/kernel/setup.c           |    8 ++-
- arch/x86/mm/init.c                |  119 +++++++++++++++++++++++++++++++++----
- arch/x86/mm/init_64.c             |    6 +-
- 4 files changed, 116 insertions(+), 25 deletions(-)
+ arch/x86/include/asm/page_types.h |    1 +
+ arch/x86/include/asm/pgtable.h    |    1 +
+ arch/x86/kernel/head64.c          |    2 +-
+ arch/x86/kernel/setup.c           |    2 ++
+ arch/x86/mm/init.c                |   37 +++++++++++++++++++++++++++++++++++--
+ arch/x86/mm/init_64.c             |    7 ++++++-
+ 6 files changed, 46 insertions(+), 4 deletions(-)
 
 diff --git a/arch/x86/include/asm/page_types.h b/arch/x86/include/asm/page_types.h
-index 45aae6e..54c9787 100644
+index 54c9787..1903736 100644
 --- a/arch/x86/include/asm/page_types.h
 +++ b/arch/x86/include/asm/page_types.h
-@@ -51,13 +51,7 @@ static inline phys_addr_t get_max_mapped(void)
- 	return (phys_addr_t)max_pfn_mapped << PAGE_SHIFT;
- }
+@@ -45,6 +45,7 @@ extern int devmem_is_allowed(unsigned long pagenr);
  
--static inline bool pfn_range_is_mapped(unsigned long start_pfn,
--					unsigned long end_pfn)
--{
--	return end_pfn <= max_low_pfn_mapped ||
--	       (end_pfn > (1UL << (32 - PAGE_SHIFT)) &&
--		end_pfn <= max_pfn_mapped);
--}
-+bool pfn_range_is_mapped(unsigned long start_pfn, unsigned long end_pfn);
+ extern unsigned long max_low_pfn_mapped;
+ extern unsigned long max_pfn_mapped;
++extern unsigned long max_pfn_high_mapped;
  
- extern unsigned long init_memory_mapping(unsigned long start,
- 					 unsigned long end);
+ static inline phys_addr_t get_max_mapped(void)
+ {
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index ae2cabb..c67a684 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -598,6 +598,7 @@ static inline int pgd_none(pgd_t pgd)
+ 
+ extern int direct_gbpages;
+ void init_mem_mapping(void);
++void early_init_mem_mapping(void);
+ 
+ /* local pte updates need not use xchg for locking */
+ static inline pte_t native_local_ptep_get_and_clear(pte_t *ptep)
+diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+index 037df57..b11bde0 100644
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -76,7 +76,7 @@ void __init x86_64_start_kernel(char * real_mode_data)
+ 	/* Make NULL pointers segfault */
+ 	zap_identity_mappings();
+ 
+-	max_pfn_mapped = KERNEL_IMAGE_SIZE >> PAGE_SHIFT;
++	max_pfn_high_mapped = KERNEL_IMAGE_SIZE >> PAGE_SHIFT;
+ 
+ 	for (i = 0; i < NUM_EXCEPTION_VECTORS; i++) {
+ #ifdef CONFIG_EARLY_PRINTK
 diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 587dcd9..2eb91b7 100644
+index 2eb91b7..b942036 100644
 --- a/arch/x86/kernel/setup.c
 +++ b/arch/x86/kernel/setup.c
-@@ -115,9 +115,11 @@
- #include <asm/prom.h>
+@@ -896,6 +896,8 @@ void __init setup_arch(char **cmdline_p)
  
- /*
-- * end_pfn only includes RAM, while max_pfn_mapped includes all e820 entries.
-- * The direct mapping extends to max_pfn_mapped, so that we can directly access
-- * apertures, ACPI and other tables without having to play with fixmaps.
-+ * max_low_pfn_mapped: highest direct mapped pfn under 4GB
-+ * max_pfn_mapped:     highest direct mapped pfn over 4GB
-+ *
-+ * The direct mapping only covers E820_RAM regions, so the ranges and gaps are
-+ * represented by pfn_mapped
-  */
- unsigned long max_low_pfn_mapped;
- unsigned long max_pfn_mapped;
+ 	reserve_ibft_region();
+ 
++	early_init_mem_mapping();
++
+ 	/*
+ 	 * Need to conclude brk, before memblock_x86_fill()
+ 	 *  it could use memblock_find_in_range, could overlap with
 diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index a475d7f..47b6e41 100644
+index 343d925..c96b731 100644
 --- a/arch/x86/mm/init.c
 +++ b/arch/x86/mm/init.c
-@@ -234,6 +234,38 @@ static unsigned long __init calculate_table_space_size(unsigned long begin,
- 	return tables;
+@@ -377,8 +377,6 @@ void __init init_mem_mapping(void)
+ {
+ 	unsigned long tables = 0, good_end, end;
+ 
+-	probe_page_size_mask();
+-
+ 	/*
+ 	 * Find space for the kernel direct mapping tables.
+ 	 *
+@@ -437,6 +435,41 @@ void __init init_mem_mapping(void)
+ 	early_memtest(0, max_pfn_mapped << PAGE_SHIFT);
  }
  
-+static unsigned long __init calculate_all_table_space_size(void)
++RESERVE_BRK(early_pgt_alloc, 65536);
++
++void  __init early_init_mem_mapping(void)
 +{
-+	unsigned long start_pfn, end_pfn;
 +	unsigned long tables;
-+	int i;
++	phys_addr_t base;
++	unsigned long start = 0, end = ISA_END_ADDRESS;
 +
-+	/* the ISA range is always mapped regardless of memory holes */
-+	tables = calculate_table_space_size(0, ISA_END_ADDRESS);
++	probe_page_size_mask();
 +
-+	for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, NULL) {
-+		u64 start = start_pfn << PAGE_SHIFT;
-+		u64 end = end_pfn << PAGE_SHIFT;
++	if (max_pfn_mapped)
++		return;
 +
-+		if (end <= ISA_END_ADDRESS)
-+			continue;
++	tables = calculate_table_space_size(start, end);
++	base = __pa(extend_brk(tables, PAGE_SIZE));
 +
-+		if (start < ISA_END_ADDRESS)
-+			start = ISA_END_ADDRESS;
-+#ifdef CONFIG_X86_32
-+		/* on 32 bit, we only map up to max_low_pfn */
-+		if ((start >> PAGE_SHIFT) >= max_low_pfn)
-+			continue;
++	pgt_buf_start = base >> PAGE_SHIFT;
++	pgt_buf_end = pgt_buf_start;
++	pgt_buf_top = pgt_buf_start + (tables >> PAGE_SHIFT);
 +
-+		if ((end >> PAGE_SHIFT) > max_low_pfn)
-+			end = max_low_pfn << PAGE_SHIFT;
-+#endif
-+		tables += calculate_table_space_size(start, end);
-+	}
++	printk(KERN_DEBUG "kernel direct mapping tables up to %#lx @ [mem %#010lx-%#010lx] prealloc\n",
++		end - 1, pgt_buf_start << PAGE_SHIFT,
++		(pgt_buf_top << PAGE_SHIFT) - 1);
 +
-+	return tables;
-+}
++	init_memory_mapping(start, end);
 +
- static void __init find_early_table_space(unsigned long start,
- 					  unsigned long good_end,
- 					  unsigned long tables)
-@@ -249,6 +281,33 @@ static void __init find_early_table_space(unsigned long start,
- 	pgt_buf_top = pgt_buf_start + (tables >> PAGE_SHIFT);
- }
- 
-+static struct range pfn_mapped[E820_X_MAX];
-+static int nr_pfn_mapped;
++	printk(KERN_DEBUG "kernel direct mapping tables up to %#lx @ [mem %#010lx-%#010lx] final\n",
++		end - 1, pgt_buf_start << PAGE_SHIFT,
++		(pgt_buf_end << PAGE_SHIFT) - 1);
++	/* return not used brk */
++	_brk_end -= (pgt_buf_top - pgt_buf_end) << PAGE_SHIFT;
 +
-+static void add_pfn_range_mapped(unsigned long start_pfn, unsigned long end_pfn)
-+{
-+	nr_pfn_mapped = add_range_with_merge(pfn_mapped, E820_X_MAX,
-+					     nr_pfn_mapped, start_pfn, end_pfn);
-+	nr_pfn_mapped = clean_sort_range(pfn_mapped, E820_X_MAX);
-+
-+	max_pfn_mapped = max(max_pfn_mapped, end_pfn);
-+
-+	if (end_pfn <= (1UL << (32 - PAGE_SHIFT)))
-+		max_low_pfn_mapped = max(max_low_pfn_mapped, end_pfn);
-+}
-+
-+bool pfn_range_is_mapped(unsigned long start_pfn, unsigned long end_pfn)
-+{
-+	int i;
-+
-+	for (i = 0; i < nr_pfn_mapped; i++)
-+		if ((start_pfn >= pfn_mapped[i].start) &&
-+		    (end_pfn <= pfn_mapped[i].end))
-+			return true;
-+
-+	return false;
++	pgt_buf_top = 0;
 +}
 +
  /*
-  * Setup the direct mapping of the physical memory at PAGE_OFFSET.
-  * This runs before bootmem is initialized and gets pages directly from
-@@ -280,9 +339,55 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 
- 	__flush_tlb_all();
- 
-+	add_pfn_range_mapped(start >> PAGE_SHIFT, ret >> PAGE_SHIFT);
-+
- 	return ret >> PAGE_SHIFT;
- }
- 
-+/*
-+ * Iterate through E820 memory map and create direct mappings for only E820_RAM
-+ * regions. We cannot simply create direct mappings for all pfns from
-+ * [0 to max_low_pfn) and [4GB to max_pfn) because of possible memory holes in
-+ * high addresses that cannot be marked as UC by fixed/variable range MTRRs.
-+ * Depending on the alignment of E820 ranges, this may possibly result in using
-+ * smaller size (i.e. 4K instead of 2M or 1G) page tables.
-+ */
-+static void __init init_all_memory_mapping(void)
-+{
-+	unsigned long start_pfn, end_pfn;
-+	int i;
-+
-+	/* the ISA range is always mapped regardless of memory holes */
-+	init_memory_mapping(0, ISA_END_ADDRESS);
-+
-+	for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, NULL) {
-+		u64 start = start_pfn << PAGE_SHIFT;
-+		u64 end = end_pfn << PAGE_SHIFT;
-+
-+		if (end <= ISA_END_ADDRESS)
-+			continue;
-+
-+		if (start < ISA_END_ADDRESS)
-+			start = ISA_END_ADDRESS;
-+#ifdef CONFIG_X86_32
-+		/* on 32 bit, we only map up to max_low_pfn */
-+		if ((start >> PAGE_SHIFT) >= max_low_pfn)
-+			continue;
-+
-+		if ((end >> PAGE_SHIFT) > max_low_pfn)
-+			end = max_low_pfn << PAGE_SHIFT;
-+#endif
-+		init_memory_mapping(start, end);
-+	}
-+
-+#ifdef CONFIG_X86_64
-+	if (max_pfn > max_low_pfn) {
-+		/* can we preseve max_low_pfn ?*/
-+		max_low_pfn = max_pfn;
-+	}
-+#endif
-+}
-+
- void __init init_mem_mapping(void)
- {
- 	unsigned long tables, good_end, end;
-@@ -303,23 +408,15 @@ void __init init_mem_mapping(void)
- 	end = max_low_pfn << PAGE_SHIFT;
- 	good_end = max_pfn_mapped << PAGE_SHIFT;
- #endif
--	tables = calculate_table_space_size(0, end);
-+	tables = calculate_all_table_space_size();
- 	find_early_table_space(0, good_end, tables);
- 	printk(KERN_DEBUG "kernel direct mapping tables up to %#lx @ [mem %#010lx-%#010lx] prealloc\n",
- 		end - 1, pgt_buf_start << PAGE_SHIFT,
- 		(pgt_buf_top << PAGE_SHIFT) - 1);
- 
--	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
--	max_pfn_mapped = max_low_pfn_mapped;
-+	max_pfn_mapped = 0; /* will get exact value next */
-+	init_all_memory_mapping();
- 
--#ifdef CONFIG_X86_64
--	if (max_pfn > max_low_pfn) {
--		max_pfn_mapped = init_memory_mapping(1UL<<32,
--						     max_pfn<<PAGE_SHIFT);
--		/* can we preseve max_low_pfn ?*/
--		max_low_pfn = max_pfn;
--	}
--#endif
- 	/*
- 	 * Reserve the kernel pagetable pages we used (pgt_buf_start -
- 	 * pgt_buf_end) and free the other ones (pgt_buf_end - pgt_buf_top)
+  * devmem_is_allowed() checks to see if /dev/mem access to a certain address
+  * is valid. The argument is a physical page number.
 diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 2b6b4a3..ab558eb 100644
+index ab558eb..832ac89 100644
 --- a/arch/x86/mm/init_64.c
 +++ b/arch/x86/mm/init_64.c
-@@ -657,13 +657,11 @@ int arch_add_memory(int nid, u64 start, u64 size)
+@@ -286,6 +286,7 @@ void __init init_extra_mapping_uc(unsigned long phys, unsigned long size)
+ 	__init_extra_mapping(phys, size, PAGE_KERNEL_LARGE_NOCACHE);
+ }
+ 
++unsigned long max_pfn_high_mapped;
+ /*
+  * The head.S code sets up the kernel high mapping:
+  *
+@@ -302,7 +303,8 @@ void __init init_extra_mapping_uc(unsigned long phys, unsigned long size)
+ void __init cleanup_highmap(void)
  {
- 	struct pglist_data *pgdat = NODE_DATA(nid);
- 	struct zone *zone = pgdat->node_zones + ZONE_NORMAL;
--	unsigned long last_mapped_pfn, start_pfn = start >> PAGE_SHIFT;
-+	unsigned long start_pfn = start >> PAGE_SHIFT;
- 	unsigned long nr_pages = size >> PAGE_SHIFT;
- 	int ret;
+ 	unsigned long vaddr = __START_KERNEL_map;
+-	unsigned long vaddr_end = __START_KERNEL_map + (max_pfn_mapped << PAGE_SHIFT);
++	unsigned long vaddr_end = __START_KERNEL_map +
++				 (max_pfn_high_mapped << PAGE_SHIFT);
+ 	unsigned long end = roundup((unsigned long)_brk_end, PMD_SIZE) - 1;
+ 	pmd_t *pmd = level2_kernel_pgt;
  
--	last_mapped_pfn = init_memory_mapping(start, start + size);
--	if (last_mapped_pfn > max_pfn_mapped)
--		max_pfn_mapped = last_mapped_pfn;
-+	init_memory_mapping(start, start + size);
+@@ -312,6 +314,9 @@ void __init cleanup_highmap(void)
+ 		if (vaddr < (unsigned long) _text || vaddr > end)
+ 			set_pmd(pmd, __pmd(0));
+ 	}
++	max_pfn_high_mapped = __pa(end) >> PAGE_SHIFT;
++
++	pr_info("max_pfn_high_mapped: %lx\n", max_pfn_high_mapped);
+ }
  
- 	ret = __add_pages(nid, zone, start_pfn, nr_pages);
- 	WARN_ON_ONCE(ret);
+ static __ref void *alloc_low_page(unsigned long *phys)
 -- 
 1.7.7
 
