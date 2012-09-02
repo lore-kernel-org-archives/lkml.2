@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875Ab2IBVwm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 17:52:42 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:19800 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755602Ab2IBVwi (ORCPT
+	id S1755997Ab2IBVyS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 17:54:18 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:23545 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755861Ab2IBVwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 17:52:38 -0400
+	Sun, 2 Sep 2012 17:52:41 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>,
         Taku Izumi <izumi.taku@jp.fujitsu.com>,
@@ -15,50 +15,103 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH part3 04/11] PCI: Use __pci_bus_size_bridges() directly in pci_assign_unassigned_bus_resources()
-Date: Sun,  2 Sep 2012 14:52:14 -0700
-Message-Id: <1346622741-30799-5-git-send-email-yinghai@kernel.org>
+        linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: [PATCH part3 06/11] PCI, sysfs: Create rescan_bridge under /sys/.../pci/devices/... for pci bridges
+Date: Sun,  2 Sep 2012 14:52:16 -0700
+Message-Id: <1346622741-30799-7-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1346622741-30799-1-git-send-email-yinghai@kernel.org>
 References: <1346622741-30799-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now __pci_bus_size_bridges() will not include self bridge.
-So we don't need to have our own version in
- pci_assign_unassigned_bus_resources anymore.
+Current code will create rescan for every pci device under parent bus.
+that is not right. The device is already there, there is no reason to rescan it.
+
+We could have rescan for pci bridges. less confusing.
+
+Need to move rescan attr to pci dev bridge attribute group.
+And we should rescan bridge's secondary bus instead of primary bus.
+
+-v3: Use device_type for pci dev.
+-v4: Seperate pci device type change out
+-v5: add rescan_bridge for bridge type, and still keep the old rescan.
+	may remove the old rescan later.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/pci/setup-bus.c |    8 +-------
- 1 files changed, 1 insertions(+), 7 deletions(-)
+ Documentation/ABI/testing/sysfs-bus-pci |   10 ++++++++++
+ drivers/pci/pci-sysfs.c                 |   24 ++++++++++++++++++++++++
+ 2 files changed, 34 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
-index 70d6292..054d54b 100644
---- a/drivers/pci/setup-bus.c
-+++ b/drivers/pci/setup-bus.c
-@@ -1519,17 +1519,11 @@ EXPORT_SYMBOL_GPL(pci_assign_unassigned_bridge_resources);
+diff --git a/Documentation/ABI/testing/sysfs-bus-pci b/Documentation/ABI/testing/sysfs-bus-pci
+index 34f5110..95f0f37 100644
+--- a/Documentation/ABI/testing/sysfs-bus-pci
++++ b/Documentation/ABI/testing/sysfs-bus-pci
+@@ -111,6 +111,16 @@ Description:
+ 		from this part of the device tree.
+ 		Depends on CONFIG_HOTPLUG.
  
- void pci_assign_unassigned_bus_resources(struct pci_bus *bus)
++What:		/sys/bus/pci/devices/.../rescan_bridge
++Date:		February 2012
++Contact:	Linux PCI developers <linux-pci@vger.kernel.org>
++Description:
++		Writing a non-zero value to this attribute will
++		force a rescan of the bridge and all child buses, and
++		re-discover devices removed earlier from this part of
++		the device tree.
++		Depends on CONFIG_HOTPLUG.
++
+ What:		/sys/bus/pci/devices/.../reset
+ Date:		July 2009
+ Contact:	Michael S. Tsirkin <mst@redhat.com>
+diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+index e37a0e0..2100c04 100644
+--- a/drivers/pci/pci-sysfs.c
++++ b/drivers/pci/pci-sysfs.c
+@@ -327,6 +327,27 @@ dev_rescan_store(struct device *dev, struct device_attribute *attr,
+ 	return count;
+ }
+ 
++static ssize_t
++dev_bridge_rescan_store(struct device *dev, struct device_attribute *attr,
++		 const char *buf, size_t count)
++{
++	unsigned long val;
++	struct pci_dev *pdev = to_pci_dev(dev);
++
++	if (kstrtoul(buf, 0, &val) < 0)
++		return -EINVAL;
++
++	if (val) {
++		mutex_lock(&pci_remove_rescan_mutex);
++		pci_rescan_bus(pdev->subordinate);
++		mutex_unlock(&pci_remove_rescan_mutex);
++	}
++	return count;
++}
++
++static struct device_attribute pci_dev_bridge_rescan_attr =
++	__ATTR(rescan_bridge, (S_IWUSR|S_IWGRP), NULL, dev_bridge_rescan_store);
++
+ static void remove_callback(struct device *dev)
  {
--	struct pci_dev *dev;
- 	LIST_HEAD(add_list); /* list of resources that
- 					want additional resources */
+ 	struct pci_dev *pdev = to_pci_dev(dev);
+@@ -1371,6 +1392,9 @@ static int __init pci_sysfs_init(void)
+ late_initcall(pci_sysfs_init);
  
- 	down_read(&pci_bus_sem);
--	list_for_each_entry(dev, &bus->devices, bus_list)
--		if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE ||
--		    dev->hdr_type == PCI_HEADER_TYPE_CARDBUS)
--			if (dev->subordinate)
--				__pci_bus_size_bridges(dev->subordinate,
--						 &add_list, true);
-+	__pci_bus_size_bridges(bus, &add_list, false);
- 	up_read(&pci_bus_sem);
- 	__pci_bus_assign_resources(bus, &add_list, NULL);
- 	BUG_ON(!list_empty(&add_list));
+ static struct attribute *pci_dev_bridge_attrs[] = {
++#ifdef CONFIG_HOTPLUG
++	&pci_dev_bridge_rescan_attr.attr,
++#endif
+ 	NULL,
+ };
+ 
 -- 
 1.7.7
 
