@@ -1,128 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756026Ab2IBHtT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 03:49:19 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:40961 "EHLO
+	id S1756034Ab2IBHtR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 03:49:17 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:40968 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755870Ab2IBHr2 (ORCPT
+	with ESMTP id S1755914Ab2IBHra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 03:47:28 -0400
+	Sun, 2 Sep 2012 03:47:30 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
         Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH -v2 03/13] x86, mm: Moving init_memory_mapping calling
-Date: Sun,  2 Sep 2012 00:46:49 -0700
-Message-Id: <1346572019-15806-4-git-send-email-yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH -v2 08/13] x86: if kernel .text .data .bss are not marked as E820_RAM, complain and fix
+Date: Sun,  2 Sep 2012 00:46:54 -0700
+Message-Id: <1346572019-15806-9-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1346572019-15806-1-git-send-email-yinghai@kernel.org>
 References: <1346572019-15806-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-from setup.c to mm/init.c
+From: Jacob Shin <jacob.shin@amd.com>
 
-So could update all related calling together later
+There could be cases where user supplied memmap=exactmap memory
+mappings do not mark the region where the kernel .text .data and
+.bss reside as E820_RAM, as reported here:
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+https://lkml.org/lkml/2012/8/14/86
+
+Handle it by complaining, and adding the range back into the e820.
+
+Signed-off-by: Jacob Shin <jacob.shin@amd.com>
 ---
- arch/x86/include/asm/init.h    |    1 -
- arch/x86/include/asm/pgtable.h |    2 +-
- arch/x86/kernel/setup.c        |   13 +------------
- arch/x86/mm/init.c             |   19 ++++++++++++++++++-
- 4 files changed, 20 insertions(+), 15 deletions(-)
+ arch/x86/kernel/setup.c |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/init.h b/arch/x86/include/asm/init.h
-index adcc0ae..4f13998 100644
---- a/arch/x86/include/asm/init.h
-+++ b/arch/x86/include/asm/init.h
-@@ -12,7 +12,6 @@ kernel_physical_mapping_init(unsigned long start,
- 			     unsigned long end,
- 			     unsigned long page_size_mask);
- 
--
- extern unsigned long __initdata pgt_buf_start;
- extern unsigned long __meminitdata pgt_buf_end;
- extern unsigned long __meminitdata pgt_buf_top;
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index e47e4db..ae2cabb 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -597,7 +597,7 @@ static inline int pgd_none(pgd_t pgd)
- #ifndef __ASSEMBLY__
- 
- extern int direct_gbpages;
--void probe_page_size_mask(void);
-+void init_mem_mapping(void);
- 
- /* local pte updates need not use xchg for locking */
- static inline pte_t native_local_ptep_get_and_clear(pte_t *ptep)
 diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index d6e8c03..c30c78c 100644
+index c30c78c..587dcd9 100644
 --- a/arch/x86/kernel/setup.c
 +++ b/arch/x86/kernel/setup.c
-@@ -912,20 +912,9 @@ void __init setup_arch(char **cmdline_p)
- 	setup_real_mode();
+@@ -831,6 +831,20 @@ void __init setup_arch(char **cmdline_p)
+ 	insert_resource(&iomem_resource, &data_resource);
+ 	insert_resource(&iomem_resource, &bss_resource);
  
- 	init_gbpages();
--	probe_page_size_mask();
- 
--	/* max_pfn_mapped is updated here */
--	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
--	max_pfn_mapped = max_low_pfn_mapped;
-+	init_mem_mapping();
- 
--#ifdef CONFIG_X86_64
--	if (max_pfn > max_low_pfn) {
--		max_pfn_mapped = init_memory_mapping(1UL<<32,
--						     max_pfn<<PAGE_SHIFT);
--		/* can we preseve max_low_pfn ?*/
--		max_low_pfn = max_pfn;
--	}
--#endif
- 	memblock.current_limit = get_max_mapped();
- 	dma_contiguous_reserve(0);
- 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 7d05e28..15a6a38 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -92,7 +92,7 @@ static void __init find_early_table_space(struct map_range *mr,
- 		(pgt_buf_top << PAGE_SHIFT) - 1);
- }
- 
--void probe_page_size_mask(void)
-+static void __init probe_page_size_mask(void)
- {
- #if !defined(CONFIG_DEBUG_PAGEALLOC) && !defined(CONFIG_KMEMCHECK)
- 	/*
-@@ -312,6 +312,23 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 	return ret >> PAGE_SHIFT;
- }
- 
-+void __init init_mem_mapping(void)
-+{
-+	probe_page_size_mask();
++	/*
++	 * Complain if .text .data and .bss are not marked as E820_RAM and
++	 * attempt to fix it by adding the range. We may have a confused BIOS,
++	 * or the user may have incorrectly supplied it via memmap=exactmap. If
++	 * we really are running on top non-RAM, we will crash later anyways.
++	 */
++	if (!e820_all_mapped(code_resource.start, __pa(__brk_limit), E820_RAM)) {
++		pr_warn(".text .data .bss are not marked as E820_RAM!\n");
 +
-+	/* max_pfn_mapped is updated here */
-+	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
-+	max_pfn_mapped = max_low_pfn_mapped;
-+
-+#ifdef CONFIG_X86_64
-+	if (max_pfn > max_low_pfn) {
-+		max_pfn_mapped = init_memory_mapping(1UL<<32,
-+						     max_pfn<<PAGE_SHIFT);
-+		/* can we preseve max_low_pfn ?*/
-+		max_low_pfn = max_pfn;
++		e820_add_region(code_resource.start,
++				__pa(__brk_limit) - code_resource.start + 1,
++				E820_RAM);
 +	}
-+#endif
-+}
- 
- /*
-  * devmem_is_allowed() checks to see if /dev/mem access to a certain address
++
+ 	trim_bios_range();
+ #ifdef CONFIG_X86_32
+ 	if (ppro_with_ram_bug()) {
 -- 
 1.7.7
 
