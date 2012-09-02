@@ -1,66 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754304Ab2IBQar (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 12:30:47 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:50610 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754121Ab2IBQap (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 12:30:45 -0400
-Date: Sun, 2 Sep 2012 09:30:30 -0700
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Kent Yoder <key@linux.vnet.ibm.com>
-Cc: James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net, kernel-janitors@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH] tpm: fix tpm_acpi sparse warning on different address
- spaces
-Message-ID: <20120902163030.GB1840@mwanda>
-References: <20120830143839.GA9589@linux.vnet.ibm.com>
- <20120830174556.GD20741@mwanda>
- <20120830192155.GA25524@linux.vnet.ibm.com>
+	id S1754297Ab2IBQii (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 12:38:38 -0400
+Received: from mga11.intel.com ([192.55.52.93]:65296 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754128Ab2IBQih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Sep 2012 12:38:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,356,1344236400"; 
+   d="scan'208";a="217292855"
+Date: Mon, 3 Sep 2012 00:38:31 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: =?utf-8?B?QmrDuHJu?= Mork <bjorn@mork.no>
+Cc: linux-input@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        chunkeey@googlemail.com, linville@tuxdriver.com,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: input0: bad kobj_uevent_env content in show_uevent()
+Message-ID: <20120902163831.GA26191@localhost>
+References: <20120902075946.GA21198@localhost>
+ <87harg35kh.fsf@nemi.mork.no>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20120830192155.GA25524@linux.vnet.ibm.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <87harg35kh.fsf@nemi.mork.no>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 02:21:55PM -0500, Kent Yoder wrote:
-> On Thu, Aug 30, 2012 at 10:45:56AM -0700, Dan Carpenter wrote:
-> > On Thu, Aug 30, 2012 at 09:38:41AM -0500, Kent Yoder wrote:
-> > > acpi_os_map_memory expects its return value to be in the __iomem address
-> > > space. Cast it back later when used in a memcpy to avoid the same sparse
-> > > warning there.
-> > > 
-> > > Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
-> > 
-> > I can't download linux-next right now but I don't think this is the
-> > correct fix.  I don't think you can memcpy() directly from __iomem.
-> > The static checker is warning about a valid bug which should be
-> > addressed instead of just casted away and silenced.
+On Sun, Sep 02, 2012 at 03:41:34PM +0200, Bjørn Mork wrote:
+> Fengguang Wu <fengguang.wu@intel.com> writes:
 > 
->   I took a look at other uses of the return from acpi_os_map_memory(),
-> such as acpi_tb_parse_fadt(), which passes the returned pointer to
-> acpi_tb_create_local_fadt(), which uses ACPI_MEMCPY on it, which is just
-> memcpy.  This code lives in drivers/acpi.
+> > After the __devinit* removal series, I can still get kernel panic in
+> > show_uevent(). So there are more sources of bug..
+> >
+> > Debug patch:
+> >
+> > @@ -343,8 +343,11 @@ static ssize_t show_uevent(struct device
+> >                 goto out;
+> >
+> >         /* copy keys to file */
+> > -       for (i = 0; i < env->envp_idx; i++)
+> > +       dev_err(dev, "uevent %d env[%d]: %s/.../%s\n", env->buflen, env->envp_idx, top_kobj->name, dev->kobj.name);
+> > +       for (i = 0; i < env->envp_idx; i++) {
+> > +               printk(KERN_ERR "uevent %d env[%d]: %s\n", (int)count, i, env->envp[i]);
+> >                 count += sprintf(&buf[count], "%s\n", env->envp[i]);
+> > +       }
+> >
+> > Oops message, the env[] is again not properly initilized:
+> >
+> > [   44.068623] input input0: uevent 61 env[805306368]: input0/.../input0
+> > [   44.069552] uevent 0 env[0]: (null)
 > 
+> This is a completely different CONFIG_HOTPLUG problem, only
+> demonstrating another reason why CONFIG_HOTPLUG should go away.  I had a
+> hard time trying to disable it anyway ;-)
+> 
+> The problem this time is lots of code assuming that a call to
+> add_uevent_var() will guarantee that env->buflen > 0.  This is not true
+> if CONFIG_HOTPLUG is unset.  So things like this end up overwriting
+> env->envp_idx because the array index is -1:
+> 
+> 	if (add_uevent_var(env, "MODALIAS="))
+> 		return -ENOMEM;
+>         len = input_print_modalias(&env->buf[env->buflen - 1],
+> 				   sizeof(env->buf) - env->buflen,
+> 				   dev, 0);
+> 
+> 
+> Don't know what the best action is, given that there seem to be a *lot*
+> of this around the kernel.  This patch "fixes" the problem for me, but I
 
-Sparse finds that bug as well.  ;)
+It also works reliably for me: 300 boots without a single failure.
 
-drivers/acpi/acpica/tbfadt.c:247:15: warning: incorrect type in assignment (different address spaces)
-drivers/acpi/acpica/tbfadt.c:247:15:    expected struct acpi_table_header *table
-drivers/acpi/acpica/tbfadt.c:247:15:    got void [noderef] <asn:2>*
-drivers/acpi/acpica/tbfadt.c:266:30: warning: incorrect type in argument 1 (different address spaces)
-drivers/acpi/acpica/tbfadt.c:266:30:    expected void [noderef] <asn:2>*logical_address
-drivers/acpi/acpica/tbfadt.c:266:30:    got struct acpi_table_header *table
+Tested-by: Fengguang Wu <fengguang.wu@intel.com> 
 
-It should be memcpy_fromio() probably.
-
-regards,
-dan carpenter
-
+Thanks!
+Fengguang
