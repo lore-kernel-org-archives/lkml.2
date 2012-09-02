@@ -1,230 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754413Ab2IBFtS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 01:49:18 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62276 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751332Ab2IBFtQ (ORCPT
+	id S1754104Ab2IBGGG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 02:06:06 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:50240 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752138Ab2IBGGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 01:49:16 -0400
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Colin Cross <ccross@android.com>,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        John Stultz <john.stultz@linaro.org>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 4/4] timerfd: Add support for deferrable timers
-Date: Sat,  1 Sep 2012 22:45:22 -0700
-Message-Id: <1346564722-14408-4-git-send-email-anton.vorontsov@linaro.org>
-X-Mailer: git-send-email 1.7.11.5
-In-Reply-To: <20120902054335.GA12741@lizard>
-References: <20120902054335.GA12741@lizard>
+	Sun, 2 Sep 2012 02:06:03 -0400
+X-Originating-IP: 217.70.178.150
+X-Originating-IP: 50.43.46.74
+Date: Sat, 1 Sep 2012 23:05:54 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 11/23] rcu: Adjust debugfs tracing for
+ kthread-based quiescent-state forcing
+Message-ID: <20120902060554.GC7767@leaf>
+References: <20120830181811.GA29154@linux.vnet.ibm.com>
+ <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346350718-30937-11-git-send-email-paulmck@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346350718-30937-11-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements a userland-side API for generic deferrable timers,
-per linux/timer.h:
+On Thu, Aug 30, 2012 at 11:18:26AM -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> 
+> Moving quiescent-state forcing into a kthread dispenses with the need
+> for the ->n_rp_need_fqs field, so this commit removes it.
+> 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
- * A deferrable timer will work normally when the system is busy, but
- * will not cause a CPU to come out of idle just to service it; instead,
- * the timer will be serviced when the CPU eventually wakes up with a
- * subsequent non-deferrable timer.
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-These timers are crucial for power saving, i.e. periodic tasks that want
-to work in background when the system is under use, but don't want to
-cause wakeups themselves.
-
-The deferred timers are somewhat orthogonal to high-res external timers,
-since the deferred timer is tied to the system load, not just to some
-external decrementer source.
-
-So, currently, the implementation has a HZ precision, and the maximum
-interval is jiffies resolution (i.e. with HZ=1000, on 32 bit that would
-be around max 49 days).  Of course we can implement longer timeouts by
-rearming the timer, although it probably  wouldn't make much sense in
-real world, so we keep it simple and just return E2BIG if we don't like
-the interval.
-
-Note that the code is still using time calculation that is done by the
-hrtimer routines, so we pretty much reuse everything except for the
-timer events themselves (i.e. we use calculation results of
-hrtimer_forward_now() and hrtimer_expires_remaining(), but never start
-the hrtimer). So the code path is pretty much the same for both hrtimers
-and deferrable timers.
-
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
----
- fs/timerfd.c            | 65 ++++++++++++++++++++++++++++++++++++++++++++++---
- include/linux/timerfd.h |  4 ++-
- 2 files changed, 65 insertions(+), 4 deletions(-)
-
-diff --git a/fs/timerfd.c b/fs/timerfd.c
-index 222db32..d608a57 100644
---- a/fs/timerfd.c
-+++ b/fs/timerfd.c
-@@ -18,6 +18,7 @@
- #include <linux/list.h>
- #include <linux/spinlock.h>
- #include <linux/time.h>
-+#include <linux/timer.h>
- #include <linux/hrtimer.h>
- #include <linux/anon_inodes.h>
- #include <linux/timerfd.h>
-@@ -26,6 +27,8 @@
- 
- struct timerfd_ctx {
- 	struct hrtimer tmr;
-+	struct timer_list dtmr;
-+	bool deferrable;
- 	ktime_t tintv;
- 	ktime_t moffs;
- 	wait_queue_head_t wqh;
-@@ -63,6 +66,11 @@ static enum hrtimer_restart timerfd_tmrproc(struct hrtimer *htmr)
- 	return HRTIMER_NORESTART;
- }
- 
-+static void timerfd_dtmrproc(unsigned long data)
-+{
-+	timerfd_expire((struct timerfd_ctx *)data);
-+}
-+
- /*
-  * Called when the clock was set to cancel the timers in the cancel
-  * list. This will wake up processes waiting on these timers. The
-@@ -131,6 +139,30 @@ static ktime_t timerfd_get_remaining(struct timerfd_ctx *ctx)
- 	return remaining.tv64 < 0 ? ktime_set(0, 0): remaining;
- }
- 
-+static bool timerfd_deferrable_valid(ktime_t intv)
-+{
-+	ktime_t max;
-+
-+	jiffies_to_ktime(MAX_JIFFY_OFFSET, &max);
-+	if (intv.tv64 > max.tv64)
-+		return 0;
-+	return 1;
-+}
-+
-+static int timerfd_setup_deferrable(struct timerfd_ctx *ctx)
-+{
-+	ktime_t rem = timerfd_get_remaining(ctx);
-+
-+	if (ctx->clockid != CLOCK_MONOTONIC)
-+		return -EINVAL;
-+	if (!timerfd_deferrable_valid(ctx->tintv) ||
-+			!timerfd_deferrable_valid(rem))
-+		return -E2BIG;
-+
-+	mod_timer(&ctx->dtmr, jiffies + ktime_to_jiffies(&rem) + 1);
-+	return 0;
-+}
-+
- static int timerfd_setup(struct timerfd_ctx *ctx, int flags,
- 			 const struct itimerspec *ktmr)
- {
-@@ -148,8 +180,18 @@ static int timerfd_setup(struct timerfd_ctx *ctx, int flags,
- 	hrtimer_init(&ctx->tmr, clockid, htmode);
- 	hrtimer_set_expires(&ctx->tmr, texp);
- 	ctx->tmr.function = timerfd_tmrproc;
-+	ctx->dtmr.function = timerfd_dtmrproc;
-+	ctx->dtmr.data = (unsigned long)ctx;
- 	if (texp.tv64 != 0) {
--		hrtimer_start(&ctx->tmr, texp, htmode);
-+		if (ctx->deferrable) {
-+			int ret;
-+
-+			ret = timerfd_setup_deferrable(ctx);
-+			if (ret)
-+				return ret;
-+		} else {
-+			hrtimer_start(&ctx->tmr, texp, htmode);
-+		}
- 		if (timerfd_canceled(ctx))
- 			return -ECANCELED;
- 	}
-@@ -162,6 +204,7 @@ static int timerfd_release(struct inode *inode, struct file *file)
- 
- 	timerfd_remove_cancel(ctx);
- 	hrtimer_cancel(&ctx->tmr);
-+	del_timer_sync(&ctx->dtmr);
- 	kfree_rcu(ctx, rcu);
- 	return 0;
- }
-@@ -186,7 +229,12 @@ static u64 timerfd_rearm(struct timerfd_ctx *ctx)
- {
- 	u64 orun = hrtimer_forward_now(&ctx->tmr, ctx->tintv) - 1;
- 
--	hrtimer_restart(&ctx->tmr);
-+	if (ctx->deferrable)
-+		mod_timer(&ctx->dtmr, jiffies +
-+			  ktime_to_jiffies(&ctx->tintv) + 1);
-+	else
-+		hrtimer_restart(&ctx->tmr);
-+
- 	return orun;
- }
- 
-@@ -280,6 +328,7 @@ SYSCALL_DEFINE2(timerfd_create, int, clockid, int, flags)
- 	init_waitqueue_head(&ctx->wqh);
- 	ctx->clockid = clockid;
- 	hrtimer_init(&ctx->tmr, clockid, HRTIMER_MODE_ABS);
-+	init_timer_deferrable(&ctx->dtmr);
- 	ctx->moffs = ktime_get_monotonic_offset();
- 
- 	ufd = anon_inode_getfd("[timerfd]", &timerfd_fops, ctx,
-@@ -319,13 +368,23 @@ SYSCALL_DEFINE4(timerfd_settime, int, ufd, int, flags,
- 	 * it to the new values.
- 	 */
- 	for (;;) {
-+		int canceled;
-+
- 		spin_lock_irq(&ctx->wqh.lock);
--		if (hrtimer_try_to_cancel(&ctx->tmr) >= 0)
-+		if (ctx->deferrable)
-+			canceled = try_to_del_timer_sync(&ctx->dtmr);
-+		else
-+			canceled = hrtimer_try_to_cancel(&ctx->tmr);
-+
-+		if (canceled >= 0)
- 			break;
- 		spin_unlock_irq(&ctx->wqh.lock);
- 		cpu_relax();
- 	}
- 
-+	/* Must set a new value after we cancel the previous timer. */
-+	ctx->deferrable = flags & TFD_TIMER_DEFERRABLE;
-+
- 	/*
- 	 * If the timer is expired and it's periodic, we need to advance it
- 	 * because the caller may want to know the previous expiration time.
-diff --git a/include/linux/timerfd.h b/include/linux/timerfd.h
-index d3b57fa..33d9842 100644
---- a/include/linux/timerfd.h
-+++ b/include/linux/timerfd.h
-@@ -20,6 +20,7 @@
-  */
- #define TFD_TIMER_ABSTIME (1 << 0)
- #define TFD_TIMER_CANCEL_ON_SET (1 << 1)
-+#define TFD_TIMER_DEFERRABLE (1 << 2)
- #define TFD_CLOEXEC O_CLOEXEC
- #define TFD_NONBLOCK O_NONBLOCK
- 
-@@ -27,6 +28,7 @@
- /* Flags for timerfd_create.  */
- #define TFD_CREATE_FLAGS TFD_SHARED_FCNTL_FLAGS
- /* Flags for timerfd_settime.  */
--#define TFD_SETTIME_FLAGS (TFD_TIMER_ABSTIME | TFD_TIMER_CANCEL_ON_SET)
-+#define TFD_SETTIME_FLAGS (TFD_TIMER_ABSTIME | TFD_TIMER_CANCEL_ON_SET | \
-+			   TFD_TIMER_DEFERRABLE)
- 
- #endif /* _LINUX_TIMERFD_H */
--- 
-1.7.11.5
-
+>  Documentation/RCU/trace.txt |   43 ++++++++++++++++---------------------------
+>  kernel/rcutree.h            |    1 -
+>  kernel/rcutree_trace.c      |    3 +--
+>  3 files changed, 17 insertions(+), 30 deletions(-)
+> 
+> diff --git a/Documentation/RCU/trace.txt b/Documentation/RCU/trace.txt
+> index f6f15ce..672d190 100644
+> --- a/Documentation/RCU/trace.txt
+> +++ b/Documentation/RCU/trace.txt
+> @@ -333,23 +333,23 @@ o	Each element of the form "1/1 0:127 ^0" represents one struct
+>  The output of "cat rcu/rcu_pending" looks as follows:
+>  
+>  rcu_sched:
+> -  0 np=255892 qsp=53936 rpq=85 cbr=0 cng=14417 gpc=10033 gps=24320 nf=6445 nn=146741
+> -  1 np=261224 qsp=54638 rpq=33 cbr=0 cng=25723 gpc=16310 gps=2849 nf=5912 nn=155792
+> -  2 np=237496 qsp=49664 rpq=23 cbr=0 cng=2762 gpc=45478 gps=1762 nf=1201 nn=136629
+> -  3 np=236249 qsp=48766 rpq=98 cbr=0 cng=286 gpc=48049 gps=1218 nf=207 nn=137723
+> -  4 np=221310 qsp=46850 rpq=7 cbr=0 cng=26 gpc=43161 gps=4634 nf=3529 nn=123110
+> -  5 np=237332 qsp=48449 rpq=9 cbr=0 cng=54 gpc=47920 gps=3252 nf=201 nn=137456
+> -  6 np=219995 qsp=46718 rpq=12 cbr=0 cng=50 gpc=42098 gps=6093 nf=4202 nn=120834
+> -  7 np=249893 qsp=49390 rpq=42 cbr=0 cng=72 gpc=38400 gps=17102 nf=41 nn=144888
+> +  0 np=255892 qsp=53936 rpq=85 cbr=0 cng=14417 gpc=10033 gps=24320 nn=146741
+> +  1 np=261224 qsp=54638 rpq=33 cbr=0 cng=25723 gpc=16310 gps=2849 nn=155792
+> +  2 np=237496 qsp=49664 rpq=23 cbr=0 cng=2762 gpc=45478 gps=1762 nn=136629
+> +  3 np=236249 qsp=48766 rpq=98 cbr=0 cng=286 gpc=48049 gps=1218 nn=137723
+> +  4 np=221310 qsp=46850 rpq=7 cbr=0 cng=26 gpc=43161 gps=4634 nn=123110
+> +  5 np=237332 qsp=48449 rpq=9 cbr=0 cng=54 gpc=47920 gps=3252 nn=137456
+> +  6 np=219995 qsp=46718 rpq=12 cbr=0 cng=50 gpc=42098 gps=6093 nn=120834
+> +  7 np=249893 qsp=49390 rpq=42 cbr=0 cng=72 gpc=38400 gps=17102 nn=144888
+>  rcu_bh:
+> -  0 np=146741 qsp=1419 rpq=6 cbr=0 cng=6 gpc=0 gps=0 nf=2 nn=145314
+> -  1 np=155792 qsp=12597 rpq=3 cbr=0 cng=0 gpc=4 gps=8 nf=3 nn=143180
+> -  2 np=136629 qsp=18680 rpq=1 cbr=0 cng=0 gpc=7 gps=6 nf=0 nn=117936
+> -  3 np=137723 qsp=2843 rpq=0 cbr=0 cng=0 gpc=10 gps=7 nf=0 nn=134863
+> -  4 np=123110 qsp=12433 rpq=0 cbr=0 cng=0 gpc=4 gps=2 nf=0 nn=110671
+> -  5 np=137456 qsp=4210 rpq=1 cbr=0 cng=0 gpc=6 gps=5 nf=0 nn=133235
+> -  6 np=120834 qsp=9902 rpq=2 cbr=0 cng=0 gpc=6 gps=3 nf=2 nn=110921
+> -  7 np=144888 qsp=26336 rpq=0 cbr=0 cng=0 gpc=8 gps=2 nf=0 nn=118542
+> +  0 np=146741 qsp=1419 rpq=6 cbr=0 cng=6 gpc=0 gps=0 nn=145314
+> +  1 np=155792 qsp=12597 rpq=3 cbr=0 cng=0 gpc=4 gps=8 nn=143180
+> +  2 np=136629 qsp=18680 rpq=1 cbr=0 cng=0 gpc=7 gps=6 nn=117936
+> +  3 np=137723 qsp=2843 rpq=0 cbr=0 cng=0 gpc=10 gps=7 nn=134863
+> +  4 np=123110 qsp=12433 rpq=0 cbr=0 cng=0 gpc=4 gps=2 nn=110671
+> +  5 np=137456 qsp=4210 rpq=1 cbr=0 cng=0 gpc=6 gps=5 nn=133235
+> +  6 np=120834 qsp=9902 rpq=2 cbr=0 cng=0 gpc=6 gps=3 nn=110921
+> +  7 np=144888 qsp=26336 rpq=0 cbr=0 cng=0 gpc=8 gps=2 nn=118542
+>  
+>  As always, this is once again split into "rcu_sched" and "rcu_bh"
+>  portions, with CONFIG_TREE_PREEMPT_RCU kernels having an additional
+> @@ -377,17 +377,6 @@ o	"gpc" is the number of times that an old grace period had
+>  o	"gps" is the number of times that a new grace period had started,
+>  	but this CPU was not yet aware of it.
+>  
+> -o	"nf" is the number of times that this CPU suspected that the
+> -	current grace period had run for too long, and thus needed to
+> -	be forced.
+> -
+> -	Please note that "forcing" consists of sending resched IPIs
+> -	to holdout CPUs.  If that CPU really still is in an old RCU
+> -	read-side critical section, then we really do have to wait for it.
+> -	The assumption behing "forcing" is that the CPU is not still in
+> -	an old RCU read-side critical section, but has not yet responded
+> -	for some other reason.
+> -
+>  o	"nn" is the number of times that this CPU needed nothing.  Alert
+>  	readers will note that the rcu "nn" number for a given CPU very
+>  	closely matches the rcu_bh "np" number for that same CPU.  This
+> diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+> index 1f26b1f..36916df 100644
+> --- a/kernel/rcutree.h
+> +++ b/kernel/rcutree.h
+> @@ -312,7 +312,6 @@ struct rcu_data {
+>  	unsigned long n_rp_cpu_needs_gp;
+>  	unsigned long n_rp_gp_completed;
+>  	unsigned long n_rp_gp_started;
+> -	unsigned long n_rp_need_fqs;
+>  	unsigned long n_rp_need_nothing;
+>  
+>  	/* 6) _rcu_barrier() and OOM callbacks. */
+> diff --git a/kernel/rcutree_trace.c b/kernel/rcutree_trace.c
+> index abffb48..f54f0ce 100644
+> --- a/kernel/rcutree_trace.c
+> +++ b/kernel/rcutree_trace.c
+> @@ -386,10 +386,9 @@ static void print_one_rcu_pending(struct seq_file *m, struct rcu_data *rdp)
+>  		   rdp->n_rp_report_qs,
+>  		   rdp->n_rp_cb_ready,
+>  		   rdp->n_rp_cpu_needs_gp);
+> -	seq_printf(m, "gpc=%ld gps=%ld nf=%ld nn=%ld\n",
+> +	seq_printf(m, "gpc=%ld gps=%ld nn=%ld\n",
+>  		   rdp->n_rp_gp_completed,
+>  		   rdp->n_rp_gp_started,
+> -		   rdp->n_rp_need_fqs,
+>  		   rdp->n_rp_need_nothing);
+>  }
+>  
+> -- 
+> 1.7.8
+> 
