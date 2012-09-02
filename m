@@ -1,68 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751362Ab2IBFXM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 01:23:12 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:55205 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870Ab2IBFXK (ORCPT
+	id S1751832Ab2IBFks (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 01:40:48 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:44849 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750923Ab2IBFkq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 01:23:10 -0400
-X-Originating-IP: 217.70.178.151
-X-Originating-IP: 50.43.46.74
-Date: Sat, 1 Sep 2012 22:23:02 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 10/23] rcu: Allow RCU quiescent-state
- forcing to be preempted
-Message-ID: <20120902052301.GB7767@leaf>
-References: <20120830181811.GA29154@linux.vnet.ibm.com>
- <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346350718-30937-10-git-send-email-paulmck@linux.vnet.ibm.com>
+	Sun, 2 Sep 2012 01:40:46 -0400
+X-Spam-Score: -100.8
+Message-ID: <5042F1A2.6090407@asianux.com>
+Date: Sun, 02 Sep 2012 13:41:54 +0800
+From: gchen <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346350718-30937-10-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jeff Layton <jlayton@redhat.com>
+CC: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [QUESTION] about NFS sub system between Public Kernel and Red
+ Hat Kernel.
+References: <50404E40.3070702@asianux.com> <20120831070213.6e350dd1@corrin.poochiereds.net>
+In-Reply-To: <20120831070213.6e350dd1@corrin.poochiereds.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 11:18:25AM -0700, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> 
-> RCU quiescent-state forcing is currently carried out without preemption
-> points, which can result in excessive latency spikes on large systems
-> (many hundreds or thousands of CPUs).  This patch therefore inserts
-> a voluntary preemption point into force_qs_rnp(), which should greatly
-> reduce the magnitude of these spikes.
-> 
-> Reported-by: Mike Galbraith <mgalbraith@suse.de>
-> Reported-by: Dimitri Sivanich <sivanich@sgi.com>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+于 2012年08月31日 22:02, Jeff Layton 写道:
+> On Fri, 31 Aug 2012 13:40:16 +0800
+> gchen <gang.chen@asianux.com> wrote:
+>
+>> Hi linux-nfs@vger.kernel.org
+>>
+>> I have 1 question, and also 2 conclusions which need confirm.
+>>
+>>
+>> 1) Question:
+>>
+>> Jeff Layton said in Red Hat Bugzilla (bug 848706):
+>> "Have configuration where the same host is acting as both NFS client
+>> and server. That's a configuration known to cause deadlocks."
+>>
+>> Does it mean that the public Linux kernel (not Red Hat) also can cause
+>> deadlocks if NFS client and server are under the same machine ?
+>>
+> Yes.
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+I will communicate with LTP (Linux Test Project) to confirm it, too.
 
->  kernel/rcutree.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index 79c2c28..cce73ff 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -1784,6 +1784,7 @@ static void force_qs_rnp(struct rcu_state *rsp, int (*f)(struct rcu_data *))
->  	struct rcu_node *rnp;
->  
->  	rcu_for_each_leaf_node(rsp, rnp) {
-> +		cond_resched();
->  		mask = 0;
->  		raw_spin_lock_irqsave(&rnp->lock, flags);
->  		if (!rcu_gp_in_progress(rsp)) {
-> -- 
-> 1.7.8
-> 
+And, it will be better if other members in linux-nfs@vger.kernel.org
+also confirm it.
+
+>> 2) Confirm 1: (better by Jeff Layton)
+>>
+>> For function nfs_commit_set_lock in ./fs/nfs/write.c
+>>
+>> for latest public kernel version:
+>> the parameters of out_of_line_wait_on_bit_lock() are
+>> (&nfsi->flags, NFS_INO_COMMIT, nfs_wait_killable, TASK_KILLABLE)
+>> for Red Hat kernel version: kernel-2.6.18-308.4.1.el5
+>> the parameters of out_of_line_wait_on_bit_lock() are
+>> (&nfsi->flags, NFS_INO_COMMIT,
+>> nfs_wait_bit_uninterruptible, TASK_UNINTERRUPTIBLE)
+>>
+>> It means for red hat version:
+>> when deadlock occurs, we can not boot machine in normal way
+>> (it is true for my test machine, the deadlock task can not be killed)
+>> It means for public kernel version:
+>> "Assume deadlock occurs", we can still boot machine in normal way,
+>> because the task can be killed.
+>>
+>> Is what I said above correct ?
+>>
+> Not sure I understand your question. RHEL5 doesn't have support for
+> TASK_KILLABLE, and I didn't backport it, hence the difference in that
+> function.
+
+I agree with what you said above.
+
+Thanks for your confirmation.
+
+>> 3) Confirm 2:
+>>
+>> Is LTP (Linux Test Project) still a suitable test tools for public kernel ?
+>> (for ltp-full-20100331.gz stress test, it mounts NFS on local machine,
+>> and the latest LTP ltp-full-20120401.bz2 also seems the same).
+>>
+> That I'm not sure of. All I can tell you is that mounts over loopback
+> (or similar configurations) are easily deadlockable under load.
+>
+
+I will communicate with LTP (Linux Test Project) about these informations.
+
+
+Thanks.
+
+gchen.
+
+Asianux Corporation.
+
