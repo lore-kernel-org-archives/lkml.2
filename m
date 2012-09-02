@@ -1,109 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753720Ab2IBNoP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 09:44:15 -0400
-Received: from smtp-vbr16.xs4all.nl ([194.109.24.36]:4490 "EHLO
-	smtp-vbr16.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752762Ab2IBNoN (ORCPT
+	id S1753851Ab2IBNri (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 09:47:38 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:37192 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752924Ab2IBNrg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 09:44:13 -0400
-X-Greylist: delayed 773 seconds by postgrey-1.27 at vger.kernel.org; Sun, 02 Sep 2012 09:44:03 EDT
-From: Maarten ter Huurne <maarten@treewalker.org>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, Antony Pavlov <antonynpavlov@gmail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: Re: [PATCH 0/3] MIPS: JZ4740: Move PWM driver to PWM framework
-Date: Sun, 02 Sep 2012 15:25:55 +0200
-Message-ID: <1890769.KjIbOv8Xbz@hyperion>
-User-Agent: KMail/4.9 (Linux/3.1.10-1.16-desktop; KDE/4.9.0; x86_64; ; )
-In-Reply-To: <1346579550-5990-1-git-send-email-thierry.reding@avionic-design.de>
-References: <1346579550-5990-1-git-send-email-thierry.reding@avionic-design.de>
+	Sun, 2 Sep 2012 09:47:36 -0400
+Message-ID: <50436371.4020902@linux.vnet.ibm.com>
+Date: Sun, 02 Sep 2012 21:47:29 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="nextPart1496028.RW5dUh1a0f"
-Content-Transfer-Encoding: 7Bit
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH v2 4/6] KVM: trace the events of mmu_notifier
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12090213-7014-0000-0000-000001D371E9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+mmu_notifier is the interface to broadcast the mm events to KVM, the
+tracepoints introduced in this patch can trace all these events, it is
+very helpful for us to notice and fix the bug caused by mm
 
---nextPart1496028.RW5dUh1a0f
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ include/trace/events/kvm.h |  129 ++++++++++++++++++++++++++++++++++++++++++++
+ virt/kvm/kvm_main.c        |   19 +++++++
+ 2 files changed, 148 insertions(+), 0 deletions(-)
 
-On Sunday 02 September 2012 11:52:27 Thierry Reding wrote:
+diff --git a/include/trace/events/kvm.h b/include/trace/events/kvm.h
+index 7ef9e75..5d082b7 100644
+--- a/include/trace/events/kvm.h
++++ b/include/trace/events/kvm.h
+@@ -309,6 +309,135 @@ TRACE_EVENT(
 
-> This small series fixes a build error due to a circular header
-> dependency, exports the timer API so it can be used outside of
-> the arch/mips/jz4740 tree and finally moves and converts the
-> JZ4740 PWM driver to the PWM framework.
-> 
-> Note that I don't have any hardware to test this on, so I had to
-> rely on compile tests only. Patches 1 and 2 should probably go
-> through the MIPS tree, while I can take patch 3 through the PWM
-> tree. It touches a couple of files in arch/mips but the changes
-> are unlikely to cause conflicts.
+ #endif
 
-Exporting the hardware outputs PWM2-7 as index 0-5 in the PWM core is rather 
-confusing. I discussed with Lars on IRC and it's probably better to expose 
-PWM0-7 through the API, but refuse to hand out PWM0 and PWM1 when requested, 
-since their associated timers are in use by the system. I attached a diff 
-that illustrates this approach.
-
-Note that if this approach is taken, the beeper ID in board-qi_lb60.c should 
-be changed back from 2 to 4, since the beeper is attached to PWM4.
-
-I tested the "for-next" branch on the Dingoo A320 with the pwm-backlight 
-driver. It didn't work at first, because the PWM number and the timer number 
-didn't align: I requested PWM number 5 to get PWM7 and the GPIO of PWM7 was 
-used, but with timer 5 instead of timer 7, resulting in a dark screen. 
-However, it works fine after adding PWM0/1 as described above.
-
-If other people want to test on real hardware, you can find the code in 
-branch jz-3.6-rc2-pwm in the qi-kernel repository. Unfortunately our web 
-interface for git is still broken, but the repo itself is fine.
-  git://projects.qi-hardware.com/qi-kernel.git
-
-Bye,
-		Maarten
-
---nextPart1496028.RW5dUh1a0f
-Content-Disposition: inline; filename="jz4740-pwm-all-8.diff"
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/x-patch; charset="UTF-8"; name="jz4740-pwm-all-8.diff"
-
-diff --git a/drivers/pwm/pwm-jz4740.c b/drivers/pwm/pwm-jz4740.c
-index db29b37..554e414 100644
---- a/drivers/pwm/pwm-jz4740.c
-+++ b/drivers/pwm/pwm-jz4740.c
-@@ -24,9 +24,11 @@
- #include <asm/mach-jz4740/gpio.h>
- #include <timer.h>
- 
--#define NUM_PWM 6
-+#define NUM_PWM 8
- 
- static const unsigned int jz4740_pwm_gpio_list[NUM_PWM] = {
-+	JZ_GPIO_PWM0,
-+	JZ_GPIO_PWM1,
- 	JZ_GPIO_PWM2,
- 	JZ_GPIO_PWM3,
- 	JZ_GPIO_PWM4,
-@@ -50,6 +52,13 @@ static int jz4740_pwm_request(struct pwm_chip *chip, struct pwm_device *pwm)
- 	unsigned int gpio = jz4740_pwm_gpio_list[pwm->hwpwm];
- 	int ret;
- 
-+	/*
-+	 * Timer 0 and 1 are used for system tasks, so they are unavailable
-+	 * for use as PWMs.
-+	 */
-+	if (pwm->hwpwm < 2)
-+		return -EBUSY;
++#if defined(CONFIG_MMU_NOTIFIER) && defined(KVM_ARCH_WANT_MMU_NOTIFIER)
++TRACE_EVENT(kvm_mmu_notifier_invalidate_page,
 +
- 	ret = gpio_request(gpio, pwm->label);
- 
- 	if (ret) {
++	TP_PROTO(unsigned long hva),
++
++	TP_ARGS(hva),
++
++	TP_STRUCT__entry(
++		__field(unsigned long, hva)
++	),
++
++	TP_fast_assign(
++		__entry->hva = hva;
++	),
++
++	TP_printk("hva %lx", __entry->hva)
++);
++
++DECLARE_EVENT_CLASS(mmu_notifier_young_class,
++
++	TP_PROTO(unsigned long hva, int young),
++
++	TP_ARGS(hva, young),
++
++	TP_STRUCT__entry(
++		__field(unsigned long, hva)
++		__field(int, young)
++	),
++
++	TP_fast_assign(
++		__entry->hva = hva;
++		__entry->young = young;
++	),
++
++	TP_printk("hva %lx young %x", __entry->hva, __entry->young)
++);
++
++DEFINE_EVENT(mmu_notifier_young_class, kvm_mmu_notifier_clear_flush_young,
++
++	TP_PROTO(unsigned long hva, int young),
++
++	TP_ARGS(hva, young)
++);
++
++DEFINE_EVENT(mmu_notifier_young_class, kvm_mmu_notifier_test_young,
++
++	TP_PROTO(unsigned long hva, int young),
++
++	TP_ARGS(hva, young)
++);
++
++DECLARE_EVENT_CLASS(mmu_notifier_range_class,
++
++	TP_PROTO(unsigned long start, unsigned long end),
++
++	TP_ARGS(start, end),
++
++	TP_STRUCT__entry(
++		__field(unsigned long, start)
++		__field(unsigned long, end)
++	),
++
++	TP_fast_assign(
++		__entry->start = start;
++		__entry->end = end;
++	),
++
++	TP_printk("start %lx end %lx", __entry->start, __entry->end)
++);
++
++DEFINE_EVENT(mmu_notifier_range_class, kvm_mmu_notifier_invalidate_range_start,
++
++	TP_PROTO(unsigned long start, unsigned long end),
++
++	TP_ARGS(start, end)
++);
++
++DEFINE_EVENT(mmu_notifier_range_class, kvm_mmu_notifier_invalidate_range_end,
++
++	TP_PROTO(unsigned long start, unsigned long end),
++
++	TP_ARGS(start, end)
++);
++
++#define pte_bit(func, bit)	\
++	(pte_##func(__pte(__entry->pteval)) ? bit : '-')
++
++TRACE_EVENT(kvm_mmu_notifier_change_pte,
++
++	TP_PROTO(unsigned long hva, pte_t pte),
++
++	TP_ARGS(hva, pte),
++
++	TP_STRUCT__entry(
++		__field(unsigned long, hva)
++		__field(unsigned long long, pteval)
++		__field(pfn_t, pfn)
++		__field(bool, writable)
++	),
++
++	TP_fast_assign(
++		__entry->hva = hva;
++		__entry->pteval = (long long)pte_val(pte);
++	),
++
++	TP_printk("hva %lx pte %llx pfn %lx bits %c%c%c%c", __entry->hva,
++		  __entry->pteval, pte_pfn(__pte(__entry->pteval)),
++		  pte_bit(present, 'p'), pte_bit(write, 'w'),
++		  pte_bit(dirty, 'd'), pte_bit(young, 'a'))
++);
++
++TRACE_EVENT(kvm_mmu_notifier_release,
++
++	TP_PROTO(struct kvm *kvm),
++
++	TP_ARGS(kvm),
++
++	TP_STRUCT__entry(
++		__field(struct kvm *, kvm)
++	),
++
++	TP_fast_assign(
++		__entry->kvm = kvm;
++	),
++
++	TP_printk("kvm %p", __entry->kvm)
++);
++#endif
++
+ #endif /* _TRACE_KVM_MAIN_H */
 
---nextPart1496028.RW5dUh1a0f--
+ /* This part must be outside protection */
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 0cbc809..9604f4c 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -287,6 +287,8 @@ static void kvm_mmu_notifier_invalidate_page(struct mmu_notifier *mn,
+ 	idx = srcu_read_lock(&kvm->srcu);
+ 	spin_lock(&kvm->mmu_lock);
+
++	trace_kvm_mmu_notifier_invalidate_page(address);
++
+ 	kvm->mmu_notifier_seq++;
+ 	need_tlb_flush = kvm_unmap_hva(kvm, address) | kvm->tlbs_dirty;
+ 	/* we've to flush the tlb before the pages can be freed */
+@@ -307,6 +309,9 @@ static void kvm_mmu_notifier_change_pte(struct mmu_notifier *mn,
+
+ 	idx = srcu_read_lock(&kvm->srcu);
+ 	spin_lock(&kvm->mmu_lock);
++
++	trace_kvm_mmu_notifier_change_pte(address, pte);
++
+ 	kvm->mmu_notifier_seq++;
+ 	kvm_set_spte_hva(kvm, address, pte);
+ 	spin_unlock(&kvm->mmu_lock);
+@@ -323,6 +328,9 @@ static void kvm_mmu_notifier_invalidate_range_start(struct mmu_notifier *mn,
+
+ 	idx = srcu_read_lock(&kvm->srcu);
+ 	spin_lock(&kvm->mmu_lock);
++
++	trace_kvm_mmu_notifier_invalidate_range_start(start, end);
++
+ 	/*
+ 	 * The count increase must become visible at unlock time as no
+ 	 * spte can be established without taking the mmu_lock and
+@@ -347,6 +355,9 @@ static void kvm_mmu_notifier_invalidate_range_end(struct mmu_notifier *mn,
+ 	struct kvm *kvm = mmu_notifier_to_kvm(mn);
+
+ 	spin_lock(&kvm->mmu_lock);
++
++	trace_kvm_mmu_notifier_invalidate_range_end(start, end);
++
+ 	/*
+ 	 * This sequence increase will notify the kvm page fault that
+ 	 * the page that is going to be mapped in the spte could have
+@@ -379,6 +390,8 @@ static int kvm_mmu_notifier_clear_flush_young(struct mmu_notifier *mn,
+ 	if (young)
+ 		kvm_flush_remote_tlbs(kvm);
+
++	trace_kvm_mmu_notifier_clear_flush_young(address, young);
++
+ 	spin_unlock(&kvm->mmu_lock);
+ 	srcu_read_unlock(&kvm->srcu, idx);
+
+@@ -395,6 +408,9 @@ static int kvm_mmu_notifier_test_young(struct mmu_notifier *mn,
+ 	idx = srcu_read_lock(&kvm->srcu);
+ 	spin_lock(&kvm->mmu_lock);
+ 	young = kvm_test_age_hva(kvm, address);
++
++	trace_kvm_mmu_notifier_test_young(address, young);
++
+ 	spin_unlock(&kvm->mmu_lock);
+ 	srcu_read_unlock(&kvm->srcu, idx);
+
+@@ -408,6 +424,9 @@ static void kvm_mmu_notifier_release(struct mmu_notifier *mn,
+ 	int idx;
+
+ 	idx = srcu_read_lock(&kvm->srcu);
++
++	trace_kvm_mmu_notifier_release(kvm);
++
+ 	kvm_arch_flush_shadow(kvm);
+ 	srcu_read_unlock(&kvm->srcu, idx);
+ }
+-- 
+1.7.7.6
 
