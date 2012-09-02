@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755627Ab2IBVvL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 17:51:11 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:23385 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755398Ab2IBVvI (ORCPT
+	id S1755673Ab2IBVvQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 17:51:16 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:19640 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755398Ab2IBVvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 17:51:08 -0400
+	Sun, 2 Sep 2012 17:51:12 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>,
         Taku Izumi <izumi.taku@jp.fujitsu.com>,
@@ -16,97 +16,161 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH part2 4/6] x86, PCI: Separate rom resource claim out
-Date: Sun,  2 Sep 2012 14:50:51 -0700
-Message-Id: <1346622653-30741-5-git-send-email-yinghai@kernel.org>
+Subject: [PATCH part2 6/6] PCI: Claim hw/fw allocated resources in hot add path.
+Date: Sun,  2 Sep 2012 14:50:53 -0700
+Message-Id: <1346622653-30741-7-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1346622653-30741-1-git-send-email-yinghai@kernel.org>
 References: <1346622653-30741-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So could use it with hot-added root bus.
+During testing remove/rescan root bus 00, found
+[  338.142574] bus: 'pci': really_probe: probing driver ata_piix with device 0000:00:01.1
+[  338.146788] ata_piix 0000:00:01.1: device not available (can't reserve [io  0x01f0-0x01f7])
+[  338.150565] ata_piix: probe of 0000:00:01.1 failed with error -22
+
+because that fixed resource is not claimed from
+        arch/x86/pci/i386.c::pcibios_allocate_resources()
+that is init path.
+
+Try to claim those resources, so on the remove/rescan will still use old
+resources.
+
+It is some kind honoring HW/FW setting in the registers during hot add.
+esp root-bus hot add is through acpi, BIOS have chance to set some register
+for us.
+
+-v2: add rom resource claiming.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/pci/i386.c |   58 ++++++++++++++++++++++++++++++++++++---------------
- 1 files changed, 41 insertions(+), 17 deletions(-)
+ arch/x86/pci/i386.c |   28 +++++++++++++++++++++-------
+ drivers/pci/bus.c   |    2 ++
+ include/linux/pci.h |    1 +
+ 3 files changed, 24 insertions(+), 7 deletions(-)
 
 diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
-index 84696ed..4fdf0b2 100644
+index abf2a61..3cb7d66 100644
 --- a/arch/x86/pci/i386.c
 +++ b/arch/x86/pci/i386.c
-@@ -298,27 +298,51 @@ static void __init pcibios_allocate_resources(struct pci_bus *bus, int pass)
+@@ -201,13 +201,15 @@ EXPORT_SYMBOL(pcibios_align_resource);
+  *	    as well.
+  */
+ 
+-static void __init pcibios_allocate_bridge_resources(struct pci_dev *dev)
++static void pcibios_allocate_bridge_resources(struct pci_dev *dev)
+ {
+ 	int idx;
+ 	struct resource *r;
+ 
+ 	for (idx = PCI_BRIDGE_RESOURCES; idx < PCI_NUM_RESOURCES; idx++) {
+ 		r = &dev->resource[idx];
++		if (r->parent)	/* Already allocated */
++			continue;
+ 		if (!r->flags)
+ 			continue;
+ 		if (!r->start || pci_claim_resource(dev, idx) < 0) {
+@@ -223,7 +225,7 @@ static void __init pcibios_allocate_bridge_resources(struct pci_dev *dev)
  	}
  }
  
--static int __init pcibios_assign_resources(void)
-+static void __init pcibios_allocate_dev_rom_resource(struct pci_dev *dev)
+-static void __init pcibios_allocate_bus_resources(struct pci_bus *bus)
++static void pcibios_allocate_bus_resources(struct pci_bus *bus)
  {
--	struct pci_dev *dev = NULL;
+ 	struct pci_bus *child;
+ 
+@@ -239,7 +241,7 @@ struct pci_check_idx_range {
+ 	int end;
+ };
+ 
+-static void __init pcibios_allocate_dev_resources(struct pci_dev *dev, int pass)
++static void pcibios_allocate_dev_resources(struct pci_dev *dev, int pass)
+ {
+ 	int idx, disabled, i;
+ 	u16 command;
+@@ -292,7 +294,7 @@ static void __init pcibios_allocate_dev_resources(struct pci_dev *dev, int pass)
+ 	}
+ }
+ 
+-static void __init pcibios_allocate_resources(struct pci_bus *bus, int pass)
++static void pcibios_allocate_resources(struct pci_bus *bus, int pass)
+ {
+ 	struct pci_dev *dev;
+ 	struct pci_bus *child;
+@@ -306,7 +308,7 @@ static void __init pcibios_allocate_resources(struct pci_bus *bus, int pass)
+ 	}
+ }
+ 
+-static void __init pcibios_allocate_dev_rom_resource(struct pci_dev *dev)
++static void pcibios_allocate_dev_rom_resource(struct pci_dev *dev)
+ {
  	struct resource *r;
  
--	if (!(pci_probe & PCI_ASSIGN_ROMS)) {
--		/*
--		 * Try to use BIOS settings for ROMs, otherwise let
--		 * pci_assign_unassigned_resources() allocate the new
--		 * addresses.
--		 */
--		for_each_pci_dev(dev) {
--			r = &dev->resource[PCI_ROM_RESOURCE];
--			if (!r->flags || !r->start)
--				continue;
--			if (pci_claim_resource(dev, PCI_ROM_RESOURCE) < 0) {
--				r->end -= r->start;
--				r->start = 0;
--			}
--		}
-+	/*
-+	 * Try to use BIOS settings for ROMs, otherwise let
-+	 * pci_assign_unassigned_resources() allocate the new
-+	 * addresses.
-+	 */
-+	r = &dev->resource[PCI_ROM_RESOURCE];
-+	if (!r->flags || !r->start)
-+		return;
-+
-+	if (pci_claim_resource(dev, PCI_ROM_RESOURCE) < 0) {
-+		r->end -= r->start;
-+		r->start = 0;
+@@ -324,7 +326,7 @@ static void __init pcibios_allocate_dev_rom_resource(struct pci_dev *dev)
+ 		r->start = 0;
  	}
-+}
-+static void __init __pcibios_allocate_rom_resources(struct pci_bus *bus)
-+{
-+	struct pci_dev *dev;
-+	struct pci_bus *child;
-+
-+	list_for_each_entry(dev, &bus->devices, bus_list) {
-+		pcibios_allocate_dev_rom_resource(dev);
-+
-+		child = dev->subordinate;
-+		if (child)
-+			__pcibios_allocate_rom_resources(child);
-+	}
-+}
-+static void __init pcibios_allocate_rom_resources(struct pci_bus *bus)
-+{
-+	if (pci_probe & PCI_ASSIGN_ROMS)
-+		return;
-+
-+	__pcibios_allocate_rom_resources(bus);
-+}
-+
-+static int __init pcibios_assign_resources(void)
-+{
-+	struct pci_bus *bus;
-+
-+	list_for_each_entry(bus, &pci_root_buses, node)
-+		pcibios_allocate_rom_resources(bus);
+ }
+-static void __init __pcibios_allocate_rom_resources(struct pci_bus *bus)
++static void __pcibios_allocate_rom_resources(struct pci_bus *bus)
+ {
+ 	struct pci_dev *dev;
+ 	struct pci_bus *child;
+@@ -337,7 +339,7 @@ static void __init __pcibios_allocate_rom_resources(struct pci_bus *bus)
+ 			__pcibios_allocate_rom_resources(child);
+ 	}
+ }
+-static void __init pcibios_allocate_rom_resources(struct pci_bus *bus)
++static void pcibios_allocate_rom_resources(struct pci_bus *bus)
+ {
+ 	if (pci_probe & PCI_ASSIGN_ROMS)
+ 		return;
+@@ -358,6 +360,18 @@ static int __init pcibios_assign_resources(void)
+ 	return 0;
+ }
  
- 	pci_assign_unassigned_resources();
- 	pcibios_fw_addr_list_del();
++void pcibios_resource_survey_bus(struct pci_bus *bus)
++{
++	dev_printk(KERN_DEBUG, &bus->dev, "Allocating resources\n");
++
++	pcibios_allocate_bus_resources(bus);
++
++	pcibios_allocate_resources(bus, 0);
++	pcibios_allocate_resources(bus, 1);
++
++	pcibios_allocate_rom_resources(bus);
++}
++
+ void __init pcibios_resource_survey(void)
+ {
+ 	struct pci_bus *bus;
+diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+index 4b0970b..2882d01 100644
+--- a/drivers/pci/bus.c
++++ b/drivers/pci/bus.c
+@@ -154,6 +154,8 @@ pci_bus_alloc_resource(struct pci_bus *bus, struct resource *res,
+ 	return ret;
+ }
+ 
++void __weak pcibios_resource_survey_bus(struct pci_bus *bus) { }
++
+ /**
+  * pci_bus_add_device - add a single device
+  * @dev: device to add
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 1b460e1..29a4704 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -676,6 +676,7 @@ extern struct list_head pci_root_buses;	/* list of all known PCI buses */
+ /* Some device drivers need know if pci is initiated */
+ extern int no_pci_devices(void);
+ 
++void pcibios_resource_survey_bus(struct pci_bus *bus);
+ void pcibios_fixup_bus(struct pci_bus *);
+ int __must_check pcibios_enable_device(struct pci_dev *, int mask);
+ /* Architecture specific versions may override this (weak) */
 -- 
 1.7.7
 
