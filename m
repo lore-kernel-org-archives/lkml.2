@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755997Ab2IBVyS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 17:54:18 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:23545 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755861Ab2IBVwl (ORCPT
+	id S1756016Ab2IBVyd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 17:54:33 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:19992 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755557Ab2IBVya (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 17:52:41 -0400
+	Sun, 2 Sep 2012 17:54:30 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>,
         Taku Izumi <izumi.taku@jp.fujitsu.com>,
@@ -15,103 +15,53 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: [PATCH part3 06/11] PCI, sysfs: Create rescan_bridge under /sys/.../pci/devices/... for pci bridges
-Date: Sun,  2 Sep 2012 14:52:16 -0700
-Message-Id: <1346622741-30799-7-git-send-email-yinghai@kernel.org>
+        linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH part4 00/11] PCI, ACPI: pci root bus hotplug support - part4
+Date: Sun,  2 Sep 2012 14:54:10 -0700
+Message-Id: <1346622861-30865-1-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1346622741-30799-1-git-send-email-yinghai@kernel.org>
-References: <1346622741-30799-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current code will create rescan for every pci device under parent bus.
-that is not right. The device is already there, there is no reason to rescan it.
+This is core part of ACPI pci root bus hotplug support.
 
-We could have rescan for pci bridges. less confusing.
+First add pci_stop_and_remove_bus support, so could use it to remove root bus.
 
-Need to move rescan attr to pci dev bridge attribute group.
-And we should rescan bridge's secondary bus instead of primary bus.
+Separate out hot add from acpiphp. User could only use pci_root_hp and pciehp.
+And add hot removal notification support.
 
--v3: Use device_type for pci dev.
--v4: Seperate pci device type change out
--v5: add rescan_bridge for bridge type, and still keep the old rescan.
-	may remove the old rescan later.
+could get from
+        git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-root-bus-hotplug-part4
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- Documentation/ABI/testing/sysfs-bus-pci |   10 ++++++++++
- drivers/pci/pci-sysfs.c                 |   24 ++++++++++++++++++++++++
- 2 files changed, 34 insertions(+), 0 deletions(-)
+Jiang Liu (3):
+  PCI: Fix a device reference count leakage issue in pci_dev_present()
+  PCI: Correctly clean up pci root buses in function pci_remove_bus()
+  PCI: Fix an access-after-free issue in function pci_stop_and_remove_bus()
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-pci b/Documentation/ABI/testing/sysfs-bus-pci
-index 34f5110..95f0f37 100644
---- a/Documentation/ABI/testing/sysfs-bus-pci
-+++ b/Documentation/ABI/testing/sysfs-bus-pci
-@@ -111,6 +111,16 @@ Description:
- 		from this part of the device tree.
- 		Depends on CONFIG_HOTPLUG.
- 
-+What:		/sys/bus/pci/devices/.../rescan_bridge
-+Date:		February 2012
-+Contact:	Linux PCI developers <linux-pci@vger.kernel.org>
-+Description:
-+		Writing a non-zero value to this attribute will
-+		force a rescan of the bridge and all child buses, and
-+		re-discover devices removed earlier from this part of
-+		the device tree.
-+		Depends on CONFIG_HOTPLUG.
-+
- What:		/sys/bus/pci/devices/.../reset
- Date:		July 2009
- Contact:	Michael S. Tsirkin <mst@redhat.com>
-diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-index e37a0e0..2100c04 100644
---- a/drivers/pci/pci-sysfs.c
-+++ b/drivers/pci/pci-sysfs.c
-@@ -327,6 +327,27 @@ dev_rescan_store(struct device *dev, struct device_attribute *attr,
- 	return count;
- }
- 
-+static ssize_t
-+dev_bridge_rescan_store(struct device *dev, struct device_attribute *attr,
-+		 const char *buf, size_t count)
-+{
-+	unsigned long val;
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+
-+	if (kstrtoul(buf, 0, &val) < 0)
-+		return -EINVAL;
-+
-+	if (val) {
-+		mutex_lock(&pci_remove_rescan_mutex);
-+		pci_rescan_bus(pdev->subordinate);
-+		mutex_unlock(&pci_remove_rescan_mutex);
-+	}
-+	return count;
-+}
-+
-+static struct device_attribute pci_dev_bridge_rescan_attr =
-+	__ATTR(rescan_bridge, (S_IWUSR|S_IWGRP), NULL, dev_bridge_rescan_store);
-+
- static void remove_callback(struct device *dev)
- {
- 	struct pci_dev *pdev = to_pci_dev(dev);
-@@ -1371,6 +1392,9 @@ static int __init pci_sysfs_init(void)
- late_initcall(pci_sysfs_init);
- 
- static struct attribute *pci_dev_bridge_attrs[] = {
-+#ifdef CONFIG_HOTPLUG
-+	&pci_dev_bridge_rescan_attr.attr,
-+#endif
- 	NULL,
- };
- 
+Yinghai Lu (8):
+  PCI: Add pci_stop_and_remove_bus()
+  PCI, acpiphp: Separate out hot-add support of pci host bridge
+  PCI, ACPI: Make acpi_pci_root_remove remove pci root bus too
+  PCI, ACPI: Add pci_root_hp hot removal notification support.
+  PCI, ACPI: Add alloc_acpi_hp_work()
+  PCI, acpiphp: Use acpi_hp_work
+  PCI, pci_root_hp: Use acpi_hp_work
+  PCI, ACPI: Make kacpi_hotplug_wq static
+
+ drivers/acpi/Makefile              |    1 +
+ drivers/acpi/osl.c                 |   24 +++-
+ drivers/acpi/pci_root.c            |   14 ++
+ drivers/acpi/pci_root_hp.c         |  271 ++++++++++++++++++++++++++++++++++++
+ drivers/pci/hotplug/acpiphp_glue.c |   79 ++---------
+ drivers/pci/remove.c               |   44 +++++-
+ drivers/pci/search.c               |   10 +-
+ include/acpi/acpiosxf.h            |    9 +-
+ include/linux/pci.h                |    1 +
+ 9 files changed, 374 insertions(+), 79 deletions(-)
+ create mode 100644 drivers/acpi/pci_root_hp.c
+
 -- 
 1.7.7
 
