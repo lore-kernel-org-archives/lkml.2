@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755647Ab2IBVwM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 17:52:12 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:23381 "EHLO
+	id S1755732Ab2IBVwa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 17:52:30 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:23372 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755373Ab2IBVvI (ORCPT
+	with ESMTP id S1755359Ab2IBVvH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 17:51:08 -0400
+	Sun, 2 Sep 2012 17:51:07 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>,
         Taku Izumi <izumi.taku@jp.fujitsu.com>,
@@ -16,95 +16,100 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH part2 3/6] x86, PCI: Let pcibios_allocate_bus_resources() take bus instead
-Date: Sun,  2 Sep 2012 14:50:50 -0700
-Message-Id: <1346622653-30741-4-git-send-email-yinghai@kernel.org>
+Subject: [PATCH part2 2/6] x86, PCI: Separate pcibios_allocate_dev_resources()
+Date: Sun,  2 Sep 2012 14:50:49 -0700
+Message-Id: <1346622653-30741-3-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1346622653-30741-1-git-send-email-yinghai@kernel.org>
 References: <1346622653-30741-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Will need call the same code for one single root bus during hot add.
-So try to make it take bus instead of bus_list.
+Thus pcibios_allocate_resources() could more simple and clean
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/pci/i386.c |   38 +++++++++++++++++++++++++-------------
- 1 files changed, 25 insertions(+), 13 deletions(-)
+ arch/x86/pci/i386.c |   42 +++++++++++++++++++++++-------------------
+ 1 files changed, 23 insertions(+), 19 deletions(-)
 
 diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
-index 5817cf2..84696ed 100644
+index 9800362..5817cf2 100644
 --- a/arch/x86/pci/i386.c
 +++ b/arch/x86/pci/i386.c
-@@ -215,16 +215,15 @@ static void __init pcibios_allocate_bridge_resources(struct pci_dev *dev)
- 	}
- }
- 
--static void __init pcibios_allocate_bus_resources(struct list_head *bus_list)
-+static void __init pcibios_allocate_bus_resources(struct pci_bus *bus)
- {
--	struct pci_bus *bus;
-+	struct pci_bus *child;
- 
- 	/* Depth-First Search on bus tree */
--	list_for_each_entry(bus, bus_list, node) {
--		if (bus->self)
--			pcibios_allocate_bridge_resources(bus->self);
--		pcibios_allocate_bus_resources(&bus->children);
--	}
-+	if (bus->self)
-+		pcibios_allocate_bridge_resources(bus->self);
-+	list_for_each_entry(child, &bus->children, node)
-+		pcibios_allocate_bus_resources(child);
- }
- 
- struct pci_check_idx_range {
-@@ -285,12 +284,18 @@ static void __init pcibios_allocate_dev_resources(struct pci_dev *dev, int pass)
- 	}
- }
+@@ -232,9 +232,8 @@ struct pci_check_idx_range {
+ 	int end;
+ };
  
 -static void __init pcibios_allocate_resources(int pass)
-+static void __init pcibios_allocate_resources(struct pci_bus *bus, int pass)
++static void __init pcibios_allocate_dev_resources(struct pci_dev *dev, int pass)
  {
 -	struct pci_dev *dev = NULL;
-+	struct pci_dev *dev;
-+	struct pci_bus *child;
+ 	int idx, disabled, i;
+ 	u16 command;
+ 	struct resource *r;
+@@ -246,14 +245,13 @@ static void __init pcibios_allocate_resources(int pass)
+ #endif
+ 	};
  
--	for_each_pci_dev(dev)
-+	list_for_each_entry(dev, &bus->devices, bus_list) {
- 		pcibios_allocate_dev_resources(dev, pass);
-+
-+		child = dev->subordinate;
-+		if (child)
-+			pcibios_allocate_resources(child, pass);
-+	}
+-	for_each_pci_dev(dev) {
+-		pci_read_config_word(dev, PCI_COMMAND, &command);
+-		for (i = 0; i < ARRAY_SIZE(idx_range); i++)
++	pci_read_config_word(dev, PCI_COMMAND, &command);
++	for (i = 0; i < ARRAY_SIZE(idx_range); i++)
+ 		for (idx = idx_range[i].start; idx <= idx_range[i].end; idx++) {
+ 			r = &dev->resource[idx];
+-			if (r->parent)		/* Already allocated */
++			if (r->parent)	/* Already allocated */
+ 				continue;
+-			if (!r->start)		/* Address not assigned at all */
++			if (!r->start)	/* Address not assigned at all */
+ 				continue;
+ 			if (r->flags & IORESOURCE_IO)
+ 				disabled = !(command & PCI_COMMAND_IO);
+@@ -272,23 +270,29 @@ static void __init pcibios_allocate_resources(int pass)
+ 				}
+ 			}
+ 		}
+-		if (!pass) {
+-			r = &dev->resource[PCI_ROM_RESOURCE];
+-			if (r->flags & IORESOURCE_ROM_ENABLE) {
+-				/* Turn the ROM off, leave the resource region,
+-				 * but keep it unregistered. */
+-				u32 reg;
+-				dev_dbg(&dev->dev, "disabling ROM %pR\n", r);
+-				r->flags &= ~IORESOURCE_ROM_ENABLE;
+-				pci_read_config_dword(dev,
+-						dev->rom_base_reg, &reg);
+-				pci_write_config_dword(dev, dev->rom_base_reg,
++	if (!pass) {
++		r = &dev->resource[PCI_ROM_RESOURCE];
++		if (r->flags & IORESOURCE_ROM_ENABLE) {
++			/* Turn the ROM off, leave the resource region,
++			 * but keep it unregistered. */
++			u32 reg;
++			dev_dbg(&dev->dev, "disabling ROM %pR\n", r);
++			r->flags &= ~IORESOURCE_ROM_ENABLE;
++			pci_read_config_dword(dev, dev->rom_base_reg, &reg);
++			pci_write_config_dword(dev, dev->rom_base_reg,
+ 						reg & ~PCI_ROM_ADDRESS_ENABLE);
+-			}
+ 		}
+ 	}
  }
  
++static void __init pcibios_allocate_resources(int pass)
++{
++	struct pci_dev *dev = NULL;
++
++	for_each_pci_dev(dev)
++		pcibios_allocate_dev_resources(dev, pass);
++}
++
  static int __init pcibios_assign_resources(void)
-@@ -323,10 +328,17 @@ static int __init pcibios_assign_resources(void)
- 
- void __init pcibios_resource_survey(void)
  {
-+	struct pci_bus *bus;
-+
- 	DBG("PCI: Allocating resources\n");
--	pcibios_allocate_bus_resources(&pci_root_buses);
--	pcibios_allocate_resources(0);
--	pcibios_allocate_resources(1);
-+
-+	list_for_each_entry(bus, &pci_root_buses, node)
-+		pcibios_allocate_bus_resources(bus);
-+
-+	list_for_each_entry(bus, &pci_root_buses, node)
-+		pcibios_allocate_resources(bus, 0);
-+	list_for_each_entry(bus, &pci_root_buses, node)
-+		pcibios_allocate_resources(bus, 1);
- 
- 	e820_reserve_resources_late();
- 	/*
+ 	struct pci_dev *dev = NULL;
 -- 
 1.7.7
 
