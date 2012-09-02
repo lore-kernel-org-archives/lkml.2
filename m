@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756134Ab2IBVz5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 17:55:57 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:20045 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755359Ab2IBVyp (ORCPT
+	id S932065Ab2IBV4V (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 17:56:21 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:40053 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755396Ab2IBV4R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 17:54:45 -0400
+	Sun, 2 Sep 2012 17:56:17 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>,
         Taku Izumi <izumi.taku@jp.fujitsu.com>,
@@ -15,116 +15,84 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Len Brown <lenb@kernel.org>
-Subject: [PATCH part4 09/11] PCI, acpiphp: Use acpi_hp_work
-Date: Sun,  2 Sep 2012 14:54:19 -0700
-Message-Id: <1346622861-30865-10-git-send-email-yinghai@kernel.org>
+        linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH part5 1/7] ACPI, PCI: Use normal list for struct acpi_pci_driver
+Date: Sun,  2 Sep 2012 14:55:59 -0700
+Message-Id: <1346622965-30937-2-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1346622861-30865-1-git-send-email-yinghai@kernel.org>
-References: <1346622861-30865-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <1346622965-30937-1-git-send-email-yinghai@kernel.org>
+References: <1346622965-30937-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove local defined acpiphp_hp_work.
+From: Jiang Liu <jiang.liu@huawei.com>
 
+Use normal list for struct acpi_pci_driver to simplify code.
+
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Len Brown <lenb@kernel.org>
-Cc: linux-acpi@vger.kernel.org
 ---
- drivers/pci/hotplug/acpiphp_glue.c |   42 +++++------------------------------
- 1 files changed, 6 insertions(+), 36 deletions(-)
+ drivers/acpi/pci_root.c |   16 +++-------------
+ include/linux/acpi.h    |    2 +-
+ 2 files changed, 4 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-index dc54d57..a4c5a81 100644
---- a/drivers/pci/hotplug/acpiphp_glue.c
-+++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -1193,34 +1193,6 @@ check_sub_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
- 	return AE_OK ;
- }
+diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+index 12791fd..2aec08d 100644
+--- a/drivers/acpi/pci_root.c
++++ b/drivers/acpi/pci_root.c
+@@ -72,8 +72,8 @@ static struct acpi_driver acpi_pci_root_driver = {
+ };
  
--struct acpiphp_hp_work {
--	struct work_struct work;
--	acpi_handle handle;
--	u32 type;
--	void *context;
--};
--
--static void alloc_acpiphp_hp_work(acpi_handle handle, u32 type,
--				  void *context,
--				  void (*func)(struct work_struct *work))
--{
--	struct acpiphp_hp_work *hp_work;
--	int ret;
--
--	hp_work = kmalloc(sizeof(*hp_work), GFP_KERNEL);
--	if (!hp_work)
--		return;
--
--	hp_work->handle = handle;
--	hp_work->type = type;
--	hp_work->context = context;
--
--	INIT_WORK(&hp_work->work, func);
--	ret = queue_work(kacpi_hotplug_wq, &hp_work->work);
--	if (!ret)
--		kfree(hp_work);
--}
--
- static void _handle_hotplug_event_bridge(struct work_struct *work)
+ static LIST_HEAD(acpi_pci_roots);
++static LIST_HEAD(acpi_pci_drivers);
+ 
+-static struct acpi_pci_driver *sub_driver;
+ static DEFINE_MUTEX(osc_lock);
+ 
+ int acpi_pci_register_driver(struct acpi_pci_driver *driver)
+@@ -81,10 +81,7 @@ int acpi_pci_register_driver(struct acpi_pci_driver *driver)
+ 	int n = 0;
+ 	struct acpi_pci_root *root;
+ 
+-	struct acpi_pci_driver **pptr = &sub_driver;
+-	while (*pptr)
+-		pptr = &(*pptr)->next;
+-	*pptr = driver;
++	list_add_tail(&driver->node, &acpi_pci_drivers);
+ 
+ 	if (!driver->add)
+ 		return 0;
+@@ -103,14 +100,7 @@ void acpi_pci_unregister_driver(struct acpi_pci_driver *driver)
  {
- 	struct acpiphp_bridge *bridge;
-@@ -1229,11 +1201,11 @@ static void _handle_hotplug_event_bridge(struct work_struct *work)
- 				      .pointer = objname };
- 	struct acpi_device *device;
- 	int num_sub_bridges = 0;
--	struct acpiphp_hp_work *hp_work;
-+	struct acpi_hp_work *hp_work;
- 	acpi_handle handle;
- 	u32 type;
+ 	struct acpi_pci_root *root;
  
--	hp_work = container_of(work, struct acpiphp_hp_work, work);
-+	hp_work = container_of(work, struct acpi_hp_work, work);
- 	handle = hp_work->handle;
- 	type = hp_work->type;
+-	struct acpi_pci_driver **pptr = &sub_driver;
+-	while (*pptr) {
+-		if (*pptr == driver)
+-			break;
+-		pptr = &(*pptr)->next;
+-	}
+-	BUG_ON(!*pptr);
+-	*pptr = (*pptr)->next;
++	list_del(&driver->node);
  
-@@ -1336,8 +1308,7 @@ static void handle_hotplug_event_bridge(acpi_handle handle, u32 type,
- 	 * For now just re-add this work to the kacpi_hotplug_wq so we
- 	 * don't deadlock on hotplug actions.
- 	 */
--	alloc_acpiphp_hp_work(handle, type, context,
--			      _handle_hotplug_event_bridge);
-+	alloc_acpi_hp_work(handle, type, context, _handle_hotplug_event_bridge);
- }
+ 	if (!driver->remove)
+ 		return;
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index 3ad510b..a54cf8e 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -138,7 +138,7 @@ void acpi_penalize_isa_irq(int irq, int active);
+ void acpi_pci_irq_disable (struct pci_dev *dev);
  
- static void _handle_hotplug_event_func(struct work_struct *work)
-@@ -1346,12 +1317,12 @@ static void _handle_hotplug_event_func(struct work_struct *work)
- 	char objname[64];
- 	struct acpi_buffer buffer = { .length = sizeof(objname),
- 				      .pointer = objname };
--	struct acpiphp_hp_work *hp_work;
-+	struct acpi_hp_work *hp_work;
- 	acpi_handle handle;
- 	u32 type;
- 	void *context;
- 
--	hp_work = container_of(work, struct acpiphp_hp_work, work);
-+	hp_work = container_of(work, struct acpi_hp_work, work);
- 	handle = hp_work->handle;
- 	type = hp_work->type;
- 	context = hp_work->context;
-@@ -1412,8 +1383,7 @@ static void handle_hotplug_event_func(acpi_handle handle, u32 type,
- 	 * For now just re-add this work to the kacpi_hotplug_wq so we
- 	 * don't deadlock on hotplug actions.
- 	 */
--	alloc_acpiphp_hp_work(handle, type, context,
--			      _handle_hotplug_event_func);
-+	alloc_acpi_hp_work(handle, type, context, _handle_hotplug_event_func);
- }
- 
- static struct acpi_pci_driver acpi_pci_hp_driver = {
+ struct acpi_pci_driver {
+-	struct acpi_pci_driver *next;
++	struct list_head node;
+ 	int (*add)(acpi_handle handle);
+ 	void (*remove)(acpi_handle handle);
+ };
 -- 
 1.7.7
 
