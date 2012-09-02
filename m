@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128Ab2IBOvD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 10:51:03 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:64479 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753832Ab2IBOvB (ORCPT
+	id S1753802Ab2IBPUK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 11:20:10 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:34647 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752108Ab2IBPUG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 10:51:01 -0400
-X-Originating-IP: 108.223.40.66
-Date: Sun, 2 Sep 2012 07:51:01 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
-        lm-sensors@lm-sensors.org, Jean Delvare <khali@linux-fr.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] hwmon: add Maxim MAX197 support
-Message-ID: <20120902145101.GA8306@roeck-us.net>
-References: <1346377377-24717-1-git-send-email-vivien.didelot@savoirfairelinux.com>
- <20120831160439.GA5756@roeck-us.net>
- <5041D5DF.7060402@metafoo.de>
+	Sun, 2 Sep 2012 11:20:06 -0400
+Message-ID: <5043791C.4050202@metafoo.de>
+Date: Sun, 02 Sep 2012 17:19:56 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120724 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5041D5DF.7060402@metafoo.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+CC: Damien Cassou <damien.cassou@lifl.fr>, kernel-janitors@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5] drivers/video/jz4740_fb.c: use devm_ functions
+References: <1344008414-2894-1-git-send-email-damien.cassou@lifl.fr> <1344008414-2894-3-git-send-email-damien.cassou@lifl.fr> <5036955F.6000806@gmx.de>
+In-Reply-To: <5036955F.6000806@gmx.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 01, 2012 at 11:31:11AM +0200, Lars-Peter Clausen wrote:
-> On 08/31/2012 06:04 PM, Guenter Roeck wrote:
-> > On Thu, Aug 30, 2012 at 09:42:57PM -0400, Vivien Didelot wrote:
-> >> The MAX197 is an A/D converter, made by Maxim. This driver currently
-> >> supports the MAX197, and MAX199. They are both 8-Channel, Multi-Range,
-> >> 5V, 12-Bit DAS with 8+4 Bus Interface and Fault Protection.
-> >>
-> >> The available ranges for the MAX197 are {0,-5V} to 5V, and {0,-10V} to
-> >> 10V, while they are {0,-2V} to 2V, and {0,-4V} to 4V on the MAX199.
-> >>
-> >> Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-> > 
-> > Applied to -next.
-> > 
+On 08/23/2012 10:41 PM, Florian Tobias Schandinat wrote:
+> On 08/03/2012 03:40 PM, Damien Cassou wrote:
+>> From: Damien Cassou <damien.cassou@lifl.fr>
+>>
+>> The various devm_ functions allocate memory that is released when a driver
+>> detaches. This patch uses these functions for data that is allocated in the
+>> probe function of a platform device and is only freed in the remove function.
+>>
+>> Signed-off-by: Damien Cassou <damien.cassou@lifl.fr>
 > 
-> Hm, now it's probably to late, but for this kind of general purpose ADC the IIO
-> framework is in my opinion the better place to add support for it.
+> Applied.
 > 
-Possibly. If someone writes an iio driver for it, and everyone agrees,
-we can drop it from hwmon at that time.
+> 
+> Thanks,
+> 
+> Florian Tobias Schandinat
+> 
+>>
+>> ---
+>>  drivers/video/jz4740_fb.c |   22 ++++++----------------
+>>  1 file changed, 6 insertions(+), 16 deletions(-)
+>>
+>> diff --git a/drivers/video/jz4740_fb.c b/drivers/video/jz4740_fb.c
+>> index de36693..7669770 100644
+>> --- a/drivers/video/jz4740_fb.c
+>> +++ b/drivers/video/jz4740_fb.c
+>> @@ -659,25 +659,25 @@ static int __devinit jzfb_probe(struct platform_device *pdev)
+>>  	jzfb->pdata = pdata;
+>>  	jzfb->mem = mem;
+>>
+>> -	jzfb->ldclk = clk_get(&pdev->dev, "lcd");
+>> +	jzfb->ldclk = devm_clk_get(&pdev->dev, "lcd");
 
-Guenter
+I guess I'm a bit late, but we do not have devm_clk_get on jz4740 (yet), so
+this patch breaks linking for this driver in next. I'll to to have this added
+for the next release, but if I do not succeed we'll have to revert part of this
+patch.
+
+Also the driver does not include #include <linux/io.h>, since it is required
+for devm_ioremap compilation is also broken. This one is easy to fix though,
+will send a follow-up patch.
+
+- Lars
