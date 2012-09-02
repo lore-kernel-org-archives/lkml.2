@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755882Ab2IBCvK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Sep 2012 22:51:10 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:60860 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755828Ab2IBCvI (ORCPT
+	id S1755879Ab2IBDGP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Sep 2012 23:06:15 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:50178 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755828Ab2IBDGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Sep 2012 22:51:08 -0400
-X-Originating-IP: 217.70.178.134
-X-Originating-IP: 50.43.46.74
-Date: Sat, 1 Sep 2012 19:51:00 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        Dimitri Sivanich <sivanich@sgi.com>
-Subject: Re: [PATCH tip/core/rcu 08/23] rcu: Segregate rcu_state fields to
- improve cache locality
-Message-ID: <20120902025100.GA6786@leaf>
-References: <20120830181811.GA29154@linux.vnet.ibm.com>
- <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346350718-30937-8-git-send-email-paulmck@linux.vnet.ibm.com>
+	Sat, 1 Sep 2012 23:06:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346350718-30937-8-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Sat, 1 Sep 2012 23:06:13 -0400
+Message-ID: <CAB-_8Q6XNAkXC1DMfem8yBO-xyRCS+xfGCfZ=jrx=jBEWZNMdQ@mail.gmail.com>
+Subject: Dm-cache in the Cloud (Call for beta testing, Free Linux cloud VM available)
+From: Ming Zhao <mingzhao99th@gmail.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>,
+        device-mapper development <dm-devel@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 11:18:23AM -0700, Paul E. McKenney wrote:
-> From: Dimitri Sivanich <sivanich@sgi.com>
-> 
-> The fields in the rcu_state structure that are protected by the
-> root rcu_node structure's ->lock can share a cache line with the
-> fields protected by ->onofflock.  This can result in excessive
-> memory contention on large systems, so this commit applies
-> ____cacheline_internodealigned_in_smp to the ->onofflock field in
-> order to segregate them.
-> 
-> Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Tested-by: Dimitri Sivanich <sivanich@sgi.com>
+Dm-cache is a generic device mapper cache target developed by Dr. Ming
+Zhao and his VISA research lab at Florida International University.
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+In collaboration with CloudVPS, a leading European cloud provider,
+dm-cache is now deployed in the clouds. Free Linux VMs will be offered
+to users who are interested in participating the beta test.
 
->  kernel/rcutree.h |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-> index effb273..5d92b80 100644
-> --- a/kernel/rcutree.h
-> +++ b/kernel/rcutree.h
-> @@ -394,7 +394,8 @@ struct rcu_state {
->  
->  	/* End of fields guarded by root rcu_node's lock. */
->  
-> -	raw_spinlock_t onofflock;		/* exclude on/offline and */
-> +	raw_spinlock_t onofflock ____cacheline_internodealigned_in_smp;
-> +						/* exclude on/offline and */
->  						/*  starting new GP. */
->  	struct rcu_head *orphan_nxtlist;	/* Orphaned callbacks that */
->  						/*  need a grace period. */
-> -- 
-> 1.7.8
-> 
+Active research is currently ongoing by the VISA lab and its industry
+collaborators on optimizing dm-cache for SSDs and cloud systems.
+
+More details about dm-cache: http://visa.cs.fiu.edu/dmcache
+More details about the beta test:
+https://www.cloudvps.com/blog/free-linux-vps-with-ssd-cache-beta-test
+
+If you have any question or request about dm-cache, please send it
+directly to dm-cache@googlegroups.com.
+
+
+- Ming
+
+Ming Zhao, Ph.D., Assistant Professor
+Director, VISA Research Lab
+School of Computing and Information Sciences
+Florida International University
+Tel: (305) 348-2034, Fax: (305) 348-3549
+Email: ming@cs.fiu.edu
+Web: http://visa.cs.fiu.edu/ming
