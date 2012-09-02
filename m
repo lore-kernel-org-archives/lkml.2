@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148Ab2IBFsT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 01:48:19 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:53814 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095Ab2IBFsR (ORCPT
+	id S1754142Ab2IBFsn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 01:48:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62276 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751973Ab2IBFsl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 01:48:17 -0400
+	Sun, 2 Sep 2012 01:48:41 -0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Thomas Gleixner <tglx@linutronix.de>
 Cc: Pekka Enberg <penberg@kernel.org>,
@@ -19,9 +19,9 @@ Cc: Pekka Enberg <penberg@kernel.org>,
         John Stultz <john.stultz@linaro.org>, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 1/4] kernel/time: Add new helpers to convert ktime to/from jiffies
-Date: Sat,  1 Sep 2012 22:45:19 -0700
-Message-Id: <1346564722-14408-1-git-send-email-anton.vorontsov@linaro.org>
+Subject: [PATCH 2/4] timerfd: Move repeated logic into timefd_rearm()
+Date: Sat,  1 Sep 2012 22:45:20 -0700
+Message-Id: <1346564722-14408-2-git-send-email-anton.vorontsov@linaro.org>
 X-Mailer: git-send-email 1.7.11.5
 In-Reply-To: <20120902054335.GA12741@lizard>
 References: <20120902054335.GA12741@lizard>
@@ -29,106 +29,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Two new functions: jiffies_to_ktime() and ktime_to_jiffies(), we'll use
-them for timerfd deferred timers handling.
+This patch introduces timerfd_rearm(), this small helper is used to
+forward and restart the hrtimer.
 
-We fully reuse the logic from timespec implementations, so the functions
-are pretty straightforward.
-
-The only tricky part is in headers: we have to include jiffies.h after
-we defined ktime_t, this is because ktime.h needs some declarations from
-jiffies.h (e.g. TICK_NSEC).
+This small refactoring would be also useful if/when we'll add other
+backend for timerfd (like deferrable timers), so we won't need to
+duplicate the code more.
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- include/linux/jiffies.h |  3 +++
- include/linux/ktime.h   |  3 ++-
- kernel/time.c           | 23 +++++++++++++++++++++++
- 3 files changed, 28 insertions(+), 1 deletion(-)
+ fs/timerfd.c | 16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
-index 265e2c3..4451241 100644
---- a/include/linux/jiffies.h
-+++ b/include/linux/jiffies.h
-@@ -6,6 +6,7 @@
- #include <linux/types.h>
- #include <linux/time.h>
- #include <linux/timex.h>
-+#include <linux/ktime.h>
- #include <asm/param.h>			/* for HZ */
- 
- /*
-@@ -303,6 +304,8 @@ extern void jiffies_to_timespec(const unsigned long jiffies,
- extern unsigned long timeval_to_jiffies(const struct timeval *value);
- extern void jiffies_to_timeval(const unsigned long jiffies,
- 			       struct timeval *value);
-+extern unsigned long ktime_to_jiffies(ktime_t *value);
-+extern void jiffies_to_ktime(const unsigned long jiffies, ktime_t *value);
- extern clock_t jiffies_to_clock_t(unsigned long x);
- extern unsigned long clock_t_to_jiffies(unsigned long x);
- extern u64 jiffies_64_to_clock_t(u64 x);
-diff --git a/include/linux/ktime.h b/include/linux/ktime.h
-index 603bec2..9551856 100644
---- a/include/linux/ktime.h
-+++ b/include/linux/ktime.h
-@@ -22,7 +22,6 @@
- #define _LINUX_KTIME_H
- 
- #include <linux/time.h>
--#include <linux/jiffies.h>
- 
- /*
-  * ktime_t:
-@@ -58,6 +57,8 @@ union ktime {
- 
- typedef union ktime ktime_t;		/* Kill this */
- 
-+#include <linux/jiffies.h>
-+
- #define KTIME_MAX			((s64)~((u64)1 << 63))
- #if (BITS_PER_LONG == 64)
- # define KTIME_SEC_MAX			(KTIME_MAX / NSEC_PER_SEC)
-diff --git a/kernel/time.c b/kernel/time.c
-index ba744cf..82c06c5 100644
---- a/kernel/time.c
-+++ b/kernel/time.c
-@@ -29,6 +29,7 @@
- 
- #include <linux/export.h>
- #include <linux/timex.h>
-+#include <linux/ktime.h>
- #include <linux/capability.h>
- #include <linux/clocksource.h>
- #include <linux/errno.h>
-@@ -566,6 +567,28 @@ void jiffies_to_timeval(const unsigned long jiffies, struct timeval *value)
+diff --git a/fs/timerfd.c b/fs/timerfd.c
+index dffeb37..ecfb3f3 100644
+--- a/fs/timerfd.c
++++ b/fs/timerfd.c
+@@ -178,6 +178,14 @@ static unsigned int timerfd_poll(struct file *file, poll_table *wait)
+ 	return events;
  }
- EXPORT_SYMBOL(jiffies_to_timeval);
  
-+unsigned long ktime_to_jiffies(ktime_t *value)
++static u64 timerfd_rearm(struct timerfd_ctx *ctx)
 +{
-+	struct timespec ts = ktime_to_timespec(*value);
++	u64 orun = hrtimer_forward_now(&ctx->tmr, ctx->tintv) - 1;
 +
-+	/*
-+	 * nsecs_to_jiffies(ktime_to_ns(*ktime)) is unsafe as nsecs_to_jiffies
-+	 * doesn't handle MAX_JIFFY_OFFSET. So we reuse the logic from the
-+	 * timespec to jiffies conversion function.
-+	 */
-+	return timespec_to_jiffies(&ts);
++	hrtimer_restart(&ctx->tmr);
++	return orun;
 +}
-+EXPORT_SYMBOL(ktime_to_jiffies);
 +
-+void jiffies_to_ktime(const unsigned long jiffies, ktime_t *value)
-+{
-+	struct timespec ts;
-+
-+	jiffies_to_timespec(jiffies, &ts);
-+	*value = timespec_to_ktime(ts);
-+}
-+EXPORT_SYMBOL(jiffies_to_ktime);
-+
- /*
-  * Convert jiffies/jiffies_64 to clock_t and back.
-  */
+ static ssize_t timerfd_read(struct file *file, char __user *buf, size_t count,
+ 			    loff_t *ppos)
+ {
+@@ -214,9 +222,7 @@ static ssize_t timerfd_read(struct file *file, char __user *buf, size_t count,
+ 			 * callback to avoid DoS attacks specifying a very
+ 			 * short timer period.
+ 			 */
+-			ticks += hrtimer_forward_now(&ctx->tmr,
+-						     ctx->tintv) - 1;
+-			hrtimer_restart(&ctx->tmr);
++			ticks += timerfd_rearm(ctx);
+ 		}
+ 		ctx->expired = 0;
+ 		ctx->ticks = 0;
+@@ -355,9 +361,7 @@ SYSCALL_DEFINE2(timerfd_gettime, int, ufd, struct itimerspec __user *, otmr)
+ 	spin_lock_irq(&ctx->wqh.lock);
+ 	if (ctx->expired && ctx->tintv.tv64) {
+ 		ctx->expired = 0;
+-		ctx->ticks +=
+-			hrtimer_forward_now(&ctx->tmr, ctx->tintv) - 1;
+-		hrtimer_restart(&ctx->tmr);
++		ctx->ticks += timerfd_rearm(ctx);
+ 	}
+ 	kotmr.it_value = ktime_to_timespec(timerfd_get_remaining(ctx));
+ 	kotmr.it_interval = ktime_to_timespec(ctx->tintv);
 -- 
 1.7.11.5
 
