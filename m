@@ -1,50 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755894Ab2IBHhx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 03:37:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34853 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752170Ab2IBHhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 03:37:52 -0400
-Date: Sun, 2 Sep 2012 09:37:40 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Kees Cook <keescook@chromium.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Eric Paris <eparis@parisplace.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        James Morris <james.l.morris@oracle.com>,
-        Eric Paris <eparis@redhat.com>,
-        John Johansen <john.johansen@canonical.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] security: unconditionally call Yama
-In-Reply-To: <CAGXu5jKD0MDetYuavSmXjDB3t3cYEkiEoEY-bAMyhFrmTaA6FA@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1209020935390.20709@pobox.suse.cz>
-References: <20120831213126.GA19688@www.outflux.net> <20120831223908.4aa5574d@pyramind.ukuu.org.uk> <CACLa4pv75-HaPEas=aOMySbMm-YdSJZdc6qtNUnTM+Ev2Rp7rg@mail.gmail.com> <87ipbyfw9j.fsf@xmission.com> <CACLa4ptpGJ7YDTqmOvtHq_Ts9f72SBV6Q_HDDw1OebhxVOzU9w@mail.gmail.com>
- <87627ye7vh.fsf@xmission.com> <CAGXu5jKD0MDetYuavSmXjDB3t3cYEkiEoEY-bAMyhFrmTaA6FA@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755908Ab2IBHr3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 03:47:29 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:40955 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755013Ab2IBHr1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Sep 2012 03:47:27 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+        Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH -v2 02/13] x86, mm: Split out split_mem_range
+Date: Sun,  2 Sep 2012 00:46:48 -0700
+Message-Id: <1346572019-15806-3-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1346572019-15806-1-git-send-email-yinghai@kernel.org>
+References: <1346572019-15806-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 Aug 2012, Kees Cook wrote:
+from init_memory_mapping, so make init_memory_mapping readable.
 
-> Given that several distros use (or want to use) Yama, I think that's 
-> reason enough for this. I think it's important for us to take a 
-> practical approach here, and having the big LSMs each hook Yama instead 
-> of doing this in a single global place will make it needlessly 
-> duplicated code.
+Suggested-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ arch/x86/mm/init.c |   42 ++++++++++++++++++++++++++----------------
+ 1 files changed, 26 insertions(+), 16 deletions(-)
 
-With my SUSE hat on, I would be really reluctant to enable config option 
-in the distribution kernel that will make attaching gdb to running 
-processess impossible without any further tuning (like sysctl/procfs knob 
-to explicitly enable this feature).
-
-Thanks,
-
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 838e9bc..7d05e28 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -143,25 +143,13 @@ static int __meminit save_mr(struct map_range *mr, int nr_range,
+ 	return nr_range;
+ }
+ 
+-/*
+- * Setup the direct mapping of the physical memory at PAGE_OFFSET.
+- * This runs before bootmem is initialized and gets pages directly from
+- * the physical memory. To access them they are temporarily mapped.
+- */
+-unsigned long __init_refok init_memory_mapping(unsigned long start,
+-					       unsigned long end)
++static int __meminit split_mem_range(struct map_range *mr, int nr_range,
++				     unsigned long start,
++				     unsigned long end)
+ {
+ 	unsigned long start_pfn, end_pfn;
+-	unsigned long ret = 0;
+ 	unsigned long pos;
+-	struct map_range mr[NR_RANGE_MR];
+-	int nr_range, i;
+-
+-	printk(KERN_INFO "init_memory_mapping: [mem %#010lx-%#010lx]\n",
+-	       start, end - 1);
+-
+-	memset(mr, 0, sizeof(mr));
+-	nr_range = 0;
++	int i;
+ 
+ 	/* head if not big page alignment ? */
+ 	start_pfn = start >> PAGE_SHIFT;
+@@ -255,6 +243,28 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+ 			(mr[i].page_size_mask & (1<<PG_LEVEL_1G))?"1G":(
+ 			 (mr[i].page_size_mask & (1<<PG_LEVEL_2M))?"2M":"4k"));
+ 
++	return nr_range;
++}
++
++/*
++ * Setup the direct mapping of the physical memory at PAGE_OFFSET.
++ * This runs before bootmem is initialized and gets pages directly from
++ * the physical memory. To access them they are temporarily mapped.
++ */
++unsigned long __init_refok init_memory_mapping(unsigned long start,
++					       unsigned long end)
++{
++	struct map_range mr[NR_RANGE_MR];
++	unsigned long ret = 0;
++	int nr_range, i;
++
++	pr_info("init_memory_mapping: [mem %#010lx-%#010lx]\n",
++	       start, end - 1);
++
++	memset(mr, 0, sizeof(mr));
++	nr_range = 0;
++	nr_range = split_mem_range(mr, nr_range, start, end);
++
+ 	/*
+ 	 * Find space for the kernel direct mapping tables.
+ 	 *
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.7
+
