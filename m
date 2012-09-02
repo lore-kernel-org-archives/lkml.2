@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755951Ab2IBVxz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 17:53:55 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:23552 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755882Ab2IBVwn (ORCPT
+	id S1755875Ab2IBVwm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 17:52:42 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:19800 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755602Ab2IBVwi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 17:52:43 -0400
+	Sun, 2 Sep 2012 17:52:38 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>,
         Taku Izumi <izumi.taku@jp.fujitsu.com>,
@@ -16,9 +16,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH part3 07/11] PCI: Add pci_bus_add_single_device()
-Date: Sun,  2 Sep 2012 14:52:17 -0700
-Message-Id: <1346622741-30799-8-git-send-email-yinghai@kernel.org>
+Subject: [PATCH part3 04/11] PCI: Use __pci_bus_size_bridges() directly in pci_assign_unassigned_bus_resources()
+Date: Sun,  2 Sep 2012 14:52:14 -0700
+Message-Id: <1346622741-30799-5-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1346622741-30799-1-git-send-email-yinghai@kernel.org>
 References: <1346622741-30799-1-git-send-email-yinghai@kernel.org>
@@ -27,77 +27,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Will use it to pci_bus_bridge_scan_resize() to make bridge will
-have pci_bus directory created correctly.
+Now __pci_bus_size_bridges() will not include self bridge.
+So we don't need to have our own version in
+ pci_assign_unassigned_bus_resources anymore.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/bus.c   |   39 +++++++++++++++++++++++++++++++++++++++
- include/linux/pci.h |    1 +
- 2 files changed, 40 insertions(+), 0 deletions(-)
+ drivers/pci/setup-bus.c |    8 +-------
+ 1 files changed, 1 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
-index 2882d01..950b786 100644
---- a/drivers/pci/bus.c
-+++ b/drivers/pci/bus.c
-@@ -259,6 +259,45 @@ void pci_bus_add_devices(const struct pci_bus *bus)
- 	}
- }
+diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+index 70d6292..054d54b 100644
+--- a/drivers/pci/setup-bus.c
++++ b/drivers/pci/setup-bus.c
+@@ -1519,17 +1519,11 @@ EXPORT_SYMBOL_GPL(pci_assign_unassigned_bridge_resources);
  
-+void pci_bus_add_single_device(struct pci_dev *dev)
-+{
-+	struct pci_bus *child;
-+	int retval;
-+
-+	/* Skip already-added devices */
-+	if (!dev->is_added) {
-+		retval = pci_bus_add_device(dev);
-+		if (retval)
-+			dev_err(&dev->dev, "Error adding device, continuing\n");
-+	}
-+
-+	BUG_ON(!dev->is_added);
-+
-+	child = dev->subordinate;
-+	/*
-+	 * If there is an unattached subordinate bus, attach
-+	 * it and then scan for unattached PCI devices.
-+	 */
-+	if (child) {
-+		if (list_empty(&child->node)) {
-+			down_write(&pci_bus_sem);
-+			list_add_tail(&child->node, &dev->bus->children);
-+			up_write(&pci_bus_sem);
-+		}
-+		pci_bus_add_devices(child);
-+
-+		/*
-+		 * register the bus with sysfs as the parent is now
-+		 * properly registered.
-+		 */
-+		if (!child->is_added) {
-+			retval = pci_bus_add_child(child);
-+			if (retval)
-+				dev_err(&dev->dev, "Error adding bus, continuing\n");
-+		}
-+	}
-+}
-+
- void pci_enable_bridges(struct pci_bus *bus)
+ void pci_assign_unassigned_bus_resources(struct pci_bus *bus)
  {
- 	struct pci_dev *dev;
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index f994e93..4446448 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -700,6 +700,7 @@ void pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
- void pcibios_scan_specific_bus(int busn);
- extern struct pci_bus *pci_find_bus(int domain, int busnr);
- void pci_bus_add_devices(const struct pci_bus *bus);
-+void pci_bus_add_single_device(struct pci_dev *dev);
- struct pci_bus *pci_scan_bus_parented(struct device *parent, int bus,
- 				      struct pci_ops *ops, void *sysdata);
- struct pci_bus *pci_scan_bus(int bus, struct pci_ops *ops, void *sysdata);
+-	struct pci_dev *dev;
+ 	LIST_HEAD(add_list); /* list of resources that
+ 					want additional resources */
+ 
+ 	down_read(&pci_bus_sem);
+-	list_for_each_entry(dev, &bus->devices, bus_list)
+-		if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE ||
+-		    dev->hdr_type == PCI_HEADER_TYPE_CARDBUS)
+-			if (dev->subordinate)
+-				__pci_bus_size_bridges(dev->subordinate,
+-						 &add_list, true);
++	__pci_bus_size_bridges(bus, &add_list, false);
+ 	up_read(&pci_bus_sem);
+ 	__pci_bus_assign_resources(bus, &add_list, NULL);
+ 	BUG_ON(!list_empty(&add_list));
 -- 
 1.7.7
 
