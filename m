@@ -1,708 +1,451 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756046Ab2IBKV5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 06:21:57 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:61153 "EHLO
+	id S1755995Ab2IBKbI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 06:31:08 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:51130 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755983Ab2IBKV2 (ORCPT
+	with ESMTP id S1755938Ab2IBKbF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 06:21:28 -0400
+	Sun, 2 Sep 2012 06:31:05 -0400
 From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/6] unicore32: Add common clock support
-Date: Sun,  2 Sep 2012 12:21:11 +0200
-Message-Id: <1346581273-7041-5-git-send-email-thierry.reding@avionic-design.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH] pwm: Move AB8500 PWM driver to PWM framework
+Date: Sun,  2 Sep 2012 12:30:58 +0200
+Message-Id: <1346581858-7469-1-git-send-email-thierry.reding@avionic-design.de>
 X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1346581273-7041-1-git-send-email-thierry.reding@avionic-design.de>
-References: <1346581273-7041-1-git-send-email-thierry.reding@avionic-design.de>
-X-Provags-ID: V02:K0:o+qVSebAT624WjfoOHbLM18ZbrmGB++p4vYhHTLLB1J
- rkNb4k/krmaLIzinWwVjtKWO742riaW1BpPqjDRVMi0Gdtb3zw
- vm7lRpfnBKxlaT4JxxpRNbOA3LFc6ZNlHuR2siuq7Me8oAsH5X
- 6ZIkkwsw5Woe7act4ZZ+rM3xtVBmlyA3n5kLoYLihEgekSMVWA
- 5URK0iWCQaPXWanH2BUTJxThcrnKhKMMiV7abuZtM2QqBctYCW
- 8oq2I0l2usF0z1nnrIFRa+9CBYHrahcnwxQxh2T8XYeyN8p6VD
- M40RrOjUAAiJnD330Myi+qxoW6WGkeQhLLaCM0ZiD6C9LpKNWB
- oVvWwg+Lo/ZlbIi9a2monsckqaPpVKAhN2PuHOPKJxnTO8vgTE
- 3kI8I1aEz+s/Hf4L8gLzpMCQMMhX/U7lQFgpmD72B6aLs+1qK8
- N4Q3o
+X-Provags-ID: V02:K0:Twn43vCz5fNig+TubWMFrL9QFBY5rgzpYntl7ITri8h
+ ny0ws2Q9wbykXc01CF7ZKcguX30kja8sW8DcncvR06bQCMgEJ8
+ d/gVT10h0g/2DC9DJMdiDyvJTtGgz4QhXCsQBVvwOqFAbi/DoL
+ POf5awN0Iai7jnij3jgNdWvGtqbFjTFnd2q+zXuH4qh4Q3Vpp0
+ Fi8L+UQnyMEzn69KV9JWd55RzRftjuecrTosM8nqDRdzr/W8aV
+ EcPsC6OheC4lH6TKuRSOscbADSfs2c7oxdNZat2sedAXPxJn/8
+ am7ZUpy5RZ4Sxqr/V8LcKoRdvXZst8IrW6wXdhwRdG0UviSYMj
+ 7AcrT6RnxTi/FowAinWiMemq6d+1UZZPyJRfQ65cDgaKlHxPtQ
+ MuB5EfT2W0T8CXYp78zLXg5a8oSeWfSVZIYHRN91r8To0ftqil
+ PRy/X
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit adds support for the common clock framework to the Unicore32
-architecture.
+This commit moves the driver to drivers/pwm and converts it to the new
+PWM framework.
 
 Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
 ---
- arch/unicore32/Kconfig              |   1 +
- arch/unicore32/include/asm/clkdev.h |  26 ++
- arch/unicore32/kernel/clock.c       | 560 ++++++++++++++++++++----------------
- 3 files changed, 339 insertions(+), 248 deletions(-)
- create mode 100644 arch/unicore32/include/asm/clkdev.h
+Note: I'll take this through the PWM tree, but I'd like to have it
+acknowledged by a few people who know the hardware and can actually
+test whether this still works.
 
-diff --git a/arch/unicore32/Kconfig b/arch/unicore32/Kconfig
-index b0a4743..46b3a15 100644
---- a/arch/unicore32/Kconfig
-+++ b/arch/unicore32/Kconfig
-@@ -14,6 +14,7 @@ config UNICORE32
- 	select GENERIC_IRQ_SHOW
- 	select ARCH_WANT_FRAME_POINTERS
- 	select GENERIC_IOMAP
-+	select COMMON_CLK
- 	help
- 	  UniCore-32 is 32-bit Instruction Set Architecture,
- 	  including a series of low-power-consumption RISC chip
-diff --git a/arch/unicore32/include/asm/clkdev.h b/arch/unicore32/include/asm/clkdev.h
-new file mode 100644
-index 0000000..201645d
---- /dev/null
-+++ b/arch/unicore32/include/asm/clkdev.h
-@@ -0,0 +1,26 @@
-+/*
-+ *  based on arch/arm/include/asm/clkdev.h
-+ *
-+ *  Copyright (C) 2008 Russell King.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Helper for the clk API to assist looking up a struct clk.
-+ */
-+
-+#ifndef __ASM_CLKDEV_H
-+#define __ASM_CLKDEV_H
-+
-+#include <linux/slab.h>
-+
-+#define __clk_get(clk)	({ 1; })
-+#define __clk_put(clk)	do { } while (0)
-+
-+static inline struct clk_lookup_alloc *__clkdev_alloc(size_t size)
-+{
-+	return kzalloc(size, GFP_KERNEL);
-+}
-+
-+#endif
-diff --git a/arch/unicore32/kernel/clock.c b/arch/unicore32/kernel/clock.c
-index 18d4563..197f885 100644
---- a/arch/unicore32/kernel/clock.c
-+++ b/arch/unicore32/kernel/clock.c
-@@ -17,223 +17,50 @@
- #include <linux/errno.h>
- #include <linux/err.h>
- #include <linux/string.h>
--#include <linux/clk.h>
-+#include <linux/clk-provider.h>
- #include <linux/mutex.h>
- #include <linux/delay.h>
- #include <linux/io.h>
-+#include <linux/slab.h>
+ drivers/misc/Kconfig      |  10 ---
+ drivers/misc/Makefile     |   1 -
+ drivers/misc/ab8500-pwm.c | 169 ----------------------------------------------
+ drivers/pwm/Kconfig       |   9 +++
+ drivers/pwm/Makefile      |   1 +
+ drivers/pwm/pwm-ab8500.c  | 153 +++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 163 insertions(+), 180 deletions(-)
+ delete mode 100644 drivers/misc/ab8500-pwm.c
+ create mode 100644 drivers/pwm/pwm-ab8500.c
+
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index 98a442d..041b656 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -60,16 +60,6 @@ config ATMEL_PWM
+ 	  purposes including software controlled power-efficient backlights
+ 	  on LCD displays, motor control, and waveform generation.
  
- #include <mach/hardware.h>
- 
+-config AB8500_PWM
+-	bool "AB8500 PWM support"
+-	depends on AB8500_CORE && ARCH_U8500
+-	select HAVE_PWM
+-	depends on !PWM
+-	help
+-	  This driver exports functions to enable/disble/config/free Pulse
+-	  Width Modulation in the Analog Baseband Chip AB8500.
+-	  It is used by led and backlight driver to control the intensity.
+-
+ config ATMEL_TCLIB
+ 	bool "Atmel AT32/AT91 Timer/Counter Library"
+ 	depends on (AVR32 || ARCH_AT91)
+diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+index b88df7a..2129377 100644
+--- a/drivers/misc/Makefile
++++ b/drivers/misc/Makefile
+@@ -44,7 +44,6 @@ obj-$(CONFIG_VMWARE_BALLOON)	+= vmw_balloon.o
+ obj-$(CONFIG_ARM_CHARLCD)	+= arm-charlcd.o
+ obj-$(CONFIG_PCH_PHUB)		+= pch_phub.o
+ obj-y				+= ti-st/
+-obj-$(CONFIG_AB8500_PWM)	+= ab8500-pwm.o
+ obj-y				+= lis3lv02d/
+ obj-y				+= carma/
+ obj-$(CONFIG_USB_SWITCH_FSA9480) += fsa9480.o
+diff --git a/drivers/misc/ab8500-pwm.c b/drivers/misc/ab8500-pwm.c
+deleted file mode 100644
+index d7a9aa1..0000000
+--- a/drivers/misc/ab8500-pwm.c
++++ /dev/null
+@@ -1,169 +0,0 @@
 -/*
-- * Very simple clock implementation
+- * Copyright (C) ST-Ericsson SA 2010
+- *
+- * Author: Arun R Murthy <arun.murthy@stericsson.com>
+- * License terms: GNU General Public License (GPL) version 2
 - */
--struct clk {
--	struct list_head	node;
--	unsigned long		rate;
--	const char		*name;
+-#include <linux/err.h>
+-#include <linux/platform_device.h>
+-#include <linux/slab.h>
+-#include <linux/pwm.h>
+-#include <linux/mfd/abx500.h>
+-#include <linux/mfd/abx500/ab8500.h>
+-#include <linux/module.h>
+-
+-/*
+- * PWM Out generators
+- * Bank: 0x10
+- */
+-#define AB8500_PWM_OUT_CTRL1_REG	0x60
+-#define AB8500_PWM_OUT_CTRL2_REG	0x61
+-#define AB8500_PWM_OUT_CTRL7_REG	0x66
+-
+-/* backlight driver constants */
+-#define ENABLE_PWM			1
+-#define DISABLE_PWM			0
+-
+-struct pwm_device {
+-	struct device *dev;
+-	struct list_head node;
+-	const char *label;
+-	unsigned int pwm_id;
 -};
 -
--static struct clk clk_ost_clk = {
--	.name		= "OST_CLK",
--	.rate		= CLOCK_TICK_RATE,
--};
+-static LIST_HEAD(pwm_list);
 -
--static struct clk clk_mclk_clk = {
--	.name		= "MAIN_CLK",
--};
--
--static struct clk clk_bclk32_clk = {
--	.name		= "BUS32_CLK",
-+struct clk_uc {
-+	struct clk_hw hw;
- };
- 
--static struct clk clk_ddr_clk = {
--	.name		= "DDR_CLK",
--};
--
--static struct clk clk_vga_clk = {
--	.name		= "VGA_CLK",
--};
--
--static LIST_HEAD(clocks);
--static DEFINE_MUTEX(clocks_mutex);
--
--struct clk *clk_get(struct device *dev, const char *id)
+-int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
 -{
--	struct clk *p, *clk = ERR_PTR(-ENOENT);
+-	int ret = 0;
+-	unsigned int higher_val, lower_val;
+-	u8 reg;
 -
--	mutex_lock(&clocks_mutex);
--	list_for_each_entry(p, &clocks, node) {
--		if (strcmp(id, p->name) == 0) {
--			clk = p;
--			break;
+-	/*
+-	 * get the first 8 bits that are be written to
+-	 * AB8500_PWM_OUT_CTRL1_REG[0:7]
+-	 */
+-	lower_val = duty_ns & 0x00FF;
+-	/*
+-	 * get bits [9:10] that are to be written to
+-	 * AB8500_PWM_OUT_CTRL2_REG[0:1]
+-	 */
+-	higher_val = ((duty_ns & 0x0300) >> 8);
+-
+-	reg = AB8500_PWM_OUT_CTRL1_REG + ((pwm->pwm_id - 1) * 2);
+-
+-	ret = abx500_set_register_interruptible(pwm->dev, AB8500_MISC,
+-			reg, (u8)lower_val);
+-	if (ret < 0)
+-		return ret;
+-	ret = abx500_set_register_interruptible(pwm->dev, AB8500_MISC,
+-			(reg + 1), (u8)higher_val);
+-
+-	return ret;
+-}
+-EXPORT_SYMBOL(pwm_config);
+-
+-int pwm_enable(struct pwm_device *pwm)
+-{
+-	int ret;
+-
+-	ret = abx500_mask_and_set_register_interruptible(pwm->dev,
+-				AB8500_MISC, AB8500_PWM_OUT_CTRL7_REG,
+-				1 << (pwm->pwm_id-1), ENABLE_PWM);
+-	if (ret < 0)
+-		dev_err(pwm->dev, "%s: Failed to disable PWM, Error %d\n",
+-							pwm->label, ret);
+-	return ret;
+-}
+-EXPORT_SYMBOL(pwm_enable);
+-
+-void pwm_disable(struct pwm_device *pwm)
+-{
+-	int ret;
+-
+-	ret = abx500_mask_and_set_register_interruptible(pwm->dev,
+-				AB8500_MISC, AB8500_PWM_OUT_CTRL7_REG,
+-				1 << (pwm->pwm_id-1), DISABLE_PWM);
+-	if (ret < 0)
+-		dev_err(pwm->dev, "%s: Failed to disable PWM, Error %d\n",
+-							pwm->label, ret);
+-	return;
+-}
+-EXPORT_SYMBOL(pwm_disable);
+-
+-struct pwm_device *pwm_request(int pwm_id, const char *label)
+-{
+-	struct pwm_device *pwm;
+-
+-	list_for_each_entry(pwm, &pwm_list, node) {
+-		if (pwm->pwm_id == pwm_id) {
+-			pwm->label = label;
+-			pwm->pwm_id = pwm_id;
+-			return pwm;
 -		}
 -	}
--	mutex_unlock(&clocks_mutex);
 -
--	return clk;
+-	return ERR_PTR(-ENOENT);
 -}
--EXPORT_SYMBOL(clk_get);
+-EXPORT_SYMBOL(pwm_request);
 -
--void clk_put(struct clk *clk)
+-void pwm_free(struct pwm_device *pwm)
 -{
+-	pwm_disable(pwm);
 -}
--EXPORT_SYMBOL(clk_put);
+-EXPORT_SYMBOL(pwm_free);
 -
--int clk_enable(struct clk *clk)
+-static int __devinit ab8500_pwm_probe(struct platform_device *pdev)
 -{
+-	struct pwm_device *pwm;
+-	/*
+-	 * Nothing to be done in probe, this is required to get the
+-	 * device which is required for ab8500 read and write
+-	 */
+-	pwm = kzalloc(sizeof(struct pwm_device), GFP_KERNEL);
+-	if (pwm == NULL) {
+-		dev_err(&pdev->dev, "failed to allocate memory\n");
+-		return -ENOMEM;
+-	}
+-	pwm->dev = &pdev->dev;
+-	pwm->pwm_id = pdev->id;
+-	list_add_tail(&pwm->node, &pwm_list);
+-	platform_set_drvdata(pdev, pwm);
+-	dev_dbg(pwm->dev, "pwm probe successful\n");
 -	return 0;
 -}
--EXPORT_SYMBOL(clk_enable);
 -
--void clk_disable(struct clk *clk)
-+static inline struct clk_uc *to_clk_uc(struct clk_hw *hw)
- {
-+	return container_of(hw, struct clk_uc, hw);
- }
--EXPORT_SYMBOL(clk_disable);
--
--unsigned long clk_get_rate(struct clk *clk)
+-static int __devexit ab8500_pwm_remove(struct platform_device *pdev)
 -{
--	return clk->rate;
+-	struct pwm_device *pwm = platform_get_drvdata(pdev);
+-	list_del(&pwm->node);
+-	dev_dbg(&pdev->dev, "pwm driver removed\n");
+-	kfree(pwm);
+-	return 0;
 -}
--EXPORT_SYMBOL(clk_get_rate);
 -
--struct {
--	unsigned long rate;
--	unsigned long cfg;
--	unsigned long div;
--} vga_clk_table[] = {
--	{.rate =  25175000, .cfg = 0x00002001, .div = 0x9},
--	{.rate =  31500000, .cfg = 0x00002001, .div = 0x7},
--	{.rate =  40000000, .cfg = 0x00003801, .div = 0x9},
--	{.rate =  49500000, .cfg = 0x00003801, .div = 0x7},
--	{.rate =  65000000, .cfg = 0x00002c01, .div = 0x4},
--	{.rate =  78750000, .cfg = 0x00002400, .div = 0x7},
--	{.rate = 108000000, .cfg = 0x00002c01, .div = 0x2},
--	{.rate = 106500000, .cfg = 0x00003c01, .div = 0x3},
--	{.rate =  50650000, .cfg = 0x00106400, .div = 0x9},
--	{.rate =  61500000, .cfg = 0x00106400, .div = 0xa},
--	{.rate =  85500000, .cfg = 0x00002800, .div = 0x6},
+-static struct platform_driver ab8500_pwm_driver = {
+-	.driver = {
+-		.name = "ab8500-pwm",
+-		.owner = THIS_MODULE,
+-	},
+-	.probe = ab8500_pwm_probe,
+-	.remove = __devexit_p(ab8500_pwm_remove),
 -};
 -
--struct {
--	unsigned long mrate;
--	unsigned long prate;
--} mclk_clk_table[] = {
--	{.mrate = 500000000, .prate = 0x00109801},
--	{.mrate = 525000000, .prate = 0x00104C00},
--	{.mrate = 550000000, .prate = 0x00105000},
--	{.mrate = 575000000, .prate = 0x00105400},
--	{.mrate = 600000000, .prate = 0x00105800},
--	{.mrate = 625000000, .prate = 0x00105C00},
--	{.mrate = 650000000, .prate = 0x00106000},
--	{.mrate = 675000000, .prate = 0x00106400},
--	{.mrate = 700000000, .prate = 0x00106800},
--	{.mrate = 725000000, .prate = 0x00106C00},
--	{.mrate = 750000000, .prate = 0x00107000},
--	{.mrate = 775000000, .prate = 0x00107400},
--	{.mrate = 800000000, .prate = 0x00107800},
--};
- 
--int clk_set_rate(struct clk *clk, unsigned long rate)
-+static struct clk *clk_register_uc(const char *name, const char *parent,
-+				   const struct clk_ops *ops)
- {
--	if (clk == &clk_vga_clk) {
--		unsigned long pll_vgacfg, pll_vgadiv;
--		int ret, i;
--
--		/* lookup vga_clk_table */
--		ret = -EINVAL;
--		for (i = 0; i < ARRAY_SIZE(vga_clk_table); i++) {
--			if (rate == vga_clk_table[i].rate) {
--				pll_vgacfg = vga_clk_table[i].cfg;
--				pll_vgadiv = vga_clk_table[i].div;
--				ret = 0;
--				break;
--			}
--		}
--
--		if (ret)
--			return ret;
--
--		if (readl(PM_PLLVGACFG) == pll_vgacfg)
--			return 0;
-+	struct clk_init_data init;
-+	struct clk_uc *uc;
-+	struct clk *clk;
- 
--		/* set pll vga cfg reg. */
--		writel(pll_vgacfg, PM_PLLVGACFG);
-+	uc = kzalloc(sizeof(*uc), GFP_KERNEL);
-+	if (!uc)
-+		return NULL;
- 
--		writel(PM_PMCR_CFBVGA, PM_PMCR);
--		while ((readl(PM_PLLDFCDONE) & PM_PLLDFCDONE_VGADFC)
--				!= PM_PLLDFCDONE_VGADFC)
--			udelay(100); /* about 1ms */
-+	init.name = name;
-+	init.ops = ops;
-+	init.flags = 0;
-+	init.parent_names = parent ? &parent : NULL;
-+	init.num_parents = parent ? 1 : 0;
- 
--		/* set div cfg reg. */
--		writel(readl(PM_PCGR) | PM_PCGR_VGACLK, PM_PCGR);
-+	uc->hw.init = &init;
- 
--		writel((readl(PM_DIVCFG) & ~PM_DIVCFG_VGACLK_MASK)
--				| PM_DIVCFG_VGACLK(pll_vgadiv), PM_DIVCFG);
-+	clk = clk_register(NULL, &uc->hw);
-+	if (IS_ERR(clk))
-+		kfree(uc);
- 
--		writel(readl(PM_SWRESET) | PM_SWRESET_VGADIV, PM_SWRESET);
--		while ((readl(PM_SWRESET) & PM_SWRESET_VGADIV)
--				== PM_SWRESET_VGADIV)
--			udelay(100); /* 65536 bclk32, about 320us */
--
--		writel(readl(PM_PCGR) & ~PM_PCGR_VGACLK, PM_PCGR);
--	}
--#ifdef CONFIG_CPU_FREQ
--	if (clk == &clk_mclk_clk) {
--		u32 pll_rate, divstatus = PM_DIVSTATUS;
--		int ret, i;
--
--		/* lookup mclk_clk_table */
--		ret = -EINVAL;
--		for (i = 0; i < ARRAY_SIZE(mclk_clk_table); i++) {
--			if (rate == mclk_clk_table[i].mrate) {
--				pll_rate = mclk_clk_table[i].prate;
--				clk_mclk_clk.rate = mclk_clk_table[i].mrate;
--				ret = 0;
--				break;
--			}
--		}
--
--		if (ret)
--			return ret;
--
--		if (clk_mclk_clk.rate)
--			clk_bclk32_clk.rate = clk_mclk_clk.rate
--				/ (((divstatus & 0x0000f000) >> 12) + 1);
--
--		/* set pll sys cfg reg. */
--		PM_PLLSYSCFG = pll_rate;
--
--		PM_PMCR = PM_PMCR_CFBSYS;
--		while ((PM_PLLDFCDONE & PM_PLLDFCDONE_SYSDFC)
--				!= PM_PLLDFCDONE_SYSDFC)
--			udelay(100);
--			/* about 1ms */
--	}
--#endif
--	return 0;
--}
--EXPORT_SYMBOL(clk_set_rate);
--
--int clk_register(struct clk *clk)
+-static int __init ab8500_pwm_init(void)
 -{
--	mutex_lock(&clocks_mutex);
--	list_add(&clk->node, &clocks);
--	mutex_unlock(&clocks_mutex);
--	printk(KERN_DEFAULT "PKUnity PM: %s %lu.%02luM\n", clk->name,
--		(clk->rate)/1000000, (clk->rate)/10000 % 100);
--	return 0;
+-	return platform_driver_register(&ab8500_pwm_driver);
 -}
--EXPORT_SYMBOL(clk_register);
 -
--void clk_unregister(struct clk *clk)
+-static void __exit ab8500_pwm_exit(void)
 -{
--	mutex_lock(&clocks_mutex);
--	list_del(&clk->node);
--	mutex_unlock(&clocks_mutex);
-+	return clk;
- }
--EXPORT_SYMBOL(clk_unregister);
+-	platform_driver_unregister(&ab8500_pwm_driver);
+-}
+-
+-subsys_initcall(ab8500_pwm_init);
+-module_exit(ab8500_pwm_exit);
+-MODULE_AUTHOR("Arun MURTHY <arun.murthy@stericsson.com>");
+-MODULE_DESCRIPTION("AB8500 Pulse Width Modulation Driver");
+-MODULE_ALIAS("platform:ab8500-pwm");
+-MODULE_LICENSE("GPL v2");
+diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+index 007c225..e678005 100644
+--- a/drivers/pwm/Kconfig
++++ b/drivers/pwm/Kconfig
+@@ -28,6 +28,15 @@ menuconfig PWM
  
--struct {
-+static const struct {
- 	unsigned long prate;
- 	unsigned long rate;
- } pllrate_table[] = {
-@@ -301,7 +128,232 @@ struct {
- 	{.prate = 0x00109800, .rate = 1000000000},
- };
+ if PWM
  
--struct {
-+static unsigned long clk_vga_recalc_rate(struct clk_hw *hw,
-+					 unsigned long parent_rate)
-+{
-+	unsigned long pllrate = readl(PM_PLLVGASTATUS);
-+	unsigned long divstatus = readl(PM_DIVSTATUS);
-+	unsigned long rate = 0;
-+	unsigned int i;
++config PWM_AB8500
++	tristate "AB8500 PWM support"
++	depends on AB8500_CORE && ARCH_U8500
++	help
++	  Generic PWM framework driver for Analog Baseband AB8500.
 +
-+	/* lookup pvga_table */
-+	for (i = 0; i < ARRAY_SIZE(pllrate_table); i++) {
-+		if (pllrate == pllrate_table[i].prate) {
-+			rate = pllrate_table[i].rate;
-+			break;
-+		}
-+	}
++	  To compile this driver as a module, choose M here: the module
++	  will be called pwm-ab8500.
 +
-+	if (rate)
-+		rate = rate / (((divstatus & 0x00f00000) >> 20) + 1);
+ config PWM_BFIN
+ 	tristate "Blackfin PWM support"
+ 	depends on BFIN_GPTIMERS
+diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
+index c8e521b..29cf57e 100644
+--- a/drivers/pwm/Makefile
++++ b/drivers/pwm/Makefile
+@@ -1,4 +1,5 @@
+ obj-$(CONFIG_PWM)		+= core.o
++obj-$(CONFIG_PWM_AB8500)	+= pwm-ab8500.o
+ obj-$(CONFIG_PWM_BFIN)		+= pwm-bfin.o
+ obj-$(CONFIG_PWM_IMX)		+= pwm-imx.o
+ obj-$(CONFIG_PWM_JZ4740)	+= pwm-jz4740.o
+diff --git a/drivers/pwm/pwm-ab8500.c b/drivers/pwm/pwm-ab8500.c
+new file mode 100644
+index 0000000..cfb72ca
+--- /dev/null
++++ b/drivers/pwm/pwm-ab8500.c
+@@ -0,0 +1,153 @@
++/*
++ * Copyright (C) ST-Ericsson SA 2010
++ *
++ * Author: Arun R Murthy <arun.murthy@stericsson.com>
++ * License terms: GNU General Public License (GPL) version 2
++ */
++#include <linux/err.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++#include <linux/pwm.h>
++#include <linux/mfd/abx500.h>
++#include <linux/mfd/abx500/ab8500.h>
++#include <linux/module.h>
 +
-+	return rate;
-+}
++/*
++ * PWM Out generators
++ * Bank: 0x10
++ */
++#define AB8500_PWM_OUT_CTRL1_REG	0x60
++#define AB8500_PWM_OUT_CTRL2_REG	0x61
++#define AB8500_PWM_OUT_CTRL7_REG	0x66
 +
-+static const struct {
-+	unsigned long rate;
-+	unsigned long cfg;
-+	unsigned long div;
-+} vga_clk_table[] = {
-+	{.rate =  25175000, .cfg = 0x00002001, .div = 0x9},
-+	{.rate =  31500000, .cfg = 0x00002001, .div = 0x7},
-+	{.rate =  40000000, .cfg = 0x00003801, .div = 0x9},
-+	{.rate =  49500000, .cfg = 0x00003801, .div = 0x7},
-+	{.rate =  65000000, .cfg = 0x00002c01, .div = 0x4},
-+	{.rate =  78750000, .cfg = 0x00002400, .div = 0x7},
-+	{.rate = 108000000, .cfg = 0x00002c01, .div = 0x2},
-+	{.rate = 106500000, .cfg = 0x00003c01, .div = 0x3},
-+	{.rate =  50650000, .cfg = 0x00106400, .div = 0x9},
-+	{.rate =  61500000, .cfg = 0x00106400, .div = 0xa},
-+	{.rate =  85500000, .cfg = 0x00002800, .div = 0x6},
++/* backlight driver constants */
++#define ENABLE_PWM			1
++#define DISABLE_PWM			0
++
++struct ab8500_pwm_chip {
++	struct pwm_chip chip;
 +};
 +
-+static long clk_vga_round_rate(struct clk_hw *hw, unsigned long rate,
-+			       unsigned long *parent_rate)
++static int ab8500_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
++			     int duty_ns, int period_ns)
 +{
-+	unsigned long min = ULONG_MAX;
-+	unsigned int i, best = 0;
++	int ret = 0;
++	unsigned int higher_val, lower_val;
++	u8 reg;
 +
-+	for (i = 0; i < ARRAY_SIZE(vga_clk_table); i++) {
-+		unsigned long diff = abs(rate - vga_clk_table[i].rate);
++	/*
++	 * get the first 8 bits that are be written to
++	 * AB8500_PWM_OUT_CTRL1_REG[0:7]
++	 */
++	lower_val = duty_ns & 0x00FF;
++	/*
++	 * get bits [9:10] that are to be written to
++	 * AB8500_PWM_OUT_CTRL2_REG[0:1]
++	 */
++	higher_val = ((duty_ns & 0x0300) >> 8);
 +
-+		if (diff < min) {
-+			min = diff;
-+			best = i;
-+		}
-+	}
++	reg = AB8500_PWM_OUT_CTRL1_REG + ((chip->base - 1) * 2);
 +
-+	return vga_clk_table[best].rate;
++	ret = abx500_set_register_interruptible(chip->dev, AB8500_MISC,
++			reg, (u8)lower_val);
++	if (ret < 0)
++		return ret;
++	ret = abx500_set_register_interruptible(chip->dev, AB8500_MISC,
++			(reg + 1), (u8)higher_val);
++
++	return ret;
 +}
 +
-+static int clk_vga_set_rate(struct clk_hw *hw, unsigned long rate,
-+			    unsigned long parent_rate)
++static int ab8500_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
 +{
-+	unsigned long pll_vgacfg, pll_vgadiv;
-+	int ret = -EINVAL;
-+	unsigned int i;
++	int ret;
 +
-+	/* lookup vga_clk_table */
-+	for (i = 0; i < ARRAY_SIZE(vga_clk_table); i++) {
-+		if (rate == vga_clk_table[i].rate) {
-+			pll_vgacfg = vga_clk_table[i].cfg;
-+			pll_vgadiv = vga_clk_table[i].div;
-+			ret = 0;
-+			break;
-+		}
++	ret = abx500_mask_and_set_register_interruptible(chip->dev,
++				AB8500_MISC, AB8500_PWM_OUT_CTRL7_REG,
++				1 << (chip->base - 1), ENABLE_PWM);
++	if (ret < 0)
++		dev_err(chip->dev, "%s: Failed to disable PWM, Error %d\n",
++							pwm->label, ret);
++	return ret;
++}
++
++static void ab8500_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
++{
++	int ret;
++
++	ret = abx500_mask_and_set_register_interruptible(chip->dev,
++				AB8500_MISC, AB8500_PWM_OUT_CTRL7_REG,
++				1 << (chip->base - 1), DISABLE_PWM);
++	if (ret < 0)
++		dev_err(chip->dev, "%s: Failed to disable PWM, Error %d\n",
++							pwm->label, ret);
++	return;
++}
++
++static const struct pwm_ops ab8500_pwm_ops = {
++	.config = ab8500_pwm_config,
++	.enable = ab8500_pwm_enable,
++	.disable = ab8500_pwm_disable,
++};
++
++static int __devinit ab8500_pwm_probe(struct platform_device *pdev)
++{
++	struct ab8500_pwm_chip *ab8500;
++	int err;
++
++	/*
++	 * Nothing to be done in probe, this is required to get the
++	 * device which is required for ab8500 read and write
++	 */
++	ab8500 = kzalloc(sizeof(*ab8500), GFP_KERNEL);
++	if (ab8500 == NULL) {
++		dev_err(&pdev->dev, "failed to allocate memory\n");
++		return -ENOMEM;
 +	}
 +
-+	if (ret)
-+		return ret;
++	ab8500->chip.dev = &pdev->dev;
++	ab8500->chip.ops = &ab8500_pwm_ops;
++	ab8500->chip.base = pdev->id;
++	ab8500->chip.npwm = 1;
 +
-+	if (readl(PM_PLLVGACFG) == pll_vgacfg)
-+		return 0;
++	err = pwmchip_add(&ab8500->chip);
++	if (err < 0) {
++		kfree(ab8500);
++		return err;
++	}
 +
-+	/* set pll vga cfg reg. */
-+	writel(pll_vgacfg, PM_PLLVGACFG);
-+
-+	writel(PM_PMCR_CFBVGA, PM_PMCR);
-+	while ((readl(PM_PLLDFCDONE) & PM_PLLDFCDONE_VGADFC)
-+			!= PM_PLLDFCDONE_VGADFC)
-+		udelay(100); /* about 1ms */
-+
-+	/* set div cfg reg. */
-+	writel(readl(PM_PCGR) | PM_PCGR_VGACLK, PM_PCGR);
-+
-+	writel((readl(PM_DIVCFG) & ~PM_DIVCFG_VGACLK_MASK)
-+			| PM_DIVCFG_VGACLK(pll_vgadiv), PM_DIVCFG);
-+
-+	writel(readl(PM_SWRESET) | PM_SWRESET_VGADIV, PM_SWRESET);
-+	while ((readl(PM_SWRESET) & PM_SWRESET_VGADIV)
-+			== PM_SWRESET_VGADIV)
-+		udelay(100); /* 65536 bclk32, about 320us */
-+
-+	writel(readl(PM_PCGR) & ~PM_PCGR_VGACLK, PM_PCGR);
++	dev_dbg(&pdev->dev, "pwm probe successful\n");
++	platform_set_drvdata(pdev, ab8500);
 +
 +	return 0;
 +}
 +
-+static const struct clk_ops clk_vga_ops = {
-+	.recalc_rate = clk_vga_recalc_rate,
-+	.round_rate = clk_vga_round_rate,
-+	.set_rate = clk_vga_set_rate,
-+};
-+
-+static unsigned long clk_mclk_recalc_rate(struct clk_hw *hw,
-+					  unsigned long parent_rate)
++static int __devexit ab8500_pwm_remove(struct platform_device *pdev)
 +{
-+#ifndef CONFIG_ARCH_FPGA
-+	unsigned long pllrate = readl(PM_PLLSYSSTATUS);
-+	unsigned long rate = 0;
-+	unsigned int i;
++	struct ab8500_pwm_chip *ab8500 = platform_get_drvdata(pdev);
++	int err;
 +
-+	/* lookup pllrate_table */
-+	for (i = 0; i < ARRAY_SIZE(pllrate_table); i++) {
-+		if (pllrate == pllrate_table[i].prate) {
-+			rate = pllrate_table[i].rate;
-+			break;
-+		}
-+	}
++	err = pwmchip_remove(&ab8500->chip);
++	if (err < 0)
++		return err;
 +
-+	return rate;
-+#else
-+	return 33000000;
-+#endif
-+}
-+
-+static const struct {
-+	unsigned long mrate;
-+	unsigned long prate;
-+} mclk_clk_table[] = {
-+	{.mrate = 500000000, .prate = 0x00109801},
-+	{.mrate = 525000000, .prate = 0x00104C00},
-+	{.mrate = 550000000, .prate = 0x00105000},
-+	{.mrate = 575000000, .prate = 0x00105400},
-+	{.mrate = 600000000, .prate = 0x00105800},
-+	{.mrate = 625000000, .prate = 0x00105C00},
-+	{.mrate = 650000000, .prate = 0x00106000},
-+	{.mrate = 675000000, .prate = 0x00106400},
-+	{.mrate = 700000000, .prate = 0x00106800},
-+	{.mrate = 725000000, .prate = 0x00106C00},
-+	{.mrate = 750000000, .prate = 0x00107000},
-+	{.mrate = 775000000, .prate = 0x00107400},
-+	{.mrate = 800000000, .prate = 0x00107800},
-+};
-+
-+static long clk_mclk_round_rate(struct clk_hw *hw, unsigned long rate,
-+			        unsigned long *ratep)
-+{
-+	unsigned long min = ULONG_MAX;
-+	unsigned int i, best = 0;
-+
-+	for (i = 0; i < ARRAY_SIZE(mclk_clk_table); i++) {
-+		unsigned long diff = abs(rate - mclk_clk_table[i].mrate);
-+
-+		if (diff < min) {
-+			min = diff;
-+			best = i;
-+		}
-+	}
-+
-+	return mclk_clk_table[best].mrate;
-+}
-+
-+static int clk_mclk_set_rate(struct clk_hw *hw, unsigned long rate,
-+			     unsigned long parent_rate)
-+{
-+	int ret = -EINVAL;
-+	unsigned int i;
-+	u32 pll_rate;
-+
-+	/* lookup mclk_clk_table */
-+	for (i = 0; i < ARRAY_SIZE(mclk_clk_table); i++) {
-+		if (rate == mclk_clk_table[i].mrate) {
-+			pll_rate = mclk_clk_table[i].prate;
-+			ret = 0;
-+			break;
-+		}
-+	}
-+
-+	if (ret)
-+		return ret;
-+
-+	/* set pll sys cfg reg. */
-+	writel(pll_rate, PM_PLLSYSCFG);
-+
-+	writel(PM_PMCR_CFBSYS, PM_PMCR);
-+
-+	while ((readl(PM_PLLDFCDONE) & PM_PLLDFCDONE_SYSDFC)
-+			!= PM_PLLDFCDONE_SYSDFC)
-+		udelay(100);
-+		/* about 1ms */
++	dev_dbg(&pdev->dev, "pwm driver removed\n");
++	kfree(ab8500);
 +
 +	return 0;
 +}
 +
-+static const struct clk_ops clk_mclk_ops = {
-+	.recalc_rate = clk_mclk_recalc_rate,
-+	.round_rate = clk_mclk_round_rate,
-+	.set_rate = clk_mclk_set_rate,
++static struct platform_driver ab8500_pwm_driver = {
++	.driver = {
++		.name = "ab8500-pwm",
++		.owner = THIS_MODULE,
++	},
++	.probe = ab8500_pwm_probe,
++	.remove = __devexit_p(ab8500_pwm_remove),
 +};
++module_platform_driver(ab8500_pwm_driver);
 +
-+static unsigned long clk_bclk32_recalc_rate(struct clk_hw *hw,
-+					    unsigned long parent_rate)
-+{
-+#ifndef CONFIG_ARCH_FPGA
-+	u32 divstatus = readl(PM_DIVSTATUS);
-+
-+	return parent_rate / (((divstatus & 0x0000f000) >> 12) + 1);
-+#else
-+	return 33000000;
-+#endif
-+}
-+
-+static const struct clk_ops clk_bclk32_ops = {
-+	.recalc_rate = clk_bclk32_recalc_rate,
-+};
-+
-+#ifndef CONFIG_ARCH_FPGA
-+static const struct {
- 	unsigned long prate;
- 	unsigned long drate;
- } pddr_table[] = {
-@@ -322,69 +374,81 @@ struct {
- 	{.prate = 0x00104001, .drate = 353894400},
- };
- 
--static int __init clk_init(void)
-+static unsigned long clk_ddr_recalc_rate(struct clk_hw *hw,
-+					 unsigned long parent_rate)
- {
--#ifdef CONFIG_PUV3_PM
--	u32 pllrate, divstatus = readl(PM_DIVSTATUS);
--	u32 pcgr_val = readl(PM_PCGR);
--	int i;
--
--	pcgr_val |= PM_PCGR_BCLKMME | PM_PCGR_BCLKH264E | PM_PCGR_BCLKH264D
--			| PM_PCGR_HECLK | PM_PCGR_HDCLK;
--	writel(pcgr_val, PM_PCGR);
-+	unsigned long pllrate = readl(PM_PLLDDRSTATUS);
-+	unsigned long rate = 0;
-+	unsigned int i;
- 
--	pllrate = readl(PM_PLLSYSSTATUS);
--
--	/* lookup pmclk_table */
--	clk_mclk_clk.rate = 0;
--	for (i = 0; i < ARRAY_SIZE(pllrate_table); i++) {
--		if (pllrate == pllrate_table[i].prate) {
--			clk_mclk_clk.rate = pllrate_table[i].rate;
-+	/* lookup pddr_table */
-+	for (i = 0; i < ARRAY_SIZE(pddr_table); i++) {
-+		if (pllrate == pddr_table[i].prate) {
-+			rate = pddr_table[i].drate;
- 			break;
- 		}
- 	}
- 
--	if (clk_mclk_clk.rate)
--		clk_bclk32_clk.rate = clk_mclk_clk.rate /
--			(((divstatus & 0x0000f000) >> 12) + 1);
-+	return rate;
-+}
-+#else
-+static unsigned long clk_ddr_recalc_rate(struct clk_hw *hw,
-+					 unsigned long parent_rate)
-+{
-+	return 33000000;
-+}
-+#endif
- 
--	pllrate = readl(PM_PLLDDRSTATUS);
-+static const struct clk_ops clk_ddr_ops = {
-+	.recalc_rate = clk_ddr_recalc_rate,
-+};
- 
--	/* lookup pddr_table */
--	clk_ddr_clk.rate = 0;
--	for (i = 0; i < ARRAY_SIZE(pddr_table); i++) {
--		if (pllrate == pddr_table[i].prate) {
--			clk_ddr_clk.rate = pddr_table[i].drate;
--			break;
--		}
-+static int __init clk_init(void)
-+{
-+	unsigned long value;
-+	struct clk *clk;
-+
-+	value = readl(PM_PCGR);
-+	value |= PM_PCGR_BCLKMME | PM_PCGR_BCLKH264E | PM_PCGR_BCLKH264D |
-+		 PM_PCGR_HECLK | PM_PCGR_HDCLK;
-+	writel(value, PM_PCGR);
-+
-+	clk = clk_register_uc("MAIN_CLK", NULL, &clk_mclk_ops);
-+	if (IS_ERR(clk)) {
-+		pr_err("%s(): failed to register main clock: %ld\n", __func__,
-+		       PTR_ERR(clk));
-+		return PTR_ERR(clk);
- 	}
- 
--	pllrate = readl(PM_PLLVGASTATUS);
-+	clk = clk_register_uc("BUS32_CLK", "MAIN_CLK", &clk_bclk32_ops);
-+	if (IS_ERR(clk)) {
-+		pr_err("%s(): failed to register bus clock: %ld\n", __func__,
-+		       PTR_ERR(clk));
-+		return PTR_ERR(clk);
-+	}
- 
--	/* lookup pvga_table */
--	clk_vga_clk.rate = 0;
--	for (i = 0; i < ARRAY_SIZE(pllrate_table); i++) {
--		if (pllrate == pllrate_table[i].prate) {
--			clk_vga_clk.rate = pllrate_table[i].rate;
--			break;
--		}
-+	clk = clk_register_uc("VGA_CLK", NULL, &clk_vga_ops);
-+	if (IS_ERR(clk)) {
-+		pr_err("%s(): failed to register VGA clock: %ld\n", __func__,
-+		       PTR_ERR(clk));
-+		return PTR_ERR(clk);
- 	}
- 
--	if (clk_vga_clk.rate)
--		clk_vga_clk.rate = clk_vga_clk.rate /
--			(((divstatus & 0x00f00000) >> 20) + 1);
-+	clk = clk_register_uc("DDR_CLK", NULL, &clk_ddr_ops);
-+	if (IS_ERR(clk)) {
-+		pr_err("%s(): failed to register DDR clock: %ld\n", __func__,
-+		       PTR_ERR(clk));
-+		return PTR_ERR(clk);
-+	}
-+
-+	clk = clk_register_fixed_rate(NULL, "OST_CLK", NULL, 0,
-+				      CLOCK_TICK_RATE);
-+	if (IS_ERR(clk)) {
-+		pr_err("%s(): failed to register timer clock: %ld\n", __func__,
-+		       PTR_ERR(clk));
-+		return PTR_ERR(clk);
-+	}
- 
--	clk_register(&clk_vga_clk);
--#endif
--#ifdef CONFIG_ARCH_FPGA
--	clk_ddr_clk.rate = 33000000;
--	clk_mclk_clk.rate = 33000000;
--	clk_bclk32_clk.rate = 33000000;
--#endif
--	clk_register(&clk_ddr_clk);
--	clk_register(&clk_mclk_clk);
--	clk_register(&clk_bclk32_clk);
--	clk_register(&clk_ost_clk);
- 	return 0;
- }
- core_initcall(clk_init);
++MODULE_AUTHOR("Arun MURTHY <arun.murthy@stericsson.com>");
++MODULE_DESCRIPTION("AB8500 Pulse Width Modulation Driver");
++MODULE_ALIAS("platform:ab8500-pwm");
++MODULE_LICENSE("GPL v2");
 -- 
 1.7.12
 
