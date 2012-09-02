@@ -1,77 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756016Ab2IBKrR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 06:47:17 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:33590 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755974Ab2IBKrQ (ORCPT
+	id S1756032Ab2IBK4z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 06:56:55 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:41910 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755974Ab2IBK4y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 06:47:16 -0400
-X-Originating-IP: 217.70.178.144
-X-Originating-IP: 50.43.46.74
-Date: Sun, 2 Sep 2012 03:47:07 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 12/23] rcu: Prevent force_quiescent_state()
- memory contention
-Message-ID: <20120902104707.GD7767@leaf>
-References: <20120830181811.GA29154@linux.vnet.ibm.com>
- <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346350718-30937-12-git-send-email-paulmck@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346350718-30937-12-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 2 Sep 2012 06:56:54 -0400
+Message-ID: <1346583402.2533.0.camel@kyv>
+Subject: Re: [PATCH v2] mtd: cmdlinepart: fix the wrong check condition
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+Cc: Huang Shijie <shijie8@gmail.com>, dwmw2@infradead.org,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Sun, 02 Sep 2012 13:56:42 +0300
+In-Reply-To: <20120825123149.3fafa4f4@halley>
+References: <1345925210-7500-1-git-send-email-shijie8@gmail.com>
+	 <20120825123149.3fafa4f4@halley>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-niE4XSr/wd3DpTfSm0GM"
+X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 11:18:27AM -0700, Paul E. McKenney wrote:
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-[...]
-> @@ -1824,16 +1825,35 @@ static void force_qs_rnp(struct rcu_state *rsp, int (*f)(struct rcu_data *))
->  static void force_quiescent_state(struct rcu_state *rsp)
->  {
->  	unsigned long flags;
-> -	struct rcu_node *rnp = rcu_get_root(rsp);
-> +	bool ret;
-> +	struct rcu_node *rnp;
-> +	struct rcu_node *rnp_old = NULL;
-> +
-> +	/* Funnel through hierarchy to reduce memory contention. */
-> +	rnp = per_cpu_ptr(rsp->rda, raw_smp_processor_id())->mynode;
 
-What makes this use of raw_smp_processor_id() safe?  (And, could you
-document the answer here?)
+--=-niE4XSr/wd3DpTfSm0GM
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> +	for (; rnp != NULL; rnp = rnp->parent) {
-> +		ret = (ACCESS_ONCE(rsp->gp_flags) & RCU_GP_FLAG_FQS) ||
-> +		      !raw_spin_trylock(&rnp->fqslock);
+On Sat, 2012-08-25 at 12:31 +0300, Shmulik Ladkani wrote:
+> Hi Huang, Artem,
+>=20
+> On Sat, 25 Aug 2012 16:06:50 -0400 Huang Shijie <shijie8@gmail.com> wrote=
+:
+> > diff --git a/drivers/mtd/cmdlinepart.c b/drivers/mtd/cmdlinepart.c
+> > index fc960a3..216d751 100644
+> > --- a/drivers/mtd/cmdlinepart.c
+> > +++ b/drivers/mtd/cmdlinepart.c
+> > @@ -322,13 +322,16 @@ static int parse_cmdline_partitions(struct mtd_in=
+fo *master,
+> >  	struct cmdline_mtd_partition *part;
+> >  	const char *mtd_id =3D master->name;
+> > =20
+> > +	if (!mtd_id)
+> > +		return 0;
+> > +
+> >  	/* parse command line */
+> >  	if (!cmdline_parsed)
+> >  		mtdpart_setup_real(cmdline);
+> > =20
+> >  	for(part =3D partitions; part; part =3D part->next)
+> >  	{
+> > -		if ((!mtd_id) || (!strcmp(part->mtd_id, mtd_id)))
+> > +		if (!strcmp(part->mtd_id, mtd_id))
+> >  		{
+> >  			for(i =3D 0, offset =3D 0; i < part->num_parts; i++)
+> >  			{
+>=20
+> This changes the behavior of cmdling parsing, which might affect users
+> expecting the old behavior.
 
-So, the root lock will still get trylocked by one CPU per second-level
-tree node, just not by every CPU?
+Yes, you are right, we should not change the mtd_id hack unless we have
+checked all the users.
 
-> @@ -2721,10 +2741,14 @@ static void __init rcu_init_levelspread(struct rcu_state *rsp)
->  static void __init rcu_init_one(struct rcu_state *rsp,
->  		struct rcu_data __percpu *rda)
->  {
-> -	static char *buf[] = { "rcu_node_level_0",
-> -			       "rcu_node_level_1",
-> -			       "rcu_node_level_2",
-> -			       "rcu_node_level_3" };  /* Match MAX_RCU_LVLS */
-> +	static char *buf[] = { "rcu_node_0",
-> +			       "rcu_node_1",
-> +			       "rcu_node_2",
-> +			       "rcu_node_3" };  /* Match MAX_RCU_LVLS */
+--=20
+Best Regards,
+Artem Bityutskiy
 
-Why rename these?
+--=-niE4XSr/wd3DpTfSm0GM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-- Josh Triplett
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQQztqAAoJECmIfjd9wqK0cXAP/RPAlDfd0QC78pPLJU1dgdwW
+u0BTPkstvX81tH8i0ooTyCBAhJe3GroC/vHnPAnVX/tM1VFhr26AQf47BEqOhU5d
+g39Ie56ASQL0hua3tJZ5eA/FBbNDbnr1SfUH9LE8X4SuHCzEgIwyTe1G/QKsTP5t
+GuWM7H/XT23pJvrZPh2F3qBIxe/RjKPfcqCXUyKkS53S7DpHzwiVGiNYfcJNOars
+Mc2P3OlZ3B0C987l1EZnEDfuU/S5LcaEDzPqRp+qJ4vwq6Yy6P0TQm/bvFKJftnr
+5IdYnRiv7kg1i/rzDQCnRNXSQaw62rRq7ZJc9HjWXo18bGexJd1wOR5KEmVC/m3p
+YdjCVueL9oV9JXQ3WdxU448AmfGR5XmlqFTgSwV/0NfY8YZRqeW7I65a0cwrJU22
+g+/bsFxNuXmYK13y8t0nJ8sSncPSXSlko/DFlWOoSFFjCNOsAuJx+SxpXbzJ2m/o
++/x0h5vSU5UP5wZ90Y52pG5T5OCND493JH2egjcqR4GxxSUOpIxViCDRk9Xguorq
+MqZ6MLa4WSe1u/mY4QM27LwA4U/jK/3WNncu+d+f2ozJ1Quz8+TQjJfH/ruND6sP
+z4gPknEsZbLFlwJBaslMnoWtY4SBVsmDk4sic5fJGpKpC0k50hW/t3iysRdjfVK+
+BNLKLkbqPQDMXHrX6cnR
+=3DyH
+-----END PGP SIGNATURE-----
+
+--=-niE4XSr/wd3DpTfSm0GM--
+
