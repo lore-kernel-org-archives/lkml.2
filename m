@@ -1,60 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756157Ab2ICIaN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 04:30:13 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61104 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754974Ab2ICIaL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 04:30:11 -0400
+	id S1755585Ab2ICIpl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 04:45:41 -0400
+Received: from mail.dce.bg ([46.40.123.75]:65078 "HELO mail.bulcrypt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754695Ab2ICIpk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 04:45:40 -0400
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Sep 2012 04:45:40 EDT
+Message-ID: <50446CA1.7040904@dce.bg>
+Date: Mon, 03 Sep 2012 11:38:57 +0300
+From: Alexander <alexander@dce.bg>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <CAHp75VcQOeVeKPg8z9u+fd8ia4QAyrq6UQn-D7Q-yO9+pLS6LQ@mail.gmail.com>
-References: <50439D44.3080100@yahoo.es>
-	<CAHp75VcQOeVeKPg8z9u+fd8ia4QAyrq6UQn-D7Q-yO9+pLS6LQ@mail.gmail.com>
-Date: Mon, 3 Sep 2012 14:00:11 +0530
-Message-ID: <CAKohpo=bvzm1O4FAtsr3YpLg-w1Rp7RT-9ZuJBgVZRxVHnQO_g@mail.gmail.com>
-Subject: Re: [PATCH v4 2/3] dw_dmac: max_mem_width limits value for
- SRC/DST_TR_WID register
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Hein Tibosch <hein_tibosch@yahoo.es>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        spear-devel <spear-devel@list.st.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "ludovic.desroches" <ludovic.desroches@atmel.com>,
-        Havard Skinnemoen <havard@skinnemoen.net>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-kernel@vger.kernel.org
+Subject: file Documentation/usb/usbmon.txt should list the .config settings
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 September 2012 13:55, Andy Shevchenko <andy.shevchenko@gmail.com> wrote:
->> #define DW_MEM_WIDTH_64         0       /* default */
->> #define DW_MEM_WIDTH_32         1       /* e.g. for avr32 */
-> There are 4 options: 32, 64, 128, and 256 bits. I would prefer to see
-> the value in conjunction with
-> real value in the register, namely 2 for 32, 3 - 64, 4 - 128, 5 - 256.
+Please indicate in the Documentation/usb/usbmon.txt file that the kernel 
+needs to be compiled with:
 
-Which register are you talking about? This configuration is outside of DMAC
-controller and i am not sure if dw DMAC controller can do 128 or 256
-bit transfers.
+CONFIG_DEBUG_KERNEL=y
+CONFIG_DEBUG_FS=y
+CONFIG_USB_MON=y
+CONFIG_USB_DEVICEFS=y
 
->> @@ -58,6 +58,9 @@ struct dw_dma_slave {
->>         u32                     cfg_lo;
->>         u8                      src_master;
->>         u8                      dst_master;
->> +#define        DW_MEM_WIDTH_64         0
->> +#define        DW_MEM_WIDTH_32         1       /* e.g. for avr32 */
->> +       u8                      max_mem_width;
-> Might be I missed something, but why is it slave configuration?
-> I think the controller (actually channel) structure is more suitable
-> to keep that field inside.
+, in order for usbmon to be useable on the system.
 
-@Hein: Even i missed it. How will you do memcpy transfers as we don't have
-this structure there. Probably you need to move this to DMA controller platform
-data filed.
-
-viresh
