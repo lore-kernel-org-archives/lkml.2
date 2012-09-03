@@ -1,1551 +1,558 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756619Ab2ICUXP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 16:23:15 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:55515 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753392Ab2ICUXM (ORCPT
+	id S1756673Ab2ICUY2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 16:24:28 -0400
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:50542 "EHLO
+	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756622Ab2ICUX2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 16:23:12 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, bigeasy@linutronix.de,
-        aletes.xgr@gmail.com, kevin.wells@nxp.com, srinivas.bakki@nxp.com,
-        FlorianSchandinat@gmx.de
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH RESEND] video: Remove pnx4008 driver
-Date: Mon,  3 Sep 2012 22:22:42 +0200
-Message-Id: <1346703762-21927-1-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.10.4
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	Mon, 3 Sep 2012 16:23:28 -0400
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: linux-i2c@vger.kernel.org
+Subject: =?UTF-8?q?=5BPATCH=201/4=5D=20i2c=3A=20introduce=20i2c-cbus=20driver?=
+Date: Mon,  3 Sep 2012 23:23:22 +0300
+Message-Id: <1346703805-31598-2-git-send-email-aaro.koskinen@iki.fi>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1346703805-31598-1-git-send-email-aaro.koskinen@iki.fi>
+References: <1346703805-31598-1-git-send-email-aaro.koskinen@iki.fi>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the video driver for pnx4008. The architecture is being
-removed via the arm-soc tree.
+Add i2c driver to enable access to devices behind CBUS on Nokia Internet
+Tablets.
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+The patch also adds CBUS I2C configuration for N8x0 which is one of the
+users of this driver.
+
+Cc: linux-i2c@vger.kernel.org
+Acked-by: Felipe Balbi <balbi@ti.com>
+Acked-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
 ---
-Applies to v3.6-rc4
+ arch/arm/mach-omap2/board-n8x0.c |   42 +++++
+ drivers/i2c/busses/Kconfig       |   10 +
+ drivers/i2c/busses/Makefile      |    1 +
+ drivers/i2c/busses/i2c-cbus.c    |  369 ++++++++++++++++++++++++++++++++++++++
+ include/linux/i2c-cbus.h         |   27 +++
+ 5 files changed, 449 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/i2c/busses/i2c-cbus.c
+ create mode 100644 include/linux/i2c-cbus.h
 
- drivers/video/Kconfig            |   15 
- drivers/video/Makefile           |    2 
- drivers/video/pnx4008/Makefile   |    7 
- drivers/video/pnx4008/dum.h      |  211 ---------
- drivers/video/pnx4008/fbcommon.h |   43 -
- drivers/video/pnx4008/pnxrgbfb.c |  198 --------
- drivers/video/pnx4008/sdum.c     |  861 ---------------------------------------
- drivers/video/pnx4008/sdum.h     |  136 ------
- 8 files changed, 1473 deletions(-)
-
---- linux-2.6.orig/drivers/video/Kconfig
-+++ linux-2.6/drivers/video/Kconfig
-@@ -2151,21 +2151,6 @@ config FB_UDL
- 	  mplayer -vo fbdev. Supports all USB 2.0 era DisplayLink devices.
- 	  To compile as a module, choose M here: the module name is udlfb.
+diff --git a/arch/arm/mach-omap2/board-n8x0.c b/arch/arm/mach-omap2/board-n8x0.c
+index 677357f..2495f2d 100644
+--- a/arch/arm/mach-omap2/board-n8x0.c
++++ b/arch/arm/mach-omap2/board-n8x0.c
+@@ -16,8 +16,10 @@
+ #include <linux/gpio.h>
+ #include <linux/init.h>
+ #include <linux/io.h>
++#include <linux/irq.h>
+ #include <linux/stddef.h>
+ #include <linux/i2c.h>
++#include <linux/i2c-cbus.h>
+ #include <linux/spi/spi.h>
+ #include <linux/usb/musb.h>
+ #include <sound/tlv320aic3x.h>
+@@ -42,6 +44,45 @@
+ #define TUSB6010_GPIO_ENABLE	0
+ #define TUSB6010_DMACHAN	0x3f
  
--config FB_PNX4008_DUM
--	tristate "Display Update Module support on Philips PNX4008 board"
--	depends on FB && ARCH_PNX4008
--	---help---
--	  Say Y here to enable support for PNX4008 Display Update Module (DUM)
--
--config FB_PNX4008_DUM_RGB
--	tristate "RGB Framebuffer support on Philips PNX4008 board"
--	depends on FB_PNX4008_DUM
--	select FB_CFB_FILLRECT
--	select FB_CFB_COPYAREA
--	select FB_CFB_IMAGEBLIT
--	---help---
--	  Say Y here to enable support for PNX4008 RGB Framebuffer
--
- config FB_IBM_GXT4500
- 	tristate "Framebuffer support for IBM GXT4500P adaptor"
- 	depends on FB && PPC
---- linux-2.6.orig/drivers/video/Makefile
-+++ linux-2.6/drivers/video/Makefile
-@@ -128,8 +128,6 @@ obj-$(CONFIG_FB_S3C)		  += s3c-fb.o
- obj-$(CONFIG_FB_S3C2410)	  += s3c2410fb.o
- obj-$(CONFIG_FB_FSL_DIU)	  += fsl-diu-fb.o
- obj-$(CONFIG_FB_COBALT)           += cobalt_lcdfb.o
--obj-$(CONFIG_FB_PNX4008_DUM)	  += pnx4008/
--obj-$(CONFIG_FB_PNX4008_DUM_RGB)  += pnx4008/
- obj-$(CONFIG_FB_IBM_GXT4500)	  += gxt4500.o
- obj-$(CONFIG_FB_PS3)		  += ps3fb.o
- obj-$(CONFIG_FB_SM501)            += sm501fb.o
---- linux-2.6.orig/drivers/video/pnx4008/Makefile
-+++ /dev/null
-@@ -1,7 +0,0 @@
--#
--# Makefile for the new PNX4008 framebuffer device driver
--#
--
--obj-$(CONFIG_FB_PNX4008_DUM) += sdum.o
--obj-$(CONFIG_FB_PNX4008_DUM_RGB) += pnxrgbfb.o
--
---- linux-2.6.orig/drivers/video/pnx4008/dum.h
-+++ /dev/null
-@@ -1,211 +0,0 @@
--/*
-- * linux/drivers/video/pnx4008/dum.h
-- *
-- * Internal header for SDUM
-- *
-- * 2005 (c) Koninklijke Philips N.V. This file is licensed under
-- * the terms of the GNU General Public License version 2. This program
-- * is licensed "as is" without any warranty of any kind, whether express
-- * or implied.
-- */
--
--#ifndef __PNX008_DUM_H__
--#define __PNX008_DUM_H__
--
--#include <mach/platform.h>
--
--#define PNX4008_DUMCONF_VA_BASE		IO_ADDRESS(PNX4008_DUMCONF_BASE)
--#define PNX4008_DUM_MAIN_VA_BASE	IO_ADDRESS(PNX4008_DUM_MAINCFG_BASE)
--
--/* DUM CFG ADDRESSES */
--#define DUM_CH_BASE_ADR		(PNX4008_DUMCONF_VA_BASE + 0x00)
--#define DUM_CH_MIN_ADR		(PNX4008_DUMCONF_VA_BASE + 0x00)
--#define DUM_CH_MAX_ADR		(PNX4008_DUMCONF_VA_BASE + 0x04)
--#define DUM_CH_CONF_ADR		(PNX4008_DUMCONF_VA_BASE + 0x08)
--#define DUM_CH_STAT_ADR		(PNX4008_DUMCONF_VA_BASE + 0x0C)
--#define DUM_CH_CTRL_ADR		(PNX4008_DUMCONF_VA_BASE + 0x10)
--
--#define CH_MARG		(0x100 / sizeof(u32))
--#define DUM_CH_MIN(i)	(*((volatile u32 *)DUM_CH_MIN_ADR + (i) * CH_MARG))
--#define DUM_CH_MAX(i)	(*((volatile u32 *)DUM_CH_MAX_ADR + (i) * CH_MARG))
--#define DUM_CH_CONF(i)	(*((volatile u32 *)DUM_CH_CONF_ADR + (i) * CH_MARG))
--#define DUM_CH_STAT(i)	(*((volatile u32 *)DUM_CH_STAT_ADR + (i) * CH_MARG))
--#define DUM_CH_CTRL(i)	(*((volatile u32 *)DUM_CH_CTRL_ADR + (i) * CH_MARG))
--
--#define DUM_CONF_ADR          (PNX4008_DUM_MAIN_VA_BASE + 0x00)
--#define DUM_CTRL_ADR          (PNX4008_DUM_MAIN_VA_BASE + 0x04)
--#define DUM_STAT_ADR          (PNX4008_DUM_MAIN_VA_BASE + 0x08)
--#define DUM_DECODE_ADR        (PNX4008_DUM_MAIN_VA_BASE + 0x0C)
--#define DUM_COM_BASE_ADR      (PNX4008_DUM_MAIN_VA_BASE + 0x10)
--#define DUM_SYNC_C_ADR        (PNX4008_DUM_MAIN_VA_BASE + 0x14)
--#define DUM_CLK_DIV_ADR       (PNX4008_DUM_MAIN_VA_BASE + 0x18)
--#define DUM_DIRTY_LOW_ADR     (PNX4008_DUM_MAIN_VA_BASE + 0x20)
--#define DUM_DIRTY_HIGH_ADR    (PNX4008_DUM_MAIN_VA_BASE + 0x24)
--#define DUM_FORMAT_ADR        (PNX4008_DUM_MAIN_VA_BASE + 0x28)
--#define DUM_WTCFG1_ADR        (PNX4008_DUM_MAIN_VA_BASE + 0x30)
--#define DUM_RTCFG1_ADR        (PNX4008_DUM_MAIN_VA_BASE + 0x34)
--#define DUM_WTCFG2_ADR        (PNX4008_DUM_MAIN_VA_BASE + 0x38)
--#define DUM_RTCFG2_ADR        (PNX4008_DUM_MAIN_VA_BASE + 0x3C)
--#define DUM_TCFG_ADR          (PNX4008_DUM_MAIN_VA_BASE + 0x40)
--#define DUM_OUTP_FORMAT1_ADR  (PNX4008_DUM_MAIN_VA_BASE + 0x44)
--#define DUM_OUTP_FORMAT2_ADR  (PNX4008_DUM_MAIN_VA_BASE + 0x48)
--#define DUM_SYNC_MODE_ADR     (PNX4008_DUM_MAIN_VA_BASE + 0x4C)
--#define DUM_SYNC_OUT_C_ADR    (PNX4008_DUM_MAIN_VA_BASE + 0x50)
--
--#define DUM_CONF              (*(volatile u32 *)(DUM_CONF_ADR))
--#define DUM_CTRL              (*(volatile u32 *)(DUM_CTRL_ADR))
--#define DUM_STAT              (*(volatile u32 *)(DUM_STAT_ADR))
--#define DUM_DECODE            (*(volatile u32 *)(DUM_DECODE_ADR))
--#define DUM_COM_BASE          (*(volatile u32 *)(DUM_COM_BASE_ADR))
--#define DUM_SYNC_C            (*(volatile u32 *)(DUM_SYNC_C_ADR))
--#define DUM_CLK_DIV           (*(volatile u32 *)(DUM_CLK_DIV_ADR))
--#define DUM_DIRTY_LOW         (*(volatile u32 *)(DUM_DIRTY_LOW_ADR))
--#define DUM_DIRTY_HIGH        (*(volatile u32 *)(DUM_DIRTY_HIGH_ADR))
--#define DUM_FORMAT            (*(volatile u32 *)(DUM_FORMAT_ADR))
--#define DUM_WTCFG1            (*(volatile u32 *)(DUM_WTCFG1_ADR))
--#define DUM_RTCFG1            (*(volatile u32 *)(DUM_RTCFG1_ADR))
--#define DUM_WTCFG2            (*(volatile u32 *)(DUM_WTCFG2_ADR))
--#define DUM_RTCFG2            (*(volatile u32 *)(DUM_RTCFG2_ADR))
--#define DUM_TCFG              (*(volatile u32 *)(DUM_TCFG_ADR))
--#define DUM_OUTP_FORMAT1      (*(volatile u32 *)(DUM_OUTP_FORMAT1_ADR))
--#define DUM_OUTP_FORMAT2      (*(volatile u32 *)(DUM_OUTP_FORMAT2_ADR))
--#define DUM_SYNC_MODE         (*(volatile u32 *)(DUM_SYNC_MODE_ADR))
--#define DUM_SYNC_OUT_C        (*(volatile u32 *)(DUM_SYNC_OUT_C_ADR))
--
--/* DUM SLAVE ADDRESSES */
--#define DUM_SLAVE_WRITE_ADR      (PNX4008_DUM_MAINCFG_BASE + 0x0000000)
--#define DUM_SLAVE_READ1_I_ADR    (PNX4008_DUM_MAINCFG_BASE + 0x1000000)
--#define DUM_SLAVE_READ1_R_ADR    (PNX4008_DUM_MAINCFG_BASE + 0x1000004)
--#define DUM_SLAVE_READ2_I_ADR    (PNX4008_DUM_MAINCFG_BASE + 0x1000008)
--#define DUM_SLAVE_READ2_R_ADR    (PNX4008_DUM_MAINCFG_BASE + 0x100000C)
--
--#define DUM_SLAVE_WRITE_W  ((volatile u32 *)(DUM_SLAVE_WRITE_ADR))
--#define DUM_SLAVE_WRITE_HW ((volatile u16 *)(DUM_SLAVE_WRITE_ADR))
--#define DUM_SLAVE_READ1_I  ((volatile u8 *)(DUM_SLAVE_READ1_I_ADR))
--#define DUM_SLAVE_READ1_R  ((volatile u16 *)(DUM_SLAVE_READ1_R_ADR))
--#define DUM_SLAVE_READ2_I  ((volatile u8 *)(DUM_SLAVE_READ2_I_ADR))
--#define DUM_SLAVE_READ2_R  ((volatile u16 *)(DUM_SLAVE_READ2_R_ADR))
--
--/* Sony display register addresses */
--#define DISP_0_REG            (0x00)
--#define DISP_1_REG            (0x01)
--#define DISP_CAL_REG          (0x20)
--#define DISP_ID_REG           (0x2A)
--#define DISP_XMIN_L_REG       (0x30)
--#define DISP_XMIN_H_REG       (0x31)
--#define DISP_YMIN_REG         (0x32)
--#define DISP_XMAX_L_REG       (0x34)
--#define DISP_XMAX_H_REG       (0x35)
--#define DISP_YMAX_REG         (0x36)
--#define DISP_SYNC_EN_REG      (0x38)
--#define DISP_SYNC_RISE_L_REG  (0x3C)
--#define DISP_SYNC_RISE_H_REG  (0x3D)
--#define DISP_SYNC_FALL_L_REG  (0x3E)
--#define DISP_SYNC_FALL_H_REG  (0x3F)
--#define DISP_PIXEL_REG        (0x0B)
--#define DISP_DUMMY1_REG       (0x28)
--#define DISP_DUMMY2_REG       (0x29)
--#define DISP_TIMING_REG       (0x98)
--#define DISP_DUMP_REG         (0x99)
--
--/* Sony display constants */
--#define SONY_ID1              (0x22)
--#define SONY_ID2              (0x23)
--
--/* Philips display register addresses */
--#define PH_DISP_ORIENT_REG    (0x003)
--#define PH_DISP_YPOINT_REG    (0x200)
--#define PH_DISP_XPOINT_REG    (0x201)
--#define PH_DISP_PIXEL_REG     (0x202)
--#define PH_DISP_YMIN_REG      (0x406)
--#define PH_DISP_YMAX_REG      (0x407)
--#define PH_DISP_XMIN_REG      (0x408)
--#define PH_DISP_XMAX_REG      (0x409)
--
--/* Misc constants */
--#define NO_VALID_DISPLAY_FOUND      (0)
--#define DISPLAY2_IS_NOT_CONNECTED   (0)
--
--/* register values */
--#define V_BAC_ENABLE		(BIT(0))
--#define V_BAC_DISABLE_IDLE	(BIT(1))
--#define V_BAC_DISABLE_TRIG	(BIT(2))
--#define V_DUM_RESET		(BIT(3))
--#define V_MUX_RESET		(BIT(4))
--#define BAC_ENABLED		(BIT(0))
--#define BAC_DISABLED		0
--
--/* Sony LCD commands */
--#define V_LCD_STANDBY_OFF	((BIT(25)) | (0 << 16) | DISP_0_REG)
--#define V_LCD_USE_9BIT_BUS	((BIT(25)) | (2 << 16) | DISP_1_REG)
--#define V_LCD_SYNC_RISE_L	((BIT(25)) | (0 << 16) | DISP_SYNC_RISE_L_REG)
--#define V_LCD_SYNC_RISE_H	((BIT(25)) | (0 << 16) | DISP_SYNC_RISE_H_REG)
--#define V_LCD_SYNC_FALL_L	((BIT(25)) | (160 << 16) | DISP_SYNC_FALL_L_REG)
--#define V_LCD_SYNC_FALL_H	((BIT(25)) | (0 << 16) | DISP_SYNC_FALL_H_REG)
--#define V_LCD_SYNC_ENABLE	((BIT(25)) | (128 << 16) | DISP_SYNC_EN_REG)
--#define V_LCD_DISPLAY_ON	((BIT(25)) | (64 << 16) | DISP_0_REG)
--
--enum {
--	PAD_NONE,
--	PAD_512,
--	PAD_1024
--};
--
--enum {
--	RGB888,
--	RGB666,
--	RGB565,
--	BGR565,
--	ARGB1555,
--	ABGR1555,
--	ARGB4444,
--	ABGR4444
--};
--
--struct dum_setup {
--	int sync_neg_edge;
--	int round_robin;
--	int mux_int;
--	int synced_dirty_flag_int;
--	int dirty_flag_int;
--	int error_int;
--	int pf_empty_int;
--	int sf_empty_int;
--	int bac_dis_int;
--	u32 dirty_base_adr;
--	u32 command_base_adr;
--	u32 sync_clk_div;
--	int sync_output;
--	u32 sync_restart_val;
--	u32 set_sync_high;
--	u32 set_sync_low;
--};
--
--struct dum_ch_setup {
--	int disp_no;
--	u32 xmin;
--	u32 ymin;
--	u32 xmax;
--	u32 ymax;
--	int xmirror;
--	int ymirror;
--	int rotate;
--	u32 minadr;
--	u32 maxadr;
--	u32 dirtybuffer;
--	int pad;
--	int format;
--	int hwdirty;
--	int slave_trans;
--};
--
--struct disp_window {
--	u32 xmin_l;
--	u32 xmin_h;
--	u32 ymin;
--	u32 xmax_l;
--	u32 xmax_h;
--	u32 ymax;
--};
--
--#endif				/* #ifndef __PNX008_DUM_H__ */
---- linux-2.6.orig/drivers/video/pnx4008/fbcommon.h
-+++ /dev/null
-@@ -1,43 +0,0 @@
--/*
-- * Copyright (C) 2005 Philips Semiconductors
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation; either version 2, or (at your option)
-- * any later version.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; see the file COPYING.  If not, write to
-- * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-- * Boston, MA 02111-1307, USA, or http://www.gnu.org/licenses/gpl.html
--*/
--
--#define QCIF_W  (176)
--#define QCIF_H  (144)
--
--#define CIF_W   (352)
--#define CIF_H   (288)
--
--#define LCD_X_RES	208
--#define LCD_Y_RES	320
--#define LCD_X_PAD	256
--#define LCD_BBP		4	/* Bytes Per Pixel */
--
--#define DISP_MAX_X_SIZE     (320)
--#define DISP_MAX_Y_SIZE     (208)
--
--#define RETURNVAL_BASE (0x400)
--
--enum fb_ioctl_returntype {
--	ENORESOURCESLEFT = RETURNVAL_BASE,
--	ERESOURCESNOTFREED,
--	EPROCNOTOWNER,
--	EFBNOTOWNER,
--	ECOPYFAILED,
--	EIOREMAPFAILED,
--};
---- linux-2.6.orig/drivers/video/pnx4008/pnxrgbfb.c
-+++ /dev/null
-@@ -1,198 +0,0 @@
--/*
-- * drivers/video/pnx4008/pnxrgbfb.c
-- *
-- * PNX4008's framebuffer support
-- *
-- * Author: Grigory Tolstolytkin <gtolstolytkin@ru.mvista.com>
-- * Based on Philips Semiconductors's code
-- *
-- * Copyrght (c) 2005 MontaVista Software, Inc.
-- * Copyright (c) 2005 Philips Semiconductors
-- * This file is licensed under the terms of the GNU General Public License
-- * version 2. This program is licensed "as is" without any warranty of any
-- * kind, whether express or implied.
-- */
--
--#include <linux/module.h>
--#include <linux/kernel.h>
--#include <linux/errno.h>
--#include <linux/string.h>
--#include <linux/mm.h>
--#include <linux/vmalloc.h>
--#include <linux/delay.h>
--#include <linux/interrupt.h>
--#include <linux/fb.h>
--#include <linux/init.h>
--#include <linux/platform_device.h>
--
--#include "sdum.h"
--#include "fbcommon.h"
--
--static u32 colreg[16];
--
--static struct fb_var_screeninfo rgbfb_var __initdata = {
--	.xres = LCD_X_RES,
--	.yres = LCD_Y_RES,
--	.xres_virtual = LCD_X_RES,
--	.yres_virtual = LCD_Y_RES,
--	.bits_per_pixel = 32,
--	.red.offset = 16,
--	.red.length = 8,
--	.green.offset = 8,
--	.green.length = 8,
--	.blue.offset = 0,
--	.blue.length = 8,
--	.left_margin = 0,
--	.right_margin = 0,
--	.upper_margin = 0,
--	.lower_margin = 0,
--	.vmode = FB_VMODE_NONINTERLACED,
--};
--static struct fb_fix_screeninfo rgbfb_fix __initdata = {
--	.id = "RGBFB",
--	.line_length = LCD_X_RES * LCD_BBP,
--	.type = FB_TYPE_PACKED_PIXELS,
--	.visual = FB_VISUAL_TRUECOLOR,
--	.xpanstep = 0,
--	.ypanstep = 0,
--	.ywrapstep = 0,
--	.accel = FB_ACCEL_NONE,
--};
--
--static int channel_owned;
--
--static int no_cursor(struct fb_info *info, struct fb_cursor *cursor)
--{
--	return 0;
--}
--
--static int rgbfb_setcolreg(u_int regno, u_int red, u_int green, u_int blue,
--			   u_int transp, struct fb_info *info)
--{
--	if (regno > 15)
--		return 1;
--
--	colreg[regno] = ((red & 0xff00) << 8) | (green & 0xff00) |
--	    ((blue & 0xff00) >> 8);
--	return 0;
--}
--
--static int rgbfb_mmap(struct fb_info *info, struct vm_area_struct *vma)
--{
--	return pnx4008_sdum_mmap(info, vma, NULL);
--}
--
--static struct fb_ops rgbfb_ops = {
--	.fb_mmap = rgbfb_mmap,
--	.fb_setcolreg = rgbfb_setcolreg,
--	.fb_fillrect = cfb_fillrect,
--	.fb_copyarea = cfb_copyarea,
--	.fb_imageblit = cfb_imageblit,
--};
--
--static int rgbfb_remove(struct platform_device *pdev)
--{
--	struct fb_info *info = platform_get_drvdata(pdev);
--
--	if (info) {
--		unregister_framebuffer(info);
--		fb_dealloc_cmap(&info->cmap);
--		framebuffer_release(info);
--		platform_set_drvdata(pdev, NULL);
--	}
--
--	pnx4008_free_dum_channel(channel_owned, pdev->id);
--	pnx4008_set_dum_exit_notification(pdev->id);
--
--	return 0;
--}
--
--static int __devinit rgbfb_probe(struct platform_device *pdev)
--{
--	struct fb_info *info;
--	struct dumchannel_uf chan_uf;
--	int ret;
--	char *option;
--
--	info = framebuffer_alloc(sizeof(u32) * 16, &pdev->dev);
--	if (!info) {
--		ret = -ENOMEM;
--		goto err;
--	}
--
--	pnx4008_get_fb_addresses(FB_TYPE_RGB, (void **)&info->screen_base,
--				 (dma_addr_t *) &rgbfb_fix.smem_start,
--				 &rgbfb_fix.smem_len);
--
--	if ((ret = pnx4008_alloc_dum_channel(pdev->id)) < 0)
--		goto err0;
--	else {
--		channel_owned = ret;
--		chan_uf.channelnr = channel_owned;
--		chan_uf.dirty = (u32 *) NULL;
--		chan_uf.source = (u32 *) rgbfb_fix.smem_start;
--		chan_uf.x_offset = 0;
--		chan_uf.y_offset = 0;
--		chan_uf.width = LCD_X_RES;
--		chan_uf.height = LCD_Y_RES;
--
--		if ((ret = pnx4008_put_dum_channel_uf(chan_uf, pdev->id))< 0)
--			goto err1;
--
--		if ((ret =
--		     pnx4008_set_dum_channel_sync(channel_owned, CONF_SYNC_ON,
--						  pdev->id)) < 0)
--			goto err1;
--
--		if ((ret =
--		     pnx4008_set_dum_channel_dirty_detect(channel_owned,
--							 CONF_DIRTYDETECTION_ON,
--							 pdev->id)) < 0)
--			goto err1;
--	}
--
--	if (!fb_get_options("pnxrgbfb", &option) && option &&
--			!strcmp(option, "nocursor"))
--		rgbfb_ops.fb_cursor = no_cursor;
--
--	info->node = -1;
--	info->flags = FBINFO_FLAG_DEFAULT;
--	info->fbops = &rgbfb_ops;
--	info->fix = rgbfb_fix;
--	info->var = rgbfb_var;
--	info->screen_size = rgbfb_fix.smem_len;
--	info->pseudo_palette = info->par;
--	info->par = NULL;
--
--	ret = fb_alloc_cmap(&info->cmap, 256, 0);
--	if (ret < 0)
--		goto err1;
--
--	ret = register_framebuffer(info);
--	if (ret < 0)
--		goto err2;
--	platform_set_drvdata(pdev, info);
--
--	return 0;
--
--err2:
--	fb_dealloc_cmap(&info->cmap);
--err1:
--	pnx4008_free_dum_channel(channel_owned, pdev->id);
--err0:
--	framebuffer_release(info);
--err:
--	return ret;
--}
--
--static struct platform_driver rgbfb_driver = {
--	.driver = {
--		.name = "pnx4008-rgbfb",
--	},
--	.probe = rgbfb_probe,
--	.remove = rgbfb_remove,
--};
--
--module_platform_driver(rgbfb_driver);
--
--MODULE_LICENSE("GPL");
---- linux-2.6.orig/drivers/video/pnx4008/sdum.c
-+++ /dev/null
-@@ -1,861 +0,0 @@
--/*
-- * drivers/video/pnx4008/sdum.c
-- *
-- * Display Update Master support
-- *
-- * Authors: Grigory Tolstolytkin <gtolstolytkin@ru.mvista.com>
-- *          Vitaly Wool <vitalywool@gmail.com>
-- * Based on Philips Semiconductors's code
-- *
-- * Copyrght (c) 2005-2006 MontaVista Software, Inc.
-- * Copyright (c) 2005 Philips Semiconductors
-- * This file is licensed under the terms of the GNU General Public License
-- * version 2. This program is licensed "as is" without any warranty of any
-- * kind, whether express or implied.
-- */
--
--#include <linux/module.h>
--#include <linux/kernel.h>
--#include <linux/errno.h>
--#include <linux/string.h>
--#include <linux/mm.h>
--#include <linux/tty.h>
--#include <linux/vmalloc.h>
--#include <linux/delay.h>
--#include <linux/interrupt.h>
--#include <linux/platform_device.h>
--#include <linux/fb.h>
--#include <linux/init.h>
--#include <linux/dma-mapping.h>
--#include <linux/clk.h>
--#include <linux/gfp.h>
--#include <asm/uaccess.h>
--#include <asm/gpio.h>
--
--#include "sdum.h"
--#include "fbcommon.h"
--#include "dum.h"
--
--/* Framebuffers we have */
--
--static struct pnx4008_fb_addr {
--	int fb_type;
--	long addr_offset;
--	long fb_length;
--} fb_addr[] = {
--	[0] = {
--		FB_TYPE_YUV, 0, 0xB0000
--	},
--	[1] = {
--		FB_TYPE_RGB, 0xB0000, 0x50000
--	},
--};
--
--static struct dum_data {
--	u32 lcd_phys_start;
--	u32 lcd_virt_start;
--	u32 slave_phys_base;
--	u32 *slave_virt_base;
--	int fb_owning_channel[MAX_DUM_CHANNELS];
--	struct dumchannel_uf chan_uf_store[MAX_DUM_CHANNELS];
--} dum_data;
--
--/* Different local helper functions */
--
--static u32 nof_pixels_dx(struct dum_ch_setup *ch_setup)
--{
--	return (ch_setup->xmax - ch_setup->xmin + 1);
--}
--
--static u32 nof_pixels_dy(struct dum_ch_setup *ch_setup)
--{
--	return (ch_setup->ymax - ch_setup->ymin + 1);
--}
--
--static u32 nof_pixels_dxy(struct dum_ch_setup *ch_setup)
--{
--	return (nof_pixels_dx(ch_setup) * nof_pixels_dy(ch_setup));
--}
--
--static u32 nof_bytes(struct dum_ch_setup *ch_setup)
--{
--	u32 r = nof_pixels_dxy(ch_setup);
--	switch (ch_setup->format) {
--	case RGB888:
--	case RGB666:
--		r *= 4;
--		break;
--
--	default:
--		r *= 2;
--		break;
--	}
--	return r;
--}
--
--static u32 build_command(int disp_no, u32 reg, u32 val)
--{
--	return ((disp_no << 26) | BIT(25) | (val << 16) | (disp_no << 10) |
--		(reg << 0));
--}
--
--static u32 build_double_index(int disp_no, u32 val)
--{
--	return ((disp_no << 26) | (val << 16) | (disp_no << 10) | (val << 0));
--}
--
--static void build_disp_window(struct dum_ch_setup * ch_setup, struct disp_window * dw)
--{
--	dw->ymin = ch_setup->ymin;
--	dw->ymax = ch_setup->ymax;
--	dw->xmin_l = ch_setup->xmin & 0xFF;
--	dw->xmin_h = (ch_setup->xmin & BIT(8)) >> 8;
--	dw->xmax_l = ch_setup->xmax & 0xFF;
--	dw->xmax_h = (ch_setup->xmax & BIT(8)) >> 8;
--}
--
--static int put_channel(struct dumchannel chan)
--{
--	int i = chan.channelnr;
--
--	if (i < 0 || i > MAX_DUM_CHANNELS)
--		return -EINVAL;
--	else {
--		DUM_CH_MIN(i) = chan.dum_ch_min;
--		DUM_CH_MAX(i) = chan.dum_ch_max;
--		DUM_CH_CONF(i) = chan.dum_ch_conf;
--		DUM_CH_CTRL(i) = chan.dum_ch_ctrl;
--	}
--
--	return 0;
--}
--
--static void clear_channel(int channr)
--{
--	struct dumchannel chan;
--
--	chan.channelnr = channr;
--	chan.dum_ch_min = 0;
--	chan.dum_ch_max = 0;
--	chan.dum_ch_conf = 0;
--	chan.dum_ch_ctrl = 0;
--
--	put_channel(chan);
--}
--
--static int put_cmd_string(struct cmdstring cmds)
--{
--	u16 *cmd_str_virtaddr;
--	u32 *cmd_ptr0_virtaddr;
--	u32 cmd_str_physaddr;
--
--	int i = cmds.channelnr;
--
--	if (i < 0 || i > MAX_DUM_CHANNELS)
--		return -EINVAL;
--	else if ((cmd_ptr0_virtaddr =
--		  (int *)ioremap_nocache(DUM_COM_BASE,
--					 sizeof(int) * MAX_DUM_CHANNELS)) ==
--		 NULL)
--		return -EIOREMAPFAILED;
--	else {
--		cmd_str_physaddr = ioread32(&cmd_ptr0_virtaddr[cmds.channelnr]);
--		if ((cmd_str_virtaddr =
--		     (u16 *) ioremap_nocache(cmd_str_physaddr,
--					     sizeof(cmds))) == NULL) {
--			iounmap(cmd_ptr0_virtaddr);
--			return -EIOREMAPFAILED;
--		} else {
--			int t;
--			for (t = 0; t < 8; t++)
--				iowrite16(*((u16 *)&cmds.prestringlen + t),
--					  cmd_str_virtaddr + t);
--
--			for (t = 0; t < cmds.prestringlen / 2; t++)
--				 iowrite16(*((u16 *)&cmds.precmd + t),
--					   cmd_str_virtaddr + t + 8);
--
--			for (t = 0; t < cmds.poststringlen / 2; t++)
--				iowrite16(*((u16 *)&cmds.postcmd + t),
--					  cmd_str_virtaddr + t + 8 +
--					  	cmds.prestringlen / 2);
--
--			iounmap(cmd_ptr0_virtaddr);
--			iounmap(cmd_str_virtaddr);
--		}
--	}
--
--	return 0;
--}
--
--static u32 dum_ch_setup(int ch_no, struct dum_ch_setup * ch_setup)
--{
--	struct cmdstring cmds_c;
--	struct cmdstring *cmds = &cmds_c;
--	struct disp_window dw;
--	int standard;
--	u32 orientation = 0;
--	struct dumchannel chan = { 0 };
--	int ret;
--
--	if ((ch_setup->xmirror) || (ch_setup->ymirror) || (ch_setup->rotate)) {
--		standard = 0;
--
--		orientation = BIT(1);	/* always set 9-bit-bus */
--		if (ch_setup->xmirror)
--			orientation |= BIT(4);
--		if (ch_setup->ymirror)
--			orientation |= BIT(3);
--		if (ch_setup->rotate)
--			orientation |= BIT(0);
--	} else
--		standard = 1;
--
--	cmds->channelnr = ch_no;
--
--	/* build command string header */
--	if (standard) {
--		cmds->prestringlen = 32;
--		cmds->poststringlen = 0;
--	} else {
--		cmds->prestringlen = 48;
--		cmds->poststringlen = 16;
--	}
--
--	cmds->format =
--	    (u16) ((ch_setup->disp_no << 4) | (BIT(3)) | (ch_setup->format));
--	cmds->reserved = 0x0;
--	cmds->startaddr_low = (ch_setup->minadr & 0xFFFF);
--	cmds->startaddr_high = (ch_setup->minadr >> 16);
--
--	if ((ch_setup->minadr == 0) && (ch_setup->maxadr == 0)
--	    && (ch_setup->xmin == 0)
--	    && (ch_setup->ymin == 0) && (ch_setup->xmax == 0)
--	    && (ch_setup->ymax == 0)) {
--		cmds->pixdatlen_low = 0;
--		cmds->pixdatlen_high = 0;
--	} else {
--		u32 nbytes = nof_bytes(ch_setup);
--		cmds->pixdatlen_low = (nbytes & 0xFFFF);
--		cmds->pixdatlen_high = (nbytes >> 16);
--	}
--
--	if (ch_setup->slave_trans)
--		cmds->pixdatlen_high |= BIT(15);
--
--	/* build pre-string */
--	build_disp_window(ch_setup, &dw);
--
--	if (standard) {
--		cmds->precmd[0] =
--		    build_command(ch_setup->disp_no, DISP_XMIN_L_REG, 0x99);
--		cmds->precmd[1] =
--		    build_command(ch_setup->disp_no, DISP_XMIN_L_REG,
--				  dw.xmin_l);
--		cmds->precmd[2] =
--		    build_command(ch_setup->disp_no, DISP_XMIN_H_REG,
--				  dw.xmin_h);
--		cmds->precmd[3] =
--		    build_command(ch_setup->disp_no, DISP_YMIN_REG, dw.ymin);
--		cmds->precmd[4] =
--		    build_command(ch_setup->disp_no, DISP_XMAX_L_REG,
--				  dw.xmax_l);
--		cmds->precmd[5] =
--		    build_command(ch_setup->disp_no, DISP_XMAX_H_REG,
--				  dw.xmax_h);
--		cmds->precmd[6] =
--		    build_command(ch_setup->disp_no, DISP_YMAX_REG, dw.ymax);
--		cmds->precmd[7] =
--		    build_double_index(ch_setup->disp_no, DISP_PIXEL_REG);
--	} else {
--		if (dw.xmin_l == ch_no)
--			cmds->precmd[0] =
--			    build_command(ch_setup->disp_no, DISP_XMIN_L_REG,
--					  0x99);
--		else
--			cmds->precmd[0] =
--			    build_command(ch_setup->disp_no, DISP_XMIN_L_REG,
--					  ch_no);
--
--		cmds->precmd[1] =
--		    build_command(ch_setup->disp_no, DISP_XMIN_L_REG,
--				  dw.xmin_l);
--		cmds->precmd[2] =
--		    build_command(ch_setup->disp_no, DISP_XMIN_H_REG,
--				  dw.xmin_h);
--		cmds->precmd[3] =
--		    build_command(ch_setup->disp_no, DISP_YMIN_REG, dw.ymin);
--		cmds->precmd[4] =
--		    build_command(ch_setup->disp_no, DISP_XMAX_L_REG,
--				  dw.xmax_l);
--		cmds->precmd[5] =
--		    build_command(ch_setup->disp_no, DISP_XMAX_H_REG,
--				  dw.xmax_h);
--		cmds->precmd[6] =
--		    build_command(ch_setup->disp_no, DISP_YMAX_REG, dw.ymax);
--		cmds->precmd[7] =
--		    build_command(ch_setup->disp_no, DISP_1_REG, orientation);
--		cmds->precmd[8] =
--		    build_double_index(ch_setup->disp_no, DISP_PIXEL_REG);
--		cmds->precmd[9] =
--		    build_double_index(ch_setup->disp_no, DISP_PIXEL_REG);
--		cmds->precmd[0xA] =
--		    build_double_index(ch_setup->disp_no, DISP_PIXEL_REG);
--		cmds->precmd[0xB] =
--		    build_double_index(ch_setup->disp_no, DISP_PIXEL_REG);
--		cmds->postcmd[0] =
--		    build_command(ch_setup->disp_no, DISP_1_REG, BIT(1));
--		cmds->postcmd[1] =
--		    build_command(ch_setup->disp_no, DISP_DUMMY1_REG, 1);
--		cmds->postcmd[2] =
--		    build_command(ch_setup->disp_no, DISP_DUMMY1_REG, 2);
--		cmds->postcmd[3] =
--		    build_command(ch_setup->disp_no, DISP_DUMMY1_REG, 3);
--	}
--
--	if ((ret = put_cmd_string(cmds_c)) != 0) {
--		return ret;
--	}
--
--	chan.channelnr = cmds->channelnr;
--	chan.dum_ch_min = ch_setup->dirtybuffer + ch_setup->minadr;
--	chan.dum_ch_max = ch_setup->dirtybuffer + ch_setup->maxadr;
--	chan.dum_ch_conf = 0x002;
--	chan.dum_ch_ctrl = 0x04;
--
--	put_channel(chan);
--
--	return 0;
--}
--
--static u32 display_open(int ch_no, int auto_update, u32 * dirty_buffer,
--			u32 * frame_buffer, u32 xpos, u32 ypos, u32 w, u32 h)
--{
--
--	struct dum_ch_setup k;
--	int ret;
--
--	/* keep width & height within display area */
--	if ((xpos + w) > DISP_MAX_X_SIZE)
--		w = DISP_MAX_X_SIZE - xpos;
--
--	if ((ypos + h) > DISP_MAX_Y_SIZE)
--		h = DISP_MAX_Y_SIZE - ypos;
--
--	/* assume 1 display only */
--	k.disp_no = 0;
--	k.xmin = xpos;
--	k.ymin = ypos;
--	k.xmax = xpos + (w - 1);
--	k.ymax = ypos + (h - 1);
--
--	/* adjust min and max values if necessary */
--	if (k.xmin > DISP_MAX_X_SIZE - 1)
--		k.xmin = DISP_MAX_X_SIZE - 1;
--	if (k.ymin > DISP_MAX_Y_SIZE - 1)
--		k.ymin = DISP_MAX_Y_SIZE - 1;
--
--	if (k.xmax > DISP_MAX_X_SIZE - 1)
--		k.xmax = DISP_MAX_X_SIZE - 1;
--	if (k.ymax > DISP_MAX_Y_SIZE - 1)
--		k.ymax = DISP_MAX_Y_SIZE - 1;
--
--	k.xmirror = 0;
--	k.ymirror = 0;
--	k.rotate = 0;
--	k.minadr = (u32) frame_buffer;
--	k.maxadr = (u32) frame_buffer + (((w - 1) << 10) | ((h << 2) - 2));
--	k.pad = PAD_1024;
--	k.dirtybuffer = (u32) dirty_buffer;
--	k.format = RGB888;
--	k.hwdirty = 0;
--	k.slave_trans = 0;
--
--	ret = dum_ch_setup(ch_no, &k);
--
--	return ret;
--}
--
--static void lcd_reset(void)
--{
--	u32 *dum_pio_base = (u32 *)IO_ADDRESS(PNX4008_PIO_BASE);
--
--	udelay(1);
--	iowrite32(BIT(19), &dum_pio_base[2]);
--	udelay(1);
--	iowrite32(BIT(19), &dum_pio_base[1]);
--	udelay(1);
--}
--
--static int dum_init(struct platform_device *pdev)
--{
--	struct clk *clk;
--
--	/* enable DUM clock */
--	clk = clk_get(&pdev->dev, "dum_ck");
--	if (IS_ERR(clk)) {
--		printk(KERN_ERR "pnx4008_dum: Unable to access DUM clock\n");
--		return PTR_ERR(clk);
--	}
--
--	clk_set_rate(clk, 1);
--	clk_put(clk);
--
--	DUM_CTRL = V_DUM_RESET;
--
--	/* set priority to "round-robin". All other params to "false" */
--	DUM_CONF = BIT(9);
--
--	/* Display 1 */
--	DUM_WTCFG1 = PNX4008_DUM_WT_CFG;
--	DUM_RTCFG1 = PNX4008_DUM_RT_CFG;
--	DUM_TCFG = PNX4008_DUM_T_CFG;
--
--	return 0;
--}
--
--static void dum_chan_init(void)
--{
--	int i = 0, ch = 0;
--	u32 *cmdptrs;
--	u32 *cmdstrings;
--
--	DUM_COM_BASE =
--		CMDSTRING_BASEADDR + BYTES_PER_CMDSTRING * NR_OF_CMDSTRINGS;
--
--	if ((cmdptrs =
--	     (u32 *) ioremap_nocache(DUM_COM_BASE,
--				     sizeof(u32) * NR_OF_CMDSTRINGS)) == NULL)
--		return;
--
--	for (ch = 0; ch < NR_OF_CMDSTRINGS; ch++)
--		iowrite32(CMDSTRING_BASEADDR + BYTES_PER_CMDSTRING * ch,
--			  cmdptrs + ch);
--
--	for (ch = 0; ch < MAX_DUM_CHANNELS; ch++)
--		clear_channel(ch);
--
--	/* Clear the cmdstrings */
--	cmdstrings =
--	    (u32 *)ioremap_nocache(*cmdptrs,
--				   BYTES_PER_CMDSTRING * NR_OF_CMDSTRINGS);
--
--	if (!cmdstrings)
--		goto out;
--
--	for (i = 0; i < NR_OF_CMDSTRINGS * BYTES_PER_CMDSTRING / sizeof(u32);
--	     i++)
--		iowrite32(0, cmdstrings + i);
--
--	iounmap((u32 *)cmdstrings);
--
--out:
--	iounmap((u32 *)cmdptrs);
--}
--
--static void lcd_init(void)
--{
--	lcd_reset();
--
--	DUM_OUTP_FORMAT1 = 0; /* RGB666 */
--
--	udelay(1);
--	iowrite32(V_LCD_STANDBY_OFF, dum_data.slave_virt_base);
--	udelay(1);
--	iowrite32(V_LCD_USE_9BIT_BUS, dum_data.slave_virt_base);
--	udelay(1);
--	iowrite32(V_LCD_SYNC_RISE_L, dum_data.slave_virt_base);
--	udelay(1);
--	iowrite32(V_LCD_SYNC_RISE_H, dum_data.slave_virt_base);
--	udelay(1);
--	iowrite32(V_LCD_SYNC_FALL_L, dum_data.slave_virt_base);
--	udelay(1);
--	iowrite32(V_LCD_SYNC_FALL_H, dum_data.slave_virt_base);
--	udelay(1);
--	iowrite32(V_LCD_SYNC_ENABLE, dum_data.slave_virt_base);
--	udelay(1);
--	iowrite32(V_LCD_DISPLAY_ON, dum_data.slave_virt_base);
--	udelay(1);
--}
--
--/* Interface exported to framebuffer drivers */
--
--int pnx4008_get_fb_addresses(int fb_type, void **virt_addr,
--			     dma_addr_t *phys_addr, int *fb_length)
--{
--	int i;
--	int ret = -1;
--	for (i = 0; i < ARRAY_SIZE(fb_addr); i++)
--		if (fb_addr[i].fb_type == fb_type) {
--			*virt_addr = (void *)(dum_data.lcd_virt_start +
--					fb_addr[i].addr_offset);
--			*phys_addr =
--			    dum_data.lcd_phys_start + fb_addr[i].addr_offset;
--			*fb_length = fb_addr[i].fb_length;
--			ret = 0;
--			break;
--		}
--
--	return ret;
--}
--
--EXPORT_SYMBOL(pnx4008_get_fb_addresses);
--
--int pnx4008_alloc_dum_channel(int dev_id)
--{
--	int i = 0;
--
--	while ((i < MAX_DUM_CHANNELS) && (dum_data.fb_owning_channel[i] != -1))
--		i++;
--
--	if (i == MAX_DUM_CHANNELS)
--		return -ENORESOURCESLEFT;
--	else {
--		dum_data.fb_owning_channel[i] = dev_id;
--		return i;
--	}
--}
--
--EXPORT_SYMBOL(pnx4008_alloc_dum_channel);
--
--int pnx4008_free_dum_channel(int channr, int dev_id)
--{
--	if (channr < 0 || channr > MAX_DUM_CHANNELS)
--		return -EINVAL;
--	else if (dum_data.fb_owning_channel[channr] != dev_id)
--		return -EFBNOTOWNER;
--	else {
--		clear_channel(channr);
--		dum_data.fb_owning_channel[channr] = -1;
--	}
--
--	return 0;
--}
--
--EXPORT_SYMBOL(pnx4008_free_dum_channel);
--
--int pnx4008_put_dum_channel_uf(struct dumchannel_uf chan_uf, int dev_id)
--{
--	int i = chan_uf.channelnr;
--	int ret;
--
--	if (i < 0 || i > MAX_DUM_CHANNELS)
--		return -EINVAL;
--	else if (dum_data.fb_owning_channel[i] != dev_id)
--		return -EFBNOTOWNER;
--	else if ((ret =
--		  display_open(chan_uf.channelnr, 0, chan_uf.dirty,
--			       chan_uf.source, chan_uf.y_offset,
--			       chan_uf.x_offset, chan_uf.height,
--			       chan_uf.width)) != 0)
--		return ret;
--	else {
--		dum_data.chan_uf_store[i].dirty = chan_uf.dirty;
--		dum_data.chan_uf_store[i].source = chan_uf.source;
--		dum_data.chan_uf_store[i].x_offset = chan_uf.x_offset;
--		dum_data.chan_uf_store[i].y_offset = chan_uf.y_offset;
--		dum_data.chan_uf_store[i].width = chan_uf.width;
--		dum_data.chan_uf_store[i].height = chan_uf.height;
--	}
--
--	return 0;
--}
--
--EXPORT_SYMBOL(pnx4008_put_dum_channel_uf);
--
--int pnx4008_set_dum_channel_sync(int channr, int val, int dev_id)
--{
--	if (channr < 0 || channr > MAX_DUM_CHANNELS)
--		return -EINVAL;
--	else if (dum_data.fb_owning_channel[channr] != dev_id)
--		return -EFBNOTOWNER;
--	else {
--		if (val == CONF_SYNC_ON) {
--			DUM_CH_CONF(channr) |= CONF_SYNCENABLE;
--			DUM_CH_CONF(channr) |= DUM_CHANNEL_CFG_SYNC_MASK |
--				DUM_CHANNEL_CFG_SYNC_MASK_SET;
--		} else if (val == CONF_SYNC_OFF)
--			DUM_CH_CONF(channr) &= ~CONF_SYNCENABLE;
--		else
--			return -EINVAL;
--	}
--
--	return 0;
--}
--
--EXPORT_SYMBOL(pnx4008_set_dum_channel_sync);
--
--int pnx4008_set_dum_channel_dirty_detect(int channr, int val, int dev_id)
--{
--	if (channr < 0 || channr > MAX_DUM_CHANNELS)
--		return -EINVAL;
--	else if (dum_data.fb_owning_channel[channr] != dev_id)
--		return -EFBNOTOWNER;
--	else {
--		if (val == CONF_DIRTYDETECTION_ON)
--			DUM_CH_CONF(channr) |= CONF_DIRTYENABLE;
--		else if (val == CONF_DIRTYDETECTION_OFF)
--			DUM_CH_CONF(channr) &= ~CONF_DIRTYENABLE;
--		else
--			return -EINVAL;
--	}
--
--	return 0;
--}
--
--EXPORT_SYMBOL(pnx4008_set_dum_channel_dirty_detect);
--
--#if 0 /* Functions not used currently, but likely to be used in future */
--
--static int get_channel(struct dumchannel *p_chan)
--{
--	int i = p_chan->channelnr;
--
--	if (i < 0 || i > MAX_DUM_CHANNELS)
--		return -EINVAL;
--	else {
--		p_chan->dum_ch_min = DUM_CH_MIN(i);
--		p_chan->dum_ch_max = DUM_CH_MAX(i);
--		p_chan->dum_ch_conf = DUM_CH_CONF(i);
--		p_chan->dum_ch_stat = DUM_CH_STAT(i);
--		p_chan->dum_ch_ctrl = 0;	/* WriteOnly control register */
--	}
--
--	return 0;
--}
--
--int pnx4008_get_dum_channel_uf(struct dumchannel_uf *p_chan_uf, int dev_id)
--{
--	int i = p_chan_uf->channelnr;
--
--	if (i < 0 || i > MAX_DUM_CHANNELS)
--		return -EINVAL;
--	else if (dum_data.fb_owning_channel[i] != dev_id)
--		return -EFBNOTOWNER;
--	else {
--		p_chan_uf->dirty = dum_data.chan_uf_store[i].dirty;
--		p_chan_uf->source = dum_data.chan_uf_store[i].source;
--		p_chan_uf->x_offset = dum_data.chan_uf_store[i].x_offset;
--		p_chan_uf->y_offset = dum_data.chan_uf_store[i].y_offset;
--		p_chan_uf->width = dum_data.chan_uf_store[i].width;
--		p_chan_uf->height = dum_data.chan_uf_store[i].height;
--	}
--
--	return 0;
--}
--
--EXPORT_SYMBOL(pnx4008_get_dum_channel_uf);
--
--int pnx4008_get_dum_channel_config(int channr, int dev_id)
--{
--	int ret;
--	struct dumchannel chan;
--
--	if (channr < 0 || channr > MAX_DUM_CHANNELS)
--		return -EINVAL;
--	else if (dum_data.fb_owning_channel[channr] != dev_id)
--		return -EFBNOTOWNER;
--	else {
--		chan.channelnr = channr;
--		if ((ret = get_channel(&chan)) != 0)
--			return ret;
--	}
--
--	return (chan.dum_ch_conf & DUM_CHANNEL_CFG_MASK);
--}
--
--EXPORT_SYMBOL(pnx4008_get_dum_channel_config);
--
--int pnx4008_force_update_dum_channel(int channr, int dev_id)
--{
--	if (channr < 0 || channr > MAX_DUM_CHANNELS)
--		return -EINVAL;
--
--	else if (dum_data.fb_owning_channel[channr] != dev_id)
--		return -EFBNOTOWNER;
--	else
--		DUM_CH_CTRL(channr) = CTRL_SETDIRTY;
--
--	return 0;
--}
--
--EXPORT_SYMBOL(pnx4008_force_update_dum_channel);
--
--#endif
--
--int pnx4008_sdum_mmap(struct fb_info *info, struct vm_area_struct *vma,
--		      struct device *dev)
--{
--	unsigned long off = vma->vm_pgoff << PAGE_SHIFT;
--
--	if (off < info->fix.smem_len) {
--		vma->vm_pgoff += 1;
--		return dma_mmap_writecombine(dev, vma,
--				(void *)dum_data.lcd_virt_start,
--				dum_data.lcd_phys_start,
--				FB_DMA_SIZE);
--	}
--	return -EINVAL;
--}
--
--EXPORT_SYMBOL(pnx4008_sdum_mmap);
--
--int pnx4008_set_dum_exit_notification(int dev_id)
--{
--	int i;
--
--	for (i = 0; i < MAX_DUM_CHANNELS; i++)
--		if (dum_data.fb_owning_channel[i] == dev_id)
--			return -ERESOURCESNOTFREED;
--
--	return 0;
--}
--
--EXPORT_SYMBOL(pnx4008_set_dum_exit_notification);
--
--/* Platform device driver for DUM */
--
--static int sdum_suspend(struct platform_device *pdev, pm_message_t state)
--{
--	int retval = 0;
--	struct clk *clk;
--
--	clk = clk_get(0, "dum_ck");
--	if (!IS_ERR(clk)) {
--		clk_set_rate(clk, 0);
--		clk_put(clk);
--	} else
--		retval = PTR_ERR(clk);
--
--	/* disable BAC */
--	DUM_CTRL = V_BAC_DISABLE_IDLE;
--
--	/* LCD standby & turn off display */
--	lcd_reset();
--
--	return retval;
--}
--
--static int sdum_resume(struct platform_device *pdev)
--{
--	int retval = 0;
--	struct clk *clk;
--
--	clk = clk_get(0, "dum_ck");
--	if (!IS_ERR(clk)) {
--		clk_set_rate(clk, 1);
--		clk_put(clk);
--	} else
--		retval = PTR_ERR(clk);
--
--	/* wait for BAC disable */
--	DUM_CTRL = V_BAC_DISABLE_TRIG;
--
--	while (DUM_CTRL & BAC_ENABLED)
--		udelay(10);
--
--	/* re-init LCD */
--	lcd_init();
--
--	/* enable BAC and reset MUX */
--	DUM_CTRL = V_BAC_ENABLE;
--	udelay(1);
--	DUM_CTRL = V_MUX_RESET;
--	return 0;
--}
--
--static int __devinit sdum_probe(struct platform_device *pdev)
--{
--	int ret = 0, i = 0;
--
--	/* map frame buffer */
--	dum_data.lcd_virt_start = (u32) dma_alloc_writecombine(&pdev->dev,
--						       FB_DMA_SIZE,
--						       &dum_data.lcd_phys_start,
--						       GFP_KERNEL);
--
--	if (!dum_data.lcd_virt_start) {
--		ret = -ENOMEM;
--		goto out_3;
--	}
--
--	/* map slave registers */
--	dum_data.slave_phys_base = PNX4008_DUM_SLAVE_BASE;
--	dum_data.slave_virt_base =
--	    (u32 *) ioremap_nocache(dum_data.slave_phys_base, sizeof(u32));
--
--	if (dum_data.slave_virt_base == NULL) {
--		ret = -ENOMEM;
--		goto out_2;
--	}
--
--	/* initialize DUM and LCD display */
--	ret = dum_init(pdev);
--	if (ret)
--		goto out_1;
--
--	dum_chan_init();
--	lcd_init();
--
--	DUM_CTRL = V_BAC_ENABLE;
--	udelay(1);
--	DUM_CTRL = V_MUX_RESET;
--
--	/* set decode address and sync clock divider */
--	DUM_DECODE = dum_data.lcd_phys_start & DUM_DECODE_MASK;
--	DUM_CLK_DIV = PNX4008_DUM_CLK_DIV;
--
--	for (i = 0; i < MAX_DUM_CHANNELS; i++)
--		dum_data.fb_owning_channel[i] = -1;
--
--	/*setup wakeup interrupt */
--	start_int_set_rising_edge(SE_DISP_SYNC_INT);
--	start_int_ack(SE_DISP_SYNC_INT);
--	start_int_umask(SE_DISP_SYNC_INT);
--
--	return 0;
--
--out_1:
--	iounmap((void *)dum_data.slave_virt_base);
--out_2:
--	dma_free_writecombine(&pdev->dev, FB_DMA_SIZE,
--			(void *)dum_data.lcd_virt_start,
--			dum_data.lcd_phys_start);
--out_3:
--	return ret;
--}
--
--static int sdum_remove(struct platform_device *pdev)
--{
--	struct clk *clk;
--
--	start_int_mask(SE_DISP_SYNC_INT);
--
--	clk = clk_get(0, "dum_ck");
--	if (!IS_ERR(clk)) {
--		clk_set_rate(clk, 0);
--		clk_put(clk);
--	}
--
--	iounmap((void *)dum_data.slave_virt_base);
--
--	dma_free_writecombine(&pdev->dev, FB_DMA_SIZE,
--			(void *)dum_data.lcd_virt_start,
--			dum_data.lcd_phys_start);
--
--	return 0;
--}
--
--static struct platform_driver sdum_driver = {
--	.driver = {
--		.name = "pnx4008-sdum",
--	},
--	.probe = sdum_probe,
--	.remove = sdum_remove,
--	.suspend = sdum_suspend,
--	.resume = sdum_resume,
--};
--
--module_platform_driver(sdum_driver);
--
--MODULE_LICENSE("GPL");
---- linux-2.6.orig/drivers/video/pnx4008/sdum.h
-+++ /dev/null
-@@ -1,136 +0,0 @@
--/*
-- * Copyright (C) 2005 Philips Semiconductors
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation; either version 2, or (at your option)
-- * any later version.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; see the file COPYING.  If not, write to
-- * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-- * Boston, MA 02111-1307, USA, or http://www.gnu.org/licenses/gpl.html
--*/
--
--#define MAX_DUM_CHANNELS	64
--
--#define RGB_MEM_WINDOW(x) (0x10000000 + (x)*0x00100000)
--
--#define QCIF_OFFSET(x) (((x) == 0) ? 0x00000: ((x) == 1) ? 0x30000: -1)
--#define CIF_OFFSET(x)  (((x) == 0) ? 0x00000: ((x) == 1) ? 0x60000: -1)
--
--#define CTRL_SETDIRTY	 	(0x00000001)
--#define CONF_DIRTYENABLE	(0x00000020)
--#define CONF_SYNCENABLE		(0x00000004)
--
--#define DIRTY_ENABLED(conf)	((conf) & 0x0020)
--#define SYNC_ENABLED(conf) 	((conf) & 0x0004)
--
--/* Display 1 & 2 Write Timing Configuration */
--#define PNX4008_DUM_WT_CFG		0x00372000
--
--/* Display 1 & 2 Read Timing Configuration */
--#define PNX4008_DUM_RT_CFG		0x00003A47
--
--/* DUM Transit State Timing Configuration */
--#define PNX4008_DUM_T_CFG		0x1D	/* 29 HCLK cycles */
--
--/* DUM Sync count clock divider */
--#define PNX4008_DUM_CLK_DIV		0x02DD
--
--/* Memory size for framebuffer, allocated through dma_alloc_writecombine().
-- * Must be PAGE aligned
-- */
--#define FB_DMA_SIZE (PAGE_ALIGN(SZ_1M + PAGE_SIZE))
--
--#define OFFSET_RGBBUFFER (0xB0000)
--#define OFFSET_YUVBUFFER (0x00000)
--
--#define YUVBUFFER (lcd_video_start + OFFSET_YUVBUFFER)
--#define RGBBUFFER (lcd_video_start + OFFSET_RGBBUFFER)
--
--#define CMDSTRING_BASEADDR	(0x00C000)	/* iram */
--#define BYTES_PER_CMDSTRING	(0x80)
--#define NR_OF_CMDSTRINGS	(64)
--
--#define MAX_NR_PRESTRINGS (0x40)
--#define MAX_NR_POSTSTRINGS (0x40)
--
--/* various mask definitions */
--#define DUM_CLK_ENABLE 0x01
--#define DUM_CLK_DISABLE 0
--#define DUM_DECODE_MASK 0x1FFFFFFF
--#define DUM_CHANNEL_CFG_MASK 0x01FF
--#define DUM_CHANNEL_CFG_SYNC_MASK 0xFFFE00FF
--#define DUM_CHANNEL_CFG_SYNC_MASK_SET 0x0CA00
--
--#define SDUM_RETURNVAL_BASE (0x500)
--
--#define CONF_SYNC_OFF		(0x602)
--#define CONF_SYNC_ON		(0x603)
--
--#define CONF_DIRTYDETECTION_OFF	(0x600)
--#define CONF_DIRTYDETECTION_ON	(0x601)
--
--struct dumchannel_uf {
--	int channelnr;
--	u32 *dirty;
--	u32 *source;
--	u32 x_offset;
--	u32 y_offset;
--	u32 width;
--	u32 height;
--};
--
--enum {
--	FB_TYPE_YUV,
--	FB_TYPE_RGB
--};
--
--struct cmdstring {
--	int channelnr;
--	uint16_t prestringlen;
--	uint16_t poststringlen;
--	uint16_t format;
--	uint16_t reserved;
--	uint16_t startaddr_low;
--	uint16_t startaddr_high;
--	uint16_t pixdatlen_low;
--	uint16_t pixdatlen_high;
--	u32 precmd[MAX_NR_PRESTRINGS];
--	u32 postcmd[MAX_NR_POSTSTRINGS];
--
--};
--
--struct dumchannel {
--	int channelnr;
--	int dum_ch_min;
--	int dum_ch_max;
--	int dum_ch_conf;
--	int dum_ch_stat;
--	int dum_ch_ctrl;
--};
--
--int pnx4008_alloc_dum_channel(int dev_id);
--int pnx4008_free_dum_channel(int channr, int dev_id);
--
--int pnx4008_get_dum_channel_uf(struct dumchannel_uf *pChan_uf, int dev_id);
--int pnx4008_put_dum_channel_uf(struct dumchannel_uf chan_uf, int dev_id);
--
--int pnx4008_set_dum_channel_sync(int channr, int val, int dev_id);
--int pnx4008_set_dum_channel_dirty_detect(int channr, int val, int dev_id);
--
--int pnx4008_force_dum_update_channel(int channr, int dev_id);
--
--int pnx4008_get_dum_channel_config(int channr, int dev_id);
--
--int pnx4008_sdum_mmap(struct fb_info *info, struct vm_area_struct *vma, struct device *dev);
--int pnx4008_set_dum_exit_notification(int dev_id);
--
--int pnx4008_get_fb_addresses(int fb_type, void **virt_addr,
--			     dma_addr_t * phys_addr, int *fb_length);
++#if defined(CONFIG_I2C_CBUS) || defined(CONFIG_I2C_CBUS_MODULE)
++static struct i2c_cbus_platform_data n8x0_cbus_data = {
++	.clk_gpio = 66,
++	.dat_gpio = 65,
++	.sel_gpio = 64,
++};
++
++static struct platform_device n8x0_cbus_device = {
++	.name	= "i2c-cbus",
++	.id	= 3,
++	.dev	= {
++		.platform_data = &n8x0_cbus_data,
++	},
++};
++
++static struct i2c_board_info n8x0_i2c_board_info_3[] __initdata = {
++	{
++		I2C_BOARD_INFO("retu-mfd", 0x01),
++	},
++};
++
++static void __init n8x0_cbus_init(void)
++{
++	const int retu_irq_gpio = 108;
++
++	if (gpio_request_one(retu_irq_gpio, GPIOF_IN, "Retu IRQ"))
++		return;
++	irq_set_irq_type(gpio_to_irq(retu_irq_gpio), IRQ_TYPE_EDGE_RISING);
++	n8x0_i2c_board_info_3[0].irq = gpio_to_irq(retu_irq_gpio);
++	i2c_register_board_info(3, n8x0_i2c_board_info_3,
++				ARRAY_SIZE(n8x0_i2c_board_info_3));
++	platform_device_register(&n8x0_cbus_device);
++}
++#else /* CONFIG_I2C_CBUS */
++static void __init n8x0_cbus_init(void)
++{
++}
++#endif /* CONFIG_I2C_CBUS */
++
+ #if defined(CONFIG_USB_MUSB_TUSB6010) || defined(CONFIG_USB_MUSB_TUSB6010_MODULE)
+ /*
+  * Enable or disable power to TUSB6010. When enabling, turn on 3.3 V and
+@@ -681,6 +722,7 @@ static void __init n8x0_init_machine(void)
+ 	gpmc_onenand_init(board_onenand_data);
+ 	n8x0_mmc_init();
+ 	n8x0_usb_init();
++	n8x0_cbus_init();
+ }
+ 
+ MACHINE_START(NOKIA_N800, "Nokia N800")
+diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+index b4aaa1b..184ef43 100644
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -331,6 +331,16 @@ config I2C_BLACKFIN_TWI_CLK_KHZ
+ 	help
+ 	  The unit of the TWI clock is kHz.
+ 
++config I2C_CBUS
++	tristate "CBUS I2C driver"
++	depends on GENERIC_GPIO
++	help
++	  Support for CBUS access using I2C API. Mostly relevant for Nokia
++	  Internet Tablets (770, N800 and N810).
++
++	  This driver can also be built as a module.  If so, the module
++	  will be called i2c-cbus.
++
+ config I2C_CPM
+ 	tristate "Freescale CPM1 or CPM2 (MPC8xx/826x)"
+ 	depends on (CPM1 || CPM2) && OF_I2C
+diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
+index ce3c2be..44dbfd1 100644
+--- a/drivers/i2c/busses/Makefile
++++ b/drivers/i2c/busses/Makefile
+@@ -31,6 +31,7 @@ obj-$(CONFIG_I2C_POWERMAC)	+= i2c-powermac.o
+ obj-$(CONFIG_I2C_AT91)		+= i2c-at91.o
+ obj-$(CONFIG_I2C_AU1550)	+= i2c-au1550.o
+ obj-$(CONFIG_I2C_BLACKFIN_TWI)	+= i2c-bfin-twi.o
++obj-$(CONFIG_I2C_CBUS)		+= i2c-cbus.o
+ obj-$(CONFIG_I2C_CPM)		+= i2c-cpm.o
+ obj-$(CONFIG_I2C_DAVINCI)	+= i2c-davinci.o
+ obj-$(CONFIG_I2C_DESIGNWARE_PLATFORM)	+= i2c-designware-platform.o
+diff --git a/drivers/i2c/busses/i2c-cbus.c b/drivers/i2c/busses/i2c-cbus.c
+new file mode 100644
+index 0000000..bacf2a9
+--- /dev/null
++++ b/drivers/i2c/busses/i2c-cbus.c
+@@ -0,0 +1,369 @@
++/*
++ * CBUS I2C driver for Nokia Internet Tablets.
++ *
++ * Copyright (C) 2004-2010 Nokia Corporation
++ *
++ * Based on code written by Juha Yrjölä, David Weinehall, Mikko Ylinen and
++ * Felipe Balbi. Converted to I2C driver by Aaro Koskinen.
++ *
++ * This file is subject to the terms and conditions of the GNU General
++ * Public License. See the file "COPYING" in the main directory of this
++ * archive for more details.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/io.h>
++#include <linux/i2c.h>
++#include <linux/gpio.h>
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/delay.h>
++#include <linux/errno.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/of_gpio.h>
++#include <linux/i2c-cbus.h>
++#include <linux/interrupt.h>
++#include <linux/platform_device.h>
++
++struct cbus_host {
++	/* host lock */
++	spinlock_t	lock;
++
++	struct device	*dev;
++
++	int		clk_gpio;
++	int		dat_gpio;
++	int		sel_gpio;
++};
++
++/**
++ * cbus_send_bit - sends one bit over the bus
++ * @host: the host we're using
++ * @bit: one bit of information to send
++ * @input: whether to set data pin as input after sending
++ */
++static int cbus_send_bit(struct cbus_host *host, unsigned bit,
++		unsigned input)
++{
++	int ret = 0;
++
++	gpio_set_value(host->dat_gpio, bit ? 1 : 0);
++	gpio_set_value(host->clk_gpio, 1);
++
++	/* The data bit is read on the rising edge of CLK */
++	if (input)
++		ret = gpio_direction_input(host->dat_gpio);
++
++	gpio_set_value(host->clk_gpio, 0);
++
++	return ret;
++}
++
++/**
++ * cbus_send_data - sends @len amount of data over the bus
++ * @host: the host we're using
++ * @data: the data to send
++ * @len: size of the transfer
++ * @input: whether to set data pin as input after sending
++ */
++static int cbus_send_data(struct cbus_host *host, unsigned data, unsigned len,
++		unsigned input)
++{
++	int ret = 0;
++	int i;
++
++	for (i = len; i > 0; i--) {
++		ret = cbus_send_bit(host, data & (1 << (i - 1)),
++				input && (i == 1));
++		if (ret < 0)
++			goto out;
++	}
++
++out:
++	return ret;
++}
++
++/**
++ * cbus_receive_bit - receives one bit from the bus
++ * @host: the host we're using
++ */
++static int cbus_receive_bit(struct cbus_host *host)
++{
++	int ret;
++
++	gpio_set_value(host->clk_gpio, 1);
++	ret = gpio_get_value(host->dat_gpio);
++	if (ret < 0)
++		goto out;
++	gpio_set_value(host->clk_gpio, 0);
++
++out:
++	return ret;
++}
++
++/**
++ * cbus_receive_word - receives 16-bit word from the bus
++ * @host: the host we're using
++ */
++static int cbus_receive_word(struct cbus_host *host)
++{
++	int ret = 0;
++	int i;
++
++	for (i = 16; i > 0; i--) {
++		int bit = cbus_receive_bit(host);
++
++		if (bit < 0)
++			goto out;
++
++		if (bit)
++			ret |= 1 << (i - 1);
++	}
++
++out:
++	return ret;
++}
++
++/**
++ * cbus_transfer - transfers data over the bus
++ * @host: the host we're using
++ * @rw: read/write flag
++ * @dev: device address
++ * @reg: register address
++ * @data: if @rw == I2C_SBUS_WRITE data to send otherwise 0
++ */
++static int cbus_transfer(struct cbus_host *host, char rw, unsigned dev,
++			 unsigned reg, unsigned data)
++{
++	unsigned long flags;
++	int ret;
++
++	/* We don't want interrupts disturbing our transfer */
++	spin_lock_irqsave(&host->lock, flags);
++
++	/* Reset state and start of transfer, SEL stays down during transfer */
++	gpio_set_value(host->sel_gpio, 0);
++
++	/* Set the DAT pin to output */
++	gpio_direction_output(host->dat_gpio, 1);
++
++	/* Send the device address */
++	ret = cbus_send_data(host, dev, 3, 0);
++	if (ret < 0) {
++		dev_dbg(host->dev, "failed sending device addr\n");
++		goto out;
++	}
++
++	/* Send the rw flag */
++	ret = cbus_send_bit(host, rw == I2C_SMBUS_READ, 0);
++	if (ret < 0) {
++		dev_dbg(host->dev, "failed sending read/write flag\n");
++		goto out;
++	}
++
++	/* Send the device address */
++	ret = cbus_send_data(host, reg, 5, rw == I2C_SMBUS_READ);
++	if (ret < 0) {
++		dev_dbg(host->dev, "failed sending register addr\n");
++		goto out;
++	}
++
++	if (rw == I2C_SMBUS_WRITE) {
++		ret = cbus_send_data(host, data, 16, 0);
++		if (ret < 0) {
++			dev_dbg(host->dev, "failed sending data\n");
++			goto out;
++		}
++	} else {
++		gpio_set_value(host->clk_gpio, 1);
++
++		ret = cbus_receive_word(host);
++		if (ret < 0) {
++			dev_dbg(host->dev, "failed receiving data\n");
++			goto out;
++		}
++	}
++
++	/* Indicate end of transfer, SEL goes up until next transfer */
++	gpio_set_value(host->sel_gpio, 1);
++	gpio_set_value(host->clk_gpio, 1);
++	gpio_set_value(host->clk_gpio, 0);
++
++out:
++	spin_unlock_irqrestore(&host->lock, flags);
++
++	return ret;
++}
++
++static int cbus_i2c_smbus_xfer(struct i2c_adapter	*adapter,
++			       u16			addr,
++			       unsigned short		flags,
++			       char			read_write,
++			       u8			command,
++			       int			size,
++			       union i2c_smbus_data	*data)
++{
++	struct cbus_host *chost = i2c_get_adapdata(adapter);
++	int ret;
++
++	if (size != I2C_SMBUS_WORD_DATA)
++		return -EINVAL;
++
++	ret = cbus_transfer(chost, read_write == I2C_SMBUS_READ, addr,
++			    command, data->word);
++	if (ret < 0)
++		return ret;
++
++	if (read_write == I2C_SMBUS_READ)
++		data->word = ret;
++
++	return 0;
++}
++
++static u32 cbus_i2c_func(struct i2c_adapter *adapter)
++{
++	return I2C_FUNC_SMBUS_READ_WORD_DATA | I2C_FUNC_SMBUS_WRITE_WORD_DATA;
++}
++
++static const struct i2c_algorithm cbus_i2c_algo = {
++	.smbus_xfer	= cbus_i2c_smbus_xfer,
++	.functionality	= cbus_i2c_func,
++};
++
++static int cbus_i2c_remove(struct platform_device *pdev)
++{
++	struct i2c_adapter *adapter = platform_get_drvdata(pdev);
++	struct cbus_host *chost = i2c_get_adapdata(adapter);
++	int ret;
++
++	ret = i2c_del_adapter(adapter);
++	if (ret)
++		return ret;
++	gpio_free(chost->clk_gpio);
++	gpio_free(chost->dat_gpio);
++	gpio_free(chost->sel_gpio);
++	kfree(chost);
++	kfree(adapter);
++	platform_set_drvdata(pdev, NULL);
++
++	return 0;
++}
++
++static int cbus_i2c_probe(struct platform_device *pdev)
++{
++	struct i2c_adapter *adapter;
++	struct cbus_host *chost;
++	struct gpio gpios[3];
++	int ret;
++
++	adapter = kzalloc(sizeof(struct i2c_adapter), GFP_KERNEL);
++	if (!adapter) {
++		ret = -ENOMEM;
++		goto error;
++	}
++
++	chost = kzalloc(sizeof(*chost), GFP_KERNEL);
++	if (!chost) {
++		ret = -ENOMEM;
++		goto error_mem;
++	}
++
++	if (pdev->dev.of_node) {
++		struct device_node *dnode = pdev->dev.of_node;
++		if (of_gpio_count(dnode) != 3) {
++			ret = -ENODEV;
++			goto error_mem;
++		}
++		chost->clk_gpio = of_get_gpio(dnode, 0);
++		chost->dat_gpio = of_get_gpio(dnode, 1);
++		chost->sel_gpio = of_get_gpio(dnode, 2);
++	} else if (pdev->dev.platform_data) {
++		struct i2c_cbus_platform_data *pdata = pdev->dev.platform_data;
++		chost->clk_gpio = pdata->clk_gpio;
++		chost->dat_gpio = pdata->dat_gpio;
++		chost->sel_gpio = pdata->sel_gpio;
++	} else {
++		ret = -ENODEV;
++		goto error_mem;
++	}
++
++	adapter->owner		= THIS_MODULE;
++	adapter->class		= I2C_CLASS_HWMON;
++	adapter->dev.parent	= &pdev->dev;
++	adapter->nr		= pdev->id;
++	adapter->timeout	= HZ;
++	adapter->algo		= &cbus_i2c_algo;
++	strlcpy(adapter->name, "CBUS I2C adapter", sizeof(adapter->name));
++
++	spin_lock_init(&chost->lock);
++	chost->dev = &pdev->dev;
++
++	gpios[0].gpio  = chost->clk_gpio;
++	gpios[0].flags = GPIOF_OUT_INIT_LOW;
++	gpios[0].label = "CBUS clk";
++
++	gpios[1].gpio  = chost->dat_gpio;
++	gpios[1].flags = GPIOF_IN;
++	gpios[1].label = "CBUS data";
++
++	gpios[2].gpio  = chost->sel_gpio;
++	gpios[2].flags = GPIOF_OUT_INIT_HIGH;
++	gpios[2].label = "CBUS sel";
++
++	ret = gpio_request_array(gpios, ARRAY_SIZE(gpios));
++	if (ret)
++		goto error_gpio;
++
++	gpio_set_value(chost->clk_gpio, 1);
++	gpio_set_value(chost->clk_gpio, 0);
++
++	i2c_set_adapdata(adapter, chost);
++	platform_set_drvdata(pdev, adapter);
++
++	ret = i2c_add_numbered_adapter(adapter);
++	if (ret)
++		goto error_i2c;
++
++	return 0;
++
++error_i2c:
++	gpio_free_array(gpios, ARRAY_SIZE(gpios));
++error_gpio:
++	kfree(chost);
++error_mem:
++	kfree(adapter);
++error:
++	return ret;
++}
++
++#if defined(CONFIG_OF)
++static const struct of_device_id i2c_cbus_dt_ids[] = {
++	{ .compatible = "i2c-cbus", },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, i2c_cbus_dt_ids);
++#endif
++
++static struct platform_driver cbus_i2c_driver = {
++	.probe	= cbus_i2c_probe,
++	.remove	= cbus_i2c_remove,
++	.driver	= {
++		.owner	= THIS_MODULE,
++		.name	= "i2c-cbus",
++	},
++};
++module_platform_driver(cbus_i2c_driver);
++
++MODULE_ALIAS("platform:i2c-cbus");
++MODULE_DESCRIPTION("CBUS I2C driver");
++MODULE_AUTHOR("Juha Yrjölä");
++MODULE_AUTHOR("David Weinehall");
++MODULE_AUTHOR("Mikko Ylinen");
++MODULE_AUTHOR("Felipe Balbi");
++MODULE_AUTHOR("Aaro Koskinen <aaro.koskinen@iki.fi>");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/i2c-cbus.h b/include/linux/i2c-cbus.h
+new file mode 100644
+index 0000000..636d726
+--- /dev/null
++++ b/include/linux/i2c-cbus.h
+@@ -0,0 +1,27 @@
++/*
++ * i2c-cbus.h - CBUS I2C platform_data definition
++ *
++ * Copyright (C) 2004-2009 Nokia Corporation
++ *
++ * Written by Felipe Balbi and Aaro Koskinen.
++ *
++ * This file is subject to the terms and conditions of the GNU General
++ * Public License. See the file "COPYING" in the main directory of this
++ * archive for more details.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef __INCLUDE_LINUX_I2C_CBUS_H
++#define __INCLUDE_LINUX_I2C_CBUS_H
++
++struct i2c_cbus_platform_data {
++	int dat_gpio;
++	int clk_gpio;
++	int sel_gpio;
++};
++
++#endif /* __INCLUDE_LINUX_I2C_CBUS_H */
+-- 
+1.7.2.5
+
