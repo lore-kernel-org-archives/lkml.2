@@ -1,127 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932092Ab2ICMks (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 08:40:48 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:44887 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755908Ab2ICMkr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 08:40:47 -0400
-Message-ID: <5044A547.2010603@pengutronix.de>
-Date: Mon, 03 Sep 2012 14:40:39 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix e.K.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120824 Thunderbird/15.0
+	id S1756345Ab2ICMpH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 08:45:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44989 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751656Ab2ICMpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 08:45:05 -0400
+Date: Mon, 3 Sep 2012 14:45:00 +0200
+From: Jan Kara <jack@suse.cz>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: jack@suse.cz, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>,
+        Bonggil Bak <bgbak@samsung.com>
+Subject: Re: [PATCH v2] udf: extent cache implementation for manipulating
+ block map
+Message-ID: <20120903124500.GE21109@quack.suse.cz>
+References: <1346431918-3691-1-git-send-email-linkinjeon@gmail.com>
 MIME-Version: 1.0
-To: Fabio Baltieri <fabio.baltieri@gmail.com>
-CC: linux-can@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>
-Subject: Re: [PATCH can-next v6] can: add tx/rx LED trigger support
-References: <50191EA5.1040303@pengutronix.de> <1343845298-2065-1-git-send-email-fabio.baltieri@gmail.com> <20120824051016.GB1718@vandijck-laurijssen.be> <50376550.4020501@pengutronix.de> <20120824124248.GA422@vandijck-laurijssen.be> <20120824220142.GA1470@gmail.com>
-In-Reply-To: <20120824220142.GA1470@gmail.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig9D8A217EF256FB81A0C34C77"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346431918-3691-1-git-send-email-linkinjeon@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig9D8A217EF256FB81A0C34C77
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+  Hello,
 
-On 08/25/2012 12:01 AM, Fabio Baltieri wrote:
-> Hello Kurt,
->=20
-> On Fri, Aug 24, 2012 at 02:42:48PM +0200, Kurt Van Dijck wrote:
->> On Fri, Aug 24, 2012 at 01:28:16PM +0200, Marc Kleine-Budde wrote:
->>> On 08/24/2012 07:10 AM, Kurt Van Dijck wrote:
->>>> Hello,
->>>>
->>>> I find the CAN led triggers an interesting thing.
->>>>
->>>> And then, this scenario fell crossed my mind:
->>>> Imagine I do:
->>>> [insert CAN device: can0]
->>>> $ ip link set can0 name helga
->>>> [insert another CAN device: again 'can0']
->>>>
->>>> Registering 'can0-tx' led trigger will fail for the second CAN devic=
-e,
->>>> since that led trigger name is already reserved for CAN device 'helg=
-a'.
->>> Good point.
->=20
-> Yep, thanks for pointing that out!
->=20
-> Interface renaming was something I considered when I first wrote the
-> code and I had the mac80211-led driver in mind, as that driver uses the=
+On Fri 31-08-12 12:51:58, Namjae Jeon wrote:
+> From: Namjae Jeon <namjae.jeon@samsung.com>
+> 
+> While mapping logical blocks of a file to physical blocks on the partition,
+> everytime UDF read file metadata from the begining which decrease preformance.
+> The drawback of this scheme is more prominent while reading large files.
+> For example, while reading a large file of ~5GB, read speed will
+> gradually become less as we near the end of file because of the time
+> taken in calculating the corresponding physical block.
+> 
+> This patch implements caching and remembers the location of the last read
+> extent. Instead of reading file metadata from begining, start from the
+> cached location.
+  Thanks for the patch. I like this much better than the previous one. Some
+comments are below:
 
-> phy name and not the netdev one for its triggers.
->=20
-> The reason why I did not care that much in the end is that on SoC based=
+> diff --git a/fs/udf/inode.c b/fs/udf/inode.c
+> index 1a0588e..f4cc4e0 100644
+> --- a/fs/udf/inode.c
+> +++ b/fs/udf/inode.c
+> @@ -357,8 +359,14 @@ static int udf_get_block(struct inode *inode, sector_t block,
+>  	if (!phys)
+>  		goto abort;
+>  
+> -	if (new)
+> +	if (new) {
+> +		unsigned char lshift = inode->i_sb->s_blocksize_bits;
+>  		set_buffer_new(bh_result);
+> +		if (iinfo->cached_extent.sanity &&
+> +		    (iinfo->cached_extent.eblock > (block << lshift)))
+> +			/* Block allocated for hole, invalidate cache */
+> +			udf_clear_extent_cache(iinfo);
+> +	}
+>  	map_bh(bh_result, inode->i_sb, phys);
+  Instead of this, you should change inode_getblk() to also use the extent
+cache (for initialization of prev_epos when appropriate) and then update
+the extent cache to the just found / created extent when the function is
+done.
 
-> systems trigger-led association is made at probe time, based on data
-> either from platform_data or devicetree, so I imagined that once the
-> kernel is ported to the board and default triggers are set correctly at=
+>  abort:
+> @@ -2132,11 +2144,12 @@ int8_t inode_bmap(struct inode *inode, sector_t block,
+>  	struct udf_inode_info *iinfo;
+>  
+>  	iinfo = UDF_I(inode);
+> -	pos->offset = 0;
+> -	pos->block = iinfo->i_location;
+> -	pos->bh = NULL;
+> -	*elen = 0;
+> -
+> +	if (!udf_read_extent_cache(inode, bcount, &lbcount, pos)) {
+> +		pos->offset = 0;
+> +		pos->block = iinfo->i_location;
+> +		pos->bh = NULL;
+> +	}
+> +		*elen = 0;
+  There's TAB added here which doesn't make sense.
 
-> boot time, the userspace is free to rename CAN interfaces and nobody
-> should notice... :^)
->=20
-> The thing I did not consider are hot-plug interfaces mixed with
-> renaming, such as in the case you pointed out - it's probably not reall=
-y
-> common but still possible.
->=20
->>>> I'm not sure how to fix such.
->>>> If 'rx' & 'tx' may be combined, reusing the netdev name may be possi=
-ble?
->>>> Just wild thinking ...
->>>
->>> I think the device's name (not netdev) is unique in the system and
->>> cannot be changed.
->>
->> but may contain several netdev's ...
->=20
-> Ouch.
+>  	do {
+>  		etype = udf_next_aext(inode, pos, eloc, elen, 1);
+>  		if (etype == -1) {
+...
+> @@ -2176,3 +2190,52 @@ long udf_block_map(struct inode *inode, sector_t block)
+>  	else
+>  		return ret;
+>  }
+> +int udf_read_extent_cache(struct inode *inode, loff_t bcount,
+> +			  loff_t *lbcount, struct extent_position *pos)
+> +{
+> +	struct udf_inode_info *iinfo = UDF_I(inode);
+> +	mutex_lock(&iinfo->i_extent_cache_lock);
+> +	if ((iinfo->cached_extent.eblock <= bcount) &&
+> +	    (iinfo->cached_extent.sanity)) {
+> +		/* Cache hit */
+> +		*lbcount = iinfo->cached_extent.eblock;
+> +		memcpy(pos, &iinfo->cached_extent.epos,
+> +		       sizeof(struct extent_position));
+> +		mutex_unlock(&iinfo->i_extent_cache_lock);
+> +		return 1;
+> +	} else
+> +		udf_clear_extent_cache(iinfo);
+  It would be less confusing, if udf_read_extent_cache() didn't clear the
+cache in case of a miss. Then in udf_update_extent_cache() just clear the
+cache if it is still valid.
 
-The net->ifindex is unique. But it's only an integer. Usually can0 has a
-ifindex !=3D 0, so a simple can%d is contra productive here.
+> +
+> +	mutex_unlock(&iinfo->i_extent_cache_lock);
+> +	return 0;
+> +}
+> +void udf_update_extent_cache(struct inode *inode, loff_t estart,
+> +			     struct extent_position *pos)
+> +{
+> +	struct udf_inode_info *iinfo = UDF_I(inode);
+> +	mutex_lock(&iinfo->i_extent_cache_lock);
+> +	if (pos->bh != NULL)
+> +		/* Increase ref count */
+> +		get_bh(pos->bh);
+> +	memcpy(&iinfo->cached_extent.epos, pos,
+> +	       sizeof(struct extent_position));
+> +	iinfo->cached_extent.eblock = estart;
+> +	iinfo->cached_extent.sanity = 1;
+> +	switch (iinfo->i_alloc_type) {
+> +	case ICBTAG_FLAG_AD_SHORT:
+> +		iinfo->cached_extent.epos.offset -= sizeof(struct short_ad);
+> +		break;
+> +	case ICBTAG_FLAG_AD_LONG:
+> +		iinfo->cached_extent.epos.offset -= sizeof(struct long_ad);
+> +	}
+> +	mutex_unlock(&iinfo->i_extent_cache_lock);
+> +}
+> +
+> +void udf_clear_extent_cache(struct udf_inode_info *iinfo)
+> +{
+> +	if (iinfo->cached_extent.sanity) {
+> +		brelse(iinfo->cached_extent.epos.bh);
+> +		memset(&iinfo->cached_extent, 0, sizeof(struct udf_ext_cache));
+> +	}
+> +}
+> +
+  I think udf_clear_entent_cache() should take i_extent_cache_lock. Or if
+you are sure it's not needed, you need a good documentation why.
 
-Some pointers to related code:
-http://lxr.free-electrons.com/source/drivers/base/core.c#L1847
-http://lxr.free-electrons.com/source/drivers/base/core.c#L73
-http://lxr.free-electrons.com/source/include/linux/device.h#L695
+> diff --git a/fs/udf/udf_i.h b/fs/udf/udf_i.h
+> index bb8309d..ec3878a 100644
+> --- a/fs/udf/udf_i.h
+> +++ b/fs/udf/udf_i.h
+> @@ -1,6 +1,20 @@
+>  #ifndef _UDF_I_H
+>  #define _UDF_I_H
+>  
+> +struct extent_position {
+> +	struct buffer_head *bh;
+> +	uint32_t offset;
+> +	struct kernel_lb_addr block;
+> +};
+> +
+> +struct udf_ext_cache {
+> +	/* Extent position */
+> +	struct extent_position epos;
+> +	/* Start logical block */
+> +	loff_t eblock;
+  Well, this is really in bytes not blocks, isn't it? Then call it like
+'lstart' and add a comment that it's in bytes.
 
-comments?
+> +	int8_t sanity;
+  Make this 'bool' and call it 'valid'. That's more common.
 
-Marc
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---------------enig9D8A217EF256FB81A0C34C77
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://www.enigmail.net/
-
-iEYEARECAAYFAlBEpUsACgkQjTAFq1RaXHMZuQCgmIPr9CV88CQQQUCUHQ8xVS1L
-hPUAn2nW1MDJDBqEGkPhw0t6qNRxmwxm
-=1YVX
------END PGP SIGNATURE-----
-
---------------enig9D8A217EF256FB81A0C34C77--
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
