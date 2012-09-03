@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755803Ab2ICI1Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 04:27:25 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:35506 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754917Ab2ICI1Y (ORCPT
+	id S1756126Ab2ICI2p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 04:28:45 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:59574 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754974Ab2ICI2n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 04:27:24 -0400
-From: Javier Martin <javier.martin@vista-silicon.com>
-To: linux-kernel@vger.kernel.org
-Cc: alsa-devel@alsa-project.org, broonie@opensource.wolfsonmicro.com,
-        gcembed@gmail.com, fabio.estevam@freescale.com, s.hauer@pengutronix.de,
-        Javier Martin <javier.martin@vista-silicon.com>
-Subject: [ASoC] Fix: Revert 'ASoC: imx-ssi: Remove mono support'.
-Date: Mon,  3 Sep 2012 10:27:11 +0200
-Message-Id: <1346660831-9662-1-git-send-email-javier.martin@vista-silicon.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 3 Sep 2012 04:28:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <50439D65.4010708@yahoo.es>
+References: <50439D65.4010708@yahoo.es>
+Date: Mon, 3 Sep 2012 11:28:42 +0300
+Message-ID: <CAHp75VdLkUZraD5AR5zT32Fs+Eh9vC+DT1BE3Ebd_QASAX+jEQ@mail.gmail.com>
+Subject: Re: [PATCH v4 3/3] avr32: at32ap700x: set DMA slave properties for
+ MCI dw_dmac
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Hein Tibosch <hein_tibosch@yahoo.es>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        viresh kumar <viresh.kumar@linaro.org>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        "ludovic.desroches" <ludovic.desroches@atmel.com>,
+        Havard Skinnemoen <havard@skinnemoen.net>,
+        spear-devel <spear-devel@list.st.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following commit should be reverted: 0865a75d4166bddc533fd50831829ceefb94f9b0
+On Sun, Sep 2, 2012 at 8:54 PM, Hein Tibosch <hein_tibosch@yahoo.es> wrote:
+> --- a/arch/avr32/mach-at32ap/at32ap700x.c
+> +++ b/arch/avr32/mach-at32ap/at32ap700x.c
+> @@ -1355,6 +1355,10 @@ at32_add_device_mci(unsigned int id, struct mci_platform_data *data)
+>                                 | DWC_CFGH_DST_PER(1));
+>         slave->sdata.cfg_lo &= ~(DWC_CFGL_HS_DST_POL
+>                                 | DWC_CFGL_HS_SRC_POL);
+> +       /* Setup DMA controller: let source be master */
+> +       slave->sdata.src_master = 1;
+I don't know the details, but do you want to set up dst_master as well?
 
-The bug this patch is meant to solve doesn't occur in Visstrim_M10 boards.
-Furthermore, after applying this patch sound in Visstrim_M10 is played
-at slower rates.
+> +       /* Limit maximum transfer width to 32-bit */
+> +       slave->sdata.max_mem_width = DW_MEM_WIDTH_32;
+It's under question regarding to my comments on previous patch.
 
-Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
----
-diff --git b/sound/soc/fsl/imx-ssi.c a/sound/soc/fsl/imx-ssi.c
-index ac337ac..28dd76c 100644
---- b/sound/soc/fsl/imx-ssi.c
-+++ a/sound/soc/fsl/imx-ssi.c
-@@ -380,13 +380,13 @@ static int imx_ssi_dai_probe(struct snd_soc_dai *dai)
- static struct snd_soc_dai_driver imx_ssi_dai = {
- 	.probe = imx_ssi_dai_probe,
- 	.playback = {
--		.channels_min = 2,
-+		.channels_min = 1,
- 		.channels_max = 2,
- 		.rates = SNDRV_PCM_RATE_8000_96000,
- 		.formats = SNDRV_PCM_FMTBIT_S16_LE,
- 	},
- 	.capture = {
--		.channels_min = 2,
-+		.channels_min = 1,
- 		.channels_max = 2,
- 		.rates = SNDRV_PCM_RATE_8000_96000,
- 		.formats = SNDRV_PCM_FMTBIT_S16_LE,
+-- 
+With Best Regards,
+Andy Shevchenko
