@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755683Ab2ICMej (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 08:34:39 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:36582 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752843Ab2ICMeh (ORCPT
+	id S1756090Ab2ICMkB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 08:40:01 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:50542 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753949Ab2ICMj7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 08:34:37 -0400
-Date: Mon, 3 Sep 2012 13:34:31 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Rob Herring <rob.herring@calxeda.com>, devicetree-discuss@lists.ozlabs.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH 3/3] i2c: nomadik: Add Device Tree support to the Nomadik
- I2C driver
-Message-ID: <20120903123424.GA31163@gmail.com>
-References: <1345734087-21803-1-git-send-email-lee.jones@linaro.org>
- <1345734087-21803-3-git-send-email-lee.jones@linaro.org>
- <20120831112258.GA2624@pengutronix.de>
- <20120831122323.GC5962@gmail.com>
- <CACRpkdZ=C1EV4WO2b=1YLHPNhsDsQdq7Kfnpzm8i7uGRtVjJuQ@mail.gmail.com>
- <20120903094448.GB11780@pengutronix.de>
- <20120903100656.GC5782@gmail.com>
- <CACRpkdb8owKBxawAv4LVVYx5kUgZ9cUSiQ=BV0f3Pf3bHtknuQ@mail.gmail.com>
- <CAF2Aj3j25w1Nn9O6hV+=i-j1ts_p_Ucswk_M7r04S7i5BzPkHg@mail.gmail.com>
- <CACRpkdZ5VFhrbONy=0K5MFh4e6BDFckq0yqzjQ2QkW9MgwKqBg@mail.gmail.com>
+	Mon, 3 Sep 2012 08:39:59 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH v2 17/31] arm64: System calls handling
+Date: Mon, 3 Sep 2012 12:39:51 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com> <20120822171309.GC2582@arm.com> <20120903114831.GA3313@mbp>
+In-Reply-To: <20120903114831.GA3313@mbp>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdZ5VFhrbONy=0K5MFh4e6BDFckq0yqzjQ2QkW9MgwKqBg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209031239.51515.arnd@arndb.de>
+X-Provags-ID: V02:K0:FL01cub+wPcQZ31scsDHyhx4IxCtLPSp2cehwkXCtw9
+ 8emXvE2Uce583vdVHg0DwEElThgY9NkN4HP0C9WiCTifvRRiut
+ 0mZhnJD6cim4SWleCE2SyUP6qptDibbgwHg/f2+xIJqjuGE+bI
+ vtfrJWiaQ+rT0otyf27sKYd5gFJ9dkPXgjfOvnrfa6E9E87KA/
+ 2GOWAhDzYFKU2AIYu5eL5wNbHQ8EynFdBLyrHDnnuNb2XWhrLw
+ Rzf3Js4+6/u76jmsIzGLNvCMJE+u02jWpMOSA/FhQ2Bu6a0VHr
+ mfYYtdbKmlPVN0+f22Sua4BrOT0WzinFsnBbgdDFjrTU1nowXG
+ gHzzBPZoAIF5z2nKSPP0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 03, 2012 at 01:58:04PM +0200, Linus Walleij wrote:
-> On Mon, Sep 3, 2012 at 1:32 PM, Lee Jones <lee.jones@linaro.org> wrote:
+On Monday 03 September 2012, Catalin Marinas wrote:
+> I forgot about this at the KS and we haven't got to a clear conclusion.
 > 
-> > No, this is wrong. Platform data should not override DT.
-> >
-> > If DT is enabled and passed, it should have highest priority.
+> Do we (1) stick with the sys_mmap() for 64-bit systems and avoid offset
+> conversion in both glibc and kernel or (2) use sys_mmap2() with a 12
+> shift in glibc and (PAGE_SHIFT - 12) in the kernel wrapper?
 > 
-> Oh is that so.
+> I personally prefer (1) as it doesn't require a kernel wrapper and we
+> avoid the double shifting. 
 
-:)
+Yes, I think it's ok this way.
 
-> Rob: do we have a clear consensus on this? Then we should document
-> it in Documentation/devicetree/usage-model.txt.
-> 
-> (That document isn't part of the binding I believe, so we could define
-> Linux-specific behaviours in it.)
-> 
-> I always thought it was the other way around, that pdata took priority.
-> 
-> Usecase: hardcoded bootloader passer erroneous DT to a platform.
-> No way out. What to do? Override with pdata.
-> 
-> Yours,
-> Linus Walleij
+> A reason for (2) would be if we ever need file offsets greater than 16EB.
 
-Hmmm... I see your point, but this won't work.
+Let's not worry about this for now, all the other architectures will
+have the same problem when we get there.
 
-When booting DT booting take a different path and no platform data
-is passed. We can't boot DT AND register devices with platform data
-or else we will double probe every device. The only way to pass
-pdata when booting with DT is with AUX_DATA() and that's a hack to
-get around things we don't have support for yet. Up until now that
-has been DMA bindings, clock and pinctrl names and call-backs.
-
-If DT is corrupt or missing the kernel will boot using platform 
-data, but np will always be NULL, so we don't have the problem you
-were alluding to above.
-
-Let me know if I didn't explain that well enough and I will have
-another go.
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+	Arnd
