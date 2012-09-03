@@ -1,79 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756064Ab2ICFV7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 01:21:59 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:60246 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754722Ab2ICFVK (ORCPT
+	id S1755985Ab2ICFV5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 01:21:57 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:51900 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754656Ab2ICFVK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Sep 2012 01:21:10 -0400
-X-Originating-IP: 217.70.178.139
-X-Originating-IP: 50.43.46.74
-Date: Sun, 2 Sep 2012 22:21:05 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: [PATCH 2/5] x86: Switch to ext4 in defconfigs
-Message-ID: <bd8a359506b7e1287c680823de16d67608ec52fe.1346649518.git.josh@joshtriplett.org>
-References: <cover.1346649518.git.josh@joshtriplett.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1346649518.git.josh@joshtriplett.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87txvfev6o.fsf@sejong.aot.lge.com>
+References: <CANg8OWLL6gzUpZuq8YT2bSbT5=EVWejbpCX0TM8dt7mKXyZ9Yg@mail.gmail.com>
+	<87txvfev6o.fsf@sejong.aot.lge.com>
+Date: Mon, 3 Sep 2012 08:21:08 +0300
+X-Google-Sender-Auth: bRIEGmj1EPYLbp5lrsjOxW3Gjb8
+Message-ID: <CAOJsxLESFr7BmyYQGxNSaS3JXVziZ=z_q7OUj-LoEJc367rcYQ@mail.gmail.com>
+Subject: Re: [PATCH] perf bench: fix assert when NDEBUG is defined
+From: Pekka Enberg <penberg@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Irina Tirdea <irina.tirdea@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current x86 and x86-64 defconfigs do not enable ext4, which most
-current distributions default to.  Switch the defconfigs to ext4, so
-they will boot on current systems without additional configuration.
+On Mon, Sep 3, 2012 at 4:45 AM, Namhyung Kim <namhyung@kernel.org> wrote:
+> On Mon, 3 Sep 2012 03:04:32 +0300, Irina Tirdea wrote:
+>> From: Irina Tirdea <irina.tirdea@intel.com>
+>>
+>> When NDEBUG is defined, the assert macro will be expanded to nothing.
+>> Some assert calls used in perf are also including some functionality
+>> (e.g. system calls), not only validity checks. Therefore, if NDEBUG is
+>> defined, these functionality will be removed along with the assert.
+>>
+>> The functionality of the program needs to be separated from the assert checks.
+>> In perf, BUG_ON is also defined on assert, so we need to fix these statements
+>> too.
+>>
+>> Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+>> ---
+>>  tools/perf/bench/mem-memcpy.c |    8 +++++---
+>>  tools/perf/bench/mem-memset.c |    8 +++++---
+>>  tools/perf/bench/sched-pipe.c |    6 ++++--
+>>  3 files changed, 14 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/tools/perf/bench/mem-memcpy.c b/tools/perf/bench/mem-memcpy.c
+>> index 02dad5d..bccb783 100644
+>> --- a/tools/perf/bench/mem-memcpy.c
+>> +++ b/tools/perf/bench/mem-memcpy.c
+>> @@ -144,17 +144,19 @@ static double do_memcpy_gettimeofday(memcpy_t
+>> fn, size_t len, bool prefault)
+>>  {
+>>       struct timeval tv_start, tv_end, tv_diff;
+>>       void *src = NULL, *dst = NULL;
+>> -     int i;
+>> +     int i, ret;
+>>
+>>       alloc_mem(&src, &dst, len);
+>>
+>>       if (prefault)
+>>               fn(dst, src, len);
+>>
+>> -     BUG_ON(gettimeofday(&tv_start, NULL));
+>> +     ret = gettimeofday(&tv_start, NULL);
+>> +     BUG_ON(ret);
+>
+> I think one of good thing of assert is that it outputs the exact failure
+> condition when it fails.  So with patch, it will convert
+>
+>   Assertion `gettimeofday(&tv_start, NULL)' failed.
+>
+> into
+>
+>   Assertion `ret' failed.
+>
+> which is not so informative.
+>
+> So I'd rather suggest using more descriptive names like ret_gtod ?
 
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
----
- arch/x86/configs/i386_defconfig   |    7 +++----
- arch/x86/configs/x86_64_defconfig |    7 +++----
- 2 files changed, 6 insertions(+), 8 deletions(-)
-
-diff --git a/arch/x86/configs/i386_defconfig b/arch/x86/configs/i386_defconfig
-index 1903408..2701b8a 100644
---- a/arch/x86/configs/i386_defconfig
-+++ b/arch/x86/configs/i386_defconfig
-@@ -260,10 +260,9 @@ CONFIG_RTC_CLASS=y
- CONFIG_DMADEVICES=y
- CONFIG_EEEPC_LAPTOP=y
- CONFIG_EFI_VARS=y
--CONFIG_EXT3_FS=y
--# CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
--CONFIG_EXT3_FS_POSIX_ACL=y
--CONFIG_EXT3_FS_SECURITY=y
-+CONFIG_EXT4_FS=y
-+CONFIG_EXT4_FS_POSIX_ACL=y
-+CONFIG_EXT4_FS_SECURITY=y
- CONFIG_QUOTA=y
- CONFIG_QUOTA_NETLINK_INTERFACE=y
- # CONFIG_PRINT_QUOTA_WARNING is not set
-diff --git a/arch/x86/configs/x86_64_defconfig b/arch/x86/configs/x86_64_defconfig
-index c2c0448..c17614e 100644
---- a/arch/x86/configs/x86_64_defconfig
-+++ b/arch/x86/configs/x86_64_defconfig
-@@ -260,10 +260,9 @@ CONFIG_AMD_IOMMU_STATS=y
- CONFIG_INTEL_IOMMU=y
- # CONFIG_INTEL_IOMMU_DEFAULT_ON is not set
- CONFIG_EFI_VARS=y
--CONFIG_EXT3_FS=y
--# CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
--CONFIG_EXT3_FS_POSIX_ACL=y
--CONFIG_EXT3_FS_SECURITY=y
-+CONFIG_EXT4_FS=y
-+CONFIG_EXT4_FS_POSIX_ACL=y
-+CONFIG_EXT4_FS_SECURITY=y
- CONFIG_QUOTA=y
- CONFIG_QUOTA_NETLINK_INTERFACE=y
- # CONFIG_PRINT_QUOTA_WARNING is not set
--- 
-1.7.10.4
-
+No, please don't do that. That'll make the code ugly and it's really
+just papering over the fact that the assertions should be converted to
+proper error handling.
