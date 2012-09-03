@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753732Ab2ICUyy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 16:54:54 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.160]:57465 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753418Ab2ICUyx (ORCPT
+	id S1753692Ab2ICU7x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 16:59:53 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:37968 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753282Ab2ICU7w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 16:54:53 -0400
-X-RZG-AUTH: :P2MHfkW8eP4Mre39l357AZT/I7AY/7nT2yrT1q0ngWNsKR9Dbc7nsXB+5kzEuK6XMgk=
-X-RZG-CLASS-ID: mo00
-Message-ID: <50451919.20205@hartkopp.net>
-Date: Mon, 03 Sep 2012 22:54:49 +0200
-From: Oliver Hartkopp <socketcan@hartkopp.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.6esrpre) Gecko/20120817 Icedove/10.0.6
+	Mon, 3 Sep 2012 16:59:52 -0400
 MIME-Version: 1.0
-To: Fabio Baltieri <fabio.baltieri@gmail.com>
-CC: Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Wolfgang Grandegger <wg@grandegger.com>
-Subject: Re: [PATCH can-next v6] can: add tx/rx LED trigger support
-References: <50191EA5.1040303@pengutronix.de> <1343845298-2065-1-git-send-email-fabio.baltieri@gmail.com> <20120824051016.GB1718@vandijck-laurijssen.be> <50376550.4020501@pengutronix.de> <20120824124248.GA422@vandijck-laurijssen.be> <20120824220142.GA1470@gmail.com> <5044A547.2010603@pengutronix.de> <20120903181335.GA415@vandijck-laurijssen.be> <20120903182925.GA28766@gmail.com>
-In-Reply-To: <20120903182925.GA28766@gmail.com>
+In-Reply-To: <87y5krewud.fsf@sejong.aot.lge.com>
+References: <CANg8OW+Y3ZMG-GdhYu2_yKOYH_XEMgw73PdCX_23UTnfYhmttA@mail.gmail.com>
+ <87y5krewud.fsf@sejong.aot.lge.com>
+From: Irina Tirdea <irina.tirdea@gmail.com>
+Date: Mon, 3 Sep 2012 23:59:31 +0300
+Message-ID: <CANg8OW+kSCuosD0Uke0w+Lxdk_Z+FRauBiyUmj4STCcNEDzzCQ@mail.gmail.com>
+Subject: Re: [PATCH 11/13] perf tools: replace mempcpy with memcpy
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03.09.2012 20:29, Fabio Baltieri wrote:
-
-> On Mon, Sep 03, 2012 at 08:13:35PM +0200, Kurt Van Dijck wrote:
->> On Mon, Sep 03, 2012 at 02:40:39PM +0200, Marc Kleine-Budde wrote:
->>> The net->ifindex is unique. But it's only an integer. Usually can0 has a
->>> ifindex != 0, so a simple can%d is contra productive here.
->>>
->>> Some pointers to related code:
->>> http://lxr.free-electrons.com/source/drivers/base/core.c#L1847
->>> http://lxr.free-electrons.com/source/drivers/base/core.c#L73
->>> http://lxr.free-electrons.com/source/include/linux/device.h#L695
->>>
->>> comments?
-> 
-> That would probabily makes really hard to choose the right
-> default_trigger for led devices to get to the appropriate CAN LED in
-> embedded systems, as trigger name would depend from other network
-> devices and probing order (correct me if I'm wrong).
-> 
-> Something with device name would probaily be more appropriate here.
-> 
+On Mon, Sep 3, 2012 at 4:09 AM, Namhyung Kim <namhyung@kernel.org> wrote:
+> On Wed, 29 Aug 2012 01:22:16 +0300, Irina Tirdea wrote:
+>> mempcpy is not supported by bionic in Android
+>> and will lead to compilation errors.
 >>
->> a very recent idea: something with netdevice notifiers and NETDEV_CHANGENAME ...
->> http://lxr.free-electrons.com/source/net/core/dev.c#L1030
->>
->> you could: rename the trigger, or if we think it's usefull,
->> block the netdev rename when its triggers are in use.
-> 
-> Blocking the rename looks overkill to me, what about using device name
-> with an optional "port id" appended to it?  Sounds simpler...
+>> Replacing mempcpy with memcpy so it will work in Android.
+>
+> Unfortunately I've added another instance of the mempcpy in a
+> libtraceevent code. :-/
+>
 
+Thanks for the heads-up. I'll fix it.
 
-The name of the device can only be changed when the interface is down.
-Is it possible to put some scripting around it to detach and attach the leds
-to the interfaces on ifup/ifdown triggers?
+Irina
 
-Regards,
-Oliver
-
+> Thanks,
+> Namhyung
+>
