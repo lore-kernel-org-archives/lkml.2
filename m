@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756502Ab2ICTrv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 15:47:51 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:38708 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752441Ab2ICTrt (ORCPT
+	id S1756491Ab2ICTxg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 15:53:36 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:49974 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753023Ab2ICTxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 15:47:49 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 173.50.127.139
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19zt37cZxsTmVjMn08Rv3t3p67Os2NQSRs=
-Date: Mon, 3 Sep 2012 15:47:35 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Ben Dooks <ben.dooks@codethink.co.uk>, Andrew Lunn <andrew@lunn.ch>,
-        Rob Landley <rob@landley.net>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/9] pinctrl: mvebu: pinctrl driver core
-Message-ID: <20120903194735.GO19437@titan.lakedaemon.net>
-References: <CABJ1b_Tdr80DGqb-FRzwDbF3m7g6fBguk5GtRAfRUYx5Sqy_cA@mail.gmail.com>
- <50366E44.4030606@wwwdotorg.org>
- <50369305.6050304@gmail.com>
- <50369FEE.8000003@wwwdotorg.org>
- <5036B639.20608@gmail.com>
- <5036F651.4020700@wwwdotorg.org>
- <5038F50E.7030807@gmail.com>
- <503AF8B4.1070206@wwwdotorg.org>
- <CACRpkdYsPadKr1i8m5cCAFUUvJYUnLmc3j8evKM_6rPU5oGzRg@mail.gmail.com>
- <50431871.1030507@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50431871.1030507@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 3 Sep 2012 15:53:34 -0400
+Date: Mon, 03 Sep 2012 15:53:32 -0400 (EDT)
+Message-Id: <20120903.155332.1814926007061594344.davem@davemloft.net>
+To: chikazawa.akifu@jp.fujitsu.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: when the MTU interface is modified, the promiscuous mode is
+ reset in gianfar driver
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <201208270838.AA02326@VF09040P.jp.fujitsu.com>
+References: <201208270838.AA02326@VF09040P.jp.fujitsu.com>
+X-Mailer: Mew version 6.5 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 02, 2012 at 10:27:29AM +0200, Sebastian Hesselbarth wrote:
-> Maybe Jason can also comment on what branch he wants to have it based
-> on, as we all agreed to get it through the Marvell tree.
+From: chikazawa.akifu@jp.fujitsu.com (近沢 哲史)
+Date: Mon, 27 Aug 2012 17:38:34 +0900
 
-Please base against:
+>  I am using the gianfar ethernet driver. I am having a problem with the
+>  interface settings.
+>  Under promiscuous mode, when the MTU interface is modified, the promiscuous
+>  mode setting is turned off in gianfar driver when it should not be.
+> The details are as follows:
+>  After changing MTU with ifconfig, I could see that the interface flag of
+>  eth0 is still PROMISC.
+>  However, when I checked value of RCTL register with ethtool, PROM bit of
+>  RTCL register is cleared.
+>  It seems to be cause that is the gfar_init_mac() function, it doesn't set
+>  the PROM bit after the interface MTU is changed.
+>  This problem was detected on linux-2.6.32.2, but it seems to same on
+>  linux-3.6.0-rc3.
+> Is this behavior on purpose?
+> 
+> I also attach the amended file,I think it would be so.
+> 
+> Signed-off-by: Akifumi Chikazawa <chikazawa.akifu@jp.fujitsu.com>
 
-git://git.infradead.org/users/jcooper/linux.git boards-for-v3.7-v2
+It seems like we also lose all of the multicast configurations as
+well.
 
-thx,
+Therefore, the thing to do is to simply call gfar_set_multi() at the
+appropriate location.  That will take care of both the promiscuous
+bit, as well as the multicast addresses.
 
-Jason.
+You can then remove some of the code in gfar_init_mac() that does
+things like gfar_clear_exact_match(), because gfar_set_multi() will
+take care of that if necessary.
