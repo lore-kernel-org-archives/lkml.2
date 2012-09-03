@@ -1,102 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756111Ab2ICIzU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 04:55:20 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:36309 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752208Ab2ICIzS (ORCPT
+	id S1756085Ab2ICI7H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 04:59:07 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:41169 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751672Ab2ICI7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 04:55:18 -0400
-Date: Mon, 3 Sep 2012 10:55:17 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Roland Stigge <stigge@antcom.de>
-Cc: Eric =?iso-8859-15?Q?B=E9nard?= <eric@eukrea.com>,
-        linux-mtd@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: mxc_nand.c on mach-imx/imx53
-Message-ID: <20120903085517.GE26594@pengutronix.de>
-References: <5035F84E.3000901@antcom.de>
- <20120829074122.GV26594@pengutronix.de>
- <503E3331.8050203@antcom.de>
- <20120829172820.43bbe68e@eb-e6520>
- <50407E44.5080408@antcom.de>
- <504098A1.4050208@antcom.de>
+	Mon, 3 Sep 2012 04:59:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <504098A1.4050208@antcom.de>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 10:53:37 up 72 days, 5 min, 74 users,  load average: 1.07, 0.71,
- 0.49
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <CAHp75VcpzomoWb3+xOk=++BkUh5_cuXQTu8ZuDByjfX+pYmNCA@mail.gmail.com>
+References: <50439D44.3080100@yahoo.es>
+	<CAHp75VcQOeVeKPg8z9u+fd8ia4QAyrq6UQn-D7Q-yO9+pLS6LQ@mail.gmail.com>
+	<CAKohpo=bvzm1O4FAtsr3YpLg-w1Rp7RT-9ZuJBgVZRxVHnQO_g@mail.gmail.com>
+	<CAHp75VcpzomoWb3+xOk=++BkUh5_cuXQTu8ZuDByjfX+pYmNCA@mail.gmail.com>
+Date: Mon, 3 Sep 2012 14:29:03 +0530
+Message-ID: <CAKohpomFDuTFVJ8SCmhRmPbCXMWdhD1Acjs5CAZD4aeqLZnurA@mail.gmail.com>
+Subject: Re: [PATCH v4 2/3] dw_dmac: max_mem_width limits value for
+ SRC/DST_TR_WID register
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Hein Tibosch <hein_tibosch@yahoo.es>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        spear-devel <spear-devel@list.st.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "ludovic.desroches" <ludovic.desroches@atmel.com>,
+        Havard Skinnemoen <havard@skinnemoen.net>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 31, 2012 at 12:57:37PM +0200, Roland Stigge wrote:
-> On 08/31/2012 11:05 AM, Roland Stigge wrote:
-> > I tried to port this on top of Sascha's patches for imx53, only for mxc v3 for now, as below.
-> > 
-> > Unfortunately, I still get:
-> > 
-> > ...
-> > UnCorrectable RS-ECC Error
-> > UnCorrectable RS-ECC Error
-> > UnCorrectable RS-ECC Error
-> > UnCorrectable RS-ECC Error
-> > UnCorrectable RS-ECC Error
+On 3 September 2012 14:19, Andy Shevchenko <andy.shevchenko@gmail.com> wrote:
+> On Mon, Sep 3, 2012 at 11:30 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>> Which register are you talking about? This configuration is outside of DMAC
+>> controller and i am not sure if dw DMAC controller can do 128 or 256
+>> bit transfers.
+> SRC_WIDTH & DST_WIDTH in CTLx. The field are 3 bit long. Acceptable
+> values from 0 to 5.
+> 2 corresponds to 32 bit transfers.
 
-Have you written the data you are unable to read with this driver?
+The field is 3 bit long but only allowable values are 0,1,2 & 3... This is what
+i can check in my copy of dw_dmac manual.
 
-> > ...
-> > 
-> > from mxc_nand.c's mxc_nand_correct_data_v2_v3(). Maybe there's still sth. missing in the
-> > error correction code?
-> 
-> With the below incremental fix, it works. :-)
-> 
-> Thanks,
-> 
-> Roland
-> 
-> PS: Will you prepare a patch for l2-mtd.git? I only have an imx53, can't test the v1/v2 etc.
-> configs.
-> 
-> 
-> --- linux-2.6.orig/drivers/mtd/nand/mxc_nand.c
-> +++ linux-2.6/drivers/mtd/nand/mxc_nand.c
-> @@ -1141,14 +1141,14 @@ static void mxc_nand_command(struct mtd_
->                 host->devtype_data->send_cmd(host, command, true);
->                 mxc_do_addr_cycle(mtd, column, page_addr);
->                 host->devtype_data->send_read_id(host);
-> -               host->buf_start = column;
-> +               host->buf_start = 0;
->                 break;
->  
->         case NAND_CMD_PARAM:
->                 host->devtype_data->send_cmd(host, command, true);
->                 mxc_do_addr_cycle(mtd, column, page_addr);
->                 host->devtype_data->send_read_param(host);
-> -               host->buf_start = column;
-> +               host->buf_start = 0;
-
-On what tree are you working? I cannot find a handling of
-NAND_CMD_PARAM in my tree.
-
-Sascha
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+4 and 5 aren't valid values.
