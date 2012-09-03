@@ -1,40 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932393Ab2ICPb5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 11:31:57 -0400
-Received: from mail.us.es ([193.147.175.20]:56417 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932361Ab2ICPby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 11:31:54 -0400
-Date: Mon, 3 Sep 2012 17:31:51 +0200
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        coreteam@netfilter.org, netfilter@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        kaber@trash.net
-Subject: Re: [PATCH 2/2] netfilter: pass 'nf_hook_ops' instead of
- 'list_head' to nf_queue()
-Message-ID: <20120903153151.GC19926@1984>
-References: <5035C6E6.6040001@linux.vnet.ibm.com>
+	id S932376Ab2ICPdH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 11:33:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46487 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932260Ab2ICPdF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 11:33:05 -0400
+Message-ID: <5044CDAB.4000902@gmail.com>
+Date: Mon, 03 Sep 2012 23:32:59 +0800
+From: daley <daleydeng@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5035C6E6.6040001@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: linux-kernel@vger.kernel.org
+Subject: Two question about kernel global function declaration and directory
+ layout
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 02:00:06PM +0800, Michael Wang wrote:
-> From: Michael Wang <wangyun@linux.vnet.ibm.com>
-> 
-> Since 'list_for_each_continue_rcu' has already been replaced by
-> 'list_for_each_entry_continue_rcu', pass 'list_head' to nf_queue() as a
-> parameter can not benefit us any more.
-> 
-> This patch will replace 'list_head' with 'nf_hook_ops' as the parameter of
-> nf_queue() and __nf_queue() to save code.
+hi, everyone, I'm a big fan of the kernel, I was always being attracted 
+by its clean and intelligent design. I'm new to the mailing list and 
+this is my first post. I want to ask two basic question about kernel 
+which bother me a lot, I've googled a lot but nobody could give a 
+suitable answer .
 
-Applied, thanks.
+The first one is about global function declaration, I was confused about 
+the usage of keyword "extern" before a global function which declared in 
+the header file. for example,
+
+<include/linux/kernel.h>
+extern long (*panic_blink)(int state);
+__printf(1, 2)
+void panic(const char *fmt, ...)
+         __noreturn __cold;
+extern void oops_enter(void);
+extern void oops_exit(void);
+void print_oops_end_marker(void);
+extern int oops_may_print(void);
+void do_exit(long error_code)
+         __noreturn;
+void complete_and_exit(struct completion *, long)
+         __noreturn;
+
+the same thing also appeared on other header files a lot. To my 
+knowledge, there's no difference between whether has the "extern" before 
+global function, is this due to the legacy problem or have other meaning?
+
+The second question is why not move the *sound* directory into the 
+*drivers* directory or put bigger subsystem out of drivers, since there 
+are more bigger subsystems(e.g. media, scsi) than sound?
+
+Can anybody help?
+Thanks.
+
+-- 
+daleydeng
+Beijing, China
+
