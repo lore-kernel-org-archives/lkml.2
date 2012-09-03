@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932165Ab2ICORJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 10:17:09 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:64060 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756450Ab2ICORH (ORCPT
+	id S932211Ab2ICOR3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 10:17:29 -0400
+Received: from na3sys009aog130.obsmtp.com ([74.125.149.143]:34095 "EHLO
+	na3sys009aog130.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756473Ab2ICOR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 10:17:07 -0400
+	Mon, 3 Sep 2012 10:17:27 -0400
+Date: Mon, 3 Sep 2012 17:13:09 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+Cc: gregkh@linuxfoundation.org, balbi@ti.com, hzpeterchen@gmail.com,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH v2] usb: otg: Move phy interface to separate file.
+Message-ID: <20120903141306.GL3147@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <1346222821-27650-1-git-send-email-vbyravarasu@nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <20120903133839.GC31542@mudshark.cambridge.arm.com>
-References: <1346588747.7909.2.camel@phoenix>
-	<CACRpkdYxYGa=C092rbTU5bo=YEu6wqiTUD7W4pLS_wNfmAe4Zw@mail.gmail.com>
-	<20120903133839.GC31542@mudshark.cambridge.arm.com>
-Date: Mon, 3 Sep 2012 16:17:05 +0200
-Message-ID: <CACRpkdZ-13VkqdLx97gRDOkGO8m=zrxMeVVFbHvRoYoZnkVeEQ@mail.gmail.com>
-Subject: Re: [PATCH] ARM: ux500: Fix build error due to missing include of
- asm/pmu.h in cpu-db8500.c
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Axel Lin <axel.lin@gmail.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xtmLDbP6TiKhntQb"
+Content-Disposition: inline
+In-Reply-To: <1346222821-27650-1-git-send-email-vbyravarasu@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 3, 2012 at 3:38 PM, Will Deacon <will.deacon@arm.com> wrote:
-> On Mon, Sep 03, 2012 at 11:47:51AM +0100, Linus Walleij wrote:
->> On Sun, Sep 2, 2012 at 2:25 PM, Axel Lin <axel.lin@gmail.com> wrote:
->>
->> > Include asm/pmu.h to fix below build error:
->> >
->> >   CC      arch/arm/mach-ux500/cpu-db8500.o
->> > arch/arm/mach-ux500/cpu-db8500.c:118:8: error: variable 'db8500_pmu_platdata' has initializer but incomplete type
->> > arch/arm/mach-ux500/cpu-db8500.c:119:2: error: unknown field 'handle_irq' specified in initializer
->> > arch/arm/mach-ux500/cpu-db8500.c:119:2: warning: excess elements in struct initializer [enabled by default]
->> > arch/arm/mach-ux500/cpu-db8500.c:119:2: warning: (near initialization for 'db8500_pmu_platdata') [enabled by default]
->> > make[1]: *** [arch/arm/mach-ux500/cpu-db8500.o] Error 1
->> > make: *** [arch/arm/mach-ux500] Error 2
->> >
->> > Signed-off-by: Axel Lin <axel.lin@gmail.com>
->>
->> That's on linux-next not on v3.6-rcN right?
->>
->> I've applied it to my ux500 branch and will carry it unless Will Deacon
->> express an interest in it, PMU is his territory...
->
-> I've already sent a pull for those patches, so please can you carry the
-> fixup? u8500 is the only platform using the arm_pmu_platdata at the moment
-> so it has to keep the include.
 
-OK I'll take it...
+--xtmLDbP6TiKhntQb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yours,
-Linus Walleij
+Hi,
+
+On Wed, Aug 29, 2012 at 12:17:01PM +0530, Venu Byravarasu wrote:
+> As otg.h is containing lots of phy interface related
+> stuff, moving all phy interface related stuff to new
+> file named phy.h
+>=20
+> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+
+this doesn't apply to my "xceiv" branch. Please rebase there so I don't
+cause any issues to your patch ;-)
+
+--=20
+balbi
+
+--xtmLDbP6TiKhntQb
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQRLryAAoJEIaOsuA1yqREZQ4P/3YKc/EECfyqyzoh3RgEvGUx
+AKcJNDg8V9vF8nIHmr6Xz1V2ZtUV21zHfCxNrxdQ4m3BTlT9LYhCOIH4pWBAKBvS
+aGAhmOu60XudpR0EZl+6gDmcEQuQJMO2mYTzXRfRzfMkSlc1vYPbmZcdNBBahGLs
+Jw6GkJTte9VrY2OAUOU9MQ+07Nt1mDAkvd1ekROGGk5LwsszlaoHv6ZdOHRsVGoL
+6UNO224cQo5E2oQWOS87vNobcQEn7ubNYHMaJsYp/hCRLzwqEAS4mWcZ0fW2IRlu
+050Up5rM8gIHzobULF48pIUMExhhGfetFh3NBWtyU/MVsry5gKMUOSKnI6Sx8y0c
+o3z6oJC3LNP8VVi+STTPgX6hwVqojAGwh0OtZbuf1xXuc7k+U6lut+omFWycAn7z
+zIwyjYKGAXMJh6riGEdytGk5WLFZrst761i1cjF01OsBN5vYjV5/x9693ArtPpzk
+kwiMt+fX22Q8L6KnCtwvwxloboLWdVm2F0Izhwm8VP3KGealQMP6bVGL4AkIw/v+
+kVSxB7GeR4/12ncAttF8aInMvdF8QgVXnXaijlIGToQjkWi39x7pC4NsoGJYtmxK
+LcrGHALbWYDHm/AwhBxYBdWKwWIJ/9nbdMSGd5H6xKzK9N0rclvPmDYsbXcf3SY1
+9uvOygG2JCnevxoUuc+F
+=SV1s
+-----END PGP SIGNATURE-----
+
+--xtmLDbP6TiKhntQb--
