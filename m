@@ -1,78 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756570Ab2ICRbO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 13:31:14 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:53899 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753285Ab2ICRbN (ORCPT
+	id S1754905Ab2ICRgs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 13:36:48 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57982 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751906Ab2ICRgq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 13:31:13 -0400
-Date: Mon, 3 Sep 2012 18:31:08 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-alpha@vger.kernel.org
-Subject: Re: [RFC] semantics of singlestepping vs. tracer exiting
-Message-ID: <20120903173108.GH23464@ZenIV.linux.org.uk>
-References: <20120903001436.GG23464@ZenIV.linux.org.uk>
- <20120903160538.GA10114@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120903160538.GA10114@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 3 Sep 2012 13:36:46 -0400
+Message-ID: <1346693799.3485.2.camel@taehun-desktop>
+Subject: [PATCH v2] ARM: S3C24XX: Add WIZnet W5300E01-ARM board support
+From: Taehun Kim <kth3321@gmail.com>
+To: Ben Dooks <ben-linux@fluff.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 04 Sep 2012 02:36:39 +0900
+In-Reply-To: <1346653236-19728-1-git-send-email-kth3321@gmail.com>
+References: <1346653236-19728-1-git-send-email-kth3321@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 03, 2012 at 06:05:38PM +0200, Oleg Nesterov wrote:
+This patch adds WIZnet W5300E01 board changed to the new gpio functions.
+Please review this patch and apply it if do not have any problems.
 
-> This is not easy to fix. ptrace_disable() and user_disable_single_step()
-> is arch dependant, but at least on x86 it assumes that the tracee is not
-> running, so exit_ptrace() can't do this.
+Signed-off-by: Taehun Kim <kth3321@gmail.com>
+---
+ arch/arm/mach-s3c24xx/Kconfig         |    5 +
+ arch/arm/mach-s3c24xx/Makefile        |    1 +
+ arch/arm/mach-s3c24xx/mach-w5300e01.c |  186
++++++++++++++++++++++++++++++++++
+ 3 files changed, 192 insertions(+)
+ create mode 100644 arch/arm/mach-s3c24xx/mach-w5300e01.c
 
-True (IOW, proposed fix is hopeless - we definitely want the detachees to be
-in kernel space, and not only on x86).
+diff --git a/arch/arm/mach-s3c24xx/Kconfig
+b/arch/arm/mach-s3c24xx/Kconfig
+index d56b0f7..94b60ca 100644
+--- a/arch/arm/mach-s3c24xx/Kconfig
++++ b/arch/arm/mach-s3c24xx/Kconfig
+@@ -248,6 +248,11 @@ config MACH_VR1000
+ 	help
+ 	  Say Y here if you are using the Thorcom VR1000 board.
+ 
++config MACH_W5300E01
++	bool "WIZnet W5300E01-ARM Board"
++	help
++	  Say Y here if you are using the Wiznet W5300E01-ARM board.
++
+ endif	# CPU_S3C2410
+ 
+ config S3C2412_PM_SLEEP
+diff --git a/arch/arm/mach-s3c24xx/Makefile
+b/arch/arm/mach-s3c24xx/Makefile
+index 0ab6ab1..fc1a89e 100644
+--- a/arch/arm/mach-s3c24xx/Makefile
++++ b/arch/arm/mach-s3c24xx/Makefile
+@@ -61,6 +61,7 @@ obj-$(CONFIG_MACH_QT2410)		+= mach-qt2410.o
+ obj-$(CONFIG_ARCH_SMDK2410)		+= mach-smdk2410.o
+ obj-$(CONFIG_MACH_TCT_HAMMER)		+= mach-tct_hammer.o
+ obj-$(CONFIG_MACH_VR1000)		+= mach-vr1000.o
++obj-$(CONFIG_MACH_W5300E01)		+= mach-w5300e01.o
+ 
+ obj-$(CONFIG_MACH_JIVE)			+= mach-jive.o
+ obj-$(CONFIG_MACH_SMDK2413)		+= mach-smdk2413.o
+diff --git a/arch/arm/mach-s3c24xx/mach-w5300e01.c
+b/arch/arm/mach-s3c24xx/mach-w5300e01.c
+new file mode 100644
+index 0000000..7daf82e
+--- /dev/null
++++ b/arch/arm/mach-s3c24xx/mach-w5300e01.c
+@@ -0,0 +1,186 @@
++/* linux/arch/arm/mach-s3c24xx/mach-w5300e01.c
++ *
++ * Copyright (c) 2012 Taehun Kim <kth3321@gmail.com>
++ *
++ * For product information, visit http://www.wiznet.co.kr/
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * @History:
++ * derived from linux/arch/arm/mach-s3c24xx/mach-bast.c, written by
++ * Ben Dooks <ben@simtec.co.uk>
++ */
++
++#include <linux/kernel.h>
++#include <linux/types.h>
++#include <linux/interrupt.h>
++#include <linux/list.h>
++#include <linux/timer.h>
++#include <linux/init.h>
++#include <linux/serial_core.h>
++#include <linux/platform_device.h>
++#include <linux/gpio.h>
++#include <linux/io.h>
++#include <linux/mtd/mtd.h>
++#include <linux/mtd/nand.h>
++#include <linux/mtd/map.h>
++#include <linux/mtd/partitions.h>
++
++#include <asm/mach/arch.h>
++#include <asm/mach/map.h>
++#include <asm/mach/irq.h>
++#include <asm/mach-types.h>
++
++#include <mach/regs-gpio.h>
++#include <plat/gpio-cfg.h>
++#include <plat/cpu.h>
++#include <plat/devs.h>
++#include <plat/regs-serial.h>
++#include <plat/nand.h>
++#include <plat/pm.h>
++
++static struct map_desc w5300e01_iodesc[] __initdata = {
++	/* Character LCD register map. */
++	{ 0xf8000000, __phys_to_pfn(S3C2410_CS3), SZ_1M, MT_DEVICE }
++};
++
++#define UCON S3C2410_UCON_DEFAULT
++#define ULCON (S3C2410_LCON_CS8 | S3C2410_LCON_PNONE |
+S3C2410_LCON_STOPB)
++#define UFCON (S3C2410_UFCON_RXTRIG8 | S3C2410_UFCON_FIFOMODE)
++
++static struct s3c2410_uartcfg w5300e01_uartcfgs[] __initdata = {
++	[0] = {
++		.hwport	= 0,
++		.flags	= 0,
++		.ucon	= UCON,
++		.ulcon	= ULCON,
++		.ufcon	= UFCON,
++	},
++	[1] = {
++		.hwport	= 1,
++		.flags	= 0,
++		.ucon	= UCON,
++		.ulcon	= ULCON,
++		.ufcon	= UFCON,
++	},
++	[2] = {
++		.hwport	= 2,
++		.flags	= 0,
++		.ucon	= UCON,
++		.ulcon	= ULCON,
++		.ufcon	= UFCON,
++	}
++};
++
++static struct mtd_partition w5300e01_mtd_partitions[] = {
++	[0] = {
++		.name		= "Bootloader",
++		.size		= 0x20000,
++		.offset		= 0,
++		.mask_flags	= MTD_WRITEABLE,
++	},
++	[1] = {
++		.name		= "Boot Param",
++		.size		= 0x20000,
++		.offset		= MTDPART_OFS_APPEND,
++	},
++	[2] = {
++		.name		= "Kernel",
++		.size		= 0x3C0000,
++		.offset		= MTDPART_OFS_APPEND,
++	},
++	[3] = {
++		.name		= "Ramdisk",
++		.size		= 0x1000000,
++		.offset		= MTDPART_OFS_APPEND,
++	},
++	[4] = {
++		.name		= "JFFS2 FileSystem",
++		.size		= MTDPART_SIZ_FULL,
++		.offset		= MTDPART_OFS_APPEND,
++	},
++};
++
++static struct resource w5300_resources[] = {
++	[0] = {
++		.start	= S3C2410_CS2,
++		.end	= S3C2410_CS2 + SZ_1M,
++		.flags	= IORESOURCE_MEM,
++	},
++	[1] = {
++		.start	= IRQ_EINT0,
++		.end	= IRQ_EINT0,
++		.flags	= IORESOURCE_IRQ,
++	},
++};
++
++static struct platform_device w5300_device = {
++	.name		= "w5300",
++	.num_resources	= ARRAY_SIZE(w5300_resources),
++	.resource	= w5300_resources,
++};
++
++static struct s3c2410_nand_set w5300e01_nand_sets[] = {
++	[0] = {
++		.name		= "W5300E01",
++		.nr_chips	= 1,
++		.nr_partitions	= ARRAY_SIZE(w5300e01_mtd_partitions),
++		.partitions	= w5300e01_mtd_partitions,
++	},
++};
++
++static struct s3c2410_platform_nand w5300e01_nand_info = {
++	.tacls		= 20,
++	.twrph0		= 60,
++	.twrph1		= 30,
++	.nr_sets	= ARRAY_SIZE(w5300e01_nand_sets),
++	.sets		= w5300e01_nand_sets,
++};
++
++static struct platform_device *w5300e01_devices[] __initdata = {
++	&s3c_device_nand,
++	&s3c_device_usbgadget,
++	&s3c_device_wdt,
++	&s3c_device_i2c0,
++	&s3c_device_iis,
++	&w5300_device,
++};
++
++static void __init w5300e01_map_io(void)
++{
++	s3c24xx_init_io(w5300e01_iodesc, ARRAY_SIZE(w5300e01_iodesc));
++	s3c24xx_init_clocks(0);
++	s3c24xx_init_uarts(w5300e01_uartcfgs, ARRAY_SIZE(w5300e01_uartcfgs));
++}
++
++static void __init w5300e01_init(void)
++{
++	s3c_nand_set_platdata(&w5300e01_nand_info);
++	platform_add_devices(w5300e01_devices, ARRAY_SIZE(w5300e01_devices));
++
++	/* W5300 interrupt pin. */
++	s3c_gpio_cfgpin(S3C2410_GPF(0), S3C2410_GPIO_IRQ);
++
++	s3c_gpio_cfgpin(S3C2410_GPF(4), S3C2410_GPIO_OUTPUT);
++	s3c_gpio_cfgpin(S3C2410_GPF(5), S3C2410_GPIO_OUTPUT);
++	s3c_gpio_cfgpin(S3C2410_GPF(6), S3C2410_GPIO_OUTPUT);
++	s3c_gpio_cfgpin(S3C2410_GPF(7), S3C2410_GPIO_OUTPUT);
++
++	gpio_set_value(S3C2410_GPF(0), 1);
++	gpio_set_value(S3C2410_GPF(4), 1);
++	gpio_set_value(S3C2410_GPF(5), 1);
++	gpio_set_value(S3C2410_GPF(6), 1);
++	gpio_set_value(S3C2410_GPF(7), 1);
++
++	s3c_pm_init();
++}
++
++MACHINE_START(W5300E01, "WIZnet W5300E01-ARM")
++	.atag_offset	= S3C2410_SDRAM_PA + 0x100,
++	.map_io		= w5300e01_map_io,
++	.init_irq	= s3c24xx_init_irq,
++	.init_machine	= w5300e01_init,
++	.timer		= &s3c24xx_timer,
++MACHINE_END
+-- 
+1.7.9.5
 
-> This is another reason to move enable/disable step into ptrace_stop().
-> And in fact I had the patches a loong ago, but we need to cleanup
-> the usage of PT_SINGLESTEP/PT_BLOCKSTEP first. The tracer should
-> simply set/clear these PT_ flags and resume the tracee which should
-> check them and do user_*_single_step() in response.
-
-> > 	Related question: should execve(2) clear (ptrace-inflicted)
-> > singlestepping?
-> 
-> Perhaps, but
-> 
-> > Tracer
-> > exit(), however, does *not* do that right now, so the state after
-> > execve(2) is theoretically observable.
-> 
-> ... why execve() is special?
-
-Because that behaviour had been changed over the history, for one thing:
-commit e1f287735c1e58c653b516931b5d3dd899edcb77
-Author: Roland McGrath <roland@redhat.com>
-Date:   Wed Jan 30 13:30:50 2008 +0100
-
-    x86 single_step: TIF_FORCED_TF
-had done that for x86, unless I'm misreading something.  BTW, now that
-I've looked at that, alpha seems to have a really unpleasant bug with
-single-stepping through execve() - it *must* reset ->bpt_nsaved to 0
-in start_thread(), simply because the address space the breakpoints used
-to be in is gone at that point.  I don't see any place where that would
-be done; suppose we single-step right into callsys insn and do PTRACE_CONT
-when stopped on the way out.  Won't that end up with ptrace_cancel_bpt()
-done in *new* address space, silently buggering new .text contents?
-
-BTW, speaking of alpha, what about PTRACE_SINGLESTEP when the task is stopped
-on syscall entry/exit after previous PTRACE_SYSCALL, BTW?  Looks like it will
-be like PTRACE_CONT until we hit the first signal, at which point it converts
-to singlesteping mode; unless I'm seriously misreading that code, we rely
-on ptrace_set_bpt() done shortly after returning from get_signal_to_deliver()
-if we found that we'd been singlestepping.  Fine, but in this case we
-had been resumed *not* in get_signal_to_deliver()...
-
-Cc'd linux-alpha, in hopes to hear "you don't understand how single-stepping
-works on alpha, you idiot, everything's fine because of $REASONS"...
