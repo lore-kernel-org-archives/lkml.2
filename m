@@ -1,100 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755930Ab2ICC5d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 22:57:33 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39025 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754186Ab2ICC5b (ORCPT
+	id S1755853Ab2ICDAs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 23:00:48 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:64143 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754457Ab2ICDAr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 22:57:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120831131020.GB23464@ZenIV.linux.org.uk>
-References: <CABMQnVL4Dnee48aQs6Bhmqt5uu_T=Ro72E47sOWcS2CyZTtu4w@mail.gmail.com>
- <20120831131020.GB23464@ZenIV.linux.org.uk>
-From: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-Date: Mon, 3 Sep 2012 11:56:59 +0900
-X-Google-Sender-Auth: 34spfZvRxGOTbFcWzyzrcN0ykTs
-Message-ID: <CABMQnVKDWN6xftShR_Xt6Odc-jPMSKnU+fqDY+v0tofaM=PTJg@mail.gmail.com>
-Subject: Re: Can not get output of command line on SH
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Paul Mundt <lethal@linux-sh.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 2 Sep 2012 23:00:47 -0400
+X-AuditID: 9c930197-b7b93ae0000028a7-df-50441d5dd412
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCHSET RESEND 0/5] perf tools: Cleanup hist printing code (v4)
+Date: Mon,  3 Sep 2012 11:53:05 +0900
+Message-Id: <1346640790-17197-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.4
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 31, 2012 at 10:10 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Fri, Aug 31, 2012 at 04:32:45PM +0900, Nobuhiro Iwamatsu wrote:
->> Hi, Al.
->>
->> I can not get output of command line on SH in latest linux kernel.
->> I bisected, I confirmed that this problem occurred by  following commit.
->>
->> -----
->> commit 4a9d4b024a3102fc083c925c242d98ac27b1c5f6
->> Author: Al Viro <viro@zeniv.linux.org.uk>
->> Date:   Sun Jun 24 09:56:45 2012 +0400
->>
->>     switch fput to task_work_add
->
->> For example ,when I input 'ls', nothing is displayed.
->> However, it is outputted when 'Ctrl+C' is inputted.
->> I checked other CPUs, it is only SH that this problem occurs.
->>
->> Paul, do you think about this?
->
-> Smells like broken TIF_NOTIFY_RESUME hookup on sh...  Arrrgh.  Looks like
-> while it is in the relevant masks *and* checked in do_notify_resume() both
-> on 32bit and 64bit variants since commit ab99c733ae73cce31f2a2434f7099564e5a73d95
-> Author: Paul Mundt <lethal@linux-sh.org>
-> Date:   Wed Jul 30 19:55:30 2008 +0900
->
->     sh: Make syscall tracer use tracehook notifiers, add TIF_NOTIFY_RESUME.
->
-> they are actually *not* reached without simulataneous SIGPENDING, since the
-> actual glue in the callers had not been updated back then and still checks
-> for _TIF_SIGPENDING alone when deciding whether to hit do_notify_resume()
-> or not.  Looks like the following ought to fix that:
+Hi,
 
-Thanks for your reply and explanation.
-I confirmed that revise this problem with your patch.
+This is a cleanup and refactoring patchset for the hist printing code
+by adding perf_hpp__format functions and perf_hpp.  I believe it makes
+the code easy to maintain and to add new features like upcoming group
+viewing and callchain accumulation.
 
->
-> Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Tested-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+Any comments are welcome, thanks.
+Namhyung
 
-> ---
-> diff --git a/arch/sh/kernel/cpu/sh5/entry.S b/arch/sh/kernel/cpu/sh5/entry.S
-> index b7cf6a5..7e605b9 100644
-> --- a/arch/sh/kernel/cpu/sh5/entry.S
-> +++ b/arch/sh/kernel/cpu/sh5/entry.S
-> @@ -933,7 +933,7 @@ ret_with_reschedule:
->
->         pta     restore_all, tr1
->
-> -       movi    _TIF_SIGPENDING, r8
-> +       movi    (_TIF_SIGPENDING|_TIF_NOTIFY_RESUME), r8
->         and     r8, r7, r8
->         pta     work_notifysig, tr0
->         bne     r8, ZERO, tr0
-> diff --git a/arch/sh/kernel/entry-common.S b/arch/sh/kernel/entry-common.S
-> index f67601c..b96489d 100644
-> --- a/arch/sh/kernel/entry-common.S
-> +++ b/arch/sh/kernel/entry-common.S
-> @@ -139,7 +139,7 @@ work_pending:
->         ! r8: current_thread_info
->         ! t:  result of "tst    #_TIF_NEED_RESCHED, r0"
->         bf/s    work_resched
-> -        tst    #_TIF_SIGPENDING, r0
-> +        tst    #(_TIF_SIGPENDING | _TIF_NOTIFY_RESUME), r0
->  work_notifysig:
->         bt/s    __restore_all
->          mov    r15, r4
-> --
+v3 -> v4:
+ * Rebase to current acme/perf/core
+ * The first two in the previous series have been merged
+ * Rename hist_period_print to perf_hpp_fmt (Arnaldo)
+ * Rename ctx->s to hpp->buf (Arnaldo)
 
-Best regards,
-  Nobuhiro
+v2 -> v3:
+ * Move fprintf code to ui/stdio/hist.c (Arnaldo)
+ * Add ack from Pekka
+
+
+Namhyung Kim (5):
+  perf hists: Introduce perf_hpp for hist period printing
+  perf hists: Handle field separator properly
+  perf hists: Use perf_hpp__format->width to calculate the column widths
+  perf ui/browser: Use perf_hpp__format functions
+  perf gtk/browser: Use perf_hpp__format functions
+
+ tools/perf/Makefile            |   2 +
+ tools/perf/builtin-diff.c      |   1 +
+ tools/perf/ui/browsers/hists.c |  94 ++++++++---
+ tools/perf/ui/gtk/browser.c    | 101 ++++++++++--
+ tools/perf/ui/gtk/gtk.h        |   1 +
+ tools/perf/ui/gtk/setup.c      |   1 +
+ tools/perf/ui/hist.c           | 366 +++++++++++++++++++++++++++++++++++++++++
+ tools/perf/ui/setup.c          |   8 +-
+ tools/perf/ui/stdio/hist.c     | 239 +++++----------------------
+ tools/perf/ui/tui/setup.c      |   4 +
+ tools/perf/util/hist.c         |  33 ----
+ tools/perf/util/hist.h         |  37 +++++
+ 12 files changed, 616 insertions(+), 271 deletions(-)
+ create mode 100644 tools/perf/ui/hist.c
 
 -- 
-Nobuhiro Iwamatsu
+1.7.11.4
+
