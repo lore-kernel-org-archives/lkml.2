@@ -1,86 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756574Ab2ICRYz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 13:24:55 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33308 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753273Ab2ICRYx (ORCPT
+	id S1756570Ab2ICRbO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 13:31:14 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:53899 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753285Ab2ICRbN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 13:24:53 -0400
-X-Sasl-enc: u+TSfFWrXs4CfsOr8K5lo2W5oG83aOL8IBoplbz/sDUm 1346693092
-Date: Mon, 3 Sep 2012 14:24:41 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-Subject: Re: rcu_bh stalls on 3.2.28
-Message-ID: <20120903172441.GA19614@khazad-dum.debian.net>
-References: <1345467862.22400.139.camel@deadeye.wl.decadent.org.uk>
- <20120831230256.GA7016@khazad-dum.debian.net>
- <50444897.6070803@linux.vnet.ibm.com>
+	Mon, 3 Sep 2012 13:31:13 -0400
+Date: Mon, 3 Sep 2012 18:31:08 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-alpha@vger.kernel.org
+Subject: Re: [RFC] semantics of singlestepping vs. tracer exiting
+Message-ID: <20120903173108.GH23464@ZenIV.linux.org.uk>
+References: <20120903001436.GG23464@ZenIV.linux.org.uk>
+ <20120903160538.GA10114@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50444897.6070803@linux.vnet.ibm.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
+In-Reply-To: <20120903160538.GA10114@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 03 Sep 2012, Michael Wang wrote:
-> On 09/01/2012 07:02 AM, Henrique de Moraes Holschuh wrote:
-> > Just got one of these:
-> > 
-> > kernel: INFO: rcu_bh detected stall on CPU 2 (t=0 jiffies)
-> > kernel: Pid: 0, comm: swapper/2 Not tainted 3.2.28+ #2
-> > kernel: Call Trace:
-> > kernel: <IRQ>  [<ffffffff810d1609>] __rcu_pending+0x159/0x400
-> > kernel: [<ffffffff810d20bb>] rcu_check_callbacks+0x9b/0x120
-> > kernel: [<ffffffff81089673>] update_process_times+0x43/0x80
-> > kernel: [<ffffffff810a836f>] tick_sched_timer+0x5f/0xb0
-> > kernel: [<ffffffff8109c097>] __run_hrtimer.isra.30+0x57/0x100
-> > kernel: [<ffffffff8109c8f5>] hrtimer_interrupt+0xe5/0x220
-> > kernel: [<ffffffff8104ce14>] smp_apic_timer_interrupt+0x64/0xa0
-> > kernel: [<ffffffff8159b5cb>] apic_timer_interrupt+0x6b/0x70
-> > kernel: <EOI>  [<ffffffff81315645>] ? intel_idle+0xe5/0x140
-> > kernel: [<ffffffff81315623>] ? intel_idle+0xc3/0x140
-> > kernel: [<ffffffff814420ee>] cpuidle_idle_call+0x8e/0xf0
-> > kernel: [<ffffffff81032425>] cpu_idle+0xa5/0x110
-> > kernel: [<ffffffff8158a9ac>] start_secondary+0x1e5/0x1ec
+On Mon, Sep 03, 2012 at 06:05:38PM +0200, Oleg Nesterov wrote:
+
+> This is not easy to fix. ptrace_disable() and user_disable_single_step()
+> is arch dependant, but at least on x86 it assumes that the tracee is not
+> running, so exit_ptrace() can't do this.
+
+True (IOW, proposed fix is hopeless - we definitely want the detachees to be
+in kernel space, and not only on x86).
+
+> This is another reason to move enable/disable step into ptrace_stop().
+> And in fact I had the patches a loong ago, but we need to cleanup
+> the usage of PT_SINGLESTEP/PT_BLOCKSTEP first. The tracer should
+> simply set/clear these PT_ flags and resume the tracee which should
+> check them and do user_*_single_step() in response.
+
+> > 	Related question: should execve(2) clear (ptrace-inflicted)
+> > singlestepping?
 > 
-> Hi, Henrique
+> Perhaps, but
 > 
-> rsp->gp_start and rsp->jiffies_stall should already set before we start
-> check stall for this gp, but the INFO show that we have a current
-> jiffies which bigger then rsp->jiffies_stall but equal to rsp->gp_start,
-> really strange...
+> > Tracer
+> > exit(), however, does *not* do that right now, so the state after
+> > execve(2) is theoretically observable.
 > 
-> Could you please have a try on the latest kernel and confirm whether
-> this issue still exist?
+> ... why execve() is special?
 
-It is a production box, it is difficult to run a -rc kernel there.
+Because that behaviour had been changed over the history, for one thing:
+commit e1f287735c1e58c653b516931b5d3dd899edcb77
+Author: Roland McGrath <roland@redhat.com>
+Date:   Wed Jan 30 13:30:50 2008 +0100
 
-And the stalls are very rare, too.  That's the only one I got, so at this
-point I cannot tell you whether something fixed the problem or not, just try
-to give you clues if a stall does happen.
+    x86 single_step: TIF_FORCED_TF
+had done that for x86, unless I'm misreading something.  BTW, now that
+I've looked at that, alpha seems to have a really unpleasant bug with
+single-stepping through execve() - it *must* reset ->bpt_nsaved to 0
+in start_thread(), simply because the address space the breakpoints used
+to be in is gone at that point.  I don't see any place where that would
+be done; suppose we single-step right into callsys insn and do PTRACE_CONT
+when stopped on the way out.  Won't that end up with ptrace_cancel_bpt()
+done in *new* address space, silently buggering new .text contents?
 
-> BTW:
-> 	Is this stall info comes from a virtual machine?
+BTW, speaking of alpha, what about PTRACE_SINGLESTEP when the task is stopped
+on syscall entry/exit after previous PTRACE_SYSCALL, BTW?  Looks like it will
+be like PTRACE_CONT until we hit the first signal, at which point it converts
+to singlesteping mode; unless I'm seriously misreading that code, we rely
+on ptrace_set_bpt() done shortly after returning from get_signal_to_deliver()
+if we found that we'd been singlestepping.  Fine, but in this case we
+had been resumed *not* in get_signal_to_deliver()...
 
-No, it runs on baremetal.  The box has one Xeon X5550 processor, 4 cores, 8
-threads, and it is allowed to go into C1, C3 and C6 (which it does very very
-often).
-
-It might be some sort of race related to SMIs?  The worst-case SMM-induced
-delay on this box is quite high (I don't recall if that means 150ms or
-150us), as measured by the Intel BITS[1].
-
-[1] http://biosbits.org/
-
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Cc'd linux-alpha, in hopes to hear "you don't understand how single-stepping
+works on alpha, you idiot, everything's fine because of $REASONS"...
