@@ -1,121 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932111Ab2ICNdp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 09:33:45 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:60133 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751596Ab2ICNdn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 09:33:43 -0400
-Date: Mon, 3 Sep 2012 14:33:39 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de
-Subject: Re: [PATCH] ARM: ux500: Provide SMSC911x fixed-regulator when not
- booting DT
-Message-ID: <20120903133333.GE31163@gmail.com>
-References: <1345809612-30992-1-git-send-email-lee.jones@linaro.org>
+	id S932126Ab2ICNeO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 09:34:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49441 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754686Ab2ICNeM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 09:34:12 -0400
+Date: Mon, 3 Sep 2012 15:34:09 +0200
+From: Jan Kara <jack@suse.cz>
+To: Marco Stornelli <marco.stornelli@gmail.com>
+Cc: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Luca Tettamanti <kronos.it@gmail.com>, reiserfs-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/21] reiserfs: drop vmtruncate
+Message-ID: <20120903133409.GH21109@quack.suse.cz>
+References: <5040C195.9050303@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1345809612-30992-1-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5040C195.9050303@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Author: Lee Jones <lee.jones@linaro.org>
-Date:   Fri Aug 24 12:40:58 2012 +0100
+On Fri 31-08-12 15:52:21, Marco Stornelli wrote:
+> Removed vmtruncate.
+  Looks good. You can add:
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-    ARM: ux500: Provide SMSC911x fixed-regulator when not booting DT
-    
-    The SMSC911x Ethernet chip requires a fixed-regulator in order to
-    function correctly. We have previously provided a means to obtain
-    this during a Device Tree boot, however nothing has been put into
-    place when booting with a non-DT kernel. This patch aims to change
-    that.
-    
-    Signed-off-by: Lee Jones <lee.jones@linaro.org>
+							Honza
 
-diff --git a/arch/arm/mach-ux500/board-mop500-regulators.c b/arch/arm/mach-ux500/board-mop500-regulators.c
-index 52426a4..2a1e388 100644
---- a/arch/arm/mach-ux500/board-mop500-regulators.c
-+++ b/arch/arm/mach-ux500/board-mop500-regulators.c
-@@ -13,6 +13,21 @@
- #include <linux/regulator/ab8500.h>
- #include "board-mop500-regulators.h"
- 
-+static struct regulator_consumer_supply gpio_en_3v3_consumers[] = {
-+       REGULATOR_SUPPLY("vdd33a", "smsc911x.0"),
-+};
-+
-+struct regulator_init_data gpio_en_3v3_regulator = {
-+       .constraints = {
-+               .name = "EN-3V3",
-+               .min_uV = 3300000,
-+               .max_uV = 3300000,
-+               .valid_ops_mask = REGULATOR_CHANGE_STATUS,
-+       },
-+       .num_consumer_supplies = ARRAY_SIZE(gpio_en_3v3_consumers),
-+       .consumer_supplies = gpio_en_3v3_consumers,
-+};
-+
- /*
-  * TPS61052 regulator
-  */
-diff --git a/arch/arm/mach-ux500/board-mop500-regulators.h b/arch/arm/mach-ux500/board-mop500-regulators.h
-index 9499215..78a0642 100644
---- a/arch/arm/mach-ux500/board-mop500-regulators.h
-+++ b/arch/arm/mach-ux500/board-mop500-regulators.h
-@@ -18,5 +18,6 @@ extern struct ab8500_regulator_reg_init
- ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS];
- extern struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATORS];
- extern struct regulator_init_data tps61052_regulator;
-+extern struct regulator_init_data gpio_en_3v3_regulator;
- 
- #endif
-diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-index b2be36f..9dfad19 100644
---- a/arch/arm/mach-ux500/board-mop500.c
-+++ b/arch/arm/mach-ux500/board-mop500.c
-@@ -23,6 +23,7 @@
- #include <linux/spi/spi.h>
- #include <linux/mfd/abx500/ab8500.h>
- #include <linux/regulator/ab8500.h>
-+#include <linux/regulator/fixed.h>
- #include <linux/mfd/tc3589x.h>
- #include <linux/mfd/tps6105x.h>
- #include <linux/mfd/abx500/ab8500-gpio.h>
-@@ -75,6 +76,23 @@ static struct platform_device snowball_led_dev = {
-        },
- };
- 
-+static struct fixed_voltage_config snowball_gpio_en_3v3_data = {
-+       .supply_name            = "EN-3V3",
-+       .gpio                   = SNOWBALL_EN_3V3_ETH_GPIO,
-+       .microvolts             = 3300000,
-+       .enable_high            = 1,
-+       .init_data              = &gpio_en_3v3_regulator,
-+       .startup_delay          = 5000, /* 1200us */
-+};
-+
-+static struct platform_device snowball_gpio_en_3v3_regulator_dev = {
-+       .name   = "reg-fixed-voltage",
-+       .id     = 1,
-+       .dev    = {
-+               .platform_data  = &snowball_gpio_en_3v3_data,
-+       },
-+};
-+
- static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
-        .gpio_base              = MOP500_AB8500_PIN_GPIO(1),
-        .irq_base               = MOP500_AB8500_VIR_GPIO_IRQ_BASE,
-@@ -585,6 +603,7 @@ static struct platform_device *snowball_platform_devs[] __initdata = {
-        &snowball_led_dev,
-        &snowball_key_dev,
-        &snowball_sbnet_dev,
-+       &snowball_gpio_en_3v3_regulator_dev,
- };
- 
- static void __init mop500_init_machine(void)
+> 
+> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+> ---
+>  fs/reiserfs/file.c     |    3 +--
+>  fs/reiserfs/inode.c    |   15 +++++++++++----
+>  fs/reiserfs/reiserfs.h |    1 +
+>  3 files changed, 13 insertions(+), 6 deletions(-)
+> 
+> diff --git a/fs/reiserfs/file.c b/fs/reiserfs/file.c
+> index 8375c92..50302d6 100644
+> --- a/fs/reiserfs/file.c
+> +++ b/fs/reiserfs/file.c
+> @@ -126,7 +126,7 @@ static int reiserfs_file_open(struct inode *inode, struct file *file)
+>  	return err;
+>  }
+>  
+> -static void reiserfs_vfs_truncate_file(struct inode *inode)
+> +void reiserfs_vfs_truncate_file(struct inode *inode)
+>  {
+>  	mutex_lock(&(REISERFS_I(inode)->tailpack));
+>  	reiserfs_truncate_file(inode, 1);
+> @@ -312,7 +312,6 @@ const struct file_operations reiserfs_file_operations = {
+>  };
+>  
+>  const struct inode_operations reiserfs_file_inode_operations = {
+> -	.truncate = reiserfs_vfs_truncate_file,
+>  	.setattr = reiserfs_setattr,
+>  	.setxattr = reiserfs_setxattr,
+>  	.getxattr = reiserfs_getxattr,
+> diff --git a/fs/reiserfs/inode.c b/fs/reiserfs/inode.c
+> index 855da58..03430b6 100644
+> --- a/fs/reiserfs/inode.c
+> +++ b/fs/reiserfs/inode.c
+> @@ -3078,8 +3078,10 @@ static ssize_t reiserfs_direct_IO(int rw, struct kiocb *iocb,
+>  		loff_t isize = i_size_read(inode);
+>  		loff_t end = offset + iov_length(iov, nr_segs);
+>  
+> -		if (end > isize)
+> -			vmtruncate(inode, isize);
+> +		if ((end > isize) && inode_newsize_ok(inode, isize) == 0) {
+> +			truncate_setsize(inode, isize);
+> +			reiserfs_vfs_truncate_file(inode);
+> +		}
+>  	}
+>  
+>  	return ret;
+> @@ -3192,8 +3194,13 @@ int reiserfs_setattr(struct dentry *dentry, struct iattr *attr)
+>  	 */
+>  	reiserfs_write_unlock_once(inode->i_sb, depth);
+>  	if ((attr->ia_valid & ATTR_SIZE) &&
+> -	    attr->ia_size != i_size_read(inode))
+> -		error = vmtruncate(inode, attr->ia_size);
+> +	    attr->ia_size != i_size_read(inode)) {
+> +		error = inode_newsize_ok(inode, attr->ia_size);
+> +		if (!error) {
+> +			truncate_setsize(inode, attr->ia_size);
+> +			reiserfs_vfs_truncate_file(inode);
+> +		}
+> +	}
+>  
+>  	if (!error) {
+>  		setattr_copy(inode, attr);
+> diff --git a/fs/reiserfs/reiserfs.h b/fs/reiserfs/reiserfs.h
+> index 33215f5..157e474 100644
+> --- a/fs/reiserfs/reiserfs.h
+> +++ b/fs/reiserfs/reiserfs.h
+> @@ -2455,6 +2455,7 @@ struct reiserfs_transaction_handle *reiserfs_persistent_transaction(struct
+>  								    *,
+>  								    int count);
+>  int reiserfs_end_persistent_transaction(struct reiserfs_transaction_handle *);
+> +void reiserfs_vfs_truncate_file(struct inode *inode);
+>  int reiserfs_commit_page(struct inode *inode, struct page *page,
+>  			 unsigned from, unsigned to);
+>  void reiserfs_flush_old_commits(struct super_block *);
+> -- 
+> 1.7.3.4
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
