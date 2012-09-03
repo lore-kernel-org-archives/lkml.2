@@ -1,75 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756648Ab2ICUYW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 16:24:22 -0400
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:57959 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753392Ab2ICUX2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 16:23:28 -0400
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/4] cbus/retu drivers to mainline
-Date: Mon,  3 Sep 2012 23:23:21 +0300
-Message-Id: <1346703805-31598-1-git-send-email-aaro.koskinen@iki.fi>
-X-Mailer: git-send-email 1.7.2.5
+	id S1753362Ab2ICU0X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 16:26:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32454 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751578Ab2ICU0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 16:26:21 -0400
+Date: Mon, 3 Sep 2012 23:27:37 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sjur =?iso-8859-1?Q?Br=E6ndeland?= <sjurbren@gmail.com>
+Cc: Amit Shah <amit.shah@redhat.com>, linux-kernel@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [RFC 1/2] virtio_console: Add support for DMA memory allocation
+Message-ID: <20120903202737.GD6181@redhat.com>
+References: <1346680277-5887-1-git-send-email-sjur.brandeland@stericsson.com>
+ <20120903143018.GA5353@redhat.com>
+ <CAJK669bkHHMAPYMEr22-6uOwfgJv1uKTbzNBQVVCq=OooExC0g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAJK669bkHHMAPYMEr22-6uOwfgJv1uKTbzNBQVVCq=OooExC0g@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set introduces drivers for CBUS access and Retu multifunction
-chip found on Nokia Internet Tablets (770, N800, N810). It would be
-nice get these patches applied as the functionality of these devices is
-severely lacking without Retu. E.g. watchdog support is mandatory at
-least on Nokia N800, you cannot currently run the mainline kernel for
-longer than ~60 seconds (there is no way to disable the watchdog).
+On Mon, Sep 03, 2012 at 04:57:45PM +0200, Sjur Brændeland wrote:
+> Hi Michael,
+> 
+> > How does access to descriptors work in this setup?
+> 
+> When the ring is setup by remoteproc the descriptors are
+> also allocated using dma_alloc_coherent().
+> 
+> >> -static void free_buf(struct port_buffer *buf)
+> >> +/* Allcoate data buffer from DMA memory if requested */
+> >
+> > typo
+> 
+> Thanks.
+> 
+> >> +static inline void *
+> >> +alloc_databuf(struct virtio_device *vdev, size_t size, dma_addr_t *dma_handle,
+> >> +                gfp_t flag)
+> >>  {
+> >> -     kfree(buf->buf);
+> >> +#ifdef CONFIG_HAS_DMA
+> >> +     if (virtio_has_feature(vdev, VIRTIO_CONSOLE_F_DMA_MEM)) {
+> >> +             struct device *dev = &vdev->dev;
+> >> +             /*
+> >> +              * Allocate DMA memory from ancestors. Finding the ancestor
+> >> +              * is a bit quirky when DMA_MEMORY_INCLUDES_CHILDREN is not
+> >> +              * implemented.
+> >> +              */
+> >> +             dev = dev->parent ? dev->parent : dev;
+> >> +             dev = dev->parent ? dev->parent : dev;
+> >> +             return dma_alloc_coherent(dev, size, dma_handle, flag);
+> >> +     }
+> >> +#endif
+> >
+> > Are these ifdefs really needed? If DMA_MEM is set,
+> > can't we use dma_alloc_coherent
+> > unconditionally?
+> 
+> If an architecture do not support DMA you will get
+> a link error: "unknown symbol" for dma_alloc_coherent.
+> 
+> Regards,
+> Sjur
 
-Drivers originate from linux-omap cbus branch and have been cleaned
-up/rewritten around i2c and MFD core.
+Yes, it even seems intentional.
+But I have a question: can the device work without DMA?
+Does not VIRTIO_CONSOLE_F_DMA_MEM mean dma api is required?
+If yes you should just fail load.
 
-Patches have been tested on top of 3.6-rc4 with Nokia N800 (watchdog
-feeding works, power off shuts down the device, power button triggers
-IRQs and input events).
+Also let's add a wrapper at top of file so ifdefs
+do not litter the code like this. For example:
 
-Changes since the RFC version
-(http://marc.info/?l=linux-omap&m=134618967116737&w=2):
-	- added DT support for getting i2c-cbus GPIO pins
-	- merged n8x0 board file changes into i2c-cbus patch
-	- corrected typo in Kconfig for MFD_RETU
-	- added power off functionality to retu-mfd
-	- added IRQ functionality to retu-mfd
-	- added power button key driver
-	- some cleanups
+#ifdef CONFIG_HAS_DMA
+#define VIRTIO_CONSOLE_HAS_DMA (1)
+#else
+#define VIRTIO_CONSOLE_HAS_DMA (0)
+#endif
 
-Aaro Koskinen (4):
-  i2c: introduce i2c-cbus driver
-  mfd: introduce retu-mfd driver
-  watchdog: introduce retu_wdt driver
-  input: misc: introduce retu-pwrbutton
-
- arch/arm/mach-omap2/board-n8x0.c    |   42 ++++
- drivers/i2c/busses/Kconfig          |   10 +
- drivers/i2c/busses/Makefile         |    1 +
- drivers/i2c/busses/i2c-cbus.c       |  369 +++++++++++++++++++++++++++++++++++
- drivers/input/misc/Kconfig          |   10 +
- drivers/input/misc/Makefile         |    1 +
- drivers/input/misc/retu-pwrbutton.c |  127 ++++++++++++
- drivers/mfd/Kconfig                 |    8 +
- drivers/mfd/Makefile                |    1 +
- drivers/mfd/retu-mfd.c              |  347 ++++++++++++++++++++++++++++++++
- drivers/watchdog/Kconfig            |   12 ++
- drivers/watchdog/Makefile           |    1 +
- drivers/watchdog/retu_wdt.c         |  188 ++++++++++++++++++
- include/linux/i2c-cbus.h            |   27 +++
- include/linux/mfd/retu.h            |   22 ++
- 15 files changed, 1166 insertions(+), 0 deletions(-)
- create mode 100644 drivers/i2c/busses/i2c-cbus.c
- create mode 100644 drivers/input/misc/retu-pwrbutton.c
- create mode 100644 drivers/mfd/retu-mfd.c
- create mode 100644 drivers/watchdog/retu_wdt.c
- create mode 100644 include/linux/i2c-cbus.h
- create mode 100644 include/linux/mfd/retu.h
+Now use if instead of ifdef.
 
 -- 
-1.7.2.5
-
+MST
