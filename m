@@ -1,62 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756254Ab2ICJcP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 05:32:15 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:56700 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756085Ab2ICJcN (ORCPT
+	id S1756273Ab2ICJch (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 05:32:37 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:50853 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756198Ab2ICJcg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 05:32:13 -0400
+	Mon, 3 Sep 2012 05:32:36 -0400
+X-Originating-IP: 217.70.178.143
+X-Originating-IP: 50.43.46.74
+Date: Mon, 3 Sep 2012 02:32:28 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 15/23] rcu: Make rcutree module parameters
+ visible in sysfs
+Message-ID: <20120903093228.GD5574@leaf>
+References: <20120830181811.GA29154@linux.vnet.ibm.com>
+ <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346350718-30937-15-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <50431871.1030507@gmail.com>
-References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1345623750-10645-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1345623750-10645-2-git-send-email-sebastian.hesselbarth@gmail.com>
-	<5035445B.6000500@wwwdotorg.org>
-	<CABJ1b_Tdr80DGqb-FRzwDbF3m7g6fBguk5GtRAfRUYx5Sqy_cA@mail.gmail.com>
-	<50366E44.4030606@wwwdotorg.org>
-	<50369305.6050304@gmail.com>
-	<50369FEE.8000003@wwwdotorg.org>
-	<5036B639.20608@gmail.com>
-	<5036F651.4020700@wwwdotorg.org>
-	<5038F50E.7030807@gmail.com>
-	<503AF8B4.1070206@wwwdotorg.org>
-	<CACRpkdYsPadKr1i8m5cCAFUUvJYUnLmc3j8evKM_6rPU5oGzRg@mail.gmail.com>
-	<50431871.1030507@gmail.com>
-Date: Mon, 3 Sep 2012 11:32:12 +0200
-Message-ID: <CACRpkdaHm9YZjM7GzZ-VEPgQfn86XrjdO1ZYWMuohCQH1PshZw@mail.gmail.com>
-Subject: Re: [PATCH v2 1/9] pinctrl: mvebu: pinctrl driver core
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346350718-30937-15-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 2, 2012 at 10:27 AM, Sebastian Hesselbarth
-<sebastian.hesselbarth@gmail.com> wrote:
+On Thu, Aug 30, 2012 at 11:18:30AM -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> 
+> The module parameters blimit, qhimark, and qlomark (and more
+> recently, rcu_fanout_leaf) have permission masks of zero, so
+> that their values are not visible from sysfs.  This is unnecessary
+> and inconvenient to administrators who might like an easy way to
+> see what these values are on a running system.  This commit therefore
+> sets their permission masks to 0444, allowing them to be read but
+> not written.
+> 
+> Reported-by: Rusty Russell <rusty@ozlabs.org>
+> Reported-by: Josh Triplett <josh@joshtriplett.org>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-> there is a v3 of the patch under internal review right now.
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-OK I'll review as you send it out. Will look through the v2 patches to
-see if I missed some comment.
-
-> I know Stephen will not like it, but I decided not to have the list of
-> functions passed statically from the SoC specific part but generate it
-> out of pingroups during probe().
-
-Well, Tony's driver does even nastier things so we need to agree
-to disagree on this point. I for one can live with it.
-
-Yours,
-Linus Walleij
+>  kernel/rcutree.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index 1d33240..55f20fd 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -88,7 +88,7 @@ LIST_HEAD(rcu_struct_flavors);
+>  
+>  /* Increase (but not decrease) the CONFIG_RCU_FANOUT_LEAF at boot time. */
+>  static int rcu_fanout_leaf = CONFIG_RCU_FANOUT_LEAF;
+> -module_param(rcu_fanout_leaf, int, 0);
+> +module_param(rcu_fanout_leaf, int, 0444);
+>  int rcu_num_lvls __read_mostly = RCU_NUM_LVLS;
+>  static int num_rcu_lvl[] = {  /* Number of rcu_nodes at specified level. */
+>  	NUM_RCU_LVL_0,
+> @@ -216,9 +216,9 @@ static int blimit = 10;		/* Maximum callbacks per rcu_do_batch. */
+>  static int qhimark = 10000;	/* If this many pending, ignore blimit. */
+>  static int qlowmark = 100;	/* Once only this many pending, use blimit. */
+>  
+> -module_param(blimit, int, 0);
+> -module_param(qhimark, int, 0);
+> -module_param(qlowmark, int, 0);
+> +module_param(blimit, int, 0444);
+> +module_param(qhimark, int, 0444);
+> +module_param(qlowmark, int, 0444);
+>  
+>  int rcu_cpu_stall_suppress __read_mostly; /* 1 = suppress stall warnings. */
+>  int rcu_cpu_stall_timeout __read_mostly = CONFIG_RCU_CPU_STALL_TIMEOUT;
+> -- 
+> 1.7.8
+> 
