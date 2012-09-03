@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932082Ab2ICJLR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 05:11:17 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:34133 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752366Ab2ICJLQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 05:11:16 -0400
+	id S932113Ab2ICJLf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 05:11:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46066 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932087Ab2ICJLe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 05:11:34 -0400
+Message-ID: <50447442.2050307@redhat.com>
+Date: Mon, 03 Sep 2012 12:11:30 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <1346660069-16049-1-git-send-email-stigge@antcom.de>
-References: <1346660069-16049-1-git-send-email-stigge@antcom.de>
-Date: Mon, 3 Sep 2012 11:11:14 +0200
-Message-ID: <CACRpkdZ75s-yh5vzevbUPzhGbOj+mBNfJ+i68f5tH67oS4X__A@mail.gmail.com>
-Subject: Re: [PATCH] spi/pl022: Fix chipselects pointer computation
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Roland Stigge <stigge@antcom.de>, broonie@opensource.wolfsonmicro.com
-Cc: shiraz.linux.kernel@gmail.com, aletes.xgr@gmail.com,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        spi-devel-general@lists.sourceforge.net,
-        gabriel.fernandez@stericsson.com, lee.jones@linaro.org,
-        viresh.kumar@linaro.org, sachin.verma@st.co
-Content-Type: text/plain; charset=ISO-8859-1
+To: dave@gnu.org
+CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] KVM: VMX: invalidate vpid for invlpg instruction
+References: <1346429448.2823.1.camel@offbook>  <20120831173707.GA3895@amt.cnet> <1346628440.3170.3.camel@offbook>
+In-Reply-To: <1346628440.3170.3.camel@offbook>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 3, 2012 at 10:14 AM, Roland Stigge <stigge@antcom.de> wrote:
+On 09/03/2012 02:27 AM, Davidlohr Bueso wrote:
+> On Fri, 2012-08-31 at 14:37 -0300, Marcelo Tosatti wrote:
+>> On Fri, Aug 31, 2012 at 06:10:48PM +0200, Davidlohr Bueso wrote:
+>> > For processors that support VPIDs we should invalidate the page table entry
+>> > specified by the lineal address. For this purpose add support for individual
+>> > address invalidations.
+>> 
+>> Not necessary - a single context invalidation is performed through
+>> KVM_REQ_TLB_FLUSH.
+> 
+> Since vpid_sync_context() supports both single and all-context vpid
+> invalidations, wouldn't it make sense to also add individual address
+> ones as well, supporting further granularity?
 
-> The new chip select handling via GPIO introduced a pointer computation bug:
->
->         (int *) pl022 + sizeof(struct pl022)
->
-> doesn't point to the data immediately after the actual struct pl022 (as was
-> intended) but to a multiple of bytes after it because of the (int *) type.
->
-> Replacing the kludgy pointer arithmetic with managed memory allocation for the
-> chip selects.
->
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
+It might.  Do you have benchmarks supporting this?
 
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
-
-Thanks for fixing this! And thanks to Shiraz for spotting the problem,
-Mark you could add a:
-
-Reported-by: Shiraz Hashim <shiraz.linux.kernel@gmail.com>
-
-when applying this.
-
-Yours,
-Linus Walleij
+-- 
+error compiling committee.c: too many arguments to function
