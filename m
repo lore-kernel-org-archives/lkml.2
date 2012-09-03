@@ -1,125 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756328Ab2ICP6E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 11:58:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34048 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752843Ab2ICP6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 11:58:00 -0400
-Date: Mon, 3 Sep 2012 17:57:58 +0200
-From: Jan Kara <jack@suse.cz>
-To: Dan Merillat <dan.merillat@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: IO stalls on one disk stall entire system
-Message-ID: <20120903155758.GJ21109@quack.suse.cz>
-References: <50421091.4030902@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50421091.4030902@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756486Ab2ICQCQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 12:02:16 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53531 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753574Ab2ICQCO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 12:02:14 -0400
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Richard Zhao <richard.zhao@freescale.com>,
+        Huang Shijie <shijie8@gmail.com>,
+        Dong Aisheng <dong.aisheng@linaro.org>, kernel@pengutronix.de,
+        devicetree-discuss@lists.ozlabs.org
+Cc: Philipp Zabel <p.zabel@pengutronix.de>
+Subject: [PATCH v3 4/4] ARM i.MX: remove IRAM_ALLOC facility
+Date: Mon,  3 Sep 2012 18:02:08 +0200
+Message-Id: <1346688128-22395-5-git-send-email-p.zabel@pengutronix.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1346688128-22395-1-git-send-email-p.zabel@pengutronix.de>
+References: <1346688128-22395-1-git-send-email-p.zabel@pengutronix.de>
+X-SA-Exim-Connect-IP: 10.1.0.7
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 01-09-12 09:41:37, Dan Merillat wrote:
-> I have a known-broken WD15EADS, which has the hilariously terrible
-> 1000ms IO response time.  Yes, that's the right number of zeros.  I'm
-> using it as a convenient way to hunt down a general feeling of
-> unresponsiveness under disk load
-> 
-> In this case, the failing drive is mounted to /backup, and I'm copying
-> large random files to it.  Firefox is operating on my normal system
-> drives, and takes up to two-minute stalls:
-> 
-> Aug 26 17:41:13 fileserver kernel: [919921.115258] INFO: task
-> firefox-bin:17616 blocked for more than 120 seconds.
-> Aug 26 17:41:13 fileserver kernel: [919921.115261] "echo 0 >
-> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> Aug 26 17:41:13 fileserver kernel: [919921.115264] firefox-bin     D
-> ffff88012fd12440     0 17616  17525 0x00000000
-> Aug 26 17:41:13 fileserver kernel: [919921.115270]  ffff8800ba87dd60
-> 0000000000000082 00007f5d00000000 ffff8800ba87dfd8
-> Aug 26 17:41:13 fileserver kernel: [919921.115277]  0000000000004000
-> 0000000000012440 ffff88012aeb96a0 ffff8800ba952d40
-> Aug 26 17:41:13 fileserver kernel: [919921.115283]  700401208b000000
-> 0000000014040800 0000000002000000 000000005cdbbb01
-> Aug 26 17:41:13 fileserver kernel: [919921.115289] Call Trace:
-> Aug 26 17:41:13 fileserver kernel: [919921.115296]  [<ffffffff81508453>]
-> ? inet_sendmsg+0x93/0x9c
-> Aug 26 17:41:13 fileserver kernel: [919921.115301]  [<ffffffff8159a155>]
-> schedule+0x5f/0x61
-> Aug 26 17:41:13 fileserver kernel: [919921.115305]  [<ffffffff8159ac3b>]
-> rwsem_down_failed_common+0xdb/0x10d
-> Aug 26 17:41:13 fileserver kernel: [919921.115310]  [<ffffffff8159ac94>]
-> rwsem_down_read_failed+0x12/0x14
-> Aug 26 17:41:13 fileserver kernel: [919921.115314]  [<ffffffff81369fc4>]
-> call_rwsem_down_read_failed+0x14/0x30
-> Aug 26 17:41:13 fileserver kernel: [919921.115318]  [<ffffffff815991f0>]
-> ? down_read+0x12/0x14
-> Aug 26 17:41:13 fileserver kernel: [919921.115326]  [<ffffffff8159db2f>]
-> do_page_fault+0x259/0x45d
-> Aug 26 17:41:13 fileserver kernel: [919921.115332]  [<ffffffff8110acc2>]
-> ? vfsmount_lock_local_unlock+0x21/0x3c
-> Aug 26 17:41:13 fileserver kernel: [919921.115337]  [<ffffffff8110b6dd>]
-> ? mntput_no_expire+0x2a/0x101
-> Aug 26 17:41:13 fileserver kernel: [919921.115343]  [<ffffffff81104d19>]
-> ? __d_free+0x4e/0x53
-> Aug 26 17:41:13 fileserver kernel: [919921.115347]  [<ffffffff8110b7dc>]
-> ? mntput+0x28/0x2a
-> Aug 26 17:41:13 fileserver kernel: [919921.115351]  [<ffffffff8136a0ca>]
-> ? trace_hardirqs_off_thunk+0x3a/0x6c
-> Aug 26 17:41:13 fileserver kernel: [919921.115356]  [<ffffffff8159b61f>]
-> page_fault+0x1f/0x30
-  Looking at the trace we are waiting for mmap_sem which is a per-process
-lock. The question is who is holding mmap_sem of firefox for such a long
-time. For that doing (as root) 'echo w >/proc/sysrq-trigger' when firefox
-gets blocked and posting the output could reveal some more details.
+A generic on-chip SRAM allocator driver can be used instead.
+Users of the iram_alloc/free API should convert to the genalloc API:
 
-There are some valid reasons why mm could decide to write to the slow drive
-while holding mmap_sem of the firefox process but these should mostly
-happen on low-memory conditions. Anyway from the traces we should be able
-to tell whether that's the case.
+-	virt = iram_alloc(SIZE, &phys);
++	gen_pool_alloc(iram_pool, SIZE);
++	phys = gen_pool_virt_to_phys(iram_pool, virt);
+ 	/* ... */
+-	iram_free(virt, SIZE);
++	gen_pool_free(iram_pool, virt, SIZE);
 
-> Linux fileserver 3.4.0-dan-00002-ga84219d #2 SMP PREEMPT Mon May 21
-> 09:36:23 EDT 2012 x86_64 GNU/Linux
-> 
-> The only hardware shared between the bad drive and the rest of the
-> system is the first AHCI controller:
-> > 00:11.0 SATA controller: Advanced Micro Devices [AMD] nee ATI SB7x0/SB8x0/SB9x0 SATA Controller [AHCI mode]
-> 
-> Some other drives are on this one:
-> > 02:00.0 SATA controller: JMicron Technology Corp. JMB363 SATA/IDE Controller (rev 03)
-> 
-> 
-> This is obviously an extreme case, but I've felt this IO stalling in
-> other contexts, like doing a recursive shasum on large bodies of data.
->  I purposely have /home and /root on separate spindles from the bulk
-> data, but I still get IO stalls when /largevol is being used.
-> 
-> It's pretty easy to reproduce, just a pain to work on it when I do.
-> That's a two minute failure to satisfy a pagefault on an otherwise idle
-> drive (I.E. not the slow one), so it really bogs down badly when it
-> fails.  This continues until I ^C the rsync process - and wait for it to
-> finish flushing the current set of dirtied pages.
-> 
-> This may involve btrfs, as that's the underlying filesystem on the
-> target drive and on /largevol.  Root on a LV, physically located on yet
-> another, separate drive (lots of disks here).
-> 
-> 2x250gb SATA MD-raid1 LVM - / (reiserfs), swap
-> 1x40gb IDE - LVM /home/me/.mozilla btrfs,
-> 4x2tb MD-raid5 - (no LVM) /largevol, btrfs
-  Seeing that md-raid is involved - be sure to have at least 3.4.5 kernel
-because in previous 3.4 kernels md raid has a nasty bug causing hangs in
-md-raid code. That could be possibly related as well.
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+---
+ arch/arm/plat-mxc/Kconfig             |    4 --
+ arch/arm/plat-mxc/Makefile            |    1 -
+ arch/arm/plat-mxc/include/mach/iram.h |   41 ------------------
+ arch/arm/plat-mxc/iram_alloc.c        |   73 ---------------------------------
+ 4 files changed, 119 deletions(-)
+ delete mode 100644 arch/arm/plat-mxc/include/mach/iram.h
+ delete mode 100644 arch/arm/plat-mxc/iram_alloc.c
 
-> 1x1.5TB SLOW ESATA - /backup
-> 
-> So I should have tons of spindle independence, but I'm just not seeing it.
-  I'm adding mm list to CC since this might be related...
-
-								Honza
+diff --git a/arch/arm/plat-mxc/Kconfig b/arch/arm/plat-mxc/Kconfig
+index baf9064..8e63f10 100644
+--- a/arch/arm/plat-mxc/Kconfig
++++ b/arch/arm/plat-mxc/Kconfig
+@@ -82,8 +82,4 @@ config IMX_HAVE_IOMUX_V1
+ config ARCH_MXC_IOMUX_V3
+ 	bool
+ 
+-config IRAM_ALLOC
+-	bool
+-	select GENERIC_ALLOCATOR
+-
+ endif
+diff --git a/arch/arm/plat-mxc/Makefile b/arch/arm/plat-mxc/Makefile
+index 6ac7200..bdf370f 100644
+--- a/arch/arm/plat-mxc/Makefile
++++ b/arch/arm/plat-mxc/Makefile
+@@ -10,7 +10,6 @@ obj-$(CONFIG_MXC_AVIC) += avic.o
+ 
+ obj-$(CONFIG_IMX_HAVE_IOMUX_V1) += iomux-v1.o
+ obj-$(CONFIG_ARCH_MXC_IOMUX_V3) += iomux-v3.o
+-obj-$(CONFIG_IRAM_ALLOC) += iram_alloc.o
+ obj-$(CONFIG_MXC_ULPI) += ulpi.o
+ obj-$(CONFIG_MXC_USE_EPIT) += epit.o
+ obj-$(CONFIG_MXC_DEBUG_BOARD) += 3ds_debugboard.o
+diff --git a/arch/arm/plat-mxc/include/mach/iram.h b/arch/arm/plat-mxc/include/mach/iram.h
+deleted file mode 100644
+index 022690c..0000000
+--- a/arch/arm/plat-mxc/include/mach/iram.h
++++ /dev/null
+@@ -1,41 +0,0 @@
+-/*
+- * Copyright (C) 2010 Freescale Semiconductor, Inc. All Rights Reserved.
+- *
+- * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public License
+- * as published by the Free Software Foundation; either version 2
+- * of the License, or (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+- * MA 02110-1301, USA.
+- */
+-#include <linux/errno.h>
+-
+-#ifdef CONFIG_IRAM_ALLOC
+-
+-int __init iram_init(unsigned long base, unsigned long size);
+-void __iomem *iram_alloc(unsigned int size, unsigned long *dma_addr);
+-void iram_free(unsigned long dma_addr, unsigned int size);
+-
+-#else
+-
+-static inline int __init iram_init(unsigned long base, unsigned long size)
+-{
+-	return -ENOMEM;
+-}
+-
+-static inline void __iomem *iram_alloc(unsigned int size, unsigned long *dma_addr)
+-{
+-	return NULL;
+-}
+-
+-static inline void iram_free(unsigned long base, unsigned long size) {}
+-
+-#endif
+diff --git a/arch/arm/plat-mxc/iram_alloc.c b/arch/arm/plat-mxc/iram_alloc.c
+deleted file mode 100644
+index 074c386..0000000
+--- a/arch/arm/plat-mxc/iram_alloc.c
++++ /dev/null
+@@ -1,73 +0,0 @@
+-/*
+- * Copyright (C) 2010 Freescale Semiconductor, Inc. All Rights Reserved.
+- *
+- * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public License
+- * as published by the Free Software Foundation; either version 2
+- * of the License, or (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+- * MA 02110-1301, USA.
+- */
+-
+-#include <linux/kernel.h>
+-#include <linux/io.h>
+-#include <linux/module.h>
+-#include <linux/spinlock.h>
+-#include <linux/genalloc.h>
+-#include <mach/iram.h>
+-
+-static unsigned long iram_phys_base;
+-static void __iomem *iram_virt_base;
+-static struct gen_pool *iram_pool;
+-
+-static inline void __iomem *iram_phys_to_virt(unsigned long p)
+-{
+-	return iram_virt_base + (p - iram_phys_base);
+-}
+-
+-void __iomem *iram_alloc(unsigned int size, unsigned long *dma_addr)
+-{
+-	if (!iram_pool)
+-		return NULL;
+-
+-	*dma_addr = gen_pool_alloc(iram_pool, size);
+-	pr_debug("iram alloc - %dB@0x%lX\n", size, *dma_addr);
+-	if (!*dma_addr)
+-		return NULL;
+-	return iram_phys_to_virt(*dma_addr);
+-}
+-EXPORT_SYMBOL(iram_alloc);
+-
+-void iram_free(unsigned long addr, unsigned int size)
+-{
+-	if (!iram_pool)
+-		return;
+-
+-	gen_pool_free(iram_pool, addr, size);
+-}
+-EXPORT_SYMBOL(iram_free);
+-
+-int __init iram_init(unsigned long base, unsigned long size)
+-{
+-	iram_phys_base = base;
+-
+-	iram_pool = gen_pool_create(PAGE_SHIFT, -1);
+-	if (!iram_pool)
+-		return -ENOMEM;
+-
+-	gen_pool_add(iram_pool, base, size, -1);
+-	iram_virt_base = ioremap(iram_phys_base, size);
+-	if (!iram_virt_base)
+-		return -EIO;
+-
+-	pr_debug("i.MX IRAM pool: %ld KB@0x%p\n", size / 1024, iram_virt_base);
+-	return 0;
+-}
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.10.4
+
