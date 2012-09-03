@@ -1,169 +1,1004 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565Ab2ICAkD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 20:40:03 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:20474 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755221Ab2ICAkA (ORCPT
+	id S1755575Ab2ICAo7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 20:44:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65475 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754827Ab2ICAox (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 20:40:00 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqgNAGr7Q1B5LHJk/2dsb2JhbABFhRy0fwEBAn+BCIIgAQEEATocIwULCAMYLhQlAyEThhGBdgW6DRSKeSAPYXw0hGMDlViJNIZngnWBRwg
-Date: Mon, 3 Sep 2012 10:39:51 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andi Kleen <andi.kleen@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Rik van Riel <riel@redhat.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] HWPOISON: prevent inode cache removal to keep
- AS_HWPOISON sticky
-Message-ID: <20120903003951.GL15292@dastard>
-References: <20120826222607.GD19235@dastard>
- <1346105106-26033-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20120829025941.GD13691@dastard>
- <503DA954.80009@ce.jp.nec.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <503DA954.80009@ce.jp.nec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 2 Sep 2012 20:44:53 -0400
+From: Joe Millenbach <jmillenbach@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: team-fjord@googlegroups.com, Josh Triplett <josh@joshtriplett.org>,
+        Joe Millenbach <jmillenbach@gmail.com>
+Subject: [PATCHv2] tty: Added a CONFIG_TTY option to allow removal of TTY
+Date: Sun,  2 Sep 2012 17:44:32 -0700
+Message-Id: <1346633072-29361-1-git-send-email-jmillenbach@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 29, 2012 at 02:32:04PM +0900, Jun'ichi Nomura wrote:
-> On 08/29/12 11:59, Dave Chinner wrote:
-> > On Mon, Aug 27, 2012 at 06:05:06PM -0400, Naoya Horiguchi wrote:
-> >> And yes, I understand it's ideal, but many applications choose not to
-> >> do that for performance reason.
-> >> So I think it's helpful if we can surely report to such applications.
-> 
-> I suspect "performance vs. integrity" is not a correct
-> description of the problem.
+The option allows you to remove TTY and compile without errors. This
+saves space on systems that won't support TTY interfaces anyway.
+bloat-o-meter output is below.
 
-Right, to be  more precise, it's a "eat my data" vs "integrity"
-problem. And in almost all cases I've seen over the years, "eat my
-data" is done for performance reasons...
+The bulk of this patch consists of Kconfig changes adding "depends on
+TTY" to various serial devices and similar drivers that require the TTY
+layer.  Ideally, these dependencies would occur on a common intermediate
+symbol such as SERIO, but most drivers "select SERIO" rather than
+"depends on SERIO", and "select" does not respect dependencies.
 
-> > If performance is chosen over data integrity, we are under no
-> > obligation to keep the error around indefinitely.  Fundamentally,
-> > ensuring a write completes successfully is the reponsibility of the
-> > application, not the kernel. There are so many different filesytem
-> > and storage errors that can be lost right now because data is not
-> > fsync()d, adding another one to them really doesn't change anything.
-> > IOWs, a memory error is no different to a disk failing or the system
-> > crashing when it comes to data integrity. If you care, you use
-> > fsync().
-> 
-> I agree that applications should fsync() or O_SYNC
-> when it wants to make sure the written data in on disk.
-> 
-> AFAIU, what Naoya is going to address is the case where
-> fsync() is not necessarily needed.
-> 
-> For example, if someone do:
->   $ patch -p1 < ../a.patch
->   $ tar cf . > ../a.tar
-> 
-> and disk failure occurred between "patch" and "tar",
-> "tar" will either see uptodate data or I/O error.
+bloat-o-meter output filtered to not show removed entries with awk
+'$3 != "-"' as the list was very long.
 
-No, it won't. The only place AS_EIO is tested is in
-filemap_fdatawait_range(), which is only called in the fsync() path.
-The only way to report async write IO errors is to use fsync() -
-subsequent reads of the file do *not* see the write error.
+add/remove: 0/385 grow/shrink: 2/18 up/down: 14/-54016 (-54002)
+function                                     old     new   delta
+chr_dev_init                                 193     205     +12
+selinux_setprocattr                         1167    1169      +2
+static.__warned                              557     556      -1
+start_kernel                                 840     835      -5
+proc_root_init                               167     162      -5
+unregister_console                           165     157      -8
+sys_setsid                                   213     205      -8
+sys_vhangup                                   37      21     -16
+daemonize                                    689     673     -16
+t_stop                                        72      54     -18
+t_next                                       129     108     -21
+static.do_acct_process                       838     806     -32
+release_task                                1157    1125     -32
+do_exit                                     2325    2288     -37
+t_start                                      269     221     -48
+static.__func__                            18289   18219     -70
+do_task_stat                                2962    2892     -70
+flush_unauthorized_files                     740     614    -126
+static._rs                                  1440    1280    -160
+static.__key                                8560    8384    -176
 
-IOWs, tar will be oblivious of any IO error that preceeded it
-reading the files it is copying.
+Signed-off-by: Joe Millenbach <jmillenbach@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+v2: Incorporated feedback from Alan Cox: used "if TTY ... endif" to wrap
+    long runs of symbols that all need "depends on TTY"; grouped all the
+    stubbed-out functions together in linux/tty.h.
 
-> OTOH, if the failure was detected on dirty pagecache, the current memory
-> failure handler invalidates the dirty page and the "tar" command will
-> re-read old contents from disk without error.
+ arch/tile/Kconfig                   |    1 +
+ drivers/bluetooth/Kconfig           |    1 +
+ drivers/char/Kconfig                |    7 +++---
+ drivers/char/pcmcia/Kconfig         |    4 ++--
+ drivers/i2c/busses/Kconfig          |    2 +-
+ drivers/input/joystick/Kconfig      |    4 ++++
+ drivers/input/keyboard/Kconfig      |   10 +++++++-
+ drivers/input/mouse/Kconfig         |    3 +++
+ drivers/input/serio/Kconfig         |    1 +
+ drivers/input/touchscreen/Kconfig   |   24 ++++++++++++++++++-
+ drivers/isdn/Kconfig                |    1 +
+ drivers/isdn/capi/Kconfig           |    1 +
+ drivers/isdn/gigaset/Kconfig        |    1 +
+ drivers/isdn/hardware/mISDN/Kconfig |    1 +
+ drivers/lguest/Kconfig              |    2 +-
+ drivers/media/radio/wl128x/Kconfig  |    2 +-
+ drivers/misc/Kconfig                |    2 +-
+ drivers/misc/ti-st/Kconfig          |    2 +-
+ drivers/mmc/card/Kconfig            |    1 +
+ drivers/net/caif/Kconfig            |    2 +-
+ drivers/net/can/Kconfig             |    2 +-
+ drivers/net/hamradio/Kconfig        |    4 ++--
+ drivers/net/irda/Kconfig            |    2 +-
+ drivers/net/ppp/Kconfig             |    3 +++
+ drivers/net/slip/Kconfig            |    1 +
+ drivers/net/usb/Kconfig             |    4 ++--
+ drivers/net/wan/Kconfig             |    2 +-
+ drivers/pps/clients/Kconfig         |    2 +-
+ drivers/tty/Kconfig                 |   13 +++++++++++
+ drivers/tty/Makefile                |    2 +-
+ drivers/tty/hvc/Kconfig             |    3 +++
+ drivers/tty/serial/Kconfig          |    4 ++++
+ drivers/usb/class/Kconfig           |    2 +-
+ drivers/usb/serial/Kconfig          |    2 +-
+ fs/proc/Makefile                    |    4 ++--
+ include/linux/console.h             |    5 ++++
+ include/linux/proc_fs.h             |    5 ++++
+ include/linux/tty.h                 |   44 ++++++++++++++++++++++++++---------
+ lib/Kconfig.kgdb                    |    1 +
+ net/bluetooth/rfcomm/Kconfig        |    1 +
+ net/irda/ircomm/Kconfig             |    2 +-
+ sound/soc/codecs/Kconfig            |    3 ++-
+ 42 files changed, 144 insertions(+), 39 deletions(-)
 
-After an IO error, the dirty page is no longer uptodate - that gets
-cleared - so when the page is read the data will be re-read from
-disk just like if a memory error occurred. So tar will behave the
-same regardless of whether it is a memory error or an IO error (i.e.
-reread old data from disk)
-
-> (Well, the failures above are permanent failures.
-
-Write IO errors can also be transient or permanent. Transient, for
-example, when a path failure occurs and multipathing then detects
-this and fails over to a good path. A subsequent write will then
-succeed. Permanent, for example, when someone unplugs a USB drive.
-
-> IOW, the current
->  memory failure handler turns permanent failure into transient error,
->  which is often more difficult to handle, I think.)
-
-The patch I commented on is turning a transient error (error in a
-page that is then poisoned and never used again) into a permanent
-error (error on an address space that is reported on every future
-operation that tries to insert a page into the page cache).
-
-> Naoya's patch will keep the failure information and allows the reader
-> to get I/O error when it reads from broken pagecache.
-
-It only adds a hwposion check in add_to_page_cache_locked(). If the
-page is already in the cache, then no error will be sent to the
-reader because it never gets to add_to_page_cache_locked().
-
-So there's no guarantee that the reader is even going to see the
-error, or that they see the error on the page that actually caused
-it - access to any missing page in the page cache will trigger it.
-And as memory reclaim clears pages off the inode, more and more of
-the range of the inode's data will return an error, even though
-there is nothing wrong with the data in most of the file.
-
-Indeed, what happens if the application calls fsync, gets the error
-and tries to rewrite the page? i.e. it does everything correctly to
-handle the write error? With this patch set, the application
-cannot insert a replacement page into the page cache, so all
-subsequent writes fail! IOWs, it makes it impossible for
-applications to recover from a detected and handled memory failure.
-
-I have no issue with reporting the problem to userspace - that needs
-t am I saying that the current IO reporting is wonderful and can't
-be improved. What I am saying, though, is that I really don't think
-this patch set has been well thought through from either an IO path
-or userspace error handling point of view.  The problems with this
-patch set are quite significant:
-	- permanent, unclearable error except by complete removal of
-	  all data on the file. (forcing the removal of all
-	  good data to recover from a transient error on a small
-	  amount of data).
-	- while the error is present, bad data cannot be overwritten
-	  (applications cannot recover even if they catch the
-	  error).
-	- while the error is present, no new data can be written
-	  (applications can't continue even if they don't care
-	  about the error).
-	- while the error is present, no valid data can be read from
-	  the file (applications can't access good data they
-	  need to run even after the error has been handled).
-	- memory reclaim will slowly remove uptodate cached pages
-	  and so re-reading good cached pages can suddenly return
-	  errors even though no new error has been encountered.
-	  (error gets worse over time until all good data is removed
-	  or the system is rebooted).
-
-The first thing that you need to do is make sure applications can
-recover from a detected (via fsync) hwpoisoning event on a dirty
-page in the page cache. Once you have that working, then handle the
-case of errors on clean pages (e.g. hwpoison a libc dso page and see
-if the machine continues to operate). Once you have a system
-resilient to clean page errors and dirty page errors for
-applications that care about data integrity, then you can start
-thinking about making stuff better for applications that don't care
-about data integrity....
-
-Cheers,
-
-Dave.
+diff --git a/arch/tile/Kconfig b/arch/tile/Kconfig
+index 11270ca..44620cd 100644
+--- a/arch/tile/Kconfig
++++ b/arch/tile/Kconfig
+@@ -102,6 +102,7 @@ config DEBUG_COPY_FROM_USER
+ 	def_bool n
+ 
+ config HVC_TILE
++	depends on TTY
+ 	select HVC_DRIVER
+ 	def_bool y
+ 
+diff --git a/drivers/bluetooth/Kconfig b/drivers/bluetooth/Kconfig
+index 5ccf142..fb7acc2 100644
+--- a/drivers/bluetooth/Kconfig
++++ b/drivers/bluetooth/Kconfig
+@@ -26,6 +26,7 @@ config BT_HCIBTSDIO
+ 
+ config BT_HCIUART
+ 	tristate "HCI UART driver"
++	depends on TTY
+ 	help
+ 	  Bluetooth HCI UART driver.
+ 	  This driver is required if you want to use Bluetooth devices with
+diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
+index 4364303..955ee518 100644
+--- a/drivers/char/Kconfig
++++ b/drivers/char/Kconfig
+@@ -53,7 +53,7 @@ source "drivers/tty/serial/Kconfig"
+ 
+ config TTY_PRINTK
+ 	bool "TTY driver to output user messages via printk"
+-	depends on EXPERT
++	depends on EXPERT && TTY
+ 	default n
+ 	---help---
+ 	  If you say Y here, the support for writing user messages (i.e.
+@@ -174,7 +174,7 @@ source "drivers/tty/hvc/Kconfig"
+ 
+ config VIRTIO_CONSOLE
+ 	tristate "Virtio console"
+-	depends on VIRTIO
++	depends on VIRTIO && TTY
+ 	select HVC_DRIVER
+ 	help
+ 	  Virtio console for use with lguest and other hypervisors.
+@@ -407,6 +407,7 @@ config XILINX_HWICAP
+ 
+ config R3964
+ 	tristate "Siemens R3964 line discipline"
++	depends on TTY
+ 	---help---
+ 	  This driver allows synchronous communication with devices using the
+ 	  Siemens R3964 packet protocol. Unless you are dealing with special
+@@ -454,7 +455,7 @@ source "drivers/char/pcmcia/Kconfig"
+ 
+ config MWAVE
+ 	tristate "ACP Modem (Mwave) support"
+-	depends on X86
++	depends on X86 && TTY
+ 	select SERIAL_8250
+ 	---help---
+ 	  The ACP modem (Mwave) for Linux is a WinModem. It is composed of a
+diff --git a/drivers/char/pcmcia/Kconfig b/drivers/char/pcmcia/Kconfig
+index 6614416..2a166d5 100644
+--- a/drivers/char/pcmcia/Kconfig
++++ b/drivers/char/pcmcia/Kconfig
+@@ -7,7 +7,7 @@ menu "PCMCIA character devices"
+ 
+ config SYNCLINK_CS
+ 	tristate "SyncLink PC Card support"
+-	depends on PCMCIA
++	depends on PCMCIA && TTY
+ 	help
+ 	  Enable support for the SyncLink PC Card serial adapter, running
+ 	  asynchronous and HDLC communications up to 512Kbps. The port is
+@@ -45,7 +45,7 @@ config CARDMAN_4040
+ 
+ config IPWIRELESS
+ 	tristate "IPWireless 3G UMTS PCMCIA card support"
+-	depends on PCMCIA && NETDEVICES
++	depends on PCMCIA && NETDEVICES && TTY
+ 	select PPP
+ 	help
+ 	  This is a driver for 3G UMTS PCMCIA card from IPWireless company. In
+diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+index 3101dd5..81eed4e 100644
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -759,7 +759,7 @@ config I2C_PARPORT_LIGHT
+ 
+ config I2C_TAOS_EVM
+ 	tristate "TAOS evaluation module"
+-	depends on EXPERIMENTAL
++	depends on EXPERIMENTAL && TTY
+ 	select SERIO
+ 	select SERIO_SERPORT
+ 	default n
+diff --git a/drivers/input/joystick/Kconfig b/drivers/input/joystick/Kconfig
+index 56eb471..055bcab 100644
+--- a/drivers/input/joystick/Kconfig
++++ b/drivers/input/joystick/Kconfig
+@@ -132,6 +132,8 @@ config JOYSTICK_TMDC
+ 
+ source "drivers/input/joystick/iforce/Kconfig"
+ 
++if TTY
++
+ config JOYSTICK_WARRIOR
+ 	tristate "Logitech WingMan Warrior joystick"
+ 	select SERIO
+@@ -205,6 +207,8 @@ config JOYSTICK_ZHENHUA
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called zhenhua.
+ 
++endif # TTY
++
+ config JOYSTICK_DB9
+ 	tristate "Multisystem, Sega Genesis, Saturn joysticks and gamepads"
+ 	depends on PARPORT
+diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
+index cdc385b..3674419 100644
+--- a/drivers/input/keyboard/Kconfig
++++ b/drivers/input/keyboard/Kconfig
+@@ -69,6 +69,7 @@ config KEYBOARD_ATARI
+ config KEYBOARD_ATKBD
+ 	tristate "AT keyboard" if EXPERT || !X86
+ 	default y
++	depends on TTY
+ 	select SERIO
+ 	select SERIO_LIBPS2
+ 	select SERIO_I8042 if X86
+@@ -153,6 +154,7 @@ config KEYBOARD_BFIN
+ 
+ config KEYBOARD_LKKBD
+ 	tristate "DECstation/VAXstation LK201/LK401 keyboard"
++	depends on TTY
+ 	select SERIO
+ 	help
+ 	  Say Y here if you want to use a LK201 or LK401 style serial
+@@ -265,7 +267,7 @@ config KEYBOARD_HIL_OLD
+ 
+ config KEYBOARD_HIL
+ 	tristate "HP HIL keyboard/pointer support"
+-	depends on GSC || HP300
++	depends on (GSC || HP300) && TTY
+ 	default y
+ 	select HP_SDC
+ 	select HIL_MLC
+@@ -374,6 +376,7 @@ config KEYBOARD_IMX
+ 
+ config KEYBOARD_NEWTON
+ 	tristate "Newton keyboard"
++	depends on TTY
+ 	select SERIO
+ 	help
+ 	  Say Y here if you have a Newton keyboard on a serial port.
+@@ -449,6 +452,8 @@ config KEYBOARD_SAMSUNG
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called samsung-keypad.
+ 
++if TTY
++
+ config KEYBOARD_STOWAWAY
+ 	tristate "Stowaway keyboard"
+ 	select SERIO
+@@ -471,6 +476,8 @@ config KEYBOARD_SUNKBD
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called sunkbd.
+ 
++endif # TTY
++
+ config KEYBOARD_SH_KEYSC
+ 	tristate "SuperH KEYSC keypad support"
+ 	depends on SUPERH || ARCH_SHMOBILE
+@@ -560,6 +567,7 @@ config KEYBOARD_TWL4030
+ 
+ config KEYBOARD_XTKBD
+ 	tristate "XT keyboard"
++	depends on TTY
+ 	select SERIO
+ 	help
+ 	  Say Y here if you want to use the old IBM PC/XT keyboard (or
+diff --git a/drivers/input/mouse/Kconfig b/drivers/input/mouse/Kconfig
+index 9c1e6ee..a9628c4 100644
+--- a/drivers/input/mouse/Kconfig
++++ b/drivers/input/mouse/Kconfig
+@@ -14,6 +14,7 @@ if INPUT_MOUSE
+ 
+ config MOUSE_PS2
+ 	tristate "PS/2 mouse"
++	depends on TTY
+ 	default y
+ 	select SERIO
+ 	select SERIO_LIBPS2
+@@ -138,6 +139,7 @@ config MOUSE_PS2_OLPC
+ 
+ config MOUSE_SERIAL
+ 	tristate "Serial mouse"
++	depends on TTY
+ 	select SERIO
+ 	help
+ 	  Say Y here if you have a serial (RS-232, COM port) mouse connected
+@@ -262,6 +264,7 @@ config MOUSE_RISCPC
+ 
+ config MOUSE_VSXXXAA
+ 	tristate "DEC VSXXX-AA/GA mouse and VSXXX-AB tablet"
++	depends on TTY
+ 	select SERIO
+ 	help
+ 	  Say Y (or M) if you want to use a DEC VSXXX-AA (hockey
+diff --git a/drivers/input/serio/Kconfig b/drivers/input/serio/Kconfig
+index 55f2c22..56a6163 100644
+--- a/drivers/input/serio/Kconfig
++++ b/drivers/input/serio/Kconfig
+@@ -4,6 +4,7 @@
+ config SERIO
+ 	tristate "Serial I/O support" if EXPERT || !X86
+ 	default y
++	depends on TTY
+ 	help
+ 	  Say Yes here if you have any input device that uses serial I/O to
+ 	  communicate with the system. This includes the
+diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
+index 4af2a18..533e58f 100644
+--- a/drivers/input/touchscreen/Kconfig
++++ b/drivers/input/touchscreen/Kconfig
+@@ -113,7 +113,7 @@ config TOUCHSCREEN_AUO_PIXCIR
+ 
+ config TOUCHSCREEN_BITSY
+ 	tristate "Compaq iPAQ H3600 (Bitsy) touchscreen"
+-	depends on SA1100_BITSY
++	depends on SA1100_BITSY && TTY
+ 	select SERIO
+ 	help
+ 	  Say Y here if you have the h3600 (Bitsy) touchscreen.
+@@ -157,6 +157,8 @@ config TOUCHSCREEN_DA9034
+ 	  Say Y here to enable the support for the touchscreen found
+ 	  on Dialog Semiconductor DA9034 PMIC.
+ 
++if TTY
++
+ config TOUCHSCREEN_DYNAPRO
+ 	tristate "Dynapro serial touchscreen"
+ 	select SERIO
+@@ -181,6 +183,8 @@ config TOUCHSCREEN_HAMPSHIRE
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called hampshire.
+ 
++endif # TTY
++
+ config TOUCHSCREEN_EETI
+ 	tristate "EETI touchscreen panel support"
+ 	depends on I2C
+@@ -202,6 +206,7 @@ config TOUCHSCREEN_EGALAX
+ 
+ config TOUCHSCREEN_FUJITSU
+ 	tristate "Fujitsu serial touchscreen"
++	depends on TTY
+ 	select SERIO
+ 	help
+ 	  Say Y here if you have the Fujitsu touchscreen (such as one
+@@ -225,6 +230,8 @@ config TOUCHSCREEN_S3C2410
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called s3c2410_ts.
+ 
++if TTY
++
+ config TOUCHSCREEN_GUNZE
+ 	tristate "Gunze AHL-51S touchscreen"
+ 	select SERIO
+@@ -261,6 +268,8 @@ config TOUCHSCREEN_WACOM_W8001
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called wacom_w8001.
+ 
++endif # TTY
++
+ config TOUCHSCREEN_LPC32XX
+ 	tristate "LPC32XX touchscreen controller"
+ 	depends on ARCH_LPC32XX
+@@ -295,6 +304,8 @@ config TOUCHSCREEN_MCS5000
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called mcs5000_ts.
+ 
++if TTY
++
+ config TOUCHSCREEN_MTOUCH
+ 	tristate "MicroTouch serial touchscreens"
+ 	select SERIO
+@@ -319,6 +330,8 @@ config TOUCHSCREEN_INEXIO
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called inexio.
+ 
++endif # TTY
++
+ config TOUCHSCREEN_INTEL_MID
+ 	tristate "Intel MID platform resistive touchscreen"
+ 	depends on INTEL_SCU_IPC
+@@ -376,6 +389,7 @@ config TOUCHSCREEN_HTCPEN
+ 
+ config TOUCHSCREEN_PENMOUNT
+ 	tristate "Penmount serial touchscreen"
++	depends on TTY
+ 	select SERIO
+ 	help
+ 	  Say Y here if you have a Penmount serial touchscreen connected to
+@@ -406,6 +420,8 @@ config TOUCHSCREEN_TNETV107X
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called tnetv107x-ts.
+ 
++if TTY
++
+ config TOUCHSCREEN_TOUCHRIGHT
+ 	tristate "Touchright serial touchscreen"
+ 	select SERIO
+@@ -430,6 +446,8 @@ config TOUCHSCREEN_TOUCHWIN
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called touchwin.
+ 
++endif # TTY
++
+ config TOUCHSCREEN_ATMEL_TSADCC
+ 	tristate "Atmel Touchscreen Interface"
+ 	depends on ARCH_AT91SAM9RL || ARCH_AT91SAM9G45
+@@ -681,6 +699,8 @@ config TOUCHSCREEN_USB_NEXIO
+ 	bool "NEXIO/iNexio device support" if EXPERT
+ 	depends on TOUCHSCREEN_USB_COMPOSITE
+ 
++if TTY
++
+ config TOUCHSCREEN_TOUCHIT213
+ 	tristate "Sahara TouchIT-213 touchscreen"
+ 	select SERIO
+@@ -704,6 +724,8 @@ config TOUCHSCREEN_TSC_SERIO
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called tsc40.
+ 
++endif # TTY
++
+ config TOUCHSCREEN_TSC2005
+         tristate "TSC2005 based touchscreens"
+         depends on SPI_MASTER && GENERIC_HARDIRQS
+diff --git a/drivers/isdn/Kconfig b/drivers/isdn/Kconfig
+index a233ed5..37d50fc 100644
+--- a/drivers/isdn/Kconfig
++++ b/drivers/isdn/Kconfig
+@@ -22,6 +22,7 @@ if ISDN
+ 
+ menuconfig ISDN_I4L
+ 	tristate "Old ISDN4Linux (deprecated)"
++	depends on TTY
+ 	---help---
+ 	  This driver allows you to use an ISDN adapter for networking
+ 	  connections and as dialin/out device.  The isdn-tty's have a built
+diff --git a/drivers/isdn/capi/Kconfig b/drivers/isdn/capi/Kconfig
+index 15c3ffd..f046865 100644
+--- a/drivers/isdn/capi/Kconfig
++++ b/drivers/isdn/capi/Kconfig
+@@ -18,6 +18,7 @@ config CAPI_TRACE
+ 
+ config ISDN_CAPI_MIDDLEWARE
+ 	bool "CAPI2.0 Middleware support"
++	depends on TTY
+ 	help
+ 	  This option will enhance the capabilities of the /dev/capi20
+ 	  interface.  It will provide a means of moving a data connection,
+diff --git a/drivers/isdn/gigaset/Kconfig b/drivers/isdn/gigaset/Kconfig
+index b18a92c..dde5e09 100644
+--- a/drivers/isdn/gigaset/Kconfig
++++ b/drivers/isdn/gigaset/Kconfig
+@@ -1,5 +1,6 @@
+ menuconfig ISDN_DRV_GIGASET
+ 	tristate "Siemens Gigaset support"
++	depends on TTY
+ 	select CRC_CCITT
+ 	select BITREVERSE
+ 	help
+diff --git a/drivers/isdn/hardware/mISDN/Kconfig b/drivers/isdn/hardware/mISDN/Kconfig
+index eadc1cd..b8611e3 100644
+--- a/drivers/isdn/hardware/mISDN/Kconfig
++++ b/drivers/isdn/hardware/mISDN/Kconfig
+@@ -76,6 +76,7 @@ config MISDN_NETJET
+ 	tristate "Support for NETJet cards"
+ 	depends on MISDN
+ 	depends on PCI
++	depends on TTY
+ 	select MISDN_IPAC
+ 	select ISDN_HDLC
+ 	select ISDN_I4L
+diff --git a/drivers/lguest/Kconfig b/drivers/lguest/Kconfig
+index 34ae49d..f9c4314 100644
+--- a/drivers/lguest/Kconfig
++++ b/drivers/lguest/Kconfig
+@@ -1,6 +1,6 @@
+ config LGUEST
+ 	tristate "Linux hypervisor example code"
+-	depends on X86_32 && EXPERIMENTAL && EVENTFD
++	depends on X86_32 && EXPERIMENTAL && EVENTFD && TTY
+ 	select HVC_DRIVER
+ 	---help---
+ 	  This is a very simple module which allows you to run
+diff --git a/drivers/media/radio/wl128x/Kconfig b/drivers/media/radio/wl128x/Kconfig
+index ea1e654..f359be7 100644
+--- a/drivers/media/radio/wl128x/Kconfig
++++ b/drivers/media/radio/wl128x/Kconfig
+@@ -4,7 +4,7 @@
+ menu "Texas Instruments WL128x FM driver (ST based)"
+ config RADIO_WL128X
+ 	tristate "Texas Instruments WL128x FM Radio"
+-	depends on VIDEO_V4L2 && RFKILL && GPIOLIB
++	depends on VIDEO_V4L2 && RFKILL && GPIOLIB && TTY
+ 	select TI_ST if NET
+ 	help
+ 	Choose Y here if you have this FM radio chip.
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index c779509..2cbf17f 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -136,7 +136,7 @@ config PHANTOM
+ 
+ config INTEL_MID_PTI
+ 	tristate "Parallel Trace Interface for MIPI P1149.7 cJTAG standard"
+-	depends on PCI
++	depends on PCI && TTY
+ 	default n
+ 	help
+ 	  The PTI (Parallel Trace Interface) driver directs
+diff --git a/drivers/misc/ti-st/Kconfig b/drivers/misc/ti-st/Kconfig
+index abb5de1..f34dcc5 100644
+--- a/drivers/misc/ti-st/Kconfig
++++ b/drivers/misc/ti-st/Kconfig
+@@ -5,7 +5,7 @@
+ menu "Texas Instruments shared transport line discipline"
+ config TI_ST
+ 	tristate "Shared transport core driver"
+-	depends on NET && GPIOLIB
++	depends on NET && GPIOLIB && TTY
+ 	select FW_LOADER
+ 	help
+ 	  This enables the shared transport core driver for TI
+diff --git a/drivers/mmc/card/Kconfig b/drivers/mmc/card/Kconfig
+index 3b1f783..5562308 100644
+--- a/drivers/mmc/card/Kconfig
++++ b/drivers/mmc/card/Kconfig
+@@ -52,6 +52,7 @@ config MMC_BLOCK_BOUNCE
+ 
+ config SDIO_UART
+ 	tristate "SDIO UART/GPS class support"
++	depends on TTY
+ 	help
+ 	  SDIO function driver for SDIO cards that implements the UART
+ 	  class, as well as the GPS class which appears like a UART.
+diff --git a/drivers/net/caif/Kconfig b/drivers/net/caif/Kconfig
+index abf4d7a..60c2142 100644
+--- a/drivers/net/caif/Kconfig
++++ b/drivers/net/caif/Kconfig
+@@ -6,7 +6,7 @@ comment "CAIF transport drivers"
+ 
+ config CAIF_TTY
+ 	tristate "CAIF TTY transport driver"
+-	depends on CAIF
++	depends on CAIF && TTY
+ 	default n
+ 	---help---
+ 	The CAIF TTY transport driver is a Line Discipline (ldisc)
+diff --git a/drivers/net/can/Kconfig b/drivers/net/can/Kconfig
+index ab45758..739c356 100644
+--- a/drivers/net/can/Kconfig
++++ b/drivers/net/can/Kconfig
+@@ -13,7 +13,7 @@ config CAN_VCAN
+ 
+ config CAN_SLCAN
+ 	tristate "Serial / USB serial CAN Adaptors (slcan)"
+-	depends on CAN
++	depends on CAN && TTY
+ 	---help---
+ 	  CAN driver for several 'low cost' CAN interfaces that are attached
+ 	  via serial lines or via USB-to-serial adapters using the LAWICEL
+diff --git a/drivers/net/hamradio/Kconfig b/drivers/net/hamradio/Kconfig
+index 95dbcfd..bf5e596 100644
+--- a/drivers/net/hamradio/Kconfig
++++ b/drivers/net/hamradio/Kconfig
+@@ -1,6 +1,6 @@
+ config MKISS
+ 	tristate "Serial port KISS driver"
+-	depends on AX25
++	depends on AX25 && TTY
+ 	select CRC16
+ 	---help---
+ 	  KISS is a protocol used for the exchange of data between a computer
+@@ -18,7 +18,7 @@ config MKISS
+ 
+ config 6PACK
+ 	tristate "Serial port 6PACK driver"
+-	depends on AX25
++	depends on AX25 && TTY
+ 	---help---
+ 	  6pack is a transmission protocol for the data exchange between your
+ 	  PC and your TNC (the Terminal Node Controller acts as a kind of
+diff --git a/drivers/net/irda/Kconfig b/drivers/net/irda/Kconfig
+index e535137..34773ed 100644
+--- a/drivers/net/irda/Kconfig
++++ b/drivers/net/irda/Kconfig
+@@ -5,7 +5,7 @@ comment "SIR device drivers"
+ 
+ config IRTTY_SIR
+ 	tristate "IrTTY (uses Linux serial driver)"
+-	depends on IRDA
++	depends on IRDA && TTY
+ 	help
+ 	  Say Y here if you want to build support for the IrTTY line
+ 	  discipline.  To compile it as a module, choose M here: the module
+diff --git a/drivers/net/ppp/Kconfig b/drivers/net/ppp/Kconfig
+index 872df3e..3d9ef4f 100644
+--- a/drivers/net/ppp/Kconfig
++++ b/drivers/net/ppp/Kconfig
+@@ -147,6 +147,7 @@ config PPPOL2TP
+ 	  Support for PPP-over-L2TP socket family. L2TP is a protocol
+ 	  used by ISPs and enterprises to tunnel PPP traffic over UDP
+ 	  tunnels. L2TP is replacing PPTP for VPN uses.
++if TTY
+ 
+ config PPP_ASYNC
+ 	tristate "PPP support for async serial ports"
+@@ -172,4 +173,6 @@ config PPP_SYNC_TTY
+ 
+ 	  To compile this driver as a module, choose M here.
+ 
++endif # TTY
++
+ endif # PPP
+diff --git a/drivers/net/slip/Kconfig b/drivers/net/slip/Kconfig
+index 211b160..48e6871 100644
+--- a/drivers/net/slip/Kconfig
++++ b/drivers/net/slip/Kconfig
+@@ -4,6 +4,7 @@
+ 
+ config SLIP
+ 	tristate "SLIP (serial line) support"
++	depends on TTY
+ 	---help---
+ 	  Say Y if you intend to use SLIP or CSLIP (compressed SLIP) to
+ 	  connect to your Internet service provider or to connect to some
+diff --git a/drivers/net/usb/Kconfig b/drivers/net/usb/Kconfig
+index 2335761..de4e543 100644
+--- a/drivers/net/usb/Kconfig
++++ b/drivers/net/usb/Kconfig
+@@ -400,7 +400,7 @@ config USB_NET_KALMIA
+ 
+ config USB_HSO
+ 	tristate "Option USB High Speed Mobile Devices"
+-	depends on USB && RFKILL
++	depends on USB && RFKILL && TTY
+ 	default n
+ 	help
+ 	  Choose this option if you have an Option HSDPA/HSUPA card.
+@@ -448,7 +448,7 @@ config USB_SIERRA_NET
+ 
+ config USB_VL600
+ 	tristate "LG VL600 modem dongle"
+-	depends on USB_NET_CDCETHER
++	depends on USB_NET_CDCETHER && TTY
+ 	select USB_ACM
+ 	help
+ 	  Select this if you want to use an LG Electronics 4G/LTE usb modem
+diff --git a/drivers/net/wan/Kconfig b/drivers/net/wan/Kconfig
+index 423eb26..636c950 100644
+--- a/drivers/net/wan/Kconfig
++++ b/drivers/net/wan/Kconfig
+@@ -460,7 +460,7 @@ config LAPBETHER
+ 
+ config X25_ASY
+ 	tristate "X.25 async driver (EXPERIMENTAL)"
+-	depends on LAPB && X25
++	depends on LAPB && X25 && TTY
+ 	---help---
+ 	  Send and receive X.25 frames over regular asynchronous serial
+ 	  lines such as telephone lines equipped with ordinary modems.
+diff --git a/drivers/pps/clients/Kconfig b/drivers/pps/clients/Kconfig
+index 445197d..6efd9b6 100644
+--- a/drivers/pps/clients/Kconfig
++++ b/drivers/pps/clients/Kconfig
+@@ -17,7 +17,7 @@ config PPS_CLIENT_KTIMER
+ 
+ config PPS_CLIENT_LDISC
+ 	tristate "PPS line discipline"
+-	depends on PPS
++	depends on PPS && TTY
+ 	help
+ 	  If you say yes here you get support for a PPS source connected
+ 	  with the CD (Carrier Detect) pin of your serial port.
+diff --git a/drivers/tty/Kconfig b/drivers/tty/Kconfig
+index 830cd62..6bf4f49 100644
+--- a/drivers/tty/Kconfig
++++ b/drivers/tty/Kconfig
+@@ -1,3 +1,14 @@
++config TTY
++	bool "Enable TTY" if EXPERT
++	default y
++	---help---
++	  Allows you to remove TTY support which can save space, and
++	  blocks features that require TTY from inclusion in the kernel.
++	  TTY is required for any text terminals or serial port
++	  communication. Most users should leave this enabled.
++
++if TTY
++
+ config VT
+ 	bool "Virtual terminal" if EXPERT
+ 	depends on !S390 && !UML
+@@ -355,6 +366,8 @@ config TRACE_SINK
+ 	  If you select this option, you need to select
+ 	  "Trace data router for MIPI P1149.7 cJTAG standard".
+ 
++endif # TTY
++
+ config PPC_EPAPR_HV_BYTECHAN
+ 	tristate "ePAPR hypervisor byte channel driver"
+ 	depends on PPC
+diff --git a/drivers/tty/Makefile b/drivers/tty/Makefile
+index 2953059..df5663d 100644
+--- a/drivers/tty/Makefile
++++ b/drivers/tty/Makefile
+@@ -1,4 +1,4 @@
+-obj-y				+= tty_io.o n_tty.o tty_ioctl.o tty_ldisc.o \
++obj-$(CONFIG_TTY)		+= tty_io.o n_tty.o tty_ioctl.o tty_ldisc.o \
+ 				   tty_buffer.o tty_port.o tty_mutex.o
+ obj-$(CONFIG_LEGACY_PTYS)	+= pty.o
+ obj-$(CONFIG_UNIX98_PTYS)	+= pty.o
+diff --git a/drivers/tty/hvc/Kconfig b/drivers/tty/hvc/Kconfig
+index 4222035..39ea77b 100644
+--- a/drivers/tty/hvc/Kconfig
++++ b/drivers/tty/hvc/Kconfig
+@@ -1,3 +1,5 @@
++if TTY
++
+ config HVC_DRIVER
+ 	bool
+ 	help
+@@ -117,3 +119,4 @@ config HVCS
+ 	  which will also be compiled when this driver is built as a
+ 	  module.
+ 
++endif # TTY
+diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+index 2de9924..52e95ed 100644
+--- a/drivers/tty/serial/Kconfig
++++ b/drivers/tty/serial/Kconfig
+@@ -2,6 +2,8 @@
+ # Serial device configuration
+ #
+ 
++if TTY
++
+ menu "Serial drivers"
+ 	depends on HAS_IOMEM
+ 
+@@ -1348,3 +1350,5 @@ config SERIAL_AR933X_NR_UARTS
+ 	  to support.
+ 
+ endmenu
++
++endif # TTY
+diff --git a/drivers/usb/class/Kconfig b/drivers/usb/class/Kconfig
+index 2519e32..316aac8 100644
+--- a/drivers/usb/class/Kconfig
++++ b/drivers/usb/class/Kconfig
+@@ -6,7 +6,7 @@ comment "USB Device Class drivers"
+ 
+ config USB_ACM
+ 	tristate "USB Modem (CDC ACM) support"
+-	depends on USB
++	depends on USB && TTY
+ 	---help---
+ 	  This driver supports USB modems and ISDN adapters which support the
+ 	  Communication Device Class Abstract Control Model interface.
+diff --git a/drivers/usb/serial/Kconfig b/drivers/usb/serial/Kconfig
+index 677f577..4a8e075 100644
+--- a/drivers/usb/serial/Kconfig
++++ b/drivers/usb/serial/Kconfig
+@@ -4,7 +4,7 @@
+ 
+ menuconfig USB_SERIAL
+ 	tristate "USB Serial Converter support"
+-	depends on USB
++	depends on USB && TTY
+ 	---help---
+ 	  Say Y here if you have a USB device that provides normal serial
+ 	  ports, or acts like a serial device, and you want to connect it to
+diff --git a/fs/proc/Makefile b/fs/proc/Makefile
+index c1c7293..a634e15 100644
+--- a/fs/proc/Makefile
++++ b/fs/proc/Makefile
+@@ -7,8 +7,8 @@ obj-y   += proc.o
+ proc-y			:= nommu.o task_nommu.o
+ proc-$(CONFIG_MMU)	:= mmu.o task_mmu.o
+ 
+-proc-y       += inode.o root.o base.o generic.o array.o \
+-		proc_tty.o
++proc-y       += inode.o root.o base.o generic.o array.o
++proc-$(CONFIG_TTY)	+= proc_tty.o
+ proc-y	+= cmdline.o
+ proc-y	+= consoles.o
+ proc-y	+= cpuinfo.o
+diff --git a/include/linux/console.h b/include/linux/console.h
+index 7201ce4..84efbf7 100644
+--- a/include/linux/console.h
++++ b/include/linux/console.h
+@@ -151,7 +151,12 @@ extern int is_console_locked(void);
+ extern int braille_register_console(struct console *, int index,
+ 		char *console_options, char *braille_options);
+ extern int braille_unregister_console(struct console *);
++#ifdef CONFIG_TTY
+ extern void console_sysfs_notify(void);
++#else
++static inline void console_sysfs_notify(void)
++{ }
++#endif
+ extern bool console_suspend_enabled;
+ 
+ /* Suspend and resume console messages over PM events */
+diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
+index 85c5073..d82e473 100644
+--- a/include/linux/proc_fs.h
++++ b/include/linux/proc_fs.h
+@@ -123,7 +123,12 @@ extern void pid_ns_release_proc(struct pid_namespace *ns);
+  * proc_tty.c
+  */
+ struct tty_driver;
++#ifdef CONFIG_TTY
+ extern void proc_tty_init(void);
++#else
++static inline void proc_tty_init(void)
++{ }
++#endif
+ extern void proc_tty_register_driver(struct tty_driver *driver);
+ extern void proc_tty_unregister_driver(struct tty_driver *driver);
+ 
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index 5dbb3cb..d042b4d 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -373,11 +373,43 @@ struct tty_file_private {
+ 
+ #define TTY_WRITE_FLUSH(tty) tty_write_flush((tty))
+ 
++#ifdef CONFIG_TTY
++extern void console_init(void);
++extern void tty_kref_put(struct tty_struct *tty);
++extern struct pid *tty_get_pgrp(struct tty_struct *tty);
++extern void tty_vhangup_self(void);
++extern void disassociate_ctty(int priv);
++extern dev_t tty_devnum(struct tty_struct *tty);
++extern void proc_clear_tty(struct task_struct *p);
++extern struct tty_struct *get_current_tty(void);
++/* tty_io.c */
++extern int __init tty_init(void);
++#else
++static inline void console_init(void)
++{ }
++static inline void tty_kref_put(struct tty_struct *tty)
++{ }
++static inline struct pid *tty_get_pgrp(struct tty_struct *tty)
++{ return NULL; }
++static inline void tty_vhangup_self(void)
++{ }
++static inline void disassociate_ctty(int priv)
++{ }
++static inline dev_t tty_devnum(struct tty_struct *tty)
++{ return 0; }
++static inline void proc_clear_tty(struct task_struct *p)
++{ }
++static inline struct tty_struct *get_current_tty(void)
++{ return NULL; }
++/* tty_io.c */
++static inline int __init tty_init(void)
++{ return 0; }
++#endif
++
+ extern void tty_write_flush(struct tty_struct *);
+ 
+ extern struct ktermios tty_std_termios;
+ 
+-extern void console_init(void);
+ extern int vcs_init(void);
+ 
+ extern struct class *tty_class;
+@@ -397,7 +429,6 @@ static inline struct tty_struct *tty_kref_get(struct tty_struct *tty)
+ 		kref_get(&tty->kref);
+ 	return tty;
+ }
+-extern void tty_kref_put(struct tty_struct *tty);
+ 
+ extern int tty_paranoia_check(struct tty_struct *tty, struct inode *inode,
+ 			      const char *routine);
+@@ -426,18 +457,15 @@ extern void tty_driver_remove_tty(struct tty_driver *driver,
+ extern void tty_shutdown(struct tty_struct *tty);
+ extern void tty_free_termios(struct tty_struct *tty);
+ extern int is_current_pgrp_orphaned(void);
+-extern struct pid *tty_get_pgrp(struct tty_struct *tty);
+ extern int is_ignored(int sig);
+ extern int tty_signal(int sig, struct tty_struct *tty);
+ extern void tty_hangup(struct tty_struct *tty);
+ extern void tty_vhangup(struct tty_struct *tty);
+ extern void tty_vhangup_locked(struct tty_struct *tty);
+-extern void tty_vhangup_self(void);
+ extern void tty_unhangup(struct file *filp);
+ extern int tty_hung_up_p(struct file *filp);
+ extern void do_SAK(struct tty_struct *tty);
+ extern void __do_SAK(struct tty_struct *tty);
+-extern void disassociate_ctty(int priv);
+ extern void no_tty(void);
+ extern void tty_flip_buffer_push(struct tty_struct *tty);
+ extern void tty_flush_to_ldisc(struct tty_struct *tty);
+@@ -468,9 +496,6 @@ extern long tty_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
+ extern int tty_mode_ioctl(struct tty_struct *tty, struct file *file,
+ 			unsigned int cmd, unsigned long arg);
+ extern int tty_perform_flush(struct tty_struct *tty, unsigned long arg);
+-extern dev_t tty_devnum(struct tty_struct *tty);
+-extern void proc_clear_tty(struct task_struct *p);
+-extern struct tty_struct *get_current_tty(void);
+ extern void tty_default_fops(struct file_operations *fops);
+ extern struct tty_struct *alloc_tty_struct(void);
+ extern int tty_alloc_file(struct file *file);
+@@ -577,9 +602,6 @@ static inline int tty_audit_push_task(struct task_struct *tsk,
+ }
+ #endif
+ 
+-/* tty_io.c */
+-extern int __init tty_init(void);
+-
+ /* tty_ioctl.c */
+ extern int n_tty_ioctl_helper(struct tty_struct *tty, struct file *file,
+ 		       unsigned int cmd, unsigned long arg);
+diff --git a/lib/Kconfig.kgdb b/lib/Kconfig.kgdb
+index 43cb93f..30894fa 100644
+--- a/lib/Kconfig.kgdb
++++ b/lib/Kconfig.kgdb
+@@ -22,6 +22,7 @@ config KGDB_SERIAL_CONSOLE
+ 	tristate "KGDB: use kgdb over the serial console"
+ 	select CONSOLE_POLL
+ 	select MAGIC_SYSRQ
++	depends on TTY
+ 	default y
+ 	help
+ 	  Share a serial console with kgdb. Sysrq-g must be used
+diff --git a/net/bluetooth/rfcomm/Kconfig b/net/bluetooth/rfcomm/Kconfig
+index 22e718b..18d352e 100644
+--- a/net/bluetooth/rfcomm/Kconfig
++++ b/net/bluetooth/rfcomm/Kconfig
+@@ -12,6 +12,7 @@ config BT_RFCOMM
+ config BT_RFCOMM_TTY
+ 	bool "RFCOMM TTY support"
+ 	depends on BT_RFCOMM
++	depends on TTY
+ 	help
+ 	  This option enables TTY emulation support for RFCOMM channels.
+ 
+diff --git a/net/irda/ircomm/Kconfig b/net/irda/ircomm/Kconfig
+index 2d4c6b4..19492c1 100644
+--- a/net/irda/ircomm/Kconfig
++++ b/net/irda/ircomm/Kconfig
+@@ -1,6 +1,6 @@
+ config IRCOMM
+ 	tristate "IrCOMM protocol"
+-	depends on IRDA
++	depends on IRDA && TTY
+ 	help
+ 	  Say Y here if you want to build support for the IrCOMM protocol.
+ 	  To compile it as modules, choose M here: the modules will be
+diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
+index 7c205e7..125587a1 100644
+--- a/sound/soc/codecs/Kconfig
++++ b/sound/soc/codecs/Kconfig
+@@ -32,7 +32,7 @@ config SND_SOC_ALL_CODECS
+ 	select SND_SOC_CS42L73 if I2C
+ 	select SND_SOC_CS4270 if I2C
+ 	select SND_SOC_CS4271 if SND_SOC_I2C_AND_SPI
+-	select SND_SOC_CX20442
++	select SND_SOC_CX20442 if TTY
+ 	select SND_SOC_DA7210 if I2C
+ 	select SND_SOC_DFBMCS320
+ 	select SND_SOC_JZ4740_CODEC
+@@ -199,6 +199,7 @@ config SND_SOC_CS4271
+ 
+ config SND_SOC_CX20442
+ 	tristate
++	depends on TTY
+ 
+ config SND_SOC_JZ4740_CODEC
+ 	tristate
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.9.5
+
