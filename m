@@ -1,81 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756248Ab2ICJWb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 05:22:31 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:40647 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756191Ab2ICJW3 (ORCPT
+	id S1756243Ab2ICJYU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 05:24:20 -0400
+Received: from smtp-vbr12.xs4all.nl ([194.109.24.32]:3760 "EHLO
+	smtp-vbr12.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755574Ab2ICJYS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 05:22:29 -0400
+	Mon, 3 Sep 2012 05:24:18 -0400
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Prabhakar Lad <prabhakar.lad@ti.com>
+Subject: Re: [PATCH] media: v4l2-ctrls: add control for test pattern
+Date: Mon, 3 Sep 2012 11:22:17 +0200
+User-Agent: KMail/1.13.7 (Linux/3.6.0-rc3-durdane; KDE/4.8.4; x86_64; ; )
+Cc: LMML <linux-media@vger.kernel.org>,
+        dlos <davinci-linux-open-source@linux.davincidsp.com>,
+        linux-kernel@vger.kernel.org, Manjunath Hadli <manjunath.hadli@ti.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-doc@vger.kernel.org, Sakari Ailus <sakari.ailus@iki.fi>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Rob Landley <rob@landley.net>, HeungJun Kim <riverful.kim@samsung.com>
+References: <1346663777-23149-1-git-send-email-prabhakar.lad@ti.com>
+In-Reply-To: <1346663777-23149-1-git-send-email-prabhakar.lad@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <20120831122323.GC5962@gmail.com>
-References: <1345734087-21803-1-git-send-email-lee.jones@linaro.org>
-	<1345734087-21803-3-git-send-email-lee.jones@linaro.org>
-	<20120831112258.GA2624@pengutronix.de>
-	<20120831122323.GC5962@gmail.com>
-Date: Mon, 3 Sep 2012 11:22:28 +0200
-Message-ID: <CACRpkdZ=C1EV4WO2b=1YLHPNhsDsQdq7Kfnpzm8i7uGRtVjJuQ@mail.gmail.com>
-Subject: Re: [PATCH 3/3] i2c: nomadik: Add Device Tree support to the Nomadik
- I2C driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Wolfram Sang <w.sang@pengutronix.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
-        linus.walleij@stericsson.com, arnd@arndb.de, linux-i2c@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209031122.17568.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 31, 2012 at 2:23 PM, Lee Jones <lee.jones@linaro.org> wrote:
+On Mon September 3 2012 11:16:17 Prabhakar Lad wrote:
+> From: Lad, Prabhakar <prabhakar.lad@ti.com>
+> 
+> add V4L2_CID_TEST_PATTERN of type menu, which determines
+> the internal test pattern selected by the device.
+> 
+> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+> Cc: Sakari Ailus <sakari.ailus@iki.fi>
+> Cc: Hans Verkuil <hans.verkuil@cisco.com>
+> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> Cc: Hans de Goede <hdegoede@redhat.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Rob Landley <rob@landley.net>
+> Cc: HeungJun Kim <riverful.kim@samsung.com>
+> Cc: Rob Landley <rob@landley.net>
+> ---
+>  This patches has one checkpatch warning for line over
+>  80 characters altough it can be avoided I have kept it
+>  for consistency.
+> 
+>  Documentation/DocBook/media/v4l/controls.xml |   52 ++++++++++++++++++++++++++
+>  drivers/media/v4l2-core/v4l2-ctrls.c         |   16 ++++++++
+>  include/linux/videodev2.h                    |   12 ++++++
+>  3 files changed, 80 insertions(+), 0 deletions(-)
+> 
+> diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
+> index f704218..06f16e7 100644
+> --- a/Documentation/DocBook/media/v4l/controls.xml
+> +++ b/Documentation/DocBook/media/v4l/controls.xml
+> @@ -4313,6 +4313,58 @@ interface and may change in the future.</para>
+>  	      </tbody>
+>  	    </entrytbl>
+>  	  </row>
+> +	  <row>
+> +	    <entry spanname="id"><constant>V4L2_CID_TEST_PATTERN</constant></entry>
+> +	    <entry>menu</entry>
+> +	  </row>
+> +	  <row id="v4l2-test-pattern">
+> +	    <entry spanname="descr"> The capture devices/sensors have the capability to
 
-(...)
->  static int nmk_i2c_probe(struct amba_device *adev, const struct amba_id *id)
->  {
->         int ret = 0;
->         struct nmk_i2c_controller *pdata = adev->dev.platform_data;
-> +       struct device_node *np = adev->dev.of_node;
->         struct nmk_i2c_dev      *dev;
->         struct i2c_adapter *adap;
->
-> +       if (np) {
-> +               if (!pdata) {
+Test patterns are also applicable to output devices, not just capture and sensor devices.
 
-So, if no pdata is provided, we go on to allocate some ...
+> +	    generate internal test patterns. This test patterns are used to test a device
+> +	    is properly working and can generate the desired waveforms that it supports.
+> +	    </entry>
+> +	  </row>
+> +	  <row>
+> +	    <entrytbl spanname="descr" cols="2">
+> +	      <tbody valign="top">
+> +	        <row>
+> +	         <entry><constant>V4L2_TEST_PATTERN_DISABLED</constant></entry>
+> +	          <entry>Test pattern generation is disabled</entry>
+> +	        </row>
+> +	        <row>
+> +	          <entry><constant>V4L2_TEST_PATTERN_VERTICAL_LINES</constant></entry>
+> +	          <entry>Generate vertical lines as test pattern</entry>
+> +	        </row>
+> +	        <row>
+> +	          <entry><constant>V4L2_TEST_PATTERN_HORIZONTAL_LINES</constant></entry>
+> +	          <entry>Generate horizontal lines as test pattern</entry>
+> +	        </row>
+> +	        <row>
+> +	          <entry><constant>V4L2_TEST_PATTERN_DIAGONAL_LINES</constant></entry>
+> +	          <entry>Generate diagonal lines as test pattern</entry>
+> +	        </row>
+> +	        <row>
+> +	          <entry><constant>V4L2_TEST_PATTERN_SOLID_BLACK</constant></entry>
+> +	          <entry>Generate solid black color as test pattern</entry>
+> +	        </row>
+> +	        <row>
+> +	          <entry><constant>V4L2_TEST_PATTERN_SOLID_WHITE</constant></entry>
+> +	          <entry>Generate solid white color as test pattern</entry>
+> +	        </row>
+> +	        <row>
+> +	          <entry><constant>V4L2_TEST_PATTERN_SOLID_BLUE</constant></entry>
+> +	          <entry>Generate solid blue color as test pattern</entry>
+> +	        </row>
+> +	        <row>
+> +	          <entry><constant>V4L2_TEST_PATTERN_SOLID_RED</constant></entry>
+> +	          <entry>Generate solid red color as test pattern</entry>
+> +	        </row>
 
-> +                       pdata = devm_kzalloc(&adev->dev, sizeof(*pdata), GFP_KERNEL);
-> +                       if (!pdata) {
-> +                               ret = -ENOMEM;
-> +                               goto err_no_mem;
-> +                       }
-> +               }
-> +               /* Provide the default configuration as a base. */
-> +               pdata = &u8500_i2c;
+Just wondering: is there no SOLID_GREEN available with this sensor?
 
-Then you just override that pointer with a pointer to the local config.
+Regards,
 
-> +               nmk_i2c_of_probe(np, pdata);
-> +       }
-> +
->         if (!pdata)
->                 /* No i2c configuration found, using the default. */
->                 pdata = &u8500_i2c;
+	Hans
 
-This in it's entirety does not look sound. I *think* this is what you
-want to do,
-replace all of the above codde (including the last if (!pdata) clause) with:
-
-if (!pdata) {
-    /* If no platform data passed in, use the default configuration as
-a base. */
-    pdata = &u8500_i2c;
-    if (np)
-        /* Further, if we have a DT node, override the default with this */
-        nmk_i2c_of_probe(np, pdata);
-}
-
-This makes any passed pdata take precedence, else default pdata
-complemented with DT info. Which is what we want.
-
-Yours,
-Linus Walleij
+> +	        <row>
+> +	          <entry><constant>V4L2_TEST_PATTERN_CHECKER_BOARD</constant></entry>
+> +	          <entry>Generate a checker board as test pattern</entry>
+> +	        </row>
+> +	      </tbody>
+> +	    </entrytbl>
+> +	  </row>
+>  	<row><entry></entry></row>
+>  	</tbody>
+>        </tgroup>
+> diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
+> index 2d7bc15..ae709d1 100644
+> --- a/drivers/media/v4l2-core/v4l2-ctrls.c
+> +++ b/drivers/media/v4l2-core/v4l2-ctrls.c
+> @@ -430,6 +430,18 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
+>  		"Advanced Predictor",
+>  		NULL,
+>  	};
+> +	static const char * const test_pattern[] = {
+> +		"Test Pattern Disabled",
+> +		"Vertical Lines",
+> +		"Horizontal Lines",
+> +		"Diagonal Lines",
+> +		"Solid Black",
+> +		"Solid White",
+> +		"Solid Blue",
+> +		"Solid Red",
+> +		"Checker Board",
+> +		NULL,
+> +	};
+>  
+>  	switch (id) {
+>  	case V4L2_CID_MPEG_AUDIO_SAMPLING_FREQ:
+> @@ -509,6 +521,8 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
+>  		return jpeg_chroma_subsampling;
+>  	case V4L2_CID_DPCM_PREDICTOR:
+>  		return dpcm_predictor;
+> +	case V4L2_CID_TEST_PATTERN:
+> +		return test_pattern;
+>  
+>  	default:
+>  		return NULL;
+> @@ -740,6 +754,7 @@ const char *v4l2_ctrl_get_name(u32 id)
+>  	case V4L2_CID_LINK_FREQ:		return "Link Frequency";
+>  	case V4L2_CID_PIXEL_RATE:		return "Pixel Rate";
+>  	case V4L2_CID_DPCM_PREDICTOR:		return "DPCM Predictor";
+> +	case V4L2_CID_TEST_PATTERN:		return "Test Pattern";
+>  
+>  	default:
+>  		return NULL;
+> @@ -841,6 +856,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
+>  	case V4L2_CID_EXPOSURE_METERING:
+>  	case V4L2_CID_SCENE_MODE:
+>  	case V4L2_CID_DPCM_PREDICTOR:
+> +	case V4L2_CID_TEST_PATTERN:
+>  		*type = V4L2_CTRL_TYPE_MENU;
+>  		break;
+>  	case V4L2_CID_LINK_FREQ:
+> diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
+> index ca9fb78..1796079 100644
+> --- a/include/linux/videodev2.h
+> +++ b/include/linux/videodev2.h
+> @@ -2005,6 +2005,18 @@ enum v4l2_dpcm_predictor {
+>  	V4L2_DPCM_PREDICTOR_SIMPLE	= 0,
+>  	V4L2_DPCM_PREDICTOR_ADVANCED	= 1,
+>  };
+> +#define V4L2_CID_TEST_PATTERN			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 4)
+> +enum v4l2_test_pattern {
+> +	V4L2_TEST_PATTERN_DISABLED		= 0,
+> +	V4L2_TEST_PATTERN_VERTICAL_LINES	= 1,
+> +	V4L2_TEST_PATTERN_HORIZONTAL_LINES	= 2,
+> +	V4L2_TEST_PATTERN_DIAGONAL_LINES	= 3,
+> +	V4L2_TEST_PATTERN_SOLID_BLACK		= 4,
+> +	V4L2_TEST_PATTERN_SOLID_WHITE		= 5,
+> +	V4L2_TEST_PATTERN_SOLID_BLUE		= 6,
+> +	V4L2_TEST_PATTERN_SOLID_RED		= 7,
+> +	V4L2_TEST_PATTERN_CHECKER_BOARD		= 8,
+> +};
+>  
+>  /*
+>   *	T U N I N G
+> 
