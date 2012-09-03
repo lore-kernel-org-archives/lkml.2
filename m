@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756534Ab2ICSuc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 14:50:32 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:44180 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753535Ab2ICSua (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 14:50:30 -0400
-Date: Mon, 3 Sep 2012 20:50:30 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: bprakash@broadcom.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Fix incorrect memset in bnx2fc_parse_fcp_rsp
-Message-ID: <20120903185030.GV16230@one.firstfloor.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+	id S1756537Ab2ICSwx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 14:52:53 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:4789 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754370Ab2ICSww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 14:52:52 -0400
+X-IronPort-AV: E=Sophos;i="4.80,361,1344236400"; 
+   d="scan'208";a="685271462"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Andi Kleen <andi@firstfloor.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Fix memset in NFS zap caches
+Thread-Topic: [PATCH] Fix memset in NFS zap caches
+Thread-Index: AQHNigLiTnmJlQHzNUyblrA1JsIXkpd5aCAAgAACXACAAAF2AA==
+Date: Mon, 3 Sep 2012 18:52:49 +0000
+Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA908F81B7D@SACEXCMBX04-PRD.hq.netapp.com>
+References: <20120903183515.GT16230@one.firstfloor.org>
+	 <4FA345DA4F4AE44899BD2B03EEEC2FA908F81A8E@SACEXCMBX04-PRD.hq.netapp.com>
+	 <20120903184734.GU16230@one.firstfloor.org>
+In-Reply-To: <20120903184734.GU16230@one.firstfloor.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <C70131D1AEB6474C8E11537A3F1D2291@tahoe.netapp.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q83IqviF007639
 
-gcc 4.8 warns because the memset only clears sizeof(char *) bytes, not
-the whole buffer. Use the correct buffer size and clear the whole sense
-buffer.
+On Mon, 2012-09-03 at 20:47 +0200, Andi Kleen wrote:
+> > No, this is a gcc bug.
+> > 
+> > NFS_COOKIEVERF(inode) resolves to an array, so the current code is
+> > correct. The above change will cause the 2nd half of the array to remain
+> > uninitialised...
+> 
+> Are you sure?
+> 
+> include/linux/nfs_fs.h:268:static inline __be32 *NFS_COOKIEVERF(const struct inode *inode)
+> 
+> That doesn't look like an array type to me. 
 
-/backup/lsrc/git/linux-lto-2.6/drivers/scsi/bnx2fc/bnx2fc_io.c: In
-function 'bnx2fc_parse_fcp_rsp':
-/backup/lsrc/git/linux-lto-2.6/drivers/scsi/bnx2fc/bnx2fc_io.c:1810:41:
-warning: argument to 'sizeof' in 'memset' call is the same expression as
-the destination; did you mean to provide an explicit length?
-[-Wsizeof-pointer-memaccess]
-   memset(sc_cmd->sense_buffer, 0, sizeof(sc_cmd->sense_buffer));
-                                         ^
+Argh... It used to be a #define, but got converted in the commit
+99fadcd7646 static inline blitz...
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+OK, let's just get rid of the NFS_COOKIEVERF thing altogether. At this
+point it is clearly just obfuscating the code.
 
-
-
-diff --git a/drivers/scsi/bnx2fc/bnx2fc_io.c b/drivers/scsi/bnx2fc/bnx2fc_io.c
-index 73f231c..8d4626c 100644
---- a/drivers/scsi/bnx2fc/bnx2fc_io.c
-+++ b/drivers/scsi/bnx2fc/bnx2fc_io.c
-@@ -1807,7 +1807,7 @@ static void bnx2fc_parse_fcp_rsp(struct bnx2fc_cmd *io_req,
- 			fcp_sns_len = SCSI_SENSE_BUFFERSIZE;
- 		}
- 
--		memset(sc_cmd->sense_buffer, 0, sizeof(sc_cmd->sense_buffer));
-+		memset(sc_cmd->sense_buffer, 0, SCSI_SENSE_BUFFERSIZE);
- 		if (fcp_sns_len)
- 			memcpy(sc_cmd->sense_buffer, rq_data, fcp_sns_len);
- 
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
