@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755627Ab2ICIGu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 04:06:50 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:37955 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755065Ab2ICIGr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 04:06:47 -0400
-X-IronPort-AV: E=Sophos;i="4.80,359,1344182400"; 
-   d="scan'208";a="5773057"
-Message-ID: <5044665C.5020909@cn.fujitsu.com>
-Date: Mon, 03 Sep 2012 16:12:12 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1755845Ab2ICILj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 04:11:39 -0400
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:38591 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755492Ab2ICILg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 04:11:36 -0400
+Message-ID: <5044664C.5010508@ti.com>
+Date: Mon, 03 Sep 2012 11:11:56 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120723 Thunderbird/14.0
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        x86@kernel.org, linux-pm@vger.kernel.org
-CC: len.brown@intel.com, pavel@ucw.cz, rjw@sisk.pl, tglx@linutronix.de,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, rusty@rustcorp.com.au,
-        bhelgaas@google.com, David Rientjes <rientjes@google.c>
-Subject: [PATCH 2/2] numa: don't check if node is NUMA_NO_NODE
-References: <504457C8.10209@cn.fujitsu.com>
-In-Reply-To: <504457C8.10209@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/03 16:06:17,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/03 16:06:26,
-	Serialize complete at 2012/09/03 16:06:26
-Content-Transfer-Encoding: 7bit
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Samuel Ortiz <sameo@linux.intel.com>, NeilBrown <neilb@suse.de>,
+        Benoit Cousson <b-cousson@ti.com>, Felipe Balbi <balbi@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] mfd: twl: Move PWM driver to PWM framework
+References: <1346582458-7890-1-git-send-email-thierry.reding@avionic-design.de>
+In-Reply-To: <1346582458-7890-1-git-send-email-thierry.reding@avionic-design.de>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we don't debug per_cpu maps, the cpu's node is stored in per_cpu variable
-numa_node. If node is NUMA_NO_NODE, it means the caller want to clear the
-cpu's node. So we should also call set_cpu_numa_node() in this case.
+Hi,
 
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
----
- arch/x86/mm/numa.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+On 09/02/2012 01:40 PM, Thierry Reding wrote:
+> Hi,
+> 
+> This mini series replaces the twl_has_*() macros by the equivalent
+> standard IS_ENABLED() macro and moves the PWM driver to the PWM
+> framework.
+> 
+> I'll take the second patch through the PWM tree but would like to have
+> some Acked-bys from people that know and have the hardware and can
+> verify that I haven't broken anything.
 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 2d125be..21d02f0 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -97,8 +97,7 @@ void __cpuinit numa_set_node(int cpu, int node)
- #endif
- 	per_cpu(x86_cpu_to_node_map, cpu) = node;
- 
--	if (node != NUMA_NO_NODE)
--		set_cpu_numa_node(cpu, node);
-+	set_cpu_numa_node(cpu, node);
- }
- 
- void __cpuinit numa_clear_node(int cpu)
+All looks good for me but I have one comment for patch 2.
+
+> 
+> Thierry
+> 
+> Thierry Reding (2):
+>   mfd: twl: Replace twl_has_*() macros by IS_ENABLED()
+>   pwm: Move TWL6030 PWM driver to PWM framework
+> 
+>  drivers/mfd/Kconfig       |  10 ---
+>  drivers/mfd/Makefile      |   1 -
+>  drivers/mfd/twl-core.c    | 124 ++++++++-----------------------
+>  drivers/mfd/twl6030-pwm.c | 165 -----------------------------------------
+>  drivers/pwm/Kconfig       |   9 +++
+>  drivers/pwm/Makefile      |   1 +
+>  drivers/pwm/pwm-twl6030.c | 184 ++++++++++++++++++++++++++++++++++++++++++++++
+>  7 files changed, 226 insertions(+), 268 deletions(-)
+>  delete mode 100644 drivers/mfd/twl6030-pwm.c
+>  create mode 100644 drivers/pwm/pwm-twl6030.c
+> 
+
+
 -- 
-1.7.1
-
+Péter
