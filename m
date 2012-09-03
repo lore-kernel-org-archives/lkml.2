@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756279Ab2ICK5h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 06:57:37 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:61078 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752327Ab2ICK5g (ORCPT
+	id S1756288Ab2ICLAO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 07:00:14 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:43881 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756229Ab2ICLAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 06:57:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <1346669179-21024-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1346669179-21024-1-git-send-email-andriy.shevchenko@linux.intel.com>
-Date: Mon, 3 Sep 2012 16:27:35 +0530
-X-Google-Sender-Auth: g8D3w2eWS1odpF4dopFn7-37e-o
-Message-ID: <CAOh2x=nrmQafH72rSE5m0ny1pU435z0Hkghpj1r=Tw3-O1-94g@mail.gmail.com>
-Subject: Re: [PATCH] dw_dmac: utilize slave_id to pass request line
-From: viresh kumar <viresh.kumar@linaro.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        spear-devel <spear-devel@list.st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 3 Sep 2012 07:00:12 -0400
+From: Jan Luebbe <jlu@pengutronix.de>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: linux-kernel@vger.kernel.org, Jan Luebbe <jlu@pengutronix.de>
+Subject: [PATCH] lib/dma-debug: check for vmalloc buffers used with the DMA-API
+Date: Mon,  3 Sep 2012 13:00:04 +0200
+Message-Id: <1346670004-10248-1-git-send-email-jlu@pengutronix.de>
+X-Mailer: git-send-email 1.7.10.4
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:219:99ff:fe56:8d7
+X-SA-Exim-Mail-From: jlu@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 3, 2012 at 4:16 PM, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
-> There is slave_id field in the generic slave config structure that is dedicated
-> for the uniq slave number. In our case we have the request lines wired to the
-> certain hardware. Therefore the number of the request line is uniq and could be
-> used as slave_id. It allows us in some cases to drop out the usage of the
-> custom slave config structure.
->
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> ---
->  drivers/dma/dw_dmac.c |    5 +++++
->  1 file changed, 5 insertions(+)
->
-> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-> index f0c9403..7a67673 100644
-> --- a/drivers/dma/dw_dmac.c
-> +++ b/drivers/dma/dw_dmac.c
-> @@ -187,6 +187,11 @@ static void dwc_initialize(struct dw_dma_chan *dwc)
->
->                 cfghi = dws->cfg_hi;
->                 cfglo |= dws->cfg_lo & ~DWC_CFGL_CH_PRIOR_MASK;
-> +       } else {
-> +               if (dwc->dma_sconfig.direction == DMA_MEM_TO_DEV)
-> +                       cfghi = DWC_CFGH_DST_PER(dwc->dma_sconfig.slave_id);
-> +               else if (dwc->dma_sconfig.direction == DMA_DEV_TO_MEM)
-> +                       cfghi = DWC_CFGH_SRC_PER(dwc->dma_sconfig.slave_id);
->         }
->
->         channel_writel(dwc, CFG_LO, cfglo);
+Signed-off-by: Jan Luebbe <jlu@pengutronix.de>
+---
+I'm not sure why we don't check for high memory, is there any problem
+with this approach?
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+ lib/dma-debug.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/lib/dma-debug.c b/lib/dma-debug.c
+index 66ce414..7d60ff0 100644
+--- a/lib/dma-debug.c
++++ b/lib/dma-debug.c
+@@ -944,6 +944,9 @@ static void check_for_illegal_area(struct device *dev, void *addr, unsigned long
+ 	if (overlap(addr, len, _text, _etext) ||
+ 	    overlap(addr, len, __start_rodata, __end_rodata))
+ 		err_printk(dev, NULL, "DMA-API: device driver maps memory from kernel text or rodata [addr=%p] [len=%lu]\n", addr, len);
++	if (is_vmalloc_or_module_addr(addr) ||
++	    is_vmalloc_or_module_addr(addr+len))
++		err_printk(dev, NULL, "DMA-API: device driver maps memory from vmalloc or module address range [addr=%p] [len=%lu]\n", addr, len);
+ }
+ 
+ static void check_sync(struct device *dev,
+-- 
+1.7.10.4
+
