@@ -1,148 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756561Ab2ICRIO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 13:08:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39020 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753273Ab2ICRIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 13:08:12 -0400
-Date: Mon, 3 Sep 2012 19:08:06 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
-        Dave Jones <davej@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH v2] memcg: first step towards hierarchical controller
-Message-ID: <20120903170806.GA21682@dhcp22.suse.cz>
-References: <1346687211-31848-1-git-send-email-glommer@parallels.com>
+	id S1756574Ab2ICRYz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 13:24:55 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33308 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753273Ab2ICRYx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 13:24:53 -0400
+X-Sasl-enc: u+TSfFWrXs4CfsOr8K5lo2W5oG83aOL8IBoplbz/sDUm 1346693092
+Date: Mon, 3 Sep 2012 14:24:41 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
+Subject: Re: rcu_bh stalls on 3.2.28
+Message-ID: <20120903172441.GA19614@khazad-dum.debian.net>
+References: <1345467862.22400.139.camel@deadeye.wl.decadent.org.uk>
+ <20120831230256.GA7016@khazad-dum.debian.net>
+ <50444897.6070803@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1346687211-31848-1-git-send-email-glommer@parallels.com>
+In-Reply-To: <50444897.6070803@linux.vnet.ibm.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 03-09-12 19:46:51, Glauber Costa wrote:
-> Here is a new attempt to lay down a path that will allow us to deprecate
-> the non-hierarchical mode of operation from memcg.  Unlike what I posted
-> before, I am making this behavior conditional on a Kconfig option.
-> Vanilla users will see no change in behavior unless they don't
-> explicitly set this option to on.
+On Mon, 03 Sep 2012, Michael Wang wrote:
+> On 09/01/2012 07:02 AM, Henrique de Moraes Holschuh wrote:
+> > Just got one of these:
+> > 
+> > kernel: INFO: rcu_bh detected stall on CPU 2 (t=0 jiffies)
+> > kernel: Pid: 0, comm: swapper/2 Not tainted 3.2.28+ #2
+> > kernel: Call Trace:
+> > kernel: <IRQ>  [<ffffffff810d1609>] __rcu_pending+0x159/0x400
+> > kernel: [<ffffffff810d20bb>] rcu_check_callbacks+0x9b/0x120
+> > kernel: [<ffffffff81089673>] update_process_times+0x43/0x80
+> > kernel: [<ffffffff810a836f>] tick_sched_timer+0x5f/0xb0
+> > kernel: [<ffffffff8109c097>] __run_hrtimer.isra.30+0x57/0x100
+> > kernel: [<ffffffff8109c8f5>] hrtimer_interrupt+0xe5/0x220
+> > kernel: [<ffffffff8104ce14>] smp_apic_timer_interrupt+0x64/0xa0
+> > kernel: [<ffffffff8159b5cb>] apic_timer_interrupt+0x6b/0x70
+> > kernel: <EOI>  [<ffffffff81315645>] ? intel_idle+0xe5/0x140
+> > kernel: [<ffffffff81315623>] ? intel_idle+0xc3/0x140
+> > kernel: [<ffffffff814420ee>] cpuidle_idle_call+0x8e/0xf0
+> > kernel: [<ffffffff81032425>] cpu_idle+0xa5/0x110
+> > kernel: [<ffffffff8158a9ac>] start_secondary+0x1e5/0x1ec
+> 
+> Hi, Henrique
+> 
+> rsp->gp_start and rsp->jiffies_stall should already set before we start
+> check stall for this gp, but the INFO show that we have a current
+> jiffies which bigger then rsp->jiffies_stall but equal to rsp->gp_start,
+> really strange...
+> 
+> Could you please have a try on the latest kernel and confirm whether
+> this issue still exist?
 
-Which is the reason why I don't like this approach. Why would you enable
-the option in the first place? If you know the default should be 1 then
-you would already do that via cgconfig or directly, right?
-I think we should either change the default (which I am planning to do
-for the next OpenSUSE) or do it slow way suggested by Tejun.
-We really want to have as big testing coverage as possible for the
-default change and config option is IMHO not a way to accomplish this.
+It is a production box, it is difficult to run a -rc kernel there.
 
-> Distributions, however, are encouraged to set it.  
+And the stalls are very rare, too.  That's the only one I got, so at this
+point I cannot tell you whether something fixed the problem or not, just try
+to give you clues if a stall does happen.
 
-As I said, I plan to change the default with WARN_ONCE for both first
-cgroup created and default changed. It would be nice if other
-distributions could do the same but this might be tricky as nobody wants
-to regress and there are certain usecases which could really suffer
-(most of them fixable easily but there still might be some where
-use_hierarchy=0 is valid).
+> BTW:
+> 	Is this stall info comes from a virtual machine?
 
-> In that case, hierarchy will still be there. We'll just default to
-> true in the root cgroup, and print a warning once if you try to set it
-> back to 0.
-> 
-> After a grace period, we should be able to gauge if anyone actually
-> relies on it and get rid of the hierarchy file, or at least of its
-> behavior.
-> 
-> [ v2: make it dependent on a Kconfig option ]
-> 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: Dave Jones <davej@redhat.com>
-> CC: Ben Hutchings <ben@decadent.org.uk>
-> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> CC: Paul Turner <pjt@google.com>
-> CC: Lennart Poettering <lennart@poettering.net>
-> CC: Kay Sievers <kay.sievers@vrfy.org>
-> CC: Michal Hocko <mhocko@suse.cz>
-> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> CC: Johannes Weiner <hannes@cmpxchg.org>
-> CC: Tejun Heo <tj@kernel.org>
-> ---
->  init/Kconfig    | 18 ++++++++++++++++++
->  mm/memcontrol.c |  9 +++++++++
->  2 files changed, 27 insertions(+)
-> 
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 707d015..f64f888 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -726,6 +726,24 @@ config MEMCG_SWAP
->  	  if boot option "swapaccount=0" is set, swap will not be accounted.
->  	  Now, memory usage of swap_cgroup is 2 bytes per entry. If swap page
->  	  size is 4096bytes, 512k per 1Gbytes of swap.
-> +
-> +config MEMCG_HIERARCHY_DEFAULT
-> +	bool "Hierarchical memcg"
-> +	depends on MEMCG
-> +	default n
-> +	help
-> +	  The memory controller has two modes of accounting: hierarchical and
-> +	  flat. Hierarchical accounting will charge pages all the way towards a
-> +	  group's parent while flat hierarchy will threat all groups as children
-> +	  of the root memcg, regardless of their positioning in the tree.
-> +
-> +	  Use of flat hierarchies is highly discouraged, but has been the
-> +	  default for performance reasons for quite some time. Setting this flag
-> +	  to on will make hierarchical accounting the default. It is still
-> +	  possible to set it back to flat by writing 0 to the file
-> +	  memory.use_hierarchy, albeit discouraged. Distributors are encouraged
-> +	  to set this option.
-> +
->  config MEMCG_SWAP_ENABLED
->  	bool "Memory Resource Controller Swap Extension enabled by default"
->  	depends on MEMCG_SWAP
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 61831c33..ab79746 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -4073,6 +4073,12 @@ static int mem_cgroup_hierarchy_write(struct cgroup *cont, struct cftype *cft,
->  	if (memcg->use_hierarchy == val)
->  		goto out;
->  
-> +#ifdef CONFIG_MEMCG_HIERARCHY_DEFAULT
-> +	WARN_ONCE((!parent_memcg && memcg->use_hierarchy && val == false),
-> +	"Setting this file to 0 (flat hierarchy) is considered deprecated.\n"
-> +	"If you believe you have a valid use case for that, we kindly ask you to contact linux-mm@kvack.org and let us know");
-> +#endif
-> +
->  	/*
->  	 * If parent's use_hierarchy is set, we can't make any modifications
->  	 * in the child subtrees. If it is unset, then the change can
-> @@ -5325,6 +5331,9 @@ mem_cgroup_create(struct cgroup *cont)
->  			INIT_WORK(&stock->work, drain_local_stock);
->  		}
->  		hotcpu_notifier(memcg_cpu_hotplug_callback, 0);
-> +#ifdef CONFIG_MEMCG_HIERARCHY_DEFAULT
-> +		memcg->use_hierarchy = true;
-> +#endif
->  	} else {
->  		parent = mem_cgroup_from_cont(cont->parent);
->  		memcg->use_hierarchy = parent->use_hierarchy;
-> -- 
-> 1.7.11.4
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+No, it runs on baremetal.  The box has one Xeon X5550 processor, 4 cores, 8
+threads, and it is allowed to go into C1, C3 and C6 (which it does very very
+often).
+
+It might be some sort of race related to SMIs?  The worst-case SMM-induced
+delay on this box is quite high (I don't recall if that means 150ms or
+150us), as measured by the Intel BITS[1].
+
+[1] http://biosbits.org/
 
 -- 
-Michal Hocko
-SUSE Labs
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
