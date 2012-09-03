@@ -1,209 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756236Ab2ICJiX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 05:38:23 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:36203 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755974Ab2ICJiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 05:38:12 -0400
-Message-ID: <50447A5C.8040401@ti.com>
-Date: Mon, 3 Sep 2012 15:07:32 +0530
-From: Prabhakar Lad <prabhakar.lad@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1756210Ab2ICJkN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 05:40:13 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:59336 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752367Ab2ICJkL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 05:40:11 -0400
+X-Originating-IP: 217.70.178.151
+X-Originating-IP: 50.43.46.74
+Date: Mon, 3 Sep 2012 02:39:57 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 17/23] rcu: Fix day-zero grace-period
+ initialization/cleanup race
+Message-ID: <20120903093957.GF5574@leaf>
+References: <20120830181811.GA29154@linux.vnet.ibm.com>
+ <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346350718-30937-17-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-CC: LMML <linux-media@vger.kernel.org>,
-        dlos <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-kernel@vger.kernel.org>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        <linux-doc@vger.kernel.org>, Sakari Ailus <sakari.ailus@iki.fi>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Rob Landley <rob@landley.net>
-Subject: Re: [PATCH v3] media: v4l2-ctrls: add control for dpcm predictor
-References: <1346656851-20316-1-git-send-email-prabhakar.lad@ti.com> <50447688.4030004@samsung.com>
-In-Reply-To: <50447688.4030004@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346350718-30937-17-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sylwester,
+On Thu, Aug 30, 2012 at 11:18:32AM -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> 
+> The current approach to grace-period initialization is vulnerable to
+> extremely low-probabity races.  These races stem fro the fact that the
+> old grace period is marked completed on the same traversal through the
+> rcu_node structure that is marking the start of the new grace period.
+> These races can result in too-short grace periods, as shown in the
+> following scenario:
+> 
+> 1.	CPU 0 completes a grace period, but needs an additional
+> 	grace period, so starts initializing one, initializing all
+> 	the non-leaf rcu_node strcutures and the first leaf rcu_node
+> 	structure.  Because CPU 0 is both completing the old grace
+> 	period and starting a new one, it marks the completion of
+> 	the old grace period and the start of the new grace period
+> 	in a single traversal of the rcu_node structures.
+> 
+> 	Therefore, CPUs corresponding to the first rcu_node structure
+> 	can become aware that the prior grace period has completed, but
+> 	CPUs corresponding to the other rcu_node structures will see
+> 	this same prior grace period as still being in progress.
+> 
+> 2.	CPU 1 passes through a quiescent state, and therefore informs
+> 	the RCU core.  Because its leaf rcu_node structure has already
+> 	been initialized, this CPU's quiescent state is applied to the
+> 	new (and only partially initialized) grace period.
+> 
+> 3.	CPU 1 enters an RCU read-side critical section and acquires
+> 	a reference to data item A.  Note that this critical section
+> 	started after the beginning of the new grace period, and
+> 	therefore will not block this new grace period.
+> 
+> 4.	CPU 16 exits dyntick-idle mode.  Because it was in dyntick-idle
+> 	mode, other CPUs informed the RCU core of its extended quiescent
+> 	state for the past several grace periods.  This means that CPU
+> 	16 is not yet aware that these past grace periods have ended.
+> 	Assume that CPU 16 corresponds to the second leaf rcu_node
+> 	structure.
+> 
+> 5.	CPU 16 removes data item A from its enclosing data structure
+> 	and passes it to call_rcu(), which queues a callback in the
+> 	RCU_NEXT_TAIL segment of the callback queue.
+> 
+> 6.	CPU 16 enters the RCU core, possibly because it has taken a
+> 	scheduling-clock interrupt, or alternatively because it has more
+> 	than 10,000 callbacks queued.  It notes that the second most
+> 	recent grace period has completed (recall that it cannot yet
+> 	become aware that the most recent grace period has completed),
+> 	and therefore advances its callbacks.  The callback for data
+> 	item A is therefore in the RCU_NEXT_READY_TAIL segment of the
+> 	callback queue.
+> 
+> 7.	CPU 0 completes initialization of the remaining leaf rcu_node
+> 	structures for the new grace period, including the structure
+> 	corresponding to CPU 16.
+> 
+> 8.	CPU 16 again enters the RCU core, again, possibly because it has
+> 	taken a scheduling-clock interrupt, or alternatively because
+> 	it now has more than 10,000 callbacks queued.	It notes that
+> 	the most recent grace period has ended, and therefore advances
+> 	its callbacks.	The callback for data item A is therefore in
+> 	the RCU_WAIT_TAIL segment of the callback queue.
+> 
+> 9.	All CPUs other than CPU 1 pass through quiescent states.  Because
+> 	CPU 1 already passed through its quiescent state, the new grace
+> 	period completes.  Note that CPU 1 is still in its RCU read-side
+> 	critical section, still referencing data item A.
+> 
+> 10.	Suppose that CPU 2 wais the last CPU to pass through a quiescent
+> 	state for the new grace period, and suppose further that CPU 2
+> 	did not have any callbacks queued, therefore not needing an
+> 	additional grace period.  CPU 2 therefore traverses all of the
+> 	rcu_node structures, marking the new grace period as completed,
+> 	but does not initialize a new grace period.
+> 
+> 11.	CPU 16 yet again enters the RCU core, yet again possibly because
+> 	it has taken a scheduling-clock interrupt, or alternatively
+> 	because it now has more than 10,000 callbacks queued.	It notes
+> 	that the new grace period has ended, and therefore advances
+> 	its callbacks.	The callback for data item A is therefore in
+> 	the RCU_DONE_TAIL segment of the callback queue.  This means
+> 	that this callback is now considered ready to be invoked.
+> 
+> 12.	CPU 16 invokes the callback, freeing data item A while CPU 1
+> 	is still referencing it.
+> 
+> This scenario represents a day-zero bug for TREE_RCU.  This commit
+> therefore ensures that the old grace period is marked completed in
+> all leaf rcu_node structures before a new grace period is marked
+> started in any of them.
+> 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Thanks for the review.
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-On Monday 03 September 2012 02:51 PM, Sylwester Nawrocki wrote:
-> On 09/03/2012 09:20 AM, Prabhakar Lad wrote:
->> From: Lad, Prabhakar <prabhakar.lad@ti.com>
->>
->> add V4L2_CID_DPCM_PREDICTOR control of type menu, which
->> determines the dpcm predictor. The predictor can be either
->> simple or advanced.
->>
->> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
->> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
->> Cc: Sakari Ailus <sakari.ailus@iki.fi>
->> Cc: Hans Verkuil <hans.verkuil@cisco.com>
->> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
->> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
->> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
->> Cc: Hans de Goede <hdegoede@redhat.com>
->> Cc: Kyungmin Park <kyungmin.park@samsung.com>
->> Cc: Rob Landley <rob@landley.net>
->> Cc: HeungJun Kim <riverful.kim@samsung.com>
+>  kernel/rcutree.c |   36 +++++++++++++-----------------------
+>  1 files changed, 13 insertions(+), 23 deletions(-)
 > 
-> Looks good.
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index d435009..4cfe488 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -1161,33 +1161,23 @@ static void rcu_gp_cleanup(struct rcu_state *rsp)
+>  	 * they can do to advance the grace period.  It is therefore
+>  	 * safe for us to drop the lock in order to mark the grace
+>  	 * period as completed in all of the rcu_node structures.
+> -	 *
+> -	 * But if this CPU needs another grace period, it will take
+> -	 * care of this while initializing the next grace period.
+> -	 * We use RCU_WAIT_TAIL instead of the usual RCU_DONE_TAIL
+> -	 * because the callbacks have not yet been advanced: Those
+> -	 * callbacks are waiting on the grace period that just now
+> -	 * completed.
+>  	 */
+> -	rdp = this_cpu_ptr(rsp->rda);
+> -	if (*rdp->nxttail[RCU_WAIT_TAIL] == NULL) {
+> -		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+> +	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+>  
+> -		/*
+> -		 * Propagate new ->completed value to rcu_node
+> -		 * structures so that other CPUs don't have to
+> -		 * wait until the start of the next grace period
+> -		 * to process their callbacks.
+> -		 */
+> -		rcu_for_each_node_breadth_first(rsp, rnp) {
+> -			raw_spin_lock_irqsave(&rnp->lock, flags);
+> -			rnp->completed = rsp->gpnum;
+> -			raw_spin_unlock_irqrestore(&rnp->lock, flags);
+> -			cond_resched();
+> -		}
+> -		rnp = rcu_get_root(rsp);
+> +	/*
+> +	 * Propagate new ->completed value to rcu_node structures so
+> +	 * that other CPUs don't have to wait until the start of the next
+> +	 * grace period to process their callbacks.  This also avoids
+> +	 * some nasty RCU grace-period initialization races.
+> +	 */
+> +	rcu_for_each_node_breadth_first(rsp, rnp) {
+>  		raw_spin_lock_irqsave(&rnp->lock, flags);
+> +		rnp->completed = rsp->gpnum;
+> +		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+> +		cond_resched();
+>  	}
+> +	rnp = rcu_get_root(rsp);
+> +	raw_spin_lock_irqsave(&rnp->lock, flags);
+>  
+>  	rsp->completed = rsp->gpnum; /* Declare grace period done. */
+>  	trace_rcu_grace_period(rsp->name, rsp->completed, "end");
+> -- 
+> 1.7.8
 > 
-> Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> 
->> ---
->> This patches has one checkpatch warning for line over
->> 80 characters altough it can be avoided I have kept it
->> for consistency.
->>
->> Changes for v3:
->> 1: Added better explanation for DPCM, pointed by Hans.
->>
->> Changes for v2:
->> 1: Added documentaion in controls.xml pointed by Sylwester.
->> 2: Chnaged V4L2_DPCM_PREDICTOR_ADVANCE to V4L2_DPCM_PREDICTOR_ADVANCED
->>    pointed by Sakari.
->>
->>  Documentation/DocBook/media/v4l/controls.xml |   48 +++++++++++++++++++++++++-
->>  drivers/media/v4l2-core/v4l2-ctrls.c         |    9 +++++
->>  include/linux/videodev2.h                    |    5 +++
->>  3 files changed, 61 insertions(+), 1 deletions(-)
->>
->> diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
->> index 93b9c68..f704218 100644
->> --- a/Documentation/DocBook/media/v4l/controls.xml
->> +++ b/Documentation/DocBook/media/v4l/controls.xml
->> @@ -4267,7 +4267,53 @@ interface and may change in the future.</para>
->>  	    pixels / second.
->>  	    </entry>
->>  	  </row>
->> -	  <row><entry></entry></row>
->> +	  <row>
->> +	    <entry spanname="id"><constant>V4L2_CID_DPCM_PREDICTOR</constant></entry>
->> +	    <entry>menu</entry>
->> +	  </row>
->> +	  <row id="v4l2-dpcm-predictor">
->> +	    <entry spanname="descr"> Differential pulse-code modulation (DPCM) is a signal
->> +	    encoder that uses the baseline of pulse-code modulation (PCM) but adds some
->> +	    functionalities based on the prediction of the samples of the signal. The input
->> +	    can be an analog signal or a digital signal.
->> +
->> +	    <para>If the input is a continuous-time
->> +	    analog signal, it needs to be sampled first so that a discrete-time signal is
->> +	    the input to the DPCM encoder.</para>
-> 
-> nit: this whole paragraph could fit in 2 lines.
-> 
-thanks for the catch ,I'll post a v4 fixing this.
-
-Thanks and Regards,
---Prabhakar Lad
-
->> +
->> +	    <para>Simple: take the values of two
->> +	    consecutive samples; if they are analog samples, quantize them; calculate the
->> +	    difference between the first one and the next; the output is the difference, and
->> +	    it can be further entropy coded.</para>
->> +
->> +	    <para>Advanced: instead of taking a difference relative to a previous input sample,
->> +	    take the difference relative to the output of a local model of the decoder process;
->> +	    in this option, the difference can be quantized, which allows a good way to
->> +	    incorporate a controlled loss in the encoding.</para>
->> +
->> +	    <para>Applying one of these two processes, short-term redundancy (positive correlation of
->> +	    nearby values) of the signal is eliminated; compression ratios on the order of 2 to 4
->> +	    can be achieved if differences are subsequently entropy coded, because the entropy of
->> +	    the difference signal is much smaller than that of the original discrete signal treated
->> +	    as independent samples.For more information about DPCM see <ulink
->> +	    url="http://en.wikipedia.org/wiki/Differential_pulse-code_modulation">Wikipedia</ulink>.</para>
->> +	    </entry>
->> +	  </row>
->> +	  <row>
->> +	    <entrytbl spanname="descr" cols="2">
->> +	      <tbody valign="top">
->> +	        <row>
->> +	         <entry><constant>V4L2_DPCM_PREDICTOR_SIMPLE</constant></entry>
->> +	          <entry>Predictor type is simple</entry>
->> +	        </row>
->> +	        <row>
->> +	          <entry><constant>V4L2_DPCM_PREDICTOR_ADVANCED</constant></entry>
->> +	          <entry>Predictor type is advanced</entry>
->> +	        </row>
->> +	      </tbody>
->> +	    </entrytbl>
->> +	  </row>
->> +	<row><entry></entry></row>
->>  	</tbody>
->>        </tgroup>
->>        </table>
->> diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
->> index b6a2ee7..2d7bc15 100644
->> --- a/drivers/media/v4l2-core/v4l2-ctrls.c
->> +++ b/drivers/media/v4l2-core/v4l2-ctrls.c
->> @@ -425,6 +425,11 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
->>  		"Gray",
->>  		NULL,
->>  	};
->> +	static const char * const dpcm_predictor[] = {
->> +		"Simple Predictor",
->> +		"Advanced Predictor",
->> +		NULL,
->> +	};
->>  
->>  	switch (id) {
->>  	case V4L2_CID_MPEG_AUDIO_SAMPLING_FREQ:
->> @@ -502,6 +507,8 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
->>  		return mpeg4_profile;
->>  	case V4L2_CID_JPEG_CHROMA_SUBSAMPLING:
->>  		return jpeg_chroma_subsampling;
->> +	case V4L2_CID_DPCM_PREDICTOR:
->> +		return dpcm_predictor;
->>  
->>  	default:
->>  		return NULL;
->> @@ -732,6 +739,7 @@ const char *v4l2_ctrl_get_name(u32 id)
->>  	case V4L2_CID_IMAGE_PROC_CLASS:		return "Image Processing Controls";
->>  	case V4L2_CID_LINK_FREQ:		return "Link Frequency";
->>  	case V4L2_CID_PIXEL_RATE:		return "Pixel Rate";
->> +	case V4L2_CID_DPCM_PREDICTOR:		return "DPCM Predictor";
->>  
->>  	default:
->>  		return NULL;
->> @@ -832,6 +840,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
->>  	case V4L2_CID_ISO_SENSITIVITY_AUTO:
->>  	case V4L2_CID_EXPOSURE_METERING:
->>  	case V4L2_CID_SCENE_MODE:
->> +	case V4L2_CID_DPCM_PREDICTOR:
->>  		*type = V4L2_CTRL_TYPE_MENU;
->>  		break;
->>  	case V4L2_CID_LINK_FREQ:
->> diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
->> index 6d6dfa7..ca9fb78 100644
->> --- a/include/linux/videodev2.h
->> +++ b/include/linux/videodev2.h
->> @@ -2000,6 +2000,11 @@ enum v4l2_jpeg_chroma_subsampling {
->>  
->>  #define V4L2_CID_LINK_FREQ			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 1)
->>  #define V4L2_CID_PIXEL_RATE			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 2)
->> +#define V4L2_CID_DPCM_PREDICTOR			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 3)
->> +enum v4l2_dpcm_predictor {
->> +	V4L2_DPCM_PREDICTOR_SIMPLE	= 0,
->> +	V4L2_DPCM_PREDICTOR_ADVANCED	= 1,
->> +};
->>  
->>  /*
->>   *	T U N I N G
-> 
-> Regards,
-> Sylwester
-> 
-
