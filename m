@@ -1,87 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932312Ab2ICPJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 11:09:28 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:36957 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932266Ab2ICPJ1 (ORCPT
+	id S932325Ab2ICPJm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 11:09:42 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:62001 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932235Ab2ICPJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 11:09:27 -0400
+	Mon, 3 Sep 2012 11:09:39 -0400
+Message-ID: <5044C82E.5060207@gmail.com>
+Date: Mon, 03 Sep 2012 10:09:34 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <1346656701.3061.8.camel@sauron.fi.intel.com>
-References: <1346001700-26895-1-git-send-email-shijie8@gmail.com>
-	<1346656701.3061.8.camel@sauron.fi.intel.com>
-Date: Mon, 3 Sep 2012 11:09:26 -0400
-Message-ID: <CAMiH66GX7h5tve9CLHzj8MMrUv90fL+4BWYPZ6KQkP5bbXY9ag@mail.gmail.com>
-Subject: Re: [PATCH 1/3] mtd: cmdlinepart: make the partitions rule more strict
-From: Huang Shijie <shijie8@gmail.com>
-To: dedekind1@gmail.com
-Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, shmulik.ladkani@gmail.com
-Content-Type: text/plain; charset=UTF-8
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Stephen Warren <swarren@nvidia.com>, Lee Jones <lee.jones@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org, linus.walleij@stericsson.com,
+        Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/3] i2c: nomadik: Add Device Tree support to the Nomadik
+ I2C driver
+References: <1345734087-21803-1-git-send-email-lee.jones@linaro.org> <1345734087-21803-3-git-send-email-lee.jones@linaro.org> <20120831112258.GA2624@pengutronix.de> <20120831122323.GC5962@gmail.com> <CACRpkdZ=C1EV4WO2b=1YLHPNhsDsQdq7Kfnpzm8i7uGRtVjJuQ@mail.gmail.com> <20120903094448.GB11780@pengutronix.de> <20120903100656.GC5782@gmail.com> <CACRpkdb8owKBxawAv4LVVYx5kUgZ9cUSiQ=BV0f3Pf3bHtknuQ@mail.gmail.com> <CAF2Aj3j25w1Nn9O6hV+=i-j1ts_p_Ucswk_M7r04S7i5BzPkHg@mail.gmail.com> <CACRpkdZ5VFhrbONy=0K5MFh4e6BDFckq0yqzjQ2QkW9MgwKqBg@mail.gmail.com> <5044BFD1.10708@nvidia.com> <CACRpkda0akcLRe3J=fVcyYpxHmkJmVe+c1doXQ4=vOA6iNxe2g@mail.gmail.com>
+In-Reply-To: <CACRpkda0akcLRe3J=fVcyYpxHmkJmVe+c1doXQ4=vOA6iNxe2g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 3, 2012 at 3:18 AM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
-> On Sun, 2012-08-26 at 13:21 -0400, Huang Shijie wrote:
->> + *
->> + * Note:
->> + * If you choose to set the @offset for the <partdef>, please set all
->> + * the partitions with the same syntax, such as:
->> + *     gpmi-nand:100m@0(boot),100m@100m(kernel),1g@200m(rootfs)
->> + *
->> + * Please do _NOT_ set the partitions like this:
->> + *     gpmi-nand:100m@0(boot),100m(kernel),1g@200m(rootfs)
->> + * The `kernel` partition does not set with the @offset, this is not permitted.
->>   */
->
-> I guess it is indeed OK to sort the partitions, just makes things a lot
-> simpler. But we probably then should also do the following:
->
-> 1. Make sure there is only one partition without offset. If there are
-> several - error out.
+On 09/03/2012 09:35 AM, Linus Walleij wrote:
+> On Mon, Sep 3, 2012 at 4:33 PM, Stephen Warren <swarren@nvidia.com> wrote:
+>> On 09/03/2012 05:58 AM, Linus Walleij wrote:
+>>> On Mon, Sep 3, 2012 at 1:32 PM, Lee Jones <lee.jones@linaro.org> wrote:
+>>>
+>>>> No, this is wrong. Platform data should not override DT.
+>>>>
+>>>> If DT is enabled and passed, it should have highest priority.
+>>
+>> No, that's wrong. If platform data is specified, it overrides DT, so
+>> that if the DT needs any fixup, it can be provided using platform data.
+> 
+> Thanks Stephen, now there are two of us saying this, Lee please
+> follow this design pattern.
+> 
+> (Unless Rob/Grant start shouting counter-orders...)
 
- Why allow `only one partition without offset`?
+Ideally, you only use DT or platform_data and you override DT with a new
+DTB. Hopefully we can ultimately remove platform_data or all but parts
+that can't be described in DT (i.e. function callouts).
 
-Take the following unsorted partitions as an example:
-     #gpmi-nand:1g@200m(rootfs),100m(boot),100m@100m(kernel)
+But if you are handling both, then I agree that platform_data should
+override DT.
 
-The current code will parses out the following partitions:
-      rootfs: < size = 1g, offset=200m>
-      boot:   < size = 100m, offset= OFFSET_CONTINOUS>
-      kernel: <size = 100m, offset = 100m>
-
-If we sort the partitions by the offset, we get the following result:
-     "kernel" , "rootfs", "boot"
-
-In actually, we expect the following result:
-    "boot", "kernel", "rootfs"
-
-What's your idea about this issue?
-In my opinion, we should forbid the mixed type.
-
-thanks
-Huang Shijie
-
-
-
-
-
-
-
-> 2. Check that partitions do not intersect - I did not notice that we do
-> this in the code.
->
-> So AFAICS, this patch is not needed and we better have the following
-> patches:
->
-> 1. Add sorting
-> 2. Add a check that partitions do not overlap and there is only one
-> offset-less partition.
->
-> How does this sound?
->
-> --
-> Best Regards,
-> Artem Bityutskiy
+Rob
