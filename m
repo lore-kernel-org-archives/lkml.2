@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756366Ab2ICLkq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 07:40:46 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:59854 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756322Ab2ICLkp (ORCPT
+	id S1756377Ab2ICLso (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 07:48:44 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:41585 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754327Ab2ICLsm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 07:40:45 -0400
+	Mon, 3 Sep 2012 07:48:42 -0400
+Date: Mon, 3 Sep 2012 12:48:31 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>
+Subject: Re: [PATCH v2 17/31] arm64: System calls handling
+Message-ID: <20120903114831.GA3313@mbp>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
+ <201208220756.31149.arnd@arndb.de>
+ <20120822102953.GA24136@arm.com>
+ <201208221227.14274.arnd@arndb.de>
+ <20120822171309.GC2582@arm.com>
 MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <CACRpkdYxYGa=C092rbTU5bo=YEu6wqiTUD7W4pLS_wNfmAe4Zw@mail.gmail.com>
-References: <1346588747.7909.2.camel@phoenix> <CACRpkdYxYGa=C092rbTU5bo=YEu6wqiTUD7W4pLS_wNfmAe4Zw@mail.gmail.com>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Mon, 3 Sep 2012 19:40:24 +0800
-Message-ID: <CAF+7xWnwH17Bxjpm3nMAJL45D4XUsEfDpJAoG=feJwKtgwpUkw@mail.gmail.com>
-Subject: Re: [PATCH] ARM: ux500: Fix build error due to missing include of
- asm/pmu.h in cpu-db8500.c
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Will Deacon <will.deacon@arm.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120822171309.GC2582@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/9/3 Linus Walleij <linus.walleij@linaro.org>:
-> On Sun, Sep 2, 2012 at 2:25 PM, Axel Lin <axel.lin@gmail.com> wrote:
->
->> Include asm/pmu.h to fix below build error:
->>
->>   CC      arch/arm/mach-ux500/cpu-db8500.o
->> arch/arm/mach-ux500/cpu-db8500.c:118:8: error: variable 'db8500_pmu_platdata' has initializer but incomplete type
->> arch/arm/mach-ux500/cpu-db8500.c:119:2: error: unknown field 'handle_irq' specified in initializer
->> arch/arm/mach-ux500/cpu-db8500.c:119:2: warning: excess elements in struct initializer [enabled by default]
->> arch/arm/mach-ux500/cpu-db8500.c:119:2: warning: (near initialization for 'db8500_pmu_platdata') [enabled by default]
->> make[1]: *** [arch/arm/mach-ux500/cpu-db8500.o] Error 1
->> make: *** [arch/arm/mach-ux500] Error 2
->>
->> Signed-off-by: Axel Lin <axel.lin@gmail.com>
->
-> That's on linux-next not on v3.6-rcN right?
-Yes, This patch is against linux-next tree.
+Hi Arnd,
 
->
-> I've applied it to my ux500 branch and will carry it unless Will Deacon
-> express an interest in it, PMU is his territory...
+On Wed, Aug 22, 2012 at 06:13:10PM +0100, Catalin Marinas wrote:
+> On Wed, Aug 22, 2012 at 01:27:14PM +0100, Arnd Bergmann wrote:
+> > On Wednesday 22 August 2012, Catalin Marinas wrote:
+> > > But what's more important - moving this wrapper to glibc causes issues
+> > > with the page size. We support both 4KB and 64KB pages on 64-bit systems
+> > > (the latter without compat support). The kernel is in a better position
+> > > to do the shift by a compile-time constant. Glibc would need to enquire
+> > > the actual page size to do the shift before calling sys_mmap_pgoff. If
+> > > we assume in glibc that the shift is always 12, we need another wrapper
+> > > in the kernel anyway for 64KB page configuration. So passing the offset
+> > > in bytes worked best for us.
+> > 
+> > Right, the kernel interface should really be independent of the page
+> > size, as sys_mmap2 normally is, and sys_mmap2 is not provided here.
+> 
+> sys_mmap2 is indeed independent of the page size on most architectures
+> assuming that the last argument represents the offset in units of 4096.
+> The cris and ia64 seem to differ (one being 8K, the other variable).
+> 
+> sys_mmap is also independent of the page size.
+> 
+> But using sys_mmap2 for a 64-bit architecture, especially when the page
+> size is not always 4K, does not bring any advantages. We end up doing a
+> shift by 12 in glibc and another shift by (PAGE_SHIFT - 12) in the
+> kernel wrapper. Unless I missed your point, I don't see the reason for
+> using sys_mmap2 on a 64-bit architecture, apart from it being newer (and
+> compat support should not have any relevance, we have different syscall
+> tables anyway).
 
-Thanks,
-Axel
+I forgot about this at the KS and we haven't got to a clear conclusion.
+
+Do we (1) stick with the sys_mmap() for 64-bit systems and avoid offset
+conversion in both glibc and kernel or (2) use sys_mmap2() with a 12
+shift in glibc and (PAGE_SHIFT - 12) in the kernel wrapper?
+
+I personally prefer (1) as it doesn't require a kernel wrapper and we
+avoid the double shifting. A reason for (2) would be if we ever need
+file offsets greater than 16EB.
+
+-- 
+Catalin
