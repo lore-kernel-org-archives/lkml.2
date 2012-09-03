@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753561Ab2ICUlw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 16:41:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11961 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751210Ab2ICUlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 16:41:51 -0400
-Date: Mon, 3 Sep 2012 16:41:37 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: Kent Overstreet <koverstreet@google.com>
-cc: Vivek Goyal <vgoyal@redhat.com>, linux-bcache@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com, tj@kernel.org,
-        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH v7 9/9] block: Avoid deadlocks with bio allocation by
- stacking drivers
-In-Reply-To: <20120831014359.GB15218@moria.home.lan>
-Message-ID: <Pine.LNX.4.64.1209031638110.15620@file.rdu.redhat.com>
-References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
- <1346175456-1572-10-git-send-email-koverstreet@google.com>
- <Pine.LNX.4.64.1208291210180.774@file.rdu.redhat.com> <20120829165006.GB20312@google.com>
- <20120829170711.GC12504@redhat.com> <20120829171345.GC20312@google.com>
- <20120830220745.GI27257@redhat.com> <20120831014359.GB15218@moria.home.lan>
+	id S1753732Ab2ICUyy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 16:54:54 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:57465 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753418Ab2ICUyx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 16:54:53 -0400
+X-RZG-AUTH: :P2MHfkW8eP4Mre39l357AZT/I7AY/7nT2yrT1q0ngWNsKR9Dbc7nsXB+5kzEuK6XMgk=
+X-RZG-CLASS-ID: mo00
+Message-ID: <50451919.20205@hartkopp.net>
+Date: Mon, 03 Sep 2012 22:54:49 +0200
+From: Oliver Hartkopp <socketcan@hartkopp.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.6esrpre) Gecko/20120817 Icedove/10.0.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Fabio Baltieri <fabio.baltieri@gmail.com>
+CC: Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Wolfgang Grandegger <wg@grandegger.com>
+Subject: Re: [PATCH can-next v6] can: add tx/rx LED trigger support
+References: <50191EA5.1040303@pengutronix.de> <1343845298-2065-1-git-send-email-fabio.baltieri@gmail.com> <20120824051016.GB1718@vandijck-laurijssen.be> <50376550.4020501@pengutronix.de> <20120824124248.GA422@vandijck-laurijssen.be> <20120824220142.GA1470@gmail.com> <5044A547.2010603@pengutronix.de> <20120903181335.GA415@vandijck-laurijssen.be> <20120903182925.GA28766@gmail.com>
+In-Reply-To: <20120903182925.GA28766@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03.09.2012 20:29, Fabio Baltieri wrote:
 
-
-On Thu, 30 Aug 2012, Kent Overstreet wrote:
-
-> On Thu, Aug 30, 2012 at 06:07:45PM -0400, Vivek Goyal wrote:
-> > On Wed, Aug 29, 2012 at 10:13:45AM -0700, Kent Overstreet wrote:
-> > 
-> > [..]
-> > > > Performance aside, punting submission to per device worker in case of deep
-> > > > stack usage sounds cleaner solution to me.
-> > > 
-> > > Agreed, but performance tends to matter in the real world. And either
-> > > way the tricky bits are going to be confined to a few functions, so I
-> > > don't think it matters that much.
-> > > 
-> > > If someone wants to code up the workqueue version and test it, they're
-> > > more than welcome...
-> > 
-> > Here is one quick and dirty proof of concept patch. It checks for stack
-> > depth and if remaining space is less than 20% of stack size, then it
-> > defers the bio submission to per queue worker.
+> On Mon, Sep 03, 2012 at 08:13:35PM +0200, Kurt Van Dijck wrote:
+>> On Mon, Sep 03, 2012 at 02:40:39PM +0200, Marc Kleine-Budde wrote:
+>>> The net->ifindex is unique. But it's only an integer. Usually can0 has a
+>>> ifindex != 0, so a simple can%d is contra productive here.
+>>>
+>>> Some pointers to related code:
+>>> http://lxr.free-electrons.com/source/drivers/base/core.c#L1847
+>>> http://lxr.free-electrons.com/source/drivers/base/core.c#L73
+>>> http://lxr.free-electrons.com/source/include/linux/device.h#L695
+>>>
+>>> comments?
 > 
-> I can't think of any correctness issues. I see some stuff that could be
-> simplified (blk_drain_deferred_bios() is redundant, just make it a
-> wrapper around blk_deffered_bio_work()).
+> That would probabily makes really hard to choose the right
+> default_trigger for led devices to get to the appropriate CAN LED in
+> embedded systems, as trigger name would depend from other network
+> devices and probing order (correct me if I'm wrong).
 > 
-> Still skeptical about the performance impact, though - frankly, on some
-> of the hardware I've been running bcache on this would be a visible
-> performance regression - probably double digit percentages but I'd have
-> to benchmark it.  That kind of of hardware/usage is not normal today,
-> but I've put a lot of work into performance and I don't want to make
-> things worse without good reason.
+> Something with device name would probaily be more appropriate here.
 > 
-> Have you tested/benchmarked it?
+>>
+>> a very recent idea: something with netdevice notifiers and NETDEV_CHANGENAME ...
+>> http://lxr.free-electrons.com/source/net/core/dev.c#L1030
+>>
+>> you could: rename the trigger, or if we think it's usefull,
+>> block the netdev rename when its triggers are in use.
 > 
-> There's scheduling behaviour, too. We really want the workqueue thread's
-> cpu time to be charged to the process that submitted the bio. (We could
-> use a mechanism like that in other places, too... not like this is a new
-> issue).
-> 
-> This is going to be a real issue for users that need strong isolation -
-> for any driver that uses non negligable cpu (i.e. dm crypt), we're
-> breaking that (not that it wasn't broken already, but this makes it
-> worse).
+> Blocking the rename looks overkill to me, what about using device name
+> with an optional "port id" appended to it?  Sounds simpler...
 
-... or another possibility - start a timer when something is put to 
-current->bio_list and use that timer to pop entries off current->bio_list 
-and submit them to a workqueue. The timer can be cpu-local so only 
-interrupt masking is required to synchronize against the timer.
 
-This would normally run just like the current kernel and in case of 
-deadlock, the timer would kick in and resolve the deadlock.
+The name of the device can only be changed when the interface is down.
+Is it possible to put some scripting around it to detach and attach the leds
+to the interfaces on ifup/ifdown triggers?
 
-> I could be convinced, but right now I prefer my solution.
+Regards,
+Oliver
 
-It fixes bio allocation problem, but not other similar mempool problems in 
-dm and md.
-
-Mikulas
