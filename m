@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756602Ab2ICUPl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 16:15:41 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:44271 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756371Ab2ICUPk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 16:15:40 -0400
-Date: Mon, 3 Sep 2012 22:15:36 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: kvalo@qca.qualcomm.com, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Fix uninitialized variable in ath6kl ath6kl_sdio_enable_scatter
-Message-ID: <20120903201536.GA16230@one.firstfloor.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+	id S1756608Ab2ICUQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 16:16:28 -0400
+Received: from antcom.de ([188.40.178.216]:41932 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756371Ab2ICUQ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 16:16:26 -0400
+Message-ID: <50451016.7010608@antcom.de>
+Date: Mon, 03 Sep 2012 22:16:22 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM Open Source Research and Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+MIME-Version: 1.0
+To: Wolfram Sang <w.sang@pengutronix.de>
+CC: Kevin Wells <kevin.wells@nxp.com>,
+        "vitalywool@gmail.com" <vitalywool@gmail.com>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "ben-linux@fluff.org" <ben-linux@fluff.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Srinivas Bakki <srinivas.bakki@nxp.com>,
+        "aletes.xgr@gmail.com" <aletes.xgr@gmail.com>,
+        "jonsmirl@gmail.com" <jonsmirl@gmail.com>
+Subject: Re: [PATCH RESEND 1/2] i2c: pnx: Fix bit definitions
+References: <1344411752-23469-1-git-send-email-stigge@antcom.de> <20120818095108.GB24812@pengutronix.de> <5030A81E.5090508@antcom.de> <083DF309106F364B939360100EC290F823A0354A3D@eu1rdcrdc1wx030.exi.nxp.com> <20120820175527.GA9169@pengutronix.de>
+In-Reply-To: <20120820175527.GA9169@pengutronix.de>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gcc 4.8 warns
+Hi Wolfram,
 
-/backup/lsrc/git/linux-lto-2.6/drivers/net/wireless/ath/ath6kl/sdio.c:
-In function 'ath6kl_sdio_enable_scatter':
-/backup/lsrc/git/linux-lto-2.6/drivers/net/wireless/ath/ath6kl/sdio.c:748:16:
-warning: 'ret' may be used uninitialized in this function
-[-Wmaybe-uninitialized]
-  if (virt_scat || ret) {
-                ^
+On 20/08/12 19:55, Wolfram Sang wrote:
+>> I've never had my hands on a PNX4008 chip at NXP, but I do
+>> believe they are the same IP. That specific I2C IP was used in a
+>> number of NXP/Phillips chips besides the PNX4008/LPC32xx. I don't
+>> think there are any PNX4008's in the wild, and even working in
+>> NXP, I can't find any non-marketing reference material for that
+>> part (including the user manual).
+> 
+> Thanks for the heads up. I'll apply both patches, then.
 
-The variable can indeed be uninitialized when the previous if branch is
-skipped. I just set it to zero for now. I'm not fully sure the fix is
-correct, maybe the || should be an && ? 
+Should I consider the two patches as applied now (where?
+i2c-embedded?), or should I resend? ;-)
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Thanks in advance,
 
-
-diff --git a/drivers/net/wireless/ath/ath6kl/sdio.c b/drivers/net/wireless/ath/ath6kl/sdio.c
-index 05b9540..f495899 100644
---- a/drivers/net/wireless/ath/ath6kl/sdio.c
-+++ b/drivers/net/wireless/ath/ath6kl/sdio.c
-@@ -709,7 +709,7 @@ static int ath6kl_sdio_enable_scatter(struct ath6kl *ar)
- {
- 	struct ath6kl_sdio *ar_sdio = ath6kl_sdio_priv(ar);
- 	struct htc_target *target = ar->htc_target;
--	int ret;
-+	int ret = 0;
- 	bool virt_scat = false;
- 
- 	if (ar_sdio->scatter_enabled)
-
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Roland
