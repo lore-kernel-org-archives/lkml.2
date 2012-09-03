@@ -1,121 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756243Ab2ICJo4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 05:44:56 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:57241 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754899Ab2ICJoy (ORCPT
+	id S1756252Ab2ICJqW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 05:46:22 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:58796 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755535Ab2ICJqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 05:44:54 -0400
-Date: Mon, 3 Sep 2012 11:44:48 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
-        linus.walleij@stericsson.com, arnd@arndb.de, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH 3/3] i2c: nomadik: Add Device Tree support to the Nomadik
- I2C driver
-Message-ID: <20120903094448.GB11780@pengutronix.de>
-References: <1345734087-21803-1-git-send-email-lee.jones@linaro.org>
- <1345734087-21803-3-git-send-email-lee.jones@linaro.org>
- <20120831112258.GA2624@pengutronix.de>
- <20120831122323.GC5962@gmail.com>
- <CACRpkdZ=C1EV4WO2b=1YLHPNhsDsQdq7Kfnpzm8i7uGRtVjJuQ@mail.gmail.com>
+	Mon, 3 Sep 2012 05:46:21 -0400
+X-Originating-IP: 217.70.178.134
+X-Originating-IP: 50.43.46.74
+Date: Mon, 3 Sep 2012 02:46:13 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 22/23] rcu: Reduce
+ synchronize_rcu_expedited() latency
+Message-ID: <20120903094613.GK5574@leaf>
+References: <20120830181811.GA29154@linux.vnet.ibm.com>
+ <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346350718-30937-22-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rS8CxjVDS/+yyDmU"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACRpkdZ=C1EV4WO2b=1YLHPNhsDsQdq7Kfnpzm8i7uGRtVjJuQ@mail.gmail.com>
+In-Reply-To: <1346350718-30937-22-git-send-email-paulmck@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Aug 30, 2012 at 11:18:37AM -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> 
+> The synchronize_rcu_expedited() function disables interrupts across a
+> scan of all leaf rcu_node structures, which is not good for real-time
+> scheduling latency on large systems (hundreds or especially thousands
+> of CPUs).  This commit therefore holds off CPU-hotplug operations using
+> get_online_cpus(), and removes the prior acquisiion of the ->onofflock
+> (which required disabling interrupts).
+> 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
---rS8CxjVDS/+yyDmU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-On Mon, Sep 03, 2012 at 11:22:28AM +0200, Linus Walleij wrote:
-> On Fri, Aug 31, 2012 at 2:23 PM, Lee Jones <lee.jones@linaro.org> wrote:
->=20
-> (...)
-> >  static int nmk_i2c_probe(struct amba_device *adev, const struct amba_i=
-d *id)
-> >  {
-> >         int ret =3D 0;
-> >         struct nmk_i2c_controller *pdata =3D adev->dev.platform_data;
-> > +       struct device_node *np =3D adev->dev.of_node;
-> >         struct nmk_i2c_dev      *dev;
-> >         struct i2c_adapter *adap;
-> >
-> > +       if (np) {
-> > +               if (!pdata) {
->=20
-> So, if no pdata is provided, we go on to allocate some ...
->=20
-> > +                       pdata =3D devm_kzalloc(&adev->dev, sizeof(*pdat=
-a), GFP_KERNEL);
-> > +                       if (!pdata) {
-> > +                               ret =3D -ENOMEM;
-> > +                               goto err_no_mem;
-> > +                       }
-> > +               }
-> > +               /* Provide the default configuration as a base. */
-> > +               pdata =3D &u8500_i2c;
->=20
-> Then you just override that pointer with a pointer to the local config.
->=20
-> > +               nmk_i2c_of_probe(np, pdata);
-> > +       }
-> > +
-> >         if (!pdata)
-> >                 /* No i2c configuration found, using the default. */
-> >                 pdata =3D &u8500_i2c;
->=20
-> This in it's entirety does not look sound. I *think* this is what you
-> want to do,
-> replace all of the above codde (including the last if (!pdata) clause) wi=
-th:
->=20
-> if (!pdata) {
->     /* If no platform data passed in, use the default configuration as
-> a base. */
->     pdata =3D &u8500_i2c;
->     if (np)
->         /* Further, if we have a DT node, override the default with this =
-*/
->         nmk_i2c_of_probe(np, pdata);
-> }
->=20
-> This makes any passed pdata take precedence, else default pdata
-> complemented with DT info. Which is what we want.
-
-No. of_probe modifies pdata which in this case the default config which
-might already be in use. So, you will get problems if you have two
-instances with different configuration. So, we need to allocate memory
-but copy the content of the default data. The patch above just copies
-the pointer which is bogus.
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---rS8CxjVDS/+yyDmU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAlBEfBAACgkQD27XaX1/VRsjUwCgyqoDMZ/wjLR/YU1jiWrkBEHf
-LG8AoIZdoi8nDhFcW9ElnLoph5QT5b1e
-=RxHU
------END PGP SIGNATURE-----
-
---rS8CxjVDS/+yyDmU--
+>  kernel/rcutree_plugin.h |   30 ++++++++++++++++++++++--------
+>  1 files changed, 22 insertions(+), 8 deletions(-)
+> 
+> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+> index 7ed45c9..f1e06f6 100644
+> --- a/kernel/rcutree_plugin.h
+> +++ b/kernel/rcutree_plugin.h
+> @@ -800,33 +800,47 @@ void synchronize_rcu_expedited(void)
+>  	smp_mb(); /* Above access cannot bleed into critical section. */
+>  
+>  	/*
+> +	 * Block CPU-hotplug operations.  This means that any CPU-hotplug
+> +	 * operation that finds an rcu_node structure with tasks in the
+> +	 * process of being boosted will know that all tasks blocking
+> +	 * this expedited grace period will already be in the process of
+> +	 * being boosted.  This simplifies the process of moving tasks
+> +	 * from leaf to root rcu_node structures.
+> +	 */
+> +	get_online_cpus();
+> +
+> +	/*
+>  	 * Acquire lock, falling back to synchronize_rcu() if too many
+>  	 * lock-acquisition failures.  Of course, if someone does the
+>  	 * expedited grace period for us, just leave.
+>  	 */
+>  	while (!mutex_trylock(&sync_rcu_preempt_exp_mutex)) {
+> +		if (ULONG_CMP_LT(snap,
+> +		    ACCESS_ONCE(sync_rcu_preempt_exp_count))) {
+> +			put_online_cpus();
+> +			goto mb_ret; /* Others did our work for us. */
+> +		}
+>  		if (trycount++ < 10) {
+>  			udelay(trycount * num_online_cpus());
+>  		} else {
+> +			put_online_cpus();
+>  			synchronize_rcu();
+>  			return;
+>  		}
+> -		if (ULONG_CMP_LT(snap, ACCESS_ONCE(sync_rcu_preempt_exp_count)))
+> -			goto mb_ret; /* Others did our work for us. */
+>  	}
+> -	if (ULONG_CMP_LT(snap, ACCESS_ONCE(sync_rcu_preempt_exp_count)))
+> +	if (ULONG_CMP_LT(snap, ACCESS_ONCE(sync_rcu_preempt_exp_count))) {
+> +		put_online_cpus();
+>  		goto unlock_mb_ret; /* Others did our work for us. */
+> +	}
+>  
+>  	/* force all RCU readers onto ->blkd_tasks lists. */
+>  	synchronize_sched_expedited();
+>  
+> -	raw_spin_lock_irqsave(&rsp->onofflock, flags);
+> -
+>  	/* Initialize ->expmask for all non-leaf rcu_node structures. */
+>  	rcu_for_each_nonleaf_node_breadth_first(rsp, rnp) {
+> -		raw_spin_lock(&rnp->lock); /* irqs already disabled. */
+> +		raw_spin_lock_irqsave(&rnp->lock, flags);
+>  		rnp->expmask = rnp->qsmaskinit;
+> -		raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
+> +		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+>  	}
+>  
+>  	/* Snapshot current state of ->blkd_tasks lists. */
+> @@ -835,7 +849,7 @@ void synchronize_rcu_expedited(void)
+>  	if (NUM_RCU_NODES > 1)
+>  		sync_rcu_preempt_exp_init(rsp, rcu_get_root(rsp));
+>  
+> -	raw_spin_unlock_irqrestore(&rsp->onofflock, flags);
+> +	put_online_cpus();
+>  
+>  	/* Wait for snapshotted ->blkd_tasks lists to drain. */
+>  	rnp = rcu_get_root(rsp);
+> -- 
+> 1.7.8
+> 
