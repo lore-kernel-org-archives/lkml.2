@@ -1,96 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229Ab2ICJny (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 05:43:54 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:36873 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754899Ab2ICJnx (ORCPT
+	id S1756243Ab2ICJo4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 05:44:56 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:57241 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754899Ab2ICJoy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 05:43:53 -0400
-X-Originating-IP: 217.70.178.136
-X-Originating-IP: 50.43.46.74
-Date: Mon, 3 Sep 2012 02:43:45 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH tip/core/rcu 21/23] rcu: Eliminate signed overflow in
- synchronize_rcu_expedited()
-Message-ID: <20120903094345.GJ5574@leaf>
-References: <20120830181811.GA29154@linux.vnet.ibm.com>
- <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346350718-30937-21-git-send-email-paulmck@linux.vnet.ibm.com>
+	Mon, 3 Sep 2012 05:44:54 -0400
+Date: Mon, 3 Sep 2012 11:44:48 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
+        linus.walleij@stericsson.com, arnd@arndb.de, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH 3/3] i2c: nomadik: Add Device Tree support to the Nomadik
+ I2C driver
+Message-ID: <20120903094448.GB11780@pengutronix.de>
+References: <1345734087-21803-1-git-send-email-lee.jones@linaro.org>
+ <1345734087-21803-3-git-send-email-lee.jones@linaro.org>
+ <20120831112258.GA2624@pengutronix.de>
+ <20120831122323.GC5962@gmail.com>
+ <CACRpkdZ=C1EV4WO2b=1YLHPNhsDsQdq7Kfnpzm8i7uGRtVjJuQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="rS8CxjVDS/+yyDmU"
 Content-Disposition: inline
-In-Reply-To: <1346350718-30937-21-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <CACRpkdZ=C1EV4WO2b=1YLHPNhsDsQdq7Kfnpzm8i7uGRtVjJuQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 11:18:36AM -0700, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paul.mckenney@linaro.org>
-> 
-> In the C language, signed overflow is undefined.  It is true that
-> twos-complement arithmetic normally comes to the rescue, but if the
-> compiler can subvert this any time it has any information about the values
-> being compared.  For example, given "if (a - b > 0)", if the compiler
-> has enough information to realize that (for example) the value of "a"
-> is positive and that of "b" is negative, the compiler is within its
-> rights to optimize to a simple "if (1)", which might not be what you want.
-> 
-> This commit therefore converts synchronize_rcu_expedited()'s work-done
-> detection counter from signed to unsigned.
-> 
-> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+--rS8CxjVDS/+yyDmU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->  kernel/rcutree_plugin.h |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> index befb0b2..7ed45c9 100644
-> --- a/kernel/rcutree_plugin.h
-> +++ b/kernel/rcutree_plugin.h
-> @@ -677,7 +677,7 @@ void synchronize_rcu(void)
->  EXPORT_SYMBOL_GPL(synchronize_rcu);
->  
->  static DECLARE_WAIT_QUEUE_HEAD(sync_rcu_preempt_exp_wq);
-> -static long sync_rcu_preempt_exp_count;
-> +static unsigned long sync_rcu_preempt_exp_count;
->  static DEFINE_MUTEX(sync_rcu_preempt_exp_mutex);
->  
->  /*
-> @@ -792,7 +792,7 @@ void synchronize_rcu_expedited(void)
->  	unsigned long flags;
->  	struct rcu_node *rnp;
->  	struct rcu_state *rsp = &rcu_preempt_state;
-> -	long snap;
-> +	unsigned long snap;
->  	int trycount = 0;
->  
->  	smp_mb(); /* Caller's modifications seen first by other CPUs. */
-> @@ -811,10 +811,10 @@ void synchronize_rcu_expedited(void)
->  			synchronize_rcu();
->  			return;
->  		}
-> -		if ((ACCESS_ONCE(sync_rcu_preempt_exp_count) - snap) > 0)
-> +		if (ULONG_CMP_LT(snap, ACCESS_ONCE(sync_rcu_preempt_exp_count)))
->  			goto mb_ret; /* Others did our work for us. */
->  	}
-> -	if ((ACCESS_ONCE(sync_rcu_preempt_exp_count) - snap) > 0)
-> +	if (ULONG_CMP_LT(snap, ACCESS_ONCE(sync_rcu_preempt_exp_count)))
->  		goto unlock_mb_ret; /* Others did our work for us. */
->  
->  	/* force all RCU readers onto ->blkd_tasks lists. */
-> -- 
-> 1.7.8
-> 
+On Mon, Sep 03, 2012 at 11:22:28AM +0200, Linus Walleij wrote:
+> On Fri, Aug 31, 2012 at 2:23 PM, Lee Jones <lee.jones@linaro.org> wrote:
+>=20
+> (...)
+> >  static int nmk_i2c_probe(struct amba_device *adev, const struct amba_i=
+d *id)
+> >  {
+> >         int ret =3D 0;
+> >         struct nmk_i2c_controller *pdata =3D adev->dev.platform_data;
+> > +       struct device_node *np =3D adev->dev.of_node;
+> >         struct nmk_i2c_dev      *dev;
+> >         struct i2c_adapter *adap;
+> >
+> > +       if (np) {
+> > +               if (!pdata) {
+>=20
+> So, if no pdata is provided, we go on to allocate some ...
+>=20
+> > +                       pdata =3D devm_kzalloc(&adev->dev, sizeof(*pdat=
+a), GFP_KERNEL);
+> > +                       if (!pdata) {
+> > +                               ret =3D -ENOMEM;
+> > +                               goto err_no_mem;
+> > +                       }
+> > +               }
+> > +               /* Provide the default configuration as a base. */
+> > +               pdata =3D &u8500_i2c;
+>=20
+> Then you just override that pointer with a pointer to the local config.
+>=20
+> > +               nmk_i2c_of_probe(np, pdata);
+> > +       }
+> > +
+> >         if (!pdata)
+> >                 /* No i2c configuration found, using the default. */
+> >                 pdata =3D &u8500_i2c;
+>=20
+> This in it's entirety does not look sound. I *think* this is what you
+> want to do,
+> replace all of the above codde (including the last if (!pdata) clause) wi=
+th:
+>=20
+> if (!pdata) {
+>     /* If no platform data passed in, use the default configuration as
+> a base. */
+>     pdata =3D &u8500_i2c;
+>     if (np)
+>         /* Further, if we have a DT node, override the default with this =
+*/
+>         nmk_i2c_of_probe(np, pdata);
+> }
+>=20
+> This makes any passed pdata take precedence, else default pdata
+> complemented with DT info. Which is what we want.
+
+No. of_probe modifies pdata which in this case the default config which
+might already be in use. So, you will get problems if you have two
+instances with different configuration. So, we need to allocate memory
+but copy the content of the default data. The patch above just copies
+the pointer which is bogus.
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--rS8CxjVDS/+yyDmU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAlBEfBAACgkQD27XaX1/VRsjUwCgyqoDMZ/wjLR/YU1jiWrkBEHf
+LG8AoIZdoi8nDhFcW9ElnLoph5QT5b1e
+=RxHU
+-----END PGP SIGNATURE-----
+
+--rS8CxjVDS/+yyDmU--
