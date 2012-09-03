@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932323Ab2ICPXX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 11:23:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24868 "EHLO mx1.redhat.com"
+	id S932331Ab2ICPX4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 11:23:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49513 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932266Ab2ICPXW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 11:23:22 -0400
-Date: Mon, 3 Sep 2012 17:25:25 +0200
+	id S932266Ab2ICPXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 11:23:55 -0400
+Date: Mon, 3 Sep 2012 17:25:59 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
@@ -16,45 +16,87 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Roland McGrath <roland@hack.frob.com>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 0/7] uprobes: single-step fixes
-Message-ID: <20120903152525.GA9028@redhat.com>
+Subject: [PATCH 1/7] uprobes: Introduce arch_uprobe_enable/disable_step()
+Message-ID: <20120903152559.GA9054@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20120903152525.GA9028@redhat.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-In short: uprobes should not use user_enable/disable_single_step().
-This is unneeded and wrong.
+As Oleg pointed out in [0] uprobe should not use the ptrace interface
+for enabling/disabling single stepping.
 
-Sebastian, I changed your patches a bit:
+[0] http://lkml.kernel.org/20120730141638.GA5306@redhat.com
 
-	1/7:
+Add the new "__weak arch" helpers which simply call user_*_single_step()
+as a preparation. This is only needed to not break the powerpc port, we
+will fold this logic into arch_uprobe_pre/post_xol() hooks later.
 
-		- Change the subject and update the changelog. In particular,
-		  s/utrace/uprobes/. I am wondering where this typo came from ;)
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ include/linux/uprobes.h |    2 ++
+ kernel/events/uprobes.c |   14 ++++++++++++--
+ 2 files changed, 14 insertions(+), 2 deletions(-)
 
-	2/7:
-
-		- Rename UPROBE_TF_CHANGES to UPROBE_FIX_SETF to match other
-		  *_FIX_* defines.
-
-		- Update the changelog.
-
-		- !!!REMOVE send_sig(SIGTRAP) from arch_uprobe_disable_step!!!
-		  Didn't I ask you to make a separate patch for this change? ;)
-
-		  This "else send_sig(SIGTRAP)" is very wrong. Just suppose an
-		  application does asm ("pushf; popf") and the 2nd insn is probed.
-		  And otoh this is not enough.
-
-		  See 6/7.
-
-please let me know if you disagree.
-
-Oleg.
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index 6d4fe79..e6f0331 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -112,6 +112,8 @@ extern void uprobe_dup_mmap(struct mm_struct *oldmm, struct mm_struct *newmm);
+ extern void uprobe_free_utask(struct task_struct *t);
+ extern void uprobe_copy_process(struct task_struct *t);
+ extern unsigned long __weak uprobe_get_swbp_addr(struct pt_regs *regs);
++extern void __weak arch_uprobe_enable_step(struct arch_uprobe *arch);
++extern void __weak arch_uprobe_disable_step(struct arch_uprobe *arch);
+ extern int uprobe_post_sstep_notifier(struct pt_regs *regs);
+ extern int uprobe_pre_sstep_notifier(struct pt_regs *regs);
+ extern void uprobe_notify_resume(struct pt_regs *regs);
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index 82a1043..125d1b7 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -1444,6 +1444,16 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
+ 	return uprobe;
+ }
+ 
++void __weak arch_uprobe_enable_step(struct arch_uprobe *arch)
++{
++	user_enable_single_step(current);
++}
++
++void __weak arch_uprobe_disable_step(struct arch_uprobe *arch)
++{
++	user_disable_single_step(current);
++}
++
+ /*
+  * Run handler and ask thread to singlestep.
+  * Ensure all non-fatal signals cannot interrupt thread while it singlesteps.
+@@ -1490,7 +1500,7 @@ static void handle_swbp(struct pt_regs *regs)
+ 
+ 	utask->state = UTASK_SSTEP;
+ 	if (!pre_ssout(uprobe, regs, bp_vaddr)) {
+-		user_enable_single_step(current);
++		arch_uprobe_enable_step(&uprobe->arch);
+ 		return;
+ 	}
+ 
+@@ -1529,7 +1539,7 @@ static void handle_singlestep(struct uprobe_task *utask, struct pt_regs *regs)
+ 	put_uprobe(uprobe);
+ 	utask->active_uprobe = NULL;
+ 	utask->state = UTASK_RUNNING;
+-	user_disable_single_step(current);
++	arch_uprobe_disable_step(&uprobe->arch);
+ 	xol_free_insn_slot(current);
+ 
+ 	spin_lock_irq(&current->sighand->siglock);
+-- 
+1.5.5.1
 
