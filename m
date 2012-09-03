@@ -1,40 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755755Ab2ICSrg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 14:47:36 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:44173 "EHLO
+	id S1756534Ab2ICSuc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 14:50:32 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:44180 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752441Ab2ICSrf (ORCPT
+	with ESMTP id S1753535Ab2ICSua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 14:47:35 -0400
-Date: Mon, 3 Sep 2012 20:47:34 +0200
+	Mon, 3 Sep 2012 14:50:30 -0400
+Date: Mon, 3 Sep 2012 20:50:30 +0200
 From: Andi Kleen <andi@firstfloor.org>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Fix memset in NFS zap caches
-Message-ID: <20120903184734.GU16230@one.firstfloor.org>
-References: <20120903183515.GT16230@one.firstfloor.org> <4FA345DA4F4AE44899BD2B03EEEC2FA908F81A8E@SACEXCMBX04-PRD.hq.netapp.com>
+To: bprakash@broadcom.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Fix incorrect memset in bnx2fc_parse_fcp_rsp
+Message-ID: <20120903185030.GV16230@one.firstfloor.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA908F81A8E@SACEXCMBX04-PRD.hq.netapp.com>
 User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> No, this is a gcc bug.
-> 
-> NFS_COOKIEVERF(inode) resolves to an array, so the current code is
-> correct. The above change will cause the 2nd half of the array to remain
-> uninitialised...
+gcc 4.8 warns because the memset only clears sizeof(char *) bytes, not
+the whole buffer. Use the correct buffer size and clear the whole sense
+buffer.
 
-Are you sure?
+/backup/lsrc/git/linux-lto-2.6/drivers/scsi/bnx2fc/bnx2fc_io.c: In
+function 'bnx2fc_parse_fcp_rsp':
+/backup/lsrc/git/linux-lto-2.6/drivers/scsi/bnx2fc/bnx2fc_io.c:1810:41:
+warning: argument to 'sizeof' in 'memset' call is the same expression as
+the destination; did you mean to provide an explicit length?
+[-Wsizeof-pointer-memaccess]
+   memset(sc_cmd->sense_buffer, 0, sizeof(sc_cmd->sense_buffer));
+                                         ^
 
-include/linux/nfs_fs.h:268:static inline __be32 *NFS_COOKIEVERF(const struct inode *inode)
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-That doesn't look like an array type to me. 
 
--Andi
 
+diff --git a/drivers/scsi/bnx2fc/bnx2fc_io.c b/drivers/scsi/bnx2fc/bnx2fc_io.c
+index 73f231c..8d4626c 100644
+--- a/drivers/scsi/bnx2fc/bnx2fc_io.c
++++ b/drivers/scsi/bnx2fc/bnx2fc_io.c
+@@ -1807,7 +1807,7 @@ static void bnx2fc_parse_fcp_rsp(struct bnx2fc_cmd *io_req,
+ 			fcp_sns_len = SCSI_SENSE_BUFFERSIZE;
+ 		}
+ 
+-		memset(sc_cmd->sense_buffer, 0, sizeof(sc_cmd->sense_buffer));
++		memset(sc_cmd->sense_buffer, 0, SCSI_SENSE_BUFFERSIZE);
+ 		if (fcp_sns_len)
+ 			memcpy(sc_cmd->sense_buffer, rq_data, fcp_sns_len);
+ 
+-- 
+ak@linux.intel.com -- Speaking for myself only.
