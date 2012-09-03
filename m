@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756218Ab2ICJmz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 05:42:55 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:50527 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752367Ab2ICJmy (ORCPT
+	id S1756229Ab2ICJny (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 05:43:54 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:36873 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754899Ab2ICJnx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 05:42:54 -0400
-X-Originating-IP: 217.70.178.150
+	Mon, 3 Sep 2012 05:43:53 -0400
+X-Originating-IP: 217.70.178.136
 X-Originating-IP: 50.43.46.74
-Date: Mon, 3 Sep 2012 02:42:46 -0700
+Date: Mon, 3 Sep 2012 02:43:45 -0700
 From: Josh Triplett <josh@joshtriplett.org>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
@@ -17,71 +17,80 @@ Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
         mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 20/23] rcu: Remove callback acceleration
- from grace-period initialization
-Message-ID: <20120903094246.GI5574@leaf>
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 21/23] rcu: Eliminate signed overflow in
+ synchronize_rcu_expedited()
+Message-ID: <20120903094345.GJ5574@leaf>
 References: <20120830181811.GA29154@linux.vnet.ibm.com>
  <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346350718-30937-20-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346350718-30937-21-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1346350718-30937-20-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1346350718-30937-21-git-send-email-paulmck@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 11:18:35AM -0700, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+On Thu, Aug 30, 2012 at 11:18:36AM -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 > 
-> Before grace-period initialization was moved to a kthread, the CPU
-> invoking this code would have at least one callback that needed
-> a grace period, often a newly registered callback.  However, moving
-> grace-period initialization means that the CPU with the callback
-> that was requesting a grace period is not necessarily the CPU that
-> is initializing the grace period, so this acceleration is less
-> valuable.  Because it also adds to the complexity of reasoning about
-> correctness, this commit removes it.
+> In the C language, signed overflow is undefined.  It is true that
+> twos-complement arithmetic normally comes to the rescue, but if the
+> compiler can subvert this any time it has any information about the values
+> being compared.  For example, given "if (a - b > 0)", if the compiler
+> has enough information to realize that (for example) the value of "a"
+> is positive and that of "b" is negative, the compiler is within its
+> rights to optimize to a simple "if (1)", which might not be what you want.
 > 
+> This commit therefore converts synchronize_rcu_expedited()'s work-done
+> detection counter from signed to unsigned.
+> 
+> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
->  kernel/rcutree.c |   19 -------------------
->  1 files changed, 0 insertions(+), 19 deletions(-)
+>  kernel/rcutree_plugin.h |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
 > 
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index 86903df..44609c3 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -1055,25 +1055,6 @@ static int rcu_gp_init(struct rcu_state *rsp)
->  	rsp->gpnum++;
->  	trace_rcu_grace_period(rsp->name, rsp->gpnum, "start");
->  	record_gp_stall_check_time(rsp);
-> -
-> -	/*
-> -	 * Because this CPU just now started the new grace period, we
-> -	 * know that all of its callbacks will be covered by this upcoming
-> -	 * grace period, even the ones that were registered arbitrarily
-> -	 * recently.    Therefore, advance all RCU_NEXT_TAIL callbacks
-> -	 * to RCU_NEXT_READY_TAIL.  When the CPU later recognizes the
-> -	 * start of the new grace period, it will advance all callbacks
-> -	 * one position, which will cause all of its current outstanding
-> -	 * callbacks to be handled by the newly started grace period.
-> -	 *
-> -	 * Other CPUs cannot be sure exactly when the grace period started.
-> -	 * Therefore, their recently registered callbacks must pass through
-> -	 * an additional RCU_NEXT_READY stage, so that they will be handled
-> -	 * by the next RCU grace period.
-> -	 */
-> -	rdp = __this_cpu_ptr(rsp->rda);
-> -	rdp->nxttail[RCU_NEXT_READY_TAIL] = rdp->nxttail[RCU_NEXT_TAIL];
-> -
->  	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+> index befb0b2..7ed45c9 100644
+> --- a/kernel/rcutree_plugin.h
+> +++ b/kernel/rcutree_plugin.h
+> @@ -677,7 +677,7 @@ void synchronize_rcu(void)
+>  EXPORT_SYMBOL_GPL(synchronize_rcu);
 >  
->  	/* Exclude any concurrent CPU-hotplug operations. */
+>  static DECLARE_WAIT_QUEUE_HEAD(sync_rcu_preempt_exp_wq);
+> -static long sync_rcu_preempt_exp_count;
+> +static unsigned long sync_rcu_preempt_exp_count;
+>  static DEFINE_MUTEX(sync_rcu_preempt_exp_mutex);
+>  
+>  /*
+> @@ -792,7 +792,7 @@ void synchronize_rcu_expedited(void)
+>  	unsigned long flags;
+>  	struct rcu_node *rnp;
+>  	struct rcu_state *rsp = &rcu_preempt_state;
+> -	long snap;
+> +	unsigned long snap;
+>  	int trycount = 0;
+>  
+>  	smp_mb(); /* Caller's modifications seen first by other CPUs. */
+> @@ -811,10 +811,10 @@ void synchronize_rcu_expedited(void)
+>  			synchronize_rcu();
+>  			return;
+>  		}
+> -		if ((ACCESS_ONCE(sync_rcu_preempt_exp_count) - snap) > 0)
+> +		if (ULONG_CMP_LT(snap, ACCESS_ONCE(sync_rcu_preempt_exp_count)))
+>  			goto mb_ret; /* Others did our work for us. */
+>  	}
+> -	if ((ACCESS_ONCE(sync_rcu_preempt_exp_count) - snap) > 0)
+> +	if (ULONG_CMP_LT(snap, ACCESS_ONCE(sync_rcu_preempt_exp_count)))
+>  		goto unlock_mb_ret; /* Others did our work for us. */
+>  
+>  	/* force all RCU readers onto ->blkd_tasks lists. */
 > -- 
 > 1.7.8
 > 
