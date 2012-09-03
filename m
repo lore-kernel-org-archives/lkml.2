@@ -1,207 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978Ab2ICHor (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 03:44:47 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:19428 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753016Ab2ICHon (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 03:44:43 -0400
-X-IronPort-AV: E=Sophos;i="4.80,359,1344182400"; 
-   d="scan'208";a="5772759"
-Message-ID: <50445CB4.80303@cn.fujitsu.com>
-Date: Mon, 03 Sep 2012 15:31:00 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1754979Ab2ICHur (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 03:50:47 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:48496 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753016Ab2ICHuq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 03:50:46 -0400
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
-        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
-        cl@linux.com, minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com
-Subject: Re: [RFC v8 PATCH 08/20] memory-hotplug: remove /sys/firmware/memmap/X
- sysfs
-References: <1346148027-24468-1-git-send-email-wency@cn.fujitsu.com>	<1346148027-24468-9-git-send-email-wency@cn.fujitsu.com> <20120831140623.8d13bd2c.akpm@linux-foundation.org>
-In-Reply-To: <20120831140623.8d13bd2c.akpm@linux-foundation.org>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/03 15:25:05,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/03 15:25:12,
-	Serialize complete at 2012/09/03 15:25:12
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20120828073858.GK27166@arwen.pp.htv.fi>
+References: <503A8CAE.6050606@yahoo.es>
+	<20120827070323.GC28721@samfundet.no>
+	<503B342C.9060300@yahoo.es>
+	<20120827111431.GA27868@samfundet.no>
+	<503B8B26.3050205@yahoo.es>
+	<CAKohpo=ALUNOnQdQjNd1Y2jtocxjixKCiBrRZp8qGErqg1LSKw@mail.gmail.com>
+	<503C6B67.2010903@yahoo.es>
+	<20120828073858.GK27166@arwen.pp.htv.fi>
+Date: Mon, 3 Sep 2012 10:50:44 +0300
+Message-ID: <CAHp75VeFDRYXuY0bkry-Leo-uGqEGYBm46wKfmj_Vxt_m3KO7A@mail.gmail.com>
+Subject: Re: [PATCH 1/2] dw_dmac: make driver endianness configurable
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: balbi@ti.com
+Cc: Hein Tibosch <hein_tibosch@yahoo.es>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        spear-devel <spear-devel@list.st.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "ludovic.desroches" <ludovic.desroches@atmel.com>,
+        Havard Skinnemoen <havard@skinnemoen.net>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 09/01/2012 05:06 AM, Andrew Morton Wrote:
-> On Tue, 28 Aug 2012 18:00:15 +0800
-> wency@cn.fujitsu.com wrote:
-> 
->> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->>
->> When (hot)adding memory into system, /sys/firmware/memmap/X/{end, start, type}
->> sysfs files are created. But there is no code to remove these files. The patch
->> implements the function to remove them.
->>
->> Note : The code does not free firmware_map_entry since there is no way to free
->>        memory which is allocated by bootmem.
->>
->> ....
->>
->> +#define to_memmap_entry(obj) container_of(obj, struct firmware_map_entry, kobj)
-> 
-> It would be better to implement this as an inlined C function.  That
-> has improved type safety and improved readability.
+On Tue, Aug 28, 2012 at 10:39 AM, Felipe Balbi <balbi@ti.com> wrote:
+> Can you not read this from any internal register ? Synopsys generally
+> adds a set of read only registers which we can use to guess which
+> features where enabled in the IP when configuring it with their IP
+> configuration tool.
+You right. I have a patch to support few options like that already.
+However, I can't share
+it yet by some legal reasons.
 
-Hmm, this macro is not a new macro. It is defined after the function
-release_firmware_map_entry(). We just moved it here because we
-need it in the function release_firmware_map_entry().
-
-> 
->> +static void release_firmware_map_entry(struct kobject *kobj)
->> +{
->> +	struct firmware_map_entry *entry = to_memmap_entry(kobj);
->> +	struct page *page;
->> +
->> +	page = virt_to_page(entry);
->> +	if (PageSlab(page) || PageCompound(page))
-> 
-> That PageCompound() test looks rather odd.  Why is this done?
-> 
->> +		kfree(entry);
->> +
->> +	/* There is no way to free memory allocated from bootmem*/
->> +}
-> 
-> This function is a bit ugly - poking around in page flags to determine
-> whether or not the memory came from bootmem.  It would be cleaner to
-> use a separate boolean.  Although I guess we can live with it as you
-> have it here.
-> 
->>  static struct kobj_type memmap_ktype = {
->> +	.release	= release_firmware_map_entry,
->>  	.sysfs_ops	= &memmap_attr_ops,
->>  	.default_attrs	= def_attrs,
->>  };
->> @@ -123,6 +139,16 @@ static int firmware_map_add_entry(u64 start, u64 end,
->>  	return 0;
->>  }
->>  
->> +/**
->> + * firmware_map_remove_entry() - Does the real work to remove a firmware
->> + * memmap entry.
->> + * @entry: removed entry.
->> + **/
->> +static inline void firmware_map_remove_entry(struct firmware_map_entry *entry)
->> +{
->> +	list_del(&entry->list);
->> +}
-> 
-> Is there no locking  to protect that list?
-
-OK, I will add a lock to protect it.
-
-Thanks
-Wen Congyang
-
-> 
->>  /*
->>   * Add memmap entry on sysfs
->>   */
->> @@ -144,6 +170,31 @@ static int add_sysfs_fw_map_entry(struct firmware_map_entry *entry)
->>  	return 0;
->>  }
->>  
->> +/*
->> + * Remove memmap entry on sysfs
->> + */
->> +static inline void remove_sysfs_fw_map_entry(struct firmware_map_entry *entry)
->> +{
->> +	kobject_put(&entry->kobj);
->> +}
->> +
->> +/*
->> + * Search memmap entry
->> + */
->> +
->> +struct firmware_map_entry * __meminit
->> +find_firmware_map_entry(u64 start, u64 end, const char *type)
-> 
-> A better name would be firmware_map_find_entry().  To retain the (good)
-> convention that symbols exported from here all start with
-> "firmware_map_".
-> 
->> +{
->> +	struct firmware_map_entry *entry;
->> +
->> +	list_for_each_entry(entry, &map_entries, list)
->> +		if ((entry->start == start) && (entry->end == end) &&
->> +		    (!strcmp(entry->type, type)))
->> +			return entry;
->> +
->> +	return NULL;
->> +}
->> +
->>  /**
->>   * firmware_map_add_hotplug() - Adds a firmware mapping entry when we do
->>   * memory hotplug.
->> @@ -196,6 +247,32 @@ int __init firmware_map_add_early(u64 start, u64 end, const char *type)
->>  	return firmware_map_add_entry(start, end, type, entry);
->>  }
->>  
->> +/**
->> + * firmware_map_remove() - remove a firmware mapping entry
->> + * @start: Start of the memory range.
->> + * @end:   End of the memory range.
->> + * @type:  Type of the memory range.
->> + *
->> + * removes a firmware mapping entry.
->> + *
->> + * Returns 0 on success, or -EINVAL if no entry.
->> + **/
->> +int __meminit firmware_map_remove(u64 start, u64 end, const char *type)
->> +{
->> +	struct firmware_map_entry *entry;
->> +
->> +	entry = find_firmware_map_entry(start, end - 1, type);
->> +	if (!entry)
->> +		return -EINVAL;
->> +
->> +	firmware_map_remove_entry(entry);
->> +
->> +	/* remove the memmap entry */
->> +	remove_sysfs_fw_map_entry(entry);
->> +
->> +	return 0;
->> +}
-> 
-> Again, the lack of locking looks bad.
-> 
->> ...
->>
->> --- a/mm/memory_hotplug.c
->> +++ b/mm/memory_hotplug.c
->> @@ -1052,9 +1052,9 @@ int offline_memory(u64 start, u64 size)
->>  	return 0;
->>  }
->>  
->> -int remove_memory(int nid, u64 start, u64 size)
->> +int __ref remove_memory(int nid, u64 start, u64 size)
-> 
-> Why was __ref added?
-> 
->>  {
->> -	int ret = -EBUSY;
->> +	int ret = 0;
->>  	lock_memory_hotplug();
->>  	/*
->>  	 * The memory might become online by other task, even if you offine it.
->>
->> ...
->>
-> 
-
+-- 
+With Best Regards,
+Andy Shevchenko
