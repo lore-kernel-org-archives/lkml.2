@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756126Ab2ICIte (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 04:49:34 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:51845 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755080Ab2ICItc (ORCPT
+	id S1756094Ab2ICIyM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 04:54:12 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:17873 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752208Ab2ICIyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 04:49:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAKohpo=bvzm1O4FAtsr3YpLg-w1Rp7RT-9ZuJBgVZRxVHnQO_g@mail.gmail.com>
-References: <50439D44.3080100@yahoo.es>
-	<CAHp75VcQOeVeKPg8z9u+fd8ia4QAyrq6UQn-D7Q-yO9+pLS6LQ@mail.gmail.com>
-	<CAKohpo=bvzm1O4FAtsr3YpLg-w1Rp7RT-9ZuJBgVZRxVHnQO_g@mail.gmail.com>
-Date: Mon, 3 Sep 2012 11:49:30 +0300
-Message-ID: <CAHp75VcpzomoWb3+xOk=++BkUh5_cuXQTu8ZuDByjfX+pYmNCA@mail.gmail.com>
-Subject: Re: [PATCH v4 2/3] dw_dmac: max_mem_width limits value for
- SRC/DST_TR_WID register
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Hein Tibosch <hein_tibosch@yahoo.es>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        spear-devel <spear-devel@list.st.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "ludovic.desroches" <ludovic.desroches@atmel.com>,
-        Havard Skinnemoen <havard@skinnemoen.net>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 3 Sep 2012 04:54:10 -0400
+Message-id: <5044702E.3070209@samsung.com>
+Date: Mon, 03 Sep 2012 10:54:06 +0200
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430
+ Thunderbird/12.0.1
+MIME-version: 1.0
+To: Taehun Kim <kth3321@gmail.com>
+Cc: Vasily Khoruzhick <anarsoul@gmail.com>, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: S3C24XX: Add WIZnet W5300E01-ARM board support
+References: <1346653236-19728-1-git-send-email-kth3321@gmail.com>
+ <CA+E=qVfGN9_Lj5GWqERfZGQsTtnnK_fARgXuCujdVeZ0PBoJEQ@mail.gmail.com>
+In-reply-to: <CA+E=qVfGN9_Lj5GWqERfZGQsTtnnK_fARgXuCujdVeZ0PBoJEQ@mail.gmail.com>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 3, 2012 at 11:30 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 3 September 2012 13:55, Andy Shevchenko <andy.shevchenko@gmail.com> wrote:
->>> #define DW_MEM_WIDTH_64         0       /* default */
->>> #define DW_MEM_WIDTH_32         1       /* e.g. for avr32 */
->> There are 4 options: 32, 64, 128, and 256 bits. I would prefer to see
->> the value in conjunction with
->> real value in the register, namely 2 for 32, 3 - 64, 4 - 128, 5 - 256.
->
-> Which register are you talking about? This configuration is outside of DMAC
-> controller and i am not sure if dw DMAC controller can do 128 or 256
-> bit transfers.
-SRC_WIDTH & DST_WIDTH in CTLx. The field are 3 bit long. Acceptable
-values from 0 to 5.
-2 corresponds to 32 bit transfers.
+Hi,
 
->>> @@ -58,6 +58,9 @@ struct dw_dma_slave {
->>>         u32                     cfg_lo;
->>>         u8                      src_master;
->>>         u8                      dst_master;
->>> +#define        DW_MEM_WIDTH_64         0
->>> +#define        DW_MEM_WIDTH_32         1       /* e.g. for avr32 */
->>> +       u8                      max_mem_width;
->> Might be I missed something, but why is it slave configuration?
->> I think the controller (actually channel) structure is more suitable
->> to keep that field inside.
->
-> @Hein: Even i missed it. How will you do memcpy transfers as we don't have
-> this structure there. Probably you need to move this to DMA controller platform
-> data filed.
->
-> viresh
+On 09/03/2012 09:56 AM, Vasily Khoruzhick wrote:
+>> +static void __init w5300e01_init(void)
+>> +{
+>> +       s3c_nand_set_platdata(&w5300e01_nand_info);
+>> +       platform_add_devices(w5300e01_devices, ARRAY_SIZE(w5300e01_devices));
+>> +
+>> +       /* W5300 interrupt pin. */
+>> +       s3c2410_gpio_cfgpin(S3C2410_GPF(0), S3C2410_GPIO_IRQ);
+>> +
+>> +       s3c2410_gpio_cfgpin(S3C2410_GPF(4), S3C2410_GPIO_OUTPUT);
+>> +       s3c2410_gpio_cfgpin(S3C2410_GPF(5), S3C2410_GPIO_OUTPUT);
+>> +       s3c2410_gpio_cfgpin(S3C2410_GPF(6), S3C2410_GPIO_OUTPUT);
+>> +       s3c2410_gpio_cfgpin(S3C2410_GPF(7), S3C2410_GPIO_OUTPUT);
+>> +
+>> +       s3c2410_gpio_setpin(S3C2410_GPF(0), 1);
+>> +       s3c2410_gpio_setpin(S3C2410_GPF(4), 1);
+>> +       s3c2410_gpio_setpin(S3C2410_GPF(5), 1);
+>> +       s3c2410_gpio_setpin(S3C2410_GPF(6), 1);
+>> +       s3c2410_gpio_setpin(S3C2410_GPF(7), 1);
+>> +
+> 
+> Please use gpiolib API, legacy s3c2410_gpio_* API will be removed soon.
 
+Right, you'll find some information about this in
+Documentation/arm/Samsung-S3C24XX/GPIO.txt.
 
+These links may be useful as well:
+http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg11985.html
+http://www.spinics.net/lists/arm-kernel/msg192119.html
 
--- 
-With Best Regards,
-Andy Shevchenko
+--
+
+Regards,
+Sylwester
