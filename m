@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932263Ab2ICO3Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 10:29:25 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:51447 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932174Ab2ICO3Y (ORCPT
+	id S932257Ab2ICObq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 10:31:46 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:43954 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932232Ab2ICObp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 10:29:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <1345614150-25723-1-git-send-email-omar.luna@linaro.org>
-References: <1345614150-25723-1-git-send-email-omar.luna@linaro.org>
-Date: Mon, 3 Sep 2012 09:29:23 -0500
-Message-ID: <CALLhW=4GNagMQgn+W8muLz__sSRv6ZOt_FvzXHLcaQzw3N_3yg@mail.gmail.com>
-Subject: Re: [PATCH 0/2] OMAP: hwmod: fix hardreset handling
-From: Omar Ramirez Luna <omar.luna@linaro.org>
-To: Benoit Cousson <b-cousson@ti.com>, Paul Walmsley <paul@pwsan.com>
-Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
-        Kevin Hilman <khilman@ti.com>, Ohad Ben-Cohen <ohad@wizery.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Omar Ramirez Luna <omar.ramirez@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 3 Sep 2012 10:31:45 -0400
+From: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+To: mturquette@linaro.org, myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        rjw@sisk.pl
+Cc: patches@linaro.org, linaro-dev@lists.linaro.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Rajagopal Venkat <rajagopal.venkat@linaro.org>
+Subject: [PATCH 0/3] devfreq: Add support for devices which can idle
+Date: Mon,  3 Sep 2012 19:59:35 +0530
+Message-Id: <1346682578-24312-1-git-send-email-rajagopal.venkat@linaro.org>
+X-Mailer: git-send-email 1.7.11.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 August 2012 00:42, Omar Ramirez Luna <omar.luna@linaro.org> wrote:
-> From: Omar Ramirez Luna <omar.ramirez@ti.com>
->
-> The patch to expose hwmod assert/deassert functions through omap_device
-> has been accepted and queued for 3.7[1], however these two patches are
-> needed to make the API functional. Hence a revised version is being sent
-> according to previous comments:
->
-> - ARM: OMAP: hwmod: revise deassert sequence
-> Now it uses enable|disable_module to handle the configuration of the
-> modulemode inside CLKCTRL. As part of the cleanup of leaf clocks, the
-> one associated with ipu_mmu will be removed along with the iommu hwmod
-> migration[2].
->
-> - ARM: OMAP: hwmod: partially un-reset hwmods might not be properly
->   enabled
-> More infomation added in the patch description[3].
->
-> [1] http://patchwork.kernel.org/patch/1266731/
-> [2] http://patchwork.kernel.org/patch/1201791/
-> [3] http://patchwork.kernel.org/patch/1201801/
->
-> Omar Ramirez Luna (2):
->   ARM: OMAP: hwmod: partially un-reset hwmods might not be properly
->     enabled
->   ARM: OMAP: hwmod: revise deassert sequence
->
->  arch/arm/mach-omap2/omap_hwmod.c |   74 ++++++++++++++++++++++++++++++--------
->  1 file changed, 59 insertions(+), 15 deletions(-)
+This patchset updates devfreq core to add support for devices
+which can idle. When device idleness is detected perhaps
+through runtime-pm, need some mechanism to suspend devfreq
+load monitoring and resume when device is back online.
 
-Ping.
+patch 1 introduce core design changes - per device work, decouple
+delayed work from core and event based interaction.
+patch 2 add devfreq suspend and resume apis.
+patch 3 current frequency bug fix and add new sysfs attribute for
+governor predicted next target frequency.
 
-Regards,
+The existing devfreq apis are kept intact. Two new apis
+devfreq_suspend_device() and devfreq_resume_device() are
+added to support suspend/resume of device devfreq.
 
-Omar
+--
+Rajagopal Venkat (3):
+  devfreq: core updates to support devices which can idle
+  devfreq: Add suspend and resume apis
+  devfreq: Add current freq callback in device profile
+
+ Documentation/ABI/testing/sysfs-class-devfreq |   7 +
+ drivers/devfreq/devfreq.c                     | 412 +++++++++++---------------
+ drivers/devfreq/governor.h                    |  11 +
+ drivers/devfreq/governor_performance.c        |  16 +-
+ drivers/devfreq/governor_powersave.c          |  16 +-
+ drivers/devfreq/governor_simpleondemand.c     |  42 +++
+ drivers/devfreq/governor_userspace.c          |  23 +-
+ include/linux/devfreq.h                       |  46 ++-
+ 8 files changed, 291 insertions(+), 282 deletions(-)
+
+-- 
+1.7.11.3
+
