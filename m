@@ -1,56 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932285Ab2ICOf6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 10:35:58 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:42876 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932200Ab2ICOf4 (ORCPT
+	id S932252Ab2ICOss (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 10:48:48 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:6765 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753364Ab2ICOsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 10:35:56 -0400
+	Mon, 3 Sep 2012 10:48:47 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 03 Sep 2012 07:48:42 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <lrg@ti.com>, <broonie@opensource.wolfsonmicro.com>,
+        <rabin.vincent@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V3] regulator: disable supply regulator if it is enabled for boot-on
+Date: Mon, 3 Sep 2012 19:55:39 +0530
+Message-ID: <1346682339-13322-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-In-Reply-To: <5044BFD1.10708@nvidia.com>
-References: <1345734087-21803-1-git-send-email-lee.jones@linaro.org>
-	<1345734087-21803-3-git-send-email-lee.jones@linaro.org>
-	<20120831112258.GA2624@pengutronix.de>
-	<20120831122323.GC5962@gmail.com>
-	<CACRpkdZ=C1EV4WO2b=1YLHPNhsDsQdq7Kfnpzm8i7uGRtVjJuQ@mail.gmail.com>
-	<20120903094448.GB11780@pengutronix.de>
-	<20120903100656.GC5782@gmail.com>
-	<CACRpkdb8owKBxawAv4LVVYx5kUgZ9cUSiQ=BV0f3Pf3bHtknuQ@mail.gmail.com>
-	<CAF2Aj3j25w1Nn9O6hV+=i-j1ts_p_Ucswk_M7r04S7i5BzPkHg@mail.gmail.com>
-	<CACRpkdZ5VFhrbONy=0K5MFh4e6BDFckq0yqzjQ2QkW9MgwKqBg@mail.gmail.com>
-	<5044BFD1.10708@nvidia.com>
-Date: Mon, 3 Sep 2012 16:35:55 +0200
-Message-ID: <CACRpkda0akcLRe3J=fVcyYpxHmkJmVe+c1doXQ4=vOA6iNxe2g@mail.gmail.com>
-Subject: Re: [PATCH 3/3] i2c: nomadik: Add Device Tree support to the Nomadik
- I2C driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@nvidia.com>, Lee Jones <lee.jones@linaro.org>
-Cc: Rob Herring <rob.herring@calxeda.com>, devicetree-discuss@lists.ozlabs.org,
-        linus.walleij@stericsson.com, Wolfram Sang <w.sang@pengutronix.de>,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 3, 2012 at 4:33 PM, Stephen Warren <swarren@nvidia.com> wrote:
-> On 09/03/2012 05:58 AM, Linus Walleij wrote:
->> On Mon, Sep 3, 2012 at 1:32 PM, Lee Jones <lee.jones@linaro.org> wrote:
->>
->>> No, this is wrong. Platform data should not override DT.
->>>
->>> If DT is enabled and passed, it should have highest priority.
->
-> No, that's wrong. If platform data is specified, it overrides DT, so
-> that if the DT needs any fixup, it can be provided using platform data.
+If supply regulator is enabled because of boot-on (not always-on)
+then disable regulator need to be call if regulator have some
+user or full constraint has been enabled.
+This will make sure that reference count of supply regulator
+is in sync with child regulator's state.
 
-Thanks Stephen, now there are two of us saying this, Lee please
-follow this design pattern.
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Reported-by: Rabin Vincent <rabin.vincent@gmail.com>
+---
+Changes from V1:
+Rabin reported that the nested locking trace is getting generated.
+This is because the regulator lock mutex and disable himself and then
+call for supply disable which again lock the regulator lock.
+Probably because both lock is taken from regulator structure in nested
+manner, the trace is getting generated.
+Rewritten patch to avoid nested locking.
 
-(Unless Rob/Grant start shouting counter-orders...)
+Changes from v2:
+The patch 1 does not handle the case where a regulator is not set boot_on
+but is considered on (for example, because of the lack of an is_enabled
+callback), and is later actually enabled by a consumer before
+regulator_init_complete().
+So here I added the flag to track if the supply is enabled during registration.
 
-Yours,
-Linus Walleij
+
+ drivers/regulator/core.c         |   15 ++++++++++++++-
+ include/linux/regulator/driver.h |    5 +++++
+ 2 files changed, 19 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 06186ba..f166a4f 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -3284,6 +3284,7 @@ regulator_register(const struct regulator_desc *regulator_desc,
+ 			ret = regulator_enable(rdev->supply);
+ 			if (ret < 0)
+ 				goto scrub;
++			rdev->need_supply_disable = 1;
+ 		}
+ 	}
+ 
+@@ -3312,8 +3313,13 @@ unset_supplies:
+ 	unset_regulator_supplies(rdev);
+ 
+ scrub:
+-	if (rdev->supply)
++	if (rdev->supply) {
++		if (rdev->need_supply_disable) {
++			regulator_disable(rdev->supply);
++			rdev->need_supply_disable = 0;
++		}
+ 		regulator_put(rdev->supply);
++	}
+ 	if (rdev->ena_gpio)
+ 		gpio_free(rdev->ena_gpio);
+ 	kfree(rdev->constraints);
+@@ -3606,6 +3612,8 @@ static int __init regulator_init_complete(void)
+ 	 * default behaviour in the future.
+ 	 */
+ 	list_for_each_entry(rdev, &regulator_list, list) {
++		bool supply_disable = true;
++
+ 		ops = rdev->desc->ops;
+ 		c = rdev->constraints;
+ 
+@@ -3641,10 +3649,15 @@ static int __init regulator_init_complete(void)
+ 			 * anything here.
+ 			 */
+ 			rdev_warn(rdev, "incomplete constraints, leaving on\n");
++			supply_disable = false;
+ 		}
+ 
+ unlock:
+ 		mutex_unlock(&rdev->mutex);
++		if (rdev->need_supply_disable && supply_disable) {
++			regulator_disable(rdev->supply);
++			rdev->need_supply_disable = 0;
++		}
+ 	}
+ 
+ 	mutex_unlock(&regulator_list_mutex);
+diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
+index c10012f..bf31771 100644
+--- a/include/linux/regulator/driver.h
++++ b/include/linux/regulator/driver.h
+@@ -279,6 +279,11 @@ struct regulator_dev {
+ 	int ena_gpio;
+ 	unsigned int ena_gpio_invert:1;
+ 	unsigned int ena_gpio_state:1;
++
++	/* If supply enabled during registrtaion then need to disable
++	 * when full constraint enabled.
++	 */
++	unsigned int need_supply_disable:1;
+ };
+ 
+ struct regulator_dev *
+-- 
+1.7.1.1
+
