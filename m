@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932138Ab2ICOCm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 10:02:42 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:50962 "EHLO comal.ext.ti.com"
+	id S932146Ab2ICOFW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 10:05:22 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:54663 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753479Ab2ICOCl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 10:02:41 -0400
+	id S1753479Ab2ICOFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 10:05:21 -0400
 From: Shubhrajyoti D <shubhrajyoti@ti.com>
 To: <spi-devel-general@lists.sourceforge.net>
 CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Shubhrajyoti D <shubhrajyoti@ti.com>
 Subject: [PATCH] spi: omap2-mcspi: Cleanup the omap2_mcspi_txrx_dma function
-Date: Mon, 3 Sep 2012 19:32:21 +0530
-Message-ID: <1346680941-7931-1-git-send-email-shubhrajyoti@ti.com>
+Date: Mon, 3 Sep 2012 19:35:03 +0530
+Message-ID: <1346681103-7981-1-git-send-email-shubhrajyoti@ti.com>
 X-Mailer: git-send-email 1.7.5.4
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -20,11 +20,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently in omap2_mcspi_txrx_dma has the rx and the rx support
+Currently in omap2_mcspi_txrx_dma the tx and the rx support is
 interleaved. Make the rx related code in omap2_mcspi_rx_dma
-and the tx related code omap2_mcspi_tx_dma and call functions.
+and the tx related code omap2_mcspi_tx_dma and call the functions.
 
-While at it also remove the braces in the if statements which has only
+While at it remove the braces in the if statements which has only
 one line.
 Also fix ["foo * bar" to "foo *bar"] warn for the rx and tx variables.
 
