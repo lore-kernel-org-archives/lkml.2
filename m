@@ -1,64 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756537Ab2ICSwx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 14:52:53 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:4789 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754370Ab2ICSww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 14:52:52 -0400
-X-IronPort-AV: E=Sophos;i="4.80,361,1344236400"; 
-   d="scan'208";a="685271462"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Andi Kleen <andi@firstfloor.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Fix memset in NFS zap caches
-Thread-Topic: [PATCH] Fix memset in NFS zap caches
-Thread-Index: AQHNigLiTnmJlQHzNUyblrA1JsIXkpd5aCAAgAACXACAAAF2AA==
-Date: Mon, 3 Sep 2012 18:52:49 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA908F81B7D@SACEXCMBX04-PRD.hq.netapp.com>
-References: <20120903183515.GT16230@one.firstfloor.org>
-	 <4FA345DA4F4AE44899BD2B03EEEC2FA908F81A8E@SACEXCMBX04-PRD.hq.netapp.com>
-	 <20120903184734.GU16230@one.firstfloor.org>
-In-Reply-To: <20120903184734.GU16230@one.firstfloor.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <C70131D1AEB6474C8E11537A3F1D2291@tahoe.netapp.com>
+	id S1756587Ab2ICSxm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 14:53:42 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54256 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754370Ab2ICSxk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 14:53:40 -0400
 MIME-Version: 1.0
+In-Reply-To: <034a9cbb168501954408f1004a28c827f3a4158b.1346653435.git.agordeev@redhat.com>
+References: <cover.1346653435.git.agordeev@redhat.com>
+	<034a9cbb168501954408f1004a28c827f3a4158b.1346653435.git.agordeev@redhat.com>
+Date: Mon, 3 Sep 2012 11:53:39 -0700
+X-Google-Sender-Auth: YOf7LUIWdwclkj6euPyi6nWy6WY
+Message-ID: <CAE9FiQUuAPy884Ytu5PrFkcoQ5tT_DPxyYDk1D1jKbo+G577Mw@mail.gmail.com>
+Subject: Re: [PATCH v2 -tip 1/5] x86, MSI: Support multiple MSIs in presense
+ of IRQ remapping
+From: Yinghai Lu <yinghai@kernel.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Jeff Garzik <jgarzik@pobox.com>,
+        Matthew Wilcox <willy@linux.intel.com>, x86@kernel.org,
+        linux-pci@vger.kernel.org, linux-ide@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q83IqviF007639
 
-On Mon, 2012-09-03 at 20:47 +0200, Andi Kleen wrote:
-> > No, this is a gcc bug.
-> > 
-> > NFS_COOKIEVERF(inode) resolves to an array, so the current code is
-> > correct. The above change will cause the 2nd half of the array to remain
-> > uninitialised...
-> 
-> Are you sure?
-> 
-> include/linux/nfs_fs.h:268:static inline __be32 *NFS_COOKIEVERF(const struct inode *inode)
-> 
-> That doesn't look like an array type to me. 
+On Mon, Sep 3, 2012 at 2:17 AM, Alexander Gordeev <agordeev@redhat.com> wrote:
+> The MSI specification has several constraints in comparison with MSI-X,
+> most notable of them is the inability to configure MSIs independently.
+> As a result, it is impossible to dispatch interrupts from different
+> queues to different CPUs. This is largely devalues the support of
+> multiple MSIs in SMP systems.
+>
+> Also, a necessity to allocate a contiguous block of vector numbers for
+> devices capable of multiple MSIs might cause a considerable pressure on
+> x86 interrupt vector allocator and could lead to fragmentation of the
+> interrupt vectors space.
+>
+> This patch overcomes both drawbacks in presense of IRQ remapping and
+> lets devices take advantage of multiple queues and per-IRQ affinity
+> assignments.
+>
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> ---
+>  arch/x86/kernel/apic/io_apic.c |  166 +++++++++++++++++++++++++++++++++++++--
+>  include/linux/irq.h            |    6 ++
+>  kernel/irq/chip.c              |   30 +++++--
+>  kernel/irq/irqdesc.c           |   31 ++++++++
+>  4 files changed, 216 insertions(+), 17 deletions(-)
+>
+> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> index c265593..5fd2577 100644
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -305,6 +305,11 @@ static int alloc_irq_from(unsigned int from, int node)
+>         return irq_alloc_desc_from(from, node);
+>  }
+>
+> +static int alloc_irqs_from(unsigned int from, unsigned int count, int node)
+> +{
+> +       return irq_alloc_descs_from(from, count, node);
+> +}
+> +
+>  static void free_irq_at(unsigned int at, struct irq_cfg *cfg)
+>  {
+>         free_irq_cfg(at, cfg);
+> @@ -3039,6 +3044,55 @@ int create_irq(void)
+>         return irq;
+>  }
+>
+> +unsigned int create_irqs(unsigned int from, unsigned int count, int node)
+> +{
+> +       struct irq_cfg **cfg;
+> +       unsigned long flags;
+> +       int irq, i;
+> +
+> +       if (from < nr_irqs_gsi)
+> +               from = nr_irqs_gsi;
+> +
+> +       cfg = kzalloc_node(count * sizeof(cfg[0]), GFP_KERNEL, node);
+> +       if (!cfg)
+> +               return 0;
+> +
+> +       irq = alloc_irqs_from(from, count, node);
+> +       if (irq < 0)
+> +               goto out_cfgs;
+> +
+> +       for (i = 0; i < count; i++) {
+> +               cfg[i] = alloc_irq_cfg(irq + i, node);
+> +               if (!cfg[i])
+> +                       goto out_irqs;
+> +       }
+> +
+> +       raw_spin_lock_irqsave(&vector_lock, flags);
+> +       for (i = 0; i < count; i++)
+> +               if (__assign_irq_vector(irq + i, cfg[i], apic->target_cpus()))
+> +                       goto out_vecs;
+> +       raw_spin_unlock_irqrestore(&vector_lock, flags);
+> +
+> +       for (i = 0; i < count; i++) {
+> +               irq_set_chip_data(irq + i, cfg[i]);
+> +               irq_clear_status_flags(irq + i, IRQ_NOREQUEST);
+> +       }
+> +
+> +       kfree(cfg);
+> +       return irq;
+> +
+> +out_vecs:
+> +       for (; i; i--)
+> +               __clear_irq_vector(irq + i - 1, cfg[i - 1]);
+> +       raw_spin_unlock_irqrestore(&vector_lock, flags);
+> +out_irqs:
+> +       for (i = 0; i < count; i++)
+> +               free_irq_at(irq + i, cfg[i]);
+> +out_cfgs:
+> +       kfree(cfg);
+> +       return 0;
+> +}
+> +
 
-Argh... It used to be a #define, but got converted in the commit
-99fadcd7646 static inline blitz...
+You may update create_irq_nr to be __create_irq_nr, and it could take
+extra count.
 
-OK, let's just get rid of the NFS_COOKIEVERF thing altogether. At this
-point it is clearly just obfuscating the code.
+and later have create_irq_nr to be __create_irq_nr(,1,)
+and create_irqs to be __create_irq_nr(,count,)
+....
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+BTW, in short, how much performance benefits for adding 500 lines code?
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+Thanks
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Yinghai
