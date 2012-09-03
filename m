@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756424Ab2ICNNG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 09:13:06 -0400
-Received: from pequod.mess.org ([93.97.41.153]:50775 "EHLO pequod.mess.org"
+	id S1756448Ab2ICNRN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 09:17:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47827 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751596Ab2ICNNE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 09:13:04 -0400
-X-Greylist: delayed 544 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Sep 2012 09:13:04 EDT
-Date: Mon, 3 Sep 2012 14:03:57 +0100
-From: Sean Young <sean@mess.org>
-To: "Du, Changbin" <changbin.du@gmail.com>
-Cc: mchehab@infradead.org, paul.gortmaker@windriver.com, sfr@canb.auug.org.au,
-        srinivas.kandagatla@st.com, linux-media@vger.kernel.org,
+	id S1753115Ab2ICNRL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 09:17:11 -0400
+Date: Mon, 3 Sep 2012 15:17:02 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] [media] rc: filter out not allowed protocols when
- decoding
-Message-ID: <20120903130357.GA7403@pequod.mess.org>
-References: <1346464629-22458-1-git-send-email-changbin.du@gmail.com>
+Subject: Re: [PATCH v3 16/20] HID: Only dump input if someone is listening
+In-Reply-To: <20120902085211.GA604@polaris.bitmath.org>
+Message-ID: <alpine.LNX.2.00.1209031515450.20709@pobox.suse.cz>
+References: <1346528835-363-1-git-send-email-rydberg@euromail.se> <1346528835-363-17-git-send-email-rydberg@euromail.se> <alpine.LNX.2.00.1209020927130.20709@pobox.suse.cz> <20120902085211.GA604@polaris.bitmath.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346464629-22458-1-git-send-email-changbin.du@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 01, 2012 at 09:57:09AM +0800, Du, Changbin wrote:
-> From: "Du, Changbin" <changbin.du@gmail.com>
+On Sun, 2 Sep 2012, Henrik Rydberg wrote:
+
+> > I have applied this one right away, so you can drop it from your series. 
+> > The remaining ones I am still about to review (currently travelling).
 > 
-> Each rc-raw device has a property "allowed_protos" stored in structure
-> ir_raw_event_ctrl. But it didn't work because all decoders would be
-> called when decoding. This path makes only allowed protocol decoders
-> been invoked.
+> Great, thanks. The notification callback can also be applied if you want.
 > 
-> Signed-off-by: Du, Changbin <changbin.du@gmail.com>
-> ---
->  drivers/media/rc/ir-raw.c |    8 ++++++--
->  1 file changed, 6 insertions(+), 2 deletions(-)
+> > There is no inter-dependency between the Input and HID ones, and so we can 
+> > handle them with Dmitry as two independent Input and HID series, right?
 > 
-> diff --git a/drivers/media/rc/ir-raw.c b/drivers/media/rc/ir-raw.c
-> index a820251..198b6d8 100644
-> --- a/drivers/media/rc/ir-raw.c
-> +++ b/drivers/media/rc/ir-raw.c
-> @@ -63,8 +63,12 @@ static int ir_raw_event_thread(void *data)
->  		spin_unlock_irq(&raw->lock);
->  
->  		mutex_lock(&ir_raw_handler_lock);
-> -		list_for_each_entry(handler, &ir_raw_handler_list, list)
-> -			handler->decode(raw->dev, ev);
-> +		list_for_each_entry(handler, &ir_raw_handler_list, list) {
-> +			/* use all protocol by default */
-> +			if (raw->dev->allowed_protos == RC_TYPE_UNKNOWN ||
-> +			    raw->dev->allowed_protos & handler->protocols)
-> +				handler->decode(raw->dev, ev);
-> +		}
-
-Each IR protocol decoder already checks whether it is enabled or not; 
-should it not be so that only allowed protocols can be enabled rather 
-than checking both enabled_protocols and allowed_protocols?
-
-Just from reading store_protocols it looks like decoders which aren't
-in allowed_protocols can be enabled, which makes no sense. Also 
-ir_raw_event_register all protocols are enabled rather than the 
-allowed ones.
-
-Lastely I don't know why raw ir drivers should dictate which protocols
-can be enabled. Would it not be better to remove it entirely?
-
-
->  		raw->prev_ev = ev;
->  		mutex_unlock(&ir_raw_handler_lock);
->  	}
-> -- 
-> 1.7.9.5
+> Not quite, I am afraid. Some of the overlap has disappeared, true.
+> However, the hid-multitouch patches depend on new variables defined in
+> the input-mt patches, which in turn depend on the input core
+> changes. The hid-multitouch patches will apply (with a tiny merge
+> conflict), but they will not compile.
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> I can split the input-core and hid-core changes into separate sets,
+> and those could be applied separately. The input-mt and bcm5974 will
+> then build on input-core, and hid-multitouch will build on both
+> input-core and hid-core. I am not sure if this helps anyone, though.
+
+I don't think so.
+
+Let's wait once Dmitry is finished with the input changes, and I can 
+either take the set through my tree with his Signed-off-by: on the Input 
+patches, or vice-versa.
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
