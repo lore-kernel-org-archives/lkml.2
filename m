@@ -1,44 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756570Ab2ICTh1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 15:37:27 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:47205 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756327Ab2ICTh0 (ORCPT
+	id S1756593Ab2ICTjz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 15:39:55 -0400
+Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:37697 "EHLO
+	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756327Ab2ICTjx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 15:37:26 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: linux-kernel@vger.kernel.org, bigeasy@linutronix.de,
-        stern@rowland.harvard.edu, balbi@ti.com, linux-usb@vger.kernel.org,
-        aletes.xgr@gmail.com, gregkh@linuxfoundation.org
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH RESEND] usb: ohci: Fix Kconfig dependency on USB_ISP1301
-Date: Mon,  3 Sep 2012 21:37:00 +0200
-Message-Id: <1346701020-21619-1-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.10.4
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	Mon, 3 Sep 2012 15:39:53 -0400
+Date: Mon, 3 Sep 2012 22:39:47 +0300
+From: Sakari Ailus <sakari.ailus@iki.fi>
+To: Prabhakar Lad <prabhakar.lad@ti.com>
+Cc: LMML <linux-media@vger.kernel.org>,
+        dlos <davinci-linux-open-source@linux.davincidsp.com>,
+        linux-kernel@vger.kernel.org, Manjunath Hadli <manjunath.hadli@ti.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-doc@vger.kernel.org, Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Rob Landley <rob@landley.net>, HeungJun Kim <riverful.kim@samsung.com>
+Subject: Re: [PATCH] media: v4l2-ctrls: add control for test pattern
+Message-ID: <20120903193947.GD6834@valkosipuli.retiisi.org.uk>
+References: <1346663777-23149-1-git-send-email-prabhakar.lad@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346663777-23149-1-git-send-email-prabhakar.lad@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With "select USB_ISP1301 ...", it could happen that I2C isn't selected although
-USB_ISP1301 depends on it. Fixing with "depends on ..." and emulating the
-condition via "|| !()".
+Hi Prabhakar,
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
----
- drivers/usb/host/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks for the patch.
 
---- linux-2.6.orig/drivers/usb/host/Kconfig
-+++ linux-2.6/drivers/usb/host/Kconfig
-@@ -292,7 +292,7 @@ config USB_OHCI_HCD
- 	depends on USB && USB_ARCH_HAS_OHCI
- 	select ISP1301_OMAP if MACH_OMAP_H2 || MACH_OMAP_H3
- 	select USB_OTG_UTILS if ARCH_OMAP
--	select USB_ISP1301 if ARCH_LPC32XX
-+	depends on USB_ISP1301 || !ARCH_LPC32XX
- 	---help---
- 	  The Open Host Controller Interface (OHCI) is a standard for accessing
- 	  USB 1.1 host controller hardware.  It does more in hardware than Intel's
+On Mon, Sep 03, 2012 at 02:46:17PM +0530, Prabhakar Lad wrote:
+> From: Lad, Prabhakar <prabhakar.lad@ti.com>
+> 
+> add V4L2_CID_TEST_PATTERN of type menu, which determines
+> the internal test pattern selected by the device.
+> 
+> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+> Cc: Sakari Ailus <sakari.ailus@iki.fi>
+> Cc: Hans Verkuil <hans.verkuil@cisco.com>
+> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> Cc: Hans de Goede <hdegoede@redhat.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Rob Landley <rob@landley.net>
+> Cc: HeungJun Kim <riverful.kim@samsung.com>
+> Cc: Rob Landley <rob@landley.net>
+> ---
+>  This patches has one checkpatch warning for line over
+>  80 characters altough it can be avoided I have kept it
+>  for consistency.
+> 
+>  Documentation/DocBook/media/v4l/controls.xml |   52 ++++++++++++++++++++++++++
+>  drivers/media/v4l2-core/v4l2-ctrls.c         |   16 ++++++++
+>  include/linux/videodev2.h                    |   12 ++++++
+>  3 files changed, 80 insertions(+), 0 deletions(-)
+> 
+> diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
+> index f704218..06f16e7 100644
+> --- a/Documentation/DocBook/media/v4l/controls.xml
+> +++ b/Documentation/DocBook/media/v4l/controls.xml
+> @@ -4313,6 +4313,58 @@ interface and may change in the future.</para>
+>  	      </tbody>
+>  	    </entrytbl>
+>  	  </row>
+> +	  <row>
+> +	    <entry spanname="id"><constant>V4L2_CID_TEST_PATTERN</constant></entry>
+> +	    <entry>menu</entry>
+> +	  </row>
+> +	  <row id="v4l2-test-pattern">
+> +	    <entry spanname="descr"> The capture devices/sensors have the capability to
+> +	    generate internal test patterns. This test patterns are used to test a device
+> +	    is properly working and can generate the desired waveforms that it supports.
+> +	    </entry>
+> +	  </row>
+> +	  <row>
+> +	    <entrytbl spanname="descr" cols="2">
+> +	      <tbody valign="top">
+> +	        <row>
+> +	         <entry><constant>V4L2_TEST_PATTERN_DISABLED</constant></entry>
+> +	          <entry>Test pattern generation is disabled</entry>
+> +	        </row>
+> +	        <row>
+> +	          <entry><constant>V4L2_TEST_PATTERN_VERTICAL_LINES</constant></entry>
+> +	          <entry>Generate vertical lines as test pattern</entry>
+> +	        </row>
+> +	        <row>
+> +	          <entry><constant>V4L2_TEST_PATTERN_HORIZONTAL_LINES</constant></entry>
+> +	          <entry>Generate horizontal lines as test pattern</entry>
+> +	        </row>
+> +	        <row>
+> +	          <entry><constant>V4L2_TEST_PATTERN_DIAGONAL_LINES</constant></entry>
+> +	          <entry>Generate diagonal lines as test pattern</entry>
+> +	        </row>
+> +	        <row>
+> +	          <entry><constant>V4L2_TEST_PATTERN_SOLID_BLACK</constant></entry>
+> +	          <entry>Generate solid black color as test pattern</entry>
+> +	        </row>
+> +	        <row>
+> +	          <entry><constant>V4L2_TEST_PATTERN_SOLID_WHITE</constant></entry>
+> +	          <entry>Generate solid white color as test pattern</entry>
+> +	        </row>
+> +	        <row>
+> +	          <entry><constant>V4L2_TEST_PATTERN_SOLID_BLUE</constant></entry>
+> +	          <entry>Generate solid blue color as test pattern</entry>
+> +	        </row>
+> +	        <row>
+> +	          <entry><constant>V4L2_TEST_PATTERN_SOLID_RED</constant></entry>
+> +	          <entry>Generate solid red color as test pattern</entry>
+> +	        </row>
+> +	        <row>
+> +	          <entry><constant>V4L2_TEST_PATTERN_CHECKER_BOARD</constant></entry>
+> +	          <entry>Generate a checker board as test pattern</entry>
+> +	        </row>
+
+You're defining 8 different test patterns based on a single device, I guess? 
+
+As the test patterns are not standardised, I'd suppose that if another
+driver implements the same control, it would require another n menu items
+added to the same standard menu. That way we'd run quickly out of menu items
+as the maximum is 32.
+
+For this reason I'd leave the items in the menu up to the driver that
+implements the control, until we have more information on the test patterns
+different devices implement --- as discussed earlier.
+
+Kind regards,
+
+-- 
+Sakari Ailus
+e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
