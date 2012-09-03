@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756377Ab2ICLso (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 07:48:44 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:41585 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754327Ab2ICLsm (ORCPT
+	id S1756385Ab2ICLwB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 07:52:01 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:60120 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756333Ab2ICLwA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 07:48:42 -0400
-Date: Mon, 3 Sep 2012 12:48:31 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [PATCH v2 17/31] arm64: System calls handling
-Message-ID: <20120903114831.GA3313@mbp>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
- <201208220756.31149.arnd@arndb.de>
- <20120822102953.GA24136@arm.com>
- <201208221227.14274.arnd@arndb.de>
- <20120822171309.GC2582@arm.com>
+	Mon, 3 Sep 2012 07:52:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120822171309.GC2582@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <F45880696056844FA6A73F415B568C695B0EA11A90@EXDCVYMBSTM006.EQ1STM.local>
+References: <1346581858-7469-1-git-send-email-thierry.reding@avionic-design.de>
+	<CACRpkdakZMWnk1zzFqa8SXLsDn9EaSxzKnH_yXoCaxCY5saVJQ@mail.gmail.com>
+	<F45880696056844FA6A73F415B568C695B0EA11A90@EXDCVYMBSTM006.EQ1STM.local>
+Date: Mon, 3 Sep 2012 13:51:58 +0200
+Message-ID: <CACRpkdZGu+GT+V7i+h3YrQDN930MYYprLS1kmgM1+rOaUaebdA@mail.gmail.com>
+Subject: Re: [PATCH] pwm: Move AB8500 PWM driver to PWM framework
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Thierry Reding <thierry.reding@avionic-design.de>,
+        Arun MURTHY <arun.murthy@stericsson.com>
+Cc: Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On Mon, Sep 3, 2012 at 1:28 PM, Arun MURTHY <arun.murthy@stericsson.com> wrote:
+>> On Sun, Sep 2, 2012 at 12:30 PM, Thierry Reding <thierry.reding@avionic-
+>> design.de> wrote:
+>>
+>> > This commit moves the driver to drivers/pwm and converts it to the new
+>> > PWM framework.
+>> >
+>> > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+>> > ---
+>> > Note: I'll take this through the PWM tree, but I'd like to have it
+>> > acknowledged by a few people who know the hardware and can actually
+>> > test whether this still works.
+>>
+>> Pls include Arun on these patches, he'll know best if it'll work or not.
+>>
+>> I have one generic question: will this alter the layout of sysfs so we need to
+>> change userspace? I had such issues before when moving drivers to new
+>> busses...
+>>
+>
+> Since this pwm framework is still a set of exported functions in a header file,
+> the file architecture doesn't really matter.
+> Using this driver, either leds-pwm and backlight-pwm is used to register and
+> this is where actual registration happens(sysfs entry is created).
 
-On Wed, Aug 22, 2012 at 06:13:10PM +0100, Catalin Marinas wrote:
-> On Wed, Aug 22, 2012 at 01:27:14PM +0100, Arnd Bergmann wrote:
-> > On Wednesday 22 August 2012, Catalin Marinas wrote:
-> > > But what's more important - moving this wrapper to glibc causes issues
-> > > with the page size. We support both 4KB and 64KB pages on 64-bit systems
-> > > (the latter without compat support). The kernel is in a better position
-> > > to do the shift by a compile-time constant. Glibc would need to enquire
-> > > the actual page size to do the shift before calling sys_mmap_pgoff. If
-> > > we assume in glibc that the shift is always 12, we need another wrapper
-> > > in the kernel anyway for 64KB page configuration. So passing the offset
-> > > in bytes worked best for us.
-> > 
-> > Right, the kernel interface should really be independent of the page
-> > size, as sys_mmap2 normally is, and sys_mmap2 is not provided here.
-> 
-> sys_mmap2 is indeed independent of the page size on most architectures
-> assuming that the last argument represents the offset in units of 4096.
-> The cris and ia64 seem to differ (one being 8K, the other variable).
-> 
-> sys_mmap is also independent of the page size.
-> 
-> But using sys_mmap2 for a 64-bit architecture, especially when the page
-> size is not always 4K, does not bring any advantages. We end up doing a
-> shift by 12 in glibc and another shift by (PAGE_SHIFT - 12) in the
-> kernel wrapper. Unless I missed your point, I don't see the reason for
-> using sys_mmap2 on a 64-bit architecture, apart from it being newer (and
-> compat support should not have any relevance, we have different syscall
-> tables anyway).
+OK sounds good to me,
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-I forgot about this at the KS and we haven't got to a clear conclusion.
-
-Do we (1) stick with the sys_mmap() for 64-bit systems and avoid offset
-conversion in both glibc and kernel or (2) use sys_mmap2() with a 12
-shift in glibc and (PAGE_SHIFT - 12) in the kernel wrapper?
-
-I personally prefer (1) as it doesn't require a kernel wrapper and we
-avoid the double shifting. A reason for (2) would be if we ever need
-file offsets greater than 16EB.
-
--- 
-Catalin
+Yours,
+Linus Walleij
