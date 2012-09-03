@@ -1,47 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756238Ab2ICKry (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 06:47:54 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:47322 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752327Ab2ICKrw (ORCPT
+	id S1756271Ab2ICKxG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 06:53:06 -0400
+Received: from mail.betterlinux.com ([199.58.199.50]:40681 "EHLO
+	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756215Ab2ICKxE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 06:47:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <1346588747.7909.2.camel@phoenix>
-References: <1346588747.7909.2.camel@phoenix>
-Date: Mon, 3 Sep 2012 12:47:51 +0200
-Message-ID: <CACRpkdYxYGa=C092rbTU5bo=YEu6wqiTUD7W4pLS_wNfmAe4Zw@mail.gmail.com>
-Subject: Re: [PATCH] ARM: ux500: Fix build error due to missing include of
- asm/pmu.h in cpu-db8500.c
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Axel Lin <axel.lin@gmail.com>, Will Deacon <will.deacon@arm.com>
-Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 3 Sep 2012 06:53:04 -0400
+X-DKIM: OpenDKIM Filter v2.4.1 mail.betterlinux.com 7119182072
+From: Andrea Righi <andrea@betterlinux.com>
+To: Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>
+Cc: Sean Jenkins <sean@bluehost.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH RESEND] audit: fix wrong timeout value in audit_log_start
+Date: Mon,  3 Sep 2012 12:52:52 +0200
+Message-Id: <1346669572-19419-1-git-send-email-andrea@betterlinux.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 2, 2012 at 2:25 PM, Axel Lin <axel.lin@gmail.com> wrote:
+audit_log_start() does not properly check timeout values when
+audit_backlog_limit is exceeded, for example it is possible to use
+negative timeout values with schedule_timeout() triggering error
+messages like this:
 
-> Include asm/pmu.h to fix below build error:
->
->   CC      arch/arm/mach-ux500/cpu-db8500.o
-> arch/arm/mach-ux500/cpu-db8500.c:118:8: error: variable 'db8500_pmu_platdata' has initializer but incomplete type
-> arch/arm/mach-ux500/cpu-db8500.c:119:2: error: unknown field 'handle_irq' specified in initializer
-> arch/arm/mach-ux500/cpu-db8500.c:119:2: warning: excess elements in struct initializer [enabled by default]
-> arch/arm/mach-ux500/cpu-db8500.c:119:2: warning: (near initialization for 'db8500_pmu_platdata') [enabled by default]
-> make[1]: *** [arch/arm/mach-ux500/cpu-db8500.o] Error 1
-> make: *** [arch/arm/mach-ux500] Error 2
->
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+  schedule_timeout: wrong timeout value ffffffffffff54e4
 
-That's on linux-next not on v3.6-rcN right?
+Be sure to never set negative values for the timeout.
 
-I've applied it to my ux500 branch and will carry it unless Will Deacon
-express an interest in it, PMU is his territory...
+Also, do a small refactoring to improve code readability.
 
-Yours,
-Linus Walleij
+Reported-by: Sean Jenkins <sean@bluehost.com>
+Signed-off-by: Andrea Righi <andrea@betterlinux.com>
+---
+ kernel/audit.c |   46 ++++++++++++++++++++++++++++++----------------
+ 1 file changed, 30 insertions(+), 16 deletions(-)
+
+diff --git a/kernel/audit.c b/kernel/audit.c
+index ea3b7b6..362d9b4 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -1123,6 +1123,28 @@ static inline void audit_get_stamp(struct audit_context *ctx,
+ 	}
+ }
+ 
++/* Wait for auditd to drain the queue a little */
++static void audit_log_congestion_wait(unsigned long timeout_start)
++{
++	DECLARE_WAITQUEUE(wait, current);
++
++	set_current_state(TASK_INTERRUPTIBLE);
++	add_wait_queue(&audit_backlog_wait, &wait);
++
++	if (audit_backlog_limit &&
++	    skb_queue_len(&audit_skb_queue) > audit_backlog_limit) {
++		unsigned long deadline, now = ACCESS_ONCE(jiffies);
++
++		WARN_ON(time_after(timeout_start, now));
++		deadline = timeout_start + audit_backlog_wait_time;
++		if (time_before(now, deadline))
++			schedule_timeout(deadline - now);
++	}
++
++	__set_current_state(TASK_RUNNING);
++	remove_wait_queue(&audit_backlog_wait, &wait);
++}
++
+ /* Obtain an audit buffer.  This routine does locking to obtain the
+  * audit buffer, but then no locking is required for calls to
+  * audit_log_*format.  If the tsk is a task that is currently in a
+@@ -1166,22 +1188,14 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
+ 		reserve = 5; /* Allow atomic callers to go up to five
+ 				entries over the normal backlog limit */
+ 
+-	while (audit_backlog_limit
+-	       && skb_queue_len(&audit_skb_queue) > audit_backlog_limit + reserve) {
+-		if (gfp_mask & __GFP_WAIT && audit_backlog_wait_time
+-		    && time_before(jiffies, timeout_start + audit_backlog_wait_time)) {
+-
+-			/* Wait for auditd to drain the queue a little */
+-			DECLARE_WAITQUEUE(wait, current);
+-			set_current_state(TASK_INTERRUPTIBLE);
+-			add_wait_queue(&audit_backlog_wait, &wait);
+-
+-			if (audit_backlog_limit &&
+-			    skb_queue_len(&audit_skb_queue) > audit_backlog_limit)
+-				schedule_timeout(timeout_start + audit_backlog_wait_time - jiffies);
+-
+-			__set_current_state(TASK_RUNNING);
+-			remove_wait_queue(&audit_backlog_wait, &wait);
++	while (audit_backlog_limit &&
++	       skb_queue_len(&audit_skb_queue) >
++				audit_backlog_limit + reserve) {
++		if ((gfp_mask & __GFP_WAIT) &&
++		    audit_backlog_wait_time &&
++		    time_is_after_jiffies(timeout_start +
++					audit_backlog_wait_time)) {
++			audit_log_congestion_wait(timeout_start);
+ 			continue;
+ 		}
+ 		if (audit_rate_check() && printk_ratelimit())
+-- 
+1.7.9.5
+
