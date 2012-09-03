@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755595Ab2ICBQv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 21:16:51 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:47107 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755190Ab2ICBQu (ORCPT
+	id S1755649Ab2ICBS2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 21:18:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34796 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755446Ab2ICBS0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 21:16:50 -0400
-X-AuditID: 9c930179-b7cc4ae00000134d-d6-504405011a90
-From: Namhyung Kim <namhyung@kernel.org>
-To: Irina Tirdea <irina.tirdea@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 11/13] perf tools: replace mempcpy with memcpy
-References: <CANg8OW+Y3ZMG-GdhYu2_yKOYH_XEMgw73PdCX_23UTnfYhmttA@mail.gmail.com>
-Date: Mon, 03 Sep 2012 10:09:14 +0900
-In-Reply-To: <CANg8OW+Y3ZMG-GdhYu2_yKOYH_XEMgw73PdCX_23UTnfYhmttA@mail.gmail.com>
-	(Irina Tirdea's message of "Wed, 29 Aug 2012 01:22:16 +0300")
-Message-ID: <87y5krewud.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Sun, 2 Sep 2012 21:18:26 -0400
+Date: Sun, 2 Sep 2012 18:17:52 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Mikulas Patocka <mpatocka@redhat.com>,
+        linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, tj@kernel.org, bharrosh@panasas.com,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH v7 9/9] block: Avoid deadlocks with bio allocation by
+ stacking drivers
+Message-ID: <20120903011752.GC20060@moria.home.lan>
+References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
+ <1346175456-1572-10-git-send-email-koverstreet@google.com>
+ <Pine.LNX.4.64.1208291210180.774@file.rdu.redhat.com>
+ <20120829165006.GB20312@google.com>
+ <20120829170711.GC12504@redhat.com>
+ <20120829171345.GC20312@google.com>
+ <20120830220745.GI27257@redhat.com>
+ <20120903004927.GM15292@dastard>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120903004927.GM15292@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Aug 2012 01:22:16 +0300, Irina Tirdea wrote:
-> mempcpy is not supported by bionic in Android
-> and will lead to compilation errors.
->
-> Replacing mempcpy with memcpy so it will work in Android.
+On Mon, Sep 03, 2012 at 10:49:27AM +1000, Dave Chinner wrote:
+> Given that we are working around stack depth issues in the
+> filesystems already in several places, and now it seems like there's
+> a reason to work around it in the block layers as well, shouldn't we
+> simply increase the default stack size rather than introduce
+> complexity and performance regressions to try and work around not
+> having enough stack?
+> 
+> I mean, we can deal with it like the ia32 4k stack issue was dealt
+> with (i.e. ignore those stupid XFS people, that's an XFS bug), or
+> we can face the reality that storage stacks have become so complex
+> that 8k is no longer a big enough stack for a modern system....
 
-Unfortunately I've added another instance of the mempcpy in a
-libtraceevent code. :-/
-
-Thanks,
-Namhyung
-
-
->
-> Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
-> ---
->  tools/perf/util/target.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/tools/perf/util/target.c b/tools/perf/util/target.c
-> index 051eaa6..065528b 100644
-> --- a/tools/perf/util/target.c
-> +++ b/tools/perf/util/target.c
-> @@ -117,8 +117,8 @@ int perf_target__strerror(struct perf_target
-> *target, int errnum,
->
->  		if (err != buf) {
->  			size_t len = strlen(err);
-> -			char *c = mempcpy(buf, err, min(buflen - 1, len));
-> -			*c = '\0';
-> +			memcpy(buf, err, min(buflen - 1, len));
-> +			*(buf + min(buflen - 1, len)) = '\0';
->  		}
->
->  		return 0;
+I'm not arguing against increasing the default stack size (I really
+don't have an opinion there) - but it's not a solution for the block
+layer, as stacking block devices can require an unbounded amount of
+stack without the generic_make_request() convert recursion-to-iteration
+thing.
