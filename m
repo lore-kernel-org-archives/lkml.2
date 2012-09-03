@@ -1,104 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755940Ab2ICCpX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 22:45:23 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:54952 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755799Ab2ICCpV (ORCPT
+	id S1755956Ab2ICCxC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 22:53:02 -0400
+Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:12590
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755799Ab2ICCxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 22:45:21 -0400
-X-Originating-IP: 217.70.178.152
-X-Originating-IP: 50.43.46.74
-Date: Sun, 2 Sep 2012 19:45:14 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: linux-kernel@vger.kernel.org
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH] trace: Stop compiling in trace_clock unconditionally
-Message-ID: <20120903024513.GA19583@leaf>
+	Sun, 2 Sep 2012 22:53:00 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zz98dI1432Izz1202h1082kzzz2dh2a8h668h839h944hd25hf0ah107ah1220h1155h)
+Date: Mon, 3 Sep 2012 10:31:03 +0800
+From: Dong Aisheng <b29396@freescale.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "lrg@ti.com" <lrg@ti.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        Zhao Richard-B20223 <B20223@freescale.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>
+Subject: Re: [PATCH v4 1/7] mfd: add syscon driver based on regmap
+Message-ID: <20120903023102.GA11891@shlinux2.ap.freescale.net>
+References: <1346237818-9498-1-git-send-email-b29396@freescale.com>
+ <1346237818-9498-2-git-send-email-b29396@freescale.com>
+ <20120831012626.GA7726@r65073-Latitude-D630>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120831012626.GA7726@r65073-Latitude-D630>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 56449f437add737a1e5e1cb7e00f63ac8ead1938, in April 2009, made
-trace_clock available unconditionally, since CONFIG_X86_DS used it too.
-Commit faa4602e47690fb11221e00f9b9697c8dc0d4b19, in March 2010, removed
-CONFIG_X86_DS, and now only CONFIG_RING_BUFFER (split out from
-CONFIG_TRACING for general use) has a dependency on trace_clock.  So,
-only compile in trace_clock with CONFIG_RING_BUFFER or CONFIG_TRACING
-enabled.
+On Fri, Aug 31, 2012 at 09:26:29AM +0800, Shawn Guo wrote:
+> On Wed, Aug 29, 2012 at 06:56:52PM +0800, Dong Aisheng wrote:
+> > +config MFD_SYSCON
+> > +        bool "System Controller Register R/W Based on Regmap"
+> 
+> If the driver only compiles and works for device tree probe, we should
+> have the following?
+> 
+> 	depends on OF
+> 
+Correct.
+For currently it only supports dt.
 
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
----
- kernel/Makefile       |    2 +-
- kernel/trace/Kconfig  |    5 +++++
- kernel/trace/Makefile |    6 +-----
- 3 files changed, 7 insertions(+), 6 deletions(-)
+> > +        select REGMAP_MMIO
+> > +        help
+> > +	  Select this option to enable accessing system control registers
+> > +	  via regmap.
+> > +
+> 
+> <snip>
+> 
+> > +struct regmap *syscon_node_to_regmap(struct device_node *np)
+> > +{
+> > +	struct syscon *syscon;
+> > +	struct device *dev;
+> > +
+> > +	dev = driver_find_device(&syscon_driver.driver, NULL, np,
+> > +				 syscon_match);
+> > +	of_node_put(np);
+> 
+> This looks a little unnatural to me.  Function syscon_node_to_regmap
+> becomes an API visible to clients, who might never know that np will
+> be put inside the API.  I'm saying the client may also call of_node_put
+> to put the node they get.
+We probably could add a comment here for the API to avoid this happen.
 
-diff --git a/kernel/Makefile b/kernel/Makefile
-index c0cc67a..29d993b 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -98,7 +98,7 @@ obj-$(CONFIG_COMPAT_BINFMT_ELF) += elfcore.o
- obj-$(CONFIG_BINFMT_ELF_FDPIC) += elfcore.o
- obj-$(CONFIG_FUNCTION_TRACER) += trace/
- obj-$(CONFIG_TRACING) += trace/
--obj-$(CONFIG_X86_DS) += trace/
-+obj-$(CONFIG_TRACE_CLOCK) += trace/
- obj-$(CONFIG_RING_BUFFER) += trace/
- obj-$(CONFIG_TRACEPOINTS) += trace/
- obj-$(CONFIG_IRQ_WORK) += irq_work.o
-diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
-index 8c4c070..e8b7c26 100644
---- a/kernel/trace/Kconfig
-+++ b/kernel/trace/Kconfig
-@@ -57,8 +57,12 @@ config HAVE_C_RECORDMCOUNT
- config TRACER_MAX_TRACE
- 	bool
- 
-+config TRACE_CLOCK
-+	bool
-+
- config RING_BUFFER
- 	bool
-+	select TRACE_CLOCK
- 
- config FTRACE_NMI_ENTER
-        bool
-@@ -109,6 +113,7 @@ config TRACING
- 	select NOP_TRACER
- 	select BINARY_PRINTF
- 	select EVENT_TRACING
-+	select TRACE_CLOCK
- 
- config GENERIC_TRACER
- 	bool
-diff --git a/kernel/trace/Makefile b/kernel/trace/Makefile
-index b831087..1b8e4c7 100644
---- a/kernel/trace/Makefile
-+++ b/kernel/trace/Makefile
-@@ -17,11 +17,7 @@ endif
- 
- CFLAGS_trace_events_filter.o := -I$(src)
- 
--#
--# Make the trace clocks available generally: it's infrastructure
--# relied on by ptrace for example:
--#
--obj-y += trace_clock.o
-+obj-$(CONFIG_TRACE_CLOCK) += trace_clock.o
- 
- obj-$(CONFIG_FUNCTION_TRACER) += libftrace.o
- obj-$(CONFIG_RING_BUFFER) += ring_buffer.o
--- 
-1.7.10.4
+> 
+> I think of_node_put should be moved out from here and put into
+> syscon_node_to_regmap and syscon_regmap_lookup_by_compatible.
+> 
+I guess no, if you want to move of_node_put into syscon_regmap_lookup_by_phandle,
+then syscon_regmap_lookup_by_phandle has the same issue.
+Actually i had considered your concern when writing this API...
+The original purpose of doing like that is saving some duplicated 'of_node_put'
+and make the API easy to use.
+I searched the kernel dt code and found it existed some similar cases.
+e.g: of_irq_find_parent, of_get_next_parent
+So it looks to me that it may be usually to do like that for the cases that
+the conversion from a node to other thing since the client may only care
+about the things converted. For our case, it's regmap.
+So i can't think it make too much sense for all client driver have to write
+duplicated and meaningless 'of_node_put' code.
+
+Regards
+Dong Aisheng
+
+> > +
+> > +	if (!dev)
+> > +		return ERR_PTR(-EPROBE_DEFER);
+> > +
+> > +	syscon = dev_get_drvdata(dev);
+> > +
+> > +	return syscon->regmap;
+> > +}
+> > +EXPORT_SYMBOL_GPL(syscon_node_to_regmap);
+> > +
+> > +struct regmap *syscon_regmap_lookup_by_compatible(const char *s)
+> > +{
+> > +	struct device_node *syscon_np;
+> > +
+> > +	syscon_np = of_find_compatible_node(NULL, NULL, s);
+> > +	if (!syscon_np)
+> > +		return ERR_PTR(-ENODEV);
+> > +
+> > +	return syscon_node_to_regmap(syscon_np);
+> > +}
+> > +EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_compatible);
+> > +
+> > +struct regmap *syscon_regmap_lookup_by_phandle(struct device_node *np,
+> > +					const char *property)
+> > +{
+> > +	struct device_node *syscon_np;
+> > +
+> > +	syscon_np = of_parse_phandle(np, property, 0);
+> > +	if (!syscon_np)
+> > +		return ERR_PTR(-ENODEV);
+> > +
+> > +	return syscon_node_to_regmap(syscon_np);
+> > +}
+> > +EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_phandle);
 
