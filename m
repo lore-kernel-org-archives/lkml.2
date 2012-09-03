@@ -1,72 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756094Ab2ICFoJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 01:44:09 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:37008 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756013Ab2ICFnl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 01:43:41 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AsENAMxCRFB5LHJk/2dsb2JhbABFhRy1AgEBAn+BCIIgAQEEAScTHCMFCwgDDgouFCUDIROIBwW6ARSKeS9hfDSEYwOVWIk0hmeCdQ
-Date: Mon, 3 Sep 2012 15:43:27 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Justin Piszcz <jpiszcz@lucidpixels.com>, linux-m@kvack.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: 3.5.2: moving files from xfs/disk -> nfs:
- radix_tree_lookup_slot+0xe/0x10
-Message-ID: <20120903054327.GZ15292@dastard>
-References: <CAO9zADzH7mG3Kp1EQ-0MtTE2CdyLmuz9jsaijgTXLSJ9rZ9tiw@mail.gmail.com>
- <20120901231338.GE6896@infradead.org>
+	id S1756061Ab2ICFpr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 01:45:47 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:62525 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754750Ab2ICFpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 01:45:43 -0400
+X-IronPort-AV: E=Sophos;i="4.80,358,1344182400"; 
+   d="scan'208";a="5770994"
+Message-ID: <5044454E.7070909@cn.fujitsu.com>
+Date: Mon, 03 Sep 2012 13:51:10 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120901231338.GE6896@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
+        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
+        cl@linux.com, minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com
+Subject: Re: [RFC v8 PATCH 08/20] memory-hotplug: remove /sys/firmware/memmap/X
+ sysfs
+References: <1346148027-24468-1-git-send-email-wency@cn.fujitsu.com>	<1346148027-24468-9-git-send-email-wency@cn.fujitsu.com> <20120831140623.8d13bd2c.akpm@linux-foundation.org>
+In-Reply-To: <20120831140623.8d13bd2c.akpm@linux-foundation.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/03 13:45:14,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/03 13:45:20,
+	Serialize complete at 2012/09/03 13:45:20
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 01, 2012 at 07:13:38PM -0400, Christoph Hellwig wrote:
-> I'd suspect it's something with the actual radix tree code, Ccing
-> linux-mm in case they know more.
+At 09/01/2012 05:06 AM, Andrew Morton Wrote:
+> On Tue, 28 Aug 2012 18:00:15 +0800
+> wency@cn.fujitsu.com wrote:
+> 
+>> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>
+>> When (hot)adding memory into system, /sys/firmware/memmap/X/{end, start, type}
+>> sysfs files are created. But there is no code to remove these files. The patch
+>> implements the function to remove them.
+>>
+>> Note : The code does not free firmware_map_entry since there is no way to free
+>>        memory which is allocated by bootmem.
+>>
+>> ....
+>>
+>> +#define to_memmap_entry(obj) container_of(obj, struct firmware_map_entry, kobj)
+> 
+> It would be better to implement this as an inlined C function.  That
+> has improved type safety and improved readability.
+> 
+>> +static void release_firmware_map_entry(struct kobject *kobj)
+>> +{
+>> +	struct firmware_map_entry *entry = to_memmap_entry(kobj);
+>> +	struct page *page;
+>> +
+>> +	page = virt_to_page(entry);
+>> +	if (PageSlab(page) || PageCompound(page))
+> 
+> That PageCompound() test looks rather odd.  Why is this done?
 
-I don't think it has anything to do with the radix tree code....
+Liu Jiang and Christoph Lameter discussed how to find slab page
+in this mail:
+https://lkml.org/lkml/2012/7/6/333.
 
-> On Mon, Aug 27, 2012 at 11:00:10AM -0400, Justin Piszcz wrote:
-> > Hi,
-> > 
-> > Moving ~276GB of files (mainly large backups) and everything has
-> > seemed to lockup on the client moving data to the server, it is still
-> > in this state..
-.....
+> 
+>> +		kfree(entry);
+>> +
+>> +	/* There is no way to free memory allocated from bootmem*/
+>> +}
+> 
+> This function is a bit ugly - poking around in page flags to determine
+> whether or not the memory came from bootmem.  It would be cleaner to
+> use a separate boolean.  Although I guess we can live with it as you
+> have it here.
+> 
+>>  static struct kobj_type memmap_ktype = {
+>> +	.release	= release_firmware_map_entry,
+>>  	.sysfs_ops	= &memmap_attr_ops,
+>>  	.default_attrs	= def_attrs,
+>>  };
+>> @@ -123,6 +139,16 @@ static int firmware_map_add_entry(u64 start, u64 end,
+>>  	return 0;
+>>  }
+>>  
+>> +/**
+>> + * firmware_map_remove_entry() - Does the real work to remove a firmware
+>> + * memmap entry.
+>> + * @entry: removed entry.
+>> + **/
+>> +static inline void firmware_map_remove_entry(struct firmware_map_entry *entry)
+>> +{
+>> +	list_del(&entry->list);
+>> +}
+> 
+> Is there no locking  to protect that list?
+> 
+>>  /*
+>>   * Add memmap entry on sysfs
+>>   */
+>> @@ -144,6 +170,31 @@ static int add_sysfs_fw_map_entry(struct firmware_map_entry *entry)
+>>  	return 0;
+>>  }
+>>  
+>> +/*
+>> + * Remove memmap entry on sysfs
+>> + */
+>> +static inline void remove_sysfs_fw_map_entry(struct firmware_map_entry *entry)
+>> +{
+>> +	kobject_put(&entry->kobj);
+>> +}
+>> +
+>> +/*
+>> + * Search memmap entry
+>> + */
+>> +
+>> +struct firmware_map_entry * __meminit
+>> +find_firmware_map_entry(u64 start, u64 end, const char *type)
+> 
+> A better name would be firmware_map_find_entry().  To retain the (good)
+> convention that symbols exported from here all start with
+> "firmware_map_".
 
-> > [75716.705720] Call Trace:
-> > [75716.705729]  [<ffffffff812dcaee>] ? radix_tree_lookup_slot+0xe/0x10
+OK.
 
-It's just a symbol that was found in the stack. The real trace is
-this:
+> 
+>> +{
+>> +	struct firmware_map_entry *entry;
+>> +
+>> +	list_for_each_entry(entry, &map_entries, list)
+>> +		if ((entry->start == start) && (entry->end == end) &&
+>> +		    (!strcmp(entry->type, type)))
+>> +			return entry;
+>> +
+>> +	return NULL;
+>> +}
+>> +
+>>  /**
+>>   * firmware_map_add_hotplug() - Adds a firmware mapping entry when we do
+>>   * memory hotplug.
+>> @@ -196,6 +247,32 @@ int __init firmware_map_add_early(u64 start, u64 end, const char *type)
+>>  	return firmware_map_add_entry(start, end, type, entry);
+>>  }
+>>  
+>> +/**
+>> + * firmware_map_remove() - remove a firmware mapping entry
+>> + * @start: Start of the memory range.
+>> + * @end:   End of the memory range.
+>> + * @type:  Type of the memory range.
+>> + *
+>> + * removes a firmware mapping entry.
+>> + *
+>> + * Returns 0 on success, or -EINVAL if no entry.
+>> + **/
+>> +int __meminit firmware_map_remove(u64 start, u64 end, const char *type)
+>> +{
+>> +	struct firmware_map_entry *entry;
+>> +
+>> +	entry = find_firmware_map_entry(start, end - 1, type);
+>> +	if (!entry)
+>> +		return -EINVAL;
+>> +
+>> +	firmware_map_remove_entry(entry);
+>> +
+>> +	/* remove the memmap entry */
+>> +	remove_sysfs_fw_map_entry(entry);
+>> +
+>> +	return 0;
+>> +}
+> 
+> Again, the lack of locking looks bad.
+> 
+>> ...
+>>
+>> --- a/mm/memory_hotplug.c
+>> +++ b/mm/memory_hotplug.c
+>> @@ -1052,9 +1052,9 @@ int offline_memory(u64 start, u64 size)
+>>  	return 0;
+>>  }
+>>  
+>> -int remove_memory(int nid, u64 start, u64 size)
+>> +int __ref remove_memory(int nid, u64 start, u64 size)
+> 
+> Why was __ref added?
 
-> > [75716.705747]  [<ffffffff815a3d04>] schedule+0x24/0x70
-> > [75716.705751]  [<ffffffff815a2549>] schedule_timeout+0x1a9/0x210
-> > [75716.705764]  [<ffffffff815a3420>] wait_for_common+0xc0/0x150
-> > [75716.705773]  [<ffffffff815a3d78>] wait_for_completion+0x18/0x20
-> > [75716.705777]  [<ffffffff810dfa47>] writeback_inodes_sb_nr+0x77/0xa0
-> > [75716.705785]  [<ffffffff810dfa99>] writeback_inodes_sb+0x29/0x40
-> > [75716.705788]  [<ffffffff810e3407>] __sync_filesystem+0x47/0x90
-> > [75716.705791]  [<ffffffff810e346b>] sync_one_sb+0x1b/0x20
-> > [75716.705795]  [<ffffffff810bea71>] iterate_supers+0xe1/0xf0
-> > [75716.705798]  [<ffffffff810e355b>] sys_sync+0x2b/0x60
-> > [75716.705802]  [<ffffffff815a53a6>] system_call_fastpath+0x1a/0x1f
-> > [75836.701197] INFO: task sync:8790 blocked for more than 120 seconds.
+Hmm, firmware_map_remove() was put in meminit section, and we call it
+in this function, so __ref is added here.
 
-Which simply says that writeback of the dirty data at the time of
-the sync call has taken longer than 120s.
+Thanks
+Wen Congyang
 
-Cheers,
+> 
+>>  {
+>> -	int ret = -EBUSY;
+>> +	int ret = 0;
+>>  	lock_memory_hotplug();
+>>  	/*
+>>  	 * The memory might become online by other task, even if you offine it.
+>>
+>> ...
+>>
+> 
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
