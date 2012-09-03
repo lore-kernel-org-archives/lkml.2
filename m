@@ -1,178 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756366Ab2ICQCP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 12:02:15 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53529 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753577Ab2ICQCO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 12:02:14 -0400
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Richard Zhao <richard.zhao@freescale.com>,
-        Huang Shijie <shijie8@gmail.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>, kernel@pengutronix.de,
-        devicetree-discuss@lists.ozlabs.org
-Cc: Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH v3 1/4] genalloc: add a global pool list, allow to find pools by phys address
-Date: Mon,  3 Sep 2012 18:02:05 +0200
-Message-Id: <1346688128-22395-2-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1346688128-22395-1-git-send-email-p.zabel@pengutronix.de>
-References: <1346688128-22395-1-git-send-email-p.zabel@pengutronix.de>
-X-SA-Exim-Connect-IP: 10.1.0.7
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1756547Ab2ICQDQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 12:03:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29617 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756511Ab2ICQDM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 12:03:12 -0400
+Date: Mon, 3 Sep 2012 18:05:38 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] semantics of singlestepping vs. tracer exiting
+Message-ID: <20120903160538.GA10114@redhat.com>
+References: <20120903001436.GG23464@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120903001436.GG23464@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch keeps all created pools in a global list and adds two
-functions that allow to retrieve the gen_pool pointer from a known
-physical address and from a device tree node.
+On 09/03, Al Viro wrote:
+>
+> 	When tracer exits, everything that had been ptraced by it
+> gets its ->ptrace reset to 0 and woken up to run.  Fine, but...
+> what should happen if the last thing that had been done to the
+> child was PTRACE_SINGLESTEP?
 
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
----
-Changes since v2:
- - Moved struct device_node declaration out of #ifdef CONFIG_OF.
- - Simplified of_get_named_gen_pool using of_parse_phandle and
-   of_address_to_resource.
----
- include/linux/genalloc.h |   14 ++++++++++
- lib/genalloc.c           |   67 ++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 81 insertions(+)
+Yes. If the tracer exits "unexpectedly", it can leave the tracee in
+the inconsistent state.
 
-diff --git a/include/linux/genalloc.h b/include/linux/genalloc.h
-index 5e98eeb..d498c43 100644
---- a/include/linux/genalloc.h
-+++ b/include/linux/genalloc.h
-@@ -33,6 +33,7 @@
-  *  General purpose special memory pool descriptor.
-  */
- struct gen_pool {
-+	struct list_head next_pool;	/* pool in global list */
- 	spinlock_t lock;
- 	struct list_head chunks;	/* list of chunks in this pool */
- 	int min_alloc_order;		/* minimum allocation order */
-@@ -78,4 +79,17 @@ extern void gen_pool_for_each_chunk(struct gen_pool *,
- 	void (*)(struct gen_pool *, struct gen_pool_chunk *, void *), void *);
- extern size_t gen_pool_avail(struct gen_pool *);
- extern size_t gen_pool_size(struct gen_pool *);
-+extern struct gen_pool *gen_pool_find_by_phys(phys_addr_t phys);
-+
-+struct device_node;
-+#ifdef CONFIG_OF
-+extern struct gen_pool *of_get_named_gen_pool(struct device_node *np,
-+	const char *propname, int index);
-+#else
-+inline struct gen_pool *of_get_named_gen_pool(struct device_node *np,
-+	const char *propname, int index)
-+{
-+	return NULL;
-+}
-+#endif
- #endif /* __GENALLOC_H__ */
-diff --git a/lib/genalloc.c b/lib/genalloc.c
-index 6bc04aa..90699ac 100644
---- a/lib/genalloc.c
-+++ b/lib/genalloc.c
-@@ -34,6 +34,11 @@
- #include <linux/rculist.h>
- #include <linux/interrupt.h>
- #include <linux/genalloc.h>
-+#include <linux/of_address.h>
-+#include <linux/of_device.h>
-+
-+static LIST_HEAD(pools);
-+static DEFINE_SPINLOCK(list_lock);
- 
- static int set_bits_ll(unsigned long *addr, unsigned long mask_to_set)
- {
-@@ -152,6 +157,9 @@ struct gen_pool *gen_pool_create(int min_alloc_order, int nid)
- 		spin_lock_init(&pool->lock);
- 		INIT_LIST_HEAD(&pool->chunks);
- 		pool->min_alloc_order = min_alloc_order;
-+		spin_lock(&list_lock);
-+		list_add_rcu(&pool->next_pool, &pools);
-+		spin_unlock(&list_lock);
- 	}
- 	return pool;
- }
-@@ -234,6 +242,9 @@ void gen_pool_destroy(struct gen_pool *pool)
- 	int order = pool->min_alloc_order;
- 	int bit, end_bit;
- 
-+	spin_lock(&list_lock);
-+	list_del_rcu(&pool->next_pool);
-+	spin_unlock(&list_lock);
- 	list_for_each_safe(_chunk, _next_chunk, &pool->chunks) {
- 		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
- 		list_del(&chunk->next_chunk);
-@@ -400,3 +411,59 @@ size_t gen_pool_size(struct gen_pool *pool)
- 	return size;
- }
- EXPORT_SYMBOL_GPL(gen_pool_size);
-+
-+/**
-+ * gen_pool_find_by_phys - find a pool by physical start address
-+ * @phys: physical address as added with gen_pool_add_virt
-+ *
-+ * Returns the pool that contains the chunk starting at phys,
-+ * or NULL if not found.
-+ */
-+struct gen_pool *gen_pool_find_by_phys(phys_addr_t phys)
-+{
-+	struct gen_pool *pool, *found = NULL;
-+	struct gen_pool_chunk *chunk;
-+
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(pool, &pools, next_pool) {
-+		list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk) {
-+			if (phys == chunk->phys_addr) {
-+				found = pool;
-+				break;
-+			}
-+		}
-+	}
-+	rcu_read_unlock();
-+
-+	return found;
-+}
-+EXPORT_SYMBOL_GPL(gen_pool_find_by_phys);
-+
-+#ifdef CONFIG_OF
-+/**
-+ * of_get_named_gen_pool - find a pool by phandle property
-+ * @np: device node
-+ * @propname: property name containing phandle(s)
-+ * @index: index into the phandle array
-+ *
-+ * Returns the pool that contains the chunk starting at the physical
-+ * address of the device tree node pointed at by the phandle property,
-+ * or NULL if not found.
-+ */
-+struct gen_pool *of_get_named_gen_pool(struct device_node *np,
-+	const char *propname, int index)
-+{
-+	struct device_node *np_pool;
-+	struct resource res;
-+	int ret;
-+
-+	np_pool = of_parse_phandle(np, propname, index);
-+	if (!np_pool)
-+		return NULL;
-+	ret = of_address_to_resource(np_pool, 0, &res);
-+	if (ret < 0)
-+		return NULL;
-+	return gen_pool_find_by_phys((phys_addr_t) res.start);
-+}
-+EXPORT_SYMBOL_GPL(of_get_named_gen_pool);
-+#endif /* CONFIG_OF */
--- 
-1.7.10.4
+IIRC, we already discussed this, but I can't recall the result.
+
+> Is that a bug or deliberate
+> behaviour?
+
+This is not easy to fix. ptrace_disable() and user_disable_single_step()
+is arch dependant, but at least on x86 it assumes that the tracee is not
+running, so exit_ptrace() can't do this.
+
+And (iirc) it can even sleep, but this is fixable. We can change
+exit_ptrace() to drop/re-acquire tasklist.
+
+And this also complicates PTRACE_DETACH_ASYNC which (imho) we need.
+Currently the tracer can't detach the running tracee. And worse, it
+can't detach a zombie. It should do wait() but if this process has
+alive sub-threads it can do nothing.
+
+
+This is another reason to move enable/disable step into ptrace_stop().
+And in fact I had the patches a loong ago, but we need to cleanup
+the usage of PT_SINGLESTEP/PT_BLOCKSTEP first. The tracer should
+simply set/clear these PT_ flags and resume the tracee which should
+check them and do user_*_single_step() in response.
+
+But. Whatever we do, exit_ptrace() can race with SIGTRAP anyway.
+
+> 	Related question: should execve(2) clear (ptrace-inflicted)
+> singlestepping?
+
+Perhaps, but
+
+> Tracer
+> exit(), however, does *not* do that right now, so the state after
+> execve(2) is theoretically observable.
+
+... why execve() is special?
+
+Olef.
 
