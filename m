@@ -1,105 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756271Ab2ICKxG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 06:53:06 -0400
-Received: from mail.betterlinux.com ([199.58.199.50]:40681 "EHLO
-	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756215Ab2ICKxE (ORCPT
+	id S1756279Ab2ICK5h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 06:57:37 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:61078 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752327Ab2ICK5g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 06:53:04 -0400
-X-DKIM: OpenDKIM Filter v2.4.1 mail.betterlinux.com 7119182072
-From: Andrea Righi <andrea@betterlinux.com>
-To: Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>
-Cc: Sean Jenkins <sean@bluehost.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH RESEND] audit: fix wrong timeout value in audit_log_start
-Date: Mon,  3 Sep 2012 12:52:52 +0200
-Message-Id: <1346669572-19419-1-git-send-email-andrea@betterlinux.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 3 Sep 2012 06:57:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <1346669179-21024-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1346669179-21024-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Mon, 3 Sep 2012 16:27:35 +0530
+X-Google-Sender-Auth: g8D3w2eWS1odpF4dopFn7-37e-o
+Message-ID: <CAOh2x=nrmQafH72rSE5m0ny1pU435z0Hkghpj1r=Tw3-O1-94g@mail.gmail.com>
+Subject: Re: [PATCH] dw_dmac: utilize slave_id to pass request line
+From: viresh kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-audit_log_start() does not properly check timeout values when
-audit_backlog_limit is exceeded, for example it is possible to use
-negative timeout values with schedule_timeout() triggering error
-messages like this:
+On Mon, Sep 3, 2012 at 4:16 PM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> There is slave_id field in the generic slave config structure that is dedicated
+> for the uniq slave number. In our case we have the request lines wired to the
+> certain hardware. Therefore the number of the request line is uniq and could be
+> used as slave_id. It allows us in some cases to drop out the usage of the
+> custom slave config structure.
+>
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> ---
+>  drivers/dma/dw_dmac.c |    5 +++++
+>  1 file changed, 5 insertions(+)
+>
+> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+> index f0c9403..7a67673 100644
+> --- a/drivers/dma/dw_dmac.c
+> +++ b/drivers/dma/dw_dmac.c
+> @@ -187,6 +187,11 @@ static void dwc_initialize(struct dw_dma_chan *dwc)
+>
+>                 cfghi = dws->cfg_hi;
+>                 cfglo |= dws->cfg_lo & ~DWC_CFGL_CH_PRIOR_MASK;
+> +       } else {
+> +               if (dwc->dma_sconfig.direction == DMA_MEM_TO_DEV)
+> +                       cfghi = DWC_CFGH_DST_PER(dwc->dma_sconfig.slave_id);
+> +               else if (dwc->dma_sconfig.direction == DMA_DEV_TO_MEM)
+> +                       cfghi = DWC_CFGH_SRC_PER(dwc->dma_sconfig.slave_id);
+>         }
+>
+>         channel_writel(dwc, CFG_LO, cfglo);
 
-  schedule_timeout: wrong timeout value ffffffffffff54e4
-
-Be sure to never set negative values for the timeout.
-
-Also, do a small refactoring to improve code readability.
-
-Reported-by: Sean Jenkins <sean@bluehost.com>
-Signed-off-by: Andrea Righi <andrea@betterlinux.com>
----
- kernel/audit.c |   46 ++++++++++++++++++++++++++++++----------------
- 1 file changed, 30 insertions(+), 16 deletions(-)
-
-diff --git a/kernel/audit.c b/kernel/audit.c
-index ea3b7b6..362d9b4 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -1123,6 +1123,28 @@ static inline void audit_get_stamp(struct audit_context *ctx,
- 	}
- }
- 
-+/* Wait for auditd to drain the queue a little */
-+static void audit_log_congestion_wait(unsigned long timeout_start)
-+{
-+	DECLARE_WAITQUEUE(wait, current);
-+
-+	set_current_state(TASK_INTERRUPTIBLE);
-+	add_wait_queue(&audit_backlog_wait, &wait);
-+
-+	if (audit_backlog_limit &&
-+	    skb_queue_len(&audit_skb_queue) > audit_backlog_limit) {
-+		unsigned long deadline, now = ACCESS_ONCE(jiffies);
-+
-+		WARN_ON(time_after(timeout_start, now));
-+		deadline = timeout_start + audit_backlog_wait_time;
-+		if (time_before(now, deadline))
-+			schedule_timeout(deadline - now);
-+	}
-+
-+	__set_current_state(TASK_RUNNING);
-+	remove_wait_queue(&audit_backlog_wait, &wait);
-+}
-+
- /* Obtain an audit buffer.  This routine does locking to obtain the
-  * audit buffer, but then no locking is required for calls to
-  * audit_log_*format.  If the tsk is a task that is currently in a
-@@ -1166,22 +1188,14 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
- 		reserve = 5; /* Allow atomic callers to go up to five
- 				entries over the normal backlog limit */
- 
--	while (audit_backlog_limit
--	       && skb_queue_len(&audit_skb_queue) > audit_backlog_limit + reserve) {
--		if (gfp_mask & __GFP_WAIT && audit_backlog_wait_time
--		    && time_before(jiffies, timeout_start + audit_backlog_wait_time)) {
--
--			/* Wait for auditd to drain the queue a little */
--			DECLARE_WAITQUEUE(wait, current);
--			set_current_state(TASK_INTERRUPTIBLE);
--			add_wait_queue(&audit_backlog_wait, &wait);
--
--			if (audit_backlog_limit &&
--			    skb_queue_len(&audit_skb_queue) > audit_backlog_limit)
--				schedule_timeout(timeout_start + audit_backlog_wait_time - jiffies);
--
--			__set_current_state(TASK_RUNNING);
--			remove_wait_queue(&audit_backlog_wait, &wait);
-+	while (audit_backlog_limit &&
-+	       skb_queue_len(&audit_skb_queue) >
-+				audit_backlog_limit + reserve) {
-+		if ((gfp_mask & __GFP_WAIT) &&
-+		    audit_backlog_wait_time &&
-+		    time_is_after_jiffies(timeout_start +
-+					audit_backlog_wait_time)) {
-+			audit_log_congestion_wait(timeout_start);
- 			continue;
- 		}
- 		if (audit_rate_check() && printk_ratelimit())
--- 
-1.7.9.5
-
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
