@@ -1,150 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755811Ab2ICBwm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 21:52:42 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:60037 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755541Ab2ICBwk (ORCPT
+	id S1755875Ab2ICBx4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 21:53:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54622 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755660Ab2ICBxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 21:52:40 -0400
-X-AuditID: 9c93016f-b7cc0ae000000e9f-74-50440d66142d
-From: Namhyung Kim <namhyung@kernel.org>
-To: Irina Tirdea <irina.tirdea@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH] perf bench: fix assert when NDEBUG is defined
-References: <CANg8OWLL6gzUpZuq8YT2bSbT5=EVWejbpCX0TM8dt7mKXyZ9Yg@mail.gmail.com>
-Date: Mon, 03 Sep 2012 10:45:03 +0900
-In-Reply-To: <CANg8OWLL6gzUpZuq8YT2bSbT5=EVWejbpCX0TM8dt7mKXyZ9Yg@mail.gmail.com>
-	(Irina Tirdea's message of "Mon, 3 Sep 2012 03:04:32 +0300")
-Message-ID: <87txvfev6o.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Sun, 2 Sep 2012 21:53:54 -0400
+Date: Mon, 3 Sep 2012 09:53:46 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Richard Zhao <richard.zhao@freescale.com>,
+        Huang Shijie <shijie8@gmail.com>,
+        Dong Aisheng <dong.aisheng@linaro.org>, kernel@pengutronix.de,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH v2 0/9] Add device tree support for on-chip SRAM
+Message-ID: <20120903015343.GB2362@S2101-09.ap.freescale.net>
+References: <1346405224-20399-1-git-send-email-p.zabel@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346405224-20399-1-git-send-email-p.zabel@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Sep 2012 03:04:32 +0300, Irina Tirdea wrote:
-> From: Irina Tirdea <irina.tirdea@intel.com>
->
-> When NDEBUG is defined, the assert macro will be expanded to nothing.
-> Some assert calls used in perf are also including some functionality
-> (e.g. system calls), not only validity checks. Therefore, if NDEBUG is
-> defined, these functionality will be removed along with the assert.
->
-> The functionality of the program needs to be separated from the assert checks.
-> In perf, BUG_ON is also defined on assert, so we need to fix these statements
-> too.
->
-> Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+I do not understand the point of introducing those imx patches, 1 ~ 4
+and 7, 8.  They are all unnecessary churns to me.  IMO, 4 patches are
+enough.
+
+ * genalloc: add a global pool list, allow to find pools by phys address
+ * misc: Generic on-chip SRAM allocation driver
+ * ARM i.MX: remove IRAM_ALLOC facility
+ * ARM: dts: add sram for imx53 and imx6q
+
+Regards,
+Shawn
+
+On Fri, Aug 31, 2012 at 11:26:55AM +0200, Philipp Zabel wrote:
+> These patches add support to configure on-chip SRAM via device-tree
+> node and to obtain the resulting genalloc pool from a phandle pointing
+> at the node.
+> This allows drivers to allocate SRAM with the genalloc API without
+> hard-coding the genalloc pool address.
+> 
+> The on-chip SRAM on i.MX53 and i.MX6q is registered via device tree and
+> changed to use the simple generic SRAM driver:
+> 
+> 		ocram: ocram@00900000 {
+> 			compatible = "fsl,imx-ocram", "sram";
+> 			reg = <0x00900000 0x3f000>;
+>  		};
+> 
+> A driver that needs to allocate SRAM buffers, like the video processing
+> unit on i.MX53, can retrieve the genalloc pool from a phandle in the
+> device tree using of_get_named_gen_pool(node, "iram", 0) from patch 5:
+> 
+> 		vpu@63ff4000 {
+> 			/* ... */
+> 			iram = <&ocram>;
+>  		};
+> 
+> Changes since v1:
+>  - Added a generic SRAM driver in drivers/misc that does nothing but
+>    request/ioremap its given memory region and serve it via the genalloc
+>    API.
+>  - Renamed the i.MX device tree nodes from "iram" to "ocram".
+> 
+> regards
+> Philipp
+> 
 > ---
->  tools/perf/bench/mem-memcpy.c |    8 +++++---
->  tools/perf/bench/mem-memset.c |    8 +++++---
->  tools/perf/bench/sched-pipe.c |    6 ++++--
->  3 files changed, 14 insertions(+), 8 deletions(-)
->
-> diff --git a/tools/perf/bench/mem-memcpy.c b/tools/perf/bench/mem-memcpy.c
-> index 02dad5d..bccb783 100644
-> --- a/tools/perf/bench/mem-memcpy.c
-> +++ b/tools/perf/bench/mem-memcpy.c
-> @@ -144,17 +144,19 @@ static double do_memcpy_gettimeofday(memcpy_t
-> fn, size_t len, bool prefault)
->  {
->  	struct timeval tv_start, tv_end, tv_diff;
->  	void *src = NULL, *dst = NULL;
-> -	int i;
-> +	int i, ret;
->
->  	alloc_mem(&src, &dst, len);
->
->  	if (prefault)
->  		fn(dst, src, len);
->
-> -	BUG_ON(gettimeofday(&tv_start, NULL));
-> +	ret = gettimeofday(&tv_start, NULL);
-> +	BUG_ON(ret);
-
-I think one of good thing of assert is that it outputs the exact failure
-condition when it fails.  So with patch, it will convert
-
-  Assertion `gettimeofday(&tv_start, NULL)' failed.
-
-into
-
-  Assertion `ret' failed.
-
-which is not so informative.
-
-So I'd rather suggest using more descriptive names like ret_gtod ?
-
-
->  	for (i = 0; i < iterations; ++i)
->  		fn(dst, src, len);
-> -	BUG_ON(gettimeofday(&tv_end, NULL));
-> +	ret = gettimeofday(&tv_end, NULL);
-> +	BUG_ON(ret);
->
->  	timersub(&tv_end, &tv_start, &tv_diff);
->
-> diff --git a/tools/perf/bench/mem-memset.c b/tools/perf/bench/mem-memset.c
-> index 350cc95..e0702d2 100644
-> --- a/tools/perf/bench/mem-memset.c
-> +++ b/tools/perf/bench/mem-memset.c
-> @@ -139,17 +139,19 @@ static double do_memset_gettimeofday(memset_t
-> fn, size_t len, bool prefault)
->  {
->  	struct timeval tv_start, tv_end, tv_diff;
->  	void *dst = NULL;
-> -	int i;
-> +	int i, ret;
->
->  	alloc_mem(&dst, len);
->
->  	if (prefault)
->  		fn(dst, -1, len);
->
-> -	BUG_ON(gettimeofday(&tv_start, NULL));
-> +	ret = gettimeofday(&tv_start, NULL);
-> +	BUG_ON(ret);
->  	for (i = 0; i < iterations; ++i)
->  		fn(dst, i, len);
-> -	BUG_ON(gettimeofday(&tv_end, NULL));
-> +	ret = gettimeofday(&tv_end, NULL);
-> +	BUG_ON(ret);
-
-Ditto.
-
-
->
->  	timersub(&tv_end, &tv_start, &tv_diff);
->
-> diff --git a/tools/perf/bench/sched-pipe.c b/tools/perf/bench/sched-pipe.c
-> index 0c7454f..b35c94b 100644
-> --- a/tools/perf/bench/sched-pipe.c
-> +++ b/tools/perf/bench/sched-pipe.c
-> @@ -61,8 +61,10 @@ int bench_sched_pipe(int argc, const char **argv,
->  	argc = parse_options(argc, argv, options,
->  			     bench_sched_pipe_usage, 0);
->
-> -	assert(!pipe(pipe_1));
-> -	assert(!pipe(pipe_2));
-> +	ret = pipe(pipe_1);
-> +	assert(!ret);
-> +	ret = !pipe(pipe_2);
-> +	assert(!ret);
-
-What about converting these raw assert's to BUG_ONs (with negating the
-conditions) for consistency?
-
-Thanks,
-Namhyung
-
-
->
->  	pid = fork();
->  	assert(pid >= 0);
+>  arch/arm/boot/dts/imx53.dtsi          |    5 ++
+>  arch/arm/boot/dts/imx6q.dtsi          |    5 ++
+>  arch/arm/plat-mxc/Kconfig             |    4 --
+>  arch/arm/plat-mxc/Makefile            |    1 -
+>  arch/arm/plat-mxc/include/mach/iram.h |   41 -------------
+>  arch/arm/plat-mxc/iram_alloc.c        |   73 -----------------------
+>  drivers/misc/Kconfig                  |    8 +++
+>  drivers/misc/Makefile                 |    1 +
+>  drivers/misc/sram.c                   |  105 +++++++++++++++++++++++++++++++++
+>  include/linux/genalloc.h              |   14 +++++
+>  lib/genalloc.c                        |   77 ++++++++++++++++++++++++
+>  11 files changed, 215 insertions(+), 119 deletions(-)
+> 
