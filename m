@@ -1,59 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756468Ab2ICNBT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 09:01:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45428 "EHLO mx2.suse.de"
+	id S1756424Ab2ICNNG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 09:13:06 -0400
+Received: from pequod.mess.org ([93.97.41.153]:50775 "EHLO pequod.mess.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754088Ab2ICNBR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 09:01:17 -0400
-From: Oliver Neukum <oneukum@suse.de>
-To: Yann Cantin <yann.cantin@laposte.net>
-Cc: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
-        gregkh@linuxfoundation.org, dmitry.torokhov@gmail.com,
+	id S1751596Ab2ICNNE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 09:13:04 -0400
+X-Greylist: delayed 544 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Sep 2012 09:13:04 EDT
+Date: Mon, 3 Sep 2012 14:03:57 +0100
+From: Sean Young <sean@mess.org>
+To: "Du, Changbin" <changbin.du@gmail.com>
+Cc: mchehab@infradead.org, paul.gortmaker@windriver.com, sfr@canb.auug.org.au,
+        srinivas.kandagatla@st.com, linux-media@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [RFC ebeam PATCH v4 2/2] input: misc: New USB eBeam input driver.
-Date: Mon, 03 Sep 2012 14:59:58 +0200
-Message-ID: <1816600.0kCAv4ld5c@linux-lqwf.site>
-Organization: SUSE
-User-Agent: KMail/4.8.4 (Linux/3.6.0-rc2-12-desktop+; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <503792CC.6050209@laposte.net>
-References: <1345673514-11575-1-git-send-email-yann.cantin@laposte.net> <1555763.Oi7gGGn7BU@linux-lqwf.site> <503792CC.6050209@laposte.net>
+Subject: Re: [RFC PATCH] [media] rc: filter out not allowed protocols when
+ decoding
+Message-ID: <20120903130357.GA7403@pequod.mess.org>
+References: <1346464629-22458-1-git-send-email-changbin.du@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346464629-22458-1-git-send-email-changbin.du@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 24 August 2012 16:42:20 Yann Cantin wrote:
-> Hi,
+On Sat, Sep 01, 2012 at 09:57:09AM +0800, Du, Changbin wrote:
+> From: "Du, Changbin" <changbin.du@gmail.com>
 > 
-> Le 24/08/2012 13:41, Oliver Neukum a écrit :
-> > On Friday 24 August 2012 11:37:45 Yann Cantin wrote:
-> >> Hi,
-> >>
-> >> Le 23/08/2012 09:23, Oliver Neukum a écrit :
-> >>> On Thursday 23 August 2012 00:11:54 Yann Cantin wrote:
-> > 
-> >>> These functions are identical. You should unify them.
-> >>
-> >> Removed reset_resume from the driver (optional, and not needed
-> >> for this hardware).
-> > 
-> > Why did you do that? It is always better to have reset_resume().
-> > And you cannot tell whether it will be needed.
+> Each rc-raw device has a property "allowed_protos" stored in structure
+> ir_raw_event_ctrl. But it didn't work because all decoders would be
+> called when decoding. This path makes only allowed protocol decoders
+> been invoked.
 > 
-> This function was used in usbtouchscreen (which this driver is based on)
-> for some hardware specific init after reset. eBeam devices doesn't need that,
-> and i didn't mention the similarity of the 2 functions after stripping the code.
+> Signed-off-by: Du, Changbin <changbin.du@gmail.com>
+> ---
+>  drivers/media/rc/ir-raw.c |    8 ++++++--
+>  1 file changed, 6 insertions(+), 2 deletions(-)
 > 
-> According to power-management.txt, reset_resume is optional, and lot of input
-> driver lack it. Anyway, if you think it's worth the code, i'll re-add a 
-> reset_resume function proxing resume like wacom_sys.c do.
+> diff --git a/drivers/media/rc/ir-raw.c b/drivers/media/rc/ir-raw.c
+> index a820251..198b6d8 100644
+> --- a/drivers/media/rc/ir-raw.c
+> +++ b/drivers/media/rc/ir-raw.c
+> @@ -63,8 +63,12 @@ static int ir_raw_event_thread(void *data)
+>  		spin_unlock_irq(&raw->lock);
+>  
+>  		mutex_lock(&ir_raw_handler_lock);
+> -		list_for_each_entry(handler, &ir_raw_handler_list, list)
+> -			handler->decode(raw->dev, ev);
+> +		list_for_each_entry(handler, &ir_raw_handler_list, list) {
+> +			/* use all protocol by default */
+> +			if (raw->dev->allowed_protos == RC_TYPE_UNKNOWN ||
+> +			    raw->dev->allowed_protos & handler->protocols)
+> +				handler->decode(raw->dev, ev);
+> +		}
 
-It is always better to have reset_resume() if it can be easily done.
+Each IR protocol decoder already checks whether it is enabled or not; 
+should it not be so that only allowed protocols can be enabled rather 
+than checking both enabled_protocols and allowed_protocols?
 
-	Regards
-		Oliver
+Just from reading store_protocols it looks like decoders which aren't
+in allowed_protocols can be enabled, which makes no sense. Also 
+ir_raw_event_register all protocols are enabled rather than the 
+allowed ones.
 
+Lastely I don't know why raw ir drivers should dictate which protocols
+can be enabled. Would it not be better to remove it entirely?
+
+
+>  		raw->prev_ev = ev;
+>  		mutex_unlock(&ir_raw_handler_lock);
+>  	}
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
