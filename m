@@ -1,92 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362Ab2ICU0X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 16:26:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32454 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751578Ab2ICU0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 16:26:21 -0400
-Date: Mon, 3 Sep 2012 23:27:37 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sjur =?iso-8859-1?Q?Br=E6ndeland?= <sjurbren@gmail.com>
-Cc: Amit Shah <amit.shah@redhat.com>, linux-kernel@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [RFC 1/2] virtio_console: Add support for DMA memory allocation
-Message-ID: <20120903202737.GD6181@redhat.com>
-References: <1346680277-5887-1-git-send-email-sjur.brandeland@stericsson.com>
- <20120903143018.GA5353@redhat.com>
- <CAJK669bkHHMAPYMEr22-6uOwfgJv1uKTbzNBQVVCq=OooExC0g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJK669bkHHMAPYMEr22-6uOwfgJv1uKTbzNBQVVCq=OooExC0g@mail.gmail.com>
+	id S1753601Ab2ICU0k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 16:26:40 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:52175 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753398Ab2ICU0i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 16:26:38 -0400
+X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
+  Mon, 03 Sep 2012 15:26:38 -0500
+X-Originating-IP: 108.223.40.66
+From: Guenter Roeck <linux@roeck-us.net>
+To: spi-devel-general@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
+Subject: [PATCH] Revert "spi/doc: spi_master_put must be followed up by kfree"
+Date: Mon,  3 Sep 2012 13:26:26 -0700
+Message-Id: <1346703986-7849-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 03, 2012 at 04:57:45PM +0200, Sjur Brændeland wrote:
-> Hi Michael,
-> 
-> > How does access to descriptors work in this setup?
-> 
-> When the ring is setup by remoteproc the descriptors are
-> also allocated using dma_alloc_coherent().
-> 
-> >> -static void free_buf(struct port_buffer *buf)
-> >> +/* Allcoate data buffer from DMA memory if requested */
-> >
-> > typo
-> 
-> Thanks.
-> 
-> >> +static inline void *
-> >> +alloc_databuf(struct virtio_device *vdev, size_t size, dma_addr_t *dma_handle,
-> >> +                gfp_t flag)
-> >>  {
-> >> -     kfree(buf->buf);
-> >> +#ifdef CONFIG_HAS_DMA
-> >> +     if (virtio_has_feature(vdev, VIRTIO_CONSOLE_F_DMA_MEM)) {
-> >> +             struct device *dev = &vdev->dev;
-> >> +             /*
-> >> +              * Allocate DMA memory from ancestors. Finding the ancestor
-> >> +              * is a bit quirky when DMA_MEMORY_INCLUDES_CHILDREN is not
-> >> +              * implemented.
-> >> +              */
-> >> +             dev = dev->parent ? dev->parent : dev;
-> >> +             dev = dev->parent ? dev->parent : dev;
-> >> +             return dma_alloc_coherent(dev, size, dma_handle, flag);
-> >> +     }
-> >> +#endif
-> >
-> > Are these ifdefs really needed? If DMA_MEM is set,
-> > can't we use dma_alloc_coherent
-> > unconditionally?
-> 
-> If an architecture do not support DMA you will get
-> a link error: "unknown symbol" for dma_alloc_coherent.
-> 
-> Regards,
-> Sjur
+Actually, spi_master_put() after spi_alloc_master() must _not_ be followed
+by kfree(). The memory is already freed with the call to spi_master_put()
+through spi_master_class, which registers a release function. Calling both
+spi_master_put() and kfree() results in often nasty (and delayed) crashes
+elsewhere in the kernel, often in the networking stack.
 
-Yes, it even seems intentional.
-But I have a question: can the device work without DMA?
-Does not VIRTIO_CONSOLE_F_DMA_MEM mean dma api is required?
-If yes you should just fail load.
+This reverts commit eb4af0f5349235df2e4a5057a72fc8962d00308a.
 
-Also let's add a wrapper at top of file so ifdefs
-do not litter the code like this. For example:
+Cc: Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ drivers/spi/spi.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-#ifdef CONFIG_HAS_DMA
-#define VIRTIO_CONSOLE_HAS_DMA (1)
-#else
-#define VIRTIO_CONSOLE_HAS_DMA (0)
-#endif
-
-Now use if instead of ifdef.
-
+diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+index 2d9b5bb..6470750 100644
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -1082,8 +1082,7 @@ static struct class spi_master_class = {
+  *
+  * The caller is responsible for assigning the bus number and initializing
+  * the master's methods before calling spi_register_master(); and (after errors
+- * adding the device) calling spi_master_put() and kfree() to prevent a memory
+- * leak.
++ * adding the device) calling spi_master_put() to prevent a memory leak.
+  */
+ struct spi_master *spi_alloc_master(struct device *dev, unsigned size)
+ {
 -- 
-MST
+1.7.9.7
+
