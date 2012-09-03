@@ -1,72 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932211Ab2ICOR3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 10:17:29 -0400
-Received: from na3sys009aog130.obsmtp.com ([74.125.149.143]:34095 "EHLO
-	na3sys009aog130.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756473Ab2ICOR1 (ORCPT
+	id S932194Ab2ICOUj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 10:20:39 -0400
+Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:33960 "EHLO
+	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756477Ab2ICOUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 10:17:27 -0400
-Date: Mon, 3 Sep 2012 17:13:09 +0300
+	Mon, 3 Sep 2012 10:20:38 -0400
+Date: Mon, 3 Sep 2012 17:16:19 +0300
 From: Felipe Balbi <balbi@ti.com>
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-Cc: gregkh@linuxfoundation.org, balbi@ti.com, hzpeterchen@gmail.com,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH v2] usb: otg: Move phy interface to separate file.
-Message-ID: <20120903141306.GL3147@arwen.pp.htv.fi>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: balbi@ti.com, Hein Tibosch <hein_tibosch@yahoo.es>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        spear-devel <spear-devel@list.st.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "ludovic.desroches" <ludovic.desroches@atmel.com>,
+        Havard Skinnemoen <havard@skinnemoen.net>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>
+Subject: Re: [PATCH 1/2] dw_dmac: make driver endianness configurable
+Message-ID: <20120903141617.GM3147@arwen.pp.htv.fi>
 Reply-To: balbi@ti.com
-References: <1346222821-27650-1-git-send-email-vbyravarasu@nvidia.com>
+References: <503A8CAE.6050606@yahoo.es>
+ <20120827070323.GC28721@samfundet.no>
+ <503B342C.9060300@yahoo.es>
+ <20120827111431.GA27868@samfundet.no>
+ <503B8B26.3050205@yahoo.es>
+ <CAKohpo=ALUNOnQdQjNd1Y2jtocxjixKCiBrRZp8qGErqg1LSKw@mail.gmail.com>
+ <503C6B67.2010903@yahoo.es>
+ <20120828073858.GK27166@arwen.pp.htv.fi>
+ <CAHp75VeFDRYXuY0bkry-Leo-uGqEGYBm46wKfmj_Vxt_m3KO7A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xtmLDbP6TiKhntQb"
+	protocol="application/pgp-signature"; boundary="g6DVDhPhk1bqxDrC"
 Content-Disposition: inline
-In-Reply-To: <1346222821-27650-1-git-send-email-vbyravarasu@nvidia.com>
+In-Reply-To: <CAHp75VeFDRYXuY0bkry-Leo-uGqEGYBm46wKfmj_Vxt_m3KO7A@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---xtmLDbP6TiKhntQb
+--g6DVDhPhk1bqxDrC
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi,
+On Mon, Sep 03, 2012 at 10:50:44AM +0300, Andy Shevchenko wrote:
+> On Tue, Aug 28, 2012 at 10:39 AM, Felipe Balbi <balbi@ti.com> wrote:
+> > Can you not read this from any internal register ? Synopsys generally
+> > adds a set of read only registers which we can use to guess which
+> > features where enabled in the IP when configuring it with their IP
+> > configuration tool.
+> You right. I have a patch to support few options like that already.
+> However, I can't share
+> it yet by some legal reasons.
 
-On Wed, Aug 29, 2012 at 12:17:01PM +0530, Venu Byravarasu wrote:
-> As otg.h is containing lots of phy interface related
-> stuff, moving all phy interface related stuff to new
-> file named phy.h
->=20
-> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
-
-this doesn't apply to my "xceiv" branch. Please rebase there so I don't
-cause any issues to your patch ;-)
+fair enough, in that case it'd be best to hold this patch and provide
+something better later ;-)
 
 --=20
 balbi
 
---xtmLDbP6TiKhntQb
+--g6DVDhPhk1bqxDrC
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQRLryAAoJEIaOsuA1yqREZQ4P/3YKc/EECfyqyzoh3RgEvGUx
-AKcJNDg8V9vF8nIHmr6Xz1V2ZtUV21zHfCxNrxdQ4m3BTlT9LYhCOIH4pWBAKBvS
-aGAhmOu60XudpR0EZl+6gDmcEQuQJMO2mYTzXRfRzfMkSlc1vYPbmZcdNBBahGLs
-Jw6GkJTte9VrY2OAUOU9MQ+07Nt1mDAkvd1ekROGGk5LwsszlaoHv6ZdOHRsVGoL
-6UNO224cQo5E2oQWOS87vNobcQEn7ubNYHMaJsYp/hCRLzwqEAS4mWcZ0fW2IRlu
-050Up5rM8gIHzobULF48pIUMExhhGfetFh3NBWtyU/MVsry5gKMUOSKnI6Sx8y0c
-o3z6oJC3LNP8VVi+STTPgX6hwVqojAGwh0OtZbuf1xXuc7k+U6lut+omFWycAn7z
-zIwyjYKGAXMJh6riGEdytGk5WLFZrst761i1cjF01OsBN5vYjV5/x9693ArtPpzk
-kwiMt+fX22Q8L6KnCtwvwxloboLWdVm2F0Izhwm8VP3KGealQMP6bVGL4AkIw/v+
-kVSxB7GeR4/12ncAttF8aInMvdF8QgVXnXaijlIGToQjkWi39x7pC4NsoGJYtmxK
-LcrGHALbWYDHm/AwhBxYBdWKwWIJ/9nbdMSGd5H6xKzK9N0rclvPmDYsbXcf3SY1
-9uvOygG2JCnevxoUuc+F
-=SV1s
+iQIcBAEBAgAGBQJQRLuxAAoJEIaOsuA1yqRESy4P/2cJ/Jw0Tly5SuIVXhAyV/bP
+QhmQ+MVIfFqPGNSPPi8SaHS2ZFnz2xQRMHaBhdoiFPR4eN8B65w5cUg4qrMn7Xz1
+8wPATkKWfADi+JAOo/XNtDmSGospfEFi26BmKdLmBs7qgj2Hn7qlnW9mX6Dvd/za
+m2OIq7LEGGJiQexivaZcPLHgYhgExnFznlG4f7or7mXL91Y/iDH4EstkA7QoO0d6
+mCx/3nxHF4DgUNHSPTgcckD24NQx+AmixK/6bTqSd3pDQIOnoCzwnVKHFohaXtCW
+N64woKxcLC2scKJ0YMueYxbItJGC3IFzq990WtZjShN1HU1McZNdqjJ8aPT5McGF
+9tlSeOt3UI/IJTm2nhduoesdCpab0ygW+XOMaEk9HFldc3wB8+SiLLsBEYbemflT
+Vl8Hf7pH9h8sSMYh7si31bMirFiSqpO7Fn+j0l2aHrzFEAwLXXbXG7SHg4CnUNLF
+m4D0Ob9cbA4tC0LAc6ZOyLV1S9dcMu7RtjtXP4j+OUQyJ1VQnAW/yiP86HX9Gdq8
+OVKHJT8kLcjSVX7FTommfMB6zrcvLqPpp+ALCV0LD1z8sJGFdhdbeov8swQA80B/
+s4ZBNGmIXUAe5uLqvjlpvmIdXtXO+GyZjKk1cHs1ZInalovN4jQAQa/VZXWlMweU
+dTMO4SK89vanPAtLfrJx
+=XGFF
 -----END PGP SIGNATURE-----
 
---xtmLDbP6TiKhntQb--
+--g6DVDhPhk1bqxDrC--
