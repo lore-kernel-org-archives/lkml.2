@@ -1,170 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754828Ab2ICHSe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 03:18:34 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45848 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751672Ab2ICHSc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 03:18:32 -0400
+	id S1754997Ab2ICHXF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 03:23:05 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:34134 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751805Ab2ICHXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 03:23:02 -0400
+From: Prabhakar Lad <prabhakar.lad@ti.com>
+To: LMML <linux-media@vger.kernel.org>
+CC: dlos <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-kernel@vger.kernel.org>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        <linux-doc@vger.kernel.org>, "Lad, Prabhakar" <prabhakar.lad@ti.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Rob Landley <rob@landley.net>, HeungJun Kim <riverful.kim@samsung.com>
+Subject: [PATCH v3] media: v4l2-ctrls: add control for dpcm predictor
+Date: Mon, 3 Sep 2012 12:50:51 +0530
+Message-ID: <1346656851-20316-1-git-send-email-prabhakar.lad@ti.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-In-Reply-To: <CAOJsxLG+o7NwuAfamPzsPJC6K_TRAO_J_W=Nn8yj9bJiqxp=Xg@mail.gmail.com>
-References: <1346572019-15806-1-git-send-email-yinghai@kernel.org>
-	<1346572019-15806-14-git-send-email-yinghai@kernel.org>
-	<CAOJsxLFtpBnvtA3F=7NDJunqXRs4AL1=oe7HR6GECgGfr9TqDA@mail.gmail.com>
-	<CAE9FiQV9pE0FOgqTbNpUf0s04yCTeHkApvUtzGXKwQw-7XB2KA@mail.gmail.com>
-	<CAOJsxLG+o7NwuAfamPzsPJC6K_TRAO_J_W=Nn8yj9bJiqxp=Xg@mail.gmail.com>
-Date: Mon, 3 Sep 2012 00:18:32 -0700
-X-Google-Sender-Auth: fjs557uT8TQt8RFtAIiodvKAF5o
-Message-ID: <CAE9FiQXHyS-ybeo5fBQwQzUtK2TTqPVkuf+6heZKrGn1wS77tQ@mail.gmail.com>
-Subject: Re: [PATCH -v2 13/13] x86, 64bit: Map first 1M ram early before memblock_x86_fill()
-From: Yinghai Lu <yinghai@kernel.org>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=f46d042f9f4ef7594d04c8c6f2c6
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---f46d042f9f4ef7594d04c8c6f2c6
-Content-Type: text/plain; charset=ISO-8859-1
+From: Lad, Prabhakar <prabhakar.lad@ti.com>
 
-On Sun, Sep 2, 2012 at 11:26 PM, Pekka Enberg <penberg@kernel.org> wrote:
->
-> Yup, or move the globals together with the comment to arch/x86/mm/init.c.
->
-> That said, max_pfn_high_mapped really ought to be kept together with
-> the other "pfn_mapped" globals and the comment should be updated.
+add V4L2_CID_DPCM_PREDICTOR control of type menu, which
+determines the dpcm predictor. The predictor can be either
+simple or advanced.
 
-max_pfn_high_mapped is only for 64bit, and it is in init_64.c
+Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+Cc: Sakari Ailus <sakari.ailus@iki.fi>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: Hans de Goede <hdegoede@redhat.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Rob Landley <rob@landley.net>
+Cc: HeungJun Kim <riverful.kim@samsung.com>
+---
+This patches has one checkpatch warning for line over
+80 characters altough it can be avoided I have kept it
+for consistency.
 
-maybe later could have another patch to move max_pfn_mapped,
-max_low_pfn_mapped from
-kernel/setup.c to mm/init.c
+Changes for v3:
+1: Added better explanation for DPCM, pointed by Hans.
 
-Please check attached updated patch.
+Changes for v2:
+1: Added documentaion in controls.xml pointed by Sylwester.
+2: Chnaged V4L2_DPCM_PREDICTOR_ADVANCE to V4L2_DPCM_PREDICTOR_ADVANCED
+   pointed by Sakari.
 
-Thanks
+ Documentation/DocBook/media/v4l/controls.xml |   48 +++++++++++++++++++++++++-
+ drivers/media/v4l2-core/v4l2-ctrls.c         |    9 +++++
+ include/linux/videodev2.h                    |    5 +++
+ 3 files changed, 61 insertions(+), 1 deletions(-)
 
-Yinghai
+diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
+index 93b9c68..f704218 100644
+--- a/Documentation/DocBook/media/v4l/controls.xml
++++ b/Documentation/DocBook/media/v4l/controls.xml
+@@ -4267,7 +4267,53 @@ interface and may change in the future.</para>
+ 	    pixels / second.
+ 	    </entry>
+ 	  </row>
+-	  <row><entry></entry></row>
++	  <row>
++	    <entry spanname="id"><constant>V4L2_CID_DPCM_PREDICTOR</constant></entry>
++	    <entry>menu</entry>
++	  </row>
++	  <row id="v4l2-dpcm-predictor">
++	    <entry spanname="descr"> Differential pulse-code modulation (DPCM) is a signal
++	    encoder that uses the baseline of pulse-code modulation (PCM) but adds some
++	    functionalities based on the prediction of the samples of the signal. The input
++	    can be an analog signal or a digital signal.
++
++	    <para>If the input is a continuous-time
++	    analog signal, it needs to be sampled first so that a discrete-time signal is
++	    the input to the DPCM encoder.</para>
++
++	    <para>Simple: take the values of two
++	    consecutive samples; if they are analog samples, quantize them; calculate the
++	    difference between the first one and the next; the output is the difference, and
++	    it can be further entropy coded.</para>
++
++	    <para>Advanced: instead of taking a difference relative to a previous input sample,
++	    take the difference relative to the output of a local model of the decoder process;
++	    in this option, the difference can be quantized, which allows a good way to
++	    incorporate a controlled loss in the encoding.</para>
++
++	    <para>Applying one of these two processes, short-term redundancy (positive correlation of
++	    nearby values) of the signal is eliminated; compression ratios on the order of 2 to 4
++	    can be achieved if differences are subsequently entropy coded, because the entropy of
++	    the difference signal is much smaller than that of the original discrete signal treated
++	    as independent samples.For more information about DPCM see <ulink
++	    url="http://en.wikipedia.org/wiki/Differential_pulse-code_modulation">Wikipedia</ulink>.</para>
++	    </entry>
++	  </row>
++	  <row>
++	    <entrytbl spanname="descr" cols="2">
++	      <tbody valign="top">
++	        <row>
++	         <entry><constant>V4L2_DPCM_PREDICTOR_SIMPLE</constant></entry>
++	          <entry>Predictor type is simple</entry>
++	        </row>
++	        <row>
++	          <entry><constant>V4L2_DPCM_PREDICTOR_ADVANCED</constant></entry>
++	          <entry>Predictor type is advanced</entry>
++	        </row>
++	      </tbody>
++	    </entrytbl>
++	  </row>
++	<row><entry></entry></row>
+ 	</tbody>
+       </tgroup>
+       </table>
+diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
+index b6a2ee7..2d7bc15 100644
+--- a/drivers/media/v4l2-core/v4l2-ctrls.c
++++ b/drivers/media/v4l2-core/v4l2-ctrls.c
+@@ -425,6 +425,11 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
+ 		"Gray",
+ 		NULL,
+ 	};
++	static const char * const dpcm_predictor[] = {
++		"Simple Predictor",
++		"Advanced Predictor",
++		NULL,
++	};
+ 
+ 	switch (id) {
+ 	case V4L2_CID_MPEG_AUDIO_SAMPLING_FREQ:
+@@ -502,6 +507,8 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
+ 		return mpeg4_profile;
+ 	case V4L2_CID_JPEG_CHROMA_SUBSAMPLING:
+ 		return jpeg_chroma_subsampling;
++	case V4L2_CID_DPCM_PREDICTOR:
++		return dpcm_predictor;
+ 
+ 	default:
+ 		return NULL;
+@@ -732,6 +739,7 @@ const char *v4l2_ctrl_get_name(u32 id)
+ 	case V4L2_CID_IMAGE_PROC_CLASS:		return "Image Processing Controls";
+ 	case V4L2_CID_LINK_FREQ:		return "Link Frequency";
+ 	case V4L2_CID_PIXEL_RATE:		return "Pixel Rate";
++	case V4L2_CID_DPCM_PREDICTOR:		return "DPCM Predictor";
+ 
+ 	default:
+ 		return NULL;
+@@ -832,6 +840,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
+ 	case V4L2_CID_ISO_SENSITIVITY_AUTO:
+ 	case V4L2_CID_EXPOSURE_METERING:
+ 	case V4L2_CID_SCENE_MODE:
++	case V4L2_CID_DPCM_PREDICTOR:
+ 		*type = V4L2_CTRL_TYPE_MENU;
+ 		break;
+ 	case V4L2_CID_LINK_FREQ:
+diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
+index 6d6dfa7..ca9fb78 100644
+--- a/include/linux/videodev2.h
++++ b/include/linux/videodev2.h
+@@ -2000,6 +2000,11 @@ enum v4l2_jpeg_chroma_subsampling {
+ 
+ #define V4L2_CID_LINK_FREQ			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 1)
+ #define V4L2_CID_PIXEL_RATE			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 2)
++#define V4L2_CID_DPCM_PREDICTOR			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 3)
++enum v4l2_dpcm_predictor {
++	V4L2_DPCM_PREDICTOR_SIMPLE	= 0,
++	V4L2_DPCM_PREDICTOR_ADVANCED	= 1,
++};
+ 
+ /*
+  *	T U N I N G
+-- 
+1.7.0.4
 
---f46d042f9f4ef7594d04c8c6f2c6
-Content-Type: application/octet-stream; name="fix_max_pfn_mapped_xx.patch"
-Content-Disposition: attachment; filename="fix_max_pfn_mapped_xx.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h6n8mvvj0
-
-U3ViamVjdDogW1BBVENIXSB4ODYsIDY0Yml0OiBNYXAgZmlyc3QgMU0gcmFtIGVhcmx5IGJlZm9y
-ZSBtZW1ibG9ja194ODZfZmlsbCgpCgpUaGlzIG9uZSBpbnRlbmQgdG8gZml4IGJ1Z3M6Cm1lbWJs
-b2NrIGluaXRpYWwgbWVtb3J5IG9ubHkgaGF2ZSAxMjggZW50cnksIGFuZCBzb21lIEVGSSBzeXN0
-ZW0gY291bGQKaGF2ZSBtb3JlIGVudHJpZXMgdGhhbiB0aGF0LgpTbyBkdXJpbmcgbWVtYmxvY2tf
-eDg2X2ZpbGwgbmVlZCB0byBkb3VibGUgdGhhdCBhcnJheS4KYW5kIGVmaV9yZXNlcnZlX2Jvb3Rf
-c2VydmljZXMoKSBjb3VsZCBtYWtlIHRoaW5nIG1vcmUgd29yc2UuIGFrYSBuZWVkCm1vcmUgZW50
-cmllcyBpbiBtZW1ibG9jay5tZW1vcnkucmVnaW9ucy4KCkZvciA2NGJpdCwgV2UgaGF2ZSBsb3cg
-a2VybmVsIG1hcHBpbmcsIGFuZCBoaWdoIGtlcm5lbCBtYXBwaW5nLgpoaWdoIGtlcm5lbCBtYXBw
-aW5nIGlzIGRvbmUgZWFybHkgaW4gaGVhZF82NC5TLgpsb3cga2VybmVsIG1hcHBpbmcgaXMgZG9u
-ZSBpbiBpbml0X21lbW9yeV9tYXBwaW5nLgoKTm93IHdlIGhhdmUgbWF4X3Bmbl9tYXBwZWQgYWN0
-dWFsbHkgaXMgZm9yIGhpZ2ggbWFwcGluZywgbGF0ZXIgd2hlbiB3ZQpuZWVkIHRvIGdldCBidWZm
-IGZvciB0aGUgZG91YmxpbmcgbWVtYmxvY2ssIHdlIGNvdWxkIGdldCBidWYgZm9yIHRoYXQgbmV3
-CmFycmF5LCBidXQgd2UgY2FuIG5vdCB1c2UgaXQuCkFzIF9fdmEoKSBpbiBkb3VibGVfYXJyYXko
-KSB3aWxsIHJldHVybiB2aXJ0dWFsIGFkZHJlc3Mgd2l0aCBsb3cga2VybmVsIG1hcHBpbmcuCgpU
-aGUgcGF0Y2ggd2lsbCB0cnkgdG8gbWFwIGZpcnN0IDFNIHJhbmdlLCBhbmQgZmluZCBlYXJseSBw
-YWdlIHRhYmxlIHNwYWNlCmZyb20gQlJLLgoKQWxzbyBhZGQgbWF4X3Bmbl9oaWdoX21hcHBlZCB0
-byB0cmFjayBoaWdoIG1hcHBlZCByYW5nZSwgc28gd2UgY291bGQga2VlcAppbml0aWFsIG1heF9w
-Zm5fbWFwcGVkIHRvIDAgZm9yIDY0Yml0LgoKLXYyOiBVcGRhdGUgY2hhbmdlbG9nIGFuZCBjb21t
-ZW50cyBhY2NvcmRpbmcgdG8gUGVra2EgRW5iZXJnLgoKU2lnbmVkLW9mZi1ieTogWWluZ2hhaSBM
-dSA8eWluZ2hhaUBrZXJuZWwub3JnPgoKLS0tCiBhcmNoL3g4Ni9pbmNsdWRlL2FzbS9wYWdlX3R5
-cGVzLmggfCAgICAxIAogYXJjaC94ODYvaW5jbHVkZS9hc20vcGd0YWJsZS5oICAgIHwgICAgMSAK
-IGFyY2gveDg2L2tlcm5lbC9oZWFkNjQuYyAgICAgICAgICB8ICAgIDIgLQogYXJjaC94ODYva2Vy
-bmVsL3NldHVwLmMgICAgICAgICAgIHwgICAgMiArCiBhcmNoL3g4Ni9tbS9pbml0LmMgICAgICAg
-ICAgICAgICAgfCAgIDQxICsrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKy0tCiBh
-cmNoL3g4Ni9tbS9pbml0XzY0LmMgICAgICAgICAgICAgfCAgICA5ICsrKysrKystCiA2IGZpbGVz
-IGNoYW5nZWQsIDUyIGluc2VydGlvbnMoKyksIDQgZGVsZXRpb25zKC0pCgpJbmRleDogbGludXgt
-Mi42L2FyY2gveDg2L2luY2x1ZGUvYXNtL3BhZ2VfdHlwZXMuaAo9PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51
-eC0yLjYub3JpZy9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9wYWdlX3R5cGVzLmgKKysrIGxpbnV4LTIu
-Ni9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9wYWdlX3R5cGVzLmgKQEAgLTQ1LDYgKzQ1LDcgQEAgZXh0
-ZXJuIGludCBkZXZtZW1faXNfYWxsb3dlZCh1bnNpZ25lZCBsbwogCiBleHRlcm4gdW5zaWduZWQg
-bG9uZyBtYXhfbG93X3Bmbl9tYXBwZWQ7CiBleHRlcm4gdW5zaWduZWQgbG9uZyBtYXhfcGZuX21h
-cHBlZDsKK2V4dGVybiB1bnNpZ25lZCBsb25nIG1heF9wZm5faGlnaF9tYXBwZWQ7CiAKIHN0YXRp
-YyBpbmxpbmUgcGh5c19hZGRyX3QgZ2V0X21heF9tYXBwZWQodm9pZCkKIHsKSW5kZXg6IGxpbnV4
-LTIuNi9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9wZ3RhYmxlLmgKPT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgt
-Mi42Lm9yaWcvYXJjaC94ODYvaW5jbHVkZS9hc20vcGd0YWJsZS5oCisrKyBsaW51eC0yLjYvYXJj
-aC94ODYvaW5jbHVkZS9hc20vcGd0YWJsZS5oCkBAIC01OTgsNiArNTk4LDcgQEAgc3RhdGljIGlu
-bGluZSBpbnQgcGdkX25vbmUocGdkX3QgcGdkKQogCiBleHRlcm4gaW50IGRpcmVjdF9nYnBhZ2Vz
-Owogdm9pZCBpbml0X21lbV9tYXBwaW5nKHZvaWQpOwordm9pZCBlYXJseV9pbml0X21lbV9tYXBw
-aW5nKHZvaWQpOwogCiAvKiBsb2NhbCBwdGUgdXBkYXRlcyBuZWVkIG5vdCB1c2UgeGNoZyBmb3Ig
-bG9ja2luZyAqLwogc3RhdGljIGlubGluZSBwdGVfdCBuYXRpdmVfbG9jYWxfcHRlcF9nZXRfYW5k
-X2NsZWFyKHB0ZV90ICpwdGVwKQpJbmRleDogbGludXgtMi42L2FyY2gveDg2L2tlcm5lbC9oZWFk
-NjQuYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9hcmNoL3g4Ni9rZXJuZWwvaGVhZDY0
-LmMKKysrIGxpbnV4LTIuNi9hcmNoL3g4Ni9rZXJuZWwvaGVhZDY0LmMKQEAgLTc2LDcgKzc2LDcg
-QEAgdm9pZCBfX2luaXQgeDg2XzY0X3N0YXJ0X2tlcm5lbChjaGFyICogcgogCS8qIE1ha2UgTlVM
-TCBwb2ludGVycyBzZWdmYXVsdCAqLwogCXphcF9pZGVudGl0eV9tYXBwaW5ncygpOwogCi0JbWF4
-X3Bmbl9tYXBwZWQgPSBLRVJORUxfSU1BR0VfU0laRSA+PiBQQUdFX1NISUZUOworCW1heF9wZm5f
-aGlnaF9tYXBwZWQgPSBLRVJORUxfSU1BR0VfU0laRSA+PiBQQUdFX1NISUZUOwogCiAJZm9yIChp
-ID0gMDsgaSA8IE5VTV9FWENFUFRJT05fVkVDVE9SUzsgaSsrKSB7CiAjaWZkZWYgQ09ORklHX0VB
-UkxZX1BSSU5USwpJbmRleDogbGludXgtMi42L2FyY2gveDg2L2tlcm5lbC9zZXR1cC5jCj09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2FyY2gveDg2L2tlcm5lbC9zZXR1cC5jCisrKyBsaW51
-eC0yLjYvYXJjaC94ODYva2VybmVsL3NldHVwLmMKQEAgLTg5Niw2ICs4OTYsOCBAQCB2b2lkIF9f
-aW5pdCBzZXR1cF9hcmNoKGNoYXIgKipjbWRsaW5lX3ApCiAKIAlyZXNlcnZlX2liZnRfcmVnaW9u
-KCk7CiAKKwllYXJseV9pbml0X21lbV9tYXBwaW5nKCk7CisKIAkvKgogCSAqIE5lZWQgdG8gY29u
-Y2x1ZGUgYnJrLCBiZWZvcmUgbWVtYmxvY2tfeDg2X2ZpbGwoKQogCSAqICBpdCBjb3VsZCB1c2Ug
-bWVtYmxvY2tfZmluZF9pbl9yYW5nZSwgY291bGQgb3ZlcmxhcCB3aXRoCkluZGV4OiBsaW51eC0y
-LjYvYXJjaC94ODYvbW0vaW5pdC5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2FyY2gv
-eDg2L21tL2luaXQuYworKysgbGludXgtMi42L2FyY2gveDg2L21tL2luaXQuYwpAQCAtMzc3LDgg
-KzM3Nyw2IEBAIHZvaWQgX19pbml0IGluaXRfbWVtX21hcHBpbmcodm9pZCkKIHsKIAl1bnNpZ25l
-ZCBsb25nIHRhYmxlcyA9IDAsIGdvb2RfZW5kLCBlbmQ7CiAKLQlwcm9iZV9wYWdlX3NpemVfbWFz
-aygpOwotCiAJLyoKIAkgKiBGaW5kIHNwYWNlIGZvciB0aGUga2VybmVsIGRpcmVjdCBtYXBwaW5n
-IHRhYmxlcy4KIAkgKgpAQCAtNDM3LDYgKzQzNSw0NSBAQCB2b2lkIF9faW5pdCBpbml0X21lbV9t
-YXBwaW5nKHZvaWQpCiAJZWFybHlfbWVtdGVzdCgwLCBtYXhfcGZuX21hcHBlZCA8PCBQQUdFX1NI
-SUZUKTsKIH0KIAorUkVTRVJWRV9CUksoZWFybHlfcGd0X2FsbG9jLCA2NTUzNik7CisKK3ZvaWQg
-IF9faW5pdCBlYXJseV9pbml0X21lbV9tYXBwaW5nKHZvaWQpCit7CisJdW5zaWduZWQgbG9uZyB0
-YWJsZXM7CisJcGh5c19hZGRyX3QgYmFzZTsKKwl1bnNpZ25lZCBsb25nIHN0YXJ0ID0gMCwgZW5k
-ID0gSVNBX0VORF9BRERSRVNTOworCisJcHJvYmVfcGFnZV9zaXplX21hc2soKTsKKworCS8qCisJ
-ICogNjRiaXQgYXQgdGhpcyBwb2ludCBtYXhfcGZuX21hcHBlZCBzaG91bGQgb24gMAorCSAqIDMy
-Yml0IHNob3VsZCBoYXZlIHRoYXQgY29ycmVjdCBzZXQgaW4gaGVhZF8zMi5TLCBha2Egbm9uLXpl
-cm8uCisJICovCisJaWYgKG1heF9wZm5fbWFwcGVkKQorCQlyZXR1cm47CisKKwl0YWJsZXMgPSBj
-YWxjdWxhdGVfdGFibGVfc3BhY2Vfc2l6ZShzdGFydCwgZW5kKTsKKwliYXNlID0gX19wYShleHRl
-bmRfYnJrKHRhYmxlcywgUEFHRV9TSVpFKSk7CisKKwlwZ3RfYnVmX3N0YXJ0ID0gYmFzZSA+PiBQ
-QUdFX1NISUZUOworCXBndF9idWZfZW5kID0gcGd0X2J1Zl9zdGFydDsKKwlwZ3RfYnVmX3RvcCA9
-IHBndF9idWZfc3RhcnQgKyAodGFibGVzID4+IFBBR0VfU0hJRlQpOworCisJcHJpbnRrKEtFUk5f
-REVCVUcgImtlcm5lbCBkaXJlY3QgbWFwcGluZyB0YWJsZXMgdXAgdG8gJSNseCBAIFttZW0gJSMw
-MTBseC0lIzAxMGx4XSBwcmVhbGxvY1xuIiwKKwkJZW5kIC0gMSwgcGd0X2J1Zl9zdGFydCA8PCBQ
-QUdFX1NISUZULAorCQkocGd0X2J1Zl90b3AgPDwgUEFHRV9TSElGVCkgLSAxKTsKKworCWluaXRf
-bWVtb3J5X21hcHBpbmcoc3RhcnQsIGVuZCk7CisKKwlwcmludGsoS0VSTl9ERUJVRyAia2VybmVs
-IGRpcmVjdCBtYXBwaW5nIHRhYmxlcyB1cCB0byAlI2x4IEAgW21lbSAlIzAxMGx4LSUjMDEwbHhd
-IGZpbmFsXG4iLAorCQllbmQgLSAxLCBwZ3RfYnVmX3N0YXJ0IDw8IFBBR0VfU0hJRlQsCisJCShw
-Z3RfYnVmX2VuZCA8PCBQQUdFX1NISUZUKSAtIDEpOworCS8qIHJldHVybiBub3QgdXNlZCBicmsg
-Ki8KKwlfYnJrX2VuZCAtPSAocGd0X2J1Zl90b3AgLSBwZ3RfYnVmX2VuZCkgPDwgUEFHRV9TSElG
-VDsKKworCXBndF9idWZfdG9wID0gMDsKK30KKwogLyoKICAqIGRldm1lbV9pc19hbGxvd2VkKCkg
-Y2hlY2tzIHRvIHNlZSBpZiAvZGV2L21lbSBhY2Nlc3MgdG8gYSBjZXJ0YWluIGFkZHJlc3MKICAq
-IGlzIHZhbGlkLiBUaGUgYXJndW1lbnQgaXMgYSBwaHlzaWNhbCBwYWdlIG51bWJlci4KSW5kZXg6
-IGxpbnV4LTIuNi9hcmNoL3g4Ni9tbS9pbml0XzY0LmMKPT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42
-Lm9yaWcvYXJjaC94ODYvbW0vaW5pdF82NC5jCisrKyBsaW51eC0yLjYvYXJjaC94ODYvbW0vaW5p
-dF82NC5jCkBAIC0yODYsNiArMjg2LDkgQEAgdm9pZCBfX2luaXQgaW5pdF9leHRyYV9tYXBwaW5n
-X3VjKHVuc2lnbgogCV9faW5pdF9leHRyYV9tYXBwaW5nKHBoeXMsIHNpemUsIFBBR0VfS0VSTkVM
-X0xBUkdFX05PQ0FDSEUpOwogfQogCisvKiBtYXhfcGZuX2hpZ2hfbWFwcGVkOiBoaWdoZXN0IG1h
-cHBlZCBwZm4gd2l0aCBoaWdoIGtlcm5lbCBtYXBwaW5nICovCit1bnNpZ25lZCBsb25nIG1heF9w
-Zm5faGlnaF9tYXBwZWQ7CisKIC8qCiAgKiBUaGUgaGVhZC5TIGNvZGUgc2V0cyB1cCB0aGUga2Vy
-bmVsIGhpZ2ggbWFwcGluZzoKICAqCkBAIC0zMDIsNyArMzA1LDggQEAgdm9pZCBfX2luaXQgaW5p
-dF9leHRyYV9tYXBwaW5nX3VjKHVuc2lnbgogdm9pZCBfX2luaXQgY2xlYW51cF9oaWdobWFwKHZv
-aWQpCiB7CiAJdW5zaWduZWQgbG9uZyB2YWRkciA9IF9fU1RBUlRfS0VSTkVMX21hcDsKLQl1bnNp
-Z25lZCBsb25nIHZhZGRyX2VuZCA9IF9fU1RBUlRfS0VSTkVMX21hcCArIChtYXhfcGZuX21hcHBl
-ZCA8PCBQQUdFX1NISUZUKTsKKwl1bnNpZ25lZCBsb25nIHZhZGRyX2VuZCA9IF9fU1RBUlRfS0VS
-TkVMX21hcCArCisJCQkJIChtYXhfcGZuX2hpZ2hfbWFwcGVkIDw8IFBBR0VfU0hJRlQpOwogCXVu
-c2lnbmVkIGxvbmcgZW5kID0gcm91bmR1cCgodW5zaWduZWQgbG9uZylfYnJrX2VuZCwgUE1EX1NJ
-WkUpIC0gMTsKIAlwbWRfdCAqcG1kID0gbGV2ZWwyX2tlcm5lbF9wZ3Q7CiAKQEAgLTMxMiw2ICsz
-MTYsOSBAQCB2b2lkIF9faW5pdCBjbGVhbnVwX2hpZ2htYXAodm9pZCkKIAkJaWYgKHZhZGRyIDwg
-KHVuc2lnbmVkIGxvbmcpIF90ZXh0IHx8IHZhZGRyID4gZW5kKQogCQkJc2V0X3BtZChwbWQsIF9f
-cG1kKDApKTsKIAl9CisJbWF4X3Bmbl9oaWdoX21hcHBlZCA9IF9fcGEoZW5kKSA+PiBQQUdFX1NI
-SUZUOworCisJcHJfaW5mbygibWF4X3Bmbl9oaWdoX21hcHBlZDogJWx4XG4iLCBtYXhfcGZuX2hp
-Z2hfbWFwcGVkKTsKIH0KIAogc3RhdGljIF9fcmVmIHZvaWQgKmFsbG9jX2xvd19wYWdlKHVuc2ln
-bmVkIGxvbmcgKnBoeXMpCg==
---f46d042f9f4ef7594d04c8c6f2c6--
