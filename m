@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756320Ab2ICLIJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 07:08:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56838 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756301Ab2ICLIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 07:08:07 -0400
-Message-ID: <50448F72.80702@redhat.com>
-Date: Mon, 03 Sep 2012 14:07:30 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1756311Ab2ICLKZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 07:10:25 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:42838 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756238Ab2ICLKY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 07:10:24 -0400
 MIME-Version: 1.0
-To: Dong Hao <haodong@linux.vnet.ibm.com>
-CC: acme@infradead.org, mtosatti@redhat.com, mingo@elte.hu,
-        xiaoguangrong@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH v7 2/3] KVM: x86: trace mmio begin and complete
-References: <1346061106-5364-1-git-send-email-haodong@linux.vnet.ibm.com> <1346061106-5364-3-git-send-email-haodong@linux.vnet.ibm.com>
-In-Reply-To: <1346061106-5364-3-git-send-email-haodong@linux.vnet.ibm.com>
+In-Reply-To: <1346581858-7469-1-git-send-email-thierry.reding@avionic-design.de>
+References: <1346581858-7469-1-git-send-email-thierry.reding@avionic-design.de>
+Date: Mon, 3 Sep 2012 13:10:23 +0200
+Message-ID: <CACRpkdakZMWnk1zzFqa8SXLsDn9EaSxzKnH_yXoCaxCY5saVJQ@mail.gmail.com>
+Subject: Re: [PATCH] pwm: Move AB8500 PWM driver to PWM framework
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Thierry Reding <thierry.reding@avionic-design.de>,
+        Arun MURTHY <arun.murthy@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2012 12:51 PM, Dong Hao wrote:
-> From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> 
-> 'perf kvm stat record/report' will use kvm_exit and kvm_mmio(read...) to
-> calculate mmio read emulated time for the old kernel, in order to trace
-> mmio read event more exactly, we add kvm_mmio_begin to trace the time when
-> mmio read begins, also, add kvm_io_done to trace the time when mmio/pio is
-> completed
-> 
+On Sun, Sep 2, 2012 at 12:30 PM, Thierry Reding
+<thierry.reding@avionic-design.de> wrote:
 
-Why is this so critical?
+> This commit moves the driver to drivers/pwm and converts it to the new
+> PWM framework.
+>
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> ---
+> Note: I'll take this through the PWM tree, but I'd like to have it
+> acknowledged by a few people who know the hardware and can actually
+> test whether this still works.
 
-If a lot of time is spent in in-kernel mmio, then 'perf top' will report
-it.  Otherwise the time between kvm_exit and kvm_entry describes the
-time spent in the host.  Not all of it is mmio handling, but it is quite
-close.
+Pls include Arun on these patches, he'll know best if it'll work or
+not.
 
--- 
-error compiling committee.c: too many arguments to function
+I have one generic question: will this alter the layout of sysfs so we
+need to change userspace? I had such issues before when moving
+drivers to new busses...
+
+Yours,
+Linus Walleij
