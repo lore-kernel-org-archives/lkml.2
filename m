@@ -1,118 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755855Ab2ICAE5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 20:04:57 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64259 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755799Ab2ICAEx (ORCPT
+	id S1755545Ab2ICAEU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 20:04:20 -0400
+Received: from caiajhbdcaid.dreamhost.com ([208.97.132.83]:50211 "EHLO
+	homiemail-a2.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755322Ab2ICADe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 20:04:53 -0400
-MIME-Version: 1.0
-From: Irina Tirdea <irina.tirdea@gmail.com>
-Date: Mon, 3 Sep 2012 03:04:32 +0300
-Message-ID: <CANg8OWLL6gzUpZuq8YT2bSbT5=EVWejbpCX0TM8dt7mKXyZ9Yg@mail.gmail.com>
-Subject: [PATCH] perf bench: fix assert when NDEBUG is defined
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 2 Sep 2012 20:03:34 -0400
+Subject: [PATCH 2/5] sonypi: remove acpi_bus_generate_proc_event
+From: Davidlohr Bueso <dave@gnu.org>
+Reply-To: dave@gnu.org
+To: Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mattia Dongili <malattia@linux.it>, Arnd Bergmann <arnd@arndb.de>
+Cc: platform-driver-x86@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Organization: GNU
+Date: Mon, 03 Sep 2012 02:03:24 +0200
+Message-ID: <1346630604.3170.30.camel@offbook>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Irina Tirdea <irina.tirdea@intel.com>
+Calling this function no longer makes sense as /proc/acpi/event
+is being removed.
 
-When NDEBUG is defined, the assert macro will be expanded to nothing.
-Some assert calls used in perf are also including some functionality
-(e.g. system calls), not only validity checks. Therefore, if NDEBUG is
-defined, these functionality will be removed along with the assert.
-
-The functionality of the program needs to be separated from the assert checks.
-In perf, BUG_ON is also defined on assert, so we need to fix these statements
-too.
-
-Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+Signed-off-by: Davidlohr Bueso <dave@gnu.org>
 ---
- tools/perf/bench/mem-memcpy.c |    8 +++++---
- tools/perf/bench/mem-memset.c |    8 +++++---
- tools/perf/bench/sched-pipe.c |    6 ++++--
- 3 files changed, 14 insertions(+), 8 deletions(-)
+ drivers/char/sonypi.c |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/bench/mem-memcpy.c b/tools/perf/bench/mem-memcpy.c
-index 02dad5d..bccb783 100644
---- a/tools/perf/bench/mem-memcpy.c
-+++ b/tools/perf/bench/mem-memcpy.c
-@@ -144,17 +144,19 @@ static double do_memcpy_gettimeofday(memcpy_t
-fn, size_t len, bool prefault)
- {
- 	struct timeval tv_start, tv_end, tv_diff;
- 	void *src = NULL, *dst = NULL;
--	int i;
-+	int i, ret;
-
- 	alloc_mem(&src, &dst, len);
-
- 	if (prefault)
- 		fn(dst, src, len);
-
--	BUG_ON(gettimeofday(&tv_start, NULL));
-+	ret = gettimeofday(&tv_start, NULL);
-+	BUG_ON(ret);
- 	for (i = 0; i < iterations; ++i)
- 		fn(dst, src, len);
--	BUG_ON(gettimeofday(&tv_end, NULL));
-+	ret = gettimeofday(&tv_end, NULL);
-+	BUG_ON(ret);
-
- 	timersub(&tv_end, &tv_start, &tv_diff);
-
-diff --git a/tools/perf/bench/mem-memset.c b/tools/perf/bench/mem-memset.c
-index 350cc95..e0702d2 100644
---- a/tools/perf/bench/mem-memset.c
-+++ b/tools/perf/bench/mem-memset.c
-@@ -139,17 +139,19 @@ static double do_memset_gettimeofday(memset_t
-fn, size_t len, bool prefault)
- {
- 	struct timeval tv_start, tv_end, tv_diff;
- 	void *dst = NULL;
--	int i;
-+	int i, ret;
-
- 	alloc_mem(&dst, len);
-
- 	if (prefault)
- 		fn(dst, -1, len);
-
--	BUG_ON(gettimeofday(&tv_start, NULL));
-+	ret = gettimeofday(&tv_start, NULL);
-+	BUG_ON(ret);
- 	for (i = 0; i < iterations; ++i)
- 		fn(dst, i, len);
--	BUG_ON(gettimeofday(&tv_end, NULL));
-+	ret = gettimeofday(&tv_end, NULL);
-+	BUG_ON(ret);
-
- 	timersub(&tv_end, &tv_start, &tv_diff);
-
-diff --git a/tools/perf/bench/sched-pipe.c b/tools/perf/bench/sched-pipe.c
-index 0c7454f..b35c94b 100644
---- a/tools/perf/bench/sched-pipe.c
-+++ b/tools/perf/bench/sched-pipe.c
-@@ -61,8 +61,10 @@ int bench_sched_pipe(int argc, const char **argv,
- 	argc = parse_options(argc, argv, options,
- 			     bench_sched_pipe_usage, 0);
-
--	assert(!pipe(pipe_1));
--	assert(!pipe(pipe_2));
-+	ret = pipe(pipe_1);
-+	assert(!ret);
-+	ret = !pipe(pipe_2);
-+	assert(!ret);
-
- 	pid = fork();
- 	assert(pid >= 0);
+diff --git a/drivers/char/sonypi.c b/drivers/char/sonypi.c
+index f877805..4543473 100644
+--- a/drivers/char/sonypi.c
++++ b/drivers/char/sonypi.c
+@@ -876,11 +876,6 @@ found:
+ 	if (useinput)
+ 		sonypi_report_input_event(event);
+ 
+-#ifdef CONFIG_ACPI
+-	if (sonypi_acpi_device)
+-		acpi_bus_generate_proc_event(sonypi_acpi_device, 1, event);
+-#endif
+-
+ 	kfifo_in_locked(&sonypi_device.fifo, (unsigned char *)&event,
+ 			sizeof(event), &sonypi_device.fifo_lock);
+ 	kill_fasync(&sonypi_device.fifo_async, SIGIO, POLL_IN);
 -- 
-1.7.9.5
+1.7.4.1
+
+
+
+
