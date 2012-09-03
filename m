@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932291Ab2ICOtS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 10:49:18 -0400
-Received: from mail.dce.bg ([46.40.123.75]:53840 "HELO mail.bulcrypt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S932260Ab2ICOtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 10:49:17 -0400
-Message-ID: <5044C36B.2010300@dce.bg>
-Date: Mon, 03 Sep 2012 17:49:15 +0300
-From: Alexander <alexander@dce.bg>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S932293Ab2ICOuN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 10:50:13 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:52675 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932200Ab2ICOuM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 10:50:12 -0400
 MIME-Version: 1.0
-To: Oliver Neukum <oneukum@suse.de>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: file Documentation/usb/usbmon.txt should list the .config settings
-References: <50446CA1.7040904@dce.bg> <4905024.kP3GZmCRKy@linux-lqwf.site>
-In-Reply-To: <4905024.kP3GZmCRKy@linux-lqwf.site>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120903141445.GA5054@redhat.com>
+References: <1346680242-5717-1-git-send-email-sjur.brandeland@stericsson.com>
+	<20120903141445.GA5054@redhat.com>
+Date: Mon, 3 Sep 2012 16:50:10 +0200
+Message-ID: <CAJK669aRsbOOmjmT+K8OHYvenOhkYWuSOx6nBM7hxC_C4mmw-g@mail.gmail.com>
+Subject: Re: [PATCH] virtio: Don't access device data after unregistration.
+From: =?UTF-8?Q?Sjur_Br=C3=A6ndeland?= <sjurbren@gmail.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        "Guzman Lugo, Fernadndo" <fernando.lugo@ti.com>,
+        virtualization@lists.linux-foundation.org,
+        Ohad Ben-Cohen <ohad@wizery.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2012 12:23 PM, Oliver Neukum wrote:
-> On Monday 03 September 2012 11:38:57 Alexander wrote:
->> Please indicate in the Documentation/usb/usbmon.txt file that the kernel
->> needs to be compiled with:
->>
->> CONFIG_DEBUG_KERNEL=y
->> CONFIG_DEBUG_FS=y
->> CONFIG_USB_MON=y
->> CONFIG_USB_DEVICEFS=y
-> Are you saying tht the modular options have been broken?
->
-> 	Regards
-> 		Oliver
->
->
-Ok what I meant is "if you want to build usbmon support into the kernel 
-then it needs to be compiled with ..."
-I think it will be useful, especially for embedded developers to have 
-this info in the usbmon doc file.
-Sorry about this confusion...
+Hi Michael,
 
-Thanks,
-Alexander
+>> Fix panic in virtio.c when CONFIG_DEBUG_SLAB is set.
+>
+> What's the root cause of the panic?
+
+I believe the cause of the panic is calling
+ida_simple_remove(&virtio_index_ida, dev->index);
+when the dev structure is "poisoned" after kfree.
+It might be the "BUG_ON((int)id < 0)" that bites...
+
+>> Use device_del() and put_device() instead of
+>> device_unregister(), and access device data before
+>> calling put_device().
+
+> Why does this help? Does device_unregister free the
+> device so dev->index access crashes?
+
+Yes, if device ref-count is one when calling unregister
+the device is freed.
+
+> If yes virtio_pci_remove will crash too
+> as it accesses the device after the
+> call to unregister_virtio_device so the
+> fix won't be effective.
+
+I discovered this using the remoteproc framework.
+It might be that device is unregistered with ref-count greater
+than one normally, in that case this bug will not show up.
+
+Regards,
+Sjur
