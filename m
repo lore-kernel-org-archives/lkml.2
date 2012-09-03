@@ -1,191 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756169Ab2ICJGq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 05:06:46 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:23169 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755676Ab2ICJGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 05:06:44 -0400
-X-IronPort-AV: E=Sophos;i="4.80,359,1344182400"; 
-   d="scan'208";a="5773560"
-Message-ID: <50447388.4080609@cn.fujitsu.com>
-Date: Mon, 03 Sep 2012 17:08:24 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1756157Ab2ICJIM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 05:08:12 -0400
+Received: from smtp-vbr1.xs4all.nl ([194.109.24.21]:3250 "EHLO
+	smtp-vbr1.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751672Ab2ICJIK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 05:08:10 -0400
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Prabhakar Lad <prabhakar.lad@ti.com>
+Subject: Re: [PATCH v3] media: v4l2-ctrls: add control for dpcm predictor
+Date: Mon, 3 Sep 2012 11:05:42 +0200
+User-Agent: KMail/1.13.7 (Linux/3.6.0-rc3-durdane; KDE/4.8.4; x86_64; ; )
+Cc: LMML <linux-media@vger.kernel.org>,
+        dlos <davinci-linux-open-source@linux.davincidsp.com>,
+        linux-kernel@vger.kernel.org, Manjunath Hadli <manjunath.hadli@ti.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-doc@vger.kernel.org, Sakari Ailus <sakari.ailus@iki.fi>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Rob Landley <rob@landley.net>, HeungJun Kim <riverful.kim@samsung.com>
+References: <1346656851-20316-1-git-send-email-prabhakar.lad@ti.com>
+In-Reply-To: <1346656851-20316-1-git-send-email-prabhakar.lad@ti.com>
 MIME-Version: 1.0
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH tip/core/rcu 07/23] rcu: Provide OOM handler to motivate
- lazy RCU callbacks
-References: <20120830181811.GA29154@linux.vnet.ibm.com> <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com> <1346350718-30937-7-git-send-email-paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1346350718-30937-7-git-send-email-paulmck@linux.vnet.ibm.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/03 17:06:19,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/03 17:06:22,
-	Serialize complete at 2012/09/03 17:06:22
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Message-Id: <201209031105.42889.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/31/2012 02:18 AM, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+On Mon September 3 2012 09:20:51 Prabhakar Lad wrote:
+> From: Lad, Prabhakar <prabhakar.lad@ti.com>
 > 
-> In kernels built with CONFIG_RCU_FAST_NO_HZ=y, CPUs can accumulate a
-> large number of lazy callbacks, which as the name implies will be slow
-> to be invoked.  This can be a problem on small-memory systems, where the
-> default 6-second sleep for CPUs having only lazy RCU callbacks could well
-> be fatal.  This commit therefore installs an OOM hander that ensures that
-> every CPU with non-lazy callbacks has at least one non-lazy callback,
-> in turn ensuring timely advancement for these callbacks.
+> add V4L2_CID_DPCM_PREDICTOR control of type menu, which
+> determines the dpcm predictor. The predictor can be either
+> simple or advanced.
 > 
-> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Tested-by: Sasha Levin <levinsasha928@gmail.com>
+> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+> Cc: Sakari Ailus <sakari.ailus@iki.fi>
+> Cc: Hans Verkuil <hans.verkuil@cisco.com>
+> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> Cc: Hans de Goede <hdegoede@redhat.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Rob Landley <rob@landley.net>
+> Cc: HeungJun Kim <riverful.kim@samsung.com>
 > ---
->  kernel/rcutree.h        |    5 ++-
->  kernel/rcutree_plugin.h |   80 +++++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 84 insertions(+), 1 deletions(-)
+> This patches has one checkpatch warning for line over
+> 80 characters altough it can be avoided I have kept it
+> for consistency.
 > 
-> diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-> index 117a150..effb273 100644
-> --- a/kernel/rcutree.h
-> +++ b/kernel/rcutree.h
-> @@ -315,8 +315,11 @@ struct rcu_data {
->  	unsigned long n_rp_need_fqs;
->  	unsigned long n_rp_need_nothing;
+> Changes for v3:
+> 1: Added better explanation for DPCM, pointed by Hans.
+
+Much better!
+
+Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
+
+Regards,
+
+	Hans
+
+> 
+> Changes for v2:
+> 1: Added documentaion in controls.xml pointed by Sylwester.
+> 2: Chnaged V4L2_DPCM_PREDICTOR_ADVANCE to V4L2_DPCM_PREDICTOR_ADVANCED
+>    pointed by Sakari.
+> 
+>  Documentation/DocBook/media/v4l/controls.xml |   48 +++++++++++++++++++++++++-
+>  drivers/media/v4l2-core/v4l2-ctrls.c         |    9 +++++
+>  include/linux/videodev2.h                    |    5 +++
+>  3 files changed, 61 insertions(+), 1 deletions(-)
+> 
+> diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
+> index 93b9c68..f704218 100644
+> --- a/Documentation/DocBook/media/v4l/controls.xml
+> +++ b/Documentation/DocBook/media/v4l/controls.xml
+> @@ -4267,7 +4267,53 @@ interface and may change in the future.</para>
+>  	    pixels / second.
+>  	    </entry>
+>  	  </row>
+> -	  <row><entry></entry></row>
+> +	  <row>
+> +	    <entry spanname="id"><constant>V4L2_CID_DPCM_PREDICTOR</constant></entry>
+> +	    <entry>menu</entry>
+> +	  </row>
+> +	  <row id="v4l2-dpcm-predictor">
+> +	    <entry spanname="descr"> Differential pulse-code modulation (DPCM) is a signal
+> +	    encoder that uses the baseline of pulse-code modulation (PCM) but adds some
+> +	    functionalities based on the prediction of the samples of the signal. The input
+> +	    can be an analog signal or a digital signal.
+> +
+> +	    <para>If the input is a continuous-time
+> +	    analog signal, it needs to be sampled first so that a discrete-time signal is
+> +	    the input to the DPCM encoder.</para>
+> +
+> +	    <para>Simple: take the values of two
+> +	    consecutive samples; if they are analog samples, quantize them; calculate the
+> +	    difference between the first one and the next; the output is the difference, and
+> +	    it can be further entropy coded.</para>
+> +
+> +	    <para>Advanced: instead of taking a difference relative to a previous input sample,
+> +	    take the difference relative to the output of a local model of the decoder process;
+> +	    in this option, the difference can be quantized, which allows a good way to
+> +	    incorporate a controlled loss in the encoding.</para>
+> +
+> +	    <para>Applying one of these two processes, short-term redundancy (positive correlation of
+> +	    nearby values) of the signal is eliminated; compression ratios on the order of 2 to 4
+> +	    can be achieved if differences are subsequently entropy coded, because the entropy of
+> +	    the difference signal is much smaller than that of the original discrete signal treated
+> +	    as independent samples.For more information about DPCM see <ulink
+> +	    url="http://en.wikipedia.org/wiki/Differential_pulse-code_modulation">Wikipedia</ulink>.</para>
+> +	    </entry>
+> +	  </row>
+> +	  <row>
+> +	    <entrytbl spanname="descr" cols="2">
+> +	      <tbody valign="top">
+> +	        <row>
+> +	         <entry><constant>V4L2_DPCM_PREDICTOR_SIMPLE</constant></entry>
+> +	          <entry>Predictor type is simple</entry>
+> +	        </row>
+> +	        <row>
+> +	          <entry><constant>V4L2_DPCM_PREDICTOR_ADVANCED</constant></entry>
+> +	          <entry>Predictor type is advanced</entry>
+> +	        </row>
+> +	      </tbody>
+> +	    </entrytbl>
+> +	  </row>
+> +	<row><entry></entry></row>
+>  	</tbody>
+>        </tgroup>
+>        </table>
+> diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
+> index b6a2ee7..2d7bc15 100644
+> --- a/drivers/media/v4l2-core/v4l2-ctrls.c
+> +++ b/drivers/media/v4l2-core/v4l2-ctrls.c
+> @@ -425,6 +425,11 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
+>  		"Gray",
+>  		NULL,
+>  	};
+> +	static const char * const dpcm_predictor[] = {
+> +		"Simple Predictor",
+> +		"Advanced Predictor",
+> +		NULL,
+> +	};
 >  
-> -	/* 6) _rcu_barrier() callback. */
-> +	/* 6) _rcu_barrier() and OOM callbacks. */
->  	struct rcu_head barrier_head;
-> +#ifdef CONFIG_RCU_FAST_NO_HZ
-> +	struct rcu_head oom_head;
-> +#endif /* #ifdef CONFIG_RCU_FAST_NO_HZ */
+>  	switch (id) {
+>  	case V4L2_CID_MPEG_AUDIO_SAMPLING_FREQ:
+> @@ -502,6 +507,8 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
+>  		return mpeg4_profile;
+>  	case V4L2_CID_JPEG_CHROMA_SUBSAMPLING:
+>  		return jpeg_chroma_subsampling;
+> +	case V4L2_CID_DPCM_PREDICTOR:
+> +		return dpcm_predictor;
 >  
->  	int cpu;
->  	struct rcu_state *rsp;
-> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> index 7f3244c..bac8cc1 100644
-> --- a/kernel/rcutree_plugin.h
-> +++ b/kernel/rcutree_plugin.h
-> @@ -25,6 +25,7 @@
->   */
+>  	default:
+>  		return NULL;
+> @@ -732,6 +739,7 @@ const char *v4l2_ctrl_get_name(u32 id)
+>  	case V4L2_CID_IMAGE_PROC_CLASS:		return "Image Processing Controls";
+>  	case V4L2_CID_LINK_FREQ:		return "Link Frequency";
+>  	case V4L2_CID_PIXEL_RATE:		return "Pixel Rate";
+> +	case V4L2_CID_DPCM_PREDICTOR:		return "DPCM Predictor";
 >  
->  #include <linux/delay.h>
-> +#include <linux/oom.h>
+>  	default:
+>  		return NULL;
+> @@ -832,6 +840,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
+>  	case V4L2_CID_ISO_SENSITIVITY_AUTO:
+>  	case V4L2_CID_EXPOSURE_METERING:
+>  	case V4L2_CID_SCENE_MODE:
+> +	case V4L2_CID_DPCM_PREDICTOR:
+>  		*type = V4L2_CTRL_TYPE_MENU;
+>  		break;
+>  	case V4L2_CID_LINK_FREQ:
+> diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
+> index 6d6dfa7..ca9fb78 100644
+> --- a/include/linux/videodev2.h
+> +++ b/include/linux/videodev2.h
+> @@ -2000,6 +2000,11 @@ enum v4l2_jpeg_chroma_subsampling {
 >  
->  #define RCU_KTHREAD_PRIO 1
->  
-> @@ -2112,6 +2113,85 @@ static void rcu_idle_count_callbacks_posted(void)
->  	__this_cpu_add(rcu_dynticks.nonlazy_posted, 1);
->  }
->  
-> +/*
-> + * Data for flushing lazy RCU callbacks at OOM time.
-> + */
-> +static atomic_t oom_callback_count;
-> +static DECLARE_WAIT_QUEUE_HEAD(oom_callback_wq);
-> +
-> +/*
-> + * RCU OOM callback -- decrement the outstanding count and deliver the
-> + * wake-up if we are the last one.
-> + */
-> +static void rcu_oom_callback(struct rcu_head *rhp)
-> +{
-> +	if (atomic_dec_and_test(&oom_callback_count))
-> +		wake_up(&oom_callback_wq);
-> +}
-> +
-> +/*
-> + * Post an rcu_oom_notify callback on the current CPU if it has at
-> + * least one lazy callback.  This will unnecessarily post callbacks
-> + * to CPUs that already have a non-lazy callback at the end of their
-> + * callback list, but this is an infrequent operation, so accept some
-> + * extra overhead to keep things simple.
-> + */
-> +static void rcu_oom_notify_cpu(void *flavor)
-> +{
-> +	struct rcu_state *rsp = flavor;
-> +	struct rcu_data *rdp = __this_cpu_ptr(rsp->rda);
-> +
-> +	if (rdp->qlen_lazy != 0) {
-> +		atomic_inc(&oom_callback_count);
-> +		rsp->call(&rdp->oom_head, rcu_oom_callback);
-> +	}
-> +}
-> +
-> +/*
-> + * If low on memory, ensure that each CPU has a non-lazy callback.
-> + * This will wake up CPUs that have only lazy callbacks, in turn
-> + * ensuring that they free up the corresponding memory in a timely manner.
-> + */
-> +static int rcu_oom_notify(struct notifier_block *self,
-> +			  unsigned long notused, void *nfreed)
-> +{
-> +	int cpu;
-> +	struct rcu_state *rsp;
-> +
-> +	/* Wait for callbacks from earlier instance to complete. */
-> +	wait_event(oom_callback_wq, atomic_read(&oom_callback_count) == 0);
-> +
-> +	/*
-> +	 * Prevent premature wakeup: ensure that all increments happen
-> +	 * before there is a chance of the counter reaching zero.
-> +	 */
-> +	atomic_set(&oom_callback_count, 1);
-> +
-> +	get_online_cpus();
-> +	for_each_online_cpu(cpu)
-> +		for_each_rcu_flavor(rsp)
-> +			smp_call_function_single(cpu, rcu_oom_notify_cpu,
-> +						 rsp, 1);
-> +	put_online_cpus();
-> +
-> +	/* Unconditionally decrement: no need to wake ourselves up. */
-> +	atomic_dec(&oom_callback_count);
-> +
-> +	*(unsigned long *)nfreed = 1;
-
-Hi, Paul
-
-If you consider the above code has free some memory,
-you should use *(unsigned long *)nfreed = +1.
-                                          ^^
-
-And your code disable OOM actually, because it transfer *nfreed to NON-ZERO
-unconditionally.
-
-I did not review the patch nor the whole series carefully.
-
-And if it is possible, could you share the code with rcu_barrier()?
-
-Thanks,
-Lai
-
-> +	return NOTIFY_OK;
-> +}
-> +
-> +static struct notifier_block rcu_oom_nb = {
-> +	.notifier_call = rcu_oom_notify
+>  #define V4L2_CID_LINK_FREQ			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 1)
+>  #define V4L2_CID_PIXEL_RATE			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 2)
+> +#define V4L2_CID_DPCM_PREDICTOR			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 3)
+> +enum v4l2_dpcm_predictor {
+> +	V4L2_DPCM_PREDICTOR_SIMPLE	= 0,
+> +	V4L2_DPCM_PREDICTOR_ADVANCED	= 1,
 > +};
-> +
-> +static int __init rcu_register_oom_notifier(void)
-> +{
-> +	register_oom_notifier(&rcu_oom_nb);
-> +	return 0;
-> +}
-> +early_initcall(rcu_register_oom_notifier);
-> +
->  #endif /* #else #if !defined(CONFIG_RCU_FAST_NO_HZ) */
 >  
->  #ifdef CONFIG_RCU_CPU_STALL_INFO
-
+>  /*
+>   *	T U N I N G
+> 
