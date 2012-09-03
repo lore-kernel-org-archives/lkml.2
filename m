@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756184Ab2ICKpy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 06:45:54 -0400
-Received: from mga03.intel.com ([143.182.124.21]:47145 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752562Ab2ICKpx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 06:45:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,359,1344236400"; 
-   d="scan'208";a="188176699"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Viresh Kumar <viresh.linux@gmail.com>, linux-kernel@vger.kernel.org,
-        Vinod Koul <vinod.koul@intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH] dw_dmac: utilize slave_id to pass request line
-Date: Mon,  3 Sep 2012 13:46:19 +0300
-Message-Id: <1346669179-21024-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1756238Ab2ICKry (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 06:47:54 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:47322 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752327Ab2ICKrw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 06:47:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <1346588747.7909.2.camel@phoenix>
+References: <1346588747.7909.2.camel@phoenix>
+Date: Mon, 3 Sep 2012 12:47:51 +0200
+Message-ID: <CACRpkdYxYGa=C092rbTU5bo=YEu6wqiTUD7W4pLS_wNfmAe4Zw@mail.gmail.com>
+Subject: Re: [PATCH] ARM: ux500: Fix build error due to missing include of
+ asm/pmu.h in cpu-db8500.c
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Axel Lin <axel.lin@gmail.com>, Will Deacon <will.deacon@arm.com>
+Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is slave_id field in the generic slave config structure that is dedicated
-for the uniq slave number. In our case we have the request lines wired to the
-certain hardware. Therefore the number of the request line is uniq and could be
-used as slave_id. It allows us in some cases to drop out the usage of the
-custom slave config structure.
+On Sun, Sep 2, 2012 at 2:25 PM, Axel Lin <axel.lin@gmail.com> wrote:
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- drivers/dma/dw_dmac.c |    5 +++++
- 1 file changed, 5 insertions(+)
+> Include asm/pmu.h to fix below build error:
+>
+>   CC      arch/arm/mach-ux500/cpu-db8500.o
+> arch/arm/mach-ux500/cpu-db8500.c:118:8: error: variable 'db8500_pmu_platdata' has initializer but incomplete type
+> arch/arm/mach-ux500/cpu-db8500.c:119:2: error: unknown field 'handle_irq' specified in initializer
+> arch/arm/mach-ux500/cpu-db8500.c:119:2: warning: excess elements in struct initializer [enabled by default]
+> arch/arm/mach-ux500/cpu-db8500.c:119:2: warning: (near initialization for 'db8500_pmu_platdata') [enabled by default]
+> make[1]: *** [arch/arm/mach-ux500/cpu-db8500.o] Error 1
+> make: *** [arch/arm/mach-ux500] Error 2
+>
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index f0c9403..7a67673 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -187,6 +187,11 @@ static void dwc_initialize(struct dw_dma_chan *dwc)
- 
- 		cfghi = dws->cfg_hi;
- 		cfglo |= dws->cfg_lo & ~DWC_CFGL_CH_PRIOR_MASK;
-+	} else {
-+		if (dwc->dma_sconfig.direction == DMA_MEM_TO_DEV)
-+			cfghi = DWC_CFGH_DST_PER(dwc->dma_sconfig.slave_id);
-+		else if (dwc->dma_sconfig.direction == DMA_DEV_TO_MEM)
-+			cfghi = DWC_CFGH_SRC_PER(dwc->dma_sconfig.slave_id);
- 	}
- 
- 	channel_writel(dwc, CFG_LO, cfglo);
--- 
-1.7.10.4
+That's on linux-next not on v3.6-rcN right?
 
+I've applied it to my ux500 branch and will carry it unless Will Deacon
+express an interest in it, PMU is his territory...
+
+Yours,
+Linus Walleij
