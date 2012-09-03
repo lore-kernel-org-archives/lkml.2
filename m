@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756205Ab2ICJRs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 05:17:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54099 "EHLO mx1.redhat.com"
+	id S1756215Ab2ICJSD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 05:18:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55499 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755801Ab2ICJRW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 05:17:22 -0400
-Date: Mon, 3 Sep 2012 11:16:55 +0200
+	id S1755974Ab2ICJR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 05:17:57 -0400
+Date: Mon, 3 Sep 2012 11:17:40 +0200
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
@@ -15,108 +15,404 @@ Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
         Yinghai Lu <yinghai@kernel.org>, Jeff Garzik <jgarzik@pobox.com>,
         Matthew Wilcox <willy@linux.intel.com>, x86@kernel.org,
         linux-pci@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: [PATCH v2 -tip 0/5] x86, MSI, AHCI: Support multiple MSIs
-Message-ID: <cover.1346653435.git.agordeev@redhat.com>
+Subject: [PATCH v2 -tip 1/5] x86, MSI: Support multiple MSIs in presense of
+ IRQ remapping
+Message-ID: <034a9cbb168501954408f1004a28c827f3a4158b.1346653435.git.agordeev@redhat.com>
+References: <cover.1346653435.git.agordeev@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="oyUTqETQ0mS9luUI"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <cover.1346653435.git.agordeev@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The MSI specification has several constraints in comparison with MSI-X,
+most notable of them is the inability to configure MSIs independently.
+As a result, it is impossible to dispatch interrupts from different
+queues to different CPUs. This is largely devalues the support of
+multiple MSIs in SMP systems.
 
---oyUTqETQ0mS9luUI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Also, a necessity to allocate a contiguous block of vector numbers for
+devices capable of multiple MSIs might cause a considerable pressure on
+x86 interrupt vector allocator and could lead to fragmentation of the
+interrupt vectors space.
 
-This series is against the latest tip tree.
+This patch overcomes both drawbacks in presense of IRQ remapping and
+lets devices take advantage of multiple queues and per-IRQ affinity
+assignments.
 
-Currently multiple MSI mode is limited to a single vector per device (at
-least on x86 and PPC). This series breathes life into pci_enable_msi_block()
-and makes it possible to set interrupt affinity for multiple IRQs, similarly
-to MSI-X. Yet, only for x86 and only when IOMMUs are present.
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+---
+ arch/x86/kernel/apic/io_apic.c |  166 +++++++++++++++++++++++++++++++++++++--
+ include/linux/irq.h            |    6 ++
+ kernel/irq/chip.c              |   30 +++++--
+ kernel/irq/irqdesc.c           |   31 ++++++++
+ 4 files changed, 216 insertions(+), 17 deletions(-)
 
-Although IRQ and PCI subsystems are modified, the current behaviour left
-intact. The drivers could just start using multiple MSIs just by following
-the existing documentation.
-
-The AHCI device driver makes use of the new mode and a new function -
-pci_enable_msi_block_auto() - patches 4,5.
-
-Changes since v1:
-  4/5:	based on Bjorn's review pci_enable_msi_block_auto() returns
-	the number of interrupts allocated or error code
-
-  5/5:	based on Jeff's comments:
-
-	- AHCI specific code moved from libata-core.c to libahci.c;
-
-	- the host-wide lock concern addressed - ahci_interrupt() handler
-	  split in two parts: ahci_hw_interrupt() hardware context handler
-	  and ahci_thread_fn() threaded handler;
-
-	- host->lock statistics attached;
-
-Host-wide lock statistics summary:
-
-  Taken using command 'if=/dev/sd{a,b,c} of=/dev/null' running in parallel
-  on three SATA HDDs:
-	ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-	ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-	ata3: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-
-  ahci_interrupt()
-  Capabilities: [80] MSI: Enable+ Count=1/16 Maskable- 64bit-
-
-Test	holdtime-total	waittime-total	acquis.	holdtime-avg	waittime-avg
-#
-01.	22565801.27	93056.41	6377094	3.538571216	0.014592291
-02.	20358324.12	60825.47	6411012	3.175524257	0.009487655
-03.	21190730.38	63610.38	6384508	3.319085884	0.009963239
-04.	22491064.54	80624.96	6398390	3.515113105	0.012600820
-05.	21986193.10	78034.38	6379092	3.446602291	0.012232835
-06.	20556437.70	62314.64	6287673	3.269323596	0.009910604
-07.	20477137.55	66190.92	6388507	3.205308776	0.010360937
-08.	21442240.03	69306.80	6402109	3.349246323	0.010825620
-						-----------	-----------
-avg						3.352346931	0.011246750
-
-  ahci_hw_interrupt()
-  Capabilities: [80] MSI: Enable+ Count=16/16 Maskable- 64bit-
-
-Test	holdtime-total	waittime-total	acquis.	holdtime-avg	waittime-avg
-#
-09.	8936643.32	54559.79	6505606	1.373683454	0.008386581
-10.	8579972.36	51496.56	6496233	1.320761180	0.007927142
-11.	8138708.47	54061.46	6494647	1.253141005	0.008324003
-12.	8322068.81	60427.51	6509975	1.278356493	0.009282295
-13.	8527745.18	65978.83	6515589	1.308821839	0.010126303
-14.	8662461.99	57291.39	6510702	1.330495850	0.008799572
-15.	8054911.26	69186.41	6514262	1.236504037	0.010620759
-16.	9618631.17	39726.37	6517385	1.475842101	0.006095446
-						-----------	-----------
-avg						1.322200745	0.008695263
-Attached patches:
-  1/5: x86, MSI: Support multiple MSIs in presense of IRQ remapping
-  2/5: x86, MSI: Allocate as many multiple IRQs as requested
-  3/5: x86, MSI: Minor readability fixes
-  4/5: PCI, MSI: Enable multiple MSIs with pci_enable_msi_block_auto()
-  5/5: AHCI: Support multiple MSIs
-
- Documentation/PCI/MSI-HOWTO.txt |   37 ++++++-
- arch/x86/kernel/apic/io_apic.c  |  170 +++++++++++++++++++++++++++++--
- drivers/ata/ahci.c              |   14 ++-
- drivers/ata/ahci.h              |    5 +
- drivers/ata/libahci.c           |  211 +++++++++++++++++++++++++++++++++++++-
- drivers/pci/msi.c               |   36 ++++++-
- include/linux/irq.h             |    6 +
- include/linux/msi.h             |    1 +
- include/linux/pci.h             |    7 ++
- kernel/irq/chip.c               |   30 ++++--
- kernel/irq/irqdesc.c            |   31 ++++++
- 11 files changed, 509 insertions(+), 39 deletions(-)
-
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index c265593..5fd2577 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -305,6 +305,11 @@ static int alloc_irq_from(unsigned int from, int node)
+ 	return irq_alloc_desc_from(from, node);
+ }
+ 
++static int alloc_irqs_from(unsigned int from, unsigned int count, int node)
++{
++	return irq_alloc_descs_from(from, count, node);
++}
++
+ static void free_irq_at(unsigned int at, struct irq_cfg *cfg)
+ {
+ 	free_irq_cfg(at, cfg);
+@@ -3039,6 +3044,55 @@ int create_irq(void)
+ 	return irq;
+ }
+ 
++unsigned int create_irqs(unsigned int from, unsigned int count, int node)
++{
++	struct irq_cfg **cfg;
++	unsigned long flags;
++	int irq, i;
++
++	if (from < nr_irqs_gsi)
++		from = nr_irqs_gsi;
++
++	cfg = kzalloc_node(count * sizeof(cfg[0]), GFP_KERNEL, node);
++	if (!cfg)
++		return 0;
++
++	irq = alloc_irqs_from(from, count, node);
++	if (irq < 0)
++		goto out_cfgs;
++
++	for (i = 0; i < count; i++) {
++		cfg[i] = alloc_irq_cfg(irq + i, node);
++		if (!cfg[i])
++			goto out_irqs;
++	}
++
++	raw_spin_lock_irqsave(&vector_lock, flags);
++	for (i = 0; i < count; i++)
++		if (__assign_irq_vector(irq + i, cfg[i], apic->target_cpus()))
++			goto out_vecs;
++	raw_spin_unlock_irqrestore(&vector_lock, flags);
++
++	for (i = 0; i < count; i++) {
++		irq_set_chip_data(irq + i, cfg[i]);
++		irq_clear_status_flags(irq + i, IRQ_NOREQUEST);
++	}
++
++	kfree(cfg);
++	return irq;
++
++out_vecs:
++	for (; i; i--)
++		__clear_irq_vector(irq + i - 1, cfg[i - 1]);
++	raw_spin_unlock_irqrestore(&vector_lock, flags);
++out_irqs:
++	for (i = 0; i < count; i++)
++		free_irq_at(irq + i, cfg[i]);
++out_cfgs:
++	kfree(cfg);
++	return 0;
++}
++
+ void destroy_irq(unsigned int irq)
+ {
+ 	struct irq_cfg *cfg = irq_get_chip_data(irq);
+@@ -3054,6 +3108,27 @@ void destroy_irq(unsigned int irq)
+ 	free_irq_at(irq, cfg);
+ }
+ 
++static inline void destroy_irqs(unsigned int irq, unsigned int count)
++{
++	unsigned int i;
++	for (i = 0; i < count; i++)
++		destroy_irq(irq + i);
++}
++
++static inline int
++can_create_pow_of_two_irqs(unsigned int from, unsigned int count)
++{
++	if ((count > 1) && (count % 2))
++		return -EINVAL;
++
++	for (; count; count = count / 2) {
++		if (!irq_can_alloc_irqs(from, count))
++			return count;
++	}
++
++	return -ENOSPC;
++}
++
+ /*
+  * MSI message composition
+  */
+@@ -3145,18 +3220,25 @@ static struct irq_chip msi_chip = {
+ 	.irq_retrigger		= ioapic_retrigger_irq,
+ };
+ 
+-static int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc, int irq)
++static int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
++			 unsigned int irq_base, unsigned int irq_offset)
+ {
+ 	struct irq_chip *chip = &msi_chip;
+ 	struct msi_msg msg;
++	unsigned int irq = irq_base + irq_offset;
+ 	int ret;
+ 
+ 	ret = msi_compose_msg(dev, irq, &msg, -1);
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	irq_set_msi_desc(irq, msidesc);
+-	write_msi_msg(irq, &msg);
++	irq_set_msi_desc_off(irq_base, irq_offset, msidesc);
++
++	/* MSI-X message is written per-IRQ, the offset is always 0.
++	 * MSI message denotes a contiguous group of IRQs, written for 0th IRQ.
++	 */
++	if (!irq_offset)
++		write_msi_msg(irq, &msg);
+ 
+ 	if (irq_remapped(irq_get_chip_data(irq))) {
+ 		irq_set_status_flags(irq, IRQ_MOVE_PCNTXT);
+@@ -3170,16 +3252,12 @@ static int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc, int irq)
+ 	return 0;
+ }
+ 
+-int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
++int setup_msix_irqs(struct pci_dev *dev, int nvec)
+ {
+ 	int node, ret, sub_handle, index = 0;
+ 	unsigned int irq, irq_want;
+ 	struct msi_desc *msidesc;
+ 
+-	/* x86 doesn't support multiple MSI yet */
+-	if (type == PCI_CAP_ID_MSI && nvec > 1)
+-		return 1;
+-
+ 	node = dev_to_node(&dev->dev);
+ 	irq_want = nr_irqs_gsi;
+ 	sub_handle = 0;
+@@ -3208,7 +3286,7 @@ int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ 				goto error;
+ 		}
+ no_ir:
+-		ret = setup_msi_irq(dev, msidesc, irq);
++		ret = setup_msi_irq(dev, msidesc, irq, 0);
+ 		if (ret < 0)
+ 			goto error;
+ 		sub_handle++;
+@@ -3220,6 +3298,76 @@ error:
+ 	return ret;
+ }
+ 
++int setup_msi_irqs(struct pci_dev *dev, int nvec)
++{
++	int node, ret, sub_handle, index = 0;
++	unsigned int irq;
++	struct msi_desc *msidesc;
++
++	if (nvec > 1 && !irq_remapping_enabled)
++		return 1;
++
++	nvec = __roundup_pow_of_two(nvec);
++	ret = can_create_pow_of_two_irqs(nr_irqs_gsi, nvec);
++	if (ret != nvec)
++		return ret;
++
++	WARN_ON(!list_is_singular(&dev->msi_list));
++	msidesc = list_entry(dev->msi_list.next, struct msi_desc, list);
++	WARN_ON(msidesc->irq);
++	WARN_ON(msidesc->msi_attrib.multiple);
++
++	node = dev_to_node(&dev->dev);
++	irq = create_irqs(nr_irqs_gsi, nvec, node);
++	if (irq == 0)
++		return -ENOSPC;
++
++	if (!irq_remapping_enabled) {
++		ret = setup_msi_irq(dev, msidesc, irq, 0);
++		if (ret < 0)
++			goto error;
++		return 0;
++	}
++
++	msidesc->msi_attrib.multiple = ilog2(nvec);
++	for (sub_handle = 0; sub_handle < nvec; sub_handle++) {
++		if (!sub_handle) {
++			index = msi_alloc_remapped_irq(dev, irq, nvec);
++			if (index < 0) {
++				ret = index;
++				goto error;
++			}
++		} else {
++			ret = msi_setup_remapped_irq(dev, irq + sub_handle,
++						     index, sub_handle);
++			if (ret < 0)
++				goto error;
++		}
++		ret = setup_msi_irq(dev, msidesc, irq, sub_handle);
++		if (ret < 0)
++			goto error;
++	}
++	return 0;
++
++error:
++	destroy_irqs(irq, nvec);
++
++	/* Restore altered MSI descriptor fields and prevent just destroyed
++	 * IRQs from tearing down again in default_teardown_msi_irqs()
++	 */
++	msidesc->irq = 0;
++	msidesc->msi_attrib.multiple = 0;
++
++	return ret;
++}
++
++int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
++{
++	if (type == PCI_CAP_ID_MSI)
++		return setup_msi_irqs(dev, nvec);
++	return setup_msix_irqs(dev, nvec);
++}
++
+ void native_teardown_msi_irq(unsigned int irq)
+ {
+ 	destroy_irq(irq);
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index 216b0ba..c3ba39f 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -522,6 +522,8 @@ extern int irq_set_handler_data(unsigned int irq, void *data);
+ extern int irq_set_chip_data(unsigned int irq, void *data);
+ extern int irq_set_irq_type(unsigned int irq, unsigned int type);
+ extern int irq_set_msi_desc(unsigned int irq, struct msi_desc *entry);
++extern int irq_set_msi_desc_off(unsigned int irq_base, unsigned int irq_offset,
++				struct msi_desc *entry);
+ extern struct irq_data *irq_get_irq_data(unsigned int irq);
+ 
+ static inline struct irq_chip *irq_get_chip(unsigned int irq)
+@@ -584,8 +586,12 @@ int __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
+ #define irq_alloc_desc_from(from, node)		\
+ 	irq_alloc_descs(-1, from, 1, node)
+ 
++#define irq_alloc_descs_from(from, cnt, node)	\
++	irq_alloc_descs(-1, from, cnt, node)
++
+ void irq_free_descs(unsigned int irq, unsigned int cnt);
+ int irq_reserve_irqs(unsigned int from, unsigned int cnt);
++int irq_can_alloc_irqs(unsigned int from, unsigned int cnt);
+ 
+ static inline void irq_free_desc(unsigned int irq)
+ {
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index 57d86d0..2230389 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -90,27 +90,41 @@ int irq_set_handler_data(unsigned int irq, void *data)
+ EXPORT_SYMBOL(irq_set_handler_data);
+ 
+ /**
+- *	irq_set_msi_desc - set MSI descriptor data for an irq
+- *	@irq:	Interrupt number
+- *	@entry:	Pointer to MSI descriptor data
++ *	irq_set_msi_desc_off - set MSI descriptor data for an irq at offset
++ *	@irq_base:	Interrupt number base
++ *	@irq_offset:	Interrupt number offset
++ *	@entry:		Pointer to MSI descriptor data
+  *
+- *	Set the MSI descriptor entry for an irq
++ *	Set the MSI descriptor entry for an irq at offset
+  */
+-int irq_set_msi_desc(unsigned int irq, struct msi_desc *entry)
++int irq_set_msi_desc_off(unsigned int irq_base, unsigned int irq_offset,
++			 struct msi_desc *entry)
+ {
+ 	unsigned long flags;
+-	struct irq_desc *desc = irq_get_desc_lock(irq, &flags, IRQ_GET_DESC_CHECK_GLOBAL);
++	struct irq_desc *desc = irq_get_desc_lock(irq_base + irq_offset, &flags, IRQ_GET_DESC_CHECK_GLOBAL);
+ 
+ 	if (!desc)
+ 		return -EINVAL;
+ 	desc->irq_data.msi_desc = entry;
+-	if (entry)
+-		entry->irq = irq;
++	if (entry && !irq_offset)
++		entry->irq = irq_base;
+ 	irq_put_desc_unlock(desc, flags);
+ 	return 0;
+ }
+ 
+ /**
++ *	irq_set_msi_desc - set MSI descriptor data for an irq
++ *	@irq:	Interrupt number
++ *	@entry:	Pointer to MSI descriptor data
++ *
++ *	Set the MSI descriptor entry for an irq
++ */
++int irq_set_msi_desc(unsigned int irq, struct msi_desc *entry)
++{
++	return irq_set_msi_desc_off(irq, 0, entry);
++}
++
++/**
+  *	irq_set_chip_data - set irq chip data for an irq
+  *	@irq:	Interrupt number
+  *	@data:	Pointer to chip specific data
+diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+index 192a302..8287b78 100644
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -210,6 +210,13 @@ static int irq_expand_nr_irqs(unsigned int nr)
+ 	return 0;
+ }
+ 
++static int irq_can_expand_nr_irqs(unsigned int nr)
++{
++	if (nr > IRQ_BITMAP_BITS)
++		return -ENOMEM;
++	return 0;
++}
++
+ int __init early_irq_init(void)
+ {
+ 	int i, initcnt, node = first_online_node;
+@@ -414,6 +421,30 @@ int irq_reserve_irqs(unsigned int from, unsigned int cnt)
+ }
+ 
+ /**
++ * irq_can_alloc_irqs - checks if a range of irqs could be allocated
++ * @from:	check from irq number
++ * @cnt:	number of irqs to check
++ *
++ * Returns 0 on success or an appropriate error code
++ */
++int irq_can_alloc_irqs(unsigned int from, unsigned int cnt)
++{
++	unsigned int start;
++	int ret = 0;
++
++	if (!cnt)
++		return -EINVAL;
++
++	mutex_lock(&sparse_irq_lock);
++	start = bitmap_find_next_zero_area(allocated_irqs, IRQ_BITMAP_BITS,
++					   from, cnt, 0);
++	mutex_unlock(&sparse_irq_lock);
++	if (start + cnt > nr_irqs)
++		ret = irq_can_expand_nr_irqs(start + cnt);
++	return ret;
++}
++
++/**
+  * irq_get_next_irq - get next allocated irq number
+  * @offset:	where to start the search
+  *
 -- 
 1.7.7.6
 
@@ -125,184 +421,3 @@ Attached patches:
 Regards,
 Alexander Gordeev
 agordeev@redhat.com
-
---oyUTqETQ0mS9luUI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="ahci_stats.txt"
-
-	ahci_interrupt()
-	Capabilities: [80] MSI: Enable+ Count=1/16 Maskable- 64bit-
-
-Test	holdtime-total	waittime-total	acquis.	holdtime-avg	waittime-avg
-#
-01.	22565801.27	93056.41	6377094	3.538571216	0.014592291
-02.	20358324.12	60825.47	6411012	3.175524257	0.009487655
-03.	21190730.38	63610.38	6384508	3.319085884	0.009963239
-04.	22491064.54	80624.96	6398390	3.515113105	0.012600820
-05.	21986193.10	78034.38	6379092	3.446602291	0.012232835
-06.	20556437.70	62314.64	6287673	3.269323596	0.009910604
-07.	20477137.55	66190.92	6388507	3.205308776	0.010360937
-08.	21442240.03	69306.80	6402109	3.349246323	0.010825620
-						-----------	-----------
-avg						3.352346931	0.011246750
-
-	ahci_hw_interrupt()
-	Capabilities: [80] MSI: Enable+ Count=16/16 Maskable- 64bit-
-
-Test	holdtime-total	waittime-total	acquis.	holdtime-avg	waittime-avg
-#
-09.	8936643.32	54559.79	6505606	1.373683454	0.008386581
-10.	8579972.36	51496.56	6496233	1.320761180	0.007927142
-11.	8138708.47	54061.46	6494647	1.253141005	0.008324003
-12.	8322068.81	60427.51	6509975	1.278356493	0.009282295
-13.	8527745.18	65978.83	6515589	1.308821839	0.010126303
-14.	8662461.99	57291.39	6510702	1.330495850	0.008799572
-15.	8054911.26	69186.41	6514262	1.236504037	0.010620759
-16.	9618631.17	39726.37	6517385	1.475842101	0.006095446
-						-----------	-----------
-avg						1.322200745	0.008695263
-
-                              class name    con-bounces    contentions   waittime-min   waittime-max waittime-total    acq-bounces   acquisitions   holdtime-min   holdtime-max holdtime-total
-
-Test #1
-                   &(&host->lock)->rlock:         41558          41558           0.13         126.84       93056.41        5141195        6377094           0.42         197.27    22565801.27
-                   ---------------------
-                   &(&host->lock)->rlock          36643          [<ffffffff81416b03>] ata_scsi_queuecmd+0x33/0x290
-                   &(&host->lock)->rlock           4915          [<ffffffff814283e4>] ahci_interrupt+0x64/0x120
-                   ---------------------
-                   &(&host->lock)->rlock          25017          [<ffffffff81416b03>] ata_scsi_queuecmd+0x33/0x290
-                   &(&host->lock)->rlock          16541          [<ffffffff814283e4>] ahci_interrupt+0x64/0x120
-Test #2
-                   &(&host->lock)->rlock:         30714          30714           0.14         104.50       60825.47        4398165        6411012           0.23         176.84    20358324.12
-                   ---------------------
-                   &(&host->lock)->rlock          25858          [<ffffffff81416b03>] ata_scsi_queuecmd+0x33/0x290
-                   &(&host->lock)->rlock           4856          [<ffffffff814283e4>] ahci_interrupt+0x64/0x120
-                   ---------------------
-                   &(&host->lock)->rlock          18199          [<ffffffff81416b03>] ata_scsi_queuecmd+0x33/0x290
-                   &(&host->lock)->rlock          12515          [<ffffffff814283e4>] ahci_interrupt+0x64/0x120
-
-Test #3
-                   &(&host->lock)->rlock:         32869          32870           0.14         106.30       63610.38        4655399        6384508           0.43         214.18    21190730.38
-                   ---------------------
-                   &(&host->lock)->rlock          27494          [<ffffffff81416b03>] ata_scsi_queuecmd+0x33/0x290
-                   &(&host->lock)->rlock           5376          [<ffffffff814283e4>] ahci_interrupt+0x64/0x120
-                   ---------------------
-                   &(&host->lock)->rlock          19632          [<ffffffff81416b03>] ata_scsi_queuecmd+0x33/0x290
-                   &(&host->lock)->rlock          13238          [<ffffffff814283e4>] ahci_interrupt+0x64/0x120
-
-Test #4
-                   &(&host->lock)->rlock:         37426          37426           0.13         104.95       80624.96        5009173        6398390           0.38         189.14    22491064.54
-                   ---------------------
-                   &(&host->lock)->rlock           6162          [<ffffffff814283e4>] ahci_interrupt+0x64/0x120
-                   &(&host->lock)->rlock          31264          [<ffffffff81416b03>] ata_scsi_queuecmd+0x33/0x290
-                   ---------------------
-                   &(&host->lock)->rlock          22271          [<ffffffff81416b03>] ata_scsi_queuecmd+0x33/0x290
-                   &(&host->lock)->rlock          15155          [<ffffffff814283e4>] ahci_interrupt+0x64/0x120
-Test #5
-                   &(&host->lock)->rlock:         38154          38154           0.14         119.50       78034.38        4923881        6379092           0.24         183.30    21986193.10
-                   ---------------------
-                   &(&host->lock)->rlock          32396          [<ffffffff81416b03>] ata_scsi_queuecmd+0x33/0x290
-                   &(&host->lock)->rlock           5758          [<ffffffff814283e4>] ahci_interrupt+0x64/0x120
-                   ---------------------
-                   &(&host->lock)->rlock          23014          [<ffffffff81416b03>] ata_scsi_queuecmd+0x33/0x290
-                   &(&host->lock)->rlock          15140          [<ffffffff814283e4>] ahci_interrupt+0x64/0x120
-
-Test #6
-                   &(&host->lock)->rlock:         33812          33812           0.14          98.56       62314.64        4479447        6287673           0.33         183.96    20556437.70
-                   ---------------------
-                   &(&host->lock)->rlock          28301          [<ffffffff81416b03>] ata_scsi_queuecmd+0x33/0x290
-                   &(&host->lock)->rlock           5511          [<ffffffff814283e4>] ahci_interrupt+0x64/0x120
-                   ---------------------
-                   &(&host->lock)->rlock          21378          [<ffffffff81416b03>] ata_scsi_queuecmd+0x33/0x290
-                   &(&host->lock)->rlock          12434          [<ffffffff814283e4>] ahci_interrupt+0x64/0x120
-
-Test #7
-                   &(&host->lock)->rlock:         35336          35336           0.14         105.05       66190.92        4642703        6388507           0.40         179.67    20477137.55
-                   ---------------------
-                   &(&host->lock)->rlock          30348          [<ffffffff81416b03>] ata_scsi_queuecmd+0x33/0x290
-                   &(&host->lock)->rlock           4988          [<ffffffff814283e4>] ahci_interrupt+0x64/0x120
-                   ---------------------
-                   &(&host->lock)->rlock          21983          [<ffffffff81416b03>] ata_scsi_queuecmd+0x33/0x290
-                   &(&host->lock)->rlock          13353          [<ffffffff814283e4>] ahci_interrupt+0x64/0x120
-
-Test #8
-                   &(&host->lock)->rlock:         37715          37715           0.14         122.00       69306.80        4827790        6402109           0.42         192.10    21442240.03
-                   ---------------------
-                   &(&host->lock)->rlock          31913          [<ffffffff81416b03>] ata_scsi_queuecmd+0x33/0x290
-                   &(&host->lock)->rlock           5802          [<ffffffff814283e4>] ahci_interrupt+0x64/0x120
-                   ---------------------
-                   &(&host->lock)->rlock          23613          [<ffffffff81416b03>] ata_scsi_queuecmd+0x33/0x290
-                   &(&host->lock)->rlock          14102          [<ffffffff814283e4>] ahci_interrupt+0x64/0x120
-Test #9
-                   &(&host->lock)->rlock:         24517          24519           0.11         114.67       54559.79        5550859        6505606           0.06         153.24     8936643.32
-                   ---------------------
-                   &(&host->lock)->rlock          10797          [<ffffffff814280d8>] ahci_thread_fn+0x48/0xa0
-                   &(&host->lock)->rlock          13722          [<ffffffff81428164>] ahci_hw_interrupt+0x34/0x130
-                   ---------------------
-                   &(&host->lock)->rlock          18255          [<ffffffff81428164>] ahci_hw_interrupt+0x34/0x130
-                   &(&host->lock)->rlock           6264          [<ffffffff814280d8>] ahci_thread_fn+0x48/0xa0
-Test #10
-                   &(&host->lock)->rlock:         27503          27505           0.13         143.29       51496.56        5659327        6496233           0.06         196.87     8579972.36
-                   ---------------------
-                   &(&host->lock)->rlock          10952          [<ffffffff814280d8>] ahci_thread_fn+0x48/0xa0
-                   &(&host->lock)->rlock          16553          [<ffffffff81428164>] ahci_hw_interrupt+0x34/0x130
-                   ---------------------
-                   &(&host->lock)->rlock           6553          [<ffffffff814280d8>] ahci_thread_fn+0x48/0xa0
-                   &(&host->lock)->rlock          20952          [<ffffffff81428164>] ahci_hw_interrupt+0x34/0x130
-
-Test #11
-                   &(&host->lock)->rlock:         25655          25658           0.12         118.67       54061.46        5690296        6494647           0.07         210.10     8138708.47
-                   ---------------------
-                   &(&host->lock)->rlock          16681          [<ffffffff814280d8>] ahci_thread_fn+0x48/0xa0
-                   &(&host->lock)->rlock           8977          [<ffffffff81428164>] ahci_hw_interrupt+0x34/0x130
-                   ---------------------
-                   &(&host->lock)->rlock          11899          [<ffffffff814280d8>] ahci_thread_fn+0x48/0xa0
-                   &(&host->lock)->rlock          13759          [<ffffffff81428164>] ahci_hw_interrupt+0x34/0x130
-
-Test #12
-                   &(&host->lock)->rlock:         36741          36742           0.12         113.75       60427.51        5624197        6509975           0.06         226.06     8322068.81
-                   ---------------------
-                   &(&host->lock)->rlock          24149          [<ffffffff814280d8>] ahci_thread_fn+0x48/0xa0
-                   &(&host->lock)->rlock          12593          [<ffffffff81428164>] ahci_hw_interrupt+0x34/0x130
-                   ---------------------
-                   &(&host->lock)->rlock          18710          [<ffffffff814280d8>] ahci_thread_fn+0x48/0xa0
-                   &(&host->lock)->rlock          18032          [<ffffffff81428164>] ahci_hw_interrupt+0x34/0x130
-
-Test #13
-                   &(&host->lock)->rlock:         25348          25350           0.16         129.52       65978.83        5632012        6515589           0.06         154.50     8527745.18
-                   ---------------------
-                   &(&host->lock)->rlock          10507          [<ffffffff814280d8>] ahci_thread_fn+0x48/0xa0
-                   &(&host->lock)->rlock          14843          [<ffffffff81428164>] ahci_hw_interrupt+0x34/0x130
-                   ---------------------
-                   &(&host->lock)->rlock          20301          [<ffffffff81428164>] ahci_hw_interrupt+0x34/0x130
-                   &(&host->lock)->rlock           5049          [<ffffffff814280d8>] ahci_thread_fn+0x48/0xa0
-
-Test #14
-                   &(&host->lock)->rlock:         33124          33125           0.11         117.73       57291.39        5621960        6510702           0.06         209.74     8662461.99
-                   ---------------------
-                   &(&host->lock)->rlock          14406          [<ffffffff814280d8>] ahci_thread_fn+0x48/0xa0
-                   &(&host->lock)->rlock          18719          [<ffffffff81428164>] ahci_hw_interrupt+0x34/0x130
-                   ---------------------
-                   &(&host->lock)->rlock           9999          [<ffffffff814280d8>] ahci_thread_fn+0x48/0xa0
-                   &(&host->lock)->rlock          23126          [<ffffffff81428164>] ahci_hw_interrupt+0x34/0x130
-
-Test #15
-                   &(&host->lock)->rlock:         24801          24801           0.14         130.18       69186.41        5468958        6514262           0.07         160.17     8054911.26
-                   ---------------------
-                   &(&host->lock)->rlock          16013          [<ffffffff814280d8>] ahci_thread_fn+0x48/0xa0
-                   &(&host->lock)->rlock           8788          [<ffffffff81428164>] ahci_hw_interrupt+0x34/0x130
-                   ---------------------
-                   &(&host->lock)->rlock          10132          [<ffffffff814280d8>] ahci_thread_fn+0x48/0xa0
-                   &(&host->lock)->rlock          14669          [<ffffffff81428164>] ahci_hw_interrupt+0x34/0x130
-
-Test #16
-                   &(&host->lock)->rlock:         29420          29422           0.15         112.77       39726.37        5609359        6517385           0.06         160.30     9618631.17
-                   ---------------------
-                   &(&host->lock)->rlock          14040          [<ffffffff814280d8>] ahci_thread_fn+0x48/0xa0
-                   &(&host->lock)->rlock          15382          [<ffffffff81428164>] ahci_hw_interrupt+0x34/0x130
-                   ---------------------
-                   &(&host->lock)->rlock          10237          [<ffffffff814280d8>] ahci_thread_fn+0x48/0xa0
-                   &(&host->lock)->rlock          19185          [<ffffffff81428164>] ahci_hw_interrupt+0x34/0x130
-
-
---oyUTqETQ0mS9luUI--
