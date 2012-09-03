@@ -1,92 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932177Ab2ICNwH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 09:52:07 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:65116 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932117Ab2ICNvy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 09:51:54 -0400
-From: sjur.brandeland@stericsson.com
-To: Amit Shah <amit.shah@redhat.com>
-Cc: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjurbren@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        virtualization@lists.linux-foundation.org,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [RFC 2/2] virtio_console: Add feature to disable console port
-Date: Mon,  3 Sep 2012 15:51:17 +0200
-Message-Id: <1346680277-5887-2-git-send-email-sjur.brandeland@stericsson.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1346680277-5887-1-git-send-email-sjur.brandeland@stericsson.com>
-References: <1346680277-5887-1-git-send-email-sjur.brandeland@stericsson.com>
+	id S932133Ab2ICN6A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 09:58:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53428 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756482Ab2ICN57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 09:57:59 -0400
+Date: Mon, 3 Sep 2012 15:57:56 +0200
+From: Jan Kara <jack@suse.cz>
+To: Kristian Nielsen <knielsen@knielsen-hq.org>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [ext3/4] PROBLEM: fdatasync not syncing appended data (w/test
+ program)
+Message-ID: <20120903135756.GI21109@quack.suse.cz>
+References: <87k3wb8pgk.fsf@frigg.knielsen-hq.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87k3wb8pgk.fsf@frigg.knielsen-hq.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sjur Brændeland <sjur.brandeland@stericsson.com>
+On Mon 03-09-12 10:45:15, Kristian Nielsen wrote:
+> It appears that ext3 and ext4 fdatasync() does not fully sync data to
+> disk. Specifically, when new data is written at the end (so that the file
+> length is increased), not all of the new data is synced by fdatasync().
+> 
+> It looks as if the problem is when the new data fits in the last allocated
+> page for the file - then ext3/4 flushes the new data page to disk, but _not_
+> the new metadata with the longer file size.
+  Thanks for the detailed analysis. This is indeed a genuine bug. While
+fixing some fsync issues I introduced (or better didn't fix) this problem.
+The culprit is that we forget to update i_datasync_tid when we change only
+inode size. Thus inode is not forced to disk during fdatasync(). I will send
+fixes for this in a moment.
 
-Add the feature VIRTIO_CONSOLE_F_NO_HVC. With this bit set
-only port-devices are created. The console port and
-port control virtio-queues are not created.
-
-The console port is not suited for communicating
-to a remote processor because of it's blocking behavior.
-But the port-device supports efficient non-blocking IO
-to a remote processor.
-
-Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
-cc: Rusty Russell <rusty@rustcorp.com.au>
-cc: Michael S. Tsirkin <mst@redhat.com>
-cc: virtualization@lists.linux-foundation.org
-cc: Ohad Ben-Cohen <ohad@wizery.com>
-cc: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/char/virtio_console.c  |    5 ++++-
- include/linux/virtio_console.h |    1 +
- 2 files changed, 5 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-index 6bfbd09..81546e9 100644
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -1246,7 +1246,9 @@ static int add_port(struct ports_device *portdev, u32 id)
- 	/*
- 	 * If we're not using multiport support, this has to be a console port
- 	 */
--	if (!use_multiport(port->portdev)) {
-+	if (virtio_has_feature(port->portdev->vdev, VIRTIO_CONSOLE_F_NO_HVC))
-+		port->host_connected = true;
-+	else if (!use_multiport(port->portdev)) {
- 		err = init_port_console(port);
- 		if (err)
- 			goto free_inbufs;
-@@ -1882,6 +1884,7 @@ static unsigned int features[] = {
- 	VIRTIO_CONSOLE_F_SIZE,
- 	VIRTIO_CONSOLE_F_MULTIPORT,
- 	VIRTIO_CONSOLE_F_DMA_MEM,
-+	VIRTIO_CONSOLE_F_NO_HVC,
- };
- 
- #ifdef CONFIG_PM
-diff --git a/include/linux/virtio_console.h b/include/linux/virtio_console.h
-index b27f7fa..a7c8974 100644
---- a/include/linux/virtio_console.h
-+++ b/include/linux/virtio_console.h
-@@ -39,6 +39,7 @@
- #define VIRTIO_CONSOLE_F_SIZE	0	/* Does host provide console size? */
- #define VIRTIO_CONSOLE_F_MULTIPORT 1	/* Does host provide multiple ports? */
- #define VIRTIO_CONSOLE_F_DMA_MEM 2	/* Use DMA memory in vrings */
-+#define VIRTIO_CONSOLE_F_NO_HVC 3	/* Disable use of HVC */
- 
- #define VIRTIO_CONSOLE_BAD_ID		(~(u32)0)
- 
+								Honza
 -- 
-1.7.5.4
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
