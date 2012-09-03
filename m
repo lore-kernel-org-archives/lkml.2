@@ -1,293 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755995Ab2ICCMj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 22:12:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35878 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755669Ab2ICCMg (ORCPT
+	id S1755930Ab2ICCQc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 22:16:32 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:45445 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755592Ab2ICCQb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 22:12:36 -0400
-From: Robin Dong <robin.k.dong@gmail.com>
-To: dm-devel@redhat.com, linux-kernel@vger.kernel.org
-Cc: Robin Dong <sanbai@taobao.com>
-Subject: [PATCH 2/2] md: modify dm_io() so it could return bios instead of submitting it
-Date: Mon,  3 Sep 2012 10:12:26 +0800
-Message-Id: <1346638346-497-2-git-send-email-robin.k.dong@gmail.com>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <1346638346-497-1-git-send-email-robin.k.dong@gmail.com>
-References: <1346638346-497-1-git-send-email-robin.k.dong@gmail.com>
+	Sun, 2 Sep 2012 22:16:31 -0400
+Message-ID: <504412F7.1020200@linux.vnet.ibm.com>
+Date: Mon, 03 Sep 2012 10:16:23 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>
+CC: mingo@redhat.com, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] sched: unify the check on atomic sleeping in __might_sleep()
+ and schedule_bug()
+References: <503446AA.2020004@linux.vnet.ibm.com>
+In-Reply-To: <503446AA.2020004@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12090302-9574-0000-0000-0000043D9F55
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robin Dong <sanbai@taobao.com>
+On 08/22/2012 10:40 AM, Michael Wang wrote:
+> From: Michael Wang <wangyun@linux.vnet.ibm.com>
+> 
+> Fengguang Wu <wfg@linux.intel.com> has reported the bug:
+> 
+> [    0.043953] BUG: scheduling while atomic: swapper/0/1/0x10000002
+> [    0.044017] no locks held by swapper/0/1.
+> [    0.044692] Pid: 1, comm: swapper/0 Not tainted 3.6.0-rc1-00420-gb7aebb9 #34
+> [    0.045861] Call Trace:
+> [    0.048071]  [<c106361e>] __schedule_bug+0x5e/0x70
+> [    0.048890]  [<c1b28701>] __schedule+0x91/0xb10
+> [    0.049660]  [<c14472ea>] ? vsnprintf+0x33a/0x450
+> [    0.050444]  [<c1060006>] ? lg_local_lock+0x6/0x70
+> [    0.051256]  [<c14fb5b1>] ? wait_for_xmitr+0x31/0x90
+> [    0.052019]  [<c144fd55>] ? do_raw_spin_unlock+0xa5/0xf0
+> [    0.052903]  [<c1b2a532>] ? _raw_spin_unlock+0x22/0x30
+> [    0.053759]  [<c105cdbb>] ? up+0x1b/0x70
+> [    0.054421]  [<c1065d6b>] __cond_resched+0x1b/0x30
+> [    0.055228]  [<c1b292d5>] _cond_resched+0x45/0x50
+> [    0.056020]  [<c1b26c58>] mutex_lock_nested+0x28/0x370
+> [    0.056884]  [<c1034222>] ? console_unlock+0x3a2/0x4e0
+> [    0.057741]  [<c1ac8559>] __irq_alloc_descs+0x39/0x1c0
+> [    0.058589]  [<c10223bc>] io_apic_setup_irq_pin+0x2c/0x310
+> [    0.060042]  [<c20638df>] setup_IO_APIC+0x101/0x744
+> [    0.060878]  [<c1021d51>] ? clear_IO_APIC+0x31/0x50
+> [    0.061695]  [<c20600f4>] native_smp_prepare_cpus+0x538/0x680
+> [    0.062644]  [<c2056a91>] ? do_one_initcall+0x12c/0x12c
+> [    0.063517]  [<c2056a91>] ? do_one_initcall+0x12c/0x12c
+> [    0.064016]  [<c2056adc>] kernel_init+0x4b/0x17f
+> [    0.064790]  [<c2056a91>] ? do_one_initcall+0x12c/0x12c
+> [    0.065660]  [<c1b2bbd6>] kernel_thread_helper+0x6/0x10
+> 
+> It was caused by that:
+> 
+> 	native_smp_prepare_cpus()
+> 	preempt_disable()		//preempt_count++
+> 	mutex_lock()			//in __irq_alloc_descs
+> 	__might_sleep()			//system is booting, avoid check
+> 	might_resched()
+> 	__schedule()
+> 	preempt_disable()		//preempt_count++
+> 	schedule_bug()			//preempt_count > 1, report bug
+> 
+> The __might_sleep() avoid check on atomic sleeping until the system booted
+> while the schedule_bug() doesn't, it's the reason for the bug.
+> 
+> This patch will add one additional check in schedule_bug() to avoid check
+> until the system booted, so the check on atomic sleeping will be unified.
 
-When trying to modify flashcache to request based (current it's bio based), we need
-to make request from bios by ourselves, but dm_io() will submit these bios directly,
-so we propose to modify the dm_io() to return bios instead of submiting it.
+Could I get some comments on this patch?
 
-This could also improve the flexibility of dm_io().
-
-Signed-off-by: Robin Dong <sanbai@taobao.com>
----
- drivers/md/dm-bufio.c           |    2 +
- drivers/md/dm-io.c              |   58 +++++++++++++++++++++++----------------
- drivers/md/dm-kcopyd.c          |    1 +
- drivers/md/dm-log.c             |    1 +
- drivers/md/dm-raid1.c           |    3 ++
- drivers/md/dm-snap-persistent.c |    1 +
- include/linux/dm-io.h           |    3 ++
- 7 files changed, 45 insertions(+), 24 deletions(-)
-
-diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
-index cc06a1e..f5867b9 100644
---- a/drivers/md/dm-bufio.c
-+++ b/drivers/md/dm-bufio.c
-@@ -487,6 +487,7 @@ static void use_dmio(struct dm_buffer *b, int rw, sector_t block,
- 		.notify.fn = dmio_complete,
- 		.notify.context = b,
- 		.client = b->c->dm_io,
-+		.submit_bio = 1,
- 	};
- 	struct dm_io_region region = {
- 		.bdev = b->c->bdev,
-@@ -1200,6 +1201,7 @@ int dm_bufio_issue_flush(struct dm_bufio_client *c)
- 		.mem.type = DM_IO_KMEM,
- 		.mem.ptr.addr = NULL,
- 		.client = c->dm_io,
-+		.submit_bio = 1,
- 	};
- 	struct dm_io_region io_reg = {
- 		.bdev = c->bdev,
-diff --git a/drivers/md/dm-io.c b/drivers/md/dm-io.c
-index ea5dd28..f235182 100644
---- a/drivers/md/dm-io.c
-+++ b/drivers/md/dm-io.c
-@@ -287,8 +287,8 @@ static void km_dp_init(struct dpages *dp, void *data)
- /*-----------------------------------------------------------------
-  * IO routines that accept a list of pages.
-  *---------------------------------------------------------------*/
--static void do_region(int rw, unsigned region, struct dm_io_region *where,
--		      struct dpages *dp, struct io *io)
-+static void do_region(struct dm_io_request *io_req, unsigned region,
-+		struct dm_io_region *where, struct dpages *dp, struct io *io)
- {
- 	struct bio *bio;
- 	struct page *page;
-@@ -298,6 +298,7 @@ static void do_region(int rw, unsigned region, struct dm_io_region *where,
- 	sector_t remaining = where->count;
- 	struct request_queue *q = bdev_get_queue(where->bdev);
- 	sector_t discard_sectors;
-+	int rw = io_req->bi_rw;
- 
- 	/*
- 	 * where->count may be zero if rw holds a flush and we need to
-@@ -339,15 +340,26 @@ static void do_region(int rw, unsigned region, struct dm_io_region *where,
- 		}
- 
- 		atomic_inc(&io->count);
--		submit_bio(rw, bio);
-+		if (io_req->submit_bio)
-+			submit_bio(rw, bio);
-+		else {
-+			bio->bi_rw |= rw;
-+			if (io_req->start) {
-+				io_req->end->bi_next = bio;
-+				io_req->end = bio;
-+			} else
-+				io_req->start = io_req->end = bio;
-+			bio->bi_next = NULL;
-+		}
- 	} while (remaining);
- }
- 
--static void dispatch_io(int rw, unsigned int num_regions,
-+static void dispatch_io(struct dm_io_request *io_req, unsigned int num_regions,
- 			struct dm_io_region *where, struct dpages *dp,
- 			struct io *io, int sync)
- {
- 	int i;
-+	int rw = io_req->bi_rw;
- 	struct dpages old_pages = *dp;
- 
- 	BUG_ON(num_regions > DM_IO_MAX_REGIONS);
-@@ -362,7 +374,7 @@ static void dispatch_io(int rw, unsigned int num_regions,
- 	for (i = 0; i < num_regions; i++) {
- 		*dp = old_pages;
- 		if (where[i].count || (rw & REQ_FLUSH))
--			do_region(rw, i, where + i, dp, io);
-+			do_region(io_req, i, where + i, dp, io);
- 	}
- 
- 	/*
-@@ -372,8 +384,8 @@ static void dispatch_io(int rw, unsigned int num_regions,
- 	dec_count(io, 0, 0);
- }
- 
--static int sync_io(struct dm_io_client *client, unsigned int num_regions,
--		   struct dm_io_region *where, int rw, struct dpages *dp,
-+static int sync_io(struct dm_io_request *io_req,  unsigned int num_regions,
-+		   struct dm_io_region *where, struct dpages *dp,
- 		   unsigned long *error_bits)
- {
- 	/*
-@@ -385,7 +397,7 @@ static int sync_io(struct dm_io_client *client, unsigned int num_regions,
- 	volatile char io_[sizeof(struct io) + __alignof__(struct io) - 1];
- 	struct io *io = (struct io *)PTR_ALIGN(&io_, __alignof__(struct io));
- 
--	if (num_regions > 1 && (rw & RW_MASK) != WRITE) {
-+	if (num_regions > 1 && (io_req->bi_rw & RW_MASK) != WRITE) {
- 		WARN_ON(1);
- 		return -EIO;
- 	}
-@@ -393,12 +405,12 @@ static int sync_io(struct dm_io_client *client, unsigned int num_regions,
- 	io->error_bits = 0;
- 	atomic_set(&io->count, 1); /* see dispatch_io() */
- 	io->sleeper = current;
--	io->client = client;
-+	io->client = io_req->client;
- 
- 	io->vma_invalidate_address = dp->vma_invalidate_address;
- 	io->vma_invalidate_size = dp->vma_invalidate_size;
- 
--	dispatch_io(rw, num_regions, where, dp, io, 1);
-+	dispatch_io(io_req, num_regions, where, dp, io, 1);
- 
- 	while (1) {
- 		set_current_state(TASK_UNINTERRUPTIBLE);
-@@ -416,30 +428,29 @@ static int sync_io(struct dm_io_client *client, unsigned int num_regions,
- 	return io->error_bits ? -EIO : 0;
- }
- 
--static int async_io(struct dm_io_client *client, unsigned int num_regions,
--		    struct dm_io_region *where, int rw, struct dpages *dp,
--		    io_notify_fn fn, void *context)
-+static int async_io(struct dm_io_request *io_req, unsigned int num_regions,
-+		    struct dm_io_region *where, struct dpages *dp)
- {
- 	struct io *io;
- 
--	if (num_regions > 1 && (rw & RW_MASK) != WRITE) {
-+	if (num_regions > 1 && (io_req->bi_rw & RW_MASK) != WRITE) {
- 		WARN_ON(1);
--		fn(1, context);
-+		io_req->notify.fn(1, io_req->notify.context);
- 		return -EIO;
- 	}
- 
--	io = mempool_alloc(client->pool, GFP_NOIO);
-+	io = mempool_alloc(io_req->client->pool, GFP_NOIO);
- 	io->error_bits = 0;
- 	atomic_set(&io->count, 1); /* see dispatch_io() */
- 	io->sleeper = NULL;
--	io->client = client;
--	io->callback = fn;
--	io->context = context;
-+	io->client = io_req->client;
-+	io->callback = io_req->notify.fn;
-+	io->context = io_req->notify.context;
- 
- 	io->vma_invalidate_address = dp->vma_invalidate_address;
- 	io->vma_invalidate_size = dp->vma_invalidate_size;
- 
--	dispatch_io(rw, num_regions, where, dp, io, 0);
-+	dispatch_io(io_req, num_regions, where, dp, io, 0);
- 	return 0;
- }
- 
-@@ -499,11 +510,10 @@ int dm_io(struct dm_io_request *io_req, unsigned num_regions,
- 		return r;
- 
- 	if (!io_req->notify.fn)
--		return sync_io(io_req->client, num_regions, where,
--			       io_req->bi_rw, &dp, sync_error_bits);
-+		return sync_io(io_req, num_regions, where,
-+				&dp, sync_error_bits);
- 
--	return async_io(io_req->client, num_regions, where, io_req->bi_rw,
--			&dp, io_req->notify.fn, io_req->notify.context);
-+	return async_io(io_req, num_regions, where, &dp);
- }
- EXPORT_SYMBOL(dm_io);
- 
-diff --git a/drivers/md/dm-kcopyd.c b/drivers/md/dm-kcopyd.c
-index bed444c..6a8ecc9 100644
---- a/drivers/md/dm-kcopyd.c
-+++ b/drivers/md/dm-kcopyd.c
-@@ -387,6 +387,7 @@ static int run_io_job(struct kcopyd_job *job)
- 		.notify.fn = complete_io,
- 		.notify.context = job,
- 		.client = job->kc->io_client,
-+		.submit_bio = 1,
- 	};
- 
- 	if (job->rw == READ)
-diff --git a/drivers/md/dm-log.c b/drivers/md/dm-log.c
-index 627d191..8425e84 100644
---- a/drivers/md/dm-log.c
-+++ b/drivers/md/dm-log.c
-@@ -463,6 +463,7 @@ static int create_log_context(struct dm_dirty_log *log, struct dm_target *ti,
- 			kfree(lc);
- 			return r;
- 		}
-+		lc->io_req.submit_bio = 1;
- 
- 		lc->disk_header = vmalloc(buf_size);
- 		if (!lc->disk_header) {
-diff --git a/drivers/md/dm-raid1.c b/drivers/md/dm-raid1.c
-index bc5ddba..338d726 100644
---- a/drivers/md/dm-raid1.c
-+++ b/drivers/md/dm-raid1.c
-@@ -261,6 +261,7 @@ static int mirror_flush(struct dm_target *ti)
- 		.mem.type = DM_IO_KMEM,
- 		.mem.ptr.addr = NULL,
- 		.client = ms->io_client,
-+		.submit_bio = 1,
- 	};
- 
- 	for (i = 0, m = ms->mirror; i < ms->nr_mirrors; i++, m++) {
-@@ -530,6 +531,7 @@ static void read_async_bio(struct mirror *m, struct bio *bio)
- 		.notify.fn = read_callback,
- 		.notify.context = bio,
- 		.client = m->ms->io_client,
-+		.submit_bio = 1,
- 	};
- 
- 	map_region(&io, m, bio);
-@@ -633,6 +635,7 @@ static void do_write(struct mirror_set *ms, struct bio *bio)
- 		.notify.fn = write_callback,
- 		.notify.context = bio,
- 		.client = ms->io_client,
-+		.submit_bio = 1,
- 	};
- 
- 	if (bio->bi_rw & REQ_DISCARD) {
-diff --git a/drivers/md/dm-snap-persistent.c b/drivers/md/dm-snap-persistent.c
-index 3ac4156..0600e1d 100644
---- a/drivers/md/dm-snap-persistent.c
-+++ b/drivers/md/dm-snap-persistent.c
-@@ -241,6 +241,7 @@ static int chunk_io(struct pstore *ps, void *area, chunk_t chunk, int rw,
- 		.mem.ptr.vma = area,
- 		.client = ps->io_client,
- 		.notify.fn = NULL,
-+		.submit_bio = 1,
- 	};
- 	struct mdata_req req;
- 
-diff --git a/include/linux/dm-io.h b/include/linux/dm-io.h
-index f4b0aa3..45f576b 100644
---- a/include/linux/dm-io.h
-+++ b/include/linux/dm-io.h
-@@ -61,6 +61,9 @@ struct dm_io_request {
- 	struct dm_io_memory mem;	/* Memory to use for io */
- 	struct dm_io_notify notify;	/* Synchronous if notify.fn is NULL */
- 	struct dm_io_client *client;	/* Client memory handler */
-+	int submit_bio;
-+	struct bio *start;
-+	struct bio *end;
- };
- 
- /*
--- 
-1.7.1
+Regards,
+Michael Wang
+> 
+> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+> Tested-by: Fengguang Wu <wfg@linux.intel.com>
+> ---
+>  kernel/sched/core.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 4376c9f..3396c33 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -3321,7 +3321,8 @@ static inline void schedule_debug(struct task_struct *prev)
+>  	 * schedule() atomically, we ignore that path for now.
+>  	 * Otherwise, whine if we are scheduling when we should not be.
+>  	 */
+> -	if (unlikely(in_atomic_preempt_off() && !prev->exit_state))
+> +	if (unlikely(in_atomic_preempt_off() && !prev->exit_state
+> +					&& system_state == SYSTEM_RUNNING))
+>  		__schedule_bug(prev);
+>  	rcu_sleep_check();
+>  
+> 
 
