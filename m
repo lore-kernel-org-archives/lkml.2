@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755683Ab2ICBju (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 21:39:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53226 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755477Ab2ICBjt (ORCPT
+	id S1755771Ab2ICBoQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 21:44:16 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39845 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755477Ab2ICBoP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 21:39:49 -0400
-Message-ID: <50440A5A.900@canonical.com>
-Date: Mon, 03 Sep 2012 09:39:38 +0800
-From: Jeremy Kerr <jeremy.kerr@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Matt Domsch <Matt_Domsch@Dell.com>
-Subject: Re: [RFC,PATCH] efi: Add support for a UEFI variable filesystem
-References: <1346319009.951368.767015086462.1.gpush@pecola> <503FA15F.7070506@zytor.com> <50400859.2080606@canonical.com> <5e40036f-b0da-47f3-acba-5dea9fdb7ed6@email.android.com>
-In-Reply-To: <5e40036f-b0da-47f3-acba-5dea9fdb7ed6@email.android.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Sun, 2 Sep 2012 21:44:15 -0400
+X-Sasl-enc: /pBRbcH0+b2NJZMtc1CYqVrVUlp+q8MmExf/jAg8D0kf 1346636654
+From: Alan Ott <alan@signal11.us>
+To: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Tony Cheneau <tony.cheneau@amnesiak.org>
+Cc: linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alan Ott <alan@signal11.us>
+Subject: [PATCH v7 0/1] Driver for Microchip MRF24J40
+Date: Sun,  2 Sep 2012 21:44:12 -0400
+Message-Id: <1346636653-28903-1-git-send-email-alan@signal11.us>
+X-Mailer: git-send-email 1.7.11.2
+In-Reply-To: <1346300194-3286-1-git-send-email-alan@signal11.us>
+References: <1346300194-3286-1-git-send-email-alan@signal11.us>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi hpa,
+This is a driver for the Microchip MRF24J40 802.15.4 transceiver.
 
-> Wouldn't that be better handled by O_APPEND?
+This is the same as v6 except that it now puts the driver in
+drivers/net/ieee802154 instead of drivers/ieee802154, since
+drivers/ieee802154 was recently moved to drivers/net/ieee802154 in
+0739d643b8dda866d1011bcf
 
-Possibly, but this then means that there are now two "interfaces" that
-specify the variable attributes.
+Full history and discussion can be found on the archives of the linux-zigbee
+mailing list:
 
-[Also, in that case we should support the same mechanism through open();
-llseek(0, SEEK_END) then, right?]
+http://www.mail-archive.com/linux-zigbee-devel@lists.sourceforge.net/msg01014.html
 
-In general, I think the attributes-in-a-header mechanism is a little
-tidier than providing them in the filename. For instance, finding if a
-variable exists from userspace will require iterating the dentries (or
-trying all combinations of variables), if the attributes aren't known.
+Alan Ott (1):
+  ieee802154: MRF24J40 driver
 
-However, I'm happy to implement this if it's the generally-preferred
-solution.
+ drivers/net/ieee802154/Kconfig    |  11 +
+ drivers/net/ieee802154/Makefile   |   1 +
+ drivers/net/ieee802154/mrf24j40.c | 767 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 779 insertions(+)
+ create mode 100644 drivers/net/ieee802154/mrf24j40.c
 
-Cheers,
-
-
-Jeremy
-
+-- 
+1.7.11.2
 
