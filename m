@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755602Ab2ICAtc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 20:49:32 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:2547 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755419Ab2ICAta (ORCPT
+	id S1755545Ab2ICBOk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 21:14:40 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:55989 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755190Ab2ICBOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 20:49:30 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqgNALb9Q1B5LHJk/2dsb2JhbABFhRy0fwEBAn+BCIIgAQEFOhwjEAgDDgouFCUDIRMbh3G6EBSKeSAPYXw0hGMDlViQG4J1gUc
-Date: Mon, 3 Sep 2012 10:49:27 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Kent Overstreet <koverstreet@google.com>,
-        Mikulas Patocka <mpatocka@redhat.com>, linux-bcache@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com, tj@kernel.org,
-        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH v7 9/9] block: Avoid deadlocks with bio allocation by
- stacking drivers
-Message-ID: <20120903004927.GM15292@dastard>
-References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
- <1346175456-1572-10-git-send-email-koverstreet@google.com>
- <Pine.LNX.4.64.1208291210180.774@file.rdu.redhat.com>
- <20120829165006.GB20312@google.com>
- <20120829170711.GC12504@redhat.com>
- <20120829171345.GC20312@google.com>
- <20120830220745.GI27257@redhat.com>
+	Sun, 2 Sep 2012 21:14:39 -0400
+X-AuditID: 9c930179-b7cc4ae00000134d-2c-5044047b1352
+From: Namhyung Kim <namhyung@kernel.org>
+To: Irina Tirdea <irina.tirdea@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 08/13] perf tools: Use __maybe_used for unused variables
+References: <CANg8OWKxb_sMXSSpf0iHVn4+a8QF1-b1cKX+jBiWzBYamGNjrw@mail.gmail.com>
+Date: Mon, 03 Sep 2012 10:07:00 +0900
+In-Reply-To: <CANg8OWKxb_sMXSSpf0iHVn4+a8QF1-b1cKX+jBiWzBYamGNjrw@mail.gmail.com>
+	(Irina Tirdea's message of "Wed, 29 Aug 2012 01:04:25 +0300")
+Message-ID: <87392zgbij.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120830220745.GI27257@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 30, 2012 at 06:07:45PM -0400, Vivek Goyal wrote:
-> On Wed, Aug 29, 2012 at 10:13:45AM -0700, Kent Overstreet wrote:
-> 
-> [..]
-> > > Performance aside, punting submission to per device worker in case of deep
-> > > stack usage sounds cleaner solution to me.
-> > 
-> > Agreed, but performance tends to matter in the real world. And either
-> > way the tricky bits are going to be confined to a few functions, so I
-> > don't think it matters that much.
-> > 
-> > If someone wants to code up the workqueue version and test it, they're
-> > more than welcome...
-> 
-> Here is one quick and dirty proof of concept patch. It checks for stack
-> depth and if remaining space is less than 20% of stack size, then it
-> defers the bio submission to per queue worker.
+Hi,
 
-Given that we are working around stack depth issues in the
-filesystems already in several places, and now it seems like there's
-a reason to work around it in the block layers as well, shouldn't we
-simply increase the default stack size rather than introduce
-complexity and performance regressions to try and work around not
-having enough stack?
+On Wed, 29 Aug 2012 01:04:25 +0300, Irina Tirdea wrote:
+> perf defines __used to for marking unused variables.
+> The variable __used is defined to __attribute__((__unused__)), which
+> contradicts the kernel definition to __attribute__((__used__))
+> for new gcc versions. On Android), __used is also defined in
+> system headers and this leads to warnings like:
+> warning: '__used__' attribute ignored
+>
+> This patch simply replaces all instances of __used with __maybe_unused
+> so there will be no such warnings.
 
-I mean, we can deal with it like the ia32 4k stack issue was dealt
-with (i.e. ignore those stupid XFS people, that's an XFS bug), or
-we can face the reality that storage stacks have become so complex
-that 8k is no longer a big enough stack for a modern system....
+How about just using '__unused' for less typing?
 
-Cheers,
+Btw, the patch looks whitespace-damaged.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Thanks,
+Namhyung
