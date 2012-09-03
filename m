@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932101Ab2ICIPZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 04:15:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54072 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932082Ab2ICIPV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932065Ab2ICIPV (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 3 Sep 2012 04:15:21 -0400
-Date: Mon, 03 Sep 2012 10:15:20 +0200
-Message-ID: <s5h4nnfjzdz.wl%tiwai@suse.de>
+Received: from cantor2.suse.de ([195.135.220.15]:54066 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755584Ab2ICIPR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 04:15:17 -0400
+Date: Mon, 03 Sep 2012 10:15:11 +0200
+Message-ID: <s5h627vjze8.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        Jaroslav Kysela <perex@perex.cz>
-Subject: Re: [PATCH] sound: Remove the last mention of SNDRV_MAIN_OBJECT_FILE
-In-Reply-To: <20120903030415.GA20377@leaf>
-References: <20120903030415.GA20377@leaf>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: perex@perex.cz, yongjun_wei@trendmicro.com.cn, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ALSA: fix possible memory leak in snd_mixer_oss_build_input()
+In-Reply-To: <CAPgLHd8PAEMY8zan8v+DTrPpyid4Lbnr4LsNvWoZqi4r5opTaw@mail.gmail.com>
+References: <CAPgLHd8PAEMY8zan8v+DTrPpyid4Lbnr4LsNvWoZqi4r5opTaw@mail.gmail.com>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.1
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -24,14 +24,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Sun, 2 Sep 2012 20:04:17 -0700,
-Josh Triplett wrote:
+At Sun, 2 Sep 2012 22:10:27 +0800,
+Wei Yongjun wrote:
 > 
-> SNDRV_MAIN_OBJECT_FILE hasn't done anything since the pre-git days, and
-> the only remaining reference occurs as a #define in sound/last.c.  Drop
-> that last mention of it.
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 > 
-> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+> uinfo has been allocated in this function and should be
+> freed before leaving from the error handling cases.
+> 
+> spatch with a semantic match is used to found this problem.
+> (http://coccinelle.lip6.fr/)
+> 
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
 Applied now.  Thanks.
 
@@ -39,21 +43,28 @@ Applied now.  Thanks.
 Takashi
 
 > ---
->  sound/last.c |    1 -
->  1 file changed, 1 deletion(-)
+>  sound/core/oss/mixer_oss.c | 2 ++
+>  1 file changed, 2 insertions(+)
 > 
-> diff --git a/sound/last.c b/sound/last.c
-> index 7ffc182..43f2228 100644
-> --- a/sound/last.c
-> +++ b/sound/last.c
-> @@ -19,7 +19,6 @@
->   *
->   */
->  
-> -#define SNDRV_MAIN_OBJECT_FILE
->  #include <linux/init.h>
->  #include <sound/core.h>
->  
-> -- 
-> 1.7.10.4
+> diff --git a/sound/core/oss/mixer_oss.c b/sound/core/oss/mixer_oss.c
+> index 18297f7..29f6ded 100644
+> --- a/sound/core/oss/mixer_oss.c
+> +++ b/sound/core/oss/mixer_oss.c
+> @@ -1046,6 +1046,7 @@ static int snd_mixer_oss_build_input(struct snd_mixer_oss *mixer, struct snd_mix
+>  			
+>  		if (kctl->info(kctl, uinfo)) {
+>  			up_read(&mixer->card->controls_rwsem);
+> +			kfree(uinfo);
+>  			return 0;
+>  		}
+>  		strcpy(str, ptr->name);
+> @@ -1061,6 +1062,7 @@ static int snd_mixer_oss_build_input(struct snd_mixer_oss *mixer, struct snd_mix
+>  				uinfo->value.enumerated.item = slot.capture_item;
+>  				if (kctl->info(kctl, uinfo)) {
+>  					up_read(&mixer->card->controls_rwsem);
+> +					kfree(uinfo);
+>  					return 0;
+>  				}
+>  				if (!strcmp(uinfo->value.enumerated.name, str)) {
+> 
 > 
