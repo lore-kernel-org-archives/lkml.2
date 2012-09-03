@@ -1,66 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755966Ab2ICC4H (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 22:56:07 -0400
-Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:52673
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755799Ab2ICC4F (ORCPT
+	id S1755930Ab2ICC5d (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 22:57:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39025 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754186Ab2ICC5b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 22:56:05 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zz98dI1432Izz1202h1082kzzz2dh2a8h668h839h944hd25hf0ah107ah1220h1155h)
-Date: Mon, 3 Sep 2012 10:34:14 +0800
-From: Dong Aisheng <b29396@freescale.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "lrg@ti.com" <lrg@ti.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        Zhao Richard-B20223 <B20223@freescale.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>
-Subject: Re: [PATCH v4 7/7] mfd: anatop-mfd: remove anatop driver
-Message-ID: <20120903023414.GB11891@shlinux2.ap.freescale.net>
-References: <1346237818-9498-1-git-send-email-b29396@freescale.com>
- <1346237818-9498-8-git-send-email-b29396@freescale.com>
- <20120831013924.GB7726@r65073-Latitude-D630>
+	Sun, 2 Sep 2012 22:57:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20120831013924.GB7726@r65073-Latitude-D630>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+In-Reply-To: <20120831131020.GB23464@ZenIV.linux.org.uk>
+References: <CABMQnVL4Dnee48aQs6Bhmqt5uu_T=Ro72E47sOWcS2CyZTtu4w@mail.gmail.com>
+ <20120831131020.GB23464@ZenIV.linux.org.uk>
+From: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+Date: Mon, 3 Sep 2012 11:56:59 +0900
+X-Google-Sender-Auth: 34spfZvRxGOTbFcWzyzrcN0ykTs
+Message-ID: <CABMQnVKDWN6xftShR_Xt6Odc-jPMSKnU+fqDY+v0tofaM=PTJg@mail.gmail.com>
+Subject: Re: Can not get output of command line on SH
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Paul Mundt <lethal@linux-sh.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 31, 2012 at 09:39:26AM +0800, Shawn Guo wrote:
-> On Wed, Aug 29, 2012 at 06:56:58PM +0800, Dong Aisheng wrote:
-> > -config MFD_ANATOP
-> > -	bool "Support for Freescale i.MX on-chip ANATOP controller"
-> > -	depends on SOC_IMX6Q
-> > -	help
-> > -	  Select this option to enable Freescale i.MX on-chip ANATOP
-> > -	  MFD controller. This controller embeds regulator and
-> > -	  thermal devices for Freescale i.MX platforms.
-> > -
-> 
-> All the occurrences of MFD_ANATOP should be removed too.  I know there
-> is one in arch/arm/mach-imx/Kconfig.
-> 
-Yes, it has been made in patch 5:
-[PATCH v4 5/7] ARM: imx6q: convert to use syscon to access anatop registers
+On Fri, Aug 31, 2012 at 10:10 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Fri, Aug 31, 2012 at 04:32:45PM +0900, Nobuhiro Iwamatsu wrote:
+>> Hi, Al.
+>>
+>> I can not get output of command line on SH in latest linux kernel.
+>> I bisected, I confirmed that this problem occurred by  following commit.
+>>
+>> -----
+>> commit 4a9d4b024a3102fc083c925c242d98ac27b1c5f6
+>> Author: Al Viro <viro@zeniv.linux.org.uk>
+>> Date:   Sun Jun 24 09:56:45 2012 +0400
+>>
+>>     switch fput to task_work_add
+>
+>> For example ,when I input 'ls', nothing is displayed.
+>> However, it is outputted when 'Ctrl+C' is inputted.
+>> I checked other CPUs, it is only SH that this problem occurs.
+>>
+>> Paul, do you think about this?
+>
+> Smells like broken TIF_NOTIFY_RESUME hookup on sh...  Arrrgh.  Looks like
+> while it is in the relevant masks *and* checked in do_notify_resume() both
+> on 32bit and 64bit variants since commit ab99c733ae73cce31f2a2434f7099564e5a73d95
+> Author: Paul Mundt <lethal@linux-sh.org>
+> Date:   Wed Jul 30 19:55:30 2008 +0900
+>
+>     sh: Make syscall tracer use tracehook notifiers, add TIF_NOTIFY_RESUME.
+>
+> they are actually *not* reached without simulataneous SIGPENDING, since the
+> actual glue in the callers had not been updated back then and still checks
+> for _TIF_SIGPENDING alone when deciding whether to hit do_notify_resume()
+> or not.  Looks like the following ought to fix that:
 
-Regards
-Dong Aisheng
+Thanks for your reply and explanation.
+I confirmed that revise this problem with your patch.
 
+>
+> Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Tested-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+
+> ---
+> diff --git a/arch/sh/kernel/cpu/sh5/entry.S b/arch/sh/kernel/cpu/sh5/entry.S
+> index b7cf6a5..7e605b9 100644
+> --- a/arch/sh/kernel/cpu/sh5/entry.S
+> +++ b/arch/sh/kernel/cpu/sh5/entry.S
+> @@ -933,7 +933,7 @@ ret_with_reschedule:
+>
+>         pta     restore_all, tr1
+>
+> -       movi    _TIF_SIGPENDING, r8
+> +       movi    (_TIF_SIGPENDING|_TIF_NOTIFY_RESUME), r8
+>         and     r8, r7, r8
+>         pta     work_notifysig, tr0
+>         bne     r8, ZERO, tr0
+> diff --git a/arch/sh/kernel/entry-common.S b/arch/sh/kernel/entry-common.S
+> index f67601c..b96489d 100644
+> --- a/arch/sh/kernel/entry-common.S
+> +++ b/arch/sh/kernel/entry-common.S
+> @@ -139,7 +139,7 @@ work_pending:
+>         ! r8: current_thread_info
+>         ! t:  result of "tst    #_TIF_NEED_RESCHED, r0"
+>         bf/s    work_resched
+> -        tst    #_TIF_SIGPENDING, r0
+> +        tst    #(_TIF_SIGPENDING | _TIF_NOTIFY_RESUME), r0
+>  work_notifysig:
+>         bt/s    __restore_all
+>          mov    r15, r4
+> --
+
+Best regards,
+  Nobuhiro
+
+-- 
+Nobuhiro Iwamatsu
