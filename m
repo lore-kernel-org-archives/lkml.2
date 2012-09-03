@@ -1,39 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756260Ab2ICJYY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 05:24:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60087 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755574Ab2ICJYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 05:24:22 -0400
-From: Oliver Neukum <oneukum@suse.de>
-To: Alexander <alexander@dce.bg>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: file Documentation/usb/usbmon.txt should list the .config settings
-Date: Mon, 03 Sep 2012 11:23:04 +0200
-Message-ID: <4905024.kP3GZmCRKy@linux-lqwf.site>
-Organization: SUSE
-User-Agent: KMail/4.8.4 (Linux/3.6.0-rc2-12-desktop+; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <50446CA1.7040904@dce.bg>
-References: <50446CA1.7040904@dce.bg>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1756238Ab2ICJZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 05:25:58 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:25749 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756139Ab2ICJZ4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 05:25:56 -0400
+Message-id: <504477A1.6020304@samsung.com>
+Date: Mon, 03 Sep 2012 11:25:53 +0200
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430
+ Thunderbird/12.0.1
+MIME-version: 1.0
+To: Prabhakar Lad <prabhakar.lad@ti.com>
+Cc: LMML <linux-media@vger.kernel.org>,
+        dlos <davinci-linux-open-source@linux.davincidsp.com>,
+        linux-kernel@vger.kernel.org, Manjunath Hadli <manjunath.hadli@ti.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-doc@vger.kernel.org, Sakari Ailus <sakari.ailus@iki.fi>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Rob Landley <rob@landley.net>
+Subject: Re: [PATCH] media: v4l2-ctrls: add control for test pattern
+References: <1346663777-23149-1-git-send-email-prabhakar.lad@ti.com>
+In-reply-to: <1346663777-23149-1-git-send-email-prabhakar.lad@ti.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 03 September 2012 11:38:57 Alexander wrote:
-> Please indicate in the Documentation/usb/usbmon.txt file that the kernel 
-> needs to be compiled with:
-> 
-> CONFIG_DEBUG_KERNEL=y
-> CONFIG_DEBUG_FS=y
-> CONFIG_USB_MON=y
-> CONFIG_USB_DEVICEFS=y
+On 09/03/2012 11:16 AM, Prabhakar Lad wrote:
+> diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
+> index 2d7bc15..ae709d1 100644
+> --- a/drivers/media/v4l2-core/v4l2-ctrls.c
+> +++ b/drivers/media/v4l2-core/v4l2-ctrls.c
+> @@ -430,6 +430,18 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
+>  		"Advanced Predictor",
+>  		NULL,
+>  	};
+> +	static const char * const test_pattern[] = {
+> +		"Test Pattern Disabled",
 
-Are you saying tht the modular options have been broken?
+How about just "Disabled" ?
 
-	Regards
-		Oliver
+> +		"Vertical Lines",
+> +		"Horizontal Lines",
+> +		"Diagonal Lines",
+> +		"Solid Black",
+> +		"Solid White",
+> +		"Solid Blue",
+> +		"Solid Red",
+> +		"Checker Board",
+> +		NULL,
+> +	};
 
+--
+
+Regards,
+Sylwester
