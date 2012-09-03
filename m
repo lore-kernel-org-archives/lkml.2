@@ -1,110 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756150Ab2ICD6j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 23:58:39 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:42158 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755030Ab2ICD6i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 23:58:38 -0400
-Message-ID: <50442AD6.7000109@linux.vnet.ibm.com>
-Date: Mon, 03 Sep 2012 11:58:14 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1752661Ab2ICEYx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 00:24:53 -0400
+Received: from linux-sh.org ([111.68.239.195]:48761 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752040Ab2ICEYw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 00:24:52 -0400
+Date: Mon, 3 Sep 2012 13:24:43 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Can not get output of command line on SH
+Message-ID: <20120903042442.GE20229@linux-sh.org>
+References: <CABMQnVL4Dnee48aQs6Bhmqt5uu_T=Ro72E47sOWcS2CyZTtu4w@mail.gmail.com>
+ <20120831131020.GB23464@ZenIV.linux.org.uk>
+ <CABMQnVKDWN6xftShR_Xt6Odc-jPMSKnU+fqDY+v0tofaM=PTJg@mail.gmail.com>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: Paul Turner <pjt@google.com>, Dhaval Giani <dhaval.giani@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC PATCH 4/4] linsched: add the simulation of schedule after ipi
- interrupt
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12090303-6102-0000-0000-00000229A798
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABMQnVKDWN6xftShR_Xt6Odc-jPMSKnU+fqDY+v0tofaM=PTJg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-
-In real world of x86, during an interrupt, if current thread need to
-be reschedule, we will do it after invoke do_IRQ.
-
-And in linsched, while handle the softirq, it may cause the
-reschedule ipi on other cpu, so we need to do schedule for them at
-that time, otherwise we will got inaccuracy results.
-
-Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
----
- tools/linsched/hrtimer.c  |   21 +++++++++++++++++++++
- tools/linsched/linsched.h |    2 ++
- tools/linsched/numa.c     |    2 ++
- 3 files changed, 25 insertions(+), 0 deletions(-)
-
-diff --git a/tools/linsched/hrtimer.c b/tools/linsched/hrtimer.c
-index 3203253..4df4e14 100644
---- a/tools/linsched/hrtimer.c
-+++ b/tools/linsched/hrtimer.c
-@@ -158,6 +158,24 @@ void linsched_enter_idle(void)
-                tick_nohz_idle_enter();
- }
-
-+cpumask_t linsched_cpu_resched_pending;
-+void process_pending_resched(void)
-+{
-+       int cpu, old_cpu = smp_processor_id();
-+
-+       if (cpumask_empty(&linsched_cpu_resched_pending))
-+               return;
-+
-+       while (!cpumask_empty(&linsched_cpu_resched_pending)) {
-+               cpu = cpumask_first(&linsched_cpu_resched_pending);
-+               linsched_change_cpu(cpu);
-+               cpumask_clear_cpu(cpu, &linsched_cpu_resched_pending);
-+               schedule();
-+       }
-+
-+       linsched_change_cpu(old_cpu);
-+}
-+
- /* Run a simulation for some number of ticks. Each tick,
-  * scheduling and load balancing decisions are made. Obviously, we
-  * could create tasks, change priorities, etc., at certain ticks
-@@ -217,6 +235,9 @@ void linsched_run_sim(int sim_ticks)
- 
-                        linsched_rcu_invoke();
- 
-+                       process_pending_resched();
-+                       linsched_check_idle_cpu();
-+
-                        BUG_ON(irqs_disabled());
-                        if (idle_cpu(active_cpu) && !need_resched()) {
-                                linsched_enter_idle();
-diff --git a/tools/linsched/linsched.h b/tools/linsched/linsched.h
-index d56d801..c4964c5 100644
---- a/tools/linsched/linsched.h
-+++ b/tools/linsched/linsched.h
-@@ -34,6 +34,8 @@ extern struct cgroup *root_cgroup;
-
- extern u64 current_time;
-
-+extern cpumask_t linsched_cpu_resched_pending;
-+
- struct sleep_run_data {
-        struct hrtimer timer;
-        struct task_struct *p;
-diff --git a/tools/linsched/numa.c b/tools/linsched/numa.c
-index 255ff51..e2e7568 100644
---- a/tools/linsched/numa.c
-+++ b/tools/linsched/numa.c
-@@ -113,6 +113,8 @@ void linsched_trigger_cpu(int cpu)
-         * Call the scheduler ipi when queueing up tasks on the wakelist
-         */
-        scheduler_ipi();
-+       if (need_resched())
-+               cpumask_set_cpu(cpu, &linsched_cpu_resched_pending);
-        linsched_change_cpu(curr_cpu);
- }
-
--- 
-1.7.1
-
+On Mon, Sep 03, 2012 at 11:56:59AM +0900, Nobuhiro Iwamatsu wrote:
+> On Fri, Aug 31, 2012 at 10:10 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> > Smells like broken TIF_NOTIFY_RESUME hookup on sh...  Arrrgh.  Looks like
+> > while it is in the relevant masks *and* checked in do_notify_resume() both
+> > on 32bit and 64bit variants since commit ab99c733ae73cce31f2a2434f7099564e5a73d95
+> > Author: Paul Mundt <lethal@linux-sh.org>
+> > Date:   Wed Jul 30 19:55:30 2008 +0900
+> >
+> >     sh: Make syscall tracer use tracehook notifiers, add TIF_NOTIFY_RESUME.
+> >
+> > they are actually *not* reached without simulataneous SIGPENDING, since the
+> > actual glue in the callers had not been updated back then and still checks
+> > for _TIF_SIGPENDING alone when deciding whether to hit do_notify_resume()
+> > or not.  Looks like the following ought to fix that:
+> 
+> Thanks for your reply and explanation.
+> I confirmed that revise this problem with your patch.
+> 
+> >
+> > Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+> Tested-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+> 
+I'll queue it up, thanks!
