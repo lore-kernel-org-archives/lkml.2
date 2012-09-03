@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932096Ab2ICKP2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 06:15:28 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:36239 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756238Ab2ICKP1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 06:15:27 -0400
-MIME-Version: 1.0
-Date: Mon, 3 Sep 2012 18:15:26 +0800
-Message-ID: <CAPgLHd-WNdXdTAGYOJQ5_2Xp0Wyj2dyrxnp0qc_6n+StiDHJMQ@mail.gmail.com>
-Subject: [PATCH] staging: csr: fix possible memory leak in do_patch_convert_download()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756184Ab2ICKpy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 06:45:54 -0400
+Received: from mga03.intel.com ([143.182.124.21]:47145 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752562Ab2ICKpx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 06:45:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,359,1344236400"; 
+   d="scan'208";a="188176699"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Viresh Kumar <viresh.linux@gmail.com>, linux-kernel@vger.kernel.org,
+        Vinod Koul <vinod.koul@intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH] dw_dmac: utilize slave_id to pass request line
+Date: Mon,  3 Sep 2012 13:46:19 +0300
+Message-Id: <1346669179-21024-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+There is slave_id field in the generic slave config structure that is dedicated
+for the uniq slave number. In our case we have the request lines wired to the
+certain hardware. Therefore the number of the request line is uniq and could be
+used as slave_id. It allows us in some cases to drop out the usage of the
+custom slave config structure.
 
-pfw has been allocated in function xbv_to_patch() and should be
-freed before leaving from the error handling cases.
-
-spatch with a semantic match is used to found this problem.
-(http://coccinelle.lip6.fr/)
-
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 ---
- drivers/staging/csr/csr_wifi_hip_download.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/dma/dw_dmac.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/staging/csr/csr_wifi_hip_download.c b/drivers/staging/csr/csr_wifi_hip_download.c
-index 8e4a460..6db672c 100644
---- a/drivers/staging/csr/csr_wifi_hip_download.c
-+++ b/drivers/staging/csr/csr_wifi_hip_download.c
-@@ -250,6 +250,7 @@ static CsrResult do_patch_convert_download(card_t *card, void *dlpriv, xbv1_t *p
-         if (r != CSR_RESULT_SUCCESS)
-         {
-             unifi_error(card->ospriv, "Failed to find BOOT_LOADER_CONTROL\n");
-+            kfree(pfw);
-             return CSR_RESULT_FAILURE;
-         }
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+index f0c9403..7a67673 100644
+--- a/drivers/dma/dw_dmac.c
++++ b/drivers/dma/dw_dmac.c
+@@ -187,6 +187,11 @@ static void dwc_initialize(struct dw_dma_chan *dwc)
  
-@@ -265,6 +266,7 @@ static CsrResult do_patch_convert_download(card_t *card, void *dlpriv, xbv1_t *p
-         desc = unifi_fw_open_buffer(card->ospriv, pfw, psize);
-         if (!desc)
-         {
-+            kfree(pfw);
-             return CSR_WIFI_HIP_RESULT_NO_MEMORY;
-         }
+ 		cfghi = dws->cfg_hi;
+ 		cfglo |= dws->cfg_lo & ~DWC_CFGL_CH_PRIOR_MASK;
++	} else {
++		if (dwc->dma_sconfig.direction == DMA_MEM_TO_DEV)
++			cfghi = DWC_CFGH_DST_PER(dwc->dma_sconfig.slave_id);
++		else if (dwc->dma_sconfig.direction == DMA_DEV_TO_MEM)
++			cfghi = DWC_CFGH_SRC_PER(dwc->dma_sconfig.slave_id);
+ 	}
  
-
+ 	channel_writel(dwc, CFG_LO, cfglo);
+-- 
+1.7.10.4
 
