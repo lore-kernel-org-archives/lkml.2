@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932080Ab2ICFbq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 01:31:46 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:37703 "EHLO
+	id S1755928Ab2ICFci (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 01:32:38 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:51771 "EHLO
 	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754247Ab2ICFbp (ORCPT
+	with ESMTP id S1754247Ab2ICFch (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 01:31:45 -0400
+	Mon, 3 Sep 2012 01:32:37 -0400
 MIME-Version: 1.0
-In-Reply-To: <1346572019-15806-9-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1346572019-15806-10-git-send-email-yinghai@kernel.org>
 References: <1346572019-15806-1-git-send-email-yinghai@kernel.org>
-	<1346572019-15806-9-git-send-email-yinghai@kernel.org>
-Date: Mon, 3 Sep 2012 08:31:43 +0300
-X-Google-Sender-Auth: bfIB5bDSr6SYxqHwCQ3gc7bdMkk
-Message-ID: <CAOJsxLF-FyPGAqPVg4jaRmPvsjreb=SfrJ7puB_dX1ksM_kg1Q@mail.gmail.com>
-Subject: Re: [PATCH -v2 08/13] x86: if kernel .text .data .bss are not marked
- as E820_RAM, complain and fix
+	<1346572019-15806-10-git-send-email-yinghai@kernel.org>
+Date: Mon, 3 Sep 2012 08:32:36 +0300
+X-Google-Sender-Auth: TtTHS-CXAzGjuX0tcHwivJ4KZTg
+Message-ID: <CAOJsxLFKQtJM1sjeBaoMjmVaOUyXf1DHMaBuEohCLgaRFLr+KQ@mail.gmail.com>
+Subject: Re: [PATCH -v2 09/13] x86: Fixup code testing if a pfn is direct mapped
 From: Pekka Enberg <penberg@kernel.org>
 To: Yinghai Lu <yinghai@kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
@@ -29,18 +28,15 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On Sun, Sep 2, 2012 at 10:46 AM, Yinghai Lu <yinghai@kernel.org> wrote:
 > From: Jacob Shin <jacob.shin@amd.com>
 >
-> There could be cases where user supplied memmap=exactmap memory
-> mappings do not mark the region where the kernel .text .data and
-> .bss reside as E820_RAM, as reported here:
->
-> https://lkml.org/lkml/2012/8/14/86
->
-> Handle it by complaining, and adding the range back into the e820.
+> Update code that previously assumed pfns [ 0 - max_low_pfn_mapped ) and
+> [ 4GB - max_pfn_mapped ) were always direct mapped, to now look up
+> pfn_mapped ranges instead.
+
+What problem does this fix? How did you find about it?
+
+> -v2: change applying sequence to keep git bisecting working.
+>      so add dummy pfn_range_is_mapped(). - Yinghai Lu
 >
 > Signed-off-by: Jacob Shin <jacob.shin@amd.com>
 
-This should have Yinghai's sign-off and the warning could be less cryptic.
-
-As for the fix itself:
-
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
+Yinghai's sign-off is missing.
