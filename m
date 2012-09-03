@@ -1,68 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756574Ab2ICT7q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 15:59:46 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:47785 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755001Ab2ICT7p convert rfc822-to-8bit (ORCPT
+	id S1756589Ab2ICUDw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 16:03:52 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:53333 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756229Ab2ICUDv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 15:59:45 -0400
+	Mon, 3 Sep 2012 16:03:51 -0400
+Message-ID: <50450D23.3010904@lwfinger.net>
+Date: Mon, 03 Sep 2012 15:03:47 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120825 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <87392zgbij.fsf@sejong.aot.lge.com>
-References: <CANg8OWKxb_sMXSSpf0iHVn4+a8QF1-b1cKX+jBiWzBYamGNjrw@mail.gmail.com>
- <87392zgbij.fsf@sejong.aot.lge.com>
-From: Irina Tirdea <irina.tirdea@gmail.com>
-Date: Mon, 3 Sep 2012 22:59:23 +0300
-Message-ID: <CANg8OW+rBXgVaboip0JCmmTb_1Gzt6R3kUju2Y8iYvj6=pnzYQ@mail.gmail.com>
-Subject: Re: [PATCH 08/13] perf tools: Use __maybe_used for unused variables
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+To: Andi Kleen <andi@firstfloor.org>
+CC: brcm80211-dev-list@broadcom.com, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Remove bogus memcpy in brcm80211 ai_detach
+References: <20120903191335.GW16230@one.firstfloor.org> <50450388.6040506@lwfinger.net> <20120903195700.GZ16230@one.firstfloor.org>
+In-Reply-To: <20120903195700.GZ16230@one.firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 3, 2012 at 4:07 AM, Namhyung Kim <namhyung@kernel.org> wrote:
-> Hi,
+On 09/03/2012 02:57 PM, Andi Kleen wrote:
+> On Mon, Sep 03, 2012 at 02:22:48PM -0500, Larry Finger wrote:
 
-Hi,
-
+>> Have you compiled all of wireless with gcc 4.8? If so, can I assume that
+>> you will report warnings for other drivers?
 >
-> On Wed, 29 Aug 2012 01:04:25 +0300, Irina Tirdea wrote:
->> perf defines __used to for marking unused variables.
->> The variable __used is defined to __attribute__((__unused__)), which
->> contradicts the kernel definition to __attribute__((__used__))
->> for new gcc versions. On Android), __used is also defined in
->> system headers and this leads to warnings like:
->> warning: '__used__' attribute ignored
->>
->> This patch simply replaces all instances of __used with __maybe_unused
->> so there will be no such warnings.
+> I did 64bit allyesconfig with LTO yes.  wireless has very few warnings overall,
+> compared to many other subsystems.
 >
-> How about just using '__unused' for less typing?
+> I found one other issue in it for which I'm sending a patch.
 
-Replacing __used with __unused leads to conflicts with glibc headers,
-since glibc has a variable named __unused in the stat.h header. I
-forgot to mention this in the commit message.
+Thanks for responding, and for doing the cleanup.
 
-This is the error:
-In file included from /usr/include/x86_64-linux-gnu/sys/stat.h:107:0,
-                 from util/util.h:48,
-                 from builtin-bench.c:20:
-/usr/include/x86_64-linux-gnu/bits/stat.h:106:22: error: expected
-identifier or ‘(’ before ‘[’ token
-/usr/include/x86_64-linux-gnu/bits/stat.h:167:22: error: expected
-identifier or ‘(’ before ‘[’ token
-make: *** [builtin-bench.o] Error 1
+Larry
 
-> Btw, the patch looks whitespace-damaged.
 
-That's true. I'll fix it.
 
-Thanks,
-Irina
