@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755467Ab2ICAam (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Sep 2012 20:30:42 -0400
-Received: from server.atrad.com.au ([150.101.241.2]:59454 "EHLO
-	server.atrad.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755134Ab2ICAal (ORCPT
+	id S1755492Ab2ICAir (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Sep 2012 20:38:47 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53953 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755221Ab2ICAip (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Sep 2012 20:30:41 -0400
-X-Greylist: delayed 413 seconds by postgrey-1.27 at vger.kernel.org; Sun, 02 Sep 2012 20:30:40 EDT
-Date: Mon, 3 Sep 2012 09:53:36 +0930
-From: Jonathan Woithe <jwoithe@just42.net>
-To: Davidlohr Bueso <dave@gnu.org>
-Cc: platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mjg@redhat.com
-Subject: Re: [PATCH 4/5] platform: x86: remove acpi_bus_generate_proc_event
-Message-ID: <20120903002336.GD25170@marvin.atrad.com.au>
-References: <1346630611.3170.32.camel@offbook>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346630611.3170.32.camel@offbook>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 2 Sep 2012 20:38:45 -0400
+From: Joe Millenbach <jmillenbach@gmail.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: team-fjord@googlegroups.com, Joe Millenbach <jmillenbach@gmail.com>
+Subject: [PATCHv2] x86: Removing invalid reference to Intel CPUs in CONFIG_SWIOTLB
+Date: Sun,  2 Sep 2012 17:38:20 -0700
+Message-Id: <1346632700-29113-1-git-send-email-jmillenbach@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 03, 2012 at 02:03:31AM +0200, Davidlohr Bueso wrote:
-> Calling this function no longer makes sense as /proc/acpi/event
-> is being removed.
-> 
-> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
-> :
->  drivers/platform/x86/fujitsu-laptop.c   |    4 ----
-> :
-> diff --git a/drivers/platform/x86/fujitsu-laptop.c b/drivers/platform/x86/fujitsu-laptop.c
-> index c4c1a54..2fac1c5 100644
-> --- a/drivers/platform/x86/fujitsu-laptop.c
-> +++ b/drivers/platform/x86/fujitsu-laptop.c
-> @@ -773,8 +773,6 @@ static void acpi_fujitsu_notify(struct acpi_device *device, u32 event)
->  				else
->  					set_lcd_level(newb);
->  			}
-> -			acpi_bus_generate_proc_event(fujitsu->dev,
-> -				ACPI_VIDEO_NOTIFY_INC_BRIGHTNESS, 0);
->  			keycode = KEY_BRIGHTNESSUP;
->  		} else if (oldb > newb) {
->  			if (disable_brightness_adjust != 1) {
-> @@ -783,8 +781,6 @@ static void acpi_fujitsu_notify(struct acpi_device *device, u32 event)
->  				else
->  					set_lcd_level(newb);
->  			}
-> -			acpi_bus_generate_proc_event(fujitsu->dev,
-> -				ACPI_VIDEO_NOTIFY_DEC_BRIGHTNESS, 0);
->  			keycode = KEY_BRIGHTNESSDOWN;
->  		}
->  		break;
+Deleted the no longer valid example of which x86 CPUs lack a hardware
+IOMMU, and moved the "If unsure..." statement to a new line to follow
+the style of surrounding options.
 
-Presumedly the intention here is for these events to be delivered via the
-input layer after the removal of /proc/acpi/event (as is done later in the
-above function).
+Signed-off-by: Joe Millenbach <jmillenbach@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+v2: Incorporated feedback from Konrad Rzeszutek Wilk that no mention of
+    Intel CPUs was needed.
 
-If that's the case, then:
-  Acked-by: Jonathan Woithe <jwoithe@just42.net>
+ arch/x86/Kconfig |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-Regards
-  jonathan
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 5bed94e..c5b08e3 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -755,10 +755,10 @@ config SWIOTLB
+ 	def_bool y if X86_64
+ 	---help---
+ 	  Support for software bounce buffers used on x86-64 systems
+-	  which don't have a hardware IOMMU (e.g. the current generation
+-	  of Intel's x86-64 CPUs). Using this PCI devices which can only
+-	  access 32-bits of memory can be used on systems with more than
+-	  3 GB of memory. If unsure, say Y.
++	  which don't have a hardware IOMMU. Using this PCI devices
++	  which can only access 32-bits of memory can be used on systems
++	  with more than 3 GB of memory.
++	  If unsure, say Y.
+ 
+ config IOMMU_HELPER
+ 	def_bool (CALGARY_IOMMU || GART_IOMMU || SWIOTLB || AMD_IOMMU)
+-- 
+1.7.9.5
+
