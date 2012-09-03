@@ -1,78 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756418Ab2ICM3l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 08:29:41 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35800 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752911Ab2ICM3k (ORCPT
+	id S1755683Ab2ICMej (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 08:34:39 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:36582 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752843Ab2ICMeh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 08:29:40 -0400
-Message-ID: <1346675368.15950.0.camel@phoenix>
-Subject: [PATCH] ARM: ep93xx: Fix build error due to 'SZ_32M' undeclared
-From: Axel Lin <axel.lin@gmail.com>
-To: Hartley Sweeten <hsweeten@visionengravers.com>,
-        Ryan Mallon <rmallon@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Mon, 03 Sep 2012 20:29:28 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 3 Sep 2012 08:34:37 -0400
+Date: Mon, 3 Sep 2012 13:34:31 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Rob Herring <rob.herring@calxeda.com>, devicetree-discuss@lists.ozlabs.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH 3/3] i2c: nomadik: Add Device Tree support to the Nomadik
+ I2C driver
+Message-ID: <20120903123424.GA31163@gmail.com>
+References: <1345734087-21803-1-git-send-email-lee.jones@linaro.org>
+ <1345734087-21803-3-git-send-email-lee.jones@linaro.org>
+ <20120831112258.GA2624@pengutronix.de>
+ <20120831122323.GC5962@gmail.com>
+ <CACRpkdZ=C1EV4WO2b=1YLHPNhsDsQdq7Kfnpzm8i7uGRtVjJuQ@mail.gmail.com>
+ <20120903094448.GB11780@pengutronix.de>
+ <20120903100656.GC5782@gmail.com>
+ <CACRpkdb8owKBxawAv4LVVYx5kUgZ9cUSiQ=BV0f3Pf3bHtknuQ@mail.gmail.com>
+ <CAF2Aj3j25w1Nn9O6hV+=i-j1ts_p_Ucswk_M7r04S7i5BzPkHg@mail.gmail.com>
+ <CACRpkdZ5VFhrbONy=0K5MFh4e6BDFckq0yqzjQ2QkW9MgwKqBg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdZ5VFhrbONy=0K5MFh4e6BDFckq0yqzjQ2QkW9MgwKqBg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Include linux/sizes.h to fix below build errors:
+On Mon, Sep 03, 2012 at 01:58:04PM +0200, Linus Walleij wrote:
+> On Mon, Sep 3, 2012 at 1:32 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> 
+> > No, this is wrong. Platform data should not override DT.
+> >
+> > If DT is enabled and passed, it should have highest priority.
+> 
+> Oh is that so.
 
-  CC      arch/arm/mach-ep93xx/adssphere.o
-arch/arm/mach-ep93xx/adssphere.c: In function 'adssphere_init_machine':
-arch/arm/mach-ep93xx/adssphere.c:32:49: error: 'SZ_32M' undeclared (first use in this function)
-arch/arm/mach-ep93xx/adssphere.c:32:49: note: each undeclared identifier is reported only once for each function it appears in
-make[1]: *** [arch/arm/mach-ep93xx/adssphere.o] Error 1
-make: *** [arch/arm/mach-ep93xx] Error 2
+:)
 
-  CC      arch/arm/mach-ep93xx/gesbc9312.o
-arch/arm/mach-ep93xx/gesbc9312.c: In function 'gesbc9312_init_machine':
-arch/arm/mach-ep93xx/gesbc9312.c:32:49: error: 'SZ_8M' undeclared (first use in this function)
-arch/arm/mach-ep93xx/gesbc9312.c:32:49: note: each undeclared identifier is reported only once for each function it appears in
-make[1]: *** [arch/arm/mach-ep93xx/gesbc9312.o] Error 1
-make: *** [arch/arm/mach-ep93xx] Error 2
+> Rob: do we have a clear consensus on this? Then we should document
+> it in Documentation/devicetree/usage-model.txt.
+> 
+> (That document isn't part of the binding I believe, so we could define
+> Linux-specific behaviours in it.)
+> 
+> I always thought it was the other way around, that pdata took priority.
+> 
+> Usecase: hardcoded bootloader passer erroneous DT to a platform.
+> No way out. What to do? Override with pdata.
+> 
+> Yours,
+> Linus Walleij
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
-This patch is against linux-next tree.
-Axel
- arch/arm/mach-ep93xx/adssphere.c |    1 +
- arch/arm/mach-ep93xx/gesbc9312.c |    1 +
- 2 files changed, 2 insertions(+)
+Hmmm... I see your point, but this won't work.
 
-diff --git a/arch/arm/mach-ep93xx/adssphere.c b/arch/arm/mach-ep93xx/adssphere.c
-index a472777..41383bf 100644
---- a/arch/arm/mach-ep93xx/adssphere.c
-+++ b/arch/arm/mach-ep93xx/adssphere.c
-@@ -13,6 +13,7 @@
- #include <linux/kernel.h>
- #include <linux/init.h>
- #include <linux/platform_device.h>
-+#include <linux/sizes.h>
- 
- #include <mach/hardware.h>
- 
-diff --git a/arch/arm/mach-ep93xx/gesbc9312.c b/arch/arm/mach-ep93xx/gesbc9312.c
-index 437c341..7fd705b 100644
---- a/arch/arm/mach-ep93xx/gesbc9312.c
-+++ b/arch/arm/mach-ep93xx/gesbc9312.c
-@@ -13,6 +13,7 @@
- #include <linux/kernel.h>
- #include <linux/init.h>
- #include <linux/platform_device.h>
-+#include <linux/sizes.h>
- 
- #include <mach/hardware.h>
- 
+When booting DT booting take a different path and no platform data
+is passed. We can't boot DT AND register devices with platform data
+or else we will double probe every device. The only way to pass
+pdata when booting with DT is with AUX_DATA() and that's a hack to
+get around things we don't have support for yet. Up until now that
+has been DMA bindings, clock and pinctrl names and call-backs.
+
+If DT is corrupt or missing the kernel will boot using platform 
+data, but np will always be NULL, so we don't have the problem you
+were alluding to above.
+
+Let me know if I didn't explain that well enough and I will have
+another go.
+
 -- 
-1.7.9.5
-
-
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
