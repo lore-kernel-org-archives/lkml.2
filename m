@@ -1,78 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932722Ab2IDUYk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 16:24:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48772 "EHLO mail.zytor.com"
+	id S932727Ab2IDU0v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 16:26:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42597 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932677Ab2IDUYg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 16:24:36 -0400
-Message-ID: <50466363.9010900@zytor.com>
-Date: Tue, 04 Sep 2012 13:24:03 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Josh Triplett <josh@joshtriplett.org>
-CC: Matt Fleming <matt.fleming@intel.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Len Brown <lenb@kernel.org>,
-        Olof Johansson <olof@lixom.net>, Matthew Garrett <mjg@redhat.com>,
-        David Howells <dhowells@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Jim Cromie <jim.cromie@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pawel Moll <pawel.moll@arm.com>, linux-acpi@vger.kernel.org,
-        linux-efi <linux-efi@vger.kernel.org>
-Subject: Re: [PATCH 0/3] Fix ACPI BGRT support for images located in EFI boot
- services memory
-References: <cover.1346361959.git.josh@joshtriplett.org> <1346768840.4244.52.camel@mfleming-mobl1.ger.corp.intel.com> <20120904175952.GA4103@jtriplet-mobl1> <5046442E.7020207@zytor.com> <20120904194523.GA5064@jtriplet-mobl1>
-In-Reply-To: <20120904194523.GA5064@jtriplet-mobl1>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S932673Ab2IDU0u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 16:26:50 -0400
+Date: Tue, 4 Sep 2012 17:26:39 -0300
+From: Flavio Leitner <fbl@redhat.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        WANG Cong <xiyou.wangcong@gmail.com>, Tejun Heo <tj@kernel.org>,
+        ianfang.cn@gmail.com, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: kexec/kdump kernel fails to start
+Message-ID: <20120904172639.0c2bfd6d@obelix.rh>
+In-Reply-To: <CAE9FiQX7OMdFU6FuTQdz+NdbNt5Hy9zjzSY7y-90G4CbhayfaA@mail.gmail.com>
+References: <20120904143215.5bbbb2a4@obelix.rh>
+	<CAE9FiQUEHbDySWHWFj6kW=HGLR0vkbaJWRq+7kMMHGhBm8e08A@mail.gmail.com>
+	<20120904161737.358d51ad@obelix.rh>
+	<CAE9FiQX7OMdFU6FuTQdz+NdbNt5Hy9zjzSY7y-90G4CbhayfaA@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2012 12:45 PM, Josh Triplett wrote:
->>
->> There are some platforms which have bugs in this area, so there are
->> other reasons to defer freeing up boot memory until as late in the
->> boot process as we can possibly get away with.
->>
->> free_initmem() is presuambly the place that makes most sense.
->
-> You're suggesting a call from free_initmem() to
-> efi_free_boot_services()?  Or, from init_post() right before the call to
-> free_initmem()?
->
+On Tue, 4 Sep 2012 12:20:14 -0700
+Yinghai Lu <yinghai@kernel.org> wrote:
 
-free_initmem() is arch-specific, so probably the latter.
+> On Tue, Sep 4, 2012 at 12:17 PM, Flavio Leitner <fbl@redhat.com> wrote:
+> > On Tue, 4 Sep 2012 12:02:00 -0700
+> > [    0.000000] x86 PAT enabled: cpu 0, old 0x7040600070406, new 0x7010600070106
+> > [    0.000000] last_pfn = 0xbf800 max_arch_pfn = 0x400000000
+> > [    0.000000] initial memory mapped : 0 - 20000000
+> > [    0.000000] Base memory trampoline at [ffff880000098000] 98000 size 20480
+> > [    0.000000] init_memory_mapping: 0000000000000000-00000000bf800000
+> > [    0.000000]  0000000000 - 00bf800000 page 2M
+> > [    0.000000] kernel direct mapping tables up to bf800000 @ 1fa00000-20000000
+> > [    0.000000] init_memory_mapping: 0000000100000000-0000000440000000
+> > [    0.000000]  0100000000 - 0440000000 page 2M
+> > [    0.000000] kernel direct mapping tables up to 440000000 @ bdaab000-bf4bd000
+> > [    0.000000] RAMDISK: 352c8000 - 3695c000
+> >
+> BTW, can you please try our new init_memory_mapping clean up at
+> 
+> 	git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+> for-x86-mm
+> 
+> hope it could make your kdump working.
 
->> This
->> is EFI-specific but not x86-specific, let's not commingle those
->> concepts, please...
->
-> init/main.c already calls the x86-specific efi_enter_virtual_mode
-> (defined in arch/x86/platform/efi/efi.c), and I split the call to the
-> x86-specific efi_free_boot_services out of that.  Neither of those
-> functions exists on non-x86 platforms, and thus I mirrored the #ifdef
-> currently wrapped around efi_enter_virtual_mode for the new call to
-> efi_free_boot_services.  While it might make sense for that code to
-> exist on non-x86 EFI platforms, it currently doesn't.  At best, I could
-> add static inline stubs to linux/efi.h for those functions to avoid the
-> ifdefs, but as far as I can tell the same issue applies to quite a few
-> more functions in efi.h.
->
-> Would you like me to add the static inline stubs for the couple of
-> functions called from init/main.c, or leave the #ifdefs?
->
-
-I think that would really help clean things up.
-
-	-hpa
-
-
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Sorry, but it didn't work.
+The same problem happened. 
+fbl
