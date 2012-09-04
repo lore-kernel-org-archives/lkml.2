@@ -1,96 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757043Ab2IDNJL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 09:09:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53509 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756784Ab2IDNJJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 09:09:09 -0400
-Date: Tue, 4 Sep 2012 15:09:06 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
-        Dave Jones <davej@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH v2] memcg: first step towards hierarchical controller
-Message-ID: <20120904130905.GA15683@dhcp22.suse.cz>
-References: <1346687211-31848-1-git-send-email-glommer@parallels.com>
- <20120903170806.GA21682@dhcp22.suse.cz>
- <5045BD25.10301@parallels.com>
+	id S1757072Ab2IDNLN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 09:11:13 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:58924 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756784Ab2IDNLM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 09:11:12 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Rob Herring <robherring2@gmail.com>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the arm-current tree
+Date: Tue, 4 Sep 2012 13:11:02 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20120904160626.f1dcb67ebbb145053c49da8c@canb.auug.org.au> <20120904090132.GG24085@n2100.arm.linux.org.uk> <5045F7A0.1090400@gmail.com>
+In-Reply-To: <5045F7A0.1090400@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5045BD25.10301@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-Id: <201209041311.02222.arnd@arndb.de>
+X-Provags-ID: V02:K0:OStDgIic+UxZnKGP91fqJ5H+lMCKx1TKKYPhZrKvzub
+ sPrTy7o4QmvnwKtRw7ZQ48xdFhXfdFYjmGx6Ht7vZQHszEbbzK
+ FPx1TVQoCtJQNVXj5p1SMfamOovWa9UQCz5O24+jC6XHzuDaTN
+ dEftJwZ2F+DgjR73sKxojW02/d6fabIhwatNdR03j7T2CmrVe7
+ MGphOnFXHNDFqiRwQ98+H5mSPfAJV3CeGg26coBZ++kF6ez9fQ
+ 28KBwpVZ8xyC0mZUWE3//fP39OEK40Hn0JLJk8282lh8gIrYhe
+ gluHykLWcKxnmynRDM+fgGaDXwHZp7ILL+YItbOS/NehzZGH+j
+ 4SyKLp40QOG7P0Mk/HKo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 04-09-12 12:34:45, Glauber Costa wrote:
-> On 09/03/2012 09:08 PM, Michal Hocko wrote:
-> > On Mon 03-09-12 19:46:51, Glauber Costa wrote:
-> >> Here is a new attempt to lay down a path that will allow us to deprecate
-> >> the non-hierarchical mode of operation from memcg.  Unlike what I posted
-> >> before, I am making this behavior conditional on a Kconfig option.
-> >> Vanilla users will see no change in behavior unless they don't
-> >> explicitly set this option to on.
-> > 
-> > Which is the reason why I don't like this approach. Why would you enable
-> > the option in the first place? If you know the default should be 1 then
-> > you would already do that via cgconfig or directly, right?
-> > I think we should either change the default (which I am planning to do
-> > for the next OpenSUSE) or do it slow way suggested by Tejun.
-> > We really want to have as big testing coverage as possible for the
-> > default change and config option is IMHO not a way to accomplish this.
-> > 
+On Tuesday 04 September 2012, Rob Herring wrote:
+> Right. The PCI i/o reserved area has a dummy physical address of 0 and 
+> needs to be skipped by ioremap searches. So we don't set 
+> VM_ARM_STATIC_MAPPING to prevent matches by ioremap. The vm_struct settings
+> don't really matter when we do the real mapping of the i/o space.
 > 
-> Not sure you realize, Michal, but you actually agree with me and my
-> patch, given your reasoning.
+> Here's my merge:
 
-I do agree with the default change, all right, but I really don't like
-the config option because that one will not help us that much.
+Ok, thanks for the clarification. I've merged Russell's fixes branch
+into the cleanup/io-pci branch now to resolve the conflict.
 
-> If you plan to change it in OpenSUSE, you have two ways of doing so:
-> You either carry a patch, which as simple as this is, is always
-> undesirable, or you add one line to your distro config. Pick my patch,
-> and do the later.
+	Arnd
 
-I would have to care the patch anyway until the distro kernel moves to
-a kernel which has the patch which won't happen anytime soon (at least
-from distro POV) and I guess we want the testing coverage as long as
-possible.
+>From 863e99a8c1ea2b0391491904297f57a0f6a1fdd6 Mon Sep 17 00:00:00 2001
+From: Arnd Bergmann <arnd@arndb.de>
+Date: Tue, 4 Sep 2012 15:01:37 +0200
+Subject: [PATCH] Merge commit 'a849088aa1' from rmk/fixes into cleanup/io-pci
 
-> This patch does exactly the "do it slowly" thing, but without
-> introducing more churn, like mount options.
+As Stephen Rothwell reports, a849088aa155 ("ARM: Fix ioremap() of
+address zero") from the arm-current tree and commit c2794437091a ("ARM:
+Add fixed PCI i/o mapping") from the arm-soc tree conflict in
+a nontrivial way in arch/arm/mm/mmu.c.
 
-Not really. Do it slowly means that somebody actually _notices_ that
-something is about to change and they have a lot of time for that. This
-will be really hard with the config option saying N by default.  People
-will ignore that until it's too late.
-We are interested in those users who would keep the config default N and
-they are (ab)using use_hierarchy=0 in a way which is hard/impossible to
-fix. This is where distributions might help and they should IMHO but why
-to put an additional code into upstream? Isn't it sufficient that those
-who would like to help (and take the risk) would just take the patch?
+Rob Herring explains:
+The PCI i/o reserved area has a dummy physical address of 0 and
+needs to be skipped by ioremap searches. So we don't set
+VM_ARM_STATIC_MAPPING to prevent matches by ioremap. The vm_struct
+settings don't really matter when we do the real mapping of the
+i/o space.
 
-> Keep in mind that since
-> there is the concern that direct upstream users won't see a sudden
-> change in behavior, *every* way we choose to do it will raise the same
-> question you posed: "Why would you enable this in the first place?" Be
-> it a Kconfig, mount option, etc. The solution here is: Direct users of
-> upstream kernels won't see a behavior change - as requested - but
-> distributors will have a way to flip it without carrying a non-upstream
-> patch.
+Since commit a849088aa155 is at the start of the fixes branch
+in the arm tree, we can merge it into the branch that contains
+the other ioremap changes.
 
-The patch is so small that I do not care having it without being
-upstream. Do others care that much?
-The consequences of the semantic change is what matters much more to me.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
 
-[...]
--- 
-Michal Hocko
-SUSE Labs
+diff --cc arch/arm/Kconfig
+index 58bb75e,6d6e18f..01790958
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+
+diff --cc arch/arm/mm/mmu.c
+index 714a7fd,eab94bc..a7a9e41
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@@ -792,19 -785,6 +786,19 @@@ void __init iotable_init(struct map_des
+  	}
+  }
+  
+ +void __init vm_reserve_area_early(unsigned long addr, unsigned long size,
+ +				  void *caller)
+ +{
+ +	struct vm_struct *vm;
+ +
+ +	vm = early_alloc_aligned(sizeof(*vm), __alignof__(*vm));
+ +	vm->addr = (void *)addr;
+ +	vm->size = size;
+- 	vm->flags = VM_IOREMAP | VM_ARM_STATIC_MAPPING;
+++	vm->flags = VM_IOREMAP | VM_ARM_EMPTY_MAPPING;
+ +	vm->caller = caller;
+ +	vm_area_add_early(vm);
+ +}
+ +
+  #ifndef CONFIG_ARM_LPAE
+  
+  /*
