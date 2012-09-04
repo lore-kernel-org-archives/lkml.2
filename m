@@ -1,88 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756689Ab2IDDoq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 23:44:46 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:44118 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756633Ab2IDDon (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 23:44:43 -0400
-X-IronPort-AV: E=Sophos;i="4.80,364,1344182400"; 
-   d="scan'208";a="5777133"
-Message-ID: <50457983.1050304@cn.fujitsu.com>
-Date: Tue, 04 Sep 2012 11:46:11 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1756691Ab2IDDxl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 23:53:41 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:42137 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756639Ab2IDDxj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 23:53:39 -0400
+Message-ID: <50457B34.6040107@linux.vnet.ibm.com>
+Date: Tue, 04 Sep 2012 11:53:24 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>, isimatu.yasuaki@jp.fujitsu.com
-CC: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
-        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
-        cl@linux.com, minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com
-Subject: Re: [RFC v8 PATCH 13/20] memory-hotplug: check page type in get_page_bootmem
-References: <1346148027-24468-1-git-send-email-wency@cn.fujitsu.com>	<1346148027-24468-14-git-send-email-wency@cn.fujitsu.com> <20120831143032.1343e99a.akpm@linux-foundation.org>
-In-Reply-To: <20120831143032.1343e99a.akpm@linux-foundation.org>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/04 11:40:15,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/04 11:40:39,
-	Serialize complete at 2012/09/04 11:40:39
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+To: Avi Kivity <avi@redhat.com>
+CC: Dong Hao <haodong@linux.vnet.ibm.com>, acme@infradead.org,
+        mtosatti@redhat.com, mingo@elte.hu, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH v7 1/3] KVM: x86: export svm/vmx exit code and vector
+ code to userspace
+References: <1346061106-5364-1-git-send-email-haodong@linux.vnet.ibm.com> <1346061106-5364-2-git-send-email-haodong@linux.vnet.ibm.com> <504490CE.5060507@redhat.com>
+In-Reply-To: <504490CE.5060507@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+x-cbid: 12090403-8256-0000-0000-00000404039B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, isimatu-san
-
-At 09/01/2012 05:30 AM, Andrew Morton Wrote:
-> On Tue, 28 Aug 2012 18:00:20 +0800
-> wency@cn.fujitsu.com wrote:
-> 
->> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+On 09/03/2012 07:13 PM, Avi Kivity wrote:
+> On 08/27/2012 12:51 PM, Dong Hao wrote:
+>> From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 >>
->> There is a possibility that get_page_bootmem() is called to the same page many
->> times. So when get_page_bootmem is called to the same page, the function only
->> increments page->_count.
+>> Exporting KVM exit information to userspace to be consumed by perf.
+>>
+>> [ Dong Hao <haodong@linux.vnet.ibm.com>: rebase it on acme's git tree ]
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>> Signed-off-by: Dong Hao <haodong@linux.vnet.ibm.com>
+>> ---
+>>  arch/x86/include/asm/kvm_host.h |   36 ++++---
 > 
-> I really don't understand this explanation, even after having looked at
-> the code.  Can you please have another attempt at the changelog?
+> Please put ABIs in kvm.h.  But see below.
+> 
+>>  arch/x86/include/asm/svm.h      |  205 +++++++++++++++++++++++++--------------
+>>  arch/x86/include/asm/vmx.h      |  126 ++++++++++++++++--------
+>>  arch/x86/kvm/trace.h            |   89 -----------------
+>>  4 files changed, 234 insertions(+), 222 deletions(-)
+>>
+>>  
+>> +#define DE_VECTOR 0
+>> +#define DB_VECTOR 1
+>> +#define BP_VECTOR 3
+>> +#define OF_VECTOR 4
+>> +#define BR_VECTOR 5
+>> +#define UD_VECTOR 6
+>> +#define NM_VECTOR 7
+>> +#define DF_VECTOR 8
+>> +#define TS_VECTOR 10
+>> +#define NP_VECTOR 11
+>> +#define SS_VECTOR 12
+>> +#define GP_VECTOR 13
+>> +#define PF_VECTOR 14
+>> +#define MF_VECTOR 16
+>> +#define MC_VECTOR 18
+> 
+> This is not a kvm ABI, but an x86 architecture constants.  It should be
+> put into an existing x86 header.
 
-What is the problem that you want to fix? The function get_page_bootmem()
-may be called to the same page more than once, but I don't find any problem
-about current implementation.
-
-Thanks
-Wen Congyang
+Okay, i will move them into asm/kvm.h
 
 > 
->> --- a/mm/memory_hotplug.c
->> +++ b/mm/memory_hotplug.c
->> @@ -95,10 +95,17 @@ static void release_memory_resource(struct resource *res)
->>  static void get_page_bootmem(unsigned long info,  struct page *page,
->>  			     unsigned long type)
->>  {
->> -	page->lru.next = (struct list_head *) type;
->> -	SetPagePrivate(page);
->> -	set_page_private(page, info);
->> -	atomic_inc(&page->_count);
->> +	unsigned long page_type;
 >> +
->> +	page_type = (unsigned long) page->lru.next;
->> +	if (page_type < MEMORY_HOTPLUG_MIN_BOOTMEM_TYPE ||
->> +	    page_type > MEMORY_HOTPLUG_MAX_BOOTMEM_TYPE){
->> +		page->lru.next = (struct list_head *) type;
->> +		SetPagePrivate(page);
->> +		set_page_private(page, info);
->> +		atomic_inc(&page->_count);
->> +	} else
->> +		atomic_inc(&page->_count);
->>  }
+>>  #endif /* _ASM_X86_KVM_HOST_H */
+>> diff --git a/arch/x86/include/asm/svm.h b/arch/x86/include/asm/svm.h
+>> index f2b83bc..cdf5674 100644
+>> --- a/arch/x86/include/asm/svm.h
+>> +++ b/arch/x86/include/asm/svm.h
+>> @@ -1,6 +1,135 @@
+>>  #ifndef __SVM_H
+>>  #define __SVM_H
+>>  
+>> +
+>> +#ifdef __KERNEL__
+>> +
 > 
-> And a code comment which explains what is going on would be good.  As
-> is always the case ;)
+> The entire file can be exported; nothing in there is implementation
+> specific.
+
+Unfortunately, i have tied this but failed:
+
+../../arch/x86/include/asm/svm.h:262:1: error: packed attribute is unnecessary for ‘vmcb_seg’ [-Werror=packed]
+../../arch/x86/include/asm/svm.h:307:1: error: packed attribute is unnecessary for ‘vmcb_save_area’ [-Werror=packed]
+../../arch/x86/include/asm/svm.h:312:1: error: packed attribute is unnecessary for ‘vmcb’ [-Werror=packed]
+......
+
 > 
+>> diff --git a/arch/x86/include/asm/vmx.h b/arch/x86/include/asm/vmx.h
+>> index 74fcb96..61e04e9 100644
+>> --- a/arch/x86/include/asm/vmx.h
+>> +++ b/arch/x86/include/asm/vmx.h
+>> +
+>> +#ifdef __KERNEL__
+>> +
 > 
+> Ditto.
+
+Or:
+
+../../arch/x86/include/asm/vmx.h:376:0: error: "REG_R8" redefined [-Werror]
+/usr/include/sys/ucontext.h:46:0: note: this is the location of the previous definition
+../../arch/x86/include/asm/vmx.h:377:0: error: "REG_R9" redefined [-Werror]
+/usr/include/sys/ucontext.h:48:0: note: this is the location of the previous definition
+......
 
