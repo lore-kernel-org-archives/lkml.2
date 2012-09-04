@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754302Ab2IDAoT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 20:44:19 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:53875 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754176Ab2IDAoS (ORCPT
+	id S1754349Ab2IDAxn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 20:53:43 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:42513 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754195Ab2IDAxm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 20:44:18 -0400
-Message-ID: <50454EDC.7050101@gmail.com>
-Date: Tue, 04 Sep 2012 10:44:12 +1000
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Mon, 3 Sep 2012 20:53:42 -0400
+X-AuditID: b753bd60-91b5cba000007c38-9f-50455114aa83
+X-AuditID: b753bd60-91b5cba000007c38-9f-50455114aa83
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Subject: [PATCH] tools: Fix pthread flag for Makefile of trace-agent used by
+ virtio-trace
+To: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org
+Cc: Amit Shah <amit.shah@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>, yrl.pp-manager.tt@hitachi.com,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Date: Tue, 04 Sep 2012 09:53:39 +0900
+Message-ID: <20120904005339.30804.58826.stgit@ltc189.sdl.hitachi.co.jp>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: yan <clouds.yan@gmail.com>
-CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] proc: use kzalloc instead of kmalloc and memset
-References: <1346681648-21427-1-git-send-email-clouds.yan@gmail.com> <1346681648-21427-4-git-send-email-clouds.yan@gmail.com>
-In-Reply-To: <1346681648-21427-4-git-send-email-clouds.yan@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/12 00:14, yan wrote:
-> Signed-off-by: yan <clouds.yan@gmail.com>
-> ---
->  fs/proc/generic.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/fs/proc/generic.c b/fs/proc/generic.c
-> index 9e8f631..38de015 100644
-> --- a/fs/proc/generic.c
-> +++ b/fs/proc/generic.c
-> @@ -616,10 +616,9 @@ static struct proc_dir_entry *__proc_create(struct proc_dir_entry **parent,
->  
->  	len = strlen(fn);
->  
-> -	ent = kmalloc(sizeof(struct proc_dir_entry) + len + 1, GFP_KERNEL);
-> +	ent = kzalloc(sizeof(struct proc_dir_entry) + len + 1, GFP_KERNEL);
->  	if (!ent) goto out;
->  
-> -	memset(ent, 0, sizeof(struct proc_dir_entry));
->  	memcpy(ent->name, fn, len + 1);
->  	ent->namelen = len;
->  	ent->mode = mode;
+pthread flag should not be -lpthread but -pthread using gcc. The -lpthread
+links the external multithread library. On the other hand, the -pthread manages
+both the gcc's preprocessor and linker to be able to compile with pthread.
 
-Note that this change results in slightly different behaviour. Before
-your change only sizeof(struct proc_dir_entry) is zero'ed by memset, and
-then the name is filled in (the len + 1 part). After your change the
-structure and the name field are both zeroed, so the name field is being
-written to twice. The cost is probably negligible though.
+Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+---
 
-~Ryan
+ tools/virtio/virtio-trace/Makefile |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
+diff --git a/tools/virtio/virtio-trace/Makefile b/tools/virtio/virtio-trace/Makefile
+index ef3adfc..0d23816 100644
+--- a/tools/virtio/virtio-trace/Makefile
++++ b/tools/virtio/virtio-trace/Makefile
+@@ -1,14 +1,13 @@
+ CC = gcc
+-CFLAGS = -O2 -Wall
+-LFLAG = -lpthread
++CFLAGS = -O2 -Wall -pthread
+ 
+ all: trace-agent
+ 
+ .c.o:
+-	$(CC) $(CFLAGS) $(LFLAG) -c $^ -o $@
++	$(CC) $(CFLAGS) -c $^ -o $@
+ 
+ trace-agent: trace-agent.o trace-agent-ctl.o trace-agent-rw.o
+-	$(CC) $(CFLAGS) $(LFLAG) -o $@ $^
++	$(CC) $(CFLAGS) -o $@ $^
+ 
+ clean:
+ 	rm -f *.o trace-agent
 
