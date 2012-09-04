@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932500Ab2IDQhZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 12:37:25 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:43138 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757135Ab2IDQhX (ORCPT
+	id S932514Ab2IDQie (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 12:38:34 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:51508 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757135Ab2IDQic (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 12:37:23 -0400
-Date: Tue, 4 Sep 2012 11:18:21 -0500
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: James Morris <jmorris@namei.org>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net, kernel-janitors@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: [PATCH] tpm: fix tpm_acpi sparse warning on different address spaces
-Message-ID: <20120904161819.GB20588@linux.vnet.ibm.com>
-References: <20120830143839.GA9589@linux.vnet.ibm.com>
- <20120830174556.GD20741@mwanda>
- <20120830192155.GA25524@linux.vnet.ibm.com>
- <20120902163030.GB1840@mwanda>
+	Tue, 4 Sep 2012 12:38:32 -0400
+Date: Tue, 4 Sep 2012 17:38:29 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: Shuah Khan <shuahkhan@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org, Josh Boyer <jwboyer@redhat.com>
+Subject: Re: [PATCH 10/11] acpi: Ignore acpi_rsdp kernel parameter in a
+ secure boot environment
+Message-ID: <20120904163829.GA23777@srcf.ucam.org>
+References: <1346774117-2277-1-git-send-email-mjg@redhat.com>
+ <1346774117-2277-11-git-send-email-mjg@redhat.com>
+ <CAKocOONvci0Otb9wDgw6he48HkCvvhh+TMrv63AwgZLtmv4_Kg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120902163030.GB1840@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12090416-4242-0000-0000-000002C73DA1
+In-Reply-To: <CAKocOONvci0Otb9wDgw6he48HkCvvhh+TMrv63AwgZLtmv4_Kg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-acpi_os_map_memory expects its return value to be in the __iomem address
-space. Tag the variable we're using as such and use memcpy_fromio to
-avoid further sparse warnings.
+On Tue, Sep 04, 2012 at 10:30:46AM -0600, Shuah Khan wrote:
+> On Tue, Sep 4, 2012 at 9:55 AM, Matthew Garrett <mjg@redhat.com> wrote:
+> > From: Josh Boyer <jwboyer@redhat.com>
+> >
+> > This option allows userspace to pass the RSDP address to the kernel.  This
+> > could potentially be used to circumvent the secure boot trust model.
+> > We ignore the setting if we don't have the CAP_SECURE_FIRMWARE capability.
+> 
+> Does this mean, acpi_rsdp is disabled on all current platforms that
+> don't support CAP_SECURE_FIRMWARE?
 
-Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
----
- drivers/char/tpm/tpm_acpi.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+No, if you're not using secure boot then you'll have 
+CAP_SECURE_FIRMWARE.
 
-diff --git a/drivers/char/tpm/tpm_acpi.c b/drivers/char/tpm/tpm_acpi.c
-index fe3fa94..56051d0 100644
---- a/drivers/char/tpm/tpm_acpi.c
-+++ b/drivers/char/tpm/tpm_acpi.c
-@@ -49,7 +49,7 @@ int read_log(struct tpm_bios_log *log)
- {
- 	struct acpi_tcpa *buff;
- 	acpi_status status;
--	struct acpi_table_header *virt;
-+	void __iomem *virt;
- 	u64 len, start;
- 
- 	if (log->bios_event_log != NULL) {
-@@ -102,7 +102,7 @@ int read_log(struct tpm_bios_log *log)
- 		return -EIO;
- 	}
- 
--	memcpy(log->bios_event_log, virt, len);
-+	memcpy_fromio(log->bios_event_log, virt, len);
- 
- 	acpi_os_unmap_memory(virt, len);
- 	return 0;
 -- 
-1.7.11.4
-
+Matthew Garrett | mjg59@srcf.ucam.org
