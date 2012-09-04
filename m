@@ -1,58 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932356Ab2IDQRz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 12:17:55 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:52033 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756926Ab2IDQRx (ORCPT
+	id S932361Ab2IDQUr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 12:20:47 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:53373 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777Ab2IDQUq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 12:17:53 -0400
-Date: Tue, 4 Sep 2012 17:17:47 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org,
-        bfields@fieldses.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v2 1/5] fat: allocate persistent inode numbers
-Message-ID: <20120904161747.GJ23464@ZenIV.linux.org.uk>
-References: <1346774264-8031-1-git-send-email-linkinjeon@gmail.com>
+	Tue, 4 Sep 2012 12:20:46 -0400
+X-Originating-IP: 108.223.40.66
+Date: Tue, 4 Sep 2012 09:20:48 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Christophe Leroy <christophe.leroy@c-s.fr>
+Cc: Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org,
+        lm-sensors@lm-sensors.org
+Subject: Re: [PATCH 2/2] hwmon/lm70: Adds support for LM71 and LM74
+Message-ID: <20120904162048.GA16877@roeck-us.net>
+References: <201209040841.q848fY60028987@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1346774264-8031-1-git-send-email-linkinjeon@gmail.com>
+In-Reply-To: <201209040841.q848fY60028987@localhost.localdomain>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 05, 2012 at 12:57:44AM +0900, Namjae Jeon wrote:
-> From: Namjae Jeon <namjae.jeon@samsung.com>
+On Tue, Sep 04, 2012 at 10:41:34AM +0200, Christophe Leroy wrote:
+> Adding support for LM74 and LM71 chips
 > 
-> All the files on a FAT partition have an on-disk directory entry.
-> The location of these entries, i_pos, is unique and is constructed by the
-> fat_make_i_pos() function.We can use this as the inode number making it
-> peristent across remounts.
+> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+> 
+Hi Christophe,
 
-> --- a/fs/fat/namei_vfat.c
-> +++ b/fs/fat/namei_vfat.c
-> @@ -954,6 +954,8 @@ static int vfat_rename(struct inode *old_dir, struct dentry *old_dentry,
->  	new_dir->i_version++;
+couple of comments below.
+
+> diff -u linux-3.5-vanilla/drivers/hwmon/Kconfig linux-3.5/drivers/hwmon/Kconfig
+> --- linux-3.5-vanilla/drivers/hwmon/Kconfig	2012-07-21 22:58:29.000000000 +0200
+> +++ linux-3.5/drivers/hwmon/Kconfig	2012-08-25 00:44:05.000000000 +0200
+> @@ -530,12 +530,12 @@
+>  	  will be called lm63.
 >  
->  	fat_detach(old_inode);
-> +	if (MSDOS_SB(sb)->options.nfs)
-> +		old_inode->i_ino = new_i_pos;
+>  config SENSORS_LM70
+> -	tristate "National Semiconductor LM70 / Texas Instruments TMP121"
+> +	tristate "National Semiconductor LM70 and compatibles"
+>  	depends on SPI_MASTER
+>  	help
+>  	  If you say yes here you get support for the National Semiconductor
+> -	  LM70 and Texas Instruments TMP121/TMP123 digital temperature
+> -	  sensor chips.
+> +	  LM70, LM71, LM74 and Texas Instruments TMP121/TMP123 digital tempera-
+> +	  ture sensor chips.
+>  
+>  	  This driver can also be built as a module.  If so, the module
+>  	  will be called lm70.
+> diff -u linux-3.5-vanilla/drivers/hwmon/lm70.c linux-3.5/drivers/hwmon/lm70.c
+> --- linux-3.5-vanilla/drivers/hwmon/lm70.c	2012-07-21 22:58:29.000000000 +0200
+> +++ linux-3.5/drivers/hwmon/lm70.c	2012-08-25 00:49:46.000000000 +0200
+> @@ -43,6 +43,8 @@
+>  
+>  #define LM70_CHIP_LM70		0	/* original NS LM70 */
+>  #define LM70_CHIP_TMP121	1	/* TI TMP121/TMP123 */
+> +#define LM70_CHIP_LM71		2	/* NS LM71 */
+> +#define LM70_CHIP_LM74		3	/* NS LM71 */
+>  
+	NS LM71 -> NS LM74
 
-Sigh...  Inode numbers are reported by fstat() in stat.st_ino.  They must
-	* remain constant from open() to close(), even if file gets
-unlinked or renamed.
-	* be equal for two simultaneously opened descriptors with the same
-st_dev *ONLY* if those descriptors refer to the same file (i.e. if writing
-through one of those would change the data read through another, etc.)
+>  struct lm70 {
+>  	struct device *hwmon_dev;
+> @@ -88,9 +90,13 @@
+>  	 * Celsius.
+>  	 * So it's equivalent to multiplying by 0.25 * 1000 = 250.
+>  	 *
+> -	 * TMP121/TMP123:
+> +	 * LM74 and TMP121/TMP123:
+>  	 * 13 bits of 2's complement data, discard LSB 3 bits,
+>  	 * resolution 0.0625 degrees celsius.
+> +	 *
+> +	 * LM71:
+> +	 * 14 bits of 2's complement data, discard LSB 2 bits,
+> +	 * resolution 0.0312 degrees celsius.
+>  	 */
+>  	switch (p_lm70->chip) {
+>  	case LM70_CHIP_LM70:
+> @@ -98,8 +104,13 @@
+>  		break;
+>  
+>  	case LM70_CHIP_TMP121:
+> +	case LM70_CHIP_LM74:
+>  		val = ((int)raw / 8) * 625 / 10;
+>  		break;
+> +
+> +	case LM70_CHIP_LM71:
+> +		val = ((int)raw / 4) * 3125 / 100;
+> +		break;
+>  	}
+>  
+>  	status = sprintf(buf, "%d\n", val); /* millidegrees Celsius */
+> @@ -123,6 +134,12 @@
+>  	case LM70_CHIP_TMP121:
+>  		ret = sprintf(buf, "tmp121\n");
+>  		break;
+> +	case LM71_CHIP_LM71:
+> +		ret = sprintf(buf, "lm71\n");
+> +		break;
+> +	case LM74_CHIP_LM74:
+> +		ret = sprintf(buf, "lm74\n");
+> +		break;
 
-And yes, the userland code does depend on those properties.  There's a damn
-good reason why we had gone for all those convolutions with separate hash,
-etc.
+Please make sure to at least compile your code ... the above doesn't compile. 
 
-inode->i_ino on a live struct inode is _never_ changed.  Period.
+>  	default:
+>  		ret = -EINVAL;
+>  	}
+> @@ -139,7 +156,7 @@
+>  	struct lm70 *p_lm70;
+>  	int status;
+>  
+> -	/* signaling is SPI_MODE_0 for both LM70 and TMP121 */
+> +	/* signaling is SPI_MODE_0 */
+>  	if (spi->mode & (SPI_CPOL | SPI_CPHA))
+>  		return -EINVAL;
+>  
+> @@ -198,6 +215,8 @@
+>  static const struct spi_device_id lm70_ids[] = {
+>  	{ "lm70",   LM70_CHIP_LM70 },
+>  	{ "tmp121", LM70_CHIP_TMP121 },
+> +	{ "lm71", LM70_CHIP_LM71 },
+> +	{ "lm74", LM70_CHIP_LM74 },
+
+Please align LM70_xxx to the first two lines.
+
+>  	{ },
+>  };
+>  MODULE_DEVICE_TABLE(spi, lm70_ids);
+> @@ -215,5 +234,5 @@
+>  module_spi_driver(lm70_driver);
+>  
+>  MODULE_AUTHOR("Kaiwan N Billimoria");
+> -MODULE_DESCRIPTION("NS LM70 / TI TMP121/TMP123 Linux driver");
+> +MODULE_DESCRIPTION("NS LM70 and compatibles Linux driver");
+>  MODULE_LICENSE("GPL");
+> diff -u linux-3.5-vanilla/Documentation/hwmon/lm70 linux-3.5/Documentation/hwmon/lm70
+> --- linux-3.5-vanilla/Documentation/hwmon/lm70	2012-07-21 22:58:29.000000000 +0200
+> +++ linux-3.5/Documentation/hwmon/lm70	2012-08-25 00:37:15.000000000 +0200
+> @@ -6,6 +6,10 @@
+>      Datasheet: http://www.national.com/pf/LM/LM70.html
+>    * Texas Instruments TMP121/TMP123
+>      Information: http://focus.ti.com/docs/prod/folders/print/tmp121.html
+> +  * National Semiconductor LM71
+> +    Datasheet: http://www.ti.com/product/LM71
+> +  * National Semiconductor LM74
+> +    Datasheet: http://www.ti.com/product/LM74
+>  
+>  Author:
+>          Kaiwan N Billimoria <kaiwan@designergraphix.com>
+> @@ -31,9 +35,12 @@
+>  with a "SPI master controller driver", see drivers/spi/spi_lm70llp.c
+>  and its associated documentation.
+>  
+> -The TMP121/TMP123 are very similar; main difference is 13-bit temperature
+> +The LM74 and TMP121/TMP123 are very similar; main difference is 13-bit temperature
+
+Please move the last word to the next line to keep the line length at 80 columns.
+
+Thanks,
+Guenter
+
+>  data (0.0625 degrees celsius resolution).
+>  
+> +The LM71 is also very similar; main difference is 14-bit temperature
+> +data (0.03125 degrees celsius resolution).
+> +
+>  Thanks to
+>  ---------
+>  Jean Delvare <khali@linux-fr.org> for mentoring the hwmon-side driver
+> 
