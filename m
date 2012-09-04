@@ -1,77 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932651Ab2IDTZR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 15:25:17 -0400
-Received: from fieldses.org ([174.143.236.118]:54060 "EHLO fieldses.org"
+	id S1757669Ab2IDT0f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 15:26:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58850 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757582Ab2IDTZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 15:25:16 -0400
-Date: Tue, 4 Sep 2012 15:25:09 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Namjae Jeon <linkinjeon@gmail.com>, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>, NeilBrown <neilb@suse.de>
-Subject: Re: [PATCH v2 4/5] fat: eliminate orphaned inode number allocation
-Message-ID: <20120904192509.GD29369@fieldses.org>
-References: <1346774312-8142-1-git-send-email-linkinjeon@gmail.com>
- <87mx15910k.fsf@devron.myhome.or.jp>
- <87fw6x90o3.fsf@devron.myhome.or.jp>
- <20120904183815.GA29369@fieldses.org>
- <87y5kp7gsq.fsf@devron.myhome.or.jp>
+	id S1757652Ab2IDT0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 15:26:31 -0400
+Date: Tue, 4 Sep 2012 15:26:19 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file.rdu.redhat.com
+To: Kent Overstreet <koverstreet@google.com>
+cc: Vivek Goyal <vgoyal@redhat.com>, linux-bcache@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dm-devel@redhat.com, tj@kernel.org,
+        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH v7 9/9] block: Avoid deadlocks with bio allocation by
+ stacking drivers
+In-Reply-To: <20120904034100.GA21602@moria.home.lan>
+Message-ID: <Pine.LNX.4.64.1209041509160.22689@file.rdu.redhat.com>
+References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
+ <1346175456-1572-10-git-send-email-koverstreet@google.com>
+ <Pine.LNX.4.64.1208291210180.774@file.rdu.redhat.com> <20120829165006.GB20312@google.com>
+ <20120829170711.GC12504@redhat.com> <20120829171345.GC20312@google.com>
+ <20120830220745.GI27257@redhat.com> <20120831014359.GB15218@moria.home.lan>
+ <Pine.LNX.4.64.1209031638110.15620@file.rdu.redhat.com>
+ <20120904034100.GA21602@moria.home.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87y5kp7gsq.fsf@devron.myhome.or.jp>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 05, 2012 at 04:02:13AM +0900, OGAWA Hirofumi wrote:
-> "J. Bruce Fields" <bfields@fieldses.org> writes:
+
+
+On Mon, 3 Sep 2012, Kent Overstreet wrote:
+
+> On Mon, Sep 03, 2012 at 04:41:37PM -0400, Mikulas Patocka wrote:
+> > ... or another possibility - start a timer when something is put to 
+> > current->bio_list and use that timer to pop entries off current->bio_list 
+> > and submit them to a workqueue. The timer can be cpu-local so only 
+> > interrupt masking is required to synchronize against the timer.
+> > 
+> > This would normally run just like the current kernel and in case of 
+> > deadlock, the timer would kick in and resolve the deadlock.
 > 
-> > On Wed, Sep 05, 2012 at 02:07:40AM +0900, OGAWA Hirofumi wrote:
-> >> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> writes:
-> >> 
-> >> > Namjae Jeon <linkinjeon@gmail.com> writes:
-> >> >
-> >> >> From: Namjae Jeon <namjae.jeon@samsung.com>
-> >> >>
-> >> >> Maintain a list of inode(i_pos) numbers of orphaned inodes (i.e the
-> >> >> inodes that have been unlinked but still having open file
-> >> >> descriptors).At file/directory creation time, skip using such i_pos
-> >> >> values.Removal of the i_pos from the list is done during inode eviction.
-> >> >
-> >> > What happens if the directory (has busy entries) was completely removed?
-> >> >
-> >> >
-> >> > And Al's point is important for NFS too. If you want stable ino for NFS,
-> >> > you never can't change it.
-> >> 
-> >> s/never can't/never can/
-> >
-> > If vfat exports aren't fixable, maybe we should just remove that
-> > feature?
-> >
-> > I'm afraid that having unfixable half-working vfat exports is just an
-> > attractive nuisance that causes users and developers to waste their
-> > time....
+> Ugh. That's a _terrible_ idea.
 > 
-> In historically, it was introduced by Neil Brown, when nfs export
-> interface was rewritten (I'm not sure what was intended).
+> Remember the old plugging code? You ever have to debug performance
+> issues caused by it?
+
+Yes, I do remember it (and I fixed one bug that resulted in missed unplug 
+and degraded performance).
+
+But currently, deadlocks due to exhausted mempools and bios being stalled 
+in current->bio_list don't happen (or do happen below so rarely that they 
+aren't reported).
+
+If we add a timer, it will turn a deadlock into an i/o delay, but it can't 
+make things any worse.
+
+BTW. can these new-style timerless plugs introduce deadlocks too? What 
+happens when some bios are indefinitely delayed because their requests are 
+held in a plug and a mempool runs out?
+
+> > > I could be convinced, but right now I prefer my solution.
+> > 
+> > It fixes bio allocation problem, but not other similar mempool problems in 
+> > dm and md.
 > 
-> Personally, I'm ok to remove it though, it is really personal
-> opinion. The state would be rather I don't have strong opinion to
-> remove.
+> I looked a bit more, and actually I think the rest of the problem is
+> pretty limited in scope - most of those mempool allocations are per
+> request, not per split.
+> 
+> I'm willing to put some time into converting dm/md over to bioset's
+> front_pad. I'm having to learn the code for the immutable biovec work,
+> anyways.
 
-Neil, any opinion?
+Currently, dm targets allocate request-specific data from target-specific 
+mempool. mempools are in dm-crypt, dm-delay, dm-mirror, dm-snapshot, 
+dm-thin, dm-verity. You can change it to allocate request-specific data 
+with the bio.
 
-If we can document circumstances under which nfs exports of fat
-filesystems are reliable, fine.
-
-Otherwise I'd rather just be clear that we don't support it.
-
---b.
+Mikulas
