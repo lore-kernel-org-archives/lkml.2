@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757877Ab2IDWHz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 18:07:55 -0400
-Received: from usindpps06.hds.com ([207.126.252.19]:43860 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757729Ab2IDWHx convert rfc822-to-8bit (ORCPT
+	id S1757903Ab2IDWIa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 18:08:30 -0400
+Received: from usindpps03.hds.com ([207.126.252.16]:59980 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757748Ab2IDWI3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 18:07:53 -0400
+	Tue, 4 Sep 2012 18:08:29 -0400
 From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Mike Waychison <mikew@google.com>,
+To: Seiji Aguchi <seiji.aguchi@hds.com>, Mike Waychison <mikew@google.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
         "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
@@ -17,13 +17,13 @@ To: Mike Waychison <mikew@google.com>,
 CC: "dle-develop@lists.sourceforge.net" 
 	<dle-develop@lists.sourceforge.net>,
         Satoru Moriya <satoru.moriya@hds.com>
-Subject: [RESEND][PATCH v4 2/3] efi_pstore: Introducing workqueue updating
- sysfs entries
-Thread-Topic: [RESEND][PATCH v4 2/3] efi_pstore: Introducing workqueue
- updating sysfs entries
-Thread-Index: Ac2K6atcVjIoMsdNR1aLpp6GDL7F0Q==
-Date: Tue, 4 Sep 2012 22:07:41 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D413826ED8@USINDEM103.corp.hds.com>
+Subject: [RESEND][PATCH v4 3/3] efi_pstore: Skiping scheduling a workqueue
+ in cases other than oops
+Thread-Topic: [RESEND][PATCH v4 3/3] efi_pstore: Skiping scheduling a
+ workqueue in cases other than oops
+Thread-Index: Ac2K6cm6vS7uelm9REqbpy5hpYmLiQ==
+Date: Tue, 4 Sep 2012 22:08:18 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D413826EEF@USINDEM103.corp.hds.com>
 Accept-Language: ja-JP, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -43,203 +43,44 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 [Problem]
-  efi_pstore creates sysfs entries ,which enable users to access to NVRAM,
-  in a write callback. If a kernel panic happens in interrupt contexts, pstore may
-  fail because it could sleep due to dynamic memory allocations during creating sysfs entries.
+ efi_pstore creates sysfs files when logging kernel messages to NVRAM.
+ Currently, the sysfs files are updated in a workqueue which is registered in a write callback.
+
+ On the other hand, situations which users need the sysfs files are when they erase entries or oops happen 
+ because a system will  be down and users can't access to sysfs files in other cases like panic, reboot or emergency_restart.
+
+ Also, if kernel panics due to a bug of workqueue operations and a write callback of efi_pstore is called in
+ panic case, efi_pstore may fail due to a failure of schedule_work(). 
+ And panic_notifier_chain()/emergency_restart() is not kicked if efi_pstore fails.  
+   This may cause user's unwanted result.
 
 [Patch Description]
- This patch removes sysfs operations from write callback by introducing a workqueue
- updating sysfs entries which is kicked after a write callback of efi_pstore is called.
- efi_pstore will be robust against a kernel panic in an interrupt context with it.
- The workqueue works as follows.
-
- - A timer is registered during an initialization of efivars module.
- - A flag, update_sysfs_entries, is checked periodically with the timer.
- - The flag is set in a write callback, efi_pstore_write().
- - Operation updating sysfs entries is kicked if the flag is set.
-
- Any operations ,like registering a timer, are not added in a write callback because it may run
- in panic case and fail due to operations related to workqueue.
-
- To make efi_pstore work in panic case, a write callback should just log to NVRAM.
+ This patch registers a workqueue updating sysfs entries in cases where users erase entries or oops happen only,
+ and skips it in other cases like panic, reboot or emergency_start.
 
 Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+
 ---
- drivers/firmware/efivars.c |  119 +++++++++++++++++++++++++++++++++++++++----
- include/linux/efi.h        |    3 +-
- 2 files changed, 110 insertions(+), 12 deletions(-)
+ drivers/firmware/efivars.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index bd1df01..cd16ea6 100644
+index cd16ea6..d5911fd 100644
 --- a/drivers/firmware/efivars.c
 +++ b/drivers/firmware/efivars.c
-@@ -146,6 +146,13 @@ efivar_create_sysfs_entry(struct efivars *efivars,
- 			  efi_char16_t *variable_name,
- 			  efi_guid_t *vendor_guid);
- 
-+/*
-+ * Prototype for workqueue functions updating sysfs entry
-+ */
-+
-+static void efivar_update_sysfs_entry(struct work_struct *);
-+static DECLARE_WORK(efivar_work, efivar_update_sysfs_entry);
-+
- /* Return the number of unicode characters in data */
- static unsigned long
- utf16_strnlen(efi_char16_t *s, size_t maxlength)
-@@ -731,9 +738,6 @@ static int efi_pstore_write(enum pstore_type_id type,
- 					   0, NULL);
- 	}
- 
--	if (found)
--		list_del(&found->list);
--
- 	for (i = 0; i < DUMP_NAME_LEN; i++)
- 		efi_name[i] = name[i];
- 
-@@ -742,14 +746,7 @@ static int efi_pstore_write(enum pstore_type_id type,
+@@ -746,7 +746,12 @@ static int efi_pstore_write(enum pstore_type_id type,
  
  	spin_unlock_irqrestore(&efivars->lock, flags);
  
--	if (found)
--		efivar_unregister(found);
--
--	if (size)
--		ret = efivar_create_sysfs_entry(efivars,
--					  utf16_strsize(efi_name,
--							DUMP_NAME_LEN * 2),
--					  efi_name, &vendor);
-+	schedule_work(&efivar_work);
+-	schedule_work(&efivar_work);
++	/*
++	 * The user may want to update sysfs for this write
++	 * when they erase an entry via /dev/pstore or oops happen.
++	 */
++	if (!size || reason == KMSG_DUMP_OOPS)
++		schedule_work(&efivar_work);
  
  	*id = part;
  	return ret;
-@@ -1200,6 +1197,104 @@ EXPORT_SYMBOL_GPL(register_efivars);
- static struct efivars __efivars;
- static struct efivar_operations ops;
- 
-+static void delete_all_stale_sysfs_entries(void)
-+{
-+	struct efivars *efivars = &__efivars;
-+	struct efivar_entry *entry, *n, *found;
-+	efi_status_t status;
-+	unsigned long flags;
-+
-+	while (1) {
-+		found = NULL;
-+		spin_lock_irqsave(&efivars->lock, flags);
-+		list_for_each_entry_safe(entry, n, &efivars->list, list) {
-+			status = get_var_data_locked(efivars, &entry->var);
-+			if (status != EFI_SUCCESS) {
-+				found = entry;
-+				list_del(&entry->list);
-+				break;
-+			}
-+		}
-+		spin_unlock_irqrestore(&efivars->lock, flags);
-+		if (found)
-+			efivar_unregister(entry);
-+		else
-+			break;
-+	}
-+}
-+
-+static bool variable_is_present(efi_char16_t *variable_name, efi_guid_t *vendor)
-+{
-+	struct efivar_entry *entry, *n;
-+	struct efivars *efivars = &__efivars;
-+	unsigned long strsize1, strsize2;
-+	bool found = false;
-+
-+	strsize1 = utf16_strsize(variable_name, 1024);
-+	list_for_each_entry_safe(entry, n, &efivars->list, list) {
-+		strsize2 = utf16_strsize(entry->var.VariableName, 1024);
-+		if (strsize1 == strsize2 &&
-+			!memcmp(variable_name, &(entry->var.VariableName),
-+				strsize2) &&
-+			!efi_guidcmp(entry->var.VendorGuid,
-+				*vendor)) {
-+			found = true;
-+			break;
-+		}
-+	}
-+	return found;
-+}
-+
-+static void efivar_update_sysfs_entry(struct work_struct *work)
-+{
-+	struct efivars *efivars = &__efivars;
-+	efi_guid_t vendor;
-+	efi_char16_t *variable_name;
-+	unsigned long variable_name_size = 1024, flags;
-+	efi_status_t status = EFI_NOT_FOUND;
-+	bool found;
-+
-+	/* Delete stale sysfs entries */
-+	delete_all_stale_sysfs_entries();
-+
-+	/* Add new sysfs entries */
-+	while (1) {
-+		variable_name = kzalloc(variable_name_size, GFP_KERNEL);
-+		if (!variable_name) {
-+			pr_err("efivars: Memory allocation failed.\n");
-+			return;
-+		}
-+
-+		spin_lock_irqsave(&efivars->lock, flags);
-+		found = false;
-+		while (1) {
-+			variable_name_size = 1024;
-+			status = efivars->ops->get_next_variable(
-+							&variable_name_size,
-+							variable_name,
-+							&vendor);
-+			if (status != EFI_SUCCESS) {
-+				break;
-+			} else {
-+				if (!variable_is_present(variable_name,
-+				    &vendor)) {
-+					found = true;
-+					break;
-+				}
-+			}
-+		}
-+		spin_unlock_irqrestore(&efivars->lock, flags);
-+
-+		if (!found) {
-+			kfree(variable_name);
-+			break;
-+		} else
-+			efivar_create_sysfs_entry(efivars,
-+						  variable_name_size,
-+						  variable_name, &vendor);
-+	}
-+}
-+
- /*
-  * For now we register the efi subsystem with the firmware subsystem
-  * and the vars subsystem with the efi subsystem.  In the future, it
-@@ -1254,6 +1349,8 @@ err_put:
- static void __exit
- efivars_exit(void)
- {
-+	cancel_work_sync(&efivar_work);
-+
- 	if (efi_enabled) {
- 		unregister_efivars(&__efivars);
- 		kobject_put(efi_kobj);
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index ec45ccd..8e03cc0 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -643,7 +643,8 @@ struct efivars {
- 	 * 1) ->list - adds, removals, reads, writes
- 	 * 2) ops.[gs]et_variable() calls.
- 	 * It must not be held when creating sysfs entries or calling kmalloc.
--	 * ops.get_next_variable() is only called from register_efivars(),
-+	 * ops.get_next_variable() is only called from register_efivars()
-+	 * or efivar_update_sysfs_entry(),
- 	 * which is protected by the BKL, so that path is safe.
- 	 */
- 	spinlock_t lock;
 -- 
 1.7.1
