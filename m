@@ -1,114 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932585Ab2IDTAm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 15:00:42 -0400
-Received: from fieldses.org ([174.143.236.118]:36274 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757486Ab2IDTAl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 15:00:41 -0400
-Date: Tue, 4 Sep 2012 15:00:07 -0400
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
-        "bfields@redhat.com" <bfields@redhat.com>,
-        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "gorcunov@openvz.org" <gorcunov@openvz.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "tim.c.chen@linux.intel.com" <tim.c.chen@linux.intel.com>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [RFC PATCH 0/5] net: socket bind to file descriptor introduced
-Message-ID: <20120904190007.GB29369@fieldses.org>
-References: <20120815161141.7598.16682.stgit@localhost.localdomain>
- <87y5lf7d37.fsf@xmission.com>
- <50320EE5.10307@parallels.com>
+	id S932615Ab2IDTBT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 15:01:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57451 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757530Ab2IDTBS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 15:01:18 -0400
+Date: Tue, 4 Sep 2012 12:01:19 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, bharrosh@panasas.com,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH v7 9/9] block: Avoid deadlocks with bio allocation by
+ stacking drivers
+Message-ID: <20120904190119.GD3638@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <1346175456-1572-10-git-send-email-koverstreet@google.com>
+ <Pine.LNX.4.64.1208291210180.774@file.rdu.redhat.com>
+ <20120829165006.GB20312@google.com>
+ <20120829170711.GC12504@redhat.com>
+ <20120829171345.GC20312@google.com>
+ <20120830220745.GI27257@redhat.com>
+ <20120831014359.GB15218@moria.home.lan>
+ <Pine.LNX.4.64.1209031638110.15620@file.rdu.redhat.com>
+ <20120904034100.GA21602@moria.home.lan>
+ <20120904185540.GC3638@dhcp-172-17-108-109.mtv.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <50320EE5.10307@parallels.com>
+In-Reply-To: <20120904185540.GC3638@dhcp-172-17-108-109.mtv.corp.google.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 20, 2012 at 02:18:13PM +0400, Stanislav Kinsbursky wrote:
-> 16.08.2012 07:03, Eric W. Biederman пишет:
-> >Stanislav Kinsbursky <skinsbursky@parallels.com> writes:
-> >
-> >>This patch set introduces new socket operation and new system call:
-> >>sys_fbind(), which allows to bind socket to opened file.
-> >>File to bind to can be created by sys_mknod(S_IFSOCK) and opened by
-> >>open(O_PATH).
-> >>
-> >>This system call is especially required for UNIX sockets, which has name
-> >>lenght limitation.
-> >>
-> >>The following series implements...
-> >
-> >Hmm.  I just realized this patchset is even sillier than I thought.
-> >
-> >Stanislav is the problem you are ultimately trying to solve nfs clients
-> >in a container connecting to the wrong user space rpciod?
-> >
-> 
-> Hi, Eric.
-> The problem you mentioned was the reason why I started to think about this.
-> But currently I believe, that limitations in unix sockets connect or
-> bind should be removed, because it will be useful it least for CRIU
-> project.
-> 
-> >Aka net/sunrpc/xprtsock.c:xs_setup_local only taking an absolute path
-> >and then creating a delayed work item to actually open the unix domain
-> >socket?
-> >
-> >The straight correct and straight forward thing to do appears to be:
-> >- Capture the root from current->fs in xs_setup_local.
-> >- In xs_local_finish_connect change current->fs.root to the captured
-> >   version of root before kernel_connect, and restore current->fs.root
-> >   after kernel_connect.
-> >
-> >It might not be a bad idea to implement open on unix domain sockets in
-> >a filesystem as create(AF_LOCAL)+connect() which would allow you to
-> >replace __sock_create + kernel_connect with a simple file_open_root.
-> >
-> 
-> I like the idea of introducing new family (AF_LOCAL_AT for example)
-> and new sockaddr for connecting or binding from specified root. The
-> only thing I'm worrying is passing file descriptor to unix bind or
-> connect routine. Because this approach doesn't provide easy way to
-> use such family and sockaddr in kernel (like in NFS example).
-> 
-> >But I think the simple scheme of:
-> >struct path old_root;
-> >old_root = current->fs.root;
-> >kernel_connect(...);
-> >current->fs.root = old_root;
-> >
-> >Is more than sufficient and will remove the need for anything
-> >except a purely local change to get nfs clients to connect from
-> >containers.
-> >
-> 
-> That was my first idea.
+On Tue, Sep 04, 2012 at 11:55:40AM -0700, Tejun Heo wrote:
+> Actually, if the timer approach can reduce the frequency of rescuer
+> involvement, I think it could actually be better.
 
-So is this what you're planning on doing now?
+Ooh, it wouldn't.  It's kicking in only after alloc failure.  I don't
+know.  I think conditioning it on alloc failure is cleaner and
+converting all per-bio allocations to front-pad makes sense.  Using a
+timer wouldn't make the mechanism any simpler, right?
 
-> And probably it would be worth to change all
-> fs_struct to support sockets with relative path.
-> What do you think about it?
+Thanks.
 
-I didn't understand the question.  Are you suggesting that changes to
-fs_struct would be required to make this work?  I don't see why.
-
---b.
+-- 
+tejun
