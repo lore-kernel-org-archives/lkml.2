@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756744Ab2IDJWl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 05:22:41 -0400
+	id S1756748Ab2IDJW6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 05:22:58 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:51068 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752722Ab2IDJVP (ORCPT
+	with ESMTP id S1756529Ab2IDJVM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 05:21:15 -0400
+	Tue, 4 Sep 2012 05:21:12 -0400
 From: Michel Lespinasse <walken@google.com>
 To: linux-mm@kvack.org, riel@redhat.com, peterz@infradead.org,
         aarcange@redhat.com, hughd@google.com, daniel.santos@pobox.com
 Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Subject: [PATCH 3/7] mm anon rmap: remove anon_vma_moveto_tail
-Date: Tue,  4 Sep 2012 02:20:53 -0700
-Message-Id: <1346750457-12385-4-git-send-email-walken@google.com>
+Subject: [PATCH 1/7] mm: interval tree updates
+Date: Tue,  4 Sep 2012 02:20:51 -0700
+Message-Id: <1346750457-12385-2-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1346750457-12385-1-git-send-email-walken@google.com>
 References: <1346750457-12385-1-git-send-email-walken@google.com>
@@ -21,154 +21,607 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mremap() had a clever optimization where move_ptes() did not take the
-anon_vma lock to avoid a race with anon rmap users such as page migration.
-Instead, the avc's were ordered in such a way that the origin vma was
-always visited by rmap before the destination. This ordering and the use
-of page table locks rmap usage safe. However, we want to replace the
-use of linked lists in anon rmap with an interval tree, and this will
-make it harder to impose such ordering as the interval tree will always
-be sorted by the avc->vma->vm_pgoff value. For now, let's replace the
-anon_vma_moveto_tail() ordering function with proper anon_vma locking
-in move_ptes(). Once we have the anon interval tree in place, we will
-re-introduce an optimization to avoid taking these locks in the most
-common cases.
+This commit updates the generic interval tree code that was
+introduced in "mm: replace vma prio_tree with an interval tree".
+
+Changes:
+
+- fixed 'endpoing' typo noticed by Andrew Morton
+
+- replaced include/linux/interval_tree_tmpl.h, which was used as a
+  template (including it automatically defined the interval tree
+  functions) with include/linux/interval_tree_generic.h, which only
+  defines a preprocessor macro INTERVAL_TREE_DEFINE(), which itself
+  defines the interval tree functions when invoked. Now that is a very
+  long macro which is unfortunate, but it does make the usage sites
+  (lib/interval_tree.c and mm/interval_tree.c) a bit nicer than previously.
+
+- make use of RB_DECLARE_CALLBACKS() in the INTERVAL_TREE_DEFINE() macro,
+  instead of duplicating that code in the interval tree template.
+
+- replaced vma_interval_tree_add(), which was actually handling the
+  nonlinear and interval tree cases, with vma_interval_tree_insert_after()
+  which handles only the interval tree case and has an API that is more
+  consistent with the other interval tree handling functions.
+  The nonlinear case is now handled explicitly in kernel/fork.c dup_mmap().
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
 ---
- include/linux/rmap.h |    1 -
- mm/mmap.c            |    3 +--
- mm/mremap.c          |   14 +++++---------
- mm/rmap.c            |   45 ---------------------------------------------
- 4 files changed, 6 insertions(+), 57 deletions(-)
+ include/linux/interval_tree_generic.h |  191 ++++++++++++++++++++++++++++
+ include/linux/interval_tree_tmpl.h    |  219 ---------------------------------
+ include/linux/mm.h                    |    6 +-
+ kernel/fork.c                         |    7 +-
+ lib/interval_tree.c                   |   15 +--
+ mm/interval_tree.c                    |   60 +++++-----
+ 6 files changed, 235 insertions(+), 263 deletions(-)
+ create mode 100644 include/linux/interval_tree_generic.h
+ delete mode 100644 include/linux/interval_tree_tmpl.h
 
-diff --git a/include/linux/rmap.h b/include/linux/rmap.h
-index 3fce545df394..7f32cec57e67 100644
---- a/include/linux/rmap.h
-+++ b/include/linux/rmap.h
-@@ -120,7 +120,6 @@ void anon_vma_init(void);	/* create anon_vma_cachep */
- int  anon_vma_prepare(struct vm_area_struct *);
- void unlink_anon_vmas(struct vm_area_struct *);
- int anon_vma_clone(struct vm_area_struct *, struct vm_area_struct *);
--void anon_vma_moveto_tail(struct vm_area_struct *);
- int anon_vma_fork(struct vm_area_struct *, struct vm_area_struct *);
- 
- static inline void anon_vma_merge(struct vm_area_struct *vma,
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 5e64c7dfc090..ea647255d763 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -2397,8 +2397,7 @@ struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
- 			 */
- 			VM_BUG_ON(faulted_in_anon_vma);
- 			*vmap = new_vma;
--		} else
--			anon_vma_moveto_tail(new_vma);
-+		}
- 	} else {
- 		new_vma = kmem_cache_alloc(vm_area_cachep, GFP_KERNEL);
- 		if (new_vma) {
-diff --git a/mm/mremap.c b/mm/mremap.c
-index 21fed202ddad..95fb2e024ced 100644
---- a/mm/mremap.c
-+++ b/mm/mremap.c
-@@ -74,6 +74,7 @@ static void move_ptes(struct vm_area_struct *vma, pmd_t *old_pmd,
- 		unsigned long new_addr)
- {
- 	struct address_space *mapping = NULL;
-+	struct anon_vma *anon_vma = vma->anon_vma;
- 	struct mm_struct *mm = vma->vm_mm;
- 	pte_t *old_pte, *new_pte, pte;
- 	spinlock_t *old_ptl, *new_ptl;
-@@ -88,6 +89,8 @@ static void move_ptes(struct vm_area_struct *vma, pmd_t *old_pmd,
- 		mapping = vma->vm_file->f_mapping;
- 		mutex_lock(&mapping->i_mmap_mutex);
- 	}
-+	if (anon_vma)
-+		anon_vma_lock(anon_vma);
- 
- 	/*
- 	 * We don't have to worry about the ordering of src and dst
-@@ -114,6 +117,8 @@ static void move_ptes(struct vm_area_struct *vma, pmd_t *old_pmd,
- 		spin_unlock(new_ptl);
- 	pte_unmap(new_pte - 1);
- 	pte_unmap_unlock(old_pte - 1, old_ptl);
-+	if (anon_vma)
-+		anon_vma_unlock(anon_vma);
- 	if (mapping)
- 		mutex_unlock(&mapping->i_mmap_mutex);
- }
-@@ -221,15 +226,6 @@ static unsigned long move_vma(struct vm_area_struct *vma,
- 	moved_len = move_page_tables(vma, old_addr, new_vma, new_addr, old_len);
- 	if (moved_len < old_len) {
- 		/*
--		 * Before moving the page tables from the new vma to
--		 * the old vma, we need to be sure the old vma is
--		 * queued after new vma in the same_anon_vma list to
--		 * prevent SMP races with rmap_walk (that could lead
--		 * rmap_walk to miss some page table).
--		 */
--		anon_vma_moveto_tail(vma);
+diff --git a/include/linux/interval_tree_generic.h b/include/linux/interval_tree_generic.h
+new file mode 100644
+index 000000000000..58370e1862ad
+--- /dev/null
++++ b/include/linux/interval_tree_generic.h
+@@ -0,0 +1,191 @@
++/*
++  Interval Trees
++  (C) 2012  Michel Lespinasse <walken@google.com>
++
++  This program is free software; you can redistribute it and/or modify
++  it under the terms of the GNU General Public License as published by
++  the Free Software Foundation; either version 2 of the License, or
++  (at your option) any later version.
++
++  This program is distributed in the hope that it will be useful,
++  but WITHOUT ANY WARRANTY; without even the implied warranty of
++  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++  GNU General Public License for more details.
++
++  You should have received a copy of the GNU General Public License
++  along with this program; if not, write to the Free Software
++  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++
++  include/linux/interval_tree_generic.h
++*/
++
++#include <linux/rbtree_augmented.h>
++
++/*
++ * Template for implementing interval trees
++ *
++ * ITSTRUCT:   struct type of the interval tree nodes
++ * ITRB:       name of struct rb_node field within ITSTRUCT
++ * ITTYPE:     type of the interval endpoints
++ * ITSUBTREE:  name of ITTYPE field within ITSTRUCT holding last-in-subtree
++ * ITSTART(n): start endpoint of ITSTRUCT node n
++ * ITLAST(n):  last endpoint of ITSTRUCT node n
++ * ITSTATIC:   'static' or empty
++ * ITPREFIX:   prefix to use for the inline tree definitions
++ *
++ * Note - before using this, please consider if non-generic version
++ * (interval_tree.h) would work for you...
++ */
++
++#define INTERVAL_TREE_DEFINE(ITSTRUCT, ITRB, ITTYPE, ITSUBTREE,		      \
++			     ITSTART, ITLAST, ITSTATIC, ITPREFIX)	      \
++									      \
++/* Callbacks for augmented rbtree insert and remove */			      \
++									      \
++static inline ITTYPE ITPREFIX ## _compute_subtree_last(ITSTRUCT *node)	      \
++{									      \
++	ITTYPE max = ITLAST(node), subtree_last;			      \
++	if (node->ITRB.rb_left) {					      \
++		subtree_last = rb_entry(node->ITRB.rb_left,		      \
++					ITSTRUCT, ITRB)->ITSUBTREE;	      \
++		if (max < subtree_last)					      \
++			max = subtree_last;				      \
++	}								      \
++	if (node->ITRB.rb_right) {					      \
++		subtree_last = rb_entry(node->ITRB.rb_right,		      \
++					ITSTRUCT, ITRB)->ITSUBTREE;	      \
++		if (max < subtree_last)					      \
++			max = subtree_last;				      \
++	}								      \
++	return max;							      \
++}									      \
++									      \
++RB_DECLARE_CALLBACKS(static, ITPREFIX ## _augment, ITSTRUCT, ITRB,	      \
++		     ITTYPE, ITSUBTREE, ITPREFIX ## _compute_subtree_last)    \
++									      \
++/* Insert / remove interval nodes from the tree */			      \
++									      \
++ITSTATIC void ITPREFIX ## _insert(ITSTRUCT *node, struct rb_root *root)	      \
++{									      \
++	struct rb_node **link = &root->rb_node, *rb_parent = NULL;	      \
++	ITTYPE start = ITSTART(node), last = ITLAST(node);		      \
++	ITSTRUCT *parent;						      \
++									      \
++	while (*link) {							      \
++		rb_parent = *link;					      \
++		parent = rb_entry(rb_parent, ITSTRUCT, ITRB);		      \
++		if (parent->ITSUBTREE < last)				      \
++			parent->ITSUBTREE = last;			      \
++		if (start < ITSTART(parent))				      \
++			link = &parent->ITRB.rb_left;			      \
++		else							      \
++			link = &parent->ITRB.rb_right;			      \
++	}								      \
++									      \
++	node->ITSUBTREE = last;						      \
++	rb_link_node(&node->ITRB, rb_parent, link);			      \
++	rb_insert_augmented(&node->ITRB, root, &ITPREFIX ## _augment);	      \
++}									      \
++									      \
++ITSTATIC void ITPREFIX ## _remove(ITSTRUCT *node, struct rb_root *root)	      \
++{									      \
++	rb_erase_augmented(&node->ITRB, root, &ITPREFIX ## _augment);	      \
++}									      \
++									      \
++/*									      \
++ * Iterate over intervals intersecting [start;last]			      \
++ *									      \
++ * Note that a node's interval intersects [start;last] iff:		      \
++ *   Cond1: ITSTART(node) <= last					      \
++ * and									      \
++ *   Cond2: start <= ITLAST(node)					      \
++ */									      \
++									      \
++static ITSTRUCT *							      \
++ITPREFIX ## _subtree_search(ITSTRUCT *node, ITTYPE start, ITTYPE last)	      \
++{									      \
++	while (true) {							      \
++		/*							      \
++		 * Loop invariant: start <= node->ITSUBTREE		      \
++		 * (Cond2 is satisfied by one of the subtree nodes)	      \
++		 */							      \
++		if (node->ITRB.rb_left) {				      \
++			ITSTRUCT *left = rb_entry(node->ITRB.rb_left,	      \
++						  ITSTRUCT, ITRB);	      \
++			if (start <= left->ITSUBTREE) {			      \
++				/*					      \
++				 * Some nodes in left subtree satisfy Cond2.  \
++				 * Iterate to find the leftmost such node N.  \
++				 * If it also satisfies Cond1, that's the     \
++				 * match we are looking for. Otherwise, there \
++				 * is no matching interval as nodes to the    \
++				 * right of N can't satisfy Cond1 either.     \
++				 */					      \
++				node = left;				      \
++				continue;				      \
++			}						      \
++		}							      \
++		if (ITSTART(node) <= last) {		/* Cond1 */	      \
++			if (start <= ITLAST(node))	/* Cond2 */	      \
++				return node;	/* node is leftmost match */  \
++			if (node->ITRB.rb_right) {			      \
++				node = rb_entry(node->ITRB.rb_right,	      \
++						ITSTRUCT, ITRB);	      \
++				if (start <= node->ITSUBTREE)		      \
++					continue;			      \
++			}						      \
++		}							      \
++		return NULL;	/* No match */				      \
++	}								      \
++}									      \
++									      \
++ITSTATIC ITSTRUCT *							      \
++ITPREFIX ## _iter_first(struct rb_root *root, ITTYPE start, ITTYPE last)      \
++{									      \
++	ITSTRUCT *node;							      \
++									      \
++	if (!root->rb_node)						      \
++		return NULL;						      \
++	node = rb_entry(root->rb_node, ITSTRUCT, ITRB);			      \
++	if (node->ITSUBTREE < start)					      \
++		return NULL;						      \
++	return ITPREFIX ## _subtree_search(node, start, last);		      \
++}									      \
++									      \
++ITSTATIC ITSTRUCT *							      \
++ITPREFIX ## _iter_next(ITSTRUCT *node, ITTYPE start, ITTYPE last)	      \
++{									      \
++	struct rb_node *rb = node->ITRB.rb_right, *prev;		      \
++									      \
++	while (true) {							      \
++		/*							      \
++		 * Loop invariants:					      \
++		 *   Cond1: ITSTART(node) <= last			      \
++		 *   rb == node->ITRB.rb_right				      \
++		 *							      \
++		 * First, search right subtree if suitable		      \
++		 */							      \
++		if (rb) {						      \
++			ITSTRUCT *right = rb_entry(rb, ITSTRUCT, ITRB);	      \
++			if (start <= right->ITSUBTREE)			      \
++				return ITPREFIX ## _subtree_search(right,     \
++								start, last); \
++		}							      \
++									      \
++		/* Move up the tree until we come from a node's left child */ \
++		do {							      \
++			rb = rb_parent(&node->ITRB);			      \
++			if (!rb)					      \
++				return NULL;				      \
++			prev = &node->ITRB;				      \
++			node = rb_entry(rb, ITSTRUCT, ITRB);		      \
++			rb = node->ITRB.rb_right;			      \
++		} while (prev == rb);					      \
++									      \
++		/* Check if the node intersects [start;last] */		      \
++		if (last < ITSTART(node))		/* !Cond1 */	      \
++			return NULL;					      \
++		else if (start <= ITLAST(node))		/* Cond2 */	      \
++			return node;					      \
++	}								      \
++}
+diff --git a/include/linux/interval_tree_tmpl.h b/include/linux/interval_tree_tmpl.h
+deleted file mode 100644
+index c1aeb922d65f..000000000000
+--- a/include/linux/interval_tree_tmpl.h
++++ /dev/null
+@@ -1,219 +0,0 @@
+-/*
+-  Interval Trees
+-  (C) 2012  Michel Lespinasse <walken@google.com>
 -
--		/*
- 		 * On error, move entries back from new area to old,
- 		 * which will succeed since page tables still there,
- 		 * and then proceed to unmap new area instead of old.
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 7b5b51d25fc5..8cbd62fde0f1 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -269,51 +269,6 @@ int anon_vma_clone(struct vm_area_struct *dst, struct vm_area_struct *src)
- }
- 
- /*
-- * Some rmap walk that needs to find all ptes/hugepmds without false
-- * negatives (like migrate and split_huge_page) running concurrent
-- * with operations that copy or move pagetables (like mremap() and
-- * fork()) to be safe. They depend on the anon_vma "same_anon_vma"
-- * list to be in a certain order: the dst_vma must be placed after the
-- * src_vma in the list. This is always guaranteed by fork() but
-- * mremap() needs to call this function to enforce it in case the
-- * dst_vma isn't newly allocated and chained with the anon_vma_clone()
-- * function but just an extension of a pre-existing vma through
-- * vma_merge.
+-  This program is free software; you can redistribute it and/or modify
+-  it under the terms of the GNU General Public License as published by
+-  the Free Software Foundation; either version 2 of the License, or
+-  (at your option) any later version.
+-
+-  This program is distributed in the hope that it will be useful,
+-  but WITHOUT ANY WARRANTY; without even the implied warranty of
+-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-  GNU General Public License for more details.
+-
+-  You should have received a copy of the GNU General Public License
+-  along with this program; if not, write to the Free Software
+-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+-
+-  include/linux/interval_tree_tmpl.h
+-*/
+-
+-#include <linux/rbtree_augmented.h>
+-
+-/*
+- * Template for implementing interval trees
 - *
-- * NOTE: the same_anon_vma list can still be changed by other
-- * processes while mremap runs because mremap doesn't hold the
-- * anon_vma mutex to prevent modifications to the list while it
-- * runs. All we need to enforce is that the relative order of this
-- * process vmas isn't changing (we don't care about other vmas
-- * order). Each vma corresponds to an anon_vma_chain structure so
-- * there's no risk that other processes calling anon_vma_moveto_tail()
-- * and changing the same_anon_vma list under mremap() will screw with
-- * the relative order of this process vmas in the list, because we
-- * they can't alter the order of any vma that belongs to this
-- * process. And there can't be another anon_vma_moveto_tail() running
-- * concurrently with mremap() coming from this process because we hold
-- * the mmap_sem for the whole mremap(). fork() ordering dependency
-- * also shouldn't be affected because fork() only cares that the
-- * parent vmas are placed in the list before the child vmas and
-- * anon_vma_moveto_tail() won't reorder vmas from either the fork()
-- * parent or child.
+- * ITSTRUCT:   struct type of the interval tree nodes
+- * ITRB:       name of struct rb_node field within ITSTRUCT
+- * ITTYPE:     type of the interval endpoints
+- * ITSUBTREE:  name of ITTYPE field within ITSTRUCT holding last-in-subtree
+- * ITSTART(n): start endpoint of ITSTRUCT node n
+- * ITLAST(n):  last endpoing of ITSTRUCT node n
+- * ITSTATIC:   'static' or empty
+- * ITPREFIX:   prefix to use for the inline tree definitions
 - */
--void anon_vma_moveto_tail(struct vm_area_struct *dst)
--{
--	struct anon_vma_chain *pavc;
--	struct anon_vma *root = NULL;
 -
--	list_for_each_entry_reverse(pavc, &dst->anon_vma_chain, same_vma) {
--		struct anon_vma *anon_vma = pavc->anon_vma;
--		VM_BUG_ON(pavc->vma != dst);
--		root = lock_anon_vma_root(root, anon_vma);
--		list_del(&pavc->same_anon_vma);
--		list_add_tail(&pavc->same_anon_vma, &anon_vma->head);
+-/* IT(name) -> ITPREFIX_name */
+-#define _ITNAME(prefix, name) prefix ## _ ## name
+-#define ITNAME(prefix, name) _ITNAME(prefix, name)
+-#define IT(name) ITNAME(ITPREFIX, name)
+-
+-/* Callbacks for augmented rbtree insert and remove */
+-
+-static inline ITTYPE IT(compute_subtree_last)(ITSTRUCT *node)
+-{
+-	ITTYPE max = ITLAST(node), subtree_last;
+-	if (node->ITRB.rb_left) {
+-		subtree_last = rb_entry(node->ITRB.rb_left,
+-					ITSTRUCT, ITRB)->ITSUBTREE;
+-		if (max < subtree_last)
+-			max = subtree_last;
 -	}
--	unlock_anon_vma_root(root);
+-	if (node->ITRB.rb_right) {
+-		subtree_last = rb_entry(node->ITRB.rb_right,
+-					ITSTRUCT, ITRB)->ITSUBTREE;
+-		if (max < subtree_last)
+-			max = subtree_last;
+-	}
+-	return max;
+-}
+-
+-static inline void
+-IT(augment_propagate)(struct rb_node *rb, struct rb_node *stop)
+-{
+-	while (rb != stop) {
+-		ITSTRUCT *node = rb_entry(rb, ITSTRUCT, ITRB);
+-		ITTYPE subtree_last = IT(compute_subtree_last)(node);
+-		if (node->ITSUBTREE == subtree_last)
+-			break;
+-		node->ITSUBTREE = subtree_last;
+-		rb = rb_parent(&node->ITRB);
+-	}
+-}
+-
+-static inline void
+-IT(augment_copy)(struct rb_node *rb_old, struct rb_node *rb_new)
+-{
+-	ITSTRUCT *old = rb_entry(rb_old, ITSTRUCT, ITRB);
+-	ITSTRUCT *new = rb_entry(rb_new, ITSTRUCT, ITRB);
+-
+-	new->ITSUBTREE = old->ITSUBTREE;
+-}
+-
+-static void IT(augment_rotate)(struct rb_node *rb_old, struct rb_node *rb_new)
+-{
+-	ITSTRUCT *old = rb_entry(rb_old, ITSTRUCT, ITRB);
+-	ITSTRUCT *new = rb_entry(rb_new, ITSTRUCT, ITRB);
+-
+-	new->ITSUBTREE = old->ITSUBTREE;
+-	old->ITSUBTREE = IT(compute_subtree_last)(old);
+-}
+-
+-static const struct rb_augment_callbacks IT(augment_callbacks) = {
+-	IT(augment_propagate), IT(augment_copy), IT(augment_rotate)
+-};
+-
+-/* Insert / remove interval nodes from the tree */
+-
+-ITSTATIC void IT(insert)(ITSTRUCT *node, struct rb_root *root)
+-{
+-	struct rb_node **link = &root->rb_node, *rb_parent = NULL;
+-	ITTYPE start = ITSTART(node), last = ITLAST(node);
+-	ITSTRUCT *parent;
+-
+-	while (*link) {
+-		rb_parent = *link;
+-		parent = rb_entry(rb_parent, ITSTRUCT, ITRB);
+-		if (parent->ITSUBTREE < last)
+-			parent->ITSUBTREE = last;
+-		if (start < ITSTART(parent))
+-			link = &parent->ITRB.rb_left;
+-		else
+-			link = &parent->ITRB.rb_right;
+-	}
+-
+-	node->ITSUBTREE = last;
+-	rb_link_node(&node->ITRB, rb_parent, link);
+-	rb_insert_augmented(&node->ITRB, root, &IT(augment_callbacks));
+-}
+-
+-ITSTATIC void IT(remove)(ITSTRUCT *node, struct rb_root *root)
+-{
+-	rb_erase_augmented(&node->ITRB, root, &IT(augment_callbacks));
 -}
 -
 -/*
-  * Attach vma to its own anon_vma, as well as to the anon_vmas that
-  * the corresponding VMA in the parent process is attached to.
-  * Returns 0 on success, non-zero on failure.
+- * Iterate over intervals intersecting [start;last]
+- *
+- * Note that a node's interval intersects [start;last] iff:
+- *   Cond1: ITSTART(node) <= last
+- * and
+- *   Cond2: start <= ITLAST(node)
+- */
+-
+-static ITSTRUCT *IT(subtree_search)(ITSTRUCT *node, ITTYPE start, ITTYPE last)
+-{
+-	while (true) {
+-		/*
+-		 * Loop invariant: start <= node->ITSUBTREE
+-		 * (Cond2 is satisfied by one of the subtree nodes)
+-		 */
+-		if (node->ITRB.rb_left) {
+-			ITSTRUCT *left = rb_entry(node->ITRB.rb_left,
+-						  ITSTRUCT, ITRB);
+-			if (start <= left->ITSUBTREE) {
+-				/*
+-				 * Some nodes in left subtree satisfy Cond2.
+-				 * Iterate to find the leftmost such node N.
+-				 * If it also satisfies Cond1, that's the match
+-				 * we are looking for. Otherwise, there is no
+-				 * matching interval as nodes to the right of N
+-				 * can't satisfy Cond1 either.
+-				 */
+-				node = left;
+-				continue;
+-			}
+-		}
+-		if (ITSTART(node) <= last) {		/* Cond1 */
+-			if (start <= ITLAST(node))	/* Cond2 */
+-				return node;	/* node is leftmost match */
+-			if (node->ITRB.rb_right) {
+-				node = rb_entry(node->ITRB.rb_right,
+-						ITSTRUCT, ITRB);
+-				if (start <= node->ITSUBTREE)
+-					continue;
+-			}
+-		}
+-		return NULL;	/* No match */
+-	}
+-}
+-
+-ITSTATIC ITSTRUCT *IT(iter_first)(struct rb_root *root,
+-				  ITTYPE start, ITTYPE last)
+-{
+-	ITSTRUCT *node;
+-
+-	if (!root->rb_node)
+-		return NULL;
+-	node = rb_entry(root->rb_node, ITSTRUCT, ITRB);
+-	if (node->ITSUBTREE < start)
+-		return NULL;
+-	return IT(subtree_search)(node, start, last);
+-}
+-
+-ITSTATIC ITSTRUCT *IT(iter_next)(ITSTRUCT *node, ITTYPE start, ITTYPE last)
+-{
+-	struct rb_node *rb = node->ITRB.rb_right, *prev;
+-
+-	while (true) {
+-		/*
+-		 * Loop invariants:
+-		 *   Cond1: ITSTART(node) <= last
+-		 *   rb == node->ITRB.rb_right
+-		 *
+-		 * First, search right subtree if suitable
+-		 */
+-		if (rb) {
+-			ITSTRUCT *right = rb_entry(rb, ITSTRUCT, ITRB);
+-			if (start <= right->ITSUBTREE)
+-				return IT(subtree_search)(right, start, last);
+-		}
+-
+-		/* Move up the tree until we come from a node's left child */
+-		do {
+-			rb = rb_parent(&node->ITRB);
+-			if (!rb)
+-				return NULL;
+-			prev = &node->ITRB;
+-			node = rb_entry(rb, ITSTRUCT, ITRB);
+-			rb = node->ITRB.rb_right;
+-		} while (prev == rb);
+-
+-		/* Check if the node intersects [start;last] */
+-		if (last < ITSTART(node))		/* !Cond1 */
+-			return NULL;
+-		else if (start <= ITLAST(node))		/* Cond2 */
+-			return node;
+-	}
+-}
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index dc504c7e9f84..38af0048037f 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1336,11 +1336,11 @@ extern atomic_long_t mmap_pages_allocated;
+ extern int nommu_shrink_inode_mappings(struct inode *, size_t, size_t);
+ 
+ /* interval_tree.c */
+-void vma_interval_tree_add(struct vm_area_struct *vma,
+-			   struct vm_area_struct *old,
+-			   struct address_space *mapping);
+ void vma_interval_tree_insert(struct vm_area_struct *node,
+ 			      struct rb_root *root);
++void vma_interval_tree_insert_after(struct vm_area_struct *node,
++				    struct vm_area_struct *prev,
++				    struct rb_root *root);
+ void vma_interval_tree_remove(struct vm_area_struct *node,
+ 			      struct rb_root *root);
+ struct vm_area_struct *vma_interval_tree_iter_first(struct rb_root *root,
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 1a5a355c54ca..4e064731971e 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -425,7 +425,12 @@ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
+ 				mapping->i_mmap_writable++;
+ 			flush_dcache_mmap_lock(mapping);
+ 			/* insert tmp into the share list, just after mpnt */
+-			vma_interval_tree_add(tmp, mpnt, mapping);
++			if (unlikely(tmp->vm_flags & VM_NONLINEAR))
++				vma_nonlinear_insert(tmp,
++						&mapping->i_mmap_nonlinear);
++			else
++				vma_interval_tree_insert_after(tmp, mpnt,
++							&mapping->i_mmap);
+ 			flush_dcache_mmap_unlock(mapping);
+ 			mutex_unlock(&mapping->i_mmap_mutex);
+ 		}
+diff --git a/lib/interval_tree.c b/lib/interval_tree.c
+index 77a793e0644b..e6eb406f2d65 100644
+--- a/lib/interval_tree.c
++++ b/lib/interval_tree.c
+@@ -1,13 +1,10 @@
+ #include <linux/init.h>
+ #include <linux/interval_tree.h>
++#include <linux/interval_tree_generic.h>
+ 
+-#define ITSTRUCT   struct interval_tree_node
+-#define ITRB       rb
+-#define ITTYPE     unsigned long
+-#define ITSUBTREE  __subtree_last
+-#define ITSTART(n) ((n)->start)
+-#define ITLAST(n)  ((n)->last)
+-#define ITSTATIC
+-#define ITPREFIX   interval_tree
++#define START(node) ((node)->start)
++#define LAST(node)  ((node)->last)
+ 
+-#include <linux/interval_tree_tmpl.h>
++INTERVAL_TREE_DEFINE(struct interval_tree_node, rb,
++		     unsigned long, __subtree_last,
++		     START, LAST,, interval_tree)
+diff --git a/mm/interval_tree.c b/mm/interval_tree.c
+index 7dc565660e56..4ab7b9ec3a56 100644
+--- a/mm/interval_tree.c
++++ b/mm/interval_tree.c
+@@ -8,40 +8,38 @@
+ 
+ #include <linux/mm.h>
+ #include <linux/fs.h>
++#include <linux/interval_tree_generic.h>
+ 
+-#define ITSTRUCT   struct vm_area_struct
+-#define ITRB       shared.linear.rb
+-#define ITTYPE     unsigned long
+-#define ITSUBTREE  shared.linear.rb_subtree_last
+-#define ITSTART(n) ((n)->vm_pgoff)
+-#define ITLAST(n)  ((n)->vm_pgoff + \
+-		    (((n)->vm_end - (n)->vm_start) >> PAGE_SHIFT) - 1)
+-#define ITSTATIC
+-#define ITPREFIX   vma_interval_tree
+-
+-#include <linux/interval_tree_tmpl.h>
+-
+-/* Insert old immediately after vma in the interval tree */
+-void vma_interval_tree_add(struct vm_area_struct *vma,
+-			   struct vm_area_struct *old,
+-			   struct address_space *mapping)
++static inline unsigned long vma_start_pgoff(struct vm_area_struct *v)
++{
++	return v->vm_pgoff;
++}
++
++static inline unsigned long vma_last_pgoff(struct vm_area_struct *v)
++{
++	return v->vm_pgoff + ((v->vm_end - v->vm_start) >> PAGE_SHIFT) - 1;
++}
++
++INTERVAL_TREE_DEFINE(struct vm_area_struct, shared.linear.rb,
++		     unsigned long, shared.linear.rb_subtree_last,
++		     vma_start_pgoff, vma_last_pgoff,, vma_interval_tree)
++
++/* Insert node immediately after prev in the interval tree */
++void vma_interval_tree_insert_after(struct vm_area_struct *node,
++				    struct vm_area_struct *prev,
++				    struct rb_root *root)
+ {
+ 	struct rb_node **link;
+ 	struct vm_area_struct *parent;
+-	unsigned long last;
+-
+-	if (unlikely(vma->vm_flags & VM_NONLINEAR)) {
+-		list_add(&vma->shared.nonlinear, &old->shared.nonlinear);
+-		return;
+-	}
++	unsigned long last = vma_last_pgoff(node);
+ 
+-	last = ITLAST(vma);
++	VM_BUG_ON(vma_start_pgoff(node) != vma_start_pgoff(prev));
+ 
+-	if (!old->shared.linear.rb.rb_right) {
+-		parent = old;
+-		link = &old->shared.linear.rb.rb_right;
++	if (!prev->shared.linear.rb.rb_right) {
++		parent = prev;
++		link = &prev->shared.linear.rb.rb_right;
+ 	} else {
+-		parent = rb_entry(old->shared.linear.rb.rb_right,
++		parent = rb_entry(prev->shared.linear.rb.rb_right,
+ 				  struct vm_area_struct, shared.linear.rb);
+ 		if (parent->shared.linear.rb_subtree_last < last)
+ 			parent->shared.linear.rb_subtree_last = last;
+@@ -54,8 +52,8 @@ void vma_interval_tree_add(struct vm_area_struct *vma,
+ 		link = &parent->shared.linear.rb.rb_left;
+ 	}
+ 
+-	vma->shared.linear.rb_subtree_last = last;
+-	rb_link_node(&vma->shared.linear.rb, &parent->shared.linear.rb, link);
+-	rb_insert_augmented(&vma->shared.linear.rb, &mapping->i_mmap,
+-			    &vma_interval_tree_augment_callbacks);
++	node->shared.linear.rb_subtree_last = last;
++	rb_link_node(&node->shared.linear.rb, &parent->shared.linear.rb, link);
++	rb_insert_augmented(&node->shared.linear.rb, root,
++			    &vma_interval_tree_augment);
+ }
 -- 
 1.7.7.3
