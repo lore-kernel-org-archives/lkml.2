@@ -1,80 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756970Ab2IDMoY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 08:44:24 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:35539 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756827Ab2IDMoW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 08:44:22 -0400
-Message-ID: <5045F7A0.1090400@gmail.com>
-Date: Tue, 04 Sep 2012 07:44:16 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1757043Ab2IDMoj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 08:44:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55848 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756999Ab2IDMoi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 08:44:38 -0400
+Date: Tue, 4 Sep 2012 08:44:31 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tao Ma <tm@tao.ma>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH] block/throttle: Call throtl_update_dispatch_stats with
+ throtl_grp directly.
+Message-ID: <20120904124431.GA13768@redhat.com>
+References: <1346389703-2927-1-git-send-email-tm@tao.ma>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Arnd Bergmann <arnd@arndb.de>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the arm-soc tree with the arm-current
- tree
-References: <20120904160626.f1dcb67ebbb145053c49da8c@canb.auug.org.au> <201209040808.25103.arnd@arndb.de> <20120904090132.GG24085@n2100.arm.linux.org.uk>
-In-Reply-To: <20120904090132.GG24085@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346389703-2927-1-git-send-email-tm@tao.ma>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2012 04:01 AM, Russell King - ARM Linux wrote:
-> On Tue, Sep 04, 2012 at 08:08:24AM +0000, Arnd Bergmann wrote:
->> On Tuesday 04 September 2012, Stephen Rothwell wrote:
->>> Today's linux-next merge of the arm-soc tree got a conflict in
->>> arch/arm/mm/mmu.c between commit a849088aa155 ("ARM: Fix ioremap() of
->>> address zero") from the arm-current tree and commit c2794437091a ("ARM:
->>> Add fixed PCI i/o mapping") from the arm-soc tree.
->>>
->>> I am not sure how to fix this, so I have used the arm-current version of
->>> the change to pmd_empty_section_gap() since that changed the vm->flags.
->>> It may be that just changing the vm->flags value in vm_reserve_area_early()
->>> would be ok?
->>
->> If I read this correctly, we want pci_reserve_io to use VM_ARM_STATIC_MAPPING
->> while pmd_empty_section_gap should use VM_ARM_EMPTY_MAPPING, so we probably
->> want to add a flag argument to the vm_reserve_area_early() function.
+On Fri, Aug 31, 2012 at 01:08:23PM +0800, Tao Ma wrote:
+> From: Tao Ma <boyu.mt@taobao.com>
 > 
-> Whereas Rob said to me that both can use VM_ARM_EMPTY_MAPPING when I
-> queried this conflict last week.
+> All callers of throtl_update_dispatch_stats uses tg_to_blkg and then
+> in this function we use blkg_to_tg again to change it back. So remove
+> all these useless conversion and use throtl_grp directly to call
+> throtl_update_dispatch_stats.
+> 
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Vivek Goyal <vgoyal@redhat.com>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+> ---
 
-Right. The PCI i/o reserved area has a dummy physical address of 0 and 
-needs to be skipped by ioremap searches. So we don't set 
-VM_ARM_STATIC_MAPPING to prevent matches by ioremap. The vm_struct settings
-don't really matter when we do the real mapping of the i/o space.
+Simple. Looks good.
 
-Here's my merge:
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
-diff --cc arch/arm/mm/mmu.c
-index 4c2d045,c2fa21d,512b2c0..18144e6
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@@@ -785,6 -785,6 -786,19 +786,19 @@@@ void __init iotable_init(struct map_des
-        }
-   }
-   
-++ void __init vm_reserve_area_early(unsigned long addr, unsigned long size,
-++                                void *caller)
-++ {
-++      struct vm_struct *vm;
-++ 
-++      vm = early_alloc_aligned(sizeof(*vm), __alignof__(*vm));
-++      vm->addr = (void *)addr;
-++      vm->size = size;
-  -     vm->flags = VM_IOREMAP | VM_ARM_STATIC_MAPPING;
-+++     vm->flags = VM_IOREMAP | VM_ARM_EMPTY_MAPPING;
-++      vm->caller = caller;
-++      vm_area_add_early(vm);
-++ }
-++ 
-   #ifndef CONFIG_ARM_LPAE
-   
-   /*
+Vivek
+
+>  block/blk-throttle.c |    7 +++----
+>  1 files changed, 3 insertions(+), 4 deletions(-)
+> 
+> diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+> index e287c19..1588c2d 100644
+> --- a/block/blk-throttle.c
+> +++ b/block/blk-throttle.c
+> @@ -675,10 +675,9 @@ static bool tg_may_dispatch(struct throtl_data *td, struct throtl_grp *tg,
+>  	return 0;
+>  }
+>  
+> -static void throtl_update_dispatch_stats(struct blkcg_gq *blkg, u64 bytes,
+> +static void throtl_update_dispatch_stats(struct throtl_grp *tg, u64 bytes,
+>  					 int rw)
+>  {
+> -	struct throtl_grp *tg = blkg_to_tg(blkg);
+>  	struct tg_stats_cpu *stats_cpu;
+>  	unsigned long flags;
+>  
+> @@ -709,7 +708,7 @@ static void throtl_charge_bio(struct throtl_grp *tg, struct bio *bio)
+>  	tg->bytes_disp[rw] += bio->bi_size;
+>  	tg->io_disp[rw]++;
+>  
+> -	throtl_update_dispatch_stats(tg_to_blkg(tg), bio->bi_size, bio->bi_rw);
+> +	throtl_update_dispatch_stats(tg, bio->bi_size, bio->bi_rw);
+>  }
+>  
+>  static void throtl_add_bio_tg(struct throtl_data *td, struct throtl_grp *tg,
+> @@ -1133,7 +1132,7 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
+>  	tg = throtl_lookup_tg(td, blkcg);
+>  	if (tg) {
+>  		if (tg_no_rule_group(tg, rw)) {
+> -			throtl_update_dispatch_stats(tg_to_blkg(tg),
+> +			throtl_update_dispatch_stats(tg,
+>  						     bio->bi_size, bio->bi_rw);
+>  			goto out_unlock_rcu;
+>  		}
+> -- 
+> 1.7.0.4
