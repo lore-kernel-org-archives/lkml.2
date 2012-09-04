@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553Ab2IDIWv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 04:22:51 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:50680 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753098Ab2IDIWs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 04:22:48 -0400
-Date: Tue, 4 Sep 2012 09:22:33 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: Sedat Dilek <sedat.dilek@gmail.com>
-cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sachin Kamat <sachin.kamat@linaro.org>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: linux-next: build warnings after merge of the drm tree
-In-Reply-To: <CA+icZUXT=GgYMAUq2KGm1jYsuw72moo+jzhoCadt7yJUpOAUzg@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1209040922110.523@skynet.skynet.ie>
-References: <20120904135829.6beb08f80919aa2b5c8bf55f@canb.auug.org.au> <CA+icZUXT=GgYMAUq2KGm1jYsuw72moo+jzhoCadt7yJUpOAUzg@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754124Ab2IDIZb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 04:25:31 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:27619 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751544Ab2IDIZ2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 04:25:28 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzzz2dh668h839hd24he5bhf0ah107ah1155h)
+X-WSS-ID: 0M9TGQ9-01-71C-02
+X-M-MSG: 
+From: Andre Przywara <andre.przywara@amd.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Thomas Renninger <trenn@suse.de>
+CC: Matthew Garret <mjg@redhat.com>, <linux-pm@vger.kernel.org>,
+        <cpufreq@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: [PATCH 0/8 v2] acpi-cpufreq: Move modern AMD cpufreq support to acpi-cpufreq
+Date: Tue, 4 Sep 2012 10:28:01 +0200
+Message-ID: <1346747289-8421-1-git-send-email-andre.przywara@amd.com>
+X-Mailer: git-send-email 1.7.12
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > After merging the drm tree, today's linux-next build (powerpc
-> > ppc64_defconfig) produced these warnings:
-> >
-> > drivers/gpu/drm/udl/Kconfig:1:error: recursive dependency detected!
-> > drivers/gpu/drm/udl/Kconfig:1:  symbol DRM_UDL depends on USB_ARCH_HAS_HCD
-> > drivers/usb/Kconfig:76: symbol USB_ARCH_HAS_HCD depends on USB_SUPPORT
-> > drivers/usb/Kconfig:58: symbol USB_SUPPORT is selected by DRM_USB
-> > drivers/gpu/drm/Kconfig:22:     symbol DRM_USB is selected by DRM_UDL
-> > warning: (PPC_PS3) selects USB_OHCI_LITTLE_ENDIAN which has unmet direct dependencies (USB_SUPPORT && USB_OHCI_HCD)
-> > warning: (PPC_PS3 && PPC_CELLEB) selects USB_OHCI_BIG_ENDIAN_MMIO which has unmet direct dependencies (USB_SUPPORT && USB_OHCI_HCD)
-> > warning: (PPC_PS3 && PPC_CELLEB && USB_EHCI_HCD_PMC_MSP && XPS_USB_HCD_XILINX && USB_OCTEON_EHCI) selects USB_EHCI_BIG_ENDIAN_MMIO which has unmet direct dependencies (USB_SUPPORT && USB_EHCI_HCD && (PPC_CELLEB || PPC_PS3 || 440EPX || ARCH_IXP4XX || XPS_USB_HCD_XILINX || PPC_MPC512x || CPU_CAVIUM_OCTEON || PMC_MSP || SPARC_LEON || MIPS_SEAD3))
-> >
-> > The x86_64 allmodconfig produces these:
-> >
-> > drivers/gpu/drm/udl/Kconfig:1:error: recursive dependency detected!
-> > drivers/gpu/drm/udl/Kconfig:1:  symbol DRM_UDL depends on USB_ARCH_HAS_HCD
-> > drivers/usb/Kconfig:76: symbol USB_ARCH_HAS_HCD depends on USB_SUPPORT
-> > drivers/usb/Kconfig:58: symbol USB_SUPPORT is selected by DRM_USB
-> > drivers/gpu/drm/Kconfig:22:     symbol DRM_USB is selected by DRM_UDL
-> > warning: (MOUSE_APPLETOUCH && MOUSE_BCM5974 && MOUSE_SYNAPTICS_USB && JOYSTICK_XPAD && TABLET_USB_ACECAD && TABLET_USB_AIPTEK && TABLET_USB_HANWANG && TABLET_USB_KBTAB && TABLET_USB_WACOM && TOUCHSCREEN_USB_COMPOSITE && INPUT_ATI_REMOTE2 && INPUT_KEYSPAN_REMOTE && INPUT_POWERMATE && INPUT_YEALINK && INPUT_CM109 && RC_ATI_REMOTE && IR_IMON && IR_MCEUSB && IR_REDRAT3 && IR_STREAMZAP && IR_IGUANA && IR_TTUSBIR && DRM_USB) selects USB which has unmet direct dependencies (USB_SUPPORT && USB_ARCH_HAS_HCD)
-> >
-> > Maybe introduced by commit df0b34430072 ("drm/usb: select USB_SUPPORT in
-> > Kconfig"), maybe interacting with a commit 8f057d7bca54 ("gpu/mfd/usb:
-> > Fix USB randconfig problems") from Linus' tree (that added "depends on
-> > USB_ARCH_HAS_HCD" to "config DRM_USB" and "config DRM_UDL").
-> >
-> > I have left this mess for now, but it needs addressing.
-> 
-> I have sent a fix ("drm/udl: usb: Fix recursive Kconfig dependency")
-> for this mess and pinged airlied on IRC.
-> NOTE: I saw this when I merged drm(-intel){-fixes,next} into next-20120824.
+Hi,
 
-I[ve pushed it to drm-next now hopefully it will resolve the mess.
+now the second, revised version of the patch set. I now tested loading
+both drivers after each other in several combinations, after two bug
+fixes this now works as expected.
+I added a patch to move messages from powernow-k8 after the initialization
+phase, so it remains silent if driver loading fails.
 
-thanks,
-Dave.
+I also rearranged the patches so that the powernow-k8 feature removal patch is
+now the last one and is somewhat optional. I still prefer to have it in,
+but it can be dropped if needed. Then powernow-k8 will still support modern
+AMD CPUs, but will emit a warning message.
+
+Regards,
+Andre
+
+Changes from v1:
+* added hints to Kconfig about CPU support
+* merge documentation from separate patch into the feature patch
+* add deprecation warning
+* prefix acpi-cpufreq warning messages with module name
+* bugfix: avoid boost init it driver registration failed
+* bugfix: fix module redirect request call (was not reached before)
+
+
+
