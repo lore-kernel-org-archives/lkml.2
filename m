@@ -1,60 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756668Ab2IDJKm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 05:10:42 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:48220 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754451Ab2IDJKl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 05:10:41 -0400
+	id S1756639Ab2IDJMh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 05:12:37 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:30507 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752722Ab2IDJMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 05:12:35 -0400
+X-IronPort-AV: E=Sophos;i="4.80,366,1344182400"; 
+   d="scan'208";a="5781396"
+Message-ID: <5045C749.80904@cn.fujitsu.com>
+Date: Tue, 04 Sep 2012 17:18:01 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <50454EDC.7050101@gmail.com>
-References: <1346681648-21427-1-git-send-email-clouds.yan@gmail.com>
-	<1346681648-21427-4-git-send-email-clouds.yan@gmail.com>
-	<50454EDC.7050101@gmail.com>
-Date: Tue, 4 Sep 2012 17:10:40 +0800
-Message-ID: <CAH+=+MEuVqZhXMELQ=Faewg=4MU2VQr1X1Qq8QCyAu=E-qSeLQ@mail.gmail.com>
-Subject: Re: [PATCH 3/3] proc: use kzalloc instead of kmalloc and memset
-From: yan yan <clouds.yan@gmail.com>
-To: Ryan Mallon <rmallon@gmail.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+To: Jiang Liu <jiang.liu@huawei.com>
+CC: Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Mel Gorman <mgorman@suse.de>, Yinghai Lu <yinghai@kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
+        Keping Chen <chenkeping@huawei.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Jiang Liu <liuj97@gmail.com>
+Subject: Re: [RFC PATCH 1/4] mm: introduce a safer interface to check whether
+ a page is managed by SLxB
+References: <1341287837-7904-1-git-send-email-jiang.liu@huawei.com>
+In-Reply-To: <1341287837-7904-1-git-send-email-jiang.liu@huawei.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/04 17:12:04,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/04 17:12:10,
+	Serialize complete at 2012/09/04 17:12:10
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/9/4 Ryan Mallon <rmallon@gmail.com>
->
-> On 04/09/12 00:14, yan wrote:
-> > Signed-off-by: yan <clouds.yan@gmail.com>
-> > ---
-> >  fs/proc/generic.c |    3 +--
-> >  1 file changed, 1 insertion(+), 2 deletions(-)
-> >
-> > diff --git a/fs/proc/generic.c b/fs/proc/generic.c
-> > index 9e8f631..38de015 100644
-> > --- a/fs/proc/generic.c
-> > +++ b/fs/proc/generic.c
-> > @@ -616,10 +616,9 @@ static struct proc_dir_entry *__proc_create(struct
-> > proc_dir_entry **parent,
-> >
-> >       len = strlen(fn);
-> >
-> > -     ent = kmalloc(sizeof(struct proc_dir_entry) + len + 1,
-> > GFP_KERNEL);
-> > +     ent = kzalloc(sizeof(struct proc_dir_entry) + len + 1,
-> > GFP_KERNEL);
-> >       if (!ent) goto out;
-> >
-> > -     memset(ent, 0, sizeof(struct proc_dir_entry));
-> >       memcpy(ent->name, fn, len + 1);
-> >       ent->namelen = len;
-> >       ent->mode = mode;
->
-> Note that this change results in slightly different behaviour. Before
-> your change only sizeof(struct proc_dir_entry) is zero'ed by memset, and
-> then the name is filled in (the len + 1 part). After your change the
-> structure and the name field are both zeroed, so the name field is being
-> written to twice. The cost is probably negligible though.
+At 07/03/2012 11:57 AM, Jiang Liu Wrote:
+> Several subsystems, including memory-failure, swap, sparse, DRBD etc,
+> use PageSlab() to check whether a page is managed by SLAB/SLUB/SLOB.
+> And they treat slab pages differently from pagecache/anonymous pages.
+> 
+> But it's unsafe to use PageSlab() to detect whether a page is managed by
+> SLUB. SLUB allocates compound pages when page order is bigger than 0 and
+> only sets PG_slab on head pages. So if a SLUB object is hosted by a tail
+> page, PageSlab() will incorrectly return false for that object.
+> 
+> Following code from sparse.c triggers this issue, which causes failure
+> when removing a hot-added memory device.
 
-Oh, I didn't notice that actually. Thank you.
+Hi, Liu
+
+What is the status of this patch?
+I encounter the same problem when removing a hot-added memory device. It
+causes the kernel panicked
+
+Thanks
+Wen Congyang
+
+>         /*
+>          * Check to see if allocation came from hot-plug-add
+>          */
+>         if (PageSlab(usemap_page)) {
+>                 kfree(usemap);
+>                 if (memmap)
+>                         __kfree_section_memmap(memmap, PAGES_PER_SECTION);
+>                 return;
+>         }
+> 
+> So introduce a transparent huge page and compound page safe macro as below
+> to check whether a page is managed by SLAB/SLUB/SLOB allocator.
+> 
+> #define page_managed_by_slab(page)     (!!PageSlab(compound_trans_head(page)))
+> 
+> Signed-off-by: Jiang Liu <liuj97@gmail.com>
+> ---
+>  arch/arm/mm/init.c             |    3 ++-
+>  arch/ia64/kernel/mca_drv.c     |    2 +-
+>  arch/unicore32/mm/init.c       |    3 ++-
+>  crypto/scatterwalk.c           |    2 +-
+>  drivers/ata/libata-sff.c       |    3 ++-
+>  drivers/block/drbd/drbd_main.c |    3 ++-
+>  fs/proc/page.c                 |    4 ++--
+>  include/linux/slab.h           |    7 +++++++
+>  mm/memory-failure.c            |    6 +++---
+>  mm/sparse.c                    |    4 +---
+>  10 files changed, 23 insertions(+), 14 deletions(-)
+> 
+> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+> index f54d592..73ff340 100644
+> --- a/arch/arm/mm/init.c
+> +++ b/arch/arm/mm/init.c
+> @@ -18,6 +18,7 @@
+>  #include <linux/initrd.h>
+>  #include <linux/of_fdt.h>
+>  #include <linux/highmem.h>
+> +#include <linux/huge_mm.h>
+>  #include <linux/gfp.h>
+>  #include <linux/memblock.h>
+>  #include <linux/dma-contiguous.h>
+> @@ -116,7 +117,7 @@ void show_mem(unsigned int filter)
+>  				reserved++;
+>  			else if (PageSwapCache(page))
+>  				cached++;
+> -			else if (PageSlab(page))
+> +			else if (page_managed_by_slab(page))
+>  				slab++;
+>  			else if (!page_count(page))
+>  				free++;
+> diff --git a/arch/ia64/kernel/mca_drv.c b/arch/ia64/kernel/mca_drv.c
+> index 1c2e894..4415bb6 100644
+> --- a/arch/ia64/kernel/mca_drv.c
+> +++ b/arch/ia64/kernel/mca_drv.c
+> @@ -136,7 +136,7 @@ mca_page_isolate(unsigned long paddr)
+>  		return ISOLATE_NG;
+>  
+>  	/* kick pages having attribute 'SLAB' or 'Reserved' */
+> -	if (PageSlab(p) || PageReserved(p))
+> +	if (page_managed_by_slab(p) || PageReserved(p))
+>  		return ISOLATE_NG;
+>  
+>  	/* add attribute 'Reserved' and register the page */
+> diff --git a/arch/unicore32/mm/init.c b/arch/unicore32/mm/init.c
+> index de186bd..829a0d9 100644
+> --- a/arch/unicore32/mm/init.c
+> +++ b/arch/unicore32/mm/init.c
+> @@ -21,6 +21,7 @@
+>  #include <linux/sort.h>
+>  #include <linux/dma-mapping.h>
+>  #include <linux/export.h>
+> +#include <linux/huge_mm.h>
+>  
+>  #include <asm/sections.h>
+>  #include <asm/setup.h>
+> @@ -83,7 +84,7 @@ void show_mem(unsigned int filter)
+>  				reserved++;
+>  			else if (PageSwapCache(page))
+>  				cached++;
+> -			else if (PageSlab(page))
+> +			else if (page_managed_by_slab(page))
+>  				slab++;
+>  			else if (!page_count(page))
+>  				free++;
+> diff --git a/crypto/scatterwalk.c b/crypto/scatterwalk.c
+> index 7281b8a..a20e019 100644
+> --- a/crypto/scatterwalk.c
+> +++ b/crypto/scatterwalk.c
+> @@ -54,7 +54,7 @@ static void scatterwalk_pagedone(struct scatter_walk *walk, int out,
+>  		struct page *page;
+>  
+>  		page = sg_page(walk->sg) + ((walk->offset - 1) >> PAGE_SHIFT);
+> -		if (!PageSlab(page))
+> +		if (!page_managed_by_slab(page))
+>  			flush_dcache_page(page);
+>  	}
+>  
+> diff --git a/drivers/ata/libata-sff.c b/drivers/ata/libata-sff.c
+> index d8af325..1ab8378 100644
+> --- a/drivers/ata/libata-sff.c
+> +++ b/drivers/ata/libata-sff.c
+> @@ -38,6 +38,7 @@
+>  #include <linux/module.h>
+>  #include <linux/libata.h>
+>  #include <linux/highmem.h>
+> +#include <linux/huge_mm.h>
+>  
+>  #include "libata.h"
+>  
+> @@ -734,7 +735,7 @@ static void ata_pio_sector(struct ata_queued_cmd *qc)
+>  				       do_write);
+>  	}
+>  
+> -	if (!do_write && !PageSlab(page))
+> +	if (!do_write && !page_managed_by_slab(page))
+>  		flush_dcache_page(page);
+>  
+>  	qc->curbytes += qc->sect_size;
+> diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
+> index 920ede2..de5b395 100644
+> --- a/drivers/block/drbd/drbd_main.c
+> +++ b/drivers/block/drbd/drbd_main.c
+> @@ -2734,7 +2734,8 @@ static int _drbd_send_page(struct drbd_conf *mdev, struct page *page,
+>  	 * put_page(); and would cause either a VM_BUG directly, or
+>  	 * __page_cache_release a page that would actually still be referenced
+>  	 * by someone, leading to some obscure delayed Oops somewhere else. */
+> -	if (disable_sendpage || (page_count(page) < 1) || PageSlab(page))
+> +	if (disable_sendpage || (page_count(page) < 1) ||
+> +	    page_managed_by_slab(page))
+>  		return _drbd_no_send_page(mdev, page, offset, size, msg_flags);
+>  
+>  	msg_flags |= MSG_NOSIGNAL;
+> diff --git a/fs/proc/page.c b/fs/proc/page.c
+> index 7fcd0d6..ae42dc7 100644
+> --- a/fs/proc/page.c
+> +++ b/fs/proc/page.c
+> @@ -40,7 +40,7 @@ static ssize_t kpagecount_read(struct file *file, char __user *buf,
+>  			ppage = pfn_to_page(pfn);
+>  		else
+>  			ppage = NULL;
+> -		if (!ppage || PageSlab(ppage))
+> +		if (!ppage || page_managed_by_slab(ppage))
+>  			pcount = 0;
+>  		else
+>  			pcount = page_mapcount(ppage);
+> @@ -98,7 +98,7 @@ u64 stable_page_flags(struct page *page)
+>  	 * Note that page->_mapcount is overloaded in SLOB/SLUB/SLQB, so the
+>  	 * simple test in page_mapped() is not enough.
+>  	 */
+> -	if (!PageSlab(page) && page_mapped(page))
+> +	if (!page_managed_by_slab(page) && page_mapped(page))
+>  		u |= 1 << KPF_MMAP;
+>  	if (PageAnon(page))
+>  		u |= 1 << KPF_ANON;
+> diff --git a/include/linux/slab.h b/include/linux/slab.h
+> index 67d5d94..bb26fab 100644
+> --- a/include/linux/slab.h
+> +++ b/include/linux/slab.h
+> @@ -364,4 +364,11 @@ static inline void *kzalloc_node(size_t size, gfp_t flags, int node)
+>  
+>  void __init kmem_cache_init_late(void);
+>  
+> +/*
+> + * Check whether a page is allocated/managed by SLAB/SLUB/SLOB allocator.
+> + * Defined as macro instead of function to avoid header file pollution.
+> + */
+> +#define page_managed_by_slab(page)	(!!PageSlab(compound_trans_head(page)))
+> +#define mem_managed_by_slab(addr)	page_managed_by_slab(virt_to_page(addr))
+> +
+>  #endif	/* _LINUX_SLAB_H */
+> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+> index ab1e714..684e7f7 100644
+> --- a/mm/memory-failure.c
+> +++ b/mm/memory-failure.c
+> @@ -88,7 +88,7 @@ static int hwpoison_filter_dev(struct page *p)
+>  	/*
+>  	 * page_mapping() does not accept slab pages.
+>  	 */
+> -	if (PageSlab(p))
+> +	if (page_managed_by_slab(p))
+>  		return -EINVAL;
+>  
+>  	mapping = page_mapping(p);
+> @@ -233,7 +233,7 @@ static int kill_proc(struct task_struct *t, unsigned long addr, int trapno,
+>   */
+>  void shake_page(struct page *p, int access)
+>  {
+> -	if (!PageSlab(p)) {
+> +	if (!page_managed_by_slab(p)) {
+>  		lru_add_drain_all();
+>  		if (PageLRU(p))
+>  			return;
+> @@ -862,7 +862,7 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+>  	struct page *hpage = compound_head(p);
+>  	struct page *ppage;
+>  
+> -	if (PageReserved(p) || PageSlab(p))
+> +	if (PageReserved(p) || page_managed_by_slab(p))
+>  		return SWAP_SUCCESS;
+>  
+>  	/*
+> diff --git a/mm/sparse.c b/mm/sparse.c
+> index 6a4bf91..32a908b 100644
+> --- a/mm/sparse.c
+> +++ b/mm/sparse.c
+> @@ -688,17 +688,15 @@ static void free_map_bootmem(struct page *page, unsigned long nr_pages)
+>  
+>  static void free_section_usemap(struct page *memmap, unsigned long *usemap)
+>  {
+> -	struct page *usemap_page;
+>  	unsigned long nr_pages;
+>  
+>  	if (!usemap)
+>  		return;
+>  
+> -	usemap_page = virt_to_page(usemap);
+>  	/*
+>  	 * Check to see if allocation came from hot-plug-add
+>  	 */
+> -	if (PageSlab(usemap_page)) {
+> +	if (mem_managed_by_slab(usemap)) {
+>  		kfree(usemap);
+>  		if (memmap)
+>  			__kfree_section_memmap(memmap, PAGES_PER_SECTION);
+
