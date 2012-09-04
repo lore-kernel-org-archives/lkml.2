@@ -1,425 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932302Ab2IDOgh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 10:36:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48035 "EHLO mx1.redhat.com"
+	id S1757277Ab2IDOkG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 10:40:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60683 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757157Ab2IDOea (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 10:34:30 -0400
-Message-Id: <20120904143420.841275882@napanee.usersys.redhat.com>
-User-Agent: quilt/0.48-1
-Date: Tue, 04 Sep 2012 10:34:22 -0400
-From: Aristeu Rozanski <aris@redhat.com>
-To: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        James Morris <jmorris@namei.org>, Pavel Emelyanov <xemul@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v2 3/6] device_cgroup: convert device_cgroup internally to policy + exceptions
-References: <20120904143419.892872876@napanee.usersys.redhat.com>
-Content-Disposition: inline; filename=handle_whitelist_as_exceptions.patch
+	id S1757152Ab2IDOkD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 10:40:03 -0400
+Date: Tue, 4 Sep 2012 16:39:47 +0200
+From: Jan Kara <jack@suse.cz>
+To: Ian Abbott <abbotti@mev.co.uk>
+Cc: lkml <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v3] UDF: Add support for O_DIRECT
+Message-ID: <20120904143947.GC8656@quack.suse.cz>
+References: <1343731212-4381-1-git-send-email-abbotti@mev.co.uk>
+ <1346752179-28052-1-git-send-email-abbotti@mev.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346752179-28052-1-git-send-email-abbotti@mev.co.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The original model of device_cgroup is having a whitelist where all the
-allowed devices are listed. The problem with this approach is that is
-impossible to have the case of allowing everything but few devices.
+  Hello,
 
-The reason for that lies in the way the whitelist is handled internally:
-since there's only a whitelist, the "all devices" entry would have to be
-removed and replaced by the entire list of possible devices but the ones
-that are being denied.  Since dev_t is 32 bits long, representing the allowed
-devices as a bitfield is not memory efficient.
+  first, you have my address wrong (you had suze instead of suse) which is
+why I wasn't getting your email and not replying (missed the patch in LKML
+traffic). Second, it's good to CC also linux-fsdevel for UDF related
+matters (I tend to use that for UDF announcements etc. so people caring
+about UDF can watch there and don't have to read high-volume LKML).
 
-This patch replaces the "whitelist" by a "exceptions" list and the default
-policy is kept as "behavior" variable in dev_cgroup structure.
+On Tue 04-09-12 10:49:39, Ian Abbott wrote:
+> Add support for the O_DIRECT flag.  There are two cases to deal with:
+  Out of curiosity, do you have a use for this feature or is it mostly
+academic interest?
 
-The current interface determines that whenever "a" is written to devices.allow
-or devices.deny, the entry masking all devices will be added or removed,
-respectively. This behavior is kept and it's what will determine the default
-policy:
+> 1. Small files stored in the ICB (inode control block?): just return 0
+> from the new udf_adinicb_direct_IO() handler to fall back to buffered
+> I/O.  For direct writes, there is a "gotcha" to deal with when
+> generic_file_direct_write() in mm/filemap.c invalidates the pages.  In
+> the udf_adinicb_writepage() handler, only part of the page data will be
+> valid and the rest will be zeroed out, so only copy the valid part into
+> the ICB.  (This is actually a bit inefficient as udf_adinicb_write_end()
+> will have already copied the data into the ICB once, but it's pretty
+> likely that the file will grow to the point where its data can no longer
+> be stored in the ICB and will be moved to a different area of the file
+> system.  At that point, a different direct_IO handler will be used - see
+> below.)
+  Sorry, I didn't quite get this. What is the problem with copying all the
+data to inode in udf_adinicb_writepage() as it is now?
 
-	# cat devices.list 
-	a *:* rwm
-	# echo a >devices.deny
-	# cat devices.list 
-	# echo a >devices.allow
-	# cat devices.list 
-	a *:* rwm
+								Honza
 
-The interface is also preserved. For example, if one wants to block only access
-to /dev/null:
-	# ls -l /dev/null
-	crw-rw-rw- 1 root root 1, 3 Jul 24 16:17 /dev/null
-	# echo a >devices.allow
-	# echo "c 1:3 rwm" >devices.deny
-	# cat /dev/null
-	cat: /dev/null: Operation not permitted
-	# echo >/dev/null
-	bash: /dev/null: Operation not permitted
-	# mknod /tmp/null c 1 3
-	mknod: /tmp/null: Operation not permitted
-	# echo "c 1:3 r" >devices.allow
-	# cat /dev/null
-	# echo >/dev/null
-	bash: /dev/null: Operation not permitted
-	# mknod /tmp/null c 1 3
-	mknod: /tmp/null: Operation not permitted
-	# echo "c 1:3 rw" >devices.allow
-	# echo >/dev/null
-	# cat /dev/null
-	# mknod /tmp/null c 1 3
-	mknod: /tmp/null: Operation not permitted
-	# echo "c 1:3 rwm" >devices.allow
-	# echo >/dev/null
-	# cat /dev/null
-	# mknod /tmp/null c 1 3
-	#
-
-Note that I didn't rename the functions/variables in this patch, but in the
-next one to make reviewing easier.
-
-v2:
-- convert code to use behavior instead of deny_all
-
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: James Morris <jmorris@namei.org>
-Cc: Pavel Emelyanov <xemul@openvz.org>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: Aristeu Rozanski <aris@redhat.com>
-
----
- security/device_cgroup.c |  228 +++++++++++++++++++++++++++--------------------
- 1 file changed, 132 insertions(+), 96 deletions(-)
-
-Index: github/security/device_cgroup.c
-===================================================================
---- github.orig/security/device_cgroup.c	2012-08-21 10:50:37.526892088 -0400
-+++ github/security/device_cgroup.c	2012-08-21 10:50:48.967215436 -0400
-@@ -99,7 +99,6 @@
- 	return -ENOMEM;
- }
- 
--/* Stupid prototype - don't bother combining existing entries */
- /*
-  * called under devcgroup_mutex
-  */
-@@ -139,16 +138,13 @@
- 	struct dev_whitelist_item *walk, *tmp;
- 
- 	list_for_each_entry_safe(walk, tmp, &dev_cgroup->whitelist, list) {
--		if (walk->type == DEV_ALL)
--			goto remove;
- 		if (walk->type != wh->type)
- 			continue;
--		if (walk->major != ~0 && walk->major != wh->major)
-+		if (walk->major != wh->major)
- 			continue;
--		if (walk->minor != ~0 && walk->minor != wh->minor)
-+		if (walk->minor != wh->minor)
- 			continue;
- 
--remove:
- 		walk->access &= ~wh->access;
- 		if (!walk->access) {
- 			list_del_rcu(&walk->list);
-@@ -188,19 +184,9 @@
- 	INIT_LIST_HEAD(&dev_cgroup->whitelist);
- 	parent_cgroup = cgroup->parent;
- 
--	if (parent_cgroup == NULL) {
--		struct dev_whitelist_item *wh;
--		wh = kmalloc(sizeof(*wh), GFP_KERNEL);
--		if (!wh) {
--			kfree(dev_cgroup);
--			return ERR_PTR(-ENOMEM);
--		}
--		wh->minor = wh->major = ~0;
--		wh->type = DEV_ALL;
--		wh->access = ACC_MASK;
-+	if (parent_cgroup == NULL)
- 		dev_cgroup->behavior = DEVCG_DEFAULT_ALLOW;
--		list_add(&wh->list, &dev_cgroup->whitelist);
--	} else {
-+	else {
- 		parent_dev_cgroup = cgroup_to_devcgroup(parent_cgroup);
- 		mutex_lock(&devcgroup_mutex);
- 		ret = dev_whitelist_copy(&dev_cgroup->whitelist,
-@@ -271,33 +257,48 @@
- 	char maj[MAJMINLEN], min[MAJMINLEN], acc[ACCLEN];
- 
- 	rcu_read_lock();
--	list_for_each_entry_rcu(wh, &devcgroup->whitelist, list) {
--		set_access(acc, wh->access);
--		set_majmin(maj, wh->major);
--		set_majmin(min, wh->minor);
--		seq_printf(m, "%c %s:%s %s\n", type_to_char(wh->type),
-+	/*
-+	 * To preserve the compatibility:
-+	 * - Only show the "all devices" when the default policy is to allow
-+	 * - List the exceptions in case the default policy is to deny
-+	 * This way, the file remains as a "whitelist of devices"
-+	 */
-+	if (devcgroup->behavior == DEVCG_DEFAULT_ALLOW) {
-+		set_access(acc, ACC_MASK);
-+		set_majmin(maj, ~0);
-+		set_majmin(min, ~0);
-+		seq_printf(m, "%c %s:%s %s\n", type_to_char(DEV_ALL),
- 			   maj, min, acc);
-+	} else {
-+		list_for_each_entry_rcu(wh, &devcgroup->whitelist, list) {
-+			set_access(acc, wh->access);
-+			set_majmin(maj, wh->major);
-+			set_majmin(min, wh->minor);
-+			seq_printf(m, "%c %s:%s %s\n", type_to_char(wh->type),
-+				   maj, min, acc);
-+		}
- 	}
- 	rcu_read_unlock();
- 
- 	return 0;
- }
- 
--/*
-- * may_access_whitelist:
-- * does the access granted to dev_cgroup c contain the access
-- * requested in whitelist item refwh.
-- * return 1 if yes, 0 if no.
-- * call with devcgroup_mutex held
-+/**
-+ * may_access_whitelist - verifies if a new rule is part of what is allowed
-+ *			  by a dev cgroup based on the default policy +
-+ *			  exceptions. This is used to make sure a child cgroup
-+ *			  won't have more privileges than its parent or to
-+ *			  verify if a certain access is allowed.
-+ * @dev_cgroup: dev cgroup to be tested against
-+ * @refwh: new rule
-  */
--static int may_access_whitelist(struct dev_cgroup *c,
--				       struct dev_whitelist_item *refwh)
-+static int may_access_whitelist(struct dev_cgroup *dev_cgroup,
-+				struct dev_whitelist_item *refwh)
- {
- 	struct dev_whitelist_item *whitem;
-+	bool match = false;
- 
--	list_for_each_entry(whitem, &c->whitelist, list) {
--		if (whitem->type & DEV_ALL)
--			return 1;
-+	list_for_each_entry(whitem, &dev_cgroup->whitelist, list) {
- 		if ((refwh->type & DEV_BLOCK) && !(whitem->type & DEV_BLOCK))
- 			continue;
- 		if ((refwh->type & DEV_CHAR) && !(whitem->type & DEV_CHAR))
-@@ -308,8 +309,21 @@
- 			continue;
- 		if (refwh->access & (~whitem->access))
- 			continue;
--		return 1;
-+		match = true;
-+		break;
- 	}
-+
-+	/*
-+	 * In two cases we'll consider this new rule valid:
-+	 * - the dev cgroup has its default policy to allow + exception list:
-+	 *   the new rule should *not* match any of the exceptions
-+	 *   (behavior != DEVCG_DEFAULT_DENY, !match)
-+	 * - the dev cgroup has its default policy to deny + exception list:
-+	 *   the new rule *should* match the exceptions
-+	 *   (behavior == DEVCG_DEFAULT_DENY, match)
-+	 */
-+	if ((dev_cgroup->behavior == DEVCG_DEFAULT_DENY) == match)
-+		return 1;
- 	return 0;
- }
- 
-@@ -359,11 +373,21 @@
- 
- 	switch (*b) {
- 	case 'a':
--		wh.type = DEV_ALL;
--		wh.access = ACC_MASK;
--		wh.major = ~0;
--		wh.minor = ~0;
--		goto handle;
-+		switch (filetype) {
-+		case DEVCG_ALLOW:
-+			if (!parent_has_perm(devcgroup, &wh))
-+				return -EPERM;
-+			dev_whitelist_clean(devcgroup);
-+			devcgroup->behavior = DEVCG_DEFAULT_ALLOW;
-+			break;
-+		case DEVCG_DENY:
-+			dev_whitelist_clean(devcgroup);
-+			devcgroup->behavior = DEVCG_DEFAULT_DENY;
-+			break;
-+		default:
-+			return -EINVAL;
-+		}
-+		return 0;
- 	case 'b':
- 		wh.type = DEV_BLOCK;
- 		break;
-@@ -422,17 +446,31 @@
- 		}
- 	}
- 
--handle:
- 	switch (filetype) {
- 	case DEVCG_ALLOW:
- 		if (!parent_has_perm(devcgroup, &wh))
- 			return -EPERM;
--		devcgroup->behavior = DEVCG_DEFAULT_ALLOW;
-+		/*
-+		 * If the default policy is to allow by default, try to remove
-+		 * an matching exception instead. And be silent about it: we
-+		 * don't want to break compatibility
-+		 */
-+		if (devcgroup->behavior == DEVCG_DEFAULT_ALLOW) {
-+			dev_whitelist_rm(devcgroup, &wh);
-+			return 0;
-+		}
- 		return dev_whitelist_add(devcgroup, &wh);
- 	case DEVCG_DENY:
--		dev_whitelist_rm(devcgroup, &wh);
--		devcgroup->behavior = DEVCG_DEFAULT_DENY;
--		break;
-+		/*
-+		 * If the default policy is to deny by default, try to remove
-+		 * an matching exception instead. And be silent about it: we
-+		 * don't want to break compatibility
-+		 */
-+		if (devcgroup->behavior == DEVCG_DEFAULT_DENY) {
-+			dev_whitelist_rm(devcgroup, &wh);
-+			return 0;
-+		}
-+		return dev_whitelist_add(devcgroup, &wh);
- 	default:
- 		return -EINVAL;
- 	}
-@@ -479,73 +517,71 @@
- 	.base_cftypes = dev_cgroup_files,
- };
- 
--int __devcgroup_inode_permission(struct inode *inode, int mask)
-+/**
-+ * __devcgroup_check_permission - checks if an inode operation is permitted
-+ * @dev_cgroup: the dev cgroup to be tested against
-+ * @type: device type
-+ * @major: device major number
-+ * @minor: device minor number
-+ * @access: combination of ACC_WRITE, ACC_READ and ACC_MKNOD
-+ *
-+ * returns 0 on success, -EPERM case the operation is not permitted
-+ */
-+static int __devcgroup_check_permission(struct dev_cgroup *dev_cgroup,
-+					short type, u32 major, u32 minor,
-+					short access)
- {
--	struct dev_cgroup *dev_cgroup;
--	struct dev_whitelist_item *wh;
-+	struct dev_whitelist_item wh;
-+	int rc;
-+
-+	memset(&wh, 0, sizeof(wh));
-+	wh.type = type;
-+	wh.major = major;
-+	wh.minor = minor;
-+	wh.access = access;
- 
- 	rcu_read_lock();
-+	rc = may_access_whitelist(dev_cgroup, &wh);
-+	rcu_read_unlock();
- 
--	dev_cgroup = task_devcgroup(current);
-+	if (!rc)
-+		return -EPERM;
- 
--	list_for_each_entry_rcu(wh, &dev_cgroup->whitelist, list) {
--		if (wh->type & DEV_ALL)
--			goto found;
--		if ((wh->type & DEV_BLOCK) && !S_ISBLK(inode->i_mode))
--			continue;
--		if ((wh->type & DEV_CHAR) && !S_ISCHR(inode->i_mode))
--			continue;
--		if (wh->major != ~0 && wh->major != imajor(inode))
--			continue;
--		if (wh->minor != ~0 && wh->minor != iminor(inode))
--			continue;
-+	return 0;
-+}
- 
--		if ((mask & MAY_WRITE) && !(wh->access & ACC_WRITE))
--			continue;
--		if ((mask & MAY_READ) && !(wh->access & ACC_READ))
--			continue;
--found:
--		rcu_read_unlock();
--		return 0;
--	}
-+int __devcgroup_inode_permission(struct inode *inode, int mask)
-+{
-+	struct dev_cgroup *dev_cgroup = task_devcgroup(current);
-+	short type, access = 0;
- 
--	rcu_read_unlock();
-+	if (S_ISBLK(inode->i_mode))
-+		type = DEV_BLOCK;
-+	if (S_ISCHR(inode->i_mode))
-+		type = DEV_CHAR;
-+	if (mask & MAY_WRITE)
-+		access |= ACC_WRITE;
-+	if (mask & MAY_READ)
-+		access |= ACC_READ;
- 
--	return -EPERM;
-+	return __devcgroup_check_permission(dev_cgroup, type, imajor(inode),
-+					    iminor(inode), access);
- }
- 
- int devcgroup_inode_mknod(int mode, dev_t dev)
- {
--	struct dev_cgroup *dev_cgroup;
--	struct dev_whitelist_item *wh;
-+	struct dev_cgroup *dev_cgroup = task_devcgroup(current);
-+	short type;
- 
- 	if (!S_ISBLK(mode) && !S_ISCHR(mode))
- 		return 0;
- 
--	rcu_read_lock();
--
--	dev_cgroup = task_devcgroup(current);
--
--	list_for_each_entry_rcu(wh, &dev_cgroup->whitelist, list) {
--		if (wh->type & DEV_ALL)
--			goto found;
--		if ((wh->type & DEV_BLOCK) && !S_ISBLK(mode))
--			continue;
--		if ((wh->type & DEV_CHAR) && !S_ISCHR(mode))
--			continue;
--		if (wh->major != ~0 && wh->major != MAJOR(dev))
--			continue;
--		if (wh->minor != ~0 && wh->minor != MINOR(dev))
--			continue;
--
--		if (!(wh->access & ACC_MKNOD))
--			continue;
--found:
--		rcu_read_unlock();
--		return 0;
--	}
-+	if (S_ISBLK(mode))
-+		type = DEV_BLOCK;
-+	else
-+		type = DEV_CHAR;
- 
--	rcu_read_unlock();
-+	return __devcgroup_check_permission(dev_cgroup, type, MAJOR(dev),
-+					    MINOR(dev), ACC_MKNOD);
- 
--	return -EPERM;
- }
-
+> 2. Larger files, not stored in the ICB: nothing special here.  Just call
+> blockdev_direct_IO() from our new udf_direct_IO() handler and tidy up
+> any blocks instantiated outside i_size on error.  This is pretty
+> standard.  Factor error handling code out of udf_write_begin() into new
+> function udf_write_failed() so it can also be called by udf_direct_IO().
+> 
+> Also change the whitespace in udf_aops and udf_adinicb_aops to make them
+> a bit neater.
+> 
+> Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+> ---
+> v2: Rework error handling in udf_direct_IO to avoid calling deprecated
+>     vmtruncate().
+> v3: Rebased to next-20120904.
+> ---
+>  fs/udf/file.c  | 29 +++++++++++++++++++++++++----
+>  fs/udf/inode.c | 52 ++++++++++++++++++++++++++++++++++++----------------
+>  2 files changed, 61 insertions(+), 20 deletions(-)
+> 
+> diff --git a/fs/udf/file.c b/fs/udf/file.c
+> index 7f3f7ba..f5f9ddd 100644
+> --- a/fs/udf/file.c
+> +++ b/fs/udf/file.c
+> @@ -34,6 +34,7 @@
+>  #include <linux/errno.h>
+>  #include <linux/pagemap.h>
+>  #include <linux/buffer_head.h>
+> +#include <linux/writeback.h>
+>  #include <linux/aio.h>
+>  
+>  #include "udf_i.h"
+> @@ -64,12 +65,23 @@ static int udf_adinicb_writepage(struct page *page,
+>  	struct inode *inode = page->mapping->host;
+>  	char *kaddr;
+>  	struct udf_inode_info *iinfo = UDF_I(inode);
+> +	loff_t start, end, page_start, page_offset;
+>  
+>  	BUG_ON(!PageLocked(page));
+>  
+>  	kaddr = kmap(page);
+> -	memcpy(iinfo->i_ext.i_data + iinfo->i_lenEAttr, kaddr, inode->i_size);
+> -	mark_inode_dirty(inode);
+> +	/* The beginning and/or end of the page data is likely to be invalid
+> +	 * for O_DIRECT, so only copy the valid part. */
+> +	page_start = (loff_t)page->index << PAGE_CACHE_SHIFT;
+> +	start = max(page_start, wbc->range_start);
+> +	end = min3(page_start + (loff_t)PAGE_CACHE_SIZE - 1,
+> +		   wbc->range_end, inode->i_size - 1);
+> +	if (likely(start <= end)) {
+> +		page_offset = start - page_start;
+> +		memcpy(iinfo->i_ext.i_data + iinfo->i_lenEAttr + start,
+> +		       kaddr + page_offset, (end + 1 - start));
+> +		mark_inode_dirty(inode);
+> +	}
+>  	SetPageUptodate(page);
+>  	kunmap(page);
+>  	unlock_page(page);
+> @@ -95,11 +107,20 @@ static int udf_adinicb_write_end(struct file *file,
+>  	return simple_write_end(file, mapping, pos, len, copied, page, fsdata);
+>  }
+>  
+> +static ssize_t udf_adinicb_direct_IO(int rw, struct kiocb *iocb,
+> +				     const struct iovec *iov,
+> +				     loff_t offset, unsigned long nr_segs)
+> +{
+> +	/* Fallback to buffered I/O. */
+> +	return 0;
+> +}
+> +
+>  const struct address_space_operations udf_adinicb_aops = {
+>  	.readpage	= udf_adinicb_readpage,
+>  	.writepage	= udf_adinicb_writepage,
+> -	.write_begin = simple_write_begin,
+> -	.write_end = udf_adinicb_write_end,
+> +	.write_begin	= simple_write_begin,
+> +	.write_end	= udf_adinicb_write_end,
+> +	.direct_IO	= udf_adinicb_direct_IO,
+>  };
+>  
+>  static ssize_t udf_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+> diff --git a/fs/udf/inode.c b/fs/udf/inode.c
+> index 1a0588e..b905448 100644
+> --- a/fs/udf/inode.c
+> +++ b/fs/udf/inode.c
+> @@ -95,6 +95,22 @@ void udf_evict_inode(struct inode *inode)
+>  	}
+>  }
+>  
+> +static void udf_write_failed(struct address_space *mapping, loff_t to)
+> +{
+> +	struct inode *inode = mapping->host;
+> +	struct udf_inode_info *iinfo = UDF_I(inode);
+> +	loff_t isize = inode->i_size;
+> +
+> +	if (to > isize) {
+> +		truncate_pagecache(inode, to, isize);
+> +		if (iinfo->i_alloc_type != ICBTAG_FLAG_AD_IN_ICB) {
+> +			down_write(&iinfo->i_data_sem);
+> +			udf_truncate_extents(inode);
+> +			up_write(&iinfo->i_data_sem);
+> +		}
+> +	}
+> +}
+> +
+>  static int udf_writepage(struct page *page, struct writeback_control *wbc)
+>  {
+>  	return block_write_full_page(page, udf_get_block, wbc);
+> @@ -124,21 +140,24 @@ static int udf_write_begin(struct file *file, struct address_space *mapping,
+>  	int ret;
+>  
+>  	ret = block_write_begin(mapping, pos, len, flags, pagep, udf_get_block);
+> -	if (unlikely(ret)) {
+> -		struct inode *inode = mapping->host;
+> -		struct udf_inode_info *iinfo = UDF_I(inode);
+> -		loff_t isize = inode->i_size;
+> -
+> -		if (pos + len > isize) {
+> -			truncate_pagecache(inode, pos + len, isize);
+> -			if (iinfo->i_alloc_type != ICBTAG_FLAG_AD_IN_ICB) {
+> -				down_write(&iinfo->i_data_sem);
+> -				udf_truncate_extents(inode);
+> -				up_write(&iinfo->i_data_sem);
+> -			}
+> -		}
+> -	}
+> +	if (unlikely(ret))
+> +		udf_write_failed(mapping, pos + len);
+> +	return ret;
+> +}
+>  
+> +static ssize_t udf_direct_IO(int rw, struct kiocb *iocb,
+> +			     const struct iovec *iov,
+> +			     loff_t offset, unsigned long nr_segs)
+> +{
+> +	struct file *file = iocb->ki_filp;
+> +	struct address_space *mapping = file->f_mapping;
+> +	struct inode *inode = mapping->host;
+> +	ssize_t ret;
+> +
+> +	ret = blockdev_direct_IO(rw, iocb, inode, iov, offset, nr_segs,
+> +				  udf_get_block);
+> +	if (unlikely(ret < 0 && (rw && WRITE)))
+> +		udf_write_failed(mapping, offset + iov_length(iov, nr_segs));
+>  	return ret;
+>  }
+>  
+> @@ -152,8 +171,9 @@ const struct address_space_operations udf_aops = {
+>  	.readpages	= udf_readpages,
+>  	.writepage	= udf_writepage,
+>  	.writepages	= udf_writepages,
+> -	.write_begin		= udf_write_begin,
+> -	.write_end		= generic_write_end,
+> +	.write_begin	= udf_write_begin,
+> +	.write_end	= generic_write_end,
+> +	.direct_IO	= udf_direct_IO,
+>  	.bmap		= udf_bmap,
+>  };
+>  
+> -- 
+> 1.7.12
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
