@@ -1,85 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757978Ab2IDXlY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 19:41:24 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:60639 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752927Ab2IDXlW (ORCPT
+	id S1757997Ab2IDXmU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 19:42:20 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:46209 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753070Ab2IDXmS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 19:41:22 -0400
-Date: Tue, 4 Sep 2012 16:41:13 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        Michael Wang <wangyun@linux.vnet.ibm.com>
-Subject: Re: [PATCH tip/core/rcu 15/15] kmemleak: Replace
- list_for_each_continue_rcu with new interface
-Message-ID: <20120904234113.GX2593@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120830185607.GA32148@linux.vnet.ibm.com>
- <1346352988-32444-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346352988-32444-15-git-send-email-paulmck@linux.vnet.ibm.com>
- <20120831185516.GO4259@jtriplet-mobl1>
+	Tue, 4 Sep 2012 19:42:18 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6825"; a="232863155"
+Message-ID: <504691D9.4060603@codeaurora.org>
+Date: Tue, 04 Sep 2012 16:42:17 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:15.0) Gecko/20120824 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120831185516.GO4259@jtriplet-mobl1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12090423-7282-0000-0000-00000CA3B8E4
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Shawn Guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] kernel/sys.c: call disable_nonboot_cpus in kernel_restart
+References: <1346682298-13958-1-git-send-email-shawn.guo@linaro.org> <20120904153624.d4aaed4e.akpm@linux-foundation.org>
+In-Reply-To: <20120904153624.d4aaed4e.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 31, 2012 at 11:55:16AM -0700, Josh Triplett wrote:
-> On Thu, Aug 30, 2012 at 11:56:28AM -0700, Paul E. McKenney wrote:
-> > From: Michael Wang <wangyun@linux.vnet.ibm.com>
-> > 
-> > This patch replaces list_for_each_continue_rcu() with
-> > list_for_each_entry_continue_rcu() to save a few lines
-> > of code and allow removing list_for_each_continue_rcu().
-> > 
-> > Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
-> > Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+On 09/04/12 15:36, Andrew Morton wrote:
+> On Mon,  3 Sep 2012 22:24:58 +0800
+> Shawn Guo <shawn.guo@linaro.org> wrote:
+>
+>> Like kernel_power_off calls disable_nonboot_cpus, we may want to have
+>> kernel_restart call disable_nonboot_cpus as well.  Doing so can help
+>> the machines that require boot cpu be the last alive cpu during reboot
+>> to survive with kernel restart.
+> That does sound logical.  But the changelog is very vague and fluffy. 
+> Does this patch actually fix any known problem on any known machine?
+>
 
-And thank you for all the reviews and comments!!!
+Not to hijack this thread but I have a similar problem that would be
+partially solved by patch. Basically reboot races with cpu_up and causes
+a BUG_ON to hit in stop machine. So this patch would fix my problem
+except for in the case where restart is called from panic (i.e.
+emergency restart).
 
-							Thanx, Paul
+https://lkml.org/lkml/2012/8/22/3
 
-> > ---
-> >  mm/kmemleak.c |    6 ++----
-> >  1 files changed, 2 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/mm/kmemleak.c b/mm/kmemleak.c
-> > index 45eb621..0de83b4 100644
-> > --- a/mm/kmemleak.c
-> > +++ b/mm/kmemleak.c
-> > @@ -1483,13 +1483,11 @@ static void *kmemleak_seq_next(struct seq_file *seq, void *v, loff_t *pos)
-> >  {
-> >  	struct kmemleak_object *prev_obj = v;
-> >  	struct kmemleak_object *next_obj = NULL;
-> > -	struct list_head *n = &prev_obj->object_list;
-> > +	struct kmemleak_object *obj = prev_obj;
-> >  
-> >  	++(*pos);
-> >  
-> > -	list_for_each_continue_rcu(n, &object_list) {
-> > -		struct kmemleak_object *obj =
-> > -			list_entry(n, struct kmemleak_object, object_list);
-> > +	list_for_each_entry_continue_rcu(obj, &object_list, object_list) {
-> >  		if (get_object(obj)) {
-> >  			next_obj = obj;
-> >  			break;
-> > -- 
-> > 1.7.8
-> > 
-> 
+Here's the commit text:
+
+Nothing stops a process from hotplugging in a CPU concurrently
+with a sys_reboot() call. In such a situation we could have
+ipi_cpu_stop() mark a cpu as 'offline' and _cpu_up() ignore the
+fact that the CPU is not really offline and call the
+CPU_UP_PREPARE notifier. When this happens stop_machine code will
+complain that the cpu thread already exists and BUG_ON().
+
+CPU0                      CPU1
+
+sys_reboot()
+ kernel_restart()
+  machine_restart()
+   machine_shutdown()
+    smp_send_stop()
+    ...                   ipi_cpu_stop()
+                           set_cpu_online(1, false)
+                            local_irq_disable()
+                             while(1)
+    <PREEMPT>
+cpu_up()
+ _cpu_up()
+   if (!cpu_online(1))
+    __cpu_notify(CPU_UP_PREPARE...)
+cpu_stop_cpu_callback()
+  BUG_ON(stopper->thread)
+
+This is easily reproducible by hotplugging in and out in a tight
+loop while also rebooting.
+
+Since the CPU is not really offline and hasn't gone through the
+proper steps to be marked as such, let's mark the CPU as inactive.
+This is just as easily testable as online and avoids any possibility
+of _cpu_up() trying to bring the CPU back online when it never was
+offline to begin with.
+
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
