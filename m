@@ -1,98 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756880Ab2IDL5h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 07:57:37 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:63272 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756773Ab2IDL5g (ORCPT
+	id S1756900Ab2IDMAZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 08:00:25 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:49669 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756859Ab2IDMAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 07:57:36 -0400
-X-Originating-IP: 108.223.40.66
-Date: Tue, 4 Sep 2012 04:57:38 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        kernel@pengutronix.de
-Subject: Re: [PATCH] Revert "spi/doc: spi_master_put must be followed up by
- kfree"
-Message-ID: <20120904115738.GA24634@roeck-us.net>
-References: <1346703986-7849-1-git-send-email-linux@roeck-us.net>
- <20120904072523.GB28643@pengutronix.de>
+	Tue, 4 Sep 2012 08:00:23 -0400
+Message-ID: <5045EC91.9050406@linux.vnet.ibm.com>
+Date: Tue, 04 Sep 2012 17:27:05 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120904072523.GB28643@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rik van Riel <riel@redhat.com>, Gleb Natapov <gleb@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
+Subject: Re: [PATCH RFC 1/1] kvm: Use vcpu_id as pivot instead of last boosted
+ vcpu in PLE handler
+References: <20120829192100.22412.92575.sendpatchset@codeblue> <20120902101234.GB27250@redhat.com> <50438978.9000405@redhat.com>
+In-Reply-To: <50438978.9000405@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12090411-9264-0000-0000-000002458E79
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 04, 2012 at 09:25:23AM +0200, Uwe Kleine-König wrote:
-> On Mon, Sep 03, 2012 at 01:26:26PM -0700, Guenter Roeck wrote:
-> > Actually, spi_master_put() after spi_alloc_master() must _not_ be followed
-> > by kfree(). The memory is already freed with the call to spi_master_put()
-> > through spi_master_class, which registers a release function. Calling both
-> > spi_master_put() and kfree() results in often nasty (and delayed) crashes
-> > elsewhere in the kernel, often in the networking stack.
-> > 
-> > This reverts commit eb4af0f5349235df2e4a5057a72fc8962d00308a.
-> > 
-> > Cc: Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
-> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> I didn't check the callback, but I introduced
-> eb4af0f5349235df2e4a5057a72fc8962d00308a because I saw the kfree in
-> drivers/spi/spi-imx.c. So I guess this needs fixing, too?!
-> 
-This is a bitbang driver, which is one of the tricky ones which I have not touched
-yet.
+On 09/02/2012 09:59 PM, Rik van Riel wrote:
+> On 09/02/2012 06:12 AM, Gleb Natapov wrote:
+>> On Thu, Aug 30, 2012 at 12:51:01AM +0530, Raghavendra K T wrote:
+>>> The idea of starting from next vcpu (source of yield_to + 1) seem to
+>>> work
+>>> well for overcomitted guest rather than using last boosted vcpu. We
+>>> can also
+>>> remove per VM variable with this approach.
+>>>
+>>> Iteration for eligible candidate after this patch starts from vcpu
+>>> source+1
+>>> and ends at source-1 (after wrapping)
+>>>
+>>> Thanks Nikunj for his quick verification of the patch.
+>>>
+>>> Please let me know if this patch is interesting and makes sense.
+>>>
+>> This last_boosted_vcpu thing caused us trouble during attempt to
+>> implement vcpu destruction. It is good to see it removed from this POV.
+>
+> I like this implementation. It should achieve pretty much
+> the same as my old code, but without the downsides and without
+> having to keep the same amount of global state.
+>
 
-That driver calls
-	spi_alloc_master
-	spi_master_get
-..
-error:
-	spi_master_put
-	kfree
+My theoretical understanding how it would help is,
 
-which works out fine, since there are two references to master (one from
-spi_alloc_master and one from spi_master_put). Calling spi_master_put twice
-would be cleaner, of course, but one can not have everything and at least
-nothing bad will happen.
+       |
+       V
+T0 ------- T1
 
-Other bitbang drivers are problematic, though. For example, looking at
-spi-altera.c:
+suppose there are 4 vcpus (v1..v4) out of 32/64 vcpus simpultaneously 
+enter directed yield handler,
 
-	hw->bitbang.master = spi_master_get(master);
-	if (!hw->bitbang.master)
-		return err;
+if last_boosted_vcpu = i then v1 .. v4 will start from i, and there may
+be some unnecessary attempts for directed yields.
 
-That error case should never happen, but if it does the return would leave master
-unreleased. In practice it is not necessary to check the return code here since
-it will only be NULL if master is NULL.
+We may not see such attempts with above patch. But again I agree that,
+whole directed_yield stuff itself is very complicated because of 
+possibility of each vcpu in different state (running/pauseloop exited 
+while spinning/eligible)  and how they are located w.r.t each other.
 
-exit:
-	spi_master_put(master);
-	return err;
+Here is the result I got for ebizzy, 32 vcpu guest 32 core PLE machine
+for 1x 2x and 3x overcommits.
 
-So this driver calls spi_alloc_master and spi_master_get, but only calls
-spi_master_put once in the error path, meaning one reference is left and
-master will not be freed. Given the context, it should really be
-	spi_master_put(hw->bitbang.master);
-	spi_master_put(master);
-	return err;
+base = 3.5-rc5 kernel with ple handler improvements patches applied
+patched = base + vcpuid patch
 
-This is just an example. spi-ath79.c and spi-au1550.c are wrong as well, and
-many others.
+      base         stdev       patched     stdev       %improvement
+1x  1955.6250    39.8961    1863.3750    37.8302    -4.71716
+2x  2475.3750   165.0307    3078.8750   341.9500    24.38014
+3x  2071.5556    91.5370    2112.6667    56.6171     1.98455
 
-The issue really is that one must keep track of the number of references to
-master, and many drivers don't get that right. Bitbang drivers usually call
-spi_master_get() to get an additional reference to master, and thus must call
-spi_master_put twice (or spi_master_put/kfree) in the error path. Non-bitbang
-drivers don't call spi_master_get() and thus don't need the additional call to
-spi_master_put (or kfree).
+Note:
+I have to admit that, I am seeing very inconsistent results while 
+experimenting with 3.6-rc kernel (not specific to vcpuid patch but as a 
+whole) but not sure if it is some thing wrong in my config or should I 
+spend some time debugging. Anybody has observed same?
 
-Guenter
