@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932611Ab2IDVUW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 17:20:22 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46589 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757685Ab2IDVUU (ORCPT
+	id S932637Ab2IDVV3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 17:21:29 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:47667 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757782Ab2IDVV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 17:20:20 -0400
-Date: Tue, 4 Sep 2012 14:20:22 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: Mikulas Patocka <mpatocka@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, bharrosh@panasas.com,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH] dm: Use bioset's front_pad for dm_target_io
-Message-ID: <20120904212022.GB8724@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <Pine.LNX.4.64.1208291210180.774@file.rdu.redhat.com>
- <20120829165006.GB20312@google.com>
- <20120829170711.GC12504@redhat.com>
- <20120829171345.GC20312@google.com>
- <20120830220745.GI27257@redhat.com>
- <20120831014359.GB15218@moria.home.lan>
- <Pine.LNX.4.64.1209031638110.15620@file.rdu.redhat.com>
- <20120904034100.GA21602@moria.home.lan>
- <Pine.LNX.4.64.1209041509160.22689@file.rdu.redhat.com>
- <20120904195156.GE25236@google.com>
+	Tue, 4 Sep 2012 17:21:27 -0400
+X-Originating-IP: 217.70.178.131
+X-Originating-IP: 173.246.103.110
+Date: Tue, 4 Sep 2012 14:21:20 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Len Brown <lenb@kernel.org>, Matt Fleming <matt.fleming@intel.com>,
+        Olof Johansson <olof@lixom.net>, Matthew Garrett <mjg@redhat.com>,
+        David Howells <dhowells@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pawel Moll <pawel.moll@arm.com>, linux-acpi@vger.kernel.org
+Subject: [PATCHv2 0/4] Fix ACPI BGRT support for images located in EFI boot
+ services memory
+Message-ID: <cover.1346792566.git.josh@joshtriplett.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120904195156.GE25236@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Kent.
+The ACPI BGRT lets the OS access the BIOS logo image and its position on the
+screen at boot time, allowing it to maintain that image on the screen until
+ready to display something else, making boot more seamless.  This series fixes
+support for accessing the boot logo image via the BGRT when the BIOS stores it
+in EFI boot services memory, as recommended by the ACPI 5.0 spec.  Linux needs
+to copy the image out of boot services memory before reclaiming boot services
+memory.
 
-On Tue, Sep 04, 2012 at 12:51:56PM -0700, Kent Overstreet wrote:
-> I wrote a patch for dm_target_io last night. I think I know an easy way
-> to go about converting the rest but it'll probably have to wait until
-> I'm further along with my immutable bvec stuff.
-> 
-> Completely untested patch below:
+The first patch cleans up the existing x86-specific efi_enter_virtual_mode
+function to have a stub version on non-x86 platforms, to eliminate an ifdef in
+init/main.c.   The second patch refactors EFI initialization to defer freeing
+boot services memory until much later in the boot process, and in particular
+until after we have ACPI available.  The third patch adds a helper function to
+look up existing EFI boot services mappings, to avoid re-mapping them.  The
+fourth patch moves BGRT initialization to before the reclamation of boot
+services memory, copies the logo at that point, and reworks the existing BGRT
+driver to use that existing copy.
 
-Yeap, this looks great to me.  In the end, I think it's better to
-require stacking drivers to not use separate mempools other than
-bioset.  Timer or not, using multiple alloc pools is brittle.  Any
-path which ends up allocating in different orders for whatever reason
-can lead to subtle deadlock scenarios which can be very difficult to
-track down and, at least currently, there's no way to automatically
-detect them.  Besides, w/ front-pad, it really shouldn't be necessary.
+v2: Made the new internal function efi_unmap_memmap static.  Incorporated
+    feedback from H. Peter Anvin and Matt Fleming: added stubs for
+    x86-specific EFI functions called from init/main.c to eliminate the
+    corresponding ifdefs in start_kernel; deferred
+    efi_free_boot_services even later, to just before free_initmem.
 
-Thanks.
+Josh Triplett (4):
+  efi: Add a stub for efi_enter_virtual_mode on non-x86
+  efi: Defer freeing boot services memory until freeing __init memory
+  efi: Add a function to look up existing IO memory mappings
+  efi: Fix the ACPI BGRT driver for images located in EFI boot services memory
+
+ arch/x86/platform/efi/Makefile   |    1 +
+ arch/x86/platform/efi/efi-bgrt.c |   76 ++++++++++++++++++++++++++++++++++++++
+ arch/x86/platform/efi/efi.c      |   65 +++++++++++++++++++++++++-------
+ drivers/acpi/Kconfig             |    4 +-
+ drivers/acpi/bgrt.c              |   76 +++++---------------------------------
+ include/linux/efi-bgrt.h         |   21 +++++++++++
+ include/linux/efi.h              |    9 +++++
+ init/main.c                      |    7 +++-
+ 8 files changed, 175 insertions(+), 84 deletions(-)
+ create mode 100644 arch/x86/platform/efi/efi-bgrt.c
+ create mode 100644 include/linux/efi-bgrt.h
 
 -- 
-tejun
+1.7.10.4
+
