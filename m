@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932312Ab2IDOes (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 10:34:48 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:56324 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932285Ab2IDOeq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 10:34:46 -0400
-Date: Tue, 4 Sep 2012 10:34:44 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-cc: gregkh@linuxfoundation.org, <linux-usb@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <plagnioj@jcrosoft.com>, <klaus.falkner@solectrix.de>,
-        <ludovic.desroches@atmel.com>
-Subject: Re: [PATCH] USB: ohci-at91: fix PIO handling in relation with number
- of ports
-In-Reply-To: <5045BB6A.8060309@atmel.com>
-Message-ID: <Pine.LNX.4.44L0.1209041032520.1605-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932145Ab2IDOej (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 10:34:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8280 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757018Ab2IDOeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 10:34:36 -0400
+Message-Id: <20120904143420.546524755@napanee.usersys.redhat.com>
+User-Agent: quilt/0.48-1
+Date: Tue, 04 Sep 2012 10:34:21 -0400
+From: Aristeu Rozanski <aris@redhat.com>
+To: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        James Morris <jmorris@namei.org>, Pavel Emelyanov <xemul@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH v2 2/6] device_cgroup: introduce dev_whitelist_clean()
+References: <20120904143419.892872876@napanee.usersys.redhat.com>
+Content-Disposition: inline; filename=introduce_whitelist_clean.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 Sep 2012, Nicolas Ferre wrote:
+This function cleans all the items in a whitelist and will be used by the next
+patches.
 
-> On 08/29/2012 11:49 AM, Nicolas Ferre :
-> > If the number of ports present on the SoC/board is not the maximum
-> > and that the platform data is not filled with all data, there is
-> > an easy way to mess the PIO setup for this interface.
-> > This quick fix addresses mis-configuration in USB host platform data
-> > that is common in at91 boards since commit 0ee6d1e (USB: ohci-at91:
-> > change maximum number of ports) that did not modified the associatd
-> > board files.
-> > 
-> > Reported-by: Klaus Falkner <klaus.falkner@solectrix.de>
-> > Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> > Cc: Alan Stern <stern@rowland.harvard.edu>
-> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > Cc: linux-usb@vger.kernel.org
-> > Cc: Stable <stable@vger.kernel.org> [3.4+]
-> 
-> Alan, Greg, gentle ping...
-> 
-> I really would like to seen it landing in stable soon...
-> 
-> Thanks, best regards,
+v2:
+- no changes
 
-Sorry for the delay.  I feel a little uncomfortable judging board-level 
-changes like this, since I know nothing about the hardware details.
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>
+Cc: James Morris <jmorris@namei.org>
+Cc: Pavel Emelyanov <xemul@openvz.org>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>
+Signed-off-by: Aristeu Rozanski <aris@redhat.com>
 
-Still, for what it's worth, this patch is okay as far as the core 
-ohci-hcd driver components are concerned.  So...
+---
+ security/device_cgroup.c |   22 +++++++++++++++++-----
+ 1 file changed, 17 insertions(+), 5 deletions(-)
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Index: github/security/device_cgroup.c
+===================================================================
+--- github.orig/security/device_cgroup.c	2012-08-21 10:50:34.650810797 -0400
++++ github/security/device_cgroup.c	2012-08-21 10:50:37.526892088 -0400
+@@ -157,6 +157,22 @@
+ 	}
+ }
+ 
++/**
++ * dev_whitelist_clean - frees all entries of the whitelist
++ * @dev_cgroup: dev_cgroup with the whitelist to be cleaned
++ *
++ * called under devcgroup_mutex
++ */
++static void dev_whitelist_clean(struct dev_cgroup *dev_cgroup)
++{
++	struct dev_whitelist_item *wh, *tmp;
++
++	list_for_each_entry_safe(wh, tmp, &dev_cgroup->whitelist, list) {
++		list_del(&wh->list);
++		kfree(wh);
++	}
++}
++
+ /*
+  * called from kernel/cgroup.c with cgroup_lock() held.
+  */
+@@ -203,13 +219,9 @@
+ static void devcgroup_destroy(struct cgroup *cgroup)
+ {
+ 	struct dev_cgroup *dev_cgroup;
+-	struct dev_whitelist_item *wh, *tmp;
+ 
+ 	dev_cgroup = cgroup_to_devcgroup(cgroup);
+-	list_for_each_entry_safe(wh, tmp, &dev_cgroup->whitelist, list) {
+-		list_del(&wh->list);
+-		kfree(wh);
+-	}
++	dev_whitelist_clean(dev_cgroup);
+ 	kfree(dev_cgroup);
+ }
+ 
 
