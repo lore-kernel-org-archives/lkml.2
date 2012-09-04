@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932707Ab2IDUWK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 16:22:10 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:34508 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932512Ab2IDUWI (ORCPT
+	id S932714Ab2IDUX1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 16:23:27 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:47242 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932679Ab2IDUX0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 16:22:08 -0400
-Date: Tue, 4 Sep 2012 21:22:05 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org
-Subject: Re: [PATCH 07/11] kexec: Disable in a secure boot environment
-Message-ID: <20120904202205.GA28903@srcf.ucam.org>
-References: <1346774117-2277-1-git-send-email-mjg@redhat.com>
- <1346774117-2277-8-git-send-email-mjg@redhat.com>
- <87txvdzgur.fsf@xmission.com>
+	Tue, 4 Sep 2012 16:23:26 -0400
+Date: Tue, 4 Sep 2012 13:20:53 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Toshiaki Yamane <yamanetoshi@gmail.com>
+Cc: devel@driverdev.osuosl.org, Manohar Vanga <manohar.vanga@gmail.com>,
+        linux-kernel@vger.kernel.org, Martyn Welch <martyn.welch@ge.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: [PATCH 2/3] staging/vme: Use pr_ printks in vme_user.c
+Message-ID: <20120904202053.GA23449@kroah.com>
+References: <20120817074644.GL4559@mwanda>
+ <1345547573-13371-1-git-send-email-yamanetoshi@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87txvdzgur.fsf@xmission.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <1345547573-13371-1-git-send-email-yamanetoshi@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 04, 2012 at 01:13:32PM -0700, Eric W. Biederman wrote:
+On Tue, Aug 21, 2012 at 08:12:53PM +0900, Toshiaki Yamane wrote:
+> The below checkpatch warnings was fixed,
 > 
-> Matthew Garrett <mjg@redhat.com> writes:
+> -WARNING: Prefer pr_info(... to printk(KERN_INFO, ...
+> -WARNING: Prefer pr_debug(... to printk(KERN_DEBUG, ...
+> -WARNING: Prefer pr_warn(... to printk(KERN_WARNING, ...
+> -WARNING: Prefer pr_err(... to printk(KERN_ERR, ...
 > 
-> > kexec could be used as a vector for a malicious user to use a signed kernel
-> > to circumvent the secure boot trust model. In the long run we'll want to
-> > support signed kexec payloads, but for the moment we should just disable
-> > loading entirely in that situation.
-> 
-> Nacked-by: "Eric W. Biederman" <ebiederm@xmission.com>
-> 
-> This makes no sense.  The naming CAP_SECURE_FIRMWARE is attrocious,
-> you aren't implementing or enforcing secure firmware.
+> and added pr_fmt.
 
-I'm certainly not attached to the name, and have no problem replacing 
-it.
+A lot of these can be converted to use dev_info(), dev_debug(),
+dev_warn(), and dev_err() instead.  Please do that whenever you have
+access to a struct device.
 
-> You don't give any justification for this other than to support some
-> silly EFI feature.  Why would anyone want this if we were not booting
-> under EFI?
+So, sorry, I can't take this patch.
 
-Well, given that approximately everyone will be booting under EFI within 
-18 months, treating it as a niche case seems a little short sighted. And 
-secondly, there are already several non-EFI platforms that want to enact 
-a policy preventing root from being able to arbitrarily replace the 
-kernel. Given that people are doing this in the wild, it makes sense to 
-move towards offering that policy in the mainline kernel.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+greg k-h
