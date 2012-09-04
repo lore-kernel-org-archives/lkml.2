@@ -1,46 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756954Ab2IDMKU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 08:10:20 -0400
-Received: from usa7109mr003.acs-inc.com ([63.101.151.12]:18906 "EHLO
-	USA7109MR003.ACS-INC.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756896Ab2IDMKS convert rfc822-to-8bit (ORCPT
+	id S1756957Ab2IDMLE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 08:11:04 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:34012 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756869Ab2IDMLA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 08:10:18 -0400
-X-Greylist: delayed 586 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Sep 2012 08:10:18 EDT
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-Class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH] sata_fsl: add workaround for data length mismatch on freescale V2 controller
-Date: Tue, 4 Sep 2012 13:00:28 +0100
-Message-ID: <929D3CED81F34E43887A393170D66FB906C13480@GBRSUN01MS002.eu.xerox.net>
-In-Reply-To: <1346756920-19128-1-git-send-email-Shaohui.Xie@freescale.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH] sata_fsl: add workaround for data length mismatch on freescale V2 controller
-Thread-Index: Ac2Kklnyb7vvkOuySAWGalzZVFNadQAAgTIA
-References: <1346756920-19128-1-git-send-email-Shaohui.Xie@freescale.com>
-From: "Jenkins, Clive" <Clive.Jenkins@xerox.com>
-To: Shaohui Xie <Shaohui.Xie@freescale.com>, <jgarzik@pobox.com>,
-        <linux-ide@vger.kernel.org>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        Anju Bhartiya <Anju.Bhartiya@freescale.com>
-X-OriginalArrivalTime: 04 Sep 2012 12:00:31.0195 (UTC) FILETIME=[E1D09AB0:01CD8A94]
+	Tue, 4 Sep 2012 08:11:00 -0400
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: kernel-janitors@vger.kernel.org, Julia.Lawall@lip6.fr,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3] drivers/media/platform/davinci/vpfe_capture.c: fix error return code
+Date: Tue,  4 Sep 2012 14:05:03 +0200
+Message-Id: <1346760305-13060-1-git-send-email-peter.senna@gmail.com>
+X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The freescale V2 SATA controller checks
-> if the received data length matches
-> the programmed length 'ttl', if not,
-> it assumes that this is an error.
-...
+From: Peter Senna Tschudin <peter.senna@gmail.com>
 
-Can you tell us exactly what
-"The freescale V2 SATA controller" is,
-and what versions of what devices contain it?
+Convert a nonnegative error return code to a negative one, as returned
+elsewhere in the function.
 
-Thanks,
-Clive
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
+
+// <smpl>
+(
+if@p1 (\(ret < 0\|ret != 0\))
+ { ... return ret; }
+|
+ret@p1 = 0
+)
+... when != ret = e1
+    when != &ret
+*if(...)
+{
+  ... when != ret = e2
+      when forall
+ return ret;
+}
+
+// </smpl>
+
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+
+---
+ drivers/media/platform/davinci/vpfe_capture.c |   15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/media/platform/davinci/vpfe_capture.c b/drivers/media/platform/davinci/vpfe_capture.c
+index 843b138..f99198c 100644
+--- a/drivers/media/platform/davinci/vpfe_capture.c
++++ b/drivers/media/platform/davinci/vpfe_capture.c
+@@ -1131,11 +1131,11 @@ static int vpfe_s_input(struct file *file, void *priv, unsigned int index)
+ 		ret = -EBUSY;
+ 		goto unlock_out;
+ 	}
+-
+-	if (vpfe_get_subdev_input_index(vpfe_dev,
+-					&subdev_index,
+-					&inp_index,
+-					index) < 0) {
++	ret = vpfe_get_subdev_input_index(vpfe_dev,
++					  &subdev_index,
++					  &inp_index,
++					  index);
++	if (ret < 0) {
+ 		v4l2_err(&vpfe_dev->v4l2_dev, "invalid input index\n");
+ 		goto unlock_out;
+ 	}
+@@ -1748,8 +1748,9 @@ static long vpfe_param_handler(struct file *file, void *priv,
+ 					"Error setting parameters in CCDC\n");
+ 				goto unlock_out;
+ 			}
+-			if (vpfe_get_ccdc_image_format(vpfe_dev,
+-						       &vpfe_dev->fmt) < 0) {
++			ret = vpfe_get_ccdc_image_format(vpfe_dev,
++							 &vpfe_dev->fmt);
++			if (ret < 0) {
+ 				v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev,
+ 					"Invalid image format at CCDC\n");
+ 				goto unlock_out;
+
