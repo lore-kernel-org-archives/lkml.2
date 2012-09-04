@@ -1,109 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756928Ab2IDMIS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 08:08:18 -0400
-Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:57262
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756818Ab2IDMIQ (ORCPT
+	id S1756905Ab2IDMJn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 08:09:43 -0400
+Received: from esgaroth.petrovitsch.at ([78.47.184.11]:2475 "EHLO
+	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756840Ab2IDMJm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 08:08:16 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VS-1(zz98dI168aJ1432Izz1202h1082kzzz2dh2a8h668h839h944hd25hf0ah107ah1220h1155h)
-Date: Tue, 4 Sep 2012 19:46:02 +0800
-From: Dong Aisheng <b29396@freescale.com>
-To: Andi Shyti <andi@etezian.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "lrg@ti.com" <lrg@ti.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        Zhao Richard-B20223 <B20223@freescale.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>
-Subject: Re: [PATCH v5 1/4] mfd: add syscon driver based on regmap
-Message-ID: <20120904114601.GB13046@shlinux2.ap.freescale.net>
-References: <1346728811-25788-1-git-send-email-b29396@freescale.com>
- <1346728811-25788-2-git-send-email-b29396@freescale.com>
- <20120904113545.GD4657@jack.whiskey>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20120904113545.GD4657@jack.whiskey>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+	Tue, 4 Sep 2012 08:09:42 -0400
+Subject: Re: Why exported const value modified by another driver not updated
+ in original driver
+From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
+To: Manavendra Nath Manav <mnm.kernel@gmail.com>
+Cc: linux-kernel@vger.kernel.org, kernelnewbies@kernelnewbies.org
+Date: Tue, 04 Sep 2012 14:06:31 +0200
+In-Reply-To: <CAJKgH8Ah-aq=LfOWs2SBZnndzugNGxJbqYS11YVQLXJy6FZxkw@mail.gmail.com>
+References: <CAJKgH8Ah-aq=LfOWs2SBZnndzugNGxJbqYS11YVQLXJy6FZxkw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1346760392.5081.19.camel@thorin>
+Mime-Version: 1.0
+X-DCC-wuwien-Metrics: esgaroth.petrovitsch.priv.at; whitelist
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 04, 2012 at 07:35:45PM +0800, Andi Shyti wrote:
-> Hi Dong,
-> 
-> On Tue, Sep 04, 2012 at 11:20:08AM +0800, Dong Aisheng wrote:
-> > +static int __devinit syscon_probe(struct platform_device *pdev)
-> > +{
-> > +	struct device *dev = &pdev->dev;
-> 
-> Do we really need this variable? Anyway you are using it only
-> once in the dev_info.
-> 
-Okay, i can remove it.
+Hi!
 
-> > +	struct device_node *np = dev->of_node;
-> > +	struct syscon *syscon;
-> > +	struct resource res;
-> > +	int ret;
-> > +
-> > +	if (!np)
-> > +		return -ENOENT;
-> > +
-> > +	syscon = devm_kzalloc(&pdev->dev, sizeof(struct syscon),
-> > +			    GFP_KERNEL);
-> > +	if (!syscon)
-> > +		return -ENOMEM;
-> > +
-> > +	syscon->base = of_iomap(np, 0);
-> > +	if (!syscon->base)
-> > +		return -EADDRNOTAVAIL;
-> > +
-> > +	ret = of_address_to_resource(np, 0, &res);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +	syscon_regmap_config.max_register = res.end - res.start - 3;
-> > +	syscon->regmap = devm_regmap_init_mmio(&pdev->dev, syscon->base,
-> > +					&syscon_regmap_config);
-> > +	if (IS_ERR(syscon->regmap)) {
-> > +		dev_err(&pdev->dev, "regmap init failed\n");
-> > +		return PTR_ERR(syscon->regmap);
-> > +	}
-> > +
-> > +	syscon->dev = &pdev->dev;
-> > +	platform_set_drvdata(pdev, syscon);
-> > +
-> > +	dev_info(dev, "syscon regmap start 0x%x end 0x%x registered\n",
-> > +		res.start, res.end);
-> > +
-> > +	return 0;
-> 
-> in case of error you are not freeing syscon.
-Do we need it for managed resource of syscon?
+On Die, 2012-09-04 at 15:00 +0530, Manavendra Nath Manav wrote:
+[....]
+> I have declared a static const int variable in one driver and exported
+> that variable symbol.
 
-> Moreover, in my opinion, some dev_err more should not heart
-> 
-There's no much error cases here, most of them rarely fails and i don't feel
-we really need add.
-I don't know what dev_err you suggested to add?
+Exporting a "static" variable makes conceptually no sense whatsoever -
+either you want it exported (so you should remove the "static") or you
+want it not exported - which is precisely the definition of "static".
 
-Regards
-Dong Aisheng
+> retains the original value. When both virtual and physical addresses
+> of the variable as seen by both drivers are same, how is this even
+> possible. Is it a kernel bug?
+
+It's a bug in your drivers.
+The C compiler sees an initialized "static const" variable. So the C
+compiler knows that it is not accessible from other compilation units
+(because it is "static") and the variable isn't changing within the
+current compilation unit (because the variable as such is "const" and
+their is no non-const pointer to it or similar).
+Since this is the only compilation unit, it knows that no one will/can
+change it's value.
+So the C compiler happily replaces all references to the variable with
+it's value - just as if you would have #define'd that value.
+
+Obviously, later on it is exported and the variable actually exists and
+you can change it in the other file. But since the value has been
+replaced literally by "123" at compile (more precise: optimizer time),
+you don't see a change in the printk()s.
+
+> Interestingly, when i change the declaration of variable to "volatile"
+> in driver.c as "static const volatile int" then the driver.ko prints
+> modified value "987" during rmmod and the original value "123" is
+> lost. What is the difference between this and previous declaration?
+
+"volatile" tells the C compiler that a variable may change it's value
+without explicit code.
+A typical use case are hardware registers which are changed by the
+underlying hardware.
+In user space, variables may be modified by signal handlers (which can
+occur at any time in a program - unless specifcally blocked).
+
+So the optimizer must not accesses to "volatile" variables because they
+may change their value at any time.
+
+> Please forgive if you find this question silly?
+
+That all is actually pure (K&R-)C and has nothing to do with the kernel.
+
+
+> static const int value = 123;
+[...]
+> EXPORT_SYMBOL(value);
+
+I wonder if we can modify EXPORT_SYMBOL() so that it compile-time-fails
+for "static" variables.
+And if we actually want that.
+
+	Bernd
+-- 
+Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
+                     LUGA : http://www.luga.at
 
