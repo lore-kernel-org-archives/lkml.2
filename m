@@ -1,91 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753953Ab2IDILN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 04:11:13 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:38389 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751544Ab2IDILK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 04:11:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F41EF2105@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998F41EF2105@DQHE02.ent.ti.com>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Tue, 4 Sep 2012 16:10:48 +0800
-X-Google-Sender-Auth: Am4HBZTVmbRyxcvTahrBzKe95jE
-Message-ID: <CAK5ve-LvRumrD6OP-aCYF0GqvdHjF7caHsC04cF7-cQZc19EDg@mail.gmail.com>
-Subject: Re: [PATCH 2/3] leds-lp5523: add new device id for LP55231
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Richard Purdie <rpurdie@rpsys.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753825Ab2IDIRP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 04:17:15 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:2400 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750722Ab2IDIRN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 04:17:13 -0400
+From: Andrew Vagin <avagin@openvz.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: criu@openvz.org, linux-kernel@vger.kernel.org, avagin@openvz.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: [PATCH] kernel: limit a value of ns_last_pid to (0, max_pid)
+Date: Tue,  4 Sep 2012 12:17:12 +0400
+Message-Id: <1346746632-3025128-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 4, 2012 at 3:06 PM, Kim, Milo <Milo.Kim@ti.com> wrote:
->  To support LP55231 device, the device id is added.
->  Additionally, the i2c driver name is changed from lp5523 to lp5523x.
->
+The kernel doesn't check pid on a negative values, so if
+you would try to write -2 in /proc/sys/kernel/ns_last_pid,
+you will get a kernel panic.
 
-Applied to my for-next.
+In this case the next pid is -1, and alloc_pidmap will try to access
+to a nonexistent pidmap.
 
--Bryan
+map = &pid_ns->pidmap[pid/BITS_PER_PAGE];
 
-> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
-> ---
->  drivers/leds/leds-lp5523.c |   10 ++++++++--
->  1 file changed, 8 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
-> index 80d3792..e69e72a 100644
-> --- a/drivers/leds/leds-lp5523.c
-> +++ b/drivers/leds/leds-lp5523.c
-> @@ -104,6 +104,11 @@
->  #define LED_ACTIVE(mux, led)           (!!(mux & (0x0001 << led)))
->  #define SHIFT_MASK(id)                 (((id) - 1) * 2)
->
-> +enum lp5523_chip_id {
-> +       LP5523,
-> +       LP55231,
-> +};
-> +
->  struct lp5523_engine {
->         int             id;
->         u8              mode;
-> @@ -1005,7 +1010,8 @@ static int lp5523_remove(struct i2c_client *client)
->  }
->
->  static const struct i2c_device_id lp5523_id[] = {
-> -       { "lp5523", 0 },
-> +       { "lp5523",  LP5523 },
-> +       { "lp55231", LP55231 },
->         { }
->  };
->
-> @@ -1013,7 +1019,7 @@ MODULE_DEVICE_TABLE(i2c, lp5523_id);
->
->  static struct i2c_driver lp5523_driver = {
->         .driver = {
-> -               .name   = "lp5523",
-> +               .name   = "lp5523x",
->         },
->         .probe          = lp5523_probe,
->         .remove         = lp5523_remove,
-> --
-> 1.7.9.5
->
->
-> Best Regards,
-> Milo
->
->
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Signed-off-by: Andrew Vagin <avagin@openvz.org>
+---
+ kernel/pid_namespace.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
-
-
+diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+index b3c7fd5..6144bab 100644
+--- a/kernel/pid_namespace.c
++++ b/kernel/pid_namespace.c
+@@ -232,15 +232,19 @@ static int pid_ns_ctl_handler(struct ctl_table *table, int write,
+ 	 */
+ 
+ 	tmp.data = &current->nsproxy->pid_ns->last_pid;
+-	return proc_dointvec(&tmp, write, buffer, lenp, ppos);
++	return proc_dointvec_minmax(&tmp, write, buffer, lenp, ppos);
+ }
+ 
++extern int pid_max;
++static int zero = 0;
+ static struct ctl_table pid_ns_ctl_table[] = {
+ 	{
+ 		.procname = "ns_last_pid",
+ 		.maxlen = sizeof(int),
+ 		.mode = 0666, /* permissions are checked in the handler */
+ 		.proc_handler = pid_ns_ctl_handler,
++		.extra1 = &zero,
++		.extra2 = &pid_max,
+ 	},
+ 	{ }
+ };
 -- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+1.7.1
+
