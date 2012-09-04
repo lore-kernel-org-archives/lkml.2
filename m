@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757618Ab2IDSy0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 14:54:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18521 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757538Ab2IDSyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 14:54:25 -0400
-Date: Tue, 4 Sep 2012 21:55:41 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sjur =?iso-8859-1?Q?Br=E6ndeland?= <sjurbren@gmail.com>
-Cc: Amit Shah <amit.shah@redhat.com>, linux-kernel@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [RFC 1/2] virtio_console: Add support for DMA memory allocation
-Message-ID: <20120904185541.GB3602@redhat.com>
-References: <1346680277-5887-1-git-send-email-sjur.brandeland@stericsson.com>
- <20120903143018.GA5353@redhat.com>
- <CAJK669bkHHMAPYMEr22-6uOwfgJv1uKTbzNBQVVCq=OooExC0g@mail.gmail.com>
- <20120903202737.GD6181@redhat.com>
- <CAJK669ZvnnG6fGOog-Z47B7xqyn9hcx5dAD7S--+2PSgE+hrLA@mail.gmail.com>
- <20120904135022.GI9805@redhat.com>
- <CAJK669Z1UYakBWartChfoeKL_eU5=GFZMGhH8R_Q-difVm0ygQ@mail.gmail.com>
+	id S932540Ab2IDSzl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 14:55:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44149 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757486Ab2IDSzj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 14:55:39 -0400
+Date: Tue, 4 Sep 2012 11:55:40 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, bharrosh@panasas.com,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH v7 9/9] block: Avoid deadlocks with bio allocation by
+ stacking drivers
+Message-ID: <20120904185540.GC3638@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
+ <1346175456-1572-10-git-send-email-koverstreet@google.com>
+ <Pine.LNX.4.64.1208291210180.774@file.rdu.redhat.com>
+ <20120829165006.GB20312@google.com>
+ <20120829170711.GC12504@redhat.com>
+ <20120829171345.GC20312@google.com>
+ <20120830220745.GI27257@redhat.com>
+ <20120831014359.GB15218@moria.home.lan>
+ <Pine.LNX.4.64.1209031638110.15620@file.rdu.redhat.com>
+ <20120904034100.GA21602@moria.home.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJK669Z1UYakBWartChfoeKL_eU5=GFZMGhH8R_Q-difVm0ygQ@mail.gmail.com>
+In-Reply-To: <20120904034100.GA21602@moria.home.lan>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 04, 2012 at 06:58:47PM +0200, Sjur Brændeland wrote:
-> Hi Michael,
-> 
-> > Exactly. Though if we just fail load it will be much less code.
-> >
-> > Generally, using a feature bit for this is a bit of a problem though:
-> > normally driver is expected to be able to simply ignore
-> > a feature bit. In this case driver is required to
-> > do something so a feature bit is not a good fit.
-> > I am not sure what the right thing to do is.
-> 
-> I see - so in order to avoid the binding between driver and device
-> there are two options I guess. Either make virtio_dev_match() or
-> virtcons_probe() fail. Neither of them seems like the obvious choice.
-> 
-> Maybe adding a check for VIRTIO_CONSOLE_F_DMA_MEM match
-> between device and driver in virtcons_probe() is the lesser evil?
-> 
-> Regards,
-> Sjur
+Hello, Mikulas, Kent.
 
-A simplest thing to do is change dev id. rusty?
+On Mon, Sep 03, 2012 at 08:41:00PM -0700, Kent Overstreet wrote:
+> On Mon, Sep 03, 2012 at 04:41:37PM -0400, Mikulas Patocka wrote:
+> > ... or another possibility - start a timer when something is put to 
+> > current->bio_list and use that timer to pop entries off current->bio_list 
+> > and submit them to a workqueue. The timer can be cpu-local so only 
+> > interrupt masking is required to synchronize against the timer.
+> > 
+> > This would normally run just like the current kernel and in case of 
+> > deadlock, the timer would kick in and resolve the deadlock.
+> 
+> Ugh. That's a _terrible_ idea.
+
+That's exactly how workqueue rescuers work - rescuers kick in if new
+worker creation doesn't succeed in given amount of time.  The
+suggested mechanism already makes use of workqueue, so it's already
+doing it.  If you can think of a better way to detect the generic
+stall condition, please be my guest.
+
+> Remember the old plugging code? You ever have to debug performance
+> issues caused by it?
+
+That is not equivalent.  Plugging was kicking in all the time and it
+wasn't entirely well-defined what the plugging / unplugging conditions
+were.  This type of rescuing for forward-progress guarantee only kicks
+in under severe memory pressure and people expect finite latency and
+throughput hits under such conditions.  The usual bio / request /
+scsi_cmd allocations could be failing under these circumstances and
+things could be progressing only thanks to the finite preallocated
+pools.  I don't think involving rescue timer would be noticeably
+deterimental.
+
+Actually, if the timer approach can reduce the frequency of rescuer
+involvement, I think it could actually be better.
+
+Thanks.
 
 -- 
-MST
+tejun
