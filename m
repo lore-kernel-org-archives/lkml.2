@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757311Ab2IDQLT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 12:11:19 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:43340 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777Ab2IDQLR (ORCPT
+	id S1757345Ab2IDQNA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 12:13:00 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:41539 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777Ab2IDQM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 12:11:17 -0400
-Date: Tue, 4 Sep 2012 17:16:03 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Matthew Garrett <mjg@redhat.com>
+	Tue, 4 Sep 2012 12:12:58 -0400
+Date: Tue, 4 Sep 2012 17:12:56 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
 Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
         linux-efi@vger.kernel.org
-Subject: Re: [PATCH 03/11] x86: Lock down IO port access in secure boot
- environments
-Message-ID: <20120904171603.3ccb5891@pyramind.ukuu.org.uk>
-In-Reply-To: <1346774117-2277-4-git-send-email-mjg@redhat.com>
+Subject: Re: [RFC] First attempt at kernel secure boot support
+Message-ID: <20120904161256.GA22961@srcf.ucam.org>
 References: <1346774117-2277-1-git-send-email-mjg@redhat.com>
-	<1346774117-2277-4-git-send-email-mjg@redhat.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+ <20120904170853.0fa6b27b@pyramind.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120904170853.0fa6b27b@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  4 Sep 2012 11:55:09 -0400
-Matthew Garrett <mjg@redhat.com> wrote:
+On Tue, Sep 04, 2012 at 05:08:53PM +0100, Alan Cox wrote:
+> On Tue,  4 Sep 2012 11:55:06 -0400
+> Matthew Garrett <mjg@redhat.com> wrote:
+> 
+> > The UEFI Secure Boot trust model is based on it not being possible for a
+> > user to cause a signed OS to boot an unsigned OS
+> 
+> Unfortunately you can't fix this at kernel level because an untrusted
+> application can at GUI level fake a system crash, reboot cycle and phish
+> any basic credentials such as passwords for the windows partition.
 
-> IO port access would permit users to gain access to PCI configuration
-> registers, which in turn (on a lot of hardware) give access to MMIO register
-> space. This would potentially permit root to trigger arbitrary DMA, so lock
-> it down by default.
+Any well-designed software asking for credentials should already be 
+requiring a SAK, so in that case we just need to implement sensible SAK 
+support in Linux.
 
-You've missed a load of others, all over the kernel, let alone getting
-into devices with other paths to firmware reprogramming of which there
-are many.
-
-You need to enforce signing on request_firmware for example, and sign
-every firmware.
-
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
