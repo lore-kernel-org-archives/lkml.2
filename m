@@ -1,72 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932288Ab2IDPHv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 11:07:51 -0400
-Received: from utopia.booyaka.com ([74.50.51.50]:49249 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932111Ab2IDPHt (ORCPT
+	id S932361Ab2IDPIT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 11:08:19 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:56412 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932181Ab2IDPIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 11:07:49 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Sep 2012 11:07:49 EDT
-Date: Tue, 4 Sep 2012 15:01:07 +0000 (UTC)
-From: Paul Walmsley <paul@booyaka.com>
-To: Jiri Kosina <jkosina@suse.cz>
-cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] [PATCH] HID: remove Paul Walmsley's copyright from places
- where it shouldn't be
-In-Reply-To: <alpine.LNX.2.00.1209041326420.23857@pobox.suse.cz>
-Message-ID: <alpine.DEB.2.00.1209041458550.11437@utopia.booyaka.com>
-References: <alpine.LNX.2.00.1209041326420.23857@pobox.suse.cz>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 4 Sep 2012 11:08:18 -0400
+Date: Tue, 4 Sep 2012 11:08:17 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>
+Subject: Re: [PATCH] USB/host: Cleanup unneccessary irq disable code
+In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A174713@SHSMSX101.ccr.corp.intel.com>
+Message-ID: <Pine.LNX.4.44L0.1209041106290.1605-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="843723315-726100372-1346770867=:11437"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Sat, 1 Sep 2012, Liu, Chuansheng wrote:
 
---843723315-726100372-1346770867=:11437
-Content-Type: TEXT/PLAIN; charset=ISO-8859-2
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+> From: liu chuansheng <chuansheng.liu@intel.com>
+> Subject: [PATCH] USB/host: Cleanup unneccessary irq disable code
+> 
+> Because the IRQF_DISABLED as the flag is now a NOOP and has been
+> deprecated and in hardirq context the interrupt is disabled.
+> 
+> so in usb/host code:
+> Removing the usage of flag IRQF_DISABLED;
+> Removing the calling local_irq save/restore actions in irq
+> handler usb_hcd_irq();
+> 
+> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
 
-Hello Ji=F8=ED,
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
-On Tue, 4 Sep 2012, Jiri Kosina wrote:
-
-> Paul Walmsley has implemented dynamic quirk handling back in 2007 through=
-=20
-> commits:
->=20
-> 2eb5dc30eb ("USB HID: encapsulate quirk handling into hid-quirks.c")
-> 8222fbe67c ("USB HID: clarify static quirk handling as squirks")
-> 8cef908235 ("USB HID: add support for dynamically-created quirks")
-> 876b9276b9 ("USB HID: add 'quirks' module parameter")
->=20
-> and as such, his copyright rightly belongs to=20
-> drivers/hid/usbhid/hid-quirks.c file.
->=20
-> However when generic HID code has been converted to bus and individual=20
-> quirks separated out to individual drivers on the bus, the copyright has=
-=20
-> been blindly transfered into all the tiny drivers, which actually don't=
-=20
-> contain any of Pauls' copyrighted code.
->=20
-> Remove the copyright from those sub-drivers.
->=20
-> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-> ---
->=20
-> Paul,
->=20
-> I am sending this out to you as RFC, and am not willing to apply it=20
-> without your explicit Ack.
-
-Looks fine to me, thanks.
-
-Acked-by: Paul Walmsley <paul@pwsan.com>
-
-- Paul
---843723315-726100372-1346770867=:11437--
