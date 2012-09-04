@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757292Ab2IDO23 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 10:28:29 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:64404 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757188Ab2IDO21 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 10:28:27 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/3] i2c: nomadik: Add Device Tree support to the Nomadik I2C driver
-Date: Tue, 4 Sep 2012 14:28:21 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Lee Jones <lee.jones@linaro.org>, Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@nvidia.com>, linus.walleij@stericsson.com,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Wolfram Sang <w.sang@pengutronix.de>, linux-i2c@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com,
-        devicetree-discuss@lists.ozlabs.org
-References: <20120831122323.GC5962@gmail.com> <5044C82E.5060207@gmail.com> <20120903152012.GH31163@gmail.com>
-In-Reply-To: <20120903152012.GH31163@gmail.com>
+	id S1757299Ab2IDOan (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 10:30:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53631 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757201Ab2IDOal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 10:30:41 -0400
+Message-ID: <5046108B.8030609@redhat.com>
+Date: Tue, 04 Sep 2012 16:30:35 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        kvm@vger.kernel.org, rusty@rustcorp.com.au, jasowang@redhat.com,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH 5/5] virtio-scsi: introduce multiqueue support
+References: <1346154857-12487-1-git-send-email-pbonzini@redhat.com> <1346154857-12487-6-git-send-email-pbonzini@redhat.com> <20120904124800.GE9805@redhat.com> <504606F6.4080603@redhat.com> <20120904142154.GL9805@redhat.com>
+In-Reply-To: <20120904142154.GL9805@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201209041428.21409.arnd@arndb.de>
-X-Provags-ID: V02:K0:AQkrYaBGayFL7SLgBAhAik7IjkToOQRxQdhCf9QH5i0
- TVu6wmR5i+4XY8jXih6kiqLaR7c5T/ASBExM0p9fsRhAivm9cE
- J8zK8v87skbzdby4RusJFOmaBnnfC97dkhBNIG2X2t/DK57BMs
- b+8bqQVkHqpigYAGEBS/YKhDeiRtobK2raToyv0mwBElAfPYuh
- T4/dmF17M2SYFK/WLQ1kRjmntT9B7bKelXRQLgKPd7YsQ/X5lf
- 075uHWJIU6zfpn8exCrk07MP8cg9JPFDNi2tthq6BwiZOHR1Mx
- gofnYwpcKSqivsxlgBICl+zOJacmeUPoC9HVowEbdY7KnviKtg
- uq+wui2GFJPmbDejQbxA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 03 September 2012, Lee Jones wrote:
-> > But if you are handling both, then I agree that platform_data should
-> > override DT.
+Il 04/09/2012 16:21, Michael S. Tsirkin ha scritto:
+> > One reason is that, even though in practice I expect roughly the same
+> > number of targets and VCPUs, hotplug means the number of targets is
+> > difficult to predict and is usually fixed to 256.
+> > 
+> > The other reason is that per-target vq didn't give any performance
+> > advantage.  The bonus comes from cache locality and less process
+> > migrations, more than from the independent virtqueues.
 > 
-> I do agree with this, but I haven't stumbled over such a use-case yet.
-> I have only provided; clock names, DMA settings and call-back information
-> via AUX_DATA() thus far, and those are being removed too when a) the 
-> correct bindings are mainlined and b) I have the time.
+> Okay, and why is per-target worse for cache locality?
 
-I'd prefer if you just disallow the case where pdata and DT have conflicting
-information. We don't seem to have a clear rule that is enforced over the
-kernel, so I don't think we can rely on either one taking precedence over
-the other in general.
+Because per-target doesn't have IRQ affinity for a particular CPU.
 
-In this particular case, we don't have a single board file providing a
-struct nmk_i2c_controller definition for platform data, so the best way
-to handle this IMHO is to remove the header file with the platform
-data definition, and just encode the defaults in the driver.
+Assuming that the thread that is sending requests to the device is
+I/O-bound, it is likely to be sleeping at the time the ISR is executed,
+and thus executing the ISR on the same processor that sent the requests
+is cheap.
 
-	Arnd
+But if you have many such I/O-bound processes, the kernel will execute
+the ISR on a random processor, rather than the one that is sending
+requests to the device.
+
+Paolo
