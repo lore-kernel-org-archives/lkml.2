@@ -1,46 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932761Ab2IDV4d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 17:56:33 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:43772 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757646Ab2IDV4c (ORCPT
+	id S932803Ab2IDV7z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 17:59:55 -0400
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:42324 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757696Ab2IDV7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 17:56:32 -0400
-Date: Tue, 4 Sep 2012 23:01:17 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Mathieu Poirier <mathieu.poirier@linaro.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org,
-        rdunlap@xenotime.net, arve@android.com, kernel-team@android.com,
-        john.stultz@linaro.org
-Subject: Re: [PATCH v2] drivers/tty: Folding Android's keyreset driver in
- sysRQ
-Message-ID: <20120904230117.5a44eb89@pyramind.ukuu.org.uk>
-In-Reply-To: <5046783D.4020702@linaro.org>
-References: <1346365854-28441-1-git-send-email-mathieu.poirier@linaro.org>
-	<20120830230129.GC21501@core.coreip.homeip.net>
-	<50413200.5010104@linaro.org>
-	<20120831230227.6e5008b5@pyramind.ukuu.org.uk>
-	<20120831224128.GA22073@core.coreip.homeip.net>
-	<50414140.60102@linaro.org>
-	<20120831232234.GB22142@core.coreip.homeip.net>
-	<5046783D.4020702@linaro.org>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 4 Sep 2012 17:59:54 -0400
+Message-ID: <1346795661.4732.229.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] ACPI: Enable SCI_EMULATE to manually simulate physical
+ hotplug testing.
+From: Toshi Kani <toshi.kani@hp.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ashok Raj <ashok.raj@intel.com>
+Date: Tue, 04 Sep 2012 15:54:21 -0600
+In-Reply-To: <CAE9FiQVT-0zmE9jyyoWmzM5dd-XAXmHgT+vGqSUKgE2yuPOOvg@mail.gmail.com>
+References: <1346707623-31476-1-git-send-email-yinghai@kernel.org>
+	 <1346776024.4732.196.camel@misato.fc.hp.com>
+	 <CAE9FiQXN1kDwSPTH5UWvDPbrtqGgcEKR4dWwYrP57H4aSA-UMA@mail.gmail.com>
+	 <1346794495.4732.221.camel@misato.fc.hp.com>
+	 <CAE9FiQVT-0zmE9jyyoWmzM5dd-XAXmHgT+vGqSUKgE2yuPOOvg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> which brings us to the "reset_fn()" function - in my opinion it offers
-> significant advantages and should be kept in the design.  What I'm not
-> so clear about is on the implementation.  Should it be kept as part of a
-> platform data or be implemented as a notifier as suggested by Alan.  I
-> am looking for guidance here and suggestions are encouraged.
+On Tue, 2012-09-04 at 14:46 -0700, Yinghai Lu wrote:
+> On Tue, Sep 4, 2012 at 2:34 PM, Toshi Kani <toshi.kani@hp.com> wrote:
+> > On Tue, 2012-09-04 at 12:17 -0700, Yinghai Lu wrote:
+> >  - If a full path is specified in acpi_name, it ignores the arg hsb
+> > ("\_SB").
+> >  - If a relative path is specified in acpi_name, it appends the arg hsb.
+> >
+> > So, the code looks good to me; assuming that is the intent.
+> >
+> > However, the error message below will show up like "\_SB.\_SB.PCIB" when
+> > a full path is specified.
+> 
+> I always use
+> echo "\_SB.PCIB 3" > /sys/kernel/debug/acpi/sci_notify
+> 
+> and it works.
+> 
+> so assume that function can accept \_SB.PCIB and PCIB both.
 
-Not sure reset_fn is the best name but it'll do for me. As for things like
-notifiers, thats extra complexity. *When* someone needs it then they can
-add it. We don't need to add extra complexity now.
+I agree.  And that's what I tried to say.
+
+
+The error message below will be confusing when a (invalid) full path
+name is specified, though.
+
+>> +     if (ACPI_FAILURE(status) || ACPI_FAILURE(status1)) {
+>> +             pr_err(PREFIX
+>> +     "acpi getting handle to <\\_SB.%s> failed inside notify_client
+\n",
+>> +                     acpi_name);
+>> +             return;
+>> +     }
+
+
+Thanks,
+-Toshi
 
