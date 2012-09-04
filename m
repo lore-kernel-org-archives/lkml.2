@@ -1,78 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757696Ab2IDUzG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 16:55:06 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:48742 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757043Ab2IDUzE (ORCPT
+	id S1757756Ab2IDU7M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 16:59:12 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32524 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757586Ab2IDU7K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 16:55:04 -0400
-Date: Tue, 4 Sep 2012 16:44:31 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xensource.com
-Subject: Re: [PATCH] xen/p2m: Fix one by off error in checking the P2M tree
- directory.
-Message-ID: <20120904204431.GA3155@phenom.dumpdata.com>
-References: <1346789834-30618-1-git-send-email-konrad.wilk@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346789834-30618-1-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Tue, 4 Sep 2012 16:59:10 -0400
+X-Authority-Analysis: v=2.0 cv=Vb91zSV9 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=zgiTqp1681AA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=Md3Eq_kwYTQA:10 a=imTROTZUkysA:10 a=OQEzN_gqAOIA:10 a=pN9PhARNchwA:10 a=nFlYCK1qHmYA:10 a=EGDuWttHsakA:10 a=xqw-HurampvXFBSbjY8A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1346792345.27919.18.camel@gandalf.local.home>
+Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive
+ hashtable
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Pedro Alves <palves@redhat.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Tejun Heo <tj@kernel.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, mingo@elte.hu,
+        ebiederm@xmission.com, aarcange@redhat.com, ericvh@gmail.com,
+        netdev@vger.kernel.org, josh@joshtriplett.org, eric.dumazet@gmail.com,
+        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
+        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
+        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
+        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Date: Tue, 04 Sep 2012 16:59:05 -0400
+In-Reply-To: <50463883.8080706@redhat.com>
+References: <20120824203332.GF21325@google.com> <5037E9D9.9000605@gmail.com>
+	   <20120824212348.GK21325@google.com> <5038074D.300@gmail.com>
+	   <20120824230740.GN21325@google.com> <20120825042419.GA27240@Krystal>
+	   <503C95E4.3010000@gmail.com> <20120828101148.GA21683@Krystal>
+	   <503CAB1E.5010408@gmail.com> <20120828115638.GC23818@Krystal>
+	   <20120828230050.GA3337@Krystal>
+	  <1346772948.27919.9.camel@gandalf.local.home>
+	 <50462C99.5000007@redhat.com>  <50462EE8.1090903@redhat.com>
+	 <1346779027.27919.15.camel@gandalf.local.home>
+	 <50463883.8080706@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 04, 2012 at 04:17:14PM -0400, Konrad Rzeszutek Wilk wrote:
-> We would the full P2M top directory from 0->MAX_DOMAIN_PAGES (inclusive).
+On Tue, 2012-09-04 at 18:21 +0100, Pedro Alves wrote:
+> On 09/04/2012 06:17 PM, Steven Rostedt wrote:
+> > On Tue, 2012-09-04 at 17:40 +0100, Pedro Alves wrote:
+> > 
+> >> BTW, you can also go a step further and remove the need to close with double }},
+> >> with something like:
+> >>
+> >> #define do_for_each_ftrace_rec(pg, rec)                                          \
+> >>         for (pg = ftrace_pages_start, rec = &pg->records[pg->index];             \
+> >>              pg && rec == &pg->records[pg->index];                               \
+> >>              pg = pg->next)                                                      \
+> >>           for (rec = pg->records; rec < &pg->records[pg->index]; rec++)
+> >>
+> > 
+> > Yeah, but why bother? It's hidden in a macro, and the extra '{ }' shows
+> > that this is something "special".
+> 
+> The point of both changes is that there's nothing special in the end
+> at all.  It all just works...
+> 
 
-.. We would traverse the full P2M top directory (from 0->MAX_DOMAIN_PAGES
-inclusive) when trying to figure out whether we can re-use some of the
-P2M middle leafs.
+It would still fail on a 'break'. The 'while' macro tells us that it is
+special, because in the end, it wont work.
 
-> 
-> Which meant that if the kernel was compiled with MAX_DOMAIN_PAGES=512
-> we would try to use the 512th entry. Fortunately for us the p2m_top_index
-> has a check for this:
-> 
->  BUG_ON(pfn >= MAX_P2M_PFN);
-> 
-> which we hit and saw this:
-> 
-> (XEN) domain_crash_sync called from entry.S
-> (XEN) Domain 0 (vcpu#0) crashed on cpu#0:
-> (XEN) ----[ Xen-4.1.2-OVM  x86_64  debug=n  Tainted:    C ]----
-> (XEN) CPU:    0
-> (XEN) RIP:    e033:[<ffffffff819cadeb>]
-> (XEN) RFLAGS: 0000000000000212   EM: 1   CONTEXT: pv guest
-> (XEN) rax: ffffffff81db5000   rbx: ffffffff81db4000   rcx: 0000000000000000
-> (XEN) rdx: 0000000000480211   rsi: 0000000000000000   rdi: ffffffff81db4000
-> (XEN) rbp: ffffffff81793db8   rsp: ffffffff81793d38   r8:  0000000008000000
-> (XEN) r9:  4000000000000000   r10: 0000000000000000   r11: ffffffff81db7000
-> (XEN) r12: 0000000000000ff8   r13: ffffffff81df1ff8   r14: ffffffff81db6000
-> (XEN) r15: 0000000000000ff8   cr0: 000000008005003b   cr4: 00000000000026f0
-> (XEN) cr3: 0000000661795000   cr2: 0000000000000000
-> 
-> Fixes-Oracle-Bug: 14570662
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  arch/x86/xen/p2m.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-> index 0bfaf5b..af11f00 100644
-> --- a/arch/x86/xen/p2m.c
-> +++ b/arch/x86/xen/p2m.c
-> @@ -695,7 +695,7 @@ bool __init early_can_reuse_p2m_middle(unsigned long set_pfn, unsigned long set_
->  	if (p2m_index(set_pfn))
->  		return false;
->  
-> -	for (pfn = 0; pfn <= MAX_DOMAIN_PAGES; pfn += P2M_PER_PAGE) {
-> +	for (pfn = 0; pfn < MAX_DOMAIN_PAGES; pfn += P2M_PER_PAGE) {
->  		topidx = p2m_top_index(pfn);
->  
->  		if (!p2m_top[topidx])
-> -- 
-> 1.7.7.6
+-- Steve
+
+
