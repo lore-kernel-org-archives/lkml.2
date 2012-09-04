@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932494Ab2IDQgM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 12:36:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28989 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932302Ab2IDQgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 12:36:11 -0400
-Message-ID: <50462DF5.1000806@redhat.com>
-Date: Tue, 04 Sep 2012 19:36:05 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S932500Ab2IDQhZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 12:37:25 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:43138 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757135Ab2IDQhX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 12:37:23 -0400
+Date: Tue, 4 Sep 2012 11:18:21 -0500
+From: Kent Yoder <key@linux.vnet.ibm.com>
+To: James Morris <jmorris@namei.org>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net, kernel-janitors@vger.kernel.org,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: [PATCH] tpm: fix tpm_acpi sparse warning on different address spaces
+Message-ID: <20120904161819.GB20588@linux.vnet.ibm.com>
+References: <20120830143839.GA9589@linux.vnet.ibm.com>
+ <20120830174556.GD20741@mwanda>
+ <20120830192155.GA25524@linux.vnet.ibm.com>
+ <20120902163030.GB1840@mwanda>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Sasha Levin <levinsasha928@gmail.com>, rusty@rustcorp.com.au,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v3 2/2] virtio-ring: Allocate indirect buffers from cache
- when possible
-References: <1346325718-11151-1-git-send-email-levinsasha928@gmail.com> <1346325718-11151-2-git-send-email-levinsasha928@gmail.com> <20120830133820.GC21132@redhat.com> <50408587.5030603@gmail.com> <20120831095628.GB24244@redhat.com> <50462D8B.7040004@redhat.com>
-In-Reply-To: <50462D8B.7040004@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120902163030.GB1840@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12090416-4242-0000-0000-000002C73DA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2012 07:34 PM, Avi Kivity wrote:
-> On 08/31/2012 12:56 PM, Michael S. Tsirkin wrote:
->> On Fri, Aug 31, 2012 at 11:36:07AM +0200, Sasha Levin wrote:
->>> On 08/30/2012 03:38 PM, Michael S. Tsirkin wrote:
->>> >> +static unsigned int indirect_alloc_thresh = 16;
->>> > Why 16?  Please make is MAX_SG + 1 this makes some sense.
->>> 
->>> Wouldn't MAX_SG mean we always allocate from the cache? Isn't the memory waste
->>> too big in this case?
->> 
->> Sorry. I really meant MAX_SKB_FRAGS + 1. MAX_SKB_FRAGS is 17 so gets us
->> threshold of 18. It is less than the size of an skb+shinfo itself so -
->> does it look too big to you? Also why do you think 16 is not too big but
->> 18 is?  If there's a reason then I am fine with 16 too but then please
->> put it in code comment near where the value is set.
->> 
->> Yes this means virtio net always allocates from cache
->> but this is a good thing, isn't it? Gets us more consistent
->> performance.
-> 
-> kmalloc() also goes to a cache.  Is there a measurable difference?
-> 
-> Ugh, there's an ugly loop in __find_general_cachep(), which really wants
-> to be replaced with fls().
-> 
+acpi_os_map_memory expects its return value to be in the __iomem address
+space. Tag the variable we're using as such and use memcpy_fromio to
+avoid further sparse warnings.
 
-Actually, not, as the loop will be very short for small sizes.
+Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
+---
+ drivers/char/tpm/tpm_acpi.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/char/tpm/tpm_acpi.c b/drivers/char/tpm/tpm_acpi.c
+index fe3fa94..56051d0 100644
+--- a/drivers/char/tpm/tpm_acpi.c
++++ b/drivers/char/tpm/tpm_acpi.c
+@@ -49,7 +49,7 @@ int read_log(struct tpm_bios_log *log)
+ {
+ 	struct acpi_tcpa *buff;
+ 	acpi_status status;
+-	struct acpi_table_header *virt;
++	void __iomem *virt;
+ 	u64 len, start;
+ 
+ 	if (log->bios_event_log != NULL) {
+@@ -102,7 +102,7 @@ int read_log(struct tpm_bios_log *log)
+ 		return -EIO;
+ 	}
+ 
+-	memcpy(log->bios_event_log, virt, len);
++	memcpy_fromio(log->bios_event_log, virt, len);
+ 
+ 	acpi_os_unmap_memory(virt, len);
+ 	return 0;
 -- 
-error compiling committee.c: too many arguments to function
+1.7.11.4
+
