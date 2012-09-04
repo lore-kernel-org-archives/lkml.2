@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754124Ab2IDIZb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 04:25:31 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:27619 "EHLO
+	id S1754625Ab2IDIZh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 04:25:37 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:15100 "EHLO
 	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751544Ab2IDIZ2 (ORCPT
+	by vger.kernel.org with ESMTP id S1754139Ab2IDIZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 04:25:28 -0400
+	Tue, 4 Sep 2012 04:25:32 -0400
 X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzzz2dh668h839hd24he5bhf0ah107ah1155h)
-X-WSS-ID: 0M9TGQ9-01-71C-02
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah107ah1155h)
+X-WSS-ID: 0M9TGQE-01-71H-02
 X-M-MSG: 
 From: Andre Przywara <andre.przywara@amd.com>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>, Thomas Renninger <trenn@suse.de>
 CC: Matthew Garret <mjg@redhat.com>, <linux-pm@vger.kernel.org>,
         <cpufreq@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Subject: [PATCH 0/8 v2] acpi-cpufreq: Move modern AMD cpufreq support to acpi-cpufreq
-Date: Tue, 4 Sep 2012 10:28:01 +0200
-Message-ID: <1346747289-8421-1-git-send-email-andre.przywara@amd.com>
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Andre Przywara <andre.przywara@amd.com>
+Subject: [PATCH 5/8 v2] ACPI: Add fixups for AMD P-state figures
+Date: Tue, 4 Sep 2012 10:28:06 +0200
+Message-ID: <1346747289-8421-6-git-send-email-andre.przywara@amd.com>
 X-Mailer: git-send-email 1.7.12
+In-Reply-To: <1346747289-8421-1-git-send-email-andre.przywara@amd.com>
+References: <1346747289-8421-1-git-send-email-andre.przywara@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-OriginatorOrg: amd.com
@@ -28,29 +31,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Matthew Garrett <mjg@redhat.com>
 
-now the second, revised version of the patch set. I now tested loading
-both drivers after each other in several combinations, after two bug
-fixes this now works as expected.
-I added a patch to move messages from powernow-k8 after the initialization
-phase, so it remains silent if driver loading fails.
+Some AMD systems may round the frequencies in ACPI tables to 100MHz
+boundaries. We can obtain the real frequencies from MSRs, so add a quirk
+to fix these frequencies up on AMD systems.
 
-I also rearranged the patches so that the powernow-k8 feature removal patch is
-now the last one and is somewhat optional. I still prefer to have it in,
-but it can be dropped if needed. Then powernow-k8 will still support modern
-AMD CPUs, but will emit a warning message.
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Signed-off-by: Andre Przywara <andre.przywara@amd.com>
+---
+ arch/x86/include/asm/msr-index.h |  1 +
+ drivers/acpi/processor_perflib.c | 30 ++++++++++++++++++++++++++++++
+ 2 files changed, 31 insertions(+)
 
-Regards,
-Andre
-
-Changes from v1:
-* added hints to Kconfig about CPU support
-* merge documentation from separate patch into the feature patch
-* add deprecation warning
-* prefix acpi-cpufreq warning messages with module name
-* bugfix: avoid boost init it driver registration failed
-* bugfix: fix module redirect request call (was not reached before)
-
+diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
+index 1e1f3eb..fbee971 100644
+--- a/arch/x86/include/asm/msr-index.h
++++ b/arch/x86/include/asm/msr-index.h
+@@ -248,6 +248,7 @@
+ 
+ #define MSR_IA32_PERF_STATUS		0x00000198
+ #define MSR_IA32_PERF_CTL		0x00000199
++#define MSR_AMD_PSTATE_DEF_BASE		0xc0010064
+ #define MSR_AMD_PERF_STATUS		0xc0010063
+ #define MSR_AMD_PERF_CTL		0xc0010062
+ 
+diff --git a/drivers/acpi/processor_perflib.c b/drivers/acpi/processor_perflib.c
+index a093dc1..836bfe0 100644
+--- a/drivers/acpi/processor_perflib.c
++++ b/drivers/acpi/processor_perflib.c
+@@ -324,6 +324,34 @@ static int acpi_processor_get_performance_control(struct acpi_processor *pr)
+ 	return result;
+ }
+ 
++#ifdef CONFIG_X86
++/*
++ * Some AMDs have 50MHz frequency multiples, but only provide 100MHz rounding
++ * in their ACPI data. Calculate the real values and fix up the _PSS data.
++ */
++static void amd_fixup_frequency(struct acpi_processor_px *px, int i)
++{
++	u32 hi, lo, fid, did;
++	int index = px->control & 0x00000007;
++
++	if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD)
++		return;
++
++	if ((boot_cpu_data.x86 == 0x10 && boot_cpu_data.x86_model < 10)
++	    || boot_cpu_data.x86 == 0x11) {
++		rdmsr(MSR_AMD_PSTATE_DEF_BASE + index, lo, hi);
++		fid = lo & 0x3f;
++		did = (lo >> 6) & 7;
++		if (boot_cpu_data.x86 == 0x10)
++			px->core_frequency = (100 * (fid + 0x10)) >> did;
++		else
++			px->core_frequency = (100 * (fid + 8)) >> did;
++	}
++}
++#else
++static void amd_fixup_frequency(struct acpi_processor_px *px, int i) {};
++#endif
++
+ static int acpi_processor_get_performance_states(struct acpi_processor *pr)
+ {
+ 	int result = 0;
+@@ -379,6 +407,8 @@ static int acpi_processor_get_performance_states(struct acpi_processor *pr)
+ 			goto end;
+ 		}
+ 
++		amd_fixup_frequency(px, i);
++
+ 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+ 				  "State [%d]: core_frequency[%d] power[%d] transition_latency[%d] bus_master_latency[%d] control[0x%x] status[0x%x]\n",
+ 				  i,
+-- 
+1.7.12
 
 
