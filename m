@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754625Ab2IDIZh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 04:25:37 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:15100 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754139Ab2IDIZc (ORCPT
+	id S1756489Ab2IDIZt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 04:25:49 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:48733
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754651Ab2IDIZi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 04:25:32 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+	Tue, 4 Sep 2012 04:25:38 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah107ah1155h)
-X-WSS-ID: 0M9TGQE-01-71H-02
+X-WSS-ID: 0M9TGQG-02-27L-02
 X-M-MSG: 
 From: Andre Przywara <andre.przywara@amd.com>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>, Thomas Renninger <trenn@suse.de>
@@ -18,9 +18,9 @@ CC: Matthew Garret <mjg@redhat.com>, <linux-pm@vger.kernel.org>,
         <cpufreq@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Andreas Herrmann <andreas.herrmann3@amd.com>,
         Andre Przywara <andre.przywara@amd.com>
-Subject: [PATCH 5/8 v2] ACPI: Add fixups for AMD P-state figures
-Date: Tue, 4 Sep 2012 10:28:06 +0200
-Message-ID: <1346747289-8421-6-git-send-email-andre.przywara@amd.com>
+Subject: [PATCH 2/8 v2] acpi-cpufreq: Add quirk to disable _PSD usage on all AMD CPUs
+Date: Tue, 4 Sep 2012 10:28:03 +0200
+Message-ID: <1346747289-8421-3-git-send-email-andre.przywara@amd.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1346747289-8421-1-git-send-email-andre.przywara@amd.com>
 References: <1346747289-8421-1-git-send-email-andre.przywara@amd.com>
@@ -31,79 +31,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matthew Garrett <mjg@redhat.com>
+To workaround some Windows specific behavior, the ACPI _PSD table
+on AMD desktop boards advertises all cores as dependent, meaning
+that they all can only use the same P-state. acpi-cpufreq strictly
+obeys this description, instantiating one CPU only and symlinking
+the others. But the hardware can have distinct frequencies for each
+core and powernow-k8 did it that way.
+So, in order to use the hardware to its full potential and keep the
+original powernow-k8 behavior, lets override the _PSD table setting
+on AMD hardware.
+We use the siblings table, as it matches the current hardware
+behavior.
 
-Some AMD systems may round the frequencies in ACPI tables to 100MHz
-boundaries. We can obtain the real frequencies from MSRs, so add a quirk
-to fix these frequencies up on AMD systems.
-
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Andre Przywara <andre.przywara@amd.com>
 ---
- arch/x86/include/asm/msr-index.h |  1 +
- drivers/acpi/processor_perflib.c | 30 ++++++++++++++++++++++++++++++
- 2 files changed, 31 insertions(+)
+ drivers/cpufreq/acpi-cpufreq.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
-index 1e1f3eb..fbee971 100644
---- a/arch/x86/include/asm/msr-index.h
-+++ b/arch/x86/include/asm/msr-index.h
-@@ -248,6 +248,7 @@
+diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
+index 067a61f..70e7173 100644
+--- a/drivers/cpufreq/acpi-cpufreq.c
++++ b/drivers/cpufreq/acpi-cpufreq.c
+@@ -51,6 +51,8 @@ MODULE_AUTHOR("Paul Diefenbaugh, Dominik Brodowski");
+ MODULE_DESCRIPTION("ACPI Processor P-States Driver");
+ MODULE_LICENSE("GPL");
  
- #define MSR_IA32_PERF_STATUS		0x00000198
- #define MSR_IA32_PERF_CTL		0x00000199
-+#define MSR_AMD_PSTATE_DEF_BASE		0xc0010064
- #define MSR_AMD_PERF_STATUS		0xc0010063
- #define MSR_AMD_PERF_CTL		0xc0010062
- 
-diff --git a/drivers/acpi/processor_perflib.c b/drivers/acpi/processor_perflib.c
-index a093dc1..836bfe0 100644
---- a/drivers/acpi/processor_perflib.c
-+++ b/drivers/acpi/processor_perflib.c
-@@ -324,6 +324,34 @@ static int acpi_processor_get_performance_control(struct acpi_processor *pr)
- 	return result;
- }
- 
-+#ifdef CONFIG_X86
-+/*
-+ * Some AMDs have 50MHz frequency multiples, but only provide 100MHz rounding
-+ * in their ACPI data. Calculate the real values and fix up the _PSS data.
-+ */
-+static void amd_fixup_frequency(struct acpi_processor_px *px, int i)
-+{
-+	u32 hi, lo, fid, did;
-+	int index = px->control & 0x00000007;
++#define PFX "acpi-cpufreq: "
 +
-+	if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD)
-+		return;
+ enum {
+ 	UNDEFINED_CAPABLE = 0,
+ 	SYSTEM_INTEL_MSR_CAPABLE,
+@@ -586,6 +588,14 @@ static int acpi_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ 		policy->shared_type = CPUFREQ_SHARED_TYPE_ALL;
+ 		cpumask_copy(policy->cpus, cpu_core_mask(cpu));
+ 	}
 +
-+	if ((boot_cpu_data.x86 == 0x10 && boot_cpu_data.x86_model < 10)
-+	    || boot_cpu_data.x86 == 0x11) {
-+		rdmsr(MSR_AMD_PSTATE_DEF_BASE + index, lo, hi);
-+		fid = lo & 0x3f;
-+		did = (lo >> 6) & 7;
-+		if (boot_cpu_data.x86 == 0x10)
-+			px->core_frequency = (100 * (fid + 0x10)) >> did;
-+		else
-+			px->core_frequency = (100 * (fid + 8)) >> did;
++	if (check_amd_hwpstate_cpu(cpu) && !acpi_pstate_strict) {
++		cpumask_clear(policy->cpus);
++		cpumask_set_cpu(cpu, policy->cpus);
++		cpumask_copy(policy->related_cpus, cpu_sibling_mask(cpu));
++		policy->shared_type = CPUFREQ_SHARED_TYPE_HW;
++		pr_info_once(PFX "overriding BIOS provided _PSD data\n");
 +	}
-+}
-+#else
-+static void amd_fixup_frequency(struct acpi_processor_px *px, int i) {};
-+#endif
-+
- static int acpi_processor_get_performance_states(struct acpi_processor *pr)
- {
- 	int result = 0;
-@@ -379,6 +407,8 @@ static int acpi_processor_get_performance_states(struct acpi_processor *pr)
- 			goto end;
- 		}
+ #endif
  
-+		amd_fixup_frequency(px, i);
-+
- 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
- 				  "State [%d]: core_frequency[%d] power[%d] transition_latency[%d] bus_master_latency[%d] control[0x%x] status[0x%x]\n",
- 				  i,
+ 	/* capability check */
 -- 
 1.7.12
 
