@@ -1,70 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575Ab2IDGkv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 02:40:51 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:54952 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751794Ab2IDGku convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 02:40:50 -0400
+	id S1754897Ab2IDGqe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 02:46:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47697 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751794Ab2IDGqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 02:46:32 -0400
+Message-ID: <5045A3B4.2030101@redhat.com>
+Date: Tue, 04 Sep 2012 08:46:12 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20120904135829.6beb08f80919aa2b5c8bf55f@canb.auug.org.au>
-References: <20120904135829.6beb08f80919aa2b5c8bf55f@canb.auug.org.au>
-Date: Tue, 4 Sep 2012 08:40:48 +0200
-Message-ID: <CA+icZUXT=GgYMAUq2KGm1jYsuw72moo+jzhoCadt7yJUpOAUzg@mail.gmail.com>
-Subject: Re: linux-next: build warnings after merge of the drm tree
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Dave Airlie <airlied@linux.ie>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sachin Kamat <sachin.kamat@linaro.org>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        kvm@vger.kernel.org, rusty@rustcorp.com.au, jasowang@redhat.com,
+        mst@redhat.com, virtualization@lists.linux-foundation.org,
+        Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
+        target-devel <target-devel@vger.kernel.org>
+Subject: Re: [PATCH 5/5] virtio-scsi: introduce multiqueue support
+References: <1346154857-12487-1-git-send-email-pbonzini@redhat.com>  <1346154857-12487-6-git-send-email-pbonzini@redhat.com> <1346725294.4162.79.camel@haakon2.linux-iscsi.org>
+In-Reply-To: <1346725294.4162.79.camel@haakon2.linux-iscsi.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 4, 2012 at 5:58 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Dave,
->
-> After merging the drm tree, today's linux-next build (powerpc
-> ppc64_defconfig) produced these warnings:
->
-> drivers/gpu/drm/udl/Kconfig:1:error: recursive dependency detected!
-> drivers/gpu/drm/udl/Kconfig:1:  symbol DRM_UDL depends on USB_ARCH_HAS_HCD
-> drivers/usb/Kconfig:76: symbol USB_ARCH_HAS_HCD depends on USB_SUPPORT
-> drivers/usb/Kconfig:58: symbol USB_SUPPORT is selected by DRM_USB
-> drivers/gpu/drm/Kconfig:22:     symbol DRM_USB is selected by DRM_UDL
-> warning: (PPC_PS3) selects USB_OHCI_LITTLE_ENDIAN which has unmet direct dependencies (USB_SUPPORT && USB_OHCI_HCD)
-> warning: (PPC_PS3 && PPC_CELLEB) selects USB_OHCI_BIG_ENDIAN_MMIO which has unmet direct dependencies (USB_SUPPORT && USB_OHCI_HCD)
-> warning: (PPC_PS3 && PPC_CELLEB && USB_EHCI_HCD_PMC_MSP && XPS_USB_HCD_XILINX && USB_OCTEON_EHCI) selects USB_EHCI_BIG_ENDIAN_MMIO which has unmet direct dependencies (USB_SUPPORT && USB_EHCI_HCD && (PPC_CELLEB || PPC_PS3 || 440EPX || ARCH_IXP4XX || XPS_USB_HCD_XILINX || PPC_MPC512x || CPU_CAVIUM_OCTEON || PMC_MSP || SPARC_LEON || MIPS_SEAD3))
->
-> The x86_64 allmodconfig produces these:
->
-> drivers/gpu/drm/udl/Kconfig:1:error: recursive dependency detected!
-> drivers/gpu/drm/udl/Kconfig:1:  symbol DRM_UDL depends on USB_ARCH_HAS_HCD
-> drivers/usb/Kconfig:76: symbol USB_ARCH_HAS_HCD depends on USB_SUPPORT
-> drivers/usb/Kconfig:58: symbol USB_SUPPORT is selected by DRM_USB
-> drivers/gpu/drm/Kconfig:22:     symbol DRM_USB is selected by DRM_UDL
-> warning: (MOUSE_APPLETOUCH && MOUSE_BCM5974 && MOUSE_SYNAPTICS_USB && JOYSTICK_XPAD && TABLET_USB_ACECAD && TABLET_USB_AIPTEK && TABLET_USB_HANWANG && TABLET_USB_KBTAB && TABLET_USB_WACOM && TOUCHSCREEN_USB_COMPOSITE && INPUT_ATI_REMOTE2 && INPUT_KEYSPAN_REMOTE && INPUT_POWERMATE && INPUT_YEALINK && INPUT_CM109 && RC_ATI_REMOTE && IR_IMON && IR_MCEUSB && IR_REDRAT3 && IR_STREAMZAP && IR_IGUANA && IR_TTUSBIR && DRM_USB) selects USB which has unmet direct dependencies (USB_SUPPORT && USB_ARCH_HAS_HCD)
->
-> Maybe introduced by commit df0b34430072 ("drm/usb: select USB_SUPPORT in
-> Kconfig"), maybe interacting with a commit 8f057d7bca54 ("gpu/mfd/usb:
-> Fix USB randconfig problems") from Linus' tree (that added "depends on
-> USB_ARCH_HAS_HCD" to "config DRM_USB" and "config DRM_UDL").
->
-> I have left this mess for now, but it needs addressing.
+Il 04/09/2012 04:21, Nicholas A. Bellinger ha scritto:
+>> @@ -112,6 +118,9 @@ static void virtscsi_complete_cmd(struct virtio_scsi *vscsi, void *buf)
+>>  	struct virtio_scsi_cmd *cmd = buf;
+>>  	struct scsi_cmnd *sc = cmd->sc;
+>>  	struct virtio_scsi_cmd_resp *resp = &cmd->resp.cmd;
+>> +	struct virtio_scsi_target_state *tgt = vscsi->tgt[sc->device->id];
+>> +
+>> +	atomic_dec(&tgt->reqs);
+>>  
+> 
+> As tgt->tgt_lock is taken in virtscsi_queuecommand_multi() before the
+> atomic_inc_return(tgt->reqs) check, it seems like using atomic_dec() w/o
+> smp_mb__after_atomic_dec or tgt_lock access here is not using atomic.h
+> accessors properly, no..?
 
-I have sent a fix ("drm/udl: usb: Fix recursive Kconfig dependency")
-for this mess and pinged airlied on IRC.
-NOTE: I saw this when I merged drm(-intel){-fixes,next} into next-20120824.
+No, only a single "thing" is being accessed, and there is no need to
+order the decrement with respect to preceding or subsequent accesses to
+other locations.
 
-- Sedat -
+In other words, tgt->reqs is already synchronized with itself, and that
+is enough.
 
-[1] https://patchwork.kernel.org/patch/1373391/
+(Besides, on x86 smp_mb__after_atomic_dec is a nop).
 
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+>> +static int virtscsi_queuecommand_multi(struct Scsi_Host *sh,
+>> +				       struct scsi_cmnd *sc)
+>> +{
+>> +	struct virtio_scsi *vscsi = shost_priv(sh);
+>> +	struct virtio_scsi_target_state *tgt = vscsi->tgt[sc->device->id];
+>> +	unsigned long flags;
+>> +	u32 queue_num;
+>> +
+>> +	/* Using an atomic_t for tgt->reqs lets the virtqueue handler
+>> +	 * decrement it without taking the spinlock.
+>> +	 */
+>> +	spin_lock_irqsave(&tgt->tgt_lock, flags);
+>> +	if (atomic_inc_return(&tgt->reqs) == 1) {
+>> +		queue_num = smp_processor_id();
+>> +		while (unlikely(queue_num >= vscsi->num_queues))
+>> +			queue_num -= vscsi->num_queues;
+>> +		tgt->req_vq = &vscsi->req_vqs[queue_num];
+>> +	}
+>> +	spin_unlock_irqrestore(&tgt->tgt_lock, flags);
+>> +	return virtscsi_queuecommand(vscsi, tgt, sc);
+>> +}
+>> +
+> 
+> The extra memory barriers to get this right for the current approach are
+> just going to slow things down even more for virtio-scsi-mq..
+
+virtio-scsi multiqueue has a performance benefit up to 20% (for a single
+LUN) or 40% (on overall bandwidth across multiple LUNs).  I doubt that a
+single memory barrier can have that much impact. :)
+
+The way to go to improve performance even more is to add new virtio APIs
+for finer control of the usage of the ring.  These should let us avoid
+copying the sg list and almost get rid of the tgt_lock; even though the
+locking is quite efficient in virtio-scsi (see how tgt_lock and vq_lock
+are "pipelined" so as to overlap the preparation of two requests), it
+should give a nice improvement and especially avoid a kmalloc with small
+requests.  I may have some time for it next month.
+
+> Jen's approach is what we will ultimately need to re-architect in SCSI
+> core if we're ever going to move beyond the issues of legacy host_lock,
+> so I'm wondering if maybe this is the direction that virtio-scsi-mq
+> needs to go in as well..?
+
+We can see after the block layer multiqueue work goes in...  I also need
+to look more closely at Jens's changes.
+
+Have you measured the host_lock to be a bottleneck in high-iops
+benchmarks, even for a modern driver that does not hold it in
+queuecommand?  (Certainly it will become more important as the
+virtio-scsi queuecommand becomes thinner and thinner).  If so, we can
+start looking at limiting host_lock usage in the fast path.
+
+BTW, supporting this in tcm-vhost should be quite trivial, as all the
+request queues are the same and all serialization is done in the
+virtio-scsi driver.
+
+Paolo
