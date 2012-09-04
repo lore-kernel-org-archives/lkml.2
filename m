@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932615Ab2IDTBT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 15:01:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57451 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757530Ab2IDTBS (ORCPT
+	id S1757588Ab2IDTCC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 15:02:02 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59712 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757494Ab2IDTCA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 15:01:18 -0400
-Date: Tue, 4 Sep 2012 12:01:19 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: Mikulas Patocka <mpatocka@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, bharrosh@panasas.com,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH v7 9/9] block: Avoid deadlocks with bio allocation by
- stacking drivers
-Message-ID: <20120904190119.GD3638@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <1346175456-1572-10-git-send-email-koverstreet@google.com>
- <Pine.LNX.4.64.1208291210180.774@file.rdu.redhat.com>
- <20120829165006.GB20312@google.com>
- <20120829170711.GC12504@redhat.com>
- <20120829171345.GC20312@google.com>
- <20120830220745.GI27257@redhat.com>
- <20120831014359.GB15218@moria.home.lan>
- <Pine.LNX.4.64.1209031638110.15620@file.rdu.redhat.com>
- <20120904034100.GA21602@moria.home.lan>
- <20120904185540.GC3638@dhcp-172-17-108-109.mtv.corp.google.com>
+	Tue, 4 Sep 2012 15:02:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120904185540.GC3638@dhcp-172-17-108-109.mtv.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120904143215.5bbbb2a4@obelix.rh>
+References: <20120904143215.5bbbb2a4@obelix.rh>
+Date: Tue, 4 Sep 2012 12:02:00 -0700
+X-Google-Sender-Auth: XbGk6ncAUIhlHL6mA6odWWqD51c
+Message-ID: <CAE9FiQUEHbDySWHWFj6kW=HGLR0vkbaJWRq+7kMMHGhBm8e08A@mail.gmail.com>
+Subject: Re: kexec/kdump kernel fails to start
+From: Yinghai Lu <yinghai@kernel.org>
+To: Flavio Leitner <fbl@redhat.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        WANG Cong <xiyou.wangcong@gmail.com>, Tejun Heo <tj@kernel.org>,
+        ianfang.cn@gmail.com, Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 04, 2012 at 11:55:40AM -0700, Tejun Heo wrote:
-> Actually, if the timer approach can reduce the frequency of rescuer
-> involvement, I think it could actually be better.
+On Tue, Sep 4, 2012 at 10:32 AM, Flavio Leitner <fbl@redhat.com> wrote:
+> Hi folks,
+>
+> I have system that no longer boots kdump kernel. Basically,
+>
+> # echo c > /proc/sysrq-trigger
+>
+> to dump a vmcore doesn't work. It just hangs after showing the usual
+> panic messages. I've bisected the problem and the commit introducing
+> the issue is the one below.
+>
+> Any idea?
+>
+> commit 722bc6b16771ed80871e1fd81c86d3627dda2ac8
+> Author: WANG Cong <xiyou.wangcong@gmail.com>  2012-03-05 20:05:13
+> Committer: Ingo Molnar <mingo@elte.hu>  2012-03-06 05:38:26
+> Parent: 550cf00dbc8ee402bef71628cb71246493dd4500 (Merge tag 'mmc-fixes-for-3.3' of git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc)
+> Child:  a6fca40f1d7f3e232c9de27c1cebbb9f787fbc4f (x86, tlb: Switch cr3 in leave_mm() only when needed)
+> Branches: master, remotes/origin/master
+> Follows: v3.3-rc6
+> Precedes: v3.5-rc1
+>
+>     x86/mm: Fix the size calculation of mapping tables
+>
+>     For machines that enable PSE, the first 2/4M memory region still uses
+>     4K pages, so needs more PTEs in this case, but
+>     find_early_table_space() doesn't count this.
+>
+>     This patch fixes it.
+>
+>     The bug was found via code review, no misbehavior of the kernel
+>     was observed.
 
-Ooh, it wouldn't.  It's kicking in only after alloc failure.  I don't
-know.  I think conditioning it on alloc failure is cleaner and
-converting all per-bio allocations to front-pad makes sense.  Using a
-timer wouldn't make the mechanism any simpler, right?
+maybe just revert the offending commit?
 
-Thanks.
+Thanks
 
--- 
-tejun
+Yinghai
