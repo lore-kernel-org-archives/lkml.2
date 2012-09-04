@@ -1,69 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756263Ab2IDHH5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 03:07:57 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:36853 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753004Ab2IDHHJ convert rfc822-to-8bit (ORCPT
+	id S1755131Ab2IDHLd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 03:11:33 -0400
+Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:11517 "EHLO
+	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753004Ab2IDHLb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 03:07:09 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Bryan Wu <bryan.wu@canonical.com>
-CC: "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Richard Purdie <rpurdie@rpsys.net>
-Subject: [PATCH 1/3] leds-lp5523: support new LP55231 device
-Thread-Topic: [PATCH 1/3] leds-lp5523: support new LP55231 device
-Thread-Index: Ac2Ka8KDhSwa2ub7QAavP9BfE1BabA==
-Date: Tue, 4 Sep 2012 07:06:11 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF20FD@DQHE02.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.16.34.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 4 Sep 2012 03:11:31 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av8EANyoRVBtggBP/2dsb2JhbABFhgW1IoEIgiABAQQBIwQvIxALDgoCAiYCAhQlJIgaCgenWZJegSGJbIYgMmADlViQG4Jl
+Date: Tue, 4 Sep 2012 09:11:28 +0200
+From: Kurt Van Dijck <kurt.van.dijck@eia.be>
+To: Oliver Hartkopp <socketcan@hartkopp.net>
+Cc: Fabio Baltieri <fabio.baltieri@gmail.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Wolfgang Grandegger <wg@grandegger.com>
+Subject: Re: [PATCH can-next v6] can: add tx/rx LED trigger support
+Message-ID: <20120904071128.GB416@vandijck-laurijssen.be>
+Mail-Followup-To: Oliver Hartkopp <socketcan@hartkopp.net>,
+	Fabio Baltieri <fabio.baltieri@gmail.com>,
+	Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	Wolfgang Grandegger <wg@grandegger.com>
+References: <50191EA5.1040303@pengutronix.de>
+ <1343845298-2065-1-git-send-email-fabio.baltieri@gmail.com>
+ <20120824051016.GB1718@vandijck-laurijssen.be>
+ <50376550.4020501@pengutronix.de>
+ <20120824124248.GA422@vandijck-laurijssen.be>
+ <20120824220142.GA1470@gmail.com>
+ <5044A547.2010603@pengutronix.de>
+ <20120903181335.GA415@vandijck-laurijssen.be>
+ <20120903182925.GA28766@gmail.com>
+ <50451919.20205@hartkopp.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <50451919.20205@hartkopp.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- New TI LP55231 device has same I2C register layout as LP5523.
- Therefore, all of LED operations can be shared with the LP5523 driver.
+On Mon, Sep 03, 2012 at 10:54:49PM +0200, Oliver Hartkopp wrote:
+> On 03.09.2012 20:29, Fabio Baltieri wrote:
+> 
+> > On Mon, Sep 03, 2012 at 08:13:35PM +0200, Kurt Van Dijck wrote:
+> >> On Mon, Sep 03, 2012 at 02:40:39PM +0200, Marc Kleine-Budde wrote:
+> >>> The net->ifindex is unique. But it's only an integer. Usually can0 has a
+> >>> ifindex != 0, so a simple can%d is contra productive here.
+> >>>
+> >>> Some pointers to related code:
+> >>> http://lxr.free-electrons.com/source/drivers/base/core.c#L1847
+> >>> http://lxr.free-electrons.com/source/drivers/base/core.c#L73
+> >>> http://lxr.free-electrons.com/source/include/linux/device.h#L695
+> >>>
+> >>> comments?
+> > 
+> > That would probabily makes really hard to choose the right
+> > default_trigger for led devices to get to the appropriate CAN LED in
+> > embedded systems, as trigger name would depend from other network
+> > devices and probing order (correct me if I'm wrong).
+> > 
+> > Something with device name would probaily be more appropriate here.
+> > 
+> >>
+> >> a very recent idea: something with netdevice notifiers and NETDEV_CHANGENAME ...
+> >> http://lxr.free-electrons.com/source/net/core/dev.c#L1030
+> >>
+> >> you could: rename the trigger, or if we think it's usefull,
+> >> block the netdev rename when its triggers are in use.
+> > 
+> > Blocking the rename looks overkill to me,
 
- To support new LP55231 device explicitly, the device description
- is added in the configuration file.
+renaming a netdev _after_ first attaching led triggers looks stupid to me
+anyway.
 
-Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
----
- drivers/leds/Kconfig |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+> > what about using device name
+> > with an optional "port id" appended to it?  Sounds simpler...
+> 
+> 
+> The name of the device can only be changed when the interface is down.
+> Is it possible to put some scripting around it to detach and attach the leds
+> to the interfaces on ifup/ifdown triggers?
 
-diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-index 16578d3..0bc80bd 100644
---- a/drivers/leds/Kconfig
-+++ b/drivers/leds/Kconfig
-@@ -192,11 +192,12 @@ config LEDS_LP5521
- 	  programming the engines.
- 
- config LEDS_LP5523
--	tristate "LED Support for N.S. LP5523 LED driver chip"
-+	tristate "LED Support for TI/National LP5523/55231 LED driver chip"
- 	depends on LEDS_CLASS && I2C
- 	help
--	  If you say yes here you get support for the National Semiconductor
--	  LP5523 LED driver. It is 9 channel chip with programmable engines.
-+	  If you say yes here you get support for TI/National Semiconductor
-+	  LP5523/55231 LED driver.
-+	  It is 9 channel chip with programmable engines.
- 	  Driver provides direct control via LED class and interface for
- 	  programming the engines.
- 
--- 
-1.7.9.5
+Are the led triggers available for using while the netdev is down then?
 
-
-Best Regards,
-Milo
-
+Kurt
