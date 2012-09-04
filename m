@@ -1,91 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756905Ab2IDMJn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 08:09:43 -0400
-Received: from esgaroth.petrovitsch.at ([78.47.184.11]:2475 "EHLO
-	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756840Ab2IDMJm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 08:09:42 -0400
-Subject: Re: Why exported const value modified by another driver not updated
- in original driver
-From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
-To: Manavendra Nath Manav <mnm.kernel@gmail.com>
-Cc: linux-kernel@vger.kernel.org, kernelnewbies@kernelnewbies.org
-Date: Tue, 04 Sep 2012 14:06:31 +0200
-In-Reply-To: <CAJKgH8Ah-aq=LfOWs2SBZnndzugNGxJbqYS11YVQLXJy6FZxkw@mail.gmail.com>
-References: <CAJKgH8Ah-aq=LfOWs2SBZnndzugNGxJbqYS11YVQLXJy6FZxkw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+	id S1756935Ab2IDMJu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 08:09:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5738 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756840Ab2IDMJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 08:09:48 -0400
+Message-ID: <5045EF86.4080600@redhat.com>
+Date: Tue, 04 Sep 2012 15:09:42 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Mathias Krause <minipli@googlemail.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/8] KVM: x86 emulator: use aligned variants of SSE register
+ ops
+References: <1346283020-22385-1-git-send-email-minipli@googlemail.com> <1346283020-22385-3-git-send-email-minipli@googlemail.com>
+In-Reply-To: <1346283020-22385-3-git-send-email-minipli@googlemail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-ID: <1346760392.5081.19.camel@thorin>
-Mime-Version: 1.0
-X-DCC-wuwien-Metrics: esgaroth.petrovitsch.priv.at; whitelist
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On 08/30/2012 02:30 AM, Mathias Krause wrote:
+> As the the compiler ensures that the memory operand is always aligned
+> to a 16 byte memory location, 
 
-On Die, 2012-09-04 at 15:00 +0530, Manavendra Nath Manav wrote:
-[....]
-> I have declared a static const int variable in one driver and exported
-> that variable symbol.
+I'm not sure it does.  Is V4SI aligned?  Do we use alignof() to
+propagate the alignment to the vcpu allocation code?
 
-Exporting a "static" variable makes conceptually no sense whatsoever -
-either you want it exported (so you should remove the "static") or you
-want it not exported - which is precisely the definition of "static".
+> use the aligned variant of MOVDQ for
+> read_sse_reg() and write_sse_reg().
+> 
+> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+> index 1451cff..5a0fee1 100644
+> --- a/arch/x86/kvm/emulate.c
+> +++ b/arch/x86/kvm/emulate.c
+> @@ -909,23 +909,23 @@ static void read_sse_reg(struct x86_emulate_ctxt *ctxt, sse128_t *data, int reg)
+>  {
+>  	ctxt->ops->get_fpu(ctxt);
+>  	switch (reg) {
+> -	case 0: asm("movdqu %%xmm0, %0" : "=m"(*data)); break;
+> -	case 1: asm("movdqu %%xmm1, %0" : "=m"(*data)); break;
+> -	case 2: asm("movdqu %%xmm2, %0" : "=m"(*data)); break;
+> -	case 3: asm("movdqu %%xmm3, %0" : "=m"(*data)); break;
+> -	case 4: asm("movdqu %%xmm4, %0" : "=m"(*data)); break;
+> -	case 5: asm("movdqu %%xmm5, %0" : "=m"(*data)); break;
+> -	case 6: asm("movdqu %%xmm6, %0" : "=m"(*data)); break;
+> -	case 7: asm("movdqu %%xmm7, %0" : "=m"(*data)); break;
+> +	case 0: asm("movdqa %%xmm0, %0" : "=m"(*data)); break;
+> +	case 1: asm("movdqa %%xmm1, %0" : "=m"(*data)); break;
+> +	case 2: asm("movdqa %%xmm2, %0" : "=m"(*data)); break;
+> +	case 3: asm("movdqa %%xmm3, %0" : "=m"(*data)); break;
+> +	case 4: asm("movdqa %%xmm4, %0" : "=m"(*data)); break;
+> +	case 5: asm("movdqa %%xmm5, %0" : "=m"(*data)); break;
+> +	case 6: asm("movdqa %%xmm6, %0" : "=m"(*data)); break;
+> +	case 7: asm("movdqa %%xmm7, %0" : "=m"(*data)); break;
+>  #ifdef CONFIG_X86_64
+> -	case 8: asm("movdqu %%xmm8, %0" : "=m"(*data)); break;
+> -	case 9: asm("movdqu %%xmm9, %0" : "=m"(*data)); break;
+> -	case 10: asm("movdqu %%xmm10, %0" : "=m"(*data)); break;
+> -	case 11: asm("movdqu %%xmm11, %0" : "=m"(*data)); break;
+> -	case 12: asm("movdqu %%xmm12, %0" : "=m"(*data)); break;
+> -	case 13: asm("movdqu %%xmm13, %0" : "=m"(*data)); break;
+> -	case 14: asm("movdqu %%xmm14, %0" : "=m"(*data)); break;
+> -	case 15: asm("movdqu %%xmm15, %0" : "=m"(*data)); break;
+> +	case 8: asm("movdqa %%xmm8, %0" : "=m"(*data)); break;
+> +	case 9: asm("movdqa %%xmm9, %0" : "=m"(*data)); break;
+> +	case 10: asm("movdqa %%xmm10, %0" : "=m"(*data)); break;
+> +	case 11: asm("movdqa %%xmm11, %0" : "=m"(*data)); break;
+> +	case 12: asm("movdqa %%xmm12, %0" : "=m"(*data)); break;
+> +	case 13: asm("movdqa %%xmm13, %0" : "=m"(*data)); break;
+> +	case 14: asm("movdqa %%xmm14, %0" : "=m"(*data)); break;
+> +	case 15: asm("movdqa %%xmm15, %0" : "=m"(*data)); break;
+>  #endif
+>  	default: BUG();
 
-> retains the original value. When both virtual and physical addresses
-> of the variable as seen by both drivers are same, how is this even
-> possible. Is it a kernel bug?
 
-It's a bug in your drivers.
-The C compiler sees an initialized "static const" variable. So the C
-compiler knows that it is not accessible from other compilation units
-(because it is "static") and the variable isn't changing within the
-current compilation unit (because the variable as such is "const" and
-their is no non-const pointer to it or similar).
-Since this is the only compilation unit, it knows that no one will/can
-change it's value.
-So the C compiler happily replaces all references to the variable with
-it's value - just as if you would have #define'd that value.
-
-Obviously, later on it is exported and the variable actually exists and
-you can change it in the other file. But since the value has been
-replaced literally by "123" at compile (more precise: optimizer time),
-you don't see a change in the printk()s.
-
-> Interestingly, when i change the declaration of variable to "volatile"
-> in driver.c as "static const volatile int" then the driver.ko prints
-> modified value "987" during rmmod and the original value "123" is
-> lost. What is the difference between this and previous declaration?
-
-"volatile" tells the C compiler that a variable may change it's value
-without explicit code.
-A typical use case are hardware registers which are changed by the
-underlying hardware.
-In user space, variables may be modified by signal handlers (which can
-occur at any time in a program - unless specifcally blocked).
-
-So the optimizer must not accesses to "volatile" variables because they
-may change their value at any time.
-
-> Please forgive if you find this question silly?
-
-That all is actually pure (K&R-)C and has nothing to do with the kernel.
+The vmexit costs dominates any win here by several orders of magnitude.
 
 
-> static const int value = 123;
-[...]
-> EXPORT_SYMBOL(value);
-
-I wonder if we can modify EXPORT_SYMBOL() so that it compile-time-fails
-for "static" variables.
-And if we actually want that.
-
-	Bernd
 -- 
-Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
-                     LUGA : http://www.luga.at
-
+error compiling committee.c: too many arguments to function
