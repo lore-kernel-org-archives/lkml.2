@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757094Ab2IDNfi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 09:35:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39233 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752958Ab2IDNfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 09:35:37 -0400
-Date: Tue, 4 Sep 2012 09:35:29 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tao Ma <tm@tao.ma>
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH V2] block/throttle: Add IO throttled information in
- blkio.throttle.
-Message-ID: <20120904133528.GB13768@redhat.com>
-References: <1346390109-3169-1-git-send-email-tm@tao.ma>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346390109-3169-1-git-send-email-tm@tao.ma>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757118Ab2IDNnP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 09:43:15 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:46694 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757039Ab2IDNnM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 09:43:12 -0400
+Message-ID: <1346766048.2384.37.camel@falcor>
+Subject: Re: [RFC] module: signature infrastructure
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, David Howells <dhowells@redhat.com>,
+        jmorris@namei.org, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 04 Sep 2012 09:40:48 -0400
+In-Reply-To: <CALLzPKYO7KyiZpC4uUy+4VueLiVM0YqphtAVBhRd1VW_AryyQw@mail.gmail.com>
+References: <20120816013405.872.42381.stgit@warthog.procyon.org.uk>
+	 <87627ufi2h.fsf@rustcorp.com.au>
+	 <CALLzPKaA3MYncJD1X6B8f3p-R6FVA5-WDF-h6GGwdtinNpjqmw@mail.gmail.com>
+	 <CALLzPKYO7KyiZpC4uUy+4VueLiVM0YqphtAVBhRd1VW_AryyQw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12090413-5518-0000-0000-000007587040
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 31, 2012 at 01:15:09PM +0800, Tao Ma wrote:
+On Tue, 2012-09-04 at 15:21 +0300, Kasatkin, Dmitry wrote:
+> On Tue, Sep 4, 2012 at 3:07 PM, Kasatkin, Dmitry
+> <dmitry.kasatkin@intel.com> wrote:
+> > Hi,
+> >
+> > Please read bellow...
+> >
+> > On Tue, Sep 4, 2012 at 8:55 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> >> OK, I took a look at the module.c parts of David and Dmitry's patchsets,
+> >> and didn't really like either, but I stole parts of David's to make
+> >> this.
+> >>
+> >> So, here's the module.c part of module signing.  I hope you two got time
+> >> to discuss the signature format details?  
 
-[..]
-> diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-> index 1588c2d..9317d71 100644
-> --- a/block/blk-throttle.c
-> +++ b/block/blk-throttle.c
-> @@ -46,6 +46,8 @@ struct tg_stats_cpu {
->  	struct blkg_rwstat		service_bytes;
->  	/* total IOs serviced, post merge */
->  	struct blkg_rwstat		serviced;
-> +	/* total IOs queued, not submitted to the underlying device. */
-> +	struct blkg_rwstat		io_queued;
->  };
+The integrity subsystem currently defines 3 extended attribute formats
+in security/integrity.h.
 
-Couple of questions.
+enum evm_ima_xattr_type {
+        IMA_XATTR_DIGEST = 0x01,
+        EVM_XATTR_HMAC,
+        EVM_IMA_XATTR_DIGSIG,
+};
 
-- blkg_rwstat is "unsigned" and io_queued can go negative too (Because
-  throttled bio can very well be dispatched from other cpu from a worker
-  thread). So is it a good idea to represent a negative number with 
-  unsingned type?
+integrity_digsig_verify() is called to appraise EVM signatures stored as
+EVM_IMA_XATTR_DIGSIG.  In Dmitry's patches, this same call is used to
+appraise modules.  If you decide to define a new format, it should be
+included here as well.
 
-- As this stat is per cpu, a reader might very well see negative (or a
-  huge unsigned value) as number of io_queued. Not sure if that is acceptable.
-  How would user space come to know whether it is a valid value or not. I
-  thought per cpu stats are good for continuously increasing values but
-  not necessarily for values which can increase as well as decrease.
+> Mimi suggested a scheme where
+> >> the private key would never be saved on disk (even temporarily), but I
+> >> didn't see patches.  Frankly it's something we can do later; let's aim
+> >> at getting the format right for the next merge window.
 
-Thanks
-Vivek
+Right, the key is a build issue, which doesn't affect the format.
+
+> > In our patches key is stored on the disc in encrypted format...
+
+An updated version of Dmitry's patches are in the 'modsig' branch of
+git://git.kernel.org/pub/scm/linux/kernel/git/kasatkin/linux-digsig. For
+now, although commit 59f1d53 "modsig: build rules and scripts to
+generate keys and sign modules" writes the ephemeral key to disk, it is
+encrypted.
+
+thanks,
+
+Mimi
+
