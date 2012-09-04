@@ -1,51 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756730Ab2IDJzL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 05:55:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37194 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752810Ab2IDJzK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 05:55:10 -0400
-Date: Tue, 4 Sep 2012 11:55:06 +0200
-From: Jan Kara <jack@suse.cz>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ashish Sangwan <a.sangwan@samsung.com>,
-        Bonggil Bak <bgbak@samsung.com>
-Subject: Re: [PATCH v2] udf: extent cache implementation for manipulating
- block map
-Message-ID: <20120904095506.GA5673@quack.suse.cz>
-References: <1346431918-3691-1-git-send-email-linkinjeon@gmail.com>
- <20120903124500.GE21109@quack.suse.cz>
- <CAKYAXd8J09FPCTC-4WwfR+wSCTtfqUq1RYNh0V6=ahH4VsiASA@mail.gmail.com>
+	id S932136Ab2IDJ4J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 05:56:09 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34838 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756736Ab2IDJzb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 05:55:31 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <5045CFD6.9040408@jp.fujitsu.com>
+Date: Tue, 4 Sep 2012 18:54:30 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120824 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKYAXd8J09FPCTC-4WwfR+wSCTtfqUq1RYNh0V6=ahH4VsiASA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, <x86@kernel.org>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>,
+        <linux-s390@vger.kernel.org>, <linux-sh@vger.kernel.org>,
+        <linux-ia64@vger.kernel.org>, <cmetcalf@tilera.com>,
+        <sparclinux@vger.kernel.org>, <rientjes@google.com>,
+        <liuj97@gmail.com>, <len.brown@intel.com>, <benh@kernel.crashing.org>,
+        <paulus@samba.org>, <cl@linux.com>, <minchan.kim@gmail.com>,
+        <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [RFC v8 PATCH 13/20] memory-hotplug: check page type in get_page_bootmem
+References: <1346148027-24468-1-git-send-email-wency@cn.fujitsu.com>	<1346148027-24468-14-git-send-email-wency@cn.fujitsu.com> <20120831143032.1343e99a.akpm@linux-foundation.org> <50457983.1050304@cn.fujitsu.com>
+In-Reply-To: <50457983.1050304@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 04-09-12 16:45:42, Namjae Jeon wrote:
-> 2012/9/3, Jan Kara <jack@suse.cz>:
-> >> +void udf_clear_extent_cache(struct udf_inode_info *iinfo)
-> >> +{
-> >> +	if (iinfo->cached_extent.sanity) {
-> >> +		brelse(iinfo->cached_extent.epos.bh);
-> >> +		memset(&iinfo->cached_extent, 0, sizeof(struct udf_ext_cache));
-> >> +	}
-> >> +}
-> >> +
-> >   I think udf_clear_entent_cache() should take i_extent_cache_lock. Or if
-> > you are sure it's not needed, you need a good documentation why.
-> Documentation ? I am a little confusing.. It means udf.txt is in
-> Documentation/filesystem/ ?
-> or comment about clear extent function ?
-  I meant in a comment before udf_clear_extent_cache() function...
+Hi Wen,
 
-									Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+2012/09/04 12:46, Wen Congyang wrote:
+> Hi, isimatu-san
+>
+> At 09/01/2012 05:30 AM, Andrew Morton Wrote:
+>> On Tue, 28 Aug 2012 18:00:20 +0800
+>> wency@cn.fujitsu.com wrote:
+>>
+>>> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>>
+>>> There is a possibility that get_page_bootmem() is called to the same page many
+>>> times. So when get_page_bootmem is called to the same page, the function only
+>>> increments page->_count.
+>>
+>> I really don't understand this explanation, even after having looked at
+>> the code.  Can you please have another attempt at the changelog?
+>
+> What is the problem that you want to fix? The function get_page_bootmem()
+> may be called to the same page more than once, but I don't find any problem
+> about current implementation.
+
+The patch is just optimization. The patch does not fix a problems.
+As you know, the function may be called many times for the same page.
+I think if a page is sets to page_type and Page Private flag and page->private,
+the page need not be set the same things again. So we check page_type when
+get_page_bootmem() is called. And if the page has been set to them, the page
+is only incremented page->_count.
+
+Thanks,
+Yasuaki Ishimatsu
+
+>
+> Thanks
+> Wen Congyang
+>
+>>
+>>> --- a/mm/memory_hotplug.c
+>>> +++ b/mm/memory_hotplug.c
+>>> @@ -95,10 +95,17 @@ static void release_memory_resource(struct resource *res)
+>>>   static void get_page_bootmem(unsigned long info,  struct page *page,
+>>>   			     unsigned long type)
+>>>   {
+>>> -	page->lru.next = (struct list_head *) type;
+>>> -	SetPagePrivate(page);
+>>> -	set_page_private(page, info);
+>>> -	atomic_inc(&page->_count);
+>>> +	unsigned long page_type;
+>>> +
+>>> +	page_type = (unsigned long) page->lru.next;
+>>> +	if (page_type < MEMORY_HOTPLUG_MIN_BOOTMEM_TYPE ||
+>>> +	    page_type > MEMORY_HOTPLUG_MAX_BOOTMEM_TYPE){
+>>> +		page->lru.next = (struct list_head *) type;
+>>> +		SetPagePrivate(page);
+>>> +		set_page_private(page, info);
+>>> +		atomic_inc(&page->_count);
+>>> +	} else
+>>> +		atomic_inc(&page->_count);
+>>>   }
+>>
+>> And a code comment which explains what is going on would be good.  As
+>> is always the case ;)
+>>
+>>
+>
+
+
