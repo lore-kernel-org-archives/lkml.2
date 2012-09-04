@@ -1,109 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757007Ab2IDM1b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 08:27:31 -0400
-Received: from gerolde.archlinux.org ([66.211.214.132]:46666 "EHLO
-	gerolde.archlinux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756928Ab2IDM1a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 08:27:30 -0400
-From: Dave Reisner <dreisner@archlinux.org>
-To: linux-kernel@vger.kernel.org
-Cc: alan@lxorguk.ukuu.org.uk, dreisner@archlinux.org
-Subject: [PATCH] block: reject invalid queue attribute values
-Date: Tue,  4 Sep 2012 08:27:16 -0400
-Message-Id: <1346761636-18175-1-git-send-email-dreisner@archlinux.org>
-X-Mailer: git-send-email 1.7.12
+	id S1757023Ab2IDM1v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 08:27:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49812 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756939Ab2IDM1t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 08:27:49 -0400
+Date: Tue, 4 Sep 2012 14:27:43 +0200
+From: Jan Kara <jack@suse.cz>
+To: Li Wang <liwang@nudt.edu.cn>
+Cc: viro@zeniv.linux.org.uk, axboe@kernel.dk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] VFS: File System Mount Wide O_DIRECT Support
+Message-ID: <20120904122743.GA8656@quack.suse.cz>
+References: <000001cd8a86$89df83b0$9d9e8b10$@edu.cn>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <000001cd8a86$89df83b0$9d9e8b10$@edu.cn>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of using simple_strtoul which "converts" invalid numbers to 0,
-use strict_strtoul and perform error checking to ensure that userspace
-passes us a valid unsigned long. This addresses problems with functions
-such as writev, which might want to write a trailing newline -- the
-newline should rightfully be rejected, but the value preceeding it
-should be preserved.
+On Tue 04-09-12 18:17:47, Li Wang wrote:
+> For file system created on file-backed loop device, there will be two-levels of 
+> page cache present, which typically doubles the memory consumption. 
+> In many cases, it is beneficial to turn on the O_DIRECT option while performing 
+> the upper file system file IO, to bypass the upper page cache, which not only reduces half
+> of the memory consumption, but also improves the performance due to shorter copy path.
+> 
+> For example, the following iozone REREAD test with O_DIRECT turned on over the one without
+> enjoys 10x speedup due to redundant cache elimination, consequently, avoiding page cache thrashing
+> on a 2GB memory machine running 3.2.9 kernel.
+> 
+> losetup /dev/loop0 dummy // dummy is a ext4 file with a size of 1.1GB
+> mkfs -t ext2 /dev/loop0
+> mount /dev/loop0 /dsk
+> cd /dsk
+> iozone -t 1 -s 1G -r 4M -i 0 -+n -w // produce a 1GB test file
+> iozone -t 1 -s 1G -r 4M -i 1 -w // REREAD test without O_DIRECT
+> echo 1 > /proc/sys/vm/drop_caches // cleanup the page cache
+> iozone -t 1 -s 1G -r 4M -i 1 -w -I // REREAD test with O_DIRECT
+> 
+> This feature is also expected to be useful for virtualization situation, the file systems inside 
+> the guest operation system will use much less of guest memory, which, potencially results in less of 
+> host memory use. Especially, it may be more useful if multiple guests are running based 
+> on a same disk image file.  
+> 
+> The idea is simple, leave the desicion for the file system user to enable file system mount 
+> wide O_DIRECT support with a new mount option, for example,
+  I believe a better approach to your problem is actually to enable
+loopback device driver to use direct IO. Someone was actually working on
+this but I'm not sure where this ended up.
 
-Fixes BZ#46981.
-
-Signed-off-by: Dave Reisner <dreisner@archlinux.org>
----
- block/blk-sysfs.c | 25 +++++++++++++++++++++++--
- 1 file changed, 23 insertions(+), 2 deletions(-)
-
-diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
-index 9628b29..ea51d82 100644
---- a/block/blk-sysfs.c
-+++ b/block/blk-sysfs.c
-@@ -26,9 +26,15 @@ queue_var_show(unsigned long var, char *page)
- static ssize_t
- queue_var_store(unsigned long *var, const char *page, size_t count)
- {
--	char *p = (char *) page;
-+	int err;
-+	unsigned long v;
-+
-+	err = strict_strtoul(page, 10, &v);
-+	if (err || v > UINT_MAX)
-+		return -EINVAL;
-+
-+	*var = v;
- 
--	*var = simple_strtoul(p, &p, 10);
- 	return count;
- }
- 
-@@ -48,6 +54,9 @@ queue_requests_store(struct request_queue *q, const char *page, size_t count)
- 		return -EINVAL;
- 
- 	ret = queue_var_store(&nr, page, count);
-+	if (ret < 0)
-+		return ret;
-+
- 	if (nr < BLKDEV_MIN_RQ)
- 		nr = BLKDEV_MIN_RQ;
- 
-@@ -102,6 +111,9 @@ queue_ra_store(struct request_queue *q, const char *page, size_t count)
- 	unsigned long ra_kb;
- 	ssize_t ret = queue_var_store(&ra_kb, page, count);
- 
-+	if (ret < 0)
-+		return ret;
-+
- 	q->backing_dev_info.ra_pages = ra_kb >> (PAGE_CACHE_SHIFT - 10);
- 
- 	return ret;
-@@ -176,6 +188,9 @@ queue_max_sectors_store(struct request_queue *q, const char *page, size_t count)
- 			page_kb = 1 << (PAGE_CACHE_SHIFT - 10);
- 	ssize_t ret = queue_var_store(&max_sectors_kb, page, count);
- 
-+	if (ret < 0)
-+		return ret;
-+
- 	if (max_sectors_kb > max_hw_sectors_kb || max_sectors_kb < page_kb)
- 		return -EINVAL;
- 
-@@ -236,6 +251,9 @@ static ssize_t queue_nomerges_store(struct request_queue *q, const char *page,
- 	unsigned long nm;
- 	ssize_t ret = queue_var_store(&nm, page, count);
- 
-+	if (ret < 0)
-+		return ret;
-+
- 	spin_lock_irq(q->queue_lock);
- 	queue_flag_clear(QUEUE_FLAG_NOMERGES, q);
- 	queue_flag_clear(QUEUE_FLAG_NOXMERGES, q);
-@@ -264,6 +282,9 @@ queue_rq_affinity_store(struct request_queue *q, const char *page, size_t count)
- 	unsigned long val;
- 
- 	ret = queue_var_store(&val, page, count);
-+	if (ret < 0)
-+		return ret;
-+
- 	spin_lock_irq(q->queue_lock);
- 	if (val == 2) {
- 		queue_flag_set(QUEUE_FLAG_SAME_COMP, q);
+									Honza
 -- 
-1.7.12
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
