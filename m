@@ -1,445 +1,495 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756682Ab2IDJJc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 05:09:32 -0400
-Received: from na3sys009aog137.obsmtp.com ([74.125.149.18]:51406 "EHLO
-	na3sys009aog137.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756657Ab2IDJJ2 (ORCPT
+	id S1756688Ab2IDJKE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 05:10:04 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:11097 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754688Ab2IDJKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 05:09:28 -0400
-Date: Tue, 4 Sep 2012 12:05:07 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH 1/4] i2c: introduce i2c-cbus driver
-Message-ID: <20120904090506.GA12397@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1346703805-31598-1-git-send-email-aaro.koskinen@iki.fi>
- <1346703805-31598-2-git-send-email-aaro.koskinen@iki.fi>
+	Tue, 4 Sep 2012 05:10:02 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Tue, 04 Sep 2012 02:09:38 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: <balbi@ti.com>, <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        Venu Byravarasu <vbyravarasu@nvidia.com>
+Subject: [PATCH] usb: otg: Move phy interface to separate file.
+Date: Tue, 4 Sep 2012 14:25:58 +0530
+Message-ID: <1346748958-10200-1-git-send-email-vbyravarasu@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="MGYHOYXEY6WxJCY8"
-Content-Disposition: inline
-In-Reply-To: <1346703805-31598-2-git-send-email-aaro.koskinen@iki.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+As otg.h is containing lots of phy interface related
+stuff, moving all phy interface related stuff to new
+file named phy.h
 
---MGYHOYXEY6WxJCY8
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Venu Byravarasu <vbyravarasu@xxxxxxxxxx>
+---
+ include/linux/usb/otg.h |  198 +--------------------------------------------
+ include/linux/usb/phy.h |  208 +++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 209 insertions(+), 197 deletions(-)
+ create mode 100644 include/linux/usb/phy.h
 
-Hi,
+diff --git a/include/linux/usb/otg.h b/include/linux/usb/otg.h
+index 16dc520..65a2b6a 100644
+--- a/include/linux/usb/otg.h
++++ b/include/linux/usb/otg.h
+@@ -9,7 +9,7 @@
+ #ifndef __LINUX_USB_OTG_H
+ #define __LINUX_USB_OTG_H
+ 
+-#include <linux/notifier.h>
++#include <linux/usb/phy.h>
+ 
+ /* OTG defines lots of enumeration states before device reset */
+ enum usb_otg_state {
+@@ -35,31 +35,6 @@ enum usb_otg_state {
+ 	OTG_STATE_A_VBUS_ERR,
+ };
+ 
+-enum usb_phy_events {
+-	USB_EVENT_NONE,         /* no events or cable disconnected */
+-	USB_EVENT_VBUS,         /* vbus valid event */
+-	USB_EVENT_ID,           /* id was grounded */
+-	USB_EVENT_CHARGER,      /* usb dedicated charger */
+-	USB_EVENT_ENUMERATED,   /* gadget driver enumerated */
+-};
+-
+-/* associate a type with PHY */
+-enum usb_phy_type {
+-	USB_PHY_TYPE_UNDEFINED,
+-	USB_PHY_TYPE_USB2,
+-	USB_PHY_TYPE_USB3,
+-};
+-
+-struct usb_phy;
+-
+-/* for transceivers connected thru an ULPI interface, the user must
+- * provide access ops
+- */
+-struct usb_phy_io_ops {
+-	int (*read)(struct usb_phy *x, u32 reg);
+-	int (*write)(struct usb_phy *x, u32 val, u32 reg);
+-};
+-
+ struct usb_otg {
+ 	u8			default_a;
+ 
+@@ -85,120 +60,9 @@ struct usb_otg {
+ 
+ };
+ 
+-/*
+- * the otg driver needs to interact with both device side and host side
+- * usb controllers.  it decides which controller is active at a given
+- * moment, using the transceiver, ID signal, HNP and sometimes static
+- * configuration information (including "board isn't wired for otg").
+- */
+-struct usb_phy {
+-	struct device		*dev;
+-	const char		*label;
+-	unsigned int		 flags;
+-
+-	enum usb_phy_type	type;
+-	enum usb_otg_state	state;
+-	enum usb_phy_events	last_event;
+-
+-	struct usb_otg		*otg;
+-
+-	struct device		*io_dev;
+-	struct usb_phy_io_ops	*io_ops;
+-	void __iomem		*io_priv;
+-
+-	/* for notification of usb_phy_events */
+-	struct atomic_notifier_head	notifier;
+-
+-	/* to pass extra port status to the root hub */
+-	u16			port_status;
+-	u16			port_change;
+-
+-	/* to support controllers that have multiple transceivers */
+-	struct list_head	head;
+-
+-	/* initialize/shutdown the OTG controller */
+-	int	(*init)(struct usb_phy *x);
+-	void	(*shutdown)(struct usb_phy *x);
+-
+-	/* effective for B devices, ignored for A-peripheral */
+-	int	(*set_power)(struct usb_phy *x,
+-				unsigned mA);
+-
+-	/* for non-OTG B devices: set transceiver into suspend mode */
+-	int	(*set_suspend)(struct usb_phy *x,
+-				int suspend);
+-
+-	/* notify phy connect status change */
+-	int	(*notify_connect)(struct usb_phy *x, int port);
+-	int	(*notify_disconnect)(struct usb_phy *x, int port);
+-};
+-
+-
+-/* for board-specific init logic */
+-extern int usb_add_phy(struct usb_phy *, enum usb_phy_type type);
+-extern void usb_remove_phy(struct usb_phy *);
+-
+-/* helpers for direct access thru low-level io interface */
+-static inline int usb_phy_io_read(struct usb_phy *x, u32 reg)
+-{
+-	if (x->io_ops && x->io_ops->read)
+-		return x->io_ops->read(x, reg);
+-
+-	return -EINVAL;
+-}
+-
+-static inline int usb_phy_io_write(struct usb_phy *x, u32 val, u32 reg)
+-{
+-	if (x->io_ops && x->io_ops->write)
+-		return x->io_ops->write(x, val, reg);
+-
+-	return -EINVAL;
+-}
+-
+-static inline int
+-usb_phy_init(struct usb_phy *x)
+-{
+-	if (x->init)
+-		return x->init(x);
+-
+-	return 0;
+-}
+-
+-static inline void
+-usb_phy_shutdown(struct usb_phy *x)
+-{
+-	if (x->shutdown)
+-		x->shutdown(x);
+-}
+-
+-/* for usb host and peripheral controller drivers */
+ #ifdef CONFIG_USB_OTG_UTILS
+-extern struct usb_phy *usb_get_phy(enum usb_phy_type type);
+-extern struct usb_phy *devm_usb_get_phy(struct device *dev,
+-	enum usb_phy_type type);
+-extern void usb_put_phy(struct usb_phy *);
+-extern void devm_usb_put_phy(struct device *dev, struct usb_phy *x);
+ extern const char *otg_state_string(enum usb_otg_state state);
+ #else
+-static inline struct usb_phy *usb_get_phy(enum usb_phy_type type)
+-{
+-	return NULL;
+-}
+-
+-static inline struct usb_phy *devm_usb_get_phy(struct device *dev,
+-	enum usb_phy_type type)
+-{
+-	return NULL;
+-}
+-
+-static inline void usb_put_phy(struct usb_phy *x)
+-{
+-}
+-
+-static inline void devm_usb_put_phy(struct device *dev, struct usb_phy *x)
+-{
+-}
+-
+ static inline const char *otg_state_string(enum usb_otg_state state)
+ {
+ 	return NULL;
+@@ -248,42 +112,6 @@ otg_set_peripheral(struct usb_otg *otg, struct usb_gadget *periph)
+ }
+ 
+ static inline int
+-usb_phy_set_power(struct usb_phy *x, unsigned mA)
+-{
+-	if (x && x->set_power)
+-		return x->set_power(x, mA);
+-	return 0;
+-}
+-
+-/* Context: can sleep */
+-static inline int
+-usb_phy_set_suspend(struct usb_phy *x, int suspend)
+-{
+-	if (x->set_suspend != NULL)
+-		return x->set_suspend(x, suspend);
+-	else
+-		return 0;
+-}
+-
+-static inline int
+-usb_phy_notify_connect(struct usb_phy *x, int port)
+-{
+-	if (x->notify_connect)
+-		return x->notify_connect(x, port);
+-	else
+-		return 0;
+-}
+-
+-static inline int
+-usb_phy_notify_disconnect(struct usb_phy *x, int port)
+-{
+-	if (x->notify_disconnect)
+-		return x->notify_disconnect(x, port);
+-	else
+-		return 0;
+-}
+-
+-static inline int
+ otg_start_srp(struct usb_otg *otg)
+ {
+ 	if (otg && otg->start_srp)
+@@ -292,31 +120,7 @@ otg_start_srp(struct usb_otg *otg)
+ 	return -ENOTSUPP;
+ }
+ 
+-/* notifiers */
+-static inline int
+-usb_register_notifier(struct usb_phy *x, struct notifier_block *nb)
+-{
+-	return atomic_notifier_chain_register(&x->notifier, nb);
+-}
+-
+-static inline void
+-usb_unregister_notifier(struct usb_phy *x, struct notifier_block *nb)
+-{
+-	atomic_notifier_chain_unregister(&x->notifier, nb);
+-}
+-
+ /* for OTG controller drivers (and maybe other stuff) */
+ extern int usb_bus_start_enum(struct usb_bus *bus, unsigned port_num);
+ 
+-static inline const char *usb_phy_type_string(enum usb_phy_type type)
+-{
+-	switch (type) {
+-	case USB_PHY_TYPE_USB2:
+-		return "USB2 PHY";
+-	case USB_PHY_TYPE_USB3:
+-		return "USB3 PHY";
+-	default:
+-		return "UNKNOWN PHY TYPE";
+-	}
+-}
+ #endif /* __LINUX_USB_OTG_H */
+diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
+new file mode 100644
+index 0000000..88fc160
+--- /dev/null
++++ b/include/linux/usb/phy.h
+@@ -0,0 +1,208 @@
++/* USB OTG (On The Go) defines */
++/*
++ *
++ * These APIs may be used between USB controllers.  USB device drivers
++ * (for either host or peripheral roles) don't use these calls; they
++ * continue to use just usb_device and usb_gadget.
++ */
++
++#ifndef __LINUX_USB_PHY_H
++#define __LINUX_USB_PHY_H
++
++#include <linux/notifier.h>
++
++enum usb_phy_events {
++	USB_EVENT_NONE,         /* no events or cable disconnected */
++	USB_EVENT_VBUS,         /* vbus valid event */
++	USB_EVENT_ID,           /* id was grounded */
++	USB_EVENT_CHARGER,      /* usb dedicated charger */
++	USB_EVENT_ENUMERATED,   /* gadget driver enumerated */
++};
++
++/* associate a type with PHY */
++enum usb_phy_type {
++	USB_PHY_TYPE_UNDEFINED,
++	USB_PHY_TYPE_USB2,
++	USB_PHY_TYPE_USB3,
++};
++
++struct usb_phy;
++struct usb_otg;
++
++/* for transceivers connected thru an ULPI interface, the user must
++ * provide access ops
++ */
++struct usb_phy_io_ops {
++	int (*read)(struct usb_phy *x, u32 reg);
++	int (*write)(struct usb_phy *x, u32 val, u32 reg);
++};
++
++struct usb_phy {
++	struct device		*dev;
++	const char		*label;
++	unsigned int		 flags;
++
++	enum usb_phy_type	type;
++	enum usb_phy_events	last_event;
++
++	struct usb_otg		*otg;
++
++	struct device		*io_dev;
++	struct usb_phy_io_ops	*io_ops;
++	void __iomem		*io_priv;
++
++	/* for notification of usb_phy_events */
++	struct atomic_notifier_head	notifier;
++
++	/* to pass extra port status to the root hub */
++	u16			port_status;
++	u16			port_change;
++
++	/* to support controllers that have multiple transceivers */
++	struct list_head	head;
++
++	/* initialize/shutdown the OTG controller */
++	int	(*init)(struct usb_phy *x);
++	void	(*shutdown)(struct usb_phy *x);
++
++	/* effective for B devices, ignored for A-peripheral */
++	int	(*set_power)(struct usb_phy *x,
++				unsigned mA);
++
++	/* for non-OTG B devices: set transceiver into suspend mode */
++	int	(*set_suspend)(struct usb_phy *x,
++				int suspend);
++
++	/* notify phy connect status change */
++	int	(*notify_connect)(struct usb_phy *x, int port);
++	int	(*notify_disconnect)(struct usb_phy *x, int port);
++};
++
++
++/* for board-specific init logic */
++extern int usb_add_phy(struct usb_phy *, enum usb_phy_type type);
++extern void usb_remove_phy(struct usb_phy *);
++
++/* helpers for direct access thru low-level io interface */
++static inline int usb_phy_io_read(struct usb_phy *x, u32 reg)
++{
++	if (x->io_ops && x->io_ops->read)
++		return x->io_ops->read(x, reg);
++
++	return -EINVAL;
++}
++
++static inline int usb_phy_io_write(struct usb_phy *x, u32 val, u32 reg)
++{
++	if (x->io_ops && x->io_ops->write)
++		return x->io_ops->write(x, val, reg);
++
++	return -EINVAL;
++}
++
++static inline int
++usb_phy_init(struct usb_phy *x)
++{
++	if (x->init)
++		return x->init(x);
++
++	return 0;
++}
++
++static inline void
++usb_phy_shutdown(struct usb_phy *x)
++{
++	if (x->shutdown)
++		x->shutdown(x);
++}
++
++/* for usb host and peripheral controller drivers */
++#ifdef CONFIG_USB_OTG_UTILS
++extern struct usb_phy *usb_get_phy(enum usb_phy_type type);
++extern struct usb_phy *devm_usb_get_phy(struct device *dev,
++	enum usb_phy_type type);
++extern void usb_put_phy(struct usb_phy *);
++extern void devm_usb_put_phy(struct device *dev, struct usb_phy *x);
++#else
++static inline struct usb_phy *usb_get_phy(enum usb_phy_type type)
++{
++	return NULL;
++}
++
++static inline struct usb_phy *devm_usb_get_phy(struct device *dev,
++	enum usb_phy_type type)
++{
++	return NULL;
++}
++
++static inline void usb_put_phy(struct usb_phy *x)
++{
++}
++
++static inline void devm_usb_put_phy(struct device *dev, struct usb_phy *x)
++{
++}
++
++#endif
++
++static inline int
++usb_phy_set_power(struct usb_phy *x, unsigned mA)
++{
++	if (x && x->set_power)
++		return x->set_power(x, mA);
++	return 0;
++}
++
++/* Context: can sleep */
++static inline int
++usb_phy_set_suspend(struct usb_phy *x, int suspend)
++{
++	if (x->set_suspend != NULL)
++		return x->set_suspend(x, suspend);
++	else
++		return 0;
++}
++
++static inline int
++usb_phy_notify_connect(struct usb_phy *x, int port)
++{
++	if (x->notify_connect)
++		return x->notify_connect(x, port);
++	else
++		return 0;
++}
++
++static inline int
++usb_phy_notify_disconnect(struct usb_phy *x, int port)
++{
++	if (x->notify_disconnect)
++		return x->notify_disconnect(x, port);
++	else
++		return 0;
++}
++
++/* notifiers */
++static inline int
++usb_register_notifier(struct usb_phy *x, struct notifier_block *nb)
++{
++	return atomic_notifier_chain_register(&x->notifier, nb);
++}
++
++static inline void
++usb_unregister_notifier(struct usb_phy *x, struct notifier_block *nb)
++{
++	atomic_notifier_chain_unregister(&x->notifier, nb);
++}
++
++static inline const char *usb_phy_type_string(enum usb_phy_type type)
++{
++	switch (type) {
++	case USB_PHY_TYPE_USB2:
++		return "USB2 PHY";
++	case USB_PHY_TYPE_USB3:
++		return "USB3 PHY";
++	default:
++		return "UNKNOWN PHY TYPE";
++	}
++}
++#endif /* __LINUX_USB_PHY_H */
+-- 
+1.7.1.1
 
-On Mon, Sep 03, 2012 at 11:23:22PM +0300, Aaro Koskinen wrote:
-> diff --git a/drivers/i2c/busses/i2c-cbus.c b/drivers/i2c/busses/i2c-cbus.c
-> new file mode 100644
-> index 0000000..bacf2a9
-> --- /dev/null
-> +++ b/drivers/i2c/busses/i2c-cbus.c
-> @@ -0,0 +1,369 @@
-> +/*
-> + * CBUS I2C driver for Nokia Internet Tablets.
-> + *
-> + * Copyright (C) 2004-2010 Nokia Corporation
-> + *
-> + * Based on code written by Juha Yrj=F6l=E4, David Weinehall, Mikko Ylin=
-en and
-> + * Felipe Balbi. Converted to I2C driver by Aaro Koskinen.
-> + *
-> + * This file is subject to the terms and conditions of the GNU General
-> + * Public License. See the file "COPYING" in the main directory of this
-> + * archive for more details.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <linux/io.h>
-> +#include <linux/i2c.h>
-> +#include <linux/gpio.h>
-> +#include <linux/init.h>
-> +#include <linux/slab.h>
-> +#include <linux/delay.h>
-> +#include <linux/errno.h>
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/of_gpio.h>
-> +#include <linux/i2c-cbus.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/platform_device.h>
-> +
-> +struct cbus_host {
-> +	/* host lock */
-> +	spinlock_t	lock;
-> +
-> +	struct device	*dev;
-> +
-> +	int		clk_gpio;
-> +	int		dat_gpio;
-> +	int		sel_gpio;
-> +};
-> +
-> +/**
-> + * cbus_send_bit - sends one bit over the bus
-> + * @host: the host we're using
-> + * @bit: one bit of information to send
-> + * @input: whether to set data pin as input after sending
-> + */
-> +static int cbus_send_bit(struct cbus_host *host, unsigned bit,
-> +		unsigned input)
-> +{
-> +	int ret =3D 0;
-> +
-> +	gpio_set_value(host->dat_gpio, bit ? 1 : 0);
-> +	gpio_set_value(host->clk_gpio, 1);
-> +
-> +	/* The data bit is read on the rising edge of CLK */
-> +	if (input)
-> +		ret =3D gpio_direction_input(host->dat_gpio);
-> +
-> +	gpio_set_value(host->clk_gpio, 0);
-> +
-> +	return ret;
-> +}
-> +
-> +/**
-> + * cbus_send_data - sends @len amount of data over the bus
-> + * @host: the host we're using
-> + * @data: the data to send
-> + * @len: size of the transfer
-> + * @input: whether to set data pin as input after sending
-> + */
-> +static int cbus_send_data(struct cbus_host *host, unsigned data, unsigne=
-d len,
-> +		unsigned input)
-> +{
-> +	int ret =3D 0;
-> +	int i;
-> +
-> +	for (i =3D len; i > 0; i--) {
-> +		ret =3D cbus_send_bit(host, data & (1 << (i - 1)),
-> +				input && (i =3D=3D 1));
-> +		if (ret < 0)
-> +			goto out;
-> +	}
-> +
-> +out:
-> +	return ret;
-> +}
-> +
-> +/**
-> + * cbus_receive_bit - receives one bit from the bus
-> + * @host: the host we're using
-> + */
-> +static int cbus_receive_bit(struct cbus_host *host)
-> +{
-> +	int ret;
-> +
-> +	gpio_set_value(host->clk_gpio, 1);
-> +	ret =3D gpio_get_value(host->dat_gpio);
-> +	if (ret < 0)
-> +		goto out;
-> +	gpio_set_value(host->clk_gpio, 0);
-> +
-> +out:
-> +	return ret;
-> +}
-> +
-> +/**
-> + * cbus_receive_word - receives 16-bit word from the bus
-> + * @host: the host we're using
-> + */
-> +static int cbus_receive_word(struct cbus_host *host)
-> +{
-> +	int ret =3D 0;
-> +	int i;
-> +
-> +	for (i =3D 16; i > 0; i--) {
-> +		int bit =3D cbus_receive_bit(host);
-> +
-> +		if (bit < 0)
-> +			goto out;
-> +
-> +		if (bit)
-> +			ret |=3D 1 << (i - 1);
-> +	}
-> +
-> +out:
-> +	return ret;
-> +}
-> +
-> +/**
-> + * cbus_transfer - transfers data over the bus
-> + * @host: the host we're using
-> + * @rw: read/write flag
-> + * @dev: device address
-> + * @reg: register address
-> + * @data: if @rw =3D=3D I2C_SBUS_WRITE data to send otherwise 0
-> + */
-> +static int cbus_transfer(struct cbus_host *host, char rw, unsigned dev,
-> +			 unsigned reg, unsigned data)
-> +{
-> +	unsigned long flags;
-> +	int ret;
-> +
-> +	/* We don't want interrupts disturbing our transfer */
-> +	spin_lock_irqsave(&host->lock, flags);
-> +
-> +	/* Reset state and start of transfer, SEL stays down during transfer */
-> +	gpio_set_value(host->sel_gpio, 0);
-> +
-> +	/* Set the DAT pin to output */
-> +	gpio_direction_output(host->dat_gpio, 1);
-> +
-> +	/* Send the device address */
-> +	ret =3D cbus_send_data(host, dev, 3, 0);
-> +	if (ret < 0) {
-> +		dev_dbg(host->dev, "failed sending device addr\n");
-> +		goto out;
-> +	}
-> +
-> +	/* Send the rw flag */
-> +	ret =3D cbus_send_bit(host, rw =3D=3D I2C_SMBUS_READ, 0);
-> +	if (ret < 0) {
-> +		dev_dbg(host->dev, "failed sending read/write flag\n");
-> +		goto out;
-> +	}
-> +
-> +	/* Send the device address */
-> +	ret =3D cbus_send_data(host, reg, 5, rw =3D=3D I2C_SMBUS_READ);
-> +	if (ret < 0) {
-> +		dev_dbg(host->dev, "failed sending register addr\n");
-> +		goto out;
-> +	}
-> +
-> +	if (rw =3D=3D I2C_SMBUS_WRITE) {
-> +		ret =3D cbus_send_data(host, data, 16, 0);
-> +		if (ret < 0) {
-> +			dev_dbg(host->dev, "failed sending data\n");
-> +			goto out;
-> +		}
-> +	} else {
-> +		gpio_set_value(host->clk_gpio, 1);
-> +
-> +		ret =3D cbus_receive_word(host);
-> +		if (ret < 0) {
-> +			dev_dbg(host->dev, "failed receiving data\n");
-> +			goto out;
-> +		}
-> +	}
-> +
-> +	/* Indicate end of transfer, SEL goes up until next transfer */
-> +	gpio_set_value(host->sel_gpio, 1);
-> +	gpio_set_value(host->clk_gpio, 1);
-> +	gpio_set_value(host->clk_gpio, 0);
-> +
-> +out:
-> +	spin_unlock_irqrestore(&host->lock, flags);
-> +
-> +	return ret;
-> +}
-> +
-> +static int cbus_i2c_smbus_xfer(struct i2c_adapter	*adapter,
-> +			       u16			addr,
-> +			       unsigned short		flags,
-> +			       char			read_write,
-> +			       u8			command,
-> +			       int			size,
-> +			       union i2c_smbus_data	*data)
-> +{
-> +	struct cbus_host *chost =3D i2c_get_adapdata(adapter);
-> +	int ret;
-> +
-> +	if (size !=3D I2C_SMBUS_WORD_DATA)
-> +		return -EINVAL;
-> +
-> +	ret =3D cbus_transfer(chost, read_write =3D=3D I2C_SMBUS_READ, addr,
-> +			    command, data->word);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	if (read_write =3D=3D I2C_SMBUS_READ)
-> +		data->word =3D ret;
-> +
-> +	return 0;
-> +}
-> +
-> +static u32 cbus_i2c_func(struct i2c_adapter *adapter)
-> +{
-> +	return I2C_FUNC_SMBUS_READ_WORD_DATA | I2C_FUNC_SMBUS_WRITE_WORD_DATA;
-> +}
-> +
-> +static const struct i2c_algorithm cbus_i2c_algo =3D {
-> +	.smbus_xfer	=3D cbus_i2c_smbus_xfer,
-> +	.functionality	=3D cbus_i2c_func,
-> +};
-> +
-> +static int cbus_i2c_remove(struct platform_device *pdev)
-> +{
-> +	struct i2c_adapter *adapter =3D platform_get_drvdata(pdev);
-> +	struct cbus_host *chost =3D i2c_get_adapdata(adapter);
-> +	int ret;
-> +
-> +	ret =3D i2c_del_adapter(adapter);
-> +	if (ret)
-> +		return ret;
-> +	gpio_free(chost->clk_gpio);
-> +	gpio_free(chost->dat_gpio);
-> +	gpio_free(chost->sel_gpio);
-> +	kfree(chost);
-> +	kfree(adapter);
-> +	platform_set_drvdata(pdev, NULL);
-> +
-> +	return 0;
-> +}
-> +
-> +static int cbus_i2c_probe(struct platform_device *pdev)
-> +{
-> +	struct i2c_adapter *adapter;
-> +	struct cbus_host *chost;
-> +	struct gpio gpios[3];
-> +	int ret;
-> +
-> +	adapter =3D kzalloc(sizeof(struct i2c_adapter), GFP_KERNEL);
-> +	if (!adapter) {
-> +		ret =3D -ENOMEM;
-> +		goto error;
-> +	}
-> +
-> +	chost =3D kzalloc(sizeof(*chost), GFP_KERNEL);
-> +	if (!chost) {
-> +		ret =3D -ENOMEM;
-> +		goto error_mem;
-> +	}
-> +
-> +	if (pdev->dev.of_node) {
-> +		struct device_node *dnode =3D pdev->dev.of_node;
-> +		if (of_gpio_count(dnode) !=3D 3) {
-> +			ret =3D -ENODEV;
-> +			goto error_mem;
-> +		}
-> +		chost->clk_gpio =3D of_get_gpio(dnode, 0);
-> +		chost->dat_gpio =3D of_get_gpio(dnode, 1);
-> +		chost->sel_gpio =3D of_get_gpio(dnode, 2);
-> +	} else if (pdev->dev.platform_data) {
-> +		struct i2c_cbus_platform_data *pdata =3D pdev->dev.platform_data;
-> +		chost->clk_gpio =3D pdata->clk_gpio;
-> +		chost->dat_gpio =3D pdata->dat_gpio;
-> +		chost->sel_gpio =3D pdata->sel_gpio;
-> +	} else {
-> +		ret =3D -ENODEV;
-> +		goto error_mem;
-> +	}
-> +
-> +	adapter->owner		=3D THIS_MODULE;
-> +	adapter->class		=3D I2C_CLASS_HWMON;
-> +	adapter->dev.parent	=3D &pdev->dev;
-> +	adapter->nr		=3D pdev->id;
-> +	adapter->timeout	=3D HZ;
-> +	adapter->algo		=3D &cbus_i2c_algo;
-> +	strlcpy(adapter->name, "CBUS I2C adapter", sizeof(adapter->name));
-> +
-> +	spin_lock_init(&chost->lock);
-> +	chost->dev =3D &pdev->dev;
-> +
-> +	gpios[0].gpio  =3D chost->clk_gpio;
-> +	gpios[0].flags =3D GPIOF_OUT_INIT_LOW;
-> +	gpios[0].label =3D "CBUS clk";
-> +
-> +	gpios[1].gpio  =3D chost->dat_gpio;
-> +	gpios[1].flags =3D GPIOF_IN;
-> +	gpios[1].label =3D "CBUS data";
-> +
-> +	gpios[2].gpio  =3D chost->sel_gpio;
-> +	gpios[2].flags =3D GPIOF_OUT_INIT_HIGH;
-> +	gpios[2].label =3D "CBUS sel";
-> +
-> +	ret =3D gpio_request_array(gpios, ARRAY_SIZE(gpios));
-> +	if (ret)
-> +		goto error_gpio;
-> +
-> +	gpio_set_value(chost->clk_gpio, 1);
-> +	gpio_set_value(chost->clk_gpio, 0);
-> +
-> +	i2c_set_adapdata(adapter, chost);
-> +	platform_set_drvdata(pdev, adapter);
-> +
-> +	ret =3D i2c_add_numbered_adapter(adapter);
-> +	if (ret)
-> +		goto error_i2c;
-> +
-> +	return 0;
-> +
-> +error_i2c:
-> +	gpio_free_array(gpios, ARRAY_SIZE(gpios));
-> +error_gpio:
-> +	kfree(chost);
-> +error_mem:
-> +	kfree(adapter);
-> +error:
-> +	return ret;
-> +}
-> +
-> +#if defined(CONFIG_OF)
-> +static const struct of_device_id i2c_cbus_dt_ids[] =3D {
-> +	{ .compatible =3D "i2c-cbus", },
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(of, i2c_cbus_dt_ids);
-> +#endif
-> +
-> +static struct platform_driver cbus_i2c_driver =3D {
-> +	.probe	=3D cbus_i2c_probe,
-> +	.remove	=3D cbus_i2c_remove,
-> +	.driver	=3D {
-> +		.owner	=3D THIS_MODULE,
-> +		.name	=3D "i2c-cbus",
-> +	},
-> +};
-> +module_platform_driver(cbus_i2c_driver);
-> +
-> +MODULE_ALIAS("platform:i2c-cbus");
-> +MODULE_DESCRIPTION("CBUS I2C driver");
-> +MODULE_AUTHOR("Juha Yrj=F6l=E4");
-> +MODULE_AUTHOR("David Weinehall");
-> +MODULE_AUTHOR("Mikko Ylinen");
-> +MODULE_AUTHOR("Felipe Balbi");
-> +MODULE_AUTHOR("Aaro Koskinen <aaro.koskinen@iki.fi>");
-> +MODULE_LICENSE("GPL");
-
-this version misses the entire IRQ handling we already had on linux-omap
-tree, so it's quite a regression.
-
---=20
-balbi
-
---MGYHOYXEY6WxJCY8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQRcRCAAoJEIaOsuA1yqREaY8QAItKtxfzIyn24cEFaJFsTPnw
-Ynhq4Ev6LuyHncHmnImK5k6uMXrYFV2Jy/eWM+v+PhQy2Bl7TEhhEvLY+MX8AVgC
-rRXI/Q71k9OCCEifBwbCDThItnaiUv9Z0r6LvqFWCqSVg570caNatHjQdg5nCIea
-afhb6Ge3jnMBcSTshOpH/gRbbCzt7symMV7++Jga2IoI3UHoZQLaDcwvJsbN0c1Q
-mFEIw0wtqhthvXJfykaUFJL3XKOW/H9V1f6K58Q+LnTg2ykOPHne89rZB7VmoWUH
-IVDg0e9K6/79jGnelShOb2rvsIe0FlrVkXq4/6eGckZ3QXheHCyhH4cyvLZTyHfu
-hDMRFPzPGP2cpwGJUHfDYA9AvGklStagrCOBOfG1bcVpp/X8A3N8dr0JF2OaML+i
-DLvuqY3XK0wU4dbFe8Mg6qp8tC95UblwNnaa1jwM1hzHSBJY193G4S5g8XsANmLq
-h1WXVfA2cMmDf0Pd4nwK4pZKFov98tXxBK/iR/ohlwzfiCze6m2vK1AtUZ/0SivF
-SoSyrZAJAhMcQckNT7PR55xqdpODYlP6dJkSuNQ59CNr008LXe88ldv5qTMlxCdQ
-XNCCuwI0HZ4By1LG10iu4IREIDi8ENwaKnEnRyeyxy+oeaTzFj/01SDRL2DW2ijs
-oU8QX/a52TfzXBeXkmvM
-=dOPw
------END PGP SIGNATURE-----
-
---MGYHOYXEY6WxJCY8--
