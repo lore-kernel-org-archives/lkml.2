@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757467Ab2IDQRJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 12:17:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25621 "EHLO mx1.redhat.com"
+	id S1757472Ab2IDQRi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 12:17:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45308 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757376Ab2IDQRF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 12:17:05 -0400
+	id S1757397Ab2IDQRD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 12:17:03 -0400
 From: Matthew Garrett <mjg@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
         Josh Boyer <jwboyer@redhat.com>
-Subject: [PATCH 10/11] acpi: Ignore acpi_rsdp kernel parameter in a secure boot environment
-Date: Tue,  4 Sep 2012 11:55:16 -0400
-Message-Id: <1346774117-2277-11-git-send-email-mjg@redhat.com>
+Subject: [PATCH 11/11] SELinux: define mapping for new Secure Boot capability
+Date: Tue,  4 Sep 2012 11:55:17 -0400
+Message-Id: <1346774117-2277-12-git-send-email-mjg@redhat.com>
 In-Reply-To: <1346774117-2277-1-git-send-email-mjg@redhat.com>
 References: <1346774117-2277-1-git-send-email-mjg@redhat.com>
 X-SA-Do-Not-Run: Yes
@@ -25,28 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Josh Boyer <jwboyer@redhat.com>
 
-This option allows userspace to pass the RSDP address to the kernel.  This
-could potentially be used to circumvent the secure boot trust model.
-We ignore the setting if we don't have the CAP_SECURE_FIRMWARE capability.
+Add the name of the new Secure Boot capability.  This allows SELinux
+policies to properly map CAP_SECURE_FIRMWARE to the appropriate
+capability class.
 
 Signed-off-by: Josh Boyer <jwboyer@redhat.com>
 ---
- drivers/acpi/osl.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ security/selinux/include/classmap.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index 9eaf708..50c94e4 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -246,7 +246,7 @@ early_param("acpi_rsdp", setup_acpi_rsdp);
- acpi_physical_address __init acpi_os_get_root_pointer(void)
- {
- #ifdef CONFIG_KEXEC
--	if (acpi_rsdp)
-+	if (acpi_rsdp && capable(CAP_SECURE_FIRMWARE))
- 		return acpi_rsdp;
- #endif
- 
+diff --git a/security/selinux/include/classmap.h b/security/selinux/include/classmap.h
+index df2de54..0a1e348 100644
+--- a/security/selinux/include/classmap.h
++++ b/security/selinux/include/classmap.h
+@@ -146,8 +146,8 @@ struct security_class_mapping secclass_map[] = {
+ 	{ "memprotect", { "mmap_zero", NULL } },
+ 	{ "peer", { "recv", NULL } },
+ 	{ "capability2",
+-	  { "mac_override", "mac_admin", "syslog", "wake_alarm", "block_suspend",
+-	    NULL } },
++	  { "mac_override", "mac_admin", "syslog", "wake_alarm",
++	    "block_suspend", "secure_firmware", NULL } },
+ 	{ "kernel_service", { "use_as_override", "create_files_as", NULL } },
+ 	{ "tun_socket",
+ 	  { COMMON_SOCK_PERMS, NULL } },
 -- 
 1.7.11.4
 
