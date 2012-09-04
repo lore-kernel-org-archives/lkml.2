@@ -1,68 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932382Ab2IDQZH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 12:25:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40131 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753089Ab2IDQZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 12:25:04 -0400
-Date: Tue, 4 Sep 2012 18:25:01 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
-        Dave Jones <davej@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH v2] memcg: first step towards hierarchical controller
-Message-ID: <20120904162501.GE15683@dhcp22.suse.cz>
-References: <1346687211-31848-1-git-send-email-glommer@parallels.com>
- <20120903170806.GA21682@dhcp22.suse.cz>
- <5045BD25.10301@parallels.com>
- <20120904130905.GA15683@dhcp22.suse.cz>
- <504601B8.2050907@parallels.com>
- <20120904143552.GB15683@dhcp22.suse.cz>
- <50461241.5010300@parallels.com>
- <20120904145414.GC15683@dhcp22.suse.cz>
- <50461610.30305@parallels.com>
+	id S1757405Ab2IDQ13 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 12:27:29 -0400
+Received: from mailgw02.core.canterbury.ac.uk ([194.82.209.160]:41901 "EHLO
+	mailgw02.core.canterbury.ac.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753426Ab2IDQ12 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 12:27:28 -0400
+X-Greylist: delayed 6960 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Sep 2012 12:27:28 EDT
+X-Squirrel-UserHash: BQgQWlc=
+X-Squirrel-FromHash: BwEADFBWAQY=
+Message-ID: <58562.BwEADFBWAQY=.1346768719.squirrel@email.canterbury.ac.uk>
+Date: Tue, 4 Sep 2012 15:25:19 +0100 (BST)
+Subject: Email Account Suspended
+From: "Aaron  Shaw" <a.m.shaw53@canterbury.ac.uk>
+User-Agent: SquirrelMail/1.4.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50461610.30305@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-CC-Time-on-queue: 0
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 04-09-12 18:54:08, Glauber Costa wrote:
-[...]
-> >> I'd personally believe merging both our patches together would achieve a
-> >> good result.
-> > 
-> > I am still not sure we want to add a config option for something that is
-> > meant to go away. But let's see what others think.
-> > 
-> 
-> So what you propose in the end is that we add a userspace tweak for
-> something that could go away, instead of a Kconfig for something that go
-> away.
 
-The tweak is necessary only if you want to have use_hierarchy=1 for all
-cgroups without taking care about that (aka setting the attribute for
-the first level under the root). All the users that use only one level
-bellow root don't have to do anything at all.
 
-> Way I see it, Kconfig is better because it is totally transparent, under
-> the hood, and will give us a single location to unpatch in case/when it
-> really goes away.
 
-I guess that by the single location you mean that no other user space
-changes would have to be done, right? If yes then this is not true
-because there will be a lot of configurations setting this up already
-(either by cgconfig or by other scripts). All of them will have to be
-fixed some day.
--- 
-Michal Hocko
-SUSE Labs
+Dear Subscriber,
+
+Your Email account has been suspended because of unusual invalid login
+attempts into your Email. You may experience inability to send and receive
+new messages. To restore your Email account, please click on the link
+below and complete the form.
+
+http://www.techsupp.uphero.com
+
+Click on the link above (or copy and paste the URL address into your web
+browser) to complete the form.
+
+Thank you for co-operation.
+Aaron Shaw
+Technical Support
+
