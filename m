@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932912Ab2IDXRe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 19:17:34 -0400
-Received: from mga10.intel.com ([192.55.52.92]:45987 "EHLO
-	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932877Ab2IDXRd (ORCPT
+	id S932914Ab2IDXS6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 19:18:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54913 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932852Ab2IDXS5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 19:17:33 -0400
-MIME-Version: 1.0
-In-Reply-To: <19214.1346799098@warthog.procyon.org.uk>
-References: <20120816013405.872.42381.stgit@warthog.procyon.org.uk>
-	<87627ufi2h.fsf@rustcorp.com.au>
-	<CAKi4VALezG7VccXJfwvzr2UZrmAjCUp9eZRjGwqq6cWcExNqXA@mail.gmail.com>
-	<19214.1346799098@warthog.procyon.org.uk>
-Date: Wed, 5 Sep 2012 02:17:31 +0300
-Message-ID: <CALLzPKZcaTBjLaPY33aVTWekpn_b4qng1fFSab=azu1EgO_ysA@mail.gmail.com>
-Subject: Re: [RFC] module: signature infrastructure
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Lucas De Marchi <lucas.de.marchi@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, zohar@linux.vnet.ibm.com,
-        jmorris@namei.org, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Tue, 4 Sep 2012 19:18:57 -0400
+Date: Tue, 4 Sep 2012 16:18:55 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Prasad Joshi <prasadjoshi.linux@gmail.com>
+Cc: ebiederm@xmission.com, viro@zeniv.linux.org.uk,
+        lucas.demarchi@profusion.mobi, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sysctl: Use BUG_ON instead of BUG
+Message-Id: <20120904161855.f34e365e.akpm@linux-foundation.org>
+In-Reply-To: <1346643025-2769-1-git-send-email-prasadjoshi.linux@gmail.com>
+References: <1346643025-2769-1-git-send-email-prasadjoshi.linux@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 5, 2012 at 1:51 AM, David Howells <dhowells@redhat.com> wrote:
-> Lucas De Marchi <lucas.de.marchi@gmail.com> wrote:
->
->> Or let the magic string as the last thing in the module and store the
->> signature length, too. In this case no scanning is needed
->
-> Indeed.  This is the better way.
->
-> The main problem is rendering the length from a shell script.  It's trivial to
-> do as ASCII (there's a printf program), but a pain to render to binary.  I'm
-> sure it can be done with perl or python without the need to compile anything.
->
-> David
+On Mon,  3 Sep 2012 09:00:25 +0530
+Prasad Joshi <prasadjoshi.linux@gmail.com> wrote:
 
-That is very easy to do from script as well.
-See script in my tree.
+> The use of if (!head) BUG(); can be replaced with single line
+> BUG_ON(!head).
+> 
+> Signed-off-by: Prasad Joshi <prasadjoshi.linux@gmail.com>
+> ---
+>  fs/proc/proc_sysctl.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
+> index dfafeb2..63bdfa0 100644
+> --- a/fs/proc/proc_sysctl.c
+> +++ b/fs/proc/proc_sysctl.c
+> @@ -266,8 +266,7 @@ void sysctl_head_put(struct ctl_table_header *head)
+>  
+>  static struct ctl_table_header *sysctl_head_grab(struct ctl_table_header *head)
+>  {
+> -	if (!head)
+> -		BUG();
+> +	BUG_ON(!head);
+>  	spin_lock(&sysctl_lock);
+>  	if (!use_table(head))
+>  		head = ERR_PTR(-ENOENT);
 
-http://git.kernel.org/?p=linux/kernel/git/kasatkin/linux-digsig.git;a=blob;f=scripts/modsig.sh;h=4e997c3996d71d8e1afeb3a7afe23b3f303b9f63;hb=59f1d5352969166f2f32f84e07e20dd1b30a890f
+We could just remove the check altogether.  The resulting NULL pointer
+deref oops in use_table() will give us the same info as that BUG().
 
-110 # add signature length - big endian
-111 dec2hex $(stat --printf %s $sigfile) 4 | hex2bin $sigfile
-112 echo -n "This Is A Crypto Signed Module" >>$sigfile
-
-well. I have couple of small functions in the script. dec2hex and hex2bin
-
-- Dmitry
