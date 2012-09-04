@@ -1,64 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932569Ab2IDRAw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 13:00:52 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46677 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932415Ab2IDRAt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 13:00:49 -0400
-Message-ID: <50463399.70506@zytor.com>
-Date: Tue, 04 Sep 2012 10:00:09 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S932583Ab2IDRBm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 13:01:42 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:42349 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932415Ab2IDRBk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 13:01:40 -0400
+Date: Tue, 4 Sep 2012 13:01:38 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Pedro Alves <palves@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Sasha Levin <levinsasha928@gmail.com>, Tejun Heo <tj@kernel.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, mingo@elte.hu,
+        ebiederm@xmission.com, aarcange@redhat.com, ericvh@gmail.com,
+        netdev@vger.kernel.org, josh@joshtriplett.org, eric.dumazet@gmail.com,
+        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
+        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
+        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
+        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive
+	hashtable
+Message-ID: <20120904170138.GB31934@Krystal>
+References: <20120824230740.GN21325@google.com> <20120825042419.GA27240@Krystal> <503C95E4.3010000@gmail.com> <20120828101148.GA21683@Krystal> <503CAB1E.5010408@gmail.com> <20120828115638.GC23818@Krystal> <20120828230050.GA3337@Krystal> <1346772948.27919.9.camel@gandalf.local.home> <50462C99.5000007@redhat.com> <50462EE8.1090903@redhat.com>
 MIME-Version: 1.0
-To: Thomas Renninger <trenn@suse.de>
-CC: linux-kernel@vger.kernel.org, lenb@kernel.org, robert.moore@intel.com,
-        Fenghua Yu <fenghua.yu@intel.com>, initramfs@vger.kernel.org,
-        bigeasy@linutronix.de, vojcek@tlen.pl, eric.piel@tremplin-utc.net,
-        linux-acpi@vger.kernel.org, yinghai@kernel.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [PATCH 1/2] lib: Add early cpio decoder
-References: <1346318957-5831-1-git-send-email-trenn@suse.de> <1346318957-5831-2-git-send-email-trenn@suse.de>
-In-Reply-To: <1346318957-5831-2-git-send-email-trenn@suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50462EE8.1090903@redhat.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/30/2012 02:29 AM, Thomas Renninger wrote:
-> From: "H. Peter Anvin" <hpa@linux.intel.com>
->
-> Add a simple cpio decoder without library dependencies for the purpose
-> of extracting components from the initramfs blob for early kernel
-> uses.  Intended consumers so far are microcode and ACPI override.
->
-> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-> CC: Thomas Renninger <trenn@suse.de>
-> Link: http://lkml.kernel.org/r/201203261651.29640.trenn@suse.de
-> Signed-off-by: Thomas Renninger <trenn@suse.de>
+* Pedro Alves (palves@redhat.com) wrote:
+> On 09/04/2012 05:30 PM, Pedro Alves wrote:
+> > On 09/04/2012 04:35 PM, Steven Rostedt wrote:
+> >> On Tue, 2012-08-28 at 19:00 -0400, Mathieu Desnoyers wrote:
+> >>
+> >>> Looking again at:
+> >>>
+> >>> +#define hash_for_each_size(name, bits, bkt, node, obj, member)                 \
+> >>> +       for (bkt = 0; bkt < HASH_SIZE(bits); bkt++)                             \
+> >>> +               hlist_for_each_entry(obj, node, &name[bkt], member)
+> >>>
+> >>> you will notice that a "break" or "continue" in the inner loop will not
+> >>> affect the outer loop, which is certainly not what the programmer would
+> >>> expect!
+> >>>
+> >>> I advise strongly against creating such error-prone construct.
+> >>>
+> >>
+> >> A few existing loop macros do this. But they require a do { } while ()
+> >> approach, and all have a comment.
+> >>
+> >> It's used by do_each_thread() in sched.h and ftrace does this as well.
+> >> Look at kernel/trace/ftrace.c at do_for_each_ftrace_rec().
+> >>
+> >> Yes it breaks 'break' but it does not break 'continue' as it would just
+> >> go to the next item that would have been found (like a normal for
+> >> would).
+> > 
+> > /*
+> >  * This is a double for. Do not use 'break' to break out of the loop,
+> >  * you must use a goto.
+> >  */
+> > #define do_for_each_ftrace_rec(pg, rec)                                 \
+> >         for (pg = ftrace_pages_start; pg; pg = pg->next) {              \
+> >                 int _____i;                                             \
+> >                 for (_____i = 0; _____i < pg->index; _____i++) {        \
+> >                         rec = &pg->records[_____i];
+> > 
+> > 
+> > 
+> > You can make 'break' also work as expected if you can embed a little knowledge
+> > of the inner loop's condition in the outer loop's condition.  Sometimes it's
+> > trivial, most often when the inner loop's iterator is a pointer that goes
+> > NULL at the end, but other times not so much.  Something like (completely untested):
+> > 
+> > #define do_for_each_ftrace_rec(pg, rec)                                 \
+> >         for (pg = ftrace_pages_start, rec = &pg->records[pg->index];    \
+> >              pg && rec == &pg->records[pg->index];                      \
+> >              pg = pg->next) {                                           \
+> >                 int _____i;                                             \
+> >                 for (_____i = 0; _____i < pg->index; _____i++) {        \
+> >                         rec = &pg->records[_____i];
+> >
+> > 
+> > (other variants possible)
+> > 
+> > IOW, the outer loop only iterates if the inner loop completes.  If there's
+> > a break in the inner loop, then the outer loop breaks too.  Of course, it
+> > all depends on whether the generated code looks sane or hideous, if
+> > the uses of the macro care for it over bug avoidance.
+> > 
+> 
+> BTW, you can also go a step further and remove the need to close with double }},
+> with something like:
+> 
+> #define do_for_each_ftrace_rec(pg, rec)                                          \
+>         for (pg = ftrace_pages_start, rec = &pg->records[pg->index];             \
+>              pg && rec == &pg->records[pg->index];                               \
+>              pg = pg->next)                                                      \
+>           for (rec = pg->records; rec < &pg->records[pg->index]; rec++)
 
-I was trying to figure out if there is a way to do what you want 
-(support for multiple files) without the problems of the callback 
-interface.  I think it is actually fairly straightforward; we need a 
-prefix iterator (so you can give it a string like "kernel/acpi/" rather 
-than a full filename) and it needs to be able to accept a "last" pointer 
-so it can resume scanning at the point it last left off.  That should be 
-a pretty trivial change.
+Maybe in some cases there might be ways to combine the two loops into
+one ? I'm not seeing exactly how to do it for this one, but it should
+not be impossible. If the inner loop condition can be moved to the outer
+loop, and if we use (blah ? loop1_conf : loop2_cond) to test for
+different conditions depending on the context, and do the same for the
+3rd argument of the for() loop. The details elude me for now though, so
+maybe it's complete non-sense ;)
 
-The other thing we presumably want to do -- and this is generic -- is to 
-be able to handle multiple sources for the initramfs; at the very least 
-there is built in vs provided from the boot loader.  I had originally 
-intended to just handle that by calling the earlycpio function once per 
-block, but the "last left off" bit makes that a little harder.  Need to 
-think about that a little bit.
+It might not be that useful for do_for_each_ftrace_rec, but if we can do
+it for the hash table iterator, it might be worth it.
 
-I am guessing that this may not need to be something we need from the 
-very beginning, or am I wrong?
+Thanks,
 
-	-hpa
+Mathieu
+
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
