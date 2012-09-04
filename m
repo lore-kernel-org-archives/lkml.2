@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932551Ab2IDREF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 13:04:05 -0400
-Received: from oproxy12-pub.bluehost.com ([50.87.16.10]:52918 "HELO
-	oproxy12-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932450Ab2IDRED (ORCPT
+	id S932574Ab2IDRHo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 13:07:44 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:35371 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932467Ab2IDRHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 13:04:03 -0400
-Message-ID: <5046346F.802@xenotime.net>
-Date: Tue, 04 Sep 2012 10:03:43 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Tue, 4 Sep 2012 13:07:43 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, bfields@fieldses.org, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH v2 4/5] fat: eliminate orphaned inode number allocation
+References: <1346774312-8142-1-git-send-email-linkinjeon@gmail.com>
+	<87mx15910k.fsf@devron.myhome.or.jp>
+Date: Wed, 05 Sep 2012 02:07:40 +0900
+In-Reply-To: <87mx15910k.fsf@devron.myhome.or.jp> (OGAWA Hirofumi's message of
+	"Wed, 05 Sep 2012 02:00:11 +0900")
+Message-ID: <87fw6x90o3.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Richard Weinberger <richard@nod.at>,
-        user-mode-linux-devel@lists.sourceforge.net
-Subject: Re: linux-next: Tree for Sept 4 (uml + execve)
-References: <20120904171330.f6b0a922a754ba0f3acc123b@canb.auug.org.au>
-In-Reply-To: <20120904171330.f6b0a922a754ba0f3acc123b@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2012 12:13 AM, Stephen Rothwell wrote:
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> writes:
 
-> Hi all,
-> 
-> Changes since 20120824:
+> Namjae Jeon <linkinjeon@gmail.com> writes:
 >
+>> From: Namjae Jeon <namjae.jeon@samsung.com>
+>>
+>> Maintain a list of inode(i_pos) numbers of orphaned inodes (i.e the
+>> inodes that have been unlinked but still having open file
+>> descriptors).At file/directory creation time, skip using such i_pos
+>> values.Removal of the i_pos from the list is done during inode eviction.
+>
+> What happens if the directory (has busy entries) was completely removed?
+>
+>
+> And Al's point is important for NFS too. If you want stable ino for NFS,
+> you never can't change it.
 
-
-UML on x86_64 (defconfig):
-
-fs/built-in.o: In function `kernel_execve':
-fs/exec.c:2342: multiple definition of `kernel_execve'
-arch/um/kernel/built-in.o:arch/um/kernel/syscall.c:57: first defined here
-fs/built-in.o: In function `sys_execve':
-fs/exec.c:2327: multiple definition of `sys_execve'
-arch/um/kernel/built-in.o:arch/um/kernel/exec.c:77: first defined here
-
-
+s/never can't/never can/
 -- 
-
-~Randy
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
