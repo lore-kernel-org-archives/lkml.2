@@ -1,41 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756973Ab2IDM1D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 08:27:03 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:18519 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756925Ab2IDM1C (ORCPT
+	id S1757007Ab2IDM1b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 08:27:31 -0400
+Received: from gerolde.archlinux.org ([66.211.214.132]:46666 "EHLO
+	gerolde.archlinux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756928Ab2IDM1a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 08:27:02 -0400
-Date: Tue, 4 Sep 2012 05:25:44 -0700
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Manavendra Nath Manav <mnm.kernel@gmail.com>
-Cc: kernelnewbies@kernelnewbies.org, devel@driverdev.osuosl.org,
-        Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org
-Subject: Re: Why exported const value modified by another driver not updated
- in original driver
-Message-ID: <20120904122544.GC19396@mwanda>
-References: <CAJKgH8Ah-aq=LfOWs2SBZnndzugNGxJbqYS11YVQLXJy6FZxkw@mail.gmail.com>
- <CAJKgH8CNJM2SyR7bD8nXae13-Fq1MP1Xn7+383YU-HPwKBe+Zg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJKgH8CNJM2SyR7bD8nXae13-Fq1MP1Xn7+383YU-HPwKBe+Zg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Tue, 4 Sep 2012 08:27:30 -0400
+From: Dave Reisner <dreisner@archlinux.org>
+To: linux-kernel@vger.kernel.org
+Cc: alan@lxorguk.ukuu.org.uk, dreisner@archlinux.org
+Subject: [PATCH] block: reject invalid queue attribute values
+Date: Tue,  4 Sep 2012 08:27:16 -0400
+Message-Id: <1346761636-18175-1-git-send-email-dreisner@archlinux.org>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 04, 2012 at 03:58:20PM +0530, Manavendra Nath Manav wrote:
-> Is the above a genuine kernel bug, or i am missing something out here. Pls help.
-> 
+Instead of using simple_strtoul which "converts" invalid numbers to 0,
+use strict_strtoul and perform error checking to ensure that userspace
+passes us a valid unsigned long. This addresses problems with functions
+such as writev, which might want to write a trailing newline -- the
+newline should rightfully be rejected, but the value preceeding it
+should be preserved.
 
-When you declare something as const then the compiler assumes it
-really is const and uses a literal instead of reading from memory.
-I'm surprised the compiler doesn't print a warning message.
+Fixes BZ#46981.
 
-It has to do with compilers, nothing to do with kernels.
+Signed-off-by: Dave Reisner <dreisner@archlinux.org>
+---
+ block/blk-sysfs.c | 25 +++++++++++++++++++++++--
+ 1 file changed, 23 insertions(+), 2 deletions(-)
 
-regards,
-dan carpenter
+diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
+index 9628b29..ea51d82 100644
+--- a/block/blk-sysfs.c
++++ b/block/blk-sysfs.c
+@@ -26,9 +26,15 @@ queue_var_show(unsigned long var, char *page)
+ static ssize_t
+ queue_var_store(unsigned long *var, const char *page, size_t count)
+ {
+-	char *p = (char *) page;
++	int err;
++	unsigned long v;
++
++	err = strict_strtoul(page, 10, &v);
++	if (err || v > UINT_MAX)
++		return -EINVAL;
++
++	*var = v;
+ 
+-	*var = simple_strtoul(p, &p, 10);
+ 	return count;
+ }
+ 
+@@ -48,6 +54,9 @@ queue_requests_store(struct request_queue *q, const char *page, size_t count)
+ 		return -EINVAL;
+ 
+ 	ret = queue_var_store(&nr, page, count);
++	if (ret < 0)
++		return ret;
++
+ 	if (nr < BLKDEV_MIN_RQ)
+ 		nr = BLKDEV_MIN_RQ;
+ 
+@@ -102,6 +111,9 @@ queue_ra_store(struct request_queue *q, const char *page, size_t count)
+ 	unsigned long ra_kb;
+ 	ssize_t ret = queue_var_store(&ra_kb, page, count);
+ 
++	if (ret < 0)
++		return ret;
++
+ 	q->backing_dev_info.ra_pages = ra_kb >> (PAGE_CACHE_SHIFT - 10);
+ 
+ 	return ret;
+@@ -176,6 +188,9 @@ queue_max_sectors_store(struct request_queue *q, const char *page, size_t count)
+ 			page_kb = 1 << (PAGE_CACHE_SHIFT - 10);
+ 	ssize_t ret = queue_var_store(&max_sectors_kb, page, count);
+ 
++	if (ret < 0)
++		return ret;
++
+ 	if (max_sectors_kb > max_hw_sectors_kb || max_sectors_kb < page_kb)
+ 		return -EINVAL;
+ 
+@@ -236,6 +251,9 @@ static ssize_t queue_nomerges_store(struct request_queue *q, const char *page,
+ 	unsigned long nm;
+ 	ssize_t ret = queue_var_store(&nm, page, count);
+ 
++	if (ret < 0)
++		return ret;
++
+ 	spin_lock_irq(q->queue_lock);
+ 	queue_flag_clear(QUEUE_FLAG_NOMERGES, q);
+ 	queue_flag_clear(QUEUE_FLAG_NOXMERGES, q);
+@@ -264,6 +282,9 @@ queue_rq_affinity_store(struct request_queue *q, const char *page, size_t count)
+ 	unsigned long val;
+ 
+ 	ret = queue_var_store(&val, page, count);
++	if (ret < 0)
++		return ret;
++
+ 	spin_lock_irq(q->queue_lock);
+ 	if (val == 2) {
+ 		queue_flag_set(QUEUE_FLAG_SAME_COMP, q);
+-- 
+1.7.12
+
