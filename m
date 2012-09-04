@@ -1,295 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932580Ab2IDVP0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 17:15:26 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:57537 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753057Ab2IDVPZ (ORCPT
+	id S1757827Ab2IDVQs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 17:16:48 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:48110 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757678Ab2IDVQq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 17:15:25 -0400
+	Tue, 4 Sep 2012 17:16:46 -0400
+Date: Tue, 4 Sep 2012 17:05:55 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Shuah Khan <shuah.khan@hp.com>
+Cc: joerg.roedel@amd.com, paul.gortmaker@windriver.com, kubakici@wp.pl,
+        stern@rowland.harvard.edu, dan.carpenter@oracle.com, rob@landley.net,
+        linux-doc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        shuahkhan@gmail.com
+Subject: Re: [PATCH] dma-debug: Add dma map/unmap error tracking support
+Message-ID: <20120904210555.GG3155@phenom.dumpdata.com>
+References: <1346595257.4377.5.camel@lorien2>
 MIME-Version: 1.0
-In-Reply-To: <1343954833-17719-1-git-send-email-anatol.pomozov@gmail.com>
-References: <1343845147-21394-1-git-send-email-anatol.pomozov@gmail.com>
-	<1343954833-17719-1-git-send-email-anatol.pomozov@gmail.com>
-Date: Tue, 4 Sep 2012 14:15:23 -0700
-Message-ID: <CAOMFOmWdoPX9P0zx2Mb9hBwFAvwuKN21UwLS+=gd0xgPB4e+YQ@mail.gmail.com>
-Subject: Re: [PATCH] fs: Preserve error code in get_empty_filp()
-From: Anatol Pomozov <anatol.pomozov@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: viro@zeniv.linux.org.uk, tytso@mit.edu,
-        Anatol Pomozov <anatol.pomozov@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346595257.4377.5.camel@lorien2>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Al
+On Sun, Sep 02, 2012 at 08:14:17AM -0600, Shuah Khan wrote:
+> A recent dma mapping error analysis effort showed that a large precentage
+> of dma_map_single() and dma_map_page() returns are not checked for mapping
+> errors. Reference: https://lkml.org/lkml/2012/8/10/326
+> 
 
-Do you have some time to review this change? Does it look good?
+So were you able to catch some naughty drivers with this?
 
-On Thu, Aug 2, 2012 at 5:47 PM, Anatol Pomozov <anatol.pomozov@gmail.com> wrote:
-> Allocating a file structure in function get_empty_filp() might fail because
-> of several reasons:
->  - not enough memory for file structures
->  - operation is not allowed
->  - user is over its limit
->
-> Currently the function returns NULL in all cases and we loose the exact
-> reason of the error. All callers of get_empty_filp() assume that the function
-> can fail with ENFILE only.
->
-> Return error through pointer. Change all callers to preserve this error code.
->
-> Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
-> Reviewed-by: "Theodore Ts'o" <tytso@mit.edu>
+> Adding support for tracking dma mapping and unmapping errors to help assess
+> the following:
+> 
+> When do dma mapping errors get detected?
+> How often do these errors occur?
+> Why don't we see failures related to missing dma mapping error checks?
+> Are they silent failures?
+> 
+> Signed-off-by: Shuah Khan <shuah.khan@hp.com>
 > ---
->  arch/ia64/kernel/perfmon.c |  4 ++--
->  fs/anon_inodes.c           |  5 +++--
->  fs/file_table.c            | 22 ++++++++++++++--------
->  fs/hugetlbfs/inode.c       |  5 +++--
->  fs/namei.c                 |  4 ++--
->  fs/open.c                  |  5 ++---
->  fs/pipe.c                  |  9 ++++++---
->  ipc/shm.c                  |  4 +++-
->  mm/shmem.c                 |  5 +++--
->  net/socket.c               |  4 ++--
->  10 files changed, 40 insertions(+), 27 deletions(-)
->
-> diff --git a/arch/ia64/kernel/perfmon.c b/arch/ia64/kernel/perfmon.c
-> index 3fa4bc5..da2dcce 100644
-> --- a/arch/ia64/kernel/perfmon.c
-> +++ b/arch/ia64/kernel/perfmon.c
-> @@ -2221,9 +2221,9 @@ pfm_alloc_file(pfm_context_t *ctx)
->         d_add(path.dentry, inode);
->
->         file = alloc_file(&path, FMODE_READ, &pfm_file_ops);
-> -       if (!file) {
-> +       if (IS_ERR(file)) {
->                 path_put(&path);
-> -               return ERR_PTR(-ENFILE);
-> +               return file;
->         }
->
->         file->f_flags = O_RDONLY;
-> diff --git a/fs/anon_inodes.c b/fs/anon_inodes.c
-> index 28d39fb..73536e3 100644
-> --- a/fs/anon_inodes.c
-> +++ b/fs/anon_inodes.c
-> @@ -160,10 +160,11 @@ struct file *anon_inode_getfile(const char *name,
->
->         d_instantiate(path.dentry, anon_inode_inode);
->
-> -       error = -ENFILE;
->         file = alloc_file(&path, OPEN_FMODE(flags), fops);
-> -       if (!file)
-> +       if (IS_ERR(file)) {
-> +               error = PTR_ERR(file);
->                 goto err_dput;
-> +       }
->         file->f_mapping = anon_inode_inode->i_mapping;
->
->         file->f_pos = 0;
-> diff --git a/fs/file_table.c b/fs/file_table.c
-> index 701985e..3b3f4d7 100644
-> --- a/fs/file_table.c
-> +++ b/fs/file_table.c
-> @@ -94,8 +94,8 @@ int proc_nr_files(ctl_table *table, int write,
->  #endif
->
->  /* Find an unused file structure and return a pointer to it.
-> - * Returns NULL, if there are no more free file structures or
-> - * we run out of memory.
-> + * Returns an error pointer if some error happend e.g. we over file
-> + * structures limit, run out of memory or operation is not permitted.
->   *
->   * Be very careful using this.  You are responsible for
->   * getting write access to any mount that you might assign
-> @@ -108,6 +108,7 @@ struct file *get_empty_filp(void)
->         const struct cred *cred = current_cred();
->         static long old_max;
->         struct file * f;
-> +       int error;
->
->         /*
->          * Privileged users can go above max_files
-> @@ -117,17 +118,22 @@ struct file *get_empty_filp(void)
->                  * percpu_counters are inaccurate.  Do an expensive check before
->                  * we go and fail.
->                  */
-> -               if (percpu_counter_sum_positive(&nr_files) >= files_stat.max_files)
-> +               if (percpu_counter_sum_positive(&nr_files) >= files_stat.max_files) {
-> +                       error = -ENFILE;
->                         goto over;
-> +               }
->         }
->
->         f = kmem_cache_zalloc(filp_cachep, GFP_KERNEL);
-> -       if (f == NULL)
-> +       if (f == NULL) {
-> +               error = -ENOMEM;
->                 goto fail;
-> +       }
->
->         percpu_counter_inc(&nr_files);
->         f->f_cred = get_cred(cred);
-> -       if (security_file_alloc(f))
-> +       error = security_file_alloc(f);
-> +       if (error)
->                 goto fail_sec;
->
->         INIT_LIST_HEAD(&f->f_u.fu_list);
-> @@ -149,7 +155,7 @@ over:
->  fail_sec:
->         file_free(f);
->  fail:
-> -       return NULL;
-> +       return ERR_PTR(error);
->  }
->
->  /**
-> @@ -173,8 +179,8 @@ struct file *alloc_file(struct path *path, fmode_t mode,
->         struct file *file;
->
->         file = get_empty_filp();
-> -       if (!file)
-> -               return NULL;
-> +       if (IS_ERR(file))
-> +               return file;
->
->         file->f_path = *path;
->         file->f_mapping = path->dentry->d_inode->i_mapping;
-> diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
-> index 8349a89..5ec849b 100644
-> --- a/fs/hugetlbfs/inode.c
-> +++ b/fs/hugetlbfs/inode.c
-> @@ -984,11 +984,12 @@ struct file *hugetlb_file_setup(const char *name, unsigned long addr,
->         inode->i_size = size;
->         clear_nlink(inode);
->
-> -       error = -ENFILE;
->         file = alloc_file(&path, FMODE_WRITE | FMODE_READ,
->                         &hugetlbfs_file_operations);
-> -       if (!file)
-> +       if (IS_ERR(file)) {
-> +               error = PTR_ERR(file);
->                 goto out_dentry; /* inode is already attached */
-> +       }
->
->         return file;
->
-> diff --git a/fs/namei.c b/fs/namei.c
-> index 1b46439..85544e9 100644
-> --- a/fs/namei.c
-> +++ b/fs/namei.c
-> @@ -2879,8 +2879,8 @@ static struct file *path_openat(int dfd, const char *pathname,
->         int error;
->
->         file = get_empty_filp();
-> -       if (!file)
-> -               return ERR_PTR(-ENFILE);
-> +       if (IS_ERR(file))
-> +               return file;
->
->         file->f_flags = op->open_flag;
->
-> diff --git a/fs/open.c b/fs/open.c
-> index f3d96e7..1587b2d 100644
-> --- a/fs/open.c
-> +++ b/fs/open.c
-> @@ -781,10 +781,9 @@ struct file *dentry_open(const struct path *path, int flags,
->         /* We must always pass in a valid mount pointer. */
->         BUG_ON(!path->mnt);
->
-> -       error = -ENFILE;
->         f = get_empty_filp();
-> -       if (f == NULL)
-> -               return ERR_PTR(error);
-> +       if (IS_ERR(f))
-> +               return f;
->
->         f->f_flags = flags;
->         f->f_path = *path;
-> diff --git a/fs/pipe.c b/fs/pipe.c
-> index 8d85d70..e420908 100644
-> --- a/fs/pipe.c
-> +++ b/fs/pipe.c
-> @@ -1035,16 +1035,19 @@ int create_pipe_files(struct file **res, int flags)
->
->         d_instantiate(path.dentry, inode);
->
-> -       err = -ENFILE;
->         f = alloc_file(&path, FMODE_WRITE, &write_pipefifo_fops);
-> -       if (!f)
-> +       if (IS_ERR(f)) {
-> +               err = PTR_ERR(f);
->                 goto err_dentry;
-> +       }
->
->         f->f_flags = O_WRONLY | (flags & (O_NONBLOCK | O_DIRECT));
->
->         res[0] = alloc_file(&path, FMODE_READ, &read_pipefifo_fops);
-> -       if (!res[0])
-> +       if (IS_ERR(res[0])) {
-> +               err = PTR_ERR(res[0]);
->                 goto err_file;
-> +       }
->
->         path_get(&path);
->         res[0]->f_flags = O_RDONLY | (flags & O_NONBLOCK);
-> diff --git a/ipc/shm.c b/ipc/shm.c
-> index 00faa05..c8eee21 100644
-> --- a/ipc/shm.c
-> +++ b/ipc/shm.c
-> @@ -1039,8 +1039,10 @@ long do_shmat(int shmid, char __user *shmaddr, int shmflg, ulong *raddr,
->                           is_file_hugepages(shp->shm_file) ?
->                                 &shm_file_operations_huge :
->                                 &shm_file_operations);
-> -       if (!file)
-> +       if (IS_ERR(file)) {
-> +               err = PTR_ERR(file);
->                 goto out_free;
-> +       }
->
->         file->private_data = sfd;
->         file->f_mapping = shp->shm_file->f_mapping;
-> diff --git a/mm/shmem.c b/mm/shmem.c
-> index d4e184e..cd814ee 100644
-> --- a/mm/shmem.c
-> +++ b/mm/shmem.c
-> @@ -2948,11 +2948,12 @@ struct file *shmem_file_setup(const char *name, loff_t size, unsigned long flags
->                 goto put_dentry;
->  #endif
->
-> -       error = -ENFILE;
->         file = alloc_file(&path, FMODE_WRITE | FMODE_READ,
->                   &shmem_file_operations);
-> -       if (!file)
-> +       if (IS_ERR(file)) {
-> +               error = PTR_ERR(file);
->                 goto put_dentry;
-> +       }
->
->         return file;
->
-> diff --git a/net/socket.c b/net/socket.c
-> index dfe5b66..e80eb83 100644
-> --- a/net/socket.c
-> +++ b/net/socket.c
-> @@ -369,12 +369,12 @@ static int sock_alloc_file(struct socket *sock, struct file **f, int flags)
->
->         file = alloc_file(&path, FMODE_READ | FMODE_WRITE,
->                   &socket_file_ops);
-> -       if (unlikely(!file)) {
-> +       if (unlikely(IS_ERR(file))) {
->                 /* drop dentry, keep inode */
->                 ihold(path.dentry->d_inode);
->                 path_put(&path);
->                 put_unused_fd(fd);
-> -               return -ENFILE;
-> +               return PTR_ERR(file);
->         }
->
->         sock->file = file;
-> --
-> 1.7.11.4
->
+>  Documentation/DMA-API.txt |    7 +++++++
+>  lib/dma-debug.c           |   26 +++++++++++++++++++++++++-
+>  2 files changed, 32 insertions(+), 1 deletion(-)
+> 
+> diff --git a/Documentation/DMA-API.txt b/Documentation/DMA-API.txt
+> index 66bd97a..ee10a11 100644
+> --- a/Documentation/DMA-API.txt
+> +++ b/Documentation/DMA-API.txt
+> @@ -638,6 +638,13 @@ this directory the following files can currently be found:
+>  	dma-api/error_count	This file is read-only and shows the total
+>  				numbers of errors found.
+>  
+> +	dma-api/dma_map_errors  This file is read-only and shows the total
+> +				number of dma mapping errors detected.
+> +
+> +	dma-api/dma_unmap_errors
+> +				This file is read-only and shows the total
+> +				number of invalid dma unmapping attempts.
+> +
+>  	dma-api/num_errors	The number in this file shows how many
+>  				warnings will be printed to the kernel log
+>  				before it stops. This number is initialized to
+> diff --git a/lib/dma-debug.c b/lib/dma-debug.c
+> index 66ce414..8596114 100644
+> --- a/lib/dma-debug.c
+> +++ b/lib/dma-debug.c
+> @@ -83,6 +83,10 @@ static u32 global_disable __read_mostly;
+>  /* Global error count */
+>  static u32 error_count;
+>  
+> +/* dma mapping error counts */
+> +static u32 dma_map_errors;
+> +static u32 dma_unmap_errors;
+> +
+>  /* Global error show enable*/
+>  static u32 show_all_errors __read_mostly;
+>  /* Number of errors to show */
+> @@ -104,6 +108,8 @@ static struct dentry *show_num_errors_dent  __read_mostly;
+>  static struct dentry *num_free_entries_dent __read_mostly;
+>  static struct dentry *min_free_entries_dent __read_mostly;
+>  static struct dentry *filter_dent           __read_mostly;
+> +static struct dentry *dma_map_errors_dent   __read_mostly;
+> +static struct dentry *dma_unmap_errors_dent __read_mostly;
+>  
+>  /* per-driver filter related state */
+>  
+> @@ -695,6 +701,19 @@ static int dma_debug_fs_init(void)
+>  	if (!filter_dent)
+>  		goto out_err;
+>  
+> +	dma_map_errors_dent = debugfs_create_u32("dma_map_errors", 0444,
+> +			dma_debug_dent,
+> +			&dma_map_errors);
+> +
+> +	if (!dma_map_errors_dent)
+> +		goto out_err;
+> +
+> +	dma_unmap_errors_dent = debugfs_create_u32("dma_unmap_errors", 0444,
+> +			dma_debug_dent,
+> +			&dma_unmap_errors);
+> +	if (!dma_unmap_errors_dent)
+> +		goto out_err;
+> +
+>  	return 0;
+>  
+>  out_err:
+> @@ -850,6 +869,7 @@ static void check_unmap(struct dma_debug_entry *ref)
+>  	unsigned long flags;
+>  
+>  	if (dma_mapping_error(ref->dev, ref->dev_addr)) {
+> +		dma_unmap_errors += 1;
+>  		err_printk(ref->dev, NULL, "DMA-API: device driver tries "
+>  			   "to free an invalid DMA memory address\n");
+>  		return;
+> @@ -1022,8 +1042,12 @@ void debug_dma_map_page(struct device *dev, struct page *page, size_t offset,
+>  	if (unlikely(global_disable))
+>  		return;
+>  
+> -	if (unlikely(dma_mapping_error(dev, dma_addr)))
+> +	if (unlikely(dma_mapping_error(dev, dma_addr))) {
+> +		dma_map_errors += 1;
+> +		err_printk(dev, NULL,
+> +			   "DMA-API: dma_map_page() returned error\n");
+>  		return;
+> +	}
+
+So this will print if the dma_map_page failed (which can happen).
+
+I was initially thinking that this patch would contain a state for the driver
+of whether after map it has called dma_mapping_error. So this function would
+increment some internal state, and if dma_mapping_error on that specific dma_addr
+it would decrement it. If it never occured, then we would print on the unmap
+that the device never had called dma_mapping_error on said dma_addr?
+
+>  
+>  	entry = dma_entry_alloc();
+>  	if (!entry)
+> -- 
+> 1.7.9.5
+> 
+> 
