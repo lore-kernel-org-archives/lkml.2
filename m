@@ -1,505 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932844Ab2IDW34 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 18:29:56 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:61111 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932828Ab2IDW3y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 18:29:54 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-12.tower-209.messagelabs.com!1346797791!6873727!4
-X-Originating-IP: [216.166.12.180]
-X-StarScan-Received: 
-X-StarScan-Version: 6.6.1.3; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/3] staging: comedi: amcc_s5933_58.h: remove unused file
-Date: Tue, 4 Sep 2012 15:28:54 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <gregkh@linuxfoundation.org>
+	id S932816Ab2IDWeD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 18:34:03 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:42204 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754251Ab2IDWeB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 18:34:01 -0400
+Date: Tue, 4 Sep 2012 15:33:50 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 04/15] rcu: Permit RCU_NONIDLE() to be used
+ from interrupt context
+Message-ID: <20120904223350.GQ2593@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120830185607.GA32148@linux.vnet.ibm.com>
+ <1346352988-32444-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346352988-32444-4-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20120831180052.GB4259@jtriplet-mobl1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-ID: <201209041528.54593.hartleys@visionengravers.com>
+In-Reply-To: <20120831180052.GB4259@jtriplet-mobl1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12090422-5806-0000-0000-00001927FFF3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nothing in the comedi subsystem references this header file. It's
-actually almost a straight copy of the addi_amcc_s5933.h file anyway.
-Just remove the file.
+On Fri, Aug 31, 2012 at 11:00:52AM -0700, Josh Triplett wrote:
+> On Thu, Aug 30, 2012 at 11:56:17AM -0700, Paul E. McKenney wrote:
+> > From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+> > 
+> > There is a need to use RCU from interrupt context, but either before
+> > rcu_irq_enter() is called or after rcu_irq_exit() is called.  If the
+> > interrupt occurs from idle, then lockdep-RCU will complain about such
+> > uses, as they appear to be illegal uses of RCU from the idle loop.
+> > In other environments, RCU_NONIDLE() could be used to properly protect
+> > the use of RCU, but RCU_NONIDLE() currently cannot be invoked except
+> > from process context.
+> > 
+> > This commit therefore modifies RCU_NONIDLE() to permit its use more
+> > globally.
+> > 
+> > Reported-by: Steven Rostedt <rostedt@goodmis.org>
+> > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> Something seems wrong about this.  The addition of EXPORT_SYMBOL_GPL
+> suggests that such interrupt handlers might live in modules.  In what
+> situation might a module interrupt handler get called from the idle
+> loop, before rcu_irq_enter or after rcu_irq_exit, and need to know that
+> when using RCU?
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- .../comedi/drivers/addi-data/amcc_s5933_58.h       | 453 ---------------------
- 1 file changed, 453 deletions(-)
- delete mode 100644 drivers/staging/comedi/drivers/addi-data/amcc_s5933_58.h
+Drivers can be in modules, in which case their interrupt handlers will
+also be in the corresponding module.  I do agree that in most cases,
+the irq_enter() and irq_exit() hooks would be invoked by non-module code,
+but I do believe that I had to add those exports due to build failures.
 
-diff --git a/drivers/staging/comedi/drivers/addi-data/amcc_s5933_58.h b/drivers/staging/comedi/drivers/addi-data/amcc_s5933_58.h
-deleted file mode 100644
-index c26c28c..0000000
---- a/drivers/staging/comedi/drivers/addi-data/amcc_s5933_58.h
-+++ /dev/null
-@@ -1,453 +0,0 @@
--/*
--	Modified by umesh on 16th may 2001
--	Modified by sarath on 22nd may 2001
--*/
--
--/*
--    comedi/drivers/amcc_s5933_v_58.h
--
--    Stuff for AMCC S5933 PCI Controller
--
--    Author: Michal Dobes <majkl@tesnet.cz>
--
--    Inspirated from general-purpose AMCC S5933 PCI Matchmaker driver
--    made by Andrea Cisternino  <acister@pcape1.pi.infn.it>
--    and as result of espionage from MITE code made by David A. Schleef.
--    Thanks to AMCC for their on-line documentation and bus master DMA
--    example.
--*/
--
--#ifndef _AMCC_S5933_H_
--#define _AMCC_S5933_H_
--
--#include <linux/pci.h>
--#include "../../comedidev.h"
--
--/***********Added by sarath for compatibility with APCI3120
--
--*************************/
--
--#define FIFO_ADVANCE_ON_BYTE_2     0x20000000	/*  written on base0 */
--
--#define AMWEN_ENABLE                     0x02	/*  added for step 6 dma written on base2 */
--#define A2P_FIFO_WRITE_ENABLE            0x01
--
--#define AGCSTS_TC_ENABLE		   0x10000000	/*  Added for transfer count enable bit */
--
--/* ADDON RELATED ADDITIONS */
--/* Constant */
--#define     APCI3120_ENABLE_TRANSFER_ADD_ON_LOW       0x00
--#define     APCI3120_ENABLE_TRANSFER_ADD_ON_HIGH      0x1200
--#define     APCI3120_A2P_FIFO_MANAGEMENT              0x04000400L
--#define     APCI3120_AMWEN_ENABLE                     0x02
--#define     APCI3120_A2P_FIFO_WRITE_ENABLE            0x01
--#define     APCI3120_FIFO_ADVANCE_ON_BYTE_2           0x20000000L
--#define     APCI3120_ENABLE_WRITE_TC_INT              0x00004000L
--#define     APCI3120_CLEAR_WRITE_TC_INT               0x00040000L
--#define     APCI3120_DISABLE_AMWEN_AND_A2P_FIFO_WRITE 0x0
--#define     APCI3120_DISABLE_BUS_MASTER_ADD_ON        0x0
--#define     APCI3120_DISABLE_BUS_MASTER_PCI           0x0
--
-- /*  ADD_ON ::: this needed since apci supports 16 bit interface to add on */
--#define     APCI3120_ADD_ON_AGCSTS_LOW       0x3C
--#define     APCI3120_ADD_ON_AGCSTS_HIGH      APCI3120_ADD_ON_AGCSTS_LOW + 2
--#define     APCI3120_ADD_ON_MWAR_LOW         0x24
--#define     APCI3120_ADD_ON_MWAR_HIGH        APCI3120_ADD_ON_MWAR_LOW + 2
--#define     APCI3120_ADD_ON_MWTC_LOW         0x058
--#define     APCI3120_ADD_ON_MWTC_HIGH        APCI3120_ADD_ON_MWTC_LOW + 2
--
--/* AMCC */
--#define     APCI3120_AMCC_OP_MCSR            0x3C
--#define     APCI3120_AMCC_OP_REG_INTCSR      0x38
--
--/*******from here all upward definitions are added by sarath */
--
--/****************************************************************************/
--/* AMCC Operation Register Offsets - PCI                                    */
--/****************************************************************************/
--
--#define AMCC_OP_REG_OMB1         0x00
--#define AMCC_OP_REG_OMB2         0x04
--#define AMCC_OP_REG_OMB3         0x08
--#define AMCC_OP_REG_OMB4         0x0c
--#define AMCC_OP_REG_IMB1         0x10
--#define AMCC_OP_REG_IMB2         0x14
--#define AMCC_OP_REG_IMB3         0x18
--#define AMCC_OP_REG_IMB4         0x1c
--#define AMCC_OP_REG_FIFO         0x20
--#define AMCC_OP_REG_MWAR         0x24
--#define AMCC_OP_REG_MWTC         0x28
--#define AMCC_OP_REG_MRAR         0x2c
--#define AMCC_OP_REG_MRTC         0x30
--#define AMCC_OP_REG_MBEF         0x34
--#define AMCC_OP_REG_INTCSR       0x38
--#define  AMCC_OP_REG_INTCSR_SRC  (AMCC_OP_REG_INTCSR + 2)	/* int source */
--#define  AMCC_OP_REG_INTCSR_FEC  (AMCC_OP_REG_INTCSR + 3)	/* FIFO ctrl */
--#define AMCC_OP_REG_MCSR         0x3c
--#define  AMCC_OP_REG_MCSR_NVDATA (AMCC_OP_REG_MCSR + 2)	/* Data in byte 2 */
--#define  AMCC_OP_REG_MCSR_NVCMD  (AMCC_OP_REG_MCSR + 3)	/* Command in byte 3 */
--
--#define AMCC_FIFO_DEPTH_DWORD	8
--#define AMCC_FIFO_DEPTH_BYTES	(8 * sizeof (u32))
--
--/****************************************************************************/
--/* AMCC Operation Registers Size - PCI                                      */
--/****************************************************************************/
--
--#define AMCC_OP_REG_SIZE	 64	/* in bytes */
--
--/****************************************************************************/
--/* AMCC Operation Register Offsets - Add-on                                 */
--/****************************************************************************/
--
--#define AMCC_OP_REG_AIMB1         0x00
--#define AMCC_OP_REG_AIMB2         0x04
--#define AMCC_OP_REG_AIMB3         0x08
--#define AMCC_OP_REG_AIMB4         0x0c
--#define AMCC_OP_REG_AOMB1         0x10
--#define AMCC_OP_REG_AOMB2         0x14
--#define AMCC_OP_REG_AOMB3         0x18
--#define AMCC_OP_REG_AOMB4         0x1c
--#define AMCC_OP_REG_AFIFO         0x20
--#define AMCC_OP_REG_AMWAR         0x24
--#define AMCC_OP_REG_APTA          0x28
--#define AMCC_OP_REG_APTD          0x2c
--#define AMCC_OP_REG_AMRAR         0x30
--#define AMCC_OP_REG_AMBEF         0x34
--#define AMCC_OP_REG_AINT          0x38
--#define AMCC_OP_REG_AGCSTS        0x3c
--#define AMCC_OP_REG_AMWTC         0x58
--#define AMCC_OP_REG_AMRTC         0x5c
--
--/****************************************************************************/
--/* AMCC - Add-on General Control/Status Register                            */
--/****************************************************************************/
--
--#define AGCSTS_CONTROL_MASK	0xfffff000
--#define  AGCSTS_NV_ACC_MASK	0xe0000000
--#define  AGCSTS_RESET_MASK	0x0e000000
--#define  AGCSTS_NV_DA_MASK	0x00ff0000
--#define  AGCSTS_BIST_MASK	0x0000f000
--#define AGCSTS_STATUS_MASK	0x000000ff
--#define  AGCSTS_TCZERO_MASK	0x000000c0
--#define  AGCSTS_FIFO_ST_MASK	0x0000003f
--
--#define AGCSTS_RESET_MBFLAGS	0x08000000
--#define AGCSTS_RESET_P2A_FIFO	0x04000000
--#define AGCSTS_RESET_A2P_FIFO	0x02000000
--#define AGCSTS_RESET_FIFOS	(AGCSTS_RESET_A2P_FIFO | AGCSTS_RESET_P2A_FIFO)
--
--#define AGCSTS_A2P_TCOUNT	0x00000080
--#define AGCSTS_P2A_TCOUNT	0x00000040
--
--#define AGCSTS_FS_P2A_EMPTY	0x00000020
--#define AGCSTS_FS_P2A_HALF	0x00000010
--#define AGCSTS_FS_P2A_FULL	0x00000008
--
--#define AGCSTS_FS_A2P_EMPTY	0x00000004
--#define AGCSTS_FS_A2P_HALF	0x00000002
--#define AGCSTS_FS_A2P_FULL	0x00000001
--
--/****************************************************************************/
--/* AMCC - Add-on Interrupt Control/Status Register                            */
--/****************************************************************************/
--
--#define AINT_INT_MASK		0x00ff0000
--#define AINT_SEL_MASK		0x0000ffff
--#define  AINT_IS_ENSEL_MASK	0x00001f1f
--
--#define AINT_INT_ASSERTED	0x00800000
--#define AINT_BM_ERROR		0x00200000
--#define AINT_BIST_INT		0x00100000
--
--#define AINT_RT_COMPLETE	0x00080000
--#define AINT_WT_COMPLETE	0x00040000
--
--#define AINT_OUT_MB_INT		0x00020000
--#define AINT_IN_MB_INT		0x00010000
--
--#define AINT_READ_COMPL		0x00008000
--#define AINT_WRITE_COMPL	0x00004000
--
--#define AINT_OMB_ENABLE 	0x00001000
--#define AINT_OMB_SELECT 	0x00000c00
--#define AINT_OMB_BYTE		0x00000300
--
--#define AINT_IMB_ENABLE 	0x00000010
--#define AINT_IMB_SELECT 	0x0000000c
--#define AINT_IMB_BYTE		0x00000003
--
--/* Enable Bus Mastering */
--#define EN_A2P_TRANSFERS	0x00000400
--/* FIFO Flag Reset */
--#define RESET_A2P_FLAGS		0x04000000L
--/* FIFO Relative Priority */
--#define A2P_HI_PRIORITY		0x00000100L
--/* Identify Interrupt Sources */
--#define ANY_S593X_INT		0x00800000L
--#define READ_TC_INT		0x00080000L
--#define WRITE_TC_INT		0x00040000L
--#define IN_MB_INT		0x00020000L
--#define MASTER_ABORT_INT	0x00100000L
--#define TARGET_ABORT_INT	0x00200000L
--#define BUS_MASTER_INT		0x00200000L
--
--/****************************************************************************/
--
--struct pcilst_struct {
--	struct pcilst_struct *next;
--	int used;
--	struct pci_dev *pcidev;
--	unsigned short vendor;
--	unsigned short device;
--	unsigned int master;
--	unsigned char pci_bus;
--	unsigned char pci_slot;
--	unsigned char pci_func;
--	unsigned int io_addr[5];
--	unsigned int irq;
--};
--
--struct pcilst_struct *amcc_devices;	/*  ptr to root list of all amcc devices */
--
--/****************************************************************************/
--
--void v_pci_card_list_init(unsigned short pci_vendor, char display);
--void v_pci_card_list_cleanup(unsigned short pci_vendor);
--struct pcilst_struct *ptr_find_free_pci_card_by_device(unsigned short vendor_id,
--						       unsigned short
--						       device_id);
--int i_find_free_pci_card_by_position(unsigned short vendor_id,
--				     unsigned short device_id,
--				     unsigned short pci_bus,
--				     unsigned short pci_slot,
--				     struct pcilst_struct **card);
--struct pcilst_struct *ptr_select_and_alloc_pci_card(unsigned short vendor_id,
--						    unsigned short device_id,
--						    unsigned short pci_bus,
--						    unsigned short pci_slot);
--
--int i_pci_card_alloc(struct pcilst_struct *amcc);
--int i_pci_card_free(struct pcilst_struct *amcc);
--void v_pci_card_list_display(void);
--int i_pci_card_data(struct pcilst_struct *amcc,
--		    unsigned char *pci_bus, unsigned char *pci_slot,
--		    unsigned char *pci_func, unsigned short *io_addr,
--		    unsigned short *irq, unsigned short *master);
--
--/****************************************************************************/
--
--/* build list of amcc cards in this system */
--void v_pci_card_list_init(unsigned short pci_vendor, char display)
--{
--	struct pci_dev *pcidev;
--	struct pcilst_struct *amcc, *last;
--	int i;
--
--	amcc_devices = NULL;
--	last = NULL;
--
--	pci_for_each_dev(pcidev) {
--		if (pcidev->vendor == pci_vendor) {
--			amcc = kzalloc(sizeof(*amcc), GFP_KERNEL);
--			if (amcc == NULL)
--				continue;
--
--			amcc->pcidev = pcidev;
--			if (last) {
--				last->next = amcc;
--			} else {
--				amcc_devices = amcc;
--			}
--			last = amcc;
--
--			amcc->vendor = pcidev->vendor;
--			amcc->device = pcidev->device;
--#if 0
--			amcc->master = pcidev->master;	/*  how get this information under 2.4 kernels? */
--#endif
--			amcc->pci_bus = pcidev->bus->number;
--			amcc->pci_slot = PCI_SLOT(pcidev->devfn);
--			amcc->pci_func = PCI_FUNC(pcidev->devfn);
--			for (i = 0; i < 5; i++)
--				amcc->io_addr[i] =
--				    pcidev->resource[i].start & ~3UL;
--			amcc->irq = pcidev->irq;
--		}
--	}
--
--	if (display)
--		v_pci_card_list_display();
--}
--
--/****************************************************************************/
--/* free up list of amcc cards in this system */
--void v_pci_card_list_cleanup(unsigned short pci_vendor)
--{
--	struct pcilst_struct *amcc, *next;
--
--	for (amcc = amcc_devices; amcc; amcc = next) {
--		next = amcc->next;
--		kfree(amcc);
--	}
--
--	amcc_devices = NULL;
--}
--
--/****************************************************************************/
--/* find first unused card with this device_id */
--struct pcilst_struct *ptr_find_free_pci_card_by_device(unsigned short vendor_id,
--						       unsigned short device_id)
--{
--	struct pcilst_struct *amcc, *next;
--
--	for (amcc = amcc_devices; amcc; amcc = next) {
--		next = amcc->next;
--		if ((!amcc->used) && (amcc->device == device_id)
--		    && (amcc->vendor == vendor_id))
--			return amcc;
--
--	}
--
--	return NULL;
--}
--
--/****************************************************************************/
--/* find card on requested position */
--int i_find_free_pci_card_by_position(unsigned short vendor_id,
--				     unsigned short device_id,
--				     unsigned short pci_bus,
--				     unsigned short pci_slot,
--				     struct pcilst_struct **card)
--{
--	struct pcilst_struct *amcc, *next;
--
--	*card = NULL;
--	for (amcc = amcc_devices; amcc; amcc = next) {
--		next = amcc->next;
--		if ((amcc->vendor == vendor_id) && (amcc->device == device_id)
--		    && (amcc->pci_bus == pci_bus)
--		    && (amcc->pci_slot == pci_slot)) {
--			if (!(amcc->used)) {
--				*card = amcc;
--				return 0;	/*  ok, card is found */
--			} else {
--				printk
--				    (" - \nCard on requested position is used b:s %d:%d!\n",
--				     pci_bus, pci_slot);
--				return 2;	/*  card exist but is used */
--			}
--		}
--	}
--
--	return 1;		/*  no card found */
--}
--
--/****************************************************************************/
--/* mark card as used */
--int i_pci_card_alloc(struct pcilst_struct *amcc)
--{
--	if (!amcc)
--		return -1;
--
--	if (amcc->used)
--		return 1;
--	amcc->used = 1;
--	return 0;
--}
--
--/****************************************************************************/
--/* mark card as free */
--int i_pci_card_free(struct pcilst_struct *amcc)
--{
--	if (!amcc)
--		return -1;
--
--	if (!amcc->used)
--		return 1;
--	amcc->used = 0;
--	return 0;
--}
--
--/****************************************************************************/
--/* display list of found cards */
--void v_pci_card_list_display(void)
--{
--	struct pcilst_struct *amcc, *next;
--
--	printk("List of pci cards\n");
--	printk("bus:slot:func vendor device master io_amcc io_daq irq used\n");
--
--	for (amcc = amcc_devices; amcc; amcc = next) {
--		next = amcc->next;
--		printk
--		    ("%2d   %2d   %2d  0x%4x 0x%4x   %3s   0x%4x 0x%4x  %2d  %2d\n",
--		     amcc->pci_bus, amcc->pci_slot, amcc->pci_func,
--		     amcc->vendor, amcc->device, amcc->master ? "yes" : "no",
--		     amcc->io_addr[0], amcc->io_addr[2], amcc->irq, amcc->used);
--
--	}
--}
--
--/****************************************************************************/
--/* return all card information for driver */
--int i_pci_card_data(struct pcilst_struct *amcc,
--		    unsigned char *pci_bus, unsigned char *pci_slot,
--		    unsigned char *pci_func, unsigned short *io_addr,
--		    unsigned short *irq, unsigned short *master)
--{
--	int i;
--
--	if (!amcc)
--		return -1;
--	*pci_bus = amcc->pci_bus;
--	*pci_slot = amcc->pci_slot;
--	*pci_func = amcc->pci_func;
--	for (i = 0; i < 5; i++)
--		io_addr[i] = amcc->io_addr[i];
--	*irq = amcc->irq;
--	*master = amcc->master;
--	return 0;
--}
--
--/****************************************************************************/
--/* select and alloc card */
--struct pcilst_struct *ptr_select_and_alloc_pci_card(unsigned short vendor_id,
--						    unsigned short device_id,
--						    unsigned short pci_bus,
--						    unsigned short pci_slot)
--{
--	struct pcilst_struct *card;
--
--	if ((pci_bus < 1) & (pci_slot < 1)) {	/*  use autodetection */
--		card = ptr_find_free_pci_card_by_device(vendor_id, device_id);
--		if (card == NULL) {
--			printk(" - Unused card not found in system!\n");
--			return NULL;
--		}
--	} else {
--		switch (i_find_free_pci_card_by_position(vendor_id, device_id,
--							 pci_bus, pci_slot,
--							 &card)) {
--		case 1:
--			printk
--			    (" - Card not found on requested position b:s %d:%d!\n",
--			     pci_bus, pci_slot);
--			return NULL;
--		case 2:
--			printk
--			    (" - Card on requested position is used b:s %d:%d!\n",
--			     pci_bus, pci_slot);
--			return NULL;
--		}
--	}
--
--	if (i_pci_card_alloc(card) != 0) {
--		printk(" - Can't allocate card!\n");
--		return NULL;
--	}
--
--	return card;
--}
--
--#endif
--- 
-1.7.11
+Steven will let me know if I am confused on this point.
+
+							Thanx, Paul
+
+> - Josh Triplett
+> 
+> > ---
+> >  include/linux/rcupdate.h |    6 ++----
+> >  kernel/rcutiny.c         |    2 ++
+> >  kernel/rcutree.c         |    2 ++
+> >  3 files changed, 6 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> > index 115ead2..0fbbd52 100644
+> > --- a/include/linux/rcupdate.h
+> > +++ b/include/linux/rcupdate.h
+> > @@ -210,14 +210,12 @@ extern void exit_rcu(void);
+> >   * to nest RCU_NONIDLE() wrappers, but the nesting level is currently
+> >   * quite limited.  If deeper nesting is required, it will be necessary
+> >   * to adjust DYNTICK_TASK_NESTING_VALUE accordingly.
+> > - *
+> > - * This macro may be used from process-level code only.
+> >   */
+> >  #define RCU_NONIDLE(a) \
+> >  	do { \
+> > -		rcu_idle_exit(); \
+> > +		rcu_irq_enter(); \
+> >  		do { a; } while (0); \
+> > -		rcu_idle_enter(); \
+> > +		rcu_irq_exit(); \
+> >  	} while (0)
+> >  
+> >  /*
+> > diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+> > index e4163c5..2e073a2 100644
+> > --- a/kernel/rcutiny.c
+> > +++ b/kernel/rcutiny.c
+> > @@ -115,6 +115,7 @@ void rcu_irq_exit(void)
+> >  	rcu_idle_enter_common(newval);
+> >  	local_irq_restore(flags);
+> >  }
+> > +EXPORT_SYMBOL_GPL(rcu_irq_exit);
+> >  
+> >  /* Common code for rcu_idle_exit() and rcu_irq_enter(), see kernel/rcutree.c. */
+> >  static void rcu_idle_exit_common(long long oldval)
+> > @@ -172,6 +173,7 @@ void rcu_irq_enter(void)
+> >  	rcu_idle_exit_common(oldval);
+> >  	local_irq_restore(flags);
+> >  }
+> > +EXPORT_SYMBOL_GPL(rcu_irq_enter);
+> >  
+> >  #ifdef CONFIG_DEBUG_LOCK_ALLOC
+> >  
+> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > index f280e54..96b8aff 100644
+> > --- a/kernel/rcutree.c
+> > +++ b/kernel/rcutree.c
+> > @@ -447,6 +447,7 @@ void rcu_irq_exit(void)
+> >  		rcu_idle_enter_common(rdtp, oldval);
+> >  	local_irq_restore(flags);
+> >  }
+> > +EXPORT_SYMBOL_GPL(rcu_irq_exit);
+> >  
+> >  /*
+> >   * rcu_idle_exit_common - inform RCU that current CPU is moving away from idle
+> > @@ -542,6 +543,7 @@ void rcu_irq_enter(void)
+> >  		rcu_idle_exit_common(rdtp, oldval);
+> >  	local_irq_restore(flags);
+> >  }
+> > +EXPORT_SYMBOL_GPL(rcu_irq_enter);
+> >  
+> >  /**
+> >   * rcu_nmi_enter - inform RCU of entry to NMI context
+> > -- 
+> > 1.7.8
+> > 
+> 
 
