@@ -1,118 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932654Ab2IDR0B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 13:26:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42949 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757474Ab2IDRYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 13:24:45 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Chuck Lever <chuck.lever@oracle.com>, Joonsoo Kim <js1304@gmail.com>,
-        Pekka@suse.de, "Enberg <penberg"@kernel.org,
-        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 3/4] slub: consider pfmemalloc_match() in get_partial_node()
-Date: Tue,  4 Sep 2012 18:24:38 +0100
-Message-Id: <1346779479-1097-4-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1346779479-1097-1-git-send-email-mgorman@suse.de>
-References: <1346779479-1097-1-git-send-email-mgorman@suse.de>
+	id S932624Ab2IDR1O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 13:27:14 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:44453 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757417Ab2IDR1M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 13:27:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <201209041428.21409.arnd@arndb.de>
+References: <20120831122323.GC5962@gmail.com>
+	<5044C82E.5060207@gmail.com>
+	<20120903152012.GH31163@gmail.com>
+	<201209041428.21409.arnd@arndb.de>
+Date: Tue, 4 Sep 2012 19:27:10 +0200
+Message-ID: <CACRpkdZESujO=2BU3jeKiX3Cm+JY2UPEXwGkro75FWa5Gio5YQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] i2c: nomadik: Add Device Tree support to the Nomadik
+ I2C driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>, Alessandro Rubini <rubini@gnudd.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, Lee Jones <lee.jones@linaro.org>,
+        Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@nvidia.com>, linus.walleij@stericsson.com,
+        linux-kernel@vger.kernel.org, Wolfram Sang <w.sang@pengutronix.de>,
+        linux-i2c@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joonsoo Kim <js1304@gmail.com>
+On Tue, Sep 4, 2012 at 4:28 PM, Arnd Bergmann <arnd@arndb.de> wrote:
 
-The function get_partial() is currently not checking pfmemalloc_match()
-meaning that it is possible for pfmemalloc pages to leak to non-pfmemalloc
-users. This is a problem in the following situation.  Assume that there is
-a request from normal allocation and there are no objects in the per-cpu
-cache and no node-partial slab.
+> In this particular case, we don't have a single board file providing a
+> struct nmk_i2c_controller definition for platform data, so the best way
+> to handle this IMHO is to remove the header file with the platform
+> data definition, and just encode the defaults in the driver.
 
-In this case, slab_alloc enters the slow path and new_slab_objects()
-is called which may return a PFMEMALLOC page. As the current user is not
-allowed to access PFMEMALLOC page, deactivate_slab() is called ([5091b74a:
-mm: slub: optimise the SLUB fast path to avoid pfmemalloc checks]) and
-returns an object from PFMEMALLOC page.
+Alessandro Rubini is actively working on bridging this (and
+other amba_device primecells) to PCI, that is the reason why it
+was recently converted to an amba_device. How is he then supposed to
+get the proper parameters into the driver? Note that the PCI ID
+is no help at all since the parameters depend on what is connected
+to the I2C bus, not on what it itself is connected to. Isn't platform data
+used in such cases?
 
-Next time, when we get another request from normal allocation, slab_alloc()
-enters the slow-path and calls new_slab_objects().  In new_slab_objects(),
-we call get_partial() and get a partial slab which was just deactivated
-but is a pfmemalloc page. We extract one object from it and re-deactivate.
-
-"deactivate -> re-get in get_partial -> re-deactivate" occures repeatedly.
-
-As a result, access to PFMEMALLOC page is not properly restricted and it
-can cause a performance degradation due to frequent deactivation.
-deactivation frequently.
-
-This patch changes get_partial_node() to take pfmemalloc_match() into
-account and prevents the "deactivate -> re-get in get_partial() scenario.
-Instead, new_slab() is called.
-
-Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/slub.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
-
-diff --git a/mm/slub.c b/mm/slub.c
-index 8f78e25..2fdd96f9e9 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1524,12 +1524,13 @@ static inline void *acquire_slab(struct kmem_cache *s,
- }
- 
- static int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain);
-+static inline bool pfmemalloc_match(struct page *page, gfp_t gfpflags);
- 
- /*
-  * Try to allocate a partial slab from a specific node.
-  */
--static void *get_partial_node(struct kmem_cache *s,
--		struct kmem_cache_node *n, struct kmem_cache_cpu *c)
-+static void *get_partial_node(struct kmem_cache *s, struct kmem_cache_node *n,
-+				struct kmem_cache_cpu *c, gfp_t flags)
- {
- 	struct page *page, *page2;
- 	void *object = NULL;
-@@ -1545,9 +1546,13 @@ static void *get_partial_node(struct kmem_cache *s,
- 
- 	spin_lock(&n->list_lock);
- 	list_for_each_entry_safe(page, page2, &n->partial, lru) {
--		void *t = acquire_slab(s, n, page, object == NULL);
-+		void *t;
- 		int available;
- 
-+		if (!pfmemalloc_match(page, flags))
-+			continue;
-+
-+		t = acquire_slab(s, n, page, object == NULL);
- 		if (!t)
- 			break;
- 
-@@ -1614,7 +1619,7 @@ static void *get_any_partial(struct kmem_cache *s, gfp_t flags,
- 
- 			if (n && cpuset_zone_allowed_hardwall(zone, flags) &&
- 					n->nr_partial > s->min_partial) {
--				object = get_partial_node(s, n, c);
-+				object = get_partial_node(s, n, c, flags);
- 				if (object) {
- 					/*
- 					 * Return the object even if
-@@ -1643,7 +1648,7 @@ static void *get_partial(struct kmem_cache *s, gfp_t flags, int node,
- 	void *object;
- 	int searchnode = (node == NUMA_NO_NODE) ? numa_node_id() : node;
- 
--	object = get_partial_node(s, get_node(s, searchnode), c);
-+	object = get_partial_node(s, get_node(s, searchnode), c, flags);
- 	if (object || node != NUMA_NO_NODE)
- 		return object;
- 
--- 
-1.7.9.2
-
+Yours,
+Linus Walleij
