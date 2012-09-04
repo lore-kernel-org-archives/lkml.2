@@ -1,113 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756624Ab2IDBlv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 21:41:51 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:64678 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754318Ab2IDBlu (ORCPT
+	id S1756616Ab2IDB7N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 21:59:13 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:60483 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754388Ab2IDB7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 21:41:50 -0400
-X-AuditID: 9c930197-b7b93ae0000028a7-ff-50455c5c15df
-From: Namhyung Kim <namhyung@kernel.org>
-To: Feng Tang <feng.tang@intel.com>
-Cc: acme@redhat.com, mingo@elte.hu, a.p.zijlstra@chello.nl,
-        andi@firstfloor.org, dsahern@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/7] perf scripts: Export a find_scripts() function
-References: <1346660073-20279-1-git-send-email-feng.tang@intel.com>
-	<1346660073-20279-5-git-send-email-feng.tang@intel.com>
-Date: Tue, 04 Sep 2012 10:34:17 +0900
-In-Reply-To: <1346660073-20279-5-git-send-email-feng.tang@intel.com> (Feng
-	Tang's message of "Mon, 3 Sep 2012 16:14:30 +0800")
-Message-ID: <87ehmiefl2.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 3 Sep 2012 21:59:12 -0400
+Date: Tue, 4 Sep 2012 11:59:00 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yuval Mintz <yuvalmin@broadcom.com>, Ariel Elior <ariele@broadcom.com>,
+        Eilon Greenstein <eilong@broadcom.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: linux-next: manual merge of the pci tree with Linus' tree
+Message-Id: <20120904115900.9df1ae8f3f608975293dc715@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__4_Sep_2012_11_59_00_+1000_L4Ce02nUY153oi=Z"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  3 Sep 2012 16:14:30 +0800, Feng Tang wrote:
-> So that other perf commands/browser has a way to dig out the available
-> scripts info in system, this is a preparation for the script browser.
->
-> Signed-off-by: Feng Tang <feng.tang@intel.com>
-> ---
->  tools/perf/builtin-script.c |   46 +++++++++++++++++++++++++++++++++++++++++++
->  tools/perf/builtin.h        |    1 +
->  2 files changed, 47 insertions(+), 0 deletions(-)
->
-> diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-> index 7ab86bb..d46056c 100644
-> --- a/tools/perf/builtin-script.c
-> +++ b/tools/perf/builtin-script.c
-> @@ -1031,6 +1031,52 @@ static int list_available_scripts(const struct option *opt __used,
->  	exit(0);
->  }
->  
-> +/*
-> + * Return 0 if none is found, otherwise the actual scripts number.
+--Signature=_Tue__4_Sep_2012_11_59_00_+1000_L4Ce02nUY153oi=Z
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-No.  It'll return -1 if perf exec path is not set properly.
+Hi Bjorn,
 
-Thanks,
-Namhyung
+Today's linux-next merge of the pci tree got a conflict in
+drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c between commit
+8eee694c3e66 ("bnx2x: fix unload previous driver flow when flr-capable")
+from Linus' tree and commit 2a80eebcbf3e ("bnx2x: Use PCI Express
+Capability accessors") from the pci tree.
 
+The former removes the function updated by the latter, so I just removed
+the function (see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> + *
-> + * Currently we just return all the raw scripts name, and their full path.
-> + *
-> + */
-> +int find_scripts(char **scripts_array, char **scripts_path_array)
-> +{
-> +	struct dirent *script_next, *lang_next, script_dirent, lang_dirent;
-> +	char scripts_path[MAXPATHLEN];
-> +	DIR *scripts_dir, *lang_dir;
-> +	char lang_path[MAXPATHLEN];
-> +	struct script_desc *desc;
-> +	char first_half[BUFSIZ];
-> +	char *temp;
-> +	int i = 0;
-> +
-> +	first_half[0] = 0;
-> +	desc = NULL;
-> +
-> +	snprintf(scripts_path, MAXPATHLEN, "%s/scripts", perf_exec_path());
-> +
-> +	scripts_dir = opendir(scripts_path);
-> +	if (!scripts_dir)
-> +		return -1;
-> +
-> +	for_each_lang(scripts_path, scripts_dir, lang_dirent, lang_next) {
-> +		snprintf(lang_path, MAXPATHLEN, "%s/%s", scripts_path,
-> +			 lang_dirent.d_name);
-> +		lang_dir = opendir(lang_path);
-> +		if (!lang_dir)
-> +			continue;
-> +
-> +		for_each_script(lang_path, lang_dir, script_dirent, script_next) {
-> +			sprintf(scripts_path_array[i], "%s/%s", lang_path,
-> +				script_dirent.d_name);
-> +			temp = strchr(script_dirent.d_name, '.');
-> +			snprintf(scripts_array[i], (temp - script_dirent.d_name) + 1,
-> +				"%s", script_dirent.d_name);
-> +			i++;
-> +		}
-> +	}
-> +
-> +	return i;
-> +}
-> +
->  static char *get_script_path(const char *script_root, const char *suffix)
->  {
->  	struct dirent *script_next, *lang_next, script_dirent, lang_dirent;
-> diff --git a/tools/perf/builtin.h b/tools/perf/builtin.h
-> index b382bd5..3ea74ed 100644
-> --- a/tools/perf/builtin.h
-> +++ b/tools/perf/builtin.h
-> @@ -36,4 +36,5 @@ extern int cmd_kvm(int argc, const char **argv, const char *prefix);
->  extern int cmd_test(int argc, const char **argv, const char *prefix);
->  extern int cmd_inject(int argc, const char **argv, const char *prefix);
->  
-> +extern int find_scripts(char **scripts_array, char **scripts_path_array);
->  #endif
+diff --cc drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
+index 2105498,281cf3f..0000000
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
+@@@ -9372,29 -9378,28 +9366,25 @@@ static int __devinit bnx2x_prev_mark_pa
+  	return rc;
+  }
+ =20
+ -static bool __devinit bnx2x_can_flr(struct bnx2x *bp)
+ -{
+ -	u32 cap;
+ -	struct pci_dev *dev =3D bp->pdev;
+ -
+ -	pcie_capability_read_dword(dev, PCI_EXP_DEVCAP, &cap);
+ -	if (!(cap & PCI_EXP_DEVCAP_FLR))
+ -		return false;
+ -
+ -	return true;
+ -}
+ -
+  static int __devinit bnx2x_do_flr(struct bnx2x *bp)
+  {
+- 	int i, pos;
++ 	int i;
+  	u16 status;
+  	struct pci_dev *dev =3D bp->pdev;
+ =20
+ -	/* probe the capability first */
+ -	if (bnx2x_can_flr(bp))
+ -		return -ENOTTY;
+ +
+ +	if (CHIP_IS_E1x(bp)) {
+ +		BNX2X_DEV_INFO("FLR not supported in E1/E1H\n");
+ +		return -EINVAL;
+ +	}
+ +
+ +	/* only bootcode REQ_BC_VER_4_INITIATE_FLR and onwards support flr */
+ +	if (bp->common.bc_ver < REQ_BC_VER_4_INITIATE_FLR) {
+ +		BNX2X_ERR("FLR not supported by BC_VER: 0x%x\n",
+ +			  bp->common.bc_ver);
+ +		return -EINVAL;
+ +	}
+ =20
+- 	pos =3D pci_pcie_cap(dev);
+- 	if (!pos)
+- 		return -ENOTTY;
+-=20
+  	/* Wait for Transaction Pending bit clean */
+  	for (i =3D 0; i < 4; i++) {
+  		if (i)
+
+--Signature=_Tue__4_Sep_2012_11_59_00_+1000_L4Ce02nUY153oi=Z
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQRWBkAAoJEECxmPOUX5FEQIYQAJSKfYLkzr7IliacfPg7TYOx
+amYUeMXu3qdtuOaYdHK+J/jIzdNW/ItcV8dHUFGdRFnGtcauVLvbVG0MqWSr0NrX
+pQdSoFQu4NCVqFbFnda5oLsmOg0hTgzYPR9C3p4vR5A6HyuoC9jO4GnKG4QNdHKA
+E/FPMxpwkgf0vM+IxqTUz6ZdrAbU++mijVElvBxyRqusJ4vVEmAb9lYvQ4BI5i9b
+yip6JZT+1J/e6VWKXVZ4r4ObUBmoQuGbmEcDFPduYbnNUYimnDCoXzj8ai6ijNOp
+yJB3SGnamyp1LDaa/j9TRP9rNXq1hDwiE6v0j5WTGuY9/SwsjJuVcO694FKxHkP2
+ZCF9rXnQi91G+xrVurDZ4Q16a587rOoHpmRQFGi2BFsLF3uRJzBI2QhWO8ApVhSg
+e1sgJaVdju3b0xAtoI4CbLfzbBh6QI8eCyDjmVVxGrz3d/Dma83kUzrtzJgX3Wa1
+3scMWJawF9GY2BeDly4QPG0xECy1v0wMNJvsXxghMcDAeU4EDKJ1SxJhp94criyr
+AP8plCu3A63YkIQE03ulOd3Ds1S0+ugDy1Ttskk4Te27gHg0AbPwXh+TsoW+b6rz
+ue9RxGhWXjrWdAku3T47UQ2Q00GrlsvyGP5WFDusAtE5ejejKT0XMJFKpDS4VNiz
+iWDpOwV8xpw5tG5LM7n0
+=9tr3
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__4_Sep_2012_11_59_00_+1000_L4Ce02nUY153oi=Z--
