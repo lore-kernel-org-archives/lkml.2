@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757321Ab2IDPzn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 11:55:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33381 "EHLO mx1.redhat.com"
+	id S932401Ab2IDP5Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 11:57:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1772 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756852Ab2IDPzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 11:55:37 -0400
+	id S1757290Ab2IDPzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 11:55:42 -0400
 From: Matthew Garrett <mjg@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
         Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH 01/11] Secure boot: Add new capability
-Date: Tue,  4 Sep 2012 11:55:07 -0400
-Message-Id: <1346774117-2277-2-git-send-email-mjg@redhat.com>
+Subject: [PATCH 05/11] asus-wmi: Restrict debugfs interface
+Date: Tue,  4 Sep 2012 11:55:11 -0400
+Message-Id: <1346774117-2277-6-git-send-email-mjg@redhat.com>
 In-Reply-To: <1346774117-2277-1-git-send-email-mjg@redhat.com>
 References: <1346774117-2277-1-git-send-email-mjg@redhat.com>
 X-SA-Do-Not-Run: Yes
@@ -23,34 +23,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Secure boot adds certain policy requirements, including that root must not
-be able to do anything that could cause the kernel to execute arbitrary code.
-The simplest way to handle this would seem to be to add a new capability
-and gate various functionality on that. We'll then strip it from the initial
-capability set if required.
+We have no way of validating what all of the Asus WMI methods do on a
+given machine, and there's a risk that some will allow hardware state to
+be manipulated in such a way that arbitrary code can be executed in the
+kernel. Add a capability check to prevent that.
 
 Signed-off-by: Matthew Garrett <mjg@redhat.com>
 ---
- include/linux/capability.h | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/platform/x86/asus-wmi.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/include/linux/capability.h b/include/linux/capability.h
-index d10b7ed..6a39163 100644
---- a/include/linux/capability.h
-+++ b/include/linux/capability.h
-@@ -364,7 +364,11 @@ struct cpu_vfs_cap_data {
+diff --git a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
+index 2eb9fe8..03ea0e8 100644
+--- a/drivers/platform/x86/asus-wmi.c
++++ b/drivers/platform/x86/asus-wmi.c
+@@ -1523,6 +1523,9 @@ static int show_dsts(struct seq_file *m, void *data)
+ 	int err;
+ 	u32 retval = -1;
  
- #define CAP_BLOCK_SUSPEND    36
- 
--#define CAP_LAST_CAP         CAP_BLOCK_SUSPEND
-+/* Allow things that are dangerous under secure boot */
++	if (!capable(CAP_SECURE_FIRMWARE))
++		return -EPERM;
 +
-+#define CAP_SECURE_FIRMWARE  37
+ 	err = asus_wmi_get_devstate(asus, asus->debug.dev_id, &retval);
+ 
+ 	if (err < 0)
+@@ -1539,6 +1542,9 @@ static int show_devs(struct seq_file *m, void *data)
+ 	int err;
+ 	u32 retval = -1;
+ 
++	if (!capable(CAP_SECURE_FIRMWARE))
++		return -EPERM;
 +
-+#define CAP_LAST_CAP         CAP_SECURE_FIRMWARE
+ 	err = asus_wmi_set_devstate(asus->debug.dev_id, asus->debug.ctrl_param,
+ 				    &retval);
  
- #define cap_valid(x) ((x) >= 0 && (x) <= CAP_LAST_CAP)
+@@ -1563,6 +1569,9 @@ static int show_call(struct seq_file *m, void *data)
+ 	union acpi_object *obj;
+ 	acpi_status status;
  
++	if (!capable(CAP_SECURE_FIRMWARE))
++		return -EPERM;
++
+ 	status = wmi_evaluate_method(ASUS_WMI_MGMT_GUID,
+ 				     1, asus->debug.method_id,
+ 				     &input, &output);
 -- 
 1.7.11.4
 
