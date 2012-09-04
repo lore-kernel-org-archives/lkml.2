@@ -1,63 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757504Ab2IDSL3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 14:11:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47583 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757444Ab2IDSL1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 14:11:27 -0400
-Message-ID: <5046442E.7020207@zytor.com>
-Date: Tue, 04 Sep 2012 11:10:54 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Josh Triplett <josh@joshtriplett.org>
-CC: Matt Fleming <matt.fleming@intel.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Len Brown <lenb@kernel.org>,
-        Olof Johansson <olof@lixom.net>, Matthew Garrett <mjg@redhat.com>,
-        David Howells <dhowells@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Jim Cromie <jim.cromie@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pawel Moll <pawel.moll@arm.com>, linux-acpi@vger.kernel.org,
-        linux-efi <linux-efi@vger.kernel.org>
-Subject: Re: [PATCH 0/3] Fix ACPI BGRT support for images located in EFI boot
- services memory
-References: <cover.1346361959.git.josh@joshtriplett.org> <1346768840.4244.52.camel@mfleming-mobl1.ger.corp.intel.com> <20120904175952.GA4103@jtriplet-mobl1>
-In-Reply-To: <20120904175952.GA4103@jtriplet-mobl1>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1757512Ab2IDSVE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 14:21:04 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:60328 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757428Ab2IDSVB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 14:21:01 -0400
+Date: Tue, 04 Sep 2012 14:20:59 -0400 (EDT)
+Message-Id: <20120904.142059.559850562286758578.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org, hkchu@google.com
+Subject: Re: linux-next: build failure after merge of the final tree
+ (net-next tree related)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120904165853.bc2f7b6524a3b03a09c4180d@canb.auug.org.au>
+References: <20120904165853.bc2f7b6524a3b03a09c4180d@canb.auug.org.au>
+X-Mailer: Mew version 6.5 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2012 10:59 AM, Josh Triplett wrote:
->
-> Unfortunately not.  We need enough of ACPI available to go read the
-> BGRT to know what to copy, so we need to defer freeing boot services
-> code until after we initialize ACPI (and thus everything ACPI needs,
-> which includes EFI since ACPI looks for root tables there).
->
->> I wouldn't be surprised if some implementations got really cranky if
->> we accessed boot services data after we installed a new virtual memory
->> map.
->
-> Note that I've carefully accessed the boot services data *through* the
-> new virtual memory map, which should work fine.
->
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 4 Sep 2012 16:58:53 +1000
 
-There are some platforms which have bugs in this area, so there are 
-other reasons to defer freeing up boot memory until as late in the boot 
-process as we can possibly get away with.
+> net/built-in.o: In function `tcp_fastopen_ctx_free':
+> tcp_fastopen.c:(.text+0x5cc5c): undefined reference to `crypto_destroy_tfm'
+> net/built-in.o: In function `tcp_fastopen_reset_cipher':
+> (.text+0x5cccc): undefined reference to `crypto_alloc_base'
+> net/built-in.o: In function `tcp_fastopen_reset_cipher':
+> (.text+0x5cd6c): undefined reference to `crypto_destroy_tfm'
+> 
+> Presumably caused by commit 104671636897 ("tcp: TCP Fast Open Server -
+> header & support functions") from the net-next tree.  I assume that some
+> dependency on the CRYPTO infrastructure is missing.
 
-free_initmem() is presuambly the place that makes most sense.  This is 
-EFI-specific but not x86-specific, let's not commingle those concepts, 
-please...
+Thanks for the report, I've pushed the following change to net-next
+which should address this:
 
-	-hpa
+--------------------
+[PATCH] net: Add INET dependency on aes crypto for the sake of TCP fastopen.
 
+Stephen Rothwell says:
+
+====================
+After merging the final tree, today's linux-next build (powerpc
+ppc44x_defconfig) failed like this:
+
+net/built-in.o: In function `tcp_fastopen_ctx_free':
+tcp_fastopen.c:(.text+0x5cc5c): undefined reference to `crypto_destroy_tfm'
+net/built-in.o: In function `tcp_fastopen_reset_cipher':
+(.text+0x5cccc): undefined reference to `crypto_alloc_base'
+net/built-in.o: In function `tcp_fastopen_reset_cipher':
+(.text+0x5cd6c): undefined reference to `crypto_destroy_tfm'
+
+Presumably caused by commit 104671636897 ("tcp: TCP Fast Open Server -
+header & support functions") from the net-next tree.  I assume that some
+dependency on the CRYPTO infrastructure is missing.
+
+I have reverted commit 1bed966cc3bd ("Merge branch
+'tcp_fastopen_server'") for today.
+====================
+
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ net/Kconfig |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/net/Kconfig b/net/Kconfig
+index 245831b..30b48f5 100644
+--- a/net/Kconfig
++++ b/net/Kconfig
+@@ -52,6 +52,8 @@ source "net/iucv/Kconfig"
+ 
+ config INET
+ 	bool "TCP/IP networking"
++	select CRYPTO
++	select CRYPTO_AES
+ 	---help---
+ 	  These are the protocols used on the Internet and on most local
+ 	  Ethernets. It is highly recommended to say Y here (this will enlarge
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.7.6
 
