@@ -1,292 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756949Ab2IDMPz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 08:15:55 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:26447 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753027Ab2IDMPy (ORCPT
+	id S1756963Ab2IDMSQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 08:18:16 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:50652 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756921Ab2IDMSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 08:15:54 -0400
-Message-ID: <5045F07D.9070904@huawei.com>
-Date: Tue, 4 Sep 2012 20:13:49 +0800
-From: Jiang Liu <jiang.liu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Tue, 4 Sep 2012 08:18:15 -0400
+Message-ID: <5045F13B.8060409@mvista.com>
+Date: Tue, 04 Sep 2012 16:16:59 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120824 Thunderbird/15.0
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Mel Gorman <mgorman@suse.de>, Yinghai Lu <yinghai@kernel.org>,
-        Tony Luck <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
-        Keping Chen <chenkeping@huawei.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, Jiang Liu <liuj97@gmail.com>
-Subject: Re: [RFC PATCH 1/4] mm: introduce a safer interface to check whether
- a page is managed by SLxB
-References: <1341287837-7904-1-git-send-email-jiang.liu@huawei.com> <5045C749.80904@cn.fujitsu.com>
-In-Reply-To: <5045C749.80904@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Andi Shyti <andi@etezian.org>
+CC: Dong Aisheng <b29396@freescale.com>, linus.walleij@stericsson.com,
+        swarren@wwwdotorg.org, devicetree-discuss@lists.ozlabs.org,
+        s.hauer@pengutronix.de, broonie@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
+        grant.likely@secretlab.ca, richard.zhao@freescale.com,
+        kernel@pengutronix.de, shawn.guo@linaro.org, lrg@ti.com,
+        linux-arm-kernel@lists.infradead.org, sameo@linux.intel.com
+Subject: Re: [PATCH v5 1/4] mfd: add syscon driver based on regmap
+References: <1346728811-25788-1-git-send-email-b29396@freescale.com> <1346728811-25788-2-git-send-email-b29396@freescale.com> <20120904113545.GD4657@jack.whiskey>
+In-Reply-To: <20120904113545.GD4657@jack.whiskey>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.108.108.229]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Need to simplify the patch set:)
-Busy with PCI patches recently and will work on this when PCI is done.
+Hello.
 
-On 2012-9-4 17:18, Wen Congyang wrote:
-> At 07/03/2012 11:57 AM, Jiang Liu Wrote:
->> Several subsystems, including memory-failure, swap, sparse, DRBD etc,
->> use PageSlab() to check whether a page is managed by SLAB/SLUB/SLOB.
->> And they treat slab pages differently from pagecache/anonymous pages.
->>
->> But it's unsafe to use PageSlab() to detect whether a page is managed by
->> SLUB. SLUB allocates compound pages when page order is bigger than 0 and
->> only sets PG_slab on head pages. So if a SLUB object is hosted by a tail
->> page, PageSlab() will incorrectly return false for that object.
->>
->> Following code from sparse.c triggers this issue, which causes failure
->> when removing a hot-added memory device.
-> 
-> Hi, Liu
-> 
-> What is the status of this patch?
-> I encounter the same problem when removing a hot-added memory device. It
-> causes the kernel panicked
-> 
-> Thanks
-> Wen Congyang
-> 
->>         /*
->>          * Check to see if allocation came from hot-plug-add
->>          */
->>         if (PageSlab(usemap_page)) {
->>                 kfree(usemap);
->>                 if (memmap)
->>                         __kfree_section_memmap(memmap, PAGES_PER_SECTION);
->>                 return;
->>         }
->>
->> So introduce a transparent huge page and compound page safe macro as below
->> to check whether a page is managed by SLAB/SLUB/SLOB allocator.
->>
->> #define page_managed_by_slab(page)     (!!PageSlab(compound_trans_head(page)))
->>
->> Signed-off-by: Jiang Liu <liuj97@gmail.com>
->> ---
->>  arch/arm/mm/init.c             |    3 ++-
->>  arch/ia64/kernel/mca_drv.c     |    2 +-
->>  arch/unicore32/mm/init.c       |    3 ++-
->>  crypto/scatterwalk.c           |    2 +-
->>  drivers/ata/libata-sff.c       |    3 ++-
->>  drivers/block/drbd/drbd_main.c |    3 ++-
->>  fs/proc/page.c                 |    4 ++--
->>  include/linux/slab.h           |    7 +++++++
->>  mm/memory-failure.c            |    6 +++---
->>  mm/sparse.c                    |    4 +---
->>  10 files changed, 23 insertions(+), 14 deletions(-)
->>
->> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
->> index f54d592..73ff340 100644
->> --- a/arch/arm/mm/init.c
->> +++ b/arch/arm/mm/init.c
->> @@ -18,6 +18,7 @@
->>  #include <linux/initrd.h>
->>  #include <linux/of_fdt.h>
->>  #include <linux/highmem.h>
->> +#include <linux/huge_mm.h>
->>  #include <linux/gfp.h>
->>  #include <linux/memblock.h>
->>  #include <linux/dma-contiguous.h>
->> @@ -116,7 +117,7 @@ void show_mem(unsigned int filter)
->>  				reserved++;
->>  			else if (PageSwapCache(page))
->>  				cached++;
->> -			else if (PageSlab(page))
->> +			else if (page_managed_by_slab(page))
->>  				slab++;
->>  			else if (!page_count(page))
->>  				free++;
->> diff --git a/arch/ia64/kernel/mca_drv.c b/arch/ia64/kernel/mca_drv.c
->> index 1c2e894..4415bb6 100644
->> --- a/arch/ia64/kernel/mca_drv.c
->> +++ b/arch/ia64/kernel/mca_drv.c
->> @@ -136,7 +136,7 @@ mca_page_isolate(unsigned long paddr)
->>  		return ISOLATE_NG;
->>  
->>  	/* kick pages having attribute 'SLAB' or 'Reserved' */
->> -	if (PageSlab(p) || PageReserved(p))
->> +	if (page_managed_by_slab(p) || PageReserved(p))
->>  		return ISOLATE_NG;
->>  
->>  	/* add attribute 'Reserved' and register the page */
->> diff --git a/arch/unicore32/mm/init.c b/arch/unicore32/mm/init.c
->> index de186bd..829a0d9 100644
->> --- a/arch/unicore32/mm/init.c
->> +++ b/arch/unicore32/mm/init.c
->> @@ -21,6 +21,7 @@
->>  #include <linux/sort.h>
->>  #include <linux/dma-mapping.h>
->>  #include <linux/export.h>
->> +#include <linux/huge_mm.h>
->>  
->>  #include <asm/sections.h>
->>  #include <asm/setup.h>
->> @@ -83,7 +84,7 @@ void show_mem(unsigned int filter)
->>  				reserved++;
->>  			else if (PageSwapCache(page))
->>  				cached++;
->> -			else if (PageSlab(page))
->> +			else if (page_managed_by_slab(page))
->>  				slab++;
->>  			else if (!page_count(page))
->>  				free++;
->> diff --git a/crypto/scatterwalk.c b/crypto/scatterwalk.c
->> index 7281b8a..a20e019 100644
->> --- a/crypto/scatterwalk.c
->> +++ b/crypto/scatterwalk.c
->> @@ -54,7 +54,7 @@ static void scatterwalk_pagedone(struct scatter_walk *walk, int out,
->>  		struct page *page;
->>  
->>  		page = sg_page(walk->sg) + ((walk->offset - 1) >> PAGE_SHIFT);
->> -		if (!PageSlab(page))
->> +		if (!page_managed_by_slab(page))
->>  			flush_dcache_page(page);
->>  	}
->>  
->> diff --git a/drivers/ata/libata-sff.c b/drivers/ata/libata-sff.c
->> index d8af325..1ab8378 100644
->> --- a/drivers/ata/libata-sff.c
->> +++ b/drivers/ata/libata-sff.c
->> @@ -38,6 +38,7 @@
->>  #include <linux/module.h>
->>  #include <linux/libata.h>
->>  #include <linux/highmem.h>
->> +#include <linux/huge_mm.h>
->>  
->>  #include "libata.h"
->>  
->> @@ -734,7 +735,7 @@ static void ata_pio_sector(struct ata_queued_cmd *qc)
->>  				       do_write);
->>  	}
->>  
->> -	if (!do_write && !PageSlab(page))
->> +	if (!do_write && !page_managed_by_slab(page))
->>  		flush_dcache_page(page);
->>  
->>  	qc->curbytes += qc->sect_size;
->> diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
->> index 920ede2..de5b395 100644
->> --- a/drivers/block/drbd/drbd_main.c
->> +++ b/drivers/block/drbd/drbd_main.c
->> @@ -2734,7 +2734,8 @@ static int _drbd_send_page(struct drbd_conf *mdev, struct page *page,
->>  	 * put_page(); and would cause either a VM_BUG directly, or
->>  	 * __page_cache_release a page that would actually still be referenced
->>  	 * by someone, leading to some obscure delayed Oops somewhere else. */
->> -	if (disable_sendpage || (page_count(page) < 1) || PageSlab(page))
->> +	if (disable_sendpage || (page_count(page) < 1) ||
->> +	    page_managed_by_slab(page))
->>  		return _drbd_no_send_page(mdev, page, offset, size, msg_flags);
->>  
->>  	msg_flags |= MSG_NOSIGNAL;
->> diff --git a/fs/proc/page.c b/fs/proc/page.c
->> index 7fcd0d6..ae42dc7 100644
->> --- a/fs/proc/page.c
->> +++ b/fs/proc/page.c
->> @@ -40,7 +40,7 @@ static ssize_t kpagecount_read(struct file *file, char __user *buf,
->>  			ppage = pfn_to_page(pfn);
->>  		else
->>  			ppage = NULL;
->> -		if (!ppage || PageSlab(ppage))
->> +		if (!ppage || page_managed_by_slab(ppage))
->>  			pcount = 0;
->>  		else
->>  			pcount = page_mapcount(ppage);
->> @@ -98,7 +98,7 @@ u64 stable_page_flags(struct page *page)
->>  	 * Note that page->_mapcount is overloaded in SLOB/SLUB/SLQB, so the
->>  	 * simple test in page_mapped() is not enough.
->>  	 */
->> -	if (!PageSlab(page) && page_mapped(page))
->> +	if (!page_managed_by_slab(page) && page_mapped(page))
->>  		u |= 1 << KPF_MMAP;
->>  	if (PageAnon(page))
->>  		u |= 1 << KPF_ANON;
->> diff --git a/include/linux/slab.h b/include/linux/slab.h
->> index 67d5d94..bb26fab 100644
->> --- a/include/linux/slab.h
->> +++ b/include/linux/slab.h
->> @@ -364,4 +364,11 @@ static inline void *kzalloc_node(size_t size, gfp_t flags, int node)
->>  
->>  void __init kmem_cache_init_late(void);
->>  
->> +/*
->> + * Check whether a page is allocated/managed by SLAB/SLUB/SLOB allocator.
->> + * Defined as macro instead of function to avoid header file pollution.
->> + */
->> +#define page_managed_by_slab(page)	(!!PageSlab(compound_trans_head(page)))
->> +#define mem_managed_by_slab(addr)	page_managed_by_slab(virt_to_page(addr))
+On 04-09-2012 15:35, Andi Shyti wrote:
+
+>> +static int __devinit syscon_probe(struct platform_device *pdev)
+>> +{
+>> +	struct device *dev = &pdev->dev;
+
+> Do we really need this variable? Anyway you are using it only
+> once in the dev_info.
+
+    But Dong definitely could use it more than once, so it seems useful.
+
+>> +	struct device_node *np = dev->of_node;
+>> +	struct syscon *syscon;
+>> +	struct resource res;
+>> +	int ret;
 >> +
->>  #endif	/* _LINUX_SLAB_H */
->> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
->> index ab1e714..684e7f7 100644
->> --- a/mm/memory-failure.c
->> +++ b/mm/memory-failure.c
->> @@ -88,7 +88,7 @@ static int hwpoison_filter_dev(struct page *p)
->>  	/*
->>  	 * page_mapping() does not accept slab pages.
->>  	 */
->> -	if (PageSlab(p))
->> +	if (page_managed_by_slab(p))
->>  		return -EINVAL;
->>  
->>  	mapping = page_mapping(p);
->> @@ -233,7 +233,7 @@ static int kill_proc(struct task_struct *t, unsigned long addr, int trapno,
->>   */
->>  void shake_page(struct page *p, int access)
->>  {
->> -	if (!PageSlab(p)) {
->> +	if (!page_managed_by_slab(p)) {
->>  		lru_add_drain_all();
->>  		if (PageLRU(p))
->>  			return;
->> @@ -862,7 +862,7 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
->>  	struct page *hpage = compound_head(p);
->>  	struct page *ppage;
->>  
->> -	if (PageReserved(p) || PageSlab(p))
->> +	if (PageReserved(p) || page_managed_by_slab(p))
->>  		return SWAP_SUCCESS;
->>  
->>  	/*
->> diff --git a/mm/sparse.c b/mm/sparse.c
->> index 6a4bf91..32a908b 100644
->> --- a/mm/sparse.c
->> +++ b/mm/sparse.c
->> @@ -688,17 +688,15 @@ static void free_map_bootmem(struct page *page, unsigned long nr_pages)
->>  
->>  static void free_section_usemap(struct page *memmap, unsigned long *usemap)
->>  {
->> -	struct page *usemap_page;
->>  	unsigned long nr_pages;
->>  
->>  	if (!usemap)
->>  		return;
->>  
->> -	usemap_page = virt_to_page(usemap);
->>  	/*
->>  	 * Check to see if allocation came from hot-plug-add
->>  	 */
->> -	if (PageSlab(usemap_page)) {
->> +	if (mem_managed_by_slab(usemap)) {
->>  		kfree(usemap);
->>  		if (memmap)
->>  			__kfree_section_memmap(memmap, PAGES_PER_SECTION);
-> 
-> 
-> .
-> 
+>> +	if (!np)
+>> +		return -ENOENT;
+>> +
+>> +	syscon = devm_kzalloc(&pdev->dev, sizeof(struct syscon),
+>> +			    GFP_KERNEL);
+>> +	if (!syscon)
+>> +		return -ENOMEM;
+>> +
+>> +	syscon->base = of_iomap(np, 0);
+>> +	if (!syscon->base)
+>> +		return -EADDRNOTAVAIL;
+>> +
+>> +	ret = of_address_to_resource(np, 0, &res);
+>> +	if (ret)
+>> +		return ret;
+>> +
+>> +	syscon_regmap_config.max_register = res.end - res.start - 3;
+>> +	syscon->regmap = devm_regmap_init_mmio(&pdev->dev, syscon->base,
+>> +					&syscon_regmap_config);
+>> +	if (IS_ERR(syscon->regmap)) {
+>> +		dev_err(&pdev->dev, "regmap init failed\n");
+>> +		return PTR_ERR(syscon->regmap);
+>> +	}
+>> +
+>> +	syscon->dev = &pdev->dev;
+>> +	platform_set_drvdata(pdev, syscon);
+>> +
+>> +	dev_info(dev, "syscon regmap start 0x%x end 0x%x registered\n",
+>> +		res.start, res.end);
+>> +
+>> +	return 0;
 
+> in case of error you are not freeing syscon.
+
+    It's allocated using devm_kzalloc(), so is freed automaticelly upon probe 
+error.
+
+> Moreover, in my opinion, some dev_err more should not heart
+
+    Hurt, you mean?
+
+> Andi
+
+WBR, Sergei
 
