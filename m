@@ -1,83 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752125Ab2IDFEl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 01:04:41 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:51341 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751285Ab2IDFEk (ORCPT
+	id S1752817Ab2IDFGR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 01:06:17 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:49142 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751285Ab2IDFGP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 01:04:40 -0400
-Date: Tue, 4 Sep 2012 15:04:30 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Alexander Graf <agraf@suse.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Avi Kivity <avi@redhat.com>, Bharat Bhushan <r65777@freescale.com>,
-        Scott Wood <scottwood@freescale.com>, Liu Yu <yu.liu@freescale.com>
-Subject: linux-next: manual merge of the kvm-ppc tree with the kvm tree
-Message-Id: <20120904150430.3f8eda1a2021fb386082697c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__4_Sep_2012_15_04_30_+1000_4LaNRv6o8+q_4sla"
+	Tue, 4 Sep 2012 01:06:15 -0400
+Message-ID: <50458C21.2090000@ti.com>
+Date: Tue, 4 Sep 2012 10:35:37 +0530
+From: Prabhakar Lad <prabhakar.lad@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Sakari Ailus <sakari.ailus@iki.fi>
+CC: LMML <linux-media@vger.kernel.org>,
+        dlos <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-kernel@vger.kernel.org>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        <linux-doc@vger.kernel.org>, Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Rob Landley <rob@landley.net>, HeungJun Kim <riverful.kim@samsung.com>
+Subject: Re: [PATCH] media: v4l2-ctrls: add control for test pattern
+References: <1346663777-23149-1-git-send-email-prabhakar.lad@ti.com> <20120903193947.GD6834@valkosipuli.retiisi.org.uk>
+In-Reply-To: <20120903193947.GD6834@valkosipuli.retiisi.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__4_Sep_2012_15_04_30_+1000_4LaNRv6o8+q_4sla
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Sakari,
 
-Hi Alexander,
+Thanks for the review.
 
-Today's linux-next merge of the kvm-ppc tree got a conflict in
-include/linux/kvm.h between commit 4d8b81abc47b ("KVM: introduce readonly
-memslot") from the kvm tree and commit 1db21d25a11b ("KVM: PPC: booke:
-Add watchdog emulation") from the kvm-ppc tree.
+On Tuesday 04 September 2012 01:09 AM, Sakari Ailus wrote:
+> Hi Prabhakar,
+> 
+> Thanks for the patch.
+> 
+> On Mon, Sep 03, 2012 at 02:46:17PM +0530, Prabhakar Lad wrote:
+>> From: Lad, Prabhakar <prabhakar.lad@ti.com>
+>>
+>> add V4L2_CID_TEST_PATTERN of type menu, which determines
+>> the internal test pattern selected by the device.
+>>
+>> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+>> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+>> Cc: Sakari Ailus <sakari.ailus@iki.fi>
+>> Cc: Hans Verkuil <hans.verkuil@cisco.com>
+>> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+>> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+>> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+>> Cc: Hans de Goede <hdegoede@redhat.com>
+>> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+>> Cc: Rob Landley <rob@landley.net>
+>> Cc: HeungJun Kim <riverful.kim@samsung.com>
+>> Cc: Rob Landley <rob@landley.net>
+>> ---
+>>  This patches has one checkpatch warning for line over
+>>  80 characters altough it can be avoided I have kept it
+>>  for consistency.
+>>
+>>  Documentation/DocBook/media/v4l/controls.xml |   52 ++++++++++++++++++++++++++
+>>  drivers/media/v4l2-core/v4l2-ctrls.c         |   16 ++++++++
+>>  include/linux/videodev2.h                    |   12 ++++++
+>>  3 files changed, 80 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
+>> index f704218..06f16e7 100644
+>> --- a/Documentation/DocBook/media/v4l/controls.xml
+>> +++ b/Documentation/DocBook/media/v4l/controls.xml
+>> @@ -4313,6 +4313,58 @@ interface and may change in the future.</para>
+>>  	      </tbody>
+>>  	    </entrytbl>
+>>  	  </row>
+>> +	  <row>
+>> +	    <entry spanname="id"><constant>V4L2_CID_TEST_PATTERN</constant></entry>
+>> +	    <entry>menu</entry>
+>> +	  </row>
+>> +	  <row id="v4l2-test-pattern">
+>> +	    <entry spanname="descr"> The capture devices/sensors have the capability to
+>> +	    generate internal test patterns. This test patterns are used to test a device
+>> +	    is properly working and can generate the desired waveforms that it supports.
+>> +	    </entry>
+>> +	  </row>
+>> +	  <row>
+>> +	    <entrytbl spanname="descr" cols="2">
+>> +	      <tbody valign="top">
+>> +	        <row>
+>> +	         <entry><constant>V4L2_TEST_PATTERN_DISABLED</constant></entry>
+>> +	          <entry>Test pattern generation is disabled</entry>
+>> +	        </row>
+>> +	        <row>
+>> +	          <entry><constant>V4L2_TEST_PATTERN_VERTICAL_LINES</constant></entry>
+>> +	          <entry>Generate vertical lines as test pattern</entry>
+>> +	        </row>
+>> +	        <row>
+>> +	          <entry><constant>V4L2_TEST_PATTERN_HORIZONTAL_LINES</constant></entry>
+>> +	          <entry>Generate horizontal lines as test pattern</entry>
+>> +	        </row>
+>> +	        <row>
+>> +	          <entry><constant>V4L2_TEST_PATTERN_DIAGONAL_LINES</constant></entry>
+>> +	          <entry>Generate diagonal lines as test pattern</entry>
+>> +	        </row>
+>> +	        <row>
+>> +	          <entry><constant>V4L2_TEST_PATTERN_SOLID_BLACK</constant></entry>
+>> +	          <entry>Generate solid black color as test pattern</entry>
+>> +	        </row>
+>> +	        <row>
+>> +	          <entry><constant>V4L2_TEST_PATTERN_SOLID_WHITE</constant></entry>
+>> +	          <entry>Generate solid white color as test pattern</entry>
+>> +	        </row>
+>> +	        <row>
+>> +	          <entry><constant>V4L2_TEST_PATTERN_SOLID_BLUE</constant></entry>
+>> +	          <entry>Generate solid blue color as test pattern</entry>
+>> +	        </row>
+>> +	        <row>
+>> +	          <entry><constant>V4L2_TEST_PATTERN_SOLID_RED</constant></entry>
+>> +	          <entry>Generate solid red color as test pattern</entry>
+>> +	        </row>
+>> +	        <row>
+>> +	          <entry><constant>V4L2_TEST_PATTERN_CHECKER_BOARD</constant></entry>
+>> +	          <entry>Generate a checker board as test pattern</entry>
+>> +	        </row>
+> 
+> You're defining 8 different test patterns based on a single device, I guess? 
+> 
+No.
 
-I fixed it up (see below) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> As the test patterns are not standardised, I'd suppose that if another
+> driver implements the same control, it would require another n menu items
+> added to the same standard menu. That way we'd run quickly out of menu items
+> as the maximum is 32.
+> 
+Agreed the test patterns are not standardized and are hardware
+dependent, but this entries which have been added are generally common
+across capture/display/sensors.
 
-diff --cc include/linux/kvm.h
-index d808694,f4f5be8..0000000
---- a/include/linux/kvm.h
-+++ b/include/linux/kvm.h
-@@@ -622,9 -621,7 +625,10 @@@ struct kvm_ppc_smmu_info=20
-  #define KVM_CAP_PPC_GET_SMMU_INFO 78
-  #define KVM_CAP_S390_COW 79
-  #define KVM_CAP_PPC_ALLOC_HTAB 80
- -#define KVM_CAP_PPC_BOOKE_WATCHDOG 81
- +#ifdef __KVM_HAVE_READONLY_MEM
- +#define KVM_CAP_READONLY_MEM 81
- +#endif
-++#define KVM_CAP_PPC_BOOKE_WATCHDOG 82
- =20
-  #ifdef KVM_CAP_IRQ_ROUTING
- =20
+> For this reason I'd leave the items in the menu up to the driver that
+> implements the control, until we have more information on the test patterns
+> different devices implement --- as discussed earlier.
+> 
+Assuming that I only added disable test pattern and if a driver wants to
+implement this control and wants add  an item to this menu, on what
+basis an entry to this menu will be qualified then ?
 
---Signature=_Tue__4_Sep_2012_15_04_30_+1000_4LaNRv6o8+q_4sla
-Content-Type: application/pgp-signature
+Thanks and Regards,
+--Prabhakar Lad
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> Kind regards,
+> 
 
-iQIcBAEBCAAGBQJQRYveAAoJEECxmPOUX5FEJaQP/jcmNHUPmNFLVouJyNTma40g
-5fuGXPqvz6kaDDhdi5qMYe8noqLixjGhrksEiHEZ5gIE0619+WGqxpFMwHVUBDmV
-CmurQZxQ5nqcrVCpNLgItXNcjZuTZ1gf6sj5fMhP+PhuxKx2Iwlm5hJR7h8kTPZW
-rs0GvG6rHto2O06TCHWREMNl0E/duE08xoIlGN3V272ULY4ixd88jVrvrjEDGNWg
-YH76KbFp6tpOPLpKB5stLlX56+8YCMoNLEPi0WbjKbhy9pDHIGD60wOeqkaJoRXJ
-aLRlhLnH1faxalhX+q/ThQZbGKgF0BMO0HwpNB9KZwNHy6s09zkn4VYwtrXmEm9a
-HtMsKA7tR77yQx8O3lgQ1krqx6lnelBC7ue9expI4+SzgAViHLVMqZDJpVwk3u+F
-5fsEbrvRaWOCWDVRU2gDM0JHX57lCfyRqh6q6UMs8V1E9FHLmTNHTwe89wlq0bNc
-+Q+sLsqyMOcP1/XcGyS7KUfwMNSB7GuhiussH/4/9BTOaR1UkNNBkmw1STkaDo+x
-vIwX2/Z9rA6+M3z32WJ2iaG1jralytn6mV/cVxiwLK5+lW06kfOEQFDBGEomRU9s
-XtMxzi5lD2o6Wog/0qUV2Mm94aMX/joFR/iGxZeZyi+0ZmZduA82dLh34ZXMVUja
-sVMxdSVoJrVf+7qnjehA
-=XtJU
------END PGP SIGNATURE-----
-
---Signature=_Tue__4_Sep_2012_15_04_30_+1000_4LaNRv6o8+q_4sla--
