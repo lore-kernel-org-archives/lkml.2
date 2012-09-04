@@ -1,143 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757933Ab2IDXZL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 19:25:11 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:54875 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752445Ab2IDXZG (ORCPT
+	id S1757922Ab2IDX1O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 19:27:14 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32317 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751154Ab2IDX1L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 19:25:06 -0400
-Date: Wed, 5 Sep 2012 00:25:03 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org
-Subject: Re: [PATCH 07/11] kexec: Disable in a secure boot environment
-Message-ID: <20120904232503.GA1077@srcf.ucam.org>
-References: <1346774117-2277-1-git-send-email-mjg@redhat.com>
- <1346774117-2277-8-git-send-email-mjg@redhat.com>
- <87txvdzgur.fsf@xmission.com>
- <20120904202205.GA28903@srcf.ucam.org>
- <87r4qhwkx9.fsf@xmission.com>
- <20120904212717.GA30899@srcf.ucam.org>
- <87fw6xtp23.fsf@xmission.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87fw6xtp23.fsf@xmission.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Tue, 4 Sep 2012 19:27:11 -0400
+X-Authority-Analysis: v=2.0 cv=Hsb06jvS c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=zgiTqp1681AA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=Md3Eq_kwYTQA:10 a=imTROTZUkysA:10 a=OQEzN_gqAOIA:10 a=pN9PhARNchwA:10 a=nFlYCK1qHmYA:10 a=EGDuWttHsakA:10 a=XvDZTzCu_e_eYNiTwP8A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1346801227.27919.40.camel@gandalf.local.home>
+Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive
+ hashtable
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Pedro Alves <palves@redhat.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Tejun Heo <tj@kernel.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, mingo@elte.hu,
+        ebiederm@xmission.com, aarcange@redhat.com, ericvh@gmail.com,
+        netdev@vger.kernel.org, josh@joshtriplett.org, eric.dumazet@gmail.com,
+        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
+        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
+        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
+        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Date: Tue, 04 Sep 2012 19:27:07 -0400
+In-Reply-To: <50468778.5000207@redhat.com>
+References: <20120824203332.GF21325@google.com> <5037E9D9.9000605@gmail.com>
+	     <20120824212348.GK21325@google.com> <5038074D.300@gmail.com>
+	     <20120824230740.GN21325@google.com> <20120825042419.GA27240@Krystal>
+	     <503C95E4.3010000@gmail.com> <20120828101148.GA21683@Krystal>
+	     <503CAB1E.5010408@gmail.com> <20120828115638.GC23818@Krystal>
+	     <20120828230050.GA3337@Krystal>
+	    <1346772948.27919.9.camel@gandalf.local.home>
+	   <50462C99.5000007@redhat.com>  <50462EE8.1090903@redhat.com>
+	   <1346779027.27919.15.camel@gandalf.local.home>
+	   <50463883.8080706@redhat.com>
+	  <1346792345.27919.18.camel@gandalf.local.home>
+	  <504677C8.3050801@redhat.com>
+	 <1346798509.27919.25.camel@gandalf.local.home>
+	 <50468778.5000207@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 04, 2012 at 03:12:52PM -0700, Eric W. Biederman wrote:
-> Matthew Garrett <mjg59@srcf.ucam.org> writes:
-> > The driving force behind this code right now is that our choices are 
-> > either (1) do something like this, or (2) disable kexec entirely.
-> 
-> Actually there is an interesting question here. Why does even EFI secure
-> boot justify this?  If I install my own key in EFI I should be able to
-> boot a kernel that does anything I want it to.   My machine doing what I
-> want it to is the point of trusted boot is it not?
+On Tue, 2012-09-04 at 23:58 +0100, Pedro Alves wrote:
 
-The full implementation should trust keys that are trusted by the 
-platform, so it'd boot any kexec image you cared to sign. Or simply 
-patch this code out and rebuild and self-sign, or disable the code that 
-turns off the capability when in secure boot mode. I've no objection to 
-putting that behind an #ifdef.
+> Not true.  The comma operator introduces a sequence point.  It's the comma
+> that separates function parameters that doesn't guarantee ordering.
 
-> > Like I 
-> > said, long term we'd want to provide appropriate technical mechanisms to 
-> > make kexec usable in a world where people want to be able to trust their 
-> > kernel, and we have people working on that. But that being our 
-> > motivation for the implementation doesn't mean that other parties won't 
-> > have uses for it, and I'd like to find a solution that satisfies them as 
-> > well.
-> 
-> I expect you want to make that that medium term.  Enterprise distros
-> don't ship without kexec-on-panic.  Too often long term seems to be
-> something that no one ever gets around to in kernel development.
+Bah! C language is almost as confusing as English.
 
-I can't comment on the release schedule of unnanounced products or 
-features that we may wish to be implemented in them.
+-- Steve
 
-> > Sure it is. The kernel exists to provide the functionality that people 
-> > require, and UEFI imposes that requirement on the people. It's like 
-> > saying gcc policy shouldn't be the justification for kernel 
-> > implementation details. We don't control the gcc developers, but we have 
-> > to consume what they provide us with.
-> 
-> This isn't efi specific code.  We need to be able to think about what
-> is happening with a local analysis so we can see if it is correct.
-> 
-> This is slightly violated already as pointed out elsewhere,
-> as CAP_SECURE_BOOT means we did not boot securely.
 
-If your problem is the naming, we'll change the name. Really not a 
-problem.
 
-> > I'm afraid I have no idea what you're asking for here. Some vendors want 
-> > to be able to ensure that kexec is only used to load trusted code. Right 
-> > now there's no mechanism for ensuring that, so why not at least provide 
-> > a mechanism for them to turn it off at runtime?
-> 
-> There is a mechanism to turn it off at runtime CAP_SYS_BOOT.
-
-Which also prevents anyone from rebooting the system, which is really 
-not what we're aiming for here. The firmware can enforce the booting of 
-trusted code, the aim is to ensure that the kernel has equivalent 
-functionality.
-
-> What I am asking for is a mechanism that makes sense without having to
-> think about EFI.  Without having to think about the silly hoops people
-> are going through because of the impending launch of windows 8.
-
-Again, I'm not clear on what you're talking about here. There's nothing 
-UEFI specific about this patch. Anyone who has firmware-level trust can 
-drop this capability in order to make it harder for someone to 
-circumvent that trust by replacing the running kernel at runtime.
-
-> I have the basic question, why can't I trust the root who has all
-> capabilities?  What makes the root user more trusted than the linux
-> kernel.  Especially when typically the root user is the owner of
-> the machine.
-
-Because historically we've found that root is also often someone who has 
-determined a mechanism for running arbitrary code on your machine, 
-rather than someone you trust. Root and the kernel aren't equivalent, 
-otherwise root would just be able to turn off memory protection in their 
-userspace processes. This patchset merely strengthens that existing 
-dividing line.
-
-> There is a element here where it seems implementing the policy you
-> are proposing will start encouraging people to start hoarding kernel
-> bugs instead of reporting them.  So implementing this policy might
-> make the kernel in net less secure.  How is that prevented?
-
-It's not. The metric I'm concerned with says a kernel where root can 
-load arbitrary code into the kernel is less secure than one where root 
-can't do that. Implementing this functionality may result in some 
-unfixed flaws that permit root to load arbitrary code. Not implementing 
-this functionality *guarantees* that root can load arbitrary code. So, 
-by the metric I'm concerned with, security improves. But security isn't 
-a bright line subject, and other people may disagree. I can't force 
-anyone to implement a given policy.
-
-> Ultimately the question is.
-> 
-> This is Unix.  In Unix we give root rope and let him hang himself
-> or shoot himself in the foot (not that we encourage it).
-> 
-> Why are we now implementing a security model where we don't trust root?
-> 
-> What is gained from a security model where root is untrusted?
-
-Root is already untrusted to a degree. We want to provide a mechanism 
-that permits the user to indicate that they want to make that more 
-explicit.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
