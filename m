@@ -1,57 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757885Ab2IDV27 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 17:28:59 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:45528
-	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
+	id S1757914Ab2IDV30 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 17:29:26 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:50671
+	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1757793Ab2IDV25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 17:28:57 -0400
+	id S1757859Ab2IDV26 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 17:28:58 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
         devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
         ben@decadent.org.uk, thozza@redhat.com, dcbw@redhat.com
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH V4 01/10] Tools: hv: Get rid of some unused variables
-Date: Tue,  4 Sep 2012 14:46:33 -0700
-Message-Id: <1346795202-25655-1-git-send-email-kys@microsoft.com>
+Subject: [PATCH V4 10/10] Tools: hv: Implement the KVP verb - KVP_OP_GET_IP_INFO
+Date: Tue,  4 Sep 2012 14:46:42 -0700
+Message-Id: <1346795202-25655-10-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1346795156-25614-1-git-send-email-kys@microsoft.com>
+In-Reply-To: <1346795202-25655-1-git-send-email-kys@microsoft.com>
 References: <1346795156-25614-1-git-send-email-kys@microsoft.com>
+ <1346795202-25655-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of unused variables.
+Now implement the KVP verb - KVP_OP_GET_IP_INFO. This operation retrieves IP
+information for the specified interface.
 
-Reported-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- tools/hv/hv_kvp_daemon.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ tools/hv/hv_kvp_daemon.c |   93 ++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 90 insertions(+), 3 deletions(-)
 
 diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-index 65d54c8..d12d714 100644
+index 849c438..c8e1013 100644
 --- a/tools/hv/hv_kvp_daemon.c
 +++ b/tools/hv/hv_kvp_daemon.c
-@@ -196,7 +196,7 @@ static void kvp_update_mem_state(int pool)
+@@ -603,6 +603,69 @@ static char *kvp_if_name_to_mac(char *if_name)
  }
- static int kvp_file_init(void)
- {
--	int ret, fd;
-+	int  fd;
- 	FILE *filep;
- 	size_t records_read;
- 	__u8 *fname;
-@@ -312,7 +312,6 @@ static int kvp_key_add_or_modify(int pool, __u8 *key, int key_size, __u8 *value,
- 			int value_size)
- {
- 	int i;
--	int j, k;
- 	int num_records;
- 	struct kvp_record *record;
- 	int num_blocks;
+ 
+ 
++/*
++ * Retrieve the interface name given tha MAC address.
++ */
++
++static char *kvp_mac_to_if_name(char *mac)
++{
++	DIR *dir;
++	struct dirent *entry;
++	FILE    *file;
++	char    *p, *q, *x;
++	char    *if_name = NULL;
++	char    buf[256];
++	char *kvp_net_dir = "/sys/class/net/";
++	char dev_id[256];
++	int i;
++
++	dir = opendir(kvp_net_dir);
++	if (dir == NULL)
++		return NULL;
++
++	snprintf(dev_id, sizeof(dev_id), kvp_net_dir);
++	q = dev_id + strlen(kvp_net_dir);
++
++	while ((entry = readdir(dir)) != NULL) {
++		/*
++		 * Set the state for the next pass.
++		 */
++		*q = '\0';
++
++		strcat(dev_id, entry->d_name);
++		strcat(dev_id, "/address");
++
++		file = fopen(dev_id, "r");
++		if (file == NULL)
++			continue;
++
++		p = fgets(buf, sizeof(buf), file);
++		if (p) {
++			x = strchr(p, '\n');
++			if (x)
++				*x = '\0';
++
++			for (i = 0; i < strlen(p); i++)
++				p[i] = toupper(p[i]);
++
++			if (!strcmp(p, mac)) {
++				/*
++				 * Found the MAC match; return the interface
++				 * name. The caller will free the memory.
++				 */
++				if_name = strdup(entry->d_name);
++				fclose(file);
++				break;
++			}
++		}
++		fclose(file);
++	}
++
++	closedir(dir);
++	return if_name;
++}
++
++
+ static void kvp_process_ipconfig_file(char *cmd,
+ 					char *config_buf, int len,
+ 					int element_size, int offset)
+@@ -749,10 +812,10 @@ static int kvp_process_ip_address(void *addrp,
+ 	}
+ 
+ 	if ((length - *offset) < addr_length + 1)
+-		return 1;
++		return HV_E_FAIL;
+ 	if (str == NULL) {
+ 		strcpy(buffer, "inet_ntop failed\n");
+-		return 1;
++		return HV_E_FAIL;
+ 	}
+ 	if (*offset == 0)
+ 		strcpy(buffer, tmp);
+@@ -796,7 +859,7 @@ kvp_get_ip_info(int family, char *if_name, int op,
+ 
+ 	if (getifaddrs(&ifap)) {
+ 		strcpy(buffer, "getifaddrs failed\n");
+-		return 1;
++		return HV_E_FAIL;
+ 	}
+ 
+ 	curp = ifap;
+@@ -1386,6 +1449,30 @@ int main(void)
+ 		}
+ 
+ 		switch (op) {
++		case KVP_OP_GET_IP_INFO:
++			kvp_ip_val = &hv_msg->body.kvp_ip_val;
++			if_name =
++			kvp_mac_to_if_name((char *)kvp_ip_val->adapter_id);
++
++			if (if_name == NULL) {
++				/*
++				 * We could not map the mac address to an
++				 * interface name; return error.
++				 */
++				hv_msg->error = HV_E_FAIL;
++				break;
++			}
++			error = kvp_get_ip_info(
++						0, if_name, KVP_OP_GET_IP_INFO,
++						kvp_ip_val,
++						(MAX_IP_ADDR_SIZE * 2));
++
++			if (error)
++				hv_msg->error = error;
++
++			free(if_name);
++			break;
++
+ 		case KVP_OP_SET_IP_INFO:
+ 			kvp_ip_val = &hv_msg->body.kvp_ip_val;
+ 			if_name = kvp_get_if_name(
 -- 
 1.7.4.1
 
