@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754415Ab2IDA5t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 20:57:49 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:64912 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754205Ab2IDA5s convert rfc822-to-8bit (ORCPT
+	id S1754388Ab2IDA7l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 20:59:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57273 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754237Ab2IDA7k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 20:57:48 -0400
-X-AuditID: 9c930197-b7b93ae0000028a7-f5-5045520a9346
-From: Namhyung Kim <namhyung@kernel.org>
-To: Feng Tang <feng.tang@intel.com>
-Cc: acme@redhat.com, mingo@elte.hu, a.p.zijlstra@chello.nl,
-        andi@firstfloor.org, dsahern@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/7] perf ui/browser: Add browser for perf script
-References: <1346660073-20279-1-git-send-email-feng.tang@intel.com>
-Date: Tue, 04 Sep 2012 09:50:16 +0900
-In-Reply-To: <1346660073-20279-1-git-send-email-feng.tang@intel.com> (Feng
-	Tang's message of "Mon, 3 Sep 2012 16:14:26 +0800")
-Message-ID: <87mx16ehmf.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 3 Sep 2012 20:59:40 -0400
+Message-ID: <50455277.40109@gmail.com>
+Date: Tue, 04 Sep 2012 10:59:35 +1000
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Brightmail-Tracker: AAAAAA==
+To: daley <daleydeng@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Two question about kernel global function declaration and directory
+ layout
+References: <5044CDAB.4000902@gmail.com>
+In-Reply-To: <5044CDAB.4000902@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Feng
+On 04/09/12 01:32, daley wrote:
+> hi, everyone, I'm a big fan of the kernel, I was always being attracted
+> by its clean and intelligent design. I'm new to the mailing list and
+> this is my first post. I want to ask two basic question about kernel
+> which bother me a lot, I've googled a lot but nobody could give a
+> suitable answer .
+> 
+> The first one is about global function declaration, I was confused about
+> the usage of keyword "extern" before a global function which declared in
+> the header file. for example,
 
-On Mon,  3 Sep 2012 16:14:26 +0800, Feng Tang wrote:
-> Hi Arnaldo and all,
->
-> This is a patch set mainly to add a browser for perf script, which
-> will be integrated into the main hists and annotation browser.
->
-> Patch 1-4 are some preparation for adding the script
-> patch 5 introduce the script browser
-> patch 6-7 integrate the browser to hists browser and annotation browser
->
-> The patches are on top of current perf/core branch of your git tree. 
-> Please help to review, thanks
->
+It specifies that the function has external linkage, which is the
+opposite of internal (static keyword) linkage. The default linkage for
+functions in external, so the extern keyword is not technically
+required, but many developers like to specify it explicitly. C linkage
+is explained here:
 
-There was a build failure on my F17 box:
+  http://publications.gbdirect.co.uk/c_book/chapter4/linkage.html
 
-      CC builtin-script.o
-  builtin-script.c: In function ‘find_scripts’:
-  builtin-script.c:1047:7: error: variable ‘first_half’ set but not used [-Werror=unused-but-set-variable]
-  builtin-script.c:1046:22: error: variable ‘desc’ set but not used [-Werror=unused-but-set-variable]
-  cc1: all warnings being treated as errors
-  make: *** [builtin-script.o] Error 1
+> The second question is why not move the *sound* directory into the
+> *drivers* directory or put bigger subsystem out of drivers, since there
+> are more bigger subsystems(e.g. media, scsi) than sound?
 
-Thanks,
-Namhyung
+This was discussed a couple of years back, but never happened. I'm not
+sure what the reasons were. You can read through the discussion yourself
+if you are so inclined. There is an email from Linus explaining some of
+the historical reasons why the sound code is in sound/ and not
+drivers/sound:
+
+  http://lkml.indiana.edu/hypermail/linux/kernel/0805.2/3026.html
+
+~Ryan
 
 
-> Feng
-> -----------------------
-> Feng Tang (7):
->   perf symbols: Filter samples with unresolved symbol when "--symbols"
->     option is used
->   perf scripts: Add --symbols option to handle specific symbols
->   perf scripts: Add event_analyzing_sample-record/report
->   perf scripts: Export a find_scripts() function
->   perf ui/browser: Add a browser for perf script
->   perf ui/browser: Integrate script browser into annotation browser
->   perf ui/browser: Integrate script browser into main hists browser
->
->  tools/perf/Makefile                                |    5 +
->  tools/perf/builtin-script.c                        |   49 ++++++
->  tools/perf/builtin.h                               |    1 +
->  .../python/bin/event_analyzing_sample-record       |    8 +
->  .../python/bin/event_analyzing_sample-report       |    3 +
->  tools/perf/ui/browsers/annotate.c                  |    8 +
->  tools/perf/ui/browsers/hists.c                     |   39 +++++
->  tools/perf/ui/browsers/scripts.c                   |  159 ++++++++++++++++++++
->  tools/perf/ui/browsers/scripts.h                   |    5 +
->  tools/perf/util/event.c                            |    5 +-
->  10 files changed, 280 insertions(+), 2 deletions(-)
->  create mode 100644 tools/perf/scripts/python/bin/event_analyzing_sample-record
->  create mode 100644 tools/perf/scripts/python/bin/event_analyzing_sample-report
->  create mode 100644 tools/perf/ui/browsers/scripts.c
->  create mode 100644 tools/perf/ui/browsers/scripts.h
