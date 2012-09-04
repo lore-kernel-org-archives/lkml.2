@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757381Ab2IDP5k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 11:57:40 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56393 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757290Ab2IDP5h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 11:57:37 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org,
-        bfields@fieldses.org, viro@zeniv.linux.org.uk
-Cc: linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Subject: [PATCH v2 0/5] fat: make persistent inode numbers and stablize for NFS.
-Date: Wed,  5 Sep 2012 00:57:08 +0900
-Message-Id: <1346774228-7993-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1757390Ab2IDP54 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 11:57:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63747 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757269Ab2IDPzl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 11:55:41 -0400
+From: Matthew Garrett <mjg@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH 04/11] ACPI: Limit access to custom_method
+Date: Tue,  4 Sep 2012 11:55:10 -0400
+Message-Id: <1346774117-2277-5-git-send-email-mjg@redhat.com>
+In-Reply-To: <1346774117-2277-1-git-send-email-mjg@redhat.com>
+References: <1346774117-2277-1-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 66.187.233.206
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+It must be impossible for even root to get code executed in kernel context
+under a secure boot environment. custom_method effectively allows arbitrary
+access to system memory, so it needs to have a capability check here.
 
-This patch-set eliminates the client side ESTALE errors when a FAT partition
-exported over NFS has its dentries evicted from the cache.
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+---
+ drivers/acpi/custom_method.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-One of the reasons for this error is lack of permanent inode numbers on FAT
-which makes it difficult to construct persistent file handles.
-This can be overcome by using the on-disk location of the directory entries
-(i_pos) as the inode numbers.
-
-Once the i_pos is available, it is only a matter of reading the directory
-entries from the disk clusters to locate the matching entry and rebuild
-the corresponding inode.
-
-If process is referring to the file, and the file is unlinked(deleted).
-Then, the file 'i_pos' is added to the busy list so the the entry is not
-available for new file creation. when finally inode is evicted
-the corresponding busy list entries are removed and slots are made
-available for new entries.
-
-Namjae Jeon (5)
- fat: allocate persistent inode numbers
- fat (exportfs): rebuild inode if ilookup() fails
- fat (exportfs): rebuild directory-inode if fat_dget() fails
- fat: eliminate-orphaned-inode-number-allocation
- Documentation: update nfs option in filesystem/vfat.txt
-
+diff --git a/drivers/acpi/custom_method.c b/drivers/acpi/custom_method.c
+index 5d42c24..3e78014 100644
+--- a/drivers/acpi/custom_method.c
++++ b/drivers/acpi/custom_method.c
+@@ -29,6 +29,9 @@ static ssize_t cm_write(struct file *file, const char __user * user_buf,
+ 	struct acpi_table_header table;
+ 	acpi_status status;
+ 
++	if (!capable(CAP_SECURE_FIRMWARE))
++		return -EPERM;
++
+ 	if (!(*ppos)) {
+ 		/* parse the table header to get the table length */
+ 		if (count <= sizeof(struct acpi_table_header))
 -- 
-1.7.9.5
+1.7.11.4
 
