@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932401Ab2IDP5Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 11:57:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1772 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757290Ab2IDPzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 11:55:42 -0400
-From: Matthew Garrett <mjg@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH 05/11] asus-wmi: Restrict debugfs interface
-Date: Tue,  4 Sep 2012 11:55:11 -0400
-Message-Id: <1346774117-2277-6-git-send-email-mjg@redhat.com>
-In-Reply-To: <1346774117-2277-1-git-send-email-mjg@redhat.com>
-References: <1346774117-2277-1-git-send-email-mjg@redhat.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 66.187.233.206
-X-SA-Exim-Mail-From: mjg@redhat.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1757381Ab2IDP5k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 11:57:40 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56393 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757290Ab2IDP5h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 11:57:37 -0400
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org,
+        bfields@fieldses.org, viro@zeniv.linux.org.uk
+Cc: linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>
+Subject: [PATCH v2 0/5] fat: make persistent inode numbers and stablize for NFS.
+Date: Wed,  5 Sep 2012 00:57:08 +0900
+Message-Id: <1346774228-7993-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have no way of validating what all of the Asus WMI methods do on a
-given machine, and there's a risk that some will allow hardware state to
-be manipulated in such a way that arbitrary code can be executed in the
-kernel. Add a capability check to prevent that.
+From: Namjae Jeon <namjae.jeon@samsung.com>
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
----
- drivers/platform/x86/asus-wmi.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+This patch-set eliminates the client side ESTALE errors when a FAT partition
+exported over NFS has its dentries evicted from the cache.
 
-diff --git a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
-index 2eb9fe8..03ea0e8 100644
---- a/drivers/platform/x86/asus-wmi.c
-+++ b/drivers/platform/x86/asus-wmi.c
-@@ -1523,6 +1523,9 @@ static int show_dsts(struct seq_file *m, void *data)
- 	int err;
- 	u32 retval = -1;
- 
-+	if (!capable(CAP_SECURE_FIRMWARE))
-+		return -EPERM;
-+
- 	err = asus_wmi_get_devstate(asus, asus->debug.dev_id, &retval);
- 
- 	if (err < 0)
-@@ -1539,6 +1542,9 @@ static int show_devs(struct seq_file *m, void *data)
- 	int err;
- 	u32 retval = -1;
- 
-+	if (!capable(CAP_SECURE_FIRMWARE))
-+		return -EPERM;
-+
- 	err = asus_wmi_set_devstate(asus->debug.dev_id, asus->debug.ctrl_param,
- 				    &retval);
- 
-@@ -1563,6 +1569,9 @@ static int show_call(struct seq_file *m, void *data)
- 	union acpi_object *obj;
- 	acpi_status status;
- 
-+	if (!capable(CAP_SECURE_FIRMWARE))
-+		return -EPERM;
-+
- 	status = wmi_evaluate_method(ASUS_WMI_MGMT_GUID,
- 				     1, asus->debug.method_id,
- 				     &input, &output);
+One of the reasons for this error is lack of permanent inode numbers on FAT
+which makes it difficult to construct persistent file handles.
+This can be overcome by using the on-disk location of the directory entries
+(i_pos) as the inode numbers.
+
+Once the i_pos is available, it is only a matter of reading the directory
+entries from the disk clusters to locate the matching entry and rebuild
+the corresponding inode.
+
+If process is referring to the file, and the file is unlinked(deleted).
+Then, the file 'i_pos' is added to the busy list so the the entry is not
+available for new file creation. when finally inode is evicted
+the corresponding busy list entries are removed and slots are made
+available for new entries.
+
+Namjae Jeon (5)
+ fat: allocate persistent inode numbers
+ fat (exportfs): rebuild inode if ilookup() fails
+ fat (exportfs): rebuild directory-inode if fat_dget() fails
+ fat: eliminate-orphaned-inode-number-allocation
+ Documentation: update nfs option in filesystem/vfat.txt
+
 -- 
-1.7.11.4
+1.7.9.5
 
