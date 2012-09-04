@@ -1,64 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932682Ab2IDUNm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 16:13:42 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:51218 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932423Ab2IDUNk (ORCPT
+	id S932692Ab2IDUPH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 16:15:07 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:46712 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932423Ab2IDUPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 16:13:40 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Matthew Garrett <mjg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org
-References: <1346774117-2277-1-git-send-email-mjg@redhat.com>
-	<1346774117-2277-8-git-send-email-mjg@redhat.com>
-Date: Tue, 04 Sep 2012 13:13:32 -0700
-In-Reply-To: <1346774117-2277-8-git-send-email-mjg@redhat.com> (Matthew
-	Garrett's message of "Tue, 4 Sep 2012 11:55:13 -0400")
-Message-ID: <87txvdzgur.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 4 Sep 2012 16:15:04 -0400
+Date: Tue, 4 Sep 2012 22:15:53 +0200
+From: Fabio Baltieri <fabio.baltieri@gmail.com>
+To: Oliver Hartkopp <socketcan@hartkopp.net>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Wolfgang Grandegger <wg@grandegger.com>
+Subject: Re: [PATCH can-next v6] can: add tx/rx LED trigger support
+Message-ID: <20120904201553.GA29478@gmail.com>
+References: <1343845298-2065-1-git-send-email-fabio.baltieri@gmail.com>
+ <20120824051016.GB1718@vandijck-laurijssen.be>
+ <50376550.4020501@pengutronix.de>
+ <20120824124248.GA422@vandijck-laurijssen.be>
+ <20120824220142.GA1470@gmail.com>
+ <5044A547.2010603@pengutronix.de>
+ <20120903181335.GA415@vandijck-laurijssen.be>
+ <20120903182925.GA28766@gmail.com>
+ <50451919.20205@hartkopp.net>
+ <20120904071128.GB416@vandijck-laurijssen.be>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18S61gpapYbQ+1yxGBt1VmfJjyXZ0FVZqE=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.5 XM_Body_Dirty_Words Contains a dirty word
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Matthew Garrett <mjg@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 07/11] kexec: Disable in a secure boot environment
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120904071128.GB416@vandijck-laurijssen.be>
+X-Operating-System: Linux balto-eee 3.6.0-rc1-balto-eee-00322-ge60818e-dirty
+ GNU/Linux
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Sep 04, 2012 at 09:11:28AM +0200, Kurt Van Dijck wrote:
+> On Mon, Sep 03, 2012 at 10:54:49PM +0200, Oliver Hartkopp wrote:
+> > On 03.09.2012 20:29, Fabio Baltieri wrote:
+> > 
+> > > On Mon, Sep 03, 2012 at 08:13:35PM +0200, Kurt Van Dijck wrote:
+> > >> On Mon, Sep 03, 2012 at 02:40:39PM +0200, Marc Kleine-Budde wrote:
+> > >>> The net->ifindex is unique. But it's only an integer. Usually can0 has a
+> > >>> ifindex != 0, so a simple can%d is contra productive here.
+> > >>>
+> > >>> Some pointers to related code:
+> > >>> http://lxr.free-electrons.com/source/drivers/base/core.c#L1847
+> > >>> http://lxr.free-electrons.com/source/drivers/base/core.c#L73
+> > >>> http://lxr.free-electrons.com/source/include/linux/device.h#L695
+> > >>>
+> > >>> comments?
+> > > 
+> > > That would probabily makes really hard to choose the right
+> > > default_trigger for led devices to get to the appropriate CAN LED in
+> > > embedded systems, as trigger name would depend from other network
+> > > devices and probing order (correct me if I'm wrong).
+> > > 
+> > > Something with device name would probaily be more appropriate here.
+> > > 
+> > >>
+> > >> a very recent idea: something with netdevice notifiers and NETDEV_CHANGENAME ...
+> > >> http://lxr.free-electrons.com/source/net/core/dev.c#L1030
+> > >>
+> > >> you could: rename the trigger, or if we think it's usefull,
+> > >> block the netdev rename when its triggers are in use.
+> > > 
+> > > Blocking the rename looks overkill to me,
+> 
+> renaming a netdev _after_ first attaching led triggers looks stupid to me
+> anyway.
+> 
+> > > what about using device name
+> > > with an optional "port id" appended to it?  Sounds simpler...
+> > 
+> > 
+> > The name of the device can only be changed when the interface is down.
+> > Is it possible to put some scripting around it to detach and attach the leds
+> > to the interfaces on ifup/ifdown triggers?
+> 
+> Are the led triggers available for using while the netdev is down then?
 
-Matthew Garrett <mjg@redhat.com> writes:
+Sure!  On embedded systems triggers are usually attached to actual LEDs
+at probe time using default_trigger field of struct led_classdev, and
+that can be specified both in machine files or in device tree.
 
-> kexec could be used as a vector for a malicious user to use a signed kernel
-> to circumvent the secure boot trust model. In the long run we'll want to
-> support signed kexec payloads, but for the moment we should just disable
-> loading entirely in that situation.
+See
 
-Nacked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+http://lxr.free-electrons.com/source/arch/powerpc/boot/dts/mpc8315erdb.dts#L477
+http://lxr.free-electrons.com/source/arch/arm/mach-pxa/tosa.c#L576
 
-This makes no sense.  The naming CAP_SECURE_FIRMWARE is attrocious,
-you aren't implementing or enforcing secure firmware.
+that's why the trigger name should be predictable, at least at
+boot/probe time.
 
-You don't give any justification for this other than to support some
-silly EFI feature.  Why would anyone want this if we were not booting
-under EFI?
+The actual CAN LED trigger also reflects the actual state of the
+interface (off if down, on if up, blink on activity).
 
-Eric
+Fabio
