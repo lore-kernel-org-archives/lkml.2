@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757837Ab2IDUEQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 16:04:16 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:55202 "EHLO e8.ny.us.ibm.com"
+	id S1757855Ab2IDUEV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 16:04:21 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:55323 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757811Ab2IDUEL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 16:04:11 -0400
+	id S1757836Ab2IDUEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 16:04:16 -0400
 From: Seth Jennings <sjenning@linux.vnet.ibm.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
@@ -16,183 +16,65 @@ Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
         Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
         Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: [PATCH v2 1/3] zsmalloc: promote to mm/
-Date: Tue,  4 Sep 2012 15:02:47 -0500
-Message-Id: <1346788969-4100-2-git-send-email-sjenning@linux.vnet.ibm.com>
+Subject: [PATCH v2 2/3] drivers: add memory management driver class
+Date: Tue,  4 Sep 2012 15:02:48 -0500
+Message-Id: <1346788969-4100-3-git-send-email-sjenning@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1346788969-4100-1-git-send-email-sjenning@linux.vnet.ibm.com>
 References: <1346788969-4100-1-git-send-email-sjenning@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12090420-9360-0000-0000-00000A311EF5
+x-cbid: 12090420-9360-0000-0000-00000A311F97
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch promotes the slab-based zsmalloc memory allocator
-from the staging tree to mm/
+This patchset creates a new driver class under drivers/ for
+memory management related drivers, like zcache.
 
-zcache depends on this allocator for storing compressed RAM pages
-in an efficient way under system wide memory pressure where
-high-order (greater than 0) page allocation are very likely to
-fail.
+This driver class would be for drivers that don't actually enabled
+a hardware device, but rather augment the memory manager in some
+way.
 
-For more information on zsmalloc and its internals, read the
-documentation at the top of the zsmalloc c file.
+In-tree candidates for this driver class are zcache, zram, and
+lowmemorykiller, both in staging.
 
 Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
 ---
- drivers/staging/Kconfig                            |    2 --
- drivers/staging/Makefile                           |    1 -
- drivers/staging/zcache/zcache-main.c               |    4 ++--
- drivers/staging/zram/zram_drv.h                    |    3 +--
- drivers/staging/zsmalloc/Kconfig                   |   10 ----------
- drivers/staging/zsmalloc/Makefile                  |    3 ---
- .../staging/zsmalloc => include/linux}/zsmalloc.h  |    0
- mm/Kconfig                                         |   18 ++++++++++++++++++
- mm/Makefile                                        |    1 +
- .../zsmalloc/zsmalloc-main.c => mm/zsmalloc.c      |    3 +--
- 10 files changed, 23 insertions(+), 22 deletions(-)
- delete mode 100644 drivers/staging/zsmalloc/Kconfig
- delete mode 100644 drivers/staging/zsmalloc/Makefile
- rename {drivers/staging/zsmalloc => include/linux}/zsmalloc.h (100%)
- rename drivers/staging/zsmalloc/zsmalloc-main.c => mm/zsmalloc.c (99%)
+ drivers/Kconfig    |    2 ++
+ drivers/Makefile   |    1 +
+ drivers/mm/Kconfig |    3 +++
+ 3 files changed, 6 insertions(+)
+ create mode 100644 drivers/mm/Kconfig
 
-diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
-index e3402d5..b7f7bc7 100644
---- a/drivers/staging/Kconfig
-+++ b/drivers/staging/Kconfig
-@@ -78,8 +78,6 @@ source "drivers/staging/zram/Kconfig"
+diff --git a/drivers/Kconfig b/drivers/Kconfig
+index 324e958..d126132 100644
+--- a/drivers/Kconfig
++++ b/drivers/Kconfig
+@@ -154,4 +154,6 @@ source "drivers/vme/Kconfig"
  
- source "drivers/staging/zcache/Kconfig"
+ source "drivers/pwm/Kconfig"
  
--source "drivers/staging/zsmalloc/Kconfig"
--
- source "drivers/staging/wlags49_h2/Kconfig"
- 
- source "drivers/staging/wlags49_h25/Kconfig"
-diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
-index 3be59d0..ad74bee 100644
---- a/drivers/staging/Makefile
-+++ b/drivers/staging/Makefile
-@@ -34,7 +34,6 @@ obj-$(CONFIG_DX_SEP)            += sep/
++source "drivers/mm/Kconfig"
++
+ endmenu
+diff --git a/drivers/Makefile b/drivers/Makefile
+index d64a0f7..aa69e1c 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -140,3 +140,4 @@ obj-$(CONFIG_EXTCON)		+= extcon/
+ obj-$(CONFIG_MEMORY)		+= memory/
  obj-$(CONFIG_IIO)		+= iio/
- obj-$(CONFIG_ZRAM)		+= zram/
- obj-$(CONFIG_ZCACHE)		+= zcache/
--obj-$(CONFIG_ZSMALLOC)		+= zsmalloc/
- obj-$(CONFIG_WLAGS49_H2)	+= wlags49_h2/
- obj-$(CONFIG_WLAGS49_H25)	+= wlags49_h25/
- obj-$(CONFIG_FB_SM7XX)		+= sm7xxfb/
-diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index 52b43b7..34b2c5c 100644
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -32,9 +32,9 @@
- #include <linux/crypto.h>
- #include <linux/string.h>
- #include <linux/idr.h>
--#include "tmem.h"
-+#include <linux/zsmalloc.h>
- 
--#include "../zsmalloc/zsmalloc.h"
-+#include "tmem.h"
- 
- #ifdef CONFIG_CLEANCACHE
- #include <linux/cleancache.h>
-diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-index 572c0b1..f6d0925 100644
---- a/drivers/staging/zram/zram_drv.h
-+++ b/drivers/staging/zram/zram_drv.h
-@@ -17,8 +17,7 @@
- 
- #include <linux/spinlock.h>
- #include <linux/mutex.h>
--
--#include "../zsmalloc/zsmalloc.h"
-+#include <linux/zsmalloc.h>
- 
- /*
-  * Some arbitrary value. This is just to catch
-diff --git a/drivers/staging/zsmalloc/Kconfig b/drivers/staging/zsmalloc/Kconfig
-deleted file mode 100644
-index 9084565..0000000
---- a/drivers/staging/zsmalloc/Kconfig
-+++ /dev/null
-@@ -1,10 +0,0 @@
--config ZSMALLOC
--	tristate "Memory allocator for compressed pages"
--	default n
--	help
--	  zsmalloc is a slab-based memory allocator designed to store
--	  compressed RAM pages.  zsmalloc uses virtual memory mapping
--	  in order to reduce fragmentation.  However, this results in a
--	  non-standard allocator interface where a handle, not a pointer, is
--	  returned by an alloc().  This handle must be mapped in order to
--	  access the allocated space.
-diff --git a/drivers/staging/zsmalloc/Makefile b/drivers/staging/zsmalloc/Makefile
-deleted file mode 100644
-index b134848..0000000
---- a/drivers/staging/zsmalloc/Makefile
-+++ /dev/null
-@@ -1,3 +0,0 @@
--zsmalloc-y 		:= zsmalloc-main.o
--
--obj-$(CONFIG_ZSMALLOC)	+= zsmalloc.o
-diff --git a/drivers/staging/zsmalloc/zsmalloc.h b/include/linux/zsmalloc.h
-similarity index 100%
-rename from drivers/staging/zsmalloc/zsmalloc.h
-rename to include/linux/zsmalloc.h
-diff --git a/mm/Kconfig b/mm/Kconfig
-index d5c8019..2586b66 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -411,3 +411,21 @@ config FRONTSWAP
- 	  and swap data is stored as normal on the matching swap device.
- 
- 	  If unsure, say Y to enable frontswap.
+ obj-$(CONFIG_VME_BUS)		+= vme/
++obj-$(CONFIG_MM_DRIVERS)	+= mm/
+diff --git a/drivers/mm/Kconfig b/drivers/mm/Kconfig
+new file mode 100644
+index 0000000..e5b3743
+--- /dev/null
++++ b/drivers/mm/Kconfig
+@@ -0,0 +1,3 @@
++menu "Memory management drivers"
 +
-+config ZSMALLOC
-+	tristate "Memory allocator for compressed pages"
-+	default n
-+	help
-+	  zsmalloc is a slab-based memory allocator designed to store
-+	  compressed RAM pages.  zsmalloc uses a memory pool that combines
-+	  single pages into higher order pages by linking them together
-+	  using the fields of the struct page. Allocations are then
-+	  mapped through copy buffers or VM mapping, in order to reduce
-+	  memory pool fragmentation and increase allocation success rate under
-+	  memory pressure.
-+
-+	  This results in a non-standard allocator interface where
-+	  a handle, not a pointer, is returned by the allocation function.
-+	  This handle must be mapped in order to access the allocated space.
-+
-+	  If unsure, say N.
-diff --git a/mm/Makefile b/mm/Makefile
-index 92753e2..8a3d7bea 100644
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@ -57,3 +57,4 @@ obj-$(CONFIG_DEBUG_KMEMLEAK) += kmemleak.o
- obj-$(CONFIG_DEBUG_KMEMLEAK_TEST) += kmemleak-test.o
- obj-$(CONFIG_CLEANCACHE) += cleancache.o
- obj-$(CONFIG_MEMORY_ISOLATION) += page_isolation.o
-+obj-$(CONFIG_ZSMALLOC) += zsmalloc.o
-diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/mm/zsmalloc.c
-similarity index 99%
-rename from drivers/staging/zsmalloc/zsmalloc-main.c
-rename to mm/zsmalloc.c
-index 09a9d35..6b20429 100644
---- a/drivers/staging/zsmalloc/zsmalloc-main.c
-+++ b/mm/zsmalloc.c
-@@ -78,8 +78,7 @@
- #include <linux/hardirq.h>
- #include <linux/spinlock.h>
- #include <linux/types.h>
--
--#include "zsmalloc.h"
-+#include <linux/zsmalloc.h>
- 
- /*
-  * This must be power of 2 and greater than of equal to sizeof(link_free).
++endmenu
 -- 
 1.7.9.5
 
