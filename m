@@ -1,85 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932323Ab2IDOyS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 10:54:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33847 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757158Ab2IDOyR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 10:54:17 -0400
-Date: Tue, 4 Sep 2012 16:54:14 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
-        Dave Jones <davej@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH v2] memcg: first step towards hierarchical controller
-Message-ID: <20120904145414.GC15683@dhcp22.suse.cz>
-References: <1346687211-31848-1-git-send-email-glommer@parallels.com>
- <20120903170806.GA21682@dhcp22.suse.cz>
- <5045BD25.10301@parallels.com>
- <20120904130905.GA15683@dhcp22.suse.cz>
- <504601B8.2050907@parallels.com>
- <20120904143552.GB15683@dhcp22.suse.cz>
- <50461241.5010300@parallels.com>
+	id S932382Ab2IDOyY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 10:54:24 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:53668 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S932331Ab2IDOyU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 10:54:20 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50461241.5010300@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH] sata_fsl: add workaround for data length mismatch on freescale V2 controller
+Date: Tue, 4 Sep 2012 15:51:26 +0100
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B6FD6@saturn3.aculab.com>
+In-Reply-To: <1346756920-19128-1-git-send-email-Shaohui.Xie@freescale.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+thread-topic: [PATCH] sata_fsl: add workaround for data length mismatch on freescale V2 controller
+thread-index: Ac2Kkh9ZdBtatmThQ8eg5t7slAOLCgAGhGEg
+References: <1346756920-19128-1-git-send-email-Shaohui.Xie@freescale.com>
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Shaohui Xie" <Shaohui.Xie@freescale.com>, <jgarzik@pobox.com>,
+        <linux-ide@vger.kernel.org>
+Cc: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        "Anju Bhartiya" <Anju.Bhartiya@freescale.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 04-09-12 18:37:53, Glauber Costa wrote:
-> On 09/04/2012 06:35 PM, Michal Hocko wrote:
-> > On Tue 04-09-12 17:27:20, Glauber Costa wrote:
-> >> On 09/04/2012 05:09 PM, Michal Hocko wrote:
-> >>> Not really. Do it slowly means that somebody actually _notices_ that
-> >>> something is about to change and they have a lot of time for that. This
-> >>> will be really hard with the config option saying N by default.  People
-> >>> will ignore that until it's too late.
-> >>> We are interested in those users who would keep the config default N and
-> >>> they are (ab)using use_hierarchy=0 in a way which is hard/impossible to
-> >>> fix. This is where distributions might help and they should IMHO but why
-> >>> to put an additional code into upstream? Isn't it sufficient that those
-> >>> who would like to help (and take the risk) would just take the patch?
-> >>
-> >> At least Fedora, seem to frown upon heavily at non-upstream patches.
-> > 
-> > OK, so what about the following approach instead? We won't change the
-> > default but rather shout at people when they actually create subtrees
-> > with use_hierarchy==0. This shouldn't make pointless noise. I do not
-> > remember whether we have considered this previously so sorry if this was
-> > shot down as well.
-> 
-> The warning is fine, but just shouting won't achieve nothing. 
+> +	/* Read command completed register */
+> +	done_mask = ioread32(hcr_base + CC);
+> +
+> +	if (host_priv->quirks & SATA_FSL_QUIRK_V2_ERRATA) {
+> +		if (unlikely(hstatus & INT_ON_DATA_LENGTH_MISMATCH)) {
+> +			for (tag = 0; tag < ATA_MAX_QUEUE; tag++) {
+> +				qc = ata_qc_from_tag(ap, tag);
+> +				if (qc && ata_is_atapi(qc->tf.protocol))
+{
+> +					atapi_flag = 1;
+> +					break;
+> +				}
+> +			}
+> +		}
+> +	}
+> +
+> +	/* Workaround for data length mismatch errata */
+> +	if (atapi_flag) {
 
-I am not so sure about that. Users are usually quite sensitive to WARN
-messages and I can put this kind of patch into older code bases as
-well because it cannot introduce any regression. This could produce
-a much bigger testing base. All we want to achieve at this stage is
-to find out whether we can get rid of the knob and help people to use
-use_hierarchy=1, right?
+Seems to me like the conditionals for this code are all
+in the wrong order - adding code to the normal path.
 
-> I believe it would be really great to have a way to turn the default
-> to 1 - and stop the shouting.
+The whole lot should probably be inside:
+	if (unlikely(hstatus & INT_ON_DATA_LENGTH_MISMATCH)) {
+and the 'atapi_flag' boolean removed.
 
-We already can. You can use /etc/cgconfig (if you are using libcgroup)
-or do it manually.
+I also wonder it this is worthy of an actual quirk?
+Might be worth doing anyway.
 
-> Even if you are doing it in OpenSUSE as a patch, an upstream patch means
-> at least that every distribution is using the same patch, and those who
-> rebase will just flip the config.
-> 
-> I'd personally believe merging both our patches together would achieve a
-> good result.
+	David
 
-I am still not sure we want to add a config option for something that is
-meant to go away. But let's see what others think.
--- 
-Michal Hocko
-SUSE Labs
+
+
