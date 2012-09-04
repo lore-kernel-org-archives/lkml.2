@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756680Ab2IDJPs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 05:15:48 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:8325 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754792Ab2IDJPr (ORCPT
+	id S1756657Ab2IDJSI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 05:18:08 -0400
+Received: from ocse.iitkgp.ernet.in ([203.110.246.9]:33853 "EHLO
+	ocse.iitkgp.ernet.in" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754817Ab2IDJSG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 05:15:47 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 04 Sep 2012 02:15:46 -0700
-Message-ID: <5045C392.8080203@nvidia.com>
-Date: Tue, 4 Sep 2012 14:32:10 +0530
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Tue, 4 Sep 2012 05:18:06 -0400
+X-TM-IMSS-Message-ID: <d1ae8ea9000784d1@WIN-EY2RUGWN1EN>
+Date: Tue, 4 Sep 2012 14:40:08 +0530 (IST)
+From: Sachin Agarwalla <sachin.agarwalla@cse.iitkgp.ernet.in>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Message-ID: <1283617617.10114.1346749808002.JavaMail.root@mailstore2.iitkgp.ac.in>
+In-Reply-To: <5045A6C9.8000101@gmail.com>
+Subject: Re: need help on development of linux kernel
 MIME-Version: 1.0
-To: "balbi@ti.com" <balbi@ti.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "hzpeterchen@gmail.com" <hzpeterchen@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH v2] usb: otg: Move phy interface to separate file.
-References: <1346222821-27650-1-git-send-email-vbyravarasu@nvidia.com> <20120903141306.GL3147@arwen.pp.htv.fi>
-In-Reply-To: <20120903141306.GL3147@arwen.pp.htv.fi>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.3.100.244]
+X-Mailer: Zimbra 6.0.7_GA_2470.RHEL5_64 (ZimbraWebClient - SAF3 (Linux)/6.0.7_GA_2470.RHEL5_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
+Dear Sir/Madam,
+ Thank you for your support.I want to know is the linux kernel cpu scheduling part optimized for scalable multi core architecture.If not then what are the scope if improvements?Can you help me?
 
-On Monday 03 September 2012 07:43 PM, Felipe Balbi wrote:
-> * PGP Signed by an unknown key
->
-> Hi,
->
-> On Wed, Aug 29, 2012 at 12:17:01PM +0530, Venu Byravarasu wrote:
->> As otg.h is containing lots of phy interface related
->> stuff, moving all phy interface related stuff to new
->> file named phy.h
->>
->> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
-> this doesn't apply to my "xceiv" branch. Please rebase there so I don't
-> cause any issues to your patch ;-)
+thanking you,
+waiting for your reply,
+yours faithfully,
+sachinagarwalla
 
-Rebased the change in your tree and pushed a patch.
-Plz merge.
+----- Original Message -----
+From: "Cong Wang" <xiyou.wangcong@gmail.com>
+To: "Sachin Agarwalla" <sachin.agarwalla@cse.iitkgp.ernet.in>
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>
+Sent: Tuesday, September 4, 2012 12:29:21 PM
+Subject: Re: need help on development of linux kernel
 
-Thanks,
-Venu
+On 08/30/2012 12:15 PM, Sachin Agarwalla wrote:
+> Dear Sir/Madam,
+>    I have some questions on development of linux kernel as follows:-
+> 1.I want to know the location of files in linux kernel source code that contains timer initialization and scheduler part.
+
+Scheduler source code is in kernel/sched/* files.
+
+> 2.Also I want to know location of header files(or library files) that are present in the above files.
+
+include/linux/sched.h
+
+> 3.Is there any version of linux kernel that uses openmp or inteltbb or parallelc tool.
+
+No, kernel doesn't use any libraries including libc.
+
