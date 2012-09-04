@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757304Ab2IDOWi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 10:22:38 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:4810 "EHLO relay.sw.ru"
+	id S1757254Ab2IDOWA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 10:22:00 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:6515 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757262Ab2IDOWF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 10:22:05 -0400
+	id S1757157Ab2IDOV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 10:21:57 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 Cc: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>, davej@redhat.com,
         ben@decadent.org.uk, a.p.zijlstra@chello.nl, pjt@google.com,
         lennart@poettering.net, kay.sievers@vrfy.org, tj@kernel.org,
         Glauber Costa <glommer@parallels.com>
-Subject: [RFC 4/5] cpuacct: do not gather cpuacct statistics when not mounted
-Date: Tue,  4 Sep 2012 18:18:19 +0400
-Message-Id: <1346768300-10282-5-git-send-email-glommer@parallels.com>
+Subject: [RFC 1/5] cgroup: allow some comounts to be forced.
+Date: Tue,  4 Sep 2012 18:18:16 +0400
+Message-Id: <1346768300-10282-2-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1346768300-10282-1-git-send-email-glommer@parallels.com>
 References: <1346768300-10282-1-git-send-email-glommer@parallels.com>
@@ -22,13 +22,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, the only test that prevents us from running the expensive
-cpuacct_charge() is cpuacct_subsys.active == true. This will hold at all
-times after the subsystem is activated, even if it is not mounted.
+One of the pain points we have today with cgroups, is the excessive
+flexibility coming from the fact that controllers can be mounted at
+will, without any relationship with each other.
 
-IOW, use it or not, you pay it. By hooking with the bind() callback, we
-can detect when cpuacct is mounted or umounted, and stop collecting
-statistics when this cgroup is not in use.
+Although this is nice in principle, this comes with a cost that is not
+always welcome in practice. The very fact of this being possible is
+already enough to trigger those costs. We cannot assume a common
+hierarchy between controllers, and then hierarchy walks have to be done
+more than once. This happens in hotpaths as well.
+
+This patch introduces a Kconfig option, default n, that will force some
+controllers to be comounted. After some time, we may be able to
+deprecate this mode of operation.
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
 CC: Dave Jones <davej@redhat.com>
@@ -39,57 +45,90 @@ CC: Lennart Poettering <lennart@poettering.net>
 CC: Kay Sievers <kay.sievers@vrfy.org>
 CC: Tejun Heo <tj@kernel.org>
 ---
- kernel/sched/core.c  | 8 ++++++++
- kernel/sched/sched.h | 3 +++
- 2 files changed, 11 insertions(+)
+ include/linux/cgroup.h |  6 ++++++
+ init/Kconfig           |  4 ++++
+ kernel/cgroup.c        | 29 ++++++++++++++++++++++++++++-
+ 3 files changed, 38 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index e46871d..d654bd1 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -8595,6 +8595,13 @@ static struct cftype files[] = {
- 	{ }	/* terminate */
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index d3f5fba..f986ad1 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -531,6 +531,12 @@ struct cgroup_subsys {
+ 
+ 	/* should be defined only by modular subsystems */
+ 	struct module *module;
++
++#ifdef CONFIG_CGROUP_FORCE_COMOUNT
++	/* List of groups that we must be comounted with */
++	int comounts;
++	int must_comount[3];
++#endif
  };
  
-+bool cpuacct_mounted;
+ #define SUBSYS(_x) extern struct cgroup_subsys _x ## _subsys;
+diff --git a/init/Kconfig b/init/Kconfig
+index f64f888..d7d693d 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -680,6 +680,10 @@ config CGROUP_CPUACCT
+ 	  Provides a simple Resource Controller for monitoring the
+ 	  total CPU consumed by the tasks in a cgroup.
+ 
++config CGROUP_FORCE_COMOUNT
++	bool
++	default n
 +
-+void cpuacct_bind(struct cgroup *root)
-+{
-+	cpuacct_mounted = root->root == root_cpuacct.css.cgroup->root;
-+}
+ config RESOURCE_COUNTERS
+ 	bool "Resource counters"
+ 	help
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index b303dfc..137ac62 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1058,6 +1058,33 @@ static int rebind_subsystems(struct cgroupfs_root *root,
+ 	if (root->number_of_cgroups > 1)
+ 		return -EBUSY;
+ 
++#ifdef CONFIG_CGROUP_FORCE_COMOUNT
++	/*
++	 * Some subsystems should not be allowed to be freely mounted in
++	 * separate hierarchies. They may not be present, but if they are, they
++	 * should be together. For compatibility with older kernels, we'll allow
++	 * this to live inside a separate Kconfig option. Each subsys will be
++	 * able to tell us which other subsys it expects to be mounted with.
++	 *
++	 * We do a separate path for this, to avoid unwinding our modifications
++	 * in case of an error.
++	 */
++	for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
++		unsigned long bit = 1UL << i;
++		int j;
 +
- /*
-  * charge this task's execution time to its accounting group.
-  *
-@@ -8628,6 +8635,7 @@ struct cgroup_subsys cpuacct_subsys = {
- 	.destroy = cpuacct_destroy,
- 	.subsys_id = cpuacct_subsys_id,
- 	.base_cftypes = files,
-+	.bind = cpuacct_bind,
- #ifdef CONFIG_CGROUP_FORCE_COMOUNT_CPU
- 	.comounts = 1,
- 	.must_comount = { cpu_cgroup_subsys_id, },
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 1da9fa8..d33f777 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -887,6 +887,7 @@ extern void update_idle_cpu_load(struct rq *this_rq);
- #include <linux/cgroup.h>
++		if (!(bit & added_bits))
++			continue;
++
++		for (j = 0; j < subsys[i]->comounts; j++) {
++			int comount_id = subsys[i]->must_comount[j];
++			struct cgroup_subsys *ss = subsys[comount_id];
++			if ((ss->root != &rootnode) && (ss->root != root))
++				return -EINVAL;
++		}
++	}
++#endif
++
+ 	/* Process each subsystem */
+ 	for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
+ 		struct cgroup_subsys *ss = subsys[i];
+@@ -1634,7 +1661,7 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
+ 			goto unlock_drop;
  
- extern bool cpuacct_from_cpu;
-+extern bool cpuacct_mounted;
- 
- /* track cpu usage of a group of tasks and its child groups */
- struct cpuacct {
-@@ -921,6 +922,8 @@ extern void __cpuacct_charge(struct task_struct *tsk, u64 cputime);
- 
- static inline void cpuacct_charge(struct task_struct *tsk, u64 cputime)
- {
-+	if (unlikely(!cpuacct_mounted))
-+		return;
- #ifdef CONFIG_CGROUP_FORCE_COMOUNT_CPU
- 	if (likely(!cpuacct_from_cpu))
- 		return;
+ 		ret = rebind_subsystems(root, root->subsys_bits);
+-		if (ret == -EBUSY) {
++		if ((ret == -EBUSY) || (ret == -EINVAL)) {
+ 			free_cg_links(&tmp_cg_links);
+ 			goto unlock_drop;
+ 		}
 -- 
 1.7.11.4
 
