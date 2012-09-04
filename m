@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756576Ab2IDJFV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 05:05:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59737 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752722Ab2IDJFT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 05:05:19 -0400
-Date: Tue, 4 Sep 2012 11:05:06 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-X-X-Sender: jikos@twin.jikos.cz
-To: Tejun Heo <tj@kernel.org>, Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, vgoyal@redhat.com, mpatocka@redhat.com,
-        bharrosh@panasas.com, Peter Osterlund <petero2@telia.com>
-Subject: Re: [PATCH v7 4/9] pktcdvd: Switch to bio_kmalloc()
-In-Reply-To: <20120828203247.GC24608@dhcp-172-17-108-109.mtv.corp.google.com>
-Message-ID: <alpine.LRH.2.00.1209041104020.26301@twin.jikos.cz>
-References: <1346175456-1572-1-git-send-email-koverstreet@google.com> <1346175456-1572-5-git-send-email-koverstreet@google.com> <20120828203247.GC24608@dhcp-172-17-108-109.mtv.corp.google.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1756557Ab2IDJJA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 05:09:00 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:46060 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752722Ab2IDJI7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 05:08:59 -0400
+Date: Tue, 4 Sep 2012 10:08:54 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de
+Subject: Re: [PATCH] ARM: ux500: Provide SMSC911x fixed-regulator when not
+ booting DT
+Message-ID: <20120904090846.GA6091@gmail.com>
+References: <1345809612-30992-1-git-send-email-lee.jones@linaro.org>
+ <20120903133333.GE31163@gmail.com>
+ <CACRpkdb_aW-uxf_4GQpRWJhLqD_QujH1BOFeG4MgVHfRasGY+A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdb_aW-uxf_4GQpRWJhLqD_QujH1BOFeG4MgVHfRasGY+A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Aug 2012, Tejun Heo wrote:
-
-> > This is prep work for killing bi_destructor - previously, pktcdvd had
-> > its own pkt_bio_alloc which was basically duplication bio_kmalloc(),
-> > necessitating its own bi_destructor implementation.
+On Tue, Sep 04, 2012 at 10:53:32AM +0200, Linus Walleij wrote:
+> On Mon, Sep 3, 2012 at 3:33 PM, Lee Jones <lee.jones@linaro.org> wrote:
 > 
-> How was this tested?
+> > Author: Lee Jones <lee.jones@linaro.org>
+> > Date:   Fri Aug 24 12:40:58 2012 +0100
+> >
+> >     ARM: ux500: Provide SMSC911x fixed-regulator when not booting DT
+> >
+> >     The SMSC911x Ethernet chip requires a fixed-regulator in order to
+> >     function correctly. We have previously provided a means to obtain
+> >     this during a Device Tree boot, however nothing has been put into
+> >     place when booting with a non-DT kernel. This patch aims to change
+> >     that.
+> >
+> >     Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> 
+> You forgot to add select REGULATOR_FIXED_VOLTAGE to
+> the MOP500 Kconfig entry, but I added it when applying.
 
-I have now tested it and it works properly. You can add
-
-	Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-
-once you will be pushing the patchset through (I will be pushing 
-MAINTAINERS update through my tree to Jens separately).
+I didn't forget. I intentionally left it out because it's
+unconditionally set in the defconfig.
 
 -- 
-Jiri Kosina
-SUSE Labs
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
