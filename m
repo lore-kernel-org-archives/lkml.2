@@ -1,81 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932181Ab2IDNUG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 09:20:06 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:59575 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757035Ab2IDNUE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 09:20:04 -0400
-Date: Tue, 4 Sep 2012 23:19:55 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Rob Herring <robherring2@gmail.com>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the arm-soc tree with the
- arm-current tree
-Message-Id: <20120904231955.fb82c1b44e7c4568f626c915@canb.auug.org.au>
-In-Reply-To: <201209041311.02222.arnd@arndb.de>
-References: <20120904160626.f1dcb67ebbb145053c49da8c@canb.auug.org.au>
-	<20120904090132.GG24085@n2100.arm.linux.org.uk>
-	<5045F7A0.1090400@gmail.com>
-	<201209041311.02222.arnd@arndb.de>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__4_Sep_2012_23_19_55_+1000_Q+=43Gm3pfQvC80+"
+	id S1757107Ab2IDN0k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 09:26:40 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:57284 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757088Ab2IDN0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 09:26:39 -0400
+From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+To: <linux-omap@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
+        <svenkatr@ti.com>
+CC: <rob.herring@calxeda.com>, <linux-kernel@vger.kernel.org>,
+        <grant.likely@secretlab.ca>, <cjb@laptop.org>, <nsekhar@ti.com>,
+        <sudhakar.raj@ti.com>, <gururaja.hebbar@ti.com>,
+        Vaibhav Bedia <vaibhav.bedia@ti.com>
+Subject: [PATCH] mmc: omap_hsmmc: Pass on the suspend failure to the PM core
+Date: Tue, 4 Sep 2012 18:38:29 +0530
+Message-ID: <1346764109-21174-1-git-send-email-gururaja.hebbar@ti.com>
+X-Mailer: git-send-email 1.7.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__4_Sep_2012_23_19_55_+1000_Q+=43Gm3pfQvC80+
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Vaibhav Bedia <vaibhav.bedia@ti.com>
 
-On Tue, 4 Sep 2012 13:11:02 +0000 Arnd Bergmann <arnd@arndb.de> wrote:
->
-> On Tuesday 04 September 2012, Rob Herring wrote:
-> > Right. The PCI i/o reserved area has a dummy physical address of 0 and=
-=20
-> > needs to be skipped by ioremap searches. So we don't set=20
-> > VM_ARM_STATIC_MAPPING to prevent matches by ioremap. The vm_struct sett=
-ings
-> > don't really matter when we do the real mapping of the i/o space.
-> >=20
-> > Here's my merge:
->=20
-> Ok, thanks for the clarification. I've merged Russell's fixes branch
-> into the cleanup/io-pci branch now to resolve the conflict.
+In some cases mmc_suspend_host() is not able to claim the
+host and proceed with the suspend process. The core returns
+-EBUSY to the host controller driver. Unfortunately, the
+host controller driver does not pass on this information
+to the PM core and hence the system suspend process continues.
 
-Even better than me handling it.  Thanks guys.
+In these cases the MMC core gets to an unexpected state
+during resume and multiple issues related to MMC crop up.
+1. Host controller driver starts accessing the device registers
+before the clocks are enabled which leads to a prefetch abort.
+2. A file copy thread which was launched before suspend gets
+stuck due to the host not being reclaimed during resume.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+To avoid such problems pass on the -EBUSY status to the PM core
+from the host controller driver. With this change, MMC core
+suspend might still fail but it does not end up making the
+system unusable. Suspend gets aborted and the user can try
+suspending the system again.
 
---Signature=_Tue__4_Sep_2012_23_19_55_+1000_Q+=43Gm3pfQvC80+
-Content-Type: application/pgp-signature
+Signed-off-by: Vaibhav Bedia <vaibhav.bedia@ti.com>
+Signed-off-by: Hebbar, Gururaja <gururaja.hebbar@ti.com>
+---
+:100644 100644 9afdd20... c3e96a2... M	drivers/mmc/host/omap_hsmmc.c
+ drivers/mmc/host/omap_hsmmc.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+index 9afdd20..c3e96a2 100644
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -2054,6 +2054,7 @@ static int omap_hsmmc_suspend(struct device *dev)
+ 			if (ret)
+ 				dev_dbg(dev, "Unmask interrupt failed\n");
+ 		}
++		ret = -EBUSY;
+ 		goto err;
+ 	}
+ 
+-- 
+1.7.1
 
-iQIcBAEBCAAGBQJQRf/7AAoJEECxmPOUX5FEMi0P/1sYeY5l65Z0wNtwYncYBSNv
-ah7IfM9c7JLRvvjmiP4FS+dJKrZm70BP+F9niNmp2I/j+vtRZ7coRuC6aypNRDMu
-QuDfxw/JhB/p/FGkIiv7fJw5Tb5m0RU1pzw6zKAySPmSrm5MxrfW6WnvnM9WRnhx
-ZwE4EryKtkwenimxLubW2O+VSKfNc/DqqZ9VenZnuSt2une5g8cf5Wkyc+pp9w0s
-ulHY8go7LG9xOZ6JsHB7opS2x5RURZJmRhxf91JJz/q0rrV5FCK02jAXzJTIMrKz
-qb55qQoOIYGrrXJUnMROJGW8XqhexUDaBrasFllcnncxu8qq0DPC8UETjUMKTvuI
-yvl7/B3RHxQuKEgx7u/u+seeeYT3uGs0nrfOcQskSrJCA+/c7muzxUJkWfmhgdTy
-Xs66vsKj57qjqTgTSQk57fgNg6+PeE8HwGGvZ4iMiAvYD/AKn03gAi9WjLZekEfI
-+mEYQfhOMmtKjobDs4surDaledXwrZmTRXTJrMbcxbtfrL5f7a2JlABr6Ckir0qQ
-PsVY7dsOEUi9aWnip9lHQ5IARN+uE678gICoQ5ji3ZopijNyNxV2qcqBMa2pnwfJ
-HIRROIioqdn42yx2wmAqZX+F3ikcw5ejJZH9UGzMe5KyXmmyxJ4uMgZ3ccFBnWr+
-wKo9onPOtzREblyMaRL/
-=tnqQ
------END PGP SIGNATURE-----
-
---Signature=_Tue__4_Sep_2012_23_19_55_+1000_Q+=43Gm3pfQvC80+--
