@@ -1,71 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757614Ab2IDTCT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 15:02:19 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:35403 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757494Ab2IDTCR (ORCPT
+	id S1757591Ab2IDTKX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 15:10:23 -0400
+Received: from rose.urlnameserver.com ([199.168.186.150]:58597 "EHLO
+	rose.urlnameserver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757489Ab2IDTKV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 15:02:17 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Namjae Jeon <linkinjeon@gmail.com>, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v2 4/5] fat: eliminate orphaned inode number allocation
-References: <1346774312-8142-1-git-send-email-linkinjeon@gmail.com>
-	<87mx15910k.fsf@devron.myhome.or.jp>
-	<87fw6x90o3.fsf@devron.myhome.or.jp>
-	<20120904183815.GA29369@fieldses.org>
-Date: Wed, 05 Sep 2012 04:02:13 +0900
-In-Reply-To: <20120904183815.GA29369@fieldses.org> (J. Bruce Fields's message
-	of "Tue, 4 Sep 2012 14:38:15 -0400")
-Message-ID: <87y5kp7gsq.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+	Tue, 4 Sep 2012 15:10:21 -0400
+X-Greylist: delayed 4012 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Sep 2012 15:10:21 EDT
+From: "Reklam Muziginiz" <jingleplusjingle@gmail.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Reply-To: jingleplusjingle@gmail.com
+Date: Tue, 04 Sep 2012 14:44:44 +0300
+Subject: Reklam (jingle) muziginiz ile ilgili
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-9
+Content-Transfer-Encoding: 8BIT
+X-Mailer: aspNetEmail ver 3.6.0.77
+Message-ID: <COMPUTER30de26e0035f4130b3c67c634185663e@computer>
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - rose.urlnameserver.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - gmail.com
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"J. Bruce Fields" <bfields@fieldses.org> writes:
+     Merhaba,
 
-> On Wed, Sep 05, 2012 at 02:07:40AM +0900, OGAWA Hirofumi wrote:
->> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> writes:
->> 
->> > Namjae Jeon <linkinjeon@gmail.com> writes:
->> >
->> >> From: Namjae Jeon <namjae.jeon@samsung.com>
->> >>
->> >> Maintain a list of inode(i_pos) numbers of orphaned inodes (i.e the
->> >> inodes that have been unlinked but still having open file
->> >> descriptors).At file/directory creation time, skip using such i_pos
->> >> values.Removal of the i_pos from the list is done during inode eviction.
->> >
->> > What happens if the directory (has busy entries) was completely removed?
->> >
->> >
->> > And Al's point is important for NFS too. If you want stable ino for NFS,
->> > you never can't change it.
->> 
->> s/never can't/never can/
->
-> If vfat exports aren't fixable, maybe we should just remove that
-> feature?
->
-> I'm afraid that having unfixable half-working vfat exports is just an
-> attractive nuisance that causes users and developers to waste their
-> time....
+    ben reklam müzikleri hazýrlamakta olan þirketlerin sanatçýsý Okan Akdeniz.
 
-In historically, it was introduced by Neil Brown, when nfs export
-interface was rewritten (I'm not sure what was intended).
+    Reklam mÜziklerinde kendi giriþimlerimin olmasý adýna size reklam müziði
 
-Personally, I'm ok to remove it though, it is really personal
-opinion. The state would be rather I don't have strong opinion to
-remove.
+    dediðimiz kurumsal jingle hazýrladým.
 
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+     Ajans olmadýðýmýz için rakam oldukça uygun. 
+
+    Müzisyen ekibimle birlikte birçok büyük þirketlere reklam müziklerini biz
+
+    hazýrlamaktayýz. Ama pek bilinmeyiz. efe raký, ankamol, abalýoðlu, havan
+
+    erkek giyim kc göksu alýþveriþ merkezi, PTT, Pamukkale Otobüs Þirketi gibi
+
+    bir çok yere reklam müziklerini ben hazýrladým.
+
+    Nerelerde kullanabilirsiniz?
+
+     * Radyo ve TV en yaygýn olaný
+
+     * Þirket telefonu bekleme müziði olarak
+
+     * Fuar standlarda
+
+     * Web sayfanýzda ingilizce ve türkçe ayrý ayrý yapýlan reklam müzikleriyle
+
+    daha kýsa versiyonu
+
+     * tanýtým cd lerinizde hem ingilizce hem türkçe
+
+     * Þirket çalýþanlarýnýzýn cep telefonlarýnda telefon sesi olarak
+
+    Dahasý sizin yaratýcýlýðýnýza kalmýþ.
+
+     Neden gerekli?
+
+     Çünkü müzik unutulmaz görsel reklam ve broþurler yok olur gider. Pirelli,
+
+    saray saray saray, eti eti eti...Nasýl? hemen aklýnýza geldi melodisi.
+
+    Yýllar öncesinden olmasýna raðmen... Daha fazla bu konuda söze gerek yok
+
+    sanýrým.
+
+     Lütfen daha geniþ bilgi için http://www.jingleplus.com da reklam müzikleri
+
+    bölümünden referanslarýma bakýn. Yani bu iþte neredeyse 10 yýldýr varým.
+
+    Ayrýca sanatçýlara beste satmaktayým. En son Rafet El Roman ýn sevdim ama
+
+    sonu yoktu adlý þarkýsýnýn bestecisiyim. Size özel hazýrladýðým 2
+
+    örnek demo ücretsizdir. Dinlemenizi istiyorum. Beðenirseniz alýrsýnýz.
+
+    Ýstediðiniz deðiþiklikleri size hazýrlar hatta 1 senelikte her türlü
+
+    reklam müziðinize seslendirmelerinizi de ücretsiz yaparým. Bunun yanýnda
+
+    yeni örnek isterseniz ve benimle çalýþmak
+
+    isterseniz telefonumuz 05353725885 .Bana en azýndan olumlu ya da olumsuz
+
+    cevap yazarsanýz çok memnun olurum.
+
+     Ýyi çalýþmalar ve bol kazançlý günler dilerim.
+
+     Ve not: Reklam müziklerimi beðeneceðinize eminim. Ayrýca dilerseniz
+
+    ingilizce olarakta seslendirilebileceðini bilmenizi istiyorum. ( web
+
+    sayfasý ve yurt dýþý tanýtým CD leri için)
+
+   
+
+     Halkla iliþkiler Pazarlama
+
+     Ahmet Odabaþý
+
+     Cep: 0535 372 58 85
+
+    diðer iletiþim adresi :ahmetodabasi@yahoo.com.tr
+
+
+
+
+
+
+
