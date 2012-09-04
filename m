@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932644Ab2IDRZc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 13:25:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42967 "EHLO mx2.suse.de"
+	id S932654Ab2IDR0B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 13:26:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42949 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757489Ab2IDRYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 13:24:46 -0400
+	id S1757474Ab2IDRYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 13:24:45 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
@@ -14,65 +14,105 @@ Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
         Chuck Lever <chuck.lever@oracle.com>, Joonsoo Kim <js1304@gmail.com>,
         Pekka@suse.de, "Enberg <penberg"@kernel.org,
         David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 4/4] Squelch compiler warning in sk_rmem_schedule()
-Date: Tue,  4 Sep 2012 18:24:39 +0100
-Message-Id: <1346779479-1097-5-git-send-email-mgorman@suse.de>
+Subject: [PATCH 3/4] slub: consider pfmemalloc_match() in get_partial_node()
+Date: Tue,  4 Sep 2012 18:24:38 +0100
+Message-Id: <1346779479-1097-4-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1346779479-1097-1-git-send-email-mgorman@suse.de>
 References: <1346779479-1097-1-git-send-email-mgorman@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chuck Lever <chuck.lever@oracle.com>
+From: Joonsoo Kim <js1304@gmail.com>
 
-In file included from linux/include/linux/tcp.h:227:0,
-                 from linux/include/linux/ipv6.h:221,
-                 from linux/include/net/ipv6.h:16,
-                 from linux/include/linux/sunrpc/clnt.h:26,
-                 from linux/net/sunrpc/stats.c:22:
-linux/include/net/sock.h: In function ‘sk_rmem_schedule’:
-linux/nfs-2.6/include/net/sock.h:1339:13: warning: comparison between
-  signed and unsigned integer expressions [-Wsign-compare]
+The function get_partial() is currently not checking pfmemalloc_match()
+meaning that it is possible for pfmemalloc pages to leak to non-pfmemalloc
+users. This is a problem in the following situation.  Assume that there is
+a request from normal allocation and there are no objects in the per-cpu
+cache and no node-partial slab.
 
-Seen with gcc (GCC) 4.6.3 20120306 (Red Hat 4.6.3-2) using the
--Wextra option.
+In this case, slab_alloc enters the slow path and new_slab_objects()
+is called which may return a PFMEMALLOC page. As the current user is not
+allowed to access PFMEMALLOC page, deactivate_slab() is called ([5091b74a:
+mm: slub: optimise the SLUB fast path to avoid pfmemalloc checks]) and
+returns an object from PFMEMALLOC page.
 
-[c76562b6: netvm: prevent a stream-specific deadlock] accidentally replaced
-the "size" parameter of sk_rmem_schedule() with an unsigned int. This
-changes the semantics of the comparison in the return statement.
+Next time, when we get another request from normal allocation, slab_alloc()
+enters the slow-path and calls new_slab_objects().  In new_slab_objects(),
+we call get_partial() and get a partial slab which was just deactivated
+but is a pfmemalloc page. We extract one object from it and re-deactivate.
 
-In sk_wmem_schedule we have syntactically the same comparison, but
-"size" is a signed integer.  In addition, __sk_mem_schedule() takes
-a signed integer for its "size" parameter, so there is an implicit
-type conversion in sk_rmem_schedule() anyway.
+"deactivate -> re-get in get_partial -> re-deactivate" occures repeatedly.
 
-Revert the "size" parameter back to a signed integer so that the
-semantics of the expressions in both sk_[rw]mem_schedule() are
-exactly the same.
+As a result, access to PFMEMALLOC page is not properly restricted and it
+can cause a performance degradation due to frequent deactivation.
+deactivation frequently.
 
-Signed-off-by: Chuck Lever <chuck.lever@oracle.com>
+This patch changes get_partial_node() to take pfmemalloc_match() into
+account and prevents the "deactivate -> re-get in get_partial() scenario.
+Instead, new_slab() is called.
+
+Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+Acked-by: David Rientjes <rientjes@google.com>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/net/sock.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/slub.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index 72132ae..adb7da2 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -1332,7 +1332,7 @@ static inline bool sk_wmem_schedule(struct sock *sk, int size)
+diff --git a/mm/slub.c b/mm/slub.c
+index 8f78e25..2fdd96f9e9 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1524,12 +1524,13 @@ static inline void *acquire_slab(struct kmem_cache *s,
  }
  
- static inline bool
--sk_rmem_schedule(struct sock *sk, struct sk_buff *skb, unsigned int size)
-+sk_rmem_schedule(struct sock *sk, struct sk_buff *skb, int size)
+ static int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain);
++static inline bool pfmemalloc_match(struct page *page, gfp_t gfpflags);
+ 
+ /*
+  * Try to allocate a partial slab from a specific node.
+  */
+-static void *get_partial_node(struct kmem_cache *s,
+-		struct kmem_cache_node *n, struct kmem_cache_cpu *c)
++static void *get_partial_node(struct kmem_cache *s, struct kmem_cache_node *n,
++				struct kmem_cache_cpu *c, gfp_t flags)
  {
- 	if (!sk_has_account(sk))
- 		return true;
+ 	struct page *page, *page2;
+ 	void *object = NULL;
+@@ -1545,9 +1546,13 @@ static void *get_partial_node(struct kmem_cache *s,
+ 
+ 	spin_lock(&n->list_lock);
+ 	list_for_each_entry_safe(page, page2, &n->partial, lru) {
+-		void *t = acquire_slab(s, n, page, object == NULL);
++		void *t;
+ 		int available;
+ 
++		if (!pfmemalloc_match(page, flags))
++			continue;
++
++		t = acquire_slab(s, n, page, object == NULL);
+ 		if (!t)
+ 			break;
+ 
+@@ -1614,7 +1619,7 @@ static void *get_any_partial(struct kmem_cache *s, gfp_t flags,
+ 
+ 			if (n && cpuset_zone_allowed_hardwall(zone, flags) &&
+ 					n->nr_partial > s->min_partial) {
+-				object = get_partial_node(s, n, c);
++				object = get_partial_node(s, n, c, flags);
+ 				if (object) {
+ 					/*
+ 					 * Return the object even if
+@@ -1643,7 +1648,7 @@ static void *get_partial(struct kmem_cache *s, gfp_t flags, int node,
+ 	void *object;
+ 	int searchnode = (node == NUMA_NO_NODE) ? numa_node_id() : node;
+ 
+-	object = get_partial_node(s, get_node(s, searchnode), c);
++	object = get_partial_node(s, get_node(s, searchnode), c, flags);
+ 	if (object || node != NUMA_NO_NODE)
+ 		return object;
+ 
 -- 
 1.7.9.2
 
