@@ -1,57 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932680Ab2IDVfS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 17:35:18 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:43736 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757858Ab2IDVfP (ORCPT
+	id S1757911Ab2IDVf7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 17:35:59 -0400
+Received: from mail-yw0-f52.google.com ([209.85.213.52]:47781 "EHLO
+	mail-yw0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932695Ab2IDVfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 17:35:15 -0400
-Date: Tue, 4 Sep 2012 22:39:57 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: ebiederm@xmission.com (Eric W. Biederman)
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: Re: [PATCH 07/11] kexec: Disable in a secure boot environment
-Message-ID: <20120904223957.50f6a3b9@pyramind.ukuu.org.uk>
-In-Reply-To: <87r4qhwkx9.fsf@xmission.com>
-References: <1346774117-2277-1-git-send-email-mjg@redhat.com>
-	<1346774117-2277-8-git-send-email-mjg@redhat.com>
-	<87txvdzgur.fsf@xmission.com>
-	<20120904202205.GA28903@srcf.ucam.org>
-	<87r4qhwkx9.fsf@xmission.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Sep 2012 17:35:45 -0400
+From: Fabio Estevam <festevam@gmail.com>
+To: herbert@gondor.hengli.com.au
+Cc: kernel@pengutronix.de, linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH v3 2/2] hw_random: mxc-rnga: Access data via structure
+Date: Tue,  4 Sep 2012 18:35:22 -0300
+Message-Id: <1346794522-25289-2-git-send-email-festevam@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1346794522-25289-1-git-send-email-festevam@gmail.com>
+References: <1346794522-25289-1-git-send-email-festevam@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Well, given that approximately everyone will be booting under EFI within 
-> > 18 months, treating it as a niche case seems a little short sighted.
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-Actually the majority of Linux devices are not PCs 8)
+In current driver, everytime we need to access the rng clock
+,ie to enable or disable it, a call to clk_get is done.
 
-> > secondly, there are already several non-EFI platforms that want to enact 
-> > a policy preventing root from being able to arbitrarily replace the 
-> > kernel. Given that people are doing this in the wild, it makes sense to 
-> > move towards offering that policy in the mainline kernel.
-> 
-> Either this code makes sense without an appeal to EFI or this code makes
-> no sense.
+This is not correct and the preferred way is to provide a rng data structure
+that could be used for accessing rng resources.
 
-Yes - and the capability is I think the right starting point (although
-you'll never make any OS locked down this way even if you are not in fact
-violating the GPLv2 license by doing so, which I suspect will be the case
-for some implementations)
+Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+---
+Changes since v2:
+- Added Ack and Cc maintainer (Herbert)
+Changes since v1:
+- No changes. Newly introduced in this version
+ drivers/char/hw_random/mxc-rnga.c |  108 ++++++++++++++++++-------------------
+ 1 file changed, 51 insertions(+), 57 deletions(-)
 
-> So please rework this to come from an angle that makes sense all by
-> itself.
+diff --git a/drivers/char/hw_random/mxc-rnga.c b/drivers/char/hw_random/mxc-rnga.c
+index 62c7efe..f05d857 100644
+--- a/drivers/char/hw_random/mxc-rnga.c
++++ b/drivers/char/hw_random/mxc-rnga.c
+@@ -59,16 +59,21 @@
+ #define RNGA_STATUS_LAST_READ_STATUS	0x00000002
+ #define RNGA_STATUS_SECURITY_VIOLATION	0x00000001
+ 
+-static struct platform_device *rng_dev;
++struct mxc_rng {
++	struct device *dev;
++	struct hwrng rng;
++	void __iomem *mem;
++	struct clk *clk;
++};
+ 
+ static int mxc_rnga_data_present(struct hwrng *rng, int wait)
+ {
+-	void __iomem *rng_base = (void __iomem *)rng->priv;
+ 	int i;
++	struct mxc_rng *mxc_rng = container_of(rng, struct mxc_rng, rng);
+ 
+ 	for (i = 0; i < 20; i++) {
+ 		/* how many random numbers are in FIFO? [0-16] */
+-		int level = (__raw_readl(rng_base + RNGA_STATUS) &
++		int level = (__raw_readl(mxc_rng->mem + RNGA_STATUS) &
+ 				RNGA_STATUS_LEVEL_MASK) >> 8;
+ 		if (level || !wait)
+ 			return !!level;
+@@ -81,20 +86,20 @@ static int mxc_rnga_data_read(struct hwrng *rng, u32 * data)
+ {
+ 	int err;
+ 	u32 ctrl;
+-	void __iomem *rng_base = (void __iomem *)rng->priv;
++	struct mxc_rng *mxc_rng = container_of(rng, struct mxc_rng, rng);
+ 
+ 	/* retrieve a random number from FIFO */
+-	*data = __raw_readl(rng_base + RNGA_OUTPUT_FIFO);
++	*data = __raw_readl(mxc_rng->mem + RNGA_OUTPUT_FIFO);
+ 
+ 	/* some error while reading this random number? */
+-	err = __raw_readl(rng_base + RNGA_STATUS) & RNGA_STATUS_ERROR_INT;
++	err = __raw_readl(mxc_rng->mem + RNGA_STATUS) & RNGA_STATUS_ERROR_INT;
+ 
+ 	/* if error: clear error interrupt, but doesn't return random number */
+ 	if (err) {
+-		dev_dbg(&rng_dev->dev, "Error while reading random number!\n");
+-		ctrl = __raw_readl(rng_base + RNGA_CONTROL);
++		dev_dbg(mxc_rng->dev, "Error while reading random number!\n");
++		ctrl = __raw_readl(mxc_rng->mem + RNGA_CONTROL);
+ 		__raw_writel(ctrl | RNGA_CONTROL_CLEAR_INT,
+-					rng_base + RNGA_CONTROL);
++					mxc_rng->mem + RNGA_CONTROL);
+ 		return 0;
+ 	} else
+ 		return 4;
+@@ -103,22 +108,22 @@ static int mxc_rnga_data_read(struct hwrng *rng, u32 * data)
+ static int mxc_rnga_init(struct hwrng *rng)
+ {
+ 	u32 ctrl, osc;
+-	void __iomem *rng_base = (void __iomem *)rng->priv;
++	struct mxc_rng *mxc_rng = container_of(rng, struct mxc_rng, rng);
+ 
+ 	/* wake up */
+-	ctrl = __raw_readl(rng_base + RNGA_CONTROL);
+-	__raw_writel(ctrl & ~RNGA_CONTROL_SLEEP, rng_base + RNGA_CONTROL);
++	ctrl = __raw_readl(mxc_rng->mem + RNGA_CONTROL);
++	__raw_writel(ctrl & ~RNGA_CONTROL_SLEEP, mxc_rng->mem + RNGA_CONTROL);
+ 
+ 	/* verify if oscillator is working */
+-	osc = __raw_readl(rng_base + RNGA_STATUS);
++	osc = __raw_readl(mxc_rng->mem + RNGA_STATUS);
+ 	if (osc & RNGA_STATUS_OSC_DEAD) {
+-		dev_err(&rng_dev->dev, "RNGA Oscillator is dead!\n");
++		dev_err(mxc_rng->dev, "RNGA Oscillator is dead!\n");
+ 		return -ENODEV;
+ 	}
+ 
+ 	/* go running */
+-	ctrl = __raw_readl(rng_base + RNGA_CONTROL);
+-	__raw_writel(ctrl | RNGA_CONTROL_GO, rng_base + RNGA_CONTROL);
++	ctrl = __raw_readl(mxc_rng->mem + RNGA_CONTROL);
++	__raw_writel(ctrl | RNGA_CONTROL_GO, mxc_rng->mem + RNGA_CONTROL);
+ 
+ 	return 0;
+ }
+@@ -126,40 +131,40 @@ static int mxc_rnga_init(struct hwrng *rng)
+ static void mxc_rnga_cleanup(struct hwrng *rng)
+ {
+ 	u32 ctrl;
+-	void __iomem *rng_base = (void __iomem *)rng->priv;
++	struct mxc_rng *mxc_rng = container_of(rng, struct mxc_rng, rng);
+ 
+-	ctrl = __raw_readl(rng_base + RNGA_CONTROL);
++	ctrl = __raw_readl(mxc_rng->mem + RNGA_CONTROL);
+ 
+ 	/* stop rnga */
+-	__raw_writel(ctrl & ~RNGA_CONTROL_GO, rng_base + RNGA_CONTROL);
++	__raw_writel(ctrl & ~RNGA_CONTROL_GO, mxc_rng->mem + RNGA_CONTROL);
+ }
+ 
+-static struct hwrng mxc_rnga = {
+-	.name = "mxc-rnga",
+-	.init = mxc_rnga_init,
+-	.cleanup = mxc_rnga_cleanup,
+-	.data_present = mxc_rnga_data_present,
+-	.data_read = mxc_rnga_data_read
+-};
+-
+ static int __init mxc_rnga_probe(struct platform_device *pdev)
+ {
+ 	int err = -ENODEV;
+-	struct clk *clk;
+ 	struct resource *res, *mem;
+-	void __iomem *rng_base = NULL;
+-
+-	if (rng_dev)
+-		return -EBUSY;
+-
+-	clk = clk_get(&pdev->dev, NULL);
+-	if (IS_ERR(clk)) {
++	struct mxc_rng *mxc_rng;
++
++	mxc_rng = devm_kzalloc(&pdev->dev, sizeof(struct mxc_rng),
++					GFP_KERNEL);
++	if (!mxc_rng)
++		return -ENOMEM;
++
++	mxc_rng->dev = &pdev->dev;
++	mxc_rng->rng.name = "mxc-rnga";
++	mxc_rng->rng.init = mxc_rnga_init;
++	mxc_rng->rng.cleanup = mxc_rnga_cleanup,
++	mxc_rng->rng.data_present = mxc_rnga_data_present,
++	mxc_rng->rng.data_read = mxc_rnga_data_read,
++
++	mxc_rng->clk = devm_clk_get(&pdev->dev, NULL);
++	if (IS_ERR(mxc_rng->clk)) {
+ 		dev_err(&pdev->dev, "Could not get rng_clk!\n");
+-		err = PTR_ERR(clk);
++		err = PTR_ERR(mxc_rng->clk);
+ 		goto out;
+ 	}
+ 
+-	clk_prepare_enable(clk);
++	clk_prepare_enable(mxc_rng->clk);
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!res) {
+@@ -173,36 +178,27 @@ static int __init mxc_rnga_probe(struct platform_device *pdev)
+ 		goto err_region;
+ 	}
+ 
+-	rng_base = ioremap(res->start, resource_size(res));
+-	if (!rng_base) {
++	mxc_rng->mem = ioremap(res->start, resource_size(res));
++	if (!mxc_rng->mem) {
+ 		err = -ENOMEM;
+ 		goto err_ioremap;
+ 	}
+ 
+-	mxc_rnga.priv = (unsigned long)rng_base;
+-
+-	err = hwrng_register(&mxc_rnga);
++	err = hwrng_register(&mxc_rng->rng);
+ 	if (err) {
+ 		dev_err(&pdev->dev, "MXC RNGA registering failed (%d)\n", err);
+-		goto err_register;
++		goto err_ioremap;
+ 	}
+ 
+-	rng_dev = pdev;
+-
+ 	dev_info(&pdev->dev, "MXC RNGA Registered.\n");
+ 
+ 	return 0;
+ 
+-err_register:
+-	iounmap(rng_base);
+-	rng_base = NULL;
+-
+ err_ioremap:
+ 	release_mem_region(res->start, resource_size(res));
+ 
+ err_region:
+-	clk_disable_unprepare(clk);
+-	clk_put(clk);
++	clk_disable_unprepare(mxc_rng->clk);
+ 
+ out:
+ 	return err;
+@@ -211,17 +207,15 @@ out:
+ static int __exit mxc_rnga_remove(struct platform_device *pdev)
+ {
+ 	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	void __iomem *rng_base = (void __iomem *)mxc_rnga.priv;
+-	struct clk *clk = clk_get(&pdev->dev, NULL);
++	struct mxc_rng *mxc_rng = platform_get_drvdata(pdev);
+ 
+-	hwrng_unregister(&mxc_rnga);
++	hwrng_unregister(&mxc_rng->rng);
+ 
+-	iounmap(rng_base);
++	iounmap(mxc_rng->mem);
+ 
+ 	release_mem_region(res->start, resource_size(res));
+ 
+-	clk_disable_unprepare(clk);
+-	clk_put(clk);
++	clk_disable_unprepare(mxc_rng->clk);
+ 
+ 	return 0;
+ }
+-- 
+1.7.9.5
 
-I think it needs to be defined in terms of what the capability is
-supposed to guarantee. I have a feeling Matthew has a pretty clear idea
-about that in his head so can nail it fairly precisely ?
-
-Alan
