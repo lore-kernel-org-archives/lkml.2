@@ -1,328 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757085Ab2IDPVU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 11:21:20 -0400
-Received: from mga02.intel.com ([134.134.136.20]:21030 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754198Ab2IDPVT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 11:21:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,367,1344236400"; 
-   d="scan'208";a="196564792"
-Subject: Re: [RFC PATCH 2/2] mm: Batch page_check_references in
- shrink_page_list sharing the same i_mmap_mutex
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Matthew Wilcox <willy@linux.intel.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andi Kleen <ak@linux.intel.com>, linux-mm@kvack.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Alex Shi <alex.shi@intel.com>
-In-Reply-To: <1345596500.13492.264.camel@schen9-DESK>
-References: <1345251998.13492.235.camel@schen9-DESK>
-	 <1345480982.13492.239.camel@schen9-DESK>
-	 <20120821132129.GC6960@linux.intel.com>
-	 <1345596500.13492.264.camel@schen9-DESK>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 04 Sep 2012 08:21:17 -0700
-Message-ID: <1346772077.13492.267.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S932323Ab2IDPef (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 11:34:35 -0400
+Received: from [213.199.154.206] ([213.199.154.206]:15787 "EHLO
+	am1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S932181Ab2IDPee (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 11:34:34 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -8
+X-BigFish: VPS-8(zz98dI936eI1433M1432Izz1202hzzz2dh668h839h944hd25hf0ah11b5h121eh1220h1155h)
+X-WSS-ID: 0M9U0JG-01-EI8-02
+X-M-MSG: 
+Date: Tue, 4 Sep 2012 17:33:12 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: i386, v3.6-rc3: Kernel panic - not syncing: Fatal exception in
+ interrupt
+Message-ID: <20120904153312.GV8285@erda.amd.com>
+References: <20120827151427.GE8285@erda.amd.com>
+ <20120828081206.GG8285@erda.amd.com>
+ <1346771776.27919.4.camel@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1346771776.27919.4.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-08-21 at 17:48 -0700, Tim Chen wrote:
+On 04.09.12 11:16:16, Steven Rostedt wrote:
+> On Tue, 2012-08-28 at 10:12 +0200, Robert Richter wrote:
 
+> > BUG: unable to handle kernel NULL pointer dereference at 00000040
+> > IP: [<c100422f>] print_context_stack+0x6e/0x8d
+> > *pde = 00000000 
+> > Oops: 0000 [#1] SMP 
+> > Modules linked in:
+> > 
+> > Pid: 15531, comm: perl Not tainted 3.5.0-oprofile-i386-standard-g28a33cb #2 Hewlett-Packard HP xw9400 Workstation/0A1Ch
+> > EIP: 0060:[<c100422f>] EFLAGS: 00010097 CPU: 3
+> > EIP is at print_context_stack+0x6e/0x8d
+> > EAX: ffffe000 EBX: 00000040 ECX: f4bd1f94 EDX: 00000040
+> > ESI: f4bd1f94 EDI: f4bd1f94 EBP: f5517ec0 ESP: f5517ea0
+> >  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+> > CR0: 8005003b CR2: 00000040 CR3: 34403000 CR4: 000007d0
+> > DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+> > DR6: ffff0ff0 DR7: 00000400
+> > Process perl (pid: 15531, ti=f5516000 task=f4f6bbc0 task.ti=f4bd0000)
+> > Stack:
+> >  000003e8 ffffe000 00001ffc f4b8e380 00000000 00000040 f4bd1f94 c1541178
+> >  f5517ef0 c1003717 c1541178 f5517f04 00000000 f5517edc 00000000 00000000
+> >  f5517ee8 f4bd1f94 f5517fc4 00000001 f5517f1c c12d3ba4 00000000 c1541178
+> > Call Trace:
+> >  [<c1003717>] dump_trace+0x7b/0xa1
+> >  [<c12d3ba4>] x86_backtrace+0x40/0x88
+> >  [<c12d2498>] ? oprofile_add_sample+0x56/0x84
+> >  [<c12d24b7>] oprofile_add_sample+0x75/0x84
+> >  [<c12d48e3>] op_amd_check_ctrs+0x46/0x260
+> >  [<c10328b9>] ? wake_up_worker+0x19/0x1b
+> >  [<c103331a>] ? insert_work+0x58/0x5c
+> >  [<c12d4195>] profile_exceptions_notify+0x23/0x4c
+> >  [<c138b497>] nmi_handle+0x31/0x4a
+> >  [<c102734f>] ? ftrace_define_fields_irq_handler_entry+0x45/0x45
+> >  [<c138b559>] do_nmi+0xa9/0x304
+> >  [<c102c2e7>] ? run_timer_softirq+0x2a/0x1f5
+> >  [<c102734f>] ? ftrace_define_fields_irq_handler_entry+0x45/0x45
+> >  [<c138ae4d>] nmi_stack_correct+0x28/0x2d
+> >  [<c102734f>] ? ftrace_define_fields_irq_handler_entry+0x45/0x45
+> >  [<c10035f7>] ? do_softirq+0x4b/0x7f
+> >  <IRQ> 
+> >  [<c10275cc>] irq_exit+0x35/0x5b
+> >  [<c101689e>] smp_apic_timer_interrupt+0x6c/0x7a
+> >  [<c138abae>] apic_timer_interrupt+0x2a/0x30
+> > Code: 89 fe eb 08 31 c9 8b 45 0c ff 55 ec 83 c3 04 83 7d 10 00 74 0c 3b 5d 10 73 26 3b 5d e4 73 0c eb 1f 3b 5d f0 76 1a 3b 5d e8 73 15 <8b> 13 89 d0 89 55 e0 e8 9d 16 03 00 85 c0 8b 55 e0 75 a6 eb cc 
+> > EIP: [<c100422f>] print_context_stack+0x6e/0x8d SS:ESP 0068:f5517ea0
+> > CR2: 0000000000000040
+> > ---[ end trace 0cce5d2b7aa480ce ]---
+> > Kernel panic - not syncing: Fatal exception in interrupt
 > 
-> Thanks to Matthew's suggestions on improving the patch. Here's the
-> updated version.  It seems to be sane when I booted my machine up.  I
-> will put it through more testing when I get a chance.
-> 
-> Tim
-> 
+> Could you send me the config file and post the entire dmesg somewhere.
 
-Matthew,
+Wei found the root cause of this that is a wrong calcuation in
+kernel_stack_pointer() in softirq context for i386. I sent a fix, see
+my today's mail with subject:
 
-The new patch seems to be causing some of the workloads with mmaped file
-read to seg fault.  Will need to dig further to find out why.
+ Re: [PATCH 1/1] x86/oprofile: Fix the calltrace upon profiling some specified events with oprofile.
 
-Tim
+-Robert
 
-
-> ---
-> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-> ---
-> diff --git a/include/linux/rmap.h b/include/linux/rmap.h
-> index fd07c45..f1320b1 100644
-> --- a/include/linux/rmap.h
-> +++ b/include/linux/rmap.h
-> @@ -156,8 +156,11 @@ static inline void page_dup_rmap(struct page *page)
->  /*
->   * Called from mm/vmscan.c to handle paging out
->   */
-> -int page_referenced(struct page *, int is_locked,
-> -			struct mem_cgroup *memcg, unsigned long *vm_flags);
-> +int needs_page_mmap_mutex(struct page *page);
-> +int page_referenced(struct page *, int is_locked, struct mem_cgroup *memcg,
-> +				unsigned long *vm_flags);
-> +int __page_referenced(struct page *, int is_locked, struct mem_cgroup *memcg,
-> +				unsigned long *vm_flags);
->  int page_referenced_one(struct page *, struct vm_area_struct *,
->  	unsigned long address, unsigned int *mapcount, unsigned long *vm_flags);
->  
-> @@ -176,6 +179,7 @@ enum ttu_flags {
->  bool is_vma_temporary_stack(struct vm_area_struct *vma);
->  
->  int try_to_unmap(struct page *, enum ttu_flags flags);
-> +int __try_to_unmap(struct page *, enum ttu_flags flags);
->  int try_to_unmap_one(struct page *, struct vm_area_struct *,
->  			unsigned long address, enum ttu_flags flags);
->  
-> diff --git a/mm/rmap.c b/mm/rmap.c
-> index 5b5ad58..ca8cd21 100644
-> --- a/mm/rmap.c
-> +++ b/mm/rmap.c
-> @@ -843,8 +843,7 @@ static int page_referenced_file(struct page *page,
->  	 * so we can safely take mapping->i_mmap_mutex.
->  	 */
->  	BUG_ON(!PageLocked(page));
-> -
-> -	mutex_lock(&mapping->i_mmap_mutex);
-> +	BUG_ON(!mutex_is_locked(&mapping->i_mmap_mutex));
->  
->  	/*
->  	 * i_mmap_mutex does not stabilize mapcount at all, but mapcount
-> @@ -869,21 +868,16 @@ static int page_referenced_file(struct page *page,
->  			break;
->  	}
->  
-> -	mutex_unlock(&mapping->i_mmap_mutex);
->  	return referenced;
->  }
->  
-> -/**
-> - * page_referenced - test if the page was referenced
-> - * @page: the page to test
-> - * @is_locked: caller holds lock on the page
-> - * @memcg: target memory cgroup
-> - * @vm_flags: collect encountered vma->vm_flags who actually referenced the page
-> - *
-> - * Quick test_and_clear_referenced for all mappings to a page,
-> - * returns the number of ptes which referenced the page.
-> - */
-> -int page_referenced(struct page *page,
-> +int needs_page_mmap_mutex(struct page *page)
-> +{
-> +	return page->mapping && page_mapped(page) && page_rmapping(page) &&
-> +		!PageKsm(page) && !PageAnon(page);
-> +}
-> +
-> +int __page_referenced(struct page *page,
->  		    int is_locked,
->  		    struct mem_cgroup *memcg,
->  		    unsigned long *vm_flags)
-> @@ -919,6 +913,32 @@ out:
->  	return referenced;
->  }
->  
-> +/**
-> + * page_referenced - test if the page was referenced
-> + * @page: the page to test
-> + * @is_locked: caller holds lock on the page
-> + * @memcg: target memory cgroup
-> + * @vm_flags: collect encountered vma->vm_flags who actually referenced the page
-> + *
-> + * Quick test_and_clear_referenced for all mappings to a page,
-> + * returns the number of ptes which referenced the page.
-> + */
-> +int page_referenced(struct page *page,
-> +		    int is_locked,
-> +		    struct mem_cgroup *memcg,
-> +		    unsigned long *vm_flags)
-> +{
-> +	int result, needs_lock;
-> +
-> +	needs_lock = needs_page_mmap_mutex(page);
-> +	if (needs_lock)
-> +		mutex_lock(&page->mapping->i_mmap_mutex);
-> +	result = __page_referenced(page, is_locked, memcg, vm_flags);
-> +	if (needs_lock)
-> +		mutex_unlock(&page->mapping->i_mmap_mutex);
-> +	return result;
-> +}
-> +
->  static int page_mkclean_one(struct page *page, struct vm_area_struct *vma,
->  			    unsigned long address)
->  {
-> @@ -1560,7 +1580,7 @@ static int try_to_unmap_file(struct page *page, enum ttu_flags flags)
->  	unsigned long max_nl_size = 0;
->  	unsigned int mapcount;
->  
-> -	mutex_lock(&mapping->i_mmap_mutex);
-> +	BUG_ON(!mutex_is_locked(&mapping->i_mmap_mutex));
->  	vma_prio_tree_foreach(vma, &iter, &mapping->i_mmap, pgoff, pgoff) {
->  		unsigned long address = vma_address(page, vma);
->  		if (address == -EFAULT)
-> @@ -1640,7 +1660,24 @@ static int try_to_unmap_file(struct page *page, enum ttu_flags flags)
->  	list_for_each_entry(vma, &mapping->i_mmap_nonlinear, shared.vm_set.list)
->  		vma->vm_private_data = NULL;
->  out:
-> -	mutex_unlock(&mapping->i_mmap_mutex);
-> +	return ret;
-> +}
-> +
-> +int __try_to_unmap(struct page *page, enum ttu_flags flags)
-> +{
-> +	int ret;
-> +
-> +	BUG_ON(!PageLocked(page));
-> +	VM_BUG_ON(!PageHuge(page) && PageTransHuge(page));
-> +
-> +	if (unlikely(PageKsm(page)))
-> +		ret = try_to_unmap_ksm(page, flags);
-> +	else if (PageAnon(page))
-> +		ret = try_to_unmap_anon(page, flags);
-> +	else
-> +		ret = try_to_unmap_file(page, flags);
-> +	if (ret != SWAP_MLOCK && !page_mapped(page))
-> +		ret = SWAP_SUCCESS;
->  	return ret;
->  }
->  
-> @@ -1660,20 +1697,27 @@ out:
->   */
->  int try_to_unmap(struct page *page, enum ttu_flags flags)
->  {
-> -	int ret;
-> +	int result, needs_lock;
-> +
-> +	needs_lock = needs_page_mmap_mutex(page);
-> +	if (needs_lock)
-> +		mutex_lock(&page->mapping->i_mmap_mutex);
-> +	result = __try_to_unmap(page, flags);
-> +	if (needs_lock)
-> +		mutex_unlock(&page->mapping->i_mmap_mutex);
-> +	return result;
-> +}
->  
-> -	BUG_ON(!PageLocked(page));
-> -	VM_BUG_ON(!PageHuge(page) && PageTransHuge(page));
-> +int __try_to_munlock(struct page *page)
-> +{
-> +	VM_BUG_ON(!PageLocked(page) || PageLRU(page));
->  
->  	if (unlikely(PageKsm(page)))
-> -		ret = try_to_unmap_ksm(page, flags);
-> +		return try_to_unmap_ksm(page, TTU_MUNLOCK);
->  	else if (PageAnon(page))
-> -		ret = try_to_unmap_anon(page, flags);
-> +		return try_to_unmap_anon(page, TTU_MUNLOCK);
->  	else
-> -		ret = try_to_unmap_file(page, flags);
-> -	if (ret != SWAP_MLOCK && !page_mapped(page))
-> -		ret = SWAP_SUCCESS;
-> -	return ret;
-> +		return try_to_unmap_file(page, TTU_MUNLOCK);
->  }
->  
->  /**
-> @@ -1693,14 +1737,15 @@ int try_to_unmap(struct page *page, enum ttu_flags flags)
->   */
->  int try_to_munlock(struct page *page)
->  {
-> -	VM_BUG_ON(!PageLocked(page) || PageLRU(page));
-> -
-> -	if (unlikely(PageKsm(page)))
-> -		return try_to_unmap_ksm(page, TTU_MUNLOCK);
-> -	else if (PageAnon(page))
-> -		return try_to_unmap_anon(page, TTU_MUNLOCK);
-> -	else
-> -		return try_to_unmap_file(page, TTU_MUNLOCK);
-> +	int result, needs_lock;
-> +
-> +	needs_lock = needs_page_mmap_mutex(page);
-> +	if (needs_lock)
-> +		mutex_lock(&page->mapping->i_mmap_mutex);
-> +	result = __try_to_munlock(page);
-> +	if (needs_lock)
-> +		mutex_unlock(&page->mapping->i_mmap_mutex);
-> +	return result;
->  }
->  
->  void __put_anon_vma(struct anon_vma *anon_vma)
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index d4ab646..74a5fd0 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -27,6 +27,7 @@
->  					buffer_heads_over_limit */
->  #include <linux/mm_inline.h>
->  #include <linux/backing-dev.h>
-> +#include <linux/ksm.h>
->  #include <linux/rmap.h>
->  #include <linux/topology.h>
->  #include <linux/cpu.h>
-> @@ -786,7 +787,7 @@ static enum page_references page_check_references(struct page *page,
->  	int referenced_ptes, referenced_page;
->  	unsigned long vm_flags;
->  
-> -	referenced_ptes = page_referenced(page, 1, mz->mem_cgroup, &vm_flags);
-> +	referenced_ptes = __page_referenced(page, 1, mz->mem_cgroup, &vm_flags);
->  	referenced_page = TestClearPageReferenced(page);
->  
->  	/* Lumpy reclaim - ignore references */
-> @@ -856,6 +857,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  	unsigned long nr_congested = 0;
->  	unsigned long nr_reclaimed = 0;
->  	unsigned long nr_writeback = 0;
-> +	struct mutex *i_mmap_mutex = NULL;
->  
->  	cond_resched();
->  
-> @@ -909,7 +911,15 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  			}
->  		}
->  
-> +		if (needs_page_mmap_mutex(page) &&
-> +			       i_mmap_mutex != &page->mapping->i_mmap_mutex) {
-> +			if (i_mmap_mutex)
-> +				mutex_unlock(i_mmap_mutex);
-> +			i_mmap_mutex = &page->mapping->i_mmap_mutex;
-> +			mutex_lock(i_mmap_mutex);
-> +		}
->  		references = page_check_references(page, mz, sc);
-> +
->  		switch (references) {
->  		case PAGEREF_ACTIVATE:
->  			goto activate_locked;
-> @@ -939,7 +949,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  		 * processes. Try to unmap it here.
->  		 */
->  		if (page_mapped(page) && mapping) {
-> -			switch (try_to_unmap(page, TTU_UNMAP)) {
-> +			switch (__try_to_unmap(page, TTU_UNMAP)) {
->  			case SWAP_FAIL:
->  				goto activate_locked;
->  			case SWAP_AGAIN:
-> @@ -1090,6 +1100,8 @@ keep_lumpy:
->  		VM_BUG_ON(PageLRU(page) || PageUnevictable(page));
->  	}
->  
-> +	if (i_mmap_mutex)
-> +		mutex_unlock(i_mmap_mutex);
->  	nr_reclaimed += __remove_mapping_batch(&unmap_pages, &ret_pages,
->  					       &free_pages);
->  
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
