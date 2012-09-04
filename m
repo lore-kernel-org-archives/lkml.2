@@ -1,66 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932382Ab2IDOyY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 10:54:24 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:53668 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S932331Ab2IDOyU convert rfc822-to-8bit (ORCPT
+	id S1757326Ab2IDOzY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 10:55:24 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:12809 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753192Ab2IDOzX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 10:54:20 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Tue, 4 Sep 2012 10:55:23 -0400
+X-IronPort-AV: E=Sophos;i="4.80,367,1344211200"; 
+   d="scan'208";a="207015968"
+Message-ID: <50461654.5040901@citrix.com>
+Date: Tue, 4 Sep 2012 15:55:16 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH] sata_fsl: add workaround for data length mismatch on freescale V2 controller
-Date: Tue, 4 Sep 2012 15:51:26 +0100
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B6FD6@saturn3.aculab.com>
-In-Reply-To: <1346756920-19128-1-git-send-email-Shaohui.Xie@freescale.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-thread-topic: [PATCH] sata_fsl: add workaround for data length mismatch on freescale V2 controller
-thread-index: Ac2Kkh9ZdBtatmThQ8eg5t7slAOLCgAGhGEg
-References: <1346756920-19128-1-git-send-email-Shaohui.Xie@freescale.com>
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Shaohui Xie" <Shaohui.Xie@freescale.com>, <jgarzik@pobox.com>,
-        <linux-ide@vger.kernel.org>
-Cc: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        "Anju Bhartiya" <Anju.Bhartiya@freescale.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Panella <stefano.panella@citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [Xen-devel] [PATCH 1/1] XEN: Use correct masking in xen_swiotlb_alloc_coherent.
+References: <1346407072-6405-1-git-send-email-stefano.panella@citrix.com> <5040B249.4000306@citrix.com> <20120831164010.GA18929@localhost.localdomain> <50460B2E.3020200@citrix.com> <20120904143731.GC23361@phenom.dumpdata.com>
+In-Reply-To: <20120904143731.GC23361@phenom.dumpdata.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +	/* Read command completed register */
-> +	done_mask = ioread32(hcr_base + CC);
-> +
-> +	if (host_priv->quirks & SATA_FSL_QUIRK_V2_ERRATA) {
-> +		if (unlikely(hstatus & INT_ON_DATA_LENGTH_MISMATCH)) {
-> +			for (tag = 0; tag < ATA_MAX_QUEUE; tag++) {
-> +				qc = ata_qc_from_tag(ap, tag);
-> +				if (qc && ata_is_atapi(qc->tf.protocol))
-{
-> +					atapi_flag = 1;
-> +					break;
-> +				}
-> +			}
-> +		}
-> +	}
-> +
-> +	/* Workaround for data length mismatch errata */
-> +	if (atapi_flag) {
+On 04/09/12 15:37, Konrad Rzeszutek Wilk wrote:
+> On Tue, Sep 04, 2012 at 03:07:42PM +0100, Stefano Panella wrote:
+>> 
+>> So if hwdev->coherent_dma_mask is set to 0xffffffffffffffff our dma_mask will
+>> be u64 set to 0xffffffffffffffff even if we set it to DMA_BIT_MASK(32) previously.
+> 
+> That is what I was missing. Let me include that in the git commit and also
+> put this patch on the stable tree.
 
-Seems to me like the conditionals for this code are all
-in the wrong order - adding code to the normal path.
+Note that this appears to be a work around for a bug in the sound system
+or Intel HDA device driver which is incorrectly truncating a dma_addr_t
+to a u32.  So by ensuring a DMA_BIT_MASK(32) when the dma_addr_t is
+truncated it still works.
 
-The whole lot should probably be inside:
-	if (unlikely(hstatus & INT_ON_DATA_LENGTH_MISMATCH)) {
-and the 'atapi_flag' boolean removed.
-
-I also wonder it this is worthy of an actual quirk?
-Might be worth doing anyway.
-
-	David
-
-
-
+David
