@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754825Ab2IDHHB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 03:07:01 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:55709 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753004Ab2IDHG7 convert rfc822-to-8bit (ORCPT
+	id S1756398Ab2IDHIE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 03:08:04 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:36259 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755059Ab2IDHHS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 03:06:59 -0400
+	Tue, 4 Sep 2012 03:07:18 -0400
 From: "Kim, Milo" <Milo.Kim@ti.com>
 To: Bryan Wu <bryan.wu@canonical.com>
 CC: "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Richard Purdie <rpurdie@rpsys.net>
-Subject: [PATCH 2/3] leds-lp5523: add new device id for LP55231
-Thread-Topic: [PATCH 2/3] leds-lp5523: add new device id for LP55231
-Thread-Index: Ac2Ka8dR3KHkJmgIQc63lknN+9gGuQ==
-Date: Tue, 4 Sep 2012 07:06:18 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF2105@DQHE02.ent.ti.com>
+Subject: [PATCH 3/3] leds-lp5523: use the i2c device id rather than fixed
+ name
+Thread-Topic: [PATCH 3/3] leds-lp5523: use the i2c device id rather than
+ fixed name
+Thread-Index: Ac2Ka8w1AEYT02swTOyDaeZrDbHD3w==
+Date: Tue, 4 Sep 2012 07:06:26 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF210D@DQHE02.ent.ti.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -29,49 +31,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- To support LP55231 device, the device id is added.
- Additionally, the i2c driver name is changed from lp5523 to lp5523x.
+ LP5523 driver supports both LP5523 and LP55231.
+ The i2c device id is one of the two - lp5523 or lp55231.
+ So it's better to use matching i2c device id while enumerating the device
+ and naming LED channels.
 
 Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 ---
- drivers/leds/leds-lp5523.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ drivers/leds/leds-lp5523.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
-index 80d3792..e69e72a 100644
+index e69e72a..3d60428 100644
 --- a/drivers/leds/leds-lp5523.c
 +++ b/drivers/leds/leds-lp5523.c
-@@ -104,6 +104,11 @@
- #define LED_ACTIVE(mux, led)		(!!(mux & (0x0001 << led)))
- #define SHIFT_MASK(id)			(((id) - 1) * 2)
- 
-+enum lp5523_chip_id {
-+	LP5523,
-+	LP55231,
-+};
-+
- struct lp5523_engine {
- 	int		id;
- 	u8		mode;
-@@ -1005,7 +1010,8 @@ static int lp5523_remove(struct i2c_client *client)
+@@ -833,7 +833,8 @@ static int __init lp5523_init_engine(struct lp5523_engine *engine, int id)
  }
  
- static const struct i2c_device_id lp5523_id[] = {
--	{ "lp5523", 0 },
-+	{ "lp5523",  LP5523 },
-+	{ "lp55231", LP55231 },
- 	{ }
- };
+ static int __devinit lp5523_init_led(struct lp5523_led *led, struct device *dev,
+-			   int chan, struct lp5523_platform_data *pdata)
++			   int chan, struct lp5523_platform_data *pdata,
++			   const char *chip_name)
+ {
+ 	char name[32];
+ 	int res;
+@@ -856,7 +857,7 @@ static int __devinit lp5523_init_led(struct lp5523_led *led, struct device *dev,
+ 			led->cdev.name = pdata->led_config[chan].name;
+ 		} else {
+ 			snprintf(name, sizeof(name), "%s:channel%d",
+-				pdata->label ?: "lp5523", chan);
++				pdata->label ? : chip_name, chan);
+ 			led->cdev.name = name;
+ 		}
  
-@@ -1013,7 +1019,7 @@ MODULE_DEVICE_TABLE(i2c, lp5523_id);
+@@ -927,7 +928,7 @@ static int __devinit lp5523_probe(struct i2c_client *client,
+ 	if (ret)
+ 		goto fail1;
  
- static struct i2c_driver lp5523_driver = {
- 	.driver = {
--		.name	= "lp5523",
-+		.name	= "lp5523x",
- 	},
- 	.probe		= lp5523_probe,
- 	.remove		= lp5523_remove,
+-	dev_info(&client->dev, "LP5523 Programmable led chip found\n");
++	dev_info(&client->dev, "%s Programmable led chip found\n", id->name);
+ 
+ 	/* Initialize engines */
+ 	for (i = 0; i < ARRAY_SIZE(chip->engines); i++) {
+@@ -955,7 +956,8 @@ static int __devinit lp5523_probe(struct i2c_client *client,
+ 		INIT_WORK(&chip->leds[led].brightness_work,
+ 			lp5523_led_brightness_work);
+ 
+-		ret = lp5523_init_led(&chip->leds[led], &client->dev, i, pdata);
++		ret = lp5523_init_led(&chip->leds[led], &client->dev, i, pdata,
++				id->name);
+ 		if (ret) {
+ 			dev_err(&client->dev, "error initializing leds\n");
+ 			goto fail2;
 -- 
 1.7.9.5
 
