@@ -1,102 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757285Ab2IDO15 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 10:27:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24495 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757221Ab2IDO1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 10:27:55 -0400
-Date: Tue, 4 Sep 2012 16:27:45 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: linux-mm@kvack.org, riel@redhat.com, peterz@infradead.org,
-        hughd@google.com, daniel.santos@pobox.com,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Subject: Re: [PATCH 2/7] mm: fix potential anon_vma locking issue in
- mprotect()
-Message-ID: <20120904142745.GE3334@redhat.com>
-References: <1346750457-12385-1-git-send-email-walken@google.com>
- <1346750457-12385-3-git-send-email-walken@google.com>
+	id S1757292Ab2IDO23 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 10:28:29 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:64404 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757188Ab2IDO21 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 10:28:27 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/3] i2c: nomadik: Add Device Tree support to the Nomadik I2C driver
+Date: Tue, 4 Sep 2012 14:28:21 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Lee Jones <lee.jones@linaro.org>, Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@nvidia.com>, linus.walleij@stericsson.com,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Wolfram Sang <w.sang@pengutronix.de>, linux-i2c@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com,
+        devicetree-discuss@lists.ozlabs.org
+References: <20120831122323.GC5962@gmail.com> <5044C82E.5060207@gmail.com> <20120903152012.GH31163@gmail.com>
+In-Reply-To: <20120903152012.GH31163@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346750457-12385-3-git-send-email-walken@google.com>
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209041428.21409.arnd@arndb.de>
+X-Provags-ID: V02:K0:AQkrYaBGayFL7SLgBAhAik7IjkToOQRxQdhCf9QH5i0
+ TVu6wmR5i+4XY8jXih6kiqLaR7c5T/ASBExM0p9fsRhAivm9cE
+ J8zK8v87skbzdby4RusJFOmaBnnfC97dkhBNIG2X2t/DK57BMs
+ b+8bqQVkHqpigYAGEBS/YKhDeiRtobK2raToyv0mwBElAfPYuh
+ T4/dmF17M2SYFK/WLQ1kRjmntT9B7bKelXRQLgKPd7YsQ/X5lf
+ 075uHWJIU6zfpn8exCrk07MP8cg9JPFDNi2tthq6BwiZOHR1Mx
+ gofnYwpcKSqivsxlgBICl+zOJacmeUPoC9HVowEbdY7KnviKtg
+ uq+wui2GFJPmbDejQbxA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michel,
-
-On Tue, Sep 04, 2012 at 02:20:52AM -0700, Michel Lespinasse wrote:
-> This change fixes an anon_vma locking issue in the following situation:
-> - vma has no anon_vma
-> - next has an anon_vma
-> - vma is being shrunk / next is being expanded, due to an mprotect call
+On Monday 03 September 2012, Lee Jones wrote:
+> > But if you are handling both, then I agree that platform_data should
+> > override DT.
 > 
-> We need to take next's anon_vma lock to avoid races with rmap users
-> (such as page migration) while next is being expanded.
-> 
-> This change also removes an optimization which avoided taking anon_vma
-> lock during brk adjustments. We could probably make that optimization
-> work again, but the following anon rmap change would break it,
-> so I kept things as simple as possible here.
+> I do agree with this, but I haven't stumbled over such a use-case yet.
+> I have only provided; clock names, DMA settings and call-back information
+> via AUX_DATA() thus far, and those are being removed too when a) the 
+> correct bindings are mainlined and b) I have the time.
 
-Agreed, definitely a bug not to take the lock whenever any
-vm_start/vm_pgoff are moved, regardless if they're the next or current
-vma. Only vm_end can be moved without taking the lock.
+I'd prefer if you just disallow the case where pdata and DT have conflicting
+information. We don't seem to have a clear rule that is enforced over the
+kernel, so I don't think we can rely on either one taking precedence over
+the other in general.
 
-I'd prefer to fix it like this though:
+In this particular case, we don't have a single board file providing a
+struct nmk_i2c_controller definition for platform data, so the best way
+to handle this IMHO is to remove the header file with the platform
+data definition, and just encode the defaults in the driver.
 
--	if (vma->anon_vma && (importer || start != vma->vm_start)) {
-+	if ((vma->anon_vma && (importer || start != vma->vm_start) ||
-+           (adjust_next && next->anon_vma)) {
-
-The strict fix is just to check also if we're moving next->vm_start or
-not, and the lock is only needed if next->anon_vma is set (otherwise
-there's no page yet set in the vma and we hold the mmap_sem in write
-mode clearly that prevents new pages to be instantiated under us).
-
-Plus we know if adjust_next is set, next is not null, so the above
-should work. The already existing (optimized) check for the "vma"
-should have been ok, so no need to de-optimize it.
-
-Then it's still fine to retain the VM_BUG_ON in the branch where
-anon_vma was not null.
-
-Thanks!
-Andrea
-
-> 
-> Signed-off-by: Michel Lespinasse <walken@google.com>
-> ---
->  mm/mmap.c |   14 ++++++--------
->  1 files changed, 6 insertions(+), 8 deletions(-)
-> 
-> diff --git a/mm/mmap.c b/mm/mmap.c
-> index cebc346ba0db..5e64c7dfc090 100644
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -570,14 +570,12 @@ again:			remove_next = 1 + (end > next->vm_end);
->  
->  	vma_adjust_trans_huge(vma, start, end, adjust_next);
->  
-> -	/*
-> -	 * When changing only vma->vm_end, we don't really need anon_vma
-> -	 * lock. This is a fairly rare case by itself, but the anon_vma
-> -	 * lock may be shared between many sibling processes.  Skipping
-> -	 * the lock for brk adjustments makes a difference sometimes.
-> -	 */
-> -	if (vma->anon_vma && (importer || start != vma->vm_start)) {
-> -		anon_vma = vma->anon_vma;
-> +	anon_vma = vma->anon_vma;
-> +	if (!anon_vma && adjust_next)
-> +		anon_vma = next->anon_vma;
-> +	if (anon_vma) {
-> +		VM_BUG_ON(adjust_next && next->anon_vma &&
-> +			  anon_vma != next->anon_vma);
->  		anon_vma_lock(anon_vma);
->  	}
->  
-> -- 
-> 1.7.7.3
-> 
+	Arnd
