@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756350Ab2IDIsx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 04:48:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49154 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754124Ab2IDIsw (ORCPT
+	id S1756521Ab2IDIxg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 04:53:36 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:36224 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754577Ab2IDIxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 04:48:52 -0400
-Message-ID: <5045C06F.4000507@gmail.com>
-Date: Tue, 04 Sep 2012 16:48:47 +0800
-From: Cong Wang <xiyou.wangcong@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Tue, 4 Sep 2012 04:53:34 -0400
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: Xin Tong <xerox.time.tech@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: linux page table
-References: <CALKntY00bG_wVpOGM_L9ENLqROgSO_TttXJeTkgkERdtpnwi_A@mail.gmail.com> <alpine.LRH.2.00.1209021005090.22050@twin.jikos.cz> <CALKntY1XnHG7BAnu4yYU_8iwDttAhuxqu1bBu7YuxXMP4nF+JQ@mail.gmail.com> <alpine.LNX.2.00.1209022026100.20709@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1209022026100.20709@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120903133333.GE31163@gmail.com>
+References: <1345809612-30992-1-git-send-email-lee.jones@linaro.org>
+	<20120903133333.GE31163@gmail.com>
+Date: Tue, 4 Sep 2012 10:53:32 +0200
+Message-ID: <CACRpkdb_aW-uxf_4GQpRWJhLqD_QujH1BOFeG4MgVHfRasGY+A@mail.gmail.com>
+Subject: Re: [PATCH] ARM: ux500: Provide SMSC911x fixed-regulator when not
+ booting DT
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2012 02:26 AM, Jiri Kosina wrote:
-> On Sun, 2 Sep 2012, Xin Tong wrote:
->
->>>> 3. can two different processes have their CR3 being the same value
->>>> even though they have different first level page tables ?
->>>
->>> Yes, if they are created by clone(CLONE_VM). In such case they share the
->>> same mm_struct, and therefore mm_struct->pgd (which is exactly what is
->>> loaded into cr3 in switch_mm()) is the same.
->>>
->>
->> Is this the COW mechanism in linux. what if the cloned process need to
->> have set of its own pages later. do the CR3s for the 2 processes
->> become different at that point ?
->
-> That is a different story. COW is applied on fork() (i.e. spawning new
-> process), not on clone(CLONE_VM) (i.e. spawning new thread).
->
+On Mon, Sep 3, 2012 at 3:33 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-Yeah, and unshare(2) does not implement the flag that reverses the 
-effects of CLONE_VM.
+> Author: Lee Jones <lee.jones@linaro.org>
+> Date:   Fri Aug 24 12:40:58 2012 +0100
+>
+>     ARM: ux500: Provide SMSC911x fixed-regulator when not booting DT
+>
+>     The SMSC911x Ethernet chip requires a fixed-regulator in order to
+>     function correctly. We have previously provided a means to obtain
+>     this during a Device Tree boot, however nothing has been put into
+>     place when booting with a non-DT kernel. This patch aims to change
+>     that.
+>
+>     Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
+You forgot to add select REGULATOR_FIXED_VOLTAGE to
+the MOP500 Kconfig entry, but I added it when applying.
+
+Yours,
+Linus Walleij
