@@ -1,44 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756792Ab2IDKnh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 06:43:37 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:42912 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756711Ab2IDKng (ORCPT
+	id S1756802Ab2IDK5Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 06:57:25 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:44746
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752761Ab2IDK5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 06:43:36 -0400
-Date: Tue, 4 Sep 2012 11:46:18 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Manavendra Nath Manav <mnm.kernel@gmail.com>
-Cc: kernelnewbies@kernelnewbies.org, linux-kernel@vger.kernel.org
-Subject: Re: Why exported const value modified by another driver not updated
- in original driver
-Message-ID: <20120904114618.62a1d89e@pyramind.ukuu.org.uk>
-In-Reply-To: <CAJKgH8Ah-aq=LfOWs2SBZnndzugNGxJbqYS11YVQLXJy6FZxkw@mail.gmail.com>
-References: <CAJKgH8Ah-aq=LfOWs2SBZnndzugNGxJbqYS11YVQLXJy6FZxkw@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Sep 2012 06:57:24 -0400
+Date: Tue, 4 Sep 2012 06:57:14 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Li Wang <liwang@nudt.edu.cn>
+Cc: viro@zeniv.linux.org.uk, axboe@kernel.dk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] VFS: File System Mount Wide O_DIRECT Support
+Message-ID: <20120904105714.GA31020@infradead.org>
+References: <000001cd8a86$89df83b0$9d9e8b10$@edu.cn>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <000001cd8a86$89df83b0$9d9e8b10$@edu.cn>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 Sep 2012 15:00:16 +0530
-Manavendra Nath Manav <mnm.kernel@gmail.com> wrote:
+On Tue, Sep 04, 2012 at 06:17:47PM +0800, Li Wang wrote:
+> For file system created on file-backed loop device, there will be two-levels of 
+> page cache present, which typically doubles the memory consumption. 
 
-> Hi,
-> 
-> I have declared a static const int variable in one driver and exported
-> that variable symbol. In another driver i am modifying that variable.
-> The other driver prints the modified value but the original driver
-> retains the original value. When both virtual and physical addresses
-> of the variable as seen by both drivers are same, how is this even
-> possible. Is it a kernel bug?
+And the right fix is to not use buffer I/O on the backing file instead
+of hacks like this.
 
-It's const, why is it even a surprise. If you don't understand what is
-going on then I suggest you disassemble the code. That will I think let
-you understand what is going on.
-
-Alan
