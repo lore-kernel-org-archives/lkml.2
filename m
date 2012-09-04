@@ -1,72 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756384Ab2IDJAQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 05:00:16 -0400
-Received: from smtp-out-217.synserver.de ([212.40.185.217]:1041 "EHLO
-	smtp-out-217.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753825Ab2IDJAO (ORCPT
+	id S1756608Ab2IDJCJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 05:02:09 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52203 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754688Ab2IDJCI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 05:00:14 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 23219
-Message-ID: <5045C19A.7000705@metafoo.de>
-Date: Tue, 04 Sep 2012 10:53:46 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.6esrpre) Gecko/20120817 Icedove/10.0.6
+	Tue, 4 Sep 2012 05:02:08 -0400
+Date: Tue, 4 Sep 2012 10:01:32 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the
+	arm-current tree
+Message-ID: <20120904090132.GG24085@n2100.arm.linux.org.uk>
+References: <20120904160626.f1dcb67ebbb145053c49da8c@canb.auug.org.au> <201209040808.25103.arnd@arndb.de>
 MIME-Version: 1.0
-To: dedekind1@gmail.com
-CC: Julia Lawall <Julia.Lawall@lip6.fr>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        David Woodhouse <dwmw2@infradead.org>, kernel-janitors@vger.kernel.org,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] drivers/mtd/nand/mpc5121_nfc.c: some devm_ cleanups
-References: <1346517191-8794-1-git-send-email-Julia.Lawall@lip6.fr>  <1346517191-8794-4-git-send-email-Julia.Lawall@lip6.fr> <1346748171.12610.22.camel@sauron.fi.intel.com>
-In-Reply-To: <1346748171.12610.22.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201209040808.25103.arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2012 10:42 AM, Artem Bityutskiy wrote:
-> Aiaiai! :-) [1] [2]
+On Tue, Sep 04, 2012 at 08:08:24AM +0000, Arnd Bergmann wrote:
+> On Tuesday 04 September 2012, Stephen Rothwell wrote:
+> > Today's linux-next merge of the arm-soc tree got a conflict in
+> > arch/arm/mm/mmu.c between commit a849088aa155 ("ARM: Fix ioremap() of
+> > address zero") from the arm-current tree and commit c2794437091a ("ARM:
+> > Add fixed PCI i/o mapping") from the arm-soc tree.
+> > 
+> > I am not sure how to fix this, so I have used the arm-current version of
+> > the change to pmd_empty_section_gap() since that changed the vm->flags.
+> > It may be that just changing the vm->flags value in vm_reserve_area_early()
+> > would be ok?
 > 
-> I've build-tested this using aiaiai and it reports that this change breaks the build:
-> 
-> dedekind@blue:~/git/maintaining$ ./verify ../l2-mtd/ mpc5121_nfc < ~/tmp/julia2.mbox 
-> Tested the patch(es) on top of the following commits:
-> ba64756 Quick fixes - applied by aiaiai
-> 651c6fa JFFS2: don't fail on bitflips in OOB
-> e22ac84 mtd: autcpu12-nvram: drop frees of devm_ alloc'd data
-> ea9d312 mtd: cmdlinepart: minor cleanups
-> 
-> --------------------------------------------------------------------------------
-> Failed to build the following commit for configuration "powerpc-mpc512x_defconfig" (architecture powerpc)":
-> 
-> 0fe13ab drivers/mtd/nand/mpc5121_nfc.c: some devm_ cleanups
-> 
-> ...
-> drivers/mtd/nand/mpc5121_nfc.c: In function 'mpc5121_nfc_probe':
-> drivers/mtd/nand/mpc5121_nfc.c:622:28: warning: variable 'regs_size' set but not used [-Wunused-but-set-variable]
-> drivers/mtd/nand/mpc5121_nfc.c:622:16: warning: variable 'regs_paddr' set but not used [-Wunused-but-set-variable]
-> drivers/built-in.o: In function `mpc5121_nfc_probe':
-> mpc5121_nfc.c:(.devinit.text+0x2a14): undefined reference to `devm_clk_get'
-> make[1]: *** [vmlinux] Error 1
-> 
-> --------------------------------------------------------------------------------
-> 
-> I do not really know why, but it seems that clock framework is not supported for powerpc. CCing the PPC mailing list. Preserved the context below for the PPC people.
-> 
+> If I read this correctly, we want pci_reserve_io to use VM_ARM_STATIC_MAPPING
+> while pmd_empty_section_gap should use VM_ARM_EMPTY_MAPPING, so we probably
+> want to add a flag argument to the vm_reserve_area_early() function.
 
-I've been bitten by the same issue recently, also cause by one of these
-cocci devm patches. devm_clk_get is only available if the generic
-clk_get/clk_put implementation is used. Not all architectures do this and
-some implement their own clk_get/clk_put, etc functions. Since devm_clk_get
-is merely a wrapper around clk_get/clk_put there is no reason why it should
-depend CLKDEV_LOOKUP. I've prepared a patch which makes them generically
-available if the clk_get/clk_put are implemented (i.e. if HAVE_CLK is set),
-but it is on a different machine right now, will try to submit it later today.
-
-- Lars
-
+Whereas Rob said to me that both can use VM_ARM_EMPTY_MAPPING when I
+queried this conflict last week.
