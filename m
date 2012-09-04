@@ -1,49 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756443Ab2IDBMV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 21:12:21 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51401 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754246Ab2IDBMU (ORCPT
+	id S1756580Ab2IDBRb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 21:17:31 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:62221 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754263Ab2IDBRa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 21:12:20 -0400
-Date: Tue, 4 Sep 2012 09:12:17 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Richard Zhao <richard.zhao@freescale.com>,
-        Huang Shijie <shijie8@gmail.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>, kernel@pengutronix.de,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH v3 0/4] Add device tree support for on-chip SRAM
-Message-ID: <20120904011215.GJ2362@S2101-09.ap.freescale.net>
-References: <1346688128-22395-1-git-send-email-p.zabel@pengutronix.de>
+	Mon, 3 Sep 2012 21:17:30 -0400
+X-AuditID: 9c930179-b7cc4ae00000134d-7a-504556a7a4b5
+From: Namhyung Kim <namhyung@kernel.org>
+To: Feng Tang <feng.tang@intel.com>
+Cc: acme@redhat.com, mingo@elte.hu, a.p.zijlstra@chello.nl,
+        andi@firstfloor.org, dsahern@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/7] perf scripts: Export a find_scripts() function
+References: <1346660073-20279-1-git-send-email-feng.tang@intel.com>
+	<1346660073-20279-5-git-send-email-feng.tang@intel.com>
+Date: Tue, 04 Sep 2012 10:09:56 +0900
+In-Reply-To: <1346660073-20279-5-git-send-email-feng.tang@intel.com> (Feng
+	Tang's message of "Mon, 3 Sep 2012 16:14:30 +0800")
+Message-ID: <87ipbuegpn.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346688128-22395-1-git-send-email-p.zabel@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 03, 2012 at 06:02:04PM +0200, Philipp Zabel wrote:
-> Changes since v2, as per Shawn's suggestions:
->  - Moved struct device_node declaration out of #ifdef CONFIG_OF.
->  - Simplified of_get_named_gen_pool using of_parse_phandle and
->    of_address_to_resource.
->  - Return -EADDRNOTAVAIL if devm_request_and_ioremap fails.
->  - Squashed i.MX changes together.
-> 
-For the series:
+On Mon,  3 Sep 2012 16:14:30 +0800, Feng Tang wrote:
+> So that other perf commands/browser has a way to dig out the available
+> scripts info in system, this is a preparation for the script browser.
+>
+> Signed-off-by: Feng Tang <feng.tang@intel.com>
+> ---
+>  tools/perf/builtin-script.c |   46 +++++++++++++++++++++++++++++++++++++++++++
+>  tools/perf/builtin.h        |    1 +
+>  2 files changed, 47 insertions(+), 0 deletions(-)
+>
+> diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+> index 7ab86bb..d46056c 100644
+> --- a/tools/perf/builtin-script.c
+> +++ b/tools/perf/builtin-script.c
+> @@ -1031,6 +1031,52 @@ static int list_available_scripts(const struct option *opt __used,
+>  	exit(0);
+>  }
+>  
+> +/*
+> + * Return 0 if none is found, otherwise the actual scripts number.
+> + *
+> + * Currently we just return all the raw scripts name, and their full path.
+> + *
+> + */
+> +int find_scripts(char **scripts_array, char **scripts_path_array)
+> +{
+> +	struct dirent *script_next, *lang_next, script_dirent, lang_dirent;
+> +	char scripts_path[MAXPATHLEN];
+> +	DIR *scripts_dir, *lang_dir;
+> +	char lang_path[MAXPATHLEN];
+> +	struct script_desc *desc;
+> +	char first_half[BUFSIZ];
+> +	char *temp;
+> +	int i = 0;
+> +
+> +	first_half[0] = 0;
+> +	desc = NULL;
+> +
+> +	snprintf(scripts_path, MAXPATHLEN, "%s/scripts", perf_exec_path());
+> +
+> +	scripts_dir = opendir(scripts_path);
+> +	if (!scripts_dir)
+> +		return -1;
+> +
+> +	for_each_lang(scripts_path, scripts_dir, lang_dirent, lang_next) {
 
-Reviewed-by: Shawn Guo <shawn.guo@linaro.org>
+It'd be better if checking language supported - ie. by NO_LIBPERL and/or
+NO_LIBPYTHON macro rather than showing all regardless.  Also you might
+consider when perf was built with no script language support.
 
-Though it will be very simple one, we may still need a binding doc for
-that "sram" driver.
+Thanks,
+Namhyung
 
-Regards,
-Shawn
+
+> +		snprintf(lang_path, MAXPATHLEN, "%s/%s", scripts_path,
+> +			 lang_dirent.d_name);
+> +		lang_dir = opendir(lang_path);
+> +		if (!lang_dir)
+> +			continue;
+> +
+> +		for_each_script(lang_path, lang_dir, script_dirent, script_next) {
+> +			sprintf(scripts_path_array[i], "%s/%s", lang_path,
+> +				script_dirent.d_name);
+> +			temp = strchr(script_dirent.d_name, '.');
+> +			snprintf(scripts_array[i], (temp - script_dirent.d_name) + 1,
+> +				"%s", script_dirent.d_name);
+> +			i++;
+> +		}
+> +	}
+> +
+> +	return i;
+> +}
+> +
+>  static char *get_script_path(const char *script_root, const char *suffix)
+>  {
+>  	struct dirent *script_next, *lang_next, script_dirent, lang_dirent;
+> diff --git a/tools/perf/builtin.h b/tools/perf/builtin.h
+> index b382bd5..3ea74ed 100644
+> --- a/tools/perf/builtin.h
+> +++ b/tools/perf/builtin.h
+> @@ -36,4 +36,5 @@ extern int cmd_kvm(int argc, const char **argv, const char *prefix);
+>  extern int cmd_test(int argc, const char **argv, const char *prefix);
+>  extern int cmd_inject(int argc, const char **argv, const char *prefix);
+>  
+> +extern int find_scripts(char **scripts_array, char **scripts_path_array);
+>  #endif
