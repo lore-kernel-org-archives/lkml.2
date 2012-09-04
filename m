@@ -1,89 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757512Ab2IDSVE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 14:21:04 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:60328 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757428Ab2IDSVB (ORCPT
+	id S1757525Ab2IDSWz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 14:22:55 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35486 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757428Ab2IDSWy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 14:21:01 -0400
-Date: Tue, 04 Sep 2012 14:20:59 -0400 (EDT)
-Message-Id: <20120904.142059.559850562286758578.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org, hkchu@google.com
-Subject: Re: linux-next: build failure after merge of the final tree
- (net-next tree related)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120904165853.bc2f7b6524a3b03a09c4180d@canb.auug.org.au>
-References: <20120904165853.bc2f7b6524a3b03a09c4180d@canb.auug.org.au>
-X-Mailer: Mew version 6.5 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Sep 2012 14:22:54 -0400
+Date: Tue, 4 Sep 2012 11:22:54 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        Dave Jones <davej@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v2] memcg: first step towards hierarchical controller
+Message-ID: <20120904182254.GA3638@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <1346687211-31848-1-git-send-email-glommer@parallels.com>
+ <20120903170806.GA21682@dhcp22.suse.cz>
+ <5045BD25.10301@parallels.com>
+ <20120904130905.GA15683@dhcp22.suse.cz>
+ <504601B8.2050907@parallels.com>
+ <20120904143552.GB15683@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120904143552.GB15683@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 4 Sep 2012 16:58:53 +1000
+Hello,
 
-> net/built-in.o: In function `tcp_fastopen_ctx_free':
-> tcp_fastopen.c:(.text+0x5cc5c): undefined reference to `crypto_destroy_tfm'
-> net/built-in.o: In function `tcp_fastopen_reset_cipher':
-> (.text+0x5cccc): undefined reference to `crypto_alloc_base'
-> net/built-in.o: In function `tcp_fastopen_reset_cipher':
-> (.text+0x5cd6c): undefined reference to `crypto_destroy_tfm'
+On Tue, Sep 04, 2012 at 04:35:52PM +0200, Michal Hocko wrote:
+...
+> The problem is that we don't know whether somebody has an use case which
+> cannot be transformed like that. Therefore this patch starts the slow
+> transition to hierarchical only memory controller by warning users who
+> are using flat hierarchies. The warning triggers only if a subgroup of
+> non-root group is created with use_hierarchy==0.
 > 
-> Presumably caused by commit 104671636897 ("tcp: TCP Fast Open Server -
-> header & support functions") from the net-next tree.  I assume that some
-> dependency on the CRYPTO infrastructure is missing.
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
 
-Thanks for the report, I've pushed the following change to net-next
-which should address this:
+I think this could work as the first step.  Regardless of the involved
+steps, the goal is 1. finding out whether there are use cases or users
+of flat hierarchy (ugh... even the name is stupid :) and 2. if so,
+push them to stop doing that and give them time to do so.  While
+userland growing "echo 1" to use_hierarchy isn't optimal, it isn't the
+end of the world and something which can be taken care of by the
+distros.
 
---------------------
-[PATCH] net: Add INET dependency on aes crypto for the sake of TCP fastopen.
+That said, I don't see how different this is from the staged way I
+suggested other than requiring "echo 1" instead of a mount option.  At
+any rate, the two aren't mutually exclusive and this looks good to me.
 
-Stephen Rothwell says:
+Thanks.
 
-====================
-After merging the final tree, today's linux-next build (powerpc
-ppc44x_defconfig) failed like this:
-
-net/built-in.o: In function `tcp_fastopen_ctx_free':
-tcp_fastopen.c:(.text+0x5cc5c): undefined reference to `crypto_destroy_tfm'
-net/built-in.o: In function `tcp_fastopen_reset_cipher':
-(.text+0x5cccc): undefined reference to `crypto_alloc_base'
-net/built-in.o: In function `tcp_fastopen_reset_cipher':
-(.text+0x5cd6c): undefined reference to `crypto_destroy_tfm'
-
-Presumably caused by commit 104671636897 ("tcp: TCP Fast Open Server -
-header & support functions") from the net-next tree.  I assume that some
-dependency on the CRYPTO infrastructure is missing.
-
-I have reverted commit 1bed966cc3bd ("Merge branch
-'tcp_fastopen_server'") for today.
-====================
-
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- net/Kconfig |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/net/Kconfig b/net/Kconfig
-index 245831b..30b48f5 100644
---- a/net/Kconfig
-+++ b/net/Kconfig
-@@ -52,6 +52,8 @@ source "net/iucv/Kconfig"
- 
- config INET
- 	bool "TCP/IP networking"
-+	select CRYPTO
-+	select CRYPTO_AES
- 	---help---
- 	  These are the protocols used on the Internet and on most local
- 	  Ethernets. It is highly recommended to say Y here (this will enlarge
 -- 
-1.7.7.6
-
+tejun
