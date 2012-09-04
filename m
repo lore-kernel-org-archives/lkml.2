@@ -1,153 +1,328 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932562Ab2IDPRB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 11:17:01 -0400
-Received: from www62.your-server.de ([213.133.104.62]:40961 "EHLO
-	www62.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932384Ab2IDPQ7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 11:16:59 -0400
-X-Greylist: delayed 1425 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Sep 2012 11:16:59 EDT
-MIME-Version: 1.0
-In-Reply-To: <1346768215-5194-1-git-send-email-icurt@ixiacom.com>
-References: <1346768215-5194-1-git-send-email-icurt@ixiacom.com>
-Date: Tue, 4 Sep 2012 16:53:06 +0200
-Message-ID: <CAD6jFUSa7gD45m7WdtDymJq-WkGq+kbofkws5n3dGMtuDE6d3A@mail.gmail.com>
-Subject: Re: [RFC] packet: change call of synchronize_net to call_rcu
-From: Daniel Borkmann <danborkmann@iogearbox.net>
-To: Iulius Curt <iulius.curt@gmail.com>
-Cc: davem@davemloft.net, edumazet@google.com, xemul@parallels.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dbaluta@ixiacom.com, Iulius Curt <icurt@ixiacom.com>,
-        Sorin Dumitru <sdumitru@ixiacom.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-Authenticated-Sender: danborkmann@iogearbox.net
+	id S1757085Ab2IDPVU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 11:21:20 -0400
+Received: from mga02.intel.com ([134.134.136.20]:21030 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754198Ab2IDPVT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 11:21:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,367,1344236400"; 
+   d="scan'208";a="196564792"
+Subject: Re: [RFC PATCH 2/2] mm: Batch page_check_references in
+ shrink_page_list sharing the same i_mmap_mutex
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Matthew Wilcox <willy@linux.intel.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andi Kleen <ak@linux.intel.com>, linux-mm@kvack.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Alex Shi <alex.shi@intel.com>
+In-Reply-To: <1345596500.13492.264.camel@schen9-DESK>
+References: <1345251998.13492.235.camel@schen9-DESK>
+	 <1345480982.13492.239.camel@schen9-DESK>
+	 <20120821132129.GC6960@linux.intel.com>
+	 <1345596500.13492.264.camel@schen9-DESK>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 04 Sep 2012 08:21:17 -0700
+Message-ID: <1346772077.13492.267.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 4, 2012 at 4:16 PM, Iulius Curt <iulius.curt@gmail.com> wrote:
-> synchronize_net is called every time we close a PF_PACKET socket which is
-> causing performance loss when doing this on many sockets.
+On Tue, 2012-08-21 at 17:48 -0700, Tim Chen wrote:
 
-Do you have any particular use case in mind? I can imagine if you are
-closing a PF_PACKET socket in a network analyzer application, you're
-more or less out of its 'critical path' anyway.
+> 
+> Thanks to Matthew's suggestions on improving the patch. Here's the
+> updated version.  It seems to be sane when I booted my machine up.  I
+> will put it through more testing when I get a chance.
+> 
+> Tim
+> 
 
-> Signed-off-by: Sorin Dumitru <sdumitru@ixiacom.com>
-> Signed-off-by: Iulius Curt <icurt@ixiacom.com>
+Matthew,
+
+The new patch seems to be causing some of the workloads with mmaped file
+read to seg fault.  Will need to dig further to find out why.
+
+Tim
+
+
 > ---
-> Statistics using test program [1]
->
-> Sockets count  |  Not patched  |  Patched
-> _________________________________________
->     1 000 000  |       1.28 s  |   1.22 s
->     5 000 000  |        7.3 s  |   6.25 s
->    50 000 000  |      72.89 s  |  64.41 s
->
-> [1] http://pastebin.com/xQ9BziaP
+> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
 > ---
->  net/packet/af_packet.c |   46 ++++++++++++++++++++++++++++++++++++----------
->  net/packet/internal.h  |    1 +
->  2 files changed, 37 insertions(+), 10 deletions(-)
->
-> diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
-> index 5dafe84..7b60135 100644
-> --- a/net/packet/af_packet.c
-> +++ b/net/packet/af_packet.c
-> @@ -2299,6 +2299,32 @@ static int packet_sendmsg(struct kiocb *iocb, struct socket *sock,
->                 return packet_snd(sock, msg, len);
->  }
->
-> +void packet_release_finish(struct sock *sk, int null)
-> +{
-> +       struct socket *sock = sk->sk_socket;
-> +
-> +       sock_orphan(sk);
-> +       /* Modifing this after the socket has been released
-> +        * might lead to memory corruption so we don't do it */
-> +       if (null)
-> +               sock->sk = NULL;
-
-One minor remark: please don't name this variable "null" since it can
-have a value of 0 or 1 in your code, it's a bit misleading. Maybe
-rather "nullify" or something.
-
-> +       /* Purge queues */
-> +
-> +       skb_queue_purge(&sk->sk_receive_queue);
-> +       sk_refcnt_debug_release(sk);
-> +
-> +       sock_put(sk);
-> +}
-> +
-> +void packet_release_rcu(struct rcu_head *rcu)
-> +{
-> +       struct packet_sock *po = container_of(rcu, struct packet_sock, rcu_head);
-> +       struct sock *sk = &po->sk;
-> +
-> +       packet_release_finish(sk, 0);
-> +}
-> +
+> diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+> index fd07c45..f1320b1 100644
+> --- a/include/linux/rmap.h
+> +++ b/include/linux/rmap.h
+> @@ -156,8 +156,11 @@ static inline void page_dup_rmap(struct page *page)
 >  /*
->   *     Close a PACKET socket. This is fairly simple. We immediately go
->   *     to 'closed' state and remove our protocol entry in the device list.
-> @@ -2310,6 +2336,7 @@ static int packet_release(struct socket *sock)
->         struct packet_sock *po;
->         struct net *net;
->         union tpacket_req_u req_u;
-> +       int postpone = 0;
->
->         if (!sk)
->                 return 0;
-> @@ -2326,7 +2353,10 @@ static int packet_release(struct socket *sock)
->         preempt_enable();
->
->         spin_lock(&po->bind_lock);
-> -       unregister_prot_hook(sk, false);
-> +       if (po->running) {
-> +               postpone = 1;
-> +               __unregister_prot_hook(sk, false);
-> +       }
->         if (po->prot_hook.dev) {
->                 dev_put(po->prot_hook.dev);
->                 po->prot_hook.dev = NULL;
-> @@ -2345,19 +2375,15 @@ static int packet_release(struct socket *sock)
->
->         fanout_release(sk);
->
-> -       synchronize_net();
->         /*
->          *      Now the socket is dead. No more input will appear.
->          */
-> -       sock_orphan(sk);
-> -       sock->sk = NULL;
+>   * Called from mm/vmscan.c to handle paging out
+>   */
+> -int page_referenced(struct page *, int is_locked,
+> -			struct mem_cgroup *memcg, unsigned long *vm_flags);
+> +int needs_page_mmap_mutex(struct page *page);
+> +int page_referenced(struct page *, int is_locked, struct mem_cgroup *memcg,
+> +				unsigned long *vm_flags);
+> +int __page_referenced(struct page *, int is_locked, struct mem_cgroup *memcg,
+> +				unsigned long *vm_flags);
+>  int page_referenced_one(struct page *, struct vm_area_struct *,
+>  	unsigned long address, unsigned int *mapcount, unsigned long *vm_flags);
+>  
+> @@ -176,6 +179,7 @@ enum ttu_flags {
+>  bool is_vma_temporary_stack(struct vm_area_struct *vma);
+>  
+>  int try_to_unmap(struct page *, enum ttu_flags flags);
+> +int __try_to_unmap(struct page *, enum ttu_flags flags);
+>  int try_to_unmap_one(struct page *, struct vm_area_struct *,
+>  			unsigned long address, enum ttu_flags flags);
+>  
+> diff --git a/mm/rmap.c b/mm/rmap.c
+> index 5b5ad58..ca8cd21 100644
+> --- a/mm/rmap.c
+> +++ b/mm/rmap.c
+> @@ -843,8 +843,7 @@ static int page_referenced_file(struct page *page,
+>  	 * so we can safely take mapping->i_mmap_mutex.
+>  	 */
+>  	BUG_ON(!PageLocked(page));
 > -
-> -       /* Purge queues */
-> -
-> -       skb_queue_purge(&sk->sk_receive_queue);
-> -       sk_refcnt_debug_release(sk);
-> +       if (postpone) {
-> +               call_rcu(&po->rcu_head, packet_release_rcu);
-> +               return 0;
-> +       }
->
-> -       sock_put(sk);
-> +       packet_release_finish(sk, 1);
->         return 0;
+> -	mutex_lock(&mapping->i_mmap_mutex);
+> +	BUG_ON(!mutex_is_locked(&mapping->i_mmap_mutex));
+>  
+>  	/*
+>  	 * i_mmap_mutex does not stabilize mapcount at all, but mapcount
+> @@ -869,21 +868,16 @@ static int page_referenced_file(struct page *page,
+>  			break;
+>  	}
+>  
+> -	mutex_unlock(&mapping->i_mmap_mutex);
+>  	return referenced;
 >  }
->
-> diff --git a/net/packet/internal.h b/net/packet/internal.h
-> index 44945f6..5778c12 100644
-> --- a/net/packet/internal.h
-> +++ b/net/packet/internal.h
-> @@ -104,6 +104,7 @@ struct packet_sock {
->         int                     ifindex;        /* bound device         */
->         __be16                  num;
->         struct packet_mclist    *mclist;
-> +       struct rcu_head         rcu_head;
->         atomic_t                mapped;
->         enum tpacket_versions   tp_version;
->         unsigned int            tp_hdrlen;
+>  
+> -/**
+> - * page_referenced - test if the page was referenced
+> - * @page: the page to test
+> - * @is_locked: caller holds lock on the page
+> - * @memcg: target memory cgroup
+> - * @vm_flags: collect encountered vma->vm_flags who actually referenced the page
+> - *
+> - * Quick test_and_clear_referenced for all mappings to a page,
+> - * returns the number of ptes which referenced the page.
+> - */
+> -int page_referenced(struct page *page,
+> +int needs_page_mmap_mutex(struct page *page)
+> +{
+> +	return page->mapping && page_mapped(page) && page_rmapping(page) &&
+> +		!PageKsm(page) && !PageAnon(page);
+> +}
+> +
+> +int __page_referenced(struct page *page,
+>  		    int is_locked,
+>  		    struct mem_cgroup *memcg,
+>  		    unsigned long *vm_flags)
+> @@ -919,6 +913,32 @@ out:
+>  	return referenced;
+>  }
+>  
+> +/**
+> + * page_referenced - test if the page was referenced
+> + * @page: the page to test
+> + * @is_locked: caller holds lock on the page
+> + * @memcg: target memory cgroup
+> + * @vm_flags: collect encountered vma->vm_flags who actually referenced the page
+> + *
+> + * Quick test_and_clear_referenced for all mappings to a page,
+> + * returns the number of ptes which referenced the page.
+> + */
+> +int page_referenced(struct page *page,
+> +		    int is_locked,
+> +		    struct mem_cgroup *memcg,
+> +		    unsigned long *vm_flags)
+> +{
+> +	int result, needs_lock;
+> +
+> +	needs_lock = needs_page_mmap_mutex(page);
+> +	if (needs_lock)
+> +		mutex_lock(&page->mapping->i_mmap_mutex);
+> +	result = __page_referenced(page, is_locked, memcg, vm_flags);
+> +	if (needs_lock)
+> +		mutex_unlock(&page->mapping->i_mmap_mutex);
+> +	return result;
+> +}
+> +
+>  static int page_mkclean_one(struct page *page, struct vm_area_struct *vma,
+>  			    unsigned long address)
+>  {
+> @@ -1560,7 +1580,7 @@ static int try_to_unmap_file(struct page *page, enum ttu_flags flags)
+>  	unsigned long max_nl_size = 0;
+>  	unsigned int mapcount;
+>  
+> -	mutex_lock(&mapping->i_mmap_mutex);
+> +	BUG_ON(!mutex_is_locked(&mapping->i_mmap_mutex));
+>  	vma_prio_tree_foreach(vma, &iter, &mapping->i_mmap, pgoff, pgoff) {
+>  		unsigned long address = vma_address(page, vma);
+>  		if (address == -EFAULT)
+> @@ -1640,7 +1660,24 @@ static int try_to_unmap_file(struct page *page, enum ttu_flags flags)
+>  	list_for_each_entry(vma, &mapping->i_mmap_nonlinear, shared.vm_set.list)
+>  		vma->vm_private_data = NULL;
+>  out:
+> -	mutex_unlock(&mapping->i_mmap_mutex);
+> +	return ret;
+> +}
+> +
+> +int __try_to_unmap(struct page *page, enum ttu_flags flags)
+> +{
+> +	int ret;
+> +
+> +	BUG_ON(!PageLocked(page));
+> +	VM_BUG_ON(!PageHuge(page) && PageTransHuge(page));
+> +
+> +	if (unlikely(PageKsm(page)))
+> +		ret = try_to_unmap_ksm(page, flags);
+> +	else if (PageAnon(page))
+> +		ret = try_to_unmap_anon(page, flags);
+> +	else
+> +		ret = try_to_unmap_file(page, flags);
+> +	if (ret != SWAP_MLOCK && !page_mapped(page))
+> +		ret = SWAP_SUCCESS;
+>  	return ret;
+>  }
+>  
+> @@ -1660,20 +1697,27 @@ out:
+>   */
+>  int try_to_unmap(struct page *page, enum ttu_flags flags)
+>  {
+> -	int ret;
+> +	int result, needs_lock;
+> +
+> +	needs_lock = needs_page_mmap_mutex(page);
+> +	if (needs_lock)
+> +		mutex_lock(&page->mapping->i_mmap_mutex);
+> +	result = __try_to_unmap(page, flags);
+> +	if (needs_lock)
+> +		mutex_unlock(&page->mapping->i_mmap_mutex);
+> +	return result;
+> +}
+>  
+> -	BUG_ON(!PageLocked(page));
+> -	VM_BUG_ON(!PageHuge(page) && PageTransHuge(page));
+> +int __try_to_munlock(struct page *page)
+> +{
+> +	VM_BUG_ON(!PageLocked(page) || PageLRU(page));
+>  
+>  	if (unlikely(PageKsm(page)))
+> -		ret = try_to_unmap_ksm(page, flags);
+> +		return try_to_unmap_ksm(page, TTU_MUNLOCK);
+>  	else if (PageAnon(page))
+> -		ret = try_to_unmap_anon(page, flags);
+> +		return try_to_unmap_anon(page, TTU_MUNLOCK);
+>  	else
+> -		ret = try_to_unmap_file(page, flags);
+> -	if (ret != SWAP_MLOCK && !page_mapped(page))
+> -		ret = SWAP_SUCCESS;
+> -	return ret;
+> +		return try_to_unmap_file(page, TTU_MUNLOCK);
+>  }
+>  
+>  /**
+> @@ -1693,14 +1737,15 @@ int try_to_unmap(struct page *page, enum ttu_flags flags)
+>   */
+>  int try_to_munlock(struct page *page)
+>  {
+> -	VM_BUG_ON(!PageLocked(page) || PageLRU(page));
+> -
+> -	if (unlikely(PageKsm(page)))
+> -		return try_to_unmap_ksm(page, TTU_MUNLOCK);
+> -	else if (PageAnon(page))
+> -		return try_to_unmap_anon(page, TTU_MUNLOCK);
+> -	else
+> -		return try_to_unmap_file(page, TTU_MUNLOCK);
+> +	int result, needs_lock;
+> +
+> +	needs_lock = needs_page_mmap_mutex(page);
+> +	if (needs_lock)
+> +		mutex_lock(&page->mapping->i_mmap_mutex);
+> +	result = __try_to_munlock(page);
+> +	if (needs_lock)
+> +		mutex_unlock(&page->mapping->i_mmap_mutex);
+> +	return result;
+>  }
+>  
+>  void __put_anon_vma(struct anon_vma *anon_vma)
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index d4ab646..74a5fd0 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -27,6 +27,7 @@
+>  					buffer_heads_over_limit */
+>  #include <linux/mm_inline.h>
+>  #include <linux/backing-dev.h>
+> +#include <linux/ksm.h>
+>  #include <linux/rmap.h>
+>  #include <linux/topology.h>
+>  #include <linux/cpu.h>
+> @@ -786,7 +787,7 @@ static enum page_references page_check_references(struct page *page,
+>  	int referenced_ptes, referenced_page;
+>  	unsigned long vm_flags;
+>  
+> -	referenced_ptes = page_referenced(page, 1, mz->mem_cgroup, &vm_flags);
+> +	referenced_ptes = __page_referenced(page, 1, mz->mem_cgroup, &vm_flags);
+>  	referenced_page = TestClearPageReferenced(page);
+>  
+>  	/* Lumpy reclaim - ignore references */
+> @@ -856,6 +857,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+>  	unsigned long nr_congested = 0;
+>  	unsigned long nr_reclaimed = 0;
+>  	unsigned long nr_writeback = 0;
+> +	struct mutex *i_mmap_mutex = NULL;
+>  
+>  	cond_resched();
+>  
+> @@ -909,7 +911,15 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+>  			}
+>  		}
+>  
+> +		if (needs_page_mmap_mutex(page) &&
+> +			       i_mmap_mutex != &page->mapping->i_mmap_mutex) {
+> +			if (i_mmap_mutex)
+> +				mutex_unlock(i_mmap_mutex);
+> +			i_mmap_mutex = &page->mapping->i_mmap_mutex;
+> +			mutex_lock(i_mmap_mutex);
+> +		}
+>  		references = page_check_references(page, mz, sc);
+> +
+>  		switch (references) {
+>  		case PAGEREF_ACTIVATE:
+>  			goto activate_locked;
+> @@ -939,7 +949,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+>  		 * processes. Try to unmap it here.
+>  		 */
+>  		if (page_mapped(page) && mapping) {
+> -			switch (try_to_unmap(page, TTU_UNMAP)) {
+> +			switch (__try_to_unmap(page, TTU_UNMAP)) {
+>  			case SWAP_FAIL:
+>  				goto activate_locked;
+>  			case SWAP_AGAIN:
+> @@ -1090,6 +1100,8 @@ keep_lumpy:
+>  		VM_BUG_ON(PageLRU(page) || PageUnevictable(page));
+>  	}
+>  
+> +	if (i_mmap_mutex)
+> +		mutex_unlock(i_mmap_mutex);
+>  	nr_reclaimed += __remove_mapping_batch(&unmap_pages, &ret_pages,
+>  					       &free_pages);
+>  
+> 
+> 
 > --
-> 1.7.9.5
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
