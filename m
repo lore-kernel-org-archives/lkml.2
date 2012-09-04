@@ -1,58 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757034Ab2IDMvJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 08:51:09 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46419 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756947Ab2IDMvH (ORCPT
+	id S1756989Ab2IDNDf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 09:03:35 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:47832 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753037Ab2IDNDd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 08:51:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <5045F06F.5030101@redhat.com>
-References: <1346283020-22385-1-git-send-email-minipli@googlemail.com>
-	<1346283020-22385-3-git-send-email-minipli@googlemail.com>
-	<5045EF86.4080600@redhat.com>
-	<5045F06F.5030101@redhat.com>
-Date: Tue, 4 Sep 2012 14:51:06 +0200
-Message-ID: <CA+rthh8T3Y9XAz+J3C7KfeJa_0d9if9GSrhwTNYhPR+RgEnXKg@mail.gmail.com>
-Subject: Re: [PATCH 2/8] KVM: x86 emulator: use aligned variants of SSE
- register ops
-From: Mathias Krause <minipli@googlemail.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
+	Tue, 4 Sep 2012 09:03:33 -0400
+Date: Tue, 4 Sep 2012 23:03:23 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: linux-next: manual merge of the arm-soc tree with the
+ arm-current tree
+Message-Id: <20120904230323.4e7e4a9b1b73644ef44236cd@canb.auug.org.au>
+In-Reply-To: <5045F7A0.1090400@gmail.com>
+References: <20120904160626.f1dcb67ebbb145053c49da8c@canb.auug.org.au>
+	<201209040808.25103.arnd@arndb.de>
+	<20120904090132.GG24085@n2100.arm.linux.org.uk>
+	<5045F7A0.1090400@gmail.com>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__4_Sep_2012_23_03_23_+1000_XV.I60l6R4VAr+ZV"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 4, 2012 at 2:13 PM, Avi Kivity <avi@redhat.com> wrote:
-> On 09/04/2012 03:09 PM, Avi Kivity wrote:
->> On 08/30/2012 02:30 AM, Mathias Krause wrote:
->>> As the the compiler ensures that the memory operand is always aligned
->>> to a 16 byte memory location,
->>
->> I'm not sure it does.  Is V4SI aligned?  Do we use alignof() to
->> propagate the alignment to the vcpu allocation code?
+--Signature=_Tue__4_Sep_2012_23_03_23_+1000_XV.I60l6R4VAr+ZV
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I checked that to by introducing a dummy char member in struct operand
-that would have misaligned vec_val but, indeed, the compiler ensured
-it's still 16 byte aligned.
+Hi Rob,
 
+On Tue, 04 Sep 2012 07:44:16 -0500 Rob Herring <robherring2@gmail.com> wrot=
+e:
 >
-> We actually do.  But please rebase the series against next, I got some
-> conflicts while applying.
+> Right. The PCI i/o reserved area has a dummy physical address of 0 and=20
+> needs to be skipped by ioremap searches. So we don't set=20
+> VM_ARM_STATIC_MAPPING to prevent matches by ioremap. The vm_struct settin=
+gs
+> don't really matter when we do the real mapping of the i/o space.
+>=20
+> Here's my merge:
 
-If "next" means kvm/next
-(i.e.git://git.kernel.org/pub/scm/virt/kvm/kvm.git#next) here, the
-whole series applies cleanly for me.
-HEAD in kvm/next is 9a78197 "KVM: x86: remove unused variable from
-kvm_task_switch()" here. Albeit the series was build against kvm/next
-at the time as a81aba1 "KVM: VMX: Ignore segment G and D bits when
-considering whether we can virtualize" was HEAD in this branch.
+Thanks, I shall use this in tomorrow's tree.
 
-Could you please retry and show me the conflicts you get?
+> diff --cc arch/arm/mm/mmu.c
+> index 4c2d045,c2fa21d,512b2c0..18144e6
+> --- a/arch/arm/mm/mmu.c
+> +++ b/arch/arm/mm/mmu.c
+> @@@@ -785,6 -785,6 -786,19 +786,19 @@@@ void __init iotable_init(struct m=
+ap_des
+>         }
+>    }
+>   =20
+> ++ void __init vm_reserve_area_early(unsigned long addr, unsigned long si=
+ze,
+> ++                                void *caller)
+> ++ {
+> ++      struct vm_struct *vm;
+> ++=20
+> ++      vm =3D early_alloc_aligned(sizeof(*vm), __alignof__(*vm));
+> ++      vm->addr =3D (void *)addr;
+> ++      vm->size =3D size;
+>   -     vm->flags =3D VM_IOREMAP | VM_ARM_STATIC_MAPPING;
+> +++     vm->flags =3D VM_IOREMAP | VM_ARM_EMPTY_MAPPING;
+> ++      vm->caller =3D caller;
+> ++      vm_area_add_early(vm);
+> ++ }
+> ++=20
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Regards,
-Mathias
+--Signature=_Tue__4_Sep_2012_23_03_23_+1000_XV.I60l6R4VAr+ZV
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQRfwbAAoJEECxmPOUX5FEJFEP/A3eBKmbTLiOUNDQW3Bi4Fej
+6ul/LtfeRnmkfNRAI0/Dz/vJSDe2a8qDYaJXcTRcYOFUndg0hSQ59J30w1lwvfCu
+gJHx6rlg8lTz6ZHZGYzHk/49ZJUkJJsn8syfld4Sf4YdlU/Wk8JFr3rD4UZMUXSR
+gkSwAPkjVIKU3FnVMEXxbqC/GjOeonDk4hSANN8TMDFGGz6svMUuEP3J/iYHB4Of
+xsPG/vHAmF0z2/oiMRW3Fugc8SDLnf/ReFwY20OOj9uEwkSLXkxpGFeTc91IdqLK
+8auEoIhy7B7jlHHV60hDDFI7YqvbuQBZ1/Nm94omwGcK6II939FnLJIAv6OuAgRc
+1lA9FTifLqYV3CVb5DXvQ08vzWxjbm6/A7tEt+kzR3RaoC5MzMWoaXInDyfqPeI7
+jrvJmkIRzvzmXCilbSwrRvgYzte8aXkhP3uGc8XGwhN0VtXf/Pk+P/DvcBElsouW
+2e34bEAa6zMwPzj3xFMY+ZeY6V46VvjHQReI0fH6SlKmerZwj/xLCv787y0OhQ7f
+yyFn4V1EGxESlRbod6t+FXv/oWqVCl7UJugrLfeE2z490hNaZ6o/rNPcHC82Tlfx
+CGb19cQNFL4/6ZmzwQDW/enNzG45mIb8KGJ7K13Dl0bJNtvB7fZU0HQJVLtObbNo
+5kGFhYj8Acm7cj9vZdQ6
+=uf1e
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__4_Sep_2012_23_03_23_+1000_XV.I60l6R4VAr+ZV--
