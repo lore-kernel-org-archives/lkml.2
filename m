@@ -1,60 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751445Ab2IDEG5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 00:06:57 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:35608 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792Ab2IDEGz (ORCPT
+	id S1752125Ab2IDEkw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 00:40:52 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:10753 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793Ab2IDEku convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 00:06:55 -0400
-Message-ID: <50457E52.1070702@linux.vnet.ibm.com>
-Date: Tue, 04 Sep 2012 12:06:42 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Tue, 4 Sep 2012 00:40:50 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 03 Sep 2012 21:33:52 -0700
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: Hiroshi Doyu <hdoyu@nvidia.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "htl10@users.sourceforge.net" <htl10@users.sourceforge.net>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "joe@perches.com" <joe@perches.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "crope@iki.fi" <crope@iki.fi>
+Date: Tue, 4 Sep 2012 06:40:40 +0200
+Subject: [v3 1/1] driver-core: Shut up dev_dbg_reatelimited() without DEBUG
+Thread-Topic: [v3 1/1] driver-core: Shut up dev_dbg_reatelimited() without
+ DEBUG
+Thread-Index: Ac2AJVgSjIR1qehVRgWDyQK62d08Zw==
+Message-ID: <20120904.074040.1817050383890381031.hdoyu@nvidia.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+x-nvconfidentiality: public
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Dong Hao <haodong@linux.vnet.ibm.com>, acme@infradead.org,
-        mtosatti@redhat.com, mingo@elte.hu, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH v7 2/3] KVM: x86: trace mmio begin and complete
-References: <1346061106-5364-1-git-send-email-haodong@linux.vnet.ibm.com> <1346061106-5364-3-git-send-email-haodong@linux.vnet.ibm.com> <50448F72.80702@redhat.com>
-In-Reply-To: <50448F72.80702@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12090404-0260-0000-0000-000001CADE72
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2012 07:07 PM, Avi Kivity wrote:
-> On 08/27/2012 12:51 PM, Dong Hao wrote:
->> From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->>
->> 'perf kvm stat record/report' will use kvm_exit and kvm_mmio(read...) to
->> calculate mmio read emulated time for the old kernel, in order to trace
->> mmio read event more exactly, we add kvm_mmio_begin to trace the time when
->> mmio read begins, also, add kvm_io_done to trace the time when mmio/pio is
->> completed
->>
-> 
-> Why is this so critical?
-> 
-> If a lot of time is spent in in-kernel mmio, then 'perf top' will report
-> it.  Otherwise the time between kvm_exit and kvm_entry describes the
-> time spent in the host.  Not all of it is mmio handling, but it is quite
-> close.
+dev_dbg_reatelimited() without DEBUG printed "217078 callbacks
+suppressed". This shouldn't print anything without DEBUG.
 
-I have done some test, the new events can get more exact result, this is a
-example in my slides:
+With CONFIG_DYNAMIC_DEBUG, the print should be configured as expected.
 
-the event handled time calculated by old events is: 0.000066(s)
-calculated by new events, the result is: 0.000005(s).
+Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+Reported-by: Hin-Tak Leung <htl10@users.sourceforge.net>
+Tested-by: Antti Palosaari <crope@iki.fi>
+Tested-by: Hin-Tak Leung <htl10@users.sourceforge.net>
+Acked-by: Hin-Tak Leung <htl10@users.sourceforge.net>
+---
+ include/linux/device.h |   62 +++++++++++++++++++++++++++++------------------
+ 1 files changed, 38 insertions(+), 24 deletions(-)
 
-So, i think it is worth introducing these new events.
-
-But if you do not care it or think these events are duplicate with current
-events or unmaintainable, i do not have strong opinion on that. Please let
-me know, i will drop them in the next version.
-
-
-
+diff --git a/include/linux/device.h b/include/linux/device.h
+index 9648331..bb6ffcb 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -932,6 +932,32 @@ int _dev_info(const struct device *dev, const char *fmt, ...)
+ 
+ #endif
+ 
++/*
++ * Stupid hackaround for existing uses of non-printk uses dev_info
++ *
++ * Note that the definition of dev_info below is actually _dev_info
++ * and a macro is used to avoid redefining dev_info
++ */
++
++#define dev_info(dev, fmt, arg...) _dev_info(dev, fmt, ##arg)
++
++#if defined(CONFIG_DYNAMIC_DEBUG)
++#define dev_dbg(dev, format, ...)		     \
++do {						     \
++	dynamic_dev_dbg(dev, format, ##__VA_ARGS__); \
++} while (0)
++#elif defined(DEBUG)
++#define dev_dbg(dev, format, arg...)		\
++	dev_printk(KERN_DEBUG, dev, format, ##arg)
++#else
++#define dev_dbg(dev, format, arg...)				\
++({								\
++	if (0)							\
++		dev_printk(KERN_DEBUG, dev, format, ##arg);	\
++	0;							\
++})
++#endif
++
+ #define dev_level_ratelimited(dev_level, dev, fmt, ...)			\
+ do {									\
+ 	static DEFINE_RATELIMIT_STATE(_rs,				\
+@@ -955,33 +981,21 @@ do {									\
+ 	dev_level_ratelimited(dev_notice, dev, fmt, ##__VA_ARGS__)
+ #define dev_info_ratelimited(dev, fmt, ...)				\
+ 	dev_level_ratelimited(dev_info, dev, fmt, ##__VA_ARGS__)
++#if defined(CONFIG_DYNAMIC_DEBUG) || defined(DEBUG)
+ #define dev_dbg_ratelimited(dev, fmt, ...)				\
+-	dev_level_ratelimited(dev_dbg, dev, fmt, ##__VA_ARGS__)
+-
+-/*
+- * Stupid hackaround for existing uses of non-printk uses dev_info
+- *
+- * Note that the definition of dev_info below is actually _dev_info
+- * and a macro is used to avoid redefining dev_info
+- */
+-
+-#define dev_info(dev, fmt, arg...) _dev_info(dev, fmt, ##arg)
+-
+-#if defined(CONFIG_DYNAMIC_DEBUG)
+-#define dev_dbg(dev, format, ...)		     \
+-do {						     \
+-	dynamic_dev_dbg(dev, format, ##__VA_ARGS__); \
++do {									\
++	static DEFINE_RATELIMIT_STATE(_rs,				\
++				      DEFAULT_RATELIMIT_INTERVAL,	\
++				      DEFAULT_RATELIMIT_BURST);		\
++	DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);			\
++	if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT) &&	\
++	    __ratelimit(&_rs))						\
++		__dynamic_pr_debug(&descriptor, pr_fmt(fmt),		\
++				   ##__VA_ARGS__);			\
+ } while (0)
+-#elif defined(DEBUG)
+-#define dev_dbg(dev, format, arg...)		\
+-	dev_printk(KERN_DEBUG, dev, format, ##arg)
+ #else
+-#define dev_dbg(dev, format, arg...)				\
+-({								\
+-	if (0)							\
+-		dev_printk(KERN_DEBUG, dev, format, ##arg);	\
+-	0;							\
+-})
++#define dev_dbg_ratelimited(dev, fmt, ...)			\
++	no_printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
+ #endif
+ 
+ #ifdef VERBOSE_DEBUG
+-- 
+1.7.5.4
+--
+To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
