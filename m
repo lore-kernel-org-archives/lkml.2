@@ -1,115 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757971Ab2IDXk2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 19:40:28 -0400
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:15115
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752688Ab2IDXk0 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 19:40:26 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC102.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: -8
-X-BigFish: VS-8(zz98dI9371I542M1432Izz1202hzz8275bhz2fh2a8h683h839h944hd25hf0ah107ah1220h1155h)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT001.namprd03.prod.outlook.com;R:internal;EFV:INT
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "ben@decadent.org.uk" <ben@decadent.org.uk>,
-        "thozza@redhat.com" <thozza@redhat.com>,
-        "dcbw@redhat.com" <dcbw@redhat.com>
-Subject: RE: [PATCH V4 05/10] Tools: hv: Add an example script to retrieve
- dhcp state
-Thread-Topic: [PATCH V4 05/10] Tools: hv: Add an example script to retrieve
- dhcp state
-Thread-Index: AQHNiuRd+TMU4+nMkkGvTOIPJ1HKHZd6zAmAgAAKcsA=
-Date: Tue, 4 Sep 2012 23:39:12 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF9309DFFA2@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <1346795156-25614-1-git-send-email-kys@microsoft.com>
- <1346795202-25655-1-git-send-email-kys@microsoft.com>
- <1346795202-25655-5-git-send-email-kys@microsoft.com>
- <20120904225917.GB3725@kroah.com>
-In-Reply-To: <20120904225917.GB3725@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [173.61.55.165]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757978Ab2IDXlY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 19:41:24 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:60639 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752927Ab2IDXlW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 19:41:22 -0400
+Date: Tue, 4 Sep 2012 16:41:13 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        Michael Wang <wangyun@linux.vnet.ibm.com>
+Subject: Re: [PATCH tip/core/rcu 15/15] kmemleak: Replace
+ list_for_each_continue_rcu with new interface
+Message-ID: <20120904234113.GX2593@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120830185607.GA32148@linux.vnet.ibm.com>
+ <1346352988-32444-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346352988-32444-15-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20120831185516.GO4259@jtriplet-mobl1>
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT001.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%DECADENT.ORG.UK$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14MLTC102.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14MLTC102.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120831185516.GO4259@jtriplet-mobl1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12090423-7282-0000-0000-00000CA3B8E4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Tuesday, September 04, 2012 6:59 PM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
-> apw@canonical.com; ben@decadent.org.uk; thozza@redhat.com;
-> dcbw@redhat.com
-> Subject: Re: [PATCH V4 05/10] Tools: hv: Add an example script to retrieve dhcp
-> state
+On Fri, Aug 31, 2012 at 11:55:16AM -0700, Josh Triplett wrote:
+> On Thu, Aug 30, 2012 at 11:56:28AM -0700, Paul E. McKenney wrote:
+> > From: Michael Wang <wangyun@linux.vnet.ibm.com>
+> > 
+> > This patch replaces list_for_each_continue_rcu() with
+> > list_for_each_entry_continue_rcu() to save a few lines
+> > of code and allow removing list_for_each_continue_rcu().
+> > 
+> > Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+> > Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 > 
-> On Tue, Sep 04, 2012 at 02:46:37PM -0700, K. Y. Srinivasan wrote:
-> > To keep the KVP daemon code free of distro specific details, we invoke an
-> > external script to retrieve the DHCP state. This is an example script that
-> > was used to test the KVP code. This script has to be implemented in a Distro
-> > specific fashion. For instance on distros that ship with Network Manager
-> enabled,
-> > this script can be based on NM APIs.
-> >
-> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+
+And thank you for all the reviews and comments!!!
+
+							Thanx, Paul
+
 > > ---
-> >  tools/hv/hv_get_dhcp_info.sh |   25 +++++++++++++++++++++++++
-> >  1 files changed, 25 insertions(+), 0 deletions(-)
-> >  create mode 100755 tools/hv/hv_get_dhcp_info.sh
-> >
-> > diff --git a/tools/hv/hv_get_dhcp_info.sh b/tools/hv/hv_get_dhcp_info.sh
-> > new file mode 100755
-> > index 0000000..3de4587
-> > --- /dev/null
-> > +++ b/tools/hv/hv_get_dhcp_info.sh
-> > @@ -0,0 +1,25 @@
-> > +#!/bin/bash
-> > +
-> > +# This example script retrieves the DHCP state of a given interface.
-> > +# In the interest of keeping the KVP daemon code free of distro specific
-> > +# information; the kvp daemon code invokes this external script to gather
-> > +# DHCP setting for the specific interface.
-> > +#
-> > +# Input: Name of the interface
-> > +#
-> > +# Output: The script prints the string "Enabled" to stdout to indicate
-> > +#	that DHCP is enabled on the interface.
+> >  mm/kmemleak.c |    6 ++----
+> >  1 files changed, 2 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/mm/kmemleak.c b/mm/kmemleak.c
+> > index 45eb621..0de83b4 100644
+> > --- a/mm/kmemleak.c
+> > +++ b/mm/kmemleak.c
+> > @@ -1483,13 +1483,11 @@ static void *kmemleak_seq_next(struct seq_file *seq, void *v, loff_t *pos)
+> >  {
+> >  	struct kmemleak_object *prev_obj = v;
+> >  	struct kmemleak_object *next_obj = NULL;
+> > -	struct list_head *n = &prev_obj->object_list;
+> > +	struct kmemleak_object *obj = prev_obj;
+> >  
+> >  	++(*pos);
+> >  
+> > -	list_for_each_continue_rcu(n, &object_list) {
+> > -		struct kmemleak_object *obj =
+> > -			list_entry(n, struct kmemleak_object, object_list);
+> > +	list_for_each_entry_continue_rcu(obj, &object_list, object_list) {
+> >  		if (get_object(obj)) {
+> >  			next_obj = obj;
+> >  			break;
+> > -- 
+> > 1.7.8
+> > 
 > 
-> What happens if DHCP is not enabled on the interface?  Shouldn't that
-> also return something other than "success"?
-
-The script is expected to write "Enabled" to stdout to indicate if DHCP is enabled; if this 
-is not the case, implicitly we assume DHCP is not enabled (since this is a binary state).
-
-Regards,
-
-K. Y 
-
-
 
