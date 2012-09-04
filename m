@@ -1,177 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932361Ab2IDQUr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 12:20:47 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:53373 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777Ab2IDQUq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 12:20:46 -0400
-X-Originating-IP: 108.223.40.66
-Date: Tue, 4 Sep 2012 09:20:48 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Christophe Leroy <christophe.leroy@c-s.fr>
-Cc: Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org,
-        lm-sensors@lm-sensors.org
-Subject: Re: [PATCH 2/2] hwmon/lm70: Adds support for LM71 and LM74
-Message-ID: <20120904162048.GA16877@roeck-us.net>
-References: <201209040841.q848fY60028987@localhost.localdomain>
+	id S932382Ab2IDQZH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 12:25:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40131 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753089Ab2IDQZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 12:25:04 -0400
+Date: Tue, 4 Sep 2012 18:25:01 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        Dave Jones <davej@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH v2] memcg: first step towards hierarchical controller
+Message-ID: <20120904162501.GE15683@dhcp22.suse.cz>
+References: <1346687211-31848-1-git-send-email-glommer@parallels.com>
+ <20120903170806.GA21682@dhcp22.suse.cz>
+ <5045BD25.10301@parallels.com>
+ <20120904130905.GA15683@dhcp22.suse.cz>
+ <504601B8.2050907@parallels.com>
+ <20120904143552.GB15683@dhcp22.suse.cz>
+ <50461241.5010300@parallels.com>
+ <20120904145414.GC15683@dhcp22.suse.cz>
+ <50461610.30305@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201209040841.q848fY60028987@localhost.localdomain>
+In-Reply-To: <50461610.30305@parallels.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 04, 2012 at 10:41:34AM +0200, Christophe Leroy wrote:
-> Adding support for LM74 and LM71 chips
+On Tue 04-09-12 18:54:08, Glauber Costa wrote:
+[...]
+> >> I'd personally believe merging both our patches together would achieve a
+> >> good result.
+> > 
+> > I am still not sure we want to add a config option for something that is
+> > meant to go away. But let's see what others think.
+> > 
 > 
-> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
-> 
-Hi Christophe,
+> So what you propose in the end is that we add a userspace tweak for
+> something that could go away, instead of a Kconfig for something that go
+> away.
 
-couple of comments below.
+The tweak is necessary only if you want to have use_hierarchy=1 for all
+cgroups without taking care about that (aka setting the attribute for
+the first level under the root). All the users that use only one level
+bellow root don't have to do anything at all.
 
-> diff -u linux-3.5-vanilla/drivers/hwmon/Kconfig linux-3.5/drivers/hwmon/Kconfig
-> --- linux-3.5-vanilla/drivers/hwmon/Kconfig	2012-07-21 22:58:29.000000000 +0200
-> +++ linux-3.5/drivers/hwmon/Kconfig	2012-08-25 00:44:05.000000000 +0200
-> @@ -530,12 +530,12 @@
->  	  will be called lm63.
->  
->  config SENSORS_LM70
-> -	tristate "National Semiconductor LM70 / Texas Instruments TMP121"
-> +	tristate "National Semiconductor LM70 and compatibles"
->  	depends on SPI_MASTER
->  	help
->  	  If you say yes here you get support for the National Semiconductor
-> -	  LM70 and Texas Instruments TMP121/TMP123 digital temperature
-> -	  sensor chips.
-> +	  LM70, LM71, LM74 and Texas Instruments TMP121/TMP123 digital tempera-
-> +	  ture sensor chips.
->  
->  	  This driver can also be built as a module.  If so, the module
->  	  will be called lm70.
-> diff -u linux-3.5-vanilla/drivers/hwmon/lm70.c linux-3.5/drivers/hwmon/lm70.c
-> --- linux-3.5-vanilla/drivers/hwmon/lm70.c	2012-07-21 22:58:29.000000000 +0200
-> +++ linux-3.5/drivers/hwmon/lm70.c	2012-08-25 00:49:46.000000000 +0200
-> @@ -43,6 +43,8 @@
->  
->  #define LM70_CHIP_LM70		0	/* original NS LM70 */
->  #define LM70_CHIP_TMP121	1	/* TI TMP121/TMP123 */
-> +#define LM70_CHIP_LM71		2	/* NS LM71 */
-> +#define LM70_CHIP_LM74		3	/* NS LM71 */
->  
-	NS LM71 -> NS LM74
+> Way I see it, Kconfig is better because it is totally transparent, under
+> the hood, and will give us a single location to unpatch in case/when it
+> really goes away.
 
->  struct lm70 {
->  	struct device *hwmon_dev;
-> @@ -88,9 +90,13 @@
->  	 * Celsius.
->  	 * So it's equivalent to multiplying by 0.25 * 1000 = 250.
->  	 *
-> -	 * TMP121/TMP123:
-> +	 * LM74 and TMP121/TMP123:
->  	 * 13 bits of 2's complement data, discard LSB 3 bits,
->  	 * resolution 0.0625 degrees celsius.
-> +	 *
-> +	 * LM71:
-> +	 * 14 bits of 2's complement data, discard LSB 2 bits,
-> +	 * resolution 0.0312 degrees celsius.
->  	 */
->  	switch (p_lm70->chip) {
->  	case LM70_CHIP_LM70:
-> @@ -98,8 +104,13 @@
->  		break;
->  
->  	case LM70_CHIP_TMP121:
-> +	case LM70_CHIP_LM74:
->  		val = ((int)raw / 8) * 625 / 10;
->  		break;
-> +
-> +	case LM70_CHIP_LM71:
-> +		val = ((int)raw / 4) * 3125 / 100;
-> +		break;
->  	}
->  
->  	status = sprintf(buf, "%d\n", val); /* millidegrees Celsius */
-> @@ -123,6 +134,12 @@
->  	case LM70_CHIP_TMP121:
->  		ret = sprintf(buf, "tmp121\n");
->  		break;
-> +	case LM71_CHIP_LM71:
-> +		ret = sprintf(buf, "lm71\n");
-> +		break;
-> +	case LM74_CHIP_LM74:
-> +		ret = sprintf(buf, "lm74\n");
-> +		break;
-
-Please make sure to at least compile your code ... the above doesn't compile. 
-
->  	default:
->  		ret = -EINVAL;
->  	}
-> @@ -139,7 +156,7 @@
->  	struct lm70 *p_lm70;
->  	int status;
->  
-> -	/* signaling is SPI_MODE_0 for both LM70 and TMP121 */
-> +	/* signaling is SPI_MODE_0 */
->  	if (spi->mode & (SPI_CPOL | SPI_CPHA))
->  		return -EINVAL;
->  
-> @@ -198,6 +215,8 @@
->  static const struct spi_device_id lm70_ids[] = {
->  	{ "lm70",   LM70_CHIP_LM70 },
->  	{ "tmp121", LM70_CHIP_TMP121 },
-> +	{ "lm71", LM70_CHIP_LM71 },
-> +	{ "lm74", LM70_CHIP_LM74 },
-
-Please align LM70_xxx to the first two lines.
-
->  	{ },
->  };
->  MODULE_DEVICE_TABLE(spi, lm70_ids);
-> @@ -215,5 +234,5 @@
->  module_spi_driver(lm70_driver);
->  
->  MODULE_AUTHOR("Kaiwan N Billimoria");
-> -MODULE_DESCRIPTION("NS LM70 / TI TMP121/TMP123 Linux driver");
-> +MODULE_DESCRIPTION("NS LM70 and compatibles Linux driver");
->  MODULE_LICENSE("GPL");
-> diff -u linux-3.5-vanilla/Documentation/hwmon/lm70 linux-3.5/Documentation/hwmon/lm70
-> --- linux-3.5-vanilla/Documentation/hwmon/lm70	2012-07-21 22:58:29.000000000 +0200
-> +++ linux-3.5/Documentation/hwmon/lm70	2012-08-25 00:37:15.000000000 +0200
-> @@ -6,6 +6,10 @@
->      Datasheet: http://www.national.com/pf/LM/LM70.html
->    * Texas Instruments TMP121/TMP123
->      Information: http://focus.ti.com/docs/prod/folders/print/tmp121.html
-> +  * National Semiconductor LM71
-> +    Datasheet: http://www.ti.com/product/LM71
-> +  * National Semiconductor LM74
-> +    Datasheet: http://www.ti.com/product/LM74
->  
->  Author:
->          Kaiwan N Billimoria <kaiwan@designergraphix.com>
-> @@ -31,9 +35,12 @@
->  with a "SPI master controller driver", see drivers/spi/spi_lm70llp.c
->  and its associated documentation.
->  
-> -The TMP121/TMP123 are very similar; main difference is 13-bit temperature
-> +The LM74 and TMP121/TMP123 are very similar; main difference is 13-bit temperature
-
-Please move the last word to the next line to keep the line length at 80 columns.
-
-Thanks,
-Guenter
-
->  data (0.0625 degrees celsius resolution).
->  
-> +The LM71 is also very similar; main difference is 14-bit temperature
-> +data (0.03125 degrees celsius resolution).
-> +
->  Thanks to
->  ---------
->  Jean Delvare <khali@linux-fr.org> for mentoring the hwmon-side driver
-> 
+I guess that by the single location you mean that no other user space
+changes would have to be done, right? If yes then this is not true
+because there will be a lot of configurations setting this up already
+(either by cgconfig or by other scripts). All of them will have to be
+fixed some day.
+-- 
+Michal Hocko
+SUSE Labs
