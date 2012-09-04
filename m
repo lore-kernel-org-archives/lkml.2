@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757832Ab2IDU71 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 16:59:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53823 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757793Ab2IDU7Z (ORCPT
+	id S1757813Ab2IDVDm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 17:03:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41934 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757610Ab2IDVDl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 16:59:25 -0400
-Date: Tue, 4 Sep 2012 13:59:24 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm@kvack.org (open list:MEMORY MANAGEMENT)
-Subject: Re: [PATCH] mm: fix mmap overflow checking
-Message-Id: <20120904135924.b61e04e0.akpm@linux-foundation.org>
-In-Reply-To: <1346750580-11352-1-git-send-email-gaowanlong@cn.fujitsu.com>
-References: <1346750580-11352-1-git-send-email-gaowanlong@cn.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Sep 2012 17:03:41 -0400
+Date: Tue, 4 Sep 2012 14:03:42 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, bharrosh@panasas.com,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH v7 9/9] block: Avoid deadlocks with bio allocation by
+ stacking drivers
+Message-ID: <20120904210342.GA8724@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <Pine.LNX.4.64.1208291210180.774@file.rdu.redhat.com>
+ <20120829165006.GB20312@google.com>
+ <20120829170711.GC12504@redhat.com>
+ <20120829171345.GC20312@google.com>
+ <20120830220745.GI27257@redhat.com>
+ <20120831014359.GB15218@moria.home.lan>
+ <Pine.LNX.4.64.1209031638110.15620@file.rdu.redhat.com>
+ <20120904034100.GA21602@moria.home.lan>
+ <20120904185540.GC3638@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120904194237.GC25236@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120904194237.GC25236@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 Sep 2012 17:23:00 +0800
-Wanlong Gao <gaowanlong@cn.fujitsu.com> wrote:
+Hello,
 
-> POSIX said that if the file is a regular file and the value of "off"
-> plus "len" exceeds the offset maximum established in the open file
-> description associated with fildes, mmap should return EOVERFLOW.
+On Tue, Sep 04, 2012 at 12:42:37PM -0700, Kent Overstreet wrote:
+> You want to point me at the relevant workqueue code? I'd really like to
+> see what you did there, it's entirely possible you're aware of some
+> issue I'm not but if not I'd like to take a stab at it.
 
-That's what POSIX says, but what does Linux do?  It is important that
-we precisely describe and understand the behaviour change, as there is
-potential here to break existing applications.
+I was mistaken.  The issue was that adding @gfp_flags to
+kthread_create() wasn't trivial involving updates to arch callbacks,
+so the timer was added to side-step the issue.  So, yeah, if it can be
+made to work w/o timer, I think that would be better.
 
-I'm assuming that Linux presently permits the mmap() and then generates
-SIGBUS if an access is attempted beyond the max file size?
+Thanks.
 
-> 	/* offset overflow? */
-> -	if ((pgoff + (len >> PAGE_SHIFT)) < pgoff)
-> -               return -EOVERFLOW;
-> +	if (off + len < off)
-> +		return -EOVERFLOW;
-
-Well, this treats sizeof(off_t) as the "offset maximum established in
-the open file".  But from my reading of the above excerpt, we should in
-fact be checking against the underlying fs's s_maxbytes?
-
+-- 
+tejun
