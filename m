@@ -1,76 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343Ab2IDGiu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 02:38:50 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:62745 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751172Ab2IDGis (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 02:38:48 -0400
+	id S1754575Ab2IDGkv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 02:40:51 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:54952 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751794Ab2IDGku convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 02:40:50 -0400
 MIME-Version: 1.0
-In-Reply-To: <5044AB51.3040106@yahoo.es>
-References: <50439D44.3080100@yahoo.es>
-	<CAHp75VcQOeVeKPg8z9u+fd8ia4QAyrq6UQn-D7Q-yO9+pLS6LQ@mail.gmail.com>
-	<CAKohpo=bvzm1O4FAtsr3YpLg-w1Rp7RT-9ZuJBgVZRxVHnQO_g@mail.gmail.com>
-	<CAHp75VcpzomoWb3+xOk=++BkUh5_cuXQTu8ZuDByjfX+pYmNCA@mail.gmail.com>
-	<CAKohpomFDuTFVJ8SCmhRmPbCXMWdhD1Acjs5CAZD4aeqLZnurA@mail.gmail.com>
-	<5044AB51.3040106@yahoo.es>
-Date: Tue, 4 Sep 2012 09:38:47 +0300
-Message-ID: <CAHp75VdQV+nZzvp8OK+vZtqnC34nj_PwVK0EdGS1_AYhDDfv=w@mail.gmail.com>
-Subject: Re: [PATCH v4 2/3] dw_dmac: max_mem_width limits value for
- SRC/DST_TR_WID register
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Hein Tibosch <hein_tibosch@yahoo.es>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        spear-devel <spear-devel@list.st.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "ludovic.desroches" <ludovic.desroches@atmel.com>,
-        Havard Skinnemoen <havard@skinnemoen.net>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20120904135829.6beb08f80919aa2b5c8bf55f@canb.auug.org.au>
+References: <20120904135829.6beb08f80919aa2b5c8bf55f@canb.auug.org.au>
+Date: Tue, 4 Sep 2012 08:40:48 +0200
+Message-ID: <CA+icZUXT=GgYMAUq2KGm1jYsuw72moo+jzhoCadt7yJUpOAUzg@mail.gmail.com>
+Subject: Re: linux-next: build warnings after merge of the drm tree
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Dave Airlie <airlied@linux.ie>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sachin Kamat <sachin.kamat@linaro.org>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 3, 2012 at 4:06 PM, Hein Tibosch <hein_tibosch@yahoo.es> wrote:
-> 1. The first draft of the patches worked with the max allowable value for
-> the SRC_WIDTH & DST_WIDTH fields: 0,1,2,3... Viresh thought it was not
-> transparent enough, he suggested to make it simpler with a binary choice of
-> 32- or 64-bits, defaulting to 64-bits.
-> But Andy is right: there are versions supporting 256-bit wide memory transfers.
-> I'd also go for this previous solution and use: "min(max_mem_width, width)"
+On Tue, Sep 4, 2012 at 5:58 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Dave,
 >
-> The only problem is that one doesn't want to change arch code for other
-> platforms (ARM) so I proposed: let "max_mem_width=0" mean: leave it up to
-> the driver, for now 3 : 64-bits.
-Sounds better to support all possible options without any additional
-layer of conversion, isn't it?
+> After merging the drm tree, today's linux-next build (powerpc
+> ppc64_defconfig) produced these warnings:
+>
+> drivers/gpu/drm/udl/Kconfig:1:error: recursive dependency detected!
+> drivers/gpu/drm/udl/Kconfig:1:  symbol DRM_UDL depends on USB_ARCH_HAS_HCD
+> drivers/usb/Kconfig:76: symbol USB_ARCH_HAS_HCD depends on USB_SUPPORT
+> drivers/usb/Kconfig:58: symbol USB_SUPPORT is selected by DRM_USB
+> drivers/gpu/drm/Kconfig:22:     symbol DRM_USB is selected by DRM_UDL
+> warning: (PPC_PS3) selects USB_OHCI_LITTLE_ENDIAN which has unmet direct dependencies (USB_SUPPORT && USB_OHCI_HCD)
+> warning: (PPC_PS3 && PPC_CELLEB) selects USB_OHCI_BIG_ENDIAN_MMIO which has unmet direct dependencies (USB_SUPPORT && USB_OHCI_HCD)
+> warning: (PPC_PS3 && PPC_CELLEB && USB_EHCI_HCD_PMC_MSP && XPS_USB_HCD_XILINX && USB_OCTEON_EHCI) selects USB_EHCI_BIG_ENDIAN_MMIO which has unmet direct dependencies (USB_SUPPORT && USB_EHCI_HCD && (PPC_CELLEB || PPC_PS3 || 440EPX || ARCH_IXP4XX || XPS_USB_HCD_XILINX || PPC_MPC512x || CPU_CAVIUM_OCTEON || PMC_MSP || SPARC_LEON || MIPS_SEAD3))
+>
+> The x86_64 allmodconfig produces these:
+>
+> drivers/gpu/drm/udl/Kconfig:1:error: recursive dependency detected!
+> drivers/gpu/drm/udl/Kconfig:1:  symbol DRM_UDL depends on USB_ARCH_HAS_HCD
+> drivers/usb/Kconfig:76: symbol USB_ARCH_HAS_HCD depends on USB_SUPPORT
+> drivers/usb/Kconfig:58: symbol USB_SUPPORT is selected by DRM_USB
+> drivers/gpu/drm/Kconfig:22:     symbol DRM_USB is selected by DRM_UDL
+> warning: (MOUSE_APPLETOUCH && MOUSE_BCM5974 && MOUSE_SYNAPTICS_USB && JOYSTICK_XPAD && TABLET_USB_ACECAD && TABLET_USB_AIPTEK && TABLET_USB_HANWANG && TABLET_USB_KBTAB && TABLET_USB_WACOM && TOUCHSCREEN_USB_COMPOSITE && INPUT_ATI_REMOTE2 && INPUT_KEYSPAN_REMOTE && INPUT_POWERMATE && INPUT_YEALINK && INPUT_CM109 && RC_ATI_REMOTE && IR_IMON && IR_MCEUSB && IR_REDRAT3 && IR_STREAMZAP && IR_IGUANA && IR_TTUSBIR && DRM_USB) selects USB which has unmet direct dependencies (USB_SUPPORT && USB_ARCH_HAS_HCD)
+>
+> Maybe introduced by commit df0b34430072 ("drm/usb: select USB_SUPPORT in
+> Kconfig"), maybe interacting with a commit 8f057d7bca54 ("gpu/mfd/usb:
+> Fix USB randconfig problems") from Linus' tree (that added "depends on
+> USB_ARCH_HAS_HCD" to "config DRM_USB" and "config DRM_UDL").
+>
+> I have left this mess for now, but it needs addressing.
 
-> 2. In another version I made 'max_mem_width' a member of 'dw_dma_platform_data'
-> because I also see it as 'constant' for all dma slaves.
-> But the dw_dmac controller can be used for multiple (types of) memories
-> and in that case, maybe a limit per slave might be desirable? My knowledge
-> of DMA-hardware doesn't reach far enough to judge that.
-As Viresh told early that will not cover memory-to-memory transfers.
+I have sent a fix ("drm/udl: usb: Fix recursive Kconfig dependency")
+for this mess and pinged airlied on IRC.
+NOTE: I saw this when I merged drm(-intel){-fixes,next} into next-20120824.
 
-> I'd say: for now let it become a member of 'dw_dma_platform_data' because
-> it's the max value of a register field.
-I support such choice.
+- Sedat -
 
-> 3. Felipe Balbi: why don't we ask the DW IP for its maximum allowed value of
-> SRC_WIDTH & DST_WIDTH (on the memory side)? Sure, would be elegant!
-It's not so simple, unfortunately.
+[1] https://patchwork.kernel.org/patch/1373391/
 
-> Alternatively, we could do a small dma-memcpy-test at start-up and try all
-> values from 5 (or 7) down to 2. The first value that works correctly will be
-> used as the maximum.
-Oh, it might be good idea to get this value in case neither IP nor
-platform data provides it.
-I'm pretty sure the platform device driver has to know this beforehand.
-
--- 
-With Best Regards,
-Andy Shevchenko
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
