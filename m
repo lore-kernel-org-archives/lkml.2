@@ -1,129 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756763Ab2IDK2n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 06:28:43 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59242 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752253Ab2IDK2l (ORCPT
+	id S1756782Ab2IDKa6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 06:30:58 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:55846 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752309Ab2IDKa4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 06:28:41 -0400
+	Tue, 4 Sep 2012 06:30:56 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX1+zDHYpoG2z2EHUtTqA8/r1SSPkwWXFeGJGgoDjxL
+	IEsTofYtvOCPWg
+Message-ID: <5045D85B.6060501@gmx.de>
+Date: Tue, 04 Sep 2012 10:30:51 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120613 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <CAJKgH8Ah-aq=LfOWs2SBZnndzugNGxJbqYS11YVQLXJy6FZxkw@mail.gmail.com>
-References: <CAJKgH8Ah-aq=LfOWs2SBZnndzugNGxJbqYS11YVQLXJy6FZxkw@mail.gmail.com>
-From: Manavendra Nath Manav <mnm.kernel@gmail.com>
-Date: Tue, 4 Sep 2012 15:58:20 +0530
-Message-ID: <CAJKgH8CNJM2SyR7bD8nXae13-Fq1MP1Xn7+383YU-HPwKBe+Zg@mail.gmail.com>
-Subject: Re: Why exported const value modified by another driver not updated
- in original driver
-To: kernelnewbies@kernelnewbies.org
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
+Subject: [GIT PULL] fbdev fixes for 3.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 4, 2012 at 3:00 PM, Manavendra Nath Manav
-<mnm.kernel@gmail.com> wrote:
-> Hi,
->
-> I have declared a static const int variable in one driver and exported
-> that variable symbol. In another driver i am modifying that variable.
-> The other driver prints the modified value but the original driver
-> retains the original value. When both virtual and physical addresses
-> of the variable as seen by both drivers are same, how is this even
-> possible. Is it a kernel bug?
->
-> [root@localhost bug]# uname -a
-> Linux localhost.localdomain 3.5.3 #3 SMP Mon Sep 3 21:52:12 IST 2012
-> i686 i686 i386 GNU/Linux
->
-> ================================
-> [root@localhost bug]# cat driver.c
-> #include <linux/module.h>
->
-> static const int value = 123;
->
-> int init_module()
-> {
->         printk("Base driver (init): value                     = %d\n", value);
->         printk("Base driver (init): virtual address of value  = %p\n", (void *)&value);
->         printk("Base driver (init): physical address of value = %p\n", (void
-> *)__pa(&value));
->         return 0;
-> }
->
-> void cleanup_module()
-> {
->         printk("Base driver (exit): value                     = %d\n", value);
->         printk("Base driver (exit): virtual address of value  = %p\n", (void *)&value);
->         printk("Base driver (exit): physical address of value = %p\n", (void
-> *)__pa(&value));
-> }
-> EXPORT_SYMBOL(value);
->
-> ==============================================
-> [root@localhost bug]# cat hacker.c
-> #include <linux/module.h>
->
-> extern int value;
->
-> int init_module()
-> {
->         value = 987;
->         printk("Hacker driver (init): value                     = %d\n", value);
->         printk("Hacker Base driver (init): virtual address of value  = %p\n",
-> (void *)&value);
->         printk("Hacker Base driver (init): physical address of value = %p\n",
-> (void *)__pa(&value));
->         return 0;
-> }
->
-> void cleanup_module()
-> {
->         printk("Hacker driver (exit): value                     = %d\n", value);
->         printk("Hacker driver (exit): virtual address of value  = %p\n",
-> (void *)&value);
->         printk("Hacker driver (exit): physical address of value = %p\n",
-> (void *)__pa(&value));
->         return;
-> }
->
-> =========================================
-> [root@localhost bug]# insmod driver.ko
-> Base driver (init): value                     = 123
-> Base driver (init): virtual address of value  = f89d61c8
-> Base driver (init): physical address of value = 389d61c8
->
-> [root@localhost bug]# insmod hacker.ko
-> Hacker driver (init): value                     = 987
-> Hacker Base driver (init): virtual address of value  = f89d61c8
-> Hacker Base driver (init): physical address of value = 389d61c8
->
-> [root@localhost bug]# rmmod hacker.ko
-> Hacker driver (exit): value                     = 987
-> Hacker driver (exit): virtual address of value  = f89d61c8
-> Hacker driver (exit): physical address of value = 389d61c8
->
-> [root@localhost bug]# rmmod driver.ko
-> Base driver (exit): value                     = 123
-> Base driver (exit): virtual address of value  = f89d61c8
-> Base driver (exit): physical address of value = 389d61c8
->
-> [root@localhost bug]# cat /proc/kallsyms | grep value
-> f89f91c8 R value        [driver]
-> f89f9088 r __ksymtab_value      [driver]
-> f89f91cc r __kstrtab_value      [driver]
->
-> Interestingly, when i change the declaration of variable to "volatile"
-> in driver.c as "static const volatile int" then the driver.ko prints
-> modified value "987" during rmmod and the original value "123" is
-> lost. What is the difference between this and previous declaration?
-> Please forgive if you find this question silly?
-> --
-> Manavendra Nath Manav
+Hi Linus,
 
-Is the above a genuine kernel bug, or i am missing something out here. Pls help.
+please pull the fixes below.
+
 
 Thanks,
-Manavendra Nath Manav
+
+Florian Tobias Schandinat
+
+
+The following changes since commit fea7a08acb13524b47711625eebea40a0ede69a0:
+
+  Linux 3.6-rc3 (2012-08-22 13:29:06 -0700)
+
+are available in the git repository at:
+
+  git://github.com/schandinat/linux-2.6.git fbdev-fixes-for-3.6-1
+
+for you to fetch changes up to c1c52848cef52e157468b8879fc3cae23b6f3a99:
+
+  OMAPFB: fix framebuffer console colors (2012-08-23 12:37:22 +0000)
+
+----------------------------------------------------------------
+fbdev fixes for 3.6
+
+- a fix by Paul Cercueil to prevent a possible buffer overflow
+- a fix by Bruno Prémont to prevent a rare sleep in invalid context
+- a fix by Julia Lawall for a double free in auo_k190x
+- a fix by Dan Carpenter to prevent a division by zero in mb862xxfb
+- a regression fix by Tomi Valkeinen for the SDI output in OMAP
+- a fix by Grazvydas Ignotas to fix the console colors in OMAP
+
+----------------------------------------------------------------
+Bruno Prémont (1):
+      fbcon: Fix bit_putcs() call to kmalloc(s, GFP_KERNEL)
+
+Dan Carpenter (1):
+      video: mb862xxfb: prevent divide by zero bug
+
+Grazvydas Ignotas (1):
+      OMAPFB: fix framebuffer console colors
+
+Julia Lawall (1):
+      drivers/video/auo_k190x.c: drop kfree of devm_kzalloc's data
+
+Paul Cercueil (1):
+      fbcon: prevent possible buffer overflow.
+
+Tomi Valkeinen (1):
+      OMAPDSS: Fix SDI PLL locking
+
+ drivers/video/auo_k190x.c                |    2 --
+ drivers/video/console/bitblit.c          |    2 +-
+ drivers/video/console/fbcon.c            |    2 +-
+ drivers/video/mb862xx/mb862xxfbdrv.c     |    2 ++
+ drivers/video/omap2/dss/sdi.c            |   14 ++++++++++++++
+ drivers/video/omap2/omapfb/omapfb-main.c |    2 +-
+ 6 files changed, 19 insertions(+), 5 deletions(-)
