@@ -1,98 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932323Ab2IDPef (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 11:34:35 -0400
-Received: from [213.199.154.206] ([213.199.154.206]:15787 "EHLO
-	am1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S932181Ab2IDPee (ORCPT
+	id S932345Ab2IDPfy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 11:35:54 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9138 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932181Ab2IDPfv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 11:34:34 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -8
-X-BigFish: VPS-8(zz98dI936eI1433M1432Izz1202hzzz2dh668h839h944hd25hf0ah11b5h121eh1220h1155h)
-X-WSS-ID: 0M9U0JG-01-EI8-02
-X-M-MSG: 
-Date: Tue, 4 Sep 2012 17:33:12 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: i386, v3.6-rc3: Kernel panic - not syncing: Fatal exception in
- interrupt
-Message-ID: <20120904153312.GV8285@erda.amd.com>
-References: <20120827151427.GE8285@erda.amd.com>
- <20120828081206.GG8285@erda.amd.com>
- <1346771776.27919.4.camel@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1346771776.27919.4.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Tue, 4 Sep 2012 11:35:51 -0400
+X-Authority-Analysis: v=2.0 cv=Vb91zSV9 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=zgiTqp1681AA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=Md3Eq_kwYTQA:10 a=imTROTZUkysA:10 a=OQEzN_gqAOIA:10 a=pN9PhARNchwA:10 a=nFlYCK1qHmYA:10 a=EGDuWttHsakA:10 a=TiR09M0h3c4A:10 a=-rGry1Sg3DAA:10 a=71224Grfh94A:10 a=S_QucjnRiEgA:10 a=8tfgvxPDMX4A:10 a=eODW5OEf59EA:10 a=xkTuBmjMRih5i96pTVwA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1346772948.27919.9.camel@gandalf.local.home>
+Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive
+ hashtable
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>, Tejun Heo <tj@kernel.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, mingo@elte.hu,
+        ebiederm@xmission.com, aarcange@redhat.com, ericvh@gmail.com,
+        netdev@vger.kernel.org, josh@joshtriplett.org, eric.dumazet@gmail.com,
+        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
+        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
+        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
+        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Date: Tue, 04 Sep 2012 11:35:48 -0400
+In-Reply-To: <20120828230050.GA3337@Krystal>
+References: <20120824203332.GF21325@google.com> <5037E9D9.9000605@gmail.com>
+	 <20120824212348.GK21325@google.com> <5038074D.300@gmail.com>
+	 <20120824230740.GN21325@google.com> <20120825042419.GA27240@Krystal>
+	 <503C95E4.3010000@gmail.com> <20120828101148.GA21683@Krystal>
+	 <503CAB1E.5010408@gmail.com> <20120828115638.GC23818@Krystal>
+	 <20120828230050.GA3337@Krystal>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04.09.12 11:16:16, Steven Rostedt wrote:
-> On Tue, 2012-08-28 at 10:12 +0200, Robert Richter wrote:
+On Tue, 2012-08-28 at 19:00 -0400, Mathieu Desnoyers wrote:
 
-> > BUG: unable to handle kernel NULL pointer dereference at 00000040
-> > IP: [<c100422f>] print_context_stack+0x6e/0x8d
-> > *pde = 00000000 
-> > Oops: 0000 [#1] SMP 
-> > Modules linked in:
-> > 
-> > Pid: 15531, comm: perl Not tainted 3.5.0-oprofile-i386-standard-g28a33cb #2 Hewlett-Packard HP xw9400 Workstation/0A1Ch
-> > EIP: 0060:[<c100422f>] EFLAGS: 00010097 CPU: 3
-> > EIP is at print_context_stack+0x6e/0x8d
-> > EAX: ffffe000 EBX: 00000040 ECX: f4bd1f94 EDX: 00000040
-> > ESI: f4bd1f94 EDI: f4bd1f94 EBP: f5517ec0 ESP: f5517ea0
-> >  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-> > CR0: 8005003b CR2: 00000040 CR3: 34403000 CR4: 000007d0
-> > DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
-> > DR6: ffff0ff0 DR7: 00000400
-> > Process perl (pid: 15531, ti=f5516000 task=f4f6bbc0 task.ti=f4bd0000)
-> > Stack:
-> >  000003e8 ffffe000 00001ffc f4b8e380 00000000 00000040 f4bd1f94 c1541178
-> >  f5517ef0 c1003717 c1541178 f5517f04 00000000 f5517edc 00000000 00000000
-> >  f5517ee8 f4bd1f94 f5517fc4 00000001 f5517f1c c12d3ba4 00000000 c1541178
-> > Call Trace:
-> >  [<c1003717>] dump_trace+0x7b/0xa1
-> >  [<c12d3ba4>] x86_backtrace+0x40/0x88
-> >  [<c12d2498>] ? oprofile_add_sample+0x56/0x84
-> >  [<c12d24b7>] oprofile_add_sample+0x75/0x84
-> >  [<c12d48e3>] op_amd_check_ctrs+0x46/0x260
-> >  [<c10328b9>] ? wake_up_worker+0x19/0x1b
-> >  [<c103331a>] ? insert_work+0x58/0x5c
-> >  [<c12d4195>] profile_exceptions_notify+0x23/0x4c
-> >  [<c138b497>] nmi_handle+0x31/0x4a
-> >  [<c102734f>] ? ftrace_define_fields_irq_handler_entry+0x45/0x45
-> >  [<c138b559>] do_nmi+0xa9/0x304
-> >  [<c102c2e7>] ? run_timer_softirq+0x2a/0x1f5
-> >  [<c102734f>] ? ftrace_define_fields_irq_handler_entry+0x45/0x45
-> >  [<c138ae4d>] nmi_stack_correct+0x28/0x2d
-> >  [<c102734f>] ? ftrace_define_fields_irq_handler_entry+0x45/0x45
-> >  [<c10035f7>] ? do_softirq+0x4b/0x7f
-> >  <IRQ> 
-> >  [<c10275cc>] irq_exit+0x35/0x5b
-> >  [<c101689e>] smp_apic_timer_interrupt+0x6c/0x7a
-> >  [<c138abae>] apic_timer_interrupt+0x2a/0x30
-> > Code: 89 fe eb 08 31 c9 8b 45 0c ff 55 ec 83 c3 04 83 7d 10 00 74 0c 3b 5d 10 73 26 3b 5d e4 73 0c eb 1f 3b 5d f0 76 1a 3b 5d e8 73 15 <8b> 13 89 d0 89 55 e0 e8 9d 16 03 00 85 c0 8b 55 e0 75 a6 eb cc 
-> > EIP: [<c100422f>] print_context_stack+0x6e/0x8d SS:ESP 0068:f5517ea0
-> > CR2: 0000000000000040
-> > ---[ end trace 0cce5d2b7aa480ce ]---
-> > Kernel panic - not syncing: Fatal exception in interrupt
+> Looking again at:
 > 
-> Could you send me the config file and post the entire dmesg somewhere.
+> +#define hash_for_each_size(name, bits, bkt, node, obj, member)                 \
+> +       for (bkt = 0; bkt < HASH_SIZE(bits); bkt++)                             \
+> +               hlist_for_each_entry(obj, node, &name[bkt], member)
+> 
+> you will notice that a "break" or "continue" in the inner loop will not
+> affect the outer loop, which is certainly not what the programmer would
+> expect!
+> 
+> I advise strongly against creating such error-prone construct.
+> 
 
-Wei found the root cause of this that is a wrong calcuation in
-kernel_stack_pointer() in softirq context for i386. I sent a fix, see
-my today's mail with subject:
+A few existing loop macros do this. But they require a do { } while ()
+approach, and all have a comment.
 
- Re: [PATCH 1/1] x86/oprofile: Fix the calltrace upon profiling some specified events with oprofile.
+It's used by do_each_thread() in sched.h and ftrace does this as well.
+Look at kernel/trace/ftrace.c at do_for_each_ftrace_rec().
 
--Robert
+Yes it breaks 'break' but it does not break 'continue' as it would just
+go to the next item that would have been found (like a normal for
+would).
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+-- Steve
+
 
