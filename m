@@ -1,261 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932224Ab2IDNwg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 09:52:36 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:24054
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932152Ab2IDNwe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 09:52:34 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 5
-X-BigFish: VS5(zz78fbmzz1202hzz8275bh84d07hz2dh2a8h668h839hd24he5bhf0ah107ah1155h)
-From: Fabio Estevam <fabio.estevam@freescale.com>
-To: <herbert@gondor.hengli.com.au>
-CC: <kernel@pengutronix.de>, <linux-kernel@vger.kernel.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH v3 2/2] hw_random: mxc-rnga: Access data via structure
-Date: Tue, 4 Sep 2012 10:52:22 -0300
-Message-ID: <1346766742-32442-2-git-send-email-fabio.estevam@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1346766742-32442-1-git-send-email-fabio.estevam@freescale.com>
-References: <1346766742-32442-1-git-send-email-fabio.estevam@freescale.com>
+	id S1757129Ab2IDNyj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 09:54:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41034 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757083Ab2IDNyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 09:54:37 -0400
+Date: Tue, 4 Sep 2012 09:54:23 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Kent Overstreet <koverstreet@google.com>,
+        Mikulas Patocka <mpatocka@redhat.com>, linux-bcache@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dm-devel@redhat.com, tj@kernel.org,
+        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH v7 9/9] block: Avoid deadlocks with bio allocation by
+ stacking drivers
+Message-ID: <20120904135422.GC13768@redhat.com>
+References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
+ <1346175456-1572-10-git-send-email-koverstreet@google.com>
+ <Pine.LNX.4.64.1208291210180.774@file.rdu.redhat.com>
+ <20120829165006.GB20312@google.com>
+ <20120829170711.GC12504@redhat.com>
+ <20120829171345.GC20312@google.com>
+ <20120830220745.GI27257@redhat.com>
+ <20120903004927.GM15292@dastard>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120903004927.GM15292@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In current driver, everytime we need to access the rng clock
-,ie to enable or disable it, a call to clk_get is done.
+On Mon, Sep 03, 2012 at 10:49:27AM +1000, Dave Chinner wrote:
+> On Thu, Aug 30, 2012 at 06:07:45PM -0400, Vivek Goyal wrote:
+> > On Wed, Aug 29, 2012 at 10:13:45AM -0700, Kent Overstreet wrote:
+> > 
+> > [..]
+> > > > Performance aside, punting submission to per device worker in case of deep
+> > > > stack usage sounds cleaner solution to me.
+> > > 
+> > > Agreed, but performance tends to matter in the real world. And either
+> > > way the tricky bits are going to be confined to a few functions, so I
+> > > don't think it matters that much.
+> > > 
+> > > If someone wants to code up the workqueue version and test it, they're
+> > > more than welcome...
+> > 
+> > Here is one quick and dirty proof of concept patch. It checks for stack
+> > depth and if remaining space is less than 20% of stack size, then it
+> > defers the bio submission to per queue worker.
+> 
+> Given that we are working around stack depth issues in the
+> filesystems already in several places, and now it seems like there's
+> a reason to work around it in the block layers as well, shouldn't we
+> simply increase the default stack size rather than introduce
+> complexity and performance regressions to try and work around not
+> having enough stack?
 
-This is not correct and the preferred way is to provide a rng data structure
-that could be used for accessing rng resources.
+Dave,
 
-Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
-Changes since v2:
-- Added Ack and Cc maintainer (Herbert)
-Changes since v1:
-- No changes. Newly introduced in this version
- drivers/char/hw_random/mxc-rnga.c |  108 ++++++++++++++++++-------------------
- 1 file changed, 51 insertions(+), 57 deletions(-)
+In this particular instance, we really don't have any bug reports of
+stack overflowing. Just discussing what will happen if we make 
+generic_make_request() recursive again.
 
-diff --git a/drivers/char/hw_random/mxc-rnga.c b/drivers/char/hw_random/mxc-rnga.c
-index 62c7efe..f05d857 100644
---- a/drivers/char/hw_random/mxc-rnga.c
-+++ b/drivers/char/hw_random/mxc-rnga.c
-@@ -59,16 +59,21 @@
- #define RNGA_STATUS_LAST_READ_STATUS	0x00000002
- #define RNGA_STATUS_SECURITY_VIOLATION	0x00000001
- 
--static struct platform_device *rng_dev;
-+struct mxc_rng {
-+	struct device *dev;
-+	struct hwrng rng;
-+	void __iomem *mem;
-+	struct clk *clk;
-+};
- 
- static int mxc_rnga_data_present(struct hwrng *rng, int wait)
- {
--	void __iomem *rng_base = (void __iomem *)rng->priv;
- 	int i;
-+	struct mxc_rng *mxc_rng = container_of(rng, struct mxc_rng, rng);
- 
- 	for (i = 0; i < 20; i++) {
- 		/* how many random numbers are in FIFO? [0-16] */
--		int level = (__raw_readl(rng_base + RNGA_STATUS) &
-+		int level = (__raw_readl(mxc_rng->mem + RNGA_STATUS) &
- 				RNGA_STATUS_LEVEL_MASK) >> 8;
- 		if (level || !wait)
- 			return !!level;
-@@ -81,20 +86,20 @@ static int mxc_rnga_data_read(struct hwrng *rng, u32 * data)
- {
- 	int err;
- 	u32 ctrl;
--	void __iomem *rng_base = (void __iomem *)rng->priv;
-+	struct mxc_rng *mxc_rng = container_of(rng, struct mxc_rng, rng);
- 
- 	/* retrieve a random number from FIFO */
--	*data = __raw_readl(rng_base + RNGA_OUTPUT_FIFO);
-+	*data = __raw_readl(mxc_rng->mem + RNGA_OUTPUT_FIFO);
- 
- 	/* some error while reading this random number? */
--	err = __raw_readl(rng_base + RNGA_STATUS) & RNGA_STATUS_ERROR_INT;
-+	err = __raw_readl(mxc_rng->mem + RNGA_STATUS) & RNGA_STATUS_ERROR_INT;
- 
- 	/* if error: clear error interrupt, but doesn't return random number */
- 	if (err) {
--		dev_dbg(&rng_dev->dev, "Error while reading random number!\n");
--		ctrl = __raw_readl(rng_base + RNGA_CONTROL);
-+		dev_dbg(mxc_rng->dev, "Error while reading random number!\n");
-+		ctrl = __raw_readl(mxc_rng->mem + RNGA_CONTROL);
- 		__raw_writel(ctrl | RNGA_CONTROL_CLEAR_INT,
--					rng_base + RNGA_CONTROL);
-+					mxc_rng->mem + RNGA_CONTROL);
- 		return 0;
- 	} else
- 		return 4;
-@@ -103,22 +108,22 @@ static int mxc_rnga_data_read(struct hwrng *rng, u32 * data)
- static int mxc_rnga_init(struct hwrng *rng)
- {
- 	u32 ctrl, osc;
--	void __iomem *rng_base = (void __iomem *)rng->priv;
-+	struct mxc_rng *mxc_rng = container_of(rng, struct mxc_rng, rng);
- 
- 	/* wake up */
--	ctrl = __raw_readl(rng_base + RNGA_CONTROL);
--	__raw_writel(ctrl & ~RNGA_CONTROL_SLEEP, rng_base + RNGA_CONTROL);
-+	ctrl = __raw_readl(mxc_rng->mem + RNGA_CONTROL);
-+	__raw_writel(ctrl & ~RNGA_CONTROL_SLEEP, mxc_rng->mem + RNGA_CONTROL);
- 
- 	/* verify if oscillator is working */
--	osc = __raw_readl(rng_base + RNGA_STATUS);
-+	osc = __raw_readl(mxc_rng->mem + RNGA_STATUS);
- 	if (osc & RNGA_STATUS_OSC_DEAD) {
--		dev_err(&rng_dev->dev, "RNGA Oscillator is dead!\n");
-+		dev_err(mxc_rng->dev, "RNGA Oscillator is dead!\n");
- 		return -ENODEV;
- 	}
- 
- 	/* go running */
--	ctrl = __raw_readl(rng_base + RNGA_CONTROL);
--	__raw_writel(ctrl | RNGA_CONTROL_GO, rng_base + RNGA_CONTROL);
-+	ctrl = __raw_readl(mxc_rng->mem + RNGA_CONTROL);
-+	__raw_writel(ctrl | RNGA_CONTROL_GO, mxc_rng->mem + RNGA_CONTROL);
- 
- 	return 0;
- }
-@@ -126,40 +131,40 @@ static int mxc_rnga_init(struct hwrng *rng)
- static void mxc_rnga_cleanup(struct hwrng *rng)
- {
- 	u32 ctrl;
--	void __iomem *rng_base = (void __iomem *)rng->priv;
-+	struct mxc_rng *mxc_rng = container_of(rng, struct mxc_rng, rng);
- 
--	ctrl = __raw_readl(rng_base + RNGA_CONTROL);
-+	ctrl = __raw_readl(mxc_rng->mem + RNGA_CONTROL);
- 
- 	/* stop rnga */
--	__raw_writel(ctrl & ~RNGA_CONTROL_GO, rng_base + RNGA_CONTROL);
-+	__raw_writel(ctrl & ~RNGA_CONTROL_GO, mxc_rng->mem + RNGA_CONTROL);
- }
- 
--static struct hwrng mxc_rnga = {
--	.name = "mxc-rnga",
--	.init = mxc_rnga_init,
--	.cleanup = mxc_rnga_cleanup,
--	.data_present = mxc_rnga_data_present,
--	.data_read = mxc_rnga_data_read
--};
--
- static int __init mxc_rnga_probe(struct platform_device *pdev)
- {
- 	int err = -ENODEV;
--	struct clk *clk;
- 	struct resource *res, *mem;
--	void __iomem *rng_base = NULL;
--
--	if (rng_dev)
--		return -EBUSY;
--
--	clk = clk_get(&pdev->dev, NULL);
--	if (IS_ERR(clk)) {
-+	struct mxc_rng *mxc_rng;
-+
-+	mxc_rng = devm_kzalloc(&pdev->dev, sizeof(struct mxc_rng),
-+					GFP_KERNEL);
-+	if (!mxc_rng)
-+		return -ENOMEM;
-+
-+	mxc_rng->dev = &pdev->dev;
-+	mxc_rng->rng.name = "mxc-rnga";
-+	mxc_rng->rng.init = mxc_rnga_init;
-+	mxc_rng->rng.cleanup = mxc_rnga_cleanup,
-+	mxc_rng->rng.data_present = mxc_rnga_data_present,
-+	mxc_rng->rng.data_read = mxc_rnga_data_read,
-+
-+	mxc_rng->clk = devm_clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(mxc_rng->clk)) {
- 		dev_err(&pdev->dev, "Could not get rng_clk!\n");
--		err = PTR_ERR(clk);
-+		err = PTR_ERR(mxc_rng->clk);
- 		goto out;
- 	}
- 
--	clk_prepare_enable(clk);
-+	clk_prepare_enable(mxc_rng->clk);
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!res) {
-@@ -173,36 +178,27 @@ static int __init mxc_rnga_probe(struct platform_device *pdev)
- 		goto err_region;
- 	}
- 
--	rng_base = ioremap(res->start, resource_size(res));
--	if (!rng_base) {
-+	mxc_rng->mem = ioremap(res->start, resource_size(res));
-+	if (!mxc_rng->mem) {
- 		err = -ENOMEM;
- 		goto err_ioremap;
- 	}
- 
--	mxc_rnga.priv = (unsigned long)rng_base;
--
--	err = hwrng_register(&mxc_rnga);
-+	err = hwrng_register(&mxc_rng->rng);
- 	if (err) {
- 		dev_err(&pdev->dev, "MXC RNGA registering failed (%d)\n", err);
--		goto err_register;
-+		goto err_ioremap;
- 	}
- 
--	rng_dev = pdev;
--
- 	dev_info(&pdev->dev, "MXC RNGA Registered.\n");
- 
- 	return 0;
- 
--err_register:
--	iounmap(rng_base);
--	rng_base = NULL;
--
- err_ioremap:
- 	release_mem_region(res->start, resource_size(res));
- 
- err_region:
--	clk_disable_unprepare(clk);
--	clk_put(clk);
-+	clk_disable_unprepare(mxc_rng->clk);
- 
- out:
- 	return err;
-@@ -211,17 +207,15 @@ out:
- static int __exit mxc_rnga_remove(struct platform_device *pdev)
- {
- 	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	void __iomem *rng_base = (void __iomem *)mxc_rnga.priv;
--	struct clk *clk = clk_get(&pdev->dev, NULL);
-+	struct mxc_rng *mxc_rng = platform_get_drvdata(pdev);
- 
--	hwrng_unregister(&mxc_rnga);
-+	hwrng_unregister(&mxc_rng->rng);
- 
--	iounmap(rng_base);
-+	iounmap(mxc_rng->mem);
- 
- 	release_mem_region(res->start, resource_size(res));
- 
--	clk_disable_unprepare(clk);
--	clk_put(clk);
-+	clk_disable_unprepare(mxc_rng->clk);
- 
- 	return 0;
- }
--- 
-1.7.9.5
+> 
+> I mean, we can deal with it like the ia32 4k stack issue was dealt
+> with (i.e. ignore those stupid XFS people, that's an XFS bug), or
+> we can face the reality that storage stacks have become so complex
+> that 8k is no longer a big enough stack for a modern system....
 
+So first question will be, what's the right stack size? If we make
+generic_make_request() recursive, then at some storage stack depth we will
+overflow stack anyway (if we have created too deep a stack). Hence
+keeping current logic kind of makes sense as in theory we can support
+arbitrary depth of storage stack.
 
+Yes, if higher layers are consuming more stack, then it does raise the
+question whether to offload work to worker and take performance hit or
+increase stack depth. I don't know what's the answer to that question.
+I have only tried going through the archive where some people seem to have
+pushed for even smaller stack size (4K).
+
+Thanks
+Vivek
