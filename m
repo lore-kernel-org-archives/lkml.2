@@ -1,75 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932673Ab2IDUA1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 16:00:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38644 "EHLO mx1.redhat.com"
+	id S1757807Ab2IDUEH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 16:04:07 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:57395 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757807Ab2IDUAY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 16:00:24 -0400
-Date: Tue, 4 Sep 2012 17:00:07 -0300
-From: Flavio Leitner <fbl@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        WANG Cong <xiyou.wangcong@gmail.com>, Tejun Heo <tj@kernel.org>,
-        ianfang.cn@gmail.com, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: kexec/kdump kernel fails to start
-Message-ID: <20120904170007.5fa65d72@obelix.rh>
-In-Reply-To: <CAE9FiQX7OMdFU6FuTQdz+NdbNt5Hy9zjzSY7y-90G4CbhayfaA@mail.gmail.com>
-References: <20120904143215.5bbbb2a4@obelix.rh>
-	<CAE9FiQUEHbDySWHWFj6kW=HGLR0vkbaJWRq+7kMMHGhBm8e08A@mail.gmail.com>
-	<20120904161737.358d51ad@obelix.rh>
-	<CAE9FiQX7OMdFU6FuTQdz+NdbNt5Hy9zjzSY7y-90G4CbhayfaA@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752269Ab2IDUEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 16:04:04 -0400
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: [PATCH v2 0/3] promote zcache from staging
+Date: Tue,  4 Sep 2012 15:02:46 -0500
+Message-Id: <1346788969-4100-1-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12090420-1976-0000-0000-000010ECBD00
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 Sep 2012 12:20:14 -0700
-Yinghai Lu <yinghai@kernel.org> wrote:
+zcache is the remaining piece of code required to support in-kernel
+memory compression.  The other two features, cleancache and frontswap,
+have been promoted to mainline in 3.0 and 3.5 respectively.  This
+patchset promotes zcache from the staging tree to mainline.
 
-> On Tue, Sep 4, 2012 at 12:17 PM, Flavio Leitner <fbl@redhat.com> wrote:
-> > On Tue, 4 Sep 2012 12:02:00 -0700
-> > [    0.000000] x86 PAT enabled: cpu 0, old 0x7040600070406, new 0x7010600070106
-> > [    0.000000] last_pfn = 0xbf800 max_arch_pfn = 0x400000000
-> > [    0.000000] initial memory mapped : 0 - 20000000
-> > [    0.000000] Base memory trampoline at [ffff880000098000] 98000 size 20480
-> > [    0.000000] init_memory_mapping: 0000000000000000-00000000bf800000
-> > [    0.000000]  0000000000 - 00bf800000 page 2M
-> > [    0.000000] kernel direct mapping tables up to bf800000 @ 1fa00000-20000000
-> > [    0.000000] init_memory_mapping: 0000000100000000-0000000440000000
-> > [    0.000000]  0100000000 - 0440000000 page 2M
-> > [    0.000000] kernel direct mapping tables up to 440000000 @ bdaab000-bf4bd000
-> > [    0.000000] RAMDISK: 352c8000 - 3695c000
-> >
+Based on the level of activity and contributions we're seeing from a
+diverse set of people and interests, I think zcache has matured to the
+point where it makes sense to promote this out of staging.
 
-Alright, moving the extra accounting to be inside of CONFIG_X86_32 works out.
+Overview
+========
+zcache is a backend to frontswap and cleancache that accepts pages from
+those mechanisms and compresses them, leading to reduced I/O caused by
+swap and file re-reads.  This is very valuable in shared storage situations
+to reduce load on things like SANs.  Also, in the case of slow backing/swap
+devices, zcache can also yield a performance gain.
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index e0e6990..63e6a5c 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -60,10 +60,10 @@ static void __init find_early_table_space(struct map_range *mr, unsigned long en
- 		extra = end - ((end>>PMD_SHIFT) << PMD_SHIFT);
- #ifdef CONFIG_X86_32
- 		extra += PMD_SIZE;
--#endif
- 		/* The first 2/4M doesn't use large pages. */
- 		if (mr->start < PMD_SIZE)
- 			extra += mr->end - mr->start;
-+#endif
- 
- 		ptes = (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 	} else
+In-Kernel Memory Compression Overview:
 
-> BTW, can you please try our new init_memory_mapping clean up at
-> 
-> 	git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
-> for-x86-mm
-> 
-> hope it could make your kdump working.
+ swap subsystem            page cache
+        +                      +
+    frontswap              cleancache
+        +                      +
+zcache frontswap glue  zcache cleancache glue
+        +                      +
+        +---------+------------+
+                  +
+            zcache/tmem core
+                  +
+        +---------+------------+
+        +                      +
+     zsmalloc                 zbud
 
-I will give a try.
-fbl
+Everything below the frontswap/cleancache layer is current inside the
+zcache driver expect for zsmalloc which is a shared between zcache and
+another memory compression driver, zram.
+
+Since zcache is dependent on zsmalloc, it is also being promoted by this
+patchset.
+
+For information on zsmalloc and the rationale behind it's design and use
+cases verses already existing allocators in the kernel:
+
+https://lkml.org/lkml/2012/1/9/386
+
+zsmalloc is the allocator used by zcache to store persistent pages that
+comes from frontswap, as opposed to zbud which is the (internal) allocator
+used for ephemeral pages from cleancache.
+
+zsmalloc uses many fields of the page struct to create it's conceptual
+high-order page called a zspage.  Exactly which fields are used and for
+what purpose is documented at the top of the zsmalloc .c file.  Because
+zsmalloc uses struct page extensively, Andrew advised that the
+promotion location be mm/:
+
+https://lkml.org/lkml/2012/1/20/308
+
+Some benchmarking numbers demonstrating the I/O saving that can be had
+with zcache:
+
+https://lkml.org/lkml/2012/3/22/383
+
+Dan's presentation at LSF/MM this year on zcache:
+
+http://oss.oracle.com/projects/tmem/dist/documentation/presentations/LSFMM12-zcache-final.pdf
+
+There was a recent thread about cleancache memory corruption that is
+resolved by this patch that should be making it into linux-next via
+Greg very soon:
+
+https://lkml.org/lkml/2012/8/29/253
+
+Changlog:
+	v2:
+	* rebased to next-20120904
+	* removed already accepted patch from patchset
+
+Seth Jennings (3):
+  zsmalloc: promote to mm/
+  drivers: add memory management driver class
+  zcache: promote to drivers/mm/
+
+ drivers/Kconfig                                    |    2 ++
+ drivers/Makefile                                   |    1 +
+ drivers/mm/Kconfig                                 |   13 +++++++++++++
+ drivers/mm/Makefile                                |    1 +
+ drivers/{staging => mm}/zcache/Makefile            |    0
+ drivers/{staging => mm}/zcache/tmem.c              |    0
+ drivers/{staging => mm}/zcache/tmem.h              |    0
+ drivers/{staging => mm}/zcache/zcache-main.c       |    4 ++--
+ drivers/staging/Kconfig                            |    4 ----
+ drivers/staging/Makefile                           |    2 --
+ drivers/staging/zcache/Kconfig                     |   11 -----------
+ drivers/staging/zram/zram_drv.h                    |    3 +--
+ drivers/staging/zsmalloc/Kconfig                   |   10 ----------
+ drivers/staging/zsmalloc/Makefile                  |    3 ---
+ .../staging/zsmalloc => include/linux}/zsmalloc.h  |    0
+ mm/Kconfig                                         |   18 ++++++++++++++++++
+ mm/Makefile                                        |    1 +
+ .../zsmalloc/zsmalloc-main.c => mm/zsmalloc.c      |    3 +--
+ 18 files changed, 40 insertions(+), 36 deletions(-)
+ create mode 100644 drivers/mm/Kconfig
+ create mode 100644 drivers/mm/Makefile
+ rename drivers/{staging => mm}/zcache/Makefile (100%)
+ rename drivers/{staging => mm}/zcache/tmem.c (100%)
+ rename drivers/{staging => mm}/zcache/tmem.h (100%)
+ rename drivers/{staging => mm}/zcache/zcache-main.c (99%)
+ delete mode 100644 drivers/staging/zcache/Kconfig
+ delete mode 100644 drivers/staging/zsmalloc/Kconfig
+ delete mode 100644 drivers/staging/zsmalloc/Makefile
+ rename {drivers/staging/zsmalloc => include/linux}/zsmalloc.h (100%)
+ rename drivers/staging/zsmalloc/zsmalloc-main.c => mm/zsmalloc.c (99%)
+
+-- 
+1.7.9.5
 
