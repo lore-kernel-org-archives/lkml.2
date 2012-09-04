@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757701Ab2IDTcu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 15:32:50 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51924 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757649Ab2IDTct (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 15:32:49 -0400
-X-Sasl-enc: sdA4l02kcWgp9rJ1+1GAvUg5wInolb7EnKZ4HtFeHO+J 1346787167
-Date: Tue, 4 Sep 2012 12:30:18 -0700
-From: Greg Kroah-Hartman <greg@kroah.com>
-To: Toshiaki Yamane <yamanetoshi@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging/rts_pstor: remove braces {} in sd.c
-Message-ID: <20120904193018.GA4176@kroah.com>
-References: <1346506980-2868-1-git-send-email-yamanetoshi@gmail.com>
+	id S1757712Ab2IDTkD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 15:40:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33078 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751967Ab2IDTkA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 15:40:00 -0400
+Date: Tue, 4 Sep 2012 15:39:49 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Kent Overstreet <koverstreet@google.com>, linux-bcache@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dm-devel@redhat.com, tj@kernel.org,
+        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH v7 9/9] block: Avoid deadlocks with bio allocation by
+ stacking drivers
+Message-ID: <20120904193949.GC2603@redhat.com>
+References: <1346175456-1572-10-git-send-email-koverstreet@google.com>
+ <Pine.LNX.4.64.1208291210180.774@file.rdu.redhat.com>
+ <20120829165006.GB20312@google.com>
+ <20120829170711.GC12504@redhat.com>
+ <20120829171345.GC20312@google.com>
+ <20120830220745.GI27257@redhat.com>
+ <20120831014359.GB15218@moria.home.lan>
+ <Pine.LNX.4.64.1209031638110.15620@file.rdu.redhat.com>
+ <20120904034100.GA21602@moria.home.lan>
+ <Pine.LNX.4.64.1209041509160.22689@file.rdu.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1346506980-2868-1-git-send-email-yamanetoshi@gmail.com>
+In-Reply-To: <Pine.LNX.4.64.1209041509160.22689@file.rdu.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 01, 2012 at 10:43:00PM +0900, Toshiaki Yamane wrote:
-> fixed below checkpatch warnings.
-> -WARNING: braces {} are not necessary for single statement blocks
-> -WARNING: braces {} are not necessary for any arm of this statement
-> 
-> Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
-> ---
->  drivers/staging/rts_pstor/sd.c | 1112 +++++++++++++++++-----------------------
->  1 file changed, 469 insertions(+), 643 deletions(-)
+On Tue, Sep 04, 2012 at 03:26:19PM -0400, Mikulas Patocka wrote:
 
-Why is the object file size changing with this patch applied?  That
-implies that something went wrong with your patch, care to redo it in a
-format that I can properly review it?
+[..]
+> BTW. can these new-style timerless plugs introduce deadlocks too? What 
+> happens when some bios are indefinitely delayed because their requests are 
+> held in a plug and a mempool runs out?
 
-thanks,
+I think they will not deadlock because these on stack bios/requests are
+flushed/dispatched when process schedules out. So if a submitter blocks
+on a mempool, it will be scheduled out and requests on plug will be 
+dispatched.
 
-greg k-h
+Thanks
+Vivek
