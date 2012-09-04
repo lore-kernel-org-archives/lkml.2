@@ -1,38 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932342Ab2IDQGM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 12:06:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34254 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102Ab2IDQGK (ORCPT
+	id S1757313Ab2IDQHW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 12:07:22 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:43333 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756897Ab2IDQHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 12:06:10 -0400
-Message-ID: <504626CB.60601@gmail.com>
-Date: Tue, 04 Sep 2012 10:05:31 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: Maciek Borzecki <maciek.borzecki@gmail.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-perf-users@vger.kernel.org
-Subject: Re: [PATCH] perf: allow user to indicate path to objdump in command
- line
-References: <1346754750.16299.3.camel@localhost.localdomain>
-In-Reply-To: <1346754750.16299.3.camel@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Tue, 4 Sep 2012 12:07:20 -0400
+Date: Tue, 4 Sep 2012 17:12:05 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Subject: Re: [PATCH 05/11] asus-wmi: Restrict debugfs interface
+Message-ID: <20120904171205.3dfbcabd@pyramind.ukuu.org.uk>
+In-Reply-To: <1346774117-2277-6-git-send-email-mjg@redhat.com>
+References: <1346774117-2277-1-git-send-email-mjg@redhat.com>
+	<1346774117-2277-6-git-send-email-mjg@redhat.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/4/12 4:32 AM, Maciek Borzecki wrote:
-> When analyzing perf data from hosts of other architecture than one of the local
-> host it's useful to call objdump that is part of a toolchain for that
-> architecture. Instead of calling regular objdump, call one that user specified
-> in command line.
+On Tue,  4 Sep 2012 11:55:11 -0400
+Matthew Garrett <mjg@redhat.com> wrote:
 
-Why not set the PATH to make the toolchain's version the one used by perf?
+> We have no way of validating what all of the Asus WMI methods do on a
+> given machine, and there's a risk that some will allow hardware state to
+> be manipulated in such a way that arbitrary code can be executed in the
+> kernel. Add a capability check to prevent that.
 
-David
+This is true of any firmware method on any device Why pick on ASUS. Have
+you run this through ASUS and discussed it with them. It seems highly
+inappropriate to cripple a specific vendors feature set without
+discussion and an Ack from the vendor concerned.
 
+Alan
