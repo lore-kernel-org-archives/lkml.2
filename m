@@ -1,198 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754144Ab2ICXNE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 19:13:04 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36850 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753936Ab2ICXNB (ORCPT
+	id S1754246Ab2IDAiy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 20:38:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47565 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754151Ab2IDAix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 19:13:01 -0400
-Message-ID: <1346713972.2312.2.camel@Cruz-PC>
-Subject: Re: [PATCH 5/5] scripts/checkincludes.pl: Replace tabs with spaces
-From: Cruz Julian Bishop <cruzjbishop@gmail.com>
-To: mcgrof@gmail.com
-Cc: linux-kernel@vger.kernel.org
-Date: Tue, 04 Sep 2012 09:12:52 +1000
-In-Reply-To: <1346710853-19166-6-git-send-email-cruzjbishop@gmail.com>
-References: <1346710853-19166-1-git-send-email-cruzjbishop@gmail.com>
-	 <1346710853-19166-6-git-send-email-cruzjbishop@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
-Mime-Version: 1.0
+	Mon, 3 Sep 2012 20:38:53 -0400
+Message-ID: <50454D97.2060002@gmail.com>
+Date: Tue, 04 Sep 2012 10:38:47 +1000
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: yan <clouds.yan@gmail.com>
+CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] proc: return -ENOMEM when inode allocation failed
+References: <1346681648-21427-1-git-send-email-clouds.yan@gmail.com> <1346681648-21427-2-git-send-email-clouds.yan@gmail.com>
+In-Reply-To: <1346681648-21427-2-git-send-email-clouds.yan@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My bad, misread the documentation files.
-
-I'll resubmit without this
-
-On Tue, 2012-09-04 at 08:20 +1000, Cruz Julian Bishop wrote:
-> This is required by the CodingStyle kernel documentation file
-> 
-> Signed-off-by: Cruz Julian Bishop <cruzjbishop@gmail.com>
+On 04/09/12 00:14, yan wrote:
+> Signed-off-by: yan <clouds.yan@gmail.com>
 > ---
->  scripts/checkincludes.pl | 122 +++++++++++++++++++++++------------------------
->  1 file changed, 61 insertions(+), 61 deletions(-)
+>  fs/proc/generic.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/scripts/checkincludes.pl b/scripts/checkincludes.pl
-> index bff7316..7e3df9e 100755
-> --- a/scripts/checkincludes.pl
-> +++ b/scripts/checkincludes.pl
-> @@ -14,7 +14,7 @@
->  use strict;
->  
->  sub usage {
-> -	print <<EOM;
-> +        print <<EOM;
->  Usage: checkincludes.pl [OPTIONS]... FILE...
->  By default, we just warn of duplicates.
->  
-> @@ -23,84 +23,84 @@ Options:
->    -q                Do not show messages for files that do not
->                      have duplicated includes
->  EOM
-> -	exit 1;
-> +        exit 1;
->  }
->  
->  my $remove = 0;
->  my $quiet = 0;
->  
->  if ($#ARGV < 0) {
-> -	usage();
-> +        usage();
->  }
->  
->  my $argc = 0;
->  
->  foreach my $arg (@ARGV) {
-> -	if ($arg eq "-r") {
-> -		$remove = 1;
-> -	} elsif($arg eq "-q") {
-> -		$quiet = 1;
-> -	} else {
-> -		open(my $f, '<', $arg)
-> -		    or die "Cannot open $arg: $!.\n";
-> -		    
-> -		$argc++;
-> +        if ($arg eq "-r") {
-> +                $remove = 1;
-> +        } elsif($arg eq "-q") {
-> +                $quiet = 1;
-> +        } else {
-> +                open(my $f, '<', $arg)
-> +                        or die "Cannot open $arg: $!.\n";
-> +                    
-> +                $argc++;
->  
-> -		my %includedfiles = ();
-> -		my @file_lines = ();
-> +                my %includedfiles = ();
-> +                my @file_lines = ();
->  
-> -		while (<$f>) {
-> -			if (m/^\s*#\s*include\s*[<"](\S*)[>"]/o) {
-> -				++$includedfiles{$1};
-> -			}
-> -			push(@file_lines, $_);
-> -		}
-> +                while (<$f>) {
-> +                        if (m/^\s*#\s*include\s*[<"](\S*)[>"]/o) {
-> +                                ++$includedfiles{$1};
-> +                        }
-> +                        push(@file_lines, $_);
-> +                }
->  
-> -		close($f);
-> +                close($f);
->  
-> -		if (!$remove) {
-> -			my $detected = 0;
-> -			foreach my $filename (keys %includedfiles) {
-> -				if ($includedfiles{$filename} > 1) {
-> -					$detected++;
-> -					print "$arg: $filename is included more than once.\n";
-> -				}
-> -			}
-> -			if (!$detected && !$quiet) {
-> -				print "$arg: No duplicated includes detected.\n";
-> -			}
-> -			next;
-> -		}
-> +                if (!$remove) {
-> +                        my $detected = 0;
-> +                        foreach my $filename (keys %includedfiles) {
-> +                                if ($includedfiles{$filename} > 1) {
-> +                                        $detected++;
-> +                                print "$arg: $filename is included more than once.\n";
-> +                                }
-> +                        }
-> +                        if (!$detected && !$quiet) {
-> +                                print "$arg: No duplicated includes detected.\n";
-> +                        }
-> +                        next;
-> +                }
->  
-> -		open($f, '>', $arg)
-> -			or die("Cannot write to $arg: $!");
-> +                open($f, '>', $arg)
-> +                        or die("Cannot write to $arg: $!");
->  
-> -		my $dups = 0;
-> -		foreach(@file_lines) {
-> -			if (m/^\s*#\s*include\s*[<"](\S*)[>"]/o) {
-> -				foreach my $filename (keys %includedfiles) {
-> -					if ($1 eq $filename) {
-> -						if ($includedfiles{$filename} > 1) {
-> -							$includedfiles{$filename}--;
-> -							$dups++;
-> -						} else {
-> -							print {$f} $_;
-> -						}
-> -					}
-> -				}
-> -			} else {
-> -				print {$f} $_;
-> -			}
-> -		}
-> -		if ($dups > 0) {
-> -			print "$arg: removed $dups duplicate includes \n";
-> -		} elsif (!$quiet) {
-> -			print "$arg: no duplicated includes to remove \n";
-> -		}
-> -		close($f);
-> -	}
-> +                my $dups = 0;
-> +                foreach(@file_lines) {
-> +                        if (m/^\s*#\s*include\s*[<"](\S*)[>"]/o) {
-> +                                foreach my $filename (keys %includedfiles) {
-> +                                        if ($1 eq $filename) {
-> +                                                if ($includedfiles{$filename} > 1) {
-> +                                                        $includedfiles{$filename}--;
-> +                                                        $dups++;
-> +                                                } else {
-> +                                                        print {$f} $_;
-> +                                                }
-> +                                        }
-> +                                }
-> +                        } else {
-> +                                print {$f} $_;
-> +                        }
-> +                }
-> +                if ($dups > 0) {
-> +                        print "$arg: removed $dups duplicate includes \n";
-> +                } elsif (!$quiet) {
-> +                        print "$arg: no duplicated includes to remove \n";
-> +                }
-> +                close($f);
-> +        }
->  }
->  
->  if ($argc == 0) {
-> -	usage();
-> +        usage();
->  }
+> diff --git a/fs/proc/generic.c b/fs/proc/generic.c
+> index b3647fe..9e8f631 100644
+> --- a/fs/proc/generic.c
+> +++ b/fs/proc/generic.c
+> @@ -427,7 +427,7 @@ struct dentry *proc_lookup_de(struct proc_dir_entry *de, struct inode *dir,
+>  		if (!memcmp(dentry->d_name.name, de->name, de->namelen)) {
+>  			pde_get(de);
+>  			spin_unlock(&proc_subdir_lock);
+> -			error = -EINVAL;
+> +			error = -ENOMEM;
 
+This seems incorrect. This function doesn't allocate anything, it looks
+up an inode. From my reading it looks like -EINVAL is returned here if
+the dentry name matches, but the inode cannot be found.
+
+~Ryan
 
