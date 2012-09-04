@@ -1,134 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757254Ab2IDOWA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 10:22:00 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:6515 "EHLO relay.sw.ru"
+	id S1757266Ab2IDOXq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 10:23:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15460 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757157Ab2IDOV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 10:21:57 -0400
-From: Glauber Costa <glommer@parallels.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>, davej@redhat.com,
-        ben@decadent.org.uk, a.p.zijlstra@chello.nl, pjt@google.com,
-        lennart@poettering.net, kay.sievers@vrfy.org, tj@kernel.org,
-        Glauber Costa <glommer@parallels.com>
-Subject: [RFC 1/5] cgroup: allow some comounts to be forced.
-Date: Tue,  4 Sep 2012 18:18:16 +0400
-Message-Id: <1346768300-10282-2-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1346768300-10282-1-git-send-email-glommer@parallels.com>
-References: <1346768300-10282-1-git-send-email-glommer@parallels.com>
+	id S1757226Ab2IDOXo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 10:23:44 -0400
+Date: Tue, 4 Sep 2012 10:23:39 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tao Ma <tm@tao.ma>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH V2] block/throttle: Add IO throttled information in
+ blkio.throttle.
+Message-ID: <20120904142339.GE13768@redhat.com>
+References: <1346390109-3169-1-git-send-email-tm@tao.ma>
+ <20120904133528.GB13768@redhat.com>
+ <50460C61.6050705@tao.ma>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50460C61.6050705@tao.ma>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One of the pain points we have today with cgroups, is the excessive
-flexibility coming from the fact that controllers can be mounted at
-will, without any relationship with each other.
+On Tue, Sep 04, 2012 at 10:12:49PM +0800, Tao Ma wrote:
+> On 09/04/2012 09:35 PM, Vivek Goyal wrote:
+> > On Fri, Aug 31, 2012 at 01:15:09PM +0800, Tao Ma wrote:
+> > 
+> > [..]
+> >> diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+> >> index 1588c2d..9317d71 100644
+> >> --- a/block/blk-throttle.c
+> >> +++ b/block/blk-throttle.c
+> >> @@ -46,6 +46,8 @@ struct tg_stats_cpu {
+> >>  	struct blkg_rwstat		service_bytes;
+> >>  	/* total IOs serviced, post merge */
+> >>  	struct blkg_rwstat		serviced;
+> >> +	/* total IOs queued, not submitted to the underlying device. */
+> >> +	struct blkg_rwstat		io_queued;
+> >>  };
+> > 
+> > Couple of questions.
+> > 
+> > - blkg_rwstat is "unsigned" and io_queued can go negative too (Because
+> >   throttled bio can very well be dispatched from other cpu from a worker
+> >   thread). So is it a good idea to represent a negative number with 
+> >   unsingned type?
+> > 
+> > - As this stat is per cpu, a reader might very well see negative (or a
+> >   huge unsigned value) as number of io_queued. Not sure if that is acceptable.
+> >   How would user space come to know whether it is a valid value or not. I
+> >   thought per cpu stats are good for continuously increasing values but
+> >   not necessarily for values which can increase as well as decrease.
+> You are right. So I should just use throtl_grp->nr_queued to display the
+> total numbers of ios being throttled and I guess a rcu_read_lock should
+> be enough for me to access that data.
 
-Although this is nice in principle, this comes with a cost that is not
-always welcome in practice. The very fact of this being possible is
-already enough to trigger those costs. We cannot assume a common
-hierarchy between controllers, and then hierarchy walks have to be done
-more than once. This happens in hotpaths as well.
+Not sure how rcu_read_lock() is going to help. Can you explain a bit more.
 
-This patch introduces a Kconfig option, default n, that will force some
-controllers to be comounted. After some time, we may be able to
-deprecate this mode of operation.
+For 64bit, we should not require any locking as updation always happens
+under queue_lock(for io_queued). And lockless reading should be just fine
+as updates to 64bit values will be atomic.
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Dave Jones <davej@redhat.com>
-CC: Ben Hutchings <ben@decadent.org.uk>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Paul Turner <pjt@google.com>
-CC: Lennart Poettering <lennart@poettering.net>
-CC: Kay Sievers <kay.sievers@vrfy.org>
-CC: Tejun Heo <tj@kernel.org>
----
- include/linux/cgroup.h |  6 ++++++
- init/Kconfig           |  4 ++++
- kernel/cgroup.c        | 29 ++++++++++++++++++++++++++++-
- 3 files changed, 38 insertions(+), 1 deletion(-)
+Only problem is reading of 64bit io_queued on 32bit platforms.
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index d3f5fba..f986ad1 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -531,6 +531,12 @@ struct cgroup_subsys {
- 
- 	/* should be defined only by modular subsystems */
- 	struct module *module;
-+
-+#ifdef CONFIG_CGROUP_FORCE_COMOUNT
-+	/* List of groups that we must be comounted with */
-+	int comounts;
-+	int must_comount[3];
-+#endif
- };
- 
- #define SUBSYS(_x) extern struct cgroup_subsys _x ## _subsys;
-diff --git a/init/Kconfig b/init/Kconfig
-index f64f888..d7d693d 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -680,6 +680,10 @@ config CGROUP_CPUACCT
- 	  Provides a simple Resource Controller for monitoring the
- 	  total CPU consumed by the tasks in a cgroup.
- 
-+config CGROUP_FORCE_COMOUNT
-+	bool
-+	default n
-+
- config RESOURCE_COUNTERS
- 	bool "Resource counters"
- 	help
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index b303dfc..137ac62 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1058,6 +1058,33 @@ static int rebind_subsystems(struct cgroupfs_root *root,
- 	if (root->number_of_cgroups > 1)
- 		return -EBUSY;
- 
-+#ifdef CONFIG_CGROUP_FORCE_COMOUNT
-+	/*
-+	 * Some subsystems should not be allowed to be freely mounted in
-+	 * separate hierarchies. They may not be present, but if they are, they
-+	 * should be together. For compatibility with older kernels, we'll allow
-+	 * this to live inside a separate Kconfig option. Each subsys will be
-+	 * able to tell us which other subsys it expects to be mounted with.
-+	 *
-+	 * We do a separate path for this, to avoid unwinding our modifications
-+	 * in case of an error.
-+	 */
-+	for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
-+		unsigned long bit = 1UL << i;
-+		int j;
-+
-+		if (!(bit & added_bits))
-+			continue;
-+
-+		for (j = 0; j < subsys[i]->comounts; j++) {
-+			int comount_id = subsys[i]->must_comount[j];
-+			struct cgroup_subsys *ss = subsys[comount_id];
-+			if ((ss->root != &rootnode) && (ss->root != root))
-+				return -EINVAL;
-+		}
-+	}
-+#endif
-+
- 	/* Process each subsystem */
- 	for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
- 		struct cgroup_subsys *ss = subsys[i];
-@@ -1634,7 +1661,7 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
- 			goto unlock_drop;
- 
- 		ret = rebind_subsystems(root, root->subsys_bits);
--		if (ret == -EBUSY) {
-+		if ((ret == -EBUSY) || (ret == -EINVAL)) {
- 			free_cg_links(&tmp_cg_links);
- 			goto unlock_drop;
- 		}
--- 
-1.7.11.4
+As updation always happens under queue_lock, we don't gain anything by making
+this stat per cpu. And for 32bit, we probably can updation/reading using
+sequence counter to make sure we don't get invalid values and read will 
+still be lockless.
 
+Thanks
+Vivek
