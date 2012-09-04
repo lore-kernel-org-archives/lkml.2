@@ -1,83 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756584Ab2IDI1e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 04:27:34 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:63680 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756090Ab2IDI1b (ORCPT
+	id S1756606Ab2IDI1y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 04:27:54 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:56008 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754287Ab2IDIZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 04:27:31 -0400
-Message-ID: <5045BB6A.8060309@atmel.com>
-Date: Tue, 4 Sep 2012 10:27:22 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Tue, 4 Sep 2012 04:25:33 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah107ah1155h)
+X-WSS-ID: 0M9TGQC-02-27F-02
+X-M-MSG: 
+From: Andre Przywara <andre.przywara@amd.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Thomas Renninger <trenn@suse.de>
+CC: Matthew Garret <mjg@redhat.com>, <linux-pm@vger.kernel.org>,
+        <cpufreq@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Andre Przywara <andre.przywara@amd.com>
+Subject: [PATCH 4/8 v2] powernow-k8: delay info messages until initialization has succeeded
+Date: Tue, 4 Sep 2012 10:28:05 +0200
+Message-ID: <1346747289-8421-5-git-send-email-andre.przywara@amd.com>
+X-Mailer: git-send-email 1.7.12
+In-Reply-To: <1346747289-8421-1-git-send-email-andre.przywara@amd.com>
+References: <1346747289-8421-1-git-send-email-andre.przywara@amd.com>
 MIME-Version: 1.0
-To: <stern@rowland.harvard.edu>, <gregkh@linuxfoundation.org>
-CC: <linux-usb@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <plagnioj@jcrosoft.com>,
-        <klaus.falkner@solectrix.de>, <ludovic.desroches@atmel.com>
-Subject: Re: [PATCH] USB: ohci-at91: fix PIO handling in relation with number
- of ports
-References: <1346233758-27009-1-git-send-email-nicolas.ferre@atmel.com>
-In-Reply-To: <1346233758-27009-1-git-send-email-nicolas.ferre@atmel.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.159.245.112]
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2012 11:49 AM, Nicolas Ferre :
-> If the number of ports present on the SoC/board is not the maximum
-> and that the platform data is not filled with all data, there is
-> an easy way to mess the PIO setup for this interface.
-> This quick fix addresses mis-configuration in USB host platform data
-> that is common in at91 boards since commit 0ee6d1e (USB: ohci-at91:
-> change maximum number of ports) that did not modified the associatd
-> board files.
-> 
-> Reported-by: Klaus Falkner <klaus.falkner@solectrix.de>
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Cc: Alan Stern <stern@rowland.harvard.edu>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: linux-usb@vger.kernel.org
-> Cc: Stable <stable@vger.kernel.org> [3.4+]
+powernow-k8 is quite prematurely crying Hooray and outputs diagnostic
+messages, although the actual initialization can still fail.
+Since now we may have acpi-cpufreq already loaded, we move the
+messages at the end of the init routine to avoid confusing output
+if the loading of powernow-k8 should not succeed.
 
-Alan, Greg, gentle ping...
+Signed-off-by: Andre Przywara <andre.przywara@amd.com>
+---
+ drivers/cpufreq/powernow-k8.c | 24 ++++++++++++++----------
+ 1 file changed, 14 insertions(+), 10 deletions(-)
 
-I really would like to seen it landing in stable soon...
-
-Thanks, best regards,
-
-> ---
->  drivers/usb/host/ohci-at91.c |   10 ++++++++++
->  1 file changed, 10 insertions(+)
-> 
-> diff --git a/drivers/usb/host/ohci-at91.c b/drivers/usb/host/ohci-at91.c
-> index a665b3e..aaa8d2b 100644
-> --- a/drivers/usb/host/ohci-at91.c
-> +++ b/drivers/usb/host/ohci-at91.c
-> @@ -570,6 +570,16 @@ static int __devinit ohci_hcd_at91_drv_probe(struct platform_device *pdev)
->  
->  	if (pdata) {
->  		at91_for_each_port(i) {
-> +			/*
-> +			 * do not configure PIO if not in relation with
-> +			 * real USB port on board
-> +			 */
-> +			if (i >= pdata->ports) {
-> +				pdata->vbus_pin[i] = -EINVAL;
-> +				pdata->overcurrent_pin[i] = -EINVAL;
-> +				break;
-> +			}
-> +
->  			if (!gpio_is_valid(pdata->vbus_pin[i]))
->  				continue;
->  			gpio = pdata->vbus_pin[i];
-> 
-
-
+diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
+index 16c7fb6..8ff0621 100644
+--- a/drivers/cpufreq/powernow-k8.c
++++ b/drivers/cpufreq/powernow-k8.c
+@@ -1573,9 +1573,6 @@ static int __cpuinit powernowk8_init(void)
+ 	if (supported_cpus != num_online_cpus())
+ 		return -ENODEV;
+ 
+-	printk(KERN_INFO PFX "Found %d %s (%d cpu cores) (" VERSION ")\n",
+-		num_online_nodes(), boot_cpu_data.x86_model_id, supported_cpus);
+-
+ 	if (boot_cpu_has(X86_FEATURE_CPB)) {
+ 
+ 		cpb_capable = true;
+@@ -1594,16 +1591,23 @@ static int __cpuinit powernowk8_init(void)
+ 			struct msr *reg = per_cpu_ptr(msrs, cpu);
+ 			cpb_enabled |= !(!!(reg->l & BIT(25)));
+ 		}
+-
+-		printk(KERN_INFO PFX "Core Performance Boosting: %s.\n",
+-			(cpb_enabled ? "on" : "off"));
+ 	}
+ 
+ 	rv = cpufreq_register_driver(&cpufreq_amd64_driver);
+-	if (rv < 0 && boot_cpu_has(X86_FEATURE_CPB)) {
+-		unregister_cpu_notifier(&cpb_nb);
+-		msrs_free(msrs);
+-		msrs = NULL;
++
++	if (!rv)
++		pr_info(PFX "Found %d %s (%d cpu cores) (" VERSION ")\n",
++			num_online_nodes(), boot_cpu_data.x86_model_id,
++			supported_cpus);
++
++	if (boot_cpu_has(X86_FEATURE_CPB)) {
++		if (rv < 0) {
++			unregister_cpu_notifier(&cpb_nb);
++			msrs_free(msrs);
++			msrs = NULL;
++		} else
++			pr_info(PFX "Core Performance Boosting: %s.\n",
++				(cpb_enabled ? "on" : "off"));
+ 	}
+ 	return rv;
+ }
 -- 
-Nicolas Ferre
+1.7.12
+
+
