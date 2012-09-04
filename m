@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757036Ab2IDM3M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 08:29:12 -0400
-Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:42375
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756982Ab2IDM3K (ORCPT
+	id S1757012Ab2IDMcF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 08:32:05 -0400
+Received: from zimbra.linbit.com ([212.69.161.123]:57100 "EHLO
+	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756938Ab2IDMcD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 08:29:10 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(zz936eI4015Izz1202hzz8275dhz2dh668h839h944hd25hf0ah11b5h121eh1220h1155h)
-X-WSS-ID: 0M9TRZG-01-0PG-02
-X-M-MSG: 
-Date: Tue, 4 Sep 2012 14:28:23 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        oprofile-list <oprofile-list@lists.sourceforge.net>
-Subject: [GIT PULL] oprofile: fixes and updates
-Message-ID: <20120904122823.GT8285@erda.amd.com>
+	Tue, 4 Sep 2012 08:32:03 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@lst.de>,
+        Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com
+Subject: FLUSH/FUA documentation & code discrepancy
+Date: Tue, 04 Sep 2012 14:32:01 +0200
+Message-ID: <8439412.RChiDciQdh@fat-tyre>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-29-generic; KDE/4.8.4; x86_64; ; )
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-X-Mailer: git-send-email 1.6.6
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
+Hi,
 
-one patch each for perf/urgent and perf/core, please pull from:
+I think commit 1e87901e18 was wrong. Starting with that commit the REQ_FLUSH 
+and REQ_FUA bits get stripped away if the queue does not advertise REQ_FLUSH
+or REQ_FUA support.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
+But the REQ_FLUSH bit is also tested for when not merging requests
+(blk_queue_bio()) or when it comes to the elevator (blk_flush_plug_list()).
 
-and
+So, since this patch the elevator reorders write requests on queues that 
+do not have REQ_FLUSH or REQ_FUA set.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git core
+While on queues that have REQ_FLUSH or REQ_FUA set, the elevator does
+not reorder writes across FLUSHes.
 
-Thanks,
+The Documentation/block/writeback_cache_control.txt file says:
+--snip--
+Implementation details for filesystems
+--------------------------------------
 
--Robert
+Filesystems can simply set the REQ_FLUSH and REQ_FUA bits and do not have to
+worry if the underlying devices need any explicit cache flushing and how
+the Forced Unit Access is implemented.  The REQ_FLUSH and REQ_FUA flags
+may both be set on a single bio.
+--snap--
 
+I have the impression every file system lets IO drain, and issues a
+flush afterwards with the blkdev_issue_flush() function. BTW that
+function turns into a non-obvious no-op as soon as the queue does not
+have the REQ_FUA or REQ_FLUSH bits set. It does not look like it is
+a no-op by intention.
 
-The following changes since commit fea7a08acb13524b47711625eebea40a0ede69a0:
+The file systems seem to be all fine, only in DRBD we have a mode were
+we depend on REQ_FUA/REQ_FLUSH requests being real boundaries for reordering
+of writes. This is broken since the mentioned commit as we recently found out.
 
-  Linux 3.6-rc3 (2012-08-22 13:29:06 -0700)
+I suggest that either this commit gets reverted, or the documentation
+is updated. I am ready to prepare such a patch, but I need directions
+how it should be fixed.
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git core
-
-Robert Richter (2):
-      oprofile, s390: Fix uninitialized memory access when writing to oprofilefs
-      oprofile: Remove 'WQ on CPUx, prefer CPUy' warning
-
- arch/s390/oprofile/init.c     |   10 +++++-----
- drivers/oprofile/cpu_buffer.c |   11 +++--------
- 2 files changed, 8 insertions(+), 13 deletions(-)
-
+Best regards,
+ Phil
