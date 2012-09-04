@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932627Ab2IDRYv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 13:24:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42933 "EHLO mx2.suse.de"
+	id S932613Ab2IDRYu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 13:24:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42940 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757425Ab2IDRYn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757463Ab2IDRYn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Sep 2012 13:24:43 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
@@ -14,35 +14,53 @@ Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
         Chuck Lever <chuck.lever@oracle.com>, Joonsoo Kim <js1304@gmail.com>,
         Pekka@suse.de, "Enberg <penberg"@kernel.org,
         David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 0/4] Small fixes for swap-over-network
-Date: Tue,  4 Sep 2012 18:24:35 +0100
-Message-Id: <1346779479-1097-1-git-send-email-mgorman@suse.de>
+Subject: [PATCH 1/4] slab: do ClearSlabPfmemalloc() for all pages of slab
+Date: Tue,  4 Sep 2012 18:24:36 +0100
+Message-Id: <1346779479-1097-2-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1346779479-1097-1-git-send-email-mgorman@suse.de>
+References: <1346779479-1097-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series is 4 small patches posted by Jonsoo Kim and Chuck Lever with
-some minor changes applied. They are not critical but they should be fixed
-before 3.6 comes out. I've picked them up and reposted to make sure they
-did not get lost.
+Right now, we call ClearSlabPfmemalloc() for first page of slab when we
+clear SlabPfmemalloc flag. This is fine for most swap-over-network use
+cases as it is expected that order-0 pages are in use. Unfortunately it
+is possible that that __ac_put_obj() checks SlabPfmemalloc on a tail page
+and while this is harmless, it is sloppy. This patch ensures that the head
+page is always used.
 
-Ordinarily I would say that 1-3 should go through Pekka's slab tree and
-the last patch through David Millers linux-net tree but as they are fairly
-minor maybe it would be easier if all 4 went through Andrew's tree at the
-same time.
+This problem was originally identified by Joonsoo Kim.
 
-The patches have been tested against 3.6-rc4 and they passed the swap over
-NFS and NBD tests.
+[js1304@gmail.com: Original implementation and problem identification]
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/slab.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
- include/net/sock.h |    2 +-
- mm/slab.c          |    6 +++---
- mm/slub.c          |   15 ++++++++++-----
- 3 files changed, 14 insertions(+), 9 deletions(-)
-
+diff --git a/mm/slab.c b/mm/slab.c
+index 811af03..d34a903 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -1000,7 +1000,7 @@ static void *__ac_get_obj(struct kmem_cache *cachep, struct array_cache *ac,
+ 		l3 = cachep->nodelists[numa_mem_id()];
+ 		if (!list_empty(&l3->slabs_free) && force_refill) {
+ 			struct slab *slabp = virt_to_slab(objp);
+-			ClearPageSlabPfmemalloc(virt_to_page(slabp->s_mem));
++			ClearPageSlabPfmemalloc(virt_to_head_page(slabp->s_mem));
+ 			clear_obj_pfmemalloc(&objp);
+ 			recheck_pfmemalloc_active(cachep, ac);
+ 			return objp;
+@@ -1032,7 +1032,7 @@ static void *__ac_put_obj(struct kmem_cache *cachep, struct array_cache *ac,
+ {
+ 	if (unlikely(pfmemalloc_active)) {
+ 		/* Some pfmemalloc slabs exist, check if this is one */
+-		struct page *page = virt_to_page(objp);
++		struct page *page = virt_to_head_page(objp);
+ 		if (PageSlabPfmemalloc(page))
+ 			set_obj_pfmemalloc(&objp);
+ 	}
 -- 
 1.7.9.2
 
