@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757187Ab2IDPwT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 11:52:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:32872 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754288Ab2IDPwS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 11:52:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <s5hd3222azc.wl%tiwai@suse.de>
-References: <s5hd3222azc.wl%tiwai@suse.de>
-Date: Tue, 4 Sep 2012 23:52:15 +0800
-Message-ID: <CACVXFVP-A7M2dG9bOvAnpzR60=iTYSw=WCOEwgo9KeuioxKanQ@mail.gmail.com>
-Subject: Re: A workaround for request_firmware() stuck in module_init
-From: Ming Lei <ming.lei@canonical.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Kay Sievers <kay@vrfy.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932387Ab2IDPzq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 11:55:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61592 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757114Ab2IDPzj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 11:55:39 -0400
+From: Matthew Garrett <mjg@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH 03/11] x86: Lock down IO port access in secure boot environments
+Date: Tue,  4 Sep 2012 11:55:09 -0400
+Message-Id: <1346774117-2277-4-git-send-email-mjg@redhat.com>
+In-Reply-To: <1346774117-2277-1-git-send-email-mjg@redhat.com>
+References: <1346774117-2277-1-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 66.187.233.206
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 4, 2012 at 9:06 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> Hi,
->
-> as I've got recently a few bug reports regarding the stuck with
-> request_firmware() in module_init of some sound drivers, I started
-> looking at the issue.  Strangely, the problem doesn't happen on
-> openSUSE 12.2 although it has the same udev version with libkmod as
-> Fedora.  So I installed Fedora 17, and indeed I could see a problem
-> there.
+IO port access would permit users to gain access to PCI configuration
+registers, which in turn (on a lot of hardware) give access to MMIO register
+space. This would potentially permit root to trigger arbitrary DMA, so lock
+it down by default.
 
-It should be a bug in udev, as discussed in the below link:
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+---
+ arch/x86/kernel/ioport.c | 4 ++--
+ drivers/char/mem.c       | 3 +++
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
-          http://marc.info/?t=134552745100002&r=1&w=2
+diff --git a/arch/x86/kernel/ioport.c b/arch/x86/kernel/ioport.c
+index 8c96897..c3a1bb2 100644
+--- a/arch/x86/kernel/ioport.c
++++ b/arch/x86/kernel/ioport.c
+@@ -28,7 +28,7 @@ asmlinkage long sys_ioperm(unsigned long from, unsigned long num, int turn_on)
+ 
+ 	if ((from + num <= from) || (from + num > IO_BITMAP_BITS))
+ 		return -EINVAL;
+-	if (turn_on && !capable(CAP_SYS_RAWIO))
++	if (turn_on && (!capable(CAP_SYS_RAWIO) || !capable(CAP_SECURE_FIRMWARE)))
+ 		return -EPERM;
+ 
+ 	/*
+@@ -102,7 +102,7 @@ long sys_iopl(unsigned int level, struct pt_regs *regs)
+ 		return -EINVAL;
+ 	/* Trying to gain more privileges? */
+ 	if (level > old) {
+-		if (!capable(CAP_SYS_RAWIO))
++		if (!capable(CAP_SYS_RAWIO) || !capable(CAP_SECURE_FIRMWARE))
+ 			return -EPERM;
+ 	}
+ 	regs->flags = (regs->flags & ~X86_EFLAGS_IOPL) | (level << 12);
+diff --git a/drivers/char/mem.c b/drivers/char/mem.c
+index e5eedfa2..8f5f872 100644
+--- a/drivers/char/mem.c
++++ b/drivers/char/mem.c
+@@ -597,6 +597,9 @@ static ssize_t write_port(struct file *file, const char __user *buf,
+ 	unsigned long i = *ppos;
+ 	const char __user * tmp = buf;
+ 
++	if (!capable(CAP_SECURE_FIRMWARE))
++		return -EPERM;
++
+ 	if (!access_ok(VERIFY_READ, buf, count))
+ 		return -EFAULT;
+ 	while (count-- > 0 && i < 65536) {
+-- 
+1.7.11.4
 
->
-> Obviously a solution would be to rewrite the driver code to use
-> request_firmware_nowait() instead.  But it'd need a lot of code
-> shuffling, and most of such drivers are old stuff I don't want to do a
-> serious surgery.
->
-> So I tried an easier workaround by using the deferred probing.
-> An experimental patch is below.  As you can see, from the driver side,
-> it's simple: just add two lines at the head of each probe function.
-
-In fact, the defer probe should only be applied in situations which
-driver is built in kernel and request_firmware is called in .probe().
-
->
-> Do you think this kind of hack is OK?  If not, any better (IOW easier)
-> solution?
-
-Looks your solution is a bit complicated, and I have wrote a similar
-patch to address the problem, but Linus thought that it may hide the
-problem of drivers.
-
-        http://marc.info/?t=134278790800004&r=1&w=2
-
-IMO, driver core needn't to be changed, and the defer probe can be
-supported just by changes in request_firmware() and its caller.
-
-Thanks,
---
-Ming Lei
