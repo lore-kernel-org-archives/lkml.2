@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756665Ab2IDDPt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 23:15:49 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:48691 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754494Ab2IDDPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 23:15:48 -0400
-Date: Mon, 3 Sep 2012 23:15:44 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Azat Khuzhin <dohardgopro@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: western digital caviar black. EXT4-fs error
-Message-ID: <20120904031544.GI5066@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Azat Khuzhin <dohardgopro@gmail.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <CAAW1UO-q5uUe4zG5BnB0z9dyKCqRRWH4sriyu7Fj6XinE7GKzA@mail.gmail.com>
+	id S1756667Ab2IDDlg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 23:41:36 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46199 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754238Ab2IDDle (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Sep 2012 23:41:34 -0400
+Date: Mon, 3 Sep 2012 20:41:00 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, linux-bcache@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dm-devel@redhat.com, tj@kernel.org,
+        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH v7 9/9] block: Avoid deadlocks with bio allocation by
+ stacking drivers
+Message-ID: <20120904034100.GA21602@moria.home.lan>
+References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
+ <1346175456-1572-10-git-send-email-koverstreet@google.com>
+ <Pine.LNX.4.64.1208291210180.774@file.rdu.redhat.com>
+ <20120829165006.GB20312@google.com>
+ <20120829170711.GC12504@redhat.com>
+ <20120829171345.GC20312@google.com>
+ <20120830220745.GI27257@redhat.com>
+ <20120831014359.GB15218@moria.home.lan>
+ <Pine.LNX.4.64.1209031638110.15620@file.rdu.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAAW1UO-q5uUe4zG5BnB0z9dyKCqRRWH4sriyu7Fj6XinE7GKzA@mail.gmail.com>
+In-Reply-To: <Pine.LNX.4.64.1209031638110.15620@file.rdu.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 01, 2012 at 11:48:17PM +0400, Azat Khuzhin wrote:
-> Recently I update my HDD on desktop machine, and bought WD Caviar Black.
-> But after I format & copy information to it (using dd), and fix
-> partitions size: I have next errors in kern.log:
+On Mon, Sep 03, 2012 at 04:41:37PM -0400, Mikulas Patocka wrote:
+> ... or another possibility - start a timer when something is put to 
+> current->bio_list and use that timer to pop entries off current->bio_list 
+> and submit them to a workqueue. The timer can be cpu-local so only 
+> interrupt masking is required to synchronize against the timer.
 > 
-> Aug 28 01:49:03 home-spb kernel: [183245.030897] EXT4-fs error (device
-> sdc2): ext4_mb_generate_buddy:739: group 3675, 32254 clusters in
-> bitmap, 32258 in gd
+> This would normally run just like the current kernel and in case of 
+> deadlock, the timer would kick in and resolve the deadlock.
 
-Sorry for the delay; you sent this to linux-kernel (and not the
-linux-ext4 list).  It also took me a while to dig up the relevant fix
-from my archives; normally, once a bug has been fixed (as this one
-was, on June 7, 2012) I don't worry about it any more.
+Ugh. That's a _terrible_ idea.
 
-The upstream fix is commit b0dd6b70f0fda17ae9762fbb72d98e40a4f66556.
+Remember the old plugging code? You ever have to debug performance
+issues caused by it?
 
-Note that you are using the 3.3.0 kernel.  This is a not long-term
-supported kernel, so fixes from upstream are no longer being
-backported to it.  The official Debian kernel (which tracks the 3.2.x
-stable kernel series) has the backported bug fix.  So does the 3.4
-long-term stable kernel series, as does the 3.5 kernel or any later
-kernel.
+> 
+> > I could be convinced, but right now I prefer my solution.
+> 
+> It fixes bio allocation problem, but not other similar mempool problems in 
+> dm and md.
 
-If you don't know how to backport a kernel patch, or even if you do, I
-would strongly suggest that you either go back to the Debian standard
-kernel for Wheezy, or track the 3.2.x or 3.4.x long-term stable
-kernel.  (The fix is in v3.2.20 or later, and v3.4.3 or later ---
-where those trees are up to v3.2.28, and v3.4.10, respectively.)
-Otherwise, you may very well run into some other kernel bug which has
-already been fixed upstream, and you'll just waste your time as well
-as various other kernel developers.
+I looked a bit more, and actually I think the rest of the problem is
+pretty limited in scope - most of those mempool allocations are per
+request, not per split.
 
-Regards,
-
-						- Ted
+I'm willing to put some time into converting dm/md over to bioset's
+front_pad. I'm having to learn the code for the immutable biovec work,
+anyways.
