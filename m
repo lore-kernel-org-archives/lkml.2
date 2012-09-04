@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757269Ab2IDOWF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 10:22:05 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:44641 "EHLO relay.sw.ru"
+	id S1757304Ab2IDOWi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 10:22:38 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:4810 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757250Ab2IDOWB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 10:22:01 -0400
+	id S1757262Ab2IDOWF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 10:22:05 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 Cc: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>, davej@redhat.com,
         ben@decadent.org.uk, a.p.zijlstra@chello.nl, pjt@google.com,
         lennart@poettering.net, kay.sievers@vrfy.org, tj@kernel.org,
         Glauber Costa <glommer@parallels.com>
-Subject: [RFC 5/5] sched: add cpusets to comounts list
-Date: Tue,  4 Sep 2012 18:18:20 +0400
-Message-Id: <1346768300-10282-6-git-send-email-glommer@parallels.com>
+Subject: [RFC 4/5] cpuacct: do not gather cpuacct statistics when not mounted
+Date: Tue,  4 Sep 2012 18:18:19 +0400
+Message-Id: <1346768300-10282-5-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1346768300-10282-1-git-send-email-glommer@parallels.com>
 References: <1346768300-10282-1-git-send-email-glommer@parallels.com>
@@ -22,15 +22,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Although we have not yet identified any place where cpusets could be
-improved performance-wise by guaranteeing comounts with the other two
-cpu cgroups, it is a sane choice to mount them together.
+Currently, the only test that prevents us from running the expensive
+cpuacct_charge() is cpuacct_subsys.active == true. This will hold at all
+times after the subsystem is activated, even if it is not mounted.
 
-We can preemptively benefit from it and avoid a growing mess, by
-guaranteeing that subsystems that mostly contraint the same kind of
-resource will live together. With cgroups is never that simple, and
-things crosses boundaries quite often. But I hope this can be seen as a
-potential improvement.
+IOW, use it or not, you pay it. By hooking with the bind() callback, we
+can detect when cpuacct is mounted or umounted, and stop collecting
+statistics when this cgroup is not in use.
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
 CC: Dave Jones <davej@redhat.com>
@@ -41,51 +39,57 @@ CC: Lennart Poettering <lennart@poettering.net>
 CC: Kay Sievers <kay.sievers@vrfy.org>
 CC: Tejun Heo <tj@kernel.org>
 ---
- kernel/cpuset.c     | 4 ++++
- kernel/sched/core.c | 8 ++++----
- 2 files changed, 8 insertions(+), 4 deletions(-)
+ kernel/sched/core.c  | 8 ++++++++
+ kernel/sched/sched.h | 3 +++
+ 2 files changed, 11 insertions(+)
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 8c8bd65..f8e1c49 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -1879,6 +1879,10 @@ struct cgroup_subsys cpuset_subsys = {
- 	.post_clone = cpuset_post_clone,
- 	.subsys_id = cpuset_subsys_id,
- 	.base_cftypes = files,
-+#ifdef CONFIG_CGROUP_FORCE_COMOUNT_CPU
-+	.comounts = 2,
-+	.must_comount = { cpu_cgroup_subsys_id, cpuacct_subsys_id, },
-+#endif
- 	.early_init = 1,
- };
- 
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index d654bd1..aeff02c 100644
+index e46871d..d654bd1 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -8301,8 +8301,8 @@ struct cgroup_subsys cpu_cgroup_subsys = {
- 	.subsys_id	= cpu_cgroup_subsys_id,
- 	.base_cftypes	= cpu_files,
- #ifdef CONFIG_CGROUP_FORCE_COMOUNT_CPU
--	.comounts	= 1,
--	.must_comount	= { cpuacct_subsys_id, },
-+	.comounts	= 2,
-+	.must_comount	= { cpuacct_subsys_id, cpuset_subsys_id, },
- 	.bind		= cpu_cgroup_bind,
- #endif
- 	.early_init	= 1,
-@@ -8637,8 +8637,8 @@ struct cgroup_subsys cpuacct_subsys = {
- 	.base_cftypes = files,
- 	.bind = cpuacct_bind,
- #ifdef CONFIG_CGROUP_FORCE_COMOUNT_CPU
--	.comounts = 1,
--	.must_comount = { cpu_cgroup_subsys_id, },
-+	.comounts = 2,
-+	.must_comount = { cpu_cgroup_subsys_id, cpuset_subsys_id, },
- #endif
+@@ -8595,6 +8595,13 @@ static struct cftype files[] = {
+ 	{ }	/* terminate */
  };
- #endif	/* CONFIG_CGROUP_CPUACCT */
+ 
++bool cpuacct_mounted;
++
++void cpuacct_bind(struct cgroup *root)
++{
++	cpuacct_mounted = root->root == root_cpuacct.css.cgroup->root;
++}
++
+ /*
+  * charge this task's execution time to its accounting group.
+  *
+@@ -8628,6 +8635,7 @@ struct cgroup_subsys cpuacct_subsys = {
+ 	.destroy = cpuacct_destroy,
+ 	.subsys_id = cpuacct_subsys_id,
+ 	.base_cftypes = files,
++	.bind = cpuacct_bind,
+ #ifdef CONFIG_CGROUP_FORCE_COMOUNT_CPU
+ 	.comounts = 1,
+ 	.must_comount = { cpu_cgroup_subsys_id, },
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 1da9fa8..d33f777 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -887,6 +887,7 @@ extern void update_idle_cpu_load(struct rq *this_rq);
+ #include <linux/cgroup.h>
+ 
+ extern bool cpuacct_from_cpu;
++extern bool cpuacct_mounted;
+ 
+ /* track cpu usage of a group of tasks and its child groups */
+ struct cpuacct {
+@@ -921,6 +922,8 @@ extern void __cpuacct_charge(struct task_struct *tsk, u64 cputime);
+ 
+ static inline void cpuacct_charge(struct task_struct *tsk, u64 cputime)
+ {
++	if (unlikely(!cpuacct_mounted))
++		return;
+ #ifdef CONFIG_CGROUP_FORCE_COMOUNT_CPU
+ 	if (likely(!cpuacct_from_cpu))
+ 		return;
 -- 
 1.7.11.4
 
