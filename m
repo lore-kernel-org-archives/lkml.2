@@ -1,40 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755657Ab2IDGHp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 02:07:45 -0400
-Received: from 0106ds1-hvi.0.fullrate.dk ([90.184.84.98]:24276 "EHLO
-	mail.knielsen-hq.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754886Ab2IDGH3 (ORCPT
+	id S1754621Ab2IDGgK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 02:36:10 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:41148 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751172Ab2IDGgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 02:07:29 -0400
-From: Kristian Nielsen <knielsen@knielsen-hq.org>
-To: Jan Kara <jack@suse.cz>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [ext3/4] PROBLEM: fdatasync not syncing appended data (w/test program)
-References: <87k3wb8pgk.fsf@frigg.knielsen-hq.org>
-	<20120903135756.GI21109@quack.suse.cz>
-Date: Tue, 04 Sep 2012 08:07:25 +0200
-In-Reply-To: <20120903135756.GI21109@quack.suse.cz> (Jan Kara's message of
-	"Mon, 3 Sep 2012 15:57:56 +0200")
-Message-ID: <87mx165nj6.fsf@frigg.knielsen-hq.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+	Tue, 4 Sep 2012 02:36:08 -0400
+Message-ID: <5045A11B.3070300@gmail.com>
+Date: Tue, 04 Sep 2012 08:35:07 +0200
+From: =?UTF-8?B?R2HDq3RhbiBDYXJsaWVy?= <gcembed@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Javier Martin <javier.martin@vista-silicon.com>
+CC: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        broonie@opensource.wolfsonmicro.com, fabio.estevam@freescale.com,
+        s.hauer@pengutronix.de
+Subject: Re: [ASoC] Fix: Revert 'ASoC: imx-ssi: Remove mono support'.
+References: <1346660831-9662-1-git-send-email-javier.martin@vista-silicon.com>
+In-Reply-To: <1346660831-9662-1-git-send-email-javier.martin@vista-silicon.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jan Kara <jack@suse.cz> writes:
+Hi Javier,
+On 09/03/2012 10:27 AM, Javier Martin wrote:
+> The following commit should be reverted: 0865a75d4166bddc533fd50831829ceefb94f9b0
+>
+> The bug this patch is meant to solve doesn't occur in Visstrim_M10 boards.
+> Furthermore, after applying this patch sound in Visstrim_M10 is played
+> at slower rates.
+>
+> Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
+> ---
+> diff --git b/sound/soc/fsl/imx-ssi.c a/sound/soc/fsl/imx-ssi.c
+> index ac337ac..28dd76c 100644
+> --- b/sound/soc/fsl/imx-ssi.c
+> +++ a/sound/soc/fsl/imx-ssi.c
+> @@ -380,13 +380,13 @@ static int imx_ssi_dai_probe(struct snd_soc_dai *dai)
+>   static struct snd_soc_dai_driver imx_ssi_dai = {
+>   	.probe = imx_ssi_dai_probe,
+>   	.playback = {
+> -		.channels_min = 2,
+> +		.channels_min = 1,
+>   		.channels_max = 2,
+>   		.rates = SNDRV_PCM_RATE_8000_96000,
+>   		.formats = SNDRV_PCM_FMTBIT_S16_LE,
+>   	},
+>   	.capture = {
+> -		.channels_min = 2,
+> +		.channels_min = 1,
+>   		.channels_max = 2,
+>   		.rates = SNDRV_PCM_RATE_8000_96000,
+>   		.formats = SNDRV_PCM_FMTBIT_S16_LE,
+>
+When applied on linux-next-20120824, the patch failed because original 
+imx-ssi.c file looks like :
+static struct snd_soc_dai_driver imx_ssi_dai = {
+	.probe = imx_ssi_dai_probe,
+	.playback = {
+		/* The SSI does not support monaural audio. */
+		.channels_min = 2,
+		.channels_max = 2,
+		.rates = SNDRV_PCM_RATE_8000_96000,
+		.formats = SNDRV_PCM_FMTBIT_S16_LE,
+	},
+	.capture = {
+		.channels_min = 2,
+		.channels_max = 2,
+		.rates = SNDRV_PCM_RATE_8000_96000,
+		.formats = SNDRV_PCM_FMTBIT_S16_LE,
+	},
+	.ops = &imx_ssi_pcm_dai_ops,
+};
 
-> On Mon 03-09-12 10:45:15, Kristian Nielsen wrote:
->> It appears that ext3 and ext4 fdatasync() does not fully sync data to
->> disk. Specifically, when new data is written at the end (so that the file
->> length is increased), not all of the new data is synced by fdatasync().
+The comment line is missing in your patch. Here is the right patch :
 
-> The culprit is that we forget to update i_datasync_tid when we change only
-> inode size. Thus inode is not forced to disk during fdatasync(). I will send
-> fixes for this in a moment.
+@@ -378,18 +378,17 @@ static int imx_ssi_dai_probe(struct snd_soc_dai *dai)
+  }
 
-Cool, thanks for the quick response! Glad that we get this fixed.
+  static struct snd_soc_dai_driver imx_ssi_dai = {
+  	.probe = imx_ssi_dai_probe,
+  	.playback = {
+-		/* The SSI does not support monaural audio. */
+-		.channels_min = 2,
++		.channels_min = 1,
+  		.channels_max = 2,
+  		.rates = SNDRV_PCM_RATE_8000_96000,
+  		.formats = SNDRV_PCM_FMTBIT_S16_LE,
+  	},
+  	.capture = {
+-		.channels_min = 2,
++		.channels_min = 1,
+  		.channels_max = 2,
+  		.rates = SNDRV_PCM_RATE_8000_96000,
+  		.formats = SNDRV_PCM_FMTBIT_S16_LE,
+  	},
+  	.ops = &imx_ssi_pcm_dai_ops,
 
- - Kristian.
+Regards,
+Gaëtan Carlier.
