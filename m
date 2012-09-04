@@ -1,70 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932761Ab2IDVhC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 17:37:02 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:35088
-	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1757919Ab2IDVg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 17:36:26 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        ben@decadent.org.uk, thozza@redhat.com, dcbw@redhat.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH V4 02/10] Tools: hv: Correctly type string variables
-Date: Tue,  4 Sep 2012 14:46:34 -0700
-Message-Id: <1346795202-25655-2-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1346795202-25655-1-git-send-email-kys@microsoft.com>
-References: <1346795156-25614-1-git-send-email-kys@microsoft.com>
- <1346795202-25655-1-git-send-email-kys@microsoft.com>
+	id S932727Ab2IDVjA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 17:39:00 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:44384 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757760Ab2IDVi7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 17:38:59 -0400
+MIME-Version: 1.0
+X-Google-Sender-Delegation: a3at.mail@gmail.com
+In-Reply-To: <CAAW1UO_SL1N0yyVUrOyhrj=ZSpQu3odMN634mHZf4Nyr0n7hEQ@mail.gmail.com>
+References: <CAAW1UO-q5uUe4zG5BnB0z9dyKCqRRWH4sriyu7Fj6XinE7GKzA@mail.gmail.com>
+	<20120904031544.GI5066@thunk.org>
+	<CAAW1UO_SL1N0yyVUrOyhrj=ZSpQu3odMN634mHZf4Nyr0n7hEQ@mail.gmail.com>
+Date: Wed, 5 Sep 2012 01:38:58 +0400
+X-Google-Sender-Auth: EgskCqfykBBOOZ_JgYDNCOpFzCs
+Message-ID: <CAAW1UO8vZtLq_SUOkG9QCzaxSxofc4RRntWA5bJQnx6BHcHq9g@mail.gmail.com>
+Subject: Re: western digital caviar black. EXT4-fs error
+From: Azat Khuzhin <dohardgopro@gmail.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correctly type character strings.
+Ted, Thanks!
+It fix my problem.
 
-Reported-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- tools/hv/hv_kvp_daemon.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+On Wed, Sep 5, 2012 at 12:37 AM, Azat Khuzhin <dohardgopro@gmail.com> wrote:
+> Ted, many thanks!
+> I'll try to compile new kernel (maybe 3.4.x)
+>
+> On Tue, Sep 4, 2012 at 7:15 AM, Theodore Ts'o <tytso@mit.edu> wrote:
+>> On Sat, Sep 01, 2012 at 11:48:17PM +0400, Azat Khuzhin wrote:
+>>> Recently I update my HDD on desktop machine, and bought WD Caviar Black.
+>>> But after I format & copy information to it (using dd), and fix
+>>> partitions size: I have next errors in kern.log:
+>>>
+>>> Aug 28 01:49:03 home-spb kernel: [183245.030897] EXT4-fs error (device
+>>> sdc2): ext4_mb_generate_buddy:739: group 3675, 32254 clusters in
+>>> bitmap, 32258 in gd
+>>
+>> Sorry for the delay; you sent this to linux-kernel (and not the
+>> linux-ext4 list).  It also took me a while to dig up the relevant fix
+>> from my archives; normally, once a bug has been fixed (as this one
+>> was, on June 7, 2012) I don't worry about it any more.
+>>
+>> The upstream fix is commit b0dd6b70f0fda17ae9762fbb72d98e40a4f66556.
+>>
+>> Note that you are using the 3.3.0 kernel.  This is a not long-term
+>> supported kernel, so fixes from upstream are no longer being
+>> backported to it.  The official Debian kernel (which tracks the 3.2.x
+>> stable kernel series) has the backported bug fix.  So does the 3.4
+>> long-term stable kernel series, as does the 3.5 kernel or any later
+>> kernel.
+>>
+>> If you don't know how to backport a kernel patch, or even if you do, I
+>> would strongly suggest that you either go back to the Debian standard
+>> kernel for Wheezy, or track the 3.2.x or 3.4.x long-term stable
+>> kernel.  (The fix is in v3.2.20 or later, and v3.4.3 or later ---
+>> where those trees are up to v3.2.28, and v3.4.10, respectively.)
+>> Otherwise, you may very well run into some other kernel bug which has
+>> already been fixed upstream, and you'll just waste your time as well
+>> as various other kernel developers.
+>>
+>> Regards,
+>>
+>>                                                 - Ted
+>
+>
+>
+> --
+> Azat Khuzhin
 
-diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-index d12d714..026bf0e 100644
---- a/tools/hv/hv_kvp_daemon.c
-+++ b/tools/hv/hv_kvp_daemon.c
-@@ -86,8 +86,8 @@ static struct utsname uts_buf;
- #define ENTRIES_PER_BLOCK 50
- 
- struct kvp_record {
--	__u8 key[HV_KVP_EXCHANGE_MAX_KEY_SIZE];
--	__u8 value[HV_KVP_EXCHANGE_MAX_VALUE_SIZE];
-+	char key[HV_KVP_EXCHANGE_MAX_KEY_SIZE];
-+	char value[HV_KVP_EXCHANGE_MAX_VALUE_SIZE];
- };
- 
- struct kvp_file_state {
-@@ -95,7 +95,7 @@ struct kvp_file_state {
- 	int num_blocks;
- 	struct kvp_record *records;
- 	int num_records;
--	__u8 fname[MAX_FILE_NAME];
-+	char fname[MAX_FILE_NAME];
- };
- 
- static struct kvp_file_state kvp_file_info[KVP_POOL_COUNT];
-@@ -199,7 +199,7 @@ static int kvp_file_init(void)
- 	int  fd;
- 	FILE *filep;
- 	size_t records_read;
--	__u8 *fname;
-+	char *fname;
- 	struct kvp_record *record;
- 	struct kvp_record *readp;
- 	int num_blocks;
+
+
 -- 
-1.7.4.1
-
+Azat Khuzhin
