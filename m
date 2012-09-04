@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757353Ab2IDO53 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 10:57:29 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:46622 "EHLO mx2.parallels.com"
+	id S932285Ab2IDPAe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 11:00:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17619 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753192Ab2IDO52 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 10:57:28 -0400
-Message-ID: <50461610.30305@parallels.com>
-Date: Tue, 4 Sep 2012 18:54:08 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1756762Ab2IDPAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 11:00:32 -0400
+Date: Tue, 4 Sep 2012 11:00:04 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Kent Overstreet <koverstreet@google.com>,
+        Mikulas Patocka <mpatocka@redhat.com>, linux-bcache@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dm-devel@redhat.com,
+        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH v7 9/9] block: Avoid deadlocks with bio allocation by
+ stacking drivers
+Message-ID: <20120904150004.GB2603@redhat.com>
+References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
+ <1346175456-1572-10-git-send-email-koverstreet@google.com>
+ <Pine.LNX.4.64.1208291210180.774@file.rdu.redhat.com>
+ <20120829165006.GB20312@google.com>
+ <20120829170711.GC12504@redhat.com>
+ <20120829171345.GC20312@google.com>
+ <20120830220745.GI27257@redhat.com>
+ <20120901021348.GB19535@dhcp-172-17-108-109.mtv.corp.google.com>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>, Dave Jones <davej@redhat.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH v2] memcg: first step towards hierarchical controller
-References: <1346687211-31848-1-git-send-email-glommer@parallels.com> <20120903170806.GA21682@dhcp22.suse.cz> <5045BD25.10301@parallels.com> <20120904130905.GA15683@dhcp22.suse.cz> <504601B8.2050907@parallels.com> <20120904143552.GB15683@dhcp22.suse.cz> <50461241.5010300@parallels.com> <20120904145414.GC15683@dhcp22.suse.cz>
-In-Reply-To: <20120904145414.GC15683@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120901021348.GB19535@dhcp-172-17-108-109.mtv.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
->> I believe it would be really great to have a way to turn the default
->> to 1 - and stop the shouting.
+On Fri, Aug 31, 2012 at 07:13:48PM -0700, Tejun Heo wrote:
+> Hello, Vivek.
 > 
-> We already can. You can use /etc/cgconfig (if you are using libcgroup)
-> or do it manually.
+> On Thu, Aug 30, 2012 at 06:07:45PM -0400, Vivek Goyal wrote:
+> > Here is one quick and dirty proof of concept patch. It checks for stack
+> > depth and if remaining space is less than 20% of stack size, then it
+> > defers the bio submission to per queue worker.
 > 
->> Even if you are doing it in OpenSUSE as a patch, an upstream patch means
->> at least that every distribution is using the same patch, and those who
->> rebase will just flip the config.
->>
->> I'd personally believe merging both our patches together would achieve a
->> good result.
+> So, it removes breadth-first walking of bio construction by ensuring
+> stack overflow never happens by bouncing to workqueue if stack usage
+> seems too high.
 > 
-> I am still not sure we want to add a config option for something that is
-> meant to go away. But let's see what others think.
+> I do like removal of breadth-first walking.  It makes failure
+> scenarios a lot less mind-bending.  That said, Kent is right that this
+> can incur significant overhead for certain configurations, and looking
+> at stack usage in block layer is rather nasty both in design and
+> implementation.
 > 
+> If we're gonna need rescuer anyway and can get it right and the
+> mechanism can be contained in block proper relatively well, I think it
+> would be better to make bread-first walking safe.  Both are nasty in
+> their own ways after all.
 
-So what you propose in the end is that we add a userspace tweak for
-something that could go away, instead of a Kconfig for something that go
-away.
+Hi Tejun,
 
-Way I see it, Kconfig is better because it is totally transparent, under
-the hood, and will give us a single location to unpatch in case/when it
-really goes away.
+That's fine. Breadth first walking does make sense given the fact that
+storage stack can be arbitrarily deep. And Kent's bio set rescuer patch
+is not too bad. So I am fine with pursuing that patch.
 
-
+Thanks
+Vivek
