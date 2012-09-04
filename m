@@ -1,142 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757180Ab2IDOHp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 10:07:45 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:34824 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756806Ab2IDOHo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 10:07:44 -0400
-X-IronPort-AV: E=Sophos;i="4.80,367,1344211200"; 
-   d="scan'208";a="14337520"
-Message-ID: <50460B2E.3020200@citrix.com>
-Date: Tue, 4 Sep 2012 15:07:42 +0100
-From: Stefano Panella <stefano.panella@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1757193Ab2IDOMJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 10:12:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28482 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757171Ab2IDOMH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 10:12:07 -0400
+Date: Tue, 4 Sep 2012 17:13:21 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sjur =?iso-8859-1?Q?Br=E6ndeland?= <sjurbren@gmail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        "Guzman Lugo, Fernadndo" <fernando.lugo@ti.com>,
+        virtualization@lists.linux-foundation.org,
+        Ohad Ben-Cohen <ohad@wizery.com>
+Subject: Re: [PATCH] virtio: Don't access device data after unregistration.
+Message-ID: <20120904141321.GJ9805@redhat.com>
+References: <1346680242-5717-1-git-send-email-sjur.brandeland@stericsson.com>
+ <20120903141445.GA5054@redhat.com>
+ <CAJK669aRsbOOmjmT+K8OHYvenOhkYWuSOx6nBM7hxC_C4mmw-g@mail.gmail.com>
+ <20120903201847.GC6181@redhat.com>
+ <CAJK669ZVHOZVEw+1UeLU5KyxZexGfWC0VPnrK5XZd9x935PznQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: David Vrabel <david.vrabel@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [Xen-devel] [PATCH 1/1] XEN: Use correct masking in xen_swiotlb_alloc_coherent.
-References: <1346407072-6405-1-git-send-email-stefano.panella@citrix.com> <5040B249.4000306@citrix.com> <20120831164010.GA18929@localhost.localdomain>
-In-Reply-To: <20120831164010.GA18929@localhost.localdomain>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAJK669ZVHOZVEw+1UeLU5KyxZexGfWC0VPnrK5XZd9x935PznQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/31/2012 05:40 PM, Konrad Rzeszutek Wilk wrote:
-> On Fri, Aug 31, 2012 at 01:47:05PM +0100, David Vrabel wrote:
->> On 31/08/12 10:57, Stefano Panella wrote:
->>> When running 32-bit pvops-dom0 and a driver tries to allocate a coherent
->>> DMA-memory the xen swiotlb-implementation returned memory beyond 4GB.
->>>
->>> This caused for example not working sound on a system with 4 GB and a 64-bit
->>> compatible sound-card with sets the DMA-mask to 64bit.
->>>
->>> On bare-metal and the forward-ported xen-dom0 patches from OpenSuse a coherent
->>> DMA-memory is always allocated inside the 32-bit address-range by calling
->>> dma_alloc_coherent_mask.
->> We should have the same behaviour under Xen as bare metal so:
->>
->> Acked-By: David Vrabel <david.vrabel@citrix.com>
->>
->> This does limit the DMA mask to 32-bits by passing it through an
->> unsigned long, which seems a bit sneaky...
-> so is the issue that we are not casting it from 'u64' to 'u32'
-> (unsigned long) on 32-bit?
-
-Yes. I do not completely understand why but I think on 32-bit kernel we need to cast dma_mask to u32. This is done automatically using dma_alloc_coherent_mask()
-
->
->> Presumably the sound card is capable of handling 64 bit physical
->> addresses (or it would break under 64-bit kernels) so it's not clear why
->> this sound driver requires this restriction.
->>
->> Is there a bug in the sound driver or sound subsystem where it's
->> truncating a dma_addr_t by assigning it to an unsigned long or similar?
->>
->>> --- a/drivers/xen/swiotlb-xen.c
->>> +++ b/drivers/xen/swiotlb-xen.c
->>> @@ -232,7 +232,7 @@ xen_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
->>>   		return ret;
->>>   
->>>   	if (hwdev && hwdev->coherent_dma_mask)
->>> -		dma_mask = hwdev->coherent_dma_mask;
->>> +		dma_mask = dma_alloc_coherent_mask(hwdev, flags);
->> Suggest
->>
->>      if (hwdev)
->>          dma_mask = dma_alloc_coherent_mask(hwdev, flags)
-
-I can change the patch like that if you like.
-
-> Isn't that code just doing this:
-> atic inline unsigned long dma_alloc_coherent_mask(struct device *dev,
->                                                      gfp_t gfp)
+On Tue, Sep 04, 2012 at 02:12:33PM +0200, Sjur Brændeland wrote:
+> Hi Michael,
+> 
+> >> >> Fix panic in virtio.c when CONFIG_DEBUG_SLAB is set.
+> >> >
+> >> > What's the root cause of the panic?
+> >>
+> >> I believe the cause of the panic is calling
+> >> ida_simple_remove(&virtio_index_ida, dev->index);
+> >> when the dev structure is "poisoned" after kfree.
+> >> It might be the "BUG_ON((int)id < 0)" that bites...
+> >>
+> >> >> Use device_del() and put_device() instead of
+> >> >> device_unregister(), and access device data before
+> >> >> calling put_device().
+> >>
+> >> > Why does this help? Does device_unregister free the
+> >> > device so dev->index access crashes?
+> >>
+> >> Yes, if device ref-count is one when calling unregister
+> >> the device is freed.
+> >
+> > Interesting. Where exactly?...
+> 
+> I was wrong here, the reason is not related to ref-count being
+> above one. The reason this issue do not show up in virtio_pci
+> is that the release function is a dummy:
+> 
+> [snip]
+> static void virtio_pci_release_dev(struct device *_d)
 > {
->          unsigned long dma_mask = 0;
->
->          dma_mask = dev->coherent_dma_mask;
->          if (!dma_mask)
->                  dma_mask = (gfp & GFP_DMA) ? DMA_BIT_MASK(24) :
-> DMA_BIT_MASK(32);
->
->          return dma_mask;
+> 	/*
+> 	 * No need for a release method as we allocate/free
+> 	 * all devices together with the pci devices.
+> 	 * Provide an empty one to avoid getting a warning from core.
+> 	 */
 > }
->
-> and in our code, the dma_mask by default is DMA_BIT_MASK(32):
->
-> u64 dma_mask = DMA_BIT_MASK(32);
->
-> So what I am missing?
-
-I am not sure what you mean with "what am I missing?"
-
-Current code looks like:
-
-void *
-xen_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
-                            dma_addr_t *dma_handle, gfp_t flags,
-                            struct dma_attrs *attrs)
-{
-         void *ret;
-         int order = get_order(size);
-         u64 dma_mask = DMA_BIT_MASK(32);
-         unsigned long vstart;
-         phys_addr_t phys;
-         dma_addr_t dev_addr;
-
-         /*
-         * Ignore region specifiers - the kernel's ideas of
-         * pseudo-phys memory layout has nothing to do with the
-         * machine physical layout.  We can't allocate highmem
-         * because we can't return a pointer to it.
-         */
-         flags &= ~(__GFP_DMA | __GFP_HIGHMEM);
-
-         if (dma_alloc_from_coherent(hwdev, size, dma_handle, &ret))
-                 return ret;
-
-         vstart = __get_free_pages(flags, order);
-         ret = (void *)vstart;
-
-         if (!ret)
-                 return ret;
-
-         if (hwdev && hwdev->coherent_dma_mask)
-                 dma_mask = hwdev->coherent_dma_mask;
+> 
+> The device structure uses a kref for reference counting the device.
+> In virtio_pci() the release function virtio_pci_release_dev()
+> will be called when the device is unregistered, but because the
+> release function is dummy, data isn't freed or reset at this point.
+> So for virtio devices created from virtio_pci my patch is not
+> currently needed.
+> 
+> However, empty release functions are not the preferred way, e.g look at
+> https://lkml.org/lkml/2012/4/3/301
+> 
+> [Greg K.H:]
+> > > > > +static void hsi_port_release(struct device *dev __maybe_unused)
+> > > > > +{
+> > > > > +}
+> > > >
+> > > > As per the documentation in the kernel tree, I get to mock you
+> > > > mercilessly for doing something as foolish as this.  You are not smarter
+> > > > than the kernel and don't think that you got rid of the kernel warning
+> > > > properly by doing this.  Do you think that I wrote that code for no good
+> > > > reason?  The kernel was being nice and telling you what you did wrong,
+> > > > don't try to fake it out, it's smarter than you are here.
+> 
+> But remoteproc frees the device memory in the release function
+> rproc_vdev_release() and needs this patch.
+> 
+> Regards,
+> Sjur
 
 
-So if hwdev->coherent_dma_mask is set to 0xffffffffffffffff our dma_mask will
-be u64 set to 0xffffffffffffffff even if we set it to DMA_BIT_MASK(32) previously.
+Okay, so let's add a comment in virtio in unregister
+function. Also slightly preferable to just use device_unregister
+IMHO. Something like the below?
 
-I hope I am not getting this wrong and let me know if I should send an updated version
-of the patch including David V. change.
+	/*
+	   device_unregister drops reference to device so put_device could
+	   invoke release callback. In case that callback will free the device,
+	   make sure we don't access device after this call.
+	 */
 
-Regards,
+	int index = dev->index;
+        device_unregister(&dev->dev);
+        ida_simple_remove(&virtio_index_ida, index);
 
-Stefano
-
+-- 
+MST
