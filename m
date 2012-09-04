@@ -1,86 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932783Ab2IDVhE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 17:37:04 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:60282
-	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1757920Ab2IDVg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 17:36:26 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        ben@decadent.org.uk, thozza@redhat.com, dcbw@redhat.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH V4 06/10] Tools: hv: Gather DHCP information
-Date: Tue,  4 Sep 2012 14:46:38 -0700
-Message-Id: <1346795202-25655-6-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1346795202-25655-1-git-send-email-kys@microsoft.com>
-References: <1346795156-25614-1-git-send-email-kys@microsoft.com>
- <1346795202-25655-1-git-send-email-kys@microsoft.com>
+	id S932792Ab2IDVhe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 17:37:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37062 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932503Ab2IDVh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 17:37:27 -0400
+Date: Tue, 4 Sep 2012 18:37:08 -0300
+From: Flavio Leitner <fbl@redhat.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        WANG Cong <xiyou.wangcong@gmail.com>, Tejun Heo <tj@kernel.org>,
+        ianfang.cn@gmail.com, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: kexec/kdump kernel fails to start
+Message-ID: <20120904183708.5f10fbde@obelix.rh>
+In-Reply-To: <CAE9FiQWnz-pC3ODOfKo6jumGztd1MdypXB5PG-eDrAfTb1s_xQ@mail.gmail.com>
+References: <20120904143215.5bbbb2a4@obelix.rh>
+	<CAE9FiQUEHbDySWHWFj6kW=HGLR0vkbaJWRq+7kMMHGhBm8e08A@mail.gmail.com>
+	<20120904161737.358d51ad@obelix.rh>
+	<CAE9FiQX7OMdFU6FuTQdz+NdbNt5Hy9zjzSY7y-90G4CbhayfaA@mail.gmail.com>
+	<20120904172639.0c2bfd6d@obelix.rh>
+	<CAE9FiQWnz-pC3ODOfKo6jumGztd1MdypXB5PG-eDrAfTb1s_xQ@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Collect information on dhcp setting for the specified interface.
-We invoke an external (Distro specific)  script to get this information.
+On Tue, 4 Sep 2012 13:45:23 -0700
+Yinghai Lu <yinghai@kernel.org> wrote:
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- tools/hv/hv_kvp_daemon.c |   31 +++++++++++++++++++++++++++++++
- 1 files changed, 31 insertions(+), 0 deletions(-)
+> On Tue, Sep 4, 2012 at 1:26 PM, Flavio Leitner <fbl@redhat.com> wrote:
+> >
+> > Sorry, but it didn't work.
+> > The same problem happened.
+> 
+> can you send out boot log ?
 
-diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-index cfa23a1..6fb2c1c 100644
---- a/tools/hv/hv_kvp_daemon.c
-+++ b/tools/hv/hv_kvp_daemon.c
-@@ -524,6 +524,9 @@ static void kvp_get_ipconfig_info(char *if_name,
- 				 struct hv_kvp_ipaddr_value *buffer)
- {
- 	char cmd[512];
-+	char dhcp_info[128];
-+	char *p;
-+	FILE *file;
- 
- 	/*
- 	 * Get the address of default gateway (ipv4).
-@@ -572,6 +575,34 @@ static void kvp_get_ipconfig_info(char *if_name,
- 	 */
- 	kvp_process_ipconfig_file(cmd, (char *)buffer->dns_addr,
- 				(MAX_IP_ADDR_SIZE * 2), INET_ADDRSTRLEN, 0);
-+
-+	/*
-+	 * Gather the DHCP state.
-+	 * We will gather this state by invoking an external script.
-+	 * The parameter to the script is the interface name.
-+	 * Here is the expected output:
-+	 *
-+	 * Enabled: DHCP enabled.
-+	 */
-+
-+	sprintf(cmd, "%s %s", "hv_get_dhcp_info", if_name);
-+
-+	file = popen(cmd, "r");
-+	if (file == NULL)
-+		return;
-+
-+	p = fgets(dhcp_info, sizeof(dhcp_info), file);
-+	if (p == NULL) {
-+		pclose(file);
-+		return;
-+	}
-+
-+	if (!strncmp(p, "Enabled", 7))
-+		buffer->dhcp_enabled = 1;
-+	else
-+		buffer->dhcp_enabled = 0;
-+
-+	pclose(file);
- }
- 
- 
--- 
-1.7.4.1
+sure, there you go:
+http://sysclose.org/kdump/dmesg-debug.log
+http://sysclose.org/kdump/config.log
 
+fbl
