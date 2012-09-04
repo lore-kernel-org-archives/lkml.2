@@ -1,323 +1,505 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932822Ab2IDW3f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 18:29:35 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:43485 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932695Ab2IDW3d convert rfc822-to-8bit (ORCPT
+	id S932844Ab2IDW34 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 18:29:56 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:61111 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932828Ab2IDW3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 18:29:33 -0400
+	Tue, 4 Sep 2012 18:29:54 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-13.tower-160.messagelabs.com!1346797771!7781788!2
-X-Originating-IP: [216.166.12.31]
+X-Msg-Ref: server-12.tower-209.messagelabs.com!1346797791!6873727!4
+X-Originating-IP: [216.166.12.180]
 X-StarScan-Received: 
 X-StarScan-Version: 6.6.1.3; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/3] staging: comedi: addi_amcc_S5920.[ch]: remove unnecessary files
-Date: Tue, 4 Sep 2012 15:29:28 -0700
+Subject: [PATCH 2/3] staging: comedi: amcc_s5933_58.h: remove unused file
+Date: Tue, 4 Sep 2012 15:28:54 -0700
 User-Agent: KMail/1.9.9
 CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
         <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201209041529.28748.hartleys@visionengravers.com>
+Message-ID: <201209041528.54593.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The addi_amcc_S5920.c file only has the function i_AddiHeaderRW_ReadEeprom()
-in it. The addi_amcc_S5920.h file has a prototype for this function and a
-couple defines for the magic numbers used when accessing the eeprom.
-
-The .c file is not actually built by any .config selection, or by an
-
-The .h file is only #include'd by the hwdrv_apci3200.c file. That file
-actually has a local version of the i_AddiHeaderRW_ReadEeprom() function
-that is identical to the one in the .c file.
-
-Just move the #define's from the .h file into hwdrv_apci3200.c and remove
-the addi_amcc_S5920.[ch] files.
+Nothing in the comedi subsystem references this header file. It's
+actually almost a straight copy of the addi_amcc_s5933.h file anyway.
+Just remove the file.
 
 Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 Cc: Ian Abbott <abbotti@mev.co.uk>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- .../comedi/drivers/addi-data/addi_amcc_S5920.c     | 195 ---------------------
- .../comedi/drivers/addi-data/addi_amcc_S5920.h     |  27 ---
- .../comedi/drivers/addi-data/hwdrv_apci3200.c      |  12 +-
- 3 files changed, 7 insertions(+), 227 deletions(-)
- delete mode 100644 drivers/staging/comedi/drivers/addi-data/addi_amcc_S5920.c
- delete mode 100644 drivers/staging/comedi/drivers/addi-data/addi_amcc_S5920.h
+ .../comedi/drivers/addi-data/amcc_s5933_58.h       | 453 ---------------------
+ 1 file changed, 453 deletions(-)
+ delete mode 100644 drivers/staging/comedi/drivers/addi-data/amcc_s5933_58.h
 
-diff --git a/drivers/staging/comedi/drivers/addi-data/addi_amcc_S5920.c b/drivers/staging/comedi/drivers/addi-data/addi_amcc_S5920.c
+diff --git a/drivers/staging/comedi/drivers/addi-data/amcc_s5933_58.h b/drivers/staging/comedi/drivers/addi-data/amcc_s5933_58.h
 deleted file mode 100644
-index b973095..0000000
---- a/drivers/staging/comedi/drivers/addi-data/addi_amcc_S5920.c
+index c26c28c..0000000
+--- a/drivers/staging/comedi/drivers/addi-data/amcc_s5933_58.h
 +++ /dev/null
-@@ -1,195 +0,0 @@
--/**
--@verbatim
--
--Copyright (C) 2004,2005  ADDI-DATA GmbH for the source code of this module.
--
--	ADDI-DATA GmbH
--	Dieselstrasse 3
--	D-77833 Ottersweier
--	Tel: +19(0)7223/9493-0
--	Fax: +49(0)7223/9493-92
--	http://www.addi-data.com
--	info@addi-data.com
--
--This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
--
--This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
--
--You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
--
--You should also find the complete GPL in the COPYING file accompanying this source code.
--
--@endverbatim
--*/
+@@ -1,453 +0,0 @@
 -/*
--  +-----------------------------------------------------------------------+
--  | (C) ADDI-DATA GmbH          Dieselstraße 3       D-77833 Ottersweier  |
--  +-----------------------------------------------------------------------+
--  | Tel : +49 (0) 7223/9493-0     | email    : info@addi-data.com         |
--  | Fax : +49 (0) 7223/9493-92    | Internet : http://www.addi-data.com   |
--  +-------------------------------+---------------------------------------+
--  | Project : ADDI HEADER READ WRITER |     Compiler   : Visual C++       |
--  | Module name : S5920.cpp           |     Version    : 6.0              |
--  +-------------------------------+---------------------------------------+
--  | Author : E. LIBS                      Date : 02/05/2002               |
--  +-----------------------------------------------------------------------+
--  | Description   : DLL with the S5920 PCI Controller functions           |
--  +-----------------------------------------------------------------------+
--  |                             UPDATE'S                                  |
--  +-----------------------------------------------------------------------+
--  |   Date   |   Author  |          Description of updates                |
--  +----------+-----------+------------------------------------------------+
--  | 28/08/02 | LIBS Eric | Add return codes each time a function of the   |
--  |          |           | Addi Library is called                         |
--  +-----------------------------------------------------------------------+
--  | 31/07/03 | KRAUTH J. | Changes for the MSX-Box                        |
--  +-----------------------------------------------------------------------+
+-	Modified by umesh on 16th may 2001
+-	Modified by sarath on 22nd may 2001
 -*/
 -
--#include "addi_amcc_S5920.h"
+-/*
+-    comedi/drivers/amcc_s5933_v_58.h
 -
--/*+----------------------------------------------------------------------------+*/
--/*| Function   Name   : int i_AddiHeaderRW_ReadEeprom                          |*/
--/*|                               (int    i_NbOfWordsToRead,                   |*/
--/*|                                unsigned int dw_PCIBoardEepromAddress,             |*/
--/*|                                unsigned short   w_EepromStartAddress,                |*/
--/*|                                unsigned short * pw_DataRead)                          |*/
--/*+----------------------------------------------------------------------------+*/
--/*| Task              : Read word from the 5920 eeprom.                        |*/
--/*+----------------------------------------------------------------------------+*/
--/*| Input Parameters  : int    i_NbOfWordsToRead : Nbr. of word to read        |*/
--/*|                     unsigned int dw_PCIBoardEepromAddress : Address of the eeprom |*/
--/*|                     unsigned short   w_EepromStartAddress : Eeprom start address     |*/
--/*+----------------------------------------------------------------------------+*/
--/*| Output Parameters : unsigned short * pw_DataRead : Read data                          |*/
--/*+----------------------------------------------------------------------------+*/
--/*| Return Value      : -                                                      |*/
--/*+----------------------------------------------------------------------------+*/
+-    Stuff for AMCC S5933 PCI Controller
 -
--int i_AddiHeaderRW_ReadEeprom(int i_NbOfWordsToRead,
--	unsigned int dw_PCIBoardEepromAddress,
--	unsigned short w_EepromStartAddress, unsigned short *pw_DataRead)
+-    Author: Michal Dobes <majkl@tesnet.cz>
+-
+-    Inspirated from general-purpose AMCC S5933 PCI Matchmaker driver
+-    made by Andrea Cisternino  <acister@pcape1.pi.infn.it>
+-    and as result of espionage from MITE code made by David A. Schleef.
+-    Thanks to AMCC for their on-line documentation and bus master DMA
+-    example.
+-*/
+-
+-#ifndef _AMCC_S5933_H_
+-#define _AMCC_S5933_H_
+-
+-#include <linux/pci.h>
+-#include "../../comedidev.h"
+-
+-/***********Added by sarath for compatibility with APCI3120
+-
+-*************************/
+-
+-#define FIFO_ADVANCE_ON_BYTE_2     0x20000000	/*  written on base0 */
+-
+-#define AMWEN_ENABLE                     0x02	/*  added for step 6 dma written on base2 */
+-#define A2P_FIFO_WRITE_ENABLE            0x01
+-
+-#define AGCSTS_TC_ENABLE		   0x10000000	/*  Added for transfer count enable bit */
+-
+-/* ADDON RELATED ADDITIONS */
+-/* Constant */
+-#define     APCI3120_ENABLE_TRANSFER_ADD_ON_LOW       0x00
+-#define     APCI3120_ENABLE_TRANSFER_ADD_ON_HIGH      0x1200
+-#define     APCI3120_A2P_FIFO_MANAGEMENT              0x04000400L
+-#define     APCI3120_AMWEN_ENABLE                     0x02
+-#define     APCI3120_A2P_FIFO_WRITE_ENABLE            0x01
+-#define     APCI3120_FIFO_ADVANCE_ON_BYTE_2           0x20000000L
+-#define     APCI3120_ENABLE_WRITE_TC_INT              0x00004000L
+-#define     APCI3120_CLEAR_WRITE_TC_INT               0x00040000L
+-#define     APCI3120_DISABLE_AMWEN_AND_A2P_FIFO_WRITE 0x0
+-#define     APCI3120_DISABLE_BUS_MASTER_ADD_ON        0x0
+-#define     APCI3120_DISABLE_BUS_MASTER_PCI           0x0
+-
+- /*  ADD_ON ::: this needed since apci supports 16 bit interface to add on */
+-#define     APCI3120_ADD_ON_AGCSTS_LOW       0x3C
+-#define     APCI3120_ADD_ON_AGCSTS_HIGH      APCI3120_ADD_ON_AGCSTS_LOW + 2
+-#define     APCI3120_ADD_ON_MWAR_LOW         0x24
+-#define     APCI3120_ADD_ON_MWAR_HIGH        APCI3120_ADD_ON_MWAR_LOW + 2
+-#define     APCI3120_ADD_ON_MWTC_LOW         0x058
+-#define     APCI3120_ADD_ON_MWTC_HIGH        APCI3120_ADD_ON_MWTC_LOW + 2
+-
+-/* AMCC */
+-#define     APCI3120_AMCC_OP_MCSR            0x3C
+-#define     APCI3120_AMCC_OP_REG_INTCSR      0x38
+-
+-/*******from here all upward definitions are added by sarath */
+-
+-/****************************************************************************/
+-/* AMCC Operation Register Offsets - PCI                                    */
+-/****************************************************************************/
+-
+-#define AMCC_OP_REG_OMB1         0x00
+-#define AMCC_OP_REG_OMB2         0x04
+-#define AMCC_OP_REG_OMB3         0x08
+-#define AMCC_OP_REG_OMB4         0x0c
+-#define AMCC_OP_REG_IMB1         0x10
+-#define AMCC_OP_REG_IMB2         0x14
+-#define AMCC_OP_REG_IMB3         0x18
+-#define AMCC_OP_REG_IMB4         0x1c
+-#define AMCC_OP_REG_FIFO         0x20
+-#define AMCC_OP_REG_MWAR         0x24
+-#define AMCC_OP_REG_MWTC         0x28
+-#define AMCC_OP_REG_MRAR         0x2c
+-#define AMCC_OP_REG_MRTC         0x30
+-#define AMCC_OP_REG_MBEF         0x34
+-#define AMCC_OP_REG_INTCSR       0x38
+-#define  AMCC_OP_REG_INTCSR_SRC  (AMCC_OP_REG_INTCSR + 2)	/* int source */
+-#define  AMCC_OP_REG_INTCSR_FEC  (AMCC_OP_REG_INTCSR + 3)	/* FIFO ctrl */
+-#define AMCC_OP_REG_MCSR         0x3c
+-#define  AMCC_OP_REG_MCSR_NVDATA (AMCC_OP_REG_MCSR + 2)	/* Data in byte 2 */
+-#define  AMCC_OP_REG_MCSR_NVCMD  (AMCC_OP_REG_MCSR + 3)	/* Command in byte 3 */
+-
+-#define AMCC_FIFO_DEPTH_DWORD	8
+-#define AMCC_FIFO_DEPTH_BYTES	(8 * sizeof (u32))
+-
+-/****************************************************************************/
+-/* AMCC Operation Registers Size - PCI                                      */
+-/****************************************************************************/
+-
+-#define AMCC_OP_REG_SIZE	 64	/* in bytes */
+-
+-/****************************************************************************/
+-/* AMCC Operation Register Offsets - Add-on                                 */
+-/****************************************************************************/
+-
+-#define AMCC_OP_REG_AIMB1         0x00
+-#define AMCC_OP_REG_AIMB2         0x04
+-#define AMCC_OP_REG_AIMB3         0x08
+-#define AMCC_OP_REG_AIMB4         0x0c
+-#define AMCC_OP_REG_AOMB1         0x10
+-#define AMCC_OP_REG_AOMB2         0x14
+-#define AMCC_OP_REG_AOMB3         0x18
+-#define AMCC_OP_REG_AOMB4         0x1c
+-#define AMCC_OP_REG_AFIFO         0x20
+-#define AMCC_OP_REG_AMWAR         0x24
+-#define AMCC_OP_REG_APTA          0x28
+-#define AMCC_OP_REG_APTD          0x2c
+-#define AMCC_OP_REG_AMRAR         0x30
+-#define AMCC_OP_REG_AMBEF         0x34
+-#define AMCC_OP_REG_AINT          0x38
+-#define AMCC_OP_REG_AGCSTS        0x3c
+-#define AMCC_OP_REG_AMWTC         0x58
+-#define AMCC_OP_REG_AMRTC         0x5c
+-
+-/****************************************************************************/
+-/* AMCC - Add-on General Control/Status Register                            */
+-/****************************************************************************/
+-
+-#define AGCSTS_CONTROL_MASK	0xfffff000
+-#define  AGCSTS_NV_ACC_MASK	0xe0000000
+-#define  AGCSTS_RESET_MASK	0x0e000000
+-#define  AGCSTS_NV_DA_MASK	0x00ff0000
+-#define  AGCSTS_BIST_MASK	0x0000f000
+-#define AGCSTS_STATUS_MASK	0x000000ff
+-#define  AGCSTS_TCZERO_MASK	0x000000c0
+-#define  AGCSTS_FIFO_ST_MASK	0x0000003f
+-
+-#define AGCSTS_RESET_MBFLAGS	0x08000000
+-#define AGCSTS_RESET_P2A_FIFO	0x04000000
+-#define AGCSTS_RESET_A2P_FIFO	0x02000000
+-#define AGCSTS_RESET_FIFOS	(AGCSTS_RESET_A2P_FIFO | AGCSTS_RESET_P2A_FIFO)
+-
+-#define AGCSTS_A2P_TCOUNT	0x00000080
+-#define AGCSTS_P2A_TCOUNT	0x00000040
+-
+-#define AGCSTS_FS_P2A_EMPTY	0x00000020
+-#define AGCSTS_FS_P2A_HALF	0x00000010
+-#define AGCSTS_FS_P2A_FULL	0x00000008
+-
+-#define AGCSTS_FS_A2P_EMPTY	0x00000004
+-#define AGCSTS_FS_A2P_HALF	0x00000002
+-#define AGCSTS_FS_A2P_FULL	0x00000001
+-
+-/****************************************************************************/
+-/* AMCC - Add-on Interrupt Control/Status Register                            */
+-/****************************************************************************/
+-
+-#define AINT_INT_MASK		0x00ff0000
+-#define AINT_SEL_MASK		0x0000ffff
+-#define  AINT_IS_ENSEL_MASK	0x00001f1f
+-
+-#define AINT_INT_ASSERTED	0x00800000
+-#define AINT_BM_ERROR		0x00200000
+-#define AINT_BIST_INT		0x00100000
+-
+-#define AINT_RT_COMPLETE	0x00080000
+-#define AINT_WT_COMPLETE	0x00040000
+-
+-#define AINT_OUT_MB_INT		0x00020000
+-#define AINT_IN_MB_INT		0x00010000
+-
+-#define AINT_READ_COMPL		0x00008000
+-#define AINT_WRITE_COMPL	0x00004000
+-
+-#define AINT_OMB_ENABLE 	0x00001000
+-#define AINT_OMB_SELECT 	0x00000c00
+-#define AINT_OMB_BYTE		0x00000300
+-
+-#define AINT_IMB_ENABLE 	0x00000010
+-#define AINT_IMB_SELECT 	0x0000000c
+-#define AINT_IMB_BYTE		0x00000003
+-
+-/* Enable Bus Mastering */
+-#define EN_A2P_TRANSFERS	0x00000400
+-/* FIFO Flag Reset */
+-#define RESET_A2P_FLAGS		0x04000000L
+-/* FIFO Relative Priority */
+-#define A2P_HI_PRIORITY		0x00000100L
+-/* Identify Interrupt Sources */
+-#define ANY_S593X_INT		0x00800000L
+-#define READ_TC_INT		0x00080000L
+-#define WRITE_TC_INT		0x00040000L
+-#define IN_MB_INT		0x00020000L
+-#define MASTER_ABORT_INT	0x00100000L
+-#define TARGET_ABORT_INT	0x00200000L
+-#define BUS_MASTER_INT		0x00200000L
+-
+-/****************************************************************************/
+-
+-struct pcilst_struct {
+-	struct pcilst_struct *next;
+-	int used;
+-	struct pci_dev *pcidev;
+-	unsigned short vendor;
+-	unsigned short device;
+-	unsigned int master;
+-	unsigned char pci_bus;
+-	unsigned char pci_slot;
+-	unsigned char pci_func;
+-	unsigned int io_addr[5];
+-	unsigned int irq;
+-};
+-
+-struct pcilst_struct *amcc_devices;	/*  ptr to root list of all amcc devices */
+-
+-/****************************************************************************/
+-
+-void v_pci_card_list_init(unsigned short pci_vendor, char display);
+-void v_pci_card_list_cleanup(unsigned short pci_vendor);
+-struct pcilst_struct *ptr_find_free_pci_card_by_device(unsigned short vendor_id,
+-						       unsigned short
+-						       device_id);
+-int i_find_free_pci_card_by_position(unsigned short vendor_id,
+-				     unsigned short device_id,
+-				     unsigned short pci_bus,
+-				     unsigned short pci_slot,
+-				     struct pcilst_struct **card);
+-struct pcilst_struct *ptr_select_and_alloc_pci_card(unsigned short vendor_id,
+-						    unsigned short device_id,
+-						    unsigned short pci_bus,
+-						    unsigned short pci_slot);
+-
+-int i_pci_card_alloc(struct pcilst_struct *amcc);
+-int i_pci_card_free(struct pcilst_struct *amcc);
+-void v_pci_card_list_display(void);
+-int i_pci_card_data(struct pcilst_struct *amcc,
+-		    unsigned char *pci_bus, unsigned char *pci_slot,
+-		    unsigned char *pci_func, unsigned short *io_addr,
+-		    unsigned short *irq, unsigned short *master);
+-
+-/****************************************************************************/
+-
+-/* build list of amcc cards in this system */
+-void v_pci_card_list_init(unsigned short pci_vendor, char display)
 -{
--	unsigned int dw_eeprom_busy = 0;
--	int i_Counter = 0;
--	int i_WordCounter;
+-	struct pci_dev *pcidev;
+-	struct pcilst_struct *amcc, *last;
 -	int i;
--	unsigned char pb_ReadByte[1];
--	unsigned char b_ReadLowByte = 0;
--	unsigned char b_ReadHighByte = 0;
--	unsigned char b_SelectedAddressLow = 0;
--	unsigned char b_SelectedAddressHigh = 0;
--	unsigned short w_ReadWord = 0;
 -
--	for (i_WordCounter = 0; i_WordCounter < i_NbOfWordsToRead;
--		i_WordCounter++) {
--		do {
--			dw_eeprom_busy =
--				inl(dw_PCIBoardEepromAddress +
--				AMCC_OP_REG_MCSR);
--			dw_eeprom_busy = dw_eeprom_busy & EEPROM_BUSY;
--		} while (dw_eeprom_busy == EEPROM_BUSY);
+-	amcc_devices = NULL;
+-	last = NULL;
 -
--		for (i_Counter = 0; i_Counter < 2; i_Counter++) {
--			b_SelectedAddressLow = (w_EepromStartAddress + i_Counter) % 256;	/* Read the low 8 bit part */
--			b_SelectedAddressHigh = (w_EepromStartAddress + i_Counter) / 256;	/* Read the high 8 bit part */
+-	pci_for_each_dev(pcidev) {
+-		if (pcidev->vendor == pci_vendor) {
+-			amcc = kzalloc(sizeof(*amcc), GFP_KERNEL);
+-			if (amcc == NULL)
+-				continue;
 -
--			/* Select the load low address mode */
--			outb(NVCMD_LOAD_LOW,
--				dw_PCIBoardEepromAddress + AMCC_OP_REG_MCSR +
--				3);
+-			amcc->pcidev = pcidev;
+-			if (last) {
+-				last->next = amcc;
+-			} else {
+-				amcc_devices = amcc;
+-			}
+-			last = amcc;
 -
--			/* Wait on busy */
--			do {
--				dw_eeprom_busy =
--					inl(dw_PCIBoardEepromAddress +
--					AMCC_OP_REG_MCSR);
--				dw_eeprom_busy = dw_eeprom_busy & EEPROM_BUSY;
--			} while (dw_eeprom_busy == EEPROM_BUSY);
--
--			/* Load the low address */
--			outb(b_SelectedAddressLow,
--				dw_PCIBoardEepromAddress + AMCC_OP_REG_MCSR +
--				2);
--
--			/* Wait on busy */
--			do {
--				dw_eeprom_busy =
--					inl(dw_PCIBoardEepromAddress +
--					AMCC_OP_REG_MCSR);
--				dw_eeprom_busy = dw_eeprom_busy & EEPROM_BUSY;
--			} while (dw_eeprom_busy == EEPROM_BUSY);
--
--			/* Select the load high address mode */
--			outb(NVCMD_LOAD_HIGH,
--				dw_PCIBoardEepromAddress + AMCC_OP_REG_MCSR +
--				3);
--
--			/* Wait on busy */
--			do {
--				dw_eeprom_busy =
--					inl(dw_PCIBoardEepromAddress +
--					AMCC_OP_REG_MCSR);
--				dw_eeprom_busy = dw_eeprom_busy & EEPROM_BUSY;
--			} while (dw_eeprom_busy == EEPROM_BUSY);
--
--			/* Load the high address */
--			outb(b_SelectedAddressHigh,
--				dw_PCIBoardEepromAddress + AMCC_OP_REG_MCSR +
--				2);
--
--			/* Wait on busy */
--			do {
--				dw_eeprom_busy =
--					inl(dw_PCIBoardEepromAddress +
--					AMCC_OP_REG_MCSR);
--				dw_eeprom_busy = dw_eeprom_busy & EEPROM_BUSY;
--			} while (dw_eeprom_busy == EEPROM_BUSY);
--
--			/* Select the READ mode */
--			outb(NVCMD_BEGIN_READ,
--				dw_PCIBoardEepromAddress + AMCC_OP_REG_MCSR +
--				3);
--
--			/* Wait on busy */
--			do {
--				dw_eeprom_busy =
--					inl(dw_PCIBoardEepromAddress +
--					AMCC_OP_REG_MCSR);
--				dw_eeprom_busy = dw_eeprom_busy & EEPROM_BUSY;
--			} while (dw_eeprom_busy == EEPROM_BUSY);
--
--			/* Read data into the EEPROM */
--			*pb_ReadByte =
--				inb(dw_PCIBoardEepromAddress +
--				AMCC_OP_REG_MCSR + 2);
--
--			/* Wait on busy */
--			do {
--				dw_eeprom_busy =
--					inl(dw_PCIBoardEepromAddress +
--					AMCC_OP_REG_MCSR);
--				dw_eeprom_busy = dw_eeprom_busy & EEPROM_BUSY;
--			} while (dw_eeprom_busy == EEPROM_BUSY);
--
--			/* Select the upper address part */
--			if (i_Counter == 0)
--				b_ReadLowByte = pb_ReadByte[0];
--			else
--				b_ReadHighByte = pb_ReadByte[0];
--
--			/* Sleep */
--			msleep(1);
--
+-			amcc->vendor = pcidev->vendor;
+-			amcc->device = pcidev->device;
+-#if 0
+-			amcc->master = pcidev->master;	/*  how get this information under 2.4 kernels? */
+-#endif
+-			amcc->pci_bus = pcidev->bus->number;
+-			amcc->pci_slot = PCI_SLOT(pcidev->devfn);
+-			amcc->pci_func = PCI_FUNC(pcidev->devfn);
+-			for (i = 0; i < 5; i++)
+-				amcc->io_addr[i] =
+-				    pcidev->resource[i].start & ~3UL;
+-			amcc->irq = pcidev->irq;
 -		}
--		w_ReadWord =
--			(b_ReadLowByte | (((unsigned short)b_ReadHighByte) *
--				256));
+-	}
 -
--		pw_DataRead[i_WordCounter] = w_ReadWord;
+-	if (display)
+-		v_pci_card_list_display();
+-}
 -
--		w_EepromStartAddress += 2;	/*  to read the next word */
+-/****************************************************************************/
+-/* free up list of amcc cards in this system */
+-void v_pci_card_list_cleanup(unsigned short pci_vendor)
+-{
+-	struct pcilst_struct *amcc, *next;
 -
--	}			/*  for (...) i_NbOfWordsToRead */
+-	for (amcc = amcc_devices; amcc; amcc = next) {
+-		next = amcc->next;
+-		kfree(amcc);
+-	}
+-
+-	amcc_devices = NULL;
+-}
+-
+-/****************************************************************************/
+-/* find first unused card with this device_id */
+-struct pcilst_struct *ptr_find_free_pci_card_by_device(unsigned short vendor_id,
+-						       unsigned short device_id)
+-{
+-	struct pcilst_struct *amcc, *next;
+-
+-	for (amcc = amcc_devices; amcc; amcc = next) {
+-		next = amcc->next;
+-		if ((!amcc->used) && (amcc->device == device_id)
+-		    && (amcc->vendor == vendor_id))
+-			return amcc;
+-
+-	}
+-
+-	return NULL;
+-}
+-
+-/****************************************************************************/
+-/* find card on requested position */
+-int i_find_free_pci_card_by_position(unsigned short vendor_id,
+-				     unsigned short device_id,
+-				     unsigned short pci_bus,
+-				     unsigned short pci_slot,
+-				     struct pcilst_struct **card)
+-{
+-	struct pcilst_struct *amcc, *next;
+-
+-	*card = NULL;
+-	for (amcc = amcc_devices; amcc; amcc = next) {
+-		next = amcc->next;
+-		if ((amcc->vendor == vendor_id) && (amcc->device == device_id)
+-		    && (amcc->pci_bus == pci_bus)
+-		    && (amcc->pci_slot == pci_slot)) {
+-			if (!(amcc->used)) {
+-				*card = amcc;
+-				return 0;	/*  ok, card is found */
+-			} else {
+-				printk
+-				    (" - \nCard on requested position is used b:s %d:%d!\n",
+-				     pci_bus, pci_slot);
+-				return 2;	/*  card exist but is used */
+-			}
+-		}
+-	}
+-
+-	return 1;		/*  no card found */
+-}
+-
+-/****************************************************************************/
+-/* mark card as used */
+-int i_pci_card_alloc(struct pcilst_struct *amcc)
+-{
+-	if (!amcc)
+-		return -1;
+-
+-	if (amcc->used)
+-		return 1;
+-	amcc->used = 1;
 -	return 0;
 -}
-diff --git a/drivers/staging/comedi/drivers/addi-data/addi_amcc_S5920.h b/drivers/staging/comedi/drivers/addi-data/addi_amcc_S5920.h
-deleted file mode 100644
-index 9afdb13..0000000
---- a/drivers/staging/comedi/drivers/addi-data/addi_amcc_S5920.h
-+++ /dev/null
-@@ -1,27 +0,0 @@
--/*
-- *  Copyright (C) 2004,2005  ADDI-DATA GmbH for the source code of this module.
-- *
-- *	ADDI-DATA GmbH
-- *	Dieselstrasse 3
-- *	D-77833 Ottersweier
-- *	Tel: +19(0)7223/9493-0
-- *	Fax: +49(0)7223/9493-92
-- *	http://www.addi-data.com
-- *	info@addi-data.com
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms of the GNU General Public License as published by the Free
-- * Software Foundation; either version 2 of the License, or (at your option)
-- * any later version.
-- */
 -
--#define AMCC_OP_REG_MCSR	0x3c
--#define EEPROM_BUSY		0x80000000
--#define NVCMD_LOAD_LOW		(0x4 << 5)	/* nvRam load low command */
--#define NVCMD_LOAD_HIGH		(0x5 << 5)	/* nvRam load high command */
--#define NVCMD_BEGIN_READ	(0x7 << 5)	/* nvRam begin read command */
--#define NVCMD_BEGIN_WRITE	(0x6 << 5)	/* EEPROM begin write command */
+-/****************************************************************************/
+-/* mark card as free */
+-int i_pci_card_free(struct pcilst_struct *amcc)
+-{
+-	if (!amcc)
+-		return -1;
 -
--int i_AddiHeaderRW_ReadEeprom(int i_NbOfWordsToRead,
--			      unsigned int dw_PCIBoardEepromAddress,
--			      unsigned short w_EepromStartAddress, unsigned short *pw_DataRead);
-diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3200.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3200.c
-index f9545b0..5aed4a1 100644
---- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3200.c
-+++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3200.c
-@@ -57,11 +57,8 @@ You should also find the complete GPL in the COPYING file accompanying this sour
-   +----------------------------------------------------------------------------+
- */
- #include "hwdrv_apci3200.h"
--/* Begin JK 21.10.2004: APCI-3200 / APCI-3300 Reading of EEPROM values */
--#include "addi_amcc_S5920.h"
--/* #define PRINT_INFO */
- 
--/* End JK 21.10.2004: APCI-3200 / APCI-3300 Reading of EEPROM values */
-+/* #define PRINT_INFO */
- 
- /* BEGIN JK 06.07.04: Management of sevrals boards */
- /*
-@@ -90,7 +87,12 @@ You should also find the complete GPL in the COPYING file accompanying this sour
- struct str_BoardInfos s_BoardInfos[100];	/*  100 will be the max number of boards to be used */
- /* END JK 06.07.04: Management of sevrals boards */
- 
--/* Begin JK 21.10.2004: APCI-3200 / APCI-3300 Reading of EEPROM values */
-+#define AMCC_OP_REG_MCSR	0x3c
-+#define EEPROM_BUSY		0x80000000
-+#define NVCMD_LOAD_LOW		(0x4 << 5)	/* nvRam load low command */
-+#define NVCMD_LOAD_HIGH		(0x5 << 5)	/* nvRam load high command */
-+#define NVCMD_BEGIN_READ	(0x7 << 5)	/* nvRam begin read command */
-+#define NVCMD_BEGIN_WRITE	(0x6 << 5)	/* EEPROM begin write command */
- 
- /*+----------------------------------------------------------------------------+*/
- /*| Function   Name   : int i_AddiHeaderRW_ReadEeprom                          |*/
+-	if (!amcc->used)
+-		return 1;
+-	amcc->used = 0;
+-	return 0;
+-}
+-
+-/****************************************************************************/
+-/* display list of found cards */
+-void v_pci_card_list_display(void)
+-{
+-	struct pcilst_struct *amcc, *next;
+-
+-	printk("List of pci cards\n");
+-	printk("bus:slot:func vendor device master io_amcc io_daq irq used\n");
+-
+-	for (amcc = amcc_devices; amcc; amcc = next) {
+-		next = amcc->next;
+-		printk
+-		    ("%2d   %2d   %2d  0x%4x 0x%4x   %3s   0x%4x 0x%4x  %2d  %2d\n",
+-		     amcc->pci_bus, amcc->pci_slot, amcc->pci_func,
+-		     amcc->vendor, amcc->device, amcc->master ? "yes" : "no",
+-		     amcc->io_addr[0], amcc->io_addr[2], amcc->irq, amcc->used);
+-
+-	}
+-}
+-
+-/****************************************************************************/
+-/* return all card information for driver */
+-int i_pci_card_data(struct pcilst_struct *amcc,
+-		    unsigned char *pci_bus, unsigned char *pci_slot,
+-		    unsigned char *pci_func, unsigned short *io_addr,
+-		    unsigned short *irq, unsigned short *master)
+-{
+-	int i;
+-
+-	if (!amcc)
+-		return -1;
+-	*pci_bus = amcc->pci_bus;
+-	*pci_slot = amcc->pci_slot;
+-	*pci_func = amcc->pci_func;
+-	for (i = 0; i < 5; i++)
+-		io_addr[i] = amcc->io_addr[i];
+-	*irq = amcc->irq;
+-	*master = amcc->master;
+-	return 0;
+-}
+-
+-/****************************************************************************/
+-/* select and alloc card */
+-struct pcilst_struct *ptr_select_and_alloc_pci_card(unsigned short vendor_id,
+-						    unsigned short device_id,
+-						    unsigned short pci_bus,
+-						    unsigned short pci_slot)
+-{
+-	struct pcilst_struct *card;
+-
+-	if ((pci_bus < 1) & (pci_slot < 1)) {	/*  use autodetection */
+-		card = ptr_find_free_pci_card_by_device(vendor_id, device_id);
+-		if (card == NULL) {
+-			printk(" - Unused card not found in system!\n");
+-			return NULL;
+-		}
+-	} else {
+-		switch (i_find_free_pci_card_by_position(vendor_id, device_id,
+-							 pci_bus, pci_slot,
+-							 &card)) {
+-		case 1:
+-			printk
+-			    (" - Card not found on requested position b:s %d:%d!\n",
+-			     pci_bus, pci_slot);
+-			return NULL;
+-		case 2:
+-			printk
+-			    (" - Card on requested position is used b:s %d:%d!\n",
+-			     pci_bus, pci_slot);
+-			return NULL;
+-		}
+-	}
+-
+-	if (i_pci_card_alloc(card) != 0) {
+-		printk(" - Can't allocate card!\n");
+-		return NULL;
+-	}
+-
+-	return card;
+-}
+-
+-#endif
 -- 
 1.7.11
 
