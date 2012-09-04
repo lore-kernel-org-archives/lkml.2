@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756630Ab2IDCsR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 22:48:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61608 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754484Ab2IDCsQ (ORCPT
+	id S1756637Ab2IDC5q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 22:57:46 -0400
+Received: from sting.hengli.com.au ([178.18.18.71]:40349 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754484Ab2IDC5p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 22:48:16 -0400
+	Mon, 3 Sep 2012 22:57:45 -0400
+Date: Mon, 3 Sep 2012 19:57:22 -0700
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, kernel@pengutronix.de,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] hw_random: mxc-rnga: Adapt clocks to new i.mx
+ clock framework
+Message-ID: <20120904025722.GA320@gondor.apana.org.au>
+References: <1343407672-27185-1-git-send-email-fabio.estevam@freescale.com>
+ <20120731064053.GW30009@pengutronix.de>
+ <CAOMZO5BSi7sfK+4mjPUn9j89CssyGBJkLXY_0aDekA5SRrXD-w@mail.gmail.com>
+ <CAOMZO5CY6GdwG2EfQjmejpiHV0i=GhFRdgnOP1puo7LjdiA48g@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQXHyS-ybeo5fBQwQzUtK2TTqPVkuf+6heZKrGn1wS77tQ@mail.gmail.com>
-References: <1346572019-15806-1-git-send-email-yinghai@kernel.org>
-	<1346572019-15806-14-git-send-email-yinghai@kernel.org>
-	<CAOJsxLFtpBnvtA3F=7NDJunqXRs4AL1=oe7HR6GECgGfr9TqDA@mail.gmail.com>
-	<CAE9FiQV9pE0FOgqTbNpUf0s04yCTeHkApvUtzGXKwQw-7XB2KA@mail.gmail.com>
-	<CAOJsxLG+o7NwuAfamPzsPJC6K_TRAO_J_W=Nn8yj9bJiqxp=Xg@mail.gmail.com>
-	<CAE9FiQXHyS-ybeo5fBQwQzUtK2TTqPVkuf+6heZKrGn1wS77tQ@mail.gmail.com>
-Date: Mon, 3 Sep 2012 19:48:15 -0700
-X-Google-Sender-Auth: lVYBeVqCGQ-uSGnMZMdxild6CPE
-Message-ID: <CAE9FiQVVKnEnFrxm1KDJeq5xgt3BXymhYF4w20qB3Kr2Sn5zUw@mail.gmail.com>
-Subject: Re: [PATCH -v2 13/13] x86, 64bit: Map first 1M ram early before memblock_x86_fill()
-From: Yinghai Lu <yinghai@kernel.org>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOMZO5CY6GdwG2EfQjmejpiHV0i=GhFRdgnOP1puo7LjdiA48g@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 3, 2012 at 12:18 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Sun, Sep 2, 2012 at 11:26 PM, Pekka Enberg <penberg@kernel.org> wrote:
->>
->> Yup, or move the globals together with the comment to arch/x86/mm/init.c.
->>
->> That said, max_pfn_high_mapped really ought to be kept together with
->> the other "pfn_mapped" globals and the comment should be updated.
->
-> max_pfn_high_mapped is only for 64bit, and it is in init_64.c
->
-> maybe later could have another patch to move max_pfn_mapped,
-> max_low_pfn_mapped from
-> kernel/setup.c to mm/init.c
->
-> Please check attached updated patch.
+On Mon, Sep 03, 2012 at 06:08:45PM -0300, Fabio Estevam wrote:
+> Herbert,
+> 
+> On Fri, Aug 3, 2012 at 12:10 PM, Fabio Estevam <festevam@gmail.com> wrote:
+> > Hi Herbert,
+> >
+> > On Tue, Jul 31, 2012 at 3:40 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> >> On Fri, Jul 27, 2012 at 01:47:51PM -0300, Fabio Estevam wrote:
+> >>> Adapt clocks to the new i.mx clock framework and fix the following warning:
+> >>>
+> >>> Cc: Theodore Ts'o <tytso@mit.edu>
+> >>> Cc: Herbert Xu <herbert@gondor.apana.org.au>
+> >>> Cc: <linux-kernel@vger.kernel.org>
+> >>> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+> >>
+> >> Both:
+> >>
+> >> Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+> >
+> > Looks like git did not Cc'ed you in these patches.
+> >
+> > Would it be OK to apply these two patches?
+> 
+> Ping?
 
-oh,  I'm wrong.
+It would help if you actually send me the patches.
 
-this patch is not needed, until some day we could not need to do low
-kernel mapping in head_64.S
-
-Thanks
-
-Yinghai
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
