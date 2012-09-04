@@ -1,85 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932803Ab2IDWZr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 18:25:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42484 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932565Ab2IDWZq (ORCPT
+	id S932813Ab2IDW1d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 18:27:33 -0400
+Received: from mail127.messagelabs.com ([216.82.250.115]:15620 "EHLO
+	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932565Ab2IDW1c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 18:25:46 -0400
+	Tue, 4 Sep 2012 18:27:32 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-7.tower-127.messagelabs.com!1346797651!6812997!2
+X-Originating-IP: [216.166.12.98]
+X-StarScan-Received: 
+X-StarScan-Version: 6.6.1.3; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/3] staging: comedi: addi-data: remove some unnecessary files
+Date: Tue, 4 Sep 2012 15:27:21 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-In-Reply-To: <20120904183708.5f10fbde@obelix.rh>
-References: <20120904143215.5bbbb2a4@obelix.rh>
-	<CAE9FiQUEHbDySWHWFj6kW=HGLR0vkbaJWRq+7kMMHGhBm8e08A@mail.gmail.com>
-	<20120904161737.358d51ad@obelix.rh>
-	<CAE9FiQX7OMdFU6FuTQdz+NdbNt5Hy9zjzSY7y-90G4CbhayfaA@mail.gmail.com>
-	<20120904172639.0c2bfd6d@obelix.rh>
-	<CAE9FiQWnz-pC3ODOfKo6jumGztd1MdypXB5PG-eDrAfTb1s_xQ@mail.gmail.com>
-	<20120904183708.5f10fbde@obelix.rh>
-Date: Tue, 4 Sep 2012 15:25:45 -0700
-X-Google-Sender-Auth: Md7zsEGY5UVOYMjbzLbHT6w_fRU
-Message-ID: <CAE9FiQXCzQ+GCCqx4+=ZSijn+_+ekfGrUABiWNuX2H8BL+j9tg@mail.gmail.com>
-Subject: Re: kexec/kdump kernel fails to start
-From: Yinghai Lu <yinghai@kernel.org>
-To: Flavio Leitner <fbl@redhat.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        WANG Cong <xiyou.wangcong@gmail.com>, Tejun Heo <tj@kernel.org>,
-        ianfang.cn@gmail.com, Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201209041527.22240.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 4, 2012 at 2:37 PM, Flavio Leitner <fbl@redhat.com> wrote:
-> On Tue, 4 Sep 2012 13:45:23 -0700
-> Yinghai Lu <yinghai@kernel.org> wrote:
->
->> On Tue, Sep 4, 2012 at 1:26 PM, Flavio Leitner <fbl@redhat.com> wrote:
->> >
->> > Sorry, but it didn't work.
->> > The same problem happened.
->>
->> can you send out boot log ?
->
-> sure, there you go:
-> http://sysclose.org/kdump/dmesg-debug.log
-> http://sysclose.org/kdump/config.log
+Remove a couple of the addi-data files that are either not built under any
+configuration or are unnecessary due to code duplication in another file.
 
-looks like you did not use for-x86-mm branch.
+H Hartley Sweeten (3):
+  staging: comedi: addi_apci_all.c: remove unused file
+  staging: comedi: amcc_s5933_58.h: remove unused file
+  staging: comedi: addi_amcc_S5920.[ch]: remove unnecessary files
 
-[    0.000000] initial memory mapped: [mem 0x00000000-0x1fffffff]
-[    0.000000] Base memory trampoline at [ffff880000097000] 97000 size 24576
-[    0.000000] init_memory_mapping: [mem 0x00000000-0xbf7fffff]
-[    0.000000]  [mem 0x00000000-0xbf7fffff] page 2M
-[    0.000000] kernel direct mapping tables up to 0xbf7fffff @ [mem
-0x1fa00000-0x1fffffff]
-[    0.000000] init_memory_mapping: [mem 0x100000000-0x43fffffff]
-[    0.000000]  [mem 0x100000000-0x43fffffff] page 2M
-[    0.000000] kernel direct mapping tables up to 0x43fffffff @ [mem
-0xbf7ce000-0xbf7dffff]
-[    0.000000] RAMDISK: [mem 0x351d2000-0x368e0fff]
-[    0.000000] Reserving 256MB of memory at 592MB for crashkernel
-(System RAM: 16372MB)
+ .../comedi/drivers/addi-data/addi_amcc_S5920.c     | 195 ---------
+ .../comedi/drivers/addi-data/addi_amcc_S5920.h     |  27 --
+ .../comedi/drivers/addi-data/amcc_s5933_58.h       | 453 ---------------------
+ .../comedi/drivers/addi-data/hwdrv_apci3200.c      |  12 +-
+ drivers/staging/comedi/drivers/addi_apci_all.c     |  18 -
+ 5 files changed, 7 insertions(+), 698 deletions(-)
+ delete mode 100644 drivers/staging/comedi/drivers/addi-data/addi_amcc_S5920.c
+ delete mode 100644 drivers/staging/comedi/drivers/addi-data/addi_amcc_S5920.h
+ delete mode 100644 drivers/staging/comedi/drivers/addi-data/amcc_s5933_58.h
+ delete mode 100644 drivers/staging/comedi/drivers/addi_apci_all.c
 
-please try:
+-- 
+1.7.11
 
-mkdir linux || exit -1
-cd linux
-
-git init-db
-
-# Add Linus's tree as a remote
-git remote add linus
-git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
-
-# Add the -tip tree as a remote
-git remote add tip git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git
-
-# Add yinghai's tree
-
-git remote add yinghai
-git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
-
-git remote update
-
-git checkout -b yinghai-for-x86-mm yinghai/for-x86-mm
