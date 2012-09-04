@@ -1,173 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932565Ab2IDTRN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 15:17:13 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35210 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752589Ab2IDTRL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 15:17:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <1346776024.4732.196.camel@misato.fc.hp.com>
-References: <1346707623-31476-1-git-send-email-yinghai@kernel.org>
-	<1346776024.4732.196.camel@misato.fc.hp.com>
-Date: Tue, 4 Sep 2012 12:17:10 -0700
-X-Google-Sender-Auth: vW-j_IXEkVJCvzi-lwPL9K0FEbg
-Message-ID: <CAE9FiQXN1kDwSPTH5UWvDPbrtqGgcEKR4dWwYrP57H4aSA-UMA@mail.gmail.com>
-Subject: Re: [PATCH] ACPI: Enable SCI_EMULATE to manually simulate physical
- hotplug testing.
-From: Yinghai Lu <yinghai@kernel.org>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ashok Raj <ashok.raj@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757629Ab2IDTRu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 15:17:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19247 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752589Ab2IDTRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 15:17:48 -0400
+Date: Tue, 4 Sep 2012 16:17:37 -0300
+From: Flavio Leitner <fbl@redhat.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        WANG Cong <xiyou.wangcong@gmail.com>, Tejun Heo <tj@kernel.org>,
+        ianfang.cn@gmail.com, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: kexec/kdump kernel fails to start
+Message-ID: <20120904161737.358d51ad@obelix.rh>
+In-Reply-To: <CAE9FiQUEHbDySWHWFj6kW=HGLR0vkbaJWRq+7kMMHGhBm8e08A@mail.gmail.com>
+References: <20120904143215.5bbbb2a4@obelix.rh>
+	<CAE9FiQUEHbDySWHWFj6kW=HGLR0vkbaJWRq+7kMMHGhBm8e08A@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 4, 2012 at 9:27 AM, Toshi Kani <toshi.kani@hp.com> wrote:
-> On Mon, 2012-09-03 at 14:27 -0700, Yinghai Lu wrote:
->> From: Ashok Raj <ashok.raj@intel.com>
->>
->> Emulate an ACPI SCI interrupt to emulate a hot-plug event. Useful
->> for testing ACPI based hot-plug on systems that don't have the
->> necessary firmware support.
->>
->> Enable CONFIG_ACPI_SCI_EMULATE on kernel compile.
->>
->> Now you will notice /sys/kernel/debug/acpi/sci_notify when new kernel is
->> booted.
->>
->> echo "\_SB.PCIB 1" > /sys/kernel/debug/acpi/sci_notify to trigger a hot-add
->> of root bus that is corresponding to PCIB.
->>
->> echo "\_SB.PCIB 3" > /sys/kernel/debug/acpi/sci_notify to trigger a hot-remove
->> of root bus that is corresponding to PCIB.
->
-> Hi Yinghai,
->
-> This feature has been very useful.  Thanks for working on this change.
-> I have a few comments below.
->
->
->> -v2: Update to current upstream, and remove not related stuff.
->> -v3: According to Len's request, update it to use debugfs.  - Yinghai Lu
->>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->> Cc: Len Brown <lenb@kernel.org>
->> Cc: linux-acpi@vger.kernel.org
->>
->> ===================================================================
->> ---
->>  drivers/acpi/Kconfig   |   10 +++
->>  drivers/acpi/Makefile  |    1
->>  drivers/acpi/sci_emu.c |  145 +++++++++++++++++++++++++++++++++++++++++++++++++
->>  3 files changed, 156 insertions(+)
->>
->> Index: linux-2.6/drivers/acpi/Kconfig
->> ===================================================================
->> --- linux-2.6.orig/drivers/acpi/Kconfig
->> +++ linux-2.6/drivers/acpi/Kconfig
->> @@ -272,6 +272,16 @@ config ACPI_BLACKLIST_YEAR
->>         Enter 0 to disable this mechanism and allow ACPI to
->>         run by default no matter what the year.  (default)
->>
->> +config ACPI_SCI_EMULATE
->> +        bool "ACPI SCI Event Emulation Support"
->> +        depends on DEBUG_FS
->> +     default n
->> +     help
->> +       This will enable your system to emulate sci hotplug event
->> +       notification through proc file system. For example user needs to
->> +       echo "XXX 0" > /sys/kernel/debug/acpi/sci_notify (where, XXX is
->> +       a target ACPI device object name present under \_SB scope).
->> +
->>  config ACPI_DEBUG
->>       bool "Debug Statements"
->>       default n
->> Index: linux-2.6/drivers/acpi/sci_emu.c
->> ===================================================================
->> --- /dev/null
->> +++ linux-2.6/drivers/acpi/sci_emu.c
->> @@ -0,0 +1,145 @@
->> +/*
->> + *  Code to emulate SCI interrupt for Hotplug node insertion/removal
->> + */
->> +#include <linux/init.h>
->> +#include <linux/module.h>
->> +#include <linux/kernel.h>
->> +#include <linux/uaccess.h>
->> +#include <linux/debugfs.h>
->> +#include <acpi/acpi_drivers.h>
->> +
->> +#include "internal.h"
->> +
->> +#include "acpica/accommon.h"
->> +#include "acpica/acnamesp.h"
->> +#include "acpica/acevents.h"
->> +
->> +#define _COMPONENT           ACPI_SYSTEM_COMPONENT
->> +ACPI_MODULE_NAME("sci_emu");
->> +MODULE_LICENSE("GPL");
->> +
->> +static struct dentry *sci_notify_dentry;
->> +
->> +static void sci_notify_client(char *acpi_name, u32 event)
->> +{
->> +     struct acpi_namespace_node *node;
->> +     acpi_status status, status1;
->> +     acpi_handle hlsb, hsb;
->> +     union acpi_operand_object *obj_desc;
->> +
->> +     status = acpi_get_handle(NULL, "\\_SB", &hsb);
->> +     status1 = acpi_get_handle(hsb, acpi_name, &hlsb);
->
-> Why do you obtain hsb for \_SB when acpi_name is supposed to be a full
-> path name?  Can you simply specify a NULL like this?
->   status = acpi_get_handle(NULL, acpi_name, &hlsb);
+On Tue, 4 Sep 2012 12:02:00 -0700
+Yinghai Lu <yinghai@kernel.org> wrote:
 
-assume those two main function is from ashok.
+> On Tue, Sep 4, 2012 at 10:32 AM, Flavio Leitner <fbl@redhat.com> wrote:
+> > Hi folks,
+> >
+> > I have system that no longer boots kdump kernel. Basically,
+> >
+> > # echo c > /proc/sysrq-trigger
+> >
+> > to dump a vmcore doesn't work. It just hangs after showing the usual
+> > panic messages. I've bisected the problem and the commit introducing
+> > the issue is the one below.
+> >
+> > Any idea?
+> >
+> > commit 722bc6b16771ed80871e1fd81c86d3627dda2ac8
+> > Author: WANG Cong <xiyou.wangcong@gmail.com>  2012-03-05 20:05:13
+> > Committer: Ingo Molnar <mingo@elte.hu>  2012-03-06 05:38:26
+> > Parent: 550cf00dbc8ee402bef71628cb71246493dd4500 (Merge tag 'mmc-fixes-for-3.3' of git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc)
+> > Child:  a6fca40f1d7f3e232c9de27c1cebbb9f787fbc4f (x86, tlb: Switch cr3 in leave_mm() only when needed)
+> > Branches: master, remotes/origin/master
+> > Follows: v3.3-rc6
+> > Precedes: v3.5-rc1
+> >
+> >     x86/mm: Fix the size calculation of mapping tables
+> >
+> >     For machines that enable PSE, the first 2/4M memory region still uses
+> >     4K pages, so needs more PTEs in this case, but
+> >     find_early_table_space() doesn't count this.
+> >
+> >     This patch fixes it.
+> >
+> >     The bug was found via code review, no misbehavior of the kernel
+> >     was observed.
+> 
+> maybe just revert the offending commit?
 
-but assume that could make user omit \_SB_?
+I don't know where the 4K pages were noticed. Here is the
+dmesg output passing 'debug':
 
->
->
->> +     if (ACPI_FAILURE(status) || ACPI_FAILURE(status1)) {
->> +             pr_err(PREFIX
->> +     "acpi getting handle to <\\_SB.%s> failed inside notify_client\n",
->> +                     acpi_name);
->> +             return;
->> +     }
->> +
->> +     status = acpi_ut_acquire_mutex(ACPI_MTX_NAMESPACE);
->> +     if (ACPI_FAILURE(status)) {
->> +             pr_err(PREFIX "Acquiring acpi namespace mutext failed\n");
->> +             return;
->> +     }
->> +
->> +     node = acpi_ns_validate_handle(hlsb);
->> +     if (!node) {
->> +             acpi_ut_release_mutex(ACPI_MTX_NAMESPACE);
->> +             pr_err(PREFIX "Mapping handle to node failed\n");
->> +             return;
->> +     }
->> +
->> +     /*
->> +      * Check for internal object and make sure there is a handler
->> +      * registered for this object
->> +      */
->> +     obj_desc = acpi_ns_get_attached_object(node);
->> +     if (obj_desc) {
->> +             if (obj_desc->common_notify.notify_list[0]) {
->
-> Is the above check necessary?  acpi_ev_queue_notify_request() sets up to
-> call the global handler, acpi_gbl_global_notify[0], even if the object
-> does not have a local handler registered.
+[    0.000000] x86 PAT enabled: cpu 0, old 0x7040600070406, new 0x7010600070106
+[    0.000000] last_pfn = 0xbf800 max_arch_pfn = 0x400000000
+[    0.000000] initial memory mapped : 0 - 20000000
+[    0.000000] Base memory trampoline at [ffff880000098000] 98000 size 20480
+[    0.000000] init_memory_mapping: 0000000000000000-00000000bf800000
+[    0.000000]  0000000000 - 00bf800000 page 2M
+[    0.000000] kernel direct mapping tables up to bf800000 @ 1fa00000-20000000
+[    0.000000] init_memory_mapping: 0000000100000000-0000000440000000
+[    0.000000]  0100000000 - 0440000000 page 2M
+[    0.000000] kernel direct mapping tables up to 440000000 @ bdaab000-bf4bd000
+[    0.000000] RAMDISK: 352c8000 - 3695c000
 
-Not sure.
+so, it appears that on my system, the pages are 2M.
+I will try moving the extra accounting to be inside of CONFIG_X86_32.
 
-maybe Len or other acpi guyes could answer your questions.
-
-Thanks
-
-Yinghai Lu
+fbl
