@@ -1,85 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757741Ab2IDTpd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 15:45:33 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:59008 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757658Ab2IDTpb (ORCPT
+	id S1757765Ab2IDTr1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 15:47:27 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47281 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757650Ab2IDTr0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 15:45:31 -0400
-X-Originating-IP: 217.70.178.136
-X-Originating-IP: 173.246.103.110
-Date: Tue, 4 Sep 2012 12:45:23 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Matt Fleming <matt.fleming@intel.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Len Brown <lenb@kernel.org>,
-        Olof Johansson <olof@lixom.net>, Matthew Garrett <mjg@redhat.com>,
-        David Howells <dhowells@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Jim Cromie <jim.cromie@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pawel Moll <pawel.moll@arm.com>, linux-acpi@vger.kernel.org,
-        linux-efi <linux-efi@vger.kernel.org>
-Subject: Re: [PATCH 0/3] Fix ACPI BGRT support for images located in EFI boot
- services memory
-Message-ID: <20120904194523.GA5064@jtriplet-mobl1>
-References: <cover.1346361959.git.josh@joshtriplett.org>
- <1346768840.4244.52.camel@mfleming-mobl1.ger.corp.intel.com>
- <20120904175952.GA4103@jtriplet-mobl1>
- <5046442E.7020207@zytor.com>
+	Tue, 4 Sep 2012 15:47:26 -0400
+X-Sasl-enc: EM/CW113akWrC0vMmV/6rA162n1iKX21j9RvCuOc6vGX 1346788045
+Date: Tue, 4 Sep 2012 12:44:55 -0700
+From: Greg KH <greg@kroah.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Rupesh Gujare <rgujare@ozmodevices.com>, linux-kernel@vger.kernel.org,
+        ckelly@ozmodevices.com
+Subject: Re: [PATCH] staging/ozwpan: Fix zero address check in
+ oz_set_active_pd
+Message-ID: <20120904194455.GA10655@kroah.com>
+References: <20120903191721.GX16230@one.firstfloor.org>
+ <5045077F.80700@ozmodevices.com>
+ <20120903195439.GY16230@one.firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5046442E.7020207@zytor.com>
+In-Reply-To: <20120903195439.GY16230@one.firstfloor.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 04, 2012 at 11:10:54AM -0700, H. Peter Anvin wrote:
-> On 09/04/2012 10:59 AM, Josh Triplett wrote:
-> >
-> >Unfortunately not.  We need enough of ACPI available to go read the
-> >BGRT to know what to copy, so we need to defer freeing boot services
-> >code until after we initialize ACPI (and thus everything ACPI needs,
-> >which includes EFI since ACPI looks for root tables there).
-> >
-> >>I wouldn't be surprised if some implementations got really cranky if
-> >>we accessed boot services data after we installed a new virtual memory
-> >>map.
-> >
-> >Note that I've carefully accessed the boot services data *through* the
-> >new virtual memory map, which should work fine.
-> >
+On Mon, Sep 03, 2012 at 09:54:39PM +0200, Andi Kleen wrote:
+> > Its already fixed by this patch :-
+> > 
+> > http://driverdev.linuxdriverproject.org/pipermail/devel/2012-August/029734.html
 > 
-> There are some platforms which have bugs in this area, so there are
-> other reasons to defer freeing up boot memory until as late in the
-> boot process as we can possibly get away with.
-> 
-> free_initmem() is presuambly the place that makes most sense.
+> Should be in 3.6 then as it's a bug fix.
 
-You're suggesting a call from free_initmem() to
-efi_free_boot_services()?  Or, from init_post() right before the call to
-free_initmem()?
+I agree, will do.
 
-> This
-> is EFI-specific but not x86-specific, let's not commingle those
-> concepts, please...
-
-init/main.c already calls the x86-specific efi_enter_virtual_mode
-(defined in arch/x86/platform/efi/efi.c), and I split the call to the
-x86-specific efi_free_boot_services out of that.  Neither of those
-functions exists on non-x86 platforms, and thus I mirrored the #ifdef
-currently wrapped around efi_enter_virtual_mode for the new call to
-efi_free_boot_services.  While it might make sense for that code to
-exist on non-x86 EFI platforms, it currently doesn't.  At best, I could
-add static inline stubs to linux/efi.h for those functions to avoid the
-ifdefs, but as far as I can tell the same issue applies to quite a few
-more functions in efi.h.
-
-Would you like me to add the static inline stubs for the couple of
-functions called from init/main.c, or leave the #ifdefs?
-
-- Josh Triplett
+greg k-h
