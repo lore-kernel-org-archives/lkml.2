@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932602Ab2IDSq5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 14:46:57 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47847 "EHLO
+	id S932617Ab2IDSsE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 14:48:04 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47864 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932558Ab2IDSqz (ORCPT
+	with ESMTP id S932456Ab2IDSsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 14:46:55 -0400
-Date: Tue, 4 Sep 2012 11:46:41 -0700
-From: tip-bot for Randy Dunlap <rdunlap@xenotime.net>
-Message-ID: <tip-9450d57eab5cad36774c297da123062744472588@git.kernel.org>
+	Tue, 4 Sep 2012 14:48:01 -0400
+Date: Tue, 4 Sep 2012 11:47:37 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-c751134ef8b070070d5f06348286b29d86424677@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, rdunlap@xenotime.net, tglx@linutronix.de
+        a.p.zijlstra@chello.nl, efault@gmx.de, namhyung.kim@lge.com,
+        namhyung@kernel.org, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, rdunlap@xenotime.net
-In-Reply-To: <50303714.3090204@xenotime.net>
-References: <50303714.3090204@xenotime.net>
+        a.p.zijlstra@chello.nl, efault@gmx.de, namhyung.kim@lge.com,
+        tglx@linutronix.de, namhyung@kernel.org
+In-Reply-To: <1345090865-20851-1-git-send-email-namhyung@kernel.org>
+References: <1345090865-20851-1-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Fix kernel-doc warnings in kernel/sched/
- fair.c
-Git-Commit-ID: 9450d57eab5cad36774c297da123062744472588
+Subject: [tip:sched/core] sched: Remove AFFINE_WAKEUPS feature flag
+Git-Commit-ID: c751134ef8b070070d5f06348286b29d86424677
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,50 +29,48 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 04 Sep 2012 11:46:47 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 04 Sep 2012 11:47:43 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9450d57eab5cad36774c297da123062744472588
-Gitweb:     http://git.kernel.org/tip/9450d57eab5cad36774c297da123062744472588
-Author:     Randy Dunlap <rdunlap@xenotime.net>
-AuthorDate: Sat, 18 Aug 2012 17:45:08 -0700
+Commit-ID:  c751134ef8b070070d5f06348286b29d86424677
+Gitweb:     http://git.kernel.org/tip/c751134ef8b070070d5f06348286b29d86424677
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Thu, 16 Aug 2012 13:21:05 +0900
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 4 Sep 2012 14:30:49 +0200
+CommitDate: Tue, 4 Sep 2012 14:31:31 +0200
 
-sched: Fix kernel-doc warnings in kernel/sched/fair.c
+sched: Remove AFFINE_WAKEUPS feature flag
 
-Fix two kernel-doc warnings in kernel/sched/fair.c:
+Commit beac4c7e4a1c ("sched: Remove AFFINE_WAKEUPS feature") removed
+use of the flag but left the definition. Get rid of it.
 
-  Warning(kernel/sched/fair.c:3660): Excess function parameter 'cpus' description in 'update_sg_lb_stats'
-  Warning(kernel/sched/fair.c:3806): Excess function parameter 'cpus' description in 'update_sd_lb_stats'
-
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/50303714.3090204@xenotime.net
+Cc: Mike Galbraith <efault@gmx.de>
+Link: http://lkml.kernel.org/r/1345090865-20851-1-git-send-email-namhyung@kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ kernel/sched/features.h |    8 --------
+ 1 files changed, 0 insertions(+), 8 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 86ad83c..42d9df6 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3658,7 +3658,6 @@ fix_small_capacity(struct sched_domain *sd, struct sched_group *group)
-  * @group: sched_group whose statistics are to be updated.
-  * @load_idx: Load index of sched_domain of this_cpu for load calc.
-  * @local_group: Does group contain this_cpu.
-- * @cpus: Set of cpus considered for load balancing.
-  * @balance: Should we balance.
-  * @sgs: variable to hold the statistics for this group.
-  */
-@@ -3805,7 +3804,6 @@ static bool update_sd_pick_busiest(struct lb_env *env,
- /**
-  * update_sd_lb_stats - Update sched_domain's statistics for load balancing.
-  * @env: The load balancing environment.
-- * @cpus: Set of cpus considered for load balancing.
-  * @balance: Should we balance.
-  * @sds: variable to hold the statistics for this sched_domain.
-  */
+diff --git a/kernel/sched/features.h b/kernel/sched/features.h
+index de00a48..c38f52e 100644
+--- a/kernel/sched/features.h
++++ b/kernel/sched/features.h
+@@ -12,14 +12,6 @@ SCHED_FEAT(GENTLE_FAIR_SLEEPERS, true)
+ SCHED_FEAT(START_DEBIT, true)
+ 
+ /*
+- * Based on load and program behaviour, see if it makes sense to place
+- * a newly woken task on the same cpu as the task that woke it --
+- * improve cache locality. Typically used with SYNC wakeups as
+- * generated by pipes and the like, see also SYNC_WAKEUPS.
+- */
+-SCHED_FEAT(AFFINE_WAKEUPS, true)
+-
+-/*
+  * Prefer to schedule the task we woke last (assuming it failed
+  * wakeup-preemption), since its likely going to consume data we
+  * touched, increases cache locality.
