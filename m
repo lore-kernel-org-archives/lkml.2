@@ -1,83 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932739Ab2IDU3f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 16:29:35 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:49549 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932673Ab2IDU3e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 16:29:34 -0400
-X-Originating-IP: 217.70.178.129
-X-Originating-IP: 173.246.103.110
-Date: Tue, 4 Sep 2012 13:29:26 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Matt Fleming <matt.fleming@intel.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Len Brown <lenb@kernel.org>,
-        Olof Johansson <olof@lixom.net>, Matthew Garrett <mjg@redhat.com>,
-        David Howells <dhowells@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Jim Cromie <jim.cromie@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pawel Moll <pawel.moll@arm.com>, linux-acpi@vger.kernel.org,
-        linux-efi <linux-efi@vger.kernel.org>
-Subject: Re: [PATCH 0/3] Fix ACPI BGRT support for images located in EFI boot
- services memory
-Message-ID: <20120904202925.GA5805@jtriplet-mobl1>
-References: <cover.1346361959.git.josh@joshtriplett.org>
- <1346768840.4244.52.camel@mfleming-mobl1.ger.corp.intel.com>
- <20120904175952.GA4103@jtriplet-mobl1>
- <5046442E.7020207@zytor.com>
- <20120904194523.GA5064@jtriplet-mobl1>
- <50466363.9010900@zytor.com>
+	id S932756Ab2IDUcc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 16:32:32 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:55905 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932718Ab2IDUc3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 16:32:29 -0400
+Date: Tue, 4 Sep 2012 13:32:13 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: James Morris <james.l.morris@oracle.com>, Eric Paris <eparis@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Jiri Kosina <jkosina@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
+        Kees Cook <keescook@chromium.org>,
+        John Johansen <john.johansen@canonical.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        linux-security-module@vger.kernel.org
+Subject: [PATCH] security: allow Yama to be unconditionally stacked
+Message-ID: <20120904203213.GA3617@www.outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50466363.9010900@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 04, 2012 at 01:24:03PM -0700, H. Peter Anvin wrote:
-> On 09/04/2012 12:45 PM, Josh Triplett wrote:
-> >>
-> >>There are some platforms which have bugs in this area, so there are
-> >>other reasons to defer freeing up boot memory until as late in the
-> >>boot process as we can possibly get away with.
-> >>
-> >>free_initmem() is presuambly the place that makes most sense.
-> >
-> >You're suggesting a call from free_initmem() to
-> >efi_free_boot_services()?  Or, from init_post() right before the call to
-> >free_initmem()?
-> 
-> free_initmem() is arch-specific, so probably the latter.
+Unconditionally call Yama when CONFIG_SECURITY_YAMA_STACKED is selected,
+no matter what LSM module is primary.
 
-OK, will do.
+Ubuntu and Chrome OS already carry patches to do this, and Fedora
+has voiced interest in doing this as well. Instead of having multiple
+distributions (or LSM authors) carrying these patches, just allow Yama
+to be called unconditionally when selected by the new CONFIG.
 
-> >>This
-> >>is EFI-specific but not x86-specific, let's not commingle those
-> >>concepts, please...
-> >
-> >init/main.c already calls the x86-specific efi_enter_virtual_mode
-> >(defined in arch/x86/platform/efi/efi.c), and I split the call to the
-> >x86-specific efi_free_boot_services out of that.  Neither of those
-> >functions exists on non-x86 platforms, and thus I mirrored the #ifdef
-> >currently wrapped around efi_enter_virtual_mode for the new call to
-> >efi_free_boot_services.  While it might make sense for that code to
-> >exist on non-x86 EFI platforms, it currently doesn't.  At best, I could
-> >add static inline stubs to linux/efi.h for those functions to avoid the
-> >ifdefs, but as far as I can tell the same issue applies to quite a few
-> >more functions in efi.h.
-> >
-> >Would you like me to add the static inline stubs for the couple of
-> >functions called from init/main.c, or leave the #ifdefs?
-> >
-> 
-> I think that would really help clean things up.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ include/linux/security.h |   31 +++++++++++++++++++++++++++++++
+ security/security.c      |   21 +++++++++++++++++++++
+ security/yama/Kconfig    |    8 ++++++++
+ security/yama/yama_lsm.c |   14 ++++++++++----
+ 4 files changed, 70 insertions(+), 4 deletions(-)
 
-Fair enough.  I'll send v2 shortly.
+diff --git a/include/linux/security.h b/include/linux/security.h
+index 3dea6a9..01ef030 100644
+--- a/include/linux/security.h
++++ b/include/linux/security.h
+@@ -3021,5 +3021,36 @@ static inline void free_secdata(void *secdata)
+ { }
+ #endif /* CONFIG_SECURITY */
+ 
++#ifdef CONFIG_SECURITY_YAMA
++extern int yama_ptrace_access_check(struct task_struct *child,
++				    unsigned int mode);
++extern int yama_ptrace_traceme(struct task_struct *parent);
++extern void yama_task_free(struct task_struct *task);
++extern int yama_task_prctl(int option, unsigned long arg2, unsigned long arg3,
++			   unsigned long arg4, unsigned long arg5);
++#else
++static inline int yama_ptrace_access_check(struct task_struct *child,
++					   unsigned int mode)
++{
++	return 0;
++}
++
++static inline int yama_ptrace_traceme(struct task_struct *parent)
++{
++	return 0;
++}
++
++static inline void yama_task_free(struct task_struct *task)
++{
++}
++
++static inline int yama_task_prctl(int option, unsigned long arg2,
++				  unsigned long arg3, unsigned long arg4,
++				  unsigned long arg5)
++{
++	return -ENOSYS;
++}
++#endif /* CONFIG_SECURITY_YAMA */
++
+ #endif /* ! __LINUX_SECURITY_H */
+ 
+diff --git a/security/security.c b/security/security.c
+index 860aeb3..68c1b9b 100644
+--- a/security/security.c
++++ b/security/security.c
+@@ -136,11 +136,23 @@ int __init register_security(struct security_operations *ops)
+ 
+ int security_ptrace_access_check(struct task_struct *child, unsigned int mode)
+ {
++#ifdef CONFIG_SECURITY_YAMA_STACKED
++	int rc;
++	rc = yama_ptrace_access_check(child, mode);
++	if (rc)
++		return rc;
++#endif
+ 	return security_ops->ptrace_access_check(child, mode);
+ }
+ 
+ int security_ptrace_traceme(struct task_struct *parent)
+ {
++#ifdef CONFIG_SECURITY_YAMA_STACKED
++	int rc;
++	rc = yama_ptrace_traceme(parent);
++	if (rc)
++		return rc;
++#endif
+ 	return security_ops->ptrace_traceme(parent);
+ }
+ 
+@@ -761,6 +773,9 @@ int security_task_create(unsigned long clone_flags)
+ 
+ void security_task_free(struct task_struct *task)
+ {
++#ifdef CONFIG_SECURITY_YAMA_STACKED
++	yama_task_free(task);
++#endif
+ 	security_ops->task_free(task);
+ }
+ 
+@@ -876,6 +891,12 @@ int security_task_wait(struct task_struct *p)
+ int security_task_prctl(int option, unsigned long arg2, unsigned long arg3,
+ 			 unsigned long arg4, unsigned long arg5)
+ {
++#ifdef CONFIG_SECURITY_YAMA_STACKED
++	int rc;
++	rc = yama_task_prctl(option, arg2, arg3, arg4, arg5);
++	if (rc != -ENOSYS)
++		return rc;
++#endif
+ 	return security_ops->task_prctl(option, arg2, arg3, arg4, arg5);
+ }
+ 
+diff --git a/security/yama/Kconfig b/security/yama/Kconfig
+index 51d6709..20ef514 100644
+--- a/security/yama/Kconfig
++++ b/security/yama/Kconfig
+@@ -11,3 +11,11 @@ config SECURITY_YAMA
+ 	  Further information can be found in Documentation/security/Yama.txt.
+ 
+ 	  If you are unsure how to answer this question, answer N.
++
++config SECURITY_YAMA_STACKED
++	bool "Yama stacked with other LSMs"
++	depends on SECURITY_YAMA
++	default n
++	help
++	  When Yama is built into the kernel, force it to stack with the
++	  selected primary LSM.
+diff --git a/security/yama/yama_lsm.c b/security/yama/yama_lsm.c
+index dcd6178..b4c2984 100644
+--- a/security/yama/yama_lsm.c
++++ b/security/yama/yama_lsm.c
+@@ -100,7 +100,7 @@ static void yama_ptracer_del(struct task_struct *tracer,
+  * yama_task_free - check for task_pid to remove from exception list
+  * @task: task being removed
+  */
+-static void yama_task_free(struct task_struct *task)
++void yama_task_free(struct task_struct *task)
+ {
+ 	yama_ptracer_del(task, task);
+ }
+@@ -116,7 +116,7 @@ static void yama_task_free(struct task_struct *task)
+  * Return 0 on success, -ve on error.  -ENOSYS is returned when Yama
+  * does not handle the given option.
+  */
+-static int yama_task_prctl(int option, unsigned long arg2, unsigned long arg3,
++int yama_task_prctl(int option, unsigned long arg2, unsigned long arg3,
+ 			   unsigned long arg4, unsigned long arg5)
+ {
+ 	int rc;
+@@ -243,7 +243,7 @@ static int ptracer_exception_found(struct task_struct *tracer,
+  *
+  * Returns 0 if following the ptrace is allowed, -ve on error.
+  */
+-static int yama_ptrace_access_check(struct task_struct *child,
++int yama_ptrace_access_check(struct task_struct *child,
+ 				    unsigned int mode)
+ {
+ 	int rc;
+@@ -293,7 +293,7 @@ static int yama_ptrace_access_check(struct task_struct *child,
+  *
+  * Returns 0 if following the ptrace is allowed, -ve on error.
+  */
+-static int yama_ptrace_traceme(struct task_struct *parent)
++int yama_ptrace_traceme(struct task_struct *parent)
+ {
+ 	int rc;
+ 
+@@ -324,6 +324,7 @@ static int yama_ptrace_traceme(struct task_struct *parent)
+ 	return rc;
+ }
+ 
++#ifndef CONFIG_SECURITY_YAMA_STACKED
+ static struct security_operations yama_ops = {
+ 	.name =			"yama",
+ 
+@@ -332,6 +333,7 @@ static struct security_operations yama_ops = {
+ 	.task_prctl =		yama_task_prctl,
+ 	.task_free =		yama_task_free,
+ };
++#endif
+ 
+ #ifdef CONFIG_SYSCTL
+ static int yama_dointvec_minmax(struct ctl_table *table, int write,
+@@ -378,13 +380,17 @@ static struct ctl_table yama_sysctl_table[] = {
+ 
+ static __init int yama_init(void)
+ {
++#ifndef CONFIG_SECURITY_YAMA_STACKED
+ 	if (!security_module_enable(&yama_ops))
+ 		return 0;
++#endif
+ 
+ 	printk(KERN_INFO "Yama: becoming mindful.\n");
+ 
++#ifndef CONFIG_SECURITY_YAMA_STACKED
+ 	if (register_security(&yama_ops))
+ 		panic("Yama: kernel registration failed.\n");
++#endif
+ 
+ #ifdef CONFIG_SYSCTL
+ 	if (!register_sysctl_paths(yama_sysctl_path, yama_sysctl_table))
+-- 
+1.7.0.4
 
-- Josh Triplett
+
+-- 
+Kees Cook
+Chrome OS Security
