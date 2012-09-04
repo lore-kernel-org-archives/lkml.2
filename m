@@ -1,63 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756667Ab2IDDlg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 23:41:36 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:46199 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754238Ab2IDDle (ORCPT
+	id S932146Ab2IDDmk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 23:42:40 -0400
+Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:26629
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756675Ab2IDDmh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 23:41:34 -0400
-Date: Mon, 3 Sep 2012 20:41:00 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, linux-bcache@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com, tj@kernel.org,
-        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH v7 9/9] block: Avoid deadlocks with bio allocation by
- stacking drivers
-Message-ID: <20120904034100.GA21602@moria.home.lan>
-References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
- <1346175456-1572-10-git-send-email-koverstreet@google.com>
- <Pine.LNX.4.64.1208291210180.774@file.rdu.redhat.com>
- <20120829165006.GB20312@google.com>
- <20120829170711.GC12504@redhat.com>
- <20120829171345.GC20312@google.com>
- <20120830220745.GI27257@redhat.com>
- <20120831014359.GB15218@moria.home.lan>
- <Pine.LNX.4.64.1209031638110.15620@file.rdu.redhat.com>
+	Mon, 3 Sep 2012 23:42:37 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 6
+X-BigFish: VS6(zzc8kzz1202h1082kzz8275dhz2dh2a8h668h839hd24he5bhf0ah107ah1155h)
+From: Dong Aisheng <b29396@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linus.walleij@stericsson.com>,
+        <s.hauer@pengutronix.de>, <shawn.guo@linaro.org>,
+        <kernel@pengutronix.de>, <grant.likely@secretlab.ca>,
+        <rob.herring@calxeda.com>, <sameo@linux.intel.com>, <lrg@ti.com>,
+        <broonie@opensource.wolfsonmicro.com>, <richard.zhao@freescale.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <swarren@wwwdotorg.org>
+Subject: [PATCH v5 4/4] mfd: anatop-mfd: remove anatop driver
+Date: Tue, 4 Sep 2012 11:20:11 +0800
+Message-ID: <1346728811-25788-5-git-send-email-b29396@freescale.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1346728811-25788-1-git-send-email-b29396@freescale.com>
+References: <1346728811-25788-1-git-send-email-b29396@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1209031638110.15620@file.rdu.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 03, 2012 at 04:41:37PM -0400, Mikulas Patocka wrote:
-> ... or another possibility - start a timer when something is put to 
-> current->bio_list and use that timer to pop entries off current->bio_list 
-> and submit them to a workqueue. The timer can be cpu-local so only 
-> interrupt masking is required to synchronize against the timer.
-> 
-> This would normally run just like the current kernel and in case of 
-> deadlock, the timer would kick in and resolve the deadlock.
+From: Dong Aisheng <dong.aisheng@linaro.org>
 
-Ugh. That's a _terrible_ idea.
+The anatop registers are accessed via syscon now, no one will use
+mfd anatop driver anymore, remove it.
 
-Remember the old plugging code? You ever have to debug performance
-issues caused by it?
+Acked-by: Stephen Warren <swarren@wwwdotorg.org>
+Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+---
+ drivers/mfd/Kconfig        |    8 ---
+ drivers/mfd/Makefile       |    1 -
+ drivers/mfd/anatop-mfd.c   |  124 --------------------------------------------
+ include/linux/mfd/anatop.h |   40 --------------
+ 4 files changed, 0 insertions(+), 173 deletions(-)
 
-> 
-> > I could be convinced, but right now I prefer my solution.
-> 
-> It fixes bio allocation problem, but not other similar mempool problems in 
-> dm and md.
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 82247b7..0b5c0cc 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -985,14 +985,6 @@ config MFD_STA2X11
+ 	depends on STA2X11
+ 	select MFD_CORE
+ 
+-config MFD_ANATOP
+-	bool "Support for Freescale i.MX on-chip ANATOP controller"
+-	depends on SOC_IMX6Q
+-	help
+-	  Select this option to enable Freescale i.MX on-chip ANATOP
+-	  MFD controller. This controller embeds regulator and
+-	  thermal devices for Freescale i.MX platforms.
+-
+ config MFD_SYSCON
+ 	bool "System Controller Register R/W Based on Regmap"
+ 	depends on OF
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 8384bc9..0f10a95 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -130,6 +130,5 @@ obj-$(CONFIG_MFD_INTEL_MSIC)	+= intel_msic.o
+ obj-$(CONFIG_MFD_PALMAS)	+= palmas.o
+ obj-$(CONFIG_MFD_RC5T583)	+= rc5t583.o rc5t583-irq.o
+ obj-$(CONFIG_MFD_SEC_CORE)	+= sec-core.o sec-irq.o
+-obj-$(CONFIG_MFD_ANATOP)	+= anatop-mfd.o
+ obj-$(CONFIG_MFD_SYSCON)	+= syscon.o
+ obj-$(CONFIG_MFD_LM3533)	+= lm3533-core.o lm3533-ctrlbank.o
+diff --git a/drivers/mfd/anatop-mfd.c b/drivers/mfd/anatop-mfd.c
+deleted file mode 100644
+index 5576e07..0000000
+--- a/drivers/mfd/anatop-mfd.c
++++ /dev/null
+@@ -1,124 +0,0 @@
+-/*
+- * Anatop MFD driver
+- *
+- * Copyright (C) 2012 Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
+- * Copyright (C) 2012 Linaro
+- *
+- *  This program is free software; you can redistribute it and/or modify
+- *  it under the terms of the GNU General Public License as published by
+- *  the Free Software Foundation; either version 2 of the License, or
+- *   (at your option) any later version.
+- *
+- *  This program is distributed in the hope that it will be useful,
+- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- *  GNU General Public License for more details.
+- *
+- *  You should have received a copy of the GNU General Public License along
+- *  with this program; if not, write to the Free Software Foundation, Inc.,
+- *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+- *  This program is free software; you can redistribute it and/or modify
+- *  it under the terms of the GNU General Public License as published by
+- *  the Free Software Foundation; either version 2 of the License, or
+- *  (at your option) any later version.
+- *
+- *  This program is distributed in the hope that it will be useful,
+- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- *  GNU General Public License for more details.
+- *
+- *  You should have received a copy of the GNU General Public License along
+- *  with this program; if not, write to the Free Software Foundation, Inc.,
+- *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+- *
+- */
+-
+-#include <linux/io.h>
+-#include <linux/module.h>
+-#include <linux/platform_device.h>
+-#include <linux/of.h>
+-#include <linux/of_platform.h>
+-#include <linux/of_address.h>
+-#include <linux/mfd/anatop.h>
+-
+-u32 anatop_read_reg(struct anatop *adata, u32 addr)
+-{
+-	return readl(adata->ioreg + addr);
+-}
+-EXPORT_SYMBOL_GPL(anatop_read_reg);
+-
+-void anatop_write_reg(struct anatop *adata, u32 addr, u32 data, u32 mask)
+-{
+-	u32 val;
+-
+-	data &= mask;
+-
+-	spin_lock(&adata->reglock);
+-	val = readl(adata->ioreg + addr);
+-	val &= ~mask;
+-	val |= data;
+-	writel(val, adata->ioreg + addr);
+-	spin_unlock(&adata->reglock);
+-}
+-EXPORT_SYMBOL_GPL(anatop_write_reg);
+-
+-static const struct of_device_id of_anatop_match[] = {
+-	{ .compatible = "fsl,imx6q-anatop", },
+-	{ },
+-};
+-
+-static int __devinit of_anatop_probe(struct platform_device *pdev)
+-{
+-	struct device *dev = &pdev->dev;
+-	struct device_node *np = dev->of_node;
+-	void *ioreg;
+-	struct anatop *drvdata;
+-
+-	ioreg = of_iomap(np, 0);
+-	if (!ioreg)
+-		return -EADDRNOTAVAIL;
+-	drvdata = devm_kzalloc(dev, sizeof(*drvdata), GFP_KERNEL);
+-	if (!drvdata)
+-		return -ENOMEM;
+-	drvdata->ioreg = ioreg;
+-	spin_lock_init(&drvdata->reglock);
+-	platform_set_drvdata(pdev, drvdata);
+-	of_platform_populate(np, NULL, NULL, dev);
+-
+-	return 0;
+-}
+-
+-static int __devexit of_anatop_remove(struct platform_device *pdev)
+-{
+-	struct anatop *drvdata;
+-	drvdata = platform_get_drvdata(pdev);
+-	iounmap(drvdata->ioreg);
+-
+-	return 0;
+-}
+-
+-static struct platform_driver anatop_of_driver = {
+-	.driver = {
+-		.name = "anatop-mfd",
+-		.owner = THIS_MODULE,
+-		.of_match_table = of_anatop_match,
+-	},
+-	.probe		= of_anatop_probe,
+-	.remove		= of_anatop_remove,
+-};
+-
+-static int __init anatop_init(void)
+-{
+-	return platform_driver_register(&anatop_of_driver);
+-}
+-postcore_initcall(anatop_init);
+-
+-static void __exit anatop_exit(void)
+-{
+-	platform_driver_unregister(&anatop_of_driver);
+-}
+-module_exit(anatop_exit);
+-
+-MODULE_AUTHOR("Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>");
+-MODULE_DESCRIPTION("ANATOP MFD driver");
+-MODULE_LICENSE("GPL v2");
+diff --git a/include/linux/mfd/anatop.h b/include/linux/mfd/anatop.h
+deleted file mode 100644
+index 7f92acf..0000000
+--- a/include/linux/mfd/anatop.h
++++ /dev/null
+@@ -1,40 +0,0 @@
+-/*
+- * anatop.h - Anatop MFD driver
+- *
+- *  Copyright (C) 2012 Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
+- *  Copyright (C) 2012 Linaro
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-
+-#ifndef __LINUX_MFD_ANATOP_H
+-#define __LINUX_MFD_ANATOP_H
+-
+-#include <linux/spinlock.h>
+-
+-/**
+- * anatop - MFD data
+- * @ioreg: ioremap register
+- * @reglock: spinlock for register read/write
+- */
+-struct anatop {
+-	void *ioreg;
+-	spinlock_t reglock;
+-};
+-
+-extern u32 anatop_read_reg(struct anatop *, u32);
+-extern void anatop_write_reg(struct anatop *, u32, u32, u32);
+-
+-#endif /*  __LINUX_MFD_ANATOP_H */
+-- 
+1.7.0.4
 
-I looked a bit more, and actually I think the rest of the problem is
-pretty limited in scope - most of those mempool allocations are per
-request, not per split.
 
-I'm willing to put some time into converting dm/md over to bioset's
-front_pad. I'm having to learn the code for the immutable biovec work,
-anyways.
