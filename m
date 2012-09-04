@@ -1,48 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825Ab2IDLSq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 07:18:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19107 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756782Ab2IDLSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 07:18:44 -0400
-Message-ID: <5045E387.4030103@redhat.com>
-Date: Tue, 04 Sep 2012 13:18:31 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1756827Ab2IDL2i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 07:28:38 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:48302 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756778Ab2IDL2h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 07:28:37 -0400
 MIME-Version: 1.0
+In-Reply-To: <20120903202737.GD6181@redhat.com>
+References: <1346680277-5887-1-git-send-email-sjur.brandeland@stericsson.com>
+	<20120903143018.GA5353@redhat.com>
+	<CAJK669bkHHMAPYMEr22-6uOwfgJv1uKTbzNBQVVCq=OooExC0g@mail.gmail.com>
+	<20120903202737.GD6181@redhat.com>
+Date: Tue, 4 Sep 2012 13:28:36 +0200
+Message-ID: <CAJK669ZvnnG6fGOog-Z47B7xqyn9hcx5dAD7S--+2PSgE+hrLA@mail.gmail.com>
+Subject: Re: [RFC 1/2] virtio_console: Add support for DMA memory allocation
+From: =?UTF-8?Q?Sjur_Br=C3=A6ndeland?= <sjurbren@gmail.com>
 To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        kvm@vger.kernel.org, rusty@rustcorp.com.au, jasowang@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
-        target-devel <target-devel@vger.kernel.org>
-Subject: Re: [PATCH 5/5] virtio-scsi: introduce multiqueue support
-References: <1346154857-12487-1-git-send-email-pbonzini@redhat.com> <1346154857-12487-6-git-send-email-pbonzini@redhat.com> <1346725294.4162.79.camel@haakon2.linux-iscsi.org> <5045A3B4.2030101@redhat.com> <20120904084628.GA8437@redhat.com> <5045D6FF.5020801@redhat.com> <20120904110905.GA9119@redhat.com>
-In-Reply-To: <20120904110905.GA9119@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Cc: Amit Shah <amit.shah@redhat.com>, linux-kernel@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        virtualization@lists.linux-foundation.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 04/09/2012 13:09, Michael S. Tsirkin ha scritto:
->> >     queuecommand on CPU #0         queuecommand #2 on CPU #1
->> >   --------------------------------------------------------------
->> >     atomic_inc_return(...) == 1
->> >                                    atomic_inc_return(...) == 2
->> >                                    virtscsi_queuecommand to queue #1
->> >     tgt->req_vq = queue #0
->> >     virtscsi_queuecommand to queue #0
->> > 
->> > then two requests are issued to different queues without a quiescent
->> > point in the middle.
-> What happens then? Does this break correctness?
+Hi Michael,
 
-Yes, requests to the same target should be processed in FIFO order, or
-you have things like a flush issued before the write it was supposed to
-flush.  This is why I can only change the queue when there is no request
-pending.
+>> If an architecture do not support DMA you will get
+>> a link error: "unknown symbol" for dma_alloc_coherent.
+>
+> Yes, it even seems intentional.
+> But I have a question: can the device work without DMA?
 
-Paolo
+The main dependency is actually on the dma-allocation.
+In my case I do dma_declare_coherent_memory() with
+the memory area shared with the remote device as argument.
+Subsequent calls to dma_alloc_coherent() will then allocate
+from this memory area.
+
+> Does not VIRTIO_CONSOLE_F_DMA_MEM mean dma api is required?
+
+Yes.dma_alloc_coherent to work.
+
+> If yes you should just fail load.
+
+Agree, I'll check on VIRTIO_CONSOLE_HAS_DMA before adding
+VIRTIO_CONSOLE_F_DMA_MEM to the feature array.
+
+> Also let's add a wrapper at top of file so ifdefs
+> do not litter the code like this. For example:
+>
+> #ifdef CONFIG_HAS_DMA
+> #define VIRTIO_CONSOLE_HAS_DMA (1)
+> #else
+> #define VIRTIO_CONSOLE_HAS_DMA (0)
+> #endif
+
+OK, good point. Perhaps we could even exploit gcc's
+ability to remove dead code and do something like this:
+
+       if (VIRTIO_CONSOLE_HAS_DMA &&
+           virtio_has_feature(vdev, VIRTIO_CONSOLE_F_DMA_MEM)) {
+...
+
+This does not give any linker warnings when compiling for UML (no DMA).
+
+Regards,
+Sjur
