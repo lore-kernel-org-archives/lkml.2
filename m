@@ -1,50 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757385Ab2IDQNr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 12:13:47 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:41560 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757159Ab2IDQNp (ORCPT
+	id S1757438Ab2IDQOz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 12:14:55 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:51844 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757335Ab2IDQOx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 12:13:45 -0400
-Date: Tue, 4 Sep 2012 17:13:43 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org
-Subject: Re: [PATCH 05/11] asus-wmi: Restrict debugfs interface
-Message-ID: <20120904161343.GB22961@srcf.ucam.org>
-References: <1346774117-2277-1-git-send-email-mjg@redhat.com>
- <1346774117-2277-6-git-send-email-mjg@redhat.com>
- <20120904171205.3dfbcabd@pyramind.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120904171205.3dfbcabd@pyramind.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Tue, 4 Sep 2012 12:14:53 -0400
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: kernel-janitors@vger.kernel.org, Julia.Lawall@lip6.fr,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/5] drivers/media/platform/s5p-tv/sdo_drv.c: fix error return code
+Date: Tue,  4 Sep 2012 18:14:28 +0200
+Message-Id: <1346775269-12191-4-git-send-email-peter.senna@gmail.com>
+X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 04, 2012 at 05:12:05PM +0100, Alan Cox wrote:
-> On Tue,  4 Sep 2012 11:55:11 -0400
-> Matthew Garrett <mjg@redhat.com> wrote:
-> 
-> > We have no way of validating what all of the Asus WMI methods do on a
-> > given machine, and there's a risk that some will allow hardware state to
-> > be manipulated in such a way that arbitrary code can be executed in the
-> > kernel. Add a capability check to prevent that.
-> 
-> This is true of any firmware method on any device Why pick on ASUS. Have
-> you run this through ASUS and discussed it with them. It seems highly
-> inappropriate to cripple a specific vendors feature set without
-> discussion and an Ack from the vendor concerned.
+From: Peter Senna Tschudin <peter.senna@gmail.com>
 
-Because asus-wmi is the only driver that has a debugfs interface that 
-lets you run arbitrary WMI methods.
+Convert a nonnegative error return code to a negative one, as returned
+elsewhere in the function.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
+
+// <smpl>
+(
+if@p1 (\(ret < 0\|ret != 0\))
+ { ... return ret; }
+|
+ret@p1 = 0
+)
+... when != ret = e1
+    when != &ret
+*if(...)
+{
+  ... when != ret = e2
+      when forall
+ return ret;
+}
+
+// </smpl>
+
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+
+---
+ drivers/media/platform/s5p-tv/sdo_drv.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/media/platform/s5p-tv/sdo_drv.c b/drivers/media/platform/s5p-tv/sdo_drv.c
+index ad68bbe..58cf56d 100644
+--- a/drivers/media/platform/s5p-tv/sdo_drv.c
++++ b/drivers/media/platform/s5p-tv/sdo_drv.c
+@@ -369,6 +369,7 @@ static int __devinit sdo_probe(struct platform_device *pdev)
+ 	sdev->fout_vpll = clk_get(dev, "fout_vpll");
+ 	if (IS_ERR_OR_NULL(sdev->fout_vpll)) {
+ 		dev_err(dev, "failed to get clock 'fout_vpll'\n");
++		ret = -ENODEV;
+ 		goto fail_dacphy;
+ 	}
+ 	dev_info(dev, "fout_vpll.rate = %lu\n", clk_get_rate(sclk_vpll));
+@@ -377,11 +378,13 @@ static int __devinit sdo_probe(struct platform_device *pdev)
+ 	sdev->vdac = devm_regulator_get(dev, "vdd33a_dac");
+ 	if (IS_ERR_OR_NULL(sdev->vdac)) {
+ 		dev_err(dev, "failed to get regulator 'vdac'\n");
++		ret = -ENODEV;
+ 		goto fail_fout_vpll;
+ 	}
+ 	sdev->vdet = devm_regulator_get(dev, "vdet");
+ 	if (IS_ERR_OR_NULL(sdev->vdet)) {
+ 		dev_err(dev, "failed to get regulator 'vdet'\n");
++		ret = -ENODEV;
+ 		goto fail_fout_vpll;
+ 	}
+ 
+
