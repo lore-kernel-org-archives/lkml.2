@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757712Ab2IDTkD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 15:40:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33078 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751967Ab2IDTkA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 15:40:00 -0400
-Date: Tue, 4 Sep 2012 15:39:49 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Kent Overstreet <koverstreet@google.com>, linux-bcache@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com, tj@kernel.org,
-        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH v7 9/9] block: Avoid deadlocks with bio allocation by
- stacking drivers
-Message-ID: <20120904193949.GC2603@redhat.com>
-References: <1346175456-1572-10-git-send-email-koverstreet@google.com>
- <Pine.LNX.4.64.1208291210180.774@file.rdu.redhat.com>
- <20120829165006.GB20312@google.com>
- <20120829170711.GC12504@redhat.com>
- <20120829171345.GC20312@google.com>
- <20120830220745.GI27257@redhat.com>
- <20120831014359.GB15218@moria.home.lan>
- <Pine.LNX.4.64.1209031638110.15620@file.rdu.redhat.com>
- <20120904034100.GA21602@moria.home.lan>
- <Pine.LNX.4.64.1209041509160.22689@file.rdu.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1209041509160.22689@file.rdu.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757726Ab2IDTmT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 15:42:19 -0400
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:45101 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757632Ab2IDTmS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 15:42:18 -0400
+Message-ID: <1346787736.17786.5.camel@trivette>
+Subject: Re: [PATCH v3] hwmon: add Maxim MAX197 support
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: anish kumar <anish198519851985@gmail.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, lm-sensors@lm-sensors.org,
+        Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org
+Date: Tue, 04 Sep 2012 15:42:16 -0400
+In-Reply-To: <20120904172034.GA17884@roeck-us.net>
+References: <1346377377-24717-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+	 <20120831160439.GA5756@roeck-us.net> <5041D5DF.7060402@metafoo.de>
+	 <20120902145101.GA8306@roeck-us.net>
+	 <1346770948.6243.3.camel@anish-Inspiron-N5050>
+	 <20120904172034.GA17884@roeck-us.net>
+Organization: Savoir-faire Linux Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 04, 2012 at 03:26:19PM -0400, Mikulas Patocka wrote:
+Hi,
 
-[..]
-> BTW. can these new-style timerless plugs introduce deadlocks too? What 
-> happens when some bios are indefinitely delayed because their requests are 
-> held in a plug and a mempool runs out?
+On Tue, 2012-09-04 at 10:20 -0700, Guenter Roeck wrote:
+> > > > > Applied to -next.
+> > > > > 
+> > > > 
+> > > > Hm, now it's probably to late, but for this kind of general
+> purpose ADC the IIO
+> > > > framework is in my opinion the better place to add support for
+> it.
+> > > > 
+> > > Possibly. If someone writes an iio driver for it, and everyone
+> agrees,
+> > > we can drop it from hwmon at that time.
+> > I can write one but unfortunately need some testing as I don't have
+> this
+> > hardware.
+> 
+> Vivien, any thoughts/comments/feedback ? 
 
-I think they will not deadlock because these on stack bios/requests are
-flushed/dispatched when process schedules out. So if a submitter blocks
-on a mempool, it will be scheduled out and requests on plug will be 
-dispatched.
+I don't see any particular advantage of including it in the IIO
+subsystem. However, if everyone agrees that it should be in the IIO
+subsystem, and someone writes a driver for it, I might be able to test
+it. Given my current schedule, it's likely to take some time though.
 
-Thanks
-Vivek
+Thanks,
+Vivien
+
