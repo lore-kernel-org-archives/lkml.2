@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757353Ab2IDP4v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 11:56:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46024 "EHLO mx1.redhat.com"
+	id S1757321Ab2IDPzn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 11:55:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33381 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757329Ab2IDPzo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 11:55:44 -0400
+	id S1756852Ab2IDPzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 11:55:37 -0400
 From: Matthew Garrett <mjg@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
         Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH 06/11] Restrict /dev/mem and /dev/kmem in secure boot setups
-Date: Tue,  4 Sep 2012 11:55:12 -0400
-Message-Id: <1346774117-2277-7-git-send-email-mjg@redhat.com>
+Subject: [PATCH 01/11] Secure boot: Add new capability
+Date: Tue,  4 Sep 2012 11:55:07 -0400
+Message-Id: <1346774117-2277-2-git-send-email-mjg@redhat.com>
 In-Reply-To: <1346774117-2277-1-git-send-email-mjg@redhat.com>
 References: <1346774117-2277-1-git-send-email-mjg@redhat.com>
 X-SA-Do-Not-Run: Yes
@@ -23,38 +23,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allowing users to write to address space makes it possible for the kernel
-to be subverted. Restrict this when we need to protect the kernel.
+Secure boot adds certain policy requirements, including that root must not
+be able to do anything that could cause the kernel to execute arbitrary code.
+The simplest way to handle this would seem to be to add a new capability
+and gate various functionality on that. We'll then strip it from the initial
+capability set if required.
 
 Signed-off-by: Matthew Garrett <mjg@redhat.com>
 ---
- drivers/char/mem.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ include/linux/capability.h | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/char/mem.c b/drivers/char/mem.c
-index 8f5f872..c1de8e1 100644
---- a/drivers/char/mem.c
-+++ b/drivers/char/mem.c
-@@ -158,6 +158,9 @@ static ssize_t write_mem(struct file *file, const char __user *buf,
- 	unsigned long copied;
- 	void *ptr;
+diff --git a/include/linux/capability.h b/include/linux/capability.h
+index d10b7ed..6a39163 100644
+--- a/include/linux/capability.h
++++ b/include/linux/capability.h
+@@ -364,7 +364,11 @@ struct cpu_vfs_cap_data {
  
-+	if (!capable(CAP_SECURE_FIRMWARE))
-+		return -EPERM;
+ #define CAP_BLOCK_SUSPEND    36
+ 
+-#define CAP_LAST_CAP         CAP_BLOCK_SUSPEND
++/* Allow things that are dangerous under secure boot */
 +
- 	if (!valid_phys_addr_range(p, count))
- 		return -EFAULT;
- 
-@@ -530,6 +533,9 @@ static ssize_t write_kmem(struct file *file, const char __user *buf,
- 	char * kbuf; /* k-addr because vwrite() takes vmlist_lock rwlock */
- 	int err = 0;
- 
-+	if (!capable(CAP_SECURE_FIRMWARE))
-+		return -EPERM;
++#define CAP_SECURE_FIRMWARE  37
 +
- 	if (p < (unsigned long) high_memory) {
- 		unsigned long to_write = min_t(unsigned long, count,
- 					       (unsigned long)high_memory - p);
++#define CAP_LAST_CAP         CAP_SECURE_FIRMWARE
+ 
+ #define cap_valid(x) ((x) >= 0 && (x) <= CAP_LAST_CAP)
+ 
 -- 
 1.7.11.4
 
