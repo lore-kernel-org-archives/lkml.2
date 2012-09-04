@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932772Ab2IDVvu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 17:51:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42936 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932580Ab2IDVvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 17:51:48 -0400
-Message-ID: <504677C8.3050801@redhat.com>
-Date: Tue, 04 Sep 2012 22:51:04 +0100
-From: Pedro Alves <palves@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S932754Ab2IDVxH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 17:53:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52265 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757639Ab2IDVxE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 17:53:04 -0400
+Message-ID: <5046783D.4020702@linaro.org>
+Date: Tue, 04 Sep 2012 15:53:01 -0600
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Tejun Heo <tj@kernel.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, mingo@elte.hu,
-        ebiederm@xmission.com, aarcange@redhat.com, ericvh@gmail.com,
-        netdev@vger.kernel.org, josh@joshtriplett.org, eric.dumazet@gmail.com,
-        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
-        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
-        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
-        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive hashtable
-References: <20120824203332.GF21325@google.com> <5037E9D9.9000605@gmail.com>    <20120824212348.GK21325@google.com> <5038074D.300@gmail.com>    <20120824230740.GN21325@google.com> <20120825042419.GA27240@Krystal>    <503C95E4.3010000@gmail.com> <20120828101148.GA21683@Krystal>    <503CAB1E.5010408@gmail.com> <20120828115638.GC23818@Krystal>    <20120828230050.GA3337@Krystal>   <1346772948.27919.9.camel@gandalf.local.home>  <50462C99.5000007@redhat.com>  <50462EE8.1090903@redhat.com>  <1346779027.27919.15.camel@gandalf.local.home>  <50463883.8080706@redhat.com> <1346792345.27919.18.camel@gandalf.local.home>
-In-Reply-To: <1346792345.27919.18.camel@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-15
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        rdunlap@xenotime.net, arve@android.com, kernel-team@android.com,
+        john.stultz@linaro.org
+Subject: Re: [PATCH v2] drivers/tty: Folding Android's keyreset driver in
+ sysRQ
+References: <1346365854-28441-1-git-send-email-mathieu.poirier@linaro.org> <20120830230129.GC21501@core.coreip.homeip.net> <50413200.5010104@linaro.org> <20120831230227.6e5008b5@pyramind.ukuu.org.uk> <20120831224128.GA22073@core.coreip.homeip.net> <50414140.60102@linaro.org> <20120831232234.GB22142@core.coreip.homeip.net>
+In-Reply-To: <20120831232234.GB22142@core.coreip.homeip.net>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2012 09:59 PM, Steven Rostedt wrote:
-> On Tue, 2012-09-04 at 18:21 +0100, Pedro Alves wrote:
->> On 09/04/2012 06:17 PM, Steven Rostedt wrote:
->>> On Tue, 2012-09-04 at 17:40 +0100, Pedro Alves wrote:
->>>
->>>> BTW, you can also go a step further and remove the need to close with double }},
->>>> with something like:
+On 12-08-31 05:22 PM, Dmitry Torokhov wrote:
+> On Fri, Aug 31, 2012 at 04:57:04PM -0600, Mathieu Poirier wrote:
+>> On 12-08-31 04:41 PM, Dmitry Torokhov wrote:
+>>> On Fri, Aug 31, 2012 at 11:02:27PM +0100, Alan Cox wrote:
+>>>>>> Why do we need to involve a platform device and not use, for example, a module
+>>>>>> parameter, that could be set up from userspace?
+>>>>>
+>>>>> The platform device comes from the original design and was included to
+>>>>> minimise the amount of changes in code that make use of the current
+>>>>> keyreset driver.
 >>>>
->>>> #define do_for_each_ftrace_rec(pg, rec)                                          \
->>>>         for (pg = ftrace_pages_start, rec = &pg->records[pg->index];             \
->>>>              pg && rec == &pg->records[pg->index];                               \
->>>>              pg = pg->next)                                                      \
->>>>           for (rec = pg->records; rec < &pg->records[pg->index]; rec++)
->>>>
+>>>> The platform device is IMHO the right answer. In this class of devices
+>>>> the stuff is compiled in, the userspace is Android, there are no modules
+>>>> and there is no reason for it to be configurable.
 >>>
->>> Yeah, but why bother? It's hidden in a macro, and the extra '{ }' shows
->>> that this is something "special".
+>>> It does not matter if it is built in or not, /sys/module/XXX/parameters
+>>> is still there, and while havig it in kernel is "easy" you could as
+>>> easily stuff needed data into a sysfs attribute during booting.
+>>>
+>>> And we should be able to get this from DT even without the platform
+>>> device (this was the next step, wasn't it?).
 >>
->> The point of both changes is that there's nothing special in the end
->> at all.  It all just works...
+>> Correct - my hope was to get the main functionality accepted before
+>> adding DT support.  Do you think the lack of DT support is a blocker for
+>> acceptance ?  Please confirm.
 >>
 > 
-> It would still fail on a 'break'. The 'while' macro tells us that it is
-> special, because in the end, it wont work.
+> No, lack of DT is not a blocker, but I am unconvinced that we need
+> platform device.
+> 
+> Thanks,
+> 
 
-Please explain why it would fail on a 'break'.
+A platform device is really easy to spin-off in a board file and once it
+is there you don't have to worry about other loose ends to tie in before
+the solution is functional.
 
--- 
-Pedro Alves
+I don't mind supplementing the current proposition with a module
+parameter interface to get the "key_down" and "key_up" sequences.
 
+Which brings us to the "reset_fn()" function - in my opinion it offers
+significant advantages and should be kept in the design.  What I'm not
+so clear about is on the implementation.  Should it be kept as part of a
+platform data or be implemented as a notifier as suggested by Alan.  I
+am looking for guidance here and suggestions are encouraged.
+
+Regards,
+Mathieu.
