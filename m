@@ -1,112 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756775Ab2IDKZS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 06:25:18 -0400
-Received: from mail.nudt.edu.cn ([61.187.54.11]:6659 "HELO nudt.edu.cn"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1752309Ab2IDKYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 06:24:42 -0400
-X-Greylist: delayed 396 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Sep 2012 06:24:42 EDT
-X-Eyou-Smtpauth: liwang@nudt.edu.cn
-From: "Li Wang" <liwang@nudt.edu.cn>
-To: <viro@zeniv.linux.org.uk>, <axboe@kernel.dk>
-Cc: <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [RFC] VFS: File System Mount Wide O_DIRECT Support
-Date: Tue, 4 Sep 2012 18:17:47 +0800
-Message-ID: <000001cd8a86$89df83b0$9d9e8b10$@edu.cn>
+	id S1756763Ab2IDK2n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 06:28:43 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59242 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752253Ab2IDK2l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 06:28:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Ac2KhoIuhqomfX8SQ+2gZF5aDKhfDw==
-Content-Language: zh-cn
-x-cr-hashedpuzzle: Guml GxmN H6ls KO5D LRyZ OODh UEH0 VJ3k Ws4h ZTMJ Zxlq eptj mlY6 nCKg qAjI qSvt;4;YQB4AGIAbwBlAEAAawBlAHIAbgBlAGwALgBkAGsAOwBsAGkAbgB1AHgALQBmAHMAZABlAHYAZQBsAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOwBsAGkAbgB1AHgALQBrAGUAcgBuAGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAdgBpAHIAbwBAAHoAZQBuAGkAdgAuAGwAaQBuAHUAeAAuAG8AcgBnAC4AdQBrAA==;Sosha1_v1;7;{336C4F24-9409-4EB8-8C48-F10F3E9A61CA};bABpAHcAYQBuAGcAQABuAHUAZAB0AC4AZQBkAHUALgBjAG4A;Tue, 04 Sep 2012 10:17:37 GMT;WwBSAEYAQwBdACAAVgBGAFMAOgAgAEYAaQBsAGUAIABTAHkAcwB0AGUAbQAgAE0AbwB1AG4AdAAgAFcAaQBkAGUAIABPAF8ARABJAFIARQBDAFQAIABTAHUAcABwAG8AcgB0AA==
-x-cr-puzzleid: {336C4F24-9409-4EB8-8C48-F10F3E9A61CA}
-X-Eyou-Sender: <liwang@nudt.edu.cn>
+In-Reply-To: <CAJKgH8Ah-aq=LfOWs2SBZnndzugNGxJbqYS11YVQLXJy6FZxkw@mail.gmail.com>
+References: <CAJKgH8Ah-aq=LfOWs2SBZnndzugNGxJbqYS11YVQLXJy6FZxkw@mail.gmail.com>
+From: Manavendra Nath Manav <mnm.kernel@gmail.com>
+Date: Tue, 4 Sep 2012 15:58:20 +0530
+Message-ID: <CAJKgH8CNJM2SyR7bD8nXae13-Fq1MP1Xn7+383YU-HPwKBe+Zg@mail.gmail.com>
+Subject: Re: Why exported const value modified by another driver not updated
+ in original driver
+To: kernelnewbies@kernelnewbies.org
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Greg KH <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For file system created on file-backed loop device, there will be two-levels of 
-page cache present, which typically doubles the memory consumption. 
-In many cases, it is beneficial to turn on the O_DIRECT option while performing 
-the upper file system file IO, to bypass the upper page cache, which not only reduces half
-of the memory consumption, but also improves the performance due to shorter copy path.
+On Tue, Sep 4, 2012 at 3:00 PM, Manavendra Nath Manav
+<mnm.kernel@gmail.com> wrote:
+> Hi,
+>
+> I have declared a static const int variable in one driver and exported
+> that variable symbol. In another driver i am modifying that variable.
+> The other driver prints the modified value but the original driver
+> retains the original value. When both virtual and physical addresses
+> of the variable as seen by both drivers are same, how is this even
+> possible. Is it a kernel bug?
+>
+> [root@localhost bug]# uname -a
+> Linux localhost.localdomain 3.5.3 #3 SMP Mon Sep 3 21:52:12 IST 2012
+> i686 i686 i386 GNU/Linux
+>
+> ================================
+> [root@localhost bug]# cat driver.c
+> #include <linux/module.h>
+>
+> static const int value = 123;
+>
+> int init_module()
+> {
+>         printk("Base driver (init): value                     = %d\n", value);
+>         printk("Base driver (init): virtual address of value  = %p\n", (void *)&value);
+>         printk("Base driver (init): physical address of value = %p\n", (void
+> *)__pa(&value));
+>         return 0;
+> }
+>
+> void cleanup_module()
+> {
+>         printk("Base driver (exit): value                     = %d\n", value);
+>         printk("Base driver (exit): virtual address of value  = %p\n", (void *)&value);
+>         printk("Base driver (exit): physical address of value = %p\n", (void
+> *)__pa(&value));
+> }
+> EXPORT_SYMBOL(value);
+>
+> ==============================================
+> [root@localhost bug]# cat hacker.c
+> #include <linux/module.h>
+>
+> extern int value;
+>
+> int init_module()
+> {
+>         value = 987;
+>         printk("Hacker driver (init): value                     = %d\n", value);
+>         printk("Hacker Base driver (init): virtual address of value  = %p\n",
+> (void *)&value);
+>         printk("Hacker Base driver (init): physical address of value = %p\n",
+> (void *)__pa(&value));
+>         return 0;
+> }
+>
+> void cleanup_module()
+> {
+>         printk("Hacker driver (exit): value                     = %d\n", value);
+>         printk("Hacker driver (exit): virtual address of value  = %p\n",
+> (void *)&value);
+>         printk("Hacker driver (exit): physical address of value = %p\n",
+> (void *)__pa(&value));
+>         return;
+> }
+>
+> =========================================
+> [root@localhost bug]# insmod driver.ko
+> Base driver (init): value                     = 123
+> Base driver (init): virtual address of value  = f89d61c8
+> Base driver (init): physical address of value = 389d61c8
+>
+> [root@localhost bug]# insmod hacker.ko
+> Hacker driver (init): value                     = 987
+> Hacker Base driver (init): virtual address of value  = f89d61c8
+> Hacker Base driver (init): physical address of value = 389d61c8
+>
+> [root@localhost bug]# rmmod hacker.ko
+> Hacker driver (exit): value                     = 987
+> Hacker driver (exit): virtual address of value  = f89d61c8
+> Hacker driver (exit): physical address of value = 389d61c8
+>
+> [root@localhost bug]# rmmod driver.ko
+> Base driver (exit): value                     = 123
+> Base driver (exit): virtual address of value  = f89d61c8
+> Base driver (exit): physical address of value = 389d61c8
+>
+> [root@localhost bug]# cat /proc/kallsyms | grep value
+> f89f91c8 R value        [driver]
+> f89f9088 r __ksymtab_value      [driver]
+> f89f91cc r __kstrtab_value      [driver]
+>
+> Interestingly, when i change the declaration of variable to "volatile"
+> in driver.c as "static const volatile int" then the driver.ko prints
+> modified value "987" during rmmod and the original value "123" is
+> lost. What is the difference between this and previous declaration?
+> Please forgive if you find this question silly?
+> --
+> Manavendra Nath Manav
 
-For example, the following iozone REREAD test with O_DIRECT turned on over the one without
-enjoys 10x speedup due to redundant cache elimination, consequently, avoiding page cache thrashing
-on a 2GB memory machine running 3.2.9 kernel.
+Is the above a genuine kernel bug, or i am missing something out here. Pls help.
 
-losetup /dev/loop0 dummy // dummy is a ext4 file with a size of 1.1GB
-mkfs -t ext2 /dev/loop0
-mount /dev/loop0 /dsk
-cd /dsk
-iozone -t 1 -s 1G -r 4M -i 0 -+n -w // produce a 1GB test file
-iozone -t 1 -s 1G -r 4M -i 1 -w // REREAD test without O_DIRECT
-echo 1 > /proc/sys/vm/drop_caches // cleanup the page cache
-iozone -t 1 -s 1G -r 4M -i 1 -w -I // REREAD test with O_DIRECT
-
-This feature is also expected to be useful for virtualization situation, the file systems inside 
-the guest operation system will use much less of guest memory, which, potencially results in less of 
-host memory use. Especially, it may be more useful if multiple guests are running based 
-on a same disk image file.  
-
-The idea is simple, leave the desicion for the file system user to enable file system mount 
-wide O_DIRECT support with a new mount option, for example,
-
-losetup /dev/loop0 dummy
-mount /dev/loop0 -o MS_DIRECT /dsk
-
-Below is the preliminary patch,
-
----
- fs/open.c          |    5 +++++
- fs/super.c         |    2 ++
- include/linux/fs.h |    1 +
- 3 files changed, 8 insertions(+), 0 deletions(-)
-
-diff --git a/fs/open.c b/fs/open.c
-index e1f2cdb..dacac30 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -958,6 +958,11 @@ long do_sys_open(int dfd, const char __user *filename, int flags, umode_t mode)
- 			} else {
- 				fsnotify_open(f);
- 				fd_install(fd, f);
-+				if (f->f_vfsmnt->mnt_sb && f->f_vfsmnt->mnt_sb->s_flags & MS_DIRECT) {
-+					if (S_ISREG(f->f_dentry->d_inode->i_mode)) {
-+	if (!f->f_mapping->a_ops || ((!f->f_mapping->a_ops->direct_IO) && (!f->f_mapping->a_ops->get_xip_mem)))
-+		f->f_flags |= O_DIRECT;
-+				}
- 			}
- 		}
- 		putname(tmp);
-diff --git a/fs/super.c b/fs/super.c
-index 0902cfa..ab5c4a5 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -1147,6 +1147,8 @@ mount_fs(struct file_system_type *type, int flags, const char *name, void *data)
- 	WARN_ON(!sb->s_bdi);
- 	WARN_ON(sb->s_bdi == &default_backing_dev_info);
- 	sb->s_flags |= MS_BORN;
-+	if (flags & MS_DIRECT)
-+		sb->s_flags |= MS_DIRECT;
- 
- 	error = security_sb_kern_mount(sb, flags, secdata);
- 	if (error)
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index aa11047..127cc85 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -225,6 +225,7 @@ struct inodes_stat_t {
- #define MS_KERNMOUNT	(1<<22) /* this is a kern_mount call */
- #define MS_I_VERSION	(1<<23) /* Update inode I_version field */
- #define MS_STRICTATIME	(1<<24) /* Always perform atime updates */
-+#define MS_DIRECT	(1<<27)
- #define MS_NOSEC	(1<<28)
- #define MS_BORN		(1<<29)
- #define MS_ACTIVE	(1<<30)
--- 
-1.7.6.5
-
+Thanks,
+Manavendra Nath Manav
