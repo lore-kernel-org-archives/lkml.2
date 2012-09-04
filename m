@@ -1,53 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757135Ab2IDQCY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 12:02:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2530 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751102Ab2IDQCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 12:02:23 -0400
-Date: Tue, 4 Sep 2012 18:04:42 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Vagin <avagin@openvz.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, criu@openvz.org,
-        linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [PATCH] kernel: limit a value of ns_last_pid to (0, max_pid)
-Message-ID: <20120904160442.GB8199@redhat.com>
-References: <1346746632-3025128-1-git-send-email-avagin@openvz.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346746632-3025128-1-git-send-email-avagin@openvz.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1757263Ab2IDQEL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 12:04:11 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:43327 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751102Ab2IDQEJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 12:04:09 -0400
+Date: Tue, 4 Sep 2012 17:08:53 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Subject: Re: [RFC] First attempt at kernel secure boot support
+Message-ID: <20120904170853.0fa6b27b@pyramind.ukuu.org.uk>
+In-Reply-To: <1346774117-2277-1-git-send-email-mjg@redhat.com>
+References: <1346774117-2277-1-git-send-email-mjg@redhat.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04, Andrew Vagin wrote:
->
-> The kernel doesn't check pid on a negative values, so if
-> you would try to write -2 in /proc/sys/kernel/ns_last_pid,
-> you will get a kernel panic.
->
-> In this case the next pid is -1, and alloc_pidmap will try to access
-> to a nonexistent pidmap.
->
-> map = &pid_ns->pidmap[pid/BITS_PER_PAGE];
+On Tue,  4 Sep 2012 11:55:06 -0400
+Matthew Garrett <mjg@redhat.com> wrote:
 
-Yes, alloc_pidmap() assumes that pid_ns->last_pid + 1 is positive...
+> The UEFI Secure Boot trust model is based on it not being possible for a
+> user to cause a signed OS to boot an unsigned OS
 
-So ".extra1 = &zero" is not enough, INT_MAX can overflow as well.
+Unfortunately you can't fix this at kernel level because an untrusted
+application can at GUI level fake a system crash, reboot cycle and phish
+any basic credentials such as passwords for the windows partition.
 
->  static struct ctl_table pid_ns_ctl_table[] = {
->  	{
->  		.procname = "ns_last_pid",
->  		.maxlen = sizeof(int),
->  		.mode = 0666, /* permissions are checked in the handler */
->  		.proc_handler = pid_ns_ctl_handler,
-> +		.extra1 = &zero,
-> +		.extra2 = &pid_max,
-
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-
+Alan
