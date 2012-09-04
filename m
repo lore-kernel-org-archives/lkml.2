@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932404Ab2IDPKa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 11:10:30 -0400
+	id S932420Ab2IDPKg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 11:10:36 -0400
 Received: from smtp4.mundo-r.com ([212.51.32.151]:34934 "EHLO
 	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932320Ab2IDPK0 (ORCPT
+	with ESMTP id S932320Ab2IDPKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 11:10:26 -0400
+	Tue, 4 Sep 2012 11:10:33 -0400
 X-Greylist: delayed 592 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Sep 2012 11:10:17 EDT
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnkCAGIWRlBbdWObgWdsb2JhbABFhgW1JSIBARYmJ4IgAQEFIwQLATQSECAFAh8HAgJXBhOIEad7kmCBIZAMgRIDlVmJM4lM
+X-IronPort-Anti-Spam-Result: AnkCAGIWRlBbdWObgWdsb2JhbABFhgW1JSIBARYmJ4IgAQEFIwQLAUYQIAUCJgICVwYTiBGne5JggSGQDIESA5VZiTOJTA
 X-IronPort-AV: E=Sophos;i="4.80,367,1344204000"; 
-   d="scan'208";a="561821815"
+   d="scan'208";a="561821816"
 From: =?UTF-8?q?Samuel=20Iglesias=20Gons=C3=A1lvez?= 
 	<siglesias@igalia.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -20,9 +20,9 @@ Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Jens Taprogge <jens.taprogge@taprogge.org>,
         =?UTF-8?q?Samuel=20Iglesias=20Gons=C3=A1lvez?= 
 	<siglesias@igalia.com>
-Subject: [PATCH 01/16] Staging: ipack/bridges/tpci200: Reorganize tpci200_probe in preparation for functional changes.
-Date: Tue,  4 Sep 2012 17:01:06 +0200
-Message-Id: <1346770881-4723-2-git-send-email-siglesias@igalia.com>
+Subject: [PATCH 04/16] Staging: ipack/bridges/tpci200: Remove the read/write functions from ipack_bus_ops.
+Date: Tue,  4 Sep 2012 17:01:09 +0200
+Message-Id: <1346770881-4723-5-git-send-email-siglesias@igalia.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1346770881-4723-1-git-send-email-siglesias@igalia.com>
 References: <1346770881-4723-1-git-send-email-siglesias@igalia.com>
@@ -35,70 +35,249 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jens Taprogge <jens.taprogge@taprogge.org>
 
-These changes make it easier to add more initialization steps later on.
+They are not used any longer.
 
 Signed-off-by: Jens Taprogge <jens.taprogge@taprogge.org>
 Signed-off-by: Samuel Iglesias Gonsálvez <siglesias@igalia.com>
 ---
- drivers/staging/ipack/bridges/tpci200.c |   25 +++++++++++++++----------
- 1 file changed, 15 insertions(+), 10 deletions(-)
+ drivers/staging/ipack/bridges/tpci200.c |  218 -------------------------------
+ 1 file changed, 218 deletions(-)
 
 diff --git a/drivers/staging/ipack/bridges/tpci200.c b/drivers/staging/ipack/bridges/tpci200.c
-index 5831af8..eda02e7 100644
+index f2501c9..b81a8c9 100644
 --- a/drivers/staging/ipack/bridges/tpci200.c
 +++ b/drivers/staging/ipack/bridges/tpci200.c
-@@ -790,8 +790,8 @@ static int tpci200_pciprobe(struct pci_dev *pdev,
- 
- 	tpci200->info = kzalloc(sizeof(struct tpci200_infos), GFP_KERNEL);
- 	if (!tpci200->info) {
--		kfree(tpci200);
--		return -ENOMEM;
-+		ret = -ENOMEM;
-+		goto out_err_info;
- 	}
- 
- 	/* Save struct pci_dev pointer */
-@@ -801,10 +801,9 @@ static int tpci200_pciprobe(struct pci_dev *pdev,
- 	/* register the device and initialize it */
- 	ret = tpci200_install(tpci200);
- 	if (ret) {
--		dev_err(&pdev->dev, "Error during tpci200 install !\n");
--		kfree(tpci200->info);
--		kfree(tpci200);
--		return -ENODEV;
-+		dev_err(&pdev->dev, "error during tpci200 install\n");
-+		ret = -ENODEV;
-+		goto out_err_install;
- 	}
- 
- 	/* Register the carrier in the industry pack bus driver */
-@@ -814,10 +813,8 @@ static int tpci200_pciprobe(struct pci_dev *pdev,
- 	if (!tpci200->info->ipack_bus) {
- 		dev_err(&pdev->dev,
- 			"error registering the carrier on ipack driver\n");
--		tpci200_uninstall(tpci200);
--		kfree(tpci200->info);
--		kfree(tpci200);
--		return -EFAULT;
-+		ret = -EFAULT;
-+		goto out_err_bus_register;
- 	}
- 
- 	/* save the bus number given by ipack to logging purpose */
-@@ -831,6 +828,14 @@ static int tpci200_pciprobe(struct pci_dev *pdev,
- 	for (i = 0; i < TPCI200_NB_SLOT; i++)
- 		tpci200->slots[i].dev =
- 			ipack_device_register(tpci200->info->ipack_bus, i, i);
-+	return 0;
-+
-+out_err_bus_register:
-+	tpci200_uninstall(tpci200);
-+out_err_install:
-+	kfree(tpci200->info);
-+out_err_info:
-+	kfree(tpci200);
- 	return ret;
+@@ -51,218 +51,6 @@ static struct tpci200_board *check_slot(struct ipack_device *dev)
+ 	return tpci200;
  }
+ 
+-static inline unsigned char __tpci200_read8(void __iomem *address,
+-					    unsigned long offset)
+-{
+-	return ioread8(address + offset);
+-}
+-
+-static inline unsigned short __tpci200_read16(void __iomem *address,
+-					      unsigned long offset)
+-{
+-	return ioread16be(address + offset);
+-}
+-
+-static inline unsigned int __tpci200_read32(void __iomem *address,
+-					    unsigned long offset)
+-{
+-	return ioread32be(address + offset);
+-}
+-
+-static inline void __tpci200_write8(unsigned char value,
+-				    void __iomem *address, unsigned long offset)
+-{
+-	iowrite8(value, address + offset);
+-}
+-
+-static inline void __tpci200_write16(unsigned short value,
+-				     void __iomem *address,
+-				     unsigned long offset)
+-{
+-	iowrite16be(value, address + offset);
+-}
+-
+-static inline void __tpci200_write32(unsigned int value,
+-				     void __iomem *address,
+-				     unsigned long offset)
+-{
+-	iowrite32be(value, address + offset);
+-}
+-
+-static struct ipack_addr_space *get_slot_address_space(struct ipack_device *dev,
+-						       int space)
+-{
+-	struct ipack_addr_space *addr;
+-
+-	switch (space) {
+-	case IPACK_IO_SPACE:
+-		addr = &dev->io_space;
+-		break;
+-	case IPACK_ID_SPACE:
+-		addr = &dev->id_space;
+-		break;
+-	case IPACK_MEM_SPACE:
+-		addr = &dev->mem_space;
+-		break;
+-	default:
+-		dev_err(&dev->dev,
+-			"Slot [%d:%d] space number %d doesn't exist !\n",
+-			dev->bus_nr, dev->slot, space);
+-		return NULL;
+-		break;
+-	}
+-
+-	if ((addr->size == 0) || (addr->address == NULL)) {
+-		dev_err(&dev->dev, "Error, slot space not mapped !\n");
+-		return NULL;
+-	}
+-
+-	return addr;
+-}
+-
+-static int tpci200_read8(struct ipack_device *dev, int space,
+-			 unsigned long offset, unsigned char *value)
+-{
+-	struct ipack_addr_space *addr;
+-	struct tpci200_board *tpci200;
+-
+-	tpci200 = check_slot(dev);
+-	if (tpci200 == NULL)
+-		return -EINVAL;
+-
+-	addr = get_slot_address_space(dev, space);
+-	if (addr == NULL)
+-		return -EINVAL;
+-
+-	if (offset >= addr->size) {
+-		dev_err(&dev->dev, "Error, slot space offset error !\n");
+-		return -EFAULT;
+-	}
+-
+-	*value = __tpci200_read8(addr->address, offset);
+-
+-	return 0;
+-}
+-
+-static int tpci200_read16(struct ipack_device *dev, int space,
+-			  unsigned long offset, unsigned short *value)
+-{
+-	struct ipack_addr_space *addr;
+-	struct tpci200_board *tpci200;
+-
+-	tpci200 = check_slot(dev);
+-	if (tpci200 == NULL)
+-		return -EINVAL;
+-
+-	addr = get_slot_address_space(dev, space);
+-	if (addr == NULL)
+-		return -EINVAL;
+-
+-	if ((offset+2) >= addr->size) {
+-		dev_err(&dev->dev, "Error, slot space offset error !\n");
+-		return -EFAULT;
+-	}
+-	*value = __tpci200_read16(addr->address, offset);
+-
+-	return 0;
+-}
+-
+-static int tpci200_read32(struct ipack_device *dev, int space,
+-			  unsigned long offset, unsigned int *value)
+-{
+-	struct ipack_addr_space *addr;
+-	struct tpci200_board *tpci200;
+-
+-	tpci200 = check_slot(dev);
+-	if (tpci200 == NULL)
+-		return -EINVAL;
+-
+-	addr = get_slot_address_space(dev, space);
+-	if (addr == NULL)
+-		return -EINVAL;
+-
+-	if ((offset+4) >= addr->size) {
+-		dev_err(&dev->dev, "Error, slot space offset error !\n");
+-		return -EFAULT;
+-	}
+-
+-	*value = __tpci200_read32(addr->address, offset);
+-
+-	return 0;
+-}
+-
+-static int tpci200_write8(struct ipack_device *dev, int space,
+-			  unsigned long offset, unsigned char value)
+-{
+-	struct ipack_addr_space *addr;
+-	struct tpci200_board *tpci200;
+-
+-	tpci200 = check_slot(dev);
+-	if (tpci200 == NULL)
+-		return -EINVAL;
+-
+-	addr = get_slot_address_space(dev, space);
+-	if (addr == NULL)
+-		return -EINVAL;
+-
+-	if (offset >= addr->size) {
+-		dev_err(&dev->dev, "Error, slot space offset error !\n");
+-		return -EFAULT;
+-	}
+-
+-	__tpci200_write8(value, addr->address, offset);
+-
+-	return 0;
+-}
+-
+-static int tpci200_write16(struct ipack_device *dev, int space,
+-			   unsigned long offset, unsigned short value)
+-{
+-	struct ipack_addr_space *addr;
+-	struct tpci200_board *tpci200;
+-
+-	tpci200 = check_slot(dev);
+-	if (tpci200 == NULL)
+-		return -EINVAL;
+-
+-	addr = get_slot_address_space(dev, space);
+-	if (addr == NULL)
+-		return -EINVAL;
+-
+-	if ((offset+2) >= addr->size) {
+-		dev_err(&dev->dev, "Error, slot space offset error !\n");
+-		return -EFAULT;
+-	}
+-
+-	__tpci200_write16(value, addr->address, offset);
+-
+-	return 0;
+-}
+-
+-static int tpci200_write32(struct ipack_device *dev, int space,
+-			   unsigned long offset, unsigned int value)
+-{
+-	struct ipack_addr_space *addr;
+-	struct tpci200_board *tpci200;
+-
+-	tpci200 = check_slot(dev);
+-	if (tpci200 == NULL)
+-		return -EINVAL;
+-
+-	addr = get_slot_address_space(dev, space);
+-	if (addr == NULL)
+-		return -EINVAL;
+-
+-	if ((offset+4) >= addr->size) {
+-		dev_err(&dev->dev, "Error, slot space offset error !\n");
+-		return -EFAULT;
+-	}
+-
+-	__tpci200_write32(value, addr->address, offset);
+-
+-	return 0;
+-}
+-
+ static void tpci200_unregister(struct tpci200_board *tpci200)
+ {
+ 	int i;
+@@ -749,12 +537,6 @@ static struct ipack_bus_ops tpci200_bus_ops = {
+ 	.unmap_space = tpci200_slot_unmap_space,
+ 	.request_irq = tpci200_request_irq,
+ 	.free_irq = tpci200_free_irq,
+-	.read8 = tpci200_read8,
+-	.read16 = tpci200_read16,
+-	.read32 = tpci200_read32,
+-	.write8 = tpci200_write8,
+-	.write16 = tpci200_write16,
+-	.write32 = tpci200_write32,
+ 	.remove_device = tpci200_slot_unregister,
+ };
  
 -- 
 1.7.10.4
