@@ -1,52 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757642Ab2IDTUU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 15:20:20 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37641 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757588Ab2IDTUS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 15:20:18 -0400
+	id S932651Ab2IDTZR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 15:25:17 -0400
+Received: from fieldses.org ([174.143.236.118]:54060 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757582Ab2IDTZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 15:25:16 -0400
+Date: Tue, 4 Sep 2012 15:25:09 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Namjae Jeon <linkinjeon@gmail.com>, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>, NeilBrown <neilb@suse.de>
+Subject: Re: [PATCH v2 4/5] fat: eliminate orphaned inode number allocation
+Message-ID: <20120904192509.GD29369@fieldses.org>
+References: <1346774312-8142-1-git-send-email-linkinjeon@gmail.com>
+ <87mx15910k.fsf@devron.myhome.or.jp>
+ <87fw6x90o3.fsf@devron.myhome.or.jp>
+ <20120904183815.GA29369@fieldses.org>
+ <87y5kp7gsq.fsf@devron.myhome.or.jp>
 MIME-Version: 1.0
-In-Reply-To: <20120904161737.358d51ad@obelix.rh>
-References: <20120904143215.5bbbb2a4@obelix.rh>
-	<CAE9FiQUEHbDySWHWFj6kW=HGLR0vkbaJWRq+7kMMHGhBm8e08A@mail.gmail.com>
-	<20120904161737.358d51ad@obelix.rh>
-Date: Tue, 4 Sep 2012 12:20:14 -0700
-X-Google-Sender-Auth: b2zJ6kTi4zygWVn08MTzHnCWLq8
-Message-ID: <CAE9FiQX7OMdFU6FuTQdz+NdbNt5Hy9zjzSY7y-90G4CbhayfaA@mail.gmail.com>
-Subject: Re: kexec/kdump kernel fails to start
-From: Yinghai Lu <yinghai@kernel.org>
-To: Flavio Leitner <fbl@redhat.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        WANG Cong <xiyou.wangcong@gmail.com>, Tejun Heo <tj@kernel.org>,
-        ianfang.cn@gmail.com, Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87y5kp7gsq.fsf@devron.myhome.or.jp>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 4, 2012 at 12:17 PM, Flavio Leitner <fbl@redhat.com> wrote:
-> On Tue, 4 Sep 2012 12:02:00 -0700
-> [    0.000000] x86 PAT enabled: cpu 0, old 0x7040600070406, new 0x7010600070106
-> [    0.000000] last_pfn = 0xbf800 max_arch_pfn = 0x400000000
-> [    0.000000] initial memory mapped : 0 - 20000000
-> [    0.000000] Base memory trampoline at [ffff880000098000] 98000 size 20480
-> [    0.000000] init_memory_mapping: 0000000000000000-00000000bf800000
-> [    0.000000]  0000000000 - 00bf800000 page 2M
-> [    0.000000] kernel direct mapping tables up to bf800000 @ 1fa00000-20000000
-> [    0.000000] init_memory_mapping: 0000000100000000-0000000440000000
-> [    0.000000]  0100000000 - 0440000000 page 2M
-> [    0.000000] kernel direct mapping tables up to 440000000 @ bdaab000-bf4bd000
-> [    0.000000] RAMDISK: 352c8000 - 3695c000
->
-BTW, can you please try our new init_memory_mapping clean up at
+On Wed, Sep 05, 2012 at 04:02:13AM +0900, OGAWA Hirofumi wrote:
+> "J. Bruce Fields" <bfields@fieldses.org> writes:
+> 
+> > On Wed, Sep 05, 2012 at 02:07:40AM +0900, OGAWA Hirofumi wrote:
+> >> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> writes:
+> >> 
+> >> > Namjae Jeon <linkinjeon@gmail.com> writes:
+> >> >
+> >> >> From: Namjae Jeon <namjae.jeon@samsung.com>
+> >> >>
+> >> >> Maintain a list of inode(i_pos) numbers of orphaned inodes (i.e the
+> >> >> inodes that have been unlinked but still having open file
+> >> >> descriptors).At file/directory creation time, skip using such i_pos
+> >> >> values.Removal of the i_pos from the list is done during inode eviction.
+> >> >
+> >> > What happens if the directory (has busy entries) was completely removed?
+> >> >
+> >> >
+> >> > And Al's point is important for NFS too. If you want stable ino for NFS,
+> >> > you never can't change it.
+> >> 
+> >> s/never can't/never can/
+> >
+> > If vfat exports aren't fixable, maybe we should just remove that
+> > feature?
+> >
+> > I'm afraid that having unfixable half-working vfat exports is just an
+> > attractive nuisance that causes users and developers to waste their
+> > time....
+> 
+> In historically, it was introduced by Neil Brown, when nfs export
+> interface was rewritten (I'm not sure what was intended).
+> 
+> Personally, I'm ok to remove it though, it is really personal
+> opinion. The state would be rather I don't have strong opinion to
+> remove.
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
-for-x86-mm
+Neil, any opinion?
 
-hope it could make your kdump working.
+If we can document circumstances under which nfs exports of fat
+filesystems are reliable, fine.
 
-Thanks
+Otherwise I'd rather just be clear that we don't support it.
 
-Yinghai
+--b.
