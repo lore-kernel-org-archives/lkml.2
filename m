@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817Ab2IDIZn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 04:25:43 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:50599
+	id S1756437Ab2IDI1C (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 04:27:02 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:53749
 	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754400Ab2IDIZg (ORCPT
+	by vger.kernel.org with ESMTP id S1754316Ab2IDIZg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Sep 2012 04:25:36 -0400
 X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah107ah1155h)
-X-WSS-ID: 0M9TGQJ-01-71O-02
+X-WSS-ID: 0M9TGQI-01-71K-02
 X-M-MSG: 
 From: Andre Przywara <andre.przywara@amd.com>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>, Thomas Renninger <trenn@suse.de>
@@ -18,9 +18,9 @@ CC: Matthew Garret <mjg@redhat.com>, <linux-pm@vger.kernel.org>,
         <cpufreq@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Andreas Herrmann <andreas.herrmann3@amd.com>,
         Andre Przywara <andre.przywara@amd.com>
-Subject: [PATCH 7/8 v2] acpi-cpufreq: Add compatibility for legacy AMD cpb sysfs knob
-Date: Tue, 4 Sep 2012 10:28:08 +0200
-Message-ID: <1346747289-8421-8-git-send-email-andre.przywara@amd.com>
+Subject: [PATCH 1/8 v2] acpi-cpufreq: Add support for modern AMD CPUs
+Date: Tue, 4 Sep 2012 10:28:02 +0200
+Message-ID: <1346747289-8421-2-git-send-email-andre.przywara@amd.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1346747289-8421-1-git-send-email-andre.przywara@amd.com>
 References: <1346747289-8421-1-git-send-email-andre.przywara@amd.com>
@@ -31,130 +31,163 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The powernow-k8 driver supported a sysfs knob called "cpb", which was
-instantiated per CPU, but actually acted globally for the whole
-system. To keep some compatibility with this feature, we re-introduce
-this behavior here, but:
-a) only enable it on AMD CPUs and
-b) protect it with a Kconfig switch
+From: Matthew Garrett <mjg@redhat.com>
 
-I'd like to consider this feature obsolete. Lets keep it around for
-some kernel versions and then phase it out.
+The programming model for P-states on modern AMD CPUs is very similar to
+that of Intel and VIA. It makes sense to consolidate this support into one
+driver rather than duplicating functionality between two of them. This
+patch adds support for AMDs with hardware P-state control to acpi-cpufreq.
 
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Andre Przywara <andre.przywara@amd.com>
 ---
- drivers/cpufreq/Kconfig.x86    | 12 +++++++++++
- drivers/cpufreq/acpi-cpufreq.c | 46 ++++++++++++++++++++++++++++++++++++++++--
- 2 files changed, 56 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/msr-index.h |  2 ++
+ drivers/cpufreq/Kconfig.x86      |  3 ++-
+ drivers/cpufreq/acpi-cpufreq.c   | 43 ++++++++++++++++++++++++++++++++++------
+ 3 files changed, 41 insertions(+), 7 deletions(-)
 
+diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
+index 957ec87..1e1f3eb 100644
+--- a/arch/x86/include/asm/msr-index.h
++++ b/arch/x86/include/asm/msr-index.h
+@@ -248,6 +248,8 @@
+ 
+ #define MSR_IA32_PERF_STATUS		0x00000198
+ #define MSR_IA32_PERF_CTL		0x00000199
++#define MSR_AMD_PERF_STATUS		0xc0010063
++#define MSR_AMD_PERF_CTL		0xc0010062
+ 
+ #define MSR_IA32_MPERF			0x000000e7
+ #define MSR_IA32_APERF			0x000000e8
 diff --git a/drivers/cpufreq/Kconfig.x86 b/drivers/cpufreq/Kconfig.x86
-index b36ca1f..934854a 100644
+index 78ff7ee..8d12e37 100644
 --- a/drivers/cpufreq/Kconfig.x86
 +++ b/drivers/cpufreq/Kconfig.x86
-@@ -33,6 +33,18 @@ config X86_ACPI_CPUFREQ
+@@ -23,7 +23,8 @@ config X86_ACPI_CPUFREQ
+ 	help
+ 	  This driver adds a CPUFreq driver which utilizes the ACPI
+ 	  Processor Performance States.
+-	  This driver also supports Intel Enhanced Speedstep.
++	  This driver also supports Intel Enhanced Speedstep and newer
++	  AMD CPUs.
  
- 	  If in doubt, say N.
- 
-+config X86_ACPI_CPUFREQ_CPB
-+	default y
-+	bool "Legacy cpb sysfs knob support for AMD CPUs"
-+	depends on X86_ACPI_CPUFREQ && CPU_SUP_AMD
-+	help
-+	  The powernow-k8 driver used to provide a sysfs knob called "cpb"
-+	  to disable the Core Performance Boosting feature of AMD CPUs. This
-+	  file has now been superseeded by the more generic "boost" entry.
-+
-+	  By enabling this option the acpi_cpufreq driver provides the old
-+	  entry in addition to the new boost ones, for compatibility reasons.
-+
- config ELAN_CPUFREQ
- 	tristate "AMD Elan SC400 and SC410"
- 	select CPU_FREQ_TABLE
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called acpi-cpufreq.
 diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
-index dffa7af..0d048f6 100644
+index 56c6c6b..067a61f 100644
 --- a/drivers/cpufreq/acpi-cpufreq.c
 +++ b/drivers/cpufreq/acpi-cpufreq.c
-@@ -133,8 +133,7 @@ static void boost_set_msrs(bool enable, const struct cpumask *cpumask)
- 	wrmsr_on_cpus(cpumask, msr_addr, msrs);
- }
- 
--static ssize_t store_global_boost(struct kobject *kobj, struct attribute *attr,
--				  const char *buf, size_t count)
-+static ssize_t _store_boost(const char *buf, size_t count)
- {
- 	int ret;
- 	unsigned long val = 0;
-@@ -161,6 +160,12 @@ static ssize_t store_global_boost(struct kobject *kobj, struct attribute *attr,
- 	return count;
- }
- 
-+static ssize_t store_global_boost(struct kobject *kobj, struct attribute *attr,
-+				  const char *buf, size_t count)
-+{
-+	return _store_boost(buf, count);
-+}
-+
- static ssize_t show_global_boost(struct kobject *kobj,
- 				 struct attribute *attr, char *buf)
- {
-@@ -171,6 +176,21 @@ static struct global_attr global_boost = __ATTR(boost, 0644,
- 						show_global_boost,
- 						store_global_boost);
- 
-+#ifdef CONFIG_X86_ACPI_CPUFREQ_CPB
-+static ssize_t store_cpb(struct cpufreq_policy *policy, const char *buf,
-+			 size_t count)
-+{
-+	return _store_boost(buf, count);
-+}
-+
-+static ssize_t show_cpb(struct cpufreq_policy *policy, char *buf)
-+{
-+	return sprintf(buf, "%u\n", boost_enabled);
-+}
-+
-+static struct freq_attr cpb = __ATTR(cpb, 0644, show_cpb, store_cpb);
-+#endif
-+
- static int check_est_cpu(unsigned int cpuid)
- {
- 	struct cpuinfo_x86 *cpu = &cpu_data(cpuid);
-@@ -889,6 +909,7 @@ static int acpi_cpufreq_resume(struct cpufreq_policy *policy)
- 
- static struct freq_attr *acpi_cpufreq_attr[] = {
- 	&cpufreq_freq_attr_scaling_available_freqs,
-+	NULL,	/* this is a placeholder for cpb, do not remove */
- 	NULL,
+@@ -54,10 +54,12 @@ MODULE_LICENSE("GPL");
+ enum {
+ 	UNDEFINED_CAPABLE = 0,
+ 	SYSTEM_INTEL_MSR_CAPABLE,
++	SYSTEM_AMD_MSR_CAPABLE,
+ 	SYSTEM_IO_CAPABLE,
  };
  
-@@ -960,6 +981,27 @@ static int __init acpi_cpufreq_init(void)
- 	if (ret)
- 		return ret;
+ #define INTEL_MSR_RANGE		(0xffff)
++#define AMD_MSR_RANGE		(0x7)
  
-+#ifdef CONFIG_X86_ACPI_CPUFREQ_CPB
-+	/* this is a sysfs file with a strange name and an even stranger
-+	 * semantic - per CPU instantiation, but system global effect.
-+	 * Lets enable it only on AMD CPUs for compatibility reasons and
-+	 * only if configured. This is considered legacy code, which
-+	 * will probably be removed at some point in the future.
-+	 */
-+	if (check_amd_hwpstate_cpu(0)) {
-+		struct freq_attr **iter;
+ struct acpi_cpufreq_data {
+ 	struct acpi_processor_performance *acpi_data;
+@@ -82,6 +84,13 @@ static int check_est_cpu(unsigned int cpuid)
+ 	return cpu_has(cpu, X86_FEATURE_EST);
+ }
+ 
++static int check_amd_hwpstate_cpu(unsigned int cpuid)
++{
++	struct cpuinfo_x86 *cpu = &cpu_data(cpuid);
 +
-+		pr_debug("adding sysfs entry for cpb\n");
++	return cpu_has(cpu, X86_FEATURE_HW_PSTATE);
++}
 +
-+		for (iter = acpi_cpufreq_attr; *iter != NULL; iter++)
-+			;
+ static unsigned extract_io(u32 value, struct acpi_cpufreq_data *data)
+ {
+ 	struct acpi_processor_performance *perf;
+@@ -101,7 +110,11 @@ static unsigned extract_msr(u32 msr, struct acpi_cpufreq_data *data)
+ 	int i;
+ 	struct acpi_processor_performance *perf;
+ 
+-	msr &= INTEL_MSR_RANGE;
++	if (boot_cpu_data.x86_vendor == X86_VENDOR_AMD)
++		msr &= AMD_MSR_RANGE;
++	else
++		msr &= INTEL_MSR_RANGE;
 +
-+		/* make sure there is a terminator behind it */
-+		if (iter[1] == NULL)
-+			*iter = &cpb;
-+	}
-+#endif
-+
- 	ret = cpufreq_register_driver(&acpi_cpufreq_driver);
- 	if (ret)
- 		free_acpi_perf_data();
+ 	perf = data->acpi_data;
+ 
+ 	for (i = 0; data->freq_table[i].frequency != CPUFREQ_TABLE_END; i++) {
+@@ -115,6 +128,7 @@ static unsigned extract_freq(u32 val, struct acpi_cpufreq_data *data)
+ {
+ 	switch (data->cpu_feature) {
+ 	case SYSTEM_INTEL_MSR_CAPABLE:
++	case SYSTEM_AMD_MSR_CAPABLE:
+ 		return extract_msr(val, data);
+ 	case SYSTEM_IO_CAPABLE:
+ 		return extract_io(val, data);
+@@ -150,6 +164,7 @@ static void do_drv_read(void *_cmd)
+ 
+ 	switch (cmd->type) {
+ 	case SYSTEM_INTEL_MSR_CAPABLE:
++	case SYSTEM_AMD_MSR_CAPABLE:
+ 		rdmsr(cmd->addr.msr.reg, cmd->val, h);
+ 		break;
+ 	case SYSTEM_IO_CAPABLE:
+@@ -174,6 +189,9 @@ static void do_drv_write(void *_cmd)
+ 		lo = (lo & ~INTEL_MSR_RANGE) | (cmd->val & INTEL_MSR_RANGE);
+ 		wrmsr(cmd->addr.msr.reg, lo, hi);
+ 		break;
++	case SYSTEM_AMD_MSR_CAPABLE:
++		wrmsr(cmd->addr.msr.reg, cmd->val, 0);
++		break;
+ 	case SYSTEM_IO_CAPABLE:
+ 		acpi_os_write_port((acpi_io_address)cmd->addr.io.port,
+ 				cmd->val,
+@@ -217,6 +235,10 @@ static u32 get_cur_val(const struct cpumask *mask)
+ 		cmd.type = SYSTEM_INTEL_MSR_CAPABLE;
+ 		cmd.addr.msr.reg = MSR_IA32_PERF_STATUS;
+ 		break;
++	case SYSTEM_AMD_MSR_CAPABLE:
++		cmd.type = SYSTEM_AMD_MSR_CAPABLE;
++		cmd.addr.msr.reg = MSR_AMD_PERF_STATUS;
++		break;
+ 	case SYSTEM_IO_CAPABLE:
+ 		cmd.type = SYSTEM_IO_CAPABLE;
+ 		perf = per_cpu(acfreq_data, cpumask_first(mask))->acpi_data;
+@@ -326,6 +348,11 @@ static int acpi_cpufreq_target(struct cpufreq_policy *policy,
+ 		cmd.addr.msr.reg = MSR_IA32_PERF_CTL;
+ 		cmd.val = (u32) perf->states[next_perf_state].control;
+ 		break;
++	case SYSTEM_AMD_MSR_CAPABLE:
++		cmd.type = SYSTEM_AMD_MSR_CAPABLE;
++		cmd.addr.msr.reg = MSR_AMD_PERF_CTL;
++		cmd.val = (u32) perf->states[next_perf_state].control;
++		break;
+ 	case SYSTEM_IO_CAPABLE:
+ 		cmd.type = SYSTEM_IO_CAPABLE;
+ 		cmd.addr.io.port = perf->control_register.address;
+@@ -580,12 +607,16 @@ static int acpi_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ 		break;
+ 	case ACPI_ADR_SPACE_FIXED_HARDWARE:
+ 		pr_debug("HARDWARE addr space\n");
+-		if (!check_est_cpu(cpu)) {
+-			result = -ENODEV;
+-			goto err_unreg;
++		if (check_est_cpu(cpu)) {
++			data->cpu_feature = SYSTEM_INTEL_MSR_CAPABLE;
++			break;
+ 		}
+-		data->cpu_feature = SYSTEM_INTEL_MSR_CAPABLE;
+-		break;
++		if (check_amd_hwpstate_cpu(cpu)) {
++			data->cpu_feature = SYSTEM_AMD_MSR_CAPABLE;
++			break;
++		}
++		result = -ENODEV;
++		goto err_unreg;
+ 	default:
+ 		pr_debug("Unknown addr space %d\n",
+ 			(u32) (perf->control_register.space_id));
 -- 
 1.7.12
 
