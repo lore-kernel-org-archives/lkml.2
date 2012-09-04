@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756529Ab2IDHZk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 03:25:40 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:48506 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756496Ab2IDHZh (ORCPT
+	id S1756489Ab2IDH00 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 03:26:26 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:37898 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753004Ab2IDH0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 03:25:37 -0400
+	Tue, 4 Sep 2012 03:26:25 -0400
 MIME-Version: 1.0
-In-Reply-To: <1346558287.7253.0.camel@phoenix>
+In-Reply-To: <1346558339.7253.1.camel@phoenix>
 References: <1346558287.7253.0.camel@phoenix>
-Date: Tue, 4 Sep 2012 09:25:36 +0200
-Message-ID: <CACRpkdai6r=iqbHBdjRrUeBH3oGzHrxG0i+ZR=68gR3UA9ckhA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] gpio: wm831x: Convert to use devm_kzalloc API
+	<1346558339.7253.1.camel@phoenix>
+Date: Tue, 4 Sep 2012 09:26:24 +0200
+Message-ID: <CACRpkdZaFQoF-YF+GVH-OWS+YmDZCdbVQ9tLMJQiDnK_MMFFAQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] gpio: wm8350: Convert to use devm_kzalloc API
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Axel Lin <axel.lin@gmail.com>
 Cc: Grant Likely <grant.likely@secretlab.ca>,
