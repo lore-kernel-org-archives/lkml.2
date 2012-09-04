@@ -1,48 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932514Ab2IDQie (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 12:38:34 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:51508 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757135Ab2IDQic (ORCPT
+	id S932545Ab2IDQii (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 12:38:38 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:59510 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757135Ab2IDQif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 12:38:32 -0400
-Date: Tue, 4 Sep 2012 17:38:29 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Shuah Khan <shuahkhan@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org, Josh Boyer <jwboyer@redhat.com>
-Subject: Re: [PATCH 10/11] acpi: Ignore acpi_rsdp kernel parameter in a
- secure boot environment
-Message-ID: <20120904163829.GA23777@srcf.ucam.org>
-References: <1346774117-2277-1-git-send-email-mjg@redhat.com>
- <1346774117-2277-11-git-send-email-mjg@redhat.com>
- <CAKocOONvci0Otb9wDgw6he48HkCvvhh+TMrv63AwgZLtmv4_Kg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKocOONvci0Otb9wDgw6he48HkCvvhh+TMrv63AwgZLtmv4_Kg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Tue, 4 Sep 2012 12:38:35 -0400
+Date: Tue, 04 Sep 2012 12:38:33 -0400 (EDT)
+Message-Id: <20120904.123833.1657238734473790349.davem@davemloft.net>
+To: danborkmann@iogearbox.net
+Cc: iulius.curt@gmail.com, edumazet@google.com, xemul@parallels.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dbaluta@ixiacom.com, icurt@ixiacom.com, sdumitru@ixiacom.com
+Subject: Re: [RFC] packet: change call of synchronize_net to call_rcu
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAD6jFUSa7gD45m7WdtDymJq-WkGq+kbofkws5n3dGMtuDE6d3A@mail.gmail.com>
+References: <1346768215-5194-1-git-send-email-icurt@ixiacom.com>
+	<CAD6jFUSa7gD45m7WdtDymJq-WkGq+kbofkws5n3dGMtuDE6d3A@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 04, 2012 at 10:30:46AM -0600, Shuah Khan wrote:
-> On Tue, Sep 4, 2012 at 9:55 AM, Matthew Garrett <mjg@redhat.com> wrote:
-> > From: Josh Boyer <jwboyer@redhat.com>
-> >
-> > This option allows userspace to pass the RSDP address to the kernel.  This
-> > could potentially be used to circumvent the secure boot trust model.
-> > We ignore the setting if we don't have the CAP_SECURE_FIRMWARE capability.
+From: Daniel Borkmann <danborkmann@iogearbox.net>
+Date: Tue, 4 Sep 2012 16:53:06 +0200
+
+> On Tue, Sep 4, 2012 at 4:16 PM, Iulius Curt <iulius.curt@gmail.com> wrote:
+>> synchronize_net is called every time we close a PF_PACKET socket which is
+>> causing performance loss when doing this on many sockets.
 > 
-> Does this mean, acpi_rsdp is disabled on all current platforms that
-> don't support CAP_SECURE_FIRMWARE?
+> Do you have any particular use case in mind?
 
-No, if you're not using secure boot then you'll have 
-CAP_SECURE_FIRMWARE.
+I'm curious about this too, it seems rediculous to optimize for this
+and that only seriously mis-designed userspace would do something like
+this.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
