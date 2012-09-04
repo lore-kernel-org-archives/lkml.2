@@ -1,34 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932609Ab2IDRVU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 13:21:20 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35907 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757403Ab2IDRVS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 13:21:18 -0400
-Date: Tue, 4 Sep 2012 10:21:12 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-Cc: balbi@ti.com, linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH] usb: otg: Move phy interface to separate file.
-Message-ID: <20120904172112.GA22494@kroah.com>
-References: <1346748958-10200-1-git-send-email-vbyravarasu@nvidia.com>
+	id S932622Ab2IDRVv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 13:21:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4558 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752289Ab2IDRVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 13:21:50 -0400
+Message-ID: <50463883.8080706@redhat.com>
+Date: Tue, 04 Sep 2012 18:21:07 +0100
+From: Pedro Alves <palves@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346748958-10200-1-git-send-email-vbyravarasu@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Tejun Heo <tj@kernel.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, mingo@elte.hu,
+        ebiederm@xmission.com, aarcange@redhat.com, ericvh@gmail.com,
+        netdev@vger.kernel.org, josh@joshtriplett.org, eric.dumazet@gmail.com,
+        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
+        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
+        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
+        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive hashtable
+References: <20120824203332.GF21325@google.com> <5037E9D9.9000605@gmail.com>   <20120824212348.GK21325@google.com> <5038074D.300@gmail.com>   <20120824230740.GN21325@google.com> <20120825042419.GA27240@Krystal>   <503C95E4.3010000@gmail.com> <20120828101148.GA21683@Krystal>   <503CAB1E.5010408@gmail.com> <20120828115638.GC23818@Krystal>   <20120828230050.GA3337@Krystal>  <1346772948.27919.9.camel@gandalf.local.home> <50462C99.5000007@redhat.com>  <50462EE8.1090903@redhat.com> <1346779027.27919.15.camel@gandalf.local.home>
+In-Reply-To: <1346779027.27919.15.camel@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 04, 2012 at 02:25:58PM +0530, Venu Byravarasu wrote:
-> As otg.h is containing lots of phy interface related
-> stuff, moving all phy interface related stuff to new
-> file named phy.h
+On 09/04/2012 06:17 PM, Steven Rostedt wrote:
+> On Tue, 2012-09-04 at 17:40 +0100, Pedro Alves wrote:
 > 
-> Signed-off-by: Venu Byravarasu <vbyravarasu@xxxxxxxxxx>
+>> BTW, you can also go a step further and remove the need to close with double }},
+>> with something like:
+>>
+>> #define do_for_each_ftrace_rec(pg, rec)                                          \
+>>         for (pg = ftrace_pages_start, rec = &pg->records[pg->index];             \
+>>              pg && rec == &pg->records[pg->index];                               \
+>>              pg = pg->next)                                                      \
+>>           for (rec = pg->records; rec < &pg->records[pg->index]; rec++)
+>>
+> 
+> Yeah, but why bother? It's hidden in a macro, and the extra '{ }' shows
+> that this is something "special".
 
-For some reason, I don't think that is a valid email address :(
+The point of both changes is that there's nothing special in the end
+at all.  It all just works...
+
+-- 
+Pedro Alves
 
