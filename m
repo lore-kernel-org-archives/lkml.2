@@ -1,301 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756644Ab2IDCFK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Sep 2012 22:05:10 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52632 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756580Ab2IDCFI (ORCPT
+	id S1756646Ab2IDCVp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Sep 2012 22:21:45 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:50611 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755084Ab2IDCVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Sep 2012 22:05:08 -0400
-X-AuditID: 9c93016f-b7cc0ae000000e9f-72-504561d1e770
-From: Namhyung Kim <namhyung@kernel.org>
-To: Feng Tang <feng.tang@intel.com>
-Cc: acme@redhat.com, mingo@elte.hu, a.p.zijlstra@chello.nl,
-        andi@firstfloor.org, dsahern@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/7] perf ui/browser: Add a browser for perf script
-References: <1346660073-20279-1-git-send-email-feng.tang@intel.com>
-	<1346660073-20279-6-git-send-email-feng.tang@intel.com>
-Date: Tue, 04 Sep 2012 10:57:35 +0900
-In-Reply-To: <1346660073-20279-6-git-send-email-feng.tang@intel.com> (Feng
-	Tang's message of "Mon, 3 Sep 2012 16:14:31 +0800")
-Message-ID: <87a9x6eei8.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 3 Sep 2012 22:21:43 -0400
+Subject: Re: [PATCH 5/5] virtio-scsi: introduce multiqueue support
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        kvm@vger.kernel.org, rusty@rustcorp.com.au, jasowang@redhat.com,
+        mst@redhat.com, virtualization@lists.linux-foundation.org,
+        Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
+        target-devel <target-devel@vger.kernel.org>
+In-Reply-To: <1346154857-12487-6-git-send-email-pbonzini@redhat.com>
+References: <1346154857-12487-1-git-send-email-pbonzini@redhat.com>
+	 <1346154857-12487-6-git-send-email-pbonzini@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 03 Sep 2012 19:21:34 -0700
+Message-ID: <1346725294.4162.79.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  3 Sep 2012 16:14:31 +0800, Feng Tang wrote:
-> Create a script browser, so that user can check all the available
-> scripts and run them inside the main perf report or annotation
-> browsers, for all the perf samples or samples belong to one
-> thread/symbol.
->
-> The work flow is, users can use function key to list all the available
-> scripts in system and chose one, which will be executed with
-> popen("perf script -s xxx.xx",) and all the output lines are put into
-> one ui browser, pressing 'q' or left arrow key will make it return
-> to previous browser.
-
-It could be used for TUI interface of perf script itself too (at least
-for --list option) IMHO.
-
-
->
-> Please be noted, most of the in-tree scripts with name xxxtop are
-> dynamically run and not supported by this static browser. 
-
-If so, wouldn't it be better adding a filter not to show those
-unsupported scripts somehow?
-
-
-> You can run the event_analyzing_sample.py for example.
->
-> Signed-off-by: Feng Tang <feng.tang@intel.com>
+On Tue, 2012-08-28 at 13:54 +0200, Paolo Bonzini wrote:
+> This patch adds queue steering to virtio-scsi.  When a target is sent
+> multiple requests, we always drive them to the same queue so that FIFO
+> processing order is kept.  However, if a target was idle, we can choose
+> a queue arbitrarily.  In this case the queue is chosen according to the
+> current VCPU, so the driver expects the number of request queues to be
+> equal to the number of VCPUs.  This makes it easy and fast to select
+> the queue, and also lets the driver optimize the IRQ affinity for the
+> virtqueues (each virtqueue's affinity is set to the CPU that "owns"
+> the queue).
+> 
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 > ---
->  tools/perf/Makefile              |    5 +
->  tools/perf/ui/browsers/scripts.c |  159 ++++++++++++++++++++++++++++++++++++++
->  tools/perf/ui/browsers/scripts.h |    5 +
->  3 files changed, 169 insertions(+), 0 deletions(-)
->  create mode 100644 tools/perf/ui/browsers/scripts.c
->  create mode 100644 tools/perf/ui/browsers/scripts.h
->
-> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-> index 722ddee..1fe23b9 100644
-> --- a/tools/perf/Makefile
-> +++ b/tools/perf/Makefile
-> @@ -569,6 +569,7 @@ else
->  		LIB_OBJS += $(OUTPUT)ui/browsers/annotate.o
->  		LIB_OBJS += $(OUTPUT)ui/browsers/hists.o
->  		LIB_OBJS += $(OUTPUT)ui/browsers/map.o
-> +		LIB_OBJS += $(OUTPUT)ui/browsers/scripts.o
->  		LIB_OBJS += $(OUTPUT)ui/progress.o
->  		LIB_OBJS += $(OUTPUT)ui/util.o
->  		LIB_OBJS += $(OUTPUT)ui/tui/setup.o
-> @@ -576,6 +577,7 @@ else
->  		LIB_OBJS += $(OUTPUT)ui/tui/helpline.o
->  		LIB_H += ui/browser.h
->  		LIB_H += ui/browsers/map.h
-> +		LIB_H += ui/browsers/scripts.h
->  		LIB_H += ui/keysyms.h
->  		LIB_H += ui/libslang.h
->  		LIB_H += ui/progress.h
-> @@ -878,6 +880,9 @@ $(OUTPUT)ui/browsers/hists.o: ui/browsers/hists.c $(OUTPUT)PERF-CFLAGS
->  $(OUTPUT)ui/browsers/map.o: ui/browsers/map.c $(OUTPUT)PERF-CFLAGS
->  	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
->
-> +$(OUTPUT)ui/browsers/scripts.o: ui/browsers/scripts.c $(OUTPUT)PERF-CFLAGS
-> +	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
-> +
->  $(OUTPUT)util/rbtree.o: ../../lib/rbtree.c $(OUTPUT)PERF-CFLAGS
->  	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
->
-> diff --git a/tools/perf/ui/browsers/scripts.c b/tools/perf/ui/browsers/scripts.c
-> new file mode 100644
-> index 0000000..7183795
-> --- /dev/null
-> +++ b/tools/perf/ui/browsers/scripts.c
-> @@ -0,0 +1,159 @@
-> +#include <elf.h>
-> +#include <newt.h>
-> +#include <inttypes.h>
-> +#include <sys/ttydefaults.h>
-> +#include <string.h>
-> +#include <linux/bitops.h>
-> +#include "../../util/sort.h"
-> +#include "../../util/util.h"
-> +#include "../../util/debug.h"
-> +#include "../../util/symbol.h"
-> +#include "../browser.h"
-> +#include "../helpline.h"
-> +#include "../libslang.h"
-> +#include "scripts.h"
-> +
-> +/* 2048 lines should be enough for a script output */
-> +#define MAX_LINES		2048
-> +
-> +/* 160 bytes for one output line */
-> +#define AVERAGE_LINE_LEN	160
-> +
-> +struct script_line {
-> +	struct list_head node;
-> +	char line[AVERAGE_LINE_LEN];
-> +};
-> +
-> +struct perf_script_browser {
-> +	struct ui_browser b;
-> +	struct list_head entries;
-> +	const char *script_name;
-> +	int nr_lines;
-> +};
-> +
-> +#define SCRIPT_NAMELEN	40
-> +#define SCRIPT_MAX_NO	32
-> +#define SCRIPT_FULLPATH_LEN 128
 
-I'm not sure these magic numbers are enough.
+Hey Paolo & Co,
 
+I've not had a chance to try this with tcm_vhost just yet, but noticed
+one thing wrt to assumptions about virtio_scsi_target_state->reqs access
+below..
 
+>  drivers/scsi/virtio_scsi.c |  162 +++++++++++++++++++++++++++++++++++---------
+>  1 files changed, 130 insertions(+), 32 deletions(-)
+> 
+> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+> index 6414ea0..0c4b096 100644
+> --- a/drivers/scsi/virtio_scsi.c
+> +++ b/drivers/scsi/virtio_scsi.c
+> @@ -26,6 +26,7 @@
+>  
+>  #define VIRTIO_SCSI_MEMPOOL_SZ 64
+>  #define VIRTIO_SCSI_EVENT_LEN 8
+> +#define VIRTIO_SCSI_VQ_BASE 2
+>  
+>  /* Command queue element */
+>  struct virtio_scsi_cmd {
+> @@ -59,9 +60,13 @@ struct virtio_scsi_vq {
+>  
+>  /* Per-target queue state */
+>  struct virtio_scsi_target_state {
+> -	/* Protects sg.  Lock hierarchy is tgt_lock -> vq_lock.  */
+> +	/* Protects sg, req_vq.  Lock hierarchy is tgt_lock -> vq_lock.  */
+>  	spinlock_t tgt_lock;
+>  
+> +	struct virtio_scsi_vq *req_vq;
 > +
-> +/* Return 0 on success */
-> +static int list_scripts(char *script_name)
+> +	atomic_t reqs;
+> +
+>  	/* For sglist construction when adding commands to the virtqueue.  */
+>  	struct scatterlist sg[];
+>  };
+> @@ -70,14 +75,15 @@ struct virtio_scsi_target_state {
+>  struct virtio_scsi {
+>  	struct virtio_device *vdev;
+>  
+> -	struct virtio_scsi_vq ctrl_vq;
+> -	struct virtio_scsi_vq event_vq;
+> -	struct virtio_scsi_vq req_vq;
+> -
+>  	/* Get some buffers ready for event vq */
+>  	struct virtio_scsi_event_node event_list[VIRTIO_SCSI_EVENT_LEN];
+>  
+> +	u32 num_queues;
+>  	struct virtio_scsi_target_state **tgt;
+> +
+> +	struct virtio_scsi_vq ctrl_vq;
+> +	struct virtio_scsi_vq event_vq;
+> +	struct virtio_scsi_vq req_vqs[];
+>  };
+>  
+>  static struct kmem_cache *virtscsi_cmd_cache;
+> @@ -112,6 +118,9 @@ static void virtscsi_complete_cmd(struct virtio_scsi *vscsi, void *buf)
+>  	struct virtio_scsi_cmd *cmd = buf;
+>  	struct scsi_cmnd *sc = cmd->sc;
+>  	struct virtio_scsi_cmd_resp *resp = &cmd->resp.cmd;
+> +	struct virtio_scsi_target_state *tgt = vscsi->tgt[sc->device->id];
+> +
+> +	atomic_dec(&tgt->reqs);
+>  
+
+As tgt->tgt_lock is taken in virtscsi_queuecommand_multi() before the
+atomic_inc_return(tgt->reqs) check, it seems like using atomic_dec() w/o
+smp_mb__after_atomic_dec or tgt_lock access here is not using atomic.h
+accessors properly, no..?
+
+>  	dev_dbg(&sc->device->sdev_gendev,
+>  		"cmd %p response %u status %#02x sense_len %u\n",
+> @@ -185,11 +194,13 @@ static void virtscsi_req_done(struct virtqueue *vq)
+>  {
+>  	struct Scsi_Host *sh = virtio_scsi_host(vq->vdev);
+>  	struct virtio_scsi *vscsi = shost_priv(sh);
+> +	int index = virtqueue_get_queue_index(vq) - VIRTIO_SCSI_VQ_BASE;
+> +	struct virtio_scsi_vq *req_vq = &vscsi->req_vqs[index];
+>  	unsigned long flags;
+>  
+> -	spin_lock_irqsave(&vscsi->req_vq.vq_lock, flags);
+> +	spin_lock_irqsave(&req_vq->vq_lock, flags);
+>  	virtscsi_vq_done(vscsi, vq, virtscsi_complete_cmd);
+> -	spin_unlock_irqrestore(&vscsi->req_vq.vq_lock, flags);
+> +	spin_unlock_irqrestore(&req_vq->vq_lock, flags);
+>  };
+>  
+>  static void virtscsi_complete_free(struct virtio_scsi *vscsi, void *buf)
+> @@ -429,10 +440,10 @@ static int virtscsi_kick_cmd(struct virtio_scsi_target_state *tgt,
+>  	return ret;
+>  }
+>  
+> -static int virtscsi_queuecommand(struct Scsi_Host *sh, struct scsi_cmnd *sc)
+> +static int virtscsi_queuecommand(struct virtio_scsi *vscsi,
+> +				 struct virtio_scsi_target_state *tgt,
+> +				 struct scsi_cmnd *sc)
+>  {
+> -	struct virtio_scsi *vscsi = shost_priv(sh);
+> -	struct virtio_scsi_target_state *tgt = vscsi->tgt[sc->device->id];
+>  	struct virtio_scsi_cmd *cmd;
+>  	int ret;
+>  
+> @@ -466,7 +477,7 @@ static int virtscsi_queuecommand(struct Scsi_Host *sh, struct scsi_cmnd *sc)
+>  	BUG_ON(sc->cmd_len > VIRTIO_SCSI_CDB_SIZE);
+>  	memcpy(cmd->req.cmd.cdb, sc->cmnd, sc->cmd_len);
+>  
+> -	if (virtscsi_kick_cmd(tgt, &vscsi->req_vq, cmd,
+> +	if (virtscsi_kick_cmd(tgt, tgt->req_vq, cmd,
+>  			      sizeof cmd->req.cmd, sizeof cmd->resp.cmd,
+>  			      GFP_ATOMIC) >= 0)
+>  		ret = 0;
+> @@ -475,6 +486,38 @@ out:
+>  	return ret;
+>  }
+>  
+> +static int virtscsi_queuecommand_single(struct Scsi_Host *sh,
+> +					struct scsi_cmnd *sc)
 > +{
-> +	char *buffer, *scripts[SCRIPT_MAX_NO], *scripts_path[SCRIPT_MAX_NO];
-> +	int i, num, choice, ret = -1;
+> +	struct virtio_scsi *vscsi = shost_priv(sh);
+> +	struct virtio_scsi_target_state *tgt = vscsi->tgt[sc->device->id];
 > +
-> +	/* Preset the script name to SCRIPT_NAMELEN */
-> +	buffer = zalloc(SCRIPT_MAX_NO * (SCRIPT_NAMELEN + SCRIPT_FULLPATH_LEN));
-> +	if (!buffer)
-> +		return ret;
-> +
-> +	for (i = 0; i < SCRIPT_MAX_NO; i++) {
-> +		scripts[i] = buffer + i * (SCRIPT_NAMELEN + SCRIPT_FULLPATH_LEN);
-> +		scripts_path[i] = scripts[i] + SCRIPT_NAMELEN;
-> +	}
-> +
-> +	num = find_scripts(scripts, scripts_path);
-> +	if (num) {
-
-It should be:
-
-	if (num > 0) {
-
-since the find_scripts() can return -1.
-
-
-> +		choice = ui__popup_menu(num, scripts);
-> +		if (choice < num && choice >= 0) {
-> +			strcpy(script_name, scripts_path[choice]);
-> +			ret = 0;
-> +		}
-> +	}
-> +
-> +	free(buffer);
-> +	return ret;
+> +	atomic_inc(&tgt->reqs);
+> +	return virtscsi_queuecommand(vscsi, tgt, sc);
 > +}
 > +
-> +static void script_browser__write(struct ui_browser *browser,
-> +				   void *entry, int row)
+
+...
+
+> +static int virtscsi_queuecommand_multi(struct Scsi_Host *sh,
+> +				       struct scsi_cmnd *sc)
 > +{
-> +	struct script_line *sline = list_entry(entry, struct script_line, node);
-> +	bool current_entry = ui_browser__is_current_entry(browser, row);
+> +	struct virtio_scsi *vscsi = shost_priv(sh);
+> +	struct virtio_scsi_target_state *tgt = vscsi->tgt[sc->device->id];
+> +	unsigned long flags;
+> +	u32 queue_num;
 > +
-> +	ui_browser__set_color(browser, current_entry ? HE_COLORSET_SELECTED :
-> +						       HE_COLORSET_NORMAL);
-> +
-> +	slsmg_write_nstring(sline->line, browser->width);
-> +}
-> +
-> +static int script_browser__run(struct perf_script_browser *self)
-> +{
-> +	int key;
-> +
-> +	if (ui_browser__show(&self->b, self->script_name,
-> +			     "Press <- or ESC to exit") < 0)
-> +		return -1;
-> +
-> +	while (1) {
-> +		key = ui_browser__run(&self->b, 0);
-> +
-> +		/* We can add some special key handling here if needed */
-> +		break;
+> +	/* Using an atomic_t for tgt->reqs lets the virtqueue handler
+> +	 * decrement it without taking the spinlock.
+> +	 */
+> +	spin_lock_irqsave(&tgt->tgt_lock, flags);
+> +	if (atomic_inc_return(&tgt->reqs) == 1) {
+> +		queue_num = smp_processor_id();
+> +		while (unlikely(queue_num >= vscsi->num_queues))
+> +			queue_num -= vscsi->num_queues;
+> +		tgt->req_vq = &vscsi->req_vqs[queue_num];
 > +	}
-> +
-> +	ui_browser__hide(&self->b);
-> +	return key;
+> +	spin_unlock_irqrestore(&tgt->tgt_lock, flags);
+> +	return virtscsi_queuecommand(vscsi, tgt, sc);
 > +}
 > +
-> +
-> +int script_browse(const char *script_opt)
-> +{
-> +	char cmd[160], script_name[128];
-> +	char *line = NULL;
-> +	size_t len = 0;
-> +	ssize_t retlen;
-> +	int ret = -1, nr_entries = 0;
-> +	FILE *fp;
-> +	struct script_line *sline;
-> +
-> +	struct perf_script_browser script = {
-> +		.b = {
-> +			.refresh    = ui_browser__list_head_refresh,
-> +			.seek	    = ui_browser__list_head_seek,
-> +			.write	    = script_browser__write,
-> +		},
-> +		.script_name = script_name,
-> +	};
-> +
-> +	INIT_LIST_HEAD(&script.entries);
-> +
-> +	/* Save each line of the output in one struct script_line object. */
-> +	sline = malloc((sizeof(*sline)) * MAX_LINES);
-> +	if (!sline)
-> +		return -1;
-> +
-> +	memset(script_name, 0, 128);
-> +	if (list_scripts(script_name))
-> +		goto exit;
-> +
-> +	if (script_opt)
-> +		sprintf(cmd, "perf script %s -s %s 2>&1", script_opt, script_name);
-> +	else
-> +		sprintf(cmd, "perf script -s %s 2>&1", script_name);
-> +
-> +	fp = popen(cmd, "r");
-> +	if (!fp)
-> +		goto exit;
-> +
-> +	while ((retlen = getline(&line, &len, fp)) != -1) {
-> +		strcpy(sline[nr_entries].line, line);
 
-What if the len is larger than sline[].line?
+The extra memory barriers to get this right for the current approach are
+just going to slow things down even more for virtio-scsi-mq..
 
+After hearing Jen's blk-mq talk last week in San Diego + having a look
+at the new code in linux-block.git/new-queue, the approach of using a
+per-cpu lock-less-list  hw -> sw queue that uses IPI + numa_node hints
+to make smart decisions for the completion path is making alot of sense.
 
-> +		list_add_tail(&sline[nr_entries].node, &script.entries);
-> +
-> +		if (script.b.width < retlen)
-> +			script.b.width = retlen;
-> +		nr_entries++;
+Jen's approach is what we will ultimately need to re-architect in SCSI
+core if we're ever going to move beyond the issues of legacy host_lock,
+so I'm wondering if maybe this is the direction that virtio-scsi-mq
+needs to go in as well..?
 
-I think you need this too:
+--nab
 
-		if (nr_entries >= MAX_LINES)
-			break;
-> +	}
-> +
-> +	script.nr_lines = nr_entries;
-> +	script.b.nr_entries = nr_entries;
-> +	script.b.entries = &script.entries;
-> +
-> +	ret = script_browser__run(&script);
-> +
-> +	if (line)
-> +		free(line);
-
-No pclose(fp) ?
-
-
-> +
-> +exit:
-> +	free(sline);
-> +	return ret;
-> +}
-> diff --git a/tools/perf/ui/browsers/scripts.h b/tools/perf/ui/browsers/scripts.h
-> new file mode 100644
-> index 0000000..011baa8
-> --- /dev/null
-> +++ b/tools/perf/ui/browsers/scripts.h
-> @@ -0,0 +1,5 @@
-> +#ifndef _PERF_UI_BROWSER_BROWSER_H_
-> +#define _PERF_UI_BROWSER_BROWSER_H_ 1
-
-I guess you want _PERF_UI_BROWSER_SCRIPT_H_ ?
-
-
-> +
-> +int script_browse(const char *script_opt);
-> +#endif /* _PERF_UI_BROWSER_BROWSER_H_ */
-> --
-> 1.7.1
