@@ -1,61 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757258Ab2IDO1e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 10:27:34 -0400
-Received: from mga09.intel.com ([134.134.136.24]:6455 "EHLO mga09.intel.com"
+	id S1757285Ab2IDO15 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 10:27:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24495 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757221Ab2IDO1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 10:27:32 -0400
-Subject: Re: [PATCH 0/3] Fix ACPI BGRT support for images located in EFI
- boot services memory
-From: Matt Fleming <matt.fleming@intel.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Len Brown <lenb@kernel.org>,
-        Olof Johansson <olof@lixom.net>, Matthew Garrett <mjg@redhat.com>,
-        David Howells <dhowells@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Jim Cromie <jim.cromie@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pawel Moll <pawel.moll@arm.com>, linux-acpi@vger.kernel.org,
-        linux-efi <linux-efi@vger.kernel.org>
-In-Reply-To: <cover.1346361959.git.josh@joshtriplett.org>
-References: <cover.1346361959.git.josh@joshtriplett.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-Date: Tue, 04 Sep 2012 15:27:20 +0100
-Message-ID: <1346768840.4244.52.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1757221Ab2IDO1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 10:27:55 -0400
+Date: Tue, 4 Sep 2012 16:27:45 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: linux-mm@kvack.org, riel@redhat.com, peterz@infradead.org,
+        hughd@google.com, daniel.santos@pobox.com,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Subject: Re: [PATCH 2/7] mm: fix potential anon_vma locking issue in
+ mprotect()
+Message-ID: <20120904142745.GE3334@redhat.com>
+References: <1346750457-12385-1-git-send-email-walken@google.com>
+ <1346750457-12385-3-git-send-email-walken@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346750457-12385-3-git-send-email-walken@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-30 at 14:28 -0700, Josh Triplett wrote:
-> The ACPI BGRT lets the OS access the BIOS logo image and its position on the
-> screen at boot time, allowing it to maintain that image on the screen until
-> ready to display something else, making boot more seamless.  This series fixes
-> support for accessing the boot logo image via the BGRT when the BIOS stores it
-> in EFI boot services memory, as recommended by the ACPI 5.0 spec.  Linux needs
-> to copy the image out of boot services memory before reclaiming boot services
-> memory.
+Hi Michel,
+
+On Tue, Sep 04, 2012 at 02:20:52AM -0700, Michel Lespinasse wrote:
+> This change fixes an anon_vma locking issue in the following situation:
+> - vma has no anon_vma
+> - next has an anon_vma
+> - vma is being shrunk / next is being expanded, due to an mprotect call
 > 
-> The first patch refactors EFI initialization to defer freeing boot services
-> memory until later in the boot process, after we have ACPI available.  The
-> second patch adds a helper function to look up existing EFI boot services
-> mappings, to avoid re-mapping them.  The third patch moves BGRT initialization
-> to before the reclamation of boot services memory, copies the logo at that
-> point, and reworks the existing BGRT driver to use that existing copy.
+> We need to take next's anon_vma lock to avoid races with rmap users
+> (such as page migration) while next is being expanded.
+> 
+> This change also removes an optimization which avoided taking anon_vma
+> lock during brk adjustments. We could probably make that optimization
+> work again, but the following anon rmap change would break it,
+> so I kept things as simple as possible here.
 
-Since we always end up doing a copy anyway, is there no way we could
-just copy the boot logo *without* deferring freeing the boot services
-code, e.g. move the copy before we do SetVirtualAddressMap()? I wouldn't
-be surprised if some implementations got really cranky if we accessed
-boot services data after we installed a new virtual memory map.
+Agreed, definitely a bug not to take the lock whenever any
+vm_start/vm_pgoff are moved, regardless if they're the next or current
+vma. Only vm_end can be moved without taking the lock.
 
-Besides, if we can avoid moving the efi_free_boot_services() call we can
-avoid littering init/main.c with more #ifdef CONFIG_X86 blocks.
+I'd prefer to fix it like this though:
 
+-	if (vma->anon_vma && (importer || start != vma->vm_start)) {
++	if ((vma->anon_vma && (importer || start != vma->vm_start) ||
++           (adjust_next && next->anon_vma)) {
+
+The strict fix is just to check also if we're moving next->vm_start or
+not, and the lock is only needed if next->anon_vma is set (otherwise
+there's no page yet set in the vma and we hold the mmap_sem in write
+mode clearly that prevents new pages to be instantiated under us).
+
+Plus we know if adjust_next is set, next is not null, so the above
+should work. The already existing (optimized) check for the "vma"
+should have been ok, so no need to de-optimize it.
+
+Then it's still fine to retain the VM_BUG_ON in the branch where
+anon_vma was not null.
+
+Thanks!
+Andrea
+
+> 
+> Signed-off-by: Michel Lespinasse <walken@google.com>
+> ---
+>  mm/mmap.c |   14 ++++++--------
+>  1 files changed, 6 insertions(+), 8 deletions(-)
+> 
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index cebc346ba0db..5e64c7dfc090 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -570,14 +570,12 @@ again:			remove_next = 1 + (end > next->vm_end);
+>  
+>  	vma_adjust_trans_huge(vma, start, end, adjust_next);
+>  
+> -	/*
+> -	 * When changing only vma->vm_end, we don't really need anon_vma
+> -	 * lock. This is a fairly rare case by itself, but the anon_vma
+> -	 * lock may be shared between many sibling processes.  Skipping
+> -	 * the lock for brk adjustments makes a difference sometimes.
+> -	 */
+> -	if (vma->anon_vma && (importer || start != vma->vm_start)) {
+> -		anon_vma = vma->anon_vma;
+> +	anon_vma = vma->anon_vma;
+> +	if (!anon_vma && adjust_next)
+> +		anon_vma = next->anon_vma;
+> +	if (anon_vma) {
+> +		VM_BUG_ON(adjust_next && next->anon_vma &&
+> +			  anon_vma != next->anon_vma);
+>  		anon_vma_lock(anon_vma);
+>  	}
+>  
+> -- 
+> 1.7.7.3
+> 
