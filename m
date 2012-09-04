@@ -1,68 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932803Ab2IDV7z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 17:59:55 -0400
-Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:42324 "EHLO
-	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757696Ab2IDV7y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 17:59:54 -0400
-Message-ID: <1346795661.4732.229.camel@misato.fc.hp.com>
-Subject: Re: [PATCH] ACPI: Enable SCI_EMULATE to manually simulate physical
- hotplug testing.
-From: Toshi Kani <toshi.kani@hp.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ashok Raj <ashok.raj@intel.com>
-Date: Tue, 04 Sep 2012 15:54:21 -0600
-In-Reply-To: <CAE9FiQVT-0zmE9jyyoWmzM5dd-XAXmHgT+vGqSUKgE2yuPOOvg@mail.gmail.com>
-References: <1346707623-31476-1-git-send-email-yinghai@kernel.org>
-	 <1346776024.4732.196.camel@misato.fc.hp.com>
-	 <CAE9FiQXN1kDwSPTH5UWvDPbrtqGgcEKR4dWwYrP57H4aSA-UMA@mail.gmail.com>
-	 <1346794495.4732.221.camel@misato.fc.hp.com>
-	 <CAE9FiQVT-0zmE9jyyoWmzM5dd-XAXmHgT+vGqSUKgE2yuPOOvg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S932780Ab2IDWCg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 18:02:36 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:48817
+	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S932503Ab2IDWCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 18:02:35 -0400
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        ben@decadent.org.uk
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 1/1] Drivers: hv: kvp: Copy the address family information
+Date: Tue,  4 Sep 2012 15:20:19 -0700
+Message-Id: <1346797219-25885-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-09-04 at 14:46 -0700, Yinghai Lu wrote:
-> On Tue, Sep 4, 2012 at 2:34 PM, Toshi Kani <toshi.kani@hp.com> wrote:
-> > On Tue, 2012-09-04 at 12:17 -0700, Yinghai Lu wrote:
-> >  - If a full path is specified in acpi_name, it ignores the arg hsb
-> > ("\_SB").
-> >  - If a relative path is specified in acpi_name, it appends the arg hsb.
-> >
-> > So, the code looks good to me; assuming that is the intent.
-> >
-> > However, the error message below will show up like "\_SB.\_SB.PCIB" when
-> > a full path is specified.
-> 
-> I always use
-> echo "\_SB.PCIB 3" > /sys/kernel/debug/acpi/sci_notify
-> 
-> and it works.
-> 
-> so assume that function can accept \_SB.PCIB and PCIB both.
+Copy the address family information.
 
-I agree.  And that's what I tried to say.
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+---
+ drivers/hv/hv_kvp.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-
-The error message below will be confusing when a (invalid) full path
-name is specified, though.
-
->> +     if (ACPI_FAILURE(status) || ACPI_FAILURE(status1)) {
->> +             pr_err(PREFIX
->> +     "acpi getting handle to <\\_SB.%s> failed inside notify_client
-\n",
->> +                     acpi_name);
->> +             return;
->> +     }
-
-
-Thanks,
--Toshi
+diff --git a/drivers/hv/hv_kvp.c b/drivers/hv/hv_kvp.c
+index d906050..ed50e9e 100644
+--- a/drivers/hv/hv_kvp.c
++++ b/drivers/hv/hv_kvp.c
+@@ -256,6 +256,8 @@ static int process_ob_ipinfo(void *in_msg, void *out_msg, int op)
+ 
+ 		out->kvp_ip_val.dhcp_enabled =
+ 			in->body.kvp_ip_val.dhcp_enabled;
++		out->kvp_ip_val.addr_family =
++			in->body.kvp_ip_val.addr_family;
+ 	}
+ 
+ 	return 0;
+-- 
+1.7.4.1
 
