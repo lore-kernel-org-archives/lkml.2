@@ -1,61 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756885Ab2IDPju (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 11:39:50 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12898 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753204Ab2IDPjt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 11:39:49 -0400
-X-Authority-Analysis: v=2.0 cv=Hsb06jvS c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=0-4HISFYYNcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=_XgnefJ09S4A:10 a=imTROTZUkysA:10 a=SWp5yrndY2wA:10 a=VQ8427OFV4AA:10 a=0pmlNgc8wlsA:10 a=yvFZqJx0NNwA:10 a=TiR09M0h3c4A:10 a=-rGry1Sg3DAA:10 a=71224Grfh94A:10 a=S_QucjnRiEgA:10 a=-SyUPZm4LSYA:10 a=CEmn-lZV0i4A:10 a=F1znnlXCbRXv_Q39WwUA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1346773188.27919.13.camel@gandalf.local.home>
-Subject: Re: [PATCH] Add feature-removal-schedule.txt removal to
- feature-removal-schedule.txt
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Tue, 04 Sep 2012 11:39:48 -0400
-In-Reply-To: <CAM_iQpV9163UKQt8Kvroc6JyMQnv1tqG1rS5M2CBWzbo7XvJXQ@mail.gmail.com>
-References: <1346091725.19381.10.camel@pippen.local.home>
-	 <CAM_iQpV9163UKQt8Kvroc6JyMQnv1tqG1rS5M2CBWzbo7XvJXQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756909Ab2IDPoi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 11:44:38 -0400
+Received: from etezian.org ([198.101.225.253]:57865 "EHLO mail.etezian.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751075Ab2IDPoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 11:44:37 -0400
+Date: Tue, 4 Sep 2012 17:44:30 +0200
+From: Andi Shyti <andi@etezian.org>
+To: Dong Aisheng <b29396@freescale.com>,
+        Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: Andi Shyti <andi@etezian.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "lrg@ti.com" <lrg@ti.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        Zhao Richard-B20223 <B20223@freescale.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>
+Subject: Re: [PATCH v5 1/4] mfd: add syscon driver based on regmap
+Message-ID: <20120904154430.GA4361@Jack.Whiskey>
+References: <1346728811-25788-1-git-send-email-b29396@freescale.com>
+ <1346728811-25788-2-git-send-email-b29396@freescale.com>
+ <20120904113545.GD4657@jack.whiskey>
+ <20120904114601.GB13046@shlinux2.ap.freescale.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120904114601.GB13046@shlinux2.ap.freescale.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-08-29 at 09:28 +0800, Cong Wang wrote:
-> On Tue, Aug 28, 2012 at 2:22 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> > The file feature-removal-schedule.txt is ignored by most people except
-> > for people that add to it. It's more of a global TODO list for
-> > developers than being anything useful by anyone.
-> >
-> > Add a feature removal of removing the feature-removal-schedule.txt.
-> >
-> 
-> Hi, Steven,
-> 
-> I sometimes remind people to remove features scheduled in this file,
-> by sending a proposed patch. ;)
+On Tue, Sep 04, 2012 at 07:46:02PM +0800, Dong Aisheng wrote:
+> On Tue, Sep 04, 2012 at 07:35:45PM +0800, Andi Shyti wrote:
+> > Hi Dong,
+> > 
+> > On Tue, Sep 04, 2012 at 11:20:08AM +0800, Dong Aisheng wrote:
+> > > +static int __devinit syscon_probe(struct platform_device *pdev)
+> > > +{
+> > > +	struct device *dev = &pdev->dev;
+> > 
+> > Do we really need this variable? Anyway you are using it only
+> > once in the dev_info.
+> > 
+> Okay, i can remove it.
 
-At Kernel Summit, Linus went on a rant about this file. He said he hates
-it and is totally useless. Basically, it is only used by us developers,
-and is not used by normal users. As it is a dumping ground for all
-developers, this file becomes the biggest conflict during merges that
-Linus does.
+On Tue, Sep 04, 2012 at 04:16:59PM +0400, Sergei Shtylyov wrote:
+>    But Dong definitely could use it more than once, so it seems useful.
 
-There are better ways to tell users something is about to go away. My
-preference is a nasty WARN_ON_ONCE() in the code when the feature is
-used. People tend to report call traces, and you can either tell the
-person, "don't use this" or you know that it is something that is
-actually used and you can't remove it.
+[sorry for pasting your e-mail here]
+yes, but he is using it only once and, it's easily
+reachable with pdev->dev and anyway Dong is using &pdev->dev.
 
--- Steve
+> > > +
+> > > +	syscon = devm_kzalloc(&pdev->dev, sizeof(struct syscon),
+> > > +			    GFP_KERNEL);
+> > 
+> > in case of error you are not freeing syscon.
+> Do we need it for managed resource of syscon?
 
+Yes, you're right :)
 
+> > Moreover, in my opinion, some dev_err more should not heart
+                                                           ^^
+as Sergei points out is 'hurt'... mistype :)
+
+> There's no much error cases here, most of them rarely fails and i don't feel
+> we really need add.
+> I don't know what dev_err you suggested to add?
+
+For example some failure cases, anyway i read quickly the code
+and I don't big see issues.
+
+Andi
