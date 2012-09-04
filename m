@@ -1,68 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932733Ab2IDU1t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 16:27:49 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:19930 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932673Ab2IDU1s (ORCPT
+	id S932739Ab2IDU3f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 16:29:35 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:49549 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932673Ab2IDU3e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 16:27:48 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xensource.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH] xen/p2m: Fix one by off error in checking the P2M tree directory.
-Date: Tue,  4 Sep 2012 16:17:14 -0400
-Message-Id: <1346789834-30618-1-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.6
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Tue, 4 Sep 2012 16:29:34 -0400
+X-Originating-IP: 217.70.178.129
+X-Originating-IP: 173.246.103.110
+Date: Tue, 4 Sep 2012 13:29:26 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Matt Fleming <matt.fleming@intel.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Len Brown <lenb@kernel.org>,
+        Olof Johansson <olof@lixom.net>, Matthew Garrett <mjg@redhat.com>,
+        David Howells <dhowells@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Jim Cromie <jim.cromie@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pawel Moll <pawel.moll@arm.com>, linux-acpi@vger.kernel.org,
+        linux-efi <linux-efi@vger.kernel.org>
+Subject: Re: [PATCH 0/3] Fix ACPI BGRT support for images located in EFI boot
+ services memory
+Message-ID: <20120904202925.GA5805@jtriplet-mobl1>
+References: <cover.1346361959.git.josh@joshtriplett.org>
+ <1346768840.4244.52.camel@mfleming-mobl1.ger.corp.intel.com>
+ <20120904175952.GA4103@jtriplet-mobl1>
+ <5046442E.7020207@zytor.com>
+ <20120904194523.GA5064@jtriplet-mobl1>
+ <50466363.9010900@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50466363.9010900@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We would the full P2M top directory from 0->MAX_DOMAIN_PAGES (inclusive).
+On Tue, Sep 04, 2012 at 01:24:03PM -0700, H. Peter Anvin wrote:
+> On 09/04/2012 12:45 PM, Josh Triplett wrote:
+> >>
+> >>There are some platforms which have bugs in this area, so there are
+> >>other reasons to defer freeing up boot memory until as late in the
+> >>boot process as we can possibly get away with.
+> >>
+> >>free_initmem() is presuambly the place that makes most sense.
+> >
+> >You're suggesting a call from free_initmem() to
+> >efi_free_boot_services()?  Or, from init_post() right before the call to
+> >free_initmem()?
+> 
+> free_initmem() is arch-specific, so probably the latter.
 
-Which meant that if the kernel was compiled with MAX_DOMAIN_PAGES=512
-we would try to use the 512th entry. Fortunately for us the p2m_top_index
-has a check for this:
+OK, will do.
 
- BUG_ON(pfn >= MAX_P2M_PFN);
+> >>This
+> >>is EFI-specific but not x86-specific, let's not commingle those
+> >>concepts, please...
+> >
+> >init/main.c already calls the x86-specific efi_enter_virtual_mode
+> >(defined in arch/x86/platform/efi/efi.c), and I split the call to the
+> >x86-specific efi_free_boot_services out of that.  Neither of those
+> >functions exists on non-x86 platforms, and thus I mirrored the #ifdef
+> >currently wrapped around efi_enter_virtual_mode for the new call to
+> >efi_free_boot_services.  While it might make sense for that code to
+> >exist on non-x86 EFI platforms, it currently doesn't.  At best, I could
+> >add static inline stubs to linux/efi.h for those functions to avoid the
+> >ifdefs, but as far as I can tell the same issue applies to quite a few
+> >more functions in efi.h.
+> >
+> >Would you like me to add the static inline stubs for the couple of
+> >functions called from init/main.c, or leave the #ifdefs?
+> >
+> 
+> I think that would really help clean things up.
 
-which we hit and saw this:
+Fair enough.  I'll send v2 shortly.
 
-(XEN) domain_crash_sync called from entry.S
-(XEN) Domain 0 (vcpu#0) crashed on cpu#0:
-(XEN) ----[ Xen-4.1.2-OVM  x86_64  debug=n  Tainted:    C ]----
-(XEN) CPU:    0
-(XEN) RIP:    e033:[<ffffffff819cadeb>]
-(XEN) RFLAGS: 0000000000000212   EM: 1   CONTEXT: pv guest
-(XEN) rax: ffffffff81db5000   rbx: ffffffff81db4000   rcx: 0000000000000000
-(XEN) rdx: 0000000000480211   rsi: 0000000000000000   rdi: ffffffff81db4000
-(XEN) rbp: ffffffff81793db8   rsp: ffffffff81793d38   r8:  0000000008000000
-(XEN) r9:  4000000000000000   r10: 0000000000000000   r11: ffffffff81db7000
-(XEN) r12: 0000000000000ff8   r13: ffffffff81df1ff8   r14: ffffffff81db6000
-(XEN) r15: 0000000000000ff8   cr0: 000000008005003b   cr4: 00000000000026f0
-(XEN) cr3: 0000000661795000   cr2: 0000000000000000
-
-Fixes-Oracle-Bug: 14570662
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/xen/p2m.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index 0bfaf5b..af11f00 100644
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -695,7 +695,7 @@ bool __init early_can_reuse_p2m_middle(unsigned long set_pfn, unsigned long set_
- 	if (p2m_index(set_pfn))
- 		return false;
- 
--	for (pfn = 0; pfn <= MAX_DOMAIN_PAGES; pfn += P2M_PER_PAGE) {
-+	for (pfn = 0; pfn < MAX_DOMAIN_PAGES; pfn += P2M_PER_PAGE) {
- 		topidx = p2m_top_index(pfn);
- 
- 		if (!p2m_top[topidx])
--- 
-1.7.7.6
-
+- Josh Triplett
