@@ -1,141 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758744Ab2IEPWL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 11:22:11 -0400
-Received: from smtprelay-b11.telenor.se ([62.127.194.20]:38449 "EHLO
-	smtprelay-b11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752246Ab2IEPWJ (ORCPT
+	id S1758738Ab2IEPW6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 11:22:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:38567 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751999Ab2IEPW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 11:22:09 -0400
-X-SENDER-IP: [85.230.170.20]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhhNAAdtR1BV5qoUPGdsb2JhbABFij+wYxkBAQEBHhkNJ4IhAQUnLxMBDxAIETg5ChQGE4gRunsUkX8Dm0eNEQ
-X-IronPort-AV: E=Sophos;i="4.80,375,1344204000"; 
-   d="scan'208";a="187259914"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>,
-        Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Subject: [PATCH 2/2] HID: hid-multitouch: Add Flatfrog support
-Date: Wed,  5 Sep 2012 17:27:37 +0200
-Message-Id: <1346858857-281-2-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1346858857-281-1-git-send-email-rydberg@euromail.se>
-References: <1346858857-281-1-git-send-email-rydberg@euromail.se>
+	Wed, 5 Sep 2012 11:22:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120905140304.5c5c58a4@pyramind.ukuu.org.uk>
+References: <s5hd3222azc.wl%tiwai@suse.de>
+	<CACVXFVP-A7M2dG9bOvAnpzR60=iTYSw=WCOEwgo9KeuioxKanQ@mail.gmail.com>
+	<s5hd32122hw.wl%tiwai@suse.de>
+	<CACVXFVNE1GHAQJTrQy2AYgUBfq5kv42EjJJ7J+2q3jzXG-E=MQ@mail.gmail.com>
+	<s5hpq61j9qx.wl%tiwai@suse.de>
+	<CACVXFVOu86J5=1DLDrpLCd-pyk1jm2HT7ks1uzCXm9nURCRo2A@mail.gmail.com>
+	<20120905140304.5c5c58a4@pyramind.ukuu.org.uk>
+Date: Wed, 5 Sep 2012 23:22:55 +0800
+Message-ID: <CACVXFVO+OgvLoFMcDD0gcQnbzUW=SyR=wiSMyT-FtpjWW5sWdw@mail.gmail.com>
+Subject: Re: A workaround for request_firmware() stuck in module_init
+From: Ming Lei <ming.lei@canonical.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Takashi Iwai <tiwai@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Kay Sievers <kay@vrfy.org>,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for the Flatfrog Multitouch 3200 panel. This panel
-advertises some fields that it does not use, hence the new quirks.
+On Wed, Sep 5, 2012 at 9:03 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> If the driver is built in kernel, the request_firmware in .probe() may
+>> prolong kernel init, and it might be a problem. But looks it is not a
+>> big deal since most of drivers are built as module.
+>
+> Doing it by deferring the load also fixes that. The built in ones will
+> defer their final probe until the firmware appears and all will be well.
 
-Cc: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
- drivers/hid/hid-ids.h        |  3 +++
- drivers/hid/hid-multitouch.c | 34 ++++++++++++++++++++++++++--------
- 2 files changed, 29 insertions(+), 8 deletions(-)
+Yes, deferring the load may fix the built in case, but which also
+introduces much work on changes of current drivers. In fact,
+there are few guys who complained the built in case.
 
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 1dcb76f..c843db9 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -283,6 +283,9 @@
- #define USB_VENDOR_ID_EMS		0x2006
- #define USB_DEVICE_ID_EMS_TRIO_LINKER_PLUS_II 0x0118
- 
-+#define USB_VENDOR_ID_FLATFROG		0x25b5
-+#define USB_DEVICE_ID_MULTITOUCH_3200	0x0002
-+
- #define USB_VENDOR_ID_ESSENTIAL_REALITY	0x0d7f
- #define USB_DEVICE_ID_ESSENTIAL_REALITY_P5 0x0100
- 
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index 340db0e..ddd2fb0 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -51,6 +51,8 @@ MODULE_LICENSE("GPL");
- #define MT_QUIRK_VALID_IS_INRANGE	(1 << 5)
- #define MT_QUIRK_VALID_IS_CONFIDENCE	(1 << 6)
- #define MT_QUIRK_SLOT_IS_CONTACTID_MINUS_ONE	(1 << 8)
-+#define MT_QUIRK_NO_AREA		(1 << 9)
-+#define MT_QUIRK_NO_PRESSURE		(1 << 10)
- 
- struct mt_slot {
- 	__s32 x, y, p, w, h;
-@@ -115,6 +117,7 @@ struct mt_device {
- #define MT_CLS_EGALAX_SERIAL			0x0104
- #define MT_CLS_TOPSEED				0x0105
- #define MT_CLS_PANASONIC			0x0106
-+#define MT_CLS_FLATFROG				0x0107
- 
- #define MT_DEFAULT_MAXCONTACT	10
- 
-@@ -197,6 +200,12 @@ static struct mt_class mt_classes[] = {
- 		.quirks = MT_QUIRK_NOT_SEEN_MEANS_UP,
- 		.maxcontacts = 4 },
- 
-+	{ .name = MT_CLS_FLATFROG,
-+		.quirks = MT_QUIRK_NOT_SEEN_MEANS_UP |
-+			MT_QUIRK_NO_AREA |
-+			MT_QUIRK_NO_PRESSURE,
-+		.sn_move = 2048,
-+	},
- 	{ }
- };
- 
-@@ -364,26 +373,30 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 		case HID_DG_WIDTH:
- 			hid_map_usage(hi, usage, bit, max,
- 					EV_ABS, ABS_MT_TOUCH_MAJOR);
--			set_abs(hi->input, ABS_MT_TOUCH_MAJOR, field,
--				cls->sn_width);
-+			if (!(cls->quirks & MT_QUIRK_NO_AREA))
-+				set_abs(hi->input, ABS_MT_TOUCH_MAJOR, field,
-+					cls->sn_width);
- 			mt_store_field(usage, td, hi);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_HEIGHT:
- 			hid_map_usage(hi, usage, bit, max,
- 					EV_ABS, ABS_MT_TOUCH_MINOR);
--			set_abs(hi->input, ABS_MT_TOUCH_MINOR, field,
--				cls->sn_height);
--			input_set_abs_params(hi->input,
-+			if (!(cls->quirks & MT_QUIRK_NO_AREA)) {
-+				set_abs(hi->input, ABS_MT_TOUCH_MINOR, field,
-+					cls->sn_height);
-+				input_set_abs_params(hi->input,
- 					ABS_MT_ORIENTATION, 0, 1, 0, 0);
-+			}
- 			mt_store_field(usage, td, hi);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_TIPPRESSURE:
- 			hid_map_usage(hi, usage, bit, max,
- 					EV_ABS, ABS_MT_PRESSURE);
--			set_abs(hi->input, ABS_MT_PRESSURE, field,
--				cls->sn_pressure);
-+			if (!(cls->quirks & MT_QUIRK_NO_PRESSURE))
-+				set_abs(hi->input, ABS_MT_PRESSURE, field,
-+					cls->sn_pressure);
- 			mt_store_field(usage, td, hi);
- 			td->last_field_index = field->index;
- 			return 1;
-@@ -860,6 +873,11 @@ static const struct hid_device_id mt_devices[] = {
- 		MT_USB_DEVICE(USB_VENDOR_ID_ELO,
- 			USB_DEVICE_ID_ELO_TS2515) },
- 
-+	/* Flatfrog Panels */
-+	{ .driver_data = MT_CLS_FLATFROG,
-+		MT_USB_DEVICE(USB_VENDOR_ID_FLATFROG,
-+			USB_DEVICE_ID_MULTITOUCH_3200) },
-+
- 	/* GeneralTouch panel */
- 	{ .driver_data = MT_CLS_DUAL_INRANGE_CONTACTNUMBER,
- 		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
--- 
-1.7.12
+The current complaint is from that udev may timeout request inside probe()
+when drivers are built as module. As pointed by Linus and Benjamin,
+it is better to fix it in udev, and looks not good to introduce great changes
+(such as Takashi's defer probe patch) in kernel to workaround the problem.
 
+>
+> If your rootfs needs firmware not in your initrd you already broke it and
+> there is a certain level beyond which you just have to give up trying to
+> save people from themselves.
+>
+> It may actually make sense to push more of it into the core driver layer
+> and take some of the ability to make mistakes away from driver authors.
+> For the general case of "load firmware if we see one" there isn't really
+> any reason we can't have a firmware_name entry in the probe table
+> entries themselves. If that was present the core bus probe would kick a
+
+Linus has said that he doesn't like to load firmware in probe(), but in some
+situation the drivers have to load firmware in its probe():
+
+        http://marc.info/?l=linux-kernel&m=134592122811866&w=2
+
+In fact, it is better for drivers to load firmware just when user wants to use
+the device, and some drivers have already changed to load firmware in
+the open() callback.
+
+So looks loading firmware always before probe in driver core is
+against the above idea.
+
+> firmware load off and only when the firmware had loaded would it call
+> ->probe with dev->firmware pointing at a refcounted firmware struct.
+
+IMO, introduce refcount for the firmware doesn't make sense. The lifetime
+of firmware is completely different with lifetime of driver or device:
+
+    - firmware needn't be kept in memory in the device/driver's lifetime, and
+      should be loaded just in need, and be released after downloading
+      it into device.
+
+   - sometimes devices may disappear, but it is better to keep the
+     firmware in memory, for example, device may be disconnected
+     during resume but will come back later.
+
+>
+> At that point it should be much faster to fix existing drivers and much
+> harder for a random device driver to get it wrong. We can even add
+> helpers which manage dev->firmware, and free the relevant objects when
+> needed, plus doing automatic ref/deref on probe/remove so that for a
+
+As said above, ref/deref on probe/remove is not a good idea since
+we needn't to keep the firmware in memory during the whole device/driver
+lifetime.
+
+Thanks,
+--
+Ming Lei
