@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758448Ab2IEKgQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 06:36:16 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:55811 "EHLO song.cn.fujitsu.com"
+	id S932675Ab2IEKic (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 06:38:32 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:18290 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751748Ab2IEKgO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 06:36:14 -0400
+	id S1751748Ab2IEKgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 06:36:16 -0400
 X-IronPort-AV: E=Sophos;i="4.80,373,1344182400"; 
-   d="scan'208";a="5789506"
+   d="scan'208";a="5789510"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
 Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH 01/11 V5] workqueue: ensure the wq_worker_sleeping() see the  right flags
-Date: Wed, 5 Sep 2012 18:37:38 +0800
-Message-Id: <1346841475-4422-2-git-send-email-laijs@cn.fujitsu.com>
+Subject: [PATCH 04/11 V5] workqueue: remove WORKER_REBIND
+Date: Wed, 5 Sep 2012 18:37:41 +0800
+Message-Id: <1346841475-4422-5-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1346841475-4422-1-git-send-email-laijs@cn.fujitsu.com>
 References: <1346841475-4422-1-git-send-email-laijs@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/05 18:35:49,
+ 2012/09/05 18:35:50,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2012/09/05 18:35:50,
 	Serialize complete at 2012/09/05 18:35:50
@@ -26,43 +26,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The compiler may compile this code into TWO write/modify instructions.
-		worker->flags &= ~WORKER_UNBOUND;
-		worker->flags |= WORKER_REBIND;
+exile operation       = list_del_init(&worker->entry).
+and destory operation -> list_del_init(&worker->entry).
 
-so the other CPU may see the temporary of worker->flags which has
-not WORKER_UNBOUND nor WORKER_REBIND, it will wrongly do local wake up.
+so we can use list_empty(&worker->entry) to know: does the worker
+has been exiled or killed.
 
-so we use one write/modify instruction explicitly instead.
-
-This bug will not occur on idle workers, because they have another
-WORKER_NOT_RUNNING flags.
+WORKER_REBIND is not need any more, remove it to reduce the states
+of workers.
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- kernel/workqueue.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+ kernel/workqueue.c |   21 ++++++++-------------
+ 1 files changed, 8 insertions(+), 13 deletions(-)
 
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 85bd340..050b2a5 100644
+index ba0ba33..6bf4185 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -1739,10 +1739,13 @@ retry:
- 	for_each_busy_worker(worker, i, pos, gcwq) {
- 		struct work_struct *rebind_work = &worker->rebind_work;
- 		struct workqueue_struct *wq;
-+		unsigned long worker_flags = worker->flags;
+@@ -72,11 +72,10 @@ enum {
+ 	WORKER_DIE		= 1 << 1,	/* die die die */
+ 	WORKER_IDLE		= 1 << 2,	/* is idle */
+ 	WORKER_PREP		= 1 << 3,	/* preparing to run works */
+-	WORKER_REBIND		= 1 << 5,	/* mom is home, come back */
+ 	WORKER_CPU_INTENSIVE	= 1 << 6,	/* cpu intensive */
+ 	WORKER_UNBOUND		= 1 << 7,	/* worker is unbound */
  
- 		/* morph UNBOUND to REBIND */
--		worker->flags &= ~WORKER_UNBOUND;
--		worker->flags |= WORKER_REBIND;
-+		worker_flags &= ~WORKER_UNBOUND;
-+		worker_flags |= WORKER_REBIND;
-+		/* ensure the wq_worker_sleeping() see the right flags */
-+		ACCESS_ONCE(worker->flags) = worker_flags;
+-	WORKER_NOT_RUNNING	= WORKER_PREP | WORKER_REBIND | WORKER_UNBOUND |
++	WORKER_NOT_RUNNING	= WORKER_PREP | WORKER_UNBOUND |
+ 				  WORKER_CPU_INTENSIVE,
  
- 		if (test_and_set_bit(WORK_STRUCT_PENDING_BIT,
- 				     work_data_bits(rebind_work)))
+ 	NR_WORKER_POOLS		= 2,		/* # worker pools per gcwq */
+@@ -1612,7 +1611,7 @@ __acquires(&gcwq->lock)
+ 
+ /*
+  * Rebind an idle @worker to its CPU. worker_thread() will test
+- * %WORKER_REBIND before leaving idle and call this function.
++ * worker->entry before leaving idle and call this function.
+  */
+ static void idle_worker_rebind(struct worker *worker)
+ {
+@@ -1621,7 +1620,6 @@ static void idle_worker_rebind(struct worker *worker)
+ 	if (worker_maybe_bind_and_lock(worker))
+ 		worker_clr_flags(worker, WORKER_UNBOUND);
+ 
+-	worker_clr_flags(worker, WORKER_REBIND);
+ 	list_add(&worker->entry, &worker->pool->idle_list);
+ 	spin_unlock_irq(&gcwq->lock);
+ }
+@@ -1674,11 +1672,9 @@ static void rebind_workers(struct global_cwq *gcwq)
+ 	for_each_worker_pool(pool, gcwq)
+ 		lockdep_assert_held(&pool->manager_mutex);
+ 
+-	/* set REBIND and kick idle ones */
++	/* exile and kick idle ones */
+ 	for_each_worker_pool(pool, gcwq) {
+ 		list_for_each_entry_safe(worker, n, &pool->idle_list, entry) {
+-			worker->flags |= WORKER_REBIND;
+-
+ 			/* exile idle workers */
+ 			list_del_init(&worker->entry);
+ 
+@@ -2115,7 +2111,7 @@ __acquires(&gcwq->lock)
+ 	 * necessary to avoid spurious warnings from rescuers servicing the
+ 	 * unbound or a disassociated gcwq.
+ 	 */
+-	WARN_ON_ONCE(!(worker->flags & (WORKER_UNBOUND | WORKER_REBIND)) &&
++	WARN_ON_ONCE(!(worker->flags & WORKER_UNBOUND) &&
+ 		     !(gcwq->flags & GCWQ_DISASSOCIATED) &&
+ 		     raw_smp_processor_id() != gcwq->cpu);
+ 
+@@ -2239,18 +2235,17 @@ static int worker_thread(void *__worker)
+ woke_up:
+ 	spin_lock_irq(&gcwq->lock);
+ 
+-	/*
+-	 * DIE can be set only while idle and REBIND set while busy has
+-	 * @worker->rebind_work scheduled.  Checking here is enough.
+-	 */
+-	if (unlikely(worker->flags & (WORKER_REBIND | WORKER_DIE))) {
++	/* Is it still home ? */
++	if (unlikely(list_empty(&worker->entry))) {
+ 		spin_unlock_irq(&gcwq->lock);
+ 
++		/* reason: DIE */
+ 		if (worker->flags & WORKER_DIE) {
+ 			worker->task->flags &= ~PF_WQ_WORKER;
+ 			return 0;
+ 		}
+ 
++		/* reason: idle rebind */
+ 		idle_worker_rebind(worker);
+ 		goto woke_up;
+ 	}
 -- 
 1.7.4.4
 
