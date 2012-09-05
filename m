@@ -1,50 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759223Ab2IETJw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 15:09:52 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:60584 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754365Ab2IETJv (ORCPT
+	id S1759198Ab2IETNa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 15:13:30 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54402 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754643Ab2IETN3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 15:09:51 -0400
+	Wed, 5 Sep 2012 15:13:29 -0400
+Date: Wed, 5 Sep 2012 20:13:12 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Catalin Marinas <catalin.marinas@arm.com>, linux-arch@vger.kernel.org,
+        Marc Zyngier <marc.zyngier@arm.com>, Will Deacon <will.deacon@arm.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 20/31] arm64: User access library function
+Message-ID: <20120905191312.GH24085@n2100.arm.linux.org.uk>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com> <1344966752-16102-21-git-send-email-catalin.marinas@arm.com> <201208151449.54834.arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <20120905184708.GC16230@one.firstfloor.org>
-References: <20120905102156.9423.27806.stgit@localhost.localdomain>
-	<20120905103237.9726.56131.stgit@localhost.localdomain>
-	<20120905184708.GC16230@one.firstfloor.org>
-Date: Wed, 5 Sep 2012 12:09:50 -0700
-Message-ID: <CA+8MBbKx7x=MxgtV5URYuDWQcxz0nqohVB8gRpBHtDxqMBb9uw@mail.gmail.com>
-Subject: Re: [PATCH] [mcelog] Start using the new sysfs tunables location
-From: Tony Luck <tony.luck@gmail.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>, ak@linux.intel.com,
-        bp@amd64.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-edac@vger.kernel.org, ananth@in.ibm.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201208151449.54834.arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 5, 2012 at 11:47 AM, Andi Kleen <andi@firstfloor.org> wrote:
-> On Wed, Sep 05, 2012 at 04:02:37PM +0530, Naveen N. Rao wrote:
->> All the current mce tunables are now available under
->> /sys/devices/system/machinecheck. Start using this new location, but fall back
->> to the older per-cpu location so that we continue working with older kernels.
->
-> Who did that change in the kernel?
->
-> That breaks Linus rule that the kernel should not break userland.
-> Kernel needs to fix that.
+On Wed, Aug 15, 2012 at 02:49:54PM +0000, Arnd Bergmann wrote:
+> It's fairly unusual to have out of line get_user/put_user functions.
+> What is the reason for this, other than copying from ARM?
 
-The change is still under discussion. Stage one is to add the new global
-pathnames in addition to keeping the old per-cpu ones. Also fix all utilities
-(just mcelog(8) as far as we know) to prefer the new paths.
-
-After some time[1] ... delete the old paths. This is allowable under Linus'
-modified edict that you can change ABI "if nobody complains". If we wait
-long enough that the new mcelog is widely deployed, then nobody should
-complain.
-
--Tony
-
-[1] several years - not just a kernel release or two.
+Actually, we never used to out of line on ARM, and then I experimented,
+and found there was a net benefit - not only in code size but also
+there appeared to be a performance benefit by out of lining them.
