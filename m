@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759266Ab2IETqW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 15:46:22 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:55301 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754323Ab2IETqU (ORCPT
+	id S1759289Ab2IETr2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 15:47:28 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:39929 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759201Ab2IETr0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 15:46:20 -0400
+	Wed, 5 Sep 2012 15:47:26 -0400
+Message-ID: <5047AC47.8080808@canonical.com>
+Date: Wed, 05 Sep 2012 12:47:19 -0700
+From: John Johansen <john.johansen@canonical.com>
+Organization: Canonical
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <1346775269-12191-2-git-send-email-peter.senna@gmail.com>
-References: <1346775269-12191-2-git-send-email-peter.senna@gmail.com>
-Date: Wed, 5 Sep 2012 16:46:20 -0300
-Message-ID: <CALF0-+UiJy-mcB7U003dCqmQp2ziiTKrTehh3E-2C6FU2bfvkQ@mail.gmail.com>
-Subject: Re: [PATCH 4/5] drivers/media/platform/vino.c: fix error return code
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        kernel-janitors@vger.kernel.org, Julia.Lawall@lip6.fr,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+To: Eric Paris <eparis@parisplace.org>
+CC: Serge Hallyn <serge.hallyn@canonical.com>,
+        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Jiri Kosina <jkosina@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] security: allow Yama to be unconditionally stacked
+References: <20120904203213.GA3617@www.outflux.net> <20120905154753.GE14225@amd1> <CACLa4pvcqXfArSmm3bRadJF9unafyko9T4F9OfwUYTgHdfU49g@mail.gmail.com>
+In-Reply-To: <CACLa4pvcqXfArSmm3bRadJF9unafyko9T4F9OfwUYTgHdfU49g@mail.gmail.com>
+X-Enigmail-Version: 1.4.4
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On 09/05/2012 11:32 AM, Eric Paris wrote:
+> On Wed, Sep 5, 2012 at 11:47 AM, Serge Hallyn
+> <serge.hallyn@canonical.com> wrote:
+>> Quoting Kees Cook (keescook@chromium.org):
+>>> Unconditionally call Yama when CONFIG_SECURITY_YAMA_STACKED is selected,
+>>> no matter what LSM module is primary.
+>>>
+>>> Ubuntu and Chrome OS already carry patches to do this, and Fedora
+>>> has voiced interest in doing this as well. Instead of having multiple
+>>> distributions (or LSM authors) carrying these patches, just allow Yama
+>>> to be called unconditionally when selected by the new CONFIG.
+>>
+>> I don't really like having both the STACKED and non-stacked paths. But
+>> I don't have a good alternative.
+>>
+>>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>>
+>> Acked-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+> 
+> I said basically the same thing to Kees off list.  But I don't have an
+> answer either.
+> 
+> Acked-by: Eric Paris <eparis@redhat.com>
+> 
+Yeah I'm not fond of it either but until some more generic form of LSM
+stacking arives, I don't see a good alternative either
 
-On Tue, Sep 4, 2012 at 1:14 PM, Peter Senna Tschudin
-<peter.senna@gmail.com> wrote:
-> From: Peter Senna Tschudin <peter.senna@gmail.com>
->
-> Convert a nonnegative error return code to a negative one, as returned
-> elsewhere in the function.
->
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
->
-> // <smpl>
-> (
-> if@p1 (\(ret < 0\|ret != 0\))
->  { ... return ret; }
-> |
-> ret@p1 = 0
-> )
-> ... when != ret = e1
->     when != &ret
-> *if(...)
-> {
->   ... when != ret = e2
->       when forall
->  return ret;
-> }
->
-> // </smpl>
->
-> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
->
-> ---
->  drivers/media/platform/vino.c |    1 +
->  1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/media/platform/vino.c b/drivers/media/platform/vino.c
-> index cc9110c..6654a28 100644
-> --- a/drivers/media/platform/vino.c
-> +++ b/drivers/media/platform/vino.c
-> @@ -2061,6 +2061,7 @@ static int vino_capture_next(struct vino_channel_settings *vcs, int start)
->         }
->         if (incoming == 0) {
->                 dprintk("vino_capture_next(): no buffers available\n");
-> +               err = -ENOMEM;
->                 goto out;
->         }
->
+so until then
 
-Mmm, this one doesn't look good.
+Acked-by: John Johansen <john.johansen@canonical.com>
 
-I think the intention was to return zero, without error.
-They driver tt's just double-checking for incoming data, if there's no incoming
-data, then he simply exits.
-
-Thanks,
-Ezequiel.
