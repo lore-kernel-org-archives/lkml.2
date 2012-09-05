@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758622Ab2IEKgT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 06:36:19 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:55811 "EHLO song.cn.fujitsu.com"
+	id S1758660Ab2IEKgV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 06:36:21 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:27254 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754687Ab2IEKgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758254Ab2IEKgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Sep 2012 06:36:16 -0400
 X-IronPort-AV: E=Sophos;i="4.80,373,1344182400"; 
-   d="scan'208";a="5789508"
+   d="scan'208";a="5789511"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
 Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH 02/11 V5] workqueue: async idle rebinding
-Date: Wed, 5 Sep 2012 18:37:39 +0800
-Message-Id: <1346841475-4422-3-git-send-email-laijs@cn.fujitsu.com>
+Subject: [PATCH 05/11 V5] workqueue: Add @bind arguement back without change any thing
+Date: Wed, 5 Sep 2012 18:37:42 +0800
+Message-Id: <1346841475-4422-6-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1346841475-4422-1-git-send-email-laijs@cn.fujitsu.com>
 References: <1346841475-4422-1-git-send-email-laijs@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/05 18:35:49,
+ 2012/09/05 18:35:50,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2012/09/05 18:35:50,
 	Serialize complete at 2012/09/05 18:35:50
@@ -26,237 +26,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fix deadlock in rebind_workers()
+Ensure the gcwq->flags is only accessed with gcwq->lock held.
+And make the code more easier to understand.
 
-Current idle_worker_rebind() has a bug.
-
-idle_worker_rebind() path			HOTPLUG path
-						online
-							rebind_workers()
-wait_event(gcwq->rebind_hold)
-	woken up but no scheduled			rebind_workers() returns
-						the same cpu offline
-						the same cpu online again
-							rebind_workers()
-								set WORKER_REBIND
-	scheduled,see the WORKER_REBIND
-	wait rebind_workers() clear it    <--bug-->		wait idle_worker_rebind()
-								rebound.
-
-The two thread wait each other. It is bug.
-
-This patch gives up to rebind idles synchronously. make them async instead.
-
-To avoid to wrongly do local-wake-up, we add a exile-operation for
-idle-worker-rebinding. When a idle worker is exiled, it will not queued
-on @idle_list until it is rebound.
-
-After we have exile-operation, the @nr_idle is not only the count of @idle_list,
-but also exiled idle workers. so I check all the code, and make
-them exile-operation aware. (too_many_workers())
-
-exile-operation is also the core idea to rebind newly created worker.
-(patch 9)
-
-rebind_workers() become single pass and don't release gcwq->lock.
+In all current callsite of create_worker(), DISASSOCIATED can't
+be flipped while create_worker().
+So the whole behavior is unchanged with this patch.
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- kernel/workqueue.c |  100 +++++++++++++---------------------------------------
- 1 files changed, 25 insertions(+), 75 deletions(-)
+ kernel/workqueue.c |   33 ++++++++++++++++++---------------
+ 1 files changed, 18 insertions(+), 15 deletions(-)
 
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 050b2a5..3dd7ce2 100644
+index 6bf4185..1946be4 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -125,7 +125,6 @@ enum {
+@@ -56,10 +56,6 @@ enum {
+ 	 * While DISASSOCIATED, the cpu may be offline and all workers have
+ 	 * %WORKER_UNBOUND set and concurrency management disabled, and may
+ 	 * be executing on any CPU.  The gcwq behaves as an unbound one.
+-	 *
+-	 * Note that DISASSOCIATED can be flipped only while holding
+-	 * managership of all pools on the gcwq to avoid changing binding
+-	 * state while create_worker() is in progress.
+ 	 */
+ 	GCWQ_DISASSOCIATED	= 1 << 0,	/* cpu can't serve workers */
+ 	GCWQ_FREEZING		= 1 << 1,	/* freeze in progress */
+@@ -1727,6 +1723,7 @@ static struct worker *alloc_worker(void)
+ /**
+  * create_worker - create a new workqueue worker
+  * @pool: pool the new worker will belong to
++ * @bind: whether to set affinity to @cpu or not
+  *
+  * Create a new worker which is bound to @pool.  The returned worker
+  * can be started by calling start_worker() or destroyed using
+@@ -1738,7 +1735,7 @@ static struct worker *alloc_worker(void)
+  * RETURNS:
+  * Pointer to the newly created worker.
+  */
+-static struct worker *create_worker(struct worker_pool *pool)
++static struct worker *create_worker(struct worker_pool *pool, bool bind)
+ {
+ 	struct global_cwq *gcwq = pool->gcwq;
+ 	const char *pri = worker_pool_pri(pool) ? "H" : "";
+@@ -1775,15 +1772,10 @@ static struct worker *create_worker(struct worker_pool *pool)
+ 		set_user_nice(worker->task, HIGHPRI_NICE_LEVEL);
  
- struct global_cwq;
- struct worker_pool;
--struct idle_rebind;
- 
- /*
-  * The poor guys doing the actual heavy lifting.  All on-duty workers
-@@ -149,7 +148,6 @@ struct worker {
- 	int			id;		/* I: worker id */
- 
- 	/* for rebinding worker to CPU */
--	struct idle_rebind	*idle_rebind;	/* L: for idle worker */
- 	struct work_struct	rebind_work;	/* L: for busy worker */
- };
- 
-@@ -159,7 +157,9 @@ struct worker_pool {
- 
- 	struct list_head	worklist;	/* L: list of pending works */
- 	int			nr_workers;	/* L: total number of workers */
--	int			nr_idle;	/* L: currently idle ones */
-+	int			nr_idle;	/* L: currently idle ones,
-+						      include ones in idle_list
-+						      and in doing rebind. */
- 
- 	struct list_head	idle_list;	/* X: list of idle workers */
- 	struct timer_list	idle_timer;	/* L: worker idle timeout */
-@@ -185,8 +185,6 @@ struct global_cwq {
- 
- 	struct worker_pool	pools[NR_WORKER_POOLS];
- 						/* normal and highpri pools */
--
--	wait_queue_head_t	rebind_hold;	/* rebind hold wait */
- } ____cacheline_aligned_in_smp;
- 
- /*
-@@ -686,6 +684,10 @@ static bool too_many_workers(struct worker_pool *pool)
- 	int nr_idle = pool->nr_idle + managing; /* manager is considered idle */
- 	int nr_busy = pool->nr_workers - nr_idle;
- 
-+	/* Is any idle home ? */
-+	if (unlikely(list_empty(&pool->idle_list)))
-+		return false;
+ 	/*
+-	 * Determine CPU binding of the new worker depending on
+-	 * %GCWQ_DISASSOCIATED.  The caller is responsible for ensuring the
+-	 * flag remains stable across this function.  See the comments
+-	 * above the flag definition for details.
+-	 *
+ 	 * As an unbound worker may later become a regular one if CPU comes
+ 	 * online, make sure every worker has %PF_THREAD_BOUND set.
+ 	 */
+-	if (!(gcwq->flags & GCWQ_DISASSOCIATED)) {
++	if (bind) {
+ 		kthread_bind(worker->task, gcwq->cpu);
+ 	} else {
+ 		worker->task->flags |= PF_THREAD_BOUND;
+@@ -1951,6 +1943,14 @@ __releases(&gcwq->lock)
+ __acquires(&gcwq->lock)
+ {
+ 	struct global_cwq *gcwq = pool->gcwq;
++	bool bind;
 +
- 	return nr_idle > 2 && (nr_idle - 2) * MAX_IDLE_WORKERS_RATIO >= nr_busy;
- }
++	/*
++	 * Note we have held the manage_mutex, so DISASSOCIATED can't be
++	 * flipped and it is correct that we calculate @bind only once
++	 * and then release the gcwq->lock.
++	 */
++	bind = !(gcwq->flags & GCWQ_DISASSOCIATED);
  
-@@ -1608,28 +1610,20 @@ __acquires(&gcwq->lock)
- 	}
- }
+ 	if (!need_to_create_worker(pool))
+ 		return false;
+@@ -1963,7 +1963,7 @@ restart:
+ 	while (true) {
+ 		struct worker *worker;
  
--struct idle_rebind {
--	int			cnt;		/* # workers to be rebound */
--	struct completion	done;		/* all workers rebound */
--};
--
- /*
-- * Rebind an idle @worker to its CPU.  During CPU onlining, this has to
-- * happen synchronously for idle workers.  worker_thread() will test
-+ * Rebind an idle @worker to its CPU. worker_thread() will test
-  * %WORKER_REBIND before leaving idle and call this function.
-  */
- static void idle_worker_rebind(struct worker *worker)
- {
- 	struct global_cwq *gcwq = worker->pool->gcwq;
+-		worker = create_worker(pool);
++		worker = create_worker(pool, bind);
+ 		if (worker) {
+ 			del_timer_sync(&pool->mayday_timer);
+ 			spin_lock_irq(&gcwq->lock);
+@@ -3479,7 +3479,7 @@ static int __devinit workqueue_cpu_up_callback(struct notifier_block *nfb,
+ 			if (pool->nr_workers)
+ 				continue;
  
--	/* CPU must be online at this point */
--	WARN_ON(!worker_maybe_bind_and_lock(worker));
--	if (!--worker->idle_rebind->cnt)
--		complete(&worker->idle_rebind->done);
--	spin_unlock_irq(&worker->pool->gcwq->lock);
-+	if (worker_maybe_bind_and_lock(worker))
-+		worker_clr_flags(worker, WORKER_UNBOUND);
+-			worker = create_worker(pool);
++			worker = create_worker(pool, false);
+ 			if (!worker)
+ 				return NOTIFY_BAD;
  
--	/* we did our part, wait for rebind_workers() to finish up */
--	wait_event(gcwq->rebind_hold, !(worker->flags & WORKER_REBIND));
-+	worker_clr_flags(worker, WORKER_REBIND);
-+	list_add(&worker->entry, &worker->pool->idle_list);
-+	spin_unlock_irq(&gcwq->lock);
- }
+@@ -3757,14 +3757,17 @@ static int __init init_workqueues(void)
+ 	for_each_online_gcwq_cpu(cpu) {
+ 		struct global_cwq *gcwq = get_gcwq(cpu);
+ 		struct worker_pool *pool;
++		bool bind = false;
  
- /*
-@@ -1656,29 +1650,22 @@ static void busy_worker_rebind_fn(struct work_struct *work)
-  * @gcwq->cpu is coming online.  Rebind all workers to the CPU.  Rebinding
-  * is different for idle and busy ones.
-  *
-- * The idle ones should be rebound synchronously and idle rebinding should
-- * be complete before any worker starts executing work items with
-- * concurrency management enabled; otherwise, scheduler may oops trying to
-- * wake up non-local idle worker from wq_worker_sleeping().
-- *
-- * This is achieved by repeatedly requesting rebinding until all idle
-- * workers are known to have been rebound under @gcwq->lock and holding all
-- * idle workers from becoming busy until idle rebinding is complete.
-+ * The idle ones will be kicked out of the idle_list, and it will
-+ * add itself back when it finish to rebind.
-  *
-- * Once idle workers are rebound, busy workers can be rebound as they
-- * finish executing their current work items.  Queueing the rebind work at
-- * the head of their scheduled lists is enough.  Note that nr_running will
-+ * The busy workers can be rebound as they finish executing
-+ * their current work items.  Queueing the rebind work at the head of
-+ * their scheduled lists is enough.  Note that nr_running will
-  * be properbly bumped as busy workers rebind.
-  *
-- * On return, all workers are guaranteed to either be bound or have rebind
-- * work item scheduled.
-+ * On return, all workers are guaranteed to be rebound when they
-+ * add themselves back to idle_list if the gcwq is still associated.
-  */
- static void rebind_workers(struct global_cwq *gcwq)
- 	__releases(&gcwq->lock) __acquires(&gcwq->lock)
- {
--	struct idle_rebind idle_rebind;
- 	struct worker_pool *pool;
--	struct worker *worker;
-+	struct worker *worker, *n;
- 	struct hlist_node *pos;
- 	int i;
+-		if (cpu != WORK_CPU_UNBOUND)
++		if (cpu != WORK_CPU_UNBOUND) {
+ 			gcwq->flags &= ~GCWQ_DISASSOCIATED;
++			bind = true;
++		}
  
-@@ -1687,54 +1674,19 @@ static void rebind_workers(struct global_cwq *gcwq)
- 	for_each_worker_pool(pool, gcwq)
- 		lockdep_assert_held(&pool->manager_mutex);
+ 		for_each_worker_pool(pool, gcwq) {
+ 			struct worker *worker;
  
--	/*
--	 * Rebind idle workers.  Interlocked both ways.  We wait for
--	 * workers to rebind via @idle_rebind.done.  Workers will wait for
--	 * us to finish up by watching %WORKER_REBIND.
--	 */
--	init_completion(&idle_rebind.done);
--retry:
--	idle_rebind.cnt = 1;
--	INIT_COMPLETION(idle_rebind.done);
--
--	/* set REBIND and kick idle ones, we'll wait for these later */
-+	/* set REBIND and kick idle ones */
- 	for_each_worker_pool(pool, gcwq) {
--		list_for_each_entry(worker, &pool->idle_list, entry) {
--			if (worker->flags & WORKER_REBIND)
--				continue;
--
--			/* morph UNBOUND to REBIND */
--			worker->flags &= ~WORKER_UNBOUND;
-+		list_for_each_entry_safe(worker, n, &pool->idle_list, entry) {
- 			worker->flags |= WORKER_REBIND;
- 
--			idle_rebind.cnt++;
--			worker->idle_rebind = &idle_rebind;
-+			/* exile idle workers */
-+			list_del_init(&worker->entry);
- 
- 			/* worker_thread() will call idle_worker_rebind() */
- 			wake_up_process(worker->task);
- 		}
- 	}
- 
--	if (--idle_rebind.cnt) {
--		spin_unlock_irq(&gcwq->lock);
--		wait_for_completion(&idle_rebind.done);
--		spin_lock_irq(&gcwq->lock);
--		/* busy ones might have become idle while waiting, retry */
--		goto retry;
--	}
--
--	/*
--	 * All idle workers are rebound and waiting for %WORKER_REBIND to
--	 * be cleared inside idle_worker_rebind().  Clear and release.
--	 * Clearing %WORKER_REBIND from this foreign context is safe
--	 * because these workers are still guaranteed to be idle.
--	 */
--	for_each_worker_pool(pool, gcwq)
--		list_for_each_entry(worker, &pool->idle_list, entry)
--			worker->flags &= ~WORKER_REBIND;
--
--	wake_up_all(&gcwq->rebind_hold);
--
- 	/* rebind busy workers */
- 	for_each_busy_worker(worker, i, pos, gcwq) {
- 		struct work_struct *rebind_work = &worker->rebind_work;
-@@ -3811,8 +3763,6 @@ static int __init init_workqueues(void)
- 			mutex_init(&pool->manager_mutex);
- 			ida_init(&pool->worker_ida);
- 		}
--
--		init_waitqueue_head(&gcwq->rebind_hold);
- 	}
- 
- 	/* create the initial worker */
+-			worker = create_worker(pool);
++			worker = create_worker(pool, bind);
+ 			BUG_ON(!worker);
+ 			spin_lock_irq(&gcwq->lock);
+ 			start_worker(worker);
 -- 
 1.7.4.4
 
