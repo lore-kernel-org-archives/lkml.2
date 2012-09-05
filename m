@@ -1,106 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758039Ab2IEA3C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 20:29:02 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:19773 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752993Ab2IEA27 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 20:28:59 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 04 Sep 2012 17:28:51 -0700
-From: Bill Huang <bilhuang@nvidia.com>
-To: Bill Huang <bilhuang@nvidia.com>
-CC: "'Thierry Reding'" <thierry.reding@avionic-design.de>,
-        "'sameo@linux.intel.com'" <sameo@linux.intel.com>,
-        "'grant.likely@secretlab.ca'" <grant.likely@secretlab.ca>,
-        "'rob.herring@calxeda.com'" <rob.herring@calxeda.com>,
-        "'rob@landley.net'" <rob@landley.net>,
-        "'broonie@opensource.wolfsonmicro.com'" 
-	<broonie@opensource.wolfsonmicro.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>, Xin Xie <xxie@nvidia.com>,
-        "'lrg@slimlogic.co.uk'" <lrg@slimlogic.co.uk>,
-        "'jhovold@gmail.com'" <jhovold@gmail.com>,
-        "'kyle.manna@fuel7.com'" <kyle.manna@fuel7.com>,
-        Rhyland Klein <rklein@nvidia.com>,
-        "'devicetree-discuss@lists.ozlabs.org'" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "'linux-doc@vger.kernel.org'" <linux-doc@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Date: Wed, 5 Sep 2012 08:28:47 +0800
-Subject: RE: [PATCH v2 1/2] mfd: dt: tps6586x: Add power off control
-Thread-Topic: [PATCH v2 1/2] mfd: dt: tps6586x: Add power off control
-Thread-Index: Ac2CcoqX3gqc2V1HRnm59y1GrfvayQBkqeUAAb31yOA=
-Message-ID: <A7051F87A141B744BCAF487D48E5B3BDF5BA98285C@HKMAIL02.nvidia.com>
-References: <1345424876-4365-1-git-send-email-bilhuang@nvidia.com>
- <1345424876-4365-2-git-send-email-bilhuang@nvidia.com>
- <20120820113423.GA5996@avionic-0098.mockup.avionic-design.de>
- <A7051F87A141B744BCAF487D48E5B3BDF5BA982847@HKMAIL02.nvidia.com>
- <A7051F87A141B744BCAF487D48E5B3BDF5BA98284B@HKMAIL02.nvidia.com>
- <503847C2.3080400@wwwdotorg.org>
- <A7051F87A141B744BCAF487D48E5B3BDF5BA98284E@HKMAIL02.nvidia.com>
-In-Reply-To: <A7051F87A141B744BCAF487D48E5B3BDF5BA98284E@HKMAIL02.nvidia.com>
-Accept-Language: zh-TW, en-US
+	id S1758023Ab2IEAaF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 20:30:05 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:3041 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752993Ab2IEAaC convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 20:30:02 -0400
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC102.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+X-SpamScore: -8
+X-BigFish: VS-8(zz98dI9371I542M1432Izz1202hzz8275bhz2fh2a8h683h839h944hd25hf0ah107ah1220h1155h)
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT002.namprd03.prod.outlook.com;R:internal;EFV:INT
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "olaf@aepfle.de" <olaf@aepfle.de>, "thozza@redhat.com" <thozza@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dcbw@redhat.com" <dcbw@redhat.com>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ben@decadent.org.uk" <ben@decadent.org.uk>
+Subject: RE: [PATCH V4 05/10] Tools: hv: Add an example script to retrieve
+ dhcp state
+Thread-Topic: [PATCH V4 05/10] Tools: hv: Add an example script to retrieve
+ dhcp state
+Thread-Index: AQHNiuRd+TMU4+nMkkGvTOIPJ1HKHZd6zAmAgAAKcsCAAAe5gIAABXKg
+Date: Wed, 5 Sep 2012 00:29:07 +0000
+Message-ID: <426367E2313C2449837CD2DE46E7EAF9309DFFBE@SN2PRD0310MB382.namprd03.prod.outlook.com>
+References: <1346795156-25614-1-git-send-email-kys@microsoft.com>
+ <1346795202-25655-1-git-send-email-kys@microsoft.com>
+ <1346795202-25655-5-git-send-email-kys@microsoft.com>
+ <20120904225917.GB3725@kroah.com>
+ <426367E2313C2449837CD2DE46E7EAF9309DFFA2@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <20120905000419.GC31997@kroah.com>
+In-Reply-To: <20120905000419.GC31997@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-acceptlanguage: zh-TW, en-US
-MIME-Version: 1.0
-Content-Language: en-US
+x-originating-ip: [173.61.55.165]
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OrganizationHeadersPreserved: SN2PRD0310HT002.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%DECADENT.ORG.UK$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14MLTC102.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14MLTC102.redmond.corp.microsoft.com
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> nvpublic
-> > On 08/24/2012 06:36 PM, Bill Huang wrote:
-> > >>> On Sun, Aug 19, 2012 at 06:07:55PM -0700, Bill Huang wrote:
-> > >>>> Add DT property "ti,system-power-controller" telling whether or
-> > >>>> not this pmic is in charge of controlling the system power, so
-> > >>>> the power off routine can be hooked up to system call "pm_power_off".
-> > ...
-> > >>> I've seen the following while trying this patch applied on top of next-20120817:
-> > >>>
-> > >>> [   40.581151] Power down.
-> > >>> [   41.583160] ------------[ cut here ]------------
-> > >>> [   41.587784] WARNING: at /home/thierry.reding/src/kernel/linux-
-> ipmp.git/drivers/i2c/busses/i2c-
-> > >>> tegra.c:525 tegra_i2c_xfer+0x21c/0x29c()
-> > ...
-> > >> Thanks Thierry, I can repro this on Tegra20 inconsistently and
-> > >> found, if current cpu is not cpu0 when doing "machine_shutdown" (it
-> > >> will call "smp_send_stop"), i2c controller will failed to do any
-> > >> transaction (looks like gic interrupt
-> > will be disabled), I'll debug further to find out the root cause.
-> > >>
-> > >> By the way, Tegra30 is good since it will always be cpu0 when doing
-> > >> "machine_shutdown", I still don't know why it makes the difference
-> > >> against Tegra20 since I'm not familiar with those cpu stuffs and
-> > >> what make it behave differently,
-> > I'll study a bit, thanks.
-> > >
-> > > I've sent the shutdown issue for discussion in ARM list: Shutdown
-> > > problem in SMP system happened on
-> > Tegra20.
-> > > The cause of the i2c timeout is pretty clear now and it is not
-> > > directly related to this patch, so is this patch series acceptable? Any thoughts or comment?
-> Thanks.
-> >
-> > I tend to agree; power off never worked without this patch, and
-> > sometimes does with the patch, due to nothing wrong with this patch.
-> >
-> > Bill, please do follow up on getting the underlying Tegra issue solved
-> > somehow though. IIRC, Joseph Lo or Prashant has a patch which enabled
-> > the config option that Russell mentioned, so the fix may just be to wait for that patch to get
-> finalized, but please double-check that solves it.
-> > Thanks!
+
+
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Sent: Tuesday, September 04, 2012 8:04 PM
+> To: KY Srinivasan
+> Cc: olaf@aepfle.de; thozza@redhat.com; linux-kernel@vger.kernel.org;
+> dcbw@redhat.com; apw@canonical.com; devel@linuxdriverproject.org;
+> ben@decadent.org.uk
+> Subject: Re: [PATCH V4 05/10] Tools: hv: Add an example script to retrieve dhcp
+> state
 > 
-> As per the shutdown issue discussion, enabling CONFIG_PM_SLEEP_SMP is the only solution and I've
-> confirmed that fix the issue, thanks.
+> On Tue, Sep 04, 2012 at 11:39:12PM +0000, KY Srinivasan wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > > Sent: Tuesday, September 04, 2012 6:59 PM
+> > > To: KY Srinivasan
+> > > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> olaf@aepfle.de;
+> > > apw@canonical.com; ben@decadent.org.uk; thozza@redhat.com;
+> > > dcbw@redhat.com
+> > > Subject: Re: [PATCH V4 05/10] Tools: hv: Add an example script to retrieve
+> dhcp
+> > > state
+> > >
+> > > On Tue, Sep 04, 2012 at 02:46:37PM -0700, K. Y. Srinivasan wrote:
+> > > > To keep the KVP daemon code free of distro specific details, we invoke an
+> > > > external script to retrieve the DHCP state. This is an example script that
+> > > > was used to test the KVP code. This script has to be implemented in a Distro
+> > > > specific fashion. For instance on distros that ship with Network Manager
+> > > enabled,
+> > > > this script can be based on NM APIs.
+> > > >
+> > > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > > > Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > > > ---
+> > > >  tools/hv/hv_get_dhcp_info.sh |   25 +++++++++++++++++++++++++
+> > > >  1 files changed, 25 insertions(+), 0 deletions(-)
+> > > >  create mode 100755 tools/hv/hv_get_dhcp_info.sh
+> > > >
+> > > > diff --git a/tools/hv/hv_get_dhcp_info.sh b/tools/hv/hv_get_dhcp_info.sh
+> > > > new file mode 100755
+> > > > index 0000000..3de4587
+> > > > --- /dev/null
+> > > > +++ b/tools/hv/hv_get_dhcp_info.sh
+> > > > @@ -0,0 +1,25 @@
+> > > > +#!/bin/bash
+> > > > +
+> > > > +# This example script retrieves the DHCP state of a given interface.
+> > > > +# In the interest of keeping the KVP daemon code free of distro specific
+> > > > +# information; the kvp daemon code invokes this external script to gather
+> > > > +# DHCP setting for the specific interface.
+> > > > +#
+> > > > +# Input: Name of the interface
+> > > > +#
+> > > > +# Output: The script prints the string "Enabled" to stdout to indicate
+> > > > +#	that DHCP is enabled on the interface.
+> > >
+> > > What happens if DHCP is not enabled on the interface?  Shouldn't that
+> > > also return something other than "success"?
+> >
+> > The script is expected to write "Enabled" to stdout to indicate if DHCP is
+> enabled; if this
+> > is not the case, implicitly we assume DHCP is not enabled (since this is a binary
+> state).
+> 
+> It's not really "binary" given that you are expecting "Enabled" or
+> nothing, right?  "Disabled" would make a bit more sense perhaps?
 
-Hi sameo,
+In the KVP daemon code, I currently only check for "Enabled" to see if
+DHCP is enabled.
 
-Is there any concern on this patch series?
+> 
+> Having a script return "nothing at all" to show the failure of a state
+> doesn't seem the wisest thing, does it?
 
-Thanks,
-Bill
+I can certainly resubmit this patch with the change you are suggesting. This patch adds a new file
+and does not impact any of the other patches that follows this. Would you want me to resubmit all of the
+remaining patches starting with this one.
+
+Regards,
+
+K. Y 
+
+
