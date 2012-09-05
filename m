@@ -1,213 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758041Ab2IEAfO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 20:35:14 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:44530 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753077Ab2IEAfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 20:35:11 -0400
-Date: Tue, 4 Sep 2012 17:34:59 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@ti.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-Subject: Re: [PATCH tip/core/rcu 04/26] rcu: Settle config for userspace
- extended quiescent state
-Message-ID: <20120905003459.GA2593@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120830210520.GA2824@linux.vnet.ibm.com>
- <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346360743-3628-4-git-send-email-paulmck@linux.vnet.ibm.com>
- <20120831234401.GB11771@jtriplet-mobl1>
+	id S1757978Ab2IEAgZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 20:36:25 -0400
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:26101 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751980Ab2IEAgY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 20:36:24 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19UlJ4fY+PBvhzG136u1Q2m
+Date: Tue, 4 Sep 2012 17:36:18 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] [RFC] ARM: treewide: manually change more
+ mach-*/*.h includes
+Message-ID: <20120905003617.GX1303@atomide.com>
+References: <201208221253.07278.arnd@arndb.de>
+ <20120822214323.GA12255@n2100.arm.linux.org.uk>
+ <201208231135.11688.arnd@arndb.de>
+ <201208231726.11293.arnd@arndb.de>
+ <20120824203622.GB1303@atomide.com>
+ <20120830190431.GU1303@atomide.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120831234401.GB11771@jtriplet-mobl1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12090500-6078-0000-0000-00000F0E5BBB
+In-Reply-To: <20120830190431.GU1303@atomide.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 31, 2012 at 04:44:01PM -0700, Josh Triplett wrote:
-> On Thu, Aug 30, 2012 at 02:05:21PM -0700, Paul E. McKenney wrote:
-> > From: Frederic Weisbecker <fweisbec@gmail.com>
+* Tony Lindgren <tony@atomide.com> [120830 12:05]:
+> * Tony Lindgren <tony@atomide.com> [120824 13:37]:
+> > * Arnd Bergmann <arnd@arndb.de> [120823 10:27]:
+> > > On Thursday 23 August 2012, Arnd Bergmann wrote:
+> > > > On Wednesday 22 August 2012, Russell King - ARM Linux wrote:
+> > > > > In any case, what we should be doing here as well is moving the headers
+> > > > > included by drivers for platform data out of the arch/arm/mach/ subtrees
+> > > > > and into include/linux/platform_data.  That will substantially reduce the
+> > > > > amount of mach/ headers to deal with.
+> > > > 
+> > > > I've just looked at the {mach,plat}/*.h files that get included in ARM
+> > > > specific drivers. Out of the 342 header files that get used in this way,
+> > > > I found 93 that are practically just platform data, and a few that
+> > > > are platform_data mixed with something else.
+> > > > 
+> > > > How about I move all the pure platform data definition files now and
+> > > > rebase the other patches on top of that. Here is a list of suggested
+> > > > file names in include/linux/platform_data/:
+> > > 
+> > > I've just scripted this and am running my build testsuite over it now.
+> > > 
+> > > Please let me know what you think about it.
+> > > 
+> > > 	Arnd
+> > > 
+> > > The following changes since commit fea7a08acb13524b47711625eebea40a0ede69a0:
+> > > 
+> > >   Linux 3.6-rc3 (2012-08-22 13:29:06 -0700)
+> > > 
+> > > are available in the git repository at:
+> > > 
+> > >   git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git 
 > > 
-> > Create a new config option under the RCU menu that put
-> > CPUs under RCU extended quiescent state (as in dynticks
-> > idle mode) when they run in userspace. This require
-> > some contribution from architectures to hook into kernel
-> > and userspace boundaries.
-> > 
-> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Alessio Igor Bogani <abogani@kernel.org>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Avi Kivity <avi@redhat.com>
-> > Cc: Chris Metcalf <cmetcalf@tilera.com>
-> > Cc: Christoph Lameter <cl@linux.com>
-> > Cc: Geoff Levand <geoff@infradead.org>
-> > Cc: Gilad Ben Yossef <gilad@benyossef.com>
-> > Cc: Hakan Akkan <hakanakkan@gmail.com>
-> > Cc: H. Peter Anvin <hpa@zytor.com>
-> > Cc: Ingo Molnar <mingo@kernel.org>
-> > Cc: Josh Triplett <josh@joshtriplett.org>
-> > Cc: Kevin Hilman <khilman@ti.com>
-> > Cc: Max Krasnyansky <maxk@qualcomm.com>
-> > Cc: Peter Zijlstra <peterz@infradead.org>
-> > Cc: Stephen Hemminger <shemminger@vyatta.com>
-> > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > I'd like to run some checks on this, but branch name missing here for
+> > pulling a branch in for testing..
 > 
-> One question below, but nonethelesss:
+> FYI, after talking with Arnd this is the testing/platform-data branch
+> in the arm soc tree. Seems to build and work fine on omaps:
 > 
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> Tested-by: Tony Lindgren <tony@atomide.com>
 > 
-> >  arch/Kconfig             |   10 ++++++++++
-> >  include/linux/rcupdate.h |    8 ++++++++
-> >  init/Kconfig             |   10 ++++++++++
-> >  kernel/rcutree.c         |    5 ++++-
-> >  4 files changed, 32 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/arch/Kconfig b/arch/Kconfig
-> > index 72f2fa1..1401a75 100644
-> > --- a/arch/Kconfig
-> > +++ b/arch/Kconfig
-> > @@ -281,4 +281,14 @@ config SECCOMP_FILTER
-> >  
-> >  	  See Documentation/prctl/seccomp_filter.txt for details.
-> >  
-> > +config HAVE_RCU_USER_QS
-> > +	bool
-> > +	help
-> > +	  Provide kernel entry/exit hooks necessary for userspace
-> > +	  RCU extended quiescent state. Syscalls need to be wrapped inside
-> > +	  rcu_user_exit()-rcu_user_enter() through the slow path using
-> > +	  TIF_NOHZ flag. Exceptions handlers must be wrapped as well. Irqs
-> > +	  are already protected inside rcu_irq_enter/rcu_irq_exit() but
-> > +	  preemption or signal handling on irq exit still need to be protected.
-> > +
-> >  source "kernel/gcov/Kconfig"
-> > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> > index 81d3d5c..e411117 100644
-> > --- a/include/linux/rcupdate.h
-> > +++ b/include/linux/rcupdate.h
-> > @@ -191,10 +191,18 @@ extern void rcu_idle_enter(void);
-> >  extern void rcu_idle_exit(void);
-> >  extern void rcu_irq_enter(void);
-> >  extern void rcu_irq_exit(void);
-> > +
-> > +#ifdef CONFIG_RCU_USER_QS
-> >  extern void rcu_user_enter(void);
-> >  extern void rcu_user_exit(void);
-> >  extern void rcu_user_enter_irq(void);
-> >  extern void rcu_user_exit_irq(void);
-> > +#else
-> > +static inline void rcu_user_enter(void) { }
-> > +static inline void rcu_user_exit(void) { }
-> > +#endif /* CONFIG_RCU_USER_QS */
-> > +
-> > +
-> >  extern void exit_rcu(void);
-> >  
-> >  /**
-> > diff --git a/init/Kconfig b/init/Kconfig
-> > index af6c7f8..f6a1830 100644
-> > --- a/init/Kconfig
-> > +++ b/init/Kconfig
-> > @@ -441,6 +441,16 @@ config PREEMPT_RCU
-> >  	  This option enables preemptible-RCU code that is common between
-> >  	  the TREE_PREEMPT_RCU and TINY_PREEMPT_RCU implementations.
-> >  
-> > +config RCU_USER_QS
-> > +	bool "Consider userspace as in RCU extended quiescent state"
-> > +	depends on HAVE_RCU_USER_QS && SMP
-> 
-> Does this actually depend on SMP, or does it depend on the non-TINY RCU
-> implementation?  If the latter, it should depend on that rather than
-> SMP.
-> 
-> (I assume that the tiny RCU implementation simply doesn't need all this
-> machinery because it doesn't need coordinated quiescence at all?  Or
-> does tiny RCU still cause a periodic wakeup on UP?)
+> Arnd, can you please provide a stable branch to use as a base of
+> other related header changes?
 
-It actually does depend on SMP.  There has to be at least one CPU taking
-scheduling-clock interrupts in order to keep time computation accurate,
-so a de-facto UP system cannot adaptive-dynticks its sole CPU.
+Actually it's probably best if I just take your commit 0c6f1498
+(ARM: omap: move platform_data definitions) into my cleanup branch
+to avoid the dependency of getting acks from all the subarch
+maintainers.
 
-							Thanx, Paul
+That's because I want to base more things on this patch that will
+cause merge conflicts otherwise.
 
-> > +	help
-> > +	  This option sets hooks on kernel / userspace boundaries and
-> > +	  puts RCU in extended quiescent state when the CPU runs in
-> > +	  userspace. It means that when a CPU runs in userspace, it is
-> > +	  excluded from the global RCU state machine and thus doesn't
-> > +	  to keep the timer tick on for RCU.
-> > +
-> >  config RCU_FANOUT
-> >  	int "Tree-based hierarchical RCU fanout value"
-> >  	range 2 64 if 64BIT
-> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > index 8fdea17..e287c4a 100644
-> > --- a/kernel/rcutree.c
-> > +++ b/kernel/rcutree.c
-> > @@ -424,6 +424,7 @@ void rcu_idle_enter(void)
-> >  }
-> >  EXPORT_SYMBOL_GPL(rcu_idle_enter);
-> >  
-> > +#ifdef CONFIG_RCU_USER_QS
-> >  /**
-> >   * rcu_user_enter - inform RCU that we are resuming userspace.
-> >   *
-> > @@ -438,7 +439,6 @@ void rcu_user_enter(void)
-> >  }
-> >  EXPORT_SYMBOL_GPL(rcu_user_enter);
-> >  
-> > -
-> >  /**
-> >   * rcu_user_enter_irq - inform RCU that we are going to resume userspace
-> >   * after the current irq returns.
-> > @@ -459,6 +459,7 @@ void rcu_user_enter_irq(void)
-> >  	rdtp->dynticks_nesting = 1;
-> >  	local_irq_restore(flags);
-> >  }
-> > +#endif
-> >  
-> >  /**
-> >   * rcu_irq_exit - inform RCU that current CPU is exiting irq towards idle
-> > @@ -562,6 +563,7 @@ void rcu_idle_exit(void)
-> >  }
-> >  EXPORT_SYMBOL_GPL(rcu_idle_exit);
-> >  
-> > +#ifdef CONFIG_RCU_USER_QS
-> >  /**
-> >   * rcu_user_exit - inform RCU that we are exiting userspace.
-> >   *
-> > @@ -595,6 +597,7 @@ void rcu_user_exit_irq(void)
-> >  	rdtp->dynticks_nesting += DYNTICK_TASK_EXIT_IDLE;
-> >  	local_irq_restore(flags);
-> >  }
-> > +#endif
-> >  
-> >  /**
-> >   * rcu_irq_enter - inform RCU that current CPU is entering irq away from idle
-> > -- 
-> > 1.7.8
-> > 
-> 
+Also, Peter Ujfalusi wanted to change the dsp-mcbsp.h name to
+ti-mcbsp.h. I can post the updated patch assuming hat's OK with
+you Arnd?
 
+Regards,
+
+Tony
