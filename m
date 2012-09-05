@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758861Ab2IEP1m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 11:27:42 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:38559 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758828Ab2IEP1k (ORCPT
+	id S1758858Ab2IEPbg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 11:31:36 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:48710 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752492Ab2IEPbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 11:27:40 -0400
+	Wed, 5 Sep 2012 11:31:35 -0400
+Date: Wed, 5 Sep 2012 17:32:04 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: "Shi, Yang A" <yang.a.shi@intel.com>
+Cc: Daniel Vetter <daniel@ffwll.ch>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>,
+        "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
+	<linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "alexander.deucher@amd.com" <alexander.deucher@amd.com>,
+        "airlied@redhat.com" <airlied@redhat.com>
+Subject: Re: [Patch 0/1]drm_irq: Introducing the irq_thread support
+Message-ID: <20120905153204.GD5357@phenom.ffwll.local>
+Mail-Followup-To: "Shi, Yang A" <yang.a.shi@intel.com>,
+	"Liu, Chuansheng" <chuansheng.liu@intel.com>,
+	"'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" <linux-kernel@vger.kernel.org>,
+	"dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+	"alexander.deucher@amd.com" <alexander.deucher@amd.com>,
+	"airlied@redhat.com" <airlied@redhat.com>
+References: <27240C0AC20F114CBF8149A2696CBE4A177306@SHSMSX101.ccr.corp.intel.com>
+ <20120905132724.GC5357@phenom.ffwll.local>
+ <E3ED5BF57CCD1C40876FA2D3385ED5D30FD781AC@SHSMSX102.ccr.corp.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20120904230554.GA8893@kroah.com>
-References: <CA+HMz3jBzbmgSANr8M4wwKD-SbVPrnsMdXqKnN+sa+S79r=P1w@mail.gmail.com>
-	<76EC11A8-968B-43B8-BE90-A4FE68644C6B@163.com>
-	<CAD+1EGOaXWM=uNDk2gm+Rahyv0MESjaibasbfjOoyur8sXTCEg@mail.gmail.com>
-	<20120904230554.GA8893@kroah.com>
-Date: Wed, 5 Sep 2012 23:27:39 +0800
-Message-ID: <CAD+1EGPiYfO2Fako4+uL98Bu7+=Zw98rPYHgr6hd629Px-_P0w@mail.gmail.com>
-Subject: Re: [PATCH] Chinese translation of Documentation/arm/Booting
-From: harryxiyou <harryxiyou@gmail.com>
-To: Greg-Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: PT <platinum@163.com>, Ninja Tekkaman <tekkamanninja@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "kernel@vger.linux-kernel.cn" <kernel@vger.linux-kernel.cn>,
-        Russell King <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E3ED5BF57CCD1C40876FA2D3385ED5D30FD781AC@SHSMSX102.ccr.corp.intel.com>
+X-Operating-System: Linux phenom 3.4.0-rc3+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q85FRkhL018417
 
-2012/9/5 Greg-Kroah-Hartman <gregkh@linuxfoundation.org>:
-> On Tue, Aug 28, 2012 at 11:45:02PM +0800, harryxiyou wrote:
->> 2012/8/28 PT <platinum@163.com>:
->> > çœ‹äº†å‡ å°ä¸­æ–‡æ–‡æ¡£ç¿»è¯‘çš„ patchï¼Œè§‰å¾—å¾ˆä¸é”™ï¼
->> > å¦‚æœä¸­æ–‡å’Œè‹±æ–‡ã€æ•°å­—ä¹‹é—´èƒ½æœ‰ä¸ªåŠè§’ç©ºæ ¼å°±æ›´å¥½äº†ï¼Œ
->> >æ— è®ºæ˜¯ç¾è§‚åº¦ã€å¯è¯»æ€§è¿˜æ˜¯è¶…é“¾éƒ½ä¸ä¼šæœ‰é—®é¢˜ã€‚
->> >
->>
->> Hi PT,
->>
->> We will take actions as you said later, thanks for your sincerely suggestions.
->
-> So should I hold off applying this one?
->
+On Wed, Sep 05, 2012 at 03:12:39PM +0000, Shi, Yang A wrote:
+> Hi Vetter:
+> 
+>     Do you mean we can just not use drm_irq_install, and make
+>     request_irq in our kernel driver pre-install or post-install
+>     interface?
 
-I think applying is okay, we will give patches for it later.
-Any comments?
+Well, you cant use the pre_install/post_install hooks the drm_irq code
+provides, but yes, just do the request_irq in your driver code at the
+right time, with the right parameters. Much easier than adding code to a
+part of the drm core fraught with backwards-compat stuff no one really
+wants to touch ... All the additional stuff besides calling request_irq
+and the driver hooks that drm_irq_install does is really just to support
+old dri1 userspace.
 
-
+Yours, Daniel
 -- 
-Thanks
-Harry Wei
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
