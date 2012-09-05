@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758076Ab2IEBSA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 21:18:00 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36853 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751560Ab2IEBR6 (ORCPT
+	id S1758091Ab2IEBSN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 21:18:13 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:36313 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753077Ab2IEBSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 21:17:58 -0400
-Date: Tue, 4 Sep 2012 18:17:54 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] workqueue: UNBOUND -> REBIND morphing in
- rebind_workers() should be atomic
-Message-ID: <20120905011754.GE2836@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <1346516916-1991-1-git-send-email-laijs@cn.fujitsu.com>
- <1346516916-1991-2-git-send-email-laijs@cn.fujitsu.com>
- <20120904233901.GC9092@dhcp-172-17-108-109.mtv.corp.google.com>
- <5046A561.9050903@cn.fujitsu.com>
+	Tue, 4 Sep 2012 21:18:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5046A561.9050903@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1345217308.3708.35.camel@gandalf.local.home>
+References: <1345204994-5400-1-git-send-email-elezegarcia@gmail.com>
+	<1345217308.3708.35.camel@gandalf.local.home>
+Date: Tue, 4 Sep 2012 22:18:09 -0300
+Message-ID: <CALF0-+WGTLQJQ-k3s11BjwpDnpJqByQuLEPttan+n4ecs2MQ5g@mail.gmail.com>
+Subject: Re: [RFC PATCH v2] trace: Move trace event enable from fs_initcall to early_initcall
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, tim.bird@am.sony.com,
+        lizefan@huawei.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Lai.
+Hi Steven,
 
-On Wed, Sep 05, 2012 at 09:05:37AM +0800, Lai Jiangshan wrote:
-> Thank you for accepting this one.
+On 8/17/12, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Fri, 2012-08-17 at 09:03 -0300, Ezequiel Garcia wrote:
+>> This patch splits trace event initialization in two stages:
+>>  * ftrace enable
+>>  * sysfs event entry creation
+>>
+>> This allows to capture trace events from an earlier point
+>> by using 'trace_event' kernel parameter and is important
+>> to trace boot-up allocations.
+>>
+>
+> This is much better, I'll give it some tests and add it to my 3.7 queue.
+>
 
-Thanks a lot for bearing with me.  I was at kernel summit / plumbers
-last week so my reviews were shaky.  My apologies.
+Ping? Will you add this to your tree?
 
-> I'm waiting for your comments on the other patches.
-> I need to rebase the other patches(on top of wq/for-3.7 and this merged one),
-> but I think it is not good to seed to new version patchset without considering
-> your comments. so I'm still waiting. Or should I rebase them at first?
-
-Let's get the fixes down first.  The fixes and restructuring need to
-be routed separately, so we need to separate them into different patch
-serieses.  Once the fix part is done, I'll pull the fixes into for-3.7
-on which restructuring can happen.
-
-Thanks.
-
--- 
-tejun
+Thanks!
+Ezequiel.
