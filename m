@@ -1,94 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754424Ab2IEQjw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 12:39:52 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:19586 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750841Ab2IEQju (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 12:39:50 -0400
-Date: Wed, 5 Sep 2012 12:29:04 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Don Dutile <ddutile@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH 5/5] PCI/xen-pcifront: simplify code by hotplug safe
- pci_get_domain_bus_and_slot()
-Message-ID: <20120905162904.GA12653@phenom.dumpdata.com>
-References: <1346168638-32724-1-git-send-email-jiang.liu@huawei.com>
- <1346168638-32724-6-git-send-email-jiang.liu@huawei.com>
- <20120828165959.GA23312@localhost.localdomain>
- <503D5ABB.6010605@gmail.com>
+	id S1758923Ab2IEQkL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 12:40:11 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:58918 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752246Ab2IEQkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 12:40:08 -0400
+Date: Wed, 5 Sep 2012 09:39:59 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: linux-next: manual merge of the rcu tree with the tip tree
+Message-ID: <20120905163959.GF3308@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120905135947.34ba1c8356cbfe374c6c4ea8@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <503D5ABB.6010605@gmail.com>
+In-Reply-To: <20120905135947.34ba1c8356cbfe374c6c4ea8@canb.auug.org.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12090516-7182-0000-0000-00000280F3F2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 29, 2012 at 07:56:43AM +0800, Jiang Liu wrote:
-> On 08/29/2012 12:59 AM, Konrad Rzeszutek Wilk wrote:
-> > On Tue, Aug 28, 2012 at 11:43:58PM +0800, Jiang Liu wrote:
-> >> Following code has a race window between pci_find_bus() and pci_get_slot()
-> >> if PCI hotplug operation happens between them which removes the pci_bus.
-> >> So use PCI hotplug safe interface pci_get_domain_bus_and_slot() instead,
-> >> which also reduces code complexity.
-> > 
-> > Has this happend in practice? Is this something one can reproduce
-> > by manipulating SysFS and at the same time unplugging the PCI
-> > devices?
-> Hi Konrad,
-> 	We just noticed this issue by code inspection when improving PCI
-> hotplug implementation. I guess we could trigger such issue by adding
-> some delay between pci_find_bus() and pci_get_slot().
-> 	Regards!
-
-OK. Let me test it out.
-> 	Gerry
+On Wed, Sep 05, 2012 at 01:59:47PM +1000, Stephen Rothwell wrote:
+> Hi Paul,
 > 
-> >>
-> >> struct pci_bus *pci_bus = pci_find_bus(domain, busno);
-> >> struct pci_dev *pci_dev = pci_get_slot(pci_bus, devfn);
-> >>
-> >> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> >> ---
-> >>  drivers/pci/xen-pcifront.c |   10 ++--------
-> >>  1 file changed, 2 insertions(+), 8 deletions(-)
-> >>
-> >> diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
-> >> index d6cc62c..def8d0b 100644
-> >> --- a/drivers/pci/xen-pcifront.c
-> >> +++ b/drivers/pci/xen-pcifront.c
-> >> @@ -982,7 +982,6 @@ static int pcifront_detach_devices(struct pcifront_device *pdev)
-> >>  	int err = 0;
-> >>  	int i, num_devs;
-> >>  	unsigned int domain, bus, slot, func;
-> >> -	struct pci_bus *pci_bus;
-> >>  	struct pci_dev *pci_dev;
-> >>  	char str[64];
-> >>  
-> >> @@ -1032,13 +1031,8 @@ static int pcifront_detach_devices(struct pcifront_device *pdev)
-> >>  			goto out;
-> >>  		}
-> >>  
-> >> -		pci_bus = pci_find_bus(domain, bus);
-> >> -		if (!pci_bus) {
-> >> -			dev_dbg(&pdev->xdev->dev, "Cannot get bus %04x:%02x\n",
-> >> -				domain, bus);
-> >> -			continue;
-> >> -		}
-> >> -		pci_dev = pci_get_slot(pci_bus, PCI_DEVFN(slot, func));
-> >> +		pci_dev = pci_get_domain_bus_and_slot(domain, bus,
-> >> +				PCI_DEVFN(slot, func));
-> >>  		if (!pci_dev) {
-> >>  			dev_dbg(&pdev->xdev->dev,
-> >>  				"Cannot get PCI device %04x:%02x:%02x.%d\n",
-> >> -- 
-> >> 1.7.9.5
-> >>
+> Today's linux-next merge of the rcu tree got a conflict in
+> kernel/sched/core.c between commit f319da0c6894 ("sched: Fix load avg vs
+> cpu-hotplug") from the tip tree and commit ead504e5600e ("sched: Fix load
+> avg vs cpu-hotplug") from the rcu tree.
+> 
+> These are 2 slightly different versions of the same patch :-( Same author
+> time, different commit times ...  The rcu tree version contains this
+> extra bit in the commit message:
+> 
+> "    [ paulmck: Move call to calc_load_migration to CPU_DEAD to avoid
+>      miscounting noted by Rakib. ]"
+> 
+> So I used it.  Let me know if this is not correct.
+
+My guess is that Peter Zijlstra will replace my version at some point,
+at which point I will drop mine.  But from what I can see, the version
+currently  in -tip is the older version, so I will keep mine until
+-tip updates.
+
+							Thanx, Paul
+
