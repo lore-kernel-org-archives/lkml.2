@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932443Ab2IEFKh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 01:10:37 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:47884 "EHLO
+	id S1758149Ab2IEFKj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 01:10:39 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:48142 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751555Ab2IEFKX (ORCPT
+	with ESMTP id S1751721Ab2IEFKY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 01:10:23 -0400
-X-AuditID: 9c93016f-b7cc0ae000000e9f-47-5046debda399
+	Wed, 5 Sep 2012 01:10:24 -0400
+X-AuditID: 9c93016f-b7cc0ae000000e9f-49-5046debd19f3
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Stephane Eranian <eranian@google.com>,
         Robert Richter <robert.richter@amd.com>
-Subject: [PATCH 5/7] perf header: Add ->process callbacks to most of features
-Date: Wed,  5 Sep 2012 14:02:51 +0900
-Message-Id: <1346821373-31621-6-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 6/7] perf header: Use pre-processed header info when printing
+Date: Wed,  5 Sep 2012 14:02:52 +0900
+Message-Id: <1346821373-31621-7-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1346821373-31621-1-git-send-email-namhyung@kernel.org>
 References: <1346821373-31621-1-git-send-email-namhyung@kernel.org>
@@ -26,377 +26,319 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 >From now on each feature information is processed and saved in perf
-header so that it can be used wherever needed.  The BRANCH_STACK
-feature is an exception since it needs nothing to be done.
+header so that it can be used for printing.  The event desc and branch
+stack features are not touched since they're not saved.
 
 Cc: Stephane Eranian <eranian@google.com>
 Cc: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/header.c | 318 +++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 307 insertions(+), 11 deletions(-)
+ tools/perf/util/header.c | 196 ++++++++++++++---------------------------------
+ 1 file changed, 57 insertions(+), 139 deletions(-)
 
 diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 43425b75f0c9..9c6ab1b52a07 100644
+index 9c6ab1b52a07..2cc0954d984c 100644
 --- a/tools/perf/util/header.c
 +++ b/tools/perf/util/header.c
-@@ -21,6 +21,7 @@
- #include "debug.h"
- #include "cpumap.h"
- #include "pmu.h"
-+#include "strbuf.h"
- 
- static bool no_buildid_cache = false;
- 
-@@ -1638,6 +1639,99 @@ static int process_build_id(struct perf_file_section *section,
+@@ -1073,118 +1073,73 @@ static int write_branch_stack(int fd __used, struct perf_header *h __used,
  	return 0;
  }
  
-+static int process_hostname(struct perf_file_section *section __unused,
-+			    struct perf_header *ph,
-+			    int feat __unused, int fd, void *data __used)
-+{
-+	ph->info.hostname = do_read_string(fd, ph);
-+	return ph->info.hostname ? 0 : -ENOMEM;
-+}
-+
-+static int process_osrelease(struct perf_file_section *section __unused,
-+			     struct perf_header *ph,
-+			     int feat __unused, int fd, void *data __used)
-+{
-+	ph->info.os_release = do_read_string(fd, ph);
-+	return ph->info.os_release ? 0 : -ENOMEM;
-+}
-+
-+static int process_version(struct perf_file_section *section __unused,
-+			   struct perf_header *ph,
-+			   int feat __unused, int fd, void *data __used)
-+{
-+	ph->info.version = do_read_string(fd, ph);
-+	return ph->info.version ? 0 : -ENOMEM;
-+}
-+
-+static int process_arch(struct perf_file_section *section __unused,
-+			struct perf_header *ph,
-+			int feat __unused, int fd, void *data __used)
-+{
-+	ph->info.arch = do_read_string(fd, ph);
-+	return ph->info.arch ? 0 : -ENOMEM;
-+}
-+
-+static int process_nrcpus(struct perf_file_section *section __unused,
-+			  struct perf_header *ph,
-+			  int feat __unused, int fd, void *data __used)
-+{
-+	size_t ret;
-+	u32 nr;
-+
-+	ret = read(fd, &nr, sizeof(nr));
-+	if (ret != sizeof(nr))
-+		return -1;
-+
-+	if (ph->needs_swap)
-+		nr = bswap_32(nr);
-+
-+	ph->info.nr_cpus_online = nr;
-+
-+	ret = read(fd, &nr, sizeof(nr));
-+	if (ret != sizeof(nr))
-+		return -1;
-+
-+	if (ph->needs_swap)
-+		nr = bswap_32(nr);
-+
-+	ph->info.nr_cpus_avail = nr;
-+	return 0;
-+}
-+
-+static int process_cpudesc(struct perf_file_section *section __unused,
-+			   struct perf_header *ph,
-+			   int feat __unused, int fd, void *data __used)
-+{
-+	ph->info.cpu_desc = do_read_string(fd, ph);
-+	return ph->info.cpu_desc ? 0 : -ENOMEM;
-+}
-+
-+static int process_cpuid(struct perf_file_section *section __unused,
-+			 struct perf_header *ph,
-+			 int feat __unused, int fd, void *data __used)
-+{
-+	ph->info.cpuid = do_read_string(fd, ph);
-+	return ph->info.cpuid ? 0 : -ENOMEM;
-+}
-+
-+static int process_total_mem(struct perf_file_section *section __unused,
-+			     struct perf_header *ph,
-+			     int feat __unused, int fd, void *data __used)
-+{
-+	uint64_t mem;
-+	size_t ret;
-+
-+	ret = read(fd, &mem, sizeof(mem));
-+	if (ret != sizeof(mem))
-+		return -1;
-+
-+	if (ph->needs_swap)
-+		mem = bswap_64(mem);
-+
-+	ph->info.total_mem = mem;
-+	return 0;
-+}
-+
- static struct perf_evsel *
- perf_evlist__find_by_index(struct perf_evlist *evlist, int idx)
+-static void print_hostname(struct perf_header *ph, int fd, FILE *fp)
++static void print_hostname(struct perf_header *ph, int fd __used, FILE *fp)
  {
-@@ -1688,6 +1782,208 @@ process_event_desc(struct perf_file_section *section __unused,
- 	return 0;
+-	char *str = do_read_string(fd, ph);
+-	fprintf(fp, "# hostname : %s\n", str);
+-	free(str);
++	fprintf(fp, "# hostname : %s\n", ph->info.hostname);
  }
  
-+static int process_cmdline(struct perf_file_section *section __unused,
-+			   struct perf_header *ph,
-+			   int feat __unused, int fd, void *data __used)
-+{
-+	size_t ret;
-+	char *str;
-+	u32 nr, i;
-+	struct strbuf sb;
+-static void print_osrelease(struct perf_header *ph, int fd, FILE *fp)
++static void print_osrelease(struct perf_header *ph, int fd __used, FILE *fp)
+ {
+-	char *str = do_read_string(fd, ph);
+-	fprintf(fp, "# os release : %s\n", str);
+-	free(str);
++	fprintf(fp, "# os release : %s\n", ph->info.os_release);
+ }
+ 
+-static void print_arch(struct perf_header *ph, int fd, FILE *fp)
++static void print_arch(struct perf_header *ph, int fd __used, FILE *fp)
+ {
+-	char *str = do_read_string(fd, ph);
+-	fprintf(fp, "# arch : %s\n", str);
+-	free(str);
++	fprintf(fp, "# arch : %s\n", ph->info.arch);
+ }
+ 
+-static void print_cpudesc(struct perf_header *ph, int fd, FILE *fp)
++static void print_cpudesc(struct perf_header *ph, int fd __used, FILE *fp)
+ {
+-	char *str = do_read_string(fd, ph);
+-	fprintf(fp, "# cpudesc : %s\n", str);
+-	free(str);
++	fprintf(fp, "# cpudesc : %s\n", ph->info.cpu_desc);
+ }
+ 
+-static void print_nrcpus(struct perf_header *ph, int fd, FILE *fp)
++static void print_nrcpus(struct perf_header *ph, int fd __used, FILE *fp)
+ {
+-	ssize_t ret;
+-	u32 nr;
+-
+-	ret = read(fd, &nr, sizeof(nr));
+-	if (ret != (ssize_t)sizeof(nr))
+-		nr = -1; /* interpreted as error */
+-
+-	if (ph->needs_swap)
+-		nr = bswap_32(nr);
+-
+-	fprintf(fp, "# nrcpus online : %u\n", nr);
+-
+-	ret = read(fd, &nr, sizeof(nr));
+-	if (ret != (ssize_t)sizeof(nr))
+-		nr = -1; /* interpreted as error */
+-
+-	if (ph->needs_swap)
+-		nr = bswap_32(nr);
+-
+-	fprintf(fp, "# nrcpus avail : %u\n", nr);
++	fprintf(fp, "# nrcpus online : %u\n", ph->info.nr_cpus_online);
++	fprintf(fp, "# nrcpus avail : %u\n", ph->info.nr_cpus_avail);
+ }
+ 
+-static void print_version(struct perf_header *ph, int fd, FILE *fp)
++static void print_version(struct perf_header *ph, int fd __used, FILE *fp)
+ {
+-	char *str = do_read_string(fd, ph);
+-	fprintf(fp, "# perf version : %s\n", str);
+-	free(str);
++	fprintf(fp, "# perf version : %s\n", ph->info.version);
+ }
+ 
+-static void print_cmdline(struct perf_header *ph, int fd, FILE *fp)
++static void print_cmdline(struct perf_header *ph, int fd __used, FILE *fp)
+ {
+-	ssize_t ret;
++	int nr, i;
+ 	char *str;
+-	u32 nr, i;
+ 
+-	ret = read(fd, &nr, sizeof(nr));
+-	if (ret != (ssize_t)sizeof(nr))
+-		return;
+-
+-	if (ph->needs_swap)
+-		nr = bswap_32(nr);
++	nr = ph->info.nr_cmdline;
++	str = ph->info.cmdline;
+ 
+ 	fprintf(fp, "# cmdline : ");
+ 
+ 	for (i = 0; i < nr; i++) {
+-		str = do_read_string(fd, ph);
+ 		fprintf(fp, "%s ", str);
+-		free(str);
++		str += strlen(str) + 1;
+ 	}
+ 	fputc('\n', fp);
+ }
+ 
+-static void print_cpu_topology(struct perf_header *ph, int fd, FILE *fp)
++static void print_cpu_topology(struct perf_header *ph, int fd __used, FILE *fp)
+ {
+-	ssize_t ret;
+-	u32 nr, i;
++	int nr, i;
+ 	char *str;
+ 
+-	ret = read(fd, &nr, sizeof(nr));
+-	if (ret != (ssize_t)sizeof(nr))
+-		return;
+-
+-	if (ph->needs_swap)
+-		nr = bswap_32(nr);
++	nr = ph->info.nr_sibling_cores;
++	str = ph->info.sibling_cores;
+ 
+ 	for (i = 0; i < nr; i++) {
+-		str = do_read_string(fd, ph);
+ 		fprintf(fp, "# sibling cores   : %s\n", str);
+-		free(str);
++		str += strlen(str) + 1;
+ 	}
+ 
+-	ret = read(fd, &nr, sizeof(nr));
+-	if (ret != (ssize_t)sizeof(nr))
+-		return;
+-
+-	if (ph->needs_swap)
+-		nr = bswap_32(nr);
++	nr = ph->info.nr_sibling_threads;
++	str = ph->info.sibling_threads;
+ 
+ 	for (i = 0; i < nr; i++) {
+-		str = do_read_string(fd, ph);
+ 		fprintf(fp, "# sibling threads : %s\n", str);
+-		free(str);
++		str += strlen(str) + 1;
+ 	}
+ }
+ 
+@@ -1345,82 +1300,52 @@ static void print_event_desc(struct perf_header *ph, int fd, FILE *fp)
+ 	free_event_desc(events);
+ }
+ 
+-static void print_total_mem(struct perf_header *h __used, int fd, FILE *fp)
++static void print_total_mem(struct perf_header *ph, int fd __used, FILE *fp)
+ {
+-	uint64_t mem;
+-	ssize_t ret;
+-
+-	ret = read(fd, &mem, sizeof(mem));
+-	if (ret != sizeof(mem))
+-		goto error;
+-
+-	if (h->needs_swap)
+-		mem = bswap_64(mem);
+-
+-	fprintf(fp, "# total memory : %"PRIu64" kB\n", mem);
+-	return;
+-error:
+-	fprintf(fp, "# total memory : unknown\n");
++	fprintf(fp, "# total memory : %Lu kB\n", ph->info.total_mem);
+ }
+ 
+-static void print_numa_topology(struct perf_header *h __used, int fd, FILE *fp)
++static void print_numa_topology(struct perf_header *ph, int fd __used, FILE *fp)
+ {
+-	ssize_t ret;
+ 	u32 nr, c, i;
+-	char *str;
++	char *str, *tmp;
+ 	uint64_t mem_total, mem_free;
+ 
+ 	/* nr nodes */
+-	ret = read(fd, &nr, sizeof(nr));
+-	if (ret != (ssize_t)sizeof(nr))
+-		goto error;
+-
+-	if (h->needs_swap)
+-		nr = bswap_32(nr);
++	nr = ph->info.nr_numa_nodes;
++	str = ph->info.numa_nodes;
+ 
+ 	for (i = 0; i < nr; i++) {
+-
+ 		/* node number */
+-		ret = read(fd, &c, sizeof(c));
+-		if (ret != (ssize_t)sizeof(c))
++		c = strtoul(str, &tmp, 0);
++		if (*tmp != ':')
+ 			goto error;
+ 
+-		if (h->needs_swap)
+-			c = bswap_32(c);
+-
+-		ret = read(fd, &mem_total, sizeof(u64));
+-		if (ret != sizeof(u64))
++		str = tmp + 1;
++		mem_total = strtoull(str, &tmp, 0);
++		if (*tmp != ':')
+ 			goto error;
+ 
+-		ret = read(fd, &mem_free, sizeof(u64));
+-		if (ret != sizeof(u64))
++		str = tmp + 1;
++		mem_free = strtoull(str, &tmp, 0);
++		if (*tmp != ':')
+ 			goto error;
+ 
+-		if (h->needs_swap) {
+-			mem_total = bswap_64(mem_total);
+-			mem_free = bswap_64(mem_free);
+-		}
+-
+ 		fprintf(fp, "# node%u meminfo  : total = %"PRIu64" kB,"
+ 			    " free = %"PRIu64" kB\n",
+-			c,
+-			mem_total,
+-			mem_free);
++			c, mem_total, mem_free);
+ 
+-		str = do_read_string(fd, h);
++		str = tmp + 1;
+ 		fprintf(fp, "# node%u cpu list : %s\n", c, str);
+-		free(str);
+ 	}
+ 	return;
+ error:
+ 	fprintf(fp, "# numa topology : not available\n");
+ }
+ 
+-static void print_cpuid(struct perf_header *ph, int fd, FILE *fp)
++static void print_cpuid(struct perf_header *ph, int fd __used, FILE *fp)
+ {
+-	char *str = do_read_string(fd, ph);
+-	fprintf(fp, "# cpuid : %s\n", str);
+-	free(str);
++	fprintf(fp, "# cpuid : %s\n", ph->info.cpuid);
+ }
+ 
+ static void print_branch_stack(struct perf_header *ph __used, int fd __used,
+@@ -1429,39 +1354,32 @@ static void print_branch_stack(struct perf_header *ph __used, int fd __used,
+ 	fprintf(fp, "# contains samples with branch stack\n");
+ }
+ 
+-static void print_pmu_mappings(struct perf_header *ph, int fd, FILE *fp)
++static void print_pmu_mappings(struct perf_header *ph, int fd __used, FILE *fp)
+ {
+ 	const char *delimiter = "# pmu mappings: ";
+-	char *name;
+-	int ret;
++	char *str, *tmp;
+ 	u32 pmu_num;
+ 	u32 type;
+ 
+-	ret = read(fd, &pmu_num, sizeof(pmu_num));
+-	if (ret != sizeof(pmu_num))
+-		goto error;
+-
+-	if (ph->needs_swap)
+-		pmu_num = bswap_32(pmu_num);
+-
++	pmu_num = ph->info.nr_pmu_mappings;
+ 	if (!pmu_num) {
+ 		fprintf(fp, "# pmu mappings: not available\n");
+ 		return;
+ 	}
+ 
++	str = ph->info.pmu_mappings;
 +
-+	ret = read(fd, &nr, sizeof(nr));
-+	if (ret != sizeof(nr))
-+		return -1;
-+
-+	if (ph->needs_swap)
-+		nr = bswap_32(nr);
-+
-+	ph->info.nr_cmdline = nr;
-+	strbuf_init(&sb, 128);
-+
-+	for (i = 0; i < nr; i++) {
-+		str = do_read_string(fd, ph);
-+		if (!str)
+ 	while (pmu_num) {
+-		if (read(fd, &type, sizeof(type)) != sizeof(type))
+-			break;
+-		if (ph->needs_swap)
+-			type = bswap_32(type);
++		type = strtoul(str, &tmp, 0);
++		if (*tmp != ':')
 +			goto error;
 +
-+		/* include a NULL character at the end */
-+		strbuf_add(&sb, str, strlen(str) + 1);
-+		free(str);
-+	}
-+	ph->info.cmdline = strbuf_detach(&sb, NULL);
-+	return 0;
-+
-+error:
-+	strbuf_release(&sb);
-+	return -1;
-+}
-+
-+static int process_cpu_topology(struct perf_file_section *section __unused,
-+				struct perf_header *ph,
-+				int feat __unused, int fd, void *data __used)
-+{
-+	size_t ret;
-+	u32 nr, i;
-+	char *str;
-+	struct strbuf sb;
-+
-+	ret = read(fd, &nr, sizeof(nr));
-+	if (ret != sizeof(nr))
-+		return -1;
-+
-+	if (ph->needs_swap)
-+		nr = bswap_32(nr);
-+
-+	ph->info.nr_sibling_cores = nr;
-+	strbuf_init(&sb, 128);
-+
-+	for (i = 0; i < nr; i++) {
-+		str = do_read_string(fd, ph);
-+		if (!str)
-+			goto error;
-+
-+		/* include a NULL character at the end */
-+		strbuf_add(&sb, str, strlen(str) + 1);
-+		free(str);
-+	}
-+	ph->info.sibling_cores = strbuf_detach(&sb, NULL);
-+
-+	ret = read(fd, &nr, sizeof(nr));
-+	if (ret != sizeof(nr))
-+		return -1;
-+
-+	if (ph->needs_swap)
-+		nr = bswap_32(nr);
-+
-+	ph->info.nr_sibling_threads = nr;
-+
-+	for (i = 0; i < nr; i++) {
-+		str = do_read_string(fd, ph);
-+		if (!str)
-+			goto error;
-+
-+		/* include a NULL character at the end */
-+		strbuf_add(&sb, str, strlen(str) + 1);
-+		free(str);
-+	}
-+	ph->info.sibling_threads = strbuf_detach(&sb, NULL);
-+	return 0;
-+
-+error:
-+	strbuf_release(&sb);
-+	return -1;
-+}
-+
-+static int process_numa_topology(struct perf_file_section *section __unused,
-+				 struct perf_header *ph,
-+				 int feat __unused, int fd, void *data __used)
-+{
-+	size_t ret;
-+	u32 nr, node, i;
-+	char *str;
-+	uint64_t mem_total, mem_free;
-+	struct strbuf sb;
-+
-+	/* nr nodes */
-+	ret = read(fd, &nr, sizeof(nr));
-+	if (ret != sizeof(nr))
-+		goto error;
-+
-+	if (ph->needs_swap)
-+		nr = bswap_32(nr);
-+
-+	ph->info.nr_numa_nodes = nr;
-+	strbuf_init(&sb, 256);
-+
-+	for (i = 0; i < nr; i++) {
-+		/* node number */
-+		ret = read(fd, &node, sizeof(node));
-+		if (ret != sizeof(node))
-+			goto error;
-+
-+		ret = read(fd, &mem_total, sizeof(u64));
-+		if (ret != sizeof(u64))
-+			goto error;
-+
-+		ret = read(fd, &mem_free, sizeof(u64));
-+		if (ret != sizeof(u64))
-+			goto error;
-+
-+		if (ph->needs_swap) {
-+			node = bswap_32(node);
-+			mem_total = bswap_64(mem_total);
-+			mem_free = bswap_64(mem_free);
-+		}
-+
-+		strbuf_addf(&sb, "%u:%"PRIu64":%"PRIu64":",
-+			    node, mem_total, mem_free);
-+
-+		str = do_read_string(fd, ph);
-+		if (!str)
-+			goto error;
-+
-+		/* include a NULL character at the end */
-+		strbuf_add(&sb, str, strlen(str) + 1);
-+		free(str);
-+	}
-+	ph->info.numa_nodes = strbuf_detach(&sb, NULL);
-+	return 0;
-+
-+error:
-+	strbuf_release(&sb);
-+	return -1;
-+}
-+
-+static int process_pmu_mappings(struct perf_file_section *section __unused,
-+				struct perf_header *ph,
-+				int feat __unused, int fd, void *data __used)
-+{
-+	size_t ret;
-+	char *name;
-+	u32 pmu_num;
-+	u32 type;
-+	struct strbuf sb;
-+
-+	ret = read(fd, &pmu_num, sizeof(pmu_num));
-+	if (ret != sizeof(pmu_num))
-+		return -1;
-+
-+	if (ph->needs_swap)
-+		pmu_num = bswap_32(pmu_num);
-+
-+	if (!pmu_num) {
-+		pr_debug("pmu mappings not available\n");
-+		return 0;
-+	}
-+
-+	ph->info.nr_pmu_mappings = pmu_num;
-+	strbuf_init(&sb, 128);
-+
-+	while (pmu_num) {
-+		if (read(fd, &type, sizeof(type)) != sizeof(type))
-+			goto error;
-+		if (ph->needs_swap)
-+			type = bswap_32(type);
-+
-+		name = do_read_string(fd, ph);
-+		if (!name)
-+			goto error;
-+
-+		strbuf_addf(&sb, "%u:%s", type, name);
-+		/* include a NULL character at the end */
-+		strbuf_add(&sb, "", 1);
-+
-+		free(name);
++		str = tmp + 1;
++		fprintf(fp, "%s%s = %" PRIu32, delimiter, str, type);
+ 
+-		name = do_read_string(fd, ph);
+-		if (!name)
+-			break;
+-		pmu_num--;
+-		fprintf(fp, "%s%s = %" PRIu32, delimiter, name, type);
+-		free(name);
+ 		delimiter = ", ";
++		str += strlen(str) + 1;
 +		pmu_num--;
-+	}
-+	ph->info.pmu_mappings = strbuf_detach(&sb, NULL);
-+	return 0;
-+
-+error:
-+	strbuf_release(&sb);
-+	return -1;
-+}
-+
- struct feature_ops {
- 	int (*write)(int fd, struct perf_header *h, struct perf_evlist *evlist);
- 	void (*print)(struct perf_header *h, int fd, FILE *fp);
-@@ -1704,7 +2000,7 @@ struct feature_ops {
- 		.process = process_##func }
- #define FEAT_OPF(n, func) \
- 	[n] = { .name = #n, .write = write_##func, .print = print_##func, \
--		.full_only = true }
-+		.process = process_##func, .full_only = true }
+ 	}
  
- /* feature_ops not implemented: */
- #define print_tracing_data	NULL
-@@ -1713,20 +2009,20 @@ struct feature_ops {
- static const struct feature_ops feat_ops[HEADER_LAST_FEATURE] = {
- 	FEAT_OPP(HEADER_TRACING_DATA,	tracing_data),
- 	FEAT_OPP(HEADER_BUILD_ID,	build_id),
--	FEAT_OPA(HEADER_HOSTNAME,	hostname),
--	FEAT_OPA(HEADER_OSRELEASE,	osrelease),
--	FEAT_OPA(HEADER_VERSION,	version),
--	FEAT_OPA(HEADER_ARCH,		arch),
--	FEAT_OPA(HEADER_NRCPUS,		nrcpus),
--	FEAT_OPA(HEADER_CPUDESC,	cpudesc),
--	FEAT_OPA(HEADER_CPUID,		cpuid),
--	FEAT_OPA(HEADER_TOTAL_MEM,	total_mem),
-+	FEAT_OPP(HEADER_HOSTNAME,	hostname),
-+	FEAT_OPP(HEADER_OSRELEASE,	osrelease),
-+	FEAT_OPP(HEADER_VERSION,	version),
-+	FEAT_OPP(HEADER_ARCH,		arch),
-+	FEAT_OPP(HEADER_NRCPUS,		nrcpus),
-+	FEAT_OPP(HEADER_CPUDESC,	cpudesc),
-+	FEAT_OPP(HEADER_CPUID,		cpuid),
-+	FEAT_OPP(HEADER_TOTAL_MEM,	total_mem),
- 	FEAT_OPP(HEADER_EVENT_DESC,	event_desc),
--	FEAT_OPA(HEADER_CMDLINE,	cmdline),
-+	FEAT_OPP(HEADER_CMDLINE,	cmdline),
- 	FEAT_OPF(HEADER_CPU_TOPOLOGY,	cpu_topology),
- 	FEAT_OPF(HEADER_NUMA_TOPOLOGY,	numa_topology),
- 	FEAT_OPA(HEADER_BRANCH_STACK,	branch_stack),
--	FEAT_OPA(HEADER_PMU_MAPPINGS,	pmu_mappings),
-+	FEAT_OPP(HEADER_PMU_MAPPINGS,	pmu_mappings),
- };
- 
- struct header_print_data {
+ 	fprintf(fp, "\n");
 -- 
 1.7.11.4
 
