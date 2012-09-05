@@ -1,83 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758080Ab2IEBTv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 21:19:51 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:46744 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752847Ab2IEBTq (ORCPT
+	id S1758039Ab2IEBWr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 21:22:47 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:57301 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752847Ab2IEBWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 21:19:46 -0400
+	Tue, 4 Sep 2012 21:22:45 -0400
+Date: Tue, 4 Sep 2012 18:22:26 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 02/23] rcu: Allow RCU grace-period
+ initialization to be preempted
+Message-ID: <20120905012226.GD2593@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120830181811.GA29154@linux.vnet.ibm.com>
+ <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346350718-30937-2-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20120902010935.GB5713@leaf>
 MIME-Version: 1.0
-In-Reply-To: <BCB48C05FCE8BC4D9E61E841ECBE6DB70FFB67@039-SN2MPN1-011.039d.mgd.msft.net>
-References: <1344500448-10927-1-git-send-email-qiang.liu@freescale.com>
-	<CAA9_cmdqmuhAcaqfkjvKSpsTL350BAJcY8pn6U=SJ9Nok1-XuA@mail.gmail.com>
-	<BCB48C05FCE8BC4D9E61E841ECBE6DB70FFB67@039-SN2MPN1-011.039d.mgd.msft.net>
-Date: Tue, 4 Sep 2012 18:19:45 -0700
-X-Google-Sender-Auth: j6ZnOolANBT2Dis8dK1BDqT0arE
-Message-ID: <CAA9_cmfT1R2+r9_8g0giMJz+wvrNce6T6GPDpvUTtcA-UyAZNQ@mail.gmail.com>
-Subject: Re: [PATCH v7 1/8] Talitos: Support for async_tx XOR offload
-From: Dan Williams <djbw@fb.com>
-To: Liu Qiang-B32616 <B32616@freescale.com>
-Cc: "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
-        "herbert@gondor.apana.org.au" <herbert@gondor.hengli.com.au>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Li Yang-R58472 <r58472@freescale.com>,
-        Phillips Kim-R1AAHA <R1AAHA@freescale.com>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        Dave Jiang <dave.jiang@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120902010935.GB5713@leaf>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12090501-6148-0000-0000-000009470548
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 4, 2012 at 5:28 AM, Liu Qiang-B32616 <B32616@freescale.com> wrote:
->> Will this engine be coordinating with another to handle memory copies?
->>  The dma mapping code for async_tx/raid is broken when dma mapping
->> requests overlap or cross dma device boundaries [1].
->>
->> [1]: http://marc.info/?l=linux-arm-kernel&m=129407269402930&w=2
-> Yes, it needs fsl-dma to handle memcpy copies.
-> I read your link, the unmap address is stored in talitos hwdesc, the address will be unmapped when async_tx ack this descriptor, I know fsl-dma won't wait this ack flag in current kernel, so I fix it in fsl-dma patch 5/8. Do you mean that?
+On Sat, Sep 01, 2012 at 06:09:35PM -0700, Josh Triplett wrote:
+> On Thu, Aug 30, 2012 at 11:18:17AM -0700, Paul E. McKenney wrote:
+> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > 
+> > RCU grace-period initialization is currently carried out with interrupts
+> > disabled, which can result in 200-microsecond latency spikes on systems
+> > on which RCU has been configured for 4096 CPUs.  This patch therefore
+> > makes the RCU grace-period initialization be preemptible, which should
+> > eliminate those latency spikes.  Similar spikes from grace-period cleanup
+> > and the forcing of quiescent states will be dealt with similarly by later
+> > patches.
+> > 
+> > Reported-by: Mike Galbraith <mgalbraith@suse.de>
+> > Reported-by: Dimitri Sivanich <sivanich@sgi.com>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> Does it make sense to have cond_resched() right before the continues,
+> which lead right back up to the wait_event_interruptible at the top of
+> the loop?  Or do you expect to usually find that event already
+> signalled?
 
-Unfortunately no.  I'm open to other suggestions. but as far as I can
-see it requires deeper changes to rip out the dma mapping that happens
-in async_tx and the automatic unmapping done by drivers.  It should
-all be pushed to the client (md).
+Given that the event might have already signaled, I need to put the
+cond_resched() into the loop.  Otherwise, we get back long latencies.
 
-Currently async_tx hides hardware details from md such that it doesn't
-even care if the operation is offloaded to hardware at all, but that
-takes things too far.  In the worst case an copy->xor chain handled by
-multiple channels results in :
+							Thanx, Paul
 
-1/ dma_map(copy_chan...)
-2/ dma_map(xor_chan...)
-3/ <exec copy>
-4/ dma_unmap(copy_chan...)
-5/ <exec xor> <---initiated by the copy_chan
-6/ dma_unmap(xor_chan...)
+> In any case:
+> 
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> 
+> >  kernel/rcutree.c |   17 ++++++++++-------
+> >  1 files changed, 10 insertions(+), 7 deletions(-)
+> > 
+> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > index e1c5868..ef56aa3 100644
+> > --- a/kernel/rcutree.c
+> > +++ b/kernel/rcutree.c
+> > @@ -1069,6 +1069,7 @@ static int rcu_gp_kthread(void *arg)
+> >  			 * don't start another one.
+> >  			 */
+> >  			raw_spin_unlock_irqrestore(&rnp->lock, flags);
+> > +			cond_resched();
+> >  			continue;
+> >  		}
+> >  
+> > @@ -1079,6 +1080,7 @@ static int rcu_gp_kthread(void *arg)
+> >  			 */
+> >  			rsp->fqs_need_gp = 1;
+> >  			raw_spin_unlock_irqrestore(&rnp->lock, flags);
+> > +			cond_resched();
+> >  			continue;
+> >  		}
+> >  
+> > @@ -1089,10 +1091,10 @@ static int rcu_gp_kthread(void *arg)
+> >  		rsp->fqs_state = RCU_GP_INIT; /* Stop force_quiescent_state. */
+> >  		rsp->jiffies_force_qs = jiffies + RCU_JIFFIES_TILL_FORCE_QS;
+> >  		record_gp_stall_check_time(rsp);
+> > -		raw_spin_unlock(&rnp->lock);  /* leave irqs disabled. */
+> > +		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+> >  
+> >  		/* Exclude any concurrent CPU-hotplug operations. */
+> > -		raw_spin_lock(&rsp->onofflock);  /* irqs already disabled. */
+> > +		get_online_cpus();
+> >  
+> >  		/*
+> >  		 * Set the quiescent-state-needed bits in all the rcu_node
+> > @@ -1112,7 +1114,7 @@ static int rcu_gp_kthread(void *arg)
+> >  		 * due to the fact that we have irqs disabled.
+> >  		 */
+> >  		rcu_for_each_node_breadth_first(rsp, rnp) {
+> > -			raw_spin_lock(&rnp->lock); /* irqs already disabled. */
+> > +			raw_spin_lock_irqsave(&rnp->lock, flags);
+> >  			rcu_preempt_check_blocked_tasks(rnp);
+> >  			rnp->qsmask = rnp->qsmaskinit;
+> >  			rnp->gpnum = rsp->gpnum;
+> > @@ -1123,15 +1125,16 @@ static int rcu_gp_kthread(void *arg)
+> >  			trace_rcu_grace_period_init(rsp->name, rnp->gpnum,
+> >  						    rnp->level, rnp->grplo,
+> >  						    rnp->grphi, rnp->qsmask);
+> > -			raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
+> > +			raw_spin_unlock_irqrestore(&rnp->lock, flags);
+> > +			cond_resched();
+> >  		}
+> >  
+> >  		rnp = rcu_get_root(rsp);
+> > -		raw_spin_lock(&rnp->lock); /* irqs already disabled. */
+> > +		raw_spin_lock_irqsave(&rnp->lock, flags);
+> >  		/* force_quiescent_state() now OK. */
+> >  		rsp->fqs_state = RCU_SIGNAL_INIT;
+> > -		raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
+> > -		raw_spin_unlock_irqrestore(&rsp->onofflock, flags);
+> > +		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+> > +		put_online_cpus();
+> >  	}
+> >  	return 0;
+> >  }
+> > -- 
+> > 1.7.8
+> > 
+> 
 
-Step 2 violates the dma api since the buffers belong to the xor_chan
-until unmap.  Step 5 also causes the random completion context of the
-copy channel to bleed into submission context of the xor channel which
-is problematic.  So the order needs to be:
-
-1/ dma_map(copy_chan...)
-2/ <exec copy>
-3/ dma_unmap(copy_chan...)
-4/ dma_map(xor_chan...)
-5/ <exec xor> <--initiated by md in a static context
-6/ dma_unmap(xor_chan...)
-
-Also, if xor_chan and copy_chan lie with the same dma mapping domain
-(iommu or parent device) then we can map the stripe once and skip the
-extra maintenance for the duration of the chain of operations.  This
-dumps a lot of hardware details on md, but I think it is the only way
-to get consistent semantics when arbitrary offload devices are
-involved.
-
---
-Dan
