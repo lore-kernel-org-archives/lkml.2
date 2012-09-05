@@ -1,52 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758412Ab2IEPN6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 11:13:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33309 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751999Ab2IEPN4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 11:13:56 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: target-devel@vger.kernel.org
-Subject: [RFC PATCH 0/3] target: try satisfying memory requests with higher-order allocations
-Date: Wed,  5 Sep 2012 17:13:42 +0200
-Message-Id: <1346858025-10459-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.7.11.2
+	id S1758850Ab2IEPOH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 11:14:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23221 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758833Ab2IEPOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 11:14:04 -0400
+Date: Wed, 5 Sep 2012 18:15:23 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, gleb@redhat.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v9 1/2] kvm: Use a reserved IRQ source ID for irqfd
+Message-ID: <20120905151523.GD11058@redhat.com>
+References: <20120821192903.24958.90138.stgit@bling.home>
+ <20120821195813.GD9027@redhat.com>
+ <1345579579.29292.67.camel@ul30vt.home>
+ <20120821204125.GF9027@redhat.com>
+ <1345583694.29292.91.camel@ul30vt.home>
+ <20120822004138.GM9027@redhat.com>
+ <5047633F.9020405@redhat.com>
+ <20120905145153.GA11048@redhat.com>
+ <20120905150913.GB11058@redhat.com>
+ <50476BC4.4050807@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50476BC4.4050807@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Wed, Sep 05, 2012 at 06:12:04PM +0300, Avi Kivity wrote:
+> On 09/05/2012 06:09 PM, Michael S. Tsirkin wrote:
+> > On Wed, Sep 05, 2012 at 05:51:53PM +0300, Michael S. Tsirkin wrote:
+> >> On Wed, Sep 05, 2012 at 05:35:43PM +0300, Avi Kivity wrote:
+> >> > On 08/22/2012 03:41 AM, Michael S. Tsirkin wrote:
+> >> > >> 
+> >> > >> I assumed you were pointing out the level vs edge interaction.  If we
+> >> > >> call that a userspace bug, I can just drop this.  Thanks,
+> >> > >> 
+> >> > >> Alex
+> >> > > 
+> >> > > level is userspace bug I think :)
+> >> > 
+> >> > I don't see how it's a bug.  Suppose we have a vfio device that shares a
+> >> > gsi with an emulated device.  The emulated device naturally uses
+> >> > KVM_IRQ_LINE (it has no need to re-sample on ADN), while vfio naturally
+> >> > has to use irqfd.
+> >> 
+> >> Absolutely. But vfio needs to use irqfd with the new flag.
+> >> Using existing irqfd for level is a bug.
+> >> 
+> >> > Note one would expect that each irqfd gets its own irq source id, since
+> >> > they are all independent level sources.  The reason they don't is that
+> >> > we shut them down anyway and let the sources re-trigger (it is more
+> >> > accurate to say that they have no irq source id, but that would just
+> >> > muddle the implementation).
+> >> > 
+> >> > Alex, if the conclusion is that we do need this patch, then please add a
+> >> > comment explaining why we can share the source id among all irqfd users.
+> > 
+> > Something along the lines of
+> > 
+> > /* 
+> >    For resample irqfds, level is a logical OR of all inputs;
+> >    to support this, track state for RESAMPLE irqfds separately
+> >    from userspace. We do not need to track state for each input since
+> >    they are all deasserted at the same time, before resampling.
+> >    */
+> 
+> Well the comment style is wrong.
 
-while testing PSCSI I noticed that even requests for a smallish amount
-of data (approximately 700 KB) failed due to an excessive number of
-segments in the request.  In fact, using alloc_page resulted in a
-completely fragmented request, with no merging of consecutive pages
-at all.
+Ouch.
 
-This patch series fixes this problem by using higher-order allocations
-to build the data scatterlist.  The problem is that iscsi assumes that the
-scatterlist consists of single pages, which is not true anymore.  So
-patch 2 has to introduce some relatively complicated changes to
-iscsi_map_iovec and iscsi_unmap_iovec.
+> To expand a little more, irqfd only sends assert events, so assigning
+> the level is equivalent to an OR.  Clearing an resampling simply builds
+> the state again.
+> 
+> btw, there can be other irq source IDs if the lines are shared with the
+> PIT or kvm assigned devices.
 
-While doing this, I noticed something strange in iscsit_do_crypto_hash_sg.
-Patch 1 adds a warning about it.
+Nod.
 
-The approach may be completely wrong and it needs more testing anyway.
-Please review!
-
-Paolo
-
-Paolo Bonzini (3):
-  tcm_iscsi: warn on incorrect precondition for iscsit_do_crypto_hash_sg
-  tcm_iscsi: support multiple sizes in the scatterlist
-  target: try satisfying memory requests with contiguous blocks
-
- drivers/target/iscsi/iscsi_target.c      |  106 +++++++++++++++++++++++++-----
- drivers/target/iscsi/iscsi_target_core.h |    2 +-
- drivers/target/target_core_transport.c   |   58 ++++++++++++++---
- 3 files changed, 138 insertions(+), 28 deletions(-)
-
+> -- 
+> error compiling committee.c: too many arguments to function
