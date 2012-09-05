@@ -1,151 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758946Ab2IEQkP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 12:40:15 -0400
-Received: from local.xorcom.com ([81.218.177.19]:48925 "EHLO local.xorcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758839Ab2IEQkL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 12:40:11 -0400
-Date: Wed, 5 Sep 2012 19:40:09 +0300
-From: Tzafrir Cohen <tzafrir.cohen@xorcom.com>
-To: maximilian attems <max@stro.at>
-Cc: Michal Marek <mmarek@suse.cz>, Linux Kbuild <linux-kbuild@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] builddeb: remove unneeded explicit Architecture
-Message-ID: <20120905164009.GM18204@xorcom.com>
-References: <1344941092-31312-1-git-send-email-tzafrir.cohen@xorcom.com>
- <5040C112.70501@suse.cz>
- <20120905130528.GI18204@xorcom.com>
- <50475310.6000508@suse.cz>
- <20120905151422.GD12713@stro.at>
-MIME-Version: 1.0
+	id S1758209Ab2IEQn1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 12:43:27 -0400
+Received: from li42-95.members.linode.com ([209.123.162.95]:55685 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752056Ab2IEQn0 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 12:43:26 -0400
+Subject: Re: [PATCH] Don't clobber access methods when !regmap
+Mime-Version: 1.0 (Apple Message framework v1084)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120905151422.GD12713@stro.at>
-X-Forced-Service: Sadly Using Gmail [tm]
-Organization: Xorcom*
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <50477FA9.8060905@metafoo.de>
+Date: Wed, 5 Sep 2012 19:43:20 +0300
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-omap@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <D96C7824-5EBC-4418-B016-DCE395A720D7@antoniou-consulting.com>
+References: <1346939132-20187-1-git-send-email-panto@antoniou-consulting.com> <50477FA9.8060905@metafoo.de>
+To: Lars-Peter Clausen <lars@metafoo.de>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 05, 2012 at 05:14:22PM +0200, maximilian attems wrote:
-> On Wed, 05 Sep 2012, Michal Marek wrote:
+Hi Lars,
+
+On Sep 5, 2012, at 7:36 PM, Lars-Peter Clausen wrote:
+
+> On 09/06/2012 03:45 PM, Pantelis Antoniou wrote:
+>> A snd-soc driver that doesn't support regmap blow up horribly
+>> when you assume that regmap is available. Fix it by marking
+>> the driver as not supporting regmap & not clobbering the codec
+>> access methods.
+>> 
+>> This is immediately noticeable on the beagleboard where we crash,
+>> since we might have REGMAP enabled, but it doesn't mean that the
+>> omap driver uses it.
+>> 
+>> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
 > 
-> > On 5.9.2012 15:05, Tzafrir Cohen wrote:
-> > > Hi,
-> > > 
-> > > Thanks for your reply,
-> > > 
-> > > On Fri, Aug 31, 2012 at 03:50:10PM +0200, Michal Marek wrote:
-> > >> Adding Max to CC.
-> > >>
-> > >> On 14.8.2012 12:44, Tzafrir Cohen wrote:
-> > >>> Architecture was set explicitly in debian/control for one of the three
-> > >>> packages (linux-libc-dev) but not for the other two. When cross-building
-> > >>> it gives me an error:
-> > >>>
-> > >>>   dpkg-gencontrol: error: current host architecture 'armhf' does not
-> > >>>   appear in package's architecture list (amd64)
-> > >>>
-> > >>> Also note that if used, dpkg --print-architecture should have been
-> > >>> replaced with dpkg-architecture.
-> > >>>
-> > >>> Signed-off-by: Tzafrir Cohen <tzafrir.cohen@xorcom.com>
-> > >>> ---
-> > >>>  scripts/package/builddeb |    3 +--
-> > >>>  1 file changed, 1 insertion(+), 2 deletions(-)
-> > >>>
-> > >>> diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-> > >>> index acb8650..d9c71a6 100644
-> > >>> --- a/scripts/package/builddeb
-> > >>> +++ b/scripts/package/builddeb
-> > >>> @@ -252,13 +252,12 @@ mkdir -p "$destdir"
-> > >>>  (cd $objtree; tar -c -f - -T "$objtree/debian/hdrobjfiles") | (cd $destdir; tar -xf -)
-> > >>>  ln -sf "/usr/src/linux-headers-$version" "$kernel_headers_dir/lib/modules/$version/build"
-> > >>>  rm -f "$objtree/debian/hdrsrcfiles" "$objtree/debian/hdrobjfiles"
-> > >>> -arch=$(dpkg --print-architecture)
-> > >>>  
-> > >>>  cat <<EOF >> debian/control
-> > >>>  
-> > >>>  Package: $kernel_headers_packagename
-> > >>>  Provides: linux-headers, linux-headers-2.6
-> > >>> -Architecture: $arch
-> > >>> +Architecture: any
-> > >>>  Description: Linux kernel headers for $KERNELRELEASE on $arch
-> > >>>   This package provides kernel header files for $KERNELRELEASE on $arch
-> > >>>   .
-> > >>
-> > >> As the package contains files from arch/$SRCARCH/include, I doubt that
-> > >> this is a valid change.
-> > > 
-> > > But you optionally force the Architecture later on in build_package.
-> > > "Arhcitecture: any" in the source package states that the binary package
-> > > will be the one stated by the build system.
-> > 
-> > Ah, OK. I don't know much about Debian packaging in fact. Max, could you
-> > have a look? The original thread is here:
-> > http://lkml.org/lkml/2012/8/14/133. I meant to add you to CC before,
-> > but apparently I forgot.
->
-> yes indeed it is an invalid change.
-> Cross building shouldn't need it, what did you exactly try?
+> But calling snd_soc_codec_set_cache_io sort of implies that you are using
+> regmap. If you are not using regmap your codec should not call
+> snd_soc_codec_set_cache_io.
+> 
+> - Lars
+> 
 
-$ grep CROSS_COMPILE .config
-CONFIG_CROSS_COMPILE="arm-linux-gnueabihf-"
+The driver in question (twl4030.c) does not call snd_soc_codec_set_cache_io().
+However the snd-soc core does call it in sound/soc/soc-core.c in soc_probe_codec.
 
-Command:
+I do see that there's a commit 98d3088e534a2a61f6690b5426909b0c3b57a785 that is
+fixing it in a different manner.
 
-  KBUILD_DEBARCH=armhf make ARCH=arm KBUILD_IMAGE=uImage deb-pkg
+> diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+> index f219b2f..f81c597 100644
+> --- a/sound/soc/soc-core.c
+> +++ b/sound/soc/soc-core.c
+> @@ -1096,7 +1096,7 @@ static int soc_probe_codec(struct snd_soc_card *card,
+>         }
+>  
+>         /* If the driver didn't set I/O up try regmap */
+> -       if (!codec->control_data)
+> +       if (!codec->write && dev_get_regmap(codec->dev, NULL))
+>                 snd_soc_codec_set_cache_io(codec, 0, 0, SND_SOC_REGMAP);
+>  
+>         if (driver->controls)
+> 
+> 
 
-Error I get:
+Originally it was call unconditionally, but now it should work. Let me check this
+and I'll report back.
 
-  dpkg-gencontrol: error: current host architecture 'armhf' does not
-  appear in package's architecture list (amd64)
+Regards
 
-It seems I have to use KBUILD_DEBARCH, as the kernel build system can't
-really tell if I want armel or armhf (If I built the same kernel for a
-Squeeze system I would have been forced to use armel).
-
-After I apply the patch, I can build the packages with no problem. The
-generated linux-libc-dev file has "Architecture: armhf".
+-- Pantelis
 
 
-Below is debian/control at the time the error message was generated:
+>> 
+>> ---
+>> sound/soc/soc-io.c | 14 ++++++++++----
+>> 1 file changed, 10 insertions(+), 4 deletions(-)
+>> 
+>> diff --git a/sound/soc/soc-io.c b/sound/soc/soc-io.c
+>> index 29183ef..4e5b4ae 100644
+>> --- a/sound/soc/soc-io.c
+>> +++ b/sound/soc/soc-io.c
+>> @@ -117,9 +117,6 @@ int snd_soc_codec_set_cache_io(struct snd_soc_codec *codec,
+>> 	int ret;
+>> 
+>> 	memset(&config, 0, sizeof(config));
+>> -	codec->write = hw_write;
+>> -	codec->read = hw_read;
+>> -	codec->bulk_write_raw = snd_soc_hw_bulk_write_raw;
+>> 
+>> 	config.reg_bits = addr_bits;
+>> 	config.val_bits = data_bits;
+>> @@ -151,7 +148,9 @@ int snd_soc_codec_set_cache_io(struct snd_soc_codec *codec,
+>> 			 * multiples */
+>> 			if (ret > 0)
+>> 				codec->val_bytes = ret;
+>> -		}
+>> +		} else
+>> +			codec->using_regmap = false;
+>> +
+>> 		break;
+>> 
+>> 	default:
+>> @@ -161,6 +160,13 @@ int snd_soc_codec_set_cache_io(struct snd_soc_codec *codec,
+>> 	if (IS_ERR(codec->control_data))
+>> 		return PTR_ERR(codec->control_data);
+>> 
+>> +	/* only when using regmap; don't modify unconditionally */
+>> +	if (codec->using_regmap) {
+>> +		codec->write = hw_write;
+>> +		codec->read = hw_read;
+>> +		codec->bulk_write_raw = snd_soc_hw_bulk_write_raw;
+>> +	}
+>> +
+>> 	return 0;
+>> }
+>> EXPORT_SYMBOL_GPL(snd_soc_codec_set_cache_io);
+> 
 
-Source: linux-upstream
-Section: kernel
-Priority: optional
-Maintainer: Tzafrir Cohen <tzafrir@debian.org>
-Standards-Version: 3.8.4
-Homepage: http://www.kernel.org/
-
-Package: linux-image-3.6.0-rc4-cm-t3730+
-Provides: linux-image, linux-image-2.6, linux-modules-3.6.0-rc4-cm-t3730+
-Suggests: linux-firmware-image
-Architecture: any
-Description: Linux kernel, version 3.6.0-rc4-cm-t3730+
- This package contains the Linux kernel, modules and corresponding other
- files, version: 3.6.0-rc4-cm-t3730+.
-
-Package: linux-headers-3.6.0-rc4-cm-t3730+
-Provides: linux-headers, linux-headers-2.6
-Architecture: amd64
-Description: Linux kernel headers for 3.6.0-rc4-cm-t3730+ on amd64
- This package provides kernel header files for 3.6.0-rc4-cm-t3730+ on amd64
- .
- This is useful for people who need to build external modules
-
-Package: linux-libc-dev
-Section: devel
-Provides: linux-kernel-headers
-Architecture: any
-Description: Linux support headers for userspace development
- This package provides userspaces headers from the Linux kernel.  These headers
- are used by the installed headers for GNU glibc and other system libraries.
-
--- 
-               Tzafrir Cohen
-icq#16849755              jabber:tzafrir.cohen@xorcom.com
-+972-50-7952406           mailto:tzafrir.cohen@xorcom.com
-http://www.xorcom.com  iax:guest@local.xorcom.com/tzafrir
