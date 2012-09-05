@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510Ab2IENfk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 09:35:40 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54778 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750906Ab2IENfi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 09:35:38 -0400
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: <linux-arm-kernel@lists.infradead.org>
-Cc: HACHIMI Samir <shachimi@adeneo-embedded.com>, shawn.guo@linaro.org,
-        thierry.reding@avionic-design.de, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Beno=C3=AEt=20Th=C3=A9baudeau?= 
-	<benoit.thebaudeau@advansee.com>,
-        kernel@pengutronix.de, Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [PATCH 4/8] pwm i.MX: Use module_platform_driver
-Date: Wed,  5 Sep 2012 15:35:23 +0200
-Message-Id: <1346852127-25226-5-git-send-email-s.hauer@pengutronix.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1346852127-25226-1-git-send-email-s.hauer@pengutronix.de>
-References: <1346852127-25226-1-git-send-email-s.hauer@pengutronix.de>
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1757034Ab2IENkI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 09:40:08 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:37796 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751298Ab2IENkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 09:40:05 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Andre Przywara <andre.przywara@amd.com>
+Subject: Re: [PATCH 0/8 v2] acpi-cpufreq: Move modern AMD cpufreq support to acpi-cpufreq
+Date: Wed, 5 Sep 2012 15:46:22 +0200
+User-Agent: KMail/1.13.6 (Linux/3.6.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: Thomas Renninger <trenn@suse.de>, Matthew Garret <mjg@redhat.com>,
+        linux-pm@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+References: <1346747289-8421-1-git-send-email-andre.przywara@amd.com>
+In-Reply-To: <1346747289-8421-1-git-send-email-andre.przywara@amd.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209051546.22590.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
----
- drivers/pwm/pwm-imx.c |   12 +-----------
- 1 file changed, 1 insertion(+), 11 deletions(-)
+On Tuesday, September 04, 2012, Andre Przywara wrote:
+> Hi,
+> 
+> now the second, revised version of the patch set. I now tested loading
+> both drivers after each other in several combinations, after two bug
+> fixes this now works as expected.
+> I added a patch to move messages from powernow-k8 after the initialization
+> phase, so it remains silent if driver loading fails.
+> 
+> I also rearranged the patches so that the powernow-k8 feature removal patch is
+> now the last one and is somewhat optional. I still prefer to have it in,
+> but it can be dropped if needed. Then powernow-k8 will still support modern
+> AMD CPUs, but will emit a warning message.
+> 
+> Regards,
+> Andre
+> 
+> Changes from v1:
+> * added hints to Kconfig about CPU support
+> * merge documentation from separate patch into the feature patch
+> * add deprecation warning
+> * prefix acpi-cpufreq warning messages with module name
+> * bugfix: avoid boost init it driver registration failed
+> * bugfix: fix module redirect request call (was not reached before)
 
-diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
-index 3fc4ae8..a689144 100644
---- a/drivers/pwm/pwm-imx.c
-+++ b/drivers/pwm/pwm-imx.c
-@@ -270,17 +270,7 @@ static struct platform_driver imx_pwm_driver = {
- 	.remove		= __devexit_p(imx_pwm_remove),
- };
- 
--static int __init imx_pwm_init(void)
--{
--	return platform_driver_register(&imx_pwm_driver);
--}
--arch_initcall(imx_pwm_init);
--
--static void __exit imx_pwm_exit(void)
--{
--	platform_driver_unregister(&imx_pwm_driver);
--}
--module_exit(imx_pwm_exit);
-+module_platform_driver(imx_pwm_driver);
- 
- MODULE_LICENSE("GPL v2");
- MODULE_AUTHOR("Sascha Hauer <s.hauer@pengutronix.de>");
--- 
-1.7.10.4
+I have applied the whole series to the linux-next branch of the linux-pm.git
+tree, but I'm quite unsure about [7/8].  Is it really necessary?  I mean, since
+we want users to switch to a different driver anyway, which already has a knob
+providing the functionality in question, what's the point really?
 
+Rafael
