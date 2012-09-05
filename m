@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759481Ab2IEVFq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 17:05:46 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54472 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754909Ab2IEVFp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 17:05:45 -0400
-Date: Wed, 5 Sep 2012 22:05:34 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 20/31] arm64: User access library function
-Message-ID: <20120905210534.GI24085@n2100.arm.linux.org.uk>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com> <1344966752-16102-21-git-send-email-catalin.marinas@arm.com> <201208151449.54834.arnd@arndb.de> <20120905191312.GH24085@n2100.arm.linux.org.uk> <20120905210135.GA87548@MacBook-Pro.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120905210135.GA87548@MacBook-Pro.local>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1759456Ab2IEVJf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 17:09:35 -0400
+Received: from gate.crashing.org ([63.228.1.57]:44617 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752971Ab2IEVJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 17:09:34 -0400
+Message-ID: <1346879334.19098.1.camel@pasglop>
+Subject: Re: A workaround for request_firmware() stuck in module_init
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Ming Lei <ming.lei@canonical.com>, Takashi Iwai <tiwai@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Kay Sievers <kay@vrfy.org>,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 06 Sep 2012 07:08:54 +1000
+In-Reply-To: <20120905173011.7a1111f0@pyramind.ukuu.org.uk>
+References: <s5hd3222azc.wl%tiwai@suse.de>
+	 <CACVXFVP-A7M2dG9bOvAnpzR60=iTYSw=WCOEwgo9KeuioxKanQ@mail.gmail.com>
+	 <s5hd32122hw.wl%tiwai@suse.de>
+	 <CACVXFVNE1GHAQJTrQy2AYgUBfq5kv42EjJJ7J+2q3jzXG-E=MQ@mail.gmail.com>
+	 <s5hpq61j9qx.wl%tiwai@suse.de>
+	 <CACVXFVOu86J5=1DLDrpLCd-pyk1jm2HT7ks1uzCXm9nURCRo2A@mail.gmail.com>
+	 <20120905140304.5c5c58a4@pyramind.ukuu.org.uk>
+	 <CACVXFVO+OgvLoFMcDD0gcQnbzUW=SyR=wiSMyT-FtpjWW5sWdw@mail.gmail.com>
+	 <20120905173011.7a1111f0@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 05, 2012 at 10:01:37PM +0100, Catalin Marinas wrote:
-> There are indeed a few KB gain in code size but that's probably coming
-> from the exception table since otherwise you just replace a bl with
-> ldrt. It depends on what the compiler does as well, the arm code has
-> some carefully chosen registers when calling the __get_user_x function.
+On Wed, 2012-09-05 at 17:30 +0100, Alan Cox wrote:
+> 
+> > Linus has said that he doesn't like to load firmware in probe(), but
+> in some
+> > situation the drivers have to load firmware in its probe():
+> 
+> You don't want to load firmware in probe because of the locking
+> problems
+> - you can trigger a load of another device on the same bus - the defer
+>   dodges that nicely 
 
-It's more than that - it's not just the ldr but also a zeroing of a
-temporary register to hold the error code should the instruction fault.
-So it's not only the exception tables but also an increase in the
-main path - and that's where you benefit from having it out of line and
-thereby a hotter i-cache.
+But then you have cases where probe() -> register_with_my_subsystem() ->
+open(). Network devices come to mind. IE. udev must be able to deal with
+a synchronous firmware load from probe I'm afraid.
 
-> If you do the access_ok inline and the __get_user_x separately, the size
-> increase is even greater (at least in the arm64 case it can get to over
-> 20KB). I think x86 does the access_ok check out of line.
+The only other option would be to make full operation of the driver
+delayed even from open(), which is possible with network devices at
+least but generally very complex to implement.
 
-Please talk to Will about get_user() and put_user().  Afterwards you
-will definitely want to keep them out of line on 64-bit ARM.
+Cheers,
+Ben.
+
+
