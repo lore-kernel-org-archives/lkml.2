@@ -1,89 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759327Ab2IET4P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 15:56:15 -0400
-Received: from mail-yx0-f202.google.com ([209.85.213.202]:34757 "EHLO
-	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751380Ab2IET4L (ORCPT
+	id S1759346Ab2IET4b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 15:56:31 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:36197 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759282Ab2IET43 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 15:56:11 -0400
-From: Bryan Freed <bfreed@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-iio@vger.kernel.org, grundler@chromium.org, ldewangan@nvidia.com,
-        lars@metafoo.de, gregkh@linuxfoundation.org, jic23@cam.ac.uk,
-        Bryan Freed <bfreed@chromium.org>
-Subject: [PATCH] iio: isl29018: Support fractional ALS scaling.
-Date: Wed,  5 Sep 2012 12:55:53 -0700
-Message-Id: <1346874953-22353-1-git-send-email-bfreed@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	Wed, 5 Sep 2012 15:56:29 -0400
+Message-ID: <5047AE6B.6090508@tilera.com>
+Date: Wed, 5 Sep 2012 15:56:27 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120824 Thunderbird/15.0
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>, <linux-arch@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 16/31] arm64: ELF definitions
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com> <201208161237.53594.arnd@arndb.de> <20120821160653.GH12708@arm.com> <201208212017.08110.arnd@arndb.de>
+In-Reply-To: <201208212017.08110.arnd@arndb.de>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Industrial IO framework supports scaling ADC values by fractions,
-but most drivers default to using whole numbers.
-This change turns on fractional scaling in the isl29018 driver.
+On 8/21/2012 4:17 PM, Arnd Bergmann wrote:
+> On Tuesday 21 August 2012, Catalin Marinas wrote:
+>> On Thu, Aug 16, 2012 at 01:37:53PM +0100, Arnd Bergmann wrote:
+>>> No, the uname output is meant to tell you about the system, not the
+>>> instruction set that you are using (you already know that in compiled
+>>> code).
+>>
+>> OK, so we assumed that compat tasks should get a uname as close as
+>> possible to a 32-bit system, i.e. armv8l, for full compatibility. This
+>> would allow us to run something like 32-bit Debian on an AArch64 kernel
+>> without worrying about any scripts failing.
+> 
+> You can still do that, just boot with init="/sbin/setarch armv7 /sbin/init".
+> 
+>> But I can see on x86 that it always reports x86_64 even if the task is
+>> x86_32.
+> 
+> Not just x86, the same behavior is used on powerpc, s390, mips, sparc and
+> parisc. Not sure about tile though.
 
-Signed-off-by: Bryan Freed <bfreed@chromium.org>
----
- drivers/staging/iio/light/isl29018.c |   17 +++++++++++++++--
- 1 files changed, 15 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/staging/iio/light/isl29018.c b/drivers/staging/iio/light/isl29018.c
-index 31d22f5..6ee5567 100644
---- a/drivers/staging/iio/light/isl29018.c
-+++ b/drivers/staging/iio/light/isl29018.c
-@@ -63,6 +63,7 @@ struct isl29018_chip {
- 	struct regmap		*regmap;
- 	struct mutex		lock;
- 	unsigned int		lux_scale;
-+	unsigned int		lux_uscale;
- 	unsigned int		range;
- 	unsigned int		adc_bit;
- 	int			prox_scheme;
-@@ -145,13 +146,22 @@ static int isl29018_read_sensor_input(struct isl29018_chip *chip, int mode)
- static int isl29018_read_lux(struct isl29018_chip *chip, int *lux)
- {
- 	int lux_data;
-+	unsigned int data_x_range, lux_unshifted;
- 
- 	lux_data = isl29018_read_sensor_input(chip, COMMMAND1_OPMODE_ALS_ONCE);
- 
- 	if (lux_data < 0)
- 		return lux_data;
- 
--	*lux = (lux_data * chip->range * chip->lux_scale) >> chip->adc_bit;
-+	/* To support fractional scaling, separate the unshifted lux
-+	 * into two calculations: int scaling and micro-scaling.
-+	 * lux_uscale ranges from 0-999999, so about 20 bits.  Split
-+	 * the /1,000,000 in two to reduce the risk of over/underflow.
-+	 */
-+	data_x_range = lux_data * chip->range;
-+	lux_unshifted = data_x_range * chip->lux_scale;
-+	lux_unshifted += data_x_range / 1000 * chip->lux_uscale / 1000;
-+	*lux = lux_unshifted >> chip->adc_bit;
- 
- 	return 0;
- }
-@@ -339,6 +349,8 @@ static int isl29018_write_raw(struct iio_dev *indio_dev,
- 	mutex_lock(&chip->lock);
- 	if (mask == IIO_CHAN_INFO_CALIBSCALE && chan->type == IIO_LIGHT) {
- 		chip->lux_scale = val;
-+		/* With no write_raw_get_fmt(), val2 is a MICRO fraction. */
-+		chip->lux_uscale = val2;
- 		ret = 0;
- 	}
- 	mutex_unlock(&chip->lock);
-@@ -379,7 +391,8 @@ static int isl29018_read_raw(struct iio_dev *indio_dev,
- 	case IIO_CHAN_INFO_CALIBSCALE:
- 		if (chan->type == IIO_LIGHT) {
- 			*val = chip->lux_scale;
--			ret = IIO_VAL_INT;
-+			*val2 = chip->lux_uscale;
-+			ret = IIO_VAL_INT_PLUS_MICRO;
- 		}
- 		break;
- 	default:
+tile also reports "tilegx" regardless of whether the task is 64-bit or
+32-bit compat.
 -- 
-1.7.7.3
-
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
