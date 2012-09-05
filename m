@@ -1,67 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751997Ab2IEMzh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 08:55:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38821 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750985Ab2IEMzf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 08:55:35 -0400
-Date: Wed, 5 Sep 2012 14:55:33 +0200
-From: Jan Kara <jack@suse.cz>
-To: Ian Abbott <abbotti@mev.co.uk>
-Cc: Jan Kara <jack@suse.cz>, Ian Abbott <ian.abbott@mev.co.uk>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH v3] UDF: Add support for O_DIRECT
-Message-ID: <20120905125533.GD18051@quack.suse.cz>
-References: <1343731212-4381-1-git-send-email-abbotti@mev.co.uk>
- <1346752179-28052-1-git-send-email-abbotti@mev.co.uk>
- <20120904143947.GC8656@quack.suse.cz>
- <50461A24.8070003@mev.co.uk>
- <20120905120520.GA18051@quack.suse.cz>
+	id S1751830Ab2IEM4g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 08:56:36 -0400
+Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:44113 "EHLO
+	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750981Ab2IEM4e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 08:56:34 -0400
+Date: Wed, 5 Sep 2012 15:52:11 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, "balbi@ti.com" <balbi@ti.com>,
+        "ccross@android.com" <ccross@android.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH v2] usb: move phy driver from mach-tegra to drivers/usb
+Message-ID: <20120905125210.GG19591@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <1346395526-18219-1-git-send-email-vbyravarasu@nvidia.com>
+ <5046772F.6060908@wwwdotorg.org>
+ <D958900912E20642BCBC71664EFECE3E6DDE77533D@BGMAIL02.nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Cp3Cp8fzgozWLBWL"
 Content-Disposition: inline
-In-Reply-To: <20120905120520.GA18051@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <D958900912E20642BCBC71664EFECE3E6DDE77533D@BGMAIL02.nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 05-09-12 14:05:20, Jan Kara wrote:
-> On Tue 04-09-12 16:11:32, Ian Abbott wrote:
-> > >>1. Small files stored in the ICB (inode control block?): just return 0
-> > >>from the new udf_adinicb_direct_IO() handler to fall back to buffered
-> > >>I/O.  For direct writes, there is a "gotcha" to deal with when
-> > >>generic_file_direct_write() in mm/filemap.c invalidates the pages.  In
-> > >>the udf_adinicb_writepage() handler, only part of the page data will be
-> > >>valid and the rest will be zeroed out, so only copy the valid part into
-> > >>the ICB.  (This is actually a bit inefficient as udf_adinicb_write_end()
-> > >>will have already copied the data into the ICB once, but it's pretty
-> > >>likely that the file will grow to the point where its data can no longer
-> > >>be stored in the ICB and will be moved to a different area of the file
-> > >>system.  At that point, a different direct_IO handler will be used - see
-> > >>below.)
-> > >   Sorry, I didn't quite get this. What is the problem with copying all the
-> > >data to inode in udf_adinicb_writepage() as it is now?
-> > 
-> > Part of the good data in the ICB outside the range being addressed
-> > would get overwritten by zeroes.  This can be tested by creating a
-> > UDF filesystem with 4KiB blocks and with small files stored in the
-> > ICB, backed by a block device with 512 byte sectors.  Create a 2KiB
-> > file with random (or non-zero) data on the file system so that its
-> > data gets stored in the ICB.  Then open the file for writing without
-> > truncation and with the O_DIRECT flag set, write 512 bytes at some
-> > 512 byte offset within the 2KiB file and close it.  If you then
-> > hexdump the file, you'll find some of the old random data has been
-> > zeroed out.
->   But don't you fall back to buffered IO for files in ICB? So then no
-> zeroing should happen?
-  Oh, I've tested things now and the bug is in buffered write as well!
-It has nothing to do with direct IO. We cannot use simple_write_begin() for
-UDF when the file is in ICB. I'll write a proper fix.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+--Cp3Cp8fzgozWLBWL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi,
+
+On Wed, Sep 05, 2012 at 06:24:13PM +0530, Venu Byravarasu wrote:
+>=20
+> > -----Original Message-----
+> > From: Stephen Warren [mailto:swarren@wwwdotorg.org]
+> > Sent: Wednesday, September 05, 2012 3:19 AM
+> > To: balbi@ti.com
+> > Cc: Venu Byravarasu; ccross@android.com; olof@lixom.net;
+> > linux@arm.linux.org.uk; stern@rowland.harvard.edu;
+> > gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org; linux-
+> > tegra@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-
+> > usb@vger.kernel.org
+> > Subject: Re: [PATCH v2] usb: move phy driver from mach-tegra to drivers=
+/usb
+> >=20
+> > On 08/31/2012 12:45 AM, Venu Byravarasu wrote:
+> > > As part of this patch:
+> > > 	1. Moved existing tegra phy driver to drivers/USB directory.
+> > > 	2. Added standard USB phy driver APIs to tegra phy driver.
+> > >
+> > > Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+> >=20
+> > Tested-by: Stephen Warren <swarren@nvidia.com>
+> >=20
+> > Felipe, Would it be possible to apply this patch to a topic branch, so
+> > that I can merge it into the Tegra tree? The reason is that I'd like to
+> > remove Tegra's devices.[ch] in kernel 3.7, but to do that, I need to
+> > move a tiny chunk of code out of that file somewhere else, and doing
+> > that relies on adding a #include to usb_phy.h/tegra_usb_phy.h, which is
+> > renamed in this patch.
+> >=20
+> > Alternatively, if you don't think it'll cause any merge conflicts with
+> > the USB PHY tree, I can just take this patch through the Tegra tree if
+> > you want. Venu, do you plan any other patches within the next couple
+> > weeks or so (i.e. before 3.6-rc6) that will depend on this patch? If so,
+> > taking it only through the Tegra tree might not work so well.
+>=20
+> Thanks Stephen for verifying the changes.
+> I'm planning to push next patches, with tegra3 phy support added, very so=
+on. =20
+
+Unfortunately the patch didn't apply on my xceiv branch. Could you
+rebase on top of that ?
+
+thanks a lot
+
+--=20
+balbi
+
+--Cp3Cp8fzgozWLBWL
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQR0r6AAoJEIaOsuA1yqREU+cP/26mtYi3PmA8BJ3+2U7HxxRB
+UVgQpwTJjlf/5JxO/Gfwh7LA9iJEe175y3SmeiETlCwr59YxONXpcaRkBXGFE2Jg
+s9MwArQX7G1nUlDQaWCgUdr3vr77V0onVoeqcHTMSw4FEiVZXdMgPvFVz+jmdYw0
+5Ed7dhW7AelJIxu/4AwXHAF2vK/Pr4X2GcQAF0IIG0ivVEGXc21QLhig00MKKpQD
+1Qs/aUHRq+emwW48K0Nrja0eemIXoJBa55iT9eVR4RdRmox2j+6eFyHny/VbNeeh
+ghMGVqWvGf+1vEJdcrhfrIAy1nurrAyeVCV0pMRHInpD/HtmO+YykEYZ825zk4EY
+A3eXxdAMOqRWQr4u4bK5rDioX1yM+kYQDUg5xdKAILB3fCZOfdPDYSy3kbzTG/nB
+tsvKI4/z3OUX0Mtsqq+Gdwic2bclLHnsUCquJN9QsJQDZD4ONTwOEOZQMjoV5FKr
+UImzRA3XaItF7ShAwsltNFbAUHdIvWks+BqRT7SaqjzUvavMx1XFPxFt4nJy4ltu
+0lw96V3I+Rhmlt/mUgdE9f4WWbnYo2Z5tdFj7+xIbyakM+xwd1ZiiD1Ay4cBCsH8
+wtOC18c7OpIanoL2vAx5O0nC6QwKJgPw0cBcn1bvuiMnJhdf/j4DZFSDt3CjSkWm
+KqLhxxH7EQUvt9yq2Lcz
+=etm1
+-----END PGP SIGNATURE-----
+
+--Cp3Cp8fzgozWLBWL--
