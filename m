@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758872Ab2IEPdN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 11:33:13 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:38441 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752128Ab2IEPdL (ORCPT
+	id S1758869Ab2IEPe1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 11:34:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49776 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752128Ab2IEPeZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 11:33:11 -0400
-Message-ID: <504770AD.8060103@wwwdotorg.org>
-Date: Wed, 05 Sep 2012 09:33:01 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Wed, 5 Sep 2012 11:34:25 -0400
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "lrg@ti.com" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2] regulator: tps6586x: register regulator even if no
- init data
-References: <1346252473-30068-1-git-send-email-ldewangan@nvidia.com> <504668E3.1060907@wwwdotorg.org> <5047072F.5030702@nvidia.com>
-In-Reply-To: <5047072F.5030702@nvidia.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120904143215.5bbbb2a4@obelix.rh>
+References: <20120904143215.5bbbb2a4@obelix.rh>
+Date: Wed, 5 Sep 2012 23:34:25 +0800
+Message-ID: <CAM_iQpVVCjJ0Bde9RS9Rm-0RJ=CtTyX3eUH45+oaaepvdAvAmQ@mail.gmail.com>
+Subject: Re: kexec/kdump kernel fails to start
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: Flavio Leitner <fbl@redhat.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
+        ianfang.cn@gmail.com, Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2012 02:02 AM, Laxman Dewangan wrote:
-> On Wednesday 05 September 2012 02:17 AM, Stephen Warren wrote:
->> On 08/29/2012 09:01 AM, Laxman Dewangan wrote:
->>> Register all TPS6586x regulators even if there is no regulator
->>> init data for platform i.e. without any user-supplied constraints.
->>>
->>> Signed-off-by: Laxman Dewangan<ldewangan@nvidia.com>
->> Tested-by: Stephen Warren<swarren@nvidia.com>
->>
->> Note that this patch depends on the patch I just posted titled
->> "regulator: tps6586x: add support for SYS rail". I also believe Laxman
->> will be posting another patch based on these 2 soon (it will move the
->> regulator DT parsing out of the MFD driver into the regulator driver),
->> so I guess it makes sense to take them all through the same TPS6586x
->> topic branch in the regulator tree.
-> 
-> About next patch (moving regulator dt parsing out of mfd), do you want
-> to support the Harmony also?
-> If yes then same change should also contain the board-harmony-power.c
-> changes.
+On Wed, Sep 5, 2012 at 1:32 AM, Flavio Leitner <fbl@redhat.com> wrote:
+> Hi folks,
+>
+> I have system that no longer boots kdump kernel. Basically,
+>
+> # echo c > /proc/sysrq-trigger
+>
+> to dump a vmcore doesn't work. It just hangs after showing the usual
+> panic messages. I've bisected the problem and the commit introducing
+> the issue is the one below.
+>
+> Any idea?
+>
+> commit 722bc6b16771ed80871e1fd81c86d3627dda2ac8
+> Author: WANG Cong <xiyou.wangcong@gmail.com>  2012-03-05 20:05:13
+> Committer: Ingo Molnar <mingo@elte.hu>  2012-03-06 05:38:26
+> Parent: 550cf00dbc8ee402bef71628cb71246493dd4500 (Merge tag 'mmc-fixes-for-3.3' of git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc)
+> Child:  a6fca40f1d7f3e232c9de27c1cebbb9f787fbc4f (x86, tlb: Switch cr3 in leave_mm() only when needed)
+> Branches: master, remotes/origin/master
+> Follows: v3.3-rc6
+> Precedes: v3.5-rc1
+>
+>     x86/mm: Fix the size calculation of mapping tables
 
-Yes, Harmony needs to continue working.
+There was some attempt to fix this:
+https://patchwork.kernel.org/patch/1195751/
 
-We can either:
-
-a) Add your third patch to the TPS6586x topic branch in the regulator
-tree, and I'll merge all 3 into the Tegra tree in order to build on it
-and switch the regulators to DT.
-
-b) You can wait to submit your third patch until after the 3.7 merge
-window (i.e. send if for 3.8) since then all the dependencies will have
-appeared in Linus's tree as a baseline. This is probably the simplest.
+but for some reason it is not accepted.
