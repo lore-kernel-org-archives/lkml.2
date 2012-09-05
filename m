@@ -1,44 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759612Ab2IEVlu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 17:41:50 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:60516 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754878Ab2IEVlr (ORCPT
+	id S1759609Ab2IEVne (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 17:43:34 -0400
+Received: from zose-mta11.web4all.fr ([178.33.204.87]:59050 "EHLO
+	zose-mta11.web4all.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754878Ab2IEVnc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 17:41:47 -0400
-Date: Wed, 5 Sep 2012 22:41:42 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org
-Subject: Re: [PATCH 07/11] kexec: Disable in a secure boot environment
-Message-ID: <20120905214142.GA29288@srcf.ucam.org>
-References: <1346774117-2277-1-git-send-email-mjg@redhat.com>
- <1346774117-2277-8-git-send-email-mjg@redhat.com>
- <1346879629.2054.22.camel@falcor.watson.ibm.com>
+	Wed, 5 Sep 2012 17:43:32 -0400
+Date: Wed, 5 Sep 2012 23:48:51 +0200 (CEST)
+From: =?utf-8?Q?Beno=C3=AEt_Th=C3=A9baudeau?= 
+	<benoit.thebaudeau@advansee.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: HACHIMI Samir <shachimi@adeneo-embedded.com>,
+        shawn guo <shawn.guo@linaro.org>,
+        thierry reding <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org, kernel@pengutronix.de,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Message-ID: <1698432111.3713458.1346881731396.JavaMail.root@advansee.com>
+In-Reply-To: <1346852127-25226-8-git-send-email-s.hauer@pengutronix.de>
+Subject: Re: [PATCH 7/8] pwm i.MX: fix clock lookup
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346879629.2054.22.camel@falcor.watson.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [88.172.188.148]
+X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Win)/7.2.0_GA_2669)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 05, 2012 at 05:13:49PM -0400, Mimi Zohar wrote:
+On Wednesday, September 5, 2012 3:35:26 PM, Sascha Hauer wrote:
+> 
+> From: Philipp Zabel <p.zabel@pengutronix.de>
+> 
+> The i.MX pwm core has two clocks: The ipg clock and the ipg highfreq
+> (peripheral) clock. The ipg clock has to be enabled for this hardware
+> to work. The actual pwm output can either be driven by the ipg clock
+> or the ipg highfreq. The ipg highfreq has the advantage that it runs
+> even when the SoC is in low power modes.
+> This patch requests both clocks and enables the ipg clock for
+> accessing
+> registers and the peripheral clock to actually turn on the pwm.
+> 
+> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+> ---
+>  drivers/pwm/pwm-imx.c |   33 +++++++++++++++++++++++++--------
+>  1 file changed, 25 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
+> index b234288..5b03ace 100644
+> --- a/drivers/pwm/pwm-imx.c
+> +++ b/drivers/pwm/pwm-imx.c
+> @@ -40,7 +40,8 @@
+>  #define MX3_PWMCR_EN              (1 << 0)
+>  
+>  struct imx_chip {
+> -	struct clk	*clk;
+> +	struct clk	*clk_per;
+> +	struct clk	*clk_ipg;
+>  
+>  	int		enabled;
+>  	void __iomem	*mmio_base;
+> @@ -105,7 +106,7 @@ static int imx_pwm_config_v2(struct pwm_chip
+> *chip,
+>  	unsigned long period_cycles, duty_cycles, prescale;
+>  	u32 cr;
+>  
+> -	c = clk_get_rate(imx->clk);
+> +	c = clk_get_rate(imx->clk_per);
+>  	c = c * period_ns;
+>  	do_div(c, 1000000000);
+>  	period_cycles = c;
+> @@ -160,8 +161,15 @@ static int imx_pwm_config(struct pwm_chip *chip,
+>  		struct pwm_device *pwm, int duty_ns, int period_ns)
+>  {
+>  	struct imx_chip *imx = to_imx_chip(chip);
+> +	int ret;
+>  
+> -	return imx->config(chip, pwm, duty_ns, period_ns);
+> +	clk_prepare_enable(imx->clk_ipg);
 
-> Normally capabilities provide additional permissions. So if you don't
-> have the capability, an errno is returned.  CAP_SYS_BOOT is a good
-> example.  With CAP_SECURE_FIRMWARE, it reads backwards - if not
-> CAP_SECURE_FIRMWARE, return error.  I think you want to invert the name
-> to CAP_NOT_SECURE_FIRMWARE, CAP_NOT_SECURE_BOOT or perhaps
-> CAP_UNSECURED_BOOT.
+Why don't you test the return value like in imx_pwm_enable()?
 
-Yeah, I think renaming the cap is a given.
+> +
+> +	ret = imx->config(chip, pwm, duty_ns, period_ns);
+> +
+> +	clk_disable_unprepare(imx->clk_ipg);
+> +
+> +	return ret;
+>  }
+>  
+>  static int imx_pwm_enable(struct pwm_chip *chip, struct pwm_device
+>  *pwm)
+> @@ -169,7 +177,7 @@ static int imx_pwm_enable(struct pwm_chip *chip,
+> struct pwm_device *pwm)
+>  	struct imx_chip *imx = to_imx_chip(chip);
+>  	int rc;
+>  
+> -	rc = clk_prepare_enable(imx->clk);
+> +	rc = clk_prepare_enable(imx->clk_per);
+>  	if (rc)
+>  		return rc;
+>  
+> @@ -186,7 +194,7 @@ static void imx_pwm_disable(struct pwm_chip
+> *chip, struct pwm_device *pwm)
+>  
+>  	imx->set_enable(chip, false);
+>  
+> -	clk_disable_unprepare(imx->clk);
+> +	clk_disable_unprepare(imx->clk_per);
+>  	imx->enabled = 0;
+>  }
+>  
+> @@ -238,10 +246,19 @@ static int __devinit imx_pwm_probe(struct
+> platform_device *pdev)
+>  		return -ENOMEM;
+>  	}
+>  
+> -	imx->clk = devm_clk_get(&pdev->dev, "pwm");
+> +	imx->clk_per = devm_clk_get(&pdev->dev, "per");
+> +	if (IS_ERR(imx->clk_per)) {
+> +		dev_err(&pdev->dev, "getting per clock failed with %ld\n",
+> +				PTR_ERR(imx->clk_per));
+> +		return PTR_ERR(imx->clk_per);
+> +	}
+>  
+> -	if (IS_ERR(imx->clk))
+> -		return PTR_ERR(imx->clk);
+> +	imx->clk_ipg = devm_clk_get(&pdev->dev, "ipg");
+> +	if (IS_ERR(imx->clk_ipg)) {
+> +		dev_err(&pdev->dev, "getting ipg clock failed with %ld\n",
+> +				PTR_ERR(imx->clk_ipg));
+> +		return PTR_ERR(imx->clk_ipg);
+> +	}
+>  
+>  	imx->chip.ops = &imx_pwm_ops;
+>  	imx->chip.dev = &pdev->dev;
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+I have reviewed the whole series. Apart from the comments I made, it looks good
+to me.
+
+Best regards,
+Benoît
