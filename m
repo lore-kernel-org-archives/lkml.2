@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758950Ab2IEQe1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 12:34:27 -0400
-Received: from masquerade.micron.com ([137.201.242.130]:61634 "EHLO
-	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753908Ab2IEQeZ (ORCPT
+	id S1754021Ab2IEQhX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 12:37:23 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51429 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751677Ab2IEQhV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 12:34:25 -0400
-Message-ID: <50477F08.4040406@micron.com>
-Date: Wed, 5 Sep 2012 22:04:16 +0530
-From: Asai Thambi S P <asamymuthupa@micron.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Wed, 5 Sep 2012 12:37:21 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH] uml: fix compile error in deliver_alarm()
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+CC: linux-kernel@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
+        Martin =?utf-8?Q?P=C3=A4rtel?= <martin.partel@gmail.com>
+Date: Wed, 05 Sep 2012 18:38:50 +0200
+Message-ID: <87harca0h1.fsf@tucsk.pomaz.szeredi.hu>
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sam Bradshaw <sbradshaw@micron.com>,
-        "Selvan Mani (smani) [CONT - Type 2]" <smani@micron.com>
-Subject: [PATCH 6/6] mtip32xx: Remove dead code
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-19164.003
-X-TM-AS-Result: No-5.555200-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-X-MT-CheckInternalSenderRule: True
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed the dead code in mtip_hw_read_registers() and mtip_hw_read_flags().
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-Reported-by: Coverity
-Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
-Signed-off-by: Selvan Mani <smani@micron.com>
+Fix the following compile error on UML.
+
+arch/um/os-Linux/time.c: In function 'deliver_alarm':
+arch/um/os-Linux/time.c:117:3: error: too few arguments to function 'alarm_handler'
+arch/um/os-Linux/internal.h:1:6: note: declared here
+
+The error was introduced by commit d3c1cfcd (um: pass siginfo to guest
+process) in 3.6-rc1.
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+CC: Martin Pärtel <martin.partel@gmail.com>
 ---
- drivers/block/mtip32xx/mtip32xx.c |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
+ arch/um/os-Linux/time.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
-index 362ce4a..e6519e2 100644
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -2592,9 +2592,6 @@ static ssize_t mtip_hw_read_registers(struct file *f, char __user *ubuf,
- 	if (!len || size)
- 		return 0;
+Index: linux-2.6/arch/um/os-Linux/time.c
+===================================================================
+--- linux-2.6.orig/arch/um/os-Linux/time.c	2012-09-05 17:18:27.000000000 +0200
++++ linux-2.6/arch/um/os-Linux/time.c	2012-09-05 18:34:35.000000000 +0200
+@@ -114,7 +114,7 @@ static void deliver_alarm(void)
+ 	skew += this_tick - last_tick;
  
--	if (size < 0)
--		return -EINVAL;
--
- 	size += sprintf(&buf[size], "H/ S ACTive      : [ 0x");
+ 	while (skew >= one_tick) {
+-		alarm_handler(SIGVTALRM, NULL);
++		alarm_handler(SIGVTALRM, NULL, NULL);
+ 		skew -= one_tick;
+ 	}
  
- 	for (n = dd->slot_groups-1; n >= 0; n--)
-@@ -2664,9 +2661,6 @@ static ssize_t mtip_hw_read_flags(struct file *f, char __user *ubuf,
- 	if (!len || size)
- 		return 0;
- 
--	if (size < 0)
--		return -EINVAL;
--
- 	size += sprintf(&buf[size], "Flag-port : [ %08lX ]\n",
- 							dd->port->flags);
- 	size += sprintf(&buf[size], "Flag-dd   : [ %08lX ]\n",
--- 
-1.7.1
-
