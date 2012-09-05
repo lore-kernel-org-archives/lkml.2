@@ -1,66 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016Ab2IEFfZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 01:35:25 -0400
-Received: from mga14.intel.com ([143.182.124.37]:61682 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750800Ab2IEFfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 01:35:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,372,1344236400"; 
-   d="scan'208";a="188922516"
-Message-ID: <5046E47C.2020405@intel.com>
-Date: Wed, 05 Sep 2012 13:34:52 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, tglx@linutronix.de,
-        mingo@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        "Ren, Yongjie" <yongjie.ren@intel.com>
-Subject: Re: [PATCH] xen: fix logical error in tlb flushing
-References: <1345798513-3566-1-git-send-email-alex.shi@intel.com> <5037A8E7020000780008A78B@nat28.tlf.novell.com> <20120824181721.GC15167@konrad-lan.dumpdata.com> <5037E7ED020000780008A7BD@nat28.tlf.novell.com>
-In-Reply-To: <5037E7ED020000780008A7BD@nat28.tlf.novell.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752889Ab2IEFjm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 01:39:42 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:50585 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750900Ab2IEFjk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 01:39:40 -0400
+Date: Wed, 5 Sep 2012 15:39:32 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Patrick McHardy <kaber@trash.net>
+Subject: linux-next: build failure after merge of the final tree (net-next
+ tree related)
+Message-Id: <20120905153932.eebf343364800678aecc98f2@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__5_Sep_2012_15_39_32_+1000_9N60VTutzsfX4tGD"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25/2012 03:45 AM, Jan Beulich wrote:
+--Signature=_Wed__5_Sep_2012_15_39_32_+1000_9N60VTutzsfX4tGD
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->>>> On 24.08.12 at 20:17, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
->> On Fri, Aug 24, 2012 at 04:16:39PM +0100, Jan Beulich wrote:
->>>>>> On 24.08.12 at 10:55, Alex Shi <alex.shi@intel.com> wrote:
->>>> While TLB_FLUSH_ALL gets passed as 'end' argument to
->>>> flush_tlb_others(), the Xen code was made to check its 'start'
->>>> parameter. That may give a incorrect op.cmd to MMUEXT_INVLPG_MULTI
->>>> instead of MMUEXT_TLB_FLUSH_MULTI. Then it causes some page can not
->>>> be flushed from TLB.
->>>>
->>>> This patch fixed this issue.
->>>>
->>>> Reported-by: Jan Beulich <jbeulich@suse.com>
->>>> Signed-off-by: Alex Shi <alex.shi@intel.com>
->>>
->>> Acked-by: Jan Beulich <jbeulich@suse.com>
+Hi all,
 
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
+net/ipv6/netfilter/nf_nat_l3proto_ipv6.c: In function 'nf_nat_ipv6_csum_rec=
+alc':
+net/ipv6/netfilter/nf_nat_l3proto_ipv6.c:144:4: error: implicit declaration=
+ of function 'csum_ipv6_magic' [-Werror=3Dimplicit-function-declaration]
 
-CC to Yongjie,
-Could you like to test this patch on PV guest
+Caused by commit 58a317f1061c ("netfilter: ipv6: add IPv6 NAT support").
 
->>
->> How can I reproduce this
+(I always thought IPv6 NAT was a bad idea ;-))
 
->
+I have applied the following patch for today:
 
-> I don't know, I spotted this while looking at the code.
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 5 Sep 2012 15:34:58 +1000
+Subject: [PATCH] netfilter: ipv6: using csum_ipv6_magic requires
+ net/ip6_checksum.h
 
+Fixes this build error:
 
-Again, since the old buggy code doesn't cause trouble in PV guest, guess
-the hypercall for MMUEXT_INVLPG_MULTI was translated or treated as
-MMUEXT_TLB_FLUSH_MULTI. If so, believe correct this will bring a big
-performance benefit.
+net/ipv6/netfilter/nf_nat_l3proto_ipv6.c: In function 'nf_nat_ipv6_csum_rec=
+alc':
+net/ipv6/netfilter/nf_nat_l3proto_ipv6.c:144:4: error: implicit declaration=
+ of function 'csum_ipv6_magic' [-Werror=3Dimplicit-function-declaration]
 
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ net/ipv6/netfilter/nf_nat_l3proto_ipv6.c |    1 +
+ 1 file changed, 1 insertion(+)
 
+diff --git a/net/ipv6/netfilter/nf_nat_l3proto_ipv6.c b/net/ipv6/netfilter/=
+nf_nat_l3proto_ipv6.c
+index 81a2d1c..abfe75a 100644
+--- a/net/ipv6/netfilter/nf_nat_l3proto_ipv6.c
++++ b/net/ipv6/netfilter/nf_nat_l3proto_ipv6.c
+@@ -15,6 +15,7 @@
+ #include <linux/netfilter_ipv6.h>
+ #include <net/secure_seq.h>
+ #include <net/checksum.h>
++#include <net/ip6_checksum.h>
+ #include <net/ip6_route.h>
+ #include <net/ipv6.h>
+=20
+--=20
+1.7.10.280.gaa39
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__5_Sep_2012_15_39_32_+1000_9N60VTutzsfX4tGD
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQRuWUAAoJEECxmPOUX5FEA7QP/2RIMOVFb2d5GBPQ9B32E+Tt
+QR9je4HxVwxqQKbUnB99dRE1BWbmguCQjaOSdHeFESwnt2VpSXgAAeqYc9KiC1NC
+aQsLRoDAVQyAaflIcrX6O76nQrPOUhoYcepnu+A+WkBUuwCYw1xNcymnpHSnNxn5
+LGDOoPO/xkMXG3H5UMESvMIsNo6t2yvaiDHXlLcgBuQiU6sDM4/+dkbfxO8eYeVx
+2M7wA9Xh5WRcXBQhbCBKKgqN0BDqbcqB894miiT3hKmxVqxOLVIw04TCf1ftbTee
+qx7KgGIzOLAvL1UC+ZjllUS3iyTBRNxrlRYwu6bOpk+POYsfg0UsIleNA+p6Ezrf
+pexMNRhyG7NPDwMEjUxG89A5HxDNnC8KRnZWHXccUpoInC2W2rfqSzeT2yk7mdIb
+Tqd4MmG2JpIrhpQ73UX1+P+8RooqHGvGkS0Rn0Hvzw5gG75Xhw7e29P/7cOx5W+g
+nZwCt4wwkw00Yn2FGfSrWkS9ZpcTcTdBtF5Y0lKxw9oECl7oL4HDtLIQ1b1FEe5C
+TfDn5xSpwJpiaLy7yyQ/4Qp3aYM8d4JVG3Qh/iF3wOAyWn/aHV2cUc9652l4xDV9
+hbon5U8KFIfyBrj+2ZmGI69QqZWl9NB9DFNnJEQK4szxTTLBj7OOyz7S2x8P2N3n
+L2obNMSLwKg63hmKPqih
+=2EfU
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__5_Sep_2012_15_39_32_+1000_9N60VTutzsfX4tGD--
