@@ -1,118 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758398Ab2IEJZo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 05:25:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52913 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751315Ab2IEJZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 05:25:39 -0400
-Date: Wed, 5 Sep 2012 10:25:34 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Xishi Qiu <qiuxishi@huawei.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] mm: remain migratetype in freed page
-Message-ID: <20120905092534.GE11266@suse.de>
-References: <1346829962-31989-1-git-send-email-minchan@kernel.org>
- <1346829962-31989-3-git-send-email-minchan@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1346829962-31989-3-git-send-email-minchan@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758324Ab2IEJ1G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 05:27:06 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50549 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751257Ab2IEJ1E convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 05:27:04 -0400
+Message-ID: <1346837209.2600.14.camel@twins>
+Subject: Re: [RFC 0/5] forced comounts for cgroups.
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, linux-mm@kvack.org, davej@redhat.com,
+        ben@decadent.org.uk, pjt@google.com, lennart@poettering.net,
+        kay.sievers@vrfy.org
+Date: Wed, 05 Sep 2012 11:26:49 +0200
+In-Reply-To: <50471782.6060800@parallels.com>
+References: <1346768300-10282-1-git-send-email-glommer@parallels.com>
+	 <20120904214602.GA9092@dhcp-172-17-108-109.mtv.corp.google.com>
+	 <5047074D.1030104@parallels.com>
+	 <20120905081439.GC3195@dhcp-172-17-108-109.mtv.corp.google.com>
+	 <50470A87.1040701@parallels.com>
+	 <20120905082947.GD3195@dhcp-172-17-108-109.mtv.corp.google.com>
+	 <50470EBF.9070109@parallels.com>
+	 <20120905084740.GE3195@dhcp-172-17-108-109.mtv.corp.google.com>
+	 <1346835993.2600.9.camel@twins>
+	 <20120905091140.GH3195@dhcp-172-17-108-109.mtv.corp.google.com>
+	 <50471782.6060800@parallels.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 05, 2012 at 04:26:01PM +0900, Minchan Kim wrote:
-> Page allocator doesn't keep migratetype information to page
-> when the page is freed. This patch remains the information
-> to freed page's index field which isn't used by free/alloc
-> preparing so it shouldn't change any behavir except below one.
+On Wed, 2012-09-05 at 13:12 +0400, Glauber Costa wrote:
+> On 09/05/2012 01:11 PM, Tejun Heo wrote:
+> > Hello, Peter.
+> > 
+> > On Wed, Sep 05, 2012 at 11:06:33AM +0200, Peter Zijlstra wrote:
+> >> *confused* I always thought that was exactly what you meant with unified
+> >> hierarchy.
+> > 
+> > No, I never counted out differing granularity.
+> > 
 > 
-
-This explanation could have been a *LOT* more helpful.
-
-The page allocator caches the pageblock information in page->private while
-it is in the PCP freelists but this is overwritten with the order of the
-page when freed to the buddy allocator. This patch stores the migratetype
-of the page in the page->index field so that it is available at all times.
-
-> This patch adds a new call site in __free_pages_ok so it might be
-> overhead a bit but it's for high order allocation.
-> So I believe damage isn't hurt.
+> Can you elaborate on which interface do you envision to make it work?
+> They will clearly be mounted in the same hierarchy, or as said
+> alternatively, comounted.
 > 
+> If you can turn them on/off on a per-subtree basis, which interface
+> exactly do you propose for that?
 
-The additional call to set_page_migratetype() is not heavy. If you were
-adding a new call to get_pageblock_migratetype() or something equally
-expensive I would be more concerned.
+I wouldn't, screw that. That would result in the exact same problem
+we're trying to fix. I want a single hierarchy walk, that's expensive
+enough.
 
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> Would a pair of cgroup core files like available_controllers and
+> current_controllers are a lot of drivers do, suffice?
 
-The information you store in the page->index becomes stale if the page
-gets moved to another free list by move_freepages(). Not sure if that is
-a problem for you or not but it is possible that
-get_page_migratetype(page) != get_pageblock_migratetype(page)
+No.. its not a 'feature' I care to support for 'my' controllers.
 
-> ---
->  include/linux/mm.h |    6 ++++--
->  mm/page_alloc.c    |    7 ++++---
->  2 files changed, 8 insertions(+), 5 deletions(-)
-> 
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index 86d61d6..8fd32da 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -251,12 +251,14 @@ struct inode;
->  
->  static inline void set_page_migratetype(struct page *page, int migratetype)
->  {
-> -	set_page_private(page, migratetype);
-> +	VM_BUG_ON((unsigned int)migratetype >= MIGRATE_TYPES);
-
-This additional bug check is not mentioned in the changelog. Not clear
-if it's necessary.
-
-> +	page->index = migratetype;
->  }
->  
->  static inline int get_page_migratetype(struct page *page)
->  {
-> -	return page_private(page);
-> +	VM_BUG_ON((unsigned int)page->index >= MIGRATE_TYPES);
-> +	return page->index;
->  }
->  
->  /*
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 103ba66..32985dd 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -723,6 +723,7 @@ static void __free_pages_ok(struct page *page, unsigned int order)
->  {
->  	unsigned long flags;
->  	int wasMlocked = __TestClearPageMlocked(page);
-> +	int migratetype;
->  
->  	if (!free_pages_prepare(page, order))
->  		return;
-> @@ -731,9 +732,9 @@ static void __free_pages_ok(struct page *page, unsigned int order)
->  	if (unlikely(wasMlocked))
->  		free_page_mlock(page);
->  	__count_vm_events(PGFREE, 1 << order);
-> -	free_one_page(page_zone(page), page, order,
-> -					get_pageblock_migratetype(page));
-> -
-> +	migratetype = get_pageblock_migratetype(page);
-> +	set_page_migratetype(page, migratetype);
-> +	free_one_page(page_zone(page), page, order, migratetype);
->  	local_irq_restore(flags);
->  }
->  
-
--- 
-Mel Gorman
-SUSE Labs
+I simply don't want to have to do two (or more) hierarchy walks for
+accounting on every schedule event, all that pointer chasing is stupidly
+expensive.
