@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759908Ab2IEXZV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 19:25:21 -0400
-Received: from oproxy12-pub.bluehost.com ([50.87.16.10]:57169 "HELO
-	oproxy12-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759696Ab2IEXZT (ORCPT
+	id S1759926Ab2IEX15 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 19:27:57 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:13774 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753952Ab2IEX1z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 19:25:19 -0400
-Message-ID: <5047DF49.6070502@xenotime.net>
-Date: Wed, 05 Sep 2012 16:24:57 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Subject: [PATCH -next] soc: fix wm0010.c printk format warning
-References: <20120905161230.3bab1de6d4c8c8e466c3b0df@canb.auug.org.au>
-In-Reply-To: <20120905161230.3bab1de6d4c8c8e466c3b0df@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 5 Sep 2012 19:27:55 -0400
+Message-ID: <1346887671.5325.47.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH 08/10] net/macb: macb_get_drvinfo: add GEM/MACB suffix
+ to differentiate revision
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: <netdev@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <davem@davemloft.net>, <havard@skinnemoen.net>,
+        <plagnioj@jcrosoft.com>, <jamie@jamieiles.com>,
+        <linux-kernel@vger.kernel.org>, <patrice.vilchez@atmel.com>
+Date: Thu, 6 Sep 2012 00:27:51 +0100
+In-Reply-To: <fc701a2ed18198b7a671c55f1e65725f1709509c.1346775479.git.nicolas.ferre@atmel.com>
+References: <cover.1346775479.git.nicolas.ferre@atmel.com>
+	 <fc701a2ed18198b7a671c55f1e65725f1709509c.1346775479.git.nicolas.ferre@atmel.com>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+MIME-Version: 1.0
+X-Originating-IP: [10.17.20.137]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+On Wed, 2012-09-05 at 11:00 +0200, Nicolas Ferre wrote:
+> Add an indication about which revision of the hardware we are running in
+> info->driver string.
+> 
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> ---
+>  drivers/net/ethernet/cadence/macb.c |    4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+> index bd331fd..c7c39f1 100644
+> --- a/drivers/net/ethernet/cadence/macb.c
+> +++ b/drivers/net/ethernet/cadence/macb.c
+> @@ -1313,6 +1313,10 @@ static void macb_get_drvinfo(struct net_device *dev,
+>  	struct macb *bp = netdev_priv(dev);
+>  
+>  	strcpy(info->driver, bp->pdev->dev.driver->name);
+> +	if (macb_is_gem(bp))
+> +		strcat(info->driver, " GEM");
+> +	else
+> +		strcat(info->driver, " MACB");
+>  	strcpy(info->version, "$Revision: 1.14 $");
 
-Fix printk format warning:
+Related to hardware revisions (which don't belong here, as David said),
+I rather doubt this CVS ID is very useful as a driver version.
 
-sound/soc/codecs/wm0010.c:411:2: warning: format '%d' expects type 'int', but argument 4 has type 'size_t'
+If the driver doesn't have a meaningful version (aside from the kernel
+version) then you can remove this function and let the ethtool core fill
+in the other two fields automatically.
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: alsa-devel@alsa-project.org
----
- sound/soc/codecs/wm0010.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Ben.
 
---- linux-next-20120905.orig/sound/soc/codecs/wm0010.c
-+++ linux-next-20120905/sound/soc/codecs/wm0010.c
-@@ -408,7 +408,7 @@ static int wm0010_boot(struct snd_soc_co
- 	wm0010->state = WM0010_BOOTROM;
- 	spin_unlock_irqrestore(&wm0010->irq_lock, flags);
- 
--	dev_dbg(codec->dev, "Downloading %d byte stage 2 loader\n", fw->size);
-+	dev_dbg(codec->dev, "Downloading %zu byte stage 2 loader\n", fw->size);
- 
- 	/* Copy to local buffer first as vmalloc causes problems for dma */
- 	img = kzalloc(fw->size, GFP_KERNEL);
+>  	strcpy(info->bus_info, dev_name(&bp->pdev->dev));
+>  }
+
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
