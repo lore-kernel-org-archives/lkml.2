@@ -1,40 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757375Ab2IEIpA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 04:45:00 -0400
-Received: from zimbra.linbit.com ([212.69.161.123]:41401 "EHLO
-	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143Ab2IEIo6 (ORCPT
+	id S1756547Ab2IEIrh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 04:47:37 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55421 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752011Ab2IEIre convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 04:44:58 -0400
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Christoph Hellwig <hch@lst.de>
-Cc: drbd-dev@lists.linbit.com, linux-kernel@vger.kernel.org
-Subject: Re: [Drbd-dev] FLUSH/FUA documentation & code discrepancy
-Date: Wed, 05 Sep 2012 10:44:55 +0200
-Message-ID: <3029802.oqG0dEY71l@fat-tyre>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-29-generic; KDE/4.8.4; x86_64; ; )
-In-Reply-To: <20120904224620.GB9092@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <8439412.RChiDciQdh@fat-tyre> <20120904224620.GB9092@dhcp-172-17-108-109.mtv.corp.google.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Wed, 5 Sep 2012 04:47:34 -0400
+Message-ID: <1346834836.2600.3.camel@twins>
+Subject: Re: [PATCH] perf/x86: Disable uncore on virtualized CPU.
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, eranian@google.com, mingo@elte.hu,
+        andi@firstfloor.org, avi@redhat.com, linux-kernel@vger.kernel.org
+Date: Wed, 05 Sep 2012 10:47:16 +0200
+In-Reply-To: <20120905063524.GA20710@gmail.com>
+References: <1345540117-14164-1-git-send-email-zheng.z.yan@intel.com>
+	 <20120905063524.GA20710@gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Currently, FLUSH/FUA doesn't enforce any ordering requirement.  File
-> systems are responsible for draining all writes which have to happen
-> before and not issue further writes which should come after.
+On Wed, 2012-09-05 at 08:35 +0200, Ingo Molnar wrote:
+> * Yan, Zheng <zheng.z.yan@intel.com> wrote:
+> 
+> > From: "Yan, Zheng" <zheng.z.yan@intel.com>
+> > 
+> > Initializing uncore PMU on virtualized CPU may hang the kernel.
+> > This is because kvm does not emulate the entire hardware. Thers
+> > are lots of uncore related MSRs, making kvm enumerate them all
+> > is a non-trival task. So just disable uncore on virtualized CPU.
+> > 
+> > Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+> > ---
+> >  arch/x86/kernel/cpu/perf_event_intel_uncore.c | 3 +++
+> >  1 file changed, 3 insertions(+)
+> > 
+> > diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> > index 0a55710..2f005ba 100644
+> > --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> > +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> > @@ -2898,6 +2898,9 @@ static int __init intel_uncore_init(void)
+> >  	if (boot_cpu_data.x86_vendor != X86_VENDOR_INTEL)
+> >  		return -ENODEV;
+> >  
+> > +	if (cpu_has_hypervisor)
+> > +		return -ENODEV;
+> > +
+> >  	ret = uncore_pci_init();
+> >  	if (ret)
+> >  		goto fail;
+> 
+> Cannot the presence of the uncore hardware be detected in a 
+> cleaner fashion, via the PCI config space and such?
 
-Ok. That is a clear statement. So we will do it that way.
+No, part of the uncore PMUs are in MSR space and aren't discoverable.
+CPUID model checks + hard assumptions of presence are all that we are
+left with.
 
-The "Currently" in you statement, suggests that there might be something
-more mighty in the future. Is that true?
+Now Avi suggested we teach KVM about these MSRs and then modify the
+uncore driver to test if the MSRs actually work -- as in retain values
+written to them and aren't always 0.
 
-We are looking for a method that allows us to submit some writes, then
-an IO-barrier, and then further writes. 
+That's a larger patch though, partly because enumerating the gazillion
+MSRs consumed by the various uncore PMUs is a tedious job, and we can
+always do this later.
 
-Best,
- Phil
+This patch is a minimal patch to at least make things 'work' for now.
+
