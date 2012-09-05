@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753675Ab2IEEjm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 00:39:42 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:53265 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753213Ab2IEEjj convert rfc822-to-8bit (ORCPT
+	id S932515Ab2IEEjs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 00:39:48 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:40072 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932260Ab2IEEjp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 00:39:39 -0400
+	Wed, 5 Sep 2012 00:39:45 -0400
 From: "Kim, Milo" <Milo.Kim@ti.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>
 CC: "Girdwood, Liam" <lrg@ti.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 4/5] regulator: lp872x: fix NULL pointer access problem
-Thread-Topic: [PATCH 4/5] regulator: lp872x: fix NULL pointer access problem
-Thread-Index: Ac2LIHGy1PFTymxvTRu2wjBSIhDNmw==
-Date: Wed, 5 Sep 2012 04:39:33 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF21E0@DQHE02.ent.ti.com>
+Subject: [PATCH 5/5] regulator: lp872x: remove unnecessary function
+Thread-Topic: [PATCH 5/5] regulator: lp872x: remove unnecessary function
+Thread-Index: Ac2LIHUa8xQSz8RfSPyvQ9N0LczHGQ==
+Date: Wed, 5 Sep 2012 04:39:39 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF21E8@DQHE02.ent.ti.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -28,49 +28,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- The lp872x_set_dvs() is used for changing the DVS pin state.
- This function works only when the DVS platform data is defined.
- So don't assume that DVS data is always valid.
- In case the platform data is not defined, the DVS data is set to NULL
- for skipping the DVS pin control.
-
- DVS selection and GPIO pin number are used for the LP872x DVS pin control.
- For better readability, DVS selection argument is added in lp872x_set_dvs().
+ The lp872x_check_dvs_validity() is used for checking DVS platform data.
+ If the DVS platform data is not defined, return as error code.
+ Now, this is unnecessary because the default DVS mode is set in this case.
 
 Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 ---
- drivers/regulator/lp872x.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/regulator/lp872x.c |   28 ----------------------------
+ 1 file changed, 28 deletions(-)
 
 diff --git a/drivers/regulator/lp872x.c b/drivers/regulator/lp872x.c
-index b16a941..86485e8 100644
+index 86485e8..708f4b6 100644
 --- a/drivers/regulator/lp872x.c
 +++ b/drivers/regulator/lp872x.c
-@@ -273,9 +273,9 @@ static int lp872x_regulator_enable_time(struct regulator_dev *rdev)
- 	return val > MAX_DELAY ? 0 : val * time_step_us;
- }
+@@ -729,28 +729,6 @@ static struct regulator_desc lp8725_regulator_desc[] = {
+ 	},
+ };
  
--static void lp872x_set_dvs(struct lp872x *lp, int gpio)
-+static void lp872x_set_dvs(struct lp872x *lp, enum lp872x_dvs_sel dvs_sel,
-+			int gpio)
- {
--	enum lp872x_dvs_sel dvs_sel = lp->pdata->dvs->vsel;
- 	enum lp872x_dvs_state state;
- 
- 	state = dvs_sel == SEL_V1 ? DVS_HIGH : DVS_LOW;
-@@ -343,10 +343,10 @@ static int lp872x_buck_set_voltage_sel(struct regulator_dev *rdev,
- 	struct lp872x *lp = rdev_get_drvdata(rdev);
- 	enum lp872x_regulator_id buck = rdev_get_id(rdev);
- 	u8 addr, mask = LP872X_VOUT_M;
+-static int lp872x_check_dvs_validity(struct lp872x *lp)
+-{
 -	struct lp872x_dvs *dvs = lp->pdata->dvs;
-+	struct lp872x_dvs *dvs = lp->pdata ? lp->pdata->dvs : NULL;
+-	u8 val = 0;
+-	int ret;
+-
+-	ret = lp872x_read_byte(lp, LP872X_GENERAL_CFG, &val);
+-	if (ret)
+-		return ret;
+-
+-	ret = 0;
+-	if (lp->chipid == LP8720) {
+-		if (val & LP8720_EXT_DVS_M)
+-			ret = dvs ? 0 : -EINVAL;
+-	} else {
+-		if ((val & LP8725_DVS1_M) == EXTERN_DVS_USED)
+-			ret = dvs ? 0 : -EINVAL;
+-	}
+-
+-	return ret;
+-}
+-
+ static int lp872x_init_dvs(struct lp872x *lp)
+ {
+ 	int ret, gpio;
+@@ -762,12 +740,6 @@ static int lp872x_init_dvs(struct lp872x *lp)
+ 	if (!dvs)
+ 		goto set_default_dvs_mode;
  
- 	if (dvs && gpio_is_valid(dvs->gpio))
--		lp872x_set_dvs(lp, dvs->gpio);
-+		lp872x_set_dvs(lp, dvs->vsel, dvs->gpio);
- 
- 	addr = lp872x_select_buck_vout_addr(lp, buck);
- 	if (!lp872x_is_valid_buck_addr(addr))
+-	ret = lp872x_check_dvs_validity(lp);
+-	if (ret) {
+-		dev_warn(lp->dev, "invalid dvs data: %d\n", ret);
+-		return ret;
+-	}
+-
+ 	gpio = dvs->gpio;
+ 	if (!gpio_is_valid(gpio)) {
+ 		dev_err(lp->dev, "invalid gpio: %d\n", gpio);
 -- 
 1.7.9.5
 
