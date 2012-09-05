@@ -1,54 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759077Ab2IERe0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 13:34:26 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:41498 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753895Ab2IEReY (ORCPT
+	id S1759054Ab2IERp6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 13:45:58 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:41466 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753095Ab2IERp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 13:34:24 -0400
-Date: Wed, 5 Sep 2012 19:34:16 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: paulmck@linux.vnet.ibm.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rakib.mullick@gmail.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:sched/core] sched: Fix load avg vs cpu-hotplug
-Message-ID: <20120905173416.GA6400@gmail.com>
-References: <1345454817.23018.27.camel@twins>
- <tip-f319da0c6894fcf55e21320e40506418a2aad629@git.kernel.org>
- <1346848616.2600.26.camel@twins>
- <20120905132939.GA3480@gmail.com>
- <1346864493.2600.27.camel@twins>
+	Wed, 5 Sep 2012 13:45:56 -0400
+Date: Wed, 5 Sep 2012 10:45:06 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH tip/core/rcu 07/23] rcu: Provide OOM handler to motivate
+ lazy RCU callbacks
+Message-ID: <20120905174506.GL3308@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120830181811.GA29154@linux.vnet.ibm.com>
+ <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346350718-30937-7-git-send-email-paulmck@linux.vnet.ibm.com>
+ <50447388.4080609@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1346864493.2600.27.camel@twins>
+In-Reply-To: <50447388.4080609@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12090517-4242-0000-0000-000002CB14E9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Wed, 2012-09-05 at 15:29 +0200, Ingo Molnar wrote:
-> > > Oh argh.. this patch isn't actually right.. I actually removed 
-> > > it from my series but forgot to update the tarball.
+On Mon, Sep 03, 2012 at 05:08:24PM +0800, Lai Jiangshan wrote:
+> On 08/31/2012 02:18 AM, Paul E. McKenney wrote:
+> > From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 > > 
-> > Sigh.
-> 
-> Yeah, sorry about that, jet-lag makes me do stupid at a higher 
-> rate than usual :/
-
-No problem! :-)
-
-> > > Ingo can you still make it go away or should I do a delta?
+> > In kernels built with CONFIG_RCU_FAST_NO_HZ=y, CPUs can accumulate a
+> > large number of lazy callbacks, which as the name implies will be slow
+> > to be invoked.  This can be a problem on small-memory systems, where the
+> > default 6-second sleep for CPUs having only lazy RCU callbacks could well
+> > be fatal.  This commit therefore installs an OOM hander that ensures that
+> > every CPU with non-lazy callbacks has at least one non-lazy callback,
+> > in turn ensuring timely advancement for these callbacks.
 > > 
-> > Please do a delta.
+> > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Tested-by: Sasha Levin <levinsasha928@gmail.com>
+> > ---
+> >  kernel/rcutree.h        |    5 ++-
+> >  kernel/rcutree_plugin.h |   80 +++++++++++++++++++++++++++++++++++++++++++++++
+> >  2 files changed, 84 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+> > index 117a150..effb273 100644
+> > --- a/kernel/rcutree.h
+> > +++ b/kernel/rcutree.h
+> > @@ -315,8 +315,11 @@ struct rcu_data {
+> >  	unsigned long n_rp_need_fqs;
+> >  	unsigned long n_rp_need_nothing;
+> >  
+> > -	/* 6) _rcu_barrier() callback. */
+> > +	/* 6) _rcu_barrier() and OOM callbacks. */
+> >  	struct rcu_head barrier_head;
+> > +#ifdef CONFIG_RCU_FAST_NO_HZ
+> > +	struct rcu_head oom_head;
+> > +#endif /* #ifdef CONFIG_RCU_FAST_NO_HZ */
+> >  
+> >  	int cpu;
+> >  	struct rcu_state *rsp;
+> > diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+> > index 7f3244c..bac8cc1 100644
+> > --- a/kernel/rcutree_plugin.h
+> > +++ b/kernel/rcutree_plugin.h
+> > @@ -25,6 +25,7 @@
+> >   */
+> >  
+> >  #include <linux/delay.h>
+> > +#include <linux/oom.h>
+> >  
+> >  #define RCU_KTHREAD_PRIO 1
+> >  
+> > @@ -2112,6 +2113,85 @@ static void rcu_idle_count_callbacks_posted(void)
+> >  	__this_cpu_add(rcu_dynticks.nonlazy_posted, 1);
+> >  }
+> >  
+> > +/*
+> > + * Data for flushing lazy RCU callbacks at OOM time.
+> > + */
+> > +static atomic_t oom_callback_count;
+> > +static DECLARE_WAIT_QUEUE_HEAD(oom_callback_wq);
+> > +
+> > +/*
+> > + * RCU OOM callback -- decrement the outstanding count and deliver the
+> > + * wake-up if we are the last one.
+> > + */
+> > +static void rcu_oom_callback(struct rcu_head *rhp)
+> > +{
+> > +	if (atomic_dec_and_test(&oom_callback_count))
+> > +		wake_up(&oom_callback_wq);
+> > +}
+> > +
+> > +/*
+> > + * Post an rcu_oom_notify callback on the current CPU if it has at
+> > + * least one lazy callback.  This will unnecessarily post callbacks
+> > + * to CPUs that already have a non-lazy callback at the end of their
+> > + * callback list, but this is an infrequent operation, so accept some
+> > + * extra overhead to keep things simple.
+> > + */
+> > +static void rcu_oom_notify_cpu(void *flavor)
+> > +{
+> > +	struct rcu_state *rsp = flavor;
+> > +	struct rcu_data *rdp = __this_cpu_ptr(rsp->rda);
+> > +
+> > +	if (rdp->qlen_lazy != 0) {
+> > +		atomic_inc(&oom_callback_count);
+> > +		rsp->call(&rdp->oom_head, rcu_oom_callback);
+> > +	}
+> > +}
+> > +
+> > +/*
+> > + * If low on memory, ensure that each CPU has a non-lazy callback.
+> > + * This will wake up CPUs that have only lazy callbacks, in turn
+> > + * ensuring that they free up the corresponding memory in a timely manner.
+> > + */
+> > +static int rcu_oom_notify(struct notifier_block *self,
+> > +			  unsigned long notused, void *nfreed)
+> > +{
+> > +	int cpu;
+> > +	struct rcu_state *rsp;
+> > +
+> > +	/* Wait for callbacks from earlier instance to complete. */
+> > +	wait_event(oom_callback_wq, atomic_read(&oom_callback_count) == 0);
+> > +
+> > +	/*
+> > +	 * Prevent premature wakeup: ensure that all increments happen
+> > +	 * before there is a chance of the counter reaching zero.
+> > +	 */
+> > +	atomic_set(&oom_callback_count, 1);
+> > +
+> > +	get_online_cpus();
+> > +	for_each_online_cpu(cpu)
+> > +		for_each_rcu_flavor(rsp)
+> > +			smp_call_function_single(cpu, rcu_oom_notify_cpu,
+> > +						 rsp, 1);
+> > +	put_online_cpus();
+> > +
+> > +	/* Unconditionally decrement: no need to wake ourselves up. */
+> > +	atomic_dec(&oom_callback_count);
+> > +
+> > +	*(unsigned long *)nfreed = 1;
 > 
-> Ok, will do.
+> Hi, Paul
+> 
+> If you consider the above code has free some memory,
+> you should use *(unsigned long *)nfreed = +1.
+>                                           ^^
+> 
+> And your code disable OOM actually, because it transfer *nfreed to NON-ZERO
+> unconditionally.
 
-Thanks!
+Hmmm...  That does indeed cause out_of_memory() to unconditionally
+return, doesn't it?
 
-	Ingo
+So I should really just leave *nfreed alone, since I cannot be sure
+whether or not anything will actually get freed.  I -could- count
+callbacks, but they might well be allocated as fast as they are freed.
+
+Good catch!!!
+
+> I did not review the patch nor the whole series carefully.
+> 
+> And if it is possible, could you share the code with rcu_barrier()?
+
+At the moment, it adds more code than it saves.
+
+							Thanx, Paul
+
+> Thanks,
+> Lai
+> 
+> > +	return NOTIFY_OK;
+> > +}
+> > +
+> > +static struct notifier_block rcu_oom_nb = {
+> > +	.notifier_call = rcu_oom_notify
+> > +};
+> > +
+> > +static int __init rcu_register_oom_notifier(void)
+> > +{
+> > +	register_oom_notifier(&rcu_oom_nb);
+> > +	return 0;
+> > +}
+> > +early_initcall(rcu_register_oom_notifier);
+> > +
+> >  #endif /* #else #if !defined(CONFIG_RCU_FAST_NO_HZ) */
+> >  
+> >  #ifdef CONFIG_RCU_CPU_STALL_INFO
+> 
+
