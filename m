@@ -1,59 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759281Ab2IEUER (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 16:04:17 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35112 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751104Ab2IEUEQ (ORCPT
+	id S1759310Ab2IEUI1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 16:08:27 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:8013
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753566Ab2IEUIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 16:04:16 -0400
-Date: Wed, 5 Sep 2012 13:04:11 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 10/11 V5] workqueue: unbind/rebind without manager_mutex
-Message-ID: <20120905200411.GD13737@google.com>
-References: <1346841475-4422-1-git-send-email-laijs@cn.fujitsu.com>
- <1346841475-4422-11-git-send-email-laijs@cn.fujitsu.com>
+	Wed, 5 Sep 2012 16:08:25 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dI1432I4015Izz1202hzz8275dhz2dh668h839h944hd25hd2bhf0ah107ah1220h1155h)
+X-WSS-ID: 0M9W7XS-01-AWO-02
+X-M-MSG: 
+Date: Wed, 5 Sep 2012 15:08:15 -0500
+From: Jacob Shin <jacob.shin@amd.com>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -v3 00/14] x86, mm: init_memory_mapping cleanup
+Message-ID: <20120905200815.GA2457@jshin-Toonie>
+References: <1346823991-22911-1-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1346841475-4422-11-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1346823991-22911-1-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Lai.
-
-On Wed, Sep 05, 2012 at 06:37:47PM +0800, Lai Jiangshan wrote:
-> gcwq_unbind_fn() unbind manager by ->manager pointer.
+On Tue, Sep 04, 2012 at 10:46:17PM -0700, Yinghai Lu wrote:
+> Only create mapping for E820_820 and E820_RESERVED_KERN.
 > 
-> rebinding-manger, unbinding/rebinding newly created worker are done by
-> other place. so we don't need manager_mutex any more.
+> Seperate calculate_table_space_size and find_early_page_table out with
+> init_memory_mapping.
 > 
-> Also change the comment of @bind accordingly.
+> For all ranges, will allocate page table one time, but init mapping
+> only for E820 RAM and E820_RESERVED_KERN.
+> 
+> Could be found at:
+> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-mm
+> 
+> Thanks
+>         Yinghai
+> 
+> 
+> Jacob Shin (4):
+>   x86: if kernel .text .data .bss are not marked as E820_RAM, complain and fix
+>   x86: Fixup code testing if a pfn is direct mapped
+>   x86: Only direct map addresses that are marked as E820_RAM
+>   x86/mm: calculate_table_space_size based on memory ranges that are being mapped
+> 
+> Yinghai Lu (10):
+>   x86, mm: Add global page_size_mask
+>   x86, mm: Split out split_mem_range
+>   x86, mm: Moving init_memory_mapping calling
+>   x86, mm: Revert back good_end setting for 64bit
+>   x86, mm: Find early page table only one time
+>   x86, mm: Separate out calculate_table_space_size()
+>   x86, mm: Move down two calculate_table_space_size down.
+>   x86, mm: set memblock initial limit to 1M
+>   x86, mm: Use func pointer to table size calculation and mapping
+>   x86, mm: Map ISA area with connected ram range at the same time
+> 
+>  arch/x86/include/asm/init.h       |    1 -
+>  arch/x86/include/asm/page_types.h |    2 +
+>  arch/x86/include/asm/pgtable.h    |    1 +
+>  arch/x86/kernel/cpu/amd.c         |    8 +-
+>  arch/x86/kernel/setup.c           |   36 +++--
+>  arch/x86/mm/init.c                |  357 +++++++++++++++++++++++++------------
+>  arch/x86/mm/init_64.c             |    6 +-
+>  arch/x86/platform/efi/efi.c       |    8 +-
+>  8 files changed, 280 insertions(+), 139 deletions(-)
+> 
+> -- 
+> 1.7.7
+> 
+> 
 
-Please don't scatter small prep patches like this.  Each piece in
-isolation doesn't make much sense to me and the patch descriptions
-don't help much.  Please collect the prep patches and explain in more
-detail.
+Tested -v3 on our (AMD) machines and everything looks good.
 
-In general, I'm not sure about this approach.  I'd really like the
-hotplug logic to be contained in hotplug logic proper as much as
-possible.  This scatters around hotplug handling to usual code paths
-and seems too invasive for 3.6-fixes.
+Thanks,
 
-Also, can you please talk to me before going ahead and sending me
-completely new 10 patch series every other day?  You're taking
-disproportionate amount of my time and I can't continue to do this.
-Please discuss with me or at least explain the high-level approach in
-the head message in detail.  Going through the patch series to figure
-out high-level design which is constantly flipping is rather
-inefficient and unfortunately your patch descriptions aren't too
-helpful.  :(
+-Jacob
 
-Thanks.
-
--- 
-tejun
