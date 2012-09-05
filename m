@@ -1,124 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752294Ab2IEJkq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 05:40:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53927 "EHLO mx2.suse.de"
+	id S1752613Ab2IEJnM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 05:43:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12173 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751816Ab2IEJkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 05:40:45 -0400
-Date: Wed, 5 Sep 2012 10:40:41 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Xishi Qiu <qiuxishi@huawei.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] memory-hotplug: bug fix race between isolation and
- allocation
-Message-ID: <20120905094041.GF11266@suse.de>
-References: <1346829962-31989-1-git-send-email-minchan@kernel.org>
- <1346829962-31989-4-git-send-email-minchan@kernel.org>
+	id S1751858Ab2IEJnL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 05:43:11 -0400
+Message-ID: <50471EAB.5060309@redhat.com>
+Date: Wed, 05 Sep 2012 12:43:07 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1346829962-31989-4-git-send-email-minchan@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mathias Krause <minipli@googlemail.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/8] KVM: x86 emulator: use aligned variants of SSE register
+ ops
+References: <1346283020-22385-1-git-send-email-minipli@googlemail.com> <1346283020-22385-3-git-send-email-minipli@googlemail.com> <5045EF86.4080600@redhat.com> <5045F06F.5030101@redhat.com> <CA+rthh8T3Y9XAz+J3C7KfeJa_0d9if9GSrhwTNYhPR+RgEnXKg@mail.gmail.com>
+In-Reply-To: <CA+rthh8T3Y9XAz+J3C7KfeJa_0d9if9GSrhwTNYhPR+RgEnXKg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 05, 2012 at 04:26:02PM +0900, Minchan Kim wrote:
-> Like below, memory-hotplug makes race between page-isolation
-> and page-allocation so it can hit BUG_ON in __offline_isolated_pages.
+On 09/04/2012 03:51 PM, Mathias Krause wrote:
+> On Tue, Sep 4, 2012 at 2:13 PM, Avi Kivity <avi@redhat.com> wrote:
+>> On 09/04/2012 03:09 PM, Avi Kivity wrote:
+>>> On 08/30/2012 02:30 AM, Mathias Krause wrote:
+>>>> As the the compiler ensures that the memory operand is always aligned
+>>>> to a 16 byte memory location,
+>>>
+>>> I'm not sure it does.  Is V4SI aligned?  Do we use alignof() to
+>>> propagate the alignment to the vcpu allocation code?
 > 
-> 	CPU A					CPU B
-> 
-> start_isolate_page_range
-> set_migratetype_isolate
-> spin_lock_irqsave(zone->lock)
-> 
-> 				free_hot_cold_page(Page A)
-> 				/* without zone->lock */
-> 				migratetype = get_pageblock_migratetype(Page A);
-> 				/*
-> 				 * Page could be moved into MIGRATE_MOVABLE
-> 				 * of per_cpu_pages
-> 				 */
-> 				list_add_tail(&page->lru, &pcp->lists[migratetype]);
-> 
-> set_pageblock_isolate
-> move_freepages_block
-> drain_all_pages
-> 
-> 				/* Page A could be in MIGRATE_MOVABLE of free_list. */
-> 
-> check_pages_isolated
-> __test_page_isolated_in_pageblock
-> /*
->  * We can't catch freed page which
->  * is free_list[MIGRATE_MOVABLE]
->  */
-> if (PageBuddy(page A))
-> 	pfn += 1 << page_order(page A);
-> 
-> 				/* So, Page A could be allocated */
-> 
-> __offline_isolated_pages
-> /*
->  * BUG_ON hit or offline page
->  * which is used by someone
->  */
-> BUG_ON(!PageBuddy(page A));
-> 
+> I checked that to by introducing a dummy char member in struct operand
+> that would have misaligned vec_val but, indeed, the compiler ensured
+> it's still 16 byte aligned.
 
-offline_page calling BUG_ON because someone allocated the page is
-ridiculous. I did not spot where that check is but it should be changed. The
-correct action is to retry the isolation.
+Ok.
 
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-
-At no point in the changelog do you actually say what he patch does :/
-
-> ---
->  mm/page_isolation.c |    5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
 > 
-> diff --git a/mm/page_isolation.c b/mm/page_isolation.c
-> index acf65a7..4699d1f 100644
-> --- a/mm/page_isolation.c
-> +++ b/mm/page_isolation.c
-> @@ -196,8 +196,11 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn)
->  			continue;
->  		}
->  		page = pfn_to_page(pfn);
-> -		if (PageBuddy(page))
-> +		if (PageBuddy(page)) {
-> +			if (get_page_migratetype(page) != MIGRATE_ISOLATE)
-> +				break;
->  			pfn += 1 << page_order(page);
-> +		}
-
-It is possible the page is moved to the MIGRATE_ISOLATE list between when
-the page was freed to the buddy allocator and this check was made. The
-page->index information is stale and the impact is that the hotplug
-operation fails when it could have succeeded. That said, I think it is a
-very unlikely race that will never happen in practice.
-
-More importantly, the effect of this path is that EBUSY gets bubbled all
-the way up and the hotplug operations fails. This is fine but as the page
-is free at the time this problem is detected you also have the option
-of moving the PageBuddy page to the MIGRATE_ISOLATE list at this time
-if you take the zone lock. This will mean you need to change the name of
-test_pages_isolated() of course.
-
->  		else if (page_count(page) == 0 &&
->  				get_page_migratetype(page) == MIGRATE_ISOLATE)
->  			pfn += 1;
-> -- 
-> 1.7.9.5
+>>
+>> We actually do.  But please rebase the series against next, I got some
+>> conflicts while applying.
 > 
+> If "next" means kvm/next
+> (i.e.git://git.kernel.org/pub/scm/virt/kvm/kvm.git#next) here, the
+> whole series applies cleanly for me.
+> HEAD in kvm/next is 9a78197 "KVM: x86: remove unused variable from
+> kvm_task_switch()" here. Albeit the series was build against kvm/next
+> at the time as a81aba1 "KVM: VMX: Ignore segment G and D bits when
+> considering whether we can virtualize" was HEAD in this branch.
+> 
+> Could you please retry and show me the conflicts you get?
+
+I tried again and it applies cleanly now, so it must have been a user
+error earlier.
+
+All applied, thanks.
 
 -- 
-Mel Gorman
-SUSE Labs
+error compiling committee.c: too many arguments to function
