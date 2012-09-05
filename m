@@ -1,88 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758672Ab2IEKhl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 06:37:41 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:18290 "EHLO song.cn.fujitsu.com"
+	id S1758699Ab2IEKiP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 06:38:15 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:55811 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758491Ab2IEKgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 06:36:18 -0400
+	id S1752860Ab2IEKgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 06:36:17 -0400
 X-IronPort-AV: E=Sophos;i="4.80,373,1344182400"; 
-   d="scan'208";a="5789514"
+   d="scan'208";a="5789512"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
 Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH 08/11 V5] workqueue: unbind newly created worker
-Date: Wed, 5 Sep 2012 18:37:45 +0800
-Message-Id: <1346841475-4422-9-git-send-email-laijs@cn.fujitsu.com>
+Subject: [PATCH 06/11 V5] workqueue: unbind manager
+Date: Wed, 5 Sep 2012 18:37:43 +0800
+Message-Id: <1346841475-4422-7-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1346841475-4422-1-git-send-email-laijs@cn.fujitsu.com>
 References: <1346841475-4422-1-git-send-email-laijs@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2012/09/05 18:35:50,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/05 18:35:51,
-	Serialize complete at 2012/09/05 18:35:51
+ 2012/09/05 18:35:50,
+	Serialize complete at 2012/09/05 18:35:50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-unbind newly created worker when manager is unbound.
+add ->manager to make gcwq_unbind_fn() knows the manager and unbind it.
 
 It just prepares, this code is useless until
 "we unbind/rebind without manager_mutex"
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- kernel/workqueue.c |   23 ++++++++++++++++++++++-
- 1 files changed, 22 insertions(+), 1 deletions(-)
+ kernel/workqueue.c |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
 
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index e9fc065..223d128 100644
+index 1946be4..9f4dd20 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -74,6 +74,8 @@ enum {
- 	WORKER_NOT_RUNNING	= WORKER_PREP | WORKER_UNBOUND |
- 				  WORKER_CPU_INTENSIVE,
+@@ -160,6 +160,7 @@ struct worker_pool {
+ 	struct timer_list	idle_timer;	/* L: worker idle timeout */
+ 	struct timer_list	mayday_timer;	/* L: SOS timer for workers */
  
-+	WORKER_COPY_FLAGS	= WORKER_UNBOUND,
++	struct worker		*manager;	/* L: manager worker */
+ 	struct mutex		manager_mutex;	/* mutex manager should hold */
+ 	struct ida		worker_ida;	/* L: for worker IDs */
+ };
+@@ -2055,6 +2056,7 @@ static bool manage_workers(struct worker *worker)
+ 	if (!mutex_trylock(&pool->manager_mutex))
+ 		return ret;
+ 
++	pool->manager = worker;
+ 	pool->flags &= ~POOL_MANAGE_WORKERS;
+ 
+ 	/*
+@@ -2065,6 +2067,8 @@ static bool manage_workers(struct worker *worker)
+ 	ret |= maybe_create_worker(pool);
+ 
+ 	mutex_unlock(&pool->manager_mutex);
++	pool->manager = NULL;
 +
- 	NR_WORKER_POOLS		= 2,		/* # worker pools per gcwq */
- 
- 	BUSY_WORKER_HASH_ORDER	= 6,		/* 64 pointers */
-@@ -1820,6 +1822,25 @@ static void start_worker(struct worker *worker)
+ 	return ret;
  }
  
- /**
-+ * manager_start_worker - start a newly created worker by manager
-+ * @worker: worker to start
-+ * @manager: the manager
-+ *
-+ * Make the gcwq aware of @worker and start it.
-+ * Fix the newly created worker's binding.
-+ *
-+ * CONTEXT:
-+ * spin_lock_irq(gcwq->lock).
-+ */
-+static void manager_start_worker(struct worker *worker, struct worker *manager)
-+{
-+	start_worker(worker);
-+
-+	/* copy the flags. also unbind the worker if the manager is unbound */
-+	worker->flags |= manager->flags & WORKER_COPY_FLAGS;
-+}
-+
-+/**
-  * destroy_worker - destroy a workqueue worker
-  * @worker: worker to be destroyed
-  *
-@@ -1976,7 +1997,7 @@ restart:
- 		if (worker) {
- 			del_timer_sync(&pool->mayday_timer);
- 			spin_lock_irq(&gcwq->lock);
--			start_worker(worker);
-+			manager_start_worker(worker, pool->manager);
- 			BUG_ON(need_to_create_worker(pool));
- 			return true;
+@@ -3426,9 +3430,12 @@ static void gcwq_unbind_fn(struct work_struct *work)
+ 	 * ones which are still executing works from before the last CPU
+ 	 * down must be on the cpu.  After this, they may become diasporas.
+ 	 */
+-	for_each_worker_pool(pool, gcwq)
++	for_each_worker_pool(pool, gcwq) {
+ 		list_for_each_entry(worker, &pool->idle_list, entry)
+ 			worker->flags |= WORKER_UNBOUND;
++		if (pool->manager)
++			pool->manager->flags |= WORKER_UNBOUND;
++	}
+ 
+ 	for_each_busy_worker(worker, i, pos, gcwq)
+ 		worker->flags |= WORKER_UNBOUND;
+@@ -3748,6 +3755,7 @@ static int __init init_workqueues(void)
+ 			setup_timer(&pool->mayday_timer, gcwq_mayday_timeout,
+ 				    (unsigned long)pool);
+ 
++			pool->manager = NULL;
+ 			mutex_init(&pool->manager_mutex);
+ 			ida_init(&pool->worker_ida);
  		}
 -- 
 1.7.4.4
