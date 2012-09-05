@@ -1,84 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752993Ab2IEN0q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 09:26:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40553 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752130Ab2IEN0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 09:26:45 -0400
-Message-ID: <50475310.6000508@suse.cz>
-Date: Wed, 05 Sep 2012 15:26:40 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1753723Ab2IEN05 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 09:26:57 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46026 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752264Ab2IEN0y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 09:26:54 -0400
+Date: Wed, 5 Sep 2012 15:27:24 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Cc: "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
+	<linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "alexander.deucher@amd.com" <alexander.deucher@amd.com>,
+        "airlied@redhat.com" <airlied@redhat.com>,
+        "Shi, Yang A" <yang.a.shi@intel.com>
+Subject: Re: [Patch 0/1]drm_irq: Introducing the irq_thread support
+Message-ID: <20120905132724.GC5357@phenom.ffwll.local>
+Mail-Followup-To: "Liu, Chuansheng" <chuansheng.liu@intel.com>,
+	"'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" <linux-kernel@vger.kernel.org>,
+	"dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+	"alexander.deucher@amd.com" <alexander.deucher@amd.com>,
+	"airlied@redhat.com" <airlied@redhat.com>,
+	"Shi, Yang A" <yang.a.shi@intel.com>
+References: <27240C0AC20F114CBF8149A2696CBE4A177306@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
-To: Tzafrir Cohen <tzafrir.cohen@xorcom.com>
-Cc: Linux Kbuild <linux-kbuild@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        maximilian attems <max@stro.at>
-Subject: Re: [PATCH] builddeb: remove unneeded explicit Architecture
-References: <1344941092-31312-1-git-send-email-tzafrir.cohen@xorcom.com> <5040C112.70501@suse.cz> <20120905130528.GI18204@xorcom.com>
-In-Reply-To: <20120905130528.GI18204@xorcom.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A177306@SHSMSX101.ccr.corp.intel.com>
+X-Operating-System: Linux phenom 3.4.0-rc3+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5.9.2012 15:05, Tzafrir Cohen wrote:
-> Hi,
+On Wed, Sep 05, 2012 at 01:53:44AM +0000, Liu, Chuansheng wrote:
+> This patch is for introducing the irq thread support in drm_irq.
 > 
-> Thanks for your reply,
+> Why we need irq thread in drm_irq code?
+> In our GPU system, the gpu interrupt handler need some time even > 1ms to finish,
+> in that case, the whole system will stay in irq disable status. One case is:
+> when audio is playing, it sometimes effects the audio quality.
 > 
-> On Fri, Aug 31, 2012 at 03:50:10PM +0200, Michal Marek wrote:
->> Adding Max to CC.
->>
->> On 14.8.2012 12:44, Tzafrir Cohen wrote:
->>> Architecture was set explicitly in debian/control for one of the three
->>> packages (linux-libc-dev) but not for the other two. When cross-building
->>> it gives me an error:
->>>
->>>   dpkg-gencontrol: error: current host architecture 'armhf' does not
->>>   appear in package's architecture list (amd64)
->>>
->>> Also note that if used, dpkg --print-architecture should have been
->>> replaced with dpkg-architecture.
->>>
->>> Signed-off-by: Tzafrir Cohen <tzafrir.cohen@xorcom.com>
->>> ---
->>>  scripts/package/builddeb |    3 +--
->>>  1 file changed, 1 insertion(+), 2 deletions(-)
->>>
->>> diff --git a/scripts/package/builddeb b/scripts/package/builddeb
->>> index acb8650..d9c71a6 100644
->>> --- a/scripts/package/builddeb
->>> +++ b/scripts/package/builddeb
->>> @@ -252,13 +252,12 @@ mkdir -p "$destdir"
->>>  (cd $objtree; tar -c -f - -T "$objtree/debian/hdrobjfiles") | (cd $destdir; tar -xf -)
->>>  ln -sf "/usr/src/linux-headers-$version" "$kernel_headers_dir/lib/modules/$version/build"
->>>  rm -f "$objtree/debian/hdrsrcfiles" "$objtree/debian/hdrobjfiles"
->>> -arch=$(dpkg --print-architecture)
->>>  
->>>  cat <<EOF >> debian/control
->>>  
->>>  Package: $kernel_headers_packagename
->>>  Provides: linux-headers, linux-headers-2.6
->>> -Architecture: $arch
->>> +Architecture: any
->>>  Description: Linux kernel headers for $KERNELRELEASE on $arch
->>>   This package provides kernel header files for $KERNELRELEASE on $arch
->>>   .
->>
->> As the package contains files from arch/$SRCARCH/include, I doubt that
->> this is a valid change.
+> So we have to introduce the irq thread in drm_irq, it can help us move some heavy work into irq thread
+> and other irq interrupts can be handled in time. Also the IRQF_ONESHOT is helpful for irq thread.
 > 
-> But you optionally force the Architecture later on in build_package.
-> "Arhcitecture: any" in the source package states that the binary package
-> will be the one stated by the build system.
+> Include one patch:
+> [PATCH 01/1] drm_irq-Introducing-the-irq_thread-support
 
-Ah, OK. I don't know much about Debian packaging in fact. Max, could you
-have a look? The original thread is here:
-http://lkml.org/lkml/2012/8/14/133. I meant to add you to CC before,
-but apparently I forgot.
+For a kms drm driver (and tbh, doing a non-kms driver today is not a great
+idea), there's no reason to use the drm_irq_install/_unistall helpers.
 
-Michal
+So if you driver has special needs wrt irq handling that don't neatly fit
+what the drm_irq stuff provides, simply don't use it - all the generic
+code that's there is just to keep non-kms userspace going.
 
+Yours, Daniel
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
