@@ -1,62 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758702Ab2IENhr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 09:37:47 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:46126 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758060Ab2IENhm (ORCPT
+	id S1757001Ab2IENfu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 09:35:50 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54811 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756566Ab2IENfr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 09:37:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <87fw6x90o3.fsf@devron.myhome.or.jp>
-References: <1346774312-8142-1-git-send-email-linkinjeon@gmail.com>
-	<87mx15910k.fsf@devron.myhome.or.jp>
-	<87fw6x90o3.fsf@devron.myhome.or.jp>
-Date: Wed, 5 Sep 2012 22:37:41 +0900
-Message-ID: <CAKYAXd8Pspe0nobWedVfOwVYEKQsXx-Kbs1gWJm5F0ARgusTUw@mail.gmail.com>
-Subject: Re: [PATCH v2 4/5] fat: eliminate orphaned inode number allocation
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: akpm@linux-foundation.org, bfields@fieldses.org, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 5 Sep 2012 09:35:47 -0400
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: <linux-arm-kernel@lists.infradead.org>
+Cc: HACHIMI Samir <shachimi@adeneo-embedded.com>, shawn.guo@linaro.org,
+        thierry.reding@avionic-design.de, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Beno=C3=AEt=20Th=C3=A9baudeau?= 
+	<benoit.thebaudeau@advansee.com>,
+        kernel@pengutronix.de, Sascha Hauer <s.hauer@pengutronix.de>
+Subject: [PATCH 1/8] pwm i.MX: factor out SoC specific functions
+Date: Wed,  5 Sep 2012 15:35:20 +0200
+Message-Id: <1346852127-25226-2-git-send-email-s.hauer@pengutronix.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1346852127-25226-1-git-send-email-s.hauer@pengutronix.de>
+References: <1346852127-25226-1-git-send-email-s.hauer@pengutronix.de>
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/9/5, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> writes:
->
->> Namjae Jeon <linkinjeon@gmail.com> writes:
->>
->>> From: Namjae Jeon <namjae.jeon@samsung.com>
->>>
->>> Maintain a list of inode(i_pos) numbers of orphaned inodes (i.e the
->>> inodes that have been unlinked but still having open file
->>> descriptors).At file/directory creation time, skip using such i_pos
->>> values.Removal of the i_pos from the list is done during inode eviction.
->>
->> What happens if the directory (has busy entries) was completely removed?
-Hi OGAWA.
-There are 2 cases:
-1. The cluster can be used as a data cluster of a file - In which case
-we can write
-normally into it.
-2. The cluster can be allocated to a new directory. In this case, the busy i_pos
-locations can not be used to create new entries until the correspnding
-inodes are
-evicted.
+To make the code more flexible.
 
->>
->>
->> And Al's point is important for NFS too. If you want stable ino for NFS,
->> you never can't change it.
-Yes, It is also important, I will explain throughout reply in Al's mail.
-Thanks!
->
-> s/never can't/never can/
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
->
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+---
+ drivers/pwm/pwm-imx.c |  145 ++++++++++++++++++++++++++++---------------------
+ 1 file changed, 82 insertions(+), 63 deletions(-)
+
+diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
+index 2a0b353..38270f4 100644
+--- a/drivers/pwm/pwm-imx.c
++++ b/drivers/pwm/pwm-imx.c
+@@ -46,81 +46,95 @@ struct imx_chip {
+ 	void __iomem	*mmio_base;
+ 
+ 	struct pwm_chip	chip;
++
++	int (*config)(struct pwm_chip *chip,
++		struct pwm_device *pwm, int duty_ns, int period_ns);
+ };
+ 
+ #define to_imx_chip(chip)	container_of(chip, struct imx_chip, chip)
+ 
+-static int imx_pwm_config(struct pwm_chip *chip,
++static int imx_pwm_config_v1(struct pwm_chip *chip,
+ 		struct pwm_device *pwm, int duty_ns, int period_ns)
+ {
+ 	struct imx_chip *imx = to_imx_chip(chip);
+ 
+-	if (!(cpu_is_mx1() || cpu_is_mx21())) {
+-		unsigned long long c;
+-		unsigned long period_cycles, duty_cycles, prescale;
+-		u32 cr;
+-
+-		c = clk_get_rate(imx->clk);
+-		c = c * period_ns;
+-		do_div(c, 1000000000);
+-		period_cycles = c;
+-
+-		prescale = period_cycles / 0x10000 + 1;
+-
+-		period_cycles /= prescale;
+-		c = (unsigned long long)period_cycles * duty_ns;
+-		do_div(c, period_ns);
+-		duty_cycles = c;
+-
+-		/*
+-		 * according to imx pwm RM, the real period value should be
+-		 * PERIOD value in PWMPR plus 2.
+-		 */
+-		if (period_cycles > 2)
+-			period_cycles -= 2;
+-		else
+-			period_cycles = 0;
+-
+-		writel(duty_cycles, imx->mmio_base + MX3_PWMSAR);
+-		writel(period_cycles, imx->mmio_base + MX3_PWMPR);
+-
+-		cr = MX3_PWMCR_PRESCALER(prescale) |
+-			MX3_PWMCR_DOZEEN | MX3_PWMCR_WAITEN |
+-			MX3_PWMCR_DBGEN | MX3_PWMCR_EN;
+-
+-		if (cpu_is_mx25())
+-			cr |= MX3_PWMCR_CLKSRC_IPG;
+-		else
+-			cr |= MX3_PWMCR_CLKSRC_IPG_HIGH;
+-
+-		writel(cr, imx->mmio_base + MX3_PWMCR);
+-	} else if (cpu_is_mx1() || cpu_is_mx21()) {
+-		/* The PWM subsystem allows for exact frequencies. However,
+-		 * I cannot connect a scope on my device to the PWM line and
+-		 * thus cannot provide the program the PWM controller
+-		 * exactly. Instead, I'm relying on the fact that the
+-		 * Bootloader (u-boot or WinCE+haret) has programmed the PWM
+-		 * function group already. So I'll just modify the PWM sample
+-		 * register to follow the ratio of duty_ns vs. period_ns
+-		 * accordingly.
+-		 *
+-		 * This is good enough for programming the brightness of
+-		 * the LCD backlight.
+-		 *
+-		 * The real implementation would divide PERCLK[0] first by
+-		 * both the prescaler (/1 .. /128) and then by CLKSEL
+-		 * (/2 .. /16).
+-		 */
+-		u32 max = readl(imx->mmio_base + MX1_PWMP);
+-		u32 p = max * duty_ns / period_ns;
+-		writel(max - p, imx->mmio_base + MX1_PWMS);
+-	} else {
+-		BUG();
+-	}
++	/* The PWM subsystem allows for exact frequencies. However,
++	 * I cannot connect a scope on my device to the PWM line and
++	 * thus cannot provide the program the PWM controller
++	 * exactly. Instead, I'm relying on the fact that the
++	 * Bootloader (u-boot or WinCE+haret) has programmed the PWM
++	 * function group already. So I'll just modify the PWM sample
++	 * register to follow the ratio of duty_ns vs. period_ns
++	 * accordingly.
++	 *
++	 * This is good enough for programming the brightness of
++	 * the LCD backlight.
++	 *
++	 * The real implementation would divide PERCLK[0] first by
++	 * both the prescaler (/1 .. /128) and then by CLKSEL
++	 * (/2 .. /16).
++	 */
++	u32 max = readl(imx->mmio_base + MX1_PWMP);
++	u32 p = max * duty_ns / period_ns;
++	writel(max - p, imx->mmio_base + MX1_PWMS);
++
++	return 0;
++}
++
++static int imx_pwm_config_v2(struct pwm_chip *chip,
++		struct pwm_device *pwm, int duty_ns, int period_ns)
++{
++	struct imx_chip *imx = to_imx_chip(chip);
++	unsigned long long c;
++	unsigned long period_cycles, duty_cycles, prescale;
++	u32 cr;
++
++	c = clk_get_rate(imx->clk);
++	c = c * period_ns;
++	do_div(c, 1000000000);
++	period_cycles = c;
++
++	prescale = period_cycles / 0x10000 + 1;
++
++	period_cycles /= prescale;
++	c = (unsigned long long)period_cycles * duty_ns;
++	do_div(c, period_ns);
++	duty_cycles = c;
++
++	/*
++	 * according to imx pwm RM, the real period value should be
++	 * PERIOD value in PWMPR plus 2.
++	 */
++	if (period_cycles > 2)
++		period_cycles -= 2;
++	else
++		period_cycles = 0;
++
++	writel(duty_cycles, imx->mmio_base + MX3_PWMSAR);
++	writel(period_cycles, imx->mmio_base + MX3_PWMPR);
++
++	cr = MX3_PWMCR_PRESCALER(prescale) |
++		MX3_PWMCR_DOZEEN | MX3_PWMCR_WAITEN |
++		MX3_PWMCR_DBGEN | MX3_PWMCR_EN;
++
++	if (cpu_is_mx25())
++		cr |= MX3_PWMCR_CLKSRC_IPG;
++	else
++		cr |= MX3_PWMCR_CLKSRC_IPG_HIGH;
++
++	writel(cr, imx->mmio_base + MX3_PWMCR);
+ 
+ 	return 0;
+ }
+ 
++static int imx_pwm_config(struct pwm_chip *chip,
++		struct pwm_device *pwm, int duty_ns, int period_ns)
++{
++	struct imx_chip *imx = to_imx_chip(chip);
++
++	return imx->config(chip, pwm, duty_ns, period_ns);
++}
++
+ static int imx_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
+ {
+ 	struct imx_chip *imx = to_imx_chip(chip);
+@@ -187,6 +201,11 @@ static int __devinit imx_pwm_probe(struct platform_device *pdev)
+ 	if (imx->mmio_base == NULL)
+ 		return -EADDRNOTAVAIL;
+ 
++	if (cpu_is_mx1() || cpu_is_mx21())
++		imx->config = imx_pwm_config_v1;
++	else
++		imx->config = imx_pwm_config_v2;
++
+ 	ret = pwmchip_add(&imx->chip);
+ 	if (ret < 0)
+ 		return ret;
+-- 
+1.7.10.4
+
