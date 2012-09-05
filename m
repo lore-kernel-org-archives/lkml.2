@@ -1,96 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759253Ab2IETg4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 15:36:56 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:59901 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754276Ab2IETgx (ORCPT
+	id S1759258Ab2IETi6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 15:38:58 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48050 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754515Ab2IETi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 15:36:53 -0400
+	Wed, 5 Sep 2012 15:38:57 -0400
+Date: Wed, 5 Sep 2012 12:38:52 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "ben@decadent.org.uk" <ben@decadent.org.uk>,
+        "thozza@redhat.com" <thozza@redhat.com>,
+        "dcbw@redhat.com" <dcbw@redhat.com>
+Subject: Re: [PATCH 0/4] Tools: hv
+Message-ID: <20120905193852.GA412@kroah.com>
+References: <1346864519-30020-1-git-send-email-kys@microsoft.com>
+ <20120905191119.GA2085@kroah.com>
+ <426367E2313C2449837CD2DE46E7EAF9309E034B@SN2PRD0310MB382.namprd03.prod.outlook.com>
 MIME-Version: 1.0
-In-Reply-To: <1346775269-12191-3-git-send-email-peter.senna@gmail.com>
-References: <1346775269-12191-3-git-send-email-peter.senna@gmail.com>
-Date: Wed, 5 Sep 2012 16:36:52 -0300
-Message-ID: <CALF0-+W6i548ehTDaqkXj7ehFfYBPOBwwPBZQ03eMoo+3K3HXQ@mail.gmail.com>
-Subject: Re: [PATCH 3/5] drivers/media/platform/s5p-tv/mixer_video.c: fix
- error return code
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        kernel-janitors@vger.kernel.org, Julia.Lawall@lip6.fr,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <426367E2313C2449837CD2DE46E7EAF9309E034B@SN2PRD0310MB382.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On Wed, Sep 05, 2012 at 07:24:37PM +0000, KY Srinivasan wrote:
+> > On Wed, Sep 05, 2012 at 10:01:59AM -0700, K. Y. Srinivasan wrote:
+> > > This patchset was authored by Ben Hutchings <ben@decadent.org.uk>. Ben
+> > > asked me to submit this patchset. This patchset cleans up the KVP daemon
+> > > code and fixes some bugs.
+> > >
+> > >
+> > > K. Y. Srinivasan (4):
+> > >   tools: hv: Fix file handle leak
+> > >   tools: hv: Fix exit() error code
+> > >   tools: hv: Check for read/write errors
+> > >   tools: hv: Parse /etc/os-release
+> > 
+> > If Ben wrote these, why are you showing that you wrote them?
+> 
+> Ben asked me to apply these patches on the tip (of my tree) and send the
+> patches out and that is what I did. I recreated these patches after applying to
+> my tree and that is what I have sent out. How could I have made the authorship
+> more clear (other than noting so in the comment which I have done).
 
-On Tue, Sep 4, 2012 at 1:14 PM, Peter Senna Tschudin
-<peter.senna@gmail.com> wrote:
-> From: Peter Senna Tschudin <peter.senna@gmail.com>
->
-> Convert a nonnegative error return code to a negative one, as returned
-> elsewhere in the function.
->
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
->
-> // <smpl>
-> (
-> if@p1 (\(ret < 0\|ret != 0\))
->  { ... return ret; }
-> |
-> ret@p1 = 0
-> )
-> ... when != ret = e1
->     when != &ret
-> *if(...)
-> {
->   ... when != ret = e2
->       when forall
->  return ret;
-> }
->
-> // </smpl>
->
-> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
->
-> ---
->  drivers/media/platform/s5p-tv/mixer_video.c |    5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/media/platform/s5p-tv/mixer_video.c b/drivers/media/platform/s5p-tv/mixer_video.c
-> index a9c6be3..f139fed 100644
-> --- a/drivers/media/platform/s5p-tv/mixer_video.c
-> +++ b/drivers/media/platform/s5p-tv/mixer_video.c
-> @@ -83,6 +83,7 @@ int __devinit mxr_acquire_video(struct mxr_device *mdev,
->         mdev->alloc_ctx = vb2_dma_contig_init_ctx(mdev->dev);
->         if (IS_ERR_OR_NULL(mdev->alloc_ctx)) {
->                 mxr_err(mdev, "could not acquire vb2 allocator\n");
-> +               ret = -ENODEV;
->                 goto fail_v4l2_dev;
->         }
->
-> @@ -764,8 +765,10 @@ static int mxr_video_open(struct file *file)
->         }
->
->         /* leaving if layer is already initialized */
-> -       if (!v4l2_fh_is_singular_file(file))
-> +       if (!v4l2_fh_is_singular_file(file)) {
-> +               ret = -EBUSY; /* Not sure if EBUSY is the best for here */
->                 goto unlock;
-> +       }
->
->         /* FIXME: should power be enabled on open? */
->         ret = mxr_power_get(mdev);
->
+You could have actually _kept_ the proper authorship information so that
+git shows who wrote the patch.  As your shortlog shows above, it looks
+like you wrote the patches, not Ben, which is not acceptable.
 
-Well, same to say here. I think if you look at this functions you'll realize
-it's so much easy to just initialize ret to something, instead of the obviously
-wrong ret = 0.
+As to how to actually do that, well, I'll leave that as an exercise for
+the reader (hint, we document how to do this quite well...)
 
-IMO, initializing ret to zero it's a free ticket to bugs. :-)
-
-Hope it helps,
-Ezequiel.
+greg k-h
