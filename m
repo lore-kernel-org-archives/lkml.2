@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759430Ab2IEU2E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 16:28:04 -0400
+	id S1759382Ab2IEU1u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 16:27:50 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:57498 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759404Ab2IEU1z (ORCPT
+	with ESMTP id S1753743Ab2IEU1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 16:27:55 -0400
+	Wed, 5 Sep 2012 16:27:47 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com
 Cc: tj@kernel.org, vgoyal@redhat.com, Kent Overstreet <koverstreet@google.com>,
-        Jens Axboe <axboe@kernel.dk>, NeilBrown <neilb@suse.de>,
-        Alasdair Kergon <agk@redhat.com>, Boaz Harrosh <bharrosh@panasas.com>,
-        Jeff Garzik <jeff@garzik.org>
-Subject: [PATCH v8 8/8] block: Add bio_clone_bioset(), bio_clone_kmalloc()
-Date: Wed,  5 Sep 2012 13:27:29 -0700
-Message-Id: <1346876849-15820-9-git-send-email-koverstreet@google.com>
+        Jens Axboe <axboe@kernel.dk>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>
+Subject: [PATCH v8 2/8] block: Ues bi_pool for bio_integrity_alloc()
+Date: Wed,  5 Sep 2012 13:27:23 -0700
+Message-Id: <1346876849-15820-3-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1346876849-15820-1-git-send-email-koverstreet@google.com>
 References: <1346876849-15820-1-git-send-email-koverstreet@google.com>
@@ -24,250 +23,241 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously, there was bio_clone() but it only allocated from the fs bio
-set; as a result various users were open coding it and using
-__bio_clone().
-
-This changes bio_clone() to become bio_clone_bioset(), and then we add
-bio_clone() and bio_clone_kmalloc() as wrappers around it, making use of
-the functionality the last patch adedd.
-
-This will also help in a later patch changing how bio cloning works.
+Now that bios keep track of where they were allocated from,
+bio_integrity_alloc_bioset() becomes redundant.
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 CC: Jens Axboe <axboe@kernel.dk>
-CC: NeilBrown <neilb@suse.de>
-CC: Alasdair Kergon <agk@redhat.com>
-CC: Boaz Harrosh <bharrosh@panasas.com>
-CC: Jeff Garzik <jeff@garzik.org>
-Acked-by: Jeff Garzik <jgarzik@redhat.com>
+CC: Martin K. Petersen <martin.petersen@oracle.com>
 ---
- block/blk-core.c       |  8 +-------
- drivers/block/osdblk.c |  3 +--
- drivers/md/dm-crypt.c  |  7 +------
- drivers/md/dm.c        |  4 ++--
- drivers/md/md.c        | 20 +-------------------
- fs/bio.c               | 11 +++++++----
- fs/exofs/ore.c         |  5 ++---
- include/linux/bio.h    | 17 ++++++++++++++---
- 8 files changed, 29 insertions(+), 46 deletions(-)
+ block/blk-core.c    |  2 +-
+ drivers/md/dm.c     |  4 ++--
+ drivers/md/md.c     |  2 +-
+ fs/bio-integrity.c  | 44 +++++++++++++++-----------------------------
+ fs/bio.c            |  6 +++---
+ include/linux/bio.h |  9 ++++-----
+ 6 files changed, 26 insertions(+), 41 deletions(-)
 
 diff --git a/block/blk-core.c b/block/blk-core.c
-index b776cc9..82aab28 100644
+index 4b4dbdf..95c4935 100644
 --- a/block/blk-core.c
 +++ b/block/blk-core.c
-@@ -2781,16 +2781,10 @@ int blk_rq_prep_clone(struct request *rq, struct request *rq_src,
- 	blk_rq_init(NULL, rq);
+@@ -2788,7 +2788,7 @@ int blk_rq_prep_clone(struct request *rq, struct request *rq_src,
+ 		__bio_clone(bio, bio_src);
  
- 	__rq_for_each_bio(bio_src, rq_src) {
--		bio = bio_alloc_bioset(gfp_mask, bio_src->bi_max_vecs, bs);
-+		bio = bio_clone_bioset(bio_src, gfp_mask, bs);
- 		if (!bio)
+ 		if (bio_integrity(bio_src) &&
+-		    bio_integrity_clone(bio, bio_src, gfp_mask, bs))
++		    bio_integrity_clone(bio, bio_src, gfp_mask))
  			goto free_and_out;
  
--		__bio_clone(bio, bio_src);
--
--		if (bio_integrity(bio_src) &&
--		    bio_integrity_clone(bio, bio_src, gfp_mask))
--			goto free_and_out;
--
  		if (bio_ctr && bio_ctr(bio, bio_src, data))
- 			goto free_and_out;
- 
-diff --git a/drivers/block/osdblk.c b/drivers/block/osdblk.c
-index 87311eb..1bbc681 100644
---- a/drivers/block/osdblk.c
-+++ b/drivers/block/osdblk.c
-@@ -266,11 +266,10 @@ static struct bio *bio_chain_clone(struct bio *old_chain, gfp_t gfpmask)
- 	struct bio *tmp, *new_chain = NULL, *tail = NULL;
- 
- 	while (old_chain) {
--		tmp = bio_kmalloc(gfpmask, old_chain->bi_max_vecs);
-+		tmp = bio_clone_kmalloc(old_chain, gfpmask);
- 		if (!tmp)
- 			goto err_out;
- 
--		__bio_clone(tmp, old_chain);
- 		tmp->bi_bdev = NULL;
- 		gfpmask &= ~__GFP_WAIT;
- 		tmp->bi_next = NULL;
-diff --git a/drivers/md/dm-crypt.c b/drivers/md/dm-crypt.c
-index 3c0acba..bbf459b 100644
---- a/drivers/md/dm-crypt.c
-+++ b/drivers/md/dm-crypt.c
-@@ -979,19 +979,14 @@ static int kcryptd_io_read(struct dm_crypt_io *io, gfp_t gfp)
- 	 * copy the required bvecs because we need the original
- 	 * one in order to decrypt the whole bio data *afterwards*.
- 	 */
--	clone = bio_alloc_bioset(gfp, bio_segments(base_bio), cc->bs);
-+	clone = bio_clone_bioset(base_bio, gfp, cc->bs);
- 	if (!clone)
- 		return 1;
- 
- 	crypt_inc_pending(io);
- 
- 	clone_init(io, clone);
--	clone->bi_idx = 0;
--	clone->bi_vcnt = bio_segments(base_bio);
--	clone->bi_size = base_bio->bi_size;
- 	clone->bi_sector = cc->start + io->sector;
--	memcpy(clone->bi_io_vec, bio_iovec(base_bio),
--	       sizeof(struct bio_vec) * clone->bi_vcnt);
- 
- 	generic_make_request(clone);
- 	return 0;
 diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-index f2eb730..41afc66 100644
+index 0c3d6dd..f43aaf6 100644
 --- a/drivers/md/dm.c
 +++ b/drivers/md/dm.c
-@@ -1129,8 +1129,8 @@ static void __issue_target_request(struct clone_info *ci, struct dm_target *ti,
- 	 * ci->bio->bi_max_vecs is BIO_INLINE_VECS anyway, for both flush
- 	 * and discard, so no need for concern about wasted bvec allocations.
- 	 */
--	clone = bio_alloc_bioset(GFP_NOIO, ci->bio->bi_max_vecs, ci->md->bs);
--	__bio_clone(clone, ci->bio);
-+	clone = bio_clone_bioset(ci->bio, GFP_NOIO, ci->md->bs);
-+
- 	if (len) {
- 		clone->bi_sector = ci->sector;
- 		clone->bi_size = to_bytes(len);
+@@ -1068,7 +1068,7 @@ static struct bio *split_bvec(struct bio *bio, sector_t sector,
+ 	clone->bi_flags |= 1 << BIO_CLONED;
+ 
+ 	if (bio_integrity(bio)) {
+-		bio_integrity_clone(clone, bio, GFP_NOIO, bs);
++		bio_integrity_clone(clone, bio, GFP_NOIO);
+ 		bio_integrity_trim(clone,
+ 				   bio_sector_offset(bio, idx, offset), len);
+ 	}
+@@ -1094,7 +1094,7 @@ static struct bio *clone_bio(struct bio *bio, sector_t sector,
+ 	clone->bi_flags &= ~(1 << BIO_SEG_VALID);
+ 
+ 	if (bio_integrity(bio)) {
+-		bio_integrity_clone(clone, bio, GFP_NOIO, bs);
++		bio_integrity_clone(clone, bio, GFP_NOIO);
+ 
+ 		if (idx != bio->bi_idx || clone->bi_size < bio->bi_size)
+ 			bio_integrity_trim(clone,
 diff --git a/drivers/md/md.c b/drivers/md/md.c
-index 457ca84..7a2b079 100644
+index b8eebe3..457ca84 100644
 --- a/drivers/md/md.c
 +++ b/drivers/md/md.c
-@@ -173,28 +173,10 @@ EXPORT_SYMBOL_GPL(bio_alloc_mddev);
- struct bio *bio_clone_mddev(struct bio *bio, gfp_t gfp_mask,
- 			    struct mddev *mddev)
- {
--	struct bio *b;
--
- 	if (!mddev || !mddev->bio_set)
- 		return bio_clone(bio, gfp_mask);
+@@ -186,7 +186,7 @@ struct bio *bio_clone_mddev(struct bio *bio, gfp_t gfp_mask,
+ 	if (bio_integrity(bio)) {
+ 		int ret;
  
--	b = bio_alloc_bioset(gfp_mask, bio->bi_max_vecs, mddev->bio_set);
--	if (!b)
--		return NULL;
--
--	__bio_clone(b, bio);
--	if (bio_integrity(bio)) {
--		int ret;
--
--		ret = bio_integrity_clone(b, bio, gfp_mask);
--
--		if (ret < 0) {
--			bio_put(b);
--			return NULL;
--		}
--	}
--
--	return b;
-+	return bio_clone_bioset(bio, gfp_mask, mddev->bio_set);
+-		ret = bio_integrity_clone(b, bio, gfp_mask, mddev->bio_set);
++		ret = bio_integrity_clone(b, bio, gfp_mask);
+ 
+ 		if (ret < 0) {
+ 			bio_put(b);
+diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
+index e85c04b..a3f28f3 100644
+--- a/fs/bio-integrity.c
++++ b/fs/bio-integrity.c
+@@ -70,23 +70,25 @@ static inline int use_bip_pool(unsigned int idx)
  }
- EXPORT_SYMBOL_GPL(bio_clone_mddev);
  
+ /**
+- * bio_integrity_alloc_bioset - Allocate integrity payload and attach it to bio
++ * bio_integrity_alloc - Allocate integrity payload and attach it to bio
+  * @bio:	bio to attach integrity metadata to
+  * @gfp_mask:	Memory allocation mask
+  * @nr_vecs:	Number of integrity metadata scatter-gather elements
+- * @bs:		bio_set to allocate from
+  *
+  * Description: This function prepares a bio for attaching integrity
+  * metadata.  nr_vecs specifies the maximum number of pages containing
+  * integrity metadata that can be attached.
+  */
+-struct bio_integrity_payload *bio_integrity_alloc_bioset(struct bio *bio,
+-							 gfp_t gfp_mask,
+-							 unsigned int nr_vecs,
+-							 struct bio_set *bs)
++struct bio_integrity_payload *bio_integrity_alloc(struct bio *bio,
++						  gfp_t gfp_mask,
++						  unsigned int nr_vecs)
+ {
+ 	struct bio_integrity_payload *bip;
+ 	unsigned int idx = vecs_to_idx(nr_vecs);
++	struct bio_set *bs = bio->bi_pool;
++
++	if (!bs)
++		bs = fs_bio_set;
+ 
+ 	BUG_ON(bio == NULL);
+ 	bip = NULL;
+@@ -114,37 +116,22 @@ struct bio_integrity_payload *bio_integrity_alloc_bioset(struct bio *bio,
+ 
+ 	return bip;
+ }
+-EXPORT_SYMBOL(bio_integrity_alloc_bioset);
+-
+-/**
+- * bio_integrity_alloc - Allocate integrity payload and attach it to bio
+- * @bio:	bio to attach integrity metadata to
+- * @gfp_mask:	Memory allocation mask
+- * @nr_vecs:	Number of integrity metadata scatter-gather elements
+- *
+- * Description: This function prepares a bio for attaching integrity
+- * metadata.  nr_vecs specifies the maximum number of pages containing
+- * integrity metadata that can be attached.
+- */
+-struct bio_integrity_payload *bio_integrity_alloc(struct bio *bio,
+-						  gfp_t gfp_mask,
+-						  unsigned int nr_vecs)
+-{
+-	return bio_integrity_alloc_bioset(bio, gfp_mask, nr_vecs, fs_bio_set);
+-}
+ EXPORT_SYMBOL(bio_integrity_alloc);
+ 
+ /**
+  * bio_integrity_free - Free bio integrity payload
+  * @bio:	bio containing bip to be freed
+- * @bs:		bio_set this bio was allocated from
+  *
+  * Description: Used to free the integrity portion of a bio. Usually
+  * called from bio_free().
+  */
+-void bio_integrity_free(struct bio *bio, struct bio_set *bs)
++void bio_integrity_free(struct bio *bio)
+ {
+ 	struct bio_integrity_payload *bip = bio->bi_integrity;
++	struct bio_set *bs = bio->bi_pool;
++
++	if (!bs)
++		bs = fs_bio_set;
+ 
+ 	BUG_ON(bip == NULL);
+ 
+@@ -730,19 +717,18 @@ EXPORT_SYMBOL(bio_integrity_split);
+  * @bio:	New bio
+  * @bio_src:	Original bio
+  * @gfp_mask:	Memory allocation mask
+- * @bs:		bio_set to allocate bip from
+  *
+  * Description:	Called to allocate a bip when cloning a bio
+  */
+ int bio_integrity_clone(struct bio *bio, struct bio *bio_src,
+-			gfp_t gfp_mask, struct bio_set *bs)
++			gfp_t gfp_mask)
+ {
+ 	struct bio_integrity_payload *bip_src = bio_src->bi_integrity;
+ 	struct bio_integrity_payload *bip;
+ 
+ 	BUG_ON(bip_src == NULL);
+ 
+-	bip = bio_integrity_alloc_bioset(bio, gfp_mask, bip_src->bip_vcnt, bs);
++	bip = bio_integrity_alloc(bio, gfp_mask, bip_src->bip_vcnt);
+ 
+ 	if (bip == NULL)
+ 		return -EIO;
 diff --git a/fs/bio.c b/fs/bio.c
-index 357a3af..f335514 100644
+index e017f7a..b14f71a 100644
 --- a/fs/bio.c
 +++ b/fs/bio.c
-@@ -428,16 +428,19 @@ void __bio_clone(struct bio *bio, struct bio *bio_src)
- EXPORT_SYMBOL(__bio_clone);
+@@ -241,7 +241,7 @@ void bio_free(struct bio *bio, struct bio_set *bs)
+ 		bvec_free_bs(bs, bio->bi_io_vec, BIO_POOL_IDX(bio));
  
- /**
-- *	bio_clone	-	clone a bio
-+ *	bio_clone_bioset -	clone a bio
-  *	@bio: bio to clone
-  *	@gfp_mask: allocation priority
-+ *	@bs: bio_set to allocate from
-  *
-  * 	Like __bio_clone, only also allocates the returned bio
-  */
--struct bio *bio_clone(struct bio *bio, gfp_t gfp_mask)
-+struct bio *bio_clone_bioset(struct bio *bio, gfp_t gfp_mask,
-+			     struct bio_set *bs)
+ 	if (bio_integrity(bio))
+-		bio_integrity_free(bio, bs);
++		bio_integrity_free(bio);
+ 
+ 	/*
+ 	 * If we have front padding, adjust the bio pointer before freeing
+@@ -341,7 +341,7 @@ EXPORT_SYMBOL(bio_alloc);
+ static void bio_kmalloc_destructor(struct bio *bio)
  {
--	struct bio *b = bio_alloc(gfp_mask, bio->bi_max_vecs);
-+	struct bio *b;
- 
-+	b = bio_alloc_bioset(gfp_mask, bio->bi_max_vecs, bs);
- 	if (!b)
- 		return NULL;
- 
-@@ -456,7 +459,7 @@ struct bio *bio_clone(struct bio *bio, gfp_t gfp_mask)
- 
- 	return b;
+ 	if (bio_integrity(bio))
+-		bio_integrity_free(bio, fs_bio_set);
++		bio_integrity_free(bio);
+ 	kfree(bio);
  }
--EXPORT_SYMBOL(bio_clone);
-+EXPORT_SYMBOL(bio_clone_bioset);
  
- /**
-  *	bio_get_nr_vecs		- return approx number of vecs
-diff --git a/fs/exofs/ore.c b/fs/exofs/ore.c
-index 1585db1..f936cb5 100644
---- a/fs/exofs/ore.c
-+++ b/fs/exofs/ore.c
-@@ -814,8 +814,8 @@ static int _write_mirror(struct ore_io_state *ios, int cur_comp)
- 			struct bio *bio;
+@@ -480,7 +480,7 @@ struct bio *bio_clone(struct bio *bio, gfp_t gfp_mask)
+ 	if (bio_integrity(bio)) {
+ 		int ret;
  
- 			if (per_dev != master_dev) {
--				bio = bio_kmalloc(GFP_KERNEL,
--						  master_dev->bio->bi_max_vecs);
-+				bio = bio_clone_kmalloc(master_dev->bio,
-+							GFP_KERNEL);
- 				if (unlikely(!bio)) {
- 					ORE_DBGMSG(
- 					      "Failed to allocate BIO size=%u\n",
-@@ -824,7 +824,6 @@ static int _write_mirror(struct ore_io_state *ios, int cur_comp)
- 					goto out;
- 				}
+-		ret = bio_integrity_clone(b, bio, gfp_mask, fs_bio_set);
++		ret = bio_integrity_clone(b, bio, gfp_mask);
  
--				__bio_clone(bio, master_dev->bio);
- 				bio->bi_bdev = NULL;
- 				bio->bi_next = NULL;
- 				per_dev->offset = master_dev->offset;
+ 		if (ret < 0) {
+ 			bio_put(b);
 diff --git a/include/linux/bio.h b/include/linux/bio.h
-index fbe35b1..52b9cbc 100644
+index 2643589..a11f74b 100644
 --- a/include/linux/bio.h
 +++ b/include/linux/bio.h
-@@ -215,6 +215,9 @@ extern void bioset_free(struct bio_set *);
- extern struct bio *bio_alloc_bioset(gfp_t, int, struct bio_set *);
- extern void bio_put(struct bio *);
+@@ -505,9 +505,8 @@ static inline struct bio *bio_list_get(struct bio_list *bl)
  
-+extern void __bio_clone(struct bio *, struct bio *);
-+extern struct bio *bio_clone_bioset(struct bio *, gfp_t, struct bio_set *bs);
-+
- extern struct bio_set *fs_bio_set;
+ #define bio_integrity(bio) (bio->bi_integrity != NULL)
  
- static inline struct bio *bio_alloc(gfp_t gfp_mask, unsigned int nr_iovecs)
-@@ -222,18 +225,26 @@ static inline struct bio *bio_alloc(gfp_t gfp_mask, unsigned int nr_iovecs)
- 	return bio_alloc_bioset(gfp_mask, nr_iovecs, fs_bio_set);
+-extern struct bio_integrity_payload *bio_integrity_alloc_bioset(struct bio *, gfp_t, unsigned int, struct bio_set *);
+ extern struct bio_integrity_payload *bio_integrity_alloc(struct bio *, gfp_t, unsigned int);
+-extern void bio_integrity_free(struct bio *, struct bio_set *);
++extern void bio_integrity_free(struct bio *);
+ extern int bio_integrity_add_page(struct bio *, struct page *, unsigned int, unsigned int);
+ extern int bio_integrity_enabled(struct bio *bio);
+ extern int bio_integrity_set_tag(struct bio *, void *, unsigned int);
+@@ -517,7 +516,7 @@ extern void bio_integrity_endio(struct bio *, int);
+ extern void bio_integrity_advance(struct bio *, unsigned int);
+ extern void bio_integrity_trim(struct bio *, unsigned int, unsigned int);
+ extern void bio_integrity_split(struct bio *, struct bio_pair *, int);
+-extern int bio_integrity_clone(struct bio *, struct bio *, gfp_t, struct bio_set *);
++extern int bio_integrity_clone(struct bio *, struct bio *, gfp_t);
+ extern int bioset_integrity_create(struct bio_set *, int);
+ extern void bioset_integrity_free(struct bio_set *);
+ extern void bio_integrity_init(void);
+@@ -549,13 +548,13 @@ static inline int bio_integrity_prep(struct bio *bio)
+ 	return 0;
  }
  
-+static inline struct bio *bio_clone(struct bio *bio, gfp_t gfp_mask)
-+{
-+	return bio_clone_bioset(bio, gfp_mask, fs_bio_set);
-+}
-+
- static inline struct bio *bio_kmalloc(gfp_t gfp_mask, unsigned int nr_iovecs)
+-static inline void bio_integrity_free(struct bio *bio, struct bio_set *bs)
++static inline void bio_integrity_free(struct bio *bio)
  {
- 	return bio_alloc_bioset(gfp_mask, nr_iovecs, NULL);
+ 	return;
  }
  
-+static inline struct bio *bio_clone_kmalloc(struct bio *bio, gfp_t gfp_mask)
-+{
-+	return bio_clone_bioset(bio, gfp_mask, NULL);
-+
-+}
-+
- extern void bio_endio(struct bio *, int);
- struct request_queue;
- extern int bio_phys_segments(struct request_queue *, struct bio *);
- 
--extern void __bio_clone(struct bio *, struct bio *);
--extern struct bio *bio_clone(struct bio *, gfp_t);
--
- extern void bio_init(struct bio *);
- extern void bio_reset(struct bio *);
- 
+ static inline int bio_integrity_clone(struct bio *bio, struct bio *bio_src,
+-				      gfp_t gfp_mask, struct bio_set *bs)
++				      gfp_t gfp_mask)
+ {
+ 	return 0;
+ }
 -- 
 1.7.12
 
