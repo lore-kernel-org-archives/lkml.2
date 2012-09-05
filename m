@@ -1,68 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754509Ab2IESwf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 14:52:35 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:46411 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753509Ab2IESwe (ORCPT
+	id S1754462Ab2IESzp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 14:55:45 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:49099 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753345Ab2IESzo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 14:52:34 -0400
-Date: Wed, 5 Sep 2012 20:52:33 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, a.p.zijlstra@chello.nl,
-        eranian@google.com, mingo@elte.hu, andi@firstfloor.org, avi@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf/x86: Disable uncore on virtualized CPU.
-Message-ID: <20120905185233.GD16230@one.firstfloor.org>
-References: <1345540117-14164-1-git-send-email-zheng.z.yan@intel.com> <20120905063524.GA20710@gmail.com>
-Mime-Version: 1.0
+	Wed, 5 Sep 2012 14:55:44 -0400
+X-Originating-IP: 217.70.178.130
+X-Originating-IP: 173.246.103.110
+Date: Wed, 5 Sep 2012 11:55:34 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 16/23] rcu: Prevent initialization-time
+ quiescent-state race
+Message-ID: <20120905185534.GA4976@jtriplet-mobl1>
+References: <20120830181811.GA29154@linux.vnet.ibm.com>
+ <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346350718-30937-16-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20120903093742.GE5574@leaf>
+ <20120905181920.GN3308@linux.vnet.ibm.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120905063524.GA20710@gmail.com>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <20120905181920.GN3308@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 05, 2012 at 08:35:24AM +0200, Ingo Molnar wrote:
-> 
-> * Yan, Zheng <zheng.z.yan@intel.com> wrote:
-> 
-> > From: "Yan, Zheng" <zheng.z.yan@intel.com>
+On Wed, Sep 05, 2012 at 11:19:20AM -0700, Paul E. McKenney wrote:
+> On Mon, Sep 03, 2012 at 02:37:42AM -0700, Josh Triplett wrote:
+> > On Thu, Aug 30, 2012 at 11:18:31AM -0700, Paul E. McKenney wrote:
+> > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > > 
+> > > Now the the grace-period initialization procedure is preemptible, it is
+> > > subject to the following race on systems whose rcu_node tree contains
+> > > more than one node:
+> > > 
+> > > 1.	CPU 31 starts initializing the grace period, including the
+> > > 	first leaf rcu_node structures, and is then preempted.
+> > > 
+> > > 2.	CPU 0 refers to the first leaf rcu_node structure, and notes
+> > > 	that a new grace period has started.  It passes through a
+> > > 	quiescent state shortly thereafter, and informs the RCU core
+> > > 	of this rite of passage.
+> > > 
+> > > 3.	CPU 0 enters an RCU read-side critical section, acquiring
+> > > 	a pointer to an RCU-protected data item.
+> > > 
+> > > 4.	CPU 31 removes the data item referenced by CPU 0 from the
+> > > 	data structure, and registers an RCU callback in order to
+> > > 	free it.
+> > > 
+> > > 5.	CPU 31 resumes initializing the grace period, including its
+> > > 	own rcu_node structure.  In invokes rcu_start_gp_per_cpu(),
+> > > 	which advances all callbacks, including the one registered
+> > > 	in #4 above, to be handled by the current grace period.
+> > > 
+> > > 6.	The remaining CPUs pass through quiescent states and inform
+> > > 	the RCU core, but CPU 0 remains in its RCU read-side critical
+> > > 	section, still referencing the now-removed data item.
+> > > 
+> > > 7.	The grace period completes and all the callbacks are invoked,
+> > > 	including the one that frees the data item that CPU 0 is still
+> > > 	referencing.  Oops!!!
+> > > 
+> > > This commit therefore moves the callback handling to precede initialization
+> > > of any of the rcu_node structures, thus avoiding this race.
 > > 
-> > Initializing uncore PMU on virtualized CPU may hang the kernel.
-> > This is because kvm does not emulate the entire hardware. Thers
-> > are lots of uncore related MSRs, making kvm enumerate them all
-> > is a non-trival task. So just disable uncore on virtualized CPU.
+> > I don't think it makes sense to introduce and subsequently fix a race in
+> > the same patch series. :)
 > > 
-> > Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-> > ---
-> >  arch/x86/kernel/cpu/perf_event_intel_uncore.c | 3 +++
-> >  1 file changed, 3 insertions(+)
-> > 
-> > diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> > index 0a55710..2f005ba 100644
-> > --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> > +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> > @@ -2898,6 +2898,9 @@ static int __init intel_uncore_init(void)
-> >  	if (boot_cpu_data.x86_vendor != X86_VENDOR_INTEL)
-> >  		return -ENODEV;
-> >  
-> > +	if (cpu_has_hypervisor)
-> > +		return -ENODEV;
-> > +
-> >  	ret = uncore_pci_init();
-> >  	if (ret)
-> >  		goto fail;
+> > Could you squash this patch into the one moving grace-period
+> > initialization into a kthread?
 > 
-> Cannot the presence of the uncore hardware be detected in a 
-> cleaner fashion, via the PCI config space and such?
+> I tried that, and got a surprisingly large set of conflicts.  Ah, OK,
+> the problem is that breaking up rcu_gp_kthread() into subfunctions
+> did enough code motion to defeat straightforward rebasing.  Is there
+> some way to tell "git rebase" about such code motion, or would this
+> need to be carried out carefully by hand?
 
-Probably just by reading the registers and see that they are 0 and 
-when writing read back and check.
+To the extent rebase knows how to handle that, I think it does so
+automatically as part of merge attempts.  Fortunately, in this case, the
+change consists of moving two lines of code and their attached comment,
+which seems easy enough to change in the original code; you'll then get
+a conflict on the commit that moves the newly fixed code (easily
+resolved by moving the change to the new code), and conflicts on any
+changes next to the change in the new code (hopefully handled by
+three-way merge, and if not then easily fixed by keeping the new lines).
 
-And the code should not hang when that happens, then this check wouldn't
-be needed.
-
--Andi
+- Josh Triplett
