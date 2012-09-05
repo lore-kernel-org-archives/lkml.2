@@ -1,69 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752648Ab2IENZk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 09:25:40 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:44772 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751494Ab2IENZi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 09:25:38 -0400
-Date: Wed, 5 Sep 2012 14:30:10 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: Don Dutile <ddutile@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-efi@vger.kernel.org,
-        mfleming@intel.com, dwmw2@infradead.org, bhelgaas@google.com
-Subject: Re: [PATCH V3 3/4] PCI: Add support for non-BAR ROMs
-Message-ID: <20120905143010.557aa3fb@pyramind.ukuu.org.uk>
-In-Reply-To: <20120905132007.GB16399@srcf.ucam.org>
-References: <1345739803-21017-1-git-send-email-mjg@redhat.com>
-	<1345739803-21017-4-git-send-email-mjg@redhat.com>
-	<5046B688.1070902@redhat.com>
-	<20120905022932.GA4087@srcf.ucam.org>
-	<20120905134621.73afe48a@pyramind.ukuu.org.uk>
-	<20120905132007.GB16399@srcf.ucam.org>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752993Ab2IEN0q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 09:26:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40553 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752130Ab2IEN0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 09:26:45 -0400
+Message-ID: <50475310.6000508@suse.cz>
+Date: Wed, 05 Sep 2012 15:26:40 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Tzafrir Cohen <tzafrir.cohen@xorcom.com>
+Cc: Linux Kbuild <linux-kbuild@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        maximilian attems <max@stro.at>
+Subject: Re: [PATCH] builddeb: remove unneeded explicit Architecture
+References: <1344941092-31312-1-git-send-email-tzafrir.cohen@xorcom.com> <5040C112.70501@suse.cz> <20120905130528.GI18204@xorcom.com>
+In-Reply-To: <20120905130528.GI18204@xorcom.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Sep 2012 14:20:07 +0100
-Matthew Garrett <mjg@redhat.com> wrote:
-
-> On Wed, Sep 05, 2012 at 01:46:21PM +0100, Alan Cox wrote:
-> > On Wed, 5 Sep 2012 03:29:32 +0100
-> > Matthew Garrett <mjg@redhat.com> wrote:
-> > 
-> > > On Tue, Sep 04, 2012 at 10:18:48PM -0400, Don Dutile wrote:
-> > > > >  	/*
-> > > > >+	 * Some devices may provide ROMs via a source other than the BAR
-> > > > >+	 */
-> > > > >+	if (pdev->rom&&  pdev->romlen) {
-> > > > >+		*size = pdev->romlen;
-> > > > >+		return phys_to_virt((phys_addr_t)pdev->rom);
-> > > >                        ^^^^^
-> > > >                          ioremap_nocache() ? ... or is caching rom ok?
-> > > 
-> > > If it's appearing through this pathway then it's not actually in ROM, 
-> > > the platform has pulled it out of somewhere else.
-> > 
-> > If that somewhere else is on the PCI bus then it should be a bus not a
-> > virt translation surely ?
+On 5.9.2012 15:05, Tzafrir Cohen wrote:
+> Hi,
 > 
-> We've no good way of knowing what the firmware's giving us - we copy it 
-> to RAM in the EFI init process, so by the time we're here it certainly 
-> shouldn't be on the PCI bus.
+> Thanks for your reply,
+> 
+> On Fri, Aug 31, 2012 at 03:50:10PM +0200, Michal Marek wrote:
+>> Adding Max to CC.
+>>
+>> On 14.8.2012 12:44, Tzafrir Cohen wrote:
+>>> Architecture was set explicitly in debian/control for one of the three
+>>> packages (linux-libc-dev) but not for the other two. When cross-building
+>>> it gives me an error:
+>>>
+>>>   dpkg-gencontrol: error: current host architecture 'armhf' does not
+>>>   appear in package's architecture list (amd64)
+>>>
+>>> Also note that if used, dpkg --print-architecture should have been
+>>> replaced with dpkg-architecture.
+>>>
+>>> Signed-off-by: Tzafrir Cohen <tzafrir.cohen@xorcom.com>
+>>> ---
+>>>  scripts/package/builddeb |    3 +--
+>>>  1 file changed, 1 insertion(+), 2 deletions(-)
+>>>
+>>> diff --git a/scripts/package/builddeb b/scripts/package/builddeb
+>>> index acb8650..d9c71a6 100644
+>>> --- a/scripts/package/builddeb
+>>> +++ b/scripts/package/builddeb
+>>> @@ -252,13 +252,12 @@ mkdir -p "$destdir"
+>>>  (cd $objtree; tar -c -f - -T "$objtree/debian/hdrobjfiles") | (cd $destdir; tar -xf -)
+>>>  ln -sf "/usr/src/linux-headers-$version" "$kernel_headers_dir/lib/modules/$version/build"
+>>>  rm -f "$objtree/debian/hdrsrcfiles" "$objtree/debian/hdrobjfiles"
+>>> -arch=$(dpkg --print-architecture)
+>>>  
+>>>  cat <<EOF >> debian/control
+>>>  
+>>>  Package: $kernel_headers_packagename
+>>>  Provides: linux-headers, linux-headers-2.6
+>>> -Architecture: $arch
+>>> +Architecture: any
+>>>  Description: Linux kernel headers for $KERNELRELEASE on $arch
+>>>   This package provides kernel header files for $KERNELRELEASE on $arch
+>>>   .
+>>
+>> As the package contains files from arch/$SRCARCH/include, I doubt that
+>> this is a valid change.
+> 
+> But you optionally force the Architecture later on in build_package.
+> "Arhcitecture: any" in the source package states that the binary package
+> will be the one stated by the build system.
 
-In which case how do you know that physical address you have been given
-actually has a mapping in kernel virtual space. It seems like it ought to
-be getting an ioremap in that case ?
+Ah, OK. I don't know much about Debian packaging in fact. Max, could you
+have a look? The original thread is here:
+http://lkml.org/lkml/2012/8/14/133. I meant to add you to CC before,
+but apparently I forgot.
 
-phys_to_virt is not valid for arbitary addresses.
-
-Alan
-
+Michal
 
