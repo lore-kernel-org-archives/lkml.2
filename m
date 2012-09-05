@@ -1,206 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759054Ab2IERp6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 13:45:58 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:41466 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753095Ab2IERp4 (ORCPT
+	id S1759050Ab2IERuT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 13:50:19 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:44842 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753895Ab2IERuR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 13:45:56 -0400
-Date: Wed, 5 Sep 2012 10:45:06 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH tip/core/rcu 07/23] rcu: Provide OOM handler to motivate
- lazy RCU callbacks
-Message-ID: <20120905174506.GL3308@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120830181811.GA29154@linux.vnet.ibm.com>
- <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346350718-30937-7-git-send-email-paulmck@linux.vnet.ibm.com>
- <50447388.4080609@cn.fujitsu.com>
+	Wed, 5 Sep 2012 13:50:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50447388.4080609@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12090517-4242-0000-0000-000002CB14E9
+Date: Thu, 6 Sep 2012 01:50:15 +0800
+Message-ID: <CA+HMz3jHvwuoGzE8=tvdkatA4K_sXe-PxQTvtn0F8WStsBz5YA@mail.gmail.com>
+Subject: [PATCH v2] Documentation: Chinese translation of Documentation/arm/Booting
+From: Ninja Tekkaman <tekkamanninja@gmail.com>
+To: Harry Wei <harryxiyou@gmail.com>
+Cc: Greg-Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        Patrick Mochel <mochel@osdl.org>, Mike Murphy <mamurph@cs.clemson.edu>,
+        kernel@vger.linux-kernel.cn
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q85HoPad019188
 
-On Mon, Sep 03, 2012 at 05:08:24PM +0800, Lai Jiangshan wrote:
-> On 08/31/2012 02:18 AM, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paul.mckenney@linaro.org>
-> > 
-> > In kernels built with CONFIG_RCU_FAST_NO_HZ=y, CPUs can accumulate a
-> > large number of lazy callbacks, which as the name implies will be slow
-> > to be invoked.  This can be a problem on small-memory systems, where the
-> > default 6-second sleep for CPUs having only lazy RCU callbacks could well
-> > be fatal.  This commit therefore installs an OOM hander that ensures that
-> > every CPU with non-lazy callbacks has at least one non-lazy callback,
-> > in turn ensuring timely advancement for these callbacks.
-> > 
-> > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Tested-by: Sasha Levin <levinsasha928@gmail.com>
-> > ---
-> >  kernel/rcutree.h        |    5 ++-
-> >  kernel/rcutree_plugin.h |   80 +++++++++++++++++++++++++++++++++++++++++++++++
-> >  2 files changed, 84 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-> > index 117a150..effb273 100644
-> > --- a/kernel/rcutree.h
-> > +++ b/kernel/rcutree.h
-> > @@ -315,8 +315,11 @@ struct rcu_data {
-> >  	unsigned long n_rp_need_fqs;
-> >  	unsigned long n_rp_need_nothing;
-> >  
-> > -	/* 6) _rcu_barrier() callback. */
-> > +	/* 6) _rcu_barrier() and OOM callbacks. */
-> >  	struct rcu_head barrier_head;
-> > +#ifdef CONFIG_RCU_FAST_NO_HZ
-> > +	struct rcu_head oom_head;
-> > +#endif /* #ifdef CONFIG_RCU_FAST_NO_HZ */
-> >  
-> >  	int cpu;
-> >  	struct rcu_state *rsp;
-> > diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> > index 7f3244c..bac8cc1 100644
-> > --- a/kernel/rcutree_plugin.h
-> > +++ b/kernel/rcutree_plugin.h
-> > @@ -25,6 +25,7 @@
-> >   */
-> >  
-> >  #include <linux/delay.h>
-> > +#include <linux/oom.h>
-> >  
-> >  #define RCU_KTHREAD_PRIO 1
-> >  
-> > @@ -2112,6 +2113,85 @@ static void rcu_idle_count_callbacks_posted(void)
-> >  	__this_cpu_add(rcu_dynticks.nonlazy_posted, 1);
-> >  }
-> >  
-> > +/*
-> > + * Data for flushing lazy RCU callbacks at OOM time.
-> > + */
-> > +static atomic_t oom_callback_count;
-> > +static DECLARE_WAIT_QUEUE_HEAD(oom_callback_wq);
-> > +
-> > +/*
-> > + * RCU OOM callback -- decrement the outstanding count and deliver the
-> > + * wake-up if we are the last one.
-> > + */
-> > +static void rcu_oom_callback(struct rcu_head *rhp)
-> > +{
-> > +	if (atomic_dec_and_test(&oom_callback_count))
-> > +		wake_up(&oom_callback_wq);
-> > +}
-> > +
-> > +/*
-> > + * Post an rcu_oom_notify callback on the current CPU if it has at
-> > + * least one lazy callback.  This will unnecessarily post callbacks
-> > + * to CPUs that already have a non-lazy callback at the end of their
-> > + * callback list, but this is an infrequent operation, so accept some
-> > + * extra overhead to keep things simple.
-> > + */
-> > +static void rcu_oom_notify_cpu(void *flavor)
-> > +{
-> > +	struct rcu_state *rsp = flavor;
-> > +	struct rcu_data *rdp = __this_cpu_ptr(rsp->rda);
-> > +
-> > +	if (rdp->qlen_lazy != 0) {
-> > +		atomic_inc(&oom_callback_count);
-> > +		rsp->call(&rdp->oom_head, rcu_oom_callback);
-> > +	}
-> > +}
-> > +
-> > +/*
-> > + * If low on memory, ensure that each CPU has a non-lazy callback.
-> > + * This will wake up CPUs that have only lazy callbacks, in turn
-> > + * ensuring that they free up the corresponding memory in a timely manner.
-> > + */
-> > +static int rcu_oom_notify(struct notifier_block *self,
-> > +			  unsigned long notused, void *nfreed)
-> > +{
-> > +	int cpu;
-> > +	struct rcu_state *rsp;
-> > +
-> > +	/* Wait for callbacks from earlier instance to complete. */
-> > +	wait_event(oom_callback_wq, atomic_read(&oom_callback_count) == 0);
-> > +
-> > +	/*
-> > +	 * Prevent premature wakeup: ensure that all increments happen
-> > +	 * before there is a chance of the counter reaching zero.
-> > +	 */
-> > +	atomic_set(&oom_callback_count, 1);
-> > +
-> > +	get_online_cpus();
-> > +	for_each_online_cpu(cpu)
-> > +		for_each_rcu_flavor(rsp)
-> > +			smp_call_function_single(cpu, rcu_oom_notify_cpu,
-> > +						 rsp, 1);
-> > +	put_online_cpus();
-> > +
-> > +	/* Unconditionally decrement: no need to wake ourselves up. */
-> > +	atomic_dec(&oom_callback_count);
-> > +
-> > +	*(unsigned long *)nfreed = 1;
-> 
-> Hi, Paul
-> 
-> If you consider the above code has free some memory,
-> you should use *(unsigned long *)nfreed = +1.
->                                           ^^
-> 
-> And your code disable OOM actually, because it transfer *nfreed to NON-ZERO
-> unconditionally.
+This is a Chinese translated version of Documentation/arm/Booting
 
-Hmmm...  That does indeed cause out_of_memory() to unconditionally
-return, doesn't it?
+Signed-off-by: Fu Wei <tekkamanninja@gmail.com>
+---
+ Documentation/zh_CN/arm/Booting |  175 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 175 insertions(+)
+ create mode 100644 Documentation/zh_CN/arm/Booting
 
-So I should really just leave *nfreed alone, since I cannot be sure
-whether or not anything will actually get freed.  I -could- count
-callbacks, but they might well be allocated as fast as they are freed.
-
-Good catch!!!
-
-> I did not review the patch nor the whole series carefully.
-> 
-> And if it is possible, could you share the code with rcu_barrier()?
-
-At the moment, it adds more code than it saves.
-
-							Thanx, Paul
-
-> Thanks,
-> Lai
-> 
-> > +	return NOTIFY_OK;
-> > +}
-> > +
-> > +static struct notifier_block rcu_oom_nb = {
-> > +	.notifier_call = rcu_oom_notify
-> > +};
-> > +
-> > +static int __init rcu_register_oom_notifier(void)
-> > +{
-> > +	register_oom_notifier(&rcu_oom_nb);
-> > +	return 0;
-> > +}
-> > +early_initcall(rcu_register_oom_notifier);
-> > +
-> >  #endif /* #else #if !defined(CONFIG_RCU_FAST_NO_HZ) */
-> >  
-> >  #ifdef CONFIG_RCU_CPU_STALL_INFO
-> 
-
+diff --git a/Documentation/zh_CN/arm/Booting b/Documentation/zh_CN/arm/Booting
+new file mode 100644
+index 0000000..3014ea8
+--- /dev/null
++++ b/Documentation/zh_CN/arm/Booting
+@@ -0,0 +1,175 @@
++﻿Chinese translated version of Documentation/arm/Booting
++
++If you have any comment or update to the content, please contact the
++original document maintainer directly.  However, if you have a problem
++communicating in English you can also ask the Chinese maintainer for
++help.  Contact the Chinese maintainer if this translation is outdated
++or if there is a problem with the translation.
++
++Maintainer: Russell King <linux@arm.linux.org.uk>
++Chinese maintainer: Fu Wei <tekkamanninja@gmail.com>
++---------------------------------------------------------------------
++Documentation/arm/Booting 的中文翻译
++
++如果想评论或更新本文的内容，请直接联系原文档的维护者。如果你使用英文
++交流有困难的话，也可以向中文版维护者求助。如果本翻译更新不及时或者翻
++译存在问题，请联系中文版维护者。
++
++英文版维护者： Russell King <linux@arm.linux.org.uk>
++中文版维护者： 傅炜  Fu Wei <tekkamanninja@gmail.com>
++中文版翻译者： 傅炜  Fu Wei <tekkamanninja@gmail.com>
++中文版校译者： 傅炜  Fu Wei <tekkamanninja@gmail.com>
++
++以下为正文
++---------------------------------------------------------------------
++
++			启动 ARM Linux
++			==============
++
++作者：Russell King
++日期：2002年5月18日
++
++以下文档适用于 2.4.18-rmk6 及以上版本。
++
++为了启动 ARM Linux，你需要一个引导装载程序（boot loader），
++它是一个在主内核启动前运行的一个小程序。引导装载程序需要初始化各种
++设备，并最终调用 Linux 内核，将信息传递给内核。
++
++从本质上讲，引导装载程序应提供（至少）以下功能：
++
++1、设置和初始化 RAM。
++2、初始化一个串口。
++3、检测机器的类型（machine type）。
++4、设置内核标签列表（tagged list）。
++5、调用内核映像。
++
++
++1、设置和初始化 RAM
++-------------------
++
++现有的引导加载程序:		强制
++新开发的引导加载程序:		强制
++
++引导装载程序应该找到并初始化系统中所有内核用于保持系统变量数据的 RAM。
++这个操作的执行是设备依赖的。（它可能使用内部算法来自动定位和计算所有
++RAM，或可能使用对这个设备已知的 RAM 信息，还可能使用任何引导装载程序
++设计者想到的匹配方法。）
++
++
++2、初始化一个串口
++-----------------------------
++
++现有的引导加载程序:		可选、建议
++新开发的引导加载程序:		可选、建议
++
++引导加载程序应该初始化并使能一个目标板上的串口。这允许内核串口驱动
++自动检测哪个串口用于内核控制台。(一般用于调试或与目标板通信。)
++
++作为替代方案，引导加载程序也可以通过标签列表传递相关的'console='
++选项给内核以指定某个串口，而串口数据格式的选项在以下文档中描述：
++
++       Documentation/kernel-parameters.txt。
++
++
++3、检测机器类型
++--------------------------
++
++现有的引导加载程序:		可选
++新开发的引导加载程序:		强制
++
++引导加载程序应该通过某些方式检测自身所处的机器类型。这是一个硬件
++代码或通过查看所连接的硬件用某些算法得到，这些超出了本文档的范围。
++引导加载程序最终必须能提供一个 MACH_TYPE_xxx 值给内核。
++(详见 linux/arch/arm/tools/mach-types )。
++
++4、设置启动数据
++------------------
++
++现有的引导加载程序:		可选、强烈建议
++新开发的引导加载程序:		强制
++
++引导加载程序必须提供标签列表或者 dtb 映像以传递配置数据给内核。启动
++数据的物理地址通过寄存器 r2 传递给内核。
++
++4a、设置内核标签列表
++--------------------------------
++
++bootloader 必须创建和初始化内核标签列表。一个有效的标签列表以
++ATAG_CORE 标签开始，并以 ATAG_NONE 标签结束。ATAG_CORE 标签可以是
++空的，也可以是非空。一个空 ATAG_CORE 标签其 size 域设置为
++‘2’(0x00000002)。ATAG_NONE 标签的 size 域必须设置为零。
++
++在列表中可以保存任意数量的标签。对于一个重复的标签是追加到之前标签
++所携带的信息之后，还是会覆盖原来的信息，是未定义的。某些标签的行为
++是前者，其他是后者。
++
++bootloader 必须传递一个系统内存的位置和最小值，以及根文件系统位置。
++因此，最小的标签列表如下所示：
++
++		+-----------+
++基地址 ->	| ATAG_CORE |  |
++		+-----------+  |
++		| ATAG_MEM  |  | 地址增长方向
++		+-----------+  |
++		| ATAG_NONE |  |
++		+-----------+  v
++
++标签列表应该保存在系统的 RAM 中。
++
++标签列表必须置于内核自解压和 initrd'bootp' 程序都不会覆盖的内存区。
++建议放在 RAM 的头 16KiB 中。
++
++4b、设置设备树
++-------------------------
++
++bootloader 必须以 64bit 地址对齐的形式加载一个设备树映像(dtb)到系统
++RAM 中，并用启动数据初始化它。dtb 格式在文档
++Documentation/devicetree/booting-without-of.txt 中。内核将会在
++dtb 物理地址处查找 dtb 魔数值（0xd00dfeed），以确定 dtb 是否已经代替
++标签列表被传递进来。
++
++bootloader 必须传递一个系统内存的位置和最小值，以及根文件系统位置。
++dtb 必须置于内核自解压不会覆盖的内存区。建议将其放置于 RAM 的头 16KiB
++中。但是不可将其放置于“0”物理地址处，因为内核认为：r2 中为 0，意味着
++没有标签列表和 dtb 传递过来。
++
++5、调用内核映像
++---------------------------
++
++现有的引导加载程序:		强制
++新开发的引导加载程序:		强制
++
++调用内核映像 zImage 有两个选择。如果 zImge 保存在 flash 中，且是为了
++在 flash 中直接运行而被正确链接的。这样引导加载程序就可以在 flash 中
++直接调用 zImage。
++
++zImage 也可以被放在系统 RAM（任意位置）中被调用。注意：内核使用映像
++基地址的前 16KB RAM 空间来保存页表。建议将映像置于 RAM 的 32KB 处。
++
++对于以上任意一种情况，都必须符合以下启动状态：
++
++- 停止所有 DMA 设备，这样内存数据就不会因为虚假网络包或磁盘数据而被破坏。
++  这可能可以节省你许多的调试时间。
++
++- CPU 寄存器配置
++  r0 = 0，
++  r1 = （在上面 3 中获取的）机器类型码。
++  r2 = 标签列表在系统 RAM 中的物理地址，或
++       设备树块(dtb)在系统 RAM 中的物理地址
++
++- CPU 模式
++  所有形式的中断必须被禁止 (IRQs 和 FIQs)
++  CPU 必须处于 SVC 模式。(对于 Angel 调试有特例存在)
++
++- 缓存，MMUs
++  MMU 必须关闭。
++  指令缓存开启或关闭都可以。
++  数据缓存必须关闭。
++
++- 引导加载程序应该通过直接跳转到内核映像的第一条指令来调用内核映像。
++
++  对于支持 ARM 指令集的 CPU，跳入内核入口时必须处在 ARM 状态，即使
++  对于 Thumb-2 内核也是如此。
++
++  对于仅支持 Thumb 指令集的 CPU，比如 Cortex-M 系列的 CPU，跳入
++  内核入口时必须处于 Thumb 状态。
+-- 
+1.7.9.5
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
