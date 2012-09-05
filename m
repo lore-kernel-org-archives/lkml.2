@@ -1,53 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759245Ab2IEUNw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 16:13:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64825 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753657Ab2IEUNu (ORCPT
+	id S1759312Ab2IEUS2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 16:18:28 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:55327 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753657Ab2IEUS0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 16:13:50 -0400
-Date: Wed, 5 Sep 2012 13:13:46 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, vgoyal@redhat.com, mpatocka@redhat.com,
-        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH v7 3/9] block: Add bio_reset()
-Message-ID: <20120905201346.GG25236@google.com>
-References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
- <1346175456-1572-4-git-send-email-koverstreet@google.com>
- <20120828203148.GB24608@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120828221715.GD1048@moria.home.lan>
- <20120901022305.GE19535@dhcp-172-17-108-109.mtv.corp.google.com>
+	Wed, 5 Sep 2012 16:18:26 -0400
+Message-ID: <5047B38D.9000607@gmail.com>
+Date: Wed, 05 Sep 2012 16:18:21 -0400
+From: Ric Wheeler <ricwheeler@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120901022305.GE19535@dhcp-172-17-108-109.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: axboe@kernel.dk, Mike Snitzer <snitzer@redhat.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [Ping^3] Re: [PATCH] sg_io: allow UNMAP and WRITE SAME without
+ CAP_SYS_RAWIO
+References: <1342801801-15617-1-git-send-email-pbonzini@redhat.com> <50195108.1090105@redhat.com> <503CA5BA.2040003@redhat.com> <50476480.9010302@redhat.com>
+In-Reply-To: <50476480.9010302@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 31, 2012 at 07:23:05PM -0700, Tejun Heo wrote:
-> On Tue, Aug 28, 2012 at 03:17:15PM -0700, Kent Overstreet wrote:
-> > I still think they should be symmetrical, but if that's true bi_ioc and
-> > bi_css need to be moved, and also bio_disassociate_task() should be
-> > getting called from bio_free(), not bio_put().
-> > 
-> > Were you the one that added that call? I know you've been working on
-> > that area of the code recently. Sticking it in bio_put() instead of
-> > bio_free() seems odd to be, and they're completely equivalent now that
-> > bio_free() is only called from bio_put() (save one instance I should
-> > probably fix).
-> 
-> Maybe I botched symmetry but anyways I *suspect* it probably would be
-> better to keep css association across bio_reset() give the current
-> usages of both mechanisms.  css association indicates the ownership of
-> the bio which isn't likely to change while recycling the bio.
+On 09/05/2012 10:41 AM, Paolo Bonzini wrote:
+> Il 28/08/2012 13:04, Paolo Bonzini ha scritto:
+>> Il 01/08/2012 17:53, Paolo Bonzini ha scritto:
+>>> Il 20/07/2012 18:30, Paolo Bonzini ha scritto:
+>>>> These commands cannot be issued right now without giving CAP_SYS_RAWIO to
+>>>> the process who wishes to send them.  These commands can be useful also to
+>>>> non-privileged programs who have access to the block devices.  For example
+>>>> a virtual machine monitor needs them to forward trim/discard to host disks.
+>>>>
+>>>> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+>>>> ---
+>>>>   block/scsi_ioctl.c |    3 ++
+>>>>   1 files changed, 3 insertions(+), 0 deletions(-)
+>>>>
+>>>> diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
+>>>> index 260fa80..dd71f18 100644
+>>>> --- a/block/scsi_ioctl.c
+>>>> +++ b/block/scsi_ioctl.c
+>>>> @@ -168,13 +168,16 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
+>>>>   	/* Basic writing commands */
+>>>>   	__set_bit(WRITE_6, filter->write_ok);
+>>>>   	__set_bit(WRITE_10, filter->write_ok);
+>>>> +	__set_bit(WRITE_SAME, filter->write_ok);
+>>>>   	__set_bit(WRITE_VERIFY, filter->write_ok);
+>>>>   	__set_bit(WRITE_12, filter->write_ok);
+>>>>   	__set_bit(WRITE_VERIFY_12, filter->write_ok);
+>>>>   	__set_bit(WRITE_16, filter->write_ok);
+>>>> +	__set_bit(WRITE_SAME_16, filter->write_ok);
+>>>>   	__set_bit(WRITE_LONG, filter->write_ok);
+>>>>   	__set_bit(WRITE_LONG_2, filter->write_ok);
+>>>>   	__set_bit(ERASE, filter->write_ok);
+>>>> +	__set_bit(UNMAP, filter->write_ok);
+>>>>   	__set_bit(GPCMD_MODE_SELECT_10, filter->write_ok);
+>>>>   	__set_bit(MODE_SELECT, filter->write_ok);
+>>>>   	__set_bit(LOG_SELECT, filter->write_ok);
+>>>>
+>>> Jens,
+>>>
+>>> can this go in 3.6 as well?
+>> Another ping...
+> Ping & adding some more folks hoping to get a Reviewed-by or to be
+> screamed at.
+>
+> Paolo
 
-Thought about it more and while you're right that css association isn't
-likely to change, it'd just be a needless difference. bio_reset() should
-be as close to a bio_free()/bio_alloc() as possible, IMO.
+Hi Paolo,
 
-Fixed my patches to do it right, though.
+Both of these commands are destructive. WRITE_SAME (if done without the discard 
+bits set) can also take a very long time to be destructive and tie up the storage.
+
+I think that restricting them to CAP_SYS_RAWIO seems reasonable - better to vet 
+and give the appropriate apps the needed capability than to widely open up the 
+safety check?
+
+thanks!
+
+Ric
+
+
