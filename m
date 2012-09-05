@@ -1,88 +1,278 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758180Ab2IEDUO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 23:20:14 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:43884 "EHLO
+	id S1758140Ab2IEDT6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 23:19:58 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:23201 "EHLO
 	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758105Ab2IEDUI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 23:20:08 -0400
+	by vger.kernel.org with ESMTP id S1752763Ab2IEDTy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 23:19:54 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -6
-X-BigFish: VS-6(zz9371I542M1432Izz1202hzz8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah107ah1220hbe9i1155h)
-From: Xie Shaohui-B21989 <B21989@freescale.com>
-To: David Laight <David.Laight@ACULAB.COM>,
-        "jgarzik@pobox.com" <jgarzik@pobox.com>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-CC: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bhartiya Anju-B07263 <B07263@freescale.com>
-Subject: RE: [PATCH] sata_fsl: add workaround for data length mismatch on
- freescale V2 controller
-Thread-Topic: [PATCH] sata_fsl: add workaround for data length mismatch on
- freescale V2 controller
-Thread-Index: AQHNipI7EuslG/m2Pk+57VOtbt3rrZd6mDEAgABzFqA=
-Date: Wed, 5 Sep 2012 03:20:04 +0000
-Message-ID: <ED492CCEAF882048BC2237DE806547C9079C4915@039-SN2MPN1-012.039d.mgd.msft.net>
-References: <1346756920-19128-1-git-send-email-Shaohui.Xie@freescale.com>
- <AE90C24D6B3A694183C094C60CF0A2F6026B6FD6@saturn3.aculab.com>
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B6FD6@saturn3.aculab.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.193.20.41]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+X-SpamScore: -2
+X-BigFish: VS-2(zz154dMzz1202h1082kzz8275bh8275dhz2dh2a8h668h839hd24he5bhf0ah107ah1155h)
+From: Dong Aisheng <b29396@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linus.walleij@stericsson.com>,
+        <s.hauer@pengutronix.de>, <shawn.guo@linaro.org>,
+        <kernel@pengutronix.de>, <grant.likely@secretlab.ca>,
+        <rob.herring@calxeda.com>, <sameo@linux.intel.com>, <lrg@ti.com>,
+        <broonie@opensource.wolfsonmicro.com>, <richard.zhao@freescale.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <swarren@wwwdotorg.org>
+Subject: [PATCH v6 3/4] regulator: anatop-regulator: convert to use syscon to access anatop register
+Date: Wed, 5 Sep 2012 10:57:15 +0800
+Message-ID: <1346813836-28736-4-git-send-email-b29396@freescale.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1346813836-28736-1-git-send-email-b29396@freescale.com>
+References: <1346813836-28736-1-git-send-email-b29396@freescale.com>
 MIME-Version: 1.0
+Content-Type: text/plain
 X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: David Laight [mailto:David.Laight@ACULAB.COM]
-> Sent: Tuesday, September 04, 2012 10:51 PM
-> To: Xie Shaohui-B21989; jgarzik@pobox.com; linux-ide@vger.kernel.org
-> Cc: linuxppc-dev@lists.ozlabs.org; linux-kernel@vger.kernel.org; Bhartiya
-> Anju-B07263
-> Subject: RE: [PATCH] sata_fsl: add workaround for data length mismatch on
-> freescale V2 controller
-> 
-> > +	/* Read command completed register */
-> > +	done_mask = ioread32(hcr_base + CC);
-> > +
-> > +	if (host_priv->quirks & SATA_FSL_QUIRK_V2_ERRATA) {
-> > +		if (unlikely(hstatus & INT_ON_DATA_LENGTH_MISMATCH)) {
-> > +			for (tag = 0; tag < ATA_MAX_QUEUE; tag++) {
-> > +				qc = ata_qc_from_tag(ap, tag);
-> > +				if (qc && ata_is_atapi(qc->tf.protocol))
-> {
-> > +					atapi_flag = 1;
-> > +					break;
-> > +				}
-> > +			}
-> > +		}
-> > +	}
-> > +
-> > +	/* Workaround for data length mismatch errata */
-> > +	if (atapi_flag) {
-> 
-> Seems to me like the conditionals for this code are all in the wrong
-> order - adding code to the normal path.
-> 
-> The whole lot should probably be inside:
-> 	if (unlikely(hstatus & INT_ON_DATA_LENGTH_MISMATCH)) { and the
-> 'atapi_flag' boolean removed.
-[S.H] OK. But I need to move the "done_mask = ioread32(hcr_base + CC);" before these codes,
- because these codes will clean command completed register.
+From: Dong Aisheng <dong.aisheng@linaro.org>
 
-> 
-> I also wonder it this is worthy of an actual quirk?
-> Might be worth doing anyway.
-[S.H] The quirk is useful for our internal use(there is another errata but got fixed by silicon upgrade),
-but you are right it's worth doing anyway in upstream, since the upstream code only handles this errata.
+Using syscon to access anatop register.
 
-Best Regards, 
-Shaohui Xie
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Acked-by: Stephen Warren <swarren@wwwdotorg.org>
+Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+---
+ChangeLog v5->v6:
+ * of_node_put after using syscon_node_to_regmap
+ChangeLog v4->v5:
+ * merge patch 3,4,5,6 to avoid break bisect.
+ChangeLog v2->v3:
+ * update to use syscon_node_to_regmap and use of_get_parent to get anatop node.
+ChangeLog v1-v2:
+ * update to use generic regmap api
+---
+ arch/arm/boot/dts/imx6q.dtsi         |    4 +-
+ arch/arm/mach-imx/Kconfig            |    2 +-
+ arch/arm/mach-imx/mach-imx6q.c       |   47 +++++++++++++---------------------
+ drivers/regulator/Kconfig            |    2 +-
+ drivers/regulator/anatop-regulator.c |   31 +++++++++++++++-------
+ 5 files changed, 43 insertions(+), 43 deletions(-)
+
+diff --git a/arch/arm/boot/dts/imx6q.dtsi b/arch/arm/boot/dts/imx6q.dtsi
+index bea21bc..52ed4d1 100644
+--- a/arch/arm/boot/dts/imx6q.dtsi
++++ b/arch/arm/boot/dts/imx6q.dtsi
+@@ -378,8 +378,8 @@
+ 				interrupts = <0 87 0x04 0 88 0x04>;
+ 			};
+ 
+-			anatop@020c8000 {
+-				compatible = "fsl,imx6q-anatop";
++			anatop: anatop@020c8000 {
++				compatible = "fsl,imx6q-anatop", "syscon", "simple-bus";
+ 				reg = <0x020c8000 0x1000>;
+ 				interrupts = <0 49 0x04 0 54 0x04 0 127 0x04>;
+ 
+diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
+index afd542a..7bba253 100644
+--- a/arch/arm/mach-imx/Kconfig
++++ b/arch/arm/mach-imx/Kconfig
+@@ -839,7 +839,7 @@ config SOC_IMX6Q
+ 	select HAVE_IMX_MMDC
+ 	select HAVE_IMX_SRC
+ 	select HAVE_SMP
+-	select MFD_ANATOP
++	select MFD_SYSCON
+ 	select PINCTRL
+ 	select PINCTRL_IMX6Q
+ 
+diff --git a/arch/arm/mach-imx/mach-imx6q.c b/arch/arm/mach-imx/mach-imx6q.c
+index 045b3f6..eaf56b4 100644
+--- a/arch/arm/mach-imx/mach-imx6q.c
++++ b/arch/arm/mach-imx/mach-imx6q.c
+@@ -24,8 +24,9 @@
+ #include <linux/of_platform.h>
+ #include <linux/pinctrl/machine.h>
+ #include <linux/phy.h>
++#include <linux/regmap.h>
+ #include <linux/micrel_phy.h>
+-#include <linux/mfd/anatop.h>
++#include <linux/mfd/syscon.h>
+ #include <asm/cpuidle.h>
+ #include <asm/smp_twd.h>
+ #include <asm/hardware/cache-l2x0.h>
+@@ -120,20 +121,7 @@ static void __init imx6q_sabrelite_init(void)
+ 
+ static void __init imx6q_usb_init(void)
+ {
+-	struct device_node *np;
+-	struct platform_device *pdev = NULL;
+-	struct anatop *adata = NULL;
+-
+-	np = of_find_compatible_node(NULL, NULL, "fsl,imx6q-anatop");
+-	if (np)
+-		pdev = of_find_device_by_node(np);
+-	if (pdev)
+-		adata = platform_get_drvdata(pdev);
+-	if (!adata) {
+-		if (np)
+-			of_node_put(np);
+-		return;
+-	}
++	struct regmap *anatop;
+ 
+ #define HW_ANADIG_USB1_CHRG_DETECT		0x000001b0
+ #define HW_ANADIG_USB2_CHRG_DETECT		0x00000210
+@@ -141,20 +129,21 @@ static void __init imx6q_usb_init(void)
+ #define BM_ANADIG_USB_CHRG_DETECT_EN_B		0x00100000
+ #define BM_ANADIG_USB_CHRG_DETECT_CHK_CHRG_B	0x00080000
+ 
+-	/*
+-	 * The external charger detector needs to be disabled,
+-	 * or the signal at DP will be poor
+-	 */
+-	anatop_write_reg(adata, HW_ANADIG_USB1_CHRG_DETECT,
+-			BM_ANADIG_USB_CHRG_DETECT_EN_B
+-			| BM_ANADIG_USB_CHRG_DETECT_CHK_CHRG_B,
+-			~0);
+-	anatop_write_reg(adata, HW_ANADIG_USB2_CHRG_DETECT,
+-			BM_ANADIG_USB_CHRG_DETECT_EN_B |
+-			BM_ANADIG_USB_CHRG_DETECT_CHK_CHRG_B,
+-			~0);
+-
+-	of_node_put(np);
++	anatop = syscon_regmap_lookup_by_compatible("fsl,imx6q-anatop");
++	if (!IS_ERR(anatop)) {
++		/*
++		 * The external charger detector needs to be disabled,
++		 * or the signal at DP will be poor
++		 */
++		regmap_write(anatop, HW_ANADIG_USB1_CHRG_DETECT,
++				BM_ANADIG_USB_CHRG_DETECT_EN_B
++				| BM_ANADIG_USB_CHRG_DETECT_CHK_CHRG_B);
++		regmap_write(anatop, HW_ANADIG_USB2_CHRG_DETECT,
++				BM_ANADIG_USB_CHRG_DETECT_EN_B |
++				BM_ANADIG_USB_CHRG_DETECT_CHK_CHRG_B);
++	} else {
++		pr_warn("failed to find fsl,imx6q-anatop regmap\n");
++	}
+ }
+ 
+ static void __init imx6q_init_machine(void)
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index 4e932cc..2ae1d97 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -112,7 +112,7 @@ config REGULATOR_DA9052
+ 
+ config REGULATOR_ANATOP
+ 	tristate "Freescale i.MX on-chip ANATOP LDO regulators"
+-	depends on MFD_ANATOP
++	depends on MFD_SYSCON
+ 	help
+ 	  Say y here to support Freescale i.MX on-chip ANATOP LDOs
+ 	  regulators. It is recommended that this option be
+diff --git a/drivers/regulator/anatop-regulator.c b/drivers/regulator/anatop-regulator.c
+index ce0fe72..1af9768 100644
+--- a/drivers/regulator/anatop-regulator.c
++++ b/drivers/regulator/anatop-regulator.c
+@@ -21,19 +21,20 @@
+ #include <linux/slab.h>
+ #include <linux/device.h>
+ #include <linux/module.h>
++#include <linux/mfd/syscon.h>
+ #include <linux/err.h>
+ #include <linux/io.h>
+ #include <linux/platform_device.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+-#include <linux/mfd/anatop.h>
++#include <linux/regmap.h>
+ #include <linux/regulator/driver.h>
+ #include <linux/regulator/of_regulator.h>
+ 
+ struct anatop_regulator {
+ 	const char *name;
+ 	u32 control_reg;
+-	struct anatop *mfd;
++	struct regmap *anatop;
+ 	int vol_bit_shift;
+ 	int vol_bit_width;
+ 	int min_bit_val;
+@@ -43,7 +44,8 @@ struct anatop_regulator {
+ 	struct regulator_init_data *initdata;
+ };
+ 
+-static int anatop_set_voltage_sel(struct regulator_dev *reg, unsigned selector)
++static int anatop_regmap_set_voltage_sel(struct regulator_dev *reg,
++					unsigned selector)
+ {
+ 	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
+ 	u32 val, mask;
+@@ -56,12 +58,13 @@ static int anatop_set_voltage_sel(struct regulator_dev *reg, unsigned selector)
+ 	mask = ((1 << anatop_reg->vol_bit_width) - 1) <<
+ 		anatop_reg->vol_bit_shift;
+ 	val <<= anatop_reg->vol_bit_shift;
+-	anatop_write_reg(anatop_reg->mfd, anatop_reg->control_reg, val, mask);
++	regmap_update_bits(anatop_reg->anatop, anatop_reg->control_reg,
++				mask, val);
+ 
+ 	return 0;
+ }
+ 
+-static int anatop_get_voltage_sel(struct regulator_dev *reg)
++static int anatop_regmap_get_voltage_sel(struct regulator_dev *reg)
+ {
+ 	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
+ 	u32 val, mask;
+@@ -69,7 +72,7 @@ static int anatop_get_voltage_sel(struct regulator_dev *reg)
+ 	if (!anatop_reg->control_reg)
+ 		return -ENOTSUPP;
+ 
+-	val = anatop_read_reg(anatop_reg->mfd, anatop_reg->control_reg);
++	regmap_read(anatop_reg->anatop, anatop_reg->control_reg, &val);
+ 	mask = ((1 << anatop_reg->vol_bit_width) - 1) <<
+ 		anatop_reg->vol_bit_shift;
+ 	val = (val & mask) >> anatop_reg->vol_bit_shift;
+@@ -78,8 +81,8 @@ static int anatop_get_voltage_sel(struct regulator_dev *reg)
+ }
+ 
+ static struct regulator_ops anatop_rops = {
+-	.set_voltage_sel = anatop_set_voltage_sel,
+-	.get_voltage_sel = anatop_get_voltage_sel,
++	.set_voltage_sel = anatop_regmap_set_voltage_sel,
++	.get_voltage_sel = anatop_regmap_get_voltage_sel,
+ 	.list_voltage = regulator_list_voltage_linear,
+ 	.map_voltage = regulator_map_voltage_linear,
+ };
+@@ -88,11 +91,11 @@ static int __devinit anatop_regulator_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+ 	struct device_node *np = dev->of_node;
++	struct device_node *anatop_np;
+ 	struct regulator_desc *rdesc;
+ 	struct regulator_dev *rdev;
+ 	struct anatop_regulator *sreg;
+ 	struct regulator_init_data *initdata;
+-	struct anatop *anatopmfd = dev_get_drvdata(pdev->dev.parent);
+ 	struct regulator_config config = { };
+ 	int ret = 0;
+ 
+@@ -109,7 +112,15 @@ static int __devinit anatop_regulator_probe(struct platform_device *pdev)
+ 	rdesc->ops = &anatop_rops;
+ 	rdesc->type = REGULATOR_VOLTAGE;
+ 	rdesc->owner = THIS_MODULE;
+-	sreg->mfd = anatopmfd;
++
++	anatop_np = of_get_parent(np);
++	if (!anatop_np)
++		return -ENODEV;
++	sreg->anatop = syscon_node_to_regmap(anatop_np);
++	of_node_put(anatop_np);
++	if (IS_ERR(sreg->anatop))
++		return PTR_ERR(sreg->anatop);
++
+ 	ret = of_property_read_u32(np, "anatop-reg-offset",
+ 				   &sreg->control_reg);
+ 	if (ret) {
+-- 
+1.7.0.4
+
 
