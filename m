@@ -1,108 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932528Ab2IEKYQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 06:24:16 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:55118 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758578Ab2IEKYL (ORCPT
+	id S1758431Ab2IEKeg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 06:34:36 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:54380 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752480Ab2IEKef (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 06:24:11 -0400
-Subject: [PATCH 1/3] x86/mce: Make sysfs tunables available globally across
- all cpus
-To: tony.luck@intel.com, andi@firstfloor.org, bp@amd64.org
+	Wed, 5 Sep 2012 06:34:35 -0400
+Subject: [PATCH] [mcelog] Start using the new sysfs tunables location
+To: ak@linux.intel.com, tony.luck@intel.com, andi@firstfloor.org, bp@amd64.org
 From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Cc: gong.chen@linux.intel.com, ananth@in.ibm.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        tglx@linutronix.de, gregkh@suse.de, linux-edac@vger.kernel.org
-Date: Wed, 05 Sep 2012 15:51:56 +0530
-Message-ID: <20120905102156.9423.27806.stgit@localhost.localdomain>
-In-Reply-To: <20120905102049.9423.6413.stgit@localhost.localdomain>
-References: <20120905102049.9423.6413.stgit@localhost.localdomain>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, linux-edac@vger.kernel.org,
+        ananth@in.ibm.com
+Date: Wed, 05 Sep 2012 16:02:37 +0530
+Message-ID: <20120905103237.9726.56131.stgit@localhost.localdomain>
+In-Reply-To: <20120905102156.9423.27806.stgit@localhost.localdomain>
+References: <20120905102156.9423.27806.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12090510-2674-0000-0000-000005DA481A
+x-cbid: 12090510-7014-0000-0000-000001D85760
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All the MCE attributes currently exported via sysfs appear under
-/sys/devices/system/machinecheck/machinecheck<n>/. Pretty much all of
-these are global in nature and not specific to a processor. So, make these
-available under /sys/devices/system/machinecheck/ where they rightly belong.
-Update documentation to also point to the new location so that user-space
-tools can pick up on the new location. We would eventually want to remove
-these from the per-cpu location.
+All the current mce tunables are now available under
+/sys/devices/system/machinecheck. Start using this new location, but fall back
+to the older per-cpu location so that we continue working with older kernels.
 
 Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
 ---
- Documentation/x86/x86_64/machinecheck |    4 ++--
- arch/x86/kernel/cpu/mcheck/mce.c      |   24 +++++++++++++++++++++++-
- 2 files changed, 25 insertions(+), 3 deletions(-)
+ README      |    2 +-
+ mcelog.init |    5 ++++-
+ tests/test  |    7 ++++++-
+ 3 files changed, 11 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/x86/x86_64/machinecheck b/Documentation/x86/x86_64/machinecheck
-index b1fb302..02b84a6 100644
---- a/Documentation/x86/x86_64/machinecheck
-+++ b/Documentation/x86/x86_64/machinecheck
-@@ -31,8 +31,8 @@ bankNctl
- 	Note that BIOS maintain another mask to disable specific events
- 	per bank.  This is not visible here
+diff --git a/README b/README
+index 08184ed..0426460 100644
+--- a/README
++++ b/README
+@@ -18,7 +18,7 @@ significantly (upto 10 minutes) and does not allow mcelog to keep extended state
  
--The following entries appear for each CPU, but they are truly shared
--between all CPUs.
-+The following entries are shared between all CPUs and appear under
-+/sys/devices/system/machinecheck:
+ trigger is a newer method where the kernel runs mcelog on a error.
+ This is configured with 
+-echo /usr/sbin/mcelog > /sys/devices/system/machinecheck/machinecheck0/trigger
++echo /usr/sbin/mcelog > /sys/devices/system/machinecheck/trigger
+ This is faster, but still doesn't allow mcelog to keep state,
+ and has relatively high overhead for each error because a program has
+ to be initialized from scratch.
+diff --git a/mcelog.init b/mcelog.init
+index 0abe786..5f32ba7 100755
+--- a/mcelog.init
++++ b/mcelog.init
+@@ -31,7 +31,10 @@ MCELOG_OPTIONS=""
  
- check_interval
- 	How often to poll for corrected machine check errors, in seconds
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index c311122..bf276eb 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -2205,6 +2205,7 @@ static struct dev_ext_attribute dev_attr_cmci_disabled = {
- 	&mce_cmci_disabled
- };
+ # private settings
+ MCELOG=${MCELOG:-/usr/sbin/mcelog}
+-TRIGGER=/sys/devices/system/machinecheck/machinecheck0/trigger
++TRIGGER=/sys/devices/system/machinecheck/trigger
++if [ ! -e $TRIGGER ] ; then
++	TRIGGER=/sys/devices/system/machinecheck/machinecheck0/trigger
++fi
+ [ ! -x $MCELOG ] && ( echo "mcelog not found" ; exit 1 )
+ [ ! -r /dev/mcelog ] && ( echo "/dev/mcelog not active" ; exit 0 )
  
-+/* Use this _only_ for per-cpu attributes */
- static struct device_attribute *mce_device_attrs[] = {
- 	&dev_attr_tolerant.attr,
- 	&dev_attr_check_interval.attr,
-@@ -2216,6 +2217,27 @@ static struct device_attribute *mce_device_attrs[] = {
- 	NULL
- };
+diff --git a/tests/test b/tests/test
+index c673eb2..52daf01 100755
+--- a/tests/test
++++ b/tests/test
+@@ -17,10 +17,15 @@ if [ "$(whoami)" != "root" ] ; then
+ 	exit 1
+ fi
  
-+/* All new global attributes go here */
-+static struct attribute *mce_device_global_attrs[] = {
-+	&dev_attr_tolerant.attr.attr,
-+	&dev_attr_check_interval.attr.attr,
-+	&dev_attr_trigger.attr,
-+	&dev_attr_monarch_timeout.attr.attr,
-+	&dev_attr_dont_log_ce.attr.attr,
-+	&dev_attr_ignore_ce.attr.attr,
-+	&dev_attr_cmci_disabled.attr.attr,
-+	NULL
-+};
++TRIGGER=/sys/devices/system/machinecheck/trigger
++if [ ! -e $TRIGGER ] ; then
++	TRIGGER=/sys/devices/system/machinecheck/machinecheck0/trigger
++fi
 +
-+static struct attribute_group mce_device_attr_group = {
-+	.attrs = mce_device_global_attrs,
-+};
-+
-+static const struct attribute_group *mce_device_attr_groups[] = {
-+	&mce_device_attr_group,
-+	NULL,
-+};
-+
- static cpumask_var_t mce_device_initialized;
+ echo "++++++++++++ running $1 test +++++++++++++++++++"
  
- static void mce_device_release(struct device *dev)
-@@ -2397,7 +2419,7 @@ static __init int mcheck_init_device(void)
+ # disable trigger
+-echo -n "" > /sys/devices/system/machinecheck/machinecheck0/trigger
++echo -n "" > $TRIGGER
+ killall mcelog || true
  
- 	mce_init_banks();
- 
--	err = subsys_system_register(&mce_subsys, NULL);
-+	err = subsys_system_register(&mce_subsys, mce_device_attr_groups);
- 	if (err)
- 		return err;
- 
+ #killwatchdog() { 
 
