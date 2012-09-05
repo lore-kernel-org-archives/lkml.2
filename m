@@ -1,53 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758072Ab2IEOWL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 10:22:11 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:45192 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751505Ab2IEOWJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 10:22:09 -0400
+	id S1753581Ab2IEOZp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 10:25:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44197 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752579Ab2IEOZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 10:25:43 -0400
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH 0/8 v2] acpi-cpufreq: Move modern AMD cpufreq support to acpi-cpufreq
+Date: Wed, 5 Sep 2012 16:25:41 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.20-desktop; KDE/4.6.0; x86_64; ; )
+Cc: Andre Przywara <andre.przywara@amd.com>, Matthew Garret <mjg@redhat.com>,
+        linux-pm@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+References: <1346747289-8421-1-git-send-email-andre.przywara@amd.com> <201209051546.22590.rjw@sisk.pl>
+In-Reply-To: <201209051546.22590.rjw@sisk.pl>
 MIME-Version: 1.0
-In-Reply-To: <11987916.rOoNGcb1ly@dev1>
-References: <1342087073-3892-1-git-send-email-u.kleine-koenig@pengutronix.de>
-	<11987916.rOoNGcb1ly@dev1>
-Date: Wed, 5 Sep 2012 11:22:08 -0300
-Message-ID: <CAOMZO5AVP1L-6A7cmV-kQEfG1C+vczFKT=sQbFtLJDaGau0kRg@mail.gmail.com>
-Subject: Re: [PATCH 0/7] Add support for Freescale's mc34708 to mc13xxx driver
-From: Fabio Estevam <festevam@gmail.com>
-To: Marc Reilly <marc@cpdesign.com.au>, Samuel Ortiz <samuel.ortiz@intel.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        "Ying-Chun Liu (PaulLiu)" <paulliu@debian.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, kernel@pengutronix.de,
-        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        =?UTF-8?Q?Philippe_R=C3=A9tornaz?= <philippe.retornaz@epfl.ch>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209051625.41769.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
+On Wednesday, September 05, 2012 03:46:22 PM Rafael J. Wysocki wrote:
+> On Tuesday, September 04, 2012, Andre Przywara wrote:
+> > Hi,
+> > 
+> > now the second, revised version of the patch set. I now tested loading
+> > both drivers after each other in several combinations, after two bug
+> > fixes this now works as expected.
+> > I added a patch to move messages from powernow-k8 after the initialization
+> > phase, so it remains silent if driver loading fails.
+> > 
+> > I also rearranged the patches so that the powernow-k8 feature removal patch is
+> > now the last one and is somewhat optional. I still prefer to have it in,
+> > but it can be dropped if needed. Then powernow-k8 will still support modern
+> > AMD CPUs, but will emit a warning message.
+> > 
+> > Regards,
+> > Andre
+> > 
+> > Changes from v1:
+> > * added hints to Kconfig about CPU support
+> > * merge documentation from separate patch into the feature patch
+> > * add deprecation warning
+> > * prefix acpi-cpufreq warning messages with module name
+> > * bugfix: avoid boost init it driver registration failed
+> > * bugfix: fix module redirect request call (was not reached before)
+> 
+> I have applied the whole series to the linux-next branch of the linux-pm.git
+> tree, but I'm quite unsure about [7/8].  Is it really necessary?  I mean, since
+> we want users to switch to a different driver anyway, which already has a knob
+> providing the functionality in question, what's the point really?
 
-On Thu, Jul 12, 2012 at 8:02 PM, Marc Reilly <marc@cpdesign.com.au> wrote:
-> Hi Uwe,
->
->> This series was tested on a Phytec pcm038 (mc13783 on spi) using
->> traditional boot (i.e. not dt) and on a i.MX53 based machine (mc34708 on
->> i2c) using dt boot.
->>
->> Philippe's patches are already in next, they are just included here for
->> those who want to test the patches. The 'mfd/mc13xxx: drop modifying
->> driver's id_table in probe' was already sent out yesterday and is
->> included here because the last patch depends on it.
->>
->
-> For all patches (that don't already have it):
-> Acked-by: Marc Reilly <marc@cpdesign.com.au>
+Afaik this was mostly for compiler people or other developers doing
+benchmarks to be able to avoid fluctating numbers caused by turbo/boost
+mode.
 
-Can this series be applied?
+I don't know whether it's used by any userspace tool. If, it would certainly
+be an AMD specific tool for developers. If you (AMD) know a userspace tool
+out there it may make sense to keep it the one or other kernel round,
+otherwise I guess it can simply be deleted.
 
-Regards,
+I will add the functionality (to enable/disable turbo/boost mode)
+to cpupower userspace tool as soon as this is in.
+Shouldn't be much more than a -t option and a
+one liner to read out or set another cpufreq sysfs file.
 
-Fabio Estevam
+   Thomas
