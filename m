@@ -1,43 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758052Ab2IECLu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 22:11:50 -0400
-Received: from ozlabs.org ([203.10.76.45]:49329 "EHLO ozlabs.org"
+	id S1758061Ab2IECS7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 22:18:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1763 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751434Ab2IECLs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 22:11:48 -0400
-Message-ID: <1346811109.28652.1.camel@concordia>
-Subject: Re: [PATCH] perf: allow user to indicate path to objdump in command
- line
-From: Michael Ellerman <michael@ellerman.id.au>
-To: David Ahern <dsahern@gmail.com>
-Cc: Maciek Borzecki <maciek.borzecki@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-perf-users@vger.kernel.org
-Date: Wed, 05 Sep 2012 12:11:49 +1000
-In-Reply-To: <504626CB.60601@gmail.com>
-References: <1346754750.16299.3.camel@localhost.localdomain>
-	 <504626CB.60601@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1753038Ab2IECS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 22:18:57 -0400
+Message-ID: <5046B688.1070902@redhat.com>
+Date: Tue, 04 Sep 2012 22:18:48 -0400
+From: Don Dutile <ddutile@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111104 Red Hat/3.1.16-2.el6_1 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Matthew Garrett <mjg@redhat.com>
+CC: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-efi@vger.kernel.org, mfleming@intel.com, dwmw2@infradead.org,
+        bhelgaas@google.com
+Subject: Re: [PATCH V3 3/4] PCI: Add support for non-BAR ROMs
+References: <1345739803-21017-1-git-send-email-mjg@redhat.com> <1345739803-21017-4-git-send-email-mjg@redhat.com>
+In-Reply-To: <1345739803-21017-4-git-send-email-mjg@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-09-04 at 10:05 -0600, David Ahern wrote:
-> On 9/4/12 4:32 AM, Maciek Borzecki wrote:
-> > When analyzing perf data from hosts of other architecture than one of the local
-> > host it's useful to call objdump that is part of a toolchain for that
-> > architecture. Instead of calling regular objdump, call one that user specified
-> > in command line.
-> 
-> Why not set the PATH to make the toolchain's version the one used by perf?
+On 08/23/2012 12:36 PM, Matthew Garrett wrote:
+> Platforms may provide their own mechanisms for obtaining ROMs. Add support
+> for using data provided by the platform in that case.
+>
+> Signed-off-by: Matthew Garrett<mjg@redhat.com>
+> ---
+>   drivers/pci/rom.c   | 11 +++++++++--
+>   include/linux/pci.h |  2 ++
+>   2 files changed, 11 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/pci/rom.c b/drivers/pci/rom.c
+> index 48ebdb2..46026e4 100644
+> --- a/drivers/pci/rom.c
+> +++ b/drivers/pci/rom.c
+> @@ -118,11 +118,17 @@ void __iomem *pci_map_rom(struct pci_dev *pdev, size_t *size)
+>   	void __iomem *rom;
+>
+>   	/*
+> +	 * Some devices may provide ROMs via a source other than the BAR
+> +	 */
+> +	if (pdev->rom&&  pdev->romlen) {
+> +		*size = pdev->romlen;
+> +		return phys_to_virt((phys_addr_t)pdev->rom);
+                        ^^^^^
+                          ioremap_nocache() ? ... or is caching rom ok?
 
-At least one reason is that cross toolchains are usually built such that
-the resulting binaries are called <target>-objdump, <target>-gcc etc.
-
-cheers
+> +	/*
+>   	 * IORESOURCE_ROM_SHADOW set on x86, x86_64 and IA64 supports legacy
+>   	 * memory map if the VGA enable bit of the Bridge Control register is
+>   	 * set for embedded VGA.
+>   	 */
+> -	if (res->flags&  IORESOURCE_ROM_SHADOW) {
+> +	} else if (res->flags&  IORESOURCE_ROM_SHADOW) {
+>   		/* primary video rom always starts here */
+>   		start = (loff_t)0xC0000;
+>   		*size = 0x20000; /* cover C000:0 through E000:0 */
+> @@ -219,7 +225,8 @@ void pci_unmap_rom(struct pci_dev *pdev, void __iomem *rom)
+>   	if (res->flags&  (IORESOURCE_ROM_COPY | IORESOURCE_ROM_BIOS_COPY))
+>   		return;
+>
+> -	iounmap(rom);
+> +	if (!pdev->rom || !pdev->romlen)
+> +		iounmap(rom);
+>
+>   	/* Disable again before continuing, leave enabled if pci=rom */
+>   	if (!(res->flags&  (IORESOURCE_ROM_ENABLE | IORESOURCE_ROM_SHADOW)))
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 6a2625c..2668bb9 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -355,6 +355,8 @@ struct pci_dev {
+>   	};
+>   	struct pci_ats	*ats;	/* Address Translation Service */
+>   #endif
+> +	void *rom; /* Physical pointer to ROM if it's not from the BAR */
+> +	size_t romlen; /* Length of ROM if it's not from the BAR */
+>   };
+>
+>   static inline struct pci_dev *pci_physfn(struct pci_dev *dev)
 
