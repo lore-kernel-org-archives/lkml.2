@@ -1,103 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758111Ab2IED33 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 23:29:29 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:43645 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751263Ab2IED32 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 23:29:28 -0400
-Date: Wed, 5 Sep 2012 03:30:02 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Aristeu Rozanski <aris@redhat.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        James Morris <jmorris@namei.org>, Pavel Emelyanov <xemul@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2 0/6] device_cgroup: replace internally whitelist
- with exception list
-Message-ID: <20120905033002.GG13310@mail.hallyn.com>
-References: <20120904143419.892872876@napanee.usersys.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120904143419.892872876@napanee.usersys.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758120Ab2IEDkd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 23:40:33 -0400
+Received: from gate.crashing.org ([63.228.1.57]:34130 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752016Ab2IEDkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 23:40:31 -0400
+Message-ID: <1346816407.2257.37.camel@pasglop>
+Subject: Re: [PATCH V3 1/3] drivers/char/tpm: Add new device driver to
+ support IBM vTPM
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Kent Yoder <key@linux.vnet.ibm.com>
+Cc: Ashley Lai <adlai@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net, linuxppc-dev@lists.ozlabs.org,
+        rcj@linux.vnet.ibm.com, adlai@us.ibm.com
+Date: Wed, 05 Sep 2012 13:40:07 +1000
+In-Reply-To: <20120822214217.GB13519@linux.vnet.ibm.com>
+References: <1344987282.4430.26.camel@footlong>
+	 <1345670263.25124.7.camel@footlong>
+	 <20120822214217.GB13519@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Aristeu Rozanski (aris@redhat.com):
-> The original model of device_cgroup is having a whitelist where all the
-> allowed devices are listed. The problem with this approach is that is
-> impossible to have the case of allowing everything but few devices.
+On Wed, 2012-08-22 at 16:42 -0500, Kent Yoder wrote:
+> On Wed, Aug 22, 2012 at 04:17:43PM -0500, Ashley Lai wrote:
+> > This patch adds a new device driver to support IBM virtual TPM
+> > (vTPM) for PPC64.  IBM vTPM is supported through the adjunct
+> > partition with firmware release 740 or higher.  With vTPM
+> > support, each lpar is able to have its own vTPM without the
+> > physical TPM hardware.
+> > 
+> > This driver provides TPM functionalities by communicating with
+> > the vTPM adjunct partition through Hypervisor calls (Hcalls)
+> > and Command/Response Queue (CRQ) commands.
 > 
-> The reason for that lies in the way the whitelist is handled internally:
-> since there's only a whitelist, the "all devices" entry would have to be
-> removed and replaced by the entire list of possible devices but the ones
-> that are being denied.  Since dev_t is 32 bits long, representing the allowed
-> devices as a bitfield is not memory efficient.
-> 
-> This patch replaces the "whitelist" by a "exceptions" list and the default
-> policy is kept as "deny_all" variable in dev_cgroup structure.
-> 
-> The current interface determines that whenever "a" is written to devices.allow
-> or devices.deny, the entry masking all devices will be added or removed,
-> respectively. This behavior is kept and it's what will determine the default
-> policy:
-> 
-> 	# cat devices.list 
-> 	a *:* rwm
-> 	# echo a >devices.deny
-> 	# cat devices.list 
-> 	# echo a >devices.allow
-> 	# cat devices.list 
-> 	a *:* rwm
-> 
-> The interface is also preserved. For example, if one wants to block only access
-> to /dev/null:
-> 	# ls -l /dev/null
-> 	crw-rw-rw- 1 root root 1, 3 Jul 24 16:17 /dev/null
-> 	# echo a >devices.allow
-> 	# echo "c 1:3 rwm" >devices.deny
-> 	# cat /dev/null
-> 	cat: /dev/null: Operation not permitted
-> 	# echo >/dev/null
-> 	bash: /dev/null: Operation not permitted
-> 	# mknod /tmp/null c 1 3
-> 	mknod: /tmp/null: Operation not permitted
-> 	# echo "c 1:3 r" >devices.allow
-> 	# cat /dev/null
-> 	# echo >/dev/null
-> 	bash: /dev/null: Operation not permitted
-> 	# mknod /tmp/null c 1 3
-> 	mknod: /tmp/null: Operation not permitted
-> 	# echo "c 1:3 rw" >devices.allow
-> 	# echo >/dev/null
-> 	# cat /dev/null
-> 	# mknod /tmp/null c 1 3
-> 	mknod: /tmp/null: Operation not permitted
-> 	# echo "c 1:3 rwm" >devices.allow
-> 	# echo >/dev/null
-> 	# cat /dev/null
-> 	# mknod /tmp/null c 1 3
-> 	#
-> 
-> v2:
-> - stop using simple_strtoul()
-> - fix checkpatch warnings
-> - rename deny_all to behavior
-> - updated documentation
-> - added new files to cgroupfs to better reflect the internal state
-> 
->  Documentation/cgroups/devices.txt |   73 ++++--
->  security/device_cgroup.c          |  443 +++++++++++++++++++++++---------------
->  2 files changed, 333 insertions(+), 183 deletions(-)
-> 
-> -- 
-> Aristeu
+>  Thanks Ashley, I'll include this in my next pull request to James.
 
-Thanks, Aristeu, very nice.
+Oh ? I was about to put it in the powerpc tree ... But yeah, I notice
+there's a change to tpm.h so it probably should be at least acked by the
+TPM folks. As for the subsequent patches, they are powerpc specific so I
+can add them, I don't think there's a strict dependency, is there ?
 
--serge
+Now, while having a look at the driver, I found a few things that I'm
+not sure I'm happy with:
+
+Mainly:
+
+> > + */
+> > +static int tpm_ibmvtpm_recv(struct tpm_chip *chip, u8 *buf, size_t count)
+> > +{
+> > +	struct ibmvtpm_dev *ibmvtpm;
+> > +	u16 len;
+> > +
+> > +	ibmvtpm = (struct ibmvtpm_dev *)chip->vendor.data;
+> > +
+> > +	if (!ibmvtpm->rtce_buf) {
+> > +		dev_err(ibmvtpm->dev, "ibmvtpm device is not ready\n");
+> > +		return 0;
+> > +	}
+> > +
+> > +	wait_event_interruptible(wq, ibmvtpm->crq_res.len != 0);
+> > +
+> > +	if (count < ibmvtpm->crq_res.len) {
+
+That doesn't look right. The "other side" as far as I can tell is:
+
+> > +		case VTPM_TPM_COMMAND_RES:
+> > +			ibmvtpm->crq_res.valid = crq->valid;
+> > +			ibmvtpm->crq_res.msg = crq->msg;
+> > +			ibmvtpm->crq_res.len = crq->len;
+> > +			ibmvtpm->crq_res.data = crq->data;
+> > +			wake_up_interruptible(&wq);
+
+That looks racy to me. At the very least it should be doing:
+
+			ibmvtpm->crq_res.data = crq->data;
+			smp_wmb();
+			ibmvtpm->crq_res.len = crq->len;
+
+IE. Ensure that "len" is written last, and possibly have an
+corresponding smp_rmb() after wait_event_interruptible() in the receive
+case.
+
+Also, I dislike having a global symbol called "wq". You also don't seem
+to have any synchronization on access to that wq, can't you end up with
+several clients trying to send messages & wait for responses getting all
+mixed up ? You might need to make sure that at least you do a
+wake_up_interruptible_all() to ensure you wake them all up (inefficient
+but works). Unless you can track per-client ?
+
+Or is the above TPM layer making sure only one command/response happens
+at a given point in time ?
+
+You also do an interruptible wait but don't seem to be checking for
+signals (and not testing the result from wait_event_interruptible which
+might be returning -ERESTARTSYS in this case).
+
+That all sound a bit wrong to me ...
+> > +static irqreturn_t ibmvtpm_interrupt(int irq, void *vtpm_instance)
+> > +{
+> > +	struct ibmvtpm_dev *ibmvtpm = (struct ibmvtpm_dev *) vtpm_instance;
+> > +	unsigned long flags;
+> > +
+> > +	spin_lock_irqsave(&ibmvtpm->lock, flags);
+> > +	vio_disable_interrupts(ibmvtpm->vdev);
+> > +	tasklet_schedule(&ibmvtpm->tasklet);
+> > +	spin_unlock_irqrestore(&ibmvtpm->lock, flags);
+> > +
+> > +	return IRQ_HANDLED;
+> > +}
+
+Tasklets ? We still use those things ? That's softirq iirc, do you
+really need to offload ? I mean, it allows to limit the amount of time
+an interrupt is disabled, but that's only useful if you assume you'll
+have quite a lot of traffic here, is that the case ?
+
+You might be actually increasing latency here in favor of throughput, is
+that what you are aiming for ? Also keep in mind that
+vio_disable/enable_interrupt() being an hcall, it can have significant
+overhead. So again, only worth it if you're going to process a bulk of
+data at a time.
+
+Cheers,
+Ben.
+
+
