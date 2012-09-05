@@ -1,218 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759050Ab2IERuT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 13:50:19 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:44842 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753895Ab2IERuR (ORCPT
+	id S1759070Ab2IERxN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 13:53:13 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19300 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754164Ab2IERxL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 13:50:17 -0400
-MIME-Version: 1.0
-Date: Thu, 6 Sep 2012 01:50:15 +0800
-Message-ID: <CA+HMz3jHvwuoGzE8=tvdkatA4K_sXe-PxQTvtn0F8WStsBz5YA@mail.gmail.com>
-Subject: [PATCH v2] Documentation: Chinese translation of Documentation/arm/Booting
-From: Ninja Tekkaman <tekkamanninja@gmail.com>
-To: Harry Wei <harryxiyou@gmail.com>
-Cc: Greg-Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        Patrick Mochel <mochel@osdl.org>, Mike Murphy <mamurph@cs.clemson.edu>,
-        kernel@vger.linux-kernel.cn
-Content-Type: text/plain; charset=UTF-8
+	Wed, 5 Sep 2012 13:53:11 -0400
+X-Authority-Analysis: v=2.0 cv=C49rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=PUxD9mNbTSIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=mO6ojbDW-mgA:10 a=sCLvJZ4lsu0A:10 a=QJAQKYxhtbAA:10 a=30V3Ao2WuoAA:10 a=Auiyno6VaE4A:10 a=KtkL0iDH468A:10 a=zMj8phRcfKoA:10 a=ClXRDn1y_dXRzU6pUQsA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1346867590.27919.60.camel@gandalf.local.home>
+Subject: Re: [RFC PATCH v2] trace: Move trace event enable from fs_initcall
+ to early_initcall
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ezequiel Garcia <elezegarcia@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, tim.bird@am.sony.com,
+        lizefan@huawei.com
+Date: Wed, 05 Sep 2012 13:53:10 -0400
+In-Reply-To: <CALF0-+WGTLQJQ-k3s11BjwpDnpJqByQuLEPttan+n4ecs2MQ5g@mail.gmail.com>
+References: <1345204994-5400-1-git-send-email-elezegarcia@gmail.com>
+	 <1345217308.3708.35.camel@gandalf.local.home>
+	 <CALF0-+WGTLQJQ-k3s11BjwpDnpJqByQuLEPttan+n4ecs2MQ5g@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q85HoPad019188
 
-This is a Chinese translated version of Documentation/arm/Booting
+On Tue, 2012-09-04 at 22:18 -0300, Ezequiel Garcia wrote:
+> Hi Steven,
+> 
+> On 8/17/12, Steven Rostedt <rostedt@goodmis.org> wrote:
+> > On Fri, 2012-08-17 at 09:03 -0300, Ezequiel Garcia wrote:
+> >> This patch splits trace event initialization in two stages:
+> >>  * ftrace enable
+> >>  * sysfs event entry creation
+> >>
+> >> This allows to capture trace events from an earlier point
+> >> by using 'trace_event' kernel parameter and is important
+> >> to trace boot-up allocations.
+> >>
+> >
+> > This is much better, I'll give it some tests and add it to my 3.7 queue.
+> >
+> 
+> Ping? Will you add this to your tree?
 
-Signed-off-by: Fu Wei <tekkamanninja@gmail.com>
----
- Documentation/zh_CN/arm/Booting |  175 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 175 insertions(+)
- create mode 100644 Documentation/zh_CN/arm/Booting
+Yeah, I haven't been able to test it yet. I've been stuck trying to
+figure out bugs on other patches I have queued. I'll let you know when I
+do apply it though.
 
-diff --git a/Documentation/zh_CN/arm/Booting b/Documentation/zh_CN/arm/Booting
-new file mode 100644
-index 0000000..3014ea8
---- /dev/null
-+++ b/Documentation/zh_CN/arm/Booting
-@@ -0,0 +1,175 @@
-+﻿Chinese translated version of Documentation/arm/Booting
-+
-+If you have any comment or update to the content, please contact the
-+original document maintainer directly.  However, if you have a problem
-+communicating in English you can also ask the Chinese maintainer for
-+help.  Contact the Chinese maintainer if this translation is outdated
-+or if there is a problem with the translation.
-+
-+Maintainer: Russell King <linux@arm.linux.org.uk>
-+Chinese maintainer: Fu Wei <tekkamanninja@gmail.com>
-+---------------------------------------------------------------------
-+Documentation/arm/Booting 的中文翻译
-+
-+如果想评论或更新本文的内容，请直接联系原文档的维护者。如果你使用英文
-+交流有困难的话，也可以向中文版维护者求助。如果本翻译更新不及时或者翻
-+译存在问题，请联系中文版维护者。
-+
-+英文版维护者： Russell King <linux@arm.linux.org.uk>
-+中文版维护者： 傅炜  Fu Wei <tekkamanninja@gmail.com>
-+中文版翻译者： 傅炜  Fu Wei <tekkamanninja@gmail.com>
-+中文版校译者： 傅炜  Fu Wei <tekkamanninja@gmail.com>
-+
-+以下为正文
-+---------------------------------------------------------------------
-+
-+			启动 ARM Linux
-+			==============
-+
-+作者：Russell King
-+日期：2002年5月18日
-+
-+以下文档适用于 2.4.18-rmk6 及以上版本。
-+
-+为了启动 ARM Linux，你需要一个引导装载程序（boot loader），
-+它是一个在主内核启动前运行的一个小程序。引导装载程序需要初始化各种
-+设备，并最终调用 Linux 内核，将信息传递给内核。
-+
-+从本质上讲，引导装载程序应提供（至少）以下功能：
-+
-+1、设置和初始化 RAM。
-+2、初始化一个串口。
-+3、检测机器的类型（machine type）。
-+4、设置内核标签列表（tagged list）。
-+5、调用内核映像。
-+
-+
-+1、设置和初始化 RAM
-+-------------------
-+
-+现有的引导加载程序:		强制
-+新开发的引导加载程序:		强制
-+
-+引导装载程序应该找到并初始化系统中所有内核用于保持系统变量数据的 RAM。
-+这个操作的执行是设备依赖的。（它可能使用内部算法来自动定位和计算所有
-+RAM，或可能使用对这个设备已知的 RAM 信息，还可能使用任何引导装载程序
-+设计者想到的匹配方法。）
-+
-+
-+2、初始化一个串口
-+-----------------------------
-+
-+现有的引导加载程序:		可选、建议
-+新开发的引导加载程序:		可选、建议
-+
-+引导加载程序应该初始化并使能一个目标板上的串口。这允许内核串口驱动
-+自动检测哪个串口用于内核控制台。(一般用于调试或与目标板通信。)
-+
-+作为替代方案，引导加载程序也可以通过标签列表传递相关的'console='
-+选项给内核以指定某个串口，而串口数据格式的选项在以下文档中描述：
-+
-+       Documentation/kernel-parameters.txt。
-+
-+
-+3、检测机器类型
-+--------------------------
-+
-+现有的引导加载程序:		可选
-+新开发的引导加载程序:		强制
-+
-+引导加载程序应该通过某些方式检测自身所处的机器类型。这是一个硬件
-+代码或通过查看所连接的硬件用某些算法得到，这些超出了本文档的范围。
-+引导加载程序最终必须能提供一个 MACH_TYPE_xxx 值给内核。
-+(详见 linux/arch/arm/tools/mach-types )。
-+
-+4、设置启动数据
-+------------------
-+
-+现有的引导加载程序:		可选、强烈建议
-+新开发的引导加载程序:		强制
-+
-+引导加载程序必须提供标签列表或者 dtb 映像以传递配置数据给内核。启动
-+数据的物理地址通过寄存器 r2 传递给内核。
-+
-+4a、设置内核标签列表
-+--------------------------------
-+
-+bootloader 必须创建和初始化内核标签列表。一个有效的标签列表以
-+ATAG_CORE 标签开始，并以 ATAG_NONE 标签结束。ATAG_CORE 标签可以是
-+空的，也可以是非空。一个空 ATAG_CORE 标签其 size 域设置为
-+‘2’(0x00000002)。ATAG_NONE 标签的 size 域必须设置为零。
-+
-+在列表中可以保存任意数量的标签。对于一个重复的标签是追加到之前标签
-+所携带的信息之后，还是会覆盖原来的信息，是未定义的。某些标签的行为
-+是前者，其他是后者。
-+
-+bootloader 必须传递一个系统内存的位置和最小值，以及根文件系统位置。
-+因此，最小的标签列表如下所示：
-+
-+		+-----------+
-+基地址 ->	| ATAG_CORE |  |
-+		+-----------+  |
-+		| ATAG_MEM  |  | 地址增长方向
-+		+-----------+  |
-+		| ATAG_NONE |  |
-+		+-----------+  v
-+
-+标签列表应该保存在系统的 RAM 中。
-+
-+标签列表必须置于内核自解压和 initrd'bootp' 程序都不会覆盖的内存区。
-+建议放在 RAM 的头 16KiB 中。
-+
-+4b、设置设备树
-+-------------------------
-+
-+bootloader 必须以 64bit 地址对齐的形式加载一个设备树映像(dtb)到系统
-+RAM 中，并用启动数据初始化它。dtb 格式在文档
-+Documentation/devicetree/booting-without-of.txt 中。内核将会在
-+dtb 物理地址处查找 dtb 魔数值（0xd00dfeed），以确定 dtb 是否已经代替
-+标签列表被传递进来。
-+
-+bootloader 必须传递一个系统内存的位置和最小值，以及根文件系统位置。
-+dtb 必须置于内核自解压不会覆盖的内存区。建议将其放置于 RAM 的头 16KiB
-+中。但是不可将其放置于“0”物理地址处，因为内核认为：r2 中为 0，意味着
-+没有标签列表和 dtb 传递过来。
-+
-+5、调用内核映像
-+---------------------------
-+
-+现有的引导加载程序:		强制
-+新开发的引导加载程序:		强制
-+
-+调用内核映像 zImage 有两个选择。如果 zImge 保存在 flash 中，且是为了
-+在 flash 中直接运行而被正确链接的。这样引导加载程序就可以在 flash 中
-+直接调用 zImage。
-+
-+zImage 也可以被放在系统 RAM（任意位置）中被调用。注意：内核使用映像
-+基地址的前 16KB RAM 空间来保存页表。建议将映像置于 RAM 的 32KB 处。
-+
-+对于以上任意一种情况，都必须符合以下启动状态：
-+
-+- 停止所有 DMA 设备，这样内存数据就不会因为虚假网络包或磁盘数据而被破坏。
-+  这可能可以节省你许多的调试时间。
-+
-+- CPU 寄存器配置
-+  r0 = 0，
-+  r1 = （在上面 3 中获取的）机器类型码。
-+  r2 = 标签列表在系统 RAM 中的物理地址，或
-+       设备树块(dtb)在系统 RAM 中的物理地址
-+
-+- CPU 模式
-+  所有形式的中断必须被禁止 (IRQs 和 FIQs)
-+  CPU 必须处于 SVC 模式。(对于 Angel 调试有特例存在)
-+
-+- 缓存，MMUs
-+  MMU 必须关闭。
-+  指令缓存开启或关闭都可以。
-+  数据缓存必须关闭。
-+
-+- 引导加载程序应该通过直接跳转到内核映像的第一条指令来调用内核映像。
-+
-+  对于支持 ARM 指令集的 CPU，跳入内核入口时必须处在 ARM 状态，即使
-+  对于 Thumb-2 内核也是如此。
-+
-+  对于仅支持 Thumb 指令集的 CPU，比如 Cortex-M 系列的 CPU，跳入
-+  内核入口时必须处于 Thumb 状态。
--- 
-1.7.9.5
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+Thanks,
+
+-- Steve
+
+
