@@ -1,100 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759335Ab2IETtb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 15:49:31 -0400
-Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:20056
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759143Ab2IETt2 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 15:49:28 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC102.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: -9
-X-BigFish: VS-9(zz98dI9371I542M1432I4015Izz1202hzz8275bhz2fh2a8h683h839h944hd25hf0ah107ah1220h1155h)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT004.namprd03.prod.outlook.com;R:internal;EFV:INT
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "ben@decadent.org.uk" <ben@decadent.org.uk>,
-        "thozza@redhat.com" <thozza@redhat.com>,
-        "dcbw@redhat.com" <dcbw@redhat.com>
-Subject: RE: [PATCH 0/4] Tools: hv
-Thread-Topic: [PATCH 0/4] Tools: hv
-Thread-Index: AQHNi5qto5FEevwI5UWgSmIJO75z15d8H22AgAAFhQCAAAFJIA==
-Date: Wed, 5 Sep 2012 19:49:12 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF9309E036B@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <1346864519-30020-1-git-send-email-kys@microsoft.com>
- <20120905191119.GA2085@kroah.com>
- <426367E2313C2449837CD2DE46E7EAF9309E034B@SN2PRD0310MB382.namprd03.prod.outlook.com>
- <20120905193852.GA412@kroah.com>
-In-Reply-To: <20120905193852.GA412@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [173.61.55.165]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1759338Ab2IETuF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 15:50:05 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:50392 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759143Ab2IETuC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 15:50:02 -0400
+Date: Wed, 5 Sep 2012 12:49:18 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 16/23] rcu: Prevent initialization-time
+ quiescent-state race
+Message-ID: <20120905194918.GQ3308@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120830181811.GA29154@linux.vnet.ibm.com>
+ <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346350718-30937-16-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20120903093742.GE5574@leaf>
+ <20120905181920.GN3308@linux.vnet.ibm.com>
+ <20120905185534.GA4976@jtriplet-mobl1>
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT004.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%DECADENT.ORG.UK$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14MLTC102.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14MLTC102.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120905185534.GA4976@jtriplet-mobl1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12090519-4242-0000-0000-000002CB844C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Wednesday, September 05, 2012 3:39 PM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
-> apw@canonical.com; ben@decadent.org.uk; thozza@redhat.com;
-> dcbw@redhat.com
-> Subject: Re: [PATCH 0/4] Tools: hv
+On Wed, Sep 05, 2012 at 11:55:34AM -0700, Josh Triplett wrote:
+> On Wed, Sep 05, 2012 at 11:19:20AM -0700, Paul E. McKenney wrote:
+> > On Mon, Sep 03, 2012 at 02:37:42AM -0700, Josh Triplett wrote:
+> > > On Thu, Aug 30, 2012 at 11:18:31AM -0700, Paul E. McKenney wrote:
+> > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > > > 
+> > > > Now the the grace-period initialization procedure is preemptible, it is
+> > > > subject to the following race on systems whose rcu_node tree contains
+> > > > more than one node:
+> > > > 
+> > > > 1.	CPU 31 starts initializing the grace period, including the
+> > > > 	first leaf rcu_node structures, and is then preempted.
+> > > > 
+> > > > 2.	CPU 0 refers to the first leaf rcu_node structure, and notes
+> > > > 	that a new grace period has started.  It passes through a
+> > > > 	quiescent state shortly thereafter, and informs the RCU core
+> > > > 	of this rite of passage.
+> > > > 
+> > > > 3.	CPU 0 enters an RCU read-side critical section, acquiring
+> > > > 	a pointer to an RCU-protected data item.
+> > > > 
+> > > > 4.	CPU 31 removes the data item referenced by CPU 0 from the
+> > > > 	data structure, and registers an RCU callback in order to
+> > > > 	free it.
+> > > > 
+> > > > 5.	CPU 31 resumes initializing the grace period, including its
+> > > > 	own rcu_node structure.  In invokes rcu_start_gp_per_cpu(),
+> > > > 	which advances all callbacks, including the one registered
+> > > > 	in #4 above, to be handled by the current grace period.
+> > > > 
+> > > > 6.	The remaining CPUs pass through quiescent states and inform
+> > > > 	the RCU core, but CPU 0 remains in its RCU read-side critical
+> > > > 	section, still referencing the now-removed data item.
+> > > > 
+> > > > 7.	The grace period completes and all the callbacks are invoked,
+> > > > 	including the one that frees the data item that CPU 0 is still
+> > > > 	referencing.  Oops!!!
+> > > > 
+> > > > This commit therefore moves the callback handling to precede initialization
+> > > > of any of the rcu_node structures, thus avoiding this race.
+> > > 
+> > > I don't think it makes sense to introduce and subsequently fix a race in
+> > > the same patch series. :)
+> > > 
+> > > Could you squash this patch into the one moving grace-period
+> > > initialization into a kthread?
+> > 
+> > I tried that, and got a surprisingly large set of conflicts.  Ah, OK,
+> > the problem is that breaking up rcu_gp_kthread() into subfunctions
+> > did enough code motion to defeat straightforward rebasing.  Is there
+> > some way to tell "git rebase" about such code motion, or would this
+> > need to be carried out carefully by hand?
 > 
-> On Wed, Sep 05, 2012 at 07:24:37PM +0000, KY Srinivasan wrote:
-> > > On Wed, Sep 05, 2012 at 10:01:59AM -0700, K. Y. Srinivasan wrote:
-> > > > This patchset was authored by Ben Hutchings <ben@decadent.org.uk>. Ben
-> > > > asked me to submit this patchset. This patchset cleans up the KVP daemon
-> > > > code and fixes some bugs.
-> > > >
-> > > >
-> > > > K. Y. Srinivasan (4):
-> > > >   tools: hv: Fix file handle leak
-> > > >   tools: hv: Fix exit() error code
-> > > >   tools: hv: Check for read/write errors
-> > > >   tools: hv: Parse /etc/os-release
-> > >
-> > > If Ben wrote these, why are you showing that you wrote them?
-> >
-> > Ben asked me to apply these patches on the tip (of my tree) and send the
-> > patches out and that is what I did. I recreated these patches after applying to
-> > my tree and that is what I have sent out. How could I have made the authorship
-> > more clear (other than noting so in the comment which I have done).
-> 
-> You could have actually _kept_ the proper authorship information so that
-> git shows who wrote the patch.  As your shortlog shows above, it looks
-> like you wrote the patches, not Ben, which is not acceptable.
+> To the extent rebase knows how to handle that, I think it does so
+> automatically as part of merge attempts.  Fortunately, in this case, the
+> change consists of moving two lines of code and their attached comment,
+> which seems easy enough to change in the original code; you'll then get
+> a conflict on the commit that moves the newly fixed code (easily
+> resolved by moving the change to the new code), and conflicts on any
+> changes next to the change in the new code (hopefully handled by
+> three-way merge, and if not then easily fixed by keeping the new lines).
 
-Obviously, I did not know how I could have done this. I will figure out the correct
-way of doing this and resubmit these patches.
+Good point, perhaps if I do the code movement manually and use multiple
+rebases it will go more easily.
 
-Thanks,
-
-K. Y 
-
-
+							Thanx, Paul
 
