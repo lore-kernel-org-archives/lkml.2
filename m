@@ -1,74 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758138Ab2IEEAA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 00:00:00 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:57631 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751768Ab2IED76 (ORCPT
+	id S1751064Ab2IEEDK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 00:03:10 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:26813 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750739Ab2IEEDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 23:59:58 -0400
-Date: Wed, 5 Sep 2012 13:59:47 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: linux-next: manual merge of the rcu tree with the tip tree
-Message-Id: <20120905135947.34ba1c8356cbfe374c6c4ea8@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__5_Sep_2012_13_59_47_+1000_q0ExDkzWagak61nU"
+	Wed, 5 Sep 2012 00:03:08 -0400
+X-Greylist: delayed 304 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Sep 2012 00:03:07 EDT
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjILAAfNRlB5LbN8/2dsb2JhbABFhRy1AQKBBIEIgiABAQQBOhwjEAgDDgouFCUDIRMbh2wFuzkUin0VC4FOhDRgA5VYkBuCdYFH
+Date: Wed, 5 Sep 2012 13:57:59 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Kent Overstreet <koverstreet@google.com>,
+        Mikulas Patocka <mpatocka@redhat.com>, linux-bcache@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dm-devel@redhat.com,
+        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH v7 9/9] block: Avoid deadlocks with bio allocation by
+ stacking drivers
+Message-ID: <20120905035758.GF13691@dastard>
+References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
+ <1346175456-1572-10-git-send-email-koverstreet@google.com>
+ <Pine.LNX.4.64.1208291210180.774@file.rdu.redhat.com>
+ <20120829165006.GB20312@google.com>
+ <20120829170711.GC12504@redhat.com>
+ <20120829171345.GC20312@google.com>
+ <20120830220745.GI27257@redhat.com>
+ <20120903004927.GM15292@dastard>
+ <20120904135422.GC13768@redhat.com>
+ <20120904182633.GB3638@dhcp-172-17-108-109.mtv.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120904182633.GB3638@dhcp-172-17-108-109.mtv.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__5_Sep_2012_13_59_47_+1000_q0ExDkzWagak61nU
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Sep 04, 2012 at 11:26:33AM -0700, Tejun Heo wrote:
+> Hello,
+> 
+> On Tue, Sep 04, 2012 at 09:54:23AM -0400, Vivek Goyal wrote:
+> > > Given that we are working around stack depth issues in the
+> > > filesystems already in several places, and now it seems like there's
+> > > a reason to work around it in the block layers as well, shouldn't we
+> > > simply increase the default stack size rather than introduce
+> > > complexity and performance regressions to try and work around not
+> > > having enough stack?
+> > 
+> > Dave,
+> > 
+> > In this particular instance, we really don't have any bug reports of
+> > stack overflowing. Just discussing what will happen if we make 
+> > generic_make_request() recursive again.
+> 
+> I think there was one and that's why we added the bio_list thing.
 
-Hi Paul,
+There was more than one - it was a regular enough to be considered a
+feature... :/
 
-Today's linux-next merge of the rcu tree got a conflict in
-kernel/sched/core.c between commit f319da0c6894 ("sched: Fix load avg vs
-cpu-hotplug") from the tip tree and commit ead504e5600e ("sched: Fix load
-avg vs cpu-hotplug") from the rcu tree.
+> > > I mean, we can deal with it like the ia32 4k stack issue was dealt
+> > > with (i.e. ignore those stupid XFS people, that's an XFS bug), or
+> > > we can face the reality that storage stacks have become so complex
+> > > that 8k is no longer a big enough stack for a modern system....
+> > 
+> > So first question will be, what's the right stack size? If we make
+> > generic_make_request() recursive, then at some storage stack depth we will
+> > overflow stack anyway (if we have created too deep a stack). Hence
+> > keeping current logic kind of makes sense as in theory we can support
+> > arbitrary depth of storage stack.
+> 
+> But, yeah, this can't be solved by enlarging the stack size.  The
+> upper limit is unbound.
 
-These are 2 slightly different versions of the same patch :-( Same author
-time, different commit times ...  The rcu tree version contains this
-extra bit in the commit message:
+Sure, but recursion issue is isolated to the block layer.
 
-"    [ paulmck: Move call to calc_load_migration to CPU_DEAD to avoid
-     miscounting noted by Rakib. ]"
+If we can still submit IO directly through the block layer without
+pushing it off to a work queue, then the overall stack usage problem
+still exists. But if the block layer always pushes the IO off into
+another workqueue to avoid stack overflows, then the context
+switches are going to cause significant performance regressions for
+high IOPS workloads.  I don't really like either situation.
 
-So I used it.  Let me know if this is not correct.
+So while you are discussing stack issues, think a little about the
+bigger picture outside of the immediate issue at hand - a better
+solution for everyone might pop up....
 
---=20
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Wed__5_Sep_2012_13_59_47_+1000_q0ExDkzWagak61nU
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQRs4zAAoJEECxmPOUX5FEALYP/i0Btufm3wCmw72Su2ohR2YL
-75XIL3I+cogGw68Owf9Iu1bxI61JGfb1mrDk+V8rRyeIm+BjakddWGrCNB6oykKK
-rzxY2SyZeQxULHrG52Oru+MZZ0YePurnHr95o/zQFLgw2wGY5w58isP31NoPrC4a
-uI/Kmy1IUbPqLNmwLa+13VzdL06Ny/iKXLEhd3jE9MsJwzNKvJaSowE68d72R8IW
-BFA9uaynnDx5fzfCkvnawODXRuhAmB0ea/2X5dZY04d5Lmknun1oQ/9XrIMbl1ib
-LBHzMHls/sQ5neHRr0wi87NYmoojrOtHurbx+egVg7cg4nFtgWKvYbmCzGy03xT2
-scDfPAPbyXDPY71yqANgkhOWC/9jDLZ+5KEmxkRcXDPe/ilPmyhSds0vGZBlCPe3
-JqPXiG1rKv4ChvraWTHZH0OKtSqK0EWDxZlT0dzAFajdtr4JvwfEVY0q6GlzY/nv
-adY9GGf6l3Pgxk/+h+rcRz6oG2otJPNYX20Zpjycl9LjNM44sYfjZtqtyAwd8h3S
-62S8KWlJq6C/vWDa3DOr1y6qo9KqoVcl0PuqgfRPLlxfY7FzSaQ+AtGKcRiUyFNV
-PIeZg/hst3VEIXO5d5xsivsUcFdELrCxr6ZqupMnFFdZdOhvbM1YBHhMpMDUZFj7
-lijEjJ76C7Rgw93jQY+t
-=O3qe
------END PGP SIGNATURE-----
-
---Signature=_Wed__5_Sep_2012_13_59_47_+1000_q0ExDkzWagak61nU--
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
