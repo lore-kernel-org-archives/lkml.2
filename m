@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758028Ab2IEFrP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 01:47:15 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:20456 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929Ab2IEFrH (ORCPT
+	id S1758128Ab2IEFtY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 01:49:24 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:17256 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750929Ab2IEFrP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 01:47:07 -0400
+	Wed, 5 Sep 2012 01:47:15 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
         Tejun Heo <tj@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH -v3 02/14] x86, mm: Split out split_mem_range
-Date: Tue,  4 Sep 2012 22:46:19 -0700
-Message-Id: <1346823991-22911-3-git-send-email-yinghai@kernel.org>
+Subject: [PATCH -v3 08/14] x86, mm: set memblock initial limit to 1M
+Date: Tue,  4 Sep 2012 22:46:25 -0700
+Message-Id: <1346823991-22911-9-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1346823991-22911-1-git-send-email-yinghai@kernel.org>
 References: <1346823991-22911-1-git-send-email-yinghai@kernel.org>
@@ -23,78 +23,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-from init_memory_mapping, so make init_memory_mapping readable.
+memblock_x86_fill() could double memory array.
+and we set max_pfn_mapped to 512M, so memory array could be around 512M.
+So kdump will not get big range (like 512M) under 1024M.
 
-Suggested-by: Ingo Molnar <mingo@elte.hu>
+Try to put it down under 1M, it could use about 4k or so.
+
+Also we need this one when we try to only map ram range only later.
+if the early double the range near 512M, and later init_mem_mapping()
+first several range could under 512M, then after mapping get reset,
+we will lose access the memblock memory array. but we are using
+memblock memory array for iteration.
+
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
 ---
- arch/x86/mm/init.c |   42 ++++++++++++++++++++++++++----------------
- 1 files changed, 26 insertions(+), 16 deletions(-)
+ arch/x86/kernel/setup.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 838e9bc..7d05e28 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -143,25 +143,13 @@ static int __meminit save_mr(struct map_range *mr, int nr_range,
- 	return nr_range;
- }
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index c30c78c..68d1b2c 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -889,7 +889,7 @@ void __init setup_arch(char **cmdline_p)
  
--/*
-- * Setup the direct mapping of the physical memory at PAGE_OFFSET.
-- * This runs before bootmem is initialized and gets pages directly from
-- * the physical memory. To access them they are temporarily mapped.
-- */
--unsigned long __init_refok init_memory_mapping(unsigned long start,
--					       unsigned long end)
-+static int __meminit split_mem_range(struct map_range *mr, int nr_range,
-+				     unsigned long start,
-+				     unsigned long end)
- {
- 	unsigned long start_pfn, end_pfn;
--	unsigned long ret = 0;
- 	unsigned long pos;
--	struct map_range mr[NR_RANGE_MR];
--	int nr_range, i;
--
--	printk(KERN_INFO "init_memory_mapping: [mem %#010lx-%#010lx]\n",
--	       start, end - 1);
--
--	memset(mr, 0, sizeof(mr));
--	nr_range = 0;
-+	int i;
+ 	cleanup_highmap();
  
- 	/* head if not big page alignment ? */
- 	start_pfn = start >> PAGE_SHIFT;
-@@ -255,6 +243,28 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 			(mr[i].page_size_mask & (1<<PG_LEVEL_1G))?"1G":(
- 			 (mr[i].page_size_mask & (1<<PG_LEVEL_2M))?"2M":"4k"));
+-	memblock.current_limit = get_max_mapped();
++	memblock.current_limit = ISA_END_ADDRESS;
+ 	memblock_x86_fill();
  
-+	return nr_range;
-+}
-+
-+/*
-+ * Setup the direct mapping of the physical memory at PAGE_OFFSET.
-+ * This runs before bootmem is initialized and gets pages directly from
-+ * the physical memory. To access them they are temporarily mapped.
-+ */
-+unsigned long __init_refok init_memory_mapping(unsigned long start,
-+					       unsigned long end)
-+{
-+	struct map_range mr[NR_RANGE_MR];
-+	unsigned long ret = 0;
-+	int nr_range, i;
-+
-+	pr_info("init_memory_mapping: [mem %#010lx-%#010lx]\n",
-+	       start, end - 1);
-+
-+	memset(mr, 0, sizeof(mr));
-+	nr_range = 0;
-+	nr_range = split_mem_range(mr, nr_range, start, end);
-+
  	/*
- 	 * Find space for the kernel direct mapping tables.
- 	 *
 -- 
 1.7.7
 
