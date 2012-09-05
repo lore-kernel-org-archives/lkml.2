@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753872Ab2IEOig (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 10:38:36 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:23810 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752469Ab2IEOif (ORCPT
+	id S1753819Ab2IEOlO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 10:41:14 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54703 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978Ab2IEOlM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 10:38:35 -0400
-Message-ID: <1346855913.2589.10.camel@lorien2>
-Subject: Re: [PATCH] swiotlb: add kernel error message to track iobtlb
- overflow buffer usage
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: fujita.tomonori@lab.ntt.co.jp, paul.gortmaker@windriver.com,
-        bhelgaas@google.com, amwang@redhat.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
-Date: Wed, 05 Sep 2012 08:38:33 -0600
-In-Reply-To: <20120904162804.baad7cc0.akpm@linux-foundation.org>
-References: <1346460959.3393.3.camel@lorien2>
-	 <20120904162804.baad7cc0.akpm@linux-foundation.org>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Wed, 5 Sep 2012 10:41:12 -0400
+Message-ID: <50476480.9010302@redhat.com>
+Date: Wed, 05 Sep 2012 16:41:04 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: axboe@kernel.dk, Mike Snitzer <snitzer@redhat.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>
+CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: [Ping^3] Re: [PATCH] sg_io: allow UNMAP and WRITE SAME without CAP_SYS_RAWIO
+References: <1342801801-15617-1-git-send-email-pbonzini@redhat.com> <50195108.1090105@redhat.com> <503CA5BA.2040003@redhat.com>
+In-Reply-To: <503CA5BA.2040003@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-09-04 at 16:28 -0700, Andrew Morton wrote:
-> On Fri, 31 Aug 2012 18:55:59 -0600
-> Shuah Khan <shuah.khan@hp.com> wrote:
+Il 28/08/2012 13:04, Paolo Bonzini ha scritto:
+> Il 01/08/2012 17:53, Paolo Bonzini ha scritto:
+>> Il 20/07/2012 18:30, Paolo Bonzini ha scritto:
+>>> These commands cannot be issued right now without giving CAP_SYS_RAWIO to
+>>> the process who wishes to send them.  These commands can be useful also to
+>>> non-privileged programs who have access to the block devices.  For example
+>>> a virtual machine monitor needs them to forward trim/discard to host disks.
+>>>
+>>> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+>>> ---
+>>>  block/scsi_ioctl.c |    3 ++
+>>>  1 files changed, 3 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
+>>> index 260fa80..dd71f18 100644
+>>> --- a/block/scsi_ioctl.c
+>>> +++ b/block/scsi_ioctl.c
+>>> @@ -168,13 +168,16 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
+>>>  	/* Basic writing commands */
+>>>  	__set_bit(WRITE_6, filter->write_ok);
+>>>  	__set_bit(WRITE_10, filter->write_ok);
+>>> +	__set_bit(WRITE_SAME, filter->write_ok);
+>>>  	__set_bit(WRITE_VERIFY, filter->write_ok);
+>>>  	__set_bit(WRITE_12, filter->write_ok);
+>>>  	__set_bit(WRITE_VERIFY_12, filter->write_ok);
+>>>  	__set_bit(WRITE_16, filter->write_ok);
+>>> +	__set_bit(WRITE_SAME_16, filter->write_ok);
+>>>  	__set_bit(WRITE_LONG, filter->write_ok);
+>>>  	__set_bit(WRITE_LONG_2, filter->write_ok);
+>>>  	__set_bit(ERASE, filter->write_ok);
+>>> +	__set_bit(UNMAP, filter->write_ok);
+>>>  	__set_bit(GPCMD_MODE_SELECT_10, filter->write_ok);
+>>>  	__set_bit(MODE_SELECT, filter->write_ok);
+>>>  	__set_bit(LOG_SELECT, filter->write_ok);
+>>>
+>>
+>> Jens,
+>>
+>> can this go in 3.6 as well?
 > 
-> > Add kernel error message to track iotlb overflow buffer triggers to understand
-> > how often the overflow buffer gets used.
-> > 
-> > Signed-off-by: Shuah Khan <shuah.khan@hp.com>
-> > ---
-> >  lib/swiotlb.c |    1 +
-> >  1 file changed, 1 insertion(+)
-> > 
-> > diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-> > index 45bc1f8..597d7b9 100644
-> > --- a/lib/swiotlb.c
-> > +++ b/lib/swiotlb.c
-> > @@ -682,6 +682,7 @@ dma_addr_t swiotlb_map_page(struct device *dev, struct page *page,
-> >  	if (!map) {
-> >  		swiotlb_full(dev, size, dir, 1);
-> >  		map = io_tlb_overflow_buffer;
-> > +		dev_err(dev, "SWIOTLB is full. Mapping overflow buffer.\n");
-> >  	}
-> >  
-> >  	dev_addr = swiotlb_virt_to_bus(dev, map);
-> 
-> hm.  I would view this as a developer-only debugging thing which
-> shouldn't be present in production code.  Plus there's a potential that
-> some poor person will have his logs flooded with this message.
+> Another ping...
 
-Yes. I agree.
-> 
-> A more typical way of handling this would be to increment a stats
-> counter, accessible in procfs or debugfs.
-> 
+Ping & adding some more folks hoping to get a Reviewed-by or to be
+screamed at.
 
-Right. I will work on it. Maybe there is a way to combine this with
-dma-debug dma mapping error tracking work I am doing - will look into.
-
--- Shuah
-
-
+Paolo
