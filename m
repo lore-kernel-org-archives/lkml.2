@@ -1,137 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445Ab2IEPTO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 11:19:14 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:50535 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751318Ab2IEPTL (ORCPT
+	id S1758017Ab2IEPVc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 11:21:32 -0400
+Received: from smtprelay-b12.telenor.se ([62.127.194.21]:42890 "EHLO
+	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752246Ab2IEPV2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 11:19:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <k27lbg$hrj$1@ger.gmane.org>
-References: <1345720529-32315-1-git-send-email-thomas.abraham@linaro.org>
-	<1345720529-32315-2-git-send-email-thomas.abraham@linaro.org>
-	<k27lbg$hrj$1@ger.gmane.org>
-Date: Wed, 5 Sep 2012 20:49:09 +0530
-Message-ID: <CAJuYYwTuPFK3aLD1jrcn4bQODdVYHg9T1Wt7zkz1pfo0nkRnxQ@mail.gmail.com>
-Subject: Re: [PATCH v3 1/4] pinctrl: add samsung pinctrl and gpiolib driver
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        devicetree-discuss@ozlabs.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 5 Sep 2012 11:21:28 -0400
+X-SENDER-IP: [85.230.170.20]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuVPAKNtR1BV5qoUPGdsb2JhbABFhT6FAbBjGQEBAQEeGQ0ngn0TAQ8YEXEKGhOIEbp8FIsGDIZtA5tHjRGBVgE
+X-IronPort-AV: E=Sophos;i="4.80,375,1344204000"; 
+   d="scan'208";a="109577978"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>
+Subject: [PATCH 1/2] HID: Allow more fields in the hid report
+Date: Wed,  5 Sep 2012 17:27:36 +0200
+Message-Id: <1346858857-281-1-git-send-email-rydberg@euromail.se>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5 September 2012 19:20, Tomasz Figa <t.figa@samsung.com> wrote:
-> Hi Thomas,
->
-> Thomas Abraham wrote:
->> Add a new device tree enabled pinctrl and gpiolib driver for Samsung
->> SoC's. This driver provides a common and extensible framework for all
->> Samsung SoC's to interface with the pinctrl and gpiolib subsystems. This
->> driver supports only device tree based instantiation and hence can be
->> used only on those Samsung platforms that have device tree enabled.
->>
->> This driver is split into two parts: the pinctrl interface and the gpiolib
->> interface. The pinctrl interface registers pinctrl devices with the
->> pinctrl subsystem and gpiolib interface registers gpio chips with the
->> gpiolib subsystem. The information about the pins, pin groups, pin
->> functions and gpio chips, which are SoC specific, are parsed from device
->> tree node.
->>
->> Cc: Linus Walleij <linus.walleij@linaro.org>
->> Cc: Kukjin Kim <kgene.kim@samsung.com>
->> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
->
-> Does the driver provide any kind of compatibility with current gpiolib
-> users?
->
-> Let me show an example of what I mean. We have a fixed voltage regulator
-> defined in device tree of an imaginary board
->
->         vemmc_reg: voltage-regulator@0 {
->                 compatible = "regulator-fixed";
->                 regulator-name = "VMEM_VDD_2.8V";
->                 regulator-min-microvolt = <2800000>;
->                 regulator-max-microvolt = <2800000>;
->                 gpio = <&gpk0 2 1 0 0>;
->                 enable-active-high;
->         };
->
-> The gpio pin used to control status of the regulator is defined using the
-> gpio property and regulator-fixed driver uses of_get_named_gpio to get the
-> pin number from device tree.
->
-> Is this kind of setup also valid when using your pinctrl driver?
+Some recent hardware define more than 128 fields in the report
+descriptor. Increase the limit to 256. This adds another kilobyte of
+memory per report.
 
-Hi Tomasz,
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+---
+Hi Jiri,
 
-It is possible to get the pin number using of_get_named_gpio()
-function with the gpiolib support included in the Samsung pinctrl
-driver. The following are the steps on how this can be done. Please
-note that, the old Samsung gpio binding will change when we switch the
-pinctrl driver. But that was inevitable.
-
-1. The gpio binding will now follow the standard gpio binding.
-    Which means, it will be something like
-
-           uart@13800000 {
-                         <the usual bindings here>
-                         gpios = <&pinctrl_0 10 0>;
-           };
-
-   Note that,
-
-   A. First cell: the pin-controller instance is used as the phandle
-(i.e &pinctrl_0).
-   B. Second cell: the pin number __local__ to the pin controller instance.
-   C. Third cell: Flags associated with the gpio pin (as per standard binding).
-
-   The pin number specified in the second cell is local to the
-pin-controller instance.
-
-   For example, the Exynos4210 GPJ1[1] pin, which belongs to pinctrl instance 1,
-   will have pin number (pin number local to pinctrl instance 1) as 10.
-
-   That is because, the number of pins in GPJ0 is 8. So GPJ1[1] =
-nr_pins(GPJ0) + 2
-   = 8 + 2 = 10.
-
-   Yes, I understand that this is hard to derive the pin number like
-this and write
-   in the dts(i) files, but while writing the pinctrl driver, there
-were two thoughts.
-
-   A. The pin numbers for all the pins included in a pinctrl instance
-will be documented
-        in the device tree binding documentation. So it can be easily looked up.
-
-   B. How many instances of listing gpio number like this will ever be
-needed for a
-       board dts file. Not much, maybe atmost 10.
-
-   Considering the two points above, it seemed okay to derive the pin
-numbers for
-   the gpio as listed in the above example.
-
-
-2. The client driver can now lookup the pin number using
-
-            gpio = of_get_gpio(dev->of_node);
-
-    which returns the pin number in the linux gpio space.
-
-So, it is possible to lookup the pin number using Samsung pinctrl driver.
-
-But, I have missed adding the #gpio-cells property in the three
-instances of the pinctrl driver. If you are trying this, please add
-
-          #gpio-cells = <2>;
-
-line in all the three instances of the pinctrl controller nodes. I
-will send this change as a separate patch.
+The Flatfrog panel (next patch) reports 188 fields, so 256 seems like
+a fair number. I am not overly thrilled about this patch, but the
+alternative looks like a major change. At least it will be easy to
+backport. :-)
 
 Thanks,
-Thomas.
+Henrik
+
+ include/linux/hid.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/linux/hid.h b/include/linux/hid.h
+index f37da28..7e1f37d 100644
+--- a/include/linux/hid.h
++++ b/include/linux/hid.h
+@@ -414,7 +414,7 @@ struct hid_field {
+ 	__u16 dpad;			/* dpad input code */
+ };
+ 
+-#define HID_MAX_FIELDS 128
++#define HID_MAX_FIELDS 256
+ 
+ struct hid_report {
+ 	struct list_head list;
+-- 
+1.7.12
+
