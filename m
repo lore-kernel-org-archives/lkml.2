@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757594Ab2IEIUe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 04:20:34 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:49296 "EHLO mx2.parallels.com"
+	id S1756548Ab2IEIV4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 04:21:56 -0400
+Received: from ozlabs.org ([203.10.76.45]:54238 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753117Ab2IEIUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 04:20:31 -0400
-Message-ID: <50470A87.1040701@parallels.com>
-Date: Wed, 5 Sep 2012 12:17:11 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1750891Ab2IEIVw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 04:21:52 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Kasatkin\, Dmitry" <dmitry.kasatkin@intel.com>
+Cc: David Howells <dhowells@redhat.com>, zohar@linux.vnet.ibm.com,
+        jmorris@namei.org, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] module: signature infrastructure
+In-Reply-To: <CALLzPKaA3MYncJD1X6B8f3p-R6FVA5-WDF-h6GGwdtinNpjqmw@mail.gmail.com>
+References: <20120816013405.872.42381.stgit@warthog.procyon.org.uk> <87627ufi2h.fsf@rustcorp.com.au> <CALLzPKaA3MYncJD1X6B8f3p-R6FVA5-WDF-h6GGwdtinNpjqmw@mail.gmail.com>
+User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Wed, 05 Sep 2012 09:59:22 +0930
+Message-ID: <871uihl3bx.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>, <davej@redhat.com>, <ben@decadent.org.uk>,
-        <a.p.zijlstra@chello.nl>, <pjt@google.com>, <lennart@poettering.net>,
-        <kay.sievers@vrfy.org>
-Subject: Re: [RFC 0/5] forced comounts for cgroups.
-References: <1346768300-10282-1-git-send-email-glommer@parallels.com> <20120904214602.GA9092@dhcp-172-17-108-109.mtv.corp.google.com> <5047074D.1030104@parallels.com> <20120905081439.GC3195@dhcp-172-17-108-109.mtv.corp.google.com>
-In-Reply-To: <20120905081439.GC3195@dhcp-172-17-108-109.mtv.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2012 12:14 PM, Tejun Heo wrote:
-> Hello, Glauber.
-> 
-> On Wed, Sep 05, 2012 at 12:03:25PM +0400, Glauber Costa wrote:
->> The goal here is to have distributions to do it, because they tend to
->> have a well defined lifecycle management, much more than upstream. Whoever
->> sets this option, can coordinate with upstream.
-> 
-> Distros can just co-mount them during boot.  What's the point of the
-> config options?
-> 
-
-Pretty simple. The kernel can't assume the distro did. And then we still
-need to pay a stupid big price in the scheduler.
-
-After this patchset, We can assume this. And cpuusage can totally be
-derived from the cpu cgroup. Because much more than "they can comount",
-we can assume they did.
-
->>> Also, I really don't see much point in enforcing this almost arbitrary
->>> grouping of controllers.  It doesn't simplify anything and using
->>> cpuacct in more granular way than cpu actually is one of the better
->>> justified use of multiple hierarchies.  Also, what about memcg and
->>> blkcg?  Do they *really* coincide?  Note that both blkcg and memcg
->>> involve non-trivial overhead and blkcg is essentially broken
->>> hierarchy-wise.
+"Kasatkin, Dmitry" <dmitry.kasatkin@intel.com> writes:
+> Hi,
+>
+> Please read bellow...
+>
+> On Tue, Sep 4, 2012 at 8:55 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>> OK, I took a look at the module.c parts of David and Dmitry's patchsets,
+>> and didn't really like either, but I stole parts of David's to make
+>> this.
 >>
->> Where did I mention memcg or blkcg in this patch ?
-> 
-> Differing hierarchies in memcg and blkcg currently is the most
-> prominent case where the intersection in writeback is problematic and
-> your proposed solution doesn't help one way or the other.  What's the
-> point?
-> 
+>> So, here's the module.c part of module signing.  I hope you two got time
+>> to discuss the signature format details?  Mimi suggested a scheme where
+>> the private key would never be saved on disk (even temporarily), but I
+>> didn't see patches.  Frankly it's something we can do later; let's aim
+>> at getting the format right for the next merge window.
+>
+> In our patches key is stored on the disc in encrypted format...
 
-The point is that I am focusing at one problem at a time. But FWIW, I
-don't see why memcg/blkcg can't use a step just like this one in a
-separate pass.
+Oh, I missed that twist.  Thanks for the explanation.
 
-If the goal is comounting them eventually, at some point when the issues
-are sorted out, just do it. Get a switch like this one, and then you
-will start being able to assume a lot of things in the code. Miracles
-can happen.
+On consideration, I prefer signing to be the final part of the "modules"
+target rather than modules_install.  I run the latter as root, and that
+is wrong for doing any code generation.
 
+>> +       for (i = 0; i < *len - (sizeof(MODULE_SIG_STRING)-1); i++) {
+>> +               /* Our memcmp is dumb, speed it up a little. */
+>> +               if (((char *)mod)[i] != MODULE_SIG_STRING[0])
+>> +                       continue;
+>> +               if (memcmp(mod, MODULE_SIG_STRING, strlen(MODULE_SIG_STRING)))
+>
+> should be (mod+i)?
 
+Yes, indeed.  Thanks, fixed.
+
+>> +                       continue;
+>> +
+>> +               sig = mod + i + strlen(MODULE_SIG_STRING);
+>> +               siglen = *len - i - strlen(MODULE_SIG_STRING);
+>> +               *len = i;
+>> +               break;
+>> +       }
+>
+> In general please clarify why do you need such parsing at all?
+> Why not to have MODULE_SIG_STRING as a last octets of the module and
+> have signature length field before?
+> Then it is easy to get the signature and rest of the module?
+> That will be super fast...
+>
+> Please clarify.
+
+Ignore performance, it's just not an issue here.  So the simplest code
+wins.
+
+And it's also simpler to sign a module this way.
+
+        (echo '~Module signature appended~'; gpg --sign ....) >> mod.ko
+
+Cheers,
+Rusty.
