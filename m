@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758161Ab2IEI0g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 04:26:36 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:16705 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756598Ab2IEI03 (ORCPT
+	id S1758203Ab2IEI1d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 04:27:33 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:53630 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757378Ab2IEI13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 04:26:29 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 05 Sep 2012 01:26:00 -0700
-Message-ID: <5047072F.5030702@nvidia.com>
-Date: Wed, 5 Sep 2012 13:32:55 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Wed, 5 Sep 2012 04:27:29 -0400
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "lrg@ti.com" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2] regulator: tps6586x: register regulator even if no
- init data
-References: <1346252473-30068-1-git-send-email-ldewangan@nvidia.com> <504668E3.1060907@wwwdotorg.org>
-In-Reply-To: <504668E3.1060907@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120904122544.GC19396@mwanda>
+References: <CAJKgH8Ah-aq=LfOWs2SBZnndzugNGxJbqYS11YVQLXJy6FZxkw@mail.gmail.com>
+ <CAJKgH8CNJM2SyR7bD8nXae13-Fq1MP1Xn7+383YU-HPwKBe+Zg@mail.gmail.com> <20120904122544.GC19396@mwanda>
+From: Manavendra Nath Manav <mnm.kernel@gmail.com>
+Date: Wed, 5 Sep 2012 13:57:07 +0530
+Message-ID: <CAJKgH8BkV0iRH8DN8-Y=LqvY90DHFOT_iqjTx1szgssPriThdg@mail.gmail.com>
+Subject: Re: Why exported const value modified by another driver not updated
+ in original driver
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: kernelnewbies@kernelnewbies.org, devel@driverdev.osuosl.org,
+        Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 05 September 2012 02:17 AM, Stephen Warren wrote:
-> On 08/29/2012 09:01 AM, Laxman Dewangan wrote:
->> Register all TPS6586x regulators even if there is no regulator
->> init data for platform i.e. without any user-supplied constraints.
+On Tue, Sep 4, 2012 at 5:55 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> On Tue, Sep 04, 2012 at 03:58:20PM +0530, Manavendra Nath Manav wrote:
+>> Is the above a genuine kernel bug, or i am missing something out here. Pls help.
 >>
->> Signed-off-by: Laxman Dewangan<ldewangan@nvidia.com>
-> Tested-by: Stephen Warren<swarren@nvidia.com>
 >
-> Note that this patch depends on the patch I just posted titled
-> "regulator: tps6586x: add support for SYS rail". I also believe Laxman
-> will be posting another patch based on these 2 soon (it will move the
-> regulator DT parsing out of the MFD driver into the regulator driver),
-> so I guess it makes sense to take them all through the same TPS6586x
-> topic branch in the regulator tree.
+> When you declare something as const then the compiler assumes it
+> really is const and uses a literal instead of reading from memory.
+> I'm surprised the compiler doesn't print a warning message.
+>
+> It has to do with compilers, nothing to do with kernels.
+>
+> regards,
+> dan carpenter
 
-About next patch (moving regulator dt parsing out of mfd), do you want 
-to support the Harmony also?
-If yes then same change should also contain the board-harmony-power.c 
-changes.
+Thanks All,
+I understood the problem and current gcc behaviour after looking at
+output of objdump of driver.ko file when the variable is declared as
+"const" and in second case as "const volatile". The compiler optimises
+by directly passing the value in first case and the address of
+variable in second case. Thanks for all the help and clarification.
+
+push   $0x7b         // 123 in decimal
+push   $0x0
+
+-- 
+Manavendra Nath Manav
