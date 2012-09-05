@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759210Ab2IEScW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 14:32:22 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:64307 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759143Ab2IEScT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 14:32:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120905154753.GE14225@amd1>
-References: <20120904203213.GA3617@www.outflux.net>
-	<20120905154753.GE14225@amd1>
-Date: Wed, 5 Sep 2012 14:32:17 -0400
-Message-ID: <CACLa4pvcqXfArSmm3bRadJF9unafyko9T4F9OfwUYTgHdfU49g@mail.gmail.com>
-Subject: Re: [PATCH] security: allow Yama to be unconditionally stacked
-From: Eric Paris <eparis@parisplace.org>
-To: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        James Morris <james.l.morris@oracle.com>,
-        Eric Paris <eparis@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Jiri Kosina <jkosina@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
-        John Johansen <john.johansen@canonical.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        linux-security-module@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1759217Ab2IEScw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 14:32:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61193 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754323Ab2IESbl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 14:31:41 -0400
+Message-Id: <20120905183133.162440150@napanee.usersys.redhat.com>
+User-Agent: quilt/0.48-1
+Date: Wed, 05 Sep 2012 14:31:33 -0400
+From: Aristeu Rozanski <aris@redhat.com>
+To: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Cc: Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Hillf Danton <dhillf@gmail.com>,
+        Lennart Poettering <lpoetter@redhat.com>
+Subject: [PATCH 1/2] cgroups: add documentation on extended attributes usage
+References: <20120905183132.806473183@napanee.usersys.redhat.com>
+Content-Disposition: inline; filename=doc.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 5, 2012 at 11:47 AM, Serge Hallyn
-<serge.hallyn@canonical.com> wrote:
-> Quoting Kees Cook (keescook@chromium.org):
->> Unconditionally call Yama when CONFIG_SECURITY_YAMA_STACKED is selected,
->> no matter what LSM module is primary.
->>
->> Ubuntu and Chrome OS already carry patches to do this, and Fedora
->> has voiced interest in doing this as well. Instead of having multiple
->> distributions (or LSM authors) carrying these patches, just allow Yama
->> to be called unconditionally when selected by the new CONFIG.
->
-> I don't really like having both the STACKED and non-stacked paths. But
-> I don't have a good alternative.
->
->> Signed-off-by: Kees Cook <keescook@chromium.org>
->
-> Acked-by: Serge E. Hallyn <serge.hallyn@canonical.com>
 
-I said basically the same thing to Kees off list.  But I don't have an
-answer either.
+Cc: Li Zefan <lizefan@huawei.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Hillf Danton <dhillf@gmail.com>
+Cc: Lennart Poettering <lpoetter@redhat.com>
+Signed-off-by: Aristeu Rozanski <aris@redhat.com>
 
-Acked-by: Eric Paris <eparis@redhat.com>
+---
+ Documentation/cgroups/00-INDEX  |    2 ++
+ Documentation/cgroups/xattr.txt |   21 +++++++++++++++++++++
+ 2 files changed, 23 insertions(+)
+
+--- a/Documentation/cgroups/00-INDEX	2010-07-29 22:53:28.000000000 -0400
++++ b/Documentation/cgroups/00-INDEX	2012-08-30 12:32:18.419879863 -0400
+@@ -16,3 +16,5 @@ memory.txt
+ 	- Memory Resource Controller; design, accounting, interface, testing.
+ resource_counter.txt
+ 	- Resource Counter API.
++xattr.txt
++	- Extended attributes support and usage in cgroup filesystem
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ b/Documentation/cgroups/xattr.txt	2012-08-30 13:02:56.585865106 -0400
+@@ -0,0 +1,21 @@
++Extended Attributes Usage in cgroup Filesystem
++
++1. Usage
++
++cgroup filesystem supports certain types of extended attributes in its
++directories and files.  The current supported types are:
++	- Trusted (XATTR_TRUSTED)
++	- Security (XATTR_SECURITY)
++
++Both require CAP_SYS_ADMIN capability to set.
++
++Like in tmpfs, the extended attributes in cgroup filesystem are stored
++using kernel memory and it's advised to keep the usage at minimum.  This
++is the reason why user defined extended attributes are not supported, since
++any user can do it and there's no limit in the value size.
++
++2. Users
++
++The current known users for this feature are SELinux to limit cgroup usage
++in containers and systemd for assorted meta data like main PID in a cgroup
++(systemd creates a cgroup per service).
+
