@@ -1,99 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462Ab2IESzp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 14:55:45 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:49099 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753345Ab2IESzo (ORCPT
+	id S1754607Ab2IES4y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 14:56:54 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:57541 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754083Ab2IES4w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 14:55:44 -0400
-X-Originating-IP: 217.70.178.130
-X-Originating-IP: 173.246.103.110
-Date: Wed, 5 Sep 2012 11:55:34 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 16/23] rcu: Prevent initialization-time
- quiescent-state race
-Message-ID: <20120905185534.GA4976@jtriplet-mobl1>
-References: <20120830181811.GA29154@linux.vnet.ibm.com>
- <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346350718-30937-16-git-send-email-paulmck@linux.vnet.ibm.com>
- <20120903093742.GE5574@leaf>
- <20120905181920.GN3308@linux.vnet.ibm.com>
+	Wed, 5 Sep 2012 14:56:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120905181920.GN3308@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120905102201.9423.46671.stgit@localhost.localdomain>
+References: <20120905102049.9423.6413.stgit@localhost.localdomain>
+	<20120905102201.9423.46671.stgit@localhost.localdomain>
+Date: Wed, 5 Sep 2012 11:56:51 -0700
+X-Google-Sender-Auth: 3PSGzB-FKdCc1ENm067HtkbXSic
+Message-ID: <CA+8MBb+T6H1jK624qkPPmK8BJ0T1-FcRM+9JPKubq65wKvfueA@mail.gmail.com>
+Subject: Re: [PATCH 2/3] x86/mce: Pack boolean MCE flags into a structure
+From: Tony Luck <tony.luck@intel.com>
+To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: andi@firstfloor.org, bp@amd64.org, gong.chen@linux.intel.com,
+        ananth@in.ibm.com, x86@kernel.org, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de, gregkh@suse.de,
+        linux-edac@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 05, 2012 at 11:19:20AM -0700, Paul E. McKenney wrote:
-> On Mon, Sep 03, 2012 at 02:37:42AM -0700, Josh Triplett wrote:
-> > On Thu, Aug 30, 2012 at 11:18:31AM -0700, Paul E. McKenney wrote:
-> > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > 
-> > > Now the the grace-period initialization procedure is preemptible, it is
-> > > subject to the following race on systems whose rcu_node tree contains
-> > > more than one node:
-> > > 
-> > > 1.	CPU 31 starts initializing the grace period, including the
-> > > 	first leaf rcu_node structures, and is then preempted.
-> > > 
-> > > 2.	CPU 0 refers to the first leaf rcu_node structure, and notes
-> > > 	that a new grace period has started.  It passes through a
-> > > 	quiescent state shortly thereafter, and informs the RCU core
-> > > 	of this rite of passage.
-> > > 
-> > > 3.	CPU 0 enters an RCU read-side critical section, acquiring
-> > > 	a pointer to an RCU-protected data item.
-> > > 
-> > > 4.	CPU 31 removes the data item referenced by CPU 0 from the
-> > > 	data structure, and registers an RCU callback in order to
-> > > 	free it.
-> > > 
-> > > 5.	CPU 31 resumes initializing the grace period, including its
-> > > 	own rcu_node structure.  In invokes rcu_start_gp_per_cpu(),
-> > > 	which advances all callbacks, including the one registered
-> > > 	in #4 above, to be handled by the current grace period.
-> > > 
-> > > 6.	The remaining CPUs pass through quiescent states and inform
-> > > 	the RCU core, but CPU 0 remains in its RCU read-side critical
-> > > 	section, still referencing the now-removed data item.
-> > > 
-> > > 7.	The grace period completes and all the callbacks are invoked,
-> > > 	including the one that frees the data item that CPU 0 is still
-> > > 	referencing.  Oops!!!
-> > > 
-> > > This commit therefore moves the callback handling to precede initialization
-> > > of any of the rcu_node structures, thus avoiding this race.
-> > 
-> > I don't think it makes sense to introduce and subsequently fix a race in
-> > the same patch series. :)
-> > 
-> > Could you squash this patch into the one moving grace-period
-> > initialization into a kthread?
-> 
-> I tried that, and got a surprisingly large set of conflicts.  Ah, OK,
-> the problem is that breaking up rcu_gp_kthread() into subfunctions
-> did enough code motion to defeat straightforward rebasing.  Is there
-> some way to tell "git rebase" about such code motion, or would this
-> need to be carried out carefully by hand?
+On Wed, Sep 5, 2012 at 3:22 AM, Naveen N. Rao
+<naveen.n.rao@linux.vnet.ibm.com> wrote:
+> Many MCE flags are boolean in nature, but are declared as integers
+> currently. We can pack these into a bitfield to save some space.
 
-To the extent rebase knows how to handle that, I think it does so
-automatically as part of merge attempts.  Fortunately, in this case, the
-change consists of moving two lines of code and their attached comment,
-which seems easy enough to change in the original code; you'll then get
-a conflict on the commit that moves the newly fixed code (easily
-resolved by moving the change to the new code), and conflicts on any
-changes next to the change in the new code (hopefully handled by
-three-way merge, and if not then easily fixed by keeping the new lines).
+Before this patch:
+size arch/x86/kernel/cpu/mcheck/mce.o
+   text	   data	    bss	    dec	    hex	filename
+  18946	   4930	    776	  24652	   604c	arch/x86/kernel/cpu/mcheck/mce.o
 
-- Josh Triplett
+After:
+size arch/x86/kernel/cpu/mcheck/mce.o
+   text	   data	    bss	    dec	    hex	filename
+  19335	   4890	    776	  25001	   61a9	arch/x86/kernel/cpu/mcheck/mce.o
+
+So we do indeed see "data" reduced by 40 bytes. But
+"text" is up by 389.  This seems to be because you have
+another change, not described in the commit log, buried
+in part 2 to add get_dont_log_ce(), set_dont_log_ce() etc.
+
+Compiler version: gcc version 4.4.6 20120305 (Red Hat 4.4.6-4) (GCC)
+
+I know I'm contradicting the feedback you got from Borislav here, but
+is this code churn really worth it to save 40 bytes? I don't think so.
+
+-Tony
