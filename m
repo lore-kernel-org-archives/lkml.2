@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754753Ab2IEMfF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 08:35:05 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:47412 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752010Ab2IEMfD (ORCPT
+	id S1758767Ab2IEMhH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 08:37:07 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53757 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751997Ab2IEMhG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 08:35:03 -0400
-Date: Wed, 5 Sep 2012 15:34:41 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Ashish Jangam <ashish.jangam@kpitcummins.com>
-Cc: Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] da9052-battery: don't free IRQ that wasn't requested
-Message-ID: <20120905123440.GF6128@elgon.mountain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Wed, 5 Sep 2012 08:37:06 -0400
+Message-ID: <1346848616.2600.26.camel@twins>
+Subject: Re: [tip:sched/core] sched: Fix load avg vs cpu-hotplug
+From: Peter Zijlstra <peterz@infradead.org>
+To: paulmck@linux.vnet.ibm.com, mingo@kernel.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, rakib.mullick@gmail.com,
+        tglx@linutronix.de
+Cc: linux-tip-commits@vger.kernel.org
+Date: Wed, 05 Sep 2012 14:36:56 +0200
+In-Reply-To: <tip-f319da0c6894fcf55e21320e40506418a2aad629@git.kernel.org>
+References: <1345454817.23018.27.camel@twins>
+	 <tip-f319da0c6894fcf55e21320e40506418a2aad629@git.kernel.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should decrement "i" before doing the free_irq().  If we call this
-because request_threaded_irq() failed then we don't want to free the
-thing which failed.  Or in the case where we get here because
-power_supply_register() failed then the original codes does a read past
-the end of the array.
+On Tue, 2012-09-04 at 11:43 -0700, tip-bot for Peter Zijlstra wrote:
+> Commit-ID:  f319da0c6894fcf55e21320e40506418a2aad629
+> Gitweb:     http://git.kernel.org/tip/f319da0c6894fcf55e21320e40506418a2aad629
+> Author:     Peter Zijlstra <peterz@infradead.org>
+> AuthorDate: Mon, 20 Aug 2012 11:26:57 +0200
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Tue, 4 Sep 2012 14:30:18 +0200
+> 
+> sched: Fix load avg vs cpu-hotplug
+> 
+> Rabik and Paul reported two different issues related to the same few
+> lines of code.
+> 
+> Rabik's issue is that the nr_uninterruptible migration code is wrong in
+> that he sees artifacts due to this (Rabik please do expand in more
+> detail).
+> 
+> Paul's issue is that this code as it stands relies on us using
+> stop_machine() for unplug, we all would like to remove this assumption
+> so that eventually we can remove this stop_machine() usage altogether.
+> 
+> The only reason we'd have to migrate nr_uninterruptible is so that we
+> could use for_each_online_cpu() loops in favour of
+> for_each_possible_cpu() loops, however since nr_uninterruptible() is the
+> only such loop and its using possible lets not bother at all.
+> 
+> The problem Rabik sees is (probably) caused by the fact that by
+> migrating nr_uninterruptible we screw rq->calc_load_active for both rqs
+> involved.
+> 
+> So don't bother with fancy migration schemes (meaning we now have to
+> keep using for_each_possible_cpu()) and instead fold any nr_active delta
+> after we migrate all tasks away to make sure we don't have any skewed
+> nr_active accounting.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Oh argh.. this patch isn't actually right.. I actually removed it from
+my series but forgot to update the tarball.
 
-diff --git a/drivers/power/da9052-battery.c b/drivers/power/da9052-battery.c
-index 20b86ed..d9d034d 100644
---- a/drivers/power/da9052-battery.c
-+++ b/drivers/power/da9052-battery.c
-@@ -623,7 +623,7 @@ static s32 __devinit da9052_bat_probe(struct platform_device *pdev)
- 	return 0;
- 
- err:
--	for (; i >= 0; i--) {
-+	while (--i >= 0) {
- 		irq = platform_get_irq_byname(pdev, da9052_bat_irqs[i]);
- 		free_irq(bat->da9052->irq_base + irq, bat);
- 	}
+Ingo can you still make it go away or should I do a delta?
