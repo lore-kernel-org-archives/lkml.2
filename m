@@ -1,83 +1,754 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752182Ab2IENFc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 09:05:32 -0400
-Received: from local.xorcom.com ([81.218.177.19]:50853 "EHLO local.xorcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751229Ab2IENFa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 09:05:30 -0400
-Date: Wed, 5 Sep 2012 16:05:28 +0300
-From: Tzafrir Cohen <tzafrir.cohen@xorcom.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Linux Kbuild <linux-kbuild@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] builddeb: remove unneeded explicit Architecture
-Message-ID: <20120905130528.GI18204@xorcom.com>
-References: <1344941092-31312-1-git-send-email-tzafrir.cohen@xorcom.com>
- <5040C112.70501@suse.cz>
+	id S1752229Ab2IENNS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 09:13:18 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:15868 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067Ab2IENNI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 09:13:08 -0400
+X-IronPort-AV: E=Sophos;i="4.80,374,1344211200"; 
+   d="scan'208";a="14359213"
+Message-ID: <50474FDE.6030005@citrix.com>
+Date: Wed, 5 Sep 2012 14:13:02 +0100
+From: Stefano Panella <stefano.panella@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5040C112.70501@suse.cz>
-X-Forced-Service: Sadly Using Gmail [tm]
-Organization: Xorcom*
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: David Vrabel <david.vrabel@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 1/1] XEN: Use correct masking in xen_swiotlb_alloc_coherent.
+References: <1346407072-6405-1-git-send-email-stefano.panella@citrix.com> <5040B249.4000306@citrix.com> <20120831164010.GA18929@localhost.localdomain> <50460B2E.3020200@citrix.com> <20120904143731.GC23361@phenom.dumpdata.com> <50461654.5040901@citrix.com> <50461A59.2050504@citrix.com> <50462FFE.7070100@citrix.com> <20120904164028.GJ23361@phenom.dumpdata.com>
+In-Reply-To: <20120904164028.GJ23361@phenom.dumpdata.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/04/2012 05:40 PM, Konrad Rzeszutek Wilk wrote:
+> On Tue, Sep 04, 2012 at 05:44:46PM +0100, David Vrabel wrote:
+>> On 04/09/12 16:12, Stefano Panella wrote:
+>>> On 09/04/2012 03:55 PM, David Vrabel wrote:
+>>>> On 04/09/12 15:37, Konrad Rzeszutek Wilk wrote:
+>>>>> On Tue, Sep 04, 2012 at 03:07:42PM +0100, Stefano Panella wrote:
+>>>>>> So if hwdev->coherent_dma_mask is set to 0xffffffffffffffff our
+>>>>>> dma_mask will
+>>>>>> be u64 set to 0xffffffffffffffff even if we set it to
+>>>>>> DMA_BIT_MASK(32) previously.
+>>>>> That is what I was missing. Let me include that in the git commit and
+>>>>> also
+>>>>> put this patch on the stable tree.
+>>>> Note that this appears to be a work around for a bug in the sound system
+>>>> or Intel HDA device driver which is incorrectly truncating a dma_addr_t
+>>>> to a u32.  So by ensuring a DMA_BIT_MASK(32) when the dma_addr_t is
+>>>> truncated it still works.
+>>>>
+>>>> David
+>>> Sorry David, I am not completely sure I understand your argument in
+>>> favour of a bug in the
+>>> sound system or Intel HDA device driver. Could you please elaborate more
+>>> in detail about this?
+>> The HDA driver claims to support 64-bit DMA addresses, so it should be
+>> perfectly fine for the Xen DMA mapping/allocation functions to return
+>> DMA addresses > 4 GiB.  For most devices this seems to work just fine.
+>>
+>> I think that somewhere between the buffer being mapped or allocated and
+>> the address being programmed into the hardware, the 64-bit dma_addr_t
+>> value is being truncated to 32 bits giving an invalid DMA address.
+>>
+>> The patch would avoid this by setting the DMA mask to 32-bit and only
+>> returning DMA address < 4 GiB which can quite happily be stuffed into a
+>> u32 without losing bits.
+>>
+>> I think it would be useful (without the patch applied) to print the DMA
+>> addresses returned by the allocate/mapping functions and the address
+>> programmed into the hardware.  It will be easily to spot if it got
+>> truncated or not.
+> Just enable DMA debug API (CONFIG_DEBUG_DMA_API) and use this fancy module:
+>
+>
+> /*
+>   *
+>   * This program is free software; you can redistribute it and/or modify
+>   * it under the terms of the GNU General Public License v2.0 as published by
+>   * the Free Software Foundation
+>   *
+>   * This program is distributed in the hope that it will be useful,
+>   * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>   * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>   * GNU General Public License for more details.
+>   */
+>
+> #include <linux/module.h>
+> #include <linux/string.h>
+> #include <linux/types.h>
+> #include <linux/init.h>
+> #include <linux/stat.h>
+> #include <linux/err.h>
+> #include <linux/ctype.h>
+> #include <linux/slab.h>
+> #include <linux/limits.h>
+> #include <linux/device.h>
+> #include <linux/pci.h>
+> #include <linux/blkdev.h>
+> #include <linux/device.h>
+>
+> #include <linux/init.h>
+> #include <linux/mm.h>
+> #include <linux/fcntl.h>
+> #include <linux/slab.h>
+> #include <linux/kmod.h>
+> #include <linux/major.h>
+> #include <linux/highmem.h>
+> #include <linux/blkdev.h>
+> #include <linux/module.h>
+> #include <linux/blkpg.h>
+> #include <linux/buffer_head.h>
+> #include <linux/mpage.h>
+> #include <linux/mount.h>
+> #include <linux/uio.h>
+> #include <linux/namei.h>
+> #include <asm/uaccess.h>
+>
+> #include <linux/pagemap.h>
+> #include <linux/pagevec.h>
+>
+> #include <linux/dma-debug.h>
+>
+> #define DUMP_DMA_FUN  "0.1"
+>
+> MODULE_AUTHOR("Konrad Rzeszutek Wilk <konrad@virtualiron>");
+> MODULE_DESCRIPTION("dump dma");
+> MODULE_LICENSE("GPL");
+> MODULE_VERSION(DUMP_DMA_FUN);
+>
+> static int __init dump_dma_init(void)
+> {
+> 	debug_dma_dump_mappings(NULL);
+> 	return 0;
+> }
+>
+> static void __exit dump_dma_exit(void)
+> {
+> }
+>
+> module_init(dump_dma_init);
+> module_exit(dump_dma_exit);
+>> David
 Hi,
+I have just tried to load the dump_dma module, can you observe anything 
+from it?
 
-Thanks for your reply,
+[ 2471.933377] e1000e 0000:00:19.0: single idx 0 P=11d54040 D=21d800040 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933380] e1000e 0000:00:19.0: single idx 0 P=11d54740 D=21d800740 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933382] e1000e 0000:00:19.0: single idx 4 P=11d5d040 D=21d809040 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933384] e1000e 0000:00:19.0: single idx 4 P=11d5d880 D=21d809880 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933385] e1000e 0000:00:19.0: single idx 5 P=11d5f040 D=21d80b040 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933387] e1000e 0000:00:19.0: single idx 5 P=11d5f740 D=21d80b740 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933388] e1000e 0000:00:19.0: single idx 8 P=11d64040 D=21d810040 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933390] e1000e 0000:00:19.0: single idx 8 P=11d64740 D=21d810740 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933392] e1000e 0000:00:19.0: single idx 21 P=11d7e7c0 D=21d82a7c0 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933393] e1000e 0000:00:19.0: single idx 22 P=11d81900 D=21d82d900 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933395] e1000e 0000:00:19.0: single idx 23 P=11d82940 D=21d82e940 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933396] e1000e 0000:00:19.0: single idx 28 P=1258d040 D=21e039040 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933398] e1000e 0000:00:19.0: single idx 33 P=11d96040 D=21d842040 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933400] e1000e 0000:00:19.0: single idx 33 P=12596040 D=21e042040 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933401] e1000e 0000:00:19.0: single idx 34 P=12599900 D=21e045900 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933403] e1000e 0000:00:19.0: single idx 36 P=11d9d040 D=21d849040 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933404] e1000e 0000:00:19.0: single idx 36 P=11d9d880 D=21d849880 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933406] e1000e 0000:00:19.0: single idx 39 P=125a2040 D=21e04e040 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933407] e1000e 0000:00:19.0: single idx 47 P=11db2040 D=21d85e040 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933409] e1000e 0000:00:19.0: single idx 49 P=125b6040 D=21e062040 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933410] e1000e 0000:00:19.0: single idx 49 P=125b6740 D=21e062740 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933412] e1000e 0000:00:19.0: single idx 50 P=125b8040 D=21e064040 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933413] e1000e 0000:00:19.0: single idx 51 P=11dba2c0 D=21d8662c0 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933415] e1000e 0000:00:19.0: single idx 57 P=11dc7900 D=21d873900 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933417] snd_hda_intel 0000:00:1b.0: coherent idx 58 P=11dc8000 
+D=21d874000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933419] e1000e 0000:00:19.0: single idx 59 P=11dca040 D=21d876040 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933420] e1000e 0000:00:19.0: single idx 59 P=11dca740 D=21d876740 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933422] e1000e 0000:00:19.0: single idx 60 P=11dcc040 D=21d878040 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933423] e1000e 0000:00:19.0: single idx 60 P=11dcc740 D=21d878740 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933425] e1000e 0000:00:19.0: single idx 60 P=11dcd040 D=21d879040 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933426] e1000e 0000:00:19.0: single idx 61 P=11dce040 D=21d87a040 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933428] e1000e 0000:00:19.0: single idx 61 P=11dce880 D=21d87a880 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933429] e1000e 0000:00:19.0: single idx 61 P=11dcf040 D=21d87b040 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933431] e1000e 0000:00:19.0: single idx 61 P=11dcf740 D=21d87b740 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933432] e1000e 0000:00:19.0: single idx 63 P=125d3040 D=21e07f040 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933434] e1000e 0000:00:19.0: single idx 63 P=125d3880 D=21e07f880 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933435] e1000e 0000:00:19.0: single idx 70 P=11de0040 D=21d88c040 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933437] e1000e 0000:00:19.0: single idx 71 P=2e43d040 D=3208e040 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933438] e1000e 0000:00:19.0: single idx 76 P=11dec900 D=21d898900 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933440] e1000e 0000:00:19.0: single idx 79 P=125f2240 D=21e09e240 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933442] e1000e 0000:00:19.0: single idx 85 P=125fe040 D=21e0aa040 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933443] e1000e 0000:00:19.0: single idx 85 P=125fe740 D=21e0aa740 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933445] e1000e 0000:00:19.0: single idx 91 P=11e0a840 D=21d8b6840 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933446] e1000e 0000:00:19.0: single idx 91 P=11e0a040 D=21d8b6040 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933448] e1000e 0000:00:19.0: single idx 94 P=12610040 D=21e0bc040 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933449] e1000e 0000:00:19.0: single idx 94 P=12610740 D=21e0bc740 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933451] snd_hda_intel 0000:00:1b.0: coherent idx 102 P=11e21000 
+D=21d8cd000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933453] e1000e 0000:00:19.0: single idx 104 P=12624040 
+D=21e0d0040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933454] e1000e 0000:00:19.0: single idx 105 P=11e27040 
+D=21d8d3040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933456] e1000e 0000:00:19.0: single idx 106 P=11e29040 
+D=21d8d5040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933459] e1000e 0000:00:19.0: single idx 108 P=1262d900 
+D=21e0d9900 L=5f2 DMA_FROM_DEVICE
+[ 2471.933460] e1000e 0000:00:19.0: single idx 113 P=11e37880 
+D=21d8e3880 L=5f2 DMA_FROM_DEVICE
+[ 2471.933462] e1000e 0000:00:19.0: single idx 114 P=11e39040 
+D=21d8e5040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933463] e1000e 0000:00:19.0: single idx 121 P=12647040 
+D=21e0f3040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933465] e1000e 0000:00:19.0: single idx 121 P=12647740 
+D=21e0f3740 L=5f2 DMA_FROM_DEVICE
+[ 2471.933467] snd_hda_intel 0000:00:1b.0: coherent idx 126 P=11e51000 
+D=21d8fd000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933468] e1000e 0000:00:19.0: single idx 126 P=11e50040 
+D=21d8fc040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933470] e1000e 0000:00:19.0: single idx 127 P=12653040 
+D=21e0ff040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933471] e1000e 0000:00:19.0: single idx 127 P=11e53840 
+D=21d8ff840 L=5f2 DMA_FROM_DEVICE
+[ 2471.933473] e1000e 0000:00:19.0: single idx 133 P=11e5f040 
+D=21d90b040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933474] e1000e 0000:00:19.0: single idx 139 P=11e6b040 
+D=21d917040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933476] e1000e 0000:00:19.0: single idx 139 P=11e6b880 
+D=21d917880 L=5f2 DMA_FROM_DEVICE
+[ 2471.933478] e1000e 0000:00:19.0: single idx 143 P=11e73040 
+D=21d91f040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933479] e1000e 0000:00:19.0: single idx 145 P=11e76040 
+D=21d922040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933480] e1000e 0000:00:19.0: single idx 146 P=11e78040 
+D=21d924040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933482] e1000e 0000:00:19.0: single idx 147 P=11e7b900 
+D=21d927900 L=5f2 DMA_FROM_DEVICE
+[ 2471.933483] e1000e 0000:00:19.0: single idx 148 P=11e7c040 
+D=21d928040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933485] e1000e 0000:00:19.0: single idx 148 P=2e5a2040 D=32129040 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933487] e1000e 0000:00:19.0: single idx 148 P=2e5a2740 D=32129740 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933488] e1000e 0000:00:19.0: single idx 154 P=12689040 
+D=21e135040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933490] e1000e 0000:00:19.0: single idx 154 P=11e89040 
+D=21d935040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933491] e1000e 0000:00:19.0: single idx 156 P=2e593180 D=32138180 
+L=5f2 DMA_FROM_DEVICE
+[ 2471.933493] e1000e 0000:00:19.0: single idx 161 P=11e97740 
+D=21d943740 L=5f2 DMA_FROM_DEVICE
+[ 2471.933494] e1000e 0000:00:19.0: single idx 170 P=126a8040 
+D=21e154040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933496] snd_hda_intel 0000:00:1b.0: coherent idx 185 P=11ec7000 
+D=21d973000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933498] e1000e 0000:00:19.0: single idx 190 P=126d1040 
+D=21e17d040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933499] e1000e 0000:00:19.0: single idx 193 P=126d6040 
+D=21e182040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933501] e1000e 0000:00:19.0: single idx 193 P=126d6740 
+D=21e182740 L=5f2 DMA_FROM_DEVICE
+[ 2471.933502] e1000e 0000:00:19.0: single idx 193 P=11ed7040 
+D=21d983040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933504] e1000e 0000:00:19.0: single idx 193 P=11ed7880 
+D=21d983880 L=5f2 DMA_FROM_DEVICE
+[ 2471.933505] snd_hda_intel 0000:00:1b.0: coherent idx 195 P=11eda000 
+D=21d986000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933507] e1000e 0000:00:19.0: single idx 196 P=126dd7c0 
+D=21e1897c0 L=5f2 DMA_FROM_DEVICE
+[ 2471.933508] e1000e 0000:00:19.0: single idx 197 P=11edf880 
+D=21d98b880 L=5f2 DMA_FROM_DEVICE
+[ 2471.933510] e1000e 0000:00:19.0: single idx 197 P=126de740 
+D=21e18a740 L=5f2 DMA_FROM_DEVICE
+[ 2471.933512] e1000e 0000:00:19.0: coherent idx 203 P=126ea000 
+D=21e196000 L=2000 DMA_BIDIRECTIONAL
+[ 2471.933513] e1000e 0000:00:19.0: single idx 206 P=126f0040 
+D=21e19c040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933515] e1000e 0000:00:19.0: single idx 210 P=11ef8040 
+D=21d9a4040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933516] e1000e 0000:00:19.0: single idx 211 P=11efb840 
+D=21d9a7840 L=5f2 DMA_FROM_DEVICE
+[ 2471.933518] e1000e 0000:00:19.0: single idx 211 P=11efb040 
+D=21d9a7040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933519] e1000e 0000:00:19.0: single idx 213 P=11eff180 
+D=21d9ab180 L=5f2 DMA_FROM_DEVICE
+[ 2471.933521] e1000e 0000:00:19.0: single idx 215 P=11f03180 
+D=21d9af180 L=5f2 DMA_FROM_DEVICE
+[ 2471.933522] e1000e 0000:00:19.0: single idx 215 P=11f03880 
+D=21d9af880 L=5f2 DMA_FROM_DEVICE
+[ 2471.933524] e1000e 0000:00:19.0: single idx 215 P=12703040 
+D=21e1af040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933525] e1000e 0000:00:19.0: single idx 215 P=12703740 
+D=21e1af740 L=5f2 DMA_FROM_DEVICE
+[ 2471.933527] e1000e 0000:00:19.0: single idx 222 P=12711040 
+D=21e1bd040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933528] e1000e 0000:00:19.0: single idx 226 P=11f19040 
+D=21d9c5040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933530] e1000e 0000:00:19.0: single idx 226 P=11f19880 
+D=21d9c5880 L=5f2 DMA_FROM_DEVICE
+[ 2471.933531] e1000e 0000:00:19.0: single idx 233 P=11f27040 
+D=21d9d3040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933533] e1000e 0000:00:19.0: single idx 238 P=12731400 
+D=21e1dd400 L=5f2 DMA_FROM_DEVICE
+[ 2471.933535] ehci_hcd 0000:00:1a.0: single idx 240 P=12631f20 D=1e1800 
+L=1 DMA_FROM_DEVICE
+[ 2471.933536] e1000e 0000:00:19.0: single idx 245 P=1273e180 
+D=21e1ea180 L=5f2 DMA_FROM_DEVICE
+[ 2471.933538] e1000e 0000:00:19.0: single idx 246 P=11f41040 
+D=21d9ed040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933539] e1000e 0000:00:19.0: single idx 247 P=12742040 
+D=21e1ee040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933541] e1000e 0000:00:19.0: single idx 249 P=12746840 
+D=21e1f2840 L=5f2 DMA_FROM_DEVICE
+[ 2471.933542] e1000e 0000:00:19.0: single idx 258 P=12759040 
+D=21e205040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933544] e1000e 0000:00:19.0: single idx 270 P=127712c0 
+D=21e21d2c0 L=5f2 DMA_FROM_DEVICE
+[ 2471.933546] e1000e 0000:00:19.0: single idx 271 P=12772040 
+D=21e21e040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933547] e1000e 0000:00:19.0: single idx 271 P=12773180 
+D=21e21f180 L=5f2 DMA_FROM_DEVICE
+[ 2471.933549] e1000e 0000:00:19.0: single idx 273 P=12776040 
+D=21e222040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933550] e1000e 0000:00:19.0: single idx 280 P=12784040 
+D=21e230040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933552] e1000e 0000:00:19.0: single idx 280 P=12784880 
+D=21e230880 L=5f2 DMA_FROM_DEVICE
+[ 2471.933554] e1000e 0000:00:19.0: single idx 284 P=1278c900 
+D=21e238900 L=5f2 DMA_FROM_DEVICE
+[ 2471.933555] e1000e 0000:00:19.0: single idx 286 P=12790040 
+D=21e23c040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933557] e1000e 0000:00:19.0: single idx 286 P=12790880 
+D=21e23c880 L=5f2 DMA_FROM_DEVICE
+[ 2471.933558] e1000e 0000:00:19.0: single idx 299 P=127aa040 
+D=21e256040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933560] e1000e 0000:00:19.0: single idx 299 P=127ab040 
+D=21e257040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933561] e1000e 0000:00:19.0: single idx 299 P=127ab740 
+D=21e257740 L=5f2 DMA_FROM_DEVICE
+[ 2471.933563] e1000e 0000:00:19.0: single idx 307 P=127ba040 
+D=21e266040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933565] e1000e 0000:00:19.0: single idx 313 P=127c7840 
+D=21e273840 L=5f2 DMA_FROM_DEVICE
+[ 2471.933566] e1000e 0000:00:19.0: single idx 313 P=127c7040 
+D=21e273040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933568] e1000e 0000:00:19.0: single idx 324 P=127dd040 
+D=21e289040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933569] e1000e 0000:00:19.0: single idx 334 P=127f0180 
+D=21e29c180 L=5f2 DMA_FROM_DEVICE
+[ 2471.933571] e1000e 0000:00:19.0: single idx 334 P=127f0880 
+D=21e29c880 L=5f2 DMA_FROM_DEVICE
+[ 2471.933572] e1000e 0000:00:19.0: single idx 336 P=127f4840 
+D=21e2a0840 L=5f2 DMA_FROM_DEVICE
+[ 2471.933574] e1000e 0000:00:19.0: single idx 342 P=12000040 
+D=21daac040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933576] e1000e 0000:00:19.0: single idx 342 P=12000740 
+D=21daac740 L=5f2 DMA_FROM_DEVICE
+[ 2471.933578] e1000e 0000:00:19.0: single idx 370 P=12039040 
+D=21dae5040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933579] e1000e 0000:00:19.0: single idx 371 P=1203a040 
+D=21dae6040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933581] e1000e 0000:00:19.0: single idx 371 P=1203a880 
+D=21dae6880 L=5f2 DMA_FROM_DEVICE
+[ 2471.933582] e1000e 0000:00:19.0: single idx 375 P=12043880 
+D=21daef880 L=5f2 DMA_FROM_DEVICE
+[ 2471.933584] e1000e 0000:00:19.0: single idx 386 P=12058180 
+D=21db04180 L=5f2 DMA_FROM_DEVICE
+[ 2471.933586] e1000e 0000:00:19.0: single idx 393 P=12067540 
+D=21db13540 L=5f2 DMA_FROM_DEVICE
+[ 2471.933587] e1000e 0000:00:19.0: single idx 395 P=1206a7c0 
+D=21db167c0 L=5f2 DMA_FROM_DEVICE
+[ 2471.933589] e1000e 0000:00:19.0: single idx 396 P=1206c880 
+D=21db18880 L=5f2 DMA_FROM_DEVICE
+[ 2471.933590] e1000e 0000:00:19.0: single idx 408 P=12084180 
+D=21db30180 L=5f2 DMA_FROM_DEVICE
+[ 2471.933592] e1000e 0000:00:19.0: single idx 431 P=118b3740 
+D=21d35f740 L=5f2 DMA_FROM_DEVICE
+[ 2471.933594] e1000e 0000:00:19.0: single idx 434 P=118b9900 
+D=21d365900 L=5f2 DMA_FROM_DEVICE
+[ 2471.933596] snd_hda_intel 0000:00:1b.0: coherent idx 436 P=120bc000 
+D=21db68000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933597] e1000e 0000:00:19.0: single idx 436 P=118bd040 
+D=21d369040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933599] e1000e 0000:00:19.0: single idx 458 P=120e8040 
+D=21db94040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933600] e1000e 0000:00:19.0: single idx 458 P=120e8740 
+D=21db94740 L=5f2 DMA_FROM_DEVICE
+[ 2471.933602] e1000e 0000:00:19.0: single idx 459 P=120eb040 
+D=21db97040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933603] e1000e 0000:00:19.0: single idx 459 P=120eb880 
+D=21db97880 L=5f2 DMA_FROM_DEVICE
+[ 2471.933605] snd_hda_intel 0000:00:1b.0: coherent idx 462 P=118f0000 
+D=21d39c000 L=10000 DMA_BIDIRECTIONAL
+[ 2471.933607] snd_hda_intel 0000:00:1b.0: coherent idx 470 P=11900000 
+D=21d3ac000 L=10000 DMA_BIDIRECTIONAL
+[ 2471.933608] e1000e 0000:00:19.0: single idx 470 P=12101040 
+D=21dbad040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933610] e1000e 0000:00:19.0: single idx 470 P=12101880 
+D=21dbad880 L=5f2 DMA_FROM_DEVICE
+[ 2471.933612] snd_hda_intel 0000:00:1b.0: coherent idx 478 P=11910000 
+D=21d3bc000 L=10000 DMA_BIDIRECTIONAL
+[ 2471.933613] snd_hda_intel 0000:00:1b.0: coherent idx 486 P=11920000 
+D=21d3cc000 L=10000 DMA_BIDIRECTIONAL
+[ 2471.933615] snd_hda_intel 0000:00:1b.0: coherent idx 494 P=11930000 
+D=21d3dc000 L=10000 DMA_BIDIRECTIONAL
+[ 2471.933617] e1000e 0000:00:19.0: single idx 498 P=12139040 
+D=21dbe5040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933618] e1000e 0000:00:19.0: single idx 502 P=11940040 
+D=21d3ec040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933620] e1000e 0000:00:19.0: single idx 503 P=11942040 
+D=21d3ee040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933621] e1000e 0000:00:19.0: single idx 503 P=11943740 
+D=21d3ef740 L=5f2 DMA_FROM_DEVICE
+[ 2471.933623] e1000e 0000:00:19.0: single idx 508 P=1214c040 
+D=21dbf8040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933624] e1000e 0000:00:19.0: single idx 508 P=1214c940 
+D=21dbf8940 L=5f2 DMA_FROM_DEVICE
+[ 2471.933626] e1000e 0000:00:19.0: single idx 524 P=1196c840 
+D=21d418840 L=5f2 DMA_FROM_DEVICE
+[ 2471.933628] e1000e 0000:00:19.0: single idx 530 P=11978040 
+D=21d424040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933629] e1000e 0000:00:19.0: single idx 536 P=11984040 
+D=21d430040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933631] e1000e 0000:00:19.0: single idx 537 P=11986040 
+D=21d432040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933632] e1000e 0000:00:19.0: single idx 540 P=1218c680 
+D=21dc38680 L=5f2 DMA_FROM_DEVICE
+[ 2471.933634] e1000e 0000:00:19.0: single idx 545 P=12196180 
+D=21dc42180 L=5f2 DMA_FROM_DEVICE
+[ 2471.933635] e1000e 0000:00:19.0: single idx 546 P=11998040 
+D=21d444040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933637] e1000e 0000:00:19.0: single idx 548 P=1199d040 
+D=21d449040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933639] e1000e 0000:00:19.0: single idx 554 P=119a8400 
+D=21d454400 L=5f2 DMA_FROM_DEVICE
+[ 2471.933640] e1000e 0000:00:19.0: single idx 557 P=119af040 
+D=21d45b040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933642] e1000e 0000:00:19.0: single idx 565 P=121bf180 
+D=21dc6b180 L=5f2 DMA_FROM_DEVICE
+[ 2471.933643] e1000e 0000:00:19.0: single idx 579 P=119db240 
+D=21d487240 L=5f2 DMA_FROM_DEVICE
+[ 2471.933646] ahci 0000:00:1f.2: coherent idx 582 P=121e0000 
+D=21dc8c000 L=16500 DMA_BIDIRECTIONAL
+[ 2471.933648] ahci 0000:00:1f.2: coherent idx 598 P=12200000 
+D=21dcac000 L=16500 DMA_BIDIRECTIONAL
+[ 2471.933649] e1000e 0000:00:19.0: single idx 600 P=11a04040 
+D=21d4b0040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933651] e1000e 0000:00:19.0: single idx 600 P=11a04880 
+D=21d4b0880 L=5f2 DMA_FROM_DEVICE
+[ 2471.933652] e1000e 0000:00:19.0: single idx 605 P=11a0e040 
+D=21d4ba040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933654] e1000e 0000:00:19.0: single idx 609 P=11a17040 
+D=21d4c3040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933655] e1000e 0000:00:19.0: single idx 609 P=11a17740 
+D=21d4c3740 L=5f2 DMA_FROM_DEVICE
+[ 2471.933657] ahci 0000:00:1f.2: coherent idx 614 P=12220000 
+D=21dccc000 L=16500 DMA_BIDIRECTIONAL
+[ 2471.933658] e1000e 0000:00:19.0: single idx 616 P=11a25040 
+D=21d4d1040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933660] e1000e 0000:00:19.0: single idx 617 P=11a26040 
+D=21d4d2040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933661] e1000e 0000:00:19.0: single idx 622 P=11a31740 
+D=21d4dd740 L=5f2 DMA_FROM_DEVICE
+[ 2471.933663] e1000e 0000:00:19.0: single idx 632 P=11a44180 
+D=21d4f0180 L=5f2 DMA_FROM_DEVICE
+[ 2471.933665] e1000e 0000:00:19.0: single idx 634 P=122492c0 
+D=21dcf52c0 L=5f2 DMA_FROM_DEVICE
+[ 2471.933666] e1000e 0000:00:19.0: single idx 636 P=11a4d040 
+D=21d4f9040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933668] e1000e 0000:00:19.0: single idx 636 P=11a4d740 
+D=21d4f9740 L=5f2 DMA_FROM_DEVICE
+[ 2471.933669] e1000e 0000:00:19.0: single idx 645 P=11a5f400 
+D=21d50b400 L=5f2 DMA_FROM_DEVICE
+[ 2471.933671] e1000e 0000:00:19.0: single idx 647 P=12263040 
+D=21dd0f040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933672] e1000e 0000:00:19.0: single idx 647 P=12263740 
+D=21dd0f740 L=5f2 DMA_FROM_DEVICE
+[ 2471.933674] e1000e 0000:00:19.0: single idx 648 P=12264900 
+D=21dd10900 L=5f2 DMA_FROM_DEVICE
+[ 2471.933675] e1000e 0000:00:19.0: single idx 651 P=11a6a040 
+D=21d516040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933677] e1000e 0000:00:19.0: single idx 654 P=12270440 
+D=21dd1c440 L=5f2 DMA_FROM_DEVICE
+[ 2471.933679] e1000e 0000:00:19.0: single idx 663 P=11a83040 
+D=21d52f040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933680] e1000e 0000:00:19.0: single idx 663 P=11a83740 
+D=21d52f740 L=5f2 DMA_FROM_DEVICE
+[ 2471.933682] snd_hda_intel 0000:00:1b.0: coherent idx 675 P=1229b000 
+D=21dd47000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933683] e1000e 0000:00:19.0: single idx 677 P=11a9f040 
+D=21d54b040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933685] e1000e 0000:00:19.0: single idx 677 P=11a9f740 
+D=21d54b740 L=5f2 DMA_FROM_DEVICE
+[ 2471.933686] e1000e 0000:00:19.0: single idx 678 P=11aa0040 
+D=21d54c040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933688] e1000e 0000:00:19.0: single idx 678 P=11aa0740 
+D=21d54c740 L=5f2 DMA_FROM_DEVICE
+[ 2471.933690] e1000e 0000:00:19.0: single idx 683 P=122ab040 
+D=21dd57040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933691] e1000e 0000:00:19.0: single idx 685 P=11aaf040 
+D=21d55b040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933693] e1000e 0000:00:19.0: single idx 687 P=122b22c0 
+D=21dd5e2c0 L=5f2 DMA_FROM_DEVICE
+[ 2471.933694] e1000e 0000:00:19.0: single idx 688 P=11ab5840 
+D=21d561840 L=5f2 DMA_FROM_DEVICE
+[ 2471.933696] e1000e 0000:00:19.0: single idx 688 P=11ab5040 
+D=21d561040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933697] e1000e 0000:00:19.0: single idx 688 P=11ab4040 
+D=21d560040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933698] e1000e 0000:00:19.0: single idx 688 P=11ab4880 
+D=21d560880 L=5f2 DMA_FROM_DEVICE
+[ 2471.933700] e1000e 0000:00:19.0: single idx 690 P=11ab9040 
+D=21d565040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933702] e1000e 0000:00:19.0: single idx 702 P=122d1840 
+D=21dd7d840 L=5f2 DMA_FROM_DEVICE
+[ 2471.933703] e1000e 0000:00:19.0: single idx 703 P=122d3040 
+D=21dd7f040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933705] e1000e 0000:00:19.0: single idx 703 P=11ad3740 
+D=21d57f740 L=5f2 DMA_FROM_DEVICE
+[ 2471.933706] e1000e 0000:00:19.0: single idx 711 P=11ae3400 
+D=21d58f400 L=5f2 DMA_FROM_DEVICE
+[ 2471.933708] e1000e 0000:00:19.0: single idx 715 P=122ea040 
+D=21dd96040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933709] e1000e 0000:00:19.0: single idx 716 P=11aed040 
+D=21d599040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933711] e1000e 0000:00:19.0: single idx 719 P=122f2740 
+D=21dd9e740 L=5f2 DMA_FROM_DEVICE
+[ 2471.933712] e1000e 0000:00:19.0: single idx 722 P=122f9040 
+D=21dda5040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933714] e1000e 0000:00:19.0: single idx 722 P=122f8040 
+D=21dda4040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933715] e1000e 0000:00:19.0: single idx 722 P=122f8880 
+D=21dda4880 L=5f2 DMA_FROM_DEVICE
+[ 2471.933717] e1000e 0000:00:19.0: single idx 744 P=12324540 
+D=21ddd0540 L=5f2 DMA_FROM_DEVICE
+[ 2471.933719] e1000e 0000:00:19.0: single idx 747 P=1232a040 
+D=21ddd6040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933720] e1000e 0000:00:19.0: single idx 747 P=1232a740 
+D=21ddd6740 L=5f2 DMA_FROM_DEVICE
+[ 2471.933722] ehci_hcd 0000:00:1d.0: coherent idx 752 P=1267e000 
+D=325e1000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933724] ehci_hcd 0000:00:1d.0: coherent idx 752 P=125af000 
+D=325e0000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933725] ehci_hcd 0000:00:1a.0: coherent idx 753 P=1266f000 
+D=325e3000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933727] ehci_hcd 0000:00:1d.0: coherent idx 753 P=120a3000 
+D=325e2000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933728] e1000e 0000:00:19.0: single idx 753 P=12336740 
+D=21dde2740 L=5f2 DMA_FROM_DEVICE
+[ 2471.933730] ehci_hcd 0000:00:1a.0: coherent idx 754 P=125ad000 
+D=325e5000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933731] ehci_hcd 0000:00:1a.0: coherent idx 754 P=12097000 
+D=325e4000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933733] e1000e 0000:00:19.0: single idx 755 P=1233b900 
+D=21dde7900 L=5f2 DMA_FROM_DEVICE
+[ 2471.933735] xhci_hcd 0000:00:14.0: coherent idx 756 P=126cd000 
+D=365e9000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933736] xhci_hcd 0000:00:14.0: coherent idx 756 P=120c1000 
+D=365e8000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933738] xhci_hcd 0000:00:14.0: coherent idx 757 P=12164000 
+D=365eb000 L=80 DMA_BIDIRECTIONAL
+[ 2471.933739] xhci_hcd 0000:00:14.0: coherent idx 757 P=1262e000 
+D=365ea000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933741] xhci_hcd 0000:00:14.0: coherent idx 758 P=1266b000 
+D=365ed000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933742] xhci_hcd 0000:00:14.0: coherent idx 758 P=12163000 
+D=365ec000 L=10 DMA_BIDIRECTIONAL
+[ 2471.933744] xhci_hcd 0000:00:14.0: coherent idx 759 P=12633000 
+D=365ef000 L=808 DMA_BIDIRECTIONAL
+[ 2471.933745] xhci_hcd 0000:00:14.0: coherent idx 759 P=12720000 
+D=365ee000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933747] xhci_hcd 0000:00:14.0: coherent idx 761 P=1263e000 
+D=365f3000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933749] xhci_hcd 0000:00:14.0: coherent idx 762 P=1268e000 
+D=365f5000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933750] xhci_hcd 0000:00:14.0: coherent idx 762 P=120c2000 
+D=365f4000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933752] xhci_hcd 0000:00:14.0: coherent idx 763 P=127d6000 
+D=365f7000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933753] xhci_hcd 0000:00:14.0: coherent idx 763 P=127d7000 
+D=365f6000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933755] xhci_hcd 0000:00:14.0: coherent idx 764 P=127d0000 
+D=365f9000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933756] xhci_hcd 0000:00:14.0: coherent idx 764 P=12148000 
+D=365f8000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933758] e1000e 0000:00:19.0: single idx 764 P=1234c400 
+D=21ddf8400 L=5f2 DMA_FROM_DEVICE
+[ 2471.933759] xhci_hcd 0000:00:14.0: coherent idx 765 P=12160000 
+D=365fb000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933761] xhci_hcd 0000:00:14.0: coherent idx 765 P=120fe000 
+D=365fa000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933762] xhci_hcd 0000:00:14.0: coherent idx 766 P=12162000 
+D=365fd000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933764] xhci_hcd 0000:00:14.0: coherent idx 766 P=1217b000 
+D=365fc000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933765] xhci_hcd 0000:00:14.0: coherent idx 767 P=125cb000 
+D=365ff000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933767] xhci_hcd 0000:00:14.0: coherent idx 767 P=12748000 
+D=365fe000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933769] e1000e 0000:00:19.0: single idx 783 P=12373400 
+D=21de1f400 L=5f2 DMA_FROM_DEVICE
+[ 2471.933770] e1000e 0000:00:19.0: single idx 793 P=12386840 
+D=21de32840 L=5f2 DMA_FROM_DEVICE
+[ 2471.933772] e1000e 0000:00:19.0: single idx 794 P=12388840 
+D=21de34840 L=5f2 DMA_FROM_DEVICE
+[ 2471.933773] e1000e 0000:00:19.0: single idx 794 P=12389740 
+D=21de35740 L=5f2 DMA_FROM_DEVICE
+[ 2471.933775] e1000e 0000:00:19.0: single idx 797 P=1238f040 
+D=21de3b040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933776] e1000e 0000:00:19.0: single idx 797 P=1238f880 
+D=21de3b880 L=5f2 DMA_FROM_DEVICE
+[ 2471.933778] e1000e 0000:00:19.0: single idx 801 P=12397040 
+D=21de43040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933779] e1000e 0000:00:19.0: single idx 801 P=12397880 
+D=21de43880 L=5f2 DMA_FROM_DEVICE
+[ 2471.933781] e1000e 0000:00:19.0: single idx 812 P=123ac040 
+D=21de58040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933783] e1000e 0000:00:19.0: single idx 814 P=123b0040 
+D=21de5c040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933784] snd_hda_intel 0000:00:1b.0: coherent idx 817 P=123b6000 
+D=21de62000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933786] snd_hda_intel 0000:00:1b.0: coherent idx 821 P=123be000 
+D=21de6a000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933787] e1000e 0000:00:19.0: single idx 823 P=123c2740 
+D=21de6e740 L=5f2 DMA_FROM_DEVICE
+[ 2471.933789] e1000e 0000:00:19.0: single idx 843 P=123ea500 
+D=21de96500 L=5f2 DMA_FROM_DEVICE
+[ 2471.933791] e1000e 0000:00:19.0: single idx 844 P=123ed900 
+D=21de99900 L=5f2 DMA_FROM_DEVICE
+[ 2471.933792] e1000e 0000:00:19.0: single idx 845 P=123ef740 
+D=21de9b740 L=5f2 DMA_FROM_DEVICE
+[ 2471.933794] e1000e 0000:00:19.0: single idx 847 P=123f3740 
+D=21de9f740 L=5f2 DMA_FROM_DEVICE
+[ 2471.933795] e1000e 0000:00:19.0: single idx 848 P=123f5040 
+D=21dea1040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933797] e1000e 0000:00:19.0: single idx 848 P=123f5880 
+D=21dea1880 L=5f2 DMA_FROM_DEVICE
+[ 2471.933798] e1000e 0000:00:19.0: single idx 851 P=123fa7c0 
+D=21dea67c0 L=5f2 DMA_FROM_DEVICE
+[ 2471.933800] e1000e 0000:00:19.0: coherent idx 855 P=11c02000 
+D=21d6ae000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933802] e1000e 0000:00:19.0: single idx 865 P=11c16040 
+D=21d6c2040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933803] e1000e 0000:00:19.0: single idx 870 P=11c21540 
+D=21d6cd540 L=5f2 DMA_FROM_DEVICE
+[ 2471.933805] e1000e 0000:00:19.0: single idx 871 P=11c23840 
+D=21d6cf840 L=5f2 DMA_FROM_DEVICE
+[ 2471.933806] e1000e 0000:00:19.0: single idx 871 P=11c23040 
+D=21d6cf040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933808] e1000e 0000:00:19.0: single idx 885 P=11c3e840 
+D=21d6ea840 L=5f2 DMA_FROM_DEVICE
+[ 2471.933809] e1000e 0000:00:19.0: single idx 885 P=11c3e040 
+D=21d6ea040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933811] e1000e 0000:00:19.0: single idx 889 P=11c46180 
+D=21d6f2180 L=5f2 DMA_FROM_DEVICE
+[ 2471.933813] e1000e 0000:00:19.0: single idx 893 P=11c4e040 
+D=21d6fa040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933814] e1000e 0000:00:19.0: single idx 897 P=11c56040 
+D=21d702040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933816] e1000e 0000:00:19.0: single idx 902 P=12460040 
+D=21df0c040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933817] e1000e 0000:00:19.0: single idx 902 P=12460740 
+D=21df0c740 L=5f2 DMA_FROM_DEVICE
+[ 2471.933819] e1000e 0000:00:19.0: single idx 910 P=11c71900 
+D=21d71d900 L=5f2 DMA_FROM_DEVICE
+[ 2471.933820] e1000e 0000:00:19.0: single idx 911 P=11c73180 
+D=21d71f180 L=5f2 DMA_FROM_DEVICE
+[ 2471.933822] e1000e 0000:00:19.0: single idx 916 P=11c7d7c0 
+D=21d7297c0 L=5f2 DMA_FROM_DEVICE
+[ 2471.933824] e1000e 0000:00:19.0: single idx 926 P=11c90040 
+D=21d73c040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933825] e1000e 0000:00:19.0: single idx 931 P=11c9b040 
+D=21d747040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933827] e1000e 0000:00:19.0: single idx 939 P=11caa040 
+D=21d756040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933828] e1000e 0000:00:19.0: single idx 939 P=11caa740 
+D=21d756740 L=5f2 DMA_FROM_DEVICE
+[ 2471.933830] e1000e 0000:00:19.0: single idx 940 P=11cac400 
+D=21d758400 L=5f2 DMA_FROM_DEVICE
+[ 2471.933831] snd_hda_intel 0000:00:1b.0: coherent idx 941 P=11caf000 
+D=21d75b000 L=1000 DMA_BIDIRECTIONAL
+[ 2471.933833] e1000e 0000:00:19.0: single idx 953 P=11cc7040 
+D=21d773040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933835] e1000e 0000:00:19.0: single idx 960 P=11cd5040 
+D=21d781040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933836] e1000e 0000:00:19.0: single idx 960 P=11cd5880 
+D=21d781880 L=5f2 DMA_FROM_DEVICE
+[ 2471.933838] e1000e 0000:00:19.0: single idx 968 P=11ce5900 
+D=21d791900 L=5f2 DMA_FROM_DEVICE
+[ 2471.933839] e1000e 0000:00:19.0: single idx 972 P=11cec840 
+D=21d798840 L=5f2 DMA_FROM_DEVICE
+[ 2471.933841] e1000e 0000:00:19.0: single idx 972 P=11ced040 
+D=21d799040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933843] e1000e 0000:00:19.0: single idx 978 P=11cf8040 
+D=21d7a4040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933844] e1000e 0000:00:19.0: single idx 992 P=12514040 
+D=21dfc0040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933846] e1000e 0000:00:19.0: single idx 992 P=12514880 
+D=21dfc0880 L=5f2 DMA_FROM_DEVICE
+[ 2471.933847] e1000e 0000:00:19.0: single idx 992 P=11d14880 
+D=21d7c0880 L=5f2 DMA_FROM_DEVICE
+[ 2471.933849] e1000e 0000:00:19.0: single idx 998 P=11d20040 
+D=21d7cc040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933850] e1000e 0000:00:19.0: single idx 1003 P=11d2a040 
+D=21d7d6040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933852] e1000e 0000:00:19.0: single idx 1008 P=12535040 
+D=21dfe1040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933854] e1000e 0000:00:19.0: single idx 1009 P=12536040 
+D=21dfe2040 L=5f2 DMA_FROM_DEVICE
+[ 2471.933855] e1000e 0000:00:19.0: single idx 1009 P=12536880 
+D=21dfe2880 L=5f2 DMA_FROM_DEVICE
 
-On Fri, Aug 31, 2012 at 03:50:10PM +0200, Michal Marek wrote:
-> Adding Max to CC.
-> 
-> On 14.8.2012 12:44, Tzafrir Cohen wrote:
-> > Architecture was set explicitly in debian/control for one of the three
-> > packages (linux-libc-dev) but not for the other two. When cross-building
-> > it gives me an error:
-> > 
-> >   dpkg-gencontrol: error: current host architecture 'armhf' does not
-> >   appear in package's architecture list (amd64)
-> > 
-> > Also note that if used, dpkg --print-architecture should have been
-> > replaced with dpkg-architecture.
-> > 
-> > Signed-off-by: Tzafrir Cohen <tzafrir.cohen@xorcom.com>
-> > ---
-> >  scripts/package/builddeb |    3 +--
-> >  1 file changed, 1 insertion(+), 2 deletions(-)
-> > 
-> > diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-> > index acb8650..d9c71a6 100644
-> > --- a/scripts/package/builddeb
-> > +++ b/scripts/package/builddeb
-> > @@ -252,13 +252,12 @@ mkdir -p "$destdir"
-> >  (cd $objtree; tar -c -f - -T "$objtree/debian/hdrobjfiles") | (cd $destdir; tar -xf -)
-> >  ln -sf "/usr/src/linux-headers-$version" "$kernel_headers_dir/lib/modules/$version/build"
-> >  rm -f "$objtree/debian/hdrsrcfiles" "$objtree/debian/hdrobjfiles"
-> > -arch=$(dpkg --print-architecture)
-> >  
-> >  cat <<EOF >> debian/control
-> >  
-> >  Package: $kernel_headers_packagename
-> >  Provides: linux-headers, linux-headers-2.6
-> > -Architecture: $arch
-> > +Architecture: any
-> >  Description: Linux kernel headers for $KERNELRELEASE on $arch
-> >   This package provides kernel header files for $KERNELRELEASE on $arch
-> >   .
-> 
-> As the package contains files from arch/$SRCARCH/include, I doubt that
-> this is a valid change.
+Regards,
 
-But you optionally force the Architecture later on in build_package.
-"Arhcitecture: any" in the source package states that the binary package
-will be the one stated by the build system.
+Stefano
 
--- 
-               Tzafrir Cohen
-icq#16849755              jabber:tzafrir.cohen@xorcom.com
-+972-50-7952406           mailto:tzafrir.cohen@xorcom.com
-http://www.xorcom.com  iax:guest@local.xorcom.com/tzafrir
