@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758236Ab2IEKVC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 06:21:02 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36744 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751298Ab2IEKVA (ORCPT
+	id S1758361Ab2IEKXs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 06:23:48 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:44283 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752072Ab2IEKXq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 06:21:00 -0400
-Subject: Re: [RFC 0/5] forced comounts for cgroups.
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, linux-mm@kvack.org, davej@redhat.com,
-        ben@decadent.org.uk, pjt@google.com, lennart@poettering.net,
-        kay.sievers@vrfy.org
-In-Reply-To: <50471C0C.7050600@parallels.com>
-References: <1346768300-10282-1-git-send-email-glommer@parallels.com>
-	 <20120904214602.GA9092@dhcp-172-17-108-109.mtv.corp.google.com>
-	 <5047074D.1030104@parallels.com>
-	 <20120905081439.GC3195@dhcp-172-17-108-109.mtv.corp.google.com>
-	 <50470A87.1040701@parallels.com>
-	 <20120905082947.GD3195@dhcp-172-17-108-109.mtv.corp.google.com>
-	 <50470EBF.9070109@parallels.com>
-	 <20120905084740.GE3195@dhcp-172-17-108-109.mtv.corp.google.com>
-	 <1346835993.2600.9.camel@twins>
-	 <20120905091140.GH3195@dhcp-172-17-108-109.mtv.corp.google.com>
-	 <50471782.6060800@parallels.com> <1346837209.2600.14.camel@twins>
-	 <50471C0C.7050600@parallels.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 05 Sep 2012 12:20:53 +0200
-Message-ID: <1346840453.2461.6.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	Wed, 5 Sep 2012 06:23:46 -0400
+Subject: [PATCH 0/3] x86:mce: Some cleanups and bios-set CMCI thresholds
+To: tony.luck@intel.com, andi@firstfloor.org, bp@amd64.org
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: gong.chen@linux.intel.com, ananth@in.ibm.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        tglx@linutronix.de, gregkh@suse.de, linux-edac@vger.kernel.org
+Date: Wed, 05 Sep 2012 15:51:51 +0530
+Message-ID: <20120905102049.9423.6413.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+x-cbid: 12090510-8878-0000-0000-000003DEC396
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-05 at 13:31 +0400, Glauber Costa wrote:
-> 
-> You wouldn't have to do more than one hierarchy walks for that. What
-> Tejun seems to want, is the ability to not have a particular controller
-> at some point in the tree. But if they exist, they are always together. 
+Hello,
+I'm putting together my previous set of patches for MCE.
 
-Right, but the accounting is very much tied to the control structures, I
-suppose we could change that, but my jet-leg addled brain isn't seeing
-anything particularly nice atm.
+The first two patches are cleanups, as per previous discussions. The first
+patch makes mce sysfs tunables available under global machinecheck sysfs
+directory. We no longer remove the existing entries in the per-cpu location.
+The second patch consolidates some of the mce boot options into a single
+bitfield. The structure name has been changed and is now in mce-internal.h
 
-But I don't really see the point though, this kind of interface would
-only ever work for the non-controlling and controlling controller
-combination (confused yet ;-), and I don't think we have many of those.
+The third patch adds a new boot option to honour bios-set CMCI thresholds.
+This has been rebased on the above patches.
 
-I would really rather see a simplification of the entire cgroup
-interface space as opposed to making it more complex. And adding this
-subtree 'feature' only makes it more complex.
+This patch series applies on top of -tip.
+
+
+Thanks,
+Naveen
+
+---
+
+Naveen N. Rao (3):
+      x86/mce: Make sysfs tunables available globally across all cpus
+      x86/mce: Pack boolean MCE flags into a structure
+      x86/mce: Honour bios-set CMCI threshold
+
+
+ Documentation/x86/x86_64/boot-options.txt |    5 +
+ Documentation/x86/x86_64/machinecheck     |    4 +
+ arch/x86/include/asm/mce.h                |    2 -
+ arch/x86/kernel/cpu/mcheck/mce-internal.h |   10 +++
+ arch/x86/kernel/cpu/mcheck/mce.c          |  112 ++++++++++++++++++++++-------
+ arch/x86/kernel/cpu/mcheck/mce_intel.c    |   41 ++++++++++-
+ 6 files changed, 140 insertions(+), 34 deletions(-)
+
+-- 
 
