@@ -1,93 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758639Ab2IEKAK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 06:00:10 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:59963 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753591Ab2IEKAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 06:00:04 -0400
-X-IronPort-AV: E=Sophos;i="4.80,373,1344182400"; 
-   d="scan'208";a="5789327"
-From: wency@cn.fujitsu.com
-To: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org
-Cc: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        Wen Congyang <wency@cn.fujitsu.com>
-Subject: [RFC v9 PATCH 18/21] memory-hotplug: add node_device_release
-Date: Wed, 5 Sep 2012 17:25:52 +0800
-Message-Id: <1346837155-534-19-git-send-email-wency@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1346837155-534-1-git-send-email-wency@cn.fujitsu.com>
-References: <1346837155-534-1-git-send-email-wency@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/05 17:20:02,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/05 17:20:04,
-	Serialize complete at 2012/09/05 17:20:04
+	id S1758648Ab2IEKA3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 06:00:29 -0400
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:39652 "EHLO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753591Ab2IEKA1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 06:00:27 -0400
+From: Loic Pallardy <loic.pallardy-ext@stericsson.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Linus Walleij <linus.walleij@linaro.com>
+Cc: Lee Jones <lee.jones@linaro.org>, Loic Pallardy <loic.pallardy@gmail.com>,
+        LT ST-Ericsson <st-ericsson@lists.linaro.org>,
+        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
+        Loic Pallardy <loic.pallardy-ext@stericsson.com>,
+        Loic Pallardy <loic.pallardy@stericsson.com>
+Subject: [PATCH 17/17] mfd: db8500-prcmu: activate dbx540-prcmu driver
+Date: Wed, 5 Sep 2012 11:59:13 +0200
+Message-ID: <1346839153-6465-18-git-send-email-loic.pallardy-ext@stericsson.com>
+X-Mailer: git-send-email 1.7.11.1
+In-Reply-To: <1346839153-6465-1-git-send-email-loic.pallardy-ext@stericsson.com>
+References: <1346839153-6465-1-git-send-email-loic.pallardy-ext@stericsson.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+db8500-prcmu clean up, removing dbx540 definition from
+db8500-prcmu file.
 
-When calling unregister_node(), the function shows following message at
-device_release().
-
-Device 'node2' does not have a release() function, it is broken and must be
-fixed.
-
-So the patch implements node_device_release()
-
-CC: David Rientjes <rientjes@google.com>
-CC: Jiang Liu <liuj97@gmail.com>
-CC: Len Brown <len.brown@intel.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org>
-CC: Christoph Lameter <cl@linux.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+Signed-off-by: Loic Pallardy <loic.pallardy@stericsson.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/base/node.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+ drivers/mfd/db8500-prcmu.c | 30 ++----------------------------
+ drivers/mfd/dbx500-prcmu.c |  6 ++++--
+ 2 files changed, 6 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/base/node.c b/drivers/base/node.c
-index af1a177..07523fb 100644
---- a/drivers/base/node.c
-+++ b/drivers/base/node.c
-@@ -252,6 +252,16 @@ static inline void hugetlb_register_node(struct node *node) {}
- static inline void hugetlb_unregister_node(struct node *node) {}
- #endif
+diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
+index b39441f..164c9d5 100644
+--- a/drivers/mfd/db8500-prcmu.c
++++ b/drivers/mfd/db8500-prcmu.c
+@@ -2988,28 +2988,6 @@ static struct mfd_cell db8500_prcmu_devs[] = {
+ 	},
+ };
  
-+static void node_device_release(struct device *dev)
-+{
-+	struct node *node_dev = to_node(dev);
-+
-+#if defined(CONFIG_MEMORY_HOTPLUG_SPARSE) && defined(CONFIG_HUGETLBFS)
-+	flush_work(&node_dev->node_work);
-+#endif
-+
-+	memset(node_dev, 0, sizeof(struct node));
-+}
+-static struct mfd_cell db9540_prcmu_devs[] = {
+-	{
+-		.name = "dbx500-prcmu",
+-		.platform_data = &db8500_probe_data,
+-		.pdata_size = sizeof(db8500_probe_data),
+-	},
+-	{
+-		.name = "db8500-prcmu-regulators",
+-		.of_compatible = "stericsson,db8500-prcmu-regulator",
+-		.platform_data = &db8500_regulators,
+-		.pdata_size = sizeof(db8500_regulators),
+-	},
+-	{
+-		.name = "ab9540-i2c",
+-		.of_compatible = "stericsson,ab8500",
+-		.num_resources = ARRAY_SIZE(ab8500_resources),
+-		.resources = ab8500_resources,
+-		.id = AB8500_VERSION_AB9540,
+-	},
+-};
+-
+-
+ /**
+  * prcmu_fw_init - arch init call for the Linux PRCMU fw init logic
+  *
+@@ -3052,14 +3030,10 @@ static int __devinit db8500_prcmu_probe(struct platform_device *pdev)
+ 		}
+ 	}
  
- /*
-  * register_node - Setup a sysfs device for a node.
-@@ -265,6 +275,7 @@ int register_node(struct node *node, int num, struct node *parent)
+-	if (cpu_is_u8500v20_or_later() && !cpu_is_u9540())
++	if (cpu_is_u8500v20_or_later())
+ 		db8500_prcmu_config_esram0_deep_sleep(ESRAM0_DEEP_SLEEP_STATE_RET);
  
- 	node->dev.id = num;
- 	node->dev.bus = &node_subsys;
-+	node->dev.release = node_device_release;
- 	error = device_register(&node->dev);
+-	if (cpu_is_u9540())
+-			err = mfd_add_devices(&pdev->dev, 0, db9540_prcmu_devs,
+-			ARRAY_SIZE(db9540_prcmu_devs), NULL, 0);
+-	else
+-		err = mfd_add_devices(&pdev->dev, 0, db8500_prcmu_devs,
++	err = mfd_add_devices(&pdev->dev, 0, db8500_prcmu_devs,
+ 			ARRAY_SIZE(db8500_prcmu_devs), NULL, 0);
  
- 	if (!error){
+ 	if (err) {
+diff --git a/drivers/mfd/dbx500-prcmu.c b/drivers/mfd/dbx500-prcmu.c
+index 1823ab7..964804e 100644
+--- a/drivers/mfd/dbx500-prcmu.c
++++ b/drivers/mfd/dbx500-prcmu.c
+@@ -725,8 +725,10 @@ void __init prcmu_early_init(struct prcmu_tcdm_map *map)
+ {
+ 	int i, ret = 0;
+ 	struct prcmu_fops_register_data *data;
+-
+-	data = db8500_prcmu_early_init(map);
++	if (cpu_is_ux540_family())
++		data =  dbx540_prcmu_early_init(map);
++	else
++		data = db8500_prcmu_early_init(map);
+ 
+ 	if (data == NULL)
+ 		return;
 -- 
-1.7.1
+1.7.11.1
 
