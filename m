@@ -1,138 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758039Ab2IEBWr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 21:22:47 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:57301 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752847Ab2IEBWp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 21:22:45 -0400
-Date: Tue, 4 Sep 2012 18:22:26 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 02/23] rcu: Allow RCU grace-period
- initialization to be preempted
-Message-ID: <20120905012226.GD2593@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120830181811.GA29154@linux.vnet.ibm.com>
- <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346350718-30937-2-git-send-email-paulmck@linux.vnet.ibm.com>
- <20120902010935.GB5713@leaf>
+	id S1753242Ab2IEB0x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 21:26:53 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:32306 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751560Ab2IEB0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 21:26:52 -0400
+X-IronPort-AV: E=Sophos;i="4.80,371,1344182400"; 
+   d="scan'208";a="5784163"
+Message-ID: <5046AAC6.7010704@cn.fujitsu.com>
+Date: Wed, 05 Sep 2012 09:28:38 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120902010935.GB5713@leaf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12090501-6148-0000-0000-000009470548
+To: Tejun Heo <tj@kernel.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/10 V4] workqueue: fix deadlock in rebind_workers()
+References: <1346516916-1991-1-git-send-email-laijs@cn.fujitsu.com> <1346516916-1991-3-git-send-email-laijs@cn.fujitsu.com> <20120905005409.GB2836@dhcp-172-17-108-109.mtv.corp.google.com>
+In-Reply-To: <20120905005409.GB2836@dhcp-172-17-108-109.mtv.corp.google.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/05 09:26:29,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/05 09:26:29,
+	Serialize complete at 2012/09/05 09:26:29
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 01, 2012 at 06:09:35PM -0700, Josh Triplett wrote:
-> On Thu, Aug 30, 2012 at 11:18:17AM -0700, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > 
-> > RCU grace-period initialization is currently carried out with interrupts
-> > disabled, which can result in 200-microsecond latency spikes on systems
-> > on which RCU has been configured for 4096 CPUs.  This patch therefore
-> > makes the RCU grace-period initialization be preemptible, which should
-> > eliminate those latency spikes.  Similar spikes from grace-period cleanup
-> > and the forcing of quiescent states will be dealt with similarly by later
-> > patches.
-> > 
-> > Reported-by: Mike Galbraith <mgalbraith@suse.de>
-> > Reported-by: Dimitri Sivanich <sivanich@sgi.com>
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+On 09/05/2012 08:54 AM, Tejun Heo wrote:
+> How about something like the following?  This is more consistent with
+> the existing code and as the fixes need to go separately through
+> for-3.6-fixes, it's best to stay consistent regardless of the end
+> result after all the restructuring.  It's not tested yet.  If you
+> don't object, I'll split it into two patches, test and route them
+> through for-3.6-fixes w/ your Original-patch-by.
 > 
-> Does it make sense to have cond_resched() right before the continues,
-> which lead right back up to the wait_event_interruptible at the top of
-> the loop?  Or do you expect to usually find that event already
-> signalled?
 
-Given that the event might have already signaled, I need to put the
-cond_resched() into the loop.  Otherwise, we get back long latencies.
+I see that this patch's idea is same as mine but reuses
+@idle_rebind.cnt and @idle_rebind.done.
 
-							Thanx, Paul
+I don't think it is consistent to avoid adding new field
+and to reuse old field for different purpose
 
-> In any case:
+
+Thanks
+Lai
+
+
+> Thanks.
+> ---
+>  kernel/workqueue.c |   51 ++++++++++++++++++++++++++++++++++++++-------------
+>  1 file changed, 38 insertions(+), 13 deletions(-)
 > 
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> 
-> >  kernel/rcutree.c |   17 ++++++++++-------
-> >  1 files changed, 10 insertions(+), 7 deletions(-)
-> > 
-> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > index e1c5868..ef56aa3 100644
-> > --- a/kernel/rcutree.c
-> > +++ b/kernel/rcutree.c
-> > @@ -1069,6 +1069,7 @@ static int rcu_gp_kthread(void *arg)
-> >  			 * don't start another one.
-> >  			 */
-> >  			raw_spin_unlock_irqrestore(&rnp->lock, flags);
-> > +			cond_resched();
-> >  			continue;
-> >  		}
-> >  
-> > @@ -1079,6 +1080,7 @@ static int rcu_gp_kthread(void *arg)
-> >  			 */
-> >  			rsp->fqs_need_gp = 1;
-> >  			raw_spin_unlock_irqrestore(&rnp->lock, flags);
-> > +			cond_resched();
-> >  			continue;
-> >  		}
-> >  
-> > @@ -1089,10 +1091,10 @@ static int rcu_gp_kthread(void *arg)
-> >  		rsp->fqs_state = RCU_GP_INIT; /* Stop force_quiescent_state. */
-> >  		rsp->jiffies_force_qs = jiffies + RCU_JIFFIES_TILL_FORCE_QS;
-> >  		record_gp_stall_check_time(rsp);
-> > -		raw_spin_unlock(&rnp->lock);  /* leave irqs disabled. */
-> > +		raw_spin_unlock_irqrestore(&rnp->lock, flags);
-> >  
-> >  		/* Exclude any concurrent CPU-hotplug operations. */
-> > -		raw_spin_lock(&rsp->onofflock);  /* irqs already disabled. */
-> > +		get_online_cpus();
-> >  
-> >  		/*
-> >  		 * Set the quiescent-state-needed bits in all the rcu_node
-> > @@ -1112,7 +1114,7 @@ static int rcu_gp_kthread(void *arg)
-> >  		 * due to the fact that we have irqs disabled.
-> >  		 */
-> >  		rcu_for_each_node_breadth_first(rsp, rnp) {
-> > -			raw_spin_lock(&rnp->lock); /* irqs already disabled. */
-> > +			raw_spin_lock_irqsave(&rnp->lock, flags);
-> >  			rcu_preempt_check_blocked_tasks(rnp);
-> >  			rnp->qsmask = rnp->qsmaskinit;
-> >  			rnp->gpnum = rsp->gpnum;
-> > @@ -1123,15 +1125,16 @@ static int rcu_gp_kthread(void *arg)
-> >  			trace_rcu_grace_period_init(rsp->name, rnp->gpnum,
-> >  						    rnp->level, rnp->grplo,
-> >  						    rnp->grphi, rnp->qsmask);
-> > -			raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
-> > +			raw_spin_unlock_irqrestore(&rnp->lock, flags);
-> > +			cond_resched();
-> >  		}
-> >  
-> >  		rnp = rcu_get_root(rsp);
-> > -		raw_spin_lock(&rnp->lock); /* irqs already disabled. */
-> > +		raw_spin_lock_irqsave(&rnp->lock, flags);
-> >  		/* force_quiescent_state() now OK. */
-> >  		rsp->fqs_state = RCU_SIGNAL_INIT;
-> > -		raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
-> > -		raw_spin_unlock_irqrestore(&rsp->onofflock, flags);
-> > +		raw_spin_unlock_irqrestore(&rnp->lock, flags);
-> > +		put_online_cpus();
-> >  	}
-> >  	return 0;
-> >  }
-> > -- 
-> > 1.7.8
-> > 
+> Index: work/kernel/workqueue.c
+> ===================================================================
+> --- work.orig/kernel/workqueue.c
+> +++ work/kernel/workqueue.c
+> @@ -1326,6 +1326,15 @@ static void idle_worker_rebind(struct wo
+>  
+>  	/* we did our part, wait for rebind_workers() to finish up */
+>  	wait_event(gcwq->rebind_hold, !(worker->flags & WORKER_REBIND));
+> +
+> +	/*
+> +	 * rebind_workers() shouldn't finish until all workers passed the
+> +	 * above WORKER_REBIND wait.  Tell it when done.
+> +	 */
+> +	spin_lock_irq(&worker->pool->gcwq->lock);
+> +	if (!--worker->idle_rebind->cnt)
+> +		complete(&worker->idle_rebind->done);
+> +	spin_unlock_irq(&worker->pool->gcwq->lock);
+>  }
+>  
+>  /*
+> @@ -1422,19 +1431,7 @@ retry:
+>  		goto retry;
+>  	}
+>  
+> -	/*
+> -	 * All idle workers are rebound and waiting for %WORKER_REBIND to
+> -	 * be cleared inside idle_worker_rebind().  Clear and release.
+> -	 * Clearing %WORKER_REBIND from this foreign context is safe
+> -	 * because these workers are still guaranteed to be idle.
+> -	 */
+> -	for_each_worker_pool(pool, gcwq)
+> -		list_for_each_entry(worker, &pool->idle_list, entry)
+> -			worker->flags &= ~WORKER_REBIND;
+> -
+> -	wake_up_all(&gcwq->rebind_hold);
+
+don't need to move down.
+
+> -
+> -	/* rebind busy workers */
+> +	/* all idle workers are rebound, rebind busy workers */
+>  	for_each_busy_worker(worker, i, pos, gcwq) {
+>  		struct work_struct *rebind_work = &worker->rebind_work;
+>  		unsigned long worker_flags = worker->flags;
+> @@ -1454,6 +1451,34 @@ retry:
+>  			    worker->scheduled.next,
+>  			    work_color_to_flags(WORK_NO_COLOR));
+>  	}
+> +
+> +	/*
+> +	 * All idle workers are rebound and waiting for %WORKER_REBIND to
+> +	 * be cleared inside idle_worker_rebind().  Clear and release.
+> +	 * Clearing %WORKER_REBIND from this foreign context is safe
+> +	 * because these workers are still guaranteed to be idle.
+> +	 *
+> +	 * We need to make sure all idle workers passed WORKER_REBIND wait
+> +	 * in idle_worker_rebind() before returning; otherwise, workers can
+> +	 * get stuck at the wait if hotplug cycle repeats.
+> +	 */
+> +	idle_rebind.cnt = 1;
+> +	INIT_COMPLETION(idle_rebind.done);
+> +
+> +	for_each_worker_pool(pool, gcwq) {
+> +		list_for_each_entry(worker, &pool->idle_list, entry) {
+> +			worker->flags &= ~WORKER_REBIND;
+> +			idle_rebind.cnt++;
+> +		}
+> +	}
+> +
+> +	wake_up_all(&gcwq->rebind_hold);
+> +
+> +	if (--idle_rebind.cnt) {
+> +		spin_unlock_irq(&gcwq->lock);
+> +		wait_for_completion(&idle_rebind.done);
+> +		spin_lock_irq(&gcwq->lock);
+> +	}
+>  }
+>  
+>  static struct worker *alloc_worker(void)
 > 
 
