@@ -1,96 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759237Ab2IETZe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 15:25:34 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:61607 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753955Ab2IETZc (ORCPT
+	id S1759329Ab2IET3W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 15:29:22 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:16957 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759300Ab2IET3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 15:25:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <1346775269-12191-5-git-send-email-peter.senna@gmail.com>
-References: <1346775269-12191-5-git-send-email-peter.senna@gmail.com>
-Date: Wed, 5 Sep 2012 16:25:31 -0300
-Message-ID: <CALF0-+Vn33ZtY68JbKSbNbaqkSO6OOfA38Ejoz=Kkz5WmOSFjA@mail.gmail.com>
-Subject: Re: [PATCH 1/5] drivers/media/platform/davinci/vpbe.c: fix error
- return code
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        kernel-janitors@vger.kernel.org, Julia.Lawall@lip6.fr,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 5 Sep 2012 15:29:18 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6826"; a="233224502"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH 3/9] ARM: msm: Add DT support to msm_timer
+Date: Wed,  5 Sep 2012 12:28:53 -0700
+Message-Id: <1346873339-10927-4-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.12.176.g3fc0e4c
+In-Reply-To: <1346873339-10927-1-git-send-email-sboyd@codeaurora.org>
+References: <1346873339-10927-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+Add support to setup the MSM timer via information obtained from
+the devicetree.
 
-On Tue, Sep 4, 2012 at 1:14 PM, Peter Senna Tschudin
-<peter.senna@gmail.com> wrote:
-> From: Peter Senna Tschudin <peter.senna@gmail.com>
->
-> Convert a nonnegative error return code to a negative one, as returned
-> elsewhere in the function.
->
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
->
-> // <smpl>
-> (
-> if@p1 (\(ret < 0\|ret != 0\))
->  { ... return ret; }
-> |
-> ret@p1 = 0
-> )
-> ... when != ret = e1
->     when != &ret
-> *if(...)
-> {
->   ... when != ret = e2
->       when forall
->  return ret;
-> }
->
-> // </smpl>
->
-> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
->
-> ---
->  drivers/media/platform/davinci/vpbe.c |   13 ++++++-------
->  1 file changed, 6 insertions(+), 7 deletions(-)
->
-> diff --git a/drivers/media/platform/davinci/vpbe.c b/drivers/media/platform/davinci/vpbe.c
-> index c4a82a1..2e4a0da 100644
-> --- a/drivers/media/platform/davinci/vpbe.c
-> +++ b/drivers/media/platform/davinci/vpbe.c
-> @@ -603,7 +603,6 @@ static int vpbe_initialize(struct device *dev, struct vpbe_device *vpbe_dev)
->         int output_index;
->         int num_encoders;
->         int ret = 0;
-> -       int err;
->         int i;
->
->         /*
-> @@ -646,10 +645,10 @@ static int vpbe_initialize(struct device *dev, struct vpbe_device *vpbe_dev)
->         }
->         v4l2_info(&vpbe_dev->v4l2_dev, "vpbe v4l2 device registered\n");
->
-> -       err = bus_for_each_dev(&platform_bus_type, NULL, vpbe_dev,
-> +       ret = bus_for_each_dev(&platform_bus_type, NULL, vpbe_dev,
->                                platform_device_get);
-> -       if (err < 0)
-> -               return err;
-> +       if (ret < 0)
-> +               return ret;
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ .../devicetree/bindings/arm/msm/timer.txt          | 38 ++++++++++
+ arch/arm/mach-msm/common.h                         |  1 +
+ arch/arm/mach-msm/timer.c                          | 87 ++++++++++++++++++++++
+ 3 files changed, 126 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/msm/timer.txt
 
-This should be "goto somewhere" (probably vbpe_fail_v4l2_device),
-instead of "return".
-There are several tasks done (like locking a mutex) that need to be undone.
+diff --git a/Documentation/devicetree/bindings/arm/msm/timer.txt b/Documentation/devicetree/bindings/arm/msm/timer.txt
+new file mode 100644
+index 0000000..a9c0748
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/msm/timer.txt
+@@ -0,0 +1,38 @@
++* MSM Timer
++
++Properties:
++
++- compatible : Should at least contain "qcom,msm-timer". More specific
++  properties such as "qcom,msm-gpt" and "qcom,msm-dgt" specify a general
++  purpose timer and a debug timer respectively.
++
++- interrupts : Interrupt indicating a match event.
++
++- reg : Specifies the base address of the timer registers. The second region
++  specifies an optional register used to configure the clock divider.
++
++- clock-frequency : The frequency of the timer in Hz.
++
++Optional:
++
++- cpu-offset : per-cpu offset used when the timer is accessed without the
++  CPU remapping facilities. The offset is cpu-offset * cpu-nr.
++
++Example:
++
++       timer@0200a004 {
++               compatible = "qcom,msm-gpt", "qcom,msm-timer";
++               interrupts = <1 2 0x301>;
++               reg = <0x0200a004 0x10>;
++               clock-frequency = <32768>;
++               cpu-offset = <0x40000>;
++       };
++
++       timer@0200a024 {
++               compatible = "qcom,msm-dgt", "qcom,msm-timer";
++               interrupts = <1 3 0x301>;
++               reg = <0x0200a024 0x10>,
++                     <0x0200a034 0x4>;
++               clock-frequency = <6750000>;
++               cpu-offset = <0x40000>;
++       };
+diff --git a/arch/arm/mach-msm/common.h b/arch/arm/mach-msm/common.h
+index 4c2dd16..7d57fb0 100644
+--- a/arch/arm/mach-msm/common.h
++++ b/arch/arm/mach-msm/common.h
+@@ -16,6 +16,7 @@ extern struct sys_timer msm7x01_timer;
+ extern struct sys_timer msm7x30_timer;
+ extern struct sys_timer msm8x60_timer;
+ extern struct sys_timer msm8960_timer;
++extern struct sys_timer msm_dt_timer;
+ extern struct sys_timer qsd8x50_timer;
+ 
+ #endif
+diff --git a/arch/arm/mach-msm/timer.c b/arch/arm/mach-msm/timer.c
+index ddb8701..b17a39d 100644
+--- a/arch/arm/mach-msm/timer.c
++++ b/arch/arm/mach-msm/timer.c
+@@ -20,6 +20,9 @@
+ #include <linux/interrupt.h>
+ #include <linux/irq.h>
+ #include <linux/io.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
+ 
+ #include <asm/mach/time.h>
+ #include <asm/hardware/gic.h>
+@@ -216,6 +219,90 @@ err:
+ 	setup_sched_clock(msm_sched_clock_read, sched_bits, dgt_hz);
+ }
+ 
++#ifdef CONFIG_OF
++static const struct of_device_id msm_dgt_match[] __initconst = {
++	{ .compatible = "qcom,msm-dgt" },
++	{ },
++};
++
++static const struct of_device_id msm_gpt_match[] __initconst = {
++	{ .compatible = "qcom,msm-gpt" },
++	{ },
++};
++
++static void __init msm_dt_timer_init(void)
++{
++	struct device_node *np;
++	u32 freq;
++	int irq;
++	struct resource res;
++	u32 percpu_offset;
++	void __iomem *dgt_clk_ctl;
++
++	np = of_find_matching_node(NULL, msm_gpt_match);
++	if (!np) {
++		pr_err("Can't find GPT DT node\n");
++		return;
++	}
++
++	event_base = of_iomap(np, 0);
++	if (!event_base) {
++		pr_err("Failed to map event base\n");
++		return;
++	}
++
++	irq = irq_of_parse_and_map(np, 0);
++	if (irq <= 0) {
++		pr_err("Can't get irq\n");
++		return;
++	}
++	of_node_put(np);
++
++	np = of_find_matching_node(NULL, msm_dgt_match);
++	if (!np) {
++		pr_err("Can't find DGT DT node\n");
++		return;
++	}
++
++	if (of_property_read_u32(np, "cpu-offset", &percpu_offset))
++		percpu_offset = 0;
++
++	if (of_address_to_resource(np, 0, &res)) {
++		pr_err("Failed to parse DGT resource\n");
++		return;
++	}
++
++	source_base = ioremap(res.start + percpu_offset, resource_size(&res));
++	if (!source_base) {
++		pr_err("Failed to map source base\n");
++		return;
++	}
++
++	if (!of_address_to_resource(np, 1, &res)) {
++		dgt_clk_ctl = ioremap(res.start + percpu_offset,
++				      resource_size(&res));
++		if (!dgt_clk_ctl) {
++			pr_err("Failed to map DGT control base\n");
++			return;
++		}
++		writel_relaxed(DGT_CLK_CTL_DIV_4, dgt_clk_ctl);
++		iounmap(dgt_clk_ctl);
++	}
++
++	if (of_property_read_u32(np, "clock-frequency", &freq)) {
++		pr_err("Unknown frequency\n");
++		return;
++	}
++	of_node_put(np);
++
++	msm_timer_init(freq, 32, irq, !!percpu_offset);
++}
++
++struct sys_timer msm_dt_timer = {
++	.init = msm_dt_timer_init
++};
++#endif
++
+ static int __init msm_timer_map(phys_addr_t event, phys_addr_t source)
+ {
+ 	event_base = ioremap(event, SZ_64);
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
-Actually, this bug is not directly related to *this* patch, so you
-could send another patch
-fixing this.
-
-Regards,
-Ezequiel.
