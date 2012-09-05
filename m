@@ -1,105 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759585Ab2IEVhE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 17:37:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54170 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759538Ab2IEVhC (ORCPT
+	id S1759600Ab2IEVhX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 17:37:23 -0400
+Received: from zose-mta11.web4all.fr ([178.33.204.87]:58728 "EHLO
+	zose-mta11.web4all.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759553Ab2IEVhT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 17:37:02 -0400
-Date: Wed, 5 Sep 2012 14:37:00 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: yan <clouds.yan@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3 v2] proc: use kzalloc instead of kmalloc and memset
-Message-Id: <20120905143700.7bfc3b1e.akpm@linux-foundation.org>
-In-Reply-To: <1346847437-3308-4-git-send-email-clouds.yan@gmail.com>
-References: <1346847437-3308-1-git-send-email-clouds.yan@gmail.com>
-	<1346847437-3308-4-git-send-email-clouds.yan@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 5 Sep 2012 17:37:19 -0400
+Date: Wed, 5 Sep 2012 23:42:34 +0200 (CEST)
+From: =?utf-8?Q?Beno=C3=AEt_Th=C3=A9baudeau?= 
+	<benoit.thebaudeau@advansee.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: HACHIMI Samir <shachimi@adeneo-embedded.com>,
+        shawn guo <shawn.guo@linaro.org>,
+        thierry reding <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org, kernel@pengutronix.de,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Message-ID: <811985020.3713350.1346881354214.JavaMail.root@advansee.com>
+In-Reply-To: <1346852127-25226-6-git-send-email-s.hauer@pengutronix.de>
+Subject: Re: [PATCH 5/8] pwm i.MX: add devicetree support
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [88.172.188.148]
+X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Win)/7.2.0_GA_2669)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  5 Sep 2012 20:17:17 +0800
-yan <clouds.yan@gmail.com> wrote:
-
-> Part of the memory will be written twice after this change, but that 
-> should be negligible.
+On Wednesday, September 5, 2012 3:35:24 PM, Sascha Hauer wrote:
 > 
-> ...
->
-> --- a/fs/proc/generic.c
-> +++ b/fs/proc/generic.c
-> @@ -616,10 +616,9 @@ static struct proc_dir_entry *__proc_create(struct proc_dir_entry **parent,
+> From: Philipp Zabel <p.zabel@pengutronix.de>
+> 
+> At the same time remove platform based support. No user for
+> this driver has made it into mainline so far, so all we break
+> is out of tree stuff.
+> 
+> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+> ---
+>  Documentation/devicetree/bindings/pwm/imx-pwm.txt |   17 ++++++++
+>  drivers/pwm/pwm-imx.c                             |   45
+>  ++++++++++++++++-----
+>  2 files changed, 52 insertions(+), 10 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/pwm/imx-pwm.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/pwm/imx-pwm.txt
+> b/Documentation/devicetree/bindings/pwm/imx-pwm.txt
+> new file mode 100644
+> index 0000000..9b9b185
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/pwm/imx-pwm.txt
+> @@ -0,0 +1,17 @@
+> +Freescale i.MX PWM controller
+> +
+> +Required properties:
+> +- compatible: should be "fsl,<soc>-pwm"
+> +- reg: physical base address and length of the controller's
+> registers
+> +- #pwm-cells: should be 2.  The first cell specifies the per-chip
+> index
+> +  of the PWM to use and the second cell is the duty cycle in
+> nanoseconds.
+> +- interrupts: The interrupt for the pwm controller
+> +
+> +Example:
+> +
+> +pwm1: pwm@53fb4000 {
+> +	#pwm-cells = <2>;
+> +	compatible = "fsl,imx53-pwm", "fsl,imx27-pwm";
+> +	reg = <0x53fb4000 0x4000>;
+> +	interrupts = <61>;
+> +};
+> diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
+> index a689144..af77045 100644
+> --- a/drivers/pwm/pwm-imx.c
+> +++ b/drivers/pwm/pwm-imx.c
+> @@ -16,8 +16,7 @@
+>  #include <linux/clk.h>
+>  #include <linux/io.h>
+>  #include <linux/pwm.h>
+> -#include <mach/hardware.h>
+> -
+> +#include <linux/of_device.h>
 >  
->  	len = strlen(fn);
+>  /* i.MX1 and i.MX21 share the same PWM function block: */
 >  
-> -	ent = kmalloc(sizeof(struct proc_dir_entry) + len + 1, GFP_KERNEL);
-> +	ent = kzalloc(sizeof(struct proc_dir_entry) + len + 1, GFP_KERNEL);
->  	if (!ent) goto out;
+> @@ -203,12 +202,41 @@ static struct pwm_ops imx_pwm_ops = {
+>  	.owner = THIS_MODULE,
+>  };
 >  
-> -	memset(ent, 0, sizeof(struct proc_dir_entry));
->  	memcpy(ent->name, fn, len + 1);
->  	ent->namelen = len;
->  	ent->mode = mode;
+> +struct imx_pwm_data {
+> +	int (*config)(struct pwm_chip *chip,
+> +		struct pwm_device *pwm, int duty_ns, int period_ns);
+> +	void (*set_enable)(struct pwm_chip *chip, bool enable);
+> +};
+> +
+> +static struct imx_pwm_data imx_pwm_data_v1 = {
+> +	.config = imx_pwm_config_v1,
+> +	.set_enable = imx_pwm_set_enable_v1,
+> +};
+> +
+> +static struct imx_pwm_data imx_pwm_data_v2 = {
+> +	.config = imx_pwm_config_v2,
+> +	.set_enable = imx_pwm_set_enable_v2,
+> +};
+> +
+> +static const struct of_device_id imx_pwm_dt_ids[] = {
+> +	{ .compatible = "fsl,imx1-pwm", .data = &imx_pwm_data_v1, },
+> +	{ .compatible = "fsl,imx27-pwm", .data = &imx_pwm_data_v2, },
+> +	{ /* sentinel */ }
+> +};
+> +MODULE_DEVICE_TABLE(of, imx_pwm_dt_ids);
+> +
+>  static int __devinit imx_pwm_probe(struct platform_device *pdev)
+>  {
+> +	const struct of_device_id *of_id =
+> +			of_match_device(imx_pwm_dt_ids, &pdev->dev);
+> +	struct imx_pwm_data *data;
+>  	struct imx_chip *imx;
+>  	struct resource *r;
+>  	int ret = 0;
+>  
+> +	if (!of_id)
+> +		return -ENODEV;
+> +
+>  	imx = devm_kzalloc(&pdev->dev, sizeof(*imx), GFP_KERNEL);
+>  	if (imx == NULL) {
+>  		dev_err(&pdev->dev, "failed to allocate memory\n");
+> @@ -235,13 +263,9 @@ static int __devinit imx_pwm_probe(struct
+> platform_device *pdev)
+>  	if (imx->mmio_base == NULL)
+>  		return -EADDRNOTAVAIL;
+>  
+> -	if (cpu_is_mx1() || cpu_is_mx21()) {
+> -		imx->config = imx_pwm_config_v1;
+> -		imx->set_enable = imx_pwm_set_enable_v1;
+> -	} else {
+> -		imx->config = imx_pwm_config_v2;
+> -		imx->set_enable = imx_pwm_set_enable_v2;
+> -	}
+> +	data = of_id->data;
+> +	imx->config = data->config;
+> +	imx->set_enable = data->set_enable;
+>  
+>  	ret = pwmchip_add(&imx->chip);
+>  	if (ret < 0)
+> @@ -264,7 +288,8 @@ static int __devexit imx_pwm_remove(struct
+> platform_device *pdev)
+>  
+>  static struct platform_driver imx_pwm_driver = {
+>  	.driver		= {
+> -		.name	= "mxc_pwm",
+> +		.name	= "imx-pwm",
+> +		.of_match_table = of_match_ptr(imx_pwm_dt_ids),
+>  	},
+>  	.probe		= imx_pwm_probe,
+>  	.remove		= __devexit_p(imx_pwm_remove),
 
-I'm not sure that I really like the idea of adding this additional
-overhead.  But sure, it won't matter to anyone at all.
+Since this is supposed to remove platform-based support, why don't you also
+remove the PWM stuff from arch/arm/plat-mxc and
+arch/arm/mach-imx/devices-imx*.h?
 
-While we're digging around in __proc_create(), how about we fix a few
-other things?
-
-
-From: Andrew Morton <akpm@linux-foundation.org>
-Subject: proc-use-kzalloc-instead-of-kmalloc-and-memset-fix
-
-fix __proc_create() coding-style issues, remove unneeded zero-initialisations
-
-Cc: yan <clouds.yan@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- fs/proc/generic.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
-diff -puN fs/proc/generic.c~proc-use-kzalloc-instead-of-kmalloc-and-memset-fix fs/proc/generic.c
---- a/fs/proc/generic.c~proc-use-kzalloc-instead-of-kmalloc-and-memset-fix
-+++ a/fs/proc/generic.c
-@@ -605,7 +605,8 @@ static struct proc_dir_entry *__proc_cre
- 	unsigned int len;
- 
- 	/* make sure name is valid */
--	if (!name || !strlen(name)) goto out;
-+	if (!name || !strlen(name))
-+		goto out;
- 
- 	if (xlate_proc_name(name, parent, &fn) != 0)
- 		goto out;
-@@ -617,18 +618,17 @@ static struct proc_dir_entry *__proc_cre
- 	len = strlen(fn);
- 
- 	ent = kzalloc(sizeof(struct proc_dir_entry) + len + 1, GFP_KERNEL);
--	if (!ent) goto out;
-+	if (!ent)
-+		goto out;
- 
- 	memcpy(ent->name, fn, len + 1);
- 	ent->namelen = len;
- 	ent->mode = mode;
- 	ent->nlink = nlink;
- 	atomic_set(&ent->count, 1);
--	ent->pde_users = 0;
- 	spin_lock_init(&ent->pde_unload_lock);
--	ent->pde_unload_completion = NULL;
- 	INIT_LIST_HEAD(&ent->pde_openers);
-- out:
-+out:
- 	return ent;
- }
- 
-_
-
+Best regards,
+Benoît
