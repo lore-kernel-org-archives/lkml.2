@@ -1,105 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758251Ab2IENgc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 09:36:32 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:58606 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751042Ab2IENg1 (ORCPT
+	id S1757783Ab2IENgG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 09:36:06 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:1433 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752264Ab2IENfz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 09:36:27 -0400
-Message-ID: <1346852077.2389.7.camel@falcor>
-Subject: Re: [RFC] module: signature infrastructure
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
-        David Howells <dhowells@redhat.com>, jmorris@namei.org,
-        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 05 Sep 2012 09:34:37 -0400
-In-Reply-To: <871uihl3bx.fsf@rustcorp.com.au>
-References: <20120816013405.872.42381.stgit@warthog.procyon.org.uk>
-	 <87627ufi2h.fsf@rustcorp.com.au>
-	 <CALLzPKaA3MYncJD1X6B8f3p-R6FVA5-WDF-h6GGwdtinNpjqmw@mail.gmail.com>
-	 <871uihl3bx.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12090513-4242-0000-0000-000002CA1CF9
+	Wed, 5 Sep 2012 09:35:55 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 05 Sep 2012 06:35:55 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: "balbi@ti.com" <balbi@ti.com>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        "ccross@android.com" <ccross@android.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Date: Wed, 5 Sep 2012 19:05:49 +0530
+Subject: RE: [PATCH v2] usb: move phy driver from mach-tegra to drivers/usb
+Thread-Topic: [PATCH v2] usb: move phy driver from mach-tegra to drivers/usb
+Thread-Index: Ac2LZegGnKUYuv1zSPq3siCcLYoqHAABVC6A
+Message-ID: <D958900912E20642BCBC71664EFECE3E6DDE77534D@BGMAIL02.nvidia.com>
+References: <1346395526-18219-1-git-send-email-vbyravarasu@nvidia.com>
+ <5046772F.6060908@wwwdotorg.org>
+ <D958900912E20642BCBC71664EFECE3E6DDE77533D@BGMAIL02.nvidia.com>
+ <20120905125210.GG19591@arwen.pp.htv.fi>
+In-Reply-To: <20120905125210.GG19591@arwen.pp.htv.fi>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+MIME-Version: 1.0
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-05 at 09:59 +0930, Rusty Russell wrote:
-> "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com> writes:
-> > Hi,
-> >
-> > Please read bellow...
-> >
-> > On Tue, Sep 4, 2012 at 8:55 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> >> OK, I took a look at the module.c parts of David and Dmitry's patchsets,
-> >> and didn't really like either, but I stole parts of David's to make
-> >> this.
-> >>
-> >> So, here's the module.c part of module signing.  I hope you two got time
-> >> to discuss the signature format details?  Mimi suggested a scheme where
-> >> the private key would never be saved on disk (even temporarily), but I
-> >> didn't see patches.  Frankly it's something we can do later; let's aim
-> >> at getting the format right for the next merge window.
-> >
-> > In our patches key is stored on the disc in encrypted format...
-> 
-> Oh, I missed that twist.  Thanks for the explanation.
-> 
-> On consideration, I prefer signing to be the final part of the "modules"
-> target rather than modules_install.  I run the latter as root, and that
-> is wrong for doing any code generation.
+Hi Felipe,
 
-Agreed, but keep in mind that 'modules_install' could subsequently strip
-the module.
+> -----Original Message-----
+> From: Felipe Balbi [mailto:balbi@ti.com]
+> Sent: Wednesday, September 05, 2012 6:22 PM
+> To: Venu Byravarasu
+> Cc: Stephen Warren; balbi@ti.com; ccross@android.com; olof@lixom.net;
+> linux@arm.linux.org.uk; stern@rowland.harvard.edu;
+> gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org; linux-
+> tegra@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-
+> usb@vger.kernel.org
+> Subject: Re: [PATCH v2] usb: move phy driver from mach-tegra to drivers/usb
+> 
+> * PGP Signed by an unknown key
+> 
+> Hi,
+> 
+> On Wed, Sep 05, 2012 at 06:24:13PM +0530, Venu Byravarasu wrote:
+> >
+> > > -----Original Message-----
+> > > From: Stephen Warren [mailto:swarren@wwwdotorg.org]
+> > > Sent: Wednesday, September 05, 2012 3:19 AM
+> > > To: balbi@ti.com
+> > > Cc: Venu Byravarasu; ccross@android.com; olof@lixom.net;
+> > > linux@arm.linux.org.uk; stern@rowland.harvard.edu;
+> > > gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org; linux-
+> > > tegra@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-
+> > > usb@vger.kernel.org
+> > > Subject: Re: [PATCH v2] usb: move phy driver from mach-tegra to
+> drivers/usb
+> > >
+> > > On 08/31/2012 12:45 AM, Venu Byravarasu wrote:
+> > > > As part of this patch:
+> > > > 	1. Moved existing tegra phy driver to drivers/USB directory.
+> > > > 	2. Added standard USB phy driver APIs to tegra phy driver.
+> > > >
+> > > > Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+> > >
+> > > Tested-by: Stephen Warren <swarren@nvidia.com>
+> > >
+> > > Felipe, Would it be possible to apply this patch to a topic branch, so
+> > > that I can merge it into the Tegra tree? The reason is that I'd like to
+> > > remove Tegra's devices.[ch] in kernel 3.7, but to do that, I need to
+> > > move a tiny chunk of code out of that file somewhere else, and doing
+> > > that relies on adding a #include to usb_phy.h/tegra_usb_phy.h, which is
+> > > renamed in this patch.
+> > >
+> > > Alternatively, if you don't think it'll cause any merge conflicts with
+> > > the USB PHY tree, I can just take this patch through the Tegra tree if
+> > > you want. Venu, do you plan any other patches within the next couple
+> > > weeks or so (i.e. before 3.6-rc6) that will depend on this patch? If so,
+> > > taking it only through the Tegra tree might not work so well.
+> >
+> > Thanks Stephen for verifying the changes.
+> > I'm planning to push next patches, with tegra3 phy support added, very
+> soon.
+> 
+> Unfortunately the patch didn't apply on my xceiv branch. Could you
+> rebase on top of that ?
 
-Mimi
+Rebased on to your branch and sent patch for your review.
+Plz review and merge.
 
-> >> +       for (i = 0; i < *len - (sizeof(MODULE_SIG_STRING)-1); i++) {
-> >> +               /* Our memcmp is dumb, speed it up a little. */
-> >> +               if (((char *)mod)[i] != MODULE_SIG_STRING[0])
-> >> +                       continue;
-> >> +               if (memcmp(mod, MODULE_SIG_STRING, strlen(MODULE_SIG_STRING)))
-> >
-> > should be (mod+i)?
+Thanks,
+Venu 
+
 > 
-> Yes, indeed.  Thanks, fixed.
+> thanks a lot
 > 
-> >> +                       continue;
-> >> +
-> >> +               sig = mod + i + strlen(MODULE_SIG_STRING);
-> >> +               siglen = *len - i - strlen(MODULE_SIG_STRING);
-> >> +               *len = i;
-> >> +               break;
-> >> +       }
-> >
-> > In general please clarify why do you need such parsing at all?
-> > Why not to have MODULE_SIG_STRING as a last octets of the module and
-> > have signature length field before?
-> > Then it is easy to get the signature and rest of the module?
-> > That will be super fast...
-> >
-> > Please clarify.
-> 
-> Ignore performance, it's just not an issue here.  So the simplest code
-> wins.
-> 
-> And it's also simpler to sign a module this way.
-> 
->         (echo '~Module signature appended~'; gpg --sign ....) >> mod.ko
-> 
-> Cheers,
-> Rusty.
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> balbi
 > 
-
-
+> * Unknown Key
+> * 0x35CAA444
