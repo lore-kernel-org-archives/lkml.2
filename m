@@ -1,206 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759878Ab2IEXRW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 19:17:22 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:40621 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755126Ab2IEXRS (ORCPT
+	id S1759887Ab2IEXSN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 19:18:13 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54931 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755157Ab2IEXSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 19:17:18 -0400
-From: Tomas Hlavacek <tmshlvck@gmail.com>
-To: gregkh@linuxfoundation.org, alan@linux.intel.com,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: marek.vasut@gmail.com, Tomas Hlavacek <tmshlvck@gmail.com>
-Subject: [PATCHv5 1/1] uartclk value from serial_core exposed to sysfs
-Date: Thu,  6 Sep 2012 01:16:56 +0200
-Message-Id: <1346887016-10415-1-git-send-email-tmshlvck@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1344929718-22736-1-git-send-email-tmshlvck@gmail.com>
-References: <1344929718-22736-1-git-send-email-tmshlvck@gmail.com>
+	Wed, 5 Sep 2012 19:18:10 -0400
+Date: Wed, 5 Sep 2012 16:18:21 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Roland Stigge <stigge@antcom.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, "arm@kernel.org" <arm@kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        bigeasy@linutronix.de, aletes.xgr@gmail.com, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: Re: [GIT PULL] ARM: mach-pnx4008: Remove architecture
+Message-ID: <20120905231821.GG32084@quad.lixom.net>
+References: <1345724548-18130-1-git-send-email-stigge@antcom.de>
+ <50378084.3080102@antcom.de>
+ <201208260441.25905.arnd@arndb.de>
+ <503A3402.7090508@antcom.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <503A3402.7090508@antcom.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added file /sys/devices/.../tty/ttySX/uartclk to allow reading
-uartclk value in struct uart_port in serial_core via sysfs.
+On Sun, Aug 26, 2012 at 04:34:42PM +0200, Roland Stigge wrote:
+> On 26/08/12 06:41, Arnd Bergmann wrote:
+> > On Friday 24 August 2012, Roland Stigge wrote:
+> >> On 23/08/12 14:22, Roland Stigge wrote:
+> >>> This patch removes the ARM architecture mach-pnx4008. No direct support or user
+> >>> feedback since 2006. Acknowledgements from NXP/Philips and Linux arm-soc
+> >>> maintainers.
+> >>>
+> >>> Signed-off-by: Roland Stigge <stigge@antcom.de>
+> >>
+> >> The patch was a bit too big for the mailing list - sorry.
+> >>
+> >> Now re-proposing via pull request, below.
+> > 
+> > I think the removal of the frame buffer driver should go separately via the
+> > framebuffer maintainer (Florian Schandinat), I can take the rest through the
+> > arm-soc tree.
+> 
+> Fine - consider the new pull request for arch-pnx4008, below.
+> 
+> (Patch for video is separate, now.)
+> 
+> Thanks,
+> 
+> Roland
+> 
+> 
+> The following changes since commit fea7a08acb13524b47711625eebea40a0ede69a0:
+> 
+>   Linux 3.6-rc3 (2012-08-22 13:29:06 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://git.antcom.de/linux-2.6.git pnx4008-removal
 
-tty_register_device() has been generalized and refactored in order
-to add support for setting drvdata and attribute_group to the device.
+Thanks, pulled into next/cleanup. If we can get an Ack out of the FB maintainer
+for the driver removal we can pick that up too, or it can go in through his
+tree.
 
-Signed-off-by: Tomas Hlavacek <tmshlvck@gmail.com>
----
- Documentation/ABI/testing/sysfs-tty |    9 ++++++
- drivers/tty/serial/serial_core.c    |   36 ++++++++++++++++++++-
- drivers/tty/tty_io.c                |   59 +++++++++++++++++++++++++++++++++--
- include/linux/tty.h                 |    4 +++
- 4 files changed, 104 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-tty b/Documentation/ABI/testing/sysfs-tty
-index b138b66..2f10855 100644
---- a/Documentation/ABI/testing/sysfs-tty
-+++ b/Documentation/ABI/testing/sysfs-tty
-@@ -17,3 +17,12 @@ Description:
- 		 device, like 'tty1'.
- 		 The file supports poll() to detect virtual
- 		 console switches.
-+
-+What:		/sys/class/tty/ttyS0/uartclk
-+Date:		Sep 2012
-+Contact:	Tomas Hlavacek <tmshlvck@gmail.com>
-+Description:
-+		Shows the current uartclk value associated with the
-+		UART port in serial_core, that is bound to TTY like ttyS0.
-+		uartclk = 16 * baud_base
-+
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index a21dc8e..ca64a93 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -2293,6 +2293,37 @@ struct tty_driver *uart_console_device(struct console *co, int *index)
- 	return p->tty_driver;
- }
- 
-+static ssize_t uart_get_attr_uartclk(struct device *dev,
-+	struct device_attribute *attr, char *buf)
-+{
-+int ret;
-+
-+struct tty_port *port = dev_get_drvdata(dev);
-+struct uart_state *state = container_of(port, struct uart_state, port);
-+mutex_lock(&state->port.mutex);
-+ret = snprintf(buf, PAGE_SIZE, "%d\n", state->uart_port->uartclk);
-+mutex_unlock(&state->port.mutex);
-+
-+return ret;
-+}
-+
-+static DEVICE_ATTR(uartclk, S_IRUSR | S_IRGRP, uart_get_attr_uartclk,
-+	NULL);
-+
-+static struct attribute *tty_dev_attrs[] = {
-+	&dev_attr_uartclk.attr,
-+	NULL,
-+	};
-+
-+static struct attribute_group tty_dev_attr_group = {
-+	.attrs = tty_dev_attrs,
-+};
-+
-+static const struct attribute_group *tty_dev_attr_groups[] = {
-+	&tty_dev_attr_group,
-+	NULL
-+	};
-+
- /**
-  *	uart_add_one_port - attach a driver-defined port structure
-  *	@drv: pointer to the uart low level driver structure for this port
-@@ -2345,8 +2376,11 @@ int uart_add_one_port(struct uart_driver *drv, struct uart_port *uport)
- 	/*
- 	 * Register the port whether it's detected or not.  This allows
- 	 * setserial to be used to alter this ports parameters.
-+	 * Use driverdata of the tty device for referencing the UART port.
-+	 * Set default device attributes to the new device.
- 	 */
--	tty_dev = tty_register_device(drv->tty_driver, uport->line, uport->dev);
-+	tty_dev = tty_register_device_attr(drv->tty_driver, uport->line,
-+			uport->dev, port, tty_dev_attr_groups);
- 	if (likely(!IS_ERR(tty_dev))) {
- 		device_set_wakeup_capable(tty_dev, 1);
- 	} else {
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index b425c79..befa99c 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -3013,8 +3013,39 @@ struct class *tty_class;
- struct device *tty_register_device(struct tty_driver *driver, unsigned index,
- 				   struct device *device)
- {
-+	return tty_register_device_attr(driver, index, device, NULL, NULL);
-+}
-+EXPORT_SYMBOL(tty_register_device);
-+
-+/**
-+ *	tty_register_device_attr - register a tty device
-+ *	@driver: the tty driver that describes the tty device
-+ *	@index: the index in the tty driver for this tty device
-+ *	@device: a struct device that is associated with this tty device.
-+ *		 This field is optional, if there is no known struct device
-+ *		 for this tty device it can be set to NULL safely.
-+ *	@drvdata: Driver data to be set to device.
-+ *	@attr_grp: Attribute group to be set on device.
-+ *
-+ *	Returns a pointer to the struct device for this tty device
-+ *	(or ERR_PTR(-EFOO) on error).
-+ *
-+ *	This call is required to be made to register an individual tty device
-+ *	if the tty driver's flags have the TTY_DRIVER_DYNAMIC_DEV bit set.  If
-+ *	that bit is not set, this function should not be called by a tty
-+ *	driver.
-+ *
-+ *	Locking: ??
-+ */
-+struct device *tty_register_device_attr(struct tty_driver *driver,
-+				   unsigned index, struct device *device,
-+				   void *drvdata,
-+				   const struct attribute_group **attr_grp)
-+{
- 	char name[64];
--	dev_t dev = MKDEV(driver->major, driver->minor_start) + index;
-+	struct device *dev = NULL;
-+	int retval = -ENODEV;
-+	dev_t devt = MKDEV(driver->major, driver->minor_start) + index;
- 
- 	if (index >= driver->num) {
- 		printk(KERN_ERR "Attempt to register invalid tty line number "
-@@ -3027,9 +3058,31 @@ struct device *tty_register_device(struct tty_driver *driver, unsigned index,
- 	else
- 		tty_line_name(driver, index, name);
- 
--	return device_create(tty_class, device, dev, NULL, name);
-+
-+	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
-+	if (!dev) {
-+		retval = -ENOMEM;
-+		goto error;
-+	}
-+
-+	dev->devt = devt;
-+	dev->class = tty_class;
-+	dev->parent = device;
-+	dev_set_name(dev, "%s", name);
-+	dev->groups = attr_grp;
-+	dev_set_drvdata(dev, drvdata);
-+
-+	retval = device_register(dev);
-+	if (retval)
-+		goto error;
-+
-+	return dev;
-+
-+error:
-+	put_device(dev);
-+	return ERR_PTR(retval);
- }
--EXPORT_SYMBOL(tty_register_device);
-+EXPORT_SYMBOL_GPL(tty_register_device_attr);
- 
- /**
-  * 	tty_unregister_device - unregister a tty device
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 9f47ab5..664252b 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -410,6 +410,10 @@ extern int tty_register_driver(struct tty_driver *driver);
- extern int tty_unregister_driver(struct tty_driver *driver);
- extern struct device *tty_register_device(struct tty_driver *driver,
- 					  unsigned index, struct device *dev);
-+extern struct device *tty_register_device_attr(struct tty_driver *driver,
-+				unsigned index, struct device *device,
-+				void *drvdata,
-+				const struct attribute_group **attr_grp);
- extern void tty_unregister_device(struct tty_driver *driver, unsigned index);
- extern int tty_read_raw_data(struct tty_struct *tty, unsigned char *bufp,
- 			     int buflen);
--- 
-1.7.10.4
-
+-Olof
