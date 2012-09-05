@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751340Ab2IEGLY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 02:11:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20683 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750826Ab2IEGLW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 02:11:22 -0400
-Date: Wed, 5 Sep 2012 09:12:19 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Kent Overstreet <koverstreet@google.com>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio-blk: Fix kconfig option
-Message-ID: <20120905061219.GC7517@redhat.com>
-References: <20120903044133.GA9980@moria.home.lan>
- <87wr0ae26e.fsf@rustcorp.com.au>
+	id S1753048Ab2IEGMk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 02:12:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42006 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750903Ab2IEGMi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 02:12:38 -0400
+Date: Tue, 4 Sep 2012 23:12:33 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] workqueue: move WORKER_REBIND clearing in
+ rebind_workers() to the end of the function
+Message-ID: <20120905061233.GA3195@dhcp-172-17-108-109.mtv.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87wr0ae26e.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 04, 2012 at 03:53:53PM +0930, Rusty Russell wrote:
-> Kent Overstreet <koverstreet@google.com> writes:
-> 
-> > CONFIG_VIRTIO isn't exposed, everything else is supposed to select it
-> > instead.
-> 
-> This is a slight mis-understanding.  It's supposed to be selected by
-> the particular driver, probably virtio_pci in your case.
-> 
-> Cheers,
-> Rusty.
+This doesn't make any functional difference and is purely to help the
+next patch to be simpler.
 
-Actually balloon selects VIRTIO, I think it's a bug.
-Also isn't it time we dropped the experimental tag?
-Leaving it in for now.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+Here are the split patches.  Will push these through wq/for-3.6-fixes.
 
--->
+Thanks.
 
-virtio-balloon: dependency fix
+ kernel/workqueue.c |   26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
 
-Devices should depend on virtio, not select it.  It's supposed to be
-selected by the particular driver, e.g. VIRTIO_PCI.
-Make balloon depend on VIRTIO and EXPERIMENTAL
-(to match description).
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-
---
-
-diff --git a/drivers/virtio/Kconfig b/drivers/virtio/Kconfig
-index f38b17a..564bb64 100644
---- a/drivers/virtio/Kconfig
-+++ b/drivers/virtio/Kconfig
-@@ -27,8 +27,7 @@ config VIRTIO_PCI
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1422,19 +1422,7 @@ retry:
+ 		goto retry;
+ 	}
  
- config VIRTIO_BALLOON
- 	tristate "Virtio balloon driver (EXPERIMENTAL)"
--	select VIRTIO
--	select VIRTIO_RING
-+	depends on EXPERIMENTAL && VIRTIO
- 	---help---
- 	 This driver supports increasing and decreasing the amount
- 	 of memory within a KVM guest.
-
+-	/*
+-	 * All idle workers are rebound and waiting for %WORKER_REBIND to
+-	 * be cleared inside idle_worker_rebind().  Clear and release.
+-	 * Clearing %WORKER_REBIND from this foreign context is safe
+-	 * because these workers are still guaranteed to be idle.
+-	 */
+-	for_each_worker_pool(pool, gcwq)
+-		list_for_each_entry(worker, &pool->idle_list, entry)
+-			worker->flags &= ~WORKER_REBIND;
+-
+-	wake_up_all(&gcwq->rebind_hold);
+-
+-	/* rebind busy workers */
++	/* all idle workers are rebound, rebind busy workers */
+ 	for_each_busy_worker(worker, i, pos, gcwq) {
+ 		struct work_struct *rebind_work = &worker->rebind_work;
+ 		unsigned long worker_flags = worker->flags;
+@@ -1454,6 +1442,18 @@ retry:
+ 			    worker->scheduled.next,
+ 			    work_color_to_flags(WORK_NO_COLOR));
+ 	}
++
++	/*
++	 * All idle workers are rebound and waiting for %WORKER_REBIND to
++	 * be cleared inside idle_worker_rebind().  Clear and release.
++	 * Clearing %WORKER_REBIND from this foreign context is safe
++	 * because these workers are still guaranteed to be idle.
++	 */
++	for_each_worker_pool(pool, gcwq)
++		list_for_each_entry(worker, &pool->idle_list, entry)
++			worker->flags &= ~WORKER_REBIND;
++
++	wake_up_all(&gcwq->rebind_hold);
+ }
+ 
+ static struct worker *alloc_worker(void)
