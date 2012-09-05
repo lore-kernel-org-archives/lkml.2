@@ -1,47 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759485Ab2IEVKc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 17:10:32 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46147 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752971Ab2IEVKb (ORCPT
+	id S1759497Ab2IEVLr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 17:11:47 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48879 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753937Ab2IEVLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 17:10:31 -0400
-X-Sasl-enc: p5isO/Wtc9FQqofqbgoOTrBYqYPjZOg29oNsDDsSY6mN 1346879429
-Date: Wed, 5 Sep 2012 14:07:58 -0700
-From: Greg KH <greg@kroah.com>
-To: Evgeniy Polyakov <zbr@ioremap.net>
-Cc: Raphael Assenat <raph@8d.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] 1-Wire: Add support for the maxim ds1825 temperature
- sensor
-Message-ID: <20120905210758.GD27262@kroah.com>
-References: <20120816165639.GB22993@renkinjitsu.usine.8d.com>
- <20120818094818.GA11844@ioremap.net>
+	Wed, 5 Sep 2012 17:11:46 -0400
+Date: Wed, 5 Sep 2012 14:09:12 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>,
+        David Miller <davem@davemloft.net>
+Subject: Re: [REVIEW][PATCH 10/15] userns: Convert debugfs to use kuid/kgid
+ where appropriate.
+Message-ID: <20120905210912.GE27262@kroah.com>
+References: <87lih2h6i4.fsf@xmission.com>
+ <871uiufrj6.fsf@xmission.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120818094818.GA11844@ioremap.net>
+In-Reply-To: <871uiufrj6.fsf@xmission.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 18, 2012 at 01:48:18PM +0400, Evgeniy Polyakov wrote:
-> Hi
+On Sat, Aug 25, 2012 at 05:03:41PM -0700, Eric W. Biederman wrote:
 > 
-> On Thu, Aug 16, 2012 at 12:56:40PM -0400, Raphael Assenat (raph@8d.com) wrote:
-> > This patch adds support for maxim ds1825 based 1-wire temperature sensors.
-> 
-> Looks good, thank you
-> 
-> > Signed-off-by: Raphael Assenat <raph@8d.com>
-> 
-> Greg, please pull it into your tree
-> Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 
-I can't seem to find the original patch here, can someone please resend
-it to me, with Evgeniy's ack added to it so I can apply it?
-
-thanks,
-
-greg k-h
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
