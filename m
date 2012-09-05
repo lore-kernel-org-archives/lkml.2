@@ -1,261 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758105Ab2IED1Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 23:27:24 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:49722 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751863Ab2IED1X (ORCPT
+	id S1758076Ab2IED2L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 23:28:11 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58141 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751191Ab2IED2J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 23:27:23 -0400
-Date: Wed, 5 Sep 2012 03:27:56 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Aristeu Rozanski <aris@redhat.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        James Morris <jmorris@namei.org>, Pavel Emelyanov <xemul@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2 6/6] device_cgroup: introduce a new, more consistent
- interface for device_cgroup
-Message-ID: <20120905032756.GF13310@mail.hallyn.com>
-References: <20120904143419.892872876@napanee.usersys.redhat.com>
- <20120904143421.692197560@napanee.usersys.redhat.com>
+	Tue, 4 Sep 2012 23:28:09 -0400
+Date: Wed, 5 Sep 2012 11:28:03 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH -next] extcon: extcon-arizona depends on INPUT
+Message-ID: <20120905032802.GB5076@opensource.wolfsonmicro.com>
+References: <20120824172820.ee0f412d2944b08789414207@canb.auug.org.au>
+ <5037B41C.6040703@xenotime.net>
+ <503AB70E.2000407@samsung.com>
+ <504693E4.8050808@xenotime.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120904143421.692197560@napanee.usersys.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <504693E4.8050808@xenotime.net>
+X-Cookie: Your lucky color has faded.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Aristeu Rozanski (aris@redhat.com):
-> Internally device_cgroup now uses a default rule (behavior) and an exception
-> list and this interface reflects it.
-> 
-> The new files, devices.behavior ('allow' or 'deny') and devices.exceptions map
-> directly to the internal state.
-> 
-> Also, update documentation about the new interface.
-> 
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Li Zefan <lizefan@huawei.com>
-> Cc: James Morris <jmorris@namei.org>
-> Cc: Pavel Emelyanov <xemul@openvz.org>
-> Cc: Serge Hallyn <serge.hallyn@canonical.com>
+On Tue, Sep 04, 2012 at 04:51:00PM -0700, Randy Dunlap wrote:
 
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+> This build error still happens in linux-next of 20120904.
 
-> Signed-off-by: Aristeu Rozanski <aris@redhat.com>
-> 
-> ---
->  Documentation/cgroups/devices.txt |   73 ++++++++++++++++++++++++++++----------
->  security/device_cgroup.c          |   63 +++++++++++++++++++++++++++-----
->  2 files changed, 107 insertions(+), 29 deletions(-)
-> 
-> --- a/security/device_cgroup.c	2012-08-30 11:53:54.214675713 -0400
-> +++ b/security/device_cgroup.c	2012-08-30 11:53:54.227682064 -0400
-> @@ -214,6 +214,8 @@ static void devcgroup_destroy(struct cgr
->  #define DEVCG_ALLOW 1
->  #define DEVCG_DENY 2
->  #define DEVCG_LIST 3
-> +#define DEVCG_BEHAVIOR 4
-> +#define DEVCG_EXCEPTIONS 5
->  
->  #define MAJMINLEN 13
->  #define ACCLEN 4
-> @@ -249,11 +251,25 @@ static void set_majmin(char *str, unsign
->  		sprintf(str, "%u", m);
->  }
->  
-> +static void __devcg_seq_list_exceptions(struct dev_cgroup *devcg,
-> +					struct seq_file *m)
-> +{
-> +	struct dev_exception_item *ex;
-> +	char maj[MAJMINLEN], min[MAJMINLEN], acc[ACCLEN];
-> +
-> +	list_for_each_entry_rcu(ex, &devcg->exceptions, list) {
-> +		set_access(acc, ex->access);
-> +		set_majmin(maj, ex->major);
-> +		set_majmin(min, ex->minor);
-> +		seq_printf(m, "%c %s:%s %s\n", type_to_char(ex->type),
-> +			   maj, min, acc);
-> +	}
-> +}
-> +
->  static int devcgroup_seq_read(struct cgroup *cgroup, struct cftype *cft,
->  				struct seq_file *m)
->  {
->  	struct dev_cgroup *devcgroup = cgroup_to_devcgroup(cgroup);
-> -	struct dev_exception_item *ex;
->  	char maj[MAJMINLEN], min[MAJMINLEN], acc[ACCLEN];
->  
->  	rcu_read_lock();
-> @@ -269,20 +285,37 @@ static int devcgroup_seq_read(struct cgr
->  		set_majmin(min, ~0);
->  		seq_printf(m, "%c %s:%s %s\n", type_to_char(DEV_ALL),
->  			   maj, min, acc);
-> -	} else {
-> -		list_for_each_entry_rcu(ex, &devcgroup->exceptions, list) {
-> -			set_access(acc, ex->access);
-> -			set_majmin(maj, ex->major);
-> -			set_majmin(min, ex->minor);
-> -			seq_printf(m, "%c %s:%s %s\n", type_to_char(ex->type),
-> -				   maj, min, acc);
-> -		}
-> -	}
-> +	} else
-> +		__devcg_seq_list_exceptions(devcgroup, m);
-> +
->  	rcu_read_unlock();
->  
->  	return 0;
->  }
->  
-> +static int devcg_seq_read_behavior(struct cgroup *cgroup,
-> +				   struct cftype *cft, struct seq_file *m)
-> +{
-> +	struct dev_cgroup *devcgroup = cgroup_to_devcgroup(cgroup);
-> +
-> +	if (devcgroup->behavior == DEVCG_DEFAULT_ALLOW)
-> +		seq_printf(m, "allow\n");
-> +	else
-> +		seq_printf(m, "deny\n");
-> +
-> +	return 0;
-> +}
-> +
-> +static int devcg_seq_read_exceptions(struct cgroup *cgroup,
-> +				     struct cftype *cft, struct seq_file *m)
-> +{
-> +	struct dev_cgroup *devcgroup = cgroup_to_devcgroup(cgroup);
-> +
-> +	__devcg_seq_list_exceptions(devcgroup, m);
-> +
-> +	return 0;
-> +}
-> +
->  /**
->   * may_access - verifies if a new exception is part of what is allowed
->   *		by a dev cgroup based on the default policy +
-> @@ -521,6 +554,16 @@ static struct cftype dev_cgroup_files[]
->  		.read_seq_string = devcgroup_seq_read,
->  		.private = DEVCG_LIST,
->  	},
-> +	{
-> +		.name = "behavior",
-> +		.read_seq_string = devcg_seq_read_behavior,
-> +		.private = DEVCG_BEHAVIOR,
-> +	},
-> +	{
-> +		.name = "exceptions",
-> +		.read_seq_string = devcg_seq_read_exceptions,
-> +		.private = DEVCG_EXCEPTIONS,
-> +	},
->  	{ }	/* terminate */
->  };
->  
-> --- a/Documentation/cgroups/devices.txt	2012-06-18 14:33:03.913651049 -0400
-> +++ b/Documentation/cgroups/devices.txt	2012-08-30 12:20:46.258720000 -0400
-> @@ -3,37 +3,65 @@ Device Whitelist Controller
->  1. Description:
->  
->  Implement a cgroup to track and enforce open and mknod restrictions
-> -on device files.  A device cgroup associates a device access
-> -whitelist with each cgroup.  A whitelist entry has 4 fields.
-> -'type' is a (all), c (char), or b (block).  'all' means it applies
-> -to all types and all major and minor numbers.  Major and minor are
-> -either an integer or * for all.  Access is a composition of r
-> -(read), w (write), and m (mknod).
-> -
-> -The root device cgroup starts with rwm to 'all'.  A child device
-> -cgroup gets a copy of the parent.  Administrators can then remove
-> -devices from the whitelist or add new entries.  A child cgroup can
-> +on device files.  A device cgroup associates a device access default
-> +behavior and a exception list with each cgroup.  A exception entry
-> +has 4 fields.  'type' is a (all), c (char), or b (block).  'all'
-> +means it applies to all types and all major and minor numbers.
-> +Major and minor are either an integer or * for all.  Access is a
-> +composition of r (read), w (write), and m (mknod).  The behavior
-> +can be set to 'allow' or 'deny' and determines what's the default
-> +action if a matching exception is not found.
-> +
-> +The root device cgroup starts with default behavior 'allow'.  A
-> +child device cgroup gets a copy of the parent.  Administrators can
-> +then add exceptions or change the behavior.  A child cgroup can
->  never receive a device access which is denied by its parent.  However
->  when a device access is removed from a parent it will not also be
->  removed from the child(ren).
->  
->  2. User Interface
->  
-> -An entry is added using devices.allow, and removed using
-> -devices.deny.  For instance
-> +First determine what's the current behavior by reading
-> +'devices.behavior':
->  
-> -	echo 'c 1:3 mr' > /sys/fs/cgroup/1/devices.allow
-> +	# cat /sys/fs/cgroup/1/devices.behavior
-> +	allow
->  
-> -allows cgroup 1 to read and mknod the device usually known as
-> -/dev/null.  Doing
-> +This means the default action is to allow everything.  You can switch
-> +the behavior by writing 'a' on the opposite file:
->  
-> -	echo a > /sys/fs/cgroup/1/devices.deny
-> +	# echo 'a' > /sys/fs/cgroup/1/devices.deny
-> +	# cat /sys/fs/cgroup/1/behavior
-> +	deny
-> +	# echo 'a' > /sys/fs/cgroup/1/devices.allow
-> +	# cat /sys/fs/cgroup/1/behavior
-> +	allow
->  
-> -will remove the default 'a *:* rwm' entry. Doing
-> +Every time the behavior changes, the exception list is cleared.
-> +To add an exception, write a rule on the opposite file:
->  
-> -	echo a > /sys/fs/cgroup/1/devices.allow
-> +	# echo 'a' > /sys/fs/cgroup/1/devices.allow
-> +	# echo 'c 1:3 mr' > /sys/fs/cgroup/1/devices.deny
->  
-> -will add the 'a *:* rwm' entry to the whitelist.
-> +So the default behavior is to allow everything but mknod and read
-> +on /dev/null file.  The file 'devices.exceptions' contains the
-> +current list of exceptions:
-> +
-> +	# cat /sys/fs/cgroup/1/devices.exceptions
-> +	c 1:3 mr
-> +
-> +To remove an exception, write the same rule in the opposite file:
-> +
-> +	# echo 'c 1:3 mr' > /sys/fs/cgroup/1/devices.allow
-> +
-> +Now the exceptions list will be empty.  It's also possible to change
-> +an exception entry::
-> +
-> +	# cat /sys/fs/cgroup/1/devices.exceptions
-> +	c 1:3 rm
-> +	# echo 'c 1:3 m' > /sys/fs/cgroup/1/devices.allow
-> +	# cat /sys/fs/cgroup/1/devices.exceptions
-> +	c 1:3 r
->  
->  3. Security
->  
-> @@ -50,3 +78,10 @@ task to a new cgroup.  (Again we'll prob
->  
->  A cgroup may not be granted more permissions than the cgroup's
->  parent has.
-> +
-> +4. Compatibility
-> +
-> +Previous versions of device cgroup operated using a whitelist.  The
-> +old interface (devices.allow, devices.deny and devices.list) is still
-> +supported but users are advised to replace devices.list usage by
-> +devices.behavior and devices.exceptions.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Can we get the patch merged for linux-next?
+
+Greg's the one managing extcon in -next.
