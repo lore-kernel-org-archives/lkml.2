@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758428Ab2IEKy5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 06:54:57 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45446 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752121Ab2IEKy4 (ORCPT
+	id S1758440Ab2IEKzk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 06:55:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56227 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752008Ab2IEKzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 06:54:56 -0400
-Subject: Re: WARNING: cpu_is_offline() at native_smp_send_reschedule()
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        x86@kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>,
-        Venkatesh Pallipadi <venki@google.com>
-In-Reply-To: <5046D69F.9000705@linux.vnet.ibm.com>
-References: <20120905011152.GA19853@localhost>
-	 <5046D69F.9000705@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 05 Sep 2012 12:54:40 +0200
-Message-ID: <1346842480.2461.11.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Wed, 5 Sep 2012 06:55:39 -0400
+Date: Wed, 5 Sep 2012 03:55:25 -0700
+From: tip-bot for Mathias Krause <minipli@googlemail.com>
+Message-ID: <tip-3d1334064fb365ea8f299874c2b4c46de2bee74d@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        minipli@googlemail.com, tglx@linutronix.de, luto@MIT.EDU
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        minipli@googlemail.com, tglx@linutronix.de, luto@MIT.EDU
+In-Reply-To: <1346621506-30857-3-git-send-email-minipli@googlemail.com>
+References: <1346621506-30857-3-git-send-email-minipli@googlemail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/debug] x86/vdso: Add __user annotation to VDSO32_SYMBOL
+Git-Commit-ID: 3d1334064fb365ea8f299874c2b4c46de2bee74d
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 05 Sep 2012 03:55:30 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-05 at 12:35 +0800, Michael Wang wrote:
-> > [   10.968565] reboot: machine restart
-> > [   10.983510] ------------[ cut here ]------------
-> > [   10.984218] WARNING: at /c/kernel-tests/src/stable/arch/x86/kernel/smp.c:123 native_smp_send_reschedule+0x46/0x50()
-> > [   10.985880] Pid: 88, comm: kpktgend_0 Not tainted 3.6.0-rc3-00005-gb374aa1 #10
-> > [   10.987185] Call Trace:
-> > [   10.987506]  [<7902f42a>] warn_slowpath_common+0x5a/0x80
-> > [   10.987506]  [<7901ee16>] ? native_smp_send_reschedule+0x46/0x50
-> > [   10.987506]  [<7901ee16>] ? native_smp_send_reschedule+0x46/0x50
-> > [   10.987506]  [<7902f4fd>] warn_slowpath_null+0x1d/0x20
-> > [   10.987506]  [<7901ee16>] native_smp_send_reschedule+0x46/0x50
-> 
-> So this cpu try to fire a nohz balance kick ipi to an offline cpu?
-> 
-> May be we are choosing a wrong cpu to kick but that's not the point,
-> what I can't understand is why this cpu could do this kick.
-> 
-> We have nohz_kick_needed() to check whether current cpu should do kick ,
-> and the first condition we need to match is that current cpu should be
-> idle, but the trace show current pid is 88 not 0.
-> 
-> We should add Peter to cc list, may be he will be interested on what
-> happened.
+Commit-ID:  3d1334064fb365ea8f299874c2b4c46de2bee74d
+Gitweb:     http://git.kernel.org/tip/3d1334064fb365ea8f299874c2b4c46de2bee74d
+Author:     Mathias Krause <minipli@googlemail.com>
+AuthorDate: Sun, 2 Sep 2012 23:31:41 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 5 Sep 2012 10:52:23 +0200
 
-> > [   10.987506]  [<7905fdad>] trigger_load_balance+0x1bd/0x250
-> > [   10.987506]  [<79056d14>] scheduler_tick+0xd4/0x100
-> > [   10.987506]  [<7903bde5>] update_process_times+0x55/0x70 
+x86/vdso: Add __user annotation to VDSO32_SYMBOL
 
-Hmm, added both venki and suresh as they touched it last ;-)
+The address calculated by VDSO32_SYMBOL() is a pointer into
+userland. Add the __user annotation to fix related sparse
+warnings in its users.
 
-I suppose you're running a hotplug loop along with your workload?
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Andy Lutomirski <luto@MIT.EDU>
+Link: http://lkml.kernel.org/r/1346621506-30857-3-git-send-email-minipli@googlemail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/include/asm/vdso.h |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
+diff --git a/arch/x86/include/asm/vdso.h b/arch/x86/include/asm/vdso.h
+index bb05228..fddb53d 100644
+--- a/arch/x86/include/asm/vdso.h
++++ b/arch/x86/include/asm/vdso.h
+@@ -11,7 +11,8 @@ extern const char VDSO32_PRELINK[];
+ #define VDSO32_SYMBOL(base, name)					\
+ ({									\
+ 	extern const char VDSO32_##name[];				\
+-	(void *)(VDSO32_##name - VDSO32_PRELINK + (unsigned long)(base)); \
++	(void __user *)(VDSO32_##name - VDSO32_PRELINK +		\
++			(unsigned long)(base));				\
+ })
+ #endif
+ 
