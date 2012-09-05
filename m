@@ -1,76 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755657Ab2IEHA5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 03:00:57 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:58303 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753917Ab2IEHAj (ORCPT
+	id S932450Ab2IEHD2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 03:03:28 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:53812 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752813Ab2IEHD0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 03:00:39 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Matthew Garrett <mjg59@srcf.ucam.org>
+	Wed, 5 Sep 2012 03:03:26 -0400
+Date: Wed, 5 Sep 2012 08:03:22 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
 Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
         linux-efi@vger.kernel.org
-References: <1346774117-2277-1-git-send-email-mjg@redhat.com>
-	<1346774117-2277-8-git-send-email-mjg@redhat.com>
-	<87txvdzgur.fsf@xmission.com> <20120904202205.GA28903@srcf.ucam.org>
-	<87r4qhwkx9.fsf@xmission.com> <20120904212717.GA30899@srcf.ucam.org>
-	<87fw6xtp23.fsf@xmission.com> <20120904232503.GA1077@srcf.ucam.org>
-	<871uihozqc.fsf@xmission.com> <20120905051652.GA5133@srcf.ucam.org>
-Date: Wed, 05 Sep 2012 00:00:31 -0700
-In-Reply-To: <20120905051652.GA5133@srcf.ucam.org> (Matthew Garrett's message
-	of "Wed, 5 Sep 2012 06:16:52 +0100")
-Message-ID: <871uihnecw.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+/rwtAMwTBkLB5VVVm0KUCq/fnSeTgIHs=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0039]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Matthew Garrett <mjg59@srcf.ucam.org>
-X-Spam-Relay-Country: 
 Subject: Re: [PATCH 07/11] kexec: Disable in a secure boot environment
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Message-ID: <20120905070322.GA8014@srcf.ucam.org>
+References: <1346774117-2277-8-git-send-email-mjg@redhat.com>
+ <87txvdzgur.fsf@xmission.com>
+ <20120904202205.GA28903@srcf.ucam.org>
+ <87r4qhwkx9.fsf@xmission.com>
+ <20120904212717.GA30899@srcf.ucam.org>
+ <87fw6xtp23.fsf@xmission.com>
+ <20120904232503.GA1077@srcf.ucam.org>
+ <871uihozqc.fsf@xmission.com>
+ <20120905051652.GA5133@srcf.ucam.org>
+ <871uihnecw.fsf@xmission.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <871uihnecw.fsf@xmission.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matthew Garrett <mjg59@srcf.ucam.org> writes:
+On Wed, Sep 05, 2012 at 12:00:31AM -0700, Eric W. Biederman wrote:
+> Matthew Garrett <mjg59@srcf.ucam.org> writes:
+> > Fine. We'll just carry this one out of tree for now.
+> 
+> It is your tree.
+> 
+> I am disappointed to learn that you aren't enthusiastic about
+> implementing verification of signatures for all code that goes into
+> ring 0.
 
-> On Tue, Sep 04, 2012 at 09:33:31PM -0700, Eric W. Biederman wrote:
->> Matthew Garrett <mjg59@srcf.ucam.org> writes:
->> > The full implementation should trust keys that are trusted by the 
->> > platform, so it'd boot any kexec image you cared to sign. Or simply 
->> > patch this code out and rebuild and self-sign, or disable the code that 
->> > turns off the capability when in secure boot mode. I've no objection to 
->> > putting that behind an #ifdef.
->> 
->> I will be happy to see a version of kexec that accepts signed images,
->> allowing the functionality to work in your brave new world where
->> everything must be signed.
->> 
->> Until then I don't see a point in merging anything else.
->
-> Fine. We'll just carry this one out of tree for now.
+I am enthusiastic, but October 26th is a date outside my control and 
+kexec isn't at the top of the priority list. We ship with the code we 
+have, not the code we want.
 
-It is your tree.
-
-I am disappointed to learn that you aren't enthusiastic about
-implementing verification of signatures for all code that goes into
-ring 0.
-
-Eric
-
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
