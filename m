@@ -1,49 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758410Ab2IEK4P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 06:56:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59394 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752072Ab2IEK4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 06:56:14 -0400
-Date: Wed, 5 Sep 2012 11:56:11 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 2/2] mm: support MIGRATE_DISCARD
-Message-ID: <20120905105611.GI11266@suse.de>
-References: <1346832673-12512-1-git-send-email-minchan@kernel.org>
- <1346832673-12512-2-git-send-email-minchan@kernel.org>
+	id S1758549Ab2IEK4f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 06:56:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56266 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752399Ab2IEK4d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 06:56:33 -0400
+Date: Wed, 5 Sep 2012 03:56:21 -0700
+From: tip-bot for Mathias Krause <minipli@googlemail.com>
+Message-ID: <tip-0ff8fef4eaf252ee13a2d0b175a8c876415bd62a@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        minipli@googlemail.com, oleg@redhat.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        minipli@googlemail.com, tglx@linutronix.de, oleg@redhat.com
+In-Reply-To: <1346621506-30857-4-git-send-email-minipli@googlemail.com>
+References: <1346621506-30857-4-git-send-email-minipli@googlemail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/debug] x86/signals: ia32_signal.c:
+  add __user casts to fix sparse warnings
+Git-Commit-ID: 0ff8fef4eaf252ee13a2d0b175a8c876415bd62a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1346832673-12512-2-git-send-email-minchan@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 05 Sep 2012 03:56:26 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 05, 2012 at 05:11:13PM +0900, Minchan Kim wrote:
-> This patch introudes MIGRATE_DISCARD mode in migration.
-> It drops *clean cache pages* instead of migration so that
-> migration latency could be reduced by avoiding (memcpy + page remapping).
-> It's useful for CMA because latency of migration is very important rather
-> than eviction of background processes's workingset. In addition, it needs
-> less free pages for migration targets so it could avoid memory reclaiming
-> to get free pages, which is another factor increase latency.
-> 
+Commit-ID:  0ff8fef4eaf252ee13a2d0b175a8c876415bd62a
+Gitweb:     http://git.kernel.org/tip/0ff8fef4eaf252ee13a2d0b175a8c876415bd62a
+Author:     Mathias Krause <minipli@googlemail.com>
+AuthorDate: Sun, 2 Sep 2012 23:31:42 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 5 Sep 2012 10:52:24 +0200
 
-Bah, this was released while I was reviewing the older version. I did
-not read this one as closely but I see the enum problems have gone away
-at least. I'd still prefer if CMA had an additional helper to discard
-some pages with shrink_page_list() and migrate the remaining pages with
-migrate_pages(). That would remove the need to add a MIGRATE_DISCARD
-migrate mode at all.
+x86/signals: ia32_signal.c: add __user casts to fix sparse warnings
 
--- 
-Mel Gorman
-SUSE Labs
+Fix the following sparse warnings by adding appropriate __user
+casts and annotations:
+
+  ia32_signal.c:165:38: warning: incorrect type in argument 1 (different address spaces)
+   ia32_signal.c:165:38:    expected struct sigaltstack const [noderef] [usertype] <asn:1>*<noident>
+  ia32_signal.c:165:38:    got struct sigaltstack *
+  [...]
+
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Link: http://lkml.kernel.org/r/1346621506-30857-4-git-send-email-minipli@googlemail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/ia32/ia32_signal.c |   11 ++++++-----
+ 1 files changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/ia32/ia32_signal.c b/arch/x86/ia32/ia32_signal.c
+index 673ac9b..452d4dd 100644
+--- a/arch/x86/ia32/ia32_signal.c
++++ b/arch/x86/ia32/ia32_signal.c
+@@ -162,7 +162,8 @@ asmlinkage long sys32_sigaltstack(const stack_ia32_t __user *uss_ptr,
+ 	}
+ 	seg = get_fs();
+ 	set_fs(KERNEL_DS);
+-	ret = do_sigaltstack(uss_ptr ? &uss : NULL, &uoss, regs->sp);
++	ret = do_sigaltstack((stack_t __force __user *) (uss_ptr ? &uss : NULL),
++			     (stack_t __force __user *) &uoss, regs->sp);
+ 	set_fs(seg);
+ 	if (ret >= 0 && uoss_ptr)  {
+ 		if (!access_ok(VERIFY_WRITE, uoss_ptr, sizeof(stack_ia32_t)))
+@@ -361,7 +362,7 @@ static int ia32_setup_sigcontext(struct sigcontext_ia32 __user *sc,
+  */
+ static void __user *get_sigframe(struct k_sigaction *ka, struct pt_regs *regs,
+ 				 size_t frame_size,
+-				 void **fpstate)
++				 void __user **fpstate)
+ {
+ 	unsigned long sp;
+ 
+@@ -382,7 +383,7 @@ static void __user *get_sigframe(struct k_sigaction *ka, struct pt_regs *regs,
+ 
+ 	if (used_math()) {
+ 		sp = sp - sig_xstate_ia32_size;
+-		*fpstate = (struct _fpstate_ia32 *) sp;
++		*fpstate = (struct _fpstate_ia32 __user *) sp;
+ 		if (save_i387_xstate_ia32(*fpstate) < 0)
+ 			return (void __user *) -1L;
+ 	}
+@@ -448,7 +449,7 @@ int ia32_setup_frame(int sig, struct k_sigaction *ka,
+ 		 * These are actually not used anymore, but left because some
+ 		 * gdb versions depend on them as a marker.
+ 		 */
+-		put_user_ex(*((u64 *)&code), (u64 *)frame->retcode);
++		put_user_ex(*((u64 *)&code), (u64 __user *)frame->retcode);
+ 	} put_user_catch(err);
+ 
+ 	if (err)
+@@ -529,7 +530,7 @@ int ia32_setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 		 * Not actually used anymore, but left because some gdb
+ 		 * versions need it.
+ 		 */
+-		put_user_ex(*((u64 *)&code), (u64 *)frame->retcode);
++		put_user_ex(*((u64 *)&code), (u64 __user *)frame->retcode);
+ 	} put_user_catch(err);
+ 
+ 	if (err)
