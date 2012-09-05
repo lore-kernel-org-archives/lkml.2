@@ -1,35 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758997Ab2IERAZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 13:00:25 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:42690 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758941Ab2IERAW (ORCPT
+	id S1758928Ab2IERBq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 13:01:46 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57774 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752056Ab2IERBo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 13:00:22 -0400
-Date: Wed, 05 Sep 2012 13:00:20 -0400 (EDT)
-Message-Id: <20120905.130020.768517336834373231.davem@davemloft.net>
-To: swhiteho@redhat.com
-Cc: xi.wang@gmail.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] decnet: fix shutdown parameter checking
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1346834276.2799.4.camel@menhir>
-References: <1346059001.2703.7.camel@menhir>
-	<20120831.155719.2228399422573401952.davem@davemloft.net>
-	<1346834276.2799.4.camel@menhir>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Wed, 5 Sep 2012 13:01:44 -0400
+Message-ID: <1346864493.2600.27.camel@twins>
+Subject: Re: [tip:sched/core] sched: Fix load avg vs cpu-hotplug
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: paulmck@linux.vnet.ibm.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rakib.mullick@gmail.com, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Date: Wed, 05 Sep 2012 19:01:33 +0200
+In-Reply-To: <20120905132939.GA3480@gmail.com>
+References: <1345454817.23018.27.camel@twins>
+	 <tip-f319da0c6894fcf55e21320e40506418a2aad629@git.kernel.org>
+	 <1346848616.2600.26.camel@twins> <20120905132939.GA3480@gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Whitehouse <swhiteho@redhat.com>
-Date: Wed, 05 Sep 2012 09:37:56 +0100
+On Wed, 2012-09-05 at 15:29 +0200, Ingo Molnar wrote:
+> > Oh argh.. this patch isn't actually right.. I actually removed 
+> > it from my series but forgot to update the tarball.
+> 
+> Sigh.
 
-> However, I'm not overly worried and we'll soon know if it will cause any
-> problems or not,
+Yeah, sorry about that, jet-lag makes me do stupid at a higher rate than
+usual :/
 
-You can be sure that if we get real bug reports due to this change, I will
-revert it back to how it was before.
+> > Ingo can you still make it go away or should I do a delta?
+> 
+> Please do a delta. 
+
+Ok, will do.
