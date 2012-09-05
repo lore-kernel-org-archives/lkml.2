@@ -1,123 +1,276 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758531Ab2IEJWa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 05:22:30 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:10824 "EHLO song.cn.fujitsu.com"
+	id S1758537Ab2IEJXB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 05:23:01 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:10989 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758379Ab2IEJW1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 05:22:27 -0400
+	id S1758361Ab2IEJUl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 05:20:41 -0400
 X-IronPort-AV: E=Sophos;i="4.80,373,1344182400"; 
-   d="scan'208";a="5789107"
-Message-ID: <50471B23.4010308@cn.fujitsu.com>
-Date: Wed, 05 Sep 2012 17:28:03 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
-CC: rob@landley.net, tglx@linutronix.de, x86@kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        bhelgaas@google.com
-Subject: Re: [PATCH v2 2/2] x86: reimplement mem boot option
-References: <4FD99C88.2010002@cn.fujitsu.com> <4FD99CFA.6060801@cn.fujitsu.com> <503342A3.3060902@cn.fujitsu.com>
-In-Reply-To: <503342A3.3060902@cn.fujitsu.com>
+   d="scan'208";a="5789093"
+From: wency@cn.fujitsu.com
+To: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org
+Cc: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
+        minchan.kim@gmail.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        Wen Congyang <wency@cn.fujitsu.com>
+Subject: [RFC v9 PATCH 15/21] memory-hotplug: implement register_page_bootmem_info_section of sparse-vmemmap
+Date: Wed, 5 Sep 2012 17:25:49 +0800
+Message-Id: <1346837155-534-16-git-send-email-wency@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1346837155-534-1-git-send-email-wency@cn.fujitsu.com>
+References: <1346837155-534-1-git-send-email-wency@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/05 17:22:02,
+ 2012/09/05 17:20:02,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/05 17:22:03,
-	Serialize complete at 2012/09/05 17:22:03
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+ 2012/09/05 17:20:04,
+	Serialize complete at 2012/09/05 17:20:04
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, H. Peter Anvin
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-Do you have time to review this patch?
+For removing memmap region of sparse-vmemmap which is allocated bootmem,
+memmap region of sparse-vmemmap needs to be registered by get_page_bootmem().
+So the patch searches pages of virtual mapping and registers the pages by
+get_page_bootmem().
 
-Thanks
-Wen Congyang
+Note: register_page_bootmem_memmap() is not implemented for ia64, ppc, s390,
+and sparc.
 
-At 08/21/2012 04:11 PM, Wen Congyang Wrote:
-> Current mem boot option only can work for non efi environment. If the user
-> specifies add_efi_memmap, it cannot work for efi environment. In
-> the efi environment, we call e820_add_region() to add the memory map. So
-> we can modify __e820_add_region() and the mem boot option can work for
-> efi environment.
-> 
-> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> ---
->  arch/x86/kernel/e820.c |   29 +++++++++++++++++++++++++----
->  1 files changed, 25 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-> index 4185797..20bc467 100644
-> --- a/arch/x86/kernel/e820.c
-> +++ b/arch/x86/kernel/e820.c
-> @@ -47,6 +47,7 @@ unsigned long pci_mem_start = 0xaeedbabe;
->  #ifdef CONFIG_PCI
->  EXPORT_SYMBOL(pci_mem_start);
->  #endif
-> +static u64 mem_limit = ~0ULL;
->  
->  /*
->   * This function checks if any part of the range <start,end> is mapped
-> @@ -119,6 +120,20 @@ static void __init __e820_add_region(struct e820map *e820x, u64 start, u64 size,
->  		return;
->  	}
->  
-> +	if (start >= mem_limit) {
-> +		printk(KERN_ERR "e820: ignoring [mem %#010llx-%#010llx]\n",
-> +		       (unsigned long long)start,
-> +		       (unsigned long long)(start + size - 1));
-> +		return;
-> +	}
-> +
-> +	if (mem_limit - start < size) {
-> +		printk(KERN_ERR "e820: ignoring [mem %#010llx-%#010llx]\n",
-> +		       (unsigned long long)mem_limit,
-> +		       (unsigned long long)(start + size - 1));
-> +		size = mem_limit - start;
-> +	}
-> +
->  	e820x->map[x].addr = start;
->  	e820x->map[x].size = size;
->  	e820x->map[x].type = type;
-> @@ -809,7 +824,7 @@ static int userdef __initdata;
->  /* "mem=nopentium" disables the 4MB page tables. */
->  static int __init parse_memopt(char *p)
->  {
-> -	u64 mem_size;
-> +	char *oldp;
->  
->  	if (!p)
->  		return -EINVAL;
-> @@ -825,11 +840,11 @@ static int __init parse_memopt(char *p)
->  	}
->  
->  	userdef = 1;
-> -	mem_size = memparse(p, &p);
-> +	oldp = p;
-> +	mem_limit = memparse(p, &p);
->  	/* don't remove all of memory when handling "mem={invalid}" param */
-> -	if (mem_size == 0)
-> +	if (mem_limit == 0 || p == oldp)
->  		return -EINVAL;
-> -	e820_remove_range(mem_size, ULLONG_MAX - mem_size, E820_RAM, 1);
->  
->  	return 0;
->  }
-> @@ -881,6 +896,12 @@ early_param("memmap", parse_memmap_opt);
->  
->  void __init finish_e820_parsing(void)
->  {
-> +	if (mem_limit != ~0ULL) {
-> +		userdef = 1;
-> +		e820_remove_range(mem_limit, ULLONG_MAX - mem_limit,
-> +				  E820_RAM, 1);
-> +	}
-> +
->  	if (userdef) {
->  		u32 nr = e820.nr_map;
->  
+CC: David Rientjes <rientjes@google.com>
+CC: Jiang Liu <liuj97@gmail.com>
+CC: Len Brown <len.brown@intel.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Paul Mackerras <paulus@samba.org>
+CC: Christoph Lameter <cl@linux.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+---
+ arch/ia64/mm/discontig.c       |    6 ++++
+ arch/powerpc/mm/init_64.c      |    6 ++++
+ arch/s390/mm/vmem.c            |    6 ++++
+ arch/sparc/mm/init_64.c        |    6 ++++
+ arch/x86/mm/init_64.c          |   52 ++++++++++++++++++++++++++++++++++++++++
+ include/linux/memory_hotplug.h |    2 +
+ include/linux/mm.h             |    3 +-
+ mm/memory_hotplug.c            |   31 +++++++++++++++++++++--
+ 8 files changed, 108 insertions(+), 4 deletions(-)
+
+diff --git a/arch/ia64/mm/discontig.c b/arch/ia64/mm/discontig.c
+index c641333..33943db 100644
+--- a/arch/ia64/mm/discontig.c
++++ b/arch/ia64/mm/discontig.c
+@@ -822,4 +822,10 @@ int __meminit vmemmap_populate(struct page *start_page,
+ {
+ 	return vmemmap_populate_basepages(start_page, size, node);
+ }
++
++void register_page_bootmem_memmap(unsigned long section_nr,
++				  struct page *start_page, unsigned long size)
++{
++	/* TODO */
++}
+ #endif
+diff --git a/arch/powerpc/mm/init_64.c b/arch/powerpc/mm/init_64.c
+index 620b7ac..3690c44 100644
+--- a/arch/powerpc/mm/init_64.c
++++ b/arch/powerpc/mm/init_64.c
+@@ -298,5 +298,11 @@ int __meminit vmemmap_populate(struct page *start_page,
+ 
+ 	return 0;
+ }
++
++void register_page_bootmem_memmap(unsigned long section_nr,
++				  struct page *start_page, unsigned long size)
++{
++	/* TODO */
++}
+ #endif /* CONFIG_SPARSEMEM_VMEMMAP */
+ 
+diff --git a/arch/s390/mm/vmem.c b/arch/s390/mm/vmem.c
+index 6f896e7..eda55cd 100644
+--- a/arch/s390/mm/vmem.c
++++ b/arch/s390/mm/vmem.c
+@@ -227,6 +227,12 @@ out:
+ 	return ret;
+ }
+ 
++void register_page_bootmem_memmap(unsigned long section_nr,
++				  struct page *start_page, unsigned long size)
++{
++	/* TODO */
++}
++
+ /*
+  * Add memory segment to the segment list if it doesn't overlap with
+  * an already present segment.
+diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
+index d58edf5..add1cc7 100644
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -2077,6 +2077,12 @@ void __meminit vmemmap_populate_print_last(void)
+ 		node_start = 0;
+ 	}
+ }
++
++void register_page_bootmem_memmap(unsigned long section_nr,
++				  struct page *start_page, unsigned long size)
++{
++	/* TODO */
++}
+ #endif /* CONFIG_SPARSEMEM_VMEMMAP */
+ 
+ static void prot_init_common(unsigned long page_none,
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index e0d88ba..0075592 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -1138,6 +1138,58 @@ vmemmap_populate(struct page *start_page, unsigned long size, int node)
+ 	return 0;
+ }
+ 
++void register_page_bootmem_memmap(unsigned long section_nr,
++				  struct page *start_page, unsigned long size)
++{
++	unsigned long addr = (unsigned long)start_page;
++	unsigned long end = (unsigned long)(start_page + size);
++	unsigned long next;
++	pgd_t *pgd;
++	pud_t *pud;
++	pmd_t *pmd;
++
++	for (; addr < end; addr = next) {
++		pte_t *pte = NULL;
++
++		pgd = pgd_offset_k(addr);
++		if (pgd_none(*pgd)) {
++			next = (addr + PAGE_SIZE) & PAGE_MASK;
++			continue;
++		}
++		get_page_bootmem(section_nr, pgd_page(*pgd), MIX_SECTION_INFO);
++
++		pud = pud_offset(pgd, addr);
++		if (pud_none(*pud)) {
++			next = (addr + PAGE_SIZE) & PAGE_MASK;
++			continue;
++		}
++		get_page_bootmem(section_nr, pud_page(*pud), MIX_SECTION_INFO);
++
++		if (!cpu_has_pse) {
++			next = (addr + PAGE_SIZE) & PAGE_MASK;
++			pmd = pmd_offset(pud, addr);
++			if (pmd_none(*pmd))
++				continue;
++			get_page_bootmem(section_nr, pmd_page(*pmd),
++					 MIX_SECTION_INFO);
++
++			pte = pte_offset_kernel(pmd, addr);
++			if (pte_none(*pte))
++				continue;
++			get_page_bootmem(section_nr, pte_page(*pte),
++					 SECTION_INFO);
++		} else {
++			next = pmd_addr_end(addr, end);
++
++			pmd = pmd_offset(pud, addr);
++			if (pmd_none(*pmd))
++				continue;
++			get_page_bootmem(section_nr, pmd_page(*pmd),
++					 SECTION_INFO);
++		}
++	}
++}
++
+ void __meminit vmemmap_populate_print_last(void)
+ {
+ 	if (p_start) {
+diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+index 1133e63..2d18235 100644
+--- a/include/linux/memory_hotplug.h
++++ b/include/linux/memory_hotplug.h
+@@ -164,6 +164,8 @@ static inline void arch_refresh_nodedata(int nid, pg_data_t *pgdat)
+ 
+ extern void register_page_bootmem_info_node(struct pglist_data *pgdat);
+ extern void put_page_bootmem(struct page *page);
++extern void get_page_bootmem(unsigned long ingo, struct page *page,
++			     unsigned long type);
+ 
+ /*
+  * Lock for memory hotplug guarantees 1) all callbacks for memory hotplug
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 311be90..c607913 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1618,7 +1618,8 @@ int vmemmap_populate_basepages(struct page *start_page,
+ 						unsigned long pages, int node);
+ int vmemmap_populate(struct page *start_page, unsigned long pages, int node);
+ void vmemmap_populate_print_last(void);
+-
++void register_page_bootmem_memmap(unsigned long section_nr, struct page *map,
++				  unsigned long size);
+ 
+ enum mf_flags {
+ 	MF_COUNT_INCREASED = 1 << 0,
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index df6857b..647a7f2 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -91,8 +91,8 @@ static void release_memory_resource(struct resource *res)
+ }
+ 
+ #ifdef CONFIG_MEMORY_HOTPLUG_SPARSE
+-static void get_page_bootmem(unsigned long info,  struct page *page,
+-			     unsigned long type)
++void get_page_bootmem(unsigned long info,  struct page *page,
++		      unsigned long type)
+ {
+ 	unsigned long page_type;
+ 
+@@ -164,8 +164,33 @@ static void register_page_bootmem_info_section(unsigned long start_pfn)
+ 
+ }
+ #else
+-static inline void register_page_bootmem_info_section(unsigned long start_pfn)
++static void register_page_bootmem_info_section(unsigned long start_pfn)
+ {
++	unsigned long *usemap, mapsize, section_nr, i;
++	struct mem_section *ms;
++	struct page *page, *memmap;
++
++	if (!pfn_valid(start_pfn))
++		return;
++
++	section_nr = pfn_to_section_nr(start_pfn);
++	ms = __nr_to_section(section_nr);
++
++	memmap = sparse_decode_mem_map(ms->section_mem_map, section_nr);
++
++	page = virt_to_page(memmap);
++	mapsize = sizeof(struct page) * PAGES_PER_SECTION;
++	mapsize = PAGE_ALIGN(mapsize) >> PAGE_SHIFT;
++
++	register_page_bootmem_memmap(section_nr, memmap, PAGES_PER_SECTION);
++
++	usemap = __nr_to_section(section_nr)->pageblock_flags;
++	page = virt_to_page(usemap);
++
++	mapsize = PAGE_ALIGN(usemap_size()) >> PAGE_SHIFT;
++
++	for (i = 0; i < mapsize; i++, page++)
++		get_page_bootmem(section_nr, page, MIX_SECTION_INFO);
+ }
+ #endif
+ 
+-- 
+1.7.1
 
