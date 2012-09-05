@@ -1,71 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758013Ab2IEA2b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 20:28:31 -0400
-Received: from us-mx3.synaptics.com ([12.239.217.85]:63441 "EHLO
-	us-mx3.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752889Ab2IEA23 (ORCPT
+	id S1758039Ab2IEA3C (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 20:29:02 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:19773 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752993Ab2IEA27 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 20:28:29 -0400
+	Tue, 4 Sep 2012 20:28:59 -0400
 X-PGP-Universal: processed;
-	by securemail.synaptics.com on Tue, 04 Sep 2012 17:00:08 -0700
-Message-ID: <50469CAC.7050608@synaptics.com>
-Date: Tue, 4 Sep 2012 17:28:28 -0700
-From: Christopher Heiny <cheiny@synaptics.com>
-Organization: Synaptics, Inc
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	by hqnvupgp06.nvidia.com on Tue, 04 Sep 2012 17:28:51 -0700
+From: Bill Huang <bilhuang@nvidia.com>
+To: Bill Huang <bilhuang@nvidia.com>
+CC: "'Thierry Reding'" <thierry.reding@avionic-design.de>,
+        "'sameo@linux.intel.com'" <sameo@linux.intel.com>,
+        "'grant.likely@secretlab.ca'" <grant.likely@secretlab.ca>,
+        "'rob.herring@calxeda.com'" <rob.herring@calxeda.com>,
+        "'rob@landley.net'" <rob@landley.net>,
+        "'broonie@opensource.wolfsonmicro.com'" 
+	<broonie@opensource.wolfsonmicro.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>, Xin Xie <xxie@nvidia.com>,
+        "'lrg@slimlogic.co.uk'" <lrg@slimlogic.co.uk>,
+        "'jhovold@gmail.com'" <jhovold@gmail.com>,
+        "'kyle.manna@fuel7.com'" <kyle.manna@fuel7.com>,
+        Rhyland Klein <rklein@nvidia.com>,
+        "'devicetree-discuss@lists.ozlabs.org'" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "'linux-doc@vger.kernel.org'" <linux-doc@vger.kernel.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Date: Wed, 5 Sep 2012 08:28:47 +0800
+Subject: RE: [PATCH v2 1/2] mfd: dt: tps6586x: Add power off control
+Thread-Topic: [PATCH v2 1/2] mfd: dt: tps6586x: Add power off control
+Thread-Index: Ac2CcoqX3gqc2V1HRnm59y1GrfvayQBkqeUAAb31yOA=
+Message-ID: <A7051F87A141B744BCAF487D48E5B3BDF5BA98285C@HKMAIL02.nvidia.com>
+References: <1345424876-4365-1-git-send-email-bilhuang@nvidia.com>
+ <1345424876-4365-2-git-send-email-bilhuang@nvidia.com>
+ <20120820113423.GA5996@avionic-0098.mockup.avionic-design.de>
+ <A7051F87A141B744BCAF487D48E5B3BDF5BA982847@HKMAIL02.nvidia.com>
+ <A7051F87A141B744BCAF487D48E5B3BDF5BA98284B@HKMAIL02.nvidia.com>
+ <503847C2.3080400@wwwdotorg.org>
+ <A7051F87A141B744BCAF487D48E5B3BDF5BA98284E@HKMAIL02.nvidia.com>
+In-Reply-To: <A7051F87A141B744BCAF487D48E5B3BDF5BA98284E@HKMAIL02.nvidia.com>
+Accept-Language: zh-TW, en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: zh-TW, en-US
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Allie Xiong <axiong@synaptics.com>,
-        William Manson <wmanson@synaptics.com>,
-        Joerie de Gram <j.de.gram@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Subject: Re: [RFC PATCH 14/17] input: RMI4 F30 GPIO/LED control
-References: <1345241877-16200-1-git-send-email-cheiny@synaptics.com> <1345241877-16200-15-git-send-email-cheiny@synaptics.com> <CACRpkdYc68j24VZAMxLoC-7-sWn4bJPtxA5U6a95Dg82+zTetg@mail.gmail.com>
-In-Reply-To: <CACRpkdYc68j24VZAMxLoC-7-sWn4bJPtxA5U6a95Dg82+zTetg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2012 03:58 PM, Linus Walleij wrote:
-> GPIO/LED, nice since I'm a GPIO maintainer I'll take a closer look.
->
-> If the bus will start doing a lot of non-input business it should live under
-> drivers/mfd but I think this is just one exception, right?
->
-> On Fri, Aug 17, 2012 at 3:17 PM, Christopher Heiny <cheiny@synaptics.com> wrote:
->
-> (...)
->> diff --git a/drivers/input/rmi4/rmi_f30.c b/drivers/input/rmi4/rmi_f30.c
->
->> +#include <linux/kernel.h>
->> +#include <linux/rmi.h>
->> +#include <linux/input.h>
->> +#include <linux/slab.h>
->> +#include "rmi_driver.h"
->
-> The non-existance of <linux/gpio.h> and <linux/leds.h> tells us that something
-> is very wrong.
->
-> You should not model these GPIOs and LEDs by a set of obscure
-> sysfs attributes, instead use the proper kernel subsystems that
-> already exist for handling this! LEDs and GPIOs already have their
-> own (standardized) userspace sysfs interfaces.
->
-> Reading the code I see that this is what happens here, so please rewrite
-> this to be a real GPIO+LED driver using struct gpio_chip and
-> the same for LEDs.
->
-> Be inspired by drivers/gpio/* and drivers/leds/*
+> nvpublic
+> > On 08/24/2012 06:36 PM, Bill Huang wrote:
+> > >>> On Sun, Aug 19, 2012 at 06:07:55PM -0700, Bill Huang wrote:
+> > >>>> Add DT property "ti,system-power-controller" telling whether or
+> > >>>> not this pmic is in charge of controlling the system power, so
+> > >>>> the power off routine can be hooked up to system call "pm_power_off".
+> > ...
+> > >>> I've seen the following while trying this patch applied on top of next-20120817:
+> > >>>
+> > >>> [   40.581151] Power down.
+> > >>> [   41.583160] ------------[ cut here ]------------
+> > >>> [   41.587784] WARNING: at /home/thierry.reding/src/kernel/linux-
+> ipmp.git/drivers/i2c/busses/i2c-
+> > >>> tegra.c:525 tegra_i2c_xfer+0x21c/0x29c()
+> > ...
+> > >> Thanks Thierry, I can repro this on Tegra20 inconsistently and
+> > >> found, if current cpu is not cpu0 when doing "machine_shutdown" (it
+> > >> will call "smp_send_stop"), i2c controller will failed to do any
+> > >> transaction (looks like gic interrupt
+> > will be disabled), I'll debug further to find out the root cause.
+> > >>
+> > >> By the way, Tegra30 is good since it will always be cpu0 when doing
+> > >> "machine_shutdown", I still don't know why it makes the difference
+> > >> against Tegra20 since I'm not familiar with those cpu stuffs and
+> > >> what make it behave differently,
+> > I'll study a bit, thanks.
+> > >
+> > > I've sent the shutdown issue for discussion in ARM list: Shutdown
+> > > problem in SMP system happened on
+> > Tegra20.
+> > > The cause of the i2c timeout is pretty clear now and it is not
+> > > directly related to this patch, so is this patch series acceptable? Any thoughts or comment?
+> Thanks.
+> >
+> > I tend to agree; power off never worked without this patch, and
+> > sometimes does with the patch, due to nothing wrong with this patch.
+> >
+> > Bill, please do follow up on getting the underlying Tegra issue solved
+> > somehow though. IIRC, Joseph Lo or Prashant has a patch which enabled
+> > the config option that Russell mentioned, so the fix may just be to wait for that patch to get
+> finalized, but please double-check that solves it.
+> > Thanks!
+> 
+> As per the shutdown issue discussion, enabling CONFIG_PM_SLEEP_SMP is the only solution and I've
+> confirmed that fix the issue, thanks.
 
-Roger.  We'll rework this and resubmit at a later date.
+Hi sameo,
+
+Is there any concern on this patch series?
+
+Thanks,
+Bill
