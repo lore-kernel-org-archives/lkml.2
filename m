@@ -1,49 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582Ab2IEO4k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 10:56:40 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:35745 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164Ab2IEO4j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 10:56:39 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
-        bfields@fieldses.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v2 1/5] fat: allocate persistent inode numbers
-References: <1346774264-8031-1-git-send-email-linkinjeon@gmail.com>
-	<20120904161747.GJ23464@ZenIV.linux.org.uk>
-	<CAKYAXd_wTxqbC-UxYimCkZtvSddx=f3FG0hoiEY_doMjoxkKog@mail.gmail.com>
-Date: Wed, 05 Sep 2012 23:56:34 +0900
-In-Reply-To: <CAKYAXd_wTxqbC-UxYimCkZtvSddx=f3FG0hoiEY_doMjoxkKog@mail.gmail.com>
-	(Namjae Jeon's message of "Wed, 5 Sep 2012 23:08:11 +0900")
-Message-ID: <87harc34d9.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+	id S1752954Ab2IEO5y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 10:57:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61487 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751164Ab2IEO5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 10:57:52 -0400
+Message-ID: <5047686D.8060606@redhat.com>
+Date: Wed, 05 Sep 2012 17:57:49 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: mst@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v9 2/2] kvm: On Ack, De-assert & Notify KVM_IRQFD extension
+References: <20120821190800.24958.74812.stgit@bling.home> <20120821192911.24958.38609.stgit@bling.home>
+In-Reply-To: <20120821192911.24958.38609.stgit@bling.home>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
+On 08/21/2012 10:29 PM, Alex Williamson wrote:
+> For VFIO based device assignment we'd like a mechanism to allow level
+> triggered interrutps to be directly injected into KVM.  KVM_IRQFD
+> already allows this for edge triggered interrupts, but for level, we
+> need to watch for acknowledgement of the interrupt from the guest to
+> provide us a hint when to test the device and allow it to re-assert
+> if necessary.  To do this, we create a new KVM_IRQFD mode called
+> "On Ack, De-assert & Notify", or OADN.  In this mode, an interrupt
+> injection provides only a gsi assertion.  We then hook into the IRQ
+> ACK notifier, which when triggered de-asserts the gsi and notifies
+> via another eventfd.  It's then the responsibility of the user to
+> re-assert the interrupt is service is still required.
+> 
+> 
+> diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+> index bf33aaa..87d7321 100644
+> --- a/Documentation/virtual/kvm/api.txt
+> +++ b/Documentation/virtual/kvm/api.txt
+> @@ -1946,6 +1946,19 @@ the guest using the specified gsi pin.  The irqfd is removed using
+>  the KVM_IRQFD_FLAG_DEASSIGN flag, specifying both kvm_irqfd.fd
+>  and kvm_irqfd.gsi.
+>  
+> +With KVM_CAP_IRQFD_OADN, KVM_IRQFD supports an "On Ack, De-assert &
+> +Notify" option that allows emulation of level-triggered interrupts.
+> +When kvm_irqfd.fd is triggered, the requested gsi is asserted and
+> +remains asserted until interaction with the irqchip indicates the
+> +VM has acknowledged the interrupt, such as an EOI.  On acknoledgement
+> +the gsi is automatically de-asserted and the user is notified via
+> +kvm_irqfd.notifyfd.  The user is then required to re-assert the
+> +interrupt if the associated device still requires service.  To enable
+> +this mode, configure the KVM_IRQFD using the KVM_IRQFD_FLAG_OADN flag
+> +and specify kvm_irqfd.notifyfd.  Note that closing kvm_irqfd.notifyfd
+> +while configured in this mode does not disable the irqfd.  The
+> +KVM_IRQFD_FLAG_OADN flag is only necessary on assignment.
 
-> In this long discusstion about the FAT acceptance over NFS, our belief
-> is still that the objective should be to reduce errors as much as
-> possible and then if there are certain scenarios - at least that could
-> be highlighted as a limitation in Documentation instead of completely
-> discarding the usage of FAT over NFS.  So how about puttting rename
-> scenario as a limitation ? In ideal scenario how many times this is
-> going to happen ?
+Under my suggested naming, this would be called a "resampling irqfd",
+with resampling requested via kvm_irqfd.resamplefd.
 
-My understanding of your patches is to introduce the silent corruption
-bug by getting wrong location via ino on some cases, instead of
-ESTALE. And make surprise to userland by change ino.
+> diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
+> index 2245cfa..dfdb5b2 100644
+> --- a/virt/kvm/eventfd.c
+> +++ b/virt/kvm/eventfd.c
+> @@ -43,6 +43,23 @@
+>   * --------------------------------------------------------------------
+>   */
+>  
+> +/*
+> + * OADN irqfds (On Ack, De-assert & Notify) are a special variety of
+> + * irqfds that assert an interrupt to the irqchip on eventfd trigger,
+> + * receieve notification when userspace acknowledges the interrupt,
+> + * automatically de-asserts the irqchip level, and notifies userspace
+> + * via the oadn_eventfd.  This object helps to provide one-to-many
+> + * deassert-to-notify so we can share a single irq source ID per OADN.
+> + */
+> +struct _irqfd_oadn {
+> +	struct kvm *kvm;
+> +	int irq_source_id; /* IRQ source ID shared by these irqfds */
+> +	struct list_head irqfds; /* list of irqfds using this object */
+> +	struct kvm_irq_ack_notifier notifier; /* IRQ ACK notification */
+> +	struct kref kref; /* Race-free removal */
+> +	struct list_head list;
+> +};
 
-Why is it safe to change ino? If you are saying to remove the changing
-ino on rename, how handle the case of collision?
+
+Why do you need per-gsi irq source IDs?  irq source ids only matter
+within a gsi.  For example KVM_IRQ_LINE shares one source ID for all
+lines (with result that userspace is forced to manage the ORing of
+shared inputs itself).
+
+
+
+
 -- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+error compiling committee.c: too many arguments to function
