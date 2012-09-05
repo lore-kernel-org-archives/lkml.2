@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758440Ab2IEKzk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 06:55:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56227 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752008Ab2IEKzj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 06:55:39 -0400
-Date: Wed, 5 Sep 2012 03:55:25 -0700
-From: tip-bot for Mathias Krause <minipli@googlemail.com>
-Message-ID: <tip-3d1334064fb365ea8f299874c2b4c46de2bee74d@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        minipli@googlemail.com, tglx@linutronix.de, luto@MIT.EDU
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        minipli@googlemail.com, tglx@linutronix.de, luto@MIT.EDU
-In-Reply-To: <1346621506-30857-3-git-send-email-minipli@googlemail.com>
-References: <1346621506-30857-3-git-send-email-minipli@googlemail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/debug] x86/vdso: Add __user annotation to VDSO32_SYMBOL
-Git-Commit-ID: 3d1334064fb365ea8f299874c2b4c46de2bee74d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1758410Ab2IEK4P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 06:56:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59394 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752072Ab2IEK4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 06:56:14 -0400
+Date: Wed, 5 Sep 2012 11:56:11 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 2/2] mm: support MIGRATE_DISCARD
+Message-ID: <20120905105611.GI11266@suse.de>
+References: <1346832673-12512-1-git-send-email-minchan@kernel.org>
+ <1346832673-12512-2-git-send-email-minchan@kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 05 Sep 2012 03:55:30 -0700 (PDT)
+In-Reply-To: <1346832673-12512-2-git-send-email-minchan@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3d1334064fb365ea8f299874c2b4c46de2bee74d
-Gitweb:     http://git.kernel.org/tip/3d1334064fb365ea8f299874c2b4c46de2bee74d
-Author:     Mathias Krause <minipli@googlemail.com>
-AuthorDate: Sun, 2 Sep 2012 23:31:41 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 5 Sep 2012 10:52:23 +0200
+On Wed, Sep 05, 2012 at 05:11:13PM +0900, Minchan Kim wrote:
+> This patch introudes MIGRATE_DISCARD mode in migration.
+> It drops *clean cache pages* instead of migration so that
+> migration latency could be reduced by avoiding (memcpy + page remapping).
+> It's useful for CMA because latency of migration is very important rather
+> than eviction of background processes's workingset. In addition, it needs
+> less free pages for migration targets so it could avoid memory reclaiming
+> to get free pages, which is another factor increase latency.
+> 
 
-x86/vdso: Add __user annotation to VDSO32_SYMBOL
+Bah, this was released while I was reviewing the older version. I did
+not read this one as closely but I see the enum problems have gone away
+at least. I'd still prefer if CMA had an additional helper to discard
+some pages with shrink_page_list() and migrate the remaining pages with
+migrate_pages(). That would remove the need to add a MIGRATE_DISCARD
+migrate mode at all.
 
-The address calculated by VDSO32_SYMBOL() is a pointer into
-userland. Add the __user annotation to fix related sparse
-warnings in its users.
-
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Andy Lutomirski <luto@MIT.EDU>
-Link: http://lkml.kernel.org/r/1346621506-30857-3-git-send-email-minipli@googlemail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/include/asm/vdso.h |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/include/asm/vdso.h b/arch/x86/include/asm/vdso.h
-index bb05228..fddb53d 100644
---- a/arch/x86/include/asm/vdso.h
-+++ b/arch/x86/include/asm/vdso.h
-@@ -11,7 +11,8 @@ extern const char VDSO32_PRELINK[];
- #define VDSO32_SYMBOL(base, name)					\
- ({									\
- 	extern const char VDSO32_##name[];				\
--	(void *)(VDSO32_##name - VDSO32_PRELINK + (unsigned long)(base)); \
-+	(void __user *)(VDSO32_##name - VDSO32_PRELINK +		\
-+			(unsigned long)(base));				\
- })
- #endif
- 
+-- 
+Mel Gorman
+SUSE Labs
