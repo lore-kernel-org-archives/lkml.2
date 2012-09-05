@@ -1,73 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758782Ab2IEPHw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 11:07:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56682 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752128Ab2IEPHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 11:07:51 -0400
-Date: Wed, 5 Sep 2012 18:09:13 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>, gleb@redhat.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v9 1/2] kvm: Use a reserved IRQ source ID for irqfd
-Message-ID: <20120905150913.GB11058@redhat.com>
-References: <20120821190800.24958.74812.stgit@bling.home>
- <20120821192903.24958.90138.stgit@bling.home>
- <20120821195813.GD9027@redhat.com>
- <1345579579.29292.67.camel@ul30vt.home>
- <20120821204125.GF9027@redhat.com>
- <1345583694.29292.91.camel@ul30vt.home>
- <20120822004138.GM9027@redhat.com>
- <5047633F.9020405@redhat.com>
- <20120905145153.GA11048@redhat.com>
+	id S1758819Ab2IEPIS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 11:08:18 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:52784 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757067Ab2IEPIQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 11:08:16 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -9
+X-BigFish: VPS-9(zzbb2dI98dI9371I146fI103dK1432I4015Izz1202hzzz2dh668h839hd25he5bhf0ah107ah1155h)
+X-WSS-ID: 0M9VU1L-02-8VY-02
+X-M-MSG: 
+Message-ID: <50476A41.30908@amd.com>
+Date: Wed, 5 Sep 2012 17:05:37 +0200
+From: Andre Przywara <andre.przywara@amd.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120905145153.GA11048@redhat.com>
+To: Thomas Renninger <trenn@suse.de>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Matthew Garret <mjg@redhat.com>,
+        <linux-pm@vger.kernel.org>, <cpufreq@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: [PATCH 0/8 v2] acpi-cpufreq: Move modern AMD cpufreq support
+ to acpi-cpufreq
+References: <1346747289-8421-1-git-send-email-andre.przywara@amd.com> <201209051546.22590.rjw@sisk.pl> <201209051625.41769.trenn@suse.de>
+In-Reply-To: <201209051625.41769.trenn@suse.de>
+Content-Type: text/plain; charset="ISO-8859-2"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 05, 2012 at 05:51:53PM +0300, Michael S. Tsirkin wrote:
-> On Wed, Sep 05, 2012 at 05:35:43PM +0300, Avi Kivity wrote:
-> > On 08/22/2012 03:41 AM, Michael S. Tsirkin wrote:
-> > >> 
-> > >> I assumed you were pointing out the level vs edge interaction.  If we
-> > >> call that a userspace bug, I can just drop this.  Thanks,
-> > >> 
-> > >> Alex
-> > > 
-> > > level is userspace bug I think :)
-> > 
-> > I don't see how it's a bug.  Suppose we have a vfio device that shares a
-> > gsi with an emulated device.  The emulated device naturally uses
-> > KVM_IRQ_LINE (it has no need to re-sample on ADN), while vfio naturally
-> > has to use irqfd.
-> 
-> Absolutely. But vfio needs to use irqfd with the new flag.
-> Using existing irqfd for level is a bug.
-> 
-> > Note one would expect that each irqfd gets its own irq source id, since
-> > they are all independent level sources.  The reason they don't is that
-> > we shut them down anyway and let the sources re-trigger (it is more
-> > accurate to say that they have no irq source id, but that would just
-> > muddle the implementation).
-> > 
-> > Alex, if the conclusion is that we do need this patch, then please add a
-> > comment explaining why we can share the source id among all irqfd users.
+On 09/05/2012 04:25 PM, Thomas Renninger wrote:
+> On Wednesday, September 05, 2012 03:46:22 PM Rafael J. Wysocki wrote:
+>> On Tuesday, September 04, 2012, Andre Przywara wrote:
+>>> Hi,
+>>>
+>>
+>> I have applied the whole series to the linux-next branch of the linux-pm.git
 
-Something along the lines of
+Thanks!
 
-/* 
-   For resample irqfds, level is a logical OR of all inputs;
-   to support this, track state for RESAMPLE irqfds separately
-   from userspace. We do not need to track state for each input since
-   they are all deasserted at the same time, before resampling.
-   */
+>> tree, but I'm quite unsure about [7/8].  Is it really necessary?  I mean, since
+>> we want users to switch to a different driver anyway, which already has a knob
+>> providing the functionality in question, what's the point really?
+>
+> Afaik this was mostly for compiler people or other developers doing
+> benchmarks to be able to avoid fluctating numbers caused by turbo/boost
+> mode.
+>
+> I don't know whether it's used by any userspace tool.
 
-?
+Well, at least we use it here in quite some scripts, both for testing 
+and for benchmarking.
+As this has been in for 2.5 year by now, I'd like to keep it for one or 
+two more major releases and then remove it.
 
-> > -- 
-> > error compiling committee.c: too many arguments to function
+> If, it would certainly
+> be an AMD specific tool for developers. If you (AMD) know a userspace tool
+> out there it may make sense to keep it the one or other kernel round,
+> otherwise I guess it can simply be deleted.
+>
+> I will add the functionality (to enable/disable turbo/boost mode)
+> to cpupower userspace tool as soon as this is in.
+> Shouldn't be much more than a -t option and a
+> one liner to read out or set another cpufreq sysfs file.
+
+Thanks, that would be nice.
+
+Regards,
+Andre.
+
+-- 
+Andre Przywara
+AMD-Operating System Research Center (OSRC), Dresden, Germany
+
