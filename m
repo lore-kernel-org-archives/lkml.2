@@ -1,82 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754938Ab2IEUnF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 16:43:05 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:36921 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752684Ab2IEUnC (ORCPT
+	id S1759371Ab2IEUpZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 16:45:25 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:49726 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754755Ab2IEUpT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 16:43:02 -0400
-Date: Wed, 5 Sep 2012 16:32:17 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Don Dutile <ddutile@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH 5/5] PCI/xen-pcifront: simplify code by hotplug safe
- pci_get_domain_bus_and_slot()
-Message-ID: <20120905203217.GA28018@phenom.dumpdata.com>
-References: <1346168638-32724-1-git-send-email-jiang.liu@huawei.com>
- <1346168638-32724-6-git-send-email-jiang.liu@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346168638-32724-6-git-send-email-jiang.liu@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Wed, 5 Sep 2012 16:45:19 -0400
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, linux-mm@kvack.org, ngupta@vflare.org,
+        konrad.wilk@oracle.com, sjenning@linux.vnet.ibm.com,
+        minchan@kernel.org, dan.magenheimer@oracle.com
+Subject: [PATCH V2 0/3] staging: ramster: move to new zcache2 code base
+Date: Wed,  5 Sep 2012 13:44:58 -0700
+Message-Id: <1346877901-12543-1-git-send-email-dan.magenheimer@oracle.com>
+X-Mailer: git-send-email 1.7.5.1
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 28, 2012 at 11:43:58PM +0800, Jiang Liu wrote:
-> Following code has a race window between pci_find_bus() and pci_get_slot()
-> if PCI hotplug operation happens between them which removes the pci_bus.
-> So use PCI hotplug safe interface pci_get_domain_bus_and_slot() instead,
-> which also reduces code complexity.
-> 
-> struct pci_bus *pci_bus = pci_find_bus(domain, busno);
-> struct pci_dev *pci_dev = pci_get_slot(pci_bus, devfn);
-> 
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+[V2: rebased to apply to 20120905 staging-next, no other changes]
 
-So:
+Hi Greg --
 
+Please apply for staging-next for the 3.7 window to move ramster forward.
+Since AFAICT there have been no patches or contributions from others to
+drivers/staging/ramster since it was merged, this totally new version
+of ramster should not run afoul and the patches should apply to
+your staging-next tree as of 20120905.
+
+Thanks,
+Dan
+
+Patchset overview:
+
+When ramster was merged into staging at 3.4, it used a "temporarily" forked
+version of zcache.  Code was proposed to merge zcache and ramster into
+a new common redesigned codebase which both resolves various serious design
+flaws and eliminates all code duplication between zcache and ramster, with
+the result to replace "zcache".  Sadly, that proposal was blocked, so the
+zcache (and tmem) code in drivers/staging/zcache and the zcache (and tmem)
+code in drivers/staging/ramster continue to be different.
+
+This patchset moves ramster to the new redesigned codebase and calls that
+new codebase "zcache2".  Most, if not all, of the redesign will eventually
+need to be merged with "zcache1" before zcache functionality should be
+promoted out of staging.
+
+An overview of the zcache2 rewrite is provided in a git commit comment
+later in this series.
+
+A significant item of debate in the new codebase is the removal of zsmalloc.
+This removal may be temporary if zsmalloc is enhanced with necessary
+features to meet the needs of the new zcache codebase.  Justification
+for the change can be found at http://lkml.org/lkml/2012/8/15/292
+Such zsmalloc enhancments will almost certainly necessitate a major
+rework, not a small patch.
+
+While this zcache2 codebase is far from perfect (and thus remains in staging),
+the foundation is now cleaner, more stable, more maintainable, and much
+better commented.
+
+Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-> ---
->  drivers/pci/xen-pcifront.c |   10 ++--------
->  1 file changed, 2 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
-> index d6cc62c..def8d0b 100644
-> --- a/drivers/pci/xen-pcifront.c
-> +++ b/drivers/pci/xen-pcifront.c
-> @@ -982,7 +982,6 @@ static int pcifront_detach_devices(struct pcifront_device *pdev)
->  	int err = 0;
->  	int i, num_devs;
->  	unsigned int domain, bus, slot, func;
-> -	struct pci_bus *pci_bus;
->  	struct pci_dev *pci_dev;
->  	char str[64];
->  
-> @@ -1032,13 +1031,8 @@ static int pcifront_detach_devices(struct pcifront_device *pdev)
->  			goto out;
->  		}
->  
-> -		pci_bus = pci_find_bus(domain, bus);
-> -		if (!pci_bus) {
-> -			dev_dbg(&pdev->xdev->dev, "Cannot get bus %04x:%02x\n",
-> -				domain, bus);
-> -			continue;
-> -		}
-> -		pci_dev = pci_get_slot(pci_bus, PCI_DEVFN(slot, func));
-> +		pci_dev = pci_get_domain_bus_and_slot(domain, bus,
-> +				PCI_DEVFN(slot, func));
->  		if (!pci_dev) {
->  			dev_dbg(&pdev->xdev->dev,
->  				"Cannot get PCI device %04x:%02x:%02x.%d\n",
-> -- 
-> 1.7.9.5
+---
+Diffstat:
+
+ drivers/staging/Kconfig                            |    4 +-
+ drivers/staging/Makefile                           |    2 +-
+ drivers/staging/ramster/Kconfig                    |   25 +-
+ drivers/staging/ramster/Makefile                   |    7 +-
+ drivers/staging/ramster/TODO                       |   13 -
+ drivers/staging/ramster/cluster/Makefile           |    3 -
+ drivers/staging/ramster/cluster/heartbeat.c        |  464 ---
+ drivers/staging/ramster/cluster/heartbeat.h        |   87 -
+ drivers/staging/ramster/cluster/masklog.c          |  155 -
+ drivers/staging/ramster/cluster/masklog.h          |  220 --
+ drivers/staging/ramster/cluster/nodemanager.c      |  992 ------
+ drivers/staging/ramster/cluster/nodemanager.h      |   88 -
+ .../staging/ramster/cluster/ramster_nodemanager.h  |   39 -
+ drivers/staging/ramster/cluster/tcp.c              | 2256 -------------
+ drivers/staging/ramster/cluster/tcp.h              |  159 -
+ drivers/staging/ramster/cluster/tcp_internal.h     |  248 --
+ drivers/staging/ramster/r2net.c                    |  401 ---
+ drivers/staging/ramster/ramster.h                  |  113 +-
+ drivers/staging/ramster/ramster/heartbeat.c        |  462 +++
+ drivers/staging/ramster/ramster/heartbeat.h        |   87 +
+ drivers/staging/ramster/ramster/masklog.c          |  155 +
+ drivers/staging/ramster/ramster/masklog.h          |  220 ++
+ drivers/staging/ramster/ramster/nodemanager.c      |  995 ++++++
+ drivers/staging/ramster/ramster/nodemanager.h      |   88 +
+ drivers/staging/ramster/ramster/r2net.c            |  414 +++
+ drivers/staging/ramster/ramster/ramster.c          |  985 ++++++
+ drivers/staging/ramster/ramster/ramster.h          |  161 +
+ .../staging/ramster/ramster/ramster_nodemanager.h  |   39 +
+ drivers/staging/ramster/ramster/tcp.c              | 2253 +++++++++++++
+ drivers/staging/ramster/ramster/tcp.h              |  159 +
+ drivers/staging/ramster/ramster/tcp_internal.h     |  248 ++
+ drivers/staging/ramster/tmem.c                     |  313 +-
+ drivers/staging/ramster/tmem.h                     |  109 +-
+ drivers/staging/ramster/xvmalloc.c                 |  509 ---
+ drivers/staging/ramster/xvmalloc.h                 |   30 -
+ drivers/staging/ramster/xvmalloc_int.h             |   95 -
+ drivers/staging/ramster/zbud.c                     | 1060 ++++++
+ drivers/staging/ramster/zbud.h                     |   33 +
+ drivers/staging/ramster/zcache-main.c              | 3532 ++++++--------------
+ drivers/staging/ramster/zcache.h                   |   55 +-
+ 40 files changed, 8711 insertions(+), 8567 deletions(-)
