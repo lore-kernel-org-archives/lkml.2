@@ -1,36 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758188Ab2IEJvI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 05:51:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54972 "EHLO mx2.suse.de"
+	id S1758366Ab2IEJvT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 05:51:19 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:38306 "EHLO mailhub1.si.c-s.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750826Ab2IEJvG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 05:51:06 -0400
-Date: Wed, 5 Sep 2012 11:50:55 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        linux-fbdev@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: [PATCH 0/6] HID: picoLCD additional fixes + CIR support
-In-Reply-To: <20120819192859.74136bb0@neptune.home>
-Message-ID: <alpine.LNX.2.00.1209051150390.11079@pobox.suse.cz>
-References: <20120730213656.0a9f6d30@neptune.home> <20120819192859.74136bb0@neptune.home>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+	id S1751879Ab2IEJvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 05:51:07 -0400
+Date: Wed, 5 Sep 2012 11:49:14 +0200
+Message-Id: <201209050949.q859nEBx007027@localhost.localdomain>
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>
+CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [PATCH 2/2] hwmon/lm70: Adds support for LM71 and LM74
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 19 Aug 2012, Bruno Prémont wrote:
+Adding support for LM74 and LM71 chips
 
-> This series fixes some race conditions in picoLCD driver during remove()
-> and adds support for IR functionality.
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
-I have now applied the series, thanks Bruno.
-
--- 
-Jiri Kosina
-SUSE Labs
+diff -u linux-3.5-vanilla/drivers/hwmon/Kconfig linux-3.5/drivers/hwmon/Kconfig
+--- linux-3.5-vanilla/drivers/hwmon/Kconfig	2012-07-21 22:58:29.000000000 +0200
++++ linux-3.5/drivers/hwmon/Kconfig	2012-08-25 00:44:05.000000000 +0200
+@@ -530,12 +530,12 @@
+ 	  will be called lm63.
+ 
+ config SENSORS_LM70
+-	tristate "National Semiconductor LM70 / Texas Instruments TMP121"
++	tristate "National Semiconductor LM70 and compatibles"
+ 	depends on SPI_MASTER
+ 	help
+ 	  If you say yes here you get support for the National Semiconductor
+-	  LM70 and Texas Instruments TMP121/TMP123 digital temperature
+-	  sensor chips.
++	  LM70, LM71, LM74 and Texas Instruments TMP121/TMP123 digital tempera-
++	  ture sensor chips.
+ 
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called lm70.
+diff -u linux-3.5-vanilla/drivers/hwmon/lm70.c linux-3.5/drivers/hwmon/lm70.c
+--- linux-3.5-vanilla/drivers/hwmon/lm70.c	2012-07-21 22:58:29.000000000 +0200
++++ linux-3.5/drivers/hwmon/lm70.c	2012-08-25 00:49:46.000000000 +0200
+@@ -43,6 +43,8 @@
+ 
+ #define LM70_CHIP_LM70		0	/* original NS LM70 */
+ #define LM70_CHIP_TMP121	1	/* TI TMP121/TMP123 */
++#define LM70_CHIP_LM71		2	/* NS LM71 */
++#define LM70_CHIP_LM74		3	/* NS LM74 */
+ 
+ struct lm70 {
+ 	struct device *hwmon_dev;
+@@ -88,9 +90,13 @@
+ 	 * Celsius.
+ 	 * So it's equivalent to multiplying by 0.25 * 1000 = 250.
+ 	 *
+-	 * TMP121/TMP123:
++	 * LM74 and TMP121/TMP123:
+ 	 * 13 bits of 2's complement data, discard LSB 3 bits,
+ 	 * resolution 0.0625 degrees celsius.
++	 *
++	 * LM71:
++	 * 14 bits of 2's complement data, discard LSB 2 bits,
++	 * resolution 0.0312 degrees celsius.
+ 	 */
+ 	switch (p_lm70->chip) {
+ 	case LM70_CHIP_LM70:
+@@ -98,8 +104,13 @@
+ 		break;
+ 
+ 	case LM70_CHIP_TMP121:
++	case LM70_CHIP_LM74:
+ 		val = ((int)raw / 8) * 625 / 10;
+ 		break;
++
++	case LM70_CHIP_LM71:
++		val = ((int)raw / 4) * 3125 / 100;
++		break;
+ 	}
+ 
+ 	status = sprintf(buf, "%d\n", val); /* millidegrees Celsius */
+@@ -123,6 +134,12 @@
+ 	case LM70_CHIP_TMP121:
+ 		ret = sprintf(buf, "tmp121\n");
+ 		break;
++	case LM70_CHIP_LM71:
++		ret = sprintf(buf, "lm71\n");
++		break;
++	case LM70_CHIP_LM74:
++		ret = sprintf(buf, "lm74\n");
++		break;
+ 	default:
+ 		ret = -EINVAL;
+ 	}
+@@ -139,7 +156,7 @@
+ 	struct lm70 *p_lm70;
+ 	int status;
+ 
+-	/* signaling is SPI_MODE_0 for both LM70 and TMP121 */
++	/* signaling is SPI_MODE_0 */
+ 	if (spi->mode & (SPI_CPOL | SPI_CPHA))
+ 		return -EINVAL;
+ 
+@@ -198,6 +215,8 @@
+ static const struct spi_device_id lm70_ids[] = {
+ 	{ "lm70",   LM70_CHIP_LM70 },
+ 	{ "tmp121", LM70_CHIP_TMP121 },
++	{ "lm71",   LM70_CHIP_LM71 },
++	{ "lm74",   LM70_CHIP_LM74 },
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(spi, lm70_ids);
+@@ -215,5 +234,5 @@
+ module_spi_driver(lm70_driver);
+ 
+ MODULE_AUTHOR("Kaiwan N Billimoria");
+-MODULE_DESCRIPTION("NS LM70 / TI TMP121/TMP123 Linux driver");
++MODULE_DESCRIPTION("NS LM70 and compatibles Linux driver");
+ MODULE_LICENSE("GPL");
+diff -u linux-3.5-vanilla/Documentation/hwmon/lm70 linux-3.5/Documentation/hwmon/lm70
+--- linux-3.5-vanilla/Documentation/hwmon/lm70	2012-07-21 22:58:29.000000000 +0200
++++ linux-3.5/Documentation/hwmon/lm70	2012-08-25 00:37:15.000000000 +0200
+@@ -6,6 +6,10 @@
+     Datasheet: http://www.national.com/pf/LM/LM70.html
+   * Texas Instruments TMP121/TMP123
+     Information: http://focus.ti.com/docs/prod/folders/print/tmp121.html
++  * National Semiconductor LM71
++    Datasheet: http://www.ti.com/product/LM71
++  * National Semiconductor LM74
++    Datasheet: http://www.ti.com/product/LM74
+ 
+ Author:
+         Kaiwan N Billimoria <kaiwan@designergraphix.com>
+@@ -31,9 +35,12 @@
+ with a "SPI master controller driver", see drivers/spi/spi_lm70llp.c
+ and its associated documentation.
+ 
+-The TMP121/TMP123 are very similar; main difference is 13-bit temperature
+-data (0.0625 degrees celsius resolution).
++The LM74 and TMP121/TMP123 are very similar; main difference is 13-bit
++temperature data (0.0625 degrees celsius resolution).
+ 
++The LM71 is also very similar; main difference is 14-bit temperature
++data (0.03125 degrees celsius resolution).
++
+ Thanks to
+ ---------
+ Jean Delvare <khali@linux-fr.org> for mentoring the hwmon-side driver
