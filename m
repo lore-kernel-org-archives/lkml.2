@@ -1,80 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754420Ab2IECya (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 22:54:30 -0400
-Received: from gate.crashing.org ([63.228.1.57]:53228 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751980Ab2IECy3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 22:54:29 -0400
-Message-ID: <1346813643.2257.24.camel@pasglop>
-Subject: Re: [PATCH v2] powerpc: fix personality handling in
- ppc64_personality()
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Andreas Schwab <schwab@linux-m68k.org>, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Date: Wed, 05 Sep 2012 12:54:03 +1000
-In-Reply-To: <alpine.LNX.2.00.1208020907490.14910@pobox.suse.cz>
-References: <alpine.LNX.2.00.1208012201520.14910@pobox.suse.cz>
-	 <m27gtitfv4.fsf@igel.home>
-	 <alpine.LNX.2.00.1208020907490.14910@pobox.suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1758028Ab2IEC7x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 22:59:53 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:34195 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751263Ab2IEC7v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 22:59:51 -0400
+Date: Wed, 5 Sep 2012 03:00:25 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Aristeu Rozanski <aris@redhat.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        James Morris <jmorris@namei.org>, Pavel Emelyanov <xemul@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2 1/6] device_cgroup: add "behavior" in dev_cgroup
+ structure
+Message-ID: <20120905030025.GA13310@mail.hallyn.com>
+References: <20120904143419.892872876@napanee.usersys.redhat.com>
+ <20120904143420.234142640@napanee.usersys.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120904143420.234142640@napanee.usersys.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-02 at 09:10 +0200, Jiri Kosina wrote:
-> Directly comparing current->personality against PER_LINUX32 doesn't work
-> in cases when any of the personality flags stored in the top three bytes
-> are used.
+Quoting Aristeu Rozanski (aris@redhat.com):
+> behavior will determine if the default policy is to deny all device access
+> unless for the ones in the exception list.
 > 
-> Directly forcefully setting personality to PER_LINUX32 or PER_LINUX
-> discards any flags stored in the top three bytes
+> This variable will be used in the next patches to convert device_cgroup
+> internally into a default policy + rules.
 > 
-> Use personality() macro to compare only PER_MASK bytes and make sure that
-> we are setting only the bits that should be set, instead of
-> overwriting the whole value.
+> v2:
+> - renamed deny_all to behavior
 > 
-> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Li Zefan <lizefan@huawei.com>
+> Cc: James Morris <jmorris@namei.org>
+> Cc: Pavel Emelyanov <xemul@openvz.org>
+> Cc: Serge Hallyn <serge.hallyn@canonical.com>
+
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+
+> Signed-off-by: Aristeu Rozanski <aris@redhat.com>
+> 
 > ---
+>  security/device_cgroup.c |    8 ++++++++
+>  1 file changed, 8 insertions(+)
 > 
-> changed since v1: fix the bit ops to reflect the fact that PER_LINUX is 
-> actually 0
-
-Had already merged v1 (oops.. didn't spot the issue with PER_LINUX being
-0). Can you send an incremental fixup ?
-
-Cheers,
-Ben.
-
->  arch/powerpc/kernel/syscalls.c |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/powerpc/kernel/syscalls.c b/arch/powerpc/kernel/syscalls.c
-> index f2496f2..dc1558e 100644
-> --- a/arch/powerpc/kernel/syscalls.c
-> +++ b/arch/powerpc/kernel/syscalls.c
-> @@ -107,11 +107,11 @@ long ppc64_personality(unsigned long personality)
->  	long ret;
+> Index: github/security/device_cgroup.c
+> ===================================================================
+> --- github.orig/security/device_cgroup.c	2012-08-21 09:49:38.698415513 -0400
+> +++ github/security/device_cgroup.c	2012-08-21 10:50:34.650810797 -0400
+> @@ -42,6 +42,10 @@
+>  struct dev_cgroup {
+>  	struct cgroup_subsys_state css;
+>  	struct list_head whitelist;
+> +	enum {
+> +		DEVCG_DEFAULT_ALLOW,
+> +		DEVCG_DEFAULT_DENY,
+> +	} behavior;
+>  };
 >  
->  	if (personality(current->personality) == PER_LINUX32
-> -	    && personality == PER_LINUX)
-> -		personality = PER_LINUX32;
-> +	    && personality(personality) == PER_LINUX)
-> +		personality |= PER_LINUX32;
->  	ret = sys_personality(personality);
-> -	if (ret == PER_LINUX32)
-> -		ret = PER_LINUX;
-> +	if (personality(ret) == PER_LINUX32)
-> +		ret &= ~PER_LINUX32;
->  	return ret;
->  }
->  #endif
-> -- 
-> 1.7.3.1
+>  static inline struct dev_cgroup *css_to_devcgroup(struct cgroup_subsys_state *s)
+> @@ -178,12 +182,14 @@
+>  		wh->minor = wh->major = ~0;
+>  		wh->type = DEV_ALL;
+>  		wh->access = ACC_MASK;
+> +		dev_cgroup->behavior = DEVCG_DEFAULT_ALLOW;
+>  		list_add(&wh->list, &dev_cgroup->whitelist);
+>  	} else {
+>  		parent_dev_cgroup = cgroup_to_devcgroup(parent_cgroup);
+>  		mutex_lock(&devcgroup_mutex);
+>  		ret = dev_whitelist_copy(&dev_cgroup->whitelist,
+>  				&parent_dev_cgroup->whitelist);
+> +		dev_cgroup->behavior = parent_dev_cgroup->behavior;
+>  		mutex_unlock(&devcgroup_mutex);
+>  		if (ret) {
+>  			kfree(dev_cgroup);
+> @@ -409,9 +415,11 @@
+>  	case DEVCG_ALLOW:
+>  		if (!parent_has_perm(devcgroup, &wh))
+>  			return -EPERM;
+> +		devcgroup->behavior = DEVCG_DEFAULT_ALLOW;
+>  		return dev_whitelist_add(devcgroup, &wh);
+>  	case DEVCG_DENY:
+>  		dev_whitelist_rm(devcgroup, &wh);
+> +		devcgroup->behavior = DEVCG_DEFAULT_DENY;
+>  		break;
+>  	default:
+>  		return -EINVAL;
 > 
-
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
