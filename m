@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758325Ab2IEJ4O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 05:56:14 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41489 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751493Ab2IEJ4M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 05:56:12 -0400
-Date: Wed, 5 Sep 2012 02:56:06 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, linux-mm@kvack.org, davej@redhat.com,
-        ben@decadent.org.uk, pjt@google.com, lennart@poettering.net,
-        kay.sievers@vrfy.org
-Subject: Re: [RFC 0/5] forced comounts for cgroups.
-Message-ID: <20120905095606.GN3195@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <20120905082947.GD3195@dhcp-172-17-108-109.mtv.corp.google.com>
- <50470EBF.9070109@parallels.com>
- <20120905084740.GE3195@dhcp-172-17-108-109.mtv.corp.google.com>
- <1346835993.2600.9.camel@twins>
- <20120905091140.GH3195@dhcp-172-17-108-109.mtv.corp.google.com>
- <50471782.6060800@parallels.com>
- <1346837209.2600.14.camel@twins>
- <50471C0C.7050600@parallels.com>
- <20120905094520.GM3195@dhcp-172-17-108-109.mtv.corp.google.com>
- <50471FEE.8060408@parallels.com>
+	id S1758353Ab2IEJ5p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 05:57:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55631 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751429Ab2IEJ5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 05:57:44 -0400
+Date: Wed, 5 Sep 2012 11:57:36 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: Chris Schlund <chrisschlund@gmx.de>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HID: hid-lcpower: Use HID_UP_LOGIVENDOR instead of hard
+ coded 0x0ffbc0000
+In-Reply-To: <1346811570.3994.0.camel@phoenix>
+Message-ID: <alpine.LNX.2.00.1209051156560.11079@pobox.suse.cz>
+References: <1346811570.3994.0.camel@phoenix>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50471FEE.8060408@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 05, 2012 at 01:48:30PM +0400, Glauber Costa wrote:
-> > Nope, as I wrote in the other reply, 
+On Wed, 5 Sep 2012, Axel Lin wrote:
+
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/hid/hid-lcpower.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> Would you mind, then, stopping for a moment and telling us what it is,
-> then, that you envision?
+> diff --git a/drivers/hid/hid-lcpower.c b/drivers/hid/hid-lcpower.c
+> index c4fe9bd0..22bc14a 100644
+> --- a/drivers/hid/hid-lcpower.c
+> +++ b/drivers/hid/hid-lcpower.c
+> @@ -24,7 +24,7 @@ static int ts_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+>  		struct hid_field *field, struct hid_usage *usage,
+>  		unsigned long **bit, int *max)
+>  {
+> -	if ((usage->hid & HID_USAGE_PAGE) != 0x0ffbc0000)
+> +	if ((usage->hid & HID_USAGE_PAGE) != HID_UP_LOGIVENDOR)
+>  		return 0;
+>  
+>  	switch (usage->hid & HID_USAGE) {
 
-I thought I already explained it a couple times in this thread (also
-in the big thread from several months ago).  It's nearing three in the
-morning here.  I'll try to explain it better tomorrow.
+The name of the actual constant is quite losing its point with more and 
+more non-Logitech devices using this usage page.
 
-Thanks.
+I am applying your patch now, but I guess we'll rather rename the define 
+in a near future.
+
+Thanks,
 
 -- 
-tejun
+Jiri Kosina
+SUSE Labs
