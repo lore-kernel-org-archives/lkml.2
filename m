@@ -1,230 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932816Ab2IEFKi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 01:10:38 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:47884 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751768Ab2IEFKY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 01:10:24 -0400
-X-AuditID: 9c93016f-b7cc0ae000000e9f-4b-5046debd5089
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Stephane Eranian <eranian@google.com>,
-        Robert Richter <robert.richter@amd.com>
-Subject: [PATCH 7/7] perf header: Remove unused @feat arg from ->process callback
-Date: Wed,  5 Sep 2012 14:02:53 +0900
-Message-Id: <1346821373-31621-8-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1346821373-31621-1-git-send-email-namhyung@kernel.org>
-References: <1346821373-31621-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	id S932903Ab2IEFLf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 01:11:35 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:51181 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751788Ab2IEFLa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 01:11:30 -0400
+Message-ID: <5046DEC1.6050704@ti.com>
+Date: Wed, 5 Sep 2012 10:40:25 +0530
+From: Prabhakar Lad <prabhakar.lad@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Sakari Ailus <sakari.ailus@iki.fi>
+CC: LMML <linux-media@vger.kernel.org>,
+        dlos <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-kernel@vger.kernel.org>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        <linux-doc@vger.kernel.org>, Hans Verkuil <hans.verkuil@cisco.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Rob Landley <rob@landley.net>
+Subject: Re: [PATCH v4] media: v4l2-ctrls: add control for dpcm predictor
+References: <1346737072-24341-1-git-send-email-prabhakar.lad@ti.com> <20120904191227.GE6834@valkosipuli.retiisi.org.uk>
+In-Reply-To: <20120904191227.GE6834@valkosipuli.retiisi.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+Hi Sakari,
 
-As the @feat arg is not used anywhere, get rid of it from the signature.
+Thanks for the review.
 
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Robert Richter <robert.richter@amd.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/header.c | 59 ++++++++++++++++++++----------------------------
- 1 file changed, 25 insertions(+), 34 deletions(-)
+On Wednesday 05 September 2012 12:42 AM, Sakari Ailus wrote:
+> Hi Prabhakar,
+> 
+> Thanks for the patch. I've got a few comments below.
+> 
+> On Tue, Sep 04, 2012 at 11:07:52AM +0530, Prabhakar Lad wrote:
+>> From: Lad, Prabhakar <prabhakar.lad@ti.com>
+>>
+>> add V4L2_CID_DPCM_PREDICTOR control of type menu, which
+>> determines the dpcm predictor. The predictor can be either
+>> simple or advanced.
+>>
+>> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+>> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+>> Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
+>> Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+>> Cc: Sakari Ailus <sakari.ailus@iki.fi>
+>> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+>> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+>> Cc: Hans de Goede <hdegoede@redhat.com>
+>> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+>> Cc: Rob Landley <rob@landley.net>
+>> ---
+>> This patches has one checkpatch warning for line over
+>> 80 characters altough it can be avoided I have kept it
+>> for consistency.
+>>
+>> Changes for v4:
+>> 1: Aligned the description to fit appropriately in the
+>> para tag, pointed by Sylwester.
+>>
+>> Changes for v3:
+>> 1: Added better explanation for DPCM, pointed by Hans.
+>>
+>> Changes for v2:
+>> 1: Added documentaion in controls.xml pointed by Sylwester.
+>> 2: Chnaged V4L2_DPCM_PREDICTOR_ADVANCE to V4L2_DPCM_PREDICTOR_ADVANCED
+>>    pointed by Sakari.
+>>
+>>  Documentation/DocBook/media/v4l/controls.xml |   46 +++++++++++++++++++++++++-
+>>  drivers/media/v4l2-core/v4l2-ctrls.c         |    9 +++++
+>>  include/linux/videodev2.h                    |    5 +++
+>>  3 files changed, 59 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
+>> index 93b9c68..ad873ea 100644
+>> --- a/Documentation/DocBook/media/v4l/controls.xml
+>> +++ b/Documentation/DocBook/media/v4l/controls.xml
+>> @@ -4267,7 +4267,51 @@ interface and may change in the future.</para>
+>>  	    pixels / second.
+>>  	    </entry>
+>>  	  </row>
+>> -	  <row><entry></entry></row>
+>> +	  <row>
+>> +	    <entry spanname="id"><constant>V4L2_CID_DPCM_PREDICTOR</constant></entry>
+>> +	    <entry>menu</entry>
+>> +	  </row>
+>> +	  <row id="v4l2-dpcm-predictor">
+>> +	    <entry spanname="descr"> Differential pulse-code modulation (DPCM) is a signal
+>> +	    encoder that uses the baseline of pulse-code modulation (PCM) but adds some
+>> +	    functionalities based on the prediction of the samples of the signal. The input
+>> +	    can be an analog signal or a digital signal.
+>> +
+>> +	    <para>If the input is a continuous-time analog signal, it needs to be sampled
+>> +	    first so that a discrete-time signal is the input to the DPCM encoder.</para>
+>> +
+>> +	    <para>Simple: take the values of two consecutive samples; if they are analog
+>> +	    samples, quantize them; calculate the difference between the first one and the
+>> +	    next; the output is the difference, and it can be further entropy coded.</para>
+>> +
+>> +	    <para>Advanced: instead of taking a difference relative to a previous input sample,
+>> +	    take the difference relative to the output of a local model of the decoder process;
+>> +	    in this option, the difference can be quantized, which allows a good way to
+>> +	    incorporate a controlled loss in the encoding.</para>
+> 
+> This is directly from Wikipedia, isn't it?
+> 
+Yes.
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 2cc0954d984c..06ecd577d1b8 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -1541,16 +1541,15 @@ out:
- }
- 
- static int process_tracing_data(struct perf_file_section *section __unused,
--			      struct perf_header *ph __unused,
--			      int feat __unused, int fd, void *data)
-+				struct perf_header *ph __unused, int fd,
-+				void *data)
- {
- 	trace_report(fd, data, false);
- 	return 0;
- }
- 
- static int process_build_id(struct perf_file_section *section,
--			    struct perf_header *ph,
--			    int feat __unused, int fd, void *data __used)
-+			    struct perf_header *ph, int fd, void *data __used)
- {
- 	if (perf_header__read_build_ids(ph, fd, section->offset, section->size))
- 		pr_debug("Failed to read buildids, continuing...\n");
-@@ -1558,40 +1557,35 @@ static int process_build_id(struct perf_file_section *section,
- }
- 
- static int process_hostname(struct perf_file_section *section __unused,
--			    struct perf_header *ph,
--			    int feat __unused, int fd, void *data __used)
-+			    struct perf_header *ph, int fd, void *data __used)
- {
- 	ph->info.hostname = do_read_string(fd, ph);
- 	return ph->info.hostname ? 0 : -ENOMEM;
- }
- 
- static int process_osrelease(struct perf_file_section *section __unused,
--			     struct perf_header *ph,
--			     int feat __unused, int fd, void *data __used)
-+			     struct perf_header *ph, int fd, void *data __used)
- {
- 	ph->info.os_release = do_read_string(fd, ph);
- 	return ph->info.os_release ? 0 : -ENOMEM;
- }
- 
- static int process_version(struct perf_file_section *section __unused,
--			   struct perf_header *ph,
--			   int feat __unused, int fd, void *data __used)
-+			   struct perf_header *ph, int fd, void *data __used)
- {
- 	ph->info.version = do_read_string(fd, ph);
- 	return ph->info.version ? 0 : -ENOMEM;
- }
- 
- static int process_arch(struct perf_file_section *section __unused,
--			struct perf_header *ph,
--			int feat __unused, int fd, void *data __used)
-+			struct perf_header *ph, int fd, void *data __used)
- {
- 	ph->info.arch = do_read_string(fd, ph);
- 	return ph->info.arch ? 0 : -ENOMEM;
- }
- 
- static int process_nrcpus(struct perf_file_section *section __unused,
--			  struct perf_header *ph,
--			  int feat __unused, int fd, void *data __used)
-+			  struct perf_header *ph, int fd, void *data __used)
- {
- 	size_t ret;
- 	u32 nr;
-@@ -1617,24 +1611,21 @@ static int process_nrcpus(struct perf_file_section *section __unused,
- }
- 
- static int process_cpudesc(struct perf_file_section *section __unused,
--			   struct perf_header *ph,
--			   int feat __unused, int fd, void *data __used)
-+			   struct perf_header *ph, int fd, void *data __used)
- {
- 	ph->info.cpu_desc = do_read_string(fd, ph);
- 	return ph->info.cpu_desc ? 0 : -ENOMEM;
- }
- 
- static int process_cpuid(struct perf_file_section *section __unused,
--			 struct perf_header *ph,
--			 int feat __unused, int fd, void *data __used)
-+			 struct perf_header *ph, int fd, void *data __used)
- {
- 	ph->info.cpuid = do_read_string(fd, ph);
- 	return ph->info.cpuid ? 0 : -ENOMEM;
- }
- 
- static int process_total_mem(struct perf_file_section *section __unused,
--			     struct perf_header *ph,
--			     int feat __unused, int fd, void *data __used)
-+			     struct perf_header *ph, int fd, void *data __used)
- {
- 	uint64_t mem;
- 	size_t ret;
-@@ -1664,7 +1655,8 @@ perf_evlist__find_by_index(struct perf_evlist *evlist, int idx)
- }
- 
- static void
--perf_evlist__set_event_name(struct perf_evlist *evlist, struct perf_evsel *event)
-+perf_evlist__set_event_name(struct perf_evlist *evlist,
-+			    struct perf_evsel *event)
- {
- 	struct perf_evsel *evsel;
- 
-@@ -1683,15 +1675,15 @@ perf_evlist__set_event_name(struct perf_evlist *evlist, struct perf_evsel *event
- 
- static int
- process_event_desc(struct perf_file_section *section __unused,
--		   struct perf_header *header, int feat __unused, int fd,
--		   void *data __used)
-+		   struct perf_header *header, int fd, void *data __used)
- {
--	struct perf_session *session = container_of(header, struct perf_session, header);
-+	struct perf_session *session;
- 	struct perf_evsel *evsel, *events = read_event_desc(header, fd);
- 
- 	if (!events)
- 		return 0;
- 
-+	session = container_of(header, struct perf_session, header);
- 	for (evsel = events; evsel->attr.size; evsel++)
- 		perf_evlist__set_event_name(session->evlist, evsel);
- 
-@@ -1701,8 +1693,7 @@ process_event_desc(struct perf_file_section *section __unused,
- }
- 
- static int process_cmdline(struct perf_file_section *section __unused,
--			   struct perf_header *ph,
--			   int feat __unused, int fd, void *data __used)
-+			   struct perf_header *ph, int fd, void *data __used)
- {
- 	size_t ret;
- 	char *str;
-@@ -1737,8 +1728,8 @@ error:
- }
- 
- static int process_cpu_topology(struct perf_file_section *section __unused,
--				struct perf_header *ph,
--				int feat __unused, int fd, void *data __used)
-+				struct perf_header *ph, int fd,
-+				void *data __used)
- {
- 	size_t ret;
- 	u32 nr, i;
-@@ -1793,8 +1784,8 @@ error:
- }
- 
- static int process_numa_topology(struct perf_file_section *section __unused,
--				 struct perf_header *ph,
--				 int feat __unused, int fd, void *data __used)
-+				 struct perf_header *ph, int fd,
-+				 void *data __used)
- {
- 	size_t ret;
- 	u32 nr, node, i;
-@@ -1853,8 +1844,8 @@ error:
- }
- 
- static int process_pmu_mappings(struct perf_file_section *section __unused,
--				struct perf_header *ph,
--				int feat __unused, int fd, void *data __used)
-+				struct perf_header *ph, int fd,
-+				void *data __used)
- {
- 	size_t ret;
- 	char *name;
-@@ -1906,7 +1897,7 @@ struct feature_ops {
- 	int (*write)(int fd, struct perf_header *h, struct perf_evlist *evlist);
- 	void (*print)(struct perf_header *h, int fd, FILE *fp);
- 	int (*process)(struct perf_file_section *section,
--		       struct perf_header *h, int feat, int fd, void *data);
-+		       struct perf_header *h, int fd, void *data);
- 	const char *name;
- 	bool full_only;
- };
-@@ -2420,7 +2411,7 @@ static int perf_file_section__process(struct perf_file_section *section,
- 	if (!feat_ops[feat].process)
- 		return 0;
- 
--	return feat_ops[feat].process(section, ph, feat, fd, data);
-+	return feat_ops[feat].process(section, ph, fd, data);
- }
- 
- static int perf_file_header__read_pipe(struct perf_pipe_file_header *header,
--- 
-1.7.11.4
+> What comes to the content, DPCM in the context of V4L2 media bus codes, as a
+> digital interface, is always digital. So there's no need to document it.
+> Entropy coding is also out of the question: the samples of the currently
+> defined formats are equal in size.
+> 
+Ok.
+
+> Another thing what I'm not sure is the definition of the simple and advanced
+> encoders. I've seen sensors that allow you to choose which one to use, but
+> the documentation hasn't stated what the actual implementation is. Does TI
+> documentation do so?
+> 
+Couldn't find much apart from this 'The DPCM compression system uses two
+different predictors; one is simple and the other is complex. Predictor1
+is very simple, so the processing power and the memory requirements are
+reduced with it (when the image quality is already high enough).
+Predictor2 gives a slightly better prediction for pixel value and the
+image quality can be improved with it.'
+
+> In V4L2 documentation we should state what is common in the hardware
+> documentation, and that is mostly limited to "simple" and "advanced". I
+> really don't know enough that I could say what the exact implamentation of
+> those two are in all of the cases.
+> 
+> I suggest we leave just a few words of the DPCM compression itself (roughly
+> the factual content of the first paragraph with the exception of the
+> reference to analogue signal) and a link to Wikipedia.
+> 
+Ok.
+
+>> +	    <para>Applying one of these two processes, short-term redundancy (positive correlation of
+>> +	    nearby values) of the signal is eliminated; compression ratios on the order of 2 to 4
+>> +	    can be achieved if differences are subsequently entropy coded, because the entropy of
+>> +	    the difference signal is much smaller than that of the original discrete signal treated
+>> +	    as independent samples.For more information about DPCM see <ulink
+>> +	    url="http://en.wikipedia.org/wiki/Differential_pulse-code_modulation">Wikipedia</ulink>.</para>
+>> +	    </entry>
+>> +	  </row>
+>> +	  <row>
+>> +	    <entrytbl spanname="descr" cols="2">
+>> +	      <tbody valign="top">
+>> +	        <row>
+>> +	         <entry><constant>V4L2_DPCM_PREDICTOR_SIMPLE</constant></entry>
+>> +	          <entry>Predictor type is simple</entry>
+>> +	        </row>
+>> +	        <row>
+>> +	          <entry><constant>V4L2_DPCM_PREDICTOR_ADVANCED</constant></entry>
+>> +	          <entry>Predictor type is advanced</entry>
+>> +	        </row>
+>> +	      </tbody>
+>> +	    </entrytbl>
+>> +	  </row>
+>> +	<row><entry></entry></row>
+>>  	</tbody>
+>>        </tgroup>
+>>        </table>
+>> diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
+>> index b6a2ee7..2d7bc15 100644
+>> --- a/drivers/media/v4l2-core/v4l2-ctrls.c
+>> +++ b/drivers/media/v4l2-core/v4l2-ctrls.c
+>> @@ -425,6 +425,11 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
+>>  		"Gray",
+>>  		NULL,
+>>  	};
+>> +	static const char * const dpcm_predictor[] = {
+>> +		"Simple Predictor",
+>> +		"Advanced Predictor",
+> 
+Ok.
+
+Regards,
+--Prabhakar Lad
+
+> As the control's name is already "DPCM Predictor", I think you can drop
+> " Predictor" from the menu items.
+> 
+> Kind regards,
+> 
 
