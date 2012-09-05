@@ -1,90 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758472Ab2IEKH3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 06:07:29 -0400
-Received: from zimbra.linbit.com ([212.69.161.123]:44461 "EHLO
-	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751263Ab2IEKH1 (ORCPT
+	id S1758236Ab2IEKVC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 06:21:02 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36744 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751298Ab2IEKVA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 06:07:27 -0400
-Date: Wed, 5 Sep 2012 12:07:24 +0200
-From: Lars Ellenberg <lars.ellenberg@linbit.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Philipp Reisner <philipp.reisner@linbit.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
-        drbd-dev@lists.linbit.com
-Subject: Re: [Drbd-dev] FLUSH/FUA documentation & code discrepancy
-Message-ID: <20120905100724.GA27527@soda.linbit>
-Mail-Followup-To: Tejun Heo <tj@kernel.org>,
-	Philipp Reisner <philipp.reisner@linbit.com>,
-	Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-	Christoph Hellwig <hch@lst.de>, drbd-dev@lists.linbit.com
-References: <8439412.RChiDciQdh@fat-tyre>
- <20120904224620.GB9092@dhcp-172-17-108-109.mtv.corp.google.com>
- <3029802.oqG0dEY71l@fat-tyre>
- <20120905084915.GF3195@dhcp-172-17-108-109.mtv.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120905084915.GF3195@dhcp-172-17-108-109.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 5 Sep 2012 06:21:00 -0400
+Subject: Re: [RFC 0/5] forced comounts for cgroups.
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, linux-mm@kvack.org, davej@redhat.com,
+        ben@decadent.org.uk, pjt@google.com, lennart@poettering.net,
+        kay.sievers@vrfy.org
+In-Reply-To: <50471C0C.7050600@parallels.com>
+References: <1346768300-10282-1-git-send-email-glommer@parallels.com>
+	 <20120904214602.GA9092@dhcp-172-17-108-109.mtv.corp.google.com>
+	 <5047074D.1030104@parallels.com>
+	 <20120905081439.GC3195@dhcp-172-17-108-109.mtv.corp.google.com>
+	 <50470A87.1040701@parallels.com>
+	 <20120905082947.GD3195@dhcp-172-17-108-109.mtv.corp.google.com>
+	 <50470EBF.9070109@parallels.com>
+	 <20120905084740.GE3195@dhcp-172-17-108-109.mtv.corp.google.com>
+	 <1346835993.2600.9.camel@twins>
+	 <20120905091140.GH3195@dhcp-172-17-108-109.mtv.corp.google.com>
+	 <50471782.6060800@parallels.com> <1346837209.2600.14.camel@twins>
+	 <50471C0C.7050600@parallels.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 05 Sep 2012 12:20:53 +0200
+Message-ID: <1346840453.2461.6.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 05, 2012 at 01:49:15AM -0700, Tejun Heo wrote:
-> On Wed, Sep 05, 2012 at 10:44:55AM +0200, Philipp Reisner wrote:
-> > > Currently, FLUSH/FUA doesn't enforce any ordering requirement.  File
-> > > systems are responsible for draining all writes which have to happen
-> > > before and not issue further writes which should come after.
-> > 
-> > Ok. That is a clear statement. So we will do it that way.
-> > 
-> > The "Currently" in you statement, suggests that there might be something
-> > more mighty in the future. Is that true?
+On Wed, 2012-09-05 at 13:31 +0400, Glauber Costa wrote:
 > 
-> Heh, I was more thinking about the past.  We used to have barrier
-> support with much stricter ordering.  I don't think we're gonna change
-> the ordering requirement in any foreseeable future.
+> You wouldn't have to do more than one hierarchy walks for that. What
+> Tejun seems to want, is the ability to not have a particular controller
+> at some point in the tree. But if they exist, they are always together. 
 
-So reiterating the situation:
+Right, but the accounting is very much tied to the control structures, I
+suppose we could change that, but my jet-leg addled brain isn't seeing
+anything particularly nice atm.
 
-If I'd submit a non-empty bio with FLUSH/FUA set,
-on a queue that does support flush, we get to
-	blk_queue_bio()
-		if (bio->bi_rw & (REQ_FLUSH | REQ_FUA)) {
-			spin_lock_irq(q->queue_lock);
-			where = ELEVATOR_INSERT_FLUSH;
-			goto get_rq;
+But I don't really see the point though, this kind of interface would
+only ever work for the non-controlling and controlling controller
+combination (confused yet ;-), and I don't think we have many of those.
 
-This bio ends up *not* being merged or reordered by the elevator.
-(and, by means of flush/fua not by the hardware, either, obviously)
-
-
-If the queue does not support it, flags are stripped away in
-generic_make_request_checks(), and we will not take that branch
-in blk_queue_bio(), but enter the normal elevator code path,
-attempting a merge, or doing ELEVATOR_INSERT_SORT.
-
-This same bio, happening to be submitted on a different IO stack,
-now *is* being reordered in the elevator already,
-even before being sent to the hardware.
-
-
-
-
-If we somehow can express at submit_bio time that we would like
-this bio, once it reaches the elevator, to not be reordered,
-regardless of whether or not FLUSH is supported respectively required
-by the IO stack in use, that would be better than now, IMO.
-In fact, for our particular use case it would even be good enough.
-
-
-Could we "just" strip these flags a "little bit later"?
-Or set some other indicator when stripping them?
-
-
-Thanks,
-
-	Lars
+I would really rather see a simplification of the entire cgroup
+interface space as opposed to making it more complex. And adding this
+subtree 'feature' only makes it more complex.
 
