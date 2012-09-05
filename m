@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758028Ab2IEC7x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 22:59:53 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:34195 "EHLO
+	id S1758084Ab2IEDDO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 23:03:14 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:34210 "EHLO
 	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751263Ab2IEC7v (ORCPT
+	with ESMTP id S1751263Ab2IEDDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 22:59:51 -0400
-Date: Wed, 5 Sep 2012 03:00:25 +0000
+	Tue, 4 Sep 2012 23:03:13 -0400
+Date: Wed, 5 Sep 2012 03:03:47 +0000
 From: "Serge E. Hallyn" <serge@hallyn.com>
 To: Aristeu Rozanski <aris@redhat.com>
 Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
@@ -15,29 +15,25 @@ Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         James Morris <jmorris@namei.org>, Pavel Emelyanov <xemul@openvz.org>,
         Serge Hallyn <serge.hallyn@canonical.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2 1/6] device_cgroup: add "behavior" in dev_cgroup
- structure
-Message-ID: <20120905030025.GA13310@mail.hallyn.com>
+Subject: Re: [PATCH v2 2/6] device_cgroup: introduce dev_whitelist_clean()
+Message-ID: <20120905030347.GB13310@mail.hallyn.com>
 References: <20120904143419.892872876@napanee.usersys.redhat.com>
- <20120904143420.234142640@napanee.usersys.redhat.com>
+ <20120904143420.546524755@napanee.usersys.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120904143420.234142640@napanee.usersys.redhat.com>
+In-Reply-To: <20120904143420.546524755@napanee.usersys.redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Quoting Aristeu Rozanski (aris@redhat.com):
-> behavior will determine if the default policy is to deny all device access
-> unless for the ones in the exception list.
-> 
-> This variable will be used in the next patches to convert device_cgroup
-> internally into a default policy + rules.
+> This function cleans all the items in a whitelist and will be used by the next
+> patches.
 > 
 > v2:
-> - renamed deny_all to behavior
+> - no changes
 > 
 > Cc: Tejun Heo <tj@kernel.org>
 > Cc: Li Zefan <lizefan@huawei.com>
@@ -50,51 +46,51 @@ Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 > Signed-off-by: Aristeu Rozanski <aris@redhat.com>
 > 
 > ---
->  security/device_cgroup.c |    8 ++++++++
->  1 file changed, 8 insertions(+)
+>  security/device_cgroup.c |   22 +++++++++++++++++-----
+>  1 file changed, 17 insertions(+), 5 deletions(-)
 > 
 > Index: github/security/device_cgroup.c
 > ===================================================================
-> --- github.orig/security/device_cgroup.c	2012-08-21 09:49:38.698415513 -0400
-> +++ github/security/device_cgroup.c	2012-08-21 10:50:34.650810797 -0400
-> @@ -42,6 +42,10 @@
->  struct dev_cgroup {
->  	struct cgroup_subsys_state css;
->  	struct list_head whitelist;
-> +	enum {
-> +		DEVCG_DEFAULT_ALLOW,
-> +		DEVCG_DEFAULT_DENY,
-> +	} behavior;
->  };
+> --- github.orig/security/device_cgroup.c	2012-08-21 10:50:34.650810797 -0400
+> +++ github/security/device_cgroup.c	2012-08-21 10:50:37.526892088 -0400
+> @@ -157,6 +157,22 @@
+>  	}
+>  }
 >  
->  static inline struct dev_cgroup *css_to_devcgroup(struct cgroup_subsys_state *s)
-> @@ -178,12 +182,14 @@
->  		wh->minor = wh->major = ~0;
->  		wh->type = DEV_ALL;
->  		wh->access = ACC_MASK;
-> +		dev_cgroup->behavior = DEVCG_DEFAULT_ALLOW;
->  		list_add(&wh->list, &dev_cgroup->whitelist);
->  	} else {
->  		parent_dev_cgroup = cgroup_to_devcgroup(parent_cgroup);
->  		mutex_lock(&devcgroup_mutex);
->  		ret = dev_whitelist_copy(&dev_cgroup->whitelist,
->  				&parent_dev_cgroup->whitelist);
-> +		dev_cgroup->behavior = parent_dev_cgroup->behavior;
->  		mutex_unlock(&devcgroup_mutex);
->  		if (ret) {
->  			kfree(dev_cgroup);
-> @@ -409,9 +415,11 @@
->  	case DEVCG_ALLOW:
->  		if (!parent_has_perm(devcgroup, &wh))
->  			return -EPERM;
-> +		devcgroup->behavior = DEVCG_DEFAULT_ALLOW;
->  		return dev_whitelist_add(devcgroup, &wh);
->  	case DEVCG_DENY:
->  		dev_whitelist_rm(devcgroup, &wh);
-> +		devcgroup->behavior = DEVCG_DEFAULT_DENY;
->  		break;
->  	default:
->  		return -EINVAL;
+> +/**
+> + * dev_whitelist_clean - frees all entries of the whitelist
+> + * @dev_cgroup: dev_cgroup with the whitelist to be cleaned
+> + *
+> + * called under devcgroup_mutex
+> + */
+> +static void dev_whitelist_clean(struct dev_cgroup *dev_cgroup)
+> +{
+> +	struct dev_whitelist_item *wh, *tmp;
+> +
+> +	list_for_each_entry_safe(wh, tmp, &dev_cgroup->whitelist, list) {
+> +		list_del(&wh->list);
+> +		kfree(wh);
+> +	}
+> +}
+> +
+>  /*
+>   * called from kernel/cgroup.c with cgroup_lock() held.
+>   */
+> @@ -203,13 +219,9 @@
+>  static void devcgroup_destroy(struct cgroup *cgroup)
+>  {
+>  	struct dev_cgroup *dev_cgroup;
+> -	struct dev_whitelist_item *wh, *tmp;
+>  
+>  	dev_cgroup = cgroup_to_devcgroup(cgroup);
+> -	list_for_each_entry_safe(wh, tmp, &dev_cgroup->whitelist, list) {
+> -		list_del(&wh->list);
+> -		kfree(wh);
+> -	}
+> +	dev_whitelist_clean(dev_cgroup);
+>  	kfree(dev_cgroup);
+>  }
+>  
 > 
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
