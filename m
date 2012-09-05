@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758869Ab2IEPe1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 11:34:27 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49776 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752128Ab2IEPeZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 11:34:25 -0400
+	id S1758894Ab2IEPf3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 11:35:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60453 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753156Ab2IEPf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 11:35:27 -0400
+Message-ID: <5047713C.3080602@redhat.com>
+Date: Wed, 05 Sep 2012 18:35:24 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <20120904143215.5bbbb2a4@obelix.rh>
-References: <20120904143215.5bbbb2a4@obelix.rh>
-Date: Wed, 5 Sep 2012 23:34:25 +0800
-Message-ID: <CAM_iQpVVCjJ0Bde9RS9Rm-0RJ=CtTyX3eUH45+oaaepvdAvAmQ@mail.gmail.com>
-Subject: Re: kexec/kdump kernel fails to start
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: Flavio Leitner <fbl@redhat.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
-        ianfang.cn@gmail.com, Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Alex Williamson <alex.williamson@redhat.com>, gleb@redhat.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v9 1/2] kvm: Use a reserved IRQ source ID for irqfd
+References: <20120821195813.GD9027@redhat.com> <1345579579.29292.67.camel@ul30vt.home> <20120821204125.GF9027@redhat.com> <1345583694.29292.91.camel@ul30vt.home> <20120822004138.GM9027@redhat.com> <5047633F.9020405@redhat.com> <20120905145153.GA11048@redhat.com> <504768E2.3020706@redhat.com> <20120905151348.GC11058@redhat.com> <50476E51.5020005@redhat.com> <20120905152832.GE11058@redhat.com>
+In-Reply-To: <20120905152832.GE11058@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 5, 2012 at 1:32 AM, Flavio Leitner <fbl@redhat.com> wrote:
-> Hi folks,
->
-> I have system that no longer boots kdump kernel. Basically,
->
-> # echo c > /proc/sysrq-trigger
->
-> to dump a vmcore doesn't work. It just hangs after showing the usual
-> panic messages. I've bisected the problem and the commit introducing
-> the issue is the one below.
->
-> Any idea?
->
-> commit 722bc6b16771ed80871e1fd81c86d3627dda2ac8
-> Author: WANG Cong <xiyou.wangcong@gmail.com>  2012-03-05 20:05:13
-> Committer: Ingo Molnar <mingo@elte.hu>  2012-03-06 05:38:26
-> Parent: 550cf00dbc8ee402bef71628cb71246493dd4500 (Merge tag 'mmc-fixes-for-3.3' of git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc)
-> Child:  a6fca40f1d7f3e232c9de27c1cebbb9f787fbc4f (x86, tlb: Switch cr3 in leave_mm() only when needed)
-> Branches: master, remotes/origin/master
-> Follows: v3.3-rc6
-> Precedes: v3.5-rc1
->
->     x86/mm: Fix the size calculation of mapping tables
+On 09/05/2012 06:28 PM, Michael S. Tsirkin wrote:
 
-There was some attempt to fix this:
-https://patchwork.kernel.org/patch/1195751/
+>> gsi 3 is configured as edge in the ioapic.  It has (unusually) two
+>> inputs: one driven by userspace, the other by irqfd.
+>> 
+>> cpu 0                    cpu 1
+>> ------------------------ -------------------------
+>> irqfd: set to 1
+>> ioapic: recognize edge
+>> inject irq
+>> EOI
+>>                          KVM_IRQ_LINE: set to 1
+>>                          ioapic: ignore
+>>                          KVM_IRQ_LINE: set to 0
+>> irqfd: set to 0
+>> 
+>> We had two edges with an EOI between them, but injected just on interrupt.
+> 
+> I see. Makes sense, ACK this patch.
 
-but for some reason it is not accepted.
+Actually it's wrong.  The two sources are not synchronized, so there is
+no way for them to know the two edges did not coalesce.  On real
+hardware, after all, edge interrupts have a non-zero pulse width, and
+kvm faithfully emulates this.
+
+But this patch makes sense for level irqfd, so we might as well keep it
+with a different description.
+
+-- 
+error compiling committee.c: too many arguments to function
