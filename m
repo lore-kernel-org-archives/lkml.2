@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757475Ab2IENf4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 09:35:56 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54827 "EHLO
+	id S1758205Ab2IENgJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 09:36:09 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54849 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757204Ab2IENfy (ORCPT
+	with ESMTP id S1753307Ab2IENgD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 09:35:54 -0400
+	Wed, 5 Sep 2012 09:36:03 -0400
 From: Sascha Hauer <s.hauer@pengutronix.de>
 To: <linux-arm-kernel@lists.infradead.org>
 Cc: HACHIMI Samir <shachimi@adeneo-embedded.com>, shawn.guo@linaro.org,
         thierry.reding@avionic-design.de, linux-kernel@vger.kernel.org,
         =?UTF-8?q?Beno=C3=AEt=20Th=C3=A9baudeau?= 
 	<benoit.thebaudeau@advansee.com>,
-        kernel@pengutronix.de, Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [PATCH 3/8] pwm i.MX: add functions to enable/disable pwm.
-Date: Wed,  5 Sep 2012 15:35:22 +0200
-Message-Id: <1346852127-25226-4-git-send-email-s.hauer@pengutronix.de>
+        kernel@pengutronix.de, Philipp Zabel <p.zabel@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: [PATCH 5/8] pwm i.MX: add devicetree support
+Date: Wed,  5 Sep 2012 15:35:24 +0200
+Message-Id: <1346852127-25226-6-git-send-email-s.hauer@pengutronix.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1346852127-25226-1-git-send-email-s.hauer@pengutronix.de>
 References: <1346852127-25226-1-git-send-email-s.hauer@pengutronix.de>
@@ -28,126 +29,126 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We used to enable/disable the pwm only by switching the
-clock on or off. Instead, use the dedicated register bits.
-These differ on different SoCs, so introduce a SoC specific
-function for this.
+From: Philipp Zabel <p.zabel@pengutronix.de>
 
+At the same time remove platform based support. No user for
+this driver has made it into mainline so far, so all we break
+is out of tree stuff.
+
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
 Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 ---
- drivers/pwm/pwm-imx.c |   48 ++++++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 44 insertions(+), 4 deletions(-)
+ Documentation/devicetree/bindings/pwm/imx-pwm.txt |   17 ++++++++
+ drivers/pwm/pwm-imx.c                             |   45 ++++++++++++++++-----
+ 2 files changed, 52 insertions(+), 10 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pwm/imx-pwm.txt
 
+diff --git a/Documentation/devicetree/bindings/pwm/imx-pwm.txt b/Documentation/devicetree/bindings/pwm/imx-pwm.txt
+new file mode 100644
+index 0000000..9b9b185
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pwm/imx-pwm.txt
+@@ -0,0 +1,17 @@
++Freescale i.MX PWM controller
++
++Required properties:
++- compatible: should be "fsl,<soc>-pwm"
++- reg: physical base address and length of the controller's registers
++- #pwm-cells: should be 2.  The first cell specifies the per-chip index
++  of the PWM to use and the second cell is the duty cycle in nanoseconds.
++- interrupts: The interrupt for the pwm controller
++
++Example:
++
++pwm1: pwm@53fb4000 {
++	#pwm-cells = <2>;
++	compatible = "fsl,imx53-pwm", "fsl,imx27-pwm";
++	reg = <0x53fb4000 0x4000>;
++	interrupts = <61>;
++};
 diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
-index 0f244e6..3fc4ae8 100644
+index a689144..af77045 100644
 --- a/drivers/pwm/pwm-imx.c
 +++ b/drivers/pwm/pwm-imx.c
-@@ -25,6 +25,7 @@
- #define MX1_PWMS    0x04   /* PWM Sample Register */
- #define MX1_PWMP    0x08   /* PWM Period Register */
+@@ -16,8 +16,7 @@
+ #include <linux/clk.h>
+ #include <linux/io.h>
+ #include <linux/pwm.h>
+-#include <mach/hardware.h>
+-
++#include <linux/of_device.h>
  
-+#define MX1_PWMC_EN		(1 << 4)
+ /* i.MX1 and i.MX21 share the same PWM function block: */
  
- /* i.MX27, i.MX31, i.MX35 share the same PWM function block: */
- 
-@@ -49,6 +50,7 @@ struct imx_chip {
- 
- 	int (*config)(struct pwm_chip *chip,
- 		struct pwm_device *pwm, int duty_ns, int period_ns);
-+	void (*set_enable)(struct pwm_chip *chip, bool enable);
+@@ -203,12 +202,41 @@ static struct pwm_ops imx_pwm_ops = {
+ 	.owner = THIS_MODULE,
  };
  
- #define to_imx_chip(chip)	container_of(chip, struct imx_chip, chip)
-@@ -81,6 +83,21 @@ static int imx_pwm_config_v1(struct pwm_chip *chip,
- 	return 0;
- }
- 
-+static void imx_pwm_set_enable_v1(struct pwm_chip *chip, bool enable)
-+{
-+	struct imx_chip *imx = to_imx_chip(chip);
-+	u32 val;
++struct imx_pwm_data {
++	int (*config)(struct pwm_chip *chip,
++		struct pwm_device *pwm, int duty_ns, int period_ns);
++	void (*set_enable)(struct pwm_chip *chip, bool enable);
++};
 +
-+	val = readl(imx->mmio_base + MX1_PWMC);
++static struct imx_pwm_data imx_pwm_data_v1 = {
++	.config = imx_pwm_config_v1,
++	.set_enable = imx_pwm_set_enable_v1,
++};
 +
-+	if (enable)
-+		val |= MX1_PWMC_EN;
-+	else
-+		val &= ~MX1_PWMC_EN;
++static struct imx_pwm_data imx_pwm_data_v2 = {
++	.config = imx_pwm_config_v2,
++	.set_enable = imx_pwm_set_enable_v2,
++};
 +
-+	writel(val, imx->mmio_base + MX1_PWMC);
-+}
++static const struct of_device_id imx_pwm_dt_ids[] = {
++	{ .compatible = "fsl,imx1-pwm", .data = &imx_pwm_data_v1, },
++	{ .compatible = "fsl,imx27-pwm", .data = &imx_pwm_data_v2, },
++	{ /* sentinel */ }
++};
++MODULE_DEVICE_TABLE(of, imx_pwm_dt_ids);
 +
- static int imx_pwm_config_v2(struct pwm_chip *chip,
- 		struct pwm_device *pwm, int duty_ns, int period_ns)
+ static int __devinit imx_pwm_probe(struct platform_device *pdev)
  {
-@@ -115,7 +132,10 @@ static int imx_pwm_config_v2(struct pwm_chip *chip,
++	const struct of_device_id *of_id =
++			of_match_device(imx_pwm_dt_ids, &pdev->dev);
++	struct imx_pwm_data *data;
+ 	struct imx_chip *imx;
+ 	struct resource *r;
+ 	int ret = 0;
  
- 	cr = MX3_PWMCR_PRESCALER(prescale) |
- 		MX3_PWMCR_DOZEEN | MX3_PWMCR_WAITEN |
--		MX3_PWMCR_DBGEN | MX3_PWMCR_EN;
-+		MX3_PWMCR_DBGEN;
++	if (!of_id)
++		return -ENODEV;
 +
-+	if (imx->enabled)
-+		cr |= MX3_PWMCR_EN;
- 
- 	if (cpu_is_mx25())
- 		cr |= MX3_PWMCR_CLKSRC_IPG;
-@@ -127,6 +147,21 @@ static int imx_pwm_config_v2(struct pwm_chip *chip,
- 	return 0;
- }
- 
-+static void imx_pwm_set_enable_v2(struct pwm_chip *chip, bool enable)
-+{
-+	struct imx_chip *imx = to_imx_chip(chip);
-+	u32 val;
-+
-+	val = readl(imx->mmio_base + MX3_PWMCR);
-+
-+	if (enable)
-+		val |= MX3_PWMCR_EN;
-+	else
-+		val &= ~MX3_PWMCR_EN;
-+
-+	writel(val, imx->mmio_base + MX3_PWMCR);
-+}
-+
- static int imx_pwm_config(struct pwm_chip *chip,
- 		struct pwm_device *pwm, int duty_ns, int period_ns)
- {
-@@ -144,6 +179,8 @@ static int imx_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
- 	if (rc)
- 		return rc;
- 
-+	imx->set_enable(chip, true);
-+
- 	imx->enabled = 1;
- 
- 	return 0;
-@@ -153,7 +190,7 @@ static void imx_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
- {
- 	struct imx_chip *imx = to_imx_chip(chip);
- 
--	writel(0, imx->mmio_base + MX3_PWMCR);
-+	imx->set_enable(chip, false);
- 
- 	clk_disable_unprepare(imx->clk);
- 	imx->enabled = 0;
-@@ -198,10 +235,13 @@ static int __devinit imx_pwm_probe(struct platform_device *pdev)
+ 	imx = devm_kzalloc(&pdev->dev, sizeof(*imx), GFP_KERNEL);
+ 	if (imx == NULL) {
+ 		dev_err(&pdev->dev, "failed to allocate memory\n");
+@@ -235,13 +263,9 @@ static int __devinit imx_pwm_probe(struct platform_device *pdev)
  	if (imx->mmio_base == NULL)
  		return -EADDRNOTAVAIL;
  
--	if (cpu_is_mx1() || cpu_is_mx21())
-+	if (cpu_is_mx1() || cpu_is_mx21()) {
- 		imx->config = imx_pwm_config_v1;
--	else
-+		imx->set_enable = imx_pwm_set_enable_v1;
-+	} else {
- 		imx->config = imx_pwm_config_v2;
-+		imx->set_enable = imx_pwm_set_enable_v2;
-+	}
+-	if (cpu_is_mx1() || cpu_is_mx21()) {
+-		imx->config = imx_pwm_config_v1;
+-		imx->set_enable = imx_pwm_set_enable_v1;
+-	} else {
+-		imx->config = imx_pwm_config_v2;
+-		imx->set_enable = imx_pwm_set_enable_v2;
+-	}
++	data = of_id->data;
++	imx->config = data->config;
++	imx->set_enable = data->set_enable;
  
  	ret = pwmchip_add(&imx->chip);
  	if (ret < 0)
+@@ -264,7 +288,8 @@ static int __devexit imx_pwm_remove(struct platform_device *pdev)
+ 
+ static struct platform_driver imx_pwm_driver = {
+ 	.driver		= {
+-		.name	= "mxc_pwm",
++		.name	= "imx-pwm",
++		.of_match_table = of_match_ptr(imx_pwm_dt_ids),
+ 	},
+ 	.probe		= imx_pwm_probe,
+ 	.remove		= __devexit_p(imx_pwm_remove),
 -- 
 1.7.10.4
 
