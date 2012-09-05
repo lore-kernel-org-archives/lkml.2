@@ -1,52 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759247Ab2IETfv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 15:35:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36918 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754515Ab2IETfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 15:35:50 -0400
-Date: Wed, 5 Sep 2012 15:35:39 -0400 (EDT)
-From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
-X-X-Sender: lukas@new-host-2
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-cc: Lukas Czerner <lczerner@redhat.com>, linux-scsi@vger.kernel.org,
-        JBottomley@parallels.com, tytso@mit.edu, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scsi_debug: Fix off-by-one bug when unmapping region
-In-Reply-To: <yq1d32ph515.fsf@sermon.lab.mkp.net>
-Message-ID: <alpine.LFD.2.00.1209051534110.509@new-host-2>
-References: <1345127925-32042-1-git-send-email-lczerner@redhat.com> <yq1d32ph515.fsf@sermon.lab.mkp.net>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1759253Ab2IETg4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 15:36:56 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:59901 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754276Ab2IETgx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 15:36:53 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1346775269-12191-3-git-send-email-peter.senna@gmail.com>
+References: <1346775269-12191-3-git-send-email-peter.senna@gmail.com>
+Date: Wed, 5 Sep 2012 16:36:52 -0300
+Message-ID: <CALF0-+W6i548ehTDaqkXj7ehFfYBPOBwwPBZQ03eMoo+3K3HXQ@mail.gmail.com>
+Subject: Re: [PATCH 3/5] drivers/media/platform/s5p-tv/mixer_video.c: fix
+ error return code
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        kernel-janitors@vger.kernel.org, Julia.Lawall@lip6.fr,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Aug 2012, Martin K. Petersen wrote:
+Hi Peter,
 
-> Date: Fri, 17 Aug 2012 12:11:50 -0400
-> From: Martin K. Petersen <martin.petersen@oracle.com>
-> To: Lukas Czerner <lczerner@redhat.com>
-> Cc: linux-scsi@vger.kernel.org, JBottomley@parallels.com, tytso@mit.edu,
->     pbonzini@redhat.com, linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] scsi_debug: Fix off-by-one bug when unmapping region
-> 
-> >>>>> "Lukas" == Lukas Czerner <lczerner@redhat.com> writes:
-> 
-> Lukas> Currently it is possible to unmap one more block than user
-> Lukas> requested to due to the off-by-one error in unmap_region(). This
-> Lukas> is probably due to the fact that the end variable despite its
-> Lukas> name actually points to the last block to unmap + 1. However in
-> Lukas> the condition it is handled as the last block of the region to
-> Lukas> unmap.
-> 
-> Acked-by: Martin K. Petersen <martin.petersen@oracle.com>
-> 
+On Tue, Sep 4, 2012 at 1:14 PM, Peter Senna Tschudin
+<peter.senna@gmail.com> wrote:
+> From: Peter Senna Tschudin <peter.senna@gmail.com>
+>
+> Convert a nonnegative error return code to a negative one, as returned
+> elsewhere in the function.
+>
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+>
+> // <smpl>
+> (
+> if@p1 (\(ret < 0\|ret != 0\))
+>  { ... return ret; }
+> |
+> ret@p1 = 0
+> )
+> ... when != ret = e1
+>     when != &ret
+> *if(...)
+> {
+>   ... when != ret = e2
+>       when forall
+>  return ret;
+> }
+>
+> // </smpl>
+>
+> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+>
+> ---
+>  drivers/media/platform/s5p-tv/mixer_video.c |    5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/media/platform/s5p-tv/mixer_video.c b/drivers/media/platform/s5p-tv/mixer_video.c
+> index a9c6be3..f139fed 100644
+> --- a/drivers/media/platform/s5p-tv/mixer_video.c
+> +++ b/drivers/media/platform/s5p-tv/mixer_video.c
+> @@ -83,6 +83,7 @@ int __devinit mxr_acquire_video(struct mxr_device *mdev,
+>         mdev->alloc_ctx = vb2_dma_contig_init_ctx(mdev->dev);
+>         if (IS_ERR_OR_NULL(mdev->alloc_ctx)) {
+>                 mxr_err(mdev, "could not acquire vb2 allocator\n");
+> +               ret = -ENODEV;
+>                 goto fail_v4l2_dev;
+>         }
+>
+> @@ -764,8 +765,10 @@ static int mxr_video_open(struct file *file)
+>         }
+>
+>         /* leaving if layer is already initialized */
+> -       if (!v4l2_fh_is_singular_file(file))
+> +       if (!v4l2_fh_is_singular_file(file)) {
+> +               ret = -EBUSY; /* Not sure if EBUSY is the best for here */
+>                 goto unlock;
+> +       }
+>
+>         /* FIXME: should power be enabled on open? */
+>         ret = mxr_power_get(mdev);
+>
 
-I am still not seeing it in anywhere, is this going in any time soon
-?
+Well, same to say here. I think if you look at this functions you'll realize
+it's so much easy to just initialize ret to something, instead of the obviously
+wrong ret = 0.
 
-Thanks!
--Lukas
+IMO, initializing ret to zero it's a free ticket to bugs. :-)
+
+Hope it helps,
+Ezequiel.
