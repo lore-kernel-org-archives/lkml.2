@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756450Ab2IENfm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 09:35:42 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54780 "EHLO
+	id S1757208Ab2IENfy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 09:35:54 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54812 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750981Ab2IENfi (ORCPT
+	with ESMTP id S1756580Ab2IENfr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 09:35:38 -0400
+	Wed, 5 Sep 2012 09:35:47 -0400
 From: Sascha Hauer <s.hauer@pengutronix.de>
 To: <linux-arm-kernel@lists.infradead.org>
 Cc: HACHIMI Samir <shachimi@adeneo-embedded.com>, shawn.guo@linaro.org,
         thierry.reding@avionic-design.de, linux-kernel@vger.kernel.org,
         =?UTF-8?q?Beno=C3=AEt=20Th=C3=A9baudeau?= 
 	<benoit.thebaudeau@advansee.com>,
-        kernel@pengutronix.de, Philipp Zabel <p.zabel@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [PATCH 7/8] pwm i.MX: fix clock lookup
-Date: Wed,  5 Sep 2012 15:35:26 +0200
-Message-Id: <1346852127-25226-8-git-send-email-s.hauer@pengutronix.de>
+        kernel@pengutronix.de
+Subject: [PATCH v2] pwm i.MX: add devicetree support
+Date: Wed,  5 Sep 2012 15:35:19 +0200
+Message-Id: <1346852127-25226-1-git-send-email-s.hauer@pengutronix.de>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1346852127-25226-1-git-send-email-s.hauer@pengutronix.de>
-References: <1346852127-25226-1-git-send-email-s.hauer@pengutronix.de>
 X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
 X-SA-Exim-Mail-From: sha@pengutronix.de
 X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
@@ -29,103 +26,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Philipp Zabel <p.zabel@pengutronix.de>
 
-The i.MX pwm core has two clocks: The ipg clock and the ipg highfreq
-(peripheral) clock. The ipg clock has to be enabled for this hardware
-to work. The actual pwm output can either be driven by the ipg clock
-or the ipg highfreq. The ipg highfreq has the advantage that it runs
-even when the SoC is in low power modes.
-This patch requests both clocks and enables the ipg clock for accessing
-registers and the peripheral clock to actually turn on the pwm.
+Changes since v1:
 
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
----
- drivers/pwm/pwm-imx.c |   33 +++++++++++++++++++++++++--------
- 1 file changed, 25 insertions(+), 8 deletions(-)
+- Add devicetree binding documentation
+- Merge 5/9 and 9/9
+- fix #pwm-cells (must be 2 instead of 3)
+- fix wrong name in MODULE_DEVICE_TABLE
+- drop platform based probing while introducing devicetree based probe
 
-diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
-index b234288..5b03ace 100644
---- a/drivers/pwm/pwm-imx.c
-+++ b/drivers/pwm/pwm-imx.c
-@@ -40,7 +40,8 @@
- #define MX3_PWMCR_EN              (1 << 0)
- 
- struct imx_chip {
--	struct clk	*clk;
-+	struct clk	*clk_per;
-+	struct clk	*clk_ipg;
- 
- 	int		enabled;
- 	void __iomem	*mmio_base;
-@@ -105,7 +106,7 @@ static int imx_pwm_config_v2(struct pwm_chip *chip,
- 	unsigned long period_cycles, duty_cycles, prescale;
- 	u32 cr;
- 
--	c = clk_get_rate(imx->clk);
-+	c = clk_get_rate(imx->clk_per);
- 	c = c * period_ns;
- 	do_div(c, 1000000000);
- 	period_cycles = c;
-@@ -160,8 +161,15 @@ static int imx_pwm_config(struct pwm_chip *chip,
- 		struct pwm_device *pwm, int duty_ns, int period_ns)
- {
- 	struct imx_chip *imx = to_imx_chip(chip);
-+	int ret;
- 
--	return imx->config(chip, pwm, duty_ns, period_ns);
-+	clk_prepare_enable(imx->clk_ipg);
-+
-+	ret = imx->config(chip, pwm, duty_ns, period_ns);
-+
-+	clk_disable_unprepare(imx->clk_ipg);
-+
-+	return ret;
- }
- 
- static int imx_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
-@@ -169,7 +177,7 @@ static int imx_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
- 	struct imx_chip *imx = to_imx_chip(chip);
- 	int rc;
- 
--	rc = clk_prepare_enable(imx->clk);
-+	rc = clk_prepare_enable(imx->clk_per);
- 	if (rc)
- 		return rc;
- 
-@@ -186,7 +194,7 @@ static void imx_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
- 
- 	imx->set_enable(chip, false);
- 
--	clk_disable_unprepare(imx->clk);
-+	clk_disable_unprepare(imx->clk_per);
- 	imx->enabled = 0;
- }
- 
-@@ -238,10 +246,19 @@ static int __devinit imx_pwm_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
--	imx->clk = devm_clk_get(&pdev->dev, "pwm");
-+	imx->clk_per = devm_clk_get(&pdev->dev, "per");
-+	if (IS_ERR(imx->clk_per)) {
-+		dev_err(&pdev->dev, "getting per clock failed with %ld\n",
-+				PTR_ERR(imx->clk_per));
-+		return PTR_ERR(imx->clk_per);
-+	}
- 
--	if (IS_ERR(imx->clk))
--		return PTR_ERR(imx->clk);
-+	imx->clk_ipg = devm_clk_get(&pdev->dev, "ipg");
-+	if (IS_ERR(imx->clk_ipg)) {
-+		dev_err(&pdev->dev, "getting ipg clock failed with %ld\n",
-+				PTR_ERR(imx->clk_ipg));
-+		return PTR_ERR(imx->clk_ipg);
-+	}
- 
- 	imx->chip.ops = &imx_pwm_ops;
- 	imx->chip.dev = &pdev->dev;
--- 
-1.7.10.4
+----------------------------------------------------------------
+Philipp Zabel (2):
+      pwm i.MX: add devicetree support
+      pwm i.MX: fix clock lookup
+
+Sascha Hauer (6):
+      pwm i.MX: factor out SoC specific functions
+      pwm i.MX: remove unnecessary if in pwm_[en|dis]able
+      pwm i.MX: add functions to enable/disable pwm.
+      pwm i.MX: Use module_platform_driver
+      pwm i.MX: use per clock unconditionally
+      ARM i.MX53: Add pwm support
+
+ Documentation/devicetree/bindings/pwm/imx-pwm.txt |   17 ++
+ arch/arm/boot/dts/imx53.dtsi                      |   14 ++
+ arch/arm/mach-imx/clk-imx51-imx53.c               |    4 +
+ drivers/pwm/pwm-imx.c                             |  275 ++++++++++++++-------
+ 4 files changed, 214 insertions(+), 96 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pwm/imx-pwm.txt
 
