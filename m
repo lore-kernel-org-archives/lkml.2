@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752445Ab2IEGx5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 02:53:57 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:49409 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999Ab2IEGx4 (ORCPT
+	id S1752222Ab2IEHAS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 03:00:18 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:61712 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750957Ab2IEHAQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 02:53:56 -0400
+	Wed, 5 Sep 2012 03:00:16 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120905064106.GA4233@gmail.com>
-References: <20120831122323.GC5962@gmail.com>
-	<5044C82E.5060207@gmail.com>
-	<20120903152012.GH31163@gmail.com>
-	<201209041428.21409.arnd@arndb.de>
-	<CACRpkdZESujO=2BU3jeKiX3Cm+JY2UPEXwGkro75FWa5Gio5YQ@mail.gmail.com>
-	<20120905064106.GA4233@gmail.com>
-Date: Wed, 5 Sep 2012 08:53:54 +0200
-Message-ID: <CACRpkdaeNXU6ye2uO0cVPnVMVABVq7UoEG=0C_sES+csiYObdA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] i2c: nomadik: Add Device Tree support to the Nomadik
- I2C driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Alessandro Rubini <rubini@gnudd.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@nvidia.com>, linus.walleij@stericsson.com,
-        linux-kernel@vger.kernel.org, Wolfram Sang <w.sang@pengutronix.de>,
-        linux-i2c@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
-        devicetree-discuss@lists.ozlabs.org
+Date: Wed, 5 Sep 2012 15:00:15 +0800
+Message-ID: <CAPgLHd8KyjsepcaW4zffjQG4ma4sdzmTa6wafwWh55La7qWzMQ@mail.gmail.com>
+Subject: [PATCH] ALSA: use list_move_tail instead of list_del/list_add_tail
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: perex@perex.cz, tiwai@suse.de
+Cc: yongjun_wei@trendmicro.com.cn, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 5, 2012 at 8:41 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> On Tue, Sep 04, 2012 at 07:27:10PM +0200, Linus Walleij wrote:
->> On Tue, Sep 4, 2012 at 4:28 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->>
->> > In this particular case, we don't have a single board file providing a
->> > struct nmk_i2c_controller definition for platform data, so the best way
->> > to handle this IMHO is to remove the header file with the platform
->> > data definition, and just encode the defaults in the driver.
->>
->> Alessandro Rubini is actively working on bridging this (and
->> other amba_device primecells) to PCI, that is the reason why it
->> was recently converted to an amba_device. How is he then supposed to
->> get the proper parameters into the driver? Note that the PCI ID
->> is no help at all since the parameters depend on what is connected
->> to the I2C bus, not on what it itself is connected to. Isn't platform data
->> used in such cases?
->
-> So why can't Alessandro continue to use Platform Data in the normal way?
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-He probably can, this is not an argument about that, what I am worried
-about is Arnd's suggestion to delete the platform data header if there
-are potential users of it.
+Using list_move_tail() instead of list_del() + list_add_tail().
 
-Yours,
-Linus Walleij
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ sound/pci/emu10k1/memory.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/sound/pci/emu10k1/memory.c b/sound/pci/emu10k1/memory.c
+index 0a43662..1dce0a39 100644
+--- a/sound/pci/emu10k1/memory.c
++++ b/sound/pci/emu10k1/memory.c
+@@ -263,8 +263,8 @@ int snd_emu10k1_memblk_map(struct snd_emu10k1 *emu, struct snd_emu10k1_memblk *b
+ 	spin_lock_irqsave(&emu->memblk_lock, flags);
+ 	if (blk->mapped_page >= 0) {
+ 		/* update order link */
+-		list_del(&blk->mapped_order_link);
+-		list_add_tail(&blk->mapped_order_link, &emu->mapped_order_link_head);
++		list_move_tail(&blk->mapped_order_link,
++			       &emu->mapped_order_link_head);
+ 		spin_unlock_irqrestore(&emu->memblk_lock, flags);
+ 		return 0;
+ 	}
+
+
