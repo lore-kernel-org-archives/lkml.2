@@ -1,62 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759763Ab2IEWiz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 18:38:55 -0400
-Received: from mail-yw0-f52.google.com ([209.85.213.52]:39893 "EHLO
+	id S1759770Ab2IEWkT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 18:40:19 -0400
+Received: from mail-yw0-f52.google.com ([209.85.213.52]:40772 "EHLO
 	mail-yw0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754718Ab2IEWix (ORCPT
+	with ESMTP id S1759731Ab2IEWkR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 18:38:53 -0400
-Date: Wed, 5 Sep 2012 15:38:49 -0700
+	Wed, 5 Sep 2012 18:40:17 -0400
+Date: Wed, 5 Sep 2012 15:40:12 -0700
 From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Irina Tirdea <irina.tirdea@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 11/13] perf tools: replace mempcpy with memcpy
-Message-ID: <20120905223849.GF8203@ghostprotocols.net>
-References: <CANg8OWLDxZTrhJ-M2aeLdV-+y0VuGR+3iro179V=LLTeeQi_CA@mail.gmail.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] perf: remove unneeded include of network header files
+Message-ID: <20120905224012.GG8203@ghostprotocols.net>
+References: <1346881986-59136-1-git-send-email-dsahern@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CANg8OWLDxZTrhJ-M2aeLdV-+y0VuGR+3iro179V=LLTeeQi_CA@mail.gmail.com>
+In-Reply-To: <1346881986-59136-1-git-send-email-dsahern@gmail.com>
 X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Aug 29, 2012 at 01:06:04AM +0300, Irina Tirdea escreveu:
->    mempcpy is not supported by bionic in Android
->    and will lead to compilation errors.
+Em Wed, Sep 05, 2012 at 03:53:06PM -0600, David Ahern escreveu:
+> perf does not have networking related functionality, and the inclusion of
+> these headers is one of the causes of compile failures for Android:
+>   https://lkml.org/lkml/2012/8/23/316
+>   https://lkml.org/lkml/2012/8/28/293
 > 
->    Replacing mempcpy with memcpy so it will work in Android.
+> So, remove them.
 > 
->    Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
->    ---
->     tools/perf/util/target.c |    4 ++--
->     1 file changed, 2 insertions(+), 2 deletions(-)
-> 
->    diff --git a/tools/perf/util/target.c b/tools/perf/util/target.c
->    index 051eaa6..065528b 100644
->    --- a/tools/perf/util/target.c
->    +++ b/tools/perf/util/target.c
->    @@ -117,8 +117,8 @@ int perf_target__strerror(struct perf_target *target,
->    int errnum,
->     
->             if (err != buf) {
->                 size_t len = strlen(err);
->    -            char *c = mempcpy(buf, err, min(buflen - 1, len));
->    -            *c = '\0';
->    +            memcpy(buf, err, min(buflen - 1, len));
->    +            *(buf + min(buflen - 1, len)) = '\0';
->             }
->     
+> v2:
+> - netdb.h is required by trace-event-perl.c, so leave it in
 
-Can you resubmit this in txt form? I applied some other patches from you
-but  you need to try to do it yourself, i.e. send just to you, then try
-to save the patch and apply it...
+Nope, I've applied this instead:
 
-- Arnaldo
+commit 12046099160e65cddb639f8b3dda2bd0701c09d6
+Author: David Ahern <dsahern@gmail.com>
+Date:   Wed Aug 29 09:55:32 2012 -0600
+
+    perf tools: remove unneeded include of network header files
+    
+    perf does not have networking related functionality, and the inclusion
+    of these headers is one of the causes of compile failures for Android:
+    
+      https://lkml.org/lkml/2012/8/23/316
+      https://lkml.org/lkml/2012/8/28/293
+    
+    So, remove them.
+    
+    Signed-off-by: David Ahern <dsahern@gmail.com>
+    Cc: Frederic Weisbecker <fweisbec@gmail.com>
+    Cc: Ingo Molnar <mingo@kernel.org>
+    Cc: Peter Zijlstra <peterz@infradead.org>
+    Link: http://lkml.kernel.org/r/1346255732-93246-1-git-send-email-dsahern@gmail.com
+    [ committer note: fix trace-event-perl.c compile failure by reordering includes ]
+    Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+
+diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
+index d280010..94e6736 100644
+--- a/tools/perf/util/scripting-engines/trace-event-perl.c
++++ b/tools/perf/util/scripting-engines/trace-event-perl.c
+@@ -25,16 +25,16 @@
+ #include <ctype.h>
+ #include <errno.h>
+ 
+-#include "../../perf.h"
+ #include "../util.h"
++#include <EXTERN.h>
++#include <perl.h>
++
++#include "../../perf.h"
+ #include "../thread.h"
+ #include "../event.h"
+ #include "../trace-event.h"
+ #include "../evsel.h"
+ 
+-#include <EXTERN.h>
+-#include <perl.h>
+-
+ void boot_Perf__Trace__Context(pTHX_ CV *cv);
+ void boot_DynaLoader(pTHX_ CV *cv);
+ typedef PerlInterpreter * INTERP;
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 00a93a9..67a3713 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -69,11 +69,6 @@
+ #include <sys/poll.h>
+ #include <sys/socket.h>
+ #include <sys/ioctl.h>
+-#include <sys/select.h>
+-#include <netinet/in.h>
+-#include <netinet/tcp.h>
+-#include <arpa/inet.h>
+-#include <netdb.h>
+ #include <inttypes.h>
+ #include "../../../include/linux/magic.h"
+ #include "types.h"
