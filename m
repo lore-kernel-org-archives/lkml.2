@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759301Ab2IEUMp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 16:12:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62641 "EHLO
+	id S1759245Ab2IEUNw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 16:13:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64825 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754756Ab2IEUMn (ORCPT
+	with ESMTP id S1753657Ab2IEUNu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 16:12:43 -0400
-Date: Wed, 5 Sep 2012 13:12:38 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        Dave Jones <davej@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v2] memcg: first step towards hierarchical controller
-Message-ID: <20120905201238.GE13737@google.com>
-References: <5045BD25.10301@parallels.com>
- <20120904130905.GA15683@dhcp22.suse.cz>
- <504601B8.2050907@parallels.com>
- <20120904143552.GB15683@dhcp22.suse.cz>
- <50461241.5010300@parallels.com>
- <20120904145414.GC15683@dhcp22.suse.cz>
- <50461610.30305@parallels.com>
- <20120904162501.GE15683@dhcp22.suse.cz>
- <504709D4.2010800@parallels.com>
- <20120905144942.GH5388@dhcp22.suse.cz>
+	Wed, 5 Sep 2012 16:13:50 -0400
+Date: Wed, 5 Sep 2012 13:13:46 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, vgoyal@redhat.com, mpatocka@redhat.com,
+        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH v7 3/9] block: Add bio_reset()
+Message-ID: <20120905201346.GG25236@google.com>
+References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
+ <1346175456-1572-4-git-send-email-koverstreet@google.com>
+ <20120828203148.GB24608@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120828221715.GD1048@moria.home.lan>
+ <20120901022305.GE19535@dhcp-172-17-108-109.mtv.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120905144942.GH5388@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120901022305.GE19535@dhcp-172-17-108-109.mtv.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Michal.
+On Fri, Aug 31, 2012 at 07:23:05PM -0700, Tejun Heo wrote:
+> On Tue, Aug 28, 2012 at 03:17:15PM -0700, Kent Overstreet wrote:
+> > I still think they should be symmetrical, but if that's true bi_ioc and
+> > bi_css need to be moved, and also bio_disassociate_task() should be
+> > getting called from bio_free(), not bio_put().
+> > 
+> > Were you the one that added that call? I know you've been working on
+> > that area of the code recently. Sticking it in bio_put() instead of
+> > bio_free() seems odd to be, and they're completely equivalent now that
+> > bio_free() is only called from bio_put() (save one instance I should
+> > probably fix).
+> 
+> Maybe I botched symmetry but anyways I *suspect* it probably would be
+> better to keep css association across bio_reset() give the current
+> usages of both mechanisms.  css association indicates the ownership of
+> the bio which isn't likely to change while recycling the bio.
 
-On Wed, Sep 05, 2012 at 04:49:42PM +0200, Michal Hocko wrote:
-> Can we settle on the following 3 steps?
-> 1) warn about "flat" hierarchies (give it X releases) - I will push it
->    to as many Suse code streams as possible (hope other distributions
->    could do the same)
+Thought about it more and while you're right that css association isn't
+likely to change, it'd just be a needless difference. bio_reset() should
+be as close to a bio_free()/bio_alloc() as possible, IMO.
 
-I think I'm just gonna trigger WARN from cgroup core if anyone tries
-to create hierarchy with a controller which doesn't support full
-hierarchy.  WARN_ON_ONCE() at first and then WARN_ON() on each
-creation later on.
-
-> 2) flip the default on the root cgroup & warn when somebody tries to
->    change it to 0 (give it another X releases) that the knob will be
->    removed
-> 3) remove the knob and the whole nonsese
-> 4) revert 3 if somebody really objects
-
-If we can get to 3, I don't think 4 would be a problem.
-
-Thanks.
-
--- 
-tejun
+Fixed my patches to do it right, though.
