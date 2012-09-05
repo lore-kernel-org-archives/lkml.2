@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759015Ab2IERMY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 13:12:24 -0400
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:56273 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750841Ab2IERMW (ORCPT
+	id S1754419Ab2IERPB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 13:15:01 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15339 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752373Ab2IERO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 13:12:22 -0400
-Date: Wed, 5 Sep 2012 19:12:13 +0200
-From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>, Hillf Danton <dhillf@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: [RFC v2 PATCH 1/7] thp: remove assumptions on pgtable_t type
-Message-ID: <20120905191213.694d201f@thinkpad>
-In-Reply-To: <20120904225632.GN3334@redhat.com>
-References: <1346254384-30046-1-git-send-email-gerald.schaefer@de.ibm.com>
-	<1346254384-30046-2-git-send-email-gerald.schaefer@de.ibm.com>
-	<20120904225632.GN3334@redhat.com>
-Reply-To: gerald.schaefer@de.ibm.com
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; i686-pc-linux-gnu)
+	Wed, 5 Sep 2012 13:14:59 -0400
+X-Authority-Analysis: v=2.0 cv=Vb91zSV9 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=18yvFWKpt00A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=irYwWJVkUgEA:10 a=TvQq1q_CqGoA:10 a=Rx3P8Oq71xYA:10 a=Dkbg8qHGoJsA:10 a=APHIi6T3EdUA:10 a=YhtTla6GYR8A:10 a=D19gQVrFAAAA:8 a=JYXWXqpfWk1sZVYSuIIA:9 a=PUjeQqilurYA:10 a=b3D6R9wpAFoA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1346865298.27919.58.camel@gandalf.local.home>
+Subject: Re: lockdep WARNING for run_timer_softirq()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        john stultz <johnstul@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 05 Sep 2012 13:14:58 -0400
+In-Reply-To: <1346864947.2600.33.camel@twins>
+References: <20120831072149.GA7821@localhost>
+	 <1346845644.2461.27.camel@laptop>
+	 <1346854836.27919.51.camel@gandalf.local.home>
+	 <1346864947.2600.33.camel@twins>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-x-cbid: 12090517-0342-0000-0000-000002C2CC07
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Sep 2012 00:56:33 +0200
-Andrea Arcangeli <aarcange@redhat.com> wrote:
+On Wed, 2012-09-05 at 19:09 +0200, Peter Zijlstra wrote:
+> On Wed, 2012-09-05 at 10:20 -0400, Steven Rostedt wrote:
+> > Well, the branch tracer was active. That means all 'if()'s were being
+> > traced. It comes down to how you define 'if' ;-) 
+> 
+> Yeah, I tried making an argument for:
+> 
+>   we tell lockdep irqs are enabled hit an if() end up in lockdep code
+> through the branch tracer and find borken state, or vice-versa.
+> 
+> Just couldn't find it in the provided stack-trace. Might be I didn't
+> look hard enough, might be there's something else entirely.
+> 
+> All I know is I've never seen it on real hardware, then again, I hardly
+> ever have CONFIG_PARAVIRT or CONFIG_TRACE_BRANCH_PROFILING, let alone
+> both.
+> 
 
-> Hi Gerald,
-> 
-> On Wed, Aug 29, 2012 at 05:32:58PM +0200, Gerald Schaefer wrote:
-> > +#ifndef __HAVE_ARCH_PGTABLE_DEPOSIT
-> > +extern void pgtable_deposit(struct mm_struct *mm, pgtable_t pgtable);
-> > +#endif
-> 
-> One minor nitpick on the naming of the two functions: considering that
-> those are global exports, that they can only be used by THP and they
-> mangle internally with the mm->pmd_huge_pte field (also only defined
-> if TRANSPARENT_HUGEPAGE=y), a more specific THP naming may be clearer.
-> 
-> If the current prepare_pmd_huge_pte/get_pmd_huge_pte wasn't good other
-> options could be pgtable_trans_huge_deposit/withdraw.
-> 
+This looks very familiar to Fengguang's previous bug report. I can't
+seem to find it on LKML.org. Probably because of the two attachments
+(dmesg and config) caused lkml to nuke it.
 
-Thanks for your feedback. I'll send a new patch series with those
-functions renamed, as it has impact on 3 of the 7 patches, and also
-including the Kconfig change using HAVE_ARCH_TRANSPARENT_HUGEPAGE.
+I'll forward it to you.
+
+-- Steve
+
 
