@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759289Ab2IETr2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 15:47:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:39929 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759201Ab2IETr0 (ORCPT
+	id S1759293Ab2IETtO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 15:49:14 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56715 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759143Ab2IETtM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 15:47:26 -0400
-Message-ID: <5047AC47.8080808@canonical.com>
-Date: Wed, 05 Sep 2012 12:47:19 -0700
-From: John Johansen <john.johansen@canonical.com>
-Organization: Canonical
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Wed, 5 Sep 2012 15:49:12 -0400
+Date: Wed, 5 Sep 2012 12:49:08 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/11 V5] workqueue: Add @bind arguement back without
+ change any thing
+Message-ID: <20120905194908.GC13737@google.com>
+References: <1346841475-4422-1-git-send-email-laijs@cn.fujitsu.com>
+ <1346841475-4422-6-git-send-email-laijs@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Eric Paris <eparis@parisplace.org>
-CC: Serge Hallyn <serge.hallyn@canonical.com>,
-        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        James Morris <james.l.morris@oracle.com>,
-        Eric Paris <eparis@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Jiri Kosina <jkosina@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] security: allow Yama to be unconditionally stacked
-References: <20120904203213.GA3617@www.outflux.net> <20120905154753.GE14225@amd1> <CACLa4pvcqXfArSmm3bRadJF9unafyko9T4F9OfwUYTgHdfU49g@mail.gmail.com>
-In-Reply-To: <CACLa4pvcqXfArSmm3bRadJF9unafyko9T4F9OfwUYTgHdfU49g@mail.gmail.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346841475-4422-6-git-send-email-laijs@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2012 11:32 AM, Eric Paris wrote:
-> On Wed, Sep 5, 2012 at 11:47 AM, Serge Hallyn
-> <serge.hallyn@canonical.com> wrote:
->> Quoting Kees Cook (keescook@chromium.org):
->>> Unconditionally call Yama when CONFIG_SECURITY_YAMA_STACKED is selected,
->>> no matter what LSM module is primary.
->>>
->>> Ubuntu and Chrome OS already carry patches to do this, and Fedora
->>> has voiced interest in doing this as well. Instead of having multiple
->>> distributions (or LSM authors) carrying these patches, just allow Yama
->>> to be called unconditionally when selected by the new CONFIG.
->>
->> I don't really like having both the STACKED and non-stacked paths. But
->> I don't have a good alternative.
->>
->>> Signed-off-by: Kees Cook <keescook@chromium.org>
->>
->> Acked-by: Serge E. Hallyn <serge.hallyn@canonical.com>
-> 
-> I said basically the same thing to Kees off list.  But I don't have an
-> answer either.
-> 
-> Acked-by: Eric Paris <eparis@redhat.com>
-> 
-Yeah I'm not fond of it either but until some more generic form of LSM
-stacking arives, I don't see a good alternative either
+Hello,
 
-so until then
+On Wed, Sep 05, 2012 at 06:37:42PM +0800, Lai Jiangshan wrote:
+> Ensure the gcwq->flags is only accessed with gcwq->lock held.
+> And make the code more easier to understand.
+>
+> In all current callsite of create_worker(), DISASSOCIATED can't
+> be flipped while create_worker().
+> So the whole behavior is unchanged with this patch.
 
-Acked-by: John Johansen <john.johansen@canonical.com>
+This doesn't change anything.  You're just moving the test to the
+caller with comments there explaining how it won't change even if
+gcwq->lock is released.  It seems more confusing to me.  The flag is
+still protected by manager_mutex.  How is this an improvement?
 
+Thanks.
+
+-- 
+tejun
