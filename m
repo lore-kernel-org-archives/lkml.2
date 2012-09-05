@@ -1,115 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758585Ab2IEJZc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 05:25:32 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:59180 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751315Ab2IEJUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 05:20:32 -0400
-X-IronPort-AV: E=Sophos;i="4.80,373,1344182400"; 
-   d="scan'208";a="5789085"
-From: wency@cn.fujitsu.com
-To: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org
-Cc: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        Wen Congyang <wency@cn.fujitsu.com>
-Subject: [RFC v9 PATCH 09/21] memory-hotplug: does not release memory region in PAGES_PER_SECTION chunks
-Date: Wed, 5 Sep 2012 17:25:43 +0800
-Message-Id: <1346837155-534-10-git-send-email-wency@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1346837155-534-1-git-send-email-wency@cn.fujitsu.com>
-References: <1346837155-534-1-git-send-email-wency@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/05 17:20:02,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/05 17:20:03,
-	Serialize complete at 2012/09/05 17:20:03
+	id S1758398Ab2IEJZo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 05:25:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52913 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751315Ab2IEJZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 05:25:39 -0400
+Date: Wed, 5 Sep 2012 10:25:34 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Xishi Qiu <qiuxishi@huawei.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] mm: remain migratetype in freed page
+Message-ID: <20120905092534.GE11266@suse.de>
+References: <1346829962-31989-1-git-send-email-minchan@kernel.org>
+ <1346829962-31989-3-git-send-email-minchan@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1346829962-31989-3-git-send-email-minchan@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+On Wed, Sep 05, 2012 at 04:26:01PM +0900, Minchan Kim wrote:
+> Page allocator doesn't keep migratetype information to page
+> when the page is freed. This patch remains the information
+> to freed page's index field which isn't used by free/alloc
+> preparing so it shouldn't change any behavir except below one.
+> 
 
-Since applying a patch(de7f0cba96786c), release_mem_region() has been changed
-as called in PAGES_PER_SECTION chunks because register_memory_resource() is
-called in PAGES_PER_SECTION chunks by add_memory(). But it seems firmware
-dependency. If CRS are written in the PAGES_PER_SECTION chunks in ACPI DSDT
-Table, register_memory_resource() is called in PAGES_PER_SECTION chunks.
-But if CRS are written in the DIMM unit in ACPI DSDT Table,
-register_memory_resource() is called in DIMM unit. So release_mem_region()
-should not be called in PAGES_PER_SECTION chunks. The patch fixes it.
+This explanation could have been a *LOT* more helpful.
 
-CC: David Rientjes <rientjes@google.com>
-CC: Jiang Liu <liuj97@gmail.com>
-CC: Len Brown <len.brown@intel.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org>
-CC: Christoph Lameter <cl@linux.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Wen Congyang <wency@cn.fujitsu.com>
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
----
- arch/powerpc/platforms/pseries/hotplug-memory.c |   13 +++++++++----
- mm/memory_hotplug.c                             |    4 ++--
- 2 files changed, 11 insertions(+), 6 deletions(-)
+The page allocator caches the pageblock information in page->private while
+it is in the PCP freelists but this is overwritten with the order of the
+page when freed to the buddy allocator. This patch stores the migratetype
+of the page in the page->index field so that it is available at all times.
 
-diff --git a/arch/powerpc/platforms/pseries/hotplug-memory.c b/arch/powerpc/platforms/pseries/hotplug-memory.c
-index 11d8e05..dc0a035 100644
---- a/arch/powerpc/platforms/pseries/hotplug-memory.c
-+++ b/arch/powerpc/platforms/pseries/hotplug-memory.c
-@@ -77,7 +77,8 @@ static int pseries_remove_memblock(unsigned long base, unsigned int memblock_siz
- {
- 	unsigned long start, start_pfn;
- 	struct zone *zone;
--	int ret;
-+	int i, ret;
-+	int sections_to_remove;
- 
- 	start_pfn = base >> PAGE_SHIFT;
- 
-@@ -97,9 +98,13 @@ static int pseries_remove_memblock(unsigned long base, unsigned int memblock_siz
- 	 * to sysfs "state" file and we can't remove sysfs entries
- 	 * while writing to it. So we have to defer it to here.
- 	 */
--	ret = __remove_pages(zone, start_pfn, memblock_size >> PAGE_SHIFT);
--	if (ret)
--		return ret;
-+	sections_to_remove = (memblock_size >> PAGE_SHIFT) / PAGES_PER_SECTION;
-+	for (i = 0; i < sections_to_remove; i++) {
-+		unsigned long pfn = start_pfn + i * PAGES_PER_SECTION;
-+		ret = __remove_pages(zone, start_pfn,  PAGES_PER_SECTION);
-+		if (ret)
-+			return ret;
-+	}
- 
- 	/*
- 	 * Update memory regions for memory remove
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index e74a01d..2353887 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -358,11 +358,11 @@ int __remove_pages(struct zone *zone, unsigned long phys_start_pfn,
- 	BUG_ON(phys_start_pfn & ~PAGE_SECTION_MASK);
- 	BUG_ON(nr_pages % PAGES_PER_SECTION);
- 
-+	release_mem_region(phys_start_pfn << PAGE_SHIFT,  nr_pages * PAGE_SIZE);
-+
- 	sections_to_remove = nr_pages / PAGES_PER_SECTION;
- 	for (i = 0; i < sections_to_remove; i++) {
- 		unsigned long pfn = phys_start_pfn + i*PAGES_PER_SECTION;
--		release_mem_region(pfn << PAGE_SHIFT,
--				   PAGES_PER_SECTION << PAGE_SHIFT);
- 		ret = __remove_section(zone, __pfn_to_section(pfn));
- 		if (ret)
- 			break;
+> This patch adds a new call site in __free_pages_ok so it might be
+> overhead a bit but it's for high order allocation.
+> So I believe damage isn't hurt.
+> 
+
+The additional call to set_page_migratetype() is not heavy. If you were
+adding a new call to get_pageblock_migratetype() or something equally
+expensive I would be more concerned.
+
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+
+The information you store in the page->index becomes stale if the page
+gets moved to another free list by move_freepages(). Not sure if that is
+a problem for you or not but it is possible that
+get_page_migratetype(page) != get_pageblock_migratetype(page)
+
+> ---
+>  include/linux/mm.h |    6 ++++--
+>  mm/page_alloc.c    |    7 ++++---
+>  2 files changed, 8 insertions(+), 5 deletions(-)
+> 
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index 86d61d6..8fd32da 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -251,12 +251,14 @@ struct inode;
+>  
+>  static inline void set_page_migratetype(struct page *page, int migratetype)
+>  {
+> -	set_page_private(page, migratetype);
+> +	VM_BUG_ON((unsigned int)migratetype >= MIGRATE_TYPES);
+
+This additional bug check is not mentioned in the changelog. Not clear
+if it's necessary.
+
+> +	page->index = migratetype;
+>  }
+>  
+>  static inline int get_page_migratetype(struct page *page)
+>  {
+> -	return page_private(page);
+> +	VM_BUG_ON((unsigned int)page->index >= MIGRATE_TYPES);
+> +	return page->index;
+>  }
+>  
+>  /*
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 103ba66..32985dd 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -723,6 +723,7 @@ static void __free_pages_ok(struct page *page, unsigned int order)
+>  {
+>  	unsigned long flags;
+>  	int wasMlocked = __TestClearPageMlocked(page);
+> +	int migratetype;
+>  
+>  	if (!free_pages_prepare(page, order))
+>  		return;
+> @@ -731,9 +732,9 @@ static void __free_pages_ok(struct page *page, unsigned int order)
+>  	if (unlikely(wasMlocked))
+>  		free_page_mlock(page);
+>  	__count_vm_events(PGFREE, 1 << order);
+> -	free_one_page(page_zone(page), page, order,
+> -					get_pageblock_migratetype(page));
+> -
+> +	migratetype = get_pageblock_migratetype(page);
+> +	set_page_migratetype(page, migratetype);
+> +	free_one_page(page_zone(page), page, order, migratetype);
+>  	local_irq_restore(flags);
+>  }
+>  
+
 -- 
-1.7.1
-
+Mel Gorman
+SUSE Labs
