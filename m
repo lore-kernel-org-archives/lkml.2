@@ -1,274 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758509Ab2IEKX4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 06:23:56 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:45382 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758418Ab2IEKXy (ORCPT
+	id S1758567Ab2IEKYB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 06:24:01 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:37496 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758517Ab2IEKX7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 06:23:54 -0400
-Subject: [PATCH 2/3] x86/mce: Pack boolean MCE flags into a structure
+	Wed, 5 Sep 2012 06:23:59 -0400
+Subject: [PATCH 3/3] x86/mce: Honour bios-set CMCI threshold
 To: tony.luck@intel.com, andi@firstfloor.org, bp@amd64.org
 From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
 Cc: gong.chen@linux.intel.com, ananth@in.ibm.com, x86@kernel.org,
         linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
         tglx@linutronix.de, gregkh@suse.de, linux-edac@vger.kernel.org
-Date: Wed, 05 Sep 2012 15:52:01 +0530
-Message-ID: <20120905102201.9423.46671.stgit@localhost.localdomain>
+Date: Wed, 05 Sep 2012 15:52:06 +0530
+Message-ID: <20120905102206.9423.28389.stgit@localhost.localdomain>
 In-Reply-To: <20120905102049.9423.6413.stgit@localhost.localdomain>
 References: <20120905102049.9423.6413.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12090510-8256-0000-0000-0000040948B4
+x-cbid: 12090510-9574-0000-0000-000004465869
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many MCE flags are boolean in nature, but are declared as integers
-currently. We can pack these into a bitfield to save some space.
+The ACPI spec doesn't provide for a way for the bios to pass down
+recommended thresholds to the OS on a _per-bank_ basis. This patch adds
+a new boot option, which if passed, allows bios to initialize the CMCI
+threshold. In such a case, we simply skip programming any threshold
+value.
+
+As fail-safe, we initialize threshold to 1 if some banks have not been
+initialized by the bios and warn the user.
 
 Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
 ---
- arch/x86/include/asm/mce.h                |    2 -
- arch/x86/kernel/cpu/mcheck/mce-internal.h |    9 +++
- arch/x86/kernel/cpu/mcheck/mce.c          |   88 +++++++++++++++++++----------
- arch/x86/kernel/cpu/mcheck/mce_intel.c    |    2 -
- 4 files changed, 67 insertions(+), 34 deletions(-)
+ Documentation/x86/x86_64/boot-options.txt |    5 ++++
+ arch/x86/kernel/cpu/mcheck/mce-internal.h |    3 +-
+ arch/x86/kernel/cpu/mcheck/mce.c          |   12 +++++++++
+ arch/x86/kernel/cpu/mcheck/mce_intel.c    |   39 +++++++++++++++++++++++++++--
+ 4 files changed, 55 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-index a3ac52b..4576930 100644
---- a/arch/x86/include/asm/mce.h
-+++ b/arch/x86/include/asm/mce.h
-@@ -169,8 +169,6 @@ DECLARE_PER_CPU(struct device *, mce_device);
- #define MAX_NR_BANKS 32
+diff --git a/Documentation/x86/x86_64/boot-options.txt b/Documentation/x86/x86_64/boot-options.txt
+index c54b4f5..ec92540 100644
+--- a/Documentation/x86/x86_64/boot-options.txt
++++ b/Documentation/x86/x86_64/boot-options.txt
+@@ -50,6 +50,11 @@ Machine check
+ 		monarchtimeout:
+ 		Sets the time in us to wait for other CPUs on machine checks. 0
+ 		to disable.
++   mce=bios_cmci_threshold
++		Don't overwrite the bios-set CMCI threshold. This boot option
++		prevents Linux from overwriting the CMCI threshold set by the
++		bios. Without this option, Linux always sets the CMCI
++		threshold to 1.
  
- #ifdef CONFIG_X86_MCE_INTEL
--extern int mce_cmci_disabled;
--extern int mce_ignore_ce;
- void mce_intel_feature_init(struct cpuinfo_x86 *c);
- void cmci_clear(void);
- void cmci_reenable(void);
+    nomce (for compatibility with i386): same as mce=off
+ 
 diff --git a/arch/x86/kernel/cpu/mcheck/mce-internal.h b/arch/x86/kernel/cpu/mcheck/mce-internal.h
-index 6a05c1d..9a165a2 100644
+index 9a165a2..cfc2852 100644
 --- a/arch/x86/kernel/cpu/mcheck/mce-internal.h
 +++ b/arch/x86/kernel/cpu/mcheck/mce-internal.h
-@@ -11,6 +11,15 @@ enum severity_level {
- 	MCE_PANIC_SEVERITY,
+@@ -15,7 +15,8 @@ struct mce_config {
+ 	__u32	cmci_disabled		: 1,
+ 		ignore_ce		: 1,
+ 		dont_log_ce		: 1,
+-		__pad			: 29;
++		bios_cmci_threshold	: 1,
++		__pad			: 28;
  };
  
-+struct mce_config {
-+	__u32	cmci_disabled		: 1,
-+		ignore_ce		: 1,
-+		dont_log_ce		: 1,
-+		__pad			: 29;
-+};
-+
-+extern struct mce_config mce_cfg;
-+
- #define ATTR_LEN		16
- 
- /* One object for each MCE bank, shared by all CPUs */
+ extern struct mce_config mce_cfg;
 diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index bf276eb..cbdef73 100644
+index cbdef73..e0985a7 100644
 --- a/arch/x86/kernel/cpu/mcheck/mce.c
 +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -79,11 +79,10 @@ static int			rip_msr			__read_mostly;
- static int			mce_bootlog		__read_mostly = -1;
- static int			monarch_timeout		__read_mostly = -1;
- static int			mce_panic_timeout	__read_mostly;
--static int			mce_dont_log_ce		__read_mostly;
--int				mce_cmci_disabled	__read_mostly;
--int				mce_ignore_ce		__read_mostly;
- int				mce_ser			__read_mostly;
- 
-+struct mce_config		mce_cfg			__read_mostly;
-+
- struct mce_bank                *mce_banks		__read_mostly;
- 
- /* User mode helper program triggered by machine check event */
-@@ -630,7 +629,7 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
- 		 * Don't get the IP here because it's unlikely to
- 		 * have anything to do with the actual error location.
- 		 */
--		if (!(flags & MCP_DONTLOG) && !mce_dont_log_ce)
-+		if (!(flags & MCP_DONTLOG) && !mce_cfg.dont_log_ce)
- 			mce_log(&m);
- 
- 		/*
-@@ -1634,7 +1633,7 @@ static void mce_start_timer(unsigned int cpu, struct timer_list *t)
- 
- 	__this_cpu_write(mce_next_interval, iv);
- 
--	if (mce_ignore_ce || !iv)
-+	if (mce_cfg.ignore_ce || !iv)
- 		return;
- 
- 	t->expires = round_jiffies(jiffies + iv);
-@@ -1958,11 +1957,11 @@ static int __init mcheck_enable(char *str)
- 	if (!strcmp(str, "off"))
- 		mce_disabled = 1;
- 	else if (!strcmp(str, "no_cmci"))
--		mce_cmci_disabled = 1;
-+		mce_cfg.cmci_disabled = 1;
- 	else if (!strcmp(str, "dont_log_ce"))
--		mce_dont_log_ce = 1;
-+		mce_cfg.dont_log_ce = 1;
- 	else if (!strcmp(str, "ignore_ce"))
--		mce_ignore_ce = 1;
-+		mce_cfg.ignore_ce = 1;
+@@ -1945,6 +1945,7 @@ static struct miscdevice mce_chrdev_device = {
+  *	check, or 0 to not wait
+  * mce=bootlog Log MCEs from before booting. Disabled by default on AMD.
+  * mce=nobootlog Don't log MCEs from before booting.
++ * mce=bios_cmci_threshold Don't program the CMCI threshold
+  */
+ static int __init mcheck_enable(char *str)
+ {
+@@ -1964,6 +1965,8 @@ static int __init mcheck_enable(char *str)
+ 		mce_cfg.ignore_ce = 1;
  	else if (!strcmp(str, "bootlog") || !strcmp(str, "nobootlog"))
  		mce_bootlog = (str[0] == 'b');
++	else if (!strcmp(str, "bios_cmci_threshold"))
++		mce_cfg.bios_cmci_threshold = 1;
  	else if (isdigit(str[0])) {
-@@ -2129,6 +2128,34 @@ static ssize_t set_trigger(struct device *s, struct device_attribute *attr,
- 	return strlen(mce_helper) + !!p;
- }
- 
-+static ssize_t get_dont_log_ce(struct device *dev,
-+			       struct device_attribute *attr,
-+			       char *buf)
-+{
-+	return snprintf(buf, PAGE_SIZE, "%d\n", mce_cfg.dont_log_ce);
-+}
-+
-+static ssize_t set_dont_log_ce(struct device *s,
-+			       struct device_attribute *attr,
-+			       const char *buf, size_t size)
-+{
-+	u64 new;
-+
-+	if (strict_strtoull(buf, 0, &new) < 0)
-+		return -EINVAL;
-+
-+	mce_cfg.dont_log_ce = !!new;
-+
-+	return size;
-+}
-+
-+static ssize_t get_ignore_ce(struct device *dev,
-+			     struct device_attribute *attr,
-+			     char *buf)
-+{
-+	return snprintf(buf, PAGE_SIZE, "%d\n", mce_cfg.ignore_ce);
-+}
-+
- static ssize_t set_ignore_ce(struct device *s,
- 			     struct device_attribute *attr,
- 			     const char *buf, size_t size)
-@@ -2138,21 +2165,28 @@ static ssize_t set_ignore_ce(struct device *s,
- 	if (strict_strtoull(buf, 0, &new) < 0)
- 		return -EINVAL;
- 
--	if (mce_ignore_ce ^ !!new) {
-+	if (mce_cfg.ignore_ce ^ !!new) {
- 		if (new) {
- 			/* disable ce features */
- 			mce_timer_delete_all();
- 			on_each_cpu(mce_disable_cmci, NULL, 1);
--			mce_ignore_ce = 1;
-+			mce_cfg.ignore_ce = 1;
- 		} else {
- 			/* enable ce features */
--			mce_ignore_ce = 0;
-+			mce_cfg.ignore_ce = 0;
- 			on_each_cpu(mce_enable_ce, (void *)1, 1);
- 		}
- 	}
+ 		get_option(&str, &tolerant);
+ 		if (*str == ',') {
+@@ -2210,6 +2213,13 @@ static ssize_t set_cmci_disabled(struct device *s,
  	return size;
  }
  
-+static ssize_t get_cmci_disabled(struct device *dev,
-+				 struct device_attribute *attr,
-+				 char *buf)
++static ssize_t get_bios_cmci_threshold(struct device *dev,
++				       struct device_attribute *attr,
++				       char *buf)
 +{
-+	return snprintf(buf, PAGE_SIZE, "%d\n", mce_cfg.cmci_disabled);
++	return snprintf(buf, PAGE_SIZE, "%d\n", mce_cfg.bios_cmci_threshold);
 +}
 +
- static ssize_t set_cmci_disabled(struct device *s,
- 				 struct device_attribute *attr,
- 				 const char *buf, size_t size)
-@@ -2162,14 +2196,14 @@ static ssize_t set_cmci_disabled(struct device *s,
- 	if (strict_strtoull(buf, 0, &new) < 0)
- 		return -EINVAL;
- 
--	if (mce_cmci_disabled ^ !!new) {
-+	if (mce_cfg.cmci_disabled ^ !!new) {
- 		if (new) {
- 			/* disable cmci */
- 			on_each_cpu(mce_disable_cmci, NULL, 1);
--			mce_cmci_disabled = 1;
-+			mce_cfg.cmci_disabled = 1;
- 		} else {
- 			/* enable cmci */
--			mce_cmci_disabled = 0;
-+			mce_cfg.cmci_disabled = 0;
- 			on_each_cpu(mce_enable_ce, NULL, 1);
- 		}
- 	}
-@@ -2188,32 +2222,24 @@ static ssize_t store_int_with_restart(struct device *s,
- static DEVICE_ATTR(trigger, 0644, show_trigger, set_trigger);
- static DEVICE_INT_ATTR(tolerant, 0644, tolerant);
- static DEVICE_INT_ATTR(monarch_timeout, 0644, monarch_timeout);
--static DEVICE_INT_ATTR(dont_log_ce, 0644, mce_dont_log_ce);
-+static DEVICE_ATTR(dont_log_ce, 0644, get_dont_log_ce, set_dont_log_ce);
-+static DEVICE_ATTR(ignore_ce, 0644, get_ignore_ce, set_ignore_ce);
-+static DEVICE_ATTR(cmci_disabled, 0644, get_cmci_disabled, set_cmci_disabled);
+ static ssize_t store_int_with_restart(struct device *s,
+ 				      struct device_attribute *attr,
+ 				      const char *buf, size_t size)
+@@ -2225,6 +2235,7 @@ static DEVICE_INT_ATTR(monarch_timeout, 0644, monarch_timeout);
+ static DEVICE_ATTR(dont_log_ce, 0644, get_dont_log_ce, set_dont_log_ce);
+ static DEVICE_ATTR(ignore_ce, 0644, get_ignore_ce, set_ignore_ce);
+ static DEVICE_ATTR(cmci_disabled, 0644, get_cmci_disabled, set_cmci_disabled);
++static DEVICE_ATTR(bios_cmci_threshold, 0444, get_bios_cmci_threshold, NULL);
  
  static struct dev_ext_attribute dev_attr_check_interval = {
  	__ATTR(check_interval, 0644, device_show_int, store_int_with_restart),
- 	&check_interval
- };
- 
--static struct dev_ext_attribute dev_attr_ignore_ce = {
--	__ATTR(ignore_ce, 0644, device_show_int, set_ignore_ce),
--	&mce_ignore_ce
--};
--
--static struct dev_ext_attribute dev_attr_cmci_disabled = {
--	__ATTR(cmci_disabled, 0644, device_show_int, set_cmci_disabled),
--	&mce_cmci_disabled
--};
--
- /* Use this _only_ for per-cpu attributes */
- static struct device_attribute *mce_device_attrs[] = {
- 	&dev_attr_tolerant.attr,
- 	&dev_attr_check_interval.attr,
- 	&dev_attr_trigger,
- 	&dev_attr_monarch_timeout.attr,
--	&dev_attr_dont_log_ce.attr,
--	&dev_attr_ignore_ce.attr,
--	&dev_attr_cmci_disabled.attr,
-+	&dev_attr_dont_log_ce,
-+	&dev_attr_ignore_ce,
-+	&dev_attr_cmci_disabled,
- 	NULL
- };
- 
-@@ -2223,9 +2249,9 @@ static struct attribute *mce_device_global_attrs[] = {
- 	&dev_attr_check_interval.attr.attr,
- 	&dev_attr_trigger.attr,
- 	&dev_attr_monarch_timeout.attr.attr,
--	&dev_attr_dont_log_ce.attr.attr,
--	&dev_attr_ignore_ce.attr.attr,
--	&dev_attr_cmci_disabled.attr.attr,
-+	&dev_attr_dont_log_ce.attr,
-+	&dev_attr_ignore_ce.attr,
-+	&dev_attr_cmci_disabled.attr,
+@@ -2252,6 +2263,7 @@ static struct attribute *mce_device_global_attrs[] = {
+ 	&dev_attr_dont_log_ce.attr,
+ 	&dev_attr_ignore_ce.attr,
+ 	&dev_attr_cmci_disabled.attr,
++	&dev_attr_bios_cmci_threshold.attr,
  	NULL
  };
  
 diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-index 098386f..a6c028d 100644
+index a6c028d..6a2de06 100644
 --- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
 +++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-@@ -53,7 +53,7 @@ static int cmci_supported(int *banks)
- {
- 	u64 cap;
+@@ -181,10 +181,16 @@ static void cmci_discover(int banks)
+ 	unsigned long *owned = (void *)&__get_cpu_var(mce_banks_owned);
+ 	unsigned long flags;
+ 	int i;
++	int bios_wrong_thresh = 0;
++
++	if (mce_cfg.bios_cmci_threshold)
++		printk_once(KERN_INFO
++			"bios_cmci_threshold: Using bios-set threshold values for CMCI");
  
--	if (mce_cmci_disabled || mce_ignore_ce)
-+	if (mce_cfg.cmci_disabled || mce_cfg.ignore_ce)
- 		return 0;
+ 	raw_spin_lock_irqsave(&cmci_discover_lock, flags);
+ 	for (i = 0; i < banks; i++) {
+ 		u64 val;
++		int bios_zero_thresh = 0;
  
- 	/*
+ 		if (test_bit(i, owned))
+ 			continue;
+@@ -198,8 +204,20 @@ static void cmci_discover(int banks)
+ 			continue;
+ 		}
+ 
+-		val &= ~MCI_CTL2_CMCI_THRESHOLD_MASK;
+-		val |= MCI_CTL2_CMCI_EN | CMCI_THRESHOLD;
++		if (!mce_cfg.bios_cmci_threshold) {
++			val &= ~MCI_CTL2_CMCI_THRESHOLD_MASK;
++			val |= CMCI_THRESHOLD;
++		} else if (!(val & MCI_CTL2_CMCI_THRESHOLD_MASK)) {
++			/*
++			 * If bios_cmci_threshold boot option was specified
++			 * but the threshold is zero, we'll try to initialize
++			 * it to 1.
++			 */
++			bios_zero_thresh = 1;
++			val |= CMCI_THRESHOLD;
++		}
++
++		val |= MCI_CTL2_CMCI_EN;
+ 		wrmsrl(MSR_IA32_MCx_CTL2(i), val);
+ 		rdmsrl(MSR_IA32_MCx_CTL2(i), val);
+ 
+@@ -207,11 +225,26 @@ static void cmci_discover(int banks)
+ 		if (val & MCI_CTL2_CMCI_EN) {
+ 			set_bit(i, owned);
+ 			__clear_bit(i, __get_cpu_var(mce_poll_banks));
++			/*
++			 * We are able to set thresholds for some banks that
++			 * had a threshold of 0. This means the BIOS has not
++			 * set the thresholds properly or does not work with
++			 * this boot option. Note down now and report later.
++			 */
++			if (mce_cfg.bios_cmci_threshold && bios_zero_thresh &&
++					(val & MCI_CTL2_CMCI_THRESHOLD_MASK))
++				bios_wrong_thresh = 1;
+ 		} else {
+ 			WARN_ON(!test_bit(i, __get_cpu_var(mce_poll_banks)));
+ 		}
+ 	}
+ 	raw_spin_unlock_irqrestore(&cmci_discover_lock, flags);
++	if (mce_cfg.bios_cmci_threshold && bios_wrong_thresh) {
++		printk_once(KERN_INFO
++			"bios_cmci_threshold: Some banks do not have valid thresholds set");
++		printk_once(KERN_INFO
++			"bios_cmci_threshold: Make sure your BIOS supports this boot option");
++	}
+ }
+ 
+ /*
+@@ -249,7 +282,7 @@ void cmci_clear(void)
+ 			continue;
+ 		/* Disable CMCI */
+ 		rdmsrl(MSR_IA32_MCx_CTL2(i), val);
+-		val &= ~(MCI_CTL2_CMCI_EN|MCI_CTL2_CMCI_THRESHOLD_MASK);
++		val &= ~MCI_CTL2_CMCI_EN;
+ 		wrmsrl(MSR_IA32_MCx_CTL2(i), val);
+ 		__clear_bit(i, __get_cpu_var(mce_banks_owned));
+ 	}
 
