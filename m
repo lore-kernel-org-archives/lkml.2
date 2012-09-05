@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759157Ab2IESbn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 14:31:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3750 "EHLO mx1.redhat.com"
+	id S1759106Ab2IESbm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 14:31:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40448 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753509Ab2IESbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751697Ab2IESbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Sep 2012 14:31:40 -0400
-Message-Id: <20120905183133.461178345@napanee.usersys.redhat.com>
+Message-Id: <20120905183132.806473183@napanee.usersys.redhat.com>
 User-Agent: quilt/0.48-1
-Date: Wed, 05 Sep 2012 14:31:34 -0400
+Date: Wed, 05 Sep 2012 14:31:32 -0400
 From: Aristeu Rozanski <aris@redhat.com>
 To: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
 Cc: Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
-        Hugh Dickins <hughd@google.com>, Hillf Danton <dhillf@gmail.com>,
-        Lennart Poettering <lpoetter@redhat.com>
-Subject: [PATCH 2/2] fs: add documentation to simple_xattr functions
-References: <20120905183132.806473183@napanee.usersys.redhat.com>
-Content-Disposition: inline; filename=simple_xattr_doc.txt
+        Hugh Dickins <hughd@google.com>, Hillf Danton <dhillf@gmail.com>
+Subject: [PATCH 0/2] cgroups: add documentation on extended attributes and simple_xattr functions
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+cgroups: add documentation on extended attributes and simple_xattr functions
+
+These patches add documentation on the new functions and current specific
+cgroup usage.
 
 Cc: Li Zefan <lizefan@huawei.com>
 Cc: Tejun Heo <tj@kernel.org>
@@ -28,70 +30,5 @@ Cc: Hillf Danton <dhillf@gmail.com>
 Cc: Lennart Poettering <lpoetter@redhat.com>
 Signed-off-by: Aristeu Rozanski <aris@redhat.com>
 
----
- Documentation/filesystems/00-INDEX         |    3 ++
- Documentation/filesystems/simple_xattr.txt |   42 +++++++++++++++++++++++++++++
- 2 files changed, 45 insertions(+)
-
-Index: github/Documentation/filesystems/00-INDEX
-===================================================================
---- github.orig/Documentation/filesystems/00-INDEX	2012-09-05 11:51:50.870969722 -0400
-+++ github/Documentation/filesystems/00-INDEX	2012-09-05 12:10:46.250211947 -0400
-@@ -96,6 +96,9 @@
- 	- how to use the seq_file API
- sharedsubtree.txt
- 	- a description of shared subtrees for namespaces.
-+simple_xattr.txt
-+	- description of extended attributes for memory backed filesystems
-+	  like tmpfs and cgroup filesystem.
- spufs.txt
- 	- info and mount options for the SPU filesystem used on Cell.
- sysfs-pci.txt
-Index: github/Documentation/filesystems/simple_xattr.txt
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ github/Documentation/filesystems/simple_xattr.txt	2012-09-05 12:10:46.250211947 -0400
-@@ -0,0 +1,42 @@
-+Simple Extended Attributes for Memory Backed Filesystems Interface
-+==================================================================
-+
-+Implements extended attributes storage using kernel memory.  Users of these
-+functions are strongly advised against allowing user or any other kind of
-+extended attributes that can be manipulated by unprivileged users, since it'd
-+be trivial to exhaust kernel memory.
-+
-+The filesystem implementation is responsible by storing a simple_xattrs
-+structure for every directory and file and to implement setxattr() and
-+getxattr() calls. Also, setxattr() should filter off by name the unsupported
-+types.
-+
-+void simple_xattrs_init(struct simple_xattrs *xattrs)
-+- Initializes a pre allocated structure
-+
-+void simple_xattrs_free(struct simple_xattrs *xattrs)
-+- Frees up all the extended attributes and any resources allocated by
-+  simple_xattrs_init
-+
-+struct simple_xattr *simple_xattr_alloc(const void *value, size_t size)
-+- Allocates a extended attribute entry
-+
-+void simple_xattr_list_add(struct simple_xattrs *xattrs,
-+                          struct simple_xattr *new_xattr)
-+int simple_xattr_remove(struct simple_xattrs *xattrs, const char *name)
-+- Adds and removes an extended attribute from the list
-+
-+int simple_xattr_get(struct simple_xattrs *xattrs, const char *name,
-+                    void *buffer, size_t size);
-+- Returns the value of an extended attribute searching by name
-+
-+int simple_xattr_set(struct simple_xattrs *xattrs, const char *name,
-+                    const void *value, size_t size, int flags);
-+- Sets a new value for a given extended attribute. Specifying value as
-+  NULL will remove the entry.  If XATTR_CREATE is set in flags, no extended
-+  attribute with the same name may exist.  If XATTR_REPLACE is set, the
-+  extended attribute has to exist or the operation will fail
-+
-+ssize_t simple_xattr_list(struct simple_xattrs *xattrs, char *buffer,
-+                         size_t size);
-+- Lists the existing extended attributes names in a given buffer
-
+-- 
+Aristeu
