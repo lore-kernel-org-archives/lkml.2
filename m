@@ -1,43 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759814Ab2IEWue (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 18:50:34 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45185 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759768Ab2IEWuc (ORCPT
+	id S1759843Ab2IEWut (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 18:50:49 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:50410 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759829Ab2IEWus (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 18:50:32 -0400
-Date: Wed, 5 Sep 2012 15:50:27 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Aristeu Rozanski <aris@redhat.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>, Hugh Dickins <hughd@google.com>,
-        Hillf Danton <dhillf@gmail.com>,
-        Lennart Poettering <lpoetter@redhat.com>
-Subject: Re: [PATCH 2/2] fs: add documentation to simple_xattr functions
-Message-ID: <20120905225027.GB29092@google.com>
-References: <20120905183132.806473183@napanee.usersys.redhat.com>
- <20120905183133.461178345@napanee.usersys.redhat.com>
+	Wed, 5 Sep 2012 18:50:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120905183133.461178345@napanee.usersys.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Wed, 5 Sep 2012 19:50:47 -0300
+Message-ID: <CALF0-+ViKZe=QoNYqz_vyoQc5kH1EJ5K5M=HfGdvOFjnWY1BbA@mail.gmail.com>
+Subject: [PATCH 0/5] mm, slob: Tracing accuracy improvement
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
+        Glauber Costa <glommer@parallels.com>, Tim Bird <tim.bird@am.sony.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 05, 2012 at 02:31:34PM -0400, Aristeu Rozanski wrote:
-> Cc: Li Zefan <lizefan@huawei.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Hugh Dickins <hughd@google.com>
-> Cc: Hillf Danton <dhillf@gmail.com>
-> Cc: Lennart Poettering <lpoetter@redhat.com>
-> Signed-off-by: Aristeu Rozanski <aris@redhat.com>
+Hi everyone,
 
-Can you make these function comments instead?
+This small patchset improves mm tracing accuracy, particularly on the
+slob allocator.
+Feedback, comments, suggestions are very welcome.
 
-Thanks.
+This work is part of CELF Workgroup Project:
+"Kernel_dynamic_memory_allocation_tracking_and_reduction" [1]
 
--- 
-tejun
+Ezequiel Garcia (5):
+ mm, slob: Trace allocation failures consistently
+ mm, slob: Use only 'ret' variable for both slob object and returned pointer
+ mm, util: Do strndup_user allocation directly, instead of through memdup_user
+ mm, slob: Add support for kmalloc_track_caller()
+ mm, slab: Remove silly function slab_buffer_size()
+
+ include/linux/slab.h |    6 +++-
+ mm/slab.c            |   12 +--------
+ mm/slob.c            |   62 +++++++++++++++++++++++++++++++++++--------------
+ mm/util.c            |   15 +++++++++--
+ 4 files changed, 62 insertions(+), 33 deletions(-)
+
+Thanks!
+Ezequiel.
+
+[1] http://elinux.org/Kernel_dynamic_memory_allocation_tracking_and_reduction
