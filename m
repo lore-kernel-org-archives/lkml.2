@@ -1,88 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759310Ab2IEUI1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 16:08:27 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:8013
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753566Ab2IEUIZ (ORCPT
+	id S1754994Ab2IEUJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 16:09:59 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48834 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754762Ab2IEUJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 16:08:25 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zz98dI1432I4015Izz1202hzz8275dhz2dh668h839h944hd25hd2bhf0ah107ah1220h1155h)
-X-WSS-ID: 0M9W7XS-01-AWO-02
-X-M-MSG: 
-Date: Wed, 5 Sep 2012 15:08:15 -0500
-From: Jacob Shin <jacob.shin@amd.com>
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -v3 00/14] x86, mm: init_memory_mapping cleanup
-Message-ID: <20120905200815.GA2457@jshin-Toonie>
-References: <1346823991-22911-1-git-send-email-yinghai@kernel.org>
+	Wed, 5 Sep 2012 16:09:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1346823991-22911-1-git-send-email-yinghai@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <20120905055218.GA24715@core.coreip.homeip.net>
+References: <1344895914-32127-1-git-send-email-vbocek@gmail.com>
+	<20120905055218.GA24715@core.coreip.homeip.net>
+Date: Wed, 5 Sep 2012 22:09:57 +0200
+Message-ID: <CAOeGmboLCan-fX4sPPxS5jkyepxLTSnRgvdHJ0-edcH8UCQg+w@mail.gmail.com>
+Subject: Re: [PATCH 1/1] Input: joydev - fix axes values sent in initial js_event
+From: =?ISO-8859-2?Q?Vojt=ECch_Bo=E8ek?= <vbocek@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 04, 2012 at 10:46:17PM -0700, Yinghai Lu wrote:
-> Only create mapping for E820_820 and E820_RESERVED_KERN.
-> 
-> Seperate calculate_table_space_size and find_early_page_table out with
-> init_memory_mapping.
-> 
-> For all ranges, will allocate page table one time, but init mapping
-> only for E820 RAM and E820_RESERVED_KERN.
-> 
-> Could be found at:
-> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-mm
-> 
-> Thanks
->         Yinghai
-> 
-> 
-> Jacob Shin (4):
->   x86: if kernel .text .data .bss are not marked as E820_RAM, complain and fix
->   x86: Fixup code testing if a pfn is direct mapped
->   x86: Only direct map addresses that are marked as E820_RAM
->   x86/mm: calculate_table_space_size based on memory ranges that are being mapped
-> 
-> Yinghai Lu (10):
->   x86, mm: Add global page_size_mask
->   x86, mm: Split out split_mem_range
->   x86, mm: Moving init_memory_mapping calling
->   x86, mm: Revert back good_end setting for 64bit
->   x86, mm: Find early page table only one time
->   x86, mm: Separate out calculate_table_space_size()
->   x86, mm: Move down two calculate_table_space_size down.
->   x86, mm: set memblock initial limit to 1M
->   x86, mm: Use func pointer to table size calculation and mapping
->   x86, mm: Map ISA area with connected ram range at the same time
-> 
->  arch/x86/include/asm/init.h       |    1 -
->  arch/x86/include/asm/page_types.h |    2 +
->  arch/x86/include/asm/pgtable.h    |    1 +
->  arch/x86/kernel/cpu/amd.c         |    8 +-
->  arch/x86/kernel/setup.c           |   36 +++--
->  arch/x86/mm/init.c                |  357 +++++++++++++++++++++++++------------
->  arch/x86/mm/init_64.c             |    6 +-
->  arch/x86/platform/efi/efi.c       |    8 +-
->  8 files changed, 280 insertions(+), 139 deletions(-)
-> 
-> -- 
-> 1.7.7
-> 
-> 
+Hi,
 
-Tested -v3 on our (AMD) machines and everything looks good.
+2012/9/5 Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> So what guarantees that joystick events will arrive in time, before
+> joydev_generate_startup_event() is called? It looks like your solution
+> is racy...
+>
+> I wonder if we should not generate the startup event until we have seen
+> at least one EV_SYN, i.e. entire device state has been transmitted to
+> us.
 
-Thanks,
+I just tried to delay read() until first EV_SYN arrives as you suggested,
+but that was not the problem, at least not the main one. First joystick
+input events arrives immediately after it is plugged in and driver is loaded,
+but when that happens, joydev may not be (and most likely is not)
+opened yet, which means the events will never reach joydev because of
+"if (!handle->open)" check in input_pass_event.
 
--Jacob
+I wonder how to handle this. Is "if(!handle->open)" valid check? I think so,
+my guess is that joydev is the only handler with internal buffer, and it
+is useless to update that buffer when the device is not opened.
+I think reloading abs values on joydev open should be okay.
 
+I suppose that if we reload abs values on joydev open, waiting for first
+sync is not needed, yes?
+
+So the patch could look like this:
+
+---
+ drivers/input/joydev.c |   19 ++++++++++++++++++-
+ 1 file changed, 18 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/input/joydev.c b/drivers/input/joydev.c
+index 26043cc..22a166c 100644
+--- a/drivers/input/joydev.c
++++ b/drivers/input/joydev.c
+@@ -158,6 +158,20 @@ static void joydev_event(struct input_handle *handle,
+ 	wake_up_interruptible(&joydev->wait);
+ }
+
++/* joydev must be locked */
++static void joydev_reload_abs(struct joydev *joydev)
++{
++	int i, j, abs;
++	struct input_dev *input = joydev->handle.dev;
++
++	for (i = 0; i < joydev->nabs; ++i) {
++		j = joydev->abspam[i];
++		abs = input_abs_get_val(input, j);
++
++		joydev->abs[i] = joydev_correct(abs, &joydev->corr[i]);
++	}
++}
++
+ static int joydev_fasync(int fd, struct file *file, int on)
+ {
+ 	struct joydev_client *client = file->private_data;
+@@ -202,8 +216,11 @@ static int joydev_open_device(struct joydev *joydev)
+ 		retval = -ENODEV;
+ 	else if (!joydev->open++) {
+ 		retval = input_open_device(&joydev->handle);
+-		if (retval)
++		if (!retval)
++			joydev_reload_abs(joydev);
++		else
+ 			joydev->open--;
++		
+ 	}
+
+ 	mutex_unlock(&joydev->mutex);
+-- 
+1.7.10.4
