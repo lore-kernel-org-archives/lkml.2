@@ -1,105 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758722Ab2IELOk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 07:14:40 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46398 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751990Ab2IELOi (ORCPT
+	id S1753039Ab2IELVx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 07:21:53 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:43478 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751328Ab2IELVw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 07:14:38 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <50473306.1070803@jp.fujitsu.com>
-Date: Wed, 05 Sep 2012 20:09:58 +0900
-From: Takao Indoh <indou.takao@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120824 Thunderbird/15.0
+	Wed, 5 Sep 2012 07:21:52 -0400
 MIME-Version: 1.0
-To: vgoyal@redhat.com
-CC: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, bhelgaas@google.com, hbabu@us.ibm.com,
-        ishii.hironobu@jp.fujitsu.com, martin.wilck@ts.fujitsu.com
-Subject: Re: [RFC][PATCH] Reset PCIe devices to address DMA problem on kdump
- with iommu
-References: <501BB4EF.7080909@jp.fujitsu.com> <20120803114643.GA28330@redhat.com> <501F4877.5050605@jp.fujitsu.com> <20120806203902.GH25559@redhat.com>
-In-Reply-To: <20120806203902.GH25559@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <7f59aa30d3af02ae522dc38105e51107e34826f2.1306455946.git.joe@perches.com>
+References: <20110525165345.5f775c7b.akpm@linux-foundation.org>
+	<7f59aa30d3af02ae522dc38105e51107e34826f2.1306455946.git.joe@perches.com>
+Date: Wed, 5 Sep 2012 13:21:50 +0200
+Message-ID: <CAOoYnzLViwqp11Tw1zf0C+qhc+AtzefNLzZEbC2oUPkWPV5zqQ@mail.gmail.com>
+Subject: Re: [PATCH v2] checkpatch: Suggest using min_t or max_t
+From: Philippe De Muyter <philippe.demuyter@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/08/07 5:39), Vivek Goyal wrote:
-> On Mon, Aug 06, 2012 at 01:30:47PM +0900, Takao Indoh wrote:
->> Hi Vivek,
->>
->> (2012/08/03 20:46), Vivek Goyal wrote:
->>> On Fri, Aug 03, 2012 at 08:24:31PM +0900, Takao Indoh wrote:
->>>> Hi all,
->>>>
->>>> This patch adds kernel parameter "reset_pcie_devices" which resets PCIe
->>>> devices at boot time to address DMA problem on kdump with iommu. When
->>>> this parameter is specified, a hot reset is triggered on each PCIe root
->>>> port and downstream port to reset its downstream endpoint.
->>>
->>> Hi Takao,
->>>
->>> Why not use existing "reset_devices" parameter instead of introducing
->>> a new one?
->>
->> "reset_devices" is used for each driver to reset their own device, and
->> this patch resets all devices forcibly, so I thought they were different
->> things.
+On 5/27/11, Joe Perches <joe@perches.com> wrote:
+> A common issue with min() or max() is using a cast on
+> one or both of the arguments when using min_t/max_t could
+> be better.
 >
-> Yes reset_devices currently is used for driver to reset its device. I
-> thought one could very well extend its reach to reset pci express devices
-> at bus level.
+> Add cast detection to uses of min/max and suggest an
+> appropriate use of min_t or max_t instead.
 >
-> Having them separate is not going to be much useful from kdump
-> perspective. We will end up passing both reset_devices and
-> reset_pcie_devices to second kernel whill lead to bus level reset as well
-> as device level reset.
+> Caveat:  This only works for min() or max() on a single line.
+>          It does not find min() or max() split across multiple lines.
 >
-> Ideal situation would be that somehow detect that bus level reset has been
-> done and skip device level reset (assuming bus level reset obviates the
-> need of device level reset, please correct me if that's not the case).
+> This does find:
+> 	min((u32)foo, bar);
+> But it does not find:
+> 	max((unsigned long)foo,
+> 	    bar);
 >
-> After pcie reset, can we store the state in a variable and drivers can
-> use that variable to check if PCIe level reset was done or not. If yes,
-> skip device level reset (Assuming driver knows that device is on a
-> PCIe slot).
+> Suggested-by: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
 >
-> In that case we will not have to introduce new kernel command line, and
-> also avoid double reset?
-  
-I found a problem when testing my patch on some machines.
+> v2: Make $match_balanced_parentheses work in perl 5.8
 
-Originally there are two problems in kdump kernel when iommu is enabled;
-DMAR error and PCI SERR. I thought they are fixed by my patch, but I
-noticed that PCI SERR is still detected after applying the patch. It
-seems that something happens when Interrupt Remapping is initialized in
-kdump kernel.
+Has this been applied  ?
 
-Therefore resetting devices has to be done before enable_IR() is
-called. I have three ideas for it.
+v3.3 version of checkpatch.pl works for me, but v3.4, v3.5 & v3.6rc2 say:
+Nested quantifiers in regex; marked by <-- HERE in m/(\((?:[^\(\)]++
+<-- HERE |(?-1))*\))/ at scripts/checkpatch.pl line 340.
 
-  (i) Resetting devices in 1st kernel(panic kernel)
-  We can reset devices before jumping into 2nd kernel. Of course it may
-  be dangerous to scan pci device tree and call PCI functions in panic'd
-  kernel. Beforehand we need to collect device information so that only
-  minimal code could run on panic.
+and my perl is :
 
-  (ii) Resetting devices in purgatory
-  It seems to be be appropriate place to do this, but I'm not sure
-  where I can save/restore PCI config when resetting devices in
-  purgatory.
+        perl --version
 
-  (iii) Resetting devices in 2nd kernel(kdump kernel)
-  Important point is to do reset before enable_IR() is called as I wrote
-  above. I think I should add new function to do reset into
-  arch/x86/pci/early.c and call it in setup_arch like
-  early_dump_pci_devices() or early_quirks().
+        This is perl, v5.8.8 built for i586-linux-thread-multi
 
-Any comments?
-
-Thanks,
-Takao Indoh
-
+Philippe
