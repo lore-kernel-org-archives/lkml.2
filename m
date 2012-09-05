@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759084Ab2IERZe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 13:25:34 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:53232 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754193Ab2IERZc (ORCPT
+	id S1759098Ab2IER0W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 13:26:22 -0400
+Received: from mxout11.netvision.net.il ([194.90.6.39]:42783 "EHLO
+	mxout11.netvision.net.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754083Ab2IER0Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 13:25:32 -0400
-Message-ID: <50478B07.4080708@wwwdotorg.org>
-Date: Wed, 05 Sep 2012 11:25:27 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Alexandre Courbot <acourbot@nvidia.com>
-CC: Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Simon Glass <sjg@chromium.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>, linux-fbdev@vger.kernel.org,
-        linux-pm@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH v5 2/4] pwm_backlight: use power sequences
-References: <1346412846-17102-1-git-send-email-acourbot@nvidia.com> <1346412846-17102-3-git-send-email-acourbot@nvidia.com>
-In-Reply-To: <1346412846-17102-3-git-send-email-acourbot@nvidia.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 5 Sep 2012 13:26:16 -0400
+X-Greylist: delayed 903 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Sep 2012 13:26:15 EDT
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; CHARSET=US-ASCII
+Reply-to: mail.info187@ok.net
+From: "DR.NED OKOH" <infomail@ok.net>
+Subject: REPLY NEEDED
+Date: Wed, 05 Sep 2012 10:10:31 -0700
+X-Priority: 3
+X-MSMail-priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MIMEOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-Antivirus: avast! (VPS 120905-1, 09/05/2012), Outbound message
+X-Antivirus-Status: Clean
+Message-id: <SERVERm0fwYdka0fIQT00004992@offline.co.il>
+X-OriginalArrivalTime: 05 Sep 2012 17:10:35.0528 (UTC)
+ FILETIME=[5D464880:01CD8B89]
+X-EsetResult: clean, is OK
+X-EsetId: 8DF0BF2045458032DFB5E0
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/31/2012 05:34 AM, Alexandre Courbot wrote:
-> Make use of the power sequences specified in the device tree or platform
-> data to control how the backlight is powered on and off.
+Good day my dear,
+I am writing to acknowledged you that this is the second time we are notifying you about your payment worth of US$16.5m USD,with foreign Remittance payment department office which is due to be released into your Account As we begin the first fiscal payment of the year 2012.Please send the information below as needed for your fund release to you OK.
 
-> +++ b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+1)Your Full Name__________________________ _____________
+2)Your Address_______________________ ______________________________
+3)Your Age___________________________ _______________________
+4)Your Direct Telephone Number________________________ ________________
+5)Fax Number________________________ _________________
+6)Occupation____________________ __________________________
 
->  Optional properties:
-> -  - pwm-names: a list of names for the PWM devices specified in the
-> -               "pwms" property (see PWM binding[0])
-> +  - pwm-names: name for the PWM device specified in the "pwms" property (see PWM
-> +      binding[0]). Necessary if power sequences are used
+We sincerely apologies for our late contact with you, We are committed to serve you better OK and you have been advice to get back to me immediately for more details OK.
 
-So this implies that power sequence are completely optional in the pwm
-binding...
-
-> diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
-
->  config BACKLIGHT_PWM
->  	tristate "Generic PWM based Backlight Driver"
->  	depends on PWM
-> +	select POWER_SEQ
-
-... but that implies they're basically mandatory.
-
-Briefly looking at the code, power sequences don't appear to be
-optional, at least for the DT case, so perhaps you just need to update
-the documentation to make "pwm-names" non-optional?
+Yours in service
+Dr.Ned Okoh
