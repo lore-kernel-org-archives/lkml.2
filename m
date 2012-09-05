@@ -1,155 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758172Ab2IEFug (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 01:50:36 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:20490 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756376Ab2IEFrL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758093Ab2IEFue (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 01:50:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9910 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756446Ab2IEFrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Sep 2012 01:47:11 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH -v3 05/14] x86, mm: Find early page table only one time
-Date: Tue,  4 Sep 2012 22:46:22 -0700
-Message-Id: <1346823991-22911-6-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1346823991-22911-1-git-send-email-yinghai@kernel.org>
-References: <1346823991-22911-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Date: Wed, 5 Sep 2012 08:48:30 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Asias He <asias@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Kent Overstreet <koverstreet@google.com>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH] virtio-blk: Fix kconfig option
+Message-ID: <20120905054830.GB7517@redhat.com>
+References: <20120903044133.GA9980@moria.home.lan>
+ <87wr0ae26e.fsf@rustcorp.com.au>
+ <5046D3A2.3070108@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5046D3A2.3070108@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Should not do that in every calling of init_memory_mapping.
-Actually in early time, only need do once.
+On Wed, Sep 05, 2012 at 12:22:58PM +0800, Asias He wrote:
+> On 09/04/2012 02:23 PM, Rusty Russell wrote:
+> > Kent Overstreet <koverstreet@google.com> writes:
+> > 
+> >> CONFIG_VIRTIO isn't exposed, everything else is supposed to select it
+> >> instead.
+> > 
+> > This is a slight mis-understanding.  It's supposed to be selected by
+> > the particular driver, probably virtio_pci in your case.
+> 
+> virtio_mmio selects virtio as well.
+> 
+> drivers/virtio/Kconfig
+> config VIRTIO_MMIO
+>        select VIRTIO
+> config VIRTIO_PCI
+>        select VIRTIO
+> 
+> How about this:
+> config VIRTIO_BLK
+>        depends on EXPERIMENTAL && (VIRTIO_PCI || VIRTIO_MMIO)
 
-Also move down early_memtest.
+Isn't this exactly what depends on VIRTIO achieves?
 
--v2: fix one early_memtest with 32bit by passing max_pfn_mapped instead.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- arch/x86/mm/init.c |   72 ++++++++++++++++++++++++++-------------------------
- 1 files changed, 37 insertions(+), 35 deletions(-)
-
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index cca9b7d..0ada295 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -37,7 +37,7 @@ struct map_range {
- 
- static int page_size_mask;
- 
--static void __init find_early_table_space(struct map_range *mr,
-+static void __init find_early_table_space(unsigned long begin,
- 					  unsigned long end)
- {
- 	unsigned long puds, pmds, ptes, tables, start = 0, good_end = end;
-@@ -64,8 +64,8 @@ static void __init find_early_table_space(struct map_range *mr,
- 		extra += PMD_SIZE;
- #endif
- 		/* The first 2/4M doesn't use large pages. */
--		if (mr->start < PMD_SIZE)
--			extra += mr->end - mr->start;
-+		if (begin < PMD_SIZE)
-+			extra += (PMD_SIZE - begin) >> PAGE_SHIFT;
- 
- 		ptes = (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 	} else
-@@ -265,16 +265,6 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 	nr_range = 0;
- 	nr_range = split_mem_range(mr, nr_range, start, end);
- 
--	/*
--	 * Find space for the kernel direct mapping tables.
--	 *
--	 * Later we should allocate these tables in the local node of the
--	 * memory mapped. Unfortunately this is done currently before the
--	 * nodes are discovered.
--	 */
--	if (!after_bootmem)
--		find_early_table_space(&mr[0], end);
--
- 	for (i = 0; i < nr_range; i++)
- 		ret = kernel_physical_mapping_init(mr[i].start, mr[i].end,
- 						   mr[i].page_size_mask);
-@@ -287,6 +277,36 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 
- 	__flush_tlb_all();
- 
-+	return ret >> PAGE_SHIFT;
-+}
-+
-+void __init init_mem_mapping(void)
-+{
-+	probe_page_size_mask();
-+
-+	/*
-+	 * Find space for the kernel direct mapping tables.
-+	 *
-+	 * Later we should allocate these tables in the local node of the
-+	 * memory mapped. Unfortunately this is done currently before the
-+	 * nodes are discovered.
-+	 */
-+#ifdef CONFIG_X86_64
-+	find_early_table_space(0, max_pfn<<PAGE_SHIFT);
-+#else
-+	find_early_table_space(0, max_low_pfn<<PAGE_SHIFT);
-+#endif
-+	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
-+	max_pfn_mapped = max_low_pfn_mapped;
-+
-+#ifdef CONFIG_X86_64
-+	if (max_pfn > max_low_pfn) {
-+		max_pfn_mapped = init_memory_mapping(1UL<<32,
-+						     max_pfn<<PAGE_SHIFT);
-+		/* can we preseve max_low_pfn ?*/
-+		max_low_pfn = max_pfn;
-+	}
-+#endif
- 	/*
- 	 * Reserve the kernel pagetable pages we used (pgt_buf_start -
- 	 * pgt_buf_end) and free the other ones (pgt_buf_end - pgt_buf_top)
-@@ -302,32 +322,14 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 	 * RO all the pagetable pages, including the ones that are beyond
- 	 * pgt_buf_end at that time.
- 	 */
--	if (!after_bootmem && pgt_buf_end > pgt_buf_start)
-+	if (pgt_buf_end > pgt_buf_start)
- 		x86_init.mapping.pagetable_reserve(PFN_PHYS(pgt_buf_start),
- 				PFN_PHYS(pgt_buf_end));
- 
--	if (!after_bootmem)
--		early_memtest(start, end);
-+	/* stop the wrong using */
-+	pgt_buf_top = 0;
- 
--	return ret >> PAGE_SHIFT;
--}
--
--void __init init_mem_mapping(void)
--{
--	probe_page_size_mask();
--
--	/* max_pfn_mapped is updated here */
--	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
--	max_pfn_mapped = max_low_pfn_mapped;
--
--#ifdef CONFIG_X86_64
--	if (max_pfn > max_low_pfn) {
--		max_pfn_mapped = init_memory_mapping(1UL<<32,
--						     max_pfn<<PAGE_SHIFT);
--		/* can we preseve max_low_pfn ?*/
--		max_low_pfn = max_pfn;
--	}
--#endif
-+	early_memtest(0, max_pfn_mapped << PAGE_SHIFT);
- }
- 
- /*
--- 
-1.7.7
-
+> -- 
+> Asias
