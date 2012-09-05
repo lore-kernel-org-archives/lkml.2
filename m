@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757034Ab2IENkI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 09:40:08 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:37796 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751298Ab2IENkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 09:40:05 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Andre Przywara <andre.przywara@amd.com>
-Subject: Re: [PATCH 0/8 v2] acpi-cpufreq: Move modern AMD cpufreq support to acpi-cpufreq
-Date: Wed, 5 Sep 2012 15:46:22 +0200
-User-Agent: KMail/1.13.6 (Linux/3.6.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: Thomas Renninger <trenn@suse.de>, Matthew Garret <mjg@redhat.com>,
-        linux-pm@vger.kernel.org, cpufreq@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-References: <1346747289-8421-1-git-send-email-andre.przywara@amd.com>
-In-Reply-To: <1346747289-8421-1-git-send-email-andre.przywara@amd.com>
+	id S1753775Ab2IENpE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 09:45:04 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:56950 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751543Ab2IENpB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 09:45:01 -0400
+Date: Wed, 5 Sep 2012 14:44:55 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Don Dutile <ddutile@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-efi@vger.kernel.org,
+        mfleming@intel.com, dwmw2@infradead.org, bhelgaas@google.com
+Subject: Re: [PATCH V3 3/4] PCI: Add support for non-BAR ROMs
+Message-ID: <20120905134454.GD16399@srcf.ucam.org>
+References: <1345739803-21017-1-git-send-email-mjg@redhat.com>
+ <1345739803-21017-4-git-send-email-mjg@redhat.com>
+ <5046B688.1070902@redhat.com>
+ <20120905022932.GA4087@srcf.ucam.org>
+ <20120905134621.73afe48a@pyramind.ukuu.org.uk>
+ <20120905132007.GB16399@srcf.ucam.org>
+ <20120905143010.557aa3fb@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209051546.22590.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120905143010.557aa3fb@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, September 04, 2012, Andre Przywara wrote:
-> Hi,
+On Wed, Sep 05, 2012 at 02:30:10PM +0100, Alan Cox wrote:
+> On Wed, 5 Sep 2012 14:20:07 +0100
+> Matthew Garrett <mjg@redhat.com> wrote:
+> > We've no good way of knowing what the firmware's giving us - we copy it 
+> > to RAM in the EFI init process, so by the time we're here it certainly 
+> > shouldn't be on the PCI bus.
 > 
-> now the second, revised version of the patch set. I now tested loading
-> both drivers after each other in several combinations, after two bug
-> fixes this now works as expected.
-> I added a patch to move messages from powernow-k8 after the initialization
-> phase, so it remains silent if driver loading fails.
+> In which case how do you know that physical address you have been given
+> actually has a mapping in kernel virtual space. It seems like it ought to
+> be getting an ioremap in that case ?
 > 
-> I also rearranged the patches so that the powernow-k8 feature removal patch is
-> now the last one and is somewhat optional. I still prefer to have it in,
-> but it can be dropped if needed. Then powernow-k8 will still support modern
-> AMD CPUs, but will emit a warning message.
-> 
-> Regards,
-> Andre
-> 
-> Changes from v1:
-> * added hints to Kconfig about CPU support
-> * merge documentation from separate patch into the feature patch
-> * add deprecation warning
-> * prefix acpi-cpufreq warning messages with module name
-> * bugfix: avoid boost init it driver registration failed
-> * bugfix: fix module redirect request call (was not reached before)
+> phys_to_virt is not valid for arbitary addresses.
 
-I have applied the whole series to the linux-next branch of the linux-pm.git
-tree, but I'm quite unsure about [7/8].  Is it really necessary?  I mean, since
-we want users to switch to a different driver anyway, which already has a knob
-providing the functionality in question, what's the point really?
+The pages are allocated as EFI_LOADER_DATA, and that gets mapped as 
+E820_RAM.
 
-Rafael
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
