@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758727Ab2IEPJn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 11:09:43 -0400
+	id S1758812Ab2IEPJs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 11:09:48 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:54127 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753811Ab2IEPJi (ORCPT
+	with ESMTP id S1753811Ab2IEPJp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 11:09:38 -0400
+	Wed, 5 Sep 2012 11:09:45 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: target-devel@vger.kernel.org, nab@linux-iscsi.org
-Subject: [PATCH 3.6 1/3] target: move transport_get_sense_data
-Date: Wed,  5 Sep 2012 17:09:13 +0200
-Message-Id: <1346857755-10224-2-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH 3.6 3/3] target: fix use-after-free with PSCSI sense data
+Date: Wed,  5 Sep 2012 17:09:15 +0200
+Message-Id: <1346857755-10224-4-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.7.11.2
 In-Reply-To: <1346857755-10224-1-git-send-email-pbonzini@redhat.com>
 References: <1346857755-10224-1-git-send-email-pbonzini@redhat.com>
@@ -20,143 +20,178 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We will be calling it from transport_complete_cmd, avoid forward
-declarations.  No semantic change.
+The pointer to the sense buffer is fetched by transport_get_sense_data,
+but this is called by target_complete_ok_work long after pscsi_req_done
+has freed the struct that contains it.
+
+Pass instead the fabric's sense buffer to transport_complete,
+and copy the data to it directly in transport_complete.  Setting
+SCF_TRANSPORT_TASK_SENSE also becomes a duty of transport_complete.
 
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- drivers/target/target_core_transport.c |  110 ++++++++++++++++----------------
- 1 files changed, 55 insertions(+), 55 deletions(-)
+ drivers/target/target_core_pscsi.c     |   21 ++++++------------
+ drivers/target/target_core_transport.c |   36 ++++++++++++-------------------
+ include/target/target_core_backend.h   |    4 ++-
+ 3 files changed, 24 insertions(+), 37 deletions(-)
 
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index 4de3186..9f5ff8d 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -567,6 +567,61 @@ static void target_complete_failure_work(struct work_struct *work)
- 	transport_generic_request_failure(cmd);
+diff --git a/drivers/target/target_core_pscsi.c b/drivers/target/target_core_pscsi.c
+index 5552fa7..5f7151d 100644
+--- a/drivers/target/target_core_pscsi.c
++++ b/drivers/target/target_core_pscsi.c
+@@ -667,7 +667,8 @@ static void pscsi_free_device(void *p)
+ 	kfree(pdv);
  }
  
-+/*
-+ * Used to obtain Sense Data from underlying Linux/SCSI struct scsi_cmnd
-+ */
-+static int transport_get_sense_data(struct se_cmd *cmd)
-+{
-+	unsigned char *buffer = cmd->sense_buffer, *sense_buffer = NULL;
-+	struct se_device *dev = cmd->se_dev;
-+	unsigned long flags;
-+	u32 offset = 0;
-+
-+	WARN_ON(!cmd->se_lun);
-+
-+	if (!dev)
-+		return 0;
-+
-+	spin_lock_irqsave(&cmd->t_state_lock, flags);
-+	if (cmd->se_cmd_flags & SCF_SENT_CHECK_CONDITION) {
-+		spin_unlock_irqrestore(&cmd->t_state_lock, flags);
-+		return 0;
-+	}
-+
-+	if (!(cmd->se_cmd_flags & SCF_TRANSPORT_TASK_SENSE))
-+		goto out;
-+
-+	if (!dev->transport->get_sense_buffer) {
-+		pr_err("dev->transport->get_sense_buffer is NULL\n");
-+		goto out;
-+	}
-+
-+	sense_buffer = dev->transport->get_sense_buffer(cmd);
-+	if (!sense_buffer) {
-+		pr_err("ITT 0x%08x cmd %p: Unable to locate"
-+			" sense buffer for task with sense\n",
-+			cmd->se_tfo->get_task_tag(cmd), cmd);
-+		goto out;
-+	}
-+
-+	spin_unlock_irqrestore(&cmd->t_state_lock, flags);
-+
-+	offset = cmd->se_tfo->set_fabric_sense_len(cmd, TRANSPORT_SENSE_BUFFER);
-+
-+	memcpy(&buffer[offset], sense_buffer, TRANSPORT_SENSE_BUFFER);
-+
-+	/* Automatically padded */
-+	cmd->scsi_sense_length = TRANSPORT_SENSE_BUFFER + offset;
-+
-+	pr_debug("HBA_[%u]_PLUG[%s]: Set SAM STATUS: 0x%02x and sense\n",
-+		dev->se_hba->hba_id, dev->transport->name, cmd->scsi_status);
-+	return 0;
-+
-+out:
-+	spin_unlock_irqrestore(&cmd->t_state_lock, flags);
-+	return -1;
-+}
-+
- void target_complete_cmd(struct se_cmd *cmd, u8 scsi_status)
+-static int pscsi_transport_complete(struct se_cmd *cmd, struct scatterlist *sg)
++static void pscsi_transport_complete(struct se_cmd *cmd, struct scatterlist *sg,
++				     unsigned char *sense_buffer)
  {
- 	struct se_device *dev = cmd->se_dev;
-@@ -1816,61 +1871,6 @@ execute:
- EXPORT_SYMBOL(target_execute_cmd);
+ 	struct pscsi_dev_virt *pdv = cmd->se_dev->dev_ptr;
+ 	struct scsi_device *sd = pdv->pdv_sd;
+@@ -679,7 +680,7 @@ static int pscsi_transport_complete(struct se_cmd *cmd, struct scatterlist *sg)
+ 	 * not been allocated because TCM is handling the emulation directly.
+ 	 */
+ 	if (!pt)
+-		return 0;
++		return;
+ 
+ 	cdb = &pt->pscsi_cdb[0];
+ 	result = pt->pscsi_result;
+@@ -750,10 +751,10 @@ after_mode_sense:
+ 	}
+ after_mode_select:
+ 
+-	if (status_byte(result) & CHECK_CONDITION)
+-		return 1;
+-
+-	return 0;
++	if (sense_buffer && (status_byte(result) & CHECK_CONDITION)) {
++		memcpy(sense_buffer, pt->pscsi_sense, TRANSPORT_SENSE_BUFFER);
++		cmd->se_cmd_flags |= SCF_TRANSPORT_TASK_SENSE;
++	}
+ }
+ 
+ enum {
+@@ -1184,13 +1185,6 @@ fail:
+ 	return -ENOMEM;
+ }
+ 
+-static unsigned char *pscsi_get_sense_buffer(struct se_cmd *cmd)
+-{
+-	struct pscsi_plugin_task *pt = cmd->priv;
+-
+-	return pt->pscsi_sense;
+-}
+-
+ /*	pscsi_get_device_rev():
+  *
+  *
+@@ -1273,7 +1267,6 @@ static struct se_subsystem_api pscsi_template = {
+ 	.check_configfs_dev_params = pscsi_check_configfs_dev_params,
+ 	.set_configfs_dev_params = pscsi_set_configfs_dev_params,
+ 	.show_configfs_dev_params = pscsi_show_configfs_dev_params,
+-	.get_sense_buffer	= pscsi_get_sense_buffer,
+ 	.get_device_rev		= pscsi_get_device_rev,
+ 	.get_device_type	= pscsi_get_device_type,
+ 	.get_blocks		= pscsi_get_blocks,
+diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+index ea01807..09028af 100644
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -568,38 +568,31 @@ static void target_complete_failure_work(struct work_struct *work)
+ }
  
  /*
 - * Used to obtain Sense Data from underlying Linux/SCSI struct scsi_cmnd
-- */
--static int transport_get_sense_data(struct se_cmd *cmd)
--{
++ * Used when asking transport to copy Sense Data from the underlying
++ * Linux/SCSI struct scsi_cmnd
+  */
+-static void transport_get_sense_data(struct se_cmd *cmd)
++static unsigned char *transport_get_sense_buffer(struct se_cmd *cmd)
+ {
 -	unsigned char *buffer = cmd->sense_buffer, *sense_buffer = NULL;
--	struct se_device *dev = cmd->se_dev;
++	unsigned char *buffer = cmd->sense_buffer;
+ 	struct se_device *dev = cmd->se_dev;
 -	unsigned long flags;
--	u32 offset = 0;
--
--	WARN_ON(!cmd->se_lun);
--
--	if (!dev)
--		return 0;
+ 	u32 offset = 0;
+ 
+ 	WARN_ON(!cmd->se_lun);
+ 
+ 	if (!dev)
+-		return;
 -
 -	spin_lock_irqsave(&cmd->t_state_lock, flags);
 -	if (cmd->se_cmd_flags & SCF_SENT_CHECK_CONDITION) {
 -		spin_unlock_irqrestore(&cmd->t_state_lock, flags);
--		return 0;
+-		return;
 -	}
--
--	if (!(cmd->se_cmd_flags & SCF_TRANSPORT_TASK_SENSE))
--		goto out;
--
--	if (!dev->transport->get_sense_buffer) {
--		pr_err("dev->transport->get_sense_buffer is NULL\n");
--		goto out;
--	}
--
++		return NULL;
+ 
 -	sense_buffer = dev->transport->get_sense_buffer(cmd);
--	if (!sense_buffer) {
--		pr_err("ITT 0x%08x cmd %p: Unable to locate"
--			" sense buffer for task with sense\n",
--			cmd->se_tfo->get_task_tag(cmd), cmd);
--		goto out;
--	}
--
 -	spin_unlock_irqrestore(&cmd->t_state_lock, flags);
--
--	offset = cmd->se_tfo->set_fabric_sense_len(cmd, TRANSPORT_SENSE_BUFFER);
--
++	if (cmd->se_cmd_flags & SCF_SENT_CHECK_CONDITION)
++		return NULL;
+ 
+ 	offset = cmd->se_tfo->set_fabric_sense_len(cmd, TRANSPORT_SENSE_BUFFER);
+ 
 -	memcpy(&buffer[offset], sense_buffer, TRANSPORT_SENSE_BUFFER);
 -
--	/* Automatically padded */
--	cmd->scsi_sense_length = TRANSPORT_SENSE_BUFFER + offset;
--
+ 	/* Automatically padded */
+ 	cmd->scsi_sense_length = TRANSPORT_SENSE_BUFFER + offset;
+ 
 -	pr_debug("HBA_[%u]_PLUG[%s]: Set SAM STATUS: 0x%02x and sense\n",
--		dev->se_hba->hba_id, dev->transport->name, cmd->scsi_status);
--	return 0;
--
--out:
--	spin_unlock_irqrestore(&cmd->t_state_lock, flags);
--	return -1;
--}
--
--/*
-  * Process all commands up to the last received ORDERED task attribute which
-  * requires another blocking boundary
-  */
++	pr_debug("HBA_[%u]_PLUG[%s]: Requesting sense for SAM STATUS: 0x%02x\n",
+ 		dev->se_hba->hba_id, dev->transport->name, cmd->scsi_status);
++	return &buffer[offset];
+ }
+ 
+ void target_complete_cmd(struct se_cmd *cmd, u8 scsi_status)
+@@ -615,11 +608,11 @@ void target_complete_cmd(struct se_cmd *cmd, u8 scsi_status)
+ 	cmd->transport_state &= ~CMD_T_BUSY;
+ 
+ 	if (dev && dev->transport->transport_complete) {
+-		if (dev->transport->transport_complete(cmd,
+-				cmd->t_data_sg) != 0) {
+-			cmd->se_cmd_flags |= SCF_TRANSPORT_TASK_SENSE;
++		dev->transport->transport_complete(cmd,
++				cmd->t_data_sg,
++				transport_get_sense_buffer(cmd));
++		if (cmd->se_cmd_flags & SCF_TRANSPORT_TASK_SENSE)
+ 			success = 1;
+-		}
+ 	}
+ 
+ 	/*
+@@ -1982,12 +1975,11 @@ static void target_complete_ok_work(struct work_struct *work)
+ 		schedule_work(&cmd->se_dev->qf_work_queue);
+ 
+ 	/*
+-	 * Check if we need to retrieve a sense buffer from
++	 * Check if we need to send a sense buffer from
+ 	 * the struct se_cmd in question.
+ 	 */
+ 	if (cmd->se_cmd_flags & SCF_TRANSPORT_TASK_SENSE) {
+ 		WARN_ON(!cmd->scsi_status);
+-		transport_get_sense_data(cmd);
+ 		ret = transport_send_check_condition_and_sense(
+ 					cmd, 0, 1);
+ 		if (ret == -EAGAIN || ret == -ENOMEM)
+diff --git a/include/target/target_core_backend.h b/include/target/target_core_backend.h
+index f1405d3..8d591e4 100644
+--- a/include/target/target_core_backend.h
++++ b/include/target/target_core_backend.h
+@@ -23,7 +23,9 @@ struct se_subsystem_api {
+ 	struct se_device *(*create_virtdevice)(struct se_hba *,
+ 				struct se_subsystem_dev *, void *);
+ 	void (*free_device)(void *);
+-	int (*transport_complete)(struct se_cmd *cmd, struct scatterlist *);
++	void (*transport_complete)(struct se_cmd *cmd,
++				   struct scatterlist *,
++				   unsigned char *);
+ 
+ 	int (*parse_cdb)(struct se_cmd *cmd);
+ 	ssize_t (*check_configfs_dev_params)(struct se_hba *,
 -- 
 1.7.1
-
 
