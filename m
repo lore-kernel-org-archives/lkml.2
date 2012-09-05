@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759625Ab2IEVrQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 17:47:16 -0400
-Received: from mail-ey0-f202.google.com ([209.85.215.202]:36941 "EHLO
-	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755072Ab2IEVrP (ORCPT
+	id S1759629Ab2IEVsD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 17:48:03 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:44323 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755072Ab2IEVsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 17:47:15 -0400
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Inki Dae <inki.dae@samsung.com>, linux-kernel@vger.kernel.org
-Cc: Mandeep Singh Baines <msb@chromium.org>,
-        =?UTF-8?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>,
-        Pawel Osciak <posciak@google.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-Subject: [PATCH] drm/exynos: fix double call of drm_prime_(init/destroy)_file_private
-Date: Wed,  5 Sep 2012 14:47:03 -0700
-Message-Id: <1346881623-388-1-git-send-email-msb@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	Wed, 5 Sep 2012 17:48:01 -0400
+From: Emil Goode <emilgoode@gmail.com>
+To: airlied@linux.ie, airlied@redhat.com, alan@linux.intel.com,
+        patrik.r.jakobsson@gmail.com, yakui.zhao@intel.com,
+        jani.nikula@intel.com
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH] gma500: Remove unused variable
+Date: Wed,  5 Sep 2012 23:51:47 +0200
+Message-Id: <1346881907-5596-1-git-send-email-emilgoode@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -27,60 +24,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The double invocations are incorrect but seem to be safe so I don't
-think this will fix any bugs.
+This patch removes a unused struct psb_intel_connector
 
-Before:
+Sparse gives a warning:
+drivers/gpu/drm/gma500/cdv_intel_hdmi.c:142:30: warning:
+	unused variable ‘psb_intel_connector’ [-Wunused-variable]
 
-[    7.639366] drm_prime_init_file ee3675d0
-[    7.639377] drm_prime_init_file ee3675d0
-[    7.639507] drm_prime_destroy_file ee3675d0
-[    7.639518] drm_prime_destroy_file ee3675d0
-[    7.639802] drm_prime_init_file ee372390
-[    7.639810] drm_prime_init_file ee372390
-[    8.473316] drm_prime_init_file ee356390
-[    8.473331] drm_prime_init_file ee356390
-
-After:
-
-[    6.363842] drm_prime_init_file edc2e5d0
-[    6.363994] drm_prime_destroy_file edc2e5d0
-[    6.364260] drm_prime_init_file edc2e750
-[    8.004837] drm_prime_init_file ee36ded0
-
-Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-CC: Stéphane Marchesin <marcheu@chromium.org>
-CC: Pawel Osciak <posciak@google.com>
-CC: Inki Dae <inki.dae@samsung.com>
-CC: Joonyoung Shim <jy0922.shim@samsung.com>
-CC: Seung-Woo Kim <sw0312.kim@samsung.com>
-CC: Kyungmin Park <kyungmin.park@samsung.com>
-CC: David Airlie <airlied@linux.ie>
-CC: dri-devel@lists.freedesktop.org
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
 ---
- drivers/gpu/drm/exynos/exynos_drm_drv.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/gma500/cdv_intel_hdmi.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_drv.c b/drivers/gpu/drm/exynos/exynos_drm_drv.c
-index ebacec6..a27b8ff 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_drv.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_drv.c
-@@ -160,7 +160,6 @@ static int exynos_drm_open(struct drm_device *dev, struct drm_file *file)
- 	if (!file_priv)
- 		return -ENOMEM;
- 
--	drm_prime_init_file_private(&file->prime);
- 	file->driver_priv = file_priv;
- 
- 	return exynos_drm_subdrv_open(dev, file);
-@@ -184,7 +183,6 @@ static void exynos_drm_preclose(struct drm_device *dev,
- 			e->base.destroy(&e->base);
- 		}
- 	}
--	drm_prime_destroy_file_private(&file->prime);
- 	spin_unlock_irqrestore(&dev->event_lock, flags);
- 
- 	exynos_drm_subdrv_close(dev, file);
+diff --git a/drivers/gpu/drm/gma500/cdv_intel_hdmi.c b/drivers/gpu/drm/gma500/cdv_intel_hdmi.c
+index b1b77bb..7272a46 100644
+--- a/drivers/gpu/drm/gma500/cdv_intel_hdmi.c
++++ b/drivers/gpu/drm/gma500/cdv_intel_hdmi.c
+@@ -139,8 +139,6 @@ static enum drm_connector_status cdv_hdmi_detect(
+ {
+ 	struct psb_intel_encoder *psb_intel_encoder =
+ 					psb_intel_attached_encoder(connector);
+-	struct psb_intel_connector *psb_intel_connector =
+-					to_psb_intel_connector(connector);
+ 	struct mid_intel_hdmi_priv *hdmi_priv = psb_intel_encoder->dev_priv;
+ 	struct edid *edid = NULL;
+ 	enum drm_connector_status status = connector_status_disconnected;
 -- 
-1.7.7.3
+1.7.10.4
 
