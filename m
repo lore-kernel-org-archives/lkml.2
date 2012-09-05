@@ -1,71 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759575Ab2IEVgT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 17:36:19 -0400
-Received: from mail-lb0-f202.google.com ([209.85.217.202]:55626 "EHLO
-	mail-lb0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759538Ab2IEVgR (ORCPT
+	id S1759585Ab2IEVhE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 17:37:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54170 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759538Ab2IEVhC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 17:36:17 -0400
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org
-Cc: Mandeep Singh Baines <msb@chromium.org>, Sonny Rao <sonnyrao@chromium.org>,
-        Olof Johansson <olofj@chromium.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Subject: [PATCH] ARM: exynos: mct: cache mct upper count
-Date: Wed,  5 Sep 2012 14:36:13 -0700
-Message-Id: <1346880973-31519-1-git-send-email-msb@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	Wed, 5 Sep 2012 17:37:02 -0400
+Date: Wed, 5 Sep 2012 14:37:00 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: yan <clouds.yan@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3 v2] proc: use kzalloc instead of kmalloc and memset
+Message-Id: <20120905143700.7bfc3b1e.akpm@linux-foundation.org>
+In-Reply-To: <1346847437-3308-4-git-send-email-clouds.yan@gmail.com>
+References: <1346847437-3308-1-git-send-email-clouds.yan@gmail.com>
+	<1346847437-3308-4-git-send-email-clouds.yan@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Saves one register read.
+On Wed,  5 Sep 2012 20:17:17 +0800
+yan <clouds.yan@gmail.com> wrote:
 
-Before (perf report):
+> Part of the memory will be written twice after this change, but that 
+> should be negligible.
+> 
+> ...
+>
+> --- a/fs/proc/generic.c
+> +++ b/fs/proc/generic.c
+> @@ -616,10 +616,9 @@ static struct proc_dir_entry *__proc_create(struct proc_dir_entry **parent,
+>  
+>  	len = strlen(fn);
+>  
+> -	ent = kmalloc(sizeof(struct proc_dir_entry) + len + 1, GFP_KERNEL);
+> +	ent = kzalloc(sizeof(struct proc_dir_entry) + len + 1, GFP_KERNEL);
+>  	if (!ent) goto out;
+>  
+> -	memset(ent, 0, sizeof(struct proc_dir_entry));
+>  	memcpy(ent->name, fn, len + 1);
+>  	ent->namelen = len;
+>  	ent->mode = mode;
 
-     1.40%  [k] exynos4_frc_read
-            |
-            |--87.20%-- ktime_get_ts
-            |          |
-            |          |--93.60%-- posix_ktime_get_ts
+I'm not sure that I really like the idea of adding this additional
+overhead.  But sure, it won't matter to anyone at all.
 
-After (perf report):
+While we're digging around in __proc_create(), how about we fix a few
+other things?
 
-     1.00%  [k] exynos4_frc_read
-            |
-            |--88.61%-- ktime_get_ts
-            |          |
-            |          |--92.70%-- posix_ktime_get_ts
 
-Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-CC: Sonny Rao <sonnyrao@chromium.org>
-CC: Olof Johansson <olofj@chromium.org>
-CC: Kukjin Kim <kgene.kim@samsung.com>
-CC: Russell King <linux@arm.linux.org.uk>
-CC: linux-arm-kernel@lists.infradead.org
-CC: linux-samsung-soc@vger.kernel.org
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: proc-use-kzalloc-instead-of-kmalloc-and-memset-fix
+
+fix __proc_create() coding-style issues, remove unneeded zero-initialisations
+
+Cc: yan <clouds.yan@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
- arch/arm/mach-exynos/mct.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-exynos/mct.c b/arch/arm/mach-exynos/mct.c
-index b601fb8..2bbd533 100644
---- a/arch/arm/mach-exynos/mct.c
-+++ b/arch/arm/mach-exynos/mct.c
-@@ -128,8 +128,8 @@ static void exynos4_mct_frc_start(u32 hi, u32 lo)
+ fs/proc/generic.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff -puN fs/proc/generic.c~proc-use-kzalloc-instead-of-kmalloc-and-memset-fix fs/proc/generic.c
+--- a/fs/proc/generic.c~proc-use-kzalloc-instead-of-kmalloc-and-memset-fix
++++ a/fs/proc/generic.c
+@@ -605,7 +605,8 @@ static struct proc_dir_entry *__proc_cre
+ 	unsigned int len;
  
- static cycle_t exynos4_frc_read(struct clocksource *cs)
- {
--	unsigned int lo, hi;
--	u32 hi2 = __raw_readl(EXYNOS4_MCT_G_CNT_U);
-+	u32 lo, hi;
-+	static u32 hi2;
+ 	/* make sure name is valid */
+-	if (!name || !strlen(name)) goto out;
++	if (!name || !strlen(name))
++		goto out;
  
- 	do {
- 		hi = hi2;
--- 
-1.7.7.3
+ 	if (xlate_proc_name(name, parent, &fn) != 0)
+ 		goto out;
+@@ -617,18 +618,17 @@ static struct proc_dir_entry *__proc_cre
+ 	len = strlen(fn);
+ 
+ 	ent = kzalloc(sizeof(struct proc_dir_entry) + len + 1, GFP_KERNEL);
+-	if (!ent) goto out;
++	if (!ent)
++		goto out;
+ 
+ 	memcpy(ent->name, fn, len + 1);
+ 	ent->namelen = len;
+ 	ent->mode = mode;
+ 	ent->nlink = nlink;
+ 	atomic_set(&ent->count, 1);
+-	ent->pde_users = 0;
+ 	spin_lock_init(&ent->pde_unload_lock);
+-	ent->pde_unload_completion = NULL;
+ 	INIT_LIST_HEAD(&ent->pde_openers);
+- out:
++out:
+ 	return ent;
+ }
+ 
+_
 
