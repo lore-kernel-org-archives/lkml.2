@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752861Ab2IEF1f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 01:27:35 -0400
-Received: from gate.crashing.org ([63.228.1.57]:59660 "EHLO gate.crashing.org"
+	id S1752016Ab2IEFfZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 01:35:25 -0400
+Received: from mga14.intel.com ([143.182.124.37]:61682 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751489Ab2IEF1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 01:27:34 -0400
-Message-ID: <1346822819.2257.49.camel@pasglop>
-Subject: Re: [PATCH v5 3/3] powerpc: Uprobes port to powerpc
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: ananth@in.ibm.com
-Cc: ppcdev <linuxppc-dev@lists.ozlabs.org>,
-        lkml <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Anton Blanchard <anton@samba.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>, peterz@infradead.org,
-        michael@ellerman.id.au, Ingo Molnar <mingo@elte.hu>, oleg@redhat.com
-Date: Wed, 05 Sep 2012 15:26:59 +1000
-In-Reply-To: <20120824073132.GC32031@in.ibm.com>
-References: <20120824072602.GA32031@in.ibm.com>
-	 <20120824073132.GC32031@in.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1750800Ab2IEFfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 01:35:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,372,1344236400"; 
+   d="scan'208";a="188922516"
+Message-ID: <5046E47C.2020405@intel.com>
+Date: Wed, 05 Sep 2012 13:34:52 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+MIME-Version: 1.0
+To: Jan Beulich <JBeulich@suse.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, tglx@linutronix.de,
+        mingo@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        "Ren, Yongjie" <yongjie.ren@intel.com>
+Subject: Re: [PATCH] xen: fix logical error in tlb flushing
+References: <1345798513-3566-1-git-send-email-alex.shi@intel.com> <5037A8E7020000780008A78B@nat28.tlf.novell.com> <20120824181721.GC15167@konrad-lan.dumpdata.com> <5037E7ED020000780008A7BD@nat28.tlf.novell.com>
+In-Reply-To: <5037E7ED020000780008A7BD@nat28.tlf.novell.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-08-24 at 13:01 +0530, Ananth N Mavinakayanahalli wrote:
-> From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-> 
-> This is the port of uprobes to powerpc. Usage is similar to x86.
+On 08/25/2012 03:45 AM, Jan Beulich wrote:
 
-Guys, can you do a minimum of build testing ?
+>>>> On 24.08.12 at 20:17, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+>> On Fri, Aug 24, 2012 at 04:16:39PM +0100, Jan Beulich wrote:
+>>>>>> On 24.08.12 at 10:55, Alex Shi <alex.shi@intel.com> wrote:
+>>>> While TLB_FLUSH_ALL gets passed as 'end' argument to
+>>>> flush_tlb_others(), the Xen code was made to check its 'start'
+>>>> parameter. That may give a incorrect op.cmd to MMUEXT_INVLPG_MULTI
+>>>> instead of MMUEXT_TLB_FLUSH_MULTI. Then it causes some page can not
+>>>> be flushed from TLB.
+>>>>
+>>>> This patch fixed this issue.
+>>>>
+>>>> Reported-by: Jan Beulich <jbeulich@suse.com>
+>>>> Signed-off-by: Alex Shi <alex.shi@intel.com>
+>>>
+>>> Acked-by: Jan Beulich <jbeulich@suse.com>
 
-This one breaks due to uprobe_get_swbp_addr() being defined in both
-asm and include/linux when CONFIG_UPROBE isn't set. You don't need
-to define it at all in fact, the generic code takes care of both the
-declaration for CONFIG_UPROBE and the empty inline for !CONFIG_UPROBE.
 
-I'm fixing that one up myself but please, please, get yourself a test
-build script or something to make sure you don't at least break the
-build when the stuff you're adding isn't enabled (among others).
 
-Cheers,
-Ben.
+CC to Yongjie,
+Could you like to test this patch on PV guest
+
+>>
+>> How can I reproduce this
+
+>
+
+> I don't know, I spotted this while looking at the code.
+
+
+Again, since the old buggy code doesn't cause trouble in PV guest, guess
+the hypercall for MMUEXT_INVLPG_MULTI was translated or treated as
+MMUEXT_TLB_FLUSH_MULTI. If so, believe correct this will bring a big
+performance benefit.
 
 
