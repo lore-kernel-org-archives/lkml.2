@@ -1,153 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758771Ab2IEOcz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 10:32:55 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:54153 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758738Ab2IEOcw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 10:32:52 -0400
-X-AuditID: b753bd60-94d61ba000007c38-ad-504762910268
-X-AuditID: b753bd60-94d61ba000007c38-ad-504762910268
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH -tip 4/4] [BUGFIX] kprobes/x86: Fix to support jprobes on
- ftrace-based kprobe
-To: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>
-Date: Wed, 05 Sep 2012 23:31:25 +0900
-Message-ID: <20120905143125.10329.90836.stgit@localhost.localdomain>
-In-Reply-To: <20120905143045.10329.64502.stgit@localhost.localdomain>
-References: <20120905143045.10329.64502.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	id S1753691Ab2IEOet (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 10:34:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63998 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751495Ab2IEOer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 10:34:47 -0400
+Date: Wed, 5 Sep 2012 17:35:58 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sjur =?iso-8859-1?Q?Br=E6ndeland?= <sjurbren@gmail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Amit Shah <amit.shah@redhat.com>,
+        linux-kernel@vger.kernel.org, Ohad Ben-Cohen <ohad@wizery.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        virtualization@lists.linux-foundation.org,
+        Sjur =?iso-8859-1?Q?Br=E6ndeland?= 
+	<sjur.brandeland@stericsson.com>
+Subject: Re: [RFC 1/2] virtio_console: Add support for DMA memory allocation
+Message-ID: <20120905143558.GB10925@redhat.com>
+References: <1346680277-5887-1-git-send-email-sjur.brandeland@stericsson.com>
+ <20120903143018.GA5353@redhat.com>
+ <CAJK669bkHHMAPYMEr22-6uOwfgJv1uKTbzNBQVVCq=OooExC0g@mail.gmail.com>
+ <20120903202737.GD6181@redhat.com>
+ <87zk56e2xc.fsf@rustcorp.com.au>
+ <CAJK669bUXHqaDUZDNZ9i85pRKENUMS_RXw4z7BsSq7Hiw=OOfg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAJK669bUXHqaDUZDNZ9i85pRKENUMS_RXw4z7BsSq7Hiw=OOfg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix kprobes/x86 to support jprobes on ftrace-based kprobes.
-Because of -mfentry support of ftrace, ftrace is now put
-on the beginning of function where jprobes are put.
+On Wed, Sep 05, 2012 at 03:00:20PM +0200, Sjur Brændeland wrote:
+> > The driver certainly shouldn't offer VIRTIO_CONSOLE_F_DMA_MEM if you
+> > don't have DMA!
+> 
+> OK, so the feature table could be done like this:
+> 
+>  static unsigned int features[] = {
+> 	VIRTIO_CONSOLE_F_SIZE,
+> 	VIRTIO_CONSOLE_F_MULTIPORT,
+> #if VIRTIO_CONSOLE_HAS_DMA
+> 	VIRTIO_CONSOLE_F_DMA_MEM,
+> #endif
+> }
+> 
+> If the device then asks for VIRTIO_CONSOLE_F_DMA_MEM
+> when DMA is not supported, virtio will do BUG_ON() from
+> virtio_check_driver_offered_feature().
+> 
+> Is this acceptable or should we add a check in virtcons_probe()
+> and let the probing fail instead?
+> 
+> E.g:
+> 	/* Refuse to bind if F_DMA_MEM request cannot be met */
+> 	if (!VIRTIO_CONSOLE_HAS_DMA &&
+> 	    (vdev->config->get_features(vdev) & (1 << VIRTIO_CONSOLE_F_DMA_MEM))){
+> 		dev_err(&vdev->dev,
+> 			"DMA_MEM requested, but arch does not support DMA\n");
+> 		err = -EINVAL;
+> 		goto fail;
+> 	}
+> 
+> Regards,
+> Sjur
 
-Originally ftrace-based kprobes doesn't support jprobe
-because it will change regs->ip and ftrace doesn't support
-changing IP and ftrace itself doesn't conflict jprobe.
-However, ftrace -mfentry support moves mcount call on the
-top of functions where jprobes are put. This means that
-jprobe always conflicts with ftrace-based kprobe and fails.
+Failing probe would be cleaner. But there is still a problem:
+old driver will happily bind to that device and then
+fail to work, right?
 
-This patch allows ftrace-based kprobes to support jprobes
-by allowing to modify regs->ip and kprobes breakpoint
-handler also allows to skip singlestepping because there
-is a ftrace call (not an original instruction).
+virtio pci has revision id for this, but remoteproc doesn't
+seem to have anything similar. Or did I miss it? If not -
+we probably need to use a different
+device id, and not a feature bit.
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
----
-
- arch/x86/kernel/kprobes.c |   42 +++++++++++++++++++++++++++++-------------
- kernel/kprobes.c          |    3 ---
- 2 files changed, 29 insertions(+), 16 deletions(-)
-
-diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
-index f49f60c..b7c2a85 100644
---- a/arch/x86/kernel/kprobes.c
-+++ b/arch/x86/kernel/kprobes.c
-@@ -541,6 +541,8 @@ reenter_kprobe(struct kprobe *p, struct pt_regs *regs, struct kprobe_ctlblk *kcb
- 	return 1;
- }
- 
-+static void __kprobes skip_singlestep(struct kprobe *p, struct pt_regs *regs,
-+				      struct kprobe_ctlblk *kcb);
- /*
-  * Interrupts are disabled on entry as trap3 is an interrupt gate and they
-  * remain disabled throughout this function.
-@@ -599,6 +601,12 @@ static int __kprobes kprobe_handler(struct pt_regs *regs)
- 	} else if (kprobe_running()) {
- 		p = __this_cpu_read(current_kprobe);
- 		if (p->break_handler && p->break_handler(p, regs)) {
-+#ifdef KPROBES_CAN_USE_FTRACE
-+			if (kprobe_ftrace(p)) {
-+				skip_singlestep(p, regs, kcb);
-+				return 1;
-+			}
-+#endif
- 			setup_singlestep(p, regs, kcb, 0);
- 			return 1;
- 		}
-@@ -1053,6 +1061,21 @@ int __kprobes longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
- }
- 
- #ifdef KPROBES_CAN_USE_FTRACE
-+static void __kprobes skip_singlestep(struct kprobe *p, struct pt_regs *regs,
-+				      struct kprobe_ctlblk *kcb)
-+{
-+	/*
-+	 * Emulate singlestep (and also recover regs->ip)
-+	 * as if there is a 5byte nop
-+	 */
-+	regs->ip = (unsigned long)p->addr + MCOUNT_INSN_SIZE;
-+	if (unlikely(p->post_handler)) {
-+		kcb->kprobe_status = KPROBE_HIT_SSDONE;
-+		p->post_handler(p, regs, 0);
-+	}
-+	__this_cpu_write(current_kprobe, NULL);
-+}
-+
- /* Ftrace callback handler for kprobes */
- void __kprobes kprobe_ftrace_handler(unsigned long ip, unsigned long parent_ip,
- 				     struct ftrace_ops *ops, struct pt_regs *regs)
-@@ -1077,19 +1100,12 @@ void __kprobes kprobe_ftrace_handler(unsigned long ip, unsigned long parent_ip,
- 
- 		__this_cpu_write(current_kprobe, p);
- 		kcb->kprobe_status = KPROBE_HIT_ACTIVE;
--		if (p->pre_handler)
--			p->pre_handler(p, regs);
--
--		if (unlikely(p->post_handler)) {
--			/*
--			 * Emulate singlestep (and also recover regs->ip)
--			 * as if there is a 5byte nop
--			 */
--			regs->ip = ip + MCOUNT_INSN_SIZE;
--			kcb->kprobe_status = KPROBE_HIT_SSDONE;
--			p->post_handler(p, regs, 0);
--		}
--		__this_cpu_write(current_kprobe, NULL);
-+		if (!p->pre_handler || !p->pre_handler(p, regs))
-+			skip_singlestep(p, regs, kcb);
-+		/*
-+		 * If pre_handler returns !0, it sets regs->ip and
-+		 * resets current kprobe.
-+		 */
- 	}
- end:
- 	local_irq_restore(flags);
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 35b4315..098f396 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -1418,9 +1418,6 @@ static __kprobes int check_kprobe_address_safe(struct kprobe *p,
- 		/* Given address is not on the instruction boundary */
- 		if ((unsigned long)p->addr != ftrace_addr)
- 			return -EILSEQ;
--		/* break_handler (jprobe) can not work with ftrace */
--		if (p->break_handler)
--			return -EINVAL;
- 		p->flags |= KPROBE_FLAG_FTRACE;
- #else	/* !KPROBES_CAN_USE_FTRACE */
- 		return -EINVAL;
-
+-- 
+MST
