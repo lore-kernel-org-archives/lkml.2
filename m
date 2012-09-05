@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932536Ab2IEJpJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 05:45:09 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:61141 "EHLO song.cn.fujitsu.com"
+	id S1758439Ab2IEJpI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 05:45:08 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:47222 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751990Ab2IEJo5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751858Ab2IEJo5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Sep 2012 05:44:57 -0400
 X-IronPort-AV: E=Sophos;i="4.80,373,1344182400"; 
-   d="scan'208";a="5789230"
+   d="scan'208";a="5789229"
 From: wency@cn.fujitsu.com
 To: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
@@ -19,9 +19,9 @@ Cc: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
         minchan.kim@gmail.com, akpm@linux-foundation.org,
         kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
         Wen Congyang <wency@cn.fujitsu.com>
-Subject: [RFC v9 PATCH 14/21] memory-hotplug: move register_page_bootmem_info_node and put_page_bootmem for sparse-vmemmap
-Date: Wed, 5 Sep 2012 17:25:48 +0800
-Message-Id: <1346837155-534-15-git-send-email-wency@cn.fujitsu.com>
+Subject: [RFC v9 PATCH 19/21] memory-hotplug: remove sysfs file of node
+Date: Wed, 5 Sep 2012 17:25:53 +0800
+Message-Id: <1346837155-534-20-git-send-email-wency@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1346837155-534-1-git-send-email-wency@cn.fujitsu.com>
 References: <1346837155-534-1-git-send-email-wency@cn.fujitsu.com>
@@ -34,11 +34,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+From: Wen Congyang <wency@cn.fujitsu.com>
 
-For implementing register_page_bootmem_info_node of sparse-vmemmap,
-register_page_bootmem_info_node and put_page_bootmem are moved to
-memory_hotplug.c
+This patch introduces a new function try_offline_node() to
+remove sysfs file of node when all memory sections of this
+node are removed. If some memory sections of this node are
+not removed, this function does nothing.
 
 CC: David Rientjes <rientjes@google.com>
 CC: Jiang Liu <liuj97@gmail.com>
@@ -49,75 +50,91 @@ CC: Christoph Lameter <cl@linux.com>
 Cc: Minchan Kim <minchan.kim@gmail.com>
 CC: Andrew Morton <akpm@linux-foundation.org>
 CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Wen Congyang <wency@cn.fujitsu.com>
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
 ---
- include/linux/memory_hotplug.h |    9 ---------
- mm/memory_hotplug.c            |    8 ++++++--
- 2 files changed, 6 insertions(+), 11 deletions(-)
+ mm/memory_hotplug.c |   54 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 54 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
-index cdbbd79..1133e63 100644
---- a/include/linux/memory_hotplug.h
-+++ b/include/linux/memory_hotplug.h
-@@ -162,17 +162,8 @@ static inline void arch_refresh_nodedata(int nid, pg_data_t *pgdat)
- #endif /* CONFIG_NUMA */
- #endif /* CONFIG_HAVE_ARCH_NODEDATA_EXTENSION */
- 
--#ifdef CONFIG_SPARSEMEM_VMEMMAP
--static inline void register_page_bootmem_info_node(struct pglist_data *pgdat)
--{
--}
--static inline void put_page_bootmem(struct page *page)
--{
--}
--#else
- extern void register_page_bootmem_info_node(struct pglist_data *pgdat);
- extern void put_page_bootmem(struct page *page);
--#endif
- 
- /*
-  * Lock for memory hotplug guarantees 1) all callbacks for memory hotplug
 diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 26a5012..df6857b 100644
+index afda7e9..270c249 100644
 --- a/mm/memory_hotplug.c
 +++ b/mm/memory_hotplug.c
-@@ -91,7 +91,6 @@ static void release_memory_resource(struct resource *res)
+@@ -29,6 +29,7 @@
+ #include <linux/suspend.h>
+ #include <linux/mm_inline.h>
+ #include <linux/firmware-map.h>
++#include <linux/stop_machine.h>
+ 
+ #include <asm/tlbflush.h>
+ 
+@@ -1285,6 +1286,57 @@ int offline_memory(u64 start, u64 size)
+ 	return 0;
  }
  
- #ifdef CONFIG_MEMORY_HOTPLUG_SPARSE
--#ifndef CONFIG_SPARSEMEM_VMEMMAP
- static void get_page_bootmem(unsigned long info,  struct page *page,
- 			     unsigned long type)
- {
-@@ -127,6 +126,7 @@ void __ref put_page_bootmem(struct page *page)
- 
- }
- 
-+#ifndef CONFIG_SPARSEMEM_VMEMMAP
- static void register_page_bootmem_info_section(unsigned long start_pfn)
- {
- 	unsigned long *usemap, mapsize, section_nr, i;
-@@ -163,6 +163,11 @@ static void register_page_bootmem_info_section(unsigned long start_pfn)
- 		get_page_bootmem(section_nr, page, MIX_SECTION_INFO);
- 
- }
-+#else
-+static inline void register_page_bootmem_info_section(unsigned long start_pfn)
++static int check_cpu_on_node(void *data)
 +{
++	struct pglist_data *pgdat = data;
++	int cpu;
++
++	for_each_online_cpu(cpu) {
++		if (cpu_to_node(cpu) == pgdat->node_id)
++			/*
++			 * the cpu on this node is onlined, and we can't
++			 * offline this node.
++			 */
++			return -EBUSY;
++	}
++
++	return 0;
 +}
-+#endif
- 
- void register_page_bootmem_info_node(struct pglist_data *pgdat)
++
++/* offline the node if all memory sections of this node are removed */
++static void try_offline_node(int nid)
++{
++	unsigned long start_pfn = NODE_DATA(nid)->node_start_pfn;
++	unsigned long end_pfn = start_pfn + NODE_DATA(nid)->node_spanned_pages;
++	unsigned long pfn;
++
++	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
++		unsigned long section_nr = pfn_to_section_nr(pfn);
++
++		if (!present_section_nr(section_nr))
++			continue;
++
++		if (pfn_to_nid(pfn) != nid)
++			continue;
++
++		/*
++		 * some memory sections of this node are not removed, and we
++		 * can't offline node now.
++		 */
++		return;
++	}
++
++	if (stop_machine(check_cpu_on_node, NODE_DATA(nid), NULL))
++		return;
++
++	/*
++	 * all memory sections of this node are removed, we can offline this
++	 * node now.
++	 */
++	node_set_offline(nid);
++	unregister_one_node(nid);
++}
++
+ int __ref remove_memory(int nid, u64 start, u64 size)
  {
-@@ -198,7 +203,6 @@ void register_page_bootmem_info_node(struct pglist_data *pgdat)
- 		register_page_bootmem_info_section(pfn);
+ 	int ret = 0;
+@@ -1305,6 +1357,8 @@ int __ref remove_memory(int nid, u64 start, u64 size)
+ 	firmware_map_remove(start, start + size, "System RAM");
  
- }
--#endif /* !CONFIG_SPARSEMEM_VMEMMAP */
- 
- static void grow_zone_span(struct zone *zone, unsigned long start_pfn,
- 			   unsigned long end_pfn)
+ 	arch_remove_memory(start, size);
++
++	try_offline_node(nid);
+ out:
+ 	unlock_memory_hotplug();
+ 	return ret;
 -- 
 1.7.1
 
