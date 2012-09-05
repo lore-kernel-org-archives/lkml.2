@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759712Ab2IEWGN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 18:06:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40385 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759674Ab2IEWGL (ORCPT
+	id S1759719Ab2IEWIJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 18:08:09 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33638 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759677Ab2IEWII convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 18:06:11 -0400
-Message-ID: <5047CCCB.1000108@canonical.com>
-Date: Wed, 05 Sep 2012 15:06:03 -0700
-From: John Johansen <john.johansen@canonical.com>
-Organization: Canonical
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: linux-kernel@vger.kernel.org, James Morris <james.l.morris@oracle.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] Yama: handle 32-bit userspace prctl
-References: <20120827183813.GA23991@www.outflux.net>
-In-Reply-To: <20120827183813.GA23991@www.outflux.net>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 5 Sep 2012 18:08:08 -0400
+Message-ID: <1346882872.2600.63.camel@twins>
+Subject: Re: [PATCH 08/11] perf tool: precise mode requires exclude_guest
+From: Peter Zijlstra <peterz@infradead.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Robert Richter <robert.richter@amd.com>, Avi Kivity <avi@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>
+Date: Thu, 06 Sep 2012 00:07:52 +0200
+In-Reply-To: <50477332.1000902@gmail.com>
+References: <1342826756-64663-1-git-send-email-dsahern@gmail.com>
+	 <1342826756-64663-9-git-send-email-dsahern@gmail.com>
+	 <20120723181358.GC6717@infradead.org> <500EAF23.8060909@gmail.com>
+	 <20120724161507.GG3732@erda.amd.com> <500EDB50.3070704@gmail.com>
+	 <20120724180312.GJ6717@infradead.org> <5010D2B1.3000206@gmail.com>
+	 <1343290109.26034.82.camel@twins> <20120803135117.GC3732@erda.amd.com>
+	 <50477332.1000902@gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2012 11:38 AM, Kees Cook wrote:
-> When running a 64-bit kernel and receiving prctls from a 32-bit
-> userspace, the "-1" used as an unsigned long will end up being
-> misdetected. The kernel is looking for 0xffffffffffffffff instead of
-> 0xffffffff. Since prctl lacks a distinct compat interface, Yama needs
-> to handle this translation itself. As such, support either value as
-> meaning PR_SET_PTRACER_ANY, to avoid breaking the ABI for 64-bit.
+On Wed, 2012-09-05 at 09:43 -0600, David Ahern wrote:
 > 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> Cc: stable@vger.kernel.org
-> ---
->  security/yama/yama_lsm.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/security/yama/yama_lsm.c b/security/yama/yama_lsm.c
-> index 0cc99a3..dcd6178 100644
-> --- a/security/yama/yama_lsm.c
-> +++ b/security/yama/yama_lsm.c
-> @@ -143,7 +143,7 @@ static int yama_task_prctl(int option, unsigned long arg2, unsigned long arg3,
->  		if (arg2 == 0) {
->  			yama_ptracer_del(NULL, myself);
->  			rc = 0;
-> -		} else if (arg2 == PR_SET_PTRACER_ANY) {
-> +		} else if (arg2 == PR_SET_PTRACER_ANY || (int)arg2 == -1) {
->  			rc = yama_ptracer_add(NULL, myself);
->  		} else {
->  			struct task_struct *tracer;
-> 
+> We need to require exclude_guest when using precise attribute with perf 
+> else all running VMs on Intel-based servers will crash. I do not have an 
+> AMD based server to even attempt the preferred solution.
 
-yeah this looks good it should at least hit stable
+I've recently gotten a machine from AMD that would allow me to test this
+stuff, so I'll put writing that somewhere near the top of the todo.
 
-Acked-by: John Johansen <john.johansen@canonical.com>
+>  Best I can do 
+> is to attempt to keep this thread alive until someone with one can 
+> tackle the problem. 
 
+Right you are.. keep doing this until its sorted.
