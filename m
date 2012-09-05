@@ -1,153 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758200Ab2IEFrn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 01:47:43 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:20555 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755211Ab2IEFrX (ORCPT
+	id S1752311Ab2IEFsI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 01:48:08 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:39182 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751064Ab2IEFsF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 01:47:23 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH -v3 13/14] x86, mm: Use func pointer to table size calculation and mapping
-Date: Tue,  4 Sep 2012 22:46:30 -0700
-Message-Id: <1346823991-22911-14-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1346823991-22911-1-git-send-email-yinghai@kernel.org>
-References: <1346823991-22911-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Wed, 5 Sep 2012 01:48:05 -0400
+Date: Wed, 5 Sep 2012 15:48:01 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jens Taprogge <jens.taprogge@taprogge.org>,
+        =?UTF-8?B?IlNhbXVlbCBJZ2xlc2lhcyBHb25zw6Fs?= =?UTF-8?B?dmV6Ig==?= 
+	<siglesias@igalia.com>
+Subject: linux-next: build failure after merge of the final tree (staging
+ tree related)
+Message-Id: <20120905154801.b21cf25d96767b69489aec29@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__5_Sep_2012_15_48_01_+1000_1DehWrO0g8CEmm2i"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-They all need to go over ram range in same sequence. So add shared function
-to reduce duplicated code.
+--Signature=_Wed__5_Sep_2012_15_48_01_+1000_1DehWrO0g8CEmm2i
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--v2: Change to walk_ram_ranges() according to Pekka Enberg.
+Hi all,
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
+
+drivers/staging/ipack/ipack.c: In function 'ipack_device_read_id':
+drivers/staging/ipack/ipack.c:291:2: error: implicit declaration of functio=
+n 'ioread8' [-Werror=3Dimplicit-function-declaration]
+drivers/staging/ipack/ipack.c:309:3: error: implicit declaration of functio=
+n 'ioread16be' [-Werror=3Dimplicit-function-declaration]
+
+Caused by commit 187e47824013 ("Staging: ipack: Read the ID space during
+device registration").
+
+I have added the following patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 5 Sep 2012 15:44:11 +1000
+Subject: [PATCH] Staging: ipack: disable due to build error
+
+The powerpc allyesconfig build gives this:
+
+drivers/staging/ipack/ipack.c: In function 'ipack_device_read_id':
+drivers/staging/ipack/ipack.c:291:2: error: implicit declaration of functio=
+n 'ioread8' [-Werror=3Dimplicit-function-declaration]
+drivers/staging/ipack/ipack.c:309:3: error: implicit declaration of functio=
+n 'ioread16be' [-Werror=3Dimplicit-function-declaration]
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- arch/x86/mm/init.c |   64 ++++++++++++++++++---------------------------------
- 1 files changed, 23 insertions(+), 41 deletions(-)
+ drivers/staging/ipack/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 852023f..6663f61 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -243,14 +243,15 @@ static unsigned long __init calculate_table_space_size(unsigned long start,
- 	return tables;
- }
- 
--static unsigned long __init calculate_all_table_space_size(void)
-+static void __init walk_ram_ranges(
-+			void (*work_fn)(unsigned long, unsigned long, void *),
-+			void *data)
- {
- 	unsigned long start_pfn, end_pfn;
--	unsigned long tables;
- 	int i;
- 
- 	/* the ISA range is always mapped regardless of memory holes */
--	tables = calculate_table_space_size(0, ISA_END_ADDRESS);
-+	work_fn(0, ISA_END_ADDRESS, data);
- 
- 	for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, NULL) {
- 		u64 start = start_pfn << PAGE_SHIFT;
-@@ -269,10 +270,15 @@ static unsigned long __init calculate_all_table_space_size(void)
- 		if ((end >> PAGE_SHIFT) > max_low_pfn)
- 			end = max_low_pfn << PAGE_SHIFT;
- #endif
--		tables += calculate_table_space_size(start, end);
-+		work_fn(start, end, data);
- 	}
-+}
- 
--	return tables;
-+static void __init size_work_fn(unsigned long start, unsigned long end, void *data)
-+{
-+	unsigned long *size = data;
-+
-+	*size += calculate_table_space_size(start, end);
- }
- 
- static void __init find_early_table_space(unsigned long start,
-@@ -361,45 +367,15 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
-  * Depending on the alignment of E820 ranges, this may possibly result in using
-  * smaller size (i.e. 4K instead of 2M or 1G) page tables.
-  */
--static void __init init_all_memory_mapping(void)
-+static void __init mapping_work_fn(unsigned long start, unsigned long end,
-+					 void *data)
- {
--	unsigned long start_pfn, end_pfn;
--	int i;
--
--	/* the ISA range is always mapped regardless of memory holes */
--	init_memory_mapping(0, ISA_END_ADDRESS);
--
--	for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, NULL) {
--		u64 start = start_pfn << PAGE_SHIFT;
--		u64 end = end_pfn << PAGE_SHIFT;
--
--		if (end <= ISA_END_ADDRESS)
--			continue;
--
--		if (start < ISA_END_ADDRESS)
--			start = ISA_END_ADDRESS;
--#ifdef CONFIG_X86_32
--		/* on 32 bit, we only map up to max_low_pfn */
--		if ((start >> PAGE_SHIFT) >= max_low_pfn)
--			continue;
--
--		if ((end >> PAGE_SHIFT) > max_low_pfn)
--			end = max_low_pfn << PAGE_SHIFT;
--#endif
--		init_memory_mapping(start, end);
--	}
--
--#ifdef CONFIG_X86_64
--	if (max_pfn > max_low_pfn) {
--		/* can we preseve max_low_pfn ?*/
--		max_low_pfn = max_pfn;
--	}
--#endif
-+	init_memory_mapping(start, end);
- }
- 
- void __init init_mem_mapping(void)
- {
--	unsigned long tables, good_end, end;
-+	unsigned long tables = 0, good_end, end;
- 
- 	probe_page_size_mask();
- 
-@@ -417,15 +393,21 @@ void __init init_mem_mapping(void)
- 	end = max_low_pfn << PAGE_SHIFT;
- 	good_end = max_pfn_mapped << PAGE_SHIFT;
- #endif
--	tables = calculate_all_table_space_size();
-+	walk_ram_ranges(size_work_fn, &tables);
- 	find_early_table_space(0, good_end, tables);
- 	printk(KERN_DEBUG "kernel direct mapping tables up to %#lx @ [mem %#010lx-%#010lx] prealloc\n",
- 		end - 1, pgt_buf_start << PAGE_SHIFT,
- 		(pgt_buf_top << PAGE_SHIFT) - 1);
- 
- 	max_pfn_mapped = 0; /* will get exact value next */
--	init_all_memory_mapping();
-+	walk_ram_ranges(mapping_work_fn, NULL);
- 
-+#ifdef CONFIG_X86_64
-+	if (max_pfn > max_low_pfn) {
-+		/* can we preseve max_low_pfn ?*/
-+		max_low_pfn = max_pfn;
-+	}
-+#endif
- 	/*
- 	 * Reserve the kernel pagetable pages we used (pgt_buf_start -
- 	 * pgt_buf_end) and free the other ones (pgt_buf_end - pgt_buf_top)
--- 
-1.7.7
+diff --git a/drivers/staging/ipack/Kconfig b/drivers/staging/ipack/Kconfig
+index af32178..5c428d7 100644
+--- a/drivers/staging/ipack/Kconfig
++++ b/drivers/staging/ipack/Kconfig
+@@ -4,6 +4,7 @@
+=20
+ menuconfig IPACK_BUS
+ 	tristate "IndustryPack bus support"
++	depends on BROKEN
+ 	---help---
+ 	  If you say Y here you get support for the IndustryPack Framework
+ 	  for drivers for many types of boards that support this industrial
+--=20
+1.7.10.280.gaa39
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__5_Sep_2012_15_48_01_+1000_1DehWrO0g8CEmm2i
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQRueRAAoJEECxmPOUX5FE4KUP/0DKRtFn9HXsE2ZTRu7Qq5Nj
+u3ZoOcL9HNffrH6T9zkoyqcweHVjT+KgvPp4pHMqVRGhGhZ1Y/pVj1zxQjXdGpZ2
+H+aLAbst8Sqn0fXaqD309ap1mKP+0GdcW6ICEQBVxIXFOo8zqMcVPRWDAgLBlZR6
+lyeFWsyvNTk8fxsfQiDROksCkq5nW14pLhW7T/avlimfClHi4XGkCWwT9ABq/MB1
+4kfnq9QqxEBkA1u7G2BisYJosXJAvn/PCDYDgGqhBm9YRJ1RfnyN/cVNtHNFUs2J
+l2K7fGoCftoanHcEAd9bJYdFg/Zgrcsd4gsCVKJ41Zzy8m6+1j5GN/1suh84F/Lh
+hA0YaIREpHei98AltZSymEMc/XbNLeAqobW2sZPLHqNzLbrNR/vxM0kJz6sotCOx
+ye8ic+R2npQAO0zqcwteYgjdfvJ2bADGDaLMwjhvHbsmAJ26r4E+8tlfSRwNi8m7
+VpA6SR0gbp7gxiB9Vmsjl24qyCu7UiqA6dQigCqJstgIB3rONZ9Jan0V+VttFjDn
+lv4s/4y7XW/2qa0qCU/jdgOoC3JIGTK2sunpEHAHvROzT8OK/3QzSOzPWQXckgEu
+kresFmxo+67viKStTIk9Wr9j1/u0e7Y/fk8pIK6g0HidR7SAFkPNMEgxNb2kHtlz
+bkpx532nu6BfVnNGHBRs
+=R2Ey
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__5_Sep_2012_15_48_01_+1000_1DehWrO0g8CEmm2i--
