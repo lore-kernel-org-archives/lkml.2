@@ -1,120 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757783Ab2IENgG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 09:36:06 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:1433 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752264Ab2IENfz convert rfc822-to-8bit (ORCPT
+	id S1757100Ab2IENfw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 09:35:52 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54814 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756637Ab2IENfr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 09:35:55 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 05 Sep 2012 06:35:55 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: "balbi@ti.com" <balbi@ti.com>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        "ccross@android.com" <ccross@android.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Date: Wed, 5 Sep 2012 19:05:49 +0530
-Subject: RE: [PATCH v2] usb: move phy driver from mach-tegra to drivers/usb
-Thread-Topic: [PATCH v2] usb: move phy driver from mach-tegra to drivers/usb
-Thread-Index: Ac2LZegGnKUYuv1zSPq3siCcLYoqHAABVC6A
-Message-ID: <D958900912E20642BCBC71664EFECE3E6DDE77534D@BGMAIL02.nvidia.com>
-References: <1346395526-18219-1-git-send-email-vbyravarasu@nvidia.com>
- <5046772F.6060908@wwwdotorg.org>
- <D958900912E20642BCBC71664EFECE3E6DDE77533D@BGMAIL02.nvidia.com>
- <20120905125210.GG19591@arwen.pp.htv.fi>
-In-Reply-To: <20120905125210.GG19591@arwen.pp.htv.fi>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 5 Sep 2012 09:35:47 -0400
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: <linux-arm-kernel@lists.infradead.org>
+Cc: HACHIMI Samir <shachimi@adeneo-embedded.com>, shawn.guo@linaro.org,
+        thierry.reding@avionic-design.de, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Beno=C3=AEt=20Th=C3=A9baudeau?= 
+	<benoit.thebaudeau@advansee.com>,
+        kernel@pengutronix.de, Sascha Hauer <s.hauer@pengutronix.de>
+Subject: [PATCH 6/8] pwm i.MX: use per clock unconditionally
+Date: Wed,  5 Sep 2012 15:35:25 +0200
+Message-Id: <1346852127-25226-7-git-send-email-s.hauer@pengutronix.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1346852127-25226-1-git-send-email-s.hauer@pengutronix.de>
+References: <1346852127-25226-1-git-send-email-s.hauer@pengutronix.de>
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
+The i.MX pwm core has two clocks: The ipg clock and the ipg highfreq
+(peripheral) clock. The ipg clock has to be enabled for this hardware
+to work. The actual pwm output can either be driven by the ipg clock
+or the ipg highfreq. The ipg highfreq has the advantage that it runs
+even when the SoC is in low power modes.
+Use the always running clock also on i.MX25.
 
-> -----Original Message-----
-> From: Felipe Balbi [mailto:balbi@ti.com]
-> Sent: Wednesday, September 05, 2012 6:22 PM
-> To: Venu Byravarasu
-> Cc: Stephen Warren; balbi@ti.com; ccross@android.com; olof@lixom.net;
-> linux@arm.linux.org.uk; stern@rowland.harvard.edu;
-> gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org; linux-
-> tegra@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-
-> usb@vger.kernel.org
-> Subject: Re: [PATCH v2] usb: move phy driver from mach-tegra to drivers/usb
-> 
-> * PGP Signed by an unknown key
-> 
-> Hi,
-> 
-> On Wed, Sep 05, 2012 at 06:24:13PM +0530, Venu Byravarasu wrote:
-> >
-> > > -----Original Message-----
-> > > From: Stephen Warren [mailto:swarren@wwwdotorg.org]
-> > > Sent: Wednesday, September 05, 2012 3:19 AM
-> > > To: balbi@ti.com
-> > > Cc: Venu Byravarasu; ccross@android.com; olof@lixom.net;
-> > > linux@arm.linux.org.uk; stern@rowland.harvard.edu;
-> > > gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org; linux-
-> > > tegra@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-
-> > > usb@vger.kernel.org
-> > > Subject: Re: [PATCH v2] usb: move phy driver from mach-tegra to
-> drivers/usb
-> > >
-> > > On 08/31/2012 12:45 AM, Venu Byravarasu wrote:
-> > > > As part of this patch:
-> > > > 	1. Moved existing tegra phy driver to drivers/USB directory.
-> > > > 	2. Added standard USB phy driver APIs to tegra phy driver.
-> > > >
-> > > > Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
-> > >
-> > > Tested-by: Stephen Warren <swarren@nvidia.com>
-> > >
-> > > Felipe, Would it be possible to apply this patch to a topic branch, so
-> > > that I can merge it into the Tegra tree? The reason is that I'd like to
-> > > remove Tegra's devices.[ch] in kernel 3.7, but to do that, I need to
-> > > move a tiny chunk of code out of that file somewhere else, and doing
-> > > that relies on adding a #include to usb_phy.h/tegra_usb_phy.h, which is
-> > > renamed in this patch.
-> > >
-> > > Alternatively, if you don't think it'll cause any merge conflicts with
-> > > the USB PHY tree, I can just take this patch through the Tegra tree if
-> > > you want. Venu, do you plan any other patches within the next couple
-> > > weeks or so (i.e. before 3.6-rc6) that will depend on this patch? If so,
-> > > taking it only through the Tegra tree might not work so well.
-> >
-> > Thanks Stephen for verifying the changes.
-> > I'm planning to push next patches, with tegra3 phy support added, very
-> soon.
-> 
-> Unfortunately the patch didn't apply on my xceiv branch. Could you
-> rebase on top of that ?
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+---
+ drivers/pwm/pwm-imx.c |    7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
-Rebased on to your branch and sent patch for your review.
-Plz review and merge.
+diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
+index af77045..b234288 100644
+--- a/drivers/pwm/pwm-imx.c
++++ b/drivers/pwm/pwm-imx.c
+@@ -131,16 +131,11 @@ static int imx_pwm_config_v2(struct pwm_chip *chip,
+ 
+ 	cr = MX3_PWMCR_PRESCALER(prescale) |
+ 		MX3_PWMCR_DOZEEN | MX3_PWMCR_WAITEN |
+-		MX3_PWMCR_DBGEN;
++		MX3_PWMCR_DBGEN | MX3_PWMCR_CLKSRC_IPG_HIGH;
+ 
+ 	if (imx->enabled)
+ 		cr |= MX3_PWMCR_EN;
+ 
+-	if (cpu_is_mx25())
+-		cr |= MX3_PWMCR_CLKSRC_IPG;
+-	else
+-		cr |= MX3_PWMCR_CLKSRC_IPG_HIGH;
+-
+ 	writel(cr, imx->mmio_base + MX3_PWMCR);
+ 
+ 	return 0;
+-- 
+1.7.10.4
 
-Thanks,
-Venu 
-
-> 
-> thanks a lot
-> 
-> --
-> balbi
-> 
-> * Unknown Key
-> * 0x35CAA444
