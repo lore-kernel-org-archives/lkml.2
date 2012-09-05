@@ -1,50 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759263Ab2IETod (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 15:44:33 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51887 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754062Ab2IETob (ORCPT
+	id S1759266Ab2IETqW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 15:46:22 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:55301 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754323Ab2IETqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 15:44:31 -0400
-Date: Wed, 5 Sep 2012 12:44:27 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Tejun Heo <tj@kernel.org>, linux-bcache@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com, vgoyal@redhat.com,
-        mpatocka@redhat.com, bharrosh@panasas.com,
-        Peter Osterlund <petero2@telia.com>
-Subject: Re: [PATCH v7 4/9] pktcdvd: Switch to bio_kmalloc()
-Message-ID: <20120905194427.GF25236@google.com>
-References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
- <1346175456-1572-5-git-send-email-koverstreet@google.com>
- <20120828203247.GC24608@dhcp-172-17-108-109.mtv.corp.google.com>
- <alpine.LRH.2.00.1209041104020.26301@twin.jikos.cz>
+	Wed, 5 Sep 2012 15:46:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.00.1209041104020.26301@twin.jikos.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1346775269-12191-2-git-send-email-peter.senna@gmail.com>
+References: <1346775269-12191-2-git-send-email-peter.senna@gmail.com>
+Date: Wed, 5 Sep 2012 16:46:20 -0300
+Message-ID: <CALF0-+UiJy-mcB7U003dCqmQp2ziiTKrTehh3E-2C6FU2bfvkQ@mail.gmail.com>
+Subject: Re: [PATCH 4/5] drivers/media/platform/vino.c: fix error return code
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        kernel-janitors@vger.kernel.org, Julia.Lawall@lip6.fr,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 04, 2012 at 11:05:06AM +0200, Jiri Kosina wrote:
-> On Tue, 28 Aug 2012, Tejun Heo wrote:
-> 
-> > > This is prep work for killing bi_destructor - previously, pktcdvd had
-> > > its own pkt_bio_alloc which was basically duplication bio_kmalloc(),
-> > > necessitating its own bi_destructor implementation.
-> > 
-> > How was this tested?
-> 
-> I have now tested it and it works properly. You can add
-> 
-> 	Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-> 
-> once you will be pushing the patchset through (I will be pushing 
-> MAINTAINERS update through my tree to Jens separately).
+Hi Peter,
 
-Thanks! I'll make sure and add you to the cc next time - I'll have
-another patch or two for pktcdvd coming soon as I clean up the next
-patch series.
+On Tue, Sep 4, 2012 at 1:14 PM, Peter Senna Tschudin
+<peter.senna@gmail.com> wrote:
+> From: Peter Senna Tschudin <peter.senna@gmail.com>
+>
+> Convert a nonnegative error return code to a negative one, as returned
+> elsewhere in the function.
+>
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+>
+> // <smpl>
+> (
+> if@p1 (\(ret < 0\|ret != 0\))
+>  { ... return ret; }
+> |
+> ret@p1 = 0
+> )
+> ... when != ret = e1
+>     when != &ret
+> *if(...)
+> {
+>   ... when != ret = e2
+>       when forall
+>  return ret;
+> }
+>
+> // </smpl>
+>
+> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+>
+> ---
+>  drivers/media/platform/vino.c |    1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/drivers/media/platform/vino.c b/drivers/media/platform/vino.c
+> index cc9110c..6654a28 100644
+> --- a/drivers/media/platform/vino.c
+> +++ b/drivers/media/platform/vino.c
+> @@ -2061,6 +2061,7 @@ static int vino_capture_next(struct vino_channel_settings *vcs, int start)
+>         }
+>         if (incoming == 0) {
+>                 dprintk("vino_capture_next(): no buffers available\n");
+> +               err = -ENOMEM;
+>                 goto out;
+>         }
+>
+
+Mmm, this one doesn't look good.
+
+I think the intention was to return zero, without error.
+They driver tt's just double-checking for incoming data, if there's no incoming
+data, then he simply exits.
+
+Thanks,
+Ezequiel.
