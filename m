@@ -1,69 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758796Ab2IEPM3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 11:12:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17292 "EHLO mx1.redhat.com"
+	id S1758815Ab2IEPMu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 11:12:50 -0400
+Received: from mga01.intel.com ([192.55.52.88]:2920 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752128Ab2IEPM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 11:12:27 -0400
-Date: Wed, 5 Sep 2012 18:13:48 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>, gleb@redhat.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v9 1/2] kvm: Use a reserved IRQ source ID for irqfd
-Message-ID: <20120905151348.GC11058@redhat.com>
-References: <20120821190800.24958.74812.stgit@bling.home>
- <20120821192903.24958.90138.stgit@bling.home>
- <20120821195813.GD9027@redhat.com>
- <1345579579.29292.67.camel@ul30vt.home>
- <20120821204125.GF9027@redhat.com>
- <1345583694.29292.91.camel@ul30vt.home>
- <20120822004138.GM9027@redhat.com>
- <5047633F.9020405@redhat.com>
- <20120905145153.GA11048@redhat.com>
- <504768E2.3020706@redhat.com>
+	id S1752197Ab2IEPMs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 11:12:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,374,1344236400"; 
+   d="scan'208";a="218402667"
+From: "Shi, Yang A" <yang.a.shi@intel.com>
+To: Daniel Vetter <daniel@ffwll.ch>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>
+CC: "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
+	<linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "alexander.deucher@amd.com" <alexander.deucher@amd.com>,
+        "airlied@redhat.com" <airlied@redhat.com>
+Subject: RE: [Patch 0/1]drm_irq: Introducing the irq_thread support
+Thread-Topic: [Patch 0/1]drm_irq: Introducing the irq_thread support
+Thread-Index: AQHNi2ovBks1cguYJ0i+EYk7WekuB5d72mEw
+Date: Wed, 5 Sep 2012 15:12:39 +0000
+Message-ID: <E3ED5BF57CCD1C40876FA2D3385ED5D30FD781AC@SHSMSX102.ccr.corp.intel.com>
+References: <27240C0AC20F114CBF8149A2696CBE4A177306@SHSMSX101.ccr.corp.intel.com>
+ <20120905132724.GC5357@phenom.ffwll.local>
+In-Reply-To: <20120905132724.GC5357@phenom.ffwll.local>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <504768E2.3020706@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 05, 2012 at 05:59:46PM +0300, Avi Kivity wrote:
-> On 09/05/2012 05:51 PM, Michael S. Tsirkin wrote:
-> > On Wed, Sep 05, 2012 at 05:35:43PM +0300, Avi Kivity wrote:
-> >> On 08/22/2012 03:41 AM, Michael S. Tsirkin wrote:
-> >> >> 
-> >> >> I assumed you were pointing out the level vs edge interaction.  If we
-> >> >> call that a userspace bug, I can just drop this.  Thanks,
-> >> >> 
-> >> >> Alex
-> >> > 
-> >> > level is userspace bug I think :)
-> >> 
-> >> I don't see how it's a bug.  Suppose we have a vfio device that shares a
-> >> gsi with an emulated device.  The emulated device naturally uses
-> >> KVM_IRQ_LINE (it has no need to re-sample on ADN), while vfio naturally
-> >> has to use irqfd.
-> > 
-> > Absolutely. But vfio needs to use irqfd with the new flag.
-> > Using existing irqfd for level is a bug.
+Hi Vetter:
+
+    Do you mean we can just not use drm_irq_install, and make request_irq in our kernel driver pre-install or post-install interface?
+
+
+
+
+
+
+Best Regards.
+Yang Shi
+
+PSI,System Integration, SH
+E-mail:yang.a.shi@intel.com
+Tel:88215666-4239
+
+
+-----Original Message-----
+From: Daniel Vetter [mailto:daniel.vetter@ffwll.ch] On Behalf Of Daniel Vetter
+Sent: Wednesday, September 05, 2012 9:27 PM
+To: Liu, Chuansheng
+Cc: 'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org); dri-devel@lists.freedesktop.org; alexander.deucher@amd.com; airlied@redhat.com; Shi, Yang A
+Subject: Re: [Patch 0/1]drm_irq: Introducing the irq_thread support
+
+On Wed, Sep 05, 2012 at 01:53:44AM +0000, Liu, Chuansheng wrote:
+> This patch is for introducing the irq thread support in drm_irq.
 > 
-> I see we're not reusing this irq source id for level irqfd.  But I think
-> we should, there's no need for per-gsi irq source id.
-
-I agree. All resample irqfds are deasserted at the same time,
-tracking them separately gets us nothing.
-
-> Plus I'd like to
-> fix the theoretical bug even if it doesn't bite in practice.
+> Why we need irq thread in drm_irq code?
+> In our GPU system, the gpu interrupt handler need some time even > 1ms 
+> to finish, in that case, the whole system will stay in irq disable status. One case is:
+> when audio is playing, it sometimes effects the audio quality.
 > 
-
-I'm not sure what the bug is, for edge, and how a separate ID fixes it.
-Could you clarify?
-
+> So we have to introduce the irq thread in drm_irq, it can help us move 
+> some heavy work into irq thread and other irq interrupts can be handled in time. Also the IRQF_ONESHOT is helpful for irq thread.
 > 
-> -- 
-> error compiling committee.c: too many arguments to function
+> Include one patch:
+> [PATCH 01/1] drm_irq-Introducing-the-irq_thread-support
+
+For a kms drm driver (and tbh, doing a non-kms driver today is not a great idea), there's no reason to use the drm_irq_install/_unistall helpers.
+
+So if you driver has special needs wrt irq handling that don't neatly fit what the drm_irq stuff provides, simply don't use it - all the generic code that's there is just to keep non-kms userspace going.
+
+Yours, Daniel
+--
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
