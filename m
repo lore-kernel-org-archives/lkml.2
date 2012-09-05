@@ -1,88 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759312Ab2IEUS2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 16:18:28 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:55327 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753657Ab2IEUS0 (ORCPT
+	id S1759344Ab2IEUTS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 16:19:18 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:34707 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754851Ab2IEUTQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 16:18:26 -0400
-Message-ID: <5047B38D.9000607@gmail.com>
-Date: Wed, 05 Sep 2012 16:18:21 -0400
-From: Ric Wheeler <ricwheeler@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Wed, 5 Sep 2012 16:19:16 -0400
+Message-ID: <5047B3AD.4080307@xenotime.net>
+Date: Wed, 05 Sep 2012 13:18:53 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: axboe@kernel.dk, Mike Snitzer <snitzer@redhat.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [Ping^3] Re: [PATCH] sg_io: allow UNMAP and WRITE SAME without
- CAP_SYS_RAWIO
-References: <1342801801-15617-1-git-send-email-pbonzini@redhat.com> <50195108.1090105@redhat.com> <503CA5BA.2040003@redhat.com> <50476480.9010302@redhat.com>
-In-Reply-To: <50476480.9010302@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: [PATCH -next] extcon: extcon-arizona depends on INPUT
+References: <20120824172820.ee0f412d2944b08789414207@canb.auug.org.au> <5037B41C.6040703@xenotime.net> <503AB70E.2000407@samsung.com> <504693E4.8050808@xenotime.net> <20120905032802.GB5076@opensource.wolfsonmicro.com> <20120905191657.GA5842@kroah.com>
+In-Reply-To: <20120905191657.GA5842@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2012 10:41 AM, Paolo Bonzini wrote:
-> Il 28/08/2012 13:04, Paolo Bonzini ha scritto:
->> Il 01/08/2012 17:53, Paolo Bonzini ha scritto:
->>> Il 20/07/2012 18:30, Paolo Bonzini ha scritto:
->>>> These commands cannot be issued right now without giving CAP_SYS_RAWIO to
->>>> the process who wishes to send them.  These commands can be useful also to
->>>> non-privileged programs who have access to the block devices.  For example
->>>> a virtual machine monitor needs them to forward trim/discard to host disks.
->>>>
->>>> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
->>>> ---
->>>>   block/scsi_ioctl.c |    3 ++
->>>>   1 files changed, 3 insertions(+), 0 deletions(-)
->>>>
->>>> diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
->>>> index 260fa80..dd71f18 100644
->>>> --- a/block/scsi_ioctl.c
->>>> +++ b/block/scsi_ioctl.c
->>>> @@ -168,13 +168,16 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
->>>>   	/* Basic writing commands */
->>>>   	__set_bit(WRITE_6, filter->write_ok);
->>>>   	__set_bit(WRITE_10, filter->write_ok);
->>>> +	__set_bit(WRITE_SAME, filter->write_ok);
->>>>   	__set_bit(WRITE_VERIFY, filter->write_ok);
->>>>   	__set_bit(WRITE_12, filter->write_ok);
->>>>   	__set_bit(WRITE_VERIFY_12, filter->write_ok);
->>>>   	__set_bit(WRITE_16, filter->write_ok);
->>>> +	__set_bit(WRITE_SAME_16, filter->write_ok);
->>>>   	__set_bit(WRITE_LONG, filter->write_ok);
->>>>   	__set_bit(WRITE_LONG_2, filter->write_ok);
->>>>   	__set_bit(ERASE, filter->write_ok);
->>>> +	__set_bit(UNMAP, filter->write_ok);
->>>>   	__set_bit(GPCMD_MODE_SELECT_10, filter->write_ok);
->>>>   	__set_bit(MODE_SELECT, filter->write_ok);
->>>>   	__set_bit(LOG_SELECT, filter->write_ok);
->>>>
->>> Jens,
->>>
->>> can this go in 3.6 as well?
->> Another ping...
-> Ping & adding some more folks hoping to get a Reviewed-by or to be
-> screamed at.
->
-> Paolo
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-Hi Paolo,
+extcon-arizona uses input_*() functions so it should depend
+on INPUT.
 
-Both of these commands are destructive. WRITE_SAME (if done without the discard 
-bits set) can also take a very long time to be destructive and tie up the storage.
+ERROR: "input_event" [drivers/extcon/extcon-arizona.ko] undefined!
+ERROR: "input_free_device" [drivers/extcon/extcon-arizona.ko] undefined!
+ERROR: "input_register_device" [drivers/extcon/extcon-arizona.ko] undefined!
+ERROR: "input_set_capability" [drivers/extcon/extcon-arizona.ko] undefined!
+ERROR: "input_allocate_device" [drivers/extcon/extcon-arizona.ko] undefined!
+ERROR: "input_unregister_device" [drivers/extcon/extcon-arizona.ko] undefined!
 
-I think that restricting them to CAP_SYS_RAWIO seems reasonable - better to vet 
-and give the appropriate apps the needed capability than to widely open up the 
-safety check?
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/extcon/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-thanks!
-
-Ric
-
-
+--- linux-next-20120824.orig/drivers/extcon/Kconfig
++++ linux-next-20120824/drivers/extcon/Kconfig
+@@ -41,7 +41,7 @@ config EXTCON_MAX8997
+ 
+ config EXTCON_ARIZONA
+ 	tristate "Wolfson Arizona EXTCON support"
+-	depends on MFD_ARIZONA
++	depends on MFD_ARIZONA && INPUT
+ 	help
+ 	  Say Y here to enable support for external accessory detection
+ 	  with Wolfson Arizona devices. These are audio CODECs with
