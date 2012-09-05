@@ -1,48 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758076Ab2IECTu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 22:19:50 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:44703 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753038Ab2IECTt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 22:19:49 -0400
-Message-ID: <1346811570.3994.0.camel@phoenix>
-Subject: [PATCH] HID: hid-lcpower: Use HID_UP_LOGIVENDOR instead of hard
- coded 0x0ffbc0000
-From: Axel Lin <axel.lin@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Chris Schlund <chrisschlund@gmx.de>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 05 Sep 2012 10:19:30 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1758058Ab2IECWN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 22:22:13 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:48342
+	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753080Ab2IECWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 22:22:11 -0400
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        ben@decadent.org.uk, thozza@redhat.com, dcbw@redhat.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH V4 05/10] Tools: hv: Add an example script to retrieve dhcp state
+Date: Tue,  4 Sep 2012 19:39:56 -0700
+Message-Id: <1346812796-27241-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+To keep the KVP daemon code free of distro specific details, we invoke an
+external script to retrieve the DHCP state. This is an example script that
+was used to test the KVP code. This script has to be implemented in a Distro
+specific fashion. For instance on distros that ship with Network Manager enabled,
+this script can be based on NM APIs.
+
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/hid/hid-lcpower.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/hv/hv_get_dhcp_info.sh |   28 ++++++++++++++++++++++++++++
+ 1 files changed, 28 insertions(+), 0 deletions(-)
+ create mode 100755 tools/hv/hv_get_dhcp_info.sh
 
-diff --git a/drivers/hid/hid-lcpower.c b/drivers/hid/hid-lcpower.c
-index c4fe9bd0..22bc14a 100644
---- a/drivers/hid/hid-lcpower.c
-+++ b/drivers/hid/hid-lcpower.c
-@@ -24,7 +24,7 @@ static int ts_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 		struct hid_field *field, struct hid_usage *usage,
- 		unsigned long **bit, int *max)
- {
--	if ((usage->hid & HID_USAGE_PAGE) != 0x0ffbc0000)
-+	if ((usage->hid & HID_USAGE_PAGE) != HID_UP_LOGIVENDOR)
- 		return 0;
- 
- 	switch (usage->hid & HID_USAGE) {
+diff --git a/tools/hv/hv_get_dhcp_info.sh b/tools/hv/hv_get_dhcp_info.sh
+new file mode 100755
+index 0000000..ccd3e95
+--- /dev/null
++++ b/tools/hv/hv_get_dhcp_info.sh
+@@ -0,0 +1,28 @@
++#!/bin/bash
++
++# This example script retrieves the DHCP state of a given interface.
++# In the interest of keeping the KVP daemon code free of distro specific
++# information; the kvp daemon code invokes this external script to gather
++# DHCP setting for the specific interface.
++#
++# Input: Name of the interface
++#
++# Output: The script prints the string "Enabled" to stdout to indicate
++#	that DHCP is enabled on the interface. If DHCP is not enabled,
++#	the script prints the string "Disabled" to stdout.
++#
++# Each Distro is expected to implement this script in a distro specific
++# fashion. For instance on Distros that ship with Network Manager enabled,
++# this script can be based on the Network Manager APIs for retrieving DHCP
++# information.
++
++if_file="/etc/sysconfig/network-scripts/ifcfg-"$1
++
++dhcp=$(grep "dhcp" $if_file 2>/dev/null)
++
++if [ "$dhcp" != "" ];
++then
++echo "Enabled"
++else
++echo "Disabled"
++fi
 -- 
-1.7.9.5
-
-
+1.7.4.1
 
