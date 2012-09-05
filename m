@@ -1,79 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758710Ab2IELBV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 07:01:21 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56409 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758644Ab2IELBR (ORCPT
+	id S1758612Ab2IELCo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 07:02:44 -0400
+Received: from smtp.pactenovation.fr ([195.5.242.163]:37883 "EHLO
+	ATLAS.pactenovation.fr" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752609Ab2IELCm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 07:01:17 -0400
-Date: Wed, 5 Sep 2012 04:01:01 -0700
-From: tip-bot for Joe Millenbach <jmillenbach@gmail.com>
-Message-ID: <tip-4454d32749465ffa77d82bc1fdd196d6dedc544b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        konrad.wilk@oracle.com, jmillenbach@gmail.com, josh@joshtriplett.org,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        konrad.wilk@oracle.com, jmillenbach@gmail.com, tglx@linutronix.de,
-        josh@joshtriplett.org
-In-Reply-To: <1346632700-29113-1-git-send-email-jmillenbach@gmail.com>
-References: <1346632700-29113-1-git-send-email-jmillenbach@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/kconfig:
-  Remove outdated reference to Intel CPUs in CONFIG_SWIOTLB
-Git-Commit-ID: 4454d32749465ffa77d82bc1fdd196d6dedc544b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 5 Sep 2012 07:02:42 -0400
+X-Greylist: delayed 912 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Sep 2012 07:02:42 EDT
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 05 Sep 2012 04:01:07 -0700 (PDT)
+Content-Type: text/plain;
+	charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Subject: =?iso-8859-1?Q?RE=A0=3A_=5BPATCH_3/3=5D_Add_support_to_M54xx_DMA_FEC_Driv?=
+	=?iso-8859-1?Q?er?=
+Date: Wed, 5 Sep 2012 12:48:31 +0200
+Message-ID: <1512C13C0C5EA947AE50B9B9AC314F4701B00E08@ATLAS.pactenovation.fr>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH 3/3] Add support to M54xx DMA FEC Driver
+thread-index: Ac2LR264cEvt/PceT5GpJMyZQFIGJwADI7QR
+References: <1345551531-15348-1-git-send-email-stany.marcel@novasys-ingenierie.com> <1345551531-15348-3-git-send-email-stany.marcel@novasys-ingenierie.com> <503C5C5C.8000901@snapgear.com> <20120905091426.GA16015@frolo.macqel>
+From: "Stany MARCEL" <smarcel@pactenovation.fr>
+To: "Philippe De Muyter" <phdm@macqel.be>, "Greg Ungerer" <gerg@snapgear.com>
+Cc: <linux-m68k@vger.kernel.org>, <geert@linux-m68k.org>,
+        <linux-kernel@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4454d32749465ffa77d82bc1fdd196d6dedc544b
-Gitweb:     http://git.kernel.org/tip/4454d32749465ffa77d82bc1fdd196d6dedc544b
-Author:     Joe Millenbach <jmillenbach@gmail.com>
-AuthorDate: Sun, 2 Sep 2012 17:38:20 -0700
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 5 Sep 2012 11:05:01 +0200
+Hi,
 
-x86/kconfig: Remove outdated reference to Intel CPUs in CONFIG_SWIOTLB
+I made a lot of cleanup in my patches, I hope to have some time next week to run my ethernet tests on my board test bench.
 
-Deleted the no longer valid example of which x86 CPUs lack a
-hardware IOMMU, and moved the "If unsure..." statement to a new
-line to follow the style of surrounding options.
+If no regressions are identified I'll resubmit my patch.
 
-Signed-off-by: Joe Millenbach <jmillenbach@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-Cc: team-fjord@googlegroups.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Link: http://lkml.kernel.org/r/1346632700-29113-1-git-send-email-jmillenbach@gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/Kconfig |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+Regards,
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 8ec3a1a..50a1d1f 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -746,10 +746,10 @@ config SWIOTLB
- 	def_bool y if X86_64
- 	---help---
- 	  Support for software bounce buffers used on x86-64 systems
--	  which don't have a hardware IOMMU (e.g. the current generation
--	  of Intel's x86-64 CPUs). Using this PCI devices which can only
--	  access 32-bits of memory can be used on systems with more than
--	  3 GB of memory. If unsure, say Y.
-+	  which don't have a hardware IOMMU. Using this PCI devices
-+	  which can only access 32-bits of memory can be used on systems
-+	  with more than 3 GB of memory.
-+	  If unsure, say Y.
+Stany
+
+
+-------- Message d'origine--------
+De: Philippe De Muyter [mailto:phdm@macqel.be]
+Date: mer. 05/09/2012 11:14
+À: Greg Ungerer
+Cc: Stany MARCEL; linux-m68k@lists.linux-m68k.org; geert@linux-m68k.org; linux-kernel@vger.kernel.org
+Objet : Re: [PATCH 3/3] Add support to M54xx DMA FEC Driver
  
- config IOMMU_HELPER
- 	def_bool (CALGARY_IOMMU || GART_IOMMU || SWIOTLB || AMD_IOMMU)
+Hi Stany & Greg
+
+Seeing that I was not the only one wanting to have the m54xx fec dma
+driver merged in, and hoping to compare Stany's version to mine,
+I have rebased (step by step) my patch from v2.38 to v3.6rc2.
+The driver still works and perhaps even better due to some fixes
+in other m68k area.
+
+Unfortunately I have not being able to compare it yet fully with Stany's
+version because Stany's patch 2/2 did not apply (using `git am') to v3.5
+or v3.6rc2.
+
+I have checked my patch using a recent version of checkpatch.pl (not the
+v3.5 version, because v3.5 version of checkpatch.pl fails with :
+Nested quantifiers in regex; marked by <-- HERE in m/(\((?:[^\(\)]++ <-- HERE |(
+?-1))*\))/ at scripts/checkpatch.pl line 340.))
+
+and I am now at :
+    464 WARNING: line over 80 characters
+     90 WARNING: Use of volatile is usually wrong: see Documentation/volatile-considered-harmful.txt
+
+Many "volatile" warnings are about such definitions :
+
+#define FEC_FECFRST(x)                 (*(volatile unsigned int *)(x + 0x1C4))
+which are afterwards used with
+
++       FEC_FECFRST(base_addr) |= FEC_SW_RST;
++       FEC_FECFRST(base_addr) &= ~FEC_SW_RST;
++               FEC_FECFRST(base_addr) |= FEC_SW_RST;
++               FEC_FECFRST(base_addr) &= ~FEC_SW_RST;
++       FEC_FECFRST(base_addr) |= FEC_SW_RST | FEC_RST_CTL;
++       FEC_FECFRST(base_addr) &= ~FEC_SW_RST;
+
+Any advice about those ones ?
+
+while many "80 characters" ones are about :
+#4014: FILE: arch/m68k/platform/coldfire/MCD_tasks.c:2406:
++       0x6000000b, /* 0098(:1560):      DRD2A: EU0=0 EU1=0 EU2=0 EU3=11 EXT ini
+t=0 WS=0 RS=0 */
+
+I would like to keep those lines intact because the comment seems to actually
+be the assembler source of the hex value at left, which seems to be a
+microcode, and it makes sense to me to keep that on one line.  What do
+you think about that ?
+
+I did not include the current status of the patch because of its size
+(I did not separate the dma part of the ethernet driver part because
+the dma part is useless without the ethernet driver, and linking the
+ethernet driver cannot succeed without the dma part), but if you ask,
+I'll send it privately.
+
+Best regards
+
+Philippe
+
+-- 
+Philippe De Muyter +32 2 6101532 Macq SA rue de l'Aeronef 2 B-1140 Bruxelles
+
