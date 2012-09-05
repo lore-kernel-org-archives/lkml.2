@@ -1,89 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759136Ab2IETYy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 15:24:54 -0400
-Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:27789
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753955Ab2IETYw convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 15:24:52 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC101.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: -8
-X-BigFish: VS-8(zz98dI9371I542M1432Izz1202hzz8275bhz2fh2a8h683h839h944hd25hf0ah107ah1220h1155h)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT005.namprd03.prod.outlook.com;R:internal;EFV:INT
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "ben@decadent.org.uk" <ben@decadent.org.uk>,
-        "thozza@redhat.com" <thozza@redhat.com>,
-        "dcbw@redhat.com" <dcbw@redhat.com>
-Subject: RE: [PATCH 0/4] Tools: hv
-Thread-Topic: [PATCH 0/4] Tools: hv
-Thread-Index: AQHNi5qto5FEevwI5UWgSmIJO75z15d8H22A
-Date: Wed, 5 Sep 2012 19:24:37 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF9309E034B@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <1346864519-30020-1-git-send-email-kys@microsoft.com>
- <20120905191119.GA2085@kroah.com>
-In-Reply-To: <20120905191119.GA2085@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [173.61.55.165]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1759237Ab2IETZe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 15:25:34 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:61607 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753955Ab2IETZc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 15:25:32 -0400
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT005.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%DECADENT.ORG.UK$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14MLTC101.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14MLTC101.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+In-Reply-To: <1346775269-12191-5-git-send-email-peter.senna@gmail.com>
+References: <1346775269-12191-5-git-send-email-peter.senna@gmail.com>
+Date: Wed, 5 Sep 2012 16:25:31 -0300
+Message-ID: <CALF0-+Vn33ZtY68JbKSbNbaqkSO6OOfA38Ejoz=Kkz5WmOSFjA@mail.gmail.com>
+Subject: Re: [PATCH 1/5] drivers/media/platform/davinci/vpbe.c: fix error
+ return code
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        kernel-janitors@vger.kernel.org, Julia.Lawall@lip6.fr,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Peter,
 
+On Tue, Sep 4, 2012 at 1:14 PM, Peter Senna Tschudin
+<peter.senna@gmail.com> wrote:
+> From: Peter Senna Tschudin <peter.senna@gmail.com>
+>
+> Convert a nonnegative error return code to a negative one, as returned
+> elsewhere in the function.
+>
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+>
+> // <smpl>
+> (
+> if@p1 (\(ret < 0\|ret != 0\))
+>  { ... return ret; }
+> |
+> ret@p1 = 0
+> )
+> ... when != ret = e1
+>     when != &ret
+> *if(...)
+> {
+>   ... when != ret = e2
+>       when forall
+>  return ret;
+> }
+>
+> // </smpl>
+>
+> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+>
+> ---
+>  drivers/media/platform/davinci/vpbe.c |   13 ++++++-------
+>  1 file changed, 6 insertions(+), 7 deletions(-)
+>
+> diff --git a/drivers/media/platform/davinci/vpbe.c b/drivers/media/platform/davinci/vpbe.c
+> index c4a82a1..2e4a0da 100644
+> --- a/drivers/media/platform/davinci/vpbe.c
+> +++ b/drivers/media/platform/davinci/vpbe.c
+> @@ -603,7 +603,6 @@ static int vpbe_initialize(struct device *dev, struct vpbe_device *vpbe_dev)
+>         int output_index;
+>         int num_encoders;
+>         int ret = 0;
+> -       int err;
+>         int i;
+>
+>         /*
+> @@ -646,10 +645,10 @@ static int vpbe_initialize(struct device *dev, struct vpbe_device *vpbe_dev)
+>         }
+>         v4l2_info(&vpbe_dev->v4l2_dev, "vpbe v4l2 device registered\n");
+>
+> -       err = bus_for_each_dev(&platform_bus_type, NULL, vpbe_dev,
+> +       ret = bus_for_each_dev(&platform_bus_type, NULL, vpbe_dev,
+>                                platform_device_get);
+> -       if (err < 0)
+> -               return err;
+> +       if (ret < 0)
+> +               return ret;
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Wednesday, September 05, 2012 3:11 PM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
-> apw@canonical.com; ben@decadent.org.uk; thozza@redhat.com;
-> dcbw@redhat.com
-> Subject: Re: [PATCH 0/4] Tools: hv
-> 
-> On Wed, Sep 05, 2012 at 10:01:59AM -0700, K. Y. Srinivasan wrote:
-> > This patchset was authored by Ben Hutchings <ben@decadent.org.uk>. Ben
-> > asked me to submit this patchset. This patchset cleans up the KVP daemon
-> > code and fixes some bugs.
-> >
-> >
-> > K. Y. Srinivasan (4):
-> >   tools: hv: Fix file handle leak
-> >   tools: hv: Fix exit() error code
-> >   tools: hv: Check for read/write errors
-> >   tools: hv: Parse /etc/os-release
-> 
-> If Ben wrote these, why are you showing that you wrote them?
+This should be "goto somewhere" (probably vbpe_fail_v4l2_device),
+instead of "return".
+There are several tasks done (like locking a mutex) that need to be undone.
 
-Ben asked me to apply these patches on the tip (of my tree) and send the
-patches out and that is what I did. I recreated these patches after applying to
-my tree and that is what I have sent out. How could I have made the authorship
-more clear (other than noting so in the comment which I have done).
+Actually, this bug is not directly related to *this* patch, so you
+could send another patch
+fixing this.
 
 Regards,
-
-K. Y
-
-
+Ezequiel.
