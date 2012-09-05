@@ -1,54 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753775Ab2IENpE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 09:45:04 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:56950 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751543Ab2IENpB (ORCPT
+	id S1756769Ab2IENqc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 09:46:32 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:14146
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751543Ab2IENqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 09:45:01 -0400
-Date: Wed, 5 Sep 2012 14:44:55 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Don Dutile <ddutile@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-efi@vger.kernel.org,
-        mfleming@intel.com, dwmw2@infradead.org, bhelgaas@google.com
-Subject: Re: [PATCH V3 3/4] PCI: Add support for non-BAR ROMs
-Message-ID: <20120905134454.GD16399@srcf.ucam.org>
-References: <1345739803-21017-1-git-send-email-mjg@redhat.com>
- <1345739803-21017-4-git-send-email-mjg@redhat.com>
- <5046B688.1070902@redhat.com>
- <20120905022932.GA4087@srcf.ucam.org>
- <20120905134621.73afe48a@pyramind.ukuu.org.uk>
- <20120905132007.GB16399@srcf.ucam.org>
- <20120905143010.557aa3fb@pyramind.ukuu.org.uk>
+	Wed, 5 Sep 2012 09:46:30 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 6
+X-BigFish: VS6(zzbb2dI98dI9371I1102I1432Ic55bszz1202hzz8275bh8275dhz2dh2a8h668h839h945hd25he5bhf0ah107ah1155h)
+Message-ID: <504757AC.90007@freescale.com>
+Date: Wed, 5 Sep 2012 16:46:20 +0300
+From: Claudiu Manoil <claudiu.manoil@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120905143010.557aa3fb@pyramind.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: David Miller <davem@davemloft.net>
+CC: <chikazawa.akifu@jp.fujitsu.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: when the MTU interface is modified, the promiscuous mode is reset
+ in gianfar driver
+References: <201208270838.AA02326@VF09040P.jp.fujitsu.com> <20120903.155332.1814926007061594344.davem@davemloft.net>
+In-Reply-To: <20120903.155332.1814926007061594344.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 05, 2012 at 02:30:10PM +0100, Alan Cox wrote:
-> On Wed, 5 Sep 2012 14:20:07 +0100
-> Matthew Garrett <mjg@redhat.com> wrote:
-> > We've no good way of knowing what the firmware's giving us - we copy it 
-> > to RAM in the EFI init process, so by the time we're here it certainly 
-> > shouldn't be on the PCI bus.
-> 
-> In which case how do you know that physical address you have been given
-> actually has a mapping in kernel virtual space. It seems like it ought to
-> be getting an ioremap in that case ?
-> 
-> phys_to_virt is not valid for arbitary addresses.
+On 09/03/2012 10:53 PM, David Miller wrote:
+> From: chikazawa.akifu@jp.fujitsu.com (近沢 哲史)
+> Date: Mon, 27 Aug 2012 17:38:34 +0900
+>
+>>  I am using the gianfar ethernet driver. I am having a problem with the
+>>  interface settings.
+>>  Under promiscuous mode, when the MTU interface is modified, the promiscuous
+>>  mode setting is turned off in gianfar driver when it should not be.
+>> The details are as follows:
+>>  After changing MTU with ifconfig, I could see that the interface flag of
+>>  eth0 is still PROMISC.
+>>  However, when I checked value of RCTL register with ethtool, PROM bit of
+>>  RTCL register is cleared.
+>>  It seems to be cause that is the gfar_init_mac() function, it doesn't set
+>>  the PROM bit after the interface MTU is changed.
+>>  This problem was detected on linux-2.6.32.2, but it seems to same on
+>>  linux-3.6.0-rc3.
+>> Is this behavior on purpose?
+>>
+>> I also attach the amended file,I think it would be so.
+>>
+>> Signed-off-by: Akifumi Chikazawa <chikazawa.akifu@jp.fujitsu.com>
+> It seems like we also lose all of the multicast configurations as
+> well.
+>
+> Therefore, the thing to do is to simply call gfar_set_multi() at the
+> appropriate location.  That will take care of both the promiscuous
+> bit, as well as the multicast addresses.
+>
+> You can then remove some of the code in gfar_init_mac() that does
+> things like gfar_clear_exact_match(), because gfar_set_multi() will
+> take care of that if necessary.
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+> .
+>
+Hello David,
 
-The pages are allocated as EFI_LOADER_DATA, and that gets mapped as 
-E820_RAM.
+Though apparently it would make sense to change init_mac as shown in the
+patch below, I must say I could *not* reproduce the issue with the
+current net-next code (just for reference:
+uname -a
+Linux p1020rdb 3.6.0-rc3-22396-g600e177 #8 SMP Wed Sep 5 ... 2012 ppc
+GNU/Linux
+)
+
+So, having eth1 up, I configured promisc mode - then checked that this
+is correctly
+reflected by rctlr (with ethtool -d eth1):
+300: 00 08 37 ca 00 00 00 00 00 00 00 00 00 00 00 00
+then, after changing mtu (while eth1 up): ifconfig eth1 mtu 500
+further checks on rctlr show that the promiscuity setting is preserved
+(i.e. rctlr
+has same value as above).
+
+Though changing the mtu with the interface up results indeed in a call to
+gfar_init_mac(), I found out that the ndo_set_rx_mode hook (set to
+gfar_set_multi()) is being also invoked in the process, to update
+the multicast and promiscuity settings. So unless there's some kind
+of concurrency/timing issue(?), I don't see how the promisc mode would
+be reset by changing the mtu. Maybe more details on the issue reproduction
+would help (or maybe a usecase involving multicast settings?)
+
+regards,
+Claudiu
+
+Signed-off-by: Claudiu Manoil <claudiu.manoil@freescale.com>
+---
+drivers/net/ethernet/freescale/gianfar.c | 5 +++--
+1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/freescale/gianfar.c
+b/drivers/net/ethernet/freescale/gianfar.c
+index 4d5b58c..ede7efe 100644
+--- a/drivers/net/ethernet/freescale/gianfar.c
++++ b/drivers/net/ethernet/freescale/gianfar.c
+@@ -353,6 +353,9 @@ static void gfar_init_mac(struct net_device *ndev)
+/* Configure the coalescing support */
+gfar_configure_coalescing(priv, 0xFF, 0xFF);
+
++ /* update multicast configs and promiscuity of the device */
++ gfar_set_multi(ndev);
++
+if (priv->rx_filer_enable) {
+rctrl |= RCTRL_FILREN;
+/* Program the RIR0 reg with the required distribution */
+@@ -364,8 +367,6 @@ static void gfar_init_mac(struct net_device *ndev)
+
+if (priv->extended_hash) {
+rctrl |= RCTRL_EXTHASH;
+-
+- gfar_clear_exact_match(ndev);
+rctrl |= RCTRL_EMEN;
+}
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.7.6.5
+
