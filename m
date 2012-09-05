@@ -1,91 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758086Ab2IEBP1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 21:15:27 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37489 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753553Ab2IEBPZ (ORCPT
+	id S932816Ab2IEBPj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 21:15:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35169 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753553Ab2IEBPg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 21:15:25 -0400
+	Tue, 4 Sep 2012 21:15:36 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120904210114.1a30338a@obelix.rh>
-References: <20120904143215.5bbbb2a4@obelix.rh>
-	<CAE9FiQUEHbDySWHWFj6kW=HGLR0vkbaJWRq+7kMMHGhBm8e08A@mail.gmail.com>
-	<20120904161737.358d51ad@obelix.rh>
-	<CAE9FiQX7OMdFU6FuTQdz+NdbNt5Hy9zjzSY7y-90G4CbhayfaA@mail.gmail.com>
-	<20120904172639.0c2bfd6d@obelix.rh>
-	<CAE9FiQWnz-pC3ODOfKo6jumGztd1MdypXB5PG-eDrAfTb1s_xQ@mail.gmail.com>
-	<20120904183708.5f10fbde@obelix.rh>
-	<CAE9FiQXCzQ+GCCqx4+=ZSijn+_+ekfGrUABiWNuX2H8BL+j9tg@mail.gmail.com>
-	<20120904210114.1a30338a@obelix.rh>
-Date: Tue, 4 Sep 2012 18:15:25 -0700
-X-Google-Sender-Auth: IBWDqw05daHbo013d9JRDkDIPsA
-Message-ID: <CAE9FiQWhkPG1AuwW-_REYiBxBtMo+5gpfpgx3Yy2wXZY2JX2kg@mail.gmail.com>
-Subject: Re: kexec/kdump kernel fails to start
-From: Yinghai Lu <yinghai@kernel.org>
-To: Flavio Leitner <fbl@redhat.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        WANG Cong <xiyou.wangcong@gmail.com>, Tejun Heo <tj@kernel.org>,
-        ianfang.cn@gmail.com, Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <s5hd32122hw.wl%tiwai@suse.de>
+References: <s5hd3222azc.wl%tiwai@suse.de>
+	<CACVXFVP-A7M2dG9bOvAnpzR60=iTYSw=WCOEwgo9KeuioxKanQ@mail.gmail.com>
+	<s5hd32122hw.wl%tiwai@suse.de>
+Date: Wed, 5 Sep 2012 09:15:34 +0800
+Message-ID: <CACVXFVNE1GHAQJTrQy2AYgUBfq5kv42EjJJ7J+2q3jzXG-E=MQ@mail.gmail.com>
+Subject: Re: A workaround for request_firmware() stuck in module_init
+From: Ming Lei <ming.lei@canonical.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Kay Sievers <kay@vrfy.org>,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 4, 2012 at 5:01 PM, Flavio Leitner <fbl@redhat.com> wrote:
-> On Tue, 4 Sep 2012 15:25:45 -0700
-> kdump works when using your branch:
+On Wed, Sep 5, 2012 at 12:10 AM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Tue, 4 Sep 2012 23:52:15 +0800,
+> Ming Lei wrote:
+>>
+>> On Tue, Sep 4, 2012 at 9:06 PM, Takashi Iwai <tiwai@suse.de> wrote:
+>> > Hi,
+>> >
+>> > as I've got recently a few bug reports regarding the stuck with
+>> > request_firmware() in module_init of some sound drivers, I started
+>> > looking at the issue.  Strangely, the problem doesn't happen on
+>> > openSUSE 12.2 although it has the same udev version with libkmod as
+>> > Fedora.  So I installed Fedora 17, and indeed I could see a problem
+>> > there.
+>>
+>> It should be a bug in udev, as discussed in the below link:
+>>
+>>           http://marc.info/?t=134552745100002&r=1&w=2
 >
-> [    0.000000] Linux version 3.6.0-rc4-00012-g9389673 (root@f17i7.rh) (gcc version 4.7.0 20120507 (Red Hat 4.7.0-5) (GCC) ) #1 SMP Tue Sep 4 20:36:43 BRT 2012
-> ...
-> [    0.000000] initial memory mapped: [mem 0x00000000-0x1fffffff]
-> [    0.000000] Base memory trampoline at [ffff880000097000] 97000 size 24576
-> [    0.000000] calculate_table_space_size: [mem 0x00000000-0x000fffff]
-> [    0.000000]  [mem 0x00000000-0x000fffff] page 4k
-> [    0.000000] calculate_table_space_size: [mem 0x00100000-0xbf4bcfff]
-> [    0.000000]  [mem 0x00100000-0x001fffff] page 4k
-> [    0.000000]  [mem 0x00200000-0xbf3fffff] page 2M
-> [    0.000000]  [mem 0xbf400000-0xbf4bcfff] page 4k
-> [    0.000000] calculate_table_space_size: [mem 0xbf4bf000-0xbf4c5fff]
-> [    0.000000]  [mem 0xbf4bf000-0xbf4c5fff] page 4k
-> [    0.000000] calculate_table_space_size: [mem 0xbf7bf000-0xbf7dffff]
-> [    0.000000]  [mem 0xbf7bf000-0xbf7dffff] page 4k
-> [    0.000000] calculate_table_space_size: [mem 0xbf7ff000-0xbf7fffff]
-> [    0.000000]  [mem 0xbf7ff000-0xbf7fffff] page 4k
-> [    0.000000] calculate_table_space_size: [mem 0x100000000-0x43fffffff]
-> [    0.000000]  [mem 0x100000000-0x43fffffff] page 2M
-> [    0.000000] kernel direct mapping tables up to 0x43fffffff @ [mem 0x43ffe1000-0x43fffffff] prealloc
-> [    0.000000] init_memory_mapping: [mem 0x00000000-0x000fffff]
-> [    0.000000]  [mem 0x00000000-0x000fffff] page 4k
-> [    0.000000] init_memory_mapping: [mem 0x00100000-0xbf4bcfff]
-> [    0.000000]  [mem 0x00100000-0x001fffff] page 4k
-> [    0.000000]  [mem 0x00200000-0xbf3fffff] page 2M
-> [    0.000000]  [mem 0xbf400000-0xbf4bcfff] page 4k
-> [    0.000000] init_memory_mapping: [mem 0xbf4bf000-0xbf4c5fff]
-> [    0.000000]  [mem 0xbf4bf000-0xbf4c5fff] page 4k
-> [    0.000000] init_memory_mapping: [mem 0xbf7bf000-0xbf7dffff]
-> [    0.000000]  [mem 0xbf7bf000-0xbf7dffff] page 4k
-> [    0.000000] init_memory_mapping: [mem 0xbf7ff000-0xbf7fffff]
-> [    0.000000]  [mem 0xbf7ff000-0xbf7fffff] page 4k
-> [    0.000000] init_memory_mapping: [mem 0x100000000-0x43fffffff]
-> [    0.000000]  [mem 0x100000000-0x43fffffff] page 2M
-> [    0.000000] kernel direct mapping tables up to 0x43fffffff @ [mem 0x43ffe1000-0x43fff2fff] final
-> [    0.000000] RAMDISK: [mem 0x34ffa000-0x367f4fff]
+> Yeah, if udev has a fix, I'm fine.  I'll proactively ignore these bug
+> reports.  But did it really happen...?
 
-thanks.
+Linus has expressed that it should be fixed by udev, maybe we can
+wait some time to see if it will happen, :-)
 
-assume when we have good_end setting for 64 bit, page table for [4g,
-TOMH) will be just under 512M, and later when first
-first 2M lines changes, will push that page table range a little low,
-and will make kdump not happy.
+There are more than 300 request_firmware called in probe(), even
+adding 2 line code in these drivers will involve much workload, since
+you need to find the matched probe()  for one request_firmware and
+sometimes it is not easy.
 
-BTW the first 2M change commit is useless should be reverted. because
-even it is in 2M page mapping at first, later
-kernel will change to 4k page.
+>
+>> > Obviously a solution would be to rewrite the driver code to use
+>> > request_firmware_nowait() instead.  But it'd need a lot of code
+>> > shuffling, and most of such drivers are old stuff I don't want to do a
+>> > serious surgery.
+>> >
+>> > So I tried an easier workaround by using the deferred probing.
+>> > An experimental patch is below.  As you can see, from the driver side,
+>> > it's simple: just add two lines at the head of each probe function.
+>>
+>> In fact, the defer probe should only be applied in situations which
+>> driver is built in kernel and request_firmware is called in .probe().
+>
+> Is it?  I thought the deferred probe is basically not for this problem
+> but rather for the dependency problem with other modules.  That's the
+> reason it's triggered only upon the successful binding.
 
-and with other change in this patchset, init_memory_mapping(0,
-ISA_END_ADDR) will always make sure first 2M use 4K page.
+Sorry, could you explain the dependency in a bit detail?
 
-Thanks
+>From your patch, I understand you just convert the caller of
+request_firmware from module_init into deferred_probe_work_func(),
+so the udev problem is avoided, isn't it?
 
-Yinghai
+Looks making all .probe() run non-module_init context is still a solution, :-)
+
+>
+> And IMO, the deferred probe for the built-in kernel is also silly.
+> Did anyone really make it working for built-in kernel driver and
+> external firmware files?  (For the resume, it's of course a different
+
+Yes, my original patch does work for the built-in situations.
+
+> issue.  And I guess it's been solved by your fw cache patch, right?)
+>
+>> > Do you think this kind of hack is OK?  If not, any better (IOW easier)
+>> > solution?
+>>
+>> Looks your solution is a bit complicated, and I have wrote a similar
+>> patch to address the problem, but Linus thought that it may hide the
+>> problem of drivers.
+>>
+>>         http://marc.info/?t=134278790800004&r=1&w=2
+>>
+>> IMO, driver core needn't to be changed, and the defer probe can be
+>> supported just by changes in request_firmware() and its caller.
+>
+> Ideally, yes.  But it won't work in some drivers like sound drivers,
+> that have its own device number counting changed at each probe call.
+> For such drivers, the deferred probe check must be done before
+> entering the normal probe procedure, and returning -EPROBE_DEFER would
+> be too late (or need more complex fallbacks).
+
+Simply, you can put the firmware loading at the start of probe to
+avoid the specific
+sound problem, :-)
+
+
+Thanks,
+--
+Ming Lei
