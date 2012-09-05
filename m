@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757519Ab2IEI5H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 04:57:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50982 "EHLO mx2.suse.de"
+	id S1757952Ab2IEI6n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 04:58:43 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:60065 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751298Ab2IEI5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 04:57:05 -0400
-Date: Wed, 5 Sep 2012 10:56:53 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Andreas Schwab <schwab@linux-m68k.org>, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] powerpc: fix personality handling in
- ppc64_personality()
-In-Reply-To: <1346813643.2257.24.camel@pasglop>
-Message-ID: <alpine.LNX.2.00.1209051056060.11079@pobox.suse.cz>
-References: <alpine.LNX.2.00.1208012201520.14910@pobox.suse.cz>  <m27gtitfv4.fsf@igel.home>  <alpine.LNX.2.00.1208020907490.14910@pobox.suse.cz> <1346813643.2257.24.camel@pasglop>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751328Ab2IEI6m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 04:58:42 -0400
+Message-ID: <50471379.3060603@parallels.com>
+Date: Wed, 5 Sep 2012 12:55:21 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Tejun Heo <tj@kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>, <davej@redhat.com>, <ben@decadent.org.uk>,
+        <a.p.zijlstra@chello.nl>, <pjt@google.com>, <lennart@poettering.net>,
+        <kay.sievers@vrfy.org>
+Subject: Re: [RFC 0/5] forced comounts for cgroups.
+References: <1346768300-10282-1-git-send-email-glommer@parallels.com> <20120904214602.GA9092@dhcp-172-17-108-109.mtv.corp.google.com> <5047074D.1030104@parallels.com> <20120905081439.GC3195@dhcp-172-17-108-109.mtv.corp.google.com> <50470A87.1040701@parallels.com> <20120905082947.GD3195@dhcp-172-17-108-109.mtv.corp.google.com> <50470EBF.9070109@parallels.com> <20120905084740.GE3195@dhcp-172-17-108-109.mtv.corp.google.com>
+In-Reply-To: <20120905084740.GE3195@dhcp-172-17-108-109.mtv.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Sep 2012, Benjamin Herrenschmidt wrote:
-
-> > Directly comparing current->personality against PER_LINUX32 doesn't work
-> > in cases when any of the personality flags stored in the top three bytes
-> > are used.
-> > 
-> > Directly forcefully setting personality to PER_LINUX32 or PER_LINUX
-> > discards any flags stored in the top three bytes
-> > 
-> > Use personality() macro to compare only PER_MASK bytes and make sure that
-> > we are setting only the bits that should be set, instead of
-> > overwriting the whole value.
-> > 
-> > Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-> > ---
-> > 
-> > changed since v1: fix the bit ops to reflect the fact that PER_LINUX is 
-> > actually 0
+On 09/05/2012 12:47 PM, Tejun Heo wrote:
+> Hello, Glauber.
 > 
-> Had already merged v1 (oops.. didn't spot the issue with PER_LINUX being
-> 0). Can you send an incremental fixup ?
+> On Wed, Sep 05, 2012 at 12:35:11PM +0400, Glauber Costa wrote:
+>>> As long as cpuacct and cpu are separate, I think it makes sense to
+>>> assume that they at least could be at different granularity.  
+>>
+>> If they are comounted, and more: forceably comounted, I don't see how to
+>> call them separate. At the very best, they are this way for
+>> compatibility purposes only, to lay a path that would allow us to get
+>> rid of the separation eventually.
+> 
+> I think this is where we disagree.  I didn't mean that all controllers
+> should be using exactly the same hierarchy when I was talking about
+> unified hierarchy.  I do think it's useful and maybe even essential to
+> allow differing levels of granularity.  cpu and cpuacct could be a
+> valid example for this.  Likely blkcg and memcg too.
+> 
+> So, I think it's desirable for all controllers to be able to handle
+> hierarchies the same way and to have the ability to tag something as
+> belonging to certain group in the hierarchy for all controllers but I
+> don't think it's desirable or feasible to require all of them to
+> follow exactly the same grouping at all levels.
+> 
 
-Hi Benjamin,
+By "different levels of granularity" do you mean having just a subset of
+them turned on at a particular place?
 
-actually commit 7256a5d2da56 seems to contain the correct PER_LINUX 
-handling, so seems like you picked the right one :)
+If yes, having them guaranteed to be comounted is still perceived by me
+as a good first step. A natural following would be to turn them on/off
+on a per-group basis.
 
-Thanks,
 
--- 
-Jiri Kosina
-SUSE Labs
+
+
