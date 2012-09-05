@@ -1,86 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758061Ab2IECS7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 22:18:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1763 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753038Ab2IECS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 22:18:57 -0400
-Message-ID: <5046B688.1070902@redhat.com>
-Date: Tue, 04 Sep 2012 22:18:48 -0400
-From: Don Dutile <ddutile@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111104 Red Hat/3.1.16-2.el6_1 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Matthew Garrett <mjg@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-efi@vger.kernel.org, mfleming@intel.com, dwmw2@infradead.org,
-        bhelgaas@google.com
-Subject: Re: [PATCH V3 3/4] PCI: Add support for non-BAR ROMs
-References: <1345739803-21017-1-git-send-email-mjg@redhat.com> <1345739803-21017-4-git-send-email-mjg@redhat.com>
-In-Reply-To: <1345739803-21017-4-git-send-email-mjg@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1758076Ab2IECTu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 22:19:50 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:44703 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753038Ab2IECTt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 22:19:49 -0400
+Message-ID: <1346811570.3994.0.camel@phoenix>
+Subject: [PATCH] HID: hid-lcpower: Use HID_UP_LOGIVENDOR instead of hard
+ coded 0x0ffbc0000
+From: Axel Lin <axel.lin@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Chris Schlund <chrisschlund@gmx.de>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 05 Sep 2012 10:19:30 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2012 12:36 PM, Matthew Garrett wrote:
-> Platforms may provide their own mechanisms for obtaining ROMs. Add support
-> for using data provided by the platform in that case.
->
-> Signed-off-by: Matthew Garrett<mjg@redhat.com>
-> ---
->   drivers/pci/rom.c   | 11 +++++++++--
->   include/linux/pci.h |  2 ++
->   2 files changed, 11 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/pci/rom.c b/drivers/pci/rom.c
-> index 48ebdb2..46026e4 100644
-> --- a/drivers/pci/rom.c
-> +++ b/drivers/pci/rom.c
-> @@ -118,11 +118,17 @@ void __iomem *pci_map_rom(struct pci_dev *pdev, size_t *size)
->   	void __iomem *rom;
->
->   	/*
-> +	 * Some devices may provide ROMs via a source other than the BAR
-> +	 */
-> +	if (pdev->rom&&  pdev->romlen) {
-> +		*size = pdev->romlen;
-> +		return phys_to_virt((phys_addr_t)pdev->rom);
-                        ^^^^^
-                          ioremap_nocache() ? ... or is caching rom ok?
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/hid/hid-lcpower.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> +	/*
->   	 * IORESOURCE_ROM_SHADOW set on x86, x86_64 and IA64 supports legacy
->   	 * memory map if the VGA enable bit of the Bridge Control register is
->   	 * set for embedded VGA.
->   	 */
-> -	if (res->flags&  IORESOURCE_ROM_SHADOW) {
-> +	} else if (res->flags&  IORESOURCE_ROM_SHADOW) {
->   		/* primary video rom always starts here */
->   		start = (loff_t)0xC0000;
->   		*size = 0x20000; /* cover C000:0 through E000:0 */
-> @@ -219,7 +225,8 @@ void pci_unmap_rom(struct pci_dev *pdev, void __iomem *rom)
->   	if (res->flags&  (IORESOURCE_ROM_COPY | IORESOURCE_ROM_BIOS_COPY))
->   		return;
->
-> -	iounmap(rom);
-> +	if (!pdev->rom || !pdev->romlen)
-> +		iounmap(rom);
->
->   	/* Disable again before continuing, leave enabled if pci=rom */
->   	if (!(res->flags&  (IORESOURCE_ROM_ENABLE | IORESOURCE_ROM_SHADOW)))
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index 6a2625c..2668bb9 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -355,6 +355,8 @@ struct pci_dev {
->   	};
->   	struct pci_ats	*ats;	/* Address Translation Service */
->   #endif
-> +	void *rom; /* Physical pointer to ROM if it's not from the BAR */
-> +	size_t romlen; /* Length of ROM if it's not from the BAR */
->   };
->
->   static inline struct pci_dev *pci_physfn(struct pci_dev *dev)
+diff --git a/drivers/hid/hid-lcpower.c b/drivers/hid/hid-lcpower.c
+index c4fe9bd0..22bc14a 100644
+--- a/drivers/hid/hid-lcpower.c
++++ b/drivers/hid/hid-lcpower.c
+@@ -24,7 +24,7 @@ static int ts_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+ 		struct hid_field *field, struct hid_usage *usage,
+ 		unsigned long **bit, int *max)
+ {
+-	if ((usage->hid & HID_USAGE_PAGE) != 0x0ffbc0000)
++	if ((usage->hid & HID_USAGE_PAGE) != HID_UP_LOGIVENDOR)
+ 		return 0;
+ 
+ 	switch (usage->hid & HID_USAGE) {
+-- 
+1.7.9.5
+
+
 
