@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759703Ab2IEWEB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 18:04:01 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43549 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759597Ab2IEWEA convert rfc822-to-8bit (ORCPT
+	id S1759712Ab2IEWGN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 18:06:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40385 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759674Ab2IEWGL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 18:04:00 -0400
-Message-ID: <1346882630.2600.59.camel@twins>
-Subject: Re: [tip:sched/core] sched: Fix load avg vs cpu-hotplug
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: paulmck@linux.vnet.ibm.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rakib.mullick@gmail.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Date: Thu, 06 Sep 2012 00:03:50 +0200
-In-Reply-To: <1346864493.2600.27.camel@twins>
-References: <1345454817.23018.27.camel@twins>
-	 <tip-f319da0c6894fcf55e21320e40506418a2aad629@git.kernel.org>
-	 <1346848616.2600.26.camel@twins> <20120905132939.GA3480@gmail.com>
-	 <1346864493.2600.27.camel@twins>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 5 Sep 2012 18:06:11 -0400
+Message-ID: <5047CCCB.1000108@canonical.com>
+Date: Wed, 05 Sep 2012 15:06:03 -0700
+From: John Johansen <john.johansen@canonical.com>
+Organization: Canonical
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Kees Cook <keescook@chromium.org>
+CC: linux-kernel@vger.kernel.org, James Morris <james.l.morris@oracle.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] Yama: handle 32-bit userspace prctl
+References: <20120827183813.GA23991@www.outflux.net>
+In-Reply-To: <20120827183813.GA23991@www.outflux.net>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-05 at 19:01 +0200, Peter Zijlstra wrote:
-> > Please do a delta.
+On 08/27/2012 11:38 AM, Kees Cook wrote:
+> When running a 64-bit kernel and receiving prctls from a 32-bit
+> userspace, the "-1" used as an unsigned long will end up being
+> misdetected. The kernel is looking for 0xffffffffffffffff instead of
+> 0xffffffff. Since prctl lacks a distinct compat interface, Yama needs
+> to handle this translation itself. As such, support either value as
+> meaning PR_SET_PTRACER_ANY, to avoid breaking the ABI for 64-bit.
+> 
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> Cc: stable@vger.kernel.org
+> ---
+>  security/yama/yama_lsm.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/security/yama/yama_lsm.c b/security/yama/yama_lsm.c
+> index 0cc99a3..dcd6178 100644
+> --- a/security/yama/yama_lsm.c
+> +++ b/security/yama/yama_lsm.c
+> @@ -143,7 +143,7 @@ static int yama_task_prctl(int option, unsigned long arg2, unsigned long arg3,
+>  		if (arg2 == 0) {
+>  			yama_ptracer_del(NULL, myself);
+>  			rc = 0;
+> -		} else if (arg2 == PR_SET_PTRACER_ANY) {
+> +		} else if (arg2 == PR_SET_PTRACER_ANY || (int)arg2 == -1) {
+>  			rc = yama_ptracer_add(NULL, myself);
+>  		} else {
+>  			struct task_struct *tracer;
+> 
 
-OK, so I suppose something like the below ought to do. Paul its slightly
-different than the one in your tree, given the changelog below, do you
-see anything wrong with it?
+yeah this looks good it should at least hit stable
 
-Rakib, again, sorry for getting your name wrong, and this time for
-getting it merged :/
-
----
-Subject: sched: Fix load avg vs cpu-hotplug mk-II
-
-Commit f319da0c68 ("sched: Fix load avg vs cpu-hotplug") was a known
-broken version that got in by accident.
-
-In particular, the problem is that at the point it calls
-calc_load_migrate() nr_running := 1 (the stopper thread), so move the
-call to CPU_DEAD where we're sure that nr_running := 0.
-
-Also note that we can call calc_load_migrate() without serialization, we
-know the state of rq is stable since its cpu is dead, and we modify the
-global state using appropriate atomic ops. 
-
-Suggested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- kernel/sched/core.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index c46a011..8c089cb 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5086,7 +5086,9 @@ migration_call(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 		migrate_tasks(cpu);
- 		BUG_ON(rq->nr_running != 1); /* the migration thread */
- 		raw_spin_unlock_irqrestore(&rq->lock, flags);
-+		break;
- 
-+	case CPU_DEAD:
- 		calc_load_migrate(rq);
- 		break;
- #endif
+Acked-by: John Johansen <john.johansen@canonical.com>
 
