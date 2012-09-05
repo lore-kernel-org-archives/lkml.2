@@ -1,49 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758228Ab2IEJDj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 05:03:39 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:49878 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750826Ab2IEJDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 05:03:37 -0400
-Message-ID: <50471558.4030505@mev.co.uk>
-Date: Wed, 5 Sep 2012 10:03:20 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120903 Thunderbird/15.0
+	id S1758248Ab2IEJEO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 05:04:14 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:20710 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751315Ab2IEJEL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 05:04:11 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: <netdev@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <davem@davemloft.net>,
+        <havard@skinnemoen.net>, <nicolas.ferre@atmel.com>,
+        <plagnioj@jcrosoft.com>, <jamie@jamieiles.com>,
+        <linux-kernel@vger.kernel.org>, <patrice.vilchez@atmel.com>
+Subject: [PATCH 10/10] net/macb: Offset first RX buffer by two bytes
+Date: Wed, 5 Sep 2012 11:04:06 +0200
+Message-ID: <68a0e4baf2ace47c04874f1918a3bd5f1e5784dc.1346775479.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <cover.1346775479.git.nicolas.ferre@atmel.com>
+References: <cover.1346775479.git.nicolas.ferre@atmel.com>
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: Ian Abbott <ian.abbott@mev.co.uk>, lkml <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH v3] UDF: Add support for O_DIRECT
-References: <1343731212-4381-1-git-send-email-abbotti@mev.co.uk> <1346752179-28052-1-git-send-email-abbotti@mev.co.uk> <20120904143947.GC8656@quack.suse.cz> <50461A24.8070003@mev.co.uk>
-In-Reply-To: <50461A24.8070003@mev.co.uk>
-Content-Type: text/plain; charset="us-ascii"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-09-04 16:11, Ian Abbott wrote:
-> On 2012-09-04 15:39, Jan Kara wrote:
->> On Tue 04-09-12 10:49:39, Ian Abbott wrote:
->>> Add support for the O_DIRECT flag.  There are two cases to deal with:
->>    Out of curiosity, do you have a use for this feature or is it mostly
->> academic interest?
->
-> I'm planning to use it for an embedded project that needs to stream
-> large files off a CompactFlash card, but the data doesn't need to be in
-> the buffer cache as its only read once, and the system has very limited
-> memory bandwidth so I can't afford the the extra copy.  The old version
-> of this project only supported FAT, but that limited the file size to
-> about 4GiB.  The filesystem needs to be something reasonably
-> Windows-friendly, at least for adding the files to the CompactFlash card
-> in the first place.
+From: Havard Skinnemoen <havard@skinnemoen.net>
 
-Actually, remembering back (the old project was about 3 years ago), the 
-main reason for using O_DIRECT was it was causing too much memory 
-fragmentation on my MMU-less embedded system.  That and the extra 
-overhead of managing the buffer cache for data that was only read once.
+Make the ethernet frame payload word-aligned, possibly making the
+memcpy into the skb a bit faster. This will be even more important
+after we eliminate the copy altogether.
 
+Also eliminate the redundant RX_OFFSET constant -- it has the same
+definition and purpose as NET_IP_ALIGN.
+
+Signed-off-by: Havard Skinnemoen <havard@skinnemoen.net>
+[nicolas.ferre@atmel.com: adapt to newer kernel]
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ drivers/net/ethernet/cadence/macb.c |   23 ++++++++++++++++-------
+ 1 file changed, 16 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+index f31c0a7..f7716b6 100644
+--- a/drivers/net/ethernet/cadence/macb.c
++++ b/drivers/net/ethernet/cadence/macb.c
+@@ -33,9 +33,6 @@
+ #define RX_RING_SIZE		512
+ #define RX_RING_BYTES		(sizeof(struct macb_dma_desc) * RX_RING_SIZE)
+ 
+-/* Make the IP header word-aligned (the ethernet header is 14 bytes) */
+-#define RX_OFFSET		2
+-
+ #define TX_RING_SIZE		128
+ #define TX_RING_BYTES		(sizeof(struct macb_dma_desc) * TX_RING_SIZE)
+ 
+@@ -466,7 +463,7 @@ static int macb_rx_frame(struct macb *bp, unsigned int first_frag,
+ {
+ 	unsigned int len;
+ 	unsigned int frag;
+-	unsigned int offset = 0;
++	unsigned int offset;
+ 	struct sk_buff *skb;
+ 	struct macb_dma_desc *desc;
+ 
+@@ -477,7 +474,16 @@ static int macb_rx_frame(struct macb *bp, unsigned int first_frag,
+ 		macb_rx_ring_wrap(first_frag),
+ 		macb_rx_ring_wrap(last_frag), len);
+ 
+-	skb = netdev_alloc_skb(bp->dev, len + RX_OFFSET);
++	/*
++	 * The ethernet header starts NET_IP_ALIGN bytes into the
++	 * first buffer. Since the header is 14 bytes, this makes the
++	 * payload word-aligned.
++	 *
++	 * Instead of calling skb_reserve(NET_IP_ALIGN), we just copy
++	 * the two padding bytes into the skb so that we avoid hitting
++	 * the slowpath in memcpy(), and pull them off afterwards.
++	 */
++	skb = netdev_alloc_skb(bp->dev, len + NET_IP_ALIGN);
+ 	if (!skb) {
+ 		bp->stats.rx_dropped++;
+ 		for (frag = first_frag; ; frag++) {
+@@ -493,7 +499,8 @@ static int macb_rx_frame(struct macb *bp, unsigned int first_frag,
+ 		return 1;
+ 	}
+ 
+-	skb_reserve(skb, RX_OFFSET);
++	offset = 0;
++	len += NET_IP_ALIGN;
+ 	skb_checksum_none_assert(skb);
+ 	skb_put(skb, len);
+ 
+@@ -517,10 +524,11 @@ static int macb_rx_frame(struct macb *bp, unsigned int first_frag,
+ 	/* Make descriptor updates visible to hardware */
+ 	wmb();
+ 
++	__skb_pull(skb, NET_IP_ALIGN);
+ 	skb->protocol = eth_type_trans(skb, bp->dev);
+ 
+ 	bp->stats.rx_packets++;
+-	bp->stats.rx_bytes += len;
++	bp->stats.rx_bytes += skb->len;
+ 	netdev_vdbg(bp->dev, "received skb of length %u, csum: %08x\n",
+ 		   skb->len, skb->csum);
+ 	netif_receive_skb(skb);
+@@ -985,6 +993,7 @@ static void macb_init_hw(struct macb *bp)
+ 	__macb_set_hwaddr(bp);
+ 
+ 	config = macb_mdc_clk_div(bp);
++	config |= MACB_BF(RBOF, NET_IP_ALIGN);	/* Make eth data aligned */
+ 	config |= MACB_BIT(PAE);		/* PAuse Enable */
+ 	config |= MACB_BIT(DRFCS);		/* Discard Rx FCS */
+ 	config |= MACB_BIT(BIG);		/* Receive oversized frames */
 -- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+1.7.10
+
