@@ -1,38 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759172Ab2IESrR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 14:47:17 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:46403 "EHLO
+	id S1754509Ab2IESwf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 14:52:35 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:46411 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758827Ab2IESrP (ORCPT
+	with ESMTP id S1753509Ab2IESwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 14:47:15 -0400
-Date: Wed, 5 Sep 2012 20:47:08 +0200
+	Wed, 5 Sep 2012 14:52:34 -0400
+Date: Wed, 5 Sep 2012 20:52:33 +0200
 From: Andi Kleen <andi@firstfloor.org>
-To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Cc: ak@linux.intel.com, tony.luck@intel.com, andi@firstfloor.org, bp@amd64.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-edac@vger.kernel.org, ananth@in.ibm.com
-Subject: Re: [PATCH] [mcelog] Start using the new sysfs tunables location
-Message-ID: <20120905184708.GC16230@one.firstfloor.org>
-References: <20120905102156.9423.27806.stgit@localhost.localdomain> <20120905103237.9726.56131.stgit@localhost.localdomain>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, a.p.zijlstra@chello.nl,
+        eranian@google.com, mingo@elte.hu, andi@firstfloor.org, avi@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf/x86: Disable uncore on virtualized CPU.
+Message-ID: <20120905185233.GD16230@one.firstfloor.org>
+References: <1345540117-14164-1-git-send-email-zheng.z.yan@intel.com> <20120905063524.GA20710@gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120905103237.9726.56131.stgit@localhost.localdomain>
+In-Reply-To: <20120905063524.GA20710@gmail.com>
 User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 05, 2012 at 04:02:37PM +0530, Naveen N. Rao wrote:
-> All the current mce tunables are now available under
-> /sys/devices/system/machinecheck. Start using this new location, but fall back
-> to the older per-cpu location so that we continue working with older kernels.
+On Wed, Sep 05, 2012 at 08:35:24AM +0200, Ingo Molnar wrote:
+> 
+> * Yan, Zheng <zheng.z.yan@intel.com> wrote:
+> 
+> > From: "Yan, Zheng" <zheng.z.yan@intel.com>
+> > 
+> > Initializing uncore PMU on virtualized CPU may hang the kernel.
+> > This is because kvm does not emulate the entire hardware. Thers
+> > are lots of uncore related MSRs, making kvm enumerate them all
+> > is a non-trival task. So just disable uncore on virtualized CPU.
+> > 
+> > Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+> > ---
+> >  arch/x86/kernel/cpu/perf_event_intel_uncore.c | 3 +++
+> >  1 file changed, 3 insertions(+)
+> > 
+> > diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> > index 0a55710..2f005ba 100644
+> > --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> > +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> > @@ -2898,6 +2898,9 @@ static int __init intel_uncore_init(void)
+> >  	if (boot_cpu_data.x86_vendor != X86_VENDOR_INTEL)
+> >  		return -ENODEV;
+> >  
+> > +	if (cpu_has_hypervisor)
+> > +		return -ENODEV;
+> > +
+> >  	ret = uncore_pci_init();
+> >  	if (ret)
+> >  		goto fail;
+> 
+> Cannot the presence of the uncore hardware be detected in a 
+> cleaner fashion, via the PCI config space and such?
 
-Who did that change in the kernel?
+Probably just by reading the registers and see that they are 0 and 
+when writing read back and check.
 
-That breaks Linus rule that the kernel should not break userland.
-Kernel needs to fix that.
+And the code should not hang when that happens, then this check wouldn't
+be needed.
 
 -Andi
