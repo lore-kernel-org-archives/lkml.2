@@ -1,81 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759271Ab2IETb2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 15:31:28 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:48627 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754490Ab2IET3D (ORCPT
+	id S1759205Ab2IETdN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 15:33:13 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60201 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753955Ab2IETdL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 15:29:03 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6826"; a="230947985"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH 4/9] ARM: msm: Move 8660 to DT timer
-Date: Wed,  5 Sep 2012 12:28:54 -0700
-Message-Id: <1346873339-10927-5-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.12.176.g3fc0e4c
-In-Reply-To: <1346873339-10927-1-git-send-email-sboyd@codeaurora.org>
-References: <1346873339-10927-1-git-send-email-sboyd@codeaurora.org>
+	Wed, 5 Sep 2012 15:33:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <1346775269-12191-4-git-send-email-peter.senna@gmail.com>
+References: <1346775269-12191-4-git-send-email-peter.senna@gmail.com>
+Date: Wed, 5 Sep 2012 16:33:10 -0300
+Message-ID: <CALF0-+VRin4LrR-9zuXro2MJ2wePkw40SSD=vrqrsrSFTsgSAg@mail.gmail.com>
+Subject: Re: [PATCH 2/5] drivers/media/platform/s5p-tv/sdo_drv.c: fix error
+ return code
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        kernel-janitors@vger.kernel.org, Julia.Lawall@lip6.fr,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the timer entry and point the machine descriptor to the
-device tree based msm timer.
+Hi Peter,
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/boot/dts/msm8660-surf.dts | 17 +++++++++++++++++
- arch/arm/mach-msm/board-msm8x60.c  |  2 +-
- 2 files changed, 18 insertions(+), 1 deletion(-)
+On Tue, Sep 4, 2012 at 1:14 PM, Peter Senna Tschudin
+<peter.senna@gmail.com> wrote:
+> From: Peter Senna Tschudin <peter.senna@gmail.com>
+>
+> Convert a nonnegative error return code to a negative one, as returned
+> elsewhere in the function.
+>
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+>
+> // <smpl>
+> (
+> if@p1 (\(ret < 0\|ret != 0\))
+>  { ... return ret; }
+> |
+> ret@p1 = 0
+> )
+> ... when != ret = e1
+>     when != &ret
+> *if(...)
+> {
+>   ... when != ret = e2
+>       when forall
+>  return ret;
+> }
+>
+> // </smpl>
+>
+> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+>
+> ---
+>  drivers/media/platform/s5p-tv/sdo_drv.c |    3 +++
+>  1 file changed, 3 insertions(+)
+>
+> diff --git a/drivers/media/platform/s5p-tv/sdo_drv.c b/drivers/media/platform/s5p-tv/sdo_drv.c
+> index ad68bbe..58cf56d 100644
+> --- a/drivers/media/platform/s5p-tv/sdo_drv.c
+> +++ b/drivers/media/platform/s5p-tv/sdo_drv.c
+> @@ -369,6 +369,7 @@ static int __devinit sdo_probe(struct platform_device *pdev)
+>         sdev->fout_vpll = clk_get(dev, "fout_vpll");
+>         if (IS_ERR_OR_NULL(sdev->fout_vpll)) {
+>                 dev_err(dev, "failed to get clock 'fout_vpll'\n");
+> +               ret = -ENODEV;
+>                 goto fail_dacphy;
+>         }
+>         dev_info(dev, "fout_vpll.rate = %lu\n", clk_get_rate(sclk_vpll));
+> @@ -377,11 +378,13 @@ static int __devinit sdo_probe(struct platform_device *pdev)
+>         sdev->vdac = devm_regulator_get(dev, "vdd33a_dac");
+>         if (IS_ERR_OR_NULL(sdev->vdac)) {
+>                 dev_err(dev, "failed to get regulator 'vdac'\n");
+> +               ret = -ENODEV;
+>                 goto fail_fout_vpll;
+>         }
+>         sdev->vdet = devm_regulator_get(dev, "vdet");
+>         if (IS_ERR_OR_NULL(sdev->vdet)) {
+>                 dev_err(dev, "failed to get regulator 'vdet'\n");
+> +               ret = -ENODEV;
+>                 goto fail_fout_vpll;
+>         }
+>
+>
 
-diff --git a/arch/arm/boot/dts/msm8660-surf.dts b/arch/arm/boot/dts/msm8660-surf.dts
-index 45bc4bb..93a15ab 100644
---- a/arch/arm/boot/dts/msm8660-surf.dts
-+++ b/arch/arm/boot/dts/msm8660-surf.dts
-@@ -15,6 +15,23 @@
- 		      < 0x02081000 0x1000 >;
- 	};
- 
-+	timer@02000004 {
-+		compatible = "qcom,msm-gpt", "qcom,msm-timer";
-+		interrupts = <1 1 0x301>;
-+		reg = <0x02000004 0x10>;
-+		clock-frequency = <32768>;
-+		cpu-offset = <0x40000>;
-+	};
-+
-+	timer@02000024 {
-+		compatible = "qcom,msm-dgt", "qcom,msm-timer";
-+		interrupts = <1 0 0x301>;
-+		reg = <0x02000024 0x10>,
-+		      <0x02000034 0x4>;
-+		clock-frequency = <6750000>;
-+		cpu-offset = <0x40000>;
-+	};
-+
- 	serial@19c400000 {
- 		compatible = "qcom,msm-hsuart", "qcom,msm-uart";
- 		reg = <0x19c40000 0x1000>,
-diff --git a/arch/arm/mach-msm/board-msm8x60.c b/arch/arm/mach-msm/board-msm8x60.c
-index 97db3cd..64c981d 100644
---- a/arch/arm/mach-msm/board-msm8x60.c
-+++ b/arch/arm/mach-msm/board-msm8x60.c
-@@ -154,7 +154,7 @@ DT_MACHINE_START(MSM_DT, "Qualcomm MSM (Flattened Device Tree)")
- 	.handle_irq = gic_handle_irq,
- 	.init_machine = msm8x60_dt_init,
- 	.init_late = msm8x60_init_late,
--	.timer = &msm8x60_timer,
-+	.timer = &msm_dt_timer,
- 	.dt_compat = msm8x60_fluid_match,
- MACHINE_END
- #endif /* CONFIG_OF */
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Just a nitpick: why using ENODEV when the rest of the function is using ENXIO?
+In which case, you could fix this with a less intrusive change, by
+initializating ret to -ENXIO.
 
+Hope this helps,
+Ezequiel.
