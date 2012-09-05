@@ -1,68 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759494Ab2IEVJm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 17:09:42 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:36205 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753937Ab2IEVJk (ORCPT
+	id S1759485Ab2IEVKc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 17:10:32 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46147 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752971Ab2IEVKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 17:09:40 -0400
-Date: Wed, 5 Sep 2012 17:09:37 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jiri Kosina <trivial@kernel.org>
-Subject: Re: [PATCH] ARM: Fix semihosting Kconfig text
-In-Reply-To: <1346879011-7765-1-git-send-email-sboyd@codeaurora.org>
-Message-ID: <alpine.LFD.2.02.1209051709040.1784@xanadu.home>
-References: <1346879011-7765-1-git-send-email-sboyd@codeaurora.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 5 Sep 2012 17:10:31 -0400
+X-Sasl-enc: p5isO/Wtc9FQqofqbgoOTrBYqYPjZOg29oNsDDsSY6mN 1346879429
+Date: Wed, 5 Sep 2012 14:07:58 -0700
+From: Greg KH <greg@kroah.com>
+To: Evgeniy Polyakov <zbr@ioremap.net>
+Cc: Raphael Assenat <raph@8d.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] 1-Wire: Add support for the maxim ds1825 temperature
+ sensor
+Message-ID: <20120905210758.GD27262@kroah.com>
+References: <20120816165639.GB22993@renkinjitsu.usine.8d.com>
+ <20120818094818.GA11844@ioremap.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120818094818.GA11844@ioremap.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Sep 2012, Stephen Boyd wrote:
-
-> It seems we were missing some text in the title for the
-> semihosting DEBUG_LL option. Add in the "/O" and fix up some
-> minor typos in the help text.
+On Sat, Aug 18, 2012 at 01:48:18PM +0400, Evgeniy Polyakov wrote:
+> Hi
 > 
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
-
-Acked-by: Nicolas Pitre <nico@linaro.org>
-
-
-> ---
->  arch/arm/Kconfig.debug | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
+> On Thu, Aug 16, 2012 at 12:56:40PM -0400, Raphael Assenat (raph@8d.com) wrote:
+> > This patch adds support for maxim ds1825 based 1-wire temperature sensors.
 > 
-> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-> index f15f82b..e968a52 100644
-> --- a/arch/arm/Kconfig.debug
-> +++ b/arch/arm/Kconfig.debug
-> @@ -356,15 +356,15 @@ choice
->  		  is nothing connected to read from the DCC.
->  
->  	config DEBUG_SEMIHOSTING
-> -		bool "Kernel low-level debug output via semihosting I"
-> +		bool "Kernel low-level debug output via semihosting I/O"
->  		help
->  		  Semihosting enables code running on an ARM target to use
->  		  the I/O facilities on a host debugger/emulator through a
-> -		  simple SVC calls. The host debugger or emulator must have
-> +		  simple SVC call. The host debugger or emulator must have
->  		  semihosting enabled for the special svc call to be trapped
->  		  otherwise the kernel will crash.
->  
-> -		  This is known to work with OpenOCD, as wellas
-> +		  This is known to work with OpenOCD, as well as
->  		  ARM's Fast Models, or any other controlling environment
->  		  that implements semihosting.
->  
-> -- 
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
+> Looks good, thank you
 > 
+> > Signed-off-by: Raphael Assenat <raph@8d.com>
+> 
+> Greg, please pull it into your tree
+> Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+
+I can't seem to find the original patch here, can someone please resend
+it to me, with Evgeniy's ack added to it so I can apply it?
+
+thanks,
+
+greg k-h
