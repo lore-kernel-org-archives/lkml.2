@@ -1,97 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758218Ab2IEP1M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 11:27:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13489 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751999Ab2IEP1K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 11:27:10 -0400
-Date: Wed, 5 Sep 2012 18:28:32 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>, gleb@redhat.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v9 1/2] kvm: Use a reserved IRQ source ID for irqfd
-Message-ID: <20120905152832.GE11058@redhat.com>
-References: <20120821195813.GD9027@redhat.com>
- <1345579579.29292.67.camel@ul30vt.home>
- <20120821204125.GF9027@redhat.com>
- <1345583694.29292.91.camel@ul30vt.home>
- <20120822004138.GM9027@redhat.com>
- <5047633F.9020405@redhat.com>
- <20120905145153.GA11048@redhat.com>
- <504768E2.3020706@redhat.com>
- <20120905151348.GC11058@redhat.com>
- <50476E51.5020005@redhat.com>
+	id S1758861Ab2IEP1m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 11:27:42 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:38559 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758828Ab2IEP1k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 11:27:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50476E51.5020005@redhat.com>
+In-Reply-To: <20120904230554.GA8893@kroah.com>
+References: <CA+HMz3jBzbmgSANr8M4wwKD-SbVPrnsMdXqKnN+sa+S79r=P1w@mail.gmail.com>
+	<76EC11A8-968B-43B8-BE90-A4FE68644C6B@163.com>
+	<CAD+1EGOaXWM=uNDk2gm+Rahyv0MESjaibasbfjOoyur8sXTCEg@mail.gmail.com>
+	<20120904230554.GA8893@kroah.com>
+Date: Wed, 5 Sep 2012 23:27:39 +0800
+Message-ID: <CAD+1EGPiYfO2Fako4+uL98Bu7+=Zw98rPYHgr6hd629Px-_P0w@mail.gmail.com>
+Subject: Re: [PATCH] Chinese translation of Documentation/arm/Booting
+From: harryxiyou <harryxiyou@gmail.com>
+To: Greg-Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: PT <platinum@163.com>, Ninja Tekkaman <tekkamanninja@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "kernel@vger.linux-kernel.cn" <kernel@vger.linux-kernel.cn>,
+        Russell King <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q85FRkhL018417
 
-On Wed, Sep 05, 2012 at 06:22:57PM +0300, Avi Kivity wrote:
-> On 09/05/2012 06:13 PM, Michael S. Tsirkin wrote:
-> > On Wed, Sep 05, 2012 at 05:59:46PM +0300, Avi Kivity wrote:
-> >> On 09/05/2012 05:51 PM, Michael S. Tsirkin wrote:
-> >> > On Wed, Sep 05, 2012 at 05:35:43PM +0300, Avi Kivity wrote:
-> >> >> On 08/22/2012 03:41 AM, Michael S. Tsirkin wrote:
-> >> >> >> 
-> >> >> >> I assumed you were pointing out the level vs edge interaction.  If we
-> >> >> >> call that a userspace bug, I can just drop this.  Thanks,
-> >> >> >> 
-> >> >> >> Alex
-> >> >> > 
-> >> >> > level is userspace bug I think :)
-> >> >> 
-> >> >> I don't see how it's a bug.  Suppose we have a vfio device that shares a
-> >> >> gsi with an emulated device.  The emulated device naturally uses
-> >> >> KVM_IRQ_LINE (it has no need to re-sample on ADN), while vfio naturally
-> >> >> has to use irqfd.
-> >> > 
-> >> > Absolutely. But vfio needs to use irqfd with the new flag.
-> >> > Using existing irqfd for level is a bug.
-> >> 
-> >> I see we're not reusing this irq source id for level irqfd.  But I think
-> >> we should, there's no need for per-gsi irq source id.
-> > 
-> > I agree. All resample irqfds are deasserted at the same time,
-> > tracking them separately gets us nothing.
-> 
-> That's not the reason.  Separate irq source ids only have meanings
-> within a gsi.  We could have two lines (gsi 3 isid 4) and (gsi 4 isid 4)
-> that can be toggled independently with no effect on the other gsi.
-> Within a gsi we do need a separate irq source id usually, but as 2/2
-> recognizes, AODNs are a special case since we clear all inputs anyway.
-> The end result is that all AODNs can share a single isid.
-> 
-> > 
-> >> Plus I'd like to
-> >> fix the theoretical bug even if it doesn't bite in practice.
-> >> 
-> > 
-> > I'm not sure what the bug is, for edge, and how a separate ID fixes it.
-> > Could you clarify?
-> 
-> gsi 3 is configured as edge in the ioapic.  It has (unusually) two
-> inputs: one driven by userspace, the other by irqfd.
-> 
-> cpu 0                    cpu 1
-> ------------------------ -------------------------
-> irqfd: set to 1
-> ioapic: recognize edge
-> inject irq
-> EOI
->                          KVM_IRQ_LINE: set to 1
->                          ioapic: ignore
->                          KVM_IRQ_LINE: set to 0
-> irqfd: set to 0
-> 
-> We had two edges with an EOI between them, but injected just on interrupt.
+2012/9/5 Greg-Kroah-Hartman <gregkh@linuxfoundation.org>:
+> On Tue, Aug 28, 2012 at 11:45:02PM +0800, harryxiyou wrote:
+>> 2012/8/28 PT <platinum@163.com>:
+>> > çœ‹äº†å‡ å°ä¸­æ–‡æ–‡æ¡£ç¿»è¯‘çš„ patchï¼Œè§‰å¾—å¾ˆä¸é”™ï¼
+>> > å¦‚æœä¸­æ–‡å’Œè‹±æ–‡ã€æ•°å­—ä¹‹é—´èƒ½æœ‰ä¸ªåŠè§’ç©ºæ ¼å°±æ›´å¥½äº†ï¼Œ
+>> >æ— è®ºæ˜¯ç¾è§‚åº¦ã€å¯è¯»æ€§è¿˜æ˜¯è¶…é“¾éƒ½ä¸ä¼šæœ‰é—®é¢˜ã€‚
+>> >
+>>
+>> Hi PT,
+>>
+>> We will take actions as you said later, thanks for your sincerely suggestions.
+>
+> So should I hold off applying this one?
+>
 
-I see. Makes sense, ACK this patch.
+I think applying is okay, we will give patches for it later.
+Any comments?
 
 
-> -- 
-> error compiling committee.c: too many arguments to function
+-- 
+Thanks
+Harry Wei
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
