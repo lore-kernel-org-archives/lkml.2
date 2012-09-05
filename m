@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753565Ab2IEFlm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 01:41:42 -0400
-Received: from mga03.intel.com ([143.182.124.21]:16114 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750991Ab2IEFlk convert rfc822-to-8bit (ORCPT
+	id S1753404Ab2IEFmv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 01:42:51 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:34102 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750800Ab2IEFmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 01:41:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,372,1344236400"; 
-   d="scan'208";a="188924117"
-From: "Ren, Yongjie" <yongjie.ren@intel.com>
-To: "Shi, Alex" <alex.shi@intel.com>, Jan Beulich <JBeulich@suse.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>
-Subject: RE: [PATCH] xen: fix logical error in tlb flushing
-Thread-Topic: [PATCH] xen: fix logical error in tlb flushing
-Thread-Index: AQHNiyhHR/lL12WnDUufh3nzhb9xgZd7Ot5Q
-Date: Wed, 5 Sep 2012 05:41:37 +0000
-Message-ID: <1B4B44D9196EFF41AE41FDA404FC0A1018E35D@SHSMSX101.ccr.corp.intel.com>
-References: <1345798513-3566-1-git-send-email-alex.shi@intel.com>
- <5037A8E7020000780008A78B@nat28.tlf.novell.com>
- <20120824181721.GC15167@konrad-lan.dumpdata.com>
- <5037E7ED020000780008A7BD@nat28.tlf.novell.com> <5046E47C.2020405@intel.com>
-In-Reply-To: <5046E47C.2020405@intel.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 5 Sep 2012 01:42:49 -0400
 MIME-Version: 1.0
+Date: Wed, 5 Sep 2012 07:42:48 +0200
+Message-ID: <CACRpkdYjMdHxFyZNRFxvHiuR_Sdkk3R6obO_0WoNCo0Z0973SA@mail.gmail.com>
+Subject: [GIT PULL] gpio fixes for v3.6
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Axel Lin <axel.lin@gmail.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Shi, Alex
-> Sent: Wednesday, September 05, 2012 1:35 PM
-> To: Jan Beulich
-> Cc: Konrad Rzeszutek Wilk; tglx@linutronix.de; mingo@redhat.com;
-> linux-kernel@vger.kernel.org; hpa@zytor.com; Ren, Yongjie
-> Subject: Re: [PATCH] xen: fix logical error in tlb flushing
-> 
-> On 08/25/2012 03:45 AM, Jan Beulich wrote:
-> 
-> >>>> On 24.08.12 at 20:17, Konrad Rzeszutek Wilk
-> <konrad.wilk@oracle.com> wrote:
-> >> On Fri, Aug 24, 2012 at 04:16:39PM +0100, Jan Beulich wrote:
-> >>>>>> On 24.08.12 at 10:55, Alex Shi <alex.shi@intel.com> wrote:
-> >>>> While TLB_FLUSH_ALL gets passed as 'end' argument to
-> >>>> flush_tlb_others(), the Xen code was made to check its 'start'
-> >>>> parameter. That may give a incorrect op.cmd to
-> MMUEXT_INVLPG_MULTI
-> >>>> instead of MMUEXT_TLB_FLUSH_MULTI. Then it causes some page
-> can not
-> >>>> be flushed from TLB.
-> >>>>
-> >>>> This patch fixed this issue.
-> >>>>
-> >>>> Reported-by: Jan Beulich <jbeulich@suse.com>
-> >>>> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> >>>
-> >>> Acked-by: Jan Beulich <jbeulich@suse.com>
-> 
-Tested-by: Yongjie Ren <yongjie.ren@intel.com>
+Hi Linus,
 
-> 
-> CC to Yongjie,
-> Could you like to test this patch on PV guest
-> 
-Xen Dom0 and a PV guest kernel with this patch can boot up correctly.
+these are some smallish GPIO regression fixes for the v3.6 series,
+should be no big deal, please pull them in! Details in the tag.
 
+Yours,
+Linus Walleij
+
+
+The following changes since commit d9875690d9b89a866022ff49e3fcea892345ad92:
+
+  Linux 3.6-rc2 (2012-08-16 14:51:24 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio.git
+tags/gpio-fixes-for-v3.6
+
+for you to fetch changes up to 1146f8822ae6601e24f9072d6cd74f76506142cd:
+
+  gpio: rdc321x: Prevent removal of modules exporting active GPIOs
+(2012-09-01 12:52:24 +0200)
+
+----------------------------------------------------------------
+These are some GPIO regression fixes for v3.6:
+- Erroneous debug message from of_get_named_gpio_flags()
+- Make sure the MC9S08DZ60 GPIO driver depend on I2C being
+  compiled in (not module) or allmodconfig breaks.
+- Check return value from irq_alloc_descs() in the Emma
+  Mobile GPIO driver.
+- Assign the owner field for the rdc321x driver so the
+  module won't be removed if it has active GPIOs.
+
+----------------------------------------------------------------
+Axel Lin (3):
+      gpio: mc9s08dz60: Fix build error if I2C=m
+      gpio: em: Fix checking return value of irq_alloc_descs
+      gpio: rdc321x: Prevent removal of modules exporting active GPIOs
+
+Thierry Reding (1):
+      gpio: Fix debug message in of_get_named_gpio_flags()
+
+ drivers/gpio/Kconfig        | 2 +-
+ drivers/gpio/gpio-em.c      | 4 ++--
+ drivers/gpio/gpio-rdc321x.c | 1 +
+ drivers/gpio/gpiolib-of.c   | 2 +-
+ 4 files changed, 5 insertions(+), 4 deletions(-)
