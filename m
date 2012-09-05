@@ -1,117 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759341Ab2IEU0J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 16:26:09 -0400
-Received: from vostochny.stro.at ([78.47.22.85]:48649 "EHLO vostochny.stro.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753657Ab2IEU0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 16:26:07 -0400
-Date: Wed, 5 Sep 2012 20:26:05 +0000
-From: maximilian attems <max@stro.at>
-To: Tzafrir Cohen <tzafrir.cohen@xorcom.com>
-Cc: Michal Marek <mmarek@suse.cz>, Linux Kbuild <linux-kbuild@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] builddeb: remove unneeded explicit Architecture
-Message-ID: <20120905202604.GF28778@vostochny.stro.at>
-References: <1344941092-31312-1-git-send-email-tzafrir.cohen@xorcom.com>
- <5040C112.70501@suse.cz>
- <20120905130528.GI18204@xorcom.com>
- <50475310.6000508@suse.cz>
- <20120905151422.GD12713@stro.at>
- <20120905164009.GM18204@xorcom.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120905164009.GM18204@xorcom.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1759362Ab2IEU1q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 16:27:46 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43085 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753743Ab2IEU1n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 16:27:43 -0400
+From: Kent Overstreet <koverstreet@google.com>
+To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com
+Cc: tj@kernel.org, vgoyal@redhat.com, Kent Overstreet <koverstreet@google.com>
+Subject: [PATCH v8 0/8] Block cleanups
+Date: Wed,  5 Sep 2012 13:27:21 -0700
+Message-Id: <1346876849-15820-1-git-send-email-koverstreet@google.com>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 05, 2012 at 07:40:09PM +0300, Tzafrir Cohen wrote:
-> On Wed, Sep 05, 2012 at 05:14:22PM +0200, maximilian attems wrote:
-> > On Wed, 05 Sep 2012, Michal Marek wrote:
-> > 
-> > > On 5.9.2012 15:05, Tzafrir Cohen wrote:
-> > > > Hi,
-> > > > 
-> > > > Thanks for your reply,
-> > > > 
-> > > > On Fri, Aug 31, 2012 at 03:50:10PM +0200, Michal Marek wrote:
-> > > >> Adding Max to CC.
-> > > >>
-> > > >> On 14.8.2012 12:44, Tzafrir Cohen wrote:
-> > > >>> Architecture was set explicitly in debian/control for one of the three
-> > > >>> packages (linux-libc-dev) but not for the other two. When cross-building
-> > > >>> it gives me an error:
-> > > >>>
-> > > >>>   dpkg-gencontrol: error: current host architecture 'armhf' does not
-> > > >>>   appear in package's architecture list (amd64)
-> > > >>>
-> > > >>> Also note that if used, dpkg --print-architecture should have been
-> > > >>> replaced with dpkg-architecture.
-> > > >>>
-> > > >>> Signed-off-by: Tzafrir Cohen <tzafrir.cohen@xorcom.com>
-> > > >>> ---
-> > > >>>  scripts/package/builddeb |    3 +--
-> > > >>>  1 file changed, 1 insertion(+), 2 deletions(-)
-> > > >>>
-> > > >>> diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-> > > >>> index acb8650..d9c71a6 100644
-> > > >>> --- a/scripts/package/builddeb
-> > > >>> +++ b/scripts/package/builddeb
-> > > >>> @@ -252,13 +252,12 @@ mkdir -p "$destdir"
-> > > >>>  (cd $objtree; tar -c -f - -T "$objtree/debian/hdrobjfiles") | (cd $destdir; tar -xf -)
-> > > >>>  ln -sf "/usr/src/linux-headers-$version" "$kernel_headers_dir/lib/modules/$version/build"
-> > > >>>  rm -f "$objtree/debian/hdrsrcfiles" "$objtree/debian/hdrobjfiles"
-> > > >>> -arch=$(dpkg --print-architecture)
-> > > >>>  
-> > > >>>  cat <<EOF >> debian/control
-> > > >>>  
-> > > >>>  Package: $kernel_headers_packagename
-> > > >>>  Provides: linux-headers, linux-headers-2.6
-> > > >>> -Architecture: $arch
-> > > >>> +Architecture: any
-> > > >>>  Description: Linux kernel headers for $KERNELRELEASE on $arch
-> > > >>>   This package provides kernel header files for $KERNELRELEASE on $arch
-> > > >>>   .
-> > > >>
-> > > >> As the package contains files from arch/$SRCARCH/include, I doubt that
-> > > >> this is a valid change.
-> > > > 
-> > > > But you optionally force the Architecture later on in build_package.
-> > > > "Arhcitecture: any" in the source package states that the binary package
-> > > > will be the one stated by the build system.
-> > > 
-> > > Ah, OK. I don't know much about Debian packaging in fact. Max, could you
-> > > have a look? The original thread is here:
-> > > http://lkml.org/lkml/2012/8/14/133. I meant to add you to CC before,
-> > > but apparently I forgot.
-> >
-> > yes indeed it is an invalid change.
-> > Cross building shouldn't need it, what did you exactly try?
-> 
-> $ grep CROSS_COMPILE .config
-> CONFIG_CROSS_COMPILE="arm-linux-gnueabihf-"
-> 
-> Command:
-> 
->   KBUILD_DEBARCH=armhf make ARCH=arm KBUILD_IMAGE=uImage deb-pkg
-> 
-> Error I get:
-> 
->   dpkg-gencontrol: error: current host architecture 'armhf' does not
->   appear in package's architecture list (amd64)
-> 
-> It seems I have to use KBUILD_DEBARCH, as the kernel build system can't
-> really tell if I want armel or armhf (If I built the same kernel for a
-> Squeeze system I would have been forced to use armel).
+Since v7:
 
-well, obviously the dpkg call in
- -arch=$(dpkg --print-architecture)
-is wrong please fix that.
+Split off the deadlock fix, this is now just cleanups
 
-thanks.
+Noticed a minor issue with bio integrity freeing, and decided the best way to
+fix it was to just make it use bi_pool directly which simplifies the code
+anyways.
+
+Tested the integrity stuff with the scsi debug module.
+
+Cleaned up bio_reset()/bio_free() a bit, introduce a __bio_free() helper used
+by both and made bio_free() static.
+
+Kent Overstreet (8):
+  block: Generalized bio pool freeing
+  block: Ues bi_pool for bio_integrity_alloc()
+  dm: Use bioset's front_pad for dm_rq_clone_bio_info
+  block: Add bio_reset()
+  pktcdvd: Switch to bio_kmalloc()
+  block: Kill bi_destructor
+  block: Consolidate bio_alloc_bioset(), bio_kmalloc()
+  block: Add bio_clone_bioset(), bio_clone_kmalloc()
+
+ Documentation/block/biodoc.txt      |   5 -
+ block/blk-core.c                    |  10 +-
+ drivers/block/drbd/drbd_main.c      |  13 +--
+ drivers/block/osdblk.c              |   3 +-
+ drivers/block/pktcdvd.c             |  52 ++--------
+ drivers/md/dm-crypt.c               |  16 +--
+ drivers/md/dm-io.c                  |  11 --
+ drivers/md/dm.c                     |  72 ++++---------
+ drivers/md/md.c                     |  44 +-------
+ drivers/target/target_core_iblock.c |   9 --
+ fs/bio-integrity.c                  |  44 +++-----
+ fs/bio.c                            | 196 +++++++++++++++---------------------
+ fs/exofs/ore.c                      |   5 +-
+ include/linux/bio.h                 |  44 +++++---
+ include/linux/blk_types.h           |  27 +++--
+ 15 files changed, 183 insertions(+), 368 deletions(-)
 
 -- 
-maks
+1.7.12
+
