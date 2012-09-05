@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758767Ab2IEMhH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 08:37:07 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53757 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751997Ab2IEMhG convert rfc822-to-8bit (ORCPT
+	id S1758783Ab2IEMi2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 08:38:28 -0400
+Received: from zimbra.linbit.com ([212.69.161.123]:50278 "EHLO
+	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752732Ab2IEMi0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 08:37:06 -0400
-Message-ID: <1346848616.2600.26.camel@twins>
-Subject: Re: [tip:sched/core] sched: Fix load avg vs cpu-hotplug
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com, mingo@kernel.org, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, rakib.mullick@gmail.com,
-        tglx@linutronix.de
-Cc: linux-tip-commits@vger.kernel.org
-Date: Wed, 05 Sep 2012 14:36:56 +0200
-In-Reply-To: <tip-f319da0c6894fcf55e21320e40506418a2aad629@git.kernel.org>
-References: <1345454817.23018.27.camel@twins>
-	 <tip-f319da0c6894fcf55e21320e40506418a2aad629@git.kernel.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 5 Sep 2012 08:38:26 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: drbd-dev@lists.linbit.com, yongjun_wei@trendmicro.com.cn,
+        linux-kernel@vger.kernel.org, drbd-user@lists.linbit.com
+Subject: Re: [Drbd-dev] [PATCH] drbd: use list_move_tail instead of list_del/list_add_tail
+Date: Wed, 05 Sep 2012 14:38:23 +0200
+Message-ID: <40830346.FXn1k67TTR@fat-tyre>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-29-generic; KDE/4.8.4; x86_64; ; )
+In-Reply-To: <CAPgLHd_HTYgzRJWvM7wekcm+EiVj24WzrhcOXkj9c1k33z+ARg@mail.gmail.com>
+References: <CAPgLHd_HTYgzRJWvM7wekcm+EiVj24WzrhcOXkj9c1k33z+ARg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-09-04 at 11:43 -0700, tip-bot for Peter Zijlstra wrote:
-> Commit-ID:  f319da0c6894fcf55e21320e40506418a2aad629
-> Gitweb:     http://git.kernel.org/tip/f319da0c6894fcf55e21320e40506418a2aad629
-> Author:     Peter Zijlstra <peterz@infradead.org>
-> AuthorDate: Mon, 20 Aug 2012 11:26:57 +0200
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Tue, 4 Sep 2012 14:30:18 +0200
-> 
-> sched: Fix load avg vs cpu-hotplug
-> 
-> Rabik and Paul reported two different issues related to the same few
-> lines of code.
-> 
-> Rabik's issue is that the nr_uninterruptible migration code is wrong in
-> that he sees artifacts due to this (Rabik please do expand in more
-> detail).
-> 
-> Paul's issue is that this code as it stands relies on us using
-> stop_machine() for unplug, we all would like to remove this assumption
-> so that eventually we can remove this stop_machine() usage altogether.
-> 
-> The only reason we'd have to migrate nr_uninterruptible is so that we
-> could use for_each_online_cpu() loops in favour of
-> for_each_possible_cpu() loops, however since nr_uninterruptible() is the
-> only such loop and its using possible lets not bother at all.
-> 
-> The problem Rabik sees is (probably) caused by the fact that by
-> migrating nr_uninterruptible we screw rq->calc_load_active for both rqs
-> involved.
-> 
-> So don't bother with fancy migration schemes (meaning we now have to
-> keep using for_each_possible_cpu()) and instead fold any nr_active delta
-> after we migrate all tasks away to make sure we don't have any skewed
-> nr_active accounting.
 
-Oh argh.. this patch isn't actually right.. I actually removed it from
-my series but forgot to update the tarball.
+Thanks, applied.
 
-Ingo can you still make it go away or should I do a delta?
+Best regards,
+ Phil
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> 
+> Using list_move_tail() instead of list_del() + list_add_tail().
+> 
+> spatch with a semantic match is used to found this problem.
+> (http://coccinelle.lip6.fr/)
+> 
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> ---
+>  drivers/block/drbd/drbd_worker.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/drivers/block/drbd/drbd_worker.c
+> b/drivers/block/drbd/drbd_worker.c index 6bce2cc..a196281 100644
+> --- a/drivers/block/drbd/drbd_worker.c
+> +++ b/drivers/block/drbd/drbd_worker.c
+> @@ -141,8 +141,7 @@ static void drbd_endio_write_sec_final(struct
+> drbd_epoch_entry *e) __releases(lo
+> 
+>  	spin_lock_irqsave(&mdev->req_lock, flags);
+>  	mdev->writ_cnt += e->size >> 9;
+> -	list_del(&e->w.list); /* has been on active_ee or sync_ee */
+> -	list_add_tail(&e->w.list, &mdev->done_ee);
+> +	list_move_tail(&e->w.list, &mdev->done_ee);
+> 
+>  	/* No hlist_del_init(&e->collision) here, we did not send the Ack yet,
+>  	 * neither did we wake possibly waiting conflicting requests.
+> 
+> 
+> _______________________________________________
+> drbd-dev mailing list
+> drbd-dev@lists.linbit.com
+> http://lists.linbit.com/mailman/listinfo/drbd-dev
