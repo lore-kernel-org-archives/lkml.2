@@ -1,90 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758058Ab2IECd4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 22:33:56 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:56744 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752502Ab2IECdz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 22:33:55 -0400
-Message-ID: <5046B9EE.7000804@linux.vnet.ibm.com>
-Date: Wed, 05 Sep 2012 10:33:18 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-CC: Matt Mackall <mpm@selenic.com>, Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: [PATCH] slab: fix the DEADLOCK issue on l3 alien lock
-References: <5044692D.7080608@linux.vnet.ibm.com>
-In-Reply-To: <5044692D.7080608@linux.vnet.ibm.com>
-X-Forwarded-Message-Id: <5044692D.7080608@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754420Ab2IECya (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 22:54:30 -0400
+Received: from gate.crashing.org ([63.228.1.57]:53228 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751980Ab2IECy3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 22:54:29 -0400
+Message-ID: <1346813643.2257.24.camel@pasglop>
+Subject: Re: [PATCH v2] powerpc: fix personality handling in
+ ppc64_personality()
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Andreas Schwab <schwab@linux-m68k.org>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Date: Wed, 05 Sep 2012 12:54:03 +1000
+In-Reply-To: <alpine.LNX.2.00.1208020907490.14910@pobox.suse.cz>
+References: <alpine.LNX.2.00.1208012201520.14910@pobox.suse.cz>
+	 <m27gtitfv4.fsf@igel.home>
+	 <alpine.LNX.2.00.1208020907490.14910@pobox.suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-x-cbid: 12090502-7014-0000-0000-000001D79FBA
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
+On Thu, 2012-08-02 at 09:10 +0200, Jiri Kosina wrote:
+> Directly comparing current->personality against PER_LINUX32 doesn't work
+> in cases when any of the personality flags stored in the top three bytes
+> are used.
+> 
+> Directly forcefully setting personality to PER_LINUX32 or PER_LINUX
+> discards any flags stored in the top three bytes
+> 
+> Use personality() macro to compare only PER_MASK bytes and make sure that
+> we are setting only the bits that should be set, instead of
+> overwriting the whole value.
+> 
+> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> ---
+> 
+> changed since v1: fix the bit ops to reflect the fact that PER_LINUX is 
+> actually 0
 
-DEADLOCK will be report while running a kernel with NUMA and LOCKDEP enabled,
-the process of this fake report is:
+Had already merged v1 (oops.. didn't spot the issue with PER_LINUX being
+0). Can you send an incremental fixup ?
 
-	   kmem_cache_free()	//free obj in cachep
-	-> cache_free_alien()	//acquire cachep's l3 alien lock
-	-> __drain_alien_cache()
-	-> free_block()
-	-> slab_destroy()
-	-> kmem_cache_free()	//free slab in cachep->slabp_cache
-	-> cache_free_alien()	//acquire cachep->slabp_cache's l3 alien lock
+Cheers,
+Ben.
 
-Since the cachep and cachep->slabp_cache's l3 alien are in the same lock class,
-fake report generated.
+>  arch/powerpc/kernel/syscalls.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/powerpc/kernel/syscalls.c b/arch/powerpc/kernel/syscalls.c
+> index f2496f2..dc1558e 100644
+> --- a/arch/powerpc/kernel/syscalls.c
+> +++ b/arch/powerpc/kernel/syscalls.c
+> @@ -107,11 +107,11 @@ long ppc64_personality(unsigned long personality)
+>  	long ret;
+>  
+>  	if (personality(current->personality) == PER_LINUX32
+> -	    && personality == PER_LINUX)
+> -		personality = PER_LINUX32;
+> +	    && personality(personality) == PER_LINUX)
+> +		personality |= PER_LINUX32;
+>  	ret = sys_personality(personality);
+> -	if (ret == PER_LINUX32)
+> -		ret = PER_LINUX;
+> +	if (personality(ret) == PER_LINUX32)
+> +		ret &= ~PER_LINUX32;
+>  	return ret;
+>  }
+>  #endif
+> -- 
+> 1.7.3.1
+> 
 
-This should not happen since we already have init_lock_keys() which will
-reassign the lock class for both l3 list and l3 alien.
-
-However, init_lock_keys() was invoked at a wrong position which is before we
-invoke enable_cpucache() on each cache.
-
-Since until set slab_state to be FULL, we won't invoke enable_cpucache()
-on caches to build their l3 alien while creating them, so although we invoked
-init_lock_keys(), the l3 alien lock class won't change since we don't have
-them until invoked enable_cpucache() later.
-
-This patch will invoke init_lock_keys() after we done enable_cpucache()
-instead of before to avoid the fake DEADLOCK report.
-
-Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
----
- mm/slab.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/mm/slab.c b/mm/slab.c
-index d4715e5..cc679ef 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -1780,9 +1780,6 @@ void __init kmem_cache_init_late(void)
- 
- 	slab_state = UP;
- 
--	/* Annotate slab for lockdep -- annotate the malloc caches */
--	init_lock_keys();
--
- 	/* 6) resize the head arrays to their final sizes */
- 	mutex_lock(&slab_mutex);
- 	list_for_each_entry(cachep, &slab_caches, list)
-@@ -1790,6 +1787,9 @@ void __init kmem_cache_init_late(void)
- 			BUG();
- 	mutex_unlock(&slab_mutex);
- 
-+	/* Annotate slab for lockdep -- annotate the malloc caches */
-+	init_lock_keys();
-+
- 	/* Done! */
- 	slab_state = FULL;
- 
--- 
-1.7.4.1
 
