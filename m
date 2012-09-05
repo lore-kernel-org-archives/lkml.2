@@ -1,70 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760048Ab2IEXLN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 19:11:13 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34322 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759849Ab2IEXJL (ORCPT
+	id S1760058Ab2IEXLZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 19:11:25 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:62289 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759819Ab2IEXLV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 19:09:11 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 01/17] tools lib traceevent: Modify header to work in C++ programs
-Date: Wed,  5 Sep 2012 20:08:41 -0300
-Message-Id: <1346886537-11621-2-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1346886537-11621-1-git-send-email-acme@infradead.org>
-References: <1346886537-11621-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 5 Sep 2012 19:11:21 -0400
+Date: Wed, 5 Sep 2012 16:11:16 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] workqueue: fix possible deadlock in idle worker
+ rebinding
+Message-ID: <20120905231116.GD29092@google.com>
+References: <20120905061233.GA3195@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120905061632.GB3195@dhcp-172-17-108-109.mtv.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120905061632.GB3195@dhcp-172-17-108-109.mtv.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
+On Tue, Sep 04, 2012 at 11:16:32PM -0700, Tejun Heo wrote:
+> Currently, rebind_workers() and idle_worker_rebind() are two-way
+> interlocked.  rebind_workers() waits for idle workers to finish
+> rebinding and rebound idle workers wait for rebind_workers() to finish
+> rebinding busy workers before proceeding.
 
-Replace keyword "private" to "priv" in event-parse.h to allow it to be
-used in C++ programs.
+Applied to wq/for-3.6-fixes.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1345735321.5069.62.camel@gandalf.local.home
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/lib/traceevent/event-parse.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Thanks.
 
-diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index 527df03..863a0bb 100644
---- a/tools/lib/traceevent/event-parse.h
-+++ b/tools/lib/traceevent/event-parse.h
-@@ -49,7 +49,7 @@ struct pevent_record {
- 	int			cpu;
- 	int			ref_count;
- 	int			locked;		/* Do not free, even if ref_count is zero */
--	void			*private;
-+	void			*priv;
- #if DEBUG_RECORD
- 	struct pevent_record	*prev;
- 	struct pevent_record	*next;
-@@ -106,7 +106,7 @@ struct plugin_option {
- 	char				*plugin_alias;
- 	char				*description;
- 	char				*value;
--	void				*private;
-+	void				*priv;
- 	int				set;
- };
- 
 -- 
-1.7.1
-
+tejun
