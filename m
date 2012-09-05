@@ -1,80 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755197Ab2IEIRq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 04:17:46 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:49123 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750929Ab2IEIRn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 04:17:43 -0400
-Message-ID: <504709D4.2010800@parallels.com>
-Date: Wed, 5 Sep 2012 12:14:12 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1756519Ab2IEITc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 04:19:32 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:12636 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750929Ab2IEIT3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 04:19:29 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: <netdev@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <davem@davemloft.net>,
+        <havard@skinnemoen.net>, <nicolas.ferre@atmel.com>,
+        <plagnioj@jcrosoft.com>, <jamie@jamieiles.com>,
+        <linux-kernel@vger.kernel.org>, <patrice.vilchez@atmel.com>
+Subject: [PATCH 01/10] net/macb: Add support for Gigabit Ethernet mode
+Date: Wed, 5 Sep 2012 10:19:08 +0200
+Message-ID: <6ba606a2333630154d5c4139d672a09ce4cc44f1.1346775479.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <cover.1346775479.git.nicolas.ferre@atmel.com>
+References: <cover.1346775479.git.nicolas.ferre@atmel.com>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>, Dave Jones <davej@redhat.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH v2] memcg: first step towards hierarchical controller
-References: <1346687211-31848-1-git-send-email-glommer@parallels.com> <20120903170806.GA21682@dhcp22.suse.cz> <5045BD25.10301@parallels.com> <20120904130905.GA15683@dhcp22.suse.cz> <504601B8.2050907@parallels.com> <20120904143552.GB15683@dhcp22.suse.cz> <50461241.5010300@parallels.com> <20120904145414.GC15683@dhcp22.suse.cz> <50461610.30305@parallels.com> <20120904162501.GE15683@dhcp22.suse.cz>
-In-Reply-To: <20120904162501.GE15683@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2012 08:25 PM, Michal Hocko wrote:
-> On Tue 04-09-12 18:54:08, Glauber Costa wrote:
-> [...]
->>>> I'd personally believe merging both our patches together would achieve a
->>>> good result.
->>>
->>> I am still not sure we want to add a config option for something that is
->>> meant to go away. But let's see what others think.
->>>
->>
->> So what you propose in the end is that we add a userspace tweak for
->> something that could go away, instead of a Kconfig for something that go
->> away.
-> 
-> The tweak is necessary only if you want to have use_hierarchy=1 for all
-> cgroups without taking care about that (aka setting the attribute for
-> the first level under the root). All the users that use only one level
-> bellow root don't have to do anything at all.
-> 
->> Way I see it, Kconfig is better because it is totally transparent, under
->> the hood, and will give us a single location to unpatch in case/when it
->> really goes away.
-> 
-> I guess that by the single location you mean that no other user space
-> changes would have to be done, right? If yes then this is not true
-> because there will be a lot of configurations setting this up already
-> (either by cgconfig or by other scripts). All of them will have to be
-> fixed some day.
-> 
+From: Patrice Vilchez <patrice.vilchez@atmel.com>
 
-Some userspaces, not all. And the ones who set:
+Add Gigabit Ethernet mode to GEM cadence IP and enable RGMII connection.
 
-They are either explicitly setting to 0, and those are the ones we need
-to find out, or they are setting to 1, which will be harmless. If they
-were all mandated to do it, fine. But they are not everywhere, and much
-many other exists that don't touch it at all. What you are proposing is
-that *all* userspace tools that use it go flip it, instead of doing it
-in the kernel.
+Signed-off-by: Patrice Vilchez <patrice.vilchez@atmel.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ drivers/net/ethernet/cadence/macb.c |   15 ++++++++++++---
+ drivers/net/ethernet/cadence/macb.h |    4 ++++
+ 2 files changed, 16 insertions(+), 3 deletions(-)
 
-As I've said before, distributions have lifecycles where changes in
-behavior like this are tolerated. Some of those lifecycles are
-incredibly long, in the 5+ years range. It could be really nice if they
-would never see use_hierarchy=0 *at all*, which is much better
-accomplished by a kernel-side switch. A Kconfig option is the choice
-between carrying either an upstream patch or no patch at all (Depending
-on timing), and carrying a non-standard patch.
-
-
+diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+index 033064b..9a10f69 100644
+--- a/drivers/net/ethernet/cadence/macb.c
++++ b/drivers/net/ethernet/cadence/macb.c
+@@ -152,13 +152,17 @@ static void macb_handle_link_change(struct net_device *dev)
+ 
+ 			reg = macb_readl(bp, NCFGR);
+ 			reg &= ~(MACB_BIT(SPD) | MACB_BIT(FD));
++			if (macb_is_gem(bp))
++				reg &= ~GEM_BIT(GBE);
+ 
+ 			if (phydev->duplex)
+ 				reg |= MACB_BIT(FD);
+ 			if (phydev->speed == SPEED_100)
+ 				reg |= MACB_BIT(SPD);
++			if (phydev->speed == SPEED_1000)
++				reg |= GEM_BIT(GBE);
+ 
+-			macb_writel(bp, NCFGR, reg);
++			macb_or_gem_writel(bp, NCFGR, reg);
+ 
+ 			bp->speed = phydev->speed;
+ 			bp->duplex = phydev->duplex;
+@@ -216,7 +220,10 @@ static int macb_mii_probe(struct net_device *dev)
+ 	}
+ 
+ 	/* mask with MAC supported features */
+-	phydev->supported &= PHY_BASIC_FEATURES;
++	if (macb_is_gem(bp))
++		phydev->supported &= PHY_GBIT_FEATURES;
++	else
++		phydev->supported &= PHY_BASIC_FEATURES;
+ 
+ 	phydev->advertising = phydev->supported;
+ 
+@@ -1384,7 +1391,9 @@ static int __init macb_probe(struct platform_device *pdev)
+ 		bp->phy_interface = err;
+ 	}
+ 
+-	if (bp->phy_interface == PHY_INTERFACE_MODE_RMII)
++	if (bp->phy_interface == PHY_INTERFACE_MODE_RGMII)
++		macb_or_gem_writel(bp, USRIO, GEM_BIT(RGMII));
++	else if (bp->phy_interface == PHY_INTERFACE_MODE_RMII)
+ #if defined(CONFIG_ARCH_AT91)
+ 		macb_or_gem_writel(bp, USRIO, (MACB_BIT(RMII) |
+ 					       MACB_BIT(CLKEN)));
+diff --git a/drivers/net/ethernet/cadence/macb.h b/drivers/net/ethernet/cadence/macb.h
+index 335e288..f69ceef 100644
+--- a/drivers/net/ethernet/cadence/macb.h
++++ b/drivers/net/ethernet/cadence/macb.h
+@@ -145,6 +145,8 @@
+ #define MACB_IRXFCS_SIZE			1
+ 
+ /* GEM specific NCFGR bitfields. */
++#define GEM_GBE_OFFSET				10
++#define GEM_GBE_SIZE				1
+ #define GEM_CLK_OFFSET				18
+ #define GEM_CLK_SIZE				3
+ #define GEM_DBW_OFFSET				21
+@@ -246,6 +248,8 @@
+ /* Bitfields in USRIO (AT91) */
+ #define MACB_RMII_OFFSET			0
+ #define MACB_RMII_SIZE				1
++#define GEM_RGMII_OFFSET			0	/* GEM gigabit mode */
++#define GEM_RGMII_SIZE				1
+ #define MACB_CLKEN_OFFSET			1
+ #define MACB_CLKEN_SIZE				1
+ 
+-- 
+1.7.10
 
