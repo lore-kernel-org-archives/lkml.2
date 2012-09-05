@@ -1,65 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758828Ab2IERGM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 13:06:12 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:57782 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750841Ab2IERGK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 13:06:10 -0400
-Message-ID: <1346864762.2600.30.camel@twins>
-Subject: Re: [BUG] perf: perf_swevent PMU should not be on rotation_list
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, mingo@elte.hu,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Date: Wed, 05 Sep 2012 19:06:02 +0200
-In-Reply-To: <CABPqkBQGNx0od5-nkRDsrXkKa3+TAYW07j59ct5b17gPU-Oqeg@mail.gmail.com>
-References: <CABPqkBQGNx0od5-nkRDsrXkKa3+TAYW07j59ct5b17gPU-Oqeg@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1758982Ab2IERHO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 13:07:14 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:36226 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752246Ab2IERHM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 13:07:12 -0400
+Message-ID: <1346864831.1906.3.camel@joe2Laptop>
+Subject: Re: [PATCH v2] checkpatch: Suggest using min_t or max_t
+From: Joe Perches <joe@perches.com>
+To: Philippe De Muyter <philippe.demuyter@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
+Date: Wed, 05 Sep 2012 10:07:11 -0700
+In-Reply-To: <CAOoYnzLViwqp11Tw1zf0C+qhc+AtzefNLzZEbC2oUPkWPV5zqQ@mail.gmail.com>
+References: <20110525165345.5f775c7b.akpm@linux-foundation.org>
+	 <7f59aa30d3af02ae522dc38105e51107e34826f2.1306455946.git.joe@perches.com>
+	 <CAOoYnzLViwqp11Tw1zf0C+qhc+AtzefNLzZEbC2oUPkWPV5zqQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-05 at 16:03 +0200, Stephane Eranian wrote:
-> Hi,
+On Wed, 2012-09-05 at 13:21 +0200, Philippe De Muyter wrote:
+> On 5/27/11, Joe Perches <joe@perches.com> wrote:
+> > A common issue with min() or max() is using a cast on
+> > one or both of the arguments when using min_t/max_t could
+> > be better.
+> >
+> > Add cast detection to uses of min/max and suggest an
+> > appropriate use of min_t or max_t instead.
+> >
+> > Caveat:  This only works for min() or max() on a single line.
+> >          It does not find min() or max() split across multiple lines.
+> >
+> > This does find:
+> > 	min((u32)foo, bar);
+> > But it does not find:
+> > 	max((unsigned long)foo,
+> > 	    bar);
+> >
+> > Suggested-by: Andrew Morton <akpm@linux-foundation.org>
+> > Signed-off-by: Joe Perches <joe@perches.com>
+> > ---
+> >
+> > v2: Make $match_balanced_parentheses work in perl 5.8
 > 
-> I was looking at the rotation code and I found out that when
-> I monitor a SW event (in my case a probe), I end up having
-> two PMUs on the rotation list on Intel Core: cpu and software.
+> Has this been applied  ?
 > 
-> I thought there was no multiplexing needed for SW events.
-
-Correct, since programming of swevents should always succeed.
-
-> So why is the SW PMU on the rotation list causing extra
-> iterations through the rotation code?
-
-Because... uhm.. someone (probably me) didn't think to exclude swevents.
-
-> Shouldn't we do something like:
+> v3.3 version of checkpatch.pl works for me, but v3.4, v3.5 & v3.6rc2 say:
+> Nested quantifiers in regex; marked by <-- HERE in m/(\((?:[^\(\)]++
+> <-- HERE |(?-1))*\))/ at scripts/checkpatch.pl line 340.
 > 
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -771,6 +780,9 @@ static void perf_pmu_rotate_start(struct pmu *pmu)
->         struct perf_cpu_context *cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
->         struct list_head *head = &__get_cpu_var(rotation_list);
+> and my perl is :
 > 
-> +       if (pmu->type == PERF_TYPE_SOFTWARE)
-> +               return;
-> +
->         WARN_ON(!irqs_disabled());
+>         perl --version
 > 
->         if (list_empty(&cpuctx->rotation_list))
+>         This is perl, v5.8.8 built for i586-linux-thread-multi
+
+The current version of checkpatch skips this
+check when the perl version is less than 5.10.0
 
 
-Yeah, I guess that'll do, although I guess something like:
+commit d7c76ba7e58bc3ca674f20759c686535db484749
+Author: Joe Perches <joe@perches.com>
+Date:   Tue Jan 10 15:09:58 2012 -0800
 
-  pmu->task_ctx_nr == perf_sw_context
+    checkpatch: improve memset and min/max with cast checking
+    
+    Improve the checking of arguments to memset and min/max tests.
+    
+    Move the checking of min/max to statement blocks instead of single line.
+    Change $Constant to allow any case type 0x initiator and trailing ul
+    specifier.  Add $FuncArg type as any function argument with or without a
+    cast.  Print the whole statement when showing memset or min/max messages.
+    Improve the memset with 0 as 3rd argument error message.
+    
+    There are still weaknesses in the $FuncArg and $Constant code as arbitrary
+    parentheses and negative signs are not generically supported.
 
-would be even better, since that would also work for TYPE_TRACEPOINT and
-possibly any other swevent like things.
+[]
+# Using $balanced_parens, $LvalOrFunc, or $FuncArg
+# requires at least perl version v5.10.0
+# Any use must be runtime checked with $^V
+[]
+# typecasts on min/max could be min_t/max_t
+		if ($^V && $^V ge 5.10.0 &&
+		    defined $stat &&
+		    $stat =~ /^\+(?:.*?)\b(min|max)\s*\(\s*$FuncArg\s*,\s*$FuncArg\s*\)/) {
+
+
