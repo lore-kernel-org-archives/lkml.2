@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758508Ab2IEJXz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 05:23:55 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:59180 "EHLO song.cn.fujitsu.com"
+	id S1758335Ab2IEJYn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 05:24:43 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:12823 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751298Ab2IEJUi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 05:20:38 -0400
+	id S1752976Ab2IEJUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 05:20:33 -0400
 X-IronPort-AV: E=Sophos;i="4.80,373,1344182400"; 
-   d="scan'208";a="5789091"
+   d="scan'208";a="5789088"
 From: wency@cn.fujitsu.com
 To: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
@@ -19,9 +19,9 @@ Cc: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
         minchan.kim@gmail.com, akpm@linux-foundation.org,
         kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
         Wen Congyang <wency@cn.fujitsu.com>
-Subject: [RFC v9 PATCH 05/21] memory-hotplug: check whether memory is present or not
-Date: Wed, 5 Sep 2012 17:25:39 +0800
-Message-Id: <1346837155-534-6-git-send-email-wency@cn.fujitsu.com>
+Subject: [RFC v9 PATCH 01/21] memory-hotplug: rename remove_memory() to offline_memory()/offline_pages()
+Date: Wed, 5 Sep 2012 17:25:35 +0800
+Message-Id: <1346837155-534-2-git-send-email-wency@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1346837155-534-1-git-send-email-wency@cn.fujitsu.com>
 References: <1346837155-534-1-git-send-email-wency@cn.fujitsu.com>
@@ -36,8 +36,17 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-If system supports memory hot-remove, online_pages() may online removed pages.
-So online_pages() need to check whether onlining pages are present or not.
+remove_memory() only try to offline pages. It is called in two cases:
+1. hot remove a memory device
+2. echo offline >/sys/devices/system/memory/memoryXX/state
+
+In the 1st case, we should also change memory block's state, and notify
+the userspace that the memory block's state is changed after offlining
+pages.
+
+So rename remove_memory() to offline_memory()/offline_pages(). And in
+the 1st case, offline_memory() will be used. The function offline_memory()
+is not implemented. In the 2nd case, offline_pages() will be used.
 
 CC: David Rientjes <rientjes@google.com>
 CC: Jiang Liu <liuj97@gmail.com>
@@ -48,67 +57,121 @@ CC: Christoph Lameter <cl@linux.com>
 Cc: Minchan Kim <minchan.kim@gmail.com>
 CC: Andrew Morton <akpm@linux-foundation.org>
 CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Wen Congyang <wency@cn.fujitsu.com>
 Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
 ---
- include/linux/mmzone.h |   19 +++++++++++++++++++
- mm/memory_hotplug.c    |   13 +++++++++++++
- 2 files changed, 32 insertions(+), 0 deletions(-)
+ drivers/acpi/acpi_memhotplug.c |    2 +-
+ drivers/base/memory.c          |    9 +++------
+ include/linux/memory_hotplug.h |    3 ++-
+ mm/memory_hotplug.c            |   22 ++++++++++++++--------
+ 4 files changed, 20 insertions(+), 16 deletions(-)
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 2daa54f..ac3ae30 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -1180,6 +1180,25 @@ void sparse_init(void);
- #define sparse_index_init(_sec, _nid)  do {} while (0)
- #endif /* CONFIG_SPARSEMEM */
+diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+index 24c807f..2a7beac 100644
+--- a/drivers/acpi/acpi_memhotplug.c
++++ b/drivers/acpi/acpi_memhotplug.c
+@@ -318,7 +318,7 @@ static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
+ 	 */
+ 	list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
+ 		if (info->enabled) {
+-			result = remove_memory(info->start_addr, info->length);
++			result = offline_memory(info->start_addr, info->length);
+ 			if (result)
+ 				return result;
+ 		}
+diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+index 7dda4f7..44e7de6 100644
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@ -248,26 +248,23 @@ static bool pages_correctly_reserved(unsigned long start_pfn,
+ static int
+ memory_block_action(unsigned long phys_index, unsigned long action)
+ {
+-	unsigned long start_pfn, start_paddr;
++	unsigned long start_pfn;
+ 	unsigned long nr_pages = PAGES_PER_SECTION * sections_per_block;
+ 	struct page *first_page;
+ 	int ret;
  
-+#ifdef CONFIG_SPARSEMEM
-+static inline int pfns_present(unsigned long pfn, unsigned long nr_pages)
-+{
-+	int i;
-+	for (i = 0; i < nr_pages; i++) {
-+		if (pfn_present(pfn + i))
-+			continue;
-+		else
-+			return -EINVAL;
-+	}
-+	return 0;
-+}
-+#else
-+static inline int pfns_present(unsigned long pfn, unsigned long nr_pages)
-+{
-+	return 0;
-+}
-+#endif /* CONFIG_SPARSEMEM*/
-+
- #ifdef CONFIG_NODES_SPAN_OTHER_NODES
- bool early_pfn_in_nid(unsigned long pfn, int nid);
- #else
+ 	first_page = pfn_to_page(phys_index << PFN_SECTION_SHIFT);
++	start_pfn = page_to_pfn(first_page);
+ 
+ 	switch (action) {
+ 		case MEM_ONLINE:
+-			start_pfn = page_to_pfn(first_page);
+-
+ 			if (!pages_correctly_reserved(start_pfn, nr_pages))
+ 				return -EBUSY;
+ 
+ 			ret = online_pages(start_pfn, nr_pages);
+ 			break;
+ 		case MEM_OFFLINE:
+-			start_paddr = page_to_pfn(first_page) << PAGE_SHIFT;
+-			ret = remove_memory(start_paddr,
+-					    nr_pages << PAGE_SHIFT);
++			ret = offline_pages(start_pfn, nr_pages);
+ 			break;
+ 		default:
+ 			WARN(1, KERN_WARNING "%s(%ld, %ld) unknown action: "
+diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+index 910550f..c183f39 100644
+--- a/include/linux/memory_hotplug.h
++++ b/include/linux/memory_hotplug.h
+@@ -233,7 +233,8 @@ static inline int is_mem_section_removable(unsigned long pfn,
+ extern int mem_online_node(int nid);
+ extern int add_memory(int nid, u64 start, u64 size);
+ extern int arch_add_memory(int nid, u64 start, u64 size);
+-extern int remove_memory(u64 start, u64 size);
++extern int offline_pages(unsigned long start_pfn, unsigned long nr_pages);
++extern int offline_memory(u64 start, u64 size);
+ extern int sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
+ 								int nr_pages);
+ extern void sparse_remove_one_section(struct zone *zone, struct mem_section *ms);
 diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 49f7747..299747d 100644
+index 3ad25f9..bb42316 100644
 --- a/mm/memory_hotplug.c
 +++ b/mm/memory_hotplug.c
-@@ -467,6 +467,19 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages)
- 	struct memory_notify arg;
+@@ -866,7 +866,7 @@ check_pages_isolated(unsigned long start_pfn, unsigned long end_pfn)
+ 	return offlined;
+ }
  
- 	lock_memory_hotplug();
-+	/*
-+	 * If system supports memory hot-remove, the memory may have been
-+	 * removed. So we check whether the memory has been removed or not.
-+	 *
-+	 * Note: When CONFIG_SPARSEMEM is defined, pfns_present() become
-+	 *       effective. If CONFIG_SPARSEMEM is not defined, pfns_present()
-+	 *       always returns 0.
-+	 */
-+	ret = pfns_present(pfn, nr_pages);
-+	if (ret) {
-+		unlock_memory_hotplug();
-+		return ret;
-+	}
- 	arg.start_pfn = pfn;
- 	arg.nr_pages = nr_pages;
- 	arg.status_change_nid = -1;
+-static int __ref offline_pages(unsigned long start_pfn,
++static int __ref __offline_pages(unsigned long start_pfn,
+ 		  unsigned long end_pfn, unsigned long timeout)
+ {
+ 	unsigned long pfn, nr_pages, expire;
+@@ -994,18 +994,24 @@ out:
+ 	return ret;
+ }
+ 
+-int remove_memory(u64 start, u64 size)
++int offline_pages(unsigned long start_pfn, unsigned long nr_pages)
+ {
+-	unsigned long start_pfn, end_pfn;
++	return __offline_pages(start_pfn, start_pfn + nr_pages, 120 * HZ);
++}
+ 
+-	start_pfn = PFN_DOWN(start);
+-	end_pfn = start_pfn + PFN_DOWN(size);
+-	return offline_pages(start_pfn, end_pfn, 120 * HZ);
++int offline_memory(u64 start, u64 size)
++{
++	return -EINVAL;
+ }
+ #else
+-int remove_memory(u64 start, u64 size)
++int offline_pages(unsigned long start, unsigned long size)
++{
++	return -EINVAL;
++}
++
++int offline_memory(u64 start, u64 size)
+ {
+ 	return -EINVAL;
+ }
+ #endif /* CONFIG_MEMORY_HOTREMOVE */
+-EXPORT_SYMBOL_GPL(remove_memory);
++EXPORT_SYMBOL_GPL(offline_memory);
 -- 
 1.7.1
 
