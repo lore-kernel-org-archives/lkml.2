@@ -1,149 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758366Ab2IEJvT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 05:51:19 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:38306 "EHLO mailhub1.si.c-s.fr"
+	id S932260Ab2IEJvy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 05:51:54 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:40947 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751879Ab2IEJvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 05:51:07 -0400
-Date: Wed, 5 Sep 2012 11:49:14 +0200
-Message-Id: <201209050949.q859nEBx007027@localhost.localdomain>
-From: Christophe Leroy <christophe.leroy@c-s.fr>
-To: Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>
-CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [PATCH 2/2] hwmon/lm70: Adds support for LM71 and LM74
+	id S1753211Ab2IEJvw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 05:51:52 -0400
+Message-ID: <50471FEE.8060408@parallels.com>
+Date: Wed, 5 Sep 2012 13:48:30 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, <linux-kernel@vger.kernel.org>,
+        <cgroups@vger.kernel.org>, <linux-mm@kvack.org>, <davej@redhat.com>,
+        <ben@decadent.org.uk>, <pjt@google.com>, <lennart@poettering.net>,
+        <kay.sievers@vrfy.org>
+Subject: Re: [RFC 0/5] forced comounts for cgroups.
+References: <20120905081439.GC3195@dhcp-172-17-108-109.mtv.corp.google.com> <50470A87.1040701@parallels.com> <20120905082947.GD3195@dhcp-172-17-108-109.mtv.corp.google.com> <50470EBF.9070109@parallels.com> <20120905084740.GE3195@dhcp-172-17-108-109.mtv.corp.google.com> <1346835993.2600.9.camel@twins> <20120905091140.GH3195@dhcp-172-17-108-109.mtv.corp.google.com> <50471782.6060800@parallels.com> <1346837209.2600.14.camel@twins> <50471C0C.7050600@parallels.com> <20120905094520.GM3195@dhcp-172-17-108-109.mtv.corp.google.com>
+In-Reply-To: <20120905094520.GM3195@dhcp-172-17-108-109.mtv.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding support for LM74 and LM71 chips
+On 09/05/2012 01:45 PM, Tejun Heo wrote:
+> Hello,
+> 
+> On Wed, Sep 05, 2012 at 01:31:56PM +0400, Glauber Costa wrote:
+>>> > > I simply don't want to have to do two (or more) hierarchy walks for
+>>> > > accounting on every schedule event, all that pointer chasing is stupidly
+>>> > > expensive.
+>> > 
+>> > You wouldn't have to do more than one hierarchy walks for that. What
+>> > Tejun seems to want, is the ability to not have a particular controller
+>> > at some point in the tree. But if they exist, they are always together.
+> Nope, as I wrote in the other reply, 
 
-Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
-
-diff -u linux-3.5-vanilla/drivers/hwmon/Kconfig linux-3.5/drivers/hwmon/Kconfig
---- linux-3.5-vanilla/drivers/hwmon/Kconfig	2012-07-21 22:58:29.000000000 +0200
-+++ linux-3.5/drivers/hwmon/Kconfig	2012-08-25 00:44:05.000000000 +0200
-@@ -530,12 +530,12 @@
- 	  will be called lm63.
- 
- config SENSORS_LM70
--	tristate "National Semiconductor LM70 / Texas Instruments TMP121"
-+	tristate "National Semiconductor LM70 and compatibles"
- 	depends on SPI_MASTER
- 	help
- 	  If you say yes here you get support for the National Semiconductor
--	  LM70 and Texas Instruments TMP121/TMP123 digital temperature
--	  sensor chips.
-+	  LM70, LM71, LM74 and Texas Instruments TMP121/TMP123 digital tempera-
-+	  ture sensor chips.
- 
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called lm70.
-diff -u linux-3.5-vanilla/drivers/hwmon/lm70.c linux-3.5/drivers/hwmon/lm70.c
---- linux-3.5-vanilla/drivers/hwmon/lm70.c	2012-07-21 22:58:29.000000000 +0200
-+++ linux-3.5/drivers/hwmon/lm70.c	2012-08-25 00:49:46.000000000 +0200
-@@ -43,6 +43,8 @@
- 
- #define LM70_CHIP_LM70		0	/* original NS LM70 */
- #define LM70_CHIP_TMP121	1	/* TI TMP121/TMP123 */
-+#define LM70_CHIP_LM71		2	/* NS LM71 */
-+#define LM70_CHIP_LM74		3	/* NS LM74 */
- 
- struct lm70 {
- 	struct device *hwmon_dev;
-@@ -88,9 +90,13 @@
- 	 * Celsius.
- 	 * So it's equivalent to multiplying by 0.25 * 1000 = 250.
- 	 *
--	 * TMP121/TMP123:
-+	 * LM74 and TMP121/TMP123:
- 	 * 13 bits of 2's complement data, discard LSB 3 bits,
- 	 * resolution 0.0625 degrees celsius.
-+	 *
-+	 * LM71:
-+	 * 14 bits of 2's complement data, discard LSB 2 bits,
-+	 * resolution 0.0312 degrees celsius.
- 	 */
- 	switch (p_lm70->chip) {
- 	case LM70_CHIP_LM70:
-@@ -98,8 +104,13 @@
- 		break;
- 
- 	case LM70_CHIP_TMP121:
-+	case LM70_CHIP_LM74:
- 		val = ((int)raw / 8) * 625 / 10;
- 		break;
-+
-+	case LM70_CHIP_LM71:
-+		val = ((int)raw / 4) * 3125 / 100;
-+		break;
- 	}
- 
- 	status = sprintf(buf, "%d\n", val); /* millidegrees Celsius */
-@@ -123,6 +134,12 @@
- 	case LM70_CHIP_TMP121:
- 		ret = sprintf(buf, "tmp121\n");
- 		break;
-+	case LM70_CHIP_LM71:
-+		ret = sprintf(buf, "lm71\n");
-+		break;
-+	case LM70_CHIP_LM74:
-+		ret = sprintf(buf, "lm74\n");
-+		break;
- 	default:
- 		ret = -EINVAL;
- 	}
-@@ -139,7 +156,7 @@
- 	struct lm70 *p_lm70;
- 	int status;
- 
--	/* signaling is SPI_MODE_0 for both LM70 and TMP121 */
-+	/* signaling is SPI_MODE_0 */
- 	if (spi->mode & (SPI_CPOL | SPI_CPHA))
- 		return -EINVAL;
- 
-@@ -198,6 +215,8 @@
- static const struct spi_device_id lm70_ids[] = {
- 	{ "lm70",   LM70_CHIP_LM70 },
- 	{ "tmp121", LM70_CHIP_TMP121 },
-+	{ "lm71",   LM70_CHIP_LM71 },
-+	{ "lm74",   LM70_CHIP_LM74 },
- 	{ },
- };
- MODULE_DEVICE_TABLE(spi, lm70_ids);
-@@ -215,5 +234,5 @@
- module_spi_driver(lm70_driver);
- 
- MODULE_AUTHOR("Kaiwan N Billimoria");
--MODULE_DESCRIPTION("NS LM70 / TI TMP121/TMP123 Linux driver");
-+MODULE_DESCRIPTION("NS LM70 and compatibles Linux driver");
- MODULE_LICENSE("GPL");
-diff -u linux-3.5-vanilla/Documentation/hwmon/lm70 linux-3.5/Documentation/hwmon/lm70
---- linux-3.5-vanilla/Documentation/hwmon/lm70	2012-07-21 22:58:29.000000000 +0200
-+++ linux-3.5/Documentation/hwmon/lm70	2012-08-25 00:37:15.000000000 +0200
-@@ -6,6 +6,10 @@
-     Datasheet: http://www.national.com/pf/LM/LM70.html
-   * Texas Instruments TMP121/TMP123
-     Information: http://focus.ti.com/docs/prod/folders/print/tmp121.html
-+  * National Semiconductor LM71
-+    Datasheet: http://www.ti.com/product/LM71
-+  * National Semiconductor LM74
-+    Datasheet: http://www.ti.com/product/LM74
- 
- Author:
-         Kaiwan N Billimoria <kaiwan@designergraphix.com>
-@@ -31,9 +35,12 @@
- with a "SPI master controller driver", see drivers/spi/spi_lm70llp.c
- and its associated documentation.
- 
--The TMP121/TMP123 are very similar; main difference is 13-bit temperature
--data (0.0625 degrees celsius resolution).
-+The LM74 and TMP121/TMP123 are very similar; main difference is 13-bit
-+temperature data (0.0625 degrees celsius resolution).
- 
-+The LM71 is also very similar; main difference is 14-bit temperature
-+data (0.03125 degrees celsius resolution).
-+
- Thanks to
- ---------
- Jean Delvare <khali@linux-fr.org> for mentoring the hwmon-side driver
+Would you mind, then, stopping for a moment and telling us what it is,
+then, that you envision?
