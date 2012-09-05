@@ -1,75 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753581Ab2IEOZp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 10:25:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44197 "EHLO mx2.suse.de"
+	id S1753733Ab2IEO0j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 10:26:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46659 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752579Ab2IEOZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 10:25:43 -0400
-From: Thomas Renninger <trenn@suse.de>
-Organization: SUSE Products GmbH
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH 0/8 v2] acpi-cpufreq: Move modern AMD cpufreq support to acpi-cpufreq
-Date: Wed, 5 Sep 2012 16:25:41 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.20-desktop; KDE/4.6.0; x86_64; ; )
-Cc: Andre Przywara <andre.przywara@amd.com>, Matthew Garret <mjg@redhat.com>,
-        linux-pm@vger.kernel.org, cpufreq@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-References: <1346747289-8421-1-git-send-email-andre.przywara@amd.com> <201209051546.22590.rjw@sisk.pl>
-In-Reply-To: <201209051546.22590.rjw@sisk.pl>
+	id S1752579Ab2IEO0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 10:26:38 -0400
+Date: Wed, 5 Sep 2012 17:27:57 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>, rusty@rustcorp.com.au,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v3 2/2] virtio-ring: Allocate indirect buffers from cache
+ when possible
+Message-ID: <20120905142757.GA10925@redhat.com>
+References: <1346325718-11151-1-git-send-email-levinsasha928@gmail.com>
+ <1346325718-11151-2-git-send-email-levinsasha928@gmail.com>
+ <20120830133820.GC21132@redhat.com>
+ <50408587.5030603@gmail.com>
+ <20120831095628.GB24244@redhat.com>
+ <50462D8B.7040004@redhat.com>
+ <20120904184122.GA3602@redhat.com>
+ <50475FD8.1090109@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209051625.41769.trenn@suse.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50475FD8.1090109@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, September 05, 2012 03:46:22 PM Rafael J. Wysocki wrote:
-> On Tuesday, September 04, 2012, Andre Przywara wrote:
-> > Hi,
+On Wed, Sep 05, 2012 at 05:21:12PM +0300, Avi Kivity wrote:
+> On 09/04/2012 09:41 PM, Michael S. Tsirkin wrote:
+> > On Tue, Sep 04, 2012 at 07:34:19PM +0300, Avi Kivity wrote:
+> >> On 08/31/2012 12:56 PM, Michael S. Tsirkin wrote:
+> >> > On Fri, Aug 31, 2012 at 11:36:07AM +0200, Sasha Levin wrote:
+> >> >> On 08/30/2012 03:38 PM, Michael S. Tsirkin wrote:
+> >> >> >> +static unsigned int indirect_alloc_thresh = 16;
+> >> >> > Why 16?  Please make is MAX_SG + 1 this makes some sense.
+> >> >> 
+> >> >> Wouldn't MAX_SG mean we always allocate from the cache? Isn't the memory waste
+> >> >> too big in this case?
+> >> > 
+> >> > Sorry. I really meant MAX_SKB_FRAGS + 1. MAX_SKB_FRAGS is 17 so gets us
+> >> > threshold of 18. It is less than the size of an skb+shinfo itself so -
+> >> > does it look too big to you? Also why do you think 16 is not too big but
+> >> > 18 is?  If there's a reason then I am fine with 16 too but then please
+> >> > put it in code comment near where the value is set.
+> >> > 
+> >> > Yes this means virtio net always allocates from cache
+> >> > but this is a good thing, isn't it? Gets us more consistent
+> >> > performance.
+> >> 
+> >> kmalloc() also goes to a cache.  Is there a measurable difference?
 > > 
-> > now the second, revised version of the patch set. I now tested loading
-> > both drivers after each other in several combinations, after two bug
-> > fixes this now works as expected.
-> > I added a patch to move messages from powernow-k8 after the initialization
-> > phase, so it remains silent if driver loading fails.
-> > 
-> > I also rearranged the patches so that the powernow-k8 feature removal patch is
-> > now the last one and is somewhat optional. I still prefer to have it in,
-> > but it can be dropped if needed. Then powernow-k8 will still support modern
-> > AMD CPUs, but will emit a warning message.
-> > 
-> > Regards,
-> > Andre
-> > 
-> > Changes from v1:
-> > * added hints to Kconfig about CPU support
-> > * merge documentation from separate patch into the feature patch
-> > * add deprecation warning
-> > * prefix acpi-cpufreq warning messages with module name
-> > * bugfix: avoid boost init it driver registration failed
-> > * bugfix: fix module redirect request call (was not reached before)
+> > Yes see 0/2 and followup discussion.
 > 
-> I have applied the whole series to the linux-next branch of the linux-pm.git
-> tree, but I'm quite unsure about [7/8].  Is it really necessary?  I mean, since
-> we want users to switch to a different driver anyway, which already has a knob
-> providing the functionality in question, what's the point really?
+> I don't see 0/2, looks like this was not threaded properly.  What was
+> the subject line?
 
-Afaik this was mostly for compiler people or other developers doing
-benchmarks to be able to avoid fluctating numbers caused by turbo/boost
-mode.
+My mistake, there is no 0/2, the resolts where in the followup thread
+of the previous version:
+	[PATCH v2 2/2] virtio-ring: Allocate indirect buffers from cache when possible
 
-I don't know whether it's used by any userspace tool. If, it would certainly
-be an AMD specific tool for developers. If you (AMD) know a userspace tool
-out there it may make sense to keep it the one or other kernel round,
-otherwise I guess it can simply be deleted.
+Sasha, could you please accompany the next version
+with a cover letter 0/2) including performance results?
 
-I will add the functionality (to enable/disable turbo/boost mode)
-to cpupower userspace tool as soon as this is in.
-Shouldn't be much more than a -t option and a
-one liner to read out or set another cpufreq sysfs file.
-
-   Thomas
+> 
+> -- 
+> error compiling committee.c: too many arguments to function
