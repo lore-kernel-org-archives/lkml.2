@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759300Ab2IETan (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 15:30:43 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:34501 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759273Ab2IETaj (ORCPT
+	id S1753509Ab2IET3J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 15:29:09 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:48636 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759243Ab2IET3F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 15:30:39 -0400
-Message-ID: <1346873436.2589.22.camel@lorien2>
-Subject: Re: [PATCH] dma-debug: Add dma map/unmap error tracking support
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: joerg.roedel@amd.com, paul.gortmaker@windriver.com, kubakici@wp.pl,
-        stern@rowland.harvard.edu, dan.carpenter@oracle.com, rob@landley.net,
-        linux-doc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        shuahkhan@gmail.com
-Date: Wed, 05 Sep 2012 13:30:36 -0600
-In-Reply-To: <1346855696.2589.7.camel@lorien2>
-References: <1346595257.4377.5.camel@lorien2>
-	 <20120904210555.GG3155@phenom.dumpdata.com>
-	 <1346799476.3130.27.camel@lorien2>
-	 <20120905115722.GC5400@localhost.localdomain>
-	 <1346855696.2589.7.camel@lorien2>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 5 Sep 2012 15:29:05 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6826"; a="230947988"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 6/9] ARM: msm: Rename board-msm8x60 to signify its DT only status
+Date: Wed,  5 Sep 2012 12:28:56 -0700
+Message-Id: <1346873339-10927-7-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.12.176.g3fc0e4c
+In-Reply-To: <1346873339-10927-1-git-send-email-sboyd@codeaurora.org>
+References: <1346873339-10927-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-05 at 08:34 -0600, Shuah Khan wrote:
-> On Wed, 2012-09-05 at 07:57 -0400, Konrad Rzeszutek Wilk wrote:
-> > 
-> > > I did compile a complete list of drivers that don't check dma mapping
-> > > errors from my analysis. Are you interested in seeing the full analysis?
-> > 
-> > Yes, plus the authors of the drivers are probably interested in it as
-> > well.
-> > ..snip..
+Rename this file to signify that this board is only supported via
+devicetree.
 
-Work in progress (I have some ways to go) - but if you want to take an
-early look at it:
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ arch/arm/mach-msm/Makefile                             | 2 +-
+ arch/arm/mach-msm/{board-msm8x60.c => board-dt-8660.c} | 0
+ 2 files changed, 1 insertion(+), 1 deletion(-)
+ rename arch/arm/mach-msm/{board-msm8x60.c => board-dt-8660.c} (100%)
 
-http://linuxdriverproject.org/mediawiki/index.php/DMA_Mapping_Error_Analysis
-
--- Shuah
-
+diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
+index 4ad3969..c4f5169 100644
+--- a/arch/arm/mach-msm/Makefile
++++ b/arch/arm/mach-msm/Makefile
+@@ -25,7 +25,7 @@ obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o b
+ obj-$(CONFIG_MACH_HALIBUT) += board-halibut.o devices-msm7x00.o
+ obj-$(CONFIG_ARCH_MSM7X30) += board-msm7x30.o devices-msm7x30.o
+ obj-$(CONFIG_ARCH_QSD8X50) += board-qsd8x50.o devices-qsd8x50.o
+-obj-$(CONFIG_ARCH_MSM8X60) += board-msm8x60.o
++obj-$(CONFIG_ARCH_MSM8X60) += board-dt-8660.o
+ obj-$(CONFIG_ARCH_MSM8960) += board-msm8960.o devices-msm8960.o
+ 
+ obj-$(CONFIG_ARCH_MSM7X30) += gpiomux-v1.o gpiomux.o
+diff --git a/arch/arm/mach-msm/board-msm8x60.c b/arch/arm/mach-msm/board-dt-8660.c
+similarity index 100%
+rename from arch/arm/mach-msm/board-msm8x60.c
+rename to arch/arm/mach-msm/board-dt-8660.c
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
