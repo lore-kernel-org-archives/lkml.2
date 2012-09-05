@@ -1,43 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758958Ab2IEQvu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 12:51:50 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:45370 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752016Ab2IEQvt (ORCPT
+	id S1758973Ab2IEQxs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 12:53:48 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45083 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754138Ab2IEQxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 12:51:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <s5hd3222azc.wl%tiwai@suse.de>
-References: <s5hd3222azc.wl%tiwai@suse.de>
-From: Lucas De Marchi <lucas.de.marchi@gmail.com>
-Date: Wed, 5 Sep 2012 13:51:27 -0300
-Message-ID: <CAKi4VAKBDPnYak9j0AwGXcnUnxNMEtUww+cQ8b_RD_Ea+hH5tQ@mail.gmail.com>
-Subject: Re: A workaround for request_firmware() stuck in module_init
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ming Lei <ming.lei@canonical.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Kay Sievers <kay@vrfy.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 5 Sep 2012 12:53:47 -0400
+Date: Wed, 5 Sep 2012 17:58:10 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        ben@decadent.org.uk, thozza@redhat.com, dcbw@redhat.com
+Subject: Re: [PATCH 4/4] tools: hv: Parse /etc/os-release
+Message-ID: <20120905175810.60ee45c8@pyramind.ukuu.org.uk>
+In-Reply-To: <1346864553-30059-4-git-send-email-kys@microsoft.com>
+References: <1346864519-30020-1-git-send-email-kys@microsoft.com>
+	<1346864553-30059-1-git-send-email-kys@microsoft.com>
+	<1346864553-30059-4-git-send-email-kys@microsoft.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 4, 2012 at 10:06 AM, Takashi Iwai <tiwai@suse.de> wrote:
-> Hi,
->
-> as I've got recently a few bug reports regarding the stuck with
-> request_firmware() in module_init of some sound drivers, I started
-> looking at the issue.  Strangely, the problem doesn't happen on
-> openSUSE 12.2 although it has the same udev version with libkmod as
-> Fedora.  So I installed Fedora 17, and indeed I could see a problem
-> there.
+> +			if (!strcmp(buf, "NAME"))
+> +				os_name = strdup(value);
+> +			else if (!strcmp(buf, "VERSION_ID"))
+> +				os_major = strdup(value);
 
-I fail to see how this is related to libkmod. It's indeed related to
-the fact that udev now timeout a modprobe request so people stop doing
-crazy things and like start daemons as modprobe's install rules. And
-that's true even with old module-init-tools.
+strdup can fail. The case where it leaks because NAME= occurs twice is
+harmless enough but the strdup ought to be checked or add an x_strdup()
+helper.
 
-
-
-Lucas De Marchi
+Alan
