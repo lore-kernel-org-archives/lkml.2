@@ -1,77 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758292Ab2IELG4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 07:06:56 -0400
-Received: from ni.piap.pl ([195.187.100.4]:43755 "EHLO ni.piap.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751774Ab2IELGy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 07:06:54 -0400
-X-Greylist: delayed 434 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Sep 2012 07:06:54 EDT
-From: khalasa@piap.pl (Krzysztof =?utf-8?Q?Ha=C5=82asa?=)
-To: linux-kernel@vger.kernel.org
-Date: Wed, 05 Sep 2012 12:56:03 +0200
+	id S1758722Ab2IELOk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 07:14:40 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46398 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751990Ab2IELOi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 07:14:38 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <50473306.1070803@jp.fujitsu.com>
+Date: Wed, 05 Sep 2012 20:09:58 +0900
+From: Takao Indoh <indou.takao@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120824 Thunderbird/15.0
 MIME-Version: 1.0
-Message-ID: <m3k3w8g2m4.fsf@t19.piap.pl>
-Content-Type: text/plain
-Subject: 3.4.10 N_GSM tty_io WARNING and lockup
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE,
-	 bases: 20120905 #7764031, check: 20120905 clean
+To: vgoyal@redhat.com
+CC: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, bhelgaas@google.com, hbabu@us.ibm.com,
+        ishii.hironobu@jp.fujitsu.com, martin.wilck@ts.fujitsu.com
+Subject: Re: [RFC][PATCH] Reset PCIe devices to address DMA problem on kdump
+ with iommu
+References: <501BB4EF.7080909@jp.fujitsu.com> <20120803114643.GA28330@redhat.com> <501F4877.5050605@jp.fujitsu.com> <20120806203902.GH25559@redhat.com>
+In-Reply-To: <20120806203902.GH25559@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+(2012/08/07 5:39), Vivek Goyal wrote:
+> On Mon, Aug 06, 2012 at 01:30:47PM +0900, Takao Indoh wrote:
+>> Hi Vivek,
+>>
+>> (2012/08/03 20:46), Vivek Goyal wrote:
+>>> On Fri, Aug 03, 2012 at 08:24:31PM +0900, Takao Indoh wrote:
+>>>> Hi all,
+>>>>
+>>>> This patch adds kernel parameter "reset_pcie_devices" which resets PCIe
+>>>> devices at boot time to address DMA problem on kdump with iommu. When
+>>>> this parameter is specified, a hot reset is triggered on each PCIe root
+>>>> port and downstream port to reset its downstream endpoint.
+>>>
+>>> Hi Takao,
+>>>
+>>> Why not use existing "reset_devices" parameter instead of introducing
+>>> a new one?
+>>
+>> "reset_devices" is used for each driver to reset their own device, and
+>> this patch resets all devices forcibly, so I thought they were different
+>> things.
+>
+> Yes reset_devices currently is used for driver to reset its device. I
+> thought one could very well extend its reach to reset pci express devices
+> at bus level.
+>
+> Having them separate is not going to be much useful from kdump
+> perspective. We will end up passing both reset_devices and
+> reset_pcie_devices to second kernel whill lead to bus level reset as well
+> as device level reset.
+>
+> Ideal situation would be that somehow detect that bus level reset has been
+> done and skip device level reset (assuming bus level reset obviates the
+> need of device level reset, please correct me if that's not the case).
+>
+> After pcie reset, can we store the state in a variable and drivers can
+> use that variable to check if PCIe level reset was done or not. If yes,
+> skip device level reset (Assuming driver knows that device is on a
+> PCIe slot).
+>
+> In that case we will not have to introduce new kernel command line, and
+> also avoid double reset?
+  
+I found a problem when testing my patch on some machines.
 
-I'm trying to use GSM tty line discipline. Basically
+Originally there are two problems in kdump kernel when iommu is enabled;
+DMAR error and PCI SERR. I thought they are fixed by my patch, but I
+noticed that PCI SERR is still detected after applying the patch. It
+seems that something happens when Interrupt Remapping is initialized in
+kdump kernel.
 
-echo AT+CMUX=0 > /dev/ttyS0
+Therefore resetting devices has to be done before enable_IR() is
+called. I have three ideas for it.
 
-set termios (speed etc.)
-int ldisc = N_GSM0710;
-ioctl(fd, TIOCSETD, &ldisc);
+  (i) Resetting devices in 1st kernel(panic kernel)
+  We can reset devices before jumping into 2nd kernel. Of course it may
+  be dangerous to scan pci device tree and call PCI functions in panic'd
+  kernel. Beforehand we need to collect device information so that only
+  minimal code could run on panic.
 
-...
+  (ii) Resetting devices in purgatory
+  It seems to be be appropriate place to do this, but I'm not sure
+  where I can save/restore PCI config when resetting devices in
+  purgatory.
 
-The ioctl first fails with EIO (probably due to inactive DCD line) in
-tty_set_ldisc():
+  (iii) Resetting devices in 2nd kernel(kdump kernel)
+  Important point is to do reset before enable_IR() is called as I wrote
+  above. I think I should add new function to do reset into
+  arch/x86/pci/early.c and call it in setup_arch like
+  early_dump_pci_devices() or early_quirks().
 
-	if (test_bit(TTY_HUPPED, &tty->flags)) {
-		/* We were raced by the hangup method. It will have stomped
-		   the ldisc data and closed the ldisc down */
-		clear_bit(TTY_LDISC_CHANGING, &tty->flags);
-		mutex_unlock(&tty->ldisc_mutex);
-		tty_ldisc_put(new_ldisc);
-		tty_unlock();
-		return -EIO;                         <<<<<< HERE
-	}
+Any comments?
 
+Thanks,
+Takao Indoh
 
-Now trying to run the program again:
-
-------------[ cut here ]------------
-WARNING: at /home/khalasa/src/linux-3.4/drivers/tty/tty_io.c:1368 tty_open+0x2e8/0x55c()
-Modules linked in: m25p80 ag71xx
-Call Trace:
- [<8030a02c>] dump_stack+0x8/0x34
- [<8007a35c>] warn_slowpath_common+0x78/0xa4
- [<8007a3a0>] warn_slowpath_null+0x18/0x24
- [<80193cac>] tty_open+0x2e8/0x55c
- [<800f1500>] chrdev_open+0x120/0x164
- [<800eb320>] __dentry_open.isra.12+0x1bc/0x318
- [<800fae54>] do_last.isra.32+0x774/0x78c
- [<800fb094>] path_openat+0xcc/0x3b4
- [<800fb498>] do_filp_open+0x3c/0xa4
- [<800ec3dc>] do_sys_open+0x13c/0x1ec
- [<80068dc4>] stack_done+0x20/0x40
-
----[ end trace 5958cc366bfb54c4 ]---
-
-then it locks up (task "D" state, though interruptible).
-
-A known problem probably?
-Any ideas? (I know about CLOCAL).
--- 
-Krzysztof Halasa
-
-Research Institute for Automation and Measurements PIAP
-Al. Jerozolimskie 202, 02-486 Warsaw, Poland
