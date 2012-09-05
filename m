@@ -1,103 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757303Ab2IEIif (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 04:38:35 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:44125 "EHLO mx2.parallels.com"
+	id S1758221Ab2IEIi5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 04:38:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10644 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751156Ab2IEIic (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 04:38:32 -0400
-Message-ID: <50470EBF.9070109@parallels.com>
-Date: Wed, 5 Sep 2012 12:35:11 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>, <davej@redhat.com>, <ben@decadent.org.uk>,
-        <a.p.zijlstra@chello.nl>, <pjt@google.com>, <lennart@poettering.net>,
-        <kay.sievers@vrfy.org>
-Subject: Re: [RFC 0/5] forced comounts for cgroups.
-References: <1346768300-10282-1-git-send-email-glommer@parallels.com> <20120904214602.GA9092@dhcp-172-17-108-109.mtv.corp.google.com> <5047074D.1030104@parallels.com> <20120905081439.GC3195@dhcp-172-17-108-109.mtv.corp.google.com> <50470A87.1040701@parallels.com> <20120905082947.GD3195@dhcp-172-17-108-109.mtv.corp.google.com>
-In-Reply-To: <20120905082947.GD3195@dhcp-172-17-108-109.mtv.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1751156Ab2IEIiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 04:38:55 -0400
+Subject: Re: [PATCH] decnet: fix shutdown parameter checking
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: David Miller <davem@davemloft.net>
+Cc: xi.wang@gmail.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20120831.155719.2228399422573401952.davem@davemloft.net>
+References: <1346035027-2347-1-git-send-email-xi.wang@gmail.com>
+	 <1346059001.2703.7.camel@menhir>
+	 <20120831.155719.2228399422573401952.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Wed, 05 Sep 2012 09:37:56 +0100
+Message-ID: <1346834276.2799.4.camel@menhir>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2012 12:29 PM, Tejun Heo wrote:
-> Hello, Glauber.
+Hi,
+
+On Fri, 2012-08-31 at 15:57 -0400, David Miller wrote:
+> From: Steven Whitehouse <swhiteho@redhat.com>
+> Date: Mon, 27 Aug 2012 10:16:41 +0100
 > 
-> On Wed, Sep 05, 2012 at 12:17:11PM +0400, Glauber Costa wrote:
->>> Distros can just co-mount them during boot.  What's the point of the
->>> config options?
->>
->> Pretty simple. The kernel can't assume the distro did. And then we still
->> need to pay a stupid big price in the scheduler.
->>
->> After this patchset, We can assume this. And cpuusage can totally be
->> derived from the cpu cgroup. Because much more than "they can comount",
->> we can assume they did.
+> > On Sun, 2012-08-26 at 22:37 -0400, Xi Wang wrote:
+> >> The allowed value of "how" is SHUT_RD/SHUT_WR/SHUT_RDWR (0/1/2),
+> >> rather than SHUTDOWN_MASK (3).
+> >> 
+> >> Signed-off-by: Xi Wang <xi.wang@gmail.com>
+> > Acked-by: Steven Whitehouse <swhiteho@redhat.com>
 > 
-> As long as cpuacct and cpu are separate, I think it makes sense to
-> assume that they at least could be at different granularity.  
-
-If they are comounted, and more: forceably comounted, I don't see how to
-call them separate. At the very best, they are this way for
-compatibility purposes only, to lay a path that would allow us to get
-rid of the separation eventually.
-
-> As for
-> optimization for co-mounted case, if that is *really* necessary,
-> couldn't it be done dynamically?  It's not like CONFIG_XXX blocks are
-> pretty things and they're worse for runtime code path coverage.
+> Applied to net-next.
 > 
-
-I've done it dynamically, as you know. But if you think that complicated
-the code less than this, we're operating by very different standards...
-
-CONFIG options can make the code uglier, but it is a lot more
-predictable. It also guarantee no state changes will happen during the
-lifecycle of the machine. Doing it dynamically makes the code prettier,
-but still extensively large, and prone to subtle bugs, as we've already
-seen in practice.
-
->>> Differing hierarchies in memcg and blkcg currently is the most
->>> prominent case where the intersection in writeback is problematic and
->>> your proposed solution doesn't help one way or the other.  What's the
->>> point?
->>
->> The point is that I am focusing at one problem at a time. But FWIW, I
->> don't see why memcg/blkcg can't use a step just like this one in a
->> separate pass.
->>
->> If the goal is comounting them eventually, at some point when the issues
->> are sorted out, just do it. Get a switch like this one, and then you
->> will start being able to assume a lot of things in the code. Miracles
->> can happen.
+> > Although it could be argued that we should also continue to accept the
+> > value 3 just in case there is any userland software out there which
+> > sends that value,
 > 
-> The problem is that I really don't see how this leads to where we
-> eventually wanna be.  Orthogonal hierarchies are bad because,
-> 
-> * It complicates the code.  This doesn't really help there much.
-> 
+> True, but this is a rather standard BSD socket interface with a very
+> specific small set of legitimate input parameters.  Allowing
+> deviation, even for compatability for specific protocols, is largely
+> unwise.
 
-Way I see it, it is the price we pay for having screwed up before.
-And Kconfig options doesn't necessarily complicate the code. They make
-it bigger, and possibly slightly harder to follow. But I myself
+Yes, I'd agree on the whole, and certainly if this was a recent
+addition. However since this code has been around for somewhere close to
+16 years now, I'd say that means that either (a) nobody calls shutdown
+for DECnet or (b) existing users are buggy too.
 
-> * Intersections between controllers are cumbersome to handle.  Again,
->   this doesn't help much.
->
+We do have a precedent for this kind of compatibility, such as the AX.25
+use of SOCK_SEQPACKET.
 
-They are only cumbersome because we can't assume nothing. The cpuacct is
-the perfect example. Once we can start assuming, they become a lot less so.
+However, I'm not overly worried and we'll soon know if it will cause any
+problems or not,
+
+Steve.
 
 
-> And this restricts the only valid use case for multiple hierarchies
-> which is applying differing level of granularity depending on
-> controllers.  So, I don't know.  Doesn't seem like a good idea to me.
-> 
-> Thanks.
-> 
 
