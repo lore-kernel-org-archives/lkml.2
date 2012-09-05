@@ -1,112 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758152Ab2IEFtB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 01:49:01 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:17262 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758116Ab2IEFrQ (ORCPT
+	id S1758028Ab2IEFrP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 01:47:15 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:20456 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750929Ab2IEFrH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 01:47:16 -0400
+	Wed, 5 Sep 2012 01:47:07 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
         Tejun Heo <tj@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH -v3 10/14] x86: Fixup code testing if a pfn is direct mapped
-Date: Tue,  4 Sep 2012 22:46:27 -0700
-Message-Id: <1346823991-22911-11-git-send-email-yinghai@kernel.org>
+Subject: [PATCH -v3 02/14] x86, mm: Split out split_mem_range
+Date: Tue,  4 Sep 2012 22:46:19 -0700
+Message-Id: <1346823991-22911-3-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1346823991-22911-1-git-send-email-yinghai@kernel.org>
 References: <1346823991-22911-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jacob Shin <jacob.shin@amd.com>
+from init_memory_mapping, so make init_memory_mapping readable.
 
-Update code that previously assumed pfns [ 0 - max_low_pfn_mapped ) and
-[ 4GB - max_pfn_mapped ) were always direct mapped, to now look up
-pfn_mapped ranges instead.
-
-
--v2: change applying sequence to keep git bisecting working.
-     so add dummy pfn_range_is_mapped(). - Yinghai Lu
-
-Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+Suggested-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
 ---
- arch/x86/include/asm/page_types.h |    8 ++++++++
- arch/x86/kernel/cpu/amd.c         |    8 +++-----
- arch/x86/platform/efi/efi.c       |    8 ++++----
- 3 files changed, 15 insertions(+), 9 deletions(-)
+ arch/x86/mm/init.c |   42 ++++++++++++++++++++++++++----------------
+ 1 files changed, 26 insertions(+), 16 deletions(-)
 
-diff --git a/arch/x86/include/asm/page_types.h b/arch/x86/include/asm/page_types.h
-index e21fdd1..45aae6e 100644
---- a/arch/x86/include/asm/page_types.h
-+++ b/arch/x86/include/asm/page_types.h
-@@ -51,6 +51,14 @@ static inline phys_addr_t get_max_mapped(void)
- 	return (phys_addr_t)max_pfn_mapped << PAGE_SHIFT;
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 838e9bc..7d05e28 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -143,25 +143,13 @@ static int __meminit save_mr(struct map_range *mr, int nr_range,
+ 	return nr_range;
  }
  
-+static inline bool pfn_range_is_mapped(unsigned long start_pfn,
-+					unsigned long end_pfn)
-+{
-+	return end_pfn <= max_low_pfn_mapped ||
-+	       (end_pfn > (1UL << (32 - PAGE_SHIFT)) &&
-+		end_pfn <= max_pfn_mapped);
+-/*
+- * Setup the direct mapping of the physical memory at PAGE_OFFSET.
+- * This runs before bootmem is initialized and gets pages directly from
+- * the physical memory. To access them they are temporarily mapped.
+- */
+-unsigned long __init_refok init_memory_mapping(unsigned long start,
+-					       unsigned long end)
++static int __meminit split_mem_range(struct map_range *mr, int nr_range,
++				     unsigned long start,
++				     unsigned long end)
+ {
+ 	unsigned long start_pfn, end_pfn;
+-	unsigned long ret = 0;
+ 	unsigned long pos;
+-	struct map_range mr[NR_RANGE_MR];
+-	int nr_range, i;
+-
+-	printk(KERN_INFO "init_memory_mapping: [mem %#010lx-%#010lx]\n",
+-	       start, end - 1);
+-
+-	memset(mr, 0, sizeof(mr));
+-	nr_range = 0;
++	int i;
+ 
+ 	/* head if not big page alignment ? */
+ 	start_pfn = start >> PAGE_SHIFT;
+@@ -255,6 +243,28 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+ 			(mr[i].page_size_mask & (1<<PG_LEVEL_1G))?"1G":(
+ 			 (mr[i].page_size_mask & (1<<PG_LEVEL_2M))?"2M":"4k"));
+ 
++	return nr_range;
 +}
 +
- extern unsigned long init_memory_mapping(unsigned long start,
- 					 unsigned long end);
- 
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 9d92e19..4235553 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -676,12 +676,10 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
- 		 * benefit in doing so.
- 		 */
- 		if (!rdmsrl_safe(MSR_K8_TSEG_ADDR, &tseg)) {
-+			unsigned long pfn = tseg >> PAGE_SHIFT;
++/*
++ * Setup the direct mapping of the physical memory at PAGE_OFFSET.
++ * This runs before bootmem is initialized and gets pages directly from
++ * the physical memory. To access them they are temporarily mapped.
++ */
++unsigned long __init_refok init_memory_mapping(unsigned long start,
++					       unsigned long end)
++{
++	struct map_range mr[NR_RANGE_MR];
++	unsigned long ret = 0;
++	int nr_range, i;
 +
- 			printk(KERN_DEBUG "tseg: %010llx\n", tseg);
--			if ((tseg>>PMD_SHIFT) <
--				(max_low_pfn_mapped>>(PMD_SHIFT-PAGE_SHIFT)) ||
--				((tseg>>PMD_SHIFT) <
--				(max_pfn_mapped>>(PMD_SHIFT-PAGE_SHIFT)) &&
--				(tseg>>PMD_SHIFT) >= (1ULL<<(32 - PMD_SHIFT))))
-+			if (pfn_range_is_mapped(pfn, pfn + 1))
- 				set_memory_4k((unsigned long)__va(tseg), 1);
- 		}
- 	}
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 92660eda..f1facde 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -776,7 +776,7 @@ void __init efi_enter_virtual_mode(void)
- 	efi_memory_desc_t *md, *prev_md = NULL;
- 	efi_status_t status;
- 	unsigned long size;
--	u64 end, systab, addr, npages, end_pfn;
-+	u64 end, systab, addr, npages, start_pfn, end_pfn;
- 	void *p, *va, *new_memmap = NULL;
- 	int count = 0;
- 
-@@ -827,10 +827,10 @@ void __init efi_enter_virtual_mode(void)
- 		size = md->num_pages << EFI_PAGE_SHIFT;
- 		end = md->phys_addr + size;
- 
-+		start_pfn = PFN_DOWN(md->phys_addr);
- 		end_pfn = PFN_UP(end);
--		if (end_pfn <= max_low_pfn_mapped
--		    || (end_pfn > (1UL << (32 - PAGE_SHIFT))
--			&& end_pfn <= max_pfn_mapped))
++	pr_info("init_memory_mapping: [mem %#010lx-%#010lx]\n",
++	       start, end - 1);
 +
-+		if (pfn_range_is_mapped(start_pfn, end_pfn))
- 			va = __va(md->phys_addr);
- 		else
- 			va = efi_ioremap(md->phys_addr, size, md->type);
++	memset(mr, 0, sizeof(mr));
++	nr_range = 0;
++	nr_range = split_mem_range(mr, nr_range, start, end);
++
+ 	/*
+ 	 * Find space for the kernel direct mapping tables.
+ 	 *
 -- 
 1.7.7
 
