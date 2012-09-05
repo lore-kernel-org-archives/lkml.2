@@ -1,93 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752202Ab2IEHbL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 03:31:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46168 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750957Ab2IEHbJ convert rfc822-to-8bit (ORCPT
+	id S1752445Ab2IEHd1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 03:33:27 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:41041 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750991Ab2IEHdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 03:31:09 -0400
-From: Oliver Neukum <oneukum@suse.de>
-To: Yann Cantin <yann.cantin@laposte.net>
-Cc: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
-        gregkh@linuxfoundation.org, dmitry.torokhov@gmail.com,
-        linux-kernel@vger.kernel.org, jikos@suse.cz
-Subject: Re: [eBeam PATCH 2/2] input: misc: New USB eBeam input driver.
-Date: Wed, 05 Sep 2012 09:29:49 +0200
-Message-ID: <3991181.oZKWSZGdK8@linux-lqwf.site>
-Organization: SUSE
-User-Agent: KMail/4.8.4 (Linux/3.6.0-rc2-12-desktop+; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <1346539923-9704-3-git-send-email-yann.cantin@laposte.net>
-References: <1346539923-9704-1-git-send-email-yann.cantin@laposte.net> <1346539923-9704-3-git-send-email-yann.cantin@laposte.net>
+	Wed, 5 Sep 2012 03:33:25 -0400
+Date: Wed, 5 Sep 2012 08:33:20 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH 3/3] i2c: nomadik: Add Device Tree support to the Nomadik
+ I2C driver
+Message-ID: <20120905073319.GF4233@gmail.com>
+References: <1345734087-21803-1-git-send-email-lee.jones@linaro.org>
+ <1345734087-21803-3-git-send-email-lee.jones@linaro.org>
+ <20120831112258.GA2624@pengutronix.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120831112258.GA2624@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 02 September 2012 00:52:03 Yann Cantin wrote:
+Author: Lee Jones <lee.jones@linaro.org>
+Date:   Mon Aug 6 11:09:57 2012 +0100
 
-Hi,
+    i2c: nomadik: Add Device Tree support to the Nomadik I2C driver
+    
+    Here we apply the bindings required for successful Device Tree
+    probing of the i2c-nomadik driver.
+    
+    Cc: linux-i2c@vger.kernel.org
+    Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-before we add yet another sysfs interface, we should ask whether calibration
-isn't a problem that should be solved with a common API.
-
-	Regards
-		Oliver
-
-> +static ssize_t ebeam_calibrated_set(struct device *dev,
-> +                                   struct device_attribute *attr,
-> +                                   const char *buf,
-> +                                   size_t count)
-> +{
-> +       struct ebeam_device *ebeam = dev_get_drvdata(dev);
-> +       int err, c;
-> +
-> +       err = kstrtoint(buf, 10, &c);
-> +       if (err)
-> +               return err;
-> +
-> +       if (c == 1) {
-> +               memcpy(&ebeam->cursetting, &ebeam->newsetting,
-> +                      sizeof(struct ebeam_settings));
-> +               ebeam->calibrated = true;
-> +               ebeam_setup_input(ebeam, ebeam->input);
-> +       } else {
-> +               memcpy(&ebeam->newsetting, &ebeam->cursetting,
-> +                      sizeof(struct ebeam_settings));
-> +               ebeam->calibrated = false;
-> +               ebeam_setup_input(ebeam, ebeam->input);
-> +       }
-> +
-> +       return count;
-> +}
-> +
-> +static DEVICE_ATTR(calibrated, S_IRUGO | S_IWUGO,
-> +                  ebeam_calibrated_get, ebeam_calibrated_set);
-> +
-> +static struct attribute *ebeam_attrs[] = {
-> +       &dev_attr_min_x.attr,
-> +       &dev_attr_min_y.attr,
-> +       &dev_attr_max_x.attr,
-> +       &dev_attr_max_y.attr,
-> +       &dev_attr_h1.attr,
-> +       &dev_attr_h2.attr,
-> +       &dev_attr_h3.attr,
-> +       &dev_attr_h4.attr,
-> +       &dev_attr_h5.attr,
-> +       &dev_attr_h6.attr,
-> +       &dev_attr_h7.attr,
-> +       &dev_attr_h8.attr,
-> +       &dev_attr_h9.attr,
-> +       &dev_attr_calibrated.attr,
-> +       NULL
-> +};
-> +
--- 
-- - - 
-SUSE LINUX Products GmbH, GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer, HRB 16746 (AG Nürnberg) 
-Maxfeldstraße 5                         
-90409 Nürnberg 
-Germany 
-- - - 
+diff --git a/drivers/i2c/busses/i2c-nomadik.c b/drivers/i2c/busses/i2c-nomadik.c
+index 61b00ed..5d1a970 100644
+--- a/drivers/i2c/busses/i2c-nomadik.c
++++ b/drivers/i2c/busses/i2c-nomadik.c
+@@ -25,6 +25,7 @@
+ #include <linux/regulator/consumer.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/platform_data/i2c-nomadik.h>
++#include <linux/of.h>
+ 
+ #define DRIVER_NAME "nmk-i2c"
+ 
+@@ -920,18 +921,42 @@ static struct nmk_i2c_controller u8500_i2c = {
+        .sm             = I2C_FREQ_MODE_FAST,
+ };
+ 
++static void nmk_i2c_of_probe(struct device_node *np,
++                       struct nmk_i2c_controller *pdata)
++{
++       of_property_read_u32(np, "clock-frequency", &pdata->clk_freq);
++
++       /* This driver only supports 'standard' and 'fast' modes of operation. */
++       if (pdata->clk_freq <= 100000)
++               pdata->sm = I2C_FREQ_MODE_STANDARD;
++       else
++               pdata->sm = I2C_FREQ_MODE_FAST;
++}
++
+ static atomic_t adapter_id = ATOMIC_INIT(0);
+ 
+ static int nmk_i2c_probe(struct amba_device *adev, const struct amba_id *id)
+ {
+        int ret = 0;
+        struct nmk_i2c_controller *pdata = adev->dev.platform_data;
++       struct device_node *np = adev->dev.of_node;
+        struct nmk_i2c_dev      *dev;
+        struct i2c_adapter *adap;
+ 
+-       if (!pdata)
+-               /* No i2c configuration found, using the default. */
+-               pdata = &u8500_i2c;
++       if (!pdata) {
++               if (np) {
++                       pdata = devm_kzalloc(&adev->dev, sizeof(*pdata), GFP_KERNEL);
++                       if (!pdata) {
++                               ret = -ENOMEM;
++                               goto err_no_mem;
++                       }
++                       /* Provide the default configuration as a base. */
++                       memcpy(pdata, &u8500_i2c, sizeof(struct nmk_i2c_controller));
++                       nmk_i2c_of_probe(np, pdata);
++               } else
++                       /* No i2c configuration found, using the default. */
++                       pdata = &u8500_i2c;
++       }
+ 
+        dev = kzalloc(sizeof(struct nmk_i2c_dev), GFP_KERNEL);
+        if (!dev) {
+diff --git a/include/linux/platform_data/i2c-nomadik.h b/include/linux/platform_data/i2c-nomadik.h
+index c2303c3..3a8be9c 100644
+--- a/include/linux/platform_data/i2c-nomadik.h
++++ b/include/linux/platform_data/i2c-nomadik.h
+@@ -28,7 +28,7 @@ enum i2c_freq_mode {
+  * @sm:                speed mode
+  */
+ struct nmk_i2c_controller {
+-       unsigned long   clk_freq;
++       u32             clk_freq;
+        unsigned short  slsu;
+        unsigned char   tft;
+        unsigned char   rft;
