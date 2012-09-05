@@ -1,257 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758168Ab2IEDUG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 23:20:06 -0400
-Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:31242
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758119Ab2IEDUB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 23:20:01 -0400
+	id S1758180Ab2IEDUO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 23:20:14 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:43884 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758105Ab2IEDUI convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Sep 2012 23:20:08 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 6
-X-BigFish: VS6(zzc8kzz1202h1082kzz8275dhz2dh2a8h668h839hd24he5bhf0ah107ah1155h)
-From: Dong Aisheng <b29396@freescale.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linus.walleij@stericsson.com>,
-        <s.hauer@pengutronix.de>, <shawn.guo@linaro.org>,
-        <kernel@pengutronix.de>, <grant.likely@secretlab.ca>,
-        <rob.herring@calxeda.com>, <sameo@linux.intel.com>, <lrg@ti.com>,
-        <broonie@opensource.wolfsonmicro.com>, <richard.zhao@freescale.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <swarren@wwwdotorg.org>
-Subject: [PATCH v6 4/4] mfd: anatop-mfd: remove anatop driver
-Date: Wed, 5 Sep 2012 10:57:16 +0800
-Message-ID: <1346813836-28736-5-git-send-email-b29396@freescale.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1346813836-28736-1-git-send-email-b29396@freescale.com>
-References: <1346813836-28736-1-git-send-email-b29396@freescale.com>
+X-SpamScore: -6
+X-BigFish: VS-6(zz9371I542M1432Izz1202hzz8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah107ah1220hbe9i1155h)
+From: Xie Shaohui-B21989 <B21989@freescale.com>
+To: David Laight <David.Laight@ACULAB.COM>,
+        "jgarzik@pobox.com" <jgarzik@pobox.com>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+CC: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bhartiya Anju-B07263 <B07263@freescale.com>
+Subject: RE: [PATCH] sata_fsl: add workaround for data length mismatch on
+ freescale V2 controller
+Thread-Topic: [PATCH] sata_fsl: add workaround for data length mismatch on
+ freescale V2 controller
+Thread-Index: AQHNipI7EuslG/m2Pk+57VOtbt3rrZd6mDEAgABzFqA=
+Date: Wed, 5 Sep 2012 03:20:04 +0000
+Message-ID: <ED492CCEAF882048BC2237DE806547C9079C4915@039-SN2MPN1-012.039d.mgd.msft.net>
+References: <1346756920-19128-1-git-send-email-Shaohui.Xie@freescale.com>
+ <AE90C24D6B3A694183C094C60CF0A2F6026B6FD6@saturn3.aculab.com>
+In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B6FD6@saturn3.aculab.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.193.20.41]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
 X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dong Aisheng <dong.aisheng@linaro.org>
+> -----Original Message-----
+> From: David Laight [mailto:David.Laight@ACULAB.COM]
+> Sent: Tuesday, September 04, 2012 10:51 PM
+> To: Xie Shaohui-B21989; jgarzik@pobox.com; linux-ide@vger.kernel.org
+> Cc: linuxppc-dev@lists.ozlabs.org; linux-kernel@vger.kernel.org; Bhartiya
+> Anju-B07263
+> Subject: RE: [PATCH] sata_fsl: add workaround for data length mismatch on
+> freescale V2 controller
+> 
+> > +	/* Read command completed register */
+> > +	done_mask = ioread32(hcr_base + CC);
+> > +
+> > +	if (host_priv->quirks & SATA_FSL_QUIRK_V2_ERRATA) {
+> > +		if (unlikely(hstatus & INT_ON_DATA_LENGTH_MISMATCH)) {
+> > +			for (tag = 0; tag < ATA_MAX_QUEUE; tag++) {
+> > +				qc = ata_qc_from_tag(ap, tag);
+> > +				if (qc && ata_is_atapi(qc->tf.protocol))
+> {
+> > +					atapi_flag = 1;
+> > +					break;
+> > +				}
+> > +			}
+> > +		}
+> > +	}
+> > +
+> > +	/* Workaround for data length mismatch errata */
+> > +	if (atapi_flag) {
+> 
+> Seems to me like the conditionals for this code are all in the wrong
+> order - adding code to the normal path.
+> 
+> The whole lot should probably be inside:
+> 	if (unlikely(hstatus & INT_ON_DATA_LENGTH_MISMATCH)) { and the
+> 'atapi_flag' boolean removed.
+[S.H] OK. But I need to move the "done_mask = ioread32(hcr_base + CC);" before these codes,
+ because these codes will clean command completed register.
 
-The anatop registers are accessed via syscon now, no one will use
-mfd anatop driver anymore, remove it.
+> 
+> I also wonder it this is worthy of an actual quirk?
+> Might be worth doing anyway.
+[S.H] The quirk is useful for our internal use(there is another errata but got fixed by silicon upgrade),
+but you are right it's worth doing anyway in upstream, since the upstream code only handles this errata.
 
-Acked-by: Stephen Warren <swarren@wwwdotorg.org>
-Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
----
- drivers/mfd/Kconfig        |    8 ---
- drivers/mfd/Makefile       |    1 -
- drivers/mfd/anatop-mfd.c   |  124 --------------------------------------------
- include/linux/mfd/anatop.h |   40 --------------
- 4 files changed, 0 insertions(+), 173 deletions(-)
-
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 82247b7..0b5c0cc 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -985,14 +985,6 @@ config MFD_STA2X11
- 	depends on STA2X11
- 	select MFD_CORE
- 
--config MFD_ANATOP
--	bool "Support for Freescale i.MX on-chip ANATOP controller"
--	depends on SOC_IMX6Q
--	help
--	  Select this option to enable Freescale i.MX on-chip ANATOP
--	  MFD controller. This controller embeds regulator and
--	  thermal devices for Freescale i.MX platforms.
--
- config MFD_SYSCON
- 	bool "System Controller Register R/W Based on Regmap"
- 	depends on OF
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 8384bc9..0f10a95 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -130,6 +130,5 @@ obj-$(CONFIG_MFD_INTEL_MSIC)	+= intel_msic.o
- obj-$(CONFIG_MFD_PALMAS)	+= palmas.o
- obj-$(CONFIG_MFD_RC5T583)	+= rc5t583.o rc5t583-irq.o
- obj-$(CONFIG_MFD_SEC_CORE)	+= sec-core.o sec-irq.o
--obj-$(CONFIG_MFD_ANATOP)	+= anatop-mfd.o
- obj-$(CONFIG_MFD_SYSCON)	+= syscon.o
- obj-$(CONFIG_MFD_LM3533)	+= lm3533-core.o lm3533-ctrlbank.o
-diff --git a/drivers/mfd/anatop-mfd.c b/drivers/mfd/anatop-mfd.c
-deleted file mode 100644
-index 5576e07..0000000
---- a/drivers/mfd/anatop-mfd.c
-+++ /dev/null
-@@ -1,124 +0,0 @@
--/*
-- * Anatop MFD driver
-- *
-- * Copyright (C) 2012 Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
-- * Copyright (C) 2012 Linaro
-- *
-- *  This program is free software; you can redistribute it and/or modify
-- *  it under the terms of the GNU General Public License as published by
-- *  the Free Software Foundation; either version 2 of the License, or
-- *   (at your option) any later version.
-- *
-- *  This program is distributed in the hope that it will be useful,
-- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- *  GNU General Public License for more details.
-- *
-- *  You should have received a copy of the GNU General Public License along
-- *  with this program; if not, write to the Free Software Foundation, Inc.,
-- *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-- *  This program is free software; you can redistribute it and/or modify
-- *  it under the terms of the GNU General Public License as published by
-- *  the Free Software Foundation; either version 2 of the License, or
-- *  (at your option) any later version.
-- *
-- *  This program is distributed in the hope that it will be useful,
-- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- *  GNU General Public License for more details.
-- *
-- *  You should have received a copy of the GNU General Public License along
-- *  with this program; if not, write to the Free Software Foundation, Inc.,
-- *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-- *
-- */
--
--#include <linux/io.h>
--#include <linux/module.h>
--#include <linux/platform_device.h>
--#include <linux/of.h>
--#include <linux/of_platform.h>
--#include <linux/of_address.h>
--#include <linux/mfd/anatop.h>
--
--u32 anatop_read_reg(struct anatop *adata, u32 addr)
--{
--	return readl(adata->ioreg + addr);
--}
--EXPORT_SYMBOL_GPL(anatop_read_reg);
--
--void anatop_write_reg(struct anatop *adata, u32 addr, u32 data, u32 mask)
--{
--	u32 val;
--
--	data &= mask;
--
--	spin_lock(&adata->reglock);
--	val = readl(adata->ioreg + addr);
--	val &= ~mask;
--	val |= data;
--	writel(val, adata->ioreg + addr);
--	spin_unlock(&adata->reglock);
--}
--EXPORT_SYMBOL_GPL(anatop_write_reg);
--
--static const struct of_device_id of_anatop_match[] = {
--	{ .compatible = "fsl,imx6q-anatop", },
--	{ },
--};
--
--static int __devinit of_anatop_probe(struct platform_device *pdev)
--{
--	struct device *dev = &pdev->dev;
--	struct device_node *np = dev->of_node;
--	void *ioreg;
--	struct anatop *drvdata;
--
--	ioreg = of_iomap(np, 0);
--	if (!ioreg)
--		return -EADDRNOTAVAIL;
--	drvdata = devm_kzalloc(dev, sizeof(*drvdata), GFP_KERNEL);
--	if (!drvdata)
--		return -ENOMEM;
--	drvdata->ioreg = ioreg;
--	spin_lock_init(&drvdata->reglock);
--	platform_set_drvdata(pdev, drvdata);
--	of_platform_populate(np, NULL, NULL, dev);
--
--	return 0;
--}
--
--static int __devexit of_anatop_remove(struct platform_device *pdev)
--{
--	struct anatop *drvdata;
--	drvdata = platform_get_drvdata(pdev);
--	iounmap(drvdata->ioreg);
--
--	return 0;
--}
--
--static struct platform_driver anatop_of_driver = {
--	.driver = {
--		.name = "anatop-mfd",
--		.owner = THIS_MODULE,
--		.of_match_table = of_anatop_match,
--	},
--	.probe		= of_anatop_probe,
--	.remove		= of_anatop_remove,
--};
--
--static int __init anatop_init(void)
--{
--	return platform_driver_register(&anatop_of_driver);
--}
--postcore_initcall(anatop_init);
--
--static void __exit anatop_exit(void)
--{
--	platform_driver_unregister(&anatop_of_driver);
--}
--module_exit(anatop_exit);
--
--MODULE_AUTHOR("Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>");
--MODULE_DESCRIPTION("ANATOP MFD driver");
--MODULE_LICENSE("GPL v2");
-diff --git a/include/linux/mfd/anatop.h b/include/linux/mfd/anatop.h
-deleted file mode 100644
-index 7f92acf..0000000
---- a/include/linux/mfd/anatop.h
-+++ /dev/null
-@@ -1,40 +0,0 @@
--/*
-- * anatop.h - Anatop MFD driver
-- *
-- *  Copyright (C) 2012 Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
-- *  Copyright (C) 2012 Linaro
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation; either version 2 of the License, or
-- * (at your option) any later version.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-- */
--
--#ifndef __LINUX_MFD_ANATOP_H
--#define __LINUX_MFD_ANATOP_H
--
--#include <linux/spinlock.h>
--
--/**
-- * anatop - MFD data
-- * @ioreg: ioremap register
-- * @reglock: spinlock for register read/write
-- */
--struct anatop {
--	void *ioreg;
--	spinlock_t reglock;
--};
--
--extern u32 anatop_read_reg(struct anatop *, u32);
--extern void anatop_write_reg(struct anatop *, u32, u32, u32);
--
--#endif /*  __LINUX_MFD_ANATOP_H */
--- 
-1.7.0.4
-
+Best Regards, 
+Shaohui Xie
 
