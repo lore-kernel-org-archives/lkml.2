@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754506Ab2IERLV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 13:11:21 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57798 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750841Ab2IERLT convert rfc822-to-8bit (ORCPT
+	id S1759015Ab2IERMY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 13:12:24 -0400
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:56273 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750841Ab2IERMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 13:11:19 -0400
-Message-ID: <1346865065.2600.34.camel@twins>
-Subject: Re: linux-next: manual merge of the rcu tree with the tip tree
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 05 Sep 2012 19:11:05 +0200
-In-Reply-To: <20120905163959.GF3308@linux.vnet.ibm.com>
-References: <20120905135947.34ba1c8356cbfe374c6c4ea8@canb.auug.org.au>
-	 <20120905163959.GF3308@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	Wed, 5 Sep 2012 13:12:22 -0400
+Date: Wed, 5 Sep 2012 19:12:13 +0200
+From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, Hillf Danton <dhillf@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [RFC v2 PATCH 1/7] thp: remove assumptions on pgtable_t type
+Message-ID: <20120905191213.694d201f@thinkpad>
+In-Reply-To: <20120904225632.GN3334@redhat.com>
+References: <1346254384-30046-1-git-send-email-gerald.schaefer@de.ibm.com>
+	<1346254384-30046-2-git-send-email-gerald.schaefer@de.ibm.com>
+	<20120904225632.GN3334@redhat.com>
+Reply-To: gerald.schaefer@de.ibm.com
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; i686-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+x-cbid: 12090517-0342-0000-0000-000002C2CC07
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-05 at 09:39 -0700, Paul E. McKenney wrote:
-> On Wed, Sep 05, 2012 at 01:59:47PM +1000, Stephen Rothwell wrote:
-> > Hi Paul,
-> > 
-> > Today's linux-next merge of the rcu tree got a conflict in
-> > kernel/sched/core.c between commit f319da0c6894 ("sched: Fix load avg vs
-> > cpu-hotplug") from the tip tree and commit ead504e5600e ("sched: Fix load
-> > avg vs cpu-hotplug") from the rcu tree.
-> > 
-> > These are 2 slightly different versions of the same patch :-( Same author
-> > time, different commit times ...  The rcu tree version contains this
-> > extra bit in the commit message:
-> > 
-> > "    [ paulmck: Move call to calc_load_migration to CPU_DEAD to avoid
-> >      miscounting noted by Rakib. ]"
-> > 
-> > So I used it.  Let me know if this is not correct.
-> 
-> My guess is that Peter Zijlstra will replace my version at some point,
-> at which point I will drop mine.  But from what I can see, the version
-> currently  in -tip is the older version, so I will keep mine until
-> -tip updates.
+On Wed, 5 Sep 2012 00:56:33 +0200
+Andrea Arcangeli <aarcange@redhat.com> wrote:
 
-Yeah, that was a fail on my part. I'll go sort it after dinner.
+> Hi Gerald,
+> 
+> On Wed, Aug 29, 2012 at 05:32:58PM +0200, Gerald Schaefer wrote:
+> > +#ifndef __HAVE_ARCH_PGTABLE_DEPOSIT
+> > +extern void pgtable_deposit(struct mm_struct *mm, pgtable_t pgtable);
+> > +#endif
+> 
+> One minor nitpick on the naming of the two functions: considering that
+> those are global exports, that they can only be used by THP and they
+> mangle internally with the mm->pmd_huge_pte field (also only defined
+> if TRANSPARENT_HUGEPAGE=y), a more specific THP naming may be clearer.
+> 
+> If the current prepare_pmd_huge_pte/get_pmd_huge_pte wasn't good other
+> options could be pgtable_trans_huge_deposit/withdraw.
+> 
+
+Thanks for your feedback. I'll send a new patch series with those
+functions renamed, as it has impact on 3 of the 7 patches, and also
+including the Kconfig change using HAVE_ARCH_TRANSPARENT_HUGEPAGE.
+
