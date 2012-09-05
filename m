@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753631Ab2IEO7u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 10:59:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50987 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751489Ab2IEO7s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 10:59:48 -0400
-Message-ID: <504768E2.3020706@redhat.com>
-Date: Wed, 05 Sep 2012 17:59:46 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1753781Ab2IEPDP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 11:03:15 -0400
+Received: from smtprelay-b21.telenor.se ([195.54.99.212]:36908 "EHLO
+	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751238Ab2IEPDN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 11:03:13 -0400
+X-SENDER-IP: [85.230.170.20]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ah9zANJoR1BV5qoUPGdsb2JhbABFij+vVwSBBxkBAQEBHhkNJ4IhAQU6HBMBDxAISRQlChoTiBG6cxSLBi6Fa2ADlViFb40RgVY
+X-IronPort-AV: E=Sophos;i="4.80,374,1344204000"; 
+   d="scan'208";a="403477044"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Wed, 5 Sep 2012 17:09:37 +0200
+To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 20/20] HID: hid-multitouch: Fix contact count on 3M panels
+Message-ID: <20120905150937.GA260@polaris.bitmath.org>
+References: <1346528835-363-1-git-send-email-rydberg@euromail.se>
+ <1346528835-363-21-git-send-email-rydberg@euromail.se>
+ <CAN+gG=FwXaSWN_AYnU7Vpxn4GcWYG3Bf100P0QD_8cQfEnGc7A@mail.gmail.com>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Alex Williamson <alex.williamson@redhat.com>, gleb@redhat.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v9 1/2] kvm: Use a reserved IRQ source ID for irqfd
-References: <20120821190800.24958.74812.stgit@bling.home> <20120821192903.24958.90138.stgit@bling.home> <20120821195813.GD9027@redhat.com> <1345579579.29292.67.camel@ul30vt.home> <20120821204125.GF9027@redhat.com> <1345583694.29292.91.camel@ul30vt.home> <20120822004138.GM9027@redhat.com> <5047633F.9020405@redhat.com> <20120905145153.GA11048@redhat.com>
-In-Reply-To: <20120905145153.GA11048@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAN+gG=FwXaSWN_AYnU7Vpxn4GcWYG3Bf100P0QD_8cQfEnGc7A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2012 05:51 PM, Michael S. Tsirkin wrote:
-> On Wed, Sep 05, 2012 at 05:35:43PM +0300, Avi Kivity wrote:
->> On 08/22/2012 03:41 AM, Michael S. Tsirkin wrote:
->> >> 
->> >> I assumed you were pointing out the level vs edge interaction.  If we
->> >> call that a userspace bug, I can just drop this.  Thanks,
->> >> 
->> >> Alex
->> > 
->> > level is userspace bug I think :)
->> 
->> I don't see how it's a bug.  Suppose we have a vfio device that shares a
->> gsi with an emulated device.  The emulated device naturally uses
->> KVM_IRQ_LINE (it has no need to re-sample on ADN), while vfio naturally
->> has to use irqfd.
-> 
-> Absolutely. But vfio needs to use irqfd with the new flag.
-> Using existing irqfd for level is a bug.
+Some devices report the number of contacts via the unreliable
+CONTACTCOUNT usage, rather than using the CONTACTMAX feature.
+Without this patch, the 3M devices are constrained to the default
+maximum of ten fingers.
 
-I see we're not reusing this irq source id for level irqfd.  But I think
-we should, there's no need for per-gsi irq source id.  Plus I'd like to
-fix the theoretical bug even if it doesn't bite in practice.
+Cc: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+---
+Benjamin, are you ok with 0x506 being treated this way as well?
 
+Thanks,
+Henrik
 
+ drivers/hid/hid-multitouch.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
+diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+index eee19c9..63f120b 100644
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -171,7 +171,9 @@ static struct mt_class mt_classes[] = {
+ 			MT_QUIRK_SLOT_IS_CONTACTID,
+ 		.sn_move = 2048,
+ 		.sn_width = 128,
+-		.sn_height = 128 },
++		.sn_height = 128,
++		.maxcontacts = 60,
++	},
+ 	{ .name = MT_CLS_CYPRESS,
+ 		.quirks = MT_QUIRK_NOT_SEEN_MEANS_UP |
+ 			MT_QUIRK_CYPRESS,
 -- 
-error compiling committee.c: too many arguments to function
+1.7.12
+
