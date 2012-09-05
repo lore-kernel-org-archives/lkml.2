@@ -1,91 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759972Ab2IEXj7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 19:39:59 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:40083 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755175Ab2IEXj5 (ORCPT
+	id S1759906Ab2IEXmJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 19:42:09 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:35835 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754774Ab2IEXmH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 19:39:57 -0400
-Date: Wed, 5 Sep 2012 16:39:51 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, rakib.mullick@gmail.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:sched/core] sched: Fix load avg vs cpu-hotplug
-Message-ID: <20120905233951.GX3308@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1345454817.23018.27.camel@twins>
- <tip-f319da0c6894fcf55e21320e40506418a2aad629@git.kernel.org>
- <1346848616.2600.26.camel@twins>
- <20120905132939.GA3480@gmail.com>
- <1346864493.2600.27.camel@twins>
- <1346882630.2600.59.camel@twins>
+	Wed, 5 Sep 2012 19:42:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346882630.2600.59.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12090523-2398-0000-0000-00000A4D89E1
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000293; HX=3.00000196; KW=3.00000007;
- PH=3.00000001; SC=3.00000007; SDB=6.00171632; UDB=6.00038928; UTC=2012-09-05
- 23:39:56
+In-Reply-To: <874nndl3ro.fsf@rustcorp.com.au>
+References: <20120816013405.872.42381.stgit@warthog.procyon.org.uk>
+ <87627ufi2h.fsf@rustcorp.com.au> <CAKi4VALezG7VccXJfwvzr2UZrmAjCUp9eZRjGwqq6cWcExNqXA@mail.gmail.com>
+ <874nndl3ro.fsf@rustcorp.com.au>
+From: Lucas De Marchi <lucas.de.marchi@gmail.com>
+Date: Wed, 5 Sep 2012 20:41:44 -0300
+Message-ID: <CAKi4VA+R0EY9OteOCc=JGOqtshAJd5_CWu9tyJqjjkvG6qZUjw@mail.gmail.com>
+Subject: Re: [RFC] module: signature infrastructure
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: David Howells <dhowells@redhat.com>, dmitry.kasatkin@intel.com,
+        zohar@linux.vnet.ibm.com, jmorris@namei.org, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 06, 2012 at 12:03:50AM +0200, Peter Zijlstra wrote:
-> On Wed, 2012-09-05 at 19:01 +0200, Peter Zijlstra wrote:
-> > > Please do a delta.
-> 
-> OK, so I suppose something like the below ought to do. Paul its slightly
-> different than the one in your tree, given the changelog below, do you
-> see anything wrong with it?
-> 
-> Rakib, again, sorry for getting your name wrong, and this time for
-> getting it merged :/
-> 
-> ---
-> Subject: sched: Fix load avg vs cpu-hotplug mk-II
-> 
-> Commit f319da0c68 ("sched: Fix load avg vs cpu-hotplug") was a known
-> broken version that got in by accident.
-> 
-> In particular, the problem is that at the point it calls
-> calc_load_migrate() nr_running := 1 (the stopper thread), so move the
-> call to CPU_DEAD where we're sure that nr_running := 0.
-> 
-> Also note that we can call calc_load_migrate() without serialization, we
-> know the state of rq is stable since its cpu is dead, and we modify the
-> global state using appropriate atomic ops. 
-> 
-> Suggested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+On Tue, Sep 4, 2012 at 9:19 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> Lucas De Marchi <lucas.de.marchi@gmail.com> writes:
+>> Hi Rusty,
+>>
+>> On Tue, Sep 4, 2012 at 2:55 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>>> @@ -2399,7 +2437,50 @@ static inline void kmemleak_load_module(const struct module *mod,
+>>>  }
+>>>  #endif
+>>>
+>>> -/* Sets info->hdr and info->len. */
+>>> +#ifdef CONFIG_MODULE_SIG
+>>> +static int module_sig_check(struct load_info *info,
+>>> +                           void *mod, unsigned long *len)
+>>> +{
+>>> +       int err;
+>>> +       unsigned long i, siglen;
+>>> +       char *sig = NULL;
+>>> +
+>>> +       /* This is not a valid module: ELF header is larger anyway. */
+>>> +       if (*len < sizeof(MODULE_SIG_STRING))
+>>> +               return -ENOEXEC;
+>>> +
+>>> +       for (i = 0; i < *len - (sizeof(MODULE_SIG_STRING)-1); i++) {
+>>> +               /* Our memcmp is dumb, speed it up a little. */
+>>> +               if (((char *)mod)[i] != MODULE_SIG_STRING[0])
+>>> +                       continue;
+>>
+>> Since the signature is appended to the module, why don't you go
+>> backwards, starting from *len - strlen(sizeof(MODULE_SIG_STRING)) and
+>> making this first comparison?
+>
+> We've had this discussion multiple times.  Simple wins.  It's so
+> marginal, I don't really care, but I've changed it to:
 
-Given your point about atomic ops, my version was indeed overkill.
+Sorry to come up with this suggestion only now (and after you have
+already talked to me at LPC). Only after seeing this implementation I
+thought about the implications of having the module signed in this
+format.
 
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+I'm worried about performance here. Module loading can take a fair
+amount of boot time. It may not be critical for servers or desktops
+that we rarely boot, but it is for embedded uses.
 
-> ---
->  kernel/sched/core.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index c46a011..8c089cb 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -5086,7 +5086,9 @@ migration_call(struct notifier_block *nfb, unsigned long action, void *hcpu)
->  		migrate_tasks(cpu);
->  		BUG_ON(rq->nr_running != 1); /* the migration thread */
->  		raw_spin_unlock_irqrestore(&rq->lock, flags);
-> +		break;
->  
-> +	case CPU_DEAD:
->  		calc_load_migrate(rq);
->  		break;
->  #endif
-> 
+>         int err;
+>         unsigned long i, siglen, markerlen;
+>         char *sig = NULL;
+>
+>         markerlen = strlen(MODULE_SIG_STRING);
+>         /* This is not a valid module: ELF header is larger anyway. */
+>         if (*len < markerlen)
+>                 return -ENOEXEC;
+>
+>         for (i = *len - markerlen; i > 0; i--) {
+>                 /* Our memcmp is dumb, speed it up a little. */
+>                 if (((char *)mod)[i] != MODULE_SIG_STRING[0])
+>                         continue;
+>                 if (memcmp(mod+i, MODULE_SIG_STRING, markerlen))
+>                         continue;
+>
+>                 sig = mod + i + markerlen;
+>                 siglen = *len - i - markerlen;
+>                 *len = i;
+>                 break;
+>         }
+>
+> We could also implement memrchr(), or memrmem().  Hell, if we had
+> memmem() in the kernel I'd gladly use it.
+>
+>> Or let the magic string as the last thing in the module and store the
+>> signature length, too. In this case no scanning is needed
+>
+> Yes, they did that too, but append is simpler.  I don't even have to
+> think about endianness (Dmitry chose be32) or parsing (David chose
+> 5-digit ascii numeric encoding).
 
+Letting it in be32 is the simplest solution IMO. it's way simpler then
+the loop above. You have to check exactly 1 byte to have a first
+decision if module is not signed (as opposed to scanning the entire
+module). Then you compare the memory area with MODULE_SIG_STRING and
+have a final decision. To get the signature length it is just a matter
+of converting it to host endiannes.  And we do have functions for
+doing that. If it's for simplicity in kernel side, this one could be
+implemented in half of the code above.
+
+>
+> Scanning the module is the least of our issues since we've just copied
+> it and we're about to SHA it.
+
+Yeah, but I don't think we need to scan it one more time. On every
+boot. For every module
+
+
+Lucas De Marchi
