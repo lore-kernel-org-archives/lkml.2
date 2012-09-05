@@ -1,47 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759620Ab2IEVqk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 17:46:40 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:45041 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755072Ab2IEVqj (ORCPT
+	id S1759625Ab2IEVrQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 17:47:16 -0400
+Received: from mail-ey0-f202.google.com ([209.85.215.202]:36941 "EHLO
+	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755072Ab2IEVrP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 17:46:39 -0400
-Date: Wed, 05 Sep 2012 17:46:37 -0400 (EDT)
-Message-Id: <20120905.174637.1499279266416363296.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kaber@trash.net
-Subject: Re: linux-next: build failure after merge of the final tree
- (net-next tree related)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120905153932.eebf343364800678aecc98f2@canb.auug.org.au>
-References: <20120905153932.eebf343364800678aecc98f2@canb.auug.org.au>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 5 Sep 2012 17:47:15 -0400
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Inki Dae <inki.dae@samsung.com>, linux-kernel@vger.kernel.org
+Cc: Mandeep Singh Baines <msb@chromium.org>,
+        =?UTF-8?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>,
+        Pawel Osciak <posciak@google.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+Subject: [PATCH] drm/exynos: fix double call of drm_prime_(init/destroy)_file_private
+Date: Wed,  5 Sep 2012 14:47:03 -0700
+Message-Id: <1346881623-388-1-git-send-email-msb@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 5 Sep 2012 15:39:32 +1000
+The double invocations are incorrect but seem to be safe so I don't
+think this will fix any bugs.
 
-> (I always thought IPv6 NAT was a bad idea ;-))
+Before:
 
-ROFL :)
+[    7.639366] drm_prime_init_file ee3675d0
+[    7.639377] drm_prime_init_file ee3675d0
+[    7.639507] drm_prime_destroy_file ee3675d0
+[    7.639518] drm_prime_destroy_file ee3675d0
+[    7.639802] drm_prime_init_file ee372390
+[    7.639810] drm_prime_init_file ee372390
+[    8.473316] drm_prime_init_file ee356390
+[    8.473331] drm_prime_init_file ee356390
 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Wed, 5 Sep 2012 15:34:58 +1000
-> Subject: [PATCH] netfilter: ipv6: using csum_ipv6_magic requires
->  net/ip6_checksum.h
-> 
-> Fixes this build error:
-> 
-> net/ipv6/netfilter/nf_nat_l3proto_ipv6.c: In function 'nf_nat_ipv6_csum_recalc':
-> net/ipv6/netfilter/nf_nat_l3proto_ipv6.c:144:4: error: implicit declaration of function 'csum_ipv6_magic' [-Werror=implicit-function-declaration]
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+After:
 
-Applied, thanks Stephen.
+[    6.363842] drm_prime_init_file edc2e5d0
+[    6.363994] drm_prime_destroy_file edc2e5d0
+[    6.364260] drm_prime_init_file edc2e750
+[    8.004837] drm_prime_init_file ee36ded0
+
+Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+CC: Stéphane Marchesin <marcheu@chromium.org>
+CC: Pawel Osciak <posciak@google.com>
+CC: Inki Dae <inki.dae@samsung.com>
+CC: Joonyoung Shim <jy0922.shim@samsung.com>
+CC: Seung-Woo Kim <sw0312.kim@samsung.com>
+CC: Kyungmin Park <kyungmin.park@samsung.com>
+CC: David Airlie <airlied@linux.ie>
+CC: dri-devel@lists.freedesktop.org
+---
+ drivers/gpu/drm/exynos/exynos_drm_drv.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_drv.c b/drivers/gpu/drm/exynos/exynos_drm_drv.c
+index ebacec6..a27b8ff 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_drv.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_drv.c
+@@ -160,7 +160,6 @@ static int exynos_drm_open(struct drm_device *dev, struct drm_file *file)
+ 	if (!file_priv)
+ 		return -ENOMEM;
+ 
+-	drm_prime_init_file_private(&file->prime);
+ 	file->driver_priv = file_priv;
+ 
+ 	return exynos_drm_subdrv_open(dev, file);
+@@ -184,7 +183,6 @@ static void exynos_drm_preclose(struct drm_device *dev,
+ 			e->base.destroy(&e->base);
+ 		}
+ 	}
+-	drm_prime_destroy_file_private(&file->prime);
+ 	spin_unlock_irqrestore(&dev->event_lock, flags);
+ 
+ 	exynos_drm_subdrv_close(dev, file);
+-- 
+1.7.7.3
+
