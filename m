@@ -1,89 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758663Ab2IEKEI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 06:04:08 -0400
-Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:48913 "EHLO
-	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758426Ab2IEJ7u (ORCPT
+	id S1758489Ab2IEKFK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 06:05:10 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41753 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753245Ab2IEKFH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 05:59:50 -0400
-From: Loic Pallardy <loic.pallardy-ext@stericsson.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Linus Walleij <linus.walleij@linaro.com>
-Cc: Lee Jones <lee.jones@linaro.org>, Loic Pallardy <loic.pallardy@gmail.com>,
-        LT ST-Ericsson <st-ericsson@lists.linaro.org>,
-        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-        Loic Pallardy <loic.pallardy-ext@stericsson.com>,
-        Loic Pallardy <loic.pallardy@stericsson.com>
-Subject: [PATCH 09/17] mfd: prcmu: add db9540 support
-Date: Wed, 5 Sep 2012 11:59:05 +0200
-Message-ID: <1346839153-6465-10-git-send-email-loic.pallardy-ext@stericsson.com>
-X-Mailer: git-send-email 1.7.11.1
-In-Reply-To: <1346839153-6465-1-git-send-email-loic.pallardy-ext@stericsson.com>
-References: <1346839153-6465-1-git-send-email-loic.pallardy-ext@stericsson.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 5 Sep 2012 06:05:07 -0400
+Message-ID: <1346839487.2600.24.camel@twins>
+Subject: Re: [RFC 0/5] forced comounts for cgroups.
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Tejun Heo <tj@kernel.org>
+Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, linux-mm@kvack.org, davej@redhat.com,
+        ben@decadent.org.uk, pjt@google.com, lennart@poettering.net,
+        kay.sievers@vrfy.org
+Date: Wed, 05 Sep 2012 12:04:47 +0200
+In-Reply-To: <20120905093204.GL3195@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <1346768300-10282-1-git-send-email-glommer@parallels.com>
+	 <20120904214602.GA9092@dhcp-172-17-108-109.mtv.corp.google.com>
+	 <5047074D.1030104@parallels.com>
+	 <20120905081439.GC3195@dhcp-172-17-108-109.mtv.corp.google.com>
+	 <50470A87.1040701@parallels.com>
+	 <20120905082947.GD3195@dhcp-172-17-108-109.mtv.corp.google.com>
+	 <50470EBF.9070109@parallels.com>
+	 <20120905084740.GE3195@dhcp-172-17-108-109.mtv.corp.google.com>
+	 <1346835993.2600.9.camel@twins>
+	 <20120905093204.GL3195@dhcp-172-17-108-109.mtv.corp.google.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Light modifications to add db9540 support
-and ab9540 detection.
+On Wed, 2012-09-05 at 02:32 -0700, Tejun Heo wrote:
+> Hey, again.
+> 
+> On Wed, Sep 05, 2012 at 11:06:33AM +0200, Peter Zijlstra wrote:
+> > Doing all this runtime is just going to make the mess even bigger,
+> > because now we have to deal with even more stupid cases.
+> > 
+> > So either we go and try to contain this mess as proposed by Glauber or
+> > we go delete controllers.. I've had it with this crap.
+> 
+> cpuacct is rather unique tho.  I think it's gonna be silly whether the
+> hierarchy is unified or not.
+> 
+> 1. If they always can live on the exact same hierarchy, there's no
+>    point in having the two separate.  Just merge them.
+> 
+> 2. If they need differing levels of granularity, they either need to
+>    do it completely separately as they do now or have some form of
+>    dynamic optimization if absolutely necesary.
+> 
+> So, I think that choice is rather separate from other issues.  If
+> cpuacct is gonna be kept, I'd just keep it separate and warn that it
+> incurs extra overhead for the current users if for nothing else.
+> Otherwise, kill it or merge it into cpu.
 
-Signed-off-by: Loic Pallardy <loic.pallardy@stericsson.com>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/mfd/db8500-prcmu.c | 26 ++++++++++++++++++++++++--
- 1 file changed, 24 insertions(+), 2 deletions(-)
+Quite, hence my 'proposal' to remove cpuacct.
 
-diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
-index 3df427f..eb327f3 100644
---- a/drivers/mfd/db8500-prcmu.c
-+++ b/drivers/mfd/db8500-prcmu.c
-@@ -2994,6 +2994,23 @@ static struct mfd_cell db8500_prcmu_devs[] = {
- 	},
- };
- 
-+static struct mfd_cell db9540_prcmu_devs[] = {
-+	{
-+		.name = "db8500-prcmu-regulators",
-+		.of_compatible = "stericsson,db8500-prcmu-regulator",
-+		.platform_data = &db8500_regulators,
-+		.pdata_size = sizeof(db8500_regulators),
-+	},
-+	{
-+		.name = "ab9540-i2c",
-+		.of_compatible = "stericsson,ab8500",
-+		.num_resources = ARRAY_SIZE(ab8500_resources),
-+		.resources = ab8500_resources,
-+		.id = AB8500_VERSION_AB9540,
-+	},
-+};
-+
-+
- /**
-  * prcmu_fw_init - arch init call for the Linux PRCMU fw init logic
-  *
-@@ -3035,11 +3052,16 @@ static int __devinit db8500_prcmu_probe(struct platform_device *pdev)
- 		}
- 	}
- 
--	if (cpu_is_u8500v20_or_later())
-+	if (cpu_is_u8500v20_or_later() && !cpu_is_u9540())
- 		prcmu_config_esram0_deep_sleep(ESRAM0_DEEP_SLEEP_STATE_RET);
- 
--	err = mfd_add_devices(&pdev->dev, 0, db8500_prcmu_devs,
-+	if (cpu_is_u9540())
-+			err = mfd_add_devices(&pdev->dev, 0, db9540_prcmu_devs,
-+			ARRAY_SIZE(db9540_prcmu_devs), NULL, 0);
-+	else
-+		err = mfd_add_devices(&pdev->dev, 0, db8500_prcmu_devs,
- 			ARRAY_SIZE(db8500_prcmu_devs), NULL, 0);
-+
- 	if (err) {
- 		pr_err("prcmu: Failed to add subdevices\n");
- 		return err;
--- 
-1.7.11.1
+There was some whining last time Glauber proposed this, but the one
+whining never convinced and has gone away from Linux, so lets just do
+this.
+
+Lets make cpuacct print a deprecated msg to dmesg for a few releases and
+make cpu do all this.
+
+The co-mounting stuff would have been nice for cpusets as well, knowing
+all your tasks are affine to a subset of cpus allows for a few
+optimizations (smaller cpumask iterations), but I guess we'll have to do
+that dynamically, we'll just have to see how ugly that is.
+
 
