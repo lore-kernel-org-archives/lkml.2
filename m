@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758718Ab2IEKix (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 06:38:53 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:27254 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751729Ab2IEKgP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 06:36:15 -0400
-X-IronPort-AV: E=Sophos;i="4.80,373,1344182400"; 
-   d="scan'208";a="5789507"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH 00/11 V5] workqueue: reimplement unbind/rebind
-Date: Wed, 5 Sep 2012 18:37:37 +0800
-Message-Id: <1346841475-4422-1-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/05 18:35:49,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/05 18:35:50,
-	Serialize complete at 2012/09/05 18:35:50
+	id S1758480Ab2IEKmO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 06:42:14 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:50673 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752360Ab2IEKmM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 06:42:12 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 02/17] arm: ux500: add ccu9540 board support
+Date: Wed, 5 Sep 2012 10:42:00 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Loic Pallardy <loic.pallardy-ext@stericsson.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.com>,
+        Loic Pallardy <loic.pallardy@stericsson.com>,
+        "STEricsson_nomadik_linux" <STEricsson_nomadik_linux@list.st.com>,
+        Loic Pallardy <loic.pallardy@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        "LT ST-Ericsson" <st-ericsson@lists.linaro.org>
+References: <1346839153-6465-1-git-send-email-loic.pallardy-ext@stericsson.com> <1346839153-6465-3-git-send-email-loic.pallardy-ext@stericsson.com>
+In-Reply-To: <1346839153-6465-3-git-send-email-loic.pallardy-ext@stericsson.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209051042.00887.arnd@arndb.de>
+X-Provags-ID: V02:K0:TerDWZYPgNEzWJYDA5XGqm8stJKTP1lYQJaDV8PjqWd
+ 7PyaznkN+3cRO/dHswq7fJBcOs4+msHSlByjQviv/wSWsQkEiX
+ oTT+t6xgxmlp+ZtWmx1fRi5Yio/Z6hBVaUnM0Xb0ljpMCD+9Tc
+ KyCNes0p9CDCeNa2MaZ4JFofizfnHACYYKGjFsctAfC5UQ1/6e
+ HIrbKLyWF6Qq0NjL1ns+BK3mi2OMGaGsf2o/INl0ebOCDp4Vao
+ WZ3WYM2YsHebraOoPXgjtY3mbrhBp080HthR8kGNSOj2aUgc/y
+ g8oiAVPkysvh957lPL94tuPXW/rGsN7/MDUR1r9V5CulQRHp8N
+ liQPJgsiiOUBbTbEQAMw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch 2 a different way to fix deadlock problem. it removes 50 LOC !!
-Patch 3-4 cleanup rebind
+On Wednesday 05 September 2012, Loic Pallardy wrote:
+> +MACHINE_START(U9540, "ST-Ericsson 9540 platform")
+> +       .atag_offset    = 0x100,
+> +       .map_io         = u8500_map_io,
+> +       .nr_irqs        = UX500_NR_IRQS,
+> +       .init_irq       = ux500_init_irq,
+> +       .timer          = &ux500_timer,
+> +       .handle_irq     = gic_handle_irq,
+> +       .init_machine   = u9540_init_machine,
+> +       .init_late      = ux500_init_late,
+> +MACHINE_END
+> +
 
-Patch 5-9 prepare for patch 10
-Patch 10  unbind/rebind without manager_mutex, fix bug hotplug VS manage
+Please don't add another ATAG based board definition to ux500. We're closing in
+on having full support for DT booting with this platform, so your patch is just
+making it harder for us to complete this. 
 
-	The first core algorithm for 5-10 is detecting the changes of binding
-	by GCWQ_DISASSOCIATED bit and WORKER_UNBOUND bit.
-	The second core algorithm is exile-operation. Patch2,9
-
-
-Patch 11  cleanup manager.
-
-
-Patch 1 accepted, just resent.
-
-Changed from V4:
-Give up to make manage_mutex safer, remove it instead.
-
-Lai Jiangshan (11):
-  workqueue: ensure the wq_worker_sleeping() see the      right flags
-  async idle rebinding
-  new day don't need WORKER_REBIND for busy worker
-  remove WORKER_REBIND
-  Add @bind arguement back
-  unbind manager
-  rebind manager
-  unbind newly created worker
-  rebind newly created worker
-  unbind/rebind without manager_mutex
-  remove manager_mutex
-
- kernel/workqueue.c |  270 ++++++++++++++++++++++++----------------------------
- 1 files changed, 124 insertions(+), 146 deletions(-)
-
--- 
-1.7.4.4
-
+	Arnd
