@@ -1,86 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759013Ab2IES3c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 14:29:32 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:54600 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752777Ab2IES3b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 14:29:31 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Aneesh V <aneesh@ti.com>
-Cc: Benoit Cousson <b-cousson@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Lokesh Vutla <lokeshvutla@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH] memory: fix build when CONFIG_OF && !CONFIG_DDR
-Date: Wed,  5 Sep 2012 12:29:23 -0600
-Message-Id: <1346869763-11798-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.0.4
-X-NVConfidentiality: public
+	id S1759157Ab2IESbn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 14:31:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3750 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753509Ab2IESbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 14:31:40 -0400
+Message-Id: <20120905183133.461178345@napanee.usersys.redhat.com>
+User-Agent: quilt/0.48-1
+Date: Wed, 05 Sep 2012 14:31:34 -0400
+From: Aristeu Rozanski <aris@redhat.com>
+To: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Cc: Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Hillf Danton <dhillf@gmail.com>,
+        Lennart Poettering <lpoetter@redhat.com>
+Subject: [PATCH 2/2] fs: add documentation to simple_xattr functions
+References: <20120905183132.806473183@napanee.usersys.redhat.com>
+Content-Disposition: inline; filename=simple_xattr_doc.txt
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+Cc: Li Zefan <lizefan@huawei.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Hillf Danton <dhillf@gmail.com>
+Cc: Lennart Poettering <lpoetter@redhat.com>
+Signed-off-by: Aristeu Rozanski <aris@redhat.com>
 
-Commit e6b42eb "memory: emif: add device tree support to emif driver"
-added drivers/memory/of_memory.c, which references tables defined in
-lib/jedec_ddr_data.c. of_memory.c is compiled when CONFIG_OF, whereas
-jedec_ddr_data.c is compiled when CONFIG_DDR. This breaks the build
-when CONFIG_OF is defined but not CONFIG_DDR:
-
-drivers/built-in.o: In function `of_get_ddr_timings':
-drivers/memory/of_memory.c:138: undefined reference to `lpddr2_jedec_timings'
-drivers/built-in.o: In function `of_get_min_tck':
-drivers/memory/of_memory.c:62: undefined reference to `lpddr2_jedec_min_tck'
-make: *** [vmlinux] Error 1
-
-To solve this, only compile of_memory.c when CONFIG_OF && CONFIG_DDR,
-otherwise, stub out the functions.
-
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
- drivers/memory/Makefile    |    2 ++
- drivers/memory/of_memory.h |    4 ++--
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ Documentation/filesystems/00-INDEX         |    3 ++
+ Documentation/filesystems/simple_xattr.txt |   42 +++++++++++++++++++++++++++++
+ 2 files changed, 45 insertions(+)
 
-diff --git a/drivers/memory/Makefile b/drivers/memory/Makefile
-index cd8486b..9cce5d7 100644
---- a/drivers/memory/Makefile
-+++ b/drivers/memory/Makefile
-@@ -2,7 +2,9 @@
- # Makefile for memory devices
- #
- 
-+ifeq ($(CONFIG_DDR),y)
- obj-$(CONFIG_OF)		+= of_memory.o
-+endif
- obj-$(CONFIG_TI_EMIF)		+= emif.o
- obj-$(CONFIG_TEGRA20_MC)	+= tegra20-mc.o
- obj-$(CONFIG_TEGRA30_MC)	+= tegra30-mc.o
-diff --git a/drivers/memory/of_memory.h b/drivers/memory/of_memory.h
-index 20b496e..ef2514f 100644
---- a/drivers/memory/of_memory.h
-+++ b/drivers/memory/of_memory.h
-@@ -12,7 +12,7 @@
- #ifndef __LINUX_MEMORY_OF_REG_H
- #define __LINUX_MEMORY_OF_REG_H
- 
--#ifdef CONFIG_OF
-+#if defined(CONFIG_OF) && defined(CONFIG_DDR)
- extern const struct lpddr2_min_tck *of_get_min_tck(struct device_node *np,
- 		struct device *dev);
- extern const struct lpddr2_timings
-@@ -31,6 +31,6 @@ static inline const struct lpddr2_timings
- {
- 	return NULL;
- }
--#endif /* CONFIG_OF */
-+#endif /* CONFIG_OF && CONFIG_DDR */
- 
- #endif /* __LINUX_MEMORY_OF_REG_ */
--- 
-1.7.0.4
+Index: github/Documentation/filesystems/00-INDEX
+===================================================================
+--- github.orig/Documentation/filesystems/00-INDEX	2012-09-05 11:51:50.870969722 -0400
++++ github/Documentation/filesystems/00-INDEX	2012-09-05 12:10:46.250211947 -0400
+@@ -96,6 +96,9 @@
+ 	- how to use the seq_file API
+ sharedsubtree.txt
+ 	- a description of shared subtrees for namespaces.
++simple_xattr.txt
++	- description of extended attributes for memory backed filesystems
++	  like tmpfs and cgroup filesystem.
+ spufs.txt
+ 	- info and mount options for the SPU filesystem used on Cell.
+ sysfs-pci.txt
+Index: github/Documentation/filesystems/simple_xattr.txt
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ github/Documentation/filesystems/simple_xattr.txt	2012-09-05 12:10:46.250211947 -0400
+@@ -0,0 +1,42 @@
++Simple Extended Attributes for Memory Backed Filesystems Interface
++==================================================================
++
++Implements extended attributes storage using kernel memory.  Users of these
++functions are strongly advised against allowing user or any other kind of
++extended attributes that can be manipulated by unprivileged users, since it'd
++be trivial to exhaust kernel memory.
++
++The filesystem implementation is responsible by storing a simple_xattrs
++structure for every directory and file and to implement setxattr() and
++getxattr() calls. Also, setxattr() should filter off by name the unsupported
++types.
++
++void simple_xattrs_init(struct simple_xattrs *xattrs)
++- Initializes a pre allocated structure
++
++void simple_xattrs_free(struct simple_xattrs *xattrs)
++- Frees up all the extended attributes and any resources allocated by
++  simple_xattrs_init
++
++struct simple_xattr *simple_xattr_alloc(const void *value, size_t size)
++- Allocates a extended attribute entry
++
++void simple_xattr_list_add(struct simple_xattrs *xattrs,
++                          struct simple_xattr *new_xattr)
++int simple_xattr_remove(struct simple_xattrs *xattrs, const char *name)
++- Adds and removes an extended attribute from the list
++
++int simple_xattr_get(struct simple_xattrs *xattrs, const char *name,
++                    void *buffer, size_t size);
++- Returns the value of an extended attribute searching by name
++
++int simple_xattr_set(struct simple_xattrs *xattrs, const char *name,
++                    const void *value, size_t size, int flags);
++- Sets a new value for a given extended attribute. Specifying value as
++  NULL will remove the entry.  If XATTR_CREATE is set in flags, no extended
++  attribute with the same name may exist.  If XATTR_REPLACE is set, the
++  extended attribute has to exist or the operation will fail
++
++ssize_t simple_xattr_list(struct simple_xattrs *xattrs, char *buffer,
++                         size_t size);
++- Lists the existing extended attributes names in a given buffer
 
