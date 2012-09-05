@@ -1,64 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752613Ab2IEJnM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 05:43:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12173 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751858Ab2IEJnL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 05:43:11 -0400
-Message-ID: <50471EAB.5060309@redhat.com>
-Date: Wed, 05 Sep 2012 12:43:07 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Mathias Krause <minipli@googlemail.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/8] KVM: x86 emulator: use aligned variants of SSE register
- ops
-References: <1346283020-22385-1-git-send-email-minipli@googlemail.com> <1346283020-22385-3-git-send-email-minipli@googlemail.com> <5045EF86.4080600@redhat.com> <5045F06F.5030101@redhat.com> <CA+rthh8T3Y9XAz+J3C7KfeJa_0d9if9GSrhwTNYhPR+RgEnXKg@mail.gmail.com>
-In-Reply-To: <CA+rthh8T3Y9XAz+J3C7KfeJa_0d9if9GSrhwTNYhPR+RgEnXKg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S932741Ab2IEJpL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 05:45:11 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:61122 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752054Ab2IEJo5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 05:44:57 -0400
+X-IronPort-AV: E=Sophos;i="4.80,373,1344182400"; 
+   d="scan'208";a="5789231"
+From: wency@cn.fujitsu.com
+To: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org
+Cc: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
+        minchan.kim@gmail.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        Wen Congyang <wency@cn.fujitsu.com>
+Subject: [RFC v9 PATCH 11/21] memory-hotplug: remove_memory calls __remove_pages
+Date: Wed, 5 Sep 2012 17:25:45 +0800
+Message-Id: <1346837155-534-12-git-send-email-wency@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1346837155-534-1-git-send-email-wency@cn.fujitsu.com>
+References: <1346837155-534-1-git-send-email-wency@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/05 17:20:02,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/05 17:20:04,
+	Serialize complete at 2012/09/05 17:20:04
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2012 03:51 PM, Mathias Krause wrote:
-> On Tue, Sep 4, 2012 at 2:13 PM, Avi Kivity <avi@redhat.com> wrote:
->> On 09/04/2012 03:09 PM, Avi Kivity wrote:
->>> On 08/30/2012 02:30 AM, Mathias Krause wrote:
->>>> As the the compiler ensures that the memory operand is always aligned
->>>> to a 16 byte memory location,
->>>
->>> I'm not sure it does.  Is V4SI aligned?  Do we use alignof() to
->>> propagate the alignment to the vcpu allocation code?
-> 
-> I checked that to by introducing a dummy char member in struct operand
-> that would have misaligned vec_val but, indeed, the compiler ensured
-> it's still 16 byte aligned.
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-Ok.
+The patch adds __remove_pages() to remove_memory(). Then the range of
+phys_start_pfn argument and nr_pages argument in __remove_pagse() may
+have different zone. So zone argument is removed from __remove_pages()
+and __remove_pages() caluculates zone in each section.
 
-> 
->>
->> We actually do.  But please rebase the series against next, I got some
->> conflicts while applying.
-> 
-> If "next" means kvm/next
-> (i.e.git://git.kernel.org/pub/scm/virt/kvm/kvm.git#next) here, the
-> whole series applies cleanly for me.
-> HEAD in kvm/next is 9a78197 "KVM: x86: remove unused variable from
-> kvm_task_switch()" here. Albeit the series was build against kvm/next
-> at the time as a81aba1 "KVM: VMX: Ignore segment G and D bits when
-> considering whether we can virtualize" was HEAD in this branch.
-> 
-> Could you please retry and show me the conflicts you get?
+When CONFIG_SPARSEMEM_VMEMMAP is defined, there is no way to remove a memmap.
+So __remove_section only calls unregister_memory_section().
 
-I tried again and it applies cleanly now, so it must have been a user
-error earlier.
+CC: David Rientjes <rientjes@google.com>
+CC: Jiang Liu <liuj97@gmail.com>
+CC: Len Brown <len.brown@intel.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Paul Mackerras <paulus@samba.org>
+CC: Christoph Lameter <cl@linux.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Wen Congyang <wency@cn.fujitsu.com>
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+---
+ arch/powerpc/platforms/pseries/hotplug-memory.c |    5 +----
+ include/linux/memory_hotplug.h                  |    3 +--
+ mm/memory_hotplug.c                             |   17 ++++++++++-------
+ 3 files changed, 12 insertions(+), 13 deletions(-)
 
-All applied, thanks.
-
+diff --git a/arch/powerpc/platforms/pseries/hotplug-memory.c b/arch/powerpc/platforms/pseries/hotplug-memory.c
+index dc0a035..cc14da4 100644
+--- a/arch/powerpc/platforms/pseries/hotplug-memory.c
++++ b/arch/powerpc/platforms/pseries/hotplug-memory.c
+@@ -76,7 +76,6 @@ unsigned long memory_block_size_bytes(void)
+ static int pseries_remove_memblock(unsigned long base, unsigned int memblock_size)
+ {
+ 	unsigned long start, start_pfn;
+-	struct zone *zone;
+ 	int i, ret;
+ 	int sections_to_remove;
+ 
+@@ -87,8 +86,6 @@ static int pseries_remove_memblock(unsigned long base, unsigned int memblock_siz
+ 		return 0;
+ 	}
+ 
+-	zone = page_zone(pfn_to_page(start_pfn));
+-
+ 	/*
+ 	 * Remove section mappings and sysfs entries for the
+ 	 * section of the memory we are removing.
+@@ -101,7 +98,7 @@ static int pseries_remove_memblock(unsigned long base, unsigned int memblock_siz
+ 	sections_to_remove = (memblock_size >> PAGE_SHIFT) / PAGES_PER_SECTION;
+ 	for (i = 0; i < sections_to_remove; i++) {
+ 		unsigned long pfn = start_pfn + i * PAGES_PER_SECTION;
+-		ret = __remove_pages(zone, start_pfn,  PAGES_PER_SECTION);
++		ret = __remove_pages(start_pfn,  PAGES_PER_SECTION);
+ 		if (ret)
+ 			return ret;
+ 	}
+diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+index fd84ea9..8bf820d 100644
+--- a/include/linux/memory_hotplug.h
++++ b/include/linux/memory_hotplug.h
+@@ -90,8 +90,7 @@ extern bool is_pageblock_removable_nolock(struct page *page);
+ /* reasonably generic interface to expand the physical pages in a zone  */
+ extern int __add_pages(int nid, struct zone *zone, unsigned long start_pfn,
+ 	unsigned long nr_pages);
+-extern int __remove_pages(struct zone *zone, unsigned long start_pfn,
+-	unsigned long nr_pages);
++extern int __remove_pages(unsigned long start_pfn, unsigned long nr_pages);
+ 
+ #ifdef CONFIG_NUMA
+ extern int memory_add_physaddr_to_nid(u64 start);
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 2353887..7fbfc9f 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -275,11 +275,14 @@ static int __meminit __add_section(int nid, struct zone *zone,
+ #ifdef CONFIG_SPARSEMEM_VMEMMAP
+ static int __remove_section(struct zone *zone, struct mem_section *ms)
+ {
+-	/*
+-	 * XXX: Freeing memmap with vmemmap is not implement yet.
+-	 *      This should be removed later.
+-	 */
+-	return -EBUSY;
++	int ret = -EINVAL;
++
++	if (!valid_section(ms))
++		return ret;
++
++	ret = unregister_memory_section(ms);
++
++	return ret;
+ }
+ #else
+ static int __remove_section(struct zone *zone, struct mem_section *ms)
+@@ -346,8 +349,7 @@ EXPORT_SYMBOL_GPL(__add_pages);
+  * sure that pages are marked reserved and zones are adjust properly by
+  * calling offline_pages().
+  */
+-int __remove_pages(struct zone *zone, unsigned long phys_start_pfn,
+-		 unsigned long nr_pages)
++int __remove_pages(unsigned long phys_start_pfn, unsigned long nr_pages)
+ {
+ 	unsigned long i, ret = 0;
+ 	int sections_to_remove;
+@@ -363,6 +365,7 @@ int __remove_pages(struct zone *zone, unsigned long phys_start_pfn,
+ 	sections_to_remove = nr_pages / PAGES_PER_SECTION;
+ 	for (i = 0; i < sections_to_remove; i++) {
+ 		unsigned long pfn = phys_start_pfn + i*PAGES_PER_SECTION;
++		struct zone *zone = page_zone(pfn_to_page(pfn));
+ 		ret = __remove_section(zone, __pfn_to_section(pfn));
+ 		if (ret)
+ 			break;
 -- 
-error compiling committee.c: too many arguments to function
+1.7.1
+
