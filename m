@@ -1,101 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758738Ab2IEPW6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 11:22:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:38567 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751999Ab2IEPW4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 11:22:56 -0400
+	id S1758843Ab2IEPXE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 11:23:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43167 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758802Ab2IEPXB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 11:23:01 -0400
+Message-ID: <50476E51.5020005@redhat.com>
+Date: Wed, 05 Sep 2012 18:22:57 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <20120905140304.5c5c58a4@pyramind.ukuu.org.uk>
-References: <s5hd3222azc.wl%tiwai@suse.de>
-	<CACVXFVP-A7M2dG9bOvAnpzR60=iTYSw=WCOEwgo9KeuioxKanQ@mail.gmail.com>
-	<s5hd32122hw.wl%tiwai@suse.de>
-	<CACVXFVNE1GHAQJTrQy2AYgUBfq5kv42EjJJ7J+2q3jzXG-E=MQ@mail.gmail.com>
-	<s5hpq61j9qx.wl%tiwai@suse.de>
-	<CACVXFVOu86J5=1DLDrpLCd-pyk1jm2HT7ks1uzCXm9nURCRo2A@mail.gmail.com>
-	<20120905140304.5c5c58a4@pyramind.ukuu.org.uk>
-Date: Wed, 5 Sep 2012 23:22:55 +0800
-Message-ID: <CACVXFVO+OgvLoFMcDD0gcQnbzUW=SyR=wiSMyT-FtpjWW5sWdw@mail.gmail.com>
-Subject: Re: A workaround for request_firmware() stuck in module_init
-From: Ming Lei <ming.lei@canonical.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Takashi Iwai <tiwai@suse.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Kay Sievers <kay@vrfy.org>,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Alex Williamson <alex.williamson@redhat.com>, gleb@redhat.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v9 1/2] kvm: Use a reserved IRQ source ID for irqfd
+References: <20120821190800.24958.74812.stgit@bling.home> <20120821192903.24958.90138.stgit@bling.home> <20120821195813.GD9027@redhat.com> <1345579579.29292.67.camel@ul30vt.home> <20120821204125.GF9027@redhat.com> <1345583694.29292.91.camel@ul30vt.home> <20120822004138.GM9027@redhat.com> <5047633F.9020405@redhat.com> <20120905145153.GA11048@redhat.com> <504768E2.3020706@redhat.com> <20120905151348.GC11058@redhat.com>
+In-Reply-To: <20120905151348.GC11058@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 5, 2012 at 9:03 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->> If the driver is built in kernel, the request_firmware in .probe() may
->> prolong kernel init, and it might be a problem. But looks it is not a
->> big deal since most of drivers are built as module.
->
-> Doing it by deferring the load also fixes that. The built in ones will
-> defer their final probe until the firmware appears and all will be well.
+On 09/05/2012 06:13 PM, Michael S. Tsirkin wrote:
+> On Wed, Sep 05, 2012 at 05:59:46PM +0300, Avi Kivity wrote:
+>> On 09/05/2012 05:51 PM, Michael S. Tsirkin wrote:
+>> > On Wed, Sep 05, 2012 at 05:35:43PM +0300, Avi Kivity wrote:
+>> >> On 08/22/2012 03:41 AM, Michael S. Tsirkin wrote:
+>> >> >> 
+>> >> >> I assumed you were pointing out the level vs edge interaction.  If we
+>> >> >> call that a userspace bug, I can just drop this.  Thanks,
+>> >> >> 
+>> >> >> Alex
+>> >> > 
+>> >> > level is userspace bug I think :)
+>> >> 
+>> >> I don't see how it's a bug.  Suppose we have a vfio device that shares a
+>> >> gsi with an emulated device.  The emulated device naturally uses
+>> >> KVM_IRQ_LINE (it has no need to re-sample on ADN), while vfio naturally
+>> >> has to use irqfd.
+>> > 
+>> > Absolutely. But vfio needs to use irqfd with the new flag.
+>> > Using existing irqfd for level is a bug.
+>> 
+>> I see we're not reusing this irq source id for level irqfd.  But I think
+>> we should, there's no need for per-gsi irq source id.
+> 
+> I agree. All resample irqfds are deasserted at the same time,
+> tracking them separately gets us nothing.
 
-Yes, deferring the load may fix the built in case, but which also
-introduces much work on changes of current drivers. In fact,
-there are few guys who complained the built in case.
+That's not the reason.  Separate irq source ids only have meanings
+within a gsi.  We could have two lines (gsi 3 isid 4) and (gsi 4 isid 4)
+that can be toggled independently with no effect on the other gsi.
+Within a gsi we do need a separate irq source id usually, but as 2/2
+recognizes, AODNs are a special case since we clear all inputs anyway.
+The end result is that all AODNs can share a single isid.
 
-The current complaint is from that udev may timeout request inside probe()
-when drivers are built as module. As pointed by Linus and Benjamin,
-it is better to fix it in udev, and looks not good to introduce great changes
-(such as Takashi's defer probe patch) in kernel to workaround the problem.
+> 
+>> Plus I'd like to
+>> fix the theoretical bug even if it doesn't bite in practice.
+>> 
+> 
+> I'm not sure what the bug is, for edge, and how a separate ID fixes it.
+> Could you clarify?
 
->
-> If your rootfs needs firmware not in your initrd you already broke it and
-> there is a certain level beyond which you just have to give up trying to
-> save people from themselves.
->
-> It may actually make sense to push more of it into the core driver layer
-> and take some of the ability to make mistakes away from driver authors.
-> For the general case of "load firmware if we see one" there isn't really
-> any reason we can't have a firmware_name entry in the probe table
-> entries themselves. If that was present the core bus probe would kick a
+gsi 3 is configured as edge in the ioapic.  It has (unusually) two
+inputs: one driven by userspace, the other by irqfd.
 
-Linus has said that he doesn't like to load firmware in probe(), but in some
-situation the drivers have to load firmware in its probe():
+cpu 0                    cpu 1
+------------------------ -------------------------
+irqfd: set to 1
+ioapic: recognize edge
+inject irq
+EOI
+                         KVM_IRQ_LINE: set to 1
+                         ioapic: ignore
+                         KVM_IRQ_LINE: set to 0
+irqfd: set to 0
 
-        http://marc.info/?l=linux-kernel&m=134592122811866&w=2
+We had two edges with an EOI between them, but injected just on interrupt.
 
-In fact, it is better for drivers to load firmware just when user wants to use
-the device, and some drivers have already changed to load firmware in
-the open() callback.
-
-So looks loading firmware always before probe in driver core is
-against the above idea.
-
-> firmware load off and only when the firmware had loaded would it call
-> ->probe with dev->firmware pointing at a refcounted firmware struct.
-
-IMO, introduce refcount for the firmware doesn't make sense. The lifetime
-of firmware is completely different with lifetime of driver or device:
-
-    - firmware needn't be kept in memory in the device/driver's lifetime, and
-      should be loaded just in need, and be released after downloading
-      it into device.
-
-   - sometimes devices may disappear, but it is better to keep the
-     firmware in memory, for example, device may be disconnected
-     during resume but will come back later.
-
->
-> At that point it should be much faster to fix existing drivers and much
-> harder for a random device driver to get it wrong. We can even add
-> helpers which manage dev->firmware, and free the relevant objects when
-> needed, plus doing automatic ref/deref on probe/remove so that for a
-
-As said above, ref/deref on probe/remove is not a good idea since
-we needn't to keep the firmware in memory during the whole device/driver
-lifetime.
-
-Thanks,
---
-Ming Lei
+-- 
+error compiling committee.c: too many arguments to function
