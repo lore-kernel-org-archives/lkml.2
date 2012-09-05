@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756547Ab2IEIrh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 04:47:37 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55421 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752011Ab2IEIre convert rfc822-to-8bit (ORCPT
+	id S1758133Ab2IEIrv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 04:47:51 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52663 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756792Ab2IEIrp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 04:47:34 -0400
-Message-ID: <1346834836.2600.3.camel@twins>
-Subject: Re: [PATCH] perf/x86: Disable uncore on virtualized CPU.
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, eranian@google.com, mingo@elte.hu,
-        andi@firstfloor.org, avi@redhat.com, linux-kernel@vger.kernel.org
-Date: Wed, 05 Sep 2012 10:47:16 +0200
-In-Reply-To: <20120905063524.GA20710@gmail.com>
-References: <1345540117-14164-1-git-send-email-zheng.z.yan@intel.com>
-	 <20120905063524.GA20710@gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 5 Sep 2012 04:47:45 -0400
+Date: Wed, 5 Sep 2012 01:47:40 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        davej@redhat.com, ben@decadent.org.uk, a.p.zijlstra@chello.nl,
+        pjt@google.com, lennart@poettering.net, kay.sievers@vrfy.org
+Subject: Re: [RFC 0/5] forced comounts for cgroups.
+Message-ID: <20120905084740.GE3195@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <1346768300-10282-1-git-send-email-glommer@parallels.com>
+ <20120904214602.GA9092@dhcp-172-17-108-109.mtv.corp.google.com>
+ <5047074D.1030104@parallels.com>
+ <20120905081439.GC3195@dhcp-172-17-108-109.mtv.corp.google.com>
+ <50470A87.1040701@parallels.com>
+ <20120905082947.GD3195@dhcp-172-17-108-109.mtv.corp.google.com>
+ <50470EBF.9070109@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50470EBF.9070109@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-05 at 08:35 +0200, Ingo Molnar wrote:
-> * Yan, Zheng <zheng.z.yan@intel.com> wrote:
+Hello, Glauber.
+
+On Wed, Sep 05, 2012 at 12:35:11PM +0400, Glauber Costa wrote:
+> > As long as cpuacct and cpu are separate, I think it makes sense to
+> > assume that they at least could be at different granularity.  
 > 
-> > From: "Yan, Zheng" <zheng.z.yan@intel.com>
-> > 
-> > Initializing uncore PMU on virtualized CPU may hang the kernel.
-> > This is because kvm does not emulate the entire hardware. Thers
-> > are lots of uncore related MSRs, making kvm enumerate them all
-> > is a non-trival task. So just disable uncore on virtualized CPU.
-> > 
-> > Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-> > ---
-> >  arch/x86/kernel/cpu/perf_event_intel_uncore.c | 3 +++
-> >  1 file changed, 3 insertions(+)
-> > 
-> > diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> > index 0a55710..2f005ba 100644
-> > --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> > +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> > @@ -2898,6 +2898,9 @@ static int __init intel_uncore_init(void)
-> >  	if (boot_cpu_data.x86_vendor != X86_VENDOR_INTEL)
-> >  		return -ENODEV;
-> >  
-> > +	if (cpu_has_hypervisor)
-> > +		return -ENODEV;
-> > +
-> >  	ret = uncore_pci_init();
-> >  	if (ret)
-> >  		goto fail;
-> 
-> Cannot the presence of the uncore hardware be detected in a 
-> cleaner fashion, via the PCI config space and such?
+> If they are comounted, and more: forceably comounted, I don't see how to
+> call them separate. At the very best, they are this way for
+> compatibility purposes only, to lay a path that would allow us to get
+> rid of the separation eventually.
 
-No, part of the uncore PMUs are in MSR space and aren't discoverable.
-CPUID model checks + hard assumptions of presence are all that we are
-left with.
+I think this is where we disagree.  I didn't mean that all controllers
+should be using exactly the same hierarchy when I was talking about
+unified hierarchy.  I do think it's useful and maybe even essential to
+allow differing levels of granularity.  cpu and cpuacct could be a
+valid example for this.  Likely blkcg and memcg too.
 
-Now Avi suggested we teach KVM about these MSRs and then modify the
-uncore driver to test if the MSRs actually work -- as in retain values
-written to them and aren't always 0.
+So, I think it's desirable for all controllers to be able to handle
+hierarchies the same way and to have the ability to tag something as
+belonging to certain group in the hierarchy for all controllers but I
+don't think it's desirable or feasible to require all of them to
+follow exactly the same grouping at all levels.
 
-That's a larger patch though, partly because enumerating the gazillion
-MSRs consumed by the various uncore PMUs is a tedious job, and we can
-always do this later.
+Thanks.
 
-This patch is a minimal patch to at least make things 'work' for now.
-
+-- 
+tejun
