@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759896Ab2IEXJS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 19:09:18 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34305 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759801Ab2IEXJH (ORCPT
+	id S1760015Ab2IEXJd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 19:09:33 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51603 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759807Ab2IEXJJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 19:09:07 -0400
+	Wed, 5 Sep 2012 19:09:09 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 07/17] perf script: Remove use of die/exit
-Date: Wed,  5 Sep 2012 20:08:47 -0300
-Message-Id: <1346886537-11621-8-git-send-email-acme@infradead.org>
+Subject: [PATCH 04/17] perf lock: Remove use of die and handle errors
+Date: Wed,  5 Sep 2012 20:08:44 -0300
+Message-Id: <1346886537-11621-5-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1346886537-11621-1-git-send-email-acme@infradead.org>
 References: <1346886537-11621-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,153 +28,475 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Ahern <dsahern@gmail.com>
 
-Allows perf to clean up properly on exit. Only exits left are exec
-failures which are appropriate and usage callbacks that list available
-options.
+Allows perf to clean up properly on exit.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1346005487-62961-7-git-send-email-dsahern@gmail.com
+Link: http://lkml.kernel.org/r/1346005487-62961-4-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-script.c |   60 +++++++++++++++++++++++++++++-------------
- 1 files changed, 41 insertions(+), 19 deletions(-)
+ tools/perf/builtin-lock.c |  181 +++++++++++++++++++++++++++++++--------------
+ 1 files changed, 124 insertions(+), 57 deletions(-)
 
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 2d6e3b2..c350cfe 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -1153,18 +1153,23 @@ static const struct option options[] = {
- 	OPT_END()
+diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
+index 585aae2..75153c8 100644
+--- a/tools/perf/builtin-lock.c
++++ b/tools/perf/builtin-lock.c
+@@ -161,8 +161,10 @@ static struct thread_stat *thread_stat_findnew_after_first(u32 tid)
+ 		return st;
+ 
+ 	st = zalloc(sizeof(struct thread_stat));
+-	if (!st)
+-		die("memory allocation failed\n");
++	if (!st) {
++		pr_err("memory allocation failed\n");
++		return NULL;
++	}
+ 
+ 	st->tid = tid;
+ 	INIT_LIST_HEAD(&st->seq_list);
+@@ -181,8 +183,10 @@ static struct thread_stat *thread_stat_findnew_first(u32 tid)
+ 	struct thread_stat *st;
+ 
+ 	st = zalloc(sizeof(struct thread_stat));
+-	if (!st)
+-		die("memory allocation failed\n");
++	if (!st) {
++		pr_err("memory allocation failed\n");
++		return NULL;
++	}
+ 	st->tid = tid;
+ 	INIT_LIST_HEAD(&st->seq_list);
+ 
+@@ -248,18 +252,20 @@ struct lock_key keys[] = {
+ 	{ NULL, NULL }
  };
  
--static bool have_cmd(int argc, const char **argv)
-+static int have_cmd(int argc, const char **argv)
+-static void select_key(void)
++static int select_key(void)
  {
- 	char **__argv = malloc(sizeof(const char *) * argc);
+ 	int i;
  
--	if (!__argv)
--		die("malloc");
-+	if (!__argv) {
-+		pr_err("malloc failed\n");
+ 	for (i = 0; keys[i].name; i++) {
+ 		if (!strcmp(keys[i].name, sort_key)) {
+ 			compare = keys[i].key;
+-			return;
++			return 0;
+ 		}
+ 	}
+ 
+-	die("Unknown compare key:%s\n", sort_key);
++	pr_err("Unknown compare key: %s\n", sort_key);
++
++	return -1;
+ }
+ 
+ static void insert_to_result(struct lock_stat *st,
+@@ -324,7 +330,8 @@ static struct lock_stat *lock_stat_findnew(void *addr, const char *name)
+ 	return new;
+ 
+ alloc_failed:
+-	die("memory allocation failed\n");
++	pr_err("memory allocation failed\n");
++	return NULL;
+ }
+ 
+ static const char *input_name;
+@@ -356,16 +363,16 @@ struct trace_release_event {
+ };
+ 
+ struct trace_lock_handler {
+-	void (*acquire_event)(struct trace_acquire_event *,
++	int (*acquire_event)(struct trace_acquire_event *,
+ 			      const struct perf_sample *sample);
+ 
+-	void (*acquired_event)(struct trace_acquired_event *,
++	int (*acquired_event)(struct trace_acquired_event *,
+ 			       const struct perf_sample *sample);
+ 
+-	void (*contended_event)(struct trace_contended_event *,
++	int (*contended_event)(struct trace_contended_event *,
+ 				const struct perf_sample *sample);
+ 
+-	void (*release_event)(struct trace_release_event *,
++	int (*release_event)(struct trace_release_event *,
+ 			      const struct perf_sample *sample);
+ };
+ 
+@@ -379,8 +386,10 @@ static struct lock_seq_stat *get_seq(struct thread_stat *ts, void *addr)
+ 	}
+ 
+ 	seq = zalloc(sizeof(struct lock_seq_stat));
+-	if (!seq)
+-		die("Not enough memory\n");
++	if (!seq) {
++		pr_err("memory allocation failed\n");
++		return NULL;
++	}
+ 	seq->state = SEQ_STATE_UNINITIALIZED;
+ 	seq->addr = addr;
+ 
+@@ -403,7 +412,7 @@ enum acquire_flags {
+ 	READ_LOCK = 2,
+ };
+ 
+-static void
++static int
+ report_lock_acquire_event(struct trace_acquire_event *acquire_event,
+ 			  const struct perf_sample *sample)
+ {
+@@ -412,11 +421,18 @@ report_lock_acquire_event(struct trace_acquire_event *acquire_event,
+ 	struct lock_seq_stat *seq;
+ 
+ 	ls = lock_stat_findnew(acquire_event->addr, acquire_event->name);
++	if (!ls)
 +		return -1;
+ 	if (ls->discard)
+-		return;
++		return 0;
+ 
+ 	ts = thread_stat_findnew(sample->tid);
++	if (!ts)
++		return -1;
++
+ 	seq = get_seq(ts, acquire_event->addr);
++	if (!seq)
++		return -1;
+ 
+ 	switch (seq->state) {
+ 	case SEQ_STATE_UNINITIALIZED:
+@@ -461,10 +477,10 @@ broken:
+ 	ls->nr_acquire++;
+ 	seq->prev_event_time = sample->time;
+ end:
+-	return;
++	return 0;
+ }
+ 
+-static void
++static int
+ report_lock_acquired_event(struct trace_acquired_event *acquired_event,
+ 			   const struct perf_sample *sample)
+ {
+@@ -475,16 +491,23 @@ report_lock_acquired_event(struct trace_acquired_event *acquired_event,
+ 	u64 contended_term;
+ 
+ 	ls = lock_stat_findnew(acquired_event->addr, acquired_event->name);
++	if (!ls)
++		return -1;
+ 	if (ls->discard)
+-		return;
++		return 0;
+ 
+ 	ts = thread_stat_findnew(sample->tid);
++	if (!ts)
++		return -1;
++
+ 	seq = get_seq(ts, acquired_event->addr);
++	if (!seq)
++		return -1;
+ 
+ 	switch (seq->state) {
+ 	case SEQ_STATE_UNINITIALIZED:
+ 		/* orphan event, do nothing */
+-		return;
++		return 0;
+ 	case SEQ_STATE_ACQUIRING:
+ 		break;
+ 	case SEQ_STATE_CONTENDED:
+@@ -515,10 +538,10 @@ report_lock_acquired_event(struct trace_acquired_event *acquired_event,
+ 	ls->nr_acquired++;
+ 	seq->prev_event_time = timestamp;
+ end:
+-	return;
++	return 0;
+ }
+ 
+-static void
++static int
+ report_lock_contended_event(struct trace_contended_event *contended_event,
+ 			    const struct perf_sample *sample)
+ {
+@@ -527,16 +550,23 @@ report_lock_contended_event(struct trace_contended_event *contended_event,
+ 	struct lock_seq_stat *seq;
+ 
+ 	ls = lock_stat_findnew(contended_event->addr, contended_event->name);
++	if (!ls)
++		return -1;
+ 	if (ls->discard)
+-		return;
++		return 0;
+ 
+ 	ts = thread_stat_findnew(sample->tid);
++	if (!ts)
++		return -1;
++
+ 	seq = get_seq(ts, contended_event->addr);
++	if (!seq)
++		return -1;
+ 
+ 	switch (seq->state) {
+ 	case SEQ_STATE_UNINITIALIZED:
+ 		/* orphan event, do nothing */
+-		return;
++		return 0;
+ 	case SEQ_STATE_ACQUIRING:
+ 		break;
+ 	case SEQ_STATE_RELEASED:
+@@ -559,10 +589,10 @@ report_lock_contended_event(struct trace_contended_event *contended_event,
+ 	ls->nr_contended++;
+ 	seq->prev_event_time = sample->time;
+ end:
+-	return;
++	return 0;
+ }
+ 
+-static void
++static int
+ report_lock_release_event(struct trace_release_event *release_event,
+ 			  const struct perf_sample *sample)
+ {
+@@ -571,11 +601,18 @@ report_lock_release_event(struct trace_release_event *release_event,
+ 	struct lock_seq_stat *seq;
+ 
+ 	ls = lock_stat_findnew(release_event->addr, release_event->name);
++	if (!ls)
++		return -1;
+ 	if (ls->discard)
+-		return;
++		return 0;
+ 
+ 	ts = thread_stat_findnew(sample->tid);
++	if (!ts)
++		return -1;
++
+ 	seq = get_seq(ts, release_event->addr);
++	if (!seq)
++		return -1;
+ 
+ 	switch (seq->state) {
+ 	case SEQ_STATE_UNINITIALIZED:
+@@ -609,7 +646,7 @@ free_seq:
+ 	list_del(&seq->list);
+ 	free(seq);
+ end:
+-	return;
++	return 0;
+ }
+ 
+ /* lock oriented handlers */
+@@ -623,13 +660,14 @@ static struct trace_lock_handler report_lock_ops  = {
+ 
+ static struct trace_lock_handler *trace_handler;
+ 
+-static void perf_evsel__process_lock_acquire(struct perf_evsel *evsel,
++static int perf_evsel__process_lock_acquire(struct perf_evsel *evsel,
+ 					     struct perf_sample *sample)
+ {
+ 	struct trace_acquire_event acquire_event;
+ 	struct event_format *event = evsel->tp_format;
+ 	void *data = sample->raw_data;
+ 	u64 tmp;		/* this is required for casting... */
++	int rc = 0;
+ 
+ 	tmp = raw_field_value(event, "lockdep_addr", data);
+ 	memcpy(&acquire_event.addr, &tmp, sizeof(void *));
+@@ -637,70 +675,84 @@ static void perf_evsel__process_lock_acquire(struct perf_evsel *evsel,
+ 	acquire_event.flag = (int)raw_field_value(event, "flag", data);
+ 
+ 	if (trace_handler->acquire_event)
+-		trace_handler->acquire_event(&acquire_event, sample);
++		rc = trace_handler->acquire_event(&acquire_event, sample);
++
++	return rc;
+ }
+ 
+-static void perf_evsel__process_lock_acquired(struct perf_evsel *evsel,
++static int perf_evsel__process_lock_acquired(struct perf_evsel *evsel,
+ 					      struct perf_sample *sample)
+ {
+ 	struct trace_acquired_event acquired_event;
+ 	struct event_format *event = evsel->tp_format;
+ 	void *data = sample->raw_data;
+ 	u64 tmp;		/* this is required for casting... */
++	int rc = 0;
+ 
+ 	tmp = raw_field_value(event, "lockdep_addr", data);
+ 	memcpy(&acquired_event.addr, &tmp, sizeof(void *));
+ 	acquired_event.name = (char *)raw_field_ptr(event, "name", data);
+ 
+-	if (trace_handler->acquire_event)
+-		trace_handler->acquired_event(&acquired_event, sample);
++	if (trace_handler->acquired_event)
++		rc = trace_handler->acquired_event(&acquired_event, sample);
++
++	return rc;
+ }
+ 
+-static void perf_evsel__process_lock_contended(struct perf_evsel *evsel,
++static int perf_evsel__process_lock_contended(struct perf_evsel *evsel,
+ 					       struct perf_sample *sample)
+ {
+ 	struct trace_contended_event contended_event;
+ 	struct event_format *event = evsel->tp_format;
+ 	void *data = sample->raw_data;
+ 	u64 tmp;		/* this is required for casting... */
++	int rc = 0;
+ 
+ 	tmp = raw_field_value(event, "lockdep_addr", data);
+ 	memcpy(&contended_event.addr, &tmp, sizeof(void *));
+ 	contended_event.name = (char *)raw_field_ptr(event, "name", data);
+ 
+-	if (trace_handler->acquire_event)
+-		trace_handler->contended_event(&contended_event, sample);
++	if (trace_handler->contended_event)
++		rc = trace_handler->contended_event(&contended_event, sample);
++
++	return rc;
+ }
+ 
+-static void perf_evsel__process_lock_release(struct perf_evsel *evsel,
++static int perf_evsel__process_lock_release(struct perf_evsel *evsel,
+ 					     struct perf_sample *sample)
+ {
+ 	struct trace_release_event release_event;
+ 	struct event_format *event = evsel->tp_format;
+ 	void *data = sample->raw_data;
+ 	u64 tmp;		/* this is required for casting... */
++	int rc = 0;
+ 
+ 	tmp = raw_field_value(event, "lockdep_addr", data);
+ 	memcpy(&release_event.addr, &tmp, sizeof(void *));
+ 	release_event.name = (char *)raw_field_ptr(event, "name", data);
+ 
+-	if (trace_handler->acquire_event)
+-		trace_handler->release_event(&release_event, sample);
++	if (trace_handler->release_event)
++		rc = trace_handler->release_event(&release_event, sample);
++
++	return rc;
+ }
+ 
+-static void perf_evsel__process_lock_event(struct perf_evsel *evsel,
++static int perf_evsel__process_lock_event(struct perf_evsel *evsel,
+ 					   struct perf_sample *sample)
+ {
+ 	struct event_format *event = evsel->tp_format;
++	int rc = 0;
+ 
+ 	if (!strcmp(event->name, "lock_acquire"))
+-		perf_evsel__process_lock_acquire(evsel, sample);
++		rc = perf_evsel__process_lock_acquire(evsel, sample);
+ 	if (!strcmp(event->name, "lock_acquired"))
+-		perf_evsel__process_lock_acquired(evsel, sample);
++		rc = perf_evsel__process_lock_acquired(evsel, sample);
+ 	if (!strcmp(event->name, "lock_contended"))
+-		perf_evsel__process_lock_contended(evsel, sample);
++		rc = perf_evsel__process_lock_contended(evsel, sample);
+ 	if (!strcmp(event->name, "lock_release"))
+-		perf_evsel__process_lock_release(evsel, sample);
++		rc = perf_evsel__process_lock_release(evsel, sample);
++
++	return rc;
+ }
+ 
+ static void print_bad_events(int bad, int total)
+@@ -802,14 +854,20 @@ static void dump_map(void)
+ 	}
+ }
+ 
+-static void dump_info(void)
++static int dump_info(void)
+ {
++	int rc = 0;
++
+ 	if (info_threads)
+ 		dump_threads();
+ 	else if (info_map)
+ 		dump_map();
+-	else
+-		die("Unknown type of information\n");
++	else {
++		rc = -1;
++		pr_err("Unknown type of information\n");
 +	}
 +
- 	memcpy(__argv, argv, sizeof(const char *) * argc);
- 	argc = parse_options(argc, (const char **)__argv, record_options,
- 			     NULL, PARSE_OPT_STOP_AT_NON_OPTION);
- 	free(__argv);
++	return rc;
+ }
  
--	return argc != 0;
-+	system_wide = (argc == 0);
+ static int process_sample_event(struct perf_tool *tool __used,
+@@ -826,8 +884,7 @@ static int process_sample_event(struct perf_tool *tool __used,
+ 		return -1;
+ 	}
+ 
+-	perf_evsel__process_lock_event(evsel, sample);
+-	return 0;
++	return perf_evsel__process_lock_event(evsel, sample);
+ }
+ 
+ static struct perf_tool eops = {
+@@ -839,8 +896,10 @@ static struct perf_tool eops = {
+ static int read_events(void)
+ {
+ 	session = perf_session__new(input_name, O_RDONLY, 0, false, &eops);
+-	if (!session)
+-		die("Initializing perf session failed\n");
++	if (!session) {
++		pr_err("Initializing perf session failed\n");
++		return -1;
++	}
+ 
+ 	return perf_session__process_events(session, &eops);
+ }
+@@ -857,13 +916,18 @@ static void sort_result(void)
+ 	}
+ }
+ 
+-static void __cmd_report(void)
++static int __cmd_report(void)
+ {
+ 	setup_pager();
+-	select_key();
+-	read_events();
++
++	if ((select_key() != 0) ||
++	    (read_events() != 0))
++		return -1;
++
+ 	sort_result();
+ 	print_result();
 +
 +	return 0;
  }
  
- int cmd_script(int argc, const char **argv, const char *prefix __used)
-@@ -1231,13 +1236,13 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
+ static const char * const report_usage[] = {
+@@ -959,6 +1023,7 @@ static int __cmd_record(int argc, const char **argv)
+ int cmd_lock(int argc, const char **argv, const char *prefix __used)
+ {
+ 	unsigned int i;
++	int rc = 0;
  
- 		if (pipe(live_pipe) < 0) {
- 			perror("failed to create pipe");
--			exit(-1);
-+			return -1;
- 		}
+ 	symbol__init();
+ 	for (i = 0; i < LOCKHASH_SIZE; i++)
+@@ -993,11 +1058,13 @@ int cmd_lock(int argc, const char **argv, const char *prefix __used)
+ 		/* recycling report_lock_ops */
+ 		trace_handler = &report_lock_ops;
+ 		setup_pager();
+-		read_events();
+-		dump_info();
++		if (read_events() != 0)
++			rc = -1;
++		else
++			rc = dump_info();
+ 	} else {
+ 		usage_with_options(lock_usage, lock_options);
+ 	}
  
- 		pid = fork();
- 		if (pid < 0) {
- 			perror("failed to fork");
--			exit(-1);
-+			return -1;
- 		}
- 
- 		if (!pid) {
-@@ -1249,13 +1254,18 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
- 			if (is_top_script(argv[0])) {
- 				system_wide = true;
- 			} else if (!system_wide) {
--				system_wide = !have_cmd(argc - rep_args,
--							&argv[rep_args]);
-+				if (have_cmd(argc - rep_args, &argv[rep_args]) != 0) {
-+					err = -1;
-+					goto out;
-+				}
- 			}
- 
- 			__argv = malloc((argc + 6) * sizeof(const char *));
--			if (!__argv)
--				die("malloc");
-+			if (!__argv) {
-+				pr_err("malloc failed\n");
-+				err = -ENOMEM;
-+				goto out;
-+			}
- 
- 			__argv[j++] = "/bin/sh";
- 			__argv[j++] = rec_script_path;
-@@ -1277,8 +1287,12 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
- 		close(live_pipe[1]);
- 
- 		__argv = malloc((argc + 4) * sizeof(const char *));
--		if (!__argv)
--			die("malloc");
-+		if (!__argv) {
-+			pr_err("malloc failed\n");
-+			err = -ENOMEM;
-+			goto out;
-+		}
-+
- 		j = 0;
- 		__argv[j++] = "/bin/sh";
- 		__argv[j++] = rep_script_path;
-@@ -1303,12 +1317,20 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
- 
- 		if (!rec_script_path)
- 			system_wide = false;
--		else if (!system_wide)
--			system_wide = !have_cmd(argc - 1, &argv[1]);
-+		else if (!system_wide) {
-+			if (have_cmd(argc - 1, &argv[1]) != 0) {
-+				err = -1;
-+				goto out;
-+			}
-+		}
- 
- 		__argv = malloc((argc + 2) * sizeof(const char *));
--		if (!__argv)
--			die("malloc");
-+		if (!__argv) {
-+			pr_err("malloc failed\n");
-+			err = -ENOMEM;
-+			goto out;
-+		}
-+
- 		__argv[j++] = "/bin/sh";
- 		__argv[j++] = script_path;
- 		if (system_wide)
-@@ -1357,18 +1379,18 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
- 		input = open(session->filename, O_RDONLY);	/* input_name */
- 		if (input < 0) {
- 			perror("failed to open file");
--			exit(-1);
-+			return -1;
- 		}
- 
- 		err = fstat(input, &perf_stat);
- 		if (err < 0) {
- 			perror("failed to stat file");
--			exit(-1);
-+			return -1;
- 		}
- 
- 		if (!perf_stat.st_size) {
- 			fprintf(stderr, "zero-sized file, nothing to do!\n");
--			exit(0);
-+			return 0;
- 		}
- 
- 		scripting_ops = script_spec__lookup(generate_script_lang);
+-	return 0;
++	return rc;
+ }
 -- 
 1.7.1
 
