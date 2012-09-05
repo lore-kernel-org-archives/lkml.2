@@ -1,444 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758099Ab2IEDIn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 23:08:43 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:35044 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753077Ab2IEDIl (ORCPT
+	id S1758097Ab2IEDPz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 23:15:55 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:54757 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191Ab2IEDPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 23:08:41 -0400
-Date: Wed, 5 Sep 2012 03:09:15 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Aristeu Rozanski <aris@redhat.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        James Morris <jmorris@namei.org>, Pavel Emelyanov <xemul@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2 3/6] device_cgroup: convert device_cgroup internally
- to policy + exceptions
-Message-ID: <20120905030915.GC13310@mail.hallyn.com>
-References: <20120904143419.892872876@napanee.usersys.redhat.com>
- <20120904143420.841275882@napanee.usersys.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120904143420.841275882@napanee.usersys.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 4 Sep 2012 23:15:52 -0400
+Date: Wed, 5 Sep 2012 13:15:39 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lauri Hintsala <lauri.hintsala@bluegiga.com>,
+        Chris Ball <cjb@laptop.org>, Marek Vasut <marex@denx.de>
+Subject: linux-next: manual merge of the spi-mb tree with the mmc tree
+Message-Id: <20120905131539.95d7a613d49f741ab6f123a6@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__5_Sep_2012_13_15_39_+1000_i5ySC6_Ni0wobtGW"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Aristeu Rozanski (aris@redhat.com):
-> The original model of device_cgroup is having a whitelist where all the
-> allowed devices are listed. The problem with this approach is that is
-> impossible to have the case of allowing everything but few devices.
-> 
-> The reason for that lies in the way the whitelist is handled internally:
-> since there's only a whitelist, the "all devices" entry would have to be
-> removed and replaced by the entire list of possible devices but the ones
-> that are being denied.  Since dev_t is 32 bits long, representing the allowed
-> devices as a bitfield is not memory efficient.
-> 
-> This patch replaces the "whitelist" by a "exceptions" list and the default
-> policy is kept as "behavior" variable in dev_cgroup structure.
-> 
-> The current interface determines that whenever "a" is written to devices.allow
-> or devices.deny, the entry masking all devices will be added or removed,
-> respectively. This behavior is kept and it's what will determine the default
-> policy:
-> 
-> 	# cat devices.list 
-> 	a *:* rwm
-> 	# echo a >devices.deny
-> 	# cat devices.list 
-> 	# echo a >devices.allow
-> 	# cat devices.list 
-> 	a *:* rwm
-> 
-> The interface is also preserved. For example, if one wants to block only access
-> to /dev/null:
-> 	# ls -l /dev/null
-> 	crw-rw-rw- 1 root root 1, 3 Jul 24 16:17 /dev/null
-> 	# echo a >devices.allow
-> 	# echo "c 1:3 rwm" >devices.deny
-> 	# cat /dev/null
-> 	cat: /dev/null: Operation not permitted
-> 	# echo >/dev/null
-> 	bash: /dev/null: Operation not permitted
-> 	# mknod /tmp/null c 1 3
-> 	mknod: /tmp/null: Operation not permitted
-> 	# echo "c 1:3 r" >devices.allow
-> 	# cat /dev/null
-> 	# echo >/dev/null
-> 	bash: /dev/null: Operation not permitted
-> 	# mknod /tmp/null c 1 3
-> 	mknod: /tmp/null: Operation not permitted
-> 	# echo "c 1:3 rw" >devices.allow
-> 	# echo >/dev/null
-> 	# cat /dev/null
-> 	# mknod /tmp/null c 1 3
-> 	mknod: /tmp/null: Operation not permitted
-> 	# echo "c 1:3 rwm" >devices.allow
-> 	# echo >/dev/null
-> 	# cat /dev/null
-> 	# mknod /tmp/null c 1 3
-> 	#
-> 
-> Note that I didn't rename the functions/variables in this patch, but in the
-> next one to make reviewing easier.
-> 
-> v2:
-> - convert code to use behavior instead of deny_all
+--Signature=_Wed__5_Sep_2012_13_15_39_+1000_i5ySC6_Ni0wobtGW
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-(Note - I'm going by the changelog which says use of 'behavior' instead
-of deny_all is the only difference from v1)
+Hi Mark,
 
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Li Zefan <lizefan@huawei.com>
-> Cc: James Morris <jmorris@namei.org>
-> Cc: Pavel Emelyanov <xemul@openvz.org>
-> Cc: Serge Hallyn <serge.hallyn@canonical.com>
+Today's linux-next merge of the spi-mb tree got a conflict in
+drivers/mmc/host/mxs-mmc.c between commit fc108d24d3a6 ("mmc: mxs-mmc:
+fix deadlock caused by recursion loop") from the mmc tree and commit
+829c1bf40b92 ("mmc: spi: Pull out parts shared between MMC and SPI") from
+the spi-mb tree.
 
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> Signed-off-by: Aristeu Rozanski <aris@redhat.com>
-> 
-> ---
->  security/device_cgroup.c |  228 +++++++++++++++++++++++++++--------------------
->  1 file changed, 132 insertions(+), 96 deletions(-)
-> 
-> Index: github/security/device_cgroup.c
-> ===================================================================
-> --- github.orig/security/device_cgroup.c	2012-08-21 10:50:37.526892088 -0400
-> +++ github/security/device_cgroup.c	2012-08-21 10:50:48.967215436 -0400
-> @@ -99,7 +99,6 @@
->  	return -ENOMEM;
->  }
->  
-> -/* Stupid prototype - don't bother combining existing entries */
->  /*
->   * called under devcgroup_mutex
->   */
-> @@ -139,16 +138,13 @@
->  	struct dev_whitelist_item *walk, *tmp;
->  
->  	list_for_each_entry_safe(walk, tmp, &dev_cgroup->whitelist, list) {
-> -		if (walk->type == DEV_ALL)
-> -			goto remove;
->  		if (walk->type != wh->type)
->  			continue;
-> -		if (walk->major != ~0 && walk->major != wh->major)
-> +		if (walk->major != wh->major)
->  			continue;
-> -		if (walk->minor != ~0 && walk->minor != wh->minor)
-> +		if (walk->minor != wh->minor)
->  			continue;
->  
-> -remove:
->  		walk->access &= ~wh->access;
->  		if (!walk->access) {
->  			list_del_rcu(&walk->list);
-> @@ -188,19 +184,9 @@
->  	INIT_LIST_HEAD(&dev_cgroup->whitelist);
->  	parent_cgroup = cgroup->parent;
->  
-> -	if (parent_cgroup == NULL) {
-> -		struct dev_whitelist_item *wh;
-> -		wh = kmalloc(sizeof(*wh), GFP_KERNEL);
-> -		if (!wh) {
-> -			kfree(dev_cgroup);
-> -			return ERR_PTR(-ENOMEM);
-> -		}
-> -		wh->minor = wh->major = ~0;
-> -		wh->type = DEV_ALL;
-> -		wh->access = ACC_MASK;
-> +	if (parent_cgroup == NULL)
->  		dev_cgroup->behavior = DEVCG_DEFAULT_ALLOW;
-> -		list_add(&wh->list, &dev_cgroup->whitelist);
-> -	} else {
-> +	else {
->  		parent_dev_cgroup = cgroup_to_devcgroup(parent_cgroup);
->  		mutex_lock(&devcgroup_mutex);
->  		ret = dev_whitelist_copy(&dev_cgroup->whitelist,
-> @@ -271,33 +257,48 @@
->  	char maj[MAJMINLEN], min[MAJMINLEN], acc[ACCLEN];
->  
->  	rcu_read_lock();
-> -	list_for_each_entry_rcu(wh, &devcgroup->whitelist, list) {
-> -		set_access(acc, wh->access);
-> -		set_majmin(maj, wh->major);
-> -		set_majmin(min, wh->minor);
-> -		seq_printf(m, "%c %s:%s %s\n", type_to_char(wh->type),
-> +	/*
-> +	 * To preserve the compatibility:
-> +	 * - Only show the "all devices" when the default policy is to allow
-> +	 * - List the exceptions in case the default policy is to deny
-> +	 * This way, the file remains as a "whitelist of devices"
-> +	 */
-> +	if (devcgroup->behavior == DEVCG_DEFAULT_ALLOW) {
-> +		set_access(acc, ACC_MASK);
-> +		set_majmin(maj, ~0);
-> +		set_majmin(min, ~0);
-> +		seq_printf(m, "%c %s:%s %s\n", type_to_char(DEV_ALL),
->  			   maj, min, acc);
-> +	} else {
-> +		list_for_each_entry_rcu(wh, &devcgroup->whitelist, list) {
-> +			set_access(acc, wh->access);
-> +			set_majmin(maj, wh->major);
-> +			set_majmin(min, wh->minor);
-> +			seq_printf(m, "%c %s:%s %s\n", type_to_char(wh->type),
-> +				   maj, min, acc);
-> +		}
->  	}
->  	rcu_read_unlock();
->  
->  	return 0;
->  }
->  
-> -/*
-> - * may_access_whitelist:
-> - * does the access granted to dev_cgroup c contain the access
-> - * requested in whitelist item refwh.
-> - * return 1 if yes, 0 if no.
-> - * call with devcgroup_mutex held
-> +/**
-> + * may_access_whitelist - verifies if a new rule is part of what is allowed
-> + *			  by a dev cgroup based on the default policy +
-> + *			  exceptions. This is used to make sure a child cgroup
-> + *			  won't have more privileges than its parent or to
-> + *			  verify if a certain access is allowed.
-> + * @dev_cgroup: dev cgroup to be tested against
-> + * @refwh: new rule
->   */
-> -static int may_access_whitelist(struct dev_cgroup *c,
-> -				       struct dev_whitelist_item *refwh)
-> +static int may_access_whitelist(struct dev_cgroup *dev_cgroup,
-> +				struct dev_whitelist_item *refwh)
->  {
->  	struct dev_whitelist_item *whitem;
-> +	bool match = false;
->  
-> -	list_for_each_entry(whitem, &c->whitelist, list) {
-> -		if (whitem->type & DEV_ALL)
-> -			return 1;
-> +	list_for_each_entry(whitem, &dev_cgroup->whitelist, list) {
->  		if ((refwh->type & DEV_BLOCK) && !(whitem->type & DEV_BLOCK))
->  			continue;
->  		if ((refwh->type & DEV_CHAR) && !(whitem->type & DEV_CHAR))
-> @@ -308,8 +309,21 @@
->  			continue;
->  		if (refwh->access & (~whitem->access))
->  			continue;
-> -		return 1;
-> +		match = true;
-> +		break;
->  	}
-> +
-> +	/*
-> +	 * In two cases we'll consider this new rule valid:
-> +	 * - the dev cgroup has its default policy to allow + exception list:
-> +	 *   the new rule should *not* match any of the exceptions
-> +	 *   (behavior != DEVCG_DEFAULT_DENY, !match)
-> +	 * - the dev cgroup has its default policy to deny + exception list:
-> +	 *   the new rule *should* match the exceptions
-> +	 *   (behavior == DEVCG_DEFAULT_DENY, match)
-> +	 */
-> +	if ((dev_cgroup->behavior == DEVCG_DEFAULT_DENY) == match)
-> +		return 1;
->  	return 0;
->  }
->  
-> @@ -359,11 +373,21 @@
->  
->  	switch (*b) {
->  	case 'a':
-> -		wh.type = DEV_ALL;
-> -		wh.access = ACC_MASK;
-> -		wh.major = ~0;
-> -		wh.minor = ~0;
-> -		goto handle;
-> +		switch (filetype) {
-> +		case DEVCG_ALLOW:
-> +			if (!parent_has_perm(devcgroup, &wh))
-> +				return -EPERM;
-> +			dev_whitelist_clean(devcgroup);
-> +			devcgroup->behavior = DEVCG_DEFAULT_ALLOW;
-> +			break;
-> +		case DEVCG_DENY:
-> +			dev_whitelist_clean(devcgroup);
-> +			devcgroup->behavior = DEVCG_DEFAULT_DENY;
-> +			break;
-> +		default:
-> +			return -EINVAL;
-> +		}
-> +		return 0;
->  	case 'b':
->  		wh.type = DEV_BLOCK;
->  		break;
-> @@ -422,17 +446,31 @@
->  		}
->  	}
->  
-> -handle:
->  	switch (filetype) {
->  	case DEVCG_ALLOW:
->  		if (!parent_has_perm(devcgroup, &wh))
->  			return -EPERM;
-> -		devcgroup->behavior = DEVCG_DEFAULT_ALLOW;
-> +		/*
-> +		 * If the default policy is to allow by default, try to remove
-> +		 * an matching exception instead. And be silent about it: we
-> +		 * don't want to break compatibility
-> +		 */
-> +		if (devcgroup->behavior == DEVCG_DEFAULT_ALLOW) {
-> +			dev_whitelist_rm(devcgroup, &wh);
-> +			return 0;
-> +		}
->  		return dev_whitelist_add(devcgroup, &wh);
->  	case DEVCG_DENY:
-> -		dev_whitelist_rm(devcgroup, &wh);
-> -		devcgroup->behavior = DEVCG_DEFAULT_DENY;
-> -		break;
-> +		/*
-> +		 * If the default policy is to deny by default, try to remove
-> +		 * an matching exception instead. And be silent about it: we
-> +		 * don't want to break compatibility
-> +		 */
-> +		if (devcgroup->behavior == DEVCG_DEFAULT_DENY) {
-> +			dev_whitelist_rm(devcgroup, &wh);
-> +			return 0;
-> +		}
-> +		return dev_whitelist_add(devcgroup, &wh);
->  	default:
->  		return -EINVAL;
->  	}
-> @@ -479,73 +517,71 @@
->  	.base_cftypes = dev_cgroup_files,
->  };
->  
-> -int __devcgroup_inode_permission(struct inode *inode, int mask)
-> +/**
-> + * __devcgroup_check_permission - checks if an inode operation is permitted
-> + * @dev_cgroup: the dev cgroup to be tested against
-> + * @type: device type
-> + * @major: device major number
-> + * @minor: device minor number
-> + * @access: combination of ACC_WRITE, ACC_READ and ACC_MKNOD
-> + *
-> + * returns 0 on success, -EPERM case the operation is not permitted
-> + */
-> +static int __devcgroup_check_permission(struct dev_cgroup *dev_cgroup,
-> +					short type, u32 major, u32 minor,
-> +					short access)
->  {
-> -	struct dev_cgroup *dev_cgroup;
-> -	struct dev_whitelist_item *wh;
-> +	struct dev_whitelist_item wh;
-> +	int rc;
-> +
-> +	memset(&wh, 0, sizeof(wh));
-> +	wh.type = type;
-> +	wh.major = major;
-> +	wh.minor = minor;
-> +	wh.access = access;
->  
->  	rcu_read_lock();
-> +	rc = may_access_whitelist(dev_cgroup, &wh);
-> +	rcu_read_unlock();
->  
-> -	dev_cgroup = task_devcgroup(current);
-> +	if (!rc)
-> +		return -EPERM;
->  
-> -	list_for_each_entry_rcu(wh, &dev_cgroup->whitelist, list) {
-> -		if (wh->type & DEV_ALL)
-> -			goto found;
-> -		if ((wh->type & DEV_BLOCK) && !S_ISBLK(inode->i_mode))
-> -			continue;
-> -		if ((wh->type & DEV_CHAR) && !S_ISCHR(inode->i_mode))
-> -			continue;
-> -		if (wh->major != ~0 && wh->major != imajor(inode))
-> -			continue;
-> -		if (wh->minor != ~0 && wh->minor != iminor(inode))
-> -			continue;
-> +	return 0;
-> +}
->  
-> -		if ((mask & MAY_WRITE) && !(wh->access & ACC_WRITE))
-> -			continue;
-> -		if ((mask & MAY_READ) && !(wh->access & ACC_READ))
-> -			continue;
-> -found:
-> -		rcu_read_unlock();
-> -		return 0;
-> -	}
-> +int __devcgroup_inode_permission(struct inode *inode, int mask)
-> +{
-> +	struct dev_cgroup *dev_cgroup = task_devcgroup(current);
-> +	short type, access = 0;
->  
-> -	rcu_read_unlock();
-> +	if (S_ISBLK(inode->i_mode))
-> +		type = DEV_BLOCK;
-> +	if (S_ISCHR(inode->i_mode))
-> +		type = DEV_CHAR;
-> +	if (mask & MAY_WRITE)
-> +		access |= ACC_WRITE;
-> +	if (mask & MAY_READ)
-> +		access |= ACC_READ;
->  
-> -	return -EPERM;
-> +	return __devcgroup_check_permission(dev_cgroup, type, imajor(inode),
-> +					    iminor(inode), access);
->  }
->  
->  int devcgroup_inode_mknod(int mode, dev_t dev)
->  {
-> -	struct dev_cgroup *dev_cgroup;
-> -	struct dev_whitelist_item *wh;
-> +	struct dev_cgroup *dev_cgroup = task_devcgroup(current);
-> +	short type;
->  
->  	if (!S_ISBLK(mode) && !S_ISCHR(mode))
->  		return 0;
->  
-> -	rcu_read_lock();
-> -
-> -	dev_cgroup = task_devcgroup(current);
-> -
-> -	list_for_each_entry_rcu(wh, &dev_cgroup->whitelist, list) {
-> -		if (wh->type & DEV_ALL)
-> -			goto found;
-> -		if ((wh->type & DEV_BLOCK) && !S_ISBLK(mode))
-> -			continue;
-> -		if ((wh->type & DEV_CHAR) && !S_ISCHR(mode))
-> -			continue;
-> -		if (wh->major != ~0 && wh->major != MAJOR(dev))
-> -			continue;
-> -		if (wh->minor != ~0 && wh->minor != MINOR(dev))
-> -			continue;
-> -
-> -		if (!(wh->access & ACC_MKNOD))
-> -			continue;
-> -found:
-> -		rcu_read_unlock();
-> -		return 0;
-> -	}
-> +	if (S_ISBLK(mode))
-> +		type = DEV_BLOCK;
-> +	else
-> +		type = DEV_CHAR;
->  
-> -	rcu_read_unlock();
-> +	return __devcgroup_check_permission(dev_cgroup, type, MAJOR(dev),
-> +					    MINOR(dev), ACC_MKNOD);
->  
-> -	return -EPERM;
->  }
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+diff --cc drivers/mmc/host/mxs-mmc.c
+index ad3fcea,4da9966..0000000
+--- a/drivers/mmc/host/mxs-mmc.c
++++ b/drivers/mmc/host/mxs-mmc.c
+@@@ -281,12 -193,10 +193,12 @@@ static irqreturn_t mxs_mmc_irq_handler(
+ =20
+  	spin_lock(&host->lock);
+ =20
+- 	stat =3D readl(host->base + HW_SSP_CTRL1(host));
++ 	stat =3D readl(ssp->base + HW_SSP_CTRL1(ssp));
+  	writel(stat & MXS_MMC_IRQ_BITS,
+- 	       host->base + HW_SSP_CTRL1(host) + STMP_OFFSET_REG_CLR);
++ 	       ssp->base + HW_SSP_CTRL1(ssp) + STMP_OFFSET_REG_CLR);
+ =20
+ +	spin_unlock(&host->lock);
+ +
+  	if ((stat & BM_SSP_CTRL1_SDIO_IRQ) && (stat & BM_SSP_CTRL1_SDIO_IRQ_EN))
+  		mmc_signal_sdio_irq(host->mmc);
+ =20
+@@@ -641,22 -523,22 +523,22 @@@ static void mxs_mmc_enable_sdio_irq(str
+ =20
+  	if (enable) {
+  		writel(BM_SSP_CTRL0_SDIO_IRQ_CHECK,
+- 		       host->base + HW_SSP_CTRL0 + STMP_OFFSET_REG_SET);
++ 		       ssp->base + HW_SSP_CTRL0 + STMP_OFFSET_REG_SET);
+  		writel(BM_SSP_CTRL1_SDIO_IRQ_EN,
+- 		       host->base + HW_SSP_CTRL1(host) + STMP_OFFSET_REG_SET);
++ 		       ssp->base + HW_SSP_CTRL1(ssp) + STMP_OFFSET_REG_SET);
+ -
+ -		if (readl(ssp->base + HW_SSP_STATUS(ssp)) &
+ -				BM_SSP_STATUS_SDIO_IRQ)
+ -			mmc_signal_sdio_irq(host->mmc);
+ -
+  	} else {
+  		writel(BM_SSP_CTRL0_SDIO_IRQ_CHECK,
+- 		       host->base + HW_SSP_CTRL0 + STMP_OFFSET_REG_CLR);
++ 		       ssp->base + HW_SSP_CTRL0 + STMP_OFFSET_REG_CLR);
+  		writel(BM_SSP_CTRL1_SDIO_IRQ_EN,
+- 		       host->base + HW_SSP_CTRL1(host) + STMP_OFFSET_REG_CLR);
++ 		       ssp->base + HW_SSP_CTRL1(ssp) + STMP_OFFSET_REG_CLR);
+  	}
+ =20
+  	spin_unlock_irqrestore(&host->lock, flags);
+ +
+- 	if (enable && readl(host->base + HW_SSP_STATUS(host)) &
+++	if (enable && readl(ssp->base + HW_SSP_STATUS(ssp)) &
+ +			BM_SSP_STATUS_SDIO_IRQ)
+ +		mmc_signal_sdio_irq(host->mmc);
+ +
+  }
+ =20
+  static const struct mmc_host_ops mxs_mmc_ops =3D {
+
+--Signature=_Wed__5_Sep_2012_13_15_39_+1000_i5ySC6_Ni0wobtGW
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQRsPbAAoJEECxmPOUX5FEdPMQAKoBVDaSYUoxESSoSmAJ2nLQ
+sCJ7ekSdVnQhYgjaIY3+j/g+UIEqx1eZeygDIblEDdGn3UTJ9OlrdTDFqMxIvwcc
+hxFYV7gGx/NMAxTd3AQVjxHrbaj5HRxt+D8+mOSIEatkSFQbW108oVUNTNLM3yEe
+zRKrAA/wGQ1szyhnl1vo+RChITDOc2muvKIBwr3lfdHBK8dG+dl5tk5DYKQq+Jgs
+OfIpM4jZN/FzcmGSQzZVXtsC4yA3fMoeWR4ooX1a5ea57KTUKNQzuTYYTrrj1+5u
+H9QfrYBmE6BbidB3rKJeUwrOv5aLx8Qc0HM600FMLpHoVnIT55br2HC2EHMzmsr3
+wE2luB2EnB72VZHvbx3nhwwfFKc0TxpFwgZlMofg6s26CV0gup7gjxEzLulXUEgn
+RZcnRuX40U+tt7PGQ4syIFftMZs31T39z15VZG5OT/y+1FNnLbmNI/zZ/cUNRr3l
+WdJxn4zaVx8A7k3zc98kMzGHtsfWevxB5DUzbeAIJ4TRPUxKUy1/Tgd8OCI7mCnU
+IV3yt2uAVK0ruECXkY9URlN2xbeaHuDRP62X+qN2jxPuPi5G2tSHwiEiHCKyzvhw
+jWBGP6VKuJJuEjTwlBtk5aTLsulLuUXM+B19+4Js+rXdJkq+xVZ30ugYt0FmiUBU
+XyqKLOXDOWP7brywdSeM
+=l457
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__5_Sep_2012_13_15_39_+1000_i5ySC6_Ni0wobtGW--
