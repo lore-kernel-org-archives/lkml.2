@@ -1,95 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759128Ab2IESPj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 14:15:39 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:49422 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753869Ab2IESPh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 14:15:37 -0400
+	id S1759114Ab2IESRw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 14:17:52 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:27218 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753869Ab2IESRv convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 14:17:51 -0400
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC105.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+X-SpamScore: -7
+X-BigFish: VS-7(zz9371I542M1432Izz1202hzz8275bhz2fh2a8h683h839h944hd25hf0ah107ah1220h1155h)
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT001.namprd03.prod.outlook.com;R:internal;EFV:INT
+From: KY Srinivasan <kys@microsoft.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "ben@decadent.org.uk" <ben@decadent.org.uk>,
+        "thozza@redhat.com" <thozza@redhat.com>,
+        "dcbw@redhat.com" <dcbw@redhat.com>
+Subject: RE: [PATCH 4/4] tools: hv: Parse /etc/os-release
+Thread-Topic: [PATCH 4/4] tools: hv: Parse /etc/os-release
+Thread-Index: AQHNi4XgLVQvSblNf0aXtnE/jq4/OJd7+DYAgAAUhGA=
+Date: Wed, 5 Sep 2012 18:16:56 +0000
+Message-ID: <426367E2313C2449837CD2DE46E7EAF9309E02B3@SN2PRD0310MB382.namprd03.prod.outlook.com>
+References: <1346864519-30020-1-git-send-email-kys@microsoft.com>
+	<1346864553-30059-1-git-send-email-kys@microsoft.com>
+	<1346864553-30059-4-git-send-email-kys@microsoft.com>
+ <20120905175810.60ee45c8@pyramind.ukuu.org.uk>
+In-Reply-To: <20120905175810.60ee45c8@pyramind.ukuu.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [173.61.55.165]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20120905143558.GB10925@redhat.com>
-References: <1346680277-5887-1-git-send-email-sjur.brandeland@stericsson.com>
-	<20120903143018.GA5353@redhat.com>
-	<CAJK669bkHHMAPYMEr22-6uOwfgJv1uKTbzNBQVVCq=OooExC0g@mail.gmail.com>
-	<20120903202737.GD6181@redhat.com>
-	<87zk56e2xc.fsf@rustcorp.com.au>
-	<CAJK669bUXHqaDUZDNZ9i85pRKENUMS_RXw4z7BsSq7Hiw=OOfg@mail.gmail.com>
-	<20120905143558.GB10925@redhat.com>
-Date: Wed, 5 Sep 2012 20:15:36 +0200
-Message-ID: <CAJK669bhVfgnxuF6wVtdnzs2bgiJ2HzgwfWw4uZ=EqTdm43Jow@mail.gmail.com>
-Subject: Re: [RFC 1/2] virtio_console: Add support for DMA memory allocation
-From: =?UTF-8?Q?Sjur_Br=C3=A6ndeland?= <sjurbren@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Amit Shah <amit.shah@redhat.com>, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        virtualization@lists.linux-foundation.org,
-        =?UTF-8?Q?Sjur_Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Content-Type: text/plain; charset=UTF-8
+X-OrganizationHeadersPreserved: SN2PRD0310HT001.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LXORGUK.UKUU.ORG.UK$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%DECADENT.ORG.UK$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC105.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC105.redmond.corp.microsoft.com
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael.
-
->> If the device then asks for VIRTIO_CONSOLE_F_DMA_MEM
->> when DMA is not supported, virtio will do BUG_ON() from
->> virtio_check_driver_offered_feature().
->>
->> Is this acceptable or should we add a check in virtcons_probe()
->> and let the probing fail instead?
->>
->> E.g:
->>       /* Refuse to bind if F_DMA_MEM request cannot be met */
->>       if (!VIRTIO_CONSOLE_HAS_DMA &&
->>           (vdev->config->get_features(vdev) & (1 << VIRTIO_CONSOLE_F_DMA_MEM))){
->>               dev_err(&vdev->dev,
->>                       "DMA_MEM requested, but arch does not support DMA\n");
->>               err = -EINVAL;
->>               goto fail;
->>       }
->>
->> Regards,
->> Sjur
->
-> Failing probe would be cleaner. But there is still a problem:
-> old driver will happily bind to that device and then
-> fail to work, right?
-
-Not just fail to work, the kernel will panic on the BUG_ON().
-Remoteproc gets the virtio configuration from firmware loaded
-from user space. So this type of problem might be triggered
-for other virtio drivers as well.
 
 
-> virtio pci has revision id for this, but remoteproc doesn't
-> seem to have anything similar. Or did I miss it?
+> -----Original Message-----
+> From: Alan Cox [mailto:alan@lxorguk.ukuu.org.uk]
+> Sent: Wednesday, September 05, 2012 12:58 PM
+> To: KY Srinivasan
+> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> ben@decadent.org.uk; thozza@redhat.com; dcbw@redhat.com
+> Subject: Re: [PATCH 4/4] tools: hv: Parse /etc/os-release
+> 
+> > +			if (!strcmp(buf, "NAME"))
+> > +				os_name = strdup(value);
+> > +			else if (!strcmp(buf, "VERSION_ID"))
+> > +				os_major = strdup(value);
+> 
+> strdup can fail. The case where it leaks because NAME= occurs twice is
+> harmless enough but the strdup ought to be checked or add an x_strdup()
+> helper.
 
-No there are currently no sanity check of
-virtio type and feature bits in remoteproc.
-One option may be to add this...
+I will fix this and resend this patch.
 
-> If not -
-> we probably need to use a different
-> device id, and not a feature bit.
+Thank you,
 
-But if I create a new virtio console type, remoteproc
-could still call the existing virtio_console with random
-bad feature bits, causing kernel panic.
+K. Y
 
-Even if we fix this particular problem, the general problem
-still exists: bogus virtio declarations in remoteproc's firmware
-may cause BUG_ON(). (Note the fundamental difference
-between visualizations and remoteproc. For remoteproc
-the virtio configuration comes from binaries loaded from
-user space).
 
-So maybe we should look for a more generic solution, e.g.
-changing virtio probe functionality so that devices with
-bad feature bits will not trigger BUG_ON(), but rather refuse
-to bind the driver.
 
-Regards,
-Sjur
