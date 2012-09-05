@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889Ab2IEHkj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 03:40:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46649 "EHLO mx2.suse.de"
+	id S1754346Ab2IEHk6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 03:40:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46671 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750991Ab2IEHkh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 03:40:37 -0400
-Date: Wed, 05 Sep 2012 09:40:29 +0200
-Message-ID: <s5h8vcokjde.wl%tiwai@suse.de>
+	id S1752966Ab2IEHkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 03:40:46 -0400
+Date: Wed, 05 Sep 2012 09:40:45 +0200
+Message-ID: <s5h7gs8kjcy.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: clemens@ladisch.de, perex@perex.cz, yongjun_wei@trendmicro.com.cn,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Cc: perex@perex.cz, yongjun_wei@trendmicro.com.cn, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
 Subject: Re: [PATCH] ALSA: use list_move_tail instead of list_del/list_add_tail
-In-Reply-To: <CAPgLHd_1T4S9pngzO=GXthvMD6Ke6xA3t_ZTbvLYRG+TS+2j=w@mail.gmail.com>
-References: <CAPgLHd_1T4S9pngzO=GXthvMD6Ke6xA3t_ZTbvLYRG+TS+2j=w@mail.gmail.com>
+In-Reply-To: <CAPgLHd8KyjsepcaW4zffjQG4ma4sdzmTa6wafwWh55La7qWzMQ@mail.gmail.com>
+References: <CAPgLHd8KyjsepcaW4zffjQG4ma4sdzmTa6wafwWh55La7qWzMQ@mail.gmail.com>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.1
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -24,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Wed, 5 Sep 2012 14:33:21 +0800,
+At Wed, 5 Sep 2012 15:00:15 +0800,
 Wei Yongjun wrote:
 > 
 > From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
@@ -33,47 +33,30 @@ Wei Yongjun wrote:
 > 
 > Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Thanks, applied.
+Applied this one, too.  Thanks.
 
 
 Takashi
 
+
 > ---
->  sound/drivers/opl4/opl4_synth.c | 9 +++------
->  1 file changed, 3 insertions(+), 6 deletions(-)
+>  sound/pci/emu10k1/memory.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 > 
-> diff --git a/sound/drivers/opl4/opl4_synth.c b/sound/drivers/opl4/opl4_synth.c
-> index 49b9e24..4b91adc 100644
-> --- a/sound/drivers/opl4/opl4_synth.c
-> +++ b/sound/drivers/opl4/opl4_synth.c
-> @@ -504,8 +504,7 @@ void snd_opl4_note_on(void *private_data, int note, int vel, struct snd_midi_cha
->  	spin_lock_irqsave(&opl4->reg_lock, flags);
->  	for (i = 0; i < voices; i++) {
->  		voice[i] = snd_opl4_get_voice(opl4);
-> -		list_del(&voice[i]->list);
-> -		list_add_tail(&voice[i]->list, &opl4->on_voices);
-> +		list_move_tail(&voice[i]->list, &opl4->on_voices);
->  		voice[i]->chan = chan;
->  		voice[i]->note = note;
->  		voice[i]->velocity = vel & 0x7f;
-> @@ -555,8 +554,7 @@ void snd_opl4_note_on(void *private_data, int note, int vel, struct snd_midi_cha
->  
->  static void snd_opl4_voice_off(struct snd_opl4 *opl4, struct opl4_voice *voice)
->  {
-> -	list_del(&voice->list);
-> -	list_add_tail(&voice->list, &opl4->off_voices);
-> +	list_move_tail(&voice->list, &opl4->off_voices);
->  
->  	voice->reg_misc &= ~OPL4_KEY_ON_BIT;
->  	snd_opl4_write(opl4, OPL4_REG_MISC + voice->number, voice->reg_misc);
-> @@ -571,8 +569,7 @@ void snd_opl4_note_off(void *private_data, int note, int vel, struct snd_midi_ch
->  
->  static void snd_opl4_terminate_voice(struct snd_opl4 *opl4, struct opl4_voice *voice)
->  {
-> -	list_del(&voice->list);
-> -	list_add_tail(&voice->list, &opl4->off_voices);
-> +	list_move_tail(&voice->list, &opl4->off_voices);
->  
->  	voice->reg_misc = (voice->reg_misc & ~OPL4_KEY_ON_BIT) | OPL4_DAMP_BIT;
->  	snd_opl4_write(opl4, OPL4_REG_MISC + voice->number, voice->reg_misc);
+> diff --git a/sound/pci/emu10k1/memory.c b/sound/pci/emu10k1/memory.c
+> index 0a43662..1dce0a39 100644
+> --- a/sound/pci/emu10k1/memory.c
+> +++ b/sound/pci/emu10k1/memory.c
+> @@ -263,8 +263,8 @@ int snd_emu10k1_memblk_map(struct snd_emu10k1 *emu, struct snd_emu10k1_memblk *b
+>  	spin_lock_irqsave(&emu->memblk_lock, flags);
+>  	if (blk->mapped_page >= 0) {
+>  		/* update order link */
+> -		list_del(&blk->mapped_order_link);
+> -		list_add_tail(&blk->mapped_order_link, &emu->mapped_order_link_head);
+> +		list_move_tail(&blk->mapped_order_link,
+> +			       &emu->mapped_order_link_head);
+>  		spin_unlock_irqrestore(&emu->memblk_lock, flags);
+>  		return 0;
+>  	}
+> 
 > 
