@@ -1,108 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759935Ab2IEXcJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 19:32:09 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63678 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759890Ab2IEXcH (ORCPT
+	id S1759986Ab2IEXgT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 19:36:19 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:26086 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1759919Ab2IEXgS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 19:32:07 -0400
-Message-ID: <5047E0F2.60404@gmail.com>
-Date: Wed, 05 Sep 2012 17:32:02 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 11/17] perf tools: Remove the node from rblist in strlist__remove
-References: <1346886537-11621-1-git-send-email-acme@infradead.org> <1346886537-11621-12-git-send-email-acme@infradead.org>
-In-Reply-To: <1346886537-11621-12-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Wed, 5 Sep 2012 19:36:18 -0400
+Message-ID: <1346888174.5325.55.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH 09/10] net/macb: ethtool interface: add register dump
+ feature
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: <netdev@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <davem@davemloft.net>, <havard@skinnemoen.net>,
+        <plagnioj@jcrosoft.com>, <jamie@jamieiles.com>,
+        <linux-kernel@vger.kernel.org>, <patrice.vilchez@atmel.com>
+Date: Thu, 6 Sep 2012 00:36:14 +0100
+In-Reply-To: <fcd1c2443a30f23ffcd8de28328c5a382e2a2459.1346775479.git.nicolas.ferre@atmel.com>
+References: <cover.1346775479.git.nicolas.ferre@atmel.com>
+	 <fcd1c2443a30f23ffcd8de28328c5a382e2a2459.1346775479.git.nicolas.ferre@atmel.com>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+X-Originating-IP: [10.17.20.137]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This one needs to go through urgent.
-
-
-On 9/5/12 5:08 PM, Arnaldo Carvalho de Melo wrote:
-> From: Suzuki K. Poulose <suzuki@in.ibm.com>
->
-> The following commit:
->
-> author	David Ahern <dsahern@gmail.com>
-> 	Tue, 31 Jul 2012 04:31:33 +0000 (22:31 -0600)
-> committer	Arnaldo Carvalho de Melo <acme@redhat.com>
-> 	Fri, 3 Aug 2012 13:39:51 +0000 (10:39 -0300)
-> commit	ee8dd3ca43f151d9fbe1edeef68fb8a77eb9f047
->
-> causes a double free during a probe deletion as the node is never
-> removed from the list via strlist__remove(), even though it gets
-> 'deleted' (read free()'d). This causes a double free when we do
-> strlist__delete() as the node is already deleted but present in the
-> rblist.
->
-> [suzukikp@suzukikp perf]$ sudo ./perf probe -a do_fork
-> Added new event:
->    probe:do_fork        (on do_fork)
->
-> You can now use it in all perf tools, such as:
->
-> 	perf record -e probe:do_fork -aR sleep 1
->
-> [suzukikp@suzukikp perf]$ sudo ./perf probe -d do_fork
-> Removed event: probe:do_fork
-> *** glibc detected *** ./perf: double free or corruption (fasttop): 0x000000000133d600 ***
-> ======= Backtrace: =========
-> /lib64/libc.so.6[0x38eec7dda6]
-> ./perf(rblist__delete+0x5c)[0x47d3dc]
-> ./perf(del_perf_probe_events+0xb6)[0x47b826]
-> ./perf(cmd_probe+0x471)[0x42c8d1]
-> ./perf[0x4150b3]
-> ./perf(main+0x501)[0x4148e1]
-> /lib64/libc.so.6(__libc_start_main+0xed)[0x38eec2169d]
-> ./perf[0x414a61]
->
-> Make sure we remove the node from the rblist before we delete the node.
-> The rblist__remove_node() will invoke rblist->node_delete, which  will
-> take care of deleting the node with the suitable function provided by
-> the user.
->
-> Reported-by: Ananth N. Mavinakayanahalli <ananth@in.ibm.com>
-> Signed-off-by: Suzuki K. Poulose <suzuki@in.ibm.com>
-> Acked-by: David Ahern <dsahern@gmail.com>
-> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Link: http://lkml.kernel.org/r/20120829055840.7802.1459.stgit@suzukikp.in.ibm.com
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+On Wed, 2012-09-05 at 11:00 +0200, Nicolas Ferre wrote:
+> Add macb_get_regs() ethtool function and its helper function:
+> macb_get_regs_len().
+> 
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 > ---
->   tools/perf/util/strlist.c |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/tools/perf/util/strlist.c b/tools/perf/util/strlist.c
-> index 95856ff..155d8b7 100644
-> --- a/tools/perf/util/strlist.c
-> +++ b/tools/perf/util/strlist.c
-> @@ -93,7 +93,7 @@ out:
->
->   void strlist__remove(struct strlist *slist, struct str_node *snode)
->   {
-> -	str_node__delete(snode, slist->dupstr);
-> +	rblist__remove_node(&slist->rblist, &snode->rb_node);
->   }
->
->   struct str_node *strlist__find(struct strlist *slist, const char *entry)
->
+>  drivers/net/ethernet/cadence/macb.c |   40 +++++++++++++++++++++++++++++++++++
+>  drivers/net/ethernet/cadence/macb.h |    3 +++
+>  2 files changed, 43 insertions(+)
+> 
+> diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+> index c7c39f1..f31c0a7 100644
+> --- a/drivers/net/ethernet/cadence/macb.c
+> +++ b/drivers/net/ethernet/cadence/macb.c
+> @@ -1321,10 +1321,50 @@ static void macb_get_drvinfo(struct net_device *dev,
+>  	strcpy(info->bus_info, dev_name(&bp->pdev->dev));
+>  }
+>  
+> +static int macb_get_regs_len(struct net_device *netdev)
+> +{
+> +	return MACB_GREGS_LEN * sizeof(u32);
+> +}
+> +
+> +static void macb_get_regs(struct net_device *dev, struct ethtool_regs *regs,
+> +			  void *p)
+> +{
+> +	struct macb *bp = netdev_priv(dev);
+> +	unsigned int tail, head;
+> +	u32 *regs_buff = p;
+> +
+> +        memset(p, 0, MACB_GREGS_LEN * sizeof(u32));
+
+The ethtool core does that for you.  (Drivers can't be trusted to do
+it!)
+
+> +	regs->version = MACB_BFEXT(IDNUM, macb_readl(bp, MID));
+
+Note that the version field is supposed to be the version of the
+register dump format.  Is this value sufficient for userland to easily
+decide whether macb_is_gem()?  Are there spare bits that you can set if
+you change the format later?
+
+> +	tail = macb_tx_ring_wrap(bp->tx_tail);
+> +	head = macb_tx_ring_wrap(bp->tx_head);
+> +
+> +	regs_buff[0]  = macb_readl(bp, NCR);
+> +	regs_buff[1]  = macb_or_gem_readl(bp, NCFGR);
+> +	regs_buff[2]  = macb_readl(bp, NSR);
+> +	regs_buff[3]  = macb_readl(bp, TSR);
+> +	regs_buff[4]  = macb_readl(bp, RBQP);
+> +	regs_buff[5]  = macb_readl(bp, TBQP);
+> +	regs_buff[6]  = macb_readl(bp, RSR);
+> +	regs_buff[7]  = macb_readl(bp, IMR);
+> +
+> +	regs_buff[8]  = tail;
+> +	regs_buff[9]  = head;
+> +	regs_buff[10] = macb_tx_dma(bp, tail);
+> +	regs_buff[11] = macb_tx_dma(bp, head);
+> +
+> +	if (macb_is_gem(bp)) {
+> +		regs_buff[12] = gem_readl(bp, USRIO);
+> +		regs_buff[13] = gem_readl(bp, DMACFG);
+> +	}
+> +}
+> +
+>  static const struct ethtool_ops macb_ethtool_ops = {
+>  	.get_settings		= macb_get_settings,
+>  	.set_settings		= macb_set_settings,
+>  	.get_drvinfo		= macb_get_drvinfo,
+> +	.get_regs_len		= macb_get_regs_len,
+> +	.get_regs		= macb_get_regs,
+>  	.get_link		= ethtool_op_get_link,
+>  	.get_ts_info		= ethtool_op_get_ts_info,
+>  };
+> diff --git a/drivers/net/ethernet/cadence/macb.h b/drivers/net/ethernet/cadence/macb.h
+> index 8a4ee2f..d509e88 100644
+> --- a/drivers/net/ethernet/cadence/macb.h
+> +++ b/drivers/net/ethernet/cadence/macb.h
+> @@ -10,6 +10,9 @@
+>  #ifndef _MACB_H
+>  #define _MACB_H
+>  
+> +
+> +#define MACB_GREGS_LEN 32
+
+Why is this rather larger than the actual number of registers you
+return?  Also, the name is not a great idea as 'regs_len' is normally a
+number of bytes.
+
+Ben.
+
+>  /* MACB register offsets */
+>  #define MACB_NCR				0x0000
+>  #define MACB_NCFGR				0x0004
+
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
