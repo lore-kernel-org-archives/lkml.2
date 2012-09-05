@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758058Ab2IEItV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 04:49:21 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40341 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765Ab2IEItU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 04:49:20 -0400
-Date: Wed, 5 Sep 2012 01:49:15 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Philipp Reisner <philipp.reisner@linbit.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@lst.de>,
-        drbd-dev@lists.linbit.com, linux-kernel@vger.kernel.org
-Subject: Re: [Drbd-dev] FLUSH/FUA documentation & code discrepancy
-Message-ID: <20120905084915.GF3195@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <8439412.RChiDciQdh@fat-tyre>
- <20120904224620.GB9092@dhcp-172-17-108-109.mtv.corp.google.com>
- <3029802.oqG0dEY71l@fat-tyre>
+	id S1757519Ab2IEI5H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 04:57:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50982 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751298Ab2IEI5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 04:57:05 -0400
+Date: Wed, 5 Sep 2012 10:56:53 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Andreas Schwab <schwab@linux-m68k.org>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] powerpc: fix personality handling in
+ ppc64_personality()
+In-Reply-To: <1346813643.2257.24.camel@pasglop>
+Message-ID: <alpine.LNX.2.00.1209051056060.11079@pobox.suse.cz>
+References: <alpine.LNX.2.00.1208012201520.14910@pobox.suse.cz>  <m27gtitfv4.fsf@igel.home>  <alpine.LNX.2.00.1208020907490.14910@pobox.suse.cz> <1346813643.2257.24.camel@pasglop>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3029802.oqG0dEY71l@fat-tyre>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 05, 2012 at 10:44:55AM +0200, Philipp Reisner wrote:
-> > Currently, FLUSH/FUA doesn't enforce any ordering requirement.  File
-> > systems are responsible for draining all writes which have to happen
-> > before and not issue further writes which should come after.
-> 
-> Ok. That is a clear statement. So we will do it that way.
-> 
-> The "Currently" in you statement, suggests that there might be something
-> more mighty in the future. Is that true?
+On Wed, 5 Sep 2012, Benjamin Herrenschmidt wrote:
 
-Heh, I was more thinking about the past.  We used to have barrier
-support with much stricter ordering.  I don't think we're gonna change
-the ordering requirement in any foreseeable future.
+> > Directly comparing current->personality against PER_LINUX32 doesn't work
+> > in cases when any of the personality flags stored in the top three bytes
+> > are used.
+> > 
+> > Directly forcefully setting personality to PER_LINUX32 or PER_LINUX
+> > discards any flags stored in the top three bytes
+> > 
+> > Use personality() macro to compare only PER_MASK bytes and make sure that
+> > we are setting only the bits that should be set, instead of
+> > overwriting the whole value.
+> > 
+> > Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> > ---
+> > 
+> > changed since v1: fix the bit ops to reflect the fact that PER_LINUX is 
+> > actually 0
+> 
+> Had already merged v1 (oops.. didn't spot the issue with PER_LINUX being
+> 0). Can you send an incremental fixup ?
 
-Thanks.
+Hi Benjamin,
+
+actually commit 7256a5d2da56 seems to contain the correct PER_LINUX 
+handling, so seems like you picked the right one :)
+
+Thanks,
 
 -- 
-tejun
+Jiri Kosina
+SUSE Labs
