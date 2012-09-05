@@ -1,228 +1,402 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751815Ab2IEE4H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 00:56:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31509 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751219Ab2IEE4B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 00:56:01 -0400
-Date: Wed, 05 Sep 2012 13:55:53 +0900 (JST)
-Message-Id: <20120905.135553.1191951431365833823.yamato@redhat.com>
-To: sfr@canb.auug.org.au
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk
-Subject: Re: linux-next: manual merge of the net-next tree with the vfs tree
-From: Masatake YAMATO <yamato@redhat.com>
-In-Reply-To: <20120905120204.a8990185fb80f6b1b65bc6ea@canb.auug.org.au>
-References: <20120905120204.a8990185fb80f6b1b65bc6ea@canb.auug.org.au>
-Organization: Red Hat Japan, Inc.
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S932443Ab2IEFKh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 01:10:37 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:47884 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751555Ab2IEFKX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 01:10:23 -0400
+X-AuditID: 9c93016f-b7cc0ae000000e9f-47-5046debda399
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [PATCH 5/7] perf header: Add ->process callbacks to most of features
+Date: Wed,  5 Sep 2012 14:02:51 +0900
+Message-Id: <1346821373-31621-6-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.4
+In-Reply-To: <1346821373-31621-1-git-send-email-namhyung@kernel.org>
+References: <1346821373-31621-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+>From now on each feature information is processed and saved in perf
+header so that it can be used wherever needed.  The BRANCH_STACK
+feature is an exception since it needs nothing to be done.
 
-How can I see source files applied your patch?
-(I'm very new to kernel development.)
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Robert Richter <robert.richter@amd.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/header.c | 318 +++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 307 insertions(+), 11 deletions(-)
 
-You patch looks like a patch for another patch.
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 43425b75f0c9..9c6ab1b52a07 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -21,6 +21,7 @@
+ #include "debug.h"
+ #include "cpumap.h"
+ #include "pmu.h"
++#include "strbuf.h"
+ 
+ static bool no_buildid_cache = false;
+ 
+@@ -1638,6 +1639,99 @@ static int process_build_id(struct perf_file_section *section,
+ 	return 0;
+ }
+ 
++static int process_hostname(struct perf_file_section *section __unused,
++			    struct perf_header *ph,
++			    int feat __unused, int fd, void *data __used)
++{
++	ph->info.hostname = do_read_string(fd, ph);
++	return ph->info.hostname ? 0 : -ENOMEM;
++}
++
++static int process_osrelease(struct perf_file_section *section __unused,
++			     struct perf_header *ph,
++			     int feat __unused, int fd, void *data __used)
++{
++	ph->info.os_release = do_read_string(fd, ph);
++	return ph->info.os_release ? 0 : -ENOMEM;
++}
++
++static int process_version(struct perf_file_section *section __unused,
++			   struct perf_header *ph,
++			   int feat __unused, int fd, void *data __used)
++{
++	ph->info.version = do_read_string(fd, ph);
++	return ph->info.version ? 0 : -ENOMEM;
++}
++
++static int process_arch(struct perf_file_section *section __unused,
++			struct perf_header *ph,
++			int feat __unused, int fd, void *data __used)
++{
++	ph->info.arch = do_read_string(fd, ph);
++	return ph->info.arch ? 0 : -ENOMEM;
++}
++
++static int process_nrcpus(struct perf_file_section *section __unused,
++			  struct perf_header *ph,
++			  int feat __unused, int fd, void *data __used)
++{
++	size_t ret;
++	u32 nr;
++
++	ret = read(fd, &nr, sizeof(nr));
++	if (ret != sizeof(nr))
++		return -1;
++
++	if (ph->needs_swap)
++		nr = bswap_32(nr);
++
++	ph->info.nr_cpus_online = nr;
++
++	ret = read(fd, &nr, sizeof(nr));
++	if (ret != sizeof(nr))
++		return -1;
++
++	if (ph->needs_swap)
++		nr = bswap_32(nr);
++
++	ph->info.nr_cpus_avail = nr;
++	return 0;
++}
++
++static int process_cpudesc(struct perf_file_section *section __unused,
++			   struct perf_header *ph,
++			   int feat __unused, int fd, void *data __used)
++{
++	ph->info.cpu_desc = do_read_string(fd, ph);
++	return ph->info.cpu_desc ? 0 : -ENOMEM;
++}
++
++static int process_cpuid(struct perf_file_section *section __unused,
++			 struct perf_header *ph,
++			 int feat __unused, int fd, void *data __used)
++{
++	ph->info.cpuid = do_read_string(fd, ph);
++	return ph->info.cpuid ? 0 : -ENOMEM;
++}
++
++static int process_total_mem(struct perf_file_section *section __unused,
++			     struct perf_header *ph,
++			     int feat __unused, int fd, void *data __used)
++{
++	uint64_t mem;
++	size_t ret;
++
++	ret = read(fd, &mem, sizeof(mem));
++	if (ret != sizeof(mem))
++		return -1;
++
++	if (ph->needs_swap)
++		mem = bswap_64(mem);
++
++	ph->info.total_mem = mem;
++	return 0;
++}
++
+ static struct perf_evsel *
+ perf_evlist__find_by_index(struct perf_evlist *evlist, int idx)
+ {
+@@ -1688,6 +1782,208 @@ process_event_desc(struct perf_file_section *section __unused,
+ 	return 0;
+ }
+ 
++static int process_cmdline(struct perf_file_section *section __unused,
++			   struct perf_header *ph,
++			   int feat __unused, int fd, void *data __used)
++{
++	size_t ret;
++	char *str;
++	u32 nr, i;
++	struct strbuf sb;
++
++	ret = read(fd, &nr, sizeof(nr));
++	if (ret != sizeof(nr))
++		return -1;
++
++	if (ph->needs_swap)
++		nr = bswap_32(nr);
++
++	ph->info.nr_cmdline = nr;
++	strbuf_init(&sb, 128);
++
++	for (i = 0; i < nr; i++) {
++		str = do_read_string(fd, ph);
++		if (!str)
++			goto error;
++
++		/* include a NULL character at the end */
++		strbuf_add(&sb, str, strlen(str) + 1);
++		free(str);
++	}
++	ph->info.cmdline = strbuf_detach(&sb, NULL);
++	return 0;
++
++error:
++	strbuf_release(&sb);
++	return -1;
++}
++
++static int process_cpu_topology(struct perf_file_section *section __unused,
++				struct perf_header *ph,
++				int feat __unused, int fd, void *data __used)
++{
++	size_t ret;
++	u32 nr, i;
++	char *str;
++	struct strbuf sb;
++
++	ret = read(fd, &nr, sizeof(nr));
++	if (ret != sizeof(nr))
++		return -1;
++
++	if (ph->needs_swap)
++		nr = bswap_32(nr);
++
++	ph->info.nr_sibling_cores = nr;
++	strbuf_init(&sb, 128);
++
++	for (i = 0; i < nr; i++) {
++		str = do_read_string(fd, ph);
++		if (!str)
++			goto error;
++
++		/* include a NULL character at the end */
++		strbuf_add(&sb, str, strlen(str) + 1);
++		free(str);
++	}
++	ph->info.sibling_cores = strbuf_detach(&sb, NULL);
++
++	ret = read(fd, &nr, sizeof(nr));
++	if (ret != sizeof(nr))
++		return -1;
++
++	if (ph->needs_swap)
++		nr = bswap_32(nr);
++
++	ph->info.nr_sibling_threads = nr;
++
++	for (i = 0; i < nr; i++) {
++		str = do_read_string(fd, ph);
++		if (!str)
++			goto error;
++
++		/* include a NULL character at the end */
++		strbuf_add(&sb, str, strlen(str) + 1);
++		free(str);
++	}
++	ph->info.sibling_threads = strbuf_detach(&sb, NULL);
++	return 0;
++
++error:
++	strbuf_release(&sb);
++	return -1;
++}
++
++static int process_numa_topology(struct perf_file_section *section __unused,
++				 struct perf_header *ph,
++				 int feat __unused, int fd, void *data __used)
++{
++	size_t ret;
++	u32 nr, node, i;
++	char *str;
++	uint64_t mem_total, mem_free;
++	struct strbuf sb;
++
++	/* nr nodes */
++	ret = read(fd, &nr, sizeof(nr));
++	if (ret != sizeof(nr))
++		goto error;
++
++	if (ph->needs_swap)
++		nr = bswap_32(nr);
++
++	ph->info.nr_numa_nodes = nr;
++	strbuf_init(&sb, 256);
++
++	for (i = 0; i < nr; i++) {
++		/* node number */
++		ret = read(fd, &node, sizeof(node));
++		if (ret != sizeof(node))
++			goto error;
++
++		ret = read(fd, &mem_total, sizeof(u64));
++		if (ret != sizeof(u64))
++			goto error;
++
++		ret = read(fd, &mem_free, sizeof(u64));
++		if (ret != sizeof(u64))
++			goto error;
++
++		if (ph->needs_swap) {
++			node = bswap_32(node);
++			mem_total = bswap_64(mem_total);
++			mem_free = bswap_64(mem_free);
++		}
++
++		strbuf_addf(&sb, "%u:%"PRIu64":%"PRIu64":",
++			    node, mem_total, mem_free);
++
++		str = do_read_string(fd, ph);
++		if (!str)
++			goto error;
++
++		/* include a NULL character at the end */
++		strbuf_add(&sb, str, strlen(str) + 1);
++		free(str);
++	}
++	ph->info.numa_nodes = strbuf_detach(&sb, NULL);
++	return 0;
++
++error:
++	strbuf_release(&sb);
++	return -1;
++}
++
++static int process_pmu_mappings(struct perf_file_section *section __unused,
++				struct perf_header *ph,
++				int feat __unused, int fd, void *data __used)
++{
++	size_t ret;
++	char *name;
++	u32 pmu_num;
++	u32 type;
++	struct strbuf sb;
++
++	ret = read(fd, &pmu_num, sizeof(pmu_num));
++	if (ret != sizeof(pmu_num))
++		return -1;
++
++	if (ph->needs_swap)
++		pmu_num = bswap_32(pmu_num);
++
++	if (!pmu_num) {
++		pr_debug("pmu mappings not available\n");
++		return 0;
++	}
++
++	ph->info.nr_pmu_mappings = pmu_num;
++	strbuf_init(&sb, 128);
++
++	while (pmu_num) {
++		if (read(fd, &type, sizeof(type)) != sizeof(type))
++			goto error;
++		if (ph->needs_swap)
++			type = bswap_32(type);
++
++		name = do_read_string(fd, ph);
++		if (!name)
++			goto error;
++
++		strbuf_addf(&sb, "%u:%s", type, name);
++		/* include a NULL character at the end */
++		strbuf_add(&sb, "", 1);
++
++		free(name);
++		pmu_num--;
++	}
++	ph->info.pmu_mappings = strbuf_detach(&sb, NULL);
++	return 0;
++
++error:
++	strbuf_release(&sb);
++	return -1;
++}
++
+ struct feature_ops {
+ 	int (*write)(int fd, struct perf_header *h, struct perf_evlist *evlist);
+ 	void (*print)(struct perf_header *h, int fd, FILE *fp);
+@@ -1704,7 +2000,7 @@ struct feature_ops {
+ 		.process = process_##func }
+ #define FEAT_OPF(n, func) \
+ 	[n] = { .name = #n, .write = write_##func, .print = print_##func, \
+-		.full_only = true }
++		.process = process_##func, .full_only = true }
+ 
+ /* feature_ops not implemented: */
+ #define print_tracing_data	NULL
+@@ -1713,20 +2009,20 @@ struct feature_ops {
+ static const struct feature_ops feat_ops[HEADER_LAST_FEATURE] = {
+ 	FEAT_OPP(HEADER_TRACING_DATA,	tracing_data),
+ 	FEAT_OPP(HEADER_BUILD_ID,	build_id),
+-	FEAT_OPA(HEADER_HOSTNAME,	hostname),
+-	FEAT_OPA(HEADER_OSRELEASE,	osrelease),
+-	FEAT_OPA(HEADER_VERSION,	version),
+-	FEAT_OPA(HEADER_ARCH,		arch),
+-	FEAT_OPA(HEADER_NRCPUS,		nrcpus),
+-	FEAT_OPA(HEADER_CPUDESC,	cpudesc),
+-	FEAT_OPA(HEADER_CPUID,		cpuid),
+-	FEAT_OPA(HEADER_TOTAL_MEM,	total_mem),
++	FEAT_OPP(HEADER_HOSTNAME,	hostname),
++	FEAT_OPP(HEADER_OSRELEASE,	osrelease),
++	FEAT_OPP(HEADER_VERSION,	version),
++	FEAT_OPP(HEADER_ARCH,		arch),
++	FEAT_OPP(HEADER_NRCPUS,		nrcpus),
++	FEAT_OPP(HEADER_CPUDESC,	cpudesc),
++	FEAT_OPP(HEADER_CPUID,		cpuid),
++	FEAT_OPP(HEADER_TOTAL_MEM,	total_mem),
+ 	FEAT_OPP(HEADER_EVENT_DESC,	event_desc),
+-	FEAT_OPA(HEADER_CMDLINE,	cmdline),
++	FEAT_OPP(HEADER_CMDLINE,	cmdline),
+ 	FEAT_OPF(HEADER_CPU_TOPOLOGY,	cpu_topology),
+ 	FEAT_OPF(HEADER_NUMA_TOPOLOGY,	numa_topology),
+ 	FEAT_OPA(HEADER_BRANCH_STACK,	branch_stack),
+-	FEAT_OPA(HEADER_PMU_MAPPINGS,	pmu_mappings),
++	FEAT_OPP(HEADER_PMU_MAPPINGS,	pmu_mappings),
+ };
+ 
+ struct header_print_data {
+-- 
+1.7.11.4
 
-Masatake YAMATO
-
-> Hi all,
-> 
-> Today's linux-next merge of the net-next tree got a conflict in
-> net/socket.c between commits f8a78429cc70 ("take descriptor handling from
-> sock_alloc_file() to callers") and 32b529f92ea7 ("unexport sock_map_fd(),
-> switch to sock_alloc_file()") from the vfs tree and commit 600e177920df
-> ("net: Providing protocol type via system.sockprotoname xattr
-> of /proc/PID/fd entries") from the net-next tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary.  I also had
-> to add this merge fix patch:
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Wed, 5 Sep 2012 11:52:06 +1000
-> Subject: [PATCH] net: cope with sock_alloc_file() API change
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  include/linux/net.h |    3 ++-
->  net/9p/trans_fd.c   |    2 +-
->  net/sctp/socket.c   |    2 +-
->  3 files changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/include/linux/net.h b/include/linux/net.h
-> index c8a9708..a3831f3 100644
-> --- a/include/linux/net.h
-> +++ b/include/linux/net.h
-> @@ -247,7 +247,8 @@ extern int   	     sock_sendmsg(struct socket *sock, struct msghdr *msg,
->  				  size_t len);
->  extern int	     sock_recvmsg(struct socket *sock, struct msghdr *msg,
->  				  size_t size, int flags);
-> -extern struct file  *sock_alloc_file(struct socket *sock, int flags);
-> +extern struct file  *sock_alloc_file(struct socket *sock, int flags,
-> +				     const char *dname);
->  extern struct socket *sockfd_lookup(int fd, int *err);
->  extern struct socket *sock_from_file(struct file *file, int *err);
->  #define		     sockfd_put(sock) fput(sock->file)
-> diff --git a/net/9p/trans_fd.c b/net/9p/trans_fd.c
-> index 8c4e0b5..1c8b557 100644
-> --- a/net/9p/trans_fd.c
-> +++ b/net/9p/trans_fd.c
-> @@ -801,7 +801,7 @@ static int p9_socket_open(struct p9_client *client, struct socket *csocket)
->  		return -ENOMEM;
->  
->  	csocket->sk->sk_allocation = GFP_NOIO;
-> -	file = sock_alloc_file(csocket, 0);
-> +	file = sock_alloc_file(csocket, 0, NULL);
->  	if (IS_ERR(file)) {
->  		pr_err("%s (%d): failed to map fd\n",
->  		       __func__, task_pid_nr(current));
-> diff --git a/net/sctp/socket.c b/net/sctp/socket.c
-> index 5ba739e..59d16ea 100644
-> --- a/net/sctp/socket.c
-> +++ b/net/sctp/socket.c
-> @@ -4313,7 +4313,7 @@ static int sctp_getsockopt_peeloff(struct sock *sk, int len, char __user *optval
->  		goto out;
->  	}
->  
-> -	newfile = sock_alloc_file(newsock, 0);
-> +	newfile = sock_alloc_file(newsock, 0, NULL);
->  	if (unlikely(IS_ERR(newfile))) {
->  		put_unused_fd(retval);
->  		sock_release(newsock);
-> -- 
-> 1.7.10.280.gaa39
-> 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc net/socket.c
-> index 79170dc,977c0f4..0000000
-> --- a/net/socket.c
-> +++ b/net/socket.c
-> @@@ -346,15 -347,30 +347,23 @@@ static struct file_system_type sock_fs_
->    *	but we take care of internal coherence yet.
->    */
->   
-> - struct file *sock_alloc_file(struct socket *sock, int flags)
->  -static int sock_alloc_file(struct socket *sock, struct file **f, int flags,
->  -			   const char *dname)
-> ++struct file *sock_alloc_file(struct socket *sock, int flags,
-> ++			     const char *dname)
->   {
->   	struct qstr name = { .name = "" };
->   	struct path path;
->   	struct file *file;
->  -	int fd;
->  -
->  -	fd = get_unused_fd_flags(flags);
->  -	if (unlikely(fd < 0))
->  -		return fd;
->   
-> + 	if (dname) {
-> + 		name.name = dname;
-> + 		name.len = strlen(name.name);
-> + 	} else if (sock->sk) {
-> + 		name.name = sock->sk->sk_prot_creator->name;
-> + 		name.len = strlen(name.name);
-> + 	}
->   	path.dentry = d_alloc_pseudo(sock_mnt->mnt_sb, &name);
->  -	if (unlikely(!path.dentry)) {
->  -		put_unused_fd(fd);
->  -		return -ENOMEM;
->  -	}
->  +	if (unlikely(!path.dentry))
->  +		return ERR_PTR(-ENOMEM);
->   	path.mnt = mntget(sock_mnt);
->   
->   	d_instantiate(path.dentry, SOCK_INODE(sock));
-> @@@ -373,26 -390,22 +382,26 @@@
->   	file->f_flags = O_RDWR | (flags & O_NONBLOCK);
->   	file->f_pos = 0;
->   	file->private_data = sock;
->  -
->  -	*f = file;
->  -	return fd;
->  +	return file;
->   }
->  +EXPORT_SYMBOL(sock_alloc_file);
->   
->  -int sock_map_fd(struct socket *sock, int flags)
->  +static int sock_map_fd(struct socket *sock, int flags)
->   {
->   	struct file *newfile;
->  -	int fd = sock_alloc_file(sock, &newfile, flags, NULL);
->  +	int fd = get_unused_fd_flags(flags);
->  +	if (unlikely(fd < 0))
->  +		return fd;
->   
-> - 	newfile = sock_alloc_file(sock, flags);
->  -	if (likely(fd >= 0))
-> ++	newfile = sock_alloc_file(sock, flags, NULL);
->  +	if (likely(!IS_ERR(newfile))) {
->   		fd_install(fd, newfile);
->  +		return fd;
->  +	}
->   
->  -	return fd;
->  +	put_unused_fd(fd);
->  +	return PTR_ERR(newfile);
->   }
->  -EXPORT_SYMBOL(sock_map_fd);
->   
->   struct socket *sock_from_file(struct file *file, int *err)
->   {
-> @@@ -1395,27 -1471,12 +1467,27 @@@ SYSCALL_DEFINE4(socketpair, int, family
->   		err = fd1;
->   		goto out_release_both;
->   	}
->  -
->  -	fd2 = sock_alloc_file(sock2, &newfile2, flags, NULL);
->  +	fd2 = get_unused_fd_flags(flags);
->   	if (unlikely(fd2 < 0)) {
->   		err = fd2;
->  +		put_unused_fd(fd1);
->  +		goto out_release_both;
->  +	}
->  +
-> - 	newfile1 = sock_alloc_file(sock1, flags);
-> ++	newfile1 = sock_alloc_file(sock1, flags, NULL);
->  +	if (unlikely(IS_ERR(newfile1))) {
->  +		err = PTR_ERR(newfile1);
->  +		put_unused_fd(fd1);
->  +		put_unused_fd(fd2);
->  +		goto out_release_both;
->  +	}
->  +
-> - 	newfile2 = sock_alloc_file(sock2, flags);
-> ++	newfile2 = sock_alloc_file(sock2, flags, NULL);
->  +	if (IS_ERR(newfile2)) {
->  +		err = PTR_ERR(newfile2);
->   		fput(newfile1);
->   		put_unused_fd(fd1);
->  +		put_unused_fd(fd2);
->   		sock_release(sock2);
->   		goto out;
->   	}
-> @@@ -1553,13 -1615,6 +1625,14 @@@ SYSCALL_DEFINE4(accept4, int, fd, struc
->   		sock_release(newsock);
->   		goto out_put;
->   	}
-> - 	newfile = sock_alloc_file(newsock, flags);
-> ++	newfile = sock_alloc_file(newsock, flags,
-> ++				  sock->sk->sk_prot_creator->name);
->  +	if (unlikely(IS_ERR(newfile))) {
->  +		err = PTR_ERR(newfile);
->  +		put_unused_fd(newfd);
->  +		sock_release(newsock);
->  +		goto out_put;
->  +	}
->   
->   	err = security_socket_accept(sock, newsock);
->   	if (err)
