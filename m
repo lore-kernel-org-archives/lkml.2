@@ -1,39 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758900Ab2IEQoU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 12:44:20 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:52935
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
+	id S1758965Ab2IEQos (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 12:44:48 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:40592
+	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751505Ab2IEQoS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 12:44:18 -0400
+	id S1753908Ab2IEQoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 12:44:46 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
         devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
         ben@decadent.org.uk, thozza@redhat.com, dcbw@redhat.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 0/4] Tools: hv 
-Date: Wed,  5 Sep 2012 10:01:59 -0700
-Message-Id: <1346864519-30020-1-git-send-email-kys@microsoft.com>
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>, stable@vger.kernel.org
+Subject: [PATCH 1/4] tools: hv: Fix file handle leak
+Date: Wed,  5 Sep 2012 10:02:30 -0700
+Message-Id: <1346864553-30059-1-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1346864519-30020-1-git-send-email-kys@microsoft.com>
+References: <1346864519-30020-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset was authored by Ben Hutchings <ben@decadent.org.uk>. Ben
-asked me to submit this patchset. This patchset cleans up the KVP daemon
-code and fixes some bugs.
+Match up each fopen() with an fclose().
 
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Cc: stable@vger.kernel.org
+---
+ tools/hv/hv_kvp_daemon.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-K. Y. Srinivasan (4):
-  tools: hv: Fix file handle leak
-  tools: hv: Fix exit() error code
-  tools: hv: Check for read/write errors
-  tools: hv: Parse /etc/os-release
-
- tools/hv/hv_kvp_daemon.c |   95 +++++++++++++++++++++++++++++++++++++--------
- 1 files changed, 78 insertions(+), 17 deletions(-)
-
+diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
+index c8e1013..4514fb4 100644
+--- a/tools/hv/hv_kvp_daemon.c
++++ b/tools/hv/hv_kvp_daemon.c
+@@ -160,7 +160,7 @@ static void kvp_update_file(int pool)
+ 				sizeof(struct kvp_record),
+ 				kvp_file_info[pool].num_records, filep);
+ 
+-	fflush(filep);
++	fclose(filep);
+ 	kvp_release_lock(pool);
+ }
+ 
+@@ -207,6 +207,7 @@ static void kvp_update_mem_state(int pool)
+ 	kvp_file_info[pool].records = record;
+ 	kvp_file_info[pool].num_records = records_read;
+ 
++	fclose(filep);
+ 	kvp_release_lock(pool);
+ }
+ static int kvp_file_init(void)
 -- 
 1.7.4.1
 
