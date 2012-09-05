@@ -1,41 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753267Ab2IEOvX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 10:51:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37094 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751340Ab2IEOvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 10:51:21 -0400
-Date: Wed, 5 Sep 2012 17:52:43 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>, gleb@redhat.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v9 0/2] kvm: level irqfd support
-Message-ID: <20120905145243.GB11048@redhat.com>
-References: <20120821190800.24958.74812.stgit@bling.home>
- <504764DE.5080202@redhat.com>
+	id S1752582Ab2IEO4k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 10:56:40 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:35745 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164Ab2IEO4j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 10:56:39 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
+        bfields@fieldses.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH v2 1/5] fat: allocate persistent inode numbers
+References: <1346774264-8031-1-git-send-email-linkinjeon@gmail.com>
+	<20120904161747.GJ23464@ZenIV.linux.org.uk>
+	<CAKYAXd_wTxqbC-UxYimCkZtvSddx=f3FG0hoiEY_doMjoxkKog@mail.gmail.com>
+Date: Wed, 05 Sep 2012 23:56:34 +0900
+In-Reply-To: <CAKYAXd_wTxqbC-UxYimCkZtvSddx=f3FG0hoiEY_doMjoxkKog@mail.gmail.com>
+	(Namjae Jeon's message of "Wed, 5 Sep 2012 23:08:11 +0900")
+Message-ID: <87harc34d9.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <504764DE.5080202@redhat.com>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 05, 2012 at 05:42:38PM +0300, Avi Kivity wrote:
-> On 08/21/2012 10:28 PM, Alex Williamson wrote:
-> > Here's the much anticipated re-write of support for level irqfds.  As
-> > Michael suggested, I've rolled the eoi/ack notification fd into
-> > KVM_IRQFD as a new mode.  For lack of a better name, as there seems to
-> > be objections to associating this specifically with an EOI or an ACK,
-> > I've name this OADN or "On Ack, De-assert & Notify".
-> 
-> Perhaps we can call it "resample", since this is what it is doing.
-> irqfd tells kvm that the line as been asserted, resample tells the
-> caller to check again.
+Namjae Jeon <linkinjeon@gmail.com> writes:
 
-Sounds good.
+> In this long discusstion about the FAT acceptance over NFS, our belief
+> is still that the objective should be to reduce errors as much as
+> possible and then if there are certain scenarios - at least that could
+> be highlighted as a limitation in Documentation instead of completely
+> discarding the usage of FAT over NFS.  So how about puttting rename
+> scenario as a limitation ? In ideal scenario how many times this is
+> going to happen ?
 
-> -- 
-> error compiling committee.c: too many arguments to function
+My understanding of your patches is to introduce the silent corruption
+bug by getting wrong location via ino on some cases, instead of
+ESTALE. And make surprise to userland by change ino.
+
+Why is it safe to change ino? If you are saying to remove the changing
+ino on rename, how handle the case of collision?
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
