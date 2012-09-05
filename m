@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758858Ab2IEPbg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 11:31:36 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:48710 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752492Ab2IEPbf (ORCPT
+	id S1758872Ab2IEPdN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 11:33:13 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:38441 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752128Ab2IEPdL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 11:31:35 -0400
-Date: Wed, 5 Sep 2012 17:32:04 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: "Shi, Yang A" <yang.a.shi@intel.com>
-Cc: Daniel Vetter <daniel@ffwll.ch>,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>,
-        "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
-	<linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "alexander.deucher@amd.com" <alexander.deucher@amd.com>,
-        "airlied@redhat.com" <airlied@redhat.com>
-Subject: Re: [Patch 0/1]drm_irq: Introducing the irq_thread support
-Message-ID: <20120905153204.GD5357@phenom.ffwll.local>
-Mail-Followup-To: "Shi, Yang A" <yang.a.shi@intel.com>,
-	"Liu, Chuansheng" <chuansheng.liu@intel.com>,
-	"'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" <linux-kernel@vger.kernel.org>,
-	"dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-	"alexander.deucher@amd.com" <alexander.deucher@amd.com>,
-	"airlied@redhat.com" <airlied@redhat.com>
-References: <27240C0AC20F114CBF8149A2696CBE4A177306@SHSMSX101.ccr.corp.intel.com>
- <20120905132724.GC5357@phenom.ffwll.local>
- <E3ED5BF57CCD1C40876FA2D3385ED5D30FD781AC@SHSMSX102.ccr.corp.intel.com>
+	Wed, 5 Sep 2012 11:33:11 -0400
+Message-ID: <504770AD.8060103@wwwdotorg.org>
+Date: Wed, 05 Sep 2012 09:33:01 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E3ED5BF57CCD1C40876FA2D3385ED5D30FD781AC@SHSMSX102.ccr.corp.intel.com>
-X-Operating-System: Linux phenom 3.4.0-rc3+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "lrg@ti.com" <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2] regulator: tps6586x: register regulator even if no
+ init data
+References: <1346252473-30068-1-git-send-email-ldewangan@nvidia.com> <504668E3.1060907@wwwdotorg.org> <5047072F.5030702@nvidia.com>
+In-Reply-To: <5047072F.5030702@nvidia.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 05, 2012 at 03:12:39PM +0000, Shi, Yang A wrote:
-> Hi Vetter:
+On 09/05/2012 02:02 AM, Laxman Dewangan wrote:
+> On Wednesday 05 September 2012 02:17 AM, Stephen Warren wrote:
+>> On 08/29/2012 09:01 AM, Laxman Dewangan wrote:
+>>> Register all TPS6586x regulators even if there is no regulator
+>>> init data for platform i.e. without any user-supplied constraints.
+>>>
+>>> Signed-off-by: Laxman Dewangan<ldewangan@nvidia.com>
+>> Tested-by: Stephen Warren<swarren@nvidia.com>
+>>
+>> Note that this patch depends on the patch I just posted titled
+>> "regulator: tps6586x: add support for SYS rail". I also believe Laxman
+>> will be posting another patch based on these 2 soon (it will move the
+>> regulator DT parsing out of the MFD driver into the regulator driver),
+>> so I guess it makes sense to take them all through the same TPS6586x
+>> topic branch in the regulator tree.
 > 
->     Do you mean we can just not use drm_irq_install, and make
->     request_irq in our kernel driver pre-install or post-install
->     interface?
+> About next patch (moving regulator dt parsing out of mfd), do you want
+> to support the Harmony also?
+> If yes then same change should also contain the board-harmony-power.c
+> changes.
 
-Well, you cant use the pre_install/post_install hooks the drm_irq code
-provides, but yes, just do the request_irq in your driver code at the
-right time, with the right parameters. Much easier than adding code to a
-part of the drm core fraught with backwards-compat stuff no one really
-wants to touch ... All the additional stuff besides calling request_irq
-and the driver hooks that drm_irq_install does is really just to support
-old dri1 userspace.
+Yes, Harmony needs to continue working.
 
-Yours, Daniel
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+We can either:
+
+a) Add your third patch to the TPS6586x topic branch in the regulator
+tree, and I'll merge all 3 into the Tegra tree in order to build on it
+and switch the regulators to DT.
+
+b) You can wait to submit your third patch until after the 3.7 merge
+window (i.e. send if for 3.8) since then all the dependencies will have
+appeared in Linus's tree as a baseline. This is probably the simplest.
