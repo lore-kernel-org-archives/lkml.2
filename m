@@ -1,71 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758909Ab2IEQAX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 12:00:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49648 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753298Ab2IEQAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 12:00:21 -0400
-Date: Wed, 5 Sep 2012 18:00:19 +0200
-From: Jan Kara <jack@suse.cz>
-To: Ian Abbott <abbotti@mev.co.uk>
-Cc: Jan Kara <jack@suse.cz>, Ian Abbott <ian.abbott@mev.co.uk>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH v3] UDF: Add support for O_DIRECT
-Message-ID: <20120905160019.GG18051@quack.suse.cz>
-References: <1343731212-4381-1-git-send-email-abbotti@mev.co.uk>
- <1346752179-28052-1-git-send-email-abbotti@mev.co.uk>
- <20120904143947.GC8656@quack.suse.cz>
- <50461A24.8070003@mev.co.uk>
- <20120905120520.GA18051@quack.suse.cz>
- <20120905125533.GD18051@quack.suse.cz>
+	id S1754371Ab2IEQF6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 12:05:58 -0400
+Received: from smtprelay-b22.telenor.se ([195.54.99.213]:33670 "EHLO
+	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753895Ab2IEQF4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 12:05:56 -0400
+X-SENDER-IP: [85.230.170.20]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AixzALx3R1BV5qoUPGdsb2JhbABFij+vVwSBCRkBAQEBHhkNJ4IgAQEFJxMcEwEPEAgDDgMDAQIBLhQlCgwOE4gRunsUin03hWtgA5VYhW+NEQ
+X-IronPort-AV: E=Sophos;i="4.80,375,1344204000"; 
+   d="scan'208";a="182904982"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Wed, 5 Sep 2012 18:12:18 +0200
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Benjamin Tissoires <benjamin.tissoires@enac.fr>
+Subject: Re: [PATCH 2/2] HID: hid-multitouch: Add Flatfrog support
+Message-ID: <20120905161218.GA270@polaris.bitmath.org>
+References: <1346858857-281-1-git-send-email-rydberg@euromail.se>
+ <1346858857-281-2-git-send-email-rydberg@euromail.se>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120905125533.GD18051@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1346858857-281-2-git-send-email-rydberg@euromail.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 05-09-12 14:55:33, Jan Kara wrote:
-> On Wed 05-09-12 14:05:20, Jan Kara wrote:
-> > On Tue 04-09-12 16:11:32, Ian Abbott wrote:
-> > > >>1. Small files stored in the ICB (inode control block?): just return 0
-> > > >>from the new udf_adinicb_direct_IO() handler to fall back to buffered
-> > > >>I/O.  For direct writes, there is a "gotcha" to deal with when
-> > > >>generic_file_direct_write() in mm/filemap.c invalidates the pages.  In
-> > > >>the udf_adinicb_writepage() handler, only part of the page data will be
-> > > >>valid and the rest will be zeroed out, so only copy the valid part into
-> > > >>the ICB.  (This is actually a bit inefficient as udf_adinicb_write_end()
-> > > >>will have already copied the data into the ICB once, but it's pretty
-> > > >>likely that the file will grow to the point where its data can no longer
-> > > >>be stored in the ICB and will be moved to a different area of the file
-> > > >>system.  At that point, a different direct_IO handler will be used - see
-> > > >>below.)
-> > > >   Sorry, I didn't quite get this. What is the problem with copying all the
-> > > >data to inode in udf_adinicb_writepage() as it is now?
-> > > 
-> > > Part of the good data in the ICB outside the range being addressed
-> > > would get overwritten by zeroes.  This can be tested by creating a
-> > > UDF filesystem with 4KiB blocks and with small files stored in the
-> > > ICB, backed by a block device with 512 byte sectors.  Create a 2KiB
-> > > file with random (or non-zero) data on the file system so that its
-> > > data gets stored in the ICB.  Then open the file for writing without
-> > > truncation and with the O_DIRECT flag set, write 512 bytes at some
-> > > 512 byte offset within the 2KiB file and close it.  If you then
-> > > hexdump the file, you'll find some of the old random data has been
-> > > zeroed out.
-> >   But don't you fall back to buffered IO for files in ICB? So then no
-> > zeroing should happen?
->   Oh, I've tested things now and the bug is in buffered write as well!
-> It has nothing to do with direct IO. We cannot use simple_write_begin() for
-> UDF when the file is in ICB. I'll write a proper fix.
-  Fix sent. Please resend your patch without that writepage() change which
-shouldn't be needed now. Thanks.
+On Wed, Sep 05, 2012 at 05:27:37PM +0200, Henrik Rydberg wrote:
+> Add support for the Flatfrog Multitouch 3200 panel. This panel
+> advertises some fields that it does not use, hence the new quirks.
+> 
+> Cc: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> ---
 
-								Honza
+I sent the wrong version, the one below is the correct one. Sorry
+about the fuzz.
+
+Henrik
+
+>From 74a60bb74176c658938e07da301396b6f1d3fbee Mon Sep 17 00:00:00 2001
+From: Henrik Rydberg <rydberg@euromail.se>
+Date: Wed, 5 Sep 2012 18:06:58 +0200
+Subject: [PATCH v2] HID: hid-multitouch: Add Flatfrog support
+
+Add support for the Flatfrog Multitouch 3200 panel. This panel
+advertises some fields that it does not use, hence the new quirks.
+
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+---
+ drivers/hid/hid-ids.h        |  3 +++
+ drivers/hid/hid-multitouch.c | 33 ++++++++++++++++++++++++++-------
+ 2 files changed, 29 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 1dcb76f..c843db9 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -283,6 +283,9 @@
+ #define USB_VENDOR_ID_EMS		0x2006
+ #define USB_DEVICE_ID_EMS_TRIO_LINKER_PLUS_II 0x0118
+ 
++#define USB_VENDOR_ID_FLATFROG		0x25b5
++#define USB_DEVICE_ID_MULTITOUCH_3200	0x0002
++
+ #define USB_VENDOR_ID_ESSENTIAL_REALITY	0x0d7f
+ #define USB_DEVICE_ID_ESSENTIAL_REALITY_P5 0x0100
+ 
+diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+index 63f120b..3cfd376 100644
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -51,6 +51,8 @@ MODULE_LICENSE("GPL");
+ #define MT_QUIRK_VALID_IS_INRANGE	(1 << 5)
+ #define MT_QUIRK_VALID_IS_CONFIDENCE	(1 << 6)
+ #define MT_QUIRK_SLOT_IS_CONTACTID_MINUS_ONE	(1 << 8)
++#define MT_QUIRK_NO_AREA		(1 << 9)
++#define MT_QUIRK_NO_PRESSURE		(1 << 10)
+ 
+ struct mt_slot {
+ 	__s32 x, y, p, w, h;
+@@ -115,6 +117,7 @@ struct mt_device {
+ #define MT_CLS_EGALAX_SERIAL			0x0104
+ #define MT_CLS_TOPSEED				0x0105
+ #define MT_CLS_PANASONIC			0x0106
++#define MT_CLS_FLATFROG				0x0107
+ 
+ #define MT_DEFAULT_MAXCONTACT	10
+ 
+@@ -199,6 +202,13 @@ static struct mt_class mt_classes[] = {
+ 		.quirks = MT_QUIRK_NOT_SEEN_MEANS_UP,
+ 		.maxcontacts = 4 },
+ 
++	{ .name = MT_CLS_FLATFROG,
++		.quirks = MT_QUIRK_NOT_SEEN_MEANS_UP |
++			MT_QUIRK_NO_AREA |
++			MT_QUIRK_NO_PRESSURE,
++		.sn_move = 2048,
++		.maxcontacts = 40,
++	},
+ 	{ }
+ };
+ 
+@@ -366,26 +376,30 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+ 		case HID_DG_WIDTH:
+ 			hid_map_usage(hi, usage, bit, max,
+ 					EV_ABS, ABS_MT_TOUCH_MAJOR);
+-			set_abs(hi->input, ABS_MT_TOUCH_MAJOR, field,
+-				cls->sn_width);
++			if (!(cls->quirks & MT_QUIRK_NO_AREA))
++				set_abs(hi->input, ABS_MT_TOUCH_MAJOR, field,
++					cls->sn_width);
+ 			mt_store_field(usage, td, hi);
+ 			td->last_field_index = field->index;
+ 			return 1;
+ 		case HID_DG_HEIGHT:
+ 			hid_map_usage(hi, usage, bit, max,
+ 					EV_ABS, ABS_MT_TOUCH_MINOR);
+-			set_abs(hi->input, ABS_MT_TOUCH_MINOR, field,
+-				cls->sn_height);
+-			input_set_abs_params(hi->input,
++			if (!(cls->quirks & MT_QUIRK_NO_AREA)) {
++				set_abs(hi->input, ABS_MT_TOUCH_MINOR, field,
++					cls->sn_height);
++				input_set_abs_params(hi->input,
+ 					ABS_MT_ORIENTATION, 0, 1, 0, 0);
++			}
+ 			mt_store_field(usage, td, hi);
+ 			td->last_field_index = field->index;
+ 			return 1;
+ 		case HID_DG_TIPPRESSURE:
+ 			hid_map_usage(hi, usage, bit, max,
+ 					EV_ABS, ABS_MT_PRESSURE);
+-			set_abs(hi->input, ABS_MT_PRESSURE, field,
+-				cls->sn_pressure);
++			if (!(cls->quirks & MT_QUIRK_NO_PRESSURE))
++				set_abs(hi->input, ABS_MT_PRESSURE, field,
++					cls->sn_pressure);
+ 			mt_store_field(usage, td, hi);
+ 			td->last_field_index = field->index;
+ 			return 1;
+@@ -860,6 +874,11 @@ static const struct hid_device_id mt_devices[] = {
+ 		MT_USB_DEVICE(USB_VENDOR_ID_ELO,
+ 			USB_DEVICE_ID_ELO_TS2515) },
+ 
++	/* Flatfrog Panels */
++	{ .driver_data = MT_CLS_FLATFROG,
++		MT_USB_DEVICE(USB_VENDOR_ID_FLATFROG,
++			USB_DEVICE_ID_MULTITOUCH_3200) },
++
+ 	/* GeneralTouch panel */
+ 	{ .driver_data = MT_CLS_DUAL_INRANGE_CONTACTNUMBER,
+ 		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.12
+
