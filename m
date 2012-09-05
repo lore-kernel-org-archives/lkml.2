@@ -1,77 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758489Ab2IEKFK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 06:05:10 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41753 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753245Ab2IEKFH convert rfc822-to-8bit (ORCPT
+	id S1758472Ab2IEKH3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 06:07:29 -0400
+Received: from zimbra.linbit.com ([212.69.161.123]:44461 "EHLO
+	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751263Ab2IEKH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 06:05:07 -0400
-Message-ID: <1346839487.2600.24.camel@twins>
-Subject: Re: [RFC 0/5] forced comounts for cgroups.
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+	Wed, 5 Sep 2012 06:07:27 -0400
+Date: Wed, 5 Sep 2012 12:07:24 +0200
+From: Lars Ellenberg <lars.ellenberg@linbit.com>
 To: Tejun Heo <tj@kernel.org>
-Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, linux-mm@kvack.org, davej@redhat.com,
-        ben@decadent.org.uk, pjt@google.com, lennart@poettering.net,
-        kay.sievers@vrfy.org
-Date: Wed, 05 Sep 2012 12:04:47 +0200
-In-Reply-To: <20120905093204.GL3195@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <1346768300-10282-1-git-send-email-glommer@parallels.com>
-	 <20120904214602.GA9092@dhcp-172-17-108-109.mtv.corp.google.com>
-	 <5047074D.1030104@parallels.com>
-	 <20120905081439.GC3195@dhcp-172-17-108-109.mtv.corp.google.com>
-	 <50470A87.1040701@parallels.com>
-	 <20120905082947.GD3195@dhcp-172-17-108-109.mtv.corp.google.com>
-	 <50470EBF.9070109@parallels.com>
-	 <20120905084740.GE3195@dhcp-172-17-108-109.mtv.corp.google.com>
-	 <1346835993.2600.9.camel@twins>
-	 <20120905093204.GL3195@dhcp-172-17-108-109.mtv.corp.google.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+Cc: Philipp Reisner <philipp.reisner@linbit.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
+        drbd-dev@lists.linbit.com
+Subject: Re: [Drbd-dev] FLUSH/FUA documentation & code discrepancy
+Message-ID: <20120905100724.GA27527@soda.linbit>
+Mail-Followup-To: Tejun Heo <tj@kernel.org>,
+	Philipp Reisner <philipp.reisner@linbit.com>,
+	Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+	Christoph Hellwig <hch@lst.de>, drbd-dev@lists.linbit.com
+References: <8439412.RChiDciQdh@fat-tyre>
+ <20120904224620.GB9092@dhcp-172-17-108-109.mtv.corp.google.com>
+ <3029802.oqG0dEY71l@fat-tyre>
+ <20120905084915.GF3195@dhcp-172-17-108-109.mtv.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120905084915.GF3195@dhcp-172-17-108-109.mtv.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-05 at 02:32 -0700, Tejun Heo wrote:
-> Hey, again.
-> 
-> On Wed, Sep 05, 2012 at 11:06:33AM +0200, Peter Zijlstra wrote:
-> > Doing all this runtime is just going to make the mess even bigger,
-> > because now we have to deal with even more stupid cases.
+On Wed, Sep 05, 2012 at 01:49:15AM -0700, Tejun Heo wrote:
+> On Wed, Sep 05, 2012 at 10:44:55AM +0200, Philipp Reisner wrote:
+> > > Currently, FLUSH/FUA doesn't enforce any ordering requirement.  File
+> > > systems are responsible for draining all writes which have to happen
+> > > before and not issue further writes which should come after.
 > > 
-> > So either we go and try to contain this mess as proposed by Glauber or
-> > we go delete controllers.. I've had it with this crap.
+> > Ok. That is a clear statement. So we will do it that way.
+> > 
+> > The "Currently" in you statement, suggests that there might be something
+> > more mighty in the future. Is that true?
 > 
-> cpuacct is rather unique tho.  I think it's gonna be silly whether the
-> hierarchy is unified or not.
-> 
-> 1. If they always can live on the exact same hierarchy, there's no
->    point in having the two separate.  Just merge them.
-> 
-> 2. If they need differing levels of granularity, they either need to
->    do it completely separately as they do now or have some form of
->    dynamic optimization if absolutely necesary.
-> 
-> So, I think that choice is rather separate from other issues.  If
-> cpuacct is gonna be kept, I'd just keep it separate and warn that it
-> incurs extra overhead for the current users if for nothing else.
-> Otherwise, kill it or merge it into cpu.
+> Heh, I was more thinking about the past.  We used to have barrier
+> support with much stricter ordering.  I don't think we're gonna change
+> the ordering requirement in any foreseeable future.
 
-Quite, hence my 'proposal' to remove cpuacct.
+So reiterating the situation:
 
-There was some whining last time Glauber proposed this, but the one
-whining never convinced and has gone away from Linux, so lets just do
-this.
+If I'd submit a non-empty bio with FLUSH/FUA set,
+on a queue that does support flush, we get to
+	blk_queue_bio()
+		if (bio->bi_rw & (REQ_FLUSH | REQ_FUA)) {
+			spin_lock_irq(q->queue_lock);
+			where = ELEVATOR_INSERT_FLUSH;
+			goto get_rq;
 
-Lets make cpuacct print a deprecated msg to dmesg for a few releases and
-make cpu do all this.
+This bio ends up *not* being merged or reordered by the elevator.
+(and, by means of flush/fua not by the hardware, either, obviously)
 
-The co-mounting stuff would have been nice for cpusets as well, knowing
-all your tasks are affine to a subset of cpus allows for a few
-optimizations (smaller cpumask iterations), but I guess we'll have to do
-that dynamically, we'll just have to see how ugly that is.
 
+If the queue does not support it, flags are stripped away in
+generic_make_request_checks(), and we will not take that branch
+in blk_queue_bio(), but enter the normal elevator code path,
+attempting a merge, or doing ELEVATOR_INSERT_SORT.
+
+This same bio, happening to be submitted on a different IO stack,
+now *is* being reordered in the elevator already,
+even before being sent to the hardware.
+
+
+
+
+If we somehow can express at submit_bio time that we would like
+this bio, once it reaches the elevator, to not be reordered,
+regardless of whether or not FLUSH is supported respectively required
+by the IO stack in use, that would be better than now, IMO.
+In fact, for our particular use case it would even be good enough.
+
+
+Could we "just" strip these flags a "little bit later"?
+Or set some other indicator when stripping them?
+
+
+Thanks,
+
+	Lars
 
