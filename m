@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092Ab2IEIFc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 04:05:32 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:34196 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751494Ab2IEIFX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 04:05:23 -0400
+	id S1753404Ab2IEIGq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 04:06:46 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:56954 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750765Ab2IEIGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 04:06:43 -0400
+Message-ID: <5047074D.1030104@parallels.com>
+Date: Wed, 5 Sep 2012 12:03:25 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <20120904.144630.82568755842479462.davem@davemloft.net>
-References: <1346300194-3286-1-git-send-email-alan@signal11.us>
-	<1346636653-28903-1-git-send-email-alan@signal11.us>
-	<1346636653-28903-2-git-send-email-alan@signal11.us>
-	<20120904.144630.82568755842479462.davem@davemloft.net>
-Date: Wed, 5 Sep 2012 12:05:21 +0400
-Message-ID: <CAJmB2rAvJyhi=iTgkmhgz4nS1-0DMRwUt_qu0=qr8-kbfCwv_A@mail.gmail.com>
-Subject: Re: [PATCH v7 1/1] ieee802154: MRF24J40 driver
-From: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: alan@signal11.us, dbaryshkov@gmail.com, tony.cheneau@amnesiak.org,
-        linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>, <davej@redhat.com>, <ben@decadent.org.uk>,
+        <a.p.zijlstra@chello.nl>, <pjt@google.com>, <lennart@poettering.net>,
+        <kay.sievers@vrfy.org>
+Subject: Re: [RFC 0/5] forced comounts for cgroups.
+References: <1346768300-10282-1-git-send-email-glommer@parallels.com> <20120904214602.GA9092@dhcp-172-17-108-109.mtv.corp.google.com>
+In-Reply-To: <20120904214602.GA9092@dhcp-172-17-108-109.mtv.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear colleagues,
-
-2012/9/4 David Miller <davem@davemloft.net>:
-> From: Alan Ott <alan@signal11.us>
-> Date: Sun,  2 Sep 2012 21:44:13 -0400
->
->> Driver for the Microchip MRF24J40 802.15.4 WPAN module.
-
-I wan on vacation so had no possibility to review the code.
-Alan, thank you for the contribution!
-
+On 09/05/2012 01:46 AM, Tejun Heo wrote:
+> Hello, Glauber.
+> 
+> On Tue, Sep 04, 2012 at 06:18:15PM +0400, Glauber Costa wrote:
+>> As we have been extensively discussing, the cost and pain points for cgroups
+>> come from many places. But at least one of those is the arbitrary nature of
+>> hierarchies. Many people, including at least Tejun and me would like this to go
+>> away altogether. Problem so far, is breaking compatiblity with existing setups
 >>
->> Signed-off-by: Alan Ott <alan@signal11.us>
+>> I am proposing here a default-n Kconfig option that will guarantee that the cpu
+>> cgroups (for now) will be comounted. I started with them because the
+>> cpu/cpuacct division is clearly the worst offender. Also, the default-n is here
+>> so distributions will have time to adapt: Forcing this flag to be on without
+>> userspace changes will just lead to cgroups failing to mount, which we don't
+>> want.
+>>
+>> Although I've tested it and it works, I haven't compile-tested all possible
+>> config combinations. So this is mostly for your eyes. If this gets traction,
+>> I'll submit it properly, along with any changes that you might require.
+> 
+> As I said during the discussion, I'm skeptical about how useful this
+> is.  This can't nudge existing users in any meaningfully gradual way.
+> Kconfig doesn't make it any better.  It's still an abrupt behavior
+> change when seen from userland.
 >
-> Applied to net-next, thanks.
 
-Thanks David.
+The goal here is to have distributions to do it, because they tend to
+have a well defined lifecycle management, much more than upstream. Whoever
+sets this option, can coordinate with upstream.
 
-Alex
+Aside from enforcing it, we can pretty much warn() as well, to direct
+people towards flipping the switch.
+
+> Also, I really don't see much point in enforcing this almost arbitrary
+> grouping of controllers.  It doesn't simplify anything and using
+> cpuacct in more granular way than cpu actually is one of the better
+> justified use of multiple hierarchies.  Also, what about memcg and
+> blkcg?  Do they *really* coincide?  Note that both blkcg and memcg
+> involve non-trivial overhead and blkcg is essentially broken
+> hierarchy-wise.
+> 
+
+Where did I mention memcg or blkcg in this patch ?
+
