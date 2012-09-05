@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758821Ab2IEQQm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 12:16:42 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:41528 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754131Ab2IEQQl (ORCPT
+	id S1757069Ab2IEQTy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 12:19:54 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:42002 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752128Ab2IEQTw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 12:16:41 -0400
-Date: Wed, 5 Sep 2012 12:05:55 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Marcus Karlsson <mk@acc.umu.se>
-Cc: gregkh@linuxfoundation.org, xiaoguangrong@linux.vnet.ibm.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: zcache: fix spelling of comment
-Message-ID: <20120905160555.GA12339@phenom.dumpdata.com>
-References: <1346531386-9524-1-git-send-email-mk@acc.umu.se>
+	Wed, 5 Sep 2012 12:19:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346531386-9524-1-git-send-email-mk@acc.umu.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <1346841475-4422-10-git-send-email-laijs@cn.fujitsu.com>
+References: <1346841475-4422-1-git-send-email-laijs@cn.fujitsu.com>
+	<1346841475-4422-10-git-send-email-laijs@cn.fujitsu.com>
+Date: Thu, 6 Sep 2012 00:19:52 +0800
+Message-ID: <CACvQF51LgTYaEweHxwzshRJxZmP9mpFuGgk1c3NNzYwwqqyPLg@mail.gmail.com>
+Subject: Re: [PATCH 09/11 V5] workqueue: rebind newly created worker
+From: Lai Jiangshan <eag0628@gmail.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 01, 2012 at 10:29:46PM +0200, Marcus Karlsson wrote:
-> Fix spelling in tmem.c:
-> Transcedent -> Transcendent
-> 
-> Signed-off-by: Marcus Karlsson <mk@acc.umu.se>
-
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+On Wed, Sep 5, 2012 at 6:37 PM, Lai Jiangshan <laijs@cn.fujitsu.com> wrote:
+> when the newly created needs to be rebound. exile it!
+> it will rebind itself in worker_thead().
+>
+> It just prepares, this code is useless until
+> "we unbind/rebind without manager_mutex"
+>
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 > ---
->  drivers/staging/zcache/tmem.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/staging/zcache/tmem.c b/drivers/staging/zcache/tmem.c
-> index eaa9021..56c8e60 100644
-> --- a/drivers/staging/zcache/tmem.c
-> +++ b/drivers/staging/zcache/tmem.c
-> @@ -3,7 +3,7 @@
->   *
->   * Copyright (c) 2009-2011, Dan Magenheimer, Oracle Corp.
->   *
-> - * The primary purpose of Transcedent Memory ("tmem") is to map object-oriented
-> + * The primary purpose of Transcendent Memory ("tmem") is to map object-oriented
->   * "handles" (triples containing a pool id, and object id, and an index), to
->   * pages in a page-accessible memory (PAM).  Tmem references the PAM pages via
->   * an abstract "pampd" (PAM page-descriptor), which can be operated on by a
-> -- 
-> 1.7.12
+>  kernel/workqueue.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+>
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index 223d128..819c84e 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -1838,6 +1838,11 @@ static void manager_start_worker(struct worker *worker, struct worker *manager)
+>
+>         /* copy the flags. also unbind the worker if the manager is unbound */
+>         worker->flags |= manager->flags & WORKER_COPY_FLAGS;
+> +
+> +       if (need_to_rebind_worker(worker)) {
+> +               /* exile it, and let it rebind itself */
+> +               list_del_init(&worker->entry);
+
+Sorry, we should not add it to idle_list.
+"add and then remove " is wrong here.
+
+> +       }
+>  }
+>
+>  /**
+> --
+> 1.7.4.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
