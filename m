@@ -1,84 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758013Ab2IDX6U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 19:58:20 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36557 "EHLO
+	id S1757992Ab2IEAB0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 20:01:26 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57280 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752966Ab2IDX6T (ORCPT
+	with ESMTP id S1752882Ab2IEABY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 19:58:19 -0400
-Date: Tue, 4 Sep 2012 16:58:12 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: [PATCH -stable] workqueue: UNBOUND -> REBIND morphing in
- rebind_workers() should be atomic
-Message-ID: <20120904235812.GA2836@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <1346516916-1991-1-git-send-email-laijs@cn.fujitsu.com>
- <1346516916-1991-2-git-send-email-laijs@cn.fujitsu.com>
- <20120904233901.GC9092@dhcp-172-17-108-109.mtv.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120904233901.GC9092@dhcp-172-17-108-109.mtv.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 4 Sep 2012 20:01:24 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Chris Zankel <chris@zankel.net>
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch 0/3] Turn CONFIG_HOTPLUG always on.
+Date: Tue,  4 Sep 2012 17:01:05 -0700
+Message-Id: <20120904234803.554552301@clark.kroah.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+From: Greg KH <gregkh@linuxfoundation.org>
 
-The compiler may compile the following code into TWO write/modify
-instructions.
+The CONFIG_HOTPLUG variable is tough to turn off, and almost all arches
+default to it on.
 
-        worker->flags &= ~WORKER_UNBOUND;
-        worker->flags |= WORKER_REBIND;
+If you turn it off, it saves you a big 200 or so bytes, and then starts
+to cause all sorts of problems as the code paths if the option is
+disabled is never really tested, and memory segments start to get thrown
+away that driver authors assume will always be present.
 
-so the other CPU may temporarily see worker->flags which doesn't have
-either WORKER_UNBOUND or WORKER_REBIND set and perform local wakeup
-prematurely.
+So, as part of trying to get rid of the option entirely, let's just turn
+the option always on.
 
-Fix it by using single explicit assignment via ACCESS_ONCE().
+Note, to do this properly, I found two duplicate definitions of the
+option, in the Tile and Xtensa arch files, this patch series removes
+those duplicates first.
 
-Because idle workers have another WORKER_NOT_RUNNING flag, this bug
-doesn't exist for them; however, update it to use the same pattern for
-consistency.
+Anyone object to me just taking these three patches through my
+driver-core tree for 3.7?  After this set, I'll start unwinding the
+places where CONFIG_HOTPLUG is used and remove the parts that are not
+used anymore now that the option can not be turned off.
 
-tj: Applied the change to idle workers too and updated comments and
-    patch description a bit.
+thanks,
 
-stable: Idle worker rebinding doesn't apply for -stable and
-        WORKER_UNBOUND used to be WORKER_ROGUE.  Updated accordingly.
+greg k-h
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: stable@vger.kernel.org
----
- kernel/workqueue.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 9a3128d..d7eb05a 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -3441,14 +3441,17 @@ static int __cpuinit trustee_thread(void *__gcwq)
- 
- 	for_each_busy_worker(worker, i, pos, gcwq) {
- 		struct work_struct *rebind_work = &worker->rebind_work;
-+		unsigned long worker_flags = worker->flags;
- 
- 		/*
- 		 * Rebind_work may race with future cpu hotplug
- 		 * operations.  Use a separate flag to mark that
--		 * rebinding is scheduled.
-+		 * rebinding is scheduled.  The morphing should
-+		 * be atomic.
- 		 */
--		worker->flags |= WORKER_REBIND;
--		worker->flags &= ~WORKER_ROGUE;
-+		worker_flags |= WORKER_REBIND;
-+		worker_flags &= ~WORKER_ROGUE;
-+		ACCESS_ONCE(worker->flags) = worker_flags;
- 
- 		/* queue rebind_work, wq doesn't matter, use the default one */
- 		if (test_and_set_bit(WORK_STRUCT_PENDING_BIT,
