@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758338Ab2IEJSs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 05:18:48 -0400
-Received: from caiajhbdcbbj.dreamhost.com ([208.97.132.119]:60546 "EHLO
-	homiemail-a3.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758259Ab2IEJSq (ORCPT
+	id S1757215Ab2IEJTd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 05:19:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54008 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750765Ab2IEJTb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 05:18:46 -0400
-Subject: [PATCH 3/3] partitions: efi: check minimum header size
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: Jens Axboe <axboe@kernel.dk>, Matt Domsch <Matt_Domsch@dell.com>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: GNU
-Date: Wed, 05 Sep 2012 11:18:43 +0200
-Message-ID: <1346836723.2559.6.camel@offbook>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Wed, 5 Sep 2012 05:19:31 -0400
+Date: Wed, 5 Sep 2012 02:19:25 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, linux-mm@kvack.org, davej@redhat.com,
+        ben@decadent.org.uk, pjt@google.com, lennart@poettering.net,
+        kay.sievers@vrfy.org
+Subject: Re: [RFC 0/5] forced comounts for cgroups.
+Message-ID: <20120905091925.GJ3195@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <20120904214602.GA9092@dhcp-172-17-108-109.mtv.corp.google.com>
+ <5047074D.1030104@parallels.com>
+ <20120905081439.GC3195@dhcp-172-17-108-109.mtv.corp.google.com>
+ <50470A87.1040701@parallels.com>
+ <20120905082947.GD3195@dhcp-172-17-108-109.mtv.corp.google.com>
+ <50470EBF.9070109@parallels.com>
+ <20120905084740.GE3195@dhcp-172-17-108-109.mtv.corp.google.com>
+ <1346835993.2600.9.camel@twins>
+ <20120905091140.GH3195@dhcp-172-17-108-109.mtv.corp.google.com>
+ <50471782.6060800@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50471782.6060800@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As per UEFI specs 2.3.1 (June 2012),
-"The Header Size must be greater than 92 and must be less than
-or equal to the logical block size"
+On Wed, Sep 05, 2012 at 01:12:34PM +0400, Glauber Costa wrote:
+> > No, I never counted out differing granularity.
+> 
+> Can you elaborate on which interface do you envision to make it work?
+> They will clearly be mounted in the same hierarchy, or as said
+> alternatively, comounted.
 
-Signed-off-by: Davidlohr Bueso <dave@gnu.org>
----
- block/partitions/efi.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+I'm not sure yet.  At the simplest, mask of controllers which should
+honor (or ignore) nesting beyond the node.  That should be
+understandable enough.  Not sure whether that would be flexible enough
+yet tho.  In the end, they should be comounted but again I don't think
+enforcing comounting at the moment is a step towards that.  It's more
+like a step sideways.
 
-diff --git a/block/partitions/efi.c b/block/partitions/efi.c
-index abf33a2..3a5114e 100644
---- a/block/partitions/efi.c
-+++ b/block/partitions/efi.c
-@@ -25,6 +25,9 @@
-  * TODO:
-  *
-  * Changelog:
-+ * Sept. 2012 Davidlohr Bueso <dave@gnu.org>
-+ * - tighten GPT header integrity verification.
-+ *
-  * Mon Nov 09 2004 Matt Domsch <Matt_Domsch@dell.com>
-  * - test for valid PMBR and valid PGPT before ever reading
-  *   AGPT, allow override with 'gpt' kernel command line option.
-@@ -311,8 +314,8 @@ static int is_gpt_valid(struct parsed_partitions *state, u64 lba,
- 	}
- 
- 	/* Check the GUID Partition Table header size */
--	if (le32_to_cpu((*gpt)->header_size) >
--			bdev_logical_block_size(state->bdev)) {
-+	if (le32_to_cpu((*gpt)->header_size) <= 92 ||
-+	    le32_to_cpu((*gpt)->header_size) > bdev_logical_block_size(state->bdev)) {
- 		pr_debug("GUID Partition Table Header size is wrong: %u > %u\n",
- 			le32_to_cpu((*gpt)->header_size),
- 			bdev_logical_block_size(state->bdev));
+Thanks.
+
 -- 
-1.7.4.1
-
-
-
-
+tejun
