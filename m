@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190Ab2IEBxt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Sep 2012 21:53:49 -0400
-Received: from mga14.intel.com ([143.182.124.37]:23407 "EHLO mga14.intel.com"
+	id S1758023Ab2IEB4U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Sep 2012 21:56:20 -0400
+Received: from mga11.intel.com ([192.55.52.93]:30059 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752502Ab2IEBxs convert rfc822-to-8bit (ORCPT
+	id S1752502Ab2IEB4T convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Sep 2012 21:53:48 -0400
+	Tue, 4 Sep 2012 21:56:19 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,371,1344236400"; 
-   d="scan'208";a="141558603"
+   d="scan'208";a="217859045"
 From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
 To: "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
 	<linux-kernel@vger.kernel.org>,
         "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
 CC: "airlied@redhat.com" <airlied@redhat.com>,
         "alexander.deucher@amd.com" <alexander.deucher@amd.com>,
-        "Shi, Yang A" <yang.a.shi@intel.com>,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Subject: [Patch 0/1]drm_irq: Introducing the irq_thread support
-Thread-Topic: [Patch 0/1]drm_irq: Introducing the irq_thread support
-Thread-Index: Ac2LCUW31F8w5RR8Th6qv7Us2nL6nQ==
-Date: Wed, 5 Sep 2012 01:53:44 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A177306@SHSMSX101.ccr.corp.intel.com>
+        "Shi, Yang A" <yang.a.shi@intel.com>
+Subject: [Patch 1/1]drm_irq: Introducing the irq_thread support
+Thread-Topic: [Patch 1/1]drm_irq: Introducing the irq_thread support
+Thread-Index: Ac2LCY8ha6WXHek1SUy+D7Bmou+cuA==
+Date: Wed, 5 Sep 2012 01:55:59 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A17731A@SHSMSX101.ccr.corp.intel.com>
 Accept-Language: zh-CN, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -35,15 +34,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is for introducing the irq thread support in drm_irq.
+From: liu chuansheng <chuansheng.liu@intel.com>
+Subject: [PATCH] drm_irq: Introducing the irq_thread support
 
-Why we need irq thread in drm_irq code?
-In our GPU system, the gpu interrupt handler need some time even > 1ms to finish,
-in that case, the whole system will stay in irq disable status. One case is:
-when audio is playing, it sometimes effects the audio quality.
+For some GPUs, the irq handler need >1ms to handle the irq action.
+And it will delay the whole system irq handler.
 
-So we have to introduce the irq thread in drm_irq, it can help us move some heavy work into irq thread
-and other irq interrupts can be handled in time. Also the IRQF_ONESHOT is helpful for irq thread.
+This patch is adding the irq thread support, it will make the drm_irq
+interface more flexible.
 
-Include one patch:
-[PATCH 01/1] drm_irq-Introducing-the-irq_thread-support
+The changes include:
+1/ Change the request_irq to request_thread_irq, and add new callback
+   irq_handler_t;
+2/ Normally we need IRQF_ONESHOT flag support for irq thread, so add
+   this option in drm_irq;
+
+Cc: Shi Yang <yang.a.shi@intel.com>
+Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+---
+ drivers/gpu/drm/drm_irq.c |    8 ++++++--
+ include/drm/drmP.h        |    2 ++
+ 2 files changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpu/drm/drm_irq.c b/drivers/gpu/drm/drm_irq.c
+index 03f16f3..bc105fe 100644
+--- a/drivers/gpu/drm/drm_irq.c
++++ b/drivers/gpu/drm/drm_irq.c
+@@ -345,13 +345,17 @@ int drm_irq_install(struct drm_device *dev)
+        if (drm_core_check_feature(dev, DRIVER_IRQ_SHARED))
+                sh_flags = IRQF_SHARED;
+ 
++       if (drm_core_check_feature(dev, DRIVER_IRQ_ONESHOT))
++               sh_flags |= IRQF_ONESHOT;
++
+        if (dev->devname)
+                irqname = dev->devname;
+        else
+                irqname = dev->driver->name;
+ 
+-       ret = request_irq(drm_dev_to_irq(dev), dev->driver->irq_handler,
+-                         sh_flags, irqname, dev);
++       ret = request_threaded_irq(drm_dev_to_irq(dev),
++               dev->driver->irq_handler, dev->driver->irq_handler_t,
++               sh_flags, irqname, dev);
+ 
+        if (ret < 0) {
+                mutex_lock(&dev->struct_mutex);
+diff --git a/include/drm/drmP.h b/include/drm/drmP.h
+index d6b67bb..b28be4b 100644
+--- a/include/drm/drmP.h
++++ b/include/drm/drmP.h
+@@ -152,6 +152,7 @@ int drm_err(const char *func, const char *format, ...);
+ #define DRIVER_GEM         0x1000
+ #define DRIVER_MODESET     0x2000
+ #define DRIVER_PRIME       0x4000
++#define DRIVER_IRQ_ONESHOT 0x8000
+ 
+ #define DRIVER_BUS_PCI 0x1
+ #define DRIVER_BUS_PLATFORM 0x2
+@@ -872,6 +873,7 @@ struct drm_driver {
+        /* these have to be filled in */
+ 
+        irqreturn_t(*irq_handler) (DRM_IRQ_ARGS);
++       irqreturn_t(*irq_handler_t) (DRM_IRQ_ARGS);
+        void (*irq_preinstall) (struct drm_device *dev);
+        int (*irq_postinstall) (struct drm_device *dev);
+        void (*irq_uninstall) (struct drm_device *dev);
+-- 
+1.7.0.4
