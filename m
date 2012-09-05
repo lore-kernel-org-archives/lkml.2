@@ -1,93 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758916Ab2IEQcL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 12:32:11 -0400
-Received: from smtp-out-233.synserver.de ([212.40.185.233]:1090 "EHLO
-	smtp-out-233.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754331Ab2IEQcI (ORCPT
+	id S1758926Ab2IEQck (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 12:32:40 -0400
+Received: from masquerade.micron.com ([137.201.242.130]:7979 "EHLO
+	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752056Ab2IEQcj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 12:32:08 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 22067
-Message-ID: <50477FA9.8060905@metafoo.de>
-Date: Wed, 05 Sep 2012 18:36:57 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.6esrpre) Gecko/20120817 Icedove/10.0.6
+	Wed, 5 Sep 2012 12:32:39 -0400
+Message-ID: <50477E90.5070002@micron.com>
+Date: Wed, 5 Sep 2012 22:02:16 +0530
+From: Asai Thambi S P <asamymuthupa@micron.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-CC: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH] Don't clobber access methods when !regmap
-References: <1346939132-20187-1-git-send-email-panto@antoniou-consulting.com>
-In-Reply-To: <1346939132-20187-1-git-send-email-panto@antoniou-consulting.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jens Axboe <axboe@kernel.dk>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sam Bradshaw <sbradshaw@micron.com>,
+        "Selvan Mani (smani) [CONT - Type 2]" <smani@micron.com>
+Subject: [PATCH 3/6] mtip32xx: Increase timeout for standby command
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-19164.003
+X-TM-AS-Result: No-5.069600-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+X-MT-CheckInternalSenderRule: True
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/06/2012 03:45 PM, Pantelis Antoniou wrote:
-> A snd-soc driver that doesn't support regmap blow up horribly
-> when you assume that regmap is available. Fix it by marking
-> the driver as not supporting regmap & not clobbering the codec
-> access methods.
-> 
-> This is immediately noticeable on the beagleboard where we crash,
-> since we might have REGMAP enabled, but it doesn't mean that the
-> omap driver uses it.
-> 
-> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+Increased timeout for standby command to work with larger capacity drives
 
-But calling snd_soc_codec_set_cache_io sort of implies that you are using
-regmap. If you are not using regmap your codec should not call
-snd_soc_codec_set_cache_io.
+Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
+Signed-off-by: Selvan Mani <smani@micron.com>
+---
+ drivers/block/mtip32xx/mtip32xx.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-- Lars
-
-> 
-> ---
->  sound/soc/soc-io.c | 14 ++++++++++----
->  1 file changed, 10 insertions(+), 4 deletions(-)
-> 
-> diff --git a/sound/soc/soc-io.c b/sound/soc/soc-io.c
-> index 29183ef..4e5b4ae 100644
-> --- a/sound/soc/soc-io.c
-> +++ b/sound/soc/soc-io.c
-> @@ -117,9 +117,6 @@ int snd_soc_codec_set_cache_io(struct snd_soc_codec *codec,
->  	int ret;
->  
->  	memset(&config, 0, sizeof(config));
-> -	codec->write = hw_write;
-> -	codec->read = hw_read;
-> -	codec->bulk_write_raw = snd_soc_hw_bulk_write_raw;
->  
->  	config.reg_bits = addr_bits;
->  	config.val_bits = data_bits;
-> @@ -151,7 +148,9 @@ int snd_soc_codec_set_cache_io(struct snd_soc_codec *codec,
->  			 * multiples */
->  			if (ret > 0)
->  				codec->val_bytes = ret;
-> -		}
-> +		} else
-> +			codec->using_regmap = false;
-> +
->  		break;
->  
->  	default:
-> @@ -161,6 +160,13 @@ int snd_soc_codec_set_cache_io(struct snd_soc_codec *codec,
->  	if (IS_ERR(codec->control_data))
->  		return PTR_ERR(codec->control_data);
->  
-> +	/* only when using regmap; don't modify unconditionally */
-> +	if (codec->using_regmap) {
-> +		codec->write = hw_write;
-> +		codec->read = hw_read;
-> +		codec->bulk_write_raw = snd_soc_hw_bulk_write_raw;
-> +	}
-> +
->  	return 0;
->  }
->  EXPORT_SYMBOL_GPL(snd_soc_codec_set_cache_io);
+diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
+index 2553c73..cf557a4 100644
+--- a/drivers/block/mtip32xx/mtip32xx.c
++++ b/drivers/block/mtip32xx/mtip32xx.c
+@@ -2047,7 +2047,7 @@ static void mtip_set_timeout(struct host_to_dev_fis *fis, unsigned int *timeout)
+ 		*timeout = 240000; /* 4 minutes */
+ 		break;
+ 	case ATA_CMD_STANDBYNOW1:
+-		*timeout = 10000;  /* 10 seconds */
++		*timeout = 120000;  /* 2 minutes */
+ 		break;
+ 	case 0xF7:
+ 	case 0xFA:
+-- 
+1.7.1
 
