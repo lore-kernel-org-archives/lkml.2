@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758278Ab2IEJPG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 05:15:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59179 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143Ab2IEJPD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 05:15:03 -0400
-Date: Wed, 5 Sep 2012 02:14:56 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
-        davej@redhat.com, ben@decadent.org.uk, a.p.zijlstra@chello.nl,
-        pjt@google.com, lennart@poettering.net, kay.sievers@vrfy.org
-Subject: Re: [RFC 0/5] forced comounts for cgroups.
-Message-ID: <20120905091456.GI3195@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <20120904214602.GA9092@dhcp-172-17-108-109.mtv.corp.google.com>
- <5047074D.1030104@parallels.com>
- <20120905081439.GC3195@dhcp-172-17-108-109.mtv.corp.google.com>
- <50470A87.1040701@parallels.com>
- <20120905082947.GD3195@dhcp-172-17-108-109.mtv.corp.google.com>
- <50470EBF.9070109@parallels.com>
- <20120905084740.GE3195@dhcp-172-17-108-109.mtv.corp.google.com>
- <50471379.3060603@parallels.com>
- <20120905090744.GG3195@dhcp-172-17-108-109.mtv.corp.google.com>
- <5047161F.60503@parallels.com>
+	id S1758299Ab2IEJPy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 05:15:54 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:34437 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750990Ab2IEJPw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 05:15:52 -0400
+Message-ID: <50471782.6060800@parallels.com>
+Date: Wed, 5 Sep 2012 13:12:34 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5047161F.60503@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Tejun Heo <tj@kernel.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, <linux-kernel@vger.kernel.org>,
+        <cgroups@vger.kernel.org>, <linux-mm@kvack.org>, <davej@redhat.com>,
+        <ben@decadent.org.uk>, <pjt@google.com>, <lennart@poettering.net>,
+        <kay.sievers@vrfy.org>
+Subject: Re: [RFC 0/5] forced comounts for cgroups.
+References: <1346768300-10282-1-git-send-email-glommer@parallels.com> <20120904214602.GA9092@dhcp-172-17-108-109.mtv.corp.google.com> <5047074D.1030104@parallels.com> <20120905081439.GC3195@dhcp-172-17-108-109.mtv.corp.google.com> <50470A87.1040701@parallels.com> <20120905082947.GD3195@dhcp-172-17-108-109.mtv.corp.google.com> <50470EBF.9070109@parallels.com> <20120905084740.GE3195@dhcp-172-17-108-109.mtv.corp.google.com> <1346835993.2600.9.camel@twins> <20120905091140.GH3195@dhcp-172-17-108-109.mtv.corp.google.com>
+In-Reply-To: <20120905091140.GH3195@dhcp-172-17-108-109.mtv.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 05, 2012 at 01:06:39PM +0400, Glauber Costa wrote:
-> > Heh, this is tricky to describe and I'm not really following what you
-> > mean. 
+On 09/05/2012 01:11 PM, Tejun Heo wrote:
+> Hello, Peter.
 > 
-> Do we really want to start cleaning up all this by changing the
-> interface to something that is described as "tricky" ?
+> On Wed, Sep 05, 2012 at 11:06:33AM +0200, Peter Zijlstra wrote:
+>> *confused* I always thought that was exactly what you meant with unified
+>> hierarchy.
+> 
+> No, I never counted out differing granularity.
+> 
 
-The concept is not tricky.  I just can't find the appropriate words.
-I *suspect* this can mostly re-use the existing css_set thing.  It
-mostly becomes that css_set belongs to the unified hierarchy rather
-than each task.  The user interface part isn't trivial and maybe
-"don't nest beyond this level" is the only thing reasonable.  Not sure
-yet whether that would be enough tho.  Need to think more about it.
+Can you elaborate on which interface do you envision to make it work?
+They will clearly be mounted in the same hierarchy, or as said
+alternatively, comounted.
 
-Thanks.
+If you can turn them on/off on a per-subtree basis, which interface
+exactly do you propose for that?
 
--- 
-tejun
+Would a pair of cgroup core files like available_controllers and
+current_controllers are a lot of drivers do, suffice?
