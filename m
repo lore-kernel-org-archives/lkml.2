@@ -1,74 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758186Ab2IEOoi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 10:44:38 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:46493 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752364Ab2IEOoh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 10:44:37 -0400
-Date: Wed, 5 Sep 2012 10:33:50 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "Ren, Yongjie" <yongjie.ren@intel.com>
-Cc: "Shi, Alex" <alex.shi@intel.com>, Jan Beulich <JBeulich@suse.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>
-Subject: Re: [PATCH] xen: fix logical error in tlb flushing
-Message-ID: <20120905143350.GD5844@phenom.dumpdata.com>
-References: <1345798513-3566-1-git-send-email-alex.shi@intel.com>
- <5037A8E7020000780008A78B@nat28.tlf.novell.com>
- <20120824181721.GC15167@konrad-lan.dumpdata.com>
- <5037E7ED020000780008A7BD@nat28.tlf.novell.com>
- <5046E47C.2020405@intel.com>
- <1B4B44D9196EFF41AE41FDA404FC0A1018E35D@SHSMSX101.ccr.corp.intel.com>
+	id S1758128Ab2IEOqY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 10:46:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45944 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752364Ab2IEOqX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 10:46:23 -0400
+Message-ID: <504765B9.7010406@redhat.com>
+Date: Wed, 05 Sep 2012 17:46:17 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1B4B44D9196EFF41AE41FDA404FC0A1018E35D@SHSMSX101.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: mst@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v9 1/2] kvm: Use a reserved IRQ source ID for irqfd
+References: <20120821190800.24958.74812.stgit@bling.home> <20120821192903.24958.90138.stgit@bling.home>
+In-Reply-To: <20120821192903.24958.90138.stgit@bling.home>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 05, 2012 at 05:41:37AM +0000, Ren, Yongjie wrote:
-> > -----Original Message-----
-> > From: Shi, Alex
-> > Sent: Wednesday, September 05, 2012 1:35 PM
-> > To: Jan Beulich
-> > Cc: Konrad Rzeszutek Wilk; tglx@linutronix.de; mingo@redhat.com;
-> > linux-kernel@vger.kernel.org; hpa@zytor.com; Ren, Yongjie
-> > Subject: Re: [PATCH] xen: fix logical error in tlb flushing
-> > 
-> > On 08/25/2012 03:45 AM, Jan Beulich wrote:
-> > 
-> > >>>> On 24.08.12 at 20:17, Konrad Rzeszutek Wilk
-> > <konrad.wilk@oracle.com> wrote:
-> > >> On Fri, Aug 24, 2012 at 04:16:39PM +0100, Jan Beulich wrote:
-> > >>>>>> On 24.08.12 at 10:55, Alex Shi <alex.shi@intel.com> wrote:
-> > >>>> While TLB_FLUSH_ALL gets passed as 'end' argument to
-> > >>>> flush_tlb_others(), the Xen code was made to check its 'start'
-> > >>>> parameter. That may give a incorrect op.cmd to
-> > MMUEXT_INVLPG_MULTI
-> > >>>> instead of MMUEXT_TLB_FLUSH_MULTI. Then it causes some page
-> > can not
-> > >>>> be flushed from TLB.
-> > >>>>
-> > >>>> This patch fixed this issue.
-> > >>>>
-> > >>>> Reported-by: Jan Beulich <jbeulich@suse.com>
-> > >>>> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> > >>>
-> > >>> Acked-by: Jan Beulich <jbeulich@suse.com>
-> > 
-> Tested-by: Yongjie Ren <yongjie.ren@intel.com>
-> 
-> > 
-> > CC to Yongjie,
-> > Could you like to test this patch on PV guest
-> > 
-> Xen Dom0 and a PV guest kernel with this patch can boot up correctly.
+On 08/21/2012 10:29 PM, Alex Williamson wrote:
+> KVM_IRQFD currently uses the reserved KVM_USERSPACE_IRQ_SOURCE_ID
+> which is also shared with userspace injection methods like
+> KVM_IRQ_LINE.  This can cause a conflict if an irqfd triggers on
+> a GSI asserted through KVM_IRQ_LINE.  Move irqfd to it's own
+> reserved IRQ source ID.  Add a capability for userspace to test
+> for this fix.
 
-OK, applied for v3.6
+I don't think we need a cap, rather a backport if we identify real cases
+where an edge gsi is shared among several devices.  Otherwise it is just
+a theoretical bug before level irqfd is introduced.
+
+-- 
+error compiling committee.c: too many arguments to function
