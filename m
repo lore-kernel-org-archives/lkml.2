@@ -1,104 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759770Ab2IEWkT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 18:40:19 -0400
-Received: from mail-yw0-f52.google.com ([209.85.213.52]:40772 "EHLO
-	mail-yw0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759731Ab2IEWkR (ORCPT
+	id S932440Ab2IEWl3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 18:41:29 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:45001 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759735Ab2IEWl2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 18:40:17 -0400
-Date: Wed, 5 Sep 2012 15:40:12 -0700
+	Wed, 5 Sep 2012 18:41:28 -0400
+Date: Wed, 5 Sep 2012 15:41:22 -0700
 From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] perf: remove unneeded include of network header files
-Message-ID: <20120905224012.GG8203@ghostprotocols.net>
-References: <1346881986-59136-1-git-send-email-dsahern@gmail.com>
+To: Richard Purdie <richard.purdie@linuxfoundation.org>
+Cc: Liang Li <liang.li@windriver.com>, a.p.zijlstra@chello.nl,
+        paulus@samba.org, mingo@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] perf: add SLANG_INC for slang.h
+Message-ID: <20120905224122.GH8203@ghostprotocols.net>
+References: <1345777839-15843-1-git-send-email-liang.li@windriver.com>
+ <20120905205439.GD8203@ghostprotocols.net>
+ <1346880183.21985.90.camel@ted>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1346881986-59136-1-git-send-email-dsahern@gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1346880183.21985.90.camel@ted>
 X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Sep 05, 2012 at 03:53:06PM -0600, David Ahern escreveu:
-> perf does not have networking related functionality, and the inclusion of
-> these headers is one of the causes of compile failures for Android:
->   https://lkml.org/lkml/2012/8/23/316
->   https://lkml.org/lkml/2012/8/28/293
+Em Wed, Sep 05, 2012 at 10:23:03PM +0100, Richard Purdie escreveu:
+> On Wed, 2012-09-05 at 13:54 -0700, Arnaldo Carvalho de Melo wrote:
+> > Em Fri, Aug 24, 2012 at 11:10:39AM +0800, Liang Li escreveu:
+> > > CFLAGS was previously hard coded to contain "-I/usr/include/slang" to
+> > > work with hosts that have "/usr/include/slang/slang.h" as well as hosts
+> > > that have "/usr/include/slang.h". This path can cause compile warnings
+> > > like:
+> > > 
+> > > cc1: warning: '/usr/include/slang' doesn't exists.
+> > > 
+> > > or
+> > > 
+> > > cc1: warning: include location "/usr/include/slang" is unsafe for
+> > > cross-compilation [-Wpoison-system-directories]
+> > > 
+> > > Then in some cases warnings become errors if WERROR is enabled hence
+> > > build errors.
+> > > 
+> > > To fix this issue, we can use -idirafter to downgrade the priority of the
+> > > default hard coded path. We can also make the slang include directory
+> > > a variable, to allow the user to specify SLANG_INC and set their own
+> > > include location. And add a '=' prefix to indicate better
+> > > compatibility with sysroot/cross compile cases.
+> > 
+> >     CC /home/acme/git/build/perf/builtin-diff.o
+> > In file included from util/../ui/keysyms.h:4,
+> >                  from util/hist.h:142,
+> >                  from builtin-diff.c:11:
+> > util/../ui/libslang.h:12:19: error: slang.h: No such file or directory
+> > util/../ui/libslang.h:14:5: error: "SLANG_VERSION" is not defined
+> > In file included from util/../ui/keysyms.h:4,
+> >                  from util/hist.h:142,
+> >                  from util/evsel.h:10,
+> >                  from util/evlist.h:8,
+> >                  from builtin-annotate.c:20:
+> > util/../ui/libslang.h:12:19: error: slang.h: No such file or directory
+> > util/../ui/libslang.h:14:5: error: "SLANG_VERSION" is not defined
+> > builtin-annotate.c: In function ‘hists__find_annotations’:
+> > builtin-annotate.c:122: error: ‘SL_KEY_RIGHT’ undeclared (first use in
+> > this function)
+> > builtin-annotate.c:122: error: (Each undeclared identifier is reported
+> > only once
+> > builtin-annotate.c:122: error: for each function it appears in.)
+> > builtin-annotate.c:134: error: ‘SL_KEY_LEFT’ undeclared (first use in
+> > this function)
+> > make: *** [/home/acme/git/build/perf/builtin-annotate.o] Error 1
+> > make: *** Waiting for unfinished jobs....
+> > make: *** [/home/acme/git/build/perf/builtin-diff.o] Error 1
+> > make: Leaving directory `/home/git/linux/tools/perf'
+> > [acme@sandy linux]$ cat /etc/redhat-release 
+> > Red Hat Enterprise Linux Server release 6.3 (Santiago)
+> > [acme@sandy linux]$
 > 
-> So, remove them.
+> Does:
 > 
-> v2:
-> - netdb.h is required by trace-event-perl.c, so leave it in
+> SLANG_INC ?= -I=/usr/include/slang
+> 
+> work any better? Its hard to tell from the above error which bit of the
 
-Nope, I've applied this instead:
+I'll try later
 
-commit 12046099160e65cddb639f8b3dda2bd0701c09d6
-Author: David Ahern <dsahern@gmail.com>
-Date:   Wed Aug 29 09:55:32 2012 -0600
+> syntax is failing. Which gcc version is it?
 
-    perf tools: remove unneeded include of network header files
-    
-    perf does not have networking related functionality, and the inclusion
-    of these headers is one of the causes of compile failures for Android:
-    
-      https://lkml.org/lkml/2012/8/23/316
-      https://lkml.org/lkml/2012/8/28/293
-    
-    So, remove them.
-    
-    Signed-off-by: David Ahern <dsahern@gmail.com>
-    Cc: Frederic Weisbecker <fweisbec@gmail.com>
-    Cc: Ingo Molnar <mingo@kernel.org>
-    Cc: Peter Zijlstra <peterz@infradead.org>
-    Link: http://lkml.kernel.org/r/1346255732-93246-1-git-send-email-dsahern@gmail.com
-    [ committer note: fix trace-event-perl.c compile failure by reordering includes ]
-    Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-
-diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
-index d280010..94e6736 100644
---- a/tools/perf/util/scripting-engines/trace-event-perl.c
-+++ b/tools/perf/util/scripting-engines/trace-event-perl.c
-@@ -25,16 +25,16 @@
- #include <ctype.h>
- #include <errno.h>
- 
--#include "../../perf.h"
- #include "../util.h"
-+#include <EXTERN.h>
-+#include <perl.h>
-+
-+#include "../../perf.h"
- #include "../thread.h"
- #include "../event.h"
- #include "../trace-event.h"
- #include "../evsel.h"
- 
--#include <EXTERN.h>
--#include <perl.h>
--
- void boot_Perf__Trace__Context(pTHX_ CV *cv);
- void boot_DynaLoader(pTHX_ CV *cv);
- typedef PerlInterpreter * INTERP;
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index 00a93a9..67a3713 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -69,11 +69,6 @@
- #include <sys/poll.h>
- #include <sys/socket.h>
- #include <sys/ioctl.h>
--#include <sys/select.h>
--#include <netinet/in.h>
--#include <netinet/tcp.h>
--#include <arpa/inet.h>
--#include <netdb.h>
- #include <inttypes.h>
- #include "../../../include/linux/magic.h"
- #include "types.h"
+[acme@sandy linux]$ gcc -v
+Using built-in specs.
+Target: x86_64-redhat-linux
+Configured with: ../configure --prefix=/usr --mandir=/usr/share/man
+--infodir=/usr/share/info
+--with-bugurl=http://bugzilla.redhat.com/bugzilla --enable-bootstrap
+--enable-shared --enable-threads=posix --enable-checking=release
+--with-system-zlib --enable-__cxa_atexit --disable-libunwind-exceptions
+--enable-gnu-unique-object
+--enable-languages=c,c++,objc,obj-c++,java,fortran,ada
+--enable-java-awt=gtk --disable-dssi
+--with-java-home=/usr/lib/jvm/java-1.5.0-gcj-1.5.0.0/jre
+--enable-libgcj-multifile --enable-java-maintainer-mode
+--with-ecj-jar=/usr/share/java/eclipse-ecj.jar
+--disable-libjava-multilib --with-ppl --with-cloog --with-tune=generic
+--with-arch_32=i686 --build=x86_64-redhat-linux
+Thread model: posix
+gcc version 4.4.6 20120305 (Red Hat 4.4.6-4) (GCC) 
+[acme@sandy linux]$
