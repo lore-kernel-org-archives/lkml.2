@@ -1,76 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757078Ab2IFJYO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 05:24:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50425 "EHLO mx1.redhat.com"
+	id S1757303Ab2IFJYc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 05:24:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49088 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753919Ab2IFJYM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 05:24:12 -0400
-Message-ID: <50486BB2.7070108@redhat.com>
-Date: Thu, 06 Sep 2012 11:24:02 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1757034Ab2IFJYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 05:24:31 -0400
+Date: Thu, 6 Sep 2012 10:24:24 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Xishi Qiu <qiuxishi@huawei.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] memory-hotplug: bug fix race between isolation and
+ allocation
+Message-ID: <20120906092424.GP11266@suse.de>
+References: <1346829962-31989-1-git-send-email-minchan@kernel.org>
+ <1346829962-31989-4-git-send-email-minchan@kernel.org>
+ <20120905094041.GF11266@suse.de>
+ <20120906044903.GA16150@bbox>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: rusty@rustcorp.com.au, fes@google.com, aarcange@redhat.com,
-        riel@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mikew@google.com, yinghan@google.com,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH] virtio-balloon spec: provide a version of the "silent
- deflate" feature that works
-References: <1346917610-14568-1-git-send-email-pbonzini@redhat.com> <20120906084736.GF17656@redhat.com>
-In-Reply-To: <20120906084736.GF17656@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20120906044903.GA16150@bbox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 06/09/2012 10:47, Michael S. Tsirkin ha scritto:
->> > - a migration from non-MUST_TELL_HOST to MUST_TELL_HOST will succeed,
->> > which is wrong;
->> > 
->> > - a migration from MUST_TELL_HOST to non-MUST_TELL_HOST will fail, which
->> > is useless.
->> > 
->> > Add instead a new feature VIRTIO_BALLOON_F_SILENT_DEFLATE, and deprecate
->> > VIRTIO_BALLOON_F_MUST_TELL_HOST since it is never actually used.
->> > 
->> > Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> Frankly I think it's a qemu migration bug. I don't see why
-> we need to tweak spec: just teach qemu to be smarter
-> during migration.
+On Thu, Sep 06, 2012 at 01:49:03PM +0900, Minchan Kim wrote:
+> > > __offline_isolated_pages
+> > > /*
+> > >  * BUG_ON hit or offline page
+> > >  * which is used by someone
+> > >  */
+> > > BUG_ON(!PageBuddy(page A));
+> > > 
+> > 
+> > offline_page calling BUG_ON because someone allocated the page is
+> > ridiculous. I did not spot where that check is but it should be changed. The
+> > correct action is to retry the isolation.
+> 
+> It is where __offline_isolated_pges.
+> 
+> ..
+>         while (pfn < end_pfn) {
+>                 if (!pfn_valid(pfn)) {
+>                         pfn++;
+>                         continue;
+>                 }    
+>                 page = pfn_to_page(pfn);
+>                 BUG_ON(page_count(page));
+>                 BUG_ON(!PageBuddy(page)); <---- HERE
+>                 order = page_order(page);
+> ...
+> 
+> Comment of offline_isolated_pages says following as.
+> 
+>         We cannot do rollback at this point
+> 
+> So if the comment is true, BUG_ON does make sense to me.
 
-Of course you can just teach QEMU to be smarter, but that would be a
-one-off hack for the only ill-defined feature that says something is
-_not_ supported.  Since in practice all virtio_balloon-enbled
-hypervisors supported silent deflate (so the bit was always zero), and
-no client used it (so it was never checked), it's easier to just reverse
-the direction.
+It's massive overkill. I see no reason why it cannot return EBUSY all the
+way back up to offline_pages() and retry with the migration step.  It would
+both remove that BUG_ON and improve reliability of memory hot-remove.
 
-In fact, it's not clear how the driver should use the feature.  My guess
-is that, if it wants to use silent deflate, it tries to negotiate
-VIRTIO_BALLOON_F_MUST_TELL_HOST, and can use silent deflate if
-negotiation fails.  This is against the logic of all other features.
+> But I don't see why we can't retry it as I look thorugh code.
+> Anyway, It's another story which isn't related to this patch.
+> 
 
-> Can you show a scenario with old driver/new hypervisor or
-> new driver/old hypervisor that fails?
+True.
 
-Suppose the driver tried to negotiate the feature as above.  We then
-have the two scenarios above.
+> > 
+> > > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > 
+> > At no point in the changelog do you actually say what he patch does :/
+> 
+> Argh, I will do.
+> 
+> > 
+> > > ---
+> > >  mm/page_isolation.c |    5 ++++-
+> > >  1 file changed, 4 insertions(+), 1 deletion(-)
+> > > 
+> > > diff --git a/mm/page_isolation.c b/mm/page_isolation.c
+> > > index acf65a7..4699d1f 100644
+> > > --- a/mm/page_isolation.c
+> > > +++ b/mm/page_isolation.c
+> > > @@ -196,8 +196,11 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn)
+> > >  			continue;
+> > >  		}
+> > >  		page = pfn_to_page(pfn);
+> > > -		if (PageBuddy(page))
+> > > +		if (PageBuddy(page)) {
+> > > +			if (get_page_migratetype(page) != MIGRATE_ISOLATE)
+> > > +				break;
+> > >  			pfn += 1 << page_order(page);
+> > > +		}
+> > 
+> > It is possible the page is moved to the MIGRATE_ISOLATE list between when
+> > the page was freed to the buddy allocator and this check was made. The
+> > page->index information is stale and the impact is that the hotplug
+> > operation fails when it could have succeeded. That said, I think it is a
+> > very unlikely race that will never happen in practice.
+> 
+> I understand you mean move_freepages which I have missed. Right?
 
-In the harmless but annoying scenario, the source hypervisor doesn't
-support silent deflate, so VIRTIO_BALLOON_F_MUST_TELL_HOST has been
-negotiated successfully.  The destination hypervisor supports silent
-deflate, so it does _not_ include the feature.  It sees that the guest
-requests VIRTIO_BALLOON_F_MUST_TELL_HOST, and fails migration.
+Yes.
 
-In the incorrect scenario, you are migrating to an older hypervisor.
-The source hypervisor is newer and supports silent deflate, so
-VIRTIO_BALLOON_F_MUST_TELL_HOST was _not_ negotiated.  The destination
-hypervisor does not supports silent deflate.  However, the guest is not
-requesting VIRTIO_BALLOON_F_MUST_TELL_HOST, and migration succeeds.
-Next time the guest tries to do use a page from the balloon, badness
-happens, because the hypervisor does not expect it.
+> Then, I will fix it, too.
+> 
+> > 
+> > More importantly, the effect of this path is that EBUSY gets bubbled all
+> > the way up and the hotplug operations fails. This is fine but as the page
+> > is free at the time this problem is detected you also have the option
+> > of moving the PageBuddy page to the MIGRATE_ISOLATE list at this time
+> > if you take the zone lock. This will mean you need to change the name of
+> > test_pages_isolated() of course.
+> 
+> Sorry, I can't get your point. Could you elaborate it more?
 
-Paolo
+You detect a PageBuddy page but it's on the wrong list. Instead of returning
+and failing memory-hotremove, move the free page to the correct list at
+the time it is detected.
+
+> Is it related to this patch?
+
+No, it's not important and was a suggestion on how it could be made
+better. However, retrying hot-remove would be even better again. I'm not
+suggesting it be done as part of this series.
+
+-- 
+Mel Gorman
+SUSE Labs
