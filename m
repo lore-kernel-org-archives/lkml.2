@@ -1,152 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933028Ab2IFSZn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 14:25:43 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:34356 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932373Ab2IFSZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 14:25:41 -0400
-Date: Thu, 6 Sep 2012 11:25:11 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 18/23] rcu: Add random PROVE_RCU_DELAY to
- grace-period initialization
-Message-ID: <20120906182511.GQ2448@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120830181811.GA29154@linux.vnet.ibm.com>
- <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346350718-30937-18-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346941673.18408.21.camel@twins>
+	id S933017Ab2IFS0l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 14:26:41 -0400
+Received: from zose-mta-11.w4a.fr ([178.33.204.86]:40731 "EHLO
+	zose-mta11.web4all.fr" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932373Ab2IFS0k convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 14:26:40 -0400
+Date: Thu, 6 Sep 2012 20:31:58 +0200 (CEST)
+From: =?utf-8?Q?Beno=C3=AEt_Th=C3=A9baudeau?= 
+	<benoit.thebaudeau@advansee.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: HACHIMI Samir <shachimi@adeneo-embedded.com>,
+        shawn guo <shawn.guo@linaro.org>,
+        thierry reding <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org, kernel@pengutronix.de,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Message-ID: <996111492.3799131.1346956318651.JavaMail.root@advansee.com>
+In-Reply-To: <1346935695-25179-8-git-send-email-s.hauer@pengutronix.de>
+Subject: Re: [PATCH 7/9] pwm i.MX: fix clock lookup
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346941673.18408.21.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12090618-7182-0000-0000-00000286606A
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [88.188.188.98]
+X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Win)/7.2.0_GA_2669)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 06, 2012 at 04:27:53PM +0200, Peter Zijlstra wrote:
-> On Thu, 2012-08-30 at 11:18 -0700, Paul E. McKenney wrote:
-> > 
-> > 1.      CPU 0 completes a grace period, but needs an additional
-> >         grace period, so starts initializing one, initializing all
-> >         the non-leaf rcu_node strcutures and the first leaf rcu_node
-> >         structure.  Because CPU 0 is both completing the old grace
-> >         period and starting a new one, it marks the completion of
-> >         the old grace period and the start of the new grace period
-> >         in a single traversal of the rcu_node structures.
-> > 
-> >         Therefore, CPUs corresponding to the first rcu_node structure
-> >         can become aware that the prior grace period has ended, but
-> >         CPUs corresponding to the other rcu_node structures cannot
-> >         yet become aware of this.
-> > 
-> > 2.      CPU 1 passes through a quiescent state, and therefore informs
-> >         the RCU core.  Because its leaf rcu_node structure has already
-> >         been initialized, so this CPU's quiescent state is applied to
-> >         the new (and only partially initialized) grace period.
-> > 
-> > 3.      CPU 1 enters an RCU read-side critical section and acquires
-> >         a reference to data item A.  Note that this critical section
-> >         will not block the new grace period.
-> > 
-> > 4.      CPU 16 exits dyntick-idle mode.  Because it was in dyntick-idle
-> >         mode, some other CPU informed the RCU core of its extended
-> >         quiescent state for the past several grace periods.  This means
-> >         that CPU 16 is not yet aware that these grace periods have ended.
-> > 
-> > 5.      CPU 16 on the second leaf rcu_node structure removes data item A
-> >         from its enclosing data structure and passes it to call_rcu(),
-> >         which queues a callback in the RCU_NEXT_TAIL segment of the
-> >         callback queue.
-> > 
-> > 6.      CPU 16 enters the RCU core, possibly because it has taken a
-> >         scheduling-clock interrupt, or alternatively because it has
-> >         more than 10,000 callbacks queued.  It notes that the second
-> >         most recent grace period has ended (recall that it cannot yet
-> >         become aware that the most recent grace period has completed),
-> >         and therefore advances its callbacks.  The callback for data
-> >         item A is therefore in the RCU_NEXT_READY_TAIL segment of the
-> >         callback queue.
-> > 
-> > 7.      CPU 0 completes initialization of the remaining leaf rcu_node
-> >         structures for the new grace period, including the structure
-> >         corresponding to CPU 16.
-> > 
-> > 8.      CPU 16 again enters the RCU core, again, possibly because it has
-> >         taken a scheduling-clock interrupt, or alternatively because
-> >         it now has more than 10,000 callbacks queued.   It notes that
-> >         the most recent grace period has ended, and therefore advances
-> >         its callbacks.  The callback for data item A is therefore in
-> >         the RCU_NEXT_TAIL segment of the callback queue.
-> > 
-> > 9.      All CPUs other than CPU 1 pass through quiescent states, so that
-> >         the new grace period completes.  Note that CPU 1 is still in
-> >         its RCU read-side critical section, still referencing data item A.
-> > 
-> > 10.     Suppose that CPU 2 is the last CPU to pass through a quiescent
-> >         state for the new grace period, and suppose further that CPU 2
-> >         does not have any callbacks queued.  It therefore traverses
-> >         all of the rcu_node structures, marking the new grace period
-> >         as completed, but does not initialize a new grace period.
-> > 
-> > 11.     CPU 16 yet again enters the RCU core, yet again possibly because
-> >         it has taken a scheduling-clock interrupt, or alternatively
-> >         because it now has more than 10,000 callbacks queued.   It notes
-> >         that the new grace period has ended, and therefore advances
-> >         its callbacks.  The callback for data item A is therefore in
-> >         the RCU_DONE_TAIL segment of the callback queue.  This means
-> >         that this callback is now considered ready to be invoked.
-> > 
-> > 12.     CPU 16 invokes the callback, freeing data item A while CPU 1
-> >         is still referencing it. 
+On Thursday, September 6, 2012 2:48:13 PM, Sascha Hauer wrote:
 > 
-> This is the same scenario as the previous patch (17), right?
+> From: Philipp Zabel <p.zabel@pengutronix.de>
+> 
+> The i.MX pwm core has two clocks: The ipg clock and the ipg highfreq
+> (peripheral) clock. The ipg clock has to be enabled for this hardware
+> to work. The actual pwm output can either be driven by the ipg clock
+> or the ipg highfreq. The ipg highfreq has the advantage that it runs
+> even when the SoC is in low power modes.
+> This patch requests both clocks and enables the ipg clock for
+> accessing
+> registers and the peripheral clock to actually turn on the pwm.
+> 
+> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+> Reviewed-by: Shawn Guo <shawn.guo@linaro.org>
+> Reviewed-by: Benoît Thébaudeau <benoit.thebaudeau@advansee.com>
+> ---
+>  drivers/pwm/pwm-imx.c |   35 +++++++++++++++++++++++++++--------
+>  1 file changed, 27 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
+> index ea4ab2c..d45d44f 100644
+> --- a/drivers/pwm/pwm-imx.c
+> +++ b/drivers/pwm/pwm-imx.c
+> @@ -40,7 +40,8 @@
+>  #define MX3_PWMCR_EN              (1 << 0)
+>  
+>  struct imx_chip {
+> -	struct clk	*clk;
+> +	struct clk	*clk_per;
+> +	struct clk	*clk_ipg;
+>  
+>  	int		enabled;
+>  	void __iomem	*mmio_base;
+> @@ -105,7 +106,7 @@ static int imx_pwm_config_v2(struct pwm_chip
+> *chip,
+>  	unsigned long period_cycles, duty_cycles, prescale;
+>  	u32 cr;
+>  
+> -	c = clk_get_rate(imx->clk);
+> +	c = clk_get_rate(imx->clk_per);
+>  	c = c * period_ns;
+>  	do_div(c, 1000000000);
+>  	period_cycles = c;
+> @@ -160,8 +161,17 @@ static int imx_pwm_config(struct pwm_chip *chip,
+>  		struct pwm_device *pwm, int duty_ns, int period_ns)
+>  {
+>  	struct imx_chip *imx = to_imx_chip(chip);
+> +	int ret;
+> +
+> +	ret = clk_prepare_enable(imx->clk_ipg);
+> +	if (ret)
+> +		return ret;
+>  
+> -	return imx->config(chip, pwm, duty_ns, period_ns);
+> +	ret = imx->config(chip, pwm, duty_ns, period_ns);
+> +
+> +	clk_disable_unprepare(imx->clk_ipg);
+> +
+> +	return ret;
+>  }
+>  
+>  static int imx_pwm_enable(struct pwm_chip *chip, struct pwm_device
+>  *pwm)
+> @@ -169,7 +179,7 @@ static int imx_pwm_enable(struct pwm_chip *chip,
+> struct pwm_device *pwm)
+>  	struct imx_chip *imx = to_imx_chip(chip);
+>  	int ret;
+>  
+> -	ret = clk_prepare_enable(imx->clk);
+> +	ret = clk_prepare_enable(imx->clk_per);
+>  	if (ret)
+>  		return ret;
 
-Yep.  That one fixed the race, this one makes the race more probable.
+Have you tested that this actually works on i.MX53?
 
-> However did you find a 12-stage race like that, is that PROMELA goodness
-> or are you training to beat some chess champion?
+I have tested it successfully on i.MX35 (with a few additions to platform code).
+But i.MX35 has a single bit controlling both PWM IPG and PER clock gates.
 
-I saw actual test failures after introducing the patch moving the
-grace-period initialization process to a kthread.  After chopping the
-original single patch into pieces and seeing that failures appeared at
-the point where I introduced preemption, it was clear what the overall
-form of the failure had to be.  That said, it did take a few tries to
-work out the exact failure scenario.  And I need to fix a few typos
-in it.  :-/
+On i.MX53, there are 2 separate control bits for these. So, if ipg clk is
+strictly required to access PWM registers, even if per clk is enabled, this code
+should not work without adding
 
-RCU's state space is -way- too big for Promela to handle in one shot.
-So I have been working on three approaches:
++	ret = clk_prepare_enable(imx->clk_ipg);
++	if (ret)
++		return ret;
 
-1.	Simplify RCU, or perhaps more accurately, introduce more
-	invariants.
+and
 
-2.	Work with various formal-methods people in the hope that we
-	can come up with something that actually can (in)validate the
-	Linux-kernel RCU implementation in one go.  One of them did
-	send me a draft paper formalizing RCU's semantics in a variant
-	of separation logic, so progress is being made!
++	clk_disable_unprepare(imx->clk_ipg);
 
-3.	Do line-by-line documentation of the current implementation.
-	This has resulted in some bug fixes and some of #1 above.
-	But it is going quite slowly, especially given that I keep
-	changing RCU.  ;-)
+around each call to set_enable().
 
-It is really cool seeing some formal-methods people willing to take
-on something like RCU!  In addition, others in the same group have
-been working on taking the entire Linux kernel as written as input to
-their tools, in one case handling about a million lines of the kernel.
-Lots more work left to do, but meaningful progress!
+>  
+> @@ -186,7 +196,7 @@ static void imx_pwm_disable(struct pwm_chip
+> *chip, struct pwm_device *pwm)
+>  
+>  	imx->set_enable(chip, false);
+>  
+> -	clk_disable_unprepare(imx->clk);
+> +	clk_disable_unprepare(imx->clk_per);
+>  	imx->enabled = 0;
+>  }
+>  
+> @@ -238,10 +248,19 @@ static int __devinit imx_pwm_probe(struct
+> platform_device *pdev)
+>  		return -ENOMEM;
+>  	}
+>  
+> -	imx->clk = devm_clk_get(&pdev->dev, "pwm");
+> +	imx->clk_per = devm_clk_get(&pdev->dev, "per");
+> +	if (IS_ERR(imx->clk_per)) {
+> +		dev_err(&pdev->dev, "getting per clock failed with %ld\n",
+> +				PTR_ERR(imx->clk_per));
+> +		return PTR_ERR(imx->clk_per);
+> +	}
+>  
+> -	if (IS_ERR(imx->clk))
+> -		return PTR_ERR(imx->clk);
+> +	imx->clk_ipg = devm_clk_get(&pdev->dev, "ipg");
+> +	if (IS_ERR(imx->clk_ipg)) {
+> +		dev_err(&pdev->dev, "getting ipg clock failed with %ld\n",
+> +				PTR_ERR(imx->clk_ipg));
+> +		return PTR_ERR(imx->clk_ipg);
+> +	}
+>  
+>  	imx->chip.ops = &imx_pwm_ops;
+>  	imx->chip.dev = &pdev->dev;
 
-							Thanx, Paul
-
+Best regards,
+Benoît
