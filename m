@@ -1,81 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757250Ab2IFPLj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 11:11:39 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22407 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756813Ab2IFPLh (ORCPT
+	id S1757442Ab2IFPMG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 11:12:06 -0400
+Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:16739 "EHLO
+	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756815Ab2IFPME (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 11:11:37 -0400
-X-Authority-Analysis: v=2.0 cv=VPlfbqzX c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=zgiTqp1681AA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=SlKO6I3lSDoA:10 a=Kqkge5DqwmKkmokaOH0A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1346944293.1680.26.camel@gandalf.local.home>
-Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive
- hashtable
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Pedro Alves <palves@redhat.com>, Tejun Heo <tj@kernel.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, mingo@elte.hu,
-        ebiederm@xmission.com, aarcange@redhat.com, ericvh@gmail.com,
-        netdev@vger.kernel.org, eric.dumazet@gmail.com, axboe@kernel.dk,
-        agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
-        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
-        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
-        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Date: Thu, 06 Sep 2012 11:11:33 -0400
-In-Reply-To: <20120906145545.GA17332@leaf>
-References: <503C95E4.3010000@gmail.com> <20120828101148.GA21683@Krystal>
-	 <503CAB1E.5010408@gmail.com> <20120828115638.GC23818@Krystal>
-	 <20120828230050.GA3337@Krystal>
-	 <1346772948.27919.9.camel@gandalf.local.home> <50462C99.5000007@redhat.com>
-	 <50462EE8.1090903@redhat.com> <20120904170138.GB31934@Krystal>
-	 <5048AAF6.5090101@gmail.com> <20120906145545.GA17332@leaf>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 6 Sep 2012 11:12:04 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av8EAGK8SFBtggBP/2dsb2JhbAA/BoYGtReBCIIgAQEEASMzIxALGAICJgICFCUEIBOIBwoHqAiTC4EhiXAmhQ0yYAOVWJAbgmWBXw
+Date: Thu, 6 Sep 2012 17:11:58 +0200
+From: Kurt Van Dijck <kurt.van.dijck@eia.be>
+To: Fabio Baltieri <fabio.baltieri@gmail.com>
+Cc: Oliver Hartkopp <socketcan@hartkopp.net>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Wolfgang Grandegger <wg@grandegger.com>
+Subject: Re: [PATCH can-next v6] can: add tx/rx LED trigger support
+Message-ID: <20120906151158.GA37075@macbook.local>
+Mail-Followup-To: Fabio Baltieri <fabio.baltieri@gmail.com>,
+	Oliver Hartkopp <socketcan@hartkopp.net>,
+	Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	Wolfgang Grandegger <wg@grandegger.com>
+References: <20120824124248.GA422@vandijck-laurijssen.be>
+ <20120824220142.GA1470@gmail.com>
+ <5044A547.2010603@pengutronix.de>
+ <20120903181335.GA415@vandijck-laurijssen.be>
+ <20120903182925.GA28766@gmail.com>
+ <50451919.20205@hartkopp.net>
+ <20120904071128.GB416@vandijck-laurijssen.be>
+ <20120904201553.GA29478@gmail.com>
+ <20120906103248.GA36903@macbook.local>
+ <CABkP77fff7wmZKbT=xbcBkSgLTbjTTzxOpQsWLrHTeG-53KSWQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CABkP77fff7wmZKbT=xbcBkSgLTbjTTzxOpQsWLrHTeG-53KSWQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-06 at 07:55 -0700, Josh Triplett wrote:
-
-> > My solution to making 'break' work in the iterator is:
-> > 
-> > 	for (bkt = 0, node = NULL; bkt < HASH_SIZE(name) && node == NULL; bkt++)
-> > 		hlist_for_each_entry(obj, node, &name[bkt], member)
-> > 
+On Thu, Sep 06, 2012 at 01:17:39PM +0200, Fabio Baltieri wrote:
+> Hi Kurt,
 > 
-> Looks reasonable.  However, it would break (or rather, not break) on
-> code like this:
+> On Thu, Sep 6, 2012 at 12:33 PM, Kurt Van Dijck <kurt.van.dijck@eia.be> wrote:
+> > On Tue, Sep 04, 2012 at 10:15:53PM +0200, Fabio Baltieri wrote:
+> >> On Tue, Sep 04, 2012 at 09:11:28AM +0200, Kurt Van Dijck wrote:
+> > [...]
+> >> > > The name of the device can only be changed when the interface is down.
+> >> > > Is it possible to put some scripting around it to detach and attach the leds
+> >> > > to the interfaces on ifup/ifdown triggers?
+> >> >
+> >> > Are the led triggers available for using while the netdev is down then?
+> >>
+> >> Sure!  On embedded systems triggers are usually attached to actual LEDs
+> >> at probe time using default_trigger field of struct led_classdev, and
+> >> that can be specified both in machine files or in device tree.
+> >
+> > I also think that led triggers should be available.
 > 
-> 	hash_for_each_entry(...) {
-> 		if (...) {
-> 			foo(node);
-> 			node = NULL;
-> 			break;
-> 		}
-> 	}
+> Right, that's why I think the only way is to use device name.
+
+yes, but it has 2 disadvantages:
+* inconvenient. I like 'can0-tx' much more than any device name
+  (Sorry I can't get any real example, I'm not at home now).
+  And for usecases where the actual device of the CAN iface is
+  important, such setup requires udev to assign the proper iface names.
+* extends existing function calls like sja1000
+
 > 
-> Hiding the double loop still seems error-prone.
+> > I asked the question because detach & attach leds to interfaces would
+> > indeed break that.
+> 
+> Sure? I think that the trigger would be set again on reattach, as
+> default_trigger is checked both in led_cdev probe and
+> trigger_register, see:
+> 
+> http://lxr.free-electrons.com/source/drivers/leds/led-triggers.c#L180
+> 
+> I'll try that tonight.
 
-We've already had this conversation ;-)  A guess a big comment is in
-order:
+It looks even more inconvenient. It only works as expected when you don't
+change the trigger afterwards, but still it is possible (as should be),
+so the design of trigger is ... wrong.
+example:
+When you put another trigger to a led, and have a proper sequence of
+'ip link set xxx up' and 'ip link set xxx down', you will end up
+with the default_trigger again.
+I realize I'm looking at unusual scenario's.
 
-/*
- * NOTE!  Although this is a double loop, 'break' still works because of
- *        the 'node == NULL' condition in the outer loop. On break of
- *        the inner loop, node will be !NULL, and the outer loop will
- *        exit as well.
- */
+> 
+> > btw, I tried to send a patch tuesday (my first $ git send-email) using
+> > netdev notifiers: did you receive it, and what do you think of it?
+> 
+> Sure, I got it!
+Ok, well done for me then :-)
+> I was planning to try that this weekend but I can
+> give you some comments earlier tonight... sorry for the dealy!
+no hurry, I'm already satified that I got git setup right.
 
--- Steve
-
-
+Kurt
