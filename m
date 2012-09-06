@@ -1,89 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755164Ab2IFC5j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 22:57:39 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:63209 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752315Ab2IFC5i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 22:57:38 -0400
-X-AuditID: 9c93016f-b7cc0ae000000e9f-20-5048112045cb
-Date: Thu, 6 Sep 2012 11:59:12 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: qiuxishi <qiuxishi@gmail.com>
-Cc: mgorman@suse.de, akpm@linux-foundation.org, kamezawa.hiroyu@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, qiuxishi@huawei.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] memory-hotplug: bug fix race between isolation and
- allocation
-Message-ID: <20120906025912.GE31615@bbox>
-References: <50480BFB.8050501@gmail.com>
+	id S1759278Ab2IFDA6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 23:00:58 -0400
+Received: from ozlabs.org ([203.10.76.45]:59066 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754031Ab2IFDAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 23:00:53 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: "Kasatkin\, Dmitry" <dmitry.kasatkin@intel.com>,
+        David Howells <dhowells@redhat.com>, jmorris@namei.org,
+        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] module: signature infrastructure
+In-Reply-To: <1346852077.2389.7.camel@falcor>
+References: <20120816013405.872.42381.stgit@warthog.procyon.org.uk> <87627ufi2h.fsf@rustcorp.com.au> <CALLzPKaA3MYncJD1X6B8f3p-R6FVA5-WDF-h6GGwdtinNpjqmw@mail.gmail.com> <871uihl3bx.fsf@rustcorp.com.au> <1346852077.2389.7.camel@falcor>
+User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Thu, 06 Sep 2012 11:35:26 +0930
+Message-ID: <87harbj47t.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50480BFB.8050501@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Xishi,
+Mimi Zohar <zohar@linux.vnet.ibm.com> writes:
 
-On Thu, Sep 06, 2012 at 10:35:39AM +0800, qiuxishi wrote:
-> On 2012/9/5 17:40, Mel Gorman wrote:
-> 
-> > On Wed, Sep 05, 2012 at 04:26:02PM +0900, Minchan Kim wrote:
-> >> Like below, memory-hotplug makes race between page-isolation
-> >> and page-allocation so it can hit BUG_ON in __offline_isolated_pages.
-> >>
-> >> 	CPU A					CPU B
-> >>
-> >> start_isolate_page_range
-> >> set_migratetype_isolate
-> >> spin_lock_irqsave(zone->lock)
-> >>
-> >> 				free_hot_cold_page(Page A)
-> >> 				/* without zone->lock */
-> >> 				migratetype = get_pageblock_migratetype(Page A);
-> >> 				/*
-> >> 				 * Page could be moved into MIGRATE_MOVABLE
-> >> 				 * of per_cpu_pages
-> >> 				 */
-> >> 				list_add_tail(&page->lru, &pcp->lists[migratetype]);
-> >>
-> >> set_pageblock_isolate
-> >> move_freepages_block
-> >> drain_all_pages
-> 
-> I think here is the problem you want to fix, it is not sure that pcp will be moved
-> into MIGRATE_ISOLATE list. They may be moved into MIGRATE_MOVABLE list because
-> page_private() maybe 2, it uses page_private() not get_pageblock_migratetype()
-> 
-> So when finish migrating pages, the free pages from pcp may be allocated again, and
-> failed in check_pages_isolated().
-> 
-> drain_all_pages()
-> 	drain_local_pages()
-> 		drain_pages()
-> 			free_pcppages_bulk()
-> 				__free_one_page(page, zone, 0, page_private(page))
-> 
-> I reported this problem too. http://marc.info/?l=linux-mm&m=134555113706068&w=2
-> How about this change:
-> 	free_pcppages_bulk()
-> 		__free_one_page(page, zone, 0, get_pageblock_migratetype(page))
+> On Wed, 2012-09-05 at 09:59 +0930, Rusty Russell wrote:
+>> "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com> writes:
+>> > Hi,
+>> >
+>> > Please read bellow...
+>> >
+>> > On Tue, Sep 4, 2012 at 8:55 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>> >> OK, I took a look at the module.c parts of David and Dmitry's patchsets,
+>> >> and didn't really like either, but I stole parts of David's to make
+>> >> this.
+>> >>
+>> >> So, here's the module.c part of module signing.  I hope you two got time
+>> >> to discuss the signature format details?  Mimi suggested a scheme where
+>> >> the private key would never be saved on disk (even temporarily), but I
+>> >> didn't see patches.  Frankly it's something we can do later; let's aim
+>> >> at getting the format right for the next merge window.
+>> >
+>> > In our patches key is stored on the disc in encrypted format...
+>> 
+>> Oh, I missed that twist.  Thanks for the explanation.
+>> 
+>> On consideration, I prefer signing to be the final part of the "modules"
+>> target rather than modules_install.  I run the latter as root, and that
+>> is wrong for doing any code generation.
+>
+> Agreed, but keep in mind that 'modules_install' could subsequently strip
+> the module.
 
-I already explained why it was not good solution.
-Again, here it goes from my previous reply.
+That had better be part of your signing step then!
 
-"
-Anyway, I don't like your approach which I already considered because it hurts hotpath
-while the race is really unlikely. Get_pageblock_migratetype is never trivial.
-We should avoid the overhead in hotpath and move into memory-hotplug itself.
-Do you see my patch in https://patchwork.kernel.org/patch/1225081/ ?
-"
-
--- 
-Kind regards,
-Minchan Kim
+Cheers,
+Rusty.
