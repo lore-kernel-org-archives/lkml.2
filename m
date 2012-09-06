@@ -1,189 +1,419 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907Ab2IFFsd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 01:48:33 -0400
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:50492 "EHLO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751908Ab2IFFsa (ORCPT
+	id S1752786Ab2IFFuW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 01:50:22 -0400
+Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:42530 "EHLO
+	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751649Ab2IFFuR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 01:48:30 -0400
+	Thu, 6 Sep 2012 01:50:17 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120906130510.32b0b877@notabene.brown>
-References: <20120825214459.7333a376@notabene.brown> <CAMQu2gz0-U4GxEpZFfmJec+0FRs7ugy8EYS3HyYhb1jwbMBjug@mail.gmail.com>
- <20120827085312.75957354@notabene.brown> <CAMQu2gwH0O+NHV7H2aF375qmv0=TKb6RweOLohTHtB4UhQ-1gQ@mail.gmail.com>
- <CAMQu2gw2b8HHDPuSRuHXVYn3sJ5BYi_PuOT=snpa3zD5ert=QQ@mail.gmail.com> <20120906130510.32b0b877@notabene.brown>
-From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Date: Thu, 6 Sep 2012 11:18:09 +0530
-Message-ID: <CAMQu2gxGNJ+NW_rcRiXNE=OMTq8Hb81_1hDZnNen6mjc2cf6BQ@mail.gmail.com>
-Subject: Re: [PATCH] OMAP GPIO - don't wake from suspend unless requested.
-To: NeilBrown <neilb@suse.de>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Tarun Kanti DebBarma <tarun.kanti@ti.com>,
-        Kevin Hilman <khilman@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Cousson@suse.de, Benoit <b-cousson@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>, Felipe Balbi <balbi@ti.com>,
-        linux-omap@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Jon Hunter <jon-hunter@ti.com>
+In-Reply-To: <5047918D.3000305@ti.com>
+References: <1346844964-24839-1-git-send-email-sourav.poddar@ti.com>
+	<5047918D.3000305@ti.com>
+Date: Thu, 6 Sep 2012 11:20:15 +0530
+Message-ID: <CAKdam55ai1VdNZ11hCpdDoG5sKW-oWO+j2C03DPacjust1Y1+g@mail.gmail.com>
+Subject: Re: [PATCHv2 1/4] mfd: smsc: Add support for smsc gpio io/keypad driver
+From: "Poddar, Sourav" <sourav.poddar@ti.com>
+To: Vaibhav Hiremath <hvaibhav@ti.com>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, santosh.shilimkar@ti.com,
+        b-cousson@ti.com, balbi@ti.com, sameo@linux.intel.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 6, 2012 at 8:35 AM, NeilBrown <neilb@suse.de> wrote:
-> On Mon, 3 Sep 2012 22:59:06 -0700 "Shilimkar, Santosh"
-> <santosh.shilimkar@ti.com> wrote:
->
->> On Sun, Aug 26, 2012 at 6:29 PM, Shilimkar, Santosh
->> <santosh.shilimkar@ti.com> wrote:
->> > On Sun, Aug 26, 2012 at 3:53 PM, NeilBrown <neilb@suse.de> wrote:
->> >>
->> >> On Sun, 26 Aug 2012 09:47:50 +0530 "Shilimkar, Santosh"
->> >> <santosh.shilimkar@ti.com> wrote:
->> >>
->> >> > + Jon,
->> >> >
->> >> > On Sat, Aug 25, 2012 at 5:14 PM, NeilBrown <neilb@suse.de> wrote:
->> >> > >
->> >> > >
->> >> > >
->> >> > > Current kernel will wake from suspend on an event on any active
->> >> > > GPIO even if enable_irq_wake() wasn't called.
->> >> > >
->> >> > > There are two reasons that the hardware wake-enable bit should be set:
->> >> > >
->> >> > > 1/ while non-suspended the CPU might go into a deep sleep (off_mode)
->> >> > >   in which the wake-enable bit is needed for an interrupt to be
->> >> > >   recognised.
->> >> > > 2/ while suspended the GPIO interrupt should wake from suspend if and
->> >> > >    only if irq_wake as been enabled.
->> >> > >
->> >> > > The code currently doesn't keep these two reasons separate so they get
->> >> > > confused and sometimes the wakeup flags is set incorrectly.
->> >> > >
->> >> > > This patch reverts:
->> >> > >  commit 9c4ed9e6c01e7a8bd9079da8267e1f03cb4761fc
->> >> > >     gpio/omap: remove suspend/resume callbacks
->> >> > > and
->> >> > >  commit 0aa2727399c0b78225021413022c164cb99fbc5e
->> >> > >     gpio/omap: remove suspend_wakeup field from struct gpio_bank
->> >> > >
->> >> > > and makes some minor changes so that we have separate flags for "GPIO
->> >> > > should wake from deep idle" and "GPIO should wake from suspend".
->> >> > >
->> >> > > With this patch, the GPIO from my touch screen doesn't wake my device
->> >> > > any more, which is what I want.
->> >> > >
->> >> > > Cc: Kevin Hilman <khilman@ti.com>
->> >> > > Cc: Tony Lindgren <tony@atomide.com>
->> >> > > Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
->> >> > > Cc: Cousson, Benoit <b-cousson@ti.com>
->> >> > > Cc: Grant Likely <grant.likely@secretlab.ca>
->> >> > > Cc: Tarun Kanti DebBarma <tarun.kanti@ti.com>
->> >> > > Cc: Felipe Balbi <balbi@ti.com>
->> >> > > Cc: Govindraj.R <govindraj.raja@ti.com>
->> >> > >
->> >> > > Signed-off-by: NeilBrown <neilb@suse.de>
->> >> > >
->> >> > The patch doesn't seems to be correct. At least the 2/ gets
->> >> > fixed with a proper IRQCHIP flag. Can you try the patch at
->> >> > end of the email and see if it helps ? Am attaching it in case
->> >> > mailer damages it.
->> >> >
->> >> > Regards
->> >> > Santosh
->> >> >
->> >> > >From b8a38fc75e046f6462610e26c47c620cad850c24 Mon Sep 17 00:00:00 2001
->> >> > From: Santosh Shilimkar <santosh.shilimkar@ti.com>
->> >> > Date: Sun, 26 Aug 2012 09:39:51 +0530
->> >> > Subject: [PATCH] gpio: omap: Set IRQCHIP_MASK_ON_SUSPEND to mask all
->> >> >  non-wakeup gpio wakeups.
->> >> >
->> >> > Set the irq chip flag IRQCHIP_MASK_ON_SUSPEND to cause the irq pm code
->> >> > to mask all non-wake gpios in suspend, which will ensure the wakeup
->> >> > enable
->> >> > bit is not set on non-wake gpios.
->> >> >
->> >> > Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->> >> > ---
->> >> >  drivers/gpio/gpio-omap.c |    1 +
->> >> >  1 file changed, 1 insertion(+)
->> >> >
->> >> > diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
->> >> > index e6efd77..50b4c18 100644
->> >> > --- a/drivers/gpio/gpio-omap.c
->> >> > +++ b/drivers/gpio/gpio-omap.c
->> >> > @@ -779,6 +779,7 @@ static struct irq_chip gpio_irq_chip = {
->> >> >       .irq_unmask     = gpio_unmask_irq,
->> >> >       .irq_set_type   = gpio_irq_type,
->> >> >       .irq_set_wake   = gpio_wake_enable,
->> >> > +     .flags          = IRQCHIP_MASK_ON_SUSPEND;
->> >> >  };
->> >> >
->> >> >
->> >> > /*---------------------------------------------------------------------*/
->> >>
->> >>
->> >> No obvious damage, unless the mailer is responsible or the ';' at the end
->> >> of
->> >> the line, rather than ',' :-)
->> >>
->> > :-) That was typo.
->> >
->> >> The approach makes sense, but does actually work.  Should be fixable
->> >> though.
->> >>
->> >> When I try this I get:
->> >>
->> >>
->> >>
->> >> [  158.114440] Checking wakeup interrupts
->> >> [  158.118408] Unhandled fault: external abort on non-linefetch (0x1028)
->> >> at 0xfb054040
->> >> [  158.126403] Internal error: : 1028 [#1] PREEMPT ARM
->> >> [  158.131500] Modules linked in: ipv6 g_ether hso libertas_sdio libertas
->> >> cfg80211
->> >> [  158.139190] CPU: 0    Not tainted  (3.5.0-gta04-debug+ #2)
->> >> [  158.144927] PC is at _set_gpio_triggering+0x38/0x258
->> >> [  158.150115] LR is at gpio_mask_irq+0xac/0xc0
->> >> [  158.154602] pc : [<c01d24a0>]    lr : [<c01d2f68>]    psr: 60000193
->> >> [  158.154602] sp : db521e90  ip : 00000011  fp : beeecc2c
->> >> [  158.166595] r10: c05c8ebc  r9 : daa5a858  r8 : 00000003
->> >> [  158.172027] r7 : a0000193  r6 : 00000000  r5 : fb054000  r4 : ded44e18
->> >> [  158.178863] r3 : 00000001  r2 : 00000000  r1 : ded30340  r0 : 00000040
->> >> [  158.185668] Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM
->> >> Segment use
->> >>
->> >> so it looks like runtime PM has turned off the iclk to the GPIO module so
->> >> that
->> >> when we try to tell it to change settings, it is no longer listening to
->> >> us.
->> > From the crash logs it appears like that.
->> >
->> >> The "Checking wakeup interrupts" function happens very late in the suspend
->> >> cycle, after all the suspend_late and suspend_noirq functions have run.
->> >> Maybe it needs to be moved earlier...
->> >>
->> > No it shouldn't be moved and it is that point for lot many good
->> > reasons. Ofcourse
->> > this omap gpio driver crash needs to be addressed. Need to think bit
->> > more on this
->> > issue.
->> >
->> After thinking bit more on this, the problem seems to be coming
->> mainly because the gpio device is runtime suspended bit early than
->> it should be. Similar issue seen with i2c driver as well. The i2c issue
->> was discussed with Rafael at LPC last week. The idea is to move
->> the pm_runtime_enable/disable() calls entirely up to the
->> _late/_early stage of device suspend/resume.
->> Will update this thread once I have further update.
->
-> This won't be late enough.  IRQCHIP_MASK_ON_SUSPEND takes effect after all
-> the _late callbacks have been called.
-> I, too, spoke to Rafael about this in San Diego.  He seemed to agree with me
-> that the interrupt needs to be masked in the ->suspend callback.  any later
-> is too late.
->
-Thanks for information about your discussion. Will wait for the patch then.
+Hi,
 
-Regards
-santosh
+On Wed, Sep 5, 2012 at 11:23 PM, Vaibhav Hiremath <hvaibhav@ti.com> wrote:
+>
+>
+> On 9/5/2012 5:06 PM, Sourav Poddar wrote:
+>> smsc ece1099 is a keyboard scan or gpio expansion device.
+>> The patch create keypad and gpio expander child for this
+>> multi function smsc driver.
+>>
+>> Cc: Samuel Ortiz <sameo@linux.intel.com>
+>> Cc: Benoit Cousson <b-cousson@ti.com>
+>> Cc: Felipe Balbi <balbi@ti.com>
+>> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+>> ---
+>> Changes since v1:
+>>  - Use Kconfig option correctly
+>>  - Add regmap_config paramters
+>>  - Modify formatting of logs for devid
+>>  - Move read/write function to headed file as an inline
+>>    function.
+>>  Documentation/smsc_ece1099.txt |   56 ++++++++++++++++++++
+>>  drivers/mfd/Kconfig            |   12 ++++
+>>  drivers/mfd/Makefile           |    1 +
+>>  drivers/mfd/smsc-ece1099.c     |  110 +++++++++++++++++++++++++++++++++++++++
+>>  include/linux/mfd/smsc.h       |  111 ++++++++++++++++++++++++++++++++++++++++
+>>  5 files changed, 290 insertions(+), 0 deletions(-)
+>>  create mode 100644 Documentation/smsc_ece1099.txt
+>>  create mode 100644 drivers/mfd/smsc-ece1099.c
+>>  create mode 100644 include/linux/mfd/smsc.h
+>>
+>> diff --git a/Documentation/smsc_ece1099.txt b/Documentation/smsc_ece1099.txt
+>> new file mode 100644
+>> index 0000000..6b492e8
+>> --- /dev/null
+>> +++ b/Documentation/smsc_ece1099.txt
+>> @@ -0,0 +1,56 @@
+>> +What is smsc-ece1099?
+>> +----------------------
+>> +
+>> +The ECE1099 is a 40-Pin 3.3V Keyboard Scan Expansion
+>> +or GPIO Expansion device. The device supports a keyboard
+>> +scan matrix of 23x8. The device is connected to a Master
+>> +via the SMSC BC-Link interface or via the SMBus.
+>> +Keypad scan Input(KSI) and Keypad Scan Output(KSO) signals
+>> +are multiplexed with GPIOs.
+>> +
+>> +Interrupt generation
+>> +--------------------
+>> +
+>> +Interrupts can be generated by an edge detection on a GPIO
+>> +pin or an edge detection on one of the bus interface pins.
+>> +Interrupts can also be detected on the keyboard scan interface.
+>> +The bus interrupt pin (BC_INT# or SMBUS_INT#) is asserted if
+>> +any bit in one of the Interrupt Status registers is 1 and
+>> +the corresponding Interrupt Mask bit is also 1.
+>> +
+>> +In order for software to determine which device is the source
+>> +of an interrupt, it should first read the Group Interrupt Status Register
+>> +to determine which Status register group is a source for the interrupt.
+>> +Software should read both the Status register and the associated Mask register,
+>> +then AND the two values together. Bits that are 1 in the result of the AND
+>> +are active interrupts. Software clears an interrupt by writing a 1 to the
+>> +corresponding bit in the Status register.
+>> +
+>> +Communication Protocol
+>> +----------------------
+>> +
+>> +- SMbus slave Interface
+>> +     The host processor communicates with the ECE1099 device
+>> +     through a series of read/write registers via the SMBus
+>> +     interface. SMBus is a serial communication protocol between
+>> +     a computer host and its peripheral devices. The SMBus data
+>> +     rate is 10KHz minimum to 400 KHz maximum
+>> +
+>> +- Slave Bus Interface
+>> +     The ECE1099 device SMBus implementation is a subset of the
+>> +     SMBus interface to the host. The device is a slave-only SMBus device.
+>> +     The implementation in the device is a subset of SMBus since it
+>> +     only supports four protocols.
+>> +
+>> +     The Write Byte, Read Byte, Send Byte, and Receive Byte protocols are the
+>> +     only valid SMBus protocols for the device.
+>> +
+>> +- BC-LinkTM Interface
+>> +     The BC-Link is a proprietary bus that allows communication
+>> +     between a Master device and a Companion device. The Master
+>> +     device uses this serial bus to read and write registers
+>> +     located on the Companion device. The bus comprises three signals,
+>> +     BC_CLK, BC_DAT and BC_INT#. The Master device always provides the
+>> +     clock, BC_CLK, and the Companion device is the source for an
+>> +     independent asynchronous interrupt signal, BC_INT#. The ECE1099
+>> +     supports BC-Link speeds up to 24MHz.
+>> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+>> index d1facef..991ef15 100644
+>> --- a/drivers/mfd/Kconfig
+>> +++ b/drivers/mfd/Kconfig
+>> @@ -385,6 +385,18 @@ config MFD_T7L66XB
+>>       help
+>>         Support for Toshiba Mobile IO Controller T7L66XB
+>>
+>> +config MFD_SMSC
+>> +       bool "Support for the SMSC ECE1099 series chips"
+>> +       depends on I2C=y
+>> +       select MFD_CORE
+>> +       select REGMAP_I2C
+>> +       help
+>> +        If you say yes here you get support for the
+>> +        ece1099 chips from SMSC.
+>> +
+>> +        To compile this driver as a module, choose M here: the
+>> +        module will be called smsc.
+>> +
+>>  config MFD_TC6387XB
+>>       bool "Support Toshiba TC6387XB"
+>>       depends on ARM && HAVE_CLK
+>> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+>> index 79dd22d..f587d91 100644
+>> --- a/drivers/mfd/Makefile
+>> +++ b/drivers/mfd/Makefile
+>> @@ -77,6 +77,7 @@ obj-$(CONFIG_EZX_PCAP)              += ezx-pcap.o
+>>  obj-$(CONFIG_MCP)            += mcp-core.o
+>>  obj-$(CONFIG_MCP_SA11X0)     += mcp-sa11x0.o
+>>  obj-$(CONFIG_MCP_UCB1200)    += ucb1x00-core.o
+>> +obj-$(CONFIG_MFD_SMSC)        += smsc.o
+>>  obj-$(CONFIG_MCP_UCB1200_TS) += ucb1x00-ts.o
+>>
+>>  ifeq ($(CONFIG_SA1100_ASSABET),y)
+>> diff --git a/drivers/mfd/smsc-ece1099.c b/drivers/mfd/smsc-ece1099.c
+>> new file mode 100644
+>> index 0000000..73a6cb7
+>> --- /dev/null
+>> +++ b/drivers/mfd/smsc-ece1099.c
+>> @@ -0,0 +1,110 @@
+>> +/*
+>> + * TI SMSC MFD Driver
+>> + *
+>> + * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com
+>> + *
+>> + * Author: Sourav Poddar <sourav.poddar@ti.com>
+>> + *
+>> + *  This program is free software; you can redistribute it and/or modify it
+>> + *  under  the terms of the GNU General  Public License as published by the
+>> + *  Free Software Foundation;  GPL v2.
+>> + *
+>> + */
+>> +
+>> +#include <linux/module.h>
+>> +#include <linux/moduleparam.h>
+>> +#include <linux/init.h>
+>> +#include <linux/slab.h>
+>> +#include <linux/i2c.h>
+>> +#include <linux/gpio.h>
+>> +#include <linux/workqueue.h>
+>> +#include <linux/irq.h>
+>> +#include <linux/regmap.h>
+>> +#include <linux/err.h>
+>> +#include <linux/mfd/core.h>
+>> +#include <linux/mfd/smsc.h>
+>> +#include <linux/of_platform.h>
+>> +
+>> +static struct regmap_config smsc_regmap_config = {
+>> +             .reg_bits = 8,
+>> +             .val_bits = 8,
+>> +             .max_register = SMSC_MAX_REGISTER - 1;
+>> +             .cache_type = REGCACHE_COMPRESSED,
+>> +};
+>
+> You can remove one extra tab here.
+>
+Ok.
+>> +
+>> +static const struct of_device_id of_smsc_match[] = {
+>> +     { .compatible = "smsc,ece1099", },
+>> +     { },
+>> +};
+>> +
+>> +static int smsc_i2c_probe(struct i2c_client *i2c,
+>> +                     const struct i2c_device_id *id)
+>> +{
+>> +     struct device_node              *node = i2c->dev.of_node;
+>> +     struct smsc *smsc;
+>> +     int ret = 0;
+>> +
+>> +     smsc = devm_kzalloc(&i2c->dev, sizeof(struct smsc),
+>> +                             GFP_KERNEL);
+>> +
+>
+> You must check the return value here?
+>
+Yes, will include the check.
+>> +     smsc->regmap = devm_regmap_init_i2c(i2c, &smsc_regmap_config);
+>> +     if (IS_ERR(smsc->regmap)) {
+>> +             ret = PTR_ERR(smsc->regmap);
+>> +             goto err;
+>
+> You can simply return from here right?
+>
+hmmm, yes.
+>> +     }
+>> +
+>> +     i2c_set_clientdata(i2c, smsc);
+>> +     smsc->dev = &i2c->dev;
+>> +
+>> +#ifdef CONFIG_OF
+>> +     of_property_read_u32(node, "clock", &smsc->clk);
+>> +#endif
+>> +
+>> +     regmap_read(smsc->regmap, SMSC_DEV_ID, &devid);
+>> +     regmap_read(smsc->regmap, SMSC_DEV_REV, &rev);
+>> +     regmap_read(smsc->regmap, SMSC_VEN_ID_L, &venid_l);
+>> +     regmap_read(smsc->regmap, SMSC_VEN_ID_H, &venid_h);
+>> +
+>
+> You also want to check return value here.
+>
+I dont see any point checking for the above ret values. These values
+are read during
+runtime and some  can be zero also. ?
+>> +     dev_info(&i2c->dev, "SMSCxxx devid: %02x rev: %02x venid: %02x\n",
+>> +             devid, rev, (venid_h << 8) | venid_l);
+>> +
+>> +     ret = regmap_write(smsc->regmap, SMSC_CLK_CTRL, smsc->clk);
+>> +     if (ret)
+>> +             goto err;
+>> +
+>> +     if (node)
+>> +             ret = of_platform_populate(node, NULL, NULL, &i2c->dev);
+>> +
+>
+> of_xxx above is encapsulated in CONFIG_OF macro, same is not done here.
+>
+Will include.
+>> +     return ret;
+>> +
+>
+> This return is not required, as next instruction. Infact I would suggest
+> you can simply return from each places above.
+>
+Ok.
+> Thanks,
+> Vaibhav
+>> +err:
+>> +     return ret;
+>> +}
+>> +
+>> +static int smsc_i2c_remove(struct i2c_client *i2c)
+>> +{
+>> +     return 0;
+>> +}
+>> +
+>> +static const struct i2c_device_id smsc_i2c_id[] = {
+>> +     { "smscece1099", 0},
+>> +     {},
+>> +};
+>> +MODULE_DEVICE_TABLE(i2c, smsc_i2c_id);
+>> +
+>> +static struct i2c_driver smsc_i2c_driver = {
+>> +     .driver = {
+>> +                .name = "smsc",
+>> +                .of_match_table = of_smsc_match,
+>> +                .owner = THIS_MODULE,
+>> +     },
+>> +     .probe = smsc_i2c_probe,
+>> +     .remove = smsc_i2c_remove,
+>> +     .id_table = smsc_i2c_id,
+>> +};
+>> +
+>> +module_i2c_driver(smsc_i2c_driver);
+>> +
+>> +MODULE_AUTHOR("Sourav Poddar <sourav.poddar@ti.com>");
+>> +MODULE_DESCRIPTION("SMSC chip multi-function driver");
+>> +MODULE_LICENSE("GPL v2");
+>> diff --git a/include/linux/mfd/smsc.h b/include/linux/mfd/smsc.h
+>> new file mode 100644
+>> index 0000000..adfaec2
+>> --- /dev/null
+>> +++ b/include/linux/mfd/smsc.h
+>> @@ -0,0 +1,111 @@
+>> +/*
+>> + * SMSC ECE1099
+>> + *
+>> + * Copyright 2012 Texas Instruments Inc.
+>> + *
+>> + * Author: Sourav Poddar <sourav.poddar@ti.com>
+>> + *
+>> + *  This program is free software; you can redistribute it and/or modify it
+>> + *  under  the terms of the GNU General  Public License as published by the
+>> + *  Free Software Foundation;  either version 2 of the License, or (at your
+>> + *  option) any later version.
+>> + *
+>> + */
+>> +
+>> +#ifndef __LINUX_MFD_SMSC_H
+>> +#define __LINUX_MFD_SMSC_H
+>> +
+>> +#include <linux/regmap.h>
+>> +
+>> +#define SMSC_ID_ECE1099                      1
+>> +#define SMSC_NUM_CLIENTS             2
+>> +
+>> +#define SMSC_BASE_ADDR                       0x38
+>> +#define OMAP_GPIO_SMSC_IRQ           151
+>> +
+>> +#define SMSC_MAXGPIO         32
+>> +#define SMSC_BANK(offs)      ((offs) >> 3)
+>> +#define SMSC_BIT(offs)       (1u << ((offs) & 0x7))
+>> +
+>> +struct smsc {
+>> +     struct device *dev;
+>> +     struct i2c_client *i2c_clients[SMSC_NUM_CLIENTS];
+>> +     struct regmap *regmap;
+>> +     int clk;
+>> +     /* Stored chip id */
+>> +     int id;
+>> +};
+>> +
+>> +struct smsc_gpio;
+>> +struct smsc_keypad;
+>> +
+>> +static inline int smsc_read(struct device *child, unsigned int reg,
+>> +     unsigned int *dest)
+>> +{
+>> +     struct smsc     *smsc = dev_get_drvdata(child->parent);
+>> +
+>> +     return regmap_read(smsc->regmap, reg, dest);
+>> +}
+>> +
+>> +static inline int smsc_write(struct device *child, unsigned int reg,
+>> +     unsigned int value)
+>> +{
+>> +     struct smsc     *smsc = dev_get_drvdata(child->parent);
+>> +
+>> +     return regmap_write(smsc->regmap, reg, value);
+>> +}
+>> +
+>> +/* Registers for SMSC */
+>> +#define SMSC_RESET                                           0xF5
+>> +#define SMSC_GRP_INT                                         0xF9
+>> +#define SMSC_CLK_CTRL                                                0xFA
+>> +#define SMSC_WKUP_CTRL                                               0xFB
+>> +#define SMSC_DEV_ID                                          0xFC
+>> +#define SMSC_DEV_REV                                         0xFD
+>> +#define SMSC_VEN_ID_L                                                0xFE
+>> +#define SMSC_VEN_ID_H                                                0xFF
+>> +
+>> +#define SMSC_MAX_REG                                  (SMSC_VEN_ID_H + 1)
+>> +
+>> +/* CLK VALUE */
+>> +#define SMSC_CLK_VALUE                                               0x13
+>> +
+>> +/* Registers for function GPIO INPUT */
+>> +#define SMSC_GPIO_DATA_IN_START                                      0x00
+>> +
+>> +/* Registers for function GPIO OUPUT */
+>> +#define SMSC_GPIO_DATA_OUT_START                                       0x05
+>> +
+>> +/* Definitions for SMSC GPIO CONFIGURATION REGISTER*/
+>> +#define SMSC_GPIO_INPUT_LOW                                  0x01
+>> +#define SMSC_GPIO_INPUT_RISING                                       0x09
+>> +#define SMSC_GPIO_INPUT_FALLING                                      0x11
+>> +#define SMSC_GPIO_INPUT_BOTH_EDGE                            0x19
+>> +#define SMSC_GPIO_OUTPUT_PP                                  0x21
+>> +#define SMSC_GPIO_OUTPUT_OP                                  0x31
+>> +
+>> +#define GRP_INT_STAT                                         0xf9
+>> +#define      SMSC_GPI_INT                                            0x0f
+>> +#define SMSC_CFG_START                                               0x0A
+>> +
+>> +/* Registers for SMSC GPIO INTERRUPT STATUS REGISTER*/
+>> +#define SMSC_GPIO_INT_STAT_START                                  0x32
+>> +
+>> +/* Registers for SMSC GPIO INTERRUPT MASK REGISTER*/
+>> +#define SMSC_GPIO_INT_MASK_START                               0x37
+>> +
+>> +/* Registers for SMSC function KEYPAD*/
+>> +#define SMSC_KP_OUT                                          0x40
+>> +#define SMSC_KP_IN                                           0x41
+>> +#define SMSC_KP_INT_STAT                                     0x42
+>> +#define SMSC_KP_INT_MASK                                     0x43
+>> +
+>> +/* Definitions for keypad */
+>> +#define SMSC_KP_KSO           0x70
+>> +#define SMSC_KP_KSI           0x51
+>> +#define SMSC_KSO_ALL_LOW        0x20
+>> +#define SMSC_KP_SET_LOW_PWR        0x0B
+>> +#define SMSC_KP_SET_HIGH           0xFF
+>> +#define SMSC_KSO_EVAL           0x00
+>> +
+>> +#endif /*  __LINUX_MFD_SMSC_H */
+>>
