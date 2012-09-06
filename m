@@ -1,166 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754821Ab2IFCUF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 22:20:05 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:57041 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751700Ab2IFCUC (ORCPT
+	id S1754892Ab2IFC1R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 22:27:17 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:59882 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752971Ab2IFC1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 22:20:02 -0400
-Subject: Re: [RFC PATCH 3/3] target: try satisfying memory requests with
- contiguous blocks
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, target-devel@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>
-In-Reply-To: <1346858025-10459-4-git-send-email-pbonzini@redhat.com>
-References: <1346858025-10459-1-git-send-email-pbonzini@redhat.com>
-	 <1346858025-10459-4-git-send-email-pbonzini@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 05 Sep 2012 19:19:59 -0700
-Message-ID: <1346897999.4162.417.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 5 Sep 2012 22:27:16 -0400
+X-AuditID: 9c93016f-b7cc0ae000000e9f-e6-50480a021a98
+Date: Thu, 6 Sep 2012 11:28:50 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Xishi Qiu <qiuxishi@huawei.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] mm: remain migratetype in freed page
+Message-ID: <20120906022850.GD31615@bbox>
+References: <1346829962-31989-1-git-send-email-minchan@kernel.org>
+ <1346829962-31989-3-git-send-email-minchan@kernel.org>
+ <20120905092534.GE11266@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120905092534.GE11266@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-05 at 17:13 +0200, Paolo Bonzini wrote:
-> transport_generic_get_mem's strategy of allocating pages one-by-one
-> for the data scatterlist may fail for even not-so-big data transfers
-> if the underlying device poses a small limit on the number of segments.
+On Wed, Sep 05, 2012 at 10:25:34AM +0100, Mel Gorman wrote:
+> On Wed, Sep 05, 2012 at 04:26:01PM +0900, Minchan Kim wrote:
+> > Page allocator doesn't keep migratetype information to page
+> > when the page is freed. This patch remains the information
+> > to freed page's index field which isn't used by free/alloc
+> > preparing so it shouldn't change any behavir except below one.
+> > 
 > 
-> This patch fixes this problem by trying to allocate pages in relatively
-> large groups (at most 512 pages right now, equivalent to 2 MB per
-> allocation), but still without any slack.  The remainder is then
-> satisfied with subsequent smaller allocations.  For example, if the
-> data to be transferred is 132 KB, the new algorithm will attempt
-> a single 128 KB allocation, followed by a 4 KB allocation.
-> In case a contiguous block cannot be found, it will fall back to
-> a progressively smaller order.
+> This explanation could have been a *LOT* more helpful.
 > 
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> ---
->  drivers/target/target_core_transport.c |   58 +++++++++++++++++++++++++++-----
->  1 files changed, 49 insertions(+), 9 deletions(-)
+> The page allocator caches the pageblock information in page->private while
+> it is in the PCP freelists but this is overwritten with the order of the
+> page when freed to the buddy allocator. This patch stores the migratetype
+> of the page in the page->index field so that it is available at all times.
+
+I will add your comment in my description.
+
 > 
-> diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-> index 09028af..6e90e2c 100644
-> --- a/drivers/target/target_core_transport.c
-> +++ b/drivers/target/target_core_transport.c
-> @@ -2058,7 +2058,7 @@ static inline void transport_free_sgl(struct scatterlist *sgl, int nents)
->  	int count;
->  
->  	for_each_sg(sgl, sg, nents, count)
-> -		__free_page(sg_page(sg));
-> +		__free_pages(sg_page(sg), get_order(sg->length));
->  
->  	kfree(sgl);
->  }
-> @@ -2229,41 +2229,81 @@ void transport_kunmap_data_sg(struct se_cmd *cmd)
->  }
->  EXPORT_SYMBOL(transport_kunmap_data_sg);
->  
-> +#define TRANSPORT_MAX_ORDER	9
-> +
-> +static inline int
-> +get_order_no_slack(u32 length)
-> +{
-> +	/*
-> +	 * get_order gives the smallest order that length fits in.
-> +	 * We want instead the largest order that does not give
-> +	 * any slack.
-> +	 *
-> +	 * Example (with PAGE_SIZE = 4096, PAGE_SHIFT = 12):
-> +	 * 	get_order_no_slack(0x1000) = fls(0) = 0, get_order(0x1000) = 0
-> +	 * 	get_order_no_slack(0x1001) = fls(0) = 0, get_order(0x1001) = 1
-> +	 * 	get_order_no_slack(0x1fff) = fls(0) = 0, get_order(0x1fff) = 1
-> +	 * 	get_order_no_slack(0x2000) = fls(1) = 1, get_order(0x2000) = 1
-> +	 * 	get_order_no_slack(0x3000) = fls(1) = 1, get_order(0x3000) = 2
-> +	 * 	get_order_no_slack(0x4000) = fls(2) = 2, get_order(0x4000) = 2
-> +	 * 	get_order_no_slack(0x8000) = fls(4) = 3, get_order(0x8000) = 3
-> +	 */
-> +	length >>= PAGE_SHIFT + 1;
-> +	return fls(length);
-> +}
-> +
->  static int
->  transport_generic_get_mem(struct se_cmd *cmd)
->  {
->  	u32 length = cmd->data_length;
-> +	u32 page_len;
->  	unsigned int nents;
->  	struct page *page;
->  	gfp_t zero_flag;
->  	int i = 0;
-> +	int order, max_order;
->  
->  	nents = DIV_ROUND_UP(length, PAGE_SIZE);
->  	cmd->t_data_sg = kmalloc(sizeof(struct scatterlist) * nents, GFP_KERNEL);
->  	if (!cmd->t_data_sg)
->  		return -ENOMEM;
->  
-> -	cmd->t_data_nents = nents;
->  	sg_init_table(cmd->t_data_sg, nents);
->  
->  	zero_flag = cmd->se_cmd_flags & SCF_SCSI_DATA_CDB ? 0 : __GFP_ZERO;
->  
-> +	max_order = TRANSPORT_MAX_ORDER;
+> > This patch adds a new call site in __free_pages_ok so it might be
+> > overhead a bit but it's for high order allocation.
+> > So I believe damage isn't hurt.
+> > 
+> 
+> The additional call to set_page_migratetype() is not heavy. If you were
+> adding a new call to get_pageblock_migratetype() or something equally
+> expensive I would be more concerned.
 
-Please go ahead and turn max_order into an DEF_DEV_ATTRIB within
-target_core_configfs.c, so we're able to change this value on the fly
-using an per device configfs attr.
+I'm lucky to avoid your keen eye. ;)
 
->  	while (length) {
-> -		u32 page_len = min_t(u32, length, PAGE_SIZE);
-> -		page = alloc_page(GFP_KERNEL | zero_flag);
-> -		if (!page)
-> -			goto out;
-> +		order = get_order_no_slack(length);
-> +		for (;;) {
-> +			order = min(order, max_order);
-> +			page_len = min_t(u32, length, PAGE_SIZE << order);
-> +			page = alloc_pages(GFP_KERNEL | zero_flag, order);
-> +			if (page)
-> +				break;
-> +
-> +			if (!order)
-> +				goto out;
-> +
-> +			/*
-> +			 * Allocation failed, only try with a smaller order
-> +			 * from this point.
-> +			 */
-> +			max_order = order - 1;
-> +		}
+> 
+> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> 
+> The information you store in the page->index becomes stale if the page
+> gets moved to another free list by move_freepages(). Not sure if that is
+> a problem for you or not but it is possible that
+> get_page_migratetype(page) != get_pageblock_migratetype(page)
 
-Seems reasonable to back-off in reverse max_order in the face of large
-order allocation failures..
+Thanks for the spot. I have to fix it.
 
->  
->  		sg_set_page(&cmd->t_data_sg[i], page, page_len, 0);
->  		length -= page_len;
->  		i++;
->  	}
-> +	cmd->t_data_nents = i;
-> +	sg_mark_end(&cmd->t_data_sg[i - 1]);
->  	return 0;
->  
->  out:
-> -	while (i > 0) {
-> -		i--;
-> -		__free_page(sg_page(&cmd->t_data_sg[i]));
-> +	while (i-- > 0) {
-> +		struct scatterlist *sg = &cmd->t_data_sg[i];
-> +		__free_pages(sg_page(sg), get_order(sg->length));
->  	}
->  	kfree(cmd->t_data_sg);
->  	cmd->t_data_sg = NULL;
+> 
+> > ---
+> >  include/linux/mm.h |    6 ++++--
+> >  mm/page_alloc.c    |    7 ++++---
+> >  2 files changed, 8 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/include/linux/mm.h b/include/linux/mm.h
+> > index 86d61d6..8fd32da 100644
+> > --- a/include/linux/mm.h
+> > +++ b/include/linux/mm.h
+> > @@ -251,12 +251,14 @@ struct inode;
+> >  
+> >  static inline void set_page_migratetype(struct page *page, int migratetype)
+> >  {
+> > -	set_page_private(page, migratetype);
+> > +	VM_BUG_ON((unsigned int)migratetype >= MIGRATE_TYPES);
+> 
+> This additional bug check is not mentioned in the changelog. Not clear
+> if it's necessary.
 
-So what I'd like to see for this patch in the short term is a new
-target_core_fabrics_op bit that is (by default) assuming single order
-SGL page allocations, that can optionally be enabled for iscsi-target +
-other fabrics that support it as we bring other multi-page SGLs fabric
-drivers online.
+I'm not strong so if anyone think it's not necessary, I will drop.
 
+> 
+> > +	page->index = migratetype;
+> >  }
+> >  
+> >  static inline int get_page_migratetype(struct page *page)
+> >  {
+> > -	return page_private(page);
+> > +	VM_BUG_ON((unsigned int)page->index >= MIGRATE_TYPES);
+> > +	return page->index;
+> >  }
+> >  
+> >  /*
+> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > index 103ba66..32985dd 100644
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -723,6 +723,7 @@ static void __free_pages_ok(struct page *page, unsigned int order)
+> >  {
+> >  	unsigned long flags;
+> >  	int wasMlocked = __TestClearPageMlocked(page);
+> > +	int migratetype;
+> >  
+> >  	if (!free_pages_prepare(page, order))
+> >  		return;
+> > @@ -731,9 +732,9 @@ static void __free_pages_ok(struct page *page, unsigned int order)
+> >  	if (unlikely(wasMlocked))
+> >  		free_page_mlock(page);
+> >  	__count_vm_events(PGFREE, 1 << order);
+> > -	free_one_page(page_zone(page), page, order,
+> > -					get_pageblock_migratetype(page));
+> > -
+> > +	migratetype = get_pageblock_migratetype(page);
+> > +	set_page_migratetype(page, migratetype);
+> > +	free_one_page(page_zone(page), page, order, migratetype);
+> >  	local_irq_restore(flags);
+> >  }
+> >  
+> 
+> -- 
+> Mel Gorman
+> SUSE Labs
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
