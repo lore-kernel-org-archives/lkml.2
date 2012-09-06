@@ -1,67 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932534Ab2IFBYW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 21:24:22 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49679 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754030Ab2IFBYV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 21:24:21 -0400
-X-AuditID: 9c930179-b7cc4ae00000134d-8b-5047fb42d259
-From: Namhyung Kim <namhyung@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] perf: clean target should do clean for lib/traceevent too
-References: <1346892816-61779-1-git-send-email-dsahern@gmail.com>
-Date: Thu, 06 Sep 2012 10:16:57 +0900
-In-Reply-To: <1346892816-61779-1-git-send-email-dsahern@gmail.com> (David
-	Ahern's message of "Wed, 5 Sep 2012 18:53:36 -0600")
-Message-ID: <87sjawc5me.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1760143Ab2IFB0u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 21:26:50 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:22544 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755363Ab2IFB0s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 21:26:48 -0400
+X-IronPort-AV: E=Sophos;i="4.80,377,1344182400"; 
+   d="scan'208";a="5791292"
+Message-ID: <5047FC43.2020706@cn.fujitsu.com>
+Date: Thu, 06 Sep 2012 09:28:35 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Tejun Heo <tj@kernel.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/11 V5] workqueue: async idle rebinding
+References: <1346841475-4422-1-git-send-email-laijs@cn.fujitsu.com> <1346841475-4422-3-git-send-email-laijs@cn.fujitsu.com> <20120905180623.GA13737@google.com>
+In-Reply-To: <20120905180623.GA13737@google.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/06 09:26:23,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/06 09:26:24,
+	Serialize complete at 2012/09/06 09:26:24
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  5 Sep 2012 18:53:36 -0600, David Ahern wrote:
-> It's built as part of perf, so it should be cleaned too.
->
-> Signed-off-by: David Ahern <dsahern@gmail.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
+On 09/06/2012 02:06 AM, Tejun Heo wrote:
+> Hello, Lai.
+> 
+> Ooh, I like the approach.  That said, I think it's a bit too invasive
+> for 3.6-fixes.  I'll merge the two patches I posted yesterday in
+> 3.6-fixes.  Let's do this restructuring in for-3.7.
 
-Tested-by: Namhyung Kim <namhyung@kernel.org>
+OK for me.
+it is too complicated for 3.6.
 
-Thanks,
-Namhyung
+> 
+> On Wed, Sep 05, 2012 at 06:37:39PM +0800, Lai Jiangshan wrote:
+>>  static void idle_worker_rebind(struct worker *worker)
+>>  {
+>>  	struct global_cwq *gcwq = worker->pool->gcwq;
+>>  
+>> -	/* CPU must be online at this point */
+>> -	WARN_ON(!worker_maybe_bind_and_lock(worker));
+>> -	if (!--worker->idle_rebind->cnt)
+>> -		complete(&worker->idle_rebind->done);
+>> -	spin_unlock_irq(&worker->pool->gcwq->lock);
+>> +	if (worker_maybe_bind_and_lock(worker))
+>> +		worker_clr_flags(worker, WORKER_UNBOUND);
+>>  
+>> -	/* we did our part, wait for rebind_workers() to finish up */
+>> -	wait_event(gcwq->rebind_hold, !(worker->flags & WORKER_REBIND));
+>> +	worker_clr_flags(worker, WORKER_REBIND);
+>> +	list_add(&worker->entry, &worker->pool->idle_list);
+>> +	spin_unlock_irq(&gcwq->lock);
+> 
+> This looks correct to me but it's still a bit scary.  Some comments
+> explaining why the above is correct would be nice.
 
+How to explain the correct, could you give some clues.
+correctness for rebinding and the flags: comments is missing. (old code miss it too, so I forgot it)
+correctness for idle management: list_del_init() and list_add(), I don't like to add comment for slef-explain-code.
+correctness for quick-enabled-CMWQ, local-wake-up: comments is in the changelog. (I should also add it to the code)
+correctness for integrating of above: ..
 
-> ---
->  tools/perf/Makefile |    5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
->
-> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-> index 90d8e09..e7e62b2 100644
-> --- a/tools/perf/Makefile
-> +++ b/tools/perf/Makefile
-> @@ -921,6 +921,9 @@ $(LIB_FILE): $(LIB_OBJS)
->  $(LIBTRACEEVENT):
->  	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(QUIET_SUBDIR1) O=$(OUTPUT) libtraceevent.a
->  
-> +$(LIBTRACEEVENT)-clean:
-> +	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(QUIET_SUBDIR1) O=$(OUTPUT) clean
-> +
->  help:
->  	@echo 'Perf make targets:'
->  	@echo '  doc		- make *all* documentation (see below)'
-> @@ -1060,7 +1063,7 @@ quick-install-html:
->  
->  ### Cleaning rules
->  
-> -clean:
-> +clean: $(LIBTRACEEVENT)-clean
->  	$(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)perf.o $(LANG_BINDINGS)
->  	$(RM) $(ALL_PROGRAMS) perf
->  	$(RM) *.spec *.pyc *.pyo */*.pyc */*.pyo $(OUTPUT)common-cmds.h TAGS tags cscope*
+> 
+> Yeah, other than that, looks good to me.  I'll prepare new for-3.7
+> branch this can be based on, so please wait a bit.  Also, I think I'll
+> probably update commit description / comments while committing.
+> 
+
+I was coding it based on wq/for-3.7. so you can merge it easier.
+waiting for you merged-result.
+
+Thanks.
+Lai
+
