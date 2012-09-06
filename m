@@ -1,77 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753171Ab2IFWXA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 18:23:00 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:56445 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751461Ab2IFWWt (ORCPT
+	id S1752608Ab2IFWWs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 18:22:48 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:38747 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751461Ab2IFWWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 18:22:49 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX1+0+KRRwry0VLuA/3K5CMj7byz8J8BNH7W1HkOer1
-	+0r+YueZqhaG4L
-Message-ID: <50492235.40106@gmx.de>
-Date: Fri, 07 Sep 2012 00:22:45 +0200
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120902 Thunderbird/15.0
-MIME-Version: 1.0
+	Thu, 6 Sep 2012 18:22:47 -0400
+Date: Thu, 6 Sep 2012 15:22:39 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Steven Rostedt <rostedt@goodmis.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: does gcc gives a false warning in kernel/trace/trace_events_filter.c
- ?
-References: <50432132.90307@gmx.de>  <1346864883.27919.56.camel@gandalf.local.home> <5048D0E5.20103@gmx.de> <1346952676.1680.44.camel@gandalf.local.home>
-In-Reply-To: <1346952676.1680.44.camel@gandalf.local.home>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 11/15] rcu: Avoid spurious RCU CPU stall
+ warnings
+Message-ID: <20120906222239.GQ2448@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120830185607.GA32148@linux.vnet.ibm.com>
+ <1346352988-32444-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346352988-32444-11-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346943414.18408.31.camel@twins>
+ <1346944049.1680.23.camel@gandalf.local.home>
+ <1346944758.18408.35.camel@twins>
+ <20120906210354.GC2448@linux.vnet.ibm.com>
+ <1346967661.1680.52.camel@gandalf.local.home>
+ <20120906215838.GM2448@linux.vnet.ibm.com>
+ <1346969153.1680.60.camel@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346969153.1680.60.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12090622-2398-0000-0000-00000A5C433C
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000294; HX=3.00000196; KW=3.00000007;
+ PH=3.00000001; SC=3.00000007; SDB=6.00171894; UDB=6.00038983; UTC=2012-09-06
+ 22:22:45
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/06/2012 07:31 PM, Steven Rostedt wrote:
-> On Thu, 2012-09-06 at 18:35 +0200, Toralf Förster wrote:
+On Thu, Sep 06, 2012 at 06:05:53PM -0400, Steven Rostedt wrote:
+> On Thu, 2012-09-06 at 14:58 -0700, Paul E. McKenney wrote:
 > 
->> I filed a bug report
->>
->> http://gcc.gnu.org/bugzilla/show_bug.cgi?id=54495
->> and got this answer : 
->>
->> --- Comment #1 from Hans-Peter Nilsson <hp at gcc dot gnu.org> 2012-09-05 22:14:00 UTC ---
->> But if the call to ftrace_function_filter_re sets re_cnt to 0, then ret indeed
->> will be used uninitialized AFAICT.  What am I missing?
->>
+> > > All these cases deserve a warning.
+> > 
+> > Agreed, and that is the whole purpose of the stall warnings.
 > 
-> That I think we are looking at two different code bases ;-)
+> Then let me ask the question again. According to the change log:
 > 
-> I've been looking at what's been queued for 3.7 and not what's in
-> mainline. If you look at tip/master, or even linux-next, you'll find:
+> > If a given CPU avoids the idle loop but also avoids starting a new
+> > RCU grace period for a full minute, RCU can issue spurious RCU CPU
+> > stall warnings.  This commit fixes this issue by adding a check for
+> > ongoing grace period to avoid these spurious stall warnings.
 > 
-> commit 92d8d4a8b0f "tracing/filter: Add missing initialization"
-> 
-> Which does:
-> 
->  static int __ftrace_function_set_filter(int filter, char *buf, int len,
->                                         struct function_filter_data *data)
->  {
-> -       int i, re_cnt, ret;
-> +       int i, re_cnt, ret = -EINVAL;
->         int *reset;
->         char **re;
-> 
-> 
-> Thus, you were correct. This could have been marked urgent, but as it
-> isn't that big of a deal I just queued it for the next merge window.
-> 
-> -- Steve
-> 
-> 
-> 
-ah - thx
-:-)
+> I'm still confused by what is "this issue"? And why is it being fixed.
+> It sounds to me that the "issue" was a CPU avoiding starting a new RCU
+> grace period for a full minute. Which to me sounds like a bug in which
+> we *want* a warning. Why is this patch needed?
 
--- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+Ah!
+
+It is perfectly legal to avoid -starting- an RCU grace period for a
+minute, or even longer.  If RCU has nothing to do, in other words, if no
+one registers any RCU callbacks, then RCU need not start a grace period.
+
+Of course, this would mean that it would eventually be a full minute
+since the last start of a grace period.  This is not a problem, after
+all, Linux went through a full ten years before experiencing its first
+grace period.
+
+But the stall-warning code just checked how long it had been since
+the last start of a grace period, failing to note that this grace
+period had long since completed.  So it splatted out a warning.
+This warning was spurious in the sense that there was no bug aside
+from the missing check that the grace period was still in progress.
+
+And this commit fixes that bug in RCU.
+
+							Thanx, Paul
+
