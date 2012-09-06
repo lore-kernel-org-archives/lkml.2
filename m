@@ -1,103 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754811Ab2IFHrH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 03:47:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11795 "EHLO mx1.redhat.com"
+	id S1753892Ab2IFHuz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 03:50:55 -0400
+Received: from mail.gw90.de ([188.40.100.199]:57405 "EHLO mail.gw90.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751965Ab2IFHrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 03:47:05 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: rusty@rustcorp.com.au
-Cc: fes@google.com, mst@redhat.com, aarcange@redhat.com, riel@redhat.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org, mikew@google.com,
-        yinghan@google.com, virtualization@lists.linux-foundation.org
-Subject: [PATCH] virtio-balloon spec: provide a version of the "silent deflate" feature that works
-Date: Thu,  6 Sep 2012 09:46:50 +0200
-Message-Id: <1346917610-14568-1-git-send-email-pbonzini@redhat.com>
+	id S1751423Ab2IFHuy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 03:50:54 -0400
+Message-ID: <1346917833.10162.4.camel@mattotaupa>
+Subject: Re: [PATCH] drm/exynos: fix double call of
+ drm_prime_(init/destroy)_file_private
+From: Paul Menzel <paulepanter@users.sourceforge.net>
+To: InKi Dae <inki.dae@samsung.com>
+Cc: Mandeep Singh Baines <msb@chromium.org>,
+        =?ISO-8859-1?Q?St=E9phane?= Marchesin <marcheu@chromium.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Date: Thu, 06 Sep 2012 09:50:33 +0200
+In-Reply-To: <CAAQKjZPGefy9333AGTN1iwxWuCiPvi85raDE7ijDmRcm9PPWWw@mail.gmail.com>
+References: <1346881623-388-1-git-send-email-msb@chromium.org>
+	 <CAAQKjZPGefy9333AGTN1iwxWuCiPvi85raDE7ijDmRcm9PPWWw@mail.gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-wYfxKnoJf6QGJph5itLH"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-VIRTIO_BALLOON_F_MUST_TELL_HOST cannot be used properly because it is a
-"negative" feature: it tells you that silent defalte is not supported.
-Right now, QEMU refuses migration if the target does not support all the
-features that were negotiated.  But then:
 
-- a migration from non-MUST_TELL_HOST to MUST_TELL_HOST will succeed,
-which is wrong;
+--=-wYfxKnoJf6QGJph5itLH
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-- a migration from MUST_TELL_HOST to non-MUST_TELL_HOST will fail, which
-is useless.
+Dear Inki Dae,
 
-Add instead a new feature VIRTIO_BALLOON_F_SILENT_DEFLATE, and deprecate
-VIRTIO_BALLOON_F_MUST_TELL_HOST since it is never actually used.
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- virtio-spec.lyx | 36 +++++++++++++++++++++++++++++++++---
- 1 file modificato, 33 inserzioni(+), 3 rimozioni(-)
+Am Donnerstag, den 06.09.2012, 11:35 +0900 schrieb InKi Dae:
 
-diff --git a/virtio-spec.lyx b/virtio-spec.lyx
-index 7a073f4..1a25a18 100644
---- a/virtio-spec.lyx
-+++ b/virtio-spec.lyx
-@@ -6238,6 +6238,8 @@ bits
- 
- \begin_deeper
- \begin_layout Description
-+
-+\change_deleted 1531152142 1346917221
- VIRTIO_BALLOON_F_MUST_TELL_HOST
- \begin_inset space ~
- \end_inset
-@@ -6251,6 +6253,20 @@ VIRTIO_BALLOON_F_STATS_VQ
- \end_inset
- 
- (1) A virtqueue for reporting guest memory statistics is present.
-+\change_inserted 1531152142 1346917193
-+
-+\end_layout
-+
-+\begin_layout Description
-+
-+\change_inserted 1531152142 1346917219
-+VIRTIO_BALLOON_F_SILENT_DEFLATE
-+\begin_inset space ~
-+\end_inset
-+
-+(2) Host does not need to be told before pages from the balloon are used.
-+\change_unchanged
-+
- \end_layout
- 
- \end_deeper
-@@ -6401,9 +6417,23 @@ The driver constructs an array of addresses of memory pages it has previously
- \end_layout
- 
- \begin_layout Enumerate
--If the VIRTIO_BALLOON_F_MUST_TELL_HOST feature is set, the guest may not
-- use these requested pages until that descriptor in the deflateq has been
-- used by the device.
-+If the VIRTIO_BALLOON_F_
-+\change_deleted 1531152142 1346917234
-+MUST_TELL_HOST
-+\change_inserted 1531152142 1346917237
-+SILENT_DEFLATE
-+\change_unchanged
-+ feature is 
-+\change_inserted 1531152142 1346917241
-+not 
-+\change_unchanged
-+set, the guest may not use these requested pages until that descriptor in
-+ the deflateq has been used by the device.
-+
-+\change_inserted 1531152142 1346917253
-+ If it is set, the guest may choose to not use the deflateq at all.
-+\change_unchanged
-+
- \end_layout
- 
- \begin_layout Enumerate
--- 
-1.7.11.2
+> 2012/9/6 Mandeep Singh Baines <msb@chromium.org>:
+> > The double invocations are incorrect but seem to be safe so I don't
+> > think this will fix any bugs.
+> >
+> > Before:
+> >
+> > [    7.639366] drm_prime_init_file ee3675d0
+> > [    7.639377] drm_prime_init_file ee3675d0
+> > [    7.639507] drm_prime_destroy_file ee3675d0
+> > [    7.639518] drm_prime_destroy_file ee3675d0
+> > [    7.639802] drm_prime_init_file ee372390
+> > [    7.639810] drm_prime_init_file ee372390
+> > [    8.473316] drm_prime_init_file ee356390
+> > [    8.473331] drm_prime_init_file ee356390
+> >
+> > After:
+> >
+> > [    6.363842] drm_prime_init_file edc2e5d0
+> > [    6.363994] drm_prime_destroy_file edc2e5d0
+> > [    6.364260] drm_prime_init_file edc2e750
+> > [    8.004837] drm_prime_init_file ee36ded0
+> >
+> > Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+> > CC: St=C3=A9phane Marchesin <marcheu@chromium.org>
+> > CC: Pawel Osciak <posciak@google.com>
+> > CC: Inki Dae <inki.dae@samsung.com>
+> > CC: Joonyoung Shim <jy0922.shim@samsung.com>
+> > CC: Seung-Woo Kim <sw0312.kim@samsung.com>
+> > CC: Kyungmin Park <kyungmin.park@samsung.com>
+> > CC: David Airlie <airlied@linux.ie>
+> > CC: dri-devel@lists.freedesktop.org
+>=20
+> remove all CCs
+
+I guess they were generated by some script. So they should be fine, no?
+
+Mandeep, if you put CC in here those people should be CCed in real. `git
+send-email` should take care of that but I do not see everyone in the CC
+field. Or does `git send-email` use blind carbon copy (BCC) field?
+
+> and can you send it again using text mode?
+
+At least to the list it was send in plain text mode.
+
+> your patch is messed up when I try to get patch file.
+
+Everything is fine on my side. Especially since Mandeep used `git
+send-email` which should do everything correctly.
+
+> Thanks.
+> Inki Dae
+
+In your From address your name is written InKi with capital K. Which one
+is correct?
+
+
+Thanks,
+
+Paul
+
+--=-wYfxKnoJf6QGJph5itLH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEABECAAYFAlBIVckACgkQPX1aK2wOHVi8JwCfY1/NR4mjORzqKnZnYl9ST9uA
+R7oAniE3xuShJwAeuNtwGjbiKSU8ZjcO
+=FMUD
+-----END PGP SIGNATURE-----
+
+--=-wYfxKnoJf6QGJph5itLH--
 
