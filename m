@@ -1,86 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933099Ab2IFS7l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 14:59:41 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:52260 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932373Ab2IFS7k (ORCPT
+	id S1759486Ab2IFTCy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 15:02:54 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:53095 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759426Ab2IFTCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 14:59:40 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19ZvQ6gn2oJ8dgVnx9UzM2J
-Date: Thu, 6 Sep 2012 11:59:38 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH 1/2] pinctrl: pinctrl-single: Make sure we do not
- change bits outside of mask
-Message-ID: <20120906185937.GY1303@atomide.com>
-References: <1346835718-21325-1-git-send-email-peter.ujfalusi@ti.com>
- <1346835718-21325-2-git-send-email-peter.ujfalusi@ti.com>
+	Thu, 6 Sep 2012 15:02:52 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VPS-1(zz98dIzz1202hzzz2dh668h839h944hd25hf0ah11b5h121eh1220h1155h)
+X-WSS-ID: 0M9XZKI-02-37L-02
+X-M-MSG: 
+Date: Thu, 6 Sep 2012 21:02:38 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: David Ahern <dsahern@gmail.com>
+CC: <acme@ghostprotocols.net>, <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH 08/11] perf tool: precise mode requires exclude_guest
+Message-ID: <20120906190238.GA29278@erda.amd.com>
+References: <1342826756-64663-1-git-send-email-dsahern@gmail.com>
+ <1342826756-64663-9-git-send-email-dsahern@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1346835718-21325-2-git-send-email-peter.ujfalusi@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1342826756-64663-9-git-send-email-dsahern@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Ujfalusi <peter.ujfalusi@ti.com> [120905 02:02]:
-> Use the pcs->fmask to make sure that the value is not changing (setting)
-> bits in areas where it should not.
-> To avoid situations like this:
-> 
-> pmx_dummy: pinmux@4a100040 {
-> 	compatible = "pinctrl-single";
-> 	reg = <0x4a100040 0x0196>;
-> 	#address-cells = <1>;
-> 	#size-cells = <0>;
-> 	pinctrl-single,register-width = <16>;
-> 	pinctrl-single,function-mask = <0x00ff>;
-> };
-> 
-> &pmx_dummy {
-> 	pinctrl-names = "default";
-> 	pinctrl-0 = <&board_pins>;
-> 
-> 	board_pins: pinmux_board_pins {
-> 		pinctrl-single,pins = <
-> 			0x6c 0xf0f
-> 			0x6e 0x10f
-> 			0x70 0x23f
-> 			0x72 0xa5f
-> 		>;
-> 	};
-> };
-> 
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+David,
 
-Thanks this is a valid fix:
+just found your patch...
 
-Acked-by: Tony Lindgren <tony@atomide.com>
+On 20.07.12 17:25:53, David Ahern wrote:
+> PEBS cannot be used with guest mode. If user adds :p modifier set
+> exclude_guest as well.
 
-> ---
->  drivers/pinctrl/pinctrl-single.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/pinctrl/pinctrl-single.c b/drivers/pinctrl/pinctrl-single.c
-> index 76a4260..3508631 100644
-> --- a/drivers/pinctrl/pinctrl-single.c
-> +++ b/drivers/pinctrl/pinctrl-single.c
-> @@ -337,7 +337,7 @@ static int pcs_enable(struct pinctrl_dev *pctldev, unsigned fselector,
->  		vals = &func->vals[i];
->  		val = pcs->read(vals->reg);
->  		val &= ~pcs->fmask;
-> -		val |= vals->val;
-> +		val |= (vals->val & pcs->fmask);
->  		pcs->write(val, vals->reg);
->  	}
->  
-> -- 
-> 1.7.12
-> 
+> @@ -653,6 +653,9 @@ int parse_events_modifier(struct list_head *list, char *str)
+>  			eH = 0;
+>  		} else if (*str == 'p') {
+>  			precise++;
+> +			/* use of precise requires exclude_guest */
+> +			if (!exclude_GH)
+> +				eG = 1;
+
+We should only enable exclude_guest if no G/H modifiers are given on
+the command line. If I correctly read the code this is indicated by
+exclude_GH and correctly implemented.
+
+To summarize how I think it should work:
+
+ -e cycles:p ..... Enable exclude_guest bit. If the syscall fails,
+                   fall back by disabling the guest bit and send
+                   syscall again
+
+ -e cycles:pGH ... Do not enable exclude_guest/_host. Do not fall back
+                   on syscall errors.
+
+Same for the case the p modifier is not set.
+
+So we have the following:
+
+ G           ... set exclude_host bit, clear exclude_guest
+ H           ... set exclude_guest bit, clear exclude_host
+ GH          ... clear both exclude_guest/_host
+ <no G or H> ... default (set exclude_host bit, clear exclude_guest),
+                 but fall back on syscall errors to clear both
+                 exclude_guest/_host
+
+The modifier parser should be correctly implemented and should work
+with ibs. Will test this patch.
+
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
