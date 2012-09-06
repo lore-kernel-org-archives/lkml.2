@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752648Ab2IFDkF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 23:40:05 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:60885 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751260Ab2IFDkD (ORCPT
+	id S1753267Ab2IFDuX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 23:50:23 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:55585 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751858Ab2IFDuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 23:40:03 -0400
-Date: Wed, 5 Sep 2012 20:39:57 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: anish singh <anish198519851985@gmail.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        =?utf-8?B?7LWc7LCs7Jqw?= <cw00.choi@samsung.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Re: [PATCH -next] extcon: extcon-arizona depends on INPUT
-Message-ID: <20120906033957.GA21704@kroah.com>
-References: <6721797.222311346888851339.JavaMail.weblogic@epml19>
- <20120906000603.GA7043@kroah.com>
- <CAK7N6vpGsrF-VrAOO0nULOXNLzMfK-+eV4UOn0ch-S1zSH0rEQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAK7N6vpGsrF-VrAOO0nULOXNLzMfK-+eV4UOn0ch-S1zSH0rEQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 5 Sep 2012 23:50:21 -0400
+Date: Thu, 6 Sep 2012 13:50:13 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Daniel Mack <zonque@gmail.com>
+Subject: linux-next: build failure after merge of the spi-mb tree
+Message-Id: <20120906135013.8dd0421cf4afd6947aa4297c@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__6_Sep_2012_13_50_13_+1000_3+suHdiaaik5n.qA"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 06, 2012 at 08:54:16AM +0530, anish singh wrote:
-> On Thu, Sep 6, 2012 at 5:36 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Wed, Sep 05, 2012 at 11:47:31PM +0000, MyungJoo Ham wrote:
-> >> > On Wed, Sep 05, 2012 at 11:28:03AM +0800, Mark Brown wrote:
-> >> > > On Tue, Sep 04, 2012 at 04:51:00PM -0700, Randy Dunlap wrote:
-> >> > >
-> >> > > > This build error still happens in linux-next of 20120904.
-> >> > >
-> >> > > > Can we get the patch merged for linux-next?
-> >> > >
-> >> > > Greg's the one managing extcon in -next.
-> >> >
-> >> > Yeah, can someone forward this to me so I can apply it?  I can't seem to
-> >> > find it anywhere...
-> >> >
-> >> > greg k-h
-> >>
-> >> I've been creating "extcon-for-next" tree at git.infradead.org
-> >> I'll rebase the branch base on your driver-core-next
-> >>
-> >> http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/extcon-for-next
-> Is it possible to apply all the patches found here?I can see that some
-> couldn't make
-> it to your driver tree.
+--Signature=_Thu__6_Sep_2012_13_50_13_+1000_3+suHdiaaik5n.qA
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If no one asks, they how can I know to apply them?
+Hi Mark, Daniel,
 
-(hint, hint, hint...)
+After merging the spi-mb tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-greg k-h
+drivers/spi/spi-gpio.c: In function 'spi_gpio_setup':
+drivers/spi/spi-gpio.c:255:8: warning: cast from pointer to integer of diff=
+erent size [-Wpointer-to-int-cast]
+drivers/spi/spi-gpio.c: In function 'spi_probe_dt':
+drivers/spi/spi-gpio.c:389:39: error: parameter name omitted
+drivers/spi/spi-gpio.c: In function 'spi_gpio_probe':
+drivers/spi/spi-gpio.c:404:2: error: implicit declaration of function 'spi_=
+gpio_probe_dt' [-Werror=3Dimplicit-function-declaration]
+
+Caused by commit 38ab18caa0ad ("spi: spi-gpio: Add DT bindings").  Please
+build test these sort of patches with and without CONFIG_OF.
+
+I have used the spi-mb tree from next-20120905 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__6_Sep_2012_13_50_13_+1000_3+suHdiaaik5n.qA
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQSB11AAoJEECxmPOUX5FEbXIP/RdujLENEMJG+RfbrxNLzKWX
+rbJcGdOHBIqy5wyRykazXnCmUv+nPqk0tLZSWfDfi/QD5esSWbDXEAZkD+JQAPk0
+CjSe80cU5Wr0zN1ZYz9DYzmLOFAcLuw6Fm2wUAE9mXx7nhC6wYdrH+VQyf2dFR87
+GSw2uchqLKsQANnkIL6uL73itOv9ps9jphYH07435jiT1qrdRwhIHz1TzARnSNX+
+NNJiD+sklXr7x3TqBuRFiv+f2K8MbwSTL2N9cmENNDl24vtLhz38NqFQtXlF5rwp
+AmSclMVLdDRKRh8+jilds/DLzcYSXB/5uE6vXpJpVEDntnq/KX1GuMQV3ruxBBU1
+RTFR88tm3jvyckEcOSqF1Nk2Xfhr5znu7BbbGOGnhV4dByjqJUZaERD/1Qn3O17k
+2D6aFID970mcHOfrIGer8RqGYnPbFUs1ZXNBx6Ki4hE4Wzwr3N/oCTYamC3kXMNd
+RMlJ2jIVekIh4kcKCdYQs0MeV47CWeObybQ0k6sP/Nj9D9uiDNmKVgeV5QUE1Z1C
+G39hlRB5l8mwNDqOGhu+wvbhmPKp5iNfWd/rXLgfoKaqGDWZk7m0zv8IQsCFcqDE
+Ey7Bdd0573HR5D9/i02J/sOA5UdL1M2UswhvHV/lx5+dPm6ULYzmtu9S6CHchi9g
+LGcYP+2xkqZHntIANRzU
+=yxfg
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__6_Sep_2012_13_50_13_+1000_3+suHdiaaik5n.qA--
