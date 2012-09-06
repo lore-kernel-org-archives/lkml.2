@@ -1,99 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757657Ab2IFPOI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 11:14:08 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:59336 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757617Ab2IFPOF convert rfc822-to-8bit (ORCPT
+	id S1757649Ab2IFPOq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 11:14:46 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10398 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757532Ab2IFPOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 11:14:05 -0400
-Message-ID: <1346944328.18408.34.camel@twins>
-Subject: Re: [PATCH tip/core/rcu 14/15] time: RCU permitted to stop idle
- entry via softirq
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Date: Thu, 06 Sep 2012 17:12:08 +0200
-In-Reply-To: <1346352988-32444-14-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20120830185607.GA32148@linux.vnet.ibm.com>
-	 <1346352988-32444-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1346352988-32444-14-git-send-email-paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	Thu, 6 Sep 2012 11:14:44 -0400
+X-Authority-Analysis: v=2.0 cv=C49rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=pZdUz1oXxZcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=7I6Cu-NdG9YA:10 a=AtSvTgsVFxPcB1ZiKxwA:9 a=PUjeQqilurYA:10 a=jFytWRkihul7h_di:21 a=1jMOe_UeGon6uLmH:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1346944482.1680.28.camel@gandalf.local.home>
+Subject: Re: [PATCH] x86, 32-bit: Fix invalid stack address while in softirq
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: wyang1 <Wei.Yang@windriver.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, oprofile-list@lists.sourceforge.net
+Date: Thu, 06 Sep 2012 11:14:42 -0400
+In-Reply-To: <20120906150246.GZ8285@erda.amd.com>
+References: <1346031133-12756-1-git-send-email-Wei.Yang@windriver.com>
+	 <20120904102439.GS8285@erda.amd.com> <5047FCBD.9000205@windriver.com>
+	 <20120906100434.GX8285@erda.amd.com>
+	 <1346937282.1680.15.camel@gandalf.local.home>
+	 <20120906150246.GZ8285@erda.amd.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
 Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-30 at 11:56 -0700, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paul.mckenney@linaro.org>
-> 
-> The can_stop_idle_tick() function complains if a softirq vector is
-> raised too late in the idle-entry process, presumably in order to
-> prevent dangling softirq invocations from being delayed across the
-> full idle period, which might be indefinitely long -- and if softirq
-> was asserted any later than the call to this function, such a delay
-> might well happen.
-> 
-> However, RCU needs to be able to use softirq to stop idle entry in
-> order to be able to drain RCU callbacks from the current CPU, which in
-> turn enables faster entry into dyntick-idle mode, which in turn reduces
-> power consumption.  Because RCU takes this action at a well-defined
-> point in the idle-entry path, it is safe for RCU to take this approach.
-> 
-> This commit therefore silences the error message that is sometimes
-> produced when the going-idle CPU suddenly finds that it has an RCU_SOFTIRQ
-> to process.  The error message will continue to be issued for other
-> softirq vectors.
-> 
-> Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
-> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
-> ---
->  include/linux/interrupt.h |    2 ++
->  kernel/time/tick-sched.c  |    3 ++-
->  2 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-> index c5f856a..5e4e617 100644
-> --- a/include/linux/interrupt.h
-> +++ b/include/linux/interrupt.h
-> @@ -430,6 +430,8 @@ enum
->  	NR_SOFTIRQS
->  };
->  
-> +#define SOFTIRQ_STOP_IDLE_MASK (~(1 << RCU_SOFTIRQ))
-> +
->  /* map softirq index to softirq name. update 'softirq_to_name' in
->   * kernel/softirq.c when adding a new softirq.
->   */
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> index 024540f..4b1785a 100644
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -436,7 +436,8 @@ static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
->  	if (unlikely(local_softirq_pending() && cpu_online(cpu))) {
->  		static int ratelimit;
->  
-> -		if (ratelimit < 10) {
-> +		if (ratelimit < 10 &&
-> +		    (local_softirq_pending() & SOFTIRQ_STOP_IDLE_MASK)) {
->  			printk(KERN_ERR "NOHZ: local_softirq_pending %02x\n",
->  			       (unsigned int) local_softirq_pending());
->  			ratelimit++;
+On Thu, 2012-09-06 at 17:02 +0200, Robert Richter wrote:
 
-Urgh.. yuck. So either add a very verbose comment here on why its OK for
-RCU (the changelog is rather vague about it), or try and come up with
-something better.
+> > > --- a/arch/x86/oprofile/backtrace.c
+> > > +++ b/arch/x86/oprofile/backtrace.c
+> > > @@ -113,7 +113,7 @@ x86_backtrace(struct pt_regs * const regs, unsigned int depth)
+> > >  
+> > >  	if (!user_mode_vm(regs)) {
+> > >  		unsigned long stack = kernel_stack_pointer(regs);
+> > > -		if (depth)
+> > > +		if (depth & stack)
+> > 
+> > Can other users of kernel_stack_pointer() be nailed by a return of NULL?
+> 
+> It would be save here too, but dump_trace() falls back to the current
+> stack in case there is no stack address given which we don't want with
+> oprofile.
+> 
+> I was looking at all users of kernel_stack_pointer() and could not
+> find any direct pointer dereference of the sp. The only potential
+> problems I found could arise here:
+> 
+>  arch/x86/kernel/kprobes.c:resume_execution()
+>  arch/x86/kernel/time.c:profile_pc()
+> 
+> It is not quite clear if we really need code here that checks the
+> pointer. Since a NULL pointer access has the same effect as if the
+> stack address would be wrong which would be the case without the
+> patch, I rather tend not to change the code here.
 
-Where does RCU flush the pending softirq? Does it flush all softirqs or
-only the RCU one? Can we move the check after RCU does this so we can
-avoid the special case?
+Then a comment should be in the oprofile code too. Something to the
+effect that oprofile is special and can cause kernel_stack_pointer() to
+return NULL in some cases, thus we need to check for it.
+
+-- Steve
+
+
