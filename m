@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758389Ab2IFP02 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 11:26:28 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:49110 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755379Ab2IFPYR (ORCPT
+	id S932091Ab2IFP1K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 11:27:10 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:62287 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752895Ab2IFPYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 11:24:17 -0400
+	Thu, 6 Sep 2012 11:24:15 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
 To: Mauro Carvalho Chehab <mchehab@infradead.org>
 Cc: kernel-janitors@vger.kernel.org, Julia.Lawall@lip6.fr,
         linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 6/14] drivers/media/pci/dm1105/dm1105.c: fix error return code
-Date: Thu,  6 Sep 2012 17:23:55 +0200
-Message-Id: <1346945041-26676-8-git-send-email-peter.senna@gmail.com>
+Subject: [PATCH 9/14] drivers/media/radio/radio-cadet.c: fix error return code
+Date: Thu,  6 Sep 2012 17:23:52 +0200
+Message-Id: <1346945041-26676-5-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -48,23 +48,21 @@ ret@p1 = 0
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
 ---
- drivers/media/pci/dm1105/dm1105.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/media/radio/radio-cadet.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/media/pci/dm1105/dm1105.c b/drivers/media/pci/dm1105/dm1105.c
-index a609b3a..f147031 100644
---- a/drivers/media/pci/dm1105/dm1105.c
-+++ b/drivers/media/pci/dm1105/dm1105.c
-@@ -1128,8 +1128,10 @@ static int __devinit dm1105_probe(struct pci_dev *pdev,
- 	INIT_WORK(&dev->work, dm1105_dmx_buffer);
- 	sprintf(dev->wqn, "%s/%d", dvb_adapter->name, dvb_adapter->num);
- 	dev->wq = create_singlethread_workqueue(dev->wqn);
--	if (!dev->wq)
-+	if (!dev->wq) {
-+		ret = -ENOMEM;
- 		goto err_dvb_net;
-+	}
+diff --git a/drivers/media/radio/radio-cadet.c b/drivers/media/radio/radio-cadet.c
+index 697a421..643d80a 100644
+--- a/drivers/media/radio/radio-cadet.c
++++ b/drivers/media/radio/radio-cadet.c
+@@ -645,7 +645,8 @@ static int __init cadet_init(void)
+ 	set_bit(V4L2_FL_USE_FH_PRIO, &dev->vdev.flags);
+ 	video_set_drvdata(&dev->vdev, dev);
  
- 	ret = request_irq(pdev->irq, dm1105_irq, IRQF_SHARED,
- 						DRIVER_NAME, dev);
+-	if (video_register_device(&dev->vdev, VFL_TYPE_RADIO, radio_nr) < 0)
++	res = video_register_device(&dev->vdev, VFL_TYPE_RADIO, radio_nr);
++	if (res < 0)
+ 		goto err_hdl;
+ 	v4l2_info(v4l2_dev, "ADS Cadet Radio Card at 0x%x\n", dev->io);
+ 	return 0;
 
