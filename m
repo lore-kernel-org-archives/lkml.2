@@ -1,192 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755144Ab2IFJDd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 05:03:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47134 "EHLO mx2.suse.de"
+	id S1756679Ab2IFJEr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 05:04:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2627 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753318Ab2IFJDb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 05:03:31 -0400
-Date: Thu, 6 Sep 2012 10:03:25 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 2/2] mm: support MIGRATE_DISCARD
-Message-ID: <20120906090325.GO11266@suse.de>
-References: <1346832673-12512-1-git-send-email-minchan@kernel.org>
- <1346832673-12512-2-git-send-email-minchan@kernel.org>
- <20120905105611.GI11266@suse.de>
- <20120906053112.GA16231@bbox>
- <20120906082935.GN11266@suse.de>
+	id S1754394Ab2IFJEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 05:04:45 -0400
+Message-ID: <50486727.7060509@redhat.com>
+Date: Thu, 06 Sep 2012 11:04:39 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120906082935.GN11266@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: linux-kernel@vger.kernel.org, target-devel@vger.kernel.org,
+        Christoph Hellwig <hch@lst.de>
+Subject: Re: [RFC PATCH 0/3] target: try satisfying memory requests with higher-order
+ allocations
+References: <1346858025-10459-1-git-send-email-pbonzini@redhat.com> <1346896698.4162.403.camel@haakon2.linux-iscsi.org>
+In-Reply-To: <1346896698.4162.403.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 06, 2012 at 09:29:35AM +0100, Mel Gorman wrote:
-> On Thu, Sep 06, 2012 at 02:31:12PM +0900, Minchan Kim wrote:
-> > Hi Mel,
-> > 
-> > On Wed, Sep 05, 2012 at 11:56:11AM +0100, Mel Gorman wrote:
-> > > On Wed, Sep 05, 2012 at 05:11:13PM +0900, Minchan Kim wrote:
-> > > > This patch introudes MIGRATE_DISCARD mode in migration.
-> > > > It drops *clean cache pages* instead of migration so that
-> > > > migration latency could be reduced by avoiding (memcpy + page remapping).
-> > > > It's useful for CMA because latency of migration is very important rather
-> > > > than eviction of background processes's workingset. In addition, it needs
-> > > > less free pages for migration targets so it could avoid memory reclaiming
-> > > > to get free pages, which is another factor increase latency.
-> > > > 
-> > > 
-> > > Bah, this was released while I was reviewing the older version. I did
-> > > not read this one as closely but I see the enum problems have gone away
-> > > at least. I'd still prefer if CMA had an additional helper to discard
-> > > some pages with shrink_page_list() and migrate the remaining pages with
-> > > migrate_pages(). That would remove the need to add a MIGRATE_DISCARD
-> > > migrate mode at all.
-> > 
-> > I am not convinced with your point. What's the benefit on separating
-> > reclaim and migration? For just removing MIGRATE_DISCARD mode?
+Il 06/09/2012 03:58, Nicholas A. Bellinger ha scritto:
+>> This patch series fixes this problem by using higher-order allocations
+>> to build the data scatterlist.  The problem is that iscsi assumes that the
+>> scatterlist consists of single pages, which is not true anymore.  So
+>> patch 2 has to introduce some relatively complicated changes to
+>> iscsi_map_iovec and iscsi_unmap_iovec.
 > 
-> Maintainability. There are reclaim functions and there are migration
-> functions. Your patch takes migrate_pages() and makes it partially a
-> reclaim function mixing up the responsibilities of migrate.c and vmscan.c.
+> So enabling multi-page per SGL support is a feature that has been
+> dormant within target core for a long time.  It's about time that we
+> start taking advantage of it again.  ;)
+
+Yeah, I noticed some preparation for it in tcm_fc/tfc_io.c, though too
+late (they look a lot like my iscsi changes, it would have saved me some
+time!).
+
+While this is obviously not to be taken lightly, I disagree with making
+this a per-fabric choice.  With a properly organized (and bisectable)
+series, it should be relatively easy to review and to get right.  I
+looked a bit more closely now and there are no changes needed to other
+targets (actually there is a change needed in tcm_qla2xxx, but the code
+is currently disabled).
+
+There are however changes to transport_kmap_data_sg needed and a few
+other places.
+
+I definitely agree with your other comments, including making max_order
+a DEF_DEV_ATTRIB.  In addition, the default max_order should be capped
+based on queue_max_sectors(q) if applicable, to avoid hitting this scenario:
+
+       /*
+        * XXX: if the length the device accepts is shorter than the
+        *      length of the S/G list entry this will cause and
+        *      endless loop.  Better hope no driver uses huge pages.
+        */
+
+Paolo
+
+>> While doing this, I noticed something strange in iscsit_do_crypto_hash_sg.
+>> Patch 1 adds a warning about it.
+>>
 > 
-> > I don't think it's not bad because my implementation is very simple(maybe
-> > it's much simpler than separating reclaim and migration) and
-> > could be used by others like memory-hotplug in future.
+> Mmmmm, looks like a separate bug with DataDigest enabled.  
 > 
-> They could also have used the helper function from CMA that takes a list
-> of pages, reclaims some and migrates other.
+>> The approach may be completely wrong and it needs more testing anyway.
+>> Please review!
+>>
 > 
-
-I also do not accept that your approach is inherently simpler than what I
-proposed to you. This is not tested at all but it should be functionally
-similar to both your patches except that it keeps the responsibility for
-reclaim in vmscan.c
-
-Your diffstats are
-
-8 files changed, 39 insertions(+), 36 deletions(-)
-3 files changed, 46 insertions(+), 4 deletions(-)
-
-Mine is
-
- 3 files changed, 32 insertions(+), 5 deletions(-)
-
-Fewer files changed and fewer lines inserted.
-
----8<---
-mm: cma: Discard clean pages during contiguous allocation instead of migration
-
-This patch drops clean cache pages instead of migration during
-alloc_contig_range() to minimise allocation latency by reducing the amount
-of migration is necessary. It's useful for CMA because latency of migration
-is more important than evicting the background processes working set.
-
-Prototype-not-signed-off-but-feel-free-to-pick-up-and-test
----
- mm/internal.h   |    1 +
- mm/page_alloc.c |    2 ++
- mm/vmscan.c     |   34 +++++++++++++++++++++++++++++-----
- 3 files changed, 32 insertions(+), 5 deletions(-)
-
-diff --git a/mm/internal.h b/mm/internal.h
-index b8c91b3..6d4bdf9 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -356,3 +356,4 @@ extern unsigned long vm_mmap_pgoff(struct file *, unsigned long,
-         unsigned long, unsigned long);
- 
- extern void set_pageblock_order(void);
-+unsigned long reclaim_clean_pages_from_list(struct list_head *page_list);
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index c66fb87..977bdb2 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5670,6 +5670,8 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
- 			break;
- 		}
- 
-+		reclaim_clean_pages_from_list(&cc.migratepages);
-+
- 		ret = migrate_pages(&cc.migratepages,
- 				    __alloc_contig_migrate_alloc,
- 				    0, false, MIGRATE_SYNC);
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 8d01243..ccf7bc2 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -703,7 +703,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 			goto keep;
- 
- 		VM_BUG_ON(PageActive(page));
--		VM_BUG_ON(page_zone(page) != zone);
-+		VM_BUG_ON(zone && page_zone(page) != zone);
- 
- 		sc->nr_scanned++;
- 
-@@ -817,7 +817,9 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 				 * except we already have the page isolated
- 				 * and know it's dirty
- 				 */
--				inc_zone_page_state(page, NR_VMSCAN_IMMEDIATE);
-+				if (zone)
-+					inc_zone_page_state(page,
-+							NR_VMSCAN_IMMEDIATE);
- 				SetPageReclaim(page);
- 
- 				goto keep_locked;
-@@ -947,7 +949,7 @@ keep:
- 	 * back off and wait for congestion to clear because further reclaim
- 	 * will encounter the same problem
- 	 */
--	if (nr_dirty && nr_dirty == nr_congested && global_reclaim(sc))
-+	if (zone && nr_dirty && nr_dirty == nr_congested && global_reclaim(sc))
- 		zone_set_flag(zone, ZONE_CONGESTED);
- 
- 	free_hot_cold_page_list(&free_pages, 1);
-@@ -955,11 +957,33 @@ keep:
- 	list_splice(&ret_pages, page_list);
- 	count_vm_events(PGACTIVATE, pgactivate);
- 	mem_cgroup_uncharge_end();
--	*ret_nr_dirty += nr_dirty;
--	*ret_nr_writeback += nr_writeback;
-+	if (ret_nr_dirty)
-+		*ret_nr_dirty += nr_dirty;
-+	if (ret_nr_writeback)
-+		*ret_nr_writeback += nr_writeback;
- 	return nr_reclaimed;
- }
- 
-+unsigned long reclaim_clean_pages_from_list(struct list_head *page_list)
-+{
-+	struct scan_control sc = {
-+		.gfp_mask = GFP_KERNEL,
-+		.priority = DEF_PRIORITY,
-+	};
-+	unsigned long ret;
-+	struct page *page, *next;
-+	LIST_HEAD(clean_pages);
-+
-+	list_for_each_entry_safe(page, next, page_list, lru) {
-+		if (page_is_file_cache(page) && !PageDirty(page))
-+			list_move(&page->lru, &clean_pages);
-+	}
-+
-+	ret = shrink_page_list(&clean_pages, NULL, &sc, NULL, NULL);
-+	list_splice(&clean_pages, page_list);
-+	return ret;
-+}
-+
- /*
-  * Attempt to remove the specified page from its LRU.  Only take this page
-  * if it is of the appropriate PageActive status.  Pages which are being
+> Adding my comments inline.
+> 
+> Thanks Paolo!
+> 
+> --nab
+> 
+>> Paolo
+>>
+>> Paolo Bonzini (3):
+>>   tcm_iscsi: warn on incorrect precondition for iscsit_do_crypto_hash_sg
+>>   tcm_iscsi: support multiple sizes in the scatterlist
+>>   target: try satisfying memory requests with contiguous blocks
+>>
+>>  drivers/target/iscsi/iscsi_target.c      |  106 +++++++++++++++++++++++++-----
+>>  drivers/target/iscsi/iscsi_target_core.h |    2 +-
+>>  drivers/target/target_core_transport.c   |   58 ++++++++++++++---
+>>  3 files changed, 138 insertions(+), 28 deletions(-)
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe target-devel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
 
