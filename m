@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758540Ab2IFP4W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 11:56:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4229 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758283Ab2IFP4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 11:56:21 -0400
-Date: Thu, 6 Sep 2012 11:56:16 -0400
-From: Dave Jones <davej@redhat.com>
-To: Eric Paris <eparis@parisplace.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, eparis@redhat.com
-Subject: Re: Check all returns from audit_log_start
-Message-ID: <20120906155616.GB27399@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Eric Paris <eparis@parisplace.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Al Viro <viro@zeniv.linux.org.uk>, eparis@redhat.com
-References: <20120906134628.GA8962@redhat.com>
- <20120906150838.GA23345@redhat.com>
- <CACLa4pteVcrk0ZuhUDQOf=WMx1Odob5F+B=Y=Y3DT-mj9ZbQ6A@mail.gmail.com>
- <20120906154749.GA27399@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120906154749.GA27399@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758771Ab2IFP4k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 11:56:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44557 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758557Ab2IFP4h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 11:56:37 -0400
+From: Andy Whitcroft <apw@canonical.com>
+To: Miklos Szeredi <miklos@szeredi.hu>, Andy Whitcroft <apw@canonical.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mszeredi@suse.cz
+Subject: [RFC PATCH 1/2] ovl: ovl_copy_up_xattr may fail when the upper filesystem does not support the same xattrs
+Date: Thu,  6 Sep 2012 16:56:33 +0100
+Message-Id: <1346946994-21286-2-git-send-email-apw@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1346946994-21286-1-git-send-email-apw@canonical.com>
+References: <1346946994-21286-1-git-send-email-apw@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 06, 2012 at 11:47:49AM -0400, Dave Jones wrote:
- > > Not certain because I haven't looked at what happens with the error
- > > code, but I think this might not be right.  auditd can be explictly
- > > told not to audit certain events, in which case it is normal and
- > > expected that ab would come back NULL....
- > 
- > Ugh, that's a lot messier to have to audit every function that gets
- > passed 'ab' to make sure it has a NULL check, but ok I'll go look at it.
- > 
- > hopefully audit_log_link_denied was a one off.
+When the upper filesystem does not support the same extended attribute
+families as the lower filesystem attempts to copy these xattrs up will
+fail EOPNOTSUPP.  This is tickled by NFS which stores access information
+in an NFS specific prefix.  Ignore failures to set these attributes.
 
-ok, from a quick look-over, that does seem to be the case.
-This still feels like a nasty trap waiting for someone to walk into again though.
+BugLink: http://bugs.launchpad.net/bugs/1039402
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
+---
+ fs/overlayfs/copy_up.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-	Dave
+diff --git a/fs/overlayfs/copy_up.c b/fs/overlayfs/copy_up.c
+index 87dbeee..b0b4229 100644
+--- a/fs/overlayfs/copy_up.c
++++ b/fs/overlayfs/copy_up.c
+@@ -58,7 +58,14 @@ static int ovl_copy_up_xattr(struct dentry *old, struct dentry *new)
+ 			goto out_free_value;
+ 		}
+ 		error = vfs_setxattr(new, name, value, size, 0);
+-		if (error)
++		/*
++		 * It is possible that the upper filesystem does not
++                 * support the same xattrs as the lower filesystem.  Ignore
++                 * unsupported types.
++                 */
++		if (error == -EOPNOTSUPP)
++			error = 0;
++		else if (error)
+ 			goto out_free_value;
+ 	}
+ 
+-- 
+1.7.9.5
 
