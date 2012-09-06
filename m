@@ -1,38 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932152Ab2IFQCM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 12:02:12 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:33890 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932074Ab2IFQCL convert rfc822-to-8bit (ORCPT
+	id S932386Ab2IFQJu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 12:09:50 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:41631 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932212Ab2IFQJr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 12:02:11 -0400
-Message-ID: <1346947316.18408.36.camel@twins>
-Subject: Re: [PATCH] perf: remove sw events from multiplexing rotation list
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, fweisbec@gmail.com
-Date: Thu, 06 Sep 2012 18:01:56 +0200
-In-Reply-To: <20120906132346.GA32717@quad>
-References: <20120906132346.GA32717@quad>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 6 Sep 2012 12:09:47 -0400
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: kernel-janitors@vger.kernel.org,
+        Peter Senna Tschudin <peter.senna@gmail.com>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 9/10] drivers/net/wireless/rtlwifi/rtl8192de/phy.c: removes unnecessary semicolon
+Date: Thu,  6 Sep 2012 18:09:17 +0200
+Message-Id: <1346947757-10481-10-git-send-email-peter.senna@gmail.com>
+X-Mailer: git-send-email 1.7.11.4
+In-Reply-To: <1346947757-10481-1-git-send-email-peter.senna@gmail.com>
+References: <1346947757-10481-1-git-send-email-peter.senna@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-06 at 15:23 +0200, Stephane Eranian wrote:
-> Software events (sw,tracepoints,...) do not need to be
-> multiplexed. However, when using a SW event, the SW PMU
-> (TYPE_SOFTWARE, TYPE_TRACEPOINT) was added to the per-cpu
-> rotation_list. That list is used by perf_rotate_context()
-> to iterate over all the PMUs to rotate event lists and
-> multiplex.
-> 
-> This is not needed for SW events. Doing this adds some
-> unnecessary overhead, so drop it by rejecting SW PMUs
-> in perf_pmu_rotate_start().
+From: Peter Senna Tschudin <peter.senna@gmail.com>
 
-Thanks!
+removes unnecessary semicolon
+
+Found by Coccinelle: http://coccinelle.lip6.fr/
+
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+
+---
+ drivers/net/wireless/rtlwifi/rtl8192de/phy.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff -u -p a/drivers/net/wireless/rtlwifi/rtl8192de/phy.c b/drivers/net/wireless/rtlwifi/rtl8192de/phy.c
+--- a/drivers/net/wireless/rtlwifi/rtl8192de/phy.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192de/phy.c
+@@ -1314,7 +1314,7 @@ static void _rtl92d_phy_restore_rf_env(s
+ 	struct bb_reg_def *pphyreg = &rtlphy->phyreg_def[rfpath];
+ 
+ 	RT_TRACE(rtlpriv, COMP_RF, DBG_LOUD, "=====>\n");
+-	/*----Restore RFENV control type----*/ ;
++	/*----Restore RFENV control type----*/
+ 	switch (rfpath) {
+ 	case RF90_PATH_A:
+ 	case RF90_PATH_C:
+
