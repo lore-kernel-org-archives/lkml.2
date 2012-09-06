@@ -1,35 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752212Ab2IFMJi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 08:09:38 -0400
-Received: from draco.telkomsa.net ([196.25.211.120]:37338 "EHLO
-	draco.telkomsa.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750923Ab2IFMJh (ORCPT
+	id S1752734Ab2IFMKb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 08:10:31 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:8274 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751727Ab2IFMKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 08:09:37 -0400
-X-Greylist: delayed 543 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Sep 2012 08:09:37 EDT
-Date: Thu, 6 Sep 2012 14:00:31 +0200 (SAST)
-From: telkomsa148133@telkomsa.net
-Reply-To: oxfam_33@yahoo.gr
-Message-ID: <1055361806.1757976.1346932831031.JavaMail.root@zimbra8-vm1.telkomsa.net>
-Subject: 
+	Thu, 6 Sep 2012 08:10:30 -0400
+X-Spam-Score: -100.8
+Message-ID: <504892F6.9080108@asianux.com>
+Date: Thu, 06 Sep 2012 20:11:34 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: linux-kernel@vger.kernel.org, masami.hiramatsu@gmail.com
+Subject: [HELP][X86 Disassembler Engine Patch] How to get the individual patches
+ for x86 disassembler engine.
+Content-Type: text/plain; charset=GB2312
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [65.49.14.88]
-X-Mailer: Zimbra 6.0.16_GA_2998 (zclient/6.0.16_GA_2998)
-To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am pleased to inform you that WEST AFRICA in conjunction with Oxfam GB awarded you a cash grant of  (ONE MILLION POUNDS) in
-our Rural Development Program. For further details reply ASAP.
-E-mail:oxfam_35@yahoo.gr
-Cordially,
-Kindly contact me for further details +2348106467540
+Hello Masami Hiramatsu
 
-Mr.Laure Norman
+After read your mail "[RFC PATCH -tip 00/16] in-kernel x86 disassember "
+to linux-kernel@vger.kernel.org
+I am very interested in your patch for x86 disassembler. I think it is
+valuable (at least, for me).
 
-Claims Agent
-Oxfam Program
+The link "git://github.com/mhiramat/linux.git" SEEMS for integrated
+kernel version, not for individual patches.
+(It is only "SEEMS", because I am not quite familiar with git,
+currently. Maybe it can get individual patches)
+
+Can you please give some help information for it ? (I want to put them
+into my download latest kernel version)
+thanks.
+
+And also welcome any other members in this mailing list to giving
+additional suggestions or completions.
+thanks.
+
+-- 
+Chen Gang
+
+Asianux Corporation
+
