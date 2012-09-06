@@ -1,112 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756388Ab2IFIa2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 04:30:28 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35393 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755249Ab2IFIaW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 04:30:22 -0400
+	id S1756055Ab2IFIcy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 04:32:54 -0400
+Received: from mprc.pku.edu.cn ([162.105.203.9]:59263 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752743Ab2IFIcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 04:32:50 -0400
+From: guanxuetao@mprc.pku.edu.cn
+Message-ID: <63235.162.105.203.8.1346920695.squirrel@mprc.pku.edu.cn>
+In-Reply-To: <1346581273-7041-2-git-send-email-thierry.reding@avionic-design.de>
+References: <1346581273-7041-1-git-send-email-thierry.reding@avionic-design.de>
+    <1346581273-7041-2-git-send-email-thierry.reding@avionic-design.de>
+Date: Thu, 6 Sep 2012 16:38:15 +0800 (CST)
+Subject: Re: [PATCH 1/6] unicore32: pwm: Properly remap memory-mapped 
+     registers
+To: "Thierry Reding" <thierry.reding@avionic-design.de>
+Cc: "Guan Xuetao" <gxt@mprc.pku.edu.cn>,
+        "Mike Turquette" <mturquette@linaro.org>, linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.8-4.0.1.el5
 MIME-Version: 1.0
-In-Reply-To: <1346917833.10162.4.camel@mattotaupa>
-References: <1346881623-388-1-git-send-email-msb@chromium.org>
-	<CAAQKjZPGefy9333AGTN1iwxWuCiPvi85raDE7ijDmRcm9PPWWw@mail.gmail.com>
-	<1346917833.10162.4.camel@mattotaupa>
-Date: Thu, 6 Sep 2012 17:30:22 +0900
-X-Google-Sender-Auth: 3y2Q6h2gOc5PyU9YsVjT8l-h260
-Message-ID: <CAAQKjZM6afLZaC6D6K2-51Yp2FUHmHHawcO67Q6b8EEM2A5+4w@mail.gmail.com>
-Subject: Re: [PATCH] drm/exynos: fix double call of drm_prime_(init/destroy)_file_private
-From: InKi Dae <inki.dae@samsung.com>
-To: Paul Menzel <paulepanter@users.sourceforge.net>
-Cc: =?ISO-8859-1?Q?St=E9phane_Marchesin?= <marcheu@chromium.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;charset=GB2312
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+> Instead of writing to the timer controller registers by dereferencing a
+> pointer to the memory location, properly remap the memory region with a
+> call to ioremap_nocache() and access the registers using writel().
+>
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> ---
+>  arch/unicore32/kernel/pwm.c | 25 ++++++++++++++++++++++---
+>  1 file changed, 22 insertions(+), 3 deletions(-)
+>
+> diff --git a/arch/unicore32/kernel/pwm.c b/arch/unicore32/kernel/pwm.c
+> index 4615d51..410b786 100644
+> --- a/arch/unicore32/kernel/pwm.c
+> +++ b/arch/unicore32/kernel/pwm.c
+> @@ -23,10 +23,16 @@
+>  #include <asm/div64.h>
+>  #include <mach/hardware.h>
+>
+> +#define PWCR 0x00
+> +#define DCCR 0x04
+> +#define PCR  0x08
+I think old register names could be used here by some small modifications.
+Please see arch/unicore32/include/mach/regs-ost.h
+We can avoid ioremap and use writel/readl directly on these registers.
 
-2012/9/6 Paul Menzel <paulepanter@users.sourceforge.net>:
-> Dear Inki Dae,
+Guan
+
+> +
+>  struct pwm_device {
+>  	struct list_head	node;
+>  	struct platform_device *pdev;
 >
+> +	void __iomem	*base;
+> +
+>  	const char	*label;
+>  	struct clk	*clk;
+>  	int		clk_enabled;
+> @@ -69,9 +75,11 @@ int pwm_config(struct pwm_device *pwm, int duty_ns, int
+> period_ns)
+>  	 * before writing to the registers
+>  	 */
+>  	clk_enable(pwm->clk);
+> -	OST_PWMPWCR = prescale;
+> -	OST_PWMDCCR = pv - dc;
+> -	OST_PWMPCR  = pv;
+> +
+> +	writel(prescale, pwm->base + PWCR);
+> +	writel(pv - dc, pwm->base + DCCR);
+> +	writel(pv, pwm->base + PCR);
+> +
+>  	clk_disable(pwm->clk);
 >
-> Am Donnerstag, den 06.09.2012, 11:35 +0900 schrieb InKi Dae:
+>  	return 0;
+> @@ -190,10 +198,19 @@ static struct pwm_device *pwm_probe(struct
+> platform_device *pdev,
+>  		goto err_free_clk;
+>  	}
 >
->> 2012/9/6 Mandeep Singh Baines <msb@chromium.org>:
->> > The double invocations are incorrect but seem to be safe so I don't
->> > think this will fix any bugs.
->> >
->> > Before:
->> >
->> > [    7.639366] drm_prime_init_file ee3675d0
->> > [    7.639377] drm_prime_init_file ee3675d0
->> > [    7.639507] drm_prime_destroy_file ee3675d0
->> > [    7.639518] drm_prime_destroy_file ee3675d0
->> > [    7.639802] drm_prime_init_file ee372390
->> > [    7.639810] drm_prime_init_file ee372390
->> > [    8.473316] drm_prime_init_file ee356390
->> > [    8.473331] drm_prime_init_file ee356390
->> >
->> > After:
->> >
->> > [    6.363842] drm_prime_init_file edc2e5d0
->> > [    6.363994] drm_prime_destroy_file edc2e5d0
->> > [    6.364260] drm_prime_init_file edc2e750
->> > [    8.004837] drm_prime_init_file ee36ded0
->> >
->> > Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
->> > CC: Stéphane Marchesin <marcheu@chromium.org>
->> > CC: Pawel Osciak <posciak@google.com>
->> > CC: Inki Dae <inki.dae@samsung.com>
->> > CC: Joonyoung Shim <jy0922.shim@samsung.com>
->> > CC: Seung-Woo Kim <sw0312.kim@samsung.com>
->> > CC: Kyungmin Park <kyungmin.park@samsung.com>
->> > CC: David Airlie <airlied@linux.ie>
->> > CC: dri-devel@lists.freedesktop.org
->>
->> remove all CCs
+> +	pwm->base = ioremap_nocache(r->start, resource_size(r));
+> +	if (pwm->base == NULL) {
+> +		dev_err(&pdev->dev, "failed to remap memory resource\n");
+> +		ret = -EADDRNOTAVAIL;
+> +		goto err_release_mem;
+> +	}
+> +
+>  	__add_pwm(pwm);
+>  	platform_set_drvdata(pdev, pwm);
+>  	return pwm;
 >
-> I guess they were generated by some script. So they should be fine, no?
+> +err_release_mem:
+> +	release_mem_region(r->start, resource_size(r));
+>  err_free_clk:
+>  	clk_put(pwm->clk);
+>  err_free:
+> @@ -224,6 +241,8 @@ static int __devexit pwm_remove(struct platform_device
+> *pdev)
+>  	list_del(&pwm->node);
+>  	mutex_unlock(&pwm_lock);
 >
-> Mandeep, if you put CC in here those people should be CCed in real. `git
-> send-email` should take care of that but I do not see everyone in the CC
-> field. Or does `git send-email` use blind carbon copy (BCC) field?
+> +	iounmap(pwm->base);
+> +
+>  	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>  	release_mem_region(r->start, resource_size(r));
 >
->> and can you send it again using text mode?
->
-> At least to the list it was send in plain text mode.
->
->> your patch is messed up when I try to get patch file.
->
-> Everything is fine on my side. Especially since Mandeep used `git
-> send-email` which should do everything correctly.
+> --
+> 1.7.12
 >
 
-your patch was encoded with 'Content-Transfer-Encoding: base64' so
-please use 7bit ascii like 'Content-Transfer-Encoding: 7bit'
-
->> Thanks.
->> Inki Dae
->
-> In your From address your name is written InKi with capital K. Which one
-> is correct?
->
-
-Inki is correct :)
-
-Thanks.
-Inki Dae
-
->
-> Thanks,
->
-> Paul
->
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
->
