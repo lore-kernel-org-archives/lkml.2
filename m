@@ -1,41 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758017Ab2IFPgL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 11:36:11 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:45376 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754845Ab2IFPgJ (ORCPT
+	id S1758171Ab2IFPjB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 11:39:01 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44426 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752158Ab2IFPi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 11:36:09 -0400
+	Thu, 6 Sep 2012 11:38:59 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120906150838.GA23345@redhat.com>
-References: <20120906134628.GA8962@redhat.com>
-	<20120906150838.GA23345@redhat.com>
-Date: Thu, 6 Sep 2012 11:36:06 -0400
-Message-ID: <CACLa4pteVcrk0ZuhUDQOf=WMx1Odob5F+B=Y=Y3DT-mj9ZbQ6A@mail.gmail.com>
-Subject: Re: Check all returns from audit_log_start
-From: Eric Paris <eparis@parisplace.org>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, eparis@redhat.com
+In-Reply-To: <20120906135957.2e705a9d@pyramind.ukuu.org.uk>
+References: <s5hd3222azc.wl%tiwai@suse.de>
+	<CACVXFVP-A7M2dG9bOvAnpzR60=iTYSw=WCOEwgo9KeuioxKanQ@mail.gmail.com>
+	<s5hd32122hw.wl%tiwai@suse.de>
+	<CACVXFVNE1GHAQJTrQy2AYgUBfq5kv42EjJJ7J+2q3jzXG-E=MQ@mail.gmail.com>
+	<s5hpq61j9qx.wl%tiwai@suse.de>
+	<CACVXFVOu86J5=1DLDrpLCd-pyk1jm2HT7ks1uzCXm9nURCRo2A@mail.gmail.com>
+	<20120905140304.5c5c58a4@pyramind.ukuu.org.uk>
+	<CACVXFVO+OgvLoFMcDD0gcQnbzUW=SyR=wiSMyT-FtpjWW5sWdw@mail.gmail.com>
+	<20120905173011.7a1111f0@pyramind.ukuu.org.uk>
+	<CACVXFVMbCOov6nFqmmVu+9QYXuGc_1uwYKLcevqERZw4CRvVCA@mail.gmail.com>
+	<20120906135957.2e705a9d@pyramind.ukuu.org.uk>
+Date: Thu, 6 Sep 2012 23:38:57 +0800
+Message-ID: <CACVXFVNFAKYxPQ0Vnp22Dx4gGUYCXCummC2-QrpGKdGe70Kp+Q@mail.gmail.com>
+Subject: Re: A workaround for request_firmware() stuck in module_init
+From: Ming Lei <ming.lei@canonical.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Takashi Iwai <tiwai@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Kay Sievers <kay@vrfy.org>,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 6, 2012 at 11:08 AM, Dave Jones <davej@redhat.com> wrote:
-> Following on from the previous patch that fixed an oops, these
-> are all the other similar code patterns in the tree with the same
-> checks added.  I never saw these causing problems, but checking
-> this everywhere seems to make more sense than every subsequent
-> routine that gets passed 'ab' having to check it.
+On Thu, Sep 6, 2012 at 8:59 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> Sorry, I don't see anyone explained clearly why request_firmware()
+>> can't be called inside module_init() in module case, so maybe it is
+>> a bit early to say it is a fix on 'bug', :-)
 >
-> Later we could remove all those same checks from audit_log_format
-> and friends. For now, this just prevents similar bugs being introduced
-> as the one in my previous patch.
->
-> Signed-off-by: Dave Jones <davej@redhat.com>
+> Because the firmware load may trigger a need to load a driver to load the
+> firmware.
 
-Not certain because I haven't looked at what happens with the error
-code, but I think this might not be right.  auditd can be explictly
-told not to audit certain events, in which case it is normal and
-expected that ab would come back NULL....
+Could you explain the problem in a bit detail?
+
+I understand once the request_firmware is called, the firmware load request
+is sent to userspace, so why is a driver loading involved? and what is the
+problem?
+
+>
+>> > dev_discard_firmware()
+>> >
+>> > so you an instance can drop its firmware reference if it doesn't need it
+>> > post probe.
+>>
+>> This kind of mechanism has been implemented already: request_firmware()
+>> and release_firmware() will get and put a refcount.  And, the reference
+>> count is associated with firmware name, and it should be so, IMO.
+>
+> Yes - so a dev_ firmware interface is very thin.
+>
+>> > You broke suspend/resume for lots of devices.
+>>
+>> The firmware cache mechanism will keep the firmware during suspend/resume
+>> cycle to address the problem.
+>
+> Ok
+>
+>> For drivers, I understand request_firmware()/request_firmware_nowait()
+>> and release_firmware() are enough. If many devices share one firmware,
+>> there is only one firmware kept in memory for their requests if one holds
+>> the firmware, and there is a refcount for it already, :-)
+>>
+>> So I don't see why it is difficult to use request/release_firmware() inside
+>> drivers, :-)
+>
+> The big problem can be summed up in one word "asynchronous". Having
+
+OK, I agree on it, but I think it just happens in built in situation. For module
+case, I think the synchronous request_firmware should be OK.
+
+> either an automated handler for it before ->probe is called or having the
+> driver author cut and paste in
+>
+>         if (!dev_request_firmware(dev, blah))
+>                 return -EPROBE_DEFER;
+>
+> avoids the need to deal with async completion after probe (and the
+> *horrible* case of
+>
+>         probe
+>                 request firmware
+>         remove
+>
+>         firmware ready
+> )
+>
+> in each driver
+
+OK, it is one solution for asynchronous firmware loading.
+
+IMO, another candidate solution is to implement asynchronous probe
+for these drivers which will call request_firmware in its probe().
+
+>
+> Having an auto unload for it at the end is just neatness. Perhaps in fact
+> it should be devm_request_firmware() and use the mechanism we have ?
+
+IMO, the kind of devm_request_firmware() mechanism may have its
+disadvantage because the firmware in memory may or should be
+released just after it has been downloaded into device, otherwise it will
+consume memory unnecessarily to keep it in the whole device lifetime
+if it will be released inside device release handler just like devm resources.
+
+
+Thanks,
+--
+Ming Lei
