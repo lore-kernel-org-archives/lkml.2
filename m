@@ -1,42 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756651Ab2IFOmc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 10:42:32 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45731 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756521Ab2IFOmb convert rfc822-to-8bit (ORCPT
+	id S1756698Ab2IFOmq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 10:42:46 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22913 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756518Ab2IFOmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 10:42:31 -0400
-Message-ID: <1346942438.18408.27.camel@twins>
-Subject: Re: [PATCH tip/core/rcu 03/15] rcu: Properly initialize
- ->boost_tasks on CPU offline
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Date: Thu, 06 Sep 2012 16:40:38 +0200
-In-Reply-To: <1346352988-32444-3-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20120830185607.GA32148@linux.vnet.ibm.com>
-	 <1346352988-32444-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1346352988-32444-3-git-send-email-paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	Thu, 6 Sep 2012 10:42:45 -0400
+X-Authority-Analysis: v=2.0 cv=C49rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=0-4HISFYYNcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=lCWGTHJAsiIA:10 a=lVNSXnoet12_OyyF6fAA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1346942563.1680.19.camel@gandalf.local.home>
+Subject: Re: [PATCH] Add feature-removal-schedule.txt removal to
+ feature-removal-schedule.txt
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Thu, 06 Sep 2012 10:42:43 -0400
+In-Reply-To: <CAM_iQpUHYDT2hnt3h8fF33rp3O9c_VjEftOFUj-qdMdUkxo1tw@mail.gmail.com>
+References: <1346091725.19381.10.camel@pippen.local.home>
+	 <CAM_iQpV9163UKQt8Kvroc6JyMQnv1tqG1rS5M2CBWzbo7XvJXQ@mail.gmail.com>
+	 <1346773188.27919.13.camel@gandalf.local.home>
+	 <CAM_iQpUHYDT2hnt3h8fF33rp3O9c_VjEftOFUj-qdMdUkxo1tw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
 Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-30 at 11:56 -0700, Paul E. McKenney wrote:
-> When rcu_preempt_offline_tasks() clears tasks from a leaf rcu_node
-> structure, it does not NULL out the structure's ->boost_tasks field.
-> This commit therefore fixes this issue. 
+On Thu, 2012-09-06 at 22:29 +0800, Cong Wang wrote:
 
-What would have been the side-effects of this? Would rcu-boosting have
-been able to go funny on hotplug, and if so, how?
+> I don't think feature-removal-schedule.txt is for kernel users, it
+> is a kind of a TODO list for kernel developers.
+
+And this is exactly what Linus was complaining about. It shouldn't be
+used as a TODO list for developers.
+
+-- Steve
+
 
