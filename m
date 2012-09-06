@@ -1,219 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751550Ab2IFFBl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 01:01:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61293 "EHLO mx1.redhat.com"
+	id S1751649Ab2IFFHJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 01:07:09 -0400
+Received: from gate.crashing.org ([63.228.1.57]:54625 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751097Ab2IFFBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 01:01:39 -0400
-Date: Thu, 6 Sep 2012 08:02:57 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, avi@redhat.com, kvm@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] virtio-ring: Allocate indirect buffers from cache
- when possible
-Message-ID: <20120906050257.GA17656@redhat.com>
-References: <1346159043-16446-1-git-send-email-levinsasha928@gmail.com>
- <1346159043-16446-2-git-send-email-levinsasha928@gmail.com>
- <20120828132032.GB2039@redhat.com>
- <503CC904.3050207@gmail.com>
- <20120829110748.GB5970@redhat.com>
- <503E2F27.5060904@gmail.com>
- <20120829153833.GE7407@redhat.com>
- <503E4873.6060607@gmail.com>
- <871uigj747.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <871uigj747.fsf@rustcorp.com.au>
+	id S1750950Ab2IFFHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 01:07:08 -0400
+Message-ID: <1346907992.2385.6.camel@pasglop>
+Subject: Re: A workaround for request_firmware() stuck in module_init
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Ming Lei <ming.lei@canonical.com>, Takashi Iwai <tiwai@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Kay Sievers <kay@vrfy.org>,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 06 Sep 2012 15:06:32 +1000
+In-Reply-To: <20120906001804.645c243c@pyramind.ukuu.org.uk>
+References: <s5hd3222azc.wl%tiwai@suse.de>
+	 <CACVXFVP-A7M2dG9bOvAnpzR60=iTYSw=WCOEwgo9KeuioxKanQ@mail.gmail.com>
+	 <s5hd32122hw.wl%tiwai@suse.de>
+	 <CACVXFVNE1GHAQJTrQy2AYgUBfq5kv42EjJJ7J+2q3jzXG-E=MQ@mail.gmail.com>
+	 <s5hpq61j9qx.wl%tiwai@suse.de>
+	 <CACVXFVOu86J5=1DLDrpLCd-pyk1jm2HT7ks1uzCXm9nURCRo2A@mail.gmail.com>
+	 <20120905140304.5c5c58a4@pyramind.ukuu.org.uk>
+	 <CACVXFVO+OgvLoFMcDD0gcQnbzUW=SyR=wiSMyT-FtpjWW5sWdw@mail.gmail.com>
+	 <20120905173011.7a1111f0@pyramind.ukuu.org.uk>
+	 <1346879334.19098.1.camel@pasglop>
+	 <20120906001804.645c243c@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 06, 2012 at 10:32:48AM +0930, Rusty Russell wrote:
-> Sasha Levin <levinsasha928@gmail.com> writes:
-> >> On Wed, Aug 29, 2012 at 05:03:03PM +0200, Sasha Levin wrote:
-> >>> I've also re-ran it on a IBM server type host instead of my laptop. Here are the
-> >>> results:
-> >>>
-> >>> Vanilla kernel:
-> >>>
-> >>> MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 192.168.33.1
-> >>> () port 0 AF_INET
-> >>> enable_enobufs failed: getprotobyname
-> >>> Recv   Send    Send
-> >>> Socket Socket  Message  Elapsed
-> >>> Size   Size    Size     Time     Throughput
-> >>> bytes  bytes   bytes    secs.    10^6bits/sec
-> >>>
-> >>>  87380  16384  16384    10.00    7922.72
-> >>>
-> >>> Patch 1, with threshold=16:
-> >>>
-> >>> MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 192.168.33.1
-> >>> () port 0 AF_INET
-> >>> enable_enobufs failed: getprotobyname
-> >>> Recv   Send    Send
-> >>> Socket Socket  Message  Elapsed
-> >>> Size   Size    Size     Time     Throughput
-> >>> bytes  bytes   bytes    secs.    10^6bits/sec
-> >>>
-> >>>  87380  16384  16384    10.00    8415.07
-> >>>
-> >>> Patch 2:
-> >>>
-> >>> MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 192.168.33.1
-> >>> () port 0 AF_INET
-> >>> enable_enobufs failed: getprotobyname
-> >>> Recv   Send    Send
-> >>> Socket Socket  Message  Elapsed
-> >>> Size   Size    Size     Time     Throughput
-> >>> bytes  bytes   bytes    secs.    10^6bits/sec
-> >>>
-> >>>  87380  16384  16384    10.00    8931.05
-> >>>
-> >>>
-> >>> Note that these are simple tests with netperf listening on one end and a simple
-> >>> 'netperf -H [host]' within the guest. If there are other tests which may be
-> >>> interesting please let me know.
+On Thu, 2012-09-06 at 00:18 +0100, Alan Cox wrote:
+> > But then you have cases where probe() -> register_with_my_subsystem() ->
+> > open(). Network devices come to mind. IE. udev must be able to deal with
+> > a synchronous firmware load from probe I'm afraid.
 > 
-> It might be worth just unconditionally having a cache for the 2
-> descriptor case.  This is what I get with qemu tap, though for some
-> reason the device features don't have guest or host CSUM, so my setup is
-> probably screwed:
+> I don't believe so. You have
+> 
+> 	begin probe
+> 		find match .. .firmware_name is set
+> 		issue firmware load request
+> 		set defer flag
+> 	end probe
+> 
+> Later..
+> 
+> 	firmware load complete
+> 	kick probe up arse
+> 
+> 	begin probe
+> 		find match .. .firmware is loaded
+> 		call ->probe()
+> 		register
+> 		open
+> 		happiness
+> 	end probe
 
-Yes without checksum net core always linearizes packets, so yes it is
-screwed.
-For -net, skb always allocates space for 17 frags + linear part so
-it seems sane to do same in virtio core, and allocate, for -net,
-up to max_frags + 1 from cache.
-We can adjust it: no _SG -> 2 otherwise 18.
+Ok, so this is my fault for picking the thread half way through and
+missing the crucial point ... deferring probe() itself. BTW. Deferring
+probe is useful for other things.
 
-Not sure about other drivers, maybe really use 2 there for now.
+I've long advocated this as a way to deal with various soft dependencies
+between services for example. Cases of a driver hooking up to two or 3
+different busses, and wanting all the bits to be actually probed &
+connected to each other in order, that sort of thing.
 
-> Queue histogram for virtio0:
-> Size distribution for input (max=128427):
->   1: 128427  ################################################################
-> Size distribution for output (max=256485):
->   2: 256485  ################################################################
-> Size distribution for control (max=10):
->   3: 10      ################################################################
->   4: 5       ################################
-> 
-> Here's a patch, what do you get (run ifconfig to trigger the dump; yeah,
-> it's a hack!)
-> 
-> Hack: histogram of buffer sizes for virtio devices.
-> 
-> Currently triggered by a stats query (eg ifconfig) on a net device.
-> 
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -727,6 +727,8 @@ static struct rtnl_link_stats64 *virtnet
->  	tot->rx_length_errors = dev->stats.rx_length_errors;
->  	tot->rx_frame_errors = dev->stats.rx_frame_errors;
->  
-> +	virtio_dev_dump_histogram(vi->vdev);
-> +
->  	return tot;
->  }
->  
-> diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
-> --- a/drivers/virtio/virtio.c
-> +++ b/drivers/virtio/virtio.c
-> @@ -108,6 +108,16 @@ void virtio_check_driver_offered_feature
->  }
->  EXPORT_SYMBOL_GPL(virtio_check_driver_offered_feature);
->  
-> +void virtio_dev_dump_histogram(const struct virtio_device *vdev)
-> +{
-> +	const struct virtqueue *vq;
-> +
-> +	printk("Queue histogram for %s:\n", dev_name(&vdev->dev));
-> +	list_for_each_entry(vq, &vdev->vqs, list)
-> +		virtqueue_dump_histogram(vq);
-> +}
-> +EXPORT_SYMBOL_GPL(virtio_dev_dump_histogram);
-> +
->  static int virtio_dev_probe(struct device *_d)
->  {
->  	int err, i;
-> diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-> --- a/drivers/virtio/virtio_ring.c
-> +++ b/drivers/virtio/virtio_ring.c
-> @@ -120,6 +120,8 @@ struct vring_virtqueue
->  	ktime_t last_add_time;
->  #endif
->  
-> +	unsigned int *histo;
-> +
->  	/* Tokens for callbacks. */
->  	void *data[];
->  };
-> @@ -259,6 +261,8 @@ int virtqueue_add_buf(struct virtqueue *
->  	BUG_ON(out + in > vq->vring.num);
->  	BUG_ON(out + in == 0);
->  
-> +	vq->histo[out+in]++;
-> +
->  	/* If the host supports indirect descriptor tables, consider it. */
->  	if (vq->indirect) {
->  		bool try_indirect;
-> @@ -726,6 +730,7 @@ struct virtqueue *vring_new_virtqueue(un
->  	}
->  	vq->data[i] = NULL;
->  
-> +	vq->histo = kzalloc(num * sizeof(vq->histo[0]), GFP_KERNEL);
->  	return &vq->vq;
->  }
->  EXPORT_SYMBOL_GPL(vring_new_virtqueue);
-> @@ -772,4 +777,33 @@ unsigned int virtqueue_get_vring_size(st
->  }
->  EXPORT_SYMBOL_GPL(virtqueue_get_vring_size);
->  
-> +void virtqueue_dump_histogram(const struct virtqueue *_vq)
-> +{
-> +	const struct vring_virtqueue *vq = to_vvq(_vq);
-> +	int i, j, start = 0, end = 0, max = 1;
-> +	char line[120];
-> +
-> +	for (i = 0; i < vq->vring.num; i++) {
-> +		if (!vq->histo[i])
-> +			continue;
-> +
-> +		end = i;
-> +		if (!vq->histo[start])
-> +			start = i;
-> +
-> +		if (vq->histo[i] > max)
-> +			max = vq->histo[i];
-> +	}
-> +
-> +	printk("Size distribution for %s (max=%u):\n", _vq->name, max);
-> +	for (i = start; i <= end; i++) {
-> +		unsigned int off;
-> +		off = sprintf(line, "%3u: %-7u ", i, vq->histo[i]);
-> +		for (j = 0; j < vq->histo[i] * 64 / max; j++)
-> +			line[off++] = '#';
-> +		line[off] = '\0';
-> +		printk("%s\n", line);
-> +	}
-> +}
-> +
->  MODULE_LICENSE("GPL");
-> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
-> --- a/include/linux/virtio.h
-> +++ b/include/linux/virtio.h
-> @@ -52,6 +52,9 @@ unsigned int virtqueue_get_vring_size(st
->  
->  int virtqueue_get_queue_index(struct virtqueue *vq);
->  
-> +void virtio_dev_dump_histogram(const struct virtio_device *vdev);
-> +void virtqueue_dump_histogram(const struct virtqueue *vq);
-> +
->  /**
->   * virtio_device - representation of a device using virtio
->   * @index: unique position on the virtio bus
+This can be done by defining the initialization order, have the "late"
+ones defer when the depend aren't initialized yet, and kick probe arse
+from bus notifiers (tho that could be moved to the core via some
+helpers).
+
+Cheers,
+Ben.
+
+
+
