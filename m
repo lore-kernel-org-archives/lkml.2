@@ -1,205 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755760Ab2IFOAI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 10:00:08 -0400
-Received: from vostochny.stro.at ([78.47.22.85]:42948 "EHLO vostochny.stro.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753804Ab2IFOAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 10:00:06 -0400
-Date: Thu, 6 Sep 2012 14:00:04 +0000
-From: maximilian attems <max@stro.at>
-To: Tzafrir Cohen <tzafrir.cohen@xorcom.com>
-Cc: Michal Marek <mmarek@suse.cz>, Linux Kbuild <linux-kbuild@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] builddeb: remove unneeded explicit Architecture
-Message-ID: <20120906140004.GL19848@vostochny.stro.at>
-References: <1344941092-31312-1-git-send-email-tzafrir.cohen@xorcom.com>
- <5040C112.70501@suse.cz>
- <20120905130528.GI18204@xorcom.com>
- <50475310.6000508@suse.cz>
- <20120905151422.GD12713@stro.at>
- <20120905164009.GM18204@xorcom.com>
- <20120905202604.GF28778@vostochny.stro.at>
+	id S1755771Ab2IFOAw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 10:00:52 -0400
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:51933 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753769Ab2IFOAu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 10:00:50 -0400
+Message-ID: <5048ACAA.3000505@ti.com>
+Date: Thu, 06 Sep 2012 17:01:14 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120903 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120905202604.GF28778@vostochny.stro.at>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+CC: Lars-Peter Clausen <lars@metafoo.de>, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH] Don't clobber access methods when !regmap
+References: <1346939132-20187-1-git-send-email-panto@antoniou-consulting.com> <50477FA9.8060905@metafoo.de> <D96C7824-5EBC-4418-B016-DCE395A720D7@antoniou-consulting.com>
+In-Reply-To: <D96C7824-5EBC-4418-B016-DCE395A720D7@antoniou-consulting.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 05, 2012 at 08:26:05PM +0000, maximilian attems wrote:
-> On Wed, Sep 05, 2012 at 07:40:09PM +0300, Tzafrir Cohen wrote:
-> > 
-> > $ grep CROSS_COMPILE .config
-> > CONFIG_CROSS_COMPILE="arm-linux-gnueabihf-"
-> > 
-> > Command:
-> > 
-> >   KBUILD_DEBARCH=armhf make ARCH=arm KBUILD_IMAGE=uImage deb-pkg
-> > 
-> > Error I get:
-> > 
-> >   dpkg-gencontrol: error: current host architecture 'armhf' does not
-> >   appear in package's architecture list (amd64)
-> > 
-> > It seems I have to use KBUILD_DEBARCH, as the kernel build system can't
-> > really tell if I want armel or armhf (If I built the same kernel for a
-> > Squeeze system I would have been forced to use armel).
+Hi,
+
+On 09/05/2012 07:43 PM, Pantelis Antoniou wrote:
+> The driver in question (twl4030.c) does not call snd_soc_codec_set_cache_io().
+> However the snd-soc core does call it in sound/soc/soc-core.c in soc_probe_codec.
 > 
-> well, obviously the dpkg call in
->  -arch=$(dpkg --print-architecture)
-> is wrong please fix that.
-> 
+> I do see that there's a commit 98d3088e534a2a61f6690b5426909b0c3b57a785 that is
+> fixing it in a different manner.
 
-care to test belows:
+I also noticed this (with 3.6-rc1 I think).
+The commit you mention does fix it so we do not have issue anymore.
+I sent two patches related to this:
+http://mailman.alsa-project.org/pipermail/alsa-devel/2012-August/053864.html
+http://mailman.alsa-project.org/pipermail/alsa-devel/2012-August/053876.html
 
+Mark took a different route which gives us the commit you mentioned:
+http://mailman.alsa-project.org/pipermail/alsa-devel/2012-August/053889.html
 
->From e12defa4ad57cdb34c14031f1dddd04db6df8962 Mon Sep 17 00:00:00 2001
-From: maximilian attems <max@stro.at>
-Date: Thu, 6 Sep 2012 15:22:02 +0200
-Subject: [PATCH] deb-pkg: Simplify architecture matching for cross building
-
-No point in invoking dpkg to get the archticture of the host
-we build on. Instead directly use the logic implemented
-in create_package(). No need anymore to override arch.
-
-While at it fix the linux images to be for the specific
-built arch.
-
-Signed-off-by: maximilian attems <max@stro.at>
----
- scripts/package/builddeb |   82 ++++++++++++++++++++++------------------------
- 1 file changed, 39 insertions(+), 43 deletions(-)
-
-diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-index acb8650..07792d6 100644
---- a/scripts/package/builddeb
-+++ b/scripts/package/builddeb
-@@ -14,6 +14,7 @@ set -e
- 
- create_package() {
- 	local pname="$1" pdir="$2"
-+	local forcearch=""
- 
- 	cp debian/copyright "$pdir/usr/share/doc/$pname/"
- 	cp debian/changelog "$pdir/usr/share/doc/$pname/changelog.Debian"
-@@ -25,44 +26,8 @@ create_package() {
- 	chown -R root:root "$pdir"
- 	chmod -R go-w "$pdir"
- 
--	# Attempt to find the correct Debian architecture
--	local forcearch="" debarch=""
--	case "$UTS_MACHINE" in
--	i386|ia64|alpha)
--		debarch="$UTS_MACHINE" ;;
--	x86_64)
--		debarch=amd64 ;;
--	sparc*)
--		debarch=sparc ;;
--	s390*)
--		debarch=s390 ;;
--	ppc*)
--		debarch=powerpc ;;
--	parisc*)
--		debarch=hppa ;;
--	mips*)
--		debarch=mips$(grep -q CPU_LITTLE_ENDIAN=y .config && echo el) ;;
--	arm*)
--		debarch=arm$(grep -q CONFIG_AEABI=y .config && echo el) ;;
--	*)
--		echo "" >&2
--		echo "** ** **  WARNING  ** ** **" >&2
--		echo "" >&2
--		echo "Your architecture doesn't have it's equivalent" >&2
--		echo "Debian userspace architecture defined!" >&2
--		echo "Falling back to using your current userspace instead!" >&2
--		echo "Please add support for $UTS_MACHINE to ${0} ..." >&2
--		echo "" >&2
--	esac
--	if [ -n "$KBUILD_DEBARCH" ] ; then
--		debarch="$KBUILD_DEBARCH"
--	fi
--	if [ -n "$debarch" ] ; then
--		forcearch="-DArchitecture=$debarch"
--	fi
--
- 	# Create the package
--	dpkg-gencontrol -isp $forcearch -p$pname -P"$pdir"
-+	dpkg-gencontrol -p$pname -P"$pdir"
- 	dpkg --build "$pdir" ..
- }
- 
-@@ -83,6 +48,38 @@ fwpackagename=linux-firmware-image
- kernel_headers_packagename=linux-headers-$version
- libc_headers_packagename=linux-libc-dev
- 
-+# Attempt to find the correct Debian architecture
-+case "$UTS_MACHINE" in
-+i386|ia64|alpha)
-+	debarch="$UTS_MACHINE" ;;
-+x86_64)
-+	debarch=amd64 ;;
-+sparc*)
-+	debarch=sparc ;;
-+s390*)
-+	debarch=s390 ;;
-+ppc*)
-+	debarch=powerpc ;;
-+parisc*)
-+	debarch=hppa ;;
-+mips*)
-+	debarch=mips$(grep -q CPU_LITTLE_ENDIAN=y .config && echo el) ;;
-+arm*)
-+	debarch=arm$(grep -q CONFIG_AEABI=y .config && echo el) ;;
-+*)
-+	echo "" >&2
-+	echo "** ** **  WARNING  ** ** **" >&2
-+	echo "" >&2
-+	echo "Your architecture doesn't have it's equivalent" >&2
-+	echo "Debian userspace architecture defined!" >&2
-+	echo "Falling back to using your current userspace instead!" >&2
-+	echo "Please add support for $UTS_MACHINE to ${0} ..." >&2
-+	echo "" >&2
-+esac
-+if [ -n "$KBUILD_DEBARCH" ] ; then
-+	debarch="$KBUILD_DEBARCH"
-+fi
-+
- if [ "$ARCH" = "um" ] ; then
- 	packagename=user-mode-linux-$version
- fi
-@@ -234,8 +231,8 @@ else
- Package: $packagename
- Provides: linux-image, linux-image-2.6, linux-modules-$version
- Suggests: $fwpackagename
--Architecture: any
--Description: Linux kernel, version $version
-+Architecture: $debarch
-+Description: Linux kernel, version $version on $debarch
-  This package contains the Linux kernel, modules and corresponding other
-  files, version: $version.
- EOF
-@@ -252,15 +249,14 @@ mkdir -p "$destdir"
- (cd $objtree; tar -c -f - -T "$objtree/debian/hdrobjfiles") | (cd $destdir; tar -xf -)
- ln -sf "/usr/src/linux-headers-$version" "$kernel_headers_dir/lib/modules/$version/build"
- rm -f "$objtree/debian/hdrsrcfiles" "$objtree/debian/hdrobjfiles"
--arch=$(dpkg --print-architecture)
- 
- cat <<EOF >> debian/control
- 
- Package: $kernel_headers_packagename
-+Architecture: $debarch
- Provides: linux-headers, linux-headers-2.6
--Architecture: $arch
--Description: Linux kernel headers for $KERNELRELEASE on $arch
-- This package provides kernel header files for $KERNELRELEASE on $arch
-+Description: Linux kernel headers for $KERNELRELEASE on $debarch
-+ This package provides kernel header files for $KERNELRELEASE on $debarch
-  .
-  This is useful for people who need to build external modules
- EOF
--- 
-1.7.10.4
-
+Regards,
+Péter
