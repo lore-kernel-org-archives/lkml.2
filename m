@@ -1,41 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755373Ab2IFNf5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 09:35:57 -0400
-Received: from mail.tpi.com ([70.99.223.143]:4262 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755247Ab2IFNfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 09:35:55 -0400
-Message-ID: <5048A6B6.40307@canonical.com>
-Date: Thu, 06 Sep 2012 07:35:50 -0600
-From: Tim Gardner <tim.gardner@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1754656Ab2IFNja (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 09:39:30 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:34053 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752742Ab2IFNj2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 09:39:28 -0400
 MIME-Version: 1.0
-To: airlied@gmail.com
-CC: airlied@redhat.com, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: drm/vmwgfx: add MODULE_DEVICE_TABLE so vmwgfx loads at boot
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <87y5knz6l5.fsf@devron.myhome.or.jp>
+References: <1346774264-8031-1-git-send-email-linkinjeon@gmail.com>
+	<20120904161747.GJ23464@ZenIV.linux.org.uk>
+	<CAKYAXd_wTxqbC-UxYimCkZtvSddx=f3FG0hoiEY_doMjoxkKog@mail.gmail.com>
+	<87harc34d9.fsf@devron.myhome.or.jp>
+	<CAKYAXd-8aztDe1QiFT=NSQX8J+h_FM+cAWwo+Q+fUQHpNGTctw@mail.gmail.com>
+	<87y5knz6l5.fsf@devron.myhome.or.jp>
+Date: Thu, 6 Sep 2012 22:39:27 +0900
+Message-ID: <CAKYAXd_mxq26bhRYd-YM9OBjYMO12TD4wHxm6PqHBLjgGFHaZg@mail.gmail.com>
+Subject: Re: [PATCH v2 1/5] fat: allocate persistent inode numbers
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
+        bfields@fieldses.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave - I couldn't find this patch in your git repo at
-git://people.freedesktop.org/~airlied/linux in the drm-next or drm-fixes
-branches.
+2012/9/6 OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+> Namjae Jeon <linkinjeon@gmail.com> writes:
+>
+>>>> In this long discusstion about the FAT acceptance over NFS, our belief
+>>>> is still that the objective should be to reduce errors as much as
+>>>> possible and then if there are certain scenarios - at least that could
+>>>> be highlighted as a limitation in Documentation instead of completely
+>>>> discarding the usage of FAT over NFS.  So how about puttting rename
+>>>> scenario as a limitation ? In ideal scenario how many times this is
+>>>> going to happen ?
+>>>
+>>> My understanding of your patches is to introduce the silent corruption
+>>> bug by getting wrong location via ino on some cases, instead of
+>>> ESTALE. And make surprise to userland by change ino.
+>>>
+>>> Why is it safe to change ino? If you are saying to remove the changing
+>>> ino on rename, how handle the case of collision?
+>> Yes, agreed this would lead to collision. So, If we are choosing
+>> 'i_pos' as inode
+>> number, We need to have a mechanism to avoid this 'i_pos' being reused.
+>>
+>> We can have one thing over here. As a part of avoidance for such scenarios -
+>> We can return EBUSY for this rename operation. i.e., If the inode is being
+>> referenced then in such cases it makes sense to return EBUSY over NFS and
+>>  forcus on the large part of the solution which is making FAT stable.
+>>
+>> Let me know your opinion.
+>
+> It sounds like sane to provide the limited but stable behavior, with the
+> option. But at first, I'd like to see the read-only export but clean
+> solution, and make it stable. (I'm not thinking about the implementation
+> detail. It may be the stable ino solution, or may not be.)
+Hi. OGAWA.
+I Agree. Once, I will check whether it is possible to implement
+read-only export or not.
+And If I face some problem or have some concern, I will discuss about
+it with you.
 
-https://patchwork.kernel.org/patch/1379071/
-
-It appears to fix a real problem for Mac users -
-http://bugs.launchpad.net/bugs/1039157. See
-https://bugs.launchpad.net/ubuntu/oneiric/+source/linux/+bug/1039157/comments/31
-for confirmation.
-
-I think it should also be 'Cc: stable@vger.kernel.org'. It applies as
-far back as 2.6.32 with minor context differences.
-
-rtg
--- 
-Tim Gardner tim.gardner@canonical.com
+>
+> After that, we can make it writable incrementally.
+Okay.
+Thanks a lot.
+> --
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
