@@ -1,83 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758733Ab2IFQBG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 12:01:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16343 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758307Ab2IFQBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 12:01:03 -0400
-Date: Thu, 6 Sep 2012 12:01:00 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Remove user-triggerable BUG from mpol_to_str
-Message-ID: <20120906160100.GA30220@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932152Ab2IFQCM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 12:02:12 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33890 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932074Ab2IFQCL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 12:02:11 -0400
+Message-ID: <1346947316.18408.36.camel@twins>
+Subject: Re: [PATCH] perf: remove sw events from multiplexing rotation list
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, fweisbec@gmail.com
+Date: Thu, 06 Sep 2012 18:01:56 +0200
+In-Reply-To: <20120906132346.GA32717@quad>
+References: <20120906132346.GA32717@quad>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trivially triggerable by any user.
+On Thu, 2012-09-06 at 15:23 +0200, Stephane Eranian wrote:
+> Software events (sw,tracepoints,...) do not need to be
+> multiplexed. However, when using a SW event, the SW PMU
+> (TYPE_SOFTWARE, TYPE_TRACEPOINT) was added to the per-cpu
+> rotation_list. That list is used by perf_rotate_context()
+> to iterate over all the PMUs to rotate event lists and
+> multiplex.
+> 
+> This is not needed for SW events. Doing this adds some
+> unnecessary overhead, so drop it by rejecting SW PMUs
+> in perf_pmu_rotate_start().
 
-kernel BUG at mm/mempolicy.c:2546!
-invalid opcode: 0000 [#1] SMP 
-CPU 2 
-Modules linked in: tun fuse binfmt_misc caif_socket caif phonet bluetooth rfkill can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt rds af_key decnet rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables crc32c_intel ghash_clmulni_intel microcode usb_debug pcspkr i2c_i801 e1000e nfsd nfs_acl auth_rpcgss lockd sunrpc i915 video i2c_algo_bit drm_kms_helper drm i2c_core [last unloaded: scsi_wait_scan]
-Pid: 23988, comm: trinity-child2 Not tainted 3.4.0-rc7+ #23
-RIP: 0010:[<ffffffff811a3b16>]  [<ffffffff811a3b16>] mpol_to_str+0x156/0x360
-RSP: 0018:ffff88010197fc98  EFLAGS: 00010202
-RAX: 0000000000006b6b RBX: ffff880109a34000 RCX: 0000000000000000
-RDX: ffff8801464984a0 RSI: 0000000000000032 RDI: ffff88010197fdbe
-RBP: ffff88010197fd48 R08: 00000000000992f0 R09: ffffffff819ce9fa
-R10: 0000000000000001 R11: 0000000000000003 R12: ffff88010197fdbe
-R13: 0000000000000032 R14: 0000000000006b6b R15: ffff880141c3e880
-FS:  00007fa1e5216740(0000) GS:ffff880148000000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000000 CR3: 00000001426dd000 CR4: 00000000001407e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process trinity-child2 (pid: 23988, threadinfo ffff88010197e000, task ffff88007821a670)
-Stack:
- ffff88010197fcb8 ffffffff81340b85 ffff88013e4292c8 0000000000000000
- ffff88010197fcd8 ffffffff81670a6b ffff88013e4292c0 ffff8801464984a0
- ffff88010197fd08 ffffffff811a2f8e 00007fd34e935fff 0000000000000000
-Call Trace:
- [<ffffffff81340b85>] ? do_raw_spin_unlock+0x75/0xd0
- [<ffffffff81670a6b>] ? _raw_spin_unlock+0x2b/0x50
- [<ffffffff811a2f8e>] ? mpol_shared_policy_lookup+0x5e/0x80
- [<ffffffff81171740>] ? shmem_get_policy+0x30/0x40
- [<ffffffff8122f235>] show_numa_map+0xd5/0x450
- [<ffffffff8122fb50>] ? gather_hugetbl_stats+0x70/0x70
- [<ffffffff8122fae0>] ? pagemap_hugetlb_range+0xf0/0xf0
- [<ffffffff8122e6a2>] ? m_start+0xa2/0x180
- [<ffffffff8122f5e3>] show_pid_numa_map+0x13/0x20
- [<ffffffff811eaf32>] traverse+0xf2/0x230
- [<ffffffff811eb74b>] seq_read+0x34b/0x3e0
- [<ffffffff811c60ec>] vfs_read+0xac/0x180
- [<ffffffff811c6382>] sys_pread64+0xa2/0xc0
- [<ffffffff8167a0ad>] system_call_fastpath+0x1a/0x1f
-Code: 19 00 48 98 48 01 c3 89 d8 44 29 e0 48 8b 5d d8 4c 8b 65 e0 4c 8b 6d e8 4c 8b 75 f0 4c 8b 7d f8 c9 c3 0f 1f 00 66 83 f8 03 76 0a <0f> 0b 0f 1f 84 00 00 00 00 00 85 c9 0f 84 08 01 00 00 48 8b 8a 
-RIP  [<ffffffff811a3b16>] mpol_to_str+0x156/0x360
-
-Cc: stable@vger.kernel.org
-Signed-off-by: Dave Jones <davej@redhat.com>
-
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index bd92431..4ada3be 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2562,7 +2562,7 @@ int mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol, int no_context)
- 		break;
- 
- 	default:
--		BUG();
-+		return -EINVAL;
- 	}
- 
- 	l = strlen(policy_modes[mode]);
+Thanks!
