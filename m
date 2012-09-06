@@ -1,121 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758171Ab2IFPjB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 11:39:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44426 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752158Ab2IFPi7 (ORCPT
+	id S1758249Ab2IFPnf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 11:43:35 -0400
+Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:49272
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757343Ab2IFPne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 11:38:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120906135957.2e705a9d@pyramind.ukuu.org.uk>
-References: <s5hd3222azc.wl%tiwai@suse.de>
-	<CACVXFVP-A7M2dG9bOvAnpzR60=iTYSw=WCOEwgo9KeuioxKanQ@mail.gmail.com>
-	<s5hd32122hw.wl%tiwai@suse.de>
-	<CACVXFVNE1GHAQJTrQy2AYgUBfq5kv42EjJJ7J+2q3jzXG-E=MQ@mail.gmail.com>
-	<s5hpq61j9qx.wl%tiwai@suse.de>
-	<CACVXFVOu86J5=1DLDrpLCd-pyk1jm2HT7ks1uzCXm9nURCRo2A@mail.gmail.com>
-	<20120905140304.5c5c58a4@pyramind.ukuu.org.uk>
-	<CACVXFVO+OgvLoFMcDD0gcQnbzUW=SyR=wiSMyT-FtpjWW5sWdw@mail.gmail.com>
-	<20120905173011.7a1111f0@pyramind.ukuu.org.uk>
-	<CACVXFVMbCOov6nFqmmVu+9QYXuGc_1uwYKLcevqERZw4CRvVCA@mail.gmail.com>
-	<20120906135957.2e705a9d@pyramind.ukuu.org.uk>
-Date: Thu, 6 Sep 2012 23:38:57 +0800
-Message-ID: <CACVXFVNFAKYxPQ0Vnp22Dx4gGUYCXCummC2-QrpGKdGe70Kp+Q@mail.gmail.com>
-Subject: Re: A workaround for request_firmware() stuck in module_init
-From: Ming Lei <ming.lei@canonical.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Takashi Iwai <tiwai@suse.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Kay Sievers <kay@vrfy.org>,
-        linux-kernel@vger.kernel.org,
+	Thu, 6 Sep 2012 11:43:34 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dI936eI1432Izz1202hzzz2dh668h839h944hd25hf0ah11b5h121eh1220h1155h)
+X-WSS-ID: 0M9XQCD-02-0TU-02
+X-M-MSG: 
+Date: Thu, 6 Sep 2012 17:36:47 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: wyang1 <Wei.Yang@windriver.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        <linux-kernel@vger.kernel.org>, <oprofile-list@lists.sourceforge.net>
+Subject: Re: [PATCH] x86, 32-bit: Fix invalid stack address while in softirq
+Message-ID: <20120906153647.GB8285@erda.amd.com>
+References: <1346031133-12756-1-git-send-email-Wei.Yang@windriver.com>
+ <20120904102439.GS8285@erda.amd.com>
+ <5047FCBD.9000205@windriver.com>
+ <20120906100434.GX8285@erda.amd.com>
+ <1346937282.1680.15.camel@gandalf.local.home>
+ <20120906150246.GZ8285@erda.amd.com>
+ <1346944482.1680.28.camel@gandalf.local.home>
+ <20120906153407.GA8285@erda.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120906153407.GA8285@erda.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 6, 2012 at 8:59 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->> Sorry, I don't see anyone explained clearly why request_firmware()
->> can't be called inside module_init() in module case, so maybe it is
->> a bit early to say it is a fix on 'bug', :-)
->
-> Because the firmware load may trigger a need to load a driver to load the
-> firmware.
+On 06.09.12 17:34:07, Robert Richter wrote:
+> On 06.09.12 11:14:42, Steven Rostedt wrote:
+> > On Thu, 2012-09-06 at 17:02 +0200, Robert Richter wrote:
+> > 
+> > > > > --- a/arch/x86/oprofile/backtrace.c
+> > > > > +++ b/arch/x86/oprofile/backtrace.c
+> > > > > @@ -113,7 +113,7 @@ x86_backtrace(struct pt_regs * const regs, unsigned int depth)
+> > > > >  
+> > > > >  	if (!user_mode_vm(regs)) {
+> > > > >  		unsigned long stack = kernel_stack_pointer(regs);
+> > > > > -		if (depth)
+> > > > > +		if (depth & stack)
+> > > > 
+> > > > Can other users of kernel_stack_pointer() be nailed by a return of NULL?
+> > > 
+> > > It would be save here too, but dump_trace() falls back to the current
+> > > stack in case there is no stack address given which we don't want with
+> > > oprofile.
+> > > 
+> > > I was looking at all users of kernel_stack_pointer() and could not
+> > > find any direct pointer dereference of the sp. The only potential
+> > > problems I found could arise here:
+> > > 
+> > >  arch/x86/kernel/kprobes.c:resume_execution()
+> > >  arch/x86/kernel/time.c:profile_pc()
+> > > 
+> > > It is not quite clear if we really need code here that checks the
+> > > pointer. Since a NULL pointer access has the same effect as if the
+> > > stack address would be wrong which would be the case without the
+> > > patch, I rather tend not to change the code here.
+> > 
+> > Then a comment should be in the oprofile code too. Something to the
+> > effect that oprofile is special and can cause kernel_stack_pointer() to
+> > return NULL in some cases, thus we need to check for it.
+> 
+> We could return always a non-null stack pointer with:
+> 
+> unsigned long kernel_stack_pointer(struct pt_regs *regs)
+> {
+> 	unsigned long context = (unsigned long)regs & ~(THREAD_SIZE - 1);
+> 	unsigned long sp = (unsigned long)&regs->sp;
+> 	struct thread_info *tinfo;
+> 
+> 	if (context == (sp & ~(THREAD_SIZE - 1)))
+> 		return sp;
+> 	
+> 	tinfo = (struct thread_info *)context;
+> 	if (tinfo->previous_esp)
+> 		tinfo->previous_esp;
+> 
+> 	return (unsigned long)regs;
+> }
 
-Could you explain the problem in a bit detail?
+I meant:
 
-I understand once the request_firmware is called, the firmware load request
-is sent to userspace, so why is a driver loading involved? and what is the
-problem?
+unsigned long kernel_stack_pointer(struct pt_regs *regs)
+{
+	unsigned long context = (unsigned long)regs & ~(THREAD_SIZE - 1);
+	unsigned long sp = (unsigned long)&regs->sp;
+	struct thread_info *tinfo;
 
->
->> > dev_discard_firmware()
->> >
->> > so you an instance can drop its firmware reference if it doesn't need it
->> > post probe.
->>
->> This kind of mechanism has been implemented already: request_firmware()
->> and release_firmware() will get and put a refcount.  And, the reference
->> count is associated with firmware name, and it should be so, IMO.
->
-> Yes - so a dev_ firmware interface is very thin.
->
->> > You broke suspend/resume for lots of devices.
->>
->> The firmware cache mechanism will keep the firmware during suspend/resume
->> cycle to address the problem.
->
-> Ok
->
->> For drivers, I understand request_firmware()/request_firmware_nowait()
->> and release_firmware() are enough. If many devices share one firmware,
->> there is only one firmware kept in memory for their requests if one holds
->> the firmware, and there is a refcount for it already, :-)
->>
->> So I don't see why it is difficult to use request/release_firmware() inside
->> drivers, :-)
->
-> The big problem can be summed up in one word "asynchronous". Having
+	if (context == (sp & ~(THREAD_SIZE - 1)))
+		return sp;
+	
+	tinfo = (struct thread_info *)context;
+	if (tinfo->previous_esp)
+		return tinfo->previous_esp;
 
-OK, I agree on it, but I think it just happens in built in situation. For module
-case, I think the synchronous request_firmware should be OK.
+	return (unsigned long)regs;
+}
 
-> either an automated handler for it before ->probe is called or having the
-> driver author cut and paste in
->
->         if (!dev_request_firmware(dev, blah))
->                 return -EPROBE_DEFER;
->
-> avoids the need to deal with async completion after probe (and the
-> *horrible* case of
->
->         probe
->                 request firmware
->         remove
->
->         firmware ready
-> )
->
-> in each driver
+-Robert
 
-OK, it is one solution for asynchronous firmware loading.
+> 
+> Maybe this is even better.
+> 
+> -Robert
+> 
+> -- 
+> Advanced Micro Devices, Inc.
+> Operating System Research Center
 
-IMO, another candidate solution is to implement asynchronous probe
-for these drivers which will call request_firmware in its probe().
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
->
-> Having an auto unload for it at the end is just neatness. Perhaps in fact
-> it should be devm_request_firmware() and use the mechanism we have ?
-
-IMO, the kind of devm_request_firmware() mechanism may have its
-disadvantage because the firmware in memory may or should be
-released just after it has been downloaded into device, otherwise it will
-consume memory unnecessarily to keep it in the whole device lifetime
-if it will be released inside device release handler just like devm resources.
-
-
-Thanks,
---
-Ming Lei
