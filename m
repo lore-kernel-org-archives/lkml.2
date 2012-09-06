@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756698Ab2IFOmq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 10:42:46 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22913 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756518Ab2IFOmp (ORCPT
+	id S1756762Ab2IFOnG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 10:43:06 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:54694 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756537Ab2IFOnD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 10:42:45 -0400
-X-Authority-Analysis: v=2.0 cv=C49rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=0-4HISFYYNcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=lCWGTHJAsiIA:10 a=lVNSXnoet12_OyyF6fAA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1346942563.1680.19.camel@gandalf.local.home>
-Subject: Re: [PATCH] Add feature-removal-schedule.txt removal to
- feature-removal-schedule.txt
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Thu, 06 Sep 2012 10:42:43 -0400
-In-Reply-To: <CAM_iQpUHYDT2hnt3h8fF33rp3O9c_VjEftOFUj-qdMdUkxo1tw@mail.gmail.com>
-References: <1346091725.19381.10.camel@pippen.local.home>
-	 <CAM_iQpV9163UKQt8Kvroc6JyMQnv1tqG1rS5M2CBWzbo7XvJXQ@mail.gmail.com>
-	 <1346773188.27919.13.camel@gandalf.local.home>
-	 <CAM_iQpUHYDT2hnt3h8fF33rp3O9c_VjEftOFUj-qdMdUkxo1tw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 6 Sep 2012 10:43:03 -0400
+From: Emil Goode <emilgoode@gmail.com>
+To: bonbons@linux-vserver.org, jkosina@suse.cz
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH] HID: picoLCD: Remove use of deprecated function
+Date: Thu,  6 Sep 2012 16:46:20 +0200
+Message-Id: <1346942780-8091-1-git-send-email-emilgoode@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-06 at 22:29 +0800, Cong Wang wrote:
+The flush_delayed_work_sync function is deprecated,
+we can instead call flush_delayed_work directly.
 
-> I don't think feature-removal-schedule.txt is for kernel users, it
-> is a kind of a TODO list for kernel developers.
+Sparse is giving a warning:
+drivers/hid/hid-picolcd_fb.c:611:2: warning:
+	‘flush_delayed_work_sync’ is deprecated
+	(declared at include/linux/workqueue.h:454)
+	[-Wdeprecated-declarations]
 
-And this is exactly what Linus was complaining about. It shouldn't be
-used as a TODO list for developers.
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
+---
+ drivers/hid/hid-picolcd_fb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
--- Steve
-
+diff --git a/drivers/hid/hid-picolcd_fb.c b/drivers/hid/hid-picolcd_fb.c
+index 0008a51..eb00357 100644
+--- a/drivers/hid/hid-picolcd_fb.c
++++ b/drivers/hid/hid-picolcd_fb.c
+@@ -608,7 +608,7 @@ void picolcd_exit_framebuffer(struct picolcd_data *data)
+ 	/* make sure there is no running update - thus that fbdata->picolcd
+ 	 * once obtained under lock is guaranteed not to get free() under
+ 	 * the feet of the deferred work */
+-	flush_delayed_work_sync(&info->deferred_work);
++	flush_delayed_work(&info->deferred_work);
+ 
+ 	data->fb_info = NULL;
+ 	unregister_framebuffer(info);
+-- 
+1.7.10.4
 
