@@ -1,133 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760065Ab2IFV7b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 17:59:31 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:33728 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759933Ab2IFV73 (ORCPT
+	id S1752042Ab2IFWD6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 18:03:58 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:44946 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777Ab2IFWD4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 17:59:29 -0400
-Date: Thu, 6 Sep 2012 14:58:38 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH tip/core/rcu 11/15] rcu: Avoid spurious RCU CPU stall
- warnings
-Message-ID: <20120906215838.GM2448@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120830185607.GA32148@linux.vnet.ibm.com>
- <1346352988-32444-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346352988-32444-11-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346943414.18408.31.camel@twins>
- <1346944049.1680.23.camel@gandalf.local.home>
- <1346944758.18408.35.camel@twins>
- <20120906210354.GC2448@linux.vnet.ibm.com>
- <1346967661.1680.52.camel@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346967661.1680.52.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12090621-6148-0000-0000-0000095CEF17
+	Thu, 6 Sep 2012 18:03:56 -0400
+X-AuditID: cbfee61b-b7f056d000002c30-52-50491dca8bef
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Stephen Warren'" <swarren@wwwdotorg.org>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>
+Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linus.walleij@linaro.org,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        dong.aisheng@linaro.org, patches@linaro.org
+References: <226e01cd8ae6$928010b0$b7803210$%kim@samsung.com>
+ <1346826046-30484-1-git-send-email-thomas.abraham@linaro.org>
+ <5048DE83.4050203@wwwdotorg.org>
+In-reply-to: <5048DE83.4050203@wwwdotorg.org>
+Subject: RE: [PATCH v3 1/4] pinctrl: add samsung pinctrl and gpiolib driver
+Date: Fri, 07 Sep 2012 07:03:53 +0900
+Message-id: <241701cd8c7b$81022580$83067080$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac2MVc4CnFyKVWjFQGSWggWdBwoQ1wAIz8aA
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrALMWRmVeSWpSXmKPExsVy+t9jAd1Tsp4BBnsfi1hc3jWHzWLG+X1M
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGU8mm1W8Iiz4tOVI+wNjL/Yuxg5OSQETCSa+48xQdhi
+	EhfurWfrYuTiEBJYxCjx+N1FdgjnL6PE03OtzCBVbAIaEoffPwPrFhGIkdh0oxGsm1mgn0ni
+	6Lc4EFtIYAGjxMGVkiA2p4CuxNpTfSwgtrCAt8TKxU/AelkEVCWaehczdjFycPAK2Eo0LyoF
+	CfMKCEr8mHyPBWKklsT6ncehxstLbF7zlhmkXEJAXeLRX12IC4wkHq/eywpRIiKx78U7xgmM
+	QrOQTJqFZNIsJJNmIWlZwMiyilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM4nJ9J72Bc1WBx
+	iFGAg1GJh9fiikeAEGtiWXFl7iFGCQ5mJRHeib+AQrwpiZVVqUX58UWlOanFhxilOViUxHmd
+	ztkFCAmkJ5akZqemFqQWwWSZODilGhhdg9Zd7Z+72onhvPm35oc2+RUXlHte/7NpWtujx32H
+	4bLAm7VfNhWs0jllF5GyYu/E/xwRW8383ASzfpzarqAQNLNzz+xNScF/JOrc9KqPFn3+0fZO
+	9fTNSu27lrxTmyu/f4w++klyrcLjd7KTxQIF9/7gCX3P0JcSWiVTzDHz2XfvVW3hcd5KLMUZ
+	iYZazEXFiQBI9MOwYwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 06, 2012 at 05:41:01PM -0400, Steven Rostedt wrote:
-> On Thu, 2012-09-06 at 14:03 -0700, Paul E. McKenney wrote:
+Stephen Warren wrote:
 > 
-> > Here are a few other ways that stalls can happen:
-> > 
-> > o	A CPU looping in an RCU read-side critical section.
+> On 09/05/2012 12:20 AM, Thomas Abraham wrote:
+> > Add a new device tree enabled pinctrl and gpiolib driver for Samsung
+> > SoC's. This driver provides a common and extensible framework for all
+> > Samsung SoC's to interface with the pinctrl and gpiolib subsystems. This
+> > driver supports only device tree based instantiation and hence can be
+> > used only on those Samsung platforms that have device tree enabled.
+> >
+> > This driver is split into two parts: the pinctrl interface and the
+> gpiolib
+> > interface. The pinctrl interface registers pinctrl devices with the
+> pinctrl
+> > subsystem and gpiolib interface registers gpio chips with the gpiolib
+> > subsystem. The information about the pins, pin groups, pin functions and
+> > gpio chips, which are SoC specific, are parsed from device tree node.
+> >
+> > Cc: Linus Walleij <linus.walleij@linaro.org>
+> > Cc: Kukjin Kim <kgene.kim@samsung.com>
+> > Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
 > 
-> For a minute? That's a bug.
-> 
-> > 	
-> > o	A CPU looping with interrupts disabled.  This condition can
-> > 	result in RCU-sched and RCU-bh stalls.
-> 
-> Also a bug.
-> 
-> > 
-> > o	A CPU looping with preemption disabled.  This condition can
-> > 	result in RCU-sched stalls and, if ksoftirqd is in use, RCU-bh
-> > 	stalls.
-> 
-> Bug as well.
-> 
-> > 
-> > o	A CPU looping with bottom halves disabled.  This condition can
-> > 	result in RCU-sched and RCU-bh stalls.
-> 
-> Bug too.
-> 
-> > 
-> > o	For !CONFIG_PREEMPT kernels, a CPU looping anywhere in the kernel
-> > 	without invoking schedule().
-> 
-> Another bug.
-> 
-> > 
-> > o	A CPU-bound real-time task in a CONFIG_PREEMPT kernel, which might
-> > 	happen to preempt a low-priority task in the middle of an RCU
-> > 	read-side critical section.   This is especially damaging if
-> > 	that low-priority task is not permitted to run on any other CPU,
-> > 	in which case the next RCU grace period can never complete, which
-> > 	will eventually cause the system to run out of memory and hang.
-> > 	While the system is in the process of running itself out of
-> > 	memory, you might see stall-warning messages.
-> 
-> Buggy system.
-> 
-> > 
-> > o	A CPU-bound real-time task in a CONFIG_PREEMPT_RT kernel that
-> > 	is running at a higher priority than the RCU softirq threads.
-> > 	This will prevent RCU callbacks from ever being invoked,
-> > 	and in a CONFIG_TREE_PREEMPT_RCU kernel will further prevent
-> > 	RCU grace periods from ever completing.  Either way, the
-> > 	system will eventually run out of memory and hang.  In the
-> > 	CONFIG_TREE_PREEMPT_RCU case, you might see stall-warning
-> > 	messages.
-> 
-> Not really a bug, but the developers need a spanking.
+> Acked-by: Stephen Warren <swarren@nvidia.com>
 
-And RCU does what it can, which is limited to a splat on the console.
+Applied this whole series, thanks.
 
-> > o	A hardware or software issue shuts off the scheduler-clock
-> > 	interrupt on a CPU that is not in dyntick-idle mode.  This
-> > 	problem really has happened, and seems to be most likely to
-> > 	result in RCU CPU stall warnings for CONFIG_NO_HZ=n kernels.
-> 
-> Driving the bug.
-> 
-> > 
-> > o	A bug in the RCU implementation.
-> 
-> Bug in the name.
-> 
-> > 
-> > o	A hardware failure.  This is quite unlikely, but has occurred
-> > 	at least once in real life.  A CPU failed in a running system,
-> > 	becoming unresponsive, but not causing an immediate crash.
-> > 	This resulted in a series of RCU CPU stall warnings, eventually
-> > 	leading the realization that the CPU had failed.
-> 
-> Hardware bug.
-> 
-> So, where's the "spurious RCU CPU stall warnings"?
-
-I figured that would count as a bug in the RCU implementation.  ;-)
-
-> All these cases deserve a warning.
-
-Agreed, and that is the whole purpose of the stall warnings.
-
-							Thanx, Paul
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
