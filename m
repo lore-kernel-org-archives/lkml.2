@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849Ab2IFWfx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 18:35:53 -0400
+	id S1753533Ab2IFWfV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 18:35:21 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:51551 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752738Ab2IFWfW (ORCPT
+	with ESMTP id S1752738Ab2IFWfS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 18:35:22 -0400
+	Thu, 6 Sep 2012 18:35:18 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com
 Cc: Kent Overstreet <koverstreet@google.com>, Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH v10 7/8] block: Consolidate bio_alloc_bioset(), bio_kmalloc()
-Date: Thu,  6 Sep 2012 15:35:01 -0700
-Message-Id: <1346970902-10931-8-git-send-email-koverstreet@google.com>
+Subject: [PATCH v10 4/8] block: Add bio_reset()
+Date: Thu,  6 Sep 2012 15:34:58 -0700
+Message-Id: <1346970902-10931-5-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1346970902-10931-1-git-send-email-koverstreet@google.com>
 References: <1346970902-10931-1-git-send-email-koverstreet@google.com>
@@ -21,222 +21,134 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously, bio_kmalloc() and bio_alloc_bioset() behaved slightly
-different because there was some almost-duplicated code - this fixes
-some of that.
+Reusing bios is something that's been highly frowned upon in the past,
+but driver code keeps doing it anyways. If it's going to happen anyways,
+we should provide a generic method.
 
-The important change is that previously bio_kmalloc() always set
-bi_io_vec = bi_inline_vecs, even if nr_iovecs == 0 - unlike
-bio_alloc_bioset(). This would cause bio_has_data() to return true; I
-don't know if this resulted in any actual bugs but it was certainly
-wrong.
+This'll help with getting rid of bi_destructor - drivers/block/pktcdvd.c
+was open coding it, by doing a bio_init() and resetting bi_destructor.
 
-bio_kmalloc() and bio_alloc_bioset() also have different arbitrary
-limits on nr_iovecs - 1024 (UIO_MAXIOV) for bio_kmalloc(), 256
-(BIO_MAX_PAGES) for bio_alloc_bioset(). This patch doesn't fix that, but
-at least they're enforced closer together and hopefully they will be
-fixed in a later patch.
+This required reordering struct bio, but the block layer is not yet
+nearly fast enough for any cacheline effects to matter here.
 
-This'll also help with some future cleanups - there are a fair number of
-functions that allocate bios (e.g. bio_clone()), and now they don't have
-to be duplicated for bio_alloc(), bio_alloc_bioset(), and bio_kmalloc().
+v5: Add a define BIO_RESET_BITS, to be very explicit about what parts of
+bio->bi_flags are saved.
+v6: Further commenting verbosity, per Tejun
+v9: Add a function comment
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 CC: Jens Axboe <axboe@kernel.dk>
-v7: Re-add dropped comments, improv patch description
+Acked-by: Tejun Heo <tj@kernel.org>
 ---
- fs/bio.c            | 110 ++++++++++++++++++----------------------------------
- include/linux/bio.h |  16 ++++++--
- 2 files changed, 49 insertions(+), 77 deletions(-)
+ fs/bio.c                  | 24 ++++++++++++++++++++++++
+ include/linux/bio.h       |  1 +
+ include/linux/blk_types.h | 25 +++++++++++++++++++------
+ 3 files changed, 44 insertions(+), 6 deletions(-)
 
 diff --git a/fs/bio.c b/fs/bio.c
-index 736ef12..191b9b8 100644
+index b14f71a..919ee9a 100644
 --- a/fs/bio.c
 +++ b/fs/bio.c
-@@ -55,6 +55,7 @@ static struct biovec_slab bvec_slabs[BIOVEC_NR_POOLS] __read_mostly = {
-  * IO code that does not need private memory pools.
-  */
- struct bio_set *fs_bio_set;
-+EXPORT_SYMBOL(fs_bio_set);
+@@ -263,6 +263,30 @@ void bio_init(struct bio *bio)
+ EXPORT_SYMBOL(bio_init);
  
- /*
-  * Our slab pool management
-@@ -301,39 +302,58 @@ EXPORT_SYMBOL(bio_reset);
-  * @bs:		the bio_set to allocate from.
-  *
-  * Description:
-- *   bio_alloc_bioset will try its own mempool to satisfy the allocation.
-- *   If %__GFP_WAIT is set then we will block on the internal pool waiting
-- *   for a &struct bio to become free.
-- **/
-+ *   If @bs is NULL, uses kmalloc() to allocate the bio; else the allocation is
-+ *   backed by the @bs's mempool.
+ /**
++ * bio_reset - reinitialize a bio
++ * @bio:	bio to reset
 + *
-+ *   When @bs is not NULL, if %__GFP_WAIT is set then bio_alloc will always be
-+ *   able to allocate a bio. This is due to the mempool guarantees. To make this
-+ *   work, callers must never allocate more than 1 bio at a time from this pool.
-+ *   Callers that need to allocate more than 1 bio must always submit the
-+ *   previously allocated bio for IO before attempting to allocate a new one.
-+ *   Failure to do so can cause deadlocks under memory pressure.
-+ *
-+ *   RETURNS:
-+ *   Pointer to new bio on success, NULL on failure.
++ * Description:
++ *   After calling bio_reset(), @bio will be in the same state as a freshly
++ *   allocated bio returned bio bio_alloc_bioset() - the only fields that are
++ *   preserved are the ones that are initialized by bio_alloc_bioset(). See
++ *   comment in struct bio.
 + */
- struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
- {
-+	unsigned front_pad;
-+	unsigned inline_vecs;
- 	unsigned long idx = BIO_POOL_NONE;
- 	struct bio_vec *bvl = NULL;
- 	struct bio *bio;
- 	void *p;
- 
--	p = mempool_alloc(bs->bio_pool, gfp_mask);
-+	if (!bs) {
-+		if (nr_iovecs > UIO_MAXIOV)
-+			return NULL;
++void bio_reset(struct bio *bio)
++{
++	unsigned long flags = bio->bi_flags & (~0UL << BIO_RESET_BITS);
 +
-+		p = kmalloc(sizeof(struct bio) +
-+			    nr_iovecs * sizeof(struct bio_vec),
-+			    gfp_mask);
-+		front_pad = 0;
-+		inline_vecs = nr_iovecs;
-+	} else {
-+		p = mempool_alloc(bs->bio_pool, gfp_mask);
-+		front_pad = bs->front_pad;
-+		inline_vecs = BIO_INLINE_VECS;
-+	}
++	if (bio_integrity(bio))
++		bio_integrity_free(bio);
 +
- 	if (unlikely(!p))
- 		return NULL;
--	bio = p + bs->front_pad;
- 
-+	bio = p + front_pad;
- 	bio_init(bio);
--	bio->bi_pool = bs;
--
--	if (unlikely(!nr_iovecs))
--		goto out_set;
- 
--	if (nr_iovecs <= BIO_INLINE_VECS) {
--		bvl = bio->bi_inline_vecs;
--		nr_iovecs = BIO_INLINE_VECS;
--	} else {
-+	if (nr_iovecs > inline_vecs) {
- 		bvl = bvec_alloc_bs(gfp_mask, nr_iovecs, &idx, bs);
- 		if (unlikely(!bvl))
- 			goto err_free;
--
--		nr_iovecs = bvec_nr_vecs(idx);
-+	} else if (nr_iovecs) {
-+		bvl = bio->bi_inline_vecs;
- 	}
--out_set:
++	bio_disassociate_task(bio);
 +
-+	bio->bi_pool = bs;
- 	bio->bi_flags |= idx << BIO_POOL_OFFSET;
- 	bio->bi_max_vecs = nr_iovecs;
- 	bio->bi_io_vec = bvl;
-@@ -345,62 +365,6 @@ err_free:
- }
- EXPORT_SYMBOL(bio_alloc_bioset);
- 
--/**
-- *	bio_alloc - allocate a new bio, memory pool backed
-- *	@gfp_mask: allocation mask to use
-- *	@nr_iovecs: number of iovecs
-- *
-- *	bio_alloc will allocate a bio and associated bio_vec array that can hold
-- *	at least @nr_iovecs entries. Allocations will be done from the
-- *	fs_bio_set. Also see @bio_alloc_bioset and @bio_kmalloc.
-- *
-- *	If %__GFP_WAIT is set, then bio_alloc will always be able to allocate
-- *	a bio. This is due to the mempool guarantees. To make this work, callers
-- *	must never allocate more than 1 bio at a time from this pool. Callers
-- *	that need to allocate more than 1 bio must always submit the previously
-- *	allocated bio for IO before attempting to allocate a new one. Failure to
-- *	do so can cause livelocks under memory pressure.
-- *
-- *	RETURNS:
-- *	Pointer to new bio on success, NULL on failure.
-- */
--struct bio *bio_alloc(gfp_t gfp_mask, unsigned int nr_iovecs)
--{
--	return bio_alloc_bioset(gfp_mask, nr_iovecs, fs_bio_set);
--}
--EXPORT_SYMBOL(bio_alloc);
--
--/**
-- * bio_kmalloc - allocate a bio for I/O using kmalloc()
-- * @gfp_mask:   the GFP_ mask given to the slab allocator
-- * @nr_iovecs:	number of iovecs to pre-allocate
-- *
-- * Description:
-- *   Allocate a new bio with @nr_iovecs bvecs.  If @gfp_mask contains
-- *   %__GFP_WAIT, the allocation is guaranteed to succeed.
-- *
-- **/
--struct bio *bio_kmalloc(gfp_t gfp_mask, unsigned int nr_iovecs)
--{
--	struct bio *bio;
--
--	if (nr_iovecs > UIO_MAXIOV)
--		return NULL;
--
--	bio = kmalloc(sizeof(struct bio) + nr_iovecs * sizeof(struct bio_vec),
--		      gfp_mask);
--	if (unlikely(!bio))
--		return NULL;
--
--	bio_init(bio);
--	bio->bi_flags |= BIO_POOL_NONE << BIO_POOL_OFFSET;
--	bio->bi_max_vecs = nr_iovecs;
--	bio->bi_io_vec = bio->bi_inline_vecs;
--
--	return bio;
--}
--EXPORT_SYMBOL(bio_kmalloc);
--
- void zero_fill_bio(struct bio *bio)
- {
- 	unsigned long flags;
++	memset(bio, 0, BIO_RESET_BYTES);
++	bio->bi_flags = flags|(1 << BIO_UPTODATE);
++}
++EXPORT_SYMBOL(bio_reset);
++
++/**
+  * bio_alloc_bioset - allocate a bio for I/O
+  * @gfp_mask:   the GFP_ mask given to the slab allocator
+  * @nr_iovecs:	number of iovecs to pre-allocate
 diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 04944c9..fbe35b1 100644
+index a11f74b..76f6c25 100644
 --- a/include/linux/bio.h
 +++ b/include/linux/bio.h
-@@ -212,11 +212,21 @@ extern void bio_pair_release(struct bio_pair *dbio);
- extern struct bio_set *bioset_create(unsigned int, unsigned int);
- extern void bioset_free(struct bio_set *);
+@@ -226,6 +226,7 @@ extern void __bio_clone(struct bio *, struct bio *);
+ extern struct bio *bio_clone(struct bio *, gfp_t);
  
--extern struct bio *bio_alloc(gfp_t, unsigned int);
--extern struct bio *bio_kmalloc(gfp_t, unsigned int);
- extern struct bio *bio_alloc_bioset(gfp_t, int, struct bio_set *);
- extern void bio_put(struct bio *);
+ extern void bio_init(struct bio *);
++extern void bio_reset(struct bio *);
  
-+extern struct bio_set *fs_bio_set;
+ extern int bio_add_page(struct bio *, struct page *, unsigned int,unsigned int);
+ extern int bio_add_pc_page(struct request_queue *, struct bio *, struct page *,
+diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+index af9dd9d..1b607c2 100644
+--- a/include/linux/blk_types.h
++++ b/include/linux/blk_types.h
+@@ -59,12 +59,6 @@ struct bio {
+ 	unsigned int		bi_seg_front_size;
+ 	unsigned int		bi_seg_back_size;
+ 
+-	unsigned int		bi_max_vecs;	/* max bvl_vecs we can hold */
+-
+-	atomic_t		bi_cnt;		/* pin count */
+-
+-	struct bio_vec		*bi_io_vec;	/* the actual vec list */
+-
+ 	bio_end_io_t		*bi_end_io;
+ 
+ 	void			*bi_private;
+@@ -80,6 +74,16 @@ struct bio {
+ 	struct bio_integrity_payload *bi_integrity;  /* data integrity */
+ #endif
+ 
++	/*
++	 * Everything starting with bi_max_vecs will be preserved by bio_reset()
++	 */
 +
-+static inline struct bio *bio_alloc(gfp_t gfp_mask, unsigned int nr_iovecs)
-+{
-+	return bio_alloc_bioset(gfp_mask, nr_iovecs, fs_bio_set);
-+}
++	unsigned int		bi_max_vecs;	/* max bvl_vecs we can hold */
 +
-+static inline struct bio *bio_kmalloc(gfp_t gfp_mask, unsigned int nr_iovecs)
-+{
-+	return bio_alloc_bioset(gfp_mask, nr_iovecs, NULL);
-+}
++	atomic_t		bi_cnt;		/* pin count */
 +
- extern void bio_endio(struct bio *, int);
- struct request_queue;
- extern int bio_phys_segments(struct request_queue *, struct bio *);
-@@ -304,8 +314,6 @@ struct biovec_slab {
- 	struct kmem_cache *slab;
++	struct bio_vec		*bi_io_vec;	/* the actual vec list */
++
+ 	/* If bi_pool is non NULL, bi_destructor is not called */
+ 	struct bio_set		*bi_pool;
+ 
+@@ -93,6 +97,8 @@ struct bio {
+ 	struct bio_vec		bi_inline_vecs[0];
  };
  
--extern struct bio_set *fs_bio_set;
--
++#define BIO_RESET_BYTES		offsetof(struct bio, bi_max_vecs)
++
  /*
-  * a small number of entries is fine, not going to be performance critical.
-  * basically we just need to survive
+  * bio flags
+  */
+@@ -108,6 +114,13 @@ struct bio {
+ #define BIO_FS_INTEGRITY 9	/* fs owns integrity data, not block layer */
+ #define BIO_QUIET	10	/* Make BIO Quiet */
+ #define BIO_MAPPED_INTEGRITY 11/* integrity metadata has been remapped */
++
++/*
++ * Flags starting here get preserved by bio_reset() - this includes
++ * BIO_POOL_IDX()
++ */
++#define BIO_RESET_BITS	12
++
+ #define bio_flagged(bio, flag)	((bio)->bi_flags & (1 << (flag)))
+ 
+ /*
 -- 
 1.7.12
 
