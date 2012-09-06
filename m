@@ -1,157 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933104Ab2IFS6n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 14:58:43 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:52479 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933001Ab2IFS6j (ORCPT
+	id S933099Ab2IFS7l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 14:59:41 -0400
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:52260 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932373Ab2IFS7k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 14:58:39 -0400
-Date: Thu, 6 Sep 2012 20:59:38 +0200
-From: Fabio Baltieri <fabio.baltieri@gmail.com>
-To: Kurt Van Dijck <kurt.van.dijck@eia.be>
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>, linux-kernel@vger.kernel.org,
-        linux-can@vger.kernel.org
-Subject: Re: [PATCH] can: rename LED trigger name on netdev renames
-Message-ID: <20120906185938.GA4043@gmail.com>
-References: <20120904071128.GB416@vandijck-laurijssen.be>
- <1346750951-10451-1-git-send-email-kurt.van.dijck@eia.be>
+	Thu, 6 Sep 2012 14:59:40 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19ZvQ6gn2oJ8dgVnx9UzM2J
+Date: Thu, 6 Sep 2012 11:59:38 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH 1/2] pinctrl: pinctrl-single: Make sure we do not
+ change bits outside of mask
+Message-ID: <20120906185937.GY1303@atomide.com>
+References: <1346835718-21325-1-git-send-email-peter.ujfalusi@ti.com>
+ <1346835718-21325-2-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1346750951-10451-1-git-send-email-kurt.van.dijck@eia.be>
-X-Operating-System: Linux balto-eee 3.6.0-rc4-balto-eee-00111-g8edc602-dirty
- GNU/Linux
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1346835718-21325-2-git-send-email-peter.ujfalusi@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kurt,
-
-thanks for the patch!
-
-On Tue, Sep 04, 2012 at 11:29:11AM +0200, Kurt Van Dijck wrote:
-> The LED trigger name for CAN devices is based on the initial
-> CAN device name, but does never change. The LED trigger name
-> is not guaranteed to be unique in case of hotplugging CAN devices.
+* Peter Ujfalusi <peter.ujfalusi@ti.com> [120905 02:02]:
+> Use the pcs->fmask to make sure that the value is not changing (setting)
+> bits in areas where it should not.
+> To avoid situations like this:
 > 
-> This patch tries to address this problem by modifying the
-> LED trigger name according to the CAN device name when
-> the latter changes.
-
-That's an ideal solution, and I like the notifier implementation, but I
-see a couple of problems with it.
-
-> This patch is meant as illustration only.
-> In case of VCAN device rename, a segmentation fault will occur.
+> pmx_dummy: pinmux@4a100040 {
+> 	compatible = "pinctrl-single";
+> 	reg = <0x4a100040 0x0196>;
+> 	#address-cells = <1>;
+> 	#size-cells = <0>;
+> 	pinctrl-single,register-width = <16>;
+> 	pinctrl-single,function-mask = <0x00ff>;
+> };
 > 
-> Signed-off-by: Kurt Van Dijck <kurt.van.dijck@eia.be>
+> &pmx_dummy {
+> 	pinctrl-names = "default";
+> 	pinctrl-0 = <&board_pins>;
+> 
+> 	board_pins: pinmux_board_pins {
+> 		pinctrl-single,pins = <
+> 			0x6c 0xf0f
+> 			0x6e 0x10f
+> 			0x70 0x23f
+> 			0x72 0xa5f
+> 		>;
+> 	};
+> };
+> 
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+
+Thanks this is a valid fix:
+
+Acked-by: Tony Lindgren <tony@atomide.com>
+
 > ---
->  drivers/net/can/led.c |   57 +++++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 57 insertions(+)
+>  drivers/pinctrl/pinctrl-single.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/drivers/net/can/led.c b/drivers/net/can/led.c
-> index eaa14ac..f62f908 100644
-> --- a/drivers/net/can/led.c
-> +++ b/drivers/net/can/led.c
-> @@ -12,6 +12,7 @@
->  #include <linux/slab.h>
->  #include <linux/netdevice.h>
->  #include <linux/can/dev.h>
-> +#include <linux/if_arp.h>
+> diff --git a/drivers/pinctrl/pinctrl-single.c b/drivers/pinctrl/pinctrl-single.c
+> index 76a4260..3508631 100644
+> --- a/drivers/pinctrl/pinctrl-single.c
+> +++ b/drivers/pinctrl/pinctrl-single.c
+> @@ -337,7 +337,7 @@ static int pcs_enable(struct pinctrl_dev *pctldev, unsigned fselector,
+>  		vals = &func->vals[i];
+>  		val = pcs->read(vals->reg);
+>  		val &= ~pcs->fmask;
+> -		val |= vals->val;
+> +		val |= (vals->val & pcs->fmask);
+>  		pcs->write(val, vals->reg);
+>  	}
 >  
->  #include <linux/can/led.h>
->  
-> @@ -87,3 +88,59 @@ void devm_can_led_init(struct net_device *netdev)
->  	devres_add(&netdev->dev, res);
->  }
->  EXPORT_SYMBOL_GPL(devm_can_led_init);
-> +
-> +/*
-> + * NETDEV rename notifier to rename the associated led triggers too
-> + */
-> +static int can_led_notifier(struct notifier_block *nb, unsigned long msg,
-> +			void *data)
-> +{
-> +	struct net_device *netdev = (struct net_device *)data;
-> +	struct can_priv *priv = netdev_priv(netdev);
-> +	int busy = 0;
-> +
-> +	if (!net_eq(dev_net(netdev), &init_net))
-> +		return NOTIFY_DONE;
-> +
-> +	if (netdev->type != ARPHRD_CAN)
-> +		return NOTIFY_DONE;
-> +
-> +	if (msg != NETDEV_CHANGENAME)
-> +		return NOTIFY_DONE;
-
-That's the main problem, which I also got stuck into when I did my first
-can-led implementation.  As LED structures are in netdev's private data,
-you can only use it if your driver is based on the can-dev API, and
-there are no way to be sure of that if you get outside driver's code
-itself.
-
-This would give problems with vcan, slcan, and probabily other
-non-mainlined drivers.
-
-Is there any way to register a notifier which fires only for devices
-registered with devm_can_led_init?
-
-> +	read_lock(&priv->tx_led_trig->leddev_list_lock);
-> +	if (!list_empty(&priv->tx_led_trig->led_cdevs))
-> +		++busy;
-> +	read_unlock(&priv->tx_led_trig->leddev_list_lock);
-> +	read_lock(&priv->rx_led_trig->leddev_list_lock);
-> +	if (!list_empty(&priv->rx_led_trig->led_cdevs))
-> +		++busy;
-> +	read_unlock(&priv->rx_led_trig->leddev_list_lock);
-> +
-> +	if (busy)
-> +		return notifier_from_errno(-EBUSY);
-
-As we were discussing in the other thread, I don't think that this is
-necessary.
-
-> +	snprintf(priv->tx_led_trig_name, sizeof(priv->tx_led_trig_name),
-> +		 "%s-tx", netdev->name);
-> +	snprintf(priv->rx_led_trig_name, sizeof(priv->rx_led_trig_name),
-> +		 "%s-rx", netdev->name);
-
-I'm afraid that this is going to race against other code using trigger
-name, so that's probabily needs a down_write(&led_cdev->trigger_lock),
-which is a bit of a problem beacause that's static in led-triggers.c.
-
-> +	return NOTIFY_DONE;
-> +}
-> +
-> +/* notifier block for netdevice event */
-> +static struct notifier_block can_netdev_notifier __read_mostly = {
-> +	.notifier_call = can_led_notifier,
-> +};
-> +
-> +static __init int can_led_init(void)
-> +{
-> +	return register_netdevice_notifier(&can_netdev_notifier);
-> +}
-> +
-> +static __exit void can_led_exit(void)
-> +{
-> +	unregister_netdevice_notifier(&can_netdev_notifier);
-> +}
-> +
-> +module_init(can_led_init);
-> +module_exit(can_led_exit);
-
-This breaks the driver when built as a module, as led.c is actually
-linked together with can-dev.  The solution is to get it on a module by
-its own or just to call init/exit functions from can_dev.
-
-Besides those points I like the idea of renaming the trigger if we can
-find a clean way to do that, so I'll try to look at those point further
-in the weekend.
-
-Fabio
+> -- 
+> 1.7.12
+> 
