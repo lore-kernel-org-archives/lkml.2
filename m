@@ -1,126 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758807Ab2IFP5H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 11:57:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44562 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758569Ab2IFP4i (ORCPT
+	id S1758627Ab2IFQAN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 12:00:13 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30872 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758283Ab2IFQAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 11:56:38 -0400
-From: Andy Whitcroft <apw@canonical.com>
-To: Miklos Szeredi <miklos@szeredi.hu>, Andy Whitcroft <apw@canonical.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mszeredi@suse.cz
-Subject: [PATCH 2/2] overlayfs: when the underlying filesystem is read-only use inode permissions
-Date: Thu,  6 Sep 2012 16:56:34 +0100
-Message-Id: <1346946994-21286-3-git-send-email-apw@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1346946994-21286-1-git-send-email-apw@canonical.com>
-References: <1346946994-21286-1-git-send-email-apw@canonical.com>
+	Thu, 6 Sep 2012 12:00:10 -0400
+X-Authority-Analysis: v=2.0 cv=C49rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=zgiTqp1681AA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=SlKO6I3lSDoA:10 a=qLesCdiRhxxrN11O5x0A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1346947206.1680.36.camel@gandalf.local.home>
+Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive
+ hashtable
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Pedro Alves <palves@redhat.com>, Tejun Heo <tj@kernel.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, mingo@elte.hu,
+        ebiederm@xmission.com, aarcange@redhat.com, ericvh@gmail.com,
+        netdev@vger.kernel.org, eric.dumazet@gmail.com, axboe@kernel.dk,
+        agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
+        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
+        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
+        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Date: Thu, 06 Sep 2012 12:00:06 -0400
+In-Reply-To: <5048C615.4070204@gmail.com>
+References: <503C95E4.3010000@gmail.com> <20120828101148.GA21683@Krystal>
+	 <503CAB1E.5010408@gmail.com> <20120828115638.GC23818@Krystal>
+	 <20120828230050.GA3337@Krystal>
+	 <1346772948.27919.9.camel@gandalf.local.home> <50462C99.5000007@redhat.com>
+	 <50462EE8.1090903@redhat.com> <20120904170138.GB31934@Krystal>
+	 <5048AAF6.5090101@gmail.com> <20120906145545.GA17332@leaf>
+	 <5048C615.4070204@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the lowerdir represents a read-only filesystems, attempts to write
-to the overlay will check for write permissions on files in the lower
-layer via the lower layer inode .permissions operation.  This operation
-may take the read-only status into account and fail the request even
-though the notional permissions on the file permit write.  This prevents
-a copy_up occuring on the file and fails the write.
+On Thu, 2012-09-06 at 17:49 +0200, Sasha Levin wrote:
+>  
+> > Looks reasonable.  However, it would break (or rather, not break) on
+> > code like this:
+> > 
+> > 	hash_for_each_entry(...) {
+> > 		if (...) {
+> > 			foo(node);
+> > 			node = NULL;
 
-Switch to using inode permissions directly when the lower layer is
-read-only.
+ug, I didn't even notice this. Ignore my last email :-p
 
-BugLink: http://bugs.launchpad.net/bugs/1039402
-Signed-off-by: Andy Whitcroft <apw@canonical.com>
----
- fs/namei.c           |   36 ++++++++++++++++++++++++++++++++++++
- fs/overlayfs/inode.c |   12 ++++++++++++
- include/linux/fs.h   |    1 +
- 3 files changed, 49 insertions(+)
+/me needs to wake-up a bit more.
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 9be439a..09925a9 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -315,6 +315,42 @@ static inline int do_inode_permission(struct inode *inode, int mask)
- }
- 
- /**
-+ * __inode_permission_generic - Check for access rights to a given inode
-+ * @inode: Inode to check permission on
-+ * @mask: Right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC)
-+ *
-+ * Check for read/write/execute permissions on an inode.
-+ *
-+ * When checking for MAY_APPEND, MAY_WRITE must also be set in @mask.
-+ *
-+ * This does not check for a read-only file system.  You probably want
-+ * inode_permission().
-+ */
-+int __inode_permission_generic(struct inode *inode, int mask)
-+{
-+	int retval;
-+
-+	if (unlikely(mask & MAY_WRITE)) {
-+		/*
-+		 * Nobody gets write access to an immutable file.
-+		 */
-+		if (IS_IMMUTABLE(inode))
-+			return -EACCES;
-+	}
-+
-+	retval = generic_permission(inode, mask);
-+	if (retval)
-+		return retval;
-+
-+	retval = devcgroup_inode_permission(inode, mask);
-+	if (retval)
-+		return retval;
-+
-+	return security_inode_permission(inode, mask);
-+}
-+EXPORT_SYMBOL(__inode_permission_generic);
-+
-+/**
-  * __inode_permission - Check for access rights to a given inode
-  * @inode: Inode to check permission on
-  * @mask: Right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC)
-diff --git a/fs/overlayfs/inode.c b/fs/overlayfs/inode.c
-index e7ab09b..00390f2 100644
---- a/fs/overlayfs/inode.c
-+++ b/fs/overlayfs/inode.c
-@@ -102,6 +102,18 @@ int ovl_permission(struct inode *inode, int mask)
- 		if (is_upper && !IS_RDONLY(inode) && IS_RDONLY(realinode) &&
- 		    (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)))
- 			goto out_dput;
-+
-+		/*
-+		 * If the lower layer is read-only the filesystem may
-+		 * fail permissions checks for write even if the file
-+		 * itself if writable and in a overlay would be eligable
-+		 * for copy up.  Use the inode permission in this case
-+		 * via generic_permission().
-+		 */
-+		if (!is_upper && !IS_RDONLY(inode) && IS_RDONLY(realinode)) {
-+			err = __inode_permission_generic(realinode, mask);
-+			goto out_dput;
-+		}
- 	}
- 
- 	err = __inode_permission(realinode, mask);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index d573703..5e72ba7 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2419,6 +2419,7 @@ extern sector_t bmap(struct inode *, sector_t);
- extern int notify_change(struct dentry *, struct iattr *);
- extern int inode_permission(struct inode *, int);
- extern int __inode_permission(struct inode *, int);
-+extern int __inode_permission_generic(struct inode *, int);
- extern int generic_permission(struct inode *, int);
- 
- static inline bool execute_ok(struct inode *inode)
--- 
-1.7.9.5
+> > 			break;
+> > 		}
+> > 	}
+> > 
+> > Hiding the double loop still seems error-prone.
+> 
+> I think that that code doesn't make sense. The users of hlist_for_each_* aren't
+> supposed to be changing the loop cursor.
+
+I totally agree. Modifying the 'node' pointer is just asking for issues.
+Yes that is error prone, but not due to the double loop. It's due to the
+modifying of the node pointer that is used internally by the loop
+counter. Don't do that :-)
+
+
+> 
+> We have three options here:
+> 
+>  1. Stuff everything into a single for(). While not too difficult, it will make
+> the readability of the code difficult as it will force us to abandon using
+> hlist_for_each_* macros.
+> 
+>  2. Over-complicate everything, and check for 'node == NULL && obj &&
+> obj->member.next == NULL' instead. That one will fail only if the user has
+> specifically set the object as the last object in the list and the node as NULL.
+> 
+>  3. Use 2 loops which might not work properly if the user does something odd,
+> with a big fat warning above them.
+> 
+> 
+> To sum it up, I'd rather go with 3 and let anyone who does things he shouldn't
+> be doing break.
+
+I agree, the double loop itself is not error prone. If you are modifying
+'node' you had better know what the hell you are doing.
+
+Actually, it may be something that is legitimate. That is, if you want
+to skip to the next bucket, just set node to NULL and do the break (as
+Josh had done). This would break if the macro loop changed later on, but
+hey, like I said, it's error prone ;-) If you really want to do that,
+then hand coding the double loop would be a better bet. IOW, don't use
+the macro loop.
+
+-- Steve
+
 
