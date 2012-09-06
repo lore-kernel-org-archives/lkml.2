@@ -1,96 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759476Ab2IFTEZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 15:04:25 -0400
-Received: from zose-mta-11.w4a.fr ([178.33.204.86]:42961 "EHLO
-	zose-mta11.web4all.fr" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750915Ab2IFTEY convert rfc822-to-8bit (ORCPT
+	id S1759426Ab2IFTJq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 15:09:46 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50708 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751505Ab2IFTJo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 15:04:24 -0400
-Date: Thu, 6 Sep 2012 21:09:42 +0200 (CEST)
-From: =?utf-8?Q?Beno=C3=AEt_Th=C3=A9baudeau?= 
-	<benoit.thebaudeau@advansee.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: HACHIMI Samir <shachimi@adeneo-embedded.com>,
-        shawn guo <shawn.guo@linaro.org>,
-        thierry reding <thierry.reding@avionic-design.de>,
-        linux-kernel@vger.kernel.org, kernel@pengutronix.de,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Message-ID: <1355578446.3801048.1346958582085.JavaMail.root@advansee.com>
-In-Reply-To: <20120906184256.GJ26594@pengutronix.de>
-Subject: Re: [PATCH 7/9] pwm i.MX: fix clock lookup
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [88.188.188.98]
-X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Win)/7.2.0_GA_2669)
+	Thu, 6 Sep 2012 15:09:44 -0400
+Message-ID: <1346958541.18408.67.camel@twins>
+Subject: Re: [PATCH tip/core/rcu 06/23] rcu: Break up rcu_gp_kthread() into
+ subfunctions
+From: Peter Zijlstra <peterz@infradead.org>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+        eric.dumazet@gmail.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, patches@linaro.org
+Date: Thu, 06 Sep 2012 21:09:01 +0200
+In-Reply-To: <20120906184921.GA5738@jtriplet-mobl1>
+References: <20120830181811.GA29154@linux.vnet.ibm.com>
+	 <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1346350718-30937-6-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1346938791.18408.7.camel@twins> <20120906173207.GK2448@linux.vnet.ibm.com>
+	 <20120906184921.GA5738@jtriplet-mobl1>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 6, 2012 8:42:56 PM, Sascha Hauer wrote:
-> On Thu, Sep 06, 2012 at 08:31:58PM +0200, Benoît Thébaudeau wrote:
-> > On Thursday, September 6, 2012 2:48:13 PM, Sascha Hauer wrote:
-> > > 
-> > > +	int ret;
-> > > +
-> > > +	ret = clk_prepare_enable(imx->clk_ipg);
-> > > +	if (ret)
-> > > +		return ret;
-> > >  
-> > > -	return imx->config(chip, pwm, duty_ns, period_ns);
-> > > +	ret = imx->config(chip, pwm, duty_ns, period_ns);
-> > > +
-> > > +	clk_disable_unprepare(imx->clk_ipg);
-> > > +
-> > > +	return ret;
-> > >  }
-> > >  
-> > >  static int imx_pwm_enable(struct pwm_chip *chip, struct
-> > >  pwm_device
-> > >  *pwm)
-> > > @@ -169,7 +179,7 @@ static int imx_pwm_enable(struct pwm_chip
-> > > *chip,
-> > > struct pwm_device *pwm)
-> > >  	struct imx_chip *imx = to_imx_chip(chip);
-> > >  	int ret;
-> > >  
-> > > -	ret = clk_prepare_enable(imx->clk);
-> > > +	ret = clk_prepare_enable(imx->clk_per);
-> > >  	if (ret)
-> > >  		return ret;
-> > 
-> > Have you tested that this actually works on i.MX53?
-> > 
-> > I have tested it successfully on i.MX35 (with a few additions to
-> > platform code).
-> > But i.MX35 has a single bit controlling both PWM IPG and PER clock
-> > gates.
-> > 
-> > On i.MX53, there are 2 separate control bits for these. So, if ipg
-> > clk is
-> > strictly required to access PWM registers, even if per clk is
-> > enabled, this code
-> > should not work without adding
+On Thu, 2012-09-06 at 11:49 -0700, Josh Triplett wrote:
 > 
-> I tested this on i.MX53, but you're right, this seems to be wrong.
-> I'll
-> recheck tomorrow.
+> Huh, I thought GCC knew to not emit that warning unless it actually
+> found control flow reaching the end of the function; since the
+> infinite
+> loop has no break in it, you shouldn't need the return.  Annoying. 
 
-I've performed a few more tests with bare register accesses in the bootloader to
-see how the PWM IP behaves.
-
-On i.MX25, i.MX35 and i.MX51, read accesses always work, whatever the state of
-the IPG and PER clock gates.
-
-On i.MX25 and i.MX51, write accesses always work, whatever the state of the IPG
-and PER clock gates.
-
-On i.MX35, write accesses work if and only if the IPG and PER clocks are not
-gated off (single control bit for both).
-
-I don't have i.MX53 or i.MX6Q platforms to test that.
-
-Best regards,
-Benoît
+tag the function with __noreturn
