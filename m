@@ -1,78 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752132Ab2IFGxD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 02:53:03 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:48450 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750985Ab2IFGxB convert rfc822-to-8bit (ORCPT
+	id S1753202Ab2IFGxn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 02:53:43 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:47653 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223Ab2IFGxm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 02:53:01 -0400
-From: "Philip, Avinash" <avinashphilip@ti.com>
-To: "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
-Subject: RE: [PATCH] pwm: pwm-tiecap: Disable APWM mode after configure
-Thread-Topic: [PATCH] pwm: pwm-tiecap: Disable APWM mode after configure
-Thread-Index: AQHNgP8kuVYEOTnfR0yB/Olh6HGaUZd85oBw
-Date: Thu, 6 Sep 2012 06:51:53 +0000
-Deferred-Delivery: Thu, 6 Sep 2012 06:51:00 +0000
-Message-ID: <518397C60809E147AF5323E0420B992E3E99B4C1@DBDE01.ent.ti.com>
-References: <1345705186-10543-1-git-send-email-avinashphilip@ti.com>
-In-Reply-To: <1345705186-10543-1-git-send-email-avinashphilip@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 6 Sep 2012 02:53:42 -0400
+Date: Thu, 6 Sep 2012 08:53:40 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Daniel Mack <zonque@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>
+Subject: Re:
+Message-ID: <20120906065340.GA257@x4>
+References: <s5hmx1526mg.wl%tiwai@suse.de>
+ <20120906060220.GA252@x4>
+ <504843BA.2040808@gmail.com>
+ <s5hehmfir46.wl%tiwai@suse.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5hehmfir46.wl%tiwai@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thierry,
-
-If you do not have any comments, could you please accept it?
-
-Thanks
-Avinash
-
-On Thu, Aug 23, 2012 at 12:29:46, Philip, Avinash wrote:
-> APWM mode is enabled while configuring PWM device. This was done to
-> handle shadow & immediate mode update of period and compare registers.
-> However, leaving it enabled after configuring will cause APWM output on
-> PWM pin even before enabling PWM device.
-> Fix the same by disabling APWM mode after configuring if PWM device is
-> not running.
+On 2012.09.06 at 08:48 +0200, Takashi Iwai wrote:
+> At Thu, 06 Sep 2012 08:33:30 +0200,
+> Daniel Mack wrote:
+> > 
+> > On 06.09.2012 08:02, Markus Trippelsdorf wrote:
+> > > On 2012.09.04 at 16:40 +0200, Takashi Iwai wrote:
+> > >> ----------------------------------------------------------------
+> > >> Sound fixes for 3.6-rc5
+> > >>
+> > >> There are nothing scaring, contains only small fixes for HD-audio and
+> > >> USB-audio:
+> > >> - EPSS regression fix and GPIO fix for HD-audio IDT codecs
+> > >> - A series of USB-audio regression fixes that are found since 3.5 kernel
+> > >>
+> > >> ----------------------------------------------------------------
+> > >> Daniel Mack (4):
+> > >>       ALSA: snd-usb: Fix URB cancellation at stream start
+> > >>       ALSA: snd-usb: restore delay information
+> > >         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+> > > The commit fbcfbf5f above causes the following lines to be printed
+> > > whenever I start a new song:
+> > 
+> > Copied Pierre-Louis Bossart - he wrote the code in 294c4fb8 which this
+> > patch (fbcfbf5f) brings back now.
+> > 
+> > > delay: estimated 0, actual 352
+> > > delay: estimated 353, actual 705
+> > > 
+> > > (44.1 * 8 = 352.8)
+> > > 
+> > > This happens with an USB-DAC that identifies itself as "C-Media USB
+> > > Headphone Set".
+> > 
+> > And you didn't you see these lines with 3.4?
 > 
-> Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
-> ---
-> :100644 100644 0b66d0f... 4b66889... M	drivers/pwm/pwm-tiecap.c
->  drivers/pwm/pwm-tiecap.c |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
+> Maybe the difference of start condition?
 > 
-> diff --git a/drivers/pwm/pwm-tiecap.c b/drivers/pwm/pwm-tiecap.c
-> index 0b66d0f..4b66889 100644
-> --- a/drivers/pwm/pwm-tiecap.c
-> +++ b/drivers/pwm/pwm-tiecap.c
-> @@ -100,6 +100,13 @@ static int ecap_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
->  		writel(period_cycles, pc->mmio_base + CAP3);
->  	}
->  
-> +	if (!test_bit(PWMF_ENABLED, &pwm->flags)) {
-> +		reg_val = readw(pc->mmio_base + ECCTL2);
-> +		/* Disable APWM mode to put APWM output Low */
-> +		reg_val &= ~ECCTL2_APWM_MODE;
-> +		writew(reg_val, pc->mmio_base + ECCTL2);
-> +	}
-> +
->  	pm_runtime_put_sync(pc->chip.dev);
->  	return 0;
->  }
-> -- 
-> 1.7.1
-> 
-> 
+> Markus, does the patch below fix anything?
 
+Unfortunately no.
+However reverting the following fixes the problem:
+
+commit 245baf983cc39524cce39c24d01b276e6e653c9e
+Author: Daniel Mack <zonque@gmail.com>
+Date:   Thu Aug 30 18:52:30 2012 +0200
+
+    ALSA: snd-usb: fix calls to next_packet_size
+
+-- 
+Markus
