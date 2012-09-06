@@ -1,96 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915Ab2IFNAG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 09:00:06 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:47321 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753331Ab2IFNAE (ORCPT
+	id S1754494Ab2IFNDb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 09:03:31 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:51965 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753830Ab2IFND2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 09:00:04 -0400
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [RFC] memory-hotplug: remove MIGRATE_ISOLATE from free_area->free_list
-In-Reply-To: <20120906020850.GA31615@bbox>
-Organization: http://mina86.com/
-References: <1346830033-32069-1-git-send-email-minchan@kernel.org> <xa1t1uigpefc.fsf@mina86.com> <20120906020850.GA31615@bbox>
-User-Agent: Notmuch/0.14+22~g8bdc16b (http://notmuchmail.org) Emacs/24.2.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-Date: Thu, 06 Sep 2012 14:59:53 +0200
-Message-ID: <xa1tipbr9uie.fsf@mina86.com>
+	Thu, 6 Sep 2012 09:03:28 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+Subject: Re: [PATCH v7 1/7] drivers: usb: phy: add a new driver for omap usb2 phy
+Date: Thu, 6 Sep 2012 13:03:02 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Greg KH <gregkh@linuxfoundation.org>, Felipe Balbi <balbi@ti.com>,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        linux@arm.linux.org.uk, b-cousson@ti.com, rnayak@ti.com,
+        tony@atomide.com, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-usb@vger.kernel.org
+References: <1344258480-4304-1-git-send-email-kishon@ti.com> <1344258480-4304-2-git-send-email-kishon@ti.com> <CAAe_U6KBNZpT03xATmPTNTgxm5hj+wJdsShdnm08EmF4Q=hTCw@mail.gmail.com>
+In-Reply-To: <CAAe_U6KBNZpT03xATmPTNTgxm5hj+wJdsShdnm08EmF4Q=hTCw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209061303.02454.arnd@arndb.de>
+X-Provags-ID: V02:K0:8GaIIT2SX9R3Xgsa0xZI0kJbg1BWkz76AQCna1Kf2Ym
+ vEdUw1zotc0uPxUjvQoUK1Tp+KkHd28IBfHGnCW/3bbcnX8N1a
+ rv12p6aGIBbDwOrc5tI0+Ih0JXyHOKWm5D7/4eBhMGOb/uWStm
+ d1bA/sVWFw8k6dfUY/34xPknE2n7x7+f1xCI9AFak6HRaggFGl
+ PleOzfvTlG46tRDz4cu8K8Ik+mmMn83MwceOYglpi0kqLdq4nC
+ PBvpLW6ehu4MlaXg6XepvY1Vn6TSsDcPYwniuthHrzOZCYMCyG
+ 34YF30Kzszn25Yht5A4DEas3rY2uzoUEBq43dZf9Qpp8hEuUoy
+ unNGBMcIifWuQvt9IVcA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+On Thursday 06 September 2012, ABRAHAM, KISHON VIJAY wrote:
+> > diff --git a/Documentation/devicetree/bindings/bus/omap-ocp2scp.txt b/Documentation/devicetree/bindings/bus/omap-ocp2scp.txt
+> > index d2fe064..bb0c7f4 100644
+> > --- a/Documentation/devicetree/bindings/bus/omap-ocp2scp.txt
+> > +++ b/Documentation/devicetree/bindings/bus/omap-ocp2scp.txt
+> > @@ -8,3 +8,6 @@ properties:
+> >
+> >  Sub-nodes:
+> >  All the devices connected to ocp2scp are described using sub-node to ocp2scp
+> > +- usb2phy :
+> > +   The binding details of usb2phy can be found in:
+> > +   Documentation/devicetree/bindings/usb/omap-usb.txt
+> 
+> The above two lines should be added in omap-ocp2scp.txt (this file was
+> added as part of omap: add ocp2scp as a bus driver and is in
+> linux-next). However this file is still not in Felipe's xceiv branch.
+> So I'm not sure how I can get this patch merged in Felipe's tree
+> without conflict.
+> 
 
-> On Wed, Sep 05, 2012 at 07:28:23PM +0200, Michal Nazarewicz wrote:
->> If you ask me, I'm not convinced that this improves anything.
+There are three possible ways to do that:
 
-On Thu, Sep 06 2012, Minchan Kim wrote:
-> At least, it removes MIGRATE_ISOLATE type in free_area->free_list
-> which is very irony type as I mentioned. I really don't like such
-> type in free_area. What's the benefit if we remain code as it is?
-> It could make more problem in future.
+* Not add that text. Is is actually required? The ocp2scp bus driver 
+doesn't actually care what is connected to it, does it?
 
-I don't really see current situation as making more problems in the
-future compared to this code.
+* Ask Felipe to merge the drivers/ocp2scp branch from arm-soc into
+his branch, then apply your patch on top. The branch is scheduled
+for merging in 3.7 and is stable, so there is no harm merging it
+into his tree, as long as Olof and I are aware of this.
 
-You are introducing a new state for a page (ie. it's not in buddy, but
-in some new limbo state) and add a bunch of new code and thus bunch of
-new  bugs.  I don't see how this improves things over having generic
-code that handles moving pages between free lists.
+* Split out this change and apply the patch to add this documentation
+change on top of the drivers/ocp2scp branch in the arm-soc tree.
+There is no strict dependency between this change and the others
+you want to merge, so it does not matter which tree it is merged through.
 
-PS.  free_list does exactly what it says on the tin -> the pages are
-free, ie. unallocated.  It does not say that they can be allocated. ;)
-
---=20
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
-..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
- (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
---=-=-=
-Content-Type: multipart/signed; boundary="==-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
-
---==-=-=
-Content-Type: text/plain
-
-
---==-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQSJ5JAAoJECBgQBJQdR/0dbsP/1dKXsqBtAKfu9S+jlmbio6O
-LlYrEC70r/wcKgsKhAqN8itfFLNrIKDxNhv/sz1aXuKrCTq8QkeQT6kZswgWb/Mp
-8/E2L0Z6XXmSjqJnmiDwPmoGDGUCQivE2XIXVkVeafhcqg9Z0HnvWsvVflJu56S4
-dmuFsaliqp9iEGQEA+HkYI8VnaXK3sHYhOcOiL2G/4yYVyIlJoH2Pp4AZopeQvKZ
-vpCspAutB+HjTSpE6tJg/4LqhmWK6OwCFjBDAuBLmRVnUCqv1hyIMxz7c2bOObdT
-1V9NHoMp0Gorzdky1J2rSH29EpugDavrx8f0kOrqzD6BqZhIno86RVHgTWEgCy8e
-zbRfecvUoABz+T78M57FjedIghB9yK/CmtvWqGg9apRUuMk6J6znb1Rtbp1bRKmn
-tKHkCjpBAW9faLT1EerHLvCEQmnvskV13phu3gDqEf5BWiDmASDz9Vso5zT4N1c9
-SKqBpX4XLDL/evEELXM9qMgIHWG7mRJz+AHHaYDFFVheiIiyr0oGwtCFKpJDGkHh
-Sf8hvc6ehGYuBCjyH79mkuznIPPDIaWR9yioEXEAq52GsVXt6Xxlgz+oIR8ZYUqC
-GffYet3kmnbtX0wX6Z871YWbpk9lQTbaqDVg8OHkSwBM5x8PMVBUeSWNlE177QLd
-f5UNFmstTAGmOYE4wqdT
-=n5Wc
------END PGP SIGNATURE-----
---==-=-=--
-
---=-=-=--
+	Arnd
