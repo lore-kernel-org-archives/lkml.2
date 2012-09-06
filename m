@@ -1,114 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932925Ab2IFSHz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 14:07:55 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:41496 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932854Ab2IFSHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 14:07:54 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Android Team <kernel-team@android.com>,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>
-Subject: [PATCH] wakeup: Use irqsave/irqrestore for events_lock
-Date: Thu,  6 Sep 2012 14:07:37 -0400
-Message-Id: <1346954857-52669-1-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S932944Ab2IFSI1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 14:08:27 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:63887 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932853Ab2IFSIZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 14:08:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12090618-7182-0000-0000-000002864E1D
+In-Reply-To: <CAAmzW4MjqETWfZuyzJUMF+5q-aGgZ20gKpgWSvFTYWp-LqdrHA@mail.gmail.com>
+References: <1345042960-6287-1-git-send-email-js1304@gmail.com>
+	<1345042960-6287-2-git-send-email-js1304@gmail.com>
+	<CAAmzW4MjqETWfZuyzJUMF+5q-aGgZ20gKpgWSvFTYWp-LqdrHA@mail.gmail.com>
+Date: Fri, 7 Sep 2012 03:08:24 +0900
+Message-ID: <CAAmzW4Op1AcCzQnAn27DYkWmTqSoVJ7kaoCpdpBeYzDj017jKw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] slub: remove one code path and reduce lock contention
+ in __slab_free()
+From: JoonSoo Kim <js1304@gmail.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Joonsoo Kim <js1304@gmail.com>, Christoph Lameter <cl@linux.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jon Medhurst (Tixy) recently noticed a problem with the
-events_lock usage. One of the Android patches that uses
-wakeup_sources calls wakeup_source_add() with irqs disabled.
-However, the event_lock usage in wakeup_source_add() uses
-spin_lock_irq()/spin_unlock_irq(), which reenables interrupts.
-This results in lockdep warnings.
+2012/8/25 JoonSoo Kim <js1304@gmail.com>:
+> 2012/8/16 Joonsoo Kim <js1304@gmail.com>:
+>> When we try to free object, there is some of case that we need
+>> to take a node lock. This is the necessary step for preventing a race.
+>> After taking a lock, then we try to cmpxchg_double_slab().
+>> But, there is a possible scenario that cmpxchg_double_slab() is failed
+>> with taking a lock. Following example explains it.
+>>
+>> CPU A               CPU B
+>> need lock
+>> ...                 need lock
+>> ...                 lock!!
+>> lock..but spin      free success
+>> spin...             unlock
+>> lock!!
+>> free fail
+>>
+>> In this case, retry with taking a lock is occured in CPU A.
+>> I think that in this case for CPU A,
+>> "release a lock first, and re-take a lock if necessary" is preferable way.
+>>
+>> There are two reasons for this.
+>>
+>> First, this makes __slab_free()'s logic somehow simple.
+>> With this patch, 'was_frozen = 1' is "always" handled without taking a lock.
+>> So we can remove one code path.
+>>
+>> Second, it may reduce lock contention.
+>> When we do retrying, status of slab is already changed,
+>> so we don't need a lock anymore in almost every case.
+>> "release a lock first, and re-take a lock if necessary" policy is
+>> helpful to this.
+>>
+>> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+>> Cc: Christoph Lameter <cl@linux.com>
+>> Acked-by: Christoph Lameter <cl@linux.com>
+>>
+>> diff --git a/mm/slub.c b/mm/slub.c
+>> index ca778e5..efce427 100644
+>> --- a/mm/slub.c
+>> +++ b/mm/slub.c
+>> @@ -2421,7 +2421,6 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
+>>         void *prior;
+>>         void **object = (void *)x;
+>>         int was_frozen;
+>> -       int inuse;
+>>         struct page new;
+>>         unsigned long counters;
+>>         struct kmem_cache_node *n = NULL;
+>> @@ -2433,13 +2432,17 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
+>>                 return;
+>>
+>>         do {
+>> +               if (unlikely(n)) {
+>> +                       spin_unlock_irqrestore(&n->list_lock, flags);
+>> +                       n = NULL;
+>> +               }
+>>                 prior = page->freelist;
+>>                 counters = page->counters;
+>>                 set_freepointer(s, object, prior);
+>>                 new.counters = counters;
+>>                 was_frozen = new.frozen;
+>>                 new.inuse--;
+>> -               if ((!new.inuse || !prior) && !was_frozen && !n) {
+>> +               if ((!new.inuse || !prior) && !was_frozen) {
+>>
+>>                         if (!kmem_cache_debug(s) && !prior)
+>>
+>> @@ -2464,7 +2467,6 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
+>>
+>>                         }
+>>                 }
+>> -               inuse = new.inuse;
+>>
+>>         } while (!cmpxchg_double_slab(s, page,
+>>                 prior, counters,
+>> @@ -2490,25 +2492,17 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
+>>                  return;
+>>          }
+>>
+>> +       if (unlikely(!new.inuse && n->nr_partial > s->min_partial))
+>> +               goto slab_empty;
+>> +
+>>         /*
+>> -        * was_frozen may have been set after we acquired the list_lock in
+>> -        * an earlier loop. So we need to check it here again.
+>> +        * Objects left in the slab. If it was not on the partial list before
+>> +        * then add it.
+>>          */
+>> -       if (was_frozen)
+>> -               stat(s, FREE_FROZEN);
+>> -       else {
+>> -               if (unlikely(!inuse && n->nr_partial > s->min_partial))
+>> -                        goto slab_empty;
+>> -
+>> -               /*
+>> -                * Objects left in the slab. If it was not on the partial list before
+>> -                * then add it.
+>> -                */
+>> -               if (unlikely(!prior)) {
+>> -                       remove_full(s, page);
+>> -                       add_partial(n, page, DEACTIVATE_TO_TAIL);
+>> -                       stat(s, FREE_ADD_PARTIAL);
+>> -               }
+>> +       if (kmem_cache_debug(s) && unlikely(!prior)) {
+>> +               remove_full(s, page);
+>> +               add_partial(n, page, DEACTIVATE_TO_TAIL);
+>> +               stat(s, FREE_ADD_PARTIAL);
+>>         }
+>>         spin_unlock_irqrestore(&n->list_lock, flags);
+>>         return;
+>> --
+>> 1.7.9.5
+>>
+>
+> Hello, Pekka.
+> Could you review this patch and comment it, please?
 
-The fix is to use spin_lock_irqsave()/spin_lock_irqrestore()
-instead for the events_lock.
-
-Full bug report here:
-https://bugs.launchpad.net/linaro-landing-team-arm/+bug/1037565
-
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: Android Team <kernel-team@android.com>
-Cc: Arve Hjønnevåg <arve@android.com>
-Cc: Jon Medhurst (Tixy) <tixy@linaro.org>
-Reported-and-debugged-by: Jon Medhurst (Tixy) <tixy@linaro.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- drivers/base/power/wakeup.c |   17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/base/power/wakeup.c b/drivers/base/power/wakeup.c
-index cbb463b..0e4b093 100644
---- a/drivers/base/power/wakeup.c
-+++ b/drivers/base/power/wakeup.c
-@@ -127,6 +127,8 @@ EXPORT_SYMBOL_GPL(wakeup_source_destroy);
-  */
- void wakeup_source_add(struct wakeup_source *ws)
- {
-+	unsigned long flags;
-+
- 	if (WARN_ON(!ws))
- 		return;
- 
-@@ -135,9 +137,9 @@ void wakeup_source_add(struct wakeup_source *ws)
- 	ws->active = false;
- 	ws->last_time = ktime_get();
- 
--	spin_lock_irq(&events_lock);
-+	spin_lock_irqsave(&events_lock, flags);
- 	list_add_rcu(&ws->entry, &wakeup_sources);
--	spin_unlock_irq(&events_lock);
-+	spin_unlock_irqrestore(&events_lock, flags);
- }
- EXPORT_SYMBOL_GPL(wakeup_source_add);
- 
-@@ -147,12 +149,14 @@ EXPORT_SYMBOL_GPL(wakeup_source_add);
-  */
- void wakeup_source_remove(struct wakeup_source *ws)
- {
-+	unsigned long flags;
-+
- 	if (WARN_ON(!ws))
- 		return;
- 
--	spin_lock_irq(&events_lock);
-+	spin_lock_irqsave(&events_lock, flags);
- 	list_del_rcu(&ws->entry);
--	spin_unlock_irq(&events_lock);
-+	spin_unlock_irqrestore(&events_lock, flags);
- 	synchronize_rcu();
- }
- EXPORT_SYMBOL_GPL(wakeup_source_remove);
-@@ -723,15 +727,16 @@ bool pm_get_wakeup_count(unsigned int *count, bool block)
- bool pm_save_wakeup_count(unsigned int count)
- {
- 	unsigned int cnt, inpr;
-+	unsigned long flags;
- 
- 	events_check_enabled = false;
--	spin_lock_irq(&events_lock);
-+	spin_lock_irqsave(&events_lock, flags);
- 	split_counters(&cnt, &inpr);
- 	if (cnt == count && inpr == 0) {
- 		saved_count = count;
- 		events_check_enabled = true;
- 	}
--	spin_unlock_irq(&events_lock);
-+	spin_unlock_irqrestore(&events_lock, flags);
- 	return events_check_enabled;
- }
- 
--- 
-1.7.9.5
-
+Hello, Pekka.
+Resend for ping.
