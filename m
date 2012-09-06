@@ -1,70 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933060Ab2IFUeM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 16:34:12 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:39298 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759754Ab2IFUeK (ORCPT
+	id S1759880Ab2IFUfw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 16:35:52 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:54518 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759857Ab2IFUft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 16:34:10 -0400
-Date: Thu, 6 Sep 2012 13:32:54 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH tip/core/rcu 07/23] rcu: Provide OOM handler to motivate
- lazy RCU callbacks
-Message-ID: <20120906203254.GU2448@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120830181811.GA29154@linux.vnet.ibm.com>
- <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346350718-30937-7-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346939197.18408.10.camel@twins>
- <1346939573.1680.18.camel@gandalf.local.home>
- <20120906174112.GL2448@linux.vnet.ibm.com>
- <1346953576.18408.52.camel@twins>
+	Thu, 6 Sep 2012 16:35:49 -0400
+Message-ID: <50490920.9070204@linaro.org>
+Date: Thu, 06 Sep 2012 22:35:44 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346953576.18408.52.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12090620-6148-0000-0000-0000095C311A
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: xen-devel@lists.xensource.com, linaro-dev@lists.linaro.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-pm@vger.kernel.org, linux-acpi@vger.kernel.org, lenb@kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: CONFIG_NO_HZ + CONFIG_CPU_IDLE freeze the system (Was Re: [PATCH]
+ acpi : remove power from acpi_processor_cx structure)
+References: <1343164349-28550-1-git-send-email-daniel.lezcano@linaro.org> <50485698.1070905@linaro.org> <50486B58.7000901@linaro.org> <201209062204.11288.rjw@sisk.pl>
+In-Reply-To: <201209062204.11288.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 06, 2012 at 07:46:16PM +0200, Peter Zijlstra wrote:
-> On Thu, 2012-09-06 at 10:41 -0700, Paul E. McKenney wrote:
-> > On Thu, Sep 06, 2012 at 09:52:53AM -0400, Steven Rostedt wrote:
-> > > On Thu, 2012-09-06 at 15:46 +0200, Peter Zijlstra wrote:
-> > > > On Thu, 2012-08-30 at 11:18 -0700, Paul E. McKenney wrote:
-> > > > > +       get_online_cpus();
-> > > > > +       for_each_online_cpu(cpu)
-> > > > > +               for_each_rcu_flavor(rsp)
-> > > > > +                       smp_call_function_single(cpu, rcu_oom_notify_cpu,
-> > > > > +                                                rsp, 1);
-> > > > > +       put_online_cpus(); 
-> > > > 
-> > > > I guess blasting IPIs around is better than OOM but still.. do you
-> > > > really need to wait for each cpu individually, or would a construct
-> > > > using on_each_cpu() be possible, or better yet, on_each_cpu_cond()?
-> > 
-> > I rejected on_each_cpu_cond() because it disables preemption across
-> > a scan of all CPUs.  Probably need to fix that at some point...
+On 09/06/2012 10:04 PM, Rafael J. Wysocki wrote:
+> On Thursday, September 06, 2012, Daniel Lezcano wrote:
+>> On 09/06/2012 09:54 AM, Daniel Lezcano wrote:
+>>> On 09/05/2012 03:41 PM, Rafael J. Wysocki wrote:
+>>>> On Saturday, September 01, 2012, Rafael J. Wysocki wrote:
+>>>>> On Friday, August 31, 2012, Daniel Lezcano wrote:
+>>>>>> On 07/24/2012 11:06 PM, Konrad Rzeszutek Wilk wrote:
+>>>>>>> On Tue, Jul 24, 2012 at 11:12:29PM +0200, Daniel Lezcano wrote:
+>>>>>>>> Remove the power field as it is not used.
+>>>>>>>>
+>>>>>>>> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+>>>>>>>> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>>>>>>> Acked.
+>>>>>> Hi Rafael,
+>>>>>>
+>>>>>> I did not see this patch going in. Is it possible to merge it ?
+>>>>> I think so.  I'll take care of it when I get back from LinuxCon/Plumbers Conf.
+>>>>> (early next week).
+>>>> Applied to the linux-next branch of the linux-pm.git tree as v3.7 material.
+>>> Thanks Rafael.
+>>>
+>>>> Are there any other patches you want me to consider for v3.7?
+>>> Yes please, I have the per cpu latencies ready to be submitted but I
+>>> want to do extra testing before. Unfortunately, the linux-pm-next hangs
+>>> at boot time on my intel dual core (not related to the patchset).
+>>>
+>>> I am git bisecting right now.
+>>
+>> I found the culprit. This is not related to the linux-pm tree but with
+>> net-next.
+>> The following patch introduced the issue.
+>>
+>> commit 6bdb7fe31046ac50b47e83c35cd6c6b6160a475d
+>> Author: Amerigo Wang <amwang@redhat.com>
+>> Date:   Fri Aug 10 01:24:50 2012 +0000
+>>
+>>     netpoll: re-enable irq in poll_napi()
+>>    
+>>     napi->poll() needs IRQ enabled, so we have to re-enable IRQ before
+>>     calling it.
+>>    
+>>     Cc: David Miller <davem@davemloft.net>
+>>     Signed-off-by: Cong Wang <amwang@redhat.com>
+>>     Signed-off-by: David S. Miller <davem@davemloft.net>
+>>
+>> AFAICS, it has been fixed by commit
+>> 072a9c48600409d72aeb0d5b29fbb75861a06631 which is not yet in linux-pm-next.
 > 
-> It would be rather straight fwd to make a variant that does
-> get_online_cpus() though.. but even then there's smp_call_function()
-> that does a broadcast, avoiding the need to spray individual IPIs and
-> wait for each CPU individually.
+> If it is present in the current Linus' tree, you can just pull this one
+> and merge linux-pm-next into it.  It should merge without conflicts.
 
-And in this case I can live with inexactness with respect to CPUs actually
-being hotplugged, so smp_call_function() does sound good.
+Ok, thanks.
 
-							Thanx, Paul
+>> I fall into this issue because NETCONSOLE is set, disabling it allowed
+>> me to go further.
+>>
+>> Unfortunately I am facing to some random freeze on the system which
+>> seems to be related to CONFIG_NO_HZ=y and CONFIG_CPU_IDLE=y.
+>>
+>> Disabling one of them, make the freezes to disappear.
+>>
+>> Is it a known issue ?
+> 
+> Well, there are systems having problems with this configuration, but they
+> should be exceptional.  What system is that?
+
+It is a laptop T61p with a Core 2 Duo T9500. Nothing exceptional I
+believe. Maybe someone got the same issue ?
+
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
