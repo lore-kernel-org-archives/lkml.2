@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758245Ab2IFPYe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 11:24:34 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:62616 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757834Ab2IFPYV (ORCPT
+	id S1758319Ab2IFPY4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 11:24:56 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:62900 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757882Ab2IFPYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 11:24:21 -0400
+	Thu, 6 Sep 2012 11:24:20 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Hans de Goede <hdegoede@redhat.com>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
 Cc: kernel-janitors@vger.kernel.org, Julia.Lawall@lip6.fr,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
         linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 14/14] drivers/media/usb/gspca/cpia1.c: fix error return code
-Date: Thu,  6 Sep 2012 17:24:01 +0200
-Message-Id: <1346945041-26676-14-git-send-email-peter.senna@gmail.com>
+Subject: [PATCH 2/14] drivers/media/platform/soc_camera/mx2_camera.c: fix error return code
+Date: Thu,  6 Sep 2012 17:23:59 +0200
+Message-Id: <1346945041-26676-12-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -49,20 +48,29 @@ ret@p1 = 0
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
 ---
- drivers/media/usb/gspca/cpia1.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/platform/soc_camera/mx2_camera.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/media/usb/gspca/cpia1.c b/drivers/media/usb/gspca/cpia1.c
-index 2499a88..b3ba47d 100644
---- a/drivers/media/usb/gspca/cpia1.c
-+++ b/drivers/media/usb/gspca/cpia1.c
-@@ -751,7 +751,7 @@ static int goto_high_power(struct gspca_dev *gspca_dev)
- 	if (signal_pending(current))
- 		return -EINTR;
+diff --git a/drivers/media/platform/soc_camera/mx2_camera.c b/drivers/media/platform/soc_camera/mx2_camera.c
+index 256187f..f8884a7 100644
+--- a/drivers/media/platform/soc_camera/mx2_camera.c
++++ b/drivers/media/platform/soc_camera/mx2_camera.c
+@@ -1800,13 +1800,16 @@ static int __devinit mx2_camera_probe(struct platform_device *pdev)
  
--	do_command(gspca_dev, CPIA_COMMAND_GetCameraStatus, 0, 0, 0, 0);
-+	ret = do_command(gspca_dev, CPIA_COMMAND_GetCameraStatus, 0, 0, 0, 0);
- 	if (ret)
- 		return ret;
+ 		if (!res_emma || !irq_emma) {
+ 			dev_err(&pdev->dev, "no EMMA resources\n");
++			err = -ENODEV;
+ 			goto exit_free_irq;
+ 		}
  
+ 		pcdev->res_emma = res_emma;
+ 		pcdev->irq_emma = irq_emma;
+-		if (mx27_camera_emma_init(pcdev))
++		if (mx27_camera_emma_init(pcdev)) {
++			err = -ENODEV;
+ 			goto exit_free_irq;
++		}
+ 	}
+ 
+ 	pcdev->soc_host.drv_name	= MX2_CAM_DRV_NAME,
 
