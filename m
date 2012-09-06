@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759683Ab2IFTch (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 15:32:37 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50918 "EHLO
+	id S1759547Ab2IFTcf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 15:32:35 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50923 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759612Ab2IFTbi (ORCPT
+	with ESMTP id S1756259Ab2IFTbi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 6 Sep 2012 15:31:38 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 6/8] perf evlist: Add fprintf method
-Date: Thu,  6 Sep 2012 16:31:19 -0300
-Message-Id: <1346959881-22427-7-git-send-email-acme@infradead.org>
+Subject: [PATCH 5/8] perf tools: Remove extraneous newline when parsing hardware cache events
+Date: Thu,  6 Sep 2012 16:31:18 -0300
+Message-Id: <1346959881-22427-6-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1346959881-22427-1-git-send-email-acme@infradead.org>
 References: <1346959881-22427-1-git-send-email-acme@infradead.org>
@@ -31,7 +31,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-For debugging, etc.
+Noticed while developing a 'perf test' entry to verify that
+perf_evsel__name works.
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -41,45 +42,25 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-fjimge1ovgh976qlt8dtmlp0@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-xz6zgh38mp3cjnd2udh38z8f@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evlist.c |   13 +++++++++++++
- tools/perf/util/evlist.h |    2 ++
- 2 files changed, 15 insertions(+)
+ tools/perf/util/parse-events.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 4774ac1..8923537 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -889,3 +889,16 @@ int perf_evlist__parse_sample(struct perf_evlist *evlist, union perf_event *even
- 	struct perf_evsel *evsel = perf_evlist__first(evlist);
- 	return perf_evsel__parse_sample(evsel, event, sample, swapped);
- }
-+
-+size_t perf_evlist__fprintf(struct perf_evlist *evlist, FILE *fp)
-+{
-+	struct perf_evsel *evsel;
-+	size_t printed = 0;
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		printed += fprintf(fp, "%s%s", evsel->idx ? ", " : "",
-+				   perf_evsel__name(evsel));
-+	}
-+
-+	return printed + fprintf(fp, "\n");;
-+}
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index 2ed2557..3f2e1e4 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -143,4 +143,6 @@ static inline struct perf_evsel *perf_evlist__last(struct perf_evlist *evlist)
- {
- 	return list_entry(evlist->entries.prev, struct perf_evsel, node);
- }
-+
-+size_t perf_evlist__fprintf(struct perf_evlist *evlist, FILE *fp);
- #endif /* __PERF_EVLIST_H */
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index b246303..66d235e 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -308,7 +308,7 @@ int parse_events_add_cache(struct list_head **list, int *idx,
+ 	for (i = 0; (i < 2) && (op_result[i]); i++) {
+ 		char *str = op_result[i];
+ 
+-		snprintf(name + n, MAX_NAME_LEN - n, "-%s\n", str);
++		snprintf(name + n, MAX_NAME_LEN - n, "-%s", str);
+ 
+ 		if (cache_op == -1) {
+ 			cache_op = parse_aliases(str, perf_evsel__hw_cache_op,
 -- 
 1.7.9.2.358.g22243
 
