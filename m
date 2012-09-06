@@ -1,127 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756479Ab2IFOdp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 10:33:45 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:53857 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756423Ab2IFOdn convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:2>);
-	Thu, 6 Sep 2012 10:33:43 -0400
-Message-Id: <5048D09A020000780009965B@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Thu, 06 Sep 2012 15:34:34 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Matt Fleming" <matt@console-pimps.org>
-Cc: "Vasco Dias" <rafa.vasco@gmail.com>,
-        "Matt Fleming" <matt.fleming@intel.com>,
-        "Matthew Garrett" <mjg@redhat.com>, <linux-efi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <cJ-ko@zougloub.eu>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] x86, efi: 1:1 pagetable mapping for virtual EFI
- calls
-References: <1346937309-1581-1-git-send-email-matt@console-pimps.org>
-In-Reply-To: <1346937309-1581-1-git-send-email-matt@console-pimps.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1756434Ab2IFOev (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 10:34:51 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:15851 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756193Ab2IFOet (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 10:34:49 -0400
+Message-ID: <1346942084.17321.22.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH v2 09/10] net/macb: ethtool interface: add register dump
+ feature
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: <netdev@vger.kernel.org>, <davem@davemloft.net>,
+        <linux-arm-kernel@lists.infradead.org>, <havard@skinnemoen.net>,
+        <plagnioj@jcrosoft.com>, <patrice.vilchez@atmel.com>,
+        <linux-kernel@vger.kernel.org>
+Date: Thu, 6 Sep 2012 15:34:44 +0100
+In-Reply-To: <1346941256-15676-1-git-send-email-nicolas.ferre@atmel.com>
+References: <1346888174.5325.55.camel@bwh-desktop.uk.solarflarecom.com>
+	 <1346941256-15676-1-git-send-email-nicolas.ferre@atmel.com>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [88.96.1.126]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 06.09.12 at 15:15, Matt Fleming <matt@console-pimps.org> wrote:
-> From: Matt Fleming <matt.fleming@intel.com>
+On Thu, 2012-09-06 at 16:20 +0200, Nicolas Ferre wrote:
+> Add macb_get_regs() ethtool function and its helper function:
+> macb_get_regs_len().
+> The version field is deduced from the IP revision which gives the
+> "MACB or GEM" information. An additional version field is reserved.
 > 
-> Some firmware still needs a 1:1 (virt->phys) mapping even after we've
-> called SetVirtualAddressMap(). So install the mapping alongside our
-> existing kernel mapping whenever we make EFI calls in virtual mode.
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Reviewed-by: Ben Hutchings <bhutchings@solarflare.com>
+> ---
+> v2: - modify MACB_GREGS_NBR name and adapt to number of registers
+>       actually displayed.
+>     - change version format to reflect register layout and
+>       add a version number to be future proof.
 > 
-> This bug was discovered on ASUS machines where the firmware
-> implementation of GetTime() accesses the RTC device via physical
-> addresses, even though that's bogus per the UEFI spec since we've
-> informed the firmware via SetVirtualAddressMap() that the boottime
-> memory map is no longer valid.
-
-> @@ -741,6 +742,114 @@ static void __init runtime_code_page_mkexec(void)
->  	}
+>  drivers/net/ethernet/cadence/macb.c |   40 +++++++++++++++++++++++++++++++++++
+>  drivers/net/ethernet/cadence/macb.h |    3 +++
+>  2 files changed, 43 insertions(+)
+> 
+> diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+> index dc34ff1..cab42e7 100644
+> --- a/drivers/net/ethernet/cadence/macb.c
+> +++ b/drivers/net/ethernet/cadence/macb.c
+> @@ -1223,9 +1223,49 @@ static int macb_set_settings(struct net_device *dev, struct ethtool_cmd *cmd)
+>  	return phy_ethtool_sset(phydev, cmd);
 >  }
 >  
-> +#ifdef CONFIG_X86_64
-> +pgd_t *efi_one_to_one_pgd;
-> +int efi_one_to_one_index = 0;
-
-I wasn't able to spot where this variable ever gets set to a
-non-zero value.
-
-> @@ -58,6 +62,47 @@ static void __init early_code_mapping_set_exec(int 
-> executable)
->  	}
->  }
+> +static int macb_get_regs_len(struct net_device *netdev)
+> +{
+> +	return MACB_GREGS_NBR * sizeof(u32);
+> +}
+> +
+> +static void macb_get_regs(struct net_device *dev, struct ethtool_regs *regs,
+> +			  void *p)
+> +{
+> +	struct macb *bp = netdev_priv(dev);
+> +	unsigned int tail, head;
+> +	u32 *regs_buff = p;
+> +
+> +	regs->version = (macb_readl(bp, MID) & ((1 << MACB_REV_SIZE) - 1))
+> +			| MACB_GREGS_VERSION;
+> +
+> +	tail = macb_tx_ring_wrap(bp->tx_tail);
+> +	head = macb_tx_ring_wrap(bp->tx_head);
+> +
+> +	regs_buff[0]  = macb_readl(bp, NCR);
+> +	regs_buff[1]  = macb_or_gem_readl(bp, NCFGR);
+> +	regs_buff[2]  = macb_readl(bp, NSR);
+> +	regs_buff[3]  = macb_readl(bp, TSR);
+> +	regs_buff[4]  = macb_readl(bp, RBQP);
+> +	regs_buff[5]  = macb_readl(bp, TBQP);
+> +	regs_buff[6]  = macb_readl(bp, RSR);
+> +	regs_buff[7]  = macb_readl(bp, IMR);
+> +
+> +	regs_buff[8]  = tail;
+> +	regs_buff[9]  = head;
+> +	regs_buff[10] = macb_tx_dma(bp, tail);
+> +	regs_buff[11] = macb_tx_dma(bp, head);
+> +
+> +	if (macb_is_gem(bp)) {
+> +		regs_buff[12] = gem_readl(bp, USRIO);
+> +		regs_buff[13] = gem_readl(bp, DMACFG);
+> +	}
+> +}
+> +
+>  static const struct ethtool_ops macb_ethtool_ops = {
+>  	.get_settings		= macb_get_settings,
+>  	.set_settings		= macb_set_settings,
+> +	.get_regs_len		= macb_get_regs_len,
+> +	.get_regs		= macb_get_regs,
+>  	.get_link		= ethtool_op_get_link,
+>  };
 >  
-> +pgd_t *efi_call_virt_prelog(void)
-> +{
-> +	pgd_t *save;
-> +	int i;
+> diff --git a/drivers/net/ethernet/cadence/macb.h b/drivers/net/ethernet/cadence/macb.h
+> index f69ceef..bcadc3c 100644
+> --- a/drivers/net/ethernet/cadence/macb.h
+> +++ b/drivers/net/ethernet/cadence/macb.h
+> @@ -10,6 +10,9 @@
+>  #ifndef _MACB_H
+>  #define _MACB_H
+>  
+> +#define MACB_GREGS_NBR 16
+> +#define MACB_GREGS_VERSION 1
 > +
-> +	save = kmalloc(sizeof(pgd_t) * (efi_one_to_one_index + 1), GFP_KERNEL);
+>  /* MACB register offsets */
+>  #define MACB_NCR				0x0000
+>  #define MACB_NCFGR				0x0004
 
-GFP_ATOMIC perhaps, given that many runtime calls happen
-inside spin locks?
-
-> +	if (!save) {
-> +		pr_alert("Unable to save pgd entries\n");
-> +		return NULL;
-> +	}
-> +
-> +	for (i = 0; i <= efi_one_to_one_index; i++) {
-> +		pgd_t *pgd = __va(read_cr3() & PHYSICAL_PAGE_MASK);
-
-I'd suggest moving this out of the loop (also below), slightly
-adjusting the rest of the loop body.
-
-> +
-> +		pgd += i;
-> +		save[i] = *pgd;
-> +		set_pgd(pgd, efi_one_to_one_pgd[i]);
-> +	}
-
-Did you, as an alternative, consider switching to a different
-CR3 instead of copying back and forth?
-
-> +
-> +	__flush_tlb_all();
-
-Is it certain you will _never_ hit a global mapping (in which case I
-believe the above would be insufficient)?
-
-Jan
-
-> +	return save;
-> +}
-> +
-> +void efi_call_virt_epilog(pgd_t *save)
-> +{
-> +	int i;
-> +
-> +	if (!save)
-> +		return;
-> +
-> +	for (i = 0; i <= efi_one_to_one_index; i++) {
-> +		pgd_t *pgd = __va(read_cr3() & PHYSICAL_PAGE_MASK);
-> +
-> +		pgd += i;
-> +		set_pgd(pgd, save[i]);
-> +	}
-> +
-> +	kfree(save);
-> +	__flush_tlb_all();
-> +}
-> +
->  void __init efi_call_phys_prelog(void)
->  {
->  	unsigned long vaddress;
-> -- 
-> 1.7.4.4
-
-
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
