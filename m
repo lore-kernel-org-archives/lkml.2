@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755285Ab2IFWpu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 18:45:50 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:50117 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754318Ab2IFWpt (ORCPT
+	id S1755001Ab2IFXFv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 19:05:51 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:34283 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752946Ab2IFXFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 18:45:49 -0400
+	Thu, 6 Sep 2012 19:05:50 -0400
+Message-ID: <50492C4B.6010502@wwwdotorg.org>
+Date: Thu, 06 Sep 2012 17:05:47 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <50492617.8030609@parallels.com>
-References: <50470A87.1040701@parallels.com>
-	<20120905082947.GD3195@dhcp-172-17-108-109.mtv.corp.google.com>
-	<50470EBF.9070109@parallels.com>
-	<20120905084740.GE3195@dhcp-172-17-108-109.mtv.corp.google.com>
-	<1346835993.2600.9.camel@twins>
-	<20120905091140.GH3195@dhcp-172-17-108-109.mtv.corp.google.com>
-	<50471782.6060800@parallels.com>
-	<1346837209.2600.14.camel@twins>
-	<50471C0C.7050600@parallels.com>
-	<1346840453.2461.6.camel@laptop>
-	<20120906203839.GM29092@google.com>
-	<50492617.8030609@parallels.com>
-Date: Thu, 6 Sep 2012 15:45:47 -0700
-X-Google-Sender-Auth: FuJJIO4uGRklWbGj2FwcVNJ0gVs
-Message-ID: <CAOS58YM3cQB1ybAJ+cV9JKHbTvr5aRNDK1bJ_PgLNzk_P-3Wuw@mail.gmail.com>
-Subject: Re: [RFC 0/5] forced comounts for cgroups.
-From: Tejun Heo <tj@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, linux-mm@kvack.org, davej@redhat.com,
-        ben@decadent.org.uk, pjt@google.com, lennart@poettering.net,
-        kay.sievers@vrfy.org
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Liam Girdwood <lrg@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH V4] regulator: tps6586x: add support for SYS rail
+References: <1346791419-31290-1-git-send-email-swarren@wwwdotorg.org> <20120906000136.GM10580@opensource.wolfsonmicro.com>
+In-Reply-To: <20120906000136.GM10580@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.4.4
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Glauber.
+On 09/05/2012 06:01 PM, Mark Brown wrote:
+> On Tue, Sep 04, 2012 at 02:43:39PM -0600, Stephen Warren wrote:
+>> From: Laxman Dewangan <ldewangan@nvidia.com>
+>>
+>> Device have SYS rail which is always ON. It is system power bus. LDO5
+>> and LDO_RTC get powered through this rail internally. Add support for
+>> this rail and make the LDO5/LDO_RTC supply by it. Update document
+>> accordingly.
+> 
+> Applied, thanks.  It'll be next week before I can give you a signed tag
+> to pull, sorry.
 
-On Thu, Sep 6, 2012 at 3:39 PM, Glauber Costa <glommer@parallels.com> wrote:
-> Yes, please.
->
-> While you rightfully claim that you explained it a couple of times, it
-> all seems to be quite fuzzy. I don't blame it on you: the current state
-> of the interface leads to this.
-
-Heh, I drank two cups of coffee and two glasses of wine that evening.
-Coffee won and I couldn't sleep till around 4am with splitting
-headache. I'm not too confident about what I wrote that night. :)
-
-> So another detailed explanation of what you envision at this point,
-> considering the discussions we had in the previous days, would be really
-> helpful,
-
-Definitely, will do. Please give me a few days to sort through
-immediately pending stuff.
-
-Thanks.
-
--- 
-tejun
+Thanks. For the record, as I mentioned on IRC, I've merged the topic
+branch that contains this patch into the Tegra tree. As soon as you have
+a tag available, I'll pull that in instead, and rebase on it.
