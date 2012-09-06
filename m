@@ -1,98 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812Ab2IFHIe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 03:08:34 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:35181 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752054Ab2IFHId (ORCPT
+	id S1753695Ab2IFHMH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 03:12:07 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:53602 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751449Ab2IFHMF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 03:08:33 -0400
-Message-ID: <50484BEB.4020103@gmail.com>
-Date: Thu, 06 Sep 2012 09:08:27 +0200
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-CC: Takashi Iwai <tiwai@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>
-Subject: Re: snd-usb: "delay: estimated 0, actual 352"
-References: <s5hmx1526mg.wl%tiwai@suse.de> <20120906060220.GA252@x4> <504843BA.2040808@gmail.com> <s5hehmfir46.wl%tiwai@suse.de> <20120906065340.GA257@x4>
-In-Reply-To: <20120906065340.GA257@x4>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 6 Sep 2012 03:12:05 -0400
+Date: Thu, 6 Sep 2012 17:11:53 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Ananth N Mavinakayanahalli" <ananth@in.ibm.com>
+Subject: linux-next: build failure after merge of the final tree (powerpc
+ tree related)
+Message-Id: <20120906171153.c80e87ea8db3dd3f4ac87cf5@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__6_Sep_2012_17_11_53_+1000_9qgwl6mOfInQ1Z19"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06.09.2012 08:53, Markus Trippelsdorf wrote:
-> On 2012.09.06 at 08:48 +0200, Takashi Iwai wrote:
->> At Thu, 06 Sep 2012 08:33:30 +0200,
->> Daniel Mack wrote:
->>>
->>> On 06.09.2012 08:02, Markus Trippelsdorf wrote:
->>>> On 2012.09.04 at 16:40 +0200, Takashi Iwai wrote:
->>>>> ----------------------------------------------------------------
->>>>> Sound fixes for 3.6-rc5
->>>>>
->>>>> There are nothing scaring, contains only small fixes for HD-audio and
->>>>> USB-audio:
->>>>> - EPSS regression fix and GPIO fix for HD-audio IDT codecs
->>>>> - A series of USB-audio regression fixes that are found since 3.5 kernel
->>>>>
->>>>> ----------------------------------------------------------------
->>>>> Daniel Mack (4):
->>>>>       ALSA: snd-usb: Fix URB cancellation at stream start
->>>>>       ALSA: snd-usb: restore delay information
->>>>         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
->>>> The commit fbcfbf5f above causes the following lines to be printed
->>>> whenever I start a new song:
->>>
->>> Copied Pierre-Louis Bossart - he wrote the code in 294c4fb8 which this
->>> patch (fbcfbf5f) brings back now.
->>>
->>>> delay: estimated 0, actual 352
->>>> delay: estimated 353, actual 705
->>>>
->>>> (44.1 * 8 = 352.8)
->>>>
->>>> This happens with an USB-DAC that identifies itself as "C-Media USB
->>>> Headphone Set".
->>>
->>> And you didn't you see these lines with 3.4?
->>
->> Maybe the difference of start condition?
->>
->> Markus, does the patch below fix anything?
-> 
-> Unfortunately no.
-> However reverting the following fixes the problem:
-> 
-> commit 245baf983cc39524cce39c24d01b276e6e653c9e
-> Author: Daniel Mack <zonque@gmail.com>
-> Date:   Thu Aug 30 18:52:30 2012 +0200
-> 
->     ALSA: snd-usb: fix calls to next_packet_size
-> 
+--Signature=_Thu__6_Sep_2012_17_11_53_+1000_9qgwl6mOfInQ1Z19
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-No, this one certainly fixes a problem and does the right thing by
-restoring the original code.
+Hi all,
 
-If you wouldn't state that you didn't see the same effect with 3.4(!),
-before the refactoring done in 3.5, I would believe the device is simply
-slightly off in its feedback rate and the tighter delay code complains
-about it while compensating, just as it did before.
+After merging the final tree, today's linux-next build (powerpc allyesconfi=
+g)
+failed like this:
 
-Are there any more than these two lines? And is audio working at all? Is
-it distorted in any way?
+In file included from drivers/atm/fore200e.c:70:0:
+drivers/atm/fore200e.h:263:3: error: redefinition of typedef 'opcode_t' wit=
+h different type
+arch/powerpc/include/asm/probes.h:25:13: note: previous declaration of 'opc=
+ode_t' was here
 
-Pierre-Louis, could you check whether I did the right thing when I
-ported over your delay bits to the new endpoint logic? Maybe I'm missing
-something here, but I currently don't see it.
+Caused by commit 7118e7e648e0 ("powerpc: Consolidate {k,u}probe
+definitions") from the powerpc tree.
 
+I have reverted that commit (and the two following:
+41ab5266c362	"powerpc: Add trap_nr to thread_struct"
+8b7b80b9ebb4	"powerpc: Uprobes port to powerpc")
+for today.
 
-Thanks,
-Daniel
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Thu__6_Sep_2012_17_11_53_+1000_9qgwl6mOfInQ1Z19
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQSEy5AAoJEECxmPOUX5FEo0EQAIALijyHzcSPJTpOkXOC5al6
+1hc+LVqeBwRSwuLJyXObyXTIIU1C9kaDB3ziJ0Ji2WXG7M8FEHf8K8q1xbw6fQ8A
+whcIZjVlZ7gfj+l31iFGsLqMI2sZq1V1Pk2/zuZst7HrDS3AsDLxQY7xRSIW7W+u
+nSLrzrIFA1n9r0SVhtelVNSUE471g4kJ7ww4aI8rig72m08zD/AzfK9zFkHxhH00
+4LXIHqTYhWTsMIhk79UirBFWLyinKStS7uCIfBF2Cxxlqao0mrrPlEDTd3VBRiEk
+IgHVzu4lQ+pquI0Fk7IjbkmxGWyMsR3X1cyt6tl9EAuy95iW/HIB8H02heL2ka0U
+v55XAibbgn04WTlLROZFRSyWlsGXg7Fp/yL83x2lHpbysBlO+vNk9uFt1kugMcU6
+9nW75BpyDQWoHQbOZFoK+N5NChw0qEyZz4iCMBuj44BGY9XJgRaR0Se2nOh2D6co
+6tCDBsPM8r+tUEsnZ2/W1EmzLmw1xg+R/SnrxaYPIbJUZhS/B5FRIiZhadNJHFbF
+02GC63qd3S5GxbWRFY5QCM5XIBU0e2kKNBga8czTxNr619ehXnUiZ/C/4rdfRJyQ
+OVfAKCYmSctefKyKo4ITfW4+AbLJlBSCN7609lrpR/ykcMLJ67dky1oLaOCViEfc
+jTogHNotM+TNnccFAWrO
+=xExw
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__6_Sep_2012_17_11_53_+1000_9qgwl6mOfInQ1Z19--
