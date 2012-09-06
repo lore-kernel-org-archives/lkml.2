@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754656Ab2IFNja (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 09:39:30 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:34053 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752742Ab2IFNj2 (ORCPT
+	id S1754750Ab2IFNmF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 09:42:05 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40417 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436Ab2IFNmD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 09:39:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <87y5knz6l5.fsf@devron.myhome.or.jp>
-References: <1346774264-8031-1-git-send-email-linkinjeon@gmail.com>
-	<20120904161747.GJ23464@ZenIV.linux.org.uk>
-	<CAKYAXd_wTxqbC-UxYimCkZtvSddx=f3FG0hoiEY_doMjoxkKog@mail.gmail.com>
-	<87harc34d9.fsf@devron.myhome.or.jp>
-	<CAKYAXd-8aztDe1QiFT=NSQX8J+h_FM+cAWwo+Q+fUQHpNGTctw@mail.gmail.com>
-	<87y5knz6l5.fsf@devron.myhome.or.jp>
-Date: Thu, 6 Sep 2012 22:39:27 +0900
-Message-ID: <CAKYAXd_mxq26bhRYd-YM9OBjYMO12TD4wHxm6PqHBLjgGFHaZg@mail.gmail.com>
-Subject: Re: [PATCH v2 1/5] fat: allocate persistent inode numbers
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
-        bfields@fieldses.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 6 Sep 2012 09:42:03 -0400
+Message-ID: <1346938791.18408.7.camel@twins>
+Subject: Re: [PATCH tip/core/rcu 06/23] rcu: Break up rcu_gp_kthread() into
+ subfunctions
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Date: Thu, 06 Sep 2012 15:39:51 +0200
+In-Reply-To: <1346350718-30937-6-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20120830181811.GA29154@linux.vnet.ibm.com>
+	 <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1346350718-30937-6-git-send-email-paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/9/6 OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
->
->>>> In this long discusstion about the FAT acceptance over NFS, our belief
->>>> is still that the objective should be to reduce errors as much as
->>>> possible and then if there are certain scenarios - at least that could
->>>> be highlighted as a limitation in Documentation instead of completely
->>>> discarding the usage of FAT over NFS.  So how about puttting rename
->>>> scenario as a limitation ? In ideal scenario how many times this is
->>>> going to happen ?
->>>
->>> My understanding of your patches is to introduce the silent corruption
->>> bug by getting wrong location via ino on some cases, instead of
->>> ESTALE. And make surprise to userland by change ino.
->>>
->>> Why is it safe to change ino? If you are saying to remove the changing
->>> ino on rename, how handle the case of collision?
->> Yes, agreed this would lead to collision. So, If we are choosing
->> 'i_pos' as inode
->> number, We need to have a mechanism to avoid this 'i_pos' being reused.
->>
->> We can have one thing over here. As a part of avoidance for such scenarios -
->> We can return EBUSY for this rename operation. i.e., If the inode is being
->> referenced then in such cases it makes sense to return EBUSY over NFS and
->>  forcus on the large part of the solution which is making FAT stable.
->>
->> Let me know your opinion.
->
-> It sounds like sane to provide the limited but stable behavior, with the
-> option. But at first, I'd like to see the read-only export but clean
-> solution, and make it stable. (I'm not thinking about the implementation
-> detail. It may be the stable ino solution, or may not be.)
-Hi. OGAWA.
-I Agree. Once, I will check whether it is possible to implement
-read-only export or not.
-And If I face some problem or have some concern, I will discuss about
-it with you.
+On Thu, 2012-08-30 at 11:18 -0700, Paul E. McKenney wrote:
+> +static int rcu_gp_kthread(void *arg)
+> +{
+> +       struct rcu_state *rsp = arg;
+> +       struct rcu_node *rnp = rcu_get_root(rsp);
+> +
+> +       for (;;) {
+> +
+> +               /* Handle grace-period start. */
+> +               for (;;) {
+> +                       wait_event_interruptible(rsp->gp_wq, rsp->gp_flags);
+> +                       if (rsp->gp_flags && rcu_gp_init(rsp))
+> +                               break;
+> +                       cond_resched();
+> +                       flush_signals(current);
+> +               }
+>  
+>                 /* Handle grace-period end. */
+>                 for (;;) {
+>                         wait_event_interruptible(rsp->gp_wq,
+>                                                  !ACCESS_ONCE(rnp->qsmask) &&
+>                                                  !rcu_preempt_blocked_readers_cgp(rnp));
+>                         if (!ACCESS_ONCE(rnp->qsmask) &&
+> +                           !rcu_preempt_blocked_readers_cgp(rnp) &&
+> +                           rcu_gp_cleanup(rsp))
+>                                 break;
+> +                       cond_resched();
+>                         flush_signals(current);
+>                 }
+>         }
+>         return 0;
+>  } 
 
->
-> After that, we can make it writable incrementally.
-Okay.
-Thanks a lot.
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Should there not be a kthread_stop() / kthread_park() call somewhere in
+there?
+
+Also, it could be me, but all those nested for (;;) loops make the flow
+rather non-obvious.
