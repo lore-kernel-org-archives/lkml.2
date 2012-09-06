@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825Ab2IFIqf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 04:46:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45583 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754306Ab2IFIqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 04:46:30 -0400
-Date: Thu, 6 Sep 2012 10:46:19 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Andreas Schwab <schwab@linux-m68k.org>, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] powerpc: fix personality handling in
- ppc64_personality()
-In-Reply-To: <1346879598.19098.4.camel@pasglop>
-Message-ID: <alpine.LNX.2.00.1209061039180.23459@pobox.suse.cz>
-References: <alpine.LNX.2.00.1208012201520.14910@pobox.suse.cz>  <m27gtitfv4.fsf@igel.home>  <alpine.LNX.2.00.1208020907490.14910@pobox.suse.cz>  <1346813643.2257.24.camel@pasglop>  <alpine.LNX.2.00.1209051056060.11079@pobox.suse.cz>
- <1346879598.19098.4.camel@pasglop>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754480Ab2IFIyr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 04:54:47 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:37037 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751458Ab2IFIyp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 04:54:45 -0400
+Date: Thu, 6 Sep 2012 16:54:17 +0800
+From: Adam Lee <adam8157@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Michal Marek <mmarek@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Yaakov Selkowitz <yselkowitz@users.sourceforge.net>,
+        Peter Foley <pefoley2@verizon.net>, Paul Bolle <pebolle@tiscali.nl>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "open list:KCONFIG" <linux-kbuild@vger.kernel.org>
+Subject: Re: [PATCH v3] kconfig: replace 'oldnoconfig' with 'olddefconfig',
+ and keep the old name as an alias
+Message-ID: <20120906085417.GA22428@adam-station.nay.redhat.com>
+References: <1346428476-12061-1-git-send-email-adam8157@gmail.com>
+ <1346432721-22521-1-git-send-email-adam8157@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346432721-22521-1-git-send-email-adam8157@gmail.com>
+X-PGP-Key-ID: 2F39D84D
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Sep 2012, Benjamin Herrenschmidt wrote:
-
-> > actually commit 7256a5d2da56 seems to contain the correct PER_LINUX 
-> > handling, so seems like you picked the right one :)
-> > 
+On Sat, Sep 01, 2012 at 01:05:17AM +0800, Adam Lee wrote:
+> As 67d34a6a391369269a2e5dba8a5f42cc4cd50231 said, 'oldnoconfig' doesn't
+> set new symbols to 'n', but instead sets it to their default values.
 > 
-> Odd, they looked different around the use of PER_MASK when I looked but
+> So, this patch replaces 'oldnoconfig' with 'olddefconfig', stop making
+> people confused, and keep the old name 'oldnoconfig' as an alias,
+> because people already are dependent on its behavior with the
+> counter-intuitive name.
+> 
+> v3: use a better way an add comments about alias in conf.c
 
-The original patch had
+Hi, Michal
 
-	personality &= ~PER_LINUX | PER_LINUX32;
-
-Which is bogus, exactly because ~PER_LINUX is -1.
-
-I then used
-
-	personality = (personality & ~PER_MASK) | PER_LINUX32;
-
-which is correct and perhaps a little bit more descriptive, and that is 
-what you have merged, so all is fine.
-
-> I was tired & jet lagged, so I might have just had a brain fail...
-
-Probably just missed that the first patch used PER_LINUX and the second 
-one PER_MASK, or whatever.
-
-Anyway, thanks.
+How about this version? I replace it and keep the old one as an alias,
+seems everyone will be happy, not have to stand the counter-intuitive
+name.
 
 -- 
-Jiri Kosina
-SUSE Labs
+Regards,
+Adam Lee
+http://adam8157.info
