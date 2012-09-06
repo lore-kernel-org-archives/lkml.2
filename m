@@ -1,59 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758940Ab2IFQVd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 12:21:33 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:38449 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758782Ab2IFQVb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 12:21:31 -0400
-Message-ID: <5048CDA2.10300@gmail.com>
-Date: Thu, 06 Sep 2012 18:21:54 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120826 Thunderbird/14.0
+	id S1758982Ab2IFQVs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 12:21:48 -0400
+Received: from local.xorcom.com ([81.218.177.19]:59445 "EHLO local.xorcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754915Ab2IFQVq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 12:21:46 -0400
+Date: Thu, 6 Sep 2012 19:21:43 +0300
+From: Tzafrir Cohen <tzafrir.cohen@xorcom.com>
+To: maximilian attems <max@stro.at>
+Cc: Michal Marek <mmarek@suse.cz>, Linux Kbuild <linux-kbuild@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] builddeb: remove unneeded explicit Architecture
+Message-ID: <20120906162143.GN18204@xorcom.com>
+References: <1344941092-31312-1-git-send-email-tzafrir.cohen@xorcom.com>
+ <5040C112.70501@suse.cz>
+ <20120905130528.GI18204@xorcom.com>
+ <50475310.6000508@suse.cz>
+ <20120905151422.GD12713@stro.at>
+ <20120905164009.GM18204@xorcom.com>
+ <20120905202604.GF28778@vostochny.stro.at>
+ <20120906140004.GL19848@vostochny.stro.at>
+ <20120906140416.GG28778@vostochny.stro.at>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Josh Triplett <josh@joshtriplett.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Pedro Alves <palves@redhat.com>, Tejun Heo <tj@kernel.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, mingo@elte.hu,
-        ebiederm@xmission.com, aarcange@redhat.com, ericvh@gmail.com,
-        netdev@vger.kernel.org, eric.dumazet@gmail.com, axboe@kernel.dk,
-        agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
-        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
-        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
-        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive hashtable
-References: <503C95E4.3010000@gmail.com> <20120828101148.GA21683@Krystal>  <503CAB1E.5010408@gmail.com> <20120828115638.GC23818@Krystal>  <20120828230050.GA3337@Krystal>  <1346772948.27919.9.camel@gandalf.local.home> <50462C99.5000007@redhat.com>  <50462EE8.1090903@redhat.com> <20120904170138.GB31934@Krystal>  <5048AAF6.5090101@gmail.com> <20120906145545.GA17332@leaf>  <5048C615.4070204@gmail.com> <1346947206.1680.36.camel@gandalf.local.home>
-In-Reply-To: <1346947206.1680.36.camel@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120906140416.GG28778@vostochny.stro.at>
+X-Forced-Service: Sadly Using Gmail [tm]
+Organization: Xorcom*
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/06/2012 06:00 PM, Steven Rostedt wrote:
->> > I think that that code doesn't make sense. The users of hlist_for_each_* aren't
->> > supposed to be changing the loop cursor.
-> I totally agree. Modifying the 'node' pointer is just asking for issues.
-> Yes that is error prone, but not due to the double loop. It's due to the
-> modifying of the node pointer that is used internally by the loop
-> counter. Don't do that :-)
+On Thu, Sep 06, 2012 at 02:04:16PM +0000, maximilian attems wrote:
+> On Thu, Sep 06, 2012 at 02:00:04PM +0000, maximilian attems wrote:
+> > On Wed, Sep 05, 2012 at 08:26:05PM +0000, maximilian attems wrote:
+> > > On Wed, Sep 05, 2012 at 07:40:09PM +0300, Tzafrir Cohen wrote:
+> > > > 
+> > > > $ grep CROSS_COMPILE .config
+> > > > CONFIG_CROSS_COMPILE="arm-linux-gnueabihf-"
+> > > > 
+> > > > Command:
+> > > > 
+> > > >   KBUILD_DEBARCH=armhf make ARCH=arm KBUILD_IMAGE=uImage deb-pkg
+> > > > 
+> > > > Error I get:
+> > > > 
+> > > >   dpkg-gencontrol: error: current host architecture 'armhf' does not
+> > > >   appear in package's architecture list (amd64)
+> > > > 
+> > > > It seems I have to use KBUILD_DEBARCH, as the kernel build system can't
+> > > > really tell if I want armel or armhf (If I built the same kernel for a
+> > > > Squeeze system I would have been forced to use armel).
+> > > 
+> > > well, obviously the dpkg call in
+> > >  -arch=$(dpkg --print-architecture)
+> > > is wrong please fix that.
+> > > 
+> > 
+> > care to test belows:
+> > 
+> 
+> without a useless snippet about the lost forcearch v2:
+> 
+> >From f78afbe0b7fa7c49656f4ed1cf404e915f3c325b Mon Sep 17 00:00:00 2001
+> From: maximilian attems <max@stro.at>
+> Date: Thu, 6 Sep 2012 15:22:02 +0200
+> Subject: [PATCH v2] deb-pkg: Simplify architecture matching for cross building
+> 
+> No point in invoking dpkg to get the archticture of the host
+> we build on. Instead directly use the logic implemented
+> in create_package(). No need anymore to override arch.
 
-While we're on this subject, I haven't actually seen hlist_for_each_entry() code
-that even *touches* 'pos'.
+Works for the case I presented. I still have one bad case:
 
-Will people yell at me loudly if I change the prototype of those macros to be:
+Now I remove the explicit setting of KBUILD_DEBRCH:
 
-	hlist_for_each_entry(tpos, head, member)
+  $ rm -rf debian
+  $ make ARCH=arm KBUILD_IMAGE=uImage deb-pkg
 
-(Dropping the 'pos' parameter), and updating anything that calls those macros to
-drop it as well?
+  ...
 
+  dpkg-gencontrol: error: current host architecture 'armhf' does not
+  appear in package's architecture list (armel)
 
-Thanks,
-Sasha
+My host architecture is amd64. This is actually the build architecture.
+dpkg-gencontrol uses Dpkg::Arch::get_host_arch().
+
+  $ perl -MDpkg::Arch -e 'print Dpkg::Arch::get_host_arch()."\n"'
+  amd64
+
+  $ CC=/usr/bin/arm-linux-gnueabi-gcc  perl -MDpkg::Arch -e 'print Dpkg::Arch::get_host_arch()."\n"'
+  armel
+  
+  $ CC=/usr/bin/arm-linux-gnueabihf-gcc  perl -MDpkg::Arch -e 'print Dpkg::Arch::get_host_arch()."\n"'
+  armhf
+
+  $ DEB_HOST_ARCH=whatever perl -MDpkg::Arch -e 'print Dpkg::Arch::get_host_arch()."\n"'
+  whatever
+
+Is it OK to use that perl one-liner as the default instead of the
+architecture guessing case?
+
+-- 
+               Tzafrir Cohen
+icq#16849755              jabber:tzafrir.cohen@xorcom.com
++972-50-7952406           mailto:tzafrir.cohen@xorcom.com
+http://www.xorcom.com  iax:guest@local.xorcom.com/tzafrir
