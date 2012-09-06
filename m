@@ -1,98 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754867Ab2IFCfn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 22:35:43 -0400
+	id S1755156Ab2IFCfy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 22:35:54 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:52999 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753955Ab2IFCfm convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754916Ab2IFCfv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 22:35:42 -0400
+	Wed, 5 Sep 2012 22:35:51 -0400
+Message-ID: <50480BFB.8050501@gmail.com>
+Date: Thu, 06 Sep 2012 10:35:39 +0800
+From: qiuxishi <qiuxishi@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <1346881623-388-1-git-send-email-msb@chromium.org>
-References: <1346881623-388-1-git-send-email-msb@chromium.org>
-Date: Thu, 6 Sep 2012 11:35:41 +0900
-X-Google-Sender-Auth: 2HwXY-kIACl5wU-6ljNGdpth_Ig
-Message-ID: <CAAQKjZPGefy9333AGTN1iwxWuCiPvi85raDE7ijDmRcm9PPWWw@mail.gmail.com>
-Subject: Re: [PATCH] drm/exynos: fix double call of drm_prime_(init/destroy)_file_private
-From: InKi Dae <inki.dae@samsung.com>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        =?ISO-8859-1?Q?St=E9phane_Marchesin?= <marcheu@chromium.org>
+To: mgorman@suse.de
+CC: Minchan Kim <minchan@kernel.org>, akpm@linux-foundation.org,
+        kamezawa.hiroyu@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        qiuxishi@huawei.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] memory-hotplug: bug fix race between isolation and
+ allocation
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 2012/9/5 17:40, Mel Gorman wrote:
 
-2012/9/6 Mandeep Singh Baines <msb@chromium.org>:
-> The double invocations are incorrect but seem to be safe so I don't
-> think this will fix any bugs.
->
-> Before:
->
-> [    7.639366] drm_prime_init_file ee3675d0
-> [    7.639377] drm_prime_init_file ee3675d0
-> [    7.639507] drm_prime_destroy_file ee3675d0
-> [    7.639518] drm_prime_destroy_file ee3675d0
-> [    7.639802] drm_prime_init_file ee372390
-> [    7.639810] drm_prime_init_file ee372390
-> [    8.473316] drm_prime_init_file ee356390
-> [    8.473331] drm_prime_init_file ee356390
->
-> After:
->
-> [    6.363842] drm_prime_init_file edc2e5d0
-> [    6.363994] drm_prime_destroy_file edc2e5d0
-> [    6.364260] drm_prime_init_file edc2e750
-> [    8.004837] drm_prime_init_file ee36ded0
->
-> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-> CC: Stéphane Marchesin <marcheu@chromium.org>
-> CC: Pawel Osciak <posciak@google.com>
-> CC: Inki Dae <inki.dae@samsung.com>
-> CC: Joonyoung Shim <jy0922.shim@samsung.com>
-> CC: Seung-Woo Kim <sw0312.kim@samsung.com>
-> CC: Kyungmin Park <kyungmin.park@samsung.com>
-> CC: David Airlie <airlied@linux.ie>
-> CC: dri-devel@lists.freedesktop.org
+> On Wed, Sep 05, 2012 at 04:26:02PM +0900, Minchan Kim wrote:
+>> Like below, memory-hotplug makes race between page-isolation
+>> and page-allocation so it can hit BUG_ON in __offline_isolated_pages.
+>>
+>> 	CPU A					CPU B
+>>
+>> start_isolate_page_range
+>> set_migratetype_isolate
+>> spin_lock_irqsave(zone->lock)
+>>
+>> 				free_hot_cold_page(Page A)
+>> 				/* without zone->lock */
+>> 				migratetype = get_pageblock_migratetype(Page A);
+>> 				/*
+>> 				 * Page could be moved into MIGRATE_MOVABLE
+>> 				 * of per_cpu_pages
+>> 				 */
+>> 				list_add_tail(&page->lru, &pcp->lists[migratetype]);
+>>
+>> set_pageblock_isolate
+>> move_freepages_block
+>> drain_all_pages
 
-remove all CCs and can you send it again using text mode? your patch
-is messed up when I try to get patch file.
+I think here is the problem you want to fix, it is not sure that pcp will be moved
+into MIGRATE_ISOLATE list. They may be moved into MIGRATE_MOVABLE list because
+page_private() maybe 2, it uses page_private() not get_pageblock_migratetype()
 
-Thanks.
-Inki Dae
+So when finish migrating pages, the free pages from pcp may be allocated again, and
+failed in check_pages_isolated().
 
-> ---
->  drivers/gpu/drm/exynos/exynos_drm_drv.c |    2 --
->  1 files changed, 0 insertions(+), 2 deletions(-)
+drain_all_pages()
+	drain_local_pages()
+		drain_pages()
+			free_pcppages_bulk()
+				__free_one_page(page, zone, 0, page_private(page))
+
+I reported this problem too. http://marc.info/?l=linux-mm&m=134555113706068&w=2
+How about this change:
+	free_pcppages_bulk()
+		__free_one_page(page, zone, 0, get_pageblock_migratetype(page))
+
+Thanks
+Xishi Qiu
+
+>>
+>> 				/* Page A could be in MIGRATE_MOVABLE of free_list. */
+>>
+>> check_pages_isolated
+>> __test_page_isolated_in_pageblock
+>> /*
+>>  * We can't catch freed page which
+>>  * is free_list[MIGRATE_MOVABLE]
+>>  */
+>> if (PageBuddy(page A))
+>> 	pfn += 1 << page_order(page A);
+>>
+>> 				/* So, Page A could be allocated */
+>>
+>> __offline_isolated_pages
+>> /*
+>>  * BUG_ON hit or offline page
+>>  * which is used by someone
+>>  */
+>> BUG_ON(!PageBuddy(page A));
+>>
 >
-> diff --git a/drivers/gpu/drm/exynos/exynos_drm_drv.c b/drivers/gpu/drm/exynos/exynos_drm_drv.c
-> index ebacec6..a27b8ff 100644
-> --- a/drivers/gpu/drm/exynos/exynos_drm_drv.c
-> +++ b/drivers/gpu/drm/exynos/exynos_drm_drv.c
-> @@ -160,7 +160,6 @@ static int exynos_drm_open(struct drm_device *dev, struct drm_file *file)
->         if (!file_priv)
->                 return -ENOMEM;
+> offline_page calling BUG_ON because someone allocated the page is
+> ridiculous. I did not spot where that check is but it should be changed. The
+> correct action is to retry the isolation.
 >
-> -       drm_prime_init_file_private(&file->prime);
->         file->driver_priv = file_priv;
+>> Signed-off-by: Minchan Kim <minchan@kernel.org>
 >
->         return exynos_drm_subdrv_open(dev, file);
-> @@ -184,7 +183,6 @@ static void exynos_drm_preclose(struct drm_device *dev,
->                         e->base.destroy(&e->base);
->                 }
->         }
-> -       drm_prime_destroy_file_private(&file->prime);
->         spin_unlock_irqrestore(&dev->event_lock, flags);
+> At no point in the changelog do you actually say what he patch does :/
 >
->         exynos_drm_subdrv_close(dev, file);
-> --
-> 1.7.7.3
+>> ---
+>>  mm/page_isolation.c |    5 ++++-
+>>  1 file changed, 4 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/mm/page_isolation.c b/mm/page_isolation.c
+>> index acf65a7..4699d1f 100644
+>> --- a/mm/page_isolation.c
+>> +++ b/mm/page_isolation.c
+>> @@ -196,8 +196,11 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn)
+>>  			continue;
+>>  		}
+>>  		page = pfn_to_page(pfn);
+>> -		if (PageBuddy(page))
+>> +		if (PageBuddy(page)) {
+>> +			if (get_page_migratetype(page) != MIGRATE_ISOLATE)
+>> +				break;
+>>  			pfn += 1 << page_order(page);
+>> +		}
 >
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+> It is possible the page is moved to the MIGRATE_ISOLATE list between when
+> the page was freed to the buddy allocator and this check was made. The
+> page->index information is stale and the impact is that the hotplug
+> operation fails when it could have succeeded. That said, I think it is a
+> very unlikely race that will never happen in practice.
+>
+> More importantly, the effect of this path is that EBUSY gets bubbled all
+> the way up and the hotplug operations fails. This is fine but as the page
+> is free at the time this problem is detected you also have the option
+> of moving the PageBuddy page to the MIGRATE_ISOLATE list at this time
+> if you take the zone lock. This will mean you need to change the name of
+> test_pages_isolated() of course.
+>
+>>  		else if (page_count(page) == 0 &&
+>>  				get_page_migratetype(page) == MIGRATE_ISOLATE)
+>>  			pfn += 1;
+>> --
+>> 1.7.9.5
+>>
+>
+
+
