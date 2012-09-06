@@ -1,200 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932729Ab2IFR5f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 13:57:35 -0400
-Received: from na3sys009aog131.obsmtp.com ([74.125.149.247]:45361 "EHLO
-	na3sys009aog131.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932130Ab2IFR5d (ORCPT
+	id S932897Ab2IFR5o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 13:57:44 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:46410 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932828Ab2IFR5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 13:57:33 -0400
+	Thu, 6 Sep 2012 13:57:40 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAJhJPsXdCn0u9aefehsTd1ZLLnbBgZZFExq=PC_Z-jv4F9XqWg@mail.gmail.com>
-References: <1345457135-12737-1-git-send-email-keguang.zhang@gmail.com> <CAJhJPsXdCn0u9aefehsTd1ZLLnbBgZZFExq=PC_Z-jv4F9XqWg@mail.gmail.com>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Thu, 6 Sep 2012 10:57:11 -0700
-Message-ID: <CAJOA=zM8CDjiGX_Wk0TAQhOiVWp2qQtFxRD1F8KcaKn9PBtsdA@mail.gmail.com>
-Subject: Re: [PATCH v3] clk: add Loongson1B clock support
-To: Kelvin Cheung <keguang.zhang@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>
+In-Reply-To: <1346779479-1097-2-git-send-email-mgorman@suse.de>
+References: <1346779479-1097-1-git-send-email-mgorman@suse.de>
+	<1346779479-1097-2-git-send-email-mgorman@suse.de>
+Date: Fri, 7 Sep 2012 02:57:39 +0900
+Message-ID: <CAAmzW4M_3hVBfjqFLG=7iydkXeQPdCXRbRmkqUJD4vwo0eWVWQ@mail.gmail.com>
+Subject: Re: [PATCH 1/4] slab: do ClearSlabPfmemalloc() for all pages of slab
+From: JoonSoo Kim <js1304@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Chuck Lever <chuck.lever@oracle.com>, Pekka@suse.de,
+        "Enberg <penberg"@kernel.org, David Rientjes <rientjes@google.com>,
+        Christoph Lameter <cl@linux.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 26, 2012 at 11:55 PM, Kelvin Cheung <keguang.zhang@gmail.com> wrote:
->
-> Ping?
->
+Add "Cc" to "Christoph Lameter" <cl@linux.com>
 
-No ping necessary.  I think mails are getting dropped somewhere on
-your end.  I've already taken this into clk-next.  See this thread on
-MARC:
-http://marc.info/?l=linux-arm-kernel&m=134643752523847&w=2
+2012/9/5 Mel Gorman <mgorman@suse.de>:
+> Right now, we call ClearSlabPfmemalloc() for first page of slab when we
+> clear SlabPfmemalloc flag. This is fine for most swap-over-network use
+> cases as it is expected that order-0 pages are in use. Unfortunately it
+> is possible that that __ac_put_obj() checks SlabPfmemalloc on a tail page
+> and while this is harmless, it is sloppy. This patch ensures that the head
+> page is always used.
+>
+> This problem was originally identified by Joonsoo Kim.
+>
+> [js1304@gmail.com: Original implementation and problem identification]
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>  mm/slab.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/mm/slab.c b/mm/slab.c
+> index 811af03..d34a903 100644
+> --- a/mm/slab.c
+> +++ b/mm/slab.c
+> @@ -1000,7 +1000,7 @@ static void *__ac_get_obj(struct kmem_cache *cachep, struct array_cache *ac,
+>                 l3 = cachep->nodelists[numa_mem_id()];
+>                 if (!list_empty(&l3->slabs_free) && force_refill) {
+>                         struct slab *slabp = virt_to_slab(objp);
+> -                       ClearPageSlabPfmemalloc(virt_to_page(slabp->s_mem));
+> +                       ClearPageSlabPfmemalloc(virt_to_head_page(slabp->s_mem));
+>                         clear_obj_pfmemalloc(&objp);
+>                         recheck_pfmemalloc_active(cachep, ac);
+>                         return objp;
 
-And here is the patch on clk-next:
-http://git.linaro.org/gitweb?p=people/mturquette/linux.git;a=commitdiff;h=5175cb5894d606f1756c07a685e6dcabd2d8745a;hp=e5ad7ac73cdd43c48998f1f43261c6209aebe00b
+We assume that slabp->s_mem's address is always in head page, so
+"virt_to_head_page" is not needed.
 
-Regards,
-Mike
-
->
-> 2012/8/20 Kelvin Cheung <keguang.zhang@gmail.com>
->>
->> This adds clock support to Loongson1B SoC using the common clock
->> infrastructure.
->>
->> Signed-off-by: Kelvin Cheung <keguang.zhang@gmail.com>
->> ---
->>  drivers/clk/Makefile   |    1 +
->>  drivers/clk/clk-ls1x.c |  111 ++++++++++++++++++++++++++++++++++++++++++++++++
->>  2 files changed, 112 insertions(+), 0 deletions(-)
->>  create mode 100644 drivers/clk/clk-ls1x.c
->>
->> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
->> index 5869ea3..018ec57 100644
->> --- a/drivers/clk/Makefile
->> +++ b/drivers/clk/Makefile
->> @@ -10,6 +10,7 @@ obj-$(CONFIG_ARCH_SOCFPGA)    += socfpga/
->>  obj-$(CONFIG_PLAT_SPEAR)       += spear/
->>  obj-$(CONFIG_ARCH_U300)                += clk-u300.o
->>  obj-$(CONFIG_ARCH_INTEGRATOR)  += versatile/
->> +obj-$(CONFIG_MACH_LOONGSON1)   += clk-ls1x.o
->>
->>  # Chip specific
->>  obj-$(CONFIG_COMMON_CLK_WM831X) += clk-wm831x.o
->> diff --git a/drivers/clk/clk-ls1x.c b/drivers/clk/clk-ls1x.c
->> new file mode 100644
->> index 0000000..f20b750
->> --- /dev/null
->> +++ b/drivers/clk/clk-ls1x.c
->> @@ -0,0 +1,111 @@
->> +/*
->> + * Copyright (c) 2012 Zhang, Keguang <keguang.zhang@gmail.com>
->> + *
->> + * This program is free software; you can redistribute  it and/or modify it
->> + * under  the terms of  the GNU General  Public License as published by the
->> + * Free Software Foundation;  either version 2 of the  License, or (at your
->> + * option) any later version.
->> + */
->> +
->> +#include <linux/clkdev.h>
->> +#include <linux/clk-provider.h>
->> +#include <linux/io.h>
->> +#include <linux/slab.h>
->> +#include <linux/err.h>
->> +
->> +#include <loongson1.h>
->> +
->> +#define OSC    33
->> +
->> +static DEFINE_SPINLOCK(_lock);
->> +
->> +static int ls1x_pll_clk_enable(struct clk_hw *hw)
->> +{
->> +       return 0;
->> +}
->> +
->> +static void ls1x_pll_clk_disable(struct clk_hw *hw)
->> +{
->> +}
->> +
->> +static unsigned long ls1x_pll_recalc_rate(struct clk_hw *hw,
->> +                                            unsigned long parent_rate)
->> +{
->> +       u32 pll, rate;
->> +
->> +       pll = __raw_readl(LS1X_CLK_PLL_FREQ);
->> +       rate = ((12 + (pll & 0x3f)) * 1000000) +
->> +               ((((pll >> 8) & 0x3ff) * 1000000) >> 10);
->> +       rate *= OSC;
->> +       rate >>= 1;
->> +
->> +       return rate;
->> +}
->> +
->> +static const struct clk_ops ls1x_pll_clk_ops = {
->> +       .enable = ls1x_pll_clk_enable,
->> +       .disable = ls1x_pll_clk_disable,
->> +       .recalc_rate = ls1x_pll_recalc_rate,
->> +};
->> +
->> +static struct clk * __init clk_register_pll(struct device *dev,
->> +        const char *name, const char *parent_name, unsigned long flags)
->> +{
->> +       struct clk_hw *hw;
->> +       struct clk *clk;
->> +       struct clk_init_data init;
->> +
->> +       /* allocate the divider */
->> +       hw = kzalloc(sizeof(struct clk_hw), GFP_KERNEL);
->> +       if (!hw) {
->> +               pr_err("%s: could not allocate clk_hw\n", __func__);
->> +               return ERR_PTR(-ENOMEM);
->> +       }
->> +
->> +       init.name = name;
->> +       init.ops = &ls1x_pll_clk_ops;
->> +       init.flags = flags | CLK_IS_BASIC;
->> +       init.parent_names = (parent_name ? &parent_name : NULL);
->> +       init.num_parents = (parent_name ? 1 : 0);
->> +       hw->init = &init;
->> +
->> +       /* register the clock */
->> +       clk = clk_register(dev, hw);
->> +
->> +       if (IS_ERR(clk))
->> +               kfree(hw);
->> +
->> +       return clk;
->> +}
->> +
->> +void __init ls1x_clk_init(void)
->> +{
->> +       struct clk *clk;
->> +
->> +       clk = clk_register_pll(NULL, "pll_clk", NULL, CLK_IS_ROOT);
->> +       clk_prepare_enable(clk);
->> +
->> +       clk = clk_register_divider(NULL, "cpu_clk", "pll_clk",
->> +                       CLK_SET_RATE_PARENT, LS1X_CLK_PLL_DIV, DIV_CPU_SHIFT,
->> +                       DIV_CPU_WIDTH, CLK_DIVIDER_ONE_BASED, &_lock);
->> +       clk_prepare_enable(clk);
->> +       clk_register_clkdev(clk, "cpu", NULL);
->> +
->> +       clk = clk_register_divider(NULL, "dc_clk", "pll_clk",
->> +                       CLK_SET_RATE_PARENT, LS1X_CLK_PLL_DIV, DIV_DC_SHIFT,
->> +                       DIV_DC_WIDTH, CLK_DIVIDER_ONE_BASED, &_lock);
->> +       clk_prepare_enable(clk);
->> +       clk_register_clkdev(clk, "dc", NULL);
->> +
->> +       clk = clk_register_divider(NULL, "ahb_clk", "pll_clk",
->> +                       CLK_SET_RATE_PARENT, LS1X_CLK_PLL_DIV, DIV_DDR_SHIFT,
->> +                       DIV_DDR_WIDTH, CLK_DIVIDER_ONE_BASED, &_lock);
->> +       clk_prepare_enable(clk);
->> +       clk_register_clkdev(clk, "ahb", NULL);
->> +       clk_register_clkdev(clk, "stmmaceth", NULL);
->> +
->> +       clk = clk_register_fixed_factor(NULL, "apb_clk", "ahb_clk", 0, 1, 2);
->> +       clk_prepare_enable(clk);
->> +       clk_register_clkdev(clk, "apb", NULL);
->> +       clk_register_clkdev(clk, "serial8250", NULL);
->> +}
->> --
->> 1.7.1
->>
->
->
->
+> @@ -1032,7 +1032,7 @@ static void *__ac_put_obj(struct kmem_cache *cachep, struct array_cache *ac,
+>  {
+>         if (unlikely(pfmemalloc_active)) {
+>                 /* Some pfmemalloc slabs exist, check if this is one */
+> -               struct page *page = virt_to_page(objp);
+> +               struct page *page = virt_to_head_page(objp);
+>                 if (PageSlabPfmemalloc(page))
+>                         set_obj_pfmemalloc(&objp);
+>         }
 > --
-> Best Regards!
-> Kelvin
+> 1.7.9.2
 >
->
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->
+
+If we always use head page, following suggestion is more good to me.
+How about you?
+
+diff --git a/mm/slab.c b/mm/slab.c
+index f8b0d53..ce70989 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -1032,7 +1032,7 @@ static void *__ac_put_obj(struct kmem_cache
+*cachep, struct array_cache *ac,
+ {
+        if (unlikely(pfmemalloc_active)) {
+                /* Some pfmemalloc slabs exist, check if this is one */
+-               struct page *page = virt_to_page(objp);
++               struct page *page = virt_to_head_page(objp);
+                if (PageSlabPfmemalloc(page))
+                        set_obj_pfmemalloc(&objp);
+        }
+@@ -1921,10 +1921,9 @@ static void *kmem_getpages(struct kmem_cache
+*cachep, gfp_t flags, int nodeid)
+                        NR_SLAB_UNRECLAIMABLE, nr_pages);
+        for (i = 0; i < nr_pages; i++) {
+                __SetPageSlab(page + i);
+-
+-               if (page->pfmemalloc)
+-                       SetPageSlabPfmemalloc(page + i);
+        }
++       if (page->pfmemalloc)
++               SetPageSlabPfmemalloc(page);
+
+        if (kmemcheck_enabled && !(cachep->flags & SLAB_NOTRACK)) {
+                kmemcheck_alloc_shadow(page, cachep->gfporder, flags, nodeid);
+@@ -1943,26 +1942,26 @@ static void *kmem_getpages(struct kmem_cache
+*cachep, gfp_t flags, int nodeid)
+  */
+ static void kmem_freepages(struct kmem_cache *cachep, void *addr)
+ {
+-       unsigned long i = (1 << cachep->gfporder);
++       int nr_pages = (1 << cachep->gfporder);
++       int i;
+        struct page *page = virt_to_page(addr);
+-       const unsigned long nr_freed = i;
+
+        kmemcheck_free_shadow(page, cachep->gfporder);
+
+        if (cachep->flags & SLAB_RECLAIM_ACCOUNT)
+                sub_zone_page_state(page_zone(page),
+-                               NR_SLAB_RECLAIMABLE, nr_freed);
++                               NR_SLAB_RECLAIMABLE, nr_pages);
+        else
+                sub_zone_page_state(page_zone(page),
+-                               NR_SLAB_UNRECLAIMABLE, nr_freed);
+-       while (i--) {
+-               BUG_ON(!PageSlab(page));
+-               __ClearPageSlabPfmemalloc(page);
+-               __ClearPageSlab(page);
+-               page++;
++                               NR_SLAB_UNRECLAIMABLE, nr_pages);
++       for (i = 0; i < nr_pages; i++) {
++               BUG_ON(!PageSlab(page + i));
++               __ClearPageSlab(page + i);
+        }
++       __ClearPageSlabPfmemalloc(page);
++
+        if (current->reclaim_state)
+-               current->reclaim_state->reclaimed_slab += nr_freed;
++               current->reclaim_state->reclaimed_slab += nr_pages;
+        free_pages((unsigned long)addr, cachep->gfporder);
+ }
