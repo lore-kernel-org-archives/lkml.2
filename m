@@ -1,118 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752951Ab2IFFQd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 01:16:33 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:54580 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751373Ab2IFFP1 (ORCPT
+	id S1751952Ab2IFFRm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 01:17:42 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:45735 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751004Ab2IFFRj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 01:15:27 -0400
-X-AuditID: 9c930179-b7cc4ae00000134d-b2-5048316d4861
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Xishi Qiu <qiuxishi@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: [PATCH v2 1/3] use get_page_migratetype instead of page_private
-Date: Thu,  6 Sep 2012 14:16:57 +0900
-Message-Id: <1346908619-16056-2-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1346908619-16056-1-git-send-email-minchan@kernel.org>
-References: <1346908619-16056-1-git-send-email-minchan@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 6 Sep 2012 01:17:39 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6826"; a="233415228"
+Message-ID: <3fc0d675156e4a79e97acd1e89ac9748.squirrel@www.codeaurora.org>
+In-Reply-To: <CANfBPZ9p-1M9hDmG4KUq_ky6+Z+7FMwVA=gz1kc7j0bUSz_EzQ@mail.gmail.com>
+References: <34e29d774773a7dfa3e1b57232249b68.squirrel@www.codeaurora.org>
+    <CANfBPZ9NZAdK4tEDJ8wiNKNjRUuqaLKk3qqVZVgod8vwYVuOYw@mail.gmail.com>
+    <f35f04238ad2e00e976d5f99b4b29648.squirrel@www.codeaurora.org>
+    <CANfBPZ9Pbsp4OXh-kCveiAm-ing8i4k5WZvAzrdi8G4d8tCDdA@mail.gmail.com>
+    <a2a7a94c38abadb36b23c964ad8e9ace.squirrel@www.codeaurora.org>
+    <CANfBPZ9p-1M9hDmG4KUq_ky6+Z+7FMwVA=gz1kc7j0bUSz_EzQ@mail.gmail.com>
+Date: Wed, 5 Sep 2012 22:17:39 -0700 (PDT)
+Subject: Re: [PATCH v2 1/1] mmc: block: Add write packing control
+From: merez@codeaurora.org
+To: "S, Venkatraman" <svenkatr@ti.com>
+Cc: merez@codeaurora.org, "Chris Ball" <cjb@laptop.org>,
+        "Muthu Kumar" <muthu.lkml@gmail.com>, linux-mmc@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org,
+        "open list" <linux-kernel@vger.kernel.org>,
+        "Seungwon Jeon" <tgih.jun@samsung.com>
+User-Agent: SquirrelMail/1.4.17
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-page allocator uses set_page_private and page_private for handling
-migratetype when it frees page. Let's replace them with [set|get]
-_freepage_migratetype to make it more clear.
+Hi Venkat,
 
-* from v1
-  * Change set_page_migratetype with set_freepage_migratetype
-  * Add comment on set_freepage_migratetype
+Sorry for the late response. I came back from a long vacation and had many
+issues to take care of.
+If you still need a rebased version of the packed commands patches, I can
+send a rebased version of the write packing control patch once Seungwon
+Jeon will send the rebased version of the packing patches.
+Please let us know if you ran into conflicts and it is required.
 
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- include/linux/mm.h  |   12 ++++++++++++
- mm/page_alloc.c     |   10 ++++++----
- mm/page_isolation.c |    2 +-
- 3 files changed, 19 insertions(+), 5 deletions(-)
+Thanks,
+Maya
+On Tue, August 28, 2012 10:40 am, S, Venkatraman wrote:
+> On Mon, Aug 27, 2012 at 11:58 PM,  <merez@codeaurora.org> wrote:
+>>
+>> On Fri, July 27, 2012 2:07 am, S, Venkatraman wrote:
+>>> On Fri, Jul 27, 2012 at 12:24 AM,  <merez@codeaurora.org> wrote:
+>>>>
+>>>> On Thu, July 26, 2012 8:28 am, S, Venkatraman wrote:
+>>>>> On Tue, Jul 24, 2012 at 2:14 PM,  <merez@codeaurora.org> wrote:
+>>>>>> On Mon, July 23, 2012 5:22 am, S, Venkatraman wrote:
+>>>>>>> On Mon, Jul 23, 2012 at 5:13 PM,  <merez@codeaurora.org> wrote:
+>>>>>>>> On Wed, July 18, 2012 12:26 am, Chris Ball wrote:
+>>>>>>>>> Hi,  [removing Jens and the documentation list, since now we're
+>>>>>> talking about the MMC side only]
+>>>>>>>>> On Wed, Jul 18 2012, merez@codeaurora.org wrote:
+>>>>>>>>>> Is there anything else that holds this patch from being pushed
+>>>>>>>>>> to
+>>>>>>>> mmc-next?
+>>>>>>>>> Yes, I'm still uncomfortable with the write packing patchsets for
+>>>>>>>>> a
+>>>>>>>> couple of reasons, and I suspect that the sum of those reasons
+>>>>>>>> means
+>>>>>>>> that
+>>>>>>>> we should probably plan on holding off merging it until after 3.6.
+>>>>>>>>> Here are the open issues; please correct any misunderstandings:
+>>>>>>>>> With
+>>>>>> Seungwon's patchset ("Support packed write command"):
+>>>>>>>>> * I still don't have a good set of representative benchmarks
+>>>>>>>>> showing
+>>>>>>>>>   what kind of performance changes come with this patchset.  It
+>>>>>>>>> seems
+>>>>>>>> like we've had a small amount of testing on one controller/eMMC
+>>>>>>>> part
+>>>>>>>> combo
+>>>>>>>> from Seungwon, and an entirely different test from Maya, and the
+>>>>>> results
+>>>>>>>> aren't documented fully anywhere to the level of describing what
+>>>>>>>> the
+>>>>>> hardware was, what the test was, and what the results were before
+>>>>>> and
+>>>>>> after the patchset.
+>>>>>>>> Currently, there is only one card vendor that supports packed
+>>>>>>>> commands.
+>>>>>> Following are our sequential write (LMDD) test results on 2 of our
+>>>>>> targets
+>>>>>>>> (in MB/s):
+>>>>>>>>                        No packing        packing
+>>>>>>>> Target 1 (SDR 50MHz)     15               25
+>>>>>>>> Target 2 (DDR 50MHz)     20               30
+>>>>>>>>> With the reads-during-writes regression:
+>>>>>>>>> * Venkat still has open questions about the nature of the read
+>>>>>>>>>   regression, and thinks we should understand it with blktrace
+>>>>>>>>> before
+>>>>>>>> trying to fix it.  Maya has a theory about writes overwhelming
+>>>>>>>> reads,
+>>>>>>>> but
+>>>>>>>> Venkat doesn't understand why this would explain the observed
+>>>>>>>> bandwidth drop.
+>>>>>>>> The degradation of read due to writes is not a new behavior and
+>>>>>>>> exists
+>>>>>> also without the write packing feature (which only increases the
+>>>>>> degradation). Our investigation of this phenomenon led us to the
+>>>>>> Conclusion that a new scheduling policy should be used for mobile
+>>>>>> devices,
+>>>>>>>> but this is not related to the current discussion of the write
+>>>>>>>> packing
+>>>>>> feature.
+>>>>>>>> The write packing feature increases the degradation of read due to
+>>>>>> write
+>>>>>>>> since it allows the MMC to fetch many write requests in a row,
+>>>>>>>> instead
+>>>>>>>> of
+>>>>>>>> fetching only one at a time.  Therefore some of the read requests
+>>>>>>>> will
+>>>>>> have to wait for the completion of more write requests before they
+>>>>>> can
+>>>>>> be
+>>>>>>>> issued.
+>>>>>>>
+>>>>>>> I am a bit puzzled by this claim. One thing I checked carefully
+>>>>>>> when
+>>>>>> reviewing write packing patches from SJeon was that the code didn't
+>>>>>> plough through a mixed list of reads and writes and selected only
+>>>>>> writes.
+>>>>>>> This section of the code in "mmc_blk_prep_packed_list()", from v8
+>>>>>> patchset..
+>>>>>>> <Quote>
+>>>>>>> +               if (rq_data_dir(cur) != rq_data_dir(next)) {
+>>>>>>> +                       put_back = 1;
+>>>>>>> +                       break;
+>>>>>>> +               }
+>>>>>>> </Quote>
+>>>>>>>
+>>>>>>> means that once a read is encountered in the middle of write
+>>>>>>> packing,
+>>>>>> the packing is stopped at that point and it is executed. Then the
+>>>>>> next
+>>>>>> blk_fetch_request should get the next read and continue as before.
+>>>>>>>
+>>>>>>> IOW, the ordering of reads and writes is _not_ altered when using
+>>>>>>> packed
+>>>>>> commands.
+>>>>>>> For example if there were 5 write requests, followed by 1 read,
+>>>>>>> followed by 5 more write requests in the request_queue, the first 5
+>>>>>> writes will be executed as one "packed command", then the read will
+>>>>>> be
+>>>>>> executed, and then the remaining 5 writes will be executed as one
+>>>>>> "packed command". So the read does not have to wait any more than it
+>>>>>> waited before (packing feature)
+>>>>>>
+>>>>>> Let me try to better explain with your example.
+>>>>>> Without packing the MMC layer will fetch 2 write requests and wait
+>>>>>> for
+>>>>>> the
+>>>>>> first write request completion before fetching another write
+>>>>>> request.
+>>>>>> During this time the read request could be inserted into the CFQ and
+>>>>>> since
+>>>>>> it has higher priority than the async write it will be dispatched in
+>>>>>> the
+>>>>>> next fetch. So, the result would be 2 write requests followed by one
+>>>>>> read
+>>>>>> request and the read would have to wait for completion of only 2
+>>>>>> write
+>>>>>> requests.
+>>>>>> With packing, all the 5 write requests will be fetched in a row, and
+>>>>>> then
+>>>>>> the read will arrive and be dispatched in the next fetch. Then the
+>>>>>> read
+>>>>>> will have to wait for the completion of 5 write requests.
+>>>>>>
+>>>>>> Few more clarifications:
+>>>>>> Due to the plug list mechanism in the block layer the applications
+>>>>>> can
+>>>>>> "aggregate" several requests to be inserted into the scheduler
+>>>>>> before
+>>>>>> waking the MMC queue thread.
+>>>>>> This leads to a situation where there are several write requests in
+>>>>>> the
+>>>>>> CFQ queue when MMC starts to do the fetches.
+>>>>>>
+>>>>>> If the read was inserted while we are building the packed command
+>>>>>> then
+>>>>>> I
+>>>>>> agree that we should have seen less effect on the read performance.
+>>>>>> However, the write packing statistics show that in most of the cases
+>>>>>> the
+>>>>>> packing stopped due to an empty queue, meaning that the read was
+>>>>>> inserted
+>>>>>> to the CFQ after all the pending write requests were fetched and
+>>>>>> packed.
+>>>>>>
+>>>>>> Following is an example for write packing statistics of a READ/WRITE
+>>>>>> parallel scenario:
+>>>>>> write packing statistics:
+>>>>>> Packed 1 reqs - 448 times
+>>>>>> Packed 2 reqs - 38 times
+>>>>>> Packed 3 reqs - 23 times
+>>>>>> Packed 4 reqs - 30 times
+>>>>>> Packed 5 reqs - 14 times
+>>>>>> Packed 6 reqs - 8 times
+>>>>>> Packed 7 reqs - 4 times
+>>>>>> Packed 8 reqs - 1 times
+>>>>>> Packed 10 reqs - 1 times
+>>>>>> Packed 34 reqs - 1 times
+>>>>>> stopped packing due to the following reasons:
+>>>>>> 2 times: wrong data direction (meaning a READ was fetched and
+>>>>>> stopped
+>>>>>> the
+>>>>>> packing)
+>>>>>> 1 times: flush or discard
+>>>>>> 565 times: empty queue (meaning blk_fetch_request returned NULL)
+>>>>>>
+>>>>>>>
+>>>>>>> And I requested blktrace to confirm that this is indeed the
+>>>>>>> behaviour.
+>>>>>>
+>>>>>> The trace logs show that in case of no packing, there are maximum of
+>>>>>> 3-4
+>>>>>> requests issued before a read request, while with packing there are
+>>>>>> also
+>>>>>> cases of 6 and 7 requests dispatched before a read request.
+>>>>>>
+>>>>>> I'm waiting for an approval for sharing the block trace logs.
+>>>>>> Since this is a simple test to run you can collect the trace logs
+>>>>>> and
+>>>>>> let
+>>>>>> us know if you reach other conclusions.
+>>>>>>
+>>>>> Thanks for the brief. I don't have the eMMC4.5 device with me yet, so
+>>>>> I can't reproduce the result.
+>>>>
+>>>> I sent the trace logs of both packing and non packing. Please let me
+>>>> know
+>>>> if you have additional questions after reviewing them.
+>>>>
+>>>> The problem you describe is most likely
+>>>>> applicable
+>>>>> to any block device driver with a large queue depth ( any queue depth
+>>>>> >1).
+>>>>> I'll check to see what knobs in block affect the result.
+>>>>> Speaking of it, what is the host controller you use to test this ?
+>>>>
+>>>> The controller I use is msm_sdcc.
+>>>>
+>>>>> I was wondering if host->max_seg_size is taken into account while
+>>>>> packed
+>>>>> command
+>>>>> is in use. If not, shouldn't it be ?  - it could act as a better
+>>>>> throttle for "packing density".
+>>>>
+>>>> The max segments (which is calculated from host->max_seg_size) is
+>>>> taking
+>>>> into account when preparing the packed list (so that the whole packed
+>>>> won't exceed the max number of segments).
+>>>> I'm not sure I understand how host->max_seg_size can be used as a
+>>>> throttle
+>>>> for "packing density". Can you please explain?
+>>>>
+>>> Ok - I overlooked that max_segments is indeed used to limit the number
+>>> of requests
+>>> that are packed.(And this corresponds to max_seg_size, which is what I
+>>> intended)
+>>> I should be getting my MMC4.5 test gear in a couple of days - I'll run
+>>> it through
+>>> on some hosts and can either provide more feedback or Ack this patch.
+>>> Regards,
+>>> Venkat.
+>>
+>> Hi Venkat,
+>>
+>> Do you have additional questions/comments?
+>>
+> None. I am just running some stress tests on BKOPS patches right now
+> and after tomorrow I'll start testing packed command. Will all the
+> patches apply on top of current mmc-next ? If not, it would be great
+> if
+> you can send an updated version.
+>
+> Thanks,
+> Venkat.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 0514fe9..84d1663f 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -237,6 +237,18 @@ struct inode;
- #define page_private(page)		((page)->private)
- #define set_page_private(page, v)	((page)->private = (v))
- 
-+/* It's valid only if the page is free path or free_list */
-+static inline void set_freepage_migratetype(struct page *page, int migratetype)
-+{
-+	set_page_private(page, migratetype);
-+}
-+
-+/* It's valid only if the page is free path or free_list */
-+static inline int get_freepage_migratetype(struct page *page)
-+{
-+	return page_private(page);
-+}
-+
- /*
-  * FIXME: take this include out, include page-flags.h in
-  * files which need it (119 of them)
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index ba3100a..f5ba236 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -671,8 +671,10 @@ static void free_pcppages_bulk(struct zone *zone, int count,
- 			/* must delete as __free_one_page list manipulates */
- 			list_del(&page->lru);
- 			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
--			__free_one_page(page, zone, 0, page_private(page));
--			trace_mm_page_pcpu_drain(page, 0, page_private(page));
-+			__free_one_page(page, zone, 0,
-+				get_freepage_migratetype(page));
-+			trace_mm_page_pcpu_drain(page, 0,
-+				get_freepage_migratetype(page));
- 		} while (--to_free && --batch_free && !list_empty(list));
- 	}
- 	__mod_zone_page_state(zone, NR_FREE_PAGES, count);
-@@ -1134,7 +1136,7 @@ static int rmqueue_bulk(struct zone *zone, unsigned int order,
- 			if (!is_migrate_cma(mt) && mt != MIGRATE_ISOLATE)
- 				mt = migratetype;
- 		}
--		set_page_private(page, mt);
-+		set_freepage_migratetype(page, mt);
- 		list = &page->lru;
- 	}
- 	__mod_zone_page_state(zone, NR_FREE_PAGES, -(i << order));
-@@ -1301,7 +1303,7 @@ void free_hot_cold_page(struct page *page, int cold)
- 		return;
- 
- 	migratetype = get_pageblock_migratetype(page);
--	set_page_private(page, migratetype);
-+	set_freepage_migratetype(page, migratetype);
- 	local_irq_save(flags);
- 	if (unlikely(wasMlocked))
- 		free_page_mlock(page);
-diff --git a/mm/page_isolation.c b/mm/page_isolation.c
-index 247d1f1..87a7929 100644
---- a/mm/page_isolation.c
-+++ b/mm/page_isolation.c
-@@ -196,7 +196,7 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn)
- 		if (PageBuddy(page))
- 			pfn += 1 << page_order(page);
- 		else if (page_count(page) == 0 &&
--				page_private(page) == MIGRATE_ISOLATE)
-+			get_freepage_migratetype(page) == MIGRATE_ISOLATE)
- 			pfn += 1;
- 		else
- 			break;
+
 -- 
-1.7.9.5
+QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
+of Code Aurora Forum, hosted by The Linux Foundation
 
