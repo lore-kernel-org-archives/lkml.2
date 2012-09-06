@@ -1,150 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932894Ab2IFSFl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 14:05:41 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:57613 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932196Ab2IFSFj (ORCPT
+	id S932928Ab2IFSGQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 14:06:16 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:56099 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932196Ab2IFSGN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 14:05:39 -0400
+	Thu, 6 Sep 2012 14:06:13 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAAmzW4M_3hVBfjqFLG=7iydkXeQPdCXRbRmkqUJD4vwo0eWVWQ@mail.gmail.com>
-References: <1346779479-1097-1-git-send-email-mgorman@suse.de>
-	<1346779479-1097-2-git-send-email-mgorman@suse.de>
-	<CAAmzW4M_3hVBfjqFLG=7iydkXeQPdCXRbRmkqUJD4vwo0eWVWQ@mail.gmail.com>
-Date: Fri, 7 Sep 2012 03:05:39 +0900
-Message-ID: <CAAmzW4MfFUH1Mi447sQvPNeae_BShEmbECUaK9eoX-8ughEdJw@mail.gmail.com>
-Subject: Re: [PATCH 1/4] slab: do ClearSlabPfmemalloc() for all pages of slab
-From: JoonSoo Kim <js1304@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Chuck Lever <chuck.lever@oracle.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20120905154801.b21cf25d96767b69489aec29@canb.auug.org.au>
+References: <20120905154801.b21cf25d96767b69489aec29@canb.auug.org.au>
+Date: Thu, 6 Sep 2012 20:06:11 +0200
+X-Google-Sender-Auth: JgmB0vAlfrpr-Yc46RopSxhdfok
+Message-ID: <CAMuHMdWN--hXYTPYNi07vNB0DrMdDoc+MwxgUkSBihPw+VKGHg@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the final tree (staging
+ tree related)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Jens Taprogge <jens.taprogge@taprogge.org>,
+        =?UTF-8?Q?=22Samuel_Iglesias_Gons=C3=A1lvez=22?= 
+	<siglesias@igalia.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct Pekka's mail address and resend.
-Sorry.
-
-Add "Cc" to "Christoph Lameter" <cl@linux.com>
-
-2012/9/5 Mel Gorman <mgorman@suse.de>:
-> Right now, we call ClearSlabPfmemalloc() for first page of slab when we
-> clear SlabPfmemalloc flag. This is fine for most swap-over-network use
-> cases as it is expected that order-0 pages are in use. Unfortunately it
-> is possible that that __ac_put_obj() checks SlabPfmemalloc on a tail page
-> and while this is harmless, it is sloppy. This patch ensures that the head
-> page is always used.
+On Wed, Sep 5, 2012 at 7:48 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
 >
-> This problem was originally identified by Joonsoo Kim.
+> drivers/staging/ipack/ipack.c: In function 'ipack_device_read_id':
+> drivers/staging/ipack/ipack.c:291:2: error: implicit declaration of function 'ioread8' [-Werror=implicit-function-declaration]
+> drivers/staging/ipack/ipack.c:309:3: error: implicit declaration of function 'ioread16be' [-Werror=implicit-function-declaration]
 >
-> [js1304@gmail.com: Original implementation and problem identification]
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Caused by commit 187e47824013 ("Staging: ipack: Read the ID space during
+> device registration").
+>
+> I have added the following patch for today:
+>
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Wed, 5 Sep 2012 15:44:11 +1000
+> Subject: [PATCH] Staging: ipack: disable due to build error
+>
+> The powerpc allyesconfig build gives this:
+>
+> drivers/staging/ipack/ipack.c: In function 'ipack_device_read_id':
+> drivers/staging/ipack/ipack.c:291:2: error: implicit declaration of function 'ioread8' [-Werror=implicit-function-declaration]
+> drivers/staging/ipack/ipack.c:309:3: error: implicit declaration of function 'ioread16be' [-Werror=implicit-function-declaration]
+
+The ipack driver also fails on s390/allmodconfig:
+
+drivers/staging/ipack/devices/ipoctal.c:59:2: error: implicit
+declaration of function 'iowrite8'
+[-Werror=implicit-function-declaration]
+drivers/staging/ipack/devices/ipoctal.c:72:2: error: implicit
+declaration of function 'ioread8'
+[-Werror=implicit-function-declaration]
+
+http://kisskb.ellerman.id.au/kisskb/buildresult/7143741/
+
+Guess it has to depend on HAS_IOMEM, too.
+
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 > ---
->  mm/slab.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+>  drivers/staging/ipack/Kconfig |    1 +
+>  1 file changed, 1 insertion(+)
 >
-> diff --git a/mm/slab.c b/mm/slab.c
-> index 811af03..d34a903 100644
-> --- a/mm/slab.c
-> +++ b/mm/slab.c
-> @@ -1000,7 +1000,7 @@ static void *__ac_get_obj(struct kmem_cache *cachep, struct array_cache *ac,
->                 l3 = cachep->nodelists[numa_mem_id()];
->                 if (!list_empty(&l3->slabs_free) && force_refill) {
->                         struct slab *slabp = virt_to_slab(objp);
-> -                       ClearPageSlabPfmemalloc(virt_to_page(slabp->s_mem));
-> +                       ClearPageSlabPfmemalloc(virt_to_head_page(slabp->s_mem));
->                         clear_obj_pfmemalloc(&objp);
->                         recheck_pfmemalloc_active(cachep, ac);
->                         return objp;
-
-We assume that slabp->s_mem's address is always in head page, so
-"virt_to_head_page" is not needed.
-
-> @@ -1032,7 +1032,7 @@ static void *__ac_put_obj(struct kmem_cache *cachep, struct array_cache *ac,
->  {
->         if (unlikely(pfmemalloc_active)) {
->                 /* Some pfmemalloc slabs exist, check if this is one */
-> -               struct page *page = virt_to_page(objp);
-> +               struct page *page = virt_to_head_page(objp);
->                 if (PageSlabPfmemalloc(page))
->                         set_obj_pfmemalloc(&objp);
->         }
-> --
-> 1.7.9.2
+> diff --git a/drivers/staging/ipack/Kconfig b/drivers/staging/ipack/Kconfig
+> index af32178..5c428d7 100644
+> --- a/drivers/staging/ipack/Kconfig
+> +++ b/drivers/staging/ipack/Kconfig
+> @@ -4,6 +4,7 @@
 >
+>  menuconfig IPACK_BUS
+>         tristate "IndustryPack bus support"
+> +       depends on BROKEN
 
-If we always use head page, following suggestion is more good to me.
-How about you?
+Cool, can I do that for all build failures? ;-)
 
-diff --git a/mm/slab.c b/mm/slab.c
-index f8b0d53..ce70989 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -1032,7 +1032,7 @@ static void *__ac_put_obj(struct kmem_cache
-*cachep, struct array_cache *ac,
- {
-        if (unlikely(pfmemalloc_active)) {
-                /* Some pfmemalloc slabs exist, check if this is one */
--               struct page *page = virt_to_page(objp);
-+               struct page *page = virt_to_head_page(objp);
-                if (PageSlabPfmemalloc(page))
-                        set_obj_pfmemalloc(&objp);
-        }
-@@ -1921,10 +1921,9 @@ static void *kmem_getpages(struct kmem_cache
-*cachep, gfp_t flags, int nodeid)
-                        NR_SLAB_UNRECLAIMABLE, nr_pages);
-        for (i = 0; i < nr_pages; i++) {
-                __SetPageSlab(page + i);
--
--               if (page->pfmemalloc)
--                       SetPageSlabPfmemalloc(page + i);
-        }
-+       if (page->pfmemalloc)
-+               SetPageSlabPfmemalloc(page);
+>         ---help---
+>           If you say Y here you get support for the IndustryPack Framework
+>           for drivers for many types of boards that support this industrial
 
-        if (kmemcheck_enabled && !(cachep->flags & SLAB_NOTRACK)) {
-                kmemcheck_alloc_shadow(page, cachep->gfporder, flags, nodeid);
-@@ -1943,26 +1942,26 @@ static void *kmem_getpages(struct kmem_cache
-*cachep, gfp_t flags, int nodeid)
-  */
- static void kmem_freepages(struct kmem_cache *cachep, void *addr)
- {
--       unsigned long i = (1 << cachep->gfporder);
-+       int nr_pages = (1 << cachep->gfporder);
-+       int i;
-        struct page *page = virt_to_page(addr);
--       const unsigned long nr_freed = i;
+Gr{oetje,eeting}s,
 
-        kmemcheck_free_shadow(page, cachep->gfporder);
+                        Geert
 
-        if (cachep->flags & SLAB_RECLAIM_ACCOUNT)
-                sub_zone_page_state(page_zone(page),
--                               NR_SLAB_RECLAIMABLE, nr_freed);
-+                               NR_SLAB_RECLAIMABLE, nr_pages);
-        else
-                sub_zone_page_state(page_zone(page),
--                               NR_SLAB_UNRECLAIMABLE, nr_freed);
--       while (i--) {
--               BUG_ON(!PageSlab(page));
--               __ClearPageSlabPfmemalloc(page);
--               __ClearPageSlab(page);
--               page++;
-+                               NR_SLAB_UNRECLAIMABLE, nr_pages);
-+       for (i = 0; i < nr_pages; i++) {
-+               BUG_ON(!PageSlab(page + i));
-+               __ClearPageSlab(page + i);
-        }
-+       __ClearPageSlabPfmemalloc(page);
-+
-        if (current->reclaim_state)
--               current->reclaim_state->reclaimed_slab += nr_freed;
-+               current->reclaim_state->reclaimed_slab += nr_pages;
-        free_pages((unsigned long)addr, cachep->gfporder);
- }
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
