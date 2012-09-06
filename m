@@ -1,96 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932928Ab2IFSGQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 14:06:16 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:56099 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932196Ab2IFSGN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 14:06:13 -0400
+	id S932925Ab2IFSHz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 14:07:55 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:41496 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932854Ab2IFSHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 14:07:54 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Android Team <kernel-team@android.com>,
+        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>
+Subject: [PATCH] wakeup: Use irqsave/irqrestore for events_lock
+Date: Thu,  6 Sep 2012 14:07:37 -0400
+Message-Id: <1346954857-52669-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <20120905154801.b21cf25d96767b69489aec29@canb.auug.org.au>
-References: <20120905154801.b21cf25d96767b69489aec29@canb.auug.org.au>
-Date: Thu, 6 Sep 2012 20:06:11 +0200
-X-Google-Sender-Auth: JgmB0vAlfrpr-Yc46RopSxhdfok
-Message-ID: <CAMuHMdWN--hXYTPYNi07vNB0DrMdDoc+MwxgUkSBihPw+VKGHg@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the final tree (staging
- tree related)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Jens Taprogge <jens.taprogge@taprogge.org>,
-        =?UTF-8?Q?=22Samuel_Iglesias_Gons=C3=A1lvez=22?= 
-	<siglesias@igalia.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12090618-7182-0000-0000-000002864E1D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 5, 2012 at 7:48 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
->
-> drivers/staging/ipack/ipack.c: In function 'ipack_device_read_id':
-> drivers/staging/ipack/ipack.c:291:2: error: implicit declaration of function 'ioread8' [-Werror=implicit-function-declaration]
-> drivers/staging/ipack/ipack.c:309:3: error: implicit declaration of function 'ioread16be' [-Werror=implicit-function-declaration]
->
-> Caused by commit 187e47824013 ("Staging: ipack: Read the ID space during
-> device registration").
->
-> I have added the following patch for today:
->
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Wed, 5 Sep 2012 15:44:11 +1000
-> Subject: [PATCH] Staging: ipack: disable due to build error
->
-> The powerpc allyesconfig build gives this:
->
-> drivers/staging/ipack/ipack.c: In function 'ipack_device_read_id':
-> drivers/staging/ipack/ipack.c:291:2: error: implicit declaration of function 'ioread8' [-Werror=implicit-function-declaration]
-> drivers/staging/ipack/ipack.c:309:3: error: implicit declaration of function 'ioread16be' [-Werror=implicit-function-declaration]
+Jon Medhurst (Tixy) recently noticed a problem with the
+events_lock usage. One of the Android patches that uses
+wakeup_sources calls wakeup_source_add() with irqs disabled.
+However, the event_lock usage in wakeup_source_add() uses
+spin_lock_irq()/spin_unlock_irq(), which reenables interrupts.
+This results in lockdep warnings.
 
-The ipack driver also fails on s390/allmodconfig:
+The fix is to use spin_lock_irqsave()/spin_lock_irqrestore()
+instead for the events_lock.
 
-drivers/staging/ipack/devices/ipoctal.c:59:2: error: implicit
-declaration of function 'iowrite8'
-[-Werror=implicit-function-declaration]
-drivers/staging/ipack/devices/ipoctal.c:72:2: error: implicit
-declaration of function 'ioread8'
-[-Werror=implicit-function-declaration]
+Full bug report here:
+https://bugs.launchpad.net/linaro-landing-team-arm/+bug/1037565
 
-http://kisskb.ellerman.id.au/kisskb/buildresult/7143741/
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: Android Team <kernel-team@android.com>
+Cc: Arve Hjønnevåg <arve@android.com>
+Cc: Jon Medhurst (Tixy) <tixy@linaro.org>
+Reported-and-debugged-by: Jon Medhurst (Tixy) <tixy@linaro.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ drivers/base/power/wakeup.c |   17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
-Guess it has to depend on HAS_IOMEM, too.
+diff --git a/drivers/base/power/wakeup.c b/drivers/base/power/wakeup.c
+index cbb463b..0e4b093 100644
+--- a/drivers/base/power/wakeup.c
++++ b/drivers/base/power/wakeup.c
+@@ -127,6 +127,8 @@ EXPORT_SYMBOL_GPL(wakeup_source_destroy);
+  */
+ void wakeup_source_add(struct wakeup_source *ws)
+ {
++	unsigned long flags;
++
+ 	if (WARN_ON(!ws))
+ 		return;
+ 
+@@ -135,9 +137,9 @@ void wakeup_source_add(struct wakeup_source *ws)
+ 	ws->active = false;
+ 	ws->last_time = ktime_get();
+ 
+-	spin_lock_irq(&events_lock);
++	spin_lock_irqsave(&events_lock, flags);
+ 	list_add_rcu(&ws->entry, &wakeup_sources);
+-	spin_unlock_irq(&events_lock);
++	spin_unlock_irqrestore(&events_lock, flags);
+ }
+ EXPORT_SYMBOL_GPL(wakeup_source_add);
+ 
+@@ -147,12 +149,14 @@ EXPORT_SYMBOL_GPL(wakeup_source_add);
+  */
+ void wakeup_source_remove(struct wakeup_source *ws)
+ {
++	unsigned long flags;
++
+ 	if (WARN_ON(!ws))
+ 		return;
+ 
+-	spin_lock_irq(&events_lock);
++	spin_lock_irqsave(&events_lock, flags);
+ 	list_del_rcu(&ws->entry);
+-	spin_unlock_irq(&events_lock);
++	spin_unlock_irqrestore(&events_lock, flags);
+ 	synchronize_rcu();
+ }
+ EXPORT_SYMBOL_GPL(wakeup_source_remove);
+@@ -723,15 +727,16 @@ bool pm_get_wakeup_count(unsigned int *count, bool block)
+ bool pm_save_wakeup_count(unsigned int count)
+ {
+ 	unsigned int cnt, inpr;
++	unsigned long flags;
+ 
+ 	events_check_enabled = false;
+-	spin_lock_irq(&events_lock);
++	spin_lock_irqsave(&events_lock, flags);
+ 	split_counters(&cnt, &inpr);
+ 	if (cnt == count && inpr == 0) {
+ 		saved_count = count;
+ 		events_check_enabled = true;
+ 	}
+-	spin_unlock_irq(&events_lock);
++	spin_unlock_irqrestore(&events_lock, flags);
+ 	return events_check_enabled;
+ }
+ 
+-- 
+1.7.9.5
 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  drivers/staging/ipack/Kconfig |    1 +
->  1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/staging/ipack/Kconfig b/drivers/staging/ipack/Kconfig
-> index af32178..5c428d7 100644
-> --- a/drivers/staging/ipack/Kconfig
-> +++ b/drivers/staging/ipack/Kconfig
-> @@ -4,6 +4,7 @@
->
->  menuconfig IPACK_BUS
->         tristate "IndustryPack bus support"
-> +       depends on BROKEN
-
-Cool, can I do that for all build failures? ;-)
-
->         ---help---
->           If you say Y here you get support for the IndustryPack Framework
->           for drivers for many types of boards that support this industrial
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
