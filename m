@@ -1,67 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759986Ab2IFV1w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 17:27:52 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:46815 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752024Ab2IFV1v (ORCPT
+	id S933194Ab2IFV3I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 17:29:08 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:40616 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752024Ab2IFV3F convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 17:27:51 -0400
-Date: Thu, 6 Sep 2012 14:25:57 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [RFC 00/12] perf diff: Factor diff command
-Message-ID: <20120906212557.GD2448@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1346946426-13496-1-git-send-email-jolsa@redhat.com>
- <1346956869.18408.66.camel@twins>
+	Thu, 6 Sep 2012 17:29:05 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH] wakeup: Use irqsave/irqrestore for events_lock
+Date: Thu, 6 Sep 2012 23:35:22 +0200
+User-Agent: KMail/1.13.6 (Linux/3.6.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Android Team <kernel-team@android.com>,
+        Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>
+References: <1346954857-52669-1-git-send-email-john.stultz@linaro.org>
+In-Reply-To: <1346954857-52669-1-git-send-email-john.stultz@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346956869.18408.66.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12090621-6148-0000-0000-0000095CABF0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201209062335.23013.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 06, 2012 at 08:41:09PM +0200, Peter Zijlstra wrote:
-> On Thu, 2012-09-06 at 17:46 +0200, Jiri Olsa wrote:
-> > The 'perf diff' and 'std/hist' code is now changed to allow computations
-> > mentioned in the paper. Two of them are implemented within this patchset:
-> >   1) ratio differential profiling
-> >   2) weighted differential profiling
+On Thursday, September 06, 2012, John Stultz wrote:
+> Jon Medhurst (Tixy) recently noticed a problem with the
+> events_lock usage. One of the Android patches that uses
+> wakeup_sources calls wakeup_source_add() with irqs disabled.
+> However, the event_lock usage in wakeup_source_add() uses
+> spin_lock_irq()/spin_unlock_irq(), which reenables interrupts.
+> This results in lockdep warnings.
 > 
-> Seems like a useful thing indeed, the explanation of the weighted diff
-> method doesn't seem to contain a why. I know I could go read the paper
-> but... :-)
+> The fix is to use spin_lock_irqsave()/spin_lock_irqrestore()
+> instead for the events_lock.
+> 
+> Full bug report here:
+> https://bugs.launchpad.net/linaro-landing-team-arm/+bug/1037565
+> 
+> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> Cc: Android Team <kernel-team@android.com>
+> Cc: Arve Hjønnevåg <arve@android.com>
+> Cc: Jon Medhurst (Tixy) <tixy@linaro.org>
+> Reported-and-debugged-by: Jon Medhurst (Tixy) <tixy@linaro.org>
+> Signed-off-by: John Stultz <john.stultz@linaro.org>
 
-Or you could ask the author.  ;-)
+Thanks, applied to the linux-next brach of the linux-pm.git tree as v3.7
+material.
 
-Ratio can be fooled by statistical variations on profiling buckets with
-few counts.  So if you are looking for a 10% difference in execution
-overhead somewhere in a large program, ratio will unhelpfully sort a
-bunch of statistical 2x or 3x noise to the top of the list.
+Please consider CCing PM-related patches to linux-pm@vger.kernel.org in the
+future, that makes it much easier for me to handle them.
 
-So you could use the difference in buckets instead of the ratio, but this
-has problems in the case where the two runs being compared got different
-amounts of work done, as is usually the case for timed benchmark runs
-or throughput-based benchmark runs.  In these cases, you use the work
-done (or the measured throughput, as the case may be) as weights.
-The weighted difference will then pinpoint the code that suffered the
-greatest per-unit-work increase in overhead between the two runs.
+Thanks,
+Rafael
 
-But ratio is still the method of choice when you are looking at pure
-scalability issues, especially when the offending code increased in
-overhead by a large factor.
 
-							Thanx, Paul
+> ---
+>  drivers/base/power/wakeup.c |   17 +++++++++++------
+>  1 file changed, 11 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/base/power/wakeup.c b/drivers/base/power/wakeup.c
+> index cbb463b..0e4b093 100644
+> --- a/drivers/base/power/wakeup.c
+> +++ b/drivers/base/power/wakeup.c
+> @@ -127,6 +127,8 @@ EXPORT_SYMBOL_GPL(wakeup_source_destroy);
+>   */
+>  void wakeup_source_add(struct wakeup_source *ws)
+>  {
+> +	unsigned long flags;
+> +
+>  	if (WARN_ON(!ws))
+>  		return;
+>  
+> @@ -135,9 +137,9 @@ void wakeup_source_add(struct wakeup_source *ws)
+>  	ws->active = false;
+>  	ws->last_time = ktime_get();
+>  
+> -	spin_lock_irq(&events_lock);
+> +	spin_lock_irqsave(&events_lock, flags);
+>  	list_add_rcu(&ws->entry, &wakeup_sources);
+> -	spin_unlock_irq(&events_lock);
+> +	spin_unlock_irqrestore(&events_lock, flags);
+>  }
+>  EXPORT_SYMBOL_GPL(wakeup_source_add);
+>  
+> @@ -147,12 +149,14 @@ EXPORT_SYMBOL_GPL(wakeup_source_add);
+>   */
+>  void wakeup_source_remove(struct wakeup_source *ws)
+>  {
+> +	unsigned long flags;
+> +
+>  	if (WARN_ON(!ws))
+>  		return;
+>  
+> -	spin_lock_irq(&events_lock);
+> +	spin_lock_irqsave(&events_lock, flags);
+>  	list_del_rcu(&ws->entry);
+> -	spin_unlock_irq(&events_lock);
+> +	spin_unlock_irqrestore(&events_lock, flags);
+>  	synchronize_rcu();
+>  }
+>  EXPORT_SYMBOL_GPL(wakeup_source_remove);
+> @@ -723,15 +727,16 @@ bool pm_get_wakeup_count(unsigned int *count, bool block)
+>  bool pm_save_wakeup_count(unsigned int count)
+>  {
+>  	unsigned int cnt, inpr;
+> +	unsigned long flags;
+>  
+>  	events_check_enabled = false;
+> -	spin_lock_irq(&events_lock);
+> +	spin_lock_irqsave(&events_lock, flags);
+>  	split_counters(&cnt, &inpr);
+>  	if (cnt == count && inpr == 0) {
+>  		saved_count = count;
+>  		events_check_enabled = true;
+>  	}
+> -	spin_unlock_irq(&events_lock);
+> +	spin_unlock_irqrestore(&events_lock, flags);
+>  	return events_check_enabled;
+>  }
+>  
+> 
 
