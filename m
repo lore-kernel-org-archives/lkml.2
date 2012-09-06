@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754408Ab2IFLdj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 07:33:39 -0400
-Received: from mailxx.hitachi.co.jp ([133.145.228.50]:60055 "EHLO
+	id S1754722Ab2IFLeB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 07:34:01 -0400
+Received: from mailxx.hitachi.co.jp ([133.145.228.50]:60058 "EHLO
 	mailxx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754492Ab2IFLdd (ORCPT
+	with ESMTP id S1754272Ab2IFLd7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 07:33:33 -0400
-X-AuditID: b753bd60-91ec3ba0000047ca-62-504888f26597
-X-AuditID: b753bd60-91ec3ba0000047ca-62-504888f26597
+	Thu, 6 Sep 2012 07:33:59 -0400
+X-AuditID: b753bd60-969d8ba000000c4c-b7-504889025e1b
+X-AuditID: b753bd60-969d8ba000000c4c-b7-504889025e1b
 From: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
-Subject: [RFC v2 PATCH 16/21] KVM: vmx: Add definitions
- PIN_BASED_PREEMPTION_TIMER
+Subject: [RFC v2 PATCH 19/21] KVM: Enable direct EOI for directly routed
+ interrupts to guests
 To: kvm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
         yrl.pp-manager.tt@hitachi.com,
@@ -19,8 +19,8 @@ Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
         Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, 06 Sep 2012 20:28:43 +0900
-Message-ID: <20120906112843.13320.47223.stgit@kvmdev>
+Date: Thu, 06 Sep 2012 20:28:59 +0900
+Message-ID: <20120906112858.13320.75400.stgit@kvmdev>
 In-Reply-To: <20120906112718.13320.8231.stgit@kvmdev>
 References: <20120906112718.13320.8231.stgit@kvmdev>
 User-Agent: StGIT/0.14.3
@@ -32,16 +32,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add some definitions to use PIN_BASED_PREEMPTION_TIMER.
-
-When PIN_BASED_PREEMPTION_TIMER is enabled, the guest will exit
-with reason=EXIT_REASON_PREEMPTION_TIMER when the counter specified in
-VMX_PREEMPTION_TIMER_VALUE becomes 0.
-This patch also adds a dummy handler for EXIT_REASON_PREEMPTION_TIMER,
-which just goes back to VM execution soon.
-
-These are currently intended only to be used with avoid entering the
-guest on a slave CPU when vmx_prevent_run(vcpu, 1) is called.
+Enable direct access to EOI MSR of x2apic to accelerate guests.
+This accelerate handling of interrupts delivered directly to guest from
+passed-through PCI devices. When a virtual IRQ is injected, this feature
+is disabled in order to route following EOI to virtual APIC. Then, it is
+enabled again after every virtual IRQ is handled.
 
 Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
 Cc: Avi Kivity <avi@redhat.com>
@@ -51,75 +46,135 @@ Cc: Ingo Molnar <mingo@redhat.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 ---
 
- arch/x86/include/asm/vmx.h |    3 +++
- arch/x86/kvm/trace.h       |    1 +
- arch/x86/kvm/vmx.c         |    7 +++++++
- 3 files changed, 11 insertions(+), 0 deletions(-)
+ arch/x86/kvm/vmx.c |   69 ++++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 67 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/vmx.h b/arch/x86/include/asm/vmx.h
-index 74fcb96..6899aaa 100644
---- a/arch/x86/include/asm/vmx.h
-+++ b/arch/x86/include/asm/vmx.h
-@@ -66,6 +66,7 @@
- #define PIN_BASED_EXT_INTR_MASK                 0x00000001
- #define PIN_BASED_NMI_EXITING                   0x00000008
- #define PIN_BASED_VIRTUAL_NMIS                  0x00000020
-+#define PIN_BASED_PREEMPTION_TIMER              0x00000040
- 
- #define VM_EXIT_SAVE_DEBUG_CONTROLS             0x00000002
- #define VM_EXIT_HOST_ADDR_SPACE_SIZE            0x00000200
-@@ -196,6 +197,7 @@ enum vmcs_field {
- 	GUEST_INTERRUPTIBILITY_INFO     = 0x00004824,
- 	GUEST_ACTIVITY_STATE            = 0X00004826,
- 	GUEST_SYSENTER_CS               = 0x0000482A,
-+	VMX_PREEMPTION_TIMER_VALUE      = 0x0000482E,
- 	HOST_IA32_SYSENTER_CS           = 0x00004c00,
- 	CR0_GUEST_HOST_MASK             = 0x00006000,
- 	CR4_GUEST_HOST_MASK             = 0x00006002,
-@@ -280,6 +282,7 @@ enum vmcs_field {
- #define EXIT_REASON_APIC_ACCESS         44
- #define EXIT_REASON_EPT_VIOLATION       48
- #define EXIT_REASON_EPT_MISCONFIG       49
-+#define EXIT_REASON_PREEMPTION_TIMER	52
- #define EXIT_REASON_WBINVD		54
- #define EXIT_REASON_XSETBV		55
- #define EXIT_REASON_INVPCID		58
-diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
-index 6081be7..fc350f3 100644
---- a/arch/x86/kvm/trace.h
-+++ b/arch/x86/kvm/trace.h
-@@ -218,6 +218,7 @@ TRACE_EVENT(kvm_apic,
- 	{ EXIT_REASON_APIC_ACCESS,		"APIC_ACCESS" }, \
- 	{ EXIT_REASON_EPT_VIOLATION,		"EPT_VIOLATION" }, \
- 	{ EXIT_REASON_EPT_MISCONFIG,		"EPT_MISCONFIG" }, \
-+	{ EXIT_REASON_PREEMPTION_TIMER,		"PREEMPTION_TIMER" }, \
- 	{ EXIT_REASON_WBINVD,			"WBINVD" }
- 
- #define SVM_EXIT_REASONS \
 diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 6dc59c8..2130cbd 100644
+index 39a4cb4..f93e08c 100644
 --- a/arch/x86/kvm/vmx.c
 +++ b/arch/x86/kvm/vmx.c
-@@ -4456,6 +4456,12 @@ static int handle_external_interrupt(struct kvm_vcpu *vcpu)
- 	return 1;
+@@ -636,6 +636,10 @@ static unsigned long *vmx_io_bitmap_a;
+ static unsigned long *vmx_io_bitmap_b;
+ static unsigned long *vmx_msr_bitmap_legacy;
+ static unsigned long *vmx_msr_bitmap_longmode;
++#ifdef CONFIG_SLAVE_CPU
++static unsigned long *vmx_msr_bitmap_slave_legacy;
++static unsigned long *vmx_msr_bitmap_slave_longmode;
++#endif
+ 
+ static bool cpu_has_load_ia32_efer;
+ static bool cpu_has_load_perf_global_ctrl;
+@@ -912,6 +916,11 @@ static void nested_vmx_entry_failure(struct kvm_vcpu *vcpu,
+ 			struct vmcs12 *vmcs12,
+ 			u32 reason, unsigned long qualification);
+ 
++static void vmx_disable_intercept_for_msr(u32 msr, bool longmode_only);
++#ifdef CONFIG_SLAVE_CPU
++static void vmx_disable_intercept_for_msr_slave(u32 msr, bool longmode_only);
++#endif
++
+ static int __find_msr_index(struct vcpu_vmx *vmx, u32 msr)
+ {
+ 	int i;
+@@ -1716,13 +1725,28 @@ static void vmx_set_direct_interrupt(struct kvm_vcpu *vcpu, bool enabled)
+ #ifdef CONFIG_SLAVE_CPU
+ 	void *msr_bitmap;
+ 
+-	if (enabled)
++	if (enabled) {
+ 		vmcs_clear_bits(PIN_BASED_VM_EXEC_CONTROL,
+ 				PIN_BASED_EXT_INTR_MASK);
+-	else
++
++		if (cpu_has_vmx_msr_bitmap()) {
++			msr_bitmap = is_long_mode(vcpu) ?
++				vmx_msr_bitmap_slave_longmode :
++				vmx_msr_bitmap_slave_legacy;
++			vmcs_write64(MSR_BITMAP, __pa(msr_bitmap));
++		}
++	} else {
+ 		vmcs_set_bits(PIN_BASED_VM_EXEC_CONTROL,
+ 			      PIN_BASED_EXT_INTR_MASK);
+ 
++		if (cpu_has_vmx_msr_bitmap()) {
++			msr_bitmap = is_long_mode(vcpu) ?
++				vmx_msr_bitmap_longmode :
++				vmx_msr_bitmap_legacy;
++			vmcs_write64(MSR_BITMAP, __pa(msr_bitmap));
++		}
++	}
++
+ 	trace_kvm_set_direct_interrupt(vcpu, enabled);
+ #endif
+ }
+@@ -3771,6 +3795,16 @@ static void vmx_disable_intercept_for_msr(u32 msr, bool longmode_only)
+ 	__vmx_disable_intercept_for_msr(vmx_msr_bitmap_longmode, msr);
  }
  
-+static int handle_preemption_timer(struct kvm_vcpu *vcpu)
++#ifdef CONFIG_SLAVE_CPU
++static void vmx_disable_intercept_for_msr_slave(u32 msr, bool longmode_only)
 +{
-+	/* Nothing */
-+	return 1;
++	if (!longmode_only)
++		__vmx_disable_intercept_for_msr(vmx_msr_bitmap_slave_legacy,
++					       msr);
++	__vmx_disable_intercept_for_msr(vmx_msr_bitmap_slave_longmode, msr);
 +}
++#endif
 +
- static int handle_triple_fault(struct kvm_vcpu *vcpu)
- {
- 	vcpu->run->exit_reason = KVM_EXIT_SHUTDOWN;
-@@ -5768,6 +5774,7 @@ static int (*kvm_vmx_exit_handlers[])(struct kvm_vcpu *vcpu) = {
- 	[EXIT_REASON_VMON]                    = handle_vmon,
- 	[EXIT_REASON_TPR_BELOW_THRESHOLD]     = handle_tpr_below_threshold,
- 	[EXIT_REASON_APIC_ACCESS]             = handle_apic_access,
-+	[EXIT_REASON_PREEMPTION_TIMER]        = handle_preemption_timer,
- 	[EXIT_REASON_WBINVD]                  = handle_wbinvd,
- 	[EXIT_REASON_XSETBV]                  = handle_xsetbv,
- 	[EXIT_REASON_TASK_SWITCH]             = handle_task_switch,
+ /*
+  * Set up the vmcs's constant host-state fields, i.e., host-state fields that
+  * will not change in the lifetime of the guest.
+@@ -7474,6 +7508,22 @@ static int __init vmx_init(void)
+ 		goto out2;
+ 
+ 
++#ifdef CONFIG_SLAVE_CPU
++	vmx_msr_bitmap_slave_legacy =
++		(unsigned long *)__get_free_page(GFP_KERNEL);
++	if (!vmx_msr_bitmap_slave_legacy) {
++		r = -ENOMEM;
++		goto out1s;
++	}
++
++	vmx_msr_bitmap_slave_longmode =
++		(unsigned long *)__get_free_page(GFP_KERNEL);
++	if (!vmx_msr_bitmap_slave_longmode) {
++		r = -ENOMEM;
++		goto out2s;
++	}
++#endif
++
+ 	/*
+ 	 * Allow direct access to the PC debug port (it is often used for I/O
+ 	 * delays, but the vmexits simply slow things down).
+@@ -7500,6 +7550,15 @@ static int __init vmx_init(void)
+ 	vmx_disable_intercept_for_msr(MSR_IA32_SYSENTER_ESP, false);
+ 	vmx_disable_intercept_for_msr(MSR_IA32_SYSENTER_EIP, false);
+ 
++#ifdef CONFIG_SLAVE_CPU
++	memcpy(vmx_msr_bitmap_slave_legacy,
++	       vmx_msr_bitmap_legacy, PAGE_SIZE);
++	memcpy(vmx_msr_bitmap_slave_longmode,
++	       vmx_msr_bitmap_longmode, PAGE_SIZE);
++	vmx_disable_intercept_for_msr_slave(
++		APIC_BASE_MSR + (APIC_EOI >> 4), false);
++#endif
++
+ 	if (enable_ept) {
+ 		kvm_mmu_set_mask_ptes(0ull,
+ 			(enable_ept_ad_bits) ? VMX_EPT_ACCESS_BIT : 0ull,
+@@ -7513,6 +7572,12 @@ static int __init vmx_init(void)
+ 	return 0;
+ 
+ out3:
++#ifdef CONFIG_SLAVE_CPU
++	free_page((unsigned long)vmx_msr_bitmap_slave_longmode);
++out2s:
++	free_page((unsigned long)vmx_msr_bitmap_slave_legacy);
++out1s:
++#endif
+ 	free_page((unsigned long)vmx_msr_bitmap_longmode);
+ out2:
+ 	free_page((unsigned long)vmx_msr_bitmap_legacy);
 
 
