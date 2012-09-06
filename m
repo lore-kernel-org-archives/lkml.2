@@ -1,102 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933086Ab2IFS6K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 14:58:10 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:52661 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933001Ab2IFS6H (ORCPT
+	id S933104Ab2IFS6n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 14:58:43 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:52479 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933001Ab2IFS6j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 14:58:07 -0400
-Subject: Re: [PATCH 3.6 1/2] target: remove pscsi_clear_cdb_lun
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, target-devel@vger.kernel.org
-In-Reply-To: <1346944410-19850-2-git-send-email-pbonzini@redhat.com>
-References: <1346944410-19850-1-git-send-email-pbonzini@redhat.com>
-	 <1346944410-19850-2-git-send-email-pbonzini@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 06 Sep 2012 11:58:05 -0700
-Message-ID: <1346957885.4162.509.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 6 Sep 2012 14:58:39 -0400
+Date: Thu, 6 Sep 2012 20:59:38 +0200
+From: Fabio Baltieri <fabio.baltieri@gmail.com>
+To: Kurt Van Dijck <kurt.van.dijck@eia.be>
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Wolfgang Grandegger <wg@grandegger.com>, linux-kernel@vger.kernel.org,
+        linux-can@vger.kernel.org
+Subject: Re: [PATCH] can: rename LED trigger name on netdev renames
+Message-ID: <20120906185938.GA4043@gmail.com>
+References: <20120904071128.GB416@vandijck-laurijssen.be>
+ <1346750951-10451-1-git-send-email-kurt.van.dijck@eia.be>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346750951-10451-1-git-send-email-kurt.van.dijck@eia.be>
+X-Operating-System: Linux balto-eee 3.6.0-rc4-balto-eee-00111-g8edc602-dirty
+ GNU/Linux
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-06 at 17:13 +0200, Paolo Bonzini wrote:
-> The purpose of this function is to clear a LUN set in the CDB, in case
-> the initiator talking to us is speaking an old standards version.
-> However, as things stand, pscsi_clear_cdb_lun has two problems.  It
-> will "deceive" the guest by clearing the LUN bits on initial
-> commands (INQUIRY, TEST UNIT READY, etc.); but then it will let the
-> LUN bits through on reads, which will likely fail due to protection not
-> being enabled.  Second, not all commands are properly filtered, in
-> particular WRITE's WRPROTECT bits are cleared.
+Hi Kurt,
+
+thanks for the patch!
+
+On Tue, Sep 04, 2012 at 11:29:11AM +0200, Kurt Van Dijck wrote:
+> The LED trigger name for CAN devices is based on the initial
+> CAN device name, but does never change. The LED trigger name
+> is not guaranteed to be unique in case of hotplugging CAN devices.
 > 
-> This should be done by the fabric module rather than by PSCSI, if it
-> knows such initiators may be lying around _and_ it can assume that its
-> initiators do not really care about protection information.  Nuke it
-> from PSCSI.
+> This patch tries to address this problem by modifying the
+> LED trigger name according to the CAN device name when
+> the latter changes.
+
+That's an ideal solution, and I like the notifier implementation, but I
+see a couple of problems with it.
+
+> This patch is meant as illustration only.
+> In case of VCAN device rename, a segmentation fault will occur.
 > 
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> Signed-off-by: Kurt Van Dijck <kurt.van.dijck@eia.be>
 > ---
-
-NAK.  This code was originally added to prevent certain pSCSI HBAs from
-going bonkers when they got a legacy SCSI LUN ID encoded within the CDB
-(eg: the fabric LUN ID) that's different from the physical SCSI LUN ID
-on an Parallel SCSI bus.
-
-If there are more special cases where the legacy SCSI LUN ID bit-range
-needs to be cleared than please add those missing bits, but I don't
-think it's yet safe to remove this completely for pSCSI w/ older LLDs.
-
->  drivers/target/target_core_pscsi.c |   26 --------------------------
->  1 files changed, 0 insertions(+), 26 deletions(-)
+>  drivers/net/can/led.c |   57 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 57 insertions(+)
 > 
-> diff --git a/drivers/target/target_core_pscsi.c b/drivers/target/target_core_pscsi.c
-> index 5f7151d..a0fb2c3 100644
-> --- a/drivers/target/target_core_pscsi.c
-> +++ b/drivers/target/target_core_pscsi.c
-> @@ -1031,30 +1031,6 @@ fail:
->  	return -ENOMEM;
+> diff --git a/drivers/net/can/led.c b/drivers/net/can/led.c
+> index eaa14ac..f62f908 100644
+> --- a/drivers/net/can/led.c
+> +++ b/drivers/net/can/led.c
+> @@ -12,6 +12,7 @@
+>  #include <linux/slab.h>
+>  #include <linux/netdevice.h>
+>  #include <linux/can/dev.h>
+> +#include <linux/if_arp.h>
+>  
+>  #include <linux/can/led.h>
+>  
+> @@ -87,3 +88,59 @@ void devm_can_led_init(struct net_device *netdev)
+>  	devres_add(&netdev->dev, res);
 >  }
->  
-> -/*
-> - * Clear a lun set in the cdb if the initiator talking to use spoke
-> - * and old standards version, as we can't assume the underlying device
-> - * won't choke up on it.
-> - */
-> -static inline void pscsi_clear_cdb_lun(unsigned char *cdb)
-> -{
-> -	switch (cdb[0]) {
-> -	case READ_10: /* SBC - RDProtect */
-> -	case READ_12: /* SBC - RDProtect */
-> -	case READ_16: /* SBC - RDProtect */
-> -	case SEND_DIAGNOSTIC: /* SPC - SELF-TEST Code */
-> -	case VERIFY: /* SBC - VRProtect */
-> -	case VERIFY_16: /* SBC - VRProtect */
-> -	case WRITE_VERIFY: /* SBC - VRProtect */
-> -	case WRITE_VERIFY_12: /* SBC - VRProtect */
-> -	case MAINTENANCE_IN: /* SPC - Parameter Data Format for SA RTPG */
-> -		break;
-> -	default:
-> -		cdb[1] &= 0x1f; /* clear logical unit number */
-> -		break;
-> -	}
-> -}
-> -
->  static int pscsi_parse_cdb(struct se_cmd *cmd)
->  {
->  	unsigned char *cdb = cmd->t_task_cdb;
-> @@ -1067,8 +1043,6 @@ static int pscsi_parse_cdb(struct se_cmd *cmd)
->  		return -EINVAL;
->  	}
->  
-> -	pscsi_clear_cdb_lun(cdb);
-> -
->  	/*
->  	 * For REPORT LUNS we always need to emulate the response, for everything
->  	 * else the default for pSCSI is to pass the command to the underlying
+>  EXPORT_SYMBOL_GPL(devm_can_led_init);
+> +
+> +/*
+> + * NETDEV rename notifier to rename the associated led triggers too
+> + */
+> +static int can_led_notifier(struct notifier_block *nb, unsigned long msg,
+> +			void *data)
+> +{
+> +	struct net_device *netdev = (struct net_device *)data;
+> +	struct can_priv *priv = netdev_priv(netdev);
+> +	int busy = 0;
+> +
+> +	if (!net_eq(dev_net(netdev), &init_net))
+> +		return NOTIFY_DONE;
+> +
+> +	if (netdev->type != ARPHRD_CAN)
+> +		return NOTIFY_DONE;
+> +
+> +	if (msg != NETDEV_CHANGENAME)
+> +		return NOTIFY_DONE;
 
+That's the main problem, which I also got stuck into when I did my first
+can-led implementation.  As LED structures are in netdev's private data,
+you can only use it if your driver is based on the can-dev API, and
+there are no way to be sure of that if you get outside driver's code
+itself.
 
+This would give problems with vcan, slcan, and probabily other
+non-mainlined drivers.
+
+Is there any way to register a notifier which fires only for devices
+registered with devm_can_led_init?
+
+> +	read_lock(&priv->tx_led_trig->leddev_list_lock);
+> +	if (!list_empty(&priv->tx_led_trig->led_cdevs))
+> +		++busy;
+> +	read_unlock(&priv->tx_led_trig->leddev_list_lock);
+> +	read_lock(&priv->rx_led_trig->leddev_list_lock);
+> +	if (!list_empty(&priv->rx_led_trig->led_cdevs))
+> +		++busy;
+> +	read_unlock(&priv->rx_led_trig->leddev_list_lock);
+> +
+> +	if (busy)
+> +		return notifier_from_errno(-EBUSY);
+
+As we were discussing in the other thread, I don't think that this is
+necessary.
+
+> +	snprintf(priv->tx_led_trig_name, sizeof(priv->tx_led_trig_name),
+> +		 "%s-tx", netdev->name);
+> +	snprintf(priv->rx_led_trig_name, sizeof(priv->rx_led_trig_name),
+> +		 "%s-rx", netdev->name);
+
+I'm afraid that this is going to race against other code using trigger
+name, so that's probabily needs a down_write(&led_cdev->trigger_lock),
+which is a bit of a problem beacause that's static in led-triggers.c.
+
+> +	return NOTIFY_DONE;
+> +}
+> +
+> +/* notifier block for netdevice event */
+> +static struct notifier_block can_netdev_notifier __read_mostly = {
+> +	.notifier_call = can_led_notifier,
+> +};
+> +
+> +static __init int can_led_init(void)
+> +{
+> +	return register_netdevice_notifier(&can_netdev_notifier);
+> +}
+> +
+> +static __exit void can_led_exit(void)
+> +{
+> +	unregister_netdevice_notifier(&can_netdev_notifier);
+> +}
+> +
+> +module_init(can_led_init);
+> +module_exit(can_led_exit);
+
+This breaks the driver when built as a module, as led.c is actually
+linked together with can-dev.  The solution is to get it on a module by
+its own or just to call init/exit functions from can_dev.
+
+Besides those points I like the idea of renaming the trigger if we can
+find a clean way to do that, so I'll try to look at those point further
+in the weekend.
+
+Fabio
