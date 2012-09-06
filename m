@@ -1,131 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756064Ab2IFOUs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 10:20:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48688 "EHLO mx1.redhat.com"
+	id S1756074Ab2IFOWf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 10:22:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45579 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755528Ab2IFOUp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 10:20:45 -0400
-Date: Thu, 6 Sep 2012 10:20:27 -0400 (EDT)
-From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
-X-X-Sender: lukas@new-host-2
-To: Paolo Bonzini <pbonzini@redhat.com>
-cc: Ric Wheeler <ricwheeler@gmail.com>, axboe@kernel.dk,
-        Mike Snitzer <snitzer@redhat.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [Ping^3] Re: [PATCH] sg_io: allow UNMAP and WRITE SAME without
- CAP_SYS_RAWIO
-In-Reply-To: <504898E5.1070507@redhat.com>
-Message-ID: <alpine.LFD.2.00.1209060959500.509@new-host-2>
-References: <1342801801-15617-1-git-send-email-pbonzini@redhat.com> <50195108.1090105@redhat.com> <503CA5BA.2040003@redhat.com> <50476480.9010302@redhat.com> <5047B38D.9000607@gmail.com> <50484345.8040508@redhat.com> <504889A1.2090507@gmail.com>
- <50488DAD.3030208@redhat.com> <5048922C.20901@gmail.com> <504898E5.1070507@redhat.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755968Ab2IFOWd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 10:22:33 -0400
+Date: Thu, 6 Sep 2012 16:22:31 +0200
+From: Jan Kara <jack@suse.cz>
+To: Ian Abbott <abbotti@mev.co.uk>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH] UDF: Fix incorrect error handling in udf_direct_IO()
+Message-ID: <20120906142231.GA12539@quack.suse.cz>
+References: <20120905190239.GK18051@quack.suse.cz>
+ <1346926091-3654-1-git-send-email-abbotti@mev.co.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346926091-3654-1-git-send-email-abbotti@mev.co.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Sep 2012, Paolo Bonzini wrote:
+On Thu 06-09-12 11:08:11, Ian Abbott wrote:
+> My recent patch to add DIRECT_IO support to the UDF filesystem handler
+> contains a mistake in the error recovery if blockdev_direct_IO() fails.
+> The test `rw && WRITE` should be `rw & WRITE`.  Fix it.
+> 
+> Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+  Thanks. I've folded the change into your patch.
 
-> Date: Thu, 06 Sep 2012 14:36:53 +0200
-> From: Paolo Bonzini <pbonzini@redhat.com>
-> To: Ric Wheeler <ricwheeler@gmail.com>
-> Cc: axboe@kernel.dk, Mike Snitzer <snitzer@redhat.com>,
->     Alan Cox <alan@lxorguk.ukuu.org.uk>,
->     Martin K. Petersen <martin.petersen@oracle.com>,
->     linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-> Subject: Re: [Ping^3] Re: [PATCH] sg_io: allow UNMAP and WRITE SAME without
->     CAP_SYS_RAWIO
-> 
-> Il 06/09/2012 14:08, Ric Wheeler ha scritto:
-> >> According to the standard, the translation layer can write a
-> >> user-provided pattern to every sector in the disk.  It's an optional
-> >> feature and libata doesn't do that, but it is still possible.
-> > 
-> > It is not possible today with our stack though, any patch that would
-> > change that would also need to be vetted.
-> 
-> It is not possible with SATA disks, but native SCSI disks might well
-> interpret FORMAT UNIT destructively.
-> 
-> >>> I don't see allowing anyone who can open the device to zero the data as
-> >>> better though :)
-> >> Note: anyone who can open it for writing!  And they can just as well
-> >> issue WRITE, it just takes a little more effort than with WRITE SAME. :)
-> >>   If you only have read access, you cannot issue WRITE or FORMAT UNIT,
-> >> and with this patch you will not be able to issue WRITE SAME.
-> > 
-> > This just seems like an argument over whether or not capabilities make
-> > sense. In general, anything as destructive as a single CDB that can kill
-> > all of your data should be tightly controlled.
-> 
-> In practice, a single write to the first MB of the disk is just as
-> destructive.  For that you do not even need a SCSI command.
-> 
-> > Pushing more code in the data path is not where we are going - we
-> > routinely need to disable IO scheduling for example when driving IO to
-> > high speed/low latency devices and are actively looking at how to tackle
-> > other performance bottlenecks in the stack.
-> 
-> I am not talking about the regular data path, only of SG_IO.
-> 
-> > I don't see a strong reason that our existing scheme (root or
-> > CAP_SYS_RAWIO access) prevents you from doing what you need to do.
-> 
-> Here are three:
-> 
-> - CAP_SYS_RAWIO partly bypasses DAC; you can issue destructive commands
-> even if you only opened the disk for reading.  CAP_SYS_RAWIO also gives
-> access to _really_ destructive commands (WRITE BUFFER and PERSISTENT
-> RESERVE OUT for example).
-> 
-> - CAP_SYS_RAWIO lets you send SCSI commands to partitions, and they will
-> gladly read/write the disk going outside the boundaries of the
-> partition.  Changing this behavior was rejected upstream already.
-> 
-> - CAP_SYS_RAWIO also gives access to I/O ports, mmap at address 0, and
-> too many other insecure things.
-> 
-> All the above mean that:
-> 
-> - any application using CAP_SYS_RAWIO would have to implement its own
-> whitelisting, even if just to duplicate what is done in the kernel;
-> 
-> - exploiting a CAP_SYS_RAWIO process leads to root too easily, and it is
-> not possible to give the capability to anything that will run in a
-> hostile environment (in my case QEMU).
+								Honza
 
-So at fist I did not think this is such a good idea however there
-are several good points you've mentioned.
-
-CAP_SYS_RAWIO is indeed too big hammer for this and it is not secure
-to allow such application to possess such capability. Moreover
-WRITE_SAME indeed is almost the SAME as WRITE :), only easier and
-delegated to the storage itself.
-
-UNMAP or WRITE_WAME w/ unamp bit is a little bit trickier but
-thinking about it some more I do not see any real reason why the
-user with write permission should not be able to use this. Yes, it
-is not technically write and it has other consequences as well, but
-none of it seems to be exploitable more than simple write.
-
-Moreover looking at BLKDISCARD ioctl there is no such restrictions
-(obviously) but neither is with TRIM ata command. So with sata SSD
-you're allowed to use TRIM command if you have write permission to
-that device. So I guess having this consistent is good idea and
-considering the points above I think it is ok to allow WRITE_SAME
-and UNMAP without CAP_SYS_RAWIO.
-
-Thanks!
--Lukas
-
+> ---
+>  fs/udf/inode.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> Paolo
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> diff --git a/fs/udf/inode.c b/fs/udf/inode.c
+> index b905448..41d5830 100644
+> --- a/fs/udf/inode.c
+> +++ b/fs/udf/inode.c
+> @@ -156,7 +156,7 @@ static ssize_t udf_direct_IO(int rw, struct kiocb *iocb,
+>  
+>  	ret = blockdev_direct_IO(rw, iocb, inode, iov, offset, nr_segs,
+>  				  udf_get_block);
+> -	if (unlikely(ret < 0 && (rw && WRITE)))
+> +	if (unlikely(ret < 0 && (rw & WRITE)))
+>  		udf_write_failed(mapping, offset + iov_length(iov, nr_segs));
+>  	return ret;
+>  }
+> -- 
+> 1.7.12
 > 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
