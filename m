@@ -1,103 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758437Ab2IFT4W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 15:56:22 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:45202 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752895Ab2IFT4T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 15:56:19 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX191zAC/1dxcJqO/A/3Hmv0P
-Date: Thu, 6 Sep 2012 12:56:07 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Vaibhav Hiremath <hvaibhav@ti.com>, Kishon Vijay Abraham I <kishon@ti.com>,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
-        b-cousson@ti.com, linux@arm.linux.org.uk, gregkh@linuxfoundation.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH 1/3] arm: omap: hwmod: add a new addr space in otg for
- writing to control module
-Message-ID: <20120906195607.GB1303@atomide.com>
-References: <1346943331-18120-1-git-send-email-kishon@ti.com>
- <1346943331-18120-2-git-send-email-kishon@ti.com>
- <5048C2A2.2020104@ti.com>
- <20120906171301.GC17754@arwen.pp.htv.fi>
- <20120906171803.GA30717@arwen.pp.htv.fi>
+	id S1759625Ab2IFT54 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 15:57:56 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:40388 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756723Ab2IFT5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 15:57:54 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: CONFIG_NO_HZ + CONFIG_CPU_IDLE freeze the system (Was Re: [PATCH] acpi : remove power from acpi_processor_cx structure)
+Date: Thu, 6 Sep 2012 22:04:11 +0200
+User-Agent: KMail/1.13.6 (Linux/3.6.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: xen-devel@lists.xensource.com, linaro-dev@lists.linaro.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-pm@vger.kernel.org, linux-acpi@vger.kernel.org, lenb@kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <1343164349-28550-1-git-send-email-daniel.lezcano@linaro.org> <50485698.1070905@linaro.org> <50486B58.7000901@linaro.org>
+In-Reply-To: <50486B58.7000901@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120906171803.GA30717@arwen.pp.htv.fi>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209062204.11288.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Felipe Balbi <balbi@ti.com> [120906 10:23]:
-> Hi,
+On Thursday, September 06, 2012, Daniel Lezcano wrote:
+> On 09/06/2012 09:54 AM, Daniel Lezcano wrote:
+> > On 09/05/2012 03:41 PM, Rafael J. Wysocki wrote:
+> >> On Saturday, September 01, 2012, Rafael J. Wysocki wrote:
+> >>> On Friday, August 31, 2012, Daniel Lezcano wrote:
+> >>>> On 07/24/2012 11:06 PM, Konrad Rzeszutek Wilk wrote:
+> >>>>> On Tue, Jul 24, 2012 at 11:12:29PM +0200, Daniel Lezcano wrote:
+> >>>>>> Remove the power field as it is not used.
+> >>>>>>
+> >>>>>> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> >>>>>> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> >>>>> Acked.
+> >>>> Hi Rafael,
+> >>>>
+> >>>> I did not see this patch going in. Is it possible to merge it ?
+> >>> I think so.  I'll take care of it when I get back from LinuxCon/Plumbers Conf.
+> >>> (early next week).
+> >> Applied to the linux-next branch of the linux-pm.git tree as v3.7 material.
+> > Thanks Rafael.
+> >
+> >> Are there any other patches you want me to consider for v3.7?
+> > Yes please, I have the per cpu latencies ready to be submitted but I
+> > want to do extra testing before. Unfortunately, the linux-pm-next hangs
+> > at boot time on my intel dual core (not related to the patchset).
+> >
+> > I am git bisecting right now.
 > 
-> On Thu, Sep 06, 2012 at 08:13:03PM +0300, Felipe Balbi wrote:
-> > Hi,
-> > 
-> > On Thu, Sep 06, 2012 at 09:04:58PM +0530, Vaibhav Hiremath wrote:
-> > > 
-> > > 
-> > > On 9/6/2012 8:25 PM, Kishon Vijay Abraham I wrote:
-> > > > The mailbox register for usb otg in omap is present in control module.
-> > > > On detection of any events VBUS or ID, this register should be written
-> > > > to send the notification to musb core.
-> > > > 
-> > > > Till we have a separate control module driver to write to control module,
-> > > > omap2430 will handle the register writes to control module by itself. So
-> > > > a new address space to represent this control module register is added
-> > > > to usb_otg_hs.
-> > > > 
-> > > > Cc: Benoit Cousson <b-cousson@ti.com>
-> > > > Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> > > > ---
-> > > >  arch/arm/mach-omap2/omap_hwmod_44xx_data.c |    5 +++++
-> > > >  1 file changed, 5 insertions(+)
-> > > > 
-> > > > diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-> > > > index 242aee4..02341bc 100644
-> > > > --- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-> > > > +++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-> > > > @@ -5890,6 +5890,11 @@ static struct omap_hwmod_addr_space omap44xx_usb_otg_hs_addrs[] = {
-> > > >  		.pa_end		= 0x4a0ab003,
-> > > >  		.flags		= ADDR_TYPE_RT
-> > > >  	},
-> > > > +	{
-> > > > +		.pa_start	= 0x4a00233c,
-> > > > +		.pa_end		= 0x4a00233f,
-> > > > +		.flags		= ADDR_TYPE_RT
-> > > > +	},
-> > > 
-> > > I do not have any objection/comment here, but I believe this is control
-> > > module address space required for USB module, right?
-> > > I am not sure this is right way of accessing control module space.
-> > > Actually Control Module Access required for drivers is one of the
-> > > blocking issue we have currently.
-> > > 
-> > > Also there was some effort put up by 'Konstantine' to convert Control
-> > > module to MFD driver, I haven't seen any further update on it. But it
-> > > would be good to check with him.
-> > 
-> > this was an agreement with Benoit since we already lost a couple merge
-> > windows for this patchset. We agreed to wait until -rc4 for SCM driver
-> > and if it wasn't ready, we'd go ahead with this and SCM author would fix
-> > it up on a patch converting users to new SCM driver.
+> I found the culprit. This is not related to the linux-pm tree but with
+> net-next.
+> The following patch introduced the issue.
 > 
-> Tony, can I get your Acked-by to this patch so I can take it together
-> with the rest of the series ? Thanks
+> commit 6bdb7fe31046ac50b47e83c35cd6c6b6160a475d
+> Author: Amerigo Wang <amwang@redhat.com>
+> Date:   Fri Aug 10 01:24:50 2012 +0000
 > 
-> ps: I'll apply this to my 'musb' branch which is immutable, so it's safe
-> to merge it into your tree once I apply.
+>     netpoll: re-enable irq in poll_napi()
+>    
+>     napi->poll() needs IRQ enabled, so we have to re-enable IRQ before
+>     calling it.
+>    
+>     Cc: David Miller <davem@davemloft.net>
+>     Signed-off-by: Cong Wang <amwang@redhat.com>
+>     Signed-off-by: David S. Miller <davem@davemloft.net>
+> 
+> AFAICS, it has been fixed by commit
+> 072a9c48600409d72aeb0d5b29fbb75861a06631 which is not yet in linux-pm-next.
 
-It would be best if this got acked by Benoit and Paul as they may
-have some other patches queued up. I'll ack if they ack ;)
+If it is present in the current Linus' tree, you can just pull this one
+and merge linux-pm-next into it.  It should merge without conflicts.
 
-Tony
+> I fall into this issue because NETCONSOLE is set, disabling it allowed
+> me to go further.
+> 
+> Unfortunately I am facing to some random freeze on the system which
+> seems to be related to CONFIG_NO_HZ=y and CONFIG_CPU_IDLE=y.
+> 
+> Disabling one of them, make the freezes to disappear.
+> 
+> Is it a known issue ?
+
+Well, there are systems having problems with this configuration, but they
+should be exceptional.  What system is that?
+
+Rafael
