@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755413Ab2IFWpB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 18:45:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37888 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755090Ab2IFWpA (ORCPT
+	id S1755285Ab2IFWpu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 18:45:50 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:50117 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754318Ab2IFWpt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 18:45:00 -0400
-Date: Thu, 6 Sep 2012 15:44:59 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v1 12/15] firmware: introduce
- device_cache/uncache_fw_images
-Message-Id: <20120906154459.8b3b73fa.akpm@linux-foundation.org>
-In-Reply-To: <1344052890-31935-13-git-send-email-ming.lei@canonical.com>
-References: <1344052890-31935-1-git-send-email-ming.lei@canonical.com>
-	<1344052890-31935-13-git-send-email-ming.lei@canonical.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 6 Sep 2012 18:45:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <50492617.8030609@parallels.com>
+References: <50470A87.1040701@parallels.com>
+	<20120905082947.GD3195@dhcp-172-17-108-109.mtv.corp.google.com>
+	<50470EBF.9070109@parallels.com>
+	<20120905084740.GE3195@dhcp-172-17-108-109.mtv.corp.google.com>
+	<1346835993.2600.9.camel@twins>
+	<20120905091140.GH3195@dhcp-172-17-108-109.mtv.corp.google.com>
+	<50471782.6060800@parallels.com>
+	<1346837209.2600.14.camel@twins>
+	<50471C0C.7050600@parallels.com>
+	<1346840453.2461.6.camel@laptop>
+	<20120906203839.GM29092@google.com>
+	<50492617.8030609@parallels.com>
+Date: Thu, 6 Sep 2012 15:45:47 -0700
+X-Google-Sender-Auth: FuJJIO4uGRklWbGj2FwcVNJ0gVs
+Message-ID: <CAOS58YM3cQB1ybAJ+cV9JKHbTvr5aRNDK1bJ_PgLNzk_P-3Wuw@mail.gmail.com>
+Subject: Re: [RFC 0/5] forced comounts for cgroups.
+From: Tejun Heo <tj@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, linux-mm@kvack.org, davej@redhat.com,
+        ben@decadent.org.uk, pjt@google.com, lennart@poettering.net,
+        kay.sievers@vrfy.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat,  4 Aug 2012 12:01:27 +0800
-Ming Lei <ming.lei@canonical.com> wrote:
+Hello, Glauber.
 
-> This patch introduces the three helpers below:
-> 
-> 	void device_cache_fw_images(void)
-> 	void device_uncache_fw_images(void)
-> 	void device_uncache_fw_images_delay(unsigned long)
+On Thu, Sep 6, 2012 at 3:39 PM, Glauber Costa <glommer@parallels.com> wrote:
+> Yes, please.
+>
+> While you rightfully claim that you explained it a couple of times, it
+> all seems to be quite fuzzy. I don't blame it on you: the current state
+> of the interface leads to this.
 
-CONFIG_PM=n:
+Heh, I drank two cups of coffee and two glasses of wine that evening.
+Coffee won and I couldn't sleep till around 4am with splitting
+headache. I'm not too confident about what I wrote that night. :)
 
-drivers/base/firmware_class.c:1147: warning: 'device_cache_fw_images' defined but not used
-drivers/base/firmware_class.c:1212: warning: 'device_uncache_fw_images_delay' defined but not used
+> So another detailed explanation of what you envision at this point,
+> considering the discussions we had in the previous days, would be really
+> helpful,
 
-the fix is not trivial - this patch added quite a lot of code and data
-structure bloat which will never be used on CONFIG_PM=n kernels.
+Definitely, will do. Please give me a few days to sort through
+immediately pending stuff.
 
+Thanks.
 
-(Well, a trivial fix would be to eradicate CONFIG_PM=n, but...)
+-- 
+tejun
