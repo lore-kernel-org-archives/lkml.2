@@ -1,73 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754540Ab2IFHSr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 03:18:47 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:38071 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752825Ab2IFHSp (ORCPT
+	id S1754141Ab2IFHTu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 03:19:50 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:22327 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752669Ab2IFHTs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 03:18:45 -0400
-From: "Philip, Avinash" <avinashphilip@ti.com>
-To: <linux@arm.linux.org.uk>, <tony@atomide.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <nsekhar@ti.com>,
-        <gururaja.hebbar@ti.com>, "Philip, Avinash" <avinashphilip@ti.com>
-Subject: [PATCH RESEND] arm/dts: AM33XX: Add SPI device tree data
-Date: Thu, 6 Sep 2012 12:30:15 +0530
-Message-ID: <1346914815-860-1-git-send-email-avinashphilip@ti.com>
-X-Mailer: git-send-email 1.7.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 6 Sep 2012 03:19:48 -0400
+Date: Thu, 6 Sep 2012 09:19:35 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>
+Subject: [PATCH] dma: ipu: Drop unused spinlock
+Message-ID: <20120906091935.64c851ac@endymion.delvare>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add McSPI data node to AM33XX device tree file. The McSPI module (and so
-as the driver) is reused from OMAP4.
+I was checking why this spinlock was never initialized, but it turns
+out it's not used anywhere, so we can drop it.
 
-Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: Dan Williams <djbw@fb.com>
 ---
-Resenting patch because ARM & OMAP mailing list was not copied.
+I can't even build-test this.
 
-:100644 100644 bb31bff... 6b469bd... M	arch/arm/boot/dts/am33xx.dtsi
- arch/arm/boot/dts/am33xx.dtsi |   25 +++++++++++++++++++++++++
- 1 files changed, 25 insertions(+), 0 deletions(-)
+ drivers/dma/ipu/ipu_irq.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-index bb31bff..6b469bd 100644
---- a/arch/arm/boot/dts/am33xx.dtsi
-+++ b/arch/arm/boot/dts/am33xx.dtsi
-@@ -210,5 +210,30 @@
- 			interrupt-parent = <&intc>;
- 			interrupts = <91>;
- 		};
-+
-+		spi0: spi@48030000 {
-+			compatible = "ti,omap4-mcspi";
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			reg = <0x4830000 0x400>;
-+			interrupt-parent = <&intc>;
-+			interrupt = <65>;
-+			ti,spi-num-cs = <2>;
-+			ti,hwmods = "spi0";
-+			status = "disabled";
-+
-+		};
-+
-+		spi1: spi@481a0000 {
-+			compatible = "ti,omap4-mcspi";
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			reg = <0x481a0000 0x400>;
-+			interrupt-parent = <&intc>;
-+			interrupt = <125>;
-+			ti,spi-num-cs = <2>;
-+			ti,hwmods = "spi1";
-+			status = "disabled";
-+		};
- 	};
+--- linux-3.6-rc4.orig/drivers/dma/ipu/ipu_irq.c	2012-08-04 21:49:26.000000000 +0200
++++ linux-3.6-rc4/drivers/dma/ipu/ipu_irq.c	2012-09-06 09:13:31.034228670 +0200
+@@ -45,7 +45,6 @@ static void ipu_write_reg(struct ipu *ip
+ struct ipu_irq_bank {
+ 	unsigned int	control;
+ 	unsigned int	status;
+-	spinlock_t	lock;
+ 	struct ipu	*ipu;
  };
--- 
-1.7.1
+ 
 
+
+-- 
+Jean Delvare
