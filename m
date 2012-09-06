@@ -1,638 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933221Ab2IFVLx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 17:11:53 -0400
-Received: from smtp121.dfw.emailsrvr.com ([67.192.241.121]:56287 "EHLO
-	smtp121.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751944Ab2IFVLg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933207Ab2IFVLw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 17:11:52 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:40550 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759866Ab2IFVLg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 6 Sep 2012 17:11:36 -0400
-X-Greylist: delayed 515 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Sep 2012 17:11:35 EDT
-From: Mark Langsdorf <mark.langsdorf@calxeda.com>
-To: jgarzik@pobox.com
-Cc: linux-ide@vger.kernel.org, jcm@redhat.com, dmarlin@redhat.com,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH v2] ata: add platform driver for Calxeda AHCI controller
-Date: Thu,  6 Sep 2012 16:03:30 -0500
-Message-Id: <1346965410-26050-1-git-send-email-mark.langsdorf@calxeda.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1345215111-11051-3-git-send-email-mark.langsdorf@calxeda.com>
-References: <1345215111-11051-3-git-send-email-mark.langsdorf@calxeda.com>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: sedat.dilek@gmail.com
+Subject: Re: linux-next: Tree for Sept 6 (does not boot on AMD64)
+Date: Thu, 6 Sep 2012 23:17:52 +0200
+User-Agent: KMail/1.13.6 (Linux/3.6.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: Andre Przywara <andre.przywara@amd.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Matthew Garrett <mjg@redhat.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Thomas Renninger <trenn@suse.de>
+References: <CA+icZUWgPV=RnXGT4hDsk3xDm8iBu8ShvFFrs=t3+3D3=-bP2Q@mail.gmail.com> <50490C9D.1070509@amd.com> <CA+icZUVY_ynMV2eQkROz1oh8EznYpcZdjv42kexSNB6LeqAb+g@mail.gmail.com>
+In-Reply-To: <CA+icZUVY_ynMV2eQkROz1oh8EznYpcZdjv42kexSNB6LeqAb+g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209062317.53214.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Calxeda highbank SATA phy has intermittent problems bringing up a link
-with Gen3 drives. Retrying the phy hard reset can work-around this issue,
-but each reset also disables spread spectrum support. The reset function
-also needs to reprogram the phy to enable spread spectrum support.
+On Thursday, September 06, 2012, Sedat Dilek wrote:
+> On Thu, Sep 6, 2012 at 10:50 PM, Andre Przywara <andre.przywara@amd.com> wrote:
+> > On 09/06/2012 10:30 PM, Sedat Dilek wrote:
+> >>
+> >> On Thu, Sep 6, 2012 at 10:08 PM, Rafael J. Wysocki<rjw@sisk.pl>  wrote:
+> >>>
+> >>> On Thursday, September 06, 2012, Sedat Dilek wrote:
+> >>>>
+> >>>> On Thu, Sep 6, 2012 at 1:48 PM, Sedat Dilek<sedat.dilek@gmail.com>
+> >>>> wrote:
+> >>>>>
+> >>>>> On Thu, Sep 6, 2012 at 9:23 AM, Stephen Rothwell<sfr@canb.auug.org.au>
+> >>>>> wrote:
+> >>>>>>
+> >>>>>> Hi all,
+> >>>>>
+> >>>>> Hi,
+> >>>>>
+> >>>>>
+> >>>>> Unfortunately, today's linux-next does not boot here on Ubuntu/precise
+> >>>>> AMD64.
+> >>>>> My yesterday's next-20120905 is fine.
+> >>>>>
+> >>>>> I throw out all my additional patches an rebuild again as "-2", but
+> >>>>> this linux-image does not boot.
+> >>>>> It's in very early stage.
+> >>>>> I removed "quiet" etc. from kernel-command-line, but this reveals not
+> >>>>> much more.
+> >>>>>
+> >>>>>  From the attached kernel-config.diff:
+> >>>>> Dunno why the 2nd is disabled now and try to turn off the 1st one in a
+> >>>>> "-3" build.
+> >>>>>
+> >>>>> +CONFIG_X86_ACPI_CPUFREQ_CPB=y
+> >>>>> -CONFIG_USB_LIBUSUAL=y
+> >>>>>
+> >>>>
+> >>>> [ CC Rafael (cpufreq sub-maintainer) ]
+> >>>
+> >>>
+> >>> Well, this is related to the AMD cpufreq patchset I've just added to
+> >>> linux-next.  I'll drop it for now until the issue is resolved.
+> >>>
+> >>
+> >> Hi Rafael,
+> >>
+> >> The problem was caused by the slab/next merge (see [1]).
+> >>
+> >> [1] http://marc.info/?t=134695686500008&r=1&w=2
+> >>
+> >>>> I hacked to turn off CONFIG_X86_ACPI_CPUFREQ_CPB, but this is not the
+> >>>> root cause.
+> >>>> Not sure why this setting is default YES, Rafael?
+> >>>>
+> >>>> To switch from upstart to systemd does not help.
+> >>>
+> >>>
+> >>> Andre, care to have a look at this?
+> >>>
+> >>
+> >> I am not sure if the depends-on/default-n/default-y lines are correct.
+> >> Here, I am on a Intel sandy-bridge CPU, so why do I need to activate
+> >> any AMD CPU workaround?
+> >
+> >
+> > It is not a workaround, it is about keeping a feature that was in
+> > powernow-k8 for 2.5 years. AMD CPUs have this sysfs knob for turning on and
+> > off the boost feature, we want to keep this around for some time for
+> > compatibility reasons.
+> > Newer AMD CPUs (Phenoms/Barcelona and up) are now only supported by
+> > acpi-cpufreq, not by powernow-k8 anymore.
+> >
+> > And: it will only be activated on AMD:
+> > +#ifdef CONFIG_X86_ACPI_CPUFREQ_CPB
+> > ....
+> > +        * Lets enable it only on AMD CPUs for compatibility reasons and
+> > +        * only if configured. This is considered legacy code, which
+> > +        * will probably be removed at some point in the future.
+> > +        */
+> > +       if (check_amd_hwpstate_cpu(0)) {
+> > ...
+> >
+> >>
+> >> [ Linux-Next (next-20120906) ]
+> >>
+> >> 19 config X86_ACPI_CPUFREQ
+> >> 20         tristate "ACPI Processor P-States driver"
+> >> 21         select CPU_FREQ_TABLE
+> >> 22         depends on ACPI_PROCESSOR
+> >> 23         help
+> >> 24           This driver adds a CPUFreq driver which utilizes the ACPI
+> >> 25           Processor Performance States.
+> >> 26           This driver also supports Intel Enhanced Speedstep and newer
+> >> 27           AMD CPUs.
+> >> 28
+> >> 29           To compile this driver as a module, choose M here: the
+> >> 30           module will be called acpi-cpufreq.
+> >> 31
+> >> 32           For details, take a look at<file:Documentation/cpu-freq/>.
+> >> 33
+> >> 34           If in doubt, say N.
+> >> 35
+> >> 36 config X86_ACPI_CPUFREQ_CPB
+> >> 37         default y
+> >> 38         bool "Legacy cpb sysfs knob support for AMD CPUs"
+> >> 39         depends on X86_ACPI_CPUFREQ&&  CPU_SUP_AMD
+> >>
+> >> 40         help
+> >> 41           The powernow-k8 driver used to provide a sysfs knob called
+> >> "cpb"
+> >> 42           to disable the Core Performance Boosting feature of AMD CPUs.
+> >> This
+> >> 43           file has now been superseeded by the more generic "boost"
+> >> entry.
+> >> 44
+> >> 45           By enabling this option the acpi_cpufreq driver provides the
+> >> old
+> >> 46           entry in addition to the new boost ones, for compatibility
+> >> reasons.
+> >>
+> >> Why is there no depends-on "X86_POWERNOW_K8" (see above help-text)?
+> >
+> >
+> > Because this driver lost the support for newer CPUs and thus also this
+> > feature. We migrate this feature over to acpi-cpufreq.
+> >
+> >
+> >> I have set CONFIG_CPU_SUP_AMD=y which leads always to
+> >> CONFIG_X86_ACPI_CPUFREQ_CPB=y.
+> >> As said Intel SNB CPU!
+> >
+> >
+> > As said it does not hurt if you boot it on an Intel CPU, the code will not
+> > be run.
+> >
+> >
+> >>
+> >> What about this (untested)?
+> >>
+> >> ----- SNIP -----
+> >> config X86_ACPI_CPUFREQ_CPB
+> >>          bool "Legacy cpb sysfs knob support for AMD CPUs"
+> >>          depends on X86_ACPI_CPUFREQ
+> >>          default y if X86_POWERNOW_K8&&  CPU_SUP_AMD
+> >
+> >
+> > Powernow-K8 does not support CPB anymore, this code is now in acpi-cpufreq.
+> > So a dependency on the old driver does not help.
+> >
+> > Are there still any problems with this patchset? Or are you only wondering
+> > about the new config switch?
+> >
+> 
+> Just wondering... Fell over it when digging into my boot-problem (this
+> appeared as a new Kconfig option, so).
+> Thanks for the explanations!
 
-Create a new driver based on ahci_platform to support the Calxeda Highbank
-SATA controller.
+Ah, OK.  I got the impression that the patchset caused a problem to happen for
+you.  I suppose it's fine to keep it in linux-next after all, then?
 
-Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
----
-Changes from v1
-used to be the second patch in a 2 part series; first patch was accepted
-        and this patch's name was changed from "ahci_platform: add custom
-        hard reset for Calxeda ahci ctrlr"
-Refactored all of sata_highbank so it is a stand-alone driver based on
-        ahci_platform
-Driver can now be loaded as a module
-        Driver is no longer auto-selected as part of ARCH_HIGHBANK
-
- .../devicetree/bindings/arm/calxeda/combophy.txt   |  17 +
- .../devicetree/bindings/ata/ahci-platform.txt      |   8 +
- arch/arm/boot/dts/highbank.dts                     |  17 +
- drivers/ata/Kconfig                                |   8 +
- drivers/ata/Makefile                               |   1 +
- drivers/ata/ahci_platform.c                        |   1 -
- drivers/ata/sata_highbank.c                        | 450 +++++++++++++++++++++
- 7 files changed, 501 insertions(+), 1 deletion(-)
- create mode 100644 Documentation/devicetree/bindings/arm/calxeda/combophy.txt
- create mode 100644 drivers/ata/sata_highbank.c
-
-diff --git a/Documentation/devicetree/bindings/arm/calxeda/combophy.txt b/Documentation/devicetree/bindings/arm/calxeda/combophy.txt
-new file mode 100644
-index 0000000..6622bdb
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/calxeda/combophy.txt
-@@ -0,0 +1,17 @@
-+Calxeda Highbank Combination Phys for SATA
-+
-+Properties:
-+- compatible : Should be "calxeda,hb-combophy"
-+- #phy-cells: Should be 1.
-+- reg : Address and size for Combination Phy registers.
-+- phydev: device ID for programming the combophy.
-+
-+Example:
-+
-+	combophy5: combo-phy@fff5d000 {
-+		compatible = "calxeda,hb-combophy";
-+		#phy-cells = <1>;
-+		reg = <0xfff5d000 0x1000>;
-+		phydev = <31>;
-+	};
-+
-diff --git a/Documentation/devicetree/bindings/ata/ahci-platform.txt b/Documentation/devicetree/bindings/ata/ahci-platform.txt
-index 8bb8a76..147c1f6 100644
---- a/Documentation/devicetree/bindings/ata/ahci-platform.txt
-+++ b/Documentation/devicetree/bindings/ata/ahci-platform.txt
-@@ -8,9 +8,17 @@ Required properties:
- - interrupts        : <interrupt mapping for SATA IRQ>
- - reg               : <registers mapping>
- 
-+Optional properties:
-+- calxeda,port-phys: phandle-combophy and lane assignment, which maps each
-+			SATA port to a combophy and a lane within that
-+			combophy
-+
- Example:
-         sata@ffe08000 {
- 		compatible = "calxeda,hb-ahci";
-                 reg = <0xffe08000 0x1000>;
-                 interrupts = <115>;
-+		calxeda,port-phys = <&combophy5 0 &combophy0 0 &combophy0 1
-+					&combophy0 2 &combophy0 3>;
-+
-         };
-diff --git a/arch/arm/boot/dts/highbank.dts b/arch/arm/boot/dts/highbank.dts
-index 9fecf1a..5204cf7 100644
---- a/arch/arm/boot/dts/highbank.dts
-+++ b/arch/arm/boot/dts/highbank.dts
-@@ -121,6 +121,9 @@
- 			compatible = "calxeda,hb-ahci";
- 			reg = <0xffe08000 0x10000>;
- 			interrupts = <0 83 4>;
-+			calxeda,port-phys = <&combophy5 0 &combophy0 0
-+					     &combophy0 1 &combophy0 2
-+					     &combophy0 3>;
- 		};
- 
- 		sdhci@ffe0e000 {
-@@ -306,5 +309,19 @@
- 			reg = <0xfff51000 0x1000>;
- 			interrupts = <0 80 4  0 81 4  0 82 4>;
- 		};
-+
-+		combophy0: combo-phy@fff58000 {
-+			compatible = "calxeda,hb-combophy";
-+			#phy-cells = <1>;
-+			reg = <0xfff58000 0x1000>;
-+			phydev = <5>;
-+		};
-+
-+		combophy5: combo-phy@fff5d000 {
-+			compatible = "calxeda,hb-combophy";
-+			#phy-cells = <1>;
-+			reg = <0xfff5d000 0x1000>;
-+			phydev = <31>;
-+		};
- 	};
- };
-diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
-index 27cecd3..e08d322 100644
---- a/drivers/ata/Kconfig
-+++ b/drivers/ata/Kconfig
-@@ -214,6 +214,14 @@ config SATA_DWC_VDEBUG
- 	help
- 	  This option enables the taskfile dumping and NCQ debugging.
- 
-+config SATA_HIGHBANK
-+	tristate "Calxeda Highbank SATA support"
-+	help
-+	  This option enables support for the Calxeda Highbank SoC's
-+	  onboard SATA.
-+
-+	  If unsure, say N.
-+
- config SATA_MV
- 	tristate "Marvell SATA support"
- 	help
-diff --git a/drivers/ata/Makefile b/drivers/ata/Makefile
-index a454a13..8b384f1 100644
---- a/drivers/ata/Makefile
-+++ b/drivers/ata/Makefile
-@@ -9,6 +9,7 @@ obj-$(CONFIG_SATA_FSL)		+= sata_fsl.o
- obj-$(CONFIG_SATA_INIC162X)	+= sata_inic162x.o
- obj-$(CONFIG_SATA_SIL24)	+= sata_sil24.o
- obj-$(CONFIG_SATA_DWC)		+= sata_dwc_460ex.o
-+obj-$(CONFIG_SATA_HIGHBANK)	+= sata_highbank.o
- 
- # SFF w/ custom DMA
- obj-$(CONFIG_PDC_ADMA)		+= pdc_adma.o
-diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
-index 09728e0..dc187c7 100644
---- a/drivers/ata/ahci_platform.c
-+++ b/drivers/ata/ahci_platform.c
-@@ -277,7 +277,6 @@ static int ahci_resume(struct device *dev)
- SIMPLE_DEV_PM_OPS(ahci_pm_ops, ahci_suspend, ahci_resume);
- 
- static const struct of_device_id ahci_of_match[] = {
--	{ .compatible = "calxeda,hb-ahci", },
- 	{ .compatible = "snps,spear-ahci", },
- 	{},
- };
-diff --git a/drivers/ata/sata_highbank.c b/drivers/ata/sata_highbank.c
-new file mode 100644
-index 0000000..0d7c4c2
---- /dev/null
-+++ b/drivers/ata/sata_highbank.c
-@@ -0,0 +1,450 @@
-+/*
-+ * Calxeda Highbank AHCI SATA platform driver
-+ * Copyright 2012 Calxeda, Inc.
-+ *
-+ * based on the AHCI SATA platform driver by Jeff Garzik and Anton Vorontsov
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#include <linux/kernel.h>
-+#include <linux/gfp.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/types.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/spinlock.h>
-+#include <linux/device.h>
-+#include <linux/of_device.h>
-+#include <linux/of_address.h>
-+#include <linux/platform_device.h>
-+#include <linux/libata.h>
-+#include <linux/ahci_platform.h>
-+#include <linux/interrupt.h>
-+#include <linux/delay.h>
-+#include <linux/export.h>
-+#include "ahci.h"
-+
-+#define CPHY_MAP(dev, addr) ((((dev) & 0x1f) << 7) | (((addr) >> 9) & 0x7f))
-+#define CPHY_ADDR(addr) (((addr) & 0x1ff) << 2)
-+#define SERDES_CR_CTL			0x80a0
-+#define SERDES_CR_ADDR			0x80a1
-+#define SERDES_CR_DATA			0x80a2
-+#define CR_BUSY				0x0001
-+#define CR_START			0x0001
-+#define CR_WR_RDN			0x0002
-+#define CPHY_RX_INPUT_STS		0x2002
-+#define CPHY_SATA_OVERRIDE	 	0x4000
-+#define CPHY_OVERRIDE			0x2005
-+#define SPHY_LANE			0x100
-+#define SPHY_HALF_RATE			0x0001
-+#define CPHY_SATA_DPLL_MODE		0x0700
-+#define CPHY_SATA_DPLL_SHIFT		8
-+#define CPHY_SATA_DPLL_RESET		(1 << 11)
-+#define CPHY_PHY_COUNT			6
-+#define CPHY_LANE_COUNT			4
-+#define CPHY_PORT_COUNT			(CPHY_PHY_COUNT * CPHY_LANE_COUNT)
-+
-+static DEFINE_SPINLOCK(cphy_lock);
-+/* Each of the 6 phys can have up to 4 sata ports attached to i. Map 0-based
-+ * sata ports to their phys and then to their lanes within the phys
-+ */
-+struct phy_lane_info {
-+	void __iomem *phy_base;
-+	u8 lane_mapping;
-+	u8 phy_devs;
-+};
-+static struct phy_lane_info port_data[CPHY_PORT_COUNT];
-+
-+static u32 __combo_phy_reg_read(u8 sata_port, u32 addr)
-+{
-+	u32 data;
-+	u8 dev = port_data[sata_port].phy_devs;
-+	spin_lock(&cphy_lock);
-+	writel(CPHY_MAP(dev, addr), port_data[sata_port].phy_base + 0x800);
-+	data = readl(port_data[sata_port].phy_base + CPHY_ADDR(addr));
-+	spin_unlock(&cphy_lock);
-+	return data;
-+}
-+
-+static void __combo_phy_reg_write(u8 sata_port, u32 addr, u32 data)
-+{
-+	u8 dev = port_data[sata_port].phy_devs;
-+	spin_lock(&cphy_lock);
-+	writel(CPHY_MAP(dev, addr), port_data[sata_port].phy_base + 0x800);
-+	writel(data, port_data[sata_port].phy_base + CPHY_ADDR(addr));
-+	spin_unlock(&cphy_lock);
-+}
-+
-+static void combo_phy_wait_for_ready(u8 sata_port)
-+{
-+	while (__combo_phy_reg_read(sata_port, SERDES_CR_CTL) & CR_BUSY)
-+		udelay(5);
-+}
-+
-+static u32 combo_phy_read(u8 sata_port, u32 addr)
-+{
-+	combo_phy_wait_for_ready(sata_port);
-+	__combo_phy_reg_write(sata_port, SERDES_CR_ADDR, addr);
-+	__combo_phy_reg_write(sata_port, SERDES_CR_CTL, CR_START);
-+	combo_phy_wait_for_ready(sata_port);
-+	return __combo_phy_reg_read(sata_port, SERDES_CR_DATA);
-+}
-+
-+static void combo_phy_write(u8 sata_port, u32 addr, u32 data)
-+{
-+	combo_phy_wait_for_ready(sata_port);
-+	__combo_phy_reg_write(sata_port, SERDES_CR_ADDR, addr);
-+	__combo_phy_reg_write(sata_port, SERDES_CR_DATA, data);
-+	__combo_phy_reg_write(sata_port, SERDES_CR_CTL, CR_WR_RDN | CR_START);
-+}
-+
-+static void highbank_cphy_disable_overrides(u8 sata_port)
-+{
-+	u8 lane = port_data[sata_port].lane_mapping;
-+	u32 tmp;
-+	if (unlikely(port_data[sata_port].phy_base == NULL))
-+		return;
-+	tmp = combo_phy_read(sata_port, CPHY_RX_INPUT_STS + lane * SPHY_LANE);
-+	tmp &= ~CPHY_SATA_OVERRIDE;
-+	combo_phy_write(sata_port, CPHY_OVERRIDE + lane * SPHY_LANE, tmp);
-+}
-+
-+static void cphy_override_rx_mode(u8 sata_port, u32 val)
-+{
-+	u8 lane = port_data[sata_port].lane_mapping;
-+	u32 tmp;
-+	tmp = combo_phy_read(sata_port, CPHY_RX_INPUT_STS + lane * SPHY_LANE);
-+	tmp &= ~CPHY_SATA_OVERRIDE;
-+	combo_phy_write(sata_port, CPHY_OVERRIDE + lane * SPHY_LANE, tmp);
-+
-+	tmp |= CPHY_SATA_OVERRIDE;
-+	combo_phy_write(sata_port, CPHY_OVERRIDE + lane * SPHY_LANE, tmp);
-+
-+	tmp &= ~CPHY_SATA_DPLL_MODE;
-+	tmp |= val << CPHY_SATA_DPLL_SHIFT;
-+	combo_phy_write(sata_port, CPHY_OVERRIDE + lane * SPHY_LANE, tmp);
-+
-+	tmp |= CPHY_SATA_DPLL_RESET;
-+	combo_phy_write(sata_port, CPHY_OVERRIDE + lane * SPHY_LANE, tmp);
-+
-+	tmp &= ~CPHY_SATA_DPLL_RESET;
-+	combo_phy_write(sata_port, CPHY_OVERRIDE + lane * SPHY_LANE, tmp);
-+
-+	msleep(15);
-+}
-+
-+static void highbank_cphy_override_lane(u8 sata_port)
-+{
-+	u8 lane = port_data[sata_port].lane_mapping;
-+	u32 tmp, k = 0;
-+
-+	if (unlikely(port_data[sata_port].phy_base == NULL))
-+		return;
-+	do {
-+		tmp = combo_phy_read(sata_port, CPHY_RX_INPUT_STS +
-+						lane * SPHY_LANE);
-+	} while ((tmp & SPHY_HALF_RATE) && (k++ < 1000));
-+	cphy_override_rx_mode(sata_port, 3);
-+}
-+
-+static int highbank_initialize_phys(struct device *dev, void __iomem *addr)
-+{
-+	struct device_node *sata_node = dev->of_node;
-+	int phy_count = 0, phy, port = 0;
-+	void __iomem *cphy_base[CPHY_PHY_COUNT];
-+	struct device_node *phy_nodes[CPHY_PHY_COUNT];
-+	memset(port_data, 0, sizeof(struct phy_lane_info) * CPHY_PORT_COUNT);
-+	memset(phy_nodes, 0, sizeof(struct device_node*) * CPHY_PHY_COUNT);
-+
-+	do {
-+		u32 tmp;
-+		struct of_phandle_args phy_data;
-+		if (of_parse_phandle_with_args(sata_node,
-+				"calxeda,port-phys", "#phy-cells",
-+				port, &phy_data))
-+			break;
-+		for (phy = 0; phy < phy_count; phy++) {
-+			if (phy_nodes[phy] == phy_data.np)
-+				break;
-+		}
-+		if (phy_nodes[phy] == NULL) {
-+			phy_nodes[phy] = phy_data.np;
-+			cphy_base[phy] = of_iomap(phy_nodes[phy], 0);
-+			if (cphy_base[phy] == NULL) {
-+				return 0;
-+			}
-+			phy_count += 1;
-+		}
-+		port_data[port].lane_mapping = phy_data.args[0];
-+		of_property_read_u32(phy_nodes[phy], "phydev", &tmp);
-+		port_data[port].phy_devs = tmp;
-+		port_data[port].phy_base = cphy_base[phy];
-+		of_node_put(phy_data.np);
-+		port += 1;
-+	} while (port < CPHY_PORT_COUNT);
-+	return 0;
-+}
-+
-+static int ahci_highbank_hardreset(struct ata_link *link, unsigned int *class,
-+				unsigned long deadline)
-+{
-+	const unsigned long *timing = sata_ehc_deb_timing(&link->eh_context);
-+	struct ata_port *ap = link->ap;
-+	struct ahci_port_priv *pp = ap->private_data;
-+	u8 *d2h_fis = pp->rx_fis + RX_FIS_D2H_REG;
-+	struct ata_taskfile tf;
-+	bool online;
-+	u32 sstatus;
-+	int rc;
-+	int retry = 10;
-+
-+	ahci_stop_engine(ap);
-+
-+	/* clear D2H reception area to properly wait for D2H FIS */
-+	ata_tf_init(link->device, &tf);
-+	tf.command = 0x80;
-+	ata_tf_to_fis(&tf, 0, 0, d2h_fis);
-+
-+	do {
-+		highbank_cphy_disable_overrides(link->ap->port_no);
-+		rc = sata_link_hardreset(link, timing, deadline, &online, NULL);
-+		highbank_cphy_override_lane(link->ap->port_no);
-+
-+		/* If the status is 1, we are connected, but the link did not
-+		 * come up. So retry resetting the link again.
-+		 */
-+		if (sata_scr_read(link, SCR_STATUS, &sstatus))
-+			break;
-+		if (!(sstatus & 0x3))
-+			break;
-+	} while (!online && retry--);
-+
-+	ahci_start_engine(ap);
-+
-+	if (online)
-+		*class = ahci_dev_classify(ap);
-+
-+	return rc;
-+}
-+
-+static struct ata_port_operations ahci_highbank_ops = {
-+	.inherits		= &ahci_ops,
-+	.hardreset		= ahci_highbank_hardreset,
-+};
-+
-+static const struct ata_port_info ahci_highbank_port_info = {
-+	.flags          = AHCI_FLAG_COMMON,
-+	.pio_mask       = ATA_PIO4,
-+	.udma_mask      = ATA_UDMA6,
-+	.port_ops       = &ahci_highbank_ops,
-+};
-+
-+static struct scsi_host_template ahci_highbank_platform_sht = {
-+	AHCI_SHT("highbank-ahci"),
-+};
-+
-+static const struct of_device_id ahci_of_match[] = {
-+	{ .compatible = "calxeda,hb-ahci" },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, ahci_of_match);
-+
-+static int __init ahci_highbank_probe(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct ahci_host_priv *hpriv;
-+	struct ata_host *host;
-+	struct resource *mem;
-+	int irq;
-+	int n_ports;
-+	int i;
-+	int rc;
-+	struct ata_port_info pi = ahci_highbank_port_info;
-+	const struct ata_port_info *ppi[] = { &pi, NULL };
-+
-+	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!mem) {
-+		dev_err(dev, "no mmio space\n");
-+		return -EINVAL;
-+	}
-+
-+	irq = platform_get_irq(pdev, 0);
-+	if (irq <= 0) {
-+		dev_err(dev, "no irq\n");
-+		return -EINVAL;
-+	}
-+
-+	hpriv = devm_kzalloc(dev, sizeof(*hpriv), GFP_KERNEL);
-+	if (!hpriv) {
-+		dev_err(dev, "can't alloc ahci_host_priv\n");
-+		return -ENOMEM;
-+	}
-+
-+	hpriv->flags |= (unsigned long)pi.private_data;
-+
-+	hpriv->mmio = devm_ioremap(dev, mem->start, resource_size(mem));
-+	if (!hpriv->mmio) {
-+		dev_err(dev, "can't map %pR\n", mem);
-+		return -ENOMEM;
-+	}
-+
-+	rc = highbank_initialize_phys(dev, hpriv->mmio);
-+	if (rc)
-+		return rc;
-+
-+
-+	ahci_save_initial_config(dev, hpriv, 0, 0);
-+
-+	/* prepare host */
-+	if (hpriv->cap & HOST_CAP_NCQ)
-+		pi.flags |= ATA_FLAG_NCQ;
-+
-+	if (hpriv->cap & HOST_CAP_PMP)
-+		pi.flags |= ATA_FLAG_PMP;
-+
-+	ahci_set_em_messages(hpriv, &pi);
-+
-+	/* CAP.NP sometimes indicate the index of the last enabled
-+	 * port, at other times, that of the last possible port, so
-+	 * determining the maximum port number requires looking at
-+	 * both CAP.NP and port_map.
-+	 */
-+	n_ports = max(ahci_nr_ports(hpriv->cap), fls(hpriv->port_map));
-+
-+	host = ata_host_alloc_pinfo(dev, ppi, n_ports);
-+	if (!host) {
-+		rc = -ENOMEM;
-+		goto err0;
-+	}
-+
-+	host->private_data = hpriv;
-+
-+	if (!(hpriv->cap & HOST_CAP_SSS) || ahci_ignore_sss)
-+		host->flags |= ATA_HOST_PARALLEL_SCAN;
-+
-+	if (pi.flags & ATA_FLAG_EM)
-+		ahci_reset_em(host);
-+
-+	for (i = 0; i < host->n_ports; i++) {
-+		struct ata_port *ap = host->ports[i];
-+
-+		ata_port_desc(ap, "mmio %pR", mem);
-+		ata_port_desc(ap, "port 0x%x", 0x100 + ap->port_no * 0x80);
-+
-+		/* set enclosure management message type */
-+		if (ap->flags & ATA_FLAG_EM)
-+			ap->em_message_type = hpriv->em_msg_type;
-+
-+		/* disabled/not-implemented port */
-+		if (!(hpriv->port_map & (1 << i)))
-+			ap->ops = &ata_dummy_port_ops;
-+	}
-+
-+	rc = ahci_reset_controller(host);
-+	if (rc)
-+		goto err0;
-+
-+	ahci_init_controller(host);
-+	ahci_print_info(host, "platform");
-+
-+	rc = ata_host_activate(host, irq, ahci_interrupt, 0,
-+					&ahci_highbank_platform_sht);
-+	if (rc)
-+		goto err0;
-+
-+	return 0;
-+err0:
-+	return rc;
-+}
-+
-+static int __devexit ahci_highbank_remove(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct ata_host *host = dev_get_drvdata(dev);
-+
-+	ata_host_detach(host);
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM
-+static int ahci_highbank_suspend(struct device *dev)
-+{
-+	struct ata_host *host = dev_get_drvdata(dev);
-+	struct ahci_host_priv *hpriv = host->private_data;
-+	void __iomem *mmio = hpriv->mmio;
-+	u32 ctl;
-+	int rc;
-+
-+	if (hpriv->flags & AHCI_HFLAG_NO_SUSPEND) {
-+		dev_err(dev, "firmware update required for suspend/resume\n");
-+		return -EIO;
-+	}
-+
-+	/*
-+	 * AHCI spec rev1.1 section 8.3.3:
-+	 * Software must disable interrupts prior to requesting a
-+	 * transition of the HBA to D3 state.
-+	 */
-+	ctl = readl(mmio + HOST_CTL);
-+	ctl &= ~HOST_IRQ_EN;
-+	writel(ctl, mmio + HOST_CTL);
-+	readl(mmio + HOST_CTL); /* flush */
-+
-+	rc = ata_host_suspend(host, PMSG_SUSPEND);
-+	if (rc)
-+		return rc;
-+
-+	return 0;
-+}
-+
-+static int ahci_highbank_resume(struct device *dev)
-+{
-+	struct ata_host *host = dev_get_drvdata(dev);
-+	int rc;
-+
-+	if (dev->power.power_state.event == PM_EVENT_SUSPEND) {
-+		rc = ahci_reset_controller(host);
-+		if (rc)
-+			return rc;
-+
-+		ahci_init_controller(host);
-+	}
-+
-+	ata_host_resume(host);
-+
-+	return 0;
-+}
-+#endif
-+
-+SIMPLE_DEV_PM_OPS(ahci_highbank_pm_ops,
-+		  ahci_highbank_suspend, ahci_highbank_resume);
-+
-+static struct platform_driver ahci_highbank_driver = {
-+        .remove = __devexit_p(ahci_highbank_remove),
-+        .driver = {
-+                .name = "highbank-ahci",
-+                .owner = THIS_MODULE,
-+                .of_match_table = ahci_of_match,
-+                .pm = &ahci_highbank_pm_ops,
-+        },
-+	.probe = ahci_highbank_probe,
-+};
-+
-+module_platform_driver(ahci_highbank_driver);
-+
-+MODULE_DESCRIPTION("Calxeda Highbank AHCI SATA platform driver");
-+MODULE_AUTHOR("Mark Langsdorf <mark.langsdorf@calxeda.com>");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("sata:highbank");
--- 
-1.7.11.4
-
+Rafael
