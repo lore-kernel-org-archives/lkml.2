@@ -1,77 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755676Ab2IFNxh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 09:53:37 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:56149 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753588Ab2IFNxf (ORCPT
+	id S1755477Ab2IFNz0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 09:55:26 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:64874 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752645Ab2IFNzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 09:53:35 -0400
-Message-ID: <5048AAF6.5090101@gmail.com>
-Date: Thu, 06 Sep 2012 15:53:58 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120826 Thunderbird/14.0
+	Thu, 6 Sep 2012 09:55:25 -0400
+Date: Thu, 6 Sep 2012 06:55:19 -0700
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Liang Li <liang.li@windriver.com>
+Cc: Richard Purdie <richard.purdie@linuxfoundation.org>,
+        a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] perf: add SLANG_INC for slang.h
+Message-ID: <20120906135519.GM8203@ghostprotocols.net>
+References: <1345777839-15843-1-git-send-email-liang.li@windriver.com>
+ <20120905205439.GD8203@ghostprotocols.net>
+ <1346880183.21985.90.camel@ted>
+ <20120905224122.GH8203@ghostprotocols.net>
+ <20120906021121.GB16647@localhost>
 MIME-Version: 1.0
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Pedro Alves <palves@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Tejun Heo <tj@kernel.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
-        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
-        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
-        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
-        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive hashtable
-References: <20120824230740.GN21325@google.com> <20120825042419.GA27240@Krystal> <503C95E4.3010000@gmail.com> <20120828101148.GA21683@Krystal> <503CAB1E.5010408@gmail.com> <20120828115638.GC23818@Krystal> <20120828230050.GA3337@Krystal> <1346772948.27919.9.camel@gandalf.local.home> <50462C99.5000007@redhat.com> <50462EE8.1090903@redhat.com> <20120904170138.GB31934@Krystal>
-In-Reply-To: <20120904170138.GB31934@Krystal>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120906021121.GB16647@localhost>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2012 07:01 PM, Mathieu Desnoyers wrote:
->> #define do_for_each_ftrace_rec(pg, rec)                                          \
->> >         for (pg = ftrace_pages_start, rec = &pg->records[pg->index];             \
->> >              pg && rec == &pg->records[pg->index];                               \
->> >              pg = pg->next)                                                      \
->> >           for (rec = pg->records; rec < &pg->records[pg->index]; rec++)
-> Maybe in some cases there might be ways to combine the two loops into
-> one ? I'm not seeing exactly how to do it for this one, but it should
-> not be impossible. If the inner loop condition can be moved to the outer
-> loop, and if we use (blah ? loop1_conf : loop2_cond) to test for
-> different conditions depending on the context, and do the same for the
-> 3rd argument of the for() loop. The details elude me for now though, so
-> maybe it's complete non-sense ;)
+Em Thu, Sep 06, 2012 at 10:11:22AM +0800, Liang Li escreveu:
+> On 2012-09-06 06:41, Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
+> > > Does:
+> > > 
+> > > SLANG_INC ?= -I=/usr/include/slang
+> > > 
+> > > work any better? Its hard to tell from the above error which bit of the
+> > 
+> > I'll try later
+> > 
+> > > syntax is failing. Which gcc version is it?
+> > 
+> > [acme@sandy linux]$ gcc -v
+> > Using built-in specs.
+> > Target: x86_64-redhat-linux
+> > Configured with: ../configure --prefix=/usr --mandir=/usr/share/man
+> > --infodir=/usr/share/info
+> > --with-bugurl=http://bugzilla.redhat.com/bugzilla --enable-bootstrap
+> > --enable-shared --enable-threads=posix --enable-checking=release
+> > --with-system-zlib --enable-__cxa_atexit --disable-libunwind-exceptions
+> > --enable-gnu-unique-object
+> > --enable-languages=c,c++,objc,obj-c++,java,fortran,ada
+> > --enable-java-awt=gtk --disable-dssi
+> > --with-java-home=/usr/lib/jvm/java-1.5.0-gcj-1.5.0.0/jre
+> > --enable-libgcj-multifile --enable-java-maintainer-mode
+> > --with-ecj-jar=/usr/share/java/eclipse-ecj.jar
+> > --disable-libjava-multilib --with-ppl --with-cloog --with-tune=generic
+> > --with-arch_32=i686 --build=x86_64-redhat-linux
+> > Thread model: posix
+> > gcc version 4.4.6 20120305 (Red Hat 4.4.6-4) (GCC) 
+> > [acme@sandy linux]$
 > 
-> It might not be that useful for do_for_each_ftrace_rec, but if we can do
-> it for the hash table iterator, it might be worth it.
+> Seems like there is no slang.h installed. Could you please check:
+> 
+> $ find /usr/include/ -name slang.h
+> 
+> On my FC17:
+> 
+> $ find /usr/include/ -name slang.h
+> /usr/include/slang/slang.h
+> /usr/include/slang.h
+> $ rpm -qf /usr/include/slang.h
+> slang-devel-2.2.4-3.fc17.x86_64
+> $ rpm -qf /usr/include/slang/slang.h
+> slang-devel-2.2.4-3.fc17.x86_64
 
-So I think that for the hash iterator it might actually be simpler.
+[root@sandy ~]# find /usr/include/ -name slang.h
+/usr/include/slang/slang.h
+[root@sandy ~]# 
+[root@sandy ~]# rpm -qf /usr/include/slang/slang.h
+slang-devel-2.2.1-1.el6.x86_64
+ 
+> ---
+> 
+> And does 'export SLANG_INC=<to location of the slang.h>' works any
+> better? :)
 
-My solution to making 'break' work in the iterator is:
+Lemme process the other patches first, will try.
 
-	for (bkt = 0, node = NULL; bkt < HASH_SIZE(name) && node == NULL; bkt++)
-		hlist_for_each_entry(obj, node, &name[bkt], member)
-
-We initialize our node loop cursor with NULL in the external loop, and the
-external loop will have a new condition to loop while that cursor is NULL.
-
-My logic is that we can only 'break' when we are iterating over an object in the
-internal loop. If we're iterating over an object in that loop then 'node != NULL'.
-
-This way, if we broke from within the internal loop, the external loop will see
-node as not NULL, and so it will stop looping itself. On the other hand, if the
-internal loop has actually ended, then node will be NULL, and the outer loop
-will keep running.
-
-Is there anything I've missed?
-
-
-Thanks,
-Sasha
+- arnaldo
