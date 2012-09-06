@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229Ab2IFO37 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 10:29:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38092 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756166Ab2IFO36 (ORCPT
+	id S1756249Ab2IFObK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 10:31:10 -0400
+Received: from mga07.intel.com ([143.182.124.22]:22210 "EHLO
+	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754879Ab2IFObI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 10:29:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <1346773188.27919.13.camel@gandalf.local.home>
-References: <1346091725.19381.10.camel@pippen.local.home>
-	<CAM_iQpV9163UKQt8Kvroc6JyMQnv1tqG1rS5M2CBWzbo7XvJXQ@mail.gmail.com>
-	<1346773188.27919.13.camel@gandalf.local.home>
-Date: Thu, 6 Sep 2012 22:29:58 +0800
-Message-ID: <CAM_iQpUHYDT2hnt3h8fF33rp3O9c_VjEftOFUj-qdMdUkxo1tw@mail.gmail.com>
-Subject: Re: [PATCH] Add feature-removal-schedule.txt removal to feature-removal-schedule.txt
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 6 Sep 2012 10:31:08 -0400
+Subject: Re: [RFC,PATCH v2] efi: Add support for a UEFI variable filesystem
+From: Matt Fleming <matt.fleming@intel.com>
+To: Jeremy Kerr <jeremy.kerr@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Matt Domsch <Matt_Domsch@Dell.com>,
+        Peter Jones <pjones@redhat.com>
+In-Reply-To: <5048B1E8.1020904@canonical.com>
+References: <1346910035.47691.188651047712.1.gpush@pecola>
+	 <1346941120.4244.82.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <5048B1E8.1020904@canonical.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Date: Thu, 06 Sep 2012 15:30:51 +0100
+Message-ID: <1346941851.4244.87.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 4, 2012 at 11:39 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Wed, 2012-08-29 at 09:28 +0800, Cong Wang wrote:
->> On Tue, Aug 28, 2012 at 2:22 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
->> > The file feature-removal-schedule.txt is ignored by most people except
->> > for people that add to it. It's more of a global TODO list for
->> > developers than being anything useful by anyone.
->> >
->> > Add a feature removal of removing the feature-removal-schedule.txt.
->> >
->>
->> Hi, Steven,
->>
->> I sometimes remind people to remove features scheduled in this file,
->> by sending a proposed patch. ;)
->
-> At Kernel Summit, Linus went on a rant about this file. He said he hates
-> it and is totally useless. Basically, it is only used by us developers,
-> and is not used by normal users. As it is a dumping ground for all
-> developers, this file becomes the biggest conflict during merges that
-> Linus does.
->
-> There are better ways to tell users something is about to go away. My
-> preference is a nasty WARN_ON_ONCE() in the code when the feature is
-> used. People tend to report call traces, and you can either tell the
-> person, "don't use this" or you know that it is something that is
-> actually used and you can't remove it.
->
+(Cc'ing Peter Jones who wrote a auth deletion patch for efivars)
 
-I don't think feature-removal-schedule.txt is for kernel users, it
-is a kind of a TODO list for kernel developers.
+On Thu, 2012-09-06 at 22:23 +0800, Jeremy Kerr wrote:
+> Hi Matt,
+> 
+> > Am I correct in thinking that this filesystem doesn't handle deletion of
+> > authenticated variables?
+> 
+> Unless I'm missing something, this should work fine; we just pass the 
+> EFI_VARIABLE_AUTHENTICATION_2 descriptor (with the usual attribute 
+> header), but no data following the descriptor.
+
+I think this is the problematic chunk of code,
+
+static int efivars_unlink(struct inode *dir, struct dentry *dentry)             
+{                                                                               
+        struct efivar_entry *var = dentry->d_inode->i_private;                  
+        struct efivars *efivars = var->efivars;                                 
+        efi_status_t status;                                                    
+                                                                                
+        spin_lock(&efivars->lock);                                              
+                                                                                
+        status = efivars->ops->set_variable(var->var.VariableName,              
+                                            &var->var.VendorGuid,               
+                                            0, 0, NULL);                        
+
+For deleting authenticated variables Attributes, DataSize and Data need
+to be non-zero. I think DataSize == AuthInfo descriptor. Peter?
+
