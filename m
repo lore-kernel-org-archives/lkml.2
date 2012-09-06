@@ -1,137 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757303Ab2IFJYc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 05:24:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49088 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757034Ab2IFJYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 05:24:31 -0400
-Date: Thu, 6 Sep 2012 10:24:24 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Xishi Qiu <qiuxishi@huawei.com>, linux-mm@kvack.org,
+	id S1757213Ab2IFJZT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 05:25:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38242 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754712Ab2IFJZR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 05:25:17 -0400
+Date: Thu, 6 Sep 2012 02:25:12 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] memory-hotplug: bug fix race between isolation and
- allocation
-Message-ID: <20120906092424.GP11266@suse.de>
-References: <1346829962-31989-1-git-send-email-minchan@kernel.org>
- <1346829962-31989-4-git-send-email-minchan@kernel.org>
- <20120905094041.GF11266@suse.de>
- <20120906044903.GA16150@bbox>
+Subject: Re: [PATCH] virtio-blk: Fix kconfig option
+Message-ID: <20120906092512.GB5902@koverstreet-glaptop>
+References: <20120903044133.GA9980@moria.home.lan>
+ <87wr0ae26e.fsf@rustcorp.com.au>
+ <20120906074113.GA5902@koverstreet-glaptop>
+ <20120906084403.GD17656@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120906044903.GA16150@bbox>
+In-Reply-To: <20120906084403.GD17656@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 06, 2012 at 01:49:03PM +0900, Minchan Kim wrote:
-> > > __offline_isolated_pages
-> > > /*
-> > >  * BUG_ON hit or offline page
-> > >  * which is used by someone
-> > >  */
-> > > BUG_ON(!PageBuddy(page A));
+On Thu, Sep 06, 2012 at 11:44:03AM +0300, Michael S. Tsirkin wrote:
+> On Thu, Sep 06, 2012 at 12:41:13AM -0700, Kent Overstreet wrote:
+> > On Tue, Sep 04, 2012 at 03:53:53PM +0930, Rusty Russell wrote:
+> > > Kent Overstreet <koverstreet@google.com> writes:
 > > > 
-> > 
-> > offline_page calling BUG_ON because someone allocated the page is
-> > ridiculous. I did not spot where that check is but it should be changed. The
-> > correct action is to retry the isolation.
-> 
-> It is where __offline_isolated_pges.
-> 
-> ..
->         while (pfn < end_pfn) {
->                 if (!pfn_valid(pfn)) {
->                         pfn++;
->                         continue;
->                 }    
->                 page = pfn_to_page(pfn);
->                 BUG_ON(page_count(page));
->                 BUG_ON(!PageBuddy(page)); <---- HERE
->                 order = page_order(page);
-> ...
-> 
-> Comment of offline_isolated_pages says following as.
-> 
->         We cannot do rollback at this point
-> 
-> So if the comment is true, BUG_ON does make sense to me.
-
-It's massive overkill. I see no reason why it cannot return EBUSY all the
-way back up to offline_pages() and retry with the migration step.  It would
-both remove that BUG_ON and improve reliability of memory hot-remove.
-
-> But I don't see why we can't retry it as I look thorugh code.
-> Anyway, It's another story which isn't related to this patch.
-> 
-
-True.
-
-> > 
-> > > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > 
-> > At no point in the changelog do you actually say what he patch does :/
-> 
-> Argh, I will do.
-> 
-> > 
-> > > ---
-> > >  mm/page_isolation.c |    5 ++++-
-> > >  1 file changed, 4 insertions(+), 1 deletion(-)
+> > > > CONFIG_VIRTIO isn't exposed, everything else is supposed to select it
+> > > > instead.
 > > > 
-> > > diff --git a/mm/page_isolation.c b/mm/page_isolation.c
-> > > index acf65a7..4699d1f 100644
-> > > --- a/mm/page_isolation.c
-> > > +++ b/mm/page_isolation.c
-> > > @@ -196,8 +196,11 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn)
-> > >  			continue;
-> > >  		}
-> > >  		page = pfn_to_page(pfn);
-> > > -		if (PageBuddy(page))
-> > > +		if (PageBuddy(page)) {
-> > > +			if (get_page_migratetype(page) != MIGRATE_ISOLATE)
-> > > +				break;
-> > >  			pfn += 1 << page_order(page);
-> > > +		}
+> > > This is a slight mis-understanding.  It's supposed to be selected by
+> > > the particular driver, probably virtio_pci in your case.
 > > 
-> > It is possible the page is moved to the MIGRATE_ISOLATE list between when
-> > the page was freed to the buddy allocator and this check was made. The
-> > page->index information is stale and the impact is that the hotplug
-> > operation fails when it could have succeeded. That said, I think it is a
-> > very unlikely race that will never happen in practice.
-> 
-> I understand you mean move_freepages which I have missed. Right?
-
-Yes.
-
-> Then, I will fix it, too.
-> 
+> > So are you saying virtio-blk depends on virtio-pci? If so, the kconfig
+> > should have that.
 > > 
-> > More importantly, the effect of this path is that EBUSY gets bubbled all
-> > the way up and the hotplug operations fails. This is fine but as the page
-> > is free at the time this problem is detected you also have the option
-> > of moving the PageBuddy page to the MIGRATE_ISOLATE list at this time
-> > if you take the zone lock. This will mean you need to change the name of
-> > test_pages_isolated() of course.
+> > As is, VIRTIO_BLK just has:
+> > 	depends on EXPERIMENTAL && VIRTIO
+> > 
+> > which is flat out broken.
 > 
-> Sorry, I can't get your point. Could you elaborate it more?
+> I don't think anything is broken.
+> Can you show an example of a broken configuration?
 
-You detect a PageBuddy page but it's on the wrong list. Instead of returning
-and failing memory-hotremove, move the free page to the correct list at
-the time it is detected.
+Do you not understand the difference between depends an selects? Or did
+you not read my original mail?
 
-> Is it related to this patch?
+Flip off everything in drivers -> virtio
 
-No, it's not important and was a suggestion on how it could be made
-better. However, retrying hot-remove would be even better again. I'm not
-suggesting it be done as part of this series.
+Now go to drivers -> block and try to turn on virtio-blk.
 
--- 
-Mel Gorman
-SUSE Labs
+It's not listed!
+
+Now go back to drivers -> virtio and turn on (randomly) balloon.
+
+Go back to drivers -> block, and now you can turn on virtio-blk!
+
+Do you see what's wrong with this picture?
