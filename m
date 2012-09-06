@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411Ab2IFGby (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 02:31:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43792 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751325Ab2IFGbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 02:31:52 -0400
-Message-ID: <50484345.8040508@redhat.com>
-Date: Thu, 06 Sep 2012 08:31:33 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
+	id S1753404Ab2IFGdm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 02:33:42 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:39224 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751325Ab2IFGdk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 02:33:40 -0400
+Message-ID: <504843BA.2040808@gmail.com>
+Date: Thu, 06 Sep 2012 08:33:30 +0200
+From: Daniel Mack <zonque@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: Ric Wheeler <ricwheeler@gmail.com>
-CC: axboe@kernel.dk, Mike Snitzer <snitzer@redhat.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [Ping^3] Re: [PATCH] sg_io: allow UNMAP and WRITE SAME without
- CAP_SYS_RAWIO
-References: <1342801801-15617-1-git-send-email-pbonzini@redhat.com> <50195108.1090105@redhat.com> <503CA5BA.2040003@redhat.com> <50476480.9010302@redhat.com> <5047B38D.9000607@gmail.com>
-In-Reply-To: <5047B38D.9000607@gmail.com>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+CC: Takashi Iwai <tiwai@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>
+Subject: Re:
+References: <s5hmx1526mg.wl%tiwai@suse.de> <20120906060220.GA252@x4>
+In-Reply-To: <20120906060220.GA252@x4>
+X-Enigmail-Version: 1.4.4
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 05/09/2012 22:18, Ric Wheeler ha scritto:
+On 06.09.2012 08:02, Markus Trippelsdorf wrote:
+> On 2012.09.04 at 16:40 +0200, Takashi Iwai wrote:
+>> ----------------------------------------------------------------
+>> Sound fixes for 3.6-rc5
 >>
+>> There are nothing scaring, contains only small fixes for HD-audio and
+>> USB-audio:
+>> - EPSS regression fix and GPIO fix for HD-audio IDT codecs
+>> - A series of USB-audio regression fixes that are found since 3.5 kernel
+>>
+>> ----------------------------------------------------------------
+>> Daniel Mack (4):
+>>       ALSA: snd-usb: Fix URB cancellation at stream start
+>>       ALSA: snd-usb: restore delay information
+>         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+> The commit fbcfbf5f above causes the following lines to be printed
+> whenever I start a new song:
+
+Copied Pierre-Louis Bossart - he wrote the code in 294c4fb8 which this
+patch (fbcfbf5f) brings back now.
+
+> delay: estimated 0, actual 352
+> delay: estimated 353, actual 705
 > 
-> Hi Paolo,
+> (44.1 * 8 = 352.8)
 > 
-> Both of these commands are destructive. WRITE_SAME (if done without the
-> discard bits set) can also take a very long time to be destructive and
-> tie up the storage.
+> This happens with an USB-DAC that identifies itself as "C-Media USB
+> Headphone Set".
 
-FORMAT_UNIT has the same characteristics and yet it is allowed (btw, I
-don't think WRITE SAME slowness is limited to the case where a real
-write is requested; discarding can be just as slow).
+And you didn't you see these lines with 3.4?
 
-Also, the two new commands are anyway restricted to programs that have
-write access to the disk.  If you have read-only access, you won't be
-able to issue any destructive command (there is one exception, START
-STOP UNIT is allowed even with read-only capability and is somewhat
-destructive).
 
-Honestly, the only reason why these two commands weren't included, is
-that the current whitelist is heavily tailored towards CD/DVD burning.
+Daniel
 
-> I think that restricting them to CAP_SYS_RAWIO seems reasonable - better
-> to vet and give the appropriate apps the needed capability than to
-> widely open up the safety check?
-
-CAP_SYS_RAWIO is so wide in its scope, that anything that requires it is
-insecure.
-
-Paolo
