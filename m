@@ -1,34 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754135Ab2IFHYi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 03:24:38 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:64566 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751619Ab2IFHYh (ORCPT
+	id S1754232Ab2IFH1a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 03:27:30 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:53287 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752501Ab2IFH13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 03:24:37 -0400
+	Thu, 6 Sep 2012 03:27:29 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120905120036.GA4242@shlinux2.ap.freescale.net>
-References: <CA+HMz3hLcxbOZ19-yposJd3pQxJXAL_FkrCPmK8pYnj0hJeuAw@mail.gmail.com>
-	<20120905120036.GA4242@shlinux2.ap.freescale.net>
-Date: Thu, 6 Sep 2012 09:24:35 +0200
-Message-ID: <CACRpkdbC++SvZe_fHRhodEOGdUiGTzSBmsSAcs5808vVy-n4AQ@mail.gmail.com>
-Subject: Re: [PATCH] Chinese translation of Documentation/gpio.txt
+In-Reply-To: <1346767579.3160.4.camel@phoenix>
+References: <1346767579.3160.4.camel@phoenix>
+Date: Thu, 6 Sep 2012 09:19:28 +0200
+Message-ID: <CACRpkdZ1rwdBFqaSPDvgJsu7=6HmM4fDWRP-H7OqKezP9ORe-Q@mail.gmail.com>
+Subject: Re: [PATCH] gpio: sx150x: Use irq_data_get_irq_chip_data() at
+ appropriate places
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Dong Aisheng <b29396@freescale.com>, Harry Wei <harryxiyou@gmail.com>
-Cc: Ninja Tekkaman <tekkamanninja@gmail.com>,
-        Greg-Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>, kernel@vger.linux-kernel.cn
+To: Axel Lin <axel.lin@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Gregory Bean <gbean@codeaurora.org>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/9/5 Dong Aisheng <b29396@freescale.com>:
+On Tue, Sep 4, 2012 at 4:06 PM, Axel Lin <axel.lin@gmail.com> wrote:
 
-Thanks for your help Dong, Wei can you please check Dong's
-comments and submit a version with his ACK, and I'll apply it.
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+
+Thanks, applied!
 
 Yours,
 Linus Walleij
