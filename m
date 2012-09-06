@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760128Ab2IFAyb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 20:54:31 -0400
-Received: from mga14.intel.com ([143.182.124.37]:44677 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755275Ab2IFAya convert rfc822-to-8bit (ORCPT
+	id S1760130Ab2IFBB5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 21:01:57 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:57381 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760096Ab2IFBBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 20:54:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,377,1344236400"; 
-   d="scan'208";a="141983072"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: Daniel Vetter <daniel@ffwll.ch>, "Shi, Yang A" <yang.a.shi@intel.com>
-CC: "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
-	<linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "alexander.deucher@amd.com" <alexander.deucher@amd.com>,
-        "airlied@redhat.com" <airlied@redhat.com>
-Subject: RE: [Patch 0/1]drm_irq: Introducing the irq_thread support
-Thread-Topic: [Patch 0/1]drm_irq: Introducing the irq_thread support
-Thread-Index: AQHNi2ovGw34DfcXvEyjDrzHnr2E5pd7VNaAgAAFbACAASF8gA==
-Date: Thu, 6 Sep 2012 00:54:05 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A177FD0@SHSMSX101.ccr.corp.intel.com>
-References: <27240C0AC20F114CBF8149A2696CBE4A177306@SHSMSX101.ccr.corp.intel.com>
- <20120905132724.GC5357@phenom.ffwll.local>
- <E3ED5BF57CCD1C40876FA2D3385ED5D30FD781AC@SHSMSX102.ccr.corp.intel.com>
- <20120905153204.GD5357@phenom.ffwll.local>
-In-Reply-To: <20120905153204.GD5357@phenom.ffwll.local>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 5 Sep 2012 21:01:55 -0400
 MIME-Version: 1.0
+In-Reply-To: <20120905234220.GA30393@kroah.com>
+References: <1344929718-22736-1-git-send-email-tmshlvck@gmail.com>
+	<1346887016-10415-1-git-send-email-tmshlvck@gmail.com>
+	<20120905234220.GA30393@kroah.com>
+Date: Thu, 6 Sep 2012 03:01:54 +0200
+Message-ID: <CAEB7QLD2wbdoDFOzRbL39ZPVVtyf5ZYSqz0Y3TTZx3sKQKat-w@mail.gmail.com>
+Subject: Re: [PATCHv5 1/1] uartclk value from serial_core exposed to sysfs
+From: Tomas Hlavacek <tmshlvck@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: alan@linux.intel.com, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, marek.vasut@gmail.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Well, you cant use the pre_install/post_install hooks the drm_irq code provides,
-> but yes, just do the request_irq in your driver code at the right time, with the
-> right parameters. Much easier than adding code to a part of the drm core
-> fraught with backwards-compat stuff no one really wants to touch ... All the
-> additional stuff besides calling request_irq and the driver hooks that
-> drm_irq_install does is really just to support old dri1 userspace.
-> 
-Please have a look for the patch, I just added the callback of irq thread handler, default is NULL without set,
-So it should be no impact with others.
+Hello Greg,
 
-In case irq threadler func is NULL, it equals to request_irq, thanks.
+On Thu, Sep 6, 2012 at 1:42 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Thu, Sep 06, 2012 at 01:16:56AM +0200, Tomas Hlavacek wrote:
+>> Added file /sys/devices/.../tty/ttySX/uartclk to allow reading
+>> uartclk value in struct uart_port in serial_core via sysfs.
+>>
+>> tty_register_device() has been generalized and refactored in order
+>> to add support for setting drvdata and attribute_group to the device.
+>>
+>> Signed-off-by: Tomas Hlavacek <tmshlvck@gmail.com>
+>> ---
+>>  Documentation/ABI/testing/sysfs-tty |    9 ++++++
+>>  drivers/tty/serial/serial_core.c    |   36 ++++++++++++++++++++-
+>>  drivers/tty/tty_io.c                |   59 +++++++++++++++++++++++++++++++++--
+>>  include/linux/tty.h                 |    4 +++
+>>  4 files changed, 104 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/Documentation/ABI/testing/sysfs-tty b/Documentation/ABI/testing/sysfs-tty
+>> index b138b66..2f10855 100644
+>
+> Odd, what tree did you make this against?  It doesn't apply at all, even
+> if I mess with it to try a --3way merge, it still throws up a ton of
+> conflicts.
+>
+> Care to do it against my tty-next branch in git?
+
+I did it wrong obviously. Sorry. I am resending it (it is going to be
+against tty-next branch in
+git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git, I hope
+it is right this time).
+
+Tomas
