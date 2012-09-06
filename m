@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598Ab2IFMym (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 08:54:42 -0400
-Received: from na3sys009aog128.obsmtp.com ([74.125.149.141]:33223 "EHLO
-	na3sys009aog128.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755413Ab2IFMud (ORCPT
+	id S1755454Ab2IFMzK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 08:55:10 -0400
+Received: from na3sys009aog130.obsmtp.com ([74.125.149.143]:39910 "EHLO
+	na3sys009aog130.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754997Ab2IFMu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 08:50:33 -0400
+	Thu, 6 Sep 2012 08:50:28 -0400
 From: Felipe Balbi <balbi@ti.com>
 To: Greg KH <gregkh@linuxfoundation.org>
 Cc: alan@linux.intel.com, Tony Lindgren <tony@atomide.com>,
@@ -19,9 +19,9 @@ Cc: alan@linux.intel.com, Tony Lindgren <tony@atomide.com>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Shubhrajyoti Datta <shubhrajyoti@ti.com>,
         Sourav Poddar <sourav.poddar@ti.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH v4 08/21] serial: omap: set dev->drvdata before enabling pm_runtime
-Date: Thu,  6 Sep 2012 15:45:27 +0300
-Message-Id: <1346935540-1792-9-git-send-email-balbi@ti.com>
+Subject: [PATCH v4 06/21] serial: omap: move THRE check to transmit_chars()
+Date: Thu,  6 Sep 2012 15:45:25 +0300
+Message-Id: <1346935540-1792-7-git-send-email-balbi@ti.com>
 X-Mailer: git-send-email 1.7.12.rc3
 In-Reply-To: <1346935540-1792-1-git-send-email-balbi@ti.com>
 References: <20120906122948.GC29202@arwen.pp.htv.fi>
@@ -30,39 +30,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-by the time we call our first pm_runtme_get_sync()
-after enable pm_runtime, our resume method might
-be called. To avoid problems, we must make sure
-that our dev->drvdata is set correctly before
-our resume method gets called.
+since all other IRQ types now do all necessary
+checks inside their handlers, transmit_chars()
+was the only one left expecting serial_omap_irq()
+to check THRE for it. We can move THRE check to
+transmit_chars() in order to make serial_omap_irq()
+more uniform.
 
 Tested-by: Shubhrajyoti D <shubhrajyoti@ti.com>
 Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/tty/serial/omap-serial.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/serial/omap-serial.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-index b2043df..8a696a4 100644
+index 9c0a4ae..d3fbb70 100644
 --- a/drivers/tty/serial/omap-serial.c
 +++ b/drivers/tty/serial/omap-serial.c
-@@ -1333,6 +1333,7 @@ static int serial_omap_probe(struct platform_device *pdev)
- 	serial_omap_uart_wq = create_singlethread_workqueue(up->name);
- 	INIT_WORK(&up->qos_work, serial_omap_uart_qos_work);
- 
-+	platform_set_drvdata(pdev, up);
- 	pm_runtime_use_autosuspend(&pdev->dev);
- 	pm_runtime_set_autosuspend_delay(&pdev->dev,
- 			omap_up_info->autosuspend_timeout);
-@@ -1352,7 +1353,6 @@ static int serial_omap_probe(struct platform_device *pdev)
- 
- 	pm_runtime_mark_last_busy(up->dev);
+@@ -196,11 +196,14 @@ static void serial_omap_stop_rx(struct uart_port *port)
  	pm_runtime_put_autosuspend(up->dev);
--	platform_set_drvdata(pdev, up);
- 	return 0;
+ }
  
- err_add_port:
+-static void transmit_chars(struct uart_omap_port *up)
++static void transmit_chars(struct uart_omap_port *up, unsigned int lsr)
+ {
+ 	struct circ_buf *xmit = &up->port.state->xmit;
+ 	int count;
+ 
++	if (!(lsr & UART_LSR_THRE))
++		return;
++
+ 	if (up->port.x_char) {
+ 		serial_out(up, UART_TX, up->port.x_char);
+ 		up->port.icount.tx++;
+@@ -370,8 +373,7 @@ static inline irqreturn_t serial_omap_irq(int irq, void *dev_id)
+ 			check_modem_status(up);
+ 			break;
+ 		case UART_IIR_THRI:
+-			if (lsr & UART_LSR_THRE)
+-				transmit_chars(up);
++			transmit_chars(up, lsr);
+ 			break;
+ 		case UART_IIR_RX_TIMEOUT:
+ 			/* FALLTHROUGH */
 -- 
 1.7.12.rc3
 
