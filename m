@@ -1,128 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933199Ab2IFVTY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 17:19:24 -0400
-Received: from ironport2-out.teksavvy.com ([206.248.154.182]:59311 "EHLO
-	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933142Ab2IFVTW (ORCPT
+	id S933213Ab2IFVT5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 17:19:57 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:60285 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933142Ab2IFVT4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 17:19:22 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAG6Zu0/O+Ip3/2dsb2JhbABEtBGBCIIVAQEEATobASMQCxUDLhQlJBOICQW6CYsIhFpiA5UajhmBWIMFgTwa
-X-IronPort-AV: E=Sophos;i="4.75,637,1330923600"; 
-   d="scan'208";a="197737764"
-Date: Thu, 6 Sep 2012 17:18:59 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH tip/core/rcu 23/23] rcu: Simplify quiescent-state
- detection
-Message-ID: <20120906211858.GA26173@Krystal>
-References: <20120830181811.GA29154@linux.vnet.ibm.com>
- <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346350718-30937-23-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346942162.18408.25.camel@twins>
- <20120906200138.GR2448@linux.vnet.ibm.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-In-Reply-To: <20120906200138.GR2448@linux.vnet.ibm.com>
-X-Editor: vi
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 6 Sep 2012 17:19:56 -0400
+From: Tomas Hlavacek <tmshlvck@gmail.com>
+To: gregkh@linuxfoundation.org, alan@linux.intel.com,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: marek.vasut@gmail.com, Tomas Hlavacek <tmshlvck@gmail.com>
+Subject: [PATCH] tty_register_device_attr updated for tty-next
+Date: Thu,  6 Sep 2012 23:17:47 +0200
+Message-Id: <1346966267-1780-1-git-send-email-tmshlvck@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> On Thu, Sep 06, 2012 at 04:36:02PM +0200, Peter Zijlstra wrote:
-> > On Thu, 2012-08-30 at 11:18 -0700, Paul E. McKenney wrote:
-> > > From: "Paul E. McKenney" <paul.mckenney@linaro.org>
-> > > 
-> > > The current quiescent-state detection algorithm is needlessly
-> > > complex.
-> > 
-> > Heh! Be careful, we might be led into believing all this RCU is actually
-> > really rather simple and this complexity is a bug on your end ;-)
-> 
-> Actually, the smallest "toy" implementation of RCU is only about 20
-> lines of code -- and on a mythical sequentially consistent system, it
-> would be smaller still.  Of course, the Linux kernel implementation if
-> somewhat larger.  Something about wanting scalability above a few tens of
-> CPUs, real-time response (also on huge numbers of CPUs), energy-efficient
-> handling of dyntick-idle mode, detection of stalled CPUs, and so on.  ;-)
-> 
-> > >   It records the grace-period number corresponding to
-> > > the quiescent state at the time of the quiescent state, which
-> > > works, but it seems better to simply erase any record of previous
-> > > quiescent states at the time that the CPU notices the new grace
-> > > period.  This has the further advantage of removing another piece
-> > > of RCU for which lockless reasoning is required. 
-> > 
-> > So why didn't you do that from the start? :-)
-> 
-> Because I was slow and stupid!  ;-)
-> 
-> > That is, I'm curious to know some history, why was it so and what led
-> > you to this insight?
-> 
-> I had historically (as in for almost 20 years now) used a counter
-> to track grace periods.  Now these are in theory subject to integer
-> overflow, but DYNIX/ptx was non-preemptible, so the general line of
-> reasoning was that anything that might stall long enough for even a 32-bit
-> grace-period counter to overflow would necessarily stall grace periods,
-> thus preventing overflow.
-> 
-> Of course, the advent of CONFIG_PREEMPT in the Linux kernel invalidated
-> this assumption, but for most uses, if the grace-period counter overflows,
-> you have waited way more than a grace period, so who cares?
-> 
-> Then combination of TREE_RCU and dyntick-idle came along, and it became
-> necessary to more carefully associate quiescent states with the corresponding
-> grace period.  Now here overflow is dangerous, because it can result in
-> associating an ancient quiescent state with the current grace period.
-> But my attitude was that if you have a task preempted for more than one
-> year, getting soft-lockup warnings every two minutes during that time,
-> well, you got what you deserved.  And even then at very low probability.
-> 
-> However, formal validation software (such as Promela) do not take kindly
-> to free-running counters.  The usual trick is to use a much narrower
-> counter.  But that would mean that any attempted mechanical validation
-> would give a big fat false positive on the counter used to associate
-> quiescent states with grace periods.  Because I have a long-term goal
-> of formally validating RCU is it sits in the Linux kernel, that counter
-> had to go.
+Added tty_device_create_release() and bound to dev->release in
+tty_register_device_attr().
+Added tty_port_register_device_attr() and used in uart_add_one_port()
+instead of tty_register_device_attr().
 
-I believe this approach bring the kernel RCU implementation slightly
-closer to the userspace RCU implementation we use for 32-bit QSBR and
-the 32/64-bit "urcu mb" variant for libraries, of which we've indeed
-been able to make a complete formal model in Promela. Simplifying the
-algorithm (mainly its state-space) in order to let formal verifiers cope
-with it entirely has a lot of value I think: it lets us mechanically
-verify safety and progress. A nice way to lessen the number of headaches
-caused by RCU! ;-)
+Signed-off-by: Tomas Hlavacek <tmshlvck@gmail.com>
+---
+ drivers/tty/serial/serial_core.c |    8 ++++----
+ drivers/tty/tty_io.c             |    7 +++++++
+ drivers/tty/tty_port.c           |   24 ++++++++++++++++++++++++
+ include/linux/tty.h              |    4 ++++
+ 4 files changed, 39 insertions(+), 4 deletions(-)
 
-Thanks!
-
-Mathieu
-
-> 
-> And I do believe that the result is easier for humans to understand, so
-> it is all to the good.
-> 
-> This time, at least.  ;-)
-> 
-> 							Thanx, Paul
-> 
-
+diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+index f629bdf..046279c 100644
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -2313,9 +2313,9 @@ static ssize_t uart_get_attr_uartclk(struct device *dev,
+ 	struct device_attribute *attr, char *buf)
+ {
+ 	int ret;
+-
+ 	struct tty_port *port = dev_get_drvdata(dev);
+ 	struct uart_state *state = container_of(port, struct uart_state, port);
++
+ 	mutex_lock(&state->port.mutex);
+ 	ret = snprintf(buf, PAGE_SIZE, "%d\n", state->uart_port->uartclk);
+ 	mutex_unlock(&state->port.mutex);
+@@ -2330,7 +2330,7 @@ static struct attribute *tty_dev_attrs[] = {
+ 	NULL,
+ 	};
+ 
+-static struct attribute_group tty_dev_attr_group = {
++static const struct attribute_group tty_dev_attr_group = {
+ 	.attrs = tty_dev_attrs,
+ 	};
+ 
+@@ -2392,8 +2392,8 @@ int uart_add_one_port(struct uart_driver *drv, struct uart_port *uport)
+ 	 * Register the port whether it's detected or not.  This allows
+ 	 * setserial to be used to alter this ports parameters.
+ 	 */
+-	tty_dev = tty_register_device_attr(drv->tty_driver, uport->line,
+-			uport->dev, port, tty_dev_attr_groups);
++	tty_dev = tty_port_register_device_attr(port, drv->tty_driver,
++			uport->line, uport->dev, port, tty_dev_attr_groups);
+ 	if (likely(!IS_ERR(tty_dev))) {
+ 		device_set_wakeup_capable(tty_dev, 1);
+ 	} else {
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index dcb30d5..8a5a8b0 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -3045,6 +3045,12 @@ struct device *tty_register_device(struct tty_driver *driver, unsigned index,
+ }
+ EXPORT_SYMBOL(tty_register_device);
+ 
++static void tty_device_create_release(struct device *dev)
++{
++	pr_debug("device: '%s': %s\n", dev_name(dev), __func__);
++	kfree(dev);
++}
++
+ /**
+  *	tty_register_device_attr - register a tty device
+  *	@driver: the tty driver that describes the tty device
+@@ -3103,6 +3109,7 @@ struct device *tty_register_device_attr(struct tty_driver *driver,
+ 	dev->devt = devt;
+ 	dev->class = tty_class;
+ 	dev->parent = device;
++	dev->release = tty_device_create_release;
+ 	dev_set_name(dev, "%s", name);
+ 	dev->groups = attr_grp;
+ 	dev_set_drvdata(dev, drvdata);
+diff --git a/drivers/tty/tty_port.c b/drivers/tty/tty_port.c
+index 96302f4..d7bdd8d 100644
+--- a/drivers/tty/tty_port.c
++++ b/drivers/tty/tty_port.c
+@@ -73,6 +73,30 @@ struct device *tty_port_register_device(struct tty_port *port,
+ }
+ EXPORT_SYMBOL_GPL(tty_port_register_device);
+ 
++/**
++ * tty_port_register_device_attr - register tty device
++ * @port: tty_port of the device
++ * @driver: tty_driver for this device
++ * @index: index of the tty
++ * @device: parent if exists, otherwise NULL
++ * @drvdata: Driver data to be set to device.
++ * @attr_grp: Attribute group to be set on device.
++ *
++ * It is the same as tty_register_device_attr except the provided @port is
++ * linked to a concrete tty specified by @index. Use this or tty_port_install
++ * (or both). Call tty_port_link_device as a last resort.
++ */
++struct device *tty_port_register_device_attr(struct tty_port *port,
++		struct tty_driver *driver, unsigned index,
++		struct device *device, void *drvdata,
++		const struct attribute_group **attr_grp)
++{
++	tty_port_link_device(port, driver, index);
++	return tty_register_device_attr(driver, index, device, drvdata,
++			attr_grp);
++}
++EXPORT_SYMBOL_GPL(tty_port_register_device_attr);
++
+ int tty_port_alloc_xmit_buf(struct tty_port *port)
+ {
+ 	/* We may sleep in get_zeroed_page() */
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index 599d603..1509b86 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -507,6 +507,10 @@ extern void tty_port_link_device(struct tty_port *port,
+ extern struct device *tty_port_register_device(struct tty_port *port,
+ 		struct tty_driver *driver, unsigned index,
+ 		struct device *device);
++extern struct device *tty_port_register_device_attr(struct tty_port *port,
++		struct tty_driver *driver, unsigned index,
++		struct device *device, void *drvdata,
++		const struct attribute_group **attr_grp);
+ extern int tty_port_alloc_xmit_buf(struct tty_port *port);
+ extern void tty_port_free_xmit_buf(struct tty_port *port);
+ extern void tty_port_put(struct tty_port *port);
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+1.7.10.4
+
