@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751899Ab2IFMD3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 08:03:29 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:39957 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751020Ab2IFMD1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 08:03:27 -0400
+	id S1752608Ab2IFMGa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 08:06:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38064 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751020Ab2IFMG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 08:06:28 -0400
+Date: Thu, 6 Sep 2012 14:06:23 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        Dave Jones <davej@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v2] memcg: first step towards hierarchical controller
+Message-ID: <20120906120623.GE22426@dhcp22.suse.cz>
+References: <20120904130905.GA15683@dhcp22.suse.cz>
+ <504601B8.2050907@parallels.com>
+ <20120904143552.GB15683@dhcp22.suse.cz>
+ <50461241.5010300@parallels.com>
+ <20120904145414.GC15683@dhcp22.suse.cz>
+ <50461610.30305@parallels.com>
+ <20120904162501.GE15683@dhcp22.suse.cz>
+ <504709D4.2010800@parallels.com>
+ <20120905144942.GH5388@dhcp22.suse.cz>
+ <20120905201238.GE13737@google.com>
 MIME-Version: 1.0
-In-Reply-To: <20120906134830.52cbdfec@endymion.delvare>
-References: <20120906134830.52cbdfec@endymion.delvare>
-Date: Thu, 6 Sep 2012 14:03:27 +0200
-X-Google-Sender-Auth: xkxzRklr4rlQbzV9Vu8pBlRHWbs
-Message-ID: <CAMuHMdUXvB8P9J26KbMXeicv0BH=gdaCHaRq-ZAP=73hn+ThMw@mail.gmail.com>
-Subject: Re: [PATCH] swim: Add missing spinlock init
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Finn Thain <fthain@telegraphics.com.au>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120905201238.GE13737@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 6, 2012 at 1:48 PM, Jean Delvare <khali@linux-fr.org> wrote:
-> It doesn't seem this spinlock was properly initialized.
+On Wed 05-09-12 13:12:38, Tejun Heo wrote:
+> Hello, Michal.
+> 
+> On Wed, Sep 05, 2012 at 04:49:42PM +0200, Michal Hocko wrote:
+> > Can we settle on the following 3 steps?
+> > 1) warn about "flat" hierarchies (give it X releases) - I will push it
+> >    to as many Suse code streams as possible (hope other distributions
+> >    could do the same)
+> 
+> I think I'm just gonna trigger WARN from cgroup core if anyone tries
+> to create hierarchy with a controller which doesn't support full
+> hierarchy.  WARN_ON_ONCE() at first and then WARN_ON() on each
+> creation later on.
 
-Quiet possible. There's no SMP on m68k, so all spinlock ops expand to nothing.
+How do you find out that a controller is not fully hierarchical? Memory
+controller can be both.
 
-> Signed-off-by: Jean Delvare <khali@linux-fr.org>
-> Cc: Finn Thain <fthain@telegraphics.com.au>
-> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
-> I can't even build-test this.
->
->  drivers/block/swim.c |    1 +
->  1 file changed, 1 insertion(+)
->
-> --- linux-3.6-rc4.orig/drivers/block/swim.c     2012-07-21 22:58:29.000000000 +0200
-> +++ linux-3.6-rc4/drivers/block/swim.c  2012-09-06 13:09:26.713382169 +0200
-> @@ -845,6 +845,7 @@ static int __devinit swim_floppy_init(st
->                 swd->unit[drive].swd = swd;
->         }
->
-> +       spin_lock_init(&swd->lock);
->         swd->queue = blk_init_queue(do_fd_request, &swd->lock);
->         if (!swd->queue) {
->                 err = -ENOMEM;
+> > 2) flip the default on the root cgroup & warn when somebody tries to
+> >    change it to 0 (give it another X releases) that the knob will be
+> >    removed
+> > 3) remove the knob and the whole nonsese
+> > 4) revert 3 if somebody really objects
+> 
+> If we can get to 3, I don't think 4 would be a problem.
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Agreed.
+-- 
+Michal Hocko
+SUSE Labs
