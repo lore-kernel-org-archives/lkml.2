@@ -1,127 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758233Ab2IFKvq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 06:51:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50447 "EHLO mx1.redhat.com"
+	id S1758200Ab2IFLIF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 07:08:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10250 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753369Ab2IFKvo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 06:51:44 -0400
-Date: Thu, 6 Sep 2012 13:53:01 +0300
+	id S1752062Ab2IFLID (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 07:08:03 -0400
+Date: Thu, 6 Sep 2012 14:09:22 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: rusty@rustcorp.com.au, fes@google.com, aarcange@redhat.com,
-        riel@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mikew@google.com, yinghan@google.com,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH] virtio-balloon spec: provide a version of the "silent
- deflate" feature that works
-Message-ID: <20120906105301.GC32325@redhat.com>
-References: <1346917610-14568-1-git-send-email-pbonzini@redhat.com>
- <20120906084736.GF17656@redhat.com>
- <50486BB2.7070108@redhat.com>
- <20120906094442.GA22816@redhat.com>
- <50487382.8030303@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] virtio-blk: Fix kconfig option
+Message-ID: <20120906110922.GD32325@redhat.com>
+References: <20120903044133.GA9980@moria.home.lan>
+ <87wr0ae26e.fsf@rustcorp.com.au>
+ <20120906074113.GA5902@koverstreet-glaptop>
+ <20120906084403.GD17656@redhat.com>
+ <20120906092512.GB5902@koverstreet-glaptop>
+ <20120906094956.GB22816@redhat.com>
+ <20120906100247.GA27355@koverstreet-glaptop>
+ <20120906101842.GB32325@redhat.com>
+ <20120906103143.GA22299@moria.home.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <50487382.8030303@redhat.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120906103143.GA22299@moria.home.lan>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 06, 2012 at 11:57:22AM +0200, Paolo Bonzini wrote:
-> Il 06/09/2012 11:44, Michael S. Tsirkin ha scritto:
-> >> In fact, it's not clear how the driver should use the feature.  My guess
-> >> is that, if it wants to use silent deflate, it tries to negotiate
-> >> VIRTIO_BALLOON_F_MUST_TELL_HOST, and can use silent deflate if
-> >> negotiation fails.  This is against the logic of all other features.
+On Thu, Sep 06, 2012 at 03:31:44AM -0700, Kent Overstreet wrote:
+> On Thu, Sep 06, 2012 at 01:18:43PM +0300, Michael S. Tsirkin wrote:
+> > On Thu, Sep 06, 2012 at 03:02:48AM -0700, Kent Overstreet wrote:
+> > > On Thu, Sep 06, 2012 at 12:49:56PM +0300, Michael S. Tsirkin wrote:
+> > > > On Thu, Sep 06, 2012 at 02:25:12AM -0700, Kent Overstreet wrote:
+> > > > > On Thu, Sep 06, 2012 at 11:44:03AM +0300, Michael S. Tsirkin wrote:
+> > > > > > On Thu, Sep 06, 2012 at 12:41:13AM -0700, Kent Overstreet wrote:
+> > > > > > > On Tue, Sep 04, 2012 at 03:53:53PM +0930, Rusty Russell wrote:
+> > > > > > > > Kent Overstreet <koverstreet@google.com> writes:
+> > > > > > > > 
+> > > > > > > > > CONFIG_VIRTIO isn't exposed, everything else is supposed to select it
+> > > > > > > > > instead.
+> > > > > > > > 
+> > > > > > > > This is a slight mis-understanding.  It's supposed to be selected by
+> > > > > > > > the particular driver, probably virtio_pci in your case.
+> > > > > > > 
+> > > > > > > So are you saying virtio-blk depends on virtio-pci? If so, the kconfig
+> > > > > > > should have that.
+> > > > > > > 
+> > > > > > > As is, VIRTIO_BLK just has:
+> > > > > > > 	depends on EXPERIMENTAL && VIRTIO
+> > > > > > > 
+> > > > > > > which is flat out broken.
+> > > > > > 
+> > > > > > I don't think anything is broken.
+> > > > > > Can you show an example of a broken configuration?
+> > > > > 
+> > > > > Do you not understand the difference between depends an selects?
+> > > > > Or did you not read my original mail?
+> > > > > Flip off everything in drivers -> virtio
+> > > > > 
+> > > > > Now go to drivers -> block and try to turn on virtio-blk.
+> > > > > 
+> > > > > It's not listed!
+> > > > 
+> > > > Yes. Because you disabled all virtio backends.
+> > > > It does not make sense to have any frontends.
+> > > 
+> > > How's a user - or even another kernel developer who isn't familiar with
+> > > virtio - supposed to know that?
+> > > 
+> > > I still don't know what exactly a virtio backend is - the term isn't
+> > > even mentioned anywhere that I've seen.
+> > > 
+> > > Whatever it is though virtio-blk should be depending on _that_, not a
+> > > config option that _isn't exposed in the menu_!
+> > > 
+> > > > > Now go back to drivers -> virtio and turn on (randomly) balloon.
+> > > > > 
+> > > > > Go back to drivers -> block, and now you can turn on virtio-blk!
+> > > > > 
+> > > > > Do you see what's wrong with this picture?
+> > > > 
+> > > > Yes. You got unlucky with your random guess.
+> > > > It's a bug in balloon kconfig: it should not
+> > > > select virtio.
+> > > > I sent a patch to fix that yesterday.
+> > > 
+> > > Then it's also a bug in the comments at the top of
+> > > drivers/virtio/Kconfig.
+> > > 
+> > > And besides that, how the _hell_ is a user supposed to know to turn on
+> > > VIRTIO_PCI before VIRTIO_BLK? It's not documented anywhere (if that is
+> > > what's supposed to happen! I still don't know)
 > > 
-> > Let's take a step back from the implementation details.
-> > You are trying to add a new feature bit, after all.
-> > Why? Why is silent deflate useful? This is what is
-> > missing in all this discussion. If it is not useful
-> > we do not need a bit for it.
+> > Well, what kind of device do you have? Tell us :)
+> > If it's a virtio pci device,
+> > you need to enable virtio-pci and virtio-blk.
 > 
-> It is useful because it lets guests inflate the balloon aggressively,
-> and then use ballooned-out pages even in places where the guest OS
-> cannot sleep, such as kmalloc(GFP_ATOMIC).
+> I run qemu with -drive if=virtio. You tell me!
 
-Interesting.
-Do you intend to develop a driver patch using this?  I'd like to see how
-that works.  Because if not, IMO it's best to wait until someone asks
-for it.
+-drive if= is a compatibility option. qemu makes
+an effort to guess what it is you want to do.
+Result is usually correct but it means people building
+their own kernels get confused.
 
-> >>> Can you show a scenario with old driver/new hypervisor or
-> >>> new driver/old hypervisor that fails?
-> >
-> > Sorry this is not the example I asked for.  Please give and example
-> > without migration.
+For x86 kvm the modern equivalent is:
+
+-device virtio-blk-pci,drive=foobar -drive if=no,...
+
+If you use this you get what you asked for :).
+
+Yes this usage is not documented anywhere, but this is
+not guest driver's problem.
+
+> Better yet, tell me how the user is supposed to figure it out!
+
+As usual when you do not know which driver to select.
+Boot a distro kernel and look around.
+Where is your virtio device? On a pci bus?
+There you are.
+
 > > 
-> > Migration is qemu's problem: it is hypervisor's job to
-> > make sure guest sees no change during migration.
+> > > and even if it was
+> > > documented, having one kconfig option depend on something that's exposed
+> > > in a _completely different menu_ is just made of fail.
+> > 
+> > Fine, but why pick on virtio?
+> > This is extremely common in kconfig.
+> > For example, a ton of network drivers depend
+> > on PCI, it's exactly the same thing.
 > 
-> Quoting my message: "Of course you can just teach QEMU to be smarter,
-> but that would be a one-off hack for the only ill-defined feature that
-> says something is _not_ supported".
->
-> Currently migration works the same way for all virtio devices,
-> and
-> assumes that features are defined only in the "positive" direction:
-> drivers request features if they want to use it, devices provide
-> features to say they support something.
+> Never noticed where CONFIG_PCI is exposed in bus options?
 
-Well this approach is buggy. If I reread features after migration what
-do I see? Something changed right? So this is a bug. Migration should
-not change hardware. And it is not a "one off" thing it is
-fundamental for any hardware.
+I see it:
 
-Fix that in qemu, and the problem goes away without spec changes.
+CONFIG_PCI:
+  │ Find out whether you have a PCI motherboard. PCI is the name of a │  
+  │ bus system, i.e. the way the CPU talks to the other stuff inside │  
+  │ your box. Other bus systems are ISA, EISA, MicroChannel (MCA) or │  
+  │ VESA. If you have PCI, say Y, otherwise N.  │  
 
-> Instead, in the case of this feature, the driver requests it before
-> relying on its lack (which is odd);
+> Nope, not the same thing.
 
-Which code in driver do you refer to?
+You just happen to know what PCI is but not what VIRTIO PCI is.
+This is fair enough, but not sure how to help in this case.
+Your patch won't help though.
 
-> the device provides if they do not
-> support something (which is wrong).
-
-Not support?
-It just seems to be asking guest to tell it about deflates.
-If guest acks the bit, we know it will. If it does not,
-it will not.
-
->  You can see that this just cannot
-> provide backwards-compatibility in the device;
-
-Sorry I do not understand this meta argument.
-There should be an example where a driver and device
-fail to work together. And without migration: as
-I showed migration is simply broken atm for
-an unrelated reason. Otherwise all's well.
-
-> it happens to work only
-> because the feature was there in the first version of the spec.
-
-This is how we do compatiblity in virtio. If we want driver to do
-something, we add a feature and it can ack, if it does we know it will
-do what we want.  Another example is network announce bit.  If driver
-acks it, we know we do not need to send gratitious arp from qemu.  You
-are saying it is also broken?
-
-> > It should be able to do this with any hardware it emulates,
-> > there should be no need to change hardware to make it
-> > "migrateable" somehow.
-> 
-> Of course, but if we can fix the hardware with no bad effects, let's do
-> that instead.
-> 
-> Paolo
-
-Don't fix what is not broken. We get to carry compatibility
-in both driver and host for a long time for each feature.
-
-Note: adding
-new features adds zero value in this respect - it will not
-allow simplifying the hypervisor.
 -- 
 MST
