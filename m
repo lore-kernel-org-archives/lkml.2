@@ -1,143 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755156Ab2IFCfy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 22:35:54 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52999 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754916Ab2IFCfv (ORCPT
+	id S1754868Ab2IFCqV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 22:46:21 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30833 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754058Ab2IFCqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 22:35:51 -0400
-Message-ID: <50480BFB.8050501@gmail.com>
-Date: Thu, 06 Sep 2012 10:35:39 +0800
-From: qiuxishi <qiuxishi@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: mgorman@suse.de
-CC: Minchan Kim <minchan@kernel.org>, akpm@linux-foundation.org,
-        kamezawa.hiroyu@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        qiuxishi@huawei.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] memory-hotplug: bug fix race between isolation and
- allocation
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 5 Sep 2012 22:46:19 -0400
+X-Authority-Analysis: v=2.0 cv=Hsb06jvS c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=PUxD9mNbTSIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=qZ4tJI1EYMwA:10 a=2CfSEKolKS7-k0w3SXMA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1346899577.1680.11.camel@gandalf.local.home>
+Subject: Re: [RFC PATCH v2] trace: Move trace event enable from fs_initcall
+ to early_initcall
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ezequiel Garcia <elezegarcia@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, tim.bird@am.sony.com,
+        lizefan@huawei.com
+Date: Wed, 05 Sep 2012 22:46:17 -0400
+In-Reply-To: <1346867590.27919.60.camel@gandalf.local.home>
+References: <1345204994-5400-1-git-send-email-elezegarcia@gmail.com>
+	 <1345217308.3708.35.camel@gandalf.local.home>
+	 <CALF0-+WGTLQJQ-k3s11BjwpDnpJqByQuLEPttan+n4ecs2MQ5g@mail.gmail.com>
+	 <1346867590.27919.60.camel@gandalf.local.home>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/9/5 17:40, Mel Gorman wrote:
+On Wed, 2012-09-05 at 13:53 -0400, Steven Rostedt wrote:
+> On Tue, 2012-09-04 at 22:18 -0300, Ezequiel Garcia wrote:
+> > Hi Steven,
+> > 
+> > On 8/17/12, Steven Rostedt <rostedt@goodmis.org> wrote:
+> > > On Fri, 2012-08-17 at 09:03 -0300, Ezequiel Garcia wrote:
+> > >> This patch splits trace event initialization in two stages:
+> > >>  * ftrace enable
+> > >>  * sysfs event entry creation
+> > >>
+> > >> This allows to capture trace events from an earlier point
+> > >> by using 'trace_event' kernel parameter and is important
+> > >> to trace boot-up allocations.
+> > >>
+> > >
+> > > This is much better, I'll give it some tests and add it to my 3.7 queue.
+> > >
+> > 
+> > Ping? Will you add this to your tree?
+> 
+> Yeah, I haven't been able to test it yet. I've been stuck trying to
+> figure out bugs on other patches I have queued. I'll let you know when I
+> do apply it though.
 
-> On Wed, Sep 05, 2012 at 04:26:02PM +0900, Minchan Kim wrote:
->> Like below, memory-hotplug makes race between page-isolation
->> and page-allocation so it can hit BUG_ON in __offline_isolated_pages.
->>
->> 	CPU A					CPU B
->>
->> start_isolate_page_range
->> set_migratetype_isolate
->> spin_lock_irqsave(zone->lock)
->>
->> 				free_hot_cold_page(Page A)
->> 				/* without zone->lock */
->> 				migratetype = get_pageblock_migratetype(Page A);
->> 				/*
->> 				 * Page could be moved into MIGRATE_MOVABLE
->> 				 * of per_cpu_pages
->> 				 */
->> 				list_add_tail(&page->lru, &pcp->lists[migratetype]);
->>
->> set_pageblock_isolate
->> move_freepages_block
->> drain_all_pages
+Just tested it and it failed :-/
 
-I think here is the problem you want to fix, it is not sure that pcp will be moved
-into MIGRATE_ISOLATE list. They may be moved into MIGRATE_MOVABLE list because
-page_private() maybe 2, it uses page_private() not get_pageblock_migratetype()
+Enable CONFIG_FTRACE_SELFTEST and CONFIG_FTRACE_STARTUP_TEST, along with
+events and syscall events. The syscall event self test fails with this
+patch applied.
 
-So when finish migrating pages, the free pages from pcp may be allocated again, and
-failed in check_pages_isolated().
-
-drain_all_pages()
-	drain_local_pages()
-		drain_pages()
-			free_pcppages_bulk()
-				__free_one_page(page, zone, 0, page_private(page))
-
-I reported this problem too. http://marc.info/?l=linux-mm&m=134555113706068&w=2
-How about this change:
-	free_pcppages_bulk()
-		__free_one_page(page, zone, 0, get_pageblock_migratetype(page))
-
-Thanks
-Xishi Qiu
-
->>
->> 				/* Page A could be in MIGRATE_MOVABLE of free_list. */
->>
->> check_pages_isolated
->> __test_page_isolated_in_pageblock
->> /*
->>  * We can't catch freed page which
->>  * is free_list[MIGRATE_MOVABLE]
->>  */
->> if (PageBuddy(page A))
->> 	pfn += 1 << page_order(page A);
->>
->> 				/* So, Page A could be allocated */
->>
->> __offline_isolated_pages
->> /*
->>  * BUG_ON hit or offline page
->>  * which is used by someone
->>  */
->> BUG_ON(!PageBuddy(page A));
->>
->
-> offline_page calling BUG_ON because someone allocated the page is
-> ridiculous. I did not spot where that check is but it should be changed. The
-> correct action is to retry the isolation.
->
->> Signed-off-by: Minchan Kim <minchan@kernel.org>
->
-> At no point in the changelog do you actually say what he patch does :/
->
->> ---
->>  mm/page_isolation.c |    5 ++++-
->>  1 file changed, 4 insertions(+), 1 deletion(-)
->>
->> diff --git a/mm/page_isolation.c b/mm/page_isolation.c
->> index acf65a7..4699d1f 100644
->> --- a/mm/page_isolation.c
->> +++ b/mm/page_isolation.c
->> @@ -196,8 +196,11 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn)
->>  			continue;
->>  		}
->>  		page = pfn_to_page(pfn);
->> -		if (PageBuddy(page))
->> +		if (PageBuddy(page)) {
->> +			if (get_page_migratetype(page) != MIGRATE_ISOLATE)
->> +				break;
->>  			pfn += 1 << page_order(page);
->> +		}
->
-> It is possible the page is moved to the MIGRATE_ISOLATE list between when
-> the page was freed to the buddy allocator and this check was made. The
-> page->index information is stale and the impact is that the hotplug
-> operation fails when it could have succeeded. That said, I think it is a
-> very unlikely race that will never happen in practice.
->
-> More importantly, the effect of this path is that EBUSY gets bubbled all
-> the way up and the hotplug operations fails. This is fine but as the page
-> is free at the time this problem is detected you also have the option
-> of moving the PageBuddy page to the MIGRATE_ISOLATE list at this time
-> if you take the zone lock. This will mean you need to change the name of
-> test_pages_isolated() of course.
->
->>  		else if (page_count(page) == 0 &&
->>  				get_page_migratetype(page) == MIGRATE_ISOLATE)
->>  			pfn += 1;
->> --
->> 1.7.9.5
->>
->
+-- Steve
 
 
