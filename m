@@ -1,201 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755751Ab2IFOES (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 10:04:18 -0400
-Received: from vostochny.stro.at ([78.47.22.85]:56419 "EHLO vostochny.stro.at"
+	id S1755250Ab2IFOLT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 10:11:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39941 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751020Ab2IFOER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 10:04:17 -0400
-Date: Thu, 6 Sep 2012 14:04:16 +0000
-From: maximilian attems <max@stro.at>
-To: Tzafrir Cohen <tzafrir.cohen@xorcom.com>
-Cc: Michal Marek <mmarek@suse.cz>, Linux Kbuild <linux-kbuild@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] builddeb: remove unneeded explicit Architecture
-Message-ID: <20120906140416.GG28778@vostochny.stro.at>
-References: <1344941092-31312-1-git-send-email-tzafrir.cohen@xorcom.com>
- <5040C112.70501@suse.cz>
- <20120905130528.GI18204@xorcom.com>
- <50475310.6000508@suse.cz>
- <20120905151422.GD12713@stro.at>
- <20120905164009.GM18204@xorcom.com>
- <20120905202604.GF28778@vostochny.stro.at>
- <20120906140004.GL19848@vostochny.stro.at>
+	id S1751436Ab2IFOLS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 10:11:18 -0400
+Message-ID: <5048AE96.3050909@redhat.com>
+Date: Thu, 06 Sep 2012 17:09:26 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120906140004.GL19848@vostochny.stro.at>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v6 12/12] KVM: indicate readonly access fault
+References: <5032F8FD.2020306@linux.vnet.ibm.com> <5032FA78.9040405@linux.vnet.ibm.com> <5034CB60.30107@redhat.com> <5034D4E3.2080801@linux.vnet.ibm.com>
+In-Reply-To: <5034D4E3.2080801@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 06, 2012 at 02:00:04PM +0000, maximilian attems wrote:
-> On Wed, Sep 05, 2012 at 08:26:05PM +0000, maximilian attems wrote:
-> > On Wed, Sep 05, 2012 at 07:40:09PM +0300, Tzafrir Cohen wrote:
-> > > 
-> > > $ grep CROSS_COMPILE .config
-> > > CONFIG_CROSS_COMPILE="arm-linux-gnueabihf-"
-> > > 
-> > > Command:
-> > > 
-> > >   KBUILD_DEBARCH=armhf make ARCH=arm KBUILD_IMAGE=uImage deb-pkg
-> > > 
-> > > Error I get:
-> > > 
-> > >   dpkg-gencontrol: error: current host architecture 'armhf' does not
-> > >   appear in package's architecture list (amd64)
-> > > 
-> > > It seems I have to use KBUILD_DEBARCH, as the kernel build system can't
-> > > really tell if I want armel or armhf (If I built the same kernel for a
-> > > Squeeze system I would have been forced to use armel).
-> > 
-> > well, obviously the dpkg call in
-> >  -arch=$(dpkg --print-architecture)
-> > is wrong please fix that.
-> > 
+On 08/22/2012 03:47 PM, Xiao Guangrong wrote:
+> On 08/22/2012 08:06 PM, Avi Kivity wrote:
+>> On 08/21/2012 06:03 AM, Xiao Guangrong wrote:
+>>> Introduce write_readonly_mem in mmio-exit-info to indicate this exit is
+>>> caused by write access on readonly memslot
+>> 
+>> Please document this in chapter 5 of apic.txt.
+>> 
 > 
-> care to test belows:
+> Okay, please review this one.
+> 
+> Subject: [PATCH v6 12/12] KVM: indicate readonly access fault
+> 
+> Introduce write_readonly_mem in mmio-exit-info to indicate this exit is
+> caused by write access on readonly memslot
 > 
 
-without a useless snippet about the lost forcearch v2:
+I'm not sure whether this indication can be trusted by userspace.  By
+the time userspace gets to process this, the slot may no longer exist,
+or it may be writable.
 
->From f78afbe0b7fa7c49656f4ed1cf404e915f3c325b Mon Sep 17 00:00:00 2001
-From: maximilian attems <max@stro.at>
-Date: Thu, 6 Sep 2012 15:22:02 +0200
-Subject: [PATCH v2] deb-pkg: Simplify architecture matching for cross building
+(in the same way an mmio exit might actually hit RAM)
 
-No point in invoking dpkg to get the archticture of the host
-we build on. Instead directly use the logic implemented
-in create_package(). No need anymore to override arch.
 
-While at it fix the linux images to be for the specific
-built arch.
-
-Signed-off-by: maximilian attems <max@stro.at>
----
- scripts/package/builddeb |   81 ++++++++++++++++++++++------------------------
- 1 file changed, 38 insertions(+), 43 deletions(-)
-
-diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-index acb8650..a5f197b 100644
---- a/scripts/package/builddeb
-+++ b/scripts/package/builddeb
-@@ -25,44 +25,8 @@ create_package() {
- 	chown -R root:root "$pdir"
- 	chmod -R go-w "$pdir"
- 
--	# Attempt to find the correct Debian architecture
--	local forcearch="" debarch=""
--	case "$UTS_MACHINE" in
--	i386|ia64|alpha)
--		debarch="$UTS_MACHINE" ;;
--	x86_64)
--		debarch=amd64 ;;
--	sparc*)
--		debarch=sparc ;;
--	s390*)
--		debarch=s390 ;;
--	ppc*)
--		debarch=powerpc ;;
--	parisc*)
--		debarch=hppa ;;
--	mips*)
--		debarch=mips$(grep -q CPU_LITTLE_ENDIAN=y .config && echo el) ;;
--	arm*)
--		debarch=arm$(grep -q CONFIG_AEABI=y .config && echo el) ;;
--	*)
--		echo "" >&2
--		echo "** ** **  WARNING  ** ** **" >&2
--		echo "" >&2
--		echo "Your architecture doesn't have it's equivalent" >&2
--		echo "Debian userspace architecture defined!" >&2
--		echo "Falling back to using your current userspace instead!" >&2
--		echo "Please add support for $UTS_MACHINE to ${0} ..." >&2
--		echo "" >&2
--	esac
--	if [ -n "$KBUILD_DEBARCH" ] ; then
--		debarch="$KBUILD_DEBARCH"
--	fi
--	if [ -n "$debarch" ] ; then
--		forcearch="-DArchitecture=$debarch"
--	fi
--
- 	# Create the package
--	dpkg-gencontrol -isp $forcearch -p$pname -P"$pdir"
-+	dpkg-gencontrol -p$pname -P"$pdir"
- 	dpkg --build "$pdir" ..
- }
- 
-@@ -83,6 +47,38 @@ fwpackagename=linux-firmware-image
- kernel_headers_packagename=linux-headers-$version
- libc_headers_packagename=linux-libc-dev
- 
-+# Attempt to find the correct Debian architecture
-+case "$UTS_MACHINE" in
-+i386|ia64|alpha)
-+	debarch="$UTS_MACHINE" ;;
-+x86_64)
-+	debarch=amd64 ;;
-+sparc*)
-+	debarch=sparc ;;
-+s390*)
-+	debarch=s390 ;;
-+ppc*)
-+	debarch=powerpc ;;
-+parisc*)
-+	debarch=hppa ;;
-+mips*)
-+	debarch=mips$(grep -q CPU_LITTLE_ENDIAN=y .config && echo el) ;;
-+arm*)
-+	debarch=arm$(grep -q CONFIG_AEABI=y .config && echo el) ;;
-+*)
-+	echo "" >&2
-+	echo "** ** **  WARNING  ** ** **" >&2
-+	echo "" >&2
-+	echo "Your architecture doesn't have it's equivalent" >&2
-+	echo "Debian userspace architecture defined!" >&2
-+	echo "Falling back to using your current userspace instead!" >&2
-+	echo "Please add support for $UTS_MACHINE to ${0} ..." >&2
-+	echo "" >&2
-+esac
-+if [ -n "$KBUILD_DEBARCH" ] ; then
-+	debarch="$KBUILD_DEBARCH"
-+fi
-+
- if [ "$ARCH" = "um" ] ; then
- 	packagename=user-mode-linux-$version
- fi
-@@ -234,8 +230,8 @@ else
- Package: $packagename
- Provides: linux-image, linux-image-2.6, linux-modules-$version
- Suggests: $fwpackagename
--Architecture: any
--Description: Linux kernel, version $version
-+Architecture: $debarch
-+Description: Linux kernel, version $version on $debarch
-  This package contains the Linux kernel, modules and corresponding other
-  files, version: $version.
- EOF
-@@ -252,15 +248,14 @@ mkdir -p "$destdir"
- (cd $objtree; tar -c -f - -T "$objtree/debian/hdrobjfiles") | (cd $destdir; tar -xf -)
- ln -sf "/usr/src/linux-headers-$version" "$kernel_headers_dir/lib/modules/$version/build"
- rm -f "$objtree/debian/hdrsrcfiles" "$objtree/debian/hdrobjfiles"
--arch=$(dpkg --print-architecture)
- 
- cat <<EOF >> debian/control
- 
- Package: $kernel_headers_packagename
-+Architecture: $debarch
- Provides: linux-headers, linux-headers-2.6
--Architecture: $arch
--Description: Linux kernel headers for $KERNELRELEASE on $arch
-- This package provides kernel header files for $KERNELRELEASE on $arch
-+Description: Linux kernel headers for $KERNELRELEASE on $debarch
-+ This package provides kernel header files for $KERNELRELEASE on $debarch
-  .
-  This is useful for people who need to build external modules
- EOF
 -- 
-1.7.10.4
-
+error compiling committee.c: too many arguments to function
