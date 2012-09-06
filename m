@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754890Ab2IFMtB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 08:49:01 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40965 "EHLO
+	id S1755037Ab2IFMtY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 08:49:24 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:40947 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754343Ab2IFMs6 (ORCPT
+	with ESMTP id S1754749Ab2IFMsv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 08:48:58 -0400
+	Thu, 6 Sep 2012 08:48:51 -0400
 From: Sascha Hauer <s.hauer@pengutronix.de>
 To: <linux-arm-kernel@lists.infradead.org>
 Cc: HACHIMI Samir <shachimi@adeneo-embedded.com>, shawn.guo@linaro.org,
@@ -14,9 +14,9 @@ Cc: HACHIMI Samir <shachimi@adeneo-embedded.com>, shawn.guo@linaro.org,
         =?UTF-8?q?Beno=C3=AEt=20Th=C3=A9baudeau?= 
 	<benoit.thebaudeau@advansee.com>,
         kernel@pengutronix.de, Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [PATCH 6/9] pwm i.MX: use per clock unconditionally
-Date: Thu,  6 Sep 2012 14:48:12 +0200
-Message-Id: <1346935695-25179-7-git-send-email-s.hauer@pengutronix.de>
+Subject: [PATCH 8/9] ARM i.MX53: Add pwm support
+Date: Thu,  6 Sep 2012 14:48:14 +0200
+Message-Id: <1346935695-25179-9-git-send-email-s.hauer@pengutronix.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1346935695-25179-1-git-send-email-s.hauer@pengutronix.de>
 References: <1346935695-25179-1-git-send-email-s.hauer@pengutronix.de>
@@ -31,42 +31,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The i.MX pwm core has two clocks: The ipg clock and the ipg highfreq
-(peripheral) clock. The ipg clock has to be enabled for this hardware
-to work. The actual pwm output can either be driven by the ipg clock
-or the ipg highfreq. The ipg highfreq has the advantage that it runs
-even when the SoC is in low power modes.
-Use the always running clock also on i.MX25.
-
 Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 Reviewed-by: Shawn Guo <shawn.guo@linaro.org>
 Reviewed-by: Benoît Thébaudeau <benoit.thebaudeau@advansee.com>
 ---
- drivers/pwm/pwm-imx.c |    7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+ arch/arm/boot/dts/imx53.dtsi        |   14 ++++++++++++++
+ arch/arm/mach-imx/clk-imx51-imx53.c |    4 ++++
+ 2 files changed, 18 insertions(+)
 
-diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
-index 675e2bb..ea4ab2c 100644
---- a/drivers/pwm/pwm-imx.c
-+++ b/drivers/pwm/pwm-imx.c
-@@ -131,16 +131,11 @@ static int imx_pwm_config_v2(struct pwm_chip *chip,
+diff --git a/arch/arm/boot/dts/imx53.dtsi b/arch/arm/boot/dts/imx53.dtsi
+index cd37165..18b9fc3 100644
+--- a/arch/arm/boot/dts/imx53.dtsi
++++ b/arch/arm/boot/dts/imx53.dtsi
+@@ -189,6 +189,20 @@
+ 				status = "disabled";
+ 			};
  
- 	cr = MX3_PWMCR_PRESCALER(prescale) |
- 		MX3_PWMCR_DOZEEN | MX3_PWMCR_WAITEN |
--		MX3_PWMCR_DBGEN;
-+		MX3_PWMCR_DBGEN | MX3_PWMCR_CLKSRC_IPG_HIGH;
++			pwm1: pwm@53fb4000 {
++				#pwm-cells = <2>;
++				compatible = "fsl,imx53-pwm", "fsl,imx27-pwm";
++				reg = <0x53fb4000 0x4000>;
++				interrupts = <61>;
++			};
++
++			pwm2: pwm@53fb8000 {
++				#pwm-cells = <2>;
++				compatible = "fsl,imx53-pwm", "fsl,imx27-pwm";
++				reg = <0x53fb8000 0x4000>;
++				interrupts = <94>;
++			};
++
+ 			uart1: serial@53fbc000 {
+ 				compatible = "fsl,imx53-uart", "fsl,imx21-uart";
+ 				reg = <0x53fbc000 0x4000>;
+diff --git a/arch/arm/mach-imx/clk-imx51-imx53.c b/arch/arm/mach-imx/clk-imx51-imx53.c
+index 4bdcaa9..b522411 100644
+--- a/arch/arm/mach-imx/clk-imx51-imx53.c
++++ b/arch/arm/mach-imx/clk-imx51-imx53.c
+@@ -455,6 +455,10 @@ int __init mx53_clocks_init(unsigned long rate_ckil, unsigned long rate_osc,
+ 	clk_register_clkdev(clk[ssi1_ipg_gate], NULL, "63fcc000.ssi");
+ 	clk_register_clkdev(clk[ssi2_ipg_gate], NULL, "50014000.ssi");
+ 	clk_register_clkdev(clk[ssi3_ipg_gate], NULL, "63fd0000.ssi");
++	clk_register_clkdev(clk[pwm1_ipg_gate], "ipg", "53fb4000.pwm");
++	clk_register_clkdev(clk[pwm1_hf_gate], "per", "53fb4000.pwm");
++	clk_register_clkdev(clk[pwm2_ipg_gate], "ipg", "53fb8000.pwm");
++	clk_register_clkdev(clk[pwm2_hf_gate], "per", "53fb8000.pwm");
  
- 	if (imx->enabled)
- 		cr |= MX3_PWMCR_EN;
- 
--	if (cpu_is_mx25())
--		cr |= MX3_PWMCR_CLKSRC_IPG;
--	else
--		cr |= MX3_PWMCR_CLKSRC_IPG_HIGH;
--
- 	writel(cr, imx->mmio_base + MX3_PWMCR);
- 
- 	return 0;
+ 	/* set SDHC root clock to 200MHZ*/
+ 	clk_set_rate(clk[esdhc_a_podf], 200000000);
 -- 
 1.7.10.4
 
