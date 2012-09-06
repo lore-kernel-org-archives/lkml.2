@@ -1,127 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751394Ab2IFFA4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 01:00:56 -0400
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:27756
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750883Ab2IFFAy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 01:00:54 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839he5bhf0ah107ah1155h)
-From: Shaohui Xie <Shaohui.Xie@freescale.com>
-To: <jgarzik@pobox.com>, <linux-ide@vger.kernel.org>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <David.Laight@ACULAB.COM>, Shaohui Xie <Shaohui.Xie@freescale.com>,
-        Anju Bhartiya <Anju.Bhartiya@freescale.com>
-Subject: [PATCH] [v2] sata_fsl: add workaround for data length mismatch on freescale V2 controller
-Date: Thu, 6 Sep 2012 12:28:06 +0800
-Message-ID: <1346905686-27912-1-git-send-email-Shaohui.Xie@freescale.com>
-X-Mailer: git-send-email 1.6.4
+	id S1751550Ab2IFFBl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 01:01:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61293 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751097Ab2IFFBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 01:01:39 -0400
+Date: Thu, 6 Sep 2012 08:02:57 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, avi@redhat.com, kvm@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] virtio-ring: Allocate indirect buffers from cache
+ when possible
+Message-ID: <20120906050257.GA17656@redhat.com>
+References: <1346159043-16446-1-git-send-email-levinsasha928@gmail.com>
+ <1346159043-16446-2-git-send-email-levinsasha928@gmail.com>
+ <20120828132032.GB2039@redhat.com>
+ <503CC904.3050207@gmail.com>
+ <20120829110748.GB5970@redhat.com>
+ <503E2F27.5060904@gmail.com>
+ <20120829153833.GE7407@redhat.com>
+ <503E4873.6060607@gmail.com>
+ <871uigj747.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <871uigj747.fsf@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The freescale V2 SATA controller checks if the received data length matches
-the programmed length 'ttl', if not, it assumes that this is an error.
-In ATAPI, the 'ttl' is based on max allocation length and not the actual
-data transfer length, controller will raise 'DLM' (Data length Mismatch)
-error bit in Hstatus register. Along with 'DLM', DE (Device error) and
-FE (fatal Error) bits are also set in Hstatus register, 'E' (Internal Error)
-bit is set in Serror register and CE (Command Error) and DE (Device error)
-registers have the corresponding bit set. In this condition, we need to
-clear errors in following way: in the service routine, based on 'DLM' flag,
-HCONTROL[27] operation clears Hstatus, CE and DE registers, clear Serror
-register.
+On Thu, Sep 06, 2012 at 10:32:48AM +0930, Rusty Russell wrote:
+> Sasha Levin <levinsasha928@gmail.com> writes:
+> >> On Wed, Aug 29, 2012 at 05:03:03PM +0200, Sasha Levin wrote:
+> >>> I've also re-ran it on a IBM server type host instead of my laptop. Here are the
+> >>> results:
+> >>>
+> >>> Vanilla kernel:
+> >>>
+> >>> MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 192.168.33.1
+> >>> () port 0 AF_INET
+> >>> enable_enobufs failed: getprotobyname
+> >>> Recv   Send    Send
+> >>> Socket Socket  Message  Elapsed
+> >>> Size   Size    Size     Time     Throughput
+> >>> bytes  bytes   bytes    secs.    10^6bits/sec
+> >>>
+> >>>  87380  16384  16384    10.00    7922.72
+> >>>
+> >>> Patch 1, with threshold=16:
+> >>>
+> >>> MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 192.168.33.1
+> >>> () port 0 AF_INET
+> >>> enable_enobufs failed: getprotobyname
+> >>> Recv   Send    Send
+> >>> Socket Socket  Message  Elapsed
+> >>> Size   Size    Size     Time     Throughput
+> >>> bytes  bytes   bytes    secs.    10^6bits/sec
+> >>>
+> >>>  87380  16384  16384    10.00    8415.07
+> >>>
+> >>> Patch 2:
+> >>>
+> >>> MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 192.168.33.1
+> >>> () port 0 AF_INET
+> >>> enable_enobufs failed: getprotobyname
+> >>> Recv   Send    Send
+> >>> Socket Socket  Message  Elapsed
+> >>> Size   Size    Size     Time     Throughput
+> >>> bytes  bytes   bytes    secs.    10^6bits/sec
+> >>>
+> >>>  87380  16384  16384    10.00    8931.05
+> >>>
+> >>>
+> >>> Note that these are simple tests with netperf listening on one end and a simple
+> >>> 'netperf -H [host]' within the guest. If there are other tests which may be
+> >>> interesting please let me know.
+> 
+> It might be worth just unconditionally having a cache for the 2
+> descriptor case.  This is what I get with qemu tap, though for some
+> reason the device features don't have guest or host CSUM, so my setup is
+> probably screwed:
 
-Signed-off-by: Shaohui Xie <Shaohui.Xie@freescale.com>
-Signed-off-by: Anju Bhartiya <Anju.Bhartiya@freescale.com>
----
-changes for V2:
-1. remove the using of quirk;
-2. wrap errata codes in condition;
+Yes without checksum net core always linearizes packets, so yes it is
+screwed.
+For -net, skb always allocates space for 17 frags + linear part so
+it seems sane to do same in virtio core, and allocate, for -net,
+up to max_frags + 1 from cache.
+We can adjust it: no _SG -> 2 otherwise 18.
 
- drivers/ata/sata_fsl.c |   40 +++++++++++++++++++++++++++++++++++-----
- 1 files changed, 35 insertions(+), 5 deletions(-)
+Not sure about other drivers, maybe really use 2 there for now.
 
-diff --git a/drivers/ata/sata_fsl.c b/drivers/ata/sata_fsl.c
-index d6577b9..6b7b73e 100644
---- a/drivers/ata/sata_fsl.c
-+++ b/drivers/ata/sata_fsl.c
-@@ -143,6 +143,7 @@ enum {
- 	    FATAL_ERR_CRC_ERR_RX |
- 	    FATAL_ERR_FIFO_OVRFL_TX | FATAL_ERR_FIFO_OVRFL_RX,
- 
-+	INT_ON_DATA_LENGTH_MISMATCH = (1 << 12),
- 	INT_ON_FATAL_ERR = (1 << 5),
- 	INT_ON_PHYRDY_CHG = (1 << 4),
- 
-@@ -1180,26 +1181,55 @@ static void sata_fsl_host_intr(struct ata_port *ap)
- 	void __iomem *hcr_base = host_priv->hcr_base;
- 	u32 hstatus, done_mask = 0;
- 	struct ata_queued_cmd *qc;
--	u32 SError;
-+	u32 SError, tag;
-+	u32 status_mask = INT_ON_ERROR;
- 
- 	hstatus = ioread32(hcr_base + HSTATUS);
- 
- 	sata_fsl_scr_read(&ap->link, SCR_ERROR, &SError);
- 
-+	/* Read command completed register */
-+	done_mask = ioread32(hcr_base + CC);
-+
-+	/* Workaround for data length mismatch errata */
-+	if (unlikely(hstatus & INT_ON_DATA_LENGTH_MISMATCH)) {
-+		for (tag = 0; tag < ATA_MAX_QUEUE; tag++) {
-+			qc = ata_qc_from_tag(ap, tag);
-+			if (qc && ata_is_atapi(qc->tf.protocol)) {
-+				u32 Hcontrol;
-+#define HCONTROL_CLEAR_ERROR	(1 << 27)
-+				/* Set HControl[27] to clear error registers */
-+				Hcontrol = ioread32(hcr_base + HCONTROL);
-+				iowrite32(Hcontrol | HCONTROL_CLEAR_ERROR,
-+						hcr_base + HCONTROL);
-+
-+				/* Clear HControl[27] */
-+				iowrite32(Hcontrol & (~HCONTROL_CLEAR_ERROR),
-+						hcr_base + HCONTROL);
-+
-+				/* Clear SError[E] bit */
-+				sata_fsl_scr_write(&ap->link, SCR_ERROR,
-+						SError);
-+
-+				/* Ignore fatal error and device error */
-+				status_mask &= ~(INT_ON_SINGL_DEVICE_ERR
-+						| INT_ON_FATAL_ERR);
-+				break;
-+			}
-+		}
-+	}
-+
- 	if (unlikely(SError & 0xFFFF0000)) {
- 		DPRINTK("serror @host_intr : 0x%x\n", SError);
- 		sata_fsl_error_intr(ap);
- 	}
- 
--	if (unlikely(hstatus & INT_ON_ERROR)) {
-+	if (unlikely(hstatus & status_mask)) {
- 		DPRINTK("error interrupt!!\n");
- 		sata_fsl_error_intr(ap);
- 		return;
- 	}
- 
--	/* Read command completed register */
--	done_mask = ioread32(hcr_base + CC);
--
- 	VPRINTK("Status of all queues :\n");
- 	VPRINTK("done_mask/CC = 0x%x, CA = 0x%x, CE=0x%x,CQ=0x%x,apqa=0x%x\n",
- 		done_mask,
--- 
-1.6.4
-
-
+> Queue histogram for virtio0:
+> Size distribution for input (max=128427):
+>   1: 128427  ################################################################
+> Size distribution for output (max=256485):
+>   2: 256485  ################################################################
+> Size distribution for control (max=10):
+>   3: 10      ################################################################
+>   4: 5       ################################
+> 
+> Here's a patch, what do you get (run ifconfig to trigger the dump; yeah,
+> it's a hack!)
+> 
+> Hack: histogram of buffer sizes for virtio devices.
+> 
+> Currently triggered by a stats query (eg ifconfig) on a net device.
+> 
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -727,6 +727,8 @@ static struct rtnl_link_stats64 *virtnet
+>  	tot->rx_length_errors = dev->stats.rx_length_errors;
+>  	tot->rx_frame_errors = dev->stats.rx_frame_errors;
+>  
+> +	virtio_dev_dump_histogram(vi->vdev);
+> +
+>  	return tot;
+>  }
+>  
+> diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
+> --- a/drivers/virtio/virtio.c
+> +++ b/drivers/virtio/virtio.c
+> @@ -108,6 +108,16 @@ void virtio_check_driver_offered_feature
+>  }
+>  EXPORT_SYMBOL_GPL(virtio_check_driver_offered_feature);
+>  
+> +void virtio_dev_dump_histogram(const struct virtio_device *vdev)
+> +{
+> +	const struct virtqueue *vq;
+> +
+> +	printk("Queue histogram for %s:\n", dev_name(&vdev->dev));
+> +	list_for_each_entry(vq, &vdev->vqs, list)
+> +		virtqueue_dump_histogram(vq);
+> +}
+> +EXPORT_SYMBOL_GPL(virtio_dev_dump_histogram);
+> +
+>  static int virtio_dev_probe(struct device *_d)
+>  {
+>  	int err, i;
+> diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+> --- a/drivers/virtio/virtio_ring.c
+> +++ b/drivers/virtio/virtio_ring.c
+> @@ -120,6 +120,8 @@ struct vring_virtqueue
+>  	ktime_t last_add_time;
+>  #endif
+>  
+> +	unsigned int *histo;
+> +
+>  	/* Tokens for callbacks. */
+>  	void *data[];
+>  };
+> @@ -259,6 +261,8 @@ int virtqueue_add_buf(struct virtqueue *
+>  	BUG_ON(out + in > vq->vring.num);
+>  	BUG_ON(out + in == 0);
+>  
+> +	vq->histo[out+in]++;
+> +
+>  	/* If the host supports indirect descriptor tables, consider it. */
+>  	if (vq->indirect) {
+>  		bool try_indirect;
+> @@ -726,6 +730,7 @@ struct virtqueue *vring_new_virtqueue(un
+>  	}
+>  	vq->data[i] = NULL;
+>  
+> +	vq->histo = kzalloc(num * sizeof(vq->histo[0]), GFP_KERNEL);
+>  	return &vq->vq;
+>  }
+>  EXPORT_SYMBOL_GPL(vring_new_virtqueue);
+> @@ -772,4 +777,33 @@ unsigned int virtqueue_get_vring_size(st
+>  }
+>  EXPORT_SYMBOL_GPL(virtqueue_get_vring_size);
+>  
+> +void virtqueue_dump_histogram(const struct virtqueue *_vq)
+> +{
+> +	const struct vring_virtqueue *vq = to_vvq(_vq);
+> +	int i, j, start = 0, end = 0, max = 1;
+> +	char line[120];
+> +
+> +	for (i = 0; i < vq->vring.num; i++) {
+> +		if (!vq->histo[i])
+> +			continue;
+> +
+> +		end = i;
+> +		if (!vq->histo[start])
+> +			start = i;
+> +
+> +		if (vq->histo[i] > max)
+> +			max = vq->histo[i];
+> +	}
+> +
+> +	printk("Size distribution for %s (max=%u):\n", _vq->name, max);
+> +	for (i = start; i <= end; i++) {
+> +		unsigned int off;
+> +		off = sprintf(line, "%3u: %-7u ", i, vq->histo[i]);
+> +		for (j = 0; j < vq->histo[i] * 64 / max; j++)
+> +			line[off++] = '#';
+> +		line[off] = '\0';
+> +		printk("%s\n", line);
+> +	}
+> +}
+> +
+>  MODULE_LICENSE("GPL");
+> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
+> --- a/include/linux/virtio.h
+> +++ b/include/linux/virtio.h
+> @@ -52,6 +52,9 @@ unsigned int virtqueue_get_vring_size(st
+>  
+>  int virtqueue_get_queue_index(struct virtqueue *vq);
+>  
+> +void virtio_dev_dump_histogram(const struct virtio_device *vdev);
+> +void virtqueue_dump_histogram(const struct virtqueue *vq);
+> +
+>  /**
+>   * virtio_device - representation of a device using virtio
+>   * @index: unique position on the virtio bus
