@@ -1,169 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759833Ab2IFUay (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 16:30:54 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:61826 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759623Ab2IFUav (ORCPT
+	id S1759928Ab2IFUbd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 16:31:33 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:33556 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759770Ab2IFUb2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 16:30:51 -0400
+	Thu, 6 Sep 2012 16:31:28 -0400
+Date: Thu, 6 Sep 2012 13:30:56 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 06/23] rcu: Break up rcu_gp_kthread() into
+ subfunctions
+Message-ID: <20120906203056.GT2448@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120830181811.GA29154@linux.vnet.ibm.com>
+ <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346350718-30937-6-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346938791.18408.7.camel@twins>
+ <20120906173207.GK2448@linux.vnet.ibm.com>
+ <20120906184921.GA5738@jtriplet-mobl1>
+ <1346958541.18408.67.camel@twins>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <201209062208.34545.rjw@sisk.pl>
-References: <CA+icZUWgPV=RnXGT4hDsk3xDm8iBu8ShvFFrs=t3+3D3=-bP2Q@mail.gmail.com>
-	<CA+icZUUQiPv=iwwC43f6kuU_ikDDKeRC5=QYN4R9OzccmpAEeA@mail.gmail.com>
-	<201209062208.34545.rjw@sisk.pl>
-Date: Thu, 6 Sep 2012 22:30:48 +0200
-Message-ID: <CA+icZUV_XPGae8t+e6SCi_8TRYyEKmmEeQ6=RbnsBpdYTFditg@mail.gmail.com>
-Subject: Re: linux-next: Tree for Sept 6 (does not boot on AMD64)
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Andre Przywara <andre.przywara@amd.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Matthew Garrett <mjg@redhat.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Thomas Renninger <trenn@suse.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346958541.18408.67.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12090620-7408-0000-0000-00000843C8D6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 6, 2012 at 10:08 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Thursday, September 06, 2012, Sedat Dilek wrote:
->> On Thu, Sep 6, 2012 at 1:48 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> > On Thu, Sep 6, 2012 at 9:23 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> >> Hi all,
->> >>
->> >> Changes since 20120905:
->> >>
->> >> New tree: arm64
->> >>
->> >> The powerpc tree gained a build failure for which I reverted 3 commits.
->> >>
->> >> The net-next tree lost its build failure.
->> >>
->> >> The trivial tree gained a conflict against the powerpc tree.
->> >>
->> >> The spi-mb tree gained a build failure so I used the version from
->> >> next-20120905.
->> >>
->> >> The driver-core tree gained a build failure (form an interaction with the
->> >> workqueues tree) for which I applied a merge fix patch.
->> >>
->> >> The tty tree gained a build failure for which I applied a patch.
->> >>
->> >> The staging tree lost its build failure.
->> >>
->> >> The arm-soc tree gained a conflict against the usb tree.
->> >>
->> >> ----------------------------------------------------------------------------
->> >>
->> >
->> > Hi,
->> >
->> > Unfortunately, today's linux-next does not boot here on Ubuntu/precise AMD64.
->> > My yesterday's next-20120905 is fine.
->> >
->> > I throw out all my additional patches an rebuild again as "-2", but
->> > this linux-image does not boot.
->> > It's in very early stage.
->> > I removed "quiet" etc. from kernel-command-line, but this reveals not much more.
->> >
->> > From the attached kernel-config.diff:
->> > Dunno why the 2nd is disabled now and try to turn off the 1st one in a
->> > "-3" build.
->> >
->> > +CONFIG_X86_ACPI_CPUFREQ_CPB=y
->> > -CONFIG_USB_LIBUSUAL=y
->> >
->>
->> [ CC Rafael (cpufreq sub-maintainer) ]
->
-> Well, this is related to the AMD cpufreq patchset I've just added to
-> linux-next.  I'll drop it for now until the issue is resolved.
->
+On Thu, Sep 06, 2012 at 09:09:01PM +0200, Peter Zijlstra wrote:
+> On Thu, 2012-09-06 at 11:49 -0700, Josh Triplett wrote:
+> > 
+> > Huh, I thought GCC knew to not emit that warning unless it actually
+> > found control flow reaching the end of the function; since the
+> > infinite
+> > loop has no break in it, you shouldn't need the return.  Annoying. 
+> 
+> tag the function with __noreturn
 
-Hi Rafael,
+Ah, I will try that.
 
-The problem was caused by the slab/next merge (see [1]).
+							Thanx, Paul
 
-[1] http://marc.info/?t=134695686500008&r=1&w=2
-
->> I hacked to turn off CONFIG_X86_ACPI_CPUFREQ_CPB, but this is not the
->> root cause.
->> Not sure why this setting is default YES, Rafael?
->>
->> To switch from upstart to systemd does not help.
->
-> Andre, care to have a look at this?
->
-
-I am not sure if the depends-on/default-n/default-y lines are correct.
-Here, I am on a Intel sandy-bridge CPU, so why do I need to activate
-any AMD CPU workaround?
-
-[ Linux-Next (next-20120906) ]
-
-19 config X86_ACPI_CPUFREQ
-20         tristate "ACPI Processor P-States driver"
-21         select CPU_FREQ_TABLE
-22         depends on ACPI_PROCESSOR
-23         help
-24           This driver adds a CPUFreq driver which utilizes the ACPI
-25           Processor Performance States.
-26           This driver also supports Intel Enhanced Speedstep and newer
-27           AMD CPUs.
-28
-29           To compile this driver as a module, choose M here: the
-30           module will be called acpi-cpufreq.
-31
-32           For details, take a look at <file:Documentation/cpu-freq/>.
-33
-34           If in doubt, say N.
-35
-36 config X86_ACPI_CPUFREQ_CPB
-37         default y
-38         bool "Legacy cpb sysfs knob support for AMD CPUs"
-39         depends on X86_ACPI_CPUFREQ && CPU_SUP_AMD
-40         help
-41           The powernow-k8 driver used to provide a sysfs knob called "cpb"
-42           to disable the Core Performance Boosting feature of AMD CPUs. This
-43           file has now been superseeded by the more generic "boost" entry.
-44
-45           By enabling this option the acpi_cpufreq driver provides the old
-46           entry in addition to the new boost ones, for compatibility reasons.
-
-Why is there no depends-on "X86_POWERNOW_K8" (see above help-text)?
-
-I have set CONFIG_CPU_SUP_AMD=y which leads always to
-CONFIG_X86_ACPI_CPUFREQ_CPB=y.
-As said Intel SNB CPU!
-
-What about this (untested)?
-
------ SNIP -----
-config X86_ACPI_CPUFREQ_CPB
-        bool "Legacy cpb sysfs knob support for AMD CPUs"
-        depends on X86_ACPI_CPUFREQ
-        default y if X86_POWERNOW_K8 && CPU_SUP_AMD
-        default n
------ SNAP -----
-
-106 config X86_POWERNOW_K8
-107         tristate "AMD Opteron/Athlon64 PowerNow!"
-108         select CPU_FREQ_TABLE
-109         depends on ACPI && ACPI_PROCESSOR
-110         help
-111           This adds the CPUFreq driver for K8/early
-Opteron/Athlon64 processors.
-112           Support for K10 and newer processors is now in acpi-cpufreq.
-113
-114           To compile this driver as a module, choose M here: the
-115           module will be called powernow-k8.
-116
-117           For details, take a look at <file:Documentation/cpu-freq/>.
-
-Regards,
-- Sedat -
-
-> Rafael
