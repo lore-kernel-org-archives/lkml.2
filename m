@@ -1,225 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754594Ab2IFWgK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 18:36:10 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:43781 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753788Ab2IFWfU (ORCPT
+	id S1754944Ab2IFWgX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 18:36:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37872 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753788Ab2IFWgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 18:35:20 -0400
-From: Kent Overstreet <koverstreet@google.com>
-To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com
-Cc: Kent Overstreet <koverstreet@google.com>, Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH v10 6/8] block: Kill bi_destructor
-Date: Thu,  6 Sep 2012 15:35:00 -0700
-Message-Id: <1346970902-10931-7-git-send-email-koverstreet@google.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1346970902-10931-1-git-send-email-koverstreet@google.com>
-References: <1346970902-10931-1-git-send-email-koverstreet@google.com>
+	Thu, 6 Sep 2012 18:36:21 -0400
+Date: Thu, 6 Sep 2012 15:36:19 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
+        Jim Schutt <jaschut@sandia.gov>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/7] mm: vmscan: Scale number of pages reclaimed by
+ reclaim/compaction based on failures
+Message-Id: <20120906153619.b0df4bd8.akpm@linux-foundation.org>
+In-Reply-To: <1345212873-22447-7-git-send-email-mgorman@suse.de>
+References: <1345212873-22447-1-git-send-email-mgorman@suse.de>
+	<1345212873-22447-7-git-send-email-mgorman@suse.de>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we've got generic code for freeing bios allocated from bio
-pools, this isn't needed anymore.
+On Fri, 17 Aug 2012 15:14:32 +0100
+Mel Gorman <mgorman@suse.de> wrote:
 
-This patch also makes bio_free() static, since without bi_destructor
-there should be no need for it to be called anywhere else.
+> If allocation fails after compaction then compaction may be deferred for
+> a number of allocation attempts. If there are subsequent failures,
+> compact_defer_shift is increased to defer for longer periods. This patch
+> uses that information to scale the number of pages reclaimed with
+> compact_defer_shift until allocations succeed again. The rationale is
+> that reclaiming the normal number of pages still allowed compaction to
+> fail and its success depends on the number of pages. If it's failing,
+> reclaim more pages until it succeeds again.
+> 
+> Note that this is not implying that VM reclaim is not reclaiming enough
+> pages or that its logic is broken. try_to_free_pages() always asks for
+> SWAP_CLUSTER_MAX pages to be reclaimed regardless of order and that is
+> what it does. Direct reclaim stops normally with this check.
+> 
+> 	if (sc->nr_reclaimed >= sc->nr_to_reclaim)
+> 		goto out;
+> 
+> should_continue_reclaim delays when that check is made until a minimum number
+> of pages for reclaim/compaction are reclaimed. It is possible that this patch
+> could instead set nr_to_reclaim in try_to_free_pages() and drive it from
+> there but that's behaves differently and not necessarily for the better. If
+> driven from do_try_to_free_pages(), it is also possible that priorities
+> will rise. When they reach DEF_PRIORITY-2, it will also start stalling
+> and setting pages for immediate reclaim which is more disruptive than not
+> desirable in this case. That is a more wide-reaching change that could
+> cause another regression related to THP requests causing interactive jitter.
+> 
+> ...
+>
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1743,6 +1743,7 @@ static inline bool should_continue_reclaim(struct lruvec *lruvec,
+>  {
+>  	unsigned long pages_for_compaction;
+>  	unsigned long inactive_lru_pages;
+> +	struct zone *zone;
+>  
+>  	/* If not in reclaim/compaction mode, stop */
+>  	if (!in_reclaim_compaction(sc))
+> @@ -1776,6 +1777,15 @@ static inline bool should_continue_reclaim(struct lruvec *lruvec,
+>  	 * inactive lists are large enough, continue reclaiming
+>  	 */
+>  	pages_for_compaction = (2UL << sc->order);
+> +
+> +	/*
+> +	 * If compaction is deferred for sc->order then scale the number of
+> +	 * pages reclaimed based on the number of consecutive allocation
+> +	 * failures
+> +	 */
+> +	zone = lruvec_zone(lruvec);
+> +	if (zone->compact_order_failed <= sc->order)
+> +		pages_for_compaction <<= zone->compact_defer_shift;
+>  	inactive_lru_pages = get_lru_size(lruvec, LRU_INACTIVE_FILE);
+>  	if (nr_swap_pages > 0)
+>  		inactive_lru_pages += get_lru_size(lruvec, LRU_INACTIVE_ANON);
 
-bio_free() is now only called from bio_put, so we can refactor those a
-bit - move some code from bio_put() to bio_free() and kill the redundant
-bio->bi_next = NULL.
+y'know, allnoconfig builds are really fast.
 
-v5: Switch to BIO_KMALLOC_POOL ((void *)~0), per Boaz
-v6: BIO_KMALLOC_POOL now NULL, drop bio_free's EXPORT_SYMBOL
-v7: No #define BIO_KMALLOC_POOL anymore
+mm/vmscan.c: In function 'should_continue_reclaim':
+mm/vmscan.c:1787: error: 'struct zone' has no member named 'compact_order_failed'
+mm/vmscan.c:1788: error: 'struct zone' has no member named 'compact_defer_shift'
 
-Signed-off-by: Kent Overstreet <koverstreet@google.com>
-CC: Jens Axboe <axboe@kernel.dk>
+This fix seems a rather overly ornate way of avoiding an ifdef :(
+
+
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: mm-vmscan-scale-number-of-pages-reclaimed-by-reclaim-compaction-based-on-failures-fix
+
+fix build
+
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Rik van Riel <riel@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
- Documentation/block/biodoc.txt |  5 ----
- block/blk-core.c               |  2 +-
- fs/bio.c                       | 64 +++++++++++++++++-------------------------
- include/linux/bio.h            |  1 -
- include/linux/blk_types.h      |  3 --
- 5 files changed, 27 insertions(+), 48 deletions(-)
 
-diff --git a/Documentation/block/biodoc.txt b/Documentation/block/biodoc.txt
-index e418dc0..8df5e8e 100644
---- a/Documentation/block/biodoc.txt
-+++ b/Documentation/block/biodoc.txt
-@@ -465,7 +465,6 @@ struct bio {
-        bio_end_io_t	*bi_end_io;  /* bi_end_io (bio) */
-        atomic_t		bi_cnt;	     /* pin count: free when it hits zero */
-        void             *bi_private;
--       bio_destructor_t *bi_destructor; /* bi_destructor (bio) */
- };
- 
- With this multipage bio design:
-@@ -647,10 +646,6 @@ for a non-clone bio. There are the 6 pools setup for different size biovecs,
- so bio_alloc(gfp_mask, nr_iovecs) will allocate a vec_list of the
- given size from these slabs.
- 
--The bi_destructor() routine takes into account the possibility of the bio
--having originated from a different source (see later discussions on
--n/w to block transfers and kvec_cb)
--
- The bio_get() routine may be used to hold an extra reference on a bio prior
- to i/o submission, if the bio fields are likely to be accessed after the
- i/o is issued (since the bio may otherwise get freed in case i/o completion
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 95c4935..b776cc9 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -2807,7 +2807,7 @@ int blk_rq_prep_clone(struct request *rq, struct request *rq_src,
- 
- free_and_out:
- 	if (bio)
--		bio_free(bio, bs);
-+		bio_put(bio);
- 	blk_rq_unprep_clone(rq);
- 
- 	return -ENOMEM;
-diff --git a/fs/bio.c b/fs/bio.c
-index 919ee9a..736ef12 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -233,26 +233,37 @@ fallback:
- 	return bvl;
+ mm/vmscan.c |   33 ++++++++++++++++++++++++---------
+ 1 file changed, 24 insertions(+), 9 deletions(-)
+
+diff -puN mm/vmscan.c~mm-vmscan-scale-number-of-pages-reclaimed-by-reclaim-compaction-based-on-failures-fix mm/vmscan.c
+--- a/mm/vmscan.c~mm-vmscan-scale-number-of-pages-reclaimed-by-reclaim-compaction-based-on-failures-fix
++++ a/mm/vmscan.c
+@@ -1729,6 +1729,28 @@ static bool in_reclaim_compaction(struct
+ 	return false;
  }
  
--void bio_free(struct bio *bio, struct bio_set *bs)
-+static void __bio_free(struct bio *bio)
- {
--	void *p;
--
--	if (bio_has_allocated_vec(bio))
--		bvec_free_bs(bs, bio->bi_io_vec, BIO_POOL_IDX(bio));
-+	bio_disassociate_task(bio);
- 
- 	if (bio_integrity(bio))
- 		bio_integrity_free(bio);
++#ifdef CONFIG_COMPACTION
++/*
++ * If compaction is deferred for sc->order then scale the number of pages
++ * reclaimed based on the number of consecutive allocation failures
++ */
++static unsigned long scale_for_compaction(unsigned long pages_for_compaction,
++			struct lruvec *lruvec, struct scan_control *sc)
++{
++	struct zone *zone = lruvec_zone(lruvec);
++
++	if (zone->compact_order_failed <= sc->order)
++		pages_for_compaction <<= zone->compact_defer_shift;
++	return pages_for_compaction;
 +}
++#else
++static unsigned long scale_for_compaction(unsigned long pages_for_compaction,
++			struct lruvec *lruvec, struct scan_control *sc)
++{
++	return pages_for_compaction;
++}
++#endif
++
+ /*
+  * Reclaim/compaction is used for high-order allocation requests. It reclaims
+  * order-0 pages before compacting the zone. should_continue_reclaim() returns
+@@ -1743,7 +1765,6 @@ static inline bool should_continue_recla
+ {
+ 	unsigned long pages_for_compaction;
+ 	unsigned long inactive_lru_pages;
+-	struct zone *zone;
+ 
+ 	/* If not in reclaim/compaction mode, stop */
+ 	if (!in_reclaim_compaction(sc))
+@@ -1778,14 +1799,8 @@ static inline bool should_continue_recla
+ 	 */
+ 	pages_for_compaction = (2UL << sc->order);
  
 -	/*
--	 * If we have front padding, adjust the bio pointer before freeing
+-	 * If compaction is deferred for sc->order then scale the number of
+-	 * pages reclaimed based on the number of consecutive allocation
+-	 * failures
 -	 */
--	p = bio;
--	if (bs->front_pad)
-+static void bio_free(struct bio *bio)
-+{
-+	struct bio_set *bs = bio->bi_pool;
-+	void *p;
-+
-+	__bio_free(bio);
-+
-+	if (bs) {
-+		if (bio_has_allocated_vec(bio))
-+			bvec_free_bs(bs, bio->bi_io_vec, BIO_POOL_IDX(bio));
-+
-+		/*
-+		 * If we have front padding, adjust the bio pointer before freeing
-+		 */
-+		p = bio;
- 		p -= bs->front_pad;
- 
--	mempool_free(p, bs->bio_pool);
-+		mempool_free(p, bs->bio_pool);
-+	} else {
-+		/* Bio was allocated by bio_kmalloc() */
-+		kfree(bio);
-+	}
- }
--EXPORT_SYMBOL(bio_free);
- 
- void bio_init(struct bio *bio)
- {
-@@ -276,10 +287,7 @@ void bio_reset(struct bio *bio)
- {
- 	unsigned long flags = bio->bi_flags & (~0UL << BIO_RESET_BITS);
- 
--	if (bio_integrity(bio))
--		bio_integrity_free(bio);
--
--	bio_disassociate_task(bio);
-+	__bio_free(bio);
- 
- 	memset(bio, 0, BIO_RESET_BYTES);
- 	bio->bi_flags = flags|(1 << BIO_UPTODATE);
-@@ -362,13 +370,6 @@ struct bio *bio_alloc(gfp_t gfp_mask, unsigned int nr_iovecs)
- }
- EXPORT_SYMBOL(bio_alloc);
- 
--static void bio_kmalloc_destructor(struct bio *bio)
--{
--	if (bio_integrity(bio))
--		bio_integrity_free(bio);
--	kfree(bio);
--}
--
- /**
-  * bio_kmalloc - allocate a bio for I/O using kmalloc()
-  * @gfp_mask:   the GFP_ mask given to the slab allocator
-@@ -395,7 +396,6 @@ struct bio *bio_kmalloc(gfp_t gfp_mask, unsigned int nr_iovecs)
- 	bio->bi_flags |= BIO_POOL_NONE << BIO_POOL_OFFSET;
- 	bio->bi_max_vecs = nr_iovecs;
- 	bio->bi_io_vec = bio->bi_inline_vecs;
--	bio->bi_destructor = bio_kmalloc_destructor;
- 
- 	return bio;
- }
-@@ -431,20 +431,8 @@ void bio_put(struct bio *bio)
- 	/*
- 	 * last put frees it
- 	 */
--	if (atomic_dec_and_test(&bio->bi_cnt)) {
--		bio_disassociate_task(bio);
--		bio->bi_next = NULL;
--
--		/*
--		 * This if statement is temporary - bi_pool is replacing
--		 * bi_destructor, but bi_destructor will be taken out in another
--		 * patch.
--		 */
--		if (bio->bi_pool)
--			bio_free(bio, bio->bi_pool);
--		else
--			bio->bi_destructor(bio);
--	}
-+	if (atomic_dec_and_test(&bio->bi_cnt))
-+		bio_free(bio);
- }
- EXPORT_SYMBOL(bio_put);
- 
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 76f6c25..04944c9 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -216,7 +216,6 @@ extern struct bio *bio_alloc(gfp_t, unsigned int);
- extern struct bio *bio_kmalloc(gfp_t, unsigned int);
- extern struct bio *bio_alloc_bioset(gfp_t, int, struct bio_set *);
- extern void bio_put(struct bio *);
--extern void bio_free(struct bio *, struct bio_set *);
- 
- extern void bio_endio(struct bio *, int);
- struct request_queue;
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index 1b607c2..3eefbb2 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -84,11 +84,8 @@ struct bio {
- 
- 	struct bio_vec		*bi_io_vec;	/* the actual vec list */
- 
--	/* If bi_pool is non NULL, bi_destructor is not called */
- 	struct bio_set		*bi_pool;
- 
--	bio_destructor_t	*bi_destructor;	/* destructor */
--
- 	/*
- 	 * We can inline a number of vecs at the end of the bio, to avoid
- 	 * double allocations for a small number of bio_vecs. This member
--- 
-1.7.12
+-	zone = lruvec_zone(lruvec);
+-	if (zone->compact_order_failed <= sc->order)
+-		pages_for_compaction <<= zone->compact_defer_shift;
++	pages_for_compaction = scale_for_compaction(pages_for_compaction,
++						    lruvec, sc);
+ 	inactive_lru_pages = get_lru_size(lruvec, LRU_INACTIVE_FILE);
+ 	if (nr_swap_pages > 0)
+ 		inactive_lru_pages += get_lru_size(lruvec, LRU_INACTIVE_ANON);
+_
 
