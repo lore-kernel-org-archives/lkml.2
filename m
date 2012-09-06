@@ -1,66 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757213Ab2IFJZT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 05:25:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38242 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754712Ab2IFJZR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 05:25:17 -0400
-Date: Thu, 6 Sep 2012 02:25:12 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio-blk: Fix kconfig option
-Message-ID: <20120906092512.GB5902@koverstreet-glaptop>
-References: <20120903044133.GA9980@moria.home.lan>
- <87wr0ae26e.fsf@rustcorp.com.au>
- <20120906074113.GA5902@koverstreet-glaptop>
- <20120906084403.GD17656@redhat.com>
+	id S1757178Ab2IFJcI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 05:32:08 -0400
+Received: from antcom.de ([188.40.178.216]:38428 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754875Ab2IFJcG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 05:32:06 -0400
+Message-ID: <50486D93.4090009@antcom.de>
+Date: Thu, 06 Sep 2012 11:32:03 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120906084403.GD17656@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the usb tree
+References: <20120906154240.12f7e0c01686559dd43744fa@canb.auug.org.au>
+In-Reply-To: <20120906154240.12f7e0c01686559dd43744fa@canb.auug.org.au>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 06, 2012 at 11:44:03AM +0300, Michael S. Tsirkin wrote:
-> On Thu, Sep 06, 2012 at 12:41:13AM -0700, Kent Overstreet wrote:
-> > On Tue, Sep 04, 2012 at 03:53:53PM +0930, Rusty Russell wrote:
-> > > Kent Overstreet <koverstreet@google.com> writes:
-> > > 
-> > > > CONFIG_VIRTIO isn't exposed, everything else is supposed to select it
-> > > > instead.
-> > > 
-> > > This is a slight mis-understanding.  It's supposed to be selected by
-> > > the particular driver, probably virtio_pci in your case.
-> > 
-> > So are you saying virtio-blk depends on virtio-pci? If so, the kconfig
-> > should have that.
-> > 
-> > As is, VIRTIO_BLK just has:
-> > 	depends on EXPERIMENTAL && VIRTIO
-> > 
-> > which is flat out broken.
+On 09/06/2012 07:42 AM, Stephen Rothwell wrote:
+> Today's linux-next merge of the arm-soc tree got a conflict in 
+> drivers/usb/host/Kconfig between commit 952230d774bb ("usb: ohci:
+> Fix Kconfig dependency on USB_ISP1301") from the usb tree and
+> commit d684f05f2d55 ("ARM: mach-pnx4008: Remove architecture") from
+> the arm-soc tree.
 > 
-> I don't think anything is broken.
-> Can you show an example of a broken configuration?
+> I fixed it up (see below) and can carry the fix as necessary (no
+> action required).
 
-Do you not understand the difference between depends an selects? Or did
-you not read my original mail?
+Thanks - this little conflict was expected when merging pnx4008
+removal and the isp1301 deoendency fix.
 
-Flip off everything in drivers -> virtio
+And the fixup is correct.
 
-Now go to drivers -> block and try to turn on virtio-blk.
-
-It's not listed!
-
-Now go back to drivers -> virtio and turn on (randomly) balloon.
-
-Go back to drivers -> block, and now you can turn on virtio-blk!
-
-Do you see what's wrong with this picture?
+Roland
