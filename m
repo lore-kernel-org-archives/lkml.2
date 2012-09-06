@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753135Ab2IFGmm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 02:42:42 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:49248 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750914Ab2IFGmk (ORCPT
+	id S1752351Ab2IFGpJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 02:45:09 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:45384 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751004Ab2IFGpH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 02:42:40 -0400
-Message-ID: <50484551.8080700@linux.vnet.ibm.com>
-Date: Thu, 06 Sep 2012 12:10:17 +0530
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Thu, 6 Sep 2012 02:45:07 -0400
+Date: Thu, 6 Sep 2012 08:45:03 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Daniel Mack <zonque@gmail.com>
+Cc: Takashi Iwai <tiwai@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>
+Subject: Re:
+Message-ID: <20120906064503.GA257@x4>
+References: <s5hmx1526mg.wl%tiwai@suse.de>
+ <20120906060220.GA252@x4>
+ <504843BA.2040808@gmail.com>
 MIME-Version: 1.0
-To: Tony Luck <tony.luck@gmail.com>
-CC: Andi Kleen <andi@firstfloor.org>, ak@linux.intel.com, bp@amd64.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-edac@vger.kernel.org, ananth@in.ibm.com
-Subject: Re: [PATCH] [mcelog] Start using the new sysfs tunables location
-References: <20120905102156.9423.27806.stgit@localhost.localdomain> <20120905103237.9726.56131.stgit@localhost.localdomain> <20120905184708.GC16230@one.firstfloor.org> <CA+8MBbKx7x=MxgtV5URYuDWQcxz0nqohVB8gRpBHtDxqMBb9uw@mail.gmail.com>
-In-Reply-To: <CA+8MBbKx7x=MxgtV5URYuDWQcxz0nqohVB8gRpBHtDxqMBb9uw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12090606-4790-0000-0000-00000479EF19
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <504843BA.2040808@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/06/2012 12:39 AM, Tony Luck wrote:
-> On Wed, Sep 5, 2012 at 11:47 AM, Andi Kleen <andi@firstfloor.org> wrote:
->> On Wed, Sep 05, 2012 at 04:02:37PM +0530, Naveen N. Rao wrote:
->>> All the current mce tunables are now available under
->>> /sys/devices/system/machinecheck. Start using this new location, but fall back
->>> to the older per-cpu location so that we continue working with older kernels.
->>
->> Who did that change in the kernel?
->>
->> That breaks Linus rule that the kernel should not break userland.
->> Kernel needs to fix that.
->
-> The change is still under discussion. Stage one is to add the new global
-> pathnames in addition to keeping the old per-cpu ones. Also fix all utilities
-> (just mcelog(8) as far as we know) to prefer the new paths.
->
-> After some time[1] ... delete the old paths. This is allowable under Linus'
-> modified edict that you can change ABI "if nobody complains". If we wait
-> long enough that the new mcelog is widely deployed, then nobody should
-> complain.
->
-> -Tony
->
-> [1] several years - not just a kernel release or two.
->
+On 2012.09.06 at 08:33 +0200, Daniel Mack wrote:
+> On 06.09.2012 08:02, Markus Trippelsdorf wrote:
+> > On 2012.09.04 at 16:40 +0200, Takashi Iwai wrote:
+> >> ----------------------------------------------------------------
+> >> Sound fixes for 3.6-rc5
+> >>
+> >> There are nothing scaring, contains only small fixes for HD-audio and
+> >> USB-audio:
+> >> - EPSS regression fix and GPIO fix for HD-audio IDT codecs
+> >> - A series of USB-audio regression fixes that are found since 3.5 kernel
+> >>
+> >> ----------------------------------------------------------------
+> >> Daniel Mack (4):
+> >>       ALSA: snd-usb: Fix URB cancellation at stream start
+> >>       ALSA: snd-usb: restore delay information
+> >         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+> > The commit fbcfbf5f above causes the following lines to be printed
+> > whenever I start a new song:
+> 
+> Copied Pierre-Louis Bossart - he wrote the code in 294c4fb8 which this
+> patch (fbcfbf5f) brings back now.
+> 
+> > delay: estimated 0, actual 352
+> > delay: estimated 353, actual 705
+> > 
+> > (44.1 * 8 = 352.8)
+> > 
+> > This happens with an USB-DAC that identifies itself as "C-Media USB
+> > Headphone Set".
+> 
+> And you didn't you see these lines with 3.4?
 
-Tony,
-Thanks for clarifying. I should have mentioned in the patch description 
-that this is indeed subject to the original patch making it into the kernel.
+No.
 
-On a related topic. I recently noticed that we don't have an entry for 
-machinecheck in Documentation/ABI/. Should we add an entry in there? We 
-could perhaps add the existing entries under obsolete/ and the new 
-location under testing/?
-
-
-- Naveen
-
+-- 
+Markus
