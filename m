@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab2IFCqV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 22:46:21 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30833 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754058Ab2IFCqT (ORCPT
+	id S1754992Ab2IFCr0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 22:47:26 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:33257 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752315Ab2IFCrZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 22:46:19 -0400
-X-Authority-Analysis: v=2.0 cv=Hsb06jvS c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=PUxD9mNbTSIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=qZ4tJI1EYMwA:10 a=2CfSEKolKS7-k0w3SXMA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1346899577.1680.11.camel@gandalf.local.home>
-Subject: Re: [RFC PATCH v2] trace: Move trace event enable from fs_initcall
- to early_initcall
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ezequiel Garcia <elezegarcia@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, tim.bird@am.sony.com,
-        lizefan@huawei.com
-Date: Wed, 05 Sep 2012 22:46:17 -0400
-In-Reply-To: <1346867590.27919.60.camel@gandalf.local.home>
-References: <1345204994-5400-1-git-send-email-elezegarcia@gmail.com>
-	 <1345217308.3708.35.camel@gandalf.local.home>
-	 <CALF0-+WGTLQJQ-k3s11BjwpDnpJqByQuLEPttan+n4ecs2MQ5g@mail.gmail.com>
-	 <1346867590.27919.60.camel@gandalf.local.home>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 5 Sep 2012 22:47:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120905173011.7a1111f0@pyramind.ukuu.org.uk>
+References: <s5hd3222azc.wl%tiwai@suse.de> <CACVXFVP-A7M2dG9bOvAnpzR60=iTYSw=WCOEwgo9KeuioxKanQ@mail.gmail.com>
+ <s5hd32122hw.wl%tiwai@suse.de> <CACVXFVNE1GHAQJTrQy2AYgUBfq5kv42EjJJ7J+2q3jzXG-E=MQ@mail.gmail.com>
+ <s5hpq61j9qx.wl%tiwai@suse.de> <CACVXFVOu86J5=1DLDrpLCd-pyk1jm2HT7ks1uzCXm9nURCRo2A@mail.gmail.com>
+ <20120905140304.5c5c58a4@pyramind.ukuu.org.uk> <CACVXFVO+OgvLoFMcDD0gcQnbzUW=SyR=wiSMyT-FtpjWW5sWdw@mail.gmail.com>
+ <20120905173011.7a1111f0@pyramind.ukuu.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 5 Sep 2012 19:47:03 -0700
+X-Google-Sender-Auth: 3rVthRw_BQZqR68u_ZkzQpVlZ9U
+Message-ID: <CA+55aFwMLp31bZhyHXxsqr=bbi9Kb+x3hrE8MF9eKydTbUTRLg@mail.gmail.com>
+Subject: Re: A workaround for request_firmware() stuck in module_init
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Ming Lei <ming.lei@canonical.com>, Takashi Iwai <tiwai@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Kay Sievers <kay@vrfy.org>,
+        linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-05 at 13:53 -0400, Steven Rostedt wrote:
-> On Tue, 2012-09-04 at 22:18 -0300, Ezequiel Garcia wrote:
-> > Hi Steven,
-> > 
-> > On 8/17/12, Steven Rostedt <rostedt@goodmis.org> wrote:
-> > > On Fri, 2012-08-17 at 09:03 -0300, Ezequiel Garcia wrote:
-> > >> This patch splits trace event initialization in two stages:
-> > >>  * ftrace enable
-> > >>  * sysfs event entry creation
-> > >>
-> > >> This allows to capture trace events from an earlier point
-> > >> by using 'trace_event' kernel parameter and is important
-> > >> to trace boot-up allocations.
-> > >>
-> > >
-> > > This is much better, I'll give it some tests and add it to my 3.7 queue.
-> > >
-> > 
-> > Ping? Will you add this to your tree?
-> 
-> Yeah, I haven't been able to test it yet. I've been stuck trying to
-> figure out bugs on other patches I have queued. I'll let you know when I
-> do apply it though.
+On Wed, Sep 5, 2012 at 9:30 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>
+> It's not about a workaround but about doing it properly for the long term
+> and doing it in one place. It's also not a "great change", its a small
+> change.
 
-Just tested it and it failed :-/
+udev needs to get fixed regardless.
 
-Enable CONFIG_FTRACE_SELFTEST and CONFIG_FTRACE_STARTUP_TEST, along with
-events and syscall events. The syscall event self test fails with this
-patch applied.
+Stop this "we can break stuff" crap. Who maintains udev? Regressions
+are not acceptable. I'm not going to change the kernel because udev
+broke, f*ck it.
 
--- Steve
+Seriously. More projects need to realize that regressions are totally
+and utterly unacceptable.
 
+The "long term cleaner issues" can be handled separately, but are
+*not* an excuse to work around clear regressions in core packages.
+That just encourages those package maintainers to be shit maintainers.
 
+Just fix udev, which had a regression. And stop blaming the kernel for
+user space breakage! Tying these kinds of things together ("udev
+broke, so now we need to change the kernel") is *wrong*. It's totally
+unacceptable to tie the two together that way.
+
+          Linus
