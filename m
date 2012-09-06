@@ -1,89 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520Ab2IFNZc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 09:25:32 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:49609 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752518Ab2IFNZa (ORCPT
+	id S1754371Ab2IFN0u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 09:26:50 -0400
+Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:37462 "EHLO
+	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752518Ab2IFN0s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 09:25:30 -0400
-Message-ID: <5048A441.3010109@gmail.com>
-Date: Thu, 06 Sep 2012 15:25:21 +0200
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Thu, 6 Sep 2012 09:26:48 -0400
+Date: Thu, 6 Sep 2012 16:22:24 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: linux@arm.linux.org.uk, b-cousson@ti.com, rob.herring@calxeda.com,
+        grant.likely@secretlab.ca, tony@atomide.com, rnayak@ti.com,
+        hvaibhav@ti.com, peter.ujfalusi@ti.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        balbi@ti.com
+Subject: Re: [PATCH 0/4] arm/dts: omap: add dt data for MUSB
+Message-ID: <20120906132223.GL29202@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <1344259395-4559-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-To: Matt Porter <mporter@ti.com>
-CC: vinod.koul@intel.com, cjb@laptop.org, grant.likely@secretlab.ca,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Sekhar Nori <nsekhar@ti.com>
-Subject: Re: [PATCH v3 0/3] DaVinci DMA engine conversion
-References: <1345684176-21472-1-git-send-email-mporter@ti.com> <503B933F.2030803@gmail.com>
-In-Reply-To: <503B933F.2030803@gmail.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FnOKg9Ah4tDwTfQS"
+Content-Disposition: inline
+In-Reply-To: <1344259395-4559-1-git-send-email-kishon@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matt,
 
-On 27.08.2012 17:33, Daniel Mack wrote:
-> On 23.08.2012 03:09, Matt Porter wrote:
->> This series begins the conversion of the DaVinci private EDMA API
->> implementation to a DMA engine driver and converts two of the three
->> in-kernel users of the private EDMA API to DMA engine.
->>
->> The approach taken is similar to the recent OMAP DMA Engine
->> conversion. The EDMA DMA Engine driver is a wrapper around the existing
->> private EDMA implementation and registers the platform device within
->> the driver.  This allows the conversion series to stand alone with just
->> the drivers and no changes to platform code. It also allows peripheral
->> drivers to continue to use the private EDMA implementation until they
->> are converted.
->>
->> The EDMA DMA Engine driver supports slave transfers only at this time. It
->> is planned to add cyclic transfers in support of audio peripherals.
->>
->> There are three users of the private EDMA API in the kernel now:
->> davinci_mmc, spi-davinci, and davinci-mcasp.  This series provides DMA
->> Engine conversions for the davinci_mmc and spi-davinci drivers which
->> use the supported slave transfers.
->>
->> This series has been tested on an AM18x EVM and Hawkboard with
->> driver performance comparable to that of the private EDMA API
->> implementations. Both MMC0 and MMC1 are tested which handles the
->> DA850/OMAP-L138/AM18x specific case where MMC1 uses DMA channels on
->> a second EDMA channel controller.  All other platforms have a simpler
->> design with just a single EDMA channel controller.
->>
->> For those wanting to easily test this series, I've pushed a branch for
->> each version to my github tree at https://github.com/ohporter/linux. The
->> current branch is edma-dmaengine-v3.
->>
->> After this series, the current plan is to complete the mcasp driver
->> conversion which includes adding cyclic dma support. This will then
->> enable the removal and refactoring of the private EDMA API functionality
->> into the EDMA DMA Engine driver.  Since EDMA is also used on the AM33xx
->> family of parts in mach-omap2/, the plan is to enable this driver on
->> that platform as well.
-> 
-> Once you have a patch for the McASP driver conversion, I can happily
-> test this on a AM33xx board, together with Gururaja's latest McASP
-> refactoring series. Let me know how I can help you here.
+--FnOKg9Ah4tDwTfQS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Did you find some time yet to continue on this side? I don't want to
-appear pushy, but as I need to finish some DT transition on a
-AM33xx-based board, I would much like to help out here, in case I can do
-anything to help speed things along.
+Hi,
 
+On Mon, Aug 06, 2012 at 06:53:11PM +0530, Kishon Vijay Abraham I wrote:
+> This patch series adds dt data for MUSB and related modules to
+> get MUSB working
+>=20
+> These patches were initially part of
+> [PATCH v6 00/11] omap: musb: Add device tree support
+>=20
+> These patches can be tested by applying it over
+> [PATCH v7 0/7] omap: musb: Add device tree support
+>=20
+> These patches were developed on
+> git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git
+>=20
+> If it needs to be rebased on some other tree, pls let me
+> know.
+>=20
+> Performed MUSB device mode testing on omap4 panda,
+> omap4 sdp and omap3 beagle
 
-Many thanks for your work!
+Grant, we already lost two merge windows on this patchset. Is it
+possible for you to take a look here so we don't loose another merge
+window ? Can Benoit just take these patches on his tree, so it goes
+upstream through the linux-omap tree ?
 
-Daniel
+cheers
+
+> Kishon Vijay Abraham I (4):
+>   arm/dts: omap: Add omap-usb2 dt data
+>   arm/dts: Add twl6030-usb data
+>   arm/dts: Add twl4030-usb data
+>   arm/dts: omap: Add usb_otg and glue data
+>=20
+>  arch/arm/boot/dts/omap3-beagle.dts |    6 ++++++
+>  arch/arm/boot/dts/omap3-evm.dts    |    6 ++++++
+>  arch/arm/boot/dts/omap3.dtsi       |    8 ++++++++
+>  arch/arm/boot/dts/omap4-panda.dts  |   10 ++++++++++
+>  arch/arm/boot/dts/omap4-sdp.dts    |   10 ++++++++++
+>  arch/arm/boot/dts/omap4.dtsi       |   13 +++++++++++++
+>  arch/arm/boot/dts/twl4030.dtsi     |   21 +++++++++++++++++++++
+>  arch/arm/boot/dts/twl6030.dtsi     |    5 +++++
+>  8 files changed, 79 insertions(+)
+>=20
+> --=20
+> 1.7.9.5
+>=20
+
+--=20
+balbi
+
+--FnOKg9Ah4tDwTfQS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQSKOPAAoJEIaOsuA1yqRE8NgP/2bap1F1tjAoanudoFaq9hkt
+Vvq8eDgdGRs0W0zIy4U0KNqYOzaCbvByBWV9p1XKODf47stbDuk/uocIta4A0kNJ
+gd9sG9lSmTkLvef4iIzU1gnlotidCJIOKKpbXbSvYAhy9GqK5hBYRsHNQMzCeGUS
+h4rF4mhJ9UTO2Ks41NcLMwhM8rgJ3GM0hWIfSwmBk1ZJ0uY2NW+MUwD1DTgJHhnt
+GaIpHfGp5PQUVSDCK0mg07e2Js733Avcj9nokNNJiiaubmzS2WIpj4C0JUirTUqH
+Bt7s5Vev4hp++J969RbZY7ZVBgnXTwMKmGaJg/Qx+QmujAY8/9WUhrz/ava1OcoS
+48p7V+m9nMng5stHJtReYZddtp5xwQp/TPCeEKwx5B8NfFvZ7v0zBYV6wAdeXCH2
+r6tna5Pepm9OZWIdf2HpgxP1DRYJTFa4OWVo0DRLnsvgTsX8cOC5aw/jnbQMWvhJ
+fDFORTEkzlQFCi4LuOVaceq3Tu6XIU2cYW8BmG2kg3uUpDXOmwG9iRwLk4kTs1wI
+GfEafxpwkaPARCje2u/7sc9RRLLHEXsT4IaEgzRWnUMYK/mtk+UzTvBgGFl8gyO8
++wEiThwSdzpyegS7ibwvFU7LudrOmIVFsTXlixepD6yXgxnXA7nBalRuX3h6kxHK
+CxnR9UaMDzkgXvo2AgA8
+=JkbZ
+-----END PGP SIGNATURE-----
+
+--FnOKg9Ah4tDwTfQS--
