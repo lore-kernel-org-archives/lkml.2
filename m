@@ -1,43 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860Ab2IFHlS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 03:41:18 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50496 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752030Ab2IFHlR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 03:41:17 -0400
-Date: Thu, 6 Sep 2012 00:41:13 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: mst@redhat.com, virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio-blk: Fix kconfig option
-Message-ID: <20120906074113.GA5902@koverstreet-glaptop>
-References: <20120903044133.GA9980@moria.home.lan>
- <87wr0ae26e.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87wr0ae26e.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754811Ab2IFHrH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 03:47:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11795 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751965Ab2IFHrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 03:47:05 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: rusty@rustcorp.com.au
+Cc: fes@google.com, mst@redhat.com, aarcange@redhat.com, riel@redhat.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org, mikew@google.com,
+        yinghan@google.com, virtualization@lists.linux-foundation.org
+Subject: [PATCH] virtio-balloon spec: provide a version of the "silent deflate" feature that works
+Date: Thu,  6 Sep 2012 09:46:50 +0200
+Message-Id: <1346917610-14568-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 04, 2012 at 03:53:53PM +0930, Rusty Russell wrote:
-> Kent Overstreet <koverstreet@google.com> writes:
-> 
-> > CONFIG_VIRTIO isn't exposed, everything else is supposed to select it
-> > instead.
-> 
-> This is a slight mis-understanding.  It's supposed to be selected by
-> the particular driver, probably virtio_pci in your case.
+VIRTIO_BALLOON_F_MUST_TELL_HOST cannot be used properly because it is a
+"negative" feature: it tells you that silent defalte is not supported.
+Right now, QEMU refuses migration if the target does not support all the
+features that were negotiated.  But then:
 
-So are you saying virtio-blk depends on virtio-pci? If so, the kconfig
-should have that.
+- a migration from non-MUST_TELL_HOST to MUST_TELL_HOST will succeed,
+which is wrong;
 
-As is, VIRTIO_BLK just has:
-	depends on EXPERIMENTAL && VIRTIO
+- a migration from MUST_TELL_HOST to non-MUST_TELL_HOST will fail, which
+is useless.
 
-which is flat out broken.
+Add instead a new feature VIRTIO_BALLOON_F_SILENT_DEFLATE, and deprecate
+VIRTIO_BALLOON_F_MUST_TELL_HOST since it is never actually used.
+
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ virtio-spec.lyx | 36 +++++++++++++++++++++++++++++++++---
+ 1 file modificato, 33 inserzioni(+), 3 rimozioni(-)
+
+diff --git a/virtio-spec.lyx b/virtio-spec.lyx
+index 7a073f4..1a25a18 100644
+--- a/virtio-spec.lyx
++++ b/virtio-spec.lyx
+@@ -6238,6 +6238,8 @@ bits
+ 
+ \begin_deeper
+ \begin_layout Description
++
++\change_deleted 1531152142 1346917221
+ VIRTIO_BALLOON_F_MUST_TELL_HOST
+ \begin_inset space ~
+ \end_inset
+@@ -6251,6 +6253,20 @@ VIRTIO_BALLOON_F_STATS_VQ
+ \end_inset
+ 
+ (1) A virtqueue for reporting guest memory statistics is present.
++\change_inserted 1531152142 1346917193
++
++\end_layout
++
++\begin_layout Description
++
++\change_inserted 1531152142 1346917219
++VIRTIO_BALLOON_F_SILENT_DEFLATE
++\begin_inset space ~
++\end_inset
++
++(2) Host does not need to be told before pages from the balloon are used.
++\change_unchanged
++
+ \end_layout
+ 
+ \end_deeper
+@@ -6401,9 +6417,23 @@ The driver constructs an array of addresses of memory pages it has previously
+ \end_layout
+ 
+ \begin_layout Enumerate
+-If the VIRTIO_BALLOON_F_MUST_TELL_HOST feature is set, the guest may not
+- use these requested pages until that descriptor in the deflateq has been
+- used by the device.
++If the VIRTIO_BALLOON_F_
++\change_deleted 1531152142 1346917234
++MUST_TELL_HOST
++\change_inserted 1531152142 1346917237
++SILENT_DEFLATE
++\change_unchanged
++ feature is 
++\change_inserted 1531152142 1346917241
++not 
++\change_unchanged
++set, the guest may not use these requested pages until that descriptor in
++ the deflateq has been used by the device.
++
++\change_inserted 1531152142 1346917253
++ If it is set, the guest may choose to not use the deflateq at all.
++\change_unchanged
++
+ \end_layout
+ 
+ \begin_layout Enumerate
+-- 
+1.7.11.2
+
