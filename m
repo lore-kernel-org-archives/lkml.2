@@ -1,74 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842Ab2IFF3j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 01:29:39 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48709 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751057Ab2IFF3i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 01:29:38 -0400
-X-AuditID: 9c930197-b7b93ae0000028a7-fc-504834c0147c
-Date: Thu, 6 Sep 2012 14:31:12 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 2/2] mm: support MIGRATE_DISCARD
-Message-ID: <20120906053112.GA16231@bbox>
-References: <1346832673-12512-1-git-send-email-minchan@kernel.org>
- <1346832673-12512-2-git-send-email-minchan@kernel.org>
- <20120905105611.GI11266@suse.de>
+	id S1751768Ab2IFFck (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 01:32:40 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:44941 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751097Ab2IFFcj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 01:32:39 -0400
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: <thierry.reding@avionic-design.de>
+CC: <linux-kernel@vger.kernel.org>, <nsekhar@ti.com>, <gururaja.hebbar@ti.com>
+Subject: [PATCH v2] pwm: pwm-tiehrpwm: Fix conflicting channel period setting
+Date: Thu, 6 Sep 2012 10:44:25 +0530
+Message-ID: <1346908465-11628-1-git-send-email-avinashphilip@ti.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120905105611.GI11266@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mel,
+EHRPWM hardware supports 2 independent PWM channels. However the device
+uses only one register to handle period setting for both channels. So
+both channels should be configured for same period (in nsec).
 
-On Wed, Sep 05, 2012 at 11:56:11AM +0100, Mel Gorman wrote:
-> On Wed, Sep 05, 2012 at 05:11:13PM +0900, Minchan Kim wrote:
-> > This patch introudes MIGRATE_DISCARD mode in migration.
-> > It drops *clean cache pages* instead of migration so that
-> > migration latency could be reduced by avoiding (memcpy + page remapping).
-> > It's useful for CMA because latency of migration is very important rather
-> > than eviction of background processes's workingset. In addition, it needs
-> > less free pages for migration targets so it could avoid memory reclaiming
-> > to get free pages, which is another factor increase latency.
-> > 
-> 
-> Bah, this was released while I was reviewing the older version. I did
-> not read this one as closely but I see the enum problems have gone away
-> at least. I'd still prefer if CMA had an additional helper to discard
-> some pages with shrink_page_list() and migrate the remaining pages with
-> migrate_pages(). That would remove the need to add a MIGRATE_DISCARD
-> migrate mode at all.
+Fix the same by returning error for conflicting period values.
 
-I am not convinced with your point. What's the benefit on separating
-reclaim and migration? For just removing MIGRATE_DISCARD mode?
-I don't think it's not bad because my implementation is very simple(maybe
-it's much simpler than separating reclaim and migration) and
-could be used by others like memory-hotplug in future.
-If you're not strong against with me, I would like to insist on my implementation.
+However, allow
+1. Configuration of period settings if not conflicting with other
+channels
+2. Re-configuring of period settings if no other channels being
+configured
 
-> 
-> -- 
-> Mel Gorman
-> SUSE Labs
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
+---
+:100644 100644 c3756d1... b1996bc... M	drivers/pwm/pwm-tiehrpwm.c
+ drivers/pwm/pwm-tiehrpwm.c |   29 +++++++++++++++++++++++++++++
+ 1 files changed, 29 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/pwm/pwm-tiehrpwm.c b/drivers/pwm/pwm-tiehrpwm.c
+index c3756d1..b1996bc 100644
+--- a/drivers/pwm/pwm-tiehrpwm.c
++++ b/drivers/pwm/pwm-tiehrpwm.c
+@@ -104,6 +104,7 @@ struct ehrpwm_pwm_chip {
+ 	struct pwm_chip	chip;
+ 	unsigned int	clk_rate;
+ 	void __iomem	*mmio_base;
++	unsigned long period_cycles[NUM_PWM_CHANNEL];
+ };
+ 
+ static inline struct ehrpwm_pwm_chip *to_ehrpwm_pwm_chip(struct pwm_chip *chip)
+@@ -210,6 +211,7 @@ static int ehrpwm_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
+ 	unsigned long long c;
+ 	unsigned long period_cycles, duty_cycles;
+ 	unsigned short ps_divval, tb_divval;
++	int i;
+ 
+ 	if (period_ns < 0 || duty_ns < 0 || period_ns > NSEC_PER_SEC)
+ 		return -ERANGE;
+@@ -229,6 +231,28 @@ static int ehrpwm_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
+ 		duty_cycles = (unsigned long)c;
+ 	}
+ 
++	/*
++	 * Period values should be same for multiple PWM channels as IP uses
++	 * same period register for multiple channels.
++	 */
++	for (i = 0; i < NUM_PWM_CHANNEL; i++) {
++		if (pc->period_cycles[i] &&
++				(pc->period_cycles[i] != period_cycles)) {
++			/*
++			 * Allow channel to reconfigure period if no other
++			 * channels being configured.
++			 */
++			if (i == pwm->hwpwm)
++				continue;
++
++			dev_err(chip->dev, "Period value conflicts with channel %d\n",
++					i);
++			return -EINVAL;
++		}
++	}
++
++	pc->period_cycles[pwm->hwpwm] = period_cycles;
++
+ 	/* Configure clock prescaler to support Low frequency PWM wave */
+ 	if (set_prescale_div(period_cycles/PERIOD_MAX, &ps_divval,
+ 				&tb_divval)) {
+@@ -320,10 +344,15 @@ static void ehrpwm_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+ 
+ static void ehrpwm_pwm_free(struct pwm_chip *chip, struct pwm_device *pwm)
+ {
++	struct ehrpwm_pwm_chip *pc = to_ehrpwm_pwm_chip(chip);
++
+ 	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
+ 		dev_warn(chip->dev, "Removing PWM device without disabling\n");
+ 		pm_runtime_put_sync(chip->dev);
+ 	}
++
++	/* set period value to zero on free */
++	pc->period_cycles[pwm->hwpwm] = 0;
+ }
+ 
+ static const struct pwm_ops ehrpwm_pwm_ops = {
 -- 
-Kind regards,
-Minchan Kim
+1.7.1
+
