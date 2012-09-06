@@ -1,95 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab2IFIAX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 04:00:23 -0400
-Received: from ozlabs.org ([203.10.76.45]:60861 "EHLO ozlabs.org"
+	id S1755090Ab2IFIFv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 04:05:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22560 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752030Ab2IFIAU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 04:00:20 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Lucas De Marchi <lucas.de.marchi@gmail.com>
-Cc: David Howells <dhowells@redhat.com>, dmitry.kasatkin@intel.com,
-        zohar@linux.vnet.ibm.com, jmorris@namei.org, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] module: signature infrastructure
-In-Reply-To: <CAKi4VA+R0EY9OteOCc=JGOqtshAJd5_CWu9tyJqjjkvG6qZUjw@mail.gmail.com>
-References: <20120816013405.872.42381.stgit@warthog.procyon.org.uk> <87627ufi2h.fsf@rustcorp.com.au> <CAKi4VALezG7VccXJfwvzr2UZrmAjCUp9eZRjGwqq6cWcExNqXA@mail.gmail.com> <874nndl3ro.fsf@rustcorp.com.au> <CAKi4VA+R0EY9OteOCc=JGOqtshAJd5_CWu9tyJqjjkvG6qZUjw@mail.gmail.com>
-User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Thu, 06 Sep 2012 17:25:27 +0930
-Message-ID: <87a9x3io0g.fsf@rustcorp.com.au>
+	id S1752054Ab2IFIFo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 04:05:44 -0400
+Message-ID: <50485954.50204@redhat.com>
+Date: Thu, 06 Sep 2012 11:05:40 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: dave@gnu.org
+CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] KVM: VMX: invalidate vpid for invlpg instruction
+References: <1346429448.2823.1.camel@offbook>  <20120831173707.GA3895@amt.cnet> <1346628440.3170.3.camel@offbook>  <50447442.2050307@redhat.com> <1346882061.6304.17.camel@offbook>
+In-Reply-To: <1346882061.6304.17.camel@offbook>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lucas De Marchi <lucas.de.marchi@gmail.com> writes:
-> Sorry to come up with this suggestion only now (and after you have
-> already talked to me at LPC). Only after seeing this implementation I
-> thought about the implications of having the module signed in this
-> format.
-...
-> I'm worried about performance here. Module loading can take a fair
-> amount of boot time. It may not be critical for servers or desktops
-> that we rarely boot, but it is for embedded uses.
-...
-> Letting it in be32 is the simplest solution IMO. it's way simpler then
-> the loop above.
-...
->> Scanning the module is the least of our issues since we've just copied
->> it and we're about to SHA it.
->
-> Yeah, but I don't think we need to scan it one more time. On every
-> boot. For every module
+On 09/06/2012 12:54 AM, Davidlohr Bueso wrote:
+> On Mon, 2012-09-03 at 12:11 +0300, Avi Kivity wrote:
+>> On 09/03/2012 02:27 AM, Davidlohr Bueso wrote:
+>> > On Fri, 2012-08-31 at 14:37 -0300, Marcelo Tosatti wrote:
+>> >> On Fri, Aug 31, 2012 at 06:10:48PM +0200, Davidlohr Bueso wrote:
+>> >> > For processors that support VPIDs we should invalidate the page table entry
+>> >> > specified by the lineal address. For this purpose add support for individual
+>> >> > address invalidations.
+>> >> 
+>> >> Not necessary - a single context invalidation is performed through
+>> >> KVM_REQ_TLB_FLUSH.
+>> > 
+>> > Since vpid_sync_context() supports both single and all-context vpid
+>> > invalidations, wouldn't it make sense to also add individual address
+>> > ones as well, supporting further granularity?
+>> 
+>> It might.  Do you have benchmarks supporting this?
+>> 
+> 
+> I ran two benchmarks: Java Dacapo[1] Sunflow (renders a set of images
+> using ray tracing) and a vanilla 3.2 kernel build (with 1 job and -j8).
+> 
+> The host configuration is an Intel i7-2635QM (4 cores + HT) with 4Gb RAM
+> running Linus's latest and only running standard system daemons. For KVM
+> I disabled EPT.
 
-Regretfully, I don't have Linus' talent for flamage.
+That's not very interesting.  In all real machines, if you have VPID you
+also have EPT.  Intel are unlikely to produce a processor without EPT.
 
-There's no measurable performance impact.  Scanning 1k takes about
-5usec; we've wasted about enough time on this subject to load a billion
-kernel modules.
+> The guest configuration is a 64bit 4 core 4Gb RAM, running Linux 3.2
+> (debian) and only running the benchmark.
+> 
+> All results represent the mean of 5 runs, with time(1).
 
-I know this.  Not because I'm brilliant, but because I *measured* it.  I
-even pulled out my original module signature signing check code, and
-that was both faster and simpler.  See below.
+The results are impressive, but lack real-world relevance.
+Individual-address invalidation isn't very useful with EPT, since we let
+the guest issue INVLPG itself and otherwise don't bother with guest page
+tables.
 
-Your assertion that the length-prepended version is "way simpler" is
-wrong.  Again, I know this because I *read the code*:
+Individual-address INVEPT would probably be more useful, but there is no
+such instruction variant.
 
-        https://git.kernel.org/?p=linux/kernel/git/kasatkin/linux-digsig.git;a=commitdiff;h=19eef6e4e529ccf2b3a6ab5c19dd40f2eaf8fcaf
-
-Don't send any more lazy, unthoughtful mails to the list.  It's
-disrespectful and makes me grumpy.
-
-Rusty.
-PS.  Pushed updated version to my kernel.org linux.git/module-signing branch.
-
-#ifdef CONFIG_MODULE_SIG
-static int module_sig_check(struct load_info *info,
-			    const void *mod, unsigned long *len)
-{
-	int err = 0;
-	const unsigned long markerlen = strlen(MODULE_SIG_STRING);
-	const void *p = mod, *end = mod + *len;
-
-	/* Poor man's memmem. */
-	while ((p = memchr(p, MODULE_SIG_STRING[0], end - p))) {
-		if (p + markerlen > end)
-			break;
-
-		if (memcmp(p, MODULE_SIG_STRING, markerlen) == 0) {
-			const void *sig = p + markerlen;
-			/* Truncate module up to signature. */
-			*len = p - mod;
-			err = mod_verify_sig(mod, *len,
-					     sig, end - sig,
-					     &info->sig_ok);
-			break;
-		}
-		p++;
-	}
-
-	/* Not having a signature is only an error if we're strict. */
-	if (!err && !info->sig_ok && sig_enforce)
-		err = -EKEYREJECTED;
-	return err;
-}
+-- 
+error compiling committee.c: too many arguments to function
