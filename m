@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753881Ab2IFMPk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 08:15:40 -0400
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:51152 "EHLO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753137Ab2IFMPf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 08:15:35 -0400
+	id S1754658Ab2IFMPw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 08:15:52 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:48705 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753575Ab2IFMPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 08:15:48 -0400
+Date: Thu, 6 Sep 2012 14:15:30 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: Tony Luck <tony.luck@intel.com>, andi@firstfloor.org,
+        gong.chen@linux.intel.com, ananth@in.ibm.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        tglx@linutronix.de, gregkh@suse.de, linux-edac@vger.kernel.org
+Subject: Re: [PATCH 2/3] x86/mce: Pack boolean MCE flags into a structure
+Message-ID: <20120906121530.GB550@aftab.osrc.amd.com>
+References: <20120905102049.9423.6413.stgit@localhost.localdomain>
+ <20120905102201.9423.46671.stgit@localhost.localdomain>
+ <CA+8MBb+T6H1jK624qkPPmK8BJ0T1-FcRM+9JPKubq65wKvfueA@mail.gmail.com>
+ <5048473F.9070704@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1344258480-4304-2-git-send-email-kishon@ti.com>
-References: <1344258480-4304-1-git-send-email-kishon@ti.com>
-	<1344258480-4304-2-git-send-email-kishon@ti.com>
-Date: Thu, 6 Sep 2012 17:45:33 +0530
-Message-ID: <CAAe_U6KBNZpT03xATmPTNTgxm5hj+wJdsShdnm08EmF4Q=hTCw@mail.gmail.com>
-Subject: Re: [PATCH v7 1/7] drivers: usb: phy: add a new driver for omap usb2 phy
-From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-To: Greg KH <gregkh@linuxfoundation.org>, Arnd Bergmann <arnd@arndb.de>,
-        Felipe Balbi <balbi@ti.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, rob@landley.net, linux@arm.linux.org.uk,
-        b-cousson@ti.com, rnayak@ti.com, tony@atomide.com,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5048473F.9070704@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Sep 06, 2012 at 12:18:31PM +0530, Naveen N. Rao wrote:
+> >I know I'm contradicting the feedback you got from Borislav here, but
+> >is this code churn really worth it to save 40 bytes? I don't think
+> >so.
 
-On Mon, Aug 6, 2012 at 6:37 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
-> All phy related programming like enabling/disabling the clocks, powering
-> on/off the phy is taken care of by this driver. It is also used for OTG
-> related functionality like srp.
->
-> This also includes device tree support for usb2 phy driver and
-> the documentation with device tree binding information is updated.
->
-> Currently writing to control module register is taken care in this
-> driver which will be removed once the control module driver is in place.
->
-> Cc: Felipe Balbi <balbi@ti.com>
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> ---
->  .../devicetree/bindings/bus/omap-ocp2scp.txt       |    3 +
->  Documentation/devicetree/bindings/usb/omap-usb.txt |   17 ++
->  drivers/usb/phy/Kconfig                            |   10 +
->  drivers/usb/phy/Makefile                           |    1 +
->  drivers/usb/phy/omap-usb2.c                        |  271 ++++++++++++++++++++
->  include/linux/usb/omap_usb.h                       |   46 ++++
->  include/linux/usb/phy_companion.h                  |   34 +++
->  7 files changed, 382 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/usb/omap-usb.txt
->  create mode 100644 drivers/usb/phy/omap-usb2.c
->  create mode 100644 include/linux/usb/omap_usb.h
->  create mode 100644 include/linux/usb/phy_companion.h
->
-> diff --git a/Documentation/devicetree/bindings/bus/omap-ocp2scp.txt b/Documentation/devicetree/bindings/bus/omap-ocp2scp.txt
-> index d2fe064..bb0c7f4 100644
-> --- a/Documentation/devicetree/bindings/bus/omap-ocp2scp.txt
-> +++ b/Documentation/devicetree/bindings/bus/omap-ocp2scp.txt
-> @@ -8,3 +8,6 @@ properties:
->
->  Sub-nodes:
->  All the devices connected to ocp2scp are described using sub-node to ocp2scp
-> +- usb2phy :
-> +   The binding details of usb2phy can be found in:
-> +   Documentation/devicetree/bindings/usb/omap-usb.txt
+Well, to answer Tony's question, I wanted to have all those config
+booleans at the beginning of mce.c packed tightly together as a
+single-bit bool values in a config-like struct so that they don't
+scatter all over the place and grow out of proportion with more features
+being added. So actually I'm willing to swallow the slight increase in
+code size for better/more clear code.
 
-The above two lines should be added in omap-ocp2scp.txt (this file was
-added as part of omap: add ocp2scp as a bus driver and is in
-linux-next). However this file is still not in Felipe's xceiv branch.
-So I'm not sure how I can get this patch merged in Felipe's tree
-without conflict.
+> Hmm.. I think I agree. I don't see a good way to get rid of the
+> individual getters and setters without adding some more code churn.
+> I guess using boolean would be better. Boris?
 
-Thanks
-Kishon
+Yes, it would be worth to try to add a DEVICE_BOOL_ATTR which introduce
+a setter/getter flavour for bools and then use that for all.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
