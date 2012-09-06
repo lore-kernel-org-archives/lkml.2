@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754964Ab2IFMtW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 08:49:22 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40949 "EHLO
+	id S1754911Ab2IFMtV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 08:49:21 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:40950 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754750Ab2IFMsv (ORCPT
+	with ESMTP id S1754754Ab2IFMsv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 6 Sep 2012 08:48:51 -0400
 From: Sascha Hauer <s.hauer@pengutronix.de>
@@ -13,11 +13,10 @@ Cc: HACHIMI Samir <shachimi@adeneo-embedded.com>, shawn.guo@linaro.org,
         thierry.reding@avionic-design.de, linux-kernel@vger.kernel.org,
         =?UTF-8?q?Beno=C3=AEt=20Th=C3=A9baudeau?= 
 	<benoit.thebaudeau@advansee.com>,
-        kernel@pengutronix.de, Philipp Zabel <p.zabel@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [PATCH 7/9] pwm i.MX: fix clock lookup
-Date: Thu,  6 Sep 2012 14:48:13 +0200
-Message-Id: <1346935695-25179-8-git-send-email-s.hauer@pengutronix.de>
+        kernel@pengutronix.de, Sascha Hauer <s.hauer@pengutronix.de>
+Subject: [PATCH 3/9] pwm i.MX: add functions to enable/disable pwm.
+Date: Thu,  6 Sep 2012 14:48:09 +0200
+Message-Id: <1346935695-25179-4-git-send-email-s.hauer@pengutronix.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1346935695-25179-1-git-send-email-s.hauer@pengutronix.de>
 References: <1346935695-25179-1-git-send-email-s.hauer@pengutronix.de>
@@ -32,107 +31,128 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Philipp Zabel <p.zabel@pengutronix.de>
+We used to enable/disable the pwm only by switching the
+clock on or off. Instead, use the dedicated register bits.
+These differ on different SoCs, so introduce a SoC specific
+function for this.
 
-The i.MX pwm core has two clocks: The ipg clock and the ipg highfreq
-(peripheral) clock. The ipg clock has to be enabled for this hardware
-to work. The actual pwm output can either be driven by the ipg clock
-or the ipg highfreq. The ipg highfreq has the advantage that it runs
-even when the SoC is in low power modes.
-This patch requests both clocks and enables the ipg clock for accessing
-registers and the peripheral clock to actually turn on the pwm.
-
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
 Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 Reviewed-by: Shawn Guo <shawn.guo@linaro.org>
 Reviewed-by: Benoît Thébaudeau <benoit.thebaudeau@advansee.com>
 ---
- drivers/pwm/pwm-imx.c |   35 +++++++++++++++++++++++++++--------
- 1 file changed, 27 insertions(+), 8 deletions(-)
+ drivers/pwm/pwm-imx.c |   48 ++++++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 44 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
-index ea4ab2c..d45d44f 100644
+index 609b540..242a30d 100644
 --- a/drivers/pwm/pwm-imx.c
 +++ b/drivers/pwm/pwm-imx.c
-@@ -40,7 +40,8 @@
- #define MX3_PWMCR_EN              (1 << 0)
+@@ -25,6 +25,7 @@
+ #define MX1_PWMS    0x04   /* PWM Sample Register */
+ #define MX1_PWMP    0x08   /* PWM Period Register */
  
- struct imx_chip {
--	struct clk	*clk;
-+	struct clk	*clk_per;
-+	struct clk	*clk_ipg;
++#define MX1_PWMC_EN		(1 << 4)
  
- 	int		enabled;
- 	void __iomem	*mmio_base;
-@@ -105,7 +106,7 @@ static int imx_pwm_config_v2(struct pwm_chip *chip,
- 	unsigned long period_cycles, duty_cycles, prescale;
- 	u32 cr;
+ /* i.MX27, i.MX31, i.MX35 share the same PWM function block: */
  
--	c = clk_get_rate(imx->clk);
-+	c = clk_get_rate(imx->clk_per);
- 	c = c * period_ns;
- 	do_div(c, 1000000000);
- 	period_cycles = c;
-@@ -160,8 +161,17 @@ static int imx_pwm_config(struct pwm_chip *chip,
- 		struct pwm_device *pwm, int duty_ns, int period_ns)
- {
- 	struct imx_chip *imx = to_imx_chip(chip);
-+	int ret;
-+
-+	ret = clk_prepare_enable(imx->clk_ipg);
-+	if (ret)
-+		return ret;
+@@ -49,6 +50,7 @@ struct imx_chip {
  
--	return imx->config(chip, pwm, duty_ns, period_ns);
-+	ret = imx->config(chip, pwm, duty_ns, period_ns);
-+
-+	clk_disable_unprepare(imx->clk_ipg);
-+
-+	return ret;
+ 	int (*config)(struct pwm_chip *chip,
+ 		struct pwm_device *pwm, int duty_ns, int period_ns);
++	void (*set_enable)(struct pwm_chip *chip, bool enable);
+ };
+ 
+ #define to_imx_chip(chip)	container_of(chip, struct imx_chip, chip)
+@@ -81,6 +83,21 @@ static int imx_pwm_config_v1(struct pwm_chip *chip,
+ 	return 0;
  }
  
- static int imx_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
-@@ -169,7 +179,7 @@ static int imx_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
- 	struct imx_chip *imx = to_imx_chip(chip);
- 	int ret;
++static void imx_pwm_set_enable_v1(struct pwm_chip *chip, bool enable)
++{
++	struct imx_chip *imx = to_imx_chip(chip);
++	u32 val;
++
++	val = readl(imx->mmio_base + MX1_PWMC);
++
++	if (enable)
++		val |= MX1_PWMC_EN;
++	else
++		val &= ~MX1_PWMC_EN;
++
++	writel(val, imx->mmio_base + MX1_PWMC);
++}
++
+ static int imx_pwm_config_v2(struct pwm_chip *chip,
+ 		struct pwm_device *pwm, int duty_ns, int period_ns)
+ {
+@@ -115,7 +132,10 @@ static int imx_pwm_config_v2(struct pwm_chip *chip,
  
--	ret = clk_prepare_enable(imx->clk);
-+	ret = clk_prepare_enable(imx->clk_per);
+ 	cr = MX3_PWMCR_PRESCALER(prescale) |
+ 		MX3_PWMCR_DOZEEN | MX3_PWMCR_WAITEN |
+-		MX3_PWMCR_DBGEN | MX3_PWMCR_EN;
++		MX3_PWMCR_DBGEN;
++
++	if (imx->enabled)
++		cr |= MX3_PWMCR_EN;
+ 
+ 	if (cpu_is_mx25())
+ 		cr |= MX3_PWMCR_CLKSRC_IPG;
+@@ -127,6 +147,21 @@ static int imx_pwm_config_v2(struct pwm_chip *chip,
+ 	return 0;
+ }
+ 
++static void imx_pwm_set_enable_v2(struct pwm_chip *chip, bool enable)
++{
++	struct imx_chip *imx = to_imx_chip(chip);
++	u32 val;
++
++	val = readl(imx->mmio_base + MX3_PWMCR);
++
++	if (enable)
++		val |= MX3_PWMCR_EN;
++	else
++		val &= ~MX3_PWMCR_EN;
++
++	writel(val, imx->mmio_base + MX3_PWMCR);
++}
++
+ static int imx_pwm_config(struct pwm_chip *chip,
+ 		struct pwm_device *pwm, int duty_ns, int period_ns)
+ {
+@@ -144,6 +179,8 @@ static int imx_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
  	if (ret)
  		return ret;
  
-@@ -186,7 +196,7 @@ static void imx_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
++	imx->set_enable(chip, true);
++
+ 	imx->enabled = 1;
  
- 	imx->set_enable(chip, false);
+ 	return 0;
+@@ -153,7 +190,7 @@ static void imx_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+ {
+ 	struct imx_chip *imx = to_imx_chip(chip);
  
--	clk_disable_unprepare(imx->clk);
-+	clk_disable_unprepare(imx->clk_per);
+-	writel(0, imx->mmio_base + MX3_PWMCR);
++	imx->set_enable(chip, false);
+ 
+ 	clk_disable_unprepare(imx->clk);
  	imx->enabled = 0;
- }
+@@ -198,10 +235,13 @@ static int __devinit imx_pwm_probe(struct platform_device *pdev)
+ 	if (imx->mmio_base == NULL)
+ 		return -EADDRNOTAVAIL;
  
-@@ -238,10 +248,19 @@ static int __devinit imx_pwm_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
--	imx->clk = devm_clk_get(&pdev->dev, "pwm");
-+	imx->clk_per = devm_clk_get(&pdev->dev, "per");
-+	if (IS_ERR(imx->clk_per)) {
-+		dev_err(&pdev->dev, "getting per clock failed with %ld\n",
-+				PTR_ERR(imx->clk_per));
-+		return PTR_ERR(imx->clk_per);
+-	if (cpu_is_mx1() || cpu_is_mx21())
++	if (cpu_is_mx1() || cpu_is_mx21()) {
+ 		imx->config = imx_pwm_config_v1;
+-	else
++		imx->set_enable = imx_pwm_set_enable_v1;
++	} else {
+ 		imx->config = imx_pwm_config_v2;
++		imx->set_enable = imx_pwm_set_enable_v2;
 +	}
  
--	if (IS_ERR(imx->clk))
--		return PTR_ERR(imx->clk);
-+	imx->clk_ipg = devm_clk_get(&pdev->dev, "ipg");
-+	if (IS_ERR(imx->clk_ipg)) {
-+		dev_err(&pdev->dev, "getting ipg clock failed with %ld\n",
-+				PTR_ERR(imx->clk_ipg));
-+		return PTR_ERR(imx->clk_ipg);
-+	}
- 
- 	imx->chip.ops = &imx_pwm_ops;
- 	imx->chip.dev = &pdev->dev;
+ 	ret = pwmchip_add(&imx->chip);
+ 	if (ret < 0)
 -- 
 1.7.10.4
 
