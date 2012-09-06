@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756500Ab2IFOhj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 10:37:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44045 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756103Ab2IFOhh (ORCPT
+	id S1756632Ab2IFOhv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 10:37:51 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40869 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756595Ab2IFOhu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 10:37:37 -0400
-Message-ID: <5048B52A.6000602@canonical.com>
-Date: Thu, 06 Sep 2012 22:37:30 +0800
-From: Jeremy Kerr <jeremy.kerr@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Matt Fleming <matt.fleming@intel.com>
-CC: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Matt Domsch <Matt_Domsch@Dell.com>,
-        Peter Jones <pjones@redhat.com>
-Subject: Re: [RFC,PATCH v2] efi: Add support for a UEFI variable filesystem
-References: <1346910035.47691.188651047712.1.gpush@pecola>  <1346941120.4244.82.camel@mfleming-mobl1.ger.corp.intel.com>  <5048B1E8.1020904@canonical.com> <1346941851.4244.87.camel@mfleming-mobl1.ger.corp.intel.com>
-In-Reply-To: <1346941851.4244.87.camel@mfleming-mobl1.ger.corp.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 6 Sep 2012 10:37:50 -0400
+Message-ID: <1346942162.18408.25.camel@twins>
+Subject: Re: [PATCH tip/core/rcu 23/23] rcu: Simplify quiescent-state
+ detection
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Date: Thu, 06 Sep 2012 16:36:02 +0200
+In-Reply-To: <1346350718-30937-23-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20120830181811.GA29154@linux.vnet.ibm.com>
+	 <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1346350718-30937-23-git-send-email-paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matt,
+On Thu, 2012-08-30 at 11:18 -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+> 
+> The current quiescent-state detection algorithm is needlessly
+> complex.
 
-> I think this is the problematic chunk of code,
->
-> static int efivars_unlink(struct inode *dir, struct dentry *dentry)
-> {
->          struct efivar_entry *var = dentry->d_inode->i_private;
->          struct efivars *efivars = var->efivars;
->          efi_status_t status;
->
->          spin_lock(&efivars->lock);
->
->          status = efivars->ops->set_variable(var->var.VariableName,
->                                              &var->var.VendorGuid,
->                                              0, 0, NULL);
->
-> For deleting authenticated variables Attributes, DataSize and Data need
-> to be non-zero. I think DataSize == AuthInfo descriptor. Peter?
+Heh! Be careful, we might be led into believing all this RCU is actually
+really rather simple and this complexity is a bug on your end ;-)
 
-That's correct, but we can't use unlink to delete a secure variable, we 
-need to do a write instead, in order to provide the authentication 
-descriptor.
+>   It records the grace-period number corresponding to
+> the quiescent state at the time of the quiescent state, which
+> works, but it seems better to simply erase any record of previous
+> quiescent states at the time that the CPU notices the new grace
+> period.  This has the further advantage of removing another piece
+> of RCU for which lockless reasoning is required. 
 
-But yes, we may need to alter the efivars_file_write path so that such a 
-write actually results in the dentry being removed...
+So why didn't you do that from the start? :-)
 
-Cheers,
-
-
-Jeremy
-
-
+That is, I'm curious to know some history, why was it so and what led
+you to this insight?
