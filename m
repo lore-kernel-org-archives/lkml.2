@@ -1,121 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760192Ab2IFCAf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 22:00:35 -0400
-Received: from mga02.intel.com ([134.134.136.20]:58991 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752875Ab2IFCAe convert rfc822-to-8bit (ORCPT
+	id S1760196Ab2IFCDe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 22:03:34 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49231 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753400Ab2IFCDd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 22:00:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,377,1344236400"; 
-   d="scan'208";a="197636455"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>
-Subject: [PATCH RESEND] USB/host: Cleanup unneccessary irq disable code
-Thread-Topic: [PATCH RESEND] USB/host: Cleanup unneccessary irq disable code
-Thread-Index: Ac2L01qRJ4tvBMTSThSxqYeIWe2s4A==
-Date: Thu, 6 Sep 2012 02:00:16 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A178108@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 5 Sep 2012 22:03:33 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <50480447.4030007@jp.fujitsu.com>
+Date: Thu, 06 Sep 2012 11:02:47 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
+To: Minchan Kim <minchan@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Xishi Qiu <qiuxishi@huawei.com>, Mel Gorman <mgorman@suse.de>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] mm: use get_page_migratetype instead of page_private
+References: <1346829962-31989-1-git-send-email-minchan@kernel.org> <1346829962-31989-2-git-send-email-minchan@kernel.org>
+In-Reply-To: <1346829962-31989-2-git-send-email-minchan@kernel.org>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because the IRQF_DISABLED as the flag is now a NOOP and has been
-deprecated and in hardirq context the interrupt is disabled.
+(2012/09/05 16:26), Minchan Kim wrote:
+> page allocator uses set_page_private and page_private for handling
+> migratetype when it frees page. Let's replace them with [set|get]
+> _page_migratetype to make it more clear.
+> 
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
 
-so in usb/host code:
-Removing the usage of flag IRQF_DISABLED;
-Removing the calling local_irq save/restore actions in irq
-handler usb_hcd_irq();
+Hmm. one request from me.
 
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
----
- drivers/usb/core/hcd.c       |   15 ---------------
- drivers/usb/host/ehci-ls1x.c |    2 +-
- drivers/usb/host/ohci-xls.c  |    2 +-
- 3 files changed, 2 insertions(+), 17 deletions(-)
+> ---
+>   include/linux/mm.h  |   10 ++++++++++
+>   mm/page_alloc.c     |   11 +++++++----
+>   mm/page_isolation.c |    2 +-
+>   3 files changed, 18 insertions(+), 5 deletions(-)
+> 
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index 5c76634..86d61d6 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -249,6 +249,16 @@ struct inode;
+>   #define page_private(page)		((page)->private)
+>   #define set_page_private(page, v)	((page)->private = (v))
+>   
+> +static inline void set_page_migratetype(struct page *page, int migratetype)
+> +{
+> +	set_page_private(page, migratetype);
+> +}
+> +
+> +static inline int get_page_migratetype(struct page *page)
+> +{
+> +	return page_private(page);
+> +}
+> +
 
-diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-index bc84106..f84ddea 100644
---- a/drivers/usb/core/hcd.c
-+++ b/drivers/usb/core/hcd.c
-@@ -2153,15 +2153,8 @@ EXPORT_SYMBOL_GPL(usb_bus_start_enum);
- irqreturn_t usb_hcd_irq (int irq, void *__hcd)
- {
-        struct usb_hcd          *hcd = __hcd;
--       unsigned long           flags;
-        irqreturn_t             rc;
- 
--       /* IRQF_DISABLED doesn't work correctly with shared IRQs
--        * when the first handler doesn't use it.  So let's just
--        * assume it's never used.
--        */
--       local_irq_save(flags);
--
-        if (unlikely(HCD_DEAD(hcd) || !HCD_HW_ACCESSIBLE(hcd)))
-                rc = IRQ_NONE;
-        else if (hcd->driver->irq(hcd) == IRQ_NONE)
-@@ -2169,7 +2162,6 @@ irqreturn_t usb_hcd_irq (int irq, void *__hcd)
-        else
-                rc = IRQ_HANDLED;
- 
--       local_irq_restore(flags);
-        return rc;
- }
- EXPORT_SYMBOL_GPL(usb_hcd_irq);
-@@ -2358,13 +2350,6 @@ static int usb_hcd_request_irqs(struct usb_hcd *hcd,
- 
-        if (hcd->driver->irq) {
- 
--               /* IRQF_DISABLED doesn't work as advertised when used together
--                * with IRQF_SHARED. As usb_hcd_irq() will always disable
--                * interrupts we can remove it here.
--                */
--               if (irqflags & IRQF_SHARED)
--                       irqflags &= ~IRQF_DISABLED;
--
-                snprintf(hcd->irq_descr, sizeof(hcd->irq_descr), "%s:usb%d",
-                                hcd->driver->description, hcd->self.busnum);
-                retval = request_irq(irqnum, &usb_hcd_irq, irqflags,
-diff --git a/drivers/usb/host/ehci-ls1x.c b/drivers/usb/host/ehci-ls1x.c
-index a283e59..425cb4a 100644
---- a/drivers/usb/host/ehci-ls1x.c
-+++ b/drivers/usb/host/ehci-ls1x.c
-@@ -119,7 +119,7 @@ static int ehci_hcd_ls1x_probe(struct platform_device *pdev)
-                goto err_release_region;
-        }
- 
--       ret = usb_add_hcd(hcd, irq, IRQF_DISABLED | IRQF_SHARED);
-+       ret = usb_add_hcd(hcd, irq, IRQF_SHARED);
-        if (ret)
-                goto err_iounmap;
- 
-diff --git a/drivers/usb/host/ohci-xls.c b/drivers/usb/host/ohci-xls.c
-index 41e378f..84201cd 100644
---- a/drivers/usb/host/ohci-xls.c
-+++ b/drivers/usb/host/ohci-xls.c
-@@ -56,7 +56,7 @@ static int ohci_xls_probe_internal(const struct hc_driver *driver,
-                goto err3;
-        }
- 
--       retval = usb_add_hcd(hcd, irq, IRQF_DISABLED | IRQF_SHARED);
-+       retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
-        if (retval != 0)
-                goto err4;
-        return retval;
--- 
-1.7.0.4
+Could you add comments to explain "when this function returns expected value" ?
+These functions can work well only in very restricted area of codes.
+
+By the way, does these functions should be static-inline ?
+
+Thanks,
+-Kame
+
+>   /*
+>    * FIXME: take this include out, include page-flags.h in
+>    * files which need it (119 of them)
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 710d91c..103ba66 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -671,8 +671,10 @@ static void free_pcppages_bulk(struct zone *zone, int count,
+>   			/* must delete as __free_one_page list manipulates */
+>   			list_del(&page->lru);
+>   			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
+> -			__free_one_page(page, zone, 0, page_private(page));
+> -			trace_mm_page_pcpu_drain(page, 0, page_private(page));
+> +			__free_one_page(page, zone, 0,
+> +				get_page_migratetype(page));
+> +			trace_mm_page_pcpu_drain(page, 0,
+> +				get_page_migratetype(page));
+>   		} while (--to_free && --batch_free && !list_empty(list));
+>   	}
+>   	__mod_zone_page_state(zone, NR_FREE_PAGES, count);
+> @@ -731,6 +733,7 @@ static void __free_pages_ok(struct page *page, unsigned int order)
+>   	__count_vm_events(PGFREE, 1 << order);
+>   	free_one_page(page_zone(page), page, order,
+>   					get_pageblock_migratetype(page));
+> +
+>   	local_irq_restore(flags);
+>   }
+>   
+> @@ -1134,7 +1137,7 @@ static int rmqueue_bulk(struct zone *zone, unsigned int order,
+>   			if (!is_migrate_cma(mt) && mt != MIGRATE_ISOLATE)
+>   				mt = migratetype;
+>   		}
+> -		set_page_private(page, mt);
+> +		set_page_migratetype(page, mt);
+>   		list = &page->lru;
+>   	}
+>   	__mod_zone_page_state(zone, NR_FREE_PAGES, -(i << order));
+> @@ -1301,7 +1304,7 @@ void free_hot_cold_page(struct page *page, int cold)
+>   		return;
+>   
+>   	migratetype = get_pageblock_migratetype(page);
+> -	set_page_private(page, migratetype);
+> +	set_page_migratetype(page, migratetype);
+>   	local_irq_save(flags);
+>   	if (unlikely(wasMlocked))
+>   		free_page_mlock(page);
+> diff --git a/mm/page_isolation.c b/mm/page_isolation.c
+> index 64abb33..acf65a7 100644
+> --- a/mm/page_isolation.c
+> +++ b/mm/page_isolation.c
+> @@ -199,7 +199,7 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn)
+>   		if (PageBuddy(page))
+>   			pfn += 1 << page_order(page);
+>   		else if (page_count(page) == 0 &&
+> -				page_private(page) == MIGRATE_ISOLATE)
+> +				get_page_migratetype(page) == MIGRATE_ISOLATE)
+>   			pfn += 1;
+>   		else
+>   			break;
+> 
+
 
