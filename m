@@ -1,94 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759070Ab2IFQtJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 12:49:09 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:45859 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756031Ab2IFQtF (ORCPT
+	id S1759163Ab2IFQtX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 12:49:23 -0400
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:12458
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759086Ab2IFQtV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 12:49:05 -0400
-Date: Thu, 6 Sep 2012 09:47:45 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
-Subject: Re: [PATCH RFC tip/core/rcu] Add callback-free CPUs
-Message-ID: <20120906164745.GF2448@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120905213945.GA15216@linux.vnet.ibm.com>
- <1346881720.2600.48.camel@twins>
- <20120905234443.GY3308@linux.vnet.ibm.com>
- <1346926417.2600.73.camel@twins>
+	Thu, 6 Sep 2012 12:49:21 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839hd24he5bhf0ah107ah1155h)
+From: Fabio Estevam <fabio.estevam@freescale.com>
+To: <zbr@ioremap.net>
+CC: <s.hauer@pengutronix.de>, <linux-kernel@vger.kernel.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH v2 1/3] w1: mxc_w1: Adapt the clock name to the new clock framework
+Date: Thu, 6 Sep 2012 13:48:59 -0300
+Message-ID: <1346950139-17059-1-git-send-email-fabio.estevam@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346926417.2600.73.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12090616-5518-0000-0000-0000076D1885
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 06, 2012 at 12:13:37PM +0200, Peter Zijlstra wrote:
-> On Wed, 2012-09-05 at 16:44 -0700, Paul E. McKenney wrote:
-> 
-> > I was excited by this possibility when you first mentioned it, but
-> > the low-OS-jitter fans are going to need the grace-period computation
-> > to be offloaded as well. 
-> 
-> Sure, but it seems to me pulling the grace period machinery out is a
-> much harder feat and should be a patch (series) on its own. Also..
+With the new i.mx clock framework the mxc_w1 clock is registered as:
 
-Actually, I believe that I can resolve this reasonably simply.
+clk_register_clkdev(clk[owire_gate], NULL, "mxc_w1.0"
 
-> >  So if I use your (admittedly much simpler)
-> > approach, I get to rewrite it when Frederic's adaptive-ticks work goes
-> > in. 
-> 
-> I don't see how Frederic's work affects any of this, that would simple
-> put RCU into extended quiescent state (aka. idle) while in userspace. In
-> that state the grace period machinery is stopped all together, so it
-> doesn't matter who would've ran it. 
+So we do not need to pass "owire" string and can use NULL instead.
 
-The key point is "would simple put RCU into extended quiescent state".
-This can only happen if the CPU has no callbacks.  If the CPU does have
-callbacks, then RCU will need to do some work to advance the callbacks.
-Advancing the callbacks requires that RCU periodically do work on that
-CPU, resulting in OS jitter.
+While at it, also fix the clock error handling code.
 
-> >  Given that this is probably happening relatively soon, it would be
-> > better if I just did the implementation that will be needed long-term,
-> > rather than rewriting.
-> > 
-> > Though I am sure that people will be sad about fewer RCU patches.  ;-)
-> 
-> Always...
-> 
-> Now thinking about this grace machinery stuff a little more, would it be
-> possible to stick the entire state machine in a kthread and replace all
-> current hooks, like the tick and rcu_read_unlock_special with a message
-> passing construct such that they pass their event on to the kthread?
-> 
-> That way you could run the entire state thing from a kthread with random
-> affinity, all 'per-cpu' data would still be fine since only the one
-> kthread will access it, even though locality might suffer somewhat.
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+-----
+Changes since v1:
+- Fix clock error handling
+ drivers/w1/masters/mxc_w1.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-Well, the current patch set does move much of the grace-period machinery
-to a kthread.  Much of the remaining work needs to remain on the CPUs
-(at least those not in an extended quiescent state) in order to keep
-the overhead of the read-side primitives and scheduler hooks inexpensive.
+diff --git a/drivers/w1/masters/mxc_w1.c b/drivers/w1/masters/mxc_w1.c
+index 1cc61a7..960b362 100644
+--- a/drivers/w1/masters/mxc_w1.c
++++ b/drivers/w1/masters/mxc_w1.c
+@@ -117,11 +117,11 @@ static int __devinit mxc_w1_probe(struct platform_device *pdev)
+ 	if (!mdev)
+ 		return -ENOMEM;
+ 
+-	mdev->clk = clk_get(&pdev->dev, "owire");
+-	if (!mdev->clk) {
+-		err = -ENODEV;
+-		goto failed_clk;
+-	}
++	mdev->clk = clk_get(&pdev->dev, NULL);
++	if (IS_ERR(mdev->clk)) {
++		err = PTR_ERR(mdev->clk);
++		goto failed_clk;
++	}
+ 
+ 	mdev->clkdiv = (clk_get_rate(mdev->clk) / 1000000) - 1;
+ 
+-- 
+1.7.9.5
 
-> This would also not suffer from the having to keep one cpu special and
-> the ugly bouncing etc..
-
-The CPU-0 bounce thing was just a short-term hack to get the prototype
-working quickly.  It absolutely will -not- go mainline.  I have not yet
-worked out the best thing to replace it, but it will be replaced!
-
-							Thanx, Paul
 
