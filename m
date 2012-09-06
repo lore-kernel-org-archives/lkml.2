@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425Ab2IFIzr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 04:55:47 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:13524 "EHLO song.cn.fujitsu.com"
+	id S1756551Ab2IFI71 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 04:59:27 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:9759 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751619Ab2IFIzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 04:55:45 -0400
+	id S1752305Ab2IFI70 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 04:59:26 -0400
 X-IronPort-AV: E=Sophos;i="4.80,379,1344182400"; 
-   d="scan'208";a="5796405"
-Message-ID: <5048657A.7060004@cn.fujitsu.com>
-Date: Thu, 06 Sep 2012 16:57:30 +0800
+   d="scan'208";a="5796428"
+Message-ID: <50486658.5000305@cn.fujitsu.com>
+Date: Thu, 06 Sep 2012 17:01:12 +0800
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
@@ -25,10 +25,10 @@ Subject: Re: [RFC v2] memory-hotplug: remove MIGRATE_ISOLATE from free_area->fre
 References: <1346900018-14759-1-git-send-email-minchan@kernel.org> <50485B7B.3030201@cn.fujitsu.com> <20120906081818.GC16231@bbox>
 In-Reply-To: <20120906081818.GC16231@bbox>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/06 16:55:18,
+ 2012/09/06 16:58:59,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/06 16:55:19,
-	Serialize complete at 2012/09/06 16:55:19
+ 2012/09/06 16:59:00,
+	Serialize complete at 2012/09/06 16:59:00
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
@@ -121,8 +121,13 @@ On 09/06/2012 04:18 PM, Minchan Kim wrote:
 
 this test is wrong.
 
+use this:
+
 if ((pfn <= start_pfn) && (start_pfn < pfn + (1UL << page_order(page))))
 	goto found;
+
+if (pfn > start_pfn)
+	return false;
 
 
 >>> +	}
