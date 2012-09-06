@@ -1,114 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758567Ab2IFPsa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 11:48:30 -0400
-Received: from mga09.intel.com ([134.134.136.24]:50536 "EHLO mga09.intel.com"
+	id S1758751Ab2IFPsk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 11:48:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64102 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758524Ab2IFPsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 11:48:24 -0400
-Subject: Re: [PATCH] x86, efi: 1:1 pagetable mapping for virtual EFI calls
-From: Matt Fleming <matt.fleming@intel.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Vasco Dias <rafa.vasco@gmail.com>, Matthew Garrett <mjg@redhat.com>,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        cJ-ko@zougloub.eu, "H. Peter Anvin" <hpa@zytor.com>
-In-Reply-To: <5048D09A020000780009965B@nat28.tlf.novell.com>
-References: <1346937309-1581-1-git-send-email-matt@console-pimps.org>
-	 <5048D09A020000780009965B@nat28.tlf.novell.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-Date: Thu, 06 Sep 2012 16:47:45 +0100
-Message-ID: <1346946465.4244.107.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1758710Ab2IFPsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 11:48:36 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 03/12] perf hists: Add struct hists pointer to struct hist_entry
+Date: Thu,  6 Sep 2012 17:46:57 +0200
+Message-Id: <1346946426-13496-4-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1346946426-13496-1-git-send-email-jolsa@redhat.com>
+References: <1346946426-13496-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-06 at 15:34 +0100, Jan Beulich wrote:
-> >>> On 06.09.12 at 15:15, Matt Fleming <matt@console-pimps.org> wrote:
-> > From: Matt Fleming <matt.fleming@intel.com>
-> > 
-> > Some firmware still needs a 1:1 (virt->phys) mapping even after we've
-> > called SetVirtualAddressMap(). So install the mapping alongside our
-> > existing kernel mapping whenever we make EFI calls in virtual mode.
-> > 
-> > This bug was discovered on ASUS machines where the firmware
-> > implementation of GetTime() accesses the RTC device via physical
-> > addresses, even though that's bogus per the UEFI spec since we've
-> > informed the firmware via SetVirtualAddressMap() that the boottime
-> > memory map is no longer valid.
-> 
-> > @@ -741,6 +742,114 @@ static void __init runtime_code_page_mkexec(void)
-> >  	}
-> >  }
-> >  
-> > +#ifdef CONFIG_X86_64
-> > +pgd_t *efi_one_to_one_pgd;
-> > +int efi_one_to_one_index = 0;
-> 
-> I wasn't able to spot where this variable ever gets set to a
-> non-zero value.
+Adding pointer back to the parent hists struct for struct hists_entry.
 
-Oops. Yeah, you're right. It seems I lost that code at some point in
-development. I'll re-add in a v2 of this patch.
+This will be useful in future for any hist_entry's data computation,
+that depends on total data of its parent hists.
 
-> > @@ -58,6 +62,47 @@ static void __init early_code_mapping_set_exec(int 
-> > executable)
-> >  	}
-> >  }
-> >  
-> > +pgd_t *efi_call_virt_prelog(void)
-> > +{
-> > +	pgd_t *save;
-> > +	int i;
-> > +
-> > +	save = kmalloc(sizeof(pgd_t) * (efi_one_to_one_index + 1), GFP_KERNEL);
-> 
-> GFP_ATOMIC perhaps, given that many runtime calls happen
-> inside spin locks?
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ tools/perf/util/hist.c | 2 ++
+ tools/perf/util/sort.h | 1 +
+ 2 files changed, 3 insertions(+)
 
-Yeah, good idea.
-
-> > +	if (!save) {
-> > +		pr_alert("Unable to save pgd entries\n");
-> > +		return NULL;
-> > +	}
-> > +
-> > +	for (i = 0; i <= efi_one_to_one_index; i++) {
-> > +		pgd_t *pgd = __va(read_cr3() & PHYSICAL_PAGE_MASK);
-> 
-> I'd suggest moving this out of the loop (also below), slightly
-> adjusting the rest of the loop body.
-
-Sure.
-
-> > +
-> > +		pgd += i;
-> > +		save[i] = *pgd;
-> > +		set_pgd(pgd, efi_one_to_one_pgd[i]);
-> > +	}
-> 
-> Did you, as an alternative, consider switching to a different
-> CR3 instead of copying back and forth?
-
-I did consider it, but I couldn't convince myself whether or not the EFI
-pagetable would need to be manually kept in sync with any other
-pagetables. But now I look at the code a bit harder, it seems that
-should be taken care of automatically. In fact, the tboot code seems to
-do something similar. I'll try that approach.
-
-> > +
-> > +	__flush_tlb_all();
-> 
-> Is it certain you will _never_ hit a global mapping (in which case I
-> believe the above would be insufficient)?
-
-Are you saying that this should be a flush_tlb_all() if we have global
-mappings? Or that if we are guaranteed to never have global mappings we
-can opitmise this by simply doing a __flush_tlb()?
-
-Thanks Jan!
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index b1817f1..0ed0683 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -325,6 +325,7 @@ struct hist_entry *__hists__add_branch_entry(struct hists *self,
+ 		.parent = sym_parent,
+ 		.filtered = symbol__parent_filter(sym_parent),
+ 		.branch_info = bi,
++		.hists	= self,
+ 	};
+ 
+ 	return add_hist_entry(self, &entry, al, period);
+@@ -346,6 +347,7 @@ struct hist_entry *__hists__add_entry(struct hists *self,
+ 		.period	= period,
+ 		.parent = sym_parent,
+ 		.filtered = symbol__parent_filter(sym_parent),
++		.hists	= self,
+ 	};
+ 
+ 	return add_hist_entry(self, &entry, al, period);
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index e459c98..b0b4752 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -78,6 +78,7 @@ struct hist_entry {
+ 		struct rb_root	  sorted_chain;
+ 	};
+ 	struct branch_info	*branch_info;
++	struct hists		*hists;
+ 	struct callchain_root	callchain[0];
+ };
+ 
+-- 
+1.7.11.4
 
