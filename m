@@ -1,163 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933017Ab2IFS0l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 14:26:41 -0400
-Received: from zose-mta-11.w4a.fr ([178.33.204.86]:40731 "EHLO
-	zose-mta11.web4all.fr" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932373Ab2IFS0k convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 14:26:40 -0400
-Date: Thu, 6 Sep 2012 20:31:58 +0200 (CEST)
-From: =?utf-8?Q?Beno=C3=AEt_Th=C3=A9baudeau?= 
-	<benoit.thebaudeau@advansee.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: HACHIMI Samir <shachimi@adeneo-embedded.com>,
-        shawn guo <shawn.guo@linaro.org>,
-        thierry reding <thierry.reding@avionic-design.de>,
-        linux-kernel@vger.kernel.org, kernel@pengutronix.de,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Message-ID: <996111492.3799131.1346956318651.JavaMail.root@advansee.com>
-In-Reply-To: <1346935695-25179-8-git-send-email-s.hauer@pengutronix.de>
-Subject: Re: [PATCH 7/9] pwm i.MX: fix clock lookup
+	id S933020Ab2IFS3D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 14:29:03 -0400
+Received: from mga09.intel.com ([134.134.136.24]:17162 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932373Ab2IFS3B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 14:29:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,380,1344236400"; 
+   d="scan'208";a="189750584"
+Date: Thu, 6 Sep 2012 11:28:56 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Girish Verma <girish@circuitsutra.com>
+Cc: kernel-janitors@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+Subject: Re: [PATCH] USB: XHCI: xhci-ring: Remove unused dma address
+ calculation in inc_enq and inc_deq function
+Message-ID: <20120906182856.GC4618@xanatos>
+References: <1336922942.3945.12.camel@cst-girish-laptop>
+ <1346946453.5012.1.camel@cst-girish-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [88.188.188.98]
-X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Win)/7.2.0_GA_2669)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346946453.5012.1.camel@cst-girish-laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 6, 2012 2:48:13 PM, Sascha Hauer wrote:
+Hmm, your patch got corrupted:
+
+sarah@xanatos:~/git/kernels/xhci$ git am -s -3 ~/Maildir.fetchmail/.to-apply-next/
+Applying: USB: XHCI: xhci-ring: Remove unused dma address calculation in inc_enq and inc_deq function
+fatal: corrupt patch at line 18
+Repository lacks necessary blobs to fall back on 3-way merge.
+Cannot fall back to three-way merge.
+Patch failed at 0001 USB: XHCI: xhci-ring: Remove unused dma address calculation in inc_enq and inc_deq function
+When you have resolved this problem run "git am --resolved".
+If you would prefer to skip this patch, instead run "git am --skip".
+To restore the original branch and stop patching run "git am --abort".
+
+It looks like your mail client attempted to line wrap it.  You might
+want to use mutt, thunderbird, or maybe even the plain text gmail
+interface to resend this.
+
+Also...
+
+On Thu, Sep 06, 2012 at 09:17:33PM +0530, Girish Verma wrote:
+> Resending patch with latest kernel code:
+
+^^^ Don't include this line in your patch description.  Otherwise it
+will be in the git history forever.  If you want to add comments to me
+like this, you can edit the patch before you send it in your email
+client, and put comments...
+
+> In xhci-ring.c, function inc_enq and inc_deq calculate the dma address
+> of trb but never used. 
 > 
-> From: Philipp Zabel <p.zabel@pengutronix.de>
 > 
-> The i.MX pwm core has two clocks: The ipg clock and the ipg highfreq
-> (peripheral) clock. The ipg clock has to be enabled for this hardware
-> to work. The actual pwm output can either be driven by the ipg clock
-> or the ipg highfreq. The ipg highfreq has the advantage that it runs
-> even when the SoC is in low power modes.
-> This patch requests both clocks and enables the ipg clock for
-> accessing
-> registers and the peripheral clock to actually turn on the pwm.
 > 
-> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-> Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-> Reviewed-by: Shawn Guo <shawn.guo@linaro.org>
-> Reviewed-by: Benoît Thébaudeau <benoit.thebaudeau@advansee.com>
+> Signed-off-by: Girish Verma <girish@circuitsutra.com>
 > ---
->  drivers/pwm/pwm-imx.c |   35 +++++++++++++++++++++++++++--------
->  1 file changed, 27 insertions(+), 8 deletions(-)
+
+...here, after the --- line and before the diff stat.  patch will ignore
+any lines after the dash line up until the first @ line.
+
+Finally, please remove the two newlines between your patch description
+and the signed-off-by line.  Thanks!
+
+>  drivers/usb/host/xhci-ring.c |    4 ----
+>  1 files changed, 0 insertions(+), 4 deletions(-)
 > 
-> diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
-> index ea4ab2c..d45d44f 100644
-> --- a/drivers/pwm/pwm-imx.c
-> +++ b/drivers/pwm/pwm-imx.c
-> @@ -40,7 +40,8 @@
->  #define MX3_PWMCR_EN              (1 << 0)
->  
->  struct imx_chip {
-> -	struct clk	*clk;
-> +	struct clk	*clk_per;
-> +	struct clk	*clk_ipg;
->  
->  	int		enabled;
->  	void __iomem	*mmio_base;
-> @@ -105,7 +106,7 @@ static int imx_pwm_config_v2(struct pwm_chip
-> *chip,
->  	unsigned long period_cycles, duty_cycles, prescale;
->  	u32 cr;
->  
-> -	c = clk_get_rate(imx->clk);
-> +	c = clk_get_rate(imx->clk_per);
->  	c = c * period_ns;
->  	do_div(c, 1000000000);
->  	period_cycles = c;
-> @@ -160,8 +161,17 @@ static int imx_pwm_config(struct pwm_chip *chip,
->  		struct pwm_device *pwm, int duty_ns, int period_ns)
+> diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
+> index 643c2f3..5c5c47b 100644
+> --- a/drivers/usb/host/xhci-ring.c
+> +++ b/drivers/usb/host/xhci-ring.c
+> @@ -145,7 +145,6 @@ static void next_trb(struct xhci_hcd *xhci,
+>   */
+>  static void inc_deq(struct xhci_hcd *xhci, struct xhci_ring *ring)
 >  {
->  	struct imx_chip *imx = to_imx_chip(chip);
-> +	int ret;
-> +
-> +	ret = clk_prepare_enable(imx->clk_ipg);
-> +	if (ret)
-> +		return ret;
+> -	unsigned long long addr;
 >  
-> -	return imx->config(chip, pwm, duty_ns, period_ns);
-> +	ret = imx->config(chip, pwm, duty_ns, period_ns);
-> +
-> +	clk_disable_unprepare(imx->clk_ipg);
-> +
-> +	return ret;
+>  	ring->deq_updates++;
+>  
+> @@ -176,7 +175,6 @@ static void inc_deq(struct xhci_hcd *xhci, struct
+> xhci_ring *ring)
+>  		}
+>  	} while (last_trb(xhci, ring, ring->deq_seg, ring->dequeue));
+>  
+> -	addr = (unsigned long long) xhci_trb_virt_to_dma(ring->deq_seg,
+> ring->dequeue);
 >  }
 >  
->  static int imx_pwm_enable(struct pwm_chip *chip, struct pwm_device
->  *pwm)
-> @@ -169,7 +179,7 @@ static int imx_pwm_enable(struct pwm_chip *chip,
-> struct pwm_device *pwm)
->  	struct imx_chip *imx = to_imx_chip(chip);
->  	int ret;
+>  /*
+> @@ -201,7 +199,6 @@ static void inc_enq(struct xhci_hcd *xhci, struct
+> xhci_ring *ring,
+>  {
+>  	u32 chain;
+>  	union xhci_trb *next;
+> -	unsigned long long addr;
 >  
-> -	ret = clk_prepare_enable(imx->clk);
-> +	ret = clk_prepare_enable(imx->clk_per);
->  	if (ret)
->  		return ret;
-
-Have you tested that this actually works on i.MX53?
-
-I have tested it successfully on i.MX35 (with a few additions to platform code).
-But i.MX35 has a single bit controlling both PWM IPG and PER clock gates.
-
-On i.MX53, there are 2 separate control bits for these. So, if ipg clk is
-strictly required to access PWM registers, even if per clk is enabled, this code
-should not work without adding
-
-+	ret = clk_prepare_enable(imx->clk_ipg);
-+	if (ret)
-+		return ret;
-
-and
-
-+	clk_disable_unprepare(imx->clk_ipg);
-
-around each call to set_enable().
-
->  
-> @@ -186,7 +196,7 @@ static void imx_pwm_disable(struct pwm_chip
-> *chip, struct pwm_device *pwm)
->  
->  	imx->set_enable(chip, false);
->  
-> -	clk_disable_unprepare(imx->clk);
-> +	clk_disable_unprepare(imx->clk_per);
->  	imx->enabled = 0;
->  }
->  
-> @@ -238,10 +248,19 @@ static int __devinit imx_pwm_probe(struct
-> platform_device *pdev)
->  		return -ENOMEM;
+>  	chain = le32_to_cpu(ring->enqueue->generic.field[3]) & TRB_CHAIN;
+>  	/* If this is not event ring, there is one less usable TRB */
+> @@ -253,7 +250,6 @@ static void inc_enq(struct xhci_hcd *xhci, struct
+> xhci_ring *ring,
+>  		ring->enqueue = ring->enq_seg->trbs;
+>  		next = ring->enqueue;
 >  	}
+> -	addr = (unsigned long long) xhci_trb_virt_to_dma(ring->enq_seg,
+> ring->enqueue);
+>  }
 >  
-> -	imx->clk = devm_clk_get(&pdev->dev, "pwm");
-> +	imx->clk_per = devm_clk_get(&pdev->dev, "per");
-> +	if (IS_ERR(imx->clk_per)) {
-> +		dev_err(&pdev->dev, "getting per clock failed with %ld\n",
-> +				PTR_ERR(imx->clk_per));
-> +		return PTR_ERR(imx->clk_per);
-> +	}
->  
-> -	if (IS_ERR(imx->clk))
-> -		return PTR_ERR(imx->clk);
-> +	imx->clk_ipg = devm_clk_get(&pdev->dev, "ipg");
-> +	if (IS_ERR(imx->clk_ipg)) {
-> +		dev_err(&pdev->dev, "getting ipg clock failed with %ld\n",
-> +				PTR_ERR(imx->clk_ipg));
-> +		return PTR_ERR(imx->clk_ipg);
-> +	}
->  
->  	imx->chip.ops = &imx_pwm_ops;
->  	imx->chip.dev = &pdev->dev;
-
-Best regards,
-Benoît
+>  /*
+> -- 
+> 1.7.0.4
+> 
+> 
