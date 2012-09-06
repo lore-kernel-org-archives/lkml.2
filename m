@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932809Ab2IFRdF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 13:33:05 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:35223 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932173Ab2IFRdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 13:33:01 -0400
-Date: Thu, 6 Sep 2012 10:29:13 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 03/23] rcu: Move RCU grace-period cleanup
- into kthread
-Message-ID: <20120906172912.GJ2448@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120830181811.GA29154@linux.vnet.ibm.com>
- <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346350718-30937-3-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346938478.18408.4.camel@twins>
+	id S932700Ab2IFReC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 13:34:02 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:44662 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932521Ab2IFRd7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 13:33:59 -0400
+Message-ID: <5048DE83.4050203@wwwdotorg.org>
+Date: Thu, 06 Sep 2012 11:33:55 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346938478.18408.4.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12090617-3534-0000-0000-00000C5254C3
+To: Thomas Abraham <thomas.abraham@linaro.org>
+CC: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linus.walleij@linaro.org,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        kgene.kim@samsung.com, dong.aisheng@linaro.org, patches@linaro.org
+Subject: Re: [PATCH v3 1/4] pinctrl: add samsung pinctrl and gpiolib driver
+References: <226e01cd8ae6$928010b0$b7803210$%kim@samsung.com> <1346826046-30484-1-git-send-email-thomas.abraham@linaro.org>
+In-Reply-To: <1346826046-30484-1-git-send-email-thomas.abraham@linaro.org>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 06, 2012 at 03:34:38PM +0200, Peter Zijlstra wrote:
-> On Thu, 2012-08-30 at 11:18 -0700, Paul E. McKenney wrote:
-> >  static void rcu_report_qs_rsp(struct rcu_state *rsp, unsigned long flags)
-> >         __releases(rcu_get_root(rsp)->lock)
-> >  {
-> > +       raw_spin_unlock_irqrestore(&rcu_get_root(rsp)->lock, flags);
-> > +       wake_up(&rsp->gp_wq);  /* Memory barrier implied by wake_up() path. */
-> >  } 
+On 09/05/2012 12:20 AM, Thomas Abraham wrote:
+> Add a new device tree enabled pinctrl and gpiolib driver for Samsung
+> SoC's. This driver provides a common and extensible framework for all
+> Samsung SoC's to interface with the pinctrl and gpiolib subsystems. This
+> driver supports only device tree based instantiation and hence can be
+> used only on those Samsung platforms that have device tree enabled.
 > 
-> Could you now also clean up the locking so that the caller releases this
-> lock?
+> This driver is split into two parts: the pinctrl interface and the gpiolib
+> interface. The pinctrl interface registers pinctrl devices with the pinctrl
+> subsystem and gpiolib interface registers gpio chips with the gpiolib
+> subsystem. The information about the pins, pin groups, pin functions and
+> gpio chips, which are SoC specific, are parsed from device tree node.
 > 
-> I so dislike asymmetric locking like that..
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: Kukjin Kim <kgene.kim@samsung.com>
+> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
 
-Or I could inline the whole thing at the two callsites...
-
-							Thanx, Paul
+Acked-by: Stephen Warren <swarren@nvidia.com>
 
