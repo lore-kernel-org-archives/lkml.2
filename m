@@ -1,70 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757358Ab2IFKOQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 06:14:16 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40043 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753446Ab2IFKOP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 06:14:15 -0400
-Message-ID: <1346926417.2600.73.camel@twins>
-Subject: Re: [PATCH RFC tip/core/rcu] Add callback-free CPUs
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
-Date: Thu, 06 Sep 2012 12:13:37 +0200
-In-Reply-To: <20120905234443.GY3308@linux.vnet.ibm.com>
-References: <20120905213945.GA15216@linux.vnet.ibm.com>
-	 <1346881720.2600.48.camel@twins> <20120905234443.GY3308@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1757410Ab2IFKRZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 06:17:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54137 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754541Ab2IFKRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 06:17:24 -0400
+Date: Thu, 6 Sep 2012 13:18:43 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] virtio-blk: Fix kconfig option
+Message-ID: <20120906101842.GB32325@redhat.com>
+References: <20120903044133.GA9980@moria.home.lan>
+ <87wr0ae26e.fsf@rustcorp.com.au>
+ <20120906074113.GA5902@koverstreet-glaptop>
+ <20120906084403.GD17656@redhat.com>
+ <20120906092512.GB5902@koverstreet-glaptop>
+ <20120906094956.GB22816@redhat.com>
+ <20120906100247.GA27355@koverstreet-glaptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120906100247.GA27355@koverstreet-glaptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-05 at 16:44 -0700, Paul E. McKenney wrote:
-
-> I was excited by this possibility when you first mentioned it, but
-> the low-OS-jitter fans are going to need the grace-period computation
-> to be offloaded as well. 
-
-Sure, but it seems to me pulling the grace period machinery out is a
-much harder feat and should be a patch (series) on its own. Also..
-
->  So if I use your (admittedly much simpler)
-> approach, I get to rewrite it when Frederic's adaptive-ticks work goes
-> in. 
-
-I don't see how Frederic's work affects any of this, that would simple
-put RCU into extended quiescent state (aka. idle) while in userspace. In
-that state the grace period machinery is stopped all together, so it
-doesn't matter who would've ran it. 
-
->  Given that this is probably happening relatively soon, it would be
-> better if I just did the implementation that will be needed long-term,
-> rather than rewriting.
+On Thu, Sep 06, 2012 at 03:02:48AM -0700, Kent Overstreet wrote:
+> On Thu, Sep 06, 2012 at 12:49:56PM +0300, Michael S. Tsirkin wrote:
+> > On Thu, Sep 06, 2012 at 02:25:12AM -0700, Kent Overstreet wrote:
+> > > On Thu, Sep 06, 2012 at 11:44:03AM +0300, Michael S. Tsirkin wrote:
+> > > > On Thu, Sep 06, 2012 at 12:41:13AM -0700, Kent Overstreet wrote:
+> > > > > On Tue, Sep 04, 2012 at 03:53:53PM +0930, Rusty Russell wrote:
+> > > > > > Kent Overstreet <koverstreet@google.com> writes:
+> > > > > > 
+> > > > > > > CONFIG_VIRTIO isn't exposed, everything else is supposed to select it
+> > > > > > > instead.
+> > > > > > 
+> > > > > > This is a slight mis-understanding.  It's supposed to be selected by
+> > > > > > the particular driver, probably virtio_pci in your case.
+> > > > > 
+> > > > > So are you saying virtio-blk depends on virtio-pci? If so, the kconfig
+> > > > > should have that.
+> > > > > 
+> > > > > As is, VIRTIO_BLK just has:
+> > > > > 	depends on EXPERIMENTAL && VIRTIO
+> > > > > 
+> > > > > which is flat out broken.
+> > > > 
+> > > > I don't think anything is broken.
+> > > > Can you show an example of a broken configuration?
+> > > 
+> > > Do you not understand the difference between depends an selects?
+> > > Or did you not read my original mail?
+> > > Flip off everything in drivers -> virtio
+> > > 
+> > > Now go to drivers -> block and try to turn on virtio-blk.
+> > > 
+> > > It's not listed!
+> > 
+> > Yes. Because you disabled all virtio backends.
+> > It does not make sense to have any frontends.
 > 
-> Though I am sure that people will be sad about fewer RCU patches.  ;-)
+> How's a user - or even another kernel developer who isn't familiar with
+> virtio - supposed to know that?
+> 
+> I still don't know what exactly a virtio backend is - the term isn't
+> even mentioned anywhere that I've seen.
+> 
+> Whatever it is though virtio-blk should be depending on _that_, not a
+> config option that _isn't exposed in the menu_!
+> 
+> > > Now go back to drivers -> virtio and turn on (randomly) balloon.
+> > > 
+> > > Go back to drivers -> block, and now you can turn on virtio-blk!
+> > > 
+> > > Do you see what's wrong with this picture?
+> > 
+> > Yes. You got unlucky with your random guess.
+> > It's a bug in balloon kconfig: it should not
+> > select virtio.
+> > I sent a patch to fix that yesterday.
+> 
+> Then it's also a bug in the comments at the top of
+> drivers/virtio/Kconfig.
+> 
+> And besides that, how the _hell_ is a user supposed to know to turn on
+> VIRTIO_PCI before VIRTIO_BLK? It's not documented anywhere (if that is
+> what's supposed to happen! I still don't know)
 
-Always...
+Well, what kind of device do you have? Tell us :)
+If it's a virtio pci device,
+you need to enable virtio-pci and virtio-blk.
 
-Now thinking about this grace machinery stuff a little more, would it be
-possible to stick the entire state machine in a kthread and replace all
-current hooks, like the tick and rcu_read_unlock_special with a message
-passing construct such that they pass their event on to the kthread?
+> and even if it was
+> documented, having one kconfig option depend on something that's exposed
+> in a _completely different menu_ is just made of fail.
 
-That way you could run the entire state thing from a kthread with random
-affinity, all 'per-cpu' data would still be fine since only the one
-kthread will access it, even though locality might suffer somewhat.
-
-This would also not suffer from the having to keep one cpu special and
-the ugly bouncing etc..
+Fine, but why pick on virtio?
+This is extremely common in kconfig.
+For example, a ton of network drivers depend
+on PCI, it's exactly the same thing.
 
 
+-- 
+MST
