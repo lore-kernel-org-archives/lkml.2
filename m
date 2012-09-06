@@ -1,94 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755974Ab2IFXwc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 19:52:32 -0400
-Received: from caiajhbdccah.dreamhost.com ([208.97.132.207]:51246 "EHLO
-	homiemail-a3.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751194Ab2IFXwb (ORCPT
+	id S1756561Ab2IFX6U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 19:58:20 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:21337 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755234Ab2IFX6Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 19:52:31 -0400
-Message-ID: <1346975548.2410.2.camel@offbook>
-Subject: [PATCH] kernel/sys: initialize return codes when  declaring
- variables
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Date: Fri, 07 Sep 2012 01:52:28 +0200
-Organization: GNU
+	Thu, 6 Sep 2012 19:58:16 -0400
+Message-ID: <1346975562.4732.256.camel@misato.fc.hp.com>
+Subject: Re: [RFC PATCH 1/5] ACPI: Add acpi_lookup_driver() function
+From: Toshi Kani <toshi.kani@hp.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org, lenb@kernel.org,
+        liuj97@gmail.com, isimatu.yasuaki@jp.fujitsu.com
+Date: Thu, 06 Sep 2012 17:52:42 -0600
+In-Reply-To: <1346430252.4732.163.camel@misato.fc.hp.com>
+References: <1346357766-14030-1-git-send-email-toshi.kani@hp.com>
+	 <1346357766-14030-2-git-send-email-toshi.kani@hp.com>
+	 <CAErSpo4nKzwFb6UfM068fqzW6J5ysKsP2cnngMnTA9GQaTmeXw@mail.gmail.com>
+	 <1346430252.4732.163.camel@misato.fc.hp.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trivially initialize return codes with default values when
-the variable is declared.
+(snip)
+ :
+> > > +
+> > > +       /* set HID to this device object */
+> > > +       acpi_device_set_id(device);
+> > > +
+> > > +       /* lookup a matching driver */
+> > > +       (void) bus_for_each_drv(device->dev.bus, NULL,
+> > > +                                       device, acpi_match_driver);
+> > > +       driver = device->driver;
+> > 
+> > This path is used when we receive a Notify to a device and a matching
+> > driver has been registered, but the driver is not bound to the device.
+> >  For example, it may be a newly-added device where we haven't bound a
+> > driver to it yet.
+> > 
+> > Is there anything that prevents us from unloading the driver between
+> > here (the point where we capture the "struct acpi_driver *") and the
+> > point where we call "driver->ops.sys_notify"?
+> 
+> Hi Bjorn,
+> 
+> That's a very good question.  I will look into how we protect a driver
+> from unloading when we try to attach & probe a driver in the
+> acpi_add_single_object() path, and see if we can use a similar way to
+> protect it here as well.
 
-Signed-off-by: Davidlohr Bueso <dave@gnu.org>
----
- kernel/sys.c |    9 +++------
- 1 files changed, 3 insertions(+), 6 deletions(-)
+I have protected this path in version 2, which I just sent out.  It
+calls .sys_notify() directly from bus_for_each_drv(), which protects the
+driver entry by increasing its reference count while the callback
+function is being called.
 
-diff --git a/kernel/sys.c b/kernel/sys.c
-index 241507f..b3b2ef7 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -1364,7 +1364,7 @@ SYSCALL_DEFINE1(olduname, struct oldold_utsname __user *, name)
+Thanks,
+-Toshi
  
- SYSCALL_DEFINE2(sethostname, char __user *, name, int, len)
- {
--	int errno;
-+	int errno = -EFAULT;
- 	char tmp[__NEW_UTS_LEN];
- 
- 	if (!ns_capable(current->nsproxy->uts_ns->user_ns, CAP_SYS_ADMIN))
-@@ -1373,7 +1373,6 @@ SYSCALL_DEFINE2(sethostname, char __user *, name, int, len)
- 	if (len < 0 || len > __NEW_UTS_LEN)
- 		return -EINVAL;
- 	down_write(&uts_sem);
--	errno = -EFAULT;
- 	if (!copy_from_user(tmp, name, len)) {
- 		struct new_utsname *u = utsname();
- 
-@@ -1390,7 +1389,7 @@ SYSCALL_DEFINE2(sethostname, char __user *, name, int, len)
- 
- SYSCALL_DEFINE2(gethostname, char __user *, name, int, len)
- {
--	int i, errno;
-+	int i, errno = 0;
- 	struct new_utsname *u;
- 
- 	if (len < 0)
-@@ -1400,7 +1399,6 @@ SYSCALL_DEFINE2(gethostname, char __user *, name, int, len)
- 	i = 1 + strlen(u->nodename);
- 	if (i > len)
- 		i = len;
--	errno = 0;
- 	if (copy_to_user(name, u->nodename, i))
- 		errno = -EFAULT;
- 	up_read(&uts_sem);
-@@ -1415,7 +1413,7 @@ SYSCALL_DEFINE2(gethostname, char __user *, name, int, len)
-  */
- SYSCALL_DEFINE2(setdomainname, char __user *, name, int, len)
- {
--	int errno;
-+	int errno = -EFAULT;
- 	char tmp[__NEW_UTS_LEN];
- 
- 	if (!ns_capable(current->nsproxy->uts_ns->user_ns, CAP_SYS_ADMIN))
-@@ -1424,7 +1422,6 @@ SYSCALL_DEFINE2(setdomainname, char __user *, name, int, len)
- 		return -EINVAL;
- 
- 	down_write(&uts_sem);
--	errno = -EFAULT;
- 	if (!copy_from_user(tmp, name, len)) {
- 		struct new_utsname *u = utsname();
- 
--- 
-1.7.5.4
 
 
 
