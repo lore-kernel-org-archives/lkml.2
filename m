@@ -1,46 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756121Ab2IFOWh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 10:22:37 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58399 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756042Ab2IFOWe convert rfc822-to-8bit (ORCPT
+	id S1756139Ab2IFOXq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 10:23:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43943 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755497Ab2IFOXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 10:22:34 -0400
-Message-ID: <1346941290.18408.17.camel@twins>
-Subject: Re: [PATCH tip/core/rcu 16/23] rcu: Prevent initialization-time
- quiescent-state race
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
-Date: Thu, 06 Sep 2012 16:21:30 +0200
-In-Reply-To: <20120905181920.GN3308@linux.vnet.ibm.com>
-References: <20120830181811.GA29154@linux.vnet.ibm.com>
-	 <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1346350718-30937-16-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <20120903093742.GE5574@leaf> <20120905181920.GN3308@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 6 Sep 2012 10:23:44 -0400
+Message-ID: <5048B1E8.1020904@canonical.com>
+Date: Thu, 06 Sep 2012 22:23:36 +0800
+From: Jeremy Kerr <jeremy.kerr@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Matt Fleming <matt.fleming@intel.com>
+CC: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Matt Domsch <Matt_Domsch@Dell.com>
+Subject: Re: [RFC,PATCH v2] efi: Add support for a UEFI variable filesystem
+References: <1346910035.47691.188651047712.1.gpush@pecola> <1346941120.4244.82.camel@mfleming-mobl1.ger.corp.intel.com>
+In-Reply-To: <1346941120.4244.82.camel@mfleming-mobl1.ger.corp.intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-05 at 11:19 -0700, Paul E. McKenney wrote:
-> I tried that, and got a surprisingly large set of conflicts.  Ah, OK,
-> the problem is that breaking up rcu_gp_kthread() into subfunctions
-> did enough code motion to defeat straightforward rebasing.  Is there
-> some way to tell "git rebase" about such code motion, or would this
-> need to be carried out carefully by hand? 
+Hi Matt,
 
-The alternative is doing that rebase by hand and in the process make
-that code movement patch (6) obsolete by making patches (1) and (3)
-introduce the code in the final form :-)
+> Am I correct in thinking that this filesystem doesn't handle deletion of
+> authenticated variables?
 
-Yay for less patches :-)
+Unless I'm missing something, this should work fine; we just pass the 
+EFI_VARIABLE_AUTHENTICATION_2 descriptor (with the usual attribute 
+header), but no data following the descriptor.
+
+Cheers,
+
+
+Jeremy
+
+
