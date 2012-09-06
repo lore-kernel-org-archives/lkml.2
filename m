@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760079Ab2IFAlj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 20:41:39 -0400
-Received: from mga01.intel.com ([192.55.52.88]:25336 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755052Ab2IFAlh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 20:41:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,377,1344236400"; 
-   d="scan'208";a="218642108"
-Date: Thu, 6 Sep 2012 08:41:34 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org
-Subject: Re: PCI/e1000 BUG: unable to handle kernel paging request at 0ffff163
-Message-ID: <20120906004134.GA12893@localhost>
-References: <20120905065118.GA9603@localhost>
- <CAE9FiQVO6dj+rEP=phQD5VYEF-rak6UPYGMSV8ud0OyELo7Opg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQVO6dj+rEP=phQD5VYEF-rak6UPYGMSV8ud0OyELo7Opg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1760098Ab2IFAlo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 20:41:44 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:33233 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755052Ab2IFAll (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 20:41:41 -0400
+Subject: Re: [PATCH 3.6 0/3] Fix use-after-free in PSCSI
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, target-devel@vger.kernel.org
+In-Reply-To: <1346857755-10224-1-git-send-email-pbonzini@redhat.com>
+References: <1346857755-10224-1-git-send-email-pbonzini@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 05 Sep 2012 17:41:39 -0700
+Message-ID: <1346892099.4162.325.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 05, 2012 at 11:41:04AM -0700, Yinghai Lu wrote:
-> On Tue, Sep 4, 2012 at 11:51 PM, Fengguang Wu <fengguang.wu@intel.com> wrote:
-> > Yinghai,
-> >
-> > There are many kernel paging errors showing up in tree:
-> >
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-for-each-res-addon-v2
-> >
-> > The below summary shows that
-> >
-> > 1) it's a reliably reproducible bug
-> > 2) all paging fault happens at address 0ffff163 and in some e1000 functions
-> >
-> > I'll try to bisect if the root cause is not obvious to you.  (Cannot
-> > do so for now because there are 3 bisections on the way and I cannot
-> > afford more..)
+On Wed, 2012-09-05 at 17:09 +0200, Paolo Bonzini wrote:
+> Hi,
 > 
-> thanks, will check that...
+> this series fixes the bug I reported with wrong sense data.  The
+> memory corruption is caused by using the sense data after freeing
+> it.  The series corrects it by moving the copy of the sense data
+> earlier, to the transport_complete callback.
 > 
-> the 32bit kernel as kvm gust, and host is doing pci passthrough to
-> export the VF to the KVM guest?
+> Please review and be kind on my first lio patches! :)
+> 
+> Paolo
+> 
+> Paolo Bonzini (3):
+>   target: move transport_get_sense_data
+>   target: simplify code around transport_get_sense_data
+>   target: fix use-after-free with PSCSI sense data
+> 
+>  drivers/target/target_core_pscsi.c     |   21 ++----
+>  drivers/target/target_core_transport.c |  117 ++++++++++++--------------------
+>  include/target/target_core_backend.h   |    4 +-
+>  3 files changed, 53 insertions(+), 89 deletions(-)
+> 
 
-No I didn't do anything special for PCI passthrough. I just used KVM's
-emulated e1000 device.
+The approach to squash the bug looks easonable to me, and nice work on
+the extra cleanups for backend sense w/ TRANSPORT_PLUGIN_PHBA_PDEV !
 
-btw, I'll be able to start bisection after several hours.
+I've applied this to target-pending/master w/ CC stable, and will plan
+to send out the PULL request for -rc5 over the next days.
 
-Thanks,
-Fengguang
+Nice work Paolo!
+
+--nab
+
