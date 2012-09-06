@@ -1,69 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760205Ab2IFCI7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 22:08:59 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:12817 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753400Ab2IFCI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 22:08:58 -0400
-X-IronPort-AV: E=Sophos;i="4.80,377,1344182400"; 
-   d="scan'208";a="5791709"
-Message-ID: <50480624.3070308@cn.fujitsu.com>
-Date: Thu, 06 Sep 2012 10:10:44 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1760213Ab2IFCL4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 22:11:56 -0400
+Received: from mail.windriver.com ([147.11.1.11]:38762 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752979Ab2IFCLz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 22:11:55 -0400
+Date: Thu, 6 Sep 2012 10:11:22 +0800
+From: Liang Li <liang.li@windriver.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Richard Purdie <richard.purdie@linuxfoundation.org>,
+        <a.p.zijlstra@chello.nl>, <paulus@samba.org>, <mingo@redhat.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] perf: add SLANG_INC for slang.h
+Message-ID: <20120906021121.GB16647@localhost>
+Reply-To: Liang Li <liang.li@windriver.com>
+References: <1345777839-15843-1-git-send-email-liang.li@windriver.com>
+ <20120905205439.GD8203@ghostprotocols.net>
+ <1346880183.21985.90.camel@ted>
+ <20120905224122.GH8203@ghostprotocols.net>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/11 V5] workqueue: new day don't need WORKER_REBIND
- for busy rebinding
-References: <1346841475-4422-1-git-send-email-laijs@cn.fujitsu.com> <1346841475-4422-4-git-send-email-laijs@cn.fujitsu.com> <20120905183148.GB13737@google.com>
-In-Reply-To: <20120905183148.GB13737@google.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/06 10:08:33,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/06 10:08:33,
-	Serialize complete at 2012/09/06 10:08:33
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120905224122.GH8203@ghostprotocols.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/06/2012 02:31 AM, Tejun Heo wrote:
-> On Wed, Sep 05, 2012 at 06:37:40PM +0800, Lai Jiangshan wrote:
->> because old busy_worker_rebind_fn() have to wait until all idle worker finish.
->> so we have to use two flags WORKER_UNBOUND and WORKER_REBIND to avoid
->> prematurely clear all NOT_RUNNING bit when highly frequent offline/online.
->>
->> but current code don't need to wait idle workers. so we don't need to
->> use two flags, just one is enough. remove WORKER_REBIND from busy rebinding.
+On 2012-09-06 06:41, Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
+> Em Wed, Sep 05, 2012 at 10:23:03PM +0100, Richard Purdie escreveu:
+> > On Wed, 2012-09-05 at 13:54 -0700, Arnaldo Carvalho de Melo wrote:
+> > > Em Fri, Aug 24, 2012 at 11:10:39AM +0800, Liang Li escreveu:
+> > > > CFLAGS was previously hard coded to contain "-I/usr/include/slang" to
+> > > > work with hosts that have "/usr/include/slang/slang.h" as well as hosts
+> > > > that have "/usr/include/slang.h". This path can cause compile warnings
+> > > > like:
+> > > > 
+> > > > cc1: warning: '/usr/include/slang' doesn't exists.
+> > > > 
+> > > > or
+> > > > 
+> > > > cc1: warning: include location "/usr/include/slang" is unsafe for
+> > > > cross-compilation [-Wpoison-system-directories]
+> > > > 
+> > > > Then in some cases warnings become errors if WERROR is enabled hence
+> > > > build errors.
+> > > > 
+> > > > To fix this issue, we can use -idirafter to downgrade the priority of the
+> > > > default hard coded path. We can also make the slang include directory
+> > > > a variable, to allow the user to specify SLANG_INC and set their own
+> > > > include location. And add a '=' prefix to indicate better
+> > > > compatibility with sysroot/cross compile cases.
+> > > 
+> > >     CC /home/acme/git/build/perf/builtin-diff.o
+> > > In file included from util/../ui/keysyms.h:4,
+> > >                  from util/hist.h:142,
+> > >                  from builtin-diff.c:11:
+> > > util/../ui/libslang.h:12:19: error: slang.h: No such file or directory
+> > > util/../ui/libslang.h:14:5: error: "SLANG_VERSION" is not defined
+> > > In file included from util/../ui/keysyms.h:4,
+> > >                  from util/hist.h:142,
+> > >                  from util/evsel.h:10,
+> > >                  from util/evlist.h:8,
+> > >                  from builtin-annotate.c:20:
+> > > util/../ui/libslang.h:12:19: error: slang.h: No such file or directory
+> > > util/../ui/libslang.h:14:5: error: "SLANG_VERSION" is not defined
+> > > builtin-annotate.c: In function ‘hists__find_annotations’:
+> > > builtin-annotate.c:122: error: ‘SL_KEY_RIGHT’ undeclared (first use in
+> > > this function)
+> > > builtin-annotate.c:122: error: (Each undeclared identifier is reported
+> > > only once
+> > > builtin-annotate.c:122: error: for each function it appears in.)
+> > > builtin-annotate.c:134: error: ‘SL_KEY_LEFT’ undeclared (first use in
+> > > this function)
+> > > make: *** [/home/acme/git/build/perf/builtin-annotate.o] Error 1
+> > > make: *** Waiting for unfinished jobs....
+> > > make: *** [/home/acme/git/build/perf/builtin-diff.o] Error 1
+> > > make: Leaving directory `/home/git/linux/tools/perf'
+> > > [acme@sandy linux]$ cat /etc/redhat-release 
+> > > Red Hat Enterprise Linux Server release 6.3 (Santiago)
+> > > [acme@sandy linux]$
+> > 
+> > Does:
+> > 
+> > SLANG_INC ?= -I=/usr/include/slang
+> > 
+> > work any better? Its hard to tell from the above error which bit of the
 > 
-> ROGUE / REBIND thing existed for busy workers from the beginning when
-> there was no idle worker rebinding, so this definitely wasn't about
-> whether idle rebind is synchronous or not. 
-
-In very old day, this definitely wasn't about whether idle rebind is synchronous or not.
-but after you reimplement rebind_worker(), it is the only reason for WORKER_REBIND in busy rebinding.
-
-if I miss something, this 03/11 will be wrong. the old code did not comment all why
-WORKER_REBIND is needed. so we have to think more about the correctness of this 03/11.
-
-> Trying to remember
-> what... ah, okay, setting of DISASSOCIATED and setting of WORKER_ROGUE
-> didn't use to happen together with gcwq->lock held.  CPU_DOWN would
-> first set ROGUE and then later on set DISASSOCIATED, so if the
-> rebind_fn kicks in inbetween that, it would break CPU_DOWN.
+> I'll try later
 > 
-> I think now that both CPU_DOWN and UP are done under single holding of
-> gcwq->lock, this should be safe.  It would be nice to note what
-> changed in the patch description and the atomicity requirement as a
-> comment tho.
+> > syntax is failing. Which gcc version is it?
 > 
+> [acme@sandy linux]$ gcc -v
+> Using built-in specs.
+> Target: x86_64-redhat-linux
+> Configured with: ../configure --prefix=/usr --mandir=/usr/share/man
+> --infodir=/usr/share/info
+> --with-bugurl=http://bugzilla.redhat.com/bugzilla --enable-bootstrap
+> --enable-shared --enable-threads=posix --enable-checking=release
+> --with-system-zlib --enable-__cxa_atexit --disable-libunwind-exceptions
+> --enable-gnu-unique-object
+> --enable-languages=c,c++,objc,obj-c++,java,fortran,ada
+> --enable-java-awt=gtk --disable-dssi
+> --with-java-home=/usr/lib/jvm/java-1.5.0-gcj-1.5.0.0/jre
+> --enable-libgcj-multifile --enable-java-maintainer-mode
+> --with-ecj-jar=/usr/share/java/eclipse-ecj.jar
+> --disable-libjava-multilib --with-ppl --with-cloog --with-tune=generic
+> --with-arch_32=i686 --build=x86_64-redhat-linux
+> Thread model: posix
+> gcc version 4.4.6 20120305 (Red Hat 4.4.6-4) (GCC) 
+> [acme@sandy linux]$
 
-Oh, I forgot to add changelog about single holding of gcwq->lock.
+Seems like there is no slang.h installed. Could you please check:
 
+$ find /usr/include/ -name slang.h
 
-Thanks
-Lai
+On my FC17:
 
+$ find /usr/include/ -name slang.h
+/usr/include/slang/slang.h
+/usr/include/slang.h
+$ rpm -qf /usr/include/slang.h
+slang-devel-2.2.4-3.fc17.x86_64
+$ rpm -qf /usr/include/slang/slang.h
+slang-devel-2.2.4-3.fc17.x86_64
+
+---
+
+And does 'export SLANG_INC=<to location of the slang.h>' works any
+better? :)
+
+Cheers,
+		Liang Li
