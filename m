@@ -1,89 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760182Ab2IFBxd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 21:53:33 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:27975 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752979Ab2IFBxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 21:53:32 -0400
-X-IronPort-AV: E=Sophos;i="4.80,377,1344182400"; 
-   d="scan'208";a="5791587"
-Message-ID: <50480286.4010405@cn.fujitsu.com>
-Date: Thu, 06 Sep 2012 09:55:18 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1760180Ab2IFB4S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 21:56:18 -0400
+Received: from void.printf.net ([89.145.121.20]:46840 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752875Ab2IFB4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 21:56:17 -0400
+From: Chris Ball <cjb@laptop.org>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
+Subject: [GIT PULL] MMC fixes for 3.6-rc5
+Date: Wed, 05 Sep 2012 21:56:06 -0400
+Message-ID: <87k3w7gbih.fsf@octavius.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/10 V4] workqueue: add manage_workers_slowpath()
-References: <1346516916-1991-1-git-send-email-laijs@cn.fujitsu.com> <1346516916-1991-5-git-send-email-laijs@cn.fujitsu.com> <20120905011235.GC2836@dhcp-172-17-108-109.mtv.corp.google.com>
-In-Reply-To: <20120905011235.GC2836@dhcp-172-17-108-109.mtv.corp.google.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/06 09:53:07,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/06 09:53:07,
-	Serialize complete at 2012/09/06 09:53:07
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2012 09:12 AM, Tejun Heo wrote:
-> Hello, Lai.
-> 
-> On Sun, Sep 02, 2012 at 12:28:22AM +0800, Lai Jiangshan wrote:
->> If hotplug code grabbed the manager_mutex and worker_thread try to create
->> a worker, the manage_worker() will return false and worker_thread go to
->> process work items. Now, on the CPU, all workers are processing work items,
->> no idle_worker left/ready for managing. It breaks the concept of workqueue
->> and it is bug.
->>
->> So when manage_worker() failed to grab the manager_mutex, it should
->> try to enter normal process contex and then compete on the manager_mutex
->> instead of return false.
->>
->> To safely do this, we add manage_workers_slowpath() and the worker
->> go to process work items mode to do the managing jobs. thus
->> managing jobs are processed via work item and can free to compete
->> on manager_mutex.
-> 
-> Ummm.... this seems overly complicated.  How about scheduling rebind
-> work to a worker and forcing it to break out of the work processing
-> loop?  I think it can be done fairly easily using POOL_MANAGE_WORKERS
-> - set it from the rebind function, break out of work processing loop
-> if it's set, replace need_to_manage_workers() with POOL_MANAGE_WORKERS
-> test (the function really isn't necessary) and always jump back to
-> recheck afterwards.  It might need a bit more mangling here and there
-> but that should be the essence of it.  I'll give a stab at it later
-> today.
-> 
+Hi Linus,
 
-This approach is a little like my unsent approach3.(I will explain in other mail)
-This approach is most complicated and changing more code if it is implemented.
+Please pull from:
 
-First we should rebind/unbind separated by pool. because,
-	if we queue the rebind-work to high-pri pool, we will break normal-pool
-	vice versa
+  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git tags/mmc-fixes-for-3.6-rc5
 
-and this forces us move DISASSOCIATED to pool-flags.
-and this forces us add more code in cpu-notify
-
-second, reuse POOL_MANAGE_WORKERS, or add new one.
-
-third, need to restruct of rebind/unbind and change a lot in worker_thread.
-
-my partial/unsent approach3 has almost the same problem.
-(different, my approach3 don't use work item, it is checked and called from
-the "recheck" label of worker_thread. it is called with WORKER_PREP bit set
-and it uses "mutex_trylock" to grab lock like manage_workers())
-
-how much code will be changed for only unbind part of this approach:
+to receive MMC fixes for 3.6-rc5.  There are no merge conflicts, and the
+patches have been tested in linux-next.  Thanks.
 
 
- kernel/workqueue.c |  103 ++++++++++++++++++++++++++++++++++++++--------------
- 1 files changed, 76 insertions(+), 27 deletions(-)
+The following changes since commit 0d7614f09c1ebdbaa1599a5aba7593f147bf96ee:
 
+  Linux 3.6-rc1 (2012-08-02 16:38:10 -0700)
 
-Thanks
-Lai
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git tags/mmc-fixes-for-3.6-rc5
+
+for you to fetch changes up to 75b53aee2f4fe6375c6007226bf68d75b5c4a929:
+
+  mmc: omap: fix broken PIO mode (2012-09-04 13:58:11 -0400)
+
+----------------------------------------------------------------
+MMC fixes for 3.6-rc5:
+ - a firmware bug on several Samsung MoviNAND eMMC models causes
+   permanent corruption on the device when secure erase and secure trim
+   requests are made, so we disable those requests on these eMMC devices.
+ - atmel-mci: fix a hang with some SD cards by waiting for not-busy flag.
+ - dw_mmc: low-power mode breaks SDIO interrupts; fix PIO error handling;
+   fix handling of error interrupts.
+ - mxs-mmc: fix deadlocks; fix compile error due to dma.h arch change.
+ - omap: fix broken PIO mode causing memory corruption.
+ - sdhci-esdhc: fix card detection.
+
+----------------------------------------------------------------
+Doug Anderson (1):
+      mmc: dw_mmc: Disable low power mode if SDIO interrupts are used
+
+Ian Chen (1):
+      mmc: card: Skip secure erase on MoviNAND; causes unrecoverable corruption.
+
+Lauri Hintsala (2):
+      mmc: mxs-mmc: fix deadlock in SDIO IRQ case
+      mmc: mxs-mmc: fix deadlock caused by recursion loop
+
+Ludovic Desroches (1):
+      mmc: atmel-mci: not busy flag has also to be used for read operations
+
+Paul Walmsley (1):
+      mmc: omap: fix broken PIO mode
+
+Seungwon Jeon (3):
+      mmc: dw_mmc: amend using error interrupt status
+      mmc: dw_mmc: correct mishandling error interrupt
+      mmc: dw_mmc: fix error handling in PIO mode
+
+Shawn Guo (1):
+      mmc: sdhci-esdhc: break out early if clock is 0
+
+Sonic Zhang (1):
+      mmc: bfin_sdh: fix dma_desc_array build error
+
+ drivers/mmc/card/block.c       | 26 ++++++++++++-
+ drivers/mmc/host/atmel-mci.c   |  6 ++-
+ drivers/mmc/host/bfin_sdh.c    |  7 ----
+ drivers/mmc/host/dw_mmc.c      | 85 +++++++++++++++++++++++-------------------
+ drivers/mmc/host/mxs-mmc.c     | 14 +++----
+ drivers/mmc/host/omap.c        | 14 +++++--
+ drivers/mmc/host/sdhci-esdhc.h |  6 +--
+ include/linux/mmc/card.h       |  1 +
+ 8 files changed, 98 insertions(+), 61 deletions(-)
+
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
