@@ -1,106 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757082Ab2IFO4e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 10:56:34 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:4599 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756998Ab2IFO4a (ORCPT
+	id S1757186Ab2IFO4w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 10:56:52 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46028 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757107Ab2IFO4r convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 10:56:30 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 06 Sep 2012 07:55:51 -0700
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>, <linux-tegra@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] ARM: tegra: fix debugfs entry for Tegra30
-Date: Thu, 6 Sep 2012 17:55:29 +0300
-Message-ID: <1346943329-4898-2-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-In-Reply-To: <1346943329-4898-1-git-send-email-pdeschrijver@nvidia.com>
-References: <1346943329-4898-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 6 Sep 2012 10:56:47 -0400
+Message-ID: <1346943078.18408.29.camel@twins>
+Subject: Re: [PATCH tip/core/rcu 10/15] rcu: Protect rcu_node accesses
+ during CPU stall warnings
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Date: Thu, 06 Sep 2012 16:51:18 +0200
+In-Reply-To: <1346352988-32444-10-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20120830185607.GA32148@linux.vnet.ibm.com>
+	 <1346352988-32444-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1346352988-32444-10-git-send-email-paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tegra30 has more powerdomains than Tegra20. The debugfs code did not take this
-into account.
+On Thu, 2012-08-30 at 11:56 -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> 
+> The print_other_cpu_stall() function accesses a number of rcu_node
+> fields without protection from the ->lock.  In theory, this is not
+> a problem because the fields accessed are all integers, but in
+> practice the compiler can get nasty.  Therefore, the commit extends
+> the existing critical section to cover the entire loop body.
+> 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
+>  kernel/rcutree.c |    6 ++++--
+>  1 files changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index 9f44749..fbe43b0 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -746,14 +746,16 @@ static void print_other_cpu_stall(struct rcu_state *rsp)
+>  	rcu_for_each_leaf_node(rsp, rnp) {
+>  		raw_spin_lock_irqsave(&rnp->lock, flags);
+>  		ndetected += rcu_print_task_stall(rnp);
+> -		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+> -		if (rnp->qsmask == 0)
+> +		if (rnp->qsmask == 0) {
+> +			raw_spin_unlock_irqrestore(&rnp->lock, flags);
+>  			continue;
+> +		}
+>  		for (cpu = 0; cpu <= rnp->grphi - rnp->grplo; cpu++)
+>  			if (rnp->qsmask & (1UL << cpu)) {
+>  				print_cpu_stall_info(rsp, rnp->grplo + cpu);
+>  				ndetected++;
+>  			}
+> +		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+>  	}
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
----
- arch/arm/mach-tegra/powergate.c |   40 ++++++++++++++++++++++++++++++++++----
- 1 files changed, 35 insertions(+), 5 deletions(-)
-
-diff --git a/arch/arm/mach-tegra/powergate.c b/arch/arm/mach-tegra/powergate.c
-index 27aee4a..de0662d 100644
---- a/arch/arm/mach-tegra/powergate.c
-+++ b/arch/arm/mach-tegra/powergate.c
-@@ -199,7 +199,9 @@ int __init tegra_powergate_init(void)
- 
- #ifdef CONFIG_DEBUG_FS
- 
--static const char * const powergate_name[] = {
-+static const char * const *powergate_name;
-+
-+static const char * const powergate_name_t20[] = {
- 	[TEGRA_POWERGATE_CPU]	= "cpu",
- 	[TEGRA_POWERGATE_3D]	= "3d",
- 	[TEGRA_POWERGATE_VENC]	= "venc",
-@@ -209,6 +211,23 @@ static const char * const powergate_name[] = {
- 	[TEGRA_POWERGATE_MPE]	= "mpe",
- };
- 
-+static const char * const powergate_name_t30[] = {
-+	[TEGRA_POWERGATE_CPU]	= "cpu0",
-+	[TEGRA_POWERGATE_3D]	= "3d0",
-+	[TEGRA_POWERGATE_VENC]	= "venc",
-+	[TEGRA_POWERGATE_VDEC]	= "vdec",
-+	[TEGRA_POWERGATE_PCIE]	= "pcie",
-+	[TEGRA_POWERGATE_L2]	= "l2",
-+	[TEGRA_POWERGATE_MPE]	= "mpe",
-+	[TEGRA_POWERGATE_HEG]	= "heg",
-+	[TEGRA_POWERGATE_SATA]	= "sata",
-+	[TEGRA_POWERGATE_CPU1]	= "cpu1",
-+	[TEGRA_POWERGATE_CPU2]	= "cpu2",
-+	[TEGRA_POWERGATE_CPU3]	= "cpu3",
-+	[TEGRA_POWERGATE_CELP]	= "celp",
-+	[TEGRA_POWERGATE_3D1]	= "3d1",
-+};
-+
- static int powergate_show(struct seq_file *s, void *data)
- {
- 	int i;
-@@ -238,10 +257,21 @@ int __init tegra_powergate_debugfs_init(void)
- {
- 	struct dentry *d;
- 
--	d = debugfs_create_file("powergate", S_IRUGO, NULL, NULL,
--		&powergate_fops);
--	if (!d)
--		return -ENOMEM;
-+	switch (tegra_chip_id) {
-+	case TEGRA20:
-+		powergate_name = powergate_name_t20;
-+		break;
-+	case TEGRA30:
-+		powergate_name = powergate_name_t30;
-+		break;
-+	}
-+
-+	if (powergate_name) {
-+		d = debugfs_create_file("powergate", S_IRUGO, NULL, NULL,
-+			&powergate_fops);
-+		if (!d)
-+			return -ENOMEM;
-+	}
- 
- 	return 0;
- }
--- 
-1.7.7.rc0.72.g4b5ea.dirty
-
+You now cover printk() and all that that can call with a RCU lock.. is
+this a good thing?
