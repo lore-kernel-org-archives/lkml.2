@@ -1,65 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755991Ab2IFOUk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 10:20:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42517 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755458Ab2IFOUi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 10:20:38 -0400
-Message-ID: <5048B0F5.9040000@redhat.com>
-Date: Thu, 06 Sep 2012 15:19:33 +0100
-From: Pedro Alves <palves@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, mingo@elte.hu,
-        ebiederm@xmission.com, aarcange@redhat.com, ericvh@gmail.com,
-        netdev@vger.kernel.org, josh@joshtriplett.org, eric.dumazet@gmail.com,
-        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
-        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
-        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
-        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive hashtable
-References: <20120824230740.GN21325@google.com> <20120825042419.GA27240@Krystal> <503C95E4.3010000@gmail.com> <20120828101148.GA21683@Krystal> <503CAB1E.5010408@gmail.com> <20120828115638.GC23818@Krystal> <20120828230050.GA3337@Krystal> <1346772948.27919.9.camel@gandalf.local.home> <50462C99.5000007@redhat.com> <50462EE8.1090903@redhat.com> <20120904170138.GB31934@Krystal> <5048AAF6.5090101@gmail.com>
-In-Reply-To: <5048AAF6.5090101@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756479Ab2IFOdp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 10:33:45 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:53857 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756423Ab2IFOdn convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:2>);
+	Thu, 6 Sep 2012 10:33:43 -0400
+Message-Id: <5048D09A020000780009965B@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Thu, 06 Sep 2012 15:34:34 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Matt Fleming" <matt@console-pimps.org>
+Cc: "Vasco Dias" <rafa.vasco@gmail.com>,
+        "Matt Fleming" <matt.fleming@intel.com>,
+        "Matthew Garrett" <mjg@redhat.com>, <linux-efi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <cJ-ko@zougloub.eu>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] x86, efi: 1:1 pagetable mapping for virtual EFI
+ calls
+References: <1346937309-1581-1-git-send-email-matt@console-pimps.org>
+In-Reply-To: <1346937309-1581-1-git-send-email-matt@console-pimps.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/06/2012 02:53 PM, Sasha Levin wrote:
+>>> On 06.09.12 at 15:15, Matt Fleming <matt@console-pimps.org> wrote:
+> From: Matt Fleming <matt.fleming@intel.com>
+> 
+> Some firmware still needs a 1:1 (virt->phys) mapping even after we've
+> called SetVirtualAddressMap(). So install the mapping alongside our
+> existing kernel mapping whenever we make EFI calls in virtual mode.
+> 
+> This bug was discovered on ASUS machines where the firmware
+> implementation of GetTime() accesses the RTC device via physical
+> addresses, even though that's bogus per the UEFI spec since we've
+> informed the firmware via SetVirtualAddressMap() that the boottime
+> memory map is no longer valid.
 
-> So I think that for the hash iterator it might actually be simpler.
-> 
-> My solution to making 'break' work in the iterator is:
-> 
-> 	for (bkt = 0, node = NULL; bkt < HASH_SIZE(name) && node == NULL; bkt++)
-> 		hlist_for_each_entry(obj, node, &name[bkt], member)
-> 
-> We initialize our node loop cursor with NULL in the external loop, and the
-> external loop will have a new condition to loop while that cursor is NULL.
-> 
-> My logic is that we can only 'break' when we are iterating over an object in the
-> internal loop. If we're iterating over an object in that loop then 'node != NULL'.
-> 
-> This way, if we broke from within the internal loop, the external loop will see
-> node as not NULL, and so it will stop looping itself. On the other hand, if the
-> internal loop has actually ended, then node will be NULL, and the outer loop
-> will keep running.
-> 
-> Is there anything I've missed?
+> @@ -741,6 +742,114 @@ static void __init runtime_code_page_mkexec(void)
+>  	}
+>  }
+>  
+> +#ifdef CONFIG_X86_64
+> +pgd_t *efi_one_to_one_pgd;
+> +int efi_one_to_one_index = 0;
 
-Looks right to me, from a cursory look at hlist_for_each_entry.  That's exactly
-what I meant with this most often being trivial when the inner loop's iterator
-is a pointer that goes NULL at the end.
+I wasn't able to spot where this variable ever gets set to a
+non-zero value.
 
--- 
-Pedro Alves
+> @@ -58,6 +62,47 @@ static void __init early_code_mapping_set_exec(int 
+> executable)
+>  	}
+>  }
+>  
+> +pgd_t *efi_call_virt_prelog(void)
+> +{
+> +	pgd_t *save;
+> +	int i;
+> +
+> +	save = kmalloc(sizeof(pgd_t) * (efi_one_to_one_index + 1), GFP_KERNEL);
+
+GFP_ATOMIC perhaps, given that many runtime calls happen
+inside spin locks?
+
+> +	if (!save) {
+> +		pr_alert("Unable to save pgd entries\n");
+> +		return NULL;
+> +	}
+> +
+> +	for (i = 0; i <= efi_one_to_one_index; i++) {
+> +		pgd_t *pgd = __va(read_cr3() & PHYSICAL_PAGE_MASK);
+
+I'd suggest moving this out of the loop (also below), slightly
+adjusting the rest of the loop body.
+
+> +
+> +		pgd += i;
+> +		save[i] = *pgd;
+> +		set_pgd(pgd, efi_one_to_one_pgd[i]);
+> +	}
+
+Did you, as an alternative, consider switching to a different
+CR3 instead of copying back and forth?
+
+> +
+> +	__flush_tlb_all();
+
+Is it certain you will _never_ hit a global mapping (in which case I
+believe the above would be insufficient)?
+
+Jan
+
+> +	return save;
+> +}
+> +
+> +void efi_call_virt_epilog(pgd_t *save)
+> +{
+> +	int i;
+> +
+> +	if (!save)
+> +		return;
+> +
+> +	for (i = 0; i <= efi_one_to_one_index; i++) {
+> +		pgd_t *pgd = __va(read_cr3() & PHYSICAL_PAGE_MASK);
+> +
+> +		pgd += i;
+> +		set_pgd(pgd, save[i]);
+> +	}
+> +
+> +	kfree(save);
+> +	__flush_tlb_all();
+> +}
+> +
+>  void __init efi_call_phys_prelog(void)
+>  {
+>  	unsigned long vaddress;
+> -- 
+> 1.7.4.4
+
+
 
