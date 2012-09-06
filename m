@@ -1,187 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758680Ab2IFPsW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 11:48:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30571 "EHLO mx1.redhat.com"
+	id S1758567Ab2IFPsa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 11:48:30 -0400
+Received: from mga09.intel.com ([134.134.136.24]:50536 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758601Ab2IFPsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 11:48:19 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 04/12] perf diff: Refactor diff displacement possition info
-Date: Thu,  6 Sep 2012 17:46:58 +0200
-Message-Id: <1346946426-13496-5-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1346946426-13496-1-git-send-email-jolsa@redhat.com>
-References: <1346946426-13496-1-git-send-email-jolsa@redhat.com>
+	id S1758524Ab2IFPsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 11:48:24 -0400
+Subject: Re: [PATCH] x86, efi: 1:1 pagetable mapping for virtual EFI calls
+From: Matt Fleming <matt.fleming@intel.com>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: Vasco Dias <rafa.vasco@gmail.com>, Matthew Garrett <mjg@redhat.com>,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        cJ-ko@zougloub.eu, "H. Peter Anvin" <hpa@zytor.com>
+In-Reply-To: <5048D09A020000780009965B@nat28.tlf.novell.com>
+References: <1346937309-1581-1-git-send-email-matt@console-pimps.org>
+	 <5048D09A020000780009965B@nat28.tlf.novell.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Date: Thu, 06 Sep 2012 16:47:45 +0100
+Message-ID: <1346946465.4244.107.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moving the position calculation into the diff command, so the position
-is prepared inside hist_entry data and there's no need to compute in
-the output display path.
+On Thu, 2012-09-06 at 15:34 +0100, Jan Beulich wrote:
+> >>> On 06.09.12 at 15:15, Matt Fleming <matt@console-pimps.org> wrote:
+> > From: Matt Fleming <matt.fleming@intel.com>
+> > 
+> > Some firmware still needs a 1:1 (virt->phys) mapping even after we've
+> > called SetVirtualAddressMap(). So install the mapping alongside our
+> > existing kernel mapping whenever we make EFI calls in virtual mode.
+> > 
+> > This bug was discovered on ASUS machines where the firmware
+> > implementation of GetTime() accesses the RTC device via physical
+> > addresses, even though that's bogus per the UEFI spec since we've
+> > informed the firmware via SetVirtualAddressMap() that the boottime
+> > memory map is no longer valid.
+> 
+> > @@ -741,6 +742,114 @@ static void __init runtime_code_page_mkexec(void)
+> >  	}
+> >  }
+> >  
+> > +#ifdef CONFIG_X86_64
+> > +pgd_t *efi_one_to_one_pgd;
+> > +int efi_one_to_one_index = 0;
+> 
+> I wasn't able to spot where this variable ever gets set to a
+> non-zero value.
 
-It will be needed for next cleanup patches.
+Oops. Yeah, you're right. It seems I lost that code at some point in
+development. I'll re-add in a v2 of this patch.
 
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- tools/perf/builtin-diff.c  | 47 ++++++++++++++++++++++++++++++----------------
- tools/perf/ui/stdio/hist.c |  4 +---
- tools/perf/util/sort.h     |  2 +-
- 3 files changed, 33 insertions(+), 20 deletions(-)
+> > @@ -58,6 +62,47 @@ static void __init early_code_mapping_set_exec(int 
+> > executable)
+> >  	}
+> >  }
+> >  
+> > +pgd_t *efi_call_virt_prelog(void)
+> > +{
+> > +	pgd_t *save;
+> > +	int i;
+> > +
+> > +	save = kmalloc(sizeof(pgd_t) * (efi_one_to_one_index + 1), GFP_KERNEL);
+> 
+> GFP_ATOMIC perhaps, given that many runtime calls happen
+> inside spin locks?
 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index e9933fd..4e63979 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -70,8 +70,8 @@ static struct perf_tool tool = {
- 	.ordering_requires_timestamps = true,
- };
- 
--static void perf_session__insert_hist_entry_by_name(struct rb_root *root,
--						    struct hist_entry *he)
-+static void insert_hist_entry_by_name(struct rb_root *root,
-+				      struct hist_entry *he)
- {
- 	struct rb_node **p = &root->rb_node;
- 	struct rb_node *parent = NULL;
-@@ -90,7 +90,7 @@ static void perf_session__insert_hist_entry_by_name(struct rb_root *root,
- 	rb_insert_color(&he->rb_node, root);
- }
- 
--static void hists__resort_entries(struct hists *self)
-+static void hists__name_resort(struct hists *self, bool sort)
- {
- 	unsigned long position = 1;
- 	struct rb_root tmp = RB_ROOT;
-@@ -100,12 +100,16 @@ static void hists__resort_entries(struct hists *self)
- 		struct hist_entry *n = rb_entry(next, struct hist_entry, rb_node);
- 
- 		next = rb_next(&n->rb_node);
--		rb_erase(&n->rb_node, &self->entries);
- 		n->position = position++;
--		perf_session__insert_hist_entry_by_name(&tmp, n);
-+
-+		if (sort) {
-+			rb_erase(&n->rb_node, &self->entries);
-+			insert_hist_entry_by_name(&tmp, n);
-+		}
- 	}
- 
--	self->entries = tmp;
-+	if (sort)
-+		self->entries = tmp;
- }
- 
- static struct hist_entry *hists__find_entry(struct hists *self,
-@@ -121,7 +125,7 @@ static struct hist_entry *hists__find_entry(struct hists *self,
- 			n = n->rb_left;
- 		else if (cmp > 0)
- 			n = n->rb_right;
--		else 
-+		else
- 			return iter;
- 	}
- 
-@@ -150,6 +154,24 @@ static struct perf_evsel *evsel_match(struct perf_evsel *evsel,
- 	return NULL;
- }
- 
-+static void resort_evlist(struct perf_evlist *evlist, bool name)
-+{
-+	struct perf_evsel *evsel;
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		struct hists *hists = &evsel->hists;
-+
-+		hists__output_resort(hists);
-+
-+		/*
-+		 * The hists__name_resort only sets possition
-+		 * if name is false.
-+		 */
-+		if (name || ((!name) && show_displacement))
-+			hists__name_resort(hists, name);
-+	}
-+}
-+
- static int __cmd_diff(void)
- {
- 	int ret, i;
-@@ -176,15 +198,8 @@ static int __cmd_diff(void)
- 	evlist_old = older->evlist;
- 	evlist_new = newer->evlist;
- 
--	list_for_each_entry(evsel, &evlist_new->entries, node)
--		hists__output_resort(&evsel->hists);
--
--	list_for_each_entry(evsel, &evlist_old->entries, node) {
--		hists__output_resort(&evsel->hists);
--
--		if (show_displacement)
--			hists__resort_entries(&evsel->hists);
--	}
-+	resort_evlist(evlist_old, true);
-+	resort_evlist(evlist_new, false);
- 
- 	list_for_each_entry(evsel, &evlist_new->entries, node) {
- 		struct perf_evsel *evsel_old;
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index 9bf7e9e..4ae9ee5 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -472,7 +472,6 @@ size_t hists__fprintf(struct hists *hists, struct hists *pair,
- 	struct rb_node *nd;
- 	size_t ret = 0;
- 	u64 total_period;
--	unsigned long position = 1;
- 	long displacement = 0;
- 	unsigned int width;
- 	const char *sep = symbol_conf.field_sep;
-@@ -607,10 +606,9 @@ print_entries:
- 		if (show_displacement) {
- 			if (h->pair != NULL)
- 				displacement = ((long)h->pair->position -
--					        (long)position);
-+					        (long)h->position);
- 			else
- 				displacement = 0;
--			++position;
- 		}
- 		ret += hist_entry__fprintf(h, max_cols, hists, pair, show_displacement,
- 					   displacement, total_period, fp);
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index b0b4752..967d381 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -72,8 +72,8 @@ struct hist_entry {
- 	u8			filtered;
- 	char			*srcline;
- 	struct symbol		*parent;
-+	unsigned long		position;
- 	union {
--		unsigned long	  position;
- 		struct hist_entry *pair;
- 		struct rb_root	  sorted_chain;
- 	};
--- 
-1.7.11.4
+Yeah, good idea.
+
+> > +	if (!save) {
+> > +		pr_alert("Unable to save pgd entries\n");
+> > +		return NULL;
+> > +	}
+> > +
+> > +	for (i = 0; i <= efi_one_to_one_index; i++) {
+> > +		pgd_t *pgd = __va(read_cr3() & PHYSICAL_PAGE_MASK);
+> 
+> I'd suggest moving this out of the loop (also below), slightly
+> adjusting the rest of the loop body.
+
+Sure.
+
+> > +
+> > +		pgd += i;
+> > +		save[i] = *pgd;
+> > +		set_pgd(pgd, efi_one_to_one_pgd[i]);
+> > +	}
+> 
+> Did you, as an alternative, consider switching to a different
+> CR3 instead of copying back and forth?
+
+I did consider it, but I couldn't convince myself whether or not the EFI
+pagetable would need to be manually kept in sync with any other
+pagetables. But now I look at the code a bit harder, it seems that
+should be taken care of automatically. In fact, the tboot code seems to
+do something similar. I'll try that approach.
+
+> > +
+> > +	__flush_tlb_all();
+> 
+> Is it certain you will _never_ hit a global mapping (in which case I
+> believe the above would be insufficient)?
+
+Are you saying that this should be a flush_tlb_all() if we have global
+mappings? Or that if we are guaranteed to never have global mappings we
+can opitmise this by simply doing a __flush_tlb()?
+
+Thanks Jan!
 
