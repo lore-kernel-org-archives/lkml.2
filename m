@@ -1,136 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760153Ab2IFBXg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 21:23:36 -0400
-Received: from mga11.intel.com ([192.55.52.93]:37583 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754030Ab2IFBXf convert rfc822-to-8bit (ORCPT
+	id S932534Ab2IFBYW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 21:24:22 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49679 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754030Ab2IFBYV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 21:23:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,377,1344236400"; 
-   d="scan'208";a="218653669"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-Subject: RE: [PATCH] USB/host: Cleanup unneccessary irq disable code
-Thread-Topic: [PATCH] USB/host: Cleanup unneccessary irq disable code
-Thread-Index: AQHNi8xuNL6TNk6ZW0Gg4f0g3PggAJd8g8ww
-Date: Thu, 6 Sep 2012 01:22:23 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A178037@SHSMSX101.ccr.corp.intel.com>
-References: <27240C0AC20F114CBF8149A2696CBE4A174713@SHSMSX101.ccr.corp.intel.com>
- <20120905235947.GA19050@kroah.com>
- <27240C0AC20F114CBF8149A2696CBE4A177FB0@SHSMSX101.ccr.corp.intel.com>
- <20120906011026.GA17340@kroah.com>
-In-Reply-To: <20120906011026.GA17340@kroah.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 5 Sep 2012 21:24:21 -0400
+X-AuditID: 9c930179-b7cc4ae00000134d-8b-5047fb42d259
+From: Namhyung Kim <namhyung@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] perf: clean target should do clean for lib/traceevent too
+References: <1346892816-61779-1-git-send-email-dsahern@gmail.com>
+Date: Thu, 06 Sep 2012 10:16:57 +0900
+In-Reply-To: <1346892816-61779-1-git-send-email-dsahern@gmail.com> (David
+	Ahern's message of "Wed, 5 Sep 2012 18:53:36 -0600")
+Message-ID: <87sjawc5me.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > From: liu chuansheng <chuansheng.liu@intel.com>
-> > Subject: [PATCH] USB/host: Cleanup unneccessary irq disable code
-> 
-> Why is this in the patch?
-> 
-> Please resend it in a format that I do not have to manually edit the patch.
-> 
-> greg k-h
-Thanks your teaching, resend again.
+On Wed,  5 Sep 2012 18:53:36 -0600, David Ahern wrote:
+> It's built as part of perf, so it should be cleaned too.
+>
+> Signed-off-by: David Ahern <dsahern@gmail.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+
+Tested-by: Namhyung Kim <namhyung@kernel.org>
+
+Thanks,
+Namhyung
 
 
-Because the IRQF_DISABLED as the flag is now a NOOP and has been
-deprecated and in hardirq context the interrupt is disabled.
-
-so in usb/host code:
-Removing the usage of flag IRQF_DISABLED;
-Removing the calling local_irq save/restore actions in irq
-handler usb_hcd_irq();
-
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
----
- drivers/usb/core/hcd.c       |   15 ---------------
- drivers/usb/host/ehci-ls1x.c |    2 +-
- drivers/usb/host/ohci-xls.c  |    2 +-
- 3 files changed, 2 insertions(+), 17 deletions(-)
-
-diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-index bc84106..f84ddea 100644
---- a/drivers/usb/core/hcd.c
-+++ b/drivers/usb/core/hcd.c
-@@ -2153,15 +2153,8 @@ EXPORT_SYMBOL_GPL(usb_bus_start_enum);
- irqreturn_t usb_hcd_irq (int irq, void *__hcd)
- {
-        struct usb_hcd          *hcd = __hcd;
--       unsigned long           flags;
-        irqreturn_t             rc;
- 
--       /* IRQF_DISABLED doesn't work correctly with shared IRQs
--        * when the first handler doesn't use it.  So let's just
--        * assume it's never used.
--        */
--       local_irq_save(flags);
--
-        if (unlikely(HCD_DEAD(hcd) || !HCD_HW_ACCESSIBLE(hcd)))
-                rc = IRQ_NONE;
-        else if (hcd->driver->irq(hcd) == IRQ_NONE)
-@@ -2169,7 +2162,6 @@ irqreturn_t usb_hcd_irq (int irq, void *__hcd)
-        else
-                rc = IRQ_HANDLED;
- 
--       local_irq_restore(flags);
-        return rc;
- }
- EXPORT_SYMBOL_GPL(usb_hcd_irq);
-@@ -2358,13 +2350,6 @@ static int usb_hcd_request_irqs(struct usb_hcd *hcd,
- 
-        if (hcd->driver->irq) {
- 
--               /* IRQF_DISABLED doesn't work as advertised when used together
--                * with IRQF_SHARED. As usb_hcd_irq() will always disable
--                * interrupts we can remove it here.
--                */
--               if (irqflags & IRQF_SHARED)
--                       irqflags &= ~IRQF_DISABLED;
--
-                snprintf(hcd->irq_descr, sizeof(hcd->irq_descr), "%s:usb%d",
-                                hcd->driver->description, hcd->self.busnum);
-                retval = request_irq(irqnum, &usb_hcd_irq, irqflags,
-diff --git a/drivers/usb/host/ehci-ls1x.c b/drivers/usb/host/ehci-ls1x.c
-index a283e59..425cb4a 100644
---- a/drivers/usb/host/ehci-ls1x.c
-+++ b/drivers/usb/host/ehci-ls1x.c
-@@ -119,7 +119,7 @@ static int ehci_hcd_ls1x_probe(struct platform_device *pdev)
-                goto err_release_region;
-        }
- 
--       ret = usb_add_hcd(hcd, irq, IRQF_DISABLED | IRQF_SHARED);
-+       ret = usb_add_hcd(hcd, irq, IRQF_SHARED);
-        if (ret)
-                goto err_iounmap;
- 
-diff --git a/drivers/usb/host/ohci-xls.c b/drivers/usb/host/ohci-xls.c
-index 41e378f..84201cd 100644
---- a/drivers/usb/host/ohci-xls.c
-+++ b/drivers/usb/host/ohci-xls.c
-@@ -56,7 +56,7 @@ static int ohci_xls_probe_internal(const struct hc_driver *driver,
-                goto err3;
-        }
- 
--       retval = usb_add_hcd(hcd, irq, IRQF_DISABLED | IRQF_SHARED);
-+       retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
-        if (retval != 0)
-                goto err4;
-        return retval;
--- 
-1.7.0.4
+> ---
+>  tools/perf/Makefile |    5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+>
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index 90d8e09..e7e62b2 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+> @@ -921,6 +921,9 @@ $(LIB_FILE): $(LIB_OBJS)
+>  $(LIBTRACEEVENT):
+>  	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(QUIET_SUBDIR1) O=$(OUTPUT) libtraceevent.a
+>  
+> +$(LIBTRACEEVENT)-clean:
+> +	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(QUIET_SUBDIR1) O=$(OUTPUT) clean
+> +
+>  help:
+>  	@echo 'Perf make targets:'
+>  	@echo '  doc		- make *all* documentation (see below)'
+> @@ -1060,7 +1063,7 @@ quick-install-html:
+>  
+>  ### Cleaning rules
+>  
+> -clean:
+> +clean: $(LIBTRACEEVENT)-clean
+>  	$(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)perf.o $(LANG_BINDINGS)
+>  	$(RM) $(ALL_PROGRAMS) perf
+>  	$(RM) *.spec *.pyc *.pyo */*.pyc */*.pyo $(OUTPUT)common-cmds.h TAGS tags cscope*
