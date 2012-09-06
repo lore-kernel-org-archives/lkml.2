@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752517Ab2IFDYT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 23:24:19 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:55845 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751858Ab2IFDYR (ORCPT
+	id S1752582Ab2IFDan (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 23:30:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46067 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751358Ab2IFDal (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 23:24:17 -0400
+	Wed, 5 Sep 2012 23:30:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120906000603.GA7043@kroah.com>
-References: <6721797.222311346888851339.JavaMail.weblogic@epml19>
-	<20120906000603.GA7043@kroah.com>
-Date: Thu, 6 Sep 2012 08:54:16 +0530
-Message-ID: <CAK7N6vpGsrF-VrAOO0nULOXNLzMfK-+eV4UOn0ch-S1zSH0rEQ@mail.gmail.com>
-Subject: Re: Re: [PATCH -next] extcon: extcon-arizona depends on INPUT
-From: anish singh <anish198519851985@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        =?UTF-8?B?7LWc7LCs7Jqw?= <cw00.choi@samsung.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1346882630.2600.59.camel@twins>
+References: <1345454817.23018.27.camel@twins>
+	<tip-f319da0c6894fcf55e21320e40506418a2aad629@git.kernel.org>
+	<1346848616.2600.26.camel@twins>
+	<20120905132939.GA3480@gmail.com>
+	<1346864493.2600.27.camel@twins>
+	<1346882630.2600.59.camel@twins>
+Date: Thu, 6 Sep 2012 09:30:41 +0600
+Message-ID: <CADZ9YHgjosK7embuuw7GyK3f+5XnoUbX5Gb4pOU-N0sSQbpygQ@mail.gmail.com>
+Subject: Re: [tip:sched/core] sched: Fix load avg vs cpu-hotplug
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, paulmck@linux.vnet.ibm.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 6, 2012 at 5:36 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Wed, Sep 05, 2012 at 11:47:31PM +0000, MyungJoo Ham wrote:
->> > On Wed, Sep 05, 2012 at 11:28:03AM +0800, Mark Brown wrote:
->> > > On Tue, Sep 04, 2012 at 04:51:00PM -0700, Randy Dunlap wrote:
->> > >
->> > > > This build error still happens in linux-next of 20120904.
->> > >
->> > > > Can we get the patch merged for linux-next?
->> > >
->> > > Greg's the one managing extcon in -next.
->> >
->> > Yeah, can someone forward this to me so I can apply it?  I can't seem to
->> > find it anywhere...
->> >
->> > greg k-h
->>
->> I've been creating "extcon-for-next" tree at git.infradead.org
->> I'll rebase the branch base on your driver-core-next
->>
->> http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/extcon-for-next
-Is it possible to apply all the patches found here?I can see that some
-couldn't make
-it to your driver tree.
+On 9/6/12, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2012-09-05 at 19:01 +0200, Peter Zijlstra wrote:
+>> > Please do a delta.
 >
-> Don't worry, I've already applied this patch now.
+> OK, so I suppose something like the below ought to do. Paul its slightly
+> different than the one in your tree, given the changelog below, do you
+> see anything wrong with it?
 >
-> thanks,
+> Rakib, again, sorry for getting your name wrong, and this time for
+> getting it merged :/
 >
-> greg k-h
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+It's okay, no problem. I was just pointed out what was the mistakes. I
+didn't take too much seriously. ( Actually, my friends often called me
+in such names that are no way near of "Rakib" or "Rabik", those names
+sounds worse than "Rabik" ;-). So, I had to cope with it :-).)
+
+Thanks,
+Rakib.
