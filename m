@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362Ab2IFMMW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 08:12:22 -0400
-Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:53586 "EHLO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753115Ab2IFMMS (ORCPT
+	id S1753881Ab2IFMPk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 08:15:40 -0400
+Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:51152 "EHLO
+	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753137Ab2IFMPf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 08:12:18 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Dmitry Torokhov <dtor@mail.ru>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: Tero Kristo <t-kristo@ti.com>, alsa-devel@alsa-project.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, Benoit Cousson <b-cousson@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3 01/14] MFD: twl4030-audio: Clean up MODULE_* and platform_driver part
-Date: Thu,  6 Sep 2012 15:12:08 +0300
-Message-Id: <1346933541-21547-2-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1346933541-21547-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1346933541-21547-1-git-send-email-peter.ujfalusi@ti.com>
+	Thu, 6 Sep 2012 08:15:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <1344258480-4304-2-git-send-email-kishon@ti.com>
+References: <1344258480-4304-1-git-send-email-kishon@ti.com>
+	<1344258480-4304-2-git-send-email-kishon@ti.com>
+Date: Thu, 6 Sep 2012 17:45:33 +0530
+Message-ID: <CAAe_U6KBNZpT03xATmPTNTgxm5hj+wJdsShdnm08EmF4Q=hTCw@mail.gmail.com>
+Subject: Re: [PATCH v7 1/7] drivers: usb: phy: add a new driver for omap usb2 phy
+From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+To: Greg KH <gregkh@linuxfoundation.org>, Arnd Bergmann <arnd@arndb.de>,
+        Felipe Balbi <balbi@ti.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, rob@landley.net, linux@arm.linux.org.uk,
+        b-cousson@ti.com, rnayak@ti.com, tony@atomide.com,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Place the MODULE_* lines in the same block and add MODULE_DESCRIPTION.
-Rearange the platform_driver structure at the same time.
+Hi,
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- drivers/mfd/twl4030-audio.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+On Mon, Aug 6, 2012 at 6:37 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+> All phy related programming like enabling/disabling the clocks, powering
+> on/off the phy is taken care of by this driver. It is also used for OTG
+> related functionality like srp.
+>
+> This also includes device tree support for usb2 phy driver and
+> the documentation with device tree binding information is updated.
+>
+> Currently writing to control module register is taken care in this
+> driver which will be removed once the control module driver is in place.
+>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> ---
+>  .../devicetree/bindings/bus/omap-ocp2scp.txt       |    3 +
+>  Documentation/devicetree/bindings/usb/omap-usb.txt |   17 ++
+>  drivers/usb/phy/Kconfig                            |   10 +
+>  drivers/usb/phy/Makefile                           |    1 +
+>  drivers/usb/phy/omap-usb2.c                        |  271 ++++++++++++++++++++
+>  include/linux/usb/omap_usb.h                       |   46 ++++
+>  include/linux/usb/phy_companion.h                  |   34 +++
+>  7 files changed, 382 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/usb/omap-usb.txt
+>  create mode 100644 drivers/usb/phy/omap-usb2.c
+>  create mode 100644 include/linux/usb/omap_usb.h
+>  create mode 100644 include/linux/usb/phy_companion.h
+>
+> diff --git a/Documentation/devicetree/bindings/bus/omap-ocp2scp.txt b/Documentation/devicetree/bindings/bus/omap-ocp2scp.txt
+> index d2fe064..bb0c7f4 100644
+> --- a/Documentation/devicetree/bindings/bus/omap-ocp2scp.txt
+> +++ b/Documentation/devicetree/bindings/bus/omap-ocp2scp.txt
+> @@ -8,3 +8,6 @@ properties:
+>
+>  Sub-nodes:
+>  All the devices connected to ocp2scp are described using sub-node to ocp2scp
+> +- usb2phy :
+> +   The binding details of usb2phy can be found in:
+> +   Documentation/devicetree/bindings/usb/omap-usb.txt
 
-diff --git a/drivers/mfd/twl4030-audio.c b/drivers/mfd/twl4030-audio.c
-index 838ce4e..ac04b4f 100644
---- a/drivers/mfd/twl4030-audio.c
-+++ b/drivers/mfd/twl4030-audio.c
-@@ -250,18 +250,18 @@ static int __devexit twl4030_audio_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
--MODULE_ALIAS("platform:twl4030-audio");
--
- static struct platform_driver twl4030_audio_driver = {
--	.probe		= twl4030_audio_probe,
--	.remove		= __devexit_p(twl4030_audio_remove),
- 	.driver		= {
- 		.owner	= THIS_MODULE,
- 		.name	= "twl4030-audio",
- 	},
-+	.probe		= twl4030_audio_probe,
-+	.remove		= __devexit_p(twl4030_audio_remove),
- };
- 
- module_platform_driver(twl4030_audio_driver);
- 
- MODULE_AUTHOR("Peter Ujfalusi <peter.ujfalusi@ti.com>");
-+MODULE_DESCRIPTION("TWL4030 audio block MFD driver");
- MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:twl4030-audio");
--- 
-1.7.12
+The above two lines should be added in omap-ocp2scp.txt (this file was
+added as part of omap: add ocp2scp as a bus driver and is in
+linux-next). However this file is still not in Felipe's xceiv branch.
+So I'm not sure how I can get this patch merged in Felipe's tree
+without conflict.
 
+Thanks
+Kishon
