@@ -1,74 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932436Ab2IFRPt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 13:15:49 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16852 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755301Ab2IFRPq (ORCPT
+	id S932470Ab2IFRQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 13:16:56 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:35966 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932207Ab2IFRQy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 13:15:46 -0400
-X-Authority-Analysis: v=2.0 cv=VPlfbqzX c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=zgiTqp1681AA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=SlKO6I3lSDoA:10 a=Hx9XTuda4VUfgBt-vnIA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1346951742.1680.38.camel@gandalf.local.home>
-Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive
- hashtable
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Pedro Alves <palves@redhat.com>, Tejun Heo <tj@kernel.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, mingo@elte.hu,
-        ebiederm@xmission.com, aarcange@redhat.com, ericvh@gmail.com,
-        netdev@vger.kernel.org, eric.dumazet@gmail.com, axboe@kernel.dk,
-        agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
-        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
-        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
-        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Date: Thu, 06 Sep 2012 13:15:42 -0400
-In-Reply-To: <5048CDA2.10300@gmail.com>
-References: <503C95E4.3010000@gmail.com> <20120828101148.GA21683@Krystal>
-	  <503CAB1E.5010408@gmail.com> <20120828115638.GC23818@Krystal>
-	  <20120828230050.GA3337@Krystal>
-	  <1346772948.27919.9.camel@gandalf.local.home>
-	 <50462C99.5000007@redhat.com>  <50462EE8.1090903@redhat.com>
-	 <20120904170138.GB31934@Krystal>  <5048AAF6.5090101@gmail.com>
-	 <20120906145545.GA17332@leaf>  <5048C615.4070204@gmail.com>
-	 <1346947206.1680.36.camel@gandalf.local.home> <5048CDA2.10300@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 6 Sep 2012 13:16:54 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6827"; a="233645491"
+From: Rohit Vaswani <rvaswani@codeaurora.org>
+To: Olof Johansson <olof@lixom.net>, David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>
+Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: [PATCHv2 2/2] msm: io: Change the default static iomappings to be shared
+Date: Thu,  6 Sep 2012 10:16:39 -0700
+Message-Id: <1346951799-9415-1-git-send-email-rvaswani@codeaurora.org>
+X-Mailer: git-send-email 1.7.8.3
+In-Reply-To: <CAOesGMgC2OxEs-wGRQku-GeoiaO2Wa_dZ2AuwnKd3Nze4gknqQ@mail.gmail.com>
+References: <CAOesGMgC2OxEs-wGRQku-GeoiaO2Wa_dZ2AuwnKd3Nze4gknqQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-06 at 18:21 +0200, Sasha Levin wrote:
-> On 09/06/2012 06:00 PM, Steven Rostedt wrote:
-> >> > I think that that code doesn't make sense. The users of hlist_for_each_* aren't
-> >> > supposed to be changing the loop cursor.
-> > I totally agree. Modifying the 'node' pointer is just asking for issues.
-> > Yes that is error prone, but not due to the double loop. It's due to the
-> > modifying of the node pointer that is used internally by the loop
-> > counter. Don't do that :-)
-> 
-> While we're on this subject, I haven't actually seen hlist_for_each_entry() code
-> that even *touches* 'pos'.
-> 
-> Will people yell at me loudly if I change the prototype of those macros to be:
-> 
-> 	hlist_for_each_entry(tpos, head, member)
-> 
-> (Dropping the 'pos' parameter), and updating anything that calls those macros to
-> drop it as well?
+With 3.4 kernel the static iomappings can be shared with the ioremap
+mappings. If ioremap is called with an address for which a static
+mapping already exists, then that mapping should be used instead
+of creating a new one.
+However, the MT_DEVICE_NONSHARED flag prevents this. Hence, get rid
+of this flag. Some targets (7X00) that require the static iomappings
+to be NONSHARED use the MSM_DEVICE_TYPE and MSM_CHIP_DEVICE_TYPE macros.
 
-If 'pos' is no longer used in the macro, I don't see any reason for
-keeping it around.
+Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+---
+ arch/arm/mach-msm/io.c |   22 +++++++++++++---------
+ 1 files changed, 13 insertions(+), 9 deletions(-)
 
--- Steve
-
+diff --git a/arch/arm/mach-msm/io.c b/arch/arm/mach-msm/io.c
+index 2409c0b..5190136 100644
+--- a/arch/arm/mach-msm/io.c
++++ b/arch/arm/mach-msm/io.c
+@@ -29,27 +29,31 @@
+ 
+ #include <mach/board.h>
+ 
+-#define MSM_CHIP_DEVICE(name, chip) {			      \
++#define MSM_CHIP_DEVICE_TYPE(name, chip, mem_type) {			      \
+ 		.virtual = (unsigned long) MSM_##name##_BASE, \
+ 		.pfn = __phys_to_pfn(chip##_##name##_PHYS), \
+ 		.length = chip##_##name##_SIZE, \
+-		.type = MT_DEVICE_NONSHARED, \
++		.type = mem_type, \
+ 	 }
+ 
++#define MSM_DEVICE_TYPE(name, mem_type) \
++		MSM_CHIP_DEVICE_TYPE(name, MSM, mem_type)
++#define MSM_CHIP_DEVICE(name, chip) \
++		MSM_CHIP_DEVICE_TYPE(name, chip, MT_DEVICE)
+ #define MSM_DEVICE(name) MSM_CHIP_DEVICE(name, MSM)
+ 
+ #if defined(CONFIG_ARCH_MSM7X00A) || defined(CONFIG_ARCH_MSM7X27) \
+ 	|| defined(CONFIG_ARCH_MSM7X25)
+ static struct map_desc msm_io_desc[] __initdata = {
+-	MSM_DEVICE(VIC),
+-	MSM_CHIP_DEVICE(CSR, MSM7X00),
+-	MSM_DEVICE(DMOV),
+-	MSM_CHIP_DEVICE(GPIO1, MSM7X00),
+-	MSM_CHIP_DEVICE(GPIO2, MSM7X00),
+-	MSM_DEVICE(CLK_CTL),
++	MSM_DEVICE_TYPE(VIC, MT_DEVICE_NONSHARED),
++	MSM_CHIP_DEVICE_TYPE(CSR, MSM7X00, MT_DEVICE_NONSHARED),
++	MSM_DEVICE_TYPE(DMOV, MT_DEVICE_NONSHARED),
++	MSM_CHIP_DEVICE_TYPE(GPIO1, MSM7X00, MT_DEVICE_NONSHARED),
++	MSM_CHIP_DEVICE_TYPE(GPIO2, MSM7X00, MT_DEVICE_NONSHARED),
++	MSM_CHIP_DEVICE_TYPE(CLK_CTL, MSM7X00, MT_DEVICE_NONSHARED),
+ #if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
+ 	defined(CONFIG_DEBUG_MSM_UART3)
+-	MSM_DEVICE(DEBUG_UART),
++	MSM_DEVICE_TYPE(DEBUG_UART, MT_DEVICE_NONSHARED),
+ #endif
+ 	{
+ 		.virtual =  (unsigned long) MSM_SHARED_RAM_BASE,
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
