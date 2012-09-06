@@ -1,109 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760172Ab2IFBiD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 21:38:03 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:42504 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754030Ab2IFBiB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 21:38:01 -0400
-X-AuditID: 9c93016f-b7cc0ae000000e9f-32-5047fe76b5ef
-From: Namhyung Kim <namhyung@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Namhyung Kim <namhyung.kim@lge.com>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 14/17] perf header: Set tracepoint event name only if not set
-References: <1346886537-11621-1-git-send-email-acme@infradead.org>
-	<1346886537-11621-15-git-send-email-acme@infradead.org>
-	<5047E7CC.6040408@gmail.com>
-Date: Thu, 06 Sep 2012 10:30:37 +0900
-In-Reply-To: <5047E7CC.6040408@gmail.com> (David Ahern's message of "Wed, 05
-	Sep 2012 18:01:16 -0600")
-Message-ID: <87oblkc4zm.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1760208Ab2IFBox (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 21:44:53 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:42075 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754679Ab2IFBow (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 21:44:52 -0400
+X-IronPort-AV: E=Sophos;i="4.80,377,1344182400"; 
+   d="scan'208";a="5791463"
+Message-ID: <5047F2B3.5060807@cn.fujitsu.com>
+Date: Thu, 06 Sep 2012 08:47:47 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Tejun Heo <tj@kernel.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] workqueue: fix possible deadlock in idle worker rebinding
+References: <20120905061233.GA3195@dhcp-172-17-108-109.mtv.corp.google.com> <20120905061632.GB3195@dhcp-172-17-108-109.mtv.corp.google.com> <20120905231116.GD29092@google.com>
+In-Reply-To: <20120905231116.GD29092@google.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/06 08:45:35,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/06 08:45:37,
+	Serialize complete at 2012/09/06 08:45:37
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 05 Sep 2012 18:01:16 -0600, David Ahern wrote:
-> On 9/5/12 5:08 PM, Arnaldo Carvalho de Melo wrote:
->> From: Namhyung Kim <namhyung.kim@lge.com>
->>
->> The event name can be set already by processing a event_desc data.
->>
->> So check it before setting to prevent possible leak.
->>
->> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
->> Cc: Ingo Molnar <mingo@kernel.org>
->> Cc: Paul Mackerras <paulus@samba.org>
->> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
->> Link: http://lkml.kernel.org/r/1346821373-31621-3-git-send-email-namhyung@kernel.org
->> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
->> ---
->>   tools/perf/util/header.c |    2 +-
->>   1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
->> index a124b93..05c9310 100644
->> --- a/tools/perf/util/header.c
->> +++ b/tools/perf/util/header.c
->> @@ -2314,7 +2314,7 @@ static int perf_evlist__set_tracepoint_names(struct perf_evlist *evlist,
->>   	struct perf_evsel *pos;
->>
->>   	list_for_each_entry(pos, &evlist->entries, node) {
->> -		if (pos->attr.type == PERF_TYPE_TRACEPOINT &&
->> +		if (pos->attr.type == PERF_TYPE_TRACEPOINT && !pos->name &&
->>   		    perf_evsel__set_tracepoint_name(pos, pevent))
->>   			return -1;
->>   	}
->>
->
-> I'm getting a segfault running perf-script due to this patch. Most
-> likely this is exposing another problem. Back trace is:
+On 09/06/2012 07:11 AM, Tejun Heo wrote:
+> On Tue, Sep 04, 2012 at 11:16:32PM -0700, Tejun Heo wrote:
+>> Currently, rebind_workers() and idle_worker_rebind() are two-way
+>> interlocked.  rebind_workers() waits for idle workers to finish
+>> rebinding and rebound idle workers wait for rebind_workers() to finish
+>> rebinding busy workers before proceeding.
+> 
+> Applied to wq/for-3.6-fixes.
+> 
+> Thanks.
+> 
 
-Hmm.  It's because evsel->tp_format being not set, not sure why I didn't
-detect this during tests.  Will find out a solution.
+OK for me.
 
-Thanks,
-Namhyung
-
-
->
-> #0  0x000000000049f4f2 in pevent_event_info (s=0x7fffffffdab0,
-> event=0x0, record=0x7fffffffda70)
->     at tools/lib/traceevent/event-parse.c:4183
-> #1  0x000000000046cd52 in event_format__print (event=0x0,
-> cpu=<optimized out>, data=<optimized out>, size=<optimized out>)
->     at util/trace-event-parse.c:182
-> #2  0x000000000042d41b in process_event (event=0x7fffef9d1e60,
-> sample=0x7fffffffdc90, evsel=0x90d870, machine=0x906f80,
->     al=<optimized out>) at builtin-script.c:415
-> #3  0x000000000042c4e1 in process_sample_event (tool=<optimized out>,
-> event=0x7fffef9d1e60, sample=0x7fffffffdc90, evsel=
->     0x90d870, machine=0x906f80) at builtin-script.c:515
-> #4  0x000000000046864d in perf_session_deliver_event
-> (session=<optimized out>, event=0x7fffef9d1e60, sample=0x7fffffffdc90,
->     tool=0x79d020, file_offset=<optimized out>) at util/session.c:1065
-> #5  0x0000000000468c5a in flush_sample_queue (s=0x906f20,
-> tool=0x79d020) at util/session.c:719
-> #6  0x0000000000468d46 in process_finished_round (tool=<optimized
-> out>, event=<optimized out>, session=0x906f20)
->     at util/session.c:790
-> #7  0x0000000000469055 in perf_session__process_user_event
-> (file_offset=541768, tool=0x79d020, event=0x7fffefa2b448,
->     session=0x906f20) at util/session.c:1129
-> #8  perf_session__process_event (session=0x906f20,
-> event=0x7fffefa2b448, tool=0x79d020, file_offset=541768)
->     at util/session.c:1161
-> #9  0x000000000046a851 in __perf_session__process_events
-> (session=0x906f20, data_offset=<optimized out>,
->     data_size=<optimized out>, file_size=2564784, tool=0x79d020) at
-> util/session.c:1429
-> #10 0x000000000042ebdc in __cmd_script (session=0x906f20) at
-> builtin-script.c:548
+Thanks.
+Lai
