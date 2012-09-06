@@ -1,47 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757000Ab2IFKIX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 06:08:23 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:51545 "EHLO mail.mev.co.uk"
+	id S1757195Ab2IFKJb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 06:09:31 -0400
+Received: from twin.jikos.cz ([89.185.236.188]:41299 "EHLO twin.jikos.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752967Ab2IFKIW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 06:08:22 -0400
-From: Ian Abbott <abbotti@mev.co.uk>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: linux-fsdevel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [PATCH] UDF: Fix incorrect error handling in udf_direct_IO()
-Date: Thu,  6 Sep 2012 11:08:11 +0100
-Message-Id: <1346926091-3654-1-git-send-email-abbotti@mev.co.uk>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <20120905190239.GK18051@quack.suse.cz>
-References: <20120905190239.GK18051@quack.suse.cz>
+	id S1752837Ab2IFKJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 06:09:29 -0400
+Date: Thu, 6 Sep 2012 12:09:23 +0200
+From: David Sterba <dave@jikos.cz>
+To: Wang Sheng-Hui <shhuiw@gmail.com>
+Cc: chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] btrfs: remove unnecessary -ENOMEM BUG_ON check in
+ extent-tree.c/exclude_super_stripes
+Message-ID: <20120906100923.GO17430@twin.jikos.cz>
+Reply-To: dave@jikos.cz
+Mail-Followup-To: Wang Sheng-Hui <shhuiw@gmail.com>,
+	chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <50484569.8080709@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50484569.8080709@gmail.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My recent patch to add DIRECT_IO support to the UDF filesystem handler
-contains a mistake in the error recovery if blockdev_direct_IO() fails.
-The test `rw && WRITE` should be `rw & WRITE`.  Fix it.
+On Thu, Sep 06, 2012 at 02:40:41PM +0800, Wang Sheng-Hui wrote:
+> The memory allocation failure is BUG_ON in add_excluded_extent (following
+> the code path) and btrfs_rmap_block. No need to BUG_ON -ENOMEM inside
+> exclude_super_stripes itself.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
----
- fs/udf/inode.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+No please.
 
-diff --git a/fs/udf/inode.c b/fs/udf/inode.c
-index b905448..41d5830 100644
---- a/fs/udf/inode.c
-+++ b/fs/udf/inode.c
-@@ -156,7 +156,7 @@ static ssize_t udf_direct_IO(int rw, struct kiocb *iocb,
- 
- 	ret = blockdev_direct_IO(rw, iocb, inode, iov, offset, nr_segs,
- 				  udf_get_block);
--	if (unlikely(ret < 0 && (rw && WRITE)))
-+	if (unlikely(ret < 0 && (rw & WRITE)))
- 		udf_write_failed(mapping, offset + iov_length(iov, nr_segs));
- 	return ret;
- }
--- 
-1.7.12
+> Its return value is always 0, and useless for its callers. Set it as void
+> instead 0-returned.
 
+btrfs_rmap_block itself contains a BUG_ON:
+
+3980 int btrfs_rmap_block(struct btrfs_mapping_tree *map_tree,
+3981                      u64 chunk_start, u64 physical, u64 devid,
+3982                      u64 **logical, int *naddrs, int *stripe_len)
+3983 {
+3984         struct extent_map_tree *em_tree = &map_tree->map_tree;
+3985         struct extent_map *em;
+3986         struct map_lookup *map;
+3987         u64 *buf;
+3988         u64 bytenr;
+3989         u64 length;
+3990         u64 stripe_nr;
+3991         int i, j, nr = 0;
+3992
+3993         read_lock(&em_tree->lock);
+3994         em = lookup_extent_mapping(em_tree, chunk_start, 1);
+3995         read_unlock(&em_tree->lock);
+3996
+3997         BUG_ON(!em || em->start != chunk_start);
+
+And this should be turned into an 'return error', thus giving a non-zero return
+code that should be handled in the callers.
+
+Eg. this patch attempts to do that
+http://www.mail-archive.com/linux-btrfs@vger.kernel.org/msg15470.html
+
+but has not been merged due to incorrect fix inside exclude_super_stripes
+(introduced in the patch).
+
+The same objection for return code cleanups will hold for any function that
+returns 0 but is full of BUG_ONs.
+
+
+david
