@@ -1,75 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757195Ab2IFKJb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 06:09:31 -0400
-Received: from twin.jikos.cz ([89.185.236.188]:41299 "EHLO twin.jikos.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752837Ab2IFKJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 06:09:29 -0400
-Date: Thu, 6 Sep 2012 12:09:23 +0200
-From: David Sterba <dave@jikos.cz>
-To: Wang Sheng-Hui <shhuiw@gmail.com>
-Cc: chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] btrfs: remove unnecessary -ENOMEM BUG_ON check in
- extent-tree.c/exclude_super_stripes
-Message-ID: <20120906100923.GO17430@twin.jikos.cz>
-Reply-To: dave@jikos.cz
-Mail-Followup-To: Wang Sheng-Hui <shhuiw@gmail.com>,
-	chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <50484569.8080709@gmail.com>
+	id S1757519Ab2IFKMZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 06:12:25 -0400
+Received: from www.piware.de ([213.9.93.70]:55095 "EHLO mail.piware.de"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752855Ab2IFKMW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 06:12:22 -0400
+Date: Thu, 6 Sep 2012 12:04:33 +0200
+From: Martin Pitt <martin.pitt@ubuntu.com>
+To: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] [SCSI] scsi_debug: Add "removable" parameter
+Message-ID: <20120906100433.GD2864@piware.de>
+References: <20120906100307.GC2864@piware.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50484569.8080709@gmail.com>
-User-Agent: Mutt/1.5.21 (2011-07-01)
+In-Reply-To: <20120906100307.GC2864@piware.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 06, 2012 at 02:40:41PM +0800, Wang Sheng-Hui wrote:
-> The memory allocation failure is BUG_ON in add_excluded_extent (following
-> the code path) and btrfs_rmap_block. No need to BUG_ON -ENOMEM inside
-> exclude_super_stripes itself.
+Add "removable" module parameter to set the "removable" attribute of any
+subsequently created debug block device. It is a writable driver option, so
+that you can switch between removable and "fixed" media block devices in
+between the add_host calls.
 
-No please.
+This is useful for being able to test the different behaviour/required
+privileges in e. g. the udisks test suite.
 
-> Its return value is always 0, and useless for its callers. Set it as void
-> instead 0-returned.
+Signed-off-by: Martin Pitt <martin.pitt@ubuntu.com>
+Acked-By: David Zeuthen <zeuthen@gmail.com>
+---
+ drivers/scsi/scsi_debug.c |   30 +++++++++++++++++++++++++++---
+ 1 files changed, 27 insertions(+), 3 deletions(-)
 
-btrfs_rmap_block itself contains a BUG_ON:
-
-3980 int btrfs_rmap_block(struct btrfs_mapping_tree *map_tree,
-3981                      u64 chunk_start, u64 physical, u64 devid,
-3982                      u64 **logical, int *naddrs, int *stripe_len)
-3983 {
-3984         struct extent_map_tree *em_tree = &map_tree->map_tree;
-3985         struct extent_map *em;
-3986         struct map_lookup *map;
-3987         u64 *buf;
-3988         u64 bytenr;
-3989         u64 length;
-3990         u64 stripe_nr;
-3991         int i, j, nr = 0;
-3992
-3993         read_lock(&em_tree->lock);
-3994         em = lookup_extent_mapping(em_tree, chunk_start, 1);
-3995         read_unlock(&em_tree->lock);
-3996
-3997         BUG_ON(!em || em->start != chunk_start);
-
-And this should be turned into an 'return error', thus giving a non-zero return
-code that should be handled in the callers.
-
-Eg. this patch attempts to do that
-http://www.mail-archive.com/linux-btrfs@vger.kernel.org/msg15470.html
-
-but has not been merged due to incorrect fix inside exclude_super_stripes
-(introduced in the patch).
-
-The same objection for return code cleanups will hold for any function that
-returns 0 but is full of BUG_ONs.
-
-
-david
+diff --git a/drivers/scsi/scsi_debug.c b/drivers/scsi/scsi_debug.c
+index 182d5a5..57fbd5a 100644
+--- a/drivers/scsi/scsi_debug.c
++++ b/drivers/scsi/scsi_debug.c
+@@ -109,6 +109,7 @@ static const char * scsi_debug_version_date = "20100324";
+ #define DEF_OPT_BLKS 64
+ #define DEF_PHYSBLK_EXP 0
+ #define DEF_PTYPE   0
++#define DEF_REMOVABLE false
+ #define DEF_SCSI_LEVEL   5    /* INQUIRY, byte2 [5->SPC-3] */
+ #define DEF_SECTOR_SIZE 512
+ #define DEF_UNMAP_ALIGNMENT 0
+@@ -193,11 +194,11 @@ static unsigned int scsi_debug_unmap_granularity = DEF_UNMAP_GRANULARITY;
+ static unsigned int scsi_debug_unmap_max_blocks = DEF_UNMAP_MAX_BLOCKS;
+ static unsigned int scsi_debug_unmap_max_desc = DEF_UNMAP_MAX_DESC;
+ static unsigned int scsi_debug_write_same_length = DEF_WRITESAME_LENGTH;
++static bool scsi_debug_removable = DEF_REMOVABLE;
+ 
+ static int scsi_debug_cmnd_count = 0;
+ 
+ #define DEV_READONLY(TGT)      (0)
+-#define DEV_REMOVEABLE(TGT)    (0)
+ 
+ static unsigned int sdebug_store_sectors;
+ static sector_t sdebug_capacity;	/* in sectors */
+@@ -919,7 +920,7 @@ static int resp_inquiry(struct scsi_cmnd * scp, int target,
+ 		return ret;
+ 	}
+ 	/* drops through here for a standard inquiry */
+-	arr[1] = DEV_REMOVEABLE(target) ? 0x80 : 0;	/* Removable disk */
++	arr[1] = scsi_debug_removable ? 0x80 : 0;	/* Removable disk */
+ 	arr[2] = scsi_debug_scsi_level;
+ 	arr[3] = 2;    /* response_data_format==2 */
+ 	arr[4] = SDEBUG_LONG_INQ_SZ - 5;
+@@ -1211,7 +1212,7 @@ static int resp_format_pg(unsigned char * p, int pcontrol, int target)
+ 	p[11] = sdebug_sectors_per & 0xff;
+ 	p[12] = (scsi_debug_sector_size >> 8) & 0xff;
+ 	p[13] = scsi_debug_sector_size & 0xff;
+-	if (DEV_REMOVEABLE(target))
++	if (scsi_debug_removable)
+ 		p[20] |= 0x20; /* should agree with INQUIRY */
+ 	if (1 == pcontrol)
+ 		memset(p + 2, 0, sizeof(format_pg) - 2);
+@@ -2754,6 +2755,7 @@ module_param_named(opt_blks, scsi_debug_opt_blks, int, S_IRUGO);
+ module_param_named(opts, scsi_debug_opts, int, S_IRUGO | S_IWUSR);
+ module_param_named(physblk_exp, scsi_debug_physblk_exp, int, S_IRUGO);
+ module_param_named(ptype, scsi_debug_ptype, int, S_IRUGO | S_IWUSR);
++module_param_named(removable, scsi_debug_removable, bool, S_IRUGO | S_IWUSR);
+ module_param_named(scsi_level, scsi_debug_scsi_level, int, S_IRUGO);
+ module_param_named(sector_size, scsi_debug_sector_size, int, S_IRUGO);
+ module_param_named(unmap_alignment, scsi_debug_unmap_alignment, int, S_IRUGO);
+@@ -2796,6 +2798,7 @@ MODULE_PARM_DESC(opt_blks, "optimal transfer length in block (def=64)");
+ MODULE_PARM_DESC(opts, "1->noise, 2->medium_err, 4->timeout, 8->recovered_err... (def=0)");
+ MODULE_PARM_DESC(physblk_exp, "physical block exponent (def=0)");
+ MODULE_PARM_DESC(ptype, "SCSI peripheral type(def=0[disk])");
++MODULE_PARM_DESC(removable, "claim to have removable media (def=0)");
+ MODULE_PARM_DESC(scsi_level, "SCSI level to simulate(def=5[SPC-3])");
+ MODULE_PARM_DESC(sector_size, "logical block size in bytes (def=512)");
+ MODULE_PARM_DESC(unmap_alignment, "lowest aligned thin provisioning lba (def=0)");
+@@ -3205,6 +3208,25 @@ static ssize_t sdebug_map_show(struct device_driver *ddp, char *buf)
+ }
+ DRIVER_ATTR(map, S_IRUGO, sdebug_map_show, NULL);
+ 
++static ssize_t sdebug_removable_show(struct device_driver *ddp,
++				     char *buf)
++{
++	return scnprintf(buf, PAGE_SIZE, "%d\n", scsi_debug_removable ? 1 : 0);
++}
++static ssize_t sdebug_removable_store(struct device_driver *ddp,
++				      const char *buf, size_t count)
++{
++	int n;
++
++	if ((count > 0) && (1 == sscanf(buf, "%d", &n)) && (n >= 0)) {
++		scsi_debug_removable = (n > 0);
++		return count;
++	}
++	return -EINVAL;
++}
++DRIVER_ATTR(removable, S_IRUGO | S_IWUSR, sdebug_removable_show,
++	    sdebug_removable_store);
++
+ 
+ /* Note: The following function creates attribute files in the
+    /sys/bus/pseudo/drivers/scsi_debug directory. The advantage of these
+@@ -3230,6 +3252,7 @@ static int do_create_driverfs_files(void)
+ 	ret |= driver_create_file(&sdebug_driverfs_driver, &driver_attr_num_tgts);
+ 	ret |= driver_create_file(&sdebug_driverfs_driver, &driver_attr_ptype);
+ 	ret |= driver_create_file(&sdebug_driverfs_driver, &driver_attr_opts);
++	ret |= driver_create_file(&sdebug_driverfs_driver, &driver_attr_removable);
+ 	ret |= driver_create_file(&sdebug_driverfs_driver, &driver_attr_scsi_level);
+ 	ret |= driver_create_file(&sdebug_driverfs_driver, &driver_attr_virtual_gb);
+ 	ret |= driver_create_file(&sdebug_driverfs_driver, &driver_attr_vpd_use_hostno);
+@@ -3255,6 +3278,7 @@ static void do_remove_driverfs_files(void)
+ 	driver_remove_file(&sdebug_driverfs_driver, &driver_attr_scsi_level);
+ 	driver_remove_file(&sdebug_driverfs_driver, &driver_attr_opts);
+ 	driver_remove_file(&sdebug_driverfs_driver, &driver_attr_ptype);
++	driver_remove_file(&sdebug_driverfs_driver, &driver_attr_removable);
+ 	driver_remove_file(&sdebug_driverfs_driver, &driver_attr_num_tgts);
+ 	driver_remove_file(&sdebug_driverfs_driver, &driver_attr_num_parts);
+ 	driver_remove_file(&sdebug_driverfs_driver, &driver_attr_no_uld);
+-- 
+1.7.2.5
