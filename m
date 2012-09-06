@@ -1,49 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932992Ab2IFSWQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 14:22:16 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:42879 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754787Ab2IFSWP convert rfc822-to-8bit (ORCPT
+	id S932976Ab2IFSY2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 14:24:28 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:48435 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932196Ab2IFSY0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 14:22:15 -0400
-Message-ID: <1346955710.18408.58.camel@twins>
-Subject: Re: [PATCH RFC tip/core/rcu] Add callback-free CPUs
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
-Date: Thu, 06 Sep 2012 20:21:50 +0200
-In-Reply-To: <20120906174652.GM2448@linux.vnet.ibm.com>
-References: <20120905213945.GA15216@linux.vnet.ibm.com>
-	 <1346881720.2600.48.camel@twins> <20120905234443.GY3308@linux.vnet.ibm.com>
-	 <1346926417.2600.73.camel@twins> <20120906164745.GF2448@linux.vnet.ibm.com>
-	 <1346950736.18408.43.camel@twins>
-	 <20120906174652.GM2448@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 6 Sep 2012 14:24:26 -0400
+Message-ID: <5048EA57.20308@wwwdotorg.org>
+Date: Thu, 06 Sep 2012 12:24:23 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] ARM: tegra: fix return value for debugfs init
+References: <1346943329-4898-1-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1346943329-4898-1-git-send-email-pdeschrijver@nvidia.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-06 at 10:46 -0700, Paul E. McKenney wrote:
-> Getting these
-> CPUs into adaptive-tick mode more quickly reduces OS jitter, which is
-> one big expected benefit of adaptive-tick mode. 
+On 09/06/2012 08:55 AM, Peter De Schrijver wrote:
+> tegra_powergate_debugfs_init() always returns -ENOMEM. It shouldn't do that
+> when registering the debugfs entry succeeded.
 
-I'm not sure I agree with that statement. Its a transition thing and
-therefore statistically irrelevant on the whole -- assuming we
-transition rarely.
+Thanks, applied the series to Tegra's for-3.7/fixes branch.
 
-And for those who cannot deal with the transition effects, a barrier was
-proposed which would wait until the system hit this state -- although
-the specific implementation of this isn't clear yet afaik.
-
-I very much think we should focus on getting adaptive tick working as
-simple as possible and worry about transition effects later, if at all.
