@@ -1,59 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756074Ab2IFOWf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 10:22:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45579 "EHLO mx2.suse.de"
+	id S1756079Ab2IFOXI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 10:23:08 -0400
+Received: from smtp.infotech.no ([82.134.31.41]:33544 "EHLO smtp.infotech.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755968Ab2IFOWd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 10:22:33 -0400
-Date: Thu, 6 Sep 2012 16:22:31 +0200
-From: Jan Kara <jack@suse.cz>
-To: Ian Abbott <abbotti@mev.co.uk>
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        Jan Kara <jack@suse.cz>
-Subject: Re: [PATCH] UDF: Fix incorrect error handling in udf_direct_IO()
-Message-ID: <20120906142231.GA12539@quack.suse.cz>
-References: <20120905190239.GK18051@quack.suse.cz>
- <1346926091-3654-1-git-send-email-abbotti@mev.co.uk>
+	id S1755497Ab2IFOXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 10:23:06 -0400
+Message-ID: <5048B1C2.1060909@interlog.com>
+Date: Thu, 06 Sep 2012 10:22:58 -0400
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346926091-3654-1-git-send-email-abbotti@mev.co.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Martin Pitt <martin.pitt@ubuntu.com>
+CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] [SCSI] scsi_debug: Add "removable" parameter
+References: <20120906100307.GC2864@piware.de> <20120906100433.GD2864@piware.de>
+In-Reply-To: <20120906100433.GD2864@piware.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 06-09-12 11:08:11, Ian Abbott wrote:
-> My recent patch to add DIRECT_IO support to the UDF filesystem handler
-> contains a mistake in the error recovery if blockdev_direct_IO() fails.
-> The test `rw && WRITE` should be `rw & WRITE`.  Fix it.
-> 
-> Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-  Thanks. I've folded the change into your patch.
+On 12-09-06 06:04 AM, Martin Pitt wrote:
+> Add "removable" module parameter to set the "removable" attribute of any
+> subsequently created debug block device. It is a writable driver option, so
+> that you can switch between removable and "fixed" media block devices in
+> between the add_host calls.
+>
+> This is useful for being able to test the different behaviour/required
+> privileges in e. g. the udisks test suite.
+>
+> Signed-off-by: Martin Pitt <martin.pitt@ubuntu.com>
+> Acked-By: David Zeuthen <zeuthen@gmail.com>
 
-								Honza
+Acked-by: Douglas Gilbert <dgilbert@interlog.com>
 
-> ---
->  fs/udf/inode.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/fs/udf/inode.c b/fs/udf/inode.c
-> index b905448..41d5830 100644
-> --- a/fs/udf/inode.c
-> +++ b/fs/udf/inode.c
-> @@ -156,7 +156,7 @@ static ssize_t udf_direct_IO(int rw, struct kiocb *iocb,
->  
->  	ret = blockdev_direct_IO(rw, iocb, inode, iov, offset, nr_segs,
->  				  udf_get_block);
-> -	if (unlikely(ret < 0 && (rw && WRITE)))
-> +	if (unlikely(ret < 0 && (rw & WRITE)))
->  		udf_write_failed(mapping, offset + iov_length(iov, nr_segs));
->  	return ret;
->  }
-> -- 
-> 1.7.12
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
