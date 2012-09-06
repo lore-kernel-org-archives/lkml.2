@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759163Ab2IFQtX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 12:49:23 -0400
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:12458
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759086Ab2IFQtV (ORCPT
+	id S1759223Ab2IFQtb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 12:49:31 -0400
+Received: from mail-yx0-f202.google.com ([209.85.213.202]:37343 "EHLO
+	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759174Ab2IFQt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 12:49:21 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839hd24he5bhf0ah107ah1155h)
-From: Fabio Estevam <fabio.estevam@freescale.com>
-To: <zbr@ioremap.net>
-CC: <s.hauer@pengutronix.de>, <linux-kernel@vger.kernel.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH v2 1/3] w1: mxc_w1: Adapt the clock name to the new clock framework
-Date: Thu, 6 Sep 2012 13:48:59 -0300
-Message-ID: <1346950139-17059-1-git-send-email-fabio.estevam@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+	Thu, 6 Sep 2012 12:49:28 -0400
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Inki Dae <inki.dae@samsung.com>, Joonyoung Shim <jy0922.shim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org,
+        Paul Menzel <paulepanter@users.sourceforge.net>,
+        =?UTF-8?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>,
+        Pawel Osciak <posciak@google.com>
+Cc: Mandeep Singh Baines <msb@chromium.org>
+Subject: [PATCH] drm/exynos: fix double call of drm_prime_(init/destroy)_file_private
+Date: Thu,  6 Sep 2012 09:49:23 -0700
+Message-Id: <1346950163-17590-1-git-send-email-msb@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <CAAQKjZPGefy9333AGTN1iwxWuCiPvi85raDE7ijDmRcm9PPWWw@mail.gmail.com>
+References: <CAAQKjZPGefy9333AGTN1iwxWuCiPvi85raDE7ijDmRcm9PPWWw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the new i.mx clock framework the mxc_w1 clock is registered as:
+The double invocations are incorrect but seem to be safe so I don't
+think this will fix any bugs.
 
-clk_register_clkdev(clk[owire_gate], NULL, "mxc_w1.0"
+Before:
 
-So we do not need to pass "owire" string and can use NULL instead.
+[    7.639366] drm_prime_init_file ee3675d0
+[    7.639377] drm_prime_init_file ee3675d0
+[    7.639507] drm_prime_destroy_file ee3675d0
+[    7.639518] drm_prime_destroy_file ee3675d0
+[    7.639802] drm_prime_init_file ee372390
+[    7.639810] drm_prime_init_file ee372390
+[    8.473316] drm_prime_init_file ee356390
+[    8.473331] drm_prime_init_file ee356390
 
-While at it, also fix the clock error handling code.
+After:
 
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
------
-Changes since v1:
-- Fix clock error handling
- drivers/w1/masters/mxc_w1.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+[    6.363842] drm_prime_init_file edc2e5d0
+[    6.363994] drm_prime_destroy_file edc2e5d0
+[    6.364260] drm_prime_init_file edc2e750
+[    8.004837] drm_prime_init_file ee36ded0
 
-diff --git a/drivers/w1/masters/mxc_w1.c b/drivers/w1/masters/mxc_w1.c
-index 1cc61a7..960b362 100644
---- a/drivers/w1/masters/mxc_w1.c
-+++ b/drivers/w1/masters/mxc_w1.c
-@@ -117,11 +117,11 @@ static int __devinit mxc_w1_probe(struct platform_device *pdev)
- 	if (!mdev)
+Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+Acked-by: Seung-Woo Kim <sw0312.kim@samsung.com>
+---
+ drivers/gpu/drm/exynos/exynos_drm_drv.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_drv.c b/drivers/gpu/drm/exynos/exynos_drm_drv.c
+index ebacec6..a27b8ff 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_drv.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_drv.c
+@@ -160,7 +160,6 @@ static int exynos_drm_open(struct drm_device *dev, struct drm_file *file)
+ 	if (!file_priv)
  		return -ENOMEM;
  
--	mdev->clk = clk_get(&pdev->dev, "owire");
--	if (!mdev->clk) {
--		err = -ENODEV;
--		goto failed_clk;
--	}
-+	mdev->clk = clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(mdev->clk)) {
-+		err = PTR_ERR(mdev->clk);
-+		goto failed_clk;
-+	}
+-	drm_prime_init_file_private(&file->prime);
+ 	file->driver_priv = file_priv;
  
- 	mdev->clkdiv = (clk_get_rate(mdev->clk) / 1000000) - 1;
+ 	return exynos_drm_subdrv_open(dev, file);
+@@ -184,7 +183,6 @@ static void exynos_drm_preclose(struct drm_device *dev,
+ 			e->base.destroy(&e->base);
+ 		}
+ 	}
+-	drm_prime_destroy_file_private(&file->prime);
+ 	spin_unlock_irqrestore(&dev->event_lock, flags);
  
+ 	exynos_drm_subdrv_close(dev, file);
 -- 
-1.7.9.5
-
+1.7.7.3
 
