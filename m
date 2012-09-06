@@ -1,64 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756595Ab2IFOig (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 10:38:36 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:43216 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756361Ab2IFOib convert rfc822-to-8bit (ORCPT
+	id S1756611Ab2IFOjj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 10:39:39 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:42885 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756182Ab2IFOji convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 10:38:31 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH v3 01/17] hashtable: introduce a small and naive hashtable
-Date: Thu, 6 Sep 2012 15:36:52 +0100
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B6FDE@saturn3.aculab.com>
-In-Reply-To: <5048AAF6.5090101@gmail.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-thread-topic: [PATCH v3 01/17] hashtable: introduce a small and naive hashtable
-thread-index: Ac2MNuxcZXFy0Og7SRmfzEG9DIYJbQABXhVA
-References: <20120824230740.GN21325@google.com> <20120825042419.GA27240@Krystal> <503C95E4.3010000@gmail.com> <20120828101148.GA21683@Krystal> <503CAB1E.5010408@gmail.com> <20120828115638.GC23818@Krystal> <20120828230050.GA3337@Krystal> <1346772948.27919.9.camel@gandalf.local.home> <50462C99.5000007@redhat.com> <50462EE8.1090903@redhat.com> <20120904170138.GB31934@Krystal> <5048AAF6.5090101@gmail.com>
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Sasha Levin" <levinsasha928@gmail.com>,
-        "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
-Cc: "Pedro Alves" <palves@redhat.com>, "Steven Rostedt" <rostedt@goodmis.org>,
-        "Tejun Heo" <tj@kernel.org>, <torvalds@linux-foundation.org>,
-        <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <paul.gortmaker@windriver.com>,
-        <davem@davemloft.net>, <mingo@elte.hu>, <ebiederm@xmission.com>,
-        <aarcange@redhat.com>, <ericvh@gmail.com>, <netdev@vger.kernel.org>,
-        <josh@joshtriplett.org>, <eric.dumazet@gmail.com>, <axboe@kernel.dk>,
-        <agk@redhat.com>, <dm-devel@redhat.com>, <neilb@suse.de>,
-        <ccaulfie@redhat.com>, <teigland@redhat.com>,
-        <Trond.Myklebust@netapp.com>, <bfields@fieldses.org>,
-        <fweisbec@gmail.com>, <jesse@nicira.com>,
-        <venkat.x.venkatsubra@oracle.com>, <ejt@redhat.com>,
-        <snitzer@redhat.com>, <edumazet@google.com>,
-        <linux-nfs@vger.kernel.org>, <dev@openvswitch.org>,
-        <rds-devel@oss.oracle.com>, <lw@cn.fujitsu.com>
+	Thu, 6 Sep 2012 10:39:38 -0400
+Message-ID: <1346942312.18408.26.camel@twins>
+Subject: Re: [PATCH tip/core/rcu 01/15] rcu: Add PROVE_RCU_DELAY to provoke
+ difficult races
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Date: Thu, 06 Sep 2012 16:38:32 +0200
+In-Reply-To: <1346352988-32444-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20120830185607.GA32148@linux.vnet.ibm.com>
+	 <1346352988-32444-1-git-send-email-paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> My solution to making 'break' work in the iterator is:
-> 
-> 	for (bkt = 0, node = NULL; bkt < HASH_SIZE(name) && node ==
-NULL; bkt++)
-> 		hlist_for_each_entry(obj, node, &name[bkt], member)
-
-I'd take a look at the generated code.
-Might come out a bit better if the condition is changed to:
-	node == NULL && bkt < HASH_SIZE(name)
-you might find the compiler always optimises out the
-node == NULL comparison.
-(It might anyway, but switching the order gives it a better
-chance.)
-
-	David
-
+On Thu, 2012-08-30 at 11:56 -0700, Paul E. McKenney wrote:
+> +#ifdef CONFIG_PROVE_RCU_DELAY
+> +               udelay(10); /* Make preemption more probable. */
+		cond_resched(); /* for extra fun? */
+> +#endif /* #ifdef CONFIG_PROVE_RCU_DELAY */ 
 
 
