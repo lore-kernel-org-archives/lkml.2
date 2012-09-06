@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758186Ab2IFKdh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 06:33:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55085 "EHLO mx2.suse.de"
+	id S1758133Ab2IFKdg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 06:33:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55084 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757783Ab2IFKdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757752Ab2IFKdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 6 Sep 2012 06:33:35 -0400
-Message-ID: <50487BFA.2010105@suse.cz>
-Date: Thu, 06 Sep 2012 12:33:30 +0200
+Date: Thu, 6 Sep 2012 12:33:32 +0200
 From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: mark.asselstine@windriver.com, mmarek@suse.cz,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT] kbuild rc fixes for v3.6 (v2)
+Message-ID: <20120906103332.GA5917@sepie.suse.cz>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        mark.asselstine@windriver.com, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT] kbuild rc fixes for v3.6
-References: <20120903191801.GA23227@pobox.suse.cz> <CA+55aFzBsKBmVMRiJ8yuML_QVQbfa2ZqHU_fh3_wS3YhLTv9fw@mail.gmail.com> <20120906151951.8c30cb06fcb20412910006d2@canb.auug.org.au>
-In-Reply-To: <20120906151951.8c30cb06fcb20412910006d2@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6.9.2012 07:19, Stephen Rothwell wrote:
-> On Wed, 5 Sep 2012 20:32:00 -0700 Linus Torvalds <torvalds@linux-foundation.org> wrote:
->>
->> On Mon, Sep 3, 2012 at 12:18 PM, Michal Marek <mmarek@suse.cz> wrote:
->>> are available in the git repository at:
->>>   git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git ..BRANCH.NOT.VERIFIED..
->>
->> There's something wrong with that repo
->>
->>  "fatal: Could not read from remote repository.
->>
->>   Please make sure you have the correct access rights
->>   and the repository exists."
->>
->> plus that BRANCH.NOT.VERIFIED thing looks bad too (and is probably related).
+Hi Linus,
 
-Oops.
+there are two fixes that should go into 3.6. The link-vmlinux.sh one is
+obvious. The other one fixes make firmware_install with certain
+configurations, where a file in the toplevel firmware tree gets
+installed first, and $(INSTALL_FW_PATH)/$$(dir <file>) results in
+/lib/firmware/./, which confuses make 3.82 for some reason.
 
+v2: This time with the correct URL.
 
-> The kbuild-current tree in linux-next is
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git rc-fixes
-> 
-> and it has those 2 commits in it.  So script update needed, I guess.
-
-I did update my script, but the last pull request was sent from a
-machine that had the old copy :).
-
+Thanks,
 Michal
+
+
+The following changes since commit 0d7614f09c1ebdbaa1599a5aba7593f147bf96ee:
+
+  Linux 3.6-rc1 (2012-08-02 16:38:10 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git rc-fixes
+
+for you to fetch changes up to 6c7080a61fc7b46b3ac8573952b5a3e9d5f68bc4:
+
+  firmware: fix directory creation rule matching with make 3.82 (2012-08-30 16:27:13 +0200)
+
+----------------------------------------------------------------
+Mark Asselstine (1):
+      firmware: fix directory creation rule matching with make 3.82
+
+Michal Marek (1):
+      link-vmlinux.sh: Fix stray "echo" in error message
+
+ scripts/Makefile.fwinst |    2 +-
+ scripts/link-vmlinux.sh |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
