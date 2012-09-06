@@ -1,98 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756679Ab2IFJEr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 05:04:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2627 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754394Ab2IFJEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 05:04:45 -0400
-Message-ID: <50486727.7060509@redhat.com>
-Date: Thu, 06 Sep 2012 11:04:39 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: linux-kernel@vger.kernel.org, target-devel@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>
-Subject: Re: [RFC PATCH 0/3] target: try satisfying memory requests with higher-order
- allocations
-References: <1346858025-10459-1-git-send-email-pbonzini@redhat.com> <1346896698.4162.403.camel@haakon2.linux-iscsi.org>
-In-Reply-To: <1346896698.4162.403.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1756799Ab2IFJFY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 05:05:24 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:47247 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754456Ab2IFJFW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 05:05:22 -0400
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH RESEND] fs: Build sys_stat64() and friends if __ARCH_WANT_COMPAT_STAT64
+Date: Thu,  6 Sep 2012 10:04:34 +0100
+Message-Id: <1346922274-15190-1-git-send-email-catalin.marinas@arm.com>
+X-Mailer: git-send-email 1.7.9.111.gf3fb0
+X-OriginalArrivalTime: 06 Sep 2012 09:05:13.0349 (UTC) FILETIME=[B9842B50:01CD8C0E]
+X-MC-Unique: 112090610051900201
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q8695Tco022765
 
-Il 06/09/2012 03:58, Nicholas A. Bellinger ha scritto:
->> This patch series fixes this problem by using higher-order allocations
->> to build the data scatterlist.  The problem is that iscsi assumes that the
->> scatterlist consists of single pages, which is not true anymore.  So
->> patch 2 has to introduce some relatively complicated changes to
->> iscsi_map_iovec and iscsi_unmap_iovec.
-> 
-> So enabling multi-page per SGL support is a feature that has been
-> dormant within target core for a long time.  It's about time that we
-> start taking advantage of it again.  ;)
+On AArch64, we want the sys_stat64() and related functions for compat
+support but do not need the generic struct stat64, enabled automatically
+if __ARCH_WANT_STAT64.
 
-Yeah, I noticed some preparation for it in tcm_fc/tfc_io.c, though too
-late (they look a lot like my iscsi changes, it would have saved me some
-time!).
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ fs/stat.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-While this is obviously not to be taken lightly, I disagree with making
-this a per-fabric choice.  With a properly organized (and bisectable)
-series, it should be relatively easy to review and to get right.  I
-looked a bit more closely now and there are no changes needed to other
-targets (actually there is a change needed in tcm_qla2xxx, but the code
-is currently disabled).
-
-There are however changes to transport_kmap_data_sg needed and a few
-other places.
-
-I definitely agree with your other comments, including making max_order
-a DEF_DEV_ATTRIB.  In addition, the default max_order should be capped
-based on queue_max_sectors(q) if applicable, to avoid hitting this scenario:
-
-       /*
-        * XXX: if the length the device accepts is shorter than the
-        *      length of the S/G list entry this will cause and
-        *      endless loop.  Better hope no driver uses huge pages.
-        */
-
-Paolo
-
->> While doing this, I noticed something strange in iscsit_do_crypto_hash_sg.
->> Patch 1 adds a warning about it.
->>
-> 
-> Mmmmm, looks like a separate bug with DataDigest enabled.  
-> 
->> The approach may be completely wrong and it needs more testing anyway.
->> Please review!
->>
-> 
-> Adding my comments inline.
-> 
-> Thanks Paolo!
-> 
-> --nab
-> 
->> Paolo
->>
->> Paolo Bonzini (3):
->>   tcm_iscsi: warn on incorrect precondition for iscsit_do_crypto_hash_sg
->>   tcm_iscsi: support multiple sizes in the scatterlist
->>   target: try satisfying memory requests with contiguous blocks
->>
->>  drivers/target/iscsi/iscsi_target.c      |  106 +++++++++++++++++++++++++-----
->>  drivers/target/iscsi/iscsi_target_core.h |    2 +-
->>  drivers/target/target_core_transport.c   |   58 ++++++++++++++---
->>  3 files changed, 138 insertions(+), 28 deletions(-)
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe target-devel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+diff --git a/fs/stat.c b/fs/stat.c
+index b6ff118..6126c5d 100644
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@ -326,7 +326,7 @@ SYSCALL_DEFINE3(readlink, const char __user *, path, char __user *, buf,
+ 
+ 
+ /* ---------- LFS-64 ----------- */
+-#ifdef __ARCH_WANT_STAT64
++#if defined(__ARCH_WANT_STAT64) || defined(__ARCH_WANT_COMPAT_STAT64)
+ 
+ #ifndef INIT_STRUCT_STAT64_PADDING
+ #  define INIT_STRUCT_STAT64_PADDING(st) memset(&st, 0, sizeof(st))
+@@ -415,7 +415,7 @@ SYSCALL_DEFINE4(fstatat64, int, dfd, const char __user *, filename,
+ 		return error;
+ 	return cp_new_stat64(&stat, statbuf);
+ }
+-#endif /* __ARCH_WANT_STAT64 */
++#endif /* __ARCH_WANT_STAT64 || __ARCH_WANT_COMPAT_STAT64 */
+ 
+ /* Caller is here responsible for sufficient locking (ie. inode->i_lock) */
+ void __inode_add_bytes(struct inode *inode, loff_t bytes)
 
