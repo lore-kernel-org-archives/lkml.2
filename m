@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088Ab2IFLcN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 07:32:13 -0400
-Received: from mailxx.hitachi.co.jp ([133.145.228.50]:59855 "EHLO
+	id S1754186Ab2IFLcS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 07:32:18 -0400
+Received: from mailxx.hitachi.co.jp ([133.145.228.50]:59857 "EHLO
 	mailxx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751029Ab2IFLcK (ORCPT
+	with ESMTP id S1751029Ab2IFLcP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 07:32:10 -0400
-X-AuditID: b753bd60-900c0ba0000047ca-8e-504888f71f06
-X-AuditID: b753bd60-900c0ba0000047ca-8e-504888f71f06
+	Thu, 6 Sep 2012 07:32:15 -0400
+X-AuditID: b753bd60-969d8ba000000c4c-cb-504889078771
+X-AuditID: b753bd60-969d8ba000000c4c-cb-504889078771
 From: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
-Subject: [RFC v2 PATCH 17/21] KVM: add kvm_arch_vcpu_prevent_run to prevent VM
- ENTER when NMI is received
+Subject: [RFC v2 PATCH 20/21] KVM: Pass-through local APIC timer of on slave
+ CPUs to guest VM
 To: kvm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
         yrl.pp-manager.tt@hitachi.com,
@@ -19,8 +19,8 @@ Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
         Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, 06 Sep 2012 20:28:48 +0900
-Message-ID: <20120906112848.13320.90106.stgit@kvmdev>
+Date: Thu, 06 Sep 2012 20:29:04 +0900
+Message-ID: <20120906112904.13320.1826.stgit@kvmdev>
 In-Reply-To: <20120906112718.13320.8231.stgit@kvmdev>
 References: <20120906112718.13320.8231.stgit@kvmdev>
 User-Agent: StGIT/0.14.3
@@ -32,14 +32,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since NMI can not be disabled around VM enter, there is a race between
-receiving NMI to kick a guest and entering the guests on slave CPUs.If the
-NMI is received just before entering VM, after the NMI handler is invoked,
-it continues entering the guest and the effect of the NMI will be lost.
+Provide direct control of local APIC timer of slave CPUs to the guest.
+The timer interrupt does not cause VM exit if direct interrupt delivery is
+enabled. To handle the timer correctly, this makes the guest occupy the
+local APIC timer.
 
-This patch adds kvm_arch_vcpu_prevent_run(), which causes VM exit right
-after VM enter. The NMI handler uses this to ensure the execution of the
-guest is cancelled after NMI.
+If the host supports x2apic, this expose TMICT and TMCCT to the guest in
+order to allow guests to start the timer and to read the timer count
+without VM exit. Otherwise, it sets APIC registers to specified values.
+LVTT is not passed-through to avoid modifying timer interrupt vector.
+
+Currently the guest timer interrupt vector remapping is not supported, and
+guest must use the same vector as host.
 
 Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
 Cc: Avi Kivity <avi@redhat.com>
@@ -49,229 +53,317 @@ Cc: Ingo Molnar <mingo@redhat.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 ---
 
- arch/x86/include/asm/kvm_host.h |    6 ++++++
- arch/x86/kvm/vmx.c              |   42 ++++++++++++++++++++++++++++++++++++++-
- arch/x86/kvm/x86.c              |   31 +++++++++++++++++++++++++++++
- 3 files changed, 78 insertions(+), 1 deletions(-)
+ arch/x86/include/asm/apic.h     |    4 +++
+ arch/x86/include/asm/kvm_host.h |    1 +
+ arch/x86/kernel/apic/apic.c     |   11 ++++++++++
+ arch/x86/kernel/smpboot.c       |   30 ++++++++++++++++++++++++++
+ arch/x86/kvm/lapic.c            |   45 +++++++++++++++++++++++++++++++++++++++
+ arch/x86/kvm/lapic.h            |    2 ++
+ arch/x86/kvm/vmx.c              |    6 +++++
+ arch/x86/kvm/x86.c              |    3 +++
+ include/linux/cpu.h             |    5 ++++
+ kernel/hrtimer.c                |    2 +-
+ 10 files changed, 108 insertions(+), 1 deletions(-)
 
+diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
+index d37ae5c..66e1155 100644
+--- a/arch/x86/include/asm/apic.h
++++ b/arch/x86/include/asm/apic.h
+@@ -44,6 +44,8 @@ static inline void generic_apic_probe(void)
+ 
+ #ifdef CONFIG_X86_LOCAL_APIC
+ 
++struct clock_event_device;
++
+ extern unsigned int apic_verbosity;
+ extern int local_apic_timer_c2_ok;
+ 
+@@ -245,6 +247,8 @@ extern void init_apic_mappings(void);
+ void register_lapic_address(unsigned long address);
+ extern void setup_boot_APIC_clock(void);
+ extern void setup_secondary_APIC_clock(void);
++extern void override_local_apic_timer(int cpu,
++	void (*handler)(struct clock_event_device *));
+ extern int APIC_init_uniprocessor(void);
+ extern int apic_force_enable(unsigned long addr);
+ 
 diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 65242a6..624e5ad 100644
+index f43680e..a95bb62 100644
 --- a/arch/x86/include/asm/kvm_host.h
 +++ b/arch/x86/include/asm/kvm_host.h
-@@ -429,6 +429,9 @@ struct kvm_vcpu_arch {
- 		void *insn;
- 		int insn_len;
- 	} page_fault;
+@@ -1035,6 +1035,7 @@ int kvm_arch_vcpu_run_prevented(struct kvm_vcpu *vcpu);
+ 
+ #ifdef CONFIG_SLAVE_CPU
+ void kvm_get_slave_cpu_mask(struct kvm *kvm, struct cpumask *mask);
++struct kvm_vcpu *get_slave_vcpu(int cpu);
+ 
+ struct kvm_assigned_dev_kernel;
+ extern void assign_slave_msi(struct kvm *kvm,
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index 24deb30..90ed84a 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -901,6 +901,17 @@ void __irq_entry smp_apic_timer_interrupt(struct pt_regs *regs)
+ 	set_irq_regs(old_regs);
+ }
+ 
++void override_local_apic_timer(int cpu,
++			       void (*handler)(struct clock_event_device *))
++{
++	unsigned long flags;
 +
-+	bool prevent_run;
-+	bool prevent_needed;
++	local_irq_save(flags);
++	per_cpu(lapic_events, cpu).event_handler = handler;
++	local_irq_restore(flags);
++}
++EXPORT_SYMBOL_GPL(override_local_apic_timer);
++
+ int setup_profiling_timer(unsigned int multiplier)
+ {
+ 	return -EINVAL;
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 45dfc1d..ba7c99b 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -133,6 +133,7 @@ static void __ref remove_cpu_from_maps(int cpu);
+ #ifdef CONFIG_SLAVE_CPU
+ /* Notify slave cpu up and down */
+ static RAW_NOTIFIER_HEAD(slave_cpu_chain);
++struct notifier_block *slave_timer_nb;
+ 
+ int register_slave_cpu_notifier(struct notifier_block *nb)
+ {
+@@ -140,6 +141,13 @@ int register_slave_cpu_notifier(struct notifier_block *nb)
+ }
+ EXPORT_SYMBOL(register_slave_cpu_notifier);
+ 
++int register_slave_cpu_timer_notifier(struct notifier_block *nb)
++{
++	slave_timer_nb = nb;
++	return register_slave_cpu_notifier(nb);
++}
++EXPORT_SYMBOL(register_slave_cpu_timer_notifier);
++
+ void unregister_slave_cpu_notifier(struct notifier_block *nb)
+ {
+ 	raw_notifier_chain_unregister(&slave_cpu_chain, nb);
+@@ -155,6 +163,8 @@ static int slave_cpu_notify(unsigned long val, int cpu)
+ 
+ 	return notifier_to_errno(ret);
+ }
++
++static void slave_cpu_disable_timer(int cpu);
  #endif
  
- 	int halt_request; /* real mode on Intel only */
-@@ -681,6 +684,7 @@ struct kvm_x86_ops {
+ /*
+@@ -1013,10 +1023,30 @@ int __cpuinit slave_cpu_up(unsigned int cpu)
  
- 	void (*run)(struct kvm_vcpu *vcpu);
- 	int (*handle_exit)(struct kvm_vcpu *vcpu);
-+	void (*prevent_run)(struct kvm_vcpu *vcpu, int prevent);
- 	void (*skip_emulated_instruction)(struct kvm_vcpu *vcpu);
- 	void (*set_interrupt_shadow)(struct kvm_vcpu *vcpu, int mask);
- 	u32 (*get_interrupt_shadow)(struct kvm_vcpu *vcpu, int mask);
-@@ -1027,4 +1031,6 @@ int kvm_pmu_read_pmc(struct kvm_vcpu *vcpu, unsigned pmc, u64 *data);
- void kvm_handle_pmu_event(struct kvm_vcpu *vcpu);
- void kvm_deliver_pmi(struct kvm_vcpu *vcpu);
+ 	cpu_maps_update_done();
  
-+int kvm_arch_vcpu_run_prevented(struct kvm_vcpu *vcpu);
++	/* Timer may be used only in starting the slave CPU */
++	slave_cpu_disable_timer(cpu);
 +
- #endif /* _ASM_X86_KVM_HOST_H */
+ 	return ret;
+ }
+ EXPORT_SYMBOL(slave_cpu_up);
+ 
++static void __slave_cpu_disable_timer(void *hcpu)
++{
++	int cpu = (long)hcpu;
++
++	pr_info("Disabling timer on slave cpu %d\n", cpu);
++	BUG_ON(!slave_timer_nb);
++	slave_timer_nb->notifier_call(slave_timer_nb, CPU_SLAVE_DYING, hcpu);
++}
++
++static void slave_cpu_disable_timer(int cpu)
++{
++	void *hcpu = (void *)(long)cpu;
++
++	slave_cpu_call_function(cpu, __slave_cpu_disable_timer, hcpu);
++	slave_timer_nb->notifier_call(slave_timer_nb, CPU_SLAVE_DEAD, hcpu);
++}
++
+ static void __slave_cpu_down(void *dummy)
+ {
+ 	__this_cpu_write(cpu_state, CPU_DYING);
+diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+index bf8e351..47288b5 100644
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -652,6 +652,9 @@ static u32 apic_get_tmcct(struct kvm_lapic *apic)
+ 	if (apic_get_reg(apic, APIC_TMICT) == 0)
+ 		return 0;
+ 
++	if (vcpu_has_slave_cpu(apic->vcpu))
++		return apic_read(APIC_TMCCT);
++
+ 	remaining = hrtimer_get_remaining(&apic->lapic_timer.timer);
+ 	if (ktime_to_ns(remaining) < 0)
+ 		remaining = ktime_set(0, 0);
+@@ -799,6 +802,10 @@ static void start_apic_timer(struct kvm_lapic *apic)
+ 	atomic_set(&apic->lapic_timer.pending, 0);
+ 
+ 	if (apic_lvtt_period(apic) || apic_lvtt_oneshot(apic)) {
++		if (vcpu_has_slave_cpu(apic->vcpu)) {
++			apic_write(APIC_TMICT, apic_get_reg(apic, APIC_TMICT));
++			return;
++		}
+ 		/* lapic timer in oneshot or peroidic mode */
+ 		now = apic->lapic_timer.timer.base->get_time();
+ 		apic->lapic_timer.period = (u64)apic_get_reg(apic, APIC_TMICT)
+@@ -845,6 +852,15 @@ static void start_apic_timer(struct kvm_lapic *apic)
+ 		unsigned long this_tsc_khz = vcpu->arch.virtual_tsc_khz;
+ 		unsigned long flags;
+ 
++		if (vcpu_has_slave_cpu(apic->vcpu)) {
++			local_irq_save(flags);
++			guest_tsc = kvm_x86_ops->read_l1_tsc(vcpu);
++			wrmsrl(MSR_IA32_TSCDEADLINE,
++			       tscdeadline - guest_tsc + native_read_tsc());
++			local_irq_restore(flags);
++			return;
++		}
++
+ 		if (unlikely(!tscdeadline || !this_tsc_khz))
+ 			return;
+ 
+@@ -971,6 +987,16 @@ static int apic_reg_write(struct kvm_lapic *apic, u32 reg, u32 val)
+ 			val |= APIC_LVT_MASKED;
+ 		val &= (apic_lvt_mask[0] | apic->lapic_timer.timer_mode_mask);
+ 		apic_set_reg(apic, APIC_LVTT, val);
++		if (vcpu_has_slave_cpu(apic->vcpu)) {
++			u8 vector = val & 0xff;
++
++			if (vector && vector != LOCAL_TIMER_VECTOR) {
++				pr_err("slave lapic: vector %x unsupported\n",
++				       vector);
++				ret = -EINVAL;
++			} else
++				apic_write(reg, val);
++		}
+ 		break;
+ 
+ 	case APIC_TMICT:
+@@ -987,6 +1013,8 @@ static int apic_reg_write(struct kvm_lapic *apic, u32 reg, u32 val)
+ 			apic_debug("KVM_WRITE:TDCR %x\n", val);
+ 		apic_set_reg(apic, APIC_TDCR, val);
+ 		update_divide_count(apic);
++		if (vcpu_has_slave_cpu(apic->vcpu))
++			apic_write(reg, val);
+ 		break;
+ 
+ 	case APIC_ESR:
+@@ -1267,6 +1295,17 @@ static const struct kvm_io_device_ops apic_mmio_ops = {
+ 	.write    = apic_mmio_write,
+ };
+ 
++#ifdef CONFIG_SLAVE_CPU
++void slave_lapic_timer_fn(struct clock_event_device *dev)
++{
++	int cpu = raw_smp_processor_id();
++	struct kvm_vcpu *vcpu = get_slave_vcpu(cpu);
++
++	BUG_ON(!vcpu || !vcpu->arch.apic);
++	kvm_timer_fn(&vcpu->arch.apic->lapic_timer.timer);
++}
++#endif
++
+ int kvm_create_lapic(struct kvm_vcpu *vcpu)
+ {
+ 	struct kvm_lapic *apic;
+@@ -1295,6 +1334,12 @@ int kvm_create_lapic(struct kvm_vcpu *vcpu)
+ 	apic->lapic_timer.kvm = vcpu->kvm;
+ 	apic->lapic_timer.vcpu = vcpu;
+ 
++#ifdef CONFIG_SLAVE_CPU
++	if (vcpu_has_slave_cpu(vcpu))
++		override_local_apic_timer(vcpu->arch.slave_cpu,
++					  slave_lapic_timer_fn);
++#endif
++
+ 	apic->base_address = APIC_DEFAULT_PHYS_BASE;
+ 	vcpu->arch.apic_base = APIC_DEFAULT_PHYS_BASE;
+ 
+diff --git a/arch/x86/kvm/lapic.h b/arch/x86/kvm/lapic.h
+index 4af5405..e8e51ca 100644
+--- a/arch/x86/kvm/lapic.h
++++ b/arch/x86/kvm/lapic.h
+@@ -55,6 +55,8 @@ int kvm_lapic_find_highest_irr(struct kvm_vcpu *vcpu);
+ u64 kvm_get_lapic_tscdeadline_msr(struct kvm_vcpu *vcpu);
+ void kvm_set_lapic_tscdeadline_msr(struct kvm_vcpu *vcpu, u64 data);
+ 
++void slave_lapic_timer_fn(struct clock_event_device *dev);
++
+ void kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr);
+ void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu);
+ void kvm_lapic_sync_to_vapic(struct kvm_vcpu *vcpu);
 diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 2130cbd..39a4cb4 100644
+index f93e08c..0aa9423 100644
 --- a/arch/x86/kvm/vmx.c
 +++ b/arch/x86/kvm/vmx.c
-@@ -1713,6 +1713,9 @@ static inline void vmx_clear_hlt(struct kvm_vcpu *vcpu)
- 
- static void vmx_set_direct_interrupt(struct kvm_vcpu *vcpu, bool enabled)
- {
-+#ifdef CONFIG_SLAVE_CPU
-+	void *msr_bitmap;
+@@ -7557,6 +7557,12 @@ static int __init vmx_init(void)
+ 	       vmx_msr_bitmap_longmode, PAGE_SIZE);
+ 	vmx_disable_intercept_for_msr_slave(
+ 		APIC_BASE_MSR + (APIC_EOI >> 4), false);
 +
- 	if (enabled)
- 		vmcs_clear_bits(PIN_BASED_VM_EXEC_CONTROL,
- 				PIN_BASED_EXT_INTR_MASK);
-@@ -1721,6 +1724,7 @@ static void vmx_set_direct_interrupt(struct kvm_vcpu *vcpu, bool enabled)
- 			      PIN_BASED_EXT_INTR_MASK);
- 
- 	trace_kvm_set_direct_interrupt(vcpu, enabled);
-+#endif
- }
- 
- static void vmx_set_slave_mode(struct kvm_vcpu *vcpu, bool slave)
-@@ -4458,7 +4462,7 @@ static int handle_external_interrupt(struct kvm_vcpu *vcpu)
- 
- static int handle_preemption_timer(struct kvm_vcpu *vcpu)
- {
--	/* Nothing */
-+	kvm_arch_vcpu_run_prevented(vcpu);
- 	return 1;
- }
- 
-@@ -6052,6 +6056,10 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
- 	}
- 
- 	if (exit_reason & VMX_EXIT_REASONS_FAILED_VMENTRY) {
-+#ifdef CONFIG_SLAVE_CPU
-+		if (vcpu->arch.prevent_run)
-+			return kvm_arch_vcpu_run_prevented(vcpu);
-+#endif
- 		vcpu->run->exit_reason = KVM_EXIT_FAIL_ENTRY;
- 		vcpu->run->fail_entry.hardware_entry_failure_reason
- 			= exit_reason;
-@@ -6059,6 +6067,10 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
- 	}
- 
- 	if (unlikely(vmx->fail)) {
-+#ifdef CONFIG_SLAVE_CPU
-+		if (vcpu->arch.prevent_run)
-+			return kvm_arch_vcpu_run_prevented(vcpu);
-+#endif
- 		vcpu->run->exit_reason = KVM_EXIT_FAIL_ENTRY;
- 		vcpu->run->fail_entry.hardware_entry_failure_reason
- 			= vmcs_read32(VM_INSTRUCTION_ERROR);
-@@ -6275,6 +6287,21 @@ static void atomic_switch_perf_msrs(struct vcpu_vmx *vmx)
- 					msrs[i].host);
- }
- 
-+/*
-+ * Make VMRESUME fail using preemption timer with timer value = 0.
-+ * On processors that doesn't support preemption timer, VMRESUME will fail
-+ * by internal error.
-+ */
-+static void vmx_prevent_run(struct kvm_vcpu *vcpu, int prevent)
-+{
-+	if (prevent)
-+		vmcs_set_bits(PIN_BASED_VM_EXEC_CONTROL,
-+			      PIN_BASED_PREEMPTION_TIMER);
-+	else
-+		vmcs_clear_bits(PIN_BASED_VM_EXEC_CONTROL,
-+				PIN_BASED_PREEMPTION_TIMER);
-+}
-+
- #ifdef CONFIG_X86_64
- #define R "r"
- #define Q "q"
-@@ -6326,6 +6353,13 @@ static void __noclone vmx_vcpu_run(struct kvm_vcpu *vcpu)
- 
- 	atomic_switch_perf_msrs(vmx);
- 
-+#ifdef CONFIG_SLAVE_CPU
-+	barrier();	/* Avoid vmcs modification by NMI before here */
-+	vcpu->arch.prevent_needed = 1;
-+	if (vcpu->arch.prevent_run)
-+		vmx_prevent_run(vcpu, 1);
-+#endif
-+
- 	vmx->__launched = vmx->loaded_vmcs->launched;
- 	asm(
- 		/* Store host registers */
-@@ -6439,6 +6473,11 @@ static void __noclone vmx_vcpu_run(struct kvm_vcpu *vcpu)
- 	loadsegment(es, __USER_DS);
++	/* Allow guests on slave CPU to access local APIC timer directly */
++	vmx_disable_intercept_for_msr_slave(
++		APIC_BASE_MSR + (APIC_TMICT >> 4), false);
++	vmx_disable_intercept_for_msr_slave(
++		APIC_BASE_MSR + (APIC_TMCCT >> 4), false);
  #endif
  
-+#ifdef CONFIG_SLAVE_CPU
-+	vcpu->arch.prevent_needed = 0;
-+	barrier();	/* Avoid vmcs modification by NMI after here */
-+#endif
-+
- 	vcpu->arch.regs_avail = ~((1 << VCPU_REGS_RIP) | (1 << VCPU_REGS_RSP)
- 				  | (1 << VCPU_EXREG_RFLAGS)
- 				  | (1 << VCPU_EXREG_CPL)
-@@ -7358,6 +7397,7 @@ static struct kvm_x86_ops vmx_x86_ops = {
- 
- 	.run = vmx_vcpu_run,
- 	.handle_exit = vmx_handle_exit,
-+	.prevent_run = vmx_prevent_run,
- 	.skip_emulated_instruction = skip_emulated_instruction,
- 	.set_interrupt_shadow = vmx_set_interrupt_shadow,
- 	.get_interrupt_shadow = vmx_get_interrupt_shadow,
+ 	if (enable_ept) {
 diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 1449187..eb2e5c4 100644
+index 609ab62..9d92581 100644
 --- a/arch/x86/kvm/x86.c
 +++ b/arch/x86/kvm/x86.c
-@@ -2667,6 +2667,19 @@ static DEFINE_PER_CPU(struct kvm_vcpu *, slave_vcpu);
- 
- static int kvm_arch_kicked_by_nmi(unsigned int cmd, struct pt_regs *regs);
- 
-+struct kvm_vcpu *get_slave_vcpu(int cpu)
-+{
-+	return per_cpu(slave_vcpu, cpu);
-+}
+@@ -2707,6 +2707,9 @@ static int kvm_arch_vcpu_ioctl_set_slave_cpu(struct kvm_vcpu *vcpu,
+ 			goto out;
+ 		BUG_ON(!cpu_slave(slave));
+ 		per_cpu(slave_vcpu, slave) = vcpu;
 +
-+static int kvm_arch_vcpu_prevent_run(struct kvm_vcpu *vcpu, int prevent)
-+{
-+	vcpu->arch.prevent_run = prevent;
-+	if (!prevent || vcpu->arch.prevent_needed)
-+		kvm_x86_ops->prevent_run(vcpu, prevent);
-+	return 1;
-+}
-+
- static int kvm_arch_vcpu_ioctl_set_slave_cpu(struct kvm_vcpu *vcpu,
- 					     int slave, int set_slave_mode)
- {
-@@ -4873,10 +4886,12 @@ static struct notifier_block kvmclock_cpu_notifier_block = {
- 	.priority = -INT_MAX
- };
- 
-+#ifdef CONFIG_SLAVE_CPU
- static struct notifier_block kvmclock_slave_cpu_notifier_block = {
- 	.notifier_call  = kvmclock_cpu_notifier,
- 	.priority = -INT_MAX
- };
-+#endif
- 
- static void kvm_timer_init(void)
- {
-@@ -5350,6 +5365,11 @@ static int kvm_arch_kicked_by_nmi(unsigned int cmd, struct pt_regs *regs)
- 	if (vcpu->mode == OUTSIDE_GUEST_MODE || kvm_is_in_guest())
- 		return NMI_HANDLED;
- 
-+	/*
-+	 * We may be about to entering VM. To prevent entering,
-+	 * mark to exit as soon as possible.
-+	 */
-+	kvm_arch_vcpu_prevent_run(vcpu, 1);
- 	return NMI_HANDLED;
- }
- #endif
-@@ -5592,6 +5612,8 @@ static void __vcpu_enter_guest_slave(void *_arg)
- 	kvm_arch_vcpu_load(vcpu, cpu);
- 
- 	while (r == LOOP_SLAVE) {
-+		vcpu->arch.prevent_run = 0;
-+
- 		r = vcpu_enter_guest(vcpu, arg->task);
- 
- 		if (r <= 0)
-@@ -5618,6 +5640,7 @@ static void __vcpu_enter_guest_slave(void *_arg)
- 		}
++		if (vcpu->arch.apic)
++			override_local_apic_timer(slave, slave_lapic_timer_fn);
  	}
  
-+	kvm_arch_vcpu_prevent_run(vcpu, 0);
- 	kvm_arch_vcpu_put_migrate(vcpu);
- 	unuse_mm(arg->task->mm);
- 	srcu_read_unlock(&vcpu->kvm->srcu, vcpu->srcu_idx);
-@@ -6733,6 +6756,14 @@ int kvm_arch_vcpu_runnable(struct kvm_vcpu *vcpu)
- 		 kvm_cpu_has_interrupt(vcpu));
- }
+ 	vcpu->arch.slave_cpu = slave;
+diff --git a/include/linux/cpu.h b/include/linux/cpu.h
+index f1aa3cc..f072c6a 100644
+--- a/include/linux/cpu.h
++++ b/include/linux/cpu.h
+@@ -223,6 +223,7 @@ static inline void enable_nonboot_cpus(void) {}
  
-+int kvm_arch_vcpu_run_prevented(struct kvm_vcpu *vcpu)
-+{
-+	kvm_x86_ops->prevent_run(vcpu, 0);
-+	vcpu->arch.interrupted = true;
-+	return 1;
-+}
-+EXPORT_SYMBOL_GPL(kvm_arch_vcpu_run_prevented);
-+
- int kvm_arch_vcpu_should_kick(struct kvm_vcpu *vcpu)
+ #ifdef CONFIG_SLAVE_CPU
+ int register_slave_cpu_notifier(struct notifier_block *nb);
++int register_slave_cpu_timer_notifier(struct notifier_block *nb);
+ void unregister_slave_cpu_notifier(struct notifier_block *nb);
+ 
+ /* CPU notifier constants for slave processors */
+@@ -240,6 +241,10 @@ static inline int register_slave_cpu_notifier(struct notifier_block *nb)
  {
- 	return kvm_vcpu_exiting_guest_mode(vcpu) == IN_GUEST_MODE;
+ 	return 0;
+ }
++static inline int register_slave_cpu_timer_notifier(struct notifier_block *nb)
++{
++	return 0;
++}
+ static inline void unregister_slave_cpu_notifier(struct notifier_block *nb) {}
+ #endif
+ 
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index e899a2c..61d1706 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -1773,7 +1773,7 @@ void __init hrtimers_init(void)
+ 	hrtimer_cpu_notify(&hrtimers_nb, (unsigned long)CPU_UP_PREPARE,
+ 			  (void *)(long)smp_processor_id());
+ 	register_cpu_notifier(&hrtimers_nb);
+-	register_slave_cpu_notifier(&hrtimers_slave_nb);
++	register_slave_cpu_timer_notifier(&hrtimers_slave_nb);
+ #ifdef CONFIG_HIGH_RES_TIMERS
+ 	open_softirq(HRTIMER_SOFTIRQ, run_hrtimer_softirq);
+ #endif
 
 
