@@ -1,86 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932983Ab2IFSUA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 14:20:00 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55344 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932196Ab2IFST7 (ORCPT
+	id S932992Ab2IFSWQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 14:22:16 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:42879 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754787Ab2IFSWP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 14:19:59 -0400
-Message-ID: <5048E94A.2020303@gmail.com>
-Date: Thu, 06 Sep 2012 12:19:54 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: Robert Richter <robert.richter@amd.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH 08/11] perf tool: precise mode requires exclude_guest
-References: <20120723181358.GC6717@infradead.org> <500EAF23.8060909@gmail.com> <20120724161507.GG3732@erda.amd.com> <500EDB50.3070704@gmail.com> <20120724180312.GJ6717@infradead.org> <5010D2B1.3000206@gmail.com> <1343290109.26034.82.camel@twins> <20120803135117.GC3732@erda.amd.com> <50477332.1000902@gmail.com> <1346882872.2600.63.camel@twins> <20120906174452.GC8285@erda.amd.com>
-In-Reply-To: <20120906174452.GC8285@erda.amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 6 Sep 2012 14:22:15 -0400
+Message-ID: <1346955710.18408.58.camel@twins>
+Subject: Re: [PATCH RFC tip/core/rcu] Add callback-free CPUs
+From: Peter Zijlstra <peterz@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Date: Thu, 06 Sep 2012 20:21:50 +0200
+In-Reply-To: <20120906174652.GM2448@linux.vnet.ibm.com>
+References: <20120905213945.GA15216@linux.vnet.ibm.com>
+	 <1346881720.2600.48.camel@twins> <20120905234443.GY3308@linux.vnet.ibm.com>
+	 <1346926417.2600.73.camel@twins> <20120906164745.GF2448@linux.vnet.ibm.com>
+	 <1346950736.18408.43.camel@twins>
+	 <20120906174652.GM2448@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/6/12 11:44 AM, Robert Richter wrote:
-> David,
->
-> On 06.09.12 00:07:52, Peter Zijlstra wrote:
->> On Wed, 2012-09-05 at 09:43 -0600, David Ahern wrote:
->>> We need to require exclude_guest when using precise attribute with perf
->>> else all running VMs on Intel-based servers will crash. I do not have an
->>> AMD based server to even attempt the preferred solution.
->
-> do you have a perf tool patch ready that enables exclude_guest per
-> default for precise events? I have ibs kernel code that returns EINVAL
-> in this case.  Current perf tool should then fall back by sending
-> another syscall with the exclude_guest modifier disabled. This should
-> work for ibs. Testing your patch wouln't be an effort for me.
+On Thu, 2012-09-06 at 10:46 -0700, Paul E. McKenney wrote:
+> Getting these
+> CPUs into adaptive-tick mode more quickly reduces OS jitter, which is
+> one big expected benefit of adaptive-tick mode. 
 
-The beginning of this thread:
-     https://lkml.org/lkml/2012/7/20/437
+I'm not sure I agree with that statement. Its a transition thing and
+therefore statistically irrelevant on the whole -- assuming we
+transition rarely.
 
-Takes the route of setting exclude_guest if precise is specified. This 
-is simpler than adding yet another failure detect with fallback.
+And for those who cannot deal with the transition effects, a barrier was
+proposed which would wait until the system hit this state -- although
+the specific implementation of this isn't clear yet afaik.
 
-
->
-> To prevent Intel-based servers from crashing, pebs should be only
-> enabled if the exclude_guest modifier is enabled. I guess there is
-> already kernel code to prevent this, but didn't look at the sources.
-
-Peter's patch takes care of this, but it can't be applied until 
-userspace code is updated to avoid userspace breakage. And the userspace 
-patch can't be applied until AMD side handles the exclude_guest setting.
-
->
-> To prevent probing the kernel with syscalls to detect pmu features, I
-> suggested some time ago to introduce
->
->   /sys/bus/event_source/devices/*/flags
->
-> or so similar to /proc/cpuinfo:flags. Any opinions on that?
-
-I think that is up to Peter, Ingo, Arnaldo.
-
-David
-
->
-> There is also the option to emulate exclude_guest for ibs in
-> software. So far I didn't have the time to look at this. We could
-> still add this in the future. Since we need to fix current mainline
-> anyway where such a patch wouldn't go in for v3.6, I will send my
-> current ibs kernel fixes I mentioned above next days. It would be
-> great to test this also with your patch.
->
-> Thanks,
->
-> -Robert
->
-
+I very much think we should focus on getting adaptive tick working as
+simple as possible and worry about transition effects later, if at all.
