@@ -1,27 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933041Ab2IFTbv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 15:31:51 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40941 "EHLO
+	id S933091Ab2IFTcM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 15:32:12 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40939 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759680Ab2IFTbt (ORCPT
+	with ESMTP id S1759647Ab2IFTbm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 15:31:49 -0400
+	Thu, 6 Sep 2012 15:31:42 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Jiri Olsa <jolsa@redhat.com>,
         Joel Uckelman <joel@lightboxtechnologies.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 8/8] perf tools: Fix cache event name generation
-Date: Thu,  6 Sep 2012 16:31:21 -0300
-Message-Id: <1346959881-22427-9-git-send-email-acme@infradead.org>
+Subject: [GIT PULL 0/8] perf/core improvements and fixes
+Date: Thu,  6 Sep 2012 16:31:13 -0300
+Message-Id: <1346959881-22427-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1346959881-22427-1-git-send-email-acme@infradead.org>
-References: <1346959881-22427-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
@@ -29,42 +33,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+Hi Ingo,
 
-If the event name is specified with all 3 components, the last one
-overwrites the previous one during the name composing within the
-parse_events_add_cache function.
+	Please consider pulling,
 
-Fixing this by properly adjusting the string index.
+- Arnaldo
 
-Reported-by: Joel Uckelman <joel@lightboxtechnologies.com>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Joel Uckelman <joel@lightboxtechnologies.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LPU-Reference: 20120905175133.GA18352@krava.brq.redhat.com
-[ committer note: Remove the newline fix, done already in 42e1fb7 ]
+The following changes since commit 7a4ec938857cf534270b23545495300fbac7f5de:
+
+  perf tools: Allow user to indicate path to objdump in command line (2012-09-05 19:41:55 -0300)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
+
+for you to fetch changes up to 275ef3878f698941353780440fec6926107a320b:
+
+  perf tools: Fix cache event name generation (2012-09-06 15:01:08 -0300)
+
+----------------------------------------------------------------
+perf/core improvements and fixes
+
+. Fix hardware cache event name generation, fix from Jiri Olsa
+
+. Add round trip test for sw, hw and cache event names, catching the
+  problem Jiri fixed, after Jiri's patch, the test passes successfully.
+
+. Clean target should do clean for lib/traceevent too, fix from David Ahern
+
+. Check the right variable for allocation failure, fix from Namhyung Kim
+
+. Set up evsel->tp_format regardless of evsel->name being set already,
+  fix from Namhyung Kim
+
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
+
+----------------------------------------------------------------
+Arnaldo Carvalho de Melo (4):
+      perf test: Add round trip test for sw and hw event names
+      perf tools: Remove extraneous newline when parsing hardware cache events
+      perf evlist: Add fprintf method
+      perf test: Add roundtrip test for hardware cache events
+
+David Ahern (1):
+      perf tools: Clean target should do clean for lib/traceevent too
+
+Jiri Olsa (1):
+      perf tools: Fix cache event name generation
+
+Namhyung Kim (2):
+      perf header: Fix a typo on evsel
+      perf header: Prepare tracepoint events regardless of name
+
+ tools/perf/Makefile            |    5 +-
+ tools/perf/builtin-test.c      |  114 ++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/evlist.c       |   13 +++++
+ tools/perf/util/evlist.h       |    2 +
+ tools/perf/util/evsel.c        |    6 +--
+ tools/perf/util/evsel.h        |    6 ++-
+ tools/perf/util/header.c       |   36 ++++++++-----
  tools/perf/util/parse-events.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 66d235e..a031ee1 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -308,7 +308,7 @@ int parse_events_add_cache(struct list_head **list, int *idx,
- 	for (i = 0; (i < 2) && (op_result[i]); i++) {
- 		char *str = op_result[i];
- 
--		snprintf(name + n, MAX_NAME_LEN - n, "-%s", str);
-+		n += snprintf(name + n, MAX_NAME_LEN - n, "-%s", str);
- 
- 		if (cache_op == -1) {
- 			cache_op = parse_aliases(str, perf_evsel__hw_cache_op,
--- 
-1.7.9.2.358.g22243
-
+ 8 files changed, 163 insertions(+), 21 deletions(-)
