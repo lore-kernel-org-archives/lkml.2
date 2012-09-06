@@ -1,110 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757410Ab2IFKRZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 06:17:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54137 "EHLO mx1.redhat.com"
+	id S1757416Ab2IFKTh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 06:19:37 -0400
+Received: from twin.jikos.cz ([89.185.236.188]:41489 "EHLO twin.jikos.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754541Ab2IFKRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 06:17:24 -0400
-Date: Thu, 6 Sep 2012 13:18:43 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org,
+	id S1753446Ab2IFKTg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 06:19:36 -0400
+Date: Thu, 6 Sep 2012 12:19:30 +0200
+From: David Sterba <dave@jikos.cz>
+To: Wang Sheng-Hui <shhuiw@gmail.com>
+Cc: chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio-blk: Fix kconfig option
-Message-ID: <20120906101842.GB32325@redhat.com>
-References: <20120903044133.GA9980@moria.home.lan>
- <87wr0ae26e.fsf@rustcorp.com.au>
- <20120906074113.GA5902@koverstreet-glaptop>
- <20120906084403.GD17656@redhat.com>
- <20120906092512.GB5902@koverstreet-glaptop>
- <20120906094956.GB22816@redhat.com>
- <20120906100247.GA27355@koverstreet-glaptop>
+Subject: Re: [PATCH 2/3] btrfs: remove unnecessary -ENOMEM BUG_ON check in
+ extent-tree.c/btrfs_alloc_logged_file_extent
+Message-ID: <20120906101930.GP17430@twin.jikos.cz>
+Reply-To: dave@jikos.cz
+Mail-Followup-To: Wang Sheng-Hui <shhuiw@gmail.com>,
+	chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <5048457E.6050002@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120906100247.GA27355@koverstreet-glaptop>
+In-Reply-To: <5048457E.6050002@gmail.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 06, 2012 at 03:02:48AM -0700, Kent Overstreet wrote:
-> On Thu, Sep 06, 2012 at 12:49:56PM +0300, Michael S. Tsirkin wrote:
-> > On Thu, Sep 06, 2012 at 02:25:12AM -0700, Kent Overstreet wrote:
-> > > On Thu, Sep 06, 2012 at 11:44:03AM +0300, Michael S. Tsirkin wrote:
-> > > > On Thu, Sep 06, 2012 at 12:41:13AM -0700, Kent Overstreet wrote:
-> > > > > On Tue, Sep 04, 2012 at 03:53:53PM +0930, Rusty Russell wrote:
-> > > > > > Kent Overstreet <koverstreet@google.com> writes:
-> > > > > > 
-> > > > > > > CONFIG_VIRTIO isn't exposed, everything else is supposed to select it
-> > > > > > > instead.
-> > > > > > 
-> > > > > > This is a slight mis-understanding.  It's supposed to be selected by
-> > > > > > the particular driver, probably virtio_pci in your case.
-> > > > > 
-> > > > > So are you saying virtio-blk depends on virtio-pci? If so, the kconfig
-> > > > > should have that.
-> > > > > 
-> > > > > As is, VIRTIO_BLK just has:
-> > > > > 	depends on EXPERIMENTAL && VIRTIO
-> > > > > 
-> > > > > which is flat out broken.
-> > > > 
-> > > > I don't think anything is broken.
-> > > > Can you show an example of a broken configuration?
-> > > 
-> > > Do you not understand the difference between depends an selects?
-> > > Or did you not read my original mail?
-> > > Flip off everything in drivers -> virtio
-> > > 
-> > > Now go to drivers -> block and try to turn on virtio-blk.
-> > > 
-> > > It's not listed!
-> > 
-> > Yes. Because you disabled all virtio backends.
-> > It does not make sense to have any frontends.
-> 
-> How's a user - or even another kernel developer who isn't familiar with
-> virtio - supposed to know that?
-> 
-> I still don't know what exactly a virtio backend is - the term isn't
-> even mentioned anywhere that I've seen.
-> 
-> Whatever it is though virtio-blk should be depending on _that_, not a
-> config option that _isn't exposed in the menu_!
-> 
-> > > Now go back to drivers -> virtio and turn on (randomly) balloon.
-> > > 
-> > > Go back to drivers -> block, and now you can turn on virtio-blk!
-> > > 
-> > > Do you see what's wrong with this picture?
-> > 
-> > Yes. You got unlucky with your random guess.
-> > It's a bug in balloon kconfig: it should not
-> > select virtio.
-> > I sent a patch to fix that yesterday.
-> 
-> Then it's also a bug in the comments at the top of
-> drivers/virtio/Kconfig.
-> 
-> And besides that, how the _hell_ is a user supposed to know to turn on
-> VIRTIO_PCI before VIRTIO_BLK? It's not documented anywhere (if that is
-> what's supposed to happen! I still don't know)
+On Thu, Sep 06, 2012 at 02:41:02PM +0800, Wang Sheng-Hui wrote:
+> The memory allocation failure is BUG_ON in add_excluded_extent
+> (following the code path). No need to BUG_ON -ENOMEM inside
+> btrfs_alloc_logged_file_extent.
 
-Well, what kind of device do you have? Tell us :)
-If it's a virtio pci device,
-you need to enable virtio-pci and virtio-blk.
+This indirectly calls __set_extent_bit that does BUG_ON on memory
+allocation failures. This type of error condition is hard to fix, as it
+usually needs to do non-trivial cleanups in the function before
+returning -ENOMEM, so the easiset way to "handle" it is to do BUG_ON and
+then separately deal with it in another patch (so it does not mix with
+the original patch).
 
-> and even if it was
-> documented, having one kconfig option depend on something that's exposed
-> in a _completely different menu_ is just made of fail.
+Your patches remove (from my POV) useful marks that we have an error
+condition to handle, not to hide it.
 
-Fine, but why pick on virtio?
-This is extremely common in kconfig.
-For example, a ton of network drivers depend
-on PCI, it's exactly the same thing.
+So, NAK from me for anything that looks like this. I'm of course glad to
+look at patches that replace the BUG_ON with proper error handling :)
 
 
--- 
-MST
+david
+
+> 
+> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+> ---
+>  fs/btrfs/extent-tree.c |    6 ++----
+>  1 files changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
+> index 95492cc..9b9a6fa 100644
+> --- a/fs/btrfs/extent-tree.c
+> +++ b/fs/btrfs/extent-tree.c
+> @@ -6207,8 +6207,7 @@ int btrfs_alloc_logged_file_extent(struct btrfs_trans_handle *trans,
+>  		mutex_lock(&caching_ctl->mutex);
+>  
+>  		if (start >= caching_ctl->progress) {
+> -			ret = add_excluded_extent(root, start, num_bytes);
+> -			BUG_ON(ret); /* -ENOMEM */
+> +			add_excluded_extent(root, start, num_bytes);
+
+>  		} else if (start + num_bytes <= caching_ctl->progress) {
+>  			ret = btrfs_remove_free_space(block_group,
+>  						      start, num_bytes);
+> @@ -6222,8 +6221,7 @@ int btrfs_alloc_logged_file_extent(struct btrfs_trans_handle *trans,
+>  			start = caching_ctl->progress;
+>  			num_bytes = ins->objectid + ins->offset -
+>  				    caching_ctl->progress;
+> -			ret = add_excluded_extent(root, start, num_bytes);
+> -			BUG_ON(ret); /* -ENOMEM */
+> +			add_excluded_extent(root, start, num_bytes);
+>  		}
+>  
+>  		mutex_unlock(&caching_ctl->mutex);
