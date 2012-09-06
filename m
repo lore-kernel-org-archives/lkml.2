@@ -1,67 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531Ab2IFMMx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 08:12:53 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:58565 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754475Ab2IFMMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 08:12:50 -0400
-Message-ID: <50489270.7060108@parallels.com>
-Date: Thu, 6 Sep 2012 16:09:20 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
-        Dave Jones <davej@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v2] memcg: first step towards hierarchical controller
-References: <20120904130905.GA15683@dhcp22.suse.cz> <504601B8.2050907@parallels.com> <20120904143552.GB15683@dhcp22.suse.cz> <50461241.5010300@parallels.com> <20120904145414.GC15683@dhcp22.suse.cz> <50461610.30305@parallels.com> <20120904162501.GE15683@dhcp22.suse.cz> <504709D4.2010800@parallels.com> <20120905144942.GH5388@dhcp22.suse.cz> <20120905201238.GE13737@google.com> <20120906120623.GE22426@dhcp22.suse.cz>
-In-Reply-To: <20120906120623.GE22426@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1754557Ab2IFMNI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 08:13:08 -0400
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:49381 "EHLO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753083Ab2IFMMv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 08:12:51 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Dmitry Torokhov <dtor@mail.ru>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>
+Cc: Tero Kristo <t-kristo@ti.com>, alsa-devel@alsa-project.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, Benoit Cousson <b-cousson@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3 14/14] ASoC: twl4030: Support for DT booted kernel
+Date: Thu,  6 Sep 2012 15:12:21 +0300
+Message-Id: <1346933541-21547-15-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.7.12
+In-Reply-To: <1346933541-21547-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1346933541-21547-1-git-send-email-peter.ujfalusi@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/06/2012 04:06 PM, Michal Hocko wrote:
-> On Wed 05-09-12 13:12:38, Tejun Heo wrote:
->> Hello, Michal.
->>
->> On Wed, Sep 05, 2012 at 04:49:42PM +0200, Michal Hocko wrote:
->>> Can we settle on the following 3 steps?
->>> 1) warn about "flat" hierarchies (give it X releases) - I will push it
->>>    to as many Suse code streams as possible (hope other distributions
->>>    could do the same)
->>
->> I think I'm just gonna trigger WARN from cgroup core if anyone tries
->> to create hierarchy with a controller which doesn't support full
->> hierarchy.  WARN_ON_ONCE() at first and then WARN_ON() on each
->> creation later on.
-> 
-> How do you find out that a controller is not fully hierarchical? Memory
-> controller can be both.
-> 
->>> 2) flip the default on the root cgroup & warn when somebody tries to
->>>    change it to 0 (give it another X releases) that the knob will be
->>>    removed
->>> 3) remove the knob and the whole nonsese
->>> 4) revert 3 if somebody really objects
->>
->> If we can get to 3, I don't think 4 would be a problem.
-> 
-> Agreed.
-> 
-Just so I understand it:
+When the kernel has been booted with DT blob the platform data is NULL for
+the driver.
+We need to construct the pdata based on the DT information for runtime use.
 
-Michal clearly objected before folding his patch with my Kconfig patch.
-But is there still opposition to merge both?
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
+ sound/soc/codecs/twl4030.c | 57 +++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 49 insertions(+), 8 deletions(-)
 
-By having it default-n, only people that are either sure that this is
-safe for them, or have more clearly defined lifecycles could set it.
+diff --git a/sound/soc/codecs/twl4030.c b/sound/soc/codecs/twl4030.c
+index 8b13d50..f13c91a 100644
+--- a/sound/soc/codecs/twl4030.c
++++ b/sound/soc/codecs/twl4030.c
+@@ -26,6 +26,8 @@
+ #include <linux/pm.h>
+ #include <linux/i2c.h>
+ #include <linux/platform_device.h>
++#include <linux/of.h>
++#include <linux/of_gpio.h>
+ #include <linux/i2c/twl.h>
+ #include <linux/slab.h>
+ #include <linux/gpio.h>
+@@ -295,13 +297,59 @@ static inline void twl4030_reset_registers(struct snd_soc_codec *codec)
+ 
+ }
+ 
+-static void twl4030_init_chip(struct snd_soc_codec *codec)
++static void twl4030_setup_pdata_of(struct twl4030_codec_data *pdata,
++				   struct device_node *node)
++{
++	int value;
++
++	of_property_read_u32(node, "ti,digimic_delay",
++			     &pdata->digimic_delay);
++	of_property_read_u32(node, "ti,ramp_delay_value",
++			     &pdata->ramp_delay_value);
++	of_property_read_u32(node, "ti,offset_cncl_path",
++			     &pdata->offset_cncl_path);
++	if (!of_property_read_u32(node, "ti,hs_extmute", &value))
++		pdata->hs_extmute = value;
++
++	pdata->hs_extmute_gpio = of_get_named_gpio(node,
++						   "ti,hs_extmute_gpio", 0);
++	if (gpio_is_valid(pdata->hs_extmute_gpio))
++		pdata->hs_extmute = 1;
++}
++
++static struct twl4030_codec_data *twl4030_get_pdata(struct snd_soc_codec *codec)
+ {
+ 	struct twl4030_codec_data *pdata = dev_get_platdata(codec->dev);
++	struct device_node *twl4030_codec_node = NULL;
++
++#ifdef CONFIG_OF
++	twl4030_codec_node = of_find_node_by_name(codec->dev->parent->of_node,
++						  "codec");
++#endif
++
++	if (!pdata && twl4030_codec_node) {
++		pdata = devm_kzalloc(codec->dev,
++				     sizeof(struct twl4030_codec_data),
++				     GFP_KERNEL);
++		if (!pdata) {
++			dev_err(codec->dev, "Can not allocate memory\n");
++			return NULL;
++		}
++		twl4030_setup_pdata_of(pdata, twl4030_codec_node);
++	}
++
++	return pdata;
++}
++
++static void twl4030_init_chip(struct snd_soc_codec *codec)
++{
++	struct twl4030_codec_data *pdata;
+ 	struct twl4030_priv *twl4030 = snd_soc_codec_get_drvdata(codec);
+ 	u8 reg, byte;
+ 	int i = 0;
+ 
++	pdata = twl4030_get_pdata(codec);
++
+ 	if (pdata && pdata->hs_extmute &&
+ 	    gpio_is_valid(pdata->hs_extmute_gpio)) {
+ 		int ret;
+@@ -2284,13 +2332,6 @@ static struct snd_soc_codec_driver soc_codec_dev_twl4030 = {
+ 
+ static int __devinit twl4030_codec_probe(struct platform_device *pdev)
+ {
+-	struct twl4030_codec_data *pdata = pdev->dev.platform_data;
+-
+-	if (!pdata) {
+-		dev_err(&pdev->dev, "platform_data is missing\n");
+-		return -EINVAL;
+-	}
+-
+ 	return snd_soc_register_codec(&pdev->dev, &soc_codec_dev_twl4030,
+ 			twl4030_dai, ARRAY_SIZE(twl4030_dai));
+ }
+-- 
+1.7.12
 
