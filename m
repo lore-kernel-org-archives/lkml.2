@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751778Ab2IFWF5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 18:05:57 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3318 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960Ab2IFWF4 (ORCPT
+	id S1752151Ab2IFWIu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 18:08:50 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:48818 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751102Ab2IFWIt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 18:05:56 -0400
-X-Authority-Analysis: v=2.0 cv=Hsb06jvS c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=dv6za2K3W50A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=hUPM8fjf3YcA:10 a=g_RyfWv84Cq2eLNl8eoA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1346969153.1680.60.camel@gandalf.local.home>
-Subject: Re: [PATCH tip/core/rcu 11/15] rcu: Avoid spurious RCU CPU stall
- warnings
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Date: Thu, 06 Sep 2012 18:05:53 -0400
-In-Reply-To: <20120906215838.GM2448@linux.vnet.ibm.com>
-References: <20120830185607.GA32148@linux.vnet.ibm.com>
-	 <1346352988-32444-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1346352988-32444-11-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1346943414.18408.31.camel@twins>
-	 <1346944049.1680.23.camel@gandalf.local.home>
-	 <1346944758.18408.35.camel@twins>
-	 <20120906210354.GC2448@linux.vnet.ibm.com>
-	 <1346967661.1680.52.camel@gandalf.local.home>
-	 <20120906215838.GM2448@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 6 Sep 2012 18:08:49 -0400
+Date: Thu, 6 Sep 2012 15:08:21 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: lockdep WARNING on check_critical_timing()
+Message-ID: <20120906220821.GO2448@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120905015937.GA20175@localhost>
+ <1346965229.1680.48.camel@gandalf.local.home>
+ <20120906212914.GE2448@linux.vnet.ibm.com>
+ <1346968599.1680.55.camel@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346968599.1680.55.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12090622-7408-0000-0000-00000844901D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-06 at 14:58 -0700, Paul E. McKenney wrote:
-
-> > All these cases deserve a warning.
+On Thu, Sep 06, 2012 at 05:56:39PM -0400, Steven Rostedt wrote:
+> On Thu, 2012-09-06 at 14:29 -0700, Paul E. McKenney wrote:
+> >  
+> > > Didn't we talk about having the rcu_dereference_raw() not do the check?
+> > > The function tracer is just too invasive to add work arounds to prevent
+> > > lockdep from screaming about it.
+> > 
+> > Actually, rcu_dereference_raw() is already supposed to bypass the
+> > lockdep checks.  And the code looks to me like it does the bypass,
+> > OR-ing "1" into the asssertion condition.
+> > 
+> > So what am I missing here?
 > 
-> Agreed, and that is the whole purpose of the stall warnings.
+> >From my tree, I see:
+> 
+> #define rcu_dereference_raw(p) rcu_dereference_check(p, 1)
+> 
+> #define rcu_dereference_check(p, c) \
+> 	__rcu_dereference_check((p), rcu_read_lock_held() || (c), __rcu)
+> 
+> Note the 'c' comes after rcu_read_lock_held()
+> 
+> static inline int rcu_read_lock_held(void)
+> {
+> 	if (!debug_lockdep_rcu_enabled())
+> 		return 1;
+> 	if (rcu_is_cpu_idle())
+> 		return 0;
+> 	if (!rcu_lockdep_current_cpu_online())
+> 		return 0;
+> 	return lock_is_held(&rcu_lock_map);
+> }
+> 
+> Then when lock_is_held() is called, we get the false warning message.
 
-Then let me ask the question again. According to the change log:
+OK, I can easily do:
 
-> If a given CPU avoids the idle loop but also avoids starting a new
-> RCU grace period for a full minute, RCU can issue spurious RCU CPU
-> stall warnings.  This commit fixes this issue by adding a check for
-> ongoing grace period to avoid these spurious stall warnings.
+	__rcu_dereference_check((p), (c) || rcu_read_lock_held(), __rcu)
 
+But I am still missing why the order matters.  Are you saying that
+lock_is_held() itself is doing the splat?
 
-I'm still confused by what is "this issue"? And why is it being fixed.
-It sounds to me that the "issue" was a CPU avoiding starting a new RCU
-grace period for a full minute. Which to me sounds like a bug in which
-we *want* a warning. Why is this patch needed?
-
--- Steve
-
+							Thanx, Paul
 
