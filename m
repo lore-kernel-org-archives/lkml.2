@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751915Ab2IFFP2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 01:15:28 -0400
+	id S1752224Ab2IFFPr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 01:15:47 -0400
 Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:54580 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751235Ab2IFFP1 (ORCPT
+	with ESMTP id S1751922Ab2IFFP2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 01:15:27 -0400
-X-AuditID: 9c930179-b7cc4ae00000134d-b0-5048316d7099
+	Thu, 6 Sep 2012 01:15:28 -0400
+X-AuditID: 9c930179-b7cc4ae00000134d-b5-5048316d2734
 From: Minchan Kim <minchan@kernel.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
@@ -16,38 +16,89 @@ Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
         Xishi Qiu <qiuxishi@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
         Minchan Kim <minchan@kernel.org>
-Subject: [PATCH v2 0/3] memory-hotplug: handle page race between allocation and isolation
-Date: Thu,  6 Sep 2012 14:16:56 +0900
-Message-Id: <1346908619-16056-1-git-send-email-minchan@kernel.org>
+Subject: [PATCH v2 2/3] mm: remain migratetype in freed page
+Date: Thu,  6 Sep 2012 14:16:58 +0900
+Message-Id: <1346908619-16056-3-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1346908619-16056-1-git-send-email-minchan@kernel.org>
+References: <1346908619-16056-1-git-send-email-minchan@kernel.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Memory hotplug has a subtle race problem so this patchset fixes the problem
-(Look at [3/3] for detail and please confirm the problem before review
-other patches in this series.)
+The page allocator caches the pageblock information in page->private while
+it is in the PCP freelists but this is overwritten with the order of the
+page when freed to the buddy allocator. This patch stores the migratetype
+of the page in the page->index field so that it is available at all times
+when the page remain in free_list.
 
- [1/3] is just clean up and help for [2/3].
- [2/3] keeps the migratetype information to freed page's index field
-       and [3/3] uses the information.
- [3/3] fixes the race problem with [2/3]'s information.
+This patch adds a new call site in __free_pages_ok so it might be
+overhead a bit but it's for high order allocation.
+So I believe damage isn't hurt.
 
-After applying [2/3], migratetype argument in __free_one_page
-and free_one_page is redundant so we can remove it but I decide
-to not touch them because it increases code size about 50 byte.
+* from v1
+  * Fix move_freepages's migratetype - Mel
+  * Add more kind explanation in description - Mel
 
-Minchan Kim (3):
-  use get_page_migratetype instead of page_private
-  mm: remain migratetype in freed page
-  memory-hotplug: bug fix race between isolation and allocation
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ include/linux/mm.h |    4 ++--
+ mm/page_alloc.c    |    7 +++++--
+ 2 files changed, 7 insertions(+), 4 deletions(-)
 
- include/linux/mm.h  |   12 ++++++++++++
- mm/page_alloc.c     |   17 +++++++++++------
- mm/page_isolation.c |    7 +++++--
- 3 files changed, 28 insertions(+), 8 deletions(-)
-
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 84d1663f..68f9e8d 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -240,13 +240,13 @@ struct inode;
+ /* It's valid only if the page is free path or free_list */
+ static inline void set_freepage_migratetype(struct page *page, int migratetype)
+ {
+-	set_page_private(page, migratetype);
++	page->index = migratetype;
+ }
+ 
+ /* It's valid only if the page is free path or free_list */
+ static inline int get_freepage_migratetype(struct page *page)
+ {
+-	return page_private(page);
++	return page->index;
+ }
+ 
+ /*
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index f5ba236..8531fa3 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -723,6 +723,7 @@ static void __free_pages_ok(struct page *page, unsigned int order)
+ {
+ 	unsigned long flags;
+ 	int wasMlocked = __TestClearPageMlocked(page);
++	int migratetype;
+ 
+ 	if (!free_pages_prepare(page, order))
+ 		return;
+@@ -731,8 +732,9 @@ static void __free_pages_ok(struct page *page, unsigned int order)
+ 	if (unlikely(wasMlocked))
+ 		free_page_mlock(page);
+ 	__count_vm_events(PGFREE, 1 << order);
+-	free_one_page(page_zone(page), page, order,
+-					get_pageblock_migratetype(page));
++	migratetype = get_pageblock_migratetype(page);
++	set_freepage_migratetype(page, migratetype);
++	free_one_page(page_zone(page), page, order, migratetype);
+ 	local_irq_restore(flags);
+ }
+ 
+@@ -952,6 +954,7 @@ static int move_freepages(struct zone *zone,
+ 		order = page_order(page);
+ 		list_move(&page->lru,
+ 			  &zone->free_area[order].free_list[migratetype]);
++		set_freepage_migratetype(page, migratetype);
+ 		page += 1 << order;
+ 		pages_moved += 1 << order;
+ 	}
 -- 
 1.7.9.5
 
