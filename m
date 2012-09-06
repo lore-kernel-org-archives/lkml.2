@@ -1,16 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754594Ab2IFLdb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 07:33:31 -0400
-Received: from mailxx.hitachi.co.jp ([133.145.228.50]:60053 "EHLO
+	id S1754408Ab2IFLdj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 07:33:39 -0400
+Received: from mailxx.hitachi.co.jp ([133.145.228.50]:60055 "EHLO
 	mailxx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752898Ab2IFLd2 (ORCPT
+	with ESMTP id S1754492Ab2IFLdd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 07:33:28 -0400
-X-AuditID: b753bd60-900c0ba0000047ca-47-504888b31b96
-X-AuditID: b753bd60-900c0ba0000047ca-47-504888b31b96
+	Thu, 6 Sep 2012 07:33:33 -0400
+X-AuditID: b753bd60-91ec3ba0000047ca-62-504888f26597
+X-AuditID: b753bd60-91ec3ba0000047ca-62-504888f26597
 From: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
-Subject: [RFC v2 PATCH 04/21] x86: Avoid RCU warnings on slave CPUs
+Subject: [RFC v2 PATCH 16/21] KVM: vmx: Add definitions
+ PIN_BASED_PREEMPTION_TIMER
 To: kvm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
         yrl.pp-manager.tt@hitachi.com,
@@ -18,8 +19,8 @@ Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
         Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, 06 Sep 2012 20:27:40 +0900
-Message-ID: <20120906112739.13320.53090.stgit@kvmdev>
+Date: Thu, 06 Sep 2012 20:28:43 +0900
+Message-ID: <20120906112843.13320.47223.stgit@kvmdev>
 In-Reply-To: <20120906112718.13320.8231.stgit@kvmdev>
 References: <20120906112718.13320.8231.stgit@kvmdev>
 User-Agent: StGIT/0.14.3
@@ -31,9 +32,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Initialize rcu related variables to avoid warnings about RCU usage while
-slave CPUs is running specified functions. Also notify RCU subsystem before
-the slave CPU is entered into idle state.
+Add some definitions to use PIN_BASED_PREEMPTION_TIMER.
+
+When PIN_BASED_PREEMPTION_TIMER is enabled, the guest will exit
+with reason=EXIT_REASON_PREEMPTION_TIMER when the counter specified in
+VMX_PREEMPTION_TIMER_VALUE becomes 0.
+This patch also adds a dummy handler for EXIT_REASON_PREEMPTION_TIMER,
+which just goes back to VM execution soon.
+
+These are currently intended only to be used with avoid entering the
+guest on a slave CPU when vmx_prevent_run(vcpu, 1) is called.
 
 Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
 Cc: Avi Kivity <avi@redhat.com>
@@ -43,84 +51,75 @@ Cc: Ingo Molnar <mingo@redhat.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 ---
 
- arch/x86/kernel/smpboot.c |    4 ++++
- kernel/rcutree.c          |   14 ++++++++++++++
- 2 files changed, 18 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/vmx.h |    3 +++
+ arch/x86/kvm/trace.h       |    1 +
+ arch/x86/kvm/vmx.c         |    7 +++++++
+ 3 files changed, 11 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index e8cfe377..45dfc1d 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -382,6 +382,8 @@ notrace static void __cpuinit start_slave_cpu(void *unused)
- 		f = per_cpu(slave_cpu_func, cpu);
- 		per_cpu(slave_cpu_func, cpu).func = NULL;
+diff --git a/arch/x86/include/asm/vmx.h b/arch/x86/include/asm/vmx.h
+index 74fcb96..6899aaa 100644
+--- a/arch/x86/include/asm/vmx.h
++++ b/arch/x86/include/asm/vmx.h
+@@ -66,6 +66,7 @@
+ #define PIN_BASED_EXT_INTR_MASK                 0x00000001
+ #define PIN_BASED_NMI_EXITING                   0x00000008
+ #define PIN_BASED_VIRTUAL_NMIS                  0x00000020
++#define PIN_BASED_PREEMPTION_TIMER              0x00000040
  
-+		rcu_note_context_switch(cpu);
-+
- 		if (!f.func) {
- 			native_safe_halt();
- 			continue;
-@@ -1005,6 +1007,8 @@ int __cpuinit slave_cpu_up(unsigned int cpu)
- 	if (IS_ERR(idle))
- 		return PTR_ERR(idle);
+ #define VM_EXIT_SAVE_DEBUG_CONTROLS             0x00000002
+ #define VM_EXIT_HOST_ADDR_SPACE_SIZE            0x00000200
+@@ -196,6 +197,7 @@ enum vmcs_field {
+ 	GUEST_INTERRUPTIBILITY_INFO     = 0x00004824,
+ 	GUEST_ACTIVITY_STATE            = 0X00004826,
+ 	GUEST_SYSENTER_CS               = 0x0000482A,
++	VMX_PREEMPTION_TIMER_VALUE      = 0x0000482E,
+ 	HOST_IA32_SYSENTER_CS           = 0x00004c00,
+ 	CR0_GUEST_HOST_MASK             = 0x00006000,
+ 	CR4_GUEST_HOST_MASK             = 0x00006002,
+@@ -280,6 +282,7 @@ enum vmcs_field {
+ #define EXIT_REASON_APIC_ACCESS         44
+ #define EXIT_REASON_EPT_VIOLATION       48
+ #define EXIT_REASON_EPT_MISCONFIG       49
++#define EXIT_REASON_PREEMPTION_TIMER	52
+ #define EXIT_REASON_WBINVD		54
+ #define EXIT_REASON_XSETBV		55
+ #define EXIT_REASON_INVPCID		58
+diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
+index 6081be7..fc350f3 100644
+--- a/arch/x86/kvm/trace.h
++++ b/arch/x86/kvm/trace.h
+@@ -218,6 +218,7 @@ TRACE_EVENT(kvm_apic,
+ 	{ EXIT_REASON_APIC_ACCESS,		"APIC_ACCESS" }, \
+ 	{ EXIT_REASON_EPT_VIOLATION,		"EPT_VIOLATION" }, \
+ 	{ EXIT_REASON_EPT_MISCONFIG,		"EPT_MISCONFIG" }, \
++	{ EXIT_REASON_PREEMPTION_TIMER,		"PREEMPTION_TIMER" }, \
+ 	{ EXIT_REASON_WBINVD,			"WBINVD" }
  
-+	slave_cpu_notify(CPU_SLAVE_UP_PREPARE, cpu);
-+
- 	ret = __native_cpu_up(cpu, idle, 1);
- 
- 	cpu_maps_update_done();
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index f280e54..31a7c8c 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -2589,6 +2589,9 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
- 	switch (action) {
- 	case CPU_UP_PREPARE:
- 	case CPU_UP_PREPARE_FROZEN:
-+#ifdef CONFIG_SLAVE_CPU
-+	case CPU_SLAVE_UP_PREPARE:
-+#endif
- 		rcu_prepare_cpu(cpu);
- 		rcu_prepare_kthreads(cpu);
- 		break;
-@@ -2603,6 +2606,9 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
- 		break;
- 	case CPU_DYING:
- 	case CPU_DYING_FROZEN:
-+#ifdef CONFIG_SLAVE_CPU
-+	case CPU_SLAVE_DYING:
-+#endif
- 		/*
- 		 * The whole machine is "stopped" except this CPU, so we can
- 		 * touch any data without introducing corruption. We send the
-@@ -2616,6 +2622,9 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
- 	case CPU_DEAD_FROZEN:
- 	case CPU_UP_CANCELED:
- 	case CPU_UP_CANCELED_FROZEN:
-+#ifdef CONFIG_SLAVE_CPU
-+	case CPU_SLAVE_DEAD:
-+#endif
- 		for_each_rcu_flavor(rsp)
- 			rcu_cleanup_dead_cpu(cpu, rsp);
- 		break;
-@@ -2797,6 +2806,10 @@ static void __init rcu_init_geometry(void)
- 	rcu_num_nodes -= n;
+ #define SVM_EXIT_REASONS \
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 6dc59c8..2130cbd 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -4456,6 +4456,12 @@ static int handle_external_interrupt(struct kvm_vcpu *vcpu)
+ 	return 1;
  }
  
-+static struct notifier_block __cpuinitdata rcu_slave_nb = {
-+	.notifier_call = rcu_cpu_notify,
-+};
++static int handle_preemption_timer(struct kvm_vcpu *vcpu)
++{
++	/* Nothing */
++	return 1;
++}
 +
- void __init rcu_init(void)
+ static int handle_triple_fault(struct kvm_vcpu *vcpu)
  {
- 	int cpu;
-@@ -2814,6 +2827,7 @@ void __init rcu_init(void)
- 	 * or the scheduler are operational.
- 	 */
- 	cpu_notifier(rcu_cpu_notify, 0);
-+	register_slave_cpu_notifier(&rcu_slave_nb);
- 	for_each_online_cpu(cpu)
- 		rcu_cpu_notify(NULL, CPU_UP_PREPARE, (void *)(long)cpu);
- 	check_cpu_stall_init();
+ 	vcpu->run->exit_reason = KVM_EXIT_SHUTDOWN;
+@@ -5768,6 +5774,7 @@ static int (*kvm_vmx_exit_handlers[])(struct kvm_vcpu *vcpu) = {
+ 	[EXIT_REASON_VMON]                    = handle_vmon,
+ 	[EXIT_REASON_TPR_BELOW_THRESHOLD]     = handle_tpr_below_threshold,
+ 	[EXIT_REASON_APIC_ACCESS]             = handle_apic_access,
++	[EXIT_REASON_PREEMPTION_TIMER]        = handle_preemption_timer,
+ 	[EXIT_REASON_WBINVD]                  = handle_wbinvd,
+ 	[EXIT_REASON_XSETBV]                  = handle_xsetbv,
+ 	[EXIT_REASON_TASK_SWITCH]             = handle_task_switch,
 
 
