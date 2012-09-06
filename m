@@ -1,44 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759426Ab2IFTJq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 15:09:46 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50708 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751505Ab2IFTJo convert rfc822-to-8bit (ORCPT
+	id S1759518Ab2IFTKC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 15:10:02 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57425 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759463Ab2IFTJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 15:09:44 -0400
-Message-ID: <1346958541.18408.67.camel@twins>
-Subject: Re: [PATCH tip/core/rcu 06/23] rcu: Break up rcu_gp_kthread() into
- subfunctions
-From: Peter Zijlstra <peterz@infradead.org>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        eric.dumazet@gmail.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, patches@linaro.org
-Date: Thu, 06 Sep 2012 21:09:01 +0200
-In-Reply-To: <20120906184921.GA5738@jtriplet-mobl1>
-References: <20120830181811.GA29154@linux.vnet.ibm.com>
-	 <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1346350718-30937-6-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1346938791.18408.7.camel@twins> <20120906173207.GK2448@linux.vnet.ibm.com>
-	 <20120906184921.GA5738@jtriplet-mobl1>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 6 Sep 2012 15:09:56 -0400
+From: Girish Verma <girish@circuitsutra.com>
+Cc: Girish Verma <girish@circuitsutra.com>, sarah.a.sharp@linux.intel.com,
+        gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] In xhci-ring.c, function inc_enq and inc_deq calculate the dma address of trb but never used.
+Date: Fri,  7 Sep 2012 00:38:04 +0530
+Message-Id: <1346958484-13533-1-git-send-email-girish@circuitsutra.com>
+X-Mailer: git-send-email 1.7.0.4
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-06 at 11:49 -0700, Josh Triplett wrote:
-> 
-> Huh, I thought GCC knew to not emit that warning unless it actually
-> found control flow reaching the end of the function; since the
-> infinite
-> loop has no break in it, you shouldn't need the return.  Annoying. 
 
-tag the function with __noreturn
+Signed-off-by: Girish Verma <girish@circuitsutra.com>
+---
+ drivers/usb/host/xhci-ring.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
+index 643c2f3..5c5c47b 100644
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -145,7 +145,6 @@ static void next_trb(struct xhci_hcd *xhci,
+  */
+ static void inc_deq(struct xhci_hcd *xhci, struct xhci_ring *ring)
+ {
+-	unsigned long long addr;
+ 
+ 	ring->deq_updates++;
+ 
+@@ -176,7 +175,6 @@ static void inc_deq(struct xhci_hcd *xhci, struct xhci_ring *ring)
+ 		}
+ 	} while (last_trb(xhci, ring, ring->deq_seg, ring->dequeue));
+ 
+-	addr = (unsigned long long) xhci_trb_virt_to_dma(ring->deq_seg, ring->dequeue);
+ }
+ 
+ /*
+@@ -201,7 +199,6 @@ static void inc_enq(struct xhci_hcd *xhci, struct xhci_ring *ring,
+ {
+ 	u32 chain;
+ 	union xhci_trb *next;
+-	unsigned long long addr;
+ 
+ 	chain = le32_to_cpu(ring->enqueue->generic.field[3]) & TRB_CHAIN;
+ 	/* If this is not event ring, there is one less usable TRB */
+@@ -253,7 +250,6 @@ static void inc_enq(struct xhci_hcd *xhci, struct xhci_ring *ring,
+ 		ring->enqueue = ring->enq_seg->trbs;
+ 		next = ring->enqueue;
+ 	}
+-	addr = (unsigned long long) xhci_trb_virt_to_dma(ring->enq_seg, ring->enqueue);
+ }
+ 
+ /*
+-- 
+1.7.0.4
+
