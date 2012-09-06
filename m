@@ -1,91 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759341Ab2IFRBF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 13:01:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56813 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759324Ab2IFRA7 (ORCPT
+	id S1759266Ab2IFRCl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 13:02:41 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:44014 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756056Ab2IFRCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 13:00:59 -0400
-Date: Thu, 6 Sep 2012 10:00:54 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 10/11 V5] workqueue: unbind/rebind without manager_mutex
-Message-ID: <20120906170054.GF29092@google.com>
-References: <1346841475-4422-1-git-send-email-laijs@cn.fujitsu.com>
- <1346841475-4422-11-git-send-email-laijs@cn.fujitsu.com>
- <20120905200411.GD13737@google.com>
- <50487EA5.3060900@cn.fujitsu.com>
+	Thu, 6 Sep 2012 13:02:39 -0400
+Date: Thu, 6 Sep 2012 13:02:36 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Josh Triplett <josh@joshtriplett.org>, Pedro Alves <palves@redhat.com>,
+        Tejun Heo <tj@kernel.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org, eric.dumazet@gmail.com,
+        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
+        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
+        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
+        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive
+	hashtable
+Message-ID: <20120906170236.GA7846@Krystal>
+References: <50462C99.5000007@redhat.com> <50462EE8.1090903@redhat.com> <20120904170138.GB31934@Krystal> <5048AAF6.5090101@gmail.com> <20120906145545.GA17332@leaf> <5048C615.4070204@gmail.com> <1346947206.1680.36.camel@gandalf.local.home> <5048CDA2.10300@gmail.com> <20120906165055.GC7385@Krystal> <5048D6DE.8090805@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50487EA5.3060900@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <5048D6DE.8090805@gmail.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Lai.
-
-On Thu, Sep 06, 2012 at 06:44:53PM +0800, Lai Jiangshan wrote:
-> On 09/06/2012 04:04 AM, Tejun Heo wrote:
-> > Please don't scatter small prep patches like this.  Each piece in
-> > isolation doesn't make much sense to me and the patch descriptions
-> > don't help much.  Please collect the prep patches and explain in more
-> > detail.
+* Sasha Levin (levinsasha928@gmail.com) wrote:
+> On 09/06/2012 06:50 PM, Mathieu Desnoyers wrote:
+> > * Sasha Levin (levinsasha928@gmail.com) wrote:
+> >> On 09/06/2012 06:00 PM, Steven Rostedt wrote:
+> >>>>> I think that that code doesn't make sense. The users of hlist_for_each_* aren't
+> >>>>> supposed to be changing the loop cursor.
+> >>> I totally agree. Modifying the 'node' pointer is just asking for issues.
+> >>> Yes that is error prone, but not due to the double loop. It's due to the
+> >>> modifying of the node pointer that is used internally by the loop
+> >>> counter. Don't do that :-)
+> >>
+> >> While we're on this subject, I haven't actually seen hlist_for_each_entry() code
+> >> that even *touches* 'pos'.
+> >>
+> >> Will people yell at me loudly if I change the prototype of those macros to be:
+> >>
+> >> 	hlist_for_each_entry(tpos, head, member)
+> >>
+> >> (Dropping the 'pos' parameter), and updating anything that calls those macros to
+> >> drop it as well?
+> > 
+> > I think the intent there is to keep hlist macros and list macros
+> > slightly in sync. Given those are vastly used, I'm not sure you want to
+> > touch them. But hey, that's just my 2 cents.
 > 
-> There are 4 different tasks. unbind/rebind manager/newbie
+> Actually, the corresponding list macro looks like this:
 > 
-> 1 task for 1 patch. if I collect them into one patch, it will be hard
-> to explain which code do which task.
-
-Not really.  Just list what each part does in the commit log and
-explain how they're gonna be used by the following patch.
-
-> > In general, I'm not sure about this approach.  I'd really like the
-> > hotplug logic to be contained in hotplug logic proper as much as
-> > possible.  This scatters around hotplug handling to usual code paths
-> > and seems too invasive for 3.6-fixes.
+> 	list_for_each_entry(pos, head, member)
 > 
-> I don't expect to fix it in 3.6. no approach is simple.
-
-I think I can come up with something fairly simple.  Will post soon.
-
-> > Also, can you please talk to me before going ahead and sending me
-> > completely new 10 patch series every other day?  You're taking
-> > disproportionate amount of my time and I can't continue to do this.
-> > Please discuss with me or at least explain the high-level approach in
-> > the head message in detail.  Going through the patch series to figure
-> > out high-level design which is constantly flipping is rather
-> > inefficient and unfortunately your patch descriptions aren't too
-> > helpful.  :(
+> With 'pos' being the equivalent of 'tpos' in the hlist macros (the type *).
+> Changing hlist macro will make them both look as follows:
 > 
-> I'm not good in English, so I prefer to attach code when I show my idea.
-> (and the code can prove the idea). I admit that my changelog and comments
-> are always bad.
+> 	hlist_for_each_entry(pos, head, member)
+> 	list_for_each_entry(pos, head, member)
+> 
+> So following this suggesting will actually bring them back to sync...
+> 
+> The only issue I can see is that as you've said, they're used almost everywhere,
+> so doing something to change that will require some coordination.
 
-English isn't my first language either and I struggled with it for
-quite a while too and it's perfectly okay to write non-perfect
-sentences, but please do keep trying to express your ideas rather than
-just throwing patches with one line description.  I'd be happy to
-update the patch description and comments as necessary but no matter
-how imperfect trying to communicate high level ideas in plain text
-helps a lot.
+if this brings hlist and list in sync, then it looks like an
+improvement. It might be good to propose this change as a separate
+patchset.
 
-* People might not understand fully but they would understand a lot of
-  it.
+Thanks,
 
-* You'll have think one more time about it while trying to explain and
-  justify all the changes in the patch.  It tends to make the code a
-  lot better.
+Mathieu
 
-* Good patch descriptions and comments are often very important
-  especially if one wants to make high-level restructuring changes
-  like you're trying to.  It might be difficult right now but it won't
-  get better without trying, right?
-
-Thanks!
+> 
+> 
+> Thanks,
+> Sasha
 
 -- 
-tejun
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
