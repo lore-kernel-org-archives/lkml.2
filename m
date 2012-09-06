@@ -1,110 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933113Ab2IFUvv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 16:51:51 -0400
-Received: from smtprelay-b12.telenor.se ([62.127.194.21]:54826 "EHLO
-	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932217Ab2IFUvt (ORCPT
+	id S933133Ab2IFUv7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 16:51:59 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:61846 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933119Ab2IFUvz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 16:51:49 -0400
-X-SENDER-IP: [85.230.170.20]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Arl1AD0MSVBV5qoUPGdsb2JhbABFhR6FI7AABIEIGQEBAQEeGQ0ngiABAQQBOhwjBQsIAw44FCUKGogdCrtcFIszhS9gA5VZgRWEWo0TgVYj
-X-IronPort-AV: E=Sophos;i="4.80,382,1344204000"; 
-   d="scan'208";a="110815066"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Thu, 6 Sep 2012 22:57:45 +0200
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 16/20] HID: Only dump input if someone is listening
-Message-ID: <20120906205745.GA419@polaris.bitmath.org>
-References: <1346528835-363-1-git-send-email-rydberg@euromail.se>
- <1346528835-363-17-git-send-email-rydberg@euromail.se>
- <alpine.LNX.2.00.1209020927130.20709@pobox.suse.cz>
- <20120902085211.GA604@polaris.bitmath.org>
- <alpine.LNX.2.00.1209031515450.20709@pobox.suse.cz>
+	Thu, 6 Sep 2012 16:51:55 -0400
+Message-ID: <50490CE7.2020806@redhat.com>
+Date: Thu, 06 Sep 2012 22:51:51 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1209031515450.20709@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: linux-kernel@vger.kernel.org, target-devel@vger.kernel.org
+Subject: Re: [PATCH 3.6 1/2] target: remove pscsi_clear_cdb_lun
+References: <1346944410-19850-1-git-send-email-pbonzini@redhat.com>  <1346944410-19850-2-git-send-email-pbonzini@redhat.com> <1346957885.4162.509.camel@haakon2.linux-iscsi.org>
+In-Reply-To: <1346957885.4162.509.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Let's wait once Dmitry is finished with the input changes, and I can 
-> either take the set through my tree with his Signed-off-by: on the Input 
-> patches, or vice-versa.
+Il 06/09/2012 20:58, Nicholas A. Bellinger ha scritto:
+> On Thu, 2012-09-06 at 17:13 +0200, Paolo Bonzini wrote:
+>> The purpose of this function is to clear a LUN set in the CDB, in case
+>> the initiator talking to us is speaking an old standards version.
+>> However, as things stand, pscsi_clear_cdb_lun has two problems.  It
+>> will "deceive" the guest by clearing the LUN bits on initial
+>> commands (INQUIRY, TEST UNIT READY, etc.); but then it will let the
+>> LUN bits through on reads, which will likely fail due to protection not
+>> being enabled.  Second, not all commands are properly filtered, in
+>> particular WRITE's WRPROTECT bits are cleared.
+>>
+>> This should be done by the fabric module rather than by PSCSI, if it
+>> knows such initiators may be lying around _and_ it can assume that its
+>> initiators do not really care about protection information.  Nuke it
+>> from PSCSI.
+>>
+>> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+>> ---
+> 
+> NAK.  This code was originally added to prevent certain pSCSI HBAs from
+> going bonkers when they got a legacy SCSI LUN ID encoded within the CDB
+> (eg: the fabric LUN ID) that's different from the physical SCSI LUN ID
+> on an Parallel SCSI bus.
 
-Ok. Meanwhile, the current set is now in a temporary branch on github,
-see below. Given there are no more change requests, I can add the
-right SOBs and push it to my next tree for a while, before sending a
-proper pull request to either of you.
+I understood, but what's good in making INQUIRY work, if the HBA will
+equally go bonkers on the first actual I/O (READ/WRITE/VERIFY are all
+affected)?
 
-Thanks,
-Henrik
+This is something the LLDs or the fabric module should be doing.  But I
+guess it could be an attribute too.
 
-The following changes since commit 4cbe5a555fa58a79b6ecbb6c531b8bab0650778d:
+Paolo
 
-  Linux 3.6-rc4 (2012-09-01 10:39:58 -0700)
+> If there are more special cases where the legacy SCSI LUN ID bit-range
+> needs to be cleared than please add those missing bits, but I don't
+> think it's yet safe to remove this completely for pSCSI w/ older LLDs.
+> 
+>>  drivers/target/target_core_pscsi.c |   26 --------------------------
+>>  1 files changed, 0 insertions(+), 26 deletions(-)
+>>
+>> diff --git a/drivers/target/target_core_pscsi.c b/drivers/target/target_core_pscsi.c
+>> index 5f7151d..a0fb2c3 100644
+>> --- a/drivers/target/target_core_pscsi.c
+>> +++ b/drivers/target/target_core_pscsi.c
+>> @@ -1031,30 +1031,6 @@ fail:
+>>  	return -ENOMEM;
+>>  }
+>>  
+>> -/*
+>> - * Clear a lun set in the cdb if the initiator talking to use spoke
+>> - * and old standards version, as we can't assume the underlying device
+>> - * won't choke up on it.
+>> - */
+>> -static inline void pscsi_clear_cdb_lun(unsigned char *cdb)
+>> -{
+>> -	switch (cdb[0]) {
+>> -	case READ_10: /* SBC - RDProtect */
+>> -	case READ_12: /* SBC - RDProtect */
+>> -	case READ_16: /* SBC - RDProtect */
+>> -	case SEND_DIAGNOSTIC: /* SPC - SELF-TEST Code */
+>> -	case VERIFY: /* SBC - VRProtect */
+>> -	case VERIFY_16: /* SBC - VRProtect */
+>> -	case WRITE_VERIFY: /* SBC - VRProtect */
+>> -	case WRITE_VERIFY_12: /* SBC - VRProtect */
+>> -	case MAINTENANCE_IN: /* SPC - Parameter Data Format for SA RTPG */
+>> -		break;
+>> -	default:
+>> -		cdb[1] &= 0x1f; /* clear logical unit number */
+>> -		break;
+>> -	}
+>> -}
+>> -
+>>  static int pscsi_parse_cdb(struct se_cmd *cmd)
+>>  {
+>>  	unsigned char *cdb = cmd->t_task_cdb;
+>> @@ -1067,8 +1043,6 @@ static int pscsi_parse_cdb(struct se_cmd *cmd)
+>>  		return -EINVAL;
+>>  	}
+>>  
+>> -	pscsi_clear_cdb_lun(cdb);
+>> -
+>>  	/*
+>>  	 * For REPORT LUNS we always need to emulate the response, for everything
+>>  	 * else the default for pSCSI is to pass the command to the underlying
+> 
+> 
 
-are available in the git repository at:
-
-  git://github.com/rydberg/linux.git maybe
-
-for you to fetch changes up to 631ea780695fdc0d1efa91b6714bd85369daab06:
-
-  HID: hid-multitouch: Add Flatfrog support (2012-09-06 22:21:02 +0200)
-
-----------------------------------------------------------------
-Henrik Rydberg (21):
-      Input: Break out MT data
-      Input: Improve the events-per-packet estimate
-      Input: Make sure we follow all EV_KEY events
-      Input: Move autorepeat to the event-passing phase
-      Input: Send events one packet at a time
-      Input: evdev - Add the events() callback
-      Input: MT - Add flags to input_mt_init_slots()
-      Input: MT - Handle frame synchronization in core
-      Input: MT - Add in-kernel tracking
-      Input: MT - Get slot by key
-      Input: bcm5974 - only setup button urb for TYPE1 devices
-      Input: bcm5974 - Preparatory renames
-      Input: bcm5974 - Drop pressure and width emulation
-      Input: bcm5974 - Drop the logical dimensions
-      Input: bcm5974 - Convert to MT-B
-      HID: Add an input configured notification callback
-      HID: hid-multitouch: Simplify setup and frame synchronization
-      HID: hid-multitouch: Remove the redundant touch state
-      HID: hid-multitouch: Fix contact count on 3M panels
-      HID: Allow more fields in the hid report
-      HID: hid-multitouch: Add Flatfrog support
-
- drivers/hid/hid-ids.h                    |   3 +
- drivers/hid/hid-input.c                  |  11 +-
- drivers/hid/hid-magicmouse.c             |   2 +-
- drivers/hid/hid-multitouch.c             | 192 +++++++++++++++-----------------
- drivers/input/evdev.c                    |  78 ++++++++-----
- drivers/input/input-mt.c                 | 294 +++++++++++++++++++++++++++++++++++++++++++++----
- drivers/input/input.c                    | 245 +++++++++++++++++++++++++++--------------
- drivers/input/misc/uinput.c              |   2 +-
- drivers/input/mouse/alps.c               |   2 +-
- drivers/input/mouse/bcm5974.c            | 317 ++++++++++++++++++++---------------------------------
- drivers/input/mouse/elantech.c           |   4 +-
- drivers/input/mouse/sentelic.c           |   2 +-
- drivers/input/mouse/synaptics.c          |   4 +-
- drivers/input/tablet/wacom_wac.c         |   6 +-
- drivers/input/touchscreen/atmel_mxt_ts.c |   2 +-
- drivers/input/touchscreen/cyttsp_core.c  |   2 +-
- drivers/input/touchscreen/edt-ft5x06.c   |   2 +-
- drivers/input/touchscreen/egalax_ts.c    |   2 +-
- drivers/input/touchscreen/ili210x.c      |   2 +-
- drivers/input/touchscreen/mms114.c       |   2 +-
- drivers/input/touchscreen/penmount.c     |   2 +-
- drivers/input/touchscreen/wacom_w8001.c  |   2 +-
- include/linux/hid.h                      |   5 +-
- include/linux/input.h                    |  33 ++++--
- include/linux/input/mt.h                 |  55 +++++++++-
- 25 files changed, 807 insertions(+), 464 deletions(-)
