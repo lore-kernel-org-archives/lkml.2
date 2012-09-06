@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932475Ab2IFAKu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 20:10:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41280 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759956Ab2IFAKs (ORCPT
+	id S1760075Ab2IFALb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 20:11:31 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:39813 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1760011Ab2IFAL3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 20:10:48 -0400
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: [PATCH] perf: clean should remove libtraceevent.a too
-Date: Wed,  5 Sep 2012 18:10:40 -0600
-Message-Id: <1346890240-61205-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
+	Wed, 5 Sep 2012 20:11:29 -0400
+Message-ID: <5047EA1C.7080608@xenotime.net>
+Date: Wed, 05 Sep 2012 17:11:08 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, alsa-devel@alsa-project.org
+Subject: Re: [PATCH -next] soc: fix wm0010.c printk format warning
+References: <20120905161230.3bab1de6d4c8c8e466c3b0df@canb.auug.org.au> <5047DF49.6070502@xenotime.net> <20120906000612.GO10580@opensource.wolfsonmicro.com>
+In-Reply-To: <20120906000612.GO10580@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's built as part of perf, so it should be cleaned too.
+On 09/05/2012 05:06 PM, Mark Brown wrote:
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/Makefile |    1 +
- 1 file changed, 1 insertion(+)
+> On Wed, Sep 05, 2012 at 04:24:57PM -0700, Randy Dunlap wrote:
+>> From: Randy Dunlap <rdunlap@xenotime.net>
+>>
+>> Fix printk format warning:
+> 
+> Somone already sent this.  As ever please try to use subject lines
+> appropriate for the subsystem.  Please also consider who you're CCing -
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 90d8e09..5f0259e 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -1068,6 +1068,7 @@ clean:
- 	$(RM) $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)PERF-CFLAGS
- 	$(RM) $(OUTPUT)util/*-bison*
- 	$(RM) $(OUTPUT)util/*-flex*
-+	$(RM) $(LIBTRACEEVENT)
- 	$(python-clean)
- 
- .PHONY: all install clean strip $(LIBTRACEEVENT)
+
+Unfortunately the MAINTAINERS file does not tell me what to include
+in the $subject line for the subsystem.
+What would you like to see there, please?  Maybe ASoC?
+
+> there's no need to copy -next on things like this which aren't
+
+
+I have always done a reply-to-all for linux-next patches, so after
+a few years someone days Don't Do That (IYO).
+
+> integration issues for example, if we start doing that then it'd get
+> drowned in noise from all the development.
+
+
+Agreed, many of us are already drowning from 1000+ emails per day.
+(seriously)
+
 -- 
-1.7.10.1
-
+~Randy
