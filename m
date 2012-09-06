@@ -1,121 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932502Ab2IFRRa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 13:17:30 -0400
-Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:59946 "EHLO
-	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932223Ab2IFRR1 (ORCPT
+	id S932484Ab2IFRUI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 13:20:08 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47375 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932173Ab2IFRUG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 13:17:27 -0400
-Date: Thu, 6 Sep 2012 20:13:03 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Vaibhav Hiremath <hvaibhav@ti.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, rob@landley.net, b-cousson@ti.com,
-        tony@atomide.com, linux@arm.linux.org.uk, balbi@ti.com,
-        gregkh@linuxfoundation.org, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH 1/3] arm: omap: hwmod: add a new addr space in otg for
- writing to control module
-Message-ID: <20120906171301.GC17754@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1346943331-18120-1-git-send-email-kishon@ti.com>
- <1346943331-18120-2-git-send-email-kishon@ti.com>
- <5048C2A2.2020104@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="eHhjakXzOLJAF9wJ"
-Content-Disposition: inline
-In-Reply-To: <5048C2A2.2020104@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 6 Sep 2012 13:20:06 -0400
+Message-ID: <1346951591.18408.48.camel@twins>
+Subject: Re: [PATCH tip/core/rcu 11/26] rcu: Exit RCU extended QS on user
+ preemption
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        Alessio Igor Bogani <abogani@kernel.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@ti.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
+Date: Thu, 06 Sep 2012 19:13:11 +0200
+In-Reply-To: <1346950959.18408.47.camel@twins>
+References: <20120830210520.GA2824@linux.vnet.ibm.com>
+	 <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1346360743-3628-11-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1346950959.18408.47.camel@twins>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---eHhjakXzOLJAF9wJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi,
-
-On Thu, Sep 06, 2012 at 09:04:58PM +0530, Vaibhav Hiremath wrote:
->=20
->=20
-> On 9/6/2012 8:25 PM, Kishon Vijay Abraham I wrote:
-> > The mailbox register for usb otg in omap is present in control module.
-> > On detection of any events VBUS or ID, this register should be written
-> > to send the notification to musb core.
-> >=20
-> > Till we have a separate control module driver to write to control modul=
-e,
-> > omap2430 will handle the register writes to control module by itself. So
-> > a new address space to represent this control module register is added
-> > to usb_otg_hs.
-> >=20
-> > Cc: Benoit Cousson <b-cousson@ti.com>
-> > Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+On Thu, 2012-09-06 at 19:02 +0200, Peter Zijlstra wrote:
+> On Thu, 2012-08-30 at 14:05 -0700, Paul E. McKenney wrote:
+> > From: Frederic Weisbecker <fweisbec@gmail.com>
+> > 
+> > When exceptions or irq are about to resume userspace, if
+> > the task needs to be rescheduled, the arch low level code
+> > calls schedule() directly.
+> > 
+> > At that time we may be in extended quiescent state from RCU
+> > POV: the exception is not anymore protected inside
+> > rcu_user_exit() - rcu_user_enter() and the irq has called
+> > rcu_irq_exit() already.
+> > 
+> > Create a new API schedule_user() that calls schedule() inside
+> > rcu_user_exit()-rcu_user_enter() in order to protect it. Archs
+> > will need to rely on it now to implement user preemption safely.
+> 
 > > ---
-> >  arch/arm/mach-omap2/omap_hwmod_44xx_data.c |    5 +++++
-> >  1 file changed, 5 insertions(+)
-> >=20
-> > diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach=
--omap2/omap_hwmod_44xx_data.c
-> > index 242aee4..02341bc 100644
-> > --- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-> > +++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-> > @@ -5890,6 +5890,11 @@ static struct omap_hwmod_addr_space omap44xx_usb=
-_otg_hs_addrs[] =3D {
-> >  		.pa_end		=3D 0x4a0ab003,
-> >  		.flags		=3D ADDR_TYPE_RT
-> >  	},
-> > +	{
-> > +		.pa_start	=3D 0x4a00233c,
-> > +		.pa_end		=3D 0x4a00233f,
-> > +		.flags		=3D ADDR_TYPE_RT
-> > +	},
->=20
-> I do not have any objection/comment here, but I believe this is control
-> module address space required for USB module, right?
-> I am not sure this is right way of accessing control module space.
-> Actually Control Module Access required for drivers is one of the
-> blocking issue we have currently.
->=20
-> Also there was some effort put up by 'Konstantine' to convert Control
-> module to MFD driver, I haven't seen any further update on it. But it
-> would be good to check with him.
+> >  kernel/sched/core.c |    7 +++++++
+> >  1 files changed, 7 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> > index 0bd599b..e841dfc 100644
+> > --- a/kernel/sched/core.c
+> > +++ b/kernel/sched/core.c
+> > @@ -3463,6 +3463,13 @@ asmlinkage void __sched schedule(void)
+> >  }
+> >  EXPORT_SYMBOL(schedule);
+> >  
+> > +asmlinkage void __sched schedule_user(void)
+> > +{
+> > +	rcu_user_exit();
+> > +	schedule();
+> > +	rcu_user_enter();
+> > +}
+> 
+> 
+> OK, so colour me unconvinced.. why are we doing this?
+> 
+> Typically when we call schedule nr_running != 1 (we need current to be
+> running and a possible target to switch to).
+> 
+> So I'd prefer to simply have schedule() disable all this adaptive tick
+> nonsense and leave it at that.
 
-this was an agreement with Benoit since we already lost a couple merge
-windows for this patchset. We agreed to wait until -rc4 for SCM driver
-and if it wasn't ready, we'd go ahead with this and SCM author would fix
-it up on a patch converting users to new SCM driver.
+In fact, the only way to get here is through ttwu(), which would have
+done the nr_running increment and should have disabled all this adaptive
+stuff.
 
---=20
-balbi
-
---eHhjakXzOLJAF9wJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQSNmdAAoJEIaOsuA1yqREWOIP/Ah2073wtfbxi2AJtgI6VqGC
-mjsDpMEWfoMJ4CfJGlcL8sQhGczVLY4vsgCSvvdlE5hp6s5PaX5XlzbQUuIQ2v0d
-9wTEiK4IJVmhNsICbMrn0GxUUpsuYoZNEpiN1nJ9au6Yxbygjo28Bw5CGRhqPfnl
-XulKaAzOtOqyHRvJ7v7yfplAaWhwYB4guAvxYQ3v+iTFYGv3V0KzH8LDOKPqDNbR
-DbPzgM2qI4k1iuvX/tsc1/DOvm6L8giAlf4tJt7nIXoLgzy5qlox6nv278qygiWW
-WLP9f/RSvMqNZSOhsEw6NmxfsLy3PYuULoIe4ngDOWB7UUHGhF7SWIZ7jSCtZFvJ
-Czc47ZH6UXgIKHBQ4KOBuqjG1xpGtkRWpGstbk2qZmW3O6/iP88T61s2Bqe+81R0
-lHuOmVzz64BxwSyFHRMQR6TJuFXFgsMZ9tgHISl9dznPh1vb9rXwr9kVGcWiMTpZ
-6ohKIQZIRqx3cIwkkPqvoKbt7dSGKyBkYUekyp61XV33W41ZrCmJi8odQmwM9cge
-IHWPUNgMERpJLYiMc8Cs1vpro9K6WqnT5mBHmfsuY/JtiGInTN7xIBhd5z991/vH
-cGf2w6hBgJmLeOFVTiDTPLE+tPn/NQmZpfNeUlz6sLc+/EBAbCO/x3Zu6odKILcl
-VhGyrpmqmgJHMSaug2OX
-=cQHs
------END PGP SIGNATURE-----
-
---eHhjakXzOLJAF9wJ--
+So again,.. why?
