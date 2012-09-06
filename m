@@ -1,191 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752951Ab2IFF3I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 01:29:08 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:33292 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752461Ab2IFF3D (ORCPT
+	id S1752842Ab2IFF3j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 01:29:39 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48709 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751057Ab2IFF3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 01:29:03 -0400
-From: "Philip, Avinash" <avinashphilip@ti.com>
-To: <thierry.reding@avionic-design.de>
-CC: <linux-kernel@vger.kernel.org>, <nsekhar@ti.com>, <gururaja.hebbar@ti.com>
-Subject: [PATCH V2 2/2] pwm: pwm-tiehrpwm: Add support for configuring polarity of PWM
-Date: Thu, 6 Sep 2012 10:40:03 +0530
-Message-ID: <1346908203-10632-3-git-send-email-avinashphilip@ti.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1346908203-10632-1-git-send-email-avinashphilip@ti.com>
-References: <1346908203-10632-1-git-send-email-avinashphilip@ti.com>
+	Thu, 6 Sep 2012 01:29:38 -0400
+X-AuditID: 9c930197-b7b93ae0000028a7-fc-504834c0147c
+Date: Thu, 6 Sep 2012 14:31:12 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 2/2] mm: support MIGRATE_DISCARD
+Message-ID: <20120906053112.GA16231@bbox>
+References: <1346832673-12512-1-git-send-email-minchan@kernel.org>
+ <1346832673-12512-2-git-send-email-minchan@kernel.org>
+ <20120905105611.GI11266@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120905105611.GI11266@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-EHRPWM hardware supports polarity configuration of PWM output. However
-configuration of polarity done in hardware only in .enable() to ensure
-PWM output present only after enabling PWM. This commit adds support for
-polarity configuration for EHRPWM.
-When being here, remove configuring of polarity during .config() and do
-it explicitly from .set_polarity().
+Hi Mel,
 
-Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
----
-changes since v1:
-	- Remove config_chans API. Duty cycle configuration done in .cinfig()
-	- Introduce config_polarity API, as don't want to confuse the
-	  functionality of .enable()
-	- Introduce polarity member as array in private structure to handle
-	  both channels.
+On Wed, Sep 05, 2012 at 11:56:11AM +0100, Mel Gorman wrote:
+> On Wed, Sep 05, 2012 at 05:11:13PM +0900, Minchan Kim wrote:
+> > This patch introudes MIGRATE_DISCARD mode in migration.
+> > It drops *clean cache pages* instead of migration so that
+> > migration latency could be reduced by avoiding (memcpy + page remapping).
+> > It's useful for CMA because latency of migration is very important rather
+> > than eviction of background processes's workingset. In addition, it needs
+> > less free pages for migration targets so it could avoid memory reclaiming
+> > to get free pages, which is another factor increase latency.
+> > 
+> 
+> Bah, this was released while I was reviewing the older version. I did
+> not read this one as closely but I see the enum problems have gone away
+> at least. I'd still prefer if CMA had an additional helper to discard
+> some pages with shrink_page_list() and migrate the remaining pages with
+> migrate_pages(). That would remove the need to add a MIGRATE_DISCARD
+> migrate mode at all.
 
-:100644 100644 b1996bc... db3675f... M	drivers/pwm/pwm-tiehrpwm.c
- drivers/pwm/pwm-tiehrpwm.c |   73 ++++++++++++++++++++++++++++++-------------
- 1 files changed, 51 insertions(+), 22 deletions(-)
+I am not convinced with your point. What's the benefit on separating
+reclaim and migration? For just removing MIGRATE_DISCARD mode?
+I don't think it's not bad because my implementation is very simple(maybe
+it's much simpler than separating reclaim and migration) and
+could be used by others like memory-hotplug in future.
+If you're not strong against with me, I would like to insist on my implementation.
 
-diff --git a/drivers/pwm/pwm-tiehrpwm.c b/drivers/pwm/pwm-tiehrpwm.c
-index b1996bc..db3675f 100644
---- a/drivers/pwm/pwm-tiehrpwm.c
-+++ b/drivers/pwm/pwm-tiehrpwm.c
-@@ -81,6 +81,15 @@
- #define AQCTL_ZRO_FRCHIGH	BIT(1)
- #define AQCTL_ZRO_FRCTOGGLE	(BIT(1) | BIT(0))
- 
-+#define AQCTL_CHANA_POLNORMAL	(AQCTL_CAU_FRCLOW | AQCTL_PRD_FRCHIGH | \
-+				AQCTL_ZRO_FRCHIGH)
-+#define AQCTL_CHANA_POLINVERSED	(AQCTL_CAU_FRCHIGH | AQCTL_PRD_FRCLOW | \
-+				AQCTL_ZRO_FRCLOW)
-+#define AQCTL_CHANB_POLNORMAL	(AQCTL_CBU_FRCLOW | AQCTL_PRD_FRCHIGH | \
-+				AQCTL_ZRO_FRCHIGH)
-+#define AQCTL_CHANB_POLINVERSED	(AQCTL_CBU_FRCHIGH | AQCTL_PRD_FRCLOW | \
-+				AQCTL_ZRO_FRCLOW)
-+
- #define AQSFRC_RLDCSF_MASK	(BIT(7) | BIT(6))
- #define AQSFRC_RLDCSF_ZRO	0
- #define AQSFRC_RLDCSF_PRD	BIT(6)
-@@ -105,6 +114,7 @@ struct ehrpwm_pwm_chip {
- 	unsigned int	clk_rate;
- 	void __iomem	*mmio_base;
- 	unsigned long period_cycles[NUM_PWM_CHANNEL];
-+	enum pwm_polarity polarity[NUM_PWM_CHANNEL];
- };
- 
- static inline struct ehrpwm_pwm_chip *to_ehrpwm_pwm_chip(struct pwm_chip *chip)
-@@ -165,39 +175,37 @@ static int set_prescale_div(unsigned long rqst_prescaler,
- 	return 1;
- }
- 
--static void configure_chans(struct ehrpwm_pwm_chip *pc, int chan,
--		unsigned long duty_cycles)
-+static void configure_polarity(struct ehrpwm_pwm_chip *pc, int chan)
- {
--	int cmp_reg, aqctl_reg;
-+	int aqctl_reg;
- 	unsigned short aqctl_val, aqctl_mask;
- 
- 	/*
--	 * Channels can be configured from action qualifier module.
--	 * Channel 0 configured with compare A register and for
--	 * up-counter mode.
--	 * Channel 1 configured with compare B register and for
--	 * up-counter mode.
-+	 * Configure PWM output to HIGH/LOW level on counter
-+	 * reaches compare register value and LOW/HIGH level
-+	 * on counter value reaches period register value and
-+	 * zero value on counter
- 	 */
- 	if (chan == 1) {
- 		aqctl_reg = AQCTLB;
--		cmp_reg = CMPB;
--		/* Configure PWM Low from compare B value */
--		aqctl_val = AQCTL_CBU_FRCLOW;
- 		aqctl_mask = AQCTL_CBU_MASK;
-+
-+		if (pc->polarity[chan] == PWM_POLARITY_INVERSED)
-+			aqctl_val = AQCTL_CHANB_POLINVERSED;
-+		else
-+			aqctl_val = AQCTL_CHANB_POLNORMAL;
- 	} else {
--		cmp_reg = CMPA;
- 		aqctl_reg = AQCTLA;
--		/* Configure PWM Low from compare A value*/
--		aqctl_val = AQCTL_CAU_FRCLOW;
- 		aqctl_mask = AQCTL_CAU_MASK;
-+
-+		if (pc->polarity[chan] == PWM_POLARITY_INVERSED)
-+			aqctl_val = AQCTL_CHANA_POLINVERSED;
-+		else
-+			aqctl_val = AQCTL_CHANA_POLNORMAL;
- 	}
- 
--	/* Configure PWM High from period value and zero value */
--	aqctl_val |= AQCTL_PRD_FRCHIGH | AQCTL_ZRO_FRCHIGH;
- 	aqctl_mask |= AQCTL_PRD_MASK | AQCTL_ZRO_MASK;
--	ehrpwm_modify(pc->mmio_base,  aqctl_reg, aqctl_mask, aqctl_val);
--
--	ehrpwm_write(pc->mmio_base,  cmp_reg, duty_cycles);
-+	ehrpwm_modify(pc->mmio_base, aqctl_reg, aqctl_mask, aqctl_val);
- }
- 
- /*
-@@ -211,7 +219,7 @@ static int ehrpwm_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
- 	unsigned long long c;
- 	unsigned long period_cycles, duty_cycles;
- 	unsigned short ps_divval, tb_divval;
--	int i;
-+	int i, cmp_reg;
- 
- 	if (period_ns < 0 || duty_ns < 0 || period_ns > NSEC_PER_SEC)
- 		return -ERANGE;
-@@ -278,12 +286,29 @@ static int ehrpwm_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
- 	ehrpwm_modify(pc->mmio_base, TBCTL, TBCTL_CTRMODE_MASK,
- 			TBCTL_CTRMODE_UP);
- 
--	/* Configure the channel for duty cycle */
--	configure_chans(pc, pwm->hwpwm, duty_cycles);
-+	if (pwm->hwpwm == 1)
-+		/* Channel 1 configured with compare B register */
-+		cmp_reg = CMPB;
-+	else
-+		/* Channel 0 configured with compare A register */
-+		cmp_reg = CMPA;
-+
-+	ehrpwm_write(pc->mmio_base, cmp_reg, duty_cycles);
-+
- 	pm_runtime_put_sync(chip->dev);
- 	return 0;
- }
- 
-+static int ehrpwm_pwm_set_polarity(struct pwm_chip *chip,
-+		struct pwm_device *pwm,	enum pwm_polarity polarity)
-+{
-+	struct ehrpwm_pwm_chip *pc = to_ehrpwm_pwm_chip(chip);
-+
-+	/* Configuration of polarity in hardware delayed, do at enable */
-+	pc->polarity[pwm->hwpwm] = polarity;
-+	return 0;
-+}
-+
- static int ehrpwm_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
- {
- 	struct ehrpwm_pwm_chip *pc = to_ehrpwm_pwm_chip(chip);
-@@ -307,6 +332,9 @@ static int ehrpwm_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
- 
- 	ehrpwm_modify(pc->mmio_base, AQCSFRC, aqcsfrc_mask, aqcsfrc_val);
- 
-+	/* Channels polarity can be configured from action qualifier module */
-+	configure_polarity(pc, pwm->hwpwm);
-+
- 	/* Enable time counter for free_run */
- 	ehrpwm_modify(pc->mmio_base, TBCTL, TBCTL_RUN_MASK, TBCTL_FREE_RUN);
- 	return 0;
-@@ -358,6 +386,7 @@ static void ehrpwm_pwm_free(struct pwm_chip *chip, struct pwm_device *pwm)
- static const struct pwm_ops ehrpwm_pwm_ops = {
- 	.free		= ehrpwm_pwm_free,
- 	.config		= ehrpwm_pwm_config,
-+	.set_polarity	= ehrpwm_pwm_set_polarity,
- 	.enable		= ehrpwm_pwm_enable,
- 	.disable	= ehrpwm_pwm_disable,
- 	.owner		= THIS_MODULE,
+> 
+> -- 
+> Mel Gorman
+> SUSE Labs
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
 -- 
-1.7.1
-
+Kind regards,
+Minchan Kim
