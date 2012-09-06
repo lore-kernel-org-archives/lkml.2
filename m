@@ -1,48 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933044Ab2IFSjO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 14:39:14 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:64007 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932373Ab2IFSjN (ORCPT
+	id S933054Ab2IFSla (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 14:41:30 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49577 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933001Ab2IFSl3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 14:39:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <5048E35F.5020304@suse.cz>
-References: <1344929718-22736-1-git-send-email-tmshlvck@gmail.com>
-	<1346894238-12870-1-git-send-email-tmshlvck@gmail.com>
-	<5048E35F.5020304@suse.cz>
-Date: Thu, 6 Sep 2012 20:39:12 +0200
-Message-ID: <CAEB7QLAWLuXFLWMYX70enP5X0z5EXTNo93hfOm7sH_kQteMAkA@mail.gmail.com>
-Subject: Re: [PATCH v6] uartclk value from serial_core exposed to sysfs
-From: Tomas Hlavacek <tmshlvck@gmail.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: gregkh@linuxfoundation.org, alan@linux.intel.com,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        marek.vasut@gmail.com
-Content-Type: text/plain; charset=UTF-8
+	Thu, 6 Sep 2012 14:41:29 -0400
+Message-ID: <1346956869.18408.66.camel@twins>
+Subject: Re: [RFC 00/12] perf diff: Factor diff command
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Date: Thu, 06 Sep 2012 20:41:09 +0200
+In-Reply-To: <1346946426-13496-1-git-send-email-jolsa@redhat.com>
+References: <1346946426-13496-1-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+On Thu, 2012-09-06 at 17:46 +0200, Jiri Olsa wrote:
+> The 'perf diff' and 'std/hist' code is now changed to allow computations
+> mentioned in the paper. Two of them are implemented within this patchset:
+>   1) ratio differential profiling
+>   2) weighted differential profiling
 
-On Thu, Sep 6, 2012 at 7:54 PM, Jiri Slaby <jslaby@suse.cz> wrote:
-> On 09/06/2012 03:17 AM, Tomas Hlavacek wrote:
->> @@ -2362,8 +2392,8 @@ int uart_add_one_port(struct uart_driver *drv, struct uart_port *uport)
->>        * Register the port whether it's detected or not.  This allows
->>        * setserial to be used to alter this ports parameters.
->>        */
->> -     tty_dev = tty_port_register_device(port, drv->tty_driver, uport->line,
->> -                     uport->dev);
->> +     tty_dev = tty_register_device_attr(drv->tty_driver, uport->line,
->> +                     uport->dev, port, tty_dev_attr_groups);
->
-> This makes me believe you have not tested the change at all?
-
-Thanks! I can't believe I missed that. (And I actually tested that,
-but I have to admit that it was not enough apparently.)
-
-I will re-send the patch (after some additional testing and double-checking).
-
-Tomas
+Seems like a useful thing indeed, the explanation of the weighted diff
+method doesn't seem to contain a why. I know I could go read the paper
+but... :-)
