@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755606Ab2IFMuw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 08:50:52 -0400
-Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:37967 "EHLO
-	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755550Ab2IFMus (ORCPT
+	id S1755649Ab2IFMu7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 08:50:59 -0400
+Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:42272 "EHLO
+	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755611Ab2IFMu4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 08:50:48 -0400
+	Thu, 6 Sep 2012 08:50:56 -0400
 From: Felipe Balbi <balbi@ti.com>
 To: Greg KH <gregkh@linuxfoundation.org>
 Cc: alan@linux.intel.com, Tony Lindgren <tony@atomide.com>,
@@ -18,11 +18,10 @@ Cc: alan@linux.intel.com, Tony Lindgren <tony@atomide.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Shubhrajyoti Datta <shubhrajyoti@ti.com>,
-        Sourav Poddar <sourav.poddar@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Ruchika Kharwar <ruchika@ti.com>
-Subject: [PATCH v4 13/21] serial: omap: optimization with section annotations
-Date: Thu,  6 Sep 2012 15:45:32 +0300
-Message-Id: <1346935540-1792-14-git-send-email-balbi@ti.com>
+        Sourav Poddar <sourav.poddar@ti.com>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH v4 14/21] serial: omap: drop "inline" from IRQ handler prototype
+Date: Thu,  6 Sep 2012 15:45:33 +0300
+Message-Id: <1346935540-1792-15-git-send-email-balbi@ti.com>
 X-Mailer: git-send-email 1.7.12.rc3
 In-Reply-To: <1346935540-1792-1-git-send-email-balbi@ti.com>
 References: <20120906122948.GC29202@arwen.pp.htv.fi>
@@ -31,69 +30,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Two functions:
-omap_serial_fill_features_erratas() and
-of_get_uart_port_info() are only called from probe().
-Marking them as __devinit gives us another
-oportunity to free some code after .init.text
-is done.
+it makes no sense to mark our IRQ handler inline
+since it's passed as a function pointer when
+enabling the IRQ line.
 
 Tested-by: Shubhrajyoti D <shubhrajyoti@ti.com>
-Signed-off-by: Ruchika Kharwar <ruchika@ti.com>
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/tty/serial/omap-serial.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/tty/serial/omap-serial.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-index f5dcb5a..9068260 100644
+index 9068260..d244163 100644
 --- a/drivers/tty/serial/omap-serial.c
 +++ b/drivers/tty/serial/omap-serial.c
-@@ -1168,7 +1168,7 @@ static int serial_omap_resume(struct device *dev)
- }
- #endif
- 
--static void omap_serial_fill_features_erratas(struct uart_omap_port *up)
-+static void __devinit omap_serial_fill_features_erratas(struct uart_omap_port *up)
+@@ -345,7 +345,7 @@ static void serial_omap_rdi(struct uart_omap_port *up, unsigned int lsr)
+  * @irq: uart port irq number
+  * @dev_id: uart port info
+  */
+-static inline irqreturn_t serial_omap_irq(int irq, void *dev_id)
++static irqreturn_t serial_omap_irq(int irq, void *dev_id)
  {
- 	u32 mvr, scheme;
- 	u16 revision, major, minor;
-@@ -1221,7 +1221,7 @@ static void omap_serial_fill_features_erratas(struct uart_omap_port *up)
- 	}
- }
- 
--static struct omap_uart_port_info *of_get_uart_port_info(struct device *dev)
-+static __devinit struct omap_uart_port_info *of_get_uart_port_info(struct device *dev)
- {
- 	struct omap_uart_port_info *omap_up_info;
- 
-@@ -1234,7 +1234,7 @@ static struct omap_uart_port_info *of_get_uart_port_info(struct device *dev)
- 	return omap_up_info;
- }
- 
--static int serial_omap_probe(struct platform_device *pdev)
-+static int __devinit serial_omap_probe(struct platform_device *pdev)
- {
- 	struct uart_omap_port	*up;
- 	struct resource		*mem, *irq;
-@@ -1364,7 +1364,7 @@ err_port_line:
- 	return ret;
- }
- 
--static int serial_omap_remove(struct platform_device *dev)
-+static int __devexit serial_omap_remove(struct platform_device *dev)
- {
- 	struct uart_omap_port *up = platform_get_drvdata(dev);
- 
-@@ -1508,7 +1508,7 @@ MODULE_DEVICE_TABLE(of, omap_serial_of_match);
- 
- static struct platform_driver serial_omap_driver = {
- 	.probe          = serial_omap_probe,
--	.remove         = serial_omap_remove,
-+	.remove         = __devexit_p(serial_omap_remove),
- 	.driver		= {
- 		.name	= DRIVER_NAME,
- 		.pm	= &serial_omap_dev_pm_ops,
+ 	struct uart_omap_port *up = dev_id;
+ 	struct tty_struct *tty = up->port.state->port.tty;
 -- 
 1.7.12.rc3
 
