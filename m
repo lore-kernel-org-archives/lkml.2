@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758116Ab2IFPYX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 11:24:23 -0400
+	id S1758245Ab2IFPYe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 11:24:34 -0400
 Received: from mail-wg0-f44.google.com ([74.125.82.44]:62616 "EHLO
 	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757860Ab2IFPYT (ORCPT
+	with ESMTP id S1757834Ab2IFPYV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 11:24:19 -0400
+	Thu, 6 Sep 2012 11:24:21 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
+To: Hans de Goede <hdegoede@redhat.com>
 Cc: kernel-janitors@vger.kernel.org, Julia.Lawall@lip6.fr,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
         linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/14] drivers/media/v4l2-core/videobuf2-core.c: fix error return code
-Date: Thu,  6 Sep 2012 17:23:57 +0200
-Message-Id: <1346945041-26676-10-git-send-email-peter.senna@gmail.com>
+Subject: [PATCH 14/14] drivers/media/usb/gspca/cpia1.c: fix error return code
+Date: Thu,  6 Sep 2012 17:24:01 +0200
+Message-Id: <1346945041-26676-14-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -48,23 +49,20 @@ ret@p1 = 0
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
 ---
- drivers/media/v4l2-core/videobuf2-core.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/media/usb/gspca/cpia1.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/media/v4l2-core/videobuf2-core.c b/drivers/media/v4l2-core/videobuf2-core.c
-index 4da3df6..f6bc240 100644
---- a/drivers/media/v4l2-core/videobuf2-core.c
-+++ b/drivers/media/v4l2-core/videobuf2-core.c
-@@ -1876,8 +1876,10 @@ static int __vb2_init_fileio(struct vb2_queue *q, int read)
- 	 */
- 	for (i = 0; i < q->num_buffers; i++) {
- 		fileio->bufs[i].vaddr = vb2_plane_vaddr(q->bufs[i], 0);
--		if (fileio->bufs[i].vaddr == NULL)
-+		if (fileio->bufs[i].vaddr == NULL) {
-+			ret = -EFAULT;
- 			goto err_reqbufs;
-+		}
- 		fileio->bufs[i].size = vb2_plane_size(q->bufs[i], 0);
- 	}
+diff --git a/drivers/media/usb/gspca/cpia1.c b/drivers/media/usb/gspca/cpia1.c
+index 2499a88..b3ba47d 100644
+--- a/drivers/media/usb/gspca/cpia1.c
++++ b/drivers/media/usb/gspca/cpia1.c
+@@ -751,7 +751,7 @@ static int goto_high_power(struct gspca_dev *gspca_dev)
+ 	if (signal_pending(current))
+ 		return -EINTR;
+ 
+-	do_command(gspca_dev, CPIA_COMMAND_GetCameraStatus, 0, 0, 0, 0);
++	ret = do_command(gspca_dev, CPIA_COMMAND_GetCameraStatus, 0, 0, 0, 0);
+ 	if (ret)
+ 		return ret;
  
 
