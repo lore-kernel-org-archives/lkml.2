@@ -1,166 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755477Ab2IFXgJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 19:36:09 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:63877 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753126Ab2IFXgH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 19:36:07 -0400
-X-AuditID: 9c930179-b7cc4ae00000134d-2f-504933664526
-Date: Fri, 7 Sep 2012 08:37:45 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Xishi Qiu <qiuxishi@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>
-Subject: Re: [PATCH v2 3/3] memory-hotplug: bug fix race between isolation
- and allocation
-Message-ID: <20120906233745.GE16231@bbox>
-References: <1346908619-16056-1-git-send-email-minchan@kernel.org>
- <1346908619-16056-4-git-send-email-minchan@kernel.org>
- <50484E22.5010304@jp.fujitsu.com>
- <20120906073020.GB16231@bbox>
- <5048697F.5060200@jp.fujitsu.com>
+	id S1755373Ab2IFXkN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 19:40:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32141 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751570Ab2IFXkK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 19:40:10 -0400
+Date: Fri, 7 Sep 2012 02:41:27 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: rusty@rustcorp.com.au, fes@google.com, aarcange@redhat.com,
+        riel@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mikew@google.com, yinghan@google.com,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH] virtio-balloon spec: provide a version of the "silent
+ deflate" feature that works
+Message-ID: <20120906234127.GC1873@redhat.com>
+References: <1346917610-14568-1-git-send-email-pbonzini@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5048697F.5060200@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <1346917610-14568-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Yasuaki,
+On Thu, Sep 06, 2012 at 09:46:50AM +0200, Paolo Bonzini wrote:
+> VIRTIO_BALLOON_F_MUST_TELL_HOST cannot be used properly because it is a
+> "negative" feature: it tells you that silent defalte is not supported.
+> Right now, QEMU refuses migration if the target does not support all the
+> features that were negotiated.  But then:
+> - a migration from non-MUST_TELL_HOST to MUST_TELL_HOST will succeed,
+> which is wrong;
 
-On Thu, Sep 06, 2012 at 06:14:39PM +0900, Yasuaki Ishimatsu wrote:
-> Hi, Minchan,
-> 
-> 2012/09/06 16:30, Minchan Kim wrote:
-> >Hello Yasuaki,
-> >
-> >On Thu, Sep 06, 2012 at 04:17:54PM +0900, Yasuaki Ishimatsu wrote:
-> >>Hi Minchan,
-> >>
-> >>2012/09/06 14:16, Minchan Kim wrote:
-> >>>Like below, memory-hotplug makes race between page-isolation
-> >>>and page-allocation so it can hit BUG_ON in __offline_isolated_pages.
-> >>>
-> >>>	CPU A					CPU B
-> >>>
-> >>>start_isolate_page_range
-> >>>set_migratetype_isolate
-> >>>spin_lock_irqsave(zone->lock)
-> >>>
-> >>>				free_hot_cold_page(Page A)
-> >>>				/* without zone->lock */
-> >>>				migratetype = get_pageblock_migratetype(Page A);
-> >>>				/*
-> >>>				 * Page could be moved into MIGRATE_MOVABLE
-> >>>				 * of per_cpu_pages
-> >>>				 */
-> >>>				list_add_tail(&page->lru, &pcp->lists[migratetype]);
-> >>>
-> >>>set_pageblock_isolate
-> >>>move_freepages_block
-> >>>drain_all_pages
-> >>>
-> >>>				/* Page A could be in MIGRATE_MOVABLE of free_list. */
-> >>>
-> >>>check_pages_isolated
-> >>>__test_page_isolated_in_pageblock
-> >>>/*
-> >>>   * We can't catch freed page which
-> >>>   * is free_list[MIGRATE_MOVABLE]
-> >>>   */
-> >>>if (PageBuddy(page A))
-> >>>	pfn += 1 << page_order(page A);
-> >>>
-> >>>				/* So, Page A could be allocated */
-> >>>
-> >>>__offline_isolated_pages
-> >>>/*
-> >>>   * BUG_ON hit or offline page
-> >>>   * which is used by someone
-> >>>   */
-> >>>BUG_ON(!PageBuddy(page A));
-> >>>
-> >>>This patch checks page's migratetype in freelist in __test_page_isolated_in_pageblock.
-> >>>So now __test_page_isolated_in_pageblock can check the page caused by above race and
-> >>>can fail of memory offlining.
-> >>>
-> >>>Signed-off-by: Minchan Kim <minchan@kernel.org>
-> >>>---
-> >>>   mm/page_isolation.c |    5 ++++-
-> >>>   1 file changed, 4 insertions(+), 1 deletion(-)
-> >>>
-> >>>diff --git a/mm/page_isolation.c b/mm/page_isolation.c
-> >>>index 87a7929..7ba7405 100644
-> >>>--- a/mm/page_isolation.c
-> >>>+++ b/mm/page_isolation.c
-> >>>@@ -193,8 +193,11 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn)
-> >>>   			continue;
-> >>>   		}
-> >>>   		page = pfn_to_page(pfn);
-> >>>-		if (PageBuddy(page))
-> >>>+		if (PageBuddy(page)) {
-> >>>+			if (get_freepage_migratetype(page) != MIGRATE_ISOLATE)
-> >>>+				break;
-> >>>   			pfn += 1 << page_order(page);
-> >>>+		}
-> >>
-> >>>   		else if (page_count(page) == 0 &&
-> >>>   			get_freepage_migratetype(page) == MIGRATE_ISOLATE)
-> >>
-> >>When do the if statement, the page may be used by someone.
-> >
-> >I can't understand your point.
-> >We already hold zone->lock so that allocator and this function should be atomic
-> >when the page is in free_list.
-> >If I miss something, could you elaborate it more?
-> 
-> According to your description, the page might be allocated by someone
-> at this point. So some value might be set the page->index by the
+It need not be wrong. It depends on how host behaves.
+The right thing for qemu to do would be to assume that
+since this bit was not acked it can not assume specific
+guest behaviour.
 
-It seems you are misunderstanding my point.
-Before my patch, Yes. It could be allocated by someone but
-after my patch, it couldn't be allocated and inconsistency between
-pageblock's migratetype and page's migratetype is detected so that
-memory offline would be just failed simply.
+Even ignoring that, looking at this at a high level: basically you have
+configured two different machines with different qemu flags, and are
+complaning that migration did not fail cleanly.
 
-> intended purpose. Thus page->index has the potential to become
-> MIGRATE_ISOLATE value.
-> 
-> Thanks,
-> Yasuaki Ishimatsu
-> 
-> >
-> >>In this case, page->index may have some number. If the number is same as
-> >>MIGRATE_ISOLATE, the code goes worng.
-> >>
-> >>Thanks,
-> >>Yasuaki Ishimatsu
-> >>
-> >>>   			pfn += 1;
-> >>>
-> >>
-> >>
-> >>--
-> >>To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> >>the body to majordomo@kvack.org.  For more info on Linux MM,
-> >>see: http://www.linux-mm.org/ .
-> >>Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> >
-> 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+However
+- This is still a user/management bug. You should not even try
+  such migration. Yes I put a sanity check there but it is
+  just a debugging aid. It is not indended to be exhaustive.
+  This is far from the only case where user error might cause
+  problems silently.
+- Yes clean failure would be nicer, if
+  you want to guarantee this just teach qemu to send
+  all host
+  features and verify they match on destination.
+  Or more generally send machine configuration.
+  No need to change spec or special case this bit at all.
 
--- 
-Kind regards,
-Minchan Kim
+> 
+> - a migration from MUST_TELL_HOST to non-MUST_TELL_HOST will fail, which
+> is useless.
+
+It is correct. device feature bits should not change across migration.
+
+
+> Add instead a new feature VIRTIO_BALLOON_F_SILENT_DEFLATE, and deprecate
+> VIRTIO_BALLOON_F_MUST_TELL_HOST since it is never actually used.
+> 
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+>  virtio-spec.lyx | 36 +++++++++++++++++++++++++++++++++---
+>  1 file modificato, 33 inserzioni(+), 3 rimozioni(-)
+> 
+> diff --git a/virtio-spec.lyx b/virtio-spec.lyx
+> index 7a073f4..1a25a18 100644
+> --- a/virtio-spec.lyx
+> +++ b/virtio-spec.lyx
+> @@ -6238,6 +6238,8 @@ bits
+>  
+>  \begin_deeper
+>  \begin_layout Description
+> +
+> +\change_deleted 1531152142 1346917221
+>  VIRTIO_BALLOON_F_MUST_TELL_HOST
+>  \begin_inset space ~
+>  \end_inset
+> @@ -6251,6 +6253,20 @@ VIRTIO_BALLOON_F_STATS_VQ
+>  \end_inset
+>  
+>  (1) A virtqueue for reporting guest memory statistics is present.
+> +\change_inserted 1531152142 1346917193
+> +
+> +\end_layout
+> +
+> +\begin_layout Description
+> +
+> +\change_inserted 1531152142 1346917219
+> +VIRTIO_BALLOON_F_SILENT_DEFLATE
+> +\begin_inset space ~
+> +\end_inset
+> +
+> +(2) Host does not need to be told before pages from the balloon are used.
+> +\change_unchanged
+> +
+>  \end_layout
+>  
+>  \end_deeper
+> @@ -6401,9 +6417,23 @@ The driver constructs an array of addresses of memory pages it has previously
+>  \end_layout
+>  
+>  \begin_layout Enumerate
+> -If the VIRTIO_BALLOON_F_MUST_TELL_HOST feature is set, the guest may not
+> - use these requested pages until that descriptor in the deflateq has been
+> - used by the device.
+> +If the VIRTIO_BALLOON_F_
+> +\change_deleted 1531152142 1346917234
+> +MUST_TELL_HOST
+> +\change_inserted 1531152142 1346917237
+> +SILENT_DEFLATE
+> +\change_unchanged
+> + feature is 
+> +\change_inserted 1531152142 1346917241
+> +not 
+> +\change_unchanged
+> +set, the guest may not use these requested pages until that descriptor in
+> + the deflateq has been used by the device.
+> +
+> +\change_inserted 1531152142 1346917253
+> + If it is set, the guest may choose to not use the deflateq at all.
+> +\change_unchanged
+> +
+>  \end_layout
+>  
+>  \begin_layout Enumerate
+> -- 
+> 1.7.11.2
