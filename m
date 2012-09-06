@@ -1,82 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757416Ab2IFKTh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 06:19:37 -0400
-Received: from twin.jikos.cz ([89.185.236.188]:41489 "EHLO twin.jikos.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753446Ab2IFKTg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 06:19:36 -0400
-Date: Thu, 6 Sep 2012 12:19:30 +0200
-From: David Sterba <dave@jikos.cz>
-To: Wang Sheng-Hui <shhuiw@gmail.com>
-Cc: chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] btrfs: remove unnecessary -ENOMEM BUG_ON check in
- extent-tree.c/btrfs_alloc_logged_file_extent
-Message-ID: <20120906101930.GP17430@twin.jikos.cz>
-Reply-To: dave@jikos.cz
-Mail-Followup-To: Wang Sheng-Hui <shhuiw@gmail.com>,
-	chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <5048457E.6050002@gmail.com>
+	id S1757363Ab2IFKZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 06:25:26 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:64579 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753369Ab2IFKZZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 06:25:25 -0400
+Message-ID: <50487A0C.4080204@gmail.com>
+Date: Thu, 06 Sep 2012 12:25:16 +0200
+From: Daniel Mack <zonque@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5048457E.6050002@gmail.com>
-User-Agent: Mutt/1.5.21 (2011-07-01)
+To: Takashi Iwai <tiwai@suse.de>
+CC: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>
+Subject: Re: snd-usb: "delay: estimated 0, actual 352"
+References: <s5hmx1526mg.wl%tiwai@suse.de> <20120906060220.GA252@x4> <504843BA.2040808@gmail.com> <s5hehmfir46.wl%tiwai@suse.de> <20120906065340.GA257@x4> <50484BEB.4020103@gmail.com> <20120906071757.GB257@x4> <s5h627rioxt.wl%tiwai@suse.de>
+In-Reply-To: <s5h627rioxt.wl%tiwai@suse.de>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 06, 2012 at 02:41:02PM +0800, Wang Sheng-Hui wrote:
-> The memory allocation failure is BUG_ON in add_excluded_extent
-> (following the code path). No need to BUG_ON -ENOMEM inside
-> btrfs_alloc_logged_file_extent.
-
-This indirectly calls __set_extent_bit that does BUG_ON on memory
-allocation failures. This type of error condition is hard to fix, as it
-usually needs to do non-trivial cleanups in the function before
-returning -ENOMEM, so the easiset way to "handle" it is to do BUG_ON and
-then separately deal with it in another patch (so it does not mix with
-the original patch).
-
-Your patches remove (from my POV) useful marks that we have an error
-condition to handle, not to hide it.
-
-So, NAK from me for anything that looks like this. I'm of course glad to
-look at patches that replace the BUG_ON with proper error handling :)
-
-
-david
-
+On 06.09.2012 09:35, Takashi Iwai wrote:
+> At Thu, 6 Sep 2012 09:17:57 +0200,
+> Markus Trippelsdorf wrote:
+>>
+>> On 2012.09.06 at 09:08 +0200, Daniel Mack wrote:
+>>> On 06.09.2012 08:53, Markus Trippelsdorf wrote:
+>>>> On 2012.09.06 at 08:48 +0200, Takashi Iwai wrote:
+>>>>> At Thu, 06 Sep 2012 08:33:30 +0200,
+>>>>> Daniel Mack wrote:
+>>>>>>
+>>>>>> On 06.09.2012 08:02, Markus Trippelsdorf wrote:
+>>>>>>> On 2012.09.04 at 16:40 +0200, Takashi Iwai wrote:
+>>>>>>>> ----------------------------------------------------------------
+>>>>>>>> Sound fixes for 3.6-rc5
+>>>>>>>>
+>>>>>>>> There are nothing scaring, contains only small fixes for HD-audio and
+>>>>>>>> USB-audio:
+>>>>>>>> - EPSS regression fix and GPIO fix for HD-audio IDT codecs
+>>>>>>>> - A series of USB-audio regression fixes that are found since 3.5 kernel
+>>>>>>>>
+>>>>>>>> ----------------------------------------------------------------
+>>>>>>>> Daniel Mack (4):
+>>>>>>>>       ALSA: snd-usb: Fix URB cancellation at stream start
+>>>>>>>>       ALSA: snd-usb: restore delay information
+>>>>>>>         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+>>>>>>> The commit fbcfbf5f above causes the following lines to be printed
+>>>>>>> whenever I start a new song:
+>>>>>>
+>>>>>> Copied Pierre-Louis Bossart - he wrote the code in 294c4fb8 which this
+>>>>>> patch (fbcfbf5f) brings back now.
+>>>>>>
+>>>>>>> delay: estimated 0, actual 352
+>>>>>>> delay: estimated 353, actual 705
+>>>>>>>
+>>>>>>> (44.1 * 8 = 352.8)
+>>>>>>>
+>>>>>>> This happens with an USB-DAC that identifies itself as "C-Media USB
+>>>>>>> Headphone Set".
+>>>>>>
+>>>>>> And you didn't you see these lines with 3.4?
+>>>>>
+>>>>> Maybe the difference of start condition?
+>>>>>
+>>>>> Markus, does the patch below fix anything?
+>>>>
+>>>> Unfortunately no.
+>>>> However reverting the following fixes the problem:
+>>>>
+>>>> commit 245baf983cc39524cce39c24d01b276e6e653c9e
+>>>> Author: Daniel Mack <zonque@gmail.com>
+>>>> Date:   Thu Aug 30 18:52:30 2012 +0200
+>>>>
+>>>>     ALSA: snd-usb: fix calls to next_packet_size
+>>>>
+>>>
+>>> No, this one certainly fixes a problem and does the right thing by
+>>> restoring the original code.
+>>>
+>>> If you wouldn't state that you didn't see the same effect with 3.4(!),
+>>> before the refactoring done in 3.5, I would believe the device is simply
+>>> slightly off in its feedback rate and the tighter delay code complains
+>>> about it while compensating, just as it did before.
+>>>
+>>> Are there any more than these two lines? And is audio working at all? Is
+>>> it distorted in any way?
+>>
+>> There are only these two lines (printed whenever sound starts). Audio is
+>> working just fine with no distortions.
+>>
+>> I did see similar lines before when the system load was very high
+>> (happend during "make check" when building glibc).
+>>
+>> Here is what Pierre-Louis wrote in November 2011:
+>>
+>> Â»This was supposed to be an informational message, I thought it was only
+>> enabled for debug. Regular users don't really need to know.Â«
 > 
-> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
-> ---
->  fs/btrfs/extent-tree.c |    6 ++----
->  1 files changed, 2 insertions(+), 4 deletions(-)
+> I guess the problem is that the new endpoint scheme doesn't count the
+> last_delay update unless the stream is triggered.  In the old code,
+> retire_playback_urb is always called even before the trigger(START) is
+> set.  And, there retire_playback_urb() does nothing but updating the
+> delay information.
 > 
-> diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
-> index 95492cc..9b9a6fa 100644
-> --- a/fs/btrfs/extent-tree.c
-> +++ b/fs/btrfs/extent-tree.c
-> @@ -6207,8 +6207,7 @@ int btrfs_alloc_logged_file_extent(struct btrfs_trans_handle *trans,
->  		mutex_lock(&caching_ctl->mutex);
->  
->  		if (start >= caching_ctl->progress) {
-> -			ret = add_excluded_extent(root, start, num_bytes);
-> -			BUG_ON(ret); /* -ENOMEM */
-> +			add_excluded_extent(root, start, num_bytes);
+> In the new code, retire_playback_urb is set only at
+> snd_usb_substream_playback_trigger().  Thus at the very first shot,
+> the delay account got confused.
 
->  		} else if (start + num_bytes <= caching_ctl->progress) {
->  			ret = btrfs_remove_free_space(block_group,
->  						      start, num_bytes);
-> @@ -6222,8 +6221,7 @@ int btrfs_alloc_logged_file_extent(struct btrfs_trans_handle *trans,
->  			start = caching_ctl->progress;
->  			num_bytes = ins->objectid + ins->offset -
->  				    caching_ctl->progress;
-> -			ret = add_excluded_extent(root, start, num_bytes);
-> -			BUG_ON(ret); /* -ENOMEM */
-> +			add_excluded_extent(root, start, num_bytes);
->  		}
->  
->  		mutex_unlock(&caching_ctl->mutex);
+In that case, I'd say we can also safely remove the debug output then.
+Let's wait for Pierre-Louis' judgement here.
+
+
+Daniel
+
