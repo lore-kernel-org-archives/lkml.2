@@ -1,104 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751264Ab2IFEyG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 00:54:06 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:57018 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750883Ab2IFEyF (ORCPT
+	id S1751394Ab2IFFA4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 01:00:56 -0400
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:27756
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750883Ab2IFFAy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 00:54:05 -0400
-Date: Thu, 6 Sep 2012 14:53:54 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>, Tejun Heo <tj@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        anish kumar <anish198519851985@gmail.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: linux-next: build failure after merge of the driver-core tree
- (workqueues tree related)
-Message-Id: <20120906145354.b1ddab86fde4fd58e55eb163@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__6_Sep_2012_14_53_54_+1000_RHNv0Fm+5BB4.2a1"
+	Thu, 6 Sep 2012 01:00:54 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839he5bhf0ah107ah1155h)
+From: Shaohui Xie <Shaohui.Xie@freescale.com>
+To: <jgarzik@pobox.com>, <linux-ide@vger.kernel.org>
+CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <David.Laight@ACULAB.COM>, Shaohui Xie <Shaohui.Xie@freescale.com>,
+        Anju Bhartiya <Anju.Bhartiya@freescale.com>
+Subject: [PATCH] [v2] sata_fsl: add workaround for data length mismatch on freescale V2 controller
+Date: Thu, 6 Sep 2012 12:28:06 +0800
+Message-ID: <1346905686-27912-1-git-send-email-Shaohui.Xie@freescale.com>
+X-Mailer: git-send-email 1.6.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__6_Sep_2012_14_53_54_+1000_RHNv0Fm+5BB4.2a1
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The freescale V2 SATA controller checks if the received data length matches
+the programmed length 'ttl', if not, it assumes that this is an error.
+In ATAPI, the 'ttl' is based on max allocation length and not the actual
+data transfer length, controller will raise 'DLM' (Data length Mismatch)
+error bit in Hstatus register. Along with 'DLM', DE (Device error) and
+FE (fatal Error) bits are also set in Hstatus register, 'E' (Internal Error)
+bit is set in Serror register and CE (Command Error) and DE (Device error)
+registers have the corresponding bit set. In this condition, we need to
+clear errors in following way: in the service routine, based on 'DLM' flag,
+HCONTROL[27] operation clears Hstatus, CE and DE registers, clear Serror
+register.
 
-Hi Greg, Tejun,
-
-After merging the driver-core tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
-
-drivers/extcon/extcon-adc-jack.c: In function 'adc_jack_probe':
-drivers/extcon/extcon-adc-jack.c:146:2: error: implicit declaration of func=
-tion 'INIT_DELAYED_WORK_DEFERRABLE' [-Werror=3Dimplicit-function-declaratio=
-n]
-
-Caused by commit 19939860dcae ("extcon: adc_jack: adc-jack driver to
-support 3.5 pi or simliar devices") from the driver-core tree interacting
-with commit 203b42f73174 ("workqueue: make deferrable delayed_work
-initializer names consistent") from the workqueues tree.
-
-I have added this merge fix patch (no action is required):
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 6 Sep 2012 14:45:26 +1000
-Subject: [PATCH] extcon: adc_jack: update for INIT_DELAYED_WORK_DEFERRABLE
- name change
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Shaohui Xie <Shaohui.Xie@freescale.com>
+Signed-off-by: Anju Bhartiya <Anju.Bhartiya@freescale.com>
 ---
- drivers/extcon/extcon-adc-jack.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+changes for V2:
+1. remove the using of quirk;
+2. wrap errata codes in condition;
 
-diff --git a/drivers/extcon/extcon-adc-jack.c b/drivers/extcon/extcon-adc-j=
-ack.c
-index 60ac3fb..725eb5a 100644
---- a/drivers/extcon/extcon-adc-jack.c
-+++ b/drivers/extcon/extcon-adc-jack.c
-@@ -143,7 +143,7 @@ static int __devinit adc_jack_probe(struct platform_dev=
-ice *pdev)
-=20
- 	data->handling_delay =3D msecs_to_jiffies(pdata->handling_delay_ms);
-=20
--	INIT_DELAYED_WORK_DEFERRABLE(&data->handler, adc_jack_handler);
-+	INIT_DEFERRABLE_WORK(&data->handler, adc_jack_handler);
-=20
- 	platform_set_drvdata(pdev, data);
-=20
---=20
-1.7.10.280.gaa39
+ drivers/ata/sata_fsl.c |   40 +++++++++++++++++++++++++++++++++++-----
+ 1 files changed, 35 insertions(+), 5 deletions(-)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+diff --git a/drivers/ata/sata_fsl.c b/drivers/ata/sata_fsl.c
+index d6577b9..6b7b73e 100644
+--- a/drivers/ata/sata_fsl.c
++++ b/drivers/ata/sata_fsl.c
+@@ -143,6 +143,7 @@ enum {
+ 	    FATAL_ERR_CRC_ERR_RX |
+ 	    FATAL_ERR_FIFO_OVRFL_TX | FATAL_ERR_FIFO_OVRFL_RX,
+ 
++	INT_ON_DATA_LENGTH_MISMATCH = (1 << 12),
+ 	INT_ON_FATAL_ERR = (1 << 5),
+ 	INT_ON_PHYRDY_CHG = (1 << 4),
+ 
+@@ -1180,26 +1181,55 @@ static void sata_fsl_host_intr(struct ata_port *ap)
+ 	void __iomem *hcr_base = host_priv->hcr_base;
+ 	u32 hstatus, done_mask = 0;
+ 	struct ata_queued_cmd *qc;
+-	u32 SError;
++	u32 SError, tag;
++	u32 status_mask = INT_ON_ERROR;
+ 
+ 	hstatus = ioread32(hcr_base + HSTATUS);
+ 
+ 	sata_fsl_scr_read(&ap->link, SCR_ERROR, &SError);
+ 
++	/* Read command completed register */
++	done_mask = ioread32(hcr_base + CC);
++
++	/* Workaround for data length mismatch errata */
++	if (unlikely(hstatus & INT_ON_DATA_LENGTH_MISMATCH)) {
++		for (tag = 0; tag < ATA_MAX_QUEUE; tag++) {
++			qc = ata_qc_from_tag(ap, tag);
++			if (qc && ata_is_atapi(qc->tf.protocol)) {
++				u32 Hcontrol;
++#define HCONTROL_CLEAR_ERROR	(1 << 27)
++				/* Set HControl[27] to clear error registers */
++				Hcontrol = ioread32(hcr_base + HCONTROL);
++				iowrite32(Hcontrol | HCONTROL_CLEAR_ERROR,
++						hcr_base + HCONTROL);
++
++				/* Clear HControl[27] */
++				iowrite32(Hcontrol & (~HCONTROL_CLEAR_ERROR),
++						hcr_base + HCONTROL);
++
++				/* Clear SError[E] bit */
++				sata_fsl_scr_write(&ap->link, SCR_ERROR,
++						SError);
++
++				/* Ignore fatal error and device error */
++				status_mask &= ~(INT_ON_SINGL_DEVICE_ERR
++						| INT_ON_FATAL_ERR);
++				break;
++			}
++		}
++	}
++
+ 	if (unlikely(SError & 0xFFFF0000)) {
+ 		DPRINTK("serror @host_intr : 0x%x\n", SError);
+ 		sata_fsl_error_intr(ap);
+ 	}
+ 
+-	if (unlikely(hstatus & INT_ON_ERROR)) {
++	if (unlikely(hstatus & status_mask)) {
+ 		DPRINTK("error interrupt!!\n");
+ 		sata_fsl_error_intr(ap);
+ 		return;
+ 	}
+ 
+-	/* Read command completed register */
+-	done_mask = ioread32(hcr_base + CC);
+-
+ 	VPRINTK("Status of all queues :\n");
+ 	VPRINTK("done_mask/CC = 0x%x, CA = 0x%x, CE=0x%x,CQ=0x%x,apqa=0x%x\n",
+ 		done_mask,
+-- 
+1.6.4
 
---Signature=_Thu__6_Sep_2012_14_53_54_+1000_RHNv0Fm+5BB4.2a1
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQSCxiAAoJEECxmPOUX5FENuUQAIrs7K2r6CbRtbHJeVsuoY/6
-NlLyWKabQnmOWaEroseWZtRZZyXGYYRN7reqApIG6NwsvudwLjON8KDr5iFiGt/+
-TBwhXk8DOKM8iMh7csE0j32KS4EopC5pXwrT4bXWhNQQdYPKNzRSXEqQd2Bgrlpn
-J+X5qEHDR6z3i0nAMmjwRkspODQSBTz/pEOf/fMUQESNYHOLMCO+EtYNtyRnI3pR
-3iAHmxL5bMPwiDYKxZ/h/UvHoeotl+sYkHbzs7xkmrn9BO03tfnFChrVuuvMctxO
-q6vJgjUgLyW0JGfYXTm9o42Ng6l7NViKPKxXzjiuM+5naHyyEZGl8O3jU4lrCJPd
-6kGDeO4li0/wJhIB1jnq7Wbcm7bwPsX+FfTWkiaEVy1Tynr+8id/b1ct/NcPVlkW
-M2+85Z0qzxLj6HPadYC0UzVdcPRB60znfrxU2z/UDkqYWFqt5ZowsijRUFE5YbsZ
-JWQYOqVkr6a/R1YV/Y2FgXpKV6fVOqGGUPrVFXTyf4zR2ufJOnTcrURZ1hcR5oIZ
-IsxaLU7/8zYrvRQYUcapwpAXMIv+SmQIou0GpD7jm+u/zf0U5m7VEDRwFY7wyc+f
-u62KOoGpVEjDSASmnNzS3ODqeSZV2YjP6qX9qnZWx/G5j++UIWWDDetxPzFtsY+o
-CNfm8AnFeF9bGd32OyFe
-=86LI
------END PGP SIGNATURE-----
-
---Signature=_Thu__6_Sep_2012_14_53_54_+1000_RHNv0Fm+5BB4.2a1--
