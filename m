@@ -1,101 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758102Ab2IFKnK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 06:43:10 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:27194 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756917Ab2IFKnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 06:43:08 -0400
-X-IronPort-AV: E=Sophos;i="4.80,380,1344182400"; 
-   d="scan'208";a="5796997"
-Message-ID: <50487EA5.3060900@cn.fujitsu.com>
-Date: Thu, 06 Sep 2012 18:44:53 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1758233Ab2IFKvq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 06:51:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50447 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753369Ab2IFKvo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 06:51:44 -0400
+Date: Thu, 6 Sep 2012 13:53:01 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: rusty@rustcorp.com.au, fes@google.com, aarcange@redhat.com,
+        riel@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mikew@google.com, yinghan@google.com,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH] virtio-balloon spec: provide a version of the "silent
+ deflate" feature that works
+Message-ID: <20120906105301.GC32325@redhat.com>
+References: <1346917610-14568-1-git-send-email-pbonzini@redhat.com>
+ <20120906084736.GF17656@redhat.com>
+ <50486BB2.7070108@redhat.com>
+ <20120906094442.GA22816@redhat.com>
+ <50487382.8030303@redhat.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 10/11 V5] workqueue: unbind/rebind without manager_mutex
-References: <1346841475-4422-1-git-send-email-laijs@cn.fujitsu.com> <1346841475-4422-11-git-send-email-laijs@cn.fujitsu.com> <20120905200411.GD13737@google.com>
-In-Reply-To: <20120905200411.GD13737@google.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/06 18:42:41,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/06 18:42:41,
-	Serialize complete at 2012/09/06 18:42:41
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50487382.8030303@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/06/2012 04:04 AM, Tejun Heo wrote:
-> Hello, Lai.
+On Thu, Sep 06, 2012 at 11:57:22AM +0200, Paolo Bonzini wrote:
+> Il 06/09/2012 11:44, Michael S. Tsirkin ha scritto:
+> >> In fact, it's not clear how the driver should use the feature.  My guess
+> >> is that, if it wants to use silent deflate, it tries to negotiate
+> >> VIRTIO_BALLOON_F_MUST_TELL_HOST, and can use silent deflate if
+> >> negotiation fails.  This is against the logic of all other features.
+> > 
+> > Let's take a step back from the implementation details.
+> > You are trying to add a new feature bit, after all.
+> > Why? Why is silent deflate useful? This is what is
+> > missing in all this discussion. If it is not useful
+> > we do not need a bit for it.
 > 
-> On Wed, Sep 05, 2012 at 06:37:47PM +0800, Lai Jiangshan wrote:
->> gcwq_unbind_fn() unbind manager by ->manager pointer.
->>
->> rebinding-manger, unbinding/rebinding newly created worker are done by
->> other place. so we don't need manager_mutex any more.
->>
->> Also change the comment of @bind accordingly.
+> It is useful because it lets guests inflate the balloon aggressively,
+> and then use ballooned-out pages even in places where the guest OS
+> cannot sleep, such as kmalloc(GFP_ATOMIC).
+
+Interesting.
+Do you intend to develop a driver patch using this?  I'd like to see how
+that works.  Because if not, IMO it's best to wait until someone asks
+for it.
+
+> >>> Can you show a scenario with old driver/new hypervisor or
+> >>> new driver/old hypervisor that fails?
+> >
+> > Sorry this is not the example I asked for.  Please give and example
+> > without migration.
+> > 
+> > Migration is qemu's problem: it is hypervisor's job to
+> > make sure guest sees no change during migration.
 > 
-> Please don't scatter small prep patches like this.  Each piece in
-> isolation doesn't make much sense to me and the patch descriptions
-> don't help much.  Please collect the prep patches and explain in more
-> detail.
+> Quoting my message: "Of course you can just teach QEMU to be smarter,
+> but that would be a one-off hack for the only ill-defined feature that
+> says something is _not_ supported".
+>
+> Currently migration works the same way for all virtio devices,
+> and
+> assumes that features are defined only in the "positive" direction:
+> drivers request features if they want to use it, devices provide
+> features to say they support something.
 
-There are 4 different tasks. unbind/rebind manager/newbie
+Well this approach is buggy. If I reread features after migration what
+do I see? Something changed right? So this is a bug. Migration should
+not change hardware. And it is not a "one off" thing it is
+fundamental for any hardware.
 
-1 task for 1 patch. if I collect them into one patch, it will be hard
-to explain which code do which task.
+Fix that in qemu, and the problem goes away without spec changes.
 
+> Instead, in the case of this feature, the driver requests it before
+> relying on its lack (which is odd);
+
+Which code in driver do you refer to?
+
+> the device provides if they do not
+> support something (which is wrong).
+
+Not support?
+It just seems to be asking guest to tell it about deflates.
+If guest acks the bit, we know it will. If it does not,
+it will not.
+
+>  You can see that this just cannot
+> provide backwards-compatibility in the device;
+
+Sorry I do not understand this meta argument.
+There should be an example where a driver and device
+fail to work together. And without migration: as
+I showed migration is simply broken atm for
+an unrelated reason. Otherwise all's well.
+
+> it happens to work only
+> because the feature was there in the first version of the spec.
+
+This is how we do compatiblity in virtio. If we want driver to do
+something, we add a feature and it can ack, if it does we know it will
+do what we want.  Another example is network announce bit.  If driver
+acks it, we know we do not need to send gratitious arp from qemu.  You
+are saying it is also broken?
+
+> > It should be able to do this with any hardware it emulates,
+> > there should be no need to change hardware to make it
+> > "migrateable" somehow.
 > 
-> In general, I'm not sure about this approach.  I'd really like the
-> hotplug logic to be contained in hotplug logic proper as much as
-> possible.  This scatters around hotplug handling to usual code paths
-> and seems too invasive for 3.6-fixes.
-
-I don't expect to fix it in 3.6. no approach is simple.
-
+> Of course, but if we can fix the hardware with no bad effects, let's do
+> that instead.
 > 
-> Also, can you please talk to me before going ahead and sending me
-> completely new 10 patch series every other day?  You're taking
-> disproportionate amount of my time and I can't continue to do this.
-> Please discuss with me or at least explain the high-level approach in
-> the head message in detail.  Going through the patch series to figure
-> out high-level design which is constantly flipping is rather
-> inefficient and unfortunately your patch descriptions aren't too
-> helpful.  :(
-> 
+> Paolo
 
-I'm not good in English, so I prefer to attach code when I show my idea.
-(and the code can prove the idea). I admit that my changelog and comments
-are always bad.
+Don't fix what is not broken. We get to carry compatibility
+in both driver and host for a long time for each feature.
 
-
-I have 4 idea/approach for bug of hotplug VS manage_workers().
-there all come up to my mind last week. 
-NOTE: (this V5 patch is my approach2)
-
-(list with the order they came into my mind)
-Approach 1	V3 patchset		non_manager_role_manager_mutex_unlock()
-Approach 2	V5 patchset		"rebind manager, unbind/rebind newbie" are done outside. no manage mutex for hotplug
-Approach 3	un-implemented		move unbind/rebind to worker_thread and handle them as POOL_MANAGE_WORKERS
-Approach 4	V4 parchset		manage_workers_slowpath()
-
-Approach 2,3 is partial implemented last week, but Approach2 is quickly finished yesterday.
-Approach 3 is too complicated to finish.
-
-
-Approach 1: the simplest. after it, we can use manage_mutex anywhere as needed, but we need to use non_manager_role_manager_mutex_unlock() to unlock.
-
-Approach 2: the binding of manager and newly created worker is handled outside of hotplug code. thus hoplug code don't need manage_mutex. manage_mutex is typical protect-code-pattern, it is not good. we should always use lock to protect data instead of protecting code. although in linux kernel, there are many lock which are only used for protecting code, I think we can reduce them as possible. the removing of BIG-KERNEL-LOCK is an example. the line of code is also less in this approach, but it touch 2 place outside of hotplug code and the logic/path are increasing. GOOD to me: disallow manage_mutex(for future), not too much code.
-
-Approach 3: complicated. make unbind/rebind 's calle-site and context are the same as manage_workers(). BAD: we can't free to use manage_mutex in future when need. encounter some other problems.(you suggested approach will also have some problem I encountered)
-
-Approach 4: the problem comes from manage_worker(), just add manage_workers_slowpath() to fix it inside manage_worker(). it fixs problem in only 1 bulk of code. after it, we can use manage_mutex anywhere as needed. the line of code is more, but it just in one place. GOOD: the most clean approach.
-
-Thanks
-Lai
-
+Note: adding
+new features adds zero value in this respect - it will not
+allow simplifying the hypervisor.
+-- 
+MST
