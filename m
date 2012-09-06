@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758314Ab2IFPrw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 11:47:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16334 "EHLO mx1.redhat.com"
+	id S1758740Ab2IFPv1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 11:51:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46414 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757864Ab2IFPru (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758188Ab2IFPru (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 6 Sep 2012 11:47:50 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
@@ -16,29 +16,48 @@ Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
         Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 07/12] perf diff: Add ratio computation way to compare hist entries
-Date: Thu,  6 Sep 2012 17:47:01 +0200
-Message-Id: <1346946426-13496-8-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 01/12] perf diff: Make diff command work with evsel hists
+Date: Thu,  6 Sep 2012 17:46:55 +0200
+Message-Id: <1346946426-13496-2-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1346946426-13496-1-git-send-email-jolsa@redhat.com>
 References: <1346946426-13496-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding -c option to select computation method with the current
-'Delta' computation as default. Current posible values are of
-this option are: 'delta' and 'ratio'.
+Putting 'perf diff' command back on track with the 'latest'
+evsel hists changes. Each evsel has its own 'hists' object
+gathering stats for the particular event.
 
-Adding 'ratio' as new computation way to compare hist entries.
-If specified the 'Ratio' column is displayed with value 'r'
-computed as:
+While currently counts are accumulated for the whole session
+regardless of the events diversification within compared
+sessions.
 
-  r = A->period / B->period
+The 'perf diff' command now outputs all matching events within
+compared sessions (with event name specified). The per event
+diff output stays the same.
 
-with:
-  - A/B being matching hist entry from first/second file specified
-    (or perf.data/perf.data.old) respectively.
-  - period being the hist entry period value
+  $ ./perf diff
+  # Event 'cycles'
+  #
+  # Baseline  Delta          Shared Object                          Symbol
+  # ........ ..........  .................  ..............................
+  #
+       0.00%    +15.14%  [kernel.kallsyms]  [k] __wake_up
+       0.00%    +13.38%  [kernel.kallsyms]  [k] ext4fs_dirhash
+
+... SNIP
+
+       0.00%     +0.42%  [kernel.kallsyms]  [k] local_clock
+       0.17%     -0.05%  [kernel.kallsyms]  [k] native_write_msr_safe
+
+  # Event 'faults'
+  #
+  # Baseline  Delta          Shared Object                          Symbol
+  # ........ ..........  .................  ..............................
+  #
+       0.00%    +79.12%  ld-2.15.so         [.] _dl_relocate_object
+       0.00%    +11.62%  ld-2.15.so         [.] openaux
 
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -52,182 +71,220 @@ Cc: David Ahern <dsahern@gmail.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/Documentation/perf-diff.txt | 33 ++++++++++++++++++++++
- tools/perf/builtin-diff.c              | 51 +++++++++++++++++++++++++++++++++-
- tools/perf/ui/stdio/hist.c             | 13 +++++++++
- tools/perf/util/hist.h                 |  1 +
- 4 files changed, 97 insertions(+), 1 deletion(-)
+ tools/perf/Documentation/perf-diff.txt |  3 ++
+ tools/perf/builtin-diff.c              | 93 ++++++++++++++++++++++------------
+ tools/perf/util/evsel.h                |  7 +++
+ tools/perf/util/session.h              |  4 +-
+ 4 files changed, 72 insertions(+), 35 deletions(-)
 
 diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
-index 6ce9585..8fff061 100644
+index 74d7481..ab7f667 100644
 --- a/tools/perf/Documentation/perf-diff.txt
 +++ b/tools/perf/Documentation/perf-diff.txt
-@@ -76,6 +76,39 @@ OPTIONS
- --baseline-only::
-         Show only items with match in baseline.
+@@ -17,6 +17,9 @@ captured via perf record.
  
-+-c::
-+--compute::
-+        Differential computation selection - delta,ratio (default is delta).
-+        See COMPARISON METHODS section for more info.
+ If no parameters are passed it will assume perf.data.old and perf.data.
+ 
++The differential profile is displayed only for events matching both
++specified perf.data files.
 +
-+COMPARISON METHODS
-+------------------
-+delta
-+~~~~~
-+If specified the 'Delta' column is displayed with value 'd' computed as:
-+
-+  d = A->period_percent - B->period_percent
-+
-+with:
-+  - A/B being matching hist entry from first/second file specified
-+    (or perf.data/perf.data.old) respectively.
-+
-+  - period_percent being the % of the hist entry period value within
-+    single data file
-+
-+ratio
-+~~~~~
-+If specified the 'Ratio' column is displayed with value 'r' computed as:
-+
-+  r = A->period / B->period
-+
-+with:
-+  - A/B being matching hist entry from first/second file specified
-+    (or perf.data/perf.data.old) respectively.
-+
-+  - period being the hist entry period value
-+
-+
- SEE ALSO
- --------
- linkperf:perf-record[1]
+ OPTIONS
+ -------
+ -M::
 diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 46f4a10..cde08d4 100644
+index d29d350..e9933fd 100644
 --- a/tools/perf/builtin-diff.c
 +++ b/tools/perf/builtin-diff.c
-@@ -27,6 +27,39 @@ static bool  force;
+@@ -10,6 +10,7 @@
+ #include "util/event.h"
+ #include "util/hist.h"
+ #include "util/evsel.h"
++#include "util/evlist.h"
+ #include "util/session.h"
+ #include "util/tool.h"
+ #include "util/sort.h"
+@@ -24,11 +25,6 @@ static char	  diff__default_sort_order[] = "dso,symbol";
+ static bool  force;
  static bool show_displacement;
- static bool show_baseline_only;
  
-+enum {
-+	COMPUTE_DELTA,
-+	COMPUTE_RATIO,
-+	COMPUTE_MAX,
-+};
-+
-+const char *compute_names[COMPUTE_MAX] = {
-+	[COMPUTE_DELTA] = "delta",
-+	[COMPUTE_RATIO] = "ratio",
-+};
-+
-+static const char *compute_str;
-+static int compute;
-+
-+static int setup_compute(void)
-+{
-+	unsigned i;
-+
-+	if (!compute_str) {
-+		compute = COMPUTE_DELTA;
-+		return 0;
-+	}
-+
-+	for (i = 0; i < COMPUTE_MAX; i++)
-+		if (!strcmp(compute_str, compute_names[i])) {
-+			compute = i;
-+			return 0;
-+		}
-+
-+	pr_err("Failed to find valid compute string\n");
-+	return -EINVAL;
-+}
-+
+-struct perf_diff {
+-	struct perf_tool tool;
+-	struct perf_session *session;
+-};
+-
  static int hists__add_entry(struct hists *self,
  			    struct addr_location *al, u64 period)
  {
-@@ -263,6 +296,8 @@ static const struct option options[] = {
- 		    "Show position displacement relative to baseline"),
- 	OPT_BOOLEAN('b', "baseline-only", &show_baseline_only,
- 		    "Show only items with match in baseline"),
-+	OPT_STRING('c', "compute", &compute_str, "delta,ratio (default delta)",
-+		   "Entries differential computation selection"),
- 	OPT_BOOLEAN('D', "dump-raw-trace", &dump_trace,
- 		    "dump raw trace in ASCII"),
- 	OPT_BOOLEAN('f', "force", &force, "don't complain, do it"),
-@@ -288,7 +323,18 @@ static void setup_ui_stdio(void)
- {
- 	hists_stdio_column__register_idx(HISTC_BASELINE);
- 	hists_stdio_column__register_global();
--	hists_stdio_column__register_idx(HISTC_DELTA);
-+
-+	switch (compute) {
-+	case COMPUTE_DELTA:
-+		hists_stdio_column__register_idx(HISTC_DELTA);
-+		break;
-+	case COMPUTE_RATIO:
-+		hists_stdio_column__register_idx(HISTC_RATIO);
-+		break;
-+	default:
-+		BUG_ON(1);
-+	};
-+
- 	if (show_displacement)
- 		hists_stdio_column__register_idx(HISTC_DISPLACEMENT);
+@@ -37,14 +33,12 @@ static int hists__add_entry(struct hists *self,
+ 	return -ENOMEM;
  }
-@@ -315,6 +361,9 @@ int cmd_diff(int argc, const char **argv, const char *prefix __used)
- 	if (symbol__init() < 0)
+ 
+-static int diff__process_sample_event(struct perf_tool *tool,
++static int diff__process_sample_event(struct perf_tool *tool __used,
+ 				      union perf_event *event,
+ 				      struct perf_sample *sample,
+-				      struct perf_evsel *evsel __used,
++				      struct perf_evsel *evsel,
+ 				      struct machine *machine)
+ {
+-	struct perf_diff *_diff = container_of(tool, struct perf_diff, tool);
+-	struct perf_session *session = _diff->session;
+ 	struct addr_location al;
+ 
+ 	if (perf_event__preprocess_sample(event, machine, &al, sample, NULL) < 0) {
+@@ -56,26 +50,24 @@ static int diff__process_sample_event(struct perf_tool *tool,
+ 	if (al.filtered || al.sym == NULL)
+ 		return 0;
+ 
+-	if (hists__add_entry(&session->hists, &al, sample->period)) {
++	if (hists__add_entry(&evsel->hists, &al, sample->period)) {
+ 		pr_warning("problem incrementing symbol period, skipping event\n");
  		return -1;
+ 	}
  
-+	if (setup_compute())
-+		usage_with_options(diff_usage, options);
-+
- 	setup_sorting(diff_usage, options);
- 	setup_ui_stdio();
- 	setup_pager();
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index 48fb0b3..02ba1c7 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -31,6 +31,18 @@ hists_stdio_column__delta_snprintf(struct hist_entry *he, char *bf,
+-	session->hists.stats.total_period += sample->period;
++	evsel->hists.stats.total_period += sample->period;
+ 	return 0;
  }
  
- static int
-+hists_stdio_column__ratio_snprintf(struct hist_entry *he, char *bf,
-+				   size_t size, unsigned int width __used)
-+{
-+	struct hist_entry *pair = he->pair;
-+	double new_period = he->period;
-+	double old_period = pair ? pair->period : 0;
-+	double ratio = pair ? new_period / old_period : 0;
-+
-+	return percent_color_snprintf(bf, size, "%14.3F", ratio);
-+}
-+
-+static int
- hists_stdio_column__baseline_snprintf(struct hist_entry *he, char *bf,
- 				      size_t size, unsigned int width __used)
- {
-@@ -124,6 +136,7 @@ DEF_COLUMN(cpu_guest_us, HISTC_CPU_UTILIZATION_GUEST_US, 8, "guest us")
- DEF_COLUMN(nr_samples, HISTC_NR_SAMPLES, 12, "Samples")
- DEF_COLUMN(total_period, HISTC_TOTAL_PERIOD, 12, "Period")
- DEF_COLUMN(delta, HISTC_DELTA, 8, "Delta")
-+DEF_COLUMN(ratio, HISTC_RATIO, 14, "Ratio")
- DEF_COLUMN(displacement, HISTC_DISPLACEMENT, 5, "Displ")
+-static struct perf_diff diff = {
+-	.tool = {
+-		.sample	= diff__process_sample_event,
+-		.mmap	= perf_event__process_mmap,
+-		.comm	= perf_event__process_comm,
+-		.exit	= perf_event__process_task,
+-		.fork	= perf_event__process_task,
+-		.lost	= perf_event__process_lost,
+-		.ordered_samples = true,
+-		.ordering_requires_timestamps = true,
+-	},
++static struct perf_tool tool = {
++	.sample	= diff__process_sample_event,
++	.mmap	= perf_event__process_mmap,
++	.comm	= perf_event__process_comm,
++	.exit	= perf_event__process_task,
++	.fork	= perf_event__process_task,
++	.lost	= perf_event__process_lost,
++	.ordered_samples = true,
++	.ordering_requires_timestamps = true,
  };
  
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 36ff4c5..b24341d 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -46,6 +46,7 @@ enum hist_column {
- 	HISTC_NR_SAMPLES,
- 	HISTC_TOTAL_PERIOD,
- 	HISTC_DELTA,
-+	HISTC_RATIO,
- 	HISTC_DISPLACEMENT,
+ static void perf_session__insert_hist_entry_by_name(struct rb_root *root,
+@@ -146,34 +138,71 @@ static void hists__match(struct hists *older, struct hists *newer)
+ 	}
+ }
  
- 	/* sorted (hist_entry__sort_list) */
++static struct perf_evsel *evsel_match(struct perf_evsel *evsel,
++				      struct perf_evlist *evlist)
++{
++	struct perf_evsel *e;
++
++	list_for_each_entry(e, &evlist->entries, node)
++		if (perf_evsel__match2(evsel, e))
++			return e;
++
++	return NULL;
++}
++
+ static int __cmd_diff(void)
+ {
+ 	int ret, i;
+ #define older (session[0])
+ #define newer (session[1])
+ 	struct perf_session *session[2];
++	struct perf_evlist *evlist_new, *evlist_old;
++	struct perf_evsel *evsel;
++	bool first = true;
+ 
+ 	older = perf_session__new(input_old, O_RDONLY, force, false,
+-				  &diff.tool);
++				  &tool);
+ 	newer = perf_session__new(input_new, O_RDONLY, force, false,
+-				  &diff.tool);
++				  &tool);
+ 	if (session[0] == NULL || session[1] == NULL)
+ 		return -ENOMEM;
+ 
+ 	for (i = 0; i < 2; ++i) {
+-		diff.session = session[i];
+-		ret = perf_session__process_events(session[i], &diff.tool);
++		ret = perf_session__process_events(session[i], &tool);
+ 		if (ret)
+ 			goto out_delete;
+-		hists__output_resort(&session[i]->hists);
+ 	}
+ 
+-	if (show_displacement)
+-		hists__resort_entries(&older->hists);
++	evlist_old = older->evlist;
++	evlist_new = newer->evlist;
++
++	list_for_each_entry(evsel, &evlist_new->entries, node)
++		hists__output_resort(&evsel->hists);
++
++	list_for_each_entry(evsel, &evlist_old->entries, node) {
++		hists__output_resort(&evsel->hists);
++
++		if (show_displacement)
++			hists__resort_entries(&evsel->hists);
++	}
++
++	list_for_each_entry(evsel, &evlist_new->entries, node) {
++		struct perf_evsel *evsel_old;
++
++		evsel_old = evsel_match(evsel, evlist_old);
++		if (!evsel_old)
++			continue;
++
++		fprintf(stdout, "%s# Event '%s'\n#\n", first ? "" : "\n",
++			perf_evsel__name(evsel));
++
++		first = false;
++
++		hists__match(&evsel_old->hists, &evsel->hists);
++		hists__fprintf(&evsel->hists, &evsel_old->hists,
++			       show_displacement, true, 0, 0, stdout);
++	}
+ 
+-	hists__match(&older->hists, &newer->hists);
+-	hists__fprintf(&newer->hists, &older->hists,
+-		       show_displacement, true, 0, 0, stdout);
+ out_delete:
+ 	for (i = 0; i < 2; ++i)
+ 		perf_session__delete(session[i]);
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 94f6ba1..fa57e48 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -122,6 +122,13 @@ void perf_evsel__close(struct perf_evsel *evsel, int ncpus, int nthreads);
+ 	(evsel->attr.type == PERF_TYPE_##t &&	\
+ 	 evsel->attr.config == PERF_COUNT_##c)
+ 
++static inline bool perf_evsel__match2(struct perf_evsel *e1,
++				      struct perf_evsel *e2)
++{
++	return (e1->attr.type == e2->attr.type) &&
++	       (e1->attr.config == e2->attr.config);
++}
++
+ int __perf_evsel__read_on_cpu(struct perf_evsel *evsel,
+ 			      int cpu, int thread, bool scale);
+ 
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 176a609..aab414f 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -36,9 +36,7 @@ struct perf_session {
+ 	struct pevent		*pevent;
+ 	/*
+ 	 * FIXME: Need to split this up further, we need global
+-	 *	  stats + per event stats. 'perf diff' also needs
+-	 *	  to properly support multiple events in a single
+-	 *	  perf.data file.
++	 *	  stats + per event stats.
+ 	 */
+ 	struct hists		hists;
+ 	int			fd;
 -- 
 1.7.11.4
 
