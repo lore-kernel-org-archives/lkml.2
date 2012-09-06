@@ -1,62 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759947Ab2IFUq1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 16:46:27 -0400
-Received: from ms-gomx12.so-net.ne.jp ([202.238.84.219]:33251 "EHLO
-	ms-gomx12.plus.so-net.ne.jp" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759858Ab2IFUqY (ORCPT
+	id S1759977Ab2IFUqu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 16:46:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36779 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759858Ab2IFUqs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 16:46:24 -0400
+	Thu, 6 Sep 2012 16:46:48 -0400
+Date: Thu, 6 Sep 2012 13:46:42 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, linux-mm@kvack.org, davej@redhat.com,
+        ben@decadent.org.uk, pjt@google.com, lennart@poettering.net,
+        kay.sievers@vrfy.org, Dhaval Giani <dhaval.giani@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC 0/5] forced comounts for cgroups.
+Message-ID: <20120906204642.GN29092@google.com>
+References: <20120904214602.GA9092@dhcp-172-17-108-109.mtv.corp.google.com>
+ <5047074D.1030104@parallels.com>
+ <20120905081439.GC3195@dhcp-172-17-108-109.mtv.corp.google.com>
+ <50470A87.1040701@parallels.com>
+ <20120905082947.GD3195@dhcp-172-17-108-109.mtv.corp.google.com>
+ <50470EBF.9070109@parallels.com>
+ <20120905084740.GE3195@dhcp-172-17-108-109.mtv.corp.google.com>
+ <1346835993.2600.9.camel@twins>
+ <20120905093204.GL3195@dhcp-172-17-108-109.mtv.corp.google.com>
+ <1346839487.2600.24.camel@twins>
 MIME-Version: 1.0
-Message-ID: <20120906204044.0000264B.0685@m6.gyao.ne.jp>
-Date: Fri, 07 Sep 2012 05:40:44 +0900
-From: "Mr.Tan Wong" <subaru04@m6.gyao.ne.jp>
-To: <info@winners.com>
-Reply-To: <mrtanwng71@kimo.com>
-Subject: Congratulations: You Have Won.
-Content-Type: Text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-ORGANIZATION: Mr.Tan Wong
-X-MAILER: Active! mail
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346839487.2600.24.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Congratulations: You Have Won
+Hello,
 
-The MICROSOFT EMAIL PROMO TEAM is glad to announce that
-after a successful completion of the PROMO DRAWS held
-on the 1st September 2012 your e-mail address,attached
-to winning numbers: (11) (80) (12)(96) (09) (43) won in
-the Tenth lottery category.
+cc'ing Dhaval and Frederic.  They were interested in the subject
+before and Dhaval was pretty vocal about cpuacct having a separate
+hierarchy (or at least granularity).
 
-You have therefore been approved to claim a total sum
-of? 450,000,00 Pounds Sterling in cash credited to REF
-NO:MICRO-L/2009-END10.
+On Wed, Sep 05, 2012 at 12:04:47PM +0200, Peter Zijlstra wrote:
+> > cpuacct is rather unique tho.  I think it's gonna be silly whether the
+> > hierarchy is unified or not.
+> > 
+> > 1. If they always can live on the exact same hierarchy, there's no
+> >    point in having the two separate.  Just merge them.
+> > 
+> > 2. If they need differing levels of granularity, they either need to
+> >    do it completely separately as they do now or have some form of
+> >    dynamic optimization if absolutely necesary.
+> > 
+> > So, I think that choice is rather separate from other issues.  If
+> > cpuacct is gonna be kept, I'd just keep it separate and warn that it
+> > incurs extra overhead for the current users if for nothing else.
+> > Otherwise, kill it or merge it into cpu.
+> 
+> Quite, hence my 'proposal' to remove cpuacct.
+> 
+> There was some whining last time Glauber proposed this, but the one
+> whining never convinced and has gone away from Linux, so lets just do
+> this.
+> 
+> Lets make cpuacct print a deprecated msg to dmesg for a few releases and
+> make cpu do all this.
 
-All participants were selected through our Microsoft
-computer ballot system drawn from 167,000 Names, as
-part of our International "E-MAIL" Promotion Program
-for our prominent MS-WORD users all over the world and
-for the continuous use of the Internet. You are advised
-to contact the claims-processor with the details below
-via his e-mail address :
+I like it.  Currently cpuacct is the only problematic one in this
+regard (cpuset to a much lesser extent) and it would be great to make
+it go away.
 
-NAME:  Mr. Harris Conklin
-EMAIL: mrharrisconklin1@yahoo.com.hk
+Dhaval, Frederic, Paul, if you guys object, please voice your
+opinions.
 
-PLEASE NOTE YOU ARE TO SEND THE FOLLOWING INFORMATION
-TO CLAIM YOUR PRIZE:
+> The co-mounting stuff would have been nice for cpusets as well, knowing
+> all your tasks are affine to a subset of cpus allows for a few
+> optimizations (smaller cpumask iterations), but I guess we'll have to do
+> that dynamically, we'll just have to see how ugly that is.
 
-1.Full Name:.......
-2.Address:.......
-3.Phone:.......
-4.Country:.......
-5.Sex/Gender:.......
+Forced co-mounting sounds rather silly to me.  If the two are always
+gonna be co-mounted, why not just merge them and switch the
+functionality depending on configuration?  I'm fairly sure the code
+would be simpler that way.
 
+If cpuset and cpu being separate is important enough && the overhead
+of doing things separately for cpuset isn't too high, I wouldn't
+bother too much with dynamic optimization but that's your call.
 
-YOURS SINCERELY,
-Mr. Harris Conklin.
+Thanks.
 
-
+-- 
+tejun
