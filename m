@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933163Ab2IFVdZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 17:33:25 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33794 "EHLO
+	id S933321Ab2IFVdq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 17:33:46 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35183 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933274Ab2IFVdV (ORCPT
+	with ESMTP id S933288Ab2IFVdY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 17:33:21 -0400
+	Thu, 6 Sep 2012 17:33:24 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com
 Cc: Kent Overstreet <koverstreet@google.com>, Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH v8 7/8] block: Consolidate bio_alloc_bioset(), bio_kmalloc()
-Date: Thu,  6 Sep 2012 14:32:55 -0700
-Message-Id: <1346967179-28596-9-git-send-email-koverstreet@google.com>
+Subject: [PATCH v9 8/9] block: Consolidate bio_alloc_bioset(), bio_kmalloc()
+Date: Thu,  6 Sep 2012 14:32:58 -0700
+Message-Id: <1346967179-28596-12-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1346967179-28596-1-git-send-email-koverstreet@google.com>
 References: <1346967179-28596-1-git-send-email-koverstreet@google.com>
@@ -50,7 +50,7 @@ v7: Re-add dropped comments, improv patch description
  2 files changed, 49 insertions(+), 77 deletions(-)
 
 diff --git a/fs/bio.c b/fs/bio.c
-index d807fe2..357a3af 100644
+index e6691f6..3a9e578 100644
 --- a/fs/bio.c
 +++ b/fs/bio.c
 @@ -55,6 +55,7 @@ static struct biovec_slab bvec_slabs[BIOVEC_NR_POOLS] __read_mostly = {
@@ -61,7 +61,7 @@ index d807fe2..357a3af 100644
  
  /*
   * Our slab pool management
-@@ -291,39 +292,58 @@ EXPORT_SYMBOL(bio_reset);
+@@ -315,39 +316,58 @@ EXPORT_SYMBOL(bio_reset);
   * @bs:		the bio_set to allocate from.
   *
   * Description:
@@ -137,7 +137,7 @@ index d807fe2..357a3af 100644
  	bio->bi_flags |= idx << BIO_POOL_OFFSET;
  	bio->bi_max_vecs = nr_iovecs;
  	bio->bi_io_vec = bvl;
-@@ -335,62 +355,6 @@ err_free:
+@@ -359,62 +379,6 @@ err_free:
  }
  EXPORT_SYMBOL(bio_alloc_bioset);
  
