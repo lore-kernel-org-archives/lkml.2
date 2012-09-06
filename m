@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756307Ab2IFXsN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 19:48:13 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38758 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755454Ab2IFXsJ (ORCPT
+	id S1756139Ab2IFXuO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 19:50:14 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56889 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753693Ab2IFXuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 19:48:09 -0400
-Date: Thu, 6 Sep 2012 16:48:05 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, Alasdair Kergon <agk@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>, Neil Brown <neilb@suse.de>
-Subject: Re: [PATCH v10 0/8] Block cleanups
-Message-ID: <20120906234805.GD9426@google.com>
-References: <1346970902-10931-1-git-send-email-koverstreet@google.com>
+	Thu, 6 Sep 2012 19:50:12 -0400
+Message-ID: <504936AF.8010701@wwwdotorg.org>
+Date: Thu, 06 Sep 2012 17:50:07 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346970902-10931-1-git-send-email-koverstreet@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Laxman Dewangan <ldewangan@nvidia.com>, grant.likely@secretlab.ca,
+        broonie@opensource.wolfsonmicro.com
+CC: olof@lixom.net, lrg@ti.com, vinod.koul@linux.intel.com,
+        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH 4/5] spi: tegra: remove support of legacy DMA driver based
+ access
+References: <1345126397-28864-1-git-send-email-ldewangan@nvidia.com> <1345126397-28864-5-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1345126397-28864-5-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, guys.
-
-(cc'ing Jens, Alasdair and Neil)
-
-On Thu, Sep 06, 2012 at 03:34:54PM -0700, Kent Overstreet wrote:
-> Screwed up the bio_reset() patch in the last patch series when I went to edit
-> the description, fixed that here.
+On 08/16/2012 08:13 AM, Laxman Dewangan wrote:
+> Remove the support code which uses the legacy APB DMA driver
+> for accessing the SPI FIFO.
+> The driver will use the dmaengine based APB DMA driver for
+> accessing reqding/writing to SPI FIFO.
 > 
-> Only other change is the dm patch - made the front_pad conditional on
-> DM_TYPE_BIO_BASED.
-> 
-> Kent Overstreet (8):
->   block: Generalized bio pool freeing
->   block: Ues bi_pool for bio_integrity_alloc()
->   dm: Use bioset's front_pad for dm_rq_clone_bio_info
->   block: Add bio_reset()
->   pktcdvd: Switch to bio_kmalloc()
->   block: Kill bi_destructor
->   block: Consolidate bio_alloc_bioset(), bio_kmalloc()
->   block: Add bio_clone_bioset(), bio_clone_kmalloc()
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 
-This series looks good to me now.  If someone can ack the dm patch, I
-think it's good to go.  Jens, what do you think?
+Grant, Mark,
 
-Thanks.
-
--- 
-tejun
+I'd like to take this patch through the Tegra tree, since it relies on
+the previous Tegra patches to convert to dmaengine. Could I please get
+an ack if that's OK? Thanks.
