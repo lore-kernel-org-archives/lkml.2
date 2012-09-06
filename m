@@ -1,87 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753564Ab2IFMhL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 08:37:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20595 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752431Ab2IFMhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 08:37:08 -0400
-Message-ID: <504898E5.1070507@redhat.com>
-Date: Thu, 06 Sep 2012 14:36:53 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1753101Ab2IFMkY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 08:40:24 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:63229 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436Ab2IFMkW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 08:40:22 -0400
 MIME-Version: 1.0
-To: Ric Wheeler <ricwheeler@gmail.com>
-CC: axboe@kernel.dk, Mike Snitzer <snitzer@redhat.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [Ping^3] Re: [PATCH] sg_io: allow UNMAP and WRITE SAME without
- CAP_SYS_RAWIO
-References: <1342801801-15617-1-git-send-email-pbonzini@redhat.com> <50195108.1090105@redhat.com> <503CA5BA.2040003@redhat.com> <50476480.9010302@redhat.com> <5047B38D.9000607@gmail.com> <50484345.8040508@redhat.com> <504889A1.2090507@gmail.com> <50488DAD.3030208@redhat.com> <5048922C.20901@gmail.com>
-In-Reply-To: <5048922C.20901@gmail.com>
+In-Reply-To: <20120821072901.GD1657@suse.de>
+References: <1345480594-27032-1-git-send-email-mgorman@suse.de>
+	<20120821072901.GD1657@suse.de>
+Date: Thu, 6 Sep 2012 08:40:21 -0400
+Message-ID: <CA+5PVA7KLmrZGDdaA0zc8nXf3sidwN2VUjWC_k6AjVwHq0dcvg@mail.gmail.com>
+Subject: Re: [PATCH 0/5] Memory policy corruption fixes V2
+From: Josh Boyer <jwboyer@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Dave Jones <davej@redhat.com>, Christoph Lameter <cl@linux.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Andi Kleen <ak@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 06/09/2012 14:08, Ric Wheeler ha scritto:
->> According to the standard, the translation layer can write a
->> user-provided pattern to every sector in the disk.  It's an optional
->> feature and libata doesn't do that, but it is still possible.
-> 
-> It is not possible today with our stack though, any patch that would
-> change that would also need to be vetted.
+On Tue, Aug 21, 2012 at 3:29 AM, Mel Gorman <mgorman@suse.de> wrote:
+> On Mon, Aug 20, 2012 at 05:36:29PM +0100, Mel Gorman wrote:
+>> This is a rebase with some small changes to Kosaki's "mempolicy memory
+>> corruption fixlet" series. I had expected that Kosaki would have revised
+>> the series by now but it's been waiting a long time.
+>>
+>> Changelog since V1
+>> o Rebase to 3.6-rc2
+>> o Editted some of the changelogs
+>> o Converted sp->lock to sp->mutex to close a race in shared_policy_replace()
+>> o Reworked the refcount imbalance fix slightly
+>> o Do not call mpol_put in shmem_alloc_page.
+>>
+>> I tested this with trinity with CONFIG_DEBUG_SLAB enabled and it passed. I
+>> did not test LTP such as Josh reported a problem with or with a database that
+>> used shared policies like Andi tested. The series is almost all Kosaki's
+>> work of course. If he has a revised series that simply got delayed in
+>> posting it should take precedence.
+>
+> I meant to add Josh to the cc, adding him now.
 
-It is not possible with SATA disks, but native SCSI disks might well
-interpret FORMAT UNIT destructively.
+Thank you.
 
->>> I don't see allowing anyone who can open the device to zero the data as
->>> better though :)
->> Note: anyone who can open it for writing!  And they can just as well
->> issue WRITE, it just takes a little more effort than with WRITE SAME. :)
->>   If you only have read access, you cannot issue WRITE or FORMAT UNIT,
->> and with this patch you will not be able to issue WRITE SAME.
-> 
-> This just seems like an argument over whether or not capabilities make
-> sense. In general, anything as destructive as a single CDB that can kill
-> all of your data should be tightly controlled.
+I see Andi has done some testing and Acked this patchset.  Christoph
+appears to have Acked it as well.  Is there anything else needed for
+it to get in mainline?  Just want to make sure this doesn't get dropped
+because we all forgot about it after KS/Plumbers.
 
-In practice, a single write to the first MB of the disk is just as
-destructive.  For that you do not even need a SCSI command.
-
-> Pushing more code in the data path is not where we are going - we
-> routinely need to disable IO scheduling for example when driving IO to
-> high speed/low latency devices and are actively looking at how to tackle
-> other performance bottlenecks in the stack.
-
-I am not talking about the regular data path, only of SG_IO.
-
-> I don't see a strong reason that our existing scheme (root or
-> CAP_SYS_RAWIO access) prevents you from doing what you need to do.
-
-Here are three:
-
-- CAP_SYS_RAWIO partly bypasses DAC; you can issue destructive commands
-even if you only opened the disk for reading.  CAP_SYS_RAWIO also gives
-access to _really_ destructive commands (WRITE BUFFER and PERSISTENT
-RESERVE OUT for example).
-
-- CAP_SYS_RAWIO lets you send SCSI commands to partitions, and they will
-gladly read/write the disk going outside the boundaries of the
-partition.  Changing this behavior was rejected upstream already.
-
-- CAP_SYS_RAWIO also gives access to I/O ports, mmap at address 0, and
-too many other insecure things.
-
-All the above mean that:
-
-- any application using CAP_SYS_RAWIO would have to implement its own
-whitelisting, even if just to duplicate what is done in the kernel;
-
-- exploiting a CAP_SYS_RAWIO process leads to root too easily, and it is
-not possible to give the capability to anything that will run in a
-hostile environment (in my case QEMU).
-
-Paolo
+josh
