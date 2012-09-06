@@ -1,69 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608Ab2IFMGa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 08:06:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38064 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751020Ab2IFMG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 08:06:28 -0400
-Date: Thu, 6 Sep 2012 14:06:23 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        Dave Jones <davej@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v2] memcg: first step towards hierarchical controller
-Message-ID: <20120906120623.GE22426@dhcp22.suse.cz>
-References: <20120904130905.GA15683@dhcp22.suse.cz>
- <504601B8.2050907@parallels.com>
- <20120904143552.GB15683@dhcp22.suse.cz>
- <50461241.5010300@parallels.com>
- <20120904145414.GC15683@dhcp22.suse.cz>
- <50461610.30305@parallels.com>
- <20120904162501.GE15683@dhcp22.suse.cz>
- <504709D4.2010800@parallels.com>
- <20120905144942.GH5388@dhcp22.suse.cz>
- <20120905201238.GE13737@google.com>
+	id S1752621Ab2IFMIR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 08:08:17 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:50039 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750742Ab2IFMIP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 08:08:15 -0400
+Message-ID: <5048922C.20901@gmail.com>
+Date: Thu, 06 Sep 2012 08:08:12 -0400
+From: Ric Wheeler <ricwheeler@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120905201238.GE13737@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: axboe@kernel.dk, Mike Snitzer <snitzer@redhat.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [Ping^3] Re: [PATCH] sg_io: allow UNMAP and WRITE SAME without
+ CAP_SYS_RAWIO
+References: <1342801801-15617-1-git-send-email-pbonzini@redhat.com> <50195108.1090105@redhat.com> <503CA5BA.2040003@redhat.com> <50476480.9010302@redhat.com> <5047B38D.9000607@gmail.com> <50484345.8040508@redhat.com> <504889A1.2090507@gmail.com> <50488DAD.3030208@redhat.com>
+In-Reply-To: <50488DAD.3030208@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 05-09-12 13:12:38, Tejun Heo wrote:
-> Hello, Michal.
-> 
-> On Wed, Sep 05, 2012 at 04:49:42PM +0200, Michal Hocko wrote:
-> > Can we settle on the following 3 steps?
-> > 1) warn about "flat" hierarchies (give it X releases) - I will push it
-> >    to as many Suse code streams as possible (hope other distributions
-> >    could do the same)
-> 
-> I think I'm just gonna trigger WARN from cgroup core if anyone tries
-> to create hierarchy with a controller which doesn't support full
-> hierarchy.  WARN_ON_ONCE() at first and then WARN_ON() on each
-> creation later on.
+On 09/06/2012 07:49 AM, Paolo Bonzini wrote:
+> Il 06/09/2012 13:31, Ric Wheeler ha scritto:
+>>>> Both of these commands are destructive. WRITE_SAME (if done without the
+>>>> discard bits set) can also take a very long time to be destructive and
+>>>> tie up the storage.
+>>> FORMAT_UNIT has the same characteristics and yet it is allowed (btw, I
+>>> don't think WRITE SAME slowness is limited to the case where a real
+>>> write is requested; discarding can be just as slow).
+>>>
+>>> Also, the two new commands are anyway restricted to programs that have
+>>> write access to the disk.  If you have read-only access, you won't be
+>>> able to issue any destructive command (there is one exception, START
+>>> STOP UNIT is allowed even with read-only capability and is somewhat
+>>> destructive).
+>>>
+>>> Honestly, the only reason why these two commands weren't included, is
+>>> that the current whitelist is heavily tailored towards CD/DVD burning.
+>> I assume that FORMAT_UNIT is for CD/DVD needs - not sure what a S-ATA
+>> disk would do with that.
+> According to the standard, the translation layer can write a
+> user-provided pattern to every sector in the disk.  It's an optional
+> feature and libata doesn't do that, but it is still possible.
 
-How do you find out that a controller is not fully hierarchical? Memory
-controller can be both.
+It is not possible today with our stack though, any patch that would change that 
+would also need to be vetted.
 
-> > 2) flip the default on the root cgroup & warn when somebody tries to
-> >    change it to 0 (give it another X releases) that the knob will be
-> >    removed
-> > 3) remove the knob and the whole nonsese
-> > 4) revert 3 if somebody really objects
-> 
-> If we can get to 3, I don't think 4 would be a problem.
+>
+>> If it is destructive, we should probably think
+>> about how to make it more secure and see how many applications we would
+>> break.
+> We have filesystem permissions to make it secure.  They already do.
+>
+>>>> I think that restricting them to CAP_SYS_RAWIO seems reasonable - better
+>>>> to vet and give the appropriate apps the needed capability than to
+>>>> widely open up the safety check?
+>>> CAP_SYS_RAWIO is so wide in its scope, that anything that requires it is
+>>> insecure.
+>> I don't see allowing anyone who can open the device to zero the data as
+>> better though :)
+> Note: anyone who can open it for writing!  And they can just as well
+> issue WRITE, it just takes a little more effort than with WRITE SAME. :)
+>   If you only have read access, you cannot issue WRITE or FORMAT UNIT,
+> and with this patch you will not be able to issue WRITE SAME.
+>
+> I'm all for providing more versatile filters---which can be both
+> stricter and looser depending on the configuration than the default.
+> For example
+> http://www.redhat.com/archives/libvir-list/2012-June/msg00505.html is a
+> possible spec for BPF-based filtering of CDBs.
+>
+> However, the default whitelist (which is all we have for now) should
+> provide a reasonable default for a user that already has been granted
+> access to the device by the normal access control mechanisms.  I believe
+> WRITE SAME and UNMAP fit the definition of a reasonable default.
+>
+> Paolo
 
-Agreed.
--- 
-Michal Hocko
-SUSE Labs
+This just seems like an argument over whether or not capabilities make sense. In 
+general, anything as destructive as a single CDB that can kill all of your data 
+should be tightly controlled.
+
+Pushing more code in the data path is not where we are going - we routinely need 
+to disable IO scheduling for example when driving IO to high speed/low latency 
+devices and are actively looking at how to tackle other performance bottlenecks 
+in the stack.
+
+I don't see a strong reason that our existing scheme (root or CAP_SYS_RAWIO 
+access) prevents you from doing what you need to do.
+
+Ric
+
