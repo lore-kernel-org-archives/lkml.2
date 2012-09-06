@@ -1,46 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759363Ab2IFRO2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 13:14:28 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:17370 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755301Ab2IFRO1 (ORCPT
+	id S932436Ab2IFRPt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 13:15:49 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16852 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755301Ab2IFRPq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 13:14:27 -0400
-Subject: Re: [PATCH v2] Add missing attributes to EFI variable attribute
- print out from sysfs
-From: Khalid Aziz <khalid.aziz@hp.com>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, tony.luck@intel.com, mikew@google.com,
-        keescook@chromium.org, gong.chen@linux.intel.com
-In-Reply-To: <20120713175036.GB18496@srcf.ucam.org>
-References: <20120713174216.GA10445@hp.com>
-	 <20120713175036.GB18496@srcf.ucam.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 06 Sep 2012 11:14:25 -0600
-Message-ID: <1346951665.20255.66.camel@lyra>
+	Thu, 6 Sep 2012 13:15:46 -0400
+X-Authority-Analysis: v=2.0 cv=VPlfbqzX c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=zgiTqp1681AA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=SlKO6I3lSDoA:10 a=Hx9XTuda4VUfgBt-vnIA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1346951742.1680.38.camel@gandalf.local.home>
+Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive
+ hashtable
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Pedro Alves <palves@redhat.com>, Tejun Heo <tj@kernel.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, mingo@elte.hu,
+        ebiederm@xmission.com, aarcange@redhat.com, ericvh@gmail.com,
+        netdev@vger.kernel.org, eric.dumazet@gmail.com, axboe@kernel.dk,
+        agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
+        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
+        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
+        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Date: Thu, 06 Sep 2012 13:15:42 -0400
+In-Reply-To: <5048CDA2.10300@gmail.com>
+References: <503C95E4.3010000@gmail.com> <20120828101148.GA21683@Krystal>
+	  <503CAB1E.5010408@gmail.com> <20120828115638.GC23818@Krystal>
+	  <20120828230050.GA3337@Krystal>
+	  <1346772948.27919.9.camel@gandalf.local.home>
+	 <50462C99.5000007@redhat.com>  <50462EE8.1090903@redhat.com>
+	 <20120904170138.GB31934@Krystal>  <5048AAF6.5090101@gmail.com>
+	 <20120906145545.GA17332@leaf>  <5048C615.4070204@gmail.com>
+	 <1346947206.1680.36.camel@gandalf.local.home> <5048CDA2.10300@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-13 at 18:50 +0100, Matthew Garrett wrote:
-> On Fri, Jul 13, 2012 at 11:42:16AM -0600, Khalid Aziz wrote:
-> > Some of the EFI variable attributes are missing from print out from
-> > /sys/firmware/efi/vars/*/attributes. This patch adds those in. It also
-> > updates code to use pre-defined constants for masking current value
-> > of attributes.
-> > 
-> > Signed-off-by: Khalid Aziz <khalid.aziz@hp.com>
-> > Cc: stable@vger.kernel.org
-> Acked-by: Matthew Garrett <mjg@redhat.com>
+On Thu, 2012-09-06 at 18:21 +0200, Sasha Levin wrote:
+> On 09/06/2012 06:00 PM, Steven Rostedt wrote:
+> >> > I think that that code doesn't make sense. The users of hlist_for_each_* aren't
+> >> > supposed to be changing the loop cursor.
+> > I totally agree. Modifying the 'node' pointer is just asking for issues.
+> > Yes that is error prone, but not due to the double loop. It's due to the
+> > modifying of the node pointer that is used internally by the loop
+> > counter. Don't do that :-)
+> 
+> While we're on this subject, I haven't actually seen hlist_for_each_entry() code
+> that even *touches* 'pos'.
+> 
+> Will people yell at me loudly if I change the prototype of those macros to be:
+> 
+> 	hlist_for_each_entry(tpos, head, member)
+> 
+> (Dropping the 'pos' parameter), and updating anything that calls those macros to
+> drop it as well?
 
-I have not seen this patch show up in linux-next or 3.6-rc*. Do I need
-to do anything more to get this patch integrated?
+If 'pos' is no longer used in the macro, I don't see any reason for
+keeping it around.
 
-Thanks
--- 
-Khalid Aziz <khalid.aziz@hp.com>
+-- Steve
+
 
