@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753171Ab2IFDcY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 23:32:24 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:58716 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751550Ab2IFDcW (ORCPT
+	id S1752648Ab2IFDkF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 23:40:05 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60885 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751260Ab2IFDkD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 23:32:22 -0400
+	Wed, 5 Sep 2012 23:40:03 -0400
+Date: Wed, 5 Sep 2012 20:39:57 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: anish singh <anish198519851985@gmail.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        =?utf-8?B?7LWc7LCs7Jqw?= <cw00.choi@samsung.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Re: [PATCH -next] extcon: extcon-arizona depends on INPUT
+Message-ID: <20120906033957.GA21704@kroah.com>
+References: <6721797.222311346888851339.JavaMail.weblogic@epml19>
+ <20120906000603.GA7043@kroah.com>
+ <CAK7N6vpGsrF-VrAOO0nULOXNLzMfK-+eV4UOn0ch-S1zSH0rEQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20120903191801.GA23227@pobox.suse.cz>
-References: <20120903191801.GA23227@pobox.suse.cz>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 5 Sep 2012 20:32:00 -0700
-X-Google-Sender-Auth: M2Xp9p8UQnmKX67ReDVN_957toE
-Message-ID: <CA+55aFzBsKBmVMRiJ8yuML_QVQbfa2ZqHU_fh3_wS3YhLTv9fw@mail.gmail.com>
-Subject: Re: [GIT] kbuild rc fixes for v3.6
-To: Michal Marek <mmarek@suse.cz>
-Cc: mark.asselstine@windriver.com, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAK7N6vpGsrF-VrAOO0nULOXNLzMfK-+eV4UOn0ch-S1zSH0rEQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 3, 2012 at 12:18 PM, Michal Marek <mmarek@suse.cz> wrote:
->
-> The following changes since commit 0d7614f09c1ebdbaa1599a5aba7593f147bf96ee:
->
->   Linux 3.6-rc1 (2012-08-02 16:38:10 -0700)
->
-> are available in the git repository at:
->   git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git ..BRANCH.NOT.VERIFIED..
+On Thu, Sep 06, 2012 at 08:54:16AM +0530, anish singh wrote:
+> On Thu, Sep 6, 2012 at 5:36 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Wed, Sep 05, 2012 at 11:47:31PM +0000, MyungJoo Ham wrote:
+> >> > On Wed, Sep 05, 2012 at 11:28:03AM +0800, Mark Brown wrote:
+> >> > > On Tue, Sep 04, 2012 at 04:51:00PM -0700, Randy Dunlap wrote:
+> >> > >
+> >> > > > This build error still happens in linux-next of 20120904.
+> >> > >
+> >> > > > Can we get the patch merged for linux-next?
+> >> > >
+> >> > > Greg's the one managing extcon in -next.
+> >> >
+> >> > Yeah, can someone forward this to me so I can apply it?  I can't seem to
+> >> > find it anywhere...
+> >> >
+> >> > greg k-h
+> >>
+> >> I've been creating "extcon-for-next" tree at git.infradead.org
+> >> I'll rebase the branch base on your driver-core-next
+> >>
+> >> http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/extcon-for-next
+> Is it possible to apply all the patches found here?I can see that some
+> couldn't make
+> it to your driver tree.
 
-There's something wrong with that repo
+If no one asks, they how can I know to apply them?
 
- "fatal: Could not read from remote repository.
+(hint, hint, hint...)
 
-  Please make sure you have the correct access rights
-  and the repository exists."
-
-plus that BRANCH.NOT.VERIFIED thing looks bad too (and is probably related).
-
-         Linus
+greg k-h
