@@ -1,103 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516Ab2IFMQq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 08:16:46 -0400
-Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:37084 "EHLO
-	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752783Ab2IFMMP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 08:12:15 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Dmitry Torokhov <dtor@mail.ru>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: Tero Kristo <t-kristo@ti.com>, alsa-devel@alsa-project.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, Benoit Cousson <b-cousson@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3 03/14] MFD: twl4030-audio: Rearange and clean-up the probe function
-Date: Thu,  6 Sep 2012 15:12:10 +0300
-Message-Id: <1346933541-21547-4-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1346933541-21547-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1346933541-21547-1-git-send-email-peter.ujfalusi@ti.com>
+	id S1752904Ab2IFMSq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 08:18:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38665 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751275Ab2IFMSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 08:18:44 -0400
+Date: Thu, 6 Sep 2012 14:18:42 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        Dave Jones <davej@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v2] memcg: first step towards hierarchical controller
+Message-ID: <20120906121842.GG22426@dhcp22.suse.cz>
+References: <20120904143552.GB15683@dhcp22.suse.cz>
+ <50461241.5010300@parallels.com>
+ <20120904145414.GC15683@dhcp22.suse.cz>
+ <50461610.30305@parallels.com>
+ <20120904162501.GE15683@dhcp22.suse.cz>
+ <504709D4.2010800@parallels.com>
+ <20120905144942.GH5388@dhcp22.suse.cz>
+ <20120905201238.GE13737@google.com>
+ <20120906120623.GE22426@dhcp22.suse.cz>
+ <50489270.7060108@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50489270.7060108@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To facilitate the device tree support the probe function need to be rearanged.
-Small cleanup in the APLL frequency selection part as well.
+On Thu 06-09-12 16:09:20, Glauber Costa wrote:
+> On 09/06/2012 04:06 PM, Michal Hocko wrote:
+> > On Wed 05-09-12 13:12:38, Tejun Heo wrote:
+> >> Hello, Michal.
+> >>
+> >> On Wed, Sep 05, 2012 at 04:49:42PM +0200, Michal Hocko wrote:
+> >>> Can we settle on the following 3 steps?
+> >>> 1) warn about "flat" hierarchies (give it X releases) - I will push it
+> >>>    to as many Suse code streams as possible (hope other distributions
+> >>>    could do the same)
+> >>
+> >> I think I'm just gonna trigger WARN from cgroup core if anyone tries
+> >> to create hierarchy with a controller which doesn't support full
+> >> hierarchy.  WARN_ON_ONCE() at first and then WARN_ON() on each
+> >> creation later on.
+> > 
+> > How do you find out that a controller is not fully hierarchical? Memory
+> > controller can be both.
+> > 
+> >>> 2) flip the default on the root cgroup & warn when somebody tries to
+> >>>    change it to 0 (give it another X releases) that the knob will be
+> >>>    removed
+> >>> 3) remove the knob and the whole nonsese
+> >>> 4) revert 3 if somebody really objects
+> >>
+> >> If we can get to 3, I don't think 4 would be a problem.
+> > 
+> > Agreed.
+> > 
+> Just so I understand it:
+> 
+> Michal clearly objected before folding his patch with my Kconfig patch.
+> But is there still opposition to merge both?
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- drivers/mfd/twl4030-audio.c | 34 ++++++++++++++++------------------
- 1 file changed, 16 insertions(+), 18 deletions(-)
+I do not find the config option very much useful but if others feel it
+really is I won't block it.
 
-diff --git a/drivers/mfd/twl4030-audio.c b/drivers/mfd/twl4030-audio.c
-index efa2d42..ca2d669 100644
---- a/drivers/mfd/twl4030-audio.c
-+++ b/drivers/mfd/twl4030-audio.c
-@@ -169,35 +169,30 @@ static int __devinit twl4030_audio_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
-+	audio = devm_kzalloc(&pdev->dev, sizeof(struct twl4030_audio),
-+			     GFP_KERNEL);
-+	if (!audio)
-+		return -ENOMEM;
-+
-+	mutex_init(&audio->mutex);
-+	audio->audio_mclk = pdata->audio_mclk;
-+
- 	/* Configure APLL_INFREQ and disable APLL if enabled */
--	val = 0;
--	switch (pdata->audio_mclk) {
-+	switch (audio->audio_mclk) {
- 	case 19200000:
--		val |= TWL4030_APLL_INFREQ_19200KHZ;
-+		val = TWL4030_APLL_INFREQ_19200KHZ;
- 		break;
- 	case 26000000:
--		val |= TWL4030_APLL_INFREQ_26000KHZ;
-+		val = TWL4030_APLL_INFREQ_26000KHZ;
- 		break;
- 	case 38400000:
--		val |= TWL4030_APLL_INFREQ_38400KHZ;
-+		val = TWL4030_APLL_INFREQ_38400KHZ;
- 		break;
- 	default:
- 		dev_err(&pdev->dev, "Invalid audio_mclk\n");
- 		return -EINVAL;
- 	}
--	twl_i2c_write_u8(TWL4030_MODULE_AUDIO_VOICE,
--					val, TWL4030_REG_APLL_CTL);
--
--	audio = devm_kzalloc(&pdev->dev, sizeof(struct twl4030_audio),
--			     GFP_KERNEL);
--	if (!audio)
--		return -ENOMEM;
--
--	platform_set_drvdata(pdev, audio);
--
--	twl4030_audio_dev = pdev;
--	mutex_init(&audio->mutex);
--	audio->audio_mclk = pdata->audio_mclk;
-+	twl_i2c_write_u8(TWL4030_MODULE_AUDIO_VOICE, val, TWL4030_REG_APLL_CTL);
- 
- 	/* Codec power */
- 	audio->resource[TWL4030_AUDIO_RES_POWER].reg = TWL4030_REG_CODEC_MODE;
-@@ -222,6 +217,9 @@ static int __devinit twl4030_audio_probe(struct platform_device *pdev)
- 		childs++;
- 	}
- 
-+	platform_set_drvdata(pdev, audio);
-+	twl4030_audio_dev = pdev;
-+
- 	if (childs)
- 		ret = mfd_add_devices(&pdev->dev, pdev->id, audio->cells,
- 				      childs, NULL, 0);
+> By having it default-n, only people that are either sure that this is
+> safe for them, or have more clearly defined lifecycles could set it.
 -- 
-1.7.12
-
+Michal Hocko
+SUSE Labs
