@@ -1,116 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752093Ab2IFF00 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 01:26:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10937 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751235Ab2IFF0Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 01:26:24 -0400
-Date: Thu, 6 Sep 2012 08:27:35 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Sjur =?iso-8859-1?Q?Br=E6ndeland?= <sjurbren@gmail.com>,
-        Amit Shah <amit.shah@redhat.com>, linux-kernel@vger.kernel.org,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [RFC 1/2] virtio_console: Add support for DMA memory allocation
-Message-ID: <20120906052735.GB17656@redhat.com>
-References: <1346680277-5887-1-git-send-email-sjur.brandeland@stericsson.com>
- <20120903143018.GA5353@redhat.com>
- <CAJK669bkHHMAPYMEr22-6uOwfgJv1uKTbzNBQVVCq=OooExC0g@mail.gmail.com>
- <20120903202737.GD6181@redhat.com>
- <CAJK669ZvnnG6fGOog-Z47B7xqyn9hcx5dAD7S--+2PSgE+hrLA@mail.gmail.com>
- <20120904135022.GI9805@redhat.com>
- <CAJK669Z1UYakBWartChfoeKL_eU5=GFZMGhH8R_Q-difVm0ygQ@mail.gmail.com>
- <20120904185541.GB3602@redhat.com>
- <87k3w7j49i.fsf@rustcorp.com.au>
+	id S1752793Ab2IFF0m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 01:26:42 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19448 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752135Ab2IFF0k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 01:26:40 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 05 Sep 2012 22:19:32 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: <balbi@ti.com>, <fengguang.wu@intel.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        Venu Byravarasu <vbyravarasu@nvidia.com>
+Subject: [PATCH] usb: phy: fix build break
+Date: Thu, 6 Sep 2012 10:42:15 +0530
+Message-ID: <1346908335-25160-1-git-send-email-vbyravarasu@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <87k3w7j49i.fsf@rustcorp.com.au>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 06, 2012 at 11:34:25AM +0930, Rusty Russell wrote:
-> "Michael S. Tsirkin" <mst@redhat.com> writes:
-> > On Tue, Sep 04, 2012 at 06:58:47PM +0200, Sjur Brændeland wrote:
-> >> Hi Michael,
-> >> 
-> >> > Exactly. Though if we just fail load it will be much less code.
-> >> >
-> >> > Generally, using a feature bit for this is a bit of a problem though:
-> >> > normally driver is expected to be able to simply ignore
-> >> > a feature bit. In this case driver is required to
-> >> > do something so a feature bit is not a good fit.
-> >> > I am not sure what the right thing to do is.
-> >> 
-> >> I see - so in order to avoid the binding between driver and device
-> >> there are two options I guess. Either make virtio_dev_match() or
-> >> virtcons_probe() fail. Neither of them seems like the obvious choice.
-> >> 
-> >> Maybe adding a check for VIRTIO_CONSOLE_F_DMA_MEM match
-> >> between device and driver in virtcons_probe() is the lesser evil?
-> >> 
-> >> Regards,
-> >> Sjur
-> >
-> > A simplest thing to do is change dev id. rusty?
-> 
-> For generic usage, this is correct.  But my opinion is that fallback on
-> feature non-ack is quality-of-implementation issue: great to have, but
-> there are cases where you just want to fail with "you're too old".
-> 
-> And in this case, an old system simply will never work.  So it's a
-> question of how graceful the failure is.
-> 
-> Can your userspace loader can refuse to proceed if the driver doesn't
-> ack the bits?  If so, it's simpler than a whole new ID.
-> 
-> Cheers,
-> Rusty.
+During phy interface separation from otg.h, as the enum "usb_otg_state"
+was having multiple otg states info and removal of member 'state'
+of this enum type from usb_phy struct did not generate any compilation
+issues, I removed member state from struct usb_phy.
 
-Yes but how can it signal guest that it will never proceed?
+As this is causing build break in musb code, adding member 'state'
+to usb_phy structure.
 
-Also grep for BUG_ON in core found this:
+Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+---
+ include/linux/usb/otg.h |   24 ------------------------
+ include/linux/usb/phy.h |   25 +++++++++++++++++++++++++
+ 2 files changed, 25 insertions(+), 24 deletions(-)
 
-       drv->remove(dev);
-
-       /* Driver should have reset device. */
-       BUG_ON(dev->config->get_status(dev));
-
-I think below is what Sjur refers to.
-I think below is a good idea for 3.6. Thoughts?
-
---->
-
-virtio: don't crash when device is buggy
-
-Because of a sanity check in virtio_dev_remove, a buggy device can crash
-kernel.  And in case of rproc it's userspace so it's not a good idea.
-We are unloading a driver so how bad can it be?
-Be less aggressive in handling this error: if it's a driver bug,
-warning once should be enough.
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-
---
-
-diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
-index c3b3f7f..1e8659c 100644
---- a/drivers/virtio/virtio.c
-+++ b/drivers/virtio/virtio.c
-@@ -159,7 +159,7 @@ static int virtio_dev_remove(struct device *_d)
- 	drv->remove(dev);
+diff --git a/include/linux/usb/otg.h b/include/linux/usb/otg.h
+index 65a2b6a..e8a5fe8 100644
+--- a/include/linux/usb/otg.h
++++ b/include/linux/usb/otg.h
+@@ -11,30 +11,6 @@
  
- 	/* Driver should have reset device. */
--	BUG_ON(dev->config->get_status(dev));
-+	WARN_ON_ONCE(dev->config->get_status(dev));
+ #include <linux/usb/phy.h>
  
- 	/* Acknowledge the device's existence again. */
- 	add_status(dev, VIRTIO_CONFIG_S_ACKNOWLEDGE);
-
+-/* OTG defines lots of enumeration states before device reset */
+-enum usb_otg_state {
+-	OTG_STATE_UNDEFINED = 0,
+-
+-	/* single-role peripheral, and dual-role default-b */
+-	OTG_STATE_B_IDLE,
+-	OTG_STATE_B_SRP_INIT,
+-	OTG_STATE_B_PERIPHERAL,
+-
+-	/* extra dual-role default-b states */
+-	OTG_STATE_B_WAIT_ACON,
+-	OTG_STATE_B_HOST,
+-
+-	/* dual-role default-a */
+-	OTG_STATE_A_IDLE,
+-	OTG_STATE_A_WAIT_VRISE,
+-	OTG_STATE_A_WAIT_BCON,
+-	OTG_STATE_A_HOST,
+-	OTG_STATE_A_SUSPEND,
+-	OTG_STATE_A_PERIPHERAL,
+-	OTG_STATE_A_WAIT_VFALL,
+-	OTG_STATE_A_VBUS_ERR,
+-};
+-
+ struct usb_otg {
+ 	u8			default_a;
+ 
+diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
+index 88fc160..06b5bae 100644
+--- a/include/linux/usb/phy.h
++++ b/include/linux/usb/phy.h
+@@ -26,6 +26,30 @@ enum usb_phy_type {
+ 	USB_PHY_TYPE_USB3,
+ };
+ 
++/* OTG defines lots of enumeration states before device reset */
++enum usb_otg_state {
++	OTG_STATE_UNDEFINED = 0,
++
++	/* single-role peripheral, and dual-role default-b */
++	OTG_STATE_B_IDLE,
++	OTG_STATE_B_SRP_INIT,
++	OTG_STATE_B_PERIPHERAL,
++
++	/* extra dual-role default-b states */
++	OTG_STATE_B_WAIT_ACON,
++	OTG_STATE_B_HOST,
++
++	/* dual-role default-a */
++	OTG_STATE_A_IDLE,
++	OTG_STATE_A_WAIT_VRISE,
++	OTG_STATE_A_WAIT_BCON,
++	OTG_STATE_A_HOST,
++	OTG_STATE_A_SUSPEND,
++	OTG_STATE_A_PERIPHERAL,
++	OTG_STATE_A_WAIT_VFALL,
++	OTG_STATE_A_VBUS_ERR,
++};
++
+ struct usb_phy;
+ struct usb_otg;
+ 
+@@ -43,6 +67,7 @@ struct usb_phy {
+ 	unsigned int		 flags;
+ 
+ 	enum usb_phy_type	type;
++	enum usb_otg_state	state;
+ 	enum usb_phy_events	last_event;
+ 
+ 	struct usb_otg		*otg;
 -- 
-MST
+1.7.1.1
+
