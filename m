@@ -1,45 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755102Ab2IFNfr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 09:35:47 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:34890 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752810Ab2IFNfo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 09:35:44 -0400
-Message-ID: <1346938478.18408.4.camel@twins>
-Subject: Re: [PATCH tip/core/rcu 03/23] rcu: Move RCU grace-period cleanup
- into kthread
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
-Date: Thu, 06 Sep 2012 15:34:38 +0200
-In-Reply-To: <1346350718-30937-3-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20120830181811.GA29154@linux.vnet.ibm.com>
-	 <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1346350718-30937-3-git-send-email-paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1755373Ab2IFNf5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 09:35:57 -0400
+Received: from mail.tpi.com ([70.99.223.143]:4262 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755247Ab2IFNfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 09:35:55 -0400
+Message-ID: <5048A6B6.40307@canonical.com>
+Date: Thu, 06 Sep 2012 07:35:50 -0600
+From: Tim Gardner <tim.gardner@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: airlied@gmail.com
+CC: airlied@redhat.com, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: drm/vmwgfx: add MODULE_DEVICE_TABLE so vmwgfx loads at boot
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-30 at 11:18 -0700, Paul E. McKenney wrote:
->  static void rcu_report_qs_rsp(struct rcu_state *rsp, unsigned long flags)
->         __releases(rcu_get_root(rsp)->lock)
->  {
-> +       raw_spin_unlock_irqrestore(&rcu_get_root(rsp)->lock, flags);
-> +       wake_up(&rsp->gp_wq);  /* Memory barrier implied by wake_up() path. */
->  } 
+Dave - I couldn't find this patch in your git repo at
+git://people.freedesktop.org/~airlied/linux in the drm-next or drm-fixes
+branches.
 
-Could you now also clean up the locking so that the caller releases this
-lock?
+https://patchwork.kernel.org/patch/1379071/
 
-I so dislike asymmetric locking like that..
+It appears to fix a real problem for Mac users -
+http://bugs.launchpad.net/bugs/1039157. See
+https://bugs.launchpad.net/ubuntu/oneiric/+source/linux/+bug/1039157/comments/31
+for confirmation.
+
+I think it should also be 'Cc: stable@vger.kernel.org'. It applies as
+far back as 2.6.32 with minor context differences.
+
+rtg
+-- 
+Tim Gardner tim.gardner@canonical.com
