@@ -1,74 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757577Ab2IFPQt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 11:16:49 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:54941 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757162Ab2IFPQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 11:16:48 -0400
-Message-ID: <5048BE4A.1000603@ti.com>
-Date: Thu, 6 Sep 2012 17:16:26 +0200
-From: Benoit Cousson <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1757533Ab2IFPT2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 11:19:28 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:65329 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752895Ab2IFPT1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 11:19:27 -0400
+X-Originating-IP: 108.223.40.66
+Date: Thu, 6 Sep 2012 08:19:28 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon fixes for 3.6-rc5
+Message-ID: <20120906151928.GA18841@roeck-us.net>
 MIME-Version: 1.0
-To: Omar Ramirez Luna <omar.luna@linaro.org>
-CC: Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, Kevin Hilman <khilman@ti.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Omar Ramirez Luna <omar.ramirez@ti.com>
-Subject: Re: [PATCH 0/2] OMAP: hwmod: fix hardreset handling
-References: <1345614150-25723-1-git-send-email-omar.luna@linaro.org> <CALLhW=4GNagMQgn+W8muLz__sSRv6ZOt_FvzXHLcaQzw3N_3yg@mail.gmail.com>
-In-Reply-To: <CALLhW=4GNagMQgn+W8muLz__sSRv6ZOt_FvzXHLcaQzw3N_3yg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SLDf9lqlvOQaIe6s"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Omar,
 
-On 09/03/2012 04:29 PM, Omar Ramirez Luna wrote:
-> On 22 August 2012 00:42, Omar Ramirez Luna <omar.luna@linaro.org> wrote:
->> From: Omar Ramirez Luna <omar.ramirez@ti.com>
->>
->> The patch to expose hwmod assert/deassert functions through omap_device
->> has been accepted and queued for 3.7[1], however these two patches are
->> needed to make the API functional. Hence a revised version is being sent
->> according to previous comments:
->>
->> - ARM: OMAP: hwmod: revise deassert sequence
->> Now it uses enable|disable_module to handle the configuration of the
->> modulemode inside CLKCTRL. As part of the cleanup of leaf clocks, the
->> one associated with ipu_mmu will be removed along with the iommu hwmod
->> migration[2].
->>
->> - ARM: OMAP: hwmod: partially un-reset hwmods might not be properly
->>   enabled
->> More infomation added in the patch description[3].
->>
->> [1] http://patchwork.kernel.org/patch/1266731/
->> [2] http://patchwork.kernel.org/patch/1201791/
->> [3] http://patchwork.kernel.org/patch/1201801/
->>
->> Omar Ramirez Luna (2):
->>   ARM: OMAP: hwmod: partially un-reset hwmods might not be properly
->>     enabled
->>   ARM: OMAP: hwmod: revise deassert sequence
->>
->>  arch/arm/mach-omap2/omap_hwmod.c |   74 ++++++++++++++++++++++++++++++--------
->>  1 file changed, 59 insertions(+), 15 deletions(-)
-> 
-> Ping.
+--SLDf9lqlvOQaIe6s
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Oops, sorry, I forgot your series.
+Hi Linus,
 
-Beside the concern about the duplication of code, that looks good to me.
+Please pull hwmon fixes for Linux 3.6-rc5 from signed tag:
 
-I'll sync with Paul to see who will push that series.
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
 
-Regards,
-Benoit
+There is only one patch in this pull request. While the changes are not in the
+drivers/hwmon directory, the problem primarily affects hwmon drivers, and it
+makes sense to push the patch through the hwmon tree.
 
+The patch has been in -mm and -next for about a week with no adverse effects.
+
+Thanks,
+Guenter
+------
+
+The following changes since commit 4cbe5a555fa58a79b6ecbb6c531b8bab0650778d:
+
+  Linux 3.6-rc4 (2012-09-01 10:39:58 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
+
+for you to fetch changes up to b6d86d3d6d6e4c9b588d81615c81b5a8292b62ed:
+
+  linux/kernel.h: Fix DIV_ROUND_CLOSEST to support negative dividends (2012-09-01 18:58:09 -0700)
+
+----------------------------------------------------------------
+One patch, fixing DIV_ROUND_CLOSEST to support negative dividends.
+
+----------------------------------------------------------------
+Guenter Roeck (1):
+      linux/kernel.h: Fix DIV_ROUND_CLOSEST to support negative dividends
+
+ include/linux/kernel.h |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+--SLDf9lqlvOQaIe6s
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQSL8AAAoJEMsfJm/On5mBhqQP/1NzZ1G7S6eiZXCO9hi56G3a
+zhrmYj4GQzzuUdUKnhJnB/Q8RyyeRNKuDo/jt35aGPEf5HQgVQcB6ylUIAFvvzBC
+0VXmtjkS/nZjJmg9UCsQQSPnXzeoBtXWDTe97XXz1ThoxdbpgWybOUzW5rW4MF+z
+SBhpIDuOfZC299rK/JjGPI49KzmY2voOAlIvZJp76jT+KLs+CptuHlp+yJa5KYck
+d/68zaL5YvVb5I+hQZLsbri1HK5EpkE9Irjg6mw7P7nmp/+V/7daqpz6kLDFfIM2
+tNAeXijE93E2JpFLBwjKaICMsYOKLCHzyctCJbdepqwVaKEGIeny395QhsBSoIFs
+msDJbAj9U9d4RTSv7u5Bz+niYwfR7UelbV2o8NFv3F2w00OAScXByIYEFxt6jjH3
+jBMZ7Rn1sMqm3SglR6wPmdBdoXjtjTR5/3wfbGTsnMIU6YoDGSDNBOGZbdAW3bEO
+DBNvR3kcoYlDMkjyik5ius06zsj+gz/ByHclSR2NrGXtPrxu+3stvRAiKTUIbsrK
+Jt7A5IZ1y2KoOboxiw05mz9P6gEU4Ot30gkRxcnQ96xiAazqKBuNZh1WW5Ogvg1t
+dIUs78WuAMkqInMfz4RAc165aSWfaYFShYxCMG9fytX2icoDbaKqdLhJ8JOuzqxc
+fKLfSZ7OfS6jHPi7QRon
+=kD6t
+-----END PGP SIGNATURE-----
+
+--SLDf9lqlvOQaIe6s--
