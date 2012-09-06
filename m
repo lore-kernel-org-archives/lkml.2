@@ -1,63 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404Ab2IFGdm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 02:33:42 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:39224 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751325Ab2IFGdk (ORCPT
+	id S1753128Ab2IFGky (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 02:40:54 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:42730 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999Ab2IFGkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 02:33:40 -0400
-Message-ID: <504843BA.2040808@gmail.com>
-Date: Thu, 06 Sep 2012 08:33:30 +0200
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Thu, 6 Sep 2012 02:40:52 -0400
+Message-ID: <50484569.8080709@gmail.com>
+Date: Thu, 06 Sep 2012 14:40:41 +0800
+From: Wang Sheng-Hui <shhuiw@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-CC: Takashi Iwai <tiwai@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>
-Subject: Re:
-References: <s5hmx1526mg.wl%tiwai@suse.de> <20120906060220.GA252@x4>
-In-Reply-To: <20120906060220.GA252@x4>
-X-Enigmail-Version: 1.4.4
+To: chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] btrfs: remove unnecessary -ENOMEM BUG_ON check in extent-tree.c/exclude_super_stripes
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06.09.2012 08:02, Markus Trippelsdorf wrote:
-> On 2012.09.04 at 16:40 +0200, Takashi Iwai wrote:
->> ----------------------------------------------------------------
->> Sound fixes for 3.6-rc5
->>
->> There are nothing scaring, contains only small fixes for HD-audio and
->> USB-audio:
->> - EPSS regression fix and GPIO fix for HD-audio IDT codecs
->> - A series of USB-audio regression fixes that are found since 3.5 kernel
->>
->> ----------------------------------------------------------------
->> Daniel Mack (4):
->>       ALSA: snd-usb: Fix URB cancellation at stream start
->>       ALSA: snd-usb: restore delay information
->         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-> The commit fbcfbf5f above causes the following lines to be printed
-> whenever I start a new song:
+The memory allocation failure is BUG_ON in add_excluded_extent (following
+the code path) and btrfs_rmap_block. No need to BUG_ON -ENOMEM inside
+exclude_super_stripes itself.
 
-Copied Pierre-Louis Bossart - he wrote the code in 294c4fb8 which this
-patch (fbcfbf5f) brings back now.
+Its return value is always 0, and useless for its callers. Set it as void
+instead 0-returned.
 
-> delay: estimated 0, actual 352
-> delay: estimated 353, actual 705
-> 
-> (44.1 * 8 = 352.8)
-> 
-> This happens with an USB-DAC that identifies itself as "C-Media USB
-> Headphone Set".
+Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+---
+ fs/btrfs/extent-tree.c |   20 +++++++-------------
+ 1 files changed, 7 insertions(+), 13 deletions(-)
 
-And you didn't you see these lines with 3.4?
-
-
-Daniel
-
+diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
+index ba58024..95492cc 100644
+--- a/fs/btrfs/extent-tree.c
++++ b/fs/btrfs/extent-tree.c
+@@ -234,39 +234,33 @@ static void free_excluded_extents(struct btrfs_root *root,
+ 			  start, end, EXTENT_UPTODATE, GFP_NOFS);
+ }
+ 
+-static int exclude_super_stripes(struct btrfs_root *root,
++static void exclude_super_stripes(struct btrfs_root *root,
+ 				 struct btrfs_block_group_cache *cache)
+ {
+ 	u64 bytenr;
+ 	u64 *logical;
+ 	int stripe_len;
+-	int i, nr, ret;
++	int i, nr;
+ 
+ 	if (cache->key.objectid < BTRFS_SUPER_INFO_OFFSET) {
+ 		stripe_len = BTRFS_SUPER_INFO_OFFSET - cache->key.objectid;
+ 		cache->bytes_super += stripe_len;
+-		ret = add_excluded_extent(root, cache->key.objectid,
+-					  stripe_len);
+-		BUG_ON(ret); /* -ENOMEM */
++		add_excluded_extent(root, cache->key.objectid, stripe_len);
+ 	}
+ 
+ 	for (i = 0; i < BTRFS_SUPER_MIRROR_MAX; i++) {
+ 		bytenr = btrfs_sb_offset(i);
+-		ret = btrfs_rmap_block(&root->fs_info->mapping_tree,
+-				       cache->key.objectid, bytenr,
+-				       0, &logical, &nr, &stripe_len);
+-		BUG_ON(ret); /* -ENOMEM */
++		btrfs_rmap_block(&root->fs_info->mapping_tree,
++				 cache->key.objectid, bytenr,
++				 0, &logical, &nr, &stripe_len);
+ 
+ 		while (nr--) {
+ 			cache->bytes_super += stripe_len;
+-			ret = add_excluded_extent(root, logical[nr],
+-						  stripe_len);
+-			BUG_ON(ret); /* -ENOMEM */
++			add_excluded_extent(root, logical[nr], stripe_len);
+ 		}
+ 
+ 		kfree(logical);
+ 	}
+-	return 0;
+ }
+ 
+ static struct btrfs_caching_control *
+-- 
+1.7.1
