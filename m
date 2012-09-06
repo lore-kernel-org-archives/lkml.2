@@ -1,71 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933052Ab2IFSfi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 14:35:38 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:15926 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932373Ab2IFSfh (ORCPT
+	id S933044Ab2IFSjO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 14:39:14 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:64007 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932373Ab2IFSjN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 14:35:37 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 06 Sep 2012 11:34:50 -0700
-Message-ID: <5048ECF2.8050307@nvidia.com>
-Date: Thu, 6 Sep 2012 14:35:30 -0400
-From: Rhyland Klein <rklein@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Thu, 6 Sep 2012 14:39:13 -0400
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-CC: Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sbs-battery: probe should try talking to the device
-References: <1346956349-21980-1-git-send-email-olof@lixom.net>
-In-Reply-To: <1346956349-21980-1-git-send-email-olof@lixom.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5048E35F.5020304@suse.cz>
+References: <1344929718-22736-1-git-send-email-tmshlvck@gmail.com>
+	<1346894238-12870-1-git-send-email-tmshlvck@gmail.com>
+	<5048E35F.5020304@suse.cz>
+Date: Thu, 6 Sep 2012 20:39:12 +0200
+Message-ID: <CAEB7QLAWLuXFLWMYX70enP5X0z5EXTNo93hfOm7sH_kQteMAkA@mail.gmail.com>
+Subject: Re: [PATCH v6] uartclk value from serial_core exposed to sysfs
+From: Tomas Hlavacek <tmshlvck@gmail.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: gregkh@linuxfoundation.org, alan@linux.intel.com,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        marek.vasut@gmail.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/06/2012 02:32 PM, Olof Johansson wrote:
-> Turns out this driver doesn't actually try talking to the device at
-> probe time, so if it's incorrectly configured in the device tree or
-> platform data (or if the battery has been removed from the system), then
-> probe will succeed and every access will sit there and time out. The
-> end result is a possibly laggy system that thinks it has a battery but
-> can never read status, which isn't very useful.
->
-> Instead, just read any register (I chose status) at probe, and if that
-> fails, don't register the device.
->
-> Signed-off-by: Olof Johansson <olof@lixom.net>
-> ---
->   drivers/power/sbs-battery.c | 10 ++++++++++
->   1 file changed, 10 insertions(+)
->
-> diff --git a/drivers/power/sbs-battery.c b/drivers/power/sbs-battery.c
-> index a65e8f5..2f24253 100644
-> --- a/drivers/power/sbs-battery.c
-> +++ b/drivers/power/sbs-battery.c
-> @@ -760,6 +760,16 @@ static int __devinit sbs_probe(struct i2c_client *client,
->
->   skip_gpio:
->
-> +	/* Before we register, we need to make sure we can actually talk
-> +	 * to the battery.
-> +	 */
-> +	rc = sbs_read_word_data(client, sbs_data[REG_STATUS].addr);
-> +	if (rc < 0) {
-> +		dev_err(&client->dev, "%s: Failed to get device status\n",
-> +			__func__);
-> +		goto exit_psupply;
-> +	}
-> +
->   	rc = power_supply_register(&client->dev, &chip->power_supply);
->   	if (rc) {
->   		dev_err(&client->dev,
->
+Hi Jiri,
 
-Acked-by: Rhyland Klein <rklein@nvidia.com>
+On Thu, Sep 6, 2012 at 7:54 PM, Jiri Slaby <jslaby@suse.cz> wrote:
+> On 09/06/2012 03:17 AM, Tomas Hlavacek wrote:
+>> @@ -2362,8 +2392,8 @@ int uart_add_one_port(struct uart_driver *drv, struct uart_port *uport)
+>>        * Register the port whether it's detected or not.  This allows
+>>        * setserial to be used to alter this ports parameters.
+>>        */
+>> -     tty_dev = tty_port_register_device(port, drv->tty_driver, uport->line,
+>> -                     uport->dev);
+>> +     tty_dev = tty_register_device_attr(drv->tty_driver, uport->line,
+>> +                     uport->dev, port, tty_dev_attr_groups);
+>
+> This makes me believe you have not tested the change at all?
 
--- 
-nvpublic
+Thanks! I can't believe I missed that. (And I actually tested that,
+but I have to admit that it was not enough apparently.)
+
+I will re-send the patch (after some additional testing and double-checking).
+
+Tomas
