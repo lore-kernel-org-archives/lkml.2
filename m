@@ -1,108 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758627Ab2IFQAN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 12:00:13 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30872 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758283Ab2IFQAK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 12:00:10 -0400
-X-Authority-Analysis: v=2.0 cv=C49rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=zgiTqp1681AA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=SlKO6I3lSDoA:10 a=qLesCdiRhxxrN11O5x0A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1346947206.1680.36.camel@gandalf.local.home>
-Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive
- hashtable
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Pedro Alves <palves@redhat.com>, Tejun Heo <tj@kernel.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, mingo@elte.hu,
-        ebiederm@xmission.com, aarcange@redhat.com, ericvh@gmail.com,
-        netdev@vger.kernel.org, eric.dumazet@gmail.com, axboe@kernel.dk,
-        agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
-        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
-        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
-        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Date: Thu, 06 Sep 2012 12:00:06 -0400
-In-Reply-To: <5048C615.4070204@gmail.com>
-References: <503C95E4.3010000@gmail.com> <20120828101148.GA21683@Krystal>
-	 <503CAB1E.5010408@gmail.com> <20120828115638.GC23818@Krystal>
-	 <20120828230050.GA3337@Krystal>
-	 <1346772948.27919.9.camel@gandalf.local.home> <50462C99.5000007@redhat.com>
-	 <50462EE8.1090903@redhat.com> <20120904170138.GB31934@Krystal>
-	 <5048AAF6.5090101@gmail.com> <20120906145545.GA17332@leaf>
-	 <5048C615.4070204@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758733Ab2IFQBG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 12:01:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16343 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758307Ab2IFQBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 12:01:03 -0400
+Date: Thu, 6 Sep 2012 12:01:00 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Remove user-triggerable BUG from mpol_to_str
+Message-ID: <20120906160100.GA30220@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-06 at 17:49 +0200, Sasha Levin wrote:
->  
-> > Looks reasonable.  However, it would break (or rather, not break) on
-> > code like this:
-> > 
-> > 	hash_for_each_entry(...) {
-> > 		if (...) {
-> > 			foo(node);
-> > 			node = NULL;
+Trivially triggerable by any user.
 
-ug, I didn't even notice this. Ignore my last email :-p
+kernel BUG at mm/mempolicy.c:2546!
+invalid opcode: 0000 [#1] SMP 
+CPU 2 
+Modules linked in: tun fuse binfmt_misc caif_socket caif phonet bluetooth rfkill can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt rds af_key decnet rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables crc32c_intel ghash_clmulni_intel microcode usb_debug pcspkr i2c_i801 e1000e nfsd nfs_acl auth_rpcgss lockd sunrpc i915 video i2c_algo_bit drm_kms_helper drm i2c_core [last unloaded: scsi_wait_scan]
+Pid: 23988, comm: trinity-child2 Not tainted 3.4.0-rc7+ #23
+RIP: 0010:[<ffffffff811a3b16>]  [<ffffffff811a3b16>] mpol_to_str+0x156/0x360
+RSP: 0018:ffff88010197fc98  EFLAGS: 00010202
+RAX: 0000000000006b6b RBX: ffff880109a34000 RCX: 0000000000000000
+RDX: ffff8801464984a0 RSI: 0000000000000032 RDI: ffff88010197fdbe
+RBP: ffff88010197fd48 R08: 00000000000992f0 R09: ffffffff819ce9fa
+R10: 0000000000000001 R11: 0000000000000003 R12: ffff88010197fdbe
+R13: 0000000000000032 R14: 0000000000006b6b R15: ffff880141c3e880
+FS:  00007fa1e5216740(0000) GS:ffff880148000000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000000000000 CR3: 00000001426dd000 CR4: 00000000001407e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process trinity-child2 (pid: 23988, threadinfo ffff88010197e000, task ffff88007821a670)
+Stack:
+ ffff88010197fcb8 ffffffff81340b85 ffff88013e4292c8 0000000000000000
+ ffff88010197fcd8 ffffffff81670a6b ffff88013e4292c0 ffff8801464984a0
+ ffff88010197fd08 ffffffff811a2f8e 00007fd34e935fff 0000000000000000
+Call Trace:
+ [<ffffffff81340b85>] ? do_raw_spin_unlock+0x75/0xd0
+ [<ffffffff81670a6b>] ? _raw_spin_unlock+0x2b/0x50
+ [<ffffffff811a2f8e>] ? mpol_shared_policy_lookup+0x5e/0x80
+ [<ffffffff81171740>] ? shmem_get_policy+0x30/0x40
+ [<ffffffff8122f235>] show_numa_map+0xd5/0x450
+ [<ffffffff8122fb50>] ? gather_hugetbl_stats+0x70/0x70
+ [<ffffffff8122fae0>] ? pagemap_hugetlb_range+0xf0/0xf0
+ [<ffffffff8122e6a2>] ? m_start+0xa2/0x180
+ [<ffffffff8122f5e3>] show_pid_numa_map+0x13/0x20
+ [<ffffffff811eaf32>] traverse+0xf2/0x230
+ [<ffffffff811eb74b>] seq_read+0x34b/0x3e0
+ [<ffffffff811c60ec>] vfs_read+0xac/0x180
+ [<ffffffff811c6382>] sys_pread64+0xa2/0xc0
+ [<ffffffff8167a0ad>] system_call_fastpath+0x1a/0x1f
+Code: 19 00 48 98 48 01 c3 89 d8 44 29 e0 48 8b 5d d8 4c 8b 65 e0 4c 8b 6d e8 4c 8b 75 f0 4c 8b 7d f8 c9 c3 0f 1f 00 66 83 f8 03 76 0a <0f> 0b 0f 1f 84 00 00 00 00 00 85 c9 0f 84 08 01 00 00 48 8b 8a 
+RIP  [<ffffffff811a3b16>] mpol_to_str+0x156/0x360
 
-/me needs to wake-up a bit more.
+Cc: stable@vger.kernel.org
+Signed-off-by: Dave Jones <davej@redhat.com>
 
-> > 			break;
-> > 		}
-> > 	}
-> > 
-> > Hiding the double loop still seems error-prone.
-> 
-> I think that that code doesn't make sense. The users of hlist_for_each_* aren't
-> supposed to be changing the loop cursor.
-
-I totally agree. Modifying the 'node' pointer is just asking for issues.
-Yes that is error prone, but not due to the double loop. It's due to the
-modifying of the node pointer that is used internally by the loop
-counter. Don't do that :-)
-
-
-> 
-> We have three options here:
-> 
->  1. Stuff everything into a single for(). While not too difficult, it will make
-> the readability of the code difficult as it will force us to abandon using
-> hlist_for_each_* macros.
-> 
->  2. Over-complicate everything, and check for 'node == NULL && obj &&
-> obj->member.next == NULL' instead. That one will fail only if the user has
-> specifically set the object as the last object in the list and the node as NULL.
-> 
->  3. Use 2 loops which might not work properly if the user does something odd,
-> with a big fat warning above them.
-> 
-> 
-> To sum it up, I'd rather go with 3 and let anyone who does things he shouldn't
-> be doing break.
-
-I agree, the double loop itself is not error prone. If you are modifying
-'node' you had better know what the hell you are doing.
-
-Actually, it may be something that is legitimate. That is, if you want
-to skip to the next bucket, just set node to NULL and do the break (as
-Josh had done). This would break if the macro loop changed later on, but
-hey, like I said, it's error prone ;-) If you really want to do that,
-then hand coding the double loop would be a better bet. IOW, don't use
-the macro loop.
-
--- Steve
-
-
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index bd92431..4ada3be 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2562,7 +2562,7 @@ int mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol, int no_context)
+ 		break;
+ 
+ 	default:
+-		BUG();
++		return -EINVAL;
+ 	}
+ 
+ 	l = strlen(policy_modes[mode]);
