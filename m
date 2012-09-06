@@ -1,58 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758892Ab2IFQSw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 12:18:52 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:59510 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758783Ab2IFQSu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 12:18:50 -0400
-Date: Thu, 6 Sep 2012 09:18:16 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 16/23] rcu: Prevent initialization-time
- quiescent-state race
-Message-ID: <20120906161815.GE2448@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120830181811.GA29154@linux.vnet.ibm.com>
- <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346350718-30937-16-git-send-email-paulmck@linux.vnet.ibm.com>
- <20120903093742.GE5574@leaf>
- <20120905181920.GN3308@linux.vnet.ibm.com>
- <1346941290.18408.17.camel@twins>
+	id S1758923Ab2IFQTm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 12:19:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37399 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758707Ab2IFQTk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 12:19:40 -0400
+Date: Thu, 6 Sep 2012 09:19:33 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Tero Kristo <t-kristo@ti.com>,
+        alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, Benoit Cousson <b-cousson@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 08/14] Input: twl4030-vibra: Support for DT booted
+ kernel
+Message-ID: <20120906161933.GA18562@core.coreip.homeip.net>
+References: <1346933541-21547-1-git-send-email-peter.ujfalusi@ti.com>
+ <1346933541-21547-9-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1346941290.18408.17.camel@twins>
+In-Reply-To: <1346933541-21547-9-git-send-email-peter.ujfalusi@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12090616-7182-0000-0000-00000285A71F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 06, 2012 at 04:21:30PM +0200, Peter Zijlstra wrote:
-> On Wed, 2012-09-05 at 11:19 -0700, Paul E. McKenney wrote:
-> > I tried that, and got a surprisingly large set of conflicts.  Ah, OK,
-> > the problem is that breaking up rcu_gp_kthread() into subfunctions
-> > did enough code motion to defeat straightforward rebasing.  Is there
-> > some way to tell "git rebase" about such code motion, or would this
-> > need to be carried out carefully by hand? 
+Hi Peter,
+
+On Thu, Sep 06, 2012 at 03:12:15PM +0300, Peter Ujfalusi wrote:
+> Add support when the kernel has been booted with DT blob. In this case the
+> pdata is NULL, we need to reach up to the core node and check if the codec
+> part has been enabled to determine if we need to coexist with the codec or
+> not.
 > 
-> The alternative is doing that rebase by hand and in the process make
-> that code movement patch (6) obsolete by making patches (1) and (3)
-> introduce the code in the final form :-)
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> ---
+>  drivers/input/misc/twl4030-vibra.c | 20 ++++++++++++++++++--
+>  1 file changed, 18 insertions(+), 2 deletions(-)
 > 
-> Yay for less patches :-)
+> diff --git a/drivers/input/misc/twl4030-vibra.c b/drivers/input/misc/twl4030-vibra.c
+> index fc0ed9b..15620f8 100644
+> --- a/drivers/input/misc/twl4030-vibra.c
+> +++ b/drivers/input/misc/twl4030-vibra.c
+> @@ -26,6 +26,7 @@
+>  #include <linux/module.h>
+>  #include <linux/jiffies.h>
+>  #include <linux/platform_device.h>
+> +#include <linux/of.h>
+>  #include <linux/workqueue.h>
+>  #include <linux/i2c/twl.h>
+>  #include <linux/mfd/twl4030-audio.h>
+> @@ -194,13 +195,28 @@ static int twl4030_vibra_resume(struct device *dev)
+>  static SIMPLE_DEV_PM_OPS(twl4030_vibra_pm_ops,
+>  			 twl4030_vibra_suspend, twl4030_vibra_resume);
+>  
+> +static bool twl4030_vibra_check_coexist(struct twl4030_vibra_data *pdata,
+> +			      struct device_node *node)
+> +{
+> +	if (pdata && pdata->coexist)
+> +		return true;
+> +
+> +#ifdef CONFIG_OF
+> +	if (of_find_node_by_name(node, "codec"))
+> +		return true;
+> +#endif
 
-Actually, my original intent was that patches 1-6 be one patch.
-The need to locate a nasty bug caused me to split it up.  So the best
-approach is to squash patches 1-6 together with the related patches.
+In patch 6 you added a stub for of_find_node_by_name(), so do you really
+need this #ifdef?
 
-							Thanx, paul
+Otherwise it looks good.
 
+Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+
+Thanks.
+
+-- 
+Dmitry
