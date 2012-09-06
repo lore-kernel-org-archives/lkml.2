@@ -1,96 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933091Ab2IFTcM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 15:32:12 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40939 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759647Ab2IFTbm (ORCPT
+	id S1759683Ab2IFTch (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 15:32:37 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50918 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759612Ab2IFTbi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 15:31:42 -0400
+	Thu, 6 Sep 2012 15:31:38 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Joel Uckelman <joel@lightboxtechnologies.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [GIT PULL 0/8] perf/core improvements and fixes
-Date: Thu,  6 Sep 2012 16:31:13 -0300
-Message-Id: <1346959881-22427-1-git-send-email-acme@infradead.org>
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 6/8] perf evlist: Add fprintf method
+Date: Thu,  6 Sep 2012 16:31:19 -0300
+Message-Id: <1346959881-22427-7-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1346959881-22427-1-git-send-email-acme@infradead.org>
+References: <1346959881-22427-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-	Please consider pulling,
+For debugging, etc.
 
-- Arnaldo
-
-The following changes since commit 7a4ec938857cf534270b23545495300fbac7f5de:
-
-  perf tools: Allow user to indicate path to objdump in command line (2012-09-05 19:41:55 -0300)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
-
-for you to fetch changes up to 275ef3878f698941353780440fec6926107a320b:
-
-  perf tools: Fix cache event name generation (2012-09-06 15:01:08 -0300)
-
-----------------------------------------------------------------
-perf/core improvements and fixes
-
-. Fix hardware cache event name generation, fix from Jiri Olsa
-
-. Add round trip test for sw, hw and cache event names, catching the
-  problem Jiri fixed, after Jiri's patch, the test passes successfully.
-
-. Clean target should do clean for lib/traceevent too, fix from David Ahern
-
-. Check the right variable for allocation failure, fix from Namhyung Kim
-
-. Set up evsel->tp_format regardless of evsel->name being set already,
-  fix from Namhyung Kim
-
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-fjimge1ovgh976qlt8dtmlp0@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/evlist.c |   13 +++++++++++++
+ tools/perf/util/evlist.h |    2 ++
+ 2 files changed, 15 insertions(+)
 
-----------------------------------------------------------------
-Arnaldo Carvalho de Melo (4):
-      perf test: Add round trip test for sw and hw event names
-      perf tools: Remove extraneous newline when parsing hardware cache events
-      perf evlist: Add fprintf method
-      perf test: Add roundtrip test for hardware cache events
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 4774ac1..8923537 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -889,3 +889,16 @@ int perf_evlist__parse_sample(struct perf_evlist *evlist, union perf_event *even
+ 	struct perf_evsel *evsel = perf_evlist__first(evlist);
+ 	return perf_evsel__parse_sample(evsel, event, sample, swapped);
+ }
++
++size_t perf_evlist__fprintf(struct perf_evlist *evlist, FILE *fp)
++{
++	struct perf_evsel *evsel;
++	size_t printed = 0;
++
++	list_for_each_entry(evsel, &evlist->entries, node) {
++		printed += fprintf(fp, "%s%s", evsel->idx ? ", " : "",
++				   perf_evsel__name(evsel));
++	}
++
++	return printed + fprintf(fp, "\n");;
++}
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 2ed2557..3f2e1e4 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -143,4 +143,6 @@ static inline struct perf_evsel *perf_evlist__last(struct perf_evlist *evlist)
+ {
+ 	return list_entry(evlist->entries.prev, struct perf_evsel, node);
+ }
++
++size_t perf_evlist__fprintf(struct perf_evlist *evlist, FILE *fp);
+ #endif /* __PERF_EVLIST_H */
+-- 
+1.7.9.2.358.g22243
 
-David Ahern (1):
-      perf tools: Clean target should do clean for lib/traceevent too
-
-Jiri Olsa (1):
-      perf tools: Fix cache event name generation
-
-Namhyung Kim (2):
-      perf header: Fix a typo on evsel
-      perf header: Prepare tracepoint events regardless of name
-
- tools/perf/Makefile            |    5 +-
- tools/perf/builtin-test.c      |  114 ++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/evlist.c       |   13 +++++
- tools/perf/util/evlist.h       |    2 +
- tools/perf/util/evsel.c        |    6 +--
- tools/perf/util/evsel.h        |    6 ++-
- tools/perf/util/header.c       |   36 ++++++++-----
- tools/perf/util/parse-events.c |    2 +-
- 8 files changed, 163 insertions(+), 21 deletions(-)
