@@ -1,44 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229Ab2IFXus (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 19:50:48 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:43984 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194Ab2IFXuq (ORCPT
+	id S1755974Ab2IFXwc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 19:52:32 -0400
+Received: from caiajhbdccah.dreamhost.com ([208.97.132.207]:51246 "EHLO
+	homiemail-a3.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751194Ab2IFXwb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 19:50:46 -0400
-Message-ID: <504936D3.8030203@wwwdotorg.org>
-Date: Thu, 06 Sep 2012 17:50:43 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: olof@lixom.net, grant.likely@secretlab.ca, lrg@ti.com,
-        broonie@opensource.wolfsonmicro.com, vinod.koul@linux.intel.com,
-        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
-        alsa-devel@alsa-project.org
-Subject: Re: [PATCH 5/5] ASoC: tegra: remove support of legacy DMA driver
- based access
-References: <1345126397-28864-1-git-send-email-ldewangan@nvidia.com> <1345126397-28864-6-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1345126397-28864-6-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 6 Sep 2012 19:52:31 -0400
+Message-ID: <1346975548.2410.2.camel@offbook>
+Subject: [PATCH] kernel/sys: initialize return codes when  declaring
+ variables
+From: Davidlohr Bueso <dave@gnu.org>
+Reply-To: dave@gnu.org
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Date: Fri, 07 Sep 2012 01:52:28 +0200
+Organization: GNU
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16/2012 08:13 AM, Laxman Dewangan wrote:
-> Remove the support code which uses the legacy APB DMA driver
-> for accessing the I2S FIFO.
-> The driver will use the dmaengine based APB DMA driver for
-> accessing reqding/writing to I2S FIFO.
-> 
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Trivially initialize return codes with default values when
+the variable is declared.
 
-Mark, Liam,
+Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+---
+ kernel/sys.c |    9 +++------
+ 1 files changed, 3 insertions(+), 6 deletions(-)
 
-I'd like to take this patch through the Tegra tree, since it relies on
-the previous Tegra patches to convert to dmaengine. Could I please get
-an ack if that's OK? Thanks.
+diff --git a/kernel/sys.c b/kernel/sys.c
+index 241507f..b3b2ef7 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -1364,7 +1364,7 @@ SYSCALL_DEFINE1(olduname, struct oldold_utsname __user *, name)
+ 
+ SYSCALL_DEFINE2(sethostname, char __user *, name, int, len)
+ {
+-	int errno;
++	int errno = -EFAULT;
+ 	char tmp[__NEW_UTS_LEN];
+ 
+ 	if (!ns_capable(current->nsproxy->uts_ns->user_ns, CAP_SYS_ADMIN))
+@@ -1373,7 +1373,6 @@ SYSCALL_DEFINE2(sethostname, char __user *, name, int, len)
+ 	if (len < 0 || len > __NEW_UTS_LEN)
+ 		return -EINVAL;
+ 	down_write(&uts_sem);
+-	errno = -EFAULT;
+ 	if (!copy_from_user(tmp, name, len)) {
+ 		struct new_utsname *u = utsname();
+ 
+@@ -1390,7 +1389,7 @@ SYSCALL_DEFINE2(sethostname, char __user *, name, int, len)
+ 
+ SYSCALL_DEFINE2(gethostname, char __user *, name, int, len)
+ {
+-	int i, errno;
++	int i, errno = 0;
+ 	struct new_utsname *u;
+ 
+ 	if (len < 0)
+@@ -1400,7 +1399,6 @@ SYSCALL_DEFINE2(gethostname, char __user *, name, int, len)
+ 	i = 1 + strlen(u->nodename);
+ 	if (i > len)
+ 		i = len;
+-	errno = 0;
+ 	if (copy_to_user(name, u->nodename, i))
+ 		errno = -EFAULT;
+ 	up_read(&uts_sem);
+@@ -1415,7 +1413,7 @@ SYSCALL_DEFINE2(gethostname, char __user *, name, int, len)
+  */
+ SYSCALL_DEFINE2(setdomainname, char __user *, name, int, len)
+ {
+-	int errno;
++	int errno = -EFAULT;
+ 	char tmp[__NEW_UTS_LEN];
+ 
+ 	if (!ns_capable(current->nsproxy->uts_ns->user_ns, CAP_SYS_ADMIN))
+@@ -1424,7 +1422,6 @@ SYSCALL_DEFINE2(setdomainname, char __user *, name, int, len)
+ 		return -EINVAL;
+ 
+ 	down_write(&uts_sem);
+-	errno = -EFAULT;
+ 	if (!copy_from_user(tmp, name, len)) {
+ 		struct new_utsname *u = utsname();
+ 
+-- 
+1.7.5.4
+
+
+
