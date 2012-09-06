@@ -1,100 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756722Ab2IFO4C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 10:56:02 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:41585 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754768Ab2IFOz7 (ORCPT
+	id S1756902Ab2IFO4Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 10:56:16 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:14138 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754768Ab2IFO4J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 10:55:59 -0400
-X-Originating-IP: 217.70.178.131
-X-Originating-IP: 50.43.46.74
-Date: Thu, 6 Sep 2012 07:55:46 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Pedro Alves <palves@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Tejun Heo <tj@kernel.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, eric.dumazet@gmail.com,
-        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
-        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
-        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
-        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive hashtable
-Message-ID: <20120906145545.GA17332@leaf>
-References: <503C95E4.3010000@gmail.com>
- <20120828101148.GA21683@Krystal>
- <503CAB1E.5010408@gmail.com>
- <20120828115638.GC23818@Krystal>
- <20120828230050.GA3337@Krystal>
- <1346772948.27919.9.camel@gandalf.local.home>
- <50462C99.5000007@redhat.com>
- <50462EE8.1090903@redhat.com>
- <20120904170138.GB31934@Krystal>
- <5048AAF6.5090101@gmail.com>
+	Thu, 6 Sep 2012 10:56:09 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 06 Sep 2012 07:48:44 -0700
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Russell King <linux@arm.linux.org.uk>, <linux-tegra@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2] ARM: tegra: fix return value for debugfs init
+Date: Thu, 6 Sep 2012 17:55:28 +0300
+Message-ID: <1346943329-4898-1-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5048AAF6.5090101@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 06, 2012 at 03:53:58PM +0200, Sasha Levin wrote:
-> On 09/04/2012 07:01 PM, Mathieu Desnoyers wrote:
-> >> #define do_for_each_ftrace_rec(pg, rec)                                          \
-> >> >         for (pg = ftrace_pages_start, rec = &pg->records[pg->index];             \
-> >> >              pg && rec == &pg->records[pg->index];                               \
-> >> >              pg = pg->next)                                                      \
-> >> >           for (rec = pg->records; rec < &pg->records[pg->index]; rec++)
-> > Maybe in some cases there might be ways to combine the two loops into
-> > one ? I'm not seeing exactly how to do it for this one, but it should
-> > not be impossible. If the inner loop condition can be moved to the outer
-> > loop, and if we use (blah ? loop1_conf : loop2_cond) to test for
-> > different conditions depending on the context, and do the same for the
-> > 3rd argument of the for() loop. The details elude me for now though, so
-> > maybe it's complete non-sense ;)
-> > 
-> > It might not be that useful for do_for_each_ftrace_rec, but if we can do
-> > it for the hash table iterator, it might be worth it.
-> 
-> So I think that for the hash iterator it might actually be simpler.
-> 
-> My solution to making 'break' work in the iterator is:
-> 
-> 	for (bkt = 0, node = NULL; bkt < HASH_SIZE(name) && node == NULL; bkt++)
-> 		hlist_for_each_entry(obj, node, &name[bkt], member)
-> 
-> We initialize our node loop cursor with NULL in the external loop, and the
-> external loop will have a new condition to loop while that cursor is NULL.
-> 
-> My logic is that we can only 'break' when we are iterating over an object in the
-> internal loop. If we're iterating over an object in that loop then 'node != NULL'.
-> 
-> This way, if we broke from within the internal loop, the external loop will see
-> node as not NULL, and so it will stop looping itself. On the other hand, if the
-> internal loop has actually ended, then node will be NULL, and the outer loop
-> will keep running.
-> 
-> Is there anything I've missed?
+tegra_powergate_debugfs_init() always returns -ENOMEM. It shouldn't do that
+when registering the debugfs entry succeeded.
 
-Looks reasonable.  However, it would break (or rather, not break) on
-code like this:
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+---
+ arch/arm/mach-tegra/powergate.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-	hash_for_each_entry(...) {
-		if (...) {
-			foo(node);
-			node = NULL;
-			break;
-		}
-	}
+diff --git a/arch/arm/mach-tegra/powergate.c b/arch/arm/mach-tegra/powergate.c
+index 15d5065..27aee4a 100644
+--- a/arch/arm/mach-tegra/powergate.c
++++ b/arch/arm/mach-tegra/powergate.c
+@@ -237,14 +237,13 @@ static const struct file_operations powergate_fops = {
+ int __init tegra_powergate_debugfs_init(void)
+ {
+ 	struct dentry *d;
+-	int err = -ENOMEM;
+ 
+ 	d = debugfs_create_file("powergate", S_IRUGO, NULL, NULL,
+ 		&powergate_fops);
+ 	if (!d)
+ 		return -ENOMEM;
+ 
+-	return err;
++	return 0;
+ }
+ 
+ #endif
+-- 
+1.7.7.rc0.72.g4b5ea.dirty
 
-Hiding the double loop still seems error-prone.
-
-- Josh Triplett
