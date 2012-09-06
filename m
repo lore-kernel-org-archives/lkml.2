@@ -1,172 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760043Ab2IFV6k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 17:58:40 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43470 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759932Ab2IFV6g (ORCPT
+	id S1760065Ab2IFV7b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 17:59:31 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:33728 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759933Ab2IFV73 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 17:58:36 -0400
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, alan@linux.intel.com,
-        Tony Lindgren <tony@atomide.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-serial@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Shubhrajyoti Datta <shubhrajyoti@ti.com>,
-        Sourav Poddar <sourav.poddar@ti.com>
-Subject: Re: [PATCH v4 20/21] serial: omap: move uart_omap_port definition to C file
-Organization: Deep Root Systems, LLC
-References: <20120906122948.GC29202@arwen.pp.htv.fi>
-	<1346935540-1792-1-git-send-email-balbi@ti.com>
-	<1346935540-1792-21-git-send-email-balbi@ti.com>
-Date: Thu, 06 Sep 2012 14:58:35 -0700
-In-Reply-To: <1346935540-1792-21-git-send-email-balbi@ti.com> (Felipe Balbi's
-	message of "Thu, 6 Sep 2012 15:45:39 +0300")
-Message-ID: <87fw6uizjo.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Thu, 6 Sep 2012 17:59:29 -0400
+Date: Thu, 6 Sep 2012 14:58:38 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 11/15] rcu: Avoid spurious RCU CPU stall
+ warnings
+Message-ID: <20120906215838.GM2448@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120830185607.GA32148@linux.vnet.ibm.com>
+ <1346352988-32444-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346352988-32444-11-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346943414.18408.31.camel@twins>
+ <1346944049.1680.23.camel@gandalf.local.home>
+ <1346944758.18408.35.camel@twins>
+ <20120906210354.GC2448@linux.vnet.ibm.com>
+ <1346967661.1680.52.camel@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346967661.1680.52.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12090621-6148-0000-0000-0000095CEF17
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Felipe Balbi <balbi@ti.com> writes:
+On Thu, Sep 06, 2012 at 05:41:01PM -0400, Steven Rostedt wrote:
+> On Thu, 2012-09-06 at 14:03 -0700, Paul E. McKenney wrote:
+> 
+> > Here are a few other ways that stalls can happen:
+> > 
+> > o	A CPU looping in an RCU read-side critical section.
+> 
+> For a minute? That's a bug.
+> 
+> > 	
+> > o	A CPU looping with interrupts disabled.  This condition can
+> > 	result in RCU-sched and RCU-bh stalls.
+> 
+> Also a bug.
+> 
+> > 
+> > o	A CPU looping with preemption disabled.  This condition can
+> > 	result in RCU-sched stalls and, if ksoftirqd is in use, RCU-bh
+> > 	stalls.
+> 
+> Bug as well.
+> 
+> > 
+> > o	A CPU looping with bottom halves disabled.  This condition can
+> > 	result in RCU-sched and RCU-bh stalls.
+> 
+> Bug too.
+> 
+> > 
+> > o	For !CONFIG_PREEMPT kernels, a CPU looping anywhere in the kernel
+> > 	without invoking schedule().
+> 
+> Another bug.
+> 
+> > 
+> > o	A CPU-bound real-time task in a CONFIG_PREEMPT kernel, which might
+> > 	happen to preempt a low-priority task in the middle of an RCU
+> > 	read-side critical section.   This is especially damaging if
+> > 	that low-priority task is not permitted to run on any other CPU,
+> > 	in which case the next RCU grace period can never complete, which
+> > 	will eventually cause the system to run out of memory and hang.
+> > 	While the system is in the process of running itself out of
+> > 	memory, you might see stall-warning messages.
+> 
+> Buggy system.
+> 
+> > 
+> > o	A CPU-bound real-time task in a CONFIG_PREEMPT_RT kernel that
+> > 	is running at a higher priority than the RCU softirq threads.
+> > 	This will prevent RCU callbacks from ever being invoked,
+> > 	and in a CONFIG_TREE_PREEMPT_RCU kernel will further prevent
+> > 	RCU grace periods from ever completing.  Either way, the
+> > 	system will eventually run out of memory and hang.  In the
+> > 	CONFIG_TREE_PREEMPT_RCU case, you might see stall-warning
+> > 	messages.
+> 
+> Not really a bug, but the developers need a spanking.
 
-> nobody needs to access the uart_omap_port structure
-> other than omap-serial.c file. Let's move that
-> structure definition to the C source file in order
-> to prevent anyone from accessing our structure.
->
-> Tested-by: Shubhrajyoti D <shubhrajyoti@ti.com>
-> Acked-by: Tony Lindgren <tony@atomide.com>
-> Signed-off-by: Felipe Balbi <balbi@ti.com>
+And RCU does what it can, which is limited to a splat on the console.
 
-This one is clearly broken, and causes compile breakage...
+> > o	A hardware or software issue shuts off the scheduler-clock
+> > 	interrupt on a CPU that is not in dyntick-idle mode.  This
+> > 	problem really has happened, and seems to be most likely to
+> > 	result in RCU CPU stall warnings for CONFIG_NO_HZ=n kernels.
+> 
+> Driving the bug.
+> 
+> > 
+> > o	A bug in the RCU implementation.
+> 
+> Bug in the name.
+> 
+> > 
+> > o	A hardware failure.  This is quite unlikely, but has occurred
+> > 	at least once in real life.  A CPU failed in a running system,
+> > 	becoming unresponsive, but not causing an immediate crash.
+> > 	This resulted in a series of RCU CPU stall warnings, eventually
+> > 	leading the realization that the CPU had failed.
+> 
+> Hardware bug.
+> 
+> So, where's the "spurious RCU CPU stall warnings"?
 
-> ---
->  arch/arm/plat-omap/include/plat/omap-serial.h | 37 --------------------------
->  drivers/tty/serial/omap-serial.c              | 38 +++++++++++++++++++++++++++
->  2 files changed, 38 insertions(+), 37 deletions(-)
->
-> diff --git a/arch/arm/plat-omap/include/plat/omap-serial.h b/arch/arm/plat-omap/include/plat/omap-serial.h
-> index a79ed8b..3c9fd3e 100644
-> --- a/arch/arm/plat-omap/include/plat/omap-serial.h
-> +++ b/arch/arm/plat-omap/include/plat/omap-serial.h
-> @@ -105,45 +105,8 @@ struct uart_omap_dma {
->  	unsigned int		rx_timeout;
->  };
->  
-> -struct uart_omap_port {
-> -	struct uart_port	port;
-> -	struct uart_omap_dma	uart_dma;
-> -	struct device		*dev;
-> -
-> -	unsigned char		ier;
-> -	unsigned char		lcr;
-> -	unsigned char		mcr;
-> -	unsigned char		fcr;
-> -	unsigned char		efr;
-> -	unsigned char		dll;
-> -	unsigned char		dlh;
-> -	unsigned char		mdr1;
-> -	unsigned char		scr;
-> -
-> -	int			use_dma;
-> -	/*
-> -	 * Some bits in registers are cleared on a read, so they must
-> -	 * be saved whenever the register is read but the bits will not
-> -	 * be immediately processed.
-> -	 */
-> -	unsigned int		lsr_break_flag;
-> -	unsigned char		msr_saved_flags;
-> -	char			name[20];
-> -	unsigned long		port_activity;
-> -	u32			context_loss_cnt;
-> -	u32			errata;
-> -	u8			wakeups_enabled;
->  
->  	int			DTR_gpio;
->  	int			DTR_inverted;
->  	int			DTR_active;
+I figured that would count as a bug in the RCU implementation.  ;-)
 
-The whole struct has moved, but some fields left behind?
+> All these cases deserve a warning.
 
-This looks to be caused by the rebase which includes Neil Brown's DTR
-GPIO change[1]
+Agreed, and that is the whole purpose of the stall warnings.
 
-> -
-> -	struct pm_qos_request	pm_qos_request;
-> -	u32			latency;
-> -	u32			calc_latency;
-> -	struct work_struct	qos_work;
-> -};
-> -
-> -#define to_uart_omap_port(p)	((container_of((p), struct uart_omap_port, port)))
-> -
->  #endif /* __OMAP_SERIAL_H__ */
-> diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-> index 881b652..164c3c9 100644
-> --- a/drivers/tty/serial/omap-serial.c
-> +++ b/drivers/tty/serial/omap-serial.c
-> @@ -70,6 +70,44 @@
->  #define OMAP_UART_MVR_MAJ_SHIFT		8
->  #define OMAP_UART_MVR_MIN_MASK		0x3f
->  
-> +struct uart_omap_port {
-> +	struct uart_port	port;
-> +	struct uart_omap_dma	uart_dma;
-> +	struct device		*dev;
-> +
-> +	unsigned char		ier;
-> +	unsigned char		lcr;
-> +	unsigned char		mcr;
-> +	unsigned char		fcr;
-> +	unsigned char		efr;
-> +	unsigned char		dll;
-> +	unsigned char		dlh;
-> +	unsigned char		mdr1;
-> +	unsigned char		scr;
-> +
-> +	int			use_dma;
-> +	/*
-> +	 * Some bits in registers are cleared on a read, so they must
-> +	 * be saved whenever the register is read but the bits will not
-> +	 * be immediately processed.
-> +	 */
-> +	unsigned int		lsr_break_flag;
-> +	unsigned char		msr_saved_flags;
-> +	char			name[20];
-> +	unsigned long		port_activity;
-> +	u32			context_loss_cnt;
-> +	u32			errata;
-> +	u8			wakeups_enabled;
-> +	unsigned int		irq_pending:1;
+							Thanx, Paul
 
-And this field was not in the original, yet the changelog describes this
-as a move.
-
-Why is a this new field added (and not described in the changelog.)
-
-Kevin
-
-
-[1]
-commit 9574f36fb801035f6ab0fbb1b53ce2c12c17d100
-Author: NeilBrown <neilb@suse.de>
-Date:   Mon Jul 30 10:30:26 2012 +1000
-
-    OMAP/serial: Add support for driving a GPIO as DTR.
-    
-    OMAP hardware doesn't provide a phyisical DTR line, but
-    some configurations may need a DTR line which tracks whether
-    the device is open or not.
-    
-    So allow a gpio to be configured as the DTR line.
-    
-    Signed-off-by: NeilBrown <neilb@suse.de>
-    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
