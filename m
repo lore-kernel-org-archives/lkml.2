@@ -1,59 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756287Ab2IFOdC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 10:33:02 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:41976 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756178Ab2IFOdA (ORCPT
+	id S1756381Ab2IFOd0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 10:33:26 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:43854 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756311Ab2IFOdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 10:33:00 -0400
+	Thu, 6 Sep 2012 10:33:23 -0400
+Date: Thu, 6 Sep 2012 10:33:20 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Pedro Alves <palves@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Tejun Heo <tj@kernel.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
+        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
+        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
+        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
+        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive
+	hashtable
+Message-ID: <20120906143320.GA4513@Krystal>
+References: <503C95E4.3010000@gmail.com> <20120828101148.GA21683@Krystal> <503CAB1E.5010408@gmail.com> <20120828115638.GC23818@Krystal> <20120828230050.GA3337@Krystal> <1346772948.27919.9.camel@gandalf.local.home> <50462C99.5000007@redhat.com> <50462EE8.1090903@redhat.com> <20120904170138.GB31934@Krystal> <5048AAF6.5090101@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <5048A6B6.40307@canonical.com>
-References: <5048A6B6.40307@canonical.com>
-Date: Thu, 6 Sep 2012 16:33:00 +0200
-Message-ID: <CADdNU4QLhn1qq2_POXZPA+DtYQS5zkmm9o=5GO00_HKZxpj24Q@mail.gmail.com>
-Subject: Re: drm/vmwgfx: add MODULE_DEVICE_TABLE so vmwgfx loads at boot
-From: Jakob Bornecrantz <wallbraker@gmail.com>
-To: Tim Gardner <tim.gardner@canonical.com>
-Cc: airlied@gmail.com, airlied@redhat.com, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5048AAF6.5090101@gmail.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 6, 2012 at 3:35 PM, Tim Gardner <tim.gardner@canonical.com> wrote:
-> Dave - I couldn't find this patch in your git repo at
-> git://people.freedesktop.org/~airlied/linux in the drm-next or drm-fixes
-> branches.
->
-> https://patchwork.kernel.org/patch/1379071/
->
-> It appears to fix a real problem for Mac users -
-> http://bugs.launchpad.net/bugs/1039157. See
-> https://bugs.launchpad.net/ubuntu/oneiric/+source/linux/+bug/1039157/comments/31
-> for confirmation.
+* Sasha Levin (levinsasha928@gmail.com) wrote:
+> On 09/04/2012 07:01 PM, Mathieu Desnoyers wrote:
+> >> #define do_for_each_ftrace_rec(pg, rec)                                          \
+> >> >         for (pg = ftrace_pages_start, rec = &pg->records[pg->index];             \
+> >> >              pg && rec == &pg->records[pg->index];                               \
+> >> >              pg = pg->next)                                                      \
+> >> >           for (rec = pg->records; rec < &pg->records[pg->index]; rec++)
+> > Maybe in some cases there might be ways to combine the two loops into
+> > one ? I'm not seeing exactly how to do it for this one, but it should
+> > not be impossible. If the inner loop condition can be moved to the outer
+> > loop, and if we use (blah ? loop1_conf : loop2_cond) to test for
+> > different conditions depending on the context, and do the same for the
+> > 3rd argument of the for() loop. The details elude me for now though, so
+> > maybe it's complete non-sense ;)
+> > 
+> > It might not be that useful for do_for_each_ftrace_rec, but if we can do
+> > it for the hash table iterator, it might be worth it.
+> 
+> So I think that for the hash iterator it might actually be simpler.
+> 
+> My solution to making 'break' work in the iterator is:
+> 
+> 	for (bkt = 0, node = NULL; bkt < HASH_SIZE(name) && node == NULL; bkt++)
+> 		hlist_for_each_entry(obj, node, &name[bkt], member)
+> 
+> We initialize our node loop cursor with NULL in the external loop, and the
+> external loop will have a new condition to loop while that cursor is NULL.
+> 
+> My logic is that we can only 'break' when we are iterating over an object in the
+> internal loop. If we're iterating over an object in that loop then 'node != NULL'.
+> 
+> This way, if we broke from within the internal loop, the external loop will see
+> node as not NULL, and so it will stop looping itself. On the other hand, if the
+> internal loop has actually ended, then node will be NULL, and the outer loop
+> will keep running.
+> 
+> Is there anything I've missed?
 
-Thanks, I was going to point out that Dave had already fix this, but it seem
-you already knew about that. There is a companion patch along side with
-the one mentioned.
+This sounds good. Unless I'm missing something too.
 
-http://lists.freedesktop.org/archives/dri-devel/2012-August/027124.html
-http://lists.freedesktop.org/archives/dri-devel/2012-August/027125.html
+Thanks!
 
-I recommend applying both and turning the config to yes (as long as you
-have the kms enabled xf86-video-vmware driver installed). I RB:ed them
-both along with the dumb ioctl interface here:
+Mathieu
 
-http://lists.freedesktop.org/archives/dri-devel/2012-August/027139.html
+> 
+> 
+> Thanks,
+> Sasha
 
->
-> I think it should also be 'Cc: stable@vger.kernel.org'. It applies as
-> far back as 2.6.32 with minor context differences.
->
-> rtg
-
-Its probably safe, but it could mean that the driver gets loaded on
-distros, where in the past it hasn't tho that should be safe.
-
-Cheers, Jakob.
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
