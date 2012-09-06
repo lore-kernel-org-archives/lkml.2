@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760148Ab2IFBCz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 21:02:55 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:1770 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1760134Ab2IFBCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 21:02:23 -0400
-X-IronPort-AV: E=Sophos;i="4.80,377,1344182400"; 
-   d="scan'208";a="5791085"
-Message-ID: <5047F686.5010207@cn.fujitsu.com>
-Date: Thu, 06 Sep 2012 09:04:06 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S932563Ab2IFBKc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 21:10:32 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:61644 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754820Ab2IFBKb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 21:10:31 -0400
+Date: Wed, 5 Sep 2012 18:10:26 -0700
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "tglx@linutronix.de" <tglx@linutronix.de>
+Subject: Re: [PATCH] USB/host: Cleanup unneccessary irq disable code
+Message-ID: <20120906011026.GA17340@kroah.com>
+References: <27240C0AC20F114CBF8149A2696CBE4A174713@SHSMSX101.ccr.corp.intel.com>
+ <20120905235947.GA19050@kroah.com>
+ <27240C0AC20F114CBF8149A2696CBE4A177FB0@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 05/11 V5] workqueue: Add @bind arguement back without
- change any thing
-References: <1346841475-4422-1-git-send-email-laijs@cn.fujitsu.com> <1346841475-4422-6-git-send-email-laijs@cn.fujitsu.com> <20120905194908.GC13737@google.com>
-In-Reply-To: <20120905194908.GC13737@google.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/06 09:01:55,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/06 09:01:56,
-	Serialize complete at 2012/09/06 09:01:56
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A177FB0@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/06/2012 03:49 AM, Tejun Heo wrote:
-> Hello,
+On Thu, Sep 06, 2012 at 12:39:09AM +0000, Liu, Chuansheng wrote:
+> > This patch is corrupted and can not be applied at all.  Please fix your email
+> > client and try again.
+> > 
+> > greg k-h
 > 
-> On Wed, Sep 05, 2012 at 06:37:42PM +0800, Lai Jiangshan wrote:
->> Ensure the gcwq->flags is only accessed with gcwq->lock held.
->> And make the code more easier to understand.
->>
->> In all current callsite of create_worker(), DISASSOCIATED can't
->> be flipped while create_worker().
->> So the whole behavior is unchanged with this patch.
+> I am very sorry to waste your time, resend it again.
 > 
-> This doesn't change anything.  You're just moving the test to the
-> caller with comments there explaining how it won't change even if
-> gcwq->lock is released.  It seems more confusing to me.  The flag is
-> still protected by manager_mutex.  How is this an improvement?
-> 
+> From: liu chuansheng <chuansheng.liu@intel.com>
+> Subject: [PATCH] USB/host: Cleanup unneccessary irq disable code
 
-Some other bit of gcwq->flags is accessed(modified) without manager_mutex.
-making gcwq->flags be accessed only form gcwq->lock C.S. will help the reviewer.
+Why is this in the patch?
 
-I don't like adding special things/code when not-absolutely-required.
+Please resend it in a format that I do not have to manually edit the
+patch.
 
+greg k-h
