@@ -1,93 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755728Ab2IFONG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 10:13:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52383 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753588Ab2IFOND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 10:13:03 -0400
-Date: Thu, 6 Sep 2012 09:46:28 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Subject: 3.6-rc4 audit_log_d_path oops.
-Message-ID: <20120906134628.GA8962@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Al Viro <viro@ZenIV.linux.org.uk>
+	id S1755943Ab2IFONY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 10:13:24 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:23570 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755900Ab2IFONW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 10:13:22 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dI9371I1432Izz1202hzz8275dhz2dh668h839h944hd25hd2bhf0ah107ah1220h1155h)
+X-WSS-ID: 0M9XM64-02-6PQ-02
+X-M-MSG: 
+Date: Thu, 6 Sep 2012 09:13:14 -0500
+From: Jacob Shin <jacob.shin@amd.com>
+To: Pekka Enberg <penberg@kernel.org>
+CC: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -v3 14/14] x86, mm: Map ISA area with connected ram range
+ at the same time
+Message-ID: <20120906141305.GA10013@jshin-Toonie>
+References: <1346823991-22911-1-git-send-email-yinghai@kernel.org>
+ <1346823991-22911-15-git-send-email-yinghai@kernel.org>
+ <CAOJsxLGXQ9+5uEvq-Pfxt=zZLWR3ZmR1WPeN=pzdzQVjHWrd0g@mail.gmail.com>
+ <CAE9FiQWTRndGpRDDfiB4RqRPC6sEt252P+QnjPd0+sH8k3YBwg@mail.gmail.com>
+ <alpine.LFD.2.02.1209061021440.2210@tux.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1209061021440.2210@tux.localdomain>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hit this in overnight fuzz testing..
+On Thu, Sep 06, 2012 at 10:22:19AM +0300, Pekka Enberg wrote:
+> On Wed, Sep 5, 2012 at 1:02 AM, Pekka Enberg <penberg@kernel.org> wrote:
+> > > How significant is the speed gain? The "isa_done" flag makes code flow
+> > > more difficult to follow.
+> 
+> On Wed, 5 Sep 2012, Yinghai Lu wrote:
+> > Not really much.
+> > 
+> > when booting system:
+> > memmap=16m$128m memmap=16m$512m memmap=16m$256m memmap=16m$768m memmap=16m$1024m
+> > 
+> > with the patch
+> > [    0.000000] init_memory_mapping: [mem 0x00000000-0x07ffffff]
+> > [    0.000000]  [mem 0x00000000-0x07ffffff] page 2M
+> > [    0.000000] init_memory_mapping: [mem 0x09000000-0x0fffffff]
+> > [    0.000000]  [mem 0x09000000-0x0fffffff] page 2M
+> > [    0.000000] init_memory_mapping: [mem 0x11000000-0x1fffffff]
+> > [    0.000000]  [mem 0x11000000-0x1fffffff] page 2M
+> > [    0.000000] init_memory_mapping: [mem 0x21000000-0x2fffffff]
+> > [    0.000000]  [mem 0x21000000-0x2fffffff] page 2M
+> > [    0.000000] init_memory_mapping: [mem 0x31000000-0x3fffffff]
+> > [    0.000000]  [mem 0x31000000-0x3fffffff] page 2M
+> > [    0.000000] init_memory_mapping: [mem 0x41000000-0x7fffdfff]
+> > [    0.000000]  [mem 0x41000000-0x7fdfffff] page 2M
+> > [    0.000000]  [mem 0x7fe00000-0x7fffdfff] page 4k
+> > 
+> > otherwise will have
+> > 
+> > [    0.000000] init_memory_mapping: [mem 0x00000000-0x000fffff]
+> > [    0.000000]  [mem 0x00000000-0x000fffff] page 4k
+> > [    0.000000] init_memory_mapping: [mem 0x00100000-0x07ffffff]
+> > [    0.000000]  [mem 0x00100000-0x001fffff] page 4k
+> > [    0.000000]  [mem 0x00200000-0x07ffffff] page 2M
+> > [    0.000000] init_memory_mapping: [mem 0x09000000-0x0fffffff]
+> > [    0.000000]  [mem 0x09000000-0x0fffffff] page 2M
+> > [    0.000000] init_memory_mapping: [mem 0x11000000-0x1fffffff]
+> > [    0.000000]  [mem 0x11000000-0x1fffffff] page 2M
+> > [    0.000000] init_memory_mapping: [mem 0x21000000-0x2fffffff]
+> > [    0.000000]  [mem 0x21000000-0x2fffffff] page 2M
+> > [    0.000000] init_memory_mapping: [mem 0x31000000-0x3fffffff]
+> > [    0.000000]  [mem 0x31000000-0x3fffffff] page 2M
+> > [    0.000000] init_memory_mapping: [mem 0x41000000-0x7fffdfff]
+> > [    0.000000]  [mem 0x41000000-0x7fdfffff] page 2M
+> > [    0.000000]  [mem 0x7fe00000-0x7fffdfff] page 4k
+> 
+> OK. Is there any other reason than performance to do this?
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000020
-IP: [<ffffffff81103365>] audit_log_d_path+0x35/0xf0
-PGD 12fded067 PUD 142c06067 PMD 0 
-Oops: 0000 [#1] SMP 
-Modules linked in: tun fuse ipt_ULOG binfmt_misc nfnetlink nfc caif_socket caif phonet can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt rds af_key decnet rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 lockd sunrpc bluetooth rfkill ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack kvm_intel kvm crc32c_intel ghash_clmulni_intel microcode pcspkr i2c_i801 e1000e uinput i915 video i2c_algo_bit drm_kms_helper drm i2c_core
-CPU 5 
-Pid: 7007, comm: trinity-child5 Not tainted 3.6.0-rc4+ #36
-RIP: 0010:[<ffffffff81103365>]  [<ffffffff81103365>] audit_log_d_path+0x35/0xf0
-RSP: 0018:ffff880116b33ec8  EFLAGS: 00010246
-RAX: 0000000000000000 RBX: 0000000000000000 RCX: 0000000000000035
-RDX: ffffffff819dbf5d RSI: ffffffff819da5bb RDI: 0000000000000000
-RBP: ffff880116b33ee8 R08: ffff88001942533e R09: 0000000000000000
-R10: 0000000000000001 R11: 0000000000000000 R12: ffff880116b33f38
-R13: ffff880116b33f38 R14: ffffffff819fa1eb R15: 0000000000000005
-FS:  00007f5742581740(0000) GS:ffff880148600000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000020 CR3: 00000001046d3000 CR4: 00000000001407e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process trinity-child5 (pid: 7007, threadinfo ffff880116b32000, task ffff880019424d00)
-Stack:
- ffff880116b33ee8 0000000000000000 ffff880116b33f38 ffff880019424d00
- ffff880116b33f18 ffffffff81103522 00000000000001d0 ffff880119ed6500
- 00000000000001d0 0000000000000109 ffff880116b33f78 ffffffff811ebb95
-Call Trace:
- [<ffffffff81103522>] audit_log_link_denied+0x92/0x100
- [<ffffffff811ebb95>] sys_linkat+0x195/0x1e0
- [<ffffffff813573de>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff816a50ed>] system_call_fastpath+0x1a/0x1f
-Code: 5d e8 4c 89 65 f0 4c 89 6d f8 0f 1f 44 00 00 48 85 f6 48 89 fb 49 89 d5 74 11 48 89 f2 31 c0 48 c7 c6 bb a5 9d 81 e8 8b e1 ff ff <8b> 73 20 40 f6 c6 01 75 62 48 8b 3d 33 33 93 01 48 85 ff 74 4e 
-RIP  [<ffffffff81103365>] audit_log_d_path+0x35/0xf0
- RSP <ffff880116b33ec8>
-CR2: 0000000000000020
----[ end trace 85b88c850143bb1c ]---
+May be minor, but ..
 
-That's here in kernel/audit.c
+The first range [mem 0x00000000-0x07ffffff] is covered entirely by 2M
+page tables, instead of some 4K + some 2M.
 
-1433 
-1434         /* We will allow 11 spaces for ' (deleted)' to be appended */
-1435         pathname = kmalloc(PATH_MAX+11, ab->gfp_mask);
+-Jacob
 
-'ab' is NULL.
+> 
+> 			Pekka
+> 
 
-Looks like audit_log_link_denied needs to handle potential failure from
-audit_log_start and abort early. (oddly, it looks like every other
-function called there checks for !ab.)
-
-Maybe additional code should be added here to printk the audit message
-to dmesg so that we don't lose it entirely, but for now, minimal fix.
-
-Signed-off-by: Dave Jones <davej@redhat.com>
-
-diff --git a/kernel/audit.c b/kernel/audit.c
-index ea3b7b6..c3e85bb 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -1466,6 +1466,9 @@ void audit_log_link_denied(const char *operation, struct path *link)
- 
- 	ab = audit_log_start(current->audit_context, GFP_KERNEL,
- 			     AUDIT_ANOM_LINK);
-+	if (!ab)
-+		return;
-+
- 	audit_log_format(ab, "op=%s action=denied", operation);
- 	audit_log_format(ab, " pid=%d comm=", current->pid);
- 	audit_log_untrustedstring(ab, current->comm);
