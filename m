@@ -1,143 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757603Ab2IFPOA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 11:14:00 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55615 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757496Ab2IFPNx (ORCPT
+	id S1757657Ab2IFPOI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 11:14:08 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:59336 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757617Ab2IFPOF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 11:13:53 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: target-devel@vger.kernel.org, nab@linux-iscsi.org
-Subject: [PATCH 3.6 2/2] target: use a bounce buffer in transport_kmap_data_sg for 0 or 1-page sglist
-Date: Thu,  6 Sep 2012 17:13:30 +0200
-Message-Id: <1346944410-19850-3-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.7.11.2
-In-Reply-To: <1346944410-19850-1-git-send-email-pbonzini@redhat.com>
-References: <1346944410-19850-1-git-send-email-pbonzini@redhat.com>
+	Thu, 6 Sep 2012 11:14:05 -0400
+Message-ID: <1346944328.18408.34.camel@twins>
+Subject: Re: [PATCH tip/core/rcu 14/15] time: RCU permitted to stop idle
+ entry via softirq
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Date: Thu, 06 Sep 2012 17:12:08 +0200
+In-Reply-To: <1346352988-32444-14-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20120830185607.GA32148@linux.vnet.ibm.com>
+	 <1346352988-32444-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1346352988-32444-14-git-send-email-paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch started with the aim of fixing START STOP UNIT to a PSCSI
-device.  Right now, commands with a zero-size payload are skipped
-completely.  This is wrong; such commands should be passed down to the
-device and processed normally.  As a hint of this, we have a hack to
-clear a unit attention state on a zero-size REQUEST SENSE.
+On Thu, 2012-08-30 at 11:56 -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+> 
+> The can_stop_idle_tick() function complains if a softirq vector is
+> raised too late in the idle-entry process, presumably in order to
+> prevent dangling softirq invocations from being delayed across the
+> full idle period, which might be indefinitely long -- and if softirq
+> was asserted any later than the call to this function, such a delay
+> might well happen.
+> 
+> However, RCU needs to be able to use softirq to stop idle entry in
+> order to be able to drain RCU callbacks from the current CPU, which in
+> turn enables faster entry into dyntick-idle mode, which in turn reduces
+> power consumption.  Because RCU takes this action at a well-defined
+> point in the idle-entry path, it is safe for RCU to take this approach.
+> 
+> This commit therefore silences the error message that is sometimes
+> produced when the going-idle CPU suddenly finds that it has an RCU_SOFTIRQ
+> to process.  The error message will continue to be issued for other
+> softirq vectors.
+> 
+> Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
+> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+> ---
+>  include/linux/interrupt.h |    2 ++
+>  kernel/time/tick-sched.c  |    3 ++-
+>  2 files changed, 4 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+> index c5f856a..5e4e617 100644
+> --- a/include/linux/interrupt.h
+> +++ b/include/linux/interrupt.h
+> @@ -430,6 +430,8 @@ enum
+>  	NR_SOFTIRQS
+>  };
+>  
+> +#define SOFTIRQ_STOP_IDLE_MASK (~(1 << RCU_SOFTIRQ))
+> +
+>  /* map softirq index to softirq name. update 'softirq_to_name' in
+>   * kernel/softirq.c when adding a new softirq.
+>   */
+> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> index 024540f..4b1785a 100644
+> --- a/kernel/time/tick-sched.c
+> +++ b/kernel/time/tick-sched.c
+> @@ -436,7 +436,8 @@ static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
+>  	if (unlikely(local_softirq_pending() && cpu_online(cpu))) {
+>  		static int ratelimit;
+>  
+> -		if (ratelimit < 10) {
+> +		if (ratelimit < 10 &&
+> +		    (local_softirq_pending() & SOFTIRQ_STOP_IDLE_MASK)) {
+>  			printk(KERN_ERR "NOHZ: local_softirq_pending %02x\n",
+>  			       (unsigned int) local_softirq_pending());
+>  			ratelimit++;
 
-The problem with fixing this, is that we do not have a page to pass
-back to the caller of transport_kmap_data_sg.  But this is just
-a special case of a more general overflow that could happen after
-using transport_kmap_data_sg.  For example, the REQUEST_SENSE handler
-expects 8 bytes, but if you send a CDB with a small allocation length
-(e.g. 4 bytes).  you might end up with a single-page sglist and a large
-sg->offset.  This would make buf[7] already inaccessible.
+Urgh.. yuck. So either add a very verbose comment here on why its OK for
+RCU (the changelog is rather vague about it), or try and come up with
+something better.
 
-Luckily, transport_kmap_data_sg is not called on the I/O path, so we can
-simply allocate a one-page bounce buffer there, which indeed also takes
-care of zero-sized transfers.
----
- drivers/target/target_core_transport.c |   62 ++++++++++++++-----------------
- 1 files changed, 28 insertions(+), 34 deletions(-)
-
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index 09028af..a77c8aa 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -2181,20 +2181,32 @@ EXPORT_SYMBOL(transport_generic_map_mem_to_cmd);
- 
- void *transport_kmap_data_sg(struct se_cmd *cmd)
- {
-+	u32 npages = DIV_ROUND_UP(cmd->data_length, PAGE_SIZE);
- 	struct scatterlist *sg = cmd->t_data_sg;
- 	struct page **pages;
- 	int i;
- 
--	BUG_ON(!sg);
-+	BUG_ON(!sg && npages > 0);
-+
- 	/*
- 	 * We need to take into account a possible offset here for fabrics like
- 	 * tcm_loop who may be using a contig buffer from the SCSI midlayer for
- 	 * control CDBs passed as SGLs via transport_generic_map_mem_to_cmd()
-+	 *
-+	 * This could cause overflows if the buffer is too small for the caller.
-+	 * For example, the REQUEST_SENSE handler expects 8 bytes, but it is
-+	 * possible to send a CDB with a small allocation length (e.g. 4 bytes).
-+	 * In this case, we could have a single-page sglist with a large offset,
-+	 * so that buf[7] is already inaccessible.
-+	 *
-+	 * But transport_kmap_data_sg is not called on the I/O path, so we can
-+	 * simply allocate a one-page bounce buffer here.  This also takes care
-+	 * of the case of zero-sized transfers.
- 	 */
--	if (!cmd->t_data_nents)
--		return NULL;
--	else if (cmd->t_data_nents == 1)
--		return kmap(sg_page(sg)) + sg->offset;
-+	if (npages <= 1) {
-+		cmd->t_data_vmap = kzalloc(PAGE_SIZE, GFP_KERNEL);
-+		return cmd->t_data_vmap;
-+	}
- 
- 	/* >1 page. use vmap */
- 	pages = kmalloc(sizeof(*pages) * cmd->t_data_nents, GFP_KERNEL);
-@@ -2217,14 +2229,18 @@ EXPORT_SYMBOL(transport_kmap_data_sg);
- 
- void transport_kunmap_data_sg(struct se_cmd *cmd)
- {
--	if (!cmd->t_data_nents) {
--		return;
--	} else if (cmd->t_data_nents == 1) {
--		kunmap(sg_page(cmd->t_data_sg));
--		return;
--	}
-+	u32 npages = DIV_ROUND_UP(cmd->data_length, PAGE_SIZE);
-+	if (npages <= 1) {
-+		if (npages) {
-+			struct scatterlist *sg = cmd->t_data_sg;
-+			u8 *dest = kmap(sg_page(sg));
-+			memcpy(dest + sg->offset, cmd->t_data_vmap, sg->length);
-+			kunmap(sg_page(sg));
-+		}
-+		kfree(cmd->t_data_vmap);
-+	} else
-+		vunmap(cmd->t_data_vmap);
- 
--	vunmap(cmd->t_data_vmap);
- 	cmd->t_data_vmap = NULL;
- }
- EXPORT_SYMBOL(transport_kunmap_data_sg);
-@@ -2290,28 +2306,6 @@ int transport_generic_new_cmd(struct se_cmd *cmd)
- 		if (ret < 0)
- 			goto out_fail;
- 	}
--	/*
--	 * If this command doesn't have any payload and we don't have to call
--	 * into the fabric for data transfers, go ahead and complete it right
--	 * away.
--	 */
--	if (!cmd->data_length) {
--		spin_lock_irq(&cmd->t_state_lock);
--		cmd->t_state = TRANSPORT_COMPLETE;
--		cmd->transport_state |= CMD_T_ACTIVE;
--		spin_unlock_irq(&cmd->t_state_lock);
--
--		if (cmd->t_task_cdb[0] == REQUEST_SENSE) {
--			u8 ua_asc = 0, ua_ascq = 0;
--
--			core_scsi3_ua_clear_for_request_sense(cmd,
--					&ua_asc, &ua_ascq);
--		}
--
--		INIT_WORK(&cmd->work, target_complete_ok_work);
--		queue_work(target_completion_wq, &cmd->work);
--		return 0;
--	}
- 
- 	atomic_inc(&cmd->t_fe_count);
- 
--- 
-1.7.1
-
+Where does RCU flush the pending softirq? Does it flush all softirqs or
+only the RCU one? Can we move the check after RCU does this so we can
+avoid the special case?
