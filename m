@@ -1,85 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759433Ab2IFRqM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 13:46:12 -0400
-Received: from [65.55.88.15] ([65.55.88.15]:54475 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1759377Ab2IFRqK (ORCPT
+	id S1759430Ab2IFRrU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 13:47:20 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:51928 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759372Ab2IFRrT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 13:46:10 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(zz98dI936eI1432I4015Izz1202hzzz2dh668h839h944hd25hf0ah11b5h121eh1220h1155h)
-X-WSS-ID: 0M9XVYU-02-E2R-02
-X-M-MSG: 
-Date: Thu, 6 Sep 2012 19:44:52 +0200
-From: Robert Richter <robert.richter@amd.com>
+	Thu, 6 Sep 2012 13:47:19 -0400
+Date: Thu, 6 Sep 2012 10:46:52 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>
-CC: David Ahern <dsahern@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH 08/11] perf tool: precise mode requires exclude_guest
-Message-ID: <20120906174452.GC8285@erda.amd.com>
-References: <20120723181358.GC6717@infradead.org>
- <500EAF23.8060909@gmail.com>
- <20120724161507.GG3732@erda.amd.com>
- <500EDB50.3070704@gmail.com>
- <20120724180312.GJ6717@infradead.org>
- <5010D2B1.3000206@gmail.com>
- <1343290109.26034.82.camel@twins>
- <20120803135117.GC3732@erda.amd.com>
- <50477332.1000902@gmail.com>
- <1346882872.2600.63.camel@twins>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Subject: Re: [PATCH RFC tip/core/rcu] Add callback-free CPUs
+Message-ID: <20120906174652.GM2448@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120905213945.GA15216@linux.vnet.ibm.com>
+ <1346881720.2600.48.camel@twins>
+ <20120905234443.GY3308@linux.vnet.ibm.com>
+ <1346926417.2600.73.camel@twins>
+ <20120906164745.GF2448@linux.vnet.ibm.com>
+ <1346950736.18408.43.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1346882872.2600.63.camel@twins>
+In-Reply-To: <1346950736.18408.43.camel@twins>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12090617-4242-0000-0000-000002CF65C0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David,
+On Thu, Sep 06, 2012 at 06:58:56PM +0200, Peter Zijlstra wrote:
+> On Thu, 2012-09-06 at 09:47 -0700, Paul E. McKenney wrote:
+> > The key point is "would simple put RCU into extended quiescent state".
+> > This can only happen if the CPU has no callbacks.  If the CPU does have
+> > callbacks, then RCU will need to do some work to advance the callbacks.
+> > Advancing the callbacks requires that RCU periodically do work on that
+> > CPU, resulting in OS jitter.
+> 
+> But since its then not actually in adaptive-tick mode (the tick is still
+> running) who cares? It will only disable the tick once all preconditions
+> are met, this includes RCU being in extended qs, so until that time...
 
-On 06.09.12 00:07:52, Peter Zijlstra wrote:
-> On Wed, 2012-09-05 at 09:43 -0600, David Ahern wrote:
-> > We need to require exclude_guest when using precise attribute with perf 
-> > else all running VMs on Intel-based servers will crash. I do not have an 
-> > AMD based server to even attempt the preferred solution.
+The fact that it is then not actually in adaptive-tick mode is exactly
+the problem.  In other words, if the grace-period processing is offloaded
+along with the callbacks, then no-CBs CPUs can get into adaptive-tick
+mode more quickly than CPUs processing their own CBs.  Getting these
+CPUs into adaptive-tick mode more quickly reduces OS jitter, which is
+one big expected benefit of adaptive-tick mode.
 
-do you have a perf tool patch ready that enables exclude_guest per
-default for precise events? I have ibs kernel code that returns EINVAL
-in this case.  Current perf tool should then fall back by sending
-another syscall with the exclude_guest modifier disabled. This should
-work for ibs. Testing your patch wouln't be an effort for me.
+> > > That way you could run the entire state thing from a kthread with random
+> > > affinity, all 'per-cpu' data would still be fine since only the one
+> > > kthread will access it, even though locality might suffer somewhat.
+> > 
+> > Well, the current patch set does move much of the grace-period machinery
+> > to a kthread.  Much of the remaining work needs to remain on the CPUs
+> > (at least those not in an extended quiescent state) in order to keep
+> > the overhead of the read-side primitives and scheduler hooks inexpensive. 
+> 
+> Ah indeed, what you're saying is that the data required by those hooks
+> needs to be accessed locally in order to avoid proper atomic ops.
 
-To prevent Intel-based servers from crashing, pebs should be only
-enabled if the exclude_guest modifier is enabled. I guess there is
-already kernel code to prevent this, but didn't look at the sources.
+Yep, that is it!
 
-To prevent probing the kernel with syscalls to detect pmu features, I
-suggested some time ago to introduce
+> So then you do indeed need to break the state machine into two parts,
+> and I guess that's the bit you're struggling with.
 
- /sys/bus/event_source/devices/*/flags
+Exactly!  I should be able to work something out without too much trouble,
+but it was not going to happen in time for Plumbers, hence the crude
+prototype.
 
-or so similar to /proc/cpuinfo:flags. Any opinions on that?
+> Still I would not make this more complex than it needs to be, if the
+> tick is running we can use this to drive the state machine, if its not,
+> we are in extended qs and we don't need to drive the tick.
 
-There is also the option to emulate exclude_guest for ibs in
-software. So far I didn't have the time to look at this. We could
-still add this in the future. Since we need to fix current mainline
-anyway where such a patch wouldn't go in for v3.6, I will send my
-current ibs kernel fixes I mentioned above next days. It would be
-great to test this also with your patch.
+True, but an important goal of no-CBs CPUs is to spend more time in
+tickless mode, thus reducing OS jitter.
 
-Thanks,
-
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+							Thanx, Paul
 
