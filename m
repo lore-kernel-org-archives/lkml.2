@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810Ab2IFW2z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 18:28:55 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:55006 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751656Ab2IFW2x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 18:28:53 -0400
-Date: Thu, 6 Sep 2012 15:28:49 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-Cc: device-mapper development <dm-devel@redhat.com>,
-        linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tj@kernel.org, Alasdair Kergon <agk@redhat.com>, vgoyal@redhat.com
-Subject: Re: [dm-devel] [PATCH v8 3/8] dm: Use bioset's front_pad for
- dm_rq_clone_bio_info
-Message-ID: <20120906222849.GI25236@google.com>
-References: <1346876849-15820-1-git-send-email-koverstreet@google.com>
- <1346876849-15820-4-git-send-email-koverstreet@google.com>
- <504816AB.8080105@ce.jp.nec.com>
+	id S1753228Ab2IFW3j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 18:29:39 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:36680 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751778Ab2IFW3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 18:29:38 -0400
+Date: Thu, 6 Sep 2012 15:29:33 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Matt Mackall <mpm@selenic.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH] slab: fix the DEADLOCK issue on l3 alien lock
+Message-ID: <20120906222933.GR2448@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <5044692D.7080608@linux.vnet.ibm.com>
+ <5046B9EE.7000804@linux.vnet.ibm.com>
+ <0000013996b6f21d-d45be653-3111-4aef-b079-31dc673e6fd8-000000@email.amazonses.com>
+ <504812E7.3000700@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <504816AB.8080105@ce.jp.nec.com>
+In-Reply-To: <504812E7.3000700@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12090622-7182-0000-0000-000002873730
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 06, 2012 at 12:21:15PM +0900, Jun'ichi Nomura wrote:
-> On 09/06/12 05:27, Kent Overstreet wrote:
-> > @@ -2718,7 +2705,8 @@ struct dm_md_mempools *dm_alloc_md_mempools(unsigned type, unsigned integrity)
-> >  	if (!pools->tio_pool)
-> >  		goto free_io_pool_and_out;
-> >  
-> > -	pools->bs = bioset_create(pool_size, 0);
-> > +	pools->bs = bioset_create(pool_size,
-> > +				  offsetof(struct dm_rq_clone_bio_info, clone));
-> >  	if (!pools->bs)
-> >  		goto free_tio_pool_and_out;
+On Thu, Sep 06, 2012 at 11:05:11AM +0800, Michael Wang wrote:
+> On 09/05/2012 09:55 PM, Christoph Lameter wrote:
+> > On Wed, 5 Sep 2012, Michael Wang wrote:
+> > 
+> >> Since the cachep and cachep->slabp_cache's l3 alien are in the same lock class,
+> >> fake report generated.
+> > 
+> > Ahh... That is a key insight into why this occurs.
+> > 
+> >> This should not happen since we already have init_lock_keys() which will
+> >> reassign the lock class for both l3 list and l3 alien.
+> > 
+> > Right. I was wondering why we still get intermitted reports on this.
+> > 
+> >> This patch will invoke init_lock_keys() after we done enable_cpucache()
+> >> instead of before to avoid the fake DEADLOCK report.
+> > 
+> > Acked-by: Christoph Lameter <cl@linux.com>
 > 
-> frontpad is not necessary if type is DM_TYPE_BIO_BASED.
+> Thanks for your review.
 > 
-> Other pool creation in that function do something like:
-> 	pools->bs = (type == DM_TYPE_BIO_BASED) ?
-> 		    bioset_create(pool_size, 0) :
-> 		    bioset_create(pool_size, offsetof(struct dm_rq_clone_bio_info, clone));
-> 
+> And add Paul to the cc list(my skills on mailing is really poor...).
 
-Eh, it doesn't really matter considering it's two pointers of padding
-and struct bio + the inline vecs are something like 200 bytes, but I can
-do it if it makes you happy. Can I get someone's acked-by?
+Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
