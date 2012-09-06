@@ -1,46 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753398Ab2IFMgt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 08:36:49 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:51211 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752803Ab2IFMgs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 08:36:48 -0400
-Message-ID: <50489853.3050906@linux.vnet.ibm.com>
-Date: Thu, 06 Sep 2012 18:04:27 +0530
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1753564Ab2IFMhL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 08:37:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20595 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752431Ab2IFMhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 08:37:08 -0400
+Message-ID: <504898E5.1070507@redhat.com>
+Date: Thu, 06 Sep 2012 14:36:53 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: Andi Kleen <ak@linux.intel.com>
-CC: Tony Luck <tony.luck@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        bp@amd64.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-edac@vger.kernel.org, ananth@in.ibm.com
-Subject: Re: [PATCH] [mcelog] Start using the new sysfs tunables location
-References: <20120905102156.9423.27806.stgit@localhost.localdomain> <20120905103237.9726.56131.stgit@localhost.localdomain> <20120905184708.GC16230@one.firstfloor.org> <CA+8MBbKx7x=MxgtV5URYuDWQcxz0nqohVB8gRpBHtDxqMBb9uw@mail.gmail.com> <20120906122850.GI17289@tassilo.jf.intel.com>
-In-Reply-To: <20120906122850.GI17289@tassilo.jf.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Ric Wheeler <ricwheeler@gmail.com>
+CC: axboe@kernel.dk, Mike Snitzer <snitzer@redhat.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [Ping^3] Re: [PATCH] sg_io: allow UNMAP and WRITE SAME without
+ CAP_SYS_RAWIO
+References: <1342801801-15617-1-git-send-email-pbonzini@redhat.com> <50195108.1090105@redhat.com> <503CA5BA.2040003@redhat.com> <50476480.9010302@redhat.com> <5047B38D.9000607@gmail.com> <50484345.8040508@redhat.com> <504889A1.2090507@gmail.com> <50488DAD.3030208@redhat.com> <5048922C.20901@gmail.com>
+In-Reply-To: <5048922C.20901@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-x-cbid: 12090612-7014-0000-0000-000001DA275A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/06/2012 05:58 PM, Andi Kleen wrote:
->> The change is still under discussion. Stage one is to add the new global
->> pathnames in addition to keeping the old per-cpu ones. Also fix all utilities
->> (just mcelog(8) as far as we know) to prefer the new paths.
->
-> But why do you even want to change it?  Does it fix anything?
-> AFAIK the old setup -- while not being pretty -- works just fine.
+Il 06/09/2012 14:08, Ric Wheeler ha scritto:
+>> According to the standard, the translation layer can write a
+>> user-provided pattern to every sector in the disk.  It's an optional
+>> feature and libata doesn't do that, but it is still possible.
+> 
+> It is not possible today with our stack though, any patch that would
+> change that would also need to be vetted.
 
-The reason for this was explained in this thread:
-http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg298302.html
+It is not possible with SATA disks, but native SCSI disks might well
+interpret FORMAT UNIT destructively.
 
-Even if we decide not to remove these tunables from under their current 
-per-cpu location, I still think it is much cleaner to have them 
-available under /sys/devices/system/machinecheck.
+>>> I don't see allowing anyone who can open the device to zero the data as
+>>> better though :)
+>> Note: anyone who can open it for writing!  And they can just as well
+>> issue WRITE, it just takes a little more effort than with WRITE SAME. :)
+>>   If you only have read access, you cannot issue WRITE or FORMAT UNIT,
+>> and with this patch you will not be able to issue WRITE SAME.
+> 
+> This just seems like an argument over whether or not capabilities make
+> sense. In general, anything as destructive as a single CDB that can kill
+> all of your data should be tightly controlled.
 
+In practice, a single write to the first MB of the disk is just as
+destructive.  For that you do not even need a SCSI command.
 
-- Naveen
+> Pushing more code in the data path is not where we are going - we
+> routinely need to disable IO scheduling for example when driving IO to
+> high speed/low latency devices and are actively looking at how to tackle
+> other performance bottlenecks in the stack.
 
+I am not talking about the regular data path, only of SG_IO.
+
+> I don't see a strong reason that our existing scheme (root or
+> CAP_SYS_RAWIO access) prevents you from doing what you need to do.
+
+Here are three:
+
+- CAP_SYS_RAWIO partly bypasses DAC; you can issue destructive commands
+even if you only opened the disk for reading.  CAP_SYS_RAWIO also gives
+access to _really_ destructive commands (WRITE BUFFER and PERSISTENT
+RESERVE OUT for example).
+
+- CAP_SYS_RAWIO lets you send SCSI commands to partitions, and they will
+gladly read/write the disk going outside the boundaries of the
+partition.  Changing this behavior was rejected upstream already.
+
+- CAP_SYS_RAWIO also gives access to I/O ports, mmap at address 0, and
+too many other insecure things.
+
+All the above mean that:
+
+- any application using CAP_SYS_RAWIO would have to implement its own
+whitelisting, even if just to duplicate what is done in the kernel;
+
+- exploiting a CAP_SYS_RAWIO process leads to root too easily, and it is
+not possible to give the capability to anything that will run in a
+hostile environment (in my case QEMU).
+
+Paolo
