@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758433Ab2IFP0a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 11:26:30 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:33245 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757793Ab2IFPYR (ORCPT
+	id S1758389Ab2IFP02 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 11:26:28 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:49110 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755379Ab2IFPYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 6 Sep 2012 11:24:17 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
 To: Mauro Carvalho Chehab <mchehab@infradead.org>
 Cc: kernel-janitors@vger.kernel.org, Julia.Lawall@lip6.fr,
         linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 7/14] drivers/media/pci/ngene/ngene-core.c: fix error return code
-Date: Thu,  6 Sep 2012 17:23:54 +0200
-Message-Id: <1346945041-26676-7-git-send-email-peter.senna@gmail.com>
+Subject: [PATCH 6/14] drivers/media/pci/dm1105/dm1105.c: fix error return code
+Date: Thu,  6 Sep 2012 17:23:55 +0200
+Message-Id: <1346945041-26676-8-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -48,21 +48,23 @@ ret@p1 = 0
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
 ---
- drivers/media/pci/ngene/ngene-core.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/media/pci/dm1105/dm1105.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/media/pci/ngene/ngene-core.c b/drivers/media/pci/ngene/ngene-core.c
-index c8e0d5b..6bb44f1 100644
---- a/drivers/media/pci/ngene/ngene-core.c
-+++ b/drivers/media/pci/ngene/ngene-core.c
-@@ -1691,7 +1691,8 @@ int __devinit ngene_probe(struct pci_dev *pci_dev,
- 	dev->i2c_current_bus = -1;
+diff --git a/drivers/media/pci/dm1105/dm1105.c b/drivers/media/pci/dm1105/dm1105.c
+index a609b3a..f147031 100644
+--- a/drivers/media/pci/dm1105/dm1105.c
++++ b/drivers/media/pci/dm1105/dm1105.c
+@@ -1128,8 +1128,10 @@ static int __devinit dm1105_probe(struct pci_dev *pdev,
+ 	INIT_WORK(&dev->work, dm1105_dmx_buffer);
+ 	sprintf(dev->wqn, "%s/%d", dvb_adapter->name, dvb_adapter->num);
+ 	dev->wq = create_singlethread_workqueue(dev->wqn);
+-	if (!dev->wq)
++	if (!dev->wq) {
++		ret = -ENOMEM;
+ 		goto err_dvb_net;
++	}
  
- 	/* Register DVB adapters and devices for both channels */
--	if (init_channels(dev) < 0)
-+	stat = init_channels(dev);
-+	if (stat < 0)
- 		goto fail2;
- 
- 	return 0;
+ 	ret = request_irq(pdev->irq, dm1105_irq, IRQF_SHARED,
+ 						DRIVER_NAME, dev);
 
