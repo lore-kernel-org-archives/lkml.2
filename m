@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904Ab2IFMSq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 08:18:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38665 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751275Ab2IFMSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 08:18:44 -0400
-Date: Thu, 6 Sep 2012 14:18:42 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        Dave Jones <davej@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v2] memcg: first step towards hierarchical controller
-Message-ID: <20120906121842.GG22426@dhcp22.suse.cz>
-References: <20120904143552.GB15683@dhcp22.suse.cz>
- <50461241.5010300@parallels.com>
- <20120904145414.GC15683@dhcp22.suse.cz>
- <50461610.30305@parallels.com>
- <20120904162501.GE15683@dhcp22.suse.cz>
- <504709D4.2010800@parallels.com>
- <20120905144942.GH5388@dhcp22.suse.cz>
- <20120905201238.GE13737@google.com>
- <20120906120623.GE22426@dhcp22.suse.cz>
- <50489270.7060108@parallels.com>
+	id S1753897Ab2IFMUE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 08:20:04 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:36029 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752721Ab2IFMUA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 08:20:00 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
+        bfields@fieldses.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH v2 1/5] fat: allocate persistent inode numbers
+References: <1346774264-8031-1-git-send-email-linkinjeon@gmail.com>
+	<20120904161747.GJ23464@ZenIV.linux.org.uk>
+	<CAKYAXd_wTxqbC-UxYimCkZtvSddx=f3FG0hoiEY_doMjoxkKog@mail.gmail.com>
+	<87harc34d9.fsf@devron.myhome.or.jp>
+	<CAKYAXd-8aztDe1QiFT=NSQX8J+h_FM+cAWwo+Q+fUQHpNGTctw@mail.gmail.com>
+Date: Thu, 06 Sep 2012 21:19:50 +0900
+In-Reply-To: <CAKYAXd-8aztDe1QiFT=NSQX8J+h_FM+cAWwo+Q+fUQHpNGTctw@mail.gmail.com>
+	(Namjae Jeon's message of "Thu, 6 Sep 2012 15:46:06 +0900")
+Message-ID: <87y5knz6l5.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50489270.7060108@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 06-09-12 16:09:20, Glauber Costa wrote:
-> On 09/06/2012 04:06 PM, Michal Hocko wrote:
-> > On Wed 05-09-12 13:12:38, Tejun Heo wrote:
-> >> Hello, Michal.
-> >>
-> >> On Wed, Sep 05, 2012 at 04:49:42PM +0200, Michal Hocko wrote:
-> >>> Can we settle on the following 3 steps?
-> >>> 1) warn about "flat" hierarchies (give it X releases) - I will push it
-> >>>    to as many Suse code streams as possible (hope other distributions
-> >>>    could do the same)
-> >>
-> >> I think I'm just gonna trigger WARN from cgroup core if anyone tries
-> >> to create hierarchy with a controller which doesn't support full
-> >> hierarchy.  WARN_ON_ONCE() at first and then WARN_ON() on each
-> >> creation later on.
-> > 
-> > How do you find out that a controller is not fully hierarchical? Memory
-> > controller can be both.
-> > 
-> >>> 2) flip the default on the root cgroup & warn when somebody tries to
-> >>>    change it to 0 (give it another X releases) that the knob will be
-> >>>    removed
-> >>> 3) remove the knob and the whole nonsese
-> >>> 4) revert 3 if somebody really objects
-> >>
-> >> If we can get to 3, I don't think 4 would be a problem.
-> > 
-> > Agreed.
-> > 
-> Just so I understand it:
-> 
-> Michal clearly objected before folding his patch with my Kconfig patch.
-> But is there still opposition to merge both?
+Namjae Jeon <linkinjeon@gmail.com> writes:
 
-I do not find the config option very much useful but if others feel it
-really is I won't block it.
+>>> In this long discusstion about the FAT acceptance over NFS, our belief
+>>> is still that the objective should be to reduce errors as much as
+>>> possible and then if there are certain scenarios - at least that could
+>>> be highlighted as a limitation in Documentation instead of completely
+>>> discarding the usage of FAT over NFS.  So how about puttting rename
+>>> scenario as a limitation ? In ideal scenario how many times this is
+>>> going to happen ?
+>>
+>> My understanding of your patches is to introduce the silent corruption
+>> bug by getting wrong location via ino on some cases, instead of
+>> ESTALE. And make surprise to userland by change ino.
+>>
+>> Why is it safe to change ino? If you are saying to remove the changing
+>> ino on rename, how handle the case of collision?
+> Yes, agreed this would lead to collision. So, If we are choosing
+> 'i_pos' as inode
+> number, We need to have a mechanism to avoid this 'i_pos' being reused.
+>
+> We can have one thing over here. As a part of avoidance for such scenarios -
+> We can return EBUSY for this rename operation. i.e., If the inode is being
+> referenced then in such cases it makes sense to return EBUSY over NFS and
+>  forcus on the large part of the solution which is making FAT stable.
+>
+> Let me know your opinion.
 
-> By having it default-n, only people that are either sure that this is
-> safe for them, or have more clearly defined lifecycles could set it.
+It sounds like sane to provide the limited but stable behavior, with the
+option. But at first, I'd like to see the read-only export but clean
+solution, and make it stable. (I'm not thinking about the implementation
+detail. It may be the stable ino solution, or may not be.)
+
+After that, we can make it writable incrementally.
 -- 
-Michal Hocko
-SUSE Labs
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
