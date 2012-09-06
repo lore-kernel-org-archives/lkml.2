@@ -1,74 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755432Ab2IFI3n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 04:29:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43945 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752760Ab2IFI3k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 04:29:40 -0400
-Date: Thu, 6 Sep 2012 09:29:35 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 2/2] mm: support MIGRATE_DISCARD
-Message-ID: <20120906082935.GN11266@suse.de>
-References: <1346832673-12512-1-git-send-email-minchan@kernel.org>
- <1346832673-12512-2-git-send-email-minchan@kernel.org>
- <20120905105611.GI11266@suse.de>
- <20120906053112.GA16231@bbox>
+	id S1756388Ab2IFIa2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 04:30:28 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35393 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755249Ab2IFIaW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 04:30:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120906053112.GA16231@bbox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1346917833.10162.4.camel@mattotaupa>
+References: <1346881623-388-1-git-send-email-msb@chromium.org>
+	<CAAQKjZPGefy9333AGTN1iwxWuCiPvi85raDE7ijDmRcm9PPWWw@mail.gmail.com>
+	<1346917833.10162.4.camel@mattotaupa>
+Date: Thu, 6 Sep 2012 17:30:22 +0900
+X-Google-Sender-Auth: 3y2Q6h2gOc5PyU9YsVjT8l-h260
+Message-ID: <CAAQKjZM6afLZaC6D6K2-51Yp2FUHmHHawcO67Q6b8EEM2A5+4w@mail.gmail.com>
+Subject: Re: [PATCH] drm/exynos: fix double call of drm_prime_(init/destroy)_file_private
+From: InKi Dae <inki.dae@samsung.com>
+To: Paul Menzel <paulepanter@users.sourceforge.net>
+Cc: =?ISO-8859-1?Q?St=E9phane_Marchesin?= <marcheu@chromium.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 06, 2012 at 02:31:12PM +0900, Minchan Kim wrote:
-> Hi Mel,
-> 
-> On Wed, Sep 05, 2012 at 11:56:11AM +0100, Mel Gorman wrote:
-> > On Wed, Sep 05, 2012 at 05:11:13PM +0900, Minchan Kim wrote:
-> > > This patch introudes MIGRATE_DISCARD mode in migration.
-> > > It drops *clean cache pages* instead of migration so that
-> > > migration latency could be reduced by avoiding (memcpy + page remapping).
-> > > It's useful for CMA because latency of migration is very important rather
-> > > than eviction of background processes's workingset. In addition, it needs
-> > > less free pages for migration targets so it could avoid memory reclaiming
-> > > to get free pages, which is another factor increase latency.
-> > > 
-> > 
-> > Bah, this was released while I was reviewing the older version. I did
-> > not read this one as closely but I see the enum problems have gone away
-> > at least. I'd still prefer if CMA had an additional helper to discard
-> > some pages with shrink_page_list() and migrate the remaining pages with
-> > migrate_pages(). That would remove the need to add a MIGRATE_DISCARD
-> > migrate mode at all.
-> 
-> I am not convinced with your point. What's the benefit on separating
-> reclaim and migration? For just removing MIGRATE_DISCARD mode?
+Hi,
 
-Maintainability. There are reclaim functions and there are migration
-functions. Your patch takes migrate_pages() and makes it partially a
-reclaim function mixing up the responsibilities of migrate.c and vmscan.c.
+2012/9/6 Paul Menzel <paulepanter@users.sourceforge.net>:
+> Dear Inki Dae,
+>
+>
+> Am Donnerstag, den 06.09.2012, 11:35 +0900 schrieb InKi Dae:
+>
+>> 2012/9/6 Mandeep Singh Baines <msb@chromium.org>:
+>> > The double invocations are incorrect but seem to be safe so I don't
+>> > think this will fix any bugs.
+>> >
+>> > Before:
+>> >
+>> > [    7.639366] drm_prime_init_file ee3675d0
+>> > [    7.639377] drm_prime_init_file ee3675d0
+>> > [    7.639507] drm_prime_destroy_file ee3675d0
+>> > [    7.639518] drm_prime_destroy_file ee3675d0
+>> > [    7.639802] drm_prime_init_file ee372390
+>> > [    7.639810] drm_prime_init_file ee372390
+>> > [    8.473316] drm_prime_init_file ee356390
+>> > [    8.473331] drm_prime_init_file ee356390
+>> >
+>> > After:
+>> >
+>> > [    6.363842] drm_prime_init_file edc2e5d0
+>> > [    6.363994] drm_prime_destroy_file edc2e5d0
+>> > [    6.364260] drm_prime_init_file edc2e750
+>> > [    8.004837] drm_prime_init_file ee36ded0
+>> >
+>> > Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+>> > CC: Stéphane Marchesin <marcheu@chromium.org>
+>> > CC: Pawel Osciak <posciak@google.com>
+>> > CC: Inki Dae <inki.dae@samsung.com>
+>> > CC: Joonyoung Shim <jy0922.shim@samsung.com>
+>> > CC: Seung-Woo Kim <sw0312.kim@samsung.com>
+>> > CC: Kyungmin Park <kyungmin.park@samsung.com>
+>> > CC: David Airlie <airlied@linux.ie>
+>> > CC: dri-devel@lists.freedesktop.org
+>>
+>> remove all CCs
+>
+> I guess they were generated by some script. So they should be fine, no?
+>
+> Mandeep, if you put CC in here those people should be CCed in real. `git
+> send-email` should take care of that but I do not see everyone in the CC
+> field. Or does `git send-email` use blind carbon copy (BCC) field?
+>
+>> and can you send it again using text mode?
+>
+> At least to the list it was send in plain text mode.
+>
+>> your patch is messed up when I try to get patch file.
+>
+> Everything is fine on my side. Especially since Mandeep used `git
+> send-email` which should do everything correctly.
+>
 
-> I don't think it's not bad because my implementation is very simple(maybe
-> it's much simpler than separating reclaim and migration) and
-> could be used by others like memory-hotplug in future.
+your patch was encoded with 'Content-Transfer-Encoding: base64' so
+please use 7bit ascii like 'Content-Transfer-Encoding: 7bit'
 
-They could also have used the helper function from CMA that takes a list
-of pages, reclaims some and migrates other.
+>> Thanks.
+>> Inki Dae
+>
+> In your From address your name is written InKi with capital K. Which one
+> is correct?
+>
 
-> If you're not strong against with me, I would like to insist on my implementation.
-> 
+Inki is correct :)
 
-I'm not very strongly against it but I'm also very unhappy.
+Thanks.
+Inki Dae
 
--- 
-Mel Gorman
-SUSE Labs
+>
+> Thanks,
+>
+> Paul
+>
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+>
