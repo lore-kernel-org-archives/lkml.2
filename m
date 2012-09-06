@@ -1,137 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759305Ab2IFRET (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 13:04:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5562 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758152Ab2IFRER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 13:04:17 -0400
-Date: Thu, 6 Sep 2012 13:04:11 -0400 (EDT)
-From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
-X-X-Sender: lukas@new-host-2
-To: Marco Stornelli <marco.stornelli@gmail.com>
-cc: Linux FS Devel <linux-fsdevel@vger.kernel.org>, linux-mm@kvack.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/21] drop vmtruncate
-In-Reply-To: <5040C11C.4060505@gmail.com>
-Message-ID: <alpine.LFD.2.00.1209061255530.509@new-host-2>
-References: <5040C11C.4060505@gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1759354Ab2IFRG2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 13:06:28 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:48246 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759135Ab2IFRG1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 13:06:27 -0400
+Date: Thu, 6 Sep 2012 10:00:47 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 01/23] rcu: Move RCU grace-period
+ initialization into a kthread
+Message-ID: <20120906170047.GI2448@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120830181811.GA29154@linux.vnet.ibm.com>
+ <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346938342.18408.3.camel@twins>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346938342.18408.3.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12090617-6148-0000-0000-0000095A1045
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 Aug 2012, Marco Stornelli wrote:
+On Thu, Sep 06, 2012 at 03:32:22PM +0200, Peter Zijlstra wrote:
+> On Thu, 2012-08-30 at 11:18 -0700, Paul E. McKenney wrote:
+> > +static int rcu_gp_kthread(void *arg)
+> > +{
+> > +       unsigned long flags;
+> > +       struct rcu_data *rdp;
+> > +       struct rcu_node *rnp;
+> > +       struct rcu_state *rsp = arg;
+> > +
+> > +       for (;;) {
+> > +
+> > +               /* Handle grace-period start. */
+> > +               rnp = rcu_get_root(rsp);
+> > +               for (;;) {
+> > +                       wait_event_interruptible(rsp->gp_wq, rsp->gp_flags);
+> > +                       if (rsp->gp_flags)
+> > +                               break;
+> > +                       flush_signals(current);
+> > +               }
+> > +               raw_spin_lock_irqsave(&rnp->lock, flags); 
+> 
+> You're in a kthread, it should be impossible for IRQs to be disabled
+> here, no? Similar for most (all) other sites in this function.
+> 
+> Using the unconditional IRQ disable/enable is generally faster.
 
-> Date: Fri, 31 Aug 2012 15:50:20 +0200
-> From: Marco Stornelli <marco.stornelli@gmail.com>
-> To: Linux FS Devel <linux-fsdevel@vger.kernel.org>, linux-mm@kvack.org
-> Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-> Subject: [PATCH 00/21] drop vmtruncate
-> 
-> Hi all,
-> 
-> with this patch series I try to clean the vmtruncate code. The theory of
-> operation:
-> 
-> old               new
-> vmtruncate() =>   inode_newsize_ok+truncate_setsize+fs truncate
-> 
-> Where vmtruncate was used without any error check, the code now is:
-> 
-> if (inode_newsize_ok() == 0) {
-> 	truncate_setsize();
-> 	fs truncate();
-> }
-> 
-> So, performance and semantic nothing change at all. I think that maybe in some
-> point we can skip inode_newsize_ok (where the error check of vmtruncate wasn't
-> used) but since there is a swap check in case of no-extension, maybe it's
-> better to avoid regressions. After this clean, of course, each fs can clean in
-> a deeply way.
-> 
-> With these patches even the inode truncate callback is deleted.
-> 
-> Any comments/feedback/bugs are welcome.
+I suppose I could see my way to using raw_spin_lock_irq() here.  ;-)
 
-Could you explain the reason behind this change a little bit more ?
-This does not make any sense to me since you're replacing
-vmtruncate() which does basically 
+							Thanx, Paul
 
-if (inode_newsize_ok() == 0) {
-	truncate_setsize();
-	fs truncate();
-}
-
-as you mentioned above by exactly the same thing but doing it within
-the file system. It does not seem like an improvement to me ... how
-is this a clean up ?
-
-Thanks!
--Lukas
-
-> 
-> Marco Stornelli (21):
->   ufs: drop vmtruncate
->   sysv: drop vmtruncate
->   reiserfs: drop vmtruncate
->   procfs: drop vmtruncate
->   omfs: drop vmtruncate
->   ocfs2: drop vmtruncate
->   adfs: drop vmtruncate
->   affs: drop vmtruncate
->   bfs: drop vmtruncate
->   hfs: drop vmtruncate
->   hpfs: drop vmtruncate
->   jfs: drop vmtruncate
->   hfsplus: drop vmtruncate
->   hostfs: drop vmtruncate
->   logfs: drop vmtruncate
->   minix: drop vmtruncate
->   ncpfs: drop vmtruncate
->   nilfs2: drop vmtruncate
->   ntfs: drop vmtruncate
->   vfs: drop vmtruncate
->   mm: drop vmtruncate
-> 
->  fs/adfs/inode.c         |    5 +++--
->  fs/affs/file.c          |    8 +++++---
->  fs/affs/inode.c         |    5 ++++-
->  fs/bfs/file.c           |    5 +++--
->  fs/hfs/inode.c          |   19 +++++++++++++------
->  fs/hfsplus/inode.c      |   19 +++++++++++++------
->  fs/hostfs/hostfs_kern.c |    8 +++++---
->  fs/hpfs/file.c          |    8 +++++---
->  fs/hpfs/inode.c         |    5 ++++-
->  fs/jfs/file.c           |    6 ++++--
->  fs/jfs/inode.c          |   13 +++++++++----
->  fs/libfs.c              |    2 --
->  fs/logfs/readwrite.c    |   10 ++++++++--
->  fs/minix/file.c         |    6 ++++--
->  fs/minix/inode.c        |    7 +++++--
->  fs/ncpfs/inode.c        |    4 +++-
->  fs/nilfs2/file.c        |    1 -
->  fs/nilfs2/inode.c       |   18 +++++++++++++-----
->  fs/nilfs2/recovery.c    |    7 +++++--
->  fs/ntfs/file.c          |    8 +++++---
->  fs/ntfs/inode.c         |   11 +++++++++--
->  fs/ntfs/inode.h         |    4 ++++
->  fs/ocfs2/file.c         |    3 ++-
->  fs/omfs/file.c          |   12 ++++++++----
->  fs/proc/base.c          |    3 ++-
->  fs/proc/generic.c       |    3 ++-
->  fs/proc/proc_sysctl.c   |    3 ++-
->  fs/reiserfs/file.c      |    3 +--
->  fs/reiserfs/inode.c     |   15 +++++++++++----
->  fs/reiserfs/reiserfs.h  |    1 +
->  fs/sysv/file.c          |    5 +++--
->  fs/sysv/itree.c         |    7 +++++--
->  fs/ufs/inode.c          |    5 +++--
->  include/linux/fs.h      |    1 -
->  include/linux/mm.h      |    1 -
->  mm/truncate.c           |   23 -----------------------
->  36 files changed, 164 insertions(+), 100 deletions(-)
-> 
-> 
