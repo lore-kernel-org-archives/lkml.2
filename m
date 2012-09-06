@@ -1,72 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758889Ab2IEPyX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 11:54:23 -0400
-Received: from twin.jikos.cz ([89.185.236.188]:56293 "EHLO twin.jikos.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753801Ab2IEPyV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 11:54:21 -0400
-Date: Wed, 5 Sep 2012 17:54:04 +0200
-From: David Sterba <dave@jikos.cz>
-To: Miao Xie <miaox@cn.fujitsu.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Btrfs <linux-btrfs@vger.kernel.org>,
-        Linux Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Ext4 <linux-ext4@vger.kernel.org>,
-        viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@infradead.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: Re: [PATCH 1/2 RESEND] vfs: re-implement
- writeback_inodes_sb(_nr)_if_idle() and rename them
-Message-ID: <20120905155403.GL17430@twin.jikos.cz>
-Reply-To: dave@jikos.cz
-Mail-Followup-To: Miao Xie <miaox@cn.fujitsu.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Linux Btrfs <linux-btrfs@vger.kernel.org>,
-	Linux Fsdevel <linux-fsdevel@vger.kernel.org>,
-	Linux Ext4 <linux-ext4@vger.kernel.org>,
-	viro <viro@zeniv.linux.org.uk>,
-	Christoph Hellwig <hch@infradead.org>,
-	Kamal Mostafa <kamal@canonical.com>
-References: <503DB3E8.1000308@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <503DB3E8.1000308@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2011-07-01)
+	id S1758902Ab2IEP5H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 11:57:07 -0400
+Received: from li42-95.members.linode.com ([209.123.162.95]:41963 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753985Ab2IEP5F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Sep 2012 11:57:05 -0400
+X-Greylist: delayed 592 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Sep 2012 11:57:05 EDT
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+To: linux-kernel@vger.kernel.org
+Cc: patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-omap@vger.kernel.org,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+Subject: [PATCH] Don't clobber access methods when !regmap
+Date: Thu,  6 Sep 2012 16:45:32 +0300
+Message-Id: <1346939132-20187-1-git-send-email-panto@antoniou-consulting.com>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 29, 2012 at 02:17:12PM +0800, Miao Xie wrote:
-> writeback_inodes_sb(_nr)_if_idle() is re-implemented by replacing down_read()
-> with down_read_trylock() because
-> - If ->s_umount is write locked, then the sb is not idle. That is
->   writeback_inodes_sb(_nr)_if_idle() needn't wait for the lock.
-> - writeback_inodes_sb(_nr)_if_idle() grabs s_umount lock when it want to start
->   writeback, it may bring us deadlock problem when doing umount.
->   (Ex. Btrfs has such a problem, see the following URL
->        http://marc.info/?l=linux-btrfs&m=133540923510561&w=2)
-> 
-> The name of these two functions is cumbersome, so rename them to
-> try_to_writeback_inodes_sb(_nr).
-> 
-> This idea came from Christoph Hellwig.
-> Some code is from the patch of Kamal Mostafa.
-> 
-> Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
-Tested-by: David Sterba <dsterba@suse.cz>
+A snd-soc driver that doesn't support regmap blow up horribly
+when you assume that regmap is available. Fix it by marking
+the driver as not supporting regmap & not clobbering the codec
+access methods.
 
-> ---
-> Many users who use btrfs met the deadlock problem caused by writeback_inodes_sb(_nr)_if_idle(),
-> so I send this patch again and hope it will be received as soon as possible if nobody objects.
+This is immediately noticeable on the beagleboard where we crash,
+since we might have REGMAP enabled, but it doesn't mean that the
+omap driver uses it.
 
-Yes please, this makes testing of the 'autodefrag' mount option hard as
-the deadlock occurs frequently upon umount (when there's a background
-snapshot cleanup in progress).
+Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
 
->From the user's POV, the autodefrag improves performance, it's not yet
-on by default until it proves to be stable, the deadlocks were standing
-in the way for long.
+---
+ sound/soc/soc-io.c | 14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
-thanks,
-david
+diff --git a/sound/soc/soc-io.c b/sound/soc/soc-io.c
+index 29183ef..4e5b4ae 100644
+--- a/sound/soc/soc-io.c
++++ b/sound/soc/soc-io.c
+@@ -117,9 +117,6 @@ int snd_soc_codec_set_cache_io(struct snd_soc_codec *codec,
+ 	int ret;
+ 
+ 	memset(&config, 0, sizeof(config));
+-	codec->write = hw_write;
+-	codec->read = hw_read;
+-	codec->bulk_write_raw = snd_soc_hw_bulk_write_raw;
+ 
+ 	config.reg_bits = addr_bits;
+ 	config.val_bits = data_bits;
+@@ -151,7 +148,9 @@ int snd_soc_codec_set_cache_io(struct snd_soc_codec *codec,
+ 			 * multiples */
+ 			if (ret > 0)
+ 				codec->val_bytes = ret;
+-		}
++		} else
++			codec->using_regmap = false;
++
+ 		break;
+ 
+ 	default:
+@@ -161,6 +160,13 @@ int snd_soc_codec_set_cache_io(struct snd_soc_codec *codec,
+ 	if (IS_ERR(codec->control_data))
+ 		return PTR_ERR(codec->control_data);
+ 
++	/* only when using regmap; don't modify unconditionally */
++	if (codec->using_regmap) {
++		codec->write = hw_write;
++		codec->read = hw_read;
++		codec->bulk_write_raw = snd_soc_hw_bulk_write_raw;
++	}
++
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(snd_soc_codec_set_cache_io);
+-- 
+1.7.12
+
