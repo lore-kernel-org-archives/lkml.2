@@ -1,127 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933194Ab2IFV3I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 17:29:08 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:40616 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752024Ab2IFV3F convert rfc822-to-8bit (ORCPT
+	id S933204Ab2IFV3w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 17:29:52 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:37140 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759908Ab2IFV3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 17:29:05 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCH] wakeup: Use irqsave/irqrestore for events_lock
-Date: Thu, 6 Sep 2012 23:35:22 +0200
-User-Agent: KMail/1.13.6 (Linux/3.6.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Android Team <kernel-team@android.com>,
-        Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>
-References: <1346954857-52669-1-git-send-email-john.stultz@linaro.org>
-In-Reply-To: <1346954857-52669-1-git-send-email-john.stultz@linaro.org>
+	Thu, 6 Sep 2012 17:29:50 -0400
+Date: Thu, 6 Sep 2012 14:29:14 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: lockdep WARNING on check_critical_timing()
+Message-ID: <20120906212914.GE2448@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120905015937.GA20175@localhost>
+ <1346965229.1680.48.camel@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201209062335.23013.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346965229.1680.48.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12090621-4242-0000-0000-000002D02A36
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 06, 2012, John Stultz wrote:
-> Jon Medhurst (Tixy) recently noticed a problem with the
-> events_lock usage. One of the Android patches that uses
-> wakeup_sources calls wakeup_source_add() with irqs disabled.
-> However, the event_lock usage in wakeup_source_add() uses
-> spin_lock_irq()/spin_unlock_irq(), which reenables interrupts.
-> This results in lockdep warnings.
+On Thu, Sep 06, 2012 at 05:00:29PM -0400, Steven Rostedt wrote:
+> On Wed, 2012-09-05 at 09:59 +0800, Fengguang Wu wrote:
+> > Greetings,
+> > 
+> > This is possibly an aged warning.
+> > 
+> >         if (!hardirq_count()) {
+> >                 if (softirq_count()) {
+> >                         /* like the above, but with softirqs */
+> > =>                      DEBUG_LOCKS_WARN_ON(current->softirqs_enabled);
+> > 
+> > [    3.600059] Testing tracer preemptoff: 
+> > [    3.760076] ------------[ cut here ]------------
+> > [    3.760866] WARNING: at /c/kernel-tests/src/stable/kernel/lockdep.c:3506 check_flags+0x125/0x154()
+> > [    3.762160] Modules linked in:
+> > [    3.762643] Pid: 1, comm: swapper/0 Not tainted 3.6.0-rc3-00013-g01f8a27 #158
+> > [    3.763679] Call Trace:
+> > [    3.764053]  [<c1020916>] warn_slowpath_common+0x4d/0x62
+> > [    3.764838]  [<c105c000>] ? check_flags+0x125/0x154
+> > [    3.765567]  [<c102093f>] warn_slowpath_null+0x14/0x18
+> > [    3.766317]  [<c105c000>] check_flags+0x125/0x154
+> > [    3.766998]  [<c105e02f>] lock_acquire+0x3b/0xef
+> > [    3.767689]  [<c12461ba>] _raw_spin_lock_irqsave+0x3e/0x4e
+> > [    3.768494]  [<c12404b8>] ? check_critical_timing+0x112/0x160
+> > [    3.769340]  [<c12404b8>] check_critical_timing+0x112/0x160
+> > [    3.770047]  [<c1027474>] ? __do_softirq+0x19b/0x1f9
+> > [    3.770047]  [<c1027474>] ? __do_softirq+0x19b/0x1f9
+> > [    3.770047]  [<c1088549>] trace_preempt_on+0x8d/0xc9
+> > [    3.770047]  [<c1027238>] ? __local_bh_enable+0x87/0x8a
+> > [    3.770047]  [<c1046c85>] sub_preempt_count+0x7f/0x9c
+> > [    3.770047]  [<c1027238>] __local_bh_enable+0x87/0x8a
+> > [    3.770047]  [<c1027474>] __do_softirq+0x19b/0x1f9
+> > [    3.770047]  [<c10272d9>] ? ftrace_define_fields_irq_handler_entry+0x45/0x45
+> > [    3.770047]  <IRQ>  [<c1027723>] ? irq_exit+0x4f/0xa9
+> > [    3.770047]  [<c1015e03>] ? smp_apic_timer_interrupt+0x70/0x7e
+> > [    3.770047]  [<c1246daf>] ? apic_timer_interrupt+0x2f/0x34
+> > [    3.770047]  [<c108007b>] ? ring_buffer_discard_commit+0x24c/0x24c
+> > [    3.770047]  [<c1139c87>] ? __const_udelay+0x1/0x1c
+> > [    3.770047]  [<c108566f>] ? trace_selftest_startup_preemptoff+0x74/0xed
+> > [    3.770047]  [<c1085b57>] ? register_tracer+0x11c/0x1f7
+> > [    3.770047]  [<c13c1bf3>] ? init_function_trace+0xf/0xf
+> > [    3.770047]  [<c13c1c00>] ? init_irqsoff_tracer+0xd/0x11
+> > [    3.770047]  [<c1001158>] ? do_one_initcall+0x70/0x118
+> > [    3.770047]  [<c13afa03>] ? kernel_init+0xec/0x169
+> > [    3.770047]  [<c13af917>] ? start_kernel+0x2f2/0x2f2
+> > [    3.770047]  [<c124773a>] ? kernel_thread_helper+0x6/0x10
+> > 
 > 
-> The fix is to use spin_lock_irqsave()/spin_lock_irqrestore()
-> instead for the events_lock.
+> This is the same as a previous bug. It is caused by rcu doing the check
+> in the function tracer and then triggering a lockdep warning.
 > 
-> Full bug report here:
-> https://bugs.launchpad.net/linaro-landing-team-arm/+bug/1037565
+> Paul,
 > 
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> Cc: Android Team <kernel-team@android.com>
-> Cc: Arve Hjønnevåg <arve@android.com>
-> Cc: Jon Medhurst (Tixy) <tixy@linaro.org>
-> Reported-and-debugged-by: Jon Medhurst (Tixy) <tixy@linaro.org>
-> Signed-off-by: John Stultz <john.stultz@linaro.org>
+> Didn't we talk about having the rcu_dereference_raw() not do the check?
+> The function tracer is just too invasive to add work arounds to prevent
+> lockdep from screaming about it.
 
-Thanks, applied to the linux-next brach of the linux-pm.git tree as v3.7
-material.
+Actually, rcu_dereference_raw() is already supposed to bypass the
+lockdep checks.  And the code looks to me like it does the bypass,
+OR-ing "1" into the asssertion condition.
 
-Please consider CCing PM-related patches to linux-pm@vger.kernel.org in the
-future, that makes it much easier for me to handle them.
+So what am I missing here?
 
-Thanks,
-Rafael
-
-
-> ---
->  drivers/base/power/wakeup.c |   17 +++++++++++------
->  1 file changed, 11 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/base/power/wakeup.c b/drivers/base/power/wakeup.c
-> index cbb463b..0e4b093 100644
-> --- a/drivers/base/power/wakeup.c
-> +++ b/drivers/base/power/wakeup.c
-> @@ -127,6 +127,8 @@ EXPORT_SYMBOL_GPL(wakeup_source_destroy);
->   */
->  void wakeup_source_add(struct wakeup_source *ws)
->  {
-> +	unsigned long flags;
-> +
->  	if (WARN_ON(!ws))
->  		return;
->  
-> @@ -135,9 +137,9 @@ void wakeup_source_add(struct wakeup_source *ws)
->  	ws->active = false;
->  	ws->last_time = ktime_get();
->  
-> -	spin_lock_irq(&events_lock);
-> +	spin_lock_irqsave(&events_lock, flags);
->  	list_add_rcu(&ws->entry, &wakeup_sources);
-> -	spin_unlock_irq(&events_lock);
-> +	spin_unlock_irqrestore(&events_lock, flags);
->  }
->  EXPORT_SYMBOL_GPL(wakeup_source_add);
->  
-> @@ -147,12 +149,14 @@ EXPORT_SYMBOL_GPL(wakeup_source_add);
->   */
->  void wakeup_source_remove(struct wakeup_source *ws)
->  {
-> +	unsigned long flags;
-> +
->  	if (WARN_ON(!ws))
->  		return;
->  
-> -	spin_lock_irq(&events_lock);
-> +	spin_lock_irqsave(&events_lock, flags);
->  	list_del_rcu(&ws->entry);
-> -	spin_unlock_irq(&events_lock);
-> +	spin_unlock_irqrestore(&events_lock, flags);
->  	synchronize_rcu();
->  }
->  EXPORT_SYMBOL_GPL(wakeup_source_remove);
-> @@ -723,15 +727,16 @@ bool pm_get_wakeup_count(unsigned int *count, bool block)
->  bool pm_save_wakeup_count(unsigned int count)
->  {
->  	unsigned int cnt, inpr;
-> +	unsigned long flags;
->  
->  	events_check_enabled = false;
-> -	spin_lock_irq(&events_lock);
-> +	spin_lock_irqsave(&events_lock, flags);
->  	split_counters(&cnt, &inpr);
->  	if (cnt == count && inpr == 0) {
->  		saved_count = count;
->  		events_check_enabled = true;
->  	}
-> -	spin_unlock_irq(&events_lock);
-> +	spin_unlock_irqrestore(&events_lock, flags);
->  	return events_check_enabled;
->  }
->  
-> 
+							Thanx, Paul
 
