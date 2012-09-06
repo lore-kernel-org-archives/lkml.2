@@ -1,60 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756928Ab2IFPHc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 11:07:32 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19979 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756624Ab2IFPHb (ORCPT
+	id S1757137Ab2IFPI0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 11:08:26 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:18702 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756800Ab2IFPIY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 11:07:31 -0400
-X-Authority-Analysis: v=2.0 cv=C49rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=dv6za2K3W50A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=hUPM8fjf3YcA:10 a=_hZiHC8XfUJeMqtsrlEA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1346944049.1680.23.camel@gandalf.local.home>
-Subject: Re: [PATCH tip/core/rcu 11/15] rcu: Avoid spurious RCU CPU stall
- warnings
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        eric.dumazet@gmail.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Date: Thu, 06 Sep 2012 11:07:29 -0400
-In-Reply-To: <1346943414.18408.31.camel@twins>
-References: <20120830185607.GA32148@linux.vnet.ibm.com>
-	 <1346352988-32444-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1346352988-32444-11-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1346943414.18408.31.camel@twins>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 6 Sep 2012 11:08:24 -0400
+Date: Thu, 6 Sep 2012 08:07:58 -0700
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: walter harms <wharms@bfs.de>
+Cc: Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch] da9052-battery: don't free IRQ that wasn't requested
+Message-ID: <20120906150758.GL19410@mwanda>
+References: <20120905123440.GF6128@elgon.mountain>
+ <50475D75.2040908@bfs.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50475D75.2040908@bfs.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-06 at 16:56 +0200, Peter Zijlstra wrote:
-> On Thu, 2012-08-30 at 11:56 -0700, Paul E. McKenney wrote:
-> > 
-> > If a given CPU avoids the idle loop but also avoids starting a new
-> > RCU grace period for a full minute, RCU can issue spurious RCU CPU
-> > stall warnings.  This commit fixes this issue by adding a check for
-> > ongoing grace period to avoid these spurious stall warnings. 
+On Wed, Sep 05, 2012 at 04:11:01PM +0200, walter harms wrote:
 > 
-> How would it avoid starting a new period for over a minute? fqs should
-> happen, right? And holding rcu_read_lock() for over a minute surely is a
-> bug.
+> 
+> Am 05.09.2012 14:34, schrieb Dan Carpenter:
+> > We should decrement "i" before doing the free_irq().  If we call this
+> > because request_threaded_irq() failed then we don't want to free the
+> > thing which failed.  Or in the case where we get here because
+> > power_supply_register() failed then the original codes does a read past
+> > the end of the array.
+> > 
+> > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> > 
+> > diff --git a/drivers/power/da9052-battery.c b/drivers/power/da9052-battery.c
+> > index 20b86ed..d9d034d 100644
+> > --- a/drivers/power/da9052-battery.c
+> > +++ b/drivers/power/da9052-battery.c
+> > @@ -623,7 +623,7 @@ static s32 __devinit da9052_bat_probe(struct platform_device *pdev)
+> >  	return 0;
+> >  
+> >  err:
+> > -	for (; i >= 0; i--) {
+> > +	while (--i >= 0) {
+> >  		irq = platform_get_irq_byname(pdev, da9052_bat_irqs[i]);
+> >  		free_irq(bat->da9052->irq_base + irq, bat);
+> >  	}
+> 
+> hi da,
+> (my usual nitpicking ...)
 
-I can see this happening in test cases, but it would seem weird on a
-normal system. That is, for preempt rcu, having a process scheduled out
-holding an rcu_read_lock() for over a minute could happen on a really
-stressed out system. But for such a case, I don't think a warning is out
-of question.
+Ha ha.  Your nit picks are welcome even if I don't always agree.
 
--- Steve
+> since a lot of people do make mistakes on count-down-loops, is there any chance to
+> make this a common count-up-for()-loop ?
+> like:
 
+I like the count down loops...  It feels very natural to unwind that
+way.
+
+>    for (j=0; j <= i ;j++ ) {
+               ^^^^^^
+The count up loops are prone to the exact same off by one bugs.  ;)
+You've got one in your sample code.  Plus I'd have to declare
+another variable and send a v2 patch and I am very lazy...  So in
+this case I think should just take my original patch.
+
+regards,
+dan carpenter
 
