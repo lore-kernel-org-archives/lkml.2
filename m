@@ -1,103 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757375Ab2IFKMY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 06:12:24 -0400
-Received: from www.piware.de ([213.9.93.70]:55093 "EHLO mail.piware.de"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752653Ab2IFKMW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 06:12:22 -0400
-X-Greylist: delayed 551 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Sep 2012 06:12:22 EDT
-Date: Thu, 6 Sep 2012 12:03:07 +0200
-From: Martin Pitt <martin.pitt@ubuntu.com>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 0/1] Option for scsi_debug to fake removable devices
-Message-ID: <20120906100307.GC2864@piware.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="GRPZ8SYKNexpdSJ7"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757358Ab2IFKOQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 06:14:16 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40043 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753446Ab2IFKOP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 06:14:15 -0400
+Message-ID: <1346926417.2600.73.camel@twins>
+Subject: Re: [PATCH RFC tip/core/rcu] Add callback-free CPUs
+From: Peter Zijlstra <peterz@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Date: Thu, 06 Sep 2012 12:13:37 +0200
+In-Reply-To: <20120905234443.GY3308@linux.vnet.ibm.com>
+References: <20120905213945.GA15216@linux.vnet.ibm.com>
+	 <1346881720.2600.48.camel@twins> <20120905234443.GY3308@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2012-09-05 at 16:44 -0700, Paul E. McKenney wrote:
 
---GRPZ8SYKNexpdSJ7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> I was excited by this possibility when you first mentioned it, but
+> the low-OS-jitter fans are going to need the grace-period computation
+> to be offloaded as well. 
 
-Hello all,
+Sure, but it seems to me pulling the grace period machinery out is a
+much harder feat and should be a patch (series) on its own. Also..
 
-I already re-sent this 1.5 months ago, but did not get any answer back
-then; I guess it got lost in the noise by now. So, patiently retrying
-again.
+>  So if I use your (admittedly much simpler)
+> approach, I get to rewrite it when Frederic's adaptive-ticks work goes
+> in. 
 
-For the purposes of automatically testing udisks and gvfs automounting
-I would like to add a parameter to scsi_debug to control the
-"removable" attribute of the created block device. With that, we can
-test system-internal and removable drives, as well as CD-ROMs (which
-scsi_debug can already emulate). udisks requires different privileges
-for mounting system-internal drives vs.  removable/hotpluggable
-drives. This will also allow us to write system integration tests for
-gvfs, which will exercise the whole stack including the actual polkit
-configuration in a VM.
+I don't see how Frederic's work affects any of this, that would simple
+put RCU into extended quiescent state (aka. idle) while in userspace. In
+that state the grace period machinery is stopped all together, so it
+doesn't matter who would've ran it. 
 
-I wrote a simple kernel patch for this (against linux-next), and
-tested this quite thoroughly.
+>  Given that this is probably happening relatively soon, it would be
+> better if I just did the implementation that will be needed long-term,
+> rather than rewriting.
+> 
+> Though I am sure that people will be sad about fewer RCU patches.  ;-)
 
-I ran the style checker, and it reports two problems:
+Always...
 
------------- 8< --------------
-WARNING: line over 80 characters
-#109: FILE: drivers/scsi/scsi_debug.c:3255:
-+       ret |=3D driver_create_file(&sdebug_driverfs_driver, &driver_attr_r=
-emovable);
+Now thinking about this grace machinery stuff a little more, would it be
+possible to stick the entire state machine in a kthread and replace all
+current hooks, like the tick and rcu_read_unlock_special with a message
+passing construct such that they pass their event on to the kthread?
 
-WARNING: Prefer pr_err(... to printk(KERN_ERR, ...
-#126: FILE: drivers/scsi/scsi_debug.c:3353:
-+               printk(KERN_ERR "scsi_debug_init: removable must be 0 or 1\=
-n");
------------- 8< --------------
+That way you could run the entire state thing from a kthread with random
+affinity, all 'per-cpu' data would still be fine since only the one
+kthread will access it, even though locality might suffer somewhat.
 
-But as the existing code uses this style in the adjacent lines, I
-favored consistency over fixing those. If the latter is desired, I'd
-rather send a separate patch with just the style cleanup for the whole
-file.
+This would also not suffer from the having to keep one cpu special and
+the ugly bouncing etc..
 
-I got an ack from David Zeuthen (the primary udisks maintainer)
-already, noted so in the patch.
 
-Thank you in advance for considering,
-
-Martin
-
---=20
-Martin Pitt                        | http://www.piware.de
-Ubuntu Developer (www.ubuntu.com)  | Debian Developer  (www.debian.org)
-
---GRPZ8SYKNexpdSJ7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQSHTbAAoJEPmIJawmtHufUsIQAJoMJMD+ZoEThv/TShPNH5BS
-DG4rUSNdxQMZmtbaBrjoZvvIpsaY0W0WAq6HcaAn8u4htXn7ZH4OE4Z054xWD7xR
-HPi3qhEmumKzsveC4MBfhOj7RLGveTi2tp7rhZkEWZRObSsPHBXpsox7p8bpuRuM
-ZVj6oVBuylUJiMFPNOoytQU1+Jr+m9TUbpzh6rJwsrfrn+vRg0lrD4w9sHueio/T
-mkqpGQLtD8mnMtaUKCXLQgXDaVqJck3MXSgGaFF3K062wOO/qObLq4b7qE20SyA/
-KmwJtv0t6b44HlAaMmAXskknhvTmxCRvTq2yhey64mPsIUQh9oRZ89c/X+MN1wET
-Sevy4syMGkhAqxq5xMO8DUzxHuR02FcK/t0ZL6C8aMrKR09J8hDws2wlgQ2Kil6i
-dgILk7OF2tonk/hugEXjNndTmXg5dMU5Yhiz/Smsk86xKYsEK0iDpgiG1ZTCnF1/
-FQTOeOD9tLiHmGEdOGmdf5Ape6cGhOdq6sSwSpkpp8km4VxPCt216HxTw6JZVZlS
-4/eISdqHk+TZbG67cG0VHe3cQLABG2Pmx6DqQsngVV313sz2+D5epvuCIhk05bqh
-3dPKHY5gVLEv9fD+AcTXfPskZEML2M2WeQuqAfHgoqdu6uU7ul1FihEU9jGzPO0w
-NMMIRmsO7fu399PkDmUH
-=uO88
------END PGP SIGNATURE-----
-
---GRPZ8SYKNexpdSJ7--
