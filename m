@@ -1,51 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756770Ab2IFIoJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 04:44:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49566 "EHLO mx1.redhat.com"
+	id S1756764Ab2IFIqX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 04:46:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4416 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752760Ab2IFIoH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 04:44:07 -0400
-Date: Thu, 6 Sep 2012 11:45:26 +0300
+	id S1755262Ab2IFIqU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 04:46:20 -0400
+Date: Thu, 6 Sep 2012 11:47:36 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, avi@redhat.com, kvm@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] virtio-ring: Allocate indirect buffers from cache
- when possible
-Message-ID: <20120906084526.GE17656@redhat.com>
-References: <1346159043-16446-2-git-send-email-levinsasha928@gmail.com>
- <20120828132032.GB2039@redhat.com>
- <503CC904.3050207@gmail.com>
- <20120829110748.GB5970@redhat.com>
- <503E2F27.5060904@gmail.com>
- <20120829153833.GE7407@redhat.com>
- <503E4873.6060607@gmail.com>
- <871uigj747.fsf@rustcorp.com.au>
- <20120906050257.GA17656@redhat.com>
- <877gs7inx8.fsf@rustcorp.com.au>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: rusty@rustcorp.com.au, fes@google.com, aarcange@redhat.com,
+        riel@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mikew@google.com, yinghan@google.com,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH] virtio-balloon spec: provide a version of the "silent
+ deflate" feature that works
+Message-ID: <20120906084736.GF17656@redhat.com>
+References: <1346917610-14568-1-git-send-email-pbonzini@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <877gs7inx8.fsf@rustcorp.com.au>
+In-Reply-To: <1346917610-14568-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 06, 2012 at 05:27:23PM +0930, Rusty Russell wrote:
-> "Michael S. Tsirkin" <mst@redhat.com> writes:
-> > Yes without checksum net core always linearizes packets, so yes it is
-> > screwed.
-> > For -net, skb always allocates space for 17 frags + linear part so
-> > it seems sane to do same in virtio core, and allocate, for -net,
-> > up to max_frags + 1 from cache.
-> > We can adjust it: no _SG -> 2 otherwise 18.
+On Thu, Sep 06, 2012 at 09:46:50AM +0200, Paolo Bonzini wrote:
+> VIRTIO_BALLOON_F_MUST_TELL_HOST cannot be used properly because it is a
+> "negative" feature: it tells you that silent defalte is not supported.
+> Right now, QEMU refuses migration if the target does not support all the
+> features that were negotiated.  But then:
 > 
-> But I thought it used individual buffers these days?
+> - a migration from non-MUST_TELL_HOST to MUST_TELL_HOST will succeed,
+> which is wrong;
+> 
+> - a migration from MUST_TELL_HOST to non-MUST_TELL_HOST will fail, which
+> is useless.
+> 
+> Add instead a new feature VIRTIO_BALLOON_F_SILENT_DEFLATE, and deprecate
+> VIRTIO_BALLOON_F_MUST_TELL_HOST since it is never actually used.
+> 
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 
-Yes for receive, no for transmit. That's probably why
-we should have the threshold per vq, not per device, BTW.
+Frankly I think it's a qemu migration bug. I don't see why
+we need to tweak spec: just teach qemu to be smarter
+during migration.
 
--- 
-MST
+Can you show a scenario with old driver/new hypervisor or
+new driver/old hypervisor that fails?
+
+> ---
+>  virtio-spec.lyx | 36 +++++++++++++++++++++++++++++++++---
+>  1 file modificato, 33 inserzioni(+), 3 rimozioni(-)
+> 
+> diff --git a/virtio-spec.lyx b/virtio-spec.lyx
+> index 7a073f4..1a25a18 100644
+> --- a/virtio-spec.lyx
+> +++ b/virtio-spec.lyx
+> @@ -6238,6 +6238,8 @@ bits
+>  
+>  \begin_deeper
+>  \begin_layout Description
+> +
+> +\change_deleted 1531152142 1346917221
+>  VIRTIO_BALLOON_F_MUST_TELL_HOST
+>  \begin_inset space ~
+>  \end_inset
+> @@ -6251,6 +6253,20 @@ VIRTIO_BALLOON_F_STATS_VQ
+>  \end_inset
+>  
+>  (1) A virtqueue for reporting guest memory statistics is present.
+> +\change_inserted 1531152142 1346917193
+> +
+> +\end_layout
+> +
+> +\begin_layout Description
+> +
+> +\change_inserted 1531152142 1346917219
+> +VIRTIO_BALLOON_F_SILENT_DEFLATE
+> +\begin_inset space ~
+> +\end_inset
+> +
+> +(2) Host does not need to be told before pages from the balloon are used.
+> +\change_unchanged
+> +
+>  \end_layout
+>  
+>  \end_deeper
+> @@ -6401,9 +6417,23 @@ The driver constructs an array of addresses of memory pages it has previously
+>  \end_layout
+>  
+>  \begin_layout Enumerate
+> -If the VIRTIO_BALLOON_F_MUST_TELL_HOST feature is set, the guest may not
+> - use these requested pages until that descriptor in the deflateq has been
+> - used by the device.
+> +If the VIRTIO_BALLOON_F_
+> +\change_deleted 1531152142 1346917234
+> +MUST_TELL_HOST
+> +\change_inserted 1531152142 1346917237
+> +SILENT_DEFLATE
+> +\change_unchanged
+> + feature is 
+> +\change_inserted 1531152142 1346917241
+> +not 
+> +\change_unchanged
+> +set, the guest may not use these requested pages until that descriptor in
+> + the deflateq has been used by the device.
+> +
+> +\change_inserted 1531152142 1346917253
+> + If it is set, the guest may choose to not use the deflateq at all.
+> +\change_unchanged
+> +
+>  \end_layout
+>  
+>  \begin_layout Enumerate
+> -- 
+> 1.7.11.2
