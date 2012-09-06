@@ -1,85 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932268Ab2IFRH6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 13:07:58 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49083 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932124Ab2IFRH4 convert rfc822-to-8bit (ORCPT
+	id S932317Ab2IFRL4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 13:11:56 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:50497 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752587Ab2IFRLy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 13:07:56 -0400
-Message-ID: <1346950959.18408.47.camel@twins>
-Subject: Re: [PATCH tip/core/rcu 11/26] rcu: Exit RCU extended QS on user
- preemption
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@ti.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-Date: Thu, 06 Sep 2012 19:02:39 +0200
-In-Reply-To: <1346360743-3628-11-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20120830210520.GA2824@linux.vnet.ibm.com>
-	 <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1346360743-3628-11-git-send-email-paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 6 Sep 2012 13:11:54 -0400
+MIME-Version: 1.0
+X-Originating-IP: [2620:0:1000:1b02:ae16:2dff:fe07:4e83]
+Date: Thu, 6 Sep 2012 10:11:54 -0700
+Message-ID: <CAOesGMjWUgFJ_Gmpn_y5V7KOV5JAnDxW2=-Y1o-ZF6Ny-FUhdQ@mail.gmail.com>
+Subject: [GIT PULL] ARM: SoC fixes for v3.6-rc5
+From: Olof Johansson <olof@lixom.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-30 at 14:05 -0700, Paul E. McKenney wrote:
-> From: Frederic Weisbecker <fweisbec@gmail.com>
-> 
-> When exceptions or irq are about to resume userspace, if
-> the task needs to be rescheduled, the arch low level code
-> calls schedule() directly.
-> 
-> At that time we may be in extended quiescent state from RCU
-> POV: the exception is not anymore protected inside
-> rcu_user_exit() - rcu_user_enter() and the irq has called
-> rcu_irq_exit() already.
-> 
-> Create a new API schedule_user() that calls schedule() inside
-> rcu_user_exit()-rcu_user_enter() in order to protect it. Archs
-> will need to rely on it now to implement user preemption safely.
+Hi Linus,
 
-> ---
->  kernel/sched/core.c |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 0bd599b..e841dfc 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -3463,6 +3463,13 @@ asmlinkage void __sched schedule(void)
->  }
->  EXPORT_SYMBOL(schedule);
->  
-> +asmlinkage void __sched schedule_user(void)
-> +{
-> +	rcu_user_exit();
-> +	schedule();
-> +	rcu_user_enter();
-> +}
+The following changes since commit 9acb172543aecb783e2e1e53e3f447d4c0f5c150:
+
+  Merge tag 'fixes-3.6-rc3' of
+git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc (2012-08-25
+17:33:33 -0700)
+
+are available in the git repository at:
 
 
-OK, so colour me unconvinced.. why are we doing this?
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git
+tags/fixes-for-linus
 
-Typically when we call schedule nr_running != 1 (we need current to be
-running and a possible target to switch to).
+for you to fetch changes up to e829c66745e66558b624fd635be4a384fe854944:
 
-So I'd prefer to simply have schedule() disable all this adaptive tick
-nonsense and leave it at that.
+  ARM: gemini: fix the gemini build (2012-09-04 22:17:34 -0700)
+
+----------------------------------------------------------------
+arm-soc: bug fixes for v3.6-rc5
+
+Mostly Renesas and Atmel bugfixes this time, targeting boot and build
+problems. A couple of patches for gemini and kirkwood as well. On a
+whole nothing very controversial.
+
+----------------------------------------------------------------
+Andrew Lunn (1):
+      ARM: Kirkwood: Fix 'SZ_1M' undeclared here for db88f6281-bp-setup.c
+
+Bo Shen (1):
+      ARM: at91/dts: remove partial parameter in at91sam9g25ek.dts
+
+Kuninori Morimoto (5):
+      ARM: shmobile: sh73a0: fixup RELOC_BASE of intca_irq_pins_desc
+      ARM: shmobile: marzen: fixup smsc911x id for regulator
+      ARM: shmobile: armadillo800eva: fixup: sound card detection order
+      ARM: shmobile: mackerel: fixup usb module order
+      ARM: shmobile: armadillo800eva: enable rw rootfs mount
+
+Laurent Pinchart (2):
+      ARM: mach-shmobile: armadillo800eva: Fix GPIO buttons descriptions
+      ARM: mach-shmobile: armadillo800eva: Enable power button as wakeup source
+
+Linus Walleij (1):
+      ARM: gemini: fix the gemini build
+
+Ludovic Desroches (3):
+      ARM: at91: fix system timer irq issue due to sparse irq support
+      ARM: at91: fix rtc-at91sam9 irq issue due to sparse irq support
+      ARM: at91/feature-removal-schedule: delay at91_mci removal
+
+Nicolas Ferre (1):
+      ARM: at91/clock: fix PLLA overclock warning
+
+Olof Johansson (6):
+      Merge branch 'fixes' of git://git.kernel.org/.../rafael/renesas into fixes
+      Merge tag 'at91-fixes' of git://github.com/at91linux/linux-at91 into fixes
+      Merge branch 'armadillo800eva' of
+git://git.kernel.org/.../horms/renesas into fixes
+      Merge branch 'fixes-for-v3.6-v2' of
+git://git.infradead.org/users/jcooper/linux into fixes
+      Merge branch 'fixes' of git://git.kernel.org/.../horms/renesas into fixes
+      Merge branch 'fixes' of git://git.kernel.org/.../horms/renesas into fixes
+
+ Documentation/feature-removal-schedule.txt     |  2 +-
+ arch/arm/boot/dts/at91sam9g25ek.dts            |  2 +-
+ arch/arm/configs/armadillo800eva_defconfig     |  2 +-
+ arch/arm/mach-at91/at91rm9200_time.c           |  2 +-
+ arch/arm/mach-at91/at91sam9260_devices.c       |  6 +++++-
+ arch/arm/mach-at91/at91sam9261_devices.c       |  6 +++++-
+ arch/arm/mach-at91/at91sam9263_devices.c       | 10 ++++++++--
+ arch/arm/mach-at91/at91sam9g45_devices.c       |  6 +++++-
+ arch/arm/mach-at91/at91sam9rl_devices.c        |  6 +++++-
+ arch/arm/mach-at91/clock.c                     | 12 ++++++++++++
+ arch/arm/mach-gemini/irq.c                     |  1 +
+ arch/arm/mach-kirkwood/db88f6281-bp-setup.c    |  1 +
+ arch/arm/mach-shmobile/board-armadillo800eva.c | 13 +++++++------
+ arch/arm/mach-shmobile/board-mackerel.c        |  3 ++-
+ arch/arm/mach-shmobile/board-marzen.c          |  2 +-
+ arch/arm/mach-shmobile/intc-sh73a0.c           |  4 ++--
+ drivers/rtc/rtc-at91sam9.c                     | 22 +++++++++++++++-------
+ 17 files changed, 73 insertions(+), 27 deletions(-)
