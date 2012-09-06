@@ -1,123 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754721Ab2IFCSS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Sep 2012 22:18:18 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44671 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753657Ab2IFCSQ (ORCPT
+	id S1754821Ab2IFCUF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Sep 2012 22:20:05 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:57041 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751700Ab2IFCUC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Sep 2012 22:18:16 -0400
-X-AuditID: 9c930179-b7cc4ae00000134d-ac-504807e643a8
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 2/2] perf header: Prepare tracepoint events regardless of name
-Date: Thu,  6 Sep 2012 11:10:46 +0900
-Message-Id: <1346897446-16569-2-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1346897446-16569-1-git-send-email-namhyung@kernel.org>
-References: <1346897446-16569-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 5 Sep 2012 22:20:02 -0400
+Subject: Re: [RFC PATCH 3/3] target: try satisfying memory requests with
+ contiguous blocks
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, target-devel@vger.kernel.org,
+        Christoph Hellwig <hch@lst.de>
+In-Reply-To: <1346858025-10459-4-git-send-email-pbonzini@redhat.com>
+References: <1346858025-10459-1-git-send-email-pbonzini@redhat.com>
+	 <1346858025-10459-4-git-send-email-pbonzini@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 05 Sep 2012 19:19:59 -0700
+Message-ID: <1346897999.4162.417.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On Wed, 2012-09-05 at 17:13 +0200, Paolo Bonzini wrote:
+> transport_generic_get_mem's strategy of allocating pages one-by-one
+> for the data scatterlist may fail for even not-so-big data transfers
+> if the underlying device poses a small limit on the number of segments.
+> 
+> This patch fixes this problem by trying to allocate pages in relatively
+> large groups (at most 512 pages right now, equivalent to 2 MB per
+> allocation), but still without any slack.  The remainder is then
+> satisfied with subsequent smaller allocations.  For example, if the
+> data to be transferred is 132 KB, the new algorithm will attempt
+> a single 128 KB allocation, followed by a 4 KB allocation.
+> In case a contiguous block cannot be found, it will fall back to
+> a progressively smaller order.
+> 
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+>  drivers/target/target_core_transport.c |   58 +++++++++++++++++++++++++++-----
+>  1 files changed, 49 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+> index 09028af..6e90e2c 100644
+> --- a/drivers/target/target_core_transport.c
+> +++ b/drivers/target/target_core_transport.c
+> @@ -2058,7 +2058,7 @@ static inline void transport_free_sgl(struct scatterlist *sgl, int nents)
+>  	int count;
+>  
+>  	for_each_sg(sgl, sg, nents, count)
+> -		__free_page(sg_page(sg));
+> +		__free_pages(sg_page(sg), get_order(sg->length));
+>  
+>  	kfree(sgl);
+>  }
+> @@ -2229,41 +2229,81 @@ void transport_kunmap_data_sg(struct se_cmd *cmd)
+>  }
+>  EXPORT_SYMBOL(transport_kunmap_data_sg);
+>  
+> +#define TRANSPORT_MAX_ORDER	9
+> +
+> +static inline int
+> +get_order_no_slack(u32 length)
+> +{
+> +	/*
+> +	 * get_order gives the smallest order that length fits in.
+> +	 * We want instead the largest order that does not give
+> +	 * any slack.
+> +	 *
+> +	 * Example (with PAGE_SIZE = 4096, PAGE_SHIFT = 12):
+> +	 * 	get_order_no_slack(0x1000) = fls(0) = 0, get_order(0x1000) = 0
+> +	 * 	get_order_no_slack(0x1001) = fls(0) = 0, get_order(0x1001) = 1
+> +	 * 	get_order_no_slack(0x1fff) = fls(0) = 0, get_order(0x1fff) = 1
+> +	 * 	get_order_no_slack(0x2000) = fls(1) = 1, get_order(0x2000) = 1
+> +	 * 	get_order_no_slack(0x3000) = fls(1) = 1, get_order(0x3000) = 2
+> +	 * 	get_order_no_slack(0x4000) = fls(2) = 2, get_order(0x4000) = 2
+> +	 * 	get_order_no_slack(0x8000) = fls(4) = 3, get_order(0x8000) = 3
+> +	 */
+> +	length >>= PAGE_SHIFT + 1;
+> +	return fls(length);
+> +}
+> +
+>  static int
+>  transport_generic_get_mem(struct se_cmd *cmd)
+>  {
+>  	u32 length = cmd->data_length;
+> +	u32 page_len;
+>  	unsigned int nents;
+>  	struct page *page;
+>  	gfp_t zero_flag;
+>  	int i = 0;
+> +	int order, max_order;
+>  
+>  	nents = DIV_ROUND_UP(length, PAGE_SIZE);
+>  	cmd->t_data_sg = kmalloc(sizeof(struct scatterlist) * nents, GFP_KERNEL);
+>  	if (!cmd->t_data_sg)
+>  		return -ENOMEM;
+>  
+> -	cmd->t_data_nents = nents;
+>  	sg_init_table(cmd->t_data_sg, nents);
+>  
+>  	zero_flag = cmd->se_cmd_flags & SCF_SCSI_DATA_CDB ? 0 : __GFP_ZERO;
+>  
+> +	max_order = TRANSPORT_MAX_ORDER;
 
-Current perf_evlist__set_tracepoint_names is a misnomer because it
-finds and sets correspoding event_format in addition to the name.  So
-skipping it when a event has set name already caused a trouble.
+Please go ahead and turn max_order into an DEF_DEV_ATTRIB within
+target_core_configfs.c, so we're able to change this value on the fly
+using an per device configfs attr.
 
-Rename it and set name only a event doesn't have one.
+>  	while (length) {
+> -		u32 page_len = min_t(u32, length, PAGE_SIZE);
+> -		page = alloc_page(GFP_KERNEL | zero_flag);
+> -		if (!page)
+> -			goto out;
+> +		order = get_order_no_slack(length);
+> +		for (;;) {
+> +			order = min(order, max_order);
+> +			page_len = min_t(u32, length, PAGE_SIZE << order);
+> +			page = alloc_pages(GFP_KERNEL | zero_flag, order);
+> +			if (page)
+> +				break;
+> +
+> +			if (!order)
+> +				goto out;
+> +
+> +			/*
+> +			 * Allocation failed, only try with a smaller order
+> +			 * from this point.
+> +			 */
+> +			max_order = order - 1;
+> +		}
 
-Reported-by: David Ahern <dsahern@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
-Arnaldo, I made it incremental for your convenience.  But if you want
-to drop my previous one I can resend with it.  Please let me know your
-preference. :)
+Seems reasonable to back-off in reverse max_order in the face of large
+order allocation failures..
 
- tools/perf/util/header.c | 36 ++++++++++++++++++++++--------------
- 1 file changed, 22 insertions(+), 14 deletions(-)
+>  
+>  		sg_set_page(&cmd->t_data_sg[i], page, page_len, 0);
+>  		length -= page_len;
+>  		i++;
+>  	}
+> +	cmd->t_data_nents = i;
+> +	sg_mark_end(&cmd->t_data_sg[i - 1]);
+>  	return 0;
+>  
+>  out:
+> -	while (i > 0) {
+> -		i--;
+> -		__free_page(sg_page(&cmd->t_data_sg[i]));
+> +	while (i-- > 0) {
+> +		struct scatterlist *sg = &cmd->t_data_sg[i];
+> +		__free_pages(sg_page(sg), get_order(sg->length));
+>  	}
+>  	kfree(cmd->t_data_sg);
+>  	cmd->t_data_sg = NULL;
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index eb7a8da2f4f5..19be34145a18 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -2500,33 +2500,39 @@ static int read_attr(int fd, struct perf_header *ph,
- 	return ret <= 0 ? -1 : 0;
- }
- 
--static int perf_evsel__set_tracepoint_name(struct perf_evsel *evsel,
--					   struct pevent *pevent)
-+static int perf_evsel__prepare_tracepoint_event(struct perf_evsel *evsel,
-+						struct pevent *pevent)
- {
--	struct event_format *event = pevent_find_event(pevent,
--						       evsel->attr.config);
-+	struct event_format *event;
- 	char bf[128];
- 
-+	/* already prepared */
-+	if (evsel->tp_format)
-+		return 0;
-+
-+	event = pevent_find_event(pevent, evsel->attr.config);
- 	if (event == NULL)
- 		return -1;
- 
--	snprintf(bf, sizeof(bf), "%s:%s", event->system, event->name);
--	evsel->name = strdup(bf);
--	if (evsel->name == NULL)
--		return -1;
-+	if (!evsel->name) {
-+		snprintf(bf, sizeof(bf), "%s:%s", event->system, event->name);
-+		evsel->name = strdup(bf);
-+		if (evsel->name == NULL)
-+			return -1;
-+	}
- 
- 	evsel->tp_format = event;
- 	return 0;
- }
- 
--static int perf_evlist__set_tracepoint_names(struct perf_evlist *evlist,
--					     struct pevent *pevent)
-+static int perf_evlist__prepare_tracepoint_events(struct perf_evlist *evlist,
-+						  struct pevent *pevent)
- {
- 	struct perf_evsel *pos;
- 
- 	list_for_each_entry(pos, &evlist->entries, node) {
--		if (pos->attr.type == PERF_TYPE_TRACEPOINT && !pos->name &&
--		    perf_evsel__set_tracepoint_name(pos, pevent))
-+		if (pos->attr.type == PERF_TYPE_TRACEPOINT &&
-+		    perf_evsel__prepare_tracepoint_event(pos, pevent))
- 			return -1;
- 	}
- 
-@@ -2614,7 +2620,8 @@ int perf_session__read_header(struct perf_session *session, int fd)
- 
- 	lseek(fd, header->data_offset, SEEK_SET);
- 
--	if (perf_evlist__set_tracepoint_names(session->evlist, session->pevent))
-+	if (perf_evlist__prepare_tracepoint_events(session->evlist,
-+						   session->pevent))
- 		goto out_delete_evlist;
- 
- 	header->frozen = 1;
-@@ -2848,7 +2855,8 @@ int perf_event__process_tracing_data(union perf_event *event,
- 	if (size_read + padding != size)
- 		die("tracing data size mismatch");
- 
--	perf_evlist__set_tracepoint_names(session->evlist, session->pevent);
-+	perf_evlist__prepare_tracepoint_events(session->evlist,
-+					       session->pevent);
- 
- 	return size_read + padding;
- }
--- 
-1.7.11.4
+So what I'd like to see for this patch in the short term is a new
+target_core_fabrics_op bit that is (by default) assuming single order
+SGL page allocations, that can optionally be enabled for iscsi-target +
+other fabrics that support it as we bring other multi-page SGLs fabric
+drivers online.
 
