@@ -1,74 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759564Ab2IFTiT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 15:38:19 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:62863 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759424Ab2IFTiQ (ORCPT
+	id S1759589Ab2IFTlO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 15:41:14 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:54645 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755067Ab2IFTlL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 15:38:16 -0400
+	Thu, 6 Sep 2012 15:41:11 -0400
 MIME-Version: 1.0
-From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Date: Thu, 6 Sep 2012 16:37:55 -0300
-Message-ID: <CAMOw1v6MYW6O2f4AR9yRvh200j5R6mFTRqDT3TFbG-TjknmUmw@mail.gmail.com>
-Subject: [ANNOUNCE] kmod 10
-To: linux-modules <linux-modules@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-hotplug <linux-hotplug@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <5048F161.3000805@suse.cz>
+References: <1344929718-22736-1-git-send-email-tmshlvck@gmail.com>
+	<1346894238-12870-1-git-send-email-tmshlvck@gmail.com>
+	<5048E35F.5020304@suse.cz>
+	<CAEB7QLAWLuXFLWMYX70enP5X0z5EXTNo93hfOm7sH_kQteMAkA@mail.gmail.com>
+	<5048F161.3000805@suse.cz>
+Date: Thu, 6 Sep 2012 21:41:09 +0200
+Message-ID: <CAEB7QLAk6pe9ih+P_621fZE3JpRcFpPA+Wzk57x3FmVaGmoOKg@mail.gmail.com>
+Subject: Re: [PATCH v6] uartclk value from serial_core exposed to sysfs
+From: Tomas Hlavacek <tmshlvck@gmail.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: gregkh@linuxfoundation.org, alan@linux.intel.com,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        marek.vasut@gmail.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey!
+Hello!
 
-kmod 10 is out:
+On Thu, Sep 6, 2012 at 8:54 PM, Jiri Slaby <jslaby@suse.cz> wrote:
+> On 09/06/2012 08:39 PM, Tomas Hlavacek wrote:
+>> On Thu, Sep 6, 2012 at 7:54 PM, Jiri Slaby <jslaby@suse.cz> wrote:
+>>> On 09/06/2012 03:17 AM, Tomas Hlavacek wrote:
+>>>> @@ -2362,8 +2392,8 @@ int uart_add_one_port(struct uart_driver *drv, struct uart_port *uport)
+>>>>        * Register the port whether it's detected or not.  This allows
+>>>>        * setserial to be used to alter this ports parameters.
+>>>>        */
+>>>> -     tty_dev = tty_port_register_device(port, drv->tty_driver, uport->line,
+>>>> -                     uport->dev);
+>>>> +     tty_dev = tty_register_device_attr(drv->tty_driver, uport->line,
+>>>> +                     uport->dev, port, tty_dev_attr_groups);
+>>>
+>>> This makes me believe you have not tested the change at all?
+>>
+>> Thanks! I can't believe I missed that. (And I actually tested that,
+>> but I have to admit that it was not enough apparently.)
+>>
+>> I will re-send the patch (after some additional testing and double-checking).
+>
+> Ok. A couple more questions...
+>
+> * why are you passing tty_port to the struct device's private data and
+> not uart_port proper? Is this for some future use?
 
-ftp://ftp.kernel.org/pub/linux/utils/kernel/kmod/kmod-10.tar.xz
-ftp://ftp.kernel.org/pub/linux/utils/kernel/kmod/kmod-10.tar.sign
+I actually used the uart_port structure in older RFC versions of the
+patch. Alan Cox advised to use struct tty_port because of consistency.
+More precisely he said (in an e-mail from Aug 12):
 
-The major change was the addition of a flag in
-kmod_module_probe_insert() to keep the previous behavior of
-module-init-tools regarding blacklisted modules.
+I'd rather however it pointed
+to the tty_port that each tty device has (or very soon will be required
+to have). You can still find the uart_foo structs from that but it means
+we can do the dev_set_drvdata() in a consistent manner for all tty
+devices in the kernel. That in turn means we can make some of the sysfs
+valid the same way.
 
-Other than that, improvements to testsuite and man pages. I also
-re-licensed the testsuite as LGPL. If anyone wants to use in his own
-project and LGPL doesn't fit your needs, let me know.
+> * cannot be all those attribute structs const?
 
-Shortlog is below
+It seems that making
 
-Cheers!
-Lucas De Marchi
+static const struct attribute *tty_dev_attrs[] = ...
 
----
+produces warning:
 
-Colin Walters (1):
-      build-sys: Add --disable-manpages option
+drivers/tty/serial/serial_core.c:2334:2: warning: initialization from
+incompatible pointer type [enabled by default]
+drivers/tty/serial/serial_core.c:2334:2: warning: (near initialization
+for ‘tty_dev_attr_group.attrs’) [enabled by default]
 
-Dave Reisner (10):
-      Implicitly run 'make rootfs' with 'make check'
-      module: support reading coresize from /sys if supported
-      build-sys: disable jobserver for rootfs target
-      man/modprobe: clarify --dirname option
-      man/modinfo: document --basedir option
-      man/modinfo: document longopts for field shortcuts
-      man/modinfo: specify each option in separate <term> tag
-      man/modprobe: specify each option in separate <term> tag
-      man/depmod: specify each option in separate <term> tag
-      man/rmmod: specify each option in separate <term> tag
+But others can. I am going to make them const in following patch.
 
-Lucas De Marchi (10):
-      testsuite: use right offset for module name
-      testsuite: re-license under LGPL
-      Use #pragma once instead of #ifndef
-      build-sys: add 'man' entry in summary
-      README: let people know they don't need to subscribe
-      libkmod-module: Add KMOD_PROBE_APPLY_BLACKLIST_ALIAS_ONLY flag
-      modprobe: Unconditionally use KMOD_PROBE_APPLY_BLACKLIST_ALIAS_ONLY
-      TODO: deprecate use of rmmod -w
-      Remove test directory
-      kmod 10
+> * kdoc for tty_register_device_attr says that when
+> TTY_DRIVER_DYNAMIC_DEV is not set, tty_register_device_attr *should* not
+> be called. But it must not be called, otherwise it will fail and emit a
+> warning as a bonus, right?
 
-Martin Pitt (2):
-      testsuite: path wrapper: Fix open() with 3 arguments
-      testsuite preload: Factorize into macros, add more stat and open variants
+Yes. In fact it does the same thing as tty_register_device() did
+before itself. The _attr version is only slightly refactored and the
+doc regarding the TTY_DRIVER_DYNAMIC_DEV test is the same as in old
+non-_attr version.
+I am not sure that I am the right person to change the doc because I
+am not an author of this part of doc nor of the test in the function.
+
+> * final remark. I would prefer declaration and code be delimited by a
+> new line in uart_get_attr_uartclk:
+> <===>
+> +       int ret;
+> +
+> +       struct tty_port *port = dev_get_drvdata(dev);
+> +       struct uart_state *state = container_of(port, struct uart_state,
+> port);
+> +       mutex_lock(&state->port.mutex);
+> <===>
+>
+> Like:
+> <===>
+>   struct tty_port *port = ...;
+>   struct uart_state *state = ...;
+>   int ret;
+>
+>   mutex_lock(&state->port.mutex);
+> <===>
+
+Yes, it looks better. I am going to it accordingly.
+
+Tomas
