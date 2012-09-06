@@ -1,221 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932709Ab2IFRch (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 13:32:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64441 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932173Ab2IFRcc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 13:32:32 -0400
-Date: Thu, 6 Sep 2012 19:31:39 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [RFC 00/12] perf diff: Factor diff command
-Message-ID: <20120906173139.GA15756@krava.brq.redhat.com>
-References: <1346946426-13496-1-git-send-email-jolsa@redhat.com>
+	id S932683Ab2IFRcg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 13:32:36 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:50166 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932433Ab2IFRcd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 13:32:33 -0400
+Date: Thu, 6 Sep 2012 10:32:07 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 06/23] rcu: Break up rcu_gp_kthread() into
+ subfunctions
+Message-ID: <20120906173207.GK2448@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120830181811.GA29154@linux.vnet.ibm.com>
+ <1346350718-30937-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346350718-30937-6-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346938791.18408.7.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1346946426-13496-1-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1346938791.18408.7.camel@twins>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12090617-7408-0000-0000-00000841F0D8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-forgot to mention git repo:
+On Thu, Sep 06, 2012 at 03:39:51PM +0200, Peter Zijlstra wrote:
+> On Thu, 2012-08-30 at 11:18 -0700, Paul E. McKenney wrote:
+> > +static int rcu_gp_kthread(void *arg)
+> > +{
+> > +       struct rcu_state *rsp = arg;
+> > +       struct rcu_node *rnp = rcu_get_root(rsp);
+> > +
+> > +       for (;;) {
+> > +
+> > +               /* Handle grace-period start. */
+> > +               for (;;) {
+> > +                       wait_event_interruptible(rsp->gp_wq, rsp->gp_flags);
+> > +                       if (rsp->gp_flags && rcu_gp_init(rsp))
+> > +                               break;
+> > +                       cond_resched();
+> > +                       flush_signals(current);
+> > +               }
+> >  
+> >                 /* Handle grace-period end. */
+> >                 for (;;) {
+> >                         wait_event_interruptible(rsp->gp_wq,
+> >                                                  !ACCESS_ONCE(rnp->qsmask) &&
+> >                                                  !rcu_preempt_blocked_readers_cgp(rnp));
+> >                         if (!ACCESS_ONCE(rnp->qsmask) &&
+> > +                           !rcu_preempt_blocked_readers_cgp(rnp) &&
+> > +                           rcu_gp_cleanup(rsp))
+> >                                 break;
+> > +                       cond_resched();
+> >                         flush_signals(current);
+> >                 }
+> >         }
+> >         return 0;
+> >  } 
+> 
+> Should there not be a kthread_stop() / kthread_park() call somewhere in
+> there?
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/linux.git
-perf/diff8 branch
+The kthread stops only when the system goes down, so no need for any
+kthread_stop() or kthread_park().  The "return 0" suppresses complaints
+about falling of the end of a non-void function.
 
-jirka
+> Also, it could be me, but all those nested for (;;) loops make the flow
+> rather non-obvious.
 
+For those two loops, I suppose I could pull the cond_resched() and
+flush_signals() to the top, and make a do-while out of it.
 
-On Thu, Sep 06, 2012 at 05:46:54PM +0200, Jiri Olsa wrote:
-> hi,
-> this patchset factors the perf diff command to be usable for
-> differential profiling following paper from Paul McKenney:
-> (thanks to Arnaldo for sharing it with me).
-> 
->   http://www2.rdrop.com/users/paulmck/scalability/paper/profiling.2002.06.04.pdf
-> 
-> The 'perf diff' and 'std/hist' code is now changed to allow computations
-> mentioned in the paper. Two of them are implemented within this patchset:
->   1) ratio differential profiling
->   2) weighted differential profiling
-> 
-> The standard ratio delta computation stays as default.
-> 
-> To sum it up:
->   - perf diff displays output for matching event pairs within 2 given perf.data files
->   - stdio ui code is factored to allow easy insertion of new data column
->   - added perf diff '-b' option to display only matched hist entries
->     (hist entries found in both files)
->   - added perf diff '-c' option to choose diff computation,
->     support for:
->       delta: the current default one
->       ratio: ratio differential profile
->       wdiff: weighted differential profile
->   - added perf diff '-c+' option to sort entries based on the computation data
->   - added perf diff '-F' option to show formula used to compute the data
->   - added perf diff '-p' option to display hist entries periods
-> 
-> 
-> Attached patches:
->   01/12 perf diff: Make diff command work with evsel hists
->   02/12 perf tools: Replace sort's standalone field_sep with symbol_conf.field_sep
->   03/12 perf hists: Add struct hists pointer to struct hist_entry
->   04/12 perf diff: Refactor diff displacement possition info
->   05/12 perf diff: Refactor stdio ui data columns output
->   06/12 perf diff: Add -b option for perf diff to display paired entries only
->   07/12 perf diff: Add ratio computation way to compare hist entries
->   08/12 perf diff: Add option to sort entries based on diff computation
->   09/12 perf diff: Add weighted diff computation way to compare hist entries
->   10/12 perf diff: Add -p option to display period values for hist entries
->   11/12 perf diff: Add -F option to display formula for computation
->   12/12 perf diff: Add -F option for ratio computation
-> 
-> 
-> I'm still testing this, trying to find out useful outputs/computations/options,
-> so looking for any ideas and recommendations ;)
-> 
-> thanks,
-> jirka
-> 
-> 
-> Eamples:
-> 
-> display default profile
-> -----------------------------------------------------------------------------------
-> $ ./perf diff
-> # Event 'cache-misses:u'
-> #
-> #   Baseline     Delta       Shared Object                             Symbol
-> #   ........  ........  ..................  .................................
-> #
->        0.00%   +63.54%  libc-2.15.so        [.] __dcigettext                 
->        0.00%    +5.38%  libc-2.15.so        [.] _dl_addr                     
->        0.00%    +5.30%  libc-2.15.so        [.] __register_atfork            
->        0.31%    +3.94%  [kernel.kallsyms]   [k] page_fault                   
->        0.00%    +4.07%  ld-2.15.so          [.] check_match.11335            
->        0.00%    +3.65%  ld-2.15.so          [.] version_check_doit           
->        0.00%    +3.56%  ld-2.15.so          [.] _dl_fixup                    
->        0.00%    +3.05%  ld-2.15.so          [.] _dl_map_object               
->        0.00%    +2.90%  [kernel.kallsyms]   [k] system_call                  
->        3.94%    -1.53%  [kernel.kallsyms]   [k] device_not_available         
->        0.00%    +1.21%  libc-2.15.so        [.] __GI___libc_write            
->        0.00%    +0.54%  libc-2.15.so        [.] __memcpy_ssse3_back          
->        0.00%    +0.11%  libc-2.15.so        [.] execvp                       
->        7.71%    -7.69%  ld-2.15.so          [.] _dl_start                    
->        0.03%    -0.02%  libpthread-2.15.so  [.] __read_nocancel              
->        0.20%    -0.18%  perf                [.] perf_evlist__prepare_workload
-> 
-> 
-> 
-> display ratio profile
-> -----------------------------------------------------------------------------------
-> $ ./perf diff -cratio
-> # Event 'cache-misses:u'
-> #
-> #   Baseline           Ratio       Shared Object                             Symbol
-> #   ........  ..............  ..................  .................................
-> #
->        0.00%           0.000  libc-2.15.so        [.] __dcigettext                 
->        0.00%           0.000  libc-2.15.so        [.] _dl_addr                     
->        0.00%           0.000  libc-2.15.so        [.] __register_atfork            
->        0.31%          15.450  [kernel.kallsyms]   [k] page_fault                   
->        0.00%           0.000  ld-2.15.so          [.] check_match.11335            
->        0.00%           0.000  ld-2.15.so          [.] version_check_doit           
->        0.00%           0.000  ld-2.15.so          [.] _dl_fixup                    
->        0.00%           0.000  ld-2.15.so          [.] _dl_map_object               
->        0.00%           0.000  [kernel.kallsyms]   [k] system_call                  
->        3.94%           0.678  [kernel.kallsyms]   [k] device_not_available         
->        0.00%           0.000  libc-2.15.so        [.] __GI___libc_write            
->        0.00%           0.000  libc-2.15.so        [.] __memcpy_ssse3_back          
->        0.00%           0.000  libc-2.15.so        [.] execvp                       
->        7.71%           0.002  ld-2.15.so          [.] _dl_start                    
->        0.03%           0.500  libpthread-2.15.so  [.] __read_nocancel              
->        0.20%           0.077  perf                [.] perf_evlist__prepare_workload
-> 
-> 
-> 
-> display ratio profile only with entries matched in both files
-> -----------------------------------------------------------------------------------
-> $ ./perf diff -cratio -b
-> 
-> # Event 'cache-misses:u'
-> #
-> #   Baseline           Ratio       Shared Object                             Symbol
-> #   ........  ..............  ..................  .................................
-> #
->        0.31%          15.450  [kernel.kallsyms]   [k] page_fault                   
->        3.94%           0.678  [kernel.kallsyms]   [k] device_not_available         
->        7.71%           0.002  ld-2.15.so          [.] _dl_start                    
->        0.03%           0.500  libpthread-2.15.so  [.] __read_nocancel              
->        0.20%           0.077  perf                [.] perf_evlist__prepare_workload
-> 
-> 
-> 
-> display ratio profile only with entries matched in both files and sorted
-> -----------------------------------------------------------------------------------
-> $ ./perf diff -c+ratio -b
-> 
-> # Event 'cache-misses:u'
-> #
-> #   Baseline           Ratio       Shared Object                             Symbol
-> #   ........  ..............  ..................  .................................
-> #
->        0.31%          15.450  [kernel.kallsyms]   [k] page_fault                   
->        3.94%           0.678  [kernel.kallsyms]   [k] device_not_available         
->        0.03%           0.500  libpthread-2.15.so  [.] __read_nocancel              
->        0.20%           0.077  perf                [.] perf_evlist__prepare_workload
->        7.71%           0.002  ld-2.15.so          [.] _dl_start                    
-> 
-> 
-> 
-> display weighted profile with weights w1=1 w2=2, with formula, sorted, matching
-> entries only and with periods displayed
-> -----------------------------------------------------------------------------------
-> $ ./perf diff -c+wdiff:1,2 -F -b -p
-> 
-> #   Baseline  Weighted diff                                             Formula  Baseline Period        Period       Shared Object                             Symbol
-> #   ........  .............  ..................................................  ...............  ............  ..................  .................................
-> #
->        0.31%           +598  (309 * 2) - (20 * 1)                                             20           309  [kernel.kallsyms]   [k] page_fault                   
->        3.94%            +92  (175 * 2) - (258 * 1)                                           258           175  [kernel.kallsyms]   [k] device_not_available         
->        0.03%             +0  (1 * 2) - (2 * 1)                                                 2             1  libpthread-2.15.so  [.] __read_nocancel              
->        0.20%            -11  (1 * 2) - (13 * 1)                                               13             1  perf                [.] perf_evlist__prepare_workload
->        7.71%           -503  (1 * 2) - (505 * 1)                                             505             1  ld-2.15.so          [.] _dl_start                    
-> 
-> 
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Andi Kleen <andi@firstfloor.org>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> 
-> ---
->  tools/perf/Documentation/perf-diff.txt |  63 ++++++++++
->  tools/perf/builtin-diff.c              | 488 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++------
->  tools/perf/builtin-report.c            |   6 +-
->  tools/perf/builtin-top.c               |   6 +-
->  tools/perf/ui/stdio/hist.c             | 574 ++++++++++++++++++++++++++++++++++++++++++++++++++++++-----------------------------------
->  tools/perf/ui/stdio/hist.h             |  26 ++++
->  tools/perf/util/evsel.h                |   7 ++
->  tools/perf/util/hist.c                 |   7 +-
->  tools/perf/util/hist.h                 |  24 +++-
->  tools/perf/util/session.h              |   4 +-
->  tools/perf/util/sort.c                 |   6 +-
->  tools/perf/util/sort.h                 |  22 +++-
->  12 files changed, 957 insertions(+), 276 deletions(-)
+							Thanx, Paul
+
