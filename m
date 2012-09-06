@@ -1,39 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759106Ab2IFQZz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 12:25:55 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50803 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757279Ab2IFQZx (ORCPT
+	id S1759142Ab2IFQ01 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 12:26:27 -0400
+Received: from oproxy11-pub.bluehost.com ([173.254.64.10]:36534 "HELO
+	oproxy11-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758953Ab2IFQ0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 12:25:53 -0400
-Date: Thu, 6 Sep 2012 09:23:17 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tomas Hlavacek <tmshlvck@gmail.com>
-Cc: alan@linux.intel.com, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, marek.vasut@gmail.com
-Subject: Re: [PATCH v6] tty: uartclk value from serial_core exposed to sysfs
-Message-ID: <20120906162317.GA25171@kroah.com>
-References: <1344929718-22736-1-git-send-email-tmshlvck@gmail.com>
- <1346894238-12870-1-git-send-email-tmshlvck@gmail.com>
+	Thu, 6 Sep 2012 12:26:25 -0400
+Message-ID: <5048C474.5040609@xenotime.net>
+Date: Thu, 06 Sep 2012 08:42:44 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346894238-12870-1-git-send-email-tmshlvck@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Cong Wang <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] Add feature-removal-schedule.txt removal to feature-removal-schedule.txt
+References: <1346091725.19381.10.camel@pippen.local.home>	 <CAM_iQpV9163UKQt8Kvroc6JyMQnv1tqG1rS5M2CBWzbo7XvJXQ@mail.gmail.com>	 <1346773188.27919.13.camel@gandalf.local.home>	 <CAM_iQpUHYDT2hnt3h8fF33rp3O9c_VjEftOFUj-qdMdUkxo1tw@mail.gmail.com> <1346942563.1680.19.camel@gandalf.local.home>
+In-Reply-To: <1346942563.1680.19.camel@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 06, 2012 at 03:17:18AM +0200, Tomas Hlavacek wrote:
-> Added file /sys/devices/.../tty/ttySX/uartclk to allow reading
-> uartclk value in struct uart_port in serial_core via sysfs.
-> 
-> tty_register_device() has been generalized and refactored in order
-> to add support for setting drvdata and attribute_group to the device.
-> 
-> Signed-off-by: Tomas Hlavacek <tmshlvck@gmail.com>
+On 09/06/2012 07:42 AM, Steven Rostedt wrote:
 
-Thanks, that worked, I've now applied this.
+> On Thu, 2012-09-06 at 22:29 +0800, Cong Wang wrote:
+> 
+>> I don't think feature-removal-schedule.txt is for kernel users, it
+>> is a kind of a TODO list for kernel developers.
+> 
+> And this is exactly what Linus was complaining about. It shouldn't be
+> used as a TODO list for developers.
 
-greg k-h
+
+Were there some better alternatives discussed?
+
+-- 
+~Randy
