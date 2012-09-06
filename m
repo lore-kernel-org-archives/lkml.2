@@ -1,94 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755536Ab2IFMzX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 08:55:23 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:46387 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753268Ab2IFMzT (ORCPT
+	id S1755637Ab2IFMz4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 08:55:56 -0400
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:58274 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754808Ab2IFMuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 08:55:19 -0400
-Date: Thu, 6 Sep 2012 13:59:57 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Takashi Iwai <tiwai@suse.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Kay Sievers <kay@vrfy.org>,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: A workaround for request_firmware() stuck in module_init
-Message-ID: <20120906135957.2e705a9d@pyramind.ukuu.org.uk>
-In-Reply-To: <CACVXFVMbCOov6nFqmmVu+9QYXuGc_1uwYKLcevqERZw4CRvVCA@mail.gmail.com>
-References: <s5hd3222azc.wl%tiwai@suse.de>
-	<CACVXFVP-A7M2dG9bOvAnpzR60=iTYSw=WCOEwgo9KeuioxKanQ@mail.gmail.com>
-	<s5hd32122hw.wl%tiwai@suse.de>
-	<CACVXFVNE1GHAQJTrQy2AYgUBfq5kv42EjJJ7J+2q3jzXG-E=MQ@mail.gmail.com>
-	<s5hpq61j9qx.wl%tiwai@suse.de>
-	<CACVXFVOu86J5=1DLDrpLCd-pyk1jm2HT7ks1uzCXm9nURCRo2A@mail.gmail.com>
-	<20120905140304.5c5c58a4@pyramind.ukuu.org.uk>
-	<CACVXFVO+OgvLoFMcDD0gcQnbzUW=SyR=wiSMyT-FtpjWW5sWdw@mail.gmail.com>
-	<20120905173011.7a1111f0@pyramind.ukuu.org.uk>
-	<CACVXFVMbCOov6nFqmmVu+9QYXuGc_1uwYKLcevqERZw4CRvVCA@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 6 Sep 2012 08:50:21 -0400
+From: Felipe Balbi <balbi@ti.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: alan@linux.intel.com, Tony Lindgren <tony@atomide.com>,
+        Kevin Hilman <khilman@ti.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-serial@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Shubhrajyoti Datta <shubhrajyoti@ti.com>,
+        Sourav Poddar <sourav.poddar@ti.com>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH v4 04/21] serial: omap: simplify IRQ handling
+Date: Thu,  6 Sep 2012 15:45:23 +0300
+Message-Id: <1346935540-1792-5-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 1.7.12.rc3
+In-Reply-To: <1346935540-1792-1-git-send-email-balbi@ti.com>
+References: <20120906122948.GC29202@arwen.pp.htv.fi>
+ <1346935540-1792-1-git-send-email-balbi@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Sorry, I don't see anyone explained clearly why request_firmware()
-> can't be called inside module_init() in module case, so maybe it is
-> a bit early to say it is a fix on 'bug', :-)
+quite a few changes here, though they are
+pretty obvious. In summary we're making sure
+to detect which interrupt type we need to
+handle before calling the underlying interrupt
+handling procedure.
 
-Because the firmware load may trigger a need to load a driver to load the
-firmware.
+Tested-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+ drivers/tty/serial/omap-serial.c | 51 ++++++++++++++++++++++++++++++----------
+ 1 file changed, 38 insertions(+), 13 deletions(-)
 
-> > dev_discard_firmware()
-> >
-> > so you an instance can drop its firmware reference if it doesn't need it
-> > post probe.
-> 
-> This kind of mechanism has been implemented already: request_firmware()
-> and release_firmware() will get and put a refcount.  And, the reference
-> count is associated with firmware name, and it should be so, IMO.
+diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
+index dd3971f..d5a08cb 100644
+--- a/drivers/tty/serial/omap-serial.c
++++ b/drivers/tty/serial/omap-serial.c
+@@ -351,33 +351,58 @@ static inline irqreturn_t serial_omap_irq(int irq, void *dev_id)
+ {
+ 	struct uart_omap_port *up = dev_id;
+ 	unsigned int iir, lsr;
++	unsigned int type;
+ 	unsigned long flags;
++	irqreturn_t ret = IRQ_NONE;
+ 
++	spin_lock_irqsave(&up->port.lock, flags);
+ 	pm_runtime_get_sync(up->dev);
+ 	iir = serial_in(up, UART_IIR);
+-	if (iir & UART_IIR_NO_INT) {
+-		pm_runtime_mark_last_busy(up->dev);
+-		pm_runtime_put_autosuspend(up->dev);
+-		return IRQ_NONE;
+-	}
++again:
++	if (iir & UART_IIR_NO_INT)
++		goto out;
+ 
+-	spin_lock_irqsave(&up->port.lock, flags);
++	ret = IRQ_HANDLED;
+ 	lsr = serial_in(up, UART_LSR);
+-	if (iir & UART_IIR_RLSI) {
++
++	/* extract IRQ type from IIR register */
++	type = iir & 0x3e;
++
++	switch (type) {
++	case UART_IIR_MSI:
++		check_modem_status(up);
++		break;
++	case UART_IIR_THRI:
++		if (lsr & UART_LSR_THRE)
++			transmit_chars(up);
++		break;
++	case UART_IIR_RDI:
+ 		if (lsr & UART_LSR_DR)
+ 			receive_chars(up, &lsr);
++		break;
++	case UART_IIR_RLSI:
++		if (lsr & UART_LSR_BRK_ERROR_BITS)
++			receive_chars(up, &lsr);
++		break;
++	case UART_IIR_RX_TIMEOUT:
++		receive_chars(up, &lsr);
++		break;
++	case UART_IIR_CTS_RTS_DSR:
++		iir = serial_in(up, UART_IIR);
++		goto again;
++	case UART_IIR_XOFF:
++		/* FALLTHROUGH */
++	default:
++		break;
+ 	}
+ 
+-	check_modem_status(up);
+-	if ((lsr & UART_LSR_THRE) && (iir & UART_IIR_THRI))
+-		transmit_chars(up);
+-
++out:
+ 	spin_unlock_irqrestore(&up->port.lock, flags);
+ 	pm_runtime_mark_last_busy(up->dev);
+ 	pm_runtime_put_autosuspend(up->dev);
+-
+ 	up->port_activity = jiffies;
+-	return IRQ_HANDLED;
++
++	return ret;
+ }
+ 
+ static unsigned int serial_omap_tx_empty(struct uart_port *port)
+-- 
+1.7.12.rc3
 
-Yes - so a dev_ firmware interface is very thin.
-
-> > You broke suspend/resume for lots of devices.
-> 
-> The firmware cache mechanism will keep the firmware during suspend/resume
-> cycle to address the problem.
-
-Ok
-
-> For drivers, I understand request_firmware()/request_firmware_nowait()
-> and release_firmware() are enough. If many devices share one firmware,
-> there is only one firmware kept in memory for their requests if one holds
-> the firmware, and there is a refcount for it already, :-)
-> 
-> So I don't see why it is difficult to use request/release_firmware() inside
-> drivers, :-)
-
-The big problem can be summed up in one word "asynchronous". Having
-either an automated handler for it before ->probe is called or having the
-driver author cut and paste in
-
-	if (!dev_request_firmware(dev, blah))
-		return -EPROBE_DEFER;
-
-avoids the need to deal with async completion after probe (and the
-*horrible* case of 
-
-	probe
-		request firmware
-	remove
-	
-	firmware ready
-)
-
-in each driver
-
-Having an auto unload for it at the end is just neatness. Perhaps in fact
-it should be devm_request_firmware() and use the mechanism we have ?
