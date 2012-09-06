@@ -1,66 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756743Ab2IFIhF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 04:37:05 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45699 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755657Ab2IFIg6 (ORCPT
+	id S1756647Ab2IFIip (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 04:38:45 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:56784 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755460Ab2IFIim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 04:36:58 -0400
-Date: Thu, 6 Sep 2012 09:36:07 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 20/31] arm64: User access library function
-Message-ID: <20120906083607.GA13975@arm.com>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
- <1344966752-16102-21-git-send-email-catalin.marinas@arm.com>
- <201208151449.54834.arnd@arndb.de>
- <20120905191312.GH24085@n2100.arm.linux.org.uk>
- <20120905210135.GA87548@MacBook-Pro.local>
- <20120905210534.GI24085@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120905210534.GI24085@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 6 Sep 2012 04:38:42 -0400
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: peter.senna@gmail.com, Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] drivers/media/platform/s5p-tv/sdo_drv.c: fix error return code
+Date: Thu,  6 Sep 2012 10:38:29 +0200
+Message-Id: <1346920709-8711-1-git-send-email-peter.senna@gmail.com>
+X-Mailer: git-send-email 1.7.11.4
+In-Reply-To: <1346775269-12191-4-git-send-email-peter.senna@gmail.com>
+References: <1346775269-12191-4-git-send-email-peter.senna@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 05, 2012 at 10:05:34PM +0100, Russell King - ARM Linux wrote:
-> On Wed, Sep 05, 2012 at 10:01:37PM +0100, Catalin Marinas wrote:
-> > There are indeed a few KB gain in code size but that's probably coming
-> > from the exception table since otherwise you just replace a bl with
-> > ldrt. It depends on what the compiler does as well, the arm code has
-> > some carefully chosen registers when calling the __get_user_x function.
-> 
-> It's more than that - it's not just the ldr but also a zeroing of a
-> temporary register to hold the error code should the instruction fault.
-> So it's not only the exception tables but also an increase in the
-> main path - and that's where you benefit from having it out of line and
-> thereby a hotter i-cache.
+From: Peter Senna Tschudin <peter.senna@gmail.com>
 
-On 32-bit we have __get_user() inline and get_user() out of line. What
-was the history behind this?
+Convert a nonnegative error return code to a negative one, as returned
+elsewhere in the function.
 
-> > If you do the access_ok inline and the __get_user_x separately, the size
-> > increase is even greater (at least in the arm64 case it can get to over
-> > 20KB). I think x86 does the access_ok check out of line.
-> 
-> Please talk to Will about get_user() and put_user().  Afterwards you
-> will definitely want to keep them out of line on 64-bit ARM.
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
-As I said, I already made the change to always inline get_user/put_user
-with some penalty in the Image size but it makes the code cleaner. I'm
-not entirely convinced of the performance gain/loss especially on ARMv8
-cores with physically tagged caches. There is room for optimisation when
-I get real silicon.
+// <smpl>
+(
+if@p1 (\(ret < 0\|ret != 0\))
+ { ... return ret; }
+|
+ret@p1 = 0
+)
+... when != ret = e1
+    when != &ret
+*if(...)
+{
+  ... when != ret = e2
+      when forall
+ return ret;
+}
 
--- 
-Catalin
+// </smpl>
+
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+
+---
+ drivers/media/platform/s5p-tv/sdo_drv.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/media/platform/s5p-tv/sdo_drv.c b/drivers/media/platform/s5p-tv/sdo_drv.c
+index ad68bbe..58cf56d 100644
+--- a/drivers/media/platform/s5p-tv/sdo_drv.c
++++ b/drivers/media/platform/s5p-tv/sdo_drv.c
+@@ -369,6 +369,7 @@ static int __devinit sdo_probe(struct platform_device *pdev)
+ 	sdev->fout_vpll = clk_get(dev, "fout_vpll");
+ 	if (IS_ERR_OR_NULL(sdev->fout_vpll)) {
+ 		dev_err(dev, "failed to get clock 'fout_vpll'\n");
++		ret = -ENXIO;
+ 		goto fail_dacphy;
+ 	}
+ 	dev_info(dev, "fout_vpll.rate = %lu\n", clk_get_rate(sclk_vpll));
+@@ -377,11 +378,13 @@ static int __devinit sdo_probe(struct platform_device *pdev)
+ 	sdev->vdac = devm_regulator_get(dev, "vdd33a_dac");
+ 	if (IS_ERR_OR_NULL(sdev->vdac)) {
+ 		dev_err(dev, "failed to get regulator 'vdac'\n");
++		ret = -ENXIO;
+ 		goto fail_fout_vpll;
+ 	}
+ 	sdev->vdet = devm_regulator_get(dev, "vdet");
+ 	if (IS_ERR_OR_NULL(sdev->vdet)) {
+ 		dev_err(dev, "failed to get regulator 'vdet'\n");
++		ret = -ENXIO;
+ 		goto fail_fout_vpll;
+ 	}
+ 
+
