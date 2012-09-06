@@ -1,154 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758200Ab2IFLIF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 07:08:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10250 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752062Ab2IFLID (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 07:08:03 -0400
-Date: Thu, 6 Sep 2012 14:09:22 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio-blk: Fix kconfig option
-Message-ID: <20120906110922.GD32325@redhat.com>
-References: <20120903044133.GA9980@moria.home.lan>
- <87wr0ae26e.fsf@rustcorp.com.au>
- <20120906074113.GA5902@koverstreet-glaptop>
- <20120906084403.GD17656@redhat.com>
- <20120906092512.GB5902@koverstreet-glaptop>
- <20120906094956.GB22816@redhat.com>
- <20120906100247.GA27355@koverstreet-glaptop>
- <20120906101842.GB32325@redhat.com>
- <20120906103143.GA22299@moria.home.lan>
+	id S1758270Ab2IFLIt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 07:08:49 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:33849 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758237Ab2IFLIp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 07:08:45 -0400
+Subject: [PATCH RFC] mm/swap: automatic tuning for swapin readahead
+To: Rik van Riel <riel@redhat.com>, Shaohua Li <shli@kernel.org>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, fengguang.wu@intel.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Date: Thu, 06 Sep 2012 15:08:36 +0400
+Message-ID: <20120906110836.22423.17638.stgit@zurg>
+In-Reply-To: <50460CED.6060006@redhat.com>
+References: <50460CED.6060006@redhat.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120906103143.GA22299@moria.home.lan>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 06, 2012 at 03:31:44AM -0700, Kent Overstreet wrote:
-> On Thu, Sep 06, 2012 at 01:18:43PM +0300, Michael S. Tsirkin wrote:
-> > On Thu, Sep 06, 2012 at 03:02:48AM -0700, Kent Overstreet wrote:
-> > > On Thu, Sep 06, 2012 at 12:49:56PM +0300, Michael S. Tsirkin wrote:
-> > > > On Thu, Sep 06, 2012 at 02:25:12AM -0700, Kent Overstreet wrote:
-> > > > > On Thu, Sep 06, 2012 at 11:44:03AM +0300, Michael S. Tsirkin wrote:
-> > > > > > On Thu, Sep 06, 2012 at 12:41:13AM -0700, Kent Overstreet wrote:
-> > > > > > > On Tue, Sep 04, 2012 at 03:53:53PM +0930, Rusty Russell wrote:
-> > > > > > > > Kent Overstreet <koverstreet@google.com> writes:
-> > > > > > > > 
-> > > > > > > > > CONFIG_VIRTIO isn't exposed, everything else is supposed to select it
-> > > > > > > > > instead.
-> > > > > > > > 
-> > > > > > > > This is a slight mis-understanding.  It's supposed to be selected by
-> > > > > > > > the particular driver, probably virtio_pci in your case.
-> > > > > > > 
-> > > > > > > So are you saying virtio-blk depends on virtio-pci? If so, the kconfig
-> > > > > > > should have that.
-> > > > > > > 
-> > > > > > > As is, VIRTIO_BLK just has:
-> > > > > > > 	depends on EXPERIMENTAL && VIRTIO
-> > > > > > > 
-> > > > > > > which is flat out broken.
-> > > > > > 
-> > > > > > I don't think anything is broken.
-> > > > > > Can you show an example of a broken configuration?
-> > > > > 
-> > > > > Do you not understand the difference between depends an selects?
-> > > > > Or did you not read my original mail?
-> > > > > Flip off everything in drivers -> virtio
-> > > > > 
-> > > > > Now go to drivers -> block and try to turn on virtio-blk.
-> > > > > 
-> > > > > It's not listed!
-> > > > 
-> > > > Yes. Because you disabled all virtio backends.
-> > > > It does not make sense to have any frontends.
-> > > 
-> > > How's a user - or even another kernel developer who isn't familiar with
-> > > virtio - supposed to know that?
-> > > 
-> > > I still don't know what exactly a virtio backend is - the term isn't
-> > > even mentioned anywhere that I've seen.
-> > > 
-> > > Whatever it is though virtio-blk should be depending on _that_, not a
-> > > config option that _isn't exposed in the menu_!
-> > > 
-> > > > > Now go back to drivers -> virtio and turn on (randomly) balloon.
-> > > > > 
-> > > > > Go back to drivers -> block, and now you can turn on virtio-blk!
-> > > > > 
-> > > > > Do you see what's wrong with this picture?
-> > > > 
-> > > > Yes. You got unlucky with your random guess.
-> > > > It's a bug in balloon kconfig: it should not
-> > > > select virtio.
-> > > > I sent a patch to fix that yesterday.
-> > > 
-> > > Then it's also a bug in the comments at the top of
-> > > drivers/virtio/Kconfig.
-> > > 
-> > > And besides that, how the _hell_ is a user supposed to know to turn on
-> > > VIRTIO_PCI before VIRTIO_BLK? It's not documented anywhere (if that is
-> > > what's supposed to happen! I still don't know)
-> > 
-> > Well, what kind of device do you have? Tell us :)
-> > If it's a virtio pci device,
-> > you need to enable virtio-pci and virtio-blk.
-> 
-> I run qemu with -drive if=virtio. You tell me!
+This patch adds simple tracker for swapin readahread effectiveness, and tunes
+readahead cluster depending on it. It manage internal state [0..1024] and scales
+readahead order between 0 and value from sysctl vm.page-cluster (3 by default).
+Swapout and readahead misses decreases state, swapin and ra hits increases it:
 
--drive if= is a compatibility option. qemu makes
-an effort to guess what it is you want to do.
-Result is usually correct but it means people building
-their own kernels get confused.
+ Swapin          +1		[page fault, shmem, etc... ]
+ Swapout         -10
+ Readahead hit   +10
+ Readahead miss  -1		[removing from swapcache unused readahead page]
 
-For x86 kvm the modern equivalent is:
+If system is under serious memory pressure swapin readahead is useless, because
+pages in swap are highly fragmented and cache hit is mostly impossible. In this
+case swapin only leads to unnecessary memory allocations. But readahead helps to
+read all swapped pages back to memory if system recovers from memory pressure.
 
--device virtio-blk-pci,drive=foobar -drive if=no,...
+This patch inspired by patch from Shaohua Li
+http://www.spinics.net/lists/linux-mm/msg41128.html
+mine version uses system wide state rather than per-VMA counters.
 
-If you use this you get what you asked for :).
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Shaohua Li <shli@kernel.org>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Minchan Kim <minchan@kernel.org>
+---
+ include/linux/page-flags.h |    1 +
+ mm/swap_state.c            |   42 +++++++++++++++++++++++++++++++++++++-----
+ 2 files changed, 38 insertions(+), 5 deletions(-)
 
-Yes this usage is not documented anywhere, but this is
-not guest driver's problem.
+diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
+index b5d1384..3657cdc 100644
+--- a/include/linux/page-flags.h
++++ b/include/linux/page-flags.h
+@@ -231,6 +231,7 @@ PAGEFLAG(MappedToDisk, mappedtodisk)
+ /* PG_readahead is only used for file reads; PG_reclaim is only for writes */
+ PAGEFLAG(Reclaim, reclaim) TESTCLEARFLAG(Reclaim, reclaim)
+ PAGEFLAG(Readahead, reclaim)		/* Reminder to do async read-ahead */
++TESTCLEARFLAG(Readahead, reclaim)
+ 
+ #ifdef CONFIG_HIGHMEM
+ /*
+diff --git a/mm/swap_state.c b/mm/swap_state.c
+index 0cb36fb..d6c7a88 100644
+--- a/mm/swap_state.c
++++ b/mm/swap_state.c
+@@ -53,12 +53,31 @@ static struct {
+ 	unsigned long find_total;
+ } swap_cache_info;
+ 
++#define SWAP_RA_BITS	10
++
++static atomic_t swap_ra_state = ATOMIC_INIT((1 << SWAP_RA_BITS) - 1);
++static int swap_ra_cluster = 1;
++
++static void swap_ra_update(int delta)
++{
++	int old_state, new_state;
++
++	old_state = atomic_read(&swap_ra_state);
++	new_state = clamp(old_state + delta, 0, 1 << SWAP_RA_BITS);
++	if (old_state != new_state) {
++		atomic_set(&swap_ra_state, new_state);
++		swap_ra_cluster = (page_cluster * new_state) >> SWAP_RA_BITS;
++	}
++}
++
+ void show_swap_cache_info(void)
+ {
+ 	printk("%lu pages in swap cache\n", total_swapcache_pages);
+-	printk("Swap cache stats: add %lu, delete %lu, find %lu/%lu\n",
++	printk("Swap cache stats: add %lu, delete %lu, find %lu/%lu,"
++		" readahead %d/%d\n",
+ 		swap_cache_info.add_total, swap_cache_info.del_total,
+-		swap_cache_info.find_success, swap_cache_info.find_total);
++		swap_cache_info.find_success, swap_cache_info.find_total,
++		1 << swap_ra_cluster, atomic_read(&swap_ra_state));
+ 	printk("Free swap  = %ldkB\n", nr_swap_pages << (PAGE_SHIFT - 10));
+ 	printk("Total swap = %lukB\n", total_swap_pages << (PAGE_SHIFT - 10));
+ }
+@@ -112,6 +131,8 @@ int add_to_swap_cache(struct page *page, swp_entry_t entry, gfp_t gfp_mask)
+ 	if (!error) {
+ 		error = __add_to_swap_cache(page, entry);
+ 		radix_tree_preload_end();
++		/* FIXME weird place */
++		swap_ra_update(-10); /* swapout, decrease readahead */
+ 	}
+ 	return error;
+ }
+@@ -132,6 +153,8 @@ void __delete_from_swap_cache(struct page *page)
+ 	total_swapcache_pages--;
+ 	__dec_zone_page_state(page, NR_FILE_PAGES);
+ 	INC_CACHE_INFO(del_total);
++	if (TestClearPageReadahead(page))
++		swap_ra_update(-1); /* readahead miss */
+ }
+ 
+ /**
+@@ -265,8 +288,11 @@ struct page * lookup_swap_cache(swp_entry_t entry)
+ 
+ 	page = find_get_page(&swapper_space, entry.val);
+ 
+-	if (page)
++	if (page) {
+ 		INC_CACHE_INFO(find_success);
++		if (TestClearPageReadahead(page))
++			swap_ra_update(+10); /* readahead hit */
++	}
+ 
+ 	INC_CACHE_INFO(find_total);
+ 	return page;
+@@ -374,11 +400,14 @@ struct page *swapin_readahead(swp_entry_t entry, gfp_t gfp_mask,
+ 			struct vm_area_struct *vma, unsigned long addr)
+ {
+ 	struct page *page;
+-	unsigned long offset = swp_offset(entry);
++	unsigned long entry_offset = swp_offset(entry);
++	unsigned long offset = entry_offset;
+ 	unsigned long start_offset, end_offset;
+-	unsigned long mask = (1UL << page_cluster) - 1;
++	unsigned long mask = (1UL << swap_ra_cluster) - 1;
+ 	struct blk_plug plug;
+ 
++	swap_ra_update(+1); /* swapin, increase readahead */
++
+ 	/* Read a page_cluster sized and aligned cluster around offset. */
+ 	start_offset = offset & ~mask;
+ 	end_offset = offset | mask;
+@@ -392,6 +421,9 @@ struct page *swapin_readahead(swp_entry_t entry, gfp_t gfp_mask,
+ 						gfp_mask, vma, addr);
+ 		if (!page)
+ 			continue;
++		/* FIXME these pages aren't readahead sometimes */
++		if (offset != entry_offset)
++			SetPageReadahead(page);
+ 		page_cache_release(page);
+ 	}
+ 	blk_finish_plug(&plug);
 
-> Better yet, tell me how the user is supposed to figure it out!
-
-As usual when you do not know which driver to select.
-Boot a distro kernel and look around.
-Where is your virtio device? On a pci bus?
-There you are.
-
-> > 
-> > > and even if it was
-> > > documented, having one kconfig option depend on something that's exposed
-> > > in a _completely different menu_ is just made of fail.
-> > 
-> > Fine, but why pick on virtio?
-> > This is extremely common in kconfig.
-> > For example, a ton of network drivers depend
-> > on PCI, it's exactly the same thing.
-> 
-> Never noticed where CONFIG_PCI is exposed in bus options?
-
-I see it:
-
-CONFIG_PCI:
-  │ Find out whether you have a PCI motherboard. PCI is the name of a │  
-  │ bus system, i.e. the way the CPU talks to the other stuff inside │  
-  │ your box. Other bus systems are ISA, EISA, MicroChannel (MCA) or │  
-  │ VESA. If you have PCI, say Y, otherwise N.  │  
-
-> Nope, not the same thing.
-
-You just happen to know what PCI is but not what VIRTIO PCI is.
-This is fair enough, but not sure how to help in this case.
-Your patch won't help though.
-
--- 
-MST
