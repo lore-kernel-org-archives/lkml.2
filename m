@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759443Ab2IGDJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 23:09:28 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:13219 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1759320Ab2IGDIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 23:08:47 -0400
-X-IronPort-AV: E=Sophos;i="4.80,384,1344182400"; 
-   d="scan'208";a="5799915"
-Message-ID: <504965AA.6090107@cn.fujitsu.com>
-Date: Fri, 07 Sep 2012 11:10:34 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1759305Ab2IGDOJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 23:14:09 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41474 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758667Ab2IGDOF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 23:14:05 -0400
+Date: Fri, 7 Sep 2012 11:14:19 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Huang Shijie <b32955@freescale.com>
+Cc: gregkh@linuxfoundation.org, alan@linux.intel.com,
+        linux-serial@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] serial: mxs-auart: put the device when exit or error
+Message-ID: <20120907031416.GJ26709@S2101-09.ap.freescale.net>
+References: <20120907024349.GH26709@S2101-09.ap.freescale.net>
+ <1346985187-30459-1-git-send-email-b32955@freescale.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH wq/for-3.6-fixes 3/3] workqueue: fix possible idle worker
- depletion during CPU_ONLINE
-References: <20120906200647.GG29092@google.com> <20120906200723.GH29092@google.com> <20120906200802.GI29092@google.com>
-In-Reply-To: <20120906200802.GI29092@google.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/07 11:08:20,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/07 11:08:20,
-	Serialize complete at 2012/09/07 11:08:20
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346985187-30459-1-git-send-email-b32955@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/07/2012 04:08 AM, Tejun Heo wrote:
->>From 985aafbf530834a9ab16348300adc7cbf35aab76 Mon Sep 17 00:00:00 2001
-> From: Tejun Heo <tj@kernel.org>
-> Date: Thu, 6 Sep 2012 12:50:41 -0700
+On Fri, Sep 07, 2012 at 10:33:07AM +0800, Huang Shijie wrote:
+> We call the get_device() in the mxs_auart_probe().
+> For the balance of the reference count, we should put the
+> device in the mxs_auart_remove() or in the error path of
+> probe.
 > 
-> To simplify both normal and CPU hotplug paths, while CPU hotplug is in
-> progress, manager_mutex is held to prevent one of the workers from
-> becoming a manager and creating or destroying workers; unfortunately,
-> it currently may lead to idle worker depletion which in turn can lead
-> to deadlock under extreme circumstances.
+> Signed-off-by: Huang Shijie <b32955@freescale.com>
+
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
+
+> ---
+>  drivers/tty/serial/mxs-auart.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
 > 
-> Idle workers aren't allowed to become busy if there's no other idle
-> worker left to create more idle workers, but during CPU_ONLINE
-> gcwq_associate() is holding all managerships and all the idle workers
-> can proceed to become busy before gcwq_associate() is finished.
+> diff --git a/drivers/tty/serial/mxs-auart.c b/drivers/tty/serial/mxs-auart.c
+> index 3a667ee..203e512 100644
+> --- a/drivers/tty/serial/mxs-auart.c
+> +++ b/drivers/tty/serial/mxs-auart.c
+> @@ -781,6 +781,7 @@ out_free_irq:
+>  	auart_port[pdev->id] = NULL;
+>  	free_irq(s->irq, s);
+>  out_free_clk:
+> +	put_device(s->dev);
+>  	clk_put(s->clk);
+>  out_free:
+>  	kfree(s);
+> @@ -796,6 +797,7 @@ static int __devexit mxs_auart_remove(struct platform_device *pdev)
+>  
+>  	auart_port[pdev->id] = NULL;
+>  
+> +	put_device(s->dev);
+>  	clk_put(s->clk);
+>  	free_irq(s->irq, s);
+>  	kfree(s);
+> -- 
+> 1.7.0.4
 > 
-> This patch fixes the bug by releasing manager_mutexes before letting
-> the rebound idle workers go.  This ensures that by the time idle
-> workers check whether management is necessary, CPU_ONLINE already has
-> released the positions.
 > 
-
-Could you review manage_workers_slowpath() in V4 patchset.
-It has enough changelog and comments.
-
-After the discussion,
-
-We don't move the hotplug code outside hotplug code. it matches this requirement.
-
-Since we introduce manage_mutex(), any palace should be allowed to grab it
-when its context allows. So it is not hotplug code's responsibility of this bug.
-
-manage_workers() just use mutex_trylock() to grab the lock, it does not make
-hard to do it jobs when need, and it does not try to find out the reason of fail.
-so I think it is manage_workers()'s responsibility to handle this bug.
-a manage_workers_slowpath() is enough to fix the bug.
-
-=====
-manage_workers_slowpath() just adds a little overhead over manage_workers(),
-so we can use manage_workers_slowpath() to replace manage_workers(), thus we
-can reduce the code of manage_workers() and we can do more cleanup for manage.
-
-Thanks,
-Lai
