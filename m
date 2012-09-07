@@ -1,41 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757891Ab2IGVZK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 17:25:10 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:41677 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757137Ab2IGVZI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 17:25:08 -0400
-Date: Fri, 07 Sep 2012 17:25:06 -0400 (EDT)
-Message-Id: <20120907.172506.1680438781148301994.davem@davemloft.net>
-To: timur@freescale.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, sfr@canb.auug.org.au, rdunlap@xenotime.net
-Subject: Re: [PATCH] netdev/phy: mdio-mux-mmioreg.c should include
- of_address.h
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1347048592-22957-1-git-send-email-timur@freescale.com>
-References: <1347048592-22957-1-git-send-email-timur@freescale.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1757875Ab2IGV1F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 17:27:05 -0400
+Received: from mga09.intel.com ([134.134.136.24]:12510 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751101Ab2IGV1C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 17:27:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,387,1344236400"; 
+   d="scan'208";a="199137568"
+From: Andi Kleen <andi@firstfloor.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: viro@zeniv.linux.org.uk, eparis@redhat.com, linux-audit@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1 00/10] vfs: getname/putname overhaul
+References: <1347025085-20285-1-git-send-email-jlayton@redhat.com>
+Date: Fri, 07 Sep 2012 14:26:56 -0700
+In-Reply-To: <1347025085-20285-1-git-send-email-jlayton@redhat.com> (Jeff
+	Layton's message of "Fri, 7 Sep 2012 09:37:55 -0400")
+Message-ID: <m2r4qd4j8f.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Timur Tabi <timur@freescale.com>
-Date: Fri, 7 Sep 2012 15:09:52 -0500
+Jeff Layton <jlayton@redhat.com> writes:
 
-> mdio-mux-mmioreg.c uses function of_address_to_resource(), which is defined
-> in linux/of_address.h.  This fixes a compilation error:
-> 
-> drivers/net/phy/mdio-mux-mmioreg.c: In function 'mdio_mux_mmioreg_probe':
-> drivers/net/phy/mdio-mux-mmioreg.c:83:2: error: implicit declaration of
-> 	function 'of_address_to_resource'
-> 
-> Signed-off-by: Timur Tabi <timur@freescale.com>
+> This patchset is a first pass at overhauling the getname/putname
+> interface to use a struct. The idea here is to add a new getname_info
+> struct that allow us to pass around some auxillary info along with
+> the string that getname() returns.
 
-Please provide "Reported-by: ..." tags to give credit to the problem
-reporter, Randy Dunlap in this case.
+Couldn't you just use some of the free pointers in struct page?
+(lru etc.)
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
