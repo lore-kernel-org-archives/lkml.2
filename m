@@ -1,87 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756979Ab2IGHXZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 03:23:25 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58477 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756796Ab2IGHXX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 03:23:23 -0400
-Message-ID: <1347002596.18408.84.camel@twins>
-Subject: Re: WARNING: cpu_is_offline() at native_smp_send_reschedule()
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Michael Wang <wangyun@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Venkatesh Pallipadi <venki@google.com>
-Date: Fri, 07 Sep 2012 09:23:16 +0200
-In-Reply-To: <20120907012058.GA9000@localhost>
-References: <20120905011152.GA19853@localhost>
-	 <5046D69F.9000705@linux.vnet.ibm.com> <1346842480.2461.11.camel@laptop>
-	 <20120905125700.GA5833@localhost> <20120907012058.GA9000@localhost>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1758213Ab2IGH3a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 03:29:30 -0400
+Received: from mga14.intel.com ([143.182.124.37]:49727 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752681Ab2IGH32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 03:29:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,384,1344236400"; 
+   d="scan'208";a="142497559"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: lenb@kernel.org
+Cc: rui.zhang@intel.com, khali@linux-fr.org, ben-linux@fluff.org,
+        w.sang@pengutronix.de, dmitry.torokhov@gmail.com,
+        eric.piel@tremplin-utc.net, mjg@redhat.com, ike.pan@canonical.com,
+        herton@canonical.com, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH RESEND 00/12] ACPI: add module_acpi_driver() and convert drivers to it
+Date: Fri,  7 Sep 2012 10:31:37 +0300
+Message-Id: <1347003109-26887-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.7.9.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-07 at 09:20 +0800, Fengguang Wu wrote:
+[Resending the series with acks]
 
-> FYI, the bisect result is
-> 
-> commit 554cecaf733623b327eef9652b65965eb1081b81
-> Author: Diwakar Tundlam <dtundlam@nvidia.com>
-> Date:   Wed Mar 7 14:44:26 2012 -0800
-> 
->     sched/nohz: Correctly initialize 'next_balance' in 'nohz' idle balancer
-> 
->     The 'next_balance' field of 'nohz' idle balancer must be initialized
->     to jiffies. Since jiffies is initialized to negative 300 seconds the
->     'nohz' idle balancer does not run for the first 300s (5mins) after
->     bootup. If no new processes are spawed or no idle cycles happen, the
->     load on the cpus will remain unbalanced for that duration.
-> 
->     Signed-off-by: Diwakar Tundlam <dtundlam@nvidia.com>
->     Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
->     Link: http://lkml.kernel.org/r/1DD7BFEDD3147247B1355BEFEFE4665237994F30EF@HQMAIL04.nvidia.com
->     Signed-off-by: Ingo Molnar <mingo@elte.hu>
+This is similar than what is done for other busses before (PCI, I2C, SPI,
+platform). It reduces a lot of unnecessary boilerplate code from modules.
 
-Oh fun.. does the below 'fix' it?
+We also remove following redundant check on few drivers:
 
-The thing I'm thinking of a tick happening right after we set jiffies
-but before the zalloc (specifically the memset(0)) is complete. Since
-we've already registered the softirq we can end up in the load-balancer
-and see a completely weird idle mask.
+	if (acpi_disabled)
+		return -ENODEV;
 
-Hmm?
+as this same check is already done at the beginning of
+acpi_bus_register_driver().
 
----
- kernel/sched/fair.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+I think these should all go via ACPI tree because they all depend on the
+first patch which touches the ACPI subsystem.
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 1ca4fe4..ac57bb6 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5346,13 +5346,12 @@ void print_cfs_stats(struct seq_file *m, int
-cpu)
- __init void init_sched_fair_class(void)
- {
- #ifdef CONFIG_SMP
--	open_softirq(SCHED_SOFTIRQ, run_rebalance_domains);
--
- #ifdef CONFIG_NO_HZ
- 	nohz.next_balance = jiffies;
- 	zalloc_cpumask_var(&nohz.idle_cpus_mask, GFP_NOWAIT);
- 	cpu_notifier(sched_ilb_notifier, 0);
- #endif
--#endif /* SMP */
- 
-+	open_softirq(SCHED_SOFTIRQ, run_rebalance_domains);
-+#endif /* SMP */
- }
+Mika Westerberg (12):
+  ACPI: introduce module_acpi_driver() helper macro
+  ACPI/button: convert to module_acpi_driver()
+  ACPI/fan: convert to module_acpi_driver()
+  ACPI/hed: convert to module_acpi_driver()
+  ACPI/sbshc: convert to module_acpi_driver()
+  i2c-scmi: convert to module_acpi_driver()
+  Input: atlas_btns - convert to module_acpi_driver()
+  hp_accel: convert to module_acpi_driver()
+  ideapad: convert to module_acpi_driver()
+  topstar-laptop: convert to module_acpi_driver()
+  toshiba_bluetooth: convert to module_acpi_driver()
+  xo15-ebook: convert to module_acpi_driver()
 
+ drivers/acpi/button.c                    |   13 +------------
+ drivers/acpi/fan.c                       |   22 +---------------------
+ drivers/acpi/hed.c                       |   20 +-------------------
+ drivers/acpi/sbshc.c                     |   18 +-----------------
+ drivers/i2c/busses/i2c-scmi.c            |   14 +-------------
+ drivers/input/misc/atlas_btns.c          |   17 +----------------
+ drivers/platform/x86/hp_accel.c          |   25 +------------------------
+ drivers/platform/x86/ideapad-laptop.c    |   14 +-------------
+ drivers/platform/x86/topstar-laptop.c    |   22 +---------------------
+ drivers/platform/x86/toshiba_bluetooth.c |   22 +---------------------
+ drivers/platform/x86/xo15-ebook.c        |   14 +-------------
+ include/acpi/acpi_bus.h                  |   13 +++++++++++++
+ 12 files changed, 24 insertions(+), 190 deletions(-)
+
+-- 
+1.7.10.4
 
