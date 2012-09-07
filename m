@@ -1,158 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759005Ab2IGCvP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 22:51:15 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:56084 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758446Ab2IGCvO (ORCPT
+	id S1758958Ab2IGCzU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 22:55:20 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52413 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752597Ab2IGCzS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 22:51:14 -0400
-Date: Fri, 7 Sep 2012 12:51:04 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David McCullough <david_mccullough@mcafee.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: linux-next: manual merge of the crypto tree with the sparc-next
- tree
-Message-Id: <20120907125104.f9adc5ba55907e802cc8329b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Thu, 6 Sep 2012 22:55:18 -0400
+Message-ID: <1346986512.17321.42.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 16/32] ext4: make sure the journal sb is written in
+ ext4_clear_journal_err()
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Theodore Tso <tytso@mit.edu>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Fri, 07 Sep 2012 03:55:12 +0100
+In-Reply-To: <20120820035650.114172576@linuxfoundation.org>
+References: <20120820035647.862247088@linuxfoundation.org>
+	 <20120820035650.114172576@linuxfoundation.org>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-5I3+UCm2MKsh/WtRpC/6"
+X-Mailer: Evolution 3.4.3-1 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__7_Sep_2012_12_51_04_+1000_tID0pQtN=WYVzHw9"
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__7_Sep_2012_12_51_04_+1000_tID0pQtN=WYVzHw9
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
+
+--=-5I3+UCm2MKsh/WtRpC/6
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-Hi Herbert,
+On Sun, 2012-08-19 at 20:57 -0700, Greg Kroah-Hartman wrote:
+> From: Greg KH <gregkh@linuxfoundation.org>
+>=20
+> 3.4-stable review patch.  If anyone has any objections, please let me kno=
+w.
+>=20
+> ------------------
+>=20
+> From: Theodore Ts'o <tytso@mit.edu>
+>=20
+> commit d796c52ef0b71a988364f6109aeb63d79c5b116b upstream.
+>=20
+> After we transfer set the EXT4_ERROR_FS bit in the file system
+> superblock, it's not enough to call jbd2_journal_clear_err() to clear
+> the error indication from journal superblock --- we need to call
+> jbd2_journal_update_sb_errno() as well.  Otherwise, when the root file
+> system is mounted read-only, the journal is replayed, and the error
+> indicator is transferred to the superblock --- but the s_errno field
+> in the jbd2 superblock is left set (since although we cleared it in
+> memory, we never flushed it out to disk).
+>=20
+> This can end up confusing e2fsck.  We should make e2fsck more robust
+> in this case, but the kernel shouldn't be leaving things in this
+> confused state, either.
+[...]
 
-Today's linux-next merge of the crypto tree got conflicts in
-crypto/Kconfig between commits 4ff28d4ca93b ("sparc64: Add SHA1 driver
-making use of the 'sha1' instruction") and 9bf4852d3d19 ("sparc64: Add
-AES driver making use of the new aes opcodes") from the sparc-next tree
-and commit f0be44f4fb1f ("arm/crypto: Add optimized AES and SHA1
-routines") from the crypto tree.
+Is this needed for 3.2?  It looked like it depended on
+24bcc89c7e7c64982e6192b4952a0a92379fc341 which is strictly too big a
+change for a stable series.  But perhaps there's a way to avoid that
+dependency.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Ben.
+
 --=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Ben Hutchings
+Usenet is essentially a HUGE group of people passing notes in class.
+                      - Rachel Kadel, `A Quick Guide to Newsgroup Etiquette=
+'
 
-diff --cc crypto/Kconfig
-index 94f232f,2730798..0000000
---- a/crypto/Kconfig
-+++ b/crypto/Kconfig
-@@@ -451,15 -433,15 +451,24 @@@ config CRYPTO_SHA1_SSSE
-  	  using Supplemental SSE3 (SSSE3) instructions or Advanced Vector
-  	  Extensions (AVX), when available.
- =20
-+ config CRYPTO_SHA1_ARM
-+ 	tristate "SHA1 digest algorithm (ARM-asm)"
-+ 	depends on ARM
-+ 	select CRYPTO_SHA1
-+ 	select CRYPTO_HASH
-+ 	help
-+ 	  SHA-1 secure hash standard (FIPS 180-1/DFIPS 180-2) implemented
-+ 	  using optimized ARM assembler.
-+=20
- +config CRYPTO_SHA1_SPARC64
- +	tristate "SHA1 digest algorithm (SPARC64)"
- +	depends on SPARC64
- +	select CRYPTO_SHA1
- +	select CRYPTO_HASH
- +	help
- +	  SHA-1 secure hash standard (FIPS 180-1/DFIPS 180-2) implemented
- +	  using sparc64 crypto instructions, when available.
- +
-  config CRYPTO_SHA256
-  	tristate "SHA224 and SHA256 digest algorithm"
-  	select CRYPTO_HASH
-@@@ -633,34 -599,30 +644,58 @@@ config CRYPTO_AES_NI_INTE
-  	  ECB, CBC, LRW, PCBC, XTS. The 64 bit version has additional
-  	  acceleration for CTR.
- =20
-+ config CRYPTO_AES_ARM
-+ 	tristate "AES cipher algorithms (ARM-asm)"
-+ 	depends on ARM
-+ 	select CRYPTO_ALGAPI
-+ 	select CRYPTO_AES
-+ 	help
-+ 	  Use optimized AES assembler routines for ARM platforms.
-+=20
-+ 	  AES cipher algorithms (FIPS-197). AES uses the Rijndael
-+ 	  algorithm.
-+=20
-+ 	  Rijndael appears to be consistently a very good performer in
-+ 	  both hardware and software across a wide range of computing
-+ 	  environments regardless of its use in feedback or non-feedback
-+ 	  modes. Its key setup time is excellent, and its key agility is
-+ 	  good. Rijndael's very low memory requirements make it very well
-+ 	  suited for restricted-space environments, in which it also
-+ 	  demonstrates excellent performance. Rijndael's operations are
-+ 	  among the easiest to defend against power and timing attacks.
-+=20
-+ 	  The AES specifies three key sizes: 128, 192 and 256 bits
-+=20
-+ 	  See <http://csrc.nist.gov/encryption/aes/> for more information.
-+=20
- +config CRYPTO_AES_SPARC64
- +	tristate "AES cipher algorithms (SPARC64)"
- +	depends on SPARC64
- +	select CRYPTO_CRYPTD
- +	select CRYPTO_ALGAPI
- +	help
- +	  Use SPARC64 crypto opcodes for AES algorithm.
- +
- +	  AES cipher algorithms (FIPS-197). AES uses the Rijndael
- +	  algorithm.
- +
- +	  Rijndael appears to be consistently a very good performer in
- +	  both hardware and software across a wide range of computing
- +	  environments regardless of its use in feedback or non-feedback
- +	  modes. Its key setup time is excellent, and its key agility is
- +	  good. Rijndael's very low memory requirements make it very well
- +	  suited for restricted-space environments, in which it also
- +	  demonstrates excellent performance. Rijndael's operations are
- +	  among the easiest to defend against power and timing attacks.
- +
- +	  The AES specifies three key sizes: 128, 192 and 256 bits
- +
- +	  See <http://csrc.nist.gov/encryption/aes/> for more information.
- +
- +	  In addition to AES cipher algorithm support, the acceleration
- +	  for some popular block cipher mode is supported too, including
- +	  ECB and CBC.
- +
-  config CRYPTO_ANUBIS
-  	tristate "Anubis cipher algorithm"
-  	select CRYPTO_ALGAPI
-
---Signature=_Fri__7_Sep_2012_12_51_04_+1000_tID0pQtN=WYVzHw9
-Content-Type: application/pgp-signature
+--=-5I3+UCm2MKsh/WtRpC/6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQSWEYAAoJEECxmPOUX5FEUXsP/jnVApPfve2sZ2mmvp+d2cXR
-D3PG1vaQhYulziY+PC9YZ+y4783/vid34sGvXyZeG1Hdmm91cPj1lK/vUSnqbTzy
-/iOmiSa/UTAGyS6J9II44BWNkXdQVLiHt9RrzG6/jmlKBZVy4bQhf9dc2NECSEvO
-j1QwyqzThpHQ2zYtw95WMCax2NkflhUDrzZ+V8L0qBhe7YOy0KSDVv/fRR//StUO
-M+aMrZJBSew+NAyjMh6lkDwt/OwrrSAZ8MUedDEECVWHmTk6GfkZQuVJrEfmsZpI
-Tm5rCNZhFn8xQg1V/CKm96a96enKf8mdg9ju7nZRnNYOQXD9m4+24ifD6E8qTdgt
-eKb3H3X0lHJv04/wsiGSEQ+U0etgSP9lg6e0Yk87mwZAvrizrHzPYE+kKN9IFtsa
-1X0Iif995XVSs0RJxT98gusfF8vR1JTEKRLsYmZY8VRf1WCUnOPUnntlyGSXFcqK
-ZPbpF6gIm77xVoglHcetqXL3Qqd+7svsj36DegwWxArLDOdaCaUZzaC42u05UMxX
-3l1mOugevgVKyxoKHfj1s2winVXd9BaA9nP+OnAaSz8QYZssfexJpeJvgmSw4b/w
-KtI+dc4mWDjXPZvzJS0ANAlAd7I46+zI2E0ijH6++pbkgeMKb57e4BDFOATKW0Fz
-7NJtc5ysnSWGWD+drIE/
-=QANv
+iQIVAwUAUEliEOe/yOyVhhEJAQr+OA/+OPvJb8IxrFl/OuLM0+eEaUEXUsUvcrVZ
+E0yQGlL5gcErbWfnT5wKGHogZpxwkErI1PYjq0GYyNp3hpT57OF2M/TNCGqfOOl4
+6qozqB9KGC3nrxiqZVN9hPmfmxTAv+V3zsvO1exvKK6uYtcUEtjPGW2DZHspSNIt
+ln6POmKDp9C31P/5s6UH0RqZRSNbKk7Ue7MKnrk3LFK7mirvXNZvpqkga1QoOs8C
+spXE1pqZ5QFisIWqxi3WuSLhA96nTw+Nn9WFC/7lGq7sW8idAKD/0Jy2gcE6/mfq
+X5lsxQJNqRDFxKwHb6VDTNw+n1uocPDPm+lHFQc1DuyyDMupsBnHKFZ/CrXz0KEO
+FamUS8/DZvusmZ0nzHCdY287LviqrwXtRyQrPoqS9XJMwHzDQTpPe6HJcgQWZLkb
+S84M2vYoY4A54/6rzWbhbXGRA7C3jUK8/sSCLX45yQEvrHviPfuPzwpb1Yfo5VQ8
+rbM5brzxZMD/DI9TFz1XaMrZ/NEky7ZUH0cyBrpoDQPjUWP2p57umDxb84iTn4xH
+zXmmccpzy9r6QEuzbhaZAwkP++BKJd/oxOQPxx28p4zt3CTa7SKNBGaHsROnBWX3
+qpS8x6lqguO2Tassp4nTxowGO5ZD9Ke/LEif5b4L69/xQbh70riaXpKG3rWcYETu
+5FcdWTdjytg=
+=rnAF
 -----END PGP SIGNATURE-----
 
---Signature=_Fri__7_Sep_2012_12_51_04_+1000_tID0pQtN=WYVzHw9--
+--=-5I3+UCm2MKsh/WtRpC/6--
