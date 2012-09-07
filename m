@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758249Ab2IGW66 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 18:58:58 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:28929 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753197Ab2IGW6z (ORCPT
+	id S1758686Ab2IGW7I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 18:59:08 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:37757 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758331Ab2IGW7C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 18:58:55 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6828"; a="234282503"
-Date: Fri, 7 Sep 2012 15:58:53 -0700
-From: David Brown <davidb@codeaurora.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Bryan Huntsman <bryanh@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 8/9] ARM: msm: Add DT support for 8960
-Message-ID: <20120907225853.GA21585@codeaurora.org>
-References: <1346873339-10927-1-git-send-email-sboyd@codeaurora.org>
- <1346873339-10927-9-git-send-email-sboyd@codeaurora.org>
+	Fri, 7 Sep 2012 18:59:02 -0400
+Date: Fri, 7 Sep 2012 15:58:59 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: wujianguo <wujianguo106@gmail.com>
+cc: tony.luck@intel.com, akpm@linux-foundation.org, fenghua.yu@intel.com,
+        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, jiang.liu@huawei.com, guohanjun@huawei.com,
+        qiuxishi@huawei.com, wujianguo@huawei.com, wency@cn.fujitsu.com
+Subject: Re: [PATCH RESEND]mm/ia64: fix a node distance bug
+In-Reply-To: <50484E2C.1060107@gmail.com>
+Message-ID: <alpine.DEB.2.00.1209071558430.28027@chino.kir.corp.google.com>
+References: <50484E2C.1060107@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346873339-10927-9-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 05, 2012 at 12:28:58PM -0700, Stephen Boyd wrote:
+On Thu, 6 Sep 2012, wujianguo wrote:
 
-> +DT_MACHINE_START(MSM8960_DT, "Qualcomm MSM (Flattened Device Tree)")
+> From: Jianguo Wu <wujianguo@huawei.com>
+> 
+> In arch ia64, has following definition:
+> extern u8 numa_slit[MAX_NUMNODES * MAX_NUMNODES];
+> #define node_distance(from,to) (numa_slit[(from) * num_online_nodes() + (to)])
+> 
+> num_online_nodes() is a variable value, it can be changed after hot-remove/add
+> a node.
+> 
+> I my practice, I found node distance is wrong after offline
+> a node in IA64 platform. For example system has 4 nodes:
+> node distances:
+> node   0   1   2   3
+>   0:  10  21  21  32
+>   1:  21  10  32  21
+>   2:  21  32  10  21
+>   3:  32  21  21  10
+> 
+> linux-drf:/sys/devices/system/node/node0 # cat distance
+> 10  21  21  32
+> linux-drf:/sys/devices/system/node/node1 # cat distance
+> 21  10  32  21
+> 
+> After offline node2:
+> linux-drf:/sys/devices/system/node/node0 # cat distance
+> 10 21 32
+> linux-drf:/sys/devices/system/node/node1 # cat distance
+> 32 21 32	--------->expected value is: 21  10  21
+> 
+> 
+> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 
-The description string should specify the general name of what this is
-suspporting.  Right now, with these patches, it would list
-
-  Qualcomm MSM (Flattened Device Tree)
-
-twice as the two targets we support (and isn't helpful when you see
-which one it picks).  I'd put the "MSM" name by itself without
-thinking about it too much.  It wasn't that confusing, since there was
-only one at the time.
-
-Perhaps make the 8660 one "Qualcomm MSM8660 (Flattened Device Tree)"
-and the 8960 one "Qualcomm MSM8960 (Flattened Device Tree)"
-
-I realize that the chip numbers are a bit confusing, so probably best
-to pick a canonical name for the description.
-
-David
-
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Acked-by: David Rientjes <rientjes@google.com>
