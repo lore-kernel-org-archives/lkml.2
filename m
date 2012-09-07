@@ -1,155 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760194Ab2IGInS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 04:43:18 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:60739 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760089Ab2IGInN (ORCPT
+	id S1759596Ab2IGIob (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 04:44:31 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:42193 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751120Ab2IGIo2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 04:43:13 -0400
-From: Prabhakar Lad <prabhakar.lad@ti.com>
-To: LMML <linux-media@vger.kernel.org>
-CC: dlos <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-kernel@vger.kernel.org>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        <linux-doc@vger.kernel.org>, Hans Verkuil <hans.verkuil@cisco.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Rob Landley <rob@landley.net>
-Subject: [PATCH v2] media: v4l2-ctrls: add control for test pattern
-Date: Fri, 7 Sep 2012 14:11:49 +0530
-Message-ID: <1347007309-6913-1-git-send-email-prabhakar.lad@ti.com>
-X-Mailer: git-send-email 1.7.0.4
+	Fri, 7 Sep 2012 04:44:28 -0400
+X-AuditID: b753bd60-90ac1ba0000047ca-b2-5049b3e91406
+X-AuditID: b753bd60-90ac1ba0000047ca-b2-5049b3e91406
+Message-ID: <5049B3E7.1010208@hitachi.com>
+Date: Fri, 07 Sep 2012 17:44:23 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        yrl.pp-manager.tt@hitachi.com, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH -tip 4/4] [BUGFIX] kprobes/x86: Fix to support jprobes
+ on ftrace-based kprobe
+References: <20120905143045.10329.64502.stgit@localhost.localdomain> <20120905143125.10329.90836.stgit@localhost.localdomain>
+In-Reply-To: <20120905143125.10329.90836.stgit@localhost.localdomain>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.lad@ti.com>
+(2012/09/05 23:31), Masami Hiramatsu wrote:
+> Fix kprobes/x86 to support jprobes on ftrace-based kprobes.
+> Because of -mfentry support of ftrace, ftrace is now put
+> on the beginning of function where jprobes are put.
+> 
+> Originally ftrace-based kprobes doesn't support jprobe
+> because it will change regs->ip and ftrace doesn't support
+> changing IP and ftrace itself doesn't conflict jprobe.
+> However, ftrace -mfentry support moves mcount call on the
+> top of functions where jprobes are put. This means that
+> jprobe always conflicts with ftrace-based kprobe and fails.
+> 
+> This patch allows ftrace-based kprobes to support jprobes
+> by allowing to modify regs->ip and kprobes breakpoint
+> handler also allows to skip singlestepping because there
+> is a ftrace call (not an original instruction).
+> 
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
 
-add V4L2_CID_TEST_PATTERN of type menu, which determines
-the internal test pattern selected by the device.
+This should have a below line...
 
-Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-Cc: Sakari Ailus <sakari.ailus@iki.fi>
-Cc: Hans Verkuil <hans.verkuil@cisco.com>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: Hans de Goede <hdegoede@redhat.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Rob Landley <rob@landley.net>
----
-This patches has one checkpatch warning for line over
-80 characters altough it can be avoided I have kept it
-for consistency.
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
 
-Changes for v2:
-1: Included display devices in the description for test pattern
-   as pointed by Hans.
-2: In the menu replaced 'Test Pattern Disabled' by 'Disabled' as
-   pointed by Sylwester.
-3: Removed the test patterns from menu as the are hardware specific
-   as pointed by Sakari.
+Thanks!
 
- Documentation/DocBook/media/v4l/controls.xml |   20 ++++++++++++++++++++
- drivers/media/v4l2-core/v4l2-ctrls.c         |    8 ++++++++
- include/linux/videodev2.h                    |    4 ++++
- 3 files changed, 32 insertions(+), 0 deletions(-)
+> ---
+> 
+>  arch/x86/kernel/kprobes.c |   42 +++++++++++++++++++++++++++++-------------
+>  kernel/kprobes.c          |    3 ---
+>  2 files changed, 29 insertions(+), 16 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
+> index f49f60c..b7c2a85 100644
+> --- a/arch/x86/kernel/kprobes.c
+> +++ b/arch/x86/kernel/kprobes.c
+> @@ -541,6 +541,8 @@ reenter_kprobe(struct kprobe *p, struct pt_regs *regs, struct kprobe_ctlblk *kcb
+>  	return 1;
+>  }
+>  
+> +static void __kprobes skip_singlestep(struct kprobe *p, struct pt_regs *regs,
+> +				      struct kprobe_ctlblk *kcb);
+>  /*
+>   * Interrupts are disabled on entry as trap3 is an interrupt gate and they
+>   * remain disabled throughout this function.
+> @@ -599,6 +601,12 @@ static int __kprobes kprobe_handler(struct pt_regs *regs)
+>  	} else if (kprobe_running()) {
+>  		p = __this_cpu_read(current_kprobe);
+>  		if (p->break_handler && p->break_handler(p, regs)) {
+> +#ifdef KPROBES_CAN_USE_FTRACE
+> +			if (kprobe_ftrace(p)) {
+> +				skip_singlestep(p, regs, kcb);
+> +				return 1;
+> +			}
+> +#endif
+>  			setup_singlestep(p, regs, kcb, 0);
+>  			return 1;
+>  		}
+> @@ -1053,6 +1061,21 @@ int __kprobes longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
+>  }
+>  
+>  #ifdef KPROBES_CAN_USE_FTRACE
+> +static void __kprobes skip_singlestep(struct kprobe *p, struct pt_regs *regs,
+> +				      struct kprobe_ctlblk *kcb)
+> +{
+> +	/*
+> +	 * Emulate singlestep (and also recover regs->ip)
+> +	 * as if there is a 5byte nop
+> +	 */
+> +	regs->ip = (unsigned long)p->addr + MCOUNT_INSN_SIZE;
+> +	if (unlikely(p->post_handler)) {
+> +		kcb->kprobe_status = KPROBE_HIT_SSDONE;
+> +		p->post_handler(p, regs, 0);
+> +	}
+> +	__this_cpu_write(current_kprobe, NULL);
+> +}
+> +
+>  /* Ftrace callback handler for kprobes */
+>  void __kprobes kprobe_ftrace_handler(unsigned long ip, unsigned long parent_ip,
+>  				     struct ftrace_ops *ops, struct pt_regs *regs)
+> @@ -1077,19 +1100,12 @@ void __kprobes kprobe_ftrace_handler(unsigned long ip, unsigned long parent_ip,
+>  
+>  		__this_cpu_write(current_kprobe, p);
+>  		kcb->kprobe_status = KPROBE_HIT_ACTIVE;
+> -		if (p->pre_handler)
+> -			p->pre_handler(p, regs);
+> -
+> -		if (unlikely(p->post_handler)) {
+> -			/*
+> -			 * Emulate singlestep (and also recover regs->ip)
+> -			 * as if there is a 5byte nop
+> -			 */
+> -			regs->ip = ip + MCOUNT_INSN_SIZE;
+> -			kcb->kprobe_status = KPROBE_HIT_SSDONE;
+> -			p->post_handler(p, regs, 0);
+> -		}
+> -		__this_cpu_write(current_kprobe, NULL);
+> +		if (!p->pre_handler || !p->pre_handler(p, regs))
+> +			skip_singlestep(p, regs, kcb);
+> +		/*
+> +		 * If pre_handler returns !0, it sets regs->ip and
+> +		 * resets current kprobe.
+> +		 */
+>  	}
+>  end:
+>  	local_irq_restore(flags);
+> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+> index 35b4315..098f396 100644
+> --- a/kernel/kprobes.c
+> +++ b/kernel/kprobes.c
+> @@ -1418,9 +1418,6 @@ static __kprobes int check_kprobe_address_safe(struct kprobe *p,
+>  		/* Given address is not on the instruction boundary */
+>  		if ((unsigned long)p->addr != ftrace_addr)
+>  			return -EILSEQ;
+> -		/* break_handler (jprobe) can not work with ftrace */
+> -		if (p->break_handler)
+> -			return -EINVAL;
+>  		p->flags |= KPROBE_FLAG_FTRACE;
+>  #else	/* !KPROBES_CAN_USE_FTRACE */
+>  		return -EINVAL;
+> 
 
-diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
-index ad873ea..173934e 100644
---- a/Documentation/DocBook/media/v4l/controls.xml
-+++ b/Documentation/DocBook/media/v4l/controls.xml
-@@ -4311,6 +4311,26 @@ interface and may change in the future.</para>
- 	      </tbody>
- 	    </entrytbl>
- 	  </row>
-+	  <row>
-+	    <entry spanname="id"><constant>V4L2_CID_TEST_PATTERN</constant></entry>
-+	    <entry>menu</entry>
-+	  </row>
-+	  <row id="v4l2-test-pattern">
-+	    <entry spanname="descr"> The Capture/Display/Sensors have the capability
-+	    to generate internal test patterns and this are hardware specific. This
-+	    test patterns are used to test a device is properly working and can generate
-+	    the desired waveforms that it supports.</entry>
-+	  </row>
-+	  <row>
-+	    <entrytbl spanname="descr" cols="2">
-+	      <tbody valign="top">
-+	        <row>
-+	         <entry><constant>V4L2_TEST_PATTERN_DISABLED</constant></entry>
-+	          <entry>Test pattern generation is disabled</entry>
-+	        </row>
-+	      </tbody>
-+	    </entrytbl>
-+	  </row>
- 	<row><entry></entry></row>
- 	</tbody>
-       </tgroup>
-diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
-index 8f2f40b..d731422 100644
---- a/drivers/media/v4l2-core/v4l2-ctrls.c
-+++ b/drivers/media/v4l2-core/v4l2-ctrls.c
-@@ -430,6 +430,10 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
- 		"Advanced",
- 		NULL,
- 	};
-+	static const char * const test_pattern[] = {
-+		"Disabled",
-+		NULL,
-+	};
- 
- 	switch (id) {
- 	case V4L2_CID_MPEG_AUDIO_SAMPLING_FREQ:
-@@ -509,6 +513,8 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
- 		return jpeg_chroma_subsampling;
- 	case V4L2_CID_DPCM_PREDICTOR:
- 		return dpcm_predictor;
-+	case V4L2_CID_TEST_PATTERN:
-+		return test_pattern;
- 
- 	default:
- 		return NULL;
-@@ -740,6 +746,7 @@ const char *v4l2_ctrl_get_name(u32 id)
- 	case V4L2_CID_LINK_FREQ:		return "Link Frequency";
- 	case V4L2_CID_PIXEL_RATE:		return "Pixel Rate";
- 	case V4L2_CID_DPCM_PREDICTOR:		return "DPCM Predictor";
-+	case V4L2_CID_TEST_PATTERN:		return "Test Pattern";
- 
- 	default:
- 		return NULL;
-@@ -841,6 +848,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
- 	case V4L2_CID_EXPOSURE_METERING:
- 	case V4L2_CID_SCENE_MODE:
- 	case V4L2_CID_DPCM_PREDICTOR:
-+	case V4L2_CID_TEST_PATTERN:
- 		*type = V4L2_CTRL_TYPE_MENU;
- 		break;
- 	case V4L2_CID_LINK_FREQ:
-diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
-index ca9fb78..6a2d499 100644
---- a/include/linux/videodev2.h
-+++ b/include/linux/videodev2.h
-@@ -2005,6 +2005,10 @@ enum v4l2_dpcm_predictor {
- 	V4L2_DPCM_PREDICTOR_SIMPLE	= 0,
- 	V4L2_DPCM_PREDICTOR_ADVANCED	= 1,
- };
-+#define V4L2_CID_TEST_PATTERN			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 4)
-+enum v4l2_test_pattern {
-+	V4L2_TEST_PATTERN_DISABLED		= 0,
-+};
- 
- /*
-  *	T U N I N G
+
 -- 
-1.7.0.4
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
