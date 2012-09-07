@@ -1,30 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757914Ab2IGV2T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 17:28:19 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:40742 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757082Ab2IGV2R convert rfc822-to-8bit (ORCPT
+	id S1758182Ab2IGV3K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 17:29:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44955 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757507Ab2IGV3H convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 17:28:17 -0400
+	Fri, 7 Sep 2012 17:29:07 -0400
 Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8BIT
-To: Murali Karicheri <m-karicheri2@ti.com>, <linux-kernel@vger.kernel.org>,
-        <spi-devel-general@lists.sourceforge.net>, <grant.likely@secretlab.ca>
+To: Murali Karicheri <m-karicheri2@ti.com>, <dwmw2@infradead.org>,
+        <artem.bityutskiy@linux.intel.com>, <dbaryshkov@gmail.com>,
+        <computersforpeace@gmail.com>, <linux-mtd@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
 From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1346351121-27710-1-git-send-email-m-karicheri2@ti.com>
+In-Reply-To: <1346350624-27291-1-git-send-email-m-karicheri2@ti.com>
 Cc: Murali Karicheri <m-karicheri2@ti.com>
-References: <1346351121-27710-1-git-send-email-m-karicheri2@ti.com>
-Message-ID: <20120907212813.20289.53844@nucleus>
+References: <1346350624-27291-1-git-send-email-m-karicheri2@ti.com>
+Message-ID: <20120907212853.20289.86031@nucleus>
 User-Agent: alot/0.3.2+
-Subject: Re: [PATCH] spi:clk: preparation for switch to common clock framework
-Date: Fri, 07 Sep 2012 14:28:13 -0700
+Subject: Re: [PATCH] mtd:nand:clk: preparation for switch to common clock framework
+Date: Fri, 07 Sep 2012 14:28:53 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Murali Karicheri (2012-08-30 11:25:21)
+Quoting Murali Karicheri (2012-08-30 11:17:04)
 > As a first step towards migrating davinci platforms to use common clock
 > framework, replace all instances of clk_enable() with clk_prepare_enable()
 > and clk_disable() with clk_disable_unprepare(). Until the platform is
@@ -39,39 +41,39 @@ Quoting Murali Karicheri (2012-08-30 11:25:21)
 Acked-by: Mike Turquette <mturquette@linaro.org>
 
 > ---
->  drivers/spi/spi-davinci.c |    6 +++---
+>  drivers/mtd/nand/davinci_nand.c |    6 +++---
 >  1 file changed, 3 insertions(+), 3 deletions(-)
 > 
-> diff --git a/drivers/spi/spi-davinci.c b/drivers/spi/spi-davinci.c
-> index 9b2901f..71a6423 100644
-> --- a/drivers/spi/spi-davinci.c
-> +++ b/drivers/spi/spi-davinci.c
-> @@ -873,7 +873,7 @@ static int __devinit davinci_spi_probe(struct platform_device *pdev)
->                 ret = -ENODEV;
->                 goto put_master;
+> diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
+> index d94b03c..6b8cf27 100644
+> --- a/drivers/mtd/nand/davinci_nand.c
+> +++ b/drivers/mtd/nand/davinci_nand.c
+> @@ -656,7 +656,7 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
+>                 goto err_clk;
 >         }
-> -       clk_enable(dspi->clk);
-> +       clk_prepare_enable(dspi->clk);
 >  
->         master->bus_num = pdev->id;
->         master->num_chipselect = pdata->num_chipselect;
-> @@ -959,7 +959,7 @@ free_dma:
->         edma_free_channel(dspi->dma.rx_channel);
->         edma_free_slot(dspi->dma.dummy_param_slot);
->  free_clk:
-> -       clk_disable(dspi->clk);
-> +       clk_disable_unprepare(dspi->clk);
->         clk_put(dspi->clk);
->  put_master:
->         spi_master_put(master);
-> @@ -995,7 +995,7 @@ static int __devexit davinci_spi_remove(struct platform_device *pdev)
+> -       ret = clk_enable(info->clk);
+> +       ret = clk_prepare_enable(info->clk);
+>         if (ret < 0) {
+>                 dev_dbg(&pdev->dev, "unable to enable AEMIF clock, err %d\n",
+>                         ret);
+> @@ -767,7 +767,7 @@ syndrome_done:
 >  
->         spi_bitbang_stop(&dspi->bitbang);
+>  err_scan:
+>  err_timing:
+> -       clk_disable(info->clk);
+> +       clk_disable_unprepare(info->clk);
 >  
-> -       clk_disable(dspi->clk);
-> +       clk_disable_unprepare(dspi->clk);
->         clk_put(dspi->clk);
->         spi_master_put(master);
->         free_irq(dspi->irq, dspi);
+>  err_clk_enable:
+>         clk_put(info->clk);
+> @@ -804,7 +804,7 @@ static int __exit nand_davinci_remove(struct platform_device *pdev)
+>  
+>         nand_release(&info->mtd);
+>  
+> -       clk_disable(info->clk);
+> +       clk_disable_unprepare(info->clk);
+>         clk_put(info->clk);
+>  
+>         kfree(info);
 > -- 
 > 1.7.9.5
