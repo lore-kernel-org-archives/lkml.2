@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760834Ab2IGOUP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 10:20:15 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:34295 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760691Ab2IGOUJ convert rfc822-to-8bit (ORCPT
+	id S1760795Ab2IGOTH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 10:19:07 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:38547 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760678Ab2IGOSp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 10:20:09 -0400
-From: "AnilKumar, Chimata" <anilkumar@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "axel.lin@gmail.com" <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Girdwood, Liam" <lrg@ti.com>, "Nori, Sekhar" <nsekhar@ti.com>
-Subject: RE: [PATCH RFT] regulator: tps65217: Convert to
- regulator_[is_enabled|get_voltage_sel]_regmap
-Thread-Topic: [PATCH RFT] regulator: tps65217: Convert to
- regulator_[is_enabled|get_voltage_sel]_regmap
-Thread-Index: AQHNSRRxSJBCL2eqoUaZnppvZVbxc5b39csQgAf6AbD//7R+gIAAaf7ngH9m9fA=
-Date: Fri, 7 Sep 2012 14:19:59 +0000
-Message-ID: <331ABD5ECB02734CA317220B2BBEABC13EA29B8E@DBDE01.ent.ti.com>
-References: <1339558031.26190.4.camel@phoenix>
- <331ABD5ECB02734CA317220B2BBEABC13E9D83E7@DBDE01.ent.ti.com>
- <CAF+7xWkh6CHvcur2iDs0Nwp_nO8i=6tYyTVauL6qtyrrMctjjA@mail.gmail.com>
- <331ABD5ECB02734CA317220B2BBEABC13E9D84D9@DBDE01.ent.ti.com>
- <20120618124513.GM3974@opensource.wolfsonmicro.com>
-In-Reply-To: <20120618124513.GM3974@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 7 Sep 2012 10:18:45 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: viro@ZenIV.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
+        hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
+Subject: [PATCH v6 06/20] vfs: fix mkdir to retry on ESTALE errors
+Date: Fri,  7 Sep 2012 10:18:13 -0400
+Message-Id: <1347027507-20956-7-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.7.11.4
+In-Reply-To: <1347027507-20956-1-git-send-email-jlayton@redhat.com>
+References: <1347027507-20956-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 18, 2012 at 18:15:14, Mark Brown wrote:
-> On Mon, Jun 18, 2012 at 12:39:38PM +0000, AnilKumar, Chimata wrote:
-> 
-> > +	if (config->regmap)
-> > +		rdev->regmap = config->regmap;
-> > +	else
-> > +		rdev->regmap = dev_get_regmap(dev->parent, NULL);
-> 
-> No, this would be broken.  We're specifically using the device we got
-> passed in.  In this case the fact that the regmap is on the MFD means
-> that the driver does need to explicitly set the regmap.  Or we should
-> have this be a multi-stage series of checks:
-> 
-> 	if (config->regmap)
-> 		rdev->regmap = config->regmap;
-> 	else if (dev_get_regmap(dev, NULL))
-> 		rdev->regmap = dev_get_regmap(dev, NULL);
-> 	else if (dev->parent)
-> 		rdev->regmap = dev_get_regmap(dev->parent, NULL);
-> 
-> which should cover the MFD case if there's no regmap on the child
-> without having to go through all the drivers doing it by hand.
-> 
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ fs/namei.c | 21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
 
-Mark,
+diff --git a/fs/namei.c b/fs/namei.c
+index 11fc388..9068375 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -3249,17 +3249,20 @@ SYSCALL_DEFINE3(mkdirat, int, dfd, const char __user *, pathname, umode_t, mode)
+ 	struct dentry *dentry;
+ 	struct path path;
+ 	int error;
++	unsigned int try = 0;
+ 
+-	dentry = user_path_create(dfd, pathname, &path, true, false);
+-	if (IS_ERR(dentry))
+-		return PTR_ERR(dentry);
++	do {
++		dentry = user_path_create(dfd, pathname, &path, true, false);
++		if (IS_ERR(dentry))
++			return PTR_ERR(dentry);
+ 
+-	if (!IS_POSIXACL(path.dentry->d_inode))
+-		mode &= ~current_umask();
+-	error = security_path_mkdir(&path, dentry, mode);
+-	if (!error)
+-		error = vfs_mkdir(path.dentry->d_inode, dentry, mode);
+-	done_path_create(&path, dentry);
++		if (!IS_POSIXACL(path.dentry->d_inode))
++			mode &= ~current_umask();
++		error = security_path_mkdir(&path, dentry, mode);
++		if (!error)
++			error = vfs_mkdir(path.dentry->d_inode, dentry, mode);
++		done_path_create(&path, dentry);
++	} while (retry_estale(error, try++));
+ 	return error;
+ }
+ 
+-- 
+1.7.11.4
 
-Currently this is not properly taken care, is there are any specific
-reasons for this?
-
-Thanks
-AnilKumar
