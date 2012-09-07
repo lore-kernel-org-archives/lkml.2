@@ -1,120 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751977Ab2IGPEX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 11:04:23 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:36042 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753863Ab2IGPEW (ORCPT
+	id S1755634Ab2IGPFZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 11:05:25 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:30371 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752158Ab2IGPFV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 11:04:22 -0400
-Date: Fri, 7 Sep 2012 20:30:37 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/7] ptrace: Introduce set_task_blockstep() helper
-Message-ID: <20120907150037.GP30238@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120903152525.GA9028@redhat.com>
- <20120903152606.GA9068@redhat.com>
+	Fri, 7 Sep 2012 11:05:21 -0400
+Date: Fri, 7 Sep 2012 10:54:33 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Justin M. Forbes" <jmforbes@linuxtx.org>
+Cc: Jan Beulich <JBeulich@suse.com>, Stefan Bader <stefan.bader@canonical.com>,
+        Matt Wilson <msw@amazon.com>, xen-devel@lists.xen.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH/RFC] Fix xsave bug on older Xen hypervisors
+Message-ID: <20120907145433.GA5378@phenom.dumpdata.com>
+References: <1347018043-21252-1-git-send-email-stefan.bader@canonical.com>
+ <504A05B00200007800099C7B@nat28.tlf.novell.com>
+ <5049F4E9.9050306@canonical.com>
+ <504A1A950200007800099D4C@nat28.tlf.novell.com>
+ <20120907142251.GA20096@linuxtx.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120903152606.GA9068@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 12090715-1618-0000-0000-0000026DFC1C
+In-Reply-To: <20120907142251.GA20096@linuxtx.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2012-09-03 17:26:06]:
+> > But iirc that bad patch is a Linux side one (i.e. you're trying to fix
+> > something upstream that isn't upstream)?
+> > 
+> Right, so the patch that this improves upon, and that Fedora and Ubuntu are
+> currently carrying is not upstream because:
+> 
+> a) It's crap, it cripples upstream xen users, but doesn't impact RHEL xen
+> users because xsave was never supported there.
+> 
+> b) The hypervisor was patched to make it unnecessary quite some time ago,
+> and we hoped EC2 would eventually pick up that correct patch and we could
+> drop the crap kernel patch.
+> 
+> Unfortunately this has not happened. We are at a point where EC2 really is
+> a quirk that has to be worked around. Distros do not want to maintain
+> a separate EC2 build of the kernel, so the easiest way is to cripple
+> current upstream xen users.  This quirk is unfortunately the best possible
+> solution.  Having it upstream also makes it possible for any user to build
+> an upstream kernel that will run on EC2 without having to dig a random
+> patch out of a vendor kernel.
 
-> No functional changes, preparation for the next fix and for uprobes
-> single-step fixes.
-> 
-> Move the code playing with TIF_BLOCKSTEP/DEBUGCTLMSR_BTF into the
-> new helper, set_task_blockstep().
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Sure. Jan is asking though for actual confirmation that the upstream kernel
+does indeed go belly up without a workaround.
+And whether this patch (which I would did since Canonical is carrying it) does
+fix the issue.
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-
-> ---
->  arch/x86/kernel/step.c |   41 +++++++++++++++++++++--------------------
->  1 files changed, 21 insertions(+), 20 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/step.c b/arch/x86/kernel/step.c
-> index c346d11..7a51498 100644
-> --- a/arch/x86/kernel/step.c
-> +++ b/arch/x86/kernel/step.c
-> @@ -157,6 +157,21 @@ static int enable_single_step(struct task_struct *child)
->  	return 1;
->  }
-> 
-> +static void set_task_blockstep(struct task_struct *task, bool on)
-> +{
-> +	unsigned long debugctl;
-> +
-> +	debugctl = get_debugctlmsr();
-> +	if (on) {
-> +		debugctl |= DEBUGCTLMSR_BTF;
-> +		set_tsk_thread_flag(task, TIF_BLOCKSTEP);
-> +	} else {
-> +		debugctl &= ~DEBUGCTLMSR_BTF;
-> +		clear_tsk_thread_flag(task, TIF_BLOCKSTEP);
-> +	}
-> +	update_debugctlmsr(debugctl);
-> +}
-> +
->  /*
->   * Enable single or block step.
->   */
-> @@ -169,19 +184,10 @@ static void enable_step(struct task_struct *child, bool block)
->  	 * So no one should try to use debugger block stepping in a program
->  	 * that uses user-mode single stepping itself.
->  	 */
-> -	if (enable_single_step(child) && block) {
-> -		unsigned long debugctl = get_debugctlmsr();
-> -
-> -		debugctl |= DEBUGCTLMSR_BTF;
-> -		update_debugctlmsr(debugctl);
-> -		set_tsk_thread_flag(child, TIF_BLOCKSTEP);
-> -	} else if (test_tsk_thread_flag(child, TIF_BLOCKSTEP)) {
-> -		unsigned long debugctl = get_debugctlmsr();
-> -
-> -		debugctl &= ~DEBUGCTLMSR_BTF;
-> -		update_debugctlmsr(debugctl);
-> -		clear_tsk_thread_flag(child, TIF_BLOCKSTEP);
-> -	}
-> +	if (enable_single_step(child) && block)
-> +		set_task_blockstep(child, true);
-> +	else if (test_tsk_thread_flag(child, TIF_BLOCKSTEP))
-> +		set_task_blockstep(child, false);
->  }
-> 
->  void user_enable_single_step(struct task_struct *child)
-> @@ -199,13 +205,8 @@ void user_disable_single_step(struct task_struct *child)
->  	/*
->  	 * Make sure block stepping (BTF) is disabled.
->  	 */
-> -	if (test_tsk_thread_flag(child, TIF_BLOCKSTEP)) {
-> -		unsigned long debugctl = get_debugctlmsr();
-> -
-> -		debugctl &= ~DEBUGCTLMSR_BTF;
-> -		update_debugctlmsr(debugctl);
-> -		clear_tsk_thread_flag(child, TIF_BLOCKSTEP);
-> -	}
-> +	if (test_tsk_thread_flag(child, TIF_BLOCKSTEP))
-> +		set_task_blockstep(child, false);
-> 
->  	/* Always clear TIF_SINGLESTEP... */
->  	clear_tsk_thread_flag(child, TIF_SINGLESTEP);
-> -- 
-> 1.5.5.1
-> 
-
+I am still a newbie on the Amazon EC2 upload your kernel thing (hint, would
+appreciate somebody taking this patch and trying it out).
