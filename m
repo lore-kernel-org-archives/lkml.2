@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753240Ab2IGQcq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 12:32:46 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:34552 "EHLO
+	id S1753863Ab2IGQct (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 12:32:49 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:34541 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752804Ab2IGQ15 (ORCPT
+	with ESMTP id S1752798Ab2IGQ15 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Sep 2012 12:27:57 -0400
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH v3 20/31] arm64: User access library functions
-Date: Fri,  7 Sep 2012 17:26:55 +0100
-Message-Id: <1347035226-18649-21-git-send-email-catalin.marinas@arm.com>
+Subject: [PATCH v3 19/31] arm64: Signal handling support
+Date: Fri,  7 Sep 2012 17:26:54 +0100
+Message-Id: <1347035226-18649-20-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.9.111.gf3fb0
 In-Reply-To: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
 References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 07 Sep 2012 16:27:55.0097 (UTC) FILETIME=[BBF70490:01CD8D15]
-X-MC-Unique: 112090717275503701
+X-OriginalArrivalTime: 07 Sep 2012 16:27:54.0722 (UTC) FILETIME=[BBBDCC20:01CD8D15]
+X-MC-Unique: 112090717275501401
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q87GWqGk008411
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q87GX9fV008415
 
-This patch add support for various user access functions. These
-functions use the standard LDR/STR instructions and not the LDRT/STRT
-variants in order to allow kernel addresses (after set_fs(KERNEL_DS)).
+This patch adds support for signal handling. The sigreturn is done via
+VDSO, introduced by a previous patch. The SA_RESTORER is still defined
+as it is required for 32-bit (compat) support but it is not to be used
+for 64-bit applications.
 
 Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Acked-by: Tony Lindgren <tony@atomide.com>
 ---
- arch/arm64/include/asm/uaccess.h   |  297 ++++++++++++++++++++++++++++++++++++
- arch/arm64/lib/clear_user.S        |   58 +++++++
- arch/arm64/lib/copy_from_user.S    |   66 ++++++++
- arch/arm64/lib/copy_in_user.S      |   63 ++++++++
- arch/arm64/lib/copy_to_user.S      |   61 ++++++++
- arch/arm64/lib/strncpy_from_user.S |   50 ++++++
- arch/arm64/lib/strnlen_user.S      |   47 ++++++
- 7 files changed, 642 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm64/include/asm/uaccess.h
- create mode 100644 arch/arm64/lib/clear_user.S
- create mode 100644 arch/arm64/lib/copy_from_user.S
- create mode 100644 arch/arm64/lib/copy_in_user.S
- create mode 100644 arch/arm64/lib/copy_to_user.S
- create mode 100644 arch/arm64/lib/strncpy_from_user.S
- create mode 100644 arch/arm64/lib/strnlen_user.S
+ arch/arm64/include/asm/sigcontext.h |   69 ++++++
+ arch/arm64/include/asm/siginfo.h    |   23 ++
+ arch/arm64/include/asm/signal.h     |   24 ++
+ arch/arm64/include/asm/ucontext.h   |   30 +++
+ arch/arm64/kernel/signal.c          |  437 +++++++++++++++++++++++++++++++++++
+ 5 files changed, 583 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm64/include/asm/sigcontext.h
+ create mode 100644 arch/arm64/include/asm/siginfo.h
+ create mode 100644 arch/arm64/include/asm/signal.h
+ create mode 100644 arch/arm64/include/asm/ucontext.h
+ create mode 100644 arch/arm64/kernel/signal.c
 
-diff --git a/arch/arm64/include/asm/uaccess.h b/arch/arm64/include/asm/uaccess.h
+diff --git a/arch/arm64/include/asm/sigcontext.h b/arch/arm64/include/asm/sigcontext.h
 new file mode 100644
-index 0000000..008f848
+index 0000000..573cec7
 --- /dev/null
-+++ b/arch/arm64/include/asm/uaccess.h
-@@ -0,0 +1,297 @@
++++ b/arch/arm64/include/asm/sigcontext.h
+@@ -0,0 +1,69 @@
 +/*
-+ * Based on arch/arm/include/asm/uaccess.h
-+ *
 + * Copyright (C) 2012 ARM Ltd.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -73,356 +67,66 @@ index 0000000..008f848
 + * You should have received a copy of the GNU General Public License
 + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
-+#ifndef __ASM_UACCESS_H
-+#define __ASM_UACCESS_H
++#ifndef __ASM_SIGCONTEXT_H
++#define __ASM_SIGCONTEXT_H
++
++#include <linux/types.h>
 +
 +/*
-+ * User space memory access functions
++ * Signal context structure - contains all info to do with the state
++ * before the signal handler was invoked.
 + */
-+#include <linux/string.h>
-+#include <linux/thread_info.h>
-+
-+#include <asm/ptrace.h>
-+#include <asm/errno.h>
-+#include <asm/memory.h>
-+#include <asm/compiler.h>
-+
-+#define VERIFY_READ 0
-+#define VERIFY_WRITE 1
-+
-+/*
-+ * The exception table consists of pairs of addresses: the first is the
-+ * address of an instruction that is allowed to fault, and the second is
-+ * the address at which the program should continue.  No registers are
-+ * modified, so it is entirely up to the continuation code to figure out
-+ * what to do.
-+ *
-+ * All the routines below use bits of fixup code that are out of line
-+ * with the main instruction path.  This means when everything is well,
-+ * we don't even have to jump over them.  Further, they do not intrude
-+ * on our cache or tlb entries.
-+ */
-+
-+struct exception_table_entry
-+{
-+	unsigned long insn, fixup;
++struct sigcontext {
++	__u64 fault_address;
++	/* AArch64 registers */
++	__u64 regs[31];
++	__u64 sp;
++	__u64 pc;
++	__u64 pstate;
++	/* 4K reserved for FP/SIMD state and future expansion */
++	__u8 __reserved[4096] __attribute__((__aligned__(16)));
 +};
 +
-+extern int fixup_exception(struct pt_regs *regs);
-+
-+#define KERNEL_DS	(-1UL)
-+#define get_ds()	(KERNEL_DS)
-+
-+#define USER_DS		TASK_SIZE_64
-+#define get_fs()	(current_thread_info()->addr_limit)
-+
-+static inline void set_fs(mm_segment_t fs)
-+{
-+	current_thread_info()->addr_limit = fs;
-+}
-+
-+#define segment_eq(a,b)	((a) == (b))
-+
 +/*
-+ * Return 1 if addr < current->addr_limit, 0 otherwise.
++ * Header to be used at the beginning of structures extending the user
++ * context. Such structures must be placed after the rt_sigframe on the stack
++ * and be 16-byte aligned. The last structure must be a dummy one with the
++ * magic and size set to 0.
 + */
-+#define __addr_ok(addr)							\
-+({									\
-+	unsigned long flag;						\
-+	asm("cmp %1, %0; cset %0, lo"					\
-+		: "=&r" (flag)						\
-+		: "r" (addr), "0" (current_thread_info()->addr_limit)	\
-+		: "cc");						\
-+	flag;								\
-+})
++struct _aarch64_ctx {
++	__u32 magic;
++	__u32 size;
++};
 +
++#define FPSIMD_MAGIC	0x46508001
++
++struct fpsimd_context {
++	struct _aarch64_ctx head;
++	__u32 fpsr;
++	__u32 fpcr;
++	__uint128_t vregs[32];
++};
++
++#ifdef __KERNEL__
 +/*
-+ * Test whether a block of memory is a valid user space address.
-+ * Returns 1 if the range is valid, 0 otherwise.
-+ *
-+ * This is equivalent to the following test:
-+ * (u65)addr + (u65)size < (u65)current->addr_limit
-+ *
-+ * This needs 65-bit arithmetic.
++ * Auxiliary context saved in the sigcontext.__reserved array. Not exported to
++ * user space as it will change with the addition of new context. User space
++ * should check the magic/size information.
 + */
-+#define __range_ok(addr, size)						\
-+({									\
-+	unsigned long flag, roksum;					\
-+	__chk_user_ptr(addr);						\
-+	asm("adds %1, %1, %3; ccmp %1, %4, #2, cc; cset %0, cc"		\
-+		: "=&r" (flag), "=&r" (roksum)				\
-+		: "1" (addr), "Ir" (size),				\
-+		  "r" (current_thread_info()->addr_limit)		\
-+		: "cc");						\
-+	flag;								\
-+})
++struct aux_context {
++	struct fpsimd_context fpsimd;
++	/* additional context to be added before "end" */
++	struct _aarch64_ctx end;
++};
++#endif
 +
-+#define access_ok(type, addr, size)	__range_ok(addr, size)
-+
-+/*
-+ * The "__xxx" versions of the user access functions do not verify the address
-+ * space - it must have been done previously with a separate "access_ok()"
-+ * call.
-+ *
-+ * The "__xxx_error" versions set the third argument to -EFAULT if an error
-+ * occurs, and leave it unchanged on success.
-+ */
-+#define __get_user_asm(instr, reg, x, addr, err)			\
-+	asm volatile(							\
-+	"1:	" instr "	" reg "1, [%2]\n"			\
-+	"2:\n"								\
-+	"	.section .fixup, \"ax\"\n"				\
-+	"	.align	2\n"						\
-+	"3:	mov	%w0, %3\n"					\
-+	"	mov	%1, #0\n"					\
-+	"	b	2b\n"						\
-+	"	.previous\n"						\
-+	"	.section __ex_table,\"a\"\n"				\
-+	"	.align	3\n"						\
-+	"	.quad	1b, 3b\n"					\
-+	"	.previous"						\
-+	: "+r" (err), "=&r" (x)						\
-+	: "r" (addr), "i" (-EFAULT))
-+
-+#define __get_user_err(x, ptr, err)					\
-+do {									\
-+	unsigned long __gu_val;						\
-+	__chk_user_ptr(ptr);						\
-+	switch (sizeof(*(ptr))) {					\
-+	case 1:								\
-+		__get_user_asm("ldrb", "%w", __gu_val, (ptr), (err));	\
-+		break;							\
-+	case 2:								\
-+		__get_user_asm("ldrh", "%w", __gu_val, (ptr), (err));	\
-+		break;							\
-+	case 4:								\
-+		__get_user_asm("ldr", "%w", __gu_val, (ptr), (err));	\
-+		break;							\
-+	case 8:								\
-+		__get_user_asm("ldr", "%",  __gu_val, (ptr), (err));	\
-+		break;							\
-+	default:							\
-+		BUILD_BUG();						\
-+	}								\
-+	(x) = (__typeof__(*(ptr)))__gu_val;				\
-+} while (0)
-+
-+#define __get_user(x, ptr)						\
-+({									\
-+	int __gu_err = 0;						\
-+	__get_user_err((x), (ptr), __gu_err);				\
-+	__gu_err;							\
-+})
-+
-+#define __get_user_error(x, ptr, err)					\
-+({									\
-+	__get_user_err((x), (ptr), (err));				\
-+	(void)0;							\
-+})
-+
-+#define __get_user_unaligned __get_user
-+
-+#define get_user(x, ptr)						\
-+({									\
-+	might_sleep();							\
-+	access_ok(VERIFY_READ, (ptr), sizeof(*(ptr))) ?			\
-+		__get_user((x), (ptr)) :				\
-+		((x) = 0, -EFAULT);					\
-+})
-+
-+#define __put_user_asm(instr, reg, x, addr, err)			\
-+	asm volatile(							\
-+	"1:	" instr "	" reg "1, [%2]\n"			\
-+	"2:\n"								\
-+	"	.section .fixup,\"ax\"\n"				\
-+	"	.align	2\n"						\
-+	"3:	mov	%w0, %3\n"					\
-+	"	b	2b\n"						\
-+	"	.previous\n"						\
-+	"	.section __ex_table,\"a\"\n"				\
-+	"	.align	3\n"						\
-+	"	.quad	1b, 3b\n"					\
-+	"	.previous"						\
-+	: "+r" (err)							\
-+	: "r" (x), "r" (addr), "i" (-EFAULT))
-+
-+#define __put_user_err(x, ptr, err)					\
-+do {									\
-+	__typeof__(*(ptr)) __pu_val = (x);				\
-+	__chk_user_ptr(ptr);						\
-+	switch (sizeof(*(ptr))) {					\
-+	case 1:								\
-+		__put_user_asm("strb", "%w", __pu_val, (ptr), (err));	\
-+		break;							\
-+	case 2:								\
-+		__put_user_asm("strh", "%w", __pu_val, (ptr), (err));	\
-+		break;							\
-+	case 4:								\
-+		__put_user_asm("str",  "%w", __pu_val, (ptr), (err));	\
-+		break;							\
-+	case 8:								\
-+		__put_user_asm("str",  "%", __pu_val, (ptr), (err));	\
-+		break;							\
-+	default:							\
-+		BUILD_BUG();						\
-+	}								\
-+} while (0)
-+
-+#define __put_user(x, ptr)						\
-+({									\
-+	int __pu_err = 0;						\
-+	__put_user_err((x), (ptr), __pu_err);				\
-+	__pu_err;							\
-+})
-+
-+#define __put_user_error(x, ptr, err)					\
-+({									\
-+	__put_user_err((x), (ptr), (err));				\
-+	(void)0;							\
-+})
-+
-+#define __put_user_unaligned __put_user
-+
-+#define put_user(x, ptr)						\
-+({									\
-+	might_sleep();							\
-+	access_ok(VERIFY_WRITE, (ptr), sizeof(*(ptr))) ?		\
-+		__put_user((x), (ptr)) :				\
-+		-EFAULT;						\
-+})
-+
-+extern unsigned long __must_check __copy_from_user(void *to, const void __user *from, unsigned long n);
-+extern unsigned long __must_check __copy_to_user(void __user *to, const void *from, unsigned long n);
-+extern unsigned long __must_check __copy_in_user(void __user *to, const void __user *from, unsigned long n);
-+extern unsigned long __must_check __clear_user(void __user *addr, unsigned long n);
-+
-+extern unsigned long __must_check __strncpy_from_user(char *to, const char __user *from, unsigned long count);
-+extern unsigned long __must_check __strnlen_user(const char __user *s, long n);
-+
-+static inline unsigned long __must_check copy_from_user(void *to, const void __user *from, unsigned long n)
-+{
-+	if (access_ok(VERIFY_READ, from, n))
-+		n = __copy_from_user(to, from, n);
-+	else /* security hole - plug it */
-+		memset(to, 0, n);
-+	return n;
-+}
-+
-+static inline unsigned long __must_check copy_to_user(void __user *to, const void *from, unsigned long n)
-+{
-+	if (access_ok(VERIFY_WRITE, to, n))
-+		n = __copy_to_user(to, from, n);
-+	return n;
-+}
-+
-+static inline unsigned long __must_check copy_in_user(void __user *to, const void __user *from, unsigned long n)
-+{
-+	if (access_ok(VERIFY_READ, from, n) && access_ok(VERIFY_WRITE, to, n))
-+		n = __copy_in_user(to, from, n);
-+	return n;
-+}
-+
-+#define __copy_to_user_inatomic __copy_to_user
-+#define __copy_from_user_inatomic __copy_from_user
-+
-+static inline unsigned long __must_check clear_user(void __user *to, unsigned long n)
-+{
-+	if (access_ok(VERIFY_WRITE, to, n))
-+		n = __clear_user(to, n);
-+	return n;
-+}
-+
-+static inline long __must_check strncpy_from_user(char *dst, const char __user *src, long count)
-+{
-+	long res = -EFAULT;
-+	if (access_ok(VERIFY_READ, src, 1))
-+		res = __strncpy_from_user(dst, src, count);
-+	return res;
-+}
-+
-+#define strlen_user(s)	strnlen_user(s, ~0UL >> 1)
-+
-+static inline long __must_check strnlen_user(const char __user *s, long n)
-+{
-+	unsigned long res = 0;
-+
-+	if (__addr_ok(s))
-+		res = __strnlen_user(s, n);
-+
-+	return res;
-+}
-+
-+#endif /* __ASM_UACCESS_H */
-diff --git a/arch/arm64/lib/clear_user.S b/arch/arm64/lib/clear_user.S
++#endif
+diff --git a/arch/arm64/include/asm/siginfo.h b/arch/arm64/include/asm/siginfo.h
 new file mode 100644
-index 0000000..6e0ed93
+index 0000000..5a74a08
 --- /dev/null
-+++ b/arch/arm64/lib/clear_user.S
-@@ -0,0 +1,58 @@
-+/*
-+ * Based on arch/arm/lib/clear_user.S
-+ *
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#include <linux/linkage.h>
-+#include <asm/assembler.h>
-+
-+	.text
-+
-+/* Prototype: int __clear_user(void *addr, size_t sz)
-+ * Purpose  : clear some user memory
-+ * Params   : addr - user memory address to clear
-+ *          : sz   - number of bytes to clear
-+ * Returns  : number of bytes NOT cleared
-+ *
-+ * Alignment fixed up by hardware.
-+ */
-+ENTRY(__clear_user)
-+	mov	x2, x1			// save the size for fixup return
-+	subs	x1, x1, #8
-+	b.mi	2f
-+1:
-+USER(9f, str	xzr, [x0], #8	)
-+	subs	x1, x1, #8
-+	b.pl	1b
-+2:	adds	x1, x1, #4
-+	b.mi	3f
-+USER(9f, str	wzr, [x0], #4	)
-+	sub	x1, x1, #4
-+3:	adds	x1, x1, #2
-+	b.mi	4f
-+USER(9f, strh	wzr, [x0], #2	)
-+	sub	x1, x1, #2
-+4:	adds	x1, x1, #1
-+	b.mi	5f
-+	strb	wzr, [x0]
-+5:	mov	x0, #0
-+	ret
-+ENDPROC(__clear_user)
-+
-+	.section .fixup,"ax"
-+	.align	2
-+9:	mov	x0, x2			// return the original size
-+	ret
-+	.previous
-diff --git a/arch/arm64/lib/copy_from_user.S b/arch/arm64/lib/copy_from_user.S
-new file mode 100644
-index 0000000..5e27add
---- /dev/null
-+++ b/arch/arm64/lib/copy_from_user.S
-@@ -0,0 +1,66 @@
++++ b/arch/arm64/include/asm/siginfo.h
+@@ -0,0 +1,23 @@
 +/*
 + * Copyright (C) 2012 ARM Ltd.
 + *
@@ -438,132 +142,20 @@ index 0000000..5e27add
 + * You should have received a copy of the GNU General Public License
 + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
++#ifndef __ASM_SIGINFO_H
++#define __ASM_SIGINFO_H
 +
-+#include <linux/linkage.h>
-+#include <asm/assembler.h>
++#define __ARCH_SI_PREAMBLE_SIZE	(4 * sizeof(int))
 +
-+/*
-+ * Copy from user space to a kernel buffer (alignment handled by the hardware)
-+ *
-+ * Parameters:
-+ *	x0 - to
-+ *	x1 - from
-+ *	x2 - n
-+ * Returns:
-+ *	x0 - bytes not copied
-+ */
-+ENTRY(__copy_from_user)
-+	add	x4, x1, x2			// upper user buffer boundary
-+	subs	x2, x2, #8
-+	b.mi	2f
-+1:
-+USER(9f, ldr	x3, [x1], #8	)
-+	subs	x2, x2, #8
-+	str	x3, [x0], #8
-+	b.pl	1b
-+2:	adds	x2, x2, #4
-+	b.mi	3f
-+USER(9f, ldr	w3, [x1], #4	)
-+	sub	x2, x2, #4
-+	str	w3, [x0], #4
-+3:	adds	x2, x2, #2
-+	b.mi	4f
-+USER(9f, ldrh	w3, [x1], #2	)
-+	sub	x2, x2, #2
-+	strh	w3, [x0], #2
-+4:	adds	x2, x2, #1
-+	b.mi	5f
-+USER(9f, ldrb	w3, [x1]	)
-+	strb	w3, [x0]
-+5:	mov	x0, #0
-+	ret
-+ENDPROC(__copy_from_user)
++#include <asm-generic/siginfo.h>
 +
-+	.section .fixup,"ax"
-+	.align	2
-+9:	sub	x2, x4, x1
-+	mov	x3, x2
-+10:	strb	wzr, [x0], #1			// zero remaining buffer space
-+	subs	x3, x3, #1
-+	b.ne	10b
-+	mov	x0, x2				// bytes not copied
-+	ret
-+	.previous
-diff --git a/arch/arm64/lib/copy_in_user.S b/arch/arm64/lib/copy_in_user.S
++#endif
+diff --git a/arch/arm64/include/asm/signal.h b/arch/arm64/include/asm/signal.h
 new file mode 100644
-index 0000000..84b6c9b
+index 0000000..8d1e723
 --- /dev/null
-+++ b/arch/arm64/lib/copy_in_user.S
-@@ -0,0 +1,63 @@
-+/*
-+ * Copy from user space to user space
-+ *
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#include <linux/linkage.h>
-+#include <asm/assembler.h>
-+
-+/*
-+ * Copy from user space to user space (alignment handled by the hardware)
-+ *
-+ * Parameters:
-+ *	x0 - to
-+ *	x1 - from
-+ *	x2 - n
-+ * Returns:
-+ *	x0 - bytes not copied
-+ */
-+ENTRY(__copy_in_user)
-+	add	x4, x0, x2			// upper user buffer boundary
-+	subs	x2, x2, #8
-+	b.mi	2f
-+1:
-+USER(9f, ldr	x3, [x1], #8	)
-+	subs	x2, x2, #8
-+USER(9f, str	x3, [x0], #8	)
-+	b.pl	1b
-+2:	adds	x2, x2, #4
-+	b.mi	3f
-+USER(9f, ldr	w3, [x1], #4	)
-+	sub	x2, x2, #4
-+USER(9f, str	w3, [x0], #4	)
-+3:	adds	x2, x2, #2
-+	b.mi	4f
-+USER(9f, ldrh	w3, [x1], #2	)
-+	sub	x2, x2, #2
-+USER(9f, strh	w3, [x0], #2	)
-+4:	adds	x2, x2, #1
-+	b.mi	5f
-+USER(9f, ldrb	w3, [x1]	)
-+USER(9f, strb	w3, [x0]	)
-+5:	mov	x0, #0
-+	ret
-+ENDPROC(__copy_in_user)
-+
-+	.section .fixup,"ax"
-+	.align	2
-+9:	sub	x0, x4, x0			// bytes not copied
-+	ret
-+	.previous
-diff --git a/arch/arm64/lib/copy_to_user.S b/arch/arm64/lib/copy_to_user.S
-new file mode 100644
-index 0000000..a0aeeb9
---- /dev/null
-+++ b/arch/arm64/lib/copy_to_user.S
-@@ -0,0 +1,61 @@
++++ b/arch/arm64/include/asm/signal.h
+@@ -0,0 +1,24 @@
 +/*
 + * Copyright (C) 2012 ARM Ltd.
 + *
@@ -579,62 +171,61 @@ index 0000000..a0aeeb9
 + * You should have received a copy of the GNU General Public License
 + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
++#ifndef __ASM_SIGNAL_H
++#define __ASM_SIGNAL_H
 +
-+#include <linux/linkage.h>
-+#include <asm/assembler.h>
++/* Required for AArch32 compatibility. */
++#define SA_RESTORER	0x04000000
 +
-+/*
-+ * Copy to user space from a kernel buffer (alignment handled by the hardware)
-+ *
-+ * Parameters:
-+ *	x0 - to
-+ *	x1 - from
-+ *	x2 - n
-+ * Returns:
-+ *	x0 - bytes not copied
-+ */
-+ENTRY(__copy_to_user)
-+	add	x4, x0, x2			// upper user buffer boundary
-+	subs	x2, x2, #8
-+	b.mi	2f
-+1:
-+	ldr	x3, [x1], #8
-+	subs	x2, x2, #8
-+USER(9f, str	x3, [x0], #8	)
-+	b.pl	1b
-+2:	adds	x2, x2, #4
-+	b.mi	3f
-+	ldr	w3, [x1], #4
-+	sub	x2, x2, #4
-+USER(9f, str	w3, [x0], #4	)
-+3:	adds	x2, x2, #2
-+	b.mi	4f
-+	ldrh	w3, [x1], #2
-+	sub	x2, x2, #2
-+USER(9f, strh	w3, [x0], #2	)
-+4:	adds	x2, x2, #1
-+	b.mi	5f
-+	ldrb	w3, [x1]
-+USER(9f, strb	w3, [x0]	)
-+5:	mov	x0, #0
-+	ret
-+ENDPROC(__copy_to_user)
++#include <asm-generic/signal.h>
 +
-+	.section .fixup,"ax"
-+	.align	2
-+9:	sub	x0, x4, x0			// bytes not copied
-+	ret
-+	.previous
-diff --git a/arch/arm64/lib/strncpy_from_user.S b/arch/arm64/lib/strncpy_from_user.S
++#endif
+diff --git a/arch/arm64/include/asm/ucontext.h b/arch/arm64/include/asm/ucontext.h
 new file mode 100644
-index 0000000..56e448a
+index 0000000..bde9607
 --- /dev/null
-+++ b/arch/arm64/lib/strncpy_from_user.S
-@@ -0,0 +1,50 @@
++++ b/arch/arm64/include/asm/ucontext.h
+@@ -0,0 +1,30 @@
 +/*
-+ * Based on arch/arm/lib/strncpy_from_user.S
++ * Copyright (C) 2012 ARM Ltd.
 + *
-+ * Copyright (C) 1995-2000 Russell King
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#ifndef __ASM_UCONTEXT_H
++#define __ASM_UCONTEXT_H
++
++struct ucontext {
++	unsigned long	  uc_flags;
++	struct ucontext	 *uc_link;
++	stack_t		  uc_stack;
++	sigset_t	  uc_sigmask;
++	/* glibc uses a 1024-bit sigset_t */
++	__u8		  __unused[(1024 - sizeof(sigset_t)) / 8];
++	/* last for future expansion */
++	struct sigcontext uc_mcontext;
++};
++
++#endif /* __ASM_UCONTEXT_H */
+diff --git a/arch/arm64/kernel/signal.c b/arch/arm64/kernel/signal.c
+new file mode 100644
+index 0000000..8807ba2
+--- /dev/null
++++ b/arch/arm64/kernel/signal.c
+@@ -0,0 +1,437 @@
++/*
++ * Based on arch/arm/kernel/signal.c
++ *
++ * Copyright (C) 1995-2009 Russell King
 + * Copyright (C) 2012 ARM Ltd.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -650,88 +241,422 @@ index 0000000..56e448a
 + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
 +
-+#include <linux/linkage.h>
-+#include <asm/assembler.h>
-+#include <asm/errno.h>
++#include <linux/errno.h>
++#include <linux/signal.h>
++#include <linux/personality.h>
++#include <linux/freezer.h>
++#include <linux/uaccess.h>
++#include <linux/tracehook.h>
++#include <linux/ratelimit.h>
 +
-+	.text
-+	.align	5
++#include <asm/compat.h>
++#include <asm/debug-monitors.h>
++#include <asm/elf.h>
++#include <asm/cacheflush.h>
++#include <asm/ucontext.h>
++#include <asm/unistd.h>
++#include <asm/fpsimd.h>
++#include <asm/signal32.h>
++#include <asm/vdso.h>
 +
 +/*
-+ * Copy a string from user space to kernel space.
-+ *  x0 = dst, x1 = src, x2 = byte length
-+ * returns the number of characters copied (strlen of copied string),
-+ *  -EFAULT on exception, or "len" if we fill the whole buffer
++ * Do a signal return; undo the signal stack. These are aligned to 128-bit.
 + */
-+ENTRY(__strncpy_from_user)
-+	mov	x4, x1
-+1:	subs	x2, x2, #1
-+	bmi	2f
-+USER(9f, ldrb	w3, [x1], #1	)
-+	strb	w3, [x0], #1
-+	cbnz	w3, 1b
-+	sub	x1, x1, #1	// take NUL character out of count
-+2:	sub	x0, x1, x4
-+	ret
-+ENDPROC(__strncpy_from_user)
++struct rt_sigframe {
++	struct siginfo info;
++	struct ucontext uc;
++};
 +
-+	.section .fixup,"ax"
-+	.align	0
-+9:	strb	wzr, [x0]	// null terminate
-+	mov	x0, #-EFAULT
-+	ret
-+	.previous
-diff --git a/arch/arm64/lib/strnlen_user.S b/arch/arm64/lib/strnlen_user.S
-new file mode 100644
-index 0000000..7f7b176
---- /dev/null
-+++ b/arch/arm64/lib/strnlen_user.S
-@@ -0,0 +1,47 @@
++static int preserve_fpsimd_context(struct fpsimd_context __user *ctx)
++{
++	struct fpsimd_state *fpsimd = &current->thread.fpsimd_state;
++	int err;
++
++	/* dump the hardware registers to the fpsimd_state structure */
++	fpsimd_save_state(fpsimd);
++
++	/* copy the FP and status/control registers */
++	err = __copy_to_user(ctx->vregs, fpsimd->vregs, sizeof(fpsimd->vregs));
++	__put_user_error(fpsimd->fpsr, &ctx->fpsr, err);
++	__put_user_error(fpsimd->fpcr, &ctx->fpcr, err);
++
++	/* copy the magic/size information */
++	__put_user_error(FPSIMD_MAGIC, &ctx->head.magic, err);
++	__put_user_error(sizeof(struct fpsimd_context), &ctx->head.size, err);
++
++	return err ? -EFAULT : 0;
++}
++
++static int restore_fpsimd_context(struct fpsimd_context __user *ctx)
++{
++	struct fpsimd_state fpsimd;
++	__u32 magic, size;
++	int err = 0;
++
++	/* check the magic/size information */
++	__get_user_error(magic, &ctx->head.magic, err);
++	__get_user_error(size, &ctx->head.size, err);
++	if (err)
++		return -EFAULT;
++	if (magic != FPSIMD_MAGIC || size != sizeof(struct fpsimd_context))
++		return -EINVAL;
++
++	/* copy the FP and status/control registers */
++	err = __copy_from_user(fpsimd.vregs, ctx->vregs,
++			       sizeof(fpsimd.vregs));
++	__get_user_error(fpsimd.fpsr, &ctx->fpsr, err);
++	__get_user_error(fpsimd.fpcr, &ctx->fpcr, err);
++
++	/* load the hardware registers from the fpsimd_state structure */
++	if (!err) {
++		preempt_disable();
++		fpsimd_load_state(&fpsimd);
++		preempt_enable();
++	}
++
++	return err ? -EFAULT : 0;
++}
++
++static int restore_sigframe(struct pt_regs *regs,
++			    struct rt_sigframe __user *sf)
++{
++	sigset_t set;
++	int i, err;
++	struct aux_context __user *aux =
++		(struct aux_context __user *)sf->uc.uc_mcontext.__reserved;
++
++	err = __copy_from_user(&set, &sf->uc.uc_sigmask, sizeof(set));
++	if (err == 0)
++		set_current_blocked(&set);
++
++	for (i = 0; i < 31; i++)
++		__get_user_error(regs->regs[i], &sf->uc.uc_mcontext.regs[i],
++				 err);
++	__get_user_error(regs->sp, &sf->uc.uc_mcontext.sp, err);
++	__get_user_error(regs->pc, &sf->uc.uc_mcontext.pc, err);
++	__get_user_error(regs->pstate, &sf->uc.uc_mcontext.pstate, err);
++
++	/*
++	 * Avoid sys_rt_sigreturn() restarting.
++	 */
++	regs->syscallno = ~0UL;
++
++	err |= !valid_user_regs(&regs->user_regs);
++
++	if (err == 0)
++		err |= restore_fpsimd_context(&aux->fpsimd);
++
++	return err;
++}
++
++asmlinkage long sys_rt_sigreturn(struct pt_regs *regs)
++{
++	struct rt_sigframe __user *frame;
++
++	/* Always make any pending restarted system calls return -EINTR */
++	current_thread_info()->restart_block.fn = do_no_restart_syscall;
++
++	/*
++	 * Since we stacked the signal on a 128-bit boundary, then 'sp' should
++	 * be word aligned here.
++	 */
++	if (regs->sp & 15)
++		goto badframe;
++
++	frame = (struct rt_sigframe __user *)regs->sp;
++
++	if (!access_ok(VERIFY_READ, frame, sizeof (*frame)))
++		goto badframe;
++
++	if (restore_sigframe(regs, frame))
++		goto badframe;
++
++	if (do_sigaltstack(&frame->uc.uc_stack,
++			   NULL, regs->sp) == -EFAULT)
++		goto badframe;
++
++	return regs->regs[0];
++
++badframe:
++	if (show_unhandled_signals)
++		pr_info_ratelimited("%s[%d]: bad frame in %s: pc=%08llx sp=%08llx\n",
++				    current->comm, task_pid_nr(current), __func__,
++				    regs->pc, regs->sp);
++	force_sig(SIGSEGV, current);
++	return 0;
++}
++
++asmlinkage long sys_sigaltstack(const stack_t __user *uss, stack_t __user *uoss,
++				unsigned long sp)
++{
++	return do_sigaltstack(uss, uoss, sp);
++}
++
++static int setup_sigframe(struct rt_sigframe __user *sf,
++			  struct pt_regs *regs, sigset_t *set)
++{
++	int i, err = 0;
++	struct aux_context __user *aux =
++		(struct aux_context __user *)sf->uc.uc_mcontext.__reserved;
++
++	for (i = 0; i < 31; i++)
++		__put_user_error(regs->regs[i], &sf->uc.uc_mcontext.regs[i],
++				 err);
++	__put_user_error(regs->sp, &sf->uc.uc_mcontext.sp, err);
++	__put_user_error(regs->pc, &sf->uc.uc_mcontext.pc, err);
++	__put_user_error(regs->pstate, &sf->uc.uc_mcontext.pstate, err);
++
++	__put_user_error(current->thread.fault_address, &sf->uc.uc_mcontext.fault_address, err);
++
++	err |= __copy_to_user(&sf->uc.uc_sigmask, set, sizeof(*set));
++
++	if (err == 0)
++		err |= preserve_fpsimd_context(&aux->fpsimd);
++
++	/* set the "end" magic */
++	__put_user_error(0, &aux->end.magic, err);
++	__put_user_error(0, &aux->end.size, err);
++
++	return err;
++}
++
++static void __user *get_sigframe(struct k_sigaction *ka, struct pt_regs *regs,
++				 int framesize)
++{
++	unsigned long sp, sp_top;
++	void __user *frame;
++
++	sp = sp_top = regs->sp;
++
++	/*
++	 * This is the X/Open sanctioned signal stack switching.
++	 */
++	if ((ka->sa.sa_flags & SA_ONSTACK) && !sas_ss_flags(sp))
++		sp = sp_top = current->sas_ss_sp + current->sas_ss_size;
++
++	/* room for stack frame (FP, LR) */
++	sp -= 16;
++
++	sp = (sp - framesize) & ~15;
++	frame = (void __user *)sp;
++
++	/*
++	 * Check that we can actually write to the signal frame.
++	 */
++	if (!access_ok(VERIFY_WRITE, frame, sp_top - sp))
++		frame = NULL;
++
++	return frame;
++}
++
++static int setup_return(struct pt_regs *regs, struct k_sigaction *ka,
++			void __user *frame, int usig)
++{
++	int err = 0;
++	__sigrestore_t sigtramp;
++	unsigned long __user *sp = (unsigned long __user *)regs->sp;
++
++	/* set up the stack frame */
++	__put_user_error(regs->regs[29], sp - 2, err);
++	__put_user_error(regs->regs[30], sp - 1, err);
++
++	regs->regs[0] = usig;
++	regs->regs[29] = regs->sp - 16;
++	regs->sp = (unsigned long)frame;
++	regs->pc = (unsigned long)ka->sa.sa_handler;
++
++	if (ka->sa.sa_flags & SA_RESTORER)
++		sigtramp = ka->sa.sa_restorer;
++	else
++		sigtramp = VDSO_SYMBOL(current->mm->context.vdso, sigtramp);
++
++	regs->regs[30] = (unsigned long)sigtramp;
++
++	return err;
++}
++
++static int setup_rt_frame(int usig, struct k_sigaction *ka, siginfo_t *info,
++			  sigset_t *set, struct pt_regs *regs)
++{
++	struct rt_sigframe __user *frame;
++	stack_t stack;
++	int err = 0;
++
++	frame = get_sigframe(ka, regs, sizeof(*frame));
++	if (!frame)
++		return 1;
++
++	__put_user_error(0, &frame->uc.uc_flags, err);
++	__put_user_error(NULL, &frame->uc.uc_link, err);
++
++	memset(&stack, 0, sizeof(stack));
++	stack.ss_sp = (void __user *)current->sas_ss_sp;
++	stack.ss_flags = sas_ss_flags(regs->sp);
++	stack.ss_size = current->sas_ss_size;
++	err |= __copy_to_user(&frame->uc.uc_stack, &stack, sizeof(stack));
++
++	err |= setup_sigframe(frame, regs, set);
++	if (err == 0)
++		err = setup_return(regs, ka, frame, usig);
++
++	if (err == 0 && ka->sa.sa_flags & SA_SIGINFO) {
++		err |= copy_siginfo_to_user(&frame->info, info);
++		regs->regs[1] = (unsigned long)&frame->info;
++		regs->regs[2] = (unsigned long)&frame->uc;
++	}
++
++	return err;
++}
++
++static void setup_restart_syscall(struct pt_regs *regs)
++{
++	if (is_compat_task())
++		compat_setup_restart_syscall(regs);
++	else
++		regs->regs[8] = __NR_restart_syscall;
++}
++
 +/*
-+ * Based on arch/arm/lib/strnlen_user.S
-+ *
-+ * Copyright (C) 1995-2000 Russell King
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ * OK, we're invoking a handler
 + */
++static void handle_signal(unsigned long sig, struct k_sigaction *ka,
++			  siginfo_t *info, struct pt_regs *regs)
++{
++	struct thread_info *thread = current_thread_info();
++	struct task_struct *tsk = current;
++	sigset_t *oldset = sigmask_to_save();
++	int usig = sig;
++	int ret;
 +
-+#include <linux/linkage.h>
-+#include <asm/assembler.h>
-+#include <asm/errno.h>
++	/*
++	 * translate the signal
++	 */
++	if (usig < 32 && thread->exec_domain && thread->exec_domain->signal_invmap)
++		usig = thread->exec_domain->signal_invmap[usig];
 +
-+	.text
-+	.align	5
++	/*
++	 * Set up the stack frame
++	 */
++	if (is_compat_task()) {
++		if (ka->sa.sa_flags & SA_SIGINFO)
++			ret = compat_setup_rt_frame(usig, ka, info, oldset,
++						    regs);
++		else
++			ret = compat_setup_frame(usig, ka, oldset, regs);
++	} else {
++		ret = setup_rt_frame(usig, ka, info, oldset, regs);
++	}
 +
-+/* Prototype: unsigned long __strnlen_user(const char *str, long n)
-+ * Purpose  : get length of a string in user memory
-+ * Params   : str - address of string in user memory
-+ * Returns  : length of string *including terminator*
-+ *	      or zero on exception, or n if too long
++	/*
++	 * Check that the resulting registers are actually sane.
++	 */
++	ret |= !valid_user_regs(&regs->user_regs);
++
++	if (ret != 0) {
++		force_sigsegv(sig, tsk);
++		return;
++	}
++
++	/*
++	 * Fast forward the stepping logic so we step into the signal
++	 * handler.
++	 */
++	user_fastforward_single_step(tsk);
++
++	signal_delivered(sig, info, ka, regs, 0);
++}
++
++/*
++ * Note that 'init' is a special process: it doesn't get signals it doesn't
++ * want to handle. Thus you cannot kill init even with a SIGKILL even by
++ * mistake.
++ *
++ * Note that we go through the signals twice: once to check the signals that
++ * the kernel can handle, and then we build all the user-level signal handling
++ * stack-frames in one go after that.
 + */
-+ENTRY(__strnlen_user)
-+	mov	x2, x0
-+1:	subs	x1, x1, #1
-+	b.mi	2f
-+USER(9f, ldrb	w3, [x0], #1	)
-+	cbnz	w3, 1b
-+2:	sub	x0, x0, x2
-+	ret
-+ENDPROC(__strnlen_user)
++static void do_signal(struct pt_regs *regs)
++{
++	unsigned long continue_addr = 0, restart_addr = 0;
++	struct k_sigaction ka;
++	siginfo_t info;
++	int signr, retval = 0;
++	int syscall = (int)regs->syscallno;
 +
-+	.section .fixup,"ax"
-+	.align	0
-+9:	mov	x0, #0
-+	ret
-+	.previous
++	/*
++	 * If we were from a system call, check for system call restarting...
++	 */
++	if (syscall >= 0) {
++		continue_addr = regs->pc;
++		restart_addr = continue_addr - (compat_thumb_mode(regs) ? 2 : 4);
++		retval = regs->regs[0];
++
++		/*
++		 * Avoid additional syscall restarting via ret_to_user.
++		 */
++		regs->syscallno = ~0UL;
++
++		/*
++		 * Prepare for system call restart. We do this here so that a
++		 * debugger will see the already changed PC.
++		 */
++		switch (retval) {
++		case -ERESTARTNOHAND:
++		case -ERESTARTSYS:
++		case -ERESTARTNOINTR:
++		case -ERESTART_RESTARTBLOCK:
++			regs->regs[0] = regs->orig_x0;
++			regs->pc = restart_addr;
++			break;
++		}
++	}
++
++	/*
++	 * Get the signal to deliver. When running under ptrace, at this point
++	 * the debugger may change all of our registers.
++	 */
++	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
++	if (signr > 0) {
++		/*
++		 * Depending on the signal settings, we may need to revert the
++		 * decision to restart the system call, but skip this if a
++		 * debugger has chosen to restart at a different PC.
++		 */
++		if (regs->pc == restart_addr &&
++		    (retval == -ERESTARTNOHAND ||
++		     retval == -ERESTART_RESTARTBLOCK ||
++		     (retval == -ERESTARTSYS &&
++		      !(ka.sa.sa_flags & SA_RESTART)))) {
++			regs->regs[0] = -EINTR;
++			regs->pc = continue_addr;
++		}
++
++		handle_signal(signr, &ka, &info, regs);
++		return;
++	}
++
++	/*
++	 * Handle restarting a different system call. As above, if a debugger
++	 * has chosen to restart at a different PC, ignore the restart.
++	 */
++	if (syscall >= 0 && regs->pc == restart_addr) {
++		if (retval == -ERESTART_RESTARTBLOCK)
++			setup_restart_syscall(regs);
++		user_rewind_single_step(current);
++	}
++
++	restore_saved_sigmask();
++}
++
++asmlinkage void do_notify_resume(struct pt_regs *regs,
++				 unsigned int thread_flags)
++{
++	if (thread_flags & _TIF_SIGPENDING)
++		do_signal(regs);
++
++	if (thread_flags & _TIF_NOTIFY_RESUME) {
++		clear_thread_flag(TIF_NOTIFY_RESUME);
++		tracehook_notify_resume(regs);
++	}
++}
 
