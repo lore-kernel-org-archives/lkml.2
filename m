@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752895Ab2IGQ3e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 12:29:34 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:34684 "EHLO
+	id S1754152Ab2IGQ3m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 12:29:42 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:34614 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752894Ab2IGQ17 (ORCPT
+	with ESMTP id S1752865Ab2IGQ17 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Sep 2012 12:27:59 -0400
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH v3 25/31] arm64: Performance counters support
-Date: Fri,  7 Sep 2012 17:27:00 +0100
-Message-Id: <1347035226-18649-26-git-send-email-catalin.marinas@arm.com>
+Subject: [PATCH v3 23/31] arm64: Debugging support
+Date: Fri,  7 Sep 2012 17:26:58 +0100
+Message-Id: <1347035226-18649-24-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.9.111.gf3fb0
 In-Reply-To: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
 References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 07 Sep 2012 16:27:57.0160 (UTC) FILETIME=[BD31CE80:01CD8D15]
-X-MC-Unique: 112090717275708001
+X-OriginalArrivalTime: 07 Sep 2012 16:27:56.0347 (UTC) FILETIME=[BCB5C0B0:01CD8D15]
+X-MC-Unique: 112090717275607001
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q87GTbSN008360
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q87GTrGc008364
 
 From: Will Deacon <will.deacon@arm.com>
 
-This patch adds support for the AArch64 performance counters.
+This patch adds ptrace, debug monitors and hardware breakpoints support.
 
 Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Acked-by: Tony Lindgren <tony@atomide.com>
 ---
- arch/arm64/include/asm/perf_event.h |   22 +
- arch/arm64/include/asm/pmu.h        |   82 +++
- arch/arm64/kernel/perf_event.c      | 1368 +++++++++++++++++++++++++++++++++++
- tools/perf/perf.h                   |    6 +
- 4 files changed, 1478 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm64/include/asm/perf_event.h
- create mode 100644 arch/arm64/include/asm/pmu.h
- create mode 100644 arch/arm64/kernel/perf_event.c
+ arch/arm64/include/asm/debug-monitors.h |   88 +++
+ arch/arm64/include/asm/hw_breakpoint.h  |  137 ++++
+ arch/arm64/kernel/debug-monitors.c      |  288 ++++++++
+ arch/arm64/kernel/hw_breakpoint.c       |  880 ++++++++++++++++++++++++
+ arch/arm64/kernel/ptrace.c              | 1126 +++++++++++++++++++++++++++++++
+ include/linux/elf.h                     |    3 +
+ 6 files changed, 2522 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm64/include/asm/debug-monitors.h
+ create mode 100644 arch/arm64/include/asm/hw_breakpoint.h
+ create mode 100644 arch/arm64/kernel/debug-monitors.c
+ create mode 100644 arch/arm64/kernel/hw_breakpoint.c
+ create mode 100644 arch/arm64/kernel/ptrace.c
 
-diff --git a/arch/arm64/include/asm/perf_event.h b/arch/arm64/include/asm/perf_event.h
+diff --git a/arch/arm64/include/asm/debug-monitors.h b/arch/arm64/include/asm/debug-monitors.h
 new file mode 100644
-index 0000000..a6fffd5
+index 0000000..7eaa0b3
 --- /dev/null
-+++ b/arch/arm64/include/asm/perf_event.h
-@@ -0,0 +1,22 @@
++++ b/arch/arm64/include/asm/debug-monitors.h
+@@ -0,0 +1,88 @@
 +/*
 + * Copyright (C) 2012 ARM Ltd.
 + *
@@ -63,23 +67,86 @@ index 0000000..a6fffd5
 + * You should have received a copy of the GNU General Public License
 + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
++#ifndef __ASM_DEBUG_MONITORS_H
++#define __ASM_DEBUG_MONITORS_H
 +
-+#ifndef __ASM_PERF_EVENT_H
-+#define __ASM_PERF_EVENT_H
++#ifdef __KERNEL__
 +
-+/* It's quiet around here... */
++#define	DBG_ESR_EVT(x)		(((x) >> 27) & 0x7)
 +
++/* AArch64 */
++#define DBG_ESR_EVT_HWBP	0x0
++#define DBG_ESR_EVT_HWSS	0x1
++#define DBG_ESR_EVT_HWWP	0x2
++#define DBG_ESR_EVT_BRK		0x6
++
++enum debug_el {
++	DBG_ACTIVE_EL0 = 0,
++	DBG_ACTIVE_EL1,
++};
++
++/* AArch32 */
++#define DBG_ESR_EVT_BKPT	0x4
++#define DBG_ESR_EVT_VECC	0x5
++
++#define AARCH32_BREAK_ARM	0x07f001f0
++#define AARCH32_BREAK_THUMB	0xde01
++#define AARCH32_BREAK_THUMB2_LO	0xf7f0
++#define AARCH32_BREAK_THUMB2_HI	0xa000
++
++#ifndef __ASSEMBLY__
++struct task_struct;
++
++#define local_dbg_save(flags)							\
++	do {									\
++		typecheck(unsigned long, flags);				\
++		asm volatile(							\
++		"mrs	%0, daif			// local_dbg_save\n"	\
++		"msr	daifset, #8"						\
++		: "=r" (flags) : : "memory");					\
++	} while (0)
++
++#define local_dbg_restore(flags)						\
++	do {									\
++		typecheck(unsigned long, flags);				\
++		asm volatile(							\
++		"msr	daif, %0			// local_dbg_restore\n"	\
++		: : "r" (flags) : "memory");					\
++	} while (0)
++
++#define DBG_ARCH_ID_RESERVED	0	/* In case of ptrace ABI updates. */
++
++u8 debug_monitors_arch(void);
++
++void enable_debug_monitors(enum debug_el el);
++void disable_debug_monitors(enum debug_el el);
++
++void user_rewind_single_step(struct task_struct *task);
++void user_fastforward_single_step(struct task_struct *task);
++
++void kernel_enable_single_step(struct pt_regs *regs);
++void kernel_disable_single_step(void);
++int kernel_active_single_step(void);
++
++#ifdef CONFIG_HAVE_HW_BREAKPOINT
++int reinstall_suspended_bps(struct pt_regs *regs);
++#else
++static inline int reinstall_suspended_bps(struct pt_regs *regs)
++{
++	return -ENODEV;
++}
 +#endif
-diff --git a/arch/arm64/include/asm/pmu.h b/arch/arm64/include/asm/pmu.h
++
++#endif	/* __ASSEMBLY */
++#endif	/* __KERNEL__ */
++#endif	/* __ASM_DEBUG_MONITORS_H */
+diff --git a/arch/arm64/include/asm/hw_breakpoint.h b/arch/arm64/include/asm/hw_breakpoint.h
 new file mode 100644
-index 0000000..e6f0878
+index 0000000..d064047
 --- /dev/null
-+++ b/arch/arm64/include/asm/pmu.h
-@@ -0,0 +1,82 @@
++++ b/arch/arm64/include/asm/hw_breakpoint.h
+@@ -0,0 +1,137 @@
 +/*
-+ * Based on arch/arm/include/asm/pmu.h
-+ *
-+ * Copyright (C) 2009 picoChip Designs Ltd, Jamie Iles
 + * Copyright (C) 2012 ARM Ltd.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -94,83 +161,1321 @@ index 0000000..e6f0878
 + * You should have received a copy of the GNU General Public License
 + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
-+#ifndef __ASM_PMU_H
-+#define __ASM_PMU_H
++#ifndef __ASM_HW_BREAKPOINT_H
++#define __ASM_HW_BREAKPOINT_H
 +
-+#ifdef CONFIG_HW_PERF_EVENTS
++#ifdef __KERNEL__
 +
-+/* The events for a given PMU register set. */
-+struct pmu_hw_events {
-+	/*
-+	 * The events that are active on the PMU for the given index.
-+	 */
-+	struct perf_event	**events;
-+
-+	/*
-+	 * A 1 bit for an index indicates that the counter is being used for
-+	 * an event. A 0 means that the counter can be used.
-+	 */
-+	unsigned long           *used_mask;
-+
-+	/*
-+	 * Hardware lock to serialize accesses to PMU registers. Needed for the
-+	 * read/modify/write sequences.
-+	 */
-+	raw_spinlock_t		pmu_lock;
++struct arch_hw_breakpoint_ctrl {
++	u32 __reserved	: 19,
++	len		: 8,
++	type		: 2,
++	privilege	: 2,
++	enabled		: 1;
 +};
 +
-+struct arm_pmu {
-+	struct pmu		pmu;
-+	cpumask_t		active_irqs;
-+	const char		*name;
-+	irqreturn_t		(*handle_irq)(int irq_num, void *dev);
-+	void			(*enable)(struct hw_perf_event *evt, int idx);
-+	void			(*disable)(struct hw_perf_event *evt, int idx);
-+	int			(*get_event_idx)(struct pmu_hw_events *hw_events,
-+						 struct hw_perf_event *hwc);
-+	int			(*set_event_filter)(struct hw_perf_event *evt,
-+						    struct perf_event_attr *attr);
-+	u32			(*read_counter)(int idx);
-+	void			(*write_counter)(int idx, u32 val);
-+	void			(*start)(void);
-+	void			(*stop)(void);
-+	void			(*reset)(void *);
-+	int			(*map_event)(struct perf_event *event);
-+	int			num_events;
-+	atomic_t		active_events;
-+	struct mutex		reserve_mutex;
-+	u64			max_period;
-+	struct platform_device	*plat_device;
-+	struct pmu_hw_events	*(*get_hw_events)(void);
++struct arch_hw_breakpoint {
++	u64 address;
++	u64 trigger;
++	struct arch_hw_breakpoint_ctrl ctrl;
 +};
 +
-+#define to_arm_pmu(p) (container_of(p, struct arm_pmu, pmu))
++static inline u32 encode_ctrl_reg(struct arch_hw_breakpoint_ctrl ctrl)
++{
++	return (ctrl.len << 5) | (ctrl.type << 3) | (ctrl.privilege << 1) |
++		ctrl.enabled;
++}
 +
-+int __init armpmu_register(struct arm_pmu *armpmu, char *name, int type);
++static inline void decode_ctrl_reg(u32 reg,
++				   struct arch_hw_breakpoint_ctrl *ctrl)
++{
++	ctrl->enabled	= reg & 0x1;
++	reg >>= 1;
++	ctrl->privilege	= reg & 0x3;
++	reg >>= 2;
++	ctrl->type	= reg & 0x3;
++	reg >>= 2;
++	ctrl->len	= reg & 0xff;
++}
 +
-+u64 armpmu_event_update(struct perf_event *event,
-+			struct hw_perf_event *hwc,
-+			int idx);
++/* Breakpoint */
++#define ARM_BREAKPOINT_EXECUTE	0
 +
-+int armpmu_event_set_period(struct perf_event *event,
-+			    struct hw_perf_event *hwc,
-+			    int idx);
++/* Watchpoints */
++#define ARM_BREAKPOINT_LOAD	1
++#define ARM_BREAKPOINT_STORE	2
++#define AARCH64_ESR_ACCESS_MASK	(1 << 6)
 +
-+#endif /* CONFIG_HW_PERF_EVENTS */
-+#endif /* __ASM_PMU_H */
-diff --git a/arch/arm64/kernel/perf_event.c b/arch/arm64/kernel/perf_event.c
-new file mode 100644
-index 0000000..ecbf2d8
---- /dev/null
-+++ b/arch/arm64/kernel/perf_event.c
-@@ -0,0 +1,1368 @@
++/* Privilege Levels */
++#define AARCH64_BREAKPOINT_EL1	1
++#define AARCH64_BREAKPOINT_EL0	2
++
++/* Lengths */
++#define ARM_BREAKPOINT_LEN_1	0x1
++#define ARM_BREAKPOINT_LEN_2	0x3
++#define ARM_BREAKPOINT_LEN_4	0xf
++#define ARM_BREAKPOINT_LEN_8	0xff
++
++/* Kernel stepping */
++#define ARM_KERNEL_STEP_NONE	0
++#define ARM_KERNEL_STEP_ACTIVE	1
++#define ARM_KERNEL_STEP_SUSPEND	2
++
 +/*
-+ * PMU support
++ * Limits.
++ * Changing these will require modifications to the register accessors.
++ */
++#define ARM_MAX_BRP		16
++#define ARM_MAX_WRP		16
++#define ARM_MAX_HBP_SLOTS	(ARM_MAX_BRP + ARM_MAX_WRP)
++
++/* Virtual debug register bases. */
++#define AARCH64_DBG_REG_BVR	0
++#define AARCH64_DBG_REG_BCR	(AARCH64_DBG_REG_BVR + ARM_MAX_BRP)
++#define AARCH64_DBG_REG_WVR	(AARCH64_DBG_REG_BCR + ARM_MAX_BRP)
++#define AARCH64_DBG_REG_WCR	(AARCH64_DBG_REG_WVR + ARM_MAX_WRP)
++
++/* Debug register names. */
++#define AARCH64_DBG_REG_NAME_BVR	"bvr"
++#define AARCH64_DBG_REG_NAME_BCR	"bcr"
++#define AARCH64_DBG_REG_NAME_WVR	"wvr"
++#define AARCH64_DBG_REG_NAME_WCR	"wcr"
++
++/* Accessor macros for the debug registers. */
++#define AARCH64_DBG_READ(N, REG, VAL) do {\
++	asm volatile("mrs %0, dbg" REG #N "_el1" : "=r" (VAL));\
++} while (0)
++
++#define AARCH64_DBG_WRITE(N, REG, VAL) do {\
++	asm volatile("msr dbg" REG #N "_el1, %0" :: "r" (VAL));\
++} while (0)
++
++struct task_struct;
++struct notifier_block;
++struct perf_event;
++struct pmu;
++
++extern int arch_bp_generic_fields(struct arch_hw_breakpoint_ctrl ctrl,
++				  int *gen_len, int *gen_type);
++extern int arch_check_bp_in_kernelspace(struct perf_event *bp);
++extern int arch_validate_hwbkpt_settings(struct perf_event *bp);
++extern int hw_breakpoint_exceptions_notify(struct notifier_block *unused,
++					   unsigned long val, void *data);
++
++extern int arch_install_hw_breakpoint(struct perf_event *bp);
++extern void arch_uninstall_hw_breakpoint(struct perf_event *bp);
++extern void hw_breakpoint_pmu_read(struct perf_event *bp);
++extern int hw_breakpoint_slots(int type);
++
++#ifdef CONFIG_HAVE_HW_BREAKPOINT
++extern void hw_breakpoint_thread_switch(struct task_struct *next);
++extern void ptrace_hw_copy_thread(struct task_struct *task);
++#else
++static inline void hw_breakpoint_thread_switch(struct task_struct *next)
++{
++}
++static inline void ptrace_hw_copy_thread(struct task_struct *task)
++{
++}
++#endif
++
++extern struct pmu perf_ops_bp;
++
++#endif	/* __KERNEL__ */
++#endif	/* __ASM_BREAKPOINT_H */
+diff --git a/arch/arm64/kernel/debug-monitors.c b/arch/arm64/kernel/debug-monitors.c
+new file mode 100644
+index 0000000..0c3ba9f
+--- /dev/null
++++ b/arch/arm64/kernel/debug-monitors.c
+@@ -0,0 +1,288 @@
++/*
++ * ARMv8 single-step debug support and mdscr context switching.
++ *
++ * Copyright (C) 2012 ARM Limited
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
++ * Author: Will Deacon <will.deacon@arm.com>
++ */
++
++#include <linux/cpu.h>
++#include <linux/debugfs.h>
++#include <linux/hardirq.h>
++#include <linux/init.h>
++#include <linux/ptrace.h>
++#include <linux/stat.h>
++
++#include <asm/debug-monitors.h>
++#include <asm/local.h>
++#include <asm/cputype.h>
++#include <asm/system_misc.h>
++
++/* Low-level stepping controls. */
++#define DBG_MDSCR_SS		(1 << 0)
++#define DBG_SPSR_SS		(1 << 21)
++
++/* MDSCR_EL1 enabling bits */
++#define DBG_MDSCR_KDE		(1 << 13)
++#define DBG_MDSCR_MDE		(1 << 15)
++#define DBG_MDSCR_MASK		~(DBG_MDSCR_KDE | DBG_MDSCR_MDE)
++
++/* Determine debug architecture. */
++u8 debug_monitors_arch(void)
++{
++	return read_cpuid(ID_AA64DFR0_EL1) & 0xf;
++}
++
++/*
++ * MDSCR access routines.
++ */
++static void mdscr_write(u32 mdscr)
++{
++	unsigned long flags;
++	local_dbg_save(flags);
++	asm volatile("msr mdscr_el1, %0" :: "r" (mdscr));
++	local_dbg_restore(flags);
++}
++
++static u32 mdscr_read(void)
++{
++	u32 mdscr;
++	asm volatile("mrs %0, mdscr_el1" : "=r" (mdscr));
++	return mdscr;
++}
++
++/*
++ * Allow root to disable self-hosted debug from userspace.
++ * This is useful if you want to connect an external JTAG debugger.
++ */
++static u32 debug_enabled = 1;
++
++static int create_debug_debugfs_entry(void)
++{
++	debugfs_create_bool("debug_enabled", 0644, NULL, &debug_enabled);
++	return 0;
++}
++fs_initcall(create_debug_debugfs_entry);
++
++static int __init early_debug_disable(char *buf)
++{
++	debug_enabled = 0;
++	return 0;
++}
++
++early_param("nodebugmon", early_debug_disable);
++
++/*
++ * Keep track of debug users on each core.
++ * The ref counts are per-cpu so we use a local_t type.
++ */
++static DEFINE_PER_CPU(local_t, mde_ref_count);
++static DEFINE_PER_CPU(local_t, kde_ref_count);
++
++void enable_debug_monitors(enum debug_el el)
++{
++	u32 mdscr, enable = 0;
++
++	WARN_ON(preemptible());
++
++	if (local_inc_return(&__get_cpu_var(mde_ref_count)) == 1)
++		enable = DBG_MDSCR_MDE;
++
++	if (el == DBG_ACTIVE_EL1 &&
++	    local_inc_return(&__get_cpu_var(kde_ref_count)) == 1)
++		enable |= DBG_MDSCR_KDE;
++
++	if (enable && debug_enabled) {
++		mdscr = mdscr_read();
++		mdscr |= enable;
++		mdscr_write(mdscr);
++	}
++}
++
++void disable_debug_monitors(enum debug_el el)
++{
++	u32 mdscr, disable = 0;
++
++	WARN_ON(preemptible());
++
++	if (local_dec_and_test(&__get_cpu_var(mde_ref_count)))
++		disable = ~DBG_MDSCR_MDE;
++
++	if (el == DBG_ACTIVE_EL1 &&
++	    local_dec_and_test(&__get_cpu_var(kde_ref_count)))
++		disable &= ~DBG_MDSCR_KDE;
++
++	if (disable) {
++		mdscr = mdscr_read();
++		mdscr &= disable;
++		mdscr_write(mdscr);
++	}
++}
++
++/*
++ * OS lock clearing.
++ */
++static void clear_os_lock(void *unused)
++{
++	asm volatile("msr mdscr_el1, %0" : : "r" (0));
++	isb();
++	asm volatile("msr oslar_el1, %0" : : "r" (0));
++	isb();
++}
++
++static int __cpuinit os_lock_notify(struct notifier_block *self,
++				    unsigned long action, void *data)
++{
++	int cpu = (unsigned long)data;
++	if (action == CPU_ONLINE)
++		smp_call_function_single(cpu, clear_os_lock, NULL, 1);
++	return NOTIFY_OK;
++}
++
++static struct notifier_block __cpuinitdata os_lock_nb = {
++	.notifier_call = os_lock_notify,
++};
++
++static int __cpuinit debug_monitors_init(void)
++{
++	/* Clear the OS lock. */
++	smp_call_function(clear_os_lock, NULL, 1);
++	clear_os_lock(NULL);
++
++	/* Register hotplug handler. */
++	register_cpu_notifier(&os_lock_nb);
++	return 0;
++}
++postcore_initcall(debug_monitors_init);
++
++/*
++ * Single step API and exception handling.
++ */
++static void set_regs_spsr_ss(struct pt_regs *regs)
++{
++	unsigned long spsr;
++
++	spsr = regs->pstate;
++	spsr &= ~DBG_SPSR_SS;
++	spsr |= DBG_SPSR_SS;
++	regs->pstate = spsr;
++}
++
++static void clear_regs_spsr_ss(struct pt_regs *regs)
++{
++	unsigned long spsr;
++
++	spsr = regs->pstate;
++	spsr &= ~DBG_SPSR_SS;
++	regs->pstate = spsr;
++}
++
++static int single_step_handler(unsigned long addr, unsigned int esr,
++			       struct pt_regs *regs)
++{
++	siginfo_t info;
++
++	/*
++	 * If we are stepping a pending breakpoint, call the hw_breakpoint
++	 * handler first.
++	 */
++	if (!reinstall_suspended_bps(regs))
++		return 0;
++
++	if (user_mode(regs)) {
++		info.si_signo = SIGTRAP;
++		info.si_errno = 0;
++		info.si_code  = TRAP_HWBKPT;
++		info.si_addr  = (void __user *)instruction_pointer(regs);
++		force_sig_info(SIGTRAP, &info, current);
++
++		/*
++		 * ptrace will disable single step unless explicitly
++		 * asked to re-enable it. For other clients, it makes
++		 * sense to leave it enabled (i.e. rewind the controls
++		 * to the active-not-pending state).
++		 */
++		user_rewind_single_step(current);
++	} else {
++		/* TODO: route to KGDB */
++		pr_warning("Unexpected kernel single-step exception at EL1\n");
++		/*
++		 * Re-enable stepping since we know that we will be
++		 * returning to regs.
++		 */
++		set_regs_spsr_ss(regs);
++	}
++
++	return 0;
++}
++
++static int __init single_step_init(void)
++{
++	hook_debug_fault_code(DBG_ESR_EVT_HWSS, single_step_handler, SIGTRAP,
++			      TRAP_HWBKPT, "single-step handler");
++	return 0;
++}
++arch_initcall(single_step_init);
++
++/* Re-enable single step for syscall restarting. */
++void user_rewind_single_step(struct task_struct *task)
++{
++	/*
++	 * If single step is active for this thread, then set SPSR.SS
++	 * to 1 to avoid returning to the active-pending state.
++	 */
++	if (test_ti_thread_flag(task_thread_info(task), TIF_SINGLESTEP))
++		set_regs_spsr_ss(task_pt_regs(task));
++}
++
++void user_fastforward_single_step(struct task_struct *task)
++{
++	if (test_ti_thread_flag(task_thread_info(task), TIF_SINGLESTEP))
++		clear_regs_spsr_ss(task_pt_regs(task));
++}
++
++/* Kernel API */
++void kernel_enable_single_step(struct pt_regs *regs)
++{
++	WARN_ON(!irqs_disabled());
++	set_regs_spsr_ss(regs);
++	mdscr_write(mdscr_read() | DBG_MDSCR_SS);
++	enable_debug_monitors(DBG_ACTIVE_EL1);
++}
++
++void kernel_disable_single_step(void)
++{
++	WARN_ON(!irqs_disabled());
++	mdscr_write(mdscr_read() & ~DBG_MDSCR_SS);
++	disable_debug_monitors(DBG_ACTIVE_EL1);
++}
++
++int kernel_active_single_step(void)
++{
++	WARN_ON(!irqs_disabled());
++	return mdscr_read() & DBG_MDSCR_SS;
++}
++
++/* ptrace API */
++void user_enable_single_step(struct task_struct *task)
++{
++	set_ti_thread_flag(task_thread_info(task), TIF_SINGLESTEP);
++	set_regs_spsr_ss(task_pt_regs(task));
++}
++
++void user_disable_single_step(struct task_struct *task)
++{
++	clear_ti_thread_flag(task_thread_info(task), TIF_SINGLESTEP);
++}
+diff --git a/arch/arm64/kernel/hw_breakpoint.c b/arch/arm64/kernel/hw_breakpoint.c
+new file mode 100644
+index 0000000..5ab825c
+--- /dev/null
++++ b/arch/arm64/kernel/hw_breakpoint.c
+@@ -0,0 +1,880 @@
++/*
++ * HW_breakpoint: a unified kernel/user-space hardware breakpoint facility,
++ * using the CPU's debug registers.
 + *
 + * Copyright (C) 2012 ARM Limited
 + * Author: Will Deacon <will.deacon@arm.com>
 + *
-+ * This code is based heavily on the ARMv7 perf event code.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#define pr_fmt(fmt) "hw-breakpoint: " fmt
++
++#include <linux/errno.h>
++#include <linux/hw_breakpoint.h>
++#include <linux/perf_event.h>
++#include <linux/ptrace.h>
++#include <linux/smp.h>
++
++#include <asm/compat.h>
++#include <asm/current.h>
++#include <asm/debug-monitors.h>
++#include <asm/hw_breakpoint.h>
++#include <asm/kdebug.h>
++#include <asm/traps.h>
++#include <asm/cputype.h>
++#include <asm/system_misc.h>
++
++/* Breakpoint currently in use for each BRP. */
++static DEFINE_PER_CPU(struct perf_event *, bp_on_reg[ARM_MAX_BRP]);
++
++/* Watchpoint currently in use for each WRP. */
++static DEFINE_PER_CPU(struct perf_event *, wp_on_reg[ARM_MAX_WRP]);
++
++/* Currently stepping a per-CPU kernel breakpoint. */
++static DEFINE_PER_CPU(int, stepping_kernel_bp);
++
++/* Number of BRP/WRP registers on this CPU. */
++static int core_num_brps;
++static int core_num_wrps;
++
++/* Determine number of BRP registers available. */
++static int get_num_brps(void)
++{
++	return ((read_cpuid(ID_AA64DFR0_EL1) >> 12) & 0xf) + 1;
++}
++
++/* Determine number of WRP registers available. */
++static int get_num_wrps(void)
++{
++	return ((read_cpuid(ID_AA64DFR0_EL1) >> 20) & 0xf) + 1;
++}
++
++int hw_breakpoint_slots(int type)
++{
++	/*
++	 * We can be called early, so don't rely on
++	 * our static variables being initialised.
++	 */
++	switch (type) {
++	case TYPE_INST:
++		return get_num_brps();
++	case TYPE_DATA:
++		return get_num_wrps();
++	default:
++		pr_warning("unknown slot type: %d\n", type);
++		return 0;
++	}
++}
++
++#define READ_WB_REG_CASE(OFF, N, REG, VAL)	\
++	case (OFF + N):				\
++		AARCH64_DBG_READ(N, REG, VAL);	\
++		break
++
++#define WRITE_WB_REG_CASE(OFF, N, REG, VAL)	\
++	case (OFF + N):				\
++		AARCH64_DBG_WRITE(N, REG, VAL);	\
++		break
++
++#define GEN_READ_WB_REG_CASES(OFF, REG, VAL)	\
++	READ_WB_REG_CASE(OFF,  0, REG, VAL);	\
++	READ_WB_REG_CASE(OFF,  1, REG, VAL);	\
++	READ_WB_REG_CASE(OFF,  2, REG, VAL);	\
++	READ_WB_REG_CASE(OFF,  3, REG, VAL);	\
++	READ_WB_REG_CASE(OFF,  4, REG, VAL);	\
++	READ_WB_REG_CASE(OFF,  5, REG, VAL);	\
++	READ_WB_REG_CASE(OFF,  6, REG, VAL);	\
++	READ_WB_REG_CASE(OFF,  7, REG, VAL);	\
++	READ_WB_REG_CASE(OFF,  8, REG, VAL);	\
++	READ_WB_REG_CASE(OFF,  9, REG, VAL);	\
++	READ_WB_REG_CASE(OFF, 10, REG, VAL);	\
++	READ_WB_REG_CASE(OFF, 11, REG, VAL);	\
++	READ_WB_REG_CASE(OFF, 12, REG, VAL);	\
++	READ_WB_REG_CASE(OFF, 13, REG, VAL);	\
++	READ_WB_REG_CASE(OFF, 14, REG, VAL);	\
++	READ_WB_REG_CASE(OFF, 15, REG, VAL)
++
++#define GEN_WRITE_WB_REG_CASES(OFF, REG, VAL)	\
++	WRITE_WB_REG_CASE(OFF,  0, REG, VAL);	\
++	WRITE_WB_REG_CASE(OFF,  1, REG, VAL);	\
++	WRITE_WB_REG_CASE(OFF,  2, REG, VAL);	\
++	WRITE_WB_REG_CASE(OFF,  3, REG, VAL);	\
++	WRITE_WB_REG_CASE(OFF,  4, REG, VAL);	\
++	WRITE_WB_REG_CASE(OFF,  5, REG, VAL);	\
++	WRITE_WB_REG_CASE(OFF,  6, REG, VAL);	\
++	WRITE_WB_REG_CASE(OFF,  7, REG, VAL);	\
++	WRITE_WB_REG_CASE(OFF,  8, REG, VAL);	\
++	WRITE_WB_REG_CASE(OFF,  9, REG, VAL);	\
++	WRITE_WB_REG_CASE(OFF, 10, REG, VAL);	\
++	WRITE_WB_REG_CASE(OFF, 11, REG, VAL);	\
++	WRITE_WB_REG_CASE(OFF, 12, REG, VAL);	\
++	WRITE_WB_REG_CASE(OFF, 13, REG, VAL);	\
++	WRITE_WB_REG_CASE(OFF, 14, REG, VAL);	\
++	WRITE_WB_REG_CASE(OFF, 15, REG, VAL)
++
++static u64 read_wb_reg(int reg, int n)
++{
++	u64 val = 0;
++
++	switch (reg + n) {
++	GEN_READ_WB_REG_CASES(AARCH64_DBG_REG_BVR, AARCH64_DBG_REG_NAME_BVR, val);
++	GEN_READ_WB_REG_CASES(AARCH64_DBG_REG_BCR, AARCH64_DBG_REG_NAME_BCR, val);
++	GEN_READ_WB_REG_CASES(AARCH64_DBG_REG_WVR, AARCH64_DBG_REG_NAME_WVR, val);
++	GEN_READ_WB_REG_CASES(AARCH64_DBG_REG_WCR, AARCH64_DBG_REG_NAME_WCR, val);
++	default:
++		pr_warning("attempt to read from unknown breakpoint register %d\n", n);
++	}
++
++	return val;
++}
++
++static void write_wb_reg(int reg, int n, u64 val)
++{
++	switch (reg + n) {
++	GEN_WRITE_WB_REG_CASES(AARCH64_DBG_REG_BVR, AARCH64_DBG_REG_NAME_BVR, val);
++	GEN_WRITE_WB_REG_CASES(AARCH64_DBG_REG_BCR, AARCH64_DBG_REG_NAME_BCR, val);
++	GEN_WRITE_WB_REG_CASES(AARCH64_DBG_REG_WVR, AARCH64_DBG_REG_NAME_WVR, val);
++	GEN_WRITE_WB_REG_CASES(AARCH64_DBG_REG_WCR, AARCH64_DBG_REG_NAME_WCR, val);
++	default:
++		pr_warning("attempt to write to unknown breakpoint register %d\n", n);
++	}
++	isb();
++}
++
++/*
++ * Convert a breakpoint privilege level to the corresponding exception
++ * level.
++ */
++static enum debug_el debug_exception_level(int privilege)
++{
++	switch (privilege) {
++	case AARCH64_BREAKPOINT_EL0:
++		return DBG_ACTIVE_EL0;
++	case AARCH64_BREAKPOINT_EL1:
++		return DBG_ACTIVE_EL1;
++	default:
++		pr_warning("invalid breakpoint privilege level %d\n", privilege);
++		return -EINVAL;
++	}
++}
++
++/*
++ * Install a perf counter breakpoint.
++ */
++int arch_install_hw_breakpoint(struct perf_event *bp)
++{
++	struct arch_hw_breakpoint *info = counter_arch_bp(bp);
++	struct perf_event **slot, **slots;
++	struct debug_info *debug_info = &current->thread.debug;
++	int i, max_slots, ctrl_reg, val_reg, reg_enable;
++	u32 ctrl;
++
++	if (info->ctrl.type == ARM_BREAKPOINT_EXECUTE) {
++		/* Breakpoint */
++		ctrl_reg = AARCH64_DBG_REG_BCR;
++		val_reg = AARCH64_DBG_REG_BVR;
++		slots = __get_cpu_var(bp_on_reg);
++		max_slots = core_num_brps;
++		reg_enable = !debug_info->bps_disabled;
++	} else {
++		/* Watchpoint */
++		ctrl_reg = AARCH64_DBG_REG_WCR;
++		val_reg = AARCH64_DBG_REG_WVR;
++		slots = __get_cpu_var(wp_on_reg);
++		max_slots = core_num_wrps;
++		reg_enable = !debug_info->wps_disabled;
++	}
++
++	for (i = 0; i < max_slots; ++i) {
++		slot = &slots[i];
++
++		if (!*slot) {
++			*slot = bp;
++			break;
++		}
++	}
++
++	if (WARN_ONCE(i == max_slots, "Can't find any breakpoint slot"))
++		return -ENOSPC;
++
++	/* Ensure debug monitors are enabled at the correct exception level.  */
++	enable_debug_monitors(debug_exception_level(info->ctrl.privilege));
++
++	/* Setup the address register. */
++	write_wb_reg(val_reg, i, info->address);
++
++	/* Setup the control register. */
++	ctrl = encode_ctrl_reg(info->ctrl);
++	write_wb_reg(ctrl_reg, i, reg_enable ? ctrl | 0x1 : ctrl & ~0x1);
++
++	return 0;
++}
++
++void arch_uninstall_hw_breakpoint(struct perf_event *bp)
++{
++	struct arch_hw_breakpoint *info = counter_arch_bp(bp);
++	struct perf_event **slot, **slots;
++	int i, max_slots, base;
++
++	if (info->ctrl.type == ARM_BREAKPOINT_EXECUTE) {
++		/* Breakpoint */
++		base = AARCH64_DBG_REG_BCR;
++		slots = __get_cpu_var(bp_on_reg);
++		max_slots = core_num_brps;
++	} else {
++		/* Watchpoint */
++		base = AARCH64_DBG_REG_WCR;
++		slots = __get_cpu_var(wp_on_reg);
++		max_slots = core_num_wrps;
++	}
++
++	/* Remove the breakpoint. */
++	for (i = 0; i < max_slots; ++i) {
++		slot = &slots[i];
++
++		if (*slot == bp) {
++			*slot = NULL;
++			break;
++		}
++	}
++
++	if (WARN_ONCE(i == max_slots, "Can't find any breakpoint slot"))
++		return;
++
++	/* Reset the control register. */
++	write_wb_reg(base, i, 0);
++
++	/* Release the debug monitors for the correct exception level.  */
++	disable_debug_monitors(debug_exception_level(info->ctrl.privilege));
++}
++
++static int get_hbp_len(u8 hbp_len)
++{
++	unsigned int len_in_bytes = 0;
++
++	switch (hbp_len) {
++	case ARM_BREAKPOINT_LEN_1:
++		len_in_bytes = 1;
++		break;
++	case ARM_BREAKPOINT_LEN_2:
++		len_in_bytes = 2;
++		break;
++	case ARM_BREAKPOINT_LEN_4:
++		len_in_bytes = 4;
++		break;
++	case ARM_BREAKPOINT_LEN_8:
++		len_in_bytes = 8;
++		break;
++	}
++
++	return len_in_bytes;
++}
++
++/*
++ * Check whether bp virtual address is in kernel space.
++ */
++int arch_check_bp_in_kernelspace(struct perf_event *bp)
++{
++	unsigned int len;
++	unsigned long va;
++	struct arch_hw_breakpoint *info = counter_arch_bp(bp);
++
++	va = info->address;
++	len = get_hbp_len(info->ctrl.len);
++
++	return (va >= TASK_SIZE) && ((va + len - 1) >= TASK_SIZE);
++}
++
++/*
++ * Extract generic type and length encodings from an arch_hw_breakpoint_ctrl.
++ * Hopefully this will disappear when ptrace can bypass the conversion
++ * to generic breakpoint descriptions.
++ */
++int arch_bp_generic_fields(struct arch_hw_breakpoint_ctrl ctrl,
++			   int *gen_len, int *gen_type)
++{
++	/* Type */
++	switch (ctrl.type) {
++	case ARM_BREAKPOINT_EXECUTE:
++		*gen_type = HW_BREAKPOINT_X;
++		break;
++	case ARM_BREAKPOINT_LOAD:
++		*gen_type = HW_BREAKPOINT_R;
++		break;
++	case ARM_BREAKPOINT_STORE:
++		*gen_type = HW_BREAKPOINT_W;
++		break;
++	case ARM_BREAKPOINT_LOAD | ARM_BREAKPOINT_STORE:
++		*gen_type = HW_BREAKPOINT_RW;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	/* Len */
++	switch (ctrl.len) {
++	case ARM_BREAKPOINT_LEN_1:
++		*gen_len = HW_BREAKPOINT_LEN_1;
++		break;
++	case ARM_BREAKPOINT_LEN_2:
++		*gen_len = HW_BREAKPOINT_LEN_2;
++		break;
++	case ARM_BREAKPOINT_LEN_4:
++		*gen_len = HW_BREAKPOINT_LEN_4;
++		break;
++	case ARM_BREAKPOINT_LEN_8:
++		*gen_len = HW_BREAKPOINT_LEN_8;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++/*
++ * Construct an arch_hw_breakpoint from a perf_event.
++ */
++static int arch_build_bp_info(struct perf_event *bp)
++{
++	struct arch_hw_breakpoint *info = counter_arch_bp(bp);
++
++	/* Type */
++	switch (bp->attr.bp_type) {
++	case HW_BREAKPOINT_X:
++		info->ctrl.type = ARM_BREAKPOINT_EXECUTE;
++		break;
++	case HW_BREAKPOINT_R:
++		info->ctrl.type = ARM_BREAKPOINT_LOAD;
++		break;
++	case HW_BREAKPOINT_W:
++		info->ctrl.type = ARM_BREAKPOINT_STORE;
++		break;
++	case HW_BREAKPOINT_RW:
++		info->ctrl.type = ARM_BREAKPOINT_LOAD | ARM_BREAKPOINT_STORE;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	/* Len */
++	switch (bp->attr.bp_len) {
++	case HW_BREAKPOINT_LEN_1:
++		info->ctrl.len = ARM_BREAKPOINT_LEN_1;
++		break;
++	case HW_BREAKPOINT_LEN_2:
++		info->ctrl.len = ARM_BREAKPOINT_LEN_2;
++		break;
++	case HW_BREAKPOINT_LEN_4:
++		info->ctrl.len = ARM_BREAKPOINT_LEN_4;
++		break;
++	case HW_BREAKPOINT_LEN_8:
++		info->ctrl.len = ARM_BREAKPOINT_LEN_8;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	/*
++	 * On AArch64, we only permit breakpoints of length 4, whereas
++	 * AArch32 also requires breakpoints of length 2 for Thumb.
++	 * Watchpoints can be of length 1, 2, 4 or 8 bytes.
++	 */
++	if (info->ctrl.type == ARM_BREAKPOINT_EXECUTE) {
++		if (is_compat_task()) {
++			if (info->ctrl.len != ARM_BREAKPOINT_LEN_2 &&
++			    info->ctrl.len != ARM_BREAKPOINT_LEN_4)
++				return -EINVAL;
++		} else if (info->ctrl.len != ARM_BREAKPOINT_LEN_4) {
++			/*
++			 * FIXME: Some tools (I'm looking at you perf) assume
++			 *	  that breakpoints should be sizeof(long). This
++			 *	  is nonsense. For now, we fix up the parameter
++			 *	  but we should probably return -EINVAL instead.
++			 */
++			info->ctrl.len = ARM_BREAKPOINT_LEN_4;
++		}
++	}
++
++	/* Address */
++	info->address = bp->attr.bp_addr;
++
++	/*
++	 * Privilege
++	 * Note that we disallow combined EL0/EL1 breakpoints because
++	 * that would complicate the stepping code.
++	 */
++	if (arch_check_bp_in_kernelspace(bp))
++		info->ctrl.privilege = AARCH64_BREAKPOINT_EL1;
++	else
++		info->ctrl.privilege = AARCH64_BREAKPOINT_EL0;
++
++	/* Enabled? */
++	info->ctrl.enabled = !bp->attr.disabled;
++
++	return 0;
++}
++
++/*
++ * Validate the arch-specific HW Breakpoint register settings.
++ */
++int arch_validate_hwbkpt_settings(struct perf_event *bp)
++{
++	struct arch_hw_breakpoint *info = counter_arch_bp(bp);
++	int ret;
++	u64 alignment_mask, offset;
++
++	/* Build the arch_hw_breakpoint. */
++	ret = arch_build_bp_info(bp);
++	if (ret)
++		return ret;
++
++	/*
++	 * Check address alignment.
++	 * We don't do any clever alignment correction for watchpoints
++	 * because using 64-bit unaligned addresses is deprecated for
++	 * AArch64.
++	 *
++	 * AArch32 tasks expect some simple alignment fixups, so emulate
++	 * that here.
++	 */
++	if (is_compat_task()) {
++		if (info->ctrl.len == ARM_BREAKPOINT_LEN_8)
++			alignment_mask = 0x7;
++		else
++			alignment_mask = 0x3;
++		offset = info->address & alignment_mask;
++		switch (offset) {
++		case 0:
++			/* Aligned */
++			break;
++		case 1:
++			/* Allow single byte watchpoint. */
++			if (info->ctrl.len == ARM_BREAKPOINT_LEN_1)
++				break;
++		case 2:
++			/* Allow halfword watchpoints and breakpoints. */
++			if (info->ctrl.len == ARM_BREAKPOINT_LEN_2)
++				break;
++		default:
++			return -EINVAL;
++		}
++
++		info->address &= ~alignment_mask;
++		info->ctrl.len <<= offset;
++	} else {
++		if (info->ctrl.type == ARM_BREAKPOINT_EXECUTE)
++			alignment_mask = 0x3;
++		else
++			alignment_mask = 0x7;
++		if (info->address & alignment_mask)
++			return -EINVAL;
++	}
++
++	/*
++	 * Disallow per-task kernel breakpoints since these would
++	 * complicate the stepping code.
++	 */
++	if (info->ctrl.privilege == AARCH64_BREAKPOINT_EL1 && bp->hw.bp_target)
++		return -EINVAL;
++
++	return 0;
++}
++
++/*
++ * Enable/disable all of the breakpoints active at the specified
++ * exception level at the register level.
++ * This is used when single-stepping after a breakpoint exception.
++ */
++static void toggle_bp_registers(int reg, enum debug_el el, int enable)
++{
++	int i, max_slots, privilege;
++	u32 ctrl;
++	struct perf_event **slots;
++
++	switch (reg) {
++	case AARCH64_DBG_REG_BCR:
++		slots = __get_cpu_var(bp_on_reg);
++		max_slots = core_num_brps;
++		break;
++	case AARCH64_DBG_REG_WCR:
++		slots = __get_cpu_var(wp_on_reg);
++		max_slots = core_num_wrps;
++		break;
++	default:
++		return;
++	}
++
++	for (i = 0; i < max_slots; ++i) {
++		if (!slots[i])
++			continue;
++
++		privilege = counter_arch_bp(slots[i])->ctrl.privilege;
++		if (debug_exception_level(privilege) != el)
++			continue;
++
++		ctrl = read_wb_reg(reg, i);
++		if (enable)
++			ctrl |= 0x1;
++		else
++			ctrl &= ~0x1;
++		write_wb_reg(reg, i, ctrl);
++	}
++}
++
++/*
++ * Debug exception handlers.
++ */
++static int breakpoint_handler(unsigned long unused, unsigned int esr,
++			      struct pt_regs *regs)
++{
++	int i, step = 0, *kernel_step;
++	u32 ctrl_reg;
++	u64 addr, val;
++	struct perf_event *bp, **slots;
++	struct debug_info *debug_info;
++	struct arch_hw_breakpoint_ctrl ctrl;
++
++	slots = (struct perf_event **)__get_cpu_var(bp_on_reg);
++	addr = instruction_pointer(regs);
++	debug_info = &current->thread.debug;
++
++	for (i = 0; i < core_num_brps; ++i) {
++		rcu_read_lock();
++
++		bp = slots[i];
++
++		if (bp == NULL)
++			goto unlock;
++
++		/* Check if the breakpoint value matches. */
++		val = read_wb_reg(AARCH64_DBG_REG_BVR, i);
++		if (val != (addr & ~0x3))
++			goto unlock;
++
++		/* Possible match, check the byte address select to confirm. */
++		ctrl_reg = read_wb_reg(AARCH64_DBG_REG_BCR, i);
++		decode_ctrl_reg(ctrl_reg, &ctrl);
++		if (!((1 << (addr & 0x3)) & ctrl.len))
++			goto unlock;
++
++		counter_arch_bp(bp)->trigger = addr;
++		perf_bp_event(bp, regs);
++
++		/* Do we need to handle the stepping? */
++		if (!bp->overflow_handler)
++			step = 1;
++unlock:
++		rcu_read_unlock();
++	}
++
++	if (!step)
++		return 0;
++
++	if (user_mode(regs)) {
++		debug_info->bps_disabled = 1;
++		toggle_bp_registers(AARCH64_DBG_REG_BCR, DBG_ACTIVE_EL0, 0);
++
++		/* If we're already stepping a watchpoint, just return. */
++		if (debug_info->wps_disabled)
++			return 0;
++
++		if (test_thread_flag(TIF_SINGLESTEP))
++			debug_info->suspended_step = 1;
++		else
++			user_enable_single_step(current);
++	} else {
++		toggle_bp_registers(AARCH64_DBG_REG_BCR, DBG_ACTIVE_EL1, 0);
++		kernel_step = &__get_cpu_var(stepping_kernel_bp);
++
++		if (*kernel_step != ARM_KERNEL_STEP_NONE)
++			return 0;
++
++		if (kernel_active_single_step()) {
++			*kernel_step = ARM_KERNEL_STEP_SUSPEND;
++		} else {
++			*kernel_step = ARM_KERNEL_STEP_ACTIVE;
++			kernel_enable_single_step(regs);
++		}
++	}
++
++	return 0;
++}
++
++static int watchpoint_handler(unsigned long addr, unsigned int esr,
++			      struct pt_regs *regs)
++{
++	int i, step = 0, *kernel_step, access;
++	u32 ctrl_reg;
++	u64 val, alignment_mask;
++	struct perf_event *wp, **slots;
++	struct debug_info *debug_info;
++	struct arch_hw_breakpoint *info;
++	struct arch_hw_breakpoint_ctrl ctrl;
++
++	slots = (struct perf_event **)__get_cpu_var(wp_on_reg);
++	debug_info = &current->thread.debug;
++
++	for (i = 0; i < core_num_wrps; ++i) {
++		rcu_read_lock();
++
++		wp = slots[i];
++
++		if (wp == NULL)
++			goto unlock;
++
++		info = counter_arch_bp(wp);
++		/* AArch32 watchpoints are either 4 or 8 bytes aligned. */
++		if (is_compat_task()) {
++			if (info->ctrl.len == ARM_BREAKPOINT_LEN_8)
++				alignment_mask = 0x7;
++			else
++				alignment_mask = 0x3;
++		} else {
++			alignment_mask = 0x7;
++		}
++
++		/* Check if the watchpoint value matches. */
++		val = read_wb_reg(AARCH64_DBG_REG_WVR, i);
++		if (val != (addr & ~alignment_mask))
++			goto unlock;
++
++		/* Possible match, check the byte address select to confirm. */
++		ctrl_reg = read_wb_reg(AARCH64_DBG_REG_WCR, i);
++		decode_ctrl_reg(ctrl_reg, &ctrl);
++		if (!((1 << (addr & alignment_mask)) & ctrl.len))
++			goto unlock;
++
++		/*
++		 * Check that the access type matches.
++		 * 0 => load, otherwise => store
++		 */
++		access = (esr & AARCH64_ESR_ACCESS_MASK) ? HW_BREAKPOINT_W :
++			 HW_BREAKPOINT_R;
++		if (!(access & hw_breakpoint_type(wp)))
++			goto unlock;
++
++		info->trigger = addr;
++		perf_bp_event(wp, regs);
++
++		/* Do we need to handle the stepping? */
++		if (!wp->overflow_handler)
++			step = 1;
++
++unlock:
++		rcu_read_unlock();
++	}
++
++	if (!step)
++		return 0;
++
++	/*
++	 * We always disable EL0 watchpoints because the kernel can
++	 * cause these to fire via an unprivileged access.
++	 */
++	toggle_bp_registers(AARCH64_DBG_REG_WCR, DBG_ACTIVE_EL0, 0);
++
++	if (user_mode(regs)) {
++		debug_info->wps_disabled = 1;
++
++		/* If we're already stepping a breakpoint, just return. */
++		if (debug_info->bps_disabled)
++			return 0;
++
++		if (test_thread_flag(TIF_SINGLESTEP))
++			debug_info->suspended_step = 1;
++		else
++			user_enable_single_step(current);
++	} else {
++		toggle_bp_registers(AARCH64_DBG_REG_WCR, DBG_ACTIVE_EL1, 0);
++		kernel_step = &__get_cpu_var(stepping_kernel_bp);
++
++		if (*kernel_step != ARM_KERNEL_STEP_NONE)
++			return 0;
++
++		if (kernel_active_single_step()) {
++			*kernel_step = ARM_KERNEL_STEP_SUSPEND;
++		} else {
++			*kernel_step = ARM_KERNEL_STEP_ACTIVE;
++			kernel_enable_single_step(regs);
++		}
++	}
++
++	return 0;
++}
++
++/*
++ * Handle single-step exception.
++ */
++int reinstall_suspended_bps(struct pt_regs *regs)
++{
++	struct debug_info *debug_info = &current->thread.debug;
++	int handled_exception = 0, *kernel_step;
++
++	kernel_step = &__get_cpu_var(stepping_kernel_bp);
++
++	/*
++	 * Called from single-step exception handler.
++	 * Return 0 if execution can resume, 1 if a SIGTRAP should be
++	 * reported.
++	 */
++	if (user_mode(regs)) {
++		if (debug_info->bps_disabled) {
++			debug_info->bps_disabled = 0;
++			toggle_bp_registers(AARCH64_DBG_REG_BCR, DBG_ACTIVE_EL0, 1);
++			handled_exception = 1;
++		}
++
++		if (debug_info->wps_disabled) {
++			debug_info->wps_disabled = 0;
++			toggle_bp_registers(AARCH64_DBG_REG_WCR, DBG_ACTIVE_EL0, 1);
++			handled_exception = 1;
++		}
++
++		if (handled_exception) {
++			if (debug_info->suspended_step) {
++				debug_info->suspended_step = 0;
++				/* Allow exception handling to fall-through. */
++				handled_exception = 0;
++			} else {
++				user_disable_single_step(current);
++			}
++		}
++	} else if (*kernel_step != ARM_KERNEL_STEP_NONE) {
++		toggle_bp_registers(AARCH64_DBG_REG_BCR, DBG_ACTIVE_EL1, 1);
++		toggle_bp_registers(AARCH64_DBG_REG_WCR, DBG_ACTIVE_EL1, 1);
++
++		if (!debug_info->wps_disabled)
++			toggle_bp_registers(AARCH64_DBG_REG_WCR, DBG_ACTIVE_EL0, 1);
++
++		if (*kernel_step != ARM_KERNEL_STEP_SUSPEND) {
++			kernel_disable_single_step();
++			handled_exception = 1;
++		} else {
++			handled_exception = 0;
++		}
++
++		*kernel_step = ARM_KERNEL_STEP_NONE;
++	}
++
++	return !handled_exception;
++}
++
++/*
++ * Context-switcher for restoring suspended breakpoints.
++ */
++void hw_breakpoint_thread_switch(struct task_struct *next)
++{
++	/*
++	 *           current        next
++	 * disabled: 0              0     => The usual case, NOTIFY_DONE
++	 *           0              1     => Disable the registers
++	 *           1              0     => Enable the registers
++	 *           1              1     => NOTIFY_DONE. per-task bps will
++	 *                                   get taken care of by perf.
++	 */
++
++	struct debug_info *current_debug_info, *next_debug_info;
++
++	current_debug_info = &current->thread.debug;
++	next_debug_info = &next->thread.debug;
++
++	/* Update breakpoints. */
++	if (current_debug_info->bps_disabled != next_debug_info->bps_disabled)
++		toggle_bp_registers(AARCH64_DBG_REG_BCR,
++				    DBG_ACTIVE_EL0,
++				    !next_debug_info->bps_disabled);
++
++	/* Update watchpoints. */
++	if (current_debug_info->wps_disabled != next_debug_info->wps_disabled)
++		toggle_bp_registers(AARCH64_DBG_REG_WCR,
++				    DBG_ACTIVE_EL0,
++				    !next_debug_info->wps_disabled);
++}
++
++/*
++ * CPU initialisation.
++ */
++static void reset_ctrl_regs(void *unused)
++{
++	int i;
++
++	for (i = 0; i < core_num_brps; ++i) {
++		write_wb_reg(AARCH64_DBG_REG_BCR, i, 0UL);
++		write_wb_reg(AARCH64_DBG_REG_BVR, i, 0UL);
++	}
++
++	for (i = 0; i < core_num_wrps; ++i) {
++		write_wb_reg(AARCH64_DBG_REG_WCR, i, 0UL);
++		write_wb_reg(AARCH64_DBG_REG_WVR, i, 0UL);
++	}
++}
++
++static int __cpuinit hw_breakpoint_reset_notify(struct notifier_block *self,
++						unsigned long action,
++						void *hcpu)
++{
++	int cpu = (long)hcpu;
++	if (action == CPU_ONLINE)
++		smp_call_function_single(cpu, reset_ctrl_regs, NULL, 1);
++	return NOTIFY_OK;
++}
++
++static struct notifier_block __cpuinitdata hw_breakpoint_reset_nb = {
++	.notifier_call = hw_breakpoint_reset_notify,
++};
++
++/*
++ * One-time initialisation.
++ */
++static int __init arch_hw_breakpoint_init(void)
++{
++	core_num_brps = get_num_brps();
++	core_num_wrps = get_num_wrps();
++
++	pr_info("found %d breakpoint and %d watchpoint registers.\n",
++		core_num_brps, core_num_wrps);
++
++	/*
++	 * Reset the breakpoint resources. We assume that a halting
++	 * debugger will leave the world in a nice state for us.
++	 */
++	smp_call_function(reset_ctrl_regs, NULL, 1);
++	reset_ctrl_regs(NULL);
++
++	/* Register debug fault handlers. */
++	hook_debug_fault_code(DBG_ESR_EVT_HWBP, breakpoint_handler, SIGTRAP,
++			      TRAP_HWBKPT, "hw-breakpoint handler");
++	hook_debug_fault_code(DBG_ESR_EVT_HWWP, watchpoint_handler, SIGTRAP,
++			      TRAP_HWBKPT, "hw-watchpoint handler");
++
++	/* Register hotplug notifier. */
++	register_cpu_notifier(&hw_breakpoint_reset_nb);
++
++	return 0;
++}
++arch_initcall(arch_hw_breakpoint_init);
++
++void hw_breakpoint_pmu_read(struct perf_event *bp)
++{
++}
++
++/*
++ * Dummy function to register with die_notifier.
++ */
++int hw_breakpoint_exceptions_notify(struct notifier_block *unused,
++				    unsigned long val, void *data)
++{
++	return NOTIFY_DONE;
++}
+diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
+new file mode 100644
+index 0000000..9e1e200
+--- /dev/null
++++ b/arch/arm64/kernel/ptrace.c
+@@ -0,0 +1,1126 @@
++/*
++ * Based on arch/arm/kernel/ptrace.c
++ *
++ * By Ross Biro 1/23/92
++ * edited by Linus Torvalds
++ * ARM modifications Copyright (C) 2000 Russell King
++ * Copyright (C) 2012 ARM Ltd.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
@@ -184,1369 +1489,1124 @@ index 0000000..ecbf2d8
 + * You should have received a copy of the GNU General Public License
 + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
-+#define pr_fmt(fmt) "hw perfevents: " fmt
 +
-+#include <linux/bitmap.h>
-+#include <linux/interrupt.h>
 +#include <linux/kernel.h>
-+#include <linux/export.h>
-+#include <linux/perf_event.h>
-+#include <linux/platform_device.h>
-+#include <linux/spinlock.h>
++#include <linux/sched.h>
++#include <linux/mm.h>
++#include <linux/smp.h>
++#include <linux/ptrace.h>
++#include <linux/user.h>
++#include <linux/security.h>
++#include <linux/init.h>
++#include <linux/signal.h>
 +#include <linux/uaccess.h>
++#include <linux/perf_event.h>
++#include <linux/hw_breakpoint.h>
++#include <linux/regset.h>
++#include <linux/tracehook.h>
++#include <linux/elf.h>
 +
-+#include <asm/cputype.h>
-+#include <asm/irq.h>
-+#include <asm/irq_regs.h>
-+#include <asm/pmu.h>
-+#include <asm/stacktrace.h>
++#include <asm/compat.h>
++#include <asm/debug-monitors.h>
++#include <asm/pgtable.h>
++#include <asm/traps.h>
++#include <asm/system_misc.h>
 +
 +/*
-+ * ARMv8 supports a maximum of 32 events.
-+ * The cycle counter is included in this total.
++ * TODO: does not yet catch signals sent when the child dies.
++ * in exit.c or in signal.c.
 + */
-+#define ARMPMU_MAX_HWEVENTS		32
 +
-+static DEFINE_PER_CPU(struct perf_event * [ARMPMU_MAX_HWEVENTS], hw_events);
-+static DEFINE_PER_CPU(unsigned long [BITS_TO_LONGS(ARMPMU_MAX_HWEVENTS)], used_mask);
-+static DEFINE_PER_CPU(struct pmu_hw_events, cpu_hw_events);
-+
-+#define to_arm_pmu(p) (container_of(p, struct arm_pmu, pmu))
-+
-+/* Set at runtime when we know what CPU type we are. */
-+static struct arm_pmu *cpu_pmu;
-+
-+int
-+armpmu_get_max_events(void)
++/*
++ * Called by kernel/ptrace.c when detaching..
++ */
++void ptrace_disable(struct task_struct *child)
 +{
-+	int max_events = 0;
-+
-+	if (cpu_pmu != NULL)
-+		max_events = cpu_pmu->num_events;
-+
-+	return max_events;
-+}
-+EXPORT_SYMBOL_GPL(armpmu_get_max_events);
-+
-+int perf_num_counters(void)
-+{
-+	return armpmu_get_max_events();
-+}
-+EXPORT_SYMBOL_GPL(perf_num_counters);
-+
-+#define HW_OP_UNSUPPORTED		0xFFFF
-+
-+#define C(_x) \
-+	PERF_COUNT_HW_CACHE_##_x
-+
-+#define CACHE_OP_UNSUPPORTED		0xFFFF
-+
-+static int
-+armpmu_map_cache_event(const unsigned (*cache_map)
-+				      [PERF_COUNT_HW_CACHE_MAX]
-+				      [PERF_COUNT_HW_CACHE_OP_MAX]
-+				      [PERF_COUNT_HW_CACHE_RESULT_MAX],
-+		       u64 config)
-+{
-+	unsigned int cache_type, cache_op, cache_result, ret;
-+
-+	cache_type = (config >>  0) & 0xff;
-+	if (cache_type >= PERF_COUNT_HW_CACHE_MAX)
-+		return -EINVAL;
-+
-+	cache_op = (config >>  8) & 0xff;
-+	if (cache_op >= PERF_COUNT_HW_CACHE_OP_MAX)
-+		return -EINVAL;
-+
-+	cache_result = (config >> 16) & 0xff;
-+	if (cache_result >= PERF_COUNT_HW_CACHE_RESULT_MAX)
-+		return -EINVAL;
-+
-+	ret = (int)(*cache_map)[cache_type][cache_op][cache_result];
-+
-+	if (ret == CACHE_OP_UNSUPPORTED)
-+		return -ENOENT;
-+
-+	return ret;
 +}
 +
-+static int
-+armpmu_map_event(const unsigned (*event_map)[PERF_COUNT_HW_MAX], u64 config)
++/*
++ * Handle hitting a breakpoint.
++ */
++static int ptrace_break(struct pt_regs *regs)
 +{
-+	int mapping = (*event_map)[config];
-+	return mapping == HW_OP_UNSUPPORTED ? -ENOENT : mapping;
-+}
-+
-+static int
-+armpmu_map_raw_event(u32 raw_event_mask, u64 config)
-+{
-+	return (int)(config & raw_event_mask);
-+}
-+
-+static int map_cpu_event(struct perf_event *event,
-+			 const unsigned (*event_map)[PERF_COUNT_HW_MAX],
-+			 const unsigned (*cache_map)
-+					[PERF_COUNT_HW_CACHE_MAX]
-+					[PERF_COUNT_HW_CACHE_OP_MAX]
-+					[PERF_COUNT_HW_CACHE_RESULT_MAX],
-+			 u32 raw_event_mask)
-+{
-+	u64 config = event->attr.config;
-+
-+	switch (event->attr.type) {
-+	case PERF_TYPE_HARDWARE:
-+		return armpmu_map_event(event_map, config);
-+	case PERF_TYPE_HW_CACHE:
-+		return armpmu_map_cache_event(cache_map, config);
-+	case PERF_TYPE_RAW:
-+		return armpmu_map_raw_event(raw_event_mask, config);
-+	}
-+
-+	return -ENOENT;
-+}
-+
-+int
-+armpmu_event_set_period(struct perf_event *event,
-+			struct hw_perf_event *hwc,
-+			int idx)
-+{
-+	struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
-+	s64 left = local64_read(&hwc->period_left);
-+	s64 period = hwc->sample_period;
-+	int ret = 0;
-+
-+	if (unlikely(left <= -period)) {
-+		left = period;
-+		local64_set(&hwc->period_left, left);
-+		hwc->last_period = period;
-+		ret = 1;
-+	}
-+
-+	if (unlikely(left <= 0)) {
-+		left += period;
-+		local64_set(&hwc->period_left, left);
-+		hwc->last_period = period;
-+		ret = 1;
-+	}
-+
-+	if (left > (s64)armpmu->max_period)
-+		left = armpmu->max_period;
-+
-+	local64_set(&hwc->prev_count, (u64)-left);
-+
-+	armpmu->write_counter(idx, (u64)(-left) & 0xffffffff);
-+
-+	perf_event_update_userpage(event);
-+
-+	return ret;
-+}
-+
-+u64
-+armpmu_event_update(struct perf_event *event,
-+		    struct hw_perf_event *hwc,
-+		    int idx)
-+{
-+	struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
-+	u64 delta, prev_raw_count, new_raw_count;
-+
-+again:
-+	prev_raw_count = local64_read(&hwc->prev_count);
-+	new_raw_count = armpmu->read_counter(idx);
-+
-+	if (local64_cmpxchg(&hwc->prev_count, prev_raw_count,
-+			     new_raw_count) != prev_raw_count)
-+		goto again;
-+
-+	delta = (new_raw_count - prev_raw_count) & armpmu->max_period;
-+
-+	local64_add(delta, &event->count);
-+	local64_sub(delta, &hwc->period_left);
-+
-+	return new_raw_count;
-+}
-+
-+static void
-+armpmu_read(struct perf_event *event)
-+{
-+	struct hw_perf_event *hwc = &event->hw;
-+
-+	/* Don't read disabled counters! */
-+	if (hwc->idx < 0)
-+		return;
-+
-+	armpmu_event_update(event, hwc, hwc->idx);
-+}
-+
-+static void
-+armpmu_stop(struct perf_event *event, int flags)
-+{
-+	struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
-+	struct hw_perf_event *hwc = &event->hw;
-+
-+	/*
-+	 * ARM pmu always has to update the counter, so ignore
-+	 * PERF_EF_UPDATE, see comments in armpmu_start().
-+	 */
-+	if (!(hwc->state & PERF_HES_STOPPED)) {
-+		armpmu->disable(hwc, hwc->idx);
-+		barrier(); /* why? */
-+		armpmu_event_update(event, hwc, hwc->idx);
-+		hwc->state |= PERF_HES_STOPPED | PERF_HES_UPTODATE;
-+	}
-+}
-+
-+static void
-+armpmu_start(struct perf_event *event, int flags)
-+{
-+	struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
-+	struct hw_perf_event *hwc = &event->hw;
-+
-+	/*
-+	 * ARM pmu always has to reprogram the period, so ignore
-+	 * PERF_EF_RELOAD, see the comment below.
-+	 */
-+	if (flags & PERF_EF_RELOAD)
-+		WARN_ON_ONCE(!(hwc->state & PERF_HES_UPTODATE));
-+
-+	hwc->state = 0;
-+	/*
-+	 * Set the period again. Some counters can't be stopped, so when we
-+	 * were stopped we simply disabled the IRQ source and the counter
-+	 * may have been left counting. If we don't do this step then we may
-+	 * get an interrupt too soon or *way* too late if the overflow has
-+	 * happened since disabling.
-+	 */
-+	armpmu_event_set_period(event, hwc, hwc->idx);
-+	armpmu->enable(hwc, hwc->idx);
-+}
-+
-+static void
-+armpmu_del(struct perf_event *event, int flags)
-+{
-+	struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
-+	struct pmu_hw_events *hw_events = armpmu->get_hw_events();
-+	struct hw_perf_event *hwc = &event->hw;
-+	int idx = hwc->idx;
-+
-+	WARN_ON(idx < 0);
-+
-+	armpmu_stop(event, PERF_EF_UPDATE);
-+	hw_events->events[idx] = NULL;
-+	clear_bit(idx, hw_events->used_mask);
-+
-+	perf_event_update_userpage(event);
-+}
-+
-+static int
-+armpmu_add(struct perf_event *event, int flags)
-+{
-+	struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
-+	struct pmu_hw_events *hw_events = armpmu->get_hw_events();
-+	struct hw_perf_event *hwc = &event->hw;
-+	int idx;
-+	int err = 0;
-+
-+	perf_pmu_disable(event->pmu);
-+
-+	/* If we don't have a space for the counter then finish early. */
-+	idx = armpmu->get_event_idx(hw_events, hwc);
-+	if (idx < 0) {
-+		err = idx;
-+		goto out;
-+	}
-+
-+	/*
-+	 * If there is an event in the counter we are going to use then make
-+	 * sure it is disabled.
-+	 */
-+	event->hw.idx = idx;
-+	armpmu->disable(hwc, idx);
-+	hw_events->events[idx] = event;
-+
-+	hwc->state = PERF_HES_STOPPED | PERF_HES_UPTODATE;
-+	if (flags & PERF_EF_START)
-+		armpmu_start(event, PERF_EF_RELOAD);
-+
-+	/* Propagate our changes to the userspace mapping. */
-+	perf_event_update_userpage(event);
-+
-+out:
-+	perf_pmu_enable(event->pmu);
-+	return err;
-+}
-+
-+static int
-+validate_event(struct pmu_hw_events *hw_events,
-+	       struct perf_event *event)
-+{
-+	struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
-+	struct hw_perf_event fake_event = event->hw;
-+	struct pmu *leader_pmu = event->group_leader->pmu;
-+
-+	if (event->pmu != leader_pmu || event->state <= PERF_EVENT_STATE_OFF)
-+		return 1;
-+
-+	return armpmu->get_event_idx(hw_events, &fake_event) >= 0;
-+}
-+
-+static int
-+validate_group(struct perf_event *event)
-+{
-+	struct perf_event *sibling, *leader = event->group_leader;
-+	struct pmu_hw_events fake_pmu;
-+	DECLARE_BITMAP(fake_used_mask, ARMPMU_MAX_HWEVENTS);
-+
-+	/*
-+	 * Initialise the fake PMU. We only need to populate the
-+	 * used_mask for the purposes of validation.
-+	 */
-+	memset(fake_used_mask, 0, sizeof(fake_used_mask));
-+	fake_pmu.used_mask = fake_used_mask;
-+
-+	if (!validate_event(&fake_pmu, leader))
-+		return -EINVAL;
-+
-+	list_for_each_entry(sibling, &leader->sibling_list, group_entry) {
-+		if (!validate_event(&fake_pmu, sibling))
-+			return -EINVAL;
-+	}
-+
-+	if (!validate_event(&fake_pmu, event))
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
-+static void
-+armpmu_release_hardware(struct arm_pmu *armpmu)
-+{
-+	int i, irq, irqs;
-+	struct platform_device *pmu_device = armpmu->plat_device;
-+
-+	irqs = min(pmu_device->num_resources, num_possible_cpus());
-+
-+	for (i = 0; i < irqs; ++i) {
-+		if (!cpumask_test_and_clear_cpu(i, &armpmu->active_irqs))
-+			continue;
-+		irq = platform_get_irq(pmu_device, i);
-+		if (irq >= 0)
-+			free_irq(irq, armpmu);
-+	}
-+}
-+
-+static int
-+armpmu_reserve_hardware(struct arm_pmu *armpmu)
-+{
-+	int i, err, irq, irqs;
-+	struct platform_device *pmu_device = armpmu->plat_device;
-+
-+	if (!pmu_device) {
-+		pr_err("no PMU device registered\n");
-+		return -ENODEV;
-+	}
-+
-+	irqs = min(pmu_device->num_resources, num_possible_cpus());
-+	if (irqs < 1) {
-+		pr_err("no irqs for PMUs defined\n");
-+		return -ENODEV;
-+	}
-+
-+	for (i = 0; i < irqs; ++i) {
-+		err = 0;
-+		irq = platform_get_irq(pmu_device, i);
-+		if (irq < 0)
-+			continue;
-+
-+		/*
-+		 * If we have a single PMU interrupt that we can't shift,
-+		 * assume that we're running on a uniprocessor machine and
-+		 * continue. Otherwise, continue without this interrupt.
-+		 */
-+		if (irq_set_affinity(irq, cpumask_of(i)) && irqs > 1) {
-+			pr_warning("unable to set irq affinity (irq=%d, cpu=%u)\n",
-+				    irq, i);
-+			continue;
-+		}
-+
-+		err = request_irq(irq, armpmu->handle_irq,
-+				  IRQF_NOBALANCING,
-+				  "arm-pmu", armpmu);
-+		if (err) {
-+			pr_err("unable to request IRQ%d for ARM PMU counters\n",
-+				irq);
-+			armpmu_release_hardware(armpmu);
-+			return err;
-+		}
-+
-+		cpumask_set_cpu(i, &armpmu->active_irqs);
-+	}
-+
-+	return 0;
-+}
-+
-+static void
-+hw_perf_event_destroy(struct perf_event *event)
-+{
-+	struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
-+	atomic_t *active_events	 = &armpmu->active_events;
-+	struct mutex *pmu_reserve_mutex = &armpmu->reserve_mutex;
-+
-+	if (atomic_dec_and_mutex_lock(active_events, pmu_reserve_mutex)) {
-+		armpmu_release_hardware(armpmu);
-+		mutex_unlock(pmu_reserve_mutex);
-+	}
-+}
-+
-+static int
-+event_requires_mode_exclusion(struct perf_event_attr *attr)
-+{
-+	return attr->exclude_idle || attr->exclude_user ||
-+	       attr->exclude_kernel || attr->exclude_hv;
-+}
-+
-+static int
-+__hw_perf_event_init(struct perf_event *event)
-+{
-+	struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
-+	struct hw_perf_event *hwc = &event->hw;
-+	int mapping, err;
-+
-+	mapping = armpmu->map_event(event);
-+
-+	if (mapping < 0) {
-+		pr_debug("event %x:%llx not supported\n", event->attr.type,
-+			 event->attr.config);
-+		return mapping;
-+	}
-+
-+	/*
-+	 * We don't assign an index until we actually place the event onto
-+	 * hardware. Use -1 to signify that we haven't decided where to put it
-+	 * yet. For SMP systems, each core has it's own PMU so we can't do any
-+	 * clever allocation or constraints checking at this point.
-+	 */
-+	hwc->idx		= -1;
-+	hwc->config_base	= 0;
-+	hwc->config		= 0;
-+	hwc->event_base		= 0;
-+
-+	/*
-+	 * Check whether we need to exclude the counter from certain modes.
-+	 */
-+	if ((!armpmu->set_event_filter ||
-+	     armpmu->set_event_filter(hwc, &event->attr)) &&
-+	     event_requires_mode_exclusion(&event->attr)) {
-+		pr_debug("ARM performance counters do not support mode exclusion\n");
-+		return -EPERM;
-+	}
-+
-+	/*
-+	 * Store the event encoding into the config_base field.
-+	 */
-+	hwc->config_base	    |= (unsigned long)mapping;
-+
-+	if (!hwc->sample_period) {
-+		/*
-+		 * For non-sampling runs, limit the sample_period to half
-+		 * of the counter width. That way, the new counter value
-+		 * is far less likely to overtake the previous one unless
-+		 * you have some serious IRQ latency issues.
-+		 */
-+		hwc->sample_period  = armpmu->max_period >> 1;
-+		hwc->last_period    = hwc->sample_period;
-+		local64_set(&hwc->period_left, hwc->sample_period);
-+	}
-+
-+	err = 0;
-+	if (event->group_leader != event) {
-+		err = validate_group(event);
-+		if (err)
-+			return -EINVAL;
-+	}
-+
-+	return err;
-+}
-+
-+static int armpmu_event_init(struct perf_event *event)
-+{
-+	struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
-+	int err = 0;
-+	atomic_t *active_events = &armpmu->active_events;
-+
-+	if (armpmu->map_event(event) == -ENOENT)
-+		return -ENOENT;
-+
-+	event->destroy = hw_perf_event_destroy;
-+
-+	if (!atomic_inc_not_zero(active_events)) {
-+		mutex_lock(&armpmu->reserve_mutex);
-+		if (atomic_read(active_events) == 0)
-+			err = armpmu_reserve_hardware(armpmu);
-+
-+		if (!err)
-+			atomic_inc(active_events);
-+		mutex_unlock(&armpmu->reserve_mutex);
-+	}
-+
-+	if (err)
-+		return err;
-+
-+	err = __hw_perf_event_init(event);
-+	if (err)
-+		hw_perf_event_destroy(event);
-+
-+	return err;
-+}
-+
-+static void armpmu_enable(struct pmu *pmu)
-+{
-+	struct arm_pmu *armpmu = to_arm_pmu(pmu);
-+	struct pmu_hw_events *hw_events = armpmu->get_hw_events();
-+	int enabled = bitmap_weight(hw_events->used_mask, armpmu->num_events);
-+
-+	if (enabled)
-+		armpmu->start();
-+}
-+
-+static void armpmu_disable(struct pmu *pmu)
-+{
-+	struct arm_pmu *armpmu = to_arm_pmu(pmu);
-+	armpmu->stop();
-+}
-+
-+static void __init armpmu_init(struct arm_pmu *armpmu)
-+{
-+	atomic_set(&armpmu->active_events, 0);
-+	mutex_init(&armpmu->reserve_mutex);
-+
-+	armpmu->pmu = (struct pmu) {
-+		.pmu_enable	= armpmu_enable,
-+		.pmu_disable	= armpmu_disable,
-+		.event_init	= armpmu_event_init,
-+		.add		= armpmu_add,
-+		.del		= armpmu_del,
-+		.start		= armpmu_start,
-+		.stop		= armpmu_stop,
-+		.read		= armpmu_read,
++	siginfo_t info = {
++		.si_signo = SIGTRAP,
++		.si_errno = 0,
++		.si_code  = TRAP_BRKPT,
++		.si_addr  = (void __user *)instruction_pointer(regs),
 +	};
-+}
 +
-+int __init armpmu_register(struct arm_pmu *armpmu, char *name, int type)
-+{
-+	armpmu_init(armpmu);
-+	return perf_pmu_register(&armpmu->pmu, name, type);
-+}
-+
-+/*
-+ * ARMv8 PMUv3 Performance Events handling code.
-+ * Common event types.
-+ */
-+enum armv8_pmuv3_perf_types {
-+	/* Required events. */
-+	ARMV8_PMUV3_PERFCTR_PMNC_SW_INCR			= 0x00,
-+	ARMV8_PMUV3_PERFCTR_L1_DCACHE_REFILL			= 0x03,
-+	ARMV8_PMUV3_PERFCTR_L1_DCACHE_ACCESS			= 0x04,
-+	ARMV8_PMUV3_PERFCTR_PC_BRANCH_MIS_PRED			= 0x10,
-+	ARMV8_PMUV3_PERFCTR_CLOCK_CYCLES			= 0x11,
-+	ARMV8_PMUV3_PERFCTR_PC_BRANCH_PRED			= 0x12,
-+
-+	/* At least one of the following is required. */
-+	ARMV8_PMUV3_PERFCTR_INSTR_EXECUTED			= 0x08,
-+	ARMV8_PMUV3_PERFCTR_OP_SPEC				= 0x1B,
-+
-+	/* Common architectural events. */
-+	ARMV8_PMUV3_PERFCTR_MEM_READ				= 0x06,
-+	ARMV8_PMUV3_PERFCTR_MEM_WRITE				= 0x07,
-+	ARMV8_PMUV3_PERFCTR_EXC_TAKEN				= 0x09,
-+	ARMV8_PMUV3_PERFCTR_EXC_EXECUTED			= 0x0A,
-+	ARMV8_PMUV3_PERFCTR_CID_WRITE				= 0x0B,
-+	ARMV8_PMUV3_PERFCTR_PC_WRITE				= 0x0C,
-+	ARMV8_PMUV3_PERFCTR_PC_IMM_BRANCH			= 0x0D,
-+	ARMV8_PMUV3_PERFCTR_PC_PROC_RETURN			= 0x0E,
-+	ARMV8_PMUV3_PERFCTR_MEM_UNALIGNED_ACCESS		= 0x0F,
-+	ARMV8_PMUV3_PERFCTR_TTBR_WRITE				= 0x1C,
-+
-+	/* Common microarchitectural events. */
-+	ARMV8_PMUV3_PERFCTR_L1_ICACHE_REFILL			= 0x01,
-+	ARMV8_PMUV3_PERFCTR_ITLB_REFILL				= 0x02,
-+	ARMV8_PMUV3_PERFCTR_DTLB_REFILL				= 0x05,
-+	ARMV8_PMUV3_PERFCTR_MEM_ACCESS				= 0x13,
-+	ARMV8_PMUV3_PERFCTR_L1_ICACHE_ACCESS			= 0x14,
-+	ARMV8_PMUV3_PERFCTR_L1_DCACHE_WB			= 0x15,
-+	ARMV8_PMUV3_PERFCTR_L2_CACHE_ACCESS			= 0x16,
-+	ARMV8_PMUV3_PERFCTR_L2_CACHE_REFILL			= 0x17,
-+	ARMV8_PMUV3_PERFCTR_L2_CACHE_WB				= 0x18,
-+	ARMV8_PMUV3_PERFCTR_BUS_ACCESS				= 0x19,
-+	ARMV8_PMUV3_PERFCTR_MEM_ERROR				= 0x1A,
-+	ARMV8_PMUV3_PERFCTR_BUS_CYCLES				= 0x1D,
-+
-+	/*
-+	 * This isn't an architected event.
-+	 * We detect this event number and use the cycle counter instead.
-+	 */
-+	ARMV8_PMUV3_PERFCTR_CPU_CYCLES				= 0xFF,
-+};
-+
-+/* PMUv3 HW events mapping. */
-+static const unsigned armv8_pmuv3_perf_map[PERF_COUNT_HW_MAX] = {
-+	[PERF_COUNT_HW_CPU_CYCLES]		= ARMV8_PMUV3_PERFCTR_CPU_CYCLES,
-+	[PERF_COUNT_HW_INSTRUCTIONS]		= ARMV8_PMUV3_PERFCTR_INSTR_EXECUTED,
-+	[PERF_COUNT_HW_CACHE_REFERENCES]	= ARMV8_PMUV3_PERFCTR_L1_DCACHE_ACCESS,
-+	[PERF_COUNT_HW_CACHE_MISSES]		= ARMV8_PMUV3_PERFCTR_L1_DCACHE_REFILL,
-+	[PERF_COUNT_HW_BRANCH_INSTRUCTIONS]	= HW_OP_UNSUPPORTED,
-+	[PERF_COUNT_HW_BRANCH_MISSES]		= ARMV8_PMUV3_PERFCTR_PC_BRANCH_MIS_PRED,
-+	[PERF_COUNT_HW_BUS_CYCLES]		= HW_OP_UNSUPPORTED,
-+	[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND]	= HW_OP_UNSUPPORTED,
-+	[PERF_COUNT_HW_STALLED_CYCLES_BACKEND]	= HW_OP_UNSUPPORTED,
-+};
-+
-+static const unsigned armv8_pmuv3_perf_cache_map[PERF_COUNT_HW_CACHE_MAX]
-+						[PERF_COUNT_HW_CACHE_OP_MAX]
-+						[PERF_COUNT_HW_CACHE_RESULT_MAX] = {
-+	[C(L1D)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= ARMV8_PMUV3_PERFCTR_L1_DCACHE_ACCESS,
-+			[C(RESULT_MISS)]	= ARMV8_PMUV3_PERFCTR_L1_DCACHE_REFILL,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= ARMV8_PMUV3_PERFCTR_L1_DCACHE_ACCESS,
-+			[C(RESULT_MISS)]	= ARMV8_PMUV3_PERFCTR_L1_DCACHE_REFILL,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
-+	[C(L1I)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
-+	[C(LL)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
-+	[C(DTLB)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
-+	[C(ITLB)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
-+	[C(BPU)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= ARMV8_PMUV3_PERFCTR_PC_BRANCH_PRED,
-+			[C(RESULT_MISS)]	= ARMV8_PMUV3_PERFCTR_PC_BRANCH_MIS_PRED,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= ARMV8_PMUV3_PERFCTR_PC_BRANCH_PRED,
-+			[C(RESULT_MISS)]	= ARMV8_PMUV3_PERFCTR_PC_BRANCH_MIS_PRED,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
-+	[C(NODE)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
-+};
-+
-+/*
-+ * Perf Events' indices
-+ */
-+#define	ARMV8_IDX_CYCLE_COUNTER	0
-+#define	ARMV8_IDX_COUNTER0	1
-+#define	ARMV8_IDX_COUNTER_LAST	(ARMV8_IDX_CYCLE_COUNTER + cpu_pmu->num_events - 1)
-+
-+#define	ARMV8_MAX_COUNTERS	32
-+#define	ARMV8_COUNTER_MASK	(ARMV8_MAX_COUNTERS - 1)
-+
-+/*
-+ * ARMv8 low level PMU access
-+ */
-+
-+/*
-+ * Perf Event to low level counters mapping
-+ */
-+#define	ARMV8_IDX_TO_COUNTER(x)	\
-+	(((x) - ARMV8_IDX_COUNTER0) & ARMV8_COUNTER_MASK)
-+
-+/*
-+ * Per-CPU PMCR: config reg
-+ */
-+#define ARMV8_PMCR_E		(1 << 0) /* Enable all counters */
-+#define ARMV8_PMCR_P		(1 << 1) /* Reset all counters */
-+#define ARMV8_PMCR_C		(1 << 2) /* Cycle counter reset */
-+#define ARMV8_PMCR_D		(1 << 3) /* CCNT counts every 64th cpu cycle */
-+#define ARMV8_PMCR_X		(1 << 4) /* Export to ETM */
-+#define ARMV8_PMCR_DP		(1 << 5) /* Disable CCNT if non-invasive debug*/
-+#define	ARMV8_PMCR_N_SHIFT	11	 /* Number of counters supported */
-+#define	ARMV8_PMCR_N_MASK	0x1f
-+#define	ARMV8_PMCR_MASK		0x3f	 /* Mask for writable bits */
-+
-+/*
-+ * PMOVSR: counters overflow flag status reg
-+ */
-+#define	ARMV8_OVSR_MASK		0xffffffff	/* Mask for writable bits */
-+#define	ARMV8_OVERFLOWED_MASK	ARMV8_OVSR_MASK
-+
-+/*
-+ * PMXEVTYPER: Event selection reg
-+ */
-+#define	ARMV8_EVTYPE_MASK	0xc00000ff	/* Mask for writable bits */
-+#define	ARMV8_EVTYPE_EVENT	0xff		/* Mask for EVENT bits */
-+
-+/*
-+ * Event filters for PMUv3
-+ */
-+#define	ARMV8_EXCLUDE_EL1	(1 << 31)
-+#define	ARMV8_EXCLUDE_EL0	(1 << 30)
-+#define	ARMV8_INCLUDE_EL2	(1 << 27)
-+
-+static inline u32 armv8pmu_pmcr_read(void)
-+{
-+	u32 val;
-+	asm volatile("mrs %0, pmcr_el0" : "=r" (val));
-+	return val;
-+}
-+
-+static inline void armv8pmu_pmcr_write(u32 val)
-+{
-+	val &= ARMV8_PMCR_MASK;
-+	isb();
-+	asm volatile("msr pmcr_el0, %0" :: "r" (val));
-+}
-+
-+static inline int armv8pmu_has_overflowed(u32 pmovsr)
-+{
-+	return pmovsr & ARMV8_OVERFLOWED_MASK;
-+}
-+
-+static inline int armv8pmu_counter_valid(int idx)
-+{
-+	return idx >= ARMV8_IDX_CYCLE_COUNTER && idx <= ARMV8_IDX_COUNTER_LAST;
-+}
-+
-+static inline int armv8pmu_counter_has_overflowed(u32 pmnc, int idx)
-+{
-+	int ret = 0;
-+	u32 counter;
-+
-+	if (!armv8pmu_counter_valid(idx)) {
-+		pr_err("CPU%u checking wrong counter %d overflow status\n",
-+			smp_processor_id(), idx);
-+	} else {
-+		counter = ARMV8_IDX_TO_COUNTER(idx);
-+		ret = pmnc & BIT(counter);
-+	}
-+
-+	return ret;
-+}
-+
-+static inline int armv8pmu_select_counter(int idx)
-+{
-+	u32 counter;
-+
-+	if (!armv8pmu_counter_valid(idx)) {
-+		pr_err("CPU%u selecting wrong PMNC counter %d\n",
-+			smp_processor_id(), idx);
-+		return -EINVAL;
-+	}
-+
-+	counter = ARMV8_IDX_TO_COUNTER(idx);
-+	asm volatile("msr pmselr_el0, %0" :: "r" (counter));
-+	isb();
-+
-+	return idx;
-+}
-+
-+static inline u32 armv8pmu_read_counter(int idx)
-+{
-+	u32 value = 0;
-+
-+	if (!armv8pmu_counter_valid(idx))
-+		pr_err("CPU%u reading wrong counter %d\n",
-+			smp_processor_id(), idx);
-+	else if (idx == ARMV8_IDX_CYCLE_COUNTER)
-+		asm volatile("mrs %0, pmccntr_el0" : "=r" (value));
-+	else if (armv8pmu_select_counter(idx) == idx)
-+		asm volatile("mrs %0, pmxevcntr_el0" : "=r" (value));
-+
-+	return value;
-+}
-+
-+static inline void armv8pmu_write_counter(int idx, u32 value)
-+{
-+	if (!armv8pmu_counter_valid(idx))
-+		pr_err("CPU%u writing wrong counter %d\n",
-+			smp_processor_id(), idx);
-+	else if (idx == ARMV8_IDX_CYCLE_COUNTER)
-+		asm volatile("msr pmccntr_el0, %0" :: "r" (value));
-+	else if (armv8pmu_select_counter(idx) == idx)
-+		asm volatile("msr pmxevcntr_el0, %0" :: "r" (value));
-+}
-+
-+static inline void armv8pmu_write_evtype(int idx, u32 val)
-+{
-+	if (armv8pmu_select_counter(idx) == idx) {
-+		val &= ARMV8_EVTYPE_MASK;
-+		asm volatile("msr pmxevtyper_el0, %0" :: "r" (val));
-+	}
-+}
-+
-+static inline int armv8pmu_enable_counter(int idx)
-+{
-+	u32 counter;
-+
-+	if (!armv8pmu_counter_valid(idx)) {
-+		pr_err("CPU%u enabling wrong PMNC counter %d\n",
-+			smp_processor_id(), idx);
-+		return -EINVAL;
-+	}
-+
-+	counter = ARMV8_IDX_TO_COUNTER(idx);
-+	asm volatile("msr pmcntenset_el0, %0" :: "r" (BIT(counter)));
-+	return idx;
-+}
-+
-+static inline int armv8pmu_disable_counter(int idx)
-+{
-+	u32 counter;
-+
-+	if (!armv8pmu_counter_valid(idx)) {
-+		pr_err("CPU%u disabling wrong PMNC counter %d\n",
-+			smp_processor_id(), idx);
-+		return -EINVAL;
-+	}
-+
-+	counter = ARMV8_IDX_TO_COUNTER(idx);
-+	asm volatile("msr pmcntenclr_el0, %0" :: "r" (BIT(counter)));
-+	return idx;
-+}
-+
-+static inline int armv8pmu_enable_intens(int idx)
-+{
-+	u32 counter;
-+
-+	if (!armv8pmu_counter_valid(idx)) {
-+		pr_err("CPU%u enabling wrong PMNC counter IRQ enable %d\n",
-+			smp_processor_id(), idx);
-+		return -EINVAL;
-+	}
-+
-+	counter = ARMV8_IDX_TO_COUNTER(idx);
-+	asm volatile("msr pmintenset_el1, %0" :: "r" (BIT(counter)));
-+	return idx;
-+}
-+
-+static inline int armv8pmu_disable_intens(int idx)
-+{
-+	u32 counter;
-+
-+	if (!armv8pmu_counter_valid(idx)) {
-+		pr_err("CPU%u disabling wrong PMNC counter IRQ enable %d\n",
-+			smp_processor_id(), idx);
-+		return -EINVAL;
-+	}
-+
-+	counter = ARMV8_IDX_TO_COUNTER(idx);
-+	asm volatile("msr pmintenclr_el1, %0" :: "r" (BIT(counter)));
-+	isb();
-+	/* Clear the overflow flag in case an interrupt is pending. */
-+	asm volatile("msr pmovsclr_el0, %0" :: "r" (BIT(counter)));
-+	isb();
-+	return idx;
-+}
-+
-+static inline u32 armv8pmu_getreset_flags(void)
-+{
-+	u32 value;
-+
-+	/* Read */
-+	asm volatile("mrs %0, pmovsclr_el0" : "=r" (value));
-+
-+	/* Write to clear flags */
-+	value &= ARMV8_OVSR_MASK;
-+	asm volatile("msr pmovsclr_el0, %0" :: "r" (value));
-+
-+	return value;
-+}
-+
-+static void armv8pmu_enable_event(struct hw_perf_event *hwc, int idx)
-+{
-+	unsigned long flags;
-+	struct pmu_hw_events *events = cpu_pmu->get_hw_events();
-+
-+	/*
-+	 * Enable counter and interrupt, and set the counter to count
-+	 * the event that we're interested in.
-+	 */
-+	raw_spin_lock_irqsave(&events->pmu_lock, flags);
-+
-+	/*
-+	 * Disable counter
-+	 */
-+	armv8pmu_disable_counter(idx);
-+
-+	/*
-+	 * Set event (if destined for PMNx counters).
-+	 */
-+	armv8pmu_write_evtype(idx, hwc->config_base);
-+
-+	/*
-+	 * Enable interrupt for this counter
-+	 */
-+	armv8pmu_enable_intens(idx);
-+
-+	/*
-+	 * Enable counter
-+	 */
-+	armv8pmu_enable_counter(idx);
-+
-+	raw_spin_unlock_irqrestore(&events->pmu_lock, flags);
-+}
-+
-+static void armv8pmu_disable_event(struct hw_perf_event *hwc, int idx)
-+{
-+	unsigned long flags;
-+	struct pmu_hw_events *events = cpu_pmu->get_hw_events();
-+
-+	/*
-+	 * Disable counter and interrupt
-+	 */
-+	raw_spin_lock_irqsave(&events->pmu_lock, flags);
-+
-+	/*
-+	 * Disable counter
-+	 */
-+	armv8pmu_disable_counter(idx);
-+
-+	/*
-+	 * Disable interrupt for this counter
-+	 */
-+	armv8pmu_disable_intens(idx);
-+
-+	raw_spin_unlock_irqrestore(&events->pmu_lock, flags);
-+}
-+
-+static irqreturn_t armv8pmu_handle_irq(int irq_num, void *dev)
-+{
-+	u32 pmovsr;
-+	struct perf_sample_data data;
-+	struct pmu_hw_events *cpuc;
-+	struct pt_regs *regs;
-+	int idx;
-+
-+	/*
-+	 * Get and reset the IRQ flags
-+	 */
-+	pmovsr = armv8pmu_getreset_flags();
-+
-+	/*
-+	 * Did an overflow occur?
-+	 */
-+	if (!armv8pmu_has_overflowed(pmovsr))
-+		return IRQ_NONE;
-+
-+	/*
-+	 * Handle the counter(s) overflow(s)
-+	 */
-+	regs = get_irq_regs();
-+
-+	cpuc = &__get_cpu_var(cpu_hw_events);
-+	for (idx = 0; idx < cpu_pmu->num_events; ++idx) {
-+		struct perf_event *event = cpuc->events[idx];
-+		struct hw_perf_event *hwc;
-+
-+		/* Ignore if we don't have an event. */
-+		if (!event)
-+			continue;
-+
-+		/*
-+		 * We have a single interrupt for all counters. Check that
-+		 * each counter has overflowed before we process it.
-+		 */
-+		if (!armv8pmu_counter_has_overflowed(pmovsr, idx))
-+			continue;
-+
-+		hwc = &event->hw;
-+		armpmu_event_update(event, hwc, idx);
-+		perf_sample_data_init(&data, 0, hwc->last_period);
-+		if (!armpmu_event_set_period(event, hwc, idx))
-+			continue;
-+
-+		if (perf_event_overflow(event, &data, regs))
-+			cpu_pmu->disable(hwc, idx);
-+	}
-+
-+	/*
-+	 * Handle the pending perf events.
-+	 *
-+	 * Note: this call *must* be run with interrupts disabled. For
-+	 * platforms that can have the PMU interrupts raised as an NMI, this
-+	 * will not work.
-+	 */
-+	irq_work_run();
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static void armv8pmu_start(void)
-+{
-+	unsigned long flags;
-+	struct pmu_hw_events *events = cpu_pmu->get_hw_events();
-+
-+	raw_spin_lock_irqsave(&events->pmu_lock, flags);
-+	/* Enable all counters */
-+	armv8pmu_pmcr_write(armv8pmu_pmcr_read() | ARMV8_PMCR_E);
-+	raw_spin_unlock_irqrestore(&events->pmu_lock, flags);
-+}
-+
-+static void armv8pmu_stop(void)
-+{
-+	unsigned long flags;
-+	struct pmu_hw_events *events = cpu_pmu->get_hw_events();
-+
-+	raw_spin_lock_irqsave(&events->pmu_lock, flags);
-+	/* Disable all counters */
-+	armv8pmu_pmcr_write(armv8pmu_pmcr_read() & ~ARMV8_PMCR_E);
-+	raw_spin_unlock_irqrestore(&events->pmu_lock, flags);
-+}
-+
-+static int armv8pmu_get_event_idx(struct pmu_hw_events *cpuc,
-+				  struct hw_perf_event *event)
-+{
-+	int idx;
-+	unsigned long evtype = event->config_base & ARMV8_EVTYPE_EVENT;
-+
-+	/* Always place a cycle counter into the cycle counter. */
-+	if (evtype == ARMV8_PMUV3_PERFCTR_CPU_CYCLES) {
-+		if (test_and_set_bit(ARMV8_IDX_CYCLE_COUNTER, cpuc->used_mask))
-+			return -EAGAIN;
-+
-+		return ARMV8_IDX_CYCLE_COUNTER;
-+	}
-+
-+	/*
-+	 * For anything other than a cycle counter, try and use
-+	 * the events counters
-+	 */
-+	for (idx = ARMV8_IDX_COUNTER0; idx < cpu_pmu->num_events; ++idx) {
-+		if (!test_and_set_bit(idx, cpuc->used_mask))
-+			return idx;
-+	}
-+
-+	/* The counters are all in use. */
-+	return -EAGAIN;
-+}
-+
-+/*
-+ * Add an event filter to a given event. This will only work for PMUv2 PMUs.
-+ */
-+static int armv8pmu_set_event_filter(struct hw_perf_event *event,
-+				     struct perf_event_attr *attr)
-+{
-+	unsigned long config_base = 0;
-+
-+	if (attr->exclude_idle)
-+		return -EPERM;
-+	if (attr->exclude_user)
-+		config_base |= ARMV8_EXCLUDE_EL0;
-+	if (attr->exclude_kernel)
-+		config_base |= ARMV8_EXCLUDE_EL1;
-+	if (!attr->exclude_hv)
-+		config_base |= ARMV8_INCLUDE_EL2;
-+
-+	/*
-+	 * Install the filter into config_base as this is used to
-+	 * construct the event type.
-+	 */
-+	event->config_base = config_base;
-+
++	force_sig_info(SIGTRAP, &info, current);
 +	return 0;
 +}
 +
-+static void armv8pmu_reset(void *info)
++static int arm64_break_trap(unsigned long addr, unsigned int esr,
++			    struct pt_regs *regs)
 +{
-+	u32 idx, nb_cnt = cpu_pmu->num_events;
-+
-+	/* The counter and interrupt enable registers are unknown at reset. */
-+	for (idx = ARMV8_IDX_CYCLE_COUNTER; idx < nb_cnt; ++idx)
-+		armv8pmu_disable_event(NULL, idx);
-+
-+	/* Initialize & Reset PMNC: C and P bits. */
-+	armv8pmu_pmcr_write(ARMV8_PMCR_P | ARMV8_PMCR_C);
-+
-+	/* Disable access from userspace. */
-+	asm volatile("msr pmuserenr_el0, %0" :: "r" (0));
++	return ptrace_break(regs);
 +}
 +
-+static int armv8_pmuv3_map_event(struct perf_event *event)
-+{
-+	return map_cpu_event(event, &armv8_pmuv3_perf_map,
-+				&armv8_pmuv3_perf_cache_map, 0xFF);
-+}
-+
-+static struct arm_pmu armv8pmu = {
-+	.handle_irq		= armv8pmu_handle_irq,
-+	.enable			= armv8pmu_enable_event,
-+	.disable		= armv8pmu_disable_event,
-+	.read_counter		= armv8pmu_read_counter,
-+	.write_counter		= armv8pmu_write_counter,
-+	.get_event_idx		= armv8pmu_get_event_idx,
-+	.start			= armv8pmu_start,
-+	.stop			= armv8pmu_stop,
-+	.reset			= armv8pmu_reset,
-+	.max_period		= (1LLU << 32) - 1,
-+};
-+
-+static u32 __init armv8pmu_read_num_pmnc_events(void)
-+{
-+	u32 nb_cnt;
-+
-+	/* Read the nb of CNTx counters supported from PMNC */
-+	nb_cnt = (armv8pmu_pmcr_read() >> ARMV8_PMCR_N_SHIFT) & ARMV8_PMCR_N_MASK;
-+
-+	/* Add the CPU cycles counter and return */
-+	return nb_cnt + 1;
-+}
-+
-+static struct arm_pmu *__init armv8_pmuv3_pmu_init(void)
-+{
-+	armv8pmu.name			= "arm/armv8-pmuv3";
-+	armv8pmu.map_event		= armv8_pmuv3_map_event;
-+	armv8pmu.num_events		= armv8pmu_read_num_pmnc_events();
-+	armv8pmu.set_event_filter	= armv8pmu_set_event_filter;
-+	return &armv8pmu;
-+}
-+
++#ifdef CONFIG_HAVE_HW_BREAKPOINT
 +/*
-+ * Ensure the PMU has sane values out of reset.
-+ * This requires SMP to be available, so exists as a separate initcall.
++ * Handle hitting a HW-breakpoint.
 + */
-+static int __init
-+cpu_pmu_reset(void)
++static void ptrace_hbptriggered(struct perf_event *bp,
++				struct perf_sample_data *data,
++				struct pt_regs *regs)
 +{
-+	if (cpu_pmu && cpu_pmu->reset)
-+		return on_each_cpu(cpu_pmu->reset, NULL, 1);
-+	return 0;
-+}
-+arch_initcall(cpu_pmu_reset);
++	struct arch_hw_breakpoint *bkpt = counter_arch_bp(bp);
++	siginfo_t info = {
++		.si_signo	= SIGTRAP,
++		.si_errno	= 0,
++		.si_code	= TRAP_HWBKPT,
++		.si_addr	= (void __user *)(bkpt->trigger),
++	};
 +
-+/*
-+ * PMU platform driver and devicetree bindings.
-+ */
-+static struct of_device_id armpmu_of_device_ids[] = {
-+	{.compatible = "arm,armv8-pmuv3"},
-+	{},
-+};
++#ifdef CONFIG_AARCH32_EMULATION
++	int i;
 +
-+static int __devinit armpmu_device_probe(struct platform_device *pdev)
-+{
-+	if (!cpu_pmu)
-+		return -ENODEV;
++	if (!is_compat_task())
++		goto send_sig;
 +
-+	cpu_pmu->plat_device = pdev;
-+	return 0;
-+}
-+
-+static struct platform_driver armpmu_driver = {
-+	.driver		= {
-+		.name	= "arm-pmu",
-+		.of_match_table = armpmu_of_device_ids,
-+	},
-+	.probe		= armpmu_device_probe,
-+};
-+
-+static int __init register_pmu_driver(void)
-+{
-+	return platform_driver_register(&armpmu_driver);
-+}
-+device_initcall(register_pmu_driver);
-+
-+static struct pmu_hw_events *armpmu_get_cpu_events(void)
-+{
-+	return &__get_cpu_var(cpu_hw_events);
-+}
-+
-+static void __init cpu_pmu_init(struct arm_pmu *armpmu)
-+{
-+	int cpu;
-+	for_each_possible_cpu(cpu) {
-+		struct pmu_hw_events *events = &per_cpu(cpu_hw_events, cpu);
-+		events->events = per_cpu(hw_events, cpu);
-+		events->used_mask = per_cpu(used_mask, cpu);
-+		raw_spin_lock_init(&events->pmu_lock);
++	for (i = 0; i < ARM_MAX_BRP; ++i) {
++		if (current->thread.debug.hbp_break[i] == bp) {
++			info.si_errno = (i << 1) + 1;
++			break;
++		}
 +	}
-+	armpmu->get_hw_events = armpmu_get_cpu_events;
++	for (i = ARM_MAX_BRP; i < ARM_MAX_HBP_SLOTS && !bp; ++i) {
++		if (current->thread.debug.hbp_watch[i] == bp) {
++			info.si_errno = -((i << 1) + 1);
++			break;
++		}
++	}
++
++send_sig:
++#endif
++	force_sig_info(SIGTRAP, &info, current);
 +}
 +
-+static int __init init_hw_perf_events(void)
++/*
++ * Unregister breakpoints from this task and reset the pointers in
++ * the thread_struct.
++ */
++void flush_ptrace_hw_breakpoint(struct task_struct *tsk)
 +{
-+	u64 dfr = read_cpuid(ID_AA64DFR0_EL1);
++	int i;
++	struct thread_struct *t = &tsk->thread;
 +
-+	switch ((dfr >> 8) & 0xf) {
-+	case 0x1:	/* PMUv3 */
-+		cpu_pmu = armv8_pmuv3_pmu_init();
++	for (i = 0; i < ARM_MAX_BRP; i++) {
++		if (t->debug.hbp_break[i]) {
++			unregister_hw_breakpoint(t->debug.hbp_break[i]);
++			t->debug.hbp_break[i] = NULL;
++		}
++	}
++
++	for (i = 0; i < ARM_MAX_WRP; i++) {
++		if (t->debug.hbp_watch[i]) {
++			unregister_hw_breakpoint(t->debug.hbp_watch[i]);
++			t->debug.hbp_watch[i] = NULL;
++		}
++	}
++}
++
++void ptrace_hw_copy_thread(struct task_struct *tsk)
++{
++	memset(&tsk->thread.debug, 0, sizeof(struct debug_info));
++}
++
++static struct perf_event *ptrace_hbp_get_event(unsigned int note_type,
++					       struct task_struct *tsk,
++					       unsigned long idx)
++{
++	struct perf_event *bp = ERR_PTR(-EINVAL);
++
++	switch (note_type) {
++	case NT_ARM_HW_BREAK:
++		if (idx < ARM_MAX_BRP)
++			bp = tsk->thread.debug.hbp_break[idx];
++		break;
++	case NT_ARM_HW_WATCH:
++		if (idx < ARM_MAX_WRP)
++			bp = tsk->thread.debug.hbp_watch[idx];
 +		break;
 +	}
 +
-+	if (cpu_pmu) {
-+		pr_info("enabled with %s PMU driver, %d counters available\n",
-+			cpu_pmu->name, cpu_pmu->num_events);
-+		cpu_pmu_init(cpu_pmu);
-+		armpmu_register(cpu_pmu, "cpu", PERF_TYPE_RAW);
-+	} else {
-+		pr_info("no hardware support available\n");
++	return bp;
++}
++
++static int ptrace_hbp_set_event(unsigned int note_type,
++				struct task_struct *tsk,
++				unsigned long idx,
++				struct perf_event *bp)
++{
++	int err = -EINVAL;
++
++	switch (note_type) {
++	case NT_ARM_HW_BREAK:
++		if (idx < ARM_MAX_BRP) {
++			tsk->thread.debug.hbp_break[idx] = bp;
++			err = 0;
++		}
++		break;
++	case NT_ARM_HW_WATCH:
++		if (idx < ARM_MAX_WRP) {
++			tsk->thread.debug.hbp_watch[idx] = bp;
++			err = 0;
++		}
++		break;
++	}
++
++	return err;
++}
++
++static struct perf_event *ptrace_hbp_create(unsigned int note_type,
++					    struct task_struct *tsk,
++					    unsigned long idx)
++{
++	struct perf_event *bp;
++	struct perf_event_attr attr;
++	int err, type;
++
++	switch (note_type) {
++	case NT_ARM_HW_BREAK:
++		type = HW_BREAKPOINT_X;
++		break;
++	case NT_ARM_HW_WATCH:
++		type = HW_BREAKPOINT_RW;
++		break;
++	default:
++		return ERR_PTR(-EINVAL);
++	}
++
++	ptrace_breakpoint_init(&attr);
++
++	/*
++	 * Initialise fields to sane defaults
++	 * (i.e. values that will pass validation).
++	 */
++	attr.bp_addr	= 0;
++	attr.bp_len	= HW_BREAKPOINT_LEN_4;
++	attr.bp_type	= type;
++	attr.disabled	= 1;
++
++	bp = register_user_hw_breakpoint(&attr, ptrace_hbptriggered, NULL, tsk);
++	if (IS_ERR(bp))
++		return bp;
++
++	err = ptrace_hbp_set_event(note_type, tsk, idx, bp);
++	if (err)
++		return ERR_PTR(err);
++
++	return bp;
++}
++
++static int ptrace_hbp_fill_attr_ctrl(unsigned int note_type,
++				     struct arch_hw_breakpoint_ctrl ctrl,
++				     struct perf_event_attr *attr)
++{
++	int err, len, type;
++
++	err = arch_bp_generic_fields(ctrl, &len, &type);
++	if (err)
++		return err;
++
++	switch (note_type) {
++	case NT_ARM_HW_BREAK:
++		if ((type & HW_BREAKPOINT_X) != type)
++			return -EINVAL;
++		break;
++	case NT_ARM_HW_WATCH:
++		if ((type & HW_BREAKPOINT_RW) != type)
++			return -EINVAL;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	attr->bp_len	= len;
++	attr->bp_type	= type;
++	attr->disabled	= !ctrl.enabled;
++
++	return 0;
++}
++
++static int ptrace_hbp_get_resource_info(unsigned int note_type, u32 *info)
++{
++	u8 num;
++	u32 reg = 0;
++
++	switch (note_type) {
++	case NT_ARM_HW_BREAK:
++		num = hw_breakpoint_slots(TYPE_INST);
++		break;
++	case NT_ARM_HW_WATCH:
++		num = hw_breakpoint_slots(TYPE_DATA);
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	reg |= debug_monitors_arch();
++	reg <<= 8;
++	reg |= num;
++
++	*info = reg;
++	return 0;
++}
++
++static int ptrace_hbp_get_ctrl(unsigned int note_type,
++			       struct task_struct *tsk,
++			       unsigned long idx,
++			       u32 *ctrl)
++{
++	struct perf_event *bp = ptrace_hbp_get_event(note_type, tsk, idx);
++
++	if (IS_ERR(bp))
++		return PTR_ERR(bp);
++
++	*ctrl = bp ? encode_ctrl_reg(counter_arch_bp(bp)->ctrl) : 0;
++	return 0;
++}
++
++static int ptrace_hbp_get_addr(unsigned int note_type,
++			       struct task_struct *tsk,
++			       unsigned long idx,
++			       u64 *addr)
++{
++	struct perf_event *bp = ptrace_hbp_get_event(note_type, tsk, idx);
++
++	if (IS_ERR(bp))
++		return PTR_ERR(bp);
++
++	*addr = bp ? bp->attr.bp_addr : 0;
++	return 0;
++}
++
++static struct perf_event *ptrace_hbp_get_initialised_bp(unsigned int note_type,
++							struct task_struct *tsk,
++							unsigned long idx)
++{
++	struct perf_event *bp = ptrace_hbp_get_event(note_type, tsk, idx);
++
++	if (!bp)
++		bp = ptrace_hbp_create(note_type, tsk, idx);
++
++	return bp;
++}
++
++static int ptrace_hbp_set_ctrl(unsigned int note_type,
++			       struct task_struct *tsk,
++			       unsigned long idx,
++			       u32 uctrl)
++{
++	int err;
++	struct perf_event *bp;
++	struct perf_event_attr attr;
++	struct arch_hw_breakpoint_ctrl ctrl;
++
++	bp = ptrace_hbp_get_initialised_bp(note_type, tsk, idx);
++	if (IS_ERR(bp)) {
++		err = PTR_ERR(bp);
++		return err;
++	}
++
++	attr = bp->attr;
++	decode_ctrl_reg(uctrl, &ctrl);
++	err = ptrace_hbp_fill_attr_ctrl(note_type, ctrl, &attr);
++	if (err)
++		return err;
++
++	return modify_user_hw_breakpoint(bp, &attr);
++}
++
++static int ptrace_hbp_set_addr(unsigned int note_type,
++			       struct task_struct *tsk,
++			       unsigned long idx,
++			       u64 addr)
++{
++	int err;
++	struct perf_event *bp;
++	struct perf_event_attr attr;
++
++	bp = ptrace_hbp_get_initialised_bp(note_type, tsk, idx);
++	if (IS_ERR(bp)) {
++		err = PTR_ERR(bp);
++		return err;
++	}
++
++	attr = bp->attr;
++	attr.bp_addr = addr;
++	err = modify_user_hw_breakpoint(bp, &attr);
++	return err;
++}
++
++#define PTRACE_HBP_ADDR_SZ	sizeof(u64)
++#define PTRACE_HBP_CTRL_SZ	sizeof(u32)
++#define PTRACE_HBP_REG_OFF	sizeof(u32)
++
++static int hw_break_get(struct task_struct *target,
++			const struct user_regset *regset,
++			unsigned int pos, unsigned int count,
++			void *kbuf, void __user *ubuf)
++{
++	unsigned int note_type = regset->core_note_type;
++	int ret, idx = 0, offset = PTRACE_HBP_REG_OFF, limit;
++	u32 info, ctrl;
++	u64 addr;
++
++	/* Resource info */
++	ret = ptrace_hbp_get_resource_info(note_type, &info);
++	if (ret)
++		return ret;
++
++	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf, &info, 0, 4);
++	if (ret)
++		return ret;
++
++	/* (address, ctrl) registers */
++	limit = regset->n * regset->size;
++	while (count && offset < limit) {
++		ret = ptrace_hbp_get_addr(note_type, target, idx, &addr);
++		if (ret)
++			return ret;
++		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf, &addr,
++					  offset, offset + PTRACE_HBP_ADDR_SZ);
++		if (ret)
++			return ret;
++		offset += PTRACE_HBP_ADDR_SZ;
++
++		ret = ptrace_hbp_get_ctrl(note_type, target, idx, &ctrl);
++		if (ret)
++			return ret;
++		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf, &ctrl,
++					  offset, offset + PTRACE_HBP_CTRL_SZ);
++		if (ret)
++			return ret;
++		offset += PTRACE_HBP_CTRL_SZ;
++		idx++;
 +	}
 +
 +	return 0;
 +}
-+early_initcall(init_hw_perf_events);
 +
-+/*
-+ * Callchain handling code.
-+ */
-+struct frame_tail {
-+	struct frame_tail   __user *fp;
-+	unsigned long	    lr;
-+} __attribute__((packed));
-+
-+/*
-+ * Get the return address for a single stackframe and return a pointer to the
-+ * next frame tail.
-+ */
-+static struct frame_tail __user *
-+user_backtrace(struct frame_tail __user *tail,
-+	       struct perf_callchain_entry *entry)
++static int hw_break_set(struct task_struct *target,
++			const struct user_regset *regset,
++			unsigned int pos, unsigned int count,
++			const void *kbuf, const void __user *ubuf)
 +{
-+	struct frame_tail buftail;
-+	unsigned long err;
++	unsigned int note_type = regset->core_note_type;
++	int ret, idx = 0, offset = PTRACE_HBP_REG_OFF, limit;
++	u32 ctrl;
++	u64 addr;
 +
-+	/* Also check accessibility of one struct frame_tail beyond */
-+	if (!access_ok(VERIFY_READ, tail, sizeof(buftail)))
-+		return NULL;
++	/* Resource info */
++	ret = user_regset_copyin_ignore(&pos, &count, &kbuf, &ubuf, 0, 4);
++	if (ret)
++		return ret;
 +
-+	pagefault_disable();
-+	err = __copy_from_user_inatomic(&buftail, tail, sizeof(buftail));
-+	pagefault_enable();
++	/* (address, ctrl) registers */
++	limit = regset->n * regset->size;
++	while (count && offset < limit) {
++		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, &addr,
++					 offset, offset + PTRACE_HBP_ADDR_SZ);
++		if (ret)
++			return ret;
++		ret = ptrace_hbp_set_addr(note_type, target, idx, addr);
++		if (ret)
++			return ret;
++		offset += PTRACE_HBP_ADDR_SZ;
 +
-+	if (err)
-+		return NULL;
++		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, &ctrl,
++					 offset, offset + PTRACE_HBP_CTRL_SZ);
++		if (ret)
++			return ret;
++		ret = ptrace_hbp_set_ctrl(note_type, target, idx, ctrl);
++		if (ret)
++			return ret;
++		offset += PTRACE_HBP_CTRL_SZ;
++		idx++;
++	}
 +
-+	perf_callchain_store(entry, buftail.lr);
++	return 0;
++}
++#endif	/* CONFIG_HAVE_HW_BREAKPOINT */
 +
-+	/*
-+	 * Frame pointers should strictly progress back up the stack
-+	 * (towards higher addresses).
-+	 */
-+	if (tail >= buftail.fp)
-+		return NULL;
-+
-+	return buftail.fp;
++static int gpr_get(struct task_struct *target,
++		   const struct user_regset *regset,
++		   unsigned int pos, unsigned int count,
++		   void *kbuf, void __user *ubuf)
++{
++	struct user_pt_regs *uregs = &task_pt_regs(target)->user_regs;
++	return user_regset_copyout(&pos, &count, &kbuf, &ubuf, uregs, 0, -1);
 +}
 +
-+void perf_callchain_user(struct perf_callchain_entry *entry,
-+			 struct pt_regs *regs)
++static int gpr_set(struct task_struct *target, const struct user_regset *regset,
++		   unsigned int pos, unsigned int count,
++		   const void *kbuf, const void __user *ubuf)
 +{
-+	struct frame_tail __user *tail;
++	int ret;
++	struct user_pt_regs newregs;
 +
-+	tail = (struct frame_tail __user *)regs->regs[29];
++	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, &newregs, 0, -1);
++	if (ret)
++		return ret;
 +
-+	while (entry->nr < PERF_MAX_STACK_DEPTH &&
-+	       tail && !((unsigned long)tail & 0xf))
-+		tail = user_backtrace(tail, entry);
-+}
++	if (!valid_user_regs(&newregs))
++		return -EINVAL;
 +
-+/*
-+ * Gets called by walk_stackframe() for every stackframe. This will be called
-+ * whist unwinding the stackframe and is like a subroutine return so we use
-+ * the PC.
-+ */
-+static int callchain_trace(struct stackframe *frame, void *data)
-+{
-+	struct perf_callchain_entry *entry = data;
-+	perf_callchain_store(entry, frame->pc);
++	task_pt_regs(target)->user_regs = newregs;
 +	return 0;
 +}
 +
-+void perf_callchain_kernel(struct perf_callchain_entry *entry,
-+			   struct pt_regs *regs)
++/*
++ * TODO: update fp accessors for lazy context switching (sync/flush hwstate)
++ */
++static int fpr_get(struct task_struct *target, const struct user_regset *regset,
++		   unsigned int pos, unsigned int count,
++		   void *kbuf, void __user *ubuf)
 +{
-+	struct stackframe frame;
-+
-+	frame.fp = regs->regs[29];
-+	frame.sp = regs->sp;
-+	frame.pc = regs->pc;
-+	walk_stackframe(&frame, callchain_trace, entry);
++	struct user_fpsimd_state *uregs;
++	uregs = &target->thread.fpsimd_state.user_fpsimd;
++	return user_regset_copyout(&pos, &count, &kbuf, &ubuf, uregs, 0, -1);
 +}
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index f960ccb..8c36763 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -88,6 +88,12 @@ void get_term_dimensions(struct winsize *ws);
- #define CPUINFO_PROC	"Processor"
- #endif
- 
-+#ifdef __aarch64__
-+#include "../../arch/arm64/include/asm/unistd.h"
-+#define rmb()		asm volatile("dmb ld" ::: "memory")
-+#define cpu_relax()	asm volatile("yield" ::: "memory")
++
++static int fpr_set(struct task_struct *target, const struct user_regset *regset,
++		   unsigned int pos, unsigned int count,
++		   const void *kbuf, const void __user *ubuf)
++{
++	int ret;
++	struct user_fpsimd_state newstate;
++
++	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, &newstate, 0, -1);
++	if (ret)
++		return ret;
++
++	target->thread.fpsimd_state.user_fpsimd = newstate;
++	return ret;
++}
++
++static int tls_get(struct task_struct *target, const struct user_regset *regset,
++		   unsigned int pos, unsigned int count,
++		   void *kbuf, void __user *ubuf)
++{
++	unsigned long *tls = &target->thread.tp_value;
++	return user_regset_copyout(&pos, &count, &kbuf, &ubuf, tls, 0, -1);
++}
++
++static int tls_set(struct task_struct *target, const struct user_regset *regset,
++		   unsigned int pos, unsigned int count,
++		   const void *kbuf, const void __user *ubuf)
++{
++	int ret;
++	unsigned long tls;
++
++	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, &tls, 0, -1);
++	if (ret)
++		return ret;
++
++	target->thread.tp_value = tls;
++	return ret;
++}
++
++enum aarch64_regset {
++	REGSET_GPR,
++	REGSET_FPR,
++	REGSET_TLS,
++#ifdef CONFIG_HAVE_HW_BREAKPOINT
++	REGSET_HW_BREAK,
++	REGSET_HW_WATCH,
++#endif
++};
++
++static const struct user_regset aarch64_regsets[] = {
++	[REGSET_GPR] = {
++		.core_note_type = NT_PRSTATUS,
++		.n = sizeof(struct user_pt_regs) / sizeof(u64),
++		.size = sizeof(u64),
++		.align = sizeof(u64),
++		.get = gpr_get,
++		.set = gpr_set
++	},
++	[REGSET_FPR] = {
++		.core_note_type = NT_PRFPREG,
++		.n = sizeof(struct user_fpsimd_state) / sizeof(u32),
++		/*
++		 * We pretend we have 32-bit registers because the fpsr and
++		 * fpcr are 32-bits wide.
++		 */
++		.size = sizeof(u32),
++		.align = sizeof(u32),
++		.get = fpr_get,
++		.set = fpr_set
++	},
++	[REGSET_TLS] = {
++		.core_note_type = NT_ARM_TLS,
++		.n = 1,
++		.size = sizeof(void *),
++		.align = sizeof(void *),
++		.get = tls_get,
++		.set = tls_set,
++	},
++#ifdef CONFIG_HAVE_HW_BREAKPOINT
++	[REGSET_HW_BREAK] = {
++		.core_note_type = NT_ARM_HW_BREAK,
++		.n = sizeof(struct user_hwdebug_state) / sizeof(u32),
++		.size = sizeof(u32),
++		.align = sizeof(u32),
++		.get = hw_break_get,
++		.set = hw_break_set,
++	},
++	[REGSET_HW_WATCH] = {
++		.core_note_type = NT_ARM_HW_WATCH,
++		.n = sizeof(struct user_hwdebug_state) / sizeof(u32),
++		.size = sizeof(u32),
++		.align = sizeof(u32),
++		.get = hw_break_get,
++		.set = hw_break_set,
++	},
++#endif
++};
++
++static const struct user_regset_view user_aarch64_view = {
++	.name = "aarch64", .e_machine = EM_AARCH64,
++	.regsets = aarch64_regsets, .n = ARRAY_SIZE(aarch64_regsets)
++};
++
++#ifdef CONFIG_COMPAT
++#include <linux/compat.h>
++
++enum compat_regset {
++	REGSET_COMPAT_GPR,
++	REGSET_COMPAT_VFP,
++};
++
++static int compat_gpr_get(struct task_struct *target,
++			  const struct user_regset *regset,
++			  unsigned int pos, unsigned int count,
++			  void *kbuf, void __user *ubuf)
++{
++	int ret = 0;
++	unsigned int i, start, num_regs;
++
++	/* Calculate the number of AArch32 registers contained in count */
++	num_regs = count / regset->size;
++
++	/* Convert pos into an register number */
++	start = pos / regset->size;
++
++	if (start + num_regs > regset->n)
++		return -EIO;
++
++	for (i = 0; i < num_regs; ++i) {
++		unsigned int idx = start + i;
++		void *reg;
++
++		switch (idx) {
++		case 15:
++			reg = (void *)&task_pt_regs(target)->pc;
++			break;
++		case 16:
++			reg = (void *)&task_pt_regs(target)->pstate;
++			break;
++		case 17:
++			reg = (void *)&task_pt_regs(target)->orig_x0;
++			break;
++		default:
++			reg = (void *)&task_pt_regs(target)->regs[idx];
++		}
++
++		ret = copy_to_user(ubuf, reg, sizeof(compat_ulong_t));
++
++		if (ret)
++			break;
++		else
++			ubuf += sizeof(compat_ulong_t);
++	}
++
++	return ret;
++}
++
++static int compat_gpr_set(struct task_struct *target,
++			  const struct user_regset *regset,
++			  unsigned int pos, unsigned int count,
++			  const void *kbuf, const void __user *ubuf)
++{
++	struct pt_regs newregs;
++	int ret = 0;
++	unsigned int i, start, num_regs;
++
++	/* Calculate the number of AArch32 registers contained in count */
++	num_regs = count / regset->size;
++
++	/* Convert pos into an register number */
++	start = pos / regset->size;
++
++	if (start + num_regs > regset->n)
++		return -EIO;
++
++	newregs = *task_pt_regs(target);
++
++	for (i = 0; i < num_regs; ++i) {
++		unsigned int idx = start + i;
++		void *reg;
++
++		switch (idx) {
++		case 15:
++			reg = (void *)&newregs.pc;
++			break;
++		case 16:
++			reg = (void *)&newregs.pstate;
++			break;
++		case 17:
++			reg = (void *)&newregs.orig_x0;
++			break;
++		default:
++			reg = (void *)&newregs.regs[idx];
++		}
++
++		ret = copy_from_user(reg, ubuf, sizeof(compat_ulong_t));
++
++		if (ret)
++			goto out;
++		else
++			ubuf += sizeof(compat_ulong_t);
++	}
++
++	if (valid_user_regs(&newregs.user_regs))
++		*task_pt_regs(target) = newregs;
++	else
++		ret = -EINVAL;
++
++out:
++	return ret;
++}
++
++static int compat_vfp_get(struct task_struct *target,
++			  const struct user_regset *regset,
++			  unsigned int pos, unsigned int count,
++			  void *kbuf, void __user *ubuf)
++{
++	struct user_fpsimd_state *uregs;
++	compat_ulong_t fpscr;
++	int ret;
++
++	uregs = &target->thread.fpsimd_state.user_fpsimd;
++
++	/*
++	 * The VFP registers are packed into the fpsimd_state, so they all sit
++	 * nicely together for us. We just need to create the fpscr separately.
++	 */
++	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf, uregs, 0,
++				  VFP_STATE_SIZE - sizeof(compat_ulong_t));
++
++	if (count && !ret) {
++		fpscr = (uregs->fpsr & VFP_FPSCR_STAT_MASK) |
++			(uregs->fpcr & VFP_FPSCR_CTRL_MASK);
++		ret = put_user(fpscr, (compat_ulong_t *)ubuf);
++	}
++
++	return ret;
++}
++
++static int compat_vfp_set(struct task_struct *target,
++			  const struct user_regset *regset,
++			  unsigned int pos, unsigned int count,
++			  const void *kbuf, const void __user *ubuf)
++{
++	struct user_fpsimd_state *uregs;
++	compat_ulong_t fpscr;
++	int ret;
++
++	if (pos + count > VFP_STATE_SIZE)
++		return -EIO;
++
++	uregs = &target->thread.fpsimd_state.user_fpsimd;
++
++	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, uregs, 0,
++				 VFP_STATE_SIZE - sizeof(compat_ulong_t));
++
++	if (count && !ret) {
++		ret = get_user(fpscr, (compat_ulong_t *)ubuf);
++		uregs->fpsr = fpscr & VFP_FPSCR_STAT_MASK;
++		uregs->fpcr = fpscr & VFP_FPSCR_CTRL_MASK;
++	}
++
++	return ret;
++}
++
++static const struct user_regset aarch32_regsets[] = {
++	[REGSET_COMPAT_GPR] = {
++		.core_note_type = NT_PRSTATUS,
++		.n = COMPAT_ELF_NGREG,
++		.size = sizeof(compat_elf_greg_t),
++		.align = sizeof(compat_elf_greg_t),
++		.get = compat_gpr_get,
++		.set = compat_gpr_set
++	},
++	[REGSET_COMPAT_VFP] = {
++		.core_note_type = NT_ARM_VFP,
++		.n = VFP_STATE_SIZE / sizeof(compat_ulong_t),
++		.size = sizeof(compat_ulong_t),
++		.align = sizeof(compat_ulong_t),
++		.get = compat_vfp_get,
++		.set = compat_vfp_set
++	},
++};
++
++static const struct user_regset_view user_aarch32_view = {
++	.name = "aarch32", .e_machine = EM_ARM,
++	.regsets = aarch32_regsets, .n = ARRAY_SIZE(aarch32_regsets)
++};
++
++int aarch32_break_trap(struct pt_regs *regs)
++{
++	unsigned int instr;
++	bool bp = false;
++	void __user *pc = (void __user *)instruction_pointer(regs);
++
++	if (compat_thumb_mode(regs)) {
++		/* get 16-bit Thumb instruction */
++		get_user(instr, (u16 __user *)pc);
++		if (instr == AARCH32_BREAK_THUMB2_LO) {
++			/* get second half of 32-bit Thumb-2 instruction */
++			get_user(instr, (u16 __user *)(pc + 2));
++			bp = instr == AARCH32_BREAK_THUMB2_HI;
++		} else {
++			bp = instr == AARCH32_BREAK_THUMB;
++		}
++	} else {
++		/* 32-bit ARM instruction */
++		get_user(instr, (u32 __user *)pc);
++		bp = (instr & ~0xf0000000) == AARCH32_BREAK_ARM;
++	}
++
++	if (bp)
++		return ptrace_break(regs);
++	return 1;
++}
++
++static int compat_ptrace_read_user(struct task_struct *tsk, compat_ulong_t off,
++				   compat_ulong_t __user *ret)
++{
++	compat_ulong_t tmp;
++
++	if (off & 3)
++		return -EIO;
++
++	if (off == PT_TEXT_ADDR)
++		tmp = tsk->mm->start_code;
++	else if (off == PT_DATA_ADDR)
++		tmp = tsk->mm->start_data;
++	else if (off == PT_TEXT_END_ADDR)
++		tmp = tsk->mm->end_code;
++	else if (off < sizeof(compat_elf_gregset_t))
++		return copy_regset_to_user(tsk, &user_aarch32_view,
++					   REGSET_COMPAT_GPR, off,
++					   sizeof(compat_ulong_t), ret);
++	else if (off >= COMPAT_USER_SZ)
++		return -EIO;
++	else
++		tmp = 0;
++
++	return put_user(tmp, ret);
++}
++
++static int compat_ptrace_write_user(struct task_struct *tsk, compat_ulong_t off,
++				    compat_ulong_t val)
++{
++	int ret;
++
++	if (off & 3 || off >= COMPAT_USER_SZ)
++		return -EIO;
++
++	if (off >= sizeof(compat_elf_gregset_t))
++		return 0;
++
++	ret = copy_regset_from_user(tsk, &user_aarch32_view,
++				    REGSET_COMPAT_GPR, off,
++				    sizeof(compat_ulong_t),
++				    &val);
++	return ret;
++}
++
++#ifdef CONFIG_HAVE_HW_BREAKPOINT
++
++/*
++ * Convert a virtual register number into an index for a thread_info
++ * breakpoint array. Breakpoints are identified using positive numbers
++ * whilst watchpoints are negative. The registers are laid out as pairs
++ * of (address, control), each pair mapping to a unique hw_breakpoint struct.
++ * Register 0 is reserved for describing resource information.
++ */
++static int compat_ptrace_hbp_num_to_idx(compat_long_t num)
++{
++	return (abs(num) - 1) >> 1;
++}
++
++static int compat_ptrace_hbp_get_resource_info(u32 *kdata)
++{
++	u8 num_brps, num_wrps, debug_arch, wp_len;
++	u32 reg = 0;
++
++	num_brps	= hw_breakpoint_slots(TYPE_INST);
++	num_wrps	= hw_breakpoint_slots(TYPE_DATA);
++
++	debug_arch	= debug_monitors_arch();
++	wp_len		= 8;
++	reg		|= debug_arch;
++	reg		<<= 8;
++	reg		|= wp_len;
++	reg		<<= 8;
++	reg		|= num_wrps;
++	reg		<<= 8;
++	reg		|= num_brps;
++
++	*kdata = reg;
++	return 0;
++}
++
++static int compat_ptrace_hbp_get(unsigned int note_type,
++				 struct task_struct *tsk,
++				 compat_long_t num,
++				 u32 *kdata)
++{
++	u64 addr = 0;
++	u32 ctrl = 0;
++
++	int err, idx = compat_ptrace_hbp_num_to_idx(num);;
++
++	if (num & 1) {
++		err = ptrace_hbp_get_addr(note_type, tsk, idx, &addr);
++		*kdata = (u32)addr;
++	} else {
++		err = ptrace_hbp_get_ctrl(note_type, tsk, idx, &ctrl);
++		*kdata = ctrl;
++	}
++
++	return err;
++}
++
++static int compat_ptrace_hbp_set(unsigned int note_type,
++				 struct task_struct *tsk,
++				 compat_long_t num,
++				 u32 *kdata)
++{
++	u64 addr;
++	u32 ctrl;
++
++	int err, idx = compat_ptrace_hbp_num_to_idx(num);
++
++	if (num & 1) {
++		addr = *kdata;
++		err = ptrace_hbp_set_addr(note_type, tsk, idx, addr);
++	} else {
++		ctrl = *kdata;
++		err = ptrace_hbp_set_ctrl(note_type, tsk, idx, ctrl);
++	}
++
++	return err;
++}
++
++static int compat_ptrace_gethbpregs(struct task_struct *tsk, compat_long_t num,
++				    compat_ulong_t __user *data)
++{
++	int ret;
++	u32 kdata;
++	mm_segment_t old_fs = get_fs();
++
++	set_fs(KERNEL_DS);
++	/* Watchpoint */
++	if (num < 0) {
++		ret = compat_ptrace_hbp_get(NT_ARM_HW_WATCH, tsk, num, &kdata);
++	/* Resource info */
++	} else if (num == 0) {
++		ret = compat_ptrace_hbp_get_resource_info(&kdata);
++	/* Breakpoint */
++	} else {
++		ret = compat_ptrace_hbp_get(NT_ARM_HW_BREAK, tsk, num, &kdata);
++	}
++	set_fs(old_fs);
++
++	if (!ret)
++		ret = put_user(kdata, data);
++
++	return ret;
++}
++
++static int compat_ptrace_sethbpregs(struct task_struct *tsk, compat_long_t num,
++				    compat_ulong_t __user *data)
++{
++	int ret;
++	u32 kdata = 0;
++	mm_segment_t old_fs = get_fs();
++
++	if (num == 0)
++		return 0;
++
++	ret = get_user(kdata, data);
++	if (ret)
++		return ret;
++
++	set_fs(KERNEL_DS);
++	if (num < 0)
++		ret = compat_ptrace_hbp_set(NT_ARM_HW_WATCH, tsk, num, &kdata);
++	else
++		ret = compat_ptrace_hbp_set(NT_ARM_HW_BREAK, tsk, num, &kdata);
++	set_fs(old_fs);
++
++	return ret;
++}
++#endif	/* CONFIG_HAVE_HW_BREAKPOINT */
++
++long compat_arch_ptrace(struct task_struct *child, compat_long_t request,
++			compat_ulong_t caddr, compat_ulong_t cdata)
++{
++	unsigned long addr = caddr;
++	unsigned long data = cdata;
++	void __user *datap = compat_ptr(data);
++	int ret;
++
++	switch (request) {
++		case PTRACE_PEEKUSR:
++			ret = compat_ptrace_read_user(child, addr, datap);
++			break;
++
++		case PTRACE_POKEUSR:
++			ret = compat_ptrace_write_user(child, addr, data);
++			break;
++
++		case PTRACE_GETREGS:
++			ret = copy_regset_to_user(child,
++						  &user_aarch32_view,
++						  REGSET_COMPAT_GPR,
++						  0, sizeof(compat_elf_gregset_t),
++						  datap);
++			break;
++
++		case PTRACE_SETREGS:
++			ret = copy_regset_from_user(child,
++						    &user_aarch32_view,
++						    REGSET_COMPAT_GPR,
++						    0, sizeof(compat_elf_gregset_t),
++						    datap);
++			break;
++
++		case PTRACE_GET_THREAD_AREA:
++			ret = put_user((compat_ulong_t)child->thread.tp_value,
++				       (compat_ulong_t __user *)datap);
++			break;
++
++		case PTRACE_SET_SYSCALL:
++			task_pt_regs(child)->syscallno = data;
++			ret = 0;
++			break;
++
++		case COMPAT_PTRACE_GETVFPREGS:
++			ret = copy_regset_to_user(child,
++						  &user_aarch32_view,
++						  REGSET_COMPAT_VFP,
++						  0, VFP_STATE_SIZE,
++						  datap);
++			break;
++
++		case COMPAT_PTRACE_SETVFPREGS:
++			ret = copy_regset_from_user(child,
++						    &user_aarch32_view,
++						    REGSET_COMPAT_VFP,
++						    0, VFP_STATE_SIZE,
++						    datap);
++			break;
++
++#ifdef CONFIG_HAVE_HW_BREAKPOINT
++		case PTRACE_GETHBPREGS:
++			ret = compat_ptrace_gethbpregs(child, addr, datap);
++			break;
++
++		case PTRACE_SETHBPREGS:
++			ret = compat_ptrace_sethbpregs(child, addr, datap);
++			break;
 +#endif
 +
- #ifdef __mips__
- #include "../../arch/mips/include/asm/unistd.h"
- #define rmb()		asm volatile(					\
++		default:
++			ret = compat_ptrace_request(child, request, addr,
++						    data);
++			break;
++	}
++
++	return ret;
++}
++#endif /* CONFIG_COMPAT */
++
++const struct user_regset_view *task_user_regset_view(struct task_struct *task)
++{
++#ifdef CONFIG_COMPAT
++	if (is_compat_thread(task_thread_info(task)))
++		return &user_aarch32_view;
++#endif
++	return &user_aarch64_view;
++}
++
++long arch_ptrace(struct task_struct *child, long request,
++		 unsigned long addr, unsigned long data)
++{
++	return ptrace_request(child, request, addr, data);
++}
++
++
++static int __init ptrace_break_init(void)
++{
++	hook_debug_fault_code(DBG_ESR_EVT_BRK, arm64_break_trap, SIGTRAP,
++			      TRAP_BRKPT, "ptrace BRK handler");
++	return 0;
++}
++core_initcall(ptrace_break_init);
++
++
++asmlinkage int syscall_trace(int dir, struct pt_regs *regs)
++{
++	unsigned long saved_reg;
++
++	if (!test_thread_flag(TIF_SYSCALL_TRACE))
++		return regs->syscallno;
++
++	if (is_compat_task()) {
++		/* AArch32 uses ip (r12) for scratch */
++		saved_reg = regs->regs[12];
++		regs->regs[12] = dir;
++	} else {
++		/*
++		 * Save X7. X7 is used to denote syscall entry/exit:
++		 *   X7 = 0 -> entry, = 1 -> exit
++		 */
++		saved_reg = regs->regs[7];
++		regs->regs[7] = dir;
++	}
++
++	if (dir)
++		tracehook_report_syscall_exit(regs, 0);
++	else if (tracehook_report_syscall_entry(regs))
++		regs->syscallno = ~0UL;
++
++	if (is_compat_task())
++		regs->regs[12] = saved_reg;
++	else
++		regs->regs[7] = saved_reg;
++
++	return regs->syscallno;
++}
+diff --git a/include/linux/elf.h b/include/linux/elf.h
+index 999b4f5..1e935e4 100644
+--- a/include/linux/elf.h
++++ b/include/linux/elf.h
+@@ -388,6 +388,9 @@ typedef struct elf64_shdr {
+ #define NT_S390_LAST_BREAK	0x306	/* s390 breaking event address */
+ #define NT_S390_SYSTEM_CALL	0x307	/* s390 system call restart data */
+ #define NT_ARM_VFP	0x400		/* ARM VFP/NEON registers */
++#define NT_ARM_TLS	0x401		/* ARM TLS register */
++#define NT_ARM_HW_BREAK	0x402		/* ARM hardware breakpoint registers */
++#define NT_ARM_HW_WATCH	0x403		/* ARM hardware watchpoint registers */
+ 
+ 
+ /* Note header in a PT_NOTE section */
 
