@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760598Ab2IGM3n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 08:29:43 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:52004 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760386Ab2IGM3m (ORCPT
+	id S933131Ab2IGMaD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 08:30:03 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:48463 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760605Ab2IGMaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 08:29:42 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 04/19] ARM: ux500: Add SDI (MMC) support to the HREF Device Tree
-Date: Fri, 7 Sep 2012 12:29:31 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com
-References: <1347016499-29354-1-git-send-email-lee.jones@linaro.org> <1347016499-29354-5-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1347016499-29354-5-git-send-email-lee.jones@linaro.org>
+	Fri, 7 Sep 2012 08:30:00 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209071229.32027.arnd@arndb.de>
-X-Provags-ID: V02:K0:fjyhRj0ekD6GKZRNOK9fUcVQKAv9wy3a55++DRmuv9/
- lm7aiWZFJgUoTPTmkgN6y5LSCAXQOXuXVy333Fp8J6ZtEAeZS6
- aJkpMGychiFwgMxj58MyIvKXrzWfooweU/KKApSxS+KeC3825c
- Q6+Q+/016gxz9Dk9kH2ZujektlUrb8Rs1xsJnT0Qn/GOq/8oPG
- Y/00PypPJI3wf8/eNQjIvGgzJtS8xAihZsmk9niRtVTCtYiMO8
- 23Ef/vcrJBAINmVmktrX4LIB3nux7jDes84OpOSIJqP6AeRTu+
- zniHQUdfeNhD4RkBOTPpPLrUfNL4CDx8ew7TMvkXNYepLeOtbw
- GfvfzGuoVP93T9emp9bg=
+In-Reply-To: <CACRpkdYVkQTH=205ggcauH7RbNPvpPEP+o12AK30wcpRWVnx4A@mail.gmail.com>
+References: <1346415691-13371-1-git-send-email-ulf.hansson@stericsson.com>
+	<1346415691-13371-2-git-send-email-ulf.hansson@stericsson.com>
+	<20120831192906.31162.97714@nucleus>
+	<CAPDyKFrS7tKu5AcjL7+R8V5Nvo0O+BVwc8HtGFqQGSf12wMioQ@mail.gmail.com>
+	<20120907001927.20289.41627@nucleus>
+	<CAJOA=zM-u5ss8ZYWFHg43V7r5B6TXhRN70=JUccNjrppx4fDyg@mail.gmail.com>
+	<CACRpkdYVkQTH=205ggcauH7RbNPvpPEP+o12AK30wcpRWVnx4A@mail.gmail.com>
+Date: Fri, 7 Sep 2012 14:29:58 +0200
+Message-ID: <CAPDyKFrTTcNfQ2d24oSWEsvw1OF6t91nv6Y_JQfiWx8Un7_u-A@mail.gmail.com>
+Subject: Re: [PATCH 1/4] clk: Provide option for clk_get_rate to issue hw for
+ new rate
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "Turquette, Mike" <mturquette@ti.com>,
+        Ulf Hansson <ulf.hansson@stericsson.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Lee Jones <lee.jones@linaro.org>,
+        Philippe Begnic <philippe.begnic@st.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 September 2012, Lee Jones wrote:
-> +               // External Micro SD slot
-> +               sdi@80126000 {
-> +                       arm,primecell-periphid = <0x10480180>;
-> +                       max-frequency = <50000000>;
-> +                       bus-width = <8>;
-> +                       mmc-cap-sd-highspeed;
-> +                       mmc-cap-mmc-highspeed;
-> +                       vmmc-supply = <&ab8500_ldo_aux3_reg>;
-> +
-> +                       #gpio-cells = <1>;
-> +                       cd-gpios  = <&gpio2 31 0x4>; // 95
-> +
-> +                       status = "okay";
-> +               };
-> +
+On 7 September 2012 10:21, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Fri, Sep 7, 2012 at 3:00 AM, Turquette, Mike <mturquette@ti.com> wrote:
+>> On Thu, Sep 6, 2012 at 5:19 PM, Mike Turquette <mturquette@ti.com> wrote:
+>>> I'll take this series into clk-next.
+>>
+>> Oops, I forgot to ask about patch #3.  Which tree do you want that to
+>> go through?
+>
+> Just take it all through your tree if there are no major conflicts.
+> Acked-by etc.
 
-The #gpio-cells property seems misplaced here.
+Agree, it makes it simpler to go through Mike's clock tree. At least
+let's try it out.
+I will likely have similar patch series with cross dependencies later
+on, so this can be a good first test and hopefully it works.
 
-	Arnd
+Although, don't we need an ack by Samuel Ortiz for the patch on mfd?
+"mfd: dbx500: Provide a more accurate smp_twd clock"
+
+Or, is it enough with Linus ack since he is the maintainer of that
+specific mfd file I have patched?
+
+Kind regards
+Ulf Hansson
