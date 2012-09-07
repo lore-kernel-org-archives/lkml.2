@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757323Ab2IGGzR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 02:55:17 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58057 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756189Ab2IGGzP convert rfc822-to-8bit (ORCPT
+	id S1757214Ab2IGG4t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 02:56:49 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:8205 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752803Ab2IGG4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 02:55:15 -0400
-Message-ID: <1347000873.18408.69.camel@twins>
-Subject: Re: [PATCH tip/core/rcu 01/15] rcu: Add PROVE_RCU_DELAY to provoke
- difficult races
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Date: Fri, 07 Sep 2012 08:54:33 +0200
-In-Reply-To: <20120906205156.GZ2448@linux.vnet.ibm.com>
-References: <20120830185607.GA32148@linux.vnet.ibm.com>
-	 <1346352988-32444-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1346942312.18408.26.camel@twins>
-	 <20120906205156.GZ2448@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Fri, 7 Sep 2012 02:56:48 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 06 Sep 2012 23:56:41 -0700
+Message-ID: <504994FF.2070706@nvidia.com>
+Date: Fri, 7 Sep 2012 12:02:31 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Wei Yongjun <weiyj.lk@gmail.com>
+CC: "vinod.koul@intel.com" <vinod.koul@intel.com>, "djbw@fb.com" <djbw@fb.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "yongjun_wei@trendmicro.com.cn" <yongjun_wei@trendmicro.com.cn>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH] dma: tegra: use list_move_tail instead of list_del/list_add_tail
+References: <CAPgLHd9DHDY9-oxFRK6coarc8JqKGporKSXTFG5fkRioZz6xFw@mail.gmail.com>
+In-Reply-To: <CAPgLHd9DHDY9-oxFRK6coarc8JqKGporKSXTFG5fkRioZz6xFw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-06 at 13:51 -0700, Paul E. McKenney wrote:
-> On Thu, Sep 06, 2012 at 04:38:32PM +0200, Peter Zijlstra wrote:
-> > On Thu, 2012-08-30 at 11:56 -0700, Paul E. McKenney wrote:
-> > > +#ifdef CONFIG_PROVE_RCU_DELAY
-> > > +               udelay(10); /* Make preemption more probable. */
-> > 		cond_resched(); /* for extra fun? */
-> 
-> The additional fun could include "scheduling while atomic", so I will
-> pass.  ;-)
-> 
-> (The problem is that __rcu_read_unlock() can be called with interrupts
-> disabled, among other things.)
-
-Hmm, too bad. Without a preemption point here you're relying on forced
-preemption, which of course can only happen on PREEMPT=y kernels.
-
-> > > +#endif /* #ifdef CONFIG_PROVE_RCU_DELAY */ 
-> > 
-> > 
-> 
+On Wednesday 05 September 2012 12:38 PM, Wei Yongjun wrote:
+> From: Wei Yongjun<yongjun_wei@trendmicro.com.cn>
+>
+> Using list_move_tail() instead of list_del() + list_add_tail().
+>
+> spatch with a semantic match is used to found this problem.
+> (http://coccinelle.lip6.fr/)
+>
+> Signed-off-by: Wei Yongjun<yongjun_wei@trendmicro.com.cn>
+> ---
+Acked-by: Laxman Dewangan <ldewangan@nvidia.com>
+Looks good to me.
 
