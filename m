@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755159Ab2IGQfu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 12:35:50 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:34292 "EHLO
+	id S1754657Ab2IGQhO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 12:37:14 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:34248 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751737Ab2IGQ1x (ORCPT
+	with ESMTP id S1751404Ab2IGQ1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 12:27:53 -0400
+	Fri, 7 Sep 2012 12:27:52 -0400
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH v3 07/31] arm64: Process management
-Date: Fri,  7 Sep 2012 17:26:42 +0100
-Message-Id: <1347035226-18649-8-git-send-email-catalin.marinas@arm.com>
+Subject: [PATCH v3 06/31] arm64: MMU fault handling and page table management
+Date: Fri,  7 Sep 2012 17:26:41 +0100
+Message-Id: <1347035226-18649-7-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.9.111.gf3fb0
 In-Reply-To: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
 References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 07 Sep 2012 16:27:50.0191 (UTC) FILETIME=[B90A6BF0:01CD8D15]
-X-MC-Unique: 112090717275104401
+X-OriginalArrivalTime: 07 Sep 2012 16:27:49.0800 (UTC) FILETIME=[B8CEC280:01CD8D15]
+X-MC-Unique: 112090717275101301
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q87GatY6008487
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q87GbMJc008491
 
-The patch adds support for thread creation and context switching. The
-context switching CPU specific code is introduced with the CPU support
-patch (part of the arch/arm64/mm/proc.S file). AArch64 supports
-ASID-tagged TLBs and the ASID can be either 8 or 16-bit wide (detectable
-via the ID_AA64AFR0_EL1 register).
+This patch adds support for the handling of the MMU faults (exception
+entry code introduced by a previous patch) and page table management.
+
+The user translation table is pointed to by TTBR0 and the kernel one
+(swapper_pg_dir) by TTBR1. There is no translation information shared or
+address space overlapping between user and kernel page tables.
 
 Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Acked-by: Tony Lindgren <tony@atomide.com>
 ---
- arch/arm64/include/asm/mmu_context.h |  152 +++++++++++++
- arch/arm64/include/asm/thread_info.h |  127 +++++++++++
- arch/arm64/kernel/process.c          |  412 ++++++++++++++++++++++++++++++++++
- arch/arm64/mm/context.c              |  159 +++++++++++++
- 4 files changed, 850 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm64/include/asm/mmu_context.h
- create mode 100644 arch/arm64/include/asm/thread_info.h
- create mode 100644 arch/arm64/kernel/process.c
- create mode 100644 arch/arm64/mm/context.c
+ arch/arm64/include/asm/page.h    |   67 +++++
+ arch/arm64/include/asm/pgalloc.h |  113 ++++++++
+ arch/arm64/mm/copypage.c         |   34 +++
+ arch/arm64/mm/extable.c          |   17 ++
+ arch/arm64/mm/fault.c            |  534 ++++++++++++++++++++++++++++++++++++++
+ arch/arm64/mm/mm.h               |    2 +
+ arch/arm64/mm/mmap.c             |  144 ++++++++++
+ arch/arm64/mm/pgd.c              |   54 ++++
+ 8 files changed, 965 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm64/include/asm/page.h
+ create mode 100644 arch/arm64/include/asm/pgalloc.h
+ create mode 100644 arch/arm64/mm/copypage.c
+ create mode 100644 arch/arm64/mm/extable.c
+ create mode 100644 arch/arm64/mm/fault.c
+ create mode 100644 arch/arm64/mm/mm.h
+ create mode 100644 arch/arm64/mm/mmap.c
+ create mode 100644 arch/arm64/mm/pgd.c
 
-diff --git a/arch/arm64/include/asm/mmu_context.h b/arch/arm64/include/asm/mmu_context.h
+diff --git a/arch/arm64/include/asm/page.h b/arch/arm64/include/asm/page.h
 new file mode 100644
-index 0000000..f68465d
+index 0000000..46bf666
 --- /dev/null
-+++ b/arch/arm64/include/asm/mmu_context.h
-@@ -0,0 +1,152 @@
++++ b/arch/arm64/include/asm/page.h
+@@ -0,0 +1,67 @@
 +/*
-+ * Based on arch/arm/include/asm/mmu_context.h
++ * Based on arch/arm/include/asm/page.h
 + *
-+ * Copyright (C) 1996 Russell King.
++ * Copyright (C) 1995-2003 Russell King
 + * Copyright (C) 2012 ARM Ltd.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -69,284 +78,184 @@ index 0000000..f68465d
 + * You should have received a copy of the GNU General Public License
 + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
-+#ifndef __ASM_MMU_CONTEXT_H
-+#define __ASM_MMU_CONTEXT_H
++#ifndef __ASM_PAGE_H
++#define __ASM_PAGE_H
 +
-+#include <linux/compiler.h>
-+#include <linux/sched.h>
-+
-+#include <asm/cacheflush.h>
-+#include <asm/proc-fns.h>
-+#include <asm-generic/mm_hooks.h>
-+#include <asm/cputype.h>
-+#include <asm/pgtable.h>
-+
-+#define MAX_ASID_BITS	16
-+
-+extern unsigned int cpu_last_asid;
-+
-+void __init_new_context(struct task_struct *tsk, struct mm_struct *mm);
-+void __new_context(struct mm_struct *mm);
-+
-+/*
-+ * Set TTBR0 to empty_zero_page. No translations will be possible via TTBR0.
-+ */
-+static inline void cpu_set_reserved_ttbr0(void)
-+{
-+	unsigned long ttbr = page_to_phys(empty_zero_page);
-+
-+	asm(
-+	"	msr	ttbr0_el1, %0			// set TTBR0\n"
-+	"	isb"
-+	:
-+	: "r" (ttbr));
-+}
-+
-+static inline void switch_new_context(struct mm_struct *mm)
-+{
-+	unsigned long flags;
-+
-+	__new_context(mm);
-+
-+	local_irq_save(flags);
-+	cpu_switch_mm(mm->pgd, mm);
-+	local_irq_restore(flags);
-+}
-+
-+static inline void check_and_switch_context(struct mm_struct *mm,
-+					    struct task_struct *tsk)
-+{
-+	/*
-+	 * Required during context switch to avoid speculative page table
-+	 * walking with the wrong TTBR.
-+	 */
-+	cpu_set_reserved_ttbr0();
-+
-+	if (!((mm->context.id ^ cpu_last_asid) >> MAX_ASID_BITS))
-+		/*
-+		 * The ASID is from the current generation, just switch to the
-+		 * new pgd. This condition is only true for calls from
-+		 * context_switch() and interrupts are already disabled.
-+		 */
-+		cpu_switch_mm(mm->pgd, mm);
-+	else if (irqs_disabled())
-+		/*
-+		 * Defer the new ASID allocation until after the context
-+		 * switch critical region since __new_context() cannot be
-+		 * called with interrupts disabled.
-+		 */
-+		set_ti_thread_flag(task_thread_info(tsk), TIF_SWITCH_MM);
-+	else
-+		/*
-+		 * That is a direct call to switch_mm() or activate_mm() with
-+		 * interrupts enabled and a new context.
-+		 */
-+		switch_new_context(mm);
-+}
-+
-+#define init_new_context(tsk,mm)	(__init_new_context(tsk,mm),0)
-+#define destroy_context(mm)		do { } while(0)
-+
-+#define finish_arch_post_lock_switch \
-+	finish_arch_post_lock_switch
-+static inline void finish_arch_post_lock_switch(void)
-+{
-+	if (test_and_clear_thread_flag(TIF_SWITCH_MM)) {
-+		struct mm_struct *mm = current->mm;
-+		unsigned long flags;
-+
-+		__new_context(mm);
-+
-+		local_irq_save(flags);
-+		cpu_switch_mm(mm->pgd, mm);
-+		local_irq_restore(flags);
-+	}
-+}
-+
-+/*
-+ * This is called when "tsk" is about to enter lazy TLB mode.
-+ *
-+ * mm:  describes the currently active mm context
-+ * tsk: task which is entering lazy tlb
-+ * cpu: cpu number which is entering lazy tlb
-+ *
-+ * tsk->mm will be NULL
-+ */
-+static inline void
-+enter_lazy_tlb(struct mm_struct *mm, struct task_struct *tsk)
-+{
-+}
-+
-+/*
-+ * This is the actual mm switch as far as the scheduler
-+ * is concerned.  No registers are touched.  We avoid
-+ * calling the CPU specific function when the mm hasn't
-+ * actually changed.
-+ */
-+static inline void
-+switch_mm(struct mm_struct *prev, struct mm_struct *next,
-+	  struct task_struct *tsk)
-+{
-+	unsigned int cpu = smp_processor_id();
-+
-+#ifdef CONFIG_SMP
-+	/* check for possible thread migration */
-+	if (!cpumask_empty(mm_cpumask(next)) &&
-+	    !cpumask_test_cpu(cpu, mm_cpumask(next)))
-+		__flush_icache_all();
++/* PAGE_SHIFT determines the page size */
++#ifdef CONFIG_ARM64_64K_PAGES
++#define PAGE_SHIFT		16
++#else
++#define PAGE_SHIFT		12
 +#endif
-+	if (!cpumask_test_and_set_cpu(cpu, mm_cpumask(next)) || prev != next)
-+		check_and_switch_context(next, tsk);
-+}
++#define PAGE_SIZE		(_AC(1,UL) << PAGE_SHIFT)
++#define PAGE_MASK		(~(PAGE_SIZE-1))
 +
-+#define deactivate_mm(tsk,mm)	do { } while (0)
-+#define activate_mm(prev,next)	switch_mm(prev, next, NULL)
-+
-+#endif
-diff --git a/arch/arm64/include/asm/thread_info.h b/arch/arm64/include/asm/thread_info.h
-new file mode 100644
-index 0000000..3659e46
---- /dev/null
-+++ b/arch/arm64/include/asm/thread_info.h
-@@ -0,0 +1,127 @@
-+/*
-+ * Based on arch/arm/include/asm/thread_info.h
-+ *
-+ * Copyright (C) 2002 Russell King.
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#ifndef __ASM_THREAD_INFO_H
-+#define __ASM_THREAD_INFO_H
-+
-+#ifdef __KERNEL__
-+
-+#include <linux/compiler.h>
-+
-+#ifndef CONFIG_ARM64_64K_PAGES
-+#define THREAD_SIZE_ORDER	1
-+#endif
-+
-+#define THREAD_SIZE		8192
-+#define THREAD_START_SP		(THREAD_SIZE - 16)
++/* We do define AT_SYSINFO_EHDR but don't use the gate mechanism */
++#define __HAVE_ARCH_GATE_AREA		1
 +
 +#ifndef __ASSEMBLY__
 +
-+struct task_struct;
-+struct exec_domain;
-+
-+#include <asm/types.h>
-+
-+typedef unsigned long mm_segment_t;
-+
-+/*
-+ * low level task data that entry.S needs immediate access to.
-+ * __switch_to() assumes cpu_context follows immediately after cpu_domain.
-+ */
-+struct thread_info {
-+	unsigned long		flags;		/* low level flags */
-+	mm_segment_t		addr_limit;	/* address limit */
-+	struct task_struct	*task;		/* main task structure */
-+	struct exec_domain	*exec_domain;	/* execution domain */
-+	struct restart_block	restart_block;
-+	int			preempt_count;	/* 0 => preemptable, <0 => bug */
-+	int			cpu;		/* cpu */
-+};
-+
-+#define INIT_THREAD_INFO(tsk)						\
-+{									\
-+	.task		= &tsk,						\
-+	.exec_domain	= &default_exec_domain,				\
-+	.flags		= 0,						\
-+	.preempt_count	= INIT_PREEMPT_COUNT,				\
-+	.addr_limit	= KERNEL_DS,					\
-+	.restart_block	= {						\
-+		.fn	= do_no_restart_syscall,			\
-+	},								\
-+}
-+
-+#define init_thread_info	(init_thread_union.thread_info)
-+#define init_stack		(init_thread_union.stack)
-+
-+/*
-+ * how to get the thread information struct from C
-+ */
-+static inline struct thread_info *current_thread_info(void) __attribute_const__;
-+
-+static inline struct thread_info *current_thread_info(void)
-+{
-+	register unsigned long sp asm ("sp");
-+	return (struct thread_info *)(sp & ~(THREAD_SIZE - 1));
-+}
-+
-+#define thread_saved_pc(tsk)	\
-+	((unsigned long)(tsk->thread.cpu_context.pc))
-+#define thread_saved_sp(tsk)	\
-+	((unsigned long)(tsk->thread.cpu_context.sp))
-+#define thread_saved_fp(tsk)	\
-+	((unsigned long)(tsk->thread.cpu_context.fp))
-+
++#ifdef CONFIG_ARM64_64K_PAGES
++#include <asm/pgtable-2level-types.h>
++#else
++#include <asm/pgtable-3level-types.h>
 +#endif
 +
-+/*
-+ * We use bit 30 of the preempt_count to indicate that kernel
-+ * preemption is occurring.  See <asm/hardirq.h>.
-+ */
-+#define PREEMPT_ACTIVE	0x40000000
++extern void __cpu_clear_user_page(void *p, unsigned long user);
++extern void __cpu_copy_user_page(void *to, const void *from,
++				 unsigned long user);
++extern void copy_page(void *to, const void *from);
++extern void clear_page(void *to);
 +
-+/*
-+ * thread information flags:
-+ *  TIF_SYSCALL_TRACE	- syscall trace active
-+ *  TIF_SIGPENDING	- signal pending
-+ *  TIF_NEED_RESCHED	- rescheduling necessary
-+ *  TIF_NOTIFY_RESUME	- callback before returning to user
-+ *  TIF_USEDFPU		- FPU was used by this task this quantum (SMP)
-+ *  TIF_POLLING_NRFLAG	- true if poll_idle() is polling TIF_NEED_RESCHED
-+ */
-+#define TIF_SIGPENDING		0
-+#define TIF_NEED_RESCHED	1
-+#define TIF_NOTIFY_RESUME	2	/* callback before returning to user */
-+#define TIF_SYSCALL_TRACE	8
-+#define TIF_POLLING_NRFLAG	16
-+#define TIF_MEMDIE		18	/* is terminating due to OOM killer */
-+#define TIF_FREEZE		19
-+#define TIF_RESTORE_SIGMASK	20
-+#define TIF_SINGLESTEP		21
-+#define TIF_32BIT		22	/* 32bit process */
-+#define TIF_SWITCH_MM		23	/* deferred switch_mm */
++#define clear_user_page(addr,vaddr,pg)  __cpu_clear_user_page(addr, vaddr)
++#define copy_user_page(to,from,vaddr,pg) __cpu_copy_user_page(to, from, vaddr)
 +
-+#define _TIF_SIGPENDING		(1 << TIF_SIGPENDING)
-+#define _TIF_NEED_RESCHED	(1 << TIF_NEED_RESCHED)
-+#define _TIF_NOTIFY_RESUME	(1 << TIF_NOTIFY_RESUME)
-+#define _TIF_32BIT		(1 << TIF_32BIT)
++typedef struct page *pgtable_t;
 +
-+#define _TIF_WORK_MASK		(_TIF_NEED_RESCHED | _TIF_SIGPENDING | \
-+				 _TIF_NOTIFY_RESUME)
++#ifdef CONFIG_HAVE_ARCH_PFN_VALID
++extern int pfn_valid(unsigned long);
++#endif
 +
-+#endif /* __KERNEL__ */
-+#endif /* __ASM_THREAD_INFO_H */
-diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
++#include <asm/memory.h>
++
++#endif /* !__ASSEMBLY__ */
++
++#define VM_DATA_DEFAULT_FLAGS \
++	(((current->personality & READ_IMPLIES_EXEC) ? VM_EXEC : 0) | \
++	 VM_READ | VM_WRITE | VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
++
++#include <asm-generic/getorder.h>
++
++#endif
+diff --git a/arch/arm64/include/asm/pgalloc.h b/arch/arm64/include/asm/pgalloc.h
 new file mode 100644
-index 0000000..6dfd96f
+index 0000000..f214069
 --- /dev/null
-+++ b/arch/arm64/kernel/process.c
-@@ -0,0 +1,412 @@
++++ b/arch/arm64/include/asm/pgalloc.h
+@@ -0,0 +1,113 @@
 +/*
-+ * Based on arch/arm/kernel/process.c
++ * Based on arch/arm/include/asm/pgalloc.h
 + *
-+ * Original Copyright (C) 1995  Linus Torvalds
-+ * Copyright (C) 1996-2000 Russell King - Converted to ARM.
++ * Copyright (C) 2000-2001 Russell King
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#ifndef __ASM_PGALLOC_H
++#define __ASM_PGALLOC_H
++
++#include <asm/pgtable-hwdef.h>
++#include <asm/processor.h>
++#include <asm/cacheflush.h>
++#include <asm/tlbflush.h>
++
++#define check_pgt_cache()		do { } while (0)
++
++#ifndef CONFIG_ARM64_64K_PAGES
++
++static inline pmd_t *pmd_alloc_one(struct mm_struct *mm, unsigned long addr)
++{
++	return (pmd_t *)get_zeroed_page(GFP_KERNEL | __GFP_REPEAT);
++}
++
++static inline void pmd_free(struct mm_struct *mm, pmd_t *pmd)
++{
++	BUG_ON((unsigned long)pmd & (PAGE_SIZE-1));
++	free_page((unsigned long)pmd);
++}
++
++static inline void pud_populate(struct mm_struct *mm, pud_t *pud, pmd_t *pmd)
++{
++	set_pud(pud, __pud(__pa(pmd) | PMD_TYPE_TABLE));
++}
++
++#endif	/* CONFIG_ARM64_64K_PAGES */
++
++extern pgd_t *pgd_alloc(struct mm_struct *mm);
++extern void pgd_free(struct mm_struct *mm, pgd_t *pgd);
++
++#define PGALLOC_GFP	(GFP_KERNEL | __GFP_NOTRACK | __GFP_REPEAT | __GFP_ZERO)
++
++static inline pte_t *
++pte_alloc_one_kernel(struct mm_struct *mm, unsigned long addr)
++{
++	return (pte_t *)__get_free_page(PGALLOC_GFP);
++}
++
++static inline pgtable_t
++pte_alloc_one(struct mm_struct *mm, unsigned long addr)
++{
++	struct page *pte;
++
++	pte = alloc_pages(PGALLOC_GFP, 0);
++	if (pte)
++		pgtable_page_ctor(pte);
++
++	return pte;
++}
++
++/*
++ * Free a PTE table.
++ */
++static inline void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
++{
++	if (pte)
++		free_page((unsigned long)pte);
++}
++
++static inline void pte_free(struct mm_struct *mm, pgtable_t pte)
++{
++	pgtable_page_dtor(pte);
++	__free_page(pte);
++}
++
++static inline void __pmd_populate(pmd_t *pmdp, phys_addr_t pte,
++				  pmdval_t prot)
++{
++	set_pmd(pmdp, __pmd(pte | prot));
++}
++
++/*
++ * Populate the pmdp entry with a pointer to the pte.  This pmd is part
++ * of the mm address space.
++ */
++static inline void
++pmd_populate_kernel(struct mm_struct *mm, pmd_t *pmdp, pte_t *ptep)
++{
++	/*
++	 * The pmd must be loaded with the physical address of the PTE table
++	 */
++	__pmd_populate(pmdp, __pa(ptep), PMD_TYPE_TABLE);
++}
++
++static inline void
++pmd_populate(struct mm_struct *mm, pmd_t *pmdp, pgtable_t ptep)
++{
++	__pmd_populate(pmdp, page_to_phys(ptep), PMD_TYPE_TABLE);
++}
++#define pmd_pgtable(pmd) pmd_page(pmd)
++
++#endif
+diff --git a/arch/arm64/mm/copypage.c b/arch/arm64/mm/copypage.c
+new file mode 100644
+index 0000000..9aecbac
+--- /dev/null
++++ b/arch/arm64/mm/copypage.c
+@@ -0,0 +1,34 @@
++/*
++ * Based on arch/arm/mm/copypage.c
++ *
++ * Copyright (C) 2002 Deep Blue Solutions Ltd, All Rights Reserved.
 + * Copyright (C) 2012 ARM Ltd.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -362,409 +271,753 @@ index 0000000..6dfd96f
 + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
 +
-+#include <stdarg.h>
-+
-+#include <linux/export.h>
-+#include <linux/sched.h>
-+#include <linux/kernel.h>
 +#include <linux/mm.h>
-+#include <linux/stddef.h>
-+#include <linux/unistd.h>
-+#include <linux/user.h>
-+#include <linux/delay.h>
-+#include <linux/reboot.h>
-+#include <linux/interrupt.h>
-+#include <linux/kallsyms.h>
-+#include <linux/init.h>
-+#include <linux/cpu.h>
-+#include <linux/elfcore.h>
-+#include <linux/pm.h>
-+#include <linux/tick.h>
-+#include <linux/utsname.h>
-+#include <linux/uaccess.h>
-+#include <linux/random.h>
-+#include <linux/hw_breakpoint.h>
-+#include <linux/personality.h>
-+#include <linux/notifier.h>
 +
-+#include <asm/compat.h>
++#include <asm/page.h>
 +#include <asm/cacheflush.h>
-+#include <asm/processor.h>
-+#include <asm/stacktrace.h>
-+#include <asm/fpsimd.h>
 +
-+extern void setup_mm_for_reboot(void);
-+
-+static void setup_restart(void)
++void __cpu_copy_user_page(void *kto, const void *kfrom, unsigned long vaddr)
 +{
-+	/*
-+	 * Tell the mm system that we are going to reboot -
-+	 * we may need it to insert some 1:1 mappings so that
-+	 * soft boot works.
-+	 */
-+	setup_mm_for_reboot();
-+
-+	/* Clean and invalidate caches */
-+	flush_cache_all();
-+
-+	/* Turn off caching */
-+	cpu_proc_fin();
-+
-+	/* Push out any further dirty data, and ensure cache is empty */
-+	flush_cache_all();
++	copy_page(kto, kfrom);
++	__flush_dcache_area(kto, PAGE_SIZE);
 +}
 +
-+void soft_restart(unsigned long addr)
++void __cpu_clear_user_page(void *kaddr, unsigned long vaddr)
 +{
-+	setup_restart();
-+	cpu_reset(addr);
++	clear_page(kaddr);
 +}
+diff --git a/arch/arm64/mm/extable.c b/arch/arm64/mm/extable.c
+new file mode 100644
+index 0000000..7944427
+--- /dev/null
++++ b/arch/arm64/mm/extable.c
+@@ -0,0 +1,17 @@
++/*
++ * Based on arch/arm/mm/extable.c
++ */
++
++#include <linux/module.h>
++#include <linux/uaccess.h>
++
++int fixup_exception(struct pt_regs *regs)
++{
++	const struct exception_table_entry *fixup;
++
++	fixup = search_exception_tables(instruction_pointer(regs));
++	if (fixup)
++		regs->pc = fixup->fixup;
++
++	return fixup != NULL;
++}
+diff --git a/arch/arm64/mm/fault.c b/arch/arm64/mm/fault.c
+new file mode 100644
+index 0000000..1909a69
+--- /dev/null
++++ b/arch/arm64/mm/fault.c
+@@ -0,0 +1,534 @@
++/*
++ * Based on arch/arm/mm/fault.c
++ *
++ * Copyright (C) 1995  Linus Torvalds
++ * Copyright (C) 1995-2004 Russell King
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <linux/module.h>
++#include <linux/signal.h>
++#include <linux/mm.h>
++#include <linux/hardirq.h>
++#include <linux/init.h>
++#include <linux/kprobes.h>
++#include <linux/uaccess.h>
++#include <linux/page-flags.h>
++#include <linux/sched.h>
++#include <linux/highmem.h>
++#include <linux/perf_event.h>
++
++#include <asm/exception.h>
++#include <asm/debug-monitors.h>
++#include <asm/system_misc.h>
++#include <asm/pgtable.h>
++#include <asm/tlbflush.h>
 +
 +/*
-+ * Function pointers to optional machine specific functions
++ * Dump out the page tables associated with 'addr' in mm 'mm'.
 + */
-+void (*pm_power_off)(void);
-+EXPORT_SYMBOL(pm_power_off);
-+
-+void (*pm_restart)(const char *cmd);
-+EXPORT_SYMBOL_GPL(pm_restart);
-+
-+
-+/*
-+ * This is our default idle handler.
-+ */
-+static void default_idle(void)
++void show_pte(struct mm_struct *mm, unsigned long addr)
 +{
-+	/*
-+	 * This should do all the clock switching and wait for interrupt
-+	 * tricks
-+	 */
-+	cpu_do_idle();
-+	local_irq_enable();
-+}
++	pgd_t *pgd;
 +
-+void (*pm_idle)(void) = default_idle;
-+EXPORT_SYMBOL(pm_idle);
++	if (!mm)
++		mm = &init_mm;
 +
-+/*
-+ * The idle thread, has rather strange semantics for calling pm_idle,
-+ * but this is what x86 does and we need to do the same, so that
-+ * things like cpuidle get called in the same way.  The only difference
-+ * is that we always respect 'hlt_counter' to prevent low power idle.
-+ */
-+void cpu_idle(void)
-+{
-+	local_fiq_enable();
++	pr_alert("pgd = %p\n", mm->pgd);
++	pgd = pgd_offset(mm, addr);
++	pr_alert("[%08lx] *pgd=%016llx", addr, pgd_val(*pgd));
 +
-+	/* endless idle loop with no priority at all */
-+	while (1) {
-+		tick_nohz_idle_enter();
-+		rcu_idle_enter();
-+		while (!need_resched()) {
-+			/*
-+			 * We need to disable interrupts here to ensure
-+			 * we don't miss a wakeup call.
-+			 */
-+			local_irq_disable();
-+			if (!need_resched()) {
-+				stop_critical_timings();
-+				pm_idle();
-+				start_critical_timings();
-+				/*
-+				 * pm_idle functions should always return
-+				 * with IRQs enabled.
-+				 */
-+				WARN_ON(irqs_disabled());
-+			} else {
-+				local_irq_enable();
-+			}
-+		}
-+		rcu_idle_exit();
-+		tick_nohz_idle_exit();
-+		schedule_preempt_disabled();
-+	}
-+}
++	do {
++		pud_t *pud;
++		pmd_t *pmd;
++		pte_t *pte;
 +
-+void machine_shutdown(void)
-+{
-+#ifdef CONFIG_SMP
-+	smp_send_stop();
-+#endif
-+}
++		if (pgd_none_or_clear_bad(pgd))
++			break;
 +
-+void machine_halt(void)
-+{
-+	machine_shutdown();
-+	while (1);
-+}
++		pud = pud_offset(pgd, addr);
++		if (pud_none_or_clear_bad(pud))
++			break;
 +
-+void machine_power_off(void)
-+{
-+	machine_shutdown();
-+	if (pm_power_off)
-+		pm_power_off();
-+}
++		pmd = pmd_offset(pud, addr);
++		printk(", *pmd=%016llx", pmd_val(*pmd));
++		if (pmd_none_or_clear_bad(pmd))
++			break;
 +
-+void machine_restart(char *cmd)
-+{
-+	machine_shutdown();
++		pte = pte_offset_map(pmd, addr);
++		printk(", *pte=%016llx", pte_val(*pte));
++		pte_unmap(pte);
++	} while(0);
 +
-+	/* Disable interrupts first */
-+	local_irq_disable();
-+	local_fiq_disable();
-+
-+	/* Now call the architecture specific reboot code. */
-+	if (pm_restart)
-+		pm_restart(cmd);
-+
-+	/*
-+	 * Whoops - the architecture was unable to reboot.
-+	 * Tell the user!
-+	 */
-+	mdelay(1000);
-+	printk("Reboot failed -- System halted\n");
-+	while (1);
-+}
-+
-+void __show_regs(struct pt_regs *regs)
-+{
-+	int i;
-+
-+	printk("CPU: %d    %s  (%s %.*s)\n",
-+		raw_smp_processor_id(), print_tainted(),
-+		init_utsname()->release,
-+		(int)strcspn(init_utsname()->version, " "),
-+		init_utsname()->version);
-+	print_symbol("PC is at %s\n", instruction_pointer(regs));
-+	print_symbol("LR is at %s\n", regs->regs[30]);
-+	printk("pc : [<%016llx>] lr : [<%016llx>] pstate: %08llx\n",
-+	       regs->pc, regs->regs[30], regs->pstate);
-+	printk("sp : %016llx\n", regs->sp);
-+	for (i = 29; i >= 0; i--) {
-+		printk("x%-2d: %016llx ", i, regs->regs[i]);
-+		if (i % 2 == 0)
-+			printk("\n");
-+	}
 +	printk("\n");
 +}
 +
-+void show_regs(struct pt_regs * regs)
++/*
++ * The kernel tried to access some page that wasn't present.
++ */
++static void __do_kernel_fault(struct mm_struct *mm, unsigned long addr,
++			      unsigned int esr, struct pt_regs *regs)
 +{
-+	printk("\n");
-+	printk("Pid: %d, comm: %20s\n", task_pid_nr(current), current->comm);
-+	__show_regs(regs);
++	/*
++	 * Are we prepared to handle this kernel fault?
++	 */
++	if (fixup_exception(regs))
++		return;
++
++	/*
++	 * No handler, we'll have to terminate things with extreme prejudice.
++	 */
++	bust_spinlocks(1);
++	pr_alert("Unable to handle kernel %s at virtual address %08lx\n",
++		 (addr < PAGE_SIZE) ? "NULL pointer dereference" :
++		 "paging request", addr);
++
++	show_pte(mm, addr);
++	die("Oops", regs, esr);
++	bust_spinlocks(0);
++	do_exit(SIGKILL);
 +}
 +
 +/*
-+ * Free current thread data structures etc..
++ * Something tried to access memory that isn't in our memory map. User mode
++ * accesses just cause a SIGSEGV
 + */
-+void exit_thread(void)
++static void __do_user_fault(struct task_struct *tsk, unsigned long addr,
++			    unsigned int esr, unsigned int sig, int code,
++			    struct pt_regs *regs)
 +{
-+}
++	struct siginfo si;
 +
-+void flush_thread(void)
-+{
-+	fpsimd_flush_thread();
-+	flush_ptrace_hw_breakpoint(current);
-+}
-+
-+void release_thread(struct task_struct *dead_task)
-+{
-+}
-+
-+int arch_dup_task_struct(struct task_struct *dst, struct task_struct *src)
-+{
-+	fpsimd_save_state(&current->thread.fpsimd_state);
-+	*dst = *src;
-+	return 0;
-+}
-+
-+asmlinkage void ret_from_fork(void) asm("ret_from_fork");
-+
-+int copy_thread(unsigned long clone_flags, unsigned long stack_start,
-+		unsigned long stk_sz, struct task_struct *p,
-+		struct pt_regs *regs)
-+{
-+	struct pt_regs *childregs = task_pt_regs(p);
-+	unsigned long tls = p->thread.tp_value;
-+
-+	*childregs = *regs;
-+	childregs->regs[0] = 0;
-+
-+	if (is_compat_thread(task_thread_info(p)))
-+		childregs->compat_sp = stack_start;
-+	else {
-+		/*
-+		 * Read the current TLS pointer from tpidr_el0 as it may be
-+		 * out-of-sync with the saved value.
-+		 */
-+		asm("mrs %0, tpidr_el0" : "=r" (tls));
-+		childregs->sp = stack_start;
++	if (show_unhandled_signals) {
++		pr_info("%s[%d]: unhandled page fault (%d) at 0x%08lx, code 0x%03x\n",
++			tsk->comm, task_pid_nr(tsk), sig, addr, esr);
++		show_pte(tsk->mm, addr);
++		show_regs(regs);
 +	}
 +
-+	memset(&p->thread.cpu_context, 0, sizeof(struct cpu_context));
-+	p->thread.cpu_context.sp = (unsigned long)childregs;
-+	p->thread.cpu_context.pc = (unsigned long)ret_from_fork;
-+
-+	/* If a TLS pointer was passed to clone, use that for the new thread. */
-+	if (clone_flags & CLONE_SETTLS)
-+		tls = regs->regs[3];
-+	p->thread.tp_value = tls;
-+
-+	ptrace_hw_copy_thread(p);
-+
-+	return 0;
++	tsk->thread.fault_address = addr;
++	si.si_signo = sig;
++	si.si_errno = 0;
++	si.si_code = code;
++	si.si_addr = (void __user *)addr;
++	force_sig_info(sig, &si, tsk);
 +}
 +
-+static void tls_thread_switch(struct task_struct *next)
++void do_bad_area(unsigned long addr, unsigned int esr, struct pt_regs *regs)
 +{
-+	unsigned long tpidr, tpidrro;
++	struct task_struct *tsk = current;
++	struct mm_struct *mm = tsk->active_mm;
 +
-+	if (!is_compat_task()) {
-+		asm("mrs %0, tpidr_el0" : "=r" (tpidr));
-+		current->thread.tp_value = tpidr;
++	/*
++	 * If we are in kernel mode at this point, we have no context to
++	 * handle this fault with.
++	 */
++	if (user_mode(regs))
++		__do_user_fault(tsk, addr, esr, SIGSEGV, SEGV_MAPERR, regs);
++	else
++		__do_kernel_fault(mm, addr, esr, regs);
++}
++
++#define VM_FAULT_BADMAP		0x010000
++#define VM_FAULT_BADACCESS	0x020000
++
++#define ESR_WRITE		(1 << 6)
++#define ESR_LNX_EXEC		(1 << 24)
++
++/*
++ * Check that the permissions on the VMA allow for the fault which occurred.
++ * If we encountered a write fault, we must have write permission, otherwise
++ * we allow any permission.
++ */
++static inline bool access_error(unsigned int esr, struct vm_area_struct *vma)
++{
++	unsigned int mask = VM_READ | VM_WRITE | VM_EXEC;
++
++	if (esr & ESR_WRITE)
++		mask = VM_WRITE;
++	if (esr & ESR_LNX_EXEC)
++		mask = VM_EXEC;
++
++	return vma->vm_flags & mask ? false : true;
++}
++
++static int __do_page_fault(struct mm_struct *mm, unsigned long addr,
++			   unsigned int esr, unsigned int flags,
++			   struct task_struct *tsk)
++{
++	struct vm_area_struct *vma;
++	int fault;
++
++	vma = find_vma(mm, addr);
++	fault = VM_FAULT_BADMAP;
++	if (unlikely(!vma))
++		goto out;
++	if (unlikely(vma->vm_start > addr))
++		goto check_stack;
++
++	/*
++	 * Ok, we have a good vm_area for this memory access, so we can handle
++	 * it.
++	 */
++good_area:
++	if (access_error(esr, vma)) {
++		fault = VM_FAULT_BADACCESS;
++		goto out;
 +	}
 +
-+	if (is_compat_thread(task_thread_info(next))) {
-+		tpidr = 0;
-+		tpidrro = next->thread.tp_value;
++	return handle_mm_fault(mm, vma, addr & PAGE_MASK, flags);
++
++check_stack:
++	if (vma->vm_flags & VM_GROWSDOWN && !expand_stack(vma, addr))
++		goto good_area;
++out:
++	return fault;
++}
++
++static int __kprobes do_page_fault(unsigned long addr, unsigned int esr,
++				   struct pt_regs *regs)
++{
++	struct task_struct *tsk;
++	struct mm_struct *mm;
++	int fault, sig, code;
++	int write = esr & ESR_WRITE;
++	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
++		(write ? FAULT_FLAG_WRITE : 0);
++
++	tsk = current;
++	mm  = tsk->mm;
++
++	/* Enable interrupts if they were enabled in the parent context. */
++	if (interrupts_enabled(regs))
++		local_irq_enable();
++
++	/*
++	 * If we're in an interrupt or have no user context, we must not take
++	 * the fault.
++	 */
++	if (in_atomic() || !mm)
++		goto no_context;
++
++	/*
++	 * As per x86, we may deadlock here. However, since the kernel only
++	 * validly references user space from well defined areas of the code,
++	 * we can bug out early if this is from code which shouldn't.
++	 */
++	if (!down_read_trylock(&mm->mmap_sem)) {
++		if (!user_mode(regs) && !search_exception_tables(regs->pc))
++			goto no_context;
++retry:
++		down_read(&mm->mmap_sem);
 +	} else {
-+		tpidr = next->thread.tp_value;
-+		tpidrro = 0;
++		/*
++		 * The above down_read_trylock() might have succeeded in which
++		 * case, we'll have missed the might_sleep() from down_read().
++		 */
++		might_sleep();
++#ifdef CONFIG_DEBUG_VM
++		if (!user_mode(regs) && !search_exception_tables(regs->pc))
++			goto no_context;
++#endif
 +	}
 +
-+	asm(
-+	"	msr	tpidr_el0, %0\n"
-+	"	msr	tpidrro_el0, %1"
-+	: : "r" (tpidr), "r" (tpidrro));
++	fault = __do_page_fault(mm, addr, esr, flags, tsk);
++
++	/*
++	 * If we need to retry but a fatal signal is pending, handle the
++	 * signal first. We do not need to release the mmap_sem because it
++	 * would already be released in __lock_page_or_retry in mm/filemap.c.
++	 */
++	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
++		return 0;
++
++	/*
++	 * Major/minor page fault accounting is only done on the initial
++	 * attempt. If we go through a retry, it is extremely likely that the
++	 * page will be found in page cache at that point.
++	 */
++
++	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, addr);
++	if (flags & FAULT_FLAG_ALLOW_RETRY) {
++		if (fault & VM_FAULT_MAJOR) {
++			tsk->maj_flt++;
++			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, regs,
++				      addr);
++		} else {
++			tsk->min_flt++;
++			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, regs,
++				      addr);
++		}
++		if (fault & VM_FAULT_RETRY) {
++			/*
++			 * Clear FAULT_FLAG_ALLOW_RETRY to avoid any risk of
++			 * starvation.
++			 */
++			flags &= ~FAULT_FLAG_ALLOW_RETRY;
++			goto retry;
++		}
++	}
++
++	up_read(&mm->mmap_sem);
++
++	/*
++	 * Handle the "normal" case first - VM_FAULT_MAJOR / VM_FAULT_MINOR
++	 */
++	if (likely(!(fault & (VM_FAULT_ERROR | VM_FAULT_BADMAP |
++			      VM_FAULT_BADACCESS))))
++		return 0;
++
++	if (fault & VM_FAULT_OOM) {
++		/*
++		 * We ran out of memory, call the OOM killer, and return to
++		 * userspace (which will retry the fault, or kill us if we got
++		 * oom-killed).
++		 */
++		pagefault_out_of_memory();
++		return 0;
++	}
++
++	/*
++	 * If we are in kernel mode at this point, we have no context to
++	 * handle this fault with.
++	 */
++	if (!user_mode(regs))
++		goto no_context;
++
++	if (fault & VM_FAULT_SIGBUS) {
++		/*
++		 * We had some memory, but were unable to successfully fix up
++		 * this page fault.
++		 */
++		sig = SIGBUS;
++		code = BUS_ADRERR;
++	} else {
++		/*
++		 * Something tried to access memory that isn't in our memory
++		 * map.
++		 */
++		sig = SIGSEGV;
++		code = fault == VM_FAULT_BADACCESS ?
++			SEGV_ACCERR : SEGV_MAPERR;
++	}
++
++	__do_user_fault(tsk, addr, esr, sig, code, regs);
++	return 0;
++
++no_context:
++	__do_kernel_fault(mm, addr, esr, regs);
++	return 0;
 +}
 +
 +/*
-+ * Thread switching.
++ * First Level Translation Fault Handler
++ *
++ * We enter here because the first level page table doesn't contain a valid
++ * entry for the address.
++ *
++ * If the address is in kernel space (>= TASK_SIZE), then we are probably
++ * faulting in the vmalloc() area.
++ *
++ * If the init_task's first level page tables contains the relevant entry, we
++ * copy the it to this task.  If not, we send the process a signal, fixup the
++ * exception, or oops the kernel.
++ *
++ * NOTE! We MUST NOT take any locks for this case. We may be in an interrupt
++ * or a critical region, and should only copy the information from the master
++ * page table, nothing more.
 + */
-+struct task_struct *__switch_to(struct task_struct *prev,
-+				struct task_struct *next)
++static int __kprobes do_translation_fault(unsigned long addr,
++					  unsigned int esr,
++					  struct pt_regs *regs)
 +{
-+	struct task_struct *last;
++	if (addr < TASK_SIZE)
++		return do_page_fault(addr, esr, regs);
 +
-+	fpsimd_thread_switch(next);
-+	tls_thread_switch(next);
-+	hw_breakpoint_thread_switch(next);
-+
-+	/* the actual thread switch */
-+	last = cpu_switch_to(prev, next);
-+
-+	return last;
++	do_bad_area(addr, esr, regs);
++	return 0;
 +}
 +
 +/*
-+ * Fill in the task's elfregs structure for a core dump.
++ * Some section permission faults need to be handled gracefully.  They can
++ * happen due to a __{get,put}_user during an oops.
 + */
-+int dump_task_regs(struct task_struct *t, elf_gregset_t *elfregs)
++static int do_sect_fault(unsigned long addr, unsigned int esr,
++			 struct pt_regs *regs)
 +{
-+	elf_core_copy_regs(elfregs, task_pt_regs(t));
++	do_bad_area(addr, esr, regs);
++	return 0;
++}
++
++/*
++ * This abort handler always returns "fault".
++ */
++static int do_bad(unsigned long addr, unsigned int esr, struct pt_regs *regs)
++{
++	return 1;
++}
++
++static struct fault_info {
++	int	(*fn)(unsigned long addr, unsigned int esr, struct pt_regs *regs);
++	int	sig;
++	int	code;
++	const char *name;
++} fault_info[] = {
++	{ do_bad,		SIGBUS,  0,		"ttbr address size fault"	},
++	{ do_bad,		SIGBUS,  0,		"level 1 address size fault"	},
++	{ do_bad,		SIGBUS,  0,		"level 2 address size fault"	},
++	{ do_bad,		SIGBUS,  0,		"level 3 address size fault"	},
++	{ do_translation_fault,	SIGSEGV, SEGV_MAPERR,	"input address range fault"	},
++	{ do_translation_fault,	SIGSEGV, SEGV_MAPERR,	"level 1 translation fault"	},
++	{ do_translation_fault,	SIGSEGV, SEGV_MAPERR,	"level 2 translation fault"	},
++	{ do_page_fault,	SIGSEGV, SEGV_MAPERR,	"level 3 translation fault"	},
++	{ do_bad,		SIGBUS,  0,		"reserved access flag fault"	},
++	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"level 1 access flag fault"	},
++	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"level 2 access flag fault"	},
++	{ do_page_fault,	SIGSEGV, SEGV_ACCERR,	"level 3 access flag fault"	},
++	{ do_bad,		SIGBUS,  0,		"reserved permission fault"	},
++	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"level 1 permission fault"	},
++	{ do_sect_fault,	SIGSEGV, SEGV_ACCERR,	"level 2 permission fault"	},
++	{ do_page_fault,	SIGSEGV, SEGV_ACCERR,	"level 3 permission fault"	},
++	{ do_bad,		SIGBUS,  0,		"synchronous external abort"	},
++	{ do_bad,		SIGBUS,  0,		"asynchronous external abort"	},
++	{ do_bad,		SIGBUS,  0,		"unknown 18"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 19"			},
++	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
++	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
++	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
++	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
++	{ do_bad,		SIGBUS,  0,		"synchronous parity error"	},
++	{ do_bad,		SIGBUS,  0,		"asynchronous parity error"	},
++	{ do_bad,		SIGBUS,  0,		"unknown 26"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 27"			},
++	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
++	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
++	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
++	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
++	{ do_bad,		SIGBUS,  0,		"unknown 32"			},
++	{ do_bad,		SIGBUS,  BUS_ADRALN,	"alignment fault"		},
++	{ do_bad,		SIGBUS,  0,		"debug event"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 35"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 36"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 37"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 38"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 39"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 40"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 41"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 42"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 43"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 44"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 45"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 46"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 47"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 48"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 49"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 50"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 51"			},
++	{ do_bad,		SIGBUS,  0,		"implementation fault (lockdown abort)" },
++	{ do_bad,		SIGBUS,  0,		"unknown 53"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 54"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 55"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 56"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 57"			},
++	{ do_bad,		SIGBUS,  0,		"implementation fault (coprocessor abort)" },
++	{ do_bad,		SIGBUS,  0,		"unknown 59"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 60"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 61"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 62"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 63"			},
++};
++
++/*
++ * Dispatch a data abort to the relevant handler.
++ */
++asmlinkage void __exception do_mem_abort(unsigned long addr, unsigned int esr,
++					 struct pt_regs *regs)
++{
++	const struct fault_info *inf = fault_info + (esr & 63);
++	struct siginfo info;
++
++	if (!inf->fn(addr, esr, regs))
++		return;
++
++	pr_alert("Unhandled fault: %s (0x%08x) at 0x%016lx\n",
++		 inf->name, esr, addr);
++
++	info.si_signo = inf->sig;
++	info.si_errno = 0;
++	info.si_code  = inf->code;
++	info.si_addr  = (void __user *)addr;
++	arm64_notify_die("", regs, &info, esr);
++}
++
++/*
++ * Handle stack alignment exceptions.
++ */
++asmlinkage void __exception do_sp_pc_abort(unsigned long addr,
++					   unsigned int esr,
++					   struct pt_regs *regs)
++{
++	struct siginfo info;
++
++	info.si_signo = SIGBUS;
++	info.si_errno = 0;
++	info.si_code  = BUS_ADRALN;
++	info.si_addr  = (void __user *)addr;
++	arm64_notify_die("", regs, &info, esr);
++}
++
++static struct fault_info debug_fault_info[] = {
++	{ do_bad,	SIGTRAP,	TRAP_HWBKPT,	"hardware breakpoint"	},
++	{ do_bad,	SIGTRAP,	TRAP_HWBKPT,	"hardware single-step"	},
++	{ do_bad,	SIGTRAP,	TRAP_HWBKPT,	"hardware watchpoint"	},
++	{ do_bad,	SIGBUS,		0,		"unknown 3"		},
++	{ do_bad,	SIGTRAP,	TRAP_BRKPT,	"aarch32 BKPT"		},
++	{ do_bad,	SIGTRAP,	0,		"aarch32 vector catch"	},
++	{ do_bad,	SIGTRAP,	TRAP_BRKPT,	"aarch64 BRK"		},
++	{ do_bad,	SIGBUS,		0,		"unknown 7"		},
++};
++
++void __init hook_debug_fault_code(int nr,
++				  int (*fn)(unsigned long, unsigned int, struct pt_regs *),
++				  int sig, int code, const char *name)
++{
++	BUG_ON(nr < 0 || nr >= ARRAY_SIZE(debug_fault_info));
++
++	debug_fault_info[nr].fn		= fn;
++	debug_fault_info[nr].sig	= sig;
++	debug_fault_info[nr].code	= code;
++	debug_fault_info[nr].name	= name;
++}
++
++asmlinkage int __exception do_debug_exception(unsigned long addr,
++					      unsigned int esr,
++					      struct pt_regs *regs)
++{
++	const struct fault_info *inf = debug_fault_info + DBG_ESR_EVT(esr);
++	struct siginfo info;
++
++	if (!inf->fn(addr, esr, regs))
++		return 1;
++
++	pr_alert("Unhandled debug exception: %s (0x%08x) at 0x%016lx\n",
++		 inf->name, esr, addr);
++
++	info.si_signo = inf->sig;
++	info.si_errno = 0;
++	info.si_code  = inf->code;
++	info.si_addr  = (void __user *)addr;
++	arm64_notify_die("", regs, &info, esr);
++
++	return 0;
++}
+diff --git a/arch/arm64/mm/mm.h b/arch/arm64/mm/mm.h
+new file mode 100644
+index 0000000..c84f68b
+--- /dev/null
++++ b/arch/arm64/mm/mm.h
+@@ -0,0 +1,2 @@
++extern void __flush_dcache_page(struct address_space *mapping, struct page *page);
++extern void __init bootmem_init(void);
+diff --git a/arch/arm64/mm/mmap.c b/arch/arm64/mm/mmap.c
+new file mode 100644
+index 0000000..7c7be78
+--- /dev/null
++++ b/arch/arm64/mm/mmap.c
+@@ -0,0 +1,144 @@
++/*
++ * Based on arch/arm/mm/mmap.c
++ *
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <linux/elf.h>
++#include <linux/fs.h>
++#include <linux/mm.h>
++#include <linux/mman.h>
++#include <linux/export.h>
++#include <linux/shm.h>
++#include <linux/sched.h>
++#include <linux/io.h>
++#include <linux/personality.h>
++#include <linux/random.h>
++
++#include <asm/cputype.h>
++
++/*
++ * Leave enough space between the mmap area and the stack to honour ulimit in
++ * the face of randomisation.
++ */
++#define MIN_GAP (SZ_128M + ((STACK_RND_MASK << PAGE_SHIFT) + 1))
++#define MAX_GAP	(STACK_TOP/6*5)
++
++static int mmap_is_legacy(void)
++{
++	if (current->personality & ADDR_COMPAT_LAYOUT)
++		return 1;
++
++	if (rlimit(RLIMIT_STACK) == RLIM_INFINITY)
++		return 1;
++
++	return sysctl_legacy_va_layout;
++}
++
++/*
++ * Since get_random_int() returns the same value within a 1 jiffy window, we
++ * will almost always get the same randomisation for the stack and mmap
++ * region. This will mean the relative distance between stack and mmap will be
++ * the same.
++ *
++ * To avoid this we can shift the randomness by 1 bit.
++ */
++static unsigned long mmap_rnd(void)
++{
++	unsigned long rnd = 0;
++
++	if (current->flags & PF_RANDOMIZE)
++		rnd = (long)get_random_int() & (STACK_RND_MASK >> 1);
++
++	return rnd << (PAGE_SHIFT + 1);
++}
++
++static unsigned long mmap_base(void)
++{
++	unsigned long gap = rlimit(RLIMIT_STACK);
++
++	if (gap < MIN_GAP)
++		gap = MIN_GAP;
++	else if (gap > MAX_GAP)
++		gap = MAX_GAP;
++
++	return PAGE_ALIGN(STACK_TOP - gap - mmap_rnd());
++}
++
++/*
++ * This function, called very early during the creation of a new process VM
++ * image, sets up which VM layout function to use:
++ */
++void arch_pick_mmap_layout(struct mm_struct *mm)
++{
++	/*
++	 * Fall back to the standard layout if the personality bit is set, or
++	 * if the expected stack growth is unlimited:
++	 */
++	if (mmap_is_legacy()) {
++		mm->mmap_base = TASK_UNMAPPED_BASE;
++		mm->get_unmapped_area = arch_get_unmapped_area;
++		mm->unmap_area = arch_unmap_area;
++	} else {
++		mm->mmap_base = mmap_base();
++		mm->get_unmapped_area = arch_get_unmapped_area_topdown;
++		mm->unmap_area = arch_unmap_area_topdown;
++	}
++}
++EXPORT_SYMBOL_GPL(arch_pick_mmap_layout);
++
++
++/*
++ * You really shouldn't be using read() or write() on /dev/mem.  This might go
++ * away in the future.
++ */
++int valid_phys_addr_range(unsigned long addr, size_t size)
++{
++	if (addr < PHYS_OFFSET)
++		return 0;
++	if (addr + size > __pa(high_memory - 1) + 1)
++		return 0;
++
 +	return 1;
 +}
 +
 +/*
-+ * fill in the fpe structure for a core dump...
++ * Do not allow /dev/mem mappings beyond the supported physical range.
 + */
-+int dump_fpu (struct pt_regs *regs, struct user_fp *fp)
++int valid_mmap_phys_addr_range(unsigned long pfn, size_t size)
 +{
-+	return 0;
++	return !(((pfn << PAGE_SHIFT) + size) & ~PHYS_MASK);
 +}
-+EXPORT_SYMBOL(dump_fpu);
++
++#ifdef CONFIG_STRICT_DEVMEM
++
++#include <linux/ioport.h>
 +
 +/*
-+ * Shuffle the argument into the correct register before calling the
-+ * thread function.  x1 is the thread argument, x2 is the pointer to
-+ * the thread function, and x3 points to the exit function.
++ * devmem_is_allowed() checks to see if /dev/mem access to a certain address
++ * is valid. The argument is a physical page number.  We mimic x86 here by
++ * disallowing access to system RAM as well as device-exclusive MMIO regions.
++ * This effectively disable read()/write() on /dev/mem.
 + */
-+extern void kernel_thread_helper(void);
-+asm(	".section .text\n"
-+"	.align\n"
-+"	.type	kernel_thread_helper, #function\n"
-+"kernel_thread_helper:\n"
-+"	mov	x0, x1\n"
-+"	mov	x30, x3\n"
-+"	br	x2\n"
-+"	.size	kernel_thread_helper, . - kernel_thread_helper\n"
-+"	.previous");
-+
-+#define kernel_thread_exit	do_exit
-+
-+/*
-+ * Create a kernel thread.
-+ */
-+pid_t kernel_thread(int (*fn)(void *), void *arg, unsigned long flags)
++int devmem_is_allowed(unsigned long pfn)
 +{
-+	struct pt_regs regs;
-+
-+	memset(&regs, 0, sizeof(regs));
-+
-+	regs.regs[1] = (unsigned long)arg;
-+	regs.regs[2] = (unsigned long)fn;
-+	regs.regs[3] = (unsigned long)kernel_thread_exit;
-+	regs.pc = (unsigned long)kernel_thread_helper;
-+	regs.pstate = PSR_MODE_EL1h;
-+
-+	return do_fork(flags|CLONE_VM|CLONE_UNTRACED, 0, &regs, 0, NULL, NULL);
-+}
-+EXPORT_SYMBOL(kernel_thread);
-+
-+unsigned long get_wchan(struct task_struct *p)
-+{
-+	struct stackframe frame;
-+	int count = 0;
-+	if (!p || p == current || p->state == TASK_RUNNING)
++	if (iomem_is_exclusive(pfn << PAGE_SHIFT))
 +		return 0;
-+
-+	frame.fp = thread_saved_fp(p);
-+	frame.sp = thread_saved_sp(p);
-+	frame.pc = thread_saved_pc(p);
-+	do {
-+		int ret = unwind_frame(&frame);
-+		if (ret < 0)
-+			return 0;
-+		if (!in_sched_functions(frame.pc))
-+			return frame.pc;
-+	} while (count ++ < 16);
++	if (!page_is_ram(pfn))
++		return 1;
 +	return 0;
 +}
 +
-+unsigned long arch_align_stack(unsigned long sp)
-+{
-+	if (!(current->personality & ADDR_NO_RANDOMIZE) && randomize_va_space)
-+		sp -= get_random_int() & ~PAGE_MASK;
-+	return sp & ~0xf;
-+}
-+
-+static unsigned long randomize_base(unsigned long base)
-+{
-+	unsigned long range_end = base + (STACK_RND_MASK << PAGE_SHIFT) + 1;
-+	return randomize_range(base, range_end, 0) ? : base;
-+}
-+
-+unsigned long arch_randomize_brk(struct mm_struct *mm)
-+{
-+	return randomize_base(mm->brk);
-+}
-+
-+unsigned long randomize_et_dyn(unsigned long base)
-+{
-+	return randomize_base(base);
-+}
-diff --git a/arch/arm64/mm/context.c b/arch/arm64/mm/context.c
++#endif
+diff --git a/arch/arm64/mm/pgd.c b/arch/arm64/mm/pgd.c
 new file mode 100644
-index 0000000..baa758d
+index 0000000..7083cda
 --- /dev/null
-+++ b/arch/arm64/mm/context.c
-@@ -0,0 +1,159 @@
++++ b/arch/arm64/mm/pgd.c
+@@ -0,0 +1,54 @@
 +/*
-+ * Based on arch/arm/mm/context.c
++ * PGD allocation/freeing
 + *
-+ * Copyright (C) 2002-2003 Deep Blue Solutions Ltd, all rights reserved.
 + * Copyright (C) 2012 ARM Ltd.
++ * Author: Catalin Marinas <catalin.marinas@arm.com>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
@@ -779,144 +1032,39 @@ index 0000000..baa758d
 + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
 +
-+#include <linux/init.h>
-+#include <linux/sched.h>
 +#include <linux/mm.h>
-+#include <linux/smp.h>
-+#include <linux/percpu.h>
++#include <linux/gfp.h>
++#include <linux/highmem.h>
++#include <linux/slab.h>
 +
-+#include <asm/mmu_context.h>
++#include <asm/pgalloc.h>
++#include <asm/page.h>
 +#include <asm/tlbflush.h>
-+#include <asm/cachetype.h>
 +
-+#define asid_bits(reg) \
-+	(((read_cpuid(ID_AA64MMFR0_EL1) & 0xf0) >> 2) + 8)
++#include "mm.h"
 +
-+#define ASID_FIRST_VERSION	(1 << MAX_ASID_BITS)
++#define PGD_SIZE	(PTRS_PER_PGD * sizeof(pgd_t))
 +
-+static DEFINE_RAW_SPINLOCK(cpu_asid_lock);
-+unsigned int cpu_last_asid = ASID_FIRST_VERSION;
-+
-+/*
-+ * We fork()ed a process, and we need a new context for the child to run in.
-+ */
-+void __init_new_context(struct task_struct *tsk, struct mm_struct *mm)
++pgd_t *pgd_alloc(struct mm_struct *mm)
 +{
-+	mm->context.id = 0;
-+	raw_spin_lock_init(&mm->context.id_lock);
++	pgd_t *new_pgd;
++
++	if (PGD_SIZE == PAGE_SIZE)
++		new_pgd = (pgd_t *)get_zeroed_page(GFP_KERNEL);
++	else
++		new_pgd = kzalloc(PGD_SIZE, GFP_KERNEL);
++
++	if (!new_pgd)
++		return NULL;
++
++	return new_pgd;
 +}
 +
-+static void flush_context(void)
++void pgd_free(struct mm_struct *mm, pgd_t *pgd)
 +{
-+	/* set the reserved TTBR0 before flushing the TLB */
-+	cpu_set_reserved_ttbr0();
-+	flush_tlb_all();
-+	if (icache_is_aivivt())
-+		__flush_icache_all();
-+}
-+
-+#ifdef CONFIG_SMP
-+
-+static void set_mm_context(struct mm_struct *mm, unsigned int asid)
-+{
-+	unsigned long flags;
-+
-+	/*
-+	 * Locking needed for multi-threaded applications where the same
-+	 * mm->context.id could be set from different CPUs during the
-+	 * broadcast. This function is also called via IPI so the
-+	 * mm->context.id_lock has to be IRQ-safe.
-+	 */
-+	raw_spin_lock_irqsave(&mm->context.id_lock, flags);
-+	if (likely((mm->context.id ^ cpu_last_asid) >> MAX_ASID_BITS)) {
-+		/*
-+		 * Old version of ASID found. Set the new one and reset
-+		 * mm_cpumask(mm).
-+		 */
-+		mm->context.id = asid;
-+		cpumask_clear(mm_cpumask(mm));
-+	}
-+	raw_spin_unlock_irqrestore(&mm->context.id_lock, flags);
-+
-+	/*
-+	 * Set the mm_cpumask(mm) bit for the current CPU.
-+	 */
-+	cpumask_set_cpu(smp_processor_id(), mm_cpumask(mm));
-+}
-+
-+/*
-+ * Reset the ASID on the current CPU. This function call is broadcast from the
-+ * CPU handling the ASID rollover and holding cpu_asid_lock.
-+ */
-+static void reset_context(void *info)
-+{
-+	unsigned int asid;
-+	unsigned int cpu = smp_processor_id();
-+	struct mm_struct *mm = current->active_mm;
-+
-+	smp_rmb();
-+	asid = cpu_last_asid + cpu;
-+
-+	flush_context();
-+	set_mm_context(mm, asid);
-+
-+	/* set the new ASID */
-+	cpu_switch_mm(mm->pgd, mm);
-+}
-+
-+#else
-+
-+static inline void set_mm_context(struct mm_struct *mm, unsigned int asid)
-+{
-+	mm->context.id = asid;
-+	cpumask_copy(mm_cpumask(mm), cpumask_of(smp_processor_id()));
-+}
-+
-+#endif
-+
-+void __new_context(struct mm_struct *mm)
-+{
-+	unsigned int asid;
-+	unsigned int bits = asid_bits();
-+
-+	raw_spin_lock(&cpu_asid_lock);
-+#ifdef CONFIG_SMP
-+	/*
-+	 * Check the ASID again, in case the change was broadcast from another
-+	 * CPU before we acquired the lock.
-+	 */
-+	if (!unlikely((mm->context.id ^ cpu_last_asid) >> MAX_ASID_BITS)) {
-+		cpumask_set_cpu(smp_processor_id(), mm_cpumask(mm));
-+		raw_spin_unlock(&cpu_asid_lock);
-+		return;
-+	}
-+#endif
-+	/*
-+	 * At this point, it is guaranteed that the current mm (with an old
-+	 * ASID) isn't active on any other CPU since the ASIDs are changed
-+	 * simultaneously via IPI.
-+	 */
-+	asid = ++cpu_last_asid;
-+
-+	/*
-+	 * If we've used up all our ASIDs, we need to start a new version and
-+	 * flush the TLB.
-+	 */
-+	if (unlikely((asid & ((1 << bits) - 1)) == 0)) {
-+		/* increment the ASID version */
-+		cpu_last_asid += (1 << MAX_ASID_BITS) - (1 << bits);
-+		if (cpu_last_asid == 0)
-+			cpu_last_asid = ASID_FIRST_VERSION;
-+		asid = cpu_last_asid + smp_processor_id();
-+		flush_context();
-+#ifdef CONFIG_SMP
-+		smp_wmb();
-+		smp_call_function(reset_context, NULL, 1);
-+#endif
-+		cpu_last_asid += NR_CPUS - 1;
-+	}
-+
-+	set_mm_context(mm, asid);
-+	raw_spin_unlock(&cpu_asid_lock);
++	if (PGD_SIZE == PAGE_SIZE)
++		free_page((unsigned long)pgd);
++	else
++		kfree(pgd);
 +}
 
