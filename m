@@ -1,67 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753840Ab2IGGfj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 02:35:39 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:34788 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011Ab2IGGfh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 02:35:37 -0400
+	id S1754198Ab2IGGoR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 02:44:17 -0400
+Received: from ozlabs.org ([203.10.76.45]:56527 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750998Ab2IGGoP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 02:44:15 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, fes@google.com, aarcange@redhat.com,
+        riel@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mikew@google.com, yinghan@google.com,
+        virtualization@lists.linux-foundation.org, yvugenfi@redhat.com,
+        vrozenfe@redhat.com
+Subject: Re: [PATCH] virtio-balloon spec: provide a version of the "silent deflate" feature that works
+In-Reply-To: <20120907054202.GA3452@redhat.com>
+References: <1346917610-14568-1-git-send-email-pbonzini@redhat.com> <20120906084736.GF17656@redhat.com> <50486BB2.7070108@redhat.com> <20120906094442.GA22816@redhat.com> <50487382.8030303@redhat.com> <20120906105301.GC32325@redhat.com> <5048935A.8090308@redhat.com> <87wr06hg0l.fsf@rustcorp.com.au> <20120907054202.GA3452@redhat.com>
+User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Fri, 07 Sep 2012 16:09:50 +0930
+Message-ID: <87vcfqfia1.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-X-Originating-IP: [94.21.92.250]
-In-Reply-To: <1346946994-21286-1-git-send-email-apw@canonical.com>
-References: <1346946994-21286-1-git-send-email-apw@canonical.com>
-Date: Fri, 7 Sep 2012 08:35:36 +0200
-Message-ID: <CAJfpegsCQKX==v-8NqO5tLDsEed7KhBFWpoeWLDjxT1vuMSokg@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/2] issues with NFS filesystems as lower layer
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mszeredi@suse.cz
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 6, 2012 at 5:56 PM, Andy Whitcroft <apw@canonical.com> wrote:
-> During some testing here we discovered that we could not successfully
-> use a NFS as the lower layer for overlayfs.  There are two separate issues:
+"Michael S. Tsirkin" <mst@redhat.com> writes:
+
+> On Fri, Sep 07, 2012 at 09:15:46AM +0930, Rusty Russell wrote:
+>> Paolo Bonzini <pbonzini@redhat.com> writes:
+>> > Instead, VIRTIO_NET_F_HOST_MUST_SEND_GARP would be a "negative" feature:
+>> > if set, the host _may not_ rely on the guest to send a gARP.  Similarly
+>> > if VIRTIO_BALLOON_F_MUST_TELL_HOST is set, the guest _may not_ use
+>> > ballooned pages directly.
+>> >
+>> > There are _no_ other negative features besides
+>> > VIRTIO_BALLOON_F_MUST_TELL_HOST in the spec, and for a good
+>> > reason---because they're broken.
+>> >
+>> > (Hmm, actually we have one, VIRTIO_BLK_F_RO.  It is also a bit broken,
+>> > but it is not so important because it depends on user input more than
+>> > hypervisor version).
+>> 
+>> Yes, this is the key observation, and an important lesson for the
+>> future.  Thanks!
+>> Note that these two negative features were in the original spec, where
+>> it's assumed that every device supports them.  That's not explicitly
+>> documented, however.
 >
-> Firstly when using an NFSv4 lower layer we tickle an issue when copying
-> up the xattrs for the underlying file.  NFS uses an xattr system.nfs4_acl
-> which the upper layer will not store (ext4 for example).  This triggers
-> an EOPNOTSUPP error when trying to copy up the xattrs for the file,
-> preventing the file being written.  I am a little unclear as to whether it
-> makes sense to generally ignore xattrs we cannot store in the upper layer,
-> this is based on the assumption the person creating the mount knew what
-> they were combining.  The first patch (for discussion) following this
-> email avoids this issue by ignoring the xattr if it is not storable.
+> I'm curious what would we do for the future? I tried to imagine that _RO
+> was not in the original spec, so virtio-blk expects a r/w device.
+> Now we can not add _RW - old hypervisors do not set it, and old
+> drivers do not ack it.
+> What would a new flag with equivalent functionality be?
 
-I don't know much about NFSv4 ACL's but I think it may be incompatible
-with POSIX ACLs in which case copying them up is not possible and
-ignoring them should be the right thing to do.
+Backwards compatibility in the R/O case would actually work: just fail
+writes.  Because it's just friendly advice to the OS, really.
 
+The final test is always: does it break users?  If there are no users
+who will notice, we can do anything.  If there are users, we have to
+keep backwards compatibility, and that implies we can't add "must know"
+features.
+
+> So it looks like a bug: we should teach driver to tell host first on leak?
+> Yan, Vadim, can you comment please?
 >
-> Secondly when using an NFSv3 R/O lower layer the filesystem permissions
-> check refuses permission to write to the inode which prevents us from
-> copying it up even though we have a writable upper layer.  (With an ext4
-> lower layer the inode check will succeed if the inode  is writable even
-> if the filesystem is not.)  It is not clear what the right solution is
-> here.  One approach is to check the inode permissions only (avoiding the
-> filesystem specific permissions op), but it is not clear we can rely on
-> these for all underlying filesystems.  Perhaps this check should only be
-> used for NFS.  Perhaps it needs to be a mount option.  The second patch
-> (for discussion) following this email implements this, using the inode
-> permissions when the lowerlayer is read-only.  This seems to work as
-> expected in my limited testing.
+> Also if true, looks like this bit will be useful to detect a fixed driver on
+> the hypervisor side - to avoid unmapping such pages? Rusty what do you
+> think?
 
-I fear that will create an inconsistency between the read-only and the
-non-read-only case, even though both should behave the same.
+So, feature is unimplemented in qemu, and broken in drivers.  I starting
+to share Paolo's dislike of it.
 
-I think the cleanest would be to create a mount option to always use
-generic_permission (on both the lower and the upper fs).  That would
-give us two, slightly different, operating modes but each would be
-self consistent.
+Don't understand why we'd care about fixed drivers though, if we remove
+the feature bit....
 
-Thanks,
-Miklos
+Cheers,
+Rusty.
+
