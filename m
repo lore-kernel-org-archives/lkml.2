@@ -1,137 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755954Ab2IGSTs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 14:19:48 -0400
-Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:39840 "EHLO
-	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753283Ab2IGSTp (ORCPT
+	id S1756174Ab2IGSUI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 14:20:08 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:36555 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756046Ab2IGSUF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 14:19:45 -0400
-Message-ID: <504A3B03.4090600@iki.fi>
-Date: Fri, 07 Sep 2012 21:20:51 +0300
-From: Sakari Ailus <sakari.ailus@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120715 SeaMonkey/2.11
+	Fri, 7 Sep 2012 14:20:05 -0400
+Date: Fri, 7 Sep 2012 19:20:04 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: linux-arch@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [RFC] status of execve() work - per-architecture patches solicited
+Message-ID: <20120907182004.GE13973@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: Prabhakar Lad <prabhakar.lad@ti.com>
-CC: LMML <linux-media@vger.kernel.org>,
-        dlos <davinci-linux-open-source@linux.davincidsp.com>,
-        linux-kernel@vger.kernel.org, Manjunath Hadli <manjunath.hadli@ti.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-doc@vger.kernel.org, Hans Verkuil <hans.verkuil@cisco.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Rob Landley <rob@landley.net>
-Subject: Re: [PATCH v2] media: v4l2-ctrls: add control for test pattern
-References: <1347007309-6913-1-git-send-email-prabhakar.lad@ti.com>
-In-Reply-To: <1347007309-6913-1-git-send-email-prabhakar.lad@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
+	To architecture maintainers: please, review the current
+situation in git.kernel.org/pub/scm/linux/kernel/git/viro/signal #execve2
+and consider sending the corresponding patches for missing architectures.
 
-Thanks for the patch!
+	What's getting done is unification of sys_execve()/kernel_execve()
+into arch-independent code.  x86, alpha, arm, s390, um and ppc are already
+converted in #execve2.  The plan is:
 
-Prabhakar Lad wrote:
-> From: Lad, Prabhakar <prabhakar.lad@ti.com>
->
-> add V4L2_CID_TEST_PATTERN of type menu, which determines
-> the internal test pattern selected by the device.
->
-> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-> Cc: Sakari Ailus <sakari.ailus@iki.fi>
-> Cc: Hans Verkuil <hans.verkuil@cisco.com>
-> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> Cc: Hans de Goede <hdegoede@redhat.com>
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Rob Landley <rob@landley.net>
-> ---
-> This patches has one checkpatch warning for line over
-> 80 characters altough it can be avoided I have kept it
-> for consistency.
->
-> Changes for v2:
-> 1: Included display devices in the description for test pattern
->     as pointed by Hans.
-> 2: In the menu replaced 'Test Pattern Disabled' by 'Disabled' as
->     pointed by Sylwester.
-> 3: Removed the test patterns from menu as the are hardware specific
->     as pointed by Sakari.
->
->   Documentation/DocBook/media/v4l/controls.xml |   20 ++++++++++++++++++++
->   drivers/media/v4l2-core/v4l2-ctrls.c         |    8 ++++++++
->   include/linux/videodev2.h                    |    4 ++++
->   3 files changed, 32 insertions(+), 0 deletions(-)
->
-> diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
-> index ad873ea..173934e 100644
-> --- a/Documentation/DocBook/media/v4l/controls.xml
-> +++ b/Documentation/DocBook/media/v4l/controls.xml
-> @@ -4311,6 +4311,26 @@ interface and may change in the future.</para>
->   	      </tbody>
->   	    </entrytbl>
->   	  </row>
-> +	  <row>
-> +	    <entry spanname="id"><constant>V4L2_CID_TEST_PATTERN</constant></entry>
-> +	    <entry>menu</entry>
-> +	  </row>
-> +	  <row id="v4l2-test-pattern">
-> +	    <entry spanname="descr"> The Capture/Display/Sensors have the capability
-> +	    to generate internal test patterns and this are hardware specific. This
-> +	    test patterns are used to test a device is properly working and can generate
-> +	    the desired waveforms that it supports.</entry>
-> +	  </row>
-> +	  <row>
-> +	    <entrytbl spanname="descr" cols="2">
-> +	      <tbody valign="top">
-> +	        <row>
-> +	         <entry><constant>V4L2_TEST_PATTERN_DISABLED</constant></entry>
-> +	          <entry>Test pattern generation is disabled</entry>
-> +	        </row>
-> +	      </tbody>
-> +	    </entrytbl>
-> +	  </row>
->   	<row><entry></entry></row>
->   	</tbody>
->         </tgroup>
-> diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
-> index 8f2f40b..d731422 100644
-> --- a/drivers/media/v4l2-core/v4l2-ctrls.c
-> +++ b/drivers/media/v4l2-core/v4l2-ctrls.c
-> @@ -430,6 +430,10 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
->   		"Advanced",
->   		NULL,
->   	};
-> +	static const char * const test_pattern[] = {
-> +		"Disabled",
-> +		NULL,
-> +	};
->
->   	switch (id) {
->   	case V4L2_CID_MPEG_AUDIO_SAMPLING_FREQ:
-> @@ -509,6 +513,8 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
->   		return jpeg_chroma_subsampling;
->   	case V4L2_CID_DPCM_PREDICTOR:
->   		return dpcm_predictor;
-> +	case V4L2_CID_TEST_PATTERN:
-> +		return test_pattern;
+* provide a new primitive - ret_from_kernel_execve(); it takes two pointers
+to struct pt_regs, one being the normal location of pt_regs for a userland
+process, another - new pt_regs just filled by do_execve().  It should copy
+the latter to the former and bugger off to userland.  Called from generic
+kernel_execve() implementation (see fs/exec.c in #execve2).  It almost always
+has to be done in assembler - normally it does equivalent of something
+along the lines of
+	memmove(normal, new, sizeof(struct pt_regs))
+	sp = normal, or whatever is needed to get a valid stack
+frame (e.g. on s390 there's ->back_chain that needs to be set to
+NULL)
+	set other registers ret_from_sys_call expects to be set (e.g.
+i386 syscall entry has current_thread_info() value cached in %ebp and
+since it's a callee-saved register there, ret_from_sys_call expects to
+find that value still in %ebp, so we need to set it); basically, check
+what has to be set in ret_from_fork - it tends to jump to the same place.
+	goto ret_from_sys_call, or whatever the equivalent is called on
+particular architecture.
+* define __ARCH_WANT_KERNEL_EXECVE in unistd.h, remove your old kernel_execve()
+* pull whatever work you'd been doing *after* do_execve() call in your
+sys_execve() (most of the architectures don't do anything after that anyway)
+into start_thread(); that's the point of no return for execve(2) and if we
+get there, we'll either succeed or get killed with SIGKILL.  The same goes
+for compat variant of execve(), with s/start_thread/compat_start_thread/.
+* define __ARCH_WANT_SYS_EXECVE in unistd.h, kill your sys_execve() and
+compat counterpart (if any).
+* if there's a better way to calculate task_pt_regs(current), you can provide
+it in your ptrace.h - macro should be called current_pt_regs(); it's optional.
 
-I think it's not necessary to define test_pattern (nor be prepared to 
-return it) since the menu is going to be device specific. So the driver 
-is responsible for all of the menu items. Such menus are created using 
-v4l2_ctrl_new_custom() instead of v4l2_ctrl_new_std_menu().
+	Status: x86, arm, um, s390 - converted, tested, seem to work. alpha
+and ppc - need testing.  The rest - hadn't touched yet.  unicore32 and
+blackfin should be trivial to convert (they are doing kernel_execve() in
+that manner already).  Other may be more or less tricky - depends on how
+gnarly their return from syscall path happens to be.  I'll do what I can
+and test what I can (some on emulators, some on real hardware), but for quite
+a few architectures I've no way to test.  Nor am I fond of sniffing dozens
+of variants of assembler glue, to put it mildly.
 
-Looks good to me otherwise.
-
-Kind regards,
-
--- 
-Sakari Ailus
-sakari.ailus@iki.fi
+	Patches and/or help with testing setups would be very welcome.
