@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760581Ab2IGMpD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 08:45:03 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56471 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933283Ab2IGMn6 (ORCPT
+	id S1760627Ab2IGMqS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 08:46:18 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:54268 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755621Ab2IGMqQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 08:43:58 -0400
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Richard Zhao <richard.zhao@freescale.com>,
-        Huang Shijie <shijie8@gmail.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>, kernel@pengutronix.de,
-        devicetree-discuss@lists.ozlabs.org
-Cc: Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH v4 5/6] misc: sram: Add optional clock
-Date: Fri,  7 Sep 2012 14:43:47 +0200
-Message-Id: <1347021828-23034-6-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1347021828-23034-1-git-send-email-p.zabel@pengutronix.de>
-References: <1347021828-23034-1-git-send-email-p.zabel@pengutronix.de>
-X-SA-Exim-Connect-IP: 10.1.0.7
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 7 Sep 2012 08:46:16 -0400
+Date: Fri, 7 Sep 2012 13:46:12 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 15/19] mfd: Don't convert just one IRQ using irqdomain if
+ a range is provided
+Message-ID: <20120907124611.GD29601@gmail.com>
+References: <1347016499-29354-1-git-send-email-lee.jones@linaro.org>
+ <1347016499-29354-16-git-send-email-lee.jones@linaro.org>
+ <201209071235.41785.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201209071235.41785.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some platforms the SRAM needs a clock to be enabled explicitly.
+On Fri, Sep 07, 2012 at 12:35:41PM +0000, Arnd Bergmann wrote:
+> On Friday 07 September 2012, Lee Jones wrote:
+> > MFD core code attempts to convert specified hardware (local) IRQ
+> > numbers to virtual-IRQs, which something Linux can understand. This
+> > works great when only one IRQ is specified. However, converting
+> > entire ranges is currently unsupported. If this occurs we issue a
+> > kernel warning to inform the user of this, but we continue to
+> > convert the first specified IRQ anyway and replace the range. This
+> > is not the correct behaviour. This patch ensures that if a range
+> > is specified, it is left untouched.
+> > 
+> > CC: Samuel Ortiz <sameo@linux.intel.com>
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> 
+> I don't see the advantage of the change. The warning already tells
+> us that the input to mfd_add_device was incorrect, so nothing the
+> function does can reliably fix it. Leaving the resource empty
+> is just as wrong as listing only the first interrupt.
 
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
----
- drivers/misc/sram.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+My thinking was to leave them in a range, then have the target driver
+convert each entry in the range manually. But what you're saying is
+that no registration should be attempted using ranges at all? What if
+the range was vast? Surely a resource array a few hundred lines long
+isn't correct either? My immediate example would be "GPIO_INT6", which
+has 31 lines. Do you want them all splitting out individually?
 
-diff --git a/drivers/misc/sram.c b/drivers/misc/sram.c
-index 7a363f2..0cc2e75 100644
---- a/drivers/misc/sram.c
-+++ b/drivers/misc/sram.c
-@@ -21,6 +21,8 @@
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/init.h>
-+#include <linux/clk.h>
-+#include <linux/err.h>
- #include <linux/io.h>
- #include <linux/of.h>
- #include <linux/platform_device.h>
-@@ -29,6 +31,7 @@
- 
- struct sram_dev {
- 	struct gen_pool *pool;
-+	struct clk *clk;
- };
- 
- static int __devinit sram_probe(struct platform_device *pdev)
-@@ -53,6 +56,10 @@ static int __devinit sram_probe(struct platform_device *pdev)
- 	if (!sram)
- 		return -ENOMEM;
- 
-+	sram->clk = devm_clk_get(&pdev->dev, NULL);
-+	if (!IS_ERR(sram->clk))
-+		clk_prepare_enable(sram->clk);
-+
- 	sram->pool = gen_pool_create(PAGE_SHIFT, -1);
- 	if (!sram->pool)
- 		return -ENOMEM;
-@@ -80,6 +87,9 @@ static int __devexit sram_remove(struct platform_device *pdev)
- 
- 	gen_pool_destroy(sram->pool);
- 
-+	if (!IS_ERR(sram->clk))
-+		clk_disable_unprepare(sram->clk);
-+
- 	return 0;
- }
- 
 -- 
-1.7.10.4
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
