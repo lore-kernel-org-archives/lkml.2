@@ -1,105 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932565Ab2IGDaP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 23:30:15 -0400
-Received: from ozlabs.org ([203.10.76.45]:54079 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759266Ab2IGDaN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 23:30:13 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio-blk: Fix kconfig option
-In-Reply-To: <20120907002533.GB16360@google.com>
-References: <20120903044133.GA9980@moria.home.lan> <87wr0ae26e.fsf@rustcorp.com.au> <20120906074113.GA5902@koverstreet-glaptop> <20120906084403.GD17656@redhat.com> <20120906092512.GB5902@koverstreet-glaptop> <20120906094956.GB22816@redhat.com> <20120906100247.GA27355@koverstreet-glaptop> <87zk52hg9i.fsf@rustcorp.com.au> <20120907002533.GB16360@google.com>
-User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Fri, 07 Sep 2012 12:27:18 +0930
-Message-ID: <874nnah75d.fsf@rustcorp.com.au>
+	id S1759553Ab2IGDcj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 23:32:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46932 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758843Ab2IGDch (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 23:32:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20120906154459.8b3b73fa.akpm@linux-foundation.org>
+References: <1344052890-31935-1-git-send-email-ming.lei@canonical.com>
+	<1344052890-31935-13-git-send-email-ming.lei@canonical.com>
+	<20120906154459.8b3b73fa.akpm@linux-foundation.org>
+Date: Fri, 7 Sep 2012 11:32:36 +0800
+Message-ID: <CACVXFVMD1MCGrmHLFU5whCf1R3feoyj+FTAMm71HNME_gF2jDg@mail.gmail.com>
+Subject: Re: [RFC PATCH v1 12/15] firmware: introduce device_cache/uncache_fw_images
+From: Ming Lei <ming.lei@canonical.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kent Overstreet <koverstreet@google.com> writes:
-> On Fri, Sep 07, 2012 at 09:10:25AM +0930, Rusty Russell wrote:
->> Kent Overstreet <koverstreet@google.com> writes:
->> 
->> > On Thu, Sep 06, 2012 at 12:49:56PM +0300, Michael S. Tsirkin wrote:
->> >> On Thu, Sep 06, 2012 at 02:25:12AM -0700, Kent Overstreet wrote:
->> >> > Do you not understand the difference between depends an selects?
->> >> > Or did you not read my original mail?
->> 
->> Now you're getting insulting.
+On Fri, Sep 7, 2012 at 6:44 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Sat,  4 Aug 2012 12:01:27 +0800
+> Ming Lei <ming.lei@canonical.com> wrote:
 >
-> Yes, but at least I'm not being intentionally obtuse.
-
-Insulting again.  Wow.
-
-It took me this long to understand your complaint.  Perhaps I'm stupid.
-Or perhaps you are terrible at explaining yourself, and it is only
-through our patient and heroic efforts that we can comprehend you at
-all?
-
-> Think about it from the user's pov. They check what VIRTIO_BLK depends
-> on - just VIRTIO.
+>> This patch introduces the three helpers below:
+>>
+>>       void device_cache_fw_images(void)
+>>       void device_uncache_fw_images(void)
+>>       void device_uncache_fw_images_delay(unsigned long)
 >
-> So they try to figure out how to flip on VIRTIO, or what VIRTIO even is.
+> CONFIG_PM=n:
 >
-> See how that last step might be problematic? CONFIG_VIRTIO is not
-> exposed! It doesn't even seem to control anything!
+> drivers/base/firmware_class.c:1147: warning: 'device_cache_fw_images' defined but not used
+> drivers/base/firmware_class.c:1212: warning: 'device_uncache_fw_images_delay' defined but not used
+
+Thanks for your report.
+
 >
-> Go back to your example. Checking the dependencies for E1000 would tell
-> you the user needs to flip on CONFIG_PCI. Done. Easy.
+> the fix is not trivial - this patch added quite a lot of code and data
+> structure bloat which will never be used on CONFIG_PM=n kernels.
 
-Actually, it depends on NET_VENDOR_INTEL which depends on CONFIG_PCI,
-but yes, it's discoverable.
+The below patch should fix the warning.
 
-So your actual complaint is that:
-1) CONFIG_VIRTIO is misleadingly documented both in comment and name.
-2) It's not discoverable, since it's only selected via other things.
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 95f6851..6e21080 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -96,7 +96,9 @@ struct firmware_cache {
+ 	/* firmware_buf instance will be added into the below list */
+ 	spinlock_t lock;
+ 	struct list_head head;
++	int state;
 
-> And, if that is what you're doing with CONFIG_VIRTIO (I'm still not
-> sure) the comment at the top of drivers/virtio/Kconfig is _wrong_:
++#ifdef CONFIG_PM_SLEEP
+ 	/*
+ 	 * Names of firmware images which have been cached successfully
+ 	 * will be added into the below list so that device uncache
+@@ -106,13 +108,12 @@ struct firmware_cache {
+ 	spinlock_t name_lock;
+ 	struct list_head fw_names;
 
-As grep would show you, it's selected by LGUEST, S390_GUEST, RPMSG,
-VIRTIO_PCI and VIRTIO_MMIO (VIRTIO_BALLOON is a cut & paste bug, already
-patched by MST).
+-	int state;
+-
+ 	wait_queue_head_t wait_queue;
+ 	int cnt;
+ 	struct delayed_work work;
 
-We could change every virtio device to depend on (CONFIG_LGUEST |
-CONFIG_S390_GUEST | CONFIG_RPMSG | CONFIG_VIRTIO_PCI |
-CONFIG_VIRTIO_MMIO), which is more discoverable but uglier.  How's this
-workaround?
+ 	struct notifier_block   pm_notify;
++#endif
+ };
 
-From: Rusty Russell <rusty@rustcorp.com.au>
-Subject: virtio: add help to CONFIG_VIRTIO option.
+ struct firmware_buf {
+@@ -622,6 +623,7 @@ static void fw_set_page_data(struct firmware_buf
+*buf, struct firmware *fw)
+ 		 (unsigned int)buf->size);
+ }
 
-Trying to enable a virtio driver (eg CONFIG_VIRTIO_BLK) is painful
-because it depends on CONFIG_VIRTIO.  CONFIG_VIRTIO doesn't tell you
-how to turn it on (it's selected from anything which provides a virtio
-bus).
++#ifdef CONFIG_PM_SLEEP
+ static void fw_name_devm_release(struct device *dev, void *res)
+ {
+ 	struct fw_name_devm *fwn = res;
+@@ -670,6 +672,12 @@ static int fw_add_devm_name(struct device *dev,
+const char *name)
 
-This patch at least adds some documentation, visible in menuconfig, as
-a hint.
+ 	return 0;
+ }
++#else
++static int fw_add_devm_name(struct device *dev, const char *name)
++{
++	return 0;
++}
++#endif
 
-Reported-by: Kent Overstreet <koverstreet@google.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+ static void _request_firmware_cleanup(const struct firmware **firmware_p)
+ {
+@@ -1046,6 +1054,7 @@ int uncache_firmware(const char *fw_name)
+ 	return -EINVAL;
+ }
 
-diff --git a/drivers/virtio/Kconfig b/drivers/virtio/Kconfig
---- a/drivers/virtio/Kconfig
-+++ b/drivers/virtio/Kconfig
-@@ -1,8 +1,10 @@
--# Virtio always gets selected by whoever wants it.
- config VIRTIO
- 	tristate
-+	---help---
-+	  This option is selected by any driver which implements the virtio
-+	  bus, such as CONFIG_VIRTIO_PCI, CONFIG_VIRTIO_MMIO, CONFIG_LGUEST,
-+	  CONFIG_RPMSG or CONFIG_S390_GUEST.
- 
--# Similarly the virtio ring implementation.
- config VIRTIO_RING
- 	tristate
- 	depends on VIRTIO
++#ifdef CONFIG_PM_SLEEP
+ static struct fw_cache_entry *alloc_fw_cache_entry(const char *name)
+ {
+ 	struct fw_cache_entry *fce;
+@@ -1258,7 +1267,6 @@ static void
+device_uncache_fw_images_delay(unsigned long delay)
+ 			msecs_to_jiffies(delay));
+ }
+
+-#ifdef CONFIG_PM
+ static int fw_pm_notify(struct notifier_block *notify_block,
+ 			unsigned long mode, void *unused)
+ {
+@@ -1285,13 +1293,6 @@ static int fw_pm_notify(struct notifier_block
+*notify_block,
+
+ 	return 0;
+ }
+-#else
+-static int fw_pm_notify(struct notifier_block *notify_block,
+-			unsigned long mode, void *unused)
+-{
+-	return 0;
+-}
+-#endif
+
+ /* stop caching firmware once syscore_suspend is reached */
+ static int fw_suspend(void)
+@@ -1303,16 +1304,23 @@ static int fw_suspend(void)
+ static struct syscore_ops fw_syscore_ops = {
+ 	.suspend = fw_suspend,
+ };
++#else
++static int fw_cache_piggyback_on_request(const char *name)
++{
++	return 0;
++}
++#endif
+
+ static void __init fw_cache_init(void)
+ {
+ 	spin_lock_init(&fw_cache.lock);
+ 	INIT_LIST_HEAD(&fw_cache.head);
++	fw_cache.state = FW_LOADER_NO_CACHE;
+
++#ifdef CONFIG_PM_SLEEP
+ 	spin_lock_init(&fw_cache.name_lock);
+ 	INIT_LIST_HEAD(&fw_cache.fw_names);
+ 	fw_cache.cnt = 0;
+-	fw_cache.state = FW_LOADER_NO_CACHE;
+
+ 	init_waitqueue_head(&fw_cache.wait_queue);
+ 	INIT_DELAYED_WORK(&fw_cache.work,
+@@ -1322,6 +1330,7 @@ static void __init fw_cache_init(void)
+ 	register_pm_notifier(&fw_cache.pm_notify);
+
+ 	register_syscore_ops(&fw_syscore_ops);
++#endif
+ }
+
+ static int __init firmware_class_init(void)
+@@ -1332,8 +1341,10 @@ static int __init firmware_class_init(void)
+
+ static void __exit firmware_class_exit(void)
+ {
++#ifdef CONFIG_PM_SLEEP
+ 	unregister_syscore_ops(&fw_syscore_ops);
+ 	unregister_pm_notifier(&fw_cache.pm_notify);
++#endif
+ 	class_unregister(&firmware_class);
+ }
+
+
+Thanks,
+--
+Ming Lei
