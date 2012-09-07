@@ -1,71 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757460Ab2IGNhf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 09:37:35 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:56395 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754152Ab2IGNhd (ORCPT
+	id S1759387Ab2IGNiS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 09:38:18 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:43977 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753283Ab2IGNiP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 09:37:33 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 15/19] mfd: Don't convert just one IRQ using irqdomain if a range is provided
-Date: Fri, 7 Sep 2012 13:37:26 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        Samuel Ortiz <sameo@linux.intel.com>
-References: <1347016499-29354-1-git-send-email-lee.jones@linaro.org> <201209071235.41785.arnd@arndb.de> <20120907124611.GD29601@gmail.com>
-In-Reply-To: <20120907124611.GD29601@gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209071337.26587.arnd@arndb.de>
-X-Provags-ID: V02:K0:3MpJZ753S0JWPOC8r3pijKBPbOe0eoiaYeILV3AHDuN
- Kc2qu29XRALykJrYuo3s+Xy6q8WiW1CP/pOlGpzXHGwrSPpVqh
- XdFc9cmoJpH5lwUKIBsdsYA6ACslm5SKXV5aKtJTerSrCDXyOk
- VLyfr98r+wtQmg0SMcpI/LsNweB98OinprFMBTLl96wJGHOxTq
- PG9VbSRynsqUvXFvUyUhf/AYQ5/g0Qf1PQYK6Qu9W2dMOhnvV8
- h3NKN3a1t/vMG2a2c7XNbsijqUpM9hVgoy0UDbfk7LLmmF1HNg
- DRYMLmVf/R5cKICVtSX9cQEdozyHAOEW1HU3cH/ZFrcu5aK6Of
- OJr0MMWsMIk0104NRGQs=
+	Fri, 7 Sep 2012 09:38:15 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: viro@zeniv.linux.org.uk
+Cc: eparis@redhat.com, linux-audit@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v1 00/10] vfs: getname/putname overhaul
+Date: Fri,  7 Sep 2012 09:37:55 -0400
+Message-Id: <1347025085-20285-1-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 September 2012, Lee Jones wrote:
-> On Fri, Sep 07, 2012 at 12:35:41PM +0000, Arnd Bergmann wrote:
-> > On Friday 07 September 2012, Lee Jones wrote:
-> > > MFD core code attempts to convert specified hardware (local) IRQ
-> > > numbers to virtual-IRQs, which something Linux can understand. This
-> > > works great when only one IRQ is specified. However, converting
-> > > entire ranges is currently unsupported. If this occurs we issue a
-> > > kernel warning to inform the user of this, but we continue to
-> > > convert the first specified IRQ anyway and replace the range. This
-> > > is not the correct behaviour. This patch ensures that if a range
-> > > is specified, it is left untouched.
-> > > 
-> > > CC: Samuel Ortiz <sameo@linux.intel.com>
-> > > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > 
-> > I don't see the advantage of the change. The warning already tells
-> > us that the input to mfd_add_device was incorrect, so nothing the
-> > function does can reliably fix it. Leaving the resource empty
-> > is just as wrong as listing only the first interrupt.
-> 
-> My thinking was to leave them in a range, then have the target driver
-> convert each entry in the range manually. But what you're saying is
-> that no registration should be attempted using ranges at all? What if
-> the range was vast? Surely a resource array a few hundred lines long
-> isn't correct either? My immediate example would be "GPIO_INT6", which
-> has 31 lines. Do you want them all splitting out individually?
+This patchset is a first pass at overhauling the getname/putname
+interface to use a struct. The idea here is to add a new getname_info
+struct that allow us to pass around some auxillary info along with
+the string that getname() returns.
 
-The examples I had seen before were all just ranges of two interrupts,
-and in those cases it was clear that splitting them would be best.
+This allows us to do some interesting things:
 
-In the exampled of the ab8500-gpio driver, it looks like the resource is
-not actually being used, and the gpio driver implements its own irq_chip,
-so maybe we can get away with not solving this problem for now.
+- no need to walk the list of audit_names in certain cases since we
+  can store a pointer to the correct audit_name
 
-	Arnd
+- we can now call getname() more than once on a userland string. Since
+  we track the original userland pointer, we can avoid doing a second
+  allocation, and can instead fill out the getname_info from the
+  audit_names struct. That makes the ESTALE patchset cleaner, and doesn't
+  explode out the list of getname() callers like the last set.
+
+- eventually we might be able to track the length of the parent portion
+  of the string so the audit code doesn't need to walk it again. I
+  haven't implemented that yet, but it doesn't look too hard to do.
+
+This is based on top of Al's signal.git#execve2 branch, with my most
+recent audit series on top of that. Al is working on unifying much of
+the execve code, which will reduce the number of getname callers greatly.
+
+This set is still preliminary since Al's set isn't complete yet and will
+probably need to be respun again once he's completed that work. That
+should shrink patch #4 since we'll have fewer getname callers to deal
+with at that point.
+
+This set is based on top of my audit overhaul patchset (posted earlier
+today). I'll also be posting a respun version of my ESTALE retry
+patchset soon that's based on top of this one.
+
+While this all seems to work correctly, I have my doubts about patch #9
+in this series. That was suggested by Al and should make it so that we
+only need a single allocation per getname() call in most cases. OTOH, it
+adds a rarely traveled codepath that could be a source of bugs in the
+future.
+
+Jeff Layton (10):
+  vfs: allocate page instead of names_cache buffer in mount_block_root
+  vfs: make dir_name arg to do_mount a const char *
+  acct: constify the name arg to acct_on
+  vfs: define getname_info struct and have getname() return it
+  audit: allow audit code to satisfy getname requests from its
+    names_list
+  vfs: turn do_path_lookup into wrapper around getname_info variant
+  vfs: make path_openat take a getname_info pointer
+  audit: make audit_inode take getname_info
+  vfs: embed getname_info inside of names_cache allocation if possible
+  vfs: unexport getname and putname symbols
+
+ arch/alpha/kernel/osf_sys.c             |  16 +--
+ arch/avr32/kernel/process.c             |   4 +-
+ arch/blackfin/kernel/process.c          |   4 +-
+ arch/c6x/kernel/process.c               |   4 +-
+ arch/cris/arch-v10/kernel/process.c     |   4 +-
+ arch/cris/arch-v32/kernel/process.c     |   4 +-
+ arch/frv/kernel/process.c               |   4 +-
+ arch/h8300/kernel/process.c             |   4 +-
+ arch/hexagon/kernel/syscall.c           |   4 +-
+ arch/ia64/kernel/process.c              |   4 +-
+ arch/m32r/kernel/process.c              |   4 +-
+ arch/m68k/kernel/process.c              |   4 +-
+ arch/microblaze/kernel/sys_microblaze.c |   4 +-
+ arch/mips/kernel/linux32.c              |   4 +-
+ arch/mips/kernel/syscall.c              |   4 +-
+ arch/mn10300/kernel/process.c           |   4 +-
+ arch/openrisc/kernel/process.c          |   4 +-
+ arch/parisc/hpux/fs.c                   |   4 +-
+ arch/parisc/kernel/process.c            |   4 +-
+ arch/parisc/kernel/sys_parisc32.c       |   4 +-
+ arch/score/kernel/sys_score.c           |   4 +-
+ arch/sh/kernel/process_32.c             |   4 +-
+ arch/sh/kernel/process_64.c             |   4 +-
+ arch/sparc/kernel/process_32.c          |   4 +-
+ arch/sparc/kernel/process_64.c          |   4 +-
+ arch/sparc/kernel/sys_sparc32.c         |   4 +-
+ arch/tile/kernel/process.c              |   8 +-
+ arch/unicore32/kernel/sys.c             |   4 +-
+ arch/xtensa/kernel/process.c            |   4 +-
+ fs/compat.c                             |  12 +-
+ fs/exec.c                               |  13 +-
+ fs/filesystems.c                        |   4 +-
+ fs/internal.h                           |   4 +-
+ fs/namei.c                              | 214 +++++++++++++++++++++-----------
+ fs/namespace.c                          |   6 +-
+ fs/open.c                               |  33 ++++-
+ fs/quota/quota.c                        |   4 +-
+ include/linux/audit.h                   |  26 ++--
+ include/linux/fs.h                      |  23 +++-
+ init/do_mounts.c                        |   7 +-
+ ipc/mqueue.c                            |   9 +-
+ kernel/acct.c                           |   6 +-
+ kernel/auditsc.c                        | 124 +++++++++++-------
+ mm/swapfile.c                           |  11 +-
+ 44 files changed, 392 insertions(+), 236 deletions(-)
+
+-- 
+1.7.11.4
+
