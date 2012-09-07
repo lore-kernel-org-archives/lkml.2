@@ -1,103 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759123Ab2IGG0P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 02:26:15 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53823 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752979Ab2IGG0O (ORCPT
+	id S1760075Ab2IGG3b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 02:29:31 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:47082 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754814Ab2IGG3a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 02:26:14 -0400
+	Fri, 7 Sep 2012 02:29:30 -0400
 MIME-Version: 1.0
-In-Reply-To: <1346829962-31989-4-git-send-email-minchan@kernel.org>
-References: <1346829962-31989-1-git-send-email-minchan@kernel.org>
-	<1346829962-31989-4-git-send-email-minchan@kernel.org>
-Date: Fri, 7 Sep 2012 14:26:13 +0800
-Message-ID: <CAN6t85S2C4WU9pNG4uAw-NBS=FPBUYqCXPFPLxHPBv70ht31Qw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] memory-hotplug: bug fix race between isolation and allocation
-From: jencce zhou <jencce2002@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Xishi Qiu <qiuxishi@huawei.com>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <alpine.LFD.2.00.1209061255530.509@new-host-2>
+References: <5040C11C.4060505@gmail.com>
+	<alpine.LFD.2.00.1209061255530.509@new-host-2>
+Date: Fri, 7 Sep 2012 08:29:28 +0200
+Message-ID: <CANGUGtB9-DuypSnT0zobd9CK88SW8x=FGCnwaHZEDjtkJ33doQ@mail.gmail.com>
+Subject: Re: [PATCH 00/21] drop vmtruncate
+From: Marco Stornelli <marco.stornelli@gmail.com>
+To: =?ISO-8859-2?Q?Luk=E1=B9_Czerner?= <lczerner@redhat.com>
+Cc: Linux FS Devel <linux-fsdevel@vger.kernel.org>, linux-mm@kvack.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/9/5 Minchan Kim <minchan@kernel.org>:
-> Like below, memory-hotplug makes race between page-isolation
-> and page-allocation so it can hit BUG_ON in __offline_isolated_pages.
+2012/9/6 Lukáš Czerner <lczerner@redhat.com>:
+> On Fri, 31 Aug 2012, Marco Stornelli wrote:
 >
->         CPU A                                   CPU B
+>> Date: Fri, 31 Aug 2012 15:50:20 +0200
+>> From: Marco Stornelli <marco.stornelli@gmail.com>
+>> To: Linux FS Devel <linux-fsdevel@vger.kernel.org>, linux-mm@kvack.org
+>> Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+>> Subject: [PATCH 00/21] drop vmtruncate
+>>
+>> Hi all,
+>>
+>> with this patch series I try to clean the vmtruncate code. The theory of
+>> operation:
+>>
+>> old               new
+>> vmtruncate() =>   inode_newsize_ok+truncate_setsize+fs truncate
+>>
+>> Where vmtruncate was used without any error check, the code now is:
+>>
+>> if (inode_newsize_ok() == 0) {
+>>       truncate_setsize();
+>>       fs truncate();
+>> }
+>>
+>> So, performance and semantic nothing change at all. I think that maybe in some
+>> point we can skip inode_newsize_ok (where the error check of vmtruncate wasn't
+>> used) but since there is a swap check in case of no-extension, maybe it's
+>> better to avoid regressions. After this clean, of course, each fs can clean in
+>> a deeply way.
+>>
+>> With these patches even the inode truncate callback is deleted.
+>>
+>> Any comments/feedback/bugs are welcome.
 >
-> start_isolate_page_range
-> set_migratetype_isolate
-> spin_lock_irqsave(zone->lock)
+> Could you explain the reason behind this change a little bit more ?
+> This does not make any sense to me since you're replacing
+> vmtruncate() which does basically
 >
->                                 free_hot_cold_page(Page A)
->                                 /* without zone->lock */
->                                 migratetype = get_pageblock_migratetype(Page A);
->                                 /*
->                                  * Page could be moved into MIGRATE_MOVABLE
->                                  * of per_cpu_pages
->                                  */
->                                 list_add_tail(&page->lru, &pcp->lists[migratetype]);
+> if (inode_newsize_ok() == 0) {
+>         truncate_setsize();
+>         fs truncate();
+> }
 >
-> set_pageblock_isolate
-here
-> move_freepages_block
-> drain_all_pages
+> as you mentioned above by exactly the same thing but doing it within
+> the file system. It does not seem like an improvement to me ... how
+> is this a clean up ?
 >
->                                 /* Page A could be in MIGRATE_MOVABLE of free_list. */
-             why ?  should it has been moved to MIGRATE_ISOLATE list ?
+> Thanks!
+> -Lukas
 >
-> check_pages_isolated
-> __test_page_isolated_in_pageblock
-> /*
->  * We can't catch freed page which
->  * is free_list[MIGRATE_MOVABLE]
->  */
-> if (PageBuddy(page A))
->         pfn += 1 << page_order(page A);
->
->                                 /* So, Page A could be allocated */
->
-> __offline_isolated_pages
-> /*
->  * BUG_ON hit or offline page
->  * which is used by someone
->  */
-> BUG_ON(!PageBuddy(page A));
->
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  mm/page_isolation.c |    5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
->
-> diff --git a/mm/page_isolation.c b/mm/page_isolation.c
-> index acf65a7..4699d1f 100644
-> --- a/mm/page_isolation.c
-> +++ b/mm/page_isolation.c
-> @@ -196,8 +196,11 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn)
->                         continue;
->                 }
->                 page = pfn_to_page(pfn);
-> -               if (PageBuddy(page))
-> +               if (PageBuddy(page)) {
-> +                       if (get_page_migratetype(page) != MIGRATE_ISOLATE)
-> +                               break;
->                         pfn += 1 << page_order(page);
-> +               }
->                 else if (page_count(page) == 0 &&
->                                 get_page_migratetype(page) == MIGRATE_ISOLATE)
->                         pfn += 1;
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
+First of all we have one function less in our stack :) Vmtruncate (see
+comments) is deprecated, so it's better to remove it completly. In
+this way we can remove even the truncate call back in inode operations
+(so save 4byte/8byte per struct for the pointer). The first goal of
+this cleaning activity, however, is remove a "deprecated" function to
+have a code much more readable. As I said, this patch series is only a
+*first* cleanup, each fs can of course clean its code in a deeply way.
+As you can see, the patch span over several fs, to be *safe* I
+preferred to use a conservative approach. Where vmtruncate was called
+without error check, as I said, maybe we can remove
+inode_newsize_ok(), but since in this way we skip a check, I preferred
+that approach. It seems that for NTFS and Raiserfs it's ok.
+
+Marco
+
+Marco
