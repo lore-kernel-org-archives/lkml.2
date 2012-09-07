@@ -1,52 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751737Ab2IGQUh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 12:20:37 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:43374 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750746Ab2IGQUf (ORCPT
+	id S1752201Ab2IGQVT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 12:21:19 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:65431 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777Ab2IGQVR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 12:20:35 -0400
-Date: Fri, 7 Sep 2012 12:20:35 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Shuah Khan <shuah.khan@hp.com>
-cc: fujita.tomonori@lab.ntt.co.jp, Andrew Morton <akpm@linux-foundation.org>,
-        <paul.gortmaker@windriver.com>, <bhelgaas@google.com>,
-        <amwang@redhat.com>, <joerg.roedel@amd.com>,
-        <paul.gortmaker@windriver.com>, <kubakici@wp.pl>,
-        <dan.carpenter@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>, <devel@linuxdriverproject.org>,
-        <shuahkhan@gmail.com>
-Subject: Re: [RFC] DMA mapping error check analysis
-In-Reply-To: <1347033200.2603.19.camel@lorien2>
-Message-ID: <Pine.LNX.4.44L0.1209071218550.1674-100000@iolanthe.rowland.org>
+	Fri, 7 Sep 2012 12:21:17 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1346945041-26676-3-git-send-email-peter.senna@gmail.com>
+References: <1346945041-26676-3-git-send-email-peter.senna@gmail.com>
+Date: Fri, 7 Sep 2012 13:21:16 -0300
+Message-ID: <CALF0-+Wy47kwSLnQtktXwi_JQ86b6-9RjL02hu5W9xYtqaYi6g@mail.gmail.com>
+Subject: Re: [PATCH 11/14] drivers/media/usb/stk1160/stk1160-i2c.c: fix error
+ return code
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        kernel-janitors@vger.kernel.org, Julia.Lawall@lip6.fr,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 Sep 2012, Shuah Khan wrote:
+On Thu, Sep 6, 2012 at 12:23 PM, Peter Senna Tschudin
+<peter.senna@gmail.com> wrote:
+> From: Peter Senna Tschudin <peter.senna@gmail.com>
+>
+> Convert a nonnegative error return code to a negative one, as returned
+> elsewhere in the function.
+>
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+>
+> // <smpl>
+> (
+> if@p1 (\(ret < 0\|ret != 0\))
+>  { ... return ret; }
+> |
+> ret@p1 = 0
+> )
+> ... when != ret = e1
+>     when != &ret
+> *if(...)
+> {
+>   ... when != ret = e2
+>       when forall
+>  return ret;
+> }
+>
+> // </smpl>
+>
+> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+>
+> ---
+>  drivers/media/usb/stk1160/stk1160-i2c.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/media/usb/stk1160/stk1160-i2c.c b/drivers/media/usb/stk1160/stk1160-i2c.c
+> index 176ac93..850cf28 100644
+> --- a/drivers/media/usb/stk1160/stk1160-i2c.c
+> +++ b/drivers/media/usb/stk1160/stk1160-i2c.c
+> @@ -116,7 +116,7 @@ static int stk1160_i2c_read_reg(struct stk1160 *dev, u8 addr,
+>         if (rc < 0)
+>                 return rc;
+>
+> -       stk1160_read_reg(dev, STK1160_SBUSR_RD, value);
+> +       rc = stk1160_read_reg(dev, STK1160_SBUSR_RD, value);
+>         if (rc < 0)
+>                 return rc;
+>
+>
+> --
 
-> I analyzed all calls to dma_map_single() and dma_map_page() in the
-> kernel, to see if callers check for mapping errors, before using the
-> returned address.
-> 
-> The goal of this analysis is to find drivers that currently do not 
-> check dma mapping errors, and fix them.
-> 
-> I documented the results of this analysis:
-> 
-> http://linuxdriverproject.org/mediawiki/index.php/DMA_Mapping_Error_Analysis
-> 
-> Please review and give me feedback on the analysis and the proposed
-> next steps.
-
-Your first table (dma_map_single) lists drivers/usb/core/usb.c and
-marks it as Bad.  This is a mistake because the code is #ifdef'ed out.  
-It hasn't been used in many years; it should be removed.
-
-Alan Stern
-
+Acked-by: Ezequiel Garcia <elezegarcia@gmail.com>
