@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754925Ab2IGGrK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 02:47:10 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:48617 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752178Ab2IGGrH convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Fri, 7 Sep 2012 02:47:07 -0400
-Message-Id: <5049B4C102000078000998FE@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Fri, 07 Sep 2012 07:48:01 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ix86: improve determination of X86_MINIMUM_CPU_FAMILY
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1754657Ab2IGGsK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 02:48:10 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:40404 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751136Ab2IGGsI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 02:48:08 -0400
+Message-ID: <504998A2.6000705@gmail.com>
+Date: Fri, 07 Sep 2012 16:48:02 +1000
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: axel.lin@gmail.com
+CC: Hartley Sweeten <hsweeten@visionengravers.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: ep93xx: Fix build error due to 'SZ_32M' undeclared
+References: <1346675368.15950.0.camel@phoenix> <5049346B.5020205@gmail.com> <CAF+7xWko4wokuU-OiMYq3a2RJyaSb=qXM+LOpJCKHYpEB1Xi2Q@mail.gmail.com>
+In-Reply-To: <CAF+7xWko4wokuU-OiMYq3a2RJyaSb=qXM+LOpJCKHYpEB1Xi2Q@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This was quite a bit off: While I never build for anything older than
-i686 (other than for specifically trying certain things out), one of my
-32-bit configs (tailor made for a VIA system) ended up having this set
-to 4. Others, customized for more mainstream systems, had this set to 5.
+On 07/09/12 15:48, Axel Lin wrote:
+>> Hi Axel,
+>>
+>> The patch looks fine. I notice that the other ep93xx boards are also
+>> using the SZ_ defines, but are indirectly including linux/sizes.h via
+>> asm/memory.h, which in turn is indirectly included via asm/io.h. That
+> Seems this is also true for other platforms ( e.g. mach-pxa, mach-ux500, etc)
+> 
+>> seems a bit flaky, so I wonder if we should just explicitly include
+>> <linux/sizes.h> in all the board files which use the SZ_ macros as per
+>> the patch below. Thoughts?
+> I'm 50/50 on this.
+> But if we do these changes, this patch is more than a build fix.
 
-Once at it, also drop the unnecessary dependencies on X86_32 - that
-symbol being the inverse of X86_64, and Kconfig default determination
-working by a first match algorithm, X86_64 being dealt with in the very
-first selection makes it unnecessary to have that dependency in all
-subsequent default selections.
+Fair enough,
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
+I've applied your patch as-is to my ep93xx-fixes branch.
 
----
- arch/x86/Kconfig.cpu |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
---- 3.6-rc4/arch/x86/Kconfig.cpu
-+++ 3.6-rc4-x86-minimum-cpu-family/arch/x86/Kconfig.cpu
-@@ -409,9 +409,9 @@ config X86_CMOV
- config X86_MINIMUM_CPU_FAMILY
- 	int
- 	default "64" if X86_64
--	default "6" if X86_32 && X86_P6_NOP
--	default "5" if X86_32 && X86_CMPXCHG64
--	default "4" if X86_32 && (X86_XADD || X86_CMPXCHG || X86_BSWAP || X86_WP_WORKS_OK)
-+	default "6" if X86_P6_NOP || X86_CMOV
-+	default "5" if X86_CMPXCHG64 || X86_TSC
-+	default "4" if X86_XADD || X86_CMPXCHG || X86_BSWAP || X86_WP_WORKS_OK
- 	default "3"
- 
- config X86_DEBUGCTLMSR
-
+Thanks,
+~Ryan
 
 
