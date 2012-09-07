@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760343Ab2IGJ53 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 05:57:29 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:43864 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753926Ab2IGJ51 (ORCPT
+	id S932942Ab2IGKCT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 06:02:19 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:58764 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760313Ab2IGKCS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 05:57:27 -0400
-Message-ID: <5049C4D7.50101@linux.vnet.ibm.com>
-Date: Fri, 07 Sep 2012 17:56:39 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Fri, 7 Sep 2012 06:02:18 -0400
+Message-ID: <5049C5F1.3050301@in.ibm.com>
+Date: Fri, 07 Sep 2012 15:31:21 +0530
+From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v6 12/12] KVM: indicate readonly access fault
-References: <5032F8FD.2020306@linux.vnet.ibm.com> <5032FA78.9040405@linux.vnet.ibm.com> <5034CB60.30107@redhat.com> <5034D4E3.2080801@linux.vnet.ibm.com> <5048AE96.3050909@redhat.com>
-In-Reply-To: <5048AE96.3050909@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: linuxppc-dev@lists.ozlabs.org, mahesh@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] [powerpc] Change memory_limit from phys_addr_t
+ to unsigned long long
+References: <20120821113815.29282.4000.stgit@suzukikp.in.ibm.com> <20120821114225.29282.87841.stgit@suzukikp.in.ibm.com> <1346981712.2385.30.camel@pasglop>
+In-Reply-To: <1346981712.2385.30.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-x-cbid: 12090709-4790-0000-0000-0000047F9FFC
+x-cbid: 12090710-5816-0000-0000-000004557B8D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/06/2012 10:09 PM, Avi Kivity wrote:
-> On 08/22/2012 03:47 PM, Xiao Guangrong wrote:
->> On 08/22/2012 08:06 PM, Avi Kivity wrote:
->>> On 08/21/2012 06:03 AM, Xiao Guangrong wrote:
->>>> Introduce write_readonly_mem in mmio-exit-info to indicate this exit is
->>>> caused by write access on readonly memslot
->>>
->>> Please document this in chapter 5 of apic.txt.
->>>
+On 09/07/2012 07:05 AM, Benjamin Herrenschmidt wrote:
+> On Tue, 2012-08-21 at 17:12 +0530, Suzuki K. Poulose wrote:
+>> There are some device-tree nodes, whose values are of type phys_addr_t.
+>> The phys_addr_t is variable sized based on the CONFIG_PHSY_T_64BIT.
 >>
->> Okay, please review this one.
+>> Change these to a fixed unsigned long long for consistency.
 >>
->> Subject: [PATCH v6 12/12] KVM: indicate readonly access fault
+>> This patch does the change only for memory_limit.
 >>
->> Introduce write_readonly_mem in mmio-exit-info to indicate this exit is
->> caused by write access on readonly memslot
+>> The following is a list of such variables which need the change:
 >>
-> 
-> I'm not sure whether this indication can be trusted by userspace.  By
-> the time userspace gets to process this, the slot may no longer exist,
-> or it may be writable.
+>>   1) kernel_end, crashk_size - in arch/powerpc/kernel/machine_kexec.c
+>>
+>>   2) (struct resource *)crashk_res.start - We could export a local static
+>>      variable from machine_kexec.c.
+>>
+>> Changing the above values might break the kexec-tools. So, I will
+>> fix kexec-tools first to handle the different sized values and then change
+>>   the above.
+>>
+>> Suggested-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>> Signed-off-by: Suzuki K. Poulose <suzuki@in.ibm.com>
+>> ---
+>
+> Breaks the build on some configs (with 32-bit phys_addr_t):
 
-The case of deleting memslot is ok, because userspace just skips this fault
-if no readonly mem or no fault handler can be found.
+Sorry for that.
+>
+> /home/benh/linux-powerpc-test/arch/powerpc/kernel/prom.c: In function
+> 'early_init_devtree':
+> /home/benh/linux-powerpc-test/arch/powerpc/kernel/prom.c:664:25: error:
+> comparison of distinct pointer types lacks a cast
+>
+> I'm fixing that myself this time but please be more careful.
+Sure. Thanks Ben for fixing that.
 
-Switching memslot from readonly to writable sounds strange, i agree with you
-that this flag is untrusty under this case.
-
-Marcelo, any comments?
-
-> 
-> (in the same way an mmio exit might actually hit RAM)
-
-So, in the userspace, for the safe reason, we should walk all memslots not
-just walking mmio handlers?
+Suzuki
 
