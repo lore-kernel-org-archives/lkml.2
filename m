@@ -1,41 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756395Ab2IGPX7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 11:23:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54322 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751544Ab2IGPXx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 11:23:53 -0400
-Date: Fri, 7 Sep 2012 17:23:52 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org
-Subject: Re: mmotm 2012-09-06-16-46 uploaded
-Message-ID: <20120907152352.GC3688@dhcp22.suse.cz>
-References: <20120906234735.1B54B20004E@hpza10.eem.corp.google.com>
- <20120907151246.GB3688@dhcp22.suse.cz>
- <20120907152251.GA14728@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120907152251.GA14728@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754408Ab2IGPWW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 11:22:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50019 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751635Ab2IGPWU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 11:22:20 -0400
+From: Seth Forshee <seth.forshee@canonical.com>
+To: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Cc: David Airlie <airlied@linux.ie>, Matthew Garrett <mjg@redhat.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Andreas Heider <andreas@meetr.de>,
+        Seth Forshee <seth.forshee@canonical.com>
+Subject: [PATCH 0/7] Fixes for hybrid graphics Apple machines
+Date: Fri,  7 Sep 2012 10:22:03 -0500
+Message-Id: <1347031330-19657-1-git-send-email-seth.forshee@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 07-09-12 23:22:51, Wu Fengguang wrote:
-> On Fri, Sep 07, 2012 at 05:12:47PM +0200, Michal Hocko wrote:
-> > [CCing Wu Fengguang so that he can update the link to the new tree
-> > location]
-> 
-> > $ git remote add mm git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
-> 
-> Thanks! I've updated to the new link and it works fine.
+Many hybrid graphics Apple laptops fail to set up LVDS on the secondary
+GPU due to missing or incorrect mode information for the panel at init
+time. The only way to get the LVDS mode on these machines is via the
+DDC, but this is muxed to the active GPU at boot. However, the graphics
+mux on these machines supports muxing the i2c idependently of the
+display, making it possible for the secondary graphics driver to read
+the EDID without a full display switch.
 
-Thanks a lot!
--- 
-Michal Hocko
-SUSE Labs
+In order to support this, these patches modify vga_switcheroo to allow
+muxing of the DDC idependently of the display. apple-gmux is updated to
+support this new functionality, and drm_get_edid() is modified to switch
+the DDC mux as needed.
+
+For this to work we also need to ensure that sufficient switcheroo
+suport is available before initializing the secondary GPU. This is done
+by adding any non-active GPUs that try to initialize before switcheroo
+is ready to a list and initializing these devices once switcheroo
+becomes ready. This behavior is restricted to Apple laptops to prevent
+causing problems on other machines.
+
+Thanks,
+Seth
+
+Seth Forshee (7):
+  vga_switcheroo: Add support for switching only the DDC
+  vga_switcheroo: Add helper function to get the active client
+  vga_switcheroo: Add notifier call chain for switcheroo events
+  apple-gmux: Add switch_ddc support
+  drm/edid: Switch DDC when reading the EDID
+  drm/pci: Add drm_put_pci_dev()
+  drm/pci: Defer initialization of secondary graphics devices until
+    switcheroo is ready
+
+ drivers/gpu/drm/ast/ast_drv.c         |    2 +-
+ drivers/gpu/drm/cirrus/cirrus_drv.c   |    2 +-
+ drivers/gpu/drm/drm_drv.c             |    3 +
+ drivers/gpu/drm/drm_edid.c            |   17 ++++
+ drivers/gpu/drm/drm_pci.c             |  172 +++++++++++++++++++++++++++++----
+ drivers/gpu/drm/gma500/psb_drv.c      |    2 +-
+ drivers/gpu/drm/i915/i915_drv.c       |    2 +-
+ drivers/gpu/drm/mgag200/mgag200_drv.c |    2 +-
+ drivers/gpu/drm/nouveau/nouveau_drv.c |    2 +-
+ drivers/gpu/drm/radeon/radeon_drv.c   |    2 +-
+ drivers/gpu/drm/vmwgfx/vmwgfx_drv.c   |    2 +-
+ drivers/gpu/vga/vga_switcheroo.c      |   87 ++++++++++++++++-
+ drivers/platform/x86/apple-gmux.c     |   12 ++-
+ include/drm/drmP.h                    |    3 +
+ include/linux/vga_switcheroo.h        |   20 ++++
+ 15 files changed, 302 insertions(+), 28 deletions(-)
+
