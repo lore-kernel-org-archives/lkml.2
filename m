@@ -1,113 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758570Ab2IGWoB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 18:44:01 -0400
-Received: from mga01.intel.com ([192.55.52.88]:37449 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751959Ab2IGWoA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 18:44:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,388,1344236400"; 
-   d="scan'208";a="219334848"
-Subject: Re: mtd: kernel BUG at arch/x86/mm/pat.c:279!
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, dwmw2@infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mtd@lists.infradead.org, linux-mm <linux-mm@kvack.org>,
-        Dave Jones <davej@redhat.com>
-Date: Fri, 07 Sep 2012 15:42:58 -0700
-In-Reply-To: <CA+55aFzJCLxVP+WYJM-gq=aXx5gmdgwC7=_Gr2Tooj8q+Dz4dw@mail.gmail.com>
-References: <1340959739.2936.28.camel@lappy>
-	 <CA+1xoqdgKV_sEWvUbuxagL9JEc39ZFa6X9-acP7j-M7wvW6qbQ@mail.gmail.com>
-	 <CA+55aFzJCLxVP+WYJM-gq=aXx5gmdgwC7=_Gr2Tooj8q+Dz4dw@mail.gmail.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+	id S1758710Ab2IGWoO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 18:44:14 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44655 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751571Ab2IGWoK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 18:44:10 -0400
+Message-ID: <504A78B0.8010105@kernel.dk>
+Date: Fri, 07 Sep 2012 16:44:00 -0600
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Kent Overstreet <koverstreet@google.com>
+CC: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com
+Subject: Re: [PATCH v10 4/8] block: Add bio_reset()
+References: <1346970902-10931-1-git-send-email-koverstreet@google.com> <1346970902-10931-5-git-send-email-koverstreet@google.com> <50494F1A.4080207@kernel.dk> <20120907205823.GD16360@google.com> <504A6D57.1030607@kernel.dk> <504A6FF5.3090603@kernel.dk> <20120907222522.GE16360@google.com>
+In-Reply-To: <20120907222522.GE16360@google.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-ID: <1347057778.26695.68.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-07 at 11:14 -0700, Linus Torvalds wrote:
-> Guys, this looks like a MTD and/or io_remap_pfn_range() bug, and it's
-> not getting any traction.
+On 2012-09-07 16:25, Kent Overstreet wrote:
+> On Fri, Sep 07, 2012 at 04:06:45PM -0600, Jens Axboe wrote:
+>> On 2012-09-07 15:55, Jens Axboe wrote:
+>>> On 2012-09-07 14:58, Kent Overstreet wrote:
+>>>> On Thu, Sep 06, 2012 at 07:34:18PM -0600, Jens Axboe wrote:
+>>>>> On 2012-09-06 16:34, Kent Overstreet wrote:
+>>>>>> Reusing bios is something that's been highly frowned upon in the past,
+>>>>>> but driver code keeps doing it anyways. If it's going to happen anyways,
+>>>>>> we should provide a generic method.
+>>>>>>
+>>>>>> This'll help with getting rid of bi_destructor - drivers/block/pktcdvd.c
+>>>>>> was open coding it, by doing a bio_init() and resetting bi_destructor.
+>>>>>>
+>>>>>> This required reordering struct bio, but the block layer is not yet
+>>>>>> nearly fast enough for any cacheline effects to matter here.
+>>>>>
+>>>>> That's an odd and misplaced comment. Was just doing testing today at 5M
+>>>>> IOPS, and even years back we've had cache effects for O_DIRECT in higher
+>>>>> speed setups.
+>>>>
+>>>> Ah, I wasn't aware that you were pushing that many iops through the
+>>>> block layer - most I've tested myself was around 1M. It wouldn't
+>>>> surprise me if cache effects in struct bio mattered around 5M...
+>>>
+>>> 5M is nothing, just did 13.5M :-)
+>>>
+>>> But we can reshuffle for now. As mentioned, we're way overdue for a
+>>> decent look at cache profiling in any case.
+>>
+>> No ill effects seen so far, fwiw:
+>>
+>>   read : io=1735.8GB, bw=53690MB/s, iops=13745K, runt= 33104msec
 > 
-> What the f*ck is mtd_mmap() doing, and why? The problem seems to be an
-> overflow condition, because reserve_pfn_range() does
+> Cool!
 > 
->     reserve_memtype(paddr, paddr + size, want_flags, &flags);
-> 
-> and then the BUG_ON() in reserve_memtype is
-> 
->     BUG_ON(start >= end);
-> 
-> so it very much looks like a paddr+size overflow. However, that makes
-> little sense too, since we're working in "u64", so I suspect the
-> overflow has happened somewhere earlier.
-> 
-> I really don't see where, though. Could somebody please take a look?
-> The mtdchar_mmap() types seem insane (why "u32" for len, for example?
-> And that whole
-> 
->   off = vma->vm_pgoff << PAGE_SHIFT;
-> 
-> thing looks like it would overflow, since the whole point of pgoff is
-> that if you shift it up by PAGE_SHIFT you need to also extend to
-> 64-bit etc.
-> 
-> So I would *guess* that it's the mtdchar_mmap() stuff that overflows
-> due to bad types, but maybe it does deeper than that?
-> 
+> I'd be really curious to see a profile. Of the patches I've got queued
+> up I don't think anything's going to significantly affect performance
+> yet, but I'm hoping the cleanups/immutable bvec stuff/efficient bio
+> splitting enables some performance gains.
 
-I started to look into this to see if this is a PAT issue but it does
-indeed appear to be a mtd mmap issue.
+Got more work to do, but certainly not a problem sharing.
 
-Sasha, Does the appended fix the issue for you?
+> Well, it certainly will for stacking drivers, but I'm less sure what
+> it's going to look like running on just a raw flash device.
+> 
+> My end goal is making generic_make_request handle arbitrary sized bios,
+> and have (efficient) splitting happen as required. This'll get rid of a
+> bunch of code and complexity in the upper layers, in bio_add_page() and
+> elsewhere. More in the stacking drivers - merge_bvec_fn is horrendous to
+> support.
 
---8<--
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: mtd: check the starting offset to be mmap'd
+It is a nasty interface, in retrospect probably a mistake. As long as we
+don't split ever on non-stacking drivers, I don't care too much. And it
+would get rid of complexity in those drivers, so that's a nice win.
+merge_bvec_fn not only a bad interface, it's also pretty slow...
 
-We need to check if both the starting offset aswell the total length
-being mmap'd are with in the limits. With a large starting offset,
-offset + (length-to-be-mapped) can wrap and appear smaller than the
-limit. Need to check both start and end.
+> I think I might be able to efficiently get rid of the
+> segments-after-merging precalculating, and just have segments merged
+> once. That'd get rid of a couple fields in struct bio, and get it under
+> 2 cachelines last I counted.
 
-Also fix the types of the variables start, off, len.
+It's 2 cachelines now, but reducing is always a great thing. Getting rid
+of the repeated recalculate after merge would be a nice win.
 
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
----
- drivers/mtd/mtdchar.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
+> Course, all this doesn't matter as much for 4k bios so it may just be a
+> wash for you.
 
-diff --git a/drivers/mtd/mtdchar.c b/drivers/mtd/mtdchar.c
-index f2f482b..f79c0fa 100644
---- a/drivers/mtd/mtdchar.c
-+++ b/drivers/mtd/mtdchar.c
-@@ -1132,16 +1132,15 @@ static int mtdchar_mmap(struct file *file, struct vm_area_struct *vma)
- 	struct mtd_file_info *mfi = file->private_data;
- 	struct mtd_info *mtd = mfi->mtd;
- 	struct map_info *map = mtd->priv;
--	unsigned long start;
--	unsigned long off;
--	u32 len;
-+	resource_size_t start, off;
-+	unsigned long len;
- 
- 	if (mtd->type == MTD_RAM || mtd->type == MTD_ROM) {
- 		off = vma->vm_pgoff << PAGE_SHIFT;
- 		start = map->phys;
- 		len = PAGE_ALIGN((start & ~PAGE_MASK) + map->size);
- 		start &= PAGE_MASK;
--		if ((vma->vm_end - vma->vm_start + off) > len)
-+		if (off >= len || (vma->vm_end - vma->vm_start + off) > len)
- 			return -EINVAL;
- 
- 		off += start;
+Right, for me it doesn't matter. As long as you don't slow me down :-)
 
+-- 
+Jens Axboe
 
