@@ -1,152 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757375Ab2IGUxT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 16:53:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33851 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753599Ab2IGUxN (ORCPT
+	id S1757793Ab2IGUxd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 16:53:33 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:63572 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757387Ab2IGUx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 16:53:13 -0400
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: balbi@ti.com
-Cc: Greg KH <gregkh@linuxfoundation.org>, Tony Lindgren <tony@atomide.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        linux-serial@vger.kernel.org, Sourav Poddar <sourav.poddar@ti.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Shubhrajyoti Datta <shubhrajyoti@ti.com>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        alan@linux.intel.com
-Subject: Re: [PATCH v4 00/21] OMAP UART Patches
-Organization: Deep Root Systems, LLC
-References: <20120906122948.GC29202@arwen.pp.htv.fi>
-	<1346935540-1792-1-git-send-email-balbi@ti.com>
-	<87harahiv6.fsf@deeprootsystems.com>
-	<20120907054932.GB3136@arwen.pp.htv.fi>
-Date: Fri, 07 Sep 2012 13:53:11 -0700
-In-Reply-To: <20120907054932.GB3136@arwen.pp.htv.fi> (Felipe Balbi's message
-	of "Fri, 7 Sep 2012 08:49:34 +0300")
-Message-ID: <87oblhmu6g.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Fri, 7 Sep 2012 16:53:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <6a425d611ce5c276ec6949fd6aadf575580e07fe.1346653435.git.agordeev@redhat.com>
+References: <cover.1346653435.git.agordeev@redhat.com> <6a425d611ce5c276ec6949fd6aadf575580e07fe.1346653435.git.agordeev@redhat.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 7 Sep 2012 13:53:03 -0700
+Message-ID: <CAErSpo6Pd1O_vzhiwrRX_fjjoDs789orX_t+uJoZKbk5XWZa6w@mail.gmail.com>
+Subject: Re: [PATCH v2 -tip 4/5] PCI, MSI: Enable multiple MSIs with pci_enable_msi_block_auto()
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Jeff Garzik <jgarzik@pobox.com>,
+        Matthew Wilcox <willy@linux.intel.com>, x86@kernel.org,
+        linux-pci@vger.kernel.org, linux-ide@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Felipe Balbi <balbi@ti.com> writes:
-
-> Hi,
+On Mon, Sep 3, 2012 at 2:19 AM, Alexander Gordeev <agordeev@redhat.com> wrote:
+> The new function pci_enable_msi_block_auto() tries to allocate maximum
+> possible number of MSIs up to the number the device supports. It
+> generalizes a pattern when pci_enable_msi_block() is contiguously called
+> until it succeeds or fails.
 >
-> On Thu, Sep 06, 2012 at 03:44:13PM -0700, Kevin Hilman wrote:
->> Felipe Balbi <balbi@ti.com> writes:
->> 
->> > Hi guys,
->> >
->> > here's v4 of the omap uart patchset. No changes other than a rebase on top of
->> > Greg's tty-next branch and Tony's Acked-by being added to a couple patches
->> >
->> > Note: I'm resending the series with Vikram's Software Flow Control fix anyway
->> > as it can just be ignored if it's decided it needs to go into this merge
->> > window.
->> 
->> Sorry to be late to the party... just getting back from some time off.
->> 
->> I'm assuming that this was not tested with PM, so decided I better do it
+> Opposite to pci_enable_msi_block() which takes the number of MSIs to
+> allocate as a input parameter, pci_enable_msi_block_auto() could be used
+> by device drivers to obtain the number of assigned MSIs and the number
+> of MSIs the device supports.
 >
-> you assumed wrong. See the previous versions of the series and you'll
-> see I mention all the basic pm testing I did.
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 
-My apologies for not reading the previous versions.  I don't think it's
-unusual that a reviewer should expect everything he to know about a
-series (including how it was tested) is in the cover letter or in the
-changelogs of the latest series.  I don't expect to have to look through
-all the previous versions for this kind of info.  Since I wasn't around
-to review/test the earlier versions, I just looked at the latest (v4)
-and didn't see any mention of testing of any sort in the cover letter.
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
 
-Looking back at the previous cover letters, I don't see any description
-of the PM testing either.  I only see it was tested on pandaboard.
-Since mainline doesn't have full PM support for OMAP4, testing on panda
-doesn't really test UART PM at all.
+I haven't looked at the other patches in this series, but if the
+x86/IRQ folks like them, I'm OK with this part.
 
-Could you please point me to the descriptions in earlier mails of how
-you did PM testing, and on what platforms?
+Since the series is mostly non-PCI, I think it makes the most sense to
+keep it all together and merge it through some x86 or IRQ tree,
+including this PCI bit.
 
-In addition, IMO, if this was only tested on Panda (as suggested by
-earlier cover letters), it really should not have been merged until it
-got some broader testing.
-
->> myself seeing that Greg is has already merge it.  To test, I merged
->> Greg's tty-next branch with v3.6-rc4 and did some PM testing.
->> 
->> The bad news is that it doesn't even compile (see reply to [PATCH v4
->> 20/21]).  
+> ---
+>  Documentation/PCI/MSI-HOWTO.txt |   37 ++++++++++++++++++++++++++++++++-----
+>  drivers/pci/msi.c               |   26 ++++++++++++++++++++++++++
+>  include/linux/pci.h             |    7 +++++++
+>  3 files changed, 65 insertions(+), 5 deletions(-)
 >
-> yeah, that was an automerge issue when rebasing on greg's tty-next
-> branch, plus me assuming omap serial was already enabled on my .config
-> and not checking the compile output. Sent a patch now.
-
-As I reported in my reply to [PATCH v4 20/21], that patch also had
-another problem where it introduced a new (but unused) field.  Maybe
-another rebase problem?  I see the same problem in v3 and v4.
-
->> Also, there is a big WARNING on boot[1], which seems to be triggered by
->> a new check added for v3.6-rc3[2].  This appears to be introduced by
->> $SUBJECT series, because I don't see it on vanilla v3.6-rc4.
-
-[...]
-
-> This doesn't seem to be caused by $SUBJECT at all. See that we are
-> calling uart_add_one_port() which will call tty_port_register_device()
-> which, in turn, will call tty_port_link_device() and that will set
-> driver->ports[index] correctly.
+> diff --git a/Documentation/PCI/MSI-HOWTO.txt b/Documentation/PCI/MSI-HOWTO.txt
+> index 53e6fca..a091780 100644
+> --- a/Documentation/PCI/MSI-HOWTO.txt
+> +++ b/Documentation/PCI/MSI-HOWTO.txt
+> @@ -127,15 +127,42 @@ on the number of vectors that can be allocated; pci_enable_msi_block()
+>  returns as soon as it finds any constraint that doesn't allow the
+>  call to succeed.
 >
-> Have you checked if this doesn't happen without my series before waving
-> your blame hammer ? FWIW, that part of the code wasn't change by
-> $SUBJECT at all.
-
-Whoa.  This was only test report.  No need to get personal.  All I said
-is that it "seemed" to introduced by $SUBJECT series.  Hardly waiving
-"blame hammer."
-
-And yes, I did check without your series.  As I reported above, the
-warning didn't exist with v3.6-rc4, and it did with yesterday's tty-next
-branch.  The WARNING pointed a finger at ttyO (omap-serial) so I assumed
-it was in $SUBJECT series.
-
-Testing with todays tty-next, the problem is gone.  The patch
-'tty_register_device_attr updated for tty-next'[1] seems to have made
-the problem go away.  So it's now clear that it wasn't introduced by
-$SUBJECT series.   My bad.
-
-Yesterday, it wasn't that obvious, so I made an assumption in order to
-report a problem uncovered in my testing in the hopes that it would be
-helpful to you in fixing a potential problem. My assumption was wrong, I
-was wrong.  I'm wrong a lot, and I'm OK with that. The bug was
-elsewhere, and is already fixed.
-
-My apologies if it seemed like I was blaming you.
-
-Kevin
-
-[1] 
-Author: Tomas Hlavacek <tmshlvck@gmail.com>  2012-09-06 14:17:47
-Committer: Greg Kroah-Hartman <gregkh@linuxfoundation.org>  2012-09-06 14:40:18
-Parent: 6915c0e487c822e2436683e14302c0b8a6155cc7 (tty: uartclk value from serial_core exposed to sysfs)
-Child:  e36851d0fa94b0f7802b3cc80406dbd3ef4f2f16 (serial: omap: fix compile breakage)
-Branch: tmp/uart-test-2
-Follows: v3.6-rc3
-Precedes: 
-
-    tty_register_device_attr updated for tty-next
-    
-    Added tty_device_create_release() and bound to dev->release in
-    tty_register_device_attr().
-    Added tty_port_register_device_attr() and used in uart_add_one_port()
-    instead of tty_register_device_attr().
-    
-    Signed-off-by: Tomas Hlavacek <tmshlvck@gmail.com>
-    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+> -4.2.3 pci_disable_msi
+> +4.2.3 pci_enable_msi_block_auto
+> +
+> +int pci_enable_msi_block_auto(struct pci_dev *dev, unsigned int *count)
+> +
+> +This variation on pci_enable_msi() call allows a device driver to request
+> +the maximum possible number of MSIs.  The MSI specification only allows
+> +interrupts to be allocated in powers of two, up to a maximum of 2^5 (32).
+> +
+> +If this function returns a positive number, it indicates that it has
+> +succeeded and the returned value is the number of allocated interrupts. In
+> +this case, the function enables MSI on this device and updates dev->irq to
+> +be the lowest of the new interrupts assigned to it.  The other interrupts
+> +assigned to the device are in the range dev->irq to dev->irq + returned
+> +value - 1.
+> +
+> +If this function returns a negative number, it indicates an error and
+> +the driver should not attempt to request any more MSI interrupts for
+> +this device.
+> +
+> +If the device driver needs to know the number of interrupts the device
+> +supports it can pass the pointer count where that number is stored. The
+> +device driver must decide what action to take if pci_enable_msi_block_auto()
+> +succeeds, but returns a value less than the number of interrupts supported.
+> +If the device driver does not need to know the number of interrupts
+> +supported, it can set the pointer count to NULL.
+> +
+> +4.2.4 pci_disable_msi
+>
+>  void pci_disable_msi(struct pci_dev *dev)
+>
+>  This function should be used to undo the effect of pci_enable_msi() or
+> -pci_enable_msi_block().  Calling it restores dev->irq to the pin-based
+> -interrupt number and frees the previously allocated message signaled
+> -interrupt(s).  The interrupt may subsequently be assigned to another
+> -device, so drivers should not cache the value of dev->irq.
+> +pci_enable_msi_block() or pci_enable_msi_block_auto().  Calling it restores
+> +dev->irq to the pin-based interrupt number and frees the previously
+> +allocated message signaled interrupt(s).  The interrupt may subsequently be
+> +assigned to another device, so drivers should not cache the value of
+> +dev->irq.
+>
+>  Before calling this function, a device driver must always call free_irq()
+>  on any interrupt for which it previously called request_irq().
+> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+> index f0752d1..690b268 100644
+> --- a/drivers/pci/msi.c
+> +++ b/drivers/pci/msi.c
+> @@ -845,6 +845,32 @@ int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec)
+>  }
+>  EXPORT_SYMBOL(pci_enable_msi_block);
+>
+> +int pci_enable_msi_block_auto(struct pci_dev *dev, unsigned int *maxvec)
+> +{
+> +       int ret, pos, nvec;
+> +       u16 msgctl;
+> +
+> +       pos = pci_find_capability(dev, PCI_CAP_ID_MSI);
+> +       if (!pos)
+> +               return -EINVAL;
+> +
+> +       pci_read_config_word(dev, pos + PCI_MSI_FLAGS, &msgctl);
+> +       ret = 1 << ((msgctl & PCI_MSI_FLAGS_QMASK) >> 1);
+> +
+> +       if (maxvec)
+> +               *maxvec = ret;
+> +
+> +       do {
+> +               nvec = ret;
+> +               ret = pci_enable_msi_block(dev, nvec);
+> +       } while (ret > 0);
+> +
+> +       if (ret < 0)
+> +               return ret;
+> +       return nvec;
+> +}
+> +EXPORT_SYMBOL(pci_enable_msi_block_auto);
+> +
+>  void pci_msi_shutdown(struct pci_dev *dev)
+>  {
+>         struct msi_desc *desc;
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 5faa831..b8a9454 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -1070,6 +1070,12 @@ static inline int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec)
+>         return -1;
+>  }
+>
+> +static inline int
+> +pci_enable_msi_block_auto(struct pci_dev *dev, unsigned int *maxvec)
+> +{
+> +       return -1;
+> +}
+> +
+>  static inline void pci_msi_shutdown(struct pci_dev *dev)
+>  { }
+>  static inline void pci_disable_msi(struct pci_dev *dev)
+> @@ -1101,6 +1107,7 @@ static inline int pci_msi_enabled(void)
+>  }
+>  #else
+>  extern int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec);
+> +extern int pci_enable_msi_block_auto(struct pci_dev *dev, unsigned int *maxvec);
+>  extern void pci_msi_shutdown(struct pci_dev *dev);
+>  extern void pci_disable_msi(struct pci_dev *dev);
+>  extern int pci_msix_table_size(struct pci_dev *dev);
+> --
+> 1.7.7.6
+>
+>
+> --
+> Regards,
+> Alexander Gordeev
+> agordeev@redhat.com
