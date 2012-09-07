@@ -1,341 +1,283 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933067Ab2IGIss (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 04:48:48 -0400
-Received: from smtp-out-233.synserver.de ([212.40.185.233]:1091 "EHLO
-	smtp-out-233.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933006Ab2IGIsl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 04:48:41 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 20929
-Message-ID: <5049B501.20604@metafoo.de>
-Date: Fri, 07 Sep 2012 10:49:05 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.6esrpre) Gecko/20120817 Icedove/10.0.6
-MIME-Version: 1.0
-To: anish kumar <anish198519851985@gmail.com>
-CC: jic23@cam.ac.uk, linux-iio@vger.kernel.org, cbou@mail.ru,
-        dwmw2@infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [RFC]power: battery: Generic battery driver using IIO
-References: <1346600372-3284-1-git-send-email-anish198519851985@gmail.com>
-In-Reply-To: <1346600372-3284-1-git-send-email-anish198519851985@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S932963Ab2IGIsc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 04:48:32 -0400
+Received: from mga01.intel.com ([192.55.52.88]:28390 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932931Ab2IGIs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 04:48:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,384,1344236400"; 
+   d="scan'208";a="219252906"
+From: Feng Tang <feng.tang@intel.com>
+To: acme@redhat.com
+Cc: mingo@elte.hu, a.p.zijlstra@chello.nl, andi@firstfloor.org,
+        namhyung@kernel.org, dsahern@gmail.com, linux-kernel@vger.kernel.org,
+        Feng Tang <feng.tang@intel.com>
+Subject: [PATCH v2 5/7] perf ui/browser: Add a browser for perf script
+Date: Fri,  7 Sep 2012 16:42:27 +0800
+Message-Id: <1347007349-3102-6-git-send-email-feng.tang@intel.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1347007349-3102-1-git-send-email-feng.tang@intel.com>
+References: <1347007349-3102-1-git-send-email-feng.tang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/2012 05:39 PM, anish kumar wrote:
-> From: anish kumar <anish198519851985@gmail.com>
-> 
-> This patch is to use IIO to write a generic batttery driver.
-> There are some inherent assumptions here:
-> 1.User is having both main battery and backup battery.
-> 2.Both batteries use same channel to get the information.
-> 
+Create a script browser, so that user can check all the available
+scripts and run them inside the main perf report or annotation
+browsers, for all the perf samples or samples belong to one
+thread/symbol.
 
-Hi thanks for stepping up to take care of this and sorry for the late reply.
+The work flow is, users can use function key to list all the available
+scripts in system and chose one, which will be executed with
+popen("perf script -s xxx.xx",) and all the output lines are put into
+one ui browser, pressing 'q' or left arrow key will make it return
+to previous browser.
 
-> Signed-off-by: anish kumar <anish198519851985@gmail.com>
-> ---
-[...]
-> +
-> +struct generic_adc_bat {
-> +	struct power_supply		psy;
-> +	struct iio_channel		*channels;
-> +	int				channel_index;
-> +};
-> +
-> +struct generic_bat {
-> +	struct generic_adc_bat bat[BAT_MAX];
-> +	struct generic_platform_data	pdata;
-> +	int				volt_value;
-> +	int				cur_value;
-> +	unsigned int			timestamp;
-> +	int				level;
-> +	int				status;
-> +	int				cable_plugged:1;
-> +};
-> +
-> +static struct generic_bat generic_bat = {
-> +	.bat[MAIN_BAT] = {
-> +		.psy.name = "main-bat",
-> +	},
-> +	.bat[BACKUP_BAT] = {
-> +		.psy.name = "backup-bat",
-> +	},
-> +};
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+---
+ tools/perf/Makefile              |    4 +
+ tools/perf/ui/browsers/scripts.c |  182 ++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/hist.h           |    7 ++
+ 3 files changed, 193 insertions(+), 0 deletions(-)
+ create mode 100644 tools/perf/ui/browsers/scripts.c
 
-This should be per device. I'd also just use one power_supply per device. If
-somebody has multiple batteries in their system they can register multiple
-devices. This should make the driver more flexible.
-
-> +
-> +static struct delayed_work bat_work;
-
-This should also go into the generic_bat struct.
-
- +
-> +static void generic_adc_bat_ext_power_changed(struct power_supply *psy)
-> +{
-> +	schedule_delayed_work(&bat_work,
-> +			msecs_to_jiffies(JITTER_DELAY));
-> +}
-> +
-> +static enum power_supply_property generic_adc_main_bat_props[] = {
-> +	POWER_SUPPLY_PROP_STATUS,
-> +	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
-> +	POWER_SUPPLY_PROP_CHARGE_EMPTY_DESIGN,
-> +	POWER_SUPPLY_PROP_CHARGE_NOW,
-> +	POWER_SUPPLY_PROP_VOLTAGE_NOW,
-> +	POWER_SUPPLY_PROP_CURRENT_NOW,
-> +	POWER_SUPPLY_PROP_TECHNOLOGY,
-> +	POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN,
-> +	POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN,
-> +	POWER_SUPPLY_PROP_MODEL_NAME,
-> +};
-
-It probably make sense to create this at runtime, depending on which kind of
-IIO channels are provided. E.g. for VOLTAGE_NOW/CURRENT_NOW.
-
-[...]
-> +
-> +static int generic_adc_bat_get_property(struct power_supply *psy,
-> +		enum power_supply_property psp,
-> +		union power_supply_propval *val)
-> +{
-> +	struct generic_adc_bat *adc_bat;
-> +	struct generic_bat *bat;
-> +	int ret, scaleint, scalepart, iio_val;
-> +	long result = 0;
-> +
-> +	if (!strcmp(psy->name, "main-battery")) {
-> +		adc_bat = container_of(psy,
-> +					struct generic_adc_bat, psy);
-> +		bat = container_of(adc_bat,
-> +				struct generic_bat, bat[MAIN_BAT]);
-> +	} else if (!strcmp(psy->name, "backup-battery")) {
-> +		adc_bat = container_of(psy, struct generic_adc_bat, psy);
-> +		bat = container_of(adc_bat,
-> +				struct generic_bat, bat[BACKUP_BAT]);
-> +	} else {
-> +		/* Ideally this should never happen */
-> +		WARN_ON(1);
-> +		return -EINVAL;
-> +	}
-> +
-> +	if (!bat) {
-> +		dev_err(psy->dev, "no battery infos ?!\n");
-> +		return -EINVAL;
-> +	}
-> +	ret = iio_read_channel_raw(&adc_bat->channels[adc_bat->channel_index],
-> +			&iio_val);
-> +	ret = iio_read_channel_scale(&adc_bat->channels[adc_bat->channel_index],
-> +			&scaleint, &scalepart);
-
-It would probably make sense to only sample if the attribute for
-VOLTAGE_NOW/CURRENT_NOW property is read.
-
-[...]
-
-> +
-> +	switch (psp) {
-> +	case POWER_SUPPLY_PROP_STATUS:
-> +		if (bat->pdata.gpio_charge_finished < 0)
-> +			val->intval = bat->level == 100000 ?
-> +				POWER_SUPPLY_STATUS_FULL : bat->status;
-> +		else
-> +			val->intval = bat->status;
-> +		return 0;
-> +	case POWER_SUPPLY_PROP_CHARGE_EMPTY_DESIGN:
-> +		val->intval = 0;
-> +		return 0;
-> +	case POWER_SUPPLY_PROP_CHARGE_NOW:
-> +		val->intval = bat->pdata.cal_charge(result);
-> +		return 0;
-> +	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-> +		val->intval = result;
-> +		return 0;
-> +	case POWER_SUPPLY_PROP_CURRENT_NOW:
-> +		val->intval = result;
-> +		return 0;
-
-also this will return the same value for VOLTAGE_NOW and CURRENT_NOW since
-there is only one channel per battery. It might make sense to allow multiple
-channels per battery, one reporting current one voltage and also one for power.
-
-
-> +	case POWER_SUPPLY_PROP_TECHNOLOGY:
-> +		val->intval = bat->pdata.battery_info.technology;
-> +		break;
-> +	case POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN:
-> +		val->intval = bat->pdata.battery_info.voltage_min_design;
-> +		break;
-> +	case POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN:
-> +		val->intval = bat->pdata.battery_info.voltage_max_design;
-> +		break;
-> +	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
-> +		val->intval = bat->pdata.battery_info.charge_full_design;
-> +		break;
-> +	case POWER_SUPPLY_PROP_MODEL_NAME:
-> +		val->strval = bat->pdata.battery_info.name;
-> +		break;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +	return ret;
-> +}
-> +
-[...]
-> +
-> +static int __devinit generic_adc_bat_probe(struct platform_device *pdev)
-> +{
-> +[...]
-> +
-> +	/* assuming main battery and backup battery is using the same channel */
-> +	for (i = 0; i < num_channels; i++) {
-> +		ret = iio_get_channel_type(&channels[i], &type);
-> +		if (ret < 0)
-> +			goto err_gpio;
-> +
-> +		if (type == IIO_VOLTAGE || type == IIO_CURRENT) {
-> +			for (j = 0; j < BAT_MAX; j++) {
-> +				generic_bat.bat[j].channel_index = k;
-> +				generic_bat.bat[j].channels[k] = channels[i];
-> +			}
-> +			k++;
-> +		}
-> +		continue;
-
-continue at the end of a loop is a noop.
-
-> +	}
-> +
-> +	INIT_DELAYED_WORK(&bat_work, generic_adc_bat_work);
-> +
-> +	if (pdata->gpio_charge_finished >= 0) {
-
-gpio_is_valid
-
-> +		ret = gpio_request(pdata->gpio_charge_finished, "charged");
-> +		if (ret)
-> +			goto err_gpio;
-> +
-> +		ret = request_irq(gpio_to_irq(pdata->gpio_charge_finished),
-> +				generic_adc_bat_charged,
-> +				IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
-> +				"battery charged", NULL);
-> +		if (ret)
-> +			goto err_gpio;
-> +	}
-> +
-> +	dev_info(&pdev->dev, "successfully loaded\n");
-
-I'd remove that message.
-
-> +
-> +	/* Schedule timer to check current status */
-> +	schedule_delayed_work(&bat_work,
-> +			msecs_to_jiffies(JITTER_DELAY));
-> +
-> +	iio_channel_release_all(channels);
-> +
-> +	return 0;
-> +
-> +err_gpio:
-> +	iio_channel_release_all(channels);
-> +err_reg_backup:
-> +	for (i = 0; i < ARRAY_SIZE(generic_bat.bat); i++)
-> +		power_supply_unregister(&generic_bat.bat[i].psy);
-> +err_reg_main:
-> +	return ret;
-> +}
-> +
-
-[...]
-
-> +
-> +#ifdef CONFIG_PM
-> +static int generic_adc_bat_suspend(struct platform_device *pdev,
-> +		pm_message_t state)
-> +{
-> +	struct generic_platform_data *pdata = pdev->dev.platform_data;
-> +	struct generic_bat *bat = container_of(pdata,
-> +					struct generic_bat, pdata);
-> +
-> +	cancel_delayed_work_sync(&bat_work);
-> +	bat->status = POWER_SUPPLY_STATUS_UNKNOWN;
-> +
-> +	return 0;
-> +}
-> +
-> +static int generic_adc_bat_resume(struct platform_device *pdev)
-> +{
-> +	/* Schedule timer to check current status */
-> +	schedule_delayed_work(&bat_work,
-> +			msecs_to_jiffies(JITTER_DELAY));
-> +
-> +	return 0;
-> +}
-> +#else
-> +#define generic_adc_bat_suspend NULL
-> +#define generic_adc_bat_resume NULL
-> +#endif
-> +
-> +static struct platform_driver generic_adc_bat_driver = {
-> +	.driver		= {
-> +		.name	= "generic-adc-battery",
-> +	},
-> +	.probe		= generic_adc_bat_probe,
-> +	.remove		= generic_adc_bat_remove,
-> +	.suspend	= generic_adc_bat_suspend,
-> +	.resume		= generic_adc_bat_resume,
-
-Use dev_pm_ops instead. Using the suspend and resume callbacks is deprecated.
-
-> +};
-> +
-> +module_platform_driver(generic_adc_bat_driver);
-> +
-> +MODULE_AUTHOR("anish kumar <anish198519851985@gmail.com>");
-> +MODULE_DESCRIPTION("generic battery driver using IIO");
-> +MODULE_LICENSE("GPL");
-> diff --git a/include/linux/power/generic-battery.h b/include/linux/power/generic-battery.h
-> new file mode 100644
-> index 0000000..7a43aa0
-> --- /dev/null
-> +++ b/include/linux/power/generic-battery.h
-> @@ -0,0 +1,26 @@
-> +/*
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#ifndef GENERIC_BATTERY_H
-> +#define GENERIC_BATTERY_H
-> +
-> +#include <linux/power_supply.h>
-> +
-> +/**
-> + * struct generic_platform_data - platform data for generic battery
-> + * @battery_info: Information about the battery
-> + * @cal_charge: platform callback to calculate charge
-> + * @gpio_charge_finished: GPIO number used for interrupts
-> + * @gpio_inverted: Is the gpio inverted?
-> + */
-> +struct generic_platform_data {
-
-The name might be a bit to generic ;) I'd go for
-generic_battery_platform_data or iio_battery_platform_data.
-
-> +	struct power_supply_info battery_info;
-> +	int	(*cal_charge)(long);
-> +	int	gpio_charge_finished;
-> +	int	gpio_inverted;
-> +};
-> +
-> +#endif /* GENERIC_BATTERY_H */
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index cd196bc..941e700 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -579,6 +579,7 @@ else
+ 		LIB_OBJS += $(OUTPUT)ui/browsers/annotate.o
+ 		LIB_OBJS += $(OUTPUT)ui/browsers/hists.o
+ 		LIB_OBJS += $(OUTPUT)ui/browsers/map.o
++		LIB_OBJS += $(OUTPUT)ui/browsers/scripts.o
+ 		LIB_OBJS += $(OUTPUT)ui/progress.o
+ 		LIB_OBJS += $(OUTPUT)ui/util.o
+ 		LIB_OBJS += $(OUTPUT)ui/tui/setup.o
+@@ -890,6 +891,9 @@ $(OUTPUT)ui/browsers/hists.o: ui/browsers/hists.c $(OUTPUT)PERF-CFLAGS
+ $(OUTPUT)ui/browsers/map.o: ui/browsers/map.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
+ 
++$(OUTPUT)ui/browsers/scripts.o: ui/browsers/scripts.c $(OUTPUT)PERF-CFLAGS
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
++
+ $(OUTPUT)util/rbtree.o: ../../lib/rbtree.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
+ 
+diff --git a/tools/perf/ui/browsers/scripts.c b/tools/perf/ui/browsers/scripts.c
+new file mode 100644
+index 0000000..28a58fc
+--- /dev/null
++++ b/tools/perf/ui/browsers/scripts.c
+@@ -0,0 +1,182 @@
++#include <elf.h>
++#include <newt.h>
++#include <inttypes.h>
++#include <sys/ttydefaults.h>
++#include <string.h>
++#include "../../util/sort.h"
++#include "../../util/util.h"
++#include "../../util/hist.h"
++#include "../../util/debug.h"
++#include "../../util/symbol.h"
++#include "../browser.h"
++#include "../helpline.h"
++#include "../libslang.h"
++
++/* 2048 lines should be enough for a script output */
++#define MAX_LINES		2048
++
++/* 160 bytes for one output line */
++#define AVERAGE_LINE_LEN	160
++
++struct script_line {
++	struct list_head node;
++	char line[AVERAGE_LINE_LEN];
++};
++
++struct perf_script_browser {
++	struct ui_browser b;
++	struct list_head entries;
++	const char *script_name;
++	int nr_lines;
++};
++
++#define SCRIPT_NAMELEN	128
++#define SCRIPT_MAX_NO	64
++/*
++ * Usually the full path for a script is:
++ *	/home/username/libexec/perf-core/scripts/python/xxx.py
++ *	/home/username/libexec/perf-core/scripts/perl/xxx.pl
++ * So 256 should be long enough to contain the full path.
++ */
++#define SCRIPT_FULLPATH_LEN	256
++
++/*
++ * When success, will copy the full path of the selected script
++ * into  the buffer pointed by script_name, and return 0.
++ * Return -1 on failure.
++ */
++static int list_scripts(char *script_name)
++{
++	char *buf, *names[SCRIPT_MAX_NO], *paths[SCRIPT_MAX_NO];
++	int i, num, choice, ret = -1;
++
++	/* Preset the script name to SCRIPT_NAMELEN */
++	buf = malloc(SCRIPT_MAX_NO * (SCRIPT_NAMELEN + SCRIPT_FULLPATH_LEN));
++	if (!buf)
++		return ret;
++
++	for (i = 0; i < SCRIPT_MAX_NO; i++) {
++		names[i] = buf + i * (SCRIPT_NAMELEN + SCRIPT_FULLPATH_LEN);
++		paths[i] = names[i] + SCRIPT_NAMELEN;
++	}
++
++	num = find_scripts(names, paths);
++	if (num > 0) {
++		choice = ui__popup_menu(num, names);
++		if (choice < num && choice >= 0) {
++			strcpy(script_name, paths[choice]);
++			ret = 0;
++		}
++	}
++
++	free(buf);
++	return ret;
++}
++
++static void script_browser__write(struct ui_browser *browser,
++				   void *entry, int row)
++{
++	struct script_line *sline = list_entry(entry, struct script_line, node);
++	bool current_entry = ui_browser__is_current_entry(browser, row);
++
++	ui_browser__set_color(browser, current_entry ? HE_COLORSET_SELECTED :
++						       HE_COLORSET_NORMAL);
++
++	slsmg_write_nstring(sline->line, browser->width);
++}
++
++static int script_browser__run(struct perf_script_browser *self)
++{
++	int key;
++
++	if (ui_browser__show(&self->b, self->script_name,
++			     "Press <- or ESC to exit") < 0)
++		return -1;
++
++	while (1) {
++		key = ui_browser__run(&self->b, 0);
++
++		/* We can add some special key handling here if needed */
++		break;
++	}
++
++	ui_browser__hide(&self->b);
++	return key;
++}
++
++
++int script_browse(const char *script_opt)
++{
++	char cmd[SCRIPT_FULLPATH_LEN*2], script_name[SCRIPT_FULLPATH_LEN];
++	char *line = NULL;
++	size_t len = 0;
++	ssize_t retlen;
++	int ret = -1, nr_entries = 0;
++	FILE *fp;
++	void *buf;
++	struct script_line *sline;
++
++	struct perf_script_browser script = {
++		.b = {
++			.refresh    = ui_browser__list_head_refresh,
++			.seek	    = ui_browser__list_head_seek,
++			.write	    = script_browser__write,
++		},
++		.script_name = script_name,
++	};
++
++	INIT_LIST_HEAD(&script.entries);
++
++	/* Save each line of the output in one struct script_line object. */
++	buf = zalloc((sizeof(*sline)) * MAX_LINES);
++	if (!buf)
++		return -1;
++	sline = buf;
++
++	memset(script_name, 0, SCRIPT_FULLPATH_LEN);
++	if (list_scripts(script_name))
++		goto exit;
++
++	if (script_opt)
++		sprintf(cmd, "perf script %s -s %s 2>&1", script_opt, script_name);
++	else
++		sprintf(cmd, "perf script -s %s 2>&1", script_name);
++
++	fp = popen(cmd, "r");
++	if (!fp)
++		goto exit;
++
++	while ((retlen = getline(&line, &len, fp)) != -1) {
++		strncpy(sline->line, line, AVERAGE_LINE_LEN);
++
++		/* If one output line is very large, just cut it short */
++		if (retlen >= AVERAGE_LINE_LEN) {
++			sline->line[AVERAGE_LINE_LEN - 1] = '\0';
++			sline->line[AVERAGE_LINE_LEN - 2] = '\n';
++		}
++		list_add_tail(&sline->node, &script.entries);
++
++		if (script.b.width < retlen)
++			script.b.width = retlen;
++
++		if (nr_entries++ >= MAX_LINES)
++			break;
++		sline++;
++	}
++
++	if (script.b.width > AVERAGE_LINE_LEN)
++		script.b.width = AVERAGE_LINE_LEN;
++
++	if (line)
++		free(line);
++	pclose(fp);
++
++	script.nr_lines = nr_entries;
++	script.b.nr_entries = nr_entries;
++	script.b.entries = &script.entries;
++
++	ret = script_browser__run(&script);
++exit:
++	free(buf);
++	return ret;
++}
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 2e650ff..418a040 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -136,6 +136,12 @@ static inline int hist_entry__tui_annotate(struct hist_entry *self __used,
+ {
+ 	return 0;
+ }
++
++static inline int script_browse(const char *script_opt)
++{
++	return 0;
++}
++
+ #define K_LEFT -1
+ #define K_RIGHT -2
+ #else
+@@ -146,6 +152,7 @@ int hist_entry__tui_annotate(struct hist_entry *he, int evidx,
+ int perf_evlist__tui_browse_hists(struct perf_evlist *evlist, const char *help,
+ 				  void(*timer)(void *arg), void *arg,
+ 				  int refresh);
++int script_browse(const char *script_opt);
+ #endif
+ 
+ #ifdef NO_GTK2_SUPPORT
+-- 
+1.7.1
 
