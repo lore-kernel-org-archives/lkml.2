@@ -1,117 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757875Ab2IGXWr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 19:22:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45450 "EHLO
+	id S1758570Ab2IGXZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 19:25:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58570 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753197Ab2IGXWq convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1756189Ab2IGXZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 19:22:46 -0400
-Content-Type: text/plain; charset="utf-8"
+	Fri, 7 Sep 2012 19:25:25 -0400
+Date: Fri, 7 Sep 2012 16:25:37 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v3 00/31] AArch64 Linux kernel port
+Message-ID: <20120907232537.GA5098@quad.lixom.net>
+References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: Mike Turquette <mturquette@linaro.org>
-User-Agent: alot/0.3.2+
-To: "Karicheri, Muralidharan" <m-karicheri2@ti.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>,
-        "dbaryshkov@gmail.com" <dbaryshkov@gmail.com>,
-        "computersforpeace@gmail.com" <computersforpeace@gmail.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1346350624-27291-1-git-send-email-m-karicheri2@ti.com>
- <20120907212853.20289.86031@nucleus>
- <3E54258959B69E4282D79E01AB1F32B7041B73E9@DFLE12.ent.ti.com>
-In-Reply-To: <3E54258959B69E4282D79E01AB1F32B7041B73E9@DFLE12.ent.ti.com>
-Message-ID: <20120907232241.20289.38511@nucleus>
-Subject: Re: RE: [PATCH] mtd:nand:clk: preparation for switch to common clock
- framework
-Date: Fri, 07 Sep 2012 16:22:41 -0700
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Karicheri, Muralidharan (2012-09-07 14:56:22)
-> Mike,
+On Fri, Sep 07, 2012 at 05:26:35PM +0100, Catalin Marinas wrote:
+> This is the 3rd version of patches implementing Linux kernel support for
+> the 64-bit ARM architecture. Most of the review comments for the
+> previous release have been implemented. There are a few left (like
+> generic timer dts specification) but the main goal was to freeze the
+> user ABI.
 > 
-> How do these patch get to upstream? Does this get merged through davinci maintainer or through individual subsystem maintainers? 
+> The Linux kernel patches are available on this tree:
 > 
-
-What does scripts/get_maintainer.pl tell you?
-
-Also feel free to make my Acked-by into a Reviewed-by.  I always ge
-those two confused.
-
-Regards,
-Mike
-
-cant never remembr 
-
-> Thanks.
+> git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git upstream
 > 
-> Murali Karicheri
-> Software Design Engineer
-> 
-> 
-> >> -----Original Message-----
-> >> From: Mike Turquette [mailto:mturquette@linaro.org]
-> >> Sent: Friday, September 07, 2012 5:29 PM
-> >> To: Karicheri, Muralidharan; dwmw2@infradead.org; artem.bityutskiy@linux.intel.com;
-> >> dbaryshkov@gmail.com; computersforpeace@gmail.com; linux-mtd@lists.infradead.org;
-> >> linux-kernel@vger.kernel.org
-> >> Cc: Karicheri, Muralidharan
-> >> Subject: Re: [PATCH] mtd:nand:clk: preparation for switch to common clock framework
-> >> 
-> >> Quoting Murali Karicheri (2012-08-30 11:17:04)
-> >> > As a first step towards migrating davinci platforms to use common clock
-> >> > framework, replace all instances of clk_enable() with clk_prepare_enable()
-> >> > and clk_disable() with clk_disable_unprepare(). Until the platform is
-> >> > switched to use the CONFIG_HAVE_CLK_PREPARE Kconfig variable, this just
-> >> > adds a might_sleep() call and would work without any issues.
-> >> >
-> >> > This will make it easy later to switch to common clk based implementation
-> >> > of clk driver from DaVinci specific driver.
-> >> >
-> >> > Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-> >> 
-> >> Acked-by: Mike Turquette <mturquette@linaro.org>
-> >> 
-> >> > ---
-> >> >  drivers/mtd/nand/davinci_nand.c |    6 +++---
-> >> >  1 file changed, 3 insertions(+), 3 deletions(-)
-> >> >
-> >> > diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
-> >> > index d94b03c..6b8cf27 100644
-> >> > --- a/drivers/mtd/nand/davinci_nand.c
-> >> > +++ b/drivers/mtd/nand/davinci_nand.c
-> >> > @@ -656,7 +656,7 @@ static int __init nand_davinci_probe(struct platform_device
-> >> *pdev)
-> >> >                 goto err_clk;
-> >> >         }
-> >> >
-> >> > -       ret = clk_enable(info->clk);
-> >> > +       ret = clk_prepare_enable(info->clk);
-> >> >         if (ret < 0) {
-> >> >                 dev_dbg(&pdev->dev, "unable to enable AEMIF clock, err %d\n",
-> >> >                         ret);
-> >> > @@ -767,7 +767,7 @@ syndrome_done:
-> >> >
-> >> >  err_scan:
-> >> >  err_timing:
-> >> > -       clk_disable(info->clk);
-> >> > +       clk_disable_unprepare(info->clk);
-> >> >
-> >> >  err_clk_enable:
-> >> >         clk_put(info->clk);
-> >> > @@ -804,7 +804,7 @@ static int __exit nand_davinci_remove(struct platform_device
-> >> *pdev)
-> >> >
-> >> >         nand_release(&info->mtd);
-> >> >
-> >> > -       clk_disable(info->clk);
-> >> > +       clk_disable_unprepare(info->clk);
-> >> >         clk_put(info->clk);
-> >> >
-> >> >         kfree(info);
-> >> > --
-> >> > 1.7.9.5
+> Main changes since the previous version:
+> - ptrace interface now using regsets for TLS and hardware debug
+>   registers.
+> - sys_personality fixes. PER_LINUX is the default for all tasks (32 or
+>   64-bit) and there is no compat_sys_personality defined.
+> - Kconfig clean-up (unused symbols, AARCH32_EMULATION removed in favour
+>   of COMPAT).
+> - Clean-up of the __cpuc_* function prefixes.
+> - CPU information table implemented in C rather than assembly.
+> - __bad_* function calls replaced with BUILD_BUG.
+> - Inline get_user/put_user (code cleaner, slightly bigger kernel Image).
+> - DMA API implementation simplified, defaulting to swiotlb. It will be
+>   extended as hardware becomes available.
+> - Arch-specific code in the generic timer patch moved to arch/arm64/.
+> - Comment fixes and clarifications.
+
+I see that a good amount of the comments I had on v2 have neither been replied
+to nor addressed.
+
+Please address them where appropriate, ideally before merging. I'll be happy to
+be told I'm wrong in some of the cases too, but completely ignoring feedback
+isn't cool.
+
+However, most of them were nits, and I've had a look-through of the rest
+of the patches, feel free to add:
+
+Acked-by: Olof Johansson <olof@lixom.net>
+
+on the patches in this series.
+
+-Olof
