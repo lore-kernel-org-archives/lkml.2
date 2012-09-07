@@ -1,82 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755693Ab2IGS6p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 14:58:45 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:46675 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab2IGS6k (ORCPT
+	id S1753476Ab2IGTBR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 15:01:17 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:41832 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751024Ab2IGTBO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 14:58:40 -0400
-Date: Fri, 7 Sep 2012 20:59:41 +0200
-From: Fabio Baltieri <fabio.baltieri@gmail.com>
-To: Oliver Hartkopp <socketcan@hartkopp.net>,
-        Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Wolfgang Grandegger <wg@grandegger.com>
-Subject: Re: [PATCH can-next v6] can: add tx/rx LED trigger support
-Message-ID: <20120907185941.GA2034@gmail.com>
-References: <20120903181335.GA415@vandijck-laurijssen.be>
- <20120903182925.GA28766@gmail.com>
- <50451919.20205@hartkopp.net>
- <20120904071128.GB416@vandijck-laurijssen.be>
- <20120904201553.GA29478@gmail.com>
- <20120906103248.GA36903@macbook.local>
- <CABkP77fff7wmZKbT=xbcBkSgLTbjTTzxOpQsWLrHTeG-53KSWQ@mail.gmail.com>
- <20120906151158.GA37075@macbook.local>
- <20120906205728.GC4043@gmail.com>
- <20120907070419.GA37685@macbook.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120907070419.GA37685@macbook.local>
-X-Operating-System: Linux balto-eee 3.6.0-rc4-balto-eee-00111-g8edc602-dirty
- GNU/Linux
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 7 Sep 2012 15:01:14 -0400
+Subject: Re: [PATCH 00/11] lots of fixes for zero allocation length
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, target-devel@vger.kernel.org, hch@lst.de,
+        roland@kernel.org
+In-Reply-To: <1347031842-2531-1-git-send-email-pbonzini@redhat.com>
+References: <1347031842-2531-1-git-send-email-pbonzini@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 07 Sep 2012 12:01:12 -0700
+Message-ID: <1347044472.4162.645.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 07, 2012 at 09:04:19AM +0200, Kurt Van Dijck wrote:
-> On Thu, Sep 06, 2012 at 10:57:28PM +0200, Fabio Baltieri wrote:
-> > On Thu, Sep 06, 2012 at 05:11:58PM +0200, Kurt Van Dijck wrote:
-> > Can't argue with that... I'm trying to see how it comes but names like
-> > "can-3-2:1.0-tx" doesn't looks that friendly to me...
+On Fri, 2012-09-07 at 17:30 +0200, Paolo Bonzini wrote:
+> Here are the fixes for zero-length commands, that ultimately let
+> all command go through normal processing, even if they have
+> zero length.
 > 
-> "can-3-2:1.0" is an iface name?
-
-No, I was trying some combination using device name instead of netdev
-one (which remains can0), here 3-2:1.0 is the usb path, looks really bad
-to be used for dev name if netdev name is still can0 - no way of
-determine the link between the two.
-
-> We must keep default iface names can%d. Only in the usecase that someone
-> wants to name its ifaces according device names, he/she should manually
-> adjust udev rules on his/her system ...
+> The first patch is for PSCSI, the others are for IBLOCK and friends.
+> I tried to order them so that the safest come first.  So for 3.6 you
+> could choose to stop at patch 1, 2, 3 or 6, or not apply anything
+> at all.
 > 
-> And if the iface is names "can-3-2:1.0", "can-3-2:1.0-tx" _is_
-> a friendly trigger name.
+> Testcases included in each patch, when relevant.
 
-Agreed.
 
-> > > It looks even more inconvenient. It only works as expected when you don't
-> > > change the trigger afterwards, but still it is possible (as should be),
-> > > so the design of trigger is ... wrong.
-> > > example:
-> > > When you put another trigger to a led, and have a proper sequence of
-> > > 'ip link set xxx up' and 'ip link set xxx down', you will end up
-> > > with the default_trigger again.
-> > > I realize I'm looking at unusual scenario's.
-> > 
-> > That's not correct, default trigger is going to be set only if there are
-> > no other trigger assigned to the LED, and only on led probe and trigger
-> > probe.
-> > 
-> > So, the LED framework is not going to change the trigger if you manually
-> > changed it to something else, and in any case default_trigger assignment
-> > only happens at probe/exit, not when interface is set up/down.
+Very nice, so the remaining patches #7-10 have been applied into
+for-next, and I'll apply a slightly modified patch #11 next week after
+rebasing for-next as patches #1-6 hit -rc5 -> -rc6 along with the other
+pending fixes.
+
+Great work Paolo !!
+
+--nab
+
+> Paolo
 > 
-> I think you're also arguing against a register/unregister during iface up/down.
-> We agree.
+> Paolo Bonzini (11):
+>   target: go through normal processing for zero-length PSCSI commands
+>   target: report too-small parameter lists everywhere
+>   target: fail REPORT LUNS with less than 16 bytes of payload
+>   target: support zero-size allocation lengths in transport_kmap_data_sg
+>   target: support zero allocation length in REQUEST SENSE
+>   target: go through normal processing for zero-length REQUEST_SENSE
+>   target: support zero allocation length in INQUIRY
+>   target: fix truncation of mode data, support zero allocation length
+>   target: support zero allocation length in SBC commands
+>   target: do not submit a zero-bio I/O request
+>   target: go through normal processing for all zero-length commands
+> 
+>  drivers/target/target_core_alua.c      |    7 +++
+>  drivers/target/target_core_device.c    |    7 +++
+>  drivers/target/target_core_iblock.c    |   17 ++++++-
+>  drivers/target/target_core_pr.c        |    8 +++
+>  drivers/target/target_core_pscsi.c     |    8 ++--
+>  drivers/target/target_core_sbc.c       |   23 ++++++---
+>  drivers/target/target_core_spc.c       |   81 +++++++++++--------------------
+>  drivers/target/target_core_transport.c |   35 ++++----------
+>  include/target/target_core_base.h      |    1 +
+>  9 files changed, 95 insertions(+), 92 deletions(-)
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe target-devel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Uh - yes! :-)
 
-Fabio
