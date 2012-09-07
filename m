@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760560Ab2IGLbu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 07:31:50 -0400
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:48820 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752798Ab2IGLbp (ORCPT
+	id S933186Ab2IGLbv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 07:31:51 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:56977 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760506Ab2IGLbs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 07:31:45 -0400
+	Fri, 7 Sep 2012 07:31:48 -0400
 From: Heiko Carstens <heiko.carstens@de.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Michal Marek <mmarek@suse.cz>, "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 1/2] checksyscalls: fix "here document" handling
-Date: Fri,  7 Sep 2012 13:31:30 +0200
-Message-Id: <1347017491-11354-1-git-send-email-heiko.carstens@de.ibm.com>
+        Cyrill Gorcunov <gorcunov@openvz.org>, Michal Marek <mmarek@suse.cz>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH 2/2] checksyscalls: ignore kcmp system call
+Date: Fri,  7 Sep 2012 13:31:31 +0200
+Message-Id: <1347017491-11354-2-git-send-email-heiko.carstens@de.ibm.com>
 X-Mailer: git-send-email 1.7.10.4
-x-cbid: 12090711-1948-0000-0000-000002E42CE3
+In-Reply-To: <1347017491-11354-1-git-send-email-heiko.carstens@de.ibm.com>
+References: <1347017491-11354-1-git-send-email-heiko.carstens@de.ibm.com>
+x-cbid: 12090711-0542-0000-0000-000002F2E20D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"echo" doesn't read from stdin, therefore the checksyscalls script didn't warn
-about not implemented system calls anymore since 29dc54c6 "checksyscalls: Use
-arch/x86/syscalls/syscall_32.tbl as source".
+Now that the checksyscalls script works again it will warn about the missing
+"kcmp" system call on all architectures but x86.
+Since according to git commit d97b46a6 "syscalls, x86: add __NR_kcmp syscall"
+only x86 is currently supported don't emit any warning for this system call.
 
-Use "cat" instead of "echo" which handles this correctly.
-
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>
 Cc: Michal Marek <mmarek@suse.cz>
 Cc: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
 ---
- scripts/checksyscalls.sh |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ scripts/checksyscalls.sh |    3 +++
+ 1 file changed, 3 insertions(+)
 
 diff --git a/scripts/checksyscalls.sh b/scripts/checksyscalls.sh
-index d24810f..fd8fa9a 100755
+index fd8fa9a..c7cda79 100755
 --- a/scripts/checksyscalls.sh
 +++ b/scripts/checksyscalls.sh
-@@ -200,7 +200,7 @@ EOF
- syscall_list() {
-     grep '^[0-9]' "$1" | sort -n | (
- 	while read nr abi name entry ; do
--	    echo <<EOF
-+	    cat <<EOF
- #if !defined(__NR_${name}) && !defined(__IGNORE_${name})
- #warning syscall ${name} not implemented
- #endif
+@@ -194,6 +194,9 @@ cat << EOF
+ #define __IGNORE_getpmsg
+ #define __IGNORE_putpmsg
+ #define __IGNORE_vserver
++
++/* kcmp is currently x86 only */
++#define __IGNORE_kcmp
+ EOF
+ }
+ 
 -- 
 1.7.10.4
 
