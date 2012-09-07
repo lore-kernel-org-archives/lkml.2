@@ -1,158 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932960Ab2IGKYA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 06:24:00 -0400
-Received: from goliath.siemens.de ([192.35.17.28]:28459 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753717Ab2IGKX6 (ORCPT
+	id S932988Ab2IGKeP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 06:34:15 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:37044
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760245Ab2IGKeL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 06:23:58 -0400
-Message-ID: <5049CB36.4080000@siemens.com>
-Date: Fri, 07 Sep 2012 12:23:50 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	Fri, 7 Sep 2012 06:34:11 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839he5bhf0ah107ah1288h1155h)
+From: Shaohui Xie <Shaohui.Xie@freescale.com>
+To: <jgarzik@pobox.com>, <linux-ide@vger.kernel.org>
+CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        Shaohui Xie <Shaohui.Xie@freescale.com>,
+        Anju Bhartiya <Anju.Bhartiya@freescale.com>
+Subject: [PATCH][v3] sata_fsl: add workaround for data length mismatch on freescale V2 controller
+Date: Fri, 7 Sep 2012 18:01:35 +0800
+Message-ID: <1347012095-4404-1-git-send-email-Shaohui.Xie@freescale.com>
+X-Mailer: git-send-email 1.6.4
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v6 11/12] KVM: introduce readonly memslot
-References: <5032F8FD.2020306@linux.vnet.ibm.com> <5032FA5B.5040308@linux.vnet.ibm.com>
-In-Reply-To: <5032FA5B.5040308@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-08-21 05:02, Xiao Guangrong wrote:
-> In current code, if we map a readonly memory space from host to guest
-> and the page is not currently mapped in the host, we will get a fault
-> pfn and async is not allowed, then the vm will crash
-> 
-> We introduce readonly memory region to map ROM/ROMD to the guest, read access
-> is happy for readonly memslot, write access on readonly memslot will cause
-> KVM_EXIT_MMIO exit
-> 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> ---
->  Documentation/virtual/kvm/api.txt |   10 +++-
->  arch/x86/include/asm/kvm.h        |    1 +
->  arch/x86/kvm/mmu.c                |    9 ++++
->  arch/x86/kvm/x86.c                |    1 +
->  include/linux/kvm.h               |    6 ++-
->  include/linux/kvm_host.h          |    7 +--
->  virt/kvm/kvm_main.c               |   96 ++++++++++++++++++++++++++++++-------
->  7 files changed, 102 insertions(+), 28 deletions(-)
-> 
-> diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-> index bf33aaa..b91bfd4 100644
-> --- a/Documentation/virtual/kvm/api.txt
-> +++ b/Documentation/virtual/kvm/api.txt
-> @@ -857,7 +857,8 @@ struct kvm_userspace_memory_region {
->  };
-> 
->  /* for kvm_memory_region::flags */
-> -#define KVM_MEM_LOG_DIRTY_PAGES  1UL
-> +#define KVM_MEM_LOG_DIRTY_PAGES	(1UL << 0)
-> +#define KVM_MEM_READONLY	(1UL << 1)
-> 
->  This ioctl allows the user to create or modify a guest physical memory
->  slot.  When changing an existing slot, it may be moved in the guest
-> @@ -873,9 +874,12 @@ It is recommended that the lower 21 bits of guest_phys_addr and userspace_addr
->  be identical.  This allows large pages in the guest to be backed by large
->  pages in the host.
-> 
-> -The flags field supports just one flag, KVM_MEM_LOG_DIRTY_PAGES, which
-> +The flags field supports two flag, KVM_MEM_LOG_DIRTY_PAGES, which
->  instructs kvm to keep track of writes to memory within the slot.  See
-> -the KVM_GET_DIRTY_LOG ioctl.
-> +the KVM_GET_DIRTY_LOG ioctl. Another flag is KVM_MEM_READONLY when the
-> +KVM_CAP_READONLY_MEM capability, it indicates the guest memory is read-only,
-> +that means, guest is only allowed to read it.
+The freescale V2 SATA controller checks if the received data length matches
+the programmed length 'ttl', if not, it assumes that this is an error.
+In ATAPI, the 'ttl' is based on max allocation length and not the actual
+data transfer length, controller will raise 'DLM' (Data length Mismatch)
+error bit in Hstatus register. Along with 'DLM', DE (Device error) and
+FE (fatal Error) bits are also set in Hstatus register, 'E' (Internal Error)
+bit is set in Serror register and CE (Command Error) and DE (Device error)
+registers have the corresponding bit set. In this condition, we need to
+clear errors in following way: in the service routine, based on 'DLM' flag,
+HCONTROL[27] operation clears Hstatus, CE and DE registers, clear Serror
+register.
 
-The last sentence requires some refactoring. :) How about: "The
-KVM_CAP_READONLY_MEM capability indicates the availability of the
-KVM_MEM_READONLY flag. When this flag is set for a memory region, KVM
-only allows read accesses."
+Signed-off-by: Shaohui Xie <Shaohui.Xie@freescale.com>
+Signed-off-by: Anju Bhartiya <Anju.Bhartiya@freescale.com>
+---
+changes for v3:
+1. not using uppercase for variable names;
+2. remove unnecessary parens;
 
-> Writes will be posted to
-> +userspace as KVM_EXIT_MMIO exits.
-> 
->  When the KVM_CAP_SYNC_MMU capability, changes in the backing of the memory
->  region are automatically reflected into the guest.  For example, an mmap()
-> diff --git a/arch/x86/include/asm/kvm.h b/arch/x86/include/asm/kvm.h
-> index 246617e..521bf25 100644
-> --- a/arch/x86/include/asm/kvm.h
-> +++ b/arch/x86/include/asm/kvm.h
-> @@ -25,6 +25,7 @@
->  #define __KVM_HAVE_DEBUGREGS
->  #define __KVM_HAVE_XSAVE
->  #define __KVM_HAVE_XCRS
-> +#define __KVM_HAVE_READONLY_MEM
-> 
->  /* Architectural interrupt line count. */
->  #define KVM_NR_INTERRUPTS 256
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index 5548971..8e312a2 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -2647,6 +2647,15 @@ static void kvm_send_hwpoison_signal(unsigned long address, struct task_struct *
-> 
->  static int kvm_handle_bad_page(struct kvm_vcpu *vcpu, gfn_t gfn, pfn_t pfn)
->  {
-> +	/*
-> +	 * Do not cache the mmio info caused by writing the readonly gfn
-> +	 * into the spte otherwise read access on readonly gfn also can
-> +	 * caused mmio page fault and treat it as mmio access.
-> +	 * Return 1 to tell kvm to emulate it.
-> +	 */
-> +	if (pfn == KVM_PFN_ERR_RO_FAULT)
-> +		return 1;
-> +
->  	if (pfn == KVM_PFN_ERR_HWPOISON) {
->  		kvm_send_hwpoison_signal(gfn_to_hva(vcpu->kvm, gfn), current);
->  		return 0;
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 704680d..42bbf41 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -2175,6 +2175,7 @@ int kvm_dev_ioctl_check_extension(long ext)
->  	case KVM_CAP_GET_TSC_KHZ:
->  	case KVM_CAP_PCI_2_3:
->  	case KVM_CAP_KVMCLOCK_CTRL:
-> +	case KVM_CAP_READONLY_MEM:
->  		r = 1;
->  		break;
->  	case KVM_CAP_COALESCED_MMIO:
-> diff --git a/include/linux/kvm.h b/include/linux/kvm.h
-> index 2de335d..d808694 100644
-> --- a/include/linux/kvm.h
-> +++ b/include/linux/kvm.h
-> @@ -106,7 +106,8 @@ struct kvm_userspace_memory_region {
->   * other bits are reserved for kvm internal use which are defined in
->   * include/linux/kvm_host.h.
->   */
-> -#define KVM_MEM_LOG_DIRTY_PAGES  1UL
-> +#define KVM_MEM_LOG_DIRTY_PAGES	(1UL << 0)
-> +#define KVM_MEM_READONLY	(1UL << 1)
-> 
->  /* for KVM_IRQ_LINE */
->  struct kvm_irq_level {
-> @@ -621,6 +622,9 @@ struct kvm_ppc_smmu_info {
->  #define KVM_CAP_PPC_GET_SMMU_INFO 78
->  #define KVM_CAP_S390_COW 79
->  #define KVM_CAP_PPC_ALLOC_HTAB 80
-> +#ifdef __KVM_HAVE_READONLY_MEM
-> +#define KVM_CAP_READONLY_MEM 81
-> +#endif
+changes for v2:
+1. remove the using of quirk;
+2. wrap errata codes in condition;
 
-See the discussion on the userspace patches: The CAP, as userspace API,
-should really be defined unconditionally, kernel code should depend on
-__KVM_HAVE_READONLY_MEM or a to-be-introduced CONFIG_KVM_HAVE_xxx
-switch. This allows for cleaner userspace code.
+ drivers/ata/sata_fsl.c |   39 +++++++++++++++++++++++++++++++++++----
+ 1 files changed, 35 insertions(+), 4 deletions(-)
 
-Jan
-
+diff --git a/drivers/ata/sata_fsl.c b/drivers/ata/sata_fsl.c
+index d6577b9..9fbab68 100644
+--- a/drivers/ata/sata_fsl.c
++++ b/drivers/ata/sata_fsl.c
+@@ -143,6 +143,7 @@ enum {
+ 	    FATAL_ERR_CRC_ERR_RX |
+ 	    FATAL_ERR_FIFO_OVRFL_TX | FATAL_ERR_FIFO_OVRFL_RX,
+ 
++	INT_ON_DATA_LENGTH_MISMATCH = (1 << 12),
+ 	INT_ON_FATAL_ERR = (1 << 5),
+ 	INT_ON_PHYRDY_CHG = (1 << 4),
+ 
+@@ -1181,25 +1182,55 @@ static void sata_fsl_host_intr(struct ata_port *ap)
+ 	u32 hstatus, done_mask = 0;
+ 	struct ata_queued_cmd *qc;
+ 	u32 SError;
++	u32 tag;
++	u32 status_mask = INT_ON_ERROR;
+ 
+ 	hstatus = ioread32(hcr_base + HSTATUS);
+ 
+ 	sata_fsl_scr_read(&ap->link, SCR_ERROR, &SError);
+ 
++	/* Read command completed register */
++	done_mask = ioread32(hcr_base + CC);
++
++	/* Workaround for data length mismatch errata */
++	if (unlikely(hstatus & INT_ON_DATA_LENGTH_MISMATCH)) {
++		for (tag = 0; tag < ATA_MAX_QUEUE; tag++) {
++			qc = ata_qc_from_tag(ap, tag);
++			if (qc && ata_is_atapi(qc->tf.protocol)) {
++				u32 hcontrol;
++#define HCONTROL_CLEAR_ERROR	(1 << 27)
++				/* Set HControl[27] to clear error registers */
++				hcontrol = ioread32(hcr_base + HCONTROL);
++				iowrite32(hcontrol | HCONTROL_CLEAR_ERROR,
++						hcr_base + HCONTROL);
++
++				/* Clear HControl[27] */
++				iowrite32(hcontrol & ~HCONTROL_CLEAR_ERROR,
++						hcr_base + HCONTROL);
++
++				/* Clear SError[E] bit */
++				sata_fsl_scr_write(&ap->link, SCR_ERROR,
++						SError);
++
++				/* Ignore fatal error and device error */
++				status_mask &= ~(INT_ON_SINGL_DEVICE_ERR
++						| INT_ON_FATAL_ERR);
++				break;
++			}
++		}
++	}
++
+ 	if (unlikely(SError & 0xFFFF0000)) {
+ 		DPRINTK("serror @host_intr : 0x%x\n", SError);
+ 		sata_fsl_error_intr(ap);
+ 	}
+ 
+-	if (unlikely(hstatus & INT_ON_ERROR)) {
++	if (unlikely(hstatus & status_mask)) {
+ 		DPRINTK("error interrupt!!\n");
+ 		sata_fsl_error_intr(ap);
+ 		return;
+ 	}
+ 
+-	/* Read command completed register */
+-	done_mask = ioread32(hcr_base + CC);
+-
+ 	VPRINTK("Status of all queues :\n");
+ 	VPRINTK("done_mask/CC = 0x%x, CA = 0x%x, CE=0x%x,CQ=0x%x,apqa=0x%x\n",
+ 		done_mask,
 -- 
-Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
-Corporate Competence Center Embedded Linux
+1.6.4
+
+
