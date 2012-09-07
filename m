@@ -1,56 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760552Ab2IGL0W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 07:26:22 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:46519 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760514Ab2IGLX7 (ORCPT
+	id S1760571Ab2IGLaA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 07:30:00 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:52568 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752798Ab2IGL35 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 07:23:59 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: eparis@redhat.com, viro@zeniv.linux.org.uk
-Cc: linux-audit@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bfields@fieldses.org
-Subject: [PATCH v6 03/10] audit: no need to walk list in audit_inode if name is NULL
-Date: Fri,  7 Sep 2012 07:23:40 -0400
-Message-Id: <1347017027-17167-4-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1347017027-17167-1-git-send-email-jlayton@redhat.com>
-References: <1347017027-17167-1-git-send-email-jlayton@redhat.com>
+	Fri, 7 Sep 2012 07:29:57 -0400
+Message-ID: <1347017428.4256.11.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCH 8/10] net/mac80211/scan.c: removes unnecessary semicolon
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        kernel-janitors@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 07 Sep 2012 13:30:28 +0200
+In-Reply-To: <1346947757-10481-9-git-send-email-peter.senna@gmail.com> (sfid-20120906_180946_737330_4FA8D7B3)
+References: <1346947757-10481-1-git-send-email-peter.senna@gmail.com>
+	 <1346947757-10481-9-git-send-email-peter.senna@gmail.com>
+	 (sfid-20120906_180946_737330_4FA8D7B3)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If name is NULL then the condition in the loop will never be true. Also,
-with this change, we can eliminate the check for n->name == NULL since
-the equivalence check will never be true if it is.
+On Thu, 2012-09-06 at 18:09 +0200, Peter Senna Tschudin wrote:
+> From: Peter Senna Tschudin <peter.senna@gmail.com>
+> 
+> removes unnecessary semicolon
+> 
+> Found by Coccinelle: http://coccinelle.lip6.fr/
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- kernel/auditsc.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+Applied. It'd be nice to have the spatch, I guess :)
 
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index 5c45b9b..4099440 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -2161,11 +2161,15 @@ void __audit_inode(const char *name, const struct dentry *dentry)
- 	if (!context->in_syscall)
- 		return;
- 
-+	if (!name)
-+		goto out_alloc;
-+
- 	list_for_each_entry_reverse(n, &context->names_list, list) {
--		if (n->name && (n->name == name))
-+		if (n->name == name)
- 			goto out;
- 	}
- 
-+out_alloc:
- 	/* unable to find the name from a previous getname() */
- 	n = audit_alloc_name(context);
- 	if (!n)
--- 
-1.7.11.4
+johannes
 
