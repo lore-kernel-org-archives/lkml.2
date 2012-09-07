@@ -1,108 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754263Ab2IGR53 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 13:57:29 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:13569 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751402Ab2IGR51 (ORCPT
+	id S1754719Ab2IGSDA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 14:03:00 -0400
+Received: from smtprelay-b22.telenor.se ([195.54.99.213]:58577 "EHLO
+	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752530Ab2IGSC5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 13:57:27 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19YHSihLYRvsaKvVsmi4Doc
-Date: Fri, 7 Sep 2012 10:57:21 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Felipe Balbi <balbi@ti.com>, alan@linux.intel.com,
-        Kevin Hilman <khilman@ti.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-serial@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Shubhrajyoti Datta <shubhrajyoti@ti.com>,
-        Sourav Poddar <sourav.poddar@ti.com>
-Subject: Re: [PATCH] serial: omap: fix compile breakage
-Message-ID: <20120907175721.GD1303@atomide.com>
-References: <20120907153136.GA8634@kroah.com>
- <1347032059-8901-1-git-send-email-balbi@ti.com>
- <20120907154008.GA21216@kroah.com>
+	Fri, 7 Sep 2012 14:02:57 -0400
+X-SENDER-IP: [85.230.170.20]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqiHAJs1SlBV5qoUPGdsb2JhbABFikGvdAGBBxkBAQEBHhkNJ4IhAQUnExwTAQ8QCBE4FCUKGhOIFLtXFI4Egk5gA5VchW+NFA
+X-IronPort-AV: E=Sophos;i="4.80,388,1344204000"; 
+   d="scan'208";a="184727812"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Fri, 7 Sep 2012 20:09:33 +0200
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Benjamin Tissoires <benjamin.tissoires@enac.fr>
+Subject: [PATCH v2] HID: hid-multitouch: Add Flatfrog support
+Message-ID: <20120907180933.GA469@polaris.bitmath.org>
+References: <1346858857-281-1-git-send-email-rydberg@euromail.se>
+ <1346858857-281-2-git-send-email-rydberg@euromail.se>
+ <20120905161218.GA270@polaris.bitmath.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120907154008.GA21216@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120905161218.GA270@polaris.bitmath.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Greg KH <gregkh@linuxfoundation.org> [120907 08:43]:
-> On Fri, Sep 07, 2012 at 06:34:19PM +0300, Felipe Balbi wrote:
-> > when rebasing patches on top of Greg's tty-next,
-> > it looks like automerge broke a few things which
-> > I didn't catch (for whatever reason I didn't
-> > have OMAP Serial enabled on .config) so I ended
-> > up breaking the build on Greg's tty-next branch.
-> > 
-> > Fix the breakage by re-adding the three missing
-> > members on struct uart_omap_port.
-> > 
-> > Reported-by: Tony Lindgren <tony@atomide.com>
-> > Signed-off-by: Felipe Balbi <balbi@ti.com>
-> > ---
-> > 
-> > Hi Greg,
-> > 
-> > I just fetched your tree again and rebased again just to
-> > make sure. Everything is fine here, let me know if it
-> > still applies with fuzz.
-> 
-> That worked, thanks.
+Add support for the Flatfrog Multitouch 3200 panel. This panel
+advertises some fields that it does not use, hence the new quirk.
 
-Something is still wrong with omap-serial in tty-next. It now
-compiles and works for the legacy non-devicetree case, but with
-device tree booting there's now regression during boot:
+Cc: Pablo Cases <pablo.cases@flatfrog.com>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+---
+The Flatfrog team pointed out that the pressure information, which is
+currently present but set to a fixed value, is a scheduled firmware
+update. Therefore, ignoring the pressure information seems
+unnecessary, and I agree. This version is without the pressure quirk,
+and will be pushed to the maybe branch in a couple of days.
 
-[    5.200836] Freeing init memory: 332K
-[    6.881744] Unable to handle kernel NULL pointer dereference at virtual address 00000030
-[    6.890258] pgd = ee664000
-[    6.893096] [00000030] *pgd=ae64f831, *pte=00000000, *ppte=00000000
-[    6.899688] Internal error: Oops: 17 [#1] SMP ARM
-[    6.904632] Modules linked in:
-[    6.907836] CPU: 1    Not tainted  (3.6.0-rc4-00207-gc893c8c-dirty #485)
-[    6.914916] PC is at serial_omap_start_tx+0x60/0x98
-[    6.920043] LR is at serial_omap_start_tx+0x44/0x98
-[    6.925140] pc : [<c0316978>]    lr : [<c031695c>]    psr: 60000193
-[    6.925140] sp : ee661e80  ip : 00000060  fp : a0000113
-[    6.937194] r10: ef3c0010  r9 : ee798800  r8 : 00000072
-[    6.942687] r7 : ef3d7472  r6 : 00000002  r5 : 00000007  r4 : ef3c0010
-[    6.949523] r3 : 00000000  r2 : 00000004  r1 : 00000007  r0 : ef0da008
-[    6.956390] Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment user
-[    6.963958] Control: 10c53c7d  Table: ae66404a  DAC: 00000015
-[    6.970001] Process modprobe (pid: 715, stack limit = 0xee6602f8)
-[    6.976379] Stack: (0xee661e80 to 0xee662000)
-[    6.980957] 1e80: ee798800 ef3c0010 20000113 c030fcb4 00000000 ef3eead0 00000000 c0310544
-[    6.989562] 1ea0: ef3eead0 ee798800 00000fff 00000073 ee798d94 ef3d7400 ee660000 ee7989b8
-[    6.998138] 1ec0: ef3d7400 c02fa090 00000073 ef3d7400 ee798800 ee798800 ef0ccdc0 c02fb8e4
-[    7.006713] 1ee0: beaa07bc ee798a2c beaa07bc 00000000 ef38aa00 c00778a0 ee798a4c ee798a4c
-[    7.015319] 1f00: ee798d4c ef0ccdc0 00000073 00000073 ee798800 b6f19000 ee660000 00000400
-[    7.023895] 1f20: 00000000 c02f775c c02fb7a8 ef1f6840 ee661f80 ef0ccdc0 00000000 ef0ccdc0
-[    7.032470] 1f40: 00000073 b6f19000 ee661f80 00000073 ee660000 00000000 beaa07bc c010b580
-[    7.041046] 1f60: ef38aa00 00000001 00000000 00000000 ef0ccdc0 b6f19000 00000073 c010b6e4
-[    7.049652] 1f80: 00000000 00000000 beaa0888 00000000 00000073 beaa0888 00000073 00000004
-[    7.058227] 1fa0: c0014308 c0014160 00000073 beaa0888 00000000 b6f19000 00000073 00000000
-[    7.066802] 1fc0: 00000073 beaa0888 00000073 00000004 b6f19000 00000000 b6ee271d beaa07bc
-[    7.075408] 1fe0: 00000000 beaa01c0 b6e2c874 b6e8015c 60000110 00000000 aaaaaaaa aaeaaaaa
-[    7.083984] [<c0316978>] (serial_omap_start_tx+0x60/0x98) from [<c030fcb4>] (uart_start+0x68/0x6c)
-[    7.093414] [<c030fcb4>] (uart_start+0x68/0x6c) from [<c0310544>] (uart_write+0xcc/0xf4)
-[    7.101928] [<c0310544>] (uart_write+0xcc/0xf4) from [<c02fa090>] (process_output_block+0xc0/0x17c)
-[    7.111419] [<c02fa090>] (process_output_block+0xc0/0x17c) from [<c02fb8e4>] (n_tty_write+0x13c/0x2ac)
-[    7.121215] [<c02fb8e4>] (n_tty_write+0x13c/0x2ac) from [<c02f775c>] (tty_write+0x13c/0x228)
-[    7.130065] [<c02f775c>] (tty_write+0x13c/0x228) from [<c010b580>] (vfs_write+0xb0/0x144)
-[    7.138671] [<c010b580>] (vfs_write+0xb0/0x144) from [<c010b6e4>] (sys_write+0x40/0x70)
-[    7.147094] [<c010b6e4>] (sys_write+0x40/0x70) from [<c0014160>] (ret_fast_syscall+0x0/0x3c)
-[    7.155944] Code: e6ff1075 e18310b2 e5940180 e5903084 (e5933030) 
-[    7.162353] ---[ end trace 8cfe94e3de797bda ]---
+Thanks,
+Henrik
+
+ drivers/hid/hid-ids.h        |  3 +++
+ drivers/hid/hid-multitouch.c | 26 +++++++++++++++++++++-----
+ 2 files changed, 24 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 1dcb76f..c843db9 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -283,6 +283,9 @@
+ #define USB_VENDOR_ID_EMS		0x2006
+ #define USB_DEVICE_ID_EMS_TRIO_LINKER_PLUS_II 0x0118
+ 
++#define USB_VENDOR_ID_FLATFROG		0x25b5
++#define USB_DEVICE_ID_MULTITOUCH_3200	0x0002
++
+ #define USB_VENDOR_ID_ESSENTIAL_REALITY	0x0d7f
+ #define USB_DEVICE_ID_ESSENTIAL_REALITY_P5 0x0100
+ 
+diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+index 63f120b..ee0b76b 100644
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -51,6 +51,7 @@ MODULE_LICENSE("GPL");
+ #define MT_QUIRK_VALID_IS_INRANGE	(1 << 5)
+ #define MT_QUIRK_VALID_IS_CONFIDENCE	(1 << 6)
+ #define MT_QUIRK_SLOT_IS_CONTACTID_MINUS_ONE	(1 << 8)
++#define MT_QUIRK_NO_AREA		(1 << 9)
+ 
+ struct mt_slot {
+ 	__s32 x, y, p, w, h;
+@@ -115,6 +116,7 @@ struct mt_device {
+ #define MT_CLS_EGALAX_SERIAL			0x0104
+ #define MT_CLS_TOPSEED				0x0105
+ #define MT_CLS_PANASONIC			0x0106
++#define MT_CLS_FLATFROG				0x0107
+ 
+ #define MT_DEFAULT_MAXCONTACT	10
+ 
+@@ -199,6 +201,12 @@ static struct mt_class mt_classes[] = {
+ 		.quirks = MT_QUIRK_NOT_SEEN_MEANS_UP,
+ 		.maxcontacts = 4 },
+ 
++	{ .name = MT_CLS_FLATFROG,
++		.quirks = MT_QUIRK_NOT_SEEN_MEANS_UP |
++			MT_QUIRK_NO_AREA,
++		.sn_move = 2048,
++		.maxcontacts = 40,
++	},
+ 	{ }
+ };
+ 
+@@ -366,18 +374,21 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+ 		case HID_DG_WIDTH:
+ 			hid_map_usage(hi, usage, bit, max,
+ 					EV_ABS, ABS_MT_TOUCH_MAJOR);
+-			set_abs(hi->input, ABS_MT_TOUCH_MAJOR, field,
+-				cls->sn_width);
++			if (!(cls->quirks & MT_QUIRK_NO_AREA))
++				set_abs(hi->input, ABS_MT_TOUCH_MAJOR, field,
++					cls->sn_width);
+ 			mt_store_field(usage, td, hi);
+ 			td->last_field_index = field->index;
+ 			return 1;
+ 		case HID_DG_HEIGHT:
+ 			hid_map_usage(hi, usage, bit, max,
+ 					EV_ABS, ABS_MT_TOUCH_MINOR);
+-			set_abs(hi->input, ABS_MT_TOUCH_MINOR, field,
+-				cls->sn_height);
+-			input_set_abs_params(hi->input,
++			if (!(cls->quirks & MT_QUIRK_NO_AREA)) {
++				set_abs(hi->input, ABS_MT_TOUCH_MINOR, field,
++					cls->sn_height);
++				input_set_abs_params(hi->input,
+ 					ABS_MT_ORIENTATION, 0, 1, 0, 0);
++			}
+ 			mt_store_field(usage, td, hi);
+ 			td->last_field_index = field->index;
+ 			return 1;
+@@ -860,6 +871,11 @@ static const struct hid_device_id mt_devices[] = {
+ 		MT_USB_DEVICE(USB_VENDOR_ID_ELO,
+ 			USB_DEVICE_ID_ELO_TS2515) },
+ 
++	/* Flatfrog Panels */
++	{ .driver_data = MT_CLS_FLATFROG,
++		MT_USB_DEVICE(USB_VENDOR_ID_FLATFROG,
++			USB_DEVICE_ID_MULTITOUCH_3200) },
++
+ 	/* GeneralTouch panel */
+ 	{ .driver_data = MT_CLS_DUAL_INRANGE_CONTACTNUMBER,
+ 		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
+-- 
+1.7.12
 
