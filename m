@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760644Ab2IGNif (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 09:38:35 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:50010 "EHLO
+	id S1760651Ab2IGNiy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 09:38:54 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:64530 "EHLO
 	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760337Ab2IGNi0 (ORCPT
+	with ESMTP id S1760624Ab2IGNia (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 09:38:26 -0400
+	Fri, 7 Sep 2012 09:38:30 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@zeniv.linux.org.uk
 Cc: eparis@redhat.com, linux-audit@redhat.com, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v1 07/10] vfs: make path_openat take a getname_info pointer
-Date: Fri,  7 Sep 2012 09:38:02 -0400
-Message-Id: <1347025085-20285-8-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v1 09/10] vfs: embed getname_info inside of names_cache allocation if possible
+Date: Fri,  7 Sep 2012 09:38:04 -0400
+Message-Id: <1347025085-20285-10-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1347025085-20285-1-git-send-email-jlayton@redhat.com>
 References: <1347025085-20285-1-git-send-email-jlayton@redhat.com>
@@ -21,296 +21,136 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-...and fix up the callers. For do_file_open_root, just declare a
-getname_info on the stack and fill out the .name field. For
-do_filp_open, make it also take a getname_info pointer, and fix up its
-callers to call it appropriately.
-
-For filp_open, add a variant that takes a getname_info pointer and turn
-filp_open into a wrapper around it.
+In the common case where a name is much smaller than PATH_MAX, an extra
+allocation for struct getname_info is unnecessary. Before allocating a
+separate one, try to embed the getname_info inside the buffer first. If
+it turns out that that's not long enough, then fall back to allocating a
+separate getname_info struct and redoing the copy.
 
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/exec.c          |  5 +++--
- fs/internal.h      |  4 ++--
- fs/namei.c         | 28 +++++++++++++++-------------
- fs/open.c          | 33 +++++++++++++++++++++++++++++----
+ fs/namei.c         | 69 ++++++++++++++++++++++++++++++++++++++----------------
  include/linux/fs.h |  1 +
- kernel/acct.c      |  6 +++---
- mm/swapfile.c      |  4 ++--
- 7 files changed, 55 insertions(+), 26 deletions(-)
+ 2 files changed, 50 insertions(+), 20 deletions(-)
 
-diff --git a/fs/exec.c b/fs/exec.c
-index 35932ea..3cfb75c 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -126,7 +126,7 @@ SYSCALL_DEFINE1(uselib, const char __user *, library)
- 	if (IS_ERR(tmp))
- 		goto out;
- 
--	file = do_filp_open(AT_FDCWD, tmp->name, &uselib_flags, LOOKUP_FOLLOW);
-+	file = do_filp_open(AT_FDCWD, tmp, &uselib_flags, LOOKUP_FOLLOW);
- 	putname(tmp);
- 	error = PTR_ERR(file);
- 	if (IS_ERR(file))
-@@ -761,13 +761,14 @@ struct file *open_exec(const char *name)
- {
- 	struct file *file;
- 	int err;
-+	struct getname_info tmp = { .name = name };
- 	static const struct open_flags open_exec_flags = {
- 		.open_flag = O_LARGEFILE | O_RDONLY | __FMODE_EXEC,
- 		.acc_mode = MAY_EXEC | MAY_OPEN,
- 		.intent = LOOKUP_OPEN
- 	};
- 
--	file = do_filp_open(AT_FDCWD, name, &open_exec_flags, LOOKUP_FOLLOW);
-+	file = do_filp_open(AT_FDCWD, &tmp, &open_exec_flags, LOOKUP_FOLLOW);
- 	if (IS_ERR(file))
- 		goto out;
- 
-diff --git a/fs/internal.h b/fs/internal.h
-index 371bcc4..ddc0d2c 100644
---- a/fs/internal.h
-+++ b/fs/internal.h
-@@ -97,8 +97,8 @@ struct open_flags {
- 	int acc_mode;
- 	int intent;
- };
--extern struct file *do_filp_open(int dfd, const char *pathname,
--		const struct open_flags *op, int lookup_flags);
-+extern struct file *do_filp_open(int dfd, struct getname_info *ginfo,
-+		const struct open_flags *op, int flags);
- extern struct file *do_file_open_root(struct dentry *, struct vfsmount *,
- 		const char *, const struct open_flags *, int lookup_flags);
- 
 diff --git a/fs/namei.c b/fs/namei.c
-index 774f942..9ef0d00 100644
+index ac57c42..52feb98 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -2663,7 +2663,7 @@ out_dput:
+@@ -119,36 +119,65 @@
   */
- static int do_last(struct nameidata *nd, struct path *path,
- 		   struct file *file, const struct open_flags *op,
--		   int *opened, const char *pathname)
-+		   int *opened, struct getname_info *ginfo)
+ void final_putname(struct getname_info *ginfo)
  {
- 	struct dentry *dir = nd->path.dentry;
- 	int open_flag = op->open_flag;
-@@ -2675,6 +2675,7 @@ static int do_last(struct nameidata *nd, struct path *path,
- 	struct path save_parent = { .dentry = NULL, .mnt = NULL };
- 	bool retried = false;
- 	int error;
-+	const char *pathname = ginfo->name;
- 
- 	nd->flags &= ~LOOKUP_PARENT;
- 	nd->flags |= op->intent;
-@@ -2909,7 +2910,7 @@ stale_open:
- 	goto retry_lookup;
+-	__putname(ginfo->name);
+-	kfree(ginfo);
++	if (ginfo->separate) {
++		__putname(ginfo->name);
++		kfree(ginfo);
++	} else {
++		__putname(ginfo);
++	}
  }
  
--static struct file *path_openat(int dfd, const char *pathname,
-+static struct file *path_openat(int dfd, struct getname_info *ginfo,
- 		struct nameidata *nd, const struct open_flags *op, int flags)
++#define EMBEDDED_NAME_MAX	(PATH_MAX - sizeof(struct getname_info))
++
+ static struct getname_info *
+ getname_flags(const char __user *filename, int flags, int *empty)
  {
- 	struct file *base = NULL;
-@@ -2924,16 +2925,16 @@ static struct file *path_openat(int dfd, const char *pathname,
+ 	struct getname_info *result, *err;
+-	char *kname;
+ 	int len;
++	long max;
++	char *kname;
  
- 	file->f_flags = op->open_flag;
+-	/* FIXME: create dedicated slabcache? */
+-	result = kzalloc(sizeof(*result), GFP_KERNEL);
++	result = __getname();
+ 	if (unlikely(!result))
+ 		return ERR_PTR(-ENOMEM);
  
--	error = path_init(dfd, pathname, flags | LOOKUP_PARENT, nd, &base);
-+	error = path_init(dfd, ginfo->name, flags | LOOKUP_PARENT, nd, &base);
- 	if (unlikely(error))
- 		goto out;
- 
- 	current->total_link_count = 0;
--	error = link_path_walk(pathname, nd);
-+	error = link_path_walk(ginfo->name, nd);
- 	if (unlikely(error))
- 		goto out;
- 
--	error = do_last(nd, &path, file, op, &opened, pathname);
-+	error = do_last(nd, &path, file, op, &opened, ginfo);
- 	while (unlikely(error > 0)) { /* trailing symlink */
- 		struct path link = path;
- 		void *cookie;
-@@ -2951,7 +2952,7 @@ static struct file *path_openat(int dfd, const char *pathname,
- 		error = follow_link(&link, nd, &cookie);
- 		if (unlikely(error))
- 			break;
--		error = do_last(nd, &path, file, op, &opened, pathname);
-+		error = do_last(nd, &path, file, op, &opened, ginfo);
- 		put_link(nd, &link, cookie);
+-	kname = __getname();
+-	if (unlikely(!kname)) {
+-		err = ERR_PTR(-ENOMEM);
+-		goto error_free_ginfo;
+-	}
+-
++	/*
++	 * First, try to embed the getname_info inside the names_cache
++	 * allocation
++	 */
++	kname = (char *)result + sizeof(*result);
+ 	result->name = kname;
+-	result->uptr = filename;
+-	len = strncpy_from_user(kname, filename, PATH_MAX);
++	result->separate = false;
++	max = EMBEDDED_NAME_MAX;
++
++recopy:
++	len = strncpy_from_user(kname, filename, max);
+ 	if (unlikely(len < 0)) {
+ 		err = ERR_PTR(len);
+ 		goto error;
  	}
- out:
-@@ -2975,17 +2976,17 @@ out:
- 	return file;
- }
  
--struct file *do_filp_open(int dfd, const char *pathname,
-+struct file *do_filp_open(int dfd, struct getname_info *ginfo,
- 		const struct open_flags *op, int flags)
- {
- 	struct nameidata nd;
- 	struct file *filp;
- 
--	filp = path_openat(dfd, pathname, &nd, op, flags | LOOKUP_RCU);
-+	filp = path_openat(dfd, ginfo, &nd, op, flags | LOOKUP_RCU);
- 	if (unlikely(filp == ERR_PTR(-ECHILD)))
--		filp = path_openat(dfd, pathname, &nd, op, flags);
-+		filp = path_openat(dfd, ginfo, &nd, op, flags);
- 	if (unlikely(filp == ERR_PTR(-ESTALE)))
--		filp = path_openat(dfd, pathname, &nd, op, flags | LOOKUP_REVAL);
-+		filp = path_openat(dfd, ginfo, &nd, op, flags | LOOKUP_REVAL);
- 	return filp;
- }
- 
-@@ -2994,6 +2995,7 @@ struct file *do_file_open_root(struct dentry *dentry, struct vfsmount *mnt,
- {
- 	struct nameidata nd;
- 	struct file *file;
-+	struct getname_info ginfo = { .name = name };
- 
- 	nd.root.mnt = mnt;
- 	nd.root.dentry = dentry;
-@@ -3003,11 +3005,11 @@ struct file *do_file_open_root(struct dentry *dentry, struct vfsmount *mnt,
- 	if (dentry->d_inode->i_op->follow_link && op->intent & LOOKUP_OPEN)
- 		return ERR_PTR(-ELOOP);
- 
--	file = path_openat(-1, name, &nd, op, flags | LOOKUP_RCU);
-+	file = path_openat(-1, &ginfo, &nd, op, flags | LOOKUP_RCU);
- 	if (unlikely(file == ERR_PTR(-ECHILD)))
--		file = path_openat(-1, name, &nd, op, flags);
-+		file = path_openat(-1, &ginfo, &nd, op, flags);
- 	if (unlikely(file == ERR_PTR(-ESTALE)))
--		file = path_openat(-1, name, &nd, op, flags | LOOKUP_REVAL);
-+		file = path_openat(-1, &ginfo, &nd, op, flags | LOOKUP_REVAL);
- 	return file;
- }
- 
-diff --git a/fs/open.c b/fs/open.c
-index 3796d0c..d0f225e 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -909,6 +909,24 @@ static inline int build_open_flags(int flags, umode_t mode, struct open_flags *o
- }
- 
- /**
-+ * filp_open_ginfo - open file and return file pointer
-+ *
-+ * @ginfo:	getname_info containing path to open
-+ * @flags:	open flags as per the open(2) second argument
-+ * @mode:	mode for the new file if O_CREAT is set, else ignored
-+ *
-+ * This is the helper to open a file from kernelspace if you really
-+ * have to.  But in generally you should not do this, so please move
-+ * along, nothing to see here..
-+ */
-+struct file *filp_open_ginfo(struct getname_info *ginfo, int flags, umode_t mode)
-+{
-+	struct open_flags op;
-+	int lookup = build_open_flags(flags, mode, &op);
-+	return do_filp_open(AT_FDCWD, ginfo, &op, lookup);
-+}
++	/*
++	 * Uh-oh. We have a name that's approaching PATH_MAX. Allocate a
++	 * separate getname_info struct so we can dedicate the entire
++	 * names_cache allocation for the pathname, and re-do the copy from
++	 * userland.
++	 */
++	if (len == EMBEDDED_NAME_MAX && max == EMBEDDED_NAME_MAX) {
++		kname = (char *)result;
 +
-+/**
-  * filp_open - open file and return file pointer
-  *
-  * @filename:	path to open
-@@ -921,9 +939,16 @@ static inline int build_open_flags(int flags, umode_t mode, struct open_flags *o
-  */
- struct file *filp_open(const char *filename, int flags, umode_t mode)
- {
--	struct open_flags op;
--	int lookup = build_open_flags(flags, mode, &op);
--	return do_filp_open(AT_FDCWD, filename, &op, lookup);
-+	struct file *filp;
-+	struct getname_info *ginfo = kzalloc(sizeof(*ginfo), GFP_KERNEL);
++		result = kzalloc(sizeof(*result), GFP_KERNEL);
++		if (!result) {
++			err = ERR_PTR(-ENOMEM);
++			result = (struct getname_info *)kname;
++			goto error;
++		}
++		result->name = kname;
++		result->separate = true;
++		max = PATH_MAX;
++		goto recopy;
++	}
 +
-+	if (!ginfo)
-+		return ERR_PTR(-ENOMEM);
-+
-+	ginfo->name = filename;
-+	filp = filp_open_ginfo(ginfo, flags, mode);
-+	putname(ginfo);
-+	return filp;
- }
- EXPORT_SYMBOL(filp_open);
+ 	/* The empty path is special. */
+ 	if (unlikely(!len)) {
+ 		if (empty)
+@@ -159,15 +188,15 @@ getname_flags(const char __user *filename, int flags, int *empty)
+ 	}
  
-@@ -951,7 +976,7 @@ long do_sys_open(int dfd, const char __user *filename, int flags, umode_t mode)
- 	if (!IS_ERR(tmp)) {
- 		fd = get_unused_fd_flags(flags);
- 		if (fd >= 0) {
--			struct file *f = do_filp_open(dfd, tmp->name, &op, lookup);
-+			struct file *f = do_filp_open(dfd, tmp, &op, lookup);
- 			if (IS_ERR(f)) {
- 				put_unused_fd(fd);
- 				fd = PTR_ERR(f);
+ 	err = ERR_PTR(-ENAMETOOLONG);
+-	if (likely(len < PATH_MAX)) {
+-		audit_getname(result);
+-		return result;
+-	}
++	if (unlikely(len >= PATH_MAX))
++		goto error;
++
++	result->uptr = filename;
++	audit_getname(result);
++	return result;
+ 
+ error:
+-	__putname(kname);
+-error_free_ginfo:
+-	kfree(result);
++	final_putname(result);
+ 	return err;
+ }
+ 
 diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 1b0d0fb..a37b0c1 100644
+index 4ce38f2..a3c2c17 100644
 --- a/include/linux/fs.h
 +++ b/include/linux/fs.h
-@@ -2200,6 +2200,7 @@ extern int do_fallocate(struct file *file, int mode, loff_t offset,
- 			loff_t len);
- extern long do_sys_open(int dfd, const char __user *filename, int flags,
- 			umode_t mode);
-+extern struct file *filp_open_ginfo(struct getname_info *, int, umode_t);
- extern struct file *filp_open(const char *, int, umode_t);
- extern struct file *file_open_root(struct dentry *, struct vfsmount *,
- 				   const char *, int);
-diff --git a/kernel/acct.c b/kernel/acct.c
-index 3943608..a6b3e14 100644
---- a/kernel/acct.c
-+++ b/kernel/acct.c
-@@ -193,7 +193,7 @@ static void acct_file_reopen(struct bsd_acct_struct *acct, struct file *file,
- 	}
- }
+@@ -2194,6 +2194,7 @@ struct getname_info {
+ 	const char		*name;	/* pointer to actual string */
+ 	const __user char	*uptr;	/* original userland pointer */
+ 	struct audit_names	*aname;
++	bool			separate; /* should "name" be freed? */
+ };
  
--static int acct_on(const char *name)
-+static int acct_on(struct getname_info *pathname)
- {
- 	struct file *file;
- 	struct vfsmount *mnt;
-@@ -201,7 +201,7 @@ static int acct_on(const char *name)
- 	struct bsd_acct_struct *acct = NULL;
- 
- 	/* Difference from BSD - they don't do O_APPEND */
--	file = filp_open(name, O_WRONLY|O_APPEND|O_LARGEFILE, 0);
-+	file = filp_open_ginfo(pathname, O_WRONLY|O_APPEND|O_LARGEFILE, 0);
- 	if (IS_ERR(file))
- 		return PTR_ERR(file);
- 
-@@ -263,7 +263,7 @@ SYSCALL_DEFINE1(acct, const char __user *, name)
- 		struct getname_info *tmp = getname(name);
- 		if (IS_ERR(tmp))
- 			return (PTR_ERR(tmp));
--		error = acct_on(tmp->name);
-+		error = acct_on(tmp);
- 		putname(tmp);
- 	} else {
- 		struct bsd_acct_struct *acct;
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index 8dbf46d..0f8b1a4 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -1498,7 +1498,7 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
- 	if (IS_ERR(pathname))
- 		goto out;
- 
--	victim = filp_open(pathname->name, O_RDWR|O_LARGEFILE, 0);
-+	victim = filp_open_ginfo(pathname, O_RDWR|O_LARGEFILE, 0);
- 	err = PTR_ERR(victim);
- 	if (IS_ERR(victim))
- 		goto out;
-@@ -1966,7 +1966,7 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
- 		name = NULL;
- 		goto bad_swap;
- 	}
--	swap_file = filp_open(name->name, O_RDWR|O_LARGEFILE, 0);
-+	swap_file = filp_open_ginfo(name, O_RDWR|O_LARGEFILE, 0);
- 	if (IS_ERR(swap_file)) {
- 		error = PTR_ERR(swap_file);
- 		swap_file = NULL;
+ extern int do_truncate(struct dentry *, loff_t start, unsigned int time_attrs,
 -- 
 1.7.11.4
 
