@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932464Ab2IGEaY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 00:30:24 -0400
+	id S932866Ab2IGEai (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 00:30:38 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:32812 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932215Ab2IGEaV (ORCPT
+	with ESMTP id S932215Ab2IGEaf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 00:30:21 -0400
+	Fri, 7 Sep 2012 00:30:35 -0400
 From: Toshiaki Yamane <yamanetoshi@gmail.com>
 To: Greg Kroah-Hartman <greg@kroah.com>
 Cc: linux-kernel@vger.kernel.org, Toshiaki Yamane <yamanetoshi@gmail.com>
-Subject: [PATCH 24/57] staging/rts_pstor: remove braces {} in sd.c (sd_ddr_tuning_tx_cmd)
-Date: Fri,  7 Sep 2012 13:30:16 +0900
-Message-Id: <1346992216-17156-1-git-send-email-yamanetoshi@gmail.com>
+Subject: [PATCH 25/57] staging/rts_pstor: remove braces {} in sd.c (sd_search_final_phase)
+Date: Fri,  7 Sep 2012 13:30:30 +0900
+Message-Id: <1346992230-17188-1-git-send-email-yamanetoshi@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1346991387-16321-1-git-send-email-yamanetoshi@gmail.com>
 References: <1346991387-16321-1-git-send-email-yamanetoshi@gmail.com>
@@ -26,45 +26,67 @@ fixed below checkpatch warnings.
 
 Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
 ---
- drivers/staging/rts_pstor/sd.c |   13 +++++--------
- 1 file changed, 5 insertions(+), 8 deletions(-)
+ drivers/staging/rts_pstor/sd.c |   19 ++++++++-----------
+ 1 file changed, 8 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/staging/rts_pstor/sd.c b/drivers/staging/rts_pstor/sd.c
-index 6088d93..24daabb 100644
+index 24daabb..1dfabcf 100644
 --- a/drivers/staging/rts_pstor/sd.c
 +++ b/drivers/staging/rts_pstor/sd.c
-@@ -1522,26 +1522,23 @@ static int sd_ddr_tuning_tx_cmd(struct rtsx_chip *chip, u8 sample_point)
- 	u8 cmd[5], bus_width;
+@@ -1572,11 +1572,10 @@ static u8 sd_search_final_phase(struct rtsx_chip *chip, u32 phase_map, u8 tune_d
+ 	u8 final_phase = 0xFF;
  
- 	retval = sd_change_phase(chip, sample_point, TUNE_TX);
--	if (retval != STATUS_SUCCESS) {
-+	if (retval != STATUS_SUCCESS)
- 		TRACE_RET(chip, STATUS_FAIL);
--	}
- 
- 	if (CHK_SD(sd_card)) {
- 		bus_width = SD_BUS_WIDTH_4;
- 	} else {
--		if (CHK_MMC_8BIT(sd_card)) {
-+		if (CHK_MMC_8BIT(sd_card))
- 			bus_width = SD_BUS_WIDTH_8;
--		} else if (CHK_MMC_4BIT(sd_card)) {
-+		else if (CHK_MMC_4BIT(sd_card))
- 			bus_width = SD_BUS_WIDTH_4;
+ 	if (phase_map == 0xFFFFFFFF) {
+-		if (tune_dir == TUNE_RX) {
++		if (tune_dir == TUNE_RX)
+ 			final_phase = (u8)chip->sd_default_rx_phase;
 -		} else {
 +		else
- 			bus_width = SD_BUS_WIDTH_1;
+ 			final_phase = (u8)chip->sd_default_tx_phase;
 -		}
+ 
+ 		goto Search_Finish;
+ 	}
+@@ -1617,9 +1616,9 @@ static u8 sd_search_final_phase(struct rtsx_chip *chip, u32 phase_map, u8 tune_d
+ 		path[0].start = path[cont_path_cnt - 1].start - MAX_PHASE - 1;
+ 		path[0].len += path[cont_path_cnt - 1].len;
+ 		path[0].mid = path[0].start + path[0].len / 2;
+-		if (path[0].mid < 0) {
++		if (path[0].mid < 0)
+ 			path[0].mid += MAX_PHASE + 1;
+-		}
++
+ 		cont_path_cnt--;
  	}
  
- 	retval = sd_wait_state_data_ready(chip, 0x08, 1, 1000);
--	if (retval != STATUS_SUCCESS) {
-+	if (retval != STATUS_SUCCESS)
- 		TRACE_RET(chip, STATUS_FAIL);
--	}
+@@ -1647,11 +1646,10 @@ static u8 sd_search_final_phase(struct rtsx_chip *chip, u32 phase_map, u8 tune_d
+ 				int temp_final_phase =
+ 					path[final_path_idx].end - (max_len - (6 + temp_mid));
  
- 	RTSX_WRITE_REG(chip, SD_CFG3, SD_RSP_80CLK_TIMEOUT_EN, SD_RSP_80CLK_TIMEOUT_EN);
+-				if (temp_final_phase < 0) {
++				if (temp_final_phase < 0)
+ 					final_phase = (u8)(temp_final_phase + MAX_PHASE + 1);
+-				} else {
++				else
+ 					final_phase = (u8)temp_final_phase;
+-				}
+ 			}
+ 		} else if (CHK_SD_SDR50(sd_card)) {
+ 			if (max_len > 12) {
+@@ -1659,11 +1657,10 @@ static u8 sd_search_final_phase(struct rtsx_chip *chip, u32 phase_map, u8 tune_d
+ 				int temp_final_phase =
+ 					path[final_path_idx].end - (max_len - (3 + temp_mid));
  
+-				if (temp_final_phase < 0) {
++				if (temp_final_phase < 0)
+ 					final_phase = (u8)(temp_final_phase + MAX_PHASE + 1);
+-				} else {
++				else
+ 					final_phase = (u8)temp_final_phase;
+-				}
+ 			}
+ 		}
+ 	}
 -- 
 1.7.9.5
 
