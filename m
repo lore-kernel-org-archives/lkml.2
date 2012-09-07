@@ -1,103 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757349Ab2IGFjr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 01:39:47 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:45833 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752537Ab2IGFjq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 01:39:46 -0400
-Date: Fri, 7 Sep 2012 07:39:39 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Joel Uckelman <joel@lightboxtechnologies.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 0/8] perf/core improvements and fixes
-Message-ID: <20120907053939.GB6194@gmail.com>
-References: <1346959881-22427-1-git-send-email-acme@infradead.org>
+	id S1757928Ab2IGFkr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 01:40:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29746 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754375Ab2IGFkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 01:40:46 -0400
+Date: Fri, 7 Sep 2012 08:42:02 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, fes@google.com, aarcange@redhat.com,
+        riel@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mikew@google.com, yinghan@google.com,
+        virtualization@lists.linux-foundation.org, yvugenfi@redhat.com,
+        vrozenfe@redhat.com
+Subject: Re: [PATCH] virtio-balloon spec: provide a version of the "silent
+ deflate" feature that works
+Message-ID: <20120907054202.GA3452@redhat.com>
+References: <1346917610-14568-1-git-send-email-pbonzini@redhat.com>
+ <20120906084736.GF17656@redhat.com>
+ <50486BB2.7070108@redhat.com>
+ <20120906094442.GA22816@redhat.com>
+ <50487382.8030303@redhat.com>
+ <20120906105301.GC32325@redhat.com>
+ <5048935A.8090308@redhat.com>
+ <87wr06hg0l.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1346959881-22427-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87wr06hg0l.fsf@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Sep 07, 2012 at 09:15:46AM +0930, Rusty Russell wrote:
+> Paolo Bonzini <pbonzini@redhat.com> writes:
+> > Instead, VIRTIO_NET_F_HOST_MUST_SEND_GARP would be a "negative" feature:
+> > if set, the host _may not_ rely on the guest to send a gARP.  Similarly
+> > if VIRTIO_BALLOON_F_MUST_TELL_HOST is set, the guest _may not_ use
+> > ballooned pages directly.
+> >
+> > There are _no_ other negative features besides
+> > VIRTIO_BALLOON_F_MUST_TELL_HOST in the spec, and for a good
+> > reason---because they're broken.
+> >
+> > (Hmm, actually we have one, VIRTIO_BLK_F_RO.  It is also a bit broken,
+> > but it is not so important because it depends on user input more than
+> > hypervisor version).
+> 
+> Yes, this is the key observation, and an important lesson for the
+> future.  Thanks!
+> Note that these two negative features were in the original spec, where
+> it's assumed that every device supports them.  That's not explicitly
+> documented, however.
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+I'm curious what would we do for the future? I tried to imagine that _RO
+was not in the original spec, so virtio-blk expects a r/w device.
+Now we can not add _RW - old hypervisors do not set it, and old
+drivers do not ack it.
+What would a new flag with equivalent functionality be?
 
-> Hi Ingo,
+> I like killing the totally unused feature.
 > 
-> 	Please consider pulling,
-> 
-> - Arnaldo
-> 
-> The following changes since commit 7a4ec938857cf534270b23545495300fbac7f5de:
-> 
->   perf tools: Allow user to indicate path to objdump in command line (2012-09-05 19:41:55 -0300)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
-> 
-> for you to fetch changes up to 275ef3878f698941353780440fec6926107a320b:
-> 
->   perf tools: Fix cache event name generation (2012-09-06 15:01:08 -0300)
-> 
-> ----------------------------------------------------------------
-> perf/core improvements and fixes
-> 
-> . Fix hardware cache event name generation, fix from Jiri Olsa
-> 
-> . Add round trip test for sw, hw and cache event names, catching the
->   problem Jiri fixed, after Jiri's patch, the test passes successfully.
-> 
-> . Clean target should do clean for lib/traceevent too, fix from David Ahern
-> 
-> . Check the right variable for allocation failure, fix from Namhyung Kim
-> 
-> . Set up evsel->tp_format regardless of evsel->name being set already,
->   fix from Namhyung Kim
-> 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> ----------------------------------------------------------------
-> Arnaldo Carvalho de Melo (4):
->       perf test: Add round trip test for sw and hw event names
->       perf tools: Remove extraneous newline when parsing hardware cache events
->       perf evlist: Add fprintf method
->       perf test: Add roundtrip test for hardware cache events
-> 
-> David Ahern (1):
->       perf tools: Clean target should do clean for lib/traceevent too
-> 
-> Jiri Olsa (1):
->       perf tools: Fix cache event name generation
-> 
-> Namhyung Kim (2):
->       perf header: Fix a typo on evsel
->       perf header: Prepare tracepoint events regardless of name
-> 
->  tools/perf/Makefile            |    5 +-
->  tools/perf/builtin-test.c      |  114 ++++++++++++++++++++++++++++++++++++++++
->  tools/perf/util/evlist.c       |   13 +++++
->  tools/perf/util/evlist.h       |    2 +
->  tools/perf/util/evsel.c        |    6 +--
->  tools/perf/util/evsel.h        |    6 ++-
->  tools/perf/util/header.c       |   36 ++++++++-----
->  tools/perf/util/parse-events.c |    2 +-
->  8 files changed, 163 insertions(+), 21 deletions(-)
+> Cheers,
+> Rusty.
 
-Pulled, thanks a lot Arnaldo!
+I tried verifying that it is unused. And found this:
+Linux drivers currently try to ack this feature if it is there,
+so do BSD drivers. Both from v1. And they tell host before leak.
+So that is fine.
 
-	Ingo
+But looking at windows drivers:
+https://github.com/YanVugenfirer/kvm-guest-drivers-windows/blob/master/Balloon/sys/balloon.c
+they do *not* ack this bit, and BalloonLeak calls TellHost at the last
+line.
+
+So it looks like a bug: we should teach driver to tell host first on leak?
+Yan, Vadim, can you comment please?
+
+Also if true, looks like this bit will be useful to detect a fixed driver on
+the hypervisor side - to avoid unmapping such pages? Rusty what do you
+think?
+
+-- 
+MST
