@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753145Ab2IGE3w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 00:29:52 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:51513 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751512Ab2IGE3u (ORCPT
+	id S1754305Ab2IGEcD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 00:32:03 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38794 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751696Ab2IGEcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 00:29:50 -0400
-Date: Fri, 7 Sep 2012 14:29:40 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Pekka Enberg <penberg@cs.helsinki.fi>,
-        Christoph Lameter <cl@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: boot problems due to the slab tree
-Message-Id: <20120907142940.5783c61bffcfd2344b5ade6d@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__7_Sep_2012_14_29_40_+1000_G7m4eSS9lfnjLudh"
+	Fri, 7 Sep 2012 00:32:00 -0400
+From: Toshiaki Yamane <yamanetoshi@gmail.com>
+To: Greg Kroah-Hartman <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org, Toshiaki Yamane <yamanetoshi@gmail.com>
+Subject: [PATCH 29/57] staging/rts_pstor: remove braces {} in sd.c (sd_sdr_tuning)
+Date: Fri,  7 Sep 2012 13:31:49 +0900
+Message-Id: <1346992310-17317-1-git-send-email-yamanetoshi@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1346991387-16321-1-git-send-email-yamanetoshi@gmail.com>
+References: <1346991387-16321-1-git-send-email-yamanetoshi@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__7_Sep_2012_14_29_40_+1000_G7m4eSS9lfnjLudh
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+fixed below checkpatch warnings.
+-WARNING: braces {} are not necessary for single statement blocks
 
-Hi all,
+Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
+---
+ drivers/staging/rts_pstor/sd.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-Due to the reported boot problems in next-20120906, I have used the slab
-tree from next-20120905 for today.
+diff --git a/drivers/staging/rts_pstor/sd.c b/drivers/staging/rts_pstor/sd.c
+index 02139b4..b623c9f 100644
+--- a/drivers/staging/rts_pstor/sd.c
++++ b/drivers/staging/rts_pstor/sd.c
+@@ -1829,14 +1829,12 @@ static int sd_sdr_tuning(struct rtsx_chip *chip)
+ 	int retval;
+ 
+ 	retval = sd_tuning_tx(chip);
+-	if (retval != STATUS_SUCCESS) {
++	if (retval != STATUS_SUCCESS)
+ 		TRACE_RET(chip, STATUS_FAIL);
+-	}
+ 
+ 	retval = sd_tuning_rx(chip);
+-	if (retval != STATUS_SUCCESS) {
++	if (retval != STATUS_SUCCESS)
+ 		TRACE_RET(chip, STATUS_FAIL);
+-	}
+ 
+ 	return STATUS_SUCCESS;
+ }
+-- 
+1.7.9.5
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__7_Sep_2012_14_29_40_+1000_G7m4eSS9lfnjLudh
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQSXg0AAoJEECxmPOUX5FEyzYQAJKstDDMRtfgD3QAHK5e5LxC
-U/x2G8UM6efoinDQBqL5wmO53BtzliNdHwaHaEB9zCvbaSL+C3pyIPs6wDdP/Nts
-G0bRGmdwl9mIgUHJ94Q79jJnu2ykfbLmEPFiCmWeJlUUWvvZvKZCSP7ceeHBL57m
-ZQzwsQlnviMMeN0Q/6MZSyvSaCM+tp//T8W2iKWy6q53Wmufo/KhbXX3Qx2yeNn5
-Sm5VEaeYlf7jm7wHBvHHlFpz8TpuZY+9LjHjWTGgmVyDQkDWkesTNN1tiTgp4W0d
-AltTqjEepZKYfGKcK6dxLxcOY2LZoLN7KbDf3f8S0duzyuOeo6X4th51k1egfW+l
-IwFMDW2l9BMia9xBthMuhI9qNJGa09mFgnBIerNbSNNdO1fa01ExL5wTkuEFvjeU
-cl/2bUQanSufu09QqPMpGw5/jV9M+d6im1YjBDCEHCOMzUrMxt/cgMFDZiw1K2Hb
-Gc4s+Ry9f2THTojglVK60nYcamvHygwzUOSinkLEgG6tXbt1Ej+QSjrGrH9+GFcm
-QkBFo2CgkhLFsP2aAUNuXCiHU1ddZE8PiV3n0BvevPWtEYBdGGujIgBLYahOsVMH
-AdFTD4MWYycPbtyxL1ARyutaG3MirZHZGb4cDEcIT/wZyU7Y/jGKJkWrO/R+p9am
-FzQUhkESylcDy8egRgeS
-=HMDJ
------END PGP SIGNATURE-----
-
---Signature=_Fri__7_Sep_2012_14_29_40_+1000_G7m4eSS9lfnjLudh--
