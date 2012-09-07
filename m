@@ -1,108 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760668Ab2IGNju (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 09:39:50 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:63548 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760098Ab2IGNiX (ORCPT
+	id S1753283Ab2IGNjs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 09:39:48 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:59218 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760291Ab2IGNiY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 09:38:23 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: kernel-janitors@vger.kernel.org
-Subject: [PATCH] ../linux-next/drivers/media/pci/cx25821/cx25821-video-upstream-ch2.c: fix error return code
-Date: Fri,  7 Sep 2012 15:38:08 +0200
-Message-Id: <1347025088-11616-1-git-send-email-peter.senna@gmail.com>
+	Fri, 7 Sep 2012 09:38:24 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: viro@zeniv.linux.org.uk
+Cc: eparis@redhat.com, linux-audit@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v1 06/10] vfs: turn do_path_lookup into wrapper around getname_info variant
+Date: Fri,  7 Sep 2012 09:38:01 -0400
+Message-Id: <1347025085-20285-7-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.11.4
+In-Reply-To: <1347025085-20285-1-git-send-email-jlayton@redhat.com>
+References: <1347025085-20285-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Senna Tschudin <peter.senna@gmail.com>
+...and make the user_path callers use that variant instead.
 
-Convert a nonnegative error return code to a negative one, as returned
-elsewhere in the function.
-
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
-
-// <smpl>
-(
-if@p1 (\(ret < 0\|ret != 0\))
- { ... return ret; }
-|
-ret@p1 = 0
-)
-... when != ret = e1
-    when != &ret
-*if(...)
-{
-  ... when != ret = e2
-      when forall
- return ret;
-}
-
-// </smpl>
-
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- drivers/media/pci/cx25821/cx25821-video-upstream-ch2.c |   15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+ fs/namei.c | 30 +++++++++++++++++++++++-------
+ 1 file changed, 23 insertions(+), 7 deletions(-)
 
-diff --git a/../linux-next/drivers/media/pci/cx25821/cx25821-video-upstream-ch2.c b/drivers/media/pci/cx25821/cx25821-video-upstream-ch2.c
-index c8c94fb..273df94 100644
---- a/../linux-next/drivers/media/pci/cx25821/cx25821-video-upstream-ch2.c
-+++ b/drivers/media/pci/cx25821/cx25821-video-upstream-ch2.c
-@@ -704,7 +704,6 @@ int cx25821_vidupstream_init_ch2(struct cx25821_dev *dev, int channel_select,
+diff --git a/fs/namei.c b/fs/namei.c
+index 60db390..774f942 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -1989,20 +1989,30 @@ static int path_lookupat(int dfd, const char *name,
+ 	return err;
+ }
+ 
+-static int do_path_lookup(int dfd, const char *name,
++static int ginfo_lookup(int dfd, struct getname_info *ginfo,
+ 				unsigned int flags, struct nameidata *nd)
  {
- 	struct sram_channel *sram_ch;
- 	u32 tmp;
--	int retval = 0;
- 	int err = 0;
- 	int data_frame_size = 0;
- 	int risc_buffer_size = 0;
-@@ -749,15 +748,19 @@ int cx25821_vidupstream_init_ch2(struct cx25821_dev *dev, int channel_select,
- 		dev->_filename_ch2 = kmemdup(dev->input_filename_ch2,
- 					     str_length + 1, GFP_KERNEL);
+-	int retval = path_lookupat(dfd, name, flags | LOOKUP_RCU, nd);
++	int retval = path_lookupat(dfd, ginfo->name, flags | LOOKUP_RCU, nd);
+ 	if (unlikely(retval == -ECHILD))
+-		retval = path_lookupat(dfd, name, flags, nd);
++		retval = path_lookupat(dfd, ginfo->name, flags, nd);
+ 	if (unlikely(retval == -ESTALE))
+-		retval = path_lookupat(dfd, name, flags | LOOKUP_REVAL, nd);
++		retval = path_lookupat(dfd, ginfo->name,
++						flags | LOOKUP_REVAL, nd);
  
--		if (!dev->_filename_ch2)
-+		if (!dev->_filename_ch2) {
-+			err = -ENOENT;
- 			goto error;
-+		}
- 	} else {
- 		str_length = strlen(dev->_defaultname_ch2);
- 		dev->_filename_ch2 = kmemdup(dev->_defaultname_ch2,
- 					     str_length + 1, GFP_KERNEL);
+ 	if (likely(!retval))
+-		audit_inode(name, nd->path.dentry, flags & LOOKUP_PARENT);
++		audit_inode(ginfo->name, nd->path.dentry,
++						flags & LOOKUP_PARENT);
+ 	return retval;
+ }
  
--		if (!dev->_filename_ch2)
-+		if (!dev->_filename_ch2) {
-+			err = -ENOENT;
- 			goto error;
-+		}
- 	}
++static int do_path_lookup(int dfd, const char *name,
++				unsigned int flags, struct nameidata *nd)
++{
++	struct getname_info ginfo = { .name = name };
++
++	return ginfo_lookup(dfd, &ginfo, flags, nd);
++}
++
+ /* does lookup, returns the object with parent locked */
+ struct dentry *kern_path_locked(const char *name, struct path *path)
+ {
+@@ -2126,7 +2136,7 @@ int user_path_at_empty(int dfd, const char __user *name, unsigned flags,
  
- 	/* Default if filename is empty string */
-@@ -773,7 +776,7 @@ int cx25821_vidupstream_init_ch2(struct cx25821_dev *dev, int channel_select,
- 		}
- 	}
+ 		BUG_ON(flags & LOOKUP_PARENT);
  
--	retval = cx25821_sram_channel_setup_upstream(dev, sram_ch,
-+	err = cx25821_sram_channel_setup_upstream(dev, sram_ch,
- 						dev->_line_size_ch2, 0);
+-		err = do_path_lookup(dfd, tmp->name, flags, &nd);
++		err = ginfo_lookup(dfd, tmp, flags, &nd);
+ 		putname(tmp);
+ 		if (!err)
+ 			*path = nd.path;
+@@ -2140,6 +2150,12 @@ int user_path_at(int dfd, const char __user *name, unsigned flags,
+ 	return user_path_at_empty(dfd, name, flags, path, NULL);
+ }
  
- 	/* setup fifo + format */
-@@ -783,9 +786,9 @@ int cx25821_vidupstream_init_ch2(struct cx25821_dev *dev, int channel_select,
- 	dev->upstream_databuf_size_ch2 = data_frame_size * 2;
++/*
++ * NB: most callers don't do anything directly with the reference to the
++ *     to ginfo, but the nd->last pointer points into the name string
++ *     allocated by getinfo. So we must hold the reference to it until all
++ *     path-walking is complete.
++ */
+ static struct getname_info *
+ user_path_parent(int dfd, const char __user *path, struct nameidata *nd)
+ {
+@@ -2149,7 +2165,7 @@ user_path_parent(int dfd, const char __user *path, struct nameidata *nd)
+ 	if (IS_ERR(s))
+ 		return s;
  
- 	/* Allocating buffers and prepare RISC program */
--	retval = cx25821_upstream_buffer_prepare_ch2(dev, sram_ch,
-+	err = cx25821_upstream_buffer_prepare_ch2(dev, sram_ch,
- 						dev->_line_size_ch2);
--	if (retval < 0) {
-+	if (err < 0) {
- 		pr_err("%s: Failed to set up Video upstream buffers!\n",
- 		       dev->name);
- 		goto error;
+-	error = do_path_lookup(dfd, s->name, LOOKUP_PARENT, nd);
++	error = ginfo_lookup(dfd, s, LOOKUP_PARENT, nd);
+ 	if (error) {
+ 		putname(s);
+ 		return ERR_PTR(error);
+-- 
+1.7.11.4
 
