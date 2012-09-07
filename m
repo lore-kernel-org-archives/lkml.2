@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755080Ab2IGPM2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 11:12:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53539 "EHLO mx2.suse.de"
+	id S1755743Ab2IGPMu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 11:12:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53610 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752955Ab2IGPM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 11:12:26 -0400
-Date: Fri, 7 Sep 2012 17:12:18 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Andres Freund <andres@anarazel.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Bernhard Seibold <mail@bernhard-seibold.de>
-Subject: Re: regression 3.5->3.6: usb keyboard not working anymore
-In-Reply-To: <201208301507.26992.andres@anarazel.de>
-Message-ID: <alpine.LNX.2.00.1209071711221.21679@pobox.suse.cz>
-References: <201208301434.26195.andres@anarazel.de> <201208301507.26992.andres@anarazel.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753057Ab2IGPMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 11:12:48 -0400
+Date: Fri, 7 Sep 2012 17:12:47 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: akpm@linux-foundation.org
+Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-next@vger.kernel.org, Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: mmotm 2012-09-06-16-46 uploaded
+Message-ID: <20120907151246.GB3688@dhcp22.suse.cz>
+References: <20120906234735.1B54B20004E@hpza10.eem.corp.google.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120906234735.1B54B20004E@hpza10.eem.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Aug 2012, Andres Freund wrote:
+[CCing Wu Fengguang so that he can update the link to the new tree
+location]
 
-> > With a quick grep I just discovered that a new driver for this (or
-> > similar?) keyboards has been added. I have *not* compiled this in though:
-> > +# CONFIG_HID_LENOVO_TPKBD is not set
-> > 
-> > Is the new, unconditional, entry in the hid_have_special_driver struct the
-> > problem?
-> > diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-> > index 8e3a6b2..f695680 100644
-> > --- a/drivers/hid/hid-core.c
-> > +++ b/drivers/hid/hid-core.c
-> > @@ -1544,6 +1544,7 @@ static const struct hid_device_id
-> > hid_have_special_driver[] = {
-> >     { HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_EASYPEN_M610X) },
-> >     { HID_USB_DEVICE(USB_VENDOR_ID_LABTEC,
-> > USB_DEVICE_ID_LABTEC_WIRELESS_KEYBOARD) },
-> >     { HID_USB_DEVICE(USB_VENDOR_ID_LCPOWER, USB_DEVICE_ID_LCPOWER_LC1000 )
-> > }, +   { HID_USB_DEVICE(USB_VENDOR_ID_LENOVO, USB_DEVICE_ID_LENOVO_TPKBD)
-> > }, { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_MX3000_RECEIVER)
-> > }, { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_S510_RECEIVER)
-> > }, { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_S510_RECEIVER_2)
-> > },
-> > 
-> > Other entries seem to be protected via things like:
-> > #if IS_ENABLED(CONFIG_HID_LOGITECH_DJ)
-> > 
-> > I have somewhat obsoleted my original line of thought in this email, but
-> > hell. Will try this and send a patch if it works.
-> Works.
-> 
-> Could somebody integrate the attached patch?
+On Thu 06-09-12 16:47:34, Andrew Morton wrote:
+[...]
+> A git tree which contains the memory management portion of this tree is
+> maintained at https://github.com/mstsxfx/memcg-devel.git by Michal Hocko. 
 
-Ok, I am now applying it, and for 3.7, I'd like to actually go over the 
-list of devices, and do the same (perhaps in some nicer way) for those 
-which are able to function (without full support) even with the generic 
-driver.
+I have finally added the tree to the kernel.org infrastructure
+(http://git.kernel.org/?p=linux/kernel/git/mhocko/mm.git;a=summary).
 
-Thanks,
+Both (k.org and github) have the same branches and layout and I will be
+updating both until the end of this month. Github will be discontinued
+since 1st Oct.
 
+The switch is really easy. Just add a new remote
+$ git remote add mm git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
+
+and move your local tracking branches to point to the new remote.
+
+> It contains the patches which are between the "#NEXT_PATCHES_START mm" and
+> "#NEXT_PATCHES_END" markers, from the series file,
+> http://www.ozlabs.org/~akpm/mmotm/series.
 -- 
-Jiri Kosina
+Michal Hocko
 SUSE Labs
