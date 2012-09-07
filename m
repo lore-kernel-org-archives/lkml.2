@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760586Ab2IGLYO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 07:24:14 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:49405 "EHLO
+	id S933131Ab2IGLYu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 07:24:50 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:36911 "EHLO
 	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760569Ab2IGLYD (ORCPT
+	with ESMTP id S1760575Ab2IGLYI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 07:24:03 -0400
+	Fri, 7 Sep 2012 07:24:08 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: eparis@redhat.com, viro@zeniv.linux.org.uk
 Cc: linux-audit@redhat.com, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, bfields@fieldses.org
-Subject: [PATCH v6 06/10] audit: set the name_len in audit_inode for parent lookups
-Date: Fri,  7 Sep 2012 07:23:43 -0400
-Message-Id: <1347017027-17167-7-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v6 10/10] audit: overhaul __audit_inode_child to accomodate retrying
+Date: Fri,  7 Sep 2012 07:23:47 -0400
+Message-Id: <1347017027-17167-11-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1347017027-17167-1-git-send-email-jlayton@redhat.com>
 References: <1347017027-17167-1-git-send-email-jlayton@redhat.com>
@@ -21,392 +21,254 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, this gets set mostly by happenstance when we call into
-audit_inode_child. While that might be a little more efficient, it seems
-wrong. If the syscall ends up failing before audit_inode_child ever gets
-called, then you'll have an audit_names record that shows the full path
-but has the parent inode info attached.
+In order to accomodate retrying path-based syscalls, we need to add a
+new "type" argument to audit_inode_child. This will tell us whether
+we're looking for a child entry that represents a create or a delete.
 
-Fix this by passing in a parent flag when we call audit_inode that gets
-set to the value of LOOKUP_PARENT. We can then fix up the pathname for
-the audit entry correctly from the get-go.
-
-While we're at it, clean up the no-op macro for audit_inode in the
-!CONFIG_AUDITSYSCALL case.
+If we find a parent, don't automatically assume that we need to create a
+new entry. Instead, use the information we have to try to find an
+existing entry first. Update it if one is found and create a new one if
+not.
 
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/namei.c            | 14 +++++++-------
- fs/open.c             |  4 ++--
- fs/xattr.c            |  8 ++++----
- include/linux/audit.h | 13 ++++++++-----
- ipc/mqueue.c          |  8 ++++----
- kernel/audit.h        |  1 +
- kernel/auditfilter.c  | 30 ++++++++++++++++++++++++++++++
- kernel/auditsc.c      | 41 +++++++++++++++++++++++++++++------------
- 8 files changed, 85 insertions(+), 34 deletions(-)
+ fs/btrfs/ioctl.c         |  2 +-
+ fs/namei.c               |  2 +-
+ include/linux/audit.h    | 12 ++++++----
+ include/linux/fsnotify.h |  8 +++----
+ kernel/auditsc.c         | 57 +++++++++++++++++++++++++-----------------------
+ 5 files changed, 44 insertions(+), 37 deletions(-)
 
+diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
+index ceff177..35c7ccd 100644
+--- a/fs/btrfs/ioctl.c
++++ b/fs/btrfs/ioctl.c
+@@ -614,7 +614,7 @@ static int btrfs_may_delete(struct inode *dir,struct dentry *victim,int isdir)
+ 		return -ENOENT;
+ 
+ 	BUG_ON(victim->d_parent->d_inode != dir);
+-	audit_inode_child(dir, victim);
++	audit_inode_child(dir, victim, AUDIT_TYPE_CHILD_DELETE);
+ 
+ 	error = inode_permission(dir, MAY_WRITE | MAY_EXEC);
+ 	if (error)
 diff --git a/fs/namei.c b/fs/namei.c
-index d431111..6c9d86d 100644
+index 6c9d86d..64f7350 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -1977,7 +1977,7 @@ static int do_path_lookup(int dfd, const char *name,
- 		retval = path_lookupat(dfd, name, flags | LOOKUP_REVAL, nd);
+@@ -2180,7 +2180,7 @@ static int may_delete(struct inode *dir,struct dentry *victim,int isdir)
+ 		return -ENOENT;
  
- 	if (likely(!retval))
--		audit_inode(name, nd->path.dentry);
-+		audit_inode(name, nd->path.dentry, flags & LOOKUP_PARENT);
- 	return retval;
- }
+ 	BUG_ON(victim->d_parent->d_inode != dir);
+-	audit_inode_child(dir, victim);
++	audit_inode_child(dir, victim, AUDIT_TYPE_CHILD_DELETE);
  
-@@ -2652,7 +2652,7 @@ static int do_last(struct nameidata *nd, struct path *path,
- 		error = complete_walk(nd);
- 		if (error)
- 			return error;
--		audit_inode(pathname, nd->path.dentry);
-+		audit_inode(pathname, nd->path.dentry, 0);
- 		if (open_flag & O_CREAT) {
- 			error = -EISDIR;
- 			goto out;
-@@ -2662,7 +2662,7 @@ static int do_last(struct nameidata *nd, struct path *path,
- 		error = complete_walk(nd);
- 		if (error)
- 			return error;
--		audit_inode(pathname, dir);
-+		audit_inode(pathname, dir, 0);
- 		goto finish_open;
- 	}
- 
-@@ -2691,7 +2691,7 @@ static int do_last(struct nameidata *nd, struct path *path,
- 		if (error)
- 			return error;
- 
--		audit_inode(pathname, dir);
-+		audit_inode(pathname, dir, 0);
- 		error = -EISDIR;
- 		/* trailing slashes? */
- 		if (nd->last.name[nd->last.len])
-@@ -2721,7 +2721,7 @@ retry_lookup:
- 		    !S_ISREG(file->f_path.dentry->d_inode->i_mode))
- 			will_truncate = false;
- 
--		audit_inode(pathname, file->f_path.dentry);
-+		audit_inode(pathname, file->f_path.dentry, 0);
- 		goto opened;
- 	}
- 
-@@ -2738,7 +2738,7 @@ retry_lookup:
- 	 * create/update audit record if it already exists.
- 	 */
- 	if (path->dentry->d_inode)
--		audit_inode(pathname, path->dentry);
-+		audit_inode(pathname, path->dentry, 0);
- 
- 	/*
- 	 * If atomic_open() acquired write access it is dropped now due to
-@@ -2803,7 +2803,7 @@ finish_lookup:
- 	error = -ENOTDIR;
- 	if ((nd->flags & LOOKUP_DIRECTORY) && !nd->inode->i_op->lookup)
- 		goto out;
--	audit_inode(pathname, nd->path.dentry);
-+	audit_inode(pathname, nd->path.dentry, 0);
- finish_open:
- 	if (!S_ISREG(nd->inode->i_mode))
- 		will_truncate = false;
-diff --git a/fs/open.c b/fs/open.c
-index e1f2cdb..ec06921 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -481,7 +481,7 @@ SYSCALL_DEFINE2(fchmod, unsigned int, fd, umode_t, mode)
- 
- 	file = fget(fd);
- 	if (file) {
--		audit_inode(NULL, file->f_path.dentry);
-+		audit_inode(NULL, file->f_path.dentry, 0);
- 		err = chmod_common(&file->f_path, mode);
- 		fput(file);
- 	}
-@@ -594,7 +594,7 @@ SYSCALL_DEFINE3(fchown, unsigned int, fd, uid_t, user, gid_t, group)
+ 	error = inode_permission(dir, MAY_WRITE | MAY_EXEC);
  	if (error)
- 		goto out_fput;
- 	dentry = file->f_path.dentry;
--	audit_inode(NULL, dentry);
-+	audit_inode(NULL, dentry, 0);
- 	error = chown_common(&file->f_path, user, group);
- 	mnt_drop_write_file(file);
- out_fput:
-diff --git a/fs/xattr.c b/fs/xattr.c
-index 4d45b71..588455b 100644
---- a/fs/xattr.c
-+++ b/fs/xattr.c
-@@ -408,7 +408,7 @@ SYSCALL_DEFINE5(fsetxattr, int, fd, const char __user *, name,
- 	if (!f)
- 		return error;
- 	dentry = f->f_path.dentry;
--	audit_inode(NULL, dentry);
-+	audit_inode(NULL, dentry, 0);
- 	error = mnt_want_write_file(f);
- 	if (!error) {
- 		error = setxattr(dentry, name, value, size, flags);
-@@ -502,7 +502,7 @@ SYSCALL_DEFINE4(fgetxattr, int, fd, const char __user *, name,
- 	f = fget_light(fd, &fput_needed);
- 	if (!f)
- 		return error;
--	audit_inode(NULL, f->f_path.dentry);
-+	audit_inode(NULL, f->f_path.dentry, 0);
- 	error = getxattr(f->f_path.dentry, name, value, size);
- 	fput_light(f, fput_needed);
- 	return error;
-@@ -583,7 +583,7 @@ SYSCALL_DEFINE3(flistxattr, int, fd, char __user *, list, size_t, size)
- 	f = fget_light(fd, &fput_needed);
- 	if (!f)
- 		return error;
--	audit_inode(NULL, f->f_path.dentry);
-+	audit_inode(NULL, f->f_path.dentry, 0);
- 	error = listxattr(f->f_path.dentry, list, size);
- 	fput_light(f, fput_needed);
- 	return error;
-@@ -654,7 +654,7 @@ SYSCALL_DEFINE2(fremovexattr, int, fd, const char __user *, name)
- 	if (!f)
- 		return error;
- 	dentry = f->f_path.dentry;
--	audit_inode(NULL, dentry);
-+	audit_inode(NULL, dentry, 0);
- 	error = mnt_want_write_file(f);
- 	if (!error) {
- 		error = removexattr(dentry, name);
 diff --git a/include/linux/audit.h b/include/linux/audit.h
-index 48c49eb..155524b 100644
+index 155524b..0f7284a 100644
 --- a/include/linux/audit.h
 +++ b/include/linux/audit.h
-@@ -454,6 +454,7 @@ extern int audit_classify_arch(int arch);
- /* audit_names->type values */
+@@ -455,6 +455,8 @@ extern int audit_classify_arch(int arch);
  #define	AUDIT_TYPE_UNKNOWN	0	/* we don't know yet */
  #define AUDIT_TYPE_NORMAL	1	/* a "normal" audit record */
-+#define AUDIT_TYPE_PARENT	2	/* a parent audit record */
+ #define AUDIT_TYPE_PARENT	2	/* a parent audit record */
++#define AUDIT_TYPE_CHILD_DELETE 3	/* a child being deleted */
++#define AUDIT_TYPE_CHILD_CREATE 4	/* a child being created */
  
  #ifdef CONFIG_AUDITSYSCALL
  /* These are defined in auditsc.c */
-@@ -466,7 +467,8 @@ extern void __audit_syscall_entry(int arch,
- extern void __audit_syscall_exit(int ret_success, long ret_value);
- extern void __audit_getname(const char *name);
- extern void audit_putname(const char *name);
--extern void __audit_inode(const char *name, const struct dentry *dentry);
-+extern void __audit_inode(const char *name, const struct dentry *dentry,
-+				unsigned int parent);
+@@ -470,7 +472,8 @@ extern void audit_putname(const char *name);
+ extern void __audit_inode(const char *name, const struct dentry *dentry,
+ 				unsigned int parent);
  extern void __audit_inode_child(const struct inode *parent,
- 				const struct dentry *dentry);
+-				const struct dentry *dentry);
++				const struct dentry *dentry,
++				const unsigned char type);
  extern void __audit_seccomp(unsigned long syscall, long signr, int code);
-@@ -503,9 +505,10 @@ static inline void audit_getname(const char *name)
- 	if (unlikely(!audit_dummy_context()))
- 		__audit_getname(name);
- }
--static inline void audit_inode(const char *name, const struct dentry *dentry) {
-+static inline void audit_inode(const char *name, const struct dentry *dentry,
-+				unsigned int parent) {
- 	if (unlikely(!audit_dummy_context()))
--		__audit_inode(name, dentry);
-+		__audit_inode(name, dentry, parent);
+ extern void __audit_ptrace(struct task_struct *t);
+ 
+@@ -511,9 +514,10 @@ static inline void audit_inode(const char *name, const struct dentry *dentry,
+ 		__audit_inode(name, dentry, parent);
  }
  static inline void audit_inode_child(const struct inode *parent,
- 				     const struct dentry *dentry) {
-@@ -635,9 +638,9 @@ extern int audit_signals;
- #define audit_dummy_context() 1
- #define audit_getname(n) do { ; } while (0)
- #define audit_putname(n) do { ; } while (0)
--#define __audit_inode(n,d) do { ; } while (0)
-+#define __audit_inode(n,d,p) do { ; } while (0)
+-				     const struct dentry *dentry) {
++				     const struct dentry *dentry,
++				     const unsigned char type) {
+ 	if (unlikely(!audit_dummy_context()))
+-		__audit_inode_child(parent, dentry);
++		__audit_inode_child(parent, dentry, type);
+ }
+ void audit_core_dumps(long signr);
+ 
+@@ -641,7 +645,7 @@ extern int audit_signals;
+ #define __audit_inode(n,d,p) do { ; } while (0)
  #define __audit_inode_child(p,d) do { ; } while (0)
--#define audit_inode(n,d) do { (void)(d); } while (0)
-+#define audit_inode(n,d,p) do { ; } while (0)
- #define audit_inode_child(p,d) do { ; } while (0)
+ #define audit_inode(n,d,p) do { ; } while (0)
+-#define audit_inode_child(p,d) do { ; } while (0)
++#define audit_inode_child(p,d,t) do { ; } while (0)
  #define audit_core_dumps(i) do { ; } while (0)
  #define audit_seccomp(i,s,c) do { ; } while (0)
-diff --git a/ipc/mqueue.c b/ipc/mqueue.c
-index 9a08acc..69cb5fe 100644
---- a/ipc/mqueue.c
-+++ b/ipc/mqueue.c
-@@ -805,7 +805,7 @@ SYSCALL_DEFINE4(mq_open, const char __user *, u_name, int, oflag, umode_t, mode,
+ #define auditsc_get_stamp(c,t,s) (0)
+diff --git a/include/linux/fsnotify.h b/include/linux/fsnotify.h
+index 9c28471..0fbfb46 100644
+--- a/include/linux/fsnotify.h
++++ b/include/linux/fsnotify.h
+@@ -109,7 +109,7 @@ static inline void fsnotify_move(struct inode *old_dir, struct inode *new_dir,
  
- 	if (oflag & O_CREAT) {
- 		if (path.dentry->d_inode) {	/* entry already exists */
--			audit_inode(name, path.dentry);
-+			audit_inode(name, path.dentry, 0);
- 			if (oflag & O_EXCL) {
- 				error = -EEXIST;
- 				goto out;
-@@ -825,7 +825,7 @@ SYSCALL_DEFINE4(mq_open, const char __user *, u_name, int, oflag, umode_t, mode,
- 			error = -ENOENT;
- 			goto out;
- 		}
--		audit_inode(name, path.dentry);
-+		audit_inode(name, path.dentry, 0);
- 		filp = do_open(&path, oflag);
- 	}
- 
-@@ -979,7 +979,7 @@ SYSCALL_DEFINE5(mq_timedsend, mqd_t, mqdes, const char __user *, u_msg_ptr,
- 		goto out_fput;
- 	}
- 	info = MQUEUE_I(inode);
--	audit_inode(NULL, filp->f_path.dentry);
-+	audit_inode(NULL, filp->f_path.dentry, 0);
- 
- 	if (unlikely(!(filp->f_mode & FMODE_WRITE))) {
- 		ret = -EBADF;
-@@ -1096,7 +1096,7 @@ SYSCALL_DEFINE5(mq_timedreceive, mqd_t, mqdes, char __user *, u_msg_ptr,
- 		goto out_fput;
- 	}
- 	info = MQUEUE_I(inode);
--	audit_inode(NULL, filp->f_path.dentry);
-+	audit_inode(NULL, filp->f_path.dentry, 0);
- 
- 	if (unlikely(!(filp->f_mode & FMODE_READ))) {
- 		ret = -EBADF;
-diff --git a/kernel/audit.h b/kernel/audit.h
-index 8167668..276ca88 100644
---- a/kernel/audit.h
-+++ b/kernel/audit.h
-@@ -76,6 +76,7 @@ static inline int audit_hash_ino(u32 ino)
- 
- extern int audit_match_class(int class, unsigned syscall);
- extern int audit_comparator(const u32 left, const u32 op, const u32 right);
-+extern int parent_len(const char *path);
- extern int audit_compare_dname_path(const char *dname, const char *path,
- 				    int *dirlen);
- extern struct sk_buff *	    audit_make_reply(int pid, int seq, int type,
-diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
-index a6c3f1a..29b167b 100644
---- a/kernel/auditfilter.c
-+++ b/kernel/auditfilter.c
-@@ -1198,6 +1198,36 @@ int audit_comparator(u32 left, u32 op, u32 right)
- 	}
+ 	if (source)
+ 		fsnotify(source, FS_MOVE_SELF, moved->d_inode, FSNOTIFY_EVENT_INODE, NULL, 0);
+-	audit_inode_child(new_dir, moved);
++	audit_inode_child(new_dir, moved, AUDIT_TYPE_CHILD_CREATE);
  }
  
-+/**
-+ * parent_len - find the length of the parent portion of a pathname
-+ * @path: pathname of which to determine length
-+ */
-+int parent_len(const char *path)
-+{
-+	int plen;
-+	const char *p;
-+
-+	plen = strlen(path);
-+
-+	if (plen == 0)
-+		return plen;
-+
-+	/* disregard trailing slashes */
-+	p = path + plen - 1;
-+	while ((*p == '/') && (p > path))
-+		p--;
-+
-+	/* walk backward until we find the next slash or hit beginning */
-+	while ((*p != '/') && (p > path))
-+		p--;
-+
-+	/* did we find a slash? Then increment to include it in path */
-+	if (*p == '/')
-+		p++;
-+
-+	return p - path;
-+}
-+
- /* Compare given dentry name with last component in given path,
-  * return of 0 indicates a match. */
- int audit_compare_dname_path(const char *dname, const char *path,
+ /*
+@@ -155,7 +155,7 @@ static inline void fsnotify_inoderemove(struct inode *inode)
+  */
+ static inline void fsnotify_create(struct inode *inode, struct dentry *dentry)
+ {
+-	audit_inode_child(inode, dentry);
++	audit_inode_child(inode, dentry, AUDIT_TYPE_CHILD_CREATE);
+ 
+ 	fsnotify(inode, FS_CREATE, dentry->d_inode, FSNOTIFY_EVENT_INODE, dentry->d_name.name, 0);
+ }
+@@ -168,7 +168,7 @@ static inline void fsnotify_create(struct inode *inode, struct dentry *dentry)
+ static inline void fsnotify_link(struct inode *dir, struct inode *inode, struct dentry *new_dentry)
+ {
+ 	fsnotify_link_count(inode);
+-	audit_inode_child(dir, new_dentry);
++	audit_inode_child(dir, new_dentry, AUDIT_TYPE_CHILD_CREATE);
+ 
+ 	fsnotify(dir, FS_CREATE, inode, FSNOTIFY_EVENT_INODE, new_dentry->d_name.name, 0);
+ }
+@@ -181,7 +181,7 @@ static inline void fsnotify_mkdir(struct inode *inode, struct dentry *dentry)
+ 	__u32 mask = (FS_CREATE | FS_ISDIR);
+ 	struct inode *d_inode = dentry->d_inode;
+ 
+-	audit_inode_child(inode, dentry);
++	audit_inode_child(inode, dentry, AUDIT_TYPE_CHILD_CREATE);
+ 
+ 	fsnotify(inode, mask, d_inode, FSNOTIFY_EVENT_INODE, dentry->d_name.name, 0);
+ }
 diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index bd11d09..011e923 100644
+index 52d1f0f..2f20b97 100644
 --- a/kernel/auditsc.c
 +++ b/kernel/auditsc.c
-@@ -2149,13 +2149,13 @@ static void audit_copy_inode(struct audit_names *name, const struct dentry *dent
- }
- 
- /**
-- * audit_inode - store the inode and device from a lookup
-+ * __audit_inode - store the inode and device from a lookup
-  * @name: name being audited
+@@ -2203,6 +2203,7 @@ out:
+  * __audit_inode_child - collect inode info for created/removed objects
+  * @parent: inode of dentry parent
   * @dentry: dentry being audited
-- *
-- * Called from fs/namei.c:path_lookup().
-+ * @parent: does this dentry represent the parent?
++ * @type:   AUDIT_TYPE_* value that we're looking for
+  *
+  * For syscalls that create or remove filesystem objects, audit_inode
+  * can only collect information for the filesystem object's parent.
+@@ -2213,13 +2214,13 @@ out:
+  * unsuccessful attempts.
   */
--void __audit_inode(const char *name, const struct dentry *dentry)
-+void __audit_inode(const char *name, const struct dentry *dentry,
-+		   unsigned int parent)
+ void __audit_inode_child(const struct inode *parent,
+-			 const struct dentry *dentry)
++			 const struct dentry *dentry,
++			 const unsigned char type)
  {
  	struct audit_context *context = current->audit_context;
- 	const struct inode *inode = dentry->d_inode;
-@@ -2168,19 +2168,38 @@ void __audit_inode(const char *name, const struct dentry *dentry)
- 		goto out_alloc;
- 
- 	list_for_each_entry_reverse(n, &context->names_list, list) {
--		if (n->name == name)
--			goto out;
-+		/* does the name pointer match? */
-+		if (n->name != name)
-+			continue;
-+
-+		/* match the correct record type */
-+		if (parent) {
-+			if (n->type == AUDIT_TYPE_PARENT ||
-+			    n->type == AUDIT_TYPE_UNKNOWN)
-+				goto out;
-+		} else {
-+			if (n->type != AUDIT_TYPE_PARENT)
-+				goto out;
-+		}
- 	}
- 
- out_alloc:
--	/* unable to find the name from a previous getname() */
-+	/* unable to find the name from a previous getname(). Allocate a new
-+	 * anonymous entry.
-+	 */
- 	n = audit_alloc_name(context, AUDIT_TYPE_NORMAL);
- 	if (!n)
- 		return;
- out:
-+	if (parent) {
-+		n->name_len = n->name ? parent_len(n->name) : AUDIT_NAME_FULL;
-+		n->type = AUDIT_TYPE_PARENT;
-+	} else {
-+		n->name_len = AUDIT_NAME_FULL;
-+		n->type = AUDIT_TYPE_NORMAL;
-+	}
- 	handle_path(dentry);
- 	audit_copy_inode(n, dentry, inode);
--	n->type = AUDIT_TYPE_NORMAL;
- }
- 
- /**
-@@ -2204,7 +2223,6 @@ void __audit_inode_child(const struct inode *parent,
+-	const char *found_parent = NULL, *found_child = NULL;
  	const struct inode *inode = dentry->d_inode;
  	const char *dname = dentry->d_name.name;
- 	struct audit_names *n;
--	int dirlen = 0;
+-	struct audit_names *n;
++	struct audit_names *n, *found_parent = NULL, *found_child = NULL;
  
  	if (!context->in_syscall)
  		return;
-@@ -2218,8 +2236,7 @@ void __audit_inode_child(const struct inode *parent,
+@@ -2227,63 +2228,65 @@ void __audit_inode_child(const struct inode *parent,
+ 	if (inode)
+ 		handle_one(inode);
+ 
+-	/* parent is more likely, look for it first */
++	/* look for a parent entry first */
+ 	list_for_each_entry(n, &context->names_list, list) {
+-		if (!n->name)
++		if (!n->name || n->type != AUDIT_TYPE_PARENT)
  			continue;
  
  		if (n->ino == parent->i_ino &&
--		    !audit_compare_dname_path(dname, n->name, &dirlen)) {
--			n->name_len = dirlen; /* update parent data in place */
-+		    !audit_compare_dname_path(dname, n->name, NULL)) {
- 			found_parent = n->name;
- 			goto add_names;
+ 		    !audit_compare_dname_path(dname, n->name, n->name_len)) {
+-			found_parent = n->name;
+-			goto add_names;
++			found_parent = n;
++			break;
  		}
-@@ -2232,7 +2249,7 @@ void __audit_inode_child(const struct inode *parent,
+ 	}
  
- 		/* strcmp() is the more likely scenario */
+-	/* no matching parent, look for matching child */
++	/* is there a matching child entry? */
+ 	list_for_each_entry(n, &context->names_list, list) {
+-		if (!n->name)
++		/* can only match entries that have a name */
++		if (!n->name || n->type != type)
++			continue;
++
++		/* if we found a parent, make sure this one is a child of it */
++		if (found_parent && (n->name != found_parent->name))
+ 			continue;
+ 
+-		/* strcmp() is the more likely scenario */
  		if (!strcmp(dname, n->name) ||
--		     !audit_compare_dname_path(dname, n->name, &dirlen)) {
-+		     !audit_compare_dname_path(dname, n->name, NULL)) {
- 			if (inode)
- 				audit_copy_inode(n, dentry, inode);
- 			else
+ 		    !audit_compare_dname_path(dname, n->name,
++						found_parent ?
++						found_parent->name_len :
+ 						AUDIT_NAME_FULL)) {
+-			if (inode)
+-				audit_copy_inode(n, dentry, inode);
+-			else
+-				n->ino = (unsigned long)-1;
+-			n->type = AUDIT_TYPE_NORMAL;
+-			found_child = n->name;
+-			goto add_names;
++			found_child = n;
++			break;
+ 		}
+ 	}
+ 
+-add_names:
+ 	if (!found_parent) {
+-		n = audit_alloc_name(context, AUDIT_TYPE_NORMAL);
++		/* create a new, "anonymous" parent record */
++		n = audit_alloc_name(context, AUDIT_TYPE_PARENT);
+ 		if (!n)
+ 			return;
+ 		audit_copy_inode(n, NULL, parent);
+ 	}
+ 
+ 	if (!found_child) {
+-		n = audit_alloc_name(context, AUDIT_TYPE_NORMAL);
+-		if (!n)
++		found_child = audit_alloc_name(context, type);
++		if (!found_child)
+ 			return;
+ 
+ 		/* Re-use the name belonging to the slot for a matching parent
+ 		 * directory. All names for this context are relinquished in
+ 		 * audit_free_names() */
+ 		if (found_parent) {
+-			n->name = found_parent;
+-			n->name_len = AUDIT_NAME_FULL;
++			found_child->name = found_parent->name;
++			found_child->name_len = AUDIT_NAME_FULL;
+ 			/* don't call __putname() */
+-			n->name_put = false;
++			found_child->name_put = false;
+ 		}
+-
+-		if (inode)
+-			audit_copy_inode(n, dentry, inode);
+ 	}
++	if (inode)
++		audit_copy_inode(found_child, dentry, inode);
++	else
++		found_child->ino = (unsigned long)-1;
+ }
+ EXPORT_SYMBOL_GPL(__audit_inode_child);
+ 
 -- 
 1.7.11.4
 
