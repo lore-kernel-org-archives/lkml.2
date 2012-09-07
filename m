@@ -1,65 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757282Ab2IGU6a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 16:58:30 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37782 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753476Ab2IGU61 (ORCPT
+	id S1757683Ab2IGVKW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 17:10:22 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:47910 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756878Ab2IGVKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 16:58:27 -0400
-Date: Fri, 7 Sep 2012 13:58:23 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com
-Subject: Re: [PATCH v10 4/8] block: Add bio_reset()
-Message-ID: <20120907205823.GD16360@google.com>
-References: <1346970902-10931-1-git-send-email-koverstreet@google.com>
- <1346970902-10931-5-git-send-email-koverstreet@google.com>
- <50494F1A.4080207@kernel.dk>
+	Fri, 7 Sep 2012 17:10:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50494F1A.4080207@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120907125519.GB11266@suse.de>
+References: <1346779479-1097-1-git-send-email-mgorman@suse.de>
+	<1346779479-1097-2-git-send-email-mgorman@suse.de>
+	<CAAmzW4M_3hVBfjqFLG=7iydkXeQPdCXRbRmkqUJD4vwo0eWVWQ@mail.gmail.com>
+	<CAAmzW4MfFUH1Mi447sQvPNeae_BShEmbECUaK9eoX-8ughEdJw@mail.gmail.com>
+	<20120907125519.GB11266@suse.de>
+Date: Sat, 8 Sep 2012 06:10:06 +0900
+Message-ID: <CAAmzW4O2xF4Oo6VhnFHHBufg35xJ2Ko3c2KD5DUGgJ1VrL8jJw@mail.gmail.com>
+Subject: Re: [PATCH 1/4] slab: do ClearSlabPfmemalloc() for all pages of slab
+From: JoonSoo Kim <js1304@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Chuck Lever <chuck.lever@oracle.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 06, 2012 at 07:34:18PM -0600, Jens Axboe wrote:
-> On 2012-09-06 16:34, Kent Overstreet wrote:
-> > Reusing bios is something that's been highly frowned upon in the past,
-> > but driver code keeps doing it anyways. If it's going to happen anyways,
-> > we should provide a generic method.
-> > 
-> > This'll help with getting rid of bi_destructor - drivers/block/pktcdvd.c
-> > was open coding it, by doing a bio_init() and resetting bi_destructor.
-> > 
-> > This required reordering struct bio, but the block layer is not yet
-> > nearly fast enough for any cacheline effects to matter here.
-> 
-> That's an odd and misplaced comment. Was just doing testing today at 5M
-> IOPS, and even years back we've had cache effects for O_DIRECT in higher
-> speed setups.
+2012/9/7 Mel Gorman <mgorman@suse.de>:
+> This churns code a lot more than is necessary. How about this as a
+> replacement patch?
+>
+> ---8<---
+> From: Joonsoo Kim <js1304@gmail.com>
+> Subject: [PATCH] slab: do ClearSlabPfmemalloc() for all pages of slab
+>
+> Right now, we call ClearSlabPfmemalloc() for first page of slab when we
+> clear SlabPfmemalloc flag. This is fine for most swap-over-network use
+> cases as it is expected that order-0 pages are in use. Unfortunately it
+> is possible that that __ac_put_obj() checks SlabPfmemalloc on a tail page
+> and while this is harmless, it is sloppy. This patch ensures that the head
+> page is always used.
+>
+> [mgorman@suse.de: Easier implementation, changelog cleanup]
+> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>  mm/slab.c |   12 +++++-------
+>  1 file changed, 5 insertions(+), 7 deletions(-)
+>
+> diff --git a/mm/slab.c b/mm/slab.c
+> index 811af03..590d52a 100644
+> --- a/mm/slab.c
+> +++ b/mm/slab.c
+> @@ -1032,7 +1032,7 @@ static void *__ac_put_obj(struct kmem_cache *cachep, struct array_cache *ac,
+>  {
+>         if (unlikely(pfmemalloc_active)) {
+>                 /* Some pfmemalloc slabs exist, check if this is one */
+> -               struct page *page = virt_to_page(objp);
+> +               struct page *page = virt_to_head_page(objp);
+>                 if (PageSlabPfmemalloc(page))
+>                         set_obj_pfmemalloc(&objp);
+>         }
+> @@ -1919,12 +1919,10 @@ static void *kmem_getpages(struct kmem_cache *cachep, gfp_t flags, int nodeid)
+>         else
+>                 add_zone_page_state(page_zone(page),
+>                         NR_SLAB_UNRECLAIMABLE, nr_pages);
+> -       for (i = 0; i < nr_pages; i++) {
+> +       for (i = 0; i < nr_pages; i++)
+>                 __SetPageSlab(page + i);
+> -
+> -               if (page->pfmemalloc)
+> -                       SetPageSlabPfmemalloc(page + i);
+> -       }
+> +       if (page->pfmemalloc)
+> +               SetPageSlabPfmemalloc(page);
+>
+>         if (kmemcheck_enabled && !(cachep->flags & SLAB_NOTRACK)) {
+>                 kmemcheck_alloc_shadow(page, cachep->gfporder, flags, nodeid);
+> @@ -1955,9 +1953,9 @@ static void kmem_freepages(struct kmem_cache *cachep, void *addr)
+>         else
+>                 sub_zone_page_state(page_zone(page),
+>                                 NR_SLAB_UNRECLAIMABLE, nr_freed);
+> +       __ClearPageSlabPfmemalloc(page);
+>         while (i--) {
+>                 BUG_ON(!PageSlab(page));
+> -               __ClearPageSlabPfmemalloc(page);
+>                 __ClearPageSlab(page);
+>                 page++;
+>         }
 
-Ah, I wasn't aware that you were pushing that many iops through the
-block layer - most I've tested myself was around 1M. It wouldn't
-surprise me if cache effects in struct bio mattered around 5M...
-
-> That said, we haven't done cache analysis in a long time. So moving
-> members around isn't necessarily a huge deal.
-
-Ok, good to know. I've got another patch coming later that reorders
-struct bio a bit more, for immutable bvecs (bi_sector, bi_size, bi_idx
-go into a struct bvec_iter together).
-
-> Lastly, this isn't a great commit message for other reasons. Anyone can
-> see that it moves members around. It'd be a lot better to explain _why_
-> it is reordering the struct.
-
-Yeah, I suppose so. Will keep that in mind for the next patch.
-
-> 
-> BTW, I looked over the rest of the patches, and it looks OK to me.
-
-Resent them. Thanks!
+Okay.
