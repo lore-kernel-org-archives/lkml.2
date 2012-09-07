@@ -1,49 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758078Ab2IGVW1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 17:22:27 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:48193 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757851Ab2IGVWR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 17:22:17 -0400
+	id S1757758Ab2IGVWO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 17:22:14 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:42872 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756662Ab2IGVWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 17:22:12 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Subject: [Resend][PATCH] pciehp: always implement resume
+Date: Fri, 7 Sep 2012 23:28:30 +0200
+User-Agent: KMail/1.13.6 (Linux/3.6.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Oliver Neukum <oliver@neukum.org>, linux-pci@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <1347009393-8751-1-git-send-email-benjamin.gaignard@stericsson.com>
-References: <1347009393-8751-1-git-send-email-benjamin.gaignard@stericsson.com>
-Date: Fri, 7 Sep 2012 23:22:16 +0200
-Message-ID: <CACRpkdb=ie-94D3izWkhKW_EY3KLL-X5buAvMvXrSZmWZMCcLA@mail.gmail.com>
-Subject: Re: [PATCH] genalloc: make possible to use a custom allocation algorithm
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Benjamin Gaignard <benjamin.gaignard@linaro.org>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        ying.huang@intel.com,
-        Benjamin Gaignard <benjamin.gaignard@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209072328.30553.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 7, 2012 at 11:16 AM, Benjamin Gaignard
-<benjamin.gaignard@linaro.org> wrote:
+From: Oliver Neukum <oliver@neukum.org>
+Subject: pciehp: always implement resume
 
-> From: Benjamin Gaignard <benjamin.gaignard@stericsson.com>
->
-> This patch allow to use another algorithm than the default first-fit one.
-> For example a custom algorithm could be used to manage alignment requirements.
->
-> Add of best-fit algorithm function:
-> most of the time best-fit is slower then first-fit but memory fragmentation is lower.
-> Random buffer allocation/free tests don't show any arithmetic relation between
-> allocation time and fragmentation but best-fit algorithm is sometime able to perform the allocation when first-fit can't.
->
-> This new algorithm help to solve fragmentation issues on ESRAM shared by multiple
-> hardware IP allocating and freeing dynamically memory region of various sizes.
->
-> Signed-off-by: Benjamin Gaignard <benjamin.gaignard@stericsson.com>
+The driver by default ignores resume. On some laptops
+that means that interrupts are not delivered after S3.
+So card removals and insertions will not be handled. Requiring
+a forced load isn't right.
 
-We really need this to manage our on-chip RAM
-(ESRAM) which is a scarce resource, so:
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+drivers/pci/hotplug/pciehp_core.c |   28 ++++++++++++++--------------
+ drivers/pci/hotplug/pciehp_core.c |   28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
 
-Yours,
-Linus Walleij
+Index: linux/drivers/pci/hotplug/pciehp_core.c
+===================================================================
+--- linux.orig/drivers/pci/hotplug/pciehp_core.c
++++ linux/drivers/pci/hotplug/pciehp_core.c
+@@ -300,24 +300,24 @@ static int pciehp_suspend (struct pcie_d
+ 
+ static int pciehp_resume (struct pcie_device *dev)
+ {
++	struct controller *ctrl;
++	struct slot *slot;
++	u8 status;
++
+ 	dev_info(&dev->device, "%s ENTRY\n", __func__);
+-	if (pciehp_force) {
+-		struct controller *ctrl = get_service_data(dev);
+-		struct slot *slot;
+-		u8 status;
++	ctrl = get_service_data(dev);
+ 
+-		/* reinitialize the chipset's event detection logic */
+-		pcie_enable_notification(ctrl);
++	/* reinitialize the chipset's event detection logic */
++	pcie_enable_notification(ctrl);
+ 
+-		slot = ctrl->slot;
++	slot = ctrl->slot;
+ 
+-		/* Check if slot is occupied */
+-		pciehp_get_adapter_status(slot, &status);
+-		if (status)
+-			pciehp_enable_slot(slot);
+-		else
+-			pciehp_disable_slot(slot);
+-	}
++	/* Check if slot is occupied */
++	pciehp_get_adapter_status(slot, &status);
++	if (status)
++		pciehp_enable_slot(slot);
++	else
++		pciehp_disable_slot(slot);
+ 	return 0;
+ }
+ #endif /* PM */
