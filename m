@@ -1,155 +1,392 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759115Ab2IGF51 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 01:57:27 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54931 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754728Ab2IGF5Z (ORCPT
+	id S1759880Ab2IGF5x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 01:57:53 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:43708 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759088Ab2IGF5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 01:57:25 -0400
-Date: Thu, 6 Sep 2012 22:57:08 -0700
-From: tip-bot for David Ahern <dsahern@gmail.com>
-Message-ID: <tip-1e6d53223884225f0c3f9f1a3ac54a224d97ab24@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, fweisbec@gmail.com, peterz@infradead.org,
-        dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1346005487-62961-3-git-send-email-dsahern@gmail.com>
-References: <1346005487-62961-3-git-send-email-dsahern@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tool:
-  handle errors in synthesized event functions
-Git-Commit-ID: 1e6d53223884225f0c3f9f1a3ac54a224d97ab24
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 7 Sep 2012 01:57:51 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 06 Sep 2012 22:57:13 -0700 (PDT)
+In-Reply-To: <20120907022434.GG16231@bbox>
+References: <1346832673-12512-1-git-send-email-minchan@kernel.org>
+	<1346832673-12512-2-git-send-email-minchan@kernel.org>
+	<20120905105611.GI11266@suse.de>
+	<20120906053112.GA16231@bbox>
+	<20120906082935.GN11266@suse.de>
+	<20120906090325.GO11266@suse.de>
+	<20120907022434.GG16231@bbox>
+Date: Fri, 7 Sep 2012 14:57:50 +0900
+X-Google-Sender-Auth: suaySDPcqJXdDx9wojS7RBPwNQM
+Message-ID: <CAH9JG2VOoA30q+3sjC4UbNFNv2Vn9KnPNNXRb+kYMKWXKHbPew@mail.gmail.com>
+Subject: Re: [PATCH 2/2] mm: support MIGRATE_DISCARD
+From: Kyungmin Park <kmpark@infradead.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>, Rik van Riel <riel@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1e6d53223884225f0c3f9f1a3ac54a224d97ab24
-Gitweb:     http://git.kernel.org/tip/1e6d53223884225f0c3f9f1a3ac54a224d97ab24
-Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Sun, 26 Aug 2012 12:24:42 -0600
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 5 Sep 2012 17:17:30 -0300
+Hi Minchan,
 
-perf tool: handle errors in synthesized event functions
+I tested Mel patch again with ClearPageActive(page). but after some
+testing, it's stall and can't return from
+reclaim_clean_pages_from_list(&cc.migratepages).
 
-Handle error from process callback and propagate back to caller.
+Maybe it's related with unmap feature from yours?
+stall is not happened from your codes until now.
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1346005487-62961-3-git-send-email-dsahern@gmail.com
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/event.c |   35 ++++++++++++++++++++++++++---------
- 1 files changed, 26 insertions(+), 9 deletions(-)
+I'll test it more and report any issue if happened.
 
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 3a0f1a5..84ff6f16 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -120,7 +120,9 @@ static pid_t perf_event__synthesize_comm(struct perf_tool *tool,
- 	if (!full) {
- 		event->comm.tid = pid;
- 
--		process(tool, event, &synth_sample, machine);
-+		if (process(tool, event, &synth_sample, machine) != 0)
-+			return -1;
-+
- 		goto out;
- 	}
- 
-@@ -151,7 +153,10 @@ static pid_t perf_event__synthesize_comm(struct perf_tool *tool,
- 
- 		event->comm.tid = pid;
- 
--		process(tool, event, &synth_sample, machine);
-+		if (process(tool, event, &synth_sample, machine) != 0) {
-+			tgid = -1;
-+			break;
-+		}
- 	}
- 
- 	closedir(tasks);
-@@ -167,6 +172,7 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- {
- 	char filename[PATH_MAX];
- 	FILE *fp;
-+	int rc = 0;
- 
- 	snprintf(filename, sizeof(filename), "/proc/%d/maps", pid);
- 
-@@ -231,18 +237,22 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 			event->mmap.pid = tgid;
- 			event->mmap.tid = pid;
- 
--			process(tool, event, &synth_sample, machine);
-+			if (process(tool, event, &synth_sample, machine) != 0) {
-+				rc = -1;
-+				break;
-+			}
- 		}
- 	}
- 
- 	fclose(fp);
--	return 0;
-+	return rc;
- }
- 
- int perf_event__synthesize_modules(struct perf_tool *tool,
- 				   perf_event__handler_t process,
- 				   struct machine *machine)
- {
-+	int rc = 0;
- 	struct rb_node *nd;
- 	struct map_groups *kmaps = &machine->kmaps;
- 	union perf_event *event = zalloc((sizeof(event->mmap) +
-@@ -284,11 +294,14 @@ int perf_event__synthesize_modules(struct perf_tool *tool,
- 
- 		memcpy(event->mmap.filename, pos->dso->long_name,
- 		       pos->dso->long_name_len + 1);
--		process(tool, event, &synth_sample, machine);
-+		if (process(tool, event, &synth_sample, machine) != 0) {
-+			rc = -1;
-+			break;
-+		}
- 	}
- 
- 	free(event);
--	return 0;
-+	return rc;
- }
- 
- static int __event__synthesize_thread(union perf_event *comm_event,
-@@ -392,12 +405,16 @@ int perf_event__synthesize_threads(struct perf_tool *tool,
- 		if (*end) /* only interested in proper numerical dirents */
- 			continue;
- 
--		__event__synthesize_thread(comm_event, mmap_event, pid, 1,
--					   process, tool, machine);
-+		if (__event__synthesize_thread(comm_event, mmap_event, pid, 1,
-+					   process, tool, machine) != 0) {
-+			err = -1;
-+			goto out_closedir;
-+		}
- 	}
- 
--	closedir(proc);
- 	err = 0;
-+out_closedir:
-+	closedir(proc);
- out_free_mmap:
- 	free(mmap_event);
- out_free_comm:
+Thank you,
+Kyungmin Park
+
+On 9/7/12, Minchan Kim <minchan@kernel.org> wrote:
+> On Thu, Sep 06, 2012 at 10:03:25AM +0100, Mel Gorman wrote:
+>> On Thu, Sep 06, 2012 at 09:29:35AM +0100, Mel Gorman wrote:
+>> > On Thu, Sep 06, 2012 at 02:31:12PM +0900, Minchan Kim wrote:
+>> > > Hi Mel,
+>> > >
+>> > > On Wed, Sep 05, 2012 at 11:56:11AM +0100, Mel Gorman wrote:
+>> > > > On Wed, Sep 05, 2012 at 05:11:13PM +0900, Minchan Kim wrote:
+>> > > > > This patch introudes MIGRATE_DISCARD mode in migration.
+>> > > > > It drops *clean cache pages* instead of migration so that
+>> > > > > migration latency could be reduced by avoiding (memcpy + page
+>> > > > > remapping).
+>> > > > > It's useful for CMA because latency of migration is very important
+>> > > > > rather
+>> > > > > than eviction of background processes's workingset. In addition,
+>> > > > > it needs
+>> > > > > less free pages for migration targets so it could avoid memory
+>> > > > > reclaiming
+>> > > > > to get free pages, which is another factor increase latency.
+>> > > > >
+>> > > >
+>> > > > Bah, this was released while I was reviewing the older version. I
+>> > > > did
+>> > > > not read this one as closely but I see the enum problems have gone
+>> > > > away
+>> > > > at least. I'd still prefer if CMA had an additional helper to
+>> > > > discard
+>> > > > some pages with shrink_page_list() and migrate the remaining pages
+>> > > > with
+>> > > > migrate_pages(). That would remove the need to add a
+>> > > > MIGRATE_DISCARD
+>> > > > migrate mode at all.
+>> > >
+>> > > I am not convinced with your point. What's the benefit on separating
+>> > > reclaim and migration? For just removing MIGRATE_DISCARD mode?
+>> >
+>> > Maintainability. There are reclaim functions and there are migration
+>> > functions. Your patch takes migrate_pages() and makes it partially a
+>> > reclaim function mixing up the responsibilities of migrate.c and
+>> > vmscan.c.
+>> >
+>> > > I don't think it's not bad because my implementation is very
+>> > > simple(maybe
+>> > > it's much simpler than separating reclaim and migration) and
+>> > > could be used by others like memory-hotplug in future.
+>> >
+>> > They could also have used the helper function from CMA that takes a
+>> > list
+>> > of pages, reclaims some and migrates other.
+>> >
+>>
+>> I also do not accept that your approach is inherently simpler than what I
+>> proposed to you. This is not tested at all but it should be functionally
+>> similar to both your patches except that it keeps the responsibility for
+>> reclaim in vmscan.c
+>>
+>> Your diffstats are
+>>
+>> 8 files changed, 39 insertions(+), 36 deletions(-)
+>> 3 files changed, 46 insertions(+), 4 deletions(-)
+>>
+>> Mine is
+>>
+>>  3 files changed, 32 insertions(+), 5 deletions(-)
+>>
+>> Fewer files changed and fewer lines inserted.
+>>
+>> ---8<---
+>> mm: cma: Discard clean pages during contiguous allocation instead of
+>> migration
+>>
+>> This patch drops clean cache pages instead of migration during
+>> alloc_contig_range() to minimise allocation latency by reducing the
+>> amount
+>> of migration is necessary. It's useful for CMA because latency of
+>> migration
+>> is more important than evicting the background processes working set.
+>>
+>> Prototype-not-signed-off-but-feel-free-to-pick-up-and-test
+>> ---
+>>  mm/internal.h   |    1 +
+>>  mm/page_alloc.c |    2 ++
+>>  mm/vmscan.c     |   34 +++++++++++++++++++++++++++++-----
+>>  3 files changed, 32 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/mm/internal.h b/mm/internal.h
+>> index b8c91b3..6d4bdf9 100644
+>> --- a/mm/internal.h
+>> +++ b/mm/internal.h
+>> @@ -356,3 +356,4 @@ extern unsigned long vm_mmap_pgoff(struct file *,
+>> unsigned long,
+>>          unsigned long, unsigned long);
+>>
+>>  extern void set_pageblock_order(void);
+>> +unsigned long reclaim_clean_pages_from_list(struct list_head
+>> *page_list);
+>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+>> index c66fb87..977bdb2 100644
+>> --- a/mm/page_alloc.c
+>> +++ b/mm/page_alloc.c
+>> @@ -5670,6 +5670,8 @@ static int __alloc_contig_migrate_range(unsigned
+>> long start, unsigned long end)
+>>  			break;
+>>  		}
+>>
+>> +		reclaim_clean_pages_from_list(&cc.migratepages);
+>> +
+>>  		ret = migrate_pages(&cc.migratepages,
+>>  				    __alloc_contig_migrate_alloc,
+>>  				    0, false, MIGRATE_SYNC);
+>> diff --git a/mm/vmscan.c b/mm/vmscan.c
+>> index 8d01243..ccf7bc2 100644
+>> --- a/mm/vmscan.c
+>> +++ b/mm/vmscan.c
+>> @@ -703,7 +703,7 @@ static unsigned long shrink_page_list(struct list_head
+>> *page_list,
+>>  			goto keep;
+>>
+>>  		VM_BUG_ON(PageActive(page));
+>> -		VM_BUG_ON(page_zone(page) != zone);
+>> +		VM_BUG_ON(zone && page_zone(page) != zone);
+>>
+>>  		sc->nr_scanned++;
+>>
+>> @@ -817,7 +817,9 @@ static unsigned long shrink_page_list(struct list_head
+>> *page_list,
+>>  				 * except we already have the page isolated
+>>  				 * and know it's dirty
+>>  				 */
+>> -				inc_zone_page_state(page, NR_VMSCAN_IMMEDIATE);
+>> +				if (zone)
+>> +					inc_zone_page_state(page,
+>> +							NR_VMSCAN_IMMEDIATE);
+>>  				SetPageReclaim(page);
+>>
+>>  				goto keep_locked;
+>> @@ -947,7 +949,7 @@ keep:
+>>  	 * back off and wait for congestion to clear because further reclaim
+>>  	 * will encounter the same problem
+>>  	 */
+>> -	if (nr_dirty && nr_dirty == nr_congested && global_reclaim(sc))
+>> +	if (zone && nr_dirty && nr_dirty == nr_congested && global_reclaim(sc))
+>>  		zone_set_flag(zone, ZONE_CONGESTED);
+>>
+>>  	free_hot_cold_page_list(&free_pages, 1);
+>> @@ -955,11 +957,33 @@ keep:
+>>  	list_splice(&ret_pages, page_list);
+>>  	count_vm_events(PGACTIVATE, pgactivate);
+>>  	mem_cgroup_uncharge_end();
+>> -	*ret_nr_dirty += nr_dirty;
+>> -	*ret_nr_writeback += nr_writeback;
+>> +	if (ret_nr_dirty)
+>> +		*ret_nr_dirty += nr_dirty;
+>> +	if (ret_nr_writeback)
+>> +		*ret_nr_writeback += nr_writeback;
+>>  	return nr_reclaimed;
+>>  }
+>>
+>> +unsigned long reclaim_clean_pages_from_list(struct list_head *page_list)
+>> +{
+>> +	struct scan_control sc = {
+>> +		.gfp_mask = GFP_KERNEL,
+>> +		.priority = DEF_PRIORITY,
+>> +	};
+>> +	unsigned long ret;
+>> +	struct page *page, *next;
+>> +	LIST_HEAD(clean_pages);
+>> +
+>> +	list_for_each_entry_safe(page, next, page_list, lru) {
+>> +		if (page_is_file_cache(page) && !PageDirty(page))
+>> +			list_move(&page->lru, &clean_pages);
+>> +	}
+>> +
+>> +	ret = shrink_page_list(&clean_pages, NULL, &sc, NULL, NULL);
+>> +	list_splice(&clean_pages, page_list);
+>> +	return ret;
+>> +}
+>> +
+>
+> It's different with my point.
+> My intention is to free mapped clean pages as well as not-mapped's one.
+>
+> How about this?
+>
+> From 0f6986e943e55929b4d7b0220a1c24a6bae1a24d Mon Sep 17 00:00:00 2001
+> From: Minchan Kim <minchan@kernel.org>
+> Date: Fri, 7 Sep 2012 11:20:48 +0900
+> Subject: [PATCH] mm: cma: Discard clean pages during contiguous allocation
+>  instead of migration
+>
+> This patch introudes MIGRATE_DISCARD mode in migration.
+> It drops *clean cache pages* instead of migration so that
+> migration latency could be reduced by avoiding (memcpy + page remapping).
+> It's useful for CMA because latency of migration is very important rather
+> than eviction of background processes's workingset. In addition, it needs
+> less free pages for migration targets so it could avoid memory reclaiming
+> to get free pages, which is another factor increase latency.
+>
+> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+> Cc: Michal Nazarewicz <mina86@mina86.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  mm/internal.h   |    2 ++
+>  mm/page_alloc.c |    2 ++
+>  mm/vmscan.c     |   42 ++++++++++++++++++++++++++++++++++++------
+>  3 files changed, 40 insertions(+), 6 deletions(-)
+>
+> diff --git a/mm/internal.h b/mm/internal.h
+> index 3314f79..be09a7e 100644
+> --- a/mm/internal.h
+> +++ b/mm/internal.h
+> @@ -355,3 +355,5 @@ extern unsigned long vm_mmap_pgoff(struct file *,
+> unsigned long,
+>          unsigned long, unsigned long);
+>
+>  extern void set_pageblock_order(void);
+> +unsigned long reclaim_clean_pages_from_list(struct zone *zone,
+> +				struct list_head *page_list);
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index ba3100a..bf35e59 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -5668,6 +5668,8 @@ static int __alloc_contig_migrate_range(unsigned long
+> start, unsigned long end)
+>  			break;
+>  		}
+>
+> +		reclaim_clean_pages_from_list(&cc.migratepages, cc.zone);
+> +
+>  		ret = migrate_pages(&cc.migratepages,
+>  				    __alloc_contig_migrate_alloc,
+>  				    0, false, MIGRATE_SYNC);
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 8d01243..525355e 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -674,8 +674,10 @@ static enum page_references
+> page_check_references(struct page *page,
+>  static unsigned long shrink_page_list(struct list_head *page_list,
+>  				      struct zone *zone,
+>  				      struct scan_control *sc,
+> +				      enum ttu_flags ttu_flags,
+>  				      unsigned long *ret_nr_dirty,
+> -				      unsigned long *ret_nr_writeback)
+> +				      unsigned long *ret_nr_writeback,
+> +				      bool force_reclaim)
+>  {
+>  	LIST_HEAD(ret_pages);
+>  	LIST_HEAD(free_pages);
+> @@ -689,10 +691,10 @@ static unsigned long shrink_page_list(struct list_head
+> *page_list,
+>
+>  	mem_cgroup_uncharge_start();
+>  	while (!list_empty(page_list)) {
+> -		enum page_references references;
+>  		struct address_space *mapping;
+>  		struct page *page;
+>  		int may_enter_fs;
+> +		enum page_references references = PAGEREF_RECLAIM;
+>
+>  		cond_resched();
+>
+> @@ -758,7 +760,9 @@ static unsigned long shrink_page_list(struct list_head
+> *page_list,
+>  			wait_on_page_writeback(page);
+>  		}
+>
+> -		references = page_check_references(page, sc);
+> +		if (!force_reclaim)
+> +			references = page_check_references(page, sc);
+> +
+>  		switch (references) {
+>  		case PAGEREF_ACTIVATE:
+>  			goto activate_locked;
+> @@ -788,7 +792,7 @@ static unsigned long shrink_page_list(struct list_head
+> *page_list,
+>  		 * processes. Try to unmap it here.
+>  		 */
+>  		if (page_mapped(page) && mapping) {
+> -			switch (try_to_unmap(page, TTU_UNMAP)) {
+> +			switch (try_to_unmap(page, ttu_flags)) {
+>  			case SWAP_FAIL:
+>  				goto activate_locked;
+>  			case SWAP_AGAIN:
+> @@ -960,6 +964,32 @@ keep:
+>  	return nr_reclaimed;
+>  }
+>
+> +unsigned long reclaim_clean_pages_from_list(struct zone *zone,
+> +					struct list_head *page_list)
+> +{
+> +	struct scan_control sc = {
+> +		.gfp_mask = GFP_KERNEL,
+> +		.priority = DEF_PRIORITY,
+> +		.may_unmap = 1,
+> +	};
+> +	unsigned long ret, dummy1, dummy2;
+> +	struct page *page, *next;
+> +	LIST_HEAD(clean_pages);
+> +
+> +	list_for_each_entry_safe(page, next, page_list, lru) {
+> +		if (page_is_file_cache(page) && !PageDirty(page)) {
+> +			ClearPageActive(page);
+> +			list_move(&page->lru, &clean_pages);
+> +		}
+> +	}
+> +
+> +	ret = shrink_page_list(&clean_pages, zone, &sc,
+> +				TTU_UNMAP|TTU_IGNORE_ACCESS,
+> +				&dummy1, &dummy2, true);
+> +	list_splice(&clean_pages, page_list);
+> +	return ret;
+> +}
+> +
+>  /*
+>   * Attempt to remove the specified page from its LRU.  Only take this page
+>   * if it is of the appropriate PageActive status.  Pages which are being
+> @@ -1278,8 +1308,8 @@ shrink_inactive_list(unsigned long nr_to_scan, struct
+> lruvec *lruvec,
+>  	if (nr_taken == 0)
+>  		return 0;
+>
+> -	nr_reclaimed = shrink_page_list(&page_list, zone, sc,
+> -						&nr_dirty, &nr_writeback);
+> +	nr_reclaimed = shrink_page_list(&page_list, zone, sc, TTU_UNMAP,
+> +					&nr_dirty, &nr_writeback, false);
+>
+>  	spin_lock_irq(&zone->lru_lock);
+>
+> --
+> 1.7.9.5
+>
+> --
+> Kind regards,
+> Minchan Kim
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
