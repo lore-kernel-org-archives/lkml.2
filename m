@@ -1,227 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758923Ab2IGCuH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 22:50:07 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:28229 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758407Ab2IGCuE (ORCPT
+	id S1759005Ab2IGCvP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 22:51:15 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:56084 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758446Ab2IGCvO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 22:50:04 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6827"; a="231588239"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] ARM: msm: Remove uncompiled board-msm7x27
-Date: Thu,  6 Sep 2012 19:50:02 -0700
-Message-Id: <1346986202-21439-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.12.176.g3fc0e4c.dirty
+	Thu, 6 Sep 2012 22:51:14 -0400
+Date: Fri, 7 Sep 2012 12:51:04 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David McCullough <david_mccullough@mcafee.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: linux-next: manual merge of the crypto tree with the sparc-next
+ tree
+Message-Id: <20120907125104.f9adc5ba55907e802cc8329b@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__7_Sep_2012_12_51_04_+1000_tID0pQtN=WYVzHw9"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This board file has never been compiled. Let's just remove it
-along with the one Kconfig reference to it in io.c.
+--Signature=_Fri__7_Sep_2012_12_51_04_+1000_tID0pQtN=WYVzHw9
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/mach-msm/board-msm7x27.c | 170 --------------------------------------
- arch/arm/mach-msm/io.c            |   3 +-
- 2 files changed, 1 insertion(+), 172 deletions(-)
- delete mode 100644 arch/arm/mach-msm/board-msm7x27.c
+Hi Herbert,
 
-diff --git a/arch/arm/mach-msm/board-msm7x27.c b/arch/arm/mach-msm/board-msm7x27.c
-deleted file mode 100644
-index 451ab1d..0000000
---- a/arch/arm/mach-msm/board-msm7x27.c
-+++ /dev/null
-@@ -1,170 +0,0 @@
--/*
-- * Copyright (C) 2007 Google, Inc.
-- * Copyright (c) 2008-2009, Code Aurora Forum. All rights reserved.
-- * Author: Brian Swetland <swetland@google.com>
-- *
-- * This software is licensed under the terms of the GNU General Public
-- * License version 2, as published by the Free Software Foundation, and
-- * may be copied, distributed, and modified under those terms.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- */
--#include <linux/gpio.h>
--#include <linux/kernel.h>
--#include <linux/init.h>
--#include <linux/platform_device.h>
--#include <linux/input.h>
--#include <linux/io.h>
--#include <linux/delay.h>
--#include <linux/power_supply.h>
--
--#include <mach/hardware.h>
--#include <asm/mach-types.h>
--#include <asm/mach/arch.h>
--#include <asm/mach/map.h>
--#include <asm/mach/flash.h>
--#include <asm/setup.h>
--#ifdef CONFIG_CACHE_L2X0
--#include <asm/hardware/cache-l2x0.h>
--#endif
--
--#include <mach/vreg.h>
--#include <mach/mpp.h>
--#include <mach/board.h>
--#include <mach/msm_iomap.h>
--
--#include <linux/mtd/nand.h>
--#include <linux/mtd/partitions.h>
--
--#include "devices.h"
--#include "socinfo.h"
--#include "clock.h"
--
--static struct resource smc91x_resources[] = {
--	[0] = {
--		.start	= 0x9C004300,
--		.end	= 0x9C0043ff,
--		.flags	= IORESOURCE_MEM,
--	},
--	[1] = {
--		.start	= MSM_GPIO_TO_INT(132),
--		.end	= MSM_GPIO_TO_INT(132),
--		.flags	= IORESOURCE_IRQ,
--	},
--};
--
--static struct platform_device smc91x_device = {
--	.name		= "smc91x",
--	.id		= 0,
--	.num_resources	= ARRAY_SIZE(smc91x_resources),
--	.resource	= smc91x_resources,
--};
--
--static struct platform_device *devices[] __initdata = {
--	&msm_device_uart3,
--	&msm_device_smd,
--	&msm_device_dmov,
--	&msm_device_nand,
--	&smc91x_device,
--};
--
--extern struct sys_timer msm_timer;
--
--static void __init msm7x2x_init_irq(void)
--{
--	msm_init_irq();
--}
--
--static void __init msm7x2x_init(void)
--{
--	if (socinfo_init() < 0)
--		BUG();
--
--	if (machine_is_msm7x25_ffa() || machine_is_msm7x27_ffa()) {
--		smc91x_resources[0].start = 0x98000300;
--		smc91x_resources[0].end = 0x980003ff;
--		smc91x_resources[1].start = MSM_GPIO_TO_INT(85);
--		smc91x_resources[1].end = MSM_GPIO_TO_INT(85);
--		if (gpio_tlmm_config(GPIO_CFG(85, 0,
--					      GPIO_INPUT,
--					      GPIO_PULL_DOWN,
--					      GPIO_2MA),
--				     GPIO_ENABLE)) {
--			printk(KERN_ERR
--			       "%s: Err: Config GPIO-85 INT\n",
--				__func__);
--		}
--	}
--
--	platform_add_devices(devices, ARRAY_SIZE(devices));
--}
--
--static void __init msm7x2x_map_io(void)
--{
--	msm_map_common_io();
--	/* Technically dependent on the SoC but using machine_is
--	 * macros since socinfo is not available this early and there
--	 * are plans to restructure the code which will eliminate the
--	 * need for socinfo.
--	 */
--	if (machine_is_msm7x27_surf() || machine_is_msm7x27_ffa())
--		msm_clock_init(msm_clocks_7x27, msm_num_clocks_7x27);
--
--	if (machine_is_msm7x25_surf() || machine_is_msm7x25_ffa())
--		msm_clock_init(msm_clocks_7x25, msm_num_clocks_7x25);
--
--#ifdef CONFIG_CACHE_L2X0
--	if (machine_is_msm7x27_surf() || machine_is_msm7x27_ffa()) {
--		/* 7x27 has 256KB L2 cache:
--			64Kb/Way and 4-Way Associativity;
--			R/W latency: 3 cycles;
--			evmon/parity/share disabled. */
--		l2x0_init(MSM_L2CC_BASE, 0x00068012, 0xfe000000);
--	}
--#endif
--}
--
--static void __init msm7x2x_init_late(void)
--{
--	smd_debugfs_init();
--}
--
--MACHINE_START(MSM7X27_SURF, "QCT MSM7x27 SURF")
--	.atag_offset	= 0x100,
--	.map_io		= msm7x2x_map_io,
--	.init_irq	= msm7x2x_init_irq,
--	.init_machine	= msm7x2x_init,
--	.init_late	= msm7x2x_init_late,
--	.timer		= &msm_timer,
--MACHINE_END
--
--MACHINE_START(MSM7X27_FFA, "QCT MSM7x27 FFA")
--	.atag_offset	= 0x100,
--	.map_io		= msm7x2x_map_io,
--	.init_irq	= msm7x2x_init_irq,
--	.init_machine	= msm7x2x_init,
--	.init_late	= msm7x2x_init_late,
--	.timer		= &msm_timer,
--MACHINE_END
--
--MACHINE_START(MSM7X25_SURF, "QCT MSM7x25 SURF")
--	.atag_offset	= 0x100,
--	.map_io		= msm7x2x_map_io,
--	.init_irq	= msm7x2x_init_irq,
--	.init_machine	= msm7x2x_init,
--	.init_late	= msm7x2x_init_late,
--	.timer		= &msm_timer,
--MACHINE_END
--
--MACHINE_START(MSM7X25_FFA, "QCT MSM7x25 FFA")
--	.atag_offset	= 0x100,
--	.map_io		= msm7x2x_map_io,
--	.init_irq	= msm7x2x_init_irq,
--	.init_machine	= msm7x2x_init,
--	.init_late	= msm7x2x_init_late,
--	.timer		= &msm_timer,
--MACHINE_END
-diff --git a/arch/arm/mach-msm/io.c b/arch/arm/mach-msm/io.c
-index 35d6926..d88a4eb 100644
---- a/arch/arm/mach-msm/io.c
-+++ b/arch/arm/mach-msm/io.c
-@@ -44,8 +44,7 @@
- 		MSM_CHIP_DEVICE_TYPE(name, chip, MT_DEVICE)
- #define MSM_DEVICE(name) MSM_CHIP_DEVICE(name, MSM)
- 
--#if defined(CONFIG_ARCH_MSM7X00A) || defined(CONFIG_ARCH_MSM7X27) \
--	|| defined(CONFIG_ARCH_MSM7X25)
-+#if defined(CONFIG_ARCH_MSM7X00A)
- static struct map_desc msm_io_desc[] __initdata = {
- 	MSM_DEVICE_TYPE(VIC, MT_DEVICE_NONSHARED),
- 	MSM_CHIP_DEVICE_TYPE(CSR, MSM7X00, MT_DEVICE_NONSHARED),
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Today's linux-next merge of the crypto tree got conflicts in
+crypto/Kconfig between commits 4ff28d4ca93b ("sparc64: Add SHA1 driver
+making use of the 'sha1' instruction") and 9bf4852d3d19 ("sparc64: Add
+AES driver making use of the new aes opcodes") from the sparc-next tree
+and commit f0be44f4fb1f ("arm/crypto: Add optimized AES and SHA1
+routines") from the crypto tree.
 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc crypto/Kconfig
+index 94f232f,2730798..0000000
+--- a/crypto/Kconfig
++++ b/crypto/Kconfig
+@@@ -451,15 -433,15 +451,24 @@@ config CRYPTO_SHA1_SSSE
+  	  using Supplemental SSE3 (SSSE3) instructions or Advanced Vector
+  	  Extensions (AVX), when available.
+ =20
++ config CRYPTO_SHA1_ARM
++ 	tristate "SHA1 digest algorithm (ARM-asm)"
++ 	depends on ARM
++ 	select CRYPTO_SHA1
++ 	select CRYPTO_HASH
++ 	help
++ 	  SHA-1 secure hash standard (FIPS 180-1/DFIPS 180-2) implemented
++ 	  using optimized ARM assembler.
++=20
+ +config CRYPTO_SHA1_SPARC64
+ +	tristate "SHA1 digest algorithm (SPARC64)"
+ +	depends on SPARC64
+ +	select CRYPTO_SHA1
+ +	select CRYPTO_HASH
+ +	help
+ +	  SHA-1 secure hash standard (FIPS 180-1/DFIPS 180-2) implemented
+ +	  using sparc64 crypto instructions, when available.
+ +
+  config CRYPTO_SHA256
+  	tristate "SHA224 and SHA256 digest algorithm"
+  	select CRYPTO_HASH
+@@@ -633,34 -599,30 +644,58 @@@ config CRYPTO_AES_NI_INTE
+  	  ECB, CBC, LRW, PCBC, XTS. The 64 bit version has additional
+  	  acceleration for CTR.
+ =20
++ config CRYPTO_AES_ARM
++ 	tristate "AES cipher algorithms (ARM-asm)"
++ 	depends on ARM
++ 	select CRYPTO_ALGAPI
++ 	select CRYPTO_AES
++ 	help
++ 	  Use optimized AES assembler routines for ARM platforms.
++=20
++ 	  AES cipher algorithms (FIPS-197). AES uses the Rijndael
++ 	  algorithm.
++=20
++ 	  Rijndael appears to be consistently a very good performer in
++ 	  both hardware and software across a wide range of computing
++ 	  environments regardless of its use in feedback or non-feedback
++ 	  modes. Its key setup time is excellent, and its key agility is
++ 	  good. Rijndael's very low memory requirements make it very well
++ 	  suited for restricted-space environments, in which it also
++ 	  demonstrates excellent performance. Rijndael's operations are
++ 	  among the easiest to defend against power and timing attacks.
++=20
++ 	  The AES specifies three key sizes: 128, 192 and 256 bits
++=20
++ 	  See <http://csrc.nist.gov/encryption/aes/> for more information.
++=20
+ +config CRYPTO_AES_SPARC64
+ +	tristate "AES cipher algorithms (SPARC64)"
+ +	depends on SPARC64
+ +	select CRYPTO_CRYPTD
+ +	select CRYPTO_ALGAPI
+ +	help
+ +	  Use SPARC64 crypto opcodes for AES algorithm.
+ +
+ +	  AES cipher algorithms (FIPS-197). AES uses the Rijndael
+ +	  algorithm.
+ +
+ +	  Rijndael appears to be consistently a very good performer in
+ +	  both hardware and software across a wide range of computing
+ +	  environments regardless of its use in feedback or non-feedback
+ +	  modes. Its key setup time is excellent, and its key agility is
+ +	  good. Rijndael's very low memory requirements make it very well
+ +	  suited for restricted-space environments, in which it also
+ +	  demonstrates excellent performance. Rijndael's operations are
+ +	  among the easiest to defend against power and timing attacks.
+ +
+ +	  The AES specifies three key sizes: 128, 192 and 256 bits
+ +
+ +	  See <http://csrc.nist.gov/encryption/aes/> for more information.
+ +
+ +	  In addition to AES cipher algorithm support, the acceleration
+ +	  for some popular block cipher mode is supported too, including
+ +	  ECB and CBC.
+ +
+  config CRYPTO_ANUBIS
+  	tristate "Anubis cipher algorithm"
+  	select CRYPTO_ALGAPI
+
+--Signature=_Fri__7_Sep_2012_12_51_04_+1000_tID0pQtN=WYVzHw9
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQSWEYAAoJEECxmPOUX5FEUXsP/jnVApPfve2sZ2mmvp+d2cXR
+D3PG1vaQhYulziY+PC9YZ+y4783/vid34sGvXyZeG1Hdmm91cPj1lK/vUSnqbTzy
+/iOmiSa/UTAGyS6J9II44BWNkXdQVLiHt9RrzG6/jmlKBZVy4bQhf9dc2NECSEvO
+j1QwyqzThpHQ2zYtw95WMCax2NkflhUDrzZ+V8L0qBhe7YOy0KSDVv/fRR//StUO
+M+aMrZJBSew+NAyjMh6lkDwt/OwrrSAZ8MUedDEECVWHmTk6GfkZQuVJrEfmsZpI
+Tm5rCNZhFn8xQg1V/CKm96a96enKf8mdg9ju7nZRnNYOQXD9m4+24ifD6E8qTdgt
+eKb3H3X0lHJv04/wsiGSEQ+U0etgSP9lg6e0Yk87mwZAvrizrHzPYE+kKN9IFtsa
+1X0Iif995XVSs0RJxT98gusfF8vR1JTEKRLsYmZY8VRf1WCUnOPUnntlyGSXFcqK
+ZPbpF6gIm77xVoglHcetqXL3Qqd+7svsj36DegwWxArLDOdaCaUZzaC42u05UMxX
+3l1mOugevgVKyxoKHfj1s2winVXd9BaA9nP+OnAaSz8QYZssfexJpeJvgmSw4b/w
+KtI+dc4mWDjXPZvzJS0ANAlAd7I46+zI2E0ijH6++pbkgeMKb57e4BDFOATKW0Fz
+7NJtc5ysnSWGWD+drIE/
+=QANv
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__7_Sep_2012_12_51_04_+1000_tID0pQtN=WYVzHw9--
