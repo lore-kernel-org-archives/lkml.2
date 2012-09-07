@@ -1,56 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932953Ab2IGJRJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 05:17:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54855 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755052Ab2IGJRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 05:17:06 -0400
-Date: Fri, 7 Sep 2012 10:17:01 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Xishi Qiu <qiuxishi@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>
-Subject: Re: [PATCH v3 0/4] memory-hotplug: handle page race between
- allocation and isolation
-Message-ID: <20120907091701.GW11266@suse.de>
-References: <1346978372-17903-1-git-send-email-minchan@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1346978372-17903-1-git-send-email-minchan@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1760233Ab2IGJTN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 05:19:13 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:60375 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755052Ab2IGJTM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 05:19:12 -0400
+From: Benjamin Gaignard <benjamin.gaignard@linaro.org>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        ying.huang@intel.com
+Cc: Benjamin Gaignard <benjamin.gaignard@stericsson.com>
+Subject: [PATCH] genalloc: make possible to use a custom allocation algorithm
+Date: Fri,  7 Sep 2012 11:16:33 +0200
+Message-Id: <1347009393-8751-1-git-send-email-benjamin.gaignard@stericsson.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <[PATCH] genalloc: add best fit algorithm>
+References: <[PATCH] genalloc: add best fit algorithm>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 07, 2012 at 09:39:28AM +0900, Minchan Kim wrote:
-> Memory hotplug has a subtle race problem so this patchset fixes the problem
-> (Look at [3/3] for detail and please confirm the problem before review
-> other patches in this series.)
-> 
->  [1/4] is just clean up and help for [2/4].
->  [2/4] keeps the migratetype information to freed page's index field
->        and [3/4] uses the information.
->  [3/4] fixes the race problem with [2/4]'s information.
->  [4/4] enhance memory-hotremove operation success ratio
-> 
-> After applying [2/4], migratetype argument in __free_one_page
-> and free_one_page is redundant so we can remove it but I decide
-> to not touch them because it increases code size about 50 byte.
-> 
-> This patchset is based on mmotm-2012-09-06-16-46
-> 
+From: Benjamin Gaignard <benjamin.gaignard@stericsson.com>
 
-Nothing jumped out and poked me in the eye so for the series;
+This patch allow to use another algorithm than the default first-fit one.
+For example a custom algorithm could be used to manage alignment requirements.
 
-Acked-by: Mel Gorman <mgorman@suse.de>
+Add of best-fit algorithm function:
+most of the time best-fit is slower then first-fit but memory fragmentation is lower.
+Random buffer allocation/free tests don't show any arithmetic relation between
+allocation time and fragmentation but best-fit algorithm is sometime able to perform the allocation when first-fit can't.
 
-Thanks!
+This new algorithm help to solve fragmentation issues on ESRAM shared by multiple
+hardware IP allocating and freeing dynamically memory region of various sizes.
 
+Signed-off-by: Benjamin Gaignard <benjamin.gaignard@stericsson.com>
+---
+ include/linux/genalloc.h |   15 ++++++++
+ lib/genalloc.c           |   86 +++++++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 97 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/genalloc.h b/include/linux/genalloc.h
+index 5e98eeb..b8570a7 100644
+--- a/include/linux/genalloc.h
++++ b/include/linux/genalloc.h
+@@ -36,6 +36,10 @@ struct gen_pool {
+ 	spinlock_t lock;
+ 	struct list_head chunks;	/* list of chunks in this pool */
+ 	int min_alloc_order;		/* minimum allocation order */
++
++	unsigned long (*algo)(unsigned long *, unsigned long,
++			unsigned long, unsigned int, void *);
++	void *data;
+ };
+ 
+ /*
+@@ -78,4 +82,15 @@ extern void gen_pool_for_each_chunk(struct gen_pool *,
+ 	void (*)(struct gen_pool *, struct gen_pool_chunk *, void *), void *);
+ extern size_t gen_pool_avail(struct gen_pool *);
+ extern size_t gen_pool_size(struct gen_pool *);
++
++extern void gen_pool_set_algo(struct gen_pool *,
++		unsigned long (*)(unsigned long *, unsigned long, unsigned long,
++		unsigned int, void *), void *);
++
++extern unsigned long gen_pool_first_fit(unsigned long *, unsigned long,
++		unsigned long, unsigned int, void *);
++
++extern unsigned long gen_pool_best_fit(unsigned long *, unsigned long,
++			unsigned long, unsigned int, void *);
++
+ #endif /* __GENALLOC_H__ */
+diff --git a/lib/genalloc.c b/lib/genalloc.c
+index 6bc04aa..a0d73c8 100644
+--- a/lib/genalloc.c
++++ b/lib/genalloc.c
+@@ -152,6 +152,8 @@ struct gen_pool *gen_pool_create(int min_alloc_order, int nid)
+ 		spin_lock_init(&pool->lock);
+ 		INIT_LIST_HEAD(&pool->chunks);
+ 		pool->min_alloc_order = min_alloc_order;
++		pool->algo = gen_pool_first_fit;
++		pool->data = NULL;
+ 	}
+ 	return pool;
+ }
+@@ -255,8 +257,9 @@ EXPORT_SYMBOL(gen_pool_destroy);
+  * @size: number of bytes to allocate from the pool
+  *
+  * Allocate the requested number of bytes from the specified pool.
+- * Uses a first-fit algorithm. Can not be used in NMI handler on
+- * architectures without NMI-safe cmpxchg implementation.
++ * Uses the pool allocation function (with first-fit algorithm by default).
++ * Can not be used in NMI handler on architectures without
++ * NMI-safe cmpxchg implementation.
+  */
+ unsigned long gen_pool_alloc(struct gen_pool *pool, size_t size)
+ {
+@@ -280,8 +283,8 @@ unsigned long gen_pool_alloc(struct gen_pool *pool, size_t size)
+ 
+ 		end_bit = (chunk->end_addr - chunk->start_addr) >> order;
+ retry:
+-		start_bit = bitmap_find_next_zero_area(chunk->bits, end_bit,
+-						       start_bit, nbits, 0);
++		start_bit = pool->algo(chunk->bits, end_bit, start_bit, nbits,
++				pool->data);
+ 		if (start_bit >= end_bit)
+ 			continue;
+ 		remain = bitmap_set_ll(chunk->bits, start_bit, nbits);
+@@ -400,3 +403,78 @@ size_t gen_pool_size(struct gen_pool *pool)
+ 	return size;
+ }
+ EXPORT_SYMBOL_GPL(gen_pool_size);
++
++/**
++ * gen_pool_set_algo - set the allocation algorithm
++ * @pool: pool to change allocation algorithm
++ * @priv: private data to be pass to algorithm function
++ * @algo: custom algorithm function
++ */
++void gen_pool_set_algo(struct gen_pool *pool,
++	unsigned long (*algo)(unsigned long *map, unsigned long size,
++	unsigned long start, unsigned int nr, void *data), void *data)
++{
++	rcu_read_lock();
++
++	pool->algo = algo;
++	if (!pool->algo)
++		pool->algo = gen_pool_first_fit;
++
++	pool->data = data;
++
++	rcu_read_unlock();
++}
++EXPORT_SYMBOL(gen_pool_set_algo);
++
++/**
++ * gen_pool_first_fit - find the first available region
++ * of memory macthing the size requirement (no alignment constraint)
++ * @map: The address to base the search on
++ * @size: The bitmap size in bits
++ * @start: The bitnumber to start searching at
++ * @nr: The number of zeroed bits we're looking for
++ * @data: additional data - unused
++ */
++unsigned long gen_pool_first_fit(unsigned long *map, unsigned long size,
++		unsigned long start, unsigned int nr, void *data)
++{
++	return bitmap_find_next_zero_area(map, size, start, nr, 0);
++}
++EXPORT_SYMBOL(gen_pool_first_fit);
++
++/**
++ * gen_pool_best_fit - find the best fiting region of memory
++ * macthing the size requirement (no alignment constraint)
++ * @map: The address to base the search on
++ * @size: The bitmap size in bits
++ * @start: The bitnumber to start searching at
++ * @nr: The number of zeroed bits we're looking for
++ * @data: additional data - unused
++ *
++ * Iterate over the bitmap to find the smaller region where
++ * allocate the memory.
++ */
++unsigned long gen_pool_best_fit(unsigned long *map, unsigned long size,
++		unsigned long start, unsigned int nr, void *data)
++{
++	unsigned long start_bit = size;
++	unsigned long len = size + 1;
++	unsigned long index;
++
++	index = bitmap_find_next_zero_area(map, size, start, nr, 0);
++
++	while (index < size) {
++		int next_bit = find_next_bit(map, size, index + nr);
++		if ((next_bit - index) < len) {
++			len = next_bit - index;
++			start_bit = index;
++			if (len == nr)
++				return start_bit;
++		}
++		index = bitmap_find_next_zero_area(map, size,
++						   next_bit + 1, nr, 0);
++	}
++
++	return start_bit;
++}
++EXPORT_SYMBOL(gen_pool_best_fit);
 -- 
-Mel Gorman
-SUSE Labs
+1.7.10
+
