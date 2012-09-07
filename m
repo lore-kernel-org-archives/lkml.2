@@ -1,166 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757969Ab2IGBvk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 21:51:40 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:64071 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1757375Ab2IGBvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 21:51:38 -0400
-X-IronPort-AV: E=Sophos;i="4.80,383,1344182400"; 
-   d="scan'208";a="5799315"
-Message-ID: <50495395.10407@cn.fujitsu.com>
-Date: Fri, 07 Sep 2012 09:53:25 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1758102Ab2IGByG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 21:54:06 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:63588 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757375Ab2IGByD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 21:54:03 -0400
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH wq/for-3.6-fixes 3/3] workqueue: fix possible idle worker
- depletion during CPU_ONLINE
-References: <20120906200647.GG29092@google.com> <20120906200723.GH29092@google.com> <20120906200802.GI29092@google.com>
-In-Reply-To: <20120906200802.GI29092@google.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/07 09:51:11,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/07 09:51:11,
-	Serialize complete at 2012/09/07 09:51:11
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20120906205745.GA419@polaris.bitmath.org>
+References: <1346528835-363-1-git-send-email-rydberg@euromail.se>
+	<1346528835-363-17-git-send-email-rydberg@euromail.se>
+	<alpine.LNX.2.00.1209020927130.20709@pobox.suse.cz>
+	<20120902085211.GA604@polaris.bitmath.org>
+	<alpine.LNX.2.00.1209031515450.20709@pobox.suse.cz>
+	<20120906205745.GA419@polaris.bitmath.org>
+Date: Thu, 6 Sep 2012 18:54:01 -0700
+Message-ID: <CAF8JNh+=GT676cpPT7WqhZ3CrbRCuqApRHwB6MTm3iPmxgauAg@mail.gmail.com>
+Subject: Re: [PATCH v3 16/20] HID: Only dump input if someone is listening
+From: Ping Cheng <pinglinux@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/07/2012 04:08 AM, Tejun Heo wrote:
->>From 985aafbf530834a9ab16348300adc7cbf35aab76 Mon Sep 17 00:00:00 2001
-> From: Tejun Heo <tj@kernel.org>
-> Date: Thu, 6 Sep 2012 12:50:41 -0700
-> 
-> To simplify both normal and CPU hotplug paths, while CPU hotplug is in
-> progress, manager_mutex is held to prevent one of the workers from
-> becoming a manager and creating or destroying workers; unfortunately,
-> it currently may lead to idle worker depletion which in turn can lead
-> to deadlock under extreme circumstances.
-> 
-> Idle workers aren't allowed to become busy if there's no other idle
-> worker left to create more idle workers, but during CPU_ONLINE
-> gcwq_associate() is holding all managerships and all the idle workers
-> can proceed to become busy before gcwq_associate() is finished.
+On Thu, Sep 6, 2012 at 1:57 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
+>> Let's wait once Dmitry is finished with the input changes, and I can
+>> either take the set through my tree with his Signed-off-by: on the Input
+>> patches, or vice-versa.
+>
+> Ok. Meanwhile, the current set is now in a temporary branch on github,
+> see below. Given there are no more change requests, I can add the
+> right SOBs and push it to my next tree for a while, before sending a
+> proper pull request to either of you.
+>
+> Thanks,
+> Henrik
+>
+> The following changes since commit 4cbe5a555fa58a79b6ecbb6c531b8bab0650778d:
+>
+>   Linux 3.6-rc4 (2012-09-01 10:39:58 -0700)
+>
+> are available in the git repository at:
+>
+>   git://github.com/rydberg/linux.git maybe
 
-The any code which grab the manage_mutex can cause the bug.
-Not only rebind_workers(), but also gcwq_unbind_fn().
-Not only during CPU_ONLINE, but also during CPU_DOWN_PREPARE
+This branch is tested with a Wacom Bamboo3 and an Intuos 5 M.
 
-> 
-> This patch fixes the bug by releasing manager_mutexes before letting
-> the rebound idle workers go.  This ensures that by the time idle
-> workers check whether management is necessary, CPU_ONLINE already has
-> released the positions.
+Tested-by: Ping Cheng <pingc@wacom.com>
 
-This can't fix the problem.
+Ping
 
-+	gcwq_claim_management(gcwq);
-+	spin_lock_irq(&gcwq->lock);
-
-
-If manage_workers() happens between the two line, the problem occurs!.
-
-
-My non_manager_role_manager_mutex_unlock() approach has the same idea: release manage_mutex before release gcwq->lock.
-but non_manager_role_manager_mutex_unlock() approach will detect the fail reason of failing to grab manage_lock and go to sleep.
-rebind_workers()/gcwq_unbind_fn() will release manage_mutex and then wait up some before release gcwq->lock.
-
-
-==========================
-A "release manage_mutex before release gcwq->lock" approach.(no one likes it, I think)
-
-
-/* claim manager positions of all pools */
-static void gcwq_claim_management_and_lock(struct global_cwq *gcwq)
-{
-	struct worker_pool *pool, *pool_fail;
-
-again:
-	spin_lock_irq(&gcwq->lock);
-	for_each_worker_pool(pool, gcwq) {
-		if (!mutex_trylock(&pool->manager_mutex))
-			goto fail;
-	}
-	return;
-
-fail: /* unlikely, because manage_workers() are very unlike path in my box */
-	
-	for_each_worker_pool(pool_fail, gcwq) {
-		if (pool_fail != pool)
-			mutex_unlock(&pool->manager_mutex);
-		else
-			break;
-	}
-	spin_unlock_irq(&gcwq->lock);
-	cpu_relax();
-	goto again;
-}
-
-/* release manager positions */
-static void gcwq_release_management_and_unlock(struct global_cwq *gcwq)
-{
-	struct worker_pool *pool;
-
-	for_each_worker_pool(pool, gcwq)
-		mutex_unlock(&pool->manager_mutex);
-	spin_unlock_irq(&gcwq->lock);
-}
-
-
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> ---
->  kernel/workqueue.c |   20 ++++++++++++++------
->  1 files changed, 14 insertions(+), 6 deletions(-)
-> 
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index b19170b..74487ef 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -1454,10 +1454,19 @@ retry:
->  	}
->  
->  	/*
-> -	 * All idle workers are rebound and waiting for %WORKER_REBIND to
-> -	 * be cleared inside idle_worker_rebind().  Clear and release.
-> -	 * Clearing %WORKER_REBIND from this foreign context is safe
-> -	 * because these workers are still guaranteed to be idle.
-> +	 * At this point, each pool is guaranteed to have at least one idle
-> +	 * worker and all idle workers are waiting for WORKER_REBIND to
-> +	 * clear.  Release management before releasing idle workers;
-> +	 * otherwise, they can all go become busy as we're holding the
-> +	 * manager_mutexes, which can lead to deadlock as we don't actually
-> +	 * create new workers.
-> +	 */
-> +	gcwq_release_management(gcwq);
-> +
-> +	/*
-> +	 * Clear %WORKER_REBIND and release.  Clearing it from this foreign
-> +	 * context is safe because these workers are still guaranteed to be
-> +	 * idle.
->  	 *
->  	 * We need to make sure all idle workers passed WORKER_REBIND wait
->  	 * in idle_worker_rebind() before returning; otherwise, workers can
-> @@ -1467,6 +1476,7 @@ retry:
->  	INIT_COMPLETION(idle_rebind.done);
->  
->  	for_each_worker_pool(pool, gcwq) {
-> +		WARN_ON_ONCE(list_empty(&pool->idle_list));
->  		list_for_each_entry(worker, &pool->idle_list, entry) {
->  			worker->flags &= ~WORKER_REBIND;
->  			idle_rebind.cnt++;
-> @@ -1481,8 +1491,6 @@ retry:
->  	} else {
->  		spin_unlock_irq(&gcwq->lock);
->  	}
-> -
-> -	gcwq_release_management(gcwq);
->  }
->  
->  static struct worker *alloc_worker(void)
-
+> for you to fetch changes up to 631ea780695fdc0d1efa91b6714bd85369daab06:
+>
+>   HID: hid-multitouch: Add Flatfrog support (2012-09-06 22:21:02 +0200)
+>
+> ----------------------------------------------------------------
+> Henrik Rydberg (21):
+>       Input: Break out MT data
+>       Input: Improve the events-per-packet estimate
+>       Input: Make sure we follow all EV_KEY events
+>       Input: Move autorepeat to the event-passing phase
+>       Input: Send events one packet at a time
+>       Input: evdev - Add the events() callback
+>       Input: MT - Add flags to input_mt_init_slots()
+>       Input: MT - Handle frame synchronization in core
+>       Input: MT - Add in-kernel tracking
+>       Input: MT - Get slot by key
+>       Input: bcm5974 - only setup button urb for TYPE1 devices
+>       Input: bcm5974 - Preparatory renames
+>       Input: bcm5974 - Drop pressure and width emulation
+>       Input: bcm5974 - Drop the logical dimensions
+>       Input: bcm5974 - Convert to MT-B
+>       HID: Add an input configured notification callback
+>       HID: hid-multitouch: Simplify setup and frame synchronization
+>       HID: hid-multitouch: Remove the redundant touch state
+>       HID: hid-multitouch: Fix contact count on 3M panels
+>       HID: Allow more fields in the hid report
+>       HID: hid-multitouch: Add Flatfrog support
+>
+>  drivers/hid/hid-ids.h                    |   3 +
+>  drivers/hid/hid-input.c                  |  11 +-
+>  drivers/hid/hid-magicmouse.c             |   2 +-
+>  drivers/hid/hid-multitouch.c             | 192 +++++++++++++++-----------------
+>  drivers/input/evdev.c                    |  78 ++++++++-----
+>  drivers/input/input-mt.c                 | 294 +++++++++++++++++++++++++++++++++++++++++++++----
+>  drivers/input/input.c                    | 245 +++++++++++++++++++++++++++--------------
+>  drivers/input/misc/uinput.c              |   2 +-
+>  drivers/input/mouse/alps.c               |   2 +-
+>  drivers/input/mouse/bcm5974.c            | 317 ++++++++++++++++++++---------------------------------
+>  drivers/input/mouse/elantech.c           |   4 +-
+>  drivers/input/mouse/sentelic.c           |   2 +-
+>  drivers/input/mouse/synaptics.c          |   4 +-
+>  drivers/input/tablet/wacom_wac.c         |   6 +-
+>  drivers/input/touchscreen/atmel_mxt_ts.c |   2 +-
+>  drivers/input/touchscreen/cyttsp_core.c  |   2 +-
+>  drivers/input/touchscreen/edt-ft5x06.c   |   2 +-
+>  drivers/input/touchscreen/egalax_ts.c    |   2 +-
+>  drivers/input/touchscreen/ili210x.c      |   2 +-
+>  drivers/input/touchscreen/mms114.c       |   2 +-
+>  drivers/input/touchscreen/penmount.c     |   2 +-
+>  drivers/input/touchscreen/wacom_w8001.c  |   2 +-
+>  include/linux/hid.h                      |   5 +-
+>  include/linux/input.h                    |  33 ++++--
+>  include/linux/input/mt.h                 |  55 +++++++++-
+>  25 files changed, 807 insertions(+), 464 deletions(-)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
