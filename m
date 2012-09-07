@@ -1,143 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757905Ab2IGUox (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 16:44:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58067 "EHLO
+	id S1757375Ab2IGUxT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 16:53:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33851 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757028Ab2IGUoN (ORCPT
+	with ESMTP id S1753599Ab2IGUxN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 16:44:13 -0400
-From: Kent Overstreet <koverstreet@google.com>
-To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com
-Cc: axboe@kernel.dk, Kent Overstreet <koverstreet@google.com>
-Subject: [PATCH v10 5/8] pktcdvd: Switch to bio_kmalloc()
-Date: Fri,  7 Sep 2012 13:44:02 -0700
-Message-Id: <1347050642-7080-2-git-send-email-koverstreet@google.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1347050642-7080-1-git-send-email-koverstreet@google.com>
-References: <1347050642-7080-1-git-send-email-koverstreet@google.com>
+	Fri, 7 Sep 2012 16:53:13 -0400
+From: Kevin Hilman <khilman@deeprootsystems.com>
+To: balbi@ti.com
+Cc: Greg KH <gregkh@linuxfoundation.org>, Tony Lindgren <tony@atomide.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        linux-serial@vger.kernel.org, Sourav Poddar <sourav.poddar@ti.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Shubhrajyoti Datta <shubhrajyoti@ti.com>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        alan@linux.intel.com
+Subject: Re: [PATCH v4 00/21] OMAP UART Patches
+Organization: Deep Root Systems, LLC
+References: <20120906122948.GC29202@arwen.pp.htv.fi>
+	<1346935540-1792-1-git-send-email-balbi@ti.com>
+	<87harahiv6.fsf@deeprootsystems.com>
+	<20120907054932.GB3136@arwen.pp.htv.fi>
+Date: Fri, 07 Sep 2012 13:53:11 -0700
+In-Reply-To: <20120907054932.GB3136@arwen.pp.htv.fi> (Felipe Balbi's message
+	of "Fri, 7 Sep 2012 08:49:34 +0300")
+Message-ID: <87oblhmu6g.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is prep work for killing bi_destructor - previously, pktcdvd had
-its own pkt_bio_alloc which was basically duplication bio_kmalloc(),
-necessitating its own bi_destructor implementation.
+Felipe Balbi <balbi@ti.com> writes:
 
-v5: Un-reorder some functions, to make the patch easier to review
+> Hi,
+>
+> On Thu, Sep 06, 2012 at 03:44:13PM -0700, Kevin Hilman wrote:
+>> Felipe Balbi <balbi@ti.com> writes:
+>> 
+>> > Hi guys,
+>> >
+>> > here's v4 of the omap uart patchset. No changes other than a rebase on top of
+>> > Greg's tty-next branch and Tony's Acked-by being added to a couple patches
+>> >
+>> > Note: I'm resending the series with Vikram's Software Flow Control fix anyway
+>> > as it can just be ignored if it's decided it needs to go into this merge
+>> > window.
+>> 
+>> Sorry to be late to the party... just getting back from some time off.
+>> 
+>> I'm assuming that this was not tested with PM, so decided I better do it
+>
+> you assumed wrong. See the previous versions of the series and you'll
+> see I mention all the basic pm testing I did.
 
-Signed-off-by: Kent Overstreet <koverstreet@google.com>
-Acked-by: Jiri Kosina <jkosina@suse.cz>
----
- drivers/block/pktcdvd.c | 52 +++++++------------------------------------------
- 1 file changed, 7 insertions(+), 45 deletions(-)
+My apologies for not reading the previous versions.  I don't think it's
+unusual that a reviewer should expect everything he to know about a
+series (including how it was tested) is in the cover letter or in the
+changelogs of the latest series.  I don't expect to have to look through
+all the previous versions for this kind of info.  Since I wasn't around
+to review/test the earlier versions, I just looked at the latest (v4)
+and didn't see any mention of testing of any sort in the cover letter.
 
-diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
-index ba66e44..2e7de7a 100644
---- a/drivers/block/pktcdvd.c
-+++ b/drivers/block/pktcdvd.c
-@@ -522,38 +522,6 @@ static void pkt_bio_finished(struct pktcdvd_device *pd)
- 	}
- }
- 
--static void pkt_bio_destructor(struct bio *bio)
--{
--	kfree(bio->bi_io_vec);
--	kfree(bio);
--}
--
--static struct bio *pkt_bio_alloc(int nr_iovecs)
--{
--	struct bio_vec *bvl = NULL;
--	struct bio *bio;
--
--	bio = kmalloc(sizeof(struct bio), GFP_KERNEL);
--	if (!bio)
--		goto no_bio;
--	bio_init(bio);
--
--	bvl = kcalloc(nr_iovecs, sizeof(struct bio_vec), GFP_KERNEL);
--	if (!bvl)
--		goto no_bvl;
--
--	bio->bi_max_vecs = nr_iovecs;
--	bio->bi_io_vec = bvl;
--	bio->bi_destructor = pkt_bio_destructor;
--
--	return bio;
--
-- no_bvl:
--	kfree(bio);
-- no_bio:
--	return NULL;
--}
--
- /*
-  * Allocate a packet_data struct
-  */
-@@ -567,7 +535,7 @@ static struct packet_data *pkt_alloc_packet_data(int frames)
- 		goto no_pkt;
- 
- 	pkt->frames = frames;
--	pkt->w_bio = pkt_bio_alloc(frames);
-+	pkt->w_bio = bio_kmalloc(GFP_KERNEL, frames);
- 	if (!pkt->w_bio)
- 		goto no_bio;
- 
-@@ -581,9 +549,10 @@ static struct packet_data *pkt_alloc_packet_data(int frames)
- 	bio_list_init(&pkt->orig_bios);
- 
- 	for (i = 0; i < frames; i++) {
--		struct bio *bio = pkt_bio_alloc(1);
-+		struct bio *bio = bio_kmalloc(GFP_KERNEL, 1);
- 		if (!bio)
- 			goto no_rd_bio;
-+
- 		pkt->r_bios[i] = bio;
- 	}
- 
-@@ -1111,21 +1080,17 @@ static void pkt_gather_data(struct pktcdvd_device *pd, struct packet_data *pkt)
- 	 * Schedule reads for missing parts of the packet.
- 	 */
- 	for (f = 0; f < pkt->frames; f++) {
--		struct bio_vec *vec;
--
- 		int p, offset;
-+
- 		if (written[f])
- 			continue;
-+
- 		bio = pkt->r_bios[f];
--		vec = bio->bi_io_vec;
--		bio_init(bio);
--		bio->bi_max_vecs = 1;
-+		bio_reset(bio);
- 		bio->bi_sector = pkt->sector + f * (CD_FRAMESIZE >> 9);
- 		bio->bi_bdev = pd->bdev;
- 		bio->bi_end_io = pkt_end_io_read;
- 		bio->bi_private = pkt;
--		bio->bi_io_vec = vec;
--		bio->bi_destructor = pkt_bio_destructor;
- 
- 		p = (f * CD_FRAMESIZE) / PAGE_SIZE;
- 		offset = (f * CD_FRAMESIZE) % PAGE_SIZE;
-@@ -1418,14 +1383,11 @@ static void pkt_start_write(struct pktcdvd_device *pd, struct packet_data *pkt)
- 	}
- 
- 	/* Start the write request */
--	bio_init(pkt->w_bio);
--	pkt->w_bio->bi_max_vecs = PACKET_MAX_SIZE;
-+	bio_reset(pkt->w_bio);
- 	pkt->w_bio->bi_sector = pkt->sector;
- 	pkt->w_bio->bi_bdev = pd->bdev;
- 	pkt->w_bio->bi_end_io = pkt_end_io_packet_write;
- 	pkt->w_bio->bi_private = pkt;
--	pkt->w_bio->bi_io_vec = bvec;
--	pkt->w_bio->bi_destructor = pkt_bio_destructor;
- 	for (f = 0; f < pkt->frames; f++)
- 		if (!bio_add_page(pkt->w_bio, bvec[f].bv_page, CD_FRAMESIZE, bvec[f].bv_offset))
- 			BUG();
--- 
-1.7.12
+Looking back at the previous cover letters, I don't see any description
+of the PM testing either.  I only see it was tested on pandaboard.
+Since mainline doesn't have full PM support for OMAP4, testing on panda
+doesn't really test UART PM at all.
+
+Could you please point me to the descriptions in earlier mails of how
+you did PM testing, and on what platforms?
+
+In addition, IMO, if this was only tested on Panda (as suggested by
+earlier cover letters), it really should not have been merged until it
+got some broader testing.
+
+>> myself seeing that Greg is has already merge it.  To test, I merged
+>> Greg's tty-next branch with v3.6-rc4 and did some PM testing.
+>> 
+>> The bad news is that it doesn't even compile (see reply to [PATCH v4
+>> 20/21]).  
+>
+> yeah, that was an automerge issue when rebasing on greg's tty-next
+> branch, plus me assuming omap serial was already enabled on my .config
+> and not checking the compile output. Sent a patch now.
+
+As I reported in my reply to [PATCH v4 20/21], that patch also had
+another problem where it introduced a new (but unused) field.  Maybe
+another rebase problem?  I see the same problem in v3 and v4.
+
+>> Also, there is a big WARNING on boot[1], which seems to be triggered by
+>> a new check added for v3.6-rc3[2].  This appears to be introduced by
+>> $SUBJECT series, because I don't see it on vanilla v3.6-rc4.
+
+[...]
+
+> This doesn't seem to be caused by $SUBJECT at all. See that we are
+> calling uart_add_one_port() which will call tty_port_register_device()
+> which, in turn, will call tty_port_link_device() and that will set
+> driver->ports[index] correctly.
+>
+> Have you checked if this doesn't happen without my series before waving
+> your blame hammer ? FWIW, that part of the code wasn't change by
+> $SUBJECT at all.
+
+Whoa.  This was only test report.  No need to get personal.  All I said
+is that it "seemed" to introduced by $SUBJECT series.  Hardly waiving
+"blame hammer."
+
+And yes, I did check without your series.  As I reported above, the
+warning didn't exist with v3.6-rc4, and it did with yesterday's tty-next
+branch.  The WARNING pointed a finger at ttyO (omap-serial) so I assumed
+it was in $SUBJECT series.
+
+Testing with todays tty-next, the problem is gone.  The patch
+'tty_register_device_attr updated for tty-next'[1] seems to have made
+the problem go away.  So it's now clear that it wasn't introduced by
+$SUBJECT series.   My bad.
+
+Yesterday, it wasn't that obvious, so I made an assumption in order to
+report a problem uncovered in my testing in the hopes that it would be
+helpful to you in fixing a potential problem. My assumption was wrong, I
+was wrong.  I'm wrong a lot, and I'm OK with that. The bug was
+elsewhere, and is already fixed.
+
+My apologies if it seemed like I was blaming you.
+
+Kevin
+
+[1] 
+Author: Tomas Hlavacek <tmshlvck@gmail.com>  2012-09-06 14:17:47
+Committer: Greg Kroah-Hartman <gregkh@linuxfoundation.org>  2012-09-06 14:40:18
+Parent: 6915c0e487c822e2436683e14302c0b8a6155cc7 (tty: uartclk value from serial_core exposed to sysfs)
+Child:  e36851d0fa94b0f7802b3cc80406dbd3ef4f2f16 (serial: omap: fix compile breakage)
+Branch: tmp/uart-test-2
+Follows: v3.6-rc3
+Precedes: 
+
+    tty_register_device_attr updated for tty-next
+    
+    Added tty_device_create_release() and bound to dev->release in
+    tty_register_device_attr().
+    Added tty_port_register_device_attr() and used in uart_add_one_port()
+    instead of tty_register_device_attr().
+    
+    Signed-off-by: Tomas Hlavacek <tmshlvck@gmail.com>
+    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
