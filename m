@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758616Ab2IGWsj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 18:48:39 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:52036 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137Ab2IGWsh (ORCPT
+	id S1757969Ab2IGWzT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 18:55:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50689 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750982Ab2IGWzP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 18:48:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <504A78E9.4030005@lwfinger.net>
-References: <504A78E9.4030005@lwfinger.net>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 7 Sep 2012 15:48:15 -0700
-Message-ID: <CAErSpo7GEkN1XLZ=UeXmDZrLnp_648mH-sLYa9hMgOqz7t+b7Q@mail.gmail.com>
-Subject: Re: Question about failure in PCI power-state change
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: linux-pci@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        =?GB2312?B?wO6zr8P3?= <chaoming_li@realsil.com.cn>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Huang Ying <ying.huang@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Fri, 7 Sep 2012 18:55:15 -0400
+Date: Fri, 7 Sep 2012 15:55:14 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michel Lespinasse <walken@google.com>
+Cc: linux-mm@kvack.org, riel@redhat.com, peterz@infradead.org,
+        aarcange@redhat.com, hughd@google.com, daniel.santos@pobox.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/7] mm: interval tree updates
+Message-Id: <20120907155514.3fad7887.akpm@linux-foundation.org>
+In-Reply-To: <CANN689HMxteeUT9q5BgKutEnNQF6sKv2n9ze11Z=wkOoC+XGqw@mail.gmail.com>
+References: <1346750457-12385-1-git-send-email-walken@google.com>
+	<1346750457-12385-2-git-send-email-walken@google.com>
+	<20120907151341.79cb5638.akpm@linux-foundation.org>
+	<CANN689HMxteeUT9q5BgKutEnNQF6sKv2n9ze11Z=wkOoC+XGqw@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+cc Rafael, Huang, linux-pm
+On Fri, 7 Sep 2012 15:29:36 -0700
+Michel Lespinasse <walken@google.com> wrote:
 
-On Fri, Sep 7, 2012 at 3:44 PM, Larry Finger <Larry.Finger@lwfinger.net> wrote:
-> Hi,
->
-> On occasion when I unload and reload driver rtl8192ce, I get the message
->
-> "Refused to change power state, currently in D3"
->
-> I added additional info to the printk and discovered that it was trying to
-> change to state D0. The problem seems to occur when I have made a
-> connection, unloaded the driver, and reloaded it. If I do not make a
-> connection before unloading, then the problem is a lot less likely.
->
-> This is with kernel 3.6-rc4 from wireless-testing. A Google search shows
-> that the problem is usually due to suspend/resume difficulties, but this
-> machine has not been suspended.
->
-> I would appreciate any help that you might give in solving this issue.
->
-> Thanks,
->
-> Larry
+> > Ho hum.  I don't think I can be bothered untangling all this.
+> 
+> I don't think you should have to do it yourself either.
+
+Patch wrangling is what I do ;)
+
+> But, if you're willing to take it, I can send you replacement patches for
+> (mm-replace-vma-prio_tree-with-an-interval-tree.patch +
+> mm-interval-tree-updates.patch) collapsed into one, and
+> rbtree-move-augmented-rbtree-functionality-to-rbtree_augmentedh.patch
+> fixed so that it'd apply after the collapsed patch (and get to the
+> same end state).
+
+Yes please, I suppose we should do this.
