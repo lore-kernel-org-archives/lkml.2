@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932729Ab2IGHbw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 03:31:52 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:57203 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760263Ab2IGHam convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Fri, 7 Sep 2012 03:30:42 -0400
-Message-Id: <5049BEF70200007800099965@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Fri, 07 Sep 2012 08:31:35 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: <mingo@elte.hu>, <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ix86: improve determination of
- X86_MINIMUM_CPU_FAMILY
-References: <5049B4C102000078000998FE@nat28.tlf.novell.com>
- <50499F3C.1070706@zytor.com>
-In-Reply-To: <50499F3C.1070706@zytor.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1760261Ab2IGHal (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 03:30:41 -0400
+Received: from mga01.intel.com ([192.55.52.88]:21417 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759880Ab2IGH3e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 03:29:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,384,1344236400"; 
+   d="scan'208";a="219221413"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: lenb@kernel.org
+Cc: rui.zhang@intel.com, khali@linux-fr.org, ben-linux@fluff.org,
+        w.sang@pengutronix.de, dmitry.torokhov@gmail.com,
+        eric.piel@tremplin-utc.net, mjg@redhat.com, ike.pan@canonical.com,
+        herton@canonical.com, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH RESEND 07/12] Input: atlas_btns - convert to module_acpi_driver()
+Date: Fri,  7 Sep 2012 10:31:44 +0300
+Message-Id: <1347003109-26887-8-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.7.9.1
+In-Reply-To: <1347003109-26887-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1347003109-26887-1-git-send-email-mika.westerberg@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 07.09.12 at 09:16, "H. Peter Anvin" <hpa@zytor.com> wrote:
-> On 09/06/2012 11:48 PM, Jan Beulich wrote:
->>
->> --- 3.6-rc4/arch/x86/Kconfig.cpu
->> +++ 3.6-rc4-x86-minimum-cpu-family/arch/x86/Kconfig.cpu
->> @@ -409,9 +409,9 @@ config X86_CMOV
->>   config X86_MINIMUM_CPU_FAMILY
->>   	int
->>   	default "64" if X86_64
->> -	default "6" if X86_32 && X86_P6_NOP
->> -	default "5" if X86_32 && X86_CMPXCHG64
->> -	default "4" if X86_32 && (X86_XADD || X86_CMPXCHG || X86_BSWAP || X86_WP_WORKS_OK)
->> +	default "6" if X86_P6_NOP || X86_CMOV
->> +	default "5" if X86_CMPXCHG64 || X86_TSC
->> +	default "4" if X86_XADD || X86_CMPXCHG || X86_BSWAP || X86_WP_WORKS_OK
->>   	default "3"
->>
-> 
-> Erk, this isn't right either.  We're not supposed to include 
-> CPUID-enumerable features here, so X86_CMOV, X86_CMPXCHG64 and X86_TSC 
-> don't belong, and should instead be done via required-features.h.
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+---
+ drivers/input/misc/atlas_btns.c |   17 +----------------
+ 1 file changed, 1 insertion(+), 16 deletions(-)
 
-Ah, so I got misguided by there already being a CPUID-detectable
-feature here (X86_CMPXCHG64). And by the fact that e.g. having
-M686 (or better) selected is then in fact not expected to have a
-relationship to the value chosen here (worth a comment perhaps).
-
-Further, the "6" case is then completely pointless - X86_P6_NOP
-depends on X86_64. And with all features the kernel cares about
-that got added with Pentium and later being CPUID-enumerable,
-the "5" case would then be superfluous too.
-
-Jan
-
-Jan
+diff --git a/drivers/input/misc/atlas_btns.c b/drivers/input/misc/atlas_btns.c
+index 601f737..26f1313 100644
+--- a/drivers/input/misc/atlas_btns.c
++++ b/drivers/input/misc/atlas_btns.c
+@@ -151,22 +151,7 @@ static struct acpi_driver atlas_acpi_driver = {
+ 		.remove	= atlas_acpi_button_remove,
+ 	},
+ };
+-
+-static int __init atlas_acpi_init(void)
+-{
+-	if (acpi_disabled)
+-		return -ENODEV;
+-
+-	return acpi_bus_register_driver(&atlas_acpi_driver);
+-}
+-
+-static void __exit atlas_acpi_exit(void)
+-{
+-	acpi_bus_unregister_driver(&atlas_acpi_driver);
+-}
+-
+-module_init(atlas_acpi_init);
+-module_exit(atlas_acpi_exit);
++module_acpi_driver(atlas_acpi_driver);
+ 
+ MODULE_AUTHOR("Jaya Kumar");
+ MODULE_LICENSE("GPL");
+-- 
+1.7.10.4
 
