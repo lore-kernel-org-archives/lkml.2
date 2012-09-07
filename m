@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759309Ab2IGNdO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 09:33:14 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62014 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754994Ab2IGNdK (ORCPT
+	id S1759834Ab2IGNfD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 09:35:03 -0400
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:47725 "EHLO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756724Ab2IGNe6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 09:33:10 -0400
-Subject: Re: [PATCH 09/12] perf diff: Add weighted diff computation way to
- compare hist entries
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>
-In-Reply-To: <20120907092831.GB3411@krava.brq.redhat.com>
-References: <1346946426-13496-1-git-send-email-jolsa@redhat.com>
-	 <1346946426-13496-10-git-send-email-jolsa@redhat.com>
-	 <87wr06bchw.fsf@sejong.aot.lge.com>
-	 <20120907092831.GB3411@krava.brq.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 07 Sep 2012 22:33:04 +0900
-Message-ID: <1347024784.1505.12.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3
+	Fri, 7 Sep 2012 09:34:58 -0400
+Message-ID: <5049F819.1080101@ti.com>
+Date: Fri, 07 Sep 2012 16:35:21 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120903 Thunderbird/15.0
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Tero Kristo <t-kristo@ti.com>,
+        alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, Benoit Cousson <b-cousson@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 08/14] Input: twl4030-vibra: Support for DT booted
+ kernel
+References: <1346933541-21547-1-git-send-email-peter.ujfalusi@ti.com> <1346933541-21547-9-git-send-email-peter.ujfalusi@ti.com> <20120906161933.GA18562@core.coreip.homeip.net>
+In-Reply-To: <20120906161933.GA18562@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012-09-07 (ê¸ˆ), 11:28 +0200, Jiri Olsa:
-> On Fri, Sep 07, 2012 at 02:58:19PM +0900, Namhyung Kim wrote:
-> > I don't see why this do { } while(0) loop is necessary.
-> > How about this?
-> > 
-> > 	w1 = strtol(opt, &tmp, 10);
-> > 	if (*tmp != ',')
-> > 		goto error;
-> > 
-> > 	opt = tmp + 1;
-> > 	w2 = strtol(opt, &tmp, 10);
-> > 	if (*tmp != '\0')
-> > 		goto error;
-> > 
-> > 	if (!w1 || !w2)
-> > 		goto error;
+Hi Dmitry,
+
+On 09/06/2012 07:19 PM, Dmitry Torokhov wrote:
+> In patch 6 you added a stub for of_find_node_by_name(), so do you really
+> need this #ifdef?
+
+True. I'll resend the series since I left the #ifdef also in other patch.
+
+> Otherwise it looks good.
 > 
-> I do this not to use labels & goto ;)
+> Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-But isn't it usual?  Do you have a reason not to do it?
-
-I was a bit confused finding which path actually make it a loop... but
-there's none. :-/
-
-Thanks,
-Namhyung
-
-
+Thank you,
+Péter
