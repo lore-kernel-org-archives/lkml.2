@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760708Ab2IGOiM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 10:38:12 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9242 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753290Ab2IGOiH (ORCPT
+	id S1760733Ab2IGOiu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 10:38:50 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43863 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753290Ab2IGOis convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 10:38:07 -0400
-X-Authority-Analysis: v=2.0 cv=Vb91zSV9 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=RYtxJhnLXCEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=Mp8wgFcg3vgA:10 a=57SyGIRnAAAA:8 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=cLG42g3Jn4-vpSt1Xj0A:9 a=PUjeQqilurYA:10 a=TIV7c6GJmisA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=LI9Vle30uBYA:10 a=Z2_L4aV3hKJ0eztf:21 a=GbYhS7mhAP0D33hk:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1347028684.8178.5.camel@gandalf.local.home>
-Subject: Re: [PATCH 1/3] tools lib traceevent: Get rid of die() from
- pretty_print()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Date: Fri, 07 Sep 2012 10:38:04 -0400
-In-Reply-To: <1346986187-5170-1-git-send-email-namhyung@kernel.org>
-References: <1346986187-5170-1-git-send-email-namhyung@kernel.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 7 Sep 2012 10:38:48 -0400
+From: "AnilKumar, Chimata" <anilkumar@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "axel.lin@gmail.com" <axel.lin@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Girdwood, Liam" <lrg@ti.com>, "Nori, Sekhar" <nsekhar@ti.com>
+Subject: RE: [PATCH RFT] regulator: tps65217: Convert to
+ regulator_[is_enabled|get_voltage_sel]_regmap
+Thread-Topic: [PATCH RFT] regulator: tps65217: Convert to
+ regulator_[is_enabled|get_voltage_sel]_regmap
+Thread-Index: AQHNSRRxSJBCL2eqoUaZnppvZVbxc5b39csQgAf6AbD//7R+gIAAaf7ngH9m9fD//6SlgIAAXtAHgAABHtA=
+Date: Fri, 7 Sep 2012 14:38:42 +0000
+Message-ID: <331ABD5ECB02734CA317220B2BBEABC13EA29C22@DBDE01.ent.ti.com>
+References: <1339558031.26190.4.camel@phoenix>
+ <331ABD5ECB02734CA317220B2BBEABC13E9D83E7@DBDE01.ent.ti.com>
+ <CAF+7xWkh6CHvcur2iDs0Nwp_nO8i=6tYyTVauL6qtyrrMctjjA@mail.gmail.com>
+ <331ABD5ECB02734CA317220B2BBEABC13E9D84D9@DBDE01.ent.ti.com>
+ <20120618124513.GM3974@opensource.wolfsonmicro.com>
+ <331ABD5ECB02734CA317220B2BBEABC13EA29B8E@DBDE01.ent.ti.com>
+ <20120907142149.GE4438@opensource.wolfsonmicro.com>
+ <331ABD5ECB02734CA317220B2BBEABC13EA29BAA@DBDE01.ent.ti.com>
+ <20120907143001.GF4438@opensource.wolfsonmicro.com>
+In-Reply-To: <20120907143001.GF4438@opensource.wolfsonmicro.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.132.219]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-07 at 11:49 +0900, Namhyung Kim wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
+On Fri, Sep 07, 2012 at 20:00:59, Mark Brown wrote:
+> On Fri, Sep 07, 2012 at 02:26:53PM +0000, AnilKumar, Chimata wrote:
+> > On Fri, Sep 07, 2012 at 19:51:51, Mark Brown wrote:
 > 
-> There are three cases that call die() in the pretty_print.
+> > > You didn't send a patch.
 > 
->  1. insufficient number of argument: cannot proceed anymore.
->  2. too long format conversion specifier: truncate and proceed.
->  3. bad size specifier in format string: skip and proceed.
+> > Its there, above to my comment
+> > https://lkml.org/lkml/2012/6/18/308
 > 
-> For all cases, convert die to do_warning, mark the event as
-> EVENT_FL_FAILED and print error message at the last.
-> 
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> Right, but my reply was saying we should do something different so I was
+> expecting an update which implemented one of the suggestions.
 
-Thanks Namyung!
+I will send the formal patch.
 
-Arnaldo,
-
-Please add my "Acked-by: Steven Rostedt <rostedt@goodmis.org>" to all
-three of these patches.
-
--- Steve
-
-
+Thanks
+AnilKumar
