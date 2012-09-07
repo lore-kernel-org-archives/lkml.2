@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932928Ab2IGC5L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 22:57:11 -0400
+	id S932699Ab2IGC5J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 22:57:09 -0400
 Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57681 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932565Ab2IGC5K (ORCPT
+	with ESMTP id S932110Ab2IGC5H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 22:57:10 -0400
-X-AuditID: 9c930179-b7cc4ae00000134d-ff-5049628087ed
+	Thu, 6 Sep 2012 22:57:07 -0400
+X-AuditID: 9c930179-b7cc4ae00000134d-f8-50496280cf75
 From: Namhyung Kim <namhyung@kernel.org>
 To: Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -15,12 +15,10 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 3/3] tools lib traceevent: Get rid of die() from pevent_register_print_function
-Date: Fri,  7 Sep 2012 11:49:47 +0900
-Message-Id: <1346986187-5170-3-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 1/3] tools lib traceevent: Get rid of die() from pretty_print()
+Date: Fri,  7 Sep 2012 11:49:45 +0900
+Message-Id: <1346986187-5170-1-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1346986187-5170-1-git-send-email-namhyung@kernel.org>
-References: <1346986187-5170-1-git-send-email-namhyung@kernel.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,98 +26,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-If memory allocation for handler fails or argument type is not match,
-return gracefully instead of calling die().  Also add an new error
-code for the later case.
+There are three cases that call die() in the pretty_print.
+
+ 1. insufficient number of argument: cannot proceed anymore.
+ 2. too long format conversion specifier: truncate and proceed.
+ 3. bad size specifier in format string: skip and proceed.
+
+For all cases, convert die to do_warning, mark the event as
+EVENT_FL_FAILED and print error message at the last.
 
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/lib/traceevent/event-parse.c | 26 ++++++++++++++++++++------
- tools/lib/traceevent/event-parse.h |  3 ++-
- 2 files changed, 22 insertions(+), 7 deletions(-)
+ tools/lib/traceevent/event-parse.c | 43 ++++++++++++++++++++++++++++----------
+ 1 file changed, 32 insertions(+), 11 deletions(-)
 
 diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 17fd01d46e60..4595aeb3c432 100644
+index b5b4d806ffa2..6d5e75987a3d 100644
 --- a/tools/lib/traceevent/event-parse.c
 +++ b/tools/lib/traceevent/event-parse.c
-@@ -5080,6 +5080,7 @@ int pevent_register_print_function(struct pevent *pevent,
- 	struct pevent_func_params *param;
- 	enum pevent_func_arg_type type;
- 	va_list ap;
-+	int ret;
+@@ -3889,8 +3889,11 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
+ 				goto cont_process;
+ 			case '*':
+ 				/* The argument is the length. */
+-				if (!arg)
+-					die("no argument match");
++				if (!arg) {
++					do_warning("no argument match");
++					event->flags |= EVENT_FL_FAILED;
++					goto out_failed;
++				}
+ 				len_arg = eval_num_arg(data, size, event, arg);
+ 				len_as_arg = 1;
+ 				arg = arg->next;
+@@ -3923,15 +3926,21 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
+ 			case 'x':
+ 			case 'X':
+ 			case 'u':
+-				if (!arg)
+-					die("no argument match");
++				if (!arg) {
++					do_warning("no argument match");
++					event->flags |= EVENT_FL_FAILED;
++					goto out_failed;
++				}
  
- 	func_handle = find_func_handler(pevent, name);
- 	if (func_handle) {
-@@ -5092,14 +5093,21 @@ int pevent_register_print_function(struct pevent *pevent,
- 		remove_func_handler(pevent, name);
+ 				len = ((unsigned long)ptr + 1) -
+ 					(unsigned long)saveptr;
+ 
+ 				/* should never happen */
+-				if (len > 31)
+-					die("bad format!");
++				if (len > 31) {
++					do_warning("bad format!");
++					event->flags |= EVENT_FL_FAILED;
++					len = 31;
++				}
+ 
+ 				memcpy(format, saveptr, len);
+ 				format[len] = 0;
+@@ -3995,19 +4004,26 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
+ 						trace_seq_printf(s, format, (long long)val);
+ 					break;
+ 				default:
+-					die("bad count (%d)", ls);
++					do_warning("bad count (%d)", ls);
++					event->flags |= EVENT_FL_FAILED;
+ 				}
+ 				break;
+ 			case 's':
+-				if (!arg)
+-					die("no matching argument");
++				if (!arg) {
++					do_warning("no matching argument");
++					event->flags |= EVENT_FL_FAILED;
++					goto out_failed;
++				}
+ 
+ 				len = ((unsigned long)ptr + 1) -
+ 					(unsigned long)saveptr;
+ 
+ 				/* should never happen */
+-				if (len > 31)
+-					die("bad format!");
++				if (len > 31) {
++					do_warning("bad format!");
++					event->flags |= EVENT_FL_FAILED;
++					len = 31;
++				}
+ 
+ 				memcpy(format, saveptr, len);
+ 				format[len] = 0;
+@@ -4025,6 +4041,11 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
+ 			trace_seq_putc(s, *ptr);
  	}
  
--	func_handle = malloc_or_die(sizeof(*func_handle));
-+	func_handle = malloc(sizeof(*func_handle));
-+	if (!func_handle) {
-+		do_warning("Failed to allocate function handler");
-+		return PEVENT_ERRNO__MEM_ALLOC_FAILED;
++	if (event->flags & EVENT_FL_FAILED) {
++out_failed:
++		trace_seq_printf(s, "[FAILED TO PARSE]");
 +	}
- 	memset(func_handle, 0, sizeof(*func_handle));
- 
- 	func_handle->ret_type = ret_type;
- 	func_handle->name = strdup(name);
- 	func_handle->func = func;
--	if (!func_handle->name)
--		die("Failed to allocate function name");
-+	if (!func_handle->name) {
-+		do_warning("Failed to allocate function name");
-+		free(func_handle);
-+		return PEVENT_ERRNO__MEM_ALLOC_FAILED;
-+	}
- 
- 	next_param = &(func_handle->params);
- 	va_start(ap, name);
-@@ -5109,11 +5117,17 @@ int pevent_register_print_function(struct pevent *pevent,
- 			break;
- 
- 		if (type < 0 || type >= PEVENT_FUNC_ARG_MAX_TYPES) {
--			warning("Invalid argument type %d", type);
-+			do_warning("Invalid argument type %d", type);
-+			ret = PEVENT_ERRNO__INVALID_ARG_TYPE;
- 			goto out_free;
- 		}
- 
--		param = malloc_or_die(sizeof(*param));
-+		param = malloc(sizeof(*param));
-+		if (!param) {
-+			do_warning("Failed to allocate function param");
-+			ret = PEVENT_ERRNO__MEM_ALLOC_FAILED;
-+			goto out_free;
-+		}
- 		param->type = type;
- 		param->next = NULL;
- 
-@@ -5131,7 +5145,7 @@ int pevent_register_print_function(struct pevent *pevent,
-  out_free:
- 	va_end(ap);
- 	free_func_handle(func_handle);
--	return -1;
-+	return ret;
- }
- 
- /**
-diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index 863a0bbda7f1..3318963f1c98 100644
---- a/tools/lib/traceevent/event-parse.h
-+++ b/tools/lib/traceevent/event-parse.h
-@@ -351,7 +351,8 @@ enum pevent_flag {
- 	_PE(READ_ID_FAILED,	"failed to read event id"),		      \
- 	_PE(READ_FORMAT_FAILED,	"failed to read event format"),		      \
- 	_PE(READ_PRINT_FAILED,	"failed to read event print fmt"), 	      \
--	_PE(OLD_FTRACE_ARG_FAILED,"failed to allocate field name for ftrace")
-+	_PE(OLD_FTRACE_ARG_FAILED,"failed to allocate field name for ftrace"),\
-+	_PE(INVALID_ARG_TYPE,	"invalid argument type")
- 
- #undef _PE
- #define _PE(__code, __str) PEVENT_ERRNO__ ## __code
++
+ 	if (args) {
+ 		free_args(args);
+ 		free(bprint_fmt);
 -- 
 1.7.11.4
 
