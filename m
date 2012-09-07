@@ -1,70 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760858Ab2IGOXI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 10:23:08 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:42964 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760730Ab2IGOS7 (ORCPT
+	id S1760837Ab2IGOXF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 10:23:05 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:39146 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760689Ab2IGOW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 10:18:59 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: viro@ZenIV.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
-        hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v6 15/20] vfs: have chdir retry lookup and call once on ESTALE error
-Date: Fri,  7 Sep 2012 10:18:22 -0400
-Message-Id: <1347027507-20956-16-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1347027507-20956-1-git-send-email-jlayton@redhat.com>
-References: <1347027507-20956-1-git-send-email-jlayton@redhat.com>
+	Fri, 7 Sep 2012 10:22:58 -0400
+Date: Fri, 7 Sep 2012 09:22:51 -0500
+From: "Justin M. Forbes" <jmforbes@linuxtx.org>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: Stefan Bader <stefan.bader@canonical.com>, Matt Wilson <msw@amazon.com>,
+        xen-devel@lists.xen.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH/RFC] Fix xsave bug on older Xen hypervisors
+Message-ID: <20120907142251.GA20096@linuxtx.org>
+References: <1347018043-21252-1-git-send-email-stefan.bader@canonical.com>
+ <504A05B00200007800099C7B@nat28.tlf.novell.com>
+ <5049F4E9.9050306@canonical.com>
+ <504A1A950200007800099D4C@nat28.tlf.novell.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <504A1A950200007800099D4C@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- fs/open.c | 25 +++++++++++++------------
- 1 file changed, 13 insertions(+), 12 deletions(-)
+On Fri, Sep 07, 2012 at 03:02:29PM +0100, Jan Beulich wrote:
+> >>> On 07.09.12 at 15:21, Stefan Bader <stefan.bader@canonical.com> wrote:
+> > On 07.09.2012 14:33, Jan Beulich wrote:
+> >>>>> On 07.09.12 at 13:40, Stefan Bader <stefan.bader@canonical.com> wrote:
+> >>> When writing unsupported flags into CR4 (for some time the
+> >>> xen_write_cr4 function would refuse to do anything at all)
+> >>> older Xen hypervisors (and patch can potentially be improved
+> >>> by finding out what older means in version numbers) would
+> >>> crash the guest.
+> >>>
+> >>> Since Amazon EC2 would at least in the past be affected by that,
+> >>> Fedora and Ubuntu were carrying a hack that would filter out
+> >>> X86_CR4_OSXSAVE before writing to CR4. This would affect any
+> >>> PV guest, even those running on a newer HV.
+> >>>
+> >>> And this recently caused trouble because some user-space was
+> >>> only partially checking (or maybe only looking at the cpuid
+> >>> bits) and then trying to use xsave even though the OS support
+> >>> was not set.
+> >>>
+> >>> So I came up with a patch that would
+> >>> - limit the work-around to certain Xen versions
+> >>> - prevent the write to CR4 by unsetting xsave and osxsave in
+> >>>   the cpuid bits
+> >>>
+> >>> Doing things that way may actually allow this to be acceptable
+> >>> upstream, so I am sending it around, now.
+> >>> It probably could be improved when knowing the exact version
+> >>> to test for but otherwise should allow to work around the guest
+> >>> crash while not preventing xsave on Xen 4.x and newer hosts.
+> >> 
+> >> Before considering a hack like this, I'd really like to see evidence
+> >> of the described behavior with an upstream kernel (i.e. not one
+> >> with that known broken hack patched in, which has never been
+> >> upstream afaict).
+> > 
+> > This is the reason I wrote that Fedora and Ubuntu were carrying it. It never 
+> > has
+> > been send upstream (the other version) because it would filter the CR4 write 
+> > for
+> > any PV guest regardless of host version.
+> 
+> But iirc that bad patch is a Linux side one (i.e. you're trying to fix
+> something upstream that isn't upstream)?
+> 
+Right, so the patch that this improves upon, and that Fedora and Ubuntu are
+currently carrying is not upstream because:
 
-diff --git a/fs/open.c b/fs/open.c
-index a5a5c9a..81ba325 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -389,20 +389,21 @@ SYSCALL_DEFINE1(chdir, const char __user *, filename)
- {
- 	struct path path;
- 	int error;
-+	int lookup_flags = LOOKUP_FOLLOW | LOOKUP_DIRECTORY;
-+	unsigned int try = 0;
- 
--	error = user_path_dir(filename, &path);
--	if (error)
--		goto out;
--
--	error = inode_permission(path.dentry->d_inode, MAY_EXEC | MAY_CHDIR);
--	if (error)
--		goto dput_and_out;
--
--	set_fs_pwd(current->fs, &path);
-+	do {
-+		error = user_path_at(AT_FDCWD, filename, lookup_flags, &path);
-+		if (error)
-+			break;
- 
--dput_and_out:
--	path_put(&path);
--out:
-+		error = inode_permission(path.dentry->d_inode,
-+					 MAY_EXEC | MAY_CHDIR);
-+		if (!error)
-+			set_fs_pwd(current->fs, &path);
-+		path_put(&path);
-+		lookup_flags |= LOOKUP_REVAL;
-+	} while (retry_estale(error, try++));
- 	return error;
- }
- 
--- 
-1.7.11.4
+a) It's crap, it cripples upstream xen users, but doesn't impact RHEL xen
+users because xsave was never supported there.
 
+b) The hypervisor was patched to make it unnecessary quite some time ago,
+and we hoped EC2 would eventually pick up that correct patch and we could
+drop the crap kernel patch.
+
+Unfortunately this has not happened. We are at a point where EC2 really is
+a quirk that has to be worked around. Distros do not want to maintain
+a separate EC2 build of the kernel, so the easiest way is to cripple
+current upstream xen users.  This quirk is unfortunately the best possible
+solution.  Having it upstream also makes it possible for any user to build
+an upstream kernel that will run on EC2 without having to dig a random
+patch out of a vendor kernel.
+
+Justin
