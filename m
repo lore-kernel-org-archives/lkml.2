@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754408Ab2IGPWW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 11:22:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50019 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751635Ab2IGPWU (ORCPT
+	id S1756714Ab2IGPZd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 11:25:33 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:62893 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753747Ab2IGPZR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 11:22:20 -0400
-From: Seth Forshee <seth.forshee@canonical.com>
-To: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Cc: David Airlie <airlied@linux.ie>, Matthew Garrett <mjg@redhat.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Andreas Heider <andreas@meetr.de>,
-        Seth Forshee <seth.forshee@canonical.com>
-Subject: [PATCH 0/7] Fixes for hybrid graphics Apple machines
-Date: Fri,  7 Sep 2012 10:22:03 -0500
-Message-Id: <1347031330-19657-1-git-send-email-seth.forshee@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 7 Sep 2012 11:25:17 -0400
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: kernel-janitors@vger.kernel.org, Julia.Lawall@lip6.fr,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 8/10] drivers/media/dvb-core/dvb_demux.c: removes unnecessary semicolon
+Date: Fri,  7 Sep 2012 17:24:44 +0200
+Message-Id: <1347031488-26598-6-git-send-email-peter.senna@gmail.com>
+X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many hybrid graphics Apple laptops fail to set up LVDS on the secondary
-GPU due to missing or incorrect mode information for the panel at init
-time. The only way to get the LVDS mode on these machines is via the
-DDC, but this is muxed to the active GPU at boot. However, the graphics
-mux on these machines supports muxing the i2c idependently of the
-display, making it possible for the secondary graphics driver to read
-the EDID without a full display switch.
+From: Peter Senna Tschudin <peter.senna@gmail.com>
 
-In order to support this, these patches modify vga_switcheroo to allow
-muxing of the DDC idependently of the display. apple-gmux is updated to
-support this new functionality, and drm_get_edid() is modified to switch
-the DDC mux as needed.
+removes unnecessary semicolon
 
-For this to work we also need to ensure that sufficient switcheroo
-suport is available before initializing the secondary GPU. This is done
-by adding any non-active GPUs that try to initialize before switcheroo
-is ready to a list and initializing these devices once switcheroo
-becomes ready. This behavior is restricted to Apple laptops to prevent
-causing problems on other machines.
+Found by Coccinelle: http://coccinelle.lip6.fr/
 
-Thanks,
-Seth
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
-Seth Forshee (7):
-  vga_switcheroo: Add support for switching only the DDC
-  vga_switcheroo: Add helper function to get the active client
-  vga_switcheroo: Add notifier call chain for switcheroo events
-  apple-gmux: Add switch_ddc support
-  drm/edid: Switch DDC when reading the EDID
-  drm/pci: Add drm_put_pci_dev()
-  drm/pci: Defer initialization of secondary graphics devices until
-    switcheroo is ready
+---
+ drivers/media/dvb-core/dvb_demux.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
- drivers/gpu/drm/ast/ast_drv.c         |    2 +-
- drivers/gpu/drm/cirrus/cirrus_drv.c   |    2 +-
- drivers/gpu/drm/drm_drv.c             |    3 +
- drivers/gpu/drm/drm_edid.c            |   17 ++++
- drivers/gpu/drm/drm_pci.c             |  172 +++++++++++++++++++++++++++++----
- drivers/gpu/drm/gma500/psb_drv.c      |    2 +-
- drivers/gpu/drm/i915/i915_drv.c       |    2 +-
- drivers/gpu/drm/mgag200/mgag200_drv.c |    2 +-
- drivers/gpu/drm/nouveau/nouveau_drv.c |    2 +-
- drivers/gpu/drm/radeon/radeon_drv.c   |    2 +-
- drivers/gpu/drm/vmwgfx/vmwgfx_drv.c   |    2 +-
- drivers/gpu/vga/vga_switcheroo.c      |   87 ++++++++++++++++-
- drivers/platform/x86/apple-gmux.c     |   12 ++-
- include/drm/drmP.h                    |    3 +
- include/linux/vga_switcheroo.h        |   20 ++++
- 15 files changed, 302 insertions(+), 28 deletions(-)
+diff -u -p a/drivers/media/dvb-core/dvb_demux.c b/drivers/media/dvb-core/dvb_demux.c
+--- a/drivers/media/dvb-core/dvb_demux.c
++++ b/drivers/media/dvb-core/dvb_demux.c
+@@ -424,12 +424,12 @@ static void dvb_dmx_swfilter_packet(stru
+ 				printk(KERN_INFO "TS speed %llu Kbits/sec \n",
+ 						div64_u64(speed_bytes,
+ 							speed_timedelta));
+-			};
++			}
+ 
+ 			demux->speed_last_time = cur_time;
+ 			demux->speed_pkts_cnt = 0;
+-		};
+-	};
++		}
++	}
+ 
+ 	if (buf[1] & 0x80) {
+ 		dprintk_tscheck("TEI detected. "
+@@ -451,9 +451,9 @@ static void dvb_dmx_swfilter_packet(stru
+ 						buf[3] & 0xf);
+ 
+ 			demux->cnt_storage[pid] = ((buf[3] & 0xf) + 1)&0xf;
+-		};
++		}
+ 		/* end check */
+-	};
++	}
+ 
+ 	list_for_each_entry(feed, &demux->feed_list, list_head) {
+ 		if ((feed->pid != pid) && (feed->pid != 0x2000))
 
