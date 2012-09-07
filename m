@@ -1,96 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760689Ab2IGOEZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 10:04:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37722 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753323Ab2IGOEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 10:04:23 -0400
-Message-ID: <5049FEDD.40303@redhat.com>
-Date: Fri, 07 Sep 2012 16:04:13 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>, fes@google.com, aarcange@redhat.com,
-        riel@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mikew@google.com, yinghan@google.com,
-        virtualization@lists.linux-foundation.org, yvugenfi@redhat.com,
-        vrozenfe@redhat.com
-Subject: Re: [PATCH] virtio-balloon spec: provide a version of the "silent
- deflate" feature that works
-References: <20120906105301.GC32325@redhat.com> <5048935A.8090308@redhat.com> <87wr06hg0l.fsf@rustcorp.com.au> <20120907054202.GA3452@redhat.com> <87vcfqfia1.fsf@rustcorp.com.au> <5049BE0E.6040202@redhat.com> <20120907105335.GB17211@redhat.com> <5049D899.60705@redhat.com> <20120907121712.GA17397@redhat.com> <5049E717.8080307@redhat.com> <20120907124432.GB17397@redhat.com>
-In-Reply-To: <20120907124432.GB17397@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1760776Ab2IGOTF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 10:19:05 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:43357 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760649Ab2IGOSm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 10:18:42 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: viro@ZenIV.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
+        hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
+Subject: [PATCH v6 04/20] vfs: add new "reval" argument to kern_path_create and user_path_create
+Date: Fri,  7 Sep 2012 10:18:11 -0400
+Message-Id: <1347027507-20956-5-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.7.11.4
+In-Reply-To: <1347027507-20956-1-git-send-email-jlayton@redhat.com>
+References: <1347027507-20956-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 07/09/2012 14:44, Michael S. Tsirkin ha scritto:
->> Well, according to your reading of the spec.
->>
->> In the spec I'm reading "Host must be told before pages from the balloon
->> are used".  Doesn't say anything about the guest.
-> 
-> No? How is host told then? By divine force?
+...for now, all of the callers pass in "false". Eventually, we'll set
+that to "true" when we retry the lookup after getting back an ESTALE on
+a call.
 
-For a simple madvise-based implementation such as the one in QEMU, the
-host doesn't need to be told about anything (except periodic updating of
-the "actual" field, or the statsq).
+While we're at it, change the is_dir arg to a bool since that's how it's
+used currently.
 
-The guest doesn't need at all to use the deflateq in fact.
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ arch/powerpc/platforms/cell/spufs/syscalls.c |  2 +-
+ drivers/base/devtmpfs.c                      |  7 ++++---
+ fs/namei.c                                   | 23 +++++++++++++++--------
+ fs/ocfs2/refcounttree.c                      |  3 ++-
+ include/linux/namei.h                        |  4 ++--
+ net/unix/af_unix.c                           |  2 +-
+ 6 files changed, 25 insertions(+), 16 deletions(-)
 
->> Now, indeed a very free interpretation is "Guest will tell host before
->> pages from the balloon are used".  It turns out that it's exactly what
->> guests have been doing, hence that's exactly what I'm proposing now:
->> rename the feature to VIRTIO_BALLOON_F_WILL_TELL_HOST.
-> 
-> Rename is fine.
+diff --git a/arch/powerpc/platforms/cell/spufs/syscalls.c b/arch/powerpc/platforms/cell/spufs/syscalls.c
+index 5b7d8ff..cb4acc7 100644
+--- a/arch/powerpc/platforms/cell/spufs/syscalls.c
++++ b/arch/powerpc/platforms/cell/spufs/syscalls.c
+@@ -66,7 +66,7 @@ static long do_spu_create(const char __user *pathname, unsigned int flags,
+ 	struct dentry *dentry;
+ 	int ret;
+ 
+-	dentry = user_path_create(AT_FDCWD, pathname, &path, 1);
++	dentry = user_path_create(AT_FDCWD, pathname, &path, true, false);
+ 	ret = PTR_ERR(dentry);
+ 	if (!IS_ERR(dentry)) {
+ 		ret = spufs_create(&path, dentry, flags, mode, neighbor);
+diff --git a/drivers/base/devtmpfs.c b/drivers/base/devtmpfs.c
+index deb4a45..2124437 100644
+--- a/drivers/base/devtmpfs.c
++++ b/drivers/base/devtmpfs.c
+@@ -148,7 +148,7 @@ static int dev_mkdir(const char *name, umode_t mode)
+ 	struct path path;
+ 	int err;
+ 
+-	dentry = kern_path_create(AT_FDCWD, name, &path, 1);
++	dentry = kern_path_create(AT_FDCWD, name, &path, true, false);
+ 	if (IS_ERR(dentry))
+ 		return PTR_ERR(dentry);
+ 
+@@ -193,10 +193,11 @@ static int handle_create(const char *nodename, umode_t mode, struct device *dev)
+ 	struct path path;
+ 	int err;
+ 
+-	dentry = kern_path_create(AT_FDCWD, nodename, &path, 0);
++	dentry = kern_path_create(AT_FDCWD, nodename, &path, false, false);
+ 	if (dentry == ERR_PTR(-ENOENT)) {
+ 		create_path(nodename);
+-		dentry = kern_path_create(AT_FDCWD, nodename, &path, 0);
++		dentry = kern_path_create(AT_FDCWD, nodename, &path,
++								false, false);
+ 	}
+ 	if (IS_ERR(dentry))
+ 		return PTR_ERR(dentry);
+diff --git a/fs/namei.c b/fs/namei.c
+index 6f9040c..d71be0b 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -3038,12 +3038,18 @@ struct file *do_file_open_root(struct dentry *dentry, struct vfsmount *mnt,
+ 	return file;
+ }
+ 
+-struct dentry *kern_path_create(int dfd, const char *pathname, struct path *path, int is_dir)
++struct dentry *kern_path_create(int dfd, const char *pathname, struct path *path, bool is_dir, bool reval)
+ {
+ 	struct dentry *dentry = ERR_PTR(-EEXIST);
+ 	struct nameidata nd;
+ 	int err2;
+-	int error = do_path_lookup(dfd, pathname, LOOKUP_PARENT, &nd);
++	int error;
++	unsigned int lookup_flags = LOOKUP_PARENT;
++
++	if (reval)
++		lookup_flags |= LOOKUP_REVAL;
++
++	error = do_path_lookup(dfd, pathname, lookup_flags, &nd);
+ 	if (error)
+ 		return ERR_PTR(error);
+ 
+@@ -3107,13 +3113,14 @@ void done_path_create(struct path *path, struct dentry *dentry)
+ }
+ EXPORT_SYMBOL(done_path_create);
+ 
+-struct dentry *user_path_create(int dfd, const char __user *pathname, struct path *path, int is_dir)
++struct dentry *user_path_create(int dfd, const char __user *pathname,
++				struct path *path, bool is_dir, bool reval)
+ {
+ 	struct getname_info *tmp = getname(pathname);
+ 	struct dentry *res;
+ 	if (IS_ERR(tmp))
+ 		return ERR_CAST(tmp);
+-	res = kern_path_create(dfd, tmp->name, path, is_dir);
++	res = kern_path_create(dfd, tmp->name, path, is_dir, reval);
+ 	putname(tmp);
+ 	return res;
+ }
+@@ -3174,7 +3181,7 @@ SYSCALL_DEFINE4(mknodat, int, dfd, const char __user *, filename, umode_t, mode,
+ 	if (error)
+ 		return error;
+ 
+-	dentry = user_path_create(dfd, filename, &path, 0);
++	dentry = user_path_create(dfd, filename, &path, false, false);
+ 	if (IS_ERR(dentry))
+ 		return PTR_ERR(dentry);
+ 
+@@ -3236,7 +3243,7 @@ SYSCALL_DEFINE3(mkdirat, int, dfd, const char __user *, pathname, umode_t, mode)
+ 	struct path path;
+ 	int error;
+ 
+-	dentry = user_path_create(dfd, pathname, &path, 1);
++	dentry = user_path_create(dfd, pathname, &path, true, false);
+ 	if (IS_ERR(dentry))
+ 		return PTR_ERR(dentry);
+ 
+@@ -3512,7 +3519,7 @@ SYSCALL_DEFINE3(symlinkat, const char __user *, oldname,
+ 	if (IS_ERR(from))
+ 		return PTR_ERR(from);
+ 
+-	dentry = user_path_create(newdfd, newname, &path, 0);
++	dentry = user_path_create(newdfd, newname, &path, false, false);
+ 	error = PTR_ERR(dentry);
+ 	if (IS_ERR(dentry))
+ 		goto out_putname;
+@@ -3612,7 +3619,7 @@ SYSCALL_DEFINE5(linkat, int, olddfd, const char __user *, oldname,
+ 	if (error)
+ 		return error;
+ 
+-	new_dentry = user_path_create(newdfd, newname, &new_path, 0);
++	new_dentry = user_path_create(newdfd, newname, &new_path, false, false);
+ 	error = PTR_ERR(new_dentry);
+ 	if (IS_ERR(new_dentry))
+ 		goto out;
+diff --git a/fs/ocfs2/refcounttree.c b/fs/ocfs2/refcounttree.c
+index 30a0550..645e225 100644
+--- a/fs/ocfs2/refcounttree.c
++++ b/fs/ocfs2/refcounttree.c
+@@ -4453,7 +4453,8 @@ int ocfs2_reflink_ioctl(struct inode *inode,
+ 		return error;
+ 	}
+ 
+-	new_dentry = user_path_create(AT_FDCWD, newname, &new_path, 0);
++	new_dentry = user_path_create(AT_FDCWD, newname, &new_path,
++					false, false);
+ 	error = PTR_ERR(new_dentry);
+ 	if (IS_ERR(new_dentry)) {
+ 		mlog_errno(error);
+diff --git a/include/linux/namei.h b/include/linux/namei.h
+index 4bf19d8..2202740 100644
+--- a/include/linux/namei.h
++++ b/include/linux/namei.h
+@@ -65,8 +65,8 @@ extern int user_path_at_empty(int, const char __user *, unsigned, struct path *,
+ 
+ extern int kern_path(const char *, unsigned, struct path *);
+ 
+-extern struct dentry *kern_path_create(int, const char *, struct path *, int);
+-extern struct dentry *user_path_create(int, const char __user *, struct path *, int);
++extern struct dentry *kern_path_create(int, const char *, struct path *, bool, bool);
++extern struct dentry *user_path_create(int, const char __user *, struct path *, bool, bool);
+ extern void done_path_create(struct path *, struct dentry *);
+ extern struct dentry *kern_path_locked(const char *, struct path *);
+ extern int vfs_path_lookup(struct dentry *, struct vfsmount *,
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index c5ee4ff..f15b0ff 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -832,7 +832,7 @@ static int unix_mknod(const char *sun_path, umode_t mode, struct path *res)
+ 	 * Get the parent directory, calculate the hash for last
+ 	 * component.
+ 	 */
+-	dentry = kern_path_create(AT_FDCWD, sun_path, &path, 0);
++	dentry = kern_path_create(AT_FDCWD, sun_path, &path, false, false);
+ 	err = PTR_ERR(dentry);
+ 	if (IS_ERR(dentry))
+ 		return err;
+-- 
+1.7.11.4
 
-Cool.
-
->> Yes, that part we agree on I think.  We disagree that (after the rename)
->> QEMU should start always proposing VIRTIO_BALLOON_F_WILL_TELL_HOST.
-> 
-> Not always. It must be off if compatibility with old qemu is disabled.
-
-Yes, of course.
-
->> _Plus_ adding the new feature bit, which is needed to actually tell the
-> 
-> This part I do not get.  What is silent deflate, why is it useful
-> and what it has to do with what we are discussing here?
-
-Silent deflate is deflating just by using the page, without using the
-deflateq at all.  So it can be done even from GFP_ATOMIC context.
-
-But knowing that the guest will _not_ deflate silently also benefits the
-host. This is the cause of unpinning ballooned pages and pinning them
-again upon deflation. This allows cooperative memory overcommit even if
-the guests' memory is pinned, similar to what Xen did before it
-supported overcommit.  This is the second feature bit.
-
-There are three cases:
-
-* guest will never do silent deflation: current Linux driver.  Host may
-do munlock/mlock dance.  Negotiates VIRTIO_BALLOON_F_WILL_TELL_HOST
-only, features = VIRTIO_BALLOON_F_WILL_TELL_HOST.
-
-* guest will always do silent deflation: current Windows driver.
-Negotiates nothing, or if it cares it can negotiate
-VIRTIO_BALLOON_F_SILENT_DEFLATE.  Host mustn't do munlock/mlock dance.
-
-* guest may do silent deflation if available: combo of Linux driver +
-Frank's driver.  Negotiates both features, looks at
-VIRTIO_BALLOON_F_SILENT_DEFLATE host feature to decide how to behave:
-
-  ** If PCI passthrough, the host will not negotiate
-     VIRTIO_BALLOON_F_SILENT_DEFLATE.  The driver will behave as the
-     current Linux driver, the host can do the munlock/mlock dance.
-
-  ** If no PCI passthrough, the host will negotiate
-     VIRTIO_BALLOON_F_SILENT_DEFLATE, and the driver can balloon more
-     aggressively and not use the deflateq.
-
-Paolo
