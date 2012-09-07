@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932729Ab2IGGIn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 02:08:43 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55118 "EHLO
+	id S1760174Ab2IGGJd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 02:09:33 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55135 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932532Ab2IGGIk (ORCPT
+	with ESMTP id S1754368Ab2IGGJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 02:08:40 -0400
-Date: Thu, 6 Sep 2012 23:08:17 -0700
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-be4a2dedf6816871349fbddd018f266e93e3c22d@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, robert.richter@amd.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, robert.richter@amd.com,
-        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, tglx@linutronix.de,
-        namhyung@kernel.org
-In-Reply-To: <1346821373-31621-4-git-send-email-namhyung@kernel.org>
-References: <1346821373-31621-4-git-send-email-namhyung@kernel.org>
+	Fri, 7 Sep 2012 02:09:32 -0400
+Date: Thu, 6 Sep 2012 23:09:13 -0700
+From: tip-bot for Irina Tirdea <irina.tirdea@gmail.com>
+Message-ID: <tip-60ff92f515a4efb36931f1b5b042332016e0f123@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, a.p.zijlstra@chello.nl, namhyung@kernel.org,
+        fweisbec@gmail.com, rostedt@goodmis.org, irina.tirdea@intel.com,
+        irina.tirdea@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, a.p.zijlstra@chello.nl, namhyung@kernel.org,
+        fweisbec@gmail.com, rostedt@goodmis.org, irina.tirdea@intel.com,
+        irina.tirdea@gmail.com, tglx@linutronix.de
+In-Reply-To: <CANg8OW+Y3ZMG-GdhYu2_yKOYH_XEMgw73PdCX_23UTnfYhmttA@mail.gmail.com>
+References: <CANg8OW+Y3ZMG-GdhYu2_yKOYH_XEMgw73PdCX_23UTnfYhmttA@mail.gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf header: Swap pmu mapping numbers if needed
-Git-Commit-ID: be4a2dedf6816871349fbddd018f266e93e3c22d
+Subject: [tip:perf/core] perf tools: Replace mempcpy with memcpy
+Git-Commit-ID: 60ff92f515a4efb36931f1b5b042332016e0f123
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,55 +31,49 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 06 Sep 2012 23:08:22 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 06 Sep 2012 23:09:18 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  be4a2dedf6816871349fbddd018f266e93e3c22d
-Gitweb:     http://git.kernel.org/tip/be4a2dedf6816871349fbddd018f266e93e3c22d
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Wed, 5 Sep 2012 14:02:49 +0900
+Commit-ID:  60ff92f515a4efb36931f1b5b042332016e0f123
+Gitweb:     http://git.kernel.org/tip/60ff92f515a4efb36931f1b5b042332016e0f123
+Author:     Irina Tirdea <irina.tirdea@gmail.com>
+AuthorDate: Wed, 29 Aug 2012 01:22:16 +0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 5 Sep 2012 17:47:11 -0300
+CommitDate: Wed, 5 Sep 2012 19:35:21 -0300
 
-perf header: Swap pmu mapping numbers if needed
+perf tools: Replace mempcpy with memcpy
 
-Like others, the numbers can be saved in a different endian format than
-a host machine.  Swap them if needed.
+mempcpy is not supported by bionic in Android and will lead to
+compilation errors.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Replacing mempcpy with memcpy so it will work in Android.
+
+Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Robert Richter <robert.richter@amd.com>
-Link: http://lkml.kernel.org/r/1346821373-31621-4-git-send-email-namhyung@kernel.org
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/CANg8OW+Y3ZMG-GdhYu2_yKOYH_XEMgw73PdCX_23UTnfYhmttA@mail.gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/header.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ tools/perf/util/target.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 05c9310..43425b7 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -1440,6 +1440,9 @@ static void print_pmu_mappings(struct perf_header *ph, int fd, FILE *fp)
- 	if (ret != sizeof(pmu_num))
- 		goto error;
+diff --git a/tools/perf/util/target.c b/tools/perf/util/target.c
+index 051eaa6..065528b 100644
+--- a/tools/perf/util/target.c
++++ b/tools/perf/util/target.c
+@@ -117,8 +117,8 @@ int perf_target__strerror(struct perf_target *target, int errnum,
  
-+	if (ph->needs_swap)
-+		pmu_num = bswap_32(pmu_num);
-+
- 	if (!pmu_num) {
- 		fprintf(fp, "# pmu mappings: not available\n");
- 		return;
-@@ -1448,6 +1451,9 @@ static void print_pmu_mappings(struct perf_header *ph, int fd, FILE *fp)
- 	while (pmu_num) {
- 		if (read(fd, &type, sizeof(type)) != sizeof(type))
- 			break;
-+		if (ph->needs_swap)
-+			type = bswap_32(type);
-+
- 		name = do_read_string(fd, ph);
- 		if (!name)
- 			break;
+ 		if (err != buf) {
+ 			size_t len = strlen(err);
+-			char *c = mempcpy(buf, err, min(buflen - 1, len));
+-			*c = '\0';
++			memcpy(buf, err, min(buflen - 1, len));
++			*(buf + min(buflen - 1, len)) = '\0';
+ 		}
+ 
+ 		return 0;
