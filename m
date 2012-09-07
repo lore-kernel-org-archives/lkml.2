@@ -1,98 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758710Ab2IGWoO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 18:44:14 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44655 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751571Ab2IGWoK (ORCPT
+	id S1758416Ab2IGWpF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 18:45:05 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61814 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751137Ab2IGWpD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 18:44:10 -0400
-Message-ID: <504A78B0.8010105@kernel.dk>
-Date: Fri, 07 Sep 2012 16:44:00 -0600
-From: Jens Axboe <axboe@kernel.dk>
+	Fri, 7 Sep 2012 18:45:03 -0400
+Message-ID: <504A78E9.4030005@lwfinger.net>
+Date: Fri, 07 Sep 2012 17:44:57 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120825 Thunderbird/15.0
 MIME-Version: 1.0
-To: Kent Overstreet <koverstreet@google.com>
-CC: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com
-Subject: Re: [PATCH v10 4/8] block: Add bio_reset()
-References: <1346970902-10931-1-git-send-email-koverstreet@google.com> <1346970902-10931-5-git-send-email-koverstreet@google.com> <50494F1A.4080207@kernel.dk> <20120907205823.GD16360@google.com> <504A6D57.1030607@kernel.dk> <504A6FF5.3090603@kernel.dk> <20120907222522.GE16360@google.com>
-In-Reply-To: <20120907222522.GE16360@google.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: linux-pci@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        =?UTF-8?B?5p2O5pyd5piO?= <chaoming_li@realsil.com.cn>
+Subject: Question about failure in PCI power-state change
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-09-07 16:25, Kent Overstreet wrote:
-> On Fri, Sep 07, 2012 at 04:06:45PM -0600, Jens Axboe wrote:
->> On 2012-09-07 15:55, Jens Axboe wrote:
->>> On 2012-09-07 14:58, Kent Overstreet wrote:
->>>> On Thu, Sep 06, 2012 at 07:34:18PM -0600, Jens Axboe wrote:
->>>>> On 2012-09-06 16:34, Kent Overstreet wrote:
->>>>>> Reusing bios is something that's been highly frowned upon in the past,
->>>>>> but driver code keeps doing it anyways. If it's going to happen anyways,
->>>>>> we should provide a generic method.
->>>>>>
->>>>>> This'll help with getting rid of bi_destructor - drivers/block/pktcdvd.c
->>>>>> was open coding it, by doing a bio_init() and resetting bi_destructor.
->>>>>>
->>>>>> This required reordering struct bio, but the block layer is not yet
->>>>>> nearly fast enough for any cacheline effects to matter here.
->>>>>
->>>>> That's an odd and misplaced comment. Was just doing testing today at 5M
->>>>> IOPS, and even years back we've had cache effects for O_DIRECT in higher
->>>>> speed setups.
->>>>
->>>> Ah, I wasn't aware that you were pushing that many iops through the
->>>> block layer - most I've tested myself was around 1M. It wouldn't
->>>> surprise me if cache effects in struct bio mattered around 5M...
->>>
->>> 5M is nothing, just did 13.5M :-)
->>>
->>> But we can reshuffle for now. As mentioned, we're way overdue for a
->>> decent look at cache profiling in any case.
->>
->> No ill effects seen so far, fwiw:
->>
->>   read : io=1735.8GB, bw=53690MB/s, iops=13745K, runt= 33104msec
-> 
-> Cool!
-> 
-> I'd be really curious to see a profile. Of the patches I've got queued
-> up I don't think anything's going to significantly affect performance
-> yet, but I'm hoping the cleanups/immutable bvec stuff/efficient bio
-> splitting enables some performance gains.
+Hi,
 
-Got more work to do, but certainly not a problem sharing.
+On occasion when I unload and reload driver rtl8192ce, I get the message
 
-> Well, it certainly will for stacking drivers, but I'm less sure what
-> it's going to look like running on just a raw flash device.
-> 
-> My end goal is making generic_make_request handle arbitrary sized bios,
-> and have (efficient) splitting happen as required. This'll get rid of a
-> bunch of code and complexity in the upper layers, in bio_add_page() and
-> elsewhere. More in the stacking drivers - merge_bvec_fn is horrendous to
-> support.
+"Refused to change power state, currently in D3"
 
-It is a nasty interface, in retrospect probably a mistake. As long as we
-don't split ever on non-stacking drivers, I don't care too much. And it
-would get rid of complexity in those drivers, so that's a nice win.
-merge_bvec_fn not only a bad interface, it's also pretty slow...
+I added additional info to the printk and discovered that it was trying to 
+change to state D0. The problem seems to occur when I have made a connection, 
+unloaded the driver, and reloaded it. If I do not make a connection before 
+unloading, then the problem is a lot less likely.
 
-> I think I might be able to efficiently get rid of the
-> segments-after-merging precalculating, and just have segments merged
-> once. That'd get rid of a couple fields in struct bio, and get it under
-> 2 cachelines last I counted.
+This is with kernel 3.6-rc4 from wireless-testing. A Google search shows that 
+the problem is usually due to suspend/resume difficulties, but this machine has 
+not been suspended.
 
-It's 2 cachelines now, but reducing is always a great thing. Getting rid
-of the repeated recalculate after merge would be a nice win.
+I would appreciate any help that you might give in solving this issue.
 
-> Course, all this doesn't matter as much for 4k bios so it may just be a
-> wash for you.
+Thanks,
 
-Right, for me it doesn't matter. As long as you don't slow me down :-)
-
--- 
-Jens Axboe
-
+Larry
