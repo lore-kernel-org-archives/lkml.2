@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752353Ab2IGPwT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 11:52:19 -0400
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:42696 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751915Ab2IGPwP (ORCPT
+	id S1752221Ab2IGPxZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 11:53:25 -0400
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:27609 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750838Ab2IGPxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 11:52:15 -0400
-Date: Fri, 7 Sep 2012 18:51:43 +0300
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Jarkko Nikula <jarkko.nikula@bitmer.com>
-Cc: linux-watchdog@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] watchdog: omap_wdt: convert to new watchdog core
-Message-ID: <20120907155143.GA10099@harshnoise.musicnaut.iki.fi>
-References: <1346769684-25543-1-git-send-email-aaro.koskinen@iki.fi>
- <20120907133107.GA14585@bitmer.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120907133107.GA14585@bitmer.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 7 Sep 2012 11:53:24 -0400
+Message-ID: <1347033200.2603.19.camel@lorien2>
+Subject: [RFC] DMA mapping error check analysis
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: fujita.tomonori@lab.ntt.co.jp, akpm@linux-foundation.org,
+        paul.gortmaker@windriver.com, bhelgaas@google.com, amwang@redhat.com,
+        joerg.roedel@amd.com, paul.gortmaker@windriver.com, kubakici@wp.pl,
+        stern@rowland.harvard.edu, dan.carpenter@oracle.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, devel@linuxdriverproject.org,
+        shuahkhan@gmail.com
+Date: Fri, 07 Sep 2012 09:53:20 -0600
+In-Reply-To: <1346595257.4377.5.camel@lorien2>
+References: <1346595257.4377.5.camel@lorien2>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 07, 2012 at 04:31:07PM +0300, Jarkko Nikula wrote:
-> On Tue, Sep 04, 2012 at 05:41:24PM +0300, Aaro Koskinen wrote:
-> > Convert omap_wdt to new watchdog core. On OMAP boards, there are usually
-> > multiple watchdogs. Since the new watchdog core supports multiple
-> > watchdogs, all watchdog drivers used on OMAP should be converted.
-> > 
-> > The legacy watchdog device node is still created, so this should not
-> > break existing users.
-> > 
-> > Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-> > ---
-> >  drivers/watchdog/Kconfig    |    1 +
-> >  drivers/watchdog/omap_wdt.c |  268 ++++++++++++++++++-------------------------
-> >  2 files changed, 115 insertions(+), 154 deletions(-)
-> > 
-> Am I missing some extra patch but this causes a crash on top of v3.6-rc4
-> commit eeea3ac?
-> 
-> Crash happens in omap_wdt.c:99 on Nokia N9.
+I analyzed all calls to dma_map_single() and dma_map_page() in the
+kernel, to see if callers check for mapping errors, before using the
+returned address.
 
-Thanks for the report! I'll look into this and test with other
-Nokia boards. I tested the patch only with N800 and v3.6-rc4
-(4cbe5a555fa58a79b6ecbb6c531b8bab0650778d) and did not see any issues
-with normal use cases (boot, watchdog open, feeding, watchdog close).
+The goal of this analysis is to find drivers that currently do not 
+check dma mapping errors, and fix them.
 
-A.
+I documented the results of this analysis:
+
+http://linuxdriverproject.org/mediawiki/index.php/DMA_Mapping_Error_Analysis
+
+Please review and give me feedback on the analysis and the proposed
+next steps.
+
+Thanks,
+-- Shuah
+
