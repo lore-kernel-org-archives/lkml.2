@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933213Ab2IGLZV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 07:25:21 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:63388 "EHLO
+	id S933230Ab2IGL0A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 07:26:00 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:36911 "EHLO
 	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760440Ab2IGLYG (ORCPT
+	with ESMTP id S1760543Ab2IGLYA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 07:24:06 -0400
+	Fri, 7 Sep 2012 07:24:00 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: eparis@redhat.com, viro@zeniv.linux.org.uk
 Cc: linux-audit@redhat.com, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, bfields@fieldses.org
-Subject: [PATCH v6 08/10] audit: make audit_compare_dname_path use parent_len helper
-Date: Fri,  7 Sep 2012 07:23:45 -0400
-Message-Id: <1347017027-17167-9-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v6 04/10] audit: reverse arguments to audit_inode_child
+Date: Fri,  7 Sep 2012 07:23:41 -0400
+Message-Id: <1347017027-17167-5-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1347017027-17167-1-git-send-email-jlayton@redhat.com>
 References: <1347017027-17167-1-git-send-email-jlayton@redhat.com>
@@ -21,57 +21,156 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Paris <eparis@redhat.com>
+Most of the callers get called with an inode and dentry in the reverse
+order. The compiler then has to reshuffle the arg registers and/or
+stack in order to pass them on to audit_inode_child.
 
-Signed-off-by: Eric Paris <eparis@redhat.com>
+Reverse those arguments for a micro-optimization.
+
+Reported-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- kernel/auditfilter.c | 27 +++++++--------------------
- 1 file changed, 7 insertions(+), 20 deletions(-)
+ fs/btrfs/ioctl.c         |  2 +-
+ fs/namei.c               |  2 +-
+ include/linux/audit.h    | 14 +++++++-------
+ include/linux/fsnotify.h |  8 ++++----
+ kernel/auditsc.c         |  8 ++++----
+ 5 files changed, 17 insertions(+), 17 deletions(-)
 
-diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
-index f9c48d0..f47ba18 100644
---- a/kernel/auditfilter.c
-+++ b/kernel/auditfilter.c
-@@ -1232,32 +1232,19 @@ int parent_len(const char *path)
-  * return of 0 indicates a match. */
- int audit_compare_dname_path(const char *dname, const char *path)
- {
--	int dlen, plen;
-+	int dlen, pathlen, parentlen;
- 	const char *p;
+diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
+index 7bb7556..ceff177 100644
+--- a/fs/btrfs/ioctl.c
++++ b/fs/btrfs/ioctl.c
+@@ -614,7 +614,7 @@ static int btrfs_may_delete(struct inode *dir,struct dentry *victim,int isdir)
+ 		return -ENOENT;
  
--	if (!dname || !path)
--		return 1;
--
- 	dlen = strlen(dname);
--	plen = strlen(path);
--	if (plen < dlen)
-+	pathlen = strlen(path);
-+	if (pathlen < dlen)
- 		return 1;
+ 	BUG_ON(victim->d_parent->d_inode != dir);
+-	audit_inode_child(victim, dir);
++	audit_inode_child(dir, victim);
  
--	/* disregard trailing slashes */
--	p = path + plen - 1;
--	while ((*p == '/') && (p > path))
--		p--;
--
--	/* find last path component */
--	p = p - dlen + 1;
--	if (p < path)
-+	parentlen = parent_len(path);
-+	if (pathlen - parentlen != dlen)
- 		return 1;
--	else if (p > path) {
--		if (*--p != '/')
--			return 1;
--		else
--			p++;
--	}
-+
-+	p = path + parentlen;
+ 	error = inode_permission(dir, MAY_WRITE | MAY_EXEC);
+ 	if (error)
+diff --git a/fs/namei.c b/fs/namei.c
+index e3661762..d431111 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2180,7 +2180,7 @@ static int may_delete(struct inode *dir,struct dentry *victim,int isdir)
+ 		return -ENOENT;
  
- 	return strncmp(p, dname, dlen);
+ 	BUG_ON(victim->d_parent->d_inode != dir);
+-	audit_inode_child(victim, dir);
++	audit_inode_child(dir, victim);
+ 
+ 	error = inode_permission(dir, MAY_WRITE | MAY_EXEC);
+ 	if (error)
+diff --git a/include/linux/audit.h b/include/linux/audit.h
+index 36abf2a..2d8b761 100644
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -462,8 +462,8 @@ extern void __audit_syscall_exit(int ret_success, long ret_value);
+ extern void __audit_getname(const char *name);
+ extern void audit_putname(const char *name);
+ extern void __audit_inode(const char *name, const struct dentry *dentry);
+-extern void __audit_inode_child(const struct dentry *dentry,
+-				const struct inode *parent);
++extern void __audit_inode_child(const struct inode *parent,
++				const struct dentry *dentry);
+ extern void __audit_seccomp(unsigned long syscall, long signr, int code);
+ extern void __audit_ptrace(struct task_struct *t);
+ 
+@@ -502,10 +502,10 @@ static inline void audit_inode(const char *name, const struct dentry *dentry) {
+ 	if (unlikely(!audit_dummy_context()))
+ 		__audit_inode(name, dentry);
  }
+-static inline void audit_inode_child(const struct dentry *dentry,
+-				     const struct inode *parent) {
++static inline void audit_inode_child(const struct inode *parent,
++				     const struct dentry *dentry) {
+ 	if (unlikely(!audit_dummy_context()))
+-		__audit_inode_child(dentry, parent);
++		__audit_inode_child(parent, dentry);
+ }
+ void audit_core_dumps(long signr);
+ 
+@@ -631,9 +631,9 @@ extern int audit_signals;
+ #define audit_getname(n) do { ; } while (0)
+ #define audit_putname(n) do { ; } while (0)
+ #define __audit_inode(n,d) do { ; } while (0)
+-#define __audit_inode_child(i,p) do { ; } while (0)
++#define __audit_inode_child(p,d) do { ; } while (0)
+ #define audit_inode(n,d) do { (void)(d); } while (0)
+-#define audit_inode_child(i,p) do { ; } while (0)
++#define audit_inode_child(p,d) do { ; } while (0)
+ #define audit_core_dumps(i) do { ; } while (0)
+ #define audit_seccomp(i,s,c) do { ; } while (0)
+ #define auditsc_get_stamp(c,t,s) (0)
+diff --git a/include/linux/fsnotify.h b/include/linux/fsnotify.h
+index a6dfe69..9c28471 100644
+--- a/include/linux/fsnotify.h
++++ b/include/linux/fsnotify.h
+@@ -109,7 +109,7 @@ static inline void fsnotify_move(struct inode *old_dir, struct inode *new_dir,
+ 
+ 	if (source)
+ 		fsnotify(source, FS_MOVE_SELF, moved->d_inode, FSNOTIFY_EVENT_INODE, NULL, 0);
+-	audit_inode_child(moved, new_dir);
++	audit_inode_child(new_dir, moved);
+ }
+ 
+ /*
+@@ -155,7 +155,7 @@ static inline void fsnotify_inoderemove(struct inode *inode)
+  */
+ static inline void fsnotify_create(struct inode *inode, struct dentry *dentry)
+ {
+-	audit_inode_child(dentry, inode);
++	audit_inode_child(inode, dentry);
+ 
+ 	fsnotify(inode, FS_CREATE, dentry->d_inode, FSNOTIFY_EVENT_INODE, dentry->d_name.name, 0);
+ }
+@@ -168,7 +168,7 @@ static inline void fsnotify_create(struct inode *inode, struct dentry *dentry)
+ static inline void fsnotify_link(struct inode *dir, struct inode *inode, struct dentry *new_dentry)
+ {
+ 	fsnotify_link_count(inode);
+-	audit_inode_child(new_dentry, dir);
++	audit_inode_child(dir, new_dentry);
+ 
+ 	fsnotify(dir, FS_CREATE, inode, FSNOTIFY_EVENT_INODE, new_dentry->d_name.name, 0);
+ }
+@@ -181,7 +181,7 @@ static inline void fsnotify_mkdir(struct inode *inode, struct dentry *dentry)
+ 	__u32 mask = (FS_CREATE | FS_ISDIR);
+ 	struct inode *d_inode = dentry->d_inode;
+ 
+-	audit_inode_child(dentry, inode);
++	audit_inode_child(inode, dentry);
+ 
+ 	fsnotify(inode, mask, d_inode, FSNOTIFY_EVENT_INODE, dentry->d_name.name, 0);
+ }
+diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+index 4099440..ff58089 100644
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -2180,9 +2180,9 @@ out:
+ }
+ 
+ /**
+- * audit_inode_child - collect inode info for created/removed objects
+- * @dentry: dentry being audited
++ * __audit_inode_child - collect inode info for created/removed objects
+  * @parent: inode of dentry parent
++ * @dentry: dentry being audited
+  *
+  * For syscalls that create or remove filesystem objects, audit_inode
+  * can only collect information for the filesystem object's parent.
+@@ -2192,8 +2192,8 @@ out:
+  * must be hooked prior, in order to capture the target inode during
+  * unsuccessful attempts.
+  */
+-void __audit_inode_child(const struct dentry *dentry,
+-			 const struct inode *parent)
++void __audit_inode_child(const struct inode *parent,
++			 const struct dentry *dentry)
+ {
+ 	struct audit_context *context = current->audit_context;
+ 	const char *found_parent = NULL, *found_child = NULL;
 -- 
 1.7.11.4
 
