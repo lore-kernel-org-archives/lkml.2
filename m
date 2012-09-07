@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756218Ab2IGSkH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 14:40:07 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:52181 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752663Ab2IGSkF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 14:40:05 -0400
+	id S1755978Ab2IGSkx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 14:40:53 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33435 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753865Ab2IGSkw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 14:40:52 -0400
+Message-ID: <504A3FA9.1050502@zytor.com>
+Date: Fri, 07 Sep 2012 11:40:41 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <504A3527.9070104@gmail.com>
-References: <CA+55aFzJWwBPgqp_QquhncpRqLXHRh0m9hHPh94Ujzd1d7kMDQ@mail.gmail.com>
- <20120904154412.GA14321@redhat.com> <504A3527.9070104@gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 7 Sep 2012 11:39:43 -0700
-X-Google-Sender-Auth: 4Xa6Bfi8Rwc1WznfFe9EoEFzRCc
-Message-ID: <CA+55aFwh5kUDC_5-_4_TkqnQU73sotAkOs166ag4R3Fx8VKffw@mail.gmail.com>
-Subject: Re: Linux 3.6-rc4
-To: Sasha Levin <levinsasha928@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>
-Cc: Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Subject: Re: [RFC] x86: mtrr: Constrain WB MTRR to max phys mem prior to cleanup
+References: <1347039854.6288.8.camel@thor>
+In-Reply-To: <1347039854.6288.8.camel@thor>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Al? Please look into this. I'm not entirely sure what's going on, but
-lockdep complains about this:
+On 09/07/2012 10:44 AM, Peter Hurley wrote:
+\>
+> diff --git a/arch/x86/kernel/cpu/mtrr/cleanup.c b/arch/x86/kernel/cpu/mtrr/cleanup.c
+> index bdda2e6..ee399c3 100644
+> --- a/arch/x86/kernel/cpu/mtrr/cleanup.c
+> +++ b/arch/x86/kernel/cpu/mtrr/cleanup.c
+> @@ -714,6 +714,16 @@ int __init mtrr_cleanup(unsigned address_bits)
+>   	if (mtrr_tom2)
+>   		x_remove_size = (mtrr_tom2 >> PAGE_SHIFT) - x_remove_base;
+>
+> +	/* Constrain a WB entry that maps entire phys addr space to max mem */
+> +	for (i = 0; i < num_var_ranges; i++) {
+> +		if (range_state[i].type == MTRR_TYPE_WRBACK &&
+> +		    range_state[i].base_pfn == 0 &&
+> +		    range_state[i].size_pfn > max_pfn) {
+> +			range_state[i].size_pfn = roundup_pow_of_two(max_pfn);
+> +			break;
+> +		}
+> +	}
+> +
 
- Possible interrupt unsafe locking scenario:
+I really don't like it as it introduces yet another user of max_pfn, 
+which should be going away.  Furthermore, the better question is what 
+remaining needs there are for MTRR cleanup; historically the reason was 
+that it prevented the display from being mapped WC via MTRR due to the 
+MTRR conflict resolution rules favoring UC.
 
-       CPU0                    CPU1
-       ----                    ----
-  lock(&(&p->alloc_lock)->rlock);
-                               local_irq_disable();
-                               lock(&(&new_timer->it_lock)->rlock);
-                               lock(tasklist_lock);
-  <Interrupt>
-    lock(&(&new_timer->it_lock)->rlock);
+However, the right way to fix that is to use the PAT interfaces, which 
+doesn't have this drawback -- then MTRR cleanup becomes entirely 
+superfluous and the problem goes away.
 
- *** DEADLOCK ***
+	-hpa
 
-and it looks real. IOW, if I read that right, we have the task_lock ->
-it_lock dependency through exit_itimers(), and then we have the
-tasklist_lock -> task_lock dependency everywhere else. So now it_lock
--> tasklist_lock becomes a deadlock.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-                  Linus
-
-On Fri, Sep 7, 2012 at 10:55 AM, Sasha Levin <levinsasha928@gmail.com> wrote:
-> On 09/04/2012 05:44 PM, Dave Jones wrote:
->> On Sat, Sep 01, 2012 at 03:10:58PM -0700, Linus Torvalds wrote:
->>  > The kernel summit is over, and most people have either returned or are
->>  > returning from San Diego.
->>
->> Still seeing this, that I started seeing just before leaving for San Diego..
->>
->>       Dave
->
-> I've bisected this one down to
->
->
-> d35abdb28824cf74f0a106a0f9c6f3ff700a35bf is the first bad commit
-> commit d35abdb28824cf74f0a106a0f9c6f3ff700a35bf
-> Author: Al Viro <viro@zeniv.linux.org.uk>
-> Date:   Sat Jun 30 11:55:24 2012 +0400
->
->     hold task_lock around checks in keyctl
->
->     Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
->
->
-> Just didn't get a response from anyone when I've mailed about it...
