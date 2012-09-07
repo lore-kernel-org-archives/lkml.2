@@ -1,114 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756715Ab2IGAXl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 20:23:41 -0400
-Received: from mga09.intel.com ([134.134.136.24]:51889 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755606Ab2IGAXj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 20:23:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,382,1344236400"; 
-   d="scan'208";a="189863987"
-Subject: [PATCH RESEND] USB/host: Cleanup unneccessary irq disable code
-From: Chuansheng Liu <chuansheng.liu@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 07 Sep 2012 17:19:59 +0800
-Message-ID: <1347009599.1119.9.camel@cliu38-desktop-build>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1756902Ab2IGAZj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 20:25:39 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46131 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755676Ab2IGAZh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 20:25:37 -0400
+Date: Thu, 6 Sep 2012 17:25:33 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] virtio-blk: Fix kconfig option
+Message-ID: <20120907002533.GB16360@google.com>
+References: <20120903044133.GA9980@moria.home.lan>
+ <87wr0ae26e.fsf@rustcorp.com.au>
+ <20120906074113.GA5902@koverstreet-glaptop>
+ <20120906084403.GD17656@redhat.com>
+ <20120906092512.GB5902@koverstreet-glaptop>
+ <20120906094956.GB22816@redhat.com>
+ <20120906100247.GA27355@koverstreet-glaptop>
+ <87zk52hg9i.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87zk52hg9i.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because the IRQF_DISABLED as the flag is now a NOOP and has been
-deprecated and in hardirq context the interrupt is disabled.
+On Fri, Sep 07, 2012 at 09:10:25AM +0930, Rusty Russell wrote:
+> Kent Overstreet <koverstreet@google.com> writes:
+> 
+> > On Thu, Sep 06, 2012 at 12:49:56PM +0300, Michael S. Tsirkin wrote:
+> >> On Thu, Sep 06, 2012 at 02:25:12AM -0700, Kent Overstreet wrote:
+> >> > Do you not understand the difference between depends an selects?
+> >> > Or did you not read my original mail?
+> 
+> Now you're getting insulting.
 
-so in usb/host code:
-Removing the usage of flag IRQF_DISABLED;
-Removing the calling local_irq save/restore actions in irq
-handler usb_hcd_irq();
+Yes, but at least I'm not being intentionally obtuse.
 
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
----
- drivers/usb/core/hcd.c       |   15 ---------------
- drivers/usb/host/ehci-ls1x.c |    2 +-
- drivers/usb/host/ohci-xls.c  |    2 +-
- 3 files changed, 2 insertions(+), 17 deletions(-)
+> It's normal for options to depend on other options.  Sometimes they're
+> directly nested (eg. E1000 depends on NETDEVICES, and it's nested under
+> that option), sometimes they're not (eg. E1000 depends on PCI, which is
+> selected elsewhere).
+> 
+> The fact that you are only just realizing this is not Michael's problem.
 
-diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-index bc84106..f84ddea 100644
---- a/drivers/usb/core/hcd.c
-+++ b/drivers/usb/core/hcd.c
-@@ -2153,15 +2153,8 @@ EXPORT_SYMBOL_GPL(usb_bus_start_enum);
- irqreturn_t usb_hcd_irq (int irq, void *__hcd)
- {
- 	struct usb_hcd		*hcd = __hcd;
--	unsigned long		flags;
- 	irqreturn_t		rc;
- 
--	/* IRQF_DISABLED doesn't work correctly with shared IRQs
--	 * when the first handler doesn't use it.  So let's just
--	 * assume it's never used.
--	 */
--	local_irq_save(flags);
--
- 	if (unlikely(HCD_DEAD(hcd) || !HCD_HW_ACCESSIBLE(hcd)))
- 		rc = IRQ_NONE;
- 	else if (hcd->driver->irq(hcd) == IRQ_NONE)
-@@ -2169,7 +2162,6 @@ irqreturn_t usb_hcd_irq (int irq, void *__hcd)
- 	else
- 		rc = IRQ_HANDLED;
- 
--	local_irq_restore(flags);
- 	return rc;
- }
- EXPORT_SYMBOL_GPL(usb_hcd_irq);
-@@ -2358,13 +2350,6 @@ static int usb_hcd_request_irqs(struct usb_hcd *hcd,
- 
- 	if (hcd->driver->irq) {
- 
--		/* IRQF_DISABLED doesn't work as advertised when used together
--		 * with IRQF_SHARED. As usb_hcd_irq() will always disable
--		 * interrupts we can remove it here.
--		 */
--		if (irqflags & IRQF_SHARED)
--			irqflags &= ~IRQF_DISABLED;
--
- 		snprintf(hcd->irq_descr, sizeof(hcd->irq_descr), "%s:usb%d",
- 				hcd->driver->description, hcd->self.busnum);
- 		retval = request_irq(irqnum, &usb_hcd_irq, irqflags,
-diff --git a/drivers/usb/host/ehci-ls1x.c b/drivers/usb/host/ehci-ls1x.c
-index a283e59..425cb4a 100644
---- a/drivers/usb/host/ehci-ls1x.c
-+++ b/drivers/usb/host/ehci-ls1x.c
-@@ -119,7 +119,7 @@ static int ehci_hcd_ls1x_probe(struct platform_device *pdev)
- 		goto err_release_region;
- 	}
- 
--	ret = usb_add_hcd(hcd, irq, IRQF_DISABLED | IRQF_SHARED);
-+	ret = usb_add_hcd(hcd, irq, IRQF_SHARED);
- 	if (ret)
- 		goto err_iounmap;
- 
-diff --git a/drivers/usb/host/ohci-xls.c b/drivers/usb/host/ohci-xls.c
-index 41e378f..84201cd 100644
---- a/drivers/usb/host/ohci-xls.c
-+++ b/drivers/usb/host/ohci-xls.c
-@@ -56,7 +56,7 @@ static int ohci_xls_probe_internal(const struct hc_driver *driver,
- 		goto err3;
- 	}
- 
--	retval = usb_add_hcd(hcd, irq, IRQF_DISABLED | IRQF_SHARED);
-+	retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
- 	if (retval != 0)
- 		goto err4;
- 	return retval;
--- 
-1.7.0.4
+Like I said, I'm well aware of that. The issue here isn't the
+dependency, it's that it depends on something that isn't exposed
+anywhere!
 
+Think about it from the user's pov. They check what VIRTIO_BLK depends
+on - just VIRTIO.
 
+So they try to figure out how to flip on VIRTIO, or what VIRTIO even is.
 
+See how that last step might be problematic? CONFIG_VIRTIO is not
+exposed! It doesn't even seem to control anything!
+
+Go back to your example. Checking the dependencies for E1000 would tell
+you the user needs to flip on CONFIG_PCI. Done. Easy.
+
+User checks the dependencies here and... what do _you_ expect people to
+do?
+
+Look, depending on a kconfig option that's supposed to be user
+controllable but isn't exposed anywhere is flat out broken. The fact
+that it's in a different submenu just makes it worse.
+
+The problem is that VIRTIO_BLK's dependencies are not actually specified
+in the kconfig. If it depends on VIRTIO_PCI, that's what the kconfig
+should say. If it depends on having any of multiple virtio backends
+enabled, then specify that!
+
+depends VIRTIO_PCI || VIRTIO_WHATEVER
+
+Or if you really want to have a fake config option that's enabled if you
+have any virtio backend enabled, fix the damn comments and naming!
+
+How is anyone supposed to know that CONFIG_VIRTIO really means "any
+virtio backend?" Call it VIRTIO_ANY_BACKEND if that's what it really is.
+
+And, if that is what you're doing with CONFIG_VIRTIO (I'm still not
+sure) the comment at the top of drivers/virtio/Kconfig is _wrong_:
+
+# Virtio always gets selected by whoever wants it.
+VIRTIO
+        tristate
+
+How is _anyone_ supposed to know that really means "VIRTIO gets selected
+by things that provide a virtio backend?"
+
+C'mon, you've had to debug other people's code before. What would _you_
+think if you were tripped up by something like that?
+
+> >> > Flip off everything in drivers -> virtio
+> >> > 
+> >> > Now go to drivers -> block and try to turn on virtio-blk.
+> >> > 
+> >> > It's not listed!
+> >> 
+> >> Yes. Because you disabled all virtio backends.
+> >> It does not make sense to have any frontends.
+> >
+> > How's a user - or even another kernel developer who isn't familiar with
+> > virtio - supposed to know that?
+> 
+> I get annoyed that menuconfig doesn't show options whose dependencies
+> aren't possible, too.  (I got bitten the other way: it doesn't show
+> dependencies which can't be disabled, and I was trying to turn KALLSYMS
+> off).
+> 
+> But as I found out just last week, the '/' key allows you to find any
+> option, and shows what dependencies it has, and their values.
+
+Yep, use it all the time. 
