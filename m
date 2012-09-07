@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759821Ab2IGGAP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 02:00:15 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54988 "EHLO
+	id S1760032Ab2IGGBS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 02:01:18 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55001 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751280Ab2IGGAN (ORCPT
+	with ESMTP id S1751280Ab2IGGBQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 02:00:13 -0400
-Date: Thu, 6 Sep 2012 22:59:56 -0700
+	Fri, 7 Sep 2012 02:01:16 -0400
+Date: Thu, 6 Sep 2012 23:00:51 -0700
 From: tip-bot for David Ahern <dsahern@gmail.com>
-Message-ID: <tip-cc58482133296f52873be909a2795f6d934ecec9@git.kernel.org>
+Message-ID: <tip-d54b1a9e0eaca92cde678d19bd82b9594ed00450@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
         mingo@kernel.org, peterz@infradead.org, fweisbec@gmail.com,
         dsahern@gmail.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         acme@redhat.com, fweisbec@gmail.com, peterz@infradead.org,
         dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1346005487-62961-6-git-send-email-dsahern@gmail.com>
-References: <1346005487-62961-6-git-send-email-dsahern@gmail.com>
+In-Reply-To: <1346005487-62961-7-git-send-email-dsahern@gmail.com>
+References: <1346005487-62961-7-git-send-email-dsahern@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf help: Remove use of die and handle errors
-Git-Commit-ID: cc58482133296f52873be909a2795f6d934ecec9
+Subject: [tip:perf/core] perf script: Remove use of die/exit
+Git-Commit-ID: d54b1a9e0eaca92cde678d19bd82b9594ed00450
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,170 +29,164 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 06 Sep 2012 23:00:01 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 06 Sep 2012 23:00:57 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cc58482133296f52873be909a2795f6d934ecec9
-Gitweb:     http://git.kernel.org/tip/cc58482133296f52873be909a2795f6d934ecec9
+Commit-ID:  d54b1a9e0eaca92cde678d19bd82b9594ed00450
+Gitweb:     http://git.kernel.org/tip/d54b1a9e0eaca92cde678d19bd82b9594ed00450
 Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Sun, 26 Aug 2012 12:24:45 -0600
+AuthorDate: Sun, 26 Aug 2012 12:24:46 -0600
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 5 Sep 2012 17:21:10 -0300
+CommitDate: Wed, 5 Sep 2012 17:21:39 -0300
 
-perf help: Remove use of die and handle errors
+perf script: Remove use of die/exit
 
-Allows perf to clean up properly on exit.
+Allows perf to clean up properly on exit. Only exits left are exec
+failures which are appropriate and usage callbacks that list available
+options.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1346005487-62961-6-git-send-email-dsahern@gmail.com
+Link: http://lkml.kernel.org/r/1346005487-62961-7-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-help.c |   48 +++++++++++++++++++++++++++++++-------------
- 1 files changed, 34 insertions(+), 14 deletions(-)
+ tools/perf/builtin-script.c |   60 +++++++++++++++++++++++++++++-------------
+ 1 files changed, 41 insertions(+), 19 deletions(-)
 
-diff --git a/tools/perf/builtin-help.c b/tools/perf/builtin-help.c
-index 6d5a8a7..f9daae5 100644
---- a/tools/perf/builtin-help.c
-+++ b/tools/perf/builtin-help.c
-@@ -24,13 +24,14 @@ static struct man_viewer_info_list {
- } *man_viewer_info_list;
- 
- enum help_format {
-+	HELP_FORMAT_NONE,
- 	HELP_FORMAT_MAN,
- 	HELP_FORMAT_INFO,
- 	HELP_FORMAT_WEB,
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 2d6e3b2..c350cfe 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -1153,18 +1153,23 @@ static const struct option options[] = {
+ 	OPT_END()
  };
  
- static bool show_all = false;
--static enum help_format help_format = HELP_FORMAT_MAN;
-+static enum help_format help_format = HELP_FORMAT_NONE;
- static struct option builtin_help_options[] = {
- 	OPT_BOOLEAN('a', "all", &show_all, "print all available commands"),
- 	OPT_SET_UINT('m', "man", &help_format, "show man page", HELP_FORMAT_MAN),
-@@ -54,7 +55,9 @@ static enum help_format parse_help_format(const char *format)
- 		return HELP_FORMAT_INFO;
- 	if (!strcmp(format, "web") || !strcmp(format, "html"))
- 		return HELP_FORMAT_WEB;
--	die("unrecognized help format '%s'", format);
-+
-+	pr_err("unrecognized help format '%s'", format);
-+	return HELP_FORMAT_NONE;
- }
- 
- static const char *get_man_viewer_info(const char *name)
-@@ -259,6 +262,8 @@ static int perf_help_config(const char *var, const char *value, void *cb)
- 		if (!value)
- 			return config_error_nonbool(var);
- 		help_format = parse_help_format(value);
-+		if (help_format == HELP_FORMAT_NONE)
-+			return -1;
- 		return 0;
- 	}
- 	if (!strcmp(var, "man.viewer")) {
-@@ -352,7 +357,7 @@ static void exec_viewer(const char *name, const char *page)
- 		warning("'%s': unknown man viewer.", name);
- }
- 
--static void show_man_page(const char *perf_cmd)
-+static int show_man_page(const char *perf_cmd)
+-static bool have_cmd(int argc, const char **argv)
++static int have_cmd(int argc, const char **argv)
  {
- 	struct man_viewer_list *viewer;
- 	const char *page = cmd_to_page(perf_cmd);
-@@ -365,28 +370,35 @@ static void show_man_page(const char *perf_cmd)
- 	if (fallback)
- 		exec_viewer(fallback, page);
- 	exec_viewer("man", page);
--	die("no man viewer handled the request");
-+
-+	pr_err("no man viewer handled the request");
-+	return -1;
- }
+ 	char **__argv = malloc(sizeof(const char *) * argc);
  
--static void show_info_page(const char *perf_cmd)
-+static int show_info_page(const char *perf_cmd)
- {
- 	const char *page = cmd_to_page(perf_cmd);
- 	setenv("INFOPATH", system_path(PERF_INFO_PATH), 1);
- 	execlp("info", "info", "perfman", page, NULL);
-+	return -1;
- }
- 
--static void get_html_page_path(struct strbuf *page_path, const char *page)
-+static int get_html_page_path(struct strbuf *page_path, const char *page)
- {
- 	struct stat st;
- 	const char *html_path = system_path(PERF_HTML_PATH);
- 
- 	/* Check that we have a perf documentation directory. */
- 	if (stat(mkpath("%s/perf.html", html_path), &st)
--	    || !S_ISREG(st.st_mode))
--		die("'%s': not a documentation directory.", html_path);
-+	    || !S_ISREG(st.st_mode)) {
-+		pr_err("'%s': not a documentation directory.", html_path);
+-	if (!__argv)
+-		die("malloc");
++	if (!__argv) {
++		pr_err("malloc failed\n");
 +		return -1;
 +	}
++
+ 	memcpy(__argv, argv, sizeof(const char *) * argc);
+ 	argc = parse_options(argc, (const char **)__argv, record_options,
+ 			     NULL, PARSE_OPT_STOP_AT_NON_OPTION);
+ 	free(__argv);
  
- 	strbuf_init(page_path, 0);
- 	strbuf_addf(page_path, "%s/%s.html", html_path, page);
+-	return argc != 0;
++	system_wide = (argc == 0);
 +
 +	return 0;
  }
  
- /*
-@@ -401,19 +413,23 @@ static void open_html(const char *path)
- }
- #endif
+ int cmd_script(int argc, const char **argv, const char *prefix __used)
+@@ -1231,13 +1236,13 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
  
--static void show_html_page(const char *perf_cmd)
-+static int show_html_page(const char *perf_cmd)
- {
- 	const char *page = cmd_to_page(perf_cmd);
- 	struct strbuf page_path; /* it leaks but we exec bellow */
+ 		if (pipe(live_pipe) < 0) {
+ 			perror("failed to create pipe");
+-			exit(-1);
++			return -1;
+ 		}
  
--	get_html_page_path(&page_path, page);
-+	if (get_html_page_path(&page_path, page) != 0)
-+		return -1;
+ 		pid = fork();
+ 		if (pid < 0) {
+ 			perror("failed to fork");
+-			exit(-1);
++			return -1;
+ 		}
  
- 	open_html(page_path.buf);
+ 		if (!pid) {
+@@ -1249,13 +1254,18 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
+ 			if (is_top_script(argv[0])) {
+ 				system_wide = true;
+ 			} else if (!system_wide) {
+-				system_wide = !have_cmd(argc - rep_args,
+-							&argv[rep_args]);
++				if (have_cmd(argc - rep_args, &argv[rep_args]) != 0) {
++					err = -1;
++					goto out;
++				}
+ 			}
+ 
+ 			__argv = malloc((argc + 6) * sizeof(const char *));
+-			if (!__argv)
+-				die("malloc");
++			if (!__argv) {
++				pr_err("malloc failed\n");
++				err = -ENOMEM;
++				goto out;
++			}
+ 
+ 			__argv[j++] = "/bin/sh";
+ 			__argv[j++] = rec_script_path;
+@@ -1277,8 +1287,12 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
+ 		close(live_pipe[1]);
+ 
+ 		__argv = malloc((argc + 4) * sizeof(const char *));
+-		if (!__argv)
+-			die("malloc");
++		if (!__argv) {
++			pr_err("malloc failed\n");
++			err = -ENOMEM;
++			goto out;
++		}
 +
-+	return 0;
- }
+ 		j = 0;
+ 		__argv[j++] = "/bin/sh";
+ 		__argv[j++] = rep_script_path;
+@@ -1303,12 +1317,20 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
  
- int cmd_help(int argc, const char **argv, const char *prefix __used)
- {
- 	const char *alias;
-+	int rc = 0;
+ 		if (!rec_script_path)
+ 			system_wide = false;
+-		else if (!system_wide)
+-			system_wide = !have_cmd(argc - 1, &argv[1]);
++		else if (!system_wide) {
++			if (have_cmd(argc - 1, &argv[1]) != 0) {
++				err = -1;
++				goto out;
++			}
++		}
  
- 	load_command_list("perf-", &main_cmds, &other_cmds);
+ 		__argv = malloc((argc + 2) * sizeof(const char *));
+-		if (!__argv)
+-			die("malloc");
++		if (!__argv) {
++			pr_err("malloc failed\n");
++			err = -ENOMEM;
++			goto out;
++		}
++
+ 		__argv[j++] = "/bin/sh";
+ 		__argv[j++] = script_path;
+ 		if (system_wide)
+@@ -1357,18 +1379,18 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
+ 		input = open(session->filename, O_RDONLY);	/* input_name */
+ 		if (input < 0) {
+ 			perror("failed to open file");
+-			exit(-1);
++			return -1;
+ 		}
  
-@@ -444,16 +460,20 @@ int cmd_help(int argc, const char **argv, const char *prefix __used)
+ 		err = fstat(input, &perf_stat);
+ 		if (err < 0) {
+ 			perror("failed to stat file");
+-			exit(-1);
++			return -1;
+ 		}
  
- 	switch (help_format) {
- 	case HELP_FORMAT_MAN:
--		show_man_page(argv[0]);
-+		rc = show_man_page(argv[0]);
- 		break;
- 	case HELP_FORMAT_INFO:
--		show_info_page(argv[0]);
-+		rc = show_info_page(argv[0]);
- 		break;
- 	case HELP_FORMAT_WEB:
--		show_html_page(argv[0]);
-+		rc = show_html_page(argv[0]);
-+		break;
-+	case HELP_FORMAT_NONE:
-+		/* fall-through */
- 	default:
-+		rc = -1;
- 		break;
- 	}
+ 		if (!perf_stat.st_size) {
+ 			fprintf(stderr, "zero-sized file, nothing to do!\n");
+-			exit(0);
++			return 0;
+ 		}
  
--	return 0;
-+	return rc;
- }
+ 		scripting_ops = script_spec__lookup(generate_script_lang);
