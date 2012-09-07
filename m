@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754261Ab2IGRxC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 13:53:02 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:34756 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751327Ab2IGRxA (ORCPT
+	id S1754352Ab2IGRzn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 13:55:43 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:46622 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752604Ab2IGRzk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 13:53:00 -0400
-Subject: Re: [PATCH 3.6 1/2] target: remove pscsi_clear_cdb_lun
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, target-devel@vger.kernel.org
-In-Reply-To: <5049DFCB.1090100@redhat.com>
-References: <1346944410-19850-1-git-send-email-pbonzini@redhat.com>
-	 <1346944410-19850-2-git-send-email-pbonzini@redhat.com>
-	 <1346957885.4162.509.camel@haakon2.linux-iscsi.org>
-	 <50490CE7.2020806@redhat.com>
-	 <1346988173.4162.581.camel@haakon2.linux-iscsi.org>
-	 <5049DFCB.1090100@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 07 Sep 2012 10:52:58 -0700
-Message-ID: <1347040378.4162.623.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 7 Sep 2012 13:55:40 -0400
+Message-ID: <504A3527.9070104@gmail.com>
+Date: Fri, 07 Sep 2012 19:55:51 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120826 Thunderbird/14.0
+MIME-Version: 1.0
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Linux 3.6-rc4
+References: <CA+55aFzJWwBPgqp_QquhncpRqLXHRh0m9hHPh94Ujzd1d7kMDQ@mail.gmail.com> <20120904154412.GA14321@redhat.com>
+In-Reply-To: <20120904154412.GA14321@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-07 at 13:51 +0200, Paolo Bonzini wrote:
-> Il 07/09/2012 05:22, Nicholas A. Bellinger ha scritto:
-> > Care to respin..?  ;)
+On 09/04/2012 05:44 PM, Dave Jones wrote:
+> On Sat, Sep 01, 2012 at 03:10:58PM -0700, Linus Torvalds wrote:
+>  > The kernel summit is over, and most people have either returned or are
+>  > returning from San Diego.
 > 
-> Sure, but I suppose this will be 3.7 material.
-
-<nod>
-
-> Do you want an attribute too?
+> Still seeing this, that I started seeing just before leaving for San Diego..
 > 
+> 	Dave
 
-Mmmmm, still undecided on that one.  I'd really like to avoid adding
-pSCSI specific backend attributes, so lets try first try disabling this
-logic for >= SCSI_3 devices and if folks run into problems we can
-consider smarter detection (say via some simple domain validation tests
-with pSCSI devices) or if it's really un-avoidable an new backend
-attribute to handle this for old hardware.
-
-Thanks Paolo!
+I've bisected this one down to
 
 
+d35abdb28824cf74f0a106a0f9c6f3ff700a35bf is the first bad commit
+commit d35abdb28824cf74f0a106a0f9c6f3ff700a35bf
+Author: Al Viro <viro@zeniv.linux.org.uk>
+Date:   Sat Jun 30 11:55:24 2012 +0400
+
+    hold task_lock around checks in keyctl
+
+    Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+
+
+Just didn't get a response from anyone when I've mailed about it...
