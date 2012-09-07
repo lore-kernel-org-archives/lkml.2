@@ -1,40 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756056Ab2IGTJE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 15:09:04 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41301 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab2IGTJA convert rfc822-to-8bit (ORCPT
+	id S1756126Ab2IGTJl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 15:09:41 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:52406 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342Ab2IGTJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 15:09:00 -0400
-Message-ID: <1347044931.2124.5.camel@twins>
-Subject: Re: [PATCH 1/3] perf: use hrtimer for event multiplexing
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, ak@linux.intel.com,
-        zheng.z.yan@intel.com, robert.richter@amd.com
-Date: Fri, 07 Sep 2012 21:08:51 +0200
-In-Reply-To: <CABPqkBT=2H5WuWZ+uFq39XTTxniVvT6tEuaYDHvaV2VSbjBPDQ@mail.gmail.com>
-References: <1347028169-1983-1-git-send-email-eranian@google.com>
-	 <1347028169-1983-2-git-send-email-eranian@google.com>
-	 <1347032350.18408.88.camel@twins>
-	 <CABPqkBT=2H5WuWZ+uFq39XTTxniVvT6tEuaYDHvaV2VSbjBPDQ@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Fri, 7 Sep 2012 15:09:40 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH v3 03/31] arm64: Exception handling
+Date: Fri, 7 Sep 2012 19:09:30 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com> <1347035226-18649-4-git-send-email-catalin.marinas@arm.com>
+In-Reply-To: <1347035226-18649-4-git-send-email-catalin.marinas@arm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209071909.30852.arnd@arndb.de>
+X-Provags-ID: V02:K0:l73jPVQvnQbEu3/PFXR5OVLHKsT9h3A0UToGqQC2VvQ
+ RNdNNyEq64xBetYnFSMjNKRfvHZYOxwjtnjJ/0Ih4+48W4dc8p
+ e1uk1Sl+Gw+YTxrkua2SroGc+pLUeqlug+bM82QhpwII0KI7sB
+ nSIHPvwdmtj5p3pl0kulXdlbB+kTiQeXpm9ARGY64IV5OBCbGb
+ IWKTN2BUGdKRjEfKm4kz964JfqA6dIzifUoFw7aJAcY48jLNLZ
+ 6H7US21+o00pr4yEdUgyRLw8XkLcuxfeQ55Who+XHDdjC7H12Z
+ xPREdP0EuBq+51mrThTtzohn7xb3L6sMpTB6u19tcQF0fUnUOR
+ mmoHQ0bKVmvG33lCFOls=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-07 at 19:03 +0200, Stephane Eranian wrote:
-> I think having different intervals would be a good thing, especially for uncore.
-> But now, I am wondering how this could work without too much overhead.
-> Looks like you're suggesting arming multiple hrtimers if multiple PMU are
-> overcommitted. Is that right?
+On Friday 07 September 2012, Catalin Marinas wrote:
+> The patch contains the exception entry code (kernel/entry.S), pt_regs
+> structure and related accessors, undefined instruction trapping and
+> stack tracing.
+> 
+> AArch64 Linux kernel (including kernel threads) runs in EL1 mode using
+> the SP1 stack. The vectors don't have a fixed address, only alignment
+> (2^11) requirements.
+> 
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
+> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> Acked-by: Tony Lindgren <tony@atomide.com>
 
-Right, we shoulnd't have too many PMUs anyway, let alone over committed
-ones, so a timer per cpu per pmu should be fine.
-
->  As opposed to having a PMU multiplier off of a
-> single per-cpu hrtimer.
+Acked-by: Arnd Bergmann <arnd@arndb.de>
