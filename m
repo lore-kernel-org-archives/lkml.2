@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756813Ab2IGPZh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 11:25:37 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:58778 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754665Ab2IGPZU (ORCPT
+	id S1756623Ab2IGPZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 11:25:29 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:62754 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754263Ab2IGPZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 11:25:20 -0400
+	Fri, 7 Sep 2012 11:25:18 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Marcel Holtmann <marcel@holtmann.org>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
 Cc: kernel-janitors@vger.kernel.org, Julia.Lawall@lip6.fr,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 10/10] drivers/bluetooth/btuart_cs.c: removes unnecessary semicolon
-Date: Fri,  7 Sep 2012 17:24:48 +0200
-Message-Id: <1347031488-26598-10-git-send-email-peter.senna@gmail.com>
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 7/10] drivers/media/tuners/tda18271-common.c: removes unnecessary semicolon
+Date: Fri,  7 Sep 2012 17:24:45 +0200
+Message-Id: <1347031488-26598-7-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,19 +28,55 @@ Found by Coccinelle: http://coccinelle.lip6.fr/
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
 ---
- drivers/bluetooth/btuart_cs.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/tuners/tda18271-common.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff -u -p a/drivers/bluetooth/btuart_cs.c b/drivers/bluetooth/btuart_cs.c
---- a/drivers/bluetooth/btuart_cs.c
-+++ b/drivers/bluetooth/btuart_cs.c
-@@ -446,7 +446,7 @@ static int btuart_hci_send_frame(struct
- 	case HCI_SCODATA_PKT:
- 		hdev->stat.sco_tx++;
+diff -u -p a/drivers/media/tuners/tda18271-common.c b/drivers/media/tuners/tda18271-common.c
+--- a/drivers/media/tuners/tda18271-common.c
++++ b/drivers/media/tuners/tda18271-common.c
+@@ -275,7 +275,7 @@ int tda18271_init_regs(struct dvb_fronte
+ 	case TDA18271HDC2:
+ 		regs[R_ID]   = 0x84;
  		break;
 -	};
 +	}
  
- 	/* Prepend skb with frame type */
- 	memcpy(skb_push(skb, 1), &bt_cb(skb)->pkt_type, 1);
+ 	regs[R_TM]   = 0x08;
+ 	regs[R_PL]   = 0x80;
+@@ -300,7 +300,7 @@ int tda18271_init_regs(struct dvb_fronte
+ 	case TDA18271HDC2:
+ 		regs[R_EB1]  = 0xfc;
+ 		break;
+-	};
++	}
+ 
+ 	regs[R_EB2]  = 0x01;
+ 	regs[R_EB3]  = 0x84;
+@@ -320,7 +320,7 @@ int tda18271_init_regs(struct dvb_fronte
+ 	case TDA18271HDC2:
+ 		regs[R_EB12] = 0x33;
+ 		break;
+-	};
++	}
+ 
+ 	regs[R_EB13] = 0xc1;
+ 	regs[R_EB14] = 0x00;
+@@ -335,7 +335,7 @@ int tda18271_init_regs(struct dvb_fronte
+ 	case TDA18271HDC2:
+ 		regs[R_EB18] = 0x8c;
+ 		break;
+-	};
++	}
+ 
+ 	regs[R_EB19] = 0x00;
+ 	regs[R_EB20] = 0x20;
+@@ -347,7 +347,7 @@ int tda18271_init_regs(struct dvb_fronte
+ 	case TDA18271HDC2:
+ 		regs[R_EB21] = 0xb3;
+ 		break;
+-	};
++	}
+ 
+ 	regs[R_EB22] = 0x48;
+ 	regs[R_EB23] = 0xb0;
 
