@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759021Ab2IGW7u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 18:59:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59044 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758738Ab2IGW7j (ORCPT
+	id S1758958Ab2IGW7p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 18:59:45 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49416 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758782Ab2IGW7k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 18:59:39 -0400
-From: Kent Overstreet <koverstreet@google.com>
-To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com
-Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk,
-        NeilBrown <neilb@suse.de>
-Subject: [PATCH 4/9] md: Convert md_trim_bio() to use bio_advance()
-Date: Fri,  7 Sep 2012 15:59:15 -0700
-Message-Id: <1347058760-30794-5-git-send-email-koverstreet@google.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1347058760-30794-1-git-send-email-koverstreet@google.com>
-References: <1347058760-30794-1-git-send-email-koverstreet@google.com>
+	Fri, 7 Sep 2012 18:59:40 -0400
+Message-ID: <504A7C5C.1000706@jp.fujitsu.com>
+Date: Fri, 07 Sep 2012 18:59:40 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+MIME-Version: 1.0
+To: mgorman@suse.de
+CC: akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
+        davej@redhat.com, cl@linux.com, ben@decadent.org.uk,
+        ak@linux.intel.com, hughd@google.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 3/5] mempolicy: fix a race in shared_policy_replace()
+References: <1345480594-27032-1-git-send-email-mgorman@suse.de> <1345480594-27032-4-git-send-email-mgorman@suse.de>
+In-Reply-To: <1345480594-27032-4-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Kent Overstreet <koverstreet@google.com>
-CC: Jens Axboe <axboe@kernel.dk>
-CC: NeilBrown <neilb@suse.de>
----
- drivers/md/md.c | 19 +++++--------------
- 1 file changed, 5 insertions(+), 14 deletions(-)
+First off, thank you very much for reworking this for me. I haven't got a chance
+to get a test machine for this.
 
-diff --git a/drivers/md/md.c b/drivers/md/md.c
-index 7a2b079..51ce48c 100644
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -190,25 +190,16 @@ void md_trim_bio(struct bio *bio, int offset, int size)
- 	struct bio_vec *bvec;
- 	int sofar = 0;
- 
--	size <<= 9;
- 	if (offset == 0 && size == bio->bi_size)
- 		return;
- 
--	bio->bi_sector += offset;
--	bio->bi_size = size;
--	offset <<= 9;
- 	clear_bit(BIO_SEG_VALID, &bio->bi_flags);
- 
--	while (bio->bi_idx < bio->bi_vcnt &&
--	       bio->bi_io_vec[bio->bi_idx].bv_len <= offset) {
--		/* remove this whole bio_vec */
--		offset -= bio->bi_io_vec[bio->bi_idx].bv_len;
--		bio->bi_idx++;
--	}
--	if (bio->bi_idx < bio->bi_vcnt) {
--		bio->bi_io_vec[bio->bi_idx].bv_offset += offset;
--		bio->bi_io_vec[bio->bi_idx].bv_len -= offset;
--	}
-+	bio_advance(bio, offset << 9);
-+
-+	size <<= 9;
-+	bio->bi_size = size;
-+
- 	/* avoid any complications with bi_idx being non-zero*/
- 	if (bio->bi_idx) {
- 		memmove(bio->bi_io_vec, bio->bi_io_vec+bio->bi_idx,
--- 
-1.7.12
+> shared_policy_replace() use of sp_alloc() is unsafe. 1) sp_node cannot
+> be dereferenced if sp->lock is not held and 2) another thread can modify
+> sp_node between spin_unlock for allocating a new sp node and next spin_lock.
+> The bug was introduced before 2.6.12-rc2.
+> 
+> Kosaki's original patch for this problem was to allocate an sp node and policy
+> within shared_policy_replace and initialise it when the lock is reacquired. I
+> was not keen on this approach because it partially duplicates sp_alloc(). As
+> the paths were sp->lock is taken are not that performance critical this
+> patch converts sp->lock to sp->mutex so it can sleep when calling sp_alloc().
+
+Looks make sense.
+
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+
 
