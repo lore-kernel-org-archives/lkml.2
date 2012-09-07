@@ -1,50 +1,333 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932261Ab2IGADS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 20:03:18 -0400
-Received: from ozlabs.org ([203.10.76.45]:38763 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755234Ab2IGAC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 20:02:26 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Paolo Bonzini <pbonzini@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>
-Cc: fes@google.com, aarcange@redhat.com, riel@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mikew@google.com, yinghan@google.com,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH] virtio-balloon spec: provide a version of the "silent deflate" feature that works
-In-Reply-To: <5048935A.8090308@redhat.com>
-References: <1346917610-14568-1-git-send-email-pbonzini@redhat.com> <20120906084736.GF17656@redhat.com> <50486BB2.7070108@redhat.com> <20120906094442.GA22816@redhat.com> <50487382.8030303@redhat.com> <20120906105301.GC32325@redhat.com> <5048935A.8090308@redhat.com>
-User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Fri, 07 Sep 2012 09:15:46 +0930
-Message-ID: <87wr06hg0l.fsf@rustcorp.com.au>
+	id S1756064Ab2IGAER (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 20:04:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64493 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753693Ab2IGAEO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 20:04:14 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+To: Jonghwa Lee <jonghwa3.lee@samsung.com>, linux-kernel@vger.kernel.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1346144068-13371-1-git-send-email-jonghwa3.lee@samsung.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>
+References: <1346144068-13371-1-git-send-email-jonghwa3.lee@samsung.com>
+Message-ID: <20120907000410.20289.117@nucleus>
+User-Agent: alot/0.3.2+
+Subject: Re: [PATCH] clock: max77686: Add driver for Maxim 77686 32Khz crystal
+ oscillator.
+Date: Thu, 06 Sep 2012 17:04:10 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paolo Bonzini <pbonzini@redhat.com> writes:
-> Instead, VIRTIO_NET_F_HOST_MUST_SEND_GARP would be a "negative" feature:
-> if set, the host _may not_ rely on the guest to send a gARP.  Similarly
-> if VIRTIO_BALLOON_F_MUST_TELL_HOST is set, the guest _may not_ use
-> ballooned pages directly.
->
-> There are _no_ other negative features besides
-> VIRTIO_BALLOON_F_MUST_TELL_HOST in the spec, and for a good
-> reason---because they're broken.
->
-> (Hmm, actually we have one, VIRTIO_BLK_F_RO.  It is also a bit broken,
-> but it is not so important because it depends on user input more than
-> hypervisor version).
+Quoting Jonghwa Lee (2012-08-28 01:54:28)
+> This patch supports max77686 mfd's clock driver using common clock frame work.
+> max77686 has 3 clock ouputs which all are generated from crystal oscillator and
+> SOC can enable/disable them via I2C bus. All clocks are fixed-rate clock sources
+> so that it doesn't supply interface for changing clock rate.
+> Driver uses regmap API to communicate with internal register.
+> 
+> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
 
-Yes, this is the key observation, and an important lesson for the
-future.  Thanks!
+Looks good.  I've taken this into clk-next.
 
-Note that these two negative features were in the original spec, where
-it's assumed that every device supports them.  That's not explicitly
-documented, however.
+Regards,
+Mike
 
-I like killing the totally unused feature.
-
-Cheers,
-Rusty.
+> ---
+> v5
+>  - Add registering failure handle for each clocks to prevent memory leak.
+>  - Update to use the latest clk_register. (Add clk_init_data).
+>  - Rename Kconfig menu's name and replace its position.
+> 
+> v4
+>  https://lkml.org/lkml/2012/6/27/183
+> 
+>  drivers/clk/Kconfig        |    6 +
+>  drivers/clk/Makefile       |    1 +
+>  drivers/clk/clk-max77686.c |  244 ++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 251 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/clk/clk-max77686.c
+> 
+> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+> index 7f0b5ca..f300ec7 100644
+> --- a/drivers/clk/Kconfig
+> +++ b/drivers/clk/Kconfig
+> @@ -40,4 +40,10 @@ config COMMON_CLK_WM831X
+>            Supports the clocking subsystem of the WM831x/2x series of
+>           PMICs from Wolfson Microlectronics.
+>  
+> +config COMMON_CLK_MAX77686
+> +       tristate "Clock driver for Maxim 77686 MFD"
+> +       depends on MFD_MAX77686
+> +       ---help---
+> +         This driver supports Maxim 77686 crystal oscillator clock. 
+> +
+>  endmenu
+> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+> index 5869ea3..97f5c57 100644
+> --- a/drivers/clk/Makefile
+> +++ b/drivers/clk/Makefile
+> @@ -13,3 +13,4 @@ obj-$(CONFIG_ARCH_INTEGRATOR) += versatile/
+>  
+>  # Chip specific
+>  obj-$(CONFIG_COMMON_CLK_WM831X) += clk-wm831x.o
+> +obj-$(CONFIG_COMMON_CLK_MAX77686) += clk-max77686.o
+> diff --git a/drivers/clk/clk-max77686.c b/drivers/clk/clk-max77686.c
+> new file mode 100644
+> index 0000000..ac5f543
+> --- /dev/null
+> +++ b/drivers/clk/clk-max77686.c
+> @@ -0,0 +1,244 @@
+> +/*
+> + * clk-max77686.c - Clock driver for Maxim 77686
+> + *
+> + * Copyright (C) 2012 Samsung Electornics
+> + * Jonghwa Lee <jonghwa3.lee@samsung.com>
+> + *
+> + * This program is free software; you can redistribute  it and/or modify it
+> + * under  the terms of  the GNU General  Public License as published by the
+> + * Free Software Foundation;  either version 2 of the  License, or (at your
+> + * option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+> + *
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/slab.h>
+> +#include <linux/err.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/mfd/max77686.h>
+> +#include <linux/mfd/max77686-private.h>
+> +#include <linux/clk-provider.h>
+> +#include <linux/mutex.h>
+> +#include <linux/clkdev.h>
+> +
+> +enum {
+> +       MAX77686_CLK_AP = 0,
+> +       MAX77686_CLK_CP,
+> +       MAX77686_CLK_PMIC,
+> +       MAX77686_CLKS_NUM,
+> +};
+> +
+> +struct max77686_clk {
+> +       struct max77686_dev *iodev;
+> +       u32 mask;
+> +       struct clk_hw hw;
+> +       struct clk_lookup *lookup;
+> +};
+> +
+> +static struct max77686_clk *get_max77686_clk(struct clk_hw *hw)
+> +{
+> +       return container_of(hw, struct max77686_clk, hw);
+> +}
+> +
+> +static int max77686_clk_prepare(struct clk_hw *hw)
+> +{
+> +       struct max77686_clk *max77686;
+> +       int ret;
+> +
+> +       max77686 = get_max77686_clk(hw);
+> +       if (!max77686)
+> +               return -ENOMEM;
+> +
+> +       ret = regmap_update_bits(max77686->iodev->regmap,
+> +               MAX77686_REG_32KHZ, max77686->mask, max77686->mask);
+> +
+> +       return ret;
+> +}
+> +
+> +static void max77686_clk_unprepare(struct clk_hw *hw)
+> +{
+> +       struct max77686_clk *max77686;
+> +
+> +       max77686 = get_max77686_clk(hw);
+> +       if (!max77686)
+> +               return;
+> +
+> +       regmap_update_bits(max77686->iodev->regmap,
+> +               MAX77686_REG_32KHZ, max77686->mask, ~max77686->mask);
+> +}
+> +
+> +static int max77686_clk_is_enabled(struct clk_hw *hw)
+> +{
+> +       struct max77686_clk *max77686;
+> +       int ret;
+> +       u32 val;
+> +
+> +       max77686 = get_max77686_clk(hw);
+> +       if (!max77686)
+> +               return -ENOMEM;
+> +
+> +       ret = regmap_read(max77686->iodev->regmap,
+> +                               MAX77686_REG_32KHZ, &val);
+> +
+> +       if (ret < 0)
+> +               return -EINVAL;
+> +
+> +       return val & max77686->mask;
+> +}
+> +
+> +static struct clk_ops max77686_clk_ops = {
+> +       .prepare        = max77686_clk_prepare,
+> +       .unprepare      = max77686_clk_unprepare,
+> +       .is_enabled     = max77686_clk_is_enabled,
+> +};
+> +
+> +static struct clk_init_data max77686_clks_init[MAX77686_CLKS_NUM] = {
+> +       [MAX77686_CLK_AP] = {
+> +               .name = "32khz_ap",
+> +               .ops = &max77686_clk_ops,
+> +               .flags = CLK_IS_ROOT,
+> +       },
+> +       [MAX77686_CLK_CP] = {
+> +               .name = "32khz_cp",
+> +               .ops = &max77686_clk_ops,
+> +               .flags = CLK_IS_ROOT,
+> +       },
+> +       [MAX77686_CLK_PMIC] = {
+> +               .name = "32khz_pmic",
+> +               .ops = &max77686_clk_ops,
+> +               .flags = CLK_IS_ROOT,
+> +       },
+> +};
+> +
+> +static int max77686_clk_register(struct device *dev,
+> +                               struct max77686_clk *max77686)
+> +{
+> +       struct clk *clk;
+> +       struct clk_hw *hw = &max77686->hw;
+> +
+> +       clk = clk_register(dev, hw);
+> +
+> +       if (IS_ERR(clk))
+> +               return -ENOMEM;
+> +
+> +       max77686->lookup = devm_kzalloc(dev, sizeof(struct clk_lookup),
+> +                                       GFP_KERNEL);
+> +       if (IS_ERR(max77686->lookup))
+> +               return -ENOMEM;
+> +
+> +       max77686->lookup->con_id = hw->init->name;
+> +       max77686->lookup->clk = clk;
+> +
+> +       clkdev_add(max77686->lookup);
+> +
+> +       return 0;
+> +}
+> +
+> +static __devinit int max77686_clk_probe(struct platform_device *pdev)
+> +{
+> +       struct max77686_dev *iodev = dev_get_drvdata(pdev->dev.parent);
+> +       struct max77686_clk **max77686_clks;
+> +       int i, ret;
+> +
+> +       max77686_clks = devm_kzalloc(&pdev->dev, sizeof(struct max77686_clk *)
+> +                                       * MAX77686_CLKS_NUM, GFP_KERNEL);
+> +       if (IS_ERR(max77686_clks))
+> +               return -ENOMEM;
+> +
+> +       for (i = 0; i < MAX77686_CLKS_NUM; i++) {
+> +               max77686_clks[i] = devm_kzalloc(&pdev->dev,
+> +                                       sizeof(struct max77686_clk), GFP_KERNEL);
+> +               if (IS_ERR(max77686_clks[i]))
+> +                       return -ENOMEM;
+> +       }
+> +
+> +       for (i = 0; i < MAX77686_CLKS_NUM; i++) {
+> +               max77686_clks[i]->iodev = iodev;
+> +               max77686_clks[i]->mask = 1 << i;
+> +               max77686_clks[i]->hw.init = &max77686_clks_init[i];
+> +
+> +               ret = max77686_clk_register(&pdev->dev, max77686_clks[i]);
+> +               if (ret) {
+> +                       switch (i) {
+> +                       case MAX77686_CLK_AP:
+> +                               dev_err(&pdev->dev, "Fail to register CLK_AP\n");
+> +                               goto err_clk_ap;
+> +                               break;
+> +                       case MAX77686_CLK_CP:
+> +                               dev_err(&pdev->dev, "Fail to register CLK_CP\n");
+> +                               goto err_clk_cp;
+> +                               break;
+> +                       case MAX77686_CLK_PMIC:
+> +                               dev_err(&pdev->dev, "Fail to register CLK_PMIC\n");
+> +                               goto err_clk_pmic;
+> +                       }
+> +               }
+> +       }
+> +
+> +       platform_set_drvdata(pdev, max77686_clks);
+> +
+> +       goto out;
+> +
+> +err_clk_pmic:
+> +       clkdev_drop(max77686_clks[MAX77686_CLK_CP]->lookup);
+> +       kfree(max77686_clks[MAX77686_CLK_CP]->hw.clk);
+> +err_clk_cp:
+> +       clkdev_drop(max77686_clks[MAX77686_CLK_AP]->lookup);
+> +       kfree(max77686_clks[MAX77686_CLK_AP]->hw.clk);
+> +err_clk_ap:
+> +out:
+> +       return ret;
+> +}
+> +
+> +static int __devexit max77686_clk_remove(struct platform_device *pdev)
+> +{
+> +       struct max77686_clk **max77686_clks = platform_get_drvdata(pdev);
+> +       int i;
+> +
+> +       for (i = 0; i < MAX77686_CLKS_NUM; i++) {
+> +               clkdev_drop(max77686_clks[i]->lookup);
+> +               kfree(max77686_clks[i]->hw.clk);
+> +       }
+> +       return 0;
+> +}
+> +
+> +static const struct platform_device_id max77686_clk_id[] = {
+> +       { "max77686-clk", 0},
+> +       { },
+> +};
+> +MODULE_DEVICE_TABLE(platform, max77686_clk_id);
+> +
+> +static struct platform_driver max77686_clk_driver = {
+> +       .driver = {
+> +               .name  = "max77686-clk",
+> +               .owner = THIS_MODULE,
+> +       },
+> +       .probe = max77686_clk_probe,
+> +       .remove = __devexit_p(max77686_clk_remove),
+> +       .id_table = max77686_clk_id,
+> +};
+> +
+> +static int __init max77686_clk_init(void)
+> +{
+> +       return platform_driver_register(&max77686_clk_driver);
+> +}
+> +subsys_initcall(max77686_clk_init);
+> +
+> +static void __init max77686_clk_cleanup(void)
+> +{
+> +       platform_driver_unregister(&max77686_clk_driver);
+> +}
+> +module_exit(max77686_clk_cleanup);
+> +
+> +MODULE_DESCRIPTION("MAXIM 77686 Clock Driver");
+> +MODULE_AUTHOR("Jonghwa Lee <jonghwa3.lee@samsung.com>");
+> +MODULE_LICENSE("GPL");
+> -- 
+> 1.7.4.1
