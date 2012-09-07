@@ -1,184 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754601Ab2IGQbg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 12:31:36 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:46800 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752914Ab2IGQa4 (ORCPT
+	id S1754629Ab2IGQbx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 12:31:53 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:34645 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752887Ab2IGQ16 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 12:30:56 -0400
-From: Lance Ortiz <lance.ortiz@hp.com>
-To: rob@landley.net, lenb@kernel.org
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Lance Ortiz <lance.ortiz@hp.com>
-Subject: [PATCH] ACPI: Add new sysfs interface to export device description
-Date: Fri,  7 Sep 2012 10:28:16 -0600
-Message-Id: <1347035296-8882-1-git-send-email-lance.ortiz@hp.com>
-X-Mailer: git-send-email 1.7.7.6
+	Fri, 7 Sep 2012 12:27:58 -0400
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH v3 24/31] arm64: Add support for /proc/sys/debug/exception-trace
+Date: Fri,  7 Sep 2012 17:26:59 +0100
+Message-Id: <1347035226-18649-25-git-send-email-catalin.marinas@arm.com>
+X-Mailer: git-send-email 1.7.9.111.gf3fb0
+In-Reply-To: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
+References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
+X-OriginalArrivalTime: 07 Sep 2012 16:27:56.0800 (UTC) FILETIME=[BCFAE000:01CD8D15]
+X-MC-Unique: 112090717275703701
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q87GW1Ge008399
 
-Add support to export the device description obtained from the ACPI _STR
-method, if one exists for a device, to user-space via a sysfs interface.
-This new interface provides a standard and platform neutral way for users
-to obtain the description text stored in the ACPI _STR method.  If no
-_STR method exists for the device, no sysfs 'description' file will be
-created.  The 'description' file will be located in the /sys/devices/
-directory using the device's path.
+This patch allows setting of the show_unhandled_signals variable via
+/proc/sys/debug/exception-trace. The default value is currently 1
+showing unhandled user faults (undefined instructions, data aborts) and
+invalid signal stack frames.
 
-/sys/device/<bus>/<bridge path>/<device path>.../firmware_node/description
-
-Example:
-
-/sys/devices/pci0000:00/0000:00.07.0/0000:0e:00.0/firmware_node/description
-
-It can also be located using the ACPI device path, for example:
-
-/sys/devices/LNXSYSTM:00/device:00/ACPI0004:00/PNP0A08:00/device:13/device:15/description
-/sys/devices/LNXSYSTM:00/device:00/ACPI0004:00/ACPI0004:01/ACPI0007:02/description
-
-Execute the 'cat' command on the 'description' file to obtain the
-description string for that device.
-
-This patch also includes documentation describing how the new sysfs
-interface works
-
-Signed-off-by: Lance Ortiz <lance.ortiz@hp.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Acked-by: Tony Lindgren <tony@atomide.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- .../ABI/testing/sysfs-devices-firmware_node        |   17 ++++++
- drivers/acpi/scan.c                                |   58 +++++++++++++++++++-
- include/acpi/acpi_bus.h                            |    1 +
- 3 files changed, 74 insertions(+), 2 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-devices-firmware_node
+ kernel/sysctl.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-devices-firmware_node b/Documentation/ABI/testing/sysfs-devices-firmware_node
-new file mode 100644
-index 0000000..46badc9
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-devices-firmware_node
-@@ -0,0 +1,17 @@
-+What:		/sys/devices/.../firmware_node/
-+Date:		September 2012
-+Contact:	<>
-+Description:
-+		The /sys/devices/.../firmware_node directory contains attributes
-+		allowing the user space to check and modify some firmware
-+		related properties of given device.
-+
-+What:		/sys/devices/.../firmware_node/description
-+Date:		September 2012
-+Contact:	Lance Ortiz <lance.ortiz@hp.com>
-+Description:
-+		The /sys/devices/.../firmware/description attribute contains a string
-+		that describes the device as provided by the _STR method in the ACPI
-+		namespace.  This attribute is read-only.  If the device does not have
-+		an _STR method associated with it in the ACPI namespace, this
-+		attribute is not present.
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index c8a1f3b..c9c91e1 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -10,6 +10,7 @@
- #include <linux/signal.h>
- #include <linux/kthread.h>
- #include <linux/dmi.h>
-+#include <linux/nls.h>
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 87174ef..79dcb00 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1544,7 +1544,7 @@ static struct ctl_table fs_table[] = {
  
- #include <acpi/acpi_drivers.h>
- 
-@@ -192,8 +193,38 @@ end:
- }
- static DEVICE_ATTR(path, 0444, acpi_device_path_show, NULL);
- 
-+/* sysfs file that shows description text from the ACPI _STR method */
-+static ssize_t description_show(struct device *dev,
-+				struct device_attribute *attr,
-+				char *buf) {
-+	struct acpi_device *acpi_dev = to_acpi_device(dev);
-+	int result;
-+
-+	if (acpi_dev->pnp.str_obj == NULL) {
-+		result = sprintf(buf, "No Description\n");
-+		goto end;
-+	}
-+
-+	/*
-+	 * The _STR object contains a Unicode identifier for a device.
-+	 * We need to convert to utf-8 so it can be displayed.
-+	 */
-+	result = utf16s_to_utf8s(
-+		(wchar_t *)acpi_dev->pnp.str_obj->buffer.pointer,
-+		acpi_dev->pnp.str_obj->buffer.length,
-+		UTF16_LITTLE_ENDIAN, buf,
-+		PAGE_SIZE);
-+
-+	buf[result++] = '\n';
-+
-+end:
-+	return result;
-+}
-+static DEVICE_ATTR(description, 0444, description_show, NULL);
-+
- static int acpi_device_setup_files(struct acpi_device *dev)
- {
-+	struct acpi_buffer buffer = {ACPI_ALLOCATE_BUFFER, NULL};
- 	acpi_status status;
- 	acpi_handle temp;
- 	int result = 0;
-@@ -217,6 +248,21 @@ static int acpi_device_setup_files(struct acpi_device *dev)
- 			goto end;
- 	}
- 
-+	/*
-+	 * If device has _STR, 'description' file is created
-+	 */
-+	status = acpi_get_handle(dev->handle, "_STR", &temp);
-+	if (ACPI_SUCCESS(status)) {
-+		status = acpi_evaluate_object(dev->handle, "_STR",
-+					NULL, &buffer);
-+		if (ACPI_FAILURE(status))
-+			buffer.pointer = NULL;
-+		dev->pnp.str_obj = buffer.pointer;
-+		result = device_create_file(&dev->dev, &dev_attr_description);
-+		if (result)
-+			goto end;
-+	}
-+
-         /*
-          * If device has _EJ0, 'eject' file is created that is used to trigger
-          * hot-removal function from userland.
-@@ -234,8 +280,16 @@ static void acpi_device_remove_files(struct acpi_device *dev)
- 	acpi_handle temp;
- 
- 	/*
--	 * If device has _EJ0, 'eject' file is created that is used to trigger
--	 * hot-removal function from userland.
-+	 * If device has _STR, remove 'description' file
-+	 */
-+	status = acpi_get_handle(dev->handle, "_STR", &temp);
-+	if (ACPI_SUCCESS(status)) {
-+		if (dev->pnp.str_obj != NULL)
-+			kfree(dev->pnp.str_obj);
-+		device_remove_file(&dev->dev, &dev_attr_description);
-+	}
-+	/*
-+	 * If device has _EJ0, remove 'eject' file.
- 	 */
- 	status = acpi_get_handle(dev->handle, "_EJ0", &temp);
- 	if (ACPI_SUCCESS(status))
-diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-index 9e6e1c6..12172d5 100644
---- a/include/acpi/acpi_bus.h
-+++ b/include/acpi/acpi_bus.h
-@@ -209,6 +209,7 @@ struct acpi_device_pnp {
- 	struct list_head ids;		/* _HID and _CIDs */
- 	acpi_device_name device_name;	/* Driver-determined */
- 	acpi_device_class device_class;	/*        "          */
-+	union acpi_object *str_obj;	/* unicode string for _STR method */
- };
- 
- #define acpi_device_bid(d)	((d)->pnp.bus_id)
--- 
-1.7.7.6
+ static struct ctl_table debug_table[] = {
+ #if defined(CONFIG_X86) || defined(CONFIG_PPC) || defined(CONFIG_SPARC) || \
+-    defined(CONFIG_S390) || defined(CONFIG_TILE)
++    defined(CONFIG_S390) || defined(CONFIG_TILE) || defined(CONFIG_ARM64)
+ 	{
+ 		.procname	= "exception-trace",
+ 		.data		= &show_unhandled_signals,
 
