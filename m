@@ -1,43 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752663Ab2IGRMA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 13:12:00 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48573 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128Ab2IGRL7 (ORCPT
+	id S1752887Ab2IGROY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 13:14:24 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50259 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751327Ab2IGROV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 13:11:59 -0400
-Message-ID: <504A2ADC.4050703@gmail.com>
-Date: Fri, 07 Sep 2012 11:11:56 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Fri, 7 Sep 2012 13:14:21 -0400
+Date: Fri, 7 Sep 2012 19:14:11 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        HACHIMI Samir <shachimi@adeneo-embedded.com>, shawn.guo@linaro.org,
+        linux-kernel@vger.kernel.org,
+        =?iso-8859-15?Q?Beno=EEt_Th=E9baudeau?= 
+	<benoit.thebaudeau@advansee.com>,
+        kernel@pengutronix.de
+Subject: Re: [PATCH v3] pwm i.MX: add devicetree support
+Message-ID: <20120907171411.GT26594@pengutronix.de>
+References: <1346935695-25179-1-git-send-email-s.hauer@pengutronix.de>
+ <20120907131037.GD29340@avionic-0098.mockup.avionic-design.de>
 MIME-Version: 1.0
-To: Robert Richter <robert.richter@amd.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf, ibs: Check syscall attribute flags
-References: <1342826756-64663-1-git-send-email-dsahern@gmail.com> <1342826756-64663-9-git-send-email-dsahern@gmail.com> <20120906190238.GA29278@erda.amd.com> <5048F6BF.70106@gmail.com> <20120906195645.GD8285@erda.amd.com> <20120907164114.GJ8285@erda.amd.com> <504A25DB.2030100@gmail.com> <20120907170700.GK8285@erda.amd.com>
-In-Reply-To: <20120907170700.GK8285@erda.amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120907131037.GD29340@avionic-0098.mockup.avionic-design.de>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 19:13:08 up 76 days,  8:24, 42 users,  load average: 1.54, 1.33,
+ 1.23
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/7/12 11:07 AM, Robert Richter wrote:
->> Am I reading this right - if exclude_guest is set then perf_ibs_init
->> returns -EINVAL?
->
-> Yes, the hardware does not support this. I will look for a solution
-> which emulates this is software.
+On Fri, Sep 07, 2012 at 03:10:37PM +0200, Thierry Reding wrote:
+> On Thu, Sep 06, 2012 at 02:48:06PM +0200, Sascha Hauer wrote:
+> > The following is the third version of the i.MX pwm series. I integrated
+> > the remaining comments from Shawn and Benoît and added their tags.
+> > 
+> > So Thierry, please pull the attached patches. The pull request only
+> > contains the pwm framework specific patches, the remaining two I'd
+> > like to push via the arm-soc tree in case the i.MX5 also gets devicetree
+> > clock lookups.
+> 
+> Hi Sascha,
+> 
+> Sorry for taking so long to get back to you. Apart from my comments to
+> patch 1, I really like how this series cleans up the i.MX driver. It's
+> already a bit late in the 3.6 release cycle for these kinds of changes
+> and none of them fix any regressions, so I'd like to queue them for
+> 3.7 after my comments have been addressed.
 
-ugh, that's exactly we need for Intel: if precise is set, exclude_guest 
-must be set.
+Sure, no problem. The patches were never intended to go in for 3.6. I
+will address your comments and resend on monday.
 
-In perf I would like to set exclude_guest if precise is set -- what I 
-mentioned yesterday for the patch https://lkml.org/lkml/2012/7/20/437. 
-With my patch -e cycles:p on AMD will then fail EINVAL.
-
-David
+Thanks
+ Sascha
 
 
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
