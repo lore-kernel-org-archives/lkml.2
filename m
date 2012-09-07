@@ -1,77 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760669Ab2IGOBh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 10:01:37 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:56629 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753323Ab2IGOBg convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Fri, 7 Sep 2012 10:01:36 -0400
-Message-Id: <504A1A950200007800099D4C@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Fri, 07 Sep 2012 15:02:29 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Stefan Bader" <stefan.bader@canonical.com>
-Cc: "Matt Wilson" <msw@amazon.com>, <xen-devel@lists.xen.org>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH/RFC] Fix xsave bug on older Xen
- hypervisors
-References: <1347018043-21252-1-git-send-email-stefan.bader@canonical.com>
- <504A05B00200007800099C7B@nat28.tlf.novell.com>
- <5049F4E9.9050306@canonical.com>
-In-Reply-To: <5049F4E9.9050306@canonical.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1760689Ab2IGOEZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 10:04:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37722 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753323Ab2IGOEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 10:04:23 -0400
+Message-ID: <5049FEDD.40303@redhat.com>
+Date: Fri, 07 Sep 2012 16:04:13 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>, fes@google.com, aarcange@redhat.com,
+        riel@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mikew@google.com, yinghan@google.com,
+        virtualization@lists.linux-foundation.org, yvugenfi@redhat.com,
+        vrozenfe@redhat.com
+Subject: Re: [PATCH] virtio-balloon spec: provide a version of the "silent
+ deflate" feature that works
+References: <20120906105301.GC32325@redhat.com> <5048935A.8090308@redhat.com> <87wr06hg0l.fsf@rustcorp.com.au> <20120907054202.GA3452@redhat.com> <87vcfqfia1.fsf@rustcorp.com.au> <5049BE0E.6040202@redhat.com> <20120907105335.GB17211@redhat.com> <5049D899.60705@redhat.com> <20120907121712.GA17397@redhat.com> <5049E717.8080307@redhat.com> <20120907124432.GB17397@redhat.com>
+In-Reply-To: <20120907124432.GB17397@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 07.09.12 at 15:21, Stefan Bader <stefan.bader@canonical.com> wrote:
-> On 07.09.2012 14:33, Jan Beulich wrote:
->>>>> On 07.09.12 at 13:40, Stefan Bader <stefan.bader@canonical.com> wrote:
->>> When writing unsupported flags into CR4 (for some time the
->>> xen_write_cr4 function would refuse to do anything at all)
->>> older Xen hypervisors (and patch can potentially be improved
->>> by finding out what older means in version numbers) would
->>> crash the guest.
->>>
->>> Since Amazon EC2 would at least in the past be affected by that,
->>> Fedora and Ubuntu were carrying a hack that would filter out
->>> X86_CR4_OSXSAVE before writing to CR4. This would affect any
->>> PV guest, even those running on a newer HV.
->>>
->>> And this recently caused trouble because some user-space was
->>> only partially checking (or maybe only looking at the cpuid
->>> bits) and then trying to use xsave even though the OS support
->>> was not set.
->>>
->>> So I came up with a patch that would
->>> - limit the work-around to certain Xen versions
->>> - prevent the write to CR4 by unsetting xsave and osxsave in
->>>   the cpuid bits
->>>
->>> Doing things that way may actually allow this to be acceptable
->>> upstream, so I am sending it around, now.
->>> It probably could be improved when knowing the exact version
->>> to test for but otherwise should allow to work around the guest
->>> crash while not preventing xsave on Xen 4.x and newer hosts.
->> 
->> Before considering a hack like this, I'd really like to see evidence
->> of the described behavior with an upstream kernel (i.e. not one
->> with that known broken hack patched in, which has never been
->> upstream afaict).
+Il 07/09/2012 14:44, Michael S. Tsirkin ha scritto:
+>> Well, according to your reading of the spec.
+>>
+>> In the spec I'm reading "Host must be told before pages from the balloon
+>> are used".  Doesn't say anything about the guest.
 > 
-> This is the reason I wrote that Fedora and Ubuntu were carrying it. It never 
-> has
-> been send upstream (the other version) because it would filter the CR4 write 
-> for
-> any PV guest regardless of host version.
+> No? How is host told then? By divine force?
 
-But iirc that bad patch is a Linux side one (i.e. you're trying to fix
-something upstream that isn't upstream)?
+For a simple madvise-based implementation such as the one in QEMU, the
+host doesn't need to be told about anything (except periodic updating of
+the "actual" field, or the statsq).
 
-Jan
+The guest doesn't need at all to use the deflateq in fact.
 
+>> Now, indeed a very free interpretation is "Guest will tell host before
+>> pages from the balloon are used".  It turns out that it's exactly what
+>> guests have been doing, hence that's exactly what I'm proposing now:
+>> rename the feature to VIRTIO_BALLOON_F_WILL_TELL_HOST.
+> 
+> Rename is fine.
+
+Cool.
+
+>> Yes, that part we agree on I think.  We disagree that (after the rename)
+>> QEMU should start always proposing VIRTIO_BALLOON_F_WILL_TELL_HOST.
+> 
+> Not always. It must be off if compatibility with old qemu is disabled.
+
+Yes, of course.
+
+>> _Plus_ adding the new feature bit, which is needed to actually tell the
+> 
+> This part I do not get.  What is silent deflate, why is it useful
+> and what it has to do with what we are discussing here?
+
+Silent deflate is deflating just by using the page, without using the
+deflateq at all.  So it can be done even from GFP_ATOMIC context.
+
+But knowing that the guest will _not_ deflate silently also benefits the
+host. This is the cause of unpinning ballooned pages and pinning them
+again upon deflation. This allows cooperative memory overcommit even if
+the guests' memory is pinned, similar to what Xen did before it
+supported overcommit.  This is the second feature bit.
+
+There are three cases:
+
+* guest will never do silent deflation: current Linux driver.  Host may
+do munlock/mlock dance.  Negotiates VIRTIO_BALLOON_F_WILL_TELL_HOST
+only, features = VIRTIO_BALLOON_F_WILL_TELL_HOST.
+
+* guest will always do silent deflation: current Windows driver.
+Negotiates nothing, or if it cares it can negotiate
+VIRTIO_BALLOON_F_SILENT_DEFLATE.  Host mustn't do munlock/mlock dance.
+
+* guest may do silent deflation if available: combo of Linux driver +
+Frank's driver.  Negotiates both features, looks at
+VIRTIO_BALLOON_F_SILENT_DEFLATE host feature to decide how to behave:
+
+  ** If PCI passthrough, the host will not negotiate
+     VIRTIO_BALLOON_F_SILENT_DEFLATE.  The driver will behave as the
+     current Linux driver, the host can do the munlock/mlock dance.
+
+  ** If no PCI passthrough, the host will negotiate
+     VIRTIO_BALLOON_F_SILENT_DEFLATE, and the driver can balloon more
+     aggressively and not use the deflateq.
+
+Paolo
