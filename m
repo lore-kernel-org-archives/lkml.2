@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760148Ab2IGGLW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 02:11:22 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55174 "EHLO
+	id S1760208Ab2IGGMX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 02:12:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55192 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753895Ab2IGGLV (ORCPT
+	with ESMTP id S1753470Ab2IGGMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 02:11:21 -0400
-Date: Thu, 6 Sep 2012 23:11:04 -0700
-From: tip-bot for David Ahern <dsahern@gmail.com>
-Message-ID: <tip-eea9b6842950924876a1a21ca197f189f8bb335a@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, namhyung@kernel.org, rostedt@goodmis.org,
-        dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, rostedt@goodmis.org, dsahern@gmail.com,
-        tglx@linutronix.de, namhyung@kernel.org
-In-Reply-To: <1346892816-61779-1-git-send-email-dsahern@gmail.com>
-References: <1346892816-61779-1-git-send-email-dsahern@gmail.com>
+	Fri, 7 Sep 2012 02:12:22 -0400
+Date: Thu, 6 Sep 2012 23:12:00 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-ae42c6bb9300cf25990bd15f1bd6ee38598f7483@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@kernel.org, dsahern@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@kernel.org, dsahern@gmail.com,
+        tglx@linutronix.de
+In-Reply-To: <1346897446-16569-1-git-send-email-namhyung@kernel.org>
+References: <1346897446-16569-1-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Clean target should do clean for lib/
- traceevent too
-Git-Commit-ID: eea9b6842950924876a1a21ca197f189f8bb335a
+Subject: [tip:perf/core] perf header: Fix a typo on evsel
+Git-Commit-ID: ae42c6bb9300cf25990bd15f1bd6ee38598f7483
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,52 +31,43 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 06 Sep 2012 23:11:09 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 06 Sep 2012 23:12:07 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  eea9b6842950924876a1a21ca197f189f8bb335a
-Gitweb:     http://git.kernel.org/tip/eea9b6842950924876a1a21ca197f189f8bb335a
-Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Wed, 5 Sep 2012 18:53:36 -0600
+Commit-ID:  ae42c6bb9300cf25990bd15f1bd6ee38598f7483
+Gitweb:     http://git.kernel.org/tip/ae42c6bb9300cf25990bd15f1bd6ee38598f7483
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Thu, 6 Sep 2012 11:10:45 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 6 Sep 2012 10:47:29 -0300
+CommitDate: Thu, 6 Sep 2012 10:49:03 -0300
 
-perf tools: Clean target should do clean for lib/traceevent too
+perf header: Fix a typo on evsel
 
-It's built as part of perf, so it should be cleaned too.
+For checking return value of the strdup, 'event' should be 'evsel'.
 
-Tested-by: Namhyung Kim <namhyung@kernel.org>
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1346892816-61779-1-git-send-email-dsahern@gmail.com
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1346897446-16569-1-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+ tools/perf/util/header.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 939cf6d..afd5075 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -917,6 +917,9 @@ $(LIB_FILE): $(LIB_OBJS)
- $(LIBTRACEEVENT):
- 	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(QUIET_SUBDIR1) O=$(OUTPUT) libtraceevent.a
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 43425b7..8b0b873 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -2307,7 +2307,7 @@ static int perf_evsel__set_tracepoint_name(struct perf_evsel *evsel,
  
-+$(LIBTRACEEVENT)-clean:
-+	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(QUIET_SUBDIR1) O=$(OUTPUT) clean
-+
- help:
- 	@echo 'Perf make targets:'
- 	@echo '  doc		- make *all* documentation (see below)'
-@@ -1056,7 +1059,7 @@ quick-install-html:
+ 	snprintf(bf, sizeof(bf), "%s:%s", event->system, event->name);
+ 	evsel->name = strdup(bf);
+-	if (event->name == NULL)
++	if (evsel->name == NULL)
+ 		return -1;
  
- ### Cleaning rules
- 
--clean:
-+clean: $(LIBTRACEEVENT)-clean
- 	$(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)perf.o $(LANG_BINDINGS)
- 	$(RM) $(ALL_PROGRAMS) perf
- 	$(RM) *.spec *.pyc *.pyo */*.pyc */*.pyo $(OUTPUT)common-cmds.h TAGS tags cscope*
+ 	evsel->tp_format = event;
