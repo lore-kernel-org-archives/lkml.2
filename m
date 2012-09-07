@@ -1,38 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756453Ab2IGTPI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 15:15:08 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41451 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753283Ab2IGTPE convert rfc822-to-8bit (ORCPT
+	id S1756639Ab2IGTU1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 15:20:27 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:56425 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752023Ab2IGTUZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 15:15:04 -0400
-Message-ID: <1347045298.2124.8.camel@twins>
-Subject: Re: [PATCH 1/3] perf: use hrtimer for event multiplexing
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, ak@linux.intel.com,
-        zheng.z.yan@intel.com, robert.richter@amd.com
-Date: Fri, 07 Sep 2012 21:14:58 +0200
-In-Reply-To: <CABPqkBSQwduG2bwz0DYP1HPf+4_SQOMhxTBSnKSX-CmATBa93A@mail.gmail.com>
-References: <1347028169-1983-1-git-send-email-eranian@google.com>
-	 <1347028169-1983-2-git-send-email-eranian@google.com>
-	 <1347032350.18408.88.camel@twins>
-	 <CABPqkBT=2H5WuWZ+uFq39XTTxniVvT6tEuaYDHvaV2VSbjBPDQ@mail.gmail.com>
-	 <1347044931.2124.5.camel@twins>
-	 <CABPqkBSQwduG2bwz0DYP1HPf+4_SQOMhxTBSnKSX-CmATBa93A@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Fri, 7 Sep 2012 15:20:25 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH v3 07/31] arm64: Process management
+Date: Fri, 7 Sep 2012 19:20:16 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com> <1347035226-18649-8-git-send-email-catalin.marinas@arm.com>
+In-Reply-To: <1347035226-18649-8-git-send-email-catalin.marinas@arm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209071920.17355.arnd@arndb.de>
+X-Provags-ID: V02:K0:eGwCt88xoBpnl3/o9igPmV2AdZdqoc9RJU7ozqnYckQ
+ ITsV8ESp1i2+2UyljrD+CIXx96arSrQjY1GDd9jj0H5DigfQTE
+ wZLmIwbSLjEMFe/ZgsgTxhq+nKWYotxDFWRX6vJnVx5buMATeM
+ WJ+xTJdzgUbBG66TCJ7KCu6/IomJWyNJGFhAaUfCBg6MqfBSPc
+ Nf4rFh3geFvBME9PCvxK2N4nszr7rsfULtIFaIb6Vt/JefZ7fo
+ LNhNNPZSn9c8CwOvGlrYcB9I57NLvVfxZO8u+FDveuMTqE3Vt1
+ trLUKzTEuHtlgGs2Od6LJ/cf5dsLUqIUrAHS7222Dpal0yyhAH
+ Mu2eO9QiXd14e+HWxL4Y=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-07 at 21:10 +0200, Stephane Eranian wrote:
+On Friday 07 September 2012, Catalin Marinas wrote:
+> The patch adds support for thread creation and context switching. The
+> context switching CPU specific code is introduced with the CPU support
+> patch (part of the arch/arm64/mm/proc.S file). AArch64 supports
+> ASID-tagged TLBs and the ASID can be either 8 or 16-bit wide (detectable
+> via the ID_AA64AFR0_EL1 register).
 > 
-> That's true. I started modifying my code to implement your suggestion.
-> We'll see how it goes. Then we would have to export that mux interval
-> via sysfs for each PMU. 
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
+> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> Acked-by: Tony Lindgren <tony@atomide.com>
 
-Indeed. Thanks!
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+
+
+But please fix a few small issues in process.c:
+
+> diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
+> new file mode 100644
+> index 0000000..6dfd96f
+> --- /dev/null
+> +++ b/arch/arm64/kernel/process.c
+
+> +
+> +extern void setup_mm_for_reboot(void);
+
+No extern declarations in .c files, put it in a header file instead.
+
+
+> +
+> +/*
+> + * Function pointers to optional machine specific functions
+> + */
+> +void (*pm_power_off)(void);
+> +EXPORT_SYMBOL(pm_power_off);
+> +
+> +void (*pm_restart)(const char *cmd);
+> +EXPORT_SYMBOL_GPL(pm_restart);
+> +
+>
+> +void (*pm_idle)(void) = default_idle;
+> +EXPORT_SYMBOL(pm_idle);
+
+I'd make them all EXPORT_SYMBOL_GPL. External modules have no business overriding them.
+
+> +	/*
+> +	 * Whoops - the architecture was unable to reboot.
+> +	 * Tell the user!
+> +	 */
+> +	mdelay(1000);
+> +	printk("Reboot failed -- System halted\n");
+> +	while (1);
+
+This delay seems pointless.
+
+
+	Arnd
