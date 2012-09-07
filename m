@@ -1,75 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933364Ab2IGOmQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 10:42:16 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14087 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753461Ab2IGOmL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 10:42:11 -0400
-X-Authority-Analysis: v=2.0 cv=Vb91zSV9 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=dv6za2K3W50A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=hUPM8fjf3YcA:10 a=IPOSIB3mYOGryxCwkksA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1347028929.8178.8.camel@gandalf.local.home>
-Subject: Re: [PATCH tip/core/rcu 11/15] rcu: Avoid spurious RCU CPU stall
- warnings
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
-        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        eric.dumazet@gmail.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Date: Fri, 07 Sep 2012 10:42:09 -0400
-In-Reply-To: <1347001230.18408.72.camel@twins>
-References: <20120830185607.GA32148@linux.vnet.ibm.com>
-	 <1346352988-32444-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1346352988-32444-11-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1346943414.18408.31.camel@twins>
-	 <1346944049.1680.23.camel@gandalf.local.home>
-	 <1346944758.18408.35.camel@twins>
-	 <20120906210354.GC2448@linux.vnet.ibm.com>
-	 <1346967661.1680.52.camel@gandalf.local.home>
-	 <20120906215838.GM2448@linux.vnet.ibm.com>
-	 <1346969153.1680.60.camel@gandalf.local.home>
-	 <20120906222239.GQ2448@linux.vnet.ibm.com>
-	 <1347001230.18408.72.camel@twins>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+	id S933276Ab2IGOox (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 10:44:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12576 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753290Ab2IGOov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 10:44:51 -0400
+Message-ID: <504A0858.4080508@redhat.com>
+Date: Fri, 07 Sep 2012 16:44:40 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>, fes@google.com, aarcange@redhat.com,
+        riel@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mikew@google.com, yinghan@google.com,
+        virtualization@lists.linux-foundation.org, yvugenfi@redhat.com,
+        vrozenfe@redhat.com
+Subject: Re: [PATCH] virtio-balloon spec: provide a version of the "silent
+ deflate" feature that works
+References: <87wr06hg0l.fsf@rustcorp.com.au> <20120907054202.GA3452@redhat.com> <87vcfqfia1.fsf@rustcorp.com.au> <5049BE0E.6040202@redhat.com> <20120907105335.GB17211@redhat.com> <5049D899.60705@redhat.com> <20120907121712.GA17397@redhat.com> <5049E717.8080307@redhat.com> <20120907124432.GB17397@redhat.com> <5049FEDD.40303@redhat.com> <20120907142545.GC17397@redhat.com>
+In-Reply-To: <20120907142545.GC17397@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-07 at 09:00 +0200, Peter Zijlstra wrote:
-> On Thu, 2012-09-06 at 15:22 -0700, Paul E. McKenney wrote:
-> > Ah!
-> > 
-> > It is perfectly legal to avoid -starting- an RCU grace period for a
-> > minute, or even longer.  If RCU has nothing to do, in other words, if no
-> > one registers any RCU callbacks, then RCU need not start a grace period.
-> > 
-> > Of course, this would mean that it would eventually be a full minute
-> > since the last start of a grace period.  This is not a problem, after
-> > all, Linux went through a full ten years before experiencing its first
-> > grace period.
-> > 
-> > But the stall-warning code just checked how long it had been since
-> > the last start of a grace period, failing to note that this grace
-> > period had long since completed.  So it splatted out a warning.
-> > This warning was spurious in the sense that there was no bug aside
-> > from the missing check that the grace period was still in progress.
-> > 
-> > And this commit fixes that bug in RCU. 
+Il 07/09/2012 16:25, Michael S. Tsirkin ha scritto:
+>> > Silent deflate is deflating just by using the page, without using the
+>> > deflateq at all.  So it can be done even from GFP_ATOMIC context.
+> BTW I don't see a need to avoid deflateq.
+> Without MUST_TELL_HOST you can just deflate and then
+> bounce telling the host out to a thread.
+
+Yes, that's fine too.
+
+>> > But knowing that the guest will _not_ deflate silently also benefits the
+>> > host. This is the cause of unpinning ballooned pages and pinning them
+>> > again upon deflation. This allows cooperative memory overcommit even if
+>> > the guests' memory is pinned, similar to what Xen did before it
+>> > supported overcommit.  This is the second feature bit.
+> This is the MUST_TELL_HOST.
+
+Almost.  One is "the guest, if really needed, can tell the host of
+pages".  If not negotiated, and the host does not support it, the host
+must break the guest (e.g. fail to offer any virtqueues).
+
+The other is "the guest, though, would prefer not to do so".  It is
+different because the guest can proceed in a fallback mode even if the
+host doesn't offer it.
+
+You're interpreting features as something that dictates behavior, but
+they're really just advisory.  You could negotiate VIRTIO_BLK_F_TOPOLOGY
+and end up never reading the fields; you could negotiate
+VIRTIO_NET_F_GUEST_ANNOUNCE and never send a guest announcement.
+
+>> > * guest will always do silent deflation: current Windows driver.
+> Not exactly. It is not silent. It tells host
+> just after use.
+
+Yeah, but no difference from the POV of the driver.
+
+Delaying or avoiding is the same in the end.  The spec says it well: "In
+this case, deflation advice is merely a courtesy".
+
+>> > Negotiates nothing, or if it cares it can negotiate
+>> > VIRTIO_BALLOON_F_SILENT_DEFLATE.  Host mustn't do munlock/mlock dance.
+>> >
+>> > * guest may do silent deflation if available: combo of Linux driver +
+>> > Frank's driver.  Negotiates both features, looks at
+>> > VIRTIO_BALLOON_F_SILENT_DEFLATE host feature to decide how to behave:
+>> > 
+>> >   ** If PCI passthrough, the host will not negotiate
+>> >      VIRTIO_BALLOON_F_SILENT_DEFLATE.  The driver will behave as the
+>> >      current Linux driver, the host can do the munlock/mlock dance.
+> So this case is just existing interface. OK.
 > 
-> OK, that makes sense.. it just looks like both Steve and me got confused
-> by the initial changelog. 
+>> >   ** If no PCI passthrough, the host will negotiate
+>> >      VIRTIO_BALLOON_F_SILENT_DEFLATE, and the driver can balloon more
+>> >      aggressively and not use the deflateq.
+>> > 
+> This last trickery confuses me.  It just does not make sense to set both
+> SILENT and TELL: either you are silent or you tell.
 
-Right, I think the change log needs to be fixed ;-)
+"I can be chatty if you ask me, but I'd rather be silent if you let me".
 
--- Steve
+TELL is a request of the host to the guest; the guest can agree or not.
 
+SILENT is a request of the guest to the host; the host can agree or not.
 
+> What is the benefit of avoiding host notification?
+> It seems cleaner for the host to know the state.
+
+Yeah, if you want to do it you can.
+
+Paolo
