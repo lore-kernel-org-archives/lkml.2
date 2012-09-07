@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759733Ab2IGEgF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 00:36:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43087 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753679Ab2IGEgB (ORCPT
+	id S1758139Ab2IGEgT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 00:36:19 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57482 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751100Ab2IGEgQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 00:36:01 -0400
+	Fri, 7 Sep 2012 00:36:16 -0400
 From: Toshiaki Yamane <yamanetoshi@gmail.com>
 To: Greg Kroah-Hartman <greg@kroah.com>
 Cc: linux-kernel@vger.kernel.org, Toshiaki Yamane <yamanetoshi@gmail.com>
-Subject: [PATCH 42/57] staging/rts_pstor: remove braces {} in sd.c (reset_sd_card)
-Date: Fri,  7 Sep 2012 13:35:56 +0900
-Message-Id: <1346992556-17738-1-git-send-email-yamanetoshi@gmail.com>
+Subject: [PATCH 43/57] staging/rts_pstor: remove braces {} in sd.c (reset_mmc_only)
+Date: Fri,  7 Sep 2012 13:36:11 +0900
+Message-Id: <1346992571-17770-1-git-send-email-yamanetoshi@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1346991387-16321-1-git-send-email-yamanetoshi@gmail.com>
 References: <1346991387-16321-1-git-send-email-yamanetoshi@gmail.com>
@@ -25,15 +25,15 @@ fixed below checkpatch warnings.
 
 Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
 ---
- drivers/staging/rts_pstor/sd.c |   22 ++++++++--------------
- 1 file changed, 8 insertions(+), 14 deletions(-)
+ drivers/staging/rts_pstor/sd.c |   16 ++++++----------
+ 1 file changed, 6 insertions(+), 10 deletions(-)
 
 diff --git a/drivers/staging/rts_pstor/sd.c b/drivers/staging/rts_pstor/sd.c
-index c117dc4..f0b11a4 100644
+index f0b11a4..f109bbc 100644
 --- a/drivers/staging/rts_pstor/sd.c
 +++ b/drivers/staging/rts_pstor/sd.c
-@@ -2961,36 +2961,31 @@ int reset_sd_card(struct rtsx_chip *chip)
- 	chip->capacity[chip->card2lun[SD_CARD]] = 0;
+@@ -3060,33 +3060,29 @@ static int reset_mmc_only(struct rtsx_chip *chip)
+ 	chip->capacity[chip->card2lun[SD_CARD]] = sd_card->capacity = 0;
  
  	retval = enable_card_clock(chip, SD_CARD);
 -	if (retval != STATUS_SUCCESS) {
@@ -41,41 +41,17 @@ index c117dc4..f0b11a4 100644
  		TRACE_RET(chip, STATUS_FAIL);
 -	}
  
- 	if (chip->ignore_sd && CHK_SDIO_EXIST(chip) && !CHK_SDIO_IGNORED(chip)) {
- 		if (chip->asic_code) {
- 			retval = sd_pull_ctl_enable(chip);
--			if (retval != STATUS_SUCCESS) {
-+			if (retval != STATUS_SUCCESS)
- 				TRACE_RET(chip, STATUS_FAIL);
--			}
- 		} else {
- 			retval = rtsx_write_register(chip, FPGA_PULL_CTL,
- 						     FPGA_SD_PULL_CTL_BIT | 0x20, 0);
--			if (retval != STATUS_SUCCESS) {
-+			if (retval != STATUS_SUCCESS)
- 				TRACE_RET(chip, STATUS_FAIL);
--			}
- 		}
- 		retval = card_share_mode(chip, SD_CARD);
--		if (retval != STATUS_SUCCESS) {
-+		if (retval != STATUS_SUCCESS)
- 			TRACE_RET(chip, STATUS_FAIL);
--		}
- 
- 		chip->sd_io = 1;
- 		TRACE_RET(chip, STATUS_FAIL);
- 	}
- 
  	retval = sd_init_power(chip);
 -	if (retval != STATUS_SUCCESS) {
 +	if (retval != STATUS_SUCCESS)
  		TRACE_RET(chip, STATUS_FAIL);
 -	}
  
- 	if (chip->sd_ctl & RESET_MMC_FIRST) {
- 		retval = reset_mmc(chip);
-@@ -3029,18 +3024,17 @@ int reset_sd_card(struct rtsx_chip *chip)
- 	}
+ 	retval = reset_mmc(chip);
+-	if (retval != STATUS_SUCCESS) {
++	if (retval != STATUS_SUCCESS)
+ 		TRACE_RET(chip, STATUS_FAIL);
+-	}
  
  	retval = sd_set_clock_divider(chip, SD_CLK_DIVIDE_0);
 -	if (retval != STATUS_SUCCESS) {
@@ -94,7 +70,7 @@ index c117dc4..f0b11a4 100644
  		TRACE_RET(chip, STATUS_FAIL);
 -	}
  
- 	RTSX_DEBUGP("sd_card->sd_type = 0x%x\n", sd_card->sd_type);
+ 	RTSX_DEBUGP("In reset_mmc_only, sd_card->sd_type = 0x%x\n", sd_card->sd_type);
  
 -- 
 1.7.9.5
