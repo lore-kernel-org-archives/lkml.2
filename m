@@ -1,185 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932894Ab2IGLOx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 07:14:53 -0400
-Received: from david.siemens.de ([192.35.17.14]:26499 "EHLO david.siemens.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760317Ab2IGLOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 07:14:52 -0400
-Message-ID: <5049D722.5090305@siemens.com>
-Date: Fri, 07 Sep 2012 13:14:42 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v6 11/12] KVM: introduce readonly memslot
-References: <5032F8FD.2020306@linux.vnet.ibm.com> <5032FA5B.5040308@linux.vnet.ibm.com> <5049CB36.4080000@siemens.com> <5049D0AA.2060202@linux.vnet.ibm.com>
-In-Reply-To: <5049D0AA.2060202@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S933028Ab2IGLPU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 07:15:20 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:42854 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752928Ab2IGLPQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 07:15:16 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de
+Subject: [PATCH 00/19] First HREF Device Tree enablement patch-set
+Date: Fri,  7 Sep 2012 12:14:40 +0100
+Message-Id: <1347016499-29354-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-09-07 12:47, Xiao Guangrong wrote:
-> On 09/07/2012 06:23 PM, Jan Kiszka wrote:
->> On 2012-08-21 05:02, Xiao Guangrong wrote:
->>> In current code, if we map a readonly memory space from host to guest
->>> and the page is not currently mapped in the host, we will get a fault
->>> pfn and async is not allowed, then the vm will crash
->>>
->>> We introduce readonly memory region to map ROM/ROMD to the guest, read access
->>> is happy for readonly memslot, write access on readonly memslot will cause
->>> KVM_EXIT_MMIO exit
->>>
->>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->>> ---
->>>  Documentation/virtual/kvm/api.txt |   10 +++-
->>>  arch/x86/include/asm/kvm.h        |    1 +
->>>  arch/x86/kvm/mmu.c                |    9 ++++
->>>  arch/x86/kvm/x86.c                |    1 +
->>>  include/linux/kvm.h               |    6 ++-
->>>  include/linux/kvm_host.h          |    7 +--
->>>  virt/kvm/kvm_main.c               |   96 ++++++++++++++++++++++++++++++-------
->>>  7 files changed, 102 insertions(+), 28 deletions(-)
->>>
->>> diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
->>> index bf33aaa..b91bfd4 100644
->>> --- a/Documentation/virtual/kvm/api.txt
->>> +++ b/Documentation/virtual/kvm/api.txt
->>> @@ -857,7 +857,8 @@ struct kvm_userspace_memory_region {
->>>  };
->>>
->>>  /* for kvm_memory_region::flags */
->>> -#define KVM_MEM_LOG_DIRTY_PAGES  1UL
->>> +#define KVM_MEM_LOG_DIRTY_PAGES	(1UL << 0)
->>> +#define KVM_MEM_READONLY	(1UL << 1)
->>>
->>>  This ioctl allows the user to create or modify a guest physical memory
->>>  slot.  When changing an existing slot, it may be moved in the guest
->>> @@ -873,9 +874,12 @@ It is recommended that the lower 21 bits of guest_phys_addr and userspace_addr
->>>  be identical.  This allows large pages in the guest to be backed by large
->>>  pages in the host.
->>>
->>> -The flags field supports just one flag, KVM_MEM_LOG_DIRTY_PAGES, which
->>> +The flags field supports two flag, KVM_MEM_LOG_DIRTY_PAGES, which
->>>  instructs kvm to keep track of writes to memory within the slot.  See
->>> -the KVM_GET_DIRTY_LOG ioctl.
->>> +the KVM_GET_DIRTY_LOG ioctl. Another flag is KVM_MEM_READONLY when the
->>> +KVM_CAP_READONLY_MEM capability, it indicates the guest memory is read-only,
->>> +that means, guest is only allowed to read it.
->>
->> The last sentence requires some refactoring. :) How about: "The
->> KVM_CAP_READONLY_MEM capability indicates the availability of the
->> KVM_MEM_READONLY flag. When this flag is set for a memory region, KVM
->> only allows read accesses."
-> 
-> Undoubtedly, your sentence is far better than mine. :)
-> 
-> By the way, this patchset has been applied on kvm -next branch, would
-> you mind to post a patch to do these works.
+Based on v3.6-rc4
 
-Can do, found some more improvable parts in this IOCTL anyway.
+This patch consists of Device Tree related enablement for
+ST-Ericsson's development HREF hardware reference board.
+Most devices are very similar, if not the same to the
+previously enabled Snowball low-cost development board.
+These are referenced from the relevant .dtsi file and
+merely enabled in the HREF specific Device Tree. There 
+are also one or two minor Device Tree related fixes which
+were stumbled upon along the way.
 
-> 
->>
->>> Writes will be posted to
->>> +userspace as KVM_EXIT_MMIO exits.
->>>
->>>  When the KVM_CAP_SYNC_MMU capability, changes in the backing of the memory
->>>  region are automatically reflected into the guest.  For example, an mmap()
->>> diff --git a/arch/x86/include/asm/kvm.h b/arch/x86/include/asm/kvm.h
->>> index 246617e..521bf25 100644
->>> --- a/arch/x86/include/asm/kvm.h
->>> +++ b/arch/x86/include/asm/kvm.h
->>> @@ -25,6 +25,7 @@
->>>  #define __KVM_HAVE_DEBUGREGS
->>>  #define __KVM_HAVE_XSAVE
->>>  #define __KVM_HAVE_XCRS
->>> +#define __KVM_HAVE_READONLY_MEM
->>>
->>>  /* Architectural interrupt line count. */
->>>  #define KVM_NR_INTERRUPTS 256
->>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
->>> index 5548971..8e312a2 100644
->>> --- a/arch/x86/kvm/mmu.c
->>> +++ b/arch/x86/kvm/mmu.c
->>> @@ -2647,6 +2647,15 @@ static void kvm_send_hwpoison_signal(unsigned long address, struct task_struct *
->>>
->>>  static int kvm_handle_bad_page(struct kvm_vcpu *vcpu, gfn_t gfn, pfn_t pfn)
->>>  {
->>> +	/*
->>> +	 * Do not cache the mmio info caused by writing the readonly gfn
->>> +	 * into the spte otherwise read access on readonly gfn also can
->>> +	 * caused mmio page fault and treat it as mmio access.
->>> +	 * Return 1 to tell kvm to emulate it.
->>> +	 */
->>> +	if (pfn == KVM_PFN_ERR_RO_FAULT)
->>> +		return 1;
->>> +
->>>  	if (pfn == KVM_PFN_ERR_HWPOISON) {
->>>  		kvm_send_hwpoison_signal(gfn_to_hva(vcpu->kvm, gfn), current);
->>>  		return 0;
->>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
->>> index 704680d..42bbf41 100644
->>> --- a/arch/x86/kvm/x86.c
->>> +++ b/arch/x86/kvm/x86.c
->>> @@ -2175,6 +2175,7 @@ int kvm_dev_ioctl_check_extension(long ext)
->>>  	case KVM_CAP_GET_TSC_KHZ:
->>>  	case KVM_CAP_PCI_2_3:
->>>  	case KVM_CAP_KVMCLOCK_CTRL:
->>> +	case KVM_CAP_READONLY_MEM:
->>>  		r = 1;
->>>  		break;
->>>  	case KVM_CAP_COALESCED_MMIO:
->>> diff --git a/include/linux/kvm.h b/include/linux/kvm.h
->>> index 2de335d..d808694 100644
->>> --- a/include/linux/kvm.h
->>> +++ b/include/linux/kvm.h
->>> @@ -106,7 +106,8 @@ struct kvm_userspace_memory_region {
->>>   * other bits are reserved for kvm internal use which are defined in
->>>   * include/linux/kvm_host.h.
->>>   */
->>> -#define KVM_MEM_LOG_DIRTY_PAGES  1UL
->>> +#define KVM_MEM_LOG_DIRTY_PAGES	(1UL << 0)
->>> +#define KVM_MEM_READONLY	(1UL << 1)
->>>
->>>  /* for KVM_IRQ_LINE */
->>>  struct kvm_irq_level {
->>> @@ -621,6 +622,9 @@ struct kvm_ppc_smmu_info {
->>>  #define KVM_CAP_PPC_GET_SMMU_INFO 78
->>>  #define KVM_CAP_S390_COW 79
->>>  #define KVM_CAP_PPC_ALLOC_HTAB 80
->>> +#ifdef __KVM_HAVE_READONLY_MEM
->>> +#define KVM_CAP_READONLY_MEM 81
->>> +#endif
->>
->> See the discussion on the userspace patches: The CAP, as userspace API,
->> should really be defined unconditionally, kernel code should depend on
->> __KVM_HAVE_READONLY_MEM or a to-be-introduced CONFIG_KVM_HAVE_xxx
->> switch. This allows for cleaner userspace code.
-> 
-> I see that using __KVM_HAVE_  around CAP in kvm.h is very popular:
-> 
-> $ grep __KVM_HAVE include/linux/kvm.h | wc -l
-> 20
+ arch/arm/boot/dts/hrefv60plus.dts      |  140 ++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/snowball.dts         |    1 -
+ arch/arm/mach-ux500/board-mop500-sdi.c |    4 +-
+ arch/arm/mach-ux500/board-mop500.c     |   12 +--
+ arch/arm/mach-ux500/board-mop500.h     |    2 +
+ drivers/gpio/gpio-tc3589x.c            |  120 +++++++++++++++++++--------
+ drivers/i2c/busses/i2c-nomadik.c       |    4 +
+ drivers/mfd/mfd-core.c                 |   10 ++-
+ drivers/mfd/tc3589x.c                  |  112 +++++++++++++++++++------
+ include/linux/mfd/tc3589x.h            |    1 +
+ 10 files changed, 327 insertions(+), 79 deletions(-)
 
-Yes, mistakes of the past.
-
-> 
-> As your suggestion, userspace will always use the CAP even if the CAP
-> is not really supported. We do not need care the overload on other arches?
-
-Generally, userspace can only find out if a CAP is supported by testing
-during runtime. Sometimes, the CAP may also be used to switch features
-that are only available on certain archs. But this particular feature
-should surely become a generic one soon, and the code you could skip in
-userspace is truly minimal.
-
-Jan
-
--- 
-Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
-Corporate Competence Center Embedded Linux
