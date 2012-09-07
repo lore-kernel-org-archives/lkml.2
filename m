@@ -1,81 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757914Ab2IGWUS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 18:20:18 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:55149 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756794Ab2IGWUK (ORCPT
+	id S1758274Ab2IGWVK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 18:21:10 -0400
+Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:46190 "EHLO
+	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751959Ab2IGWVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 18:20:10 -0400
+	Fri, 7 Sep 2012 18:21:07 -0400
+From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
+Date: Fri, 7 Sep 2012 18:14:02 -0400
+To: linux-kernel@vger.kernel.org
+Cc: =?utf-8?B?QmrDuHJu?= Mork <bjorn@mork.no>,
+        Len Sorensen <lsorense@csclub.uwaterloo.ca>, linux@sierrawireless.com,
+        netdev@vger.kernel.org
+Subject: Endianess bug fix for sierra_net
+Message-ID: <20120907221402.GJ15650@csclub.uwaterloo.ca>
 MIME-Version: 1.0
-In-Reply-To: <20120907142723.5766b42d.akpm@linux-foundation.org>
-References: <1347009393-8751-1-git-send-email-benjamin.gaignard@stericsson.com>
-	<20120907142723.5766b42d.akpm@linux-foundation.org>
-Date: Sat, 8 Sep 2012 00:20:09 +0200
-Message-ID: <CACRpkdap5Ujx5q=NjORgdz1DxE0_bTnCX+MxRdaycKTtv63Qdw@mail.gmail.com>
-Subject: Re: [PATCH] genalloc: make possible to use a custom allocation algorithm
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Benjamin Gaignard <benjamin.gaignard@linaro.org>,
-        linux-kernel@vger.kernel.org, ying.huang@intel.com,
-        Benjamin Gaignard <benjamin.gaignard@stericsson.com>,
-        Staffan Mansson <staffan.mansson@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 7, 2012 at 11:27 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Fri,  7 Sep 2012 11:16:33 +0200
-> Benjamin Gaignard <benjamin.gaignard@linaro.org> wrote:
+I discovered I couldn't get sierra_net to work on a powerpc.  Turns out
+the firmware attribute check assumes the system is little endian and
+hence fails because the attributes is a 16 bit value.
 
-> hm, OK.  What kernel subsystem are you referring to here?  Where do I
-> find this "ESRAM shared by multiple hardware"?
+Signed-off-by: Len Sorensen <lsorense@csclub.uwaterloo.ca>
 
-This is on the Ux500 in the ARM tree. We have defined the bases
-for this memory down there:
-
-cd arch/arm/mach-ux500 && grep -r ESRAM .
-./include/mach/db8500-regs.h:/* Base address and bank offsets for ESRAM */
-./include/mach/db8500-regs.h:#define U8500_ESRAM_BASE	0x40000000
-./include/mach/db8500-regs.h:#define U8500_ESRAM_BANK_SIZE	0x00020000
-./include/mach/db8500-regs.h:#define U8500_ESRAM_BANK0	U8500_ESRAM_BASE
-./include/mach/db8500-regs.h:#define
-U8500_ESRAM_BANK1	(U8500_ESRAM_BASE + U8500_ESRAM_BANK_SIZE)
-./include/mach/db8500-regs.h:#define
-U8500_ESRAM_BANK2	(U8500_ESRAM_BANK1 + U8500_ESRAM_BANK_SIZE)
-./include/mach/db8500-regs.h:#define
-U8500_ESRAM_BANK3	(U8500_ESRAM_BANK2 + U8500_ESRAM_BANK_SIZE)
-./include/mach/db8500-regs.h:#define
-U8500_ESRAM_BANK4	(U8500_ESRAM_BANK3 + U8500_ESRAM_BANK_SIZE)
-./include/mach/db8500-regs.h:#define U8500_ESRAM_DMA_LCPA_OFFSET     0x10000
-./include/mach/db8500-regs.h:#define U8500_DMA_LCPA_BASE
-(U8500_ESRAM_BANK0 + U8500_ESRAM_DMA_LCPA_OFFSET)
-./include/mach/db8500-regs.h:#define U8500_DMA_LCLA_BASE	U8500_ESRAM_BANK4
-
-So 5 banks of on-chip (fast!) RAM of 128 KB each. (And my
-Commodore 128 had 128 kB in total ... sob.)
-
-As you can see the last three defines start to do something that
-will grow unmaintainable: use static allocations in that ESRAM.
-In this case to hold linked lists for DMA transfers.
-
-Needless to say, a few high-performance use cases will really
-benefit from using this high-speed RAM. Typically DMA
-linked lists, graphics accelerators, encoders/decoders,
-SETI@Home work units, you name it.
-
-So we need to chop up this memory using a real allocator.
-So we've tried to use genalloc and it turns out it works fine
-until we run into allocation issues as those described by
-Benjamin, and it becomes a chicken-and-egg problem
-that we need fixing genalloc first to get to use the resource
-in a good way before we can submit code using the
-allocator.
-
-(The rest of the review comments I think Benjamin can
-answer way better than me...)
-
-Yours,
-Linus Walleij
+diff --git a/drivers/net/usb/sierra_net.c b/drivers/net/usb/sierra_net.c
+index 7be49ea..8e22417 100644
+--- a/drivers/net/usb/sierra_net.c
++++ b/drivers/net/usb/sierra_net.c
+@@ -656,7 +656,7 @@ static int sierra_net_get_fw_attr(struct usbnet *dev, u16 *datap)
+ 		return -EIO;
+ 	}
+ 
+-	*datap = *attrdata;
++	*datap = le16_to_cpu(*attrdata);
+ 
+ 	kfree(attrdata);
+ 	return result;
