@@ -1,535 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753042Ab2IGQbJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 12:31:09 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:34731 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752928Ab2IGQ17 (ORCPT
+	id S1754601Ab2IGQbg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 12:31:36 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:46800 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752914Ab2IGQa4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 12:27:59 -0400
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH v3 27/31] arm64: Loadable modules
-Date: Fri,  7 Sep 2012 17:27:02 +0100
-Message-Id: <1347035226-18649-28-git-send-email-catalin.marinas@arm.com>
-X-Mailer: git-send-email 1.7.9.111.gf3fb0
-In-Reply-To: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
-References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 07 Sep 2012 16:27:57.0909 (UTC) FILETIME=[BDA41850:01CD8D15]
-X-MC-Unique: 112090717275804701
-Content-Type: text/plain; charset=WINDOWS-1252
+	Fri, 7 Sep 2012 12:30:56 -0400
+From: Lance Ortiz <lance.ortiz@hp.com>
+To: rob@landley.net, lenb@kernel.org
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Lance Ortiz <lance.ortiz@hp.com>
+Subject: [PATCH] ACPI: Add new sysfs interface to export device description
+Date: Fri,  7 Sep 2012 10:28:16 -0600
+Message-Id: <1347035296-8882-1-git-send-email-lance.ortiz@hp.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q87GVGYu008391
 
-From: Will Deacon <will.deacon@arm.com>
+Add support to export the device description obtained from the ACPI _STR
+method, if one exists for a device, to user-space via a sysfs interface.
+This new interface provides a standard and platform neutral way for users
+to obtain the description text stored in the ACPI _STR method.  If no
+_STR method exists for the device, no sysfs 'description' file will be
+created.  The 'description' file will be located in the /sys/devices/
+directory using the device's path.
 
-This patch adds support for loadable modules. Loadable modules are
-loaded 64MB below the kernel image due to branch relocation restrictions
-(see Documentation/arm64/memory.txt).
+/sys/device/<bus>/<bridge path>/<device path>.../firmware_node/description
 
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Acked-by: Tony Lindgren <tony@atomide.com>
+Example:
+
+/sys/devices/pci0000:00/0000:00.07.0/0000:0e:00.0/firmware_node/description
+
+It can also be located using the ACPI device path, for example:
+
+/sys/devices/LNXSYSTM:00/device:00/ACPI0004:00/PNP0A08:00/device:13/device:15/description
+/sys/devices/LNXSYSTM:00/device:00/ACPI0004:00/ACPI0004:01/ACPI0007:02/description
+
+Execute the 'cat' command on the 'description' file to obtain the
+description string for that device.
+
+This patch also includes documentation describing how the new sysfs
+interface works
+
+Signed-off-by: Lance Ortiz <lance.ortiz@hp.com>
 ---
- arch/arm64/include/asm/module.h |   23 ++
- arch/arm64/kernel/module.c      |  456 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 479 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm64/include/asm/module.h
- create mode 100644 arch/arm64/kernel/module.c
+ .../ABI/testing/sysfs-devices-firmware_node        |   17 ++++++
+ drivers/acpi/scan.c                                |   58 +++++++++++++++++++-
+ include/acpi/acpi_bus.h                            |    1 +
+ 3 files changed, 74 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-devices-firmware_node
 
-diff --git a/arch/arm64/include/asm/module.h b/arch/arm64/include/asm/module.h
+diff --git a/Documentation/ABI/testing/sysfs-devices-firmware_node b/Documentation/ABI/testing/sysfs-devices-firmware_node
 new file mode 100644
-index 0000000..e80e232
+index 0000000..46badc9
 --- /dev/null
-+++ b/arch/arm64/include/asm/module.h
-@@ -0,0 +1,23 @@
-+/*
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#ifndef __ASM_MODULE_H
-+#define __ASM_MODULE_H
++++ b/Documentation/ABI/testing/sysfs-devices-firmware_node
+@@ -0,0 +1,17 @@
++What:		/sys/devices/.../firmware_node/
++Date:		September 2012
++Contact:	<>
++Description:
++		The /sys/devices/.../firmware_node directory contains attributes
++		allowing the user space to check and modify some firmware
++		related properties of given device.
 +
-+#include <asm-generic/module.h>
++What:		/sys/devices/.../firmware_node/description
++Date:		September 2012
++Contact:	Lance Ortiz <lance.ortiz@hp.com>
++Description:
++		The /sys/devices/.../firmware/description attribute contains a string
++		that describes the device as provided by the _STR method in the ACPI
++		namespace.  This attribute is read-only.  If the device does not have
++		an _STR method associated with it in the ACPI namespace, this
++		attribute is not present.
+diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+index c8a1f3b..c9c91e1 100644
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -10,6 +10,7 @@
+ #include <linux/signal.h>
+ #include <linux/kthread.h>
+ #include <linux/dmi.h>
++#include <linux/nls.h>
+ 
+ #include <acpi/acpi_drivers.h>
+ 
+@@ -192,8 +193,38 @@ end:
+ }
+ static DEVICE_ATTR(path, 0444, acpi_device_path_show, NULL);
+ 
++/* sysfs file that shows description text from the ACPI _STR method */
++static ssize_t description_show(struct device *dev,
++				struct device_attribute *attr,
++				char *buf) {
++	struct acpi_device *acpi_dev = to_acpi_device(dev);
++	int result;
 +
-+#define MODULE_ARCH_VERMAGIC	"aarch64"
-+
-+#endif /* __ASM_MODULE_H */
-diff --git a/arch/arm64/kernel/module.c b/arch/arm64/kernel/module.c
-new file mode 100644
-index 0000000..ca0e3d5
---- /dev/null
-+++ b/arch/arm64/kernel/module.c
-@@ -0,0 +1,456 @@
-+/*
-+ * AArch64 loadable module support.
-+ *
-+ * Copyright (C) 2012 ARM Limited
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ * Author: Will Deacon <will.deacon@arm.com>
-+ */
-+
-+#include <linux/bitops.h>
-+#include <linux/elf.h>
-+#include <linux/gfp.h>
-+#include <linux/kernel.h>
-+#include <linux/mm.h>
-+#include <linux/moduleloader.h>
-+#include <linux/vmalloc.h>
-+
-+void *module_alloc(unsigned long size)
-+{
-+	return __vmalloc_node_range(size, 1, MODULES_VADDR, MODULES_END,
-+				    GFP_KERNEL, PAGE_KERNEL_EXEC, -1,
-+				    __builtin_return_address(0));
-+}
-+
-+enum aarch64_reloc_op {
-+	RELOC_OP_NONE,
-+	RELOC_OP_ABS,
-+	RELOC_OP_PREL,
-+	RELOC_OP_PAGE,
-+};
-+
-+static u64 do_reloc(enum aarch64_reloc_op reloc_op, void *place, u64 val)
-+{
-+	switch (reloc_op) {
-+	case RELOC_OP_ABS:
-+		return val;
-+	case RELOC_OP_PREL:
-+		return val - (u64)place;
-+	case RELOC_OP_PAGE:
-+		return (val & ~0xfff) - ((u64)place & ~0xfff);
-+	case RELOC_OP_NONE:
-+		return 0;
-+	}
-+
-+	pr_err("do_reloc: unknown relocation operation %d\n", reloc_op);
-+	return 0;
-+}
-+
-+static int reloc_data(enum aarch64_reloc_op op, void *place, u64 val, int len)
-+{
-+	u64 imm_mask = (1 << len) - 1;
-+	s64 sval = do_reloc(op, place, val);
-+
-+	switch (len) {
-+	case 16:
-+		*(s16 *)place = sval;
-+		break;
-+	case 32:
-+		*(s32 *)place = sval;
-+		break;
-+	case 64:
-+		*(s64 *)place = sval;
-+		break;
-+	default:
-+		pr_err("Invalid length (%d) for data relocation\n", len);
-+		return 0;
++	if (acpi_dev->pnp.str_obj == NULL) {
++		result = sprintf(buf, "No Description\n");
++		goto end;
 +	}
 +
 +	/*
-+	 * Extract the upper value bits (including the sign bit) and
-+	 * shift them to bit 0.
++	 * The _STR object contains a Unicode identifier for a device.
++	 * We need to convert to utf-8 so it can be displayed.
 +	 */
-+	sval = (s64)(sval & ~(imm_mask >> 1)) >> (len - 1);
++	result = utf16s_to_utf8s(
++		(wchar_t *)acpi_dev->pnp.str_obj->buffer.pointer,
++		acpi_dev->pnp.str_obj->buffer.length,
++		UTF16_LITTLE_ENDIAN, buf,
++		PAGE_SIZE);
 +
-+	/*
-+	 * Overflow has occurred if the value is not representable in
-+	 * len bits (i.e the bottom len bits are not sign-extended and
-+	 * the top bits are not all zero).
-+	 */
-+	if ((u64)(sval + 1) > 2)
-+		return -ERANGE;
++	buf[result++] = '\n';
 +
-+	return 0;
++end:
++	return result;
 +}
++static DEVICE_ATTR(description, 0444, description_show, NULL);
 +
-+enum aarch64_imm_type {
-+	INSN_IMM_MOVNZ,
-+	INSN_IMM_MOVK,
-+	INSN_IMM_ADR,
-+	INSN_IMM_26,
-+	INSN_IMM_19,
-+	INSN_IMM_16,
-+	INSN_IMM_14,
-+	INSN_IMM_12,
-+	INSN_IMM_9,
-+};
-+
-+static u32 encode_insn_immediate(enum aarch64_imm_type type, u32 insn, u64 imm)
-+{
-+	u32 immlo, immhi, lomask, himask, mask;
-+	int shift;
-+
-+	switch (type) {
-+	case INSN_IMM_MOVNZ:
-+		/*
-+		 * For signed MOVW relocations, we have to manipulate the
-+		 * instruction encoding depending on whether or not the
-+		 * immediate is less than zero.
-+		 */
-+		insn &= ~(3 << 29);
-+		if ((s64)imm >= 0) {
-+			/* >=0: Set the instruction to MOVZ (opcode 10b). */
-+			insn |= 2 << 29;
-+		} else {
-+			/*
-+			 * <0: Set the instruction to MOVN (opcode 00b).
-+			 *     Since we've masked the opcode already, we
-+			 *     don't need to do anything other than
-+			 *     inverting the new immediate field.
-+			 */
-+			imm = ~imm;
-+		}
-+	case INSN_IMM_MOVK:
-+		mask = BIT(16) - 1;
-+		shift = 5;
-+		break;
-+	case INSN_IMM_ADR:
-+		lomask = 0x3;
-+		himask = 0x7ffff;
-+		immlo = imm & lomask;
-+		imm >>= 2;
-+		immhi = imm & himask;
-+		imm = (immlo << 24) | (immhi);
-+		mask = (lomask << 24) | (himask);
-+		shift = 5;
-+		break;
-+	case INSN_IMM_26:
-+		mask = BIT(26) - 1;
-+		shift = 0;
-+		break;
-+	case INSN_IMM_19:
-+		mask = BIT(19) - 1;
-+		shift = 5;
-+		break;
-+	case INSN_IMM_16:
-+		mask = BIT(16) - 1;
-+		shift = 5;
-+		break;
-+	case INSN_IMM_14:
-+		mask = BIT(14) - 1;
-+		shift = 5;
-+		break;
-+	case INSN_IMM_12:
-+		mask = BIT(12) - 1;
-+		shift = 10;
-+		break;
-+	case INSN_IMM_9:
-+		mask = BIT(9) - 1;
-+		shift = 12;
-+		break;
-+	default:
-+		pr_err("encode_insn_immediate: unknown immediate encoding %d\n",
-+			type);
-+		return 0;
+ static int acpi_device_setup_files(struct acpi_device *dev)
+ {
++	struct acpi_buffer buffer = {ACPI_ALLOCATE_BUFFER, NULL};
+ 	acpi_status status;
+ 	acpi_handle temp;
+ 	int result = 0;
+@@ -217,6 +248,21 @@ static int acpi_device_setup_files(struct acpi_device *dev)
+ 			goto end;
+ 	}
+ 
++	/*
++	 * If device has _STR, 'description' file is created
++	 */
++	status = acpi_get_handle(dev->handle, "_STR", &temp);
++	if (ACPI_SUCCESS(status)) {
++		status = acpi_evaluate_object(dev->handle, "_STR",
++					NULL, &buffer);
++		if (ACPI_FAILURE(status))
++			buffer.pointer = NULL;
++		dev->pnp.str_obj = buffer.pointer;
++		result = device_create_file(&dev->dev, &dev_attr_description);
++		if (result)
++			goto end;
 +	}
 +
-+	/* Update the immediate field. */
-+	insn &= ~(mask << shift);
-+	insn |= (imm & mask) << shift;
-+
-+	return insn;
-+}
-+
-+static int reloc_insn_movw(enum aarch64_reloc_op op, void *place, u64 val,
-+			   int lsb, enum aarch64_imm_type imm_type)
-+{
-+	u64 imm, limit = 0;
-+	s64 sval;
-+	u32 insn = *(u32 *)place;
-+
-+	sval = do_reloc(op, place, val);
-+	sval >>= lsb;
-+	imm = sval & 0xffff;
-+
-+	/* Update the instruction with the new encoding. */
-+	*(u32 *)place = encode_insn_immediate(imm_type, insn, imm);
-+
-+	/* Shift out the immediate field. */
-+	sval >>= 16;
-+
-+	/*
-+	 * For unsigned immediates, the overflow check is straightforward.
-+	 * For signed immediates, the sign bit is actually the bit past the
-+	 * most significant bit of the field.
-+	 * The INSN_IMM_16 immediate type is unsigned.
+         /*
+          * If device has _EJ0, 'eject' file is created that is used to trigger
+          * hot-removal function from userland.
+@@ -234,8 +280,16 @@ static void acpi_device_remove_files(struct acpi_device *dev)
+ 	acpi_handle temp;
+ 
+ 	/*
+-	 * If device has _EJ0, 'eject' file is created that is used to trigger
+-	 * hot-removal function from userland.
++	 * If device has _STR, remove 'description' file
 +	 */
-+	if (imm_type != INSN_IMM_16) {
-+		sval++;
-+		limit++;
++	status = acpi_get_handle(dev->handle, "_STR", &temp);
++	if (ACPI_SUCCESS(status)) {
++		if (dev->pnp.str_obj != NULL)
++			kfree(dev->pnp.str_obj);
++		device_remove_file(&dev->dev, &dev_attr_description);
 +	}
-+
-+	/* Check the upper bits depending on the sign of the immediate. */
-+	if ((u64)sval > limit)
-+		return -ERANGE;
-+
-+	return 0;
-+}
-+
-+static int reloc_insn_imm(enum aarch64_reloc_op op, void *place, u64 val,
-+			  int lsb, int len, enum aarch64_imm_type imm_type)
-+{
-+	u64 imm, imm_mask;
-+	s64 sval;
-+	u32 insn = *(u32 *)place;
-+
-+	/* Calculate the relocation value. */
-+	sval = do_reloc(op, place, val);
-+	sval >>= lsb;
-+
-+	/* Extract the value bits and shift them to bit 0. */
-+	imm_mask = (BIT(lsb + len) - 1) >> lsb;
-+	imm = sval & imm_mask;
-+
-+	/* Update the instruction's immediate field. */
-+	*(u32 *)place = encode_insn_immediate(imm_type, insn, imm);
-+
 +	/*
-+	 * Extract the upper value bits (including the sign bit) and
-+	 * shift them to bit 0.
-+	 */
-+	sval = (s64)(sval & ~(imm_mask >> 1)) >> (len - 1);
-+
-+	/*
-+	 * Overflow has occurred if the upper bits are not all equal to
-+	 * the sign bit of the value.
-+	 */
-+	if ((u64)(sval + 1) >= 2)
-+		return -ERANGE;
-+
-+	return 0;
-+}
-+
-+int apply_relocate_add(Elf64_Shdr *sechdrs,
-+		       const char *strtab,
-+		       unsigned int symindex,
-+		       unsigned int relsec,
-+		       struct module *me)
-+{
-+	unsigned int i;
-+	int ovf;
-+	bool overflow_check;
-+	Elf64_Sym *sym;
-+	void *loc;
-+	u64 val;
-+	Elf64_Rela *rel = (void *)sechdrs[relsec].sh_addr;
-+
-+	for (i = 0; i < sechdrs[relsec].sh_size / sizeof(*rel); i++) {
-+		/* loc corresponds to P in the AArch64 ELF document. */
-+		loc = (void *)sechdrs[sechdrs[relsec].sh_info].sh_addr
-+			+ rel[i].r_offset;
-+
-+		/* sym is the ELF symbol we're referring to. */
-+		sym = (Elf64_Sym *)sechdrs[symindex].sh_addr
-+			+ ELF64_R_SYM(rel[i].r_info);
-+
-+		/* val corresponds to (S + A) in the AArch64 ELF document. */
-+		val = sym->st_value + rel[i].r_addend;
-+
-+		/* Check for overflow by default. */
-+		overflow_check = true;
-+
-+		/* Perform the static relocation. */
-+		switch (ELF64_R_TYPE(rel[i].r_info)) {
-+		/* Null relocations. */
-+		case R_ARM_NONE:
-+		case R_AARCH64_NONE:
-+			ovf = 0;
-+			break;
-+
-+		/* Data relocations. */
-+		case R_AARCH64_ABS64:
-+			overflow_check = false;
-+			ovf = reloc_data(RELOC_OP_ABS, loc, val, 64);
-+			break;
-+		case R_AARCH64_ABS32:
-+			ovf = reloc_data(RELOC_OP_ABS, loc, val, 32);
-+			break;
-+		case R_AARCH64_ABS16:
-+			ovf = reloc_data(RELOC_OP_ABS, loc, val, 16);
-+			break;
-+		case R_AARCH64_PREL64:
-+			overflow_check = false;
-+			ovf = reloc_data(RELOC_OP_PREL, loc, val, 64);
-+			break;
-+		case R_AARCH64_PREL32:
-+			ovf = reloc_data(RELOC_OP_PREL, loc, val, 32);
-+			break;
-+		case R_AARCH64_PREL16:
-+			ovf = reloc_data(RELOC_OP_PREL, loc, val, 16);
-+			break;
-+
-+		/* MOVW instruction relocations. */
-+		case R_AARCH64_MOVW_UABS_G0_NC:
-+			overflow_check = false;
-+		case R_AARCH64_MOVW_UABS_G0:
-+			ovf = reloc_insn_movw(RELOC_OP_ABS, loc, val, 0,
-+					      INSN_IMM_16);
-+			break;
-+		case R_AARCH64_MOVW_UABS_G1_NC:
-+			overflow_check = false;
-+		case R_AARCH64_MOVW_UABS_G1:
-+			ovf = reloc_insn_movw(RELOC_OP_ABS, loc, val, 16,
-+					      INSN_IMM_16);
-+			break;
-+		case R_AARCH64_MOVW_UABS_G2_NC:
-+			overflow_check = false;
-+		case R_AARCH64_MOVW_UABS_G2:
-+			ovf = reloc_insn_movw(RELOC_OP_ABS, loc, val, 32,
-+					      INSN_IMM_16);
-+			break;
-+		case R_AARCH64_MOVW_UABS_G3:
-+			/* We're using the top bits so we can't overflow. */
-+			overflow_check = false;
-+			ovf = reloc_insn_movw(RELOC_OP_ABS, loc, val, 48,
-+					      INSN_IMM_16);
-+			break;
-+		case R_AARCH64_MOVW_SABS_G0:
-+			ovf = reloc_insn_movw(RELOC_OP_ABS, loc, val, 0,
-+					      INSN_IMM_MOVNZ);
-+			break;
-+		case R_AARCH64_MOVW_SABS_G1:
-+			ovf = reloc_insn_movw(RELOC_OP_ABS, loc, val, 16,
-+					      INSN_IMM_MOVNZ);
-+			break;
-+		case R_AARCH64_MOVW_SABS_G2:
-+			ovf = reloc_insn_movw(RELOC_OP_ABS, loc, val, 32,
-+					      INSN_IMM_MOVNZ);
-+			break;
-+		case R_AARCH64_MOVW_PREL_G0_NC:
-+			overflow_check = false;
-+			ovf = reloc_insn_movw(RELOC_OP_PREL, loc, val, 0,
-+					      INSN_IMM_MOVK);
-+			break;
-+		case R_AARCH64_MOVW_PREL_G0:
-+			ovf = reloc_insn_movw(RELOC_OP_PREL, loc, val, 0,
-+					      INSN_IMM_MOVNZ);
-+			break;
-+		case R_AARCH64_MOVW_PREL_G1_NC:
-+			overflow_check = false;
-+			ovf = reloc_insn_movw(RELOC_OP_PREL, loc, val, 16,
-+					      INSN_IMM_MOVK);
-+			break;
-+		case R_AARCH64_MOVW_PREL_G1:
-+			ovf = reloc_insn_movw(RELOC_OP_PREL, loc, val, 16,
-+					      INSN_IMM_MOVNZ);
-+			break;
-+		case R_AARCH64_MOVW_PREL_G2_NC:
-+			overflow_check = false;
-+			ovf = reloc_insn_movw(RELOC_OP_PREL, loc, val, 32,
-+					      INSN_IMM_MOVK);
-+			break;
-+		case R_AARCH64_MOVW_PREL_G2:
-+			ovf = reloc_insn_movw(RELOC_OP_PREL, loc, val, 32,
-+					      INSN_IMM_MOVNZ);
-+			break;
-+		case R_AARCH64_MOVW_PREL_G3:
-+			/* We're using the top bits so we can't overflow. */
-+			overflow_check = false;
-+			ovf = reloc_insn_movw(RELOC_OP_PREL, loc, val, 48,
-+					      INSN_IMM_MOVNZ);
-+			break;
-+
-+		/* Immediate instruction relocations. */
-+		case R_AARCH64_LD_PREL_LO19:
-+			ovf = reloc_insn_imm(RELOC_OP_PREL, loc, val, 2, 19,
-+					     INSN_IMM_19);
-+			break;
-+		case R_AARCH64_ADR_PREL_LO21:
-+			ovf = reloc_insn_imm(RELOC_OP_PREL, loc, val, 0, 21,
-+					     INSN_IMM_ADR);
-+			break;
-+		case R_AARCH64_ADR_PREL_PG_HI21_NC:
-+			overflow_check = false;
-+		case R_AARCH64_ADR_PREL_PG_HI21:
-+			ovf = reloc_insn_imm(RELOC_OP_PAGE, loc, val, 12, 21,
-+					     INSN_IMM_ADR);
-+			break;
-+		case R_AARCH64_ADD_ABS_LO12_NC:
-+		case R_AARCH64_LDST8_ABS_LO12_NC:
-+			overflow_check = false;
-+			ovf = reloc_insn_imm(RELOC_OP_ABS, loc, val, 0, 12,
-+					     INSN_IMM_12);
-+			break;
-+		case R_AARCH64_LDST16_ABS_LO12_NC:
-+			overflow_check = false;
-+			ovf = reloc_insn_imm(RELOC_OP_ABS, loc, val, 1, 11,
-+					     INSN_IMM_12);
-+			break;
-+		case R_AARCH64_LDST32_ABS_LO12_NC:
-+			overflow_check = false;
-+			ovf = reloc_insn_imm(RELOC_OP_ABS, loc, val, 2, 10,
-+					     INSN_IMM_12);
-+			break;
-+		case R_AARCH64_LDST64_ABS_LO12_NC:
-+			overflow_check = false;
-+			ovf = reloc_insn_imm(RELOC_OP_ABS, loc, val, 3, 9,
-+					     INSN_IMM_12);
-+			break;
-+		case R_AARCH64_LDST128_ABS_LO12_NC:
-+			overflow_check = false;
-+			ovf = reloc_insn_imm(RELOC_OP_ABS, loc, val, 4, 8,
-+					     INSN_IMM_12);
-+			break;
-+		case R_AARCH64_TSTBR14:
-+			ovf = reloc_insn_imm(RELOC_OP_PREL, loc, val, 2, 14,
-+					     INSN_IMM_14);
-+			break;
-+		case R_AARCH64_CONDBR19:
-+			ovf = reloc_insn_imm(RELOC_OP_PREL, loc, val, 2, 19,
-+					     INSN_IMM_19);
-+			break;
-+		case R_AARCH64_JUMP26:
-+		case R_AARCH64_CALL26:
-+			ovf = reloc_insn_imm(RELOC_OP_PREL, loc, val, 2, 26,
-+					     INSN_IMM_26);
-+			break;
-+
-+		default:
-+			pr_err("module %s: unsupported RELA relocation: %llu\n",
-+			       me->name, ELF64_R_TYPE(rel[i].r_info));
-+			return -ENOEXEC;
-+		}
-+
-+		if (overflow_check && ovf == -ERANGE)
-+			goto overflow;
-+
-+	}
-+
-+	return 0;
-+
-+overflow:
-+	pr_err("module %s: overflow in relocation type %d val %Lx\n",
-+	       me->name, (int)ELF64_R_TYPE(rel[i].r_info), val);
-+	return -ENOEXEC;
-+}
++	 * If device has _EJ0, remove 'eject' file.
+ 	 */
+ 	status = acpi_get_handle(dev->handle, "_EJ0", &temp);
+ 	if (ACPI_SUCCESS(status))
+diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+index 9e6e1c6..12172d5 100644
+--- a/include/acpi/acpi_bus.h
++++ b/include/acpi/acpi_bus.h
+@@ -209,6 +209,7 @@ struct acpi_device_pnp {
+ 	struct list_head ids;		/* _HID and _CIDs */
+ 	acpi_device_name device_name;	/* Driver-determined */
+ 	acpi_device_class device_class;	/*        "          */
++	union acpi_object *str_obj;	/* unicode string for _STR method */
+ };
+ 
+ #define acpi_device_bid(d)	((d)->pnp.bus_id)
+-- 
+1.7.7.6
 
