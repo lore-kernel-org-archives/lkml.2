@@ -1,120 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759640Ab2IGGNm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 02:13:42 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:57573 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753306Ab2IGGNk (ORCPT
+	id S932660Ab2IGGOT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 02:14:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55224 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754442Ab2IGGOR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 02:13:40 -0400
-Message-ID: <5049908A.7070501@linux.vnet.ibm.com>
-Date: Fri, 07 Sep 2012 14:13:30 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Fri, 7 Sep 2012 02:14:17 -0400
+Date: Thu, 6 Sep 2012 23:13:53 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Message-ID: <tip-5jskfkuqvf2fi257zmni0ftz@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf test:
+  Add round trip test for sw and hw event names
+Git-Commit-ID: 8ad7013b252ba683055df19e657eb03d98f4f312
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: [PATCH 1/3] KVM: MMU: release noslot pfn on the fail path properly
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12090706-9264-0000-0000-0000024A0AAA
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 06 Sep 2012 23:13:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can not directly call kvm_release_pfn_clean to release the pfn
-since we can meet noslot pfn which is used to cache mmio info into
-spte
+Commit-ID:  8ad7013b252ba683055df19e657eb03d98f4f312
+Gitweb:     http://git.kernel.org/tip/8ad7013b252ba683055df19e657eb03d98f4f312
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Thu, 6 Sep 2012 13:11:18 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 6 Sep 2012 13:11:18 -0300
 
-Introduce mmu_release_pfn_clean to do this kind of thing
+perf test: Add round trip test for sw and hw event names
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+It basically traverses the hardware and software event name arrays
+creating an evlist with all events, then it uses perf_evsel__name to
+check that the name is the expected one.
+
+With it I noticed this problem:
+
+[root@sandy ~]# perf test 10
+10: roundtrip evsel->name check:invalid or unsupported event: 'CPU-migrations'
+Run 'perf list' for a list of valid events
+ FAILED!
+
+Changed it to "cpu-migrations" in the software event arrays and it
+worked.
+
+This is to catch problems like the one reported by Joel Uckelman in
+http://permalink.gmane.org/gmane.linux.kernel.perf.user/1016
+
+Hardware cache events will be checked in the following patch.
+
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-5jskfkuqvf2fi257zmni0ftz@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/x86/kvm/mmu.c         |   19 ++++++++++++++-----
- arch/x86/kvm/paging_tmpl.h |    4 ++--
- 2 files changed, 16 insertions(+), 7 deletions(-)
+ tools/perf/builtin-test.c |   53 +++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/evsel.c   |    6 ++--
+ tools/perf/util/evsel.h   |    6 +++-
+ 3 files changed, 60 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 399c177..3c10bca 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -2432,6 +2432,16 @@ done:
- 	return ret;
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index 381d5ab..ba94fbe 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -1092,6 +1092,55 @@ static int test__perf_pmu(void)
+ 	return perf_pmu__test();
  }
-
-+/*
-+ * The primary user is page fault path which call it to properly
-+ * release noslot_pfn.
-+ */
-+static void mmu_release_pfn_clean(pfn_t pfn)
+ 
++static int __perf_evsel__name_array_test(const char *names[], int nr_names)
 +{
-+	if (!is_error_pfn(pfn))
-+		kvm_release_pfn_clean(pfn);
++	int i, err;
++	struct perf_evsel *evsel;
++        struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
++
++        if (evlist == NULL)
++                return -ENOMEM;
++
++	for (i = 0; i < nr_names; ++i) {
++		err = parse_events(evlist, names[i], 0);
++		if (err) {
++			pr_debug("failed to parse event '%s', err %d\n",
++				 names[i], err);
++			goto out_delete_evlist;
++		}
++	}
++
++	err = 0;
++	list_for_each_entry(evsel, &evlist->entries, node) {
++		if (strcmp(perf_evsel__name(evsel), names[evsel->idx])) {
++			--err;
++			pr_debug("%s != %s\n", perf_evsel__name(evsel), names[evsel->idx]);
++		}
++	}
++
++out_delete_evlist:
++	perf_evlist__delete(evlist);
++	return err;
 +}
 +
- static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
- 			 unsigned pt_access, unsigned pte_access,
- 			 int user_fault, int write_fault,
-@@ -2497,8 +2507,7 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
- 		}
- 	}
-
--	if (!is_error_pfn(pfn))
--		kvm_release_pfn_clean(pfn);
-+	mmu_release_pfn_clean(pfn);
++#define perf_evsel__name_array_test(names) \
++	__perf_evsel__name_array_test(names, ARRAY_SIZE(names))
++
++static int perf_evsel__roundtrip_name_test(void)
++{
++	int err = 0, ret = 0;
++
++	err = perf_evsel__name_array_test(perf_evsel__hw_names);
++	if (err)
++		ret = err;
++
++	err = perf_evsel__name_array_test(perf_evsel__sw_names);
++	if (err)
++		ret = err;
++
++	return ret;
++}
++
+ static struct test {
+ 	const char *desc;
+ 	int (*func)(void);
+@@ -1135,6 +1184,10 @@ static struct test {
+ 		.func = dso__test_data,
+ 	},
+ 	{
++		.desc = "roundtrip evsel->name check",
++		.func = perf_evsel__roundtrip_name_test,
++	},
++	{
+ 		.func = NULL,
+ 	},
+ };
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 7ff3c8f..06f7644 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -68,7 +68,7 @@ struct perf_evsel *perf_evsel__new(struct perf_event_attr *attr, int idx)
+ 	return evsel;
  }
-
- static void nonpaging_new_cr3(struct kvm_vcpu *vcpu)
-@@ -2618,7 +2627,7 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
- 					      1, ACC_ALL, iterator.sptep);
- 			if (!sp) {
- 				pgprintk("nonpaging_map: ENOMEM\n");
--				kvm_release_pfn_clean(pfn);
-+				mmu_release_pfn_clean(pfn);
- 				return -ENOMEM;
- 			}
-
-@@ -2882,7 +2891,7 @@ static int nonpaging_map(struct kvm_vcpu *vcpu, gva_t v, u32 error_code,
-
- out_unlock:
- 	spin_unlock(&vcpu->kvm->mmu_lock);
--	kvm_release_pfn_clean(pfn);
-+	mmu_release_pfn_clean(pfn);
- 	return 0;
+ 
+-static const char *perf_evsel__hw_names[PERF_COUNT_HW_MAX] = {
++const char *perf_evsel__hw_names[PERF_COUNT_HW_MAX] = {
+ 	"cycles",
+ 	"instructions",
+ 	"cache-references",
+@@ -131,12 +131,12 @@ static int perf_evsel__hw_name(struct perf_evsel *evsel, char *bf, size_t size)
+ 	return r + perf_evsel__add_modifiers(evsel, bf + r, size - r);
  }
-
-@@ -3350,7 +3359,7 @@ static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa, u32 error_code,
-
- out_unlock:
- 	spin_unlock(&vcpu->kvm->mmu_lock);
--	kvm_release_pfn_clean(pfn);
-+	mmu_release_pfn_clean(pfn);
- 	return 0;
- }
-
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index bf8c42b..f075259 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -544,7 +544,7 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
- out_gpte_changed:
- 	if (sp)
- 		kvm_mmu_put_page(sp, it.sptep);
--	kvm_release_pfn_clean(pfn);
-+	mmu_release_pfn_clean(pfn);
- 	return NULL;
- }
-
-@@ -645,7 +645,7 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
-
- out_unlock:
- 	spin_unlock(&vcpu->kvm->mmu_lock);
--	kvm_release_pfn_clean(pfn);
-+	mmu_release_pfn_clean(pfn);
- 	return 0;
- }
-
--- 
-1.7.7.6
-
+ 
+-static const char *perf_evsel__sw_names[PERF_COUNT_SW_MAX] = {
++const char *perf_evsel__sw_names[PERF_COUNT_SW_MAX] = {
+ 	"cpu-clock",
+ 	"task-clock",
+ 	"page-faults",
+ 	"context-switches",
+-	"CPU-migrations",
++	"cpu-migrations",
+ 	"minor-faults",
+ 	"major-faults",
+ 	"alignment-faults",
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 94f6ba1..a3f562c 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -97,8 +97,10 @@ extern const char *perf_evsel__hw_cache[PERF_COUNT_HW_CACHE_MAX]
+ 				       [PERF_EVSEL__MAX_ALIASES];
+ extern const char *perf_evsel__hw_cache_op[PERF_COUNT_HW_CACHE_OP_MAX]
+ 					  [PERF_EVSEL__MAX_ALIASES];
+-const char *perf_evsel__hw_cache_result[PERF_COUNT_HW_CACHE_RESULT_MAX]
+-				       [PERF_EVSEL__MAX_ALIASES];
++extern const char *perf_evsel__hw_cache_result[PERF_COUNT_HW_CACHE_RESULT_MAX]
++					      [PERF_EVSEL__MAX_ALIASES];
++extern const char *perf_evsel__hw_names[PERF_COUNT_HW_MAX];
++extern const char *perf_evsel__sw_names[PERF_COUNT_SW_MAX];
+ int __perf_evsel__hw_cache_type_op_res_name(u8 type, u8 op, u8 result,
+ 					    char *bf, size_t size);
+ const char *perf_evsel__name(struct perf_evsel *evsel);
