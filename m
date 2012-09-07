@@ -1,47 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758172Ab2IGB63 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 21:58:29 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:53398 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757375Ab2IGB61 (ORCPT
+	id S1758290Ab2IGB7L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 21:59:11 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45315 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757532Ab2IGB7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 21:58:27 -0400
-From: Andreas Sturmlechner <andreas.sturmlechner@gmail.com>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, daniel@ffwll.ch
-Subject: Re: Re: 3.4.10 i915 [GM45] regression
-Date: Fri, 07 Sep 2012 03:57:54 +0200
-Message-ID: <2329337.9aFzn0oRxF@tux200s>
-Organization: Andreas Sturmlechner
-User-Agent: KMail/4.9.1 (Linux/3.5.3-ownage; KDE/4.9.1; x86_64; ; )
-In-Reply-To: <20120907011542.GA26688@kroah.com>
-References: <2372445.fuIXicT4H0@tux200s> <20120907011542.GA26688@kroah.com>
+	Thu, 6 Sep 2012 21:59:08 -0400
+Date: Fri, 7 Sep 2012 09:59:01 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: lrg@ti.com, rabin.vincent@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3] regulator: disable supply regulator if it is enabled
+ for boot-on
+Message-ID: <20120907015900.GC6827@opensource.wolfsonmicro.com>
+References: <1346682339-13322-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346682339-13322-1-git-send-email-ldewangan@nvidia.com>
+X-Cookie: Long life is in store for you.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Fri, Sep 07, 2012 at 02:27:12AM +0200, Andreas Sturmlechner wrote:
-> > Hello,
-> > 
-> > please revert commit 0d8957c8a90bbb5d34fab9a304459448a5131e06 - for some 
-> > reason it breaks boot-up (screen stays blank) on my GM45 hardware despite 
-> > >= 3.5 being fine.
-> > 
-> > See bug 54575 on freedesktop.org for a full description: 
-> > https://bugs.freedesktop.org/show_bug.cgi?id=54575
-> > 
-> > No idea how far-spread or not this might be since I couldn't find any
-> > other reports of that kind.
-> 
-> Can you cc: this to the people who wrote that patch?  That might help in
-> figuring out what is wrong here...
-> 
-> thanks,
-> 
-> greg k-h
+On Mon, Sep 03, 2012 at 07:55:39PM +0530, Laxman Dewangan wrote:
 
-done as intended, hopefully
+> +	/* If supply enabled during registrtaion then need to disable
+> +	 * when full constraint enabled.
+> +	 */
+> +	unsigned int need_supply_disable:1;
+
+I don't understand why we need this flag.  Shouldn't we just be making
+the reference counts for the supplies correct and then have the
+regulator disabled in the late initcall as a result of its refcount
+falling to zero when the children are disabled?  I think what we need to
+do here is always take a reference to the supply if the child is enabled
+during boot, then in the initcall we can just disable the parent
+regulator as normal.
