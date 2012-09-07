@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760222Ab2IGJJm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 05:09:42 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57232 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753066Ab2IGJJl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 05:09:41 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <balbi@ti.com>, <paul@pwsan.com>, <tony@atomide.com>,
-        <linux@arm.linux.org.uk>, <b-cousson@ti.com>, <arnd@arndb.de>,
-        <gregkh@linuxfoundation.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-CC: Kishon Vijay Abraham I <kishon@ti.com>
-Subject: [PATCH v2] arm: omap: hwmod: make *phy_48m* as the main_clk of ocp2scp
-Date: Fri, 7 Sep 2012 14:39:15 +0530
-Message-ID: <1347008955-21310-1-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1757399Ab2IGJQN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 05:16:13 -0400
+Received: from sjdcsican04.udc.trendmicro.com ([66.180.85.17]:41143 "EHLO
+	sjdciscan04.udc.trendmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757914Ab2IGJQL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 05:16:11 -0400
+X-Greylist: delayed 1731 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Sep 2012 05:16:11 EDT
+From: "yongjun_wei@trendmicro.com.cn" <yongjun_wei@trendmicro.com.cn>
+To: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: RE: [PATCH] block: move the dereference below the NULL test
+Thread-Topic: [PATCH] block: move the dereference below the NULL test
+Thread-Index: AQHNjMb69Ey80wCtlUGV+D2mgfcNzJd+kRsQ
+Date: Fri, 7 Sep 2012 08:47:16 +0000
+Message-ID: <A360F954C61C69449463B060666371121CDCB094@CDCEXMBX01.tw.trendnet.org>
+References: <CAPgLHd_T_ApNEibN_VYHzs9fA9YahFwjkfj2T4+UYtPdhzC3zA@mail.gmail.com>
+In-Reply-To: <CAPgLHd_T_ApNEibN_VYHzs9fA9YahFwjkfj2T4+UYtPdhzC3zA@mail.gmail.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.64.44.131]
+Content-Type: text/plain;
+	charset="gb2312"
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q879GQDx006398
 
-Made *ocp2scp_usb_phy_phy_48m* as the main_clk for ocp2scp.
-Since this ocp2scp module does not have any fck but does have a
-single opt_clock, it is added as the main_clk for ocp2scp. Also
-removed phy_48m as the optional clock since it is now made as the
-main clock. By this the driver need not enable/disable phy_48m clk
-separately and runtime_get/runtime_put will take care of that.
+Sorry, I see the patch fix this issue has already exists in the maillist,
+please ignore it, thanks.
 
-Cc: Beno√Æt Cousson <b-cousson@ti.com>
-Reviewed-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
-Changes for v1:
- Amend the comment section with benefit for the driver because of this patch.
- arch/arm/mach-omap2/omap_hwmod_44xx_data.c |    7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+-----Original Message-----
+From: Wei Yongjun [mailto:weiyj.lk@gmail.com] 
+Sent: 2012ƒÍ9‘¬7»’ 15:04
+To: grant.likely@secretlab.ca; rob.herring@calxeda.com
+Cc: Yongjun Wei (RD-CN); linux-kernel@vger.kernel.org; devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH] block: move the dereference below the NULL test
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-index 242aee4..e8e5405 100644
---- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-@@ -2503,14 +2503,11 @@ static struct omap_hwmod_class omap44xx_ocp2scp_hwmod_class = {
- };
- 
- /* ocp2scp_usb_phy */
--static struct omap_hwmod_opt_clk ocp2scp_usb_phy_opt_clks[] = {
--	{ .role = "phy_48m", .clk = "ocp2scp_usb_phy_phy_48m" },
--};
--
- static struct omap_hwmod omap44xx_ocp2scp_usb_phy_hwmod = {
- 	.name		= "ocp2scp_usb_phy",
- 	.class		= &omap44xx_ocp2scp_hwmod_class,
- 	.clkdm_name	= "l3_init_clkdm",
-+	.main_clk	= "ocp2scp_usb_phy_phy_48m",
- 	.prcm = {
- 		.omap4 = {
- 			.clkctrl_offs = OMAP4_CM_L3INIT_USBPHYOCP2SCP_CLKCTRL_OFFSET,
-@@ -2518,8 +2515,6 @@ static struct omap_hwmod omap44xx_ocp2scp_usb_phy_hwmod = {
- 			.modulemode   = MODULEMODE_HWCTRL,
- 		},
- 	},
--	.opt_clks	= ocp2scp_usb_phy_opt_clks,
--	.opt_clks_cnt	= ARRAY_SIZE(ocp2scp_usb_phy_opt_clks),
- };
- 
- /*
--- 
-1.7.9.5
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
+The dereference should be moved below the NULL test.
+
+spatch with a semantic match is used to found this.
+(http://coccinelle.lip6.fr/)
+
+
+
+TREND MICRO EMAIL NOTICE
+The information contained in this email and any attachments is confidential and may be subject to copyright or other intellectual property protection. If you are not the intended recipient, you are not authorized to use or disclose this information, and we request that you notify us by reply mail or telephone and delete the original message from your mail system.ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
