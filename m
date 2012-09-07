@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760174Ab2IGGJd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 02:09:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55135 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754368Ab2IGGJc (ORCPT
+	id S1760180Ab2IGGJv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 02:09:51 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:34027 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752646Ab2IGGJu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 02:09:32 -0400
-Date: Thu, 6 Sep 2012 23:09:13 -0700
-From: tip-bot for Irina Tirdea <irina.tirdea@gmail.com>
-Message-ID: <tip-60ff92f515a4efb36931f1b5b042332016e0f123@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, namhyung@kernel.org,
-        fweisbec@gmail.com, rostedt@goodmis.org, irina.tirdea@intel.com,
-        irina.tirdea@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, a.p.zijlstra@chello.nl, namhyung@kernel.org,
-        fweisbec@gmail.com, rostedt@goodmis.org, irina.tirdea@intel.com,
-        irina.tirdea@gmail.com, tglx@linutronix.de
-In-Reply-To: <CANg8OW+Y3ZMG-GdhYu2_yKOYH_XEMgw73PdCX_23UTnfYhmttA@mail.gmail.com>
-References: <CANg8OW+Y3ZMG-GdhYu2_yKOYH_XEMgw73PdCX_23UTnfYhmttA@mail.gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Replace mempcpy with memcpy
-Git-Commit-ID: 60ff92f515a4efb36931f1b5b042332016e0f123
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 7 Sep 2012 02:09:50 -0400
+X-Originating-IP: 217.70.178.148
+X-Originating-IP: 50.43.46.74
+Date: Thu, 6 Sep 2012 23:09:40 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+        eric.dumazet@gmail.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 04/15] rcu: Permit RCU_NONIDLE() to be used
+ from interrupt context
+Message-ID: <20120907060940.GA21166@leaf>
+References: <1346352988-32444-4-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20120831180052.GB4259@jtriplet-mobl1>
+ <20120904223350.GQ2593@linux.vnet.ibm.com>
+ <1346799082.27919.31.camel@gandalf.local.home>
+ <20120904230834.GB11494@jtriplet-mobl1>
+ <1346801031.27919.39.camel@gandalf.local.home>
+ <20120904233344.GB11855@jtriplet-mobl1>
+ <20120904234307.GY2593@linux.vnet.ibm.com>
+ <20120906185402.GB5738@jtriplet-mobl1>
+ <1346961244.1680.46.camel@gandalf.local.home>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 06 Sep 2012 23:09:18 -0700 (PDT)
+In-Reply-To: <1346961244.1680.46.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  60ff92f515a4efb36931f1b5b042332016e0f123
-Gitweb:     http://git.kernel.org/tip/60ff92f515a4efb36931f1b5b042332016e0f123
-Author:     Irina Tirdea <irina.tirdea@gmail.com>
-AuthorDate: Wed, 29 Aug 2012 01:22:16 +0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 5 Sep 2012 19:35:21 -0300
+On Thu, Sep 06, 2012 at 03:54:04PM -0400, Steven Rostedt wrote:
+> On Thu, 2012-09-06 at 11:54 -0700, Josh Triplett wrote:
+> > Not sure I see much difference in aesthetics between the three approaches,
+> > > but am willing to switch over to a generally agreed-upon scheme.
+> > 
+> > Steve, could I get an ack from you on the patch I sent?
+> 
+> I acked it, but do you just want me to take the patch? I'm getting ready
+> for another 3.7 push to tip.
 
-perf tools: Replace mempcpy with memcpy
+Up to Paul.  What would make it easiest to coordinate that patch and the
+corresponding bits in the RCU patch series?
 
-mempcpy is not supported by bionic in Android and will lead to
-compilation errors.
-
-Replacing mempcpy with memcpy so it will work in Android.
-
-Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/CANg8OW+Y3ZMG-GdhYu2_yKOYH_XEMgw73PdCX_23UTnfYhmttA@mail.gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/target.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/tools/perf/util/target.c b/tools/perf/util/target.c
-index 051eaa6..065528b 100644
---- a/tools/perf/util/target.c
-+++ b/tools/perf/util/target.c
-@@ -117,8 +117,8 @@ int perf_target__strerror(struct perf_target *target, int errnum,
- 
- 		if (err != buf) {
- 			size_t len = strlen(err);
--			char *c = mempcpy(buf, err, min(buflen - 1, len));
--			*c = '\0';
-+			memcpy(buf, err, min(buflen - 1, len));
-+			*(buf + min(buflen - 1, len)) = '\0';
- 		}
- 
- 		return 0;
+- Josh Triplett
