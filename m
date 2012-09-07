@@ -1,31 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758991Ab2IGXWA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 19:22:00 -0400
-Received: from zoll.ecam.fr ([193.55.245.6]:46954 "EHLO uranus.ecam.fr"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754742Ab2IGXV7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 19:21:59 -0400
-X-Greylist: delayed 2299 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Sep 2012 19:21:59 EDT
-To: undisclosed-recipients:;
-Subject: AVAILABLE FOR PICK-UP!!!
+	id S1757875Ab2IGXWr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 19:22:47 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45450 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753197Ab2IGXWq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 19:22:46 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Fri, 07 Sep 2012 15:41:19 -0700
-From: Western Union Money Transfer <info@pickup.org>
-Reply-To: <w-union.co.cc@admin.in.th>
-Mail-Reply-To: <w-union.co.cc@admin.in.th>
-Message-ID: <9f454dce0719a9a2c52808bb49f56bb8@ecam.fr>
-User-Agent: Roundcube Webmail/0.5.3
+Content-Transfer-Encoding: 8BIT
+From: Mike Turquette <mturquette@linaro.org>
+User-Agent: alot/0.3.2+
+To: "Karicheri, Muralidharan" <m-karicheri2@ti.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>,
+        "dbaryshkov@gmail.com" <dbaryshkov@gmail.com>,
+        "computersforpeace@gmail.com" <computersforpeace@gmail.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1346350624-27291-1-git-send-email-m-karicheri2@ti.com>
+ <20120907212853.20289.86031@nucleus>
+ <3E54258959B69E4282D79E01AB1F32B7041B73E9@DFLE12.ent.ti.com>
+In-Reply-To: <3E54258959B69E4282D79E01AB1F32B7041B73E9@DFLE12.ent.ti.com>
+Message-ID: <20120907232241.20289.38511@nucleus>
+Subject: Re: RE: [PATCH] mtd:nand:clk: preparation for switch to common clock
+ framework
+Date: Fri, 07 Sep 2012 16:22:41 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is to re-notify you of the $300,000.00 USD that was deposited
-here in the western union office in your name is available for pickup.
-Contact us via email for your M.T.C.N Numbers.
+Quoting Karicheri, Muralidharan (2012-09-07 14:56:22)
+> Mike,
+> 
+> How do these patch get to upstream? Does this get merged through davinci maintainer or through individual subsystem maintainers? 
+> 
 
-Contact Person:Mr. Allen G. Maurice
-Email: w-union.co.cc@admin.in.th
+What does scripts/get_maintainer.pl tell you?
+
+Also feel free to make my Acked-by into a Reviewed-by.  I always ge
+those two confused.
+
+Regards,
+Mike
+
+cant never remembr 
+
+> Thanks.
+> 
+> Murali Karicheri
+> Software Design Engineer
+> 
+> 
+> >> -----Original Message-----
+> >> From: Mike Turquette [mailto:mturquette@linaro.org]
+> >> Sent: Friday, September 07, 2012 5:29 PM
+> >> To: Karicheri, Muralidharan; dwmw2@infradead.org; artem.bityutskiy@linux.intel.com;
+> >> dbaryshkov@gmail.com; computersforpeace@gmail.com; linux-mtd@lists.infradead.org;
+> >> linux-kernel@vger.kernel.org
+> >> Cc: Karicheri, Muralidharan
+> >> Subject: Re: [PATCH] mtd:nand:clk: preparation for switch to common clock framework
+> >> 
+> >> Quoting Murali Karicheri (2012-08-30 11:17:04)
+> >> > As a first step towards migrating davinci platforms to use common clock
+> >> > framework, replace all instances of clk_enable() with clk_prepare_enable()
+> >> > and clk_disable() with clk_disable_unprepare(). Until the platform is
+> >> > switched to use the CONFIG_HAVE_CLK_PREPARE Kconfig variable, this just
+> >> > adds a might_sleep() call and would work without any issues.
+> >> >
+> >> > This will make it easy later to switch to common clk based implementation
+> >> > of clk driver from DaVinci specific driver.
+> >> >
+> >> > Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+> >> 
+> >> Acked-by: Mike Turquette <mturquette@linaro.org>
+> >> 
+> >> > ---
+> >> >  drivers/mtd/nand/davinci_nand.c |    6 +++---
+> >> >  1 file changed, 3 insertions(+), 3 deletions(-)
+> >> >
+> >> > diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
+> >> > index d94b03c..6b8cf27 100644
+> >> > --- a/drivers/mtd/nand/davinci_nand.c
+> >> > +++ b/drivers/mtd/nand/davinci_nand.c
+> >> > @@ -656,7 +656,7 @@ static int __init nand_davinci_probe(struct platform_device
+> >> *pdev)
+> >> >                 goto err_clk;
+> >> >         }
+> >> >
+> >> > -       ret = clk_enable(info->clk);
+> >> > +       ret = clk_prepare_enable(info->clk);
+> >> >         if (ret < 0) {
+> >> >                 dev_dbg(&pdev->dev, "unable to enable AEMIF clock, err %d\n",
+> >> >                         ret);
+> >> > @@ -767,7 +767,7 @@ syndrome_done:
+> >> >
+> >> >  err_scan:
+> >> >  err_timing:
+> >> > -       clk_disable(info->clk);
+> >> > +       clk_disable_unprepare(info->clk);
+> >> >
+> >> >  err_clk_enable:
+> >> >         clk_put(info->clk);
+> >> > @@ -804,7 +804,7 @@ static int __exit nand_davinci_remove(struct platform_device
+> >> *pdev)
+> >> >
+> >> >         nand_release(&info->mtd);
+> >> >
+> >> > -       clk_disable(info->clk);
+> >> > +       clk_disable_unprepare(info->clk);
+> >> >         clk_put(info->clk);
+> >> >
+> >> >         kfree(info);
+> >> > --
+> >> > 1.7.9.5
