@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759103Ab2IGF4d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 01:56:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54918 "EHLO
+	id S1759115Ab2IGF51 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 01:57:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54931 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754442Ab2IGF4b (ORCPT
+	with ESMTP id S1754728Ab2IGF5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 01:56:31 -0400
-Date: Thu, 6 Sep 2012 22:56:13 -0700
+	Fri, 7 Sep 2012 01:57:25 -0400
+Date: Thu, 6 Sep 2012 22:57:08 -0700
 From: tip-bot for David Ahern <dsahern@gmail.com>
-Message-ID: <tip-d25380cd3be38baff4ab31935b9d19b7f58ba7ac@git.kernel.org>
+Message-ID: <tip-1e6d53223884225f0c3f9f1a3ac54a224d97ab24@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
         mingo@kernel.org, peterz@infradead.org, fweisbec@gmail.com,
         dsahern@gmail.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         acme@redhat.com, fweisbec@gmail.com, peterz@infradead.org,
         dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1346005487-62961-2-git-send-email-dsahern@gmail.com>
-References: <1346005487-62961-2-git-send-email-dsahern@gmail.com>
+In-Reply-To: <1346005487-62961-3-git-send-email-dsahern@gmail.com>
+References: <1346005487-62961-3-git-send-email-dsahern@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf session:
-  flush_sample_queue needs to handle errors from handlers
-Git-Commit-ID: d25380cd3be38baff4ab31935b9d19b7f58ba7ac
+Subject: [tip:perf/core] perf tool:
+  handle errors in synthesized event functions
+Git-Commit-ID: 1e6d53223884225f0c3f9f1a3ac54a224d97ab24
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,101 +30,126 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 06 Sep 2012 22:56:18 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 06 Sep 2012 22:57:13 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d25380cd3be38baff4ab31935b9d19b7f58ba7ac
-Gitweb:     http://git.kernel.org/tip/d25380cd3be38baff4ab31935b9d19b7f58ba7ac
+Commit-ID:  1e6d53223884225f0c3f9f1a3ac54a224d97ab24
+Gitweb:     http://git.kernel.org/tip/1e6d53223884225f0c3f9f1a3ac54a224d97ab24
 Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Sun, 26 Aug 2012 12:24:41 -0600
+AuthorDate: Sun, 26 Aug 2012 12:24:42 -0600
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Wed, 5 Sep 2012 17:17:30 -0300
 
-perf session: flush_sample_queue needs to handle errors from handlers
+perf tool: handle errors in synthesized event functions
 
-Allows errors to propogate through event processing code and back to
-commands.
+Handle error from process callback and propagate back to caller.
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1346005487-62961-2-git-send-email-dsahern@gmail.com
+Link: http://lkml.kernel.org/r/1346005487-62961-3-git-send-email-dsahern@gmail.com
+Signed-off-by: David Ahern <dsahern@gmail.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/session.c |   24 +++++++++++++++---------
- 1 files changed, 15 insertions(+), 9 deletions(-)
+ tools/perf/util/event.c |   35 ++++++++++++++++++++++++++---------
+ 1 files changed, 26 insertions(+), 9 deletions(-)
 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index f7bb7ae..9453758 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -692,7 +692,7 @@ static int perf_session_deliver_event(struct perf_session *session,
- 				      struct perf_tool *tool,
- 				      u64 file_offset);
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 3a0f1a5..84ff6f16 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -120,7 +120,9 @@ static pid_t perf_event__synthesize_comm(struct perf_tool *tool,
+ 	if (!full) {
+ 		event->comm.tid = pid;
  
--static void flush_sample_queue(struct perf_session *s,
-+static int flush_sample_queue(struct perf_session *s,
- 			       struct perf_tool *tool)
- {
- 	struct ordered_samples *os = &s->ordered_samples;
-@@ -705,7 +705,7 @@ static void flush_sample_queue(struct perf_session *s,
- 	int ret;
- 
- 	if (!tool->ordered_samples || !limit)
--		return;
-+		return 0;
- 
- 	list_for_each_entry_safe(iter, tmp, head, list) {
- 		if (iter->timestamp > limit)
-@@ -715,9 +715,12 @@ static void flush_sample_queue(struct perf_session *s,
- 						s->header.needs_swap);
- 		if (ret)
- 			pr_err("Can't parse sample, err = %d\n", ret);
--		else
--			perf_session_deliver_event(s, iter->event, &sample, tool,
--						   iter->file_offset);
-+		else {
-+			ret = perf_session_deliver_event(s, iter->event, &sample, tool,
-+							 iter->file_offset);
-+			if (ret)
-+				return ret;
-+		}
- 
- 		os->last_flush = iter->timestamp;
- 		list_del(&iter->list);
-@@ -737,6 +740,8 @@ static void flush_sample_queue(struct perf_session *s,
+-		process(tool, event, &synth_sample, machine);
++		if (process(tool, event, &synth_sample, machine) != 0)
++			return -1;
++
+ 		goto out;
  	}
  
- 	os->nr_samples = 0;
-+
-+	return 0;
- }
+@@ -151,7 +153,10 @@ static pid_t perf_event__synthesize_comm(struct perf_tool *tool,
  
- /*
-@@ -782,10 +787,11 @@ static int process_finished_round(struct perf_tool *tool,
- 				  union perf_event *event __used,
- 				  struct perf_session *session)
+ 		event->comm.tid = pid;
+ 
+-		process(tool, event, &synth_sample, machine);
++		if (process(tool, event, &synth_sample, machine) != 0) {
++			tgid = -1;
++			break;
++		}
+ 	}
+ 
+ 	closedir(tasks);
+@@ -167,6 +172,7 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
  {
--	flush_sample_queue(session, tool);
--	session->ordered_samples.next_flush = session->ordered_samples.max_timestamp;
-+	int ret = flush_sample_queue(session, tool);
-+	if (!ret)
-+		session->ordered_samples.next_flush = session->ordered_samples.max_timestamp;
+ 	char filename[PATH_MAX];
+ 	FILE *fp;
++	int rc = 0;
  
+ 	snprintf(filename, sizeof(filename), "/proc/%d/maps", pid);
+ 
+@@ -231,18 +237,22 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
+ 			event->mmap.pid = tgid;
+ 			event->mmap.tid = pid;
+ 
+-			process(tool, event, &synth_sample, machine);
++			if (process(tool, event, &synth_sample, machine) != 0) {
++				rc = -1;
++				break;
++			}
+ 		}
+ 	}
+ 
+ 	fclose(fp);
 -	return 0;
-+	return ret;
++	return rc;
  }
  
- /* The queue is ordered by time */
-@@ -1443,7 +1449,7 @@ more:
+ int perf_event__synthesize_modules(struct perf_tool *tool,
+ 				   perf_event__handler_t process,
+ 				   struct machine *machine)
+ {
++	int rc = 0;
+ 	struct rb_node *nd;
+ 	struct map_groups *kmaps = &machine->kmaps;
+ 	union perf_event *event = zalloc((sizeof(event->mmap) +
+@@ -284,11 +294,14 @@ int perf_event__synthesize_modules(struct perf_tool *tool,
+ 
+ 		memcpy(event->mmap.filename, pos->dso->long_name,
+ 		       pos->dso->long_name_len + 1);
+-		process(tool, event, &synth_sample, machine);
++		if (process(tool, event, &synth_sample, machine) != 0) {
++			rc = -1;
++			break;
++		}
+ 	}
+ 
+ 	free(event);
+-	return 0;
++	return rc;
+ }
+ 
+ static int __event__synthesize_thread(union perf_event *comm_event,
+@@ -392,12 +405,16 @@ int perf_event__synthesize_threads(struct perf_tool *tool,
+ 		if (*end) /* only interested in proper numerical dirents */
+ 			continue;
+ 
+-		__event__synthesize_thread(comm_event, mmap_event, pid, 1,
+-					   process, tool, machine);
++		if (__event__synthesize_thread(comm_event, mmap_event, pid, 1,
++					   process, tool, machine) != 0) {
++			err = -1;
++			goto out_closedir;
++		}
+ 	}
+ 
+-	closedir(proc);
  	err = 0;
- 	/* do the final flush for ordered samples */
- 	session->ordered_samples.next_flush = ULLONG_MAX;
--	flush_sample_queue(session, tool);
-+	err = flush_sample_queue(session, tool);
- out_err:
- 	perf_session__warn_about_errors(session, tool);
- 	perf_session_free_sample_buffers(session);
++out_closedir:
++	closedir(proc);
+ out_free_mmap:
+ 	free(mmap_event);
+ out_free_comm:
