@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753513Ab2IGPb2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 11:31:28 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50881 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753037Ab2IGPbX (ORCPT
+	id S1753949Ab2IGPbi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 11:31:38 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52113 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752893Ab2IGPb1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 11:31:23 -0400
+	Fri, 7 Sep 2012 11:31:27 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: target-devel@vger.kernel.org, nab@linux-iscsi.org, hch@lst.de,
         roland@kernel.org
-Subject: [PATCH 08/11] target: fix truncation of mode data, support zero allocation length
-Date: Fri,  7 Sep 2012 17:30:39 +0200
-Message-Id: <1347031842-2531-9-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH 09/11] target: support zero allocation length in SBC commands
+Date: Fri,  7 Sep 2012 17:30:40 +0200
+Message-Id: <1347031842-2531-10-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.7.11.2
 In-Reply-To: <1347031842-2531-1-git-send-email-pbonzini@redhat.com>
 References: <1347031842-2531-1-git-send-email-pbonzini@redhat.com>
@@ -21,73 +21,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The offset was not bumped back to the full size after writing the
-header of the MODE SENSE response, so the last 1 or 2 bytes were
-not copied.
-
-On top of this, support zero-length requests by checking for the
-return value of transport_kmap_data_sg.
-
-Testcase: sg_raw -r20 /dev/sdb 5a 00 0a 00 00 00 00 00 14 00
-    last byte should be 0x1e
-    it is 0x00 without the patch
-    it is correct with the patch
+READ CAPACITY must be subject to the same treatment as INQUIRY,
+REQUEST SENSE, and MODE SENSE, but there are no pre-existing bugs
+to fix here.  Just use an on-stack buffer, and copy to it after
+checking the return value of transport_kmap_data_sg.
 
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- drivers/target/target_core_spc.c |   17 +++++++----------
- 1 files changed, 7 insertions(+), 10 deletions(-)
+ drivers/target/target_core_sbc.c |   23 +++++++++++++++--------
+ 1 files changed, 15 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/target/target_core_spc.c b/drivers/target/target_core_spc.c
-index 647e51b..96e5c48 100644
---- a/drivers/target/target_core_spc.c
-+++ b/drivers/target/target_core_spc.c
-@@ -784,7 +784,7 @@ static int spc_emulate_modesense(struct se_cmd *cmd)
- 	unsigned char *rbuf;
- 	int type = dev->transport->get_device_type(dev);
- 	int ten = (cmd->t_task_cdb[0] == MODE_SENSE_10);
--	int offset = ten ? 8 : 4;
-+	u32 offset = ten ? 8 : 4;
- 	int length = 0;
- 	unsigned char buf[SE_MODE_PAGE_BUF];
+diff --git a/drivers/target/target_core_sbc.c b/drivers/target/target_core_sbc.c
+index a9dd946..868f8aa 100644
+--- a/drivers/target/target_core_sbc.c
++++ b/drivers/target/target_core_sbc.c
+@@ -40,8 +40,9 @@
+ static int sbc_emulate_readcapacity(struct se_cmd *cmd)
+ {
+ 	struct se_device *dev = cmd->se_dev;
+-	unsigned char *buf;
+ 	unsigned long long blocks_long = dev->transport->get_blocks(dev);
++	unsigned char *rbuf;
++	unsigned char buf[8];
+ 	u32 blocks;
  
-@@ -817,6 +817,7 @@ static int spc_emulate_modesense(struct se_cmd *cmd)
- 		offset -= 2;
- 		buf[0] = (offset >> 8) & 0xff;
- 		buf[1] = offset & 0xff;
-+		offset += 2;
+ 	if (blocks_long >= 0x00000000ffffffff)
+@@ -49,8 +50,6 @@ static int sbc_emulate_readcapacity(struct se_cmd *cmd)
+ 	else
+ 		blocks = (u32)blocks_long;
  
- 		if ((cmd->se_lun->lun_access & TRANSPORT_LUNFLAGS_READ_ONLY) ||
- 		    (cmd->se_deve &&
-@@ -826,13 +827,10 @@ static int spc_emulate_modesense(struct se_cmd *cmd)
- 		if ((dev->se_sub_dev->se_dev_attrib.emulate_write_cache > 0) &&
- 		    (dev->se_sub_dev->se_dev_attrib.emulate_fua_write > 0))
- 			spc_modesense_dpofua(&buf[3], type);
+-	buf = transport_kmap_data_sg(cmd);
 -
--		if ((offset + 2) > cmd->data_length)
--			offset = cmd->data_length;
--
- 	} else {
- 		offset -= 1;
- 		buf[0] = offset & 0xff;
-+		offset += 1;
+ 	buf[0] = (blocks >> 24) & 0xff;
+ 	buf[1] = (blocks >> 16) & 0xff;
+ 	buf[2] = (blocks >> 8) & 0xff;
+@@ -60,7 +59,11 @@ static int sbc_emulate_readcapacity(struct se_cmd *cmd)
+ 	buf[6] = (dev->se_sub_dev->se_dev_attrib.block_size >> 8) & 0xff;
+ 	buf[7] = dev->se_sub_dev->se_dev_attrib.block_size & 0xff;
  
- 		if ((cmd->se_lun->lun_access & TRANSPORT_LUNFLAGS_READ_ONLY) ||
- 		    (cmd->se_deve &&
-@@ -842,14 +840,13 @@ static int spc_emulate_modesense(struct se_cmd *cmd)
- 		if ((dev->se_sub_dev->se_dev_attrib.emulate_write_cache > 0) &&
- 		    (dev->se_sub_dev->se_dev_attrib.emulate_fua_write > 0))
- 			spc_modesense_dpofua(&buf[2], type);
--
--		if ((offset + 1) > cmd->data_length)
--			offset = cmd->data_length;
- 	}
- 
- 	rbuf = transport_kmap_data_sg(cmd);
--	memcpy(rbuf, buf, offset);
 -	transport_kunmap_data_sg(cmd);
++	rbuf = transport_kmap_data_sg(cmd);
 +	if (rbuf) {
-+		memcpy(rbuf, buf, min(offset, cmd->data_length));
++		memcpy(rbuf, buf, min_t(u32, sizeof(buf), cmd->data_length));
++		transport_kunmap_data_sg(cmd);
++	}
+ 
+ 	target_complete_cmd(cmd, GOOD);
+ 	return 0;
+@@ -69,11 +72,11 @@ static int sbc_emulate_readcapacity(struct se_cmd *cmd)
+ static int sbc_emulate_readcapacity_16(struct se_cmd *cmd)
+ {
+ 	struct se_device *dev = cmd->se_dev;
+-	unsigned char *buf;
++	unsigned char *rbuf;
++	unsigned char buf[32];
+ 	unsigned long long blocks = dev->transport->get_blocks(dev);
+ 
+-	buf = transport_kmap_data_sg(cmd);
+-
++	memset(buf, 0, sizeof(buf));
+ 	buf[0] = (blocks >> 56) & 0xff;
+ 	buf[1] = (blocks >> 48) & 0xff;
+ 	buf[2] = (blocks >> 40) & 0xff;
+@@ -93,7 +96,11 @@ static int sbc_emulate_readcapacity_16(struct se_cmd *cmd)
+ 	if (dev->se_sub_dev->se_dev_attrib.emulate_tpu || dev->se_sub_dev->se_dev_attrib.emulate_tpws)
+ 		buf[14] = 0x80;
+ 
+-	transport_kunmap_data_sg(cmd);
++	rbuf = transport_kmap_data_sg(cmd);
++	if (rbuf) {
++		memcpy(rbuf, buf, min_t(u32, sizeof(buf), cmd->data_length));
 +		transport_kunmap_data_sg(cmd);
 +	}
  
