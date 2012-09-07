@@ -1,170 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756356Ab2IGSsN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 14:48:13 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:34110 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755159Ab2IGSsH (ORCPT
+	id S1755693Ab2IGS6p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 14:58:45 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:46675 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342Ab2IGS6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 14:48:07 -0400
+	Fri, 7 Sep 2012 14:58:40 -0400
+Date: Fri, 7 Sep 2012 20:59:41 +0200
+From: Fabio Baltieri <fabio.baltieri@gmail.com>
+To: Oliver Hartkopp <socketcan@hartkopp.net>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Wolfgang Grandegger <wg@grandegger.com>
+Subject: Re: [PATCH can-next v6] can: add tx/rx LED trigger support
+Message-ID: <20120907185941.GA2034@gmail.com>
+References: <20120903181335.GA415@vandijck-laurijssen.be>
+ <20120903182925.GA28766@gmail.com>
+ <50451919.20205@hartkopp.net>
+ <20120904071128.GB416@vandijck-laurijssen.be>
+ <20120904201553.GA29478@gmail.com>
+ <20120906103248.GA36903@macbook.local>
+ <CABkP77fff7wmZKbT=xbcBkSgLTbjTTzxOpQsWLrHTeG-53KSWQ@mail.gmail.com>
+ <20120906151158.GA37075@macbook.local>
+ <20120906205728.GC4043@gmail.com>
+ <20120907070419.GA37685@macbook.local>
 MIME-Version: 1.0
-In-Reply-To: <1347043094-11120-2-git-send-email-keescook@chromium.org>
-References: <1347043094-11120-1-git-send-email-keescook@chromium.org>
-	<1347043094-11120-2-git-send-email-keescook@chromium.org>
-Date: Fri, 7 Sep 2012 14:48:06 -0400
-Message-ID: <CACLa4psXVL6ed+Qh9vzZMLy+d+iH2_V4Giq4FzYeudDB6j-jVQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] security: introduce kernel_module_from_file hook
-From: Eric Paris <eparis@parisplace.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-security-module@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120907070419.GA37685@macbook.local>
+X-Operating-System: Linux balto-eee 3.6.0-rc4-balto-eee-00111-g8edc602-dirty
+ GNU/Linux
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Eric Paris <eparis@redhat.com>
+On Fri, Sep 07, 2012 at 09:04:19AM +0200, Kurt Van Dijck wrote:
+> On Thu, Sep 06, 2012 at 10:57:28PM +0200, Fabio Baltieri wrote:
+> > On Thu, Sep 06, 2012 at 05:11:58PM +0200, Kurt Van Dijck wrote:
+> > Can't argue with that... I'm trying to see how it comes but names like
+> > "can-3-2:1.0-tx" doesn't looks that friendly to me...
+> 
+> "can-3-2:1.0" is an iface name?
 
-On Fri, Sep 7, 2012 at 2:38 PM, Kees Cook <keescook@chromium.org> wrote:
-> Now that kernel module origins can be reasoned about, provide a hook to
-> the LSMs to make policy decisions about the module file.
->
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> Acked-by: Serge E. Hallyn <serge.hallyn@canonical.com>
-> ---
->  include/linux/security.h |   13 +++++++++++++
->  kernel/module.c          |    9 +++++++++
->  security/capability.c    |    6 ++++++
->  security/security.c      |    5 +++++
->  4 files changed, 33 insertions(+), 0 deletions(-)
->
-> diff --git a/include/linux/security.h b/include/linux/security.h
-> index 3dea6a9..368e539 100644
-> --- a/include/linux/security.h
-> +++ b/include/linux/security.h
-> @@ -693,6 +693,12 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
->   *     userspace to load a kernel module with the given name.
->   *     @kmod_name name of the module requested by the kernel
->   *     Return 0 if successful.
-> + * @kernel_module_from_file:
-> + *     Load a kernel module from userspace.
-> + *     @file contains the file structure pointing to the file containing
-> + *     the kernel module to load. If the module is being loaded from a blob,
-> + *     this argument will be NULL.
-> + *     Return 0 if permission is granted.
->   * @task_fix_setuid:
->   *     Update the module's state after setting one or more of the user
->   *     identity attributes of the current process.  The @flags parameter
-> @@ -1507,6 +1513,7 @@ struct security_operations {
->         int (*kernel_act_as)(struct cred *new, u32 secid);
->         int (*kernel_create_files_as)(struct cred *new, struct inode *inode);
->         int (*kernel_module_request)(char *kmod_name);
-> +       int (*kernel_module_from_file)(struct file *file);
->         int (*task_fix_setuid) (struct cred *new, const struct cred *old,
->                                 int flags);
->         int (*task_setpgid) (struct task_struct *p, pid_t pgid);
-> @@ -1764,6 +1771,7 @@ void security_transfer_creds(struct cred *new, const struct cred *old);
->  int security_kernel_act_as(struct cred *new, u32 secid);
->  int security_kernel_create_files_as(struct cred *new, struct inode *inode);
->  int security_kernel_module_request(char *kmod_name);
-> +int security_kernel_module_from_file(struct file *file);
->  int security_task_fix_setuid(struct cred *new, const struct cred *old,
->                              int flags);
->  int security_task_setpgid(struct task_struct *p, pid_t pgid);
-> @@ -2277,6 +2285,11 @@ static inline int security_kernel_module_request(char *kmod_name)
->         return 0;
->  }
->
-> +static inline int security_kernel_module_from_file(struct file *file)
-> +{
-> +       return 0;
-> +}
-> +
->  static inline int security_task_fix_setuid(struct cred *new,
->                                            const struct cred *old,
->                                            int flags)
-> diff --git a/kernel/module.c b/kernel/module.c
-> index c1e446e..0ad03c4 100644
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -29,6 +29,7 @@
->  #include <linux/vmalloc.h>
->  #include <linux/elf.h>
->  #include <linux/proc_fs.h>
-> +#include <linux/security.h>
->  #include <linux/seq_file.h>
->  #include <linux/syscalls.h>
->  #include <linux/fcntl.h>
-> @@ -2430,6 +2431,10 @@ int copy_module_from_user(const void __user *umod, unsigned long len,
->         if (info->len < sizeof(*(info->hdr)))
->                 return -ENOEXEC;
->
-> +       err = security_kernel_module_from_file(NULL);
-> +       if (err)
-> +               return err;
-> +
->         /* Suck in entire file: we'll want most of it. */
->         info->hdr = vmalloc(info->len);
->         if (!info->hdr)
-> @@ -2468,6 +2473,10 @@ int copy_module_from_fd(int fd, struct load_info *info)
->         if (err)
->                 goto out;
->
-> +       err = security_kernel_module_from_file(file);
-> +       if (err)
-> +               goto out;
-> +
->         size = stat.size;
->         info->hdr = vmalloc(size);
->         if (!info->hdr) {
-> diff --git a/security/capability.c b/security/capability.c
-> index 61095df..8acb304 100644
-> --- a/security/capability.c
-> +++ b/security/capability.c
-> @@ -395,6 +395,11 @@ static int cap_kernel_module_request(char *kmod_name)
->         return 0;
->  }
->
-> +static int cap_kernel_module_from_file(struct file *file)
-> +{
-> +       return 0;
-> +}
-> +
->  static int cap_task_setpgid(struct task_struct *p, pid_t pgid)
->  {
->         return 0;
-> @@ -967,6 +972,7 @@ void __init security_fixup_ops(struct security_operations *ops)
->         set_to_cap_if_null(ops, kernel_act_as);
->         set_to_cap_if_null(ops, kernel_create_files_as);
->         set_to_cap_if_null(ops, kernel_module_request);
-> +       set_to_cap_if_null(ops, kernel_module_from_file);
->         set_to_cap_if_null(ops, task_fix_setuid);
->         set_to_cap_if_null(ops, task_setpgid);
->         set_to_cap_if_null(ops, task_getpgid);
-> diff --git a/security/security.c b/security/security.c
-> index 860aeb3..f7f8695 100644
-> --- a/security/security.c
-> +++ b/security/security.c
-> @@ -799,6 +799,11 @@ int security_kernel_module_request(char *kmod_name)
->         return security_ops->kernel_module_request(kmod_name);
->  }
->
-> +int security_kernel_module_from_file(struct file *file)
-> +{
-> +       return security_ops->kernel_module_from_file(file);
-> +}
-> +
->  int security_task_fix_setuid(struct cred *new, const struct cred *old,
->                              int flags)
->  {
-> --
-> 1.7.0.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+No, I was trying some combination using device name instead of netdev
+one (which remains can0), here 3-2:1.0 is the usb path, looks really bad
+to be used for dev name if netdev name is still can0 - no way of
+determine the link between the two.
+
+> We must keep default iface names can%d. Only in the usecase that someone
+> wants to name its ifaces according device names, he/she should manually
+> adjust udev rules on his/her system ...
+> 
+> And if the iface is names "can-3-2:1.0", "can-3-2:1.0-tx" _is_
+> a friendly trigger name.
+
+Agreed.
+
+> > > It looks even more inconvenient. It only works as expected when you don't
+> > > change the trigger afterwards, but still it is possible (as should be),
+> > > so the design of trigger is ... wrong.
+> > > example:
+> > > When you put another trigger to a led, and have a proper sequence of
+> > > 'ip link set xxx up' and 'ip link set xxx down', you will end up
+> > > with the default_trigger again.
+> > > I realize I'm looking at unusual scenario's.
+> > 
+> > That's not correct, default trigger is going to be set only if there are
+> > no other trigger assigned to the LED, and only on led probe and trigger
+> > probe.
+> > 
+> > So, the LED framework is not going to change the trigger if you manually
+> > changed it to something else, and in any case default_trigger assignment
+> > only happens at probe/exit, not when interface is set up/down.
+> 
+> I think you're also arguing against a register/unregister during iface up/down.
+> We agree.
+
+Uh - yes! :-)
+
+Fabio
