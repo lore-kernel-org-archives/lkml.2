@@ -1,95 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932846Ab2IGJQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 05:16:56 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:44585 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759896Ab2IGJQy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 05:16:54 -0400
+	id S932953Ab2IGJRJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 05:17:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54855 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755052Ab2IGJRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 05:17:06 -0400
+Date: Fri, 7 Sep 2012 10:17:01 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Xishi Qiu <qiuxishi@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>
+Subject: Re: [PATCH v3 0/4] memory-hotplug: handle page race between
+ allocation and isolation
+Message-ID: <20120907091701.GW11266@suse.de>
+References: <1346978372-17903-1-git-send-email-minchan@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20120906211125.GB4785@balrog.le.imgtec.org>
-References: <20120906211125.GB4785@balrog.le.imgtec.org>
-Date: Fri, 7 Sep 2012 17:16:53 +0800
-Message-ID: <CAA_GA1enseskbRhgCGtZBcouuqUpJfcebUNtviUGw2HC8VBq4Q@mail.gmail.com>
-Subject: Re: [PATCH] kbuild: add symbol prefix arg to kallsyms
-From: Bob Liu <lliubbo@gmail.com>
-To: James Hogan <james@albanarts.com>
-Cc: Mike Frysinger <vapier@gentoo.org>, Michal Marek <mmarek@suse.cz>,
-        Sam Ravnborg <sam@ravnborg.org>,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1346978372-17903-1-git-send-email-minchan@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
+On Fri, Sep 07, 2012 at 09:39:28AM +0900, Minchan Kim wrote:
+> Memory hotplug has a subtle race problem so this patchset fixes the problem
+> (Look at [3/3] for detail and please confirm the problem before review
+> other patches in this series.)
+> 
+>  [1/4] is just clean up and help for [2/4].
+>  [2/4] keeps the migratetype information to freed page's index field
+>        and [3/4] uses the information.
+>  [3/4] fixes the race problem with [2/4]'s information.
+>  [4/4] enhance memory-hotremove operation success ratio
+> 
+> After applying [2/4], migratetype argument in __free_one_page
+> and free_one_page is redundant so we can remove it but I decide
+> to not touch them because it increases code size about 50 byte.
+> 
+> This patchset is based on mmotm-2012-09-06-16-46
+> 
 
-On Fri, Sep 7, 2012 at 5:11 AM, James Hogan <james@albanarts.com> wrote:
-> Commit 1f2bfbd00e466ff3489b2ca5cc75b1cccd14c123 ("kbuild: link of
-> vmlinux moved to a script") introduced in v3.5-rc1 broke kallsyms on
-> architectures which have symbol prefixes.
->
-> The --symbol-prefix argument used to be added to the KALLSYMS command
-> line from the architecture Makefile, however this isn't picked up by the
-> new scripts/link-vmlinux.sh. This resulted in symbols like
-> kallsyms_addresses being added which weren't correctly overriding the
-> weak symbols such as _kallsyms_addresses. These could then trigger
-> BUG_ONs in kallsyms code.
->
-> This is fixed by removing the KALLSYMS addition from the architecture
-> Makefile, and using CONFIG_SYMBOL_PREFIX in the link-vmlinux.sh script
-> to determine whether to add the --symbol-prefix argument.
->
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Nothing jumped out and poked me in the eye so for the series;
 
-Yes, we also found this issue. Thank you for your fix.
-I'll apply it soon.
+Acked-by: Mel Gorman <mgorman@suse.de>
 
-> ---
->  arch/blackfin/Makefile  |    1 -
->  scripts/link-vmlinux.sh |    7 ++++++-
->  2 files changed, 6 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/blackfin/Makefile b/arch/blackfin/Makefile
-> index d3d7e64..66cf000 100644
-> --- a/arch/blackfin/Makefile
-> +++ b/arch/blackfin/Makefile
-> @@ -20,7 +20,6 @@ endif
->  KBUILD_AFLAGS           += $(call cc-option,-mno-fdpic)
->  KBUILD_CFLAGS_MODULE    += -mlong-calls
->  LDFLAGS                 += -m elf32bfin
-> -KALLSYMS         += --symbol-prefix=_
->
->  KBUILD_DEFCONFIG := BF537-STAMP_defconfig
->
-> diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
-> index 4629038..df48dda 100644
-> --- a/scripts/link-vmlinux.sh
-> +++ b/scripts/link-vmlinux.sh
-> @@ -74,8 +74,13 @@ kallsyms()
->         info KSYM ${2}
->         local kallsymopt;
->
-> +       if [ -n "${CONFIG_SYMBOL_PREFIX}" ]; then
-> +               kallsymopt="${kallsymopt} \
-> +                           --symbol-prefix=${CONFIG_SYMBOL_PREFIX}"
-> +       fi
-> +
->         if [ -n "${CONFIG_KALLSYMS_ALL}" ]; then
-> -               kallsymopt=--all-symbols
-> +               kallsymopt="${kallsymopt} --all-symbols"
->         fi
->
->         local aflags="${KBUILD_AFLAGS} ${KBUILD_AFLAGS_KERNEL}               \
-> --
-> 1.7.7.6
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Thanks!
 
 -- 
-Regards,
---Bob
+Mel Gorman
+SUSE Labs
