@@ -1,50 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756318Ab2IGT27 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 15:28:59 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:54234 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751378Ab2IGT24 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 15:28:56 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH v3 10/31] arm64: TLB maintenance functionality
-Date: Fri, 7 Sep 2012 19:28:52 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+	id S1756679Ab2IGT31 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 15:29:27 -0400
+Received: from bitmer.com ([213.157.87.50]:46225 "EHLO bitmer.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753247Ab2IGT3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 15:29:25 -0400
+Date: Fri, 7 Sep 2012 22:29:23 +0300
+From: Jarkko Nikula <jarkko.nikula@bitmer.com>
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: linux-watchdog@vger.kernel.org, linux-omap@vger.kernel.org,
         linux-kernel@vger.kernel.org
-References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com> <1347035226-18649-11-git-send-email-catalin.marinas@arm.com>
-In-Reply-To: <1347035226-18649-11-git-send-email-catalin.marinas@arm.com>
+Subject: Re: [PATCH] watchdog: omap_wdt: convert to new watchdog core
+Message-ID: <20120907192923.GA16586@bitmer.com>
+References: <1346769684-25543-1-git-send-email-aaro.koskinen@iki.fi>
+ <20120907133107.GA14585@bitmer.com>
+ <20120907155143.GA10099@harshnoise.musicnaut.iki.fi>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209071928.52417.arnd@arndb.de>
-X-Provags-ID: V02:K0:ZtGQRsokx0x8fOsyq0SC0w7YET+nk6+zKnDT7iuVwz8
- UOH8WRdhdJNqsxEXMygq/HkyluXDbJDr1LYXQsLkIhivRB2tj3
- DHTn9HJlmz5EoKDwweitlKTcQHG0uQzdMQoDcDiRIdS76NUBPn
- 4p6jnZ/gks32fJ5/9RVmLIdQGaBC4YcpBECU8YBLXHlbxt/jXr
- M4JoaSWkPWf+cxxAQ1yrse1pShtmG4gaQpC7WxqaqQ5bM8jqAf
- xAKlXK5+Bx7Lg2tD9rKKvRFs+AhnyzFm8GyjP8KADOjRsJ0ET7
- exv+HERsrsTJ+afn60W2eNRhZSaU2QpEtP8F89V0YpZjeX8GJ1
- PU6vLVmX9QDVzzz0fpDs=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120907155143.GA10099@harshnoise.musicnaut.iki.fi>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 September 2012, Catalin Marinas wrote:
-> 
-> This patch adds the TLB maintenance functions. There is no distinction
-> made between the I and D TLBs. TLB maintenance operations are
-> automatically broadcast between CPUs in hardware. The inner-shareable
-> operations are always present, even on UP systems.
-> 
-> NOTE: Large part of this patch to be dropped once Peter Z's generic
-> mmu_gather patches are merged.
-> 
-> Signed-off-by: Will Deacon <will.deacon@arm.com>
-> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> Acked-by: Tony Lindgren <tony@atomide.com>
+On Fri, Sep 07, 2012 at 06:51:43PM +0300, Aaro Koskinen wrote:
+ 
+> Thanks for the report! I'll look into this and test with other
+> Nokia boards. I tested the patch only with N800 and v3.6-rc4
+> (4cbe5a555fa58a79b6ecbb6c531b8bab0650778d) and did not see any issues
+> with normal use cases (boot, watchdog open, feeding, watchdog close).
+>
+I forgot to test on another hw but will try to do in coming days. Anyway I'm
+happy to test your patch again if you spot something so you could cc also me
+for retesting.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+-- 
+Jarkko
