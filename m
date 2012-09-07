@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757405Ab2IGBe0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 21:34:26 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36899 "EHLO
+	id S1752207Ab2IGBhU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 21:37:20 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37910 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752207Ab2IGBeZ (ORCPT
+	with ESMTP id S1755637Ab2IGBhR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 21:34:25 -0400
-Message-ID: <50494F1A.4080207@kernel.dk>
-Date: Thu, 06 Sep 2012 19:34:18 -0600
+	Thu, 6 Sep 2012 21:37:17 -0400
+Message-ID: <50494FC6.3050502@kernel.dk>
+Date: Thu, 06 Sep 2012 19:37:10 -0600
 From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-To: Kent Overstreet <koverstreet@google.com>
-CC: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com
-Subject: Re: [PATCH v10 4/8] block: Add bio_reset()
-References: <1346970902-10931-1-git-send-email-koverstreet@google.com> <1346970902-10931-5-git-send-email-koverstreet@google.com>
-In-Reply-To: <1346970902-10931-5-git-send-email-koverstreet@google.com>
+To: Tejun Heo <tj@kernel.org>
+CC: Kent Overstreet <koverstreet@google.com>, linux-bcache@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dm-devel@redhat.com,
+        Alasdair Kergon <agk@redhat.com>, Neil Brown <neilb@suse.de>
+Subject: Re: [PATCH v10 0/8] Block cleanups
+References: <1346970902-10931-1-git-send-email-koverstreet@google.com> <20120906234805.GD9426@google.com>
+In-Reply-To: <20120906234805.GD9426@google.com>
 X-Enigmail-Version: 1.4.4
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -24,31 +25,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-09-06 16:34, Kent Overstreet wrote:
-> Reusing bios is something that's been highly frowned upon in the past,
-> but driver code keeps doing it anyways. If it's going to happen anyways,
-> we should provide a generic method.
+On 2012-09-06 17:48, Tejun Heo wrote:
+> Hello, guys.
 > 
-> This'll help with getting rid of bi_destructor - drivers/block/pktcdvd.c
-> was open coding it, by doing a bio_init() and resetting bi_destructor.
+> (cc'ing Jens, Alasdair and Neil)
 > 
-> This required reordering struct bio, but the block layer is not yet
-> nearly fast enough for any cacheline effects to matter here.
+> On Thu, Sep 06, 2012 at 03:34:54PM -0700, Kent Overstreet wrote:
+>> Screwed up the bio_reset() patch in the last patch series when I went to edit
+>> the description, fixed that here.
+>>
+>> Only other change is the dm patch - made the front_pad conditional on
+>> DM_TYPE_BIO_BASED.
+>>
+>> Kent Overstreet (8):
+>>   block: Generalized bio pool freeing
+>>   block: Ues bi_pool for bio_integrity_alloc()
+>>   dm: Use bioset's front_pad for dm_rq_clone_bio_info
+>>   block: Add bio_reset()
+>>   pktcdvd: Switch to bio_kmalloc()
+>>   block: Kill bi_destructor
+>>   block: Consolidate bio_alloc_bioset(), bio_kmalloc()
+>>   block: Add bio_clone_bioset(), bio_clone_kmalloc()
+> 
+> This series looks good to me now.  If someone can ack the dm patch, I
+> think it's good to go.  Jens, what do you think?
 
-That's an odd and misplaced comment. Was just doing testing today at 5M
-IOPS, and even years back we've had cache effects for O_DIRECT in higher
-speed setups.
+Looks OK to me too. I'll run a quick perf test on this tomorrow, and get
+it queued up for 3.7 if it looks fine.
 
-That said, we haven't done cache analysis in a long time. So moving
-members around isn't necessarily a huge deal.
-
-Lastly, this isn't a great commit message for other reasons. Anyone can
-see that it moves members around. It'd be a lot better to explain _why_
-it is reordering the struct.
-
-BTW, I looked over the rest of the patches, and it looks OK to me.
-However, you didn't CC me on the full series, so I'm missing bits 3 and
-5.
+Kent, are to resend 3+5 to me?
 
 -- 
 Jens Axboe
