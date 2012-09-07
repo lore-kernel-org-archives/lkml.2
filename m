@@ -1,35 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760624Ab2IGNvn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 09:51:43 -0400
-Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:48215 "EHLO
-	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755245Ab2IGNvl (ORCPT
+	id S1760667Ab2IGN5L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 09:57:11 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:42976 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756733Ab2IGN5H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 09:51:41 -0400
-Message-ID: <5049FC05.6090101@ti.com>
-Date: Fri, 07 Sep 2012 16:52:05 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120903 Thunderbird/15.0
-MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Samuel Ortiz <sameo@linux.intel.com>, NeilBrown <neilb@suse.de>,
-        Benoit Cousson <b-cousson@ti.com>, Felipe Balbi <balbi@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] mfd: twl: Move PWM driver to PWM framework
-References: <1346582458-7890-1-git-send-email-thierry.reding@avionic-design.de> <5044664C.5010508@ti.com> <20120907131926.GF29340@avionic-0098.mockup.avionic-design.de>
-In-Reply-To: <20120907131926.GF29340@avionic-0098.mockup.avionic-design.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 7 Sep 2012 09:57:07 -0400
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, Fengguang Wu <wfg@linux.intel.com>,
+        Mike Miller <mike.miller@hp.com>, Jens Axboe <axboe@kernel.dk>,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Subject: [PATCH -mm] cciss: select CONFIG_CHECK_SIGNATURE
+Date: Fri,  7 Sep 2012 22:56:51 +0900
+Message-Id: <1347026211-10557-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/07/2012 04:19 PM, Thierry Reding wrote:
->> All looks good for me but I have one comment for patch 2.
-> 
-> Okay. With that change to patch 2, can I add your Acked-by?
+The patch cciss-use-check_signature.patch in -mm tree introduced
+a build error:
 
-Yes, with that change added:
+drivers/built-in.o: In function `CISS_signature_present':
+drivers/block/cciss.c:4270: undefined reference to `check_signature'
 
-Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Add missing CONFIG_CHECK_SIGNATURE to fix this issue.
+
+Reported-by: Fengguang Wu <wfg@linux.intel.com>
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: Fengguang Wu <wfg@linux.intel.com>
+Cc: Mike Miller <mike.miller@hp.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+---
+ drivers/block/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
+index f529407..f7de322 100644
+--- a/drivers/block/Kconfig
++++ b/drivers/block/Kconfig
+@@ -131,6 +131,7 @@ config BLK_CPQ_DA
+ config BLK_CPQ_CISS_DA
+ 	tristate "Compaq Smart Array 5xxx support"
+ 	depends on PCI
++	select CHECK_SIGNATURE
+ 	help
+ 	  This is the driver for Compaq Smart Array 5xxx controllers.
+ 	  Everyone using these boards should say Y here.
+-- 
+1.7.11.4
+
