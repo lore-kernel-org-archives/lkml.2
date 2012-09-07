@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759075Ab2IGHQl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 03:16:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55752 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753459Ab2IGHQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 03:16:40 -0400
-Message-ID: <50499F3C.1070706@zytor.com>
-Date: Fri, 07 Sep 2012 00:16:12 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>
-CC: mingo@elte.hu, tglx@linutronix.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ix86: improve determination of X86_MINIMUM_CPU_FAMILY
-References: <5049B4C102000078000998FE@nat28.tlf.novell.com>
-In-Reply-To: <5049B4C102000078000998FE@nat28.tlf.novell.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1759359Ab2IGHTJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 03:19:09 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:47301 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751528Ab2IGHTI convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:2>);
+	Fri, 7 Sep 2012 03:19:08 -0400
+Message-Id: <5049BC410200007800099944@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Fri, 07 Sep 2012 08:20:01 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Matt Fleming" <matt.fleming@intel.com>
+Cc: "Vasco Dias" <rafa.vasco@gmail.com>, "Matthew Garrett" <mjg@redhat.com>,
+        <linux-efi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <cJ-ko@zougloub.eu>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] x86, efi: 1:1 pagetable mapping for virtual EFI
+ calls
+References: <1346937309-1581-1-git-send-email-matt@console-pimps.org>
+ <5048D09A020000780009965B@nat28.tlf.novell.com>
+ <1346946465.4244.107.camel@mfleming-mobl1.ger.corp.intel.com>
+In-Reply-To: <1346946465.4244.107.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/06/2012 11:48 PM, Jan Beulich wrote:
->
-> --- 3.6-rc4/arch/x86/Kconfig.cpu
-> +++ 3.6-rc4-x86-minimum-cpu-family/arch/x86/Kconfig.cpu
-> @@ -409,9 +409,9 @@ config X86_CMOV
->   config X86_MINIMUM_CPU_FAMILY
->   	int
->   	default "64" if X86_64
-> -	default "6" if X86_32 && X86_P6_NOP
-> -	default "5" if X86_32 && X86_CMPXCHG64
-> -	default "4" if X86_32 && (X86_XADD || X86_CMPXCHG || X86_BSWAP || X86_WP_WORKS_OK)
-> +	default "6" if X86_P6_NOP || X86_CMOV
-> +	default "5" if X86_CMPXCHG64 || X86_TSC
-> +	default "4" if X86_XADD || X86_CMPXCHG || X86_BSWAP || X86_WP_WORKS_OK
->   	default "3"
->
+>>> On 06.09.12 at 17:47, Matt Fleming <matt.fleming@intel.com> wrote:
+> On Thu, 2012-09-06 at 15:34 +0100, Jan Beulich wrote:
+>> >>> On 06.09.12 at 15:15, Matt Fleming <matt@console-pimps.org> wrote:
+>> > +	__flush_tlb_all();
+>> 
+>> Is it certain you will _never_ hit a global mapping (in which case I
+>> believe the above would be insufficient)?
+> 
+> Are you saying that this should be a flush_tlb_all() if we have global
+> mappings? Or that if we are guaranteed to never have global mappings we
+> can opitmise this by simply doing a __flush_tlb()?
 
-Erk, this isn't right either.  We're not supposed to include 
-CPUID-enumerable features here, so X86_CMOV, X86_CMPXCHG64 and X86_TSC 
-don't belong, and should instead be done via required-features.h.
+Hmm, looks like I shouldn't have worked from memory -
+other than I remembered, __flush_tlb_all() does take care
+of global pages. But indeed, if we can be sure that no global
+mappings would ever exist in the replaced (low) part of the
+address space, then __flush_tlb() would be sufficient. But I
+would agree that for a first round (and possibly forever,
+particularly as long as performance doesn't matter) it's safer
+to use the more aggressive flush. So please disregard my
+respective comment to that part of your patch.
 
-What a mess.
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Jan
 
