@@ -1,44 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757405Ab2IGTzI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 15:55:08 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:54535 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756514Ab2IGTzG (ORCPT
+	id S1757435Ab2IGT4W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 15:56:22 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:38265 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757214Ab2IGT4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 15:55:06 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH v3 30/31] arm64: Build infrastructure
-Date: Fri, 7 Sep 2012 19:55:01 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com> <1347035226-18649-31-git-send-email-catalin.marinas@arm.com>
-In-Reply-To: <1347035226-18649-31-git-send-email-catalin.marinas@arm.com>
+	Fri, 7 Sep 2012 15:56:19 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209071955.01994.arnd@arndb.de>
-X-Provags-ID: V02:K0:4t978IytjjPo2kjtrSes6SJXn+M7jlxGct4JDC+bh1s
- N+BDL+vrVOdfqHvCK8fsSr6nhmuFtPOg2AX7IFmu2C+VnCU/K3
- o8JDI5qdb18hvcogdhFSX8DYenMpSe+NnRWS2ywfDEOblZeuLp
- TGS4rffUzXNaSDA2P9gCHZPCOAv5G9mn26z71NhBrLrqd1zOeu
- amtkBzxy4plEWe51e1OtjcLmUu1h/ouUoOXogfHIkUXhCL6I/d
- tq4JkMDXHPZ6viIv5XDXFF6xL/SFf5SQ2d9g+nK8CTTik3WASG
- cER/JNsAToBfVxHyLUEaviOQILa+NgvE+gsZB8rf3j7NUnFbxn
- jjASfw+Q16yiz3azD4n0=
+In-Reply-To: <CAK2BKZxG840YUdjbqX4cRYXM-7axXCQrbD7EJbpC3c1-d=TfxA@mail.gmail.com>
+References: <CAK2BKZxG840YUdjbqX4cRYXM-7axXCQrbD7EJbpC3c1-d=TfxA@mail.gmail.com>
+Date: Fri, 7 Sep 2012 21:56:18 +0200
+Message-ID: <CAFLxGvykHyd0A1FZajUk51LcBTSma+tcZA94VTfVqBRqaZyiTw@mail.gmail.com>
+Subject: Re: Suggestions for the Future of Linux
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Angela Bernard <agelbernard@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 September 2012, Catalin Marinas wrote:
-> This patch adds Makefile and Kconfig files required for building an
-> AArch64 kernel.
-> 
-> Signed-off-by: Will Deacon <will.deacon@arm.com>
-> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> Acked-by: Tony Lindgren <tony@atomide.com>
+On Fri, Sep 7, 2012 at 9:39 PM, Angela Bernard <agelbernard@gmail.com> wrote:
+> Peoples, we're entering a new era of tech - so let's get Linux going
+> the way people want it to.
+>
+> 1: Remove ethernet support. Ethernet is just bloat - devices only have
+> it for the stubborn old geezers. Other than that, no one really uses
+> it. Get over it.
+>
+> http://www.pcgamer.com/2011/12/13/is-it-the-end-for-ethernet/
+>
+>  Who expects that thick cabling running through our offices? I don't!
+>
+> 2: Remove multi-monitor support
+>
+> The new way for technology is mobile. The desktop is dead, and Linux
+> on the desktop has been deader than dead since it was conceived. No
+> one, even on the desktop space, really even uses multi-monitors,
+> anyways.
+>
+> 3: Remove support for multiple users - no one really expects a single
+> device to be used by two people!
+>
+> 4: Ending optical drive support - when's the last time you ever bought
+> something on disk for use in your Linux box? The CD, DVD and Blu-Ray
+> are today what the Floppy was 15 years ago - obsolete and yet still in
+> use - where you need multiple disks for one thing - And even most
+> people's internet are faster than a CD drive.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+      .-'\
+   .-'  `/\
+.-'      `/\
+\         `/\
+ \         `/\
+  \    _-   `/\       _.--.
+   \    _-   `/`-..--\     )
+    \    _-   `,','  /    ,')
+     `-_   -   ` -- ~   ,','
+      `-              ,','
+       \,--.    ____==-~
+        \   \_-~\
+         `_-~_.-'
+          \-~
+
+
+-- 
+Thanks,
+//richard
