@@ -1,114 +1,341 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933000Ab2IGIse (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 04:48:34 -0400
-Received: from mga01.intel.com ([192.55.52.88]:28377 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932856Ab2IGIs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 04:48:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,384,1344236400"; 
-   d="scan'208";a="219252890"
-From: Feng Tang <feng.tang@intel.com>
-To: acme@redhat.com
-Cc: mingo@elte.hu, a.p.zijlstra@chello.nl, andi@firstfloor.org,
-        namhyung@kernel.org, dsahern@gmail.com, linux-kernel@vger.kernel.org,
-        Feng Tang <feng.tang@intel.com>
-Subject: [PATCH v2 4/7] perf scripts: Export a find_scripts() function
-Date: Fri,  7 Sep 2012 16:42:26 +0800
-Message-Id: <1347007349-3102-5-git-send-email-feng.tang@intel.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1347007349-3102-1-git-send-email-feng.tang@intel.com>
-References: <1347007349-3102-1-git-send-email-feng.tang@intel.com>
+	id S933067Ab2IGIss (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 04:48:48 -0400
+Received: from smtp-out-233.synserver.de ([212.40.185.233]:1091 "EHLO
+	smtp-out-233.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933006Ab2IGIsl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 04:48:41 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 20929
+Message-ID: <5049B501.20604@metafoo.de>
+Date: Fri, 07 Sep 2012 10:49:05 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.6esrpre) Gecko/20120817 Icedove/10.0.6
+MIME-Version: 1.0
+To: anish kumar <anish198519851985@gmail.com>
+CC: jic23@cam.ac.uk, linux-iio@vger.kernel.org, cbou@mail.ru,
+        dwmw2@infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [RFC]power: battery: Generic battery driver using IIO
+References: <1346600372-3284-1-git-send-email-anish198519851985@gmail.com>
+In-Reply-To: <1346600372-3284-1-git-send-email-anish198519851985@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So that other perf commands/browser has a way to dig out the available
-scripts info in system, this is a preparation for the script browser.
+On 09/02/2012 05:39 PM, anish kumar wrote:
+> From: anish kumar <anish198519851985@gmail.com>
+> 
+> This patch is to use IIO to write a generic batttery driver.
+> There are some inherent assumptions here:
+> 1.User is having both main battery and backup battery.
+> 2.Both batteries use same channel to get the information.
+> 
 
-Signed-off-by: Feng Tang <feng.tang@intel.com>
----
- tools/perf/builtin-script.c |   55 +++++++++++++++++++++++++++++++++++++++++++
- tools/perf/builtin.h        |    1 +
- 2 files changed, 56 insertions(+), 0 deletions(-)
+Hi thanks for stepping up to take care of this and sorry for the late reply.
 
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 7ab86bb..79f21d5 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -1031,6 +1031,61 @@ static int list_available_scripts(const struct option *opt __used,
- 	exit(0);
- }
- 
-+/*
-+ * Return -1 if none is found, otherwise the actual scripts number.
-+ *
-+ * Currently the only user of this function is the script browser, which
-+ * will list all statically runnable scripts, select one, execute it and
-+ * show the output in a perf browser.
-+ */
-+int find_scripts(char **scripts_array, char **scripts_path_array)
-+{
-+	struct dirent *script_next, *lang_next, script_dirent, lang_dirent;
-+	char scripts_path[MAXPATHLEN];
-+	DIR *scripts_dir, *lang_dir;
-+	char lang_path[MAXPATHLEN];
-+	char *temp;
-+	int i = 0;
-+
-+	snprintf(scripts_path, MAXPATHLEN, "%s/scripts", perf_exec_path());
-+
-+	scripts_dir = opendir(scripts_path);
-+	if (!scripts_dir)
-+		return -1;
-+
-+	for_each_lang(scripts_path, scripts_dir, lang_dirent, lang_next) {
-+		snprintf(lang_path, MAXPATHLEN, "%s/%s", scripts_path,
-+			 lang_dirent.d_name);
-+#ifdef NO_LIBPERL
-+		if (strstr(lang_path, "perl"))
-+			continue;
-+#endif
-+#ifdef NO_LIBPYTHON
-+		if (strstr(lang_path, "python"))
-+			continue;
-+#endif
-+
-+		lang_dir = opendir(lang_path);
-+		if (!lang_dir)
-+			continue;
-+
-+		for_each_script(lang_path, lang_dir, script_dirent, script_next) {
-+			/* Skip those real time scripts: xxxtop.p[yl] */
-+			if (strstr(script_dirent.d_name, "top."))
-+				continue;
-+			sprintf(scripts_path_array[i], "%s/%s", lang_path,
-+				script_dirent.d_name);
-+			temp = strchr(script_dirent.d_name, '.');
-+			snprintf(scripts_array[i],
-+				(temp - script_dirent.d_name) + 1,
-+				"%s", script_dirent.d_name);
-+			i++;
-+		}
-+	}
-+
-+	return i;
-+}
-+
- static char *get_script_path(const char *script_root, const char *suffix)
- {
- 	struct dirent *script_next, *lang_next, script_dirent, lang_dirent;
-diff --git a/tools/perf/builtin.h b/tools/perf/builtin.h
-index b382bd5..3ea74ed 100644
---- a/tools/perf/builtin.h
-+++ b/tools/perf/builtin.h
-@@ -36,4 +36,5 @@ extern int cmd_kvm(int argc, const char **argv, const char *prefix);
- extern int cmd_test(int argc, const char **argv, const char *prefix);
- extern int cmd_inject(int argc, const char **argv, const char *prefix);
- 
-+extern int find_scripts(char **scripts_array, char **scripts_path_array);
- #endif
--- 
-1.7.1
+> Signed-off-by: anish kumar <anish198519851985@gmail.com>
+> ---
+[...]
+> +
+> +struct generic_adc_bat {
+> +	struct power_supply		psy;
+> +	struct iio_channel		*channels;
+> +	int				channel_index;
+> +};
+> +
+> +struct generic_bat {
+> +	struct generic_adc_bat bat[BAT_MAX];
+> +	struct generic_platform_data	pdata;
+> +	int				volt_value;
+> +	int				cur_value;
+> +	unsigned int			timestamp;
+> +	int				level;
+> +	int				status;
+> +	int				cable_plugged:1;
+> +};
+> +
+> +static struct generic_bat generic_bat = {
+> +	.bat[MAIN_BAT] = {
+> +		.psy.name = "main-bat",
+> +	},
+> +	.bat[BACKUP_BAT] = {
+> +		.psy.name = "backup-bat",
+> +	},
+> +};
+
+This should be per device. I'd also just use one power_supply per device. If
+somebody has multiple batteries in their system they can register multiple
+devices. This should make the driver more flexible.
+
+> +
+> +static struct delayed_work bat_work;
+
+This should also go into the generic_bat struct.
+
+ +
+> +static void generic_adc_bat_ext_power_changed(struct power_supply *psy)
+> +{
+> +	schedule_delayed_work(&bat_work,
+> +			msecs_to_jiffies(JITTER_DELAY));
+> +}
+> +
+> +static enum power_supply_property generic_adc_main_bat_props[] = {
+> +	POWER_SUPPLY_PROP_STATUS,
+> +	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
+> +	POWER_SUPPLY_PROP_CHARGE_EMPTY_DESIGN,
+> +	POWER_SUPPLY_PROP_CHARGE_NOW,
+> +	POWER_SUPPLY_PROP_VOLTAGE_NOW,
+> +	POWER_SUPPLY_PROP_CURRENT_NOW,
+> +	POWER_SUPPLY_PROP_TECHNOLOGY,
+> +	POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN,
+> +	POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN,
+> +	POWER_SUPPLY_PROP_MODEL_NAME,
+> +};
+
+It probably make sense to create this at runtime, depending on which kind of
+IIO channels are provided. E.g. for VOLTAGE_NOW/CURRENT_NOW.
+
+[...]
+> +
+> +static int generic_adc_bat_get_property(struct power_supply *psy,
+> +		enum power_supply_property psp,
+> +		union power_supply_propval *val)
+> +{
+> +	struct generic_adc_bat *adc_bat;
+> +	struct generic_bat *bat;
+> +	int ret, scaleint, scalepart, iio_val;
+> +	long result = 0;
+> +
+> +	if (!strcmp(psy->name, "main-battery")) {
+> +		adc_bat = container_of(psy,
+> +					struct generic_adc_bat, psy);
+> +		bat = container_of(adc_bat,
+> +				struct generic_bat, bat[MAIN_BAT]);
+> +	} else if (!strcmp(psy->name, "backup-battery")) {
+> +		adc_bat = container_of(psy, struct generic_adc_bat, psy);
+> +		bat = container_of(adc_bat,
+> +				struct generic_bat, bat[BACKUP_BAT]);
+> +	} else {
+> +		/* Ideally this should never happen */
+> +		WARN_ON(1);
+> +		return -EINVAL;
+> +	}
+> +
+> +	if (!bat) {
+> +		dev_err(psy->dev, "no battery infos ?!\n");
+> +		return -EINVAL;
+> +	}
+> +	ret = iio_read_channel_raw(&adc_bat->channels[adc_bat->channel_index],
+> +			&iio_val);
+> +	ret = iio_read_channel_scale(&adc_bat->channels[adc_bat->channel_index],
+> +			&scaleint, &scalepart);
+
+It would probably make sense to only sample if the attribute for
+VOLTAGE_NOW/CURRENT_NOW property is read.
+
+[...]
+
+> +
+> +	switch (psp) {
+> +	case POWER_SUPPLY_PROP_STATUS:
+> +		if (bat->pdata.gpio_charge_finished < 0)
+> +			val->intval = bat->level == 100000 ?
+> +				POWER_SUPPLY_STATUS_FULL : bat->status;
+> +		else
+> +			val->intval = bat->status;
+> +		return 0;
+> +	case POWER_SUPPLY_PROP_CHARGE_EMPTY_DESIGN:
+> +		val->intval = 0;
+> +		return 0;
+> +	case POWER_SUPPLY_PROP_CHARGE_NOW:
+> +		val->intval = bat->pdata.cal_charge(result);
+> +		return 0;
+> +	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
+> +		val->intval = result;
+> +		return 0;
+> +	case POWER_SUPPLY_PROP_CURRENT_NOW:
+> +		val->intval = result;
+> +		return 0;
+
+also this will return the same value for VOLTAGE_NOW and CURRENT_NOW since
+there is only one channel per battery. It might make sense to allow multiple
+channels per battery, one reporting current one voltage and also one for power.
+
+
+> +	case POWER_SUPPLY_PROP_TECHNOLOGY:
+> +		val->intval = bat->pdata.battery_info.technology;
+> +		break;
+> +	case POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN:
+> +		val->intval = bat->pdata.battery_info.voltage_min_design;
+> +		break;
+> +	case POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN:
+> +		val->intval = bat->pdata.battery_info.voltage_max_design;
+> +		break;
+> +	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
+> +		val->intval = bat->pdata.battery_info.charge_full_design;
+> +		break;
+> +	case POWER_SUPPLY_PROP_MODEL_NAME:
+> +		val->strval = bat->pdata.battery_info.name;
+> +		break;
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +	return ret;
+> +}
+> +
+[...]
+> +
+> +static int __devinit generic_adc_bat_probe(struct platform_device *pdev)
+> +{
+> +[...]
+> +
+> +	/* assuming main battery and backup battery is using the same channel */
+> +	for (i = 0; i < num_channels; i++) {
+> +		ret = iio_get_channel_type(&channels[i], &type);
+> +		if (ret < 0)
+> +			goto err_gpio;
+> +
+> +		if (type == IIO_VOLTAGE || type == IIO_CURRENT) {
+> +			for (j = 0; j < BAT_MAX; j++) {
+> +				generic_bat.bat[j].channel_index = k;
+> +				generic_bat.bat[j].channels[k] = channels[i];
+> +			}
+> +			k++;
+> +		}
+> +		continue;
+
+continue at the end of a loop is a noop.
+
+> +	}
+> +
+> +	INIT_DELAYED_WORK(&bat_work, generic_adc_bat_work);
+> +
+> +	if (pdata->gpio_charge_finished >= 0) {
+
+gpio_is_valid
+
+> +		ret = gpio_request(pdata->gpio_charge_finished, "charged");
+> +		if (ret)
+> +			goto err_gpio;
+> +
+> +		ret = request_irq(gpio_to_irq(pdata->gpio_charge_finished),
+> +				generic_adc_bat_charged,
+> +				IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
+> +				"battery charged", NULL);
+> +		if (ret)
+> +			goto err_gpio;
+> +	}
+> +
+> +	dev_info(&pdev->dev, "successfully loaded\n");
+
+I'd remove that message.
+
+> +
+> +	/* Schedule timer to check current status */
+> +	schedule_delayed_work(&bat_work,
+> +			msecs_to_jiffies(JITTER_DELAY));
+> +
+> +	iio_channel_release_all(channels);
+> +
+> +	return 0;
+> +
+> +err_gpio:
+> +	iio_channel_release_all(channels);
+> +err_reg_backup:
+> +	for (i = 0; i < ARRAY_SIZE(generic_bat.bat); i++)
+> +		power_supply_unregister(&generic_bat.bat[i].psy);
+> +err_reg_main:
+> +	return ret;
+> +}
+> +
+
+[...]
+
+> +
+> +#ifdef CONFIG_PM
+> +static int generic_adc_bat_suspend(struct platform_device *pdev,
+> +		pm_message_t state)
+> +{
+> +	struct generic_platform_data *pdata = pdev->dev.platform_data;
+> +	struct generic_bat *bat = container_of(pdata,
+> +					struct generic_bat, pdata);
+> +
+> +	cancel_delayed_work_sync(&bat_work);
+> +	bat->status = POWER_SUPPLY_STATUS_UNKNOWN;
+> +
+> +	return 0;
+> +}
+> +
+> +static int generic_adc_bat_resume(struct platform_device *pdev)
+> +{
+> +	/* Schedule timer to check current status */
+> +	schedule_delayed_work(&bat_work,
+> +			msecs_to_jiffies(JITTER_DELAY));
+> +
+> +	return 0;
+> +}
+> +#else
+> +#define generic_adc_bat_suspend NULL
+> +#define generic_adc_bat_resume NULL
+> +#endif
+> +
+> +static struct platform_driver generic_adc_bat_driver = {
+> +	.driver		= {
+> +		.name	= "generic-adc-battery",
+> +	},
+> +	.probe		= generic_adc_bat_probe,
+> +	.remove		= generic_adc_bat_remove,
+> +	.suspend	= generic_adc_bat_suspend,
+> +	.resume		= generic_adc_bat_resume,
+
+Use dev_pm_ops instead. Using the suspend and resume callbacks is deprecated.
+
+> +};
+> +
+> +module_platform_driver(generic_adc_bat_driver);
+> +
+> +MODULE_AUTHOR("anish kumar <anish198519851985@gmail.com>");
+> +MODULE_DESCRIPTION("generic battery driver using IIO");
+> +MODULE_LICENSE("GPL");
+> diff --git a/include/linux/power/generic-battery.h b/include/linux/power/generic-battery.h
+> new file mode 100644
+> index 0000000..7a43aa0
+> --- /dev/null
+> +++ b/include/linux/power/generic-battery.h
+> @@ -0,0 +1,26 @@
+> +/*
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#ifndef GENERIC_BATTERY_H
+> +#define GENERIC_BATTERY_H
+> +
+> +#include <linux/power_supply.h>
+> +
+> +/**
+> + * struct generic_platform_data - platform data for generic battery
+> + * @battery_info: Information about the battery
+> + * @cal_charge: platform callback to calculate charge
+> + * @gpio_charge_finished: GPIO number used for interrupts
+> + * @gpio_inverted: Is the gpio inverted?
+> + */
+> +struct generic_platform_data {
+
+The name might be a bit to generic ;) I'd go for
+generic_battery_platform_data or iio_battery_platform_data.
+
+> +	struct power_supply_info battery_info;
+> +	int	(*cal_charge)(long);
+> +	int	gpio_charge_finished;
+> +	int	gpio_inverted;
+> +};
+> +
+> +#endif /* GENERIC_BATTERY_H */
 
