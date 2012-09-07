@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757363Ab2IGAiP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 20:38:15 -0400
+	id S1757767Ab2IGAiz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 20:38:55 -0400
 Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:48599 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752914Ab2IGAiC (ORCPT
+	with ESMTP id S1757195Ab2IGAiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 20:38:02 -0400
-X-AuditID: 9c93016f-b7cc0ae000000e9f-e0-504941e4cb81
+	Thu, 6 Sep 2012 20:38:07 -0400
+X-AuditID: 9c93016f-b7cc0ae000000e9f-1e-504941e95567
 From: Minchan Kim <minchan@kernel.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
         Xishi Qiu <qiuxishi@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
         Minchan Kim <minchan@kernel.org>
-Subject: [PATCH v3 1/4] use get_freepage_migratetype instead of page_private
-Date: Fri,  7 Sep 2012 09:39:29 +0900
-Message-Id: <1346978372-17903-2-git-send-email-minchan@kernel.org>
+Subject: [PATCH v3 4/4] memory-hotplug: fix pages missed by race rather than failng
+Date: Fri,  7 Sep 2012 09:39:32 +0900
+Message-Id: <1346978372-17903-5-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1346978372-17903-1-git-send-email-minchan@kernel.org>
 References: <1346978372-17903-1-git-send-email-minchan@kernel.org>
@@ -27,96 +27,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-page allocator uses set_page_private and page_private for handling
-migratetype when it frees page. Let's replace them with [set|get]
-_freepage_migratetype to make it more clear.
+If race between allocation and isolation in memory-hotplug offline
+happens, some pages could be in MIGRATE_MOVABLE of free_list although
+the pageblock's migratetype of the page is MIGRATE_ISOLATE.
 
-* from v2
-  * Add Acked-by of Kame
+The race could be detected by get_freepage_migratetype
+in __test_page_isolated_in_pageblock. If it is detected, now EBUSY
+gets bubbled all the way up and the hotplug operations fails.
 
-* from v1
-  * Change set_page_migratetype with set_freepage_migratetype
-  * Add comment on set_freepage_migratetype
+But better idea is instead of returning and failing memory-hotremove,
+move the free page to the correct list at the time it is detected.
+It could enhance memory-hotremove operation success ratio although
+the race is really rare.
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Suggested-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- include/linux/mm.h  |   12 ++++++++++++
- mm/page_alloc.c     |   10 ++++++----
- mm/page_isolation.c |    2 +-
- 3 files changed, 19 insertions(+), 5 deletions(-)
+ include/linux/page-isolation.h |    4 ++++
+ mm/page_alloc.c                |    2 +-
+ mm/page_isolation.c            |   15 +++++++++++++--
+ 3 files changed, 18 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 0514fe9..84d1663f 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -237,6 +237,18 @@ struct inode;
- #define page_private(page)		((page)->private)
- #define set_page_private(page, v)	((page)->private = (v))
- 
-+/* It's valid only if the page is free path or free_list */
-+static inline void set_freepage_migratetype(struct page *page, int migratetype)
-+{
-+	set_page_private(page, migratetype);
-+}
-+
-+/* It's valid only if the page is free path or free_list */
-+static inline int get_freepage_migratetype(struct page *page)
-+{
-+	return page_private(page);
-+}
+diff --git a/include/linux/page-isolation.h b/include/linux/page-isolation.h
+index 105077a..fca8c0a 100644
+--- a/include/linux/page-isolation.h
++++ b/include/linux/page-isolation.h
+@@ -6,6 +6,10 @@ bool has_unmovable_pages(struct zone *zone, struct page *page, int count);
+ void set_pageblock_migratetype(struct page *page, int migratetype);
+ int move_freepages_block(struct zone *zone, struct page *page,
+ 				int migratetype);
++int move_freepages(struct zone *zone,
++			  struct page *start_page, struct page *end_page,
++			  int migratetype);
 +
  /*
-  * FIXME: take this include out, include page-flags.h in
-  * files which need it (119 of them)
+  * Changes migrate type in [start_pfn, end_pfn) to be MIGRATE_ISOLATE.
+  * If specified range includes migrate types other than MOVABLE or CMA,
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index ba3100a..f5ba236 100644
+index 8531fa3..5a4c4d8 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -671,8 +671,10 @@ static void free_pcppages_bulk(struct zone *zone, int count,
- 			/* must delete as __free_one_page list manipulates */
- 			list_del(&page->lru);
- 			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
--			__free_one_page(page, zone, 0, page_private(page));
--			trace_mm_page_pcpu_drain(page, 0, page_private(page));
-+			__free_one_page(page, zone, 0,
-+				get_freepage_migratetype(page));
-+			trace_mm_page_pcpu_drain(page, 0,
-+				get_freepage_migratetype(page));
- 		} while (--to_free && --batch_free && !list_empty(list));
- 	}
- 	__mod_zone_page_state(zone, NR_FREE_PAGES, count);
-@@ -1134,7 +1136,7 @@ static int rmqueue_bulk(struct zone *zone, unsigned int order,
- 			if (!is_migrate_cma(mt) && mt != MIGRATE_ISOLATE)
- 				mt = migratetype;
- 		}
--		set_page_private(page, mt);
-+		set_freepage_migratetype(page, mt);
- 		list = &page->lru;
- 	}
- 	__mod_zone_page_state(zone, NR_FREE_PAGES, -(i << order));
-@@ -1301,7 +1303,7 @@ void free_hot_cold_page(struct page *page, int cold)
- 		return;
- 
- 	migratetype = get_pageblock_migratetype(page);
--	set_page_private(page, migratetype);
-+	set_freepage_migratetype(page, migratetype);
- 	local_irq_save(flags);
- 	if (unlikely(wasMlocked))
- 		free_page_mlock(page);
+@@ -918,7 +918,7 @@ static int fallbacks[MIGRATE_TYPES][4] = {
+  * Note that start_page and end_pages are not aligned on a pageblock
+  * boundary. If alignment is required, use move_freepages_block()
+  */
+-static int move_freepages(struct zone *zone,
++int move_freepages(struct zone *zone,
+ 			  struct page *start_page, struct page *end_page,
+ 			  int migratetype)
+ {
 diff --git a/mm/page_isolation.c b/mm/page_isolation.c
-index 247d1f1..87a7929 100644
+index 7ba7405..a42fa8d 100644
 --- a/mm/page_isolation.c
 +++ b/mm/page_isolation.c
-@@ -196,7 +196,7 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn)
- 		if (PageBuddy(page))
+@@ -194,8 +194,19 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn)
+ 		}
+ 		page = pfn_to_page(pfn);
+ 		if (PageBuddy(page)) {
+-			if (get_freepage_migratetype(page) != MIGRATE_ISOLATE)
+-				break;
++			/*
++			 * If race between isolatation and allocation happens,
++			 * some free pages could be in MIGRATE_MOVABLE list
++			 * although pageblock's migratation type of the page
++			 * is MIGRATE_ISOLATE. Catch it and move the page into
++			 * MIGRATE_ISOLATE list.
++			 */
++			if (get_freepage_migratetype(page) != MIGRATE_ISOLATE) {
++				struct page *end_page = page +
++						(1 << page_order(page)) - 1;
++				move_freepages(page_zone(page), page, end_page,
++						MIGRATE_ISOLATE);
++			}
  			pfn += 1 << page_order(page);
+ 		}
  		else if (page_count(page) == 0 &&
--				page_private(page) == MIGRATE_ISOLATE)
-+			get_freepage_migratetype(page) == MIGRATE_ISOLATE)
- 			pfn += 1;
- 		else
- 			break;
 -- 
 1.7.9.5
 
