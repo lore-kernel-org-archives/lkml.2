@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933192Ab2IGLYz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 07:24:55 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:55466 "EHLO
+	id S933247Ab2IGLZY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 07:25:24 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:34003 "EHLO
 	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760574Ab2IGLYH (ORCPT
+	with ESMTP id S1760557Ab2IGLYB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 07:24:07 -0400
+	Fri, 7 Sep 2012 07:24:01 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: eparis@redhat.com, viro@zeniv.linux.org.uk
 Cc: linux-audit@redhat.com, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, bfields@fieldses.org
-Subject: [PATCH v6 09/10] audit: optimize audit_compare_dname_path
-Date: Fri,  7 Sep 2012 07:23:46 -0400
-Message-Id: <1347017027-17167-10-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v6 05/10] audit: add a new "type" field to audit_names struct
+Date: Fri,  7 Sep 2012 07:23:42 -0400
+Message-Id: <1347017027-17167-6-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1347017027-17167-1-git-send-email-jlayton@redhat.com>
 References: <1347017027-17167-1-git-send-email-jlayton@redhat.com>
@@ -21,120 +21,115 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the cases where we already know the length of the parent, pass it as
-a parm so we don't need to recompute it. In the cases where we don't
-know the length, pass in AUDIT_NAME_FULL (-1) to indicate that it should
-be determined.
+For now, we just have two possibilities:
+
+UNKNOWN: for a new audit_names record that we don't know anything about yet
+NORMAL: for everything else
+
+In later patches, we'll add other types so we can distinguish and update
+records created under different circumstances.
 
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- kernel/audit.h       |  5 ++++-
- kernel/audit_watch.c |  3 ++-
- kernel/auditfilter.c | 16 +++++++++++-----
- kernel/auditsc.c     |  8 +++-----
- 4 files changed, 20 insertions(+), 12 deletions(-)
+ include/linux/audit.h |  5 +++++
+ kernel/auditsc.c      | 15 ++++++++++-----
+ 2 files changed, 15 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/audit.h b/kernel/audit.h
-index ee31316..34af33c 100644
---- a/kernel/audit.h
-+++ b/kernel/audit.h
-@@ -74,10 +74,13 @@ static inline int audit_hash_ino(u32 ino)
- 	return (ino & (AUDIT_INODE_BUCKETS-1));
- }
- 
-+/* Indicates that audit should log the full pathname. */
-+#define AUDIT_NAME_FULL -1
+diff --git a/include/linux/audit.h b/include/linux/audit.h
+index 2d8b761..48c49eb 100644
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -450,6 +450,11 @@ struct audit_field {
+ extern int __init audit_register_class(int class, unsigned *list);
+ extern int audit_classify_syscall(int abi, unsigned syscall);
+ extern int audit_classify_arch(int arch);
 +
- extern int audit_match_class(int class, unsigned syscall);
- extern int audit_comparator(const u32 left, const u32 op, const u32 right);
- extern int parent_len(const char *path);
--extern int audit_compare_dname_path(const char *dname, const char *path);
-+extern int audit_compare_dname_path(const char *dname, const char *path, int plen);
- extern struct sk_buff *	    audit_make_reply(int pid, int seq, int type,
- 					     int done, int multi,
- 					     const void *payload, int size);
-diff --git a/kernel/audit_watch.c b/kernel/audit_watch.c
-index b6a873a..f8e9353 100644
---- a/kernel/audit_watch.c
-+++ b/kernel/audit_watch.c
-@@ -265,7 +265,8 @@ static void audit_update_watch(struct audit_parent *parent,
- 	/* Run all of the watches on this parent looking for the one that
- 	 * matches the given dname */
- 	list_for_each_entry_safe(owatch, nextw, &parent->watches, wlist) {
--		if (audit_compare_dname_path(dname, owatch->path))
-+		if (audit_compare_dname_path(dname, owatch->path,
-+					     AUDIT_NAME_FULL))
- 			continue;
- 
- 		/* If the update involves invalidating rules, do the inode-based
-diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
-index f47ba18..1e0899d 100644
---- a/kernel/auditfilter.c
-+++ b/kernel/auditfilter.c
-@@ -1228,11 +1228,17 @@ int parent_len(const char *path)
- 	return p - path;
- }
- 
--/* Compare given dentry name with last component in given path,
-- * return of 0 indicates a match. */
--int audit_compare_dname_path(const char *dname, const char *path)
-+/**
-+ * audit_compare_dname_path - compare given dentry name with last component in
-+ * 			      given path. Return of 0 indicates a match.
-+ * @dname:	dentry name that we're comparing
-+ * @path:	full pathname that we're comparing
-+ * @parentlen:	length of the parent if known. Passing in AUDIT_NAME_FULL
-+ * 		here indicates that we must compute this value.
-+ */
-+int audit_compare_dname_path(const char *dname, const char *path, int parentlen)
- {
--	int dlen, pathlen, parentlen;
-+	int dlen, pathlen;
- 	const char *p;
- 
- 	dlen = strlen(dname);
-@@ -1240,7 +1246,7 @@ int audit_compare_dname_path(const char *dname, const char *path)
- 	if (pathlen < dlen)
- 		return 1;
- 
--	parentlen = parent_len(path);
-+	parentlen = parentlen == AUDIT_NAME_FULL ? parent_len(path) : parentlen;
- 	if (pathlen - parentlen != dlen)
- 		return 1;
- 
++/* audit_names->type values */
++#define	AUDIT_TYPE_UNKNOWN	0	/* we don't know yet */
++#define AUDIT_TYPE_NORMAL	1	/* a "normal" audit record */
++
+ #ifdef CONFIG_AUDITSYSCALL
+ /* These are defined in auditsc.c */
+ 				/* Public API */
 diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index b03ef6a..52d1f0f 100644
+index ff58089..bd11d09 100644
 --- a/kernel/auditsc.c
 +++ b/kernel/auditsc.c
-@@ -81,9 +81,6 @@
-  * a name dynamically and also add those to the list anchored by names_list. */
- #define AUDIT_NAMES	5
+@@ -120,6 +120,7 @@ struct audit_names {
+ 	struct audit_cap_data fcap;
+ 	unsigned int	fcap_ver;
+ 	int		name_len;	/* number of name's characters to log */
++	unsigned char	type;		/* record type */
+ 	bool		name_put;	/* call __putname() for this name */
+ 	/*
+ 	 * This was an allocated audit_names and not from the array of
+@@ -2009,7 +2010,8 @@ retry:
+ #endif
+ }
  
--/* Indicates that audit should log the full pathname. */
--#define AUDIT_NAME_FULL -1
--
- /* no execve audit message should be longer than this (userspace limits) */
- #define MAX_EXECVE_AUDIT_LEN 7500
+-static struct audit_names *audit_alloc_name(struct audit_context *context)
++static struct audit_names *audit_alloc_name(struct audit_context *context,
++						unsigned char type)
+ {
+ 	struct audit_names *aname;
  
-@@ -2236,7 +2233,7 @@ void __audit_inode_child(const struct inode *parent,
- 			continue;
+@@ -2024,6 +2026,7 @@ static struct audit_names *audit_alloc_name(struct audit_context *context)
+ 	}
  
- 		if (n->ino == parent->i_ino &&
--		    !audit_compare_dname_path(dname, n->name)) {
-+		    !audit_compare_dname_path(dname, n->name, n->name_len)) {
- 			found_parent = n->name;
- 			goto add_names;
- 		}
-@@ -2249,7 +2246,8 @@ void __audit_inode_child(const struct inode *parent,
+ 	aname->ino = (unsigned long)-1;
++	aname->type = type;
+ 	list_add_tail(&aname->list, &context->names_list);
  
- 		/* strcmp() is the more likely scenario */
- 		if (!strcmp(dname, n->name) ||
--		     !audit_compare_dname_path(dname, n->name)) {
-+		    !audit_compare_dname_path(dname, n->name,
-+						AUDIT_NAME_FULL)) {
- 			if (inode)
+ 	context->name_count++;
+@@ -2054,7 +2057,7 @@ void __audit_getname(const char *name)
+ 		return;
+ 	}
+ 
+-	n = audit_alloc_name(context);
++	n = audit_alloc_name(context, AUDIT_TYPE_UNKNOWN);
+ 	if (!n)
+ 		return;
+ 
+@@ -2171,12 +2174,13 @@ void __audit_inode(const char *name, const struct dentry *dentry)
+ 
+ out_alloc:
+ 	/* unable to find the name from a previous getname() */
+-	n = audit_alloc_name(context);
++	n = audit_alloc_name(context, AUDIT_TYPE_NORMAL);
+ 	if (!n)
+ 		return;
+ out:
+ 	handle_path(dentry);
+ 	audit_copy_inode(n, dentry, inode);
++	n->type = AUDIT_TYPE_NORMAL;
+ }
+ 
+ /**
+@@ -2233,6 +2237,7 @@ void __audit_inode_child(const struct inode *parent,
  				audit_copy_inode(n, dentry, inode);
  			else
+ 				n->ino = (unsigned long)-1;
++			n->type = AUDIT_TYPE_NORMAL;
+ 			found_child = n->name;
+ 			goto add_names;
+ 		}
+@@ -2240,14 +2245,14 @@ void __audit_inode_child(const struct inode *parent,
+ 
+ add_names:
+ 	if (!found_parent) {
+-		n = audit_alloc_name(context);
++		n = audit_alloc_name(context, AUDIT_TYPE_NORMAL);
+ 		if (!n)
+ 			return;
+ 		audit_copy_inode(n, NULL, parent);
+ 	}
+ 
+ 	if (!found_child) {
+-		n = audit_alloc_name(context);
++		n = audit_alloc_name(context, AUDIT_TYPE_NORMAL);
+ 		if (!n)
+ 			return;
+ 
 -- 
 1.7.11.4
 
