@@ -1,68 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756903Ab2IGTiG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 15:38:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42341 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755693Ab2IGTh7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 15:37:59 -0400
-Date: Fri, 7 Sep 2012 12:37:54 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 05/11 V5] workqueue: Add @bind arguement back without
- change any thing
-Message-ID: <20120907193754.GG9426@google.com>
-References: <1346841475-4422-1-git-send-email-laijs@cn.fujitsu.com>
- <1346841475-4422-6-git-send-email-laijs@cn.fujitsu.com>
- <20120905194908.GC13737@google.com>
- <5047F686.5010207@cn.fujitsu.com>
- <20120906165145.GE29092@google.com>
- <504957EC.60305@cn.fujitsu.com>
+	id S1756930Ab2IGTi3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 15:38:29 -0400
+Received: from fieldses.org ([174.143.236.118]:39122 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755693Ab2IGTi2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 15:38:28 -0400
+Date: Fri, 7 Sep 2012 15:38:26 -0400
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Andy Whitcroft <apw@canonical.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mszeredi@suse.cz
+Subject: Re: [RFC PATCH 0/2] issues with NFS filesystems as lower layer
+Message-ID: <20120907193825.GA4633@fieldses.org>
+References: <1346946994-21286-1-git-send-email-apw@canonical.com>
+ <CAJfpegsCQKX==v-8NqO5tLDsEed7KhBFWpoeWLDjxT1vuMSokg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <504957EC.60305@cn.fujitsu.com>
+In-Reply-To: <CAJfpegsCQKX==v-8NqO5tLDsEed7KhBFWpoeWLDjxT1vuMSokg@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Lai.
+On Fri, Sep 07, 2012 at 08:35:36AM +0200, Miklos Szeredi wrote:
+> On Thu, Sep 6, 2012 at 5:56 PM, Andy Whitcroft <apw@canonical.com> wrote:
+> > During some testing here we discovered that we could not successfully
+> > use a NFS as the lower layer for overlayfs.  There are two separate issues:
+> >
+> > Firstly when using an NFSv4 lower layer we tickle an issue when copying
+> > up the xattrs for the underlying file.  NFS uses an xattr system.nfs4_acl
+> > which the upper layer will not store (ext4 for example).  This triggers
+> > an EOPNOTSUPP error when trying to copy up the xattrs for the file,
+> > preventing the file being written.  I am a little unclear as to whether it
+> > makes sense to generally ignore xattrs we cannot store in the upper layer,
+> > this is based on the assumption the person creating the mount knew what
+> > they were combining.  The first patch (for discussion) following this
+> > email avoids this issue by ignoring the xattr if it is not storable.
+> 
+> I don't know much about NFSv4 ACL's but I think it may be incompatible
+> with POSIX ACLs in which case copying them up is not possible and
 
-On Fri, Sep 07, 2012 at 10:11:56AM +0800, Lai Jiangshan wrote:
-> When I read "gcwq->flags & GCWQ_DISASSOCIATED" in create_worker, I
-> thought: WTF, gcwq->flags can be change by other, is it
-> correct?. When I saw the comments claim it is correct, I have to use
-> about 30 mins to check whether it is correct in several places of
-> code in workqueue.c(include check does flags has internal state in
-> all gcwq->lock).  I'm not good on it, but I think there are some
-> reviewers will be confused like me.
+Right.  (You can try to map them; see fs/nfsd/nfs4acl.c; but it's
+complicated and lossy.)
 
-The head-scratchy part there is not where it's tested - under
-manager_mutex or gcwq->lock.  It's that DISASSOCIATED has an
-additional locking restriction while still living in gcwq->flags.
-Simply moving DISASSOCIATED test inside gcwq->lock doesn't change
-anything including readability.  You still have to verify the flag
-changes according to the said locking requirement.
+> ignoring them should be the right thing to do.
 
-Separating DISASSOCIATED into a separate variable could help it but I
-really don't see much point in doing that.  I don't know why it took
-you 30 minutes to figure out when it's clearly stated in the constant
-definition and there are only two places which modify the flag - one
-setting and the other clearing.  Were you worrying about the flag
-flipping while other bits are modified?  But even then, there's only
-one other flag - GCWQ_FREEZING which again is set and cleared once in
-the whole code.
+The ACLs are enforced by the server side, so this won't let you read or
+write server data that you couldn't before.
 
-So, either you were hopelessly confused for some reason or I'm missing
-something.  If the latter, please enlighten me; otherwise, I actually
-like putting the test outside gcwq->lock.  That makes it explicit that
-the flag shouldn't be changing outside manager_mutex, which is the
-necessary locking requirement.
+And you also shouldn't be able to access the copied-up file in ways you
+couldn't before as long as the lower filesystem is consulted about
+permissions.
 
-Thanks.
+> > Secondly when using an NFSv3 R/O lower layer the filesystem permissions
+> > check refuses permission to write to the inode which prevents us from
+> > copying it up even though we have a writable upper layer.  (With an ext4
+> > lower layer the inode check will succeed if the inode  is writable even
+> > if the filesystem is not.)  It is not clear what the right solution is
+> > here.  One approach is to check the inode permissions only (avoiding the
+> > filesystem specific permissions op), but it is not clear we can rely on
+> > these for all underlying filesystems.  Perhaps this check should only be
+> > used for NFS.
 
--- 
-tejun
+Then couldn't you for example end up circumventing ACLs on the
+underlying file to access data cached by reads from another user on the
+same system?
+
+Is it possible to arrange that the check for a readonly filesystem be
+done only by the vfs and not also by ->permission?
+
+--b.
+
+> > Perhaps it needs to be a mount option.  The second patch
+> > (for discussion) following this email implements this, using the inode
+> > permissions when the lowerlayer is read-only.  This seems to work as
+> > expected in my limited testing.
+> 
+> I fear that will create an inconsistency between the read-only and the
+> non-read-only case, even though both should behave the same.
+> 
+> I think the cleanest would be to create a mount option to always use
+> generic_permission (on both the lower and the upper fs).  That would
+> give us two, slightly different, operating modes but each would be
+> self consistent.
+> 
+> Thanks,
+> Miklos
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
