@@ -1,59 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760680Ab2IGN5n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 09:57:43 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:58685 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756733Ab2IGN5l (ORCPT
+	id S1760693Ab2IGN5v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 09:57:51 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:18948 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755546Ab2IGN5p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 09:57:41 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 15/19] mfd: Don't convert just one IRQ using irqdomain if a range is provided
-Date: Fri, 7 Sep 2012 13:57:27 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        Samuel Ortiz <sameo@linux.intel.com>
-References: <1347016499-29354-1-git-send-email-lee.jones@linaro.org> <201209071337.26587.arnd@arndb.de> <20120907134259.GJ29601@gmail.com>
-In-Reply-To: <20120907134259.GJ29601@gmail.com>
+	Fri, 7 Sep 2012 09:57:45 -0400
+Date: Fri, 7 Sep 2012 09:47:01 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefan Bader <stefan.bader@canonical.com>
+Cc: xen-devel@lists.xen.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Matt Wilson <msw@amazon.com>
+Subject: Re: [PATCH/RFC] Fix xsave bug on older Xen hypervisors
+Message-ID: <20120907134701.GF2870@phenom.dumpdata.com>
+References: <1347018043-21252-1-git-send-email-stefan.bader@canonical.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209071357.27779.arnd@arndb.de>
-X-Provags-ID: V02:K0:xrplk+zkBAVCAJ69krkSheI8R63qX7XaEWaOsG6Nwyv
- ISHKVn21pT9jHubNiCZSRzlADlLNJJLxxD54y+6mL2RZs3Ciia
- B4V96v2371CoI7SmHOUEJ41JaxY9FvO8gTAhAqaMTGuCWhFHWf
- PEhkt7KNkwFFBhvGgTuFH4fJc2uw82u9YMuw+4x2oDQF7zi3UQ
- BoJUQ/FzX0QdnAZdJSDPWFcokvONQWQKmWM9/t7bzVTWH8ZO6W
- JW7VOdb60ynXnITTkKc0jBZw+oneBgqVCAUs5IetKRPsG/VMuL
- 5/7p/inP9Q2n/dGLxpcUbH8IW5CKF7DrKQfmJQlt6bUeUbEgv3
- LO0MmXX4NFShIWQVy0LI=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347018043-21252-1-git-send-email-stefan.bader@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 September 2012, Lee Jones wrote:
-> On Fri, Sep 07, 2012 at 01:37:26PM +0000, Arnd Bergmann wrote:
-> > On Friday 07 September 2012, Lee Jones wrote:
-> > > On Fri, Sep 07, 2012 at 12:35:41PM +0000, Arnd Bergmann wrote:
-> >
-> > The examples I had seen before were all just ranges of two interrupts,
-> > and in those cases it was clear that splitting them would be best.
-> > 
-> > In the exampled of the ab8500-gpio driver, it looks like the resource is
-> > not actually being used, and the gpio driver implements its own irq_chip,
-> > so maybe we can get away with not solving this problem for now.
+On Fri, Sep 07, 2012 at 01:40:43PM +0200, Stefan Bader wrote:
+> When writing unsupported flags into CR4 (for some time the
+> xen_write_cr4 function would refuse to do anything at all)
+> older Xen hypervisors (and patch can potentially be improved
+> by finding out what older means in version numbers) would
+> crash the guest.
 > 
-> Understood. I'd still feel more comfortable if we didn't trash the
-> range. I think it would be best to show the warning, and leave the
-> range for its target driver to take care - hence the patch.
+> Since Amazon EC2 would at least in the past be affected by that,
+> Fedora and Ubuntu were carrying a hack that would filter out
+> X86_CR4_OSXSAVE before writing to CR4. This would affect any
+> PV guest, even those running on a newer HV.
 > 
-> ... but it's your call.
+> And this recently caused trouble because some user-space was
+> only partially checking (or maybe only looking at the cpuid
+> bits) and then trying to use xsave even though the OS support
+> was not set.
+> 
+> So I came up with a patch that would
+> - limit the work-around to certain Xen versions
+> - prevent the write to CR4 by unsetting xsave and osxsave in
+>   the cpuid bits
+> 
+> Doing things that way may actually allow this to be acceptable
+> upstream, so I am sending it around, now.
+> It probably could be improved when knowing the exact version
+> to test for but otherwise should allow to work around the guest
+> crash while not preventing xsave on Xen 4.x and newer hosts.
 
-I'm fine with whatever Samuel sees fit here.  My personal opinion is
-that leaving the range alone for the child driver to do the conversion
-would be too inconsistent and only lead to confusion with driver authors.
+Perhaps Matt can give us some hints here.. but otherwise this
+"quirk" should fix this. It should also allow one to run a virgin
+kernel on Amazon EC2 - and we can ask the distros to ditch their
+existing work-arounds for this..
 
-	Arnd
+
+> 
+> -Stefan
+> 
+> 
+> >From dff8885934d4e1274a69c4cedd28a4d18a1255e8 Mon Sep 17 00:00:00 2001
+> From: Stefan Bader <stefan.bader@canonical.com>
+> Date: Fri, 15 Jun 2012 11:54:59 +0200
+> Subject: [PATCH] xen: Mask xsave cpu capability on Xen host < 4
+> 
+> Older Xen hypervisors (like RHEL5 versions found to be used
+> on Amazon's EC2) did have a bug which would crash the domain
+> when trying to write unsupported CR4 values.
+> Newer versions of the Xen hypervisor do handle this correctly.
+> But when a 2.6.28 or later kernel (those seem to have
+> xen_write_cr4 and xsave support) is booted as a PV guest on EC2,
+> it potentially crashes when hitting the right CPU and the wrong
+> hypervisor.
+> 
+> We were using a patch (taken from Fedora) that did always filter
+> the OSXSAVE off the values written to CR4 when running as Xen PV
+> guest. While not completely wrong this creates an inconsistency
+> between the cpuid bits a guest sees and the CR4 settings.
+> But it prevents any use of xsave even on recent Xen hypervisors.
+> And this did recently cause problems because user-space was not
+> testing all bits when deciding to use certain features.
+> 
+> This patch will actually mask off the cpuid bits for XSAVE and
+> OSXSAVE, so generic code will not even try to set CR4. It is
+> limited to PV guests and (since we do not actually know the
+> exact version) Xen hypervisors before version 4.
+> 
+> Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+> ---
+>  arch/x86/xen/enlighten.c |   17 ++++++++++++++++-
+>  1 file changed, 16 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index 9642d4a..4241055 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -210,6 +210,18 @@ void xen_vcpu_restore(void)
+>  	}
+>  }
+>  
+> +/*
+> + * Older (with no clear statement about what old means) Xen hypervisors
+> + * will crash a PV guest that tries to store OSXSAVE into CR4.
+> + * To prevent this, we force the feature bits related to this off in the
+> + * xen cpuid call. This inline function serves as a centralized test
+> + * on whether the quirk should be done.
+> + */
+> +static inline needs_xsave_quirk(unsigned version)
+> +{
+> +	return (xen_pv_domain() && ((version >> 16) < 4)) ? 1 : 0;
+> +}
+> +
+>  static void __init xen_banner(void)
+>  {
+>  	unsigned version = HYPERVISOR_xen_version(XENVER_version, NULL);
+> @@ -221,6 +233,8 @@ static void __init xen_banner(void)
+>  	printk(KERN_INFO "Xen version: %d.%d%s%s\n",
+>  	       version >> 16, version & 0xffff, extra.extraversion,
+>  	       xen_feature(XENFEAT_mmu_pt_update_preserve_ad) ? " (preserve-AD)" : "");
+> +	if (needs_xsave_quirk(version))
+> +		printk(KERN_INFO "Forcing xsave off due to Xen version.\n");
+>  }
+>  
+>  #define CPUID_THERM_POWER_LEAF 6
+> @@ -351,6 +365,7 @@ static bool __init xen_check_mwait(void)
+>  }
+>  static void __init xen_init_cpuid_mask(void)
+>  {
+> +	unsigned version = HYPERVISOR_xen_version(XENVER_version, NULL);
+>  	unsigned int ax, bx, cx, dx;
+>  	unsigned int xsave_mask;
+>  
+> @@ -371,7 +386,7 @@ static void __init xen_init_cpuid_mask(void)
+>  		(1 << (X86_FEATURE_OSXSAVE % 32));
+>  
+>  	/* Xen will set CR4.OSXSAVE if supported and not disabled by force */
+> -	if ((cx & xsave_mask) != xsave_mask)
+> +	if (((cx & xsave_mask) != xsave_mask) || needs_xsave_quirk(version))
+>  		cpuid_leaf1_ecx_mask &= ~xsave_mask; /* disable XSAVE & OSXSAVE */
+>  	if (xen_check_mwait())
+>  		cpuid_leaf1_ecx_set_mask = (1 << (X86_FEATURE_MWAIT % 32));
+> -- 
+> 1.7.9.5
