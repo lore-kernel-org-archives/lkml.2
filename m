@@ -1,60 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755634Ab2IGPFZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 11:05:25 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:30371 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752158Ab2IGPFV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 11:05:21 -0400
-Date: Fri, 7 Sep 2012 10:54:33 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "Justin M. Forbes" <jmforbes@linuxtx.org>
-Cc: Jan Beulich <JBeulich@suse.com>, Stefan Bader <stefan.bader@canonical.com>,
-        Matt Wilson <msw@amazon.com>, xen-devel@lists.xen.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH/RFC] Fix xsave bug on older Xen hypervisors
-Message-ID: <20120907145433.GA5378@phenom.dumpdata.com>
-References: <1347018043-21252-1-git-send-email-stefan.bader@canonical.com>
- <504A05B00200007800099C7B@nat28.tlf.novell.com>
- <5049F4E9.9050306@canonical.com>
- <504A1A950200007800099D4C@nat28.tlf.novell.com>
- <20120907142251.GA20096@linuxtx.org>
+	id S1753591Ab2IGPIy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 11:08:54 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59390 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751032Ab2IGPIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 11:08:53 -0400
+Message-ID: <504A0DF8.2030009@zytor.com>
+Date: Fri, 07 Sep 2012 08:08:40 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120907142251.GA20096@linuxtx.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: Jan Beulich <JBeulich@suse.com>
+CC: mingo@elte.hu, tglx@linutronix.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ix86: improve determination of X86_MINIMUM_CPU_FAMILY
+References: <5049B4C102000078000998FE@nat28.tlf.novell.com> <50499F3C.1070706@zytor.com> <5049BEF70200007800099965@nat28.tlf.novell.com>
+In-Reply-To: <5049BEF70200007800099965@nat28.tlf.novell.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > But iirc that bad patch is a Linux side one (i.e. you're trying to fix
-> > something upstream that isn't upstream)?
-> > 
-> Right, so the patch that this improves upon, and that Fedora and Ubuntu are
-> currently carrying is not upstream because:
-> 
-> a) It's crap, it cripples upstream xen users, but doesn't impact RHEL xen
-> users because xsave was never supported there.
-> 
-> b) The hypervisor was patched to make it unnecessary quite some time ago,
-> and we hoped EC2 would eventually pick up that correct patch and we could
-> drop the crap kernel patch.
-> 
-> Unfortunately this has not happened. We are at a point where EC2 really is
-> a quirk that has to be worked around. Distros do not want to maintain
-> a separate EC2 build of the kernel, so the easiest way is to cripple
-> current upstream xen users.  This quirk is unfortunately the best possible
-> solution.  Having it upstream also makes it possible for any user to build
-> an upstream kernel that will run on EC2 without having to dig a random
-> patch out of a vendor kernel.
+On 09/07/2012 12:31 AM, Jan Beulich wrote:
+>
+> Further, the "6" case is then completely pointless - X86_P6_NOP
+> depends on X86_64. And with all features the kernel cares about
+> that got added with Pentium and later being CPUID-enumerable,
+> the "5" case would then be superfluous too.
+>
 
-Sure. Jan is asking though for actual confirmation that the upstream kernel
-does indeed go belly up without a workaround.
-And whether this patch (which I would did since Canonical is carrying it) does
-fix the issue.
+The dependency X86_64 -> X86_P6_NOP is actually not inherent; it is a 
+worksaround for a broken version of Microsoft HyperV presenting an 
+inconsistent ISA to the guest.  We could allow enabling X86_P6_NOP on 32 
+bits, in which family should be 6.
 
-I am still a newbie on the Amazon EC2 upload your kernel thing (hint, would
-appreciate somebody taking this patch and trying it out).
+	-hpa
+
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
