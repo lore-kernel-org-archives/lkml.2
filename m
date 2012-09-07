@@ -1,226 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293Ab2IGLNQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 07:13:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48612 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932514Ab2IGLM3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 07:12:29 -0400
-Message-ID: <5049D698.1020405@canonical.com>
-Date: Fri, 07 Sep 2012 13:12:24 +0200
-From: Stefan Bader <stefan.bader@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S932894Ab2IGLOx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 07:14:53 -0400
+Received: from david.siemens.de ([192.35.17.14]:26499 "EHLO david.siemens.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760317Ab2IGLOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 07:14:52 -0400
+Message-ID: <5049D722.5090305@siemens.com>
+Date: Fri, 07 Sep 2012 13:14:42 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>, Cong Wang <xiyou.wangcong@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Yinghai Lu <yinghai@kernel.org>,
-        Tejun Heo <tj@kernel.org>,
-        Konrad Rezeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH] x86/mm: Limit 2/4M size calculation to x86_32
-References: <5017AE48.5090108@redhat.com> <1346430699-19894-1-git-send-email-stefan.bader@canonical.com> <a6b71e0f-d2d3-44b5-a939-f909ea3fdccc@email.android.com>
-In-Reply-To: <a6b71e0f-d2d3-44b5-a939-f909ea3fdccc@email.android.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="------------enigCE619EE5472A4044742E054D"
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v6 11/12] KVM: introduce readonly memslot
+References: <5032F8FD.2020306@linux.vnet.ibm.com> <5032FA5B.5040308@linux.vnet.ibm.com> <5049CB36.4080000@siemens.com> <5049D0AA.2060202@linux.vnet.ibm.com>
+In-Reply-To: <5049D0AA.2060202@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigCE619EE5472A4044742E054D
-Content-Type: multipart/mixed;
- boundary="------------010202000805000903090102"
+On 2012-09-07 12:47, Xiao Guangrong wrote:
+> On 09/07/2012 06:23 PM, Jan Kiszka wrote:
+>> On 2012-08-21 05:02, Xiao Guangrong wrote:
+>>> In current code, if we map a readonly memory space from host to guest
+>>> and the page is not currently mapped in the host, we will get a fault
+>>> pfn and async is not allowed, then the vm will crash
+>>>
+>>> We introduce readonly memory region to map ROM/ROMD to the guest, read access
+>>> is happy for readonly memslot, write access on readonly memslot will cause
+>>> KVM_EXIT_MMIO exit
+>>>
+>>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>>> ---
+>>>  Documentation/virtual/kvm/api.txt |   10 +++-
+>>>  arch/x86/include/asm/kvm.h        |    1 +
+>>>  arch/x86/kvm/mmu.c                |    9 ++++
+>>>  arch/x86/kvm/x86.c                |    1 +
+>>>  include/linux/kvm.h               |    6 ++-
+>>>  include/linux/kvm_host.h          |    7 +--
+>>>  virt/kvm/kvm_main.c               |   96 ++++++++++++++++++++++++++++++-------
+>>>  7 files changed, 102 insertions(+), 28 deletions(-)
+>>>
+>>> diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+>>> index bf33aaa..b91bfd4 100644
+>>> --- a/Documentation/virtual/kvm/api.txt
+>>> +++ b/Documentation/virtual/kvm/api.txt
+>>> @@ -857,7 +857,8 @@ struct kvm_userspace_memory_region {
+>>>  };
+>>>
+>>>  /* for kvm_memory_region::flags */
+>>> -#define KVM_MEM_LOG_DIRTY_PAGES  1UL
+>>> +#define KVM_MEM_LOG_DIRTY_PAGES	(1UL << 0)
+>>> +#define KVM_MEM_READONLY	(1UL << 1)
+>>>
+>>>  This ioctl allows the user to create or modify a guest physical memory
+>>>  slot.  When changing an existing slot, it may be moved in the guest
+>>> @@ -873,9 +874,12 @@ It is recommended that the lower 21 bits of guest_phys_addr and userspace_addr
+>>>  be identical.  This allows large pages in the guest to be backed by large
+>>>  pages in the host.
+>>>
+>>> -The flags field supports just one flag, KVM_MEM_LOG_DIRTY_PAGES, which
+>>> +The flags field supports two flag, KVM_MEM_LOG_DIRTY_PAGES, which
+>>>  instructs kvm to keep track of writes to memory within the slot.  See
+>>> -the KVM_GET_DIRTY_LOG ioctl.
+>>> +the KVM_GET_DIRTY_LOG ioctl. Another flag is KVM_MEM_READONLY when the
+>>> +KVM_CAP_READONLY_MEM capability, it indicates the guest memory is read-only,
+>>> +that means, guest is only allowed to read it.
+>>
+>> The last sentence requires some refactoring. :) How about: "The
+>> KVM_CAP_READONLY_MEM capability indicates the availability of the
+>> KVM_MEM_READONLY flag. When this flag is set for a memory region, KVM
+>> only allows read accesses."
+> 
+> Undoubtedly, your sentence is far better than mine. :)
+> 
+> By the way, this patchset has been applied on kvm -next branch, would
+> you mind to post a patch to do these works.
 
-This is a multi-part message in MIME format.
---------------010202000805000903090102
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Can do, found some more improvable parts in this IOCTL anyway.
 
-On 31.08.2012 18:41, H. Peter Anvin wrote:
-> I'm not saying we shouldn't patch the regression, but this house of car=
-ds
-> *needs* to be replaced with something robust and correct by constructio=
-n.
+> 
+>>
+>>> Writes will be posted to
+>>> +userspace as KVM_EXIT_MMIO exits.
+>>>
+>>>  When the KVM_CAP_SYNC_MMU capability, changes in the backing of the memory
+>>>  region are automatically reflected into the guest.  For example, an mmap()
+>>> diff --git a/arch/x86/include/asm/kvm.h b/arch/x86/include/asm/kvm.h
+>>> index 246617e..521bf25 100644
+>>> --- a/arch/x86/include/asm/kvm.h
+>>> +++ b/arch/x86/include/asm/kvm.h
+>>> @@ -25,6 +25,7 @@
+>>>  #define __KVM_HAVE_DEBUGREGS
+>>>  #define __KVM_HAVE_XSAVE
+>>>  #define __KVM_HAVE_XCRS
+>>> +#define __KVM_HAVE_READONLY_MEM
+>>>
+>>>  /* Architectural interrupt line count. */
+>>>  #define KVM_NR_INTERRUPTS 256
+>>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+>>> index 5548971..8e312a2 100644
+>>> --- a/arch/x86/kvm/mmu.c
+>>> +++ b/arch/x86/kvm/mmu.c
+>>> @@ -2647,6 +2647,15 @@ static void kvm_send_hwpoison_signal(unsigned long address, struct task_struct *
+>>>
+>>>  static int kvm_handle_bad_page(struct kvm_vcpu *vcpu, gfn_t gfn, pfn_t pfn)
+>>>  {
+>>> +	/*
+>>> +	 * Do not cache the mmio info caused by writing the readonly gfn
+>>> +	 * into the spte otherwise read access on readonly gfn also can
+>>> +	 * caused mmio page fault and treat it as mmio access.
+>>> +	 * Return 1 to tell kvm to emulate it.
+>>> +	 */
+>>> +	if (pfn == KVM_PFN_ERR_RO_FAULT)
+>>> +		return 1;
+>>> +
+>>>  	if (pfn == KVM_PFN_ERR_HWPOISON) {
+>>>  		kvm_send_hwpoison_signal(gfn_to_hva(vcpu->kvm, gfn), current);
+>>>  		return 0;
+>>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+>>> index 704680d..42bbf41 100644
+>>> --- a/arch/x86/kvm/x86.c
+>>> +++ b/arch/x86/kvm/x86.c
+>>> @@ -2175,6 +2175,7 @@ int kvm_dev_ioctl_check_extension(long ext)
+>>>  	case KVM_CAP_GET_TSC_KHZ:
+>>>  	case KVM_CAP_PCI_2_3:
+>>>  	case KVM_CAP_KVMCLOCK_CTRL:
+>>> +	case KVM_CAP_READONLY_MEM:
+>>>  		r = 1;
+>>>  		break;
+>>>  	case KVM_CAP_COALESCED_MMIO:
+>>> diff --git a/include/linux/kvm.h b/include/linux/kvm.h
+>>> index 2de335d..d808694 100644
+>>> --- a/include/linux/kvm.h
+>>> +++ b/include/linux/kvm.h
+>>> @@ -106,7 +106,8 @@ struct kvm_userspace_memory_region {
+>>>   * other bits are reserved for kvm internal use which are defined in
+>>>   * include/linux/kvm_host.h.
+>>>   */
+>>> -#define KVM_MEM_LOG_DIRTY_PAGES  1UL
+>>> +#define KVM_MEM_LOG_DIRTY_PAGES	(1UL << 0)
+>>> +#define KVM_MEM_READONLY	(1UL << 1)
+>>>
+>>>  /* for KVM_IRQ_LINE */
+>>>  struct kvm_irq_level {
+>>> @@ -621,6 +622,9 @@ struct kvm_ppc_smmu_info {
+>>>  #define KVM_CAP_PPC_GET_SMMU_INFO 78
+>>>  #define KVM_CAP_S390_COW 79
+>>>  #define KVM_CAP_PPC_ALLOC_HTAB 80
+>>> +#ifdef __KVM_HAVE_READONLY_MEM
+>>> +#define KVM_CAP_READONLY_MEM 81
+>>> +#endif
+>>
+>> See the discussion on the userspace patches: The CAP, as userspace API,
+>> should really be defined unconditionally, kernel code should depend on
+>> __KVM_HAVE_READONLY_MEM or a to-be-introduced CONFIG_KVM_HAVE_xxx
+>> switch. This allows for cleaner userspace code.
+> 
+> I see that using __KVM_HAVE_  around CAP in kvm.h is very popular:
+> 
+> $ grep __KVM_HAVE include/linux/kvm.h | wc -l
+> 20
 
-Could that patch then get applied? Though I got some feedback, that the
-description might be not really well written. So I am attaching a version=
- that
-tries to do better. The code change itself is the same.
+Yes, mistakes of the past.
 
--Stefan
+> 
+> As your suggestion, userspace will always use the CAP even if the CAP
+> is not really supported. We do not need care the overload on other arches?
 
----
+Generally, userspace can only find out if a CAP is supported by testing
+during runtime. Sometimes, the CAP may also be used to switch features
+that are only available on certain archs. But this particular feature
+should surely become a generic one soon, and the code you could skip in
+userspace is truly minimal.
 
-=46rom 737a5ebdd7ac1f4106cb0b0c53cc8f73b6ff1aca Mon Sep 17 00:00:00 2001
-From: Stefan Bader <stefan.bader@canonical.com>
-Date: Fri, 13 Jul 2012 15:16:33 +0200
-Subject: [PATCH] x86/mm: Limit extra padding calculation to x86_32
+Jan
 
-Starting with kernel v3.5 kexec based crash dumping was observed to fail
-(without any apparent message) on x86_64 machines.  This was traced to
-a lack of memory triggered by a substantial increase (several megabyes)
-in the size of the initial page tables.
-
- After regression (on a VM with 2GB of memory):
- kernel direct mapping tables up to 0x7fffcfff @ [mem 0x1fbfd000-0x1fffff=
-ff]
- size =3D 4206591 bytes
-
- With this patch applied:
- kernel direct mapping tables up to 0x7fffcfff @ [mem 0x1fffc000-0x1fffff=
-ff]
- size =3D 16383 bytes
-
-A bisection lead to the commit below:
-
-commit 722bc6b (x86/mm: Fix the size calculation of mapping tables)
-
-This change modified the extra space calculation to take into account
-that the first 2/4M range of memory would be mapped as 4K pages as
-suggested in chapter 11.11.9 of the Intel software developer's manual.
-
-However this is currently only true for x86_32 (the reasons behind that
-are unclear but apparently the whole page table setup needs to be re-
-visited as it turns out to be very easy to break and has flaws in its
-current form).
-
-Until the logic can be revisited and combined, pair up the extra space
-calculation with the logic which creates the extra mappings.
-
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
-Cc: stable@vger.kernel.org # v3.5+
-Cc: WANG Cong <xiyou.wangcong@gmail.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Tejun Heo <tj@kernel.org>
----
- arch/x86/mm/init.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index bc4e9d8..636bbfd 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -60,10 +60,11 @@ static void __init find_early_table_space(struct map_=
-range
-*mr, unsigned long en
- 		extra =3D end - ((end>>PMD_SHIFT) << PMD_SHIFT);
- #ifdef CONFIG_X86_32
- 		extra +=3D PMD_SIZE;
--#endif
-+
- 		/* The first 2/4M doesn't use large pages. */
- 		if (mr->start < PMD_SIZE)
- 			extra +=3D mr->end - mr->start;
-+#endif
-
- 		ptes =3D (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 	} else
---=20
-1.7.9.5
-
---------------010202000805000903090102
-Content-Type: text/x-diff;
- name="0001-x86-mm-Limit-2-4M-size-calculation-to-x86_32.patch"
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: attachment;
- filename="0001-x86-mm-Limit-2-4M-size-calculation-to-x86_32.patch"
-
-=46rom 737a5ebdd7ac1f4106cb0b0c53cc8f73b6ff1aca Mon Sep 17 00:00:00 2001
-From: Stefan Bader <stefan.bader@canonical.com>
-Date: Fri, 13 Jul 2012 15:16:33 +0200
-Subject: [PATCH] x86/mm: Limit extra padding calculation to x86_32
-
-Starting with kernel v3.5 kexec based crash dumping was observed to fail
-(without any apparent message) on x86_64 machines.  This was traced to
-a lack of memory triggered by a substantial increase (several megabyes)
-in the size of the initial page tables.
-
- After regression (on a VM with 2GB of memory):
- kernel direct mapping tables up to 0x7fffcfff @ [mem 0x1fbfd000-0x1fffff=
-ff]
- size =3D 4206591 bytes
-
- With this patch applied:
- kernel direct mapping tables up to 0x7fffcfff @ [mem 0x1fffc000-0x1fffff=
-ff]
- size =3D 16383 bytes
-
-A bisection lead to the commit below:
-
-commit 722bc6b (x86/mm: Fix the size calculation of mapping tables)
-
-This change modified the extra space calculation to take into account
-that the first 2/4M range of memory would be mapped as 4K pages as
-suggested in chapter 11.11.9 of the Intel software developer's manual.
-
-However this is currently only true for x86_32 (the reasons behind that
-are unclear but apparently the whole page table setup needs to be re-
-visited as it turns out to be very easy to break and has flaws in its
-current form).
-
-Until the logic can be revisited and combined, pair up the extra space
-calculation with the logic which creates the extra mappings.
-
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
-Cc: stable@vger.kernel.org # v3.5+
-Cc: WANG Cong <xiyou.wangcong@gmail.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Tejun Heo <tj@kernel.org>
----
- arch/x86/mm/init.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index bc4e9d8..636bbfd 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -60,10 +60,11 @@ static void __init find_early_table_space(struct map_=
-range *mr, unsigned long en
- 		extra =3D end - ((end>>PMD_SHIFT) << PMD_SHIFT);
- #ifdef CONFIG_X86_32
- 		extra +=3D PMD_SIZE;
--#endif
-+
- 		/* The first 2/4M doesn't use large pages. */
- 		if (mr->start < PMD_SIZE)
- 			extra +=3D mr->end - mr->start;
-+#endif
-=20
- 		ptes =3D (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 	} else
---=20
-1.7.9.5
-
-
---------------010202000805000903090102--
-
---------------enigCE619EE5472A4044742E054D
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://www.enigmail.net/
-
-iQIcBAEBCgAGBQJQSdaYAAoJEOhnXe7L7s6jSY0P/27Bdlo2uurutNTpoxwPs9Xe
-L1wAJJFbkc/enGK+AXNQ1hjBXJzcnGo2T7RYisar1ROVmRnQgANJlSPlc/Q1b1hW
-GacPaPlZstA7GyohiM7/15o1B7iZZvjeZ8ZIofwu+5N9erVq9CjgHhKmHPQkxGUr
-8VCvBifHFY1shLqArWa4w0i5B2F4o587F3DHpRotWfqaVo2u23GvjyTGd/k87UAl
-pku5Und/RB91q0H7tCcsR2Rvvous6YIVuD04YU3NXO1tYNcl/osei7Knia3C+3st
-DWvxJboOy/0MlU1lW1OCBjzmBdPs/iRbZ+VT5Pf/nQnjnoZQnzXmKzq7OWkoITfX
-n0eIzTrpLCrxJLPkQ5e5ksd7jLZfcsS8/sQq5xrBFYBmn4fIlQ/hDi/KMEzOHH1a
-jF5NxUkiQjJWmOwtS8oHnPDm3jJXdCQHNKr9PZWfQTSRLfsgI5NmsHkL3lgTg0/v
-CHQvJOWJ8BhgPtwOlY2sUs1CyhThtf9LSSLSSAasGx31RazphZYDzh/G5vrlcWL9
-CfR+W8v/DYaeAVpShU6goxaazqYDKDMY4tg0lph7HUCyaqfOzBlmk7QX/b4SkbFa
-zqw8ZZlOxSQ1+JdAGihWCASgssT+H1pyNPGqzj1Z6EJvh3HMMEg5RzhRr4g95cDF
-JodiL4kh0txROri+7rAA
-=/0VE
------END PGP SIGNATURE-----
-
---------------enigCE619EE5472A4044742E054D--
+-- 
+Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
+Corporate Competence Center Embedded Linux
