@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756561Ab2IGAFH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 20:05:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6222 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753693Ab2IGAFE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 20:05:04 -0400
-Date: Fri, 7 Sep 2012 03:06:23 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, avi@redhat.com, kvm@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] virtio-ring: Allocate indirect buffers from cache
- when possible
-Message-ID: <20120907000623.GA3000@redhat.com>
-References: <503CC904.3050207@gmail.com>
- <20120829110748.GB5970@redhat.com>
- <503E2F27.5060904@gmail.com>
- <20120829153833.GE7407@redhat.com>
- <503E4873.6060607@gmail.com>
- <871uigj747.fsf@rustcorp.com.au>
- <20120906050257.GA17656@redhat.com>
- <877gs7inx8.fsf@rustcorp.com.au>
- <20120906084526.GE17656@redhat.com>
- <87txvahfv3.fsf@rustcorp.com.au>
+	id S1756055Ab2IGAGv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 20:06:51 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:52751 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753228Ab2IGAGu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 20:06:50 -0400
+X-AuditID: 9c930197-b7b93ae0000028a7-55-50493a984a66
+Date: Fri, 7 Sep 2012 09:08:27 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Xishi Qiu <qiuxishi@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>
+Subject: Re: [PATCH v2 2/3] mm: remain migratetype in freed page
+Message-ID: <20120907000827.GF16231@bbox>
+References: <1346908619-16056-1-git-send-email-minchan@kernel.org>
+ <1346908619-16056-3-git-send-email-minchan@kernel.org>
+ <50483EF4.6010909@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87txvahfv3.fsf@rustcorp.com.au>
+In-Reply-To: <50483EF4.6010909@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 07, 2012 at 09:19:04AM +0930, Rusty Russell wrote:
-> "Michael S. Tsirkin" <mst@redhat.com> writes:
+On Thu, Sep 06, 2012 at 03:13:08PM +0900, Kamezawa Hiroyuki wrote:
+> (2012/09/06 14:16), Minchan Kim wrote:
+> > The page allocator caches the pageblock information in page->private while
+> > it is in the PCP freelists but this is overwritten with the order of the
+> > page when freed to the buddy allocator. This patch stores the migratetype
+> > of the page in the page->index field so that it is available at all times
+> > when the page remain in free_list.
+> > 
+> sounds reasonable.
 > 
-> > On Thu, Sep 06, 2012 at 05:27:23PM +0930, Rusty Russell wrote:
-> >> "Michael S. Tsirkin" <mst@redhat.com> writes:
-> >> > Yes without checksum net core always linearizes packets, so yes it is
-> >> > screwed.
-> >> > For -net, skb always allocates space for 17 frags + linear part so
-> >> > it seems sane to do same in virtio core, and allocate, for -net,
-> >> > up to max_frags + 1 from cache.
-> >> > We can adjust it: no _SG -> 2 otherwise 18.
-> >> 
-> >> But I thought it used individual buffers these days?
-> >
-> > Yes for receive, no for transmit. That's probably why
-> > we should have the threshold per vq, not per device, BTW.
+> > This patch adds a new call site in __free_pages_ok so it might be
+> > overhead a bit but it's for high order allocation.
+> > So I believe damage isn't hurt.
+> > 
+> > * from v1
+> >    * Fix move_freepages's migratetype - Mel
+> >    * Add more kind explanation in description - Mel
+> > 
+> > Signed-off-by: Minchan Kim <minchan@kernel.org>
 > 
-> Can someone actually run with my histogram patch and see what the real
-> numbers are?
-> 
-> I'm not convinced that the ideal 17-buffer case actually happens as much
-> as we think.  And if it's not happening with this netperf test, we're
-> testing the wrong thing.
-> 
-> Thanks,
-> Rusty.
+> Hmm, page->index is valid only when the page is the head of buddy chunk ?
 
-hope to play with it next week
+Yes.
+
+> 
+> Anyway,
+> 
+> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+Thanks, Kame!
+
+-- 
+Kind regards,
+Minchan Kim
