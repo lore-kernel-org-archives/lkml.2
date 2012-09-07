@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760864Ab2IGOXm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 10:23:42 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:43357 "EHLO
+	id S1760846Ab2IGOXj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 10:23:39 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:38547 "EHLO
 	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760722Ab2IGOS6 (ORCPT
+	with ESMTP id S1760723Ab2IGOS6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Sep 2012 10:18:58 -0400
 From: Jeff Layton <jlayton@redhat.com>
@@ -12,9 +12,9 @@ To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
         hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v6 10/20] vfs: make rmdir retry on ESTALE errors
-Date: Fri,  7 Sep 2012 10:18:17 -0400
-Message-Id: <1347027507-20956-11-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v6 09/20] vfs: add a reval argument to user_path_parent
+Date: Fri,  7 Sep 2012 10:18:16 -0400
+Message-Id: <1347027507-20956-10-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1347027507-20956-1-git-send-email-jlayton@redhat.com>
 References: <1347027507-20956-1-git-send-email-jlayton@redhat.com>
@@ -22,109 +22,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+...so we can tell it when to set LOOKUP_REVAL.
+
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/namei.c | 81 ++++++++++++++++++++++++++++++++++----------------------------
- 1 file changed, 44 insertions(+), 37 deletions(-)
+ fs/namei.c | 17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
 diff --git a/fs/namei.c b/fs/namei.c
-index 51841ec..a9dd63f 100644
+index e05d6ee..51841ec 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -3343,49 +3343,56 @@ static long do_rmdir(int dfd, const char __user *pathname)
- 	struct getname_info *name;
+@@ -2183,15 +2183,20 @@ int user_path_at(int dfd, const char __user *name, unsigned flags,
+  *     path-walking is complete.
+  */
+ static struct getname_info *
+-user_path_parent(int dfd, const char __user *path, struct nameidata *nd)
++user_path_parent(int dfd, const char __user *path, struct nameidata *nd,
++		 unsigned int reval)
+ {
+ 	struct getname_info *s = getname(path);
+ 	int error;
++	unsigned int flags = LOOKUP_PARENT;
++
++	if (reval)
++		flags |= LOOKUP_REVAL;
+ 
+ 	if (IS_ERR(s))
+ 		return s;
+ 
+-	error = ginfo_lookup(dfd, s, LOOKUP_PARENT, nd);
++	error = ginfo_lookup(dfd, s, flags, nd);
+ 	if (error) {
+ 		putname(s);
+ 		return ERR_PTR(error);
+@@ -3339,7 +3344,7 @@ static long do_rmdir(int dfd, const char __user *pathname)
  	struct dentry *dentry;
  	struct nameidata nd;
-+	unsigned int try = 0;
-+	unsigned int lookup_flags = LOOKUP_PARENT;
  
--	name = user_path_parent(dfd, pathname, &nd, 0);
--	if (IS_ERR(name))
--		return PTR_ERR(name);
--
--	switch(nd.last_type) {
--	case LAST_DOTDOT:
--		error = -ENOTEMPTY;
--		goto exit1;
--	case LAST_DOT:
--		error = -EINVAL;
--		goto exit1;
--	case LAST_ROOT:
--		error = -EBUSY;
--		goto exit1;
--	}
-+	do {
-+		name = user_path_parent(dfd, pathname, &nd, try);
-+		if (IS_ERR(name))
-+			return PTR_ERR(name);
-+
-+		switch (nd.last_type) {
-+		case LAST_DOTDOT:
-+			error = -ENOTEMPTY;
-+			goto exit1;
-+		case LAST_DOT:
-+			error = -EINVAL;
-+			goto exit1;
-+		case LAST_ROOT:
-+			error = -EBUSY;
-+			goto exit1;
-+		}
+-	name = user_path_parent(dfd, pathname, &nd);
++	name = user_path_parent(dfd, pathname, &nd, 0);
+ 	if (IS_ERR(name))
+ 		return PTR_ERR(name);
  
--	nd.flags &= ~LOOKUP_PARENT;
--	error = mnt_want_write(nd.path.mnt);
--	if (error)
--		goto exit1;
-+		nd.flags &= ~LOOKUP_PARENT;
-+		error = mnt_want_write(nd.path.mnt);
-+		if (error)
-+			goto exit1;
+@@ -3435,7 +3440,7 @@ static long do_unlinkat(int dfd, const char __user *pathname)
+ 	struct nameidata nd;
+ 	struct inode *inode = NULL;
  
--	mutex_lock_nested(&nd.path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
--	dentry = lookup_hash(&nd);
--	error = PTR_ERR(dentry);
--	if (IS_ERR(dentry))
--		goto exit2;
--	if (!dentry->d_inode) {
--		error = -ENOENT;
--		goto exit3;
--	}
--	error = security_path_rmdir(&nd.path, dentry);
--	if (error)
--		goto exit3;
--	error = vfs_rmdir(nd.path.dentry->d_inode, dentry);
-+		mutex_lock_nested(&nd.path.dentry->d_inode->i_mutex,
-+					I_MUTEX_PARENT);
-+		dentry = lookup_hash(&nd);
-+		if (IS_ERR(dentry)) {
-+			error = PTR_ERR(dentry);
-+			goto exit2;
-+		}
-+		if (!dentry->d_inode) {
-+			error = -ENOENT;
-+			goto exit3;
-+		}
-+		error = security_path_rmdir(&nd.path, dentry);
-+		if (error)
-+			goto exit3;
-+		error = vfs_rmdir(nd.path.dentry->d_inode, dentry);
- exit3:
--	dput(dentry);
-+		dput(dentry);
- exit2:
--	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
--	mnt_drop_write(nd.path.mnt);
-+		mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
-+		mnt_drop_write(nd.path.mnt);
- exit1:
--	path_put(&nd.path);
--	putname(name);
-+		path_put(&nd.path);
-+		lookup_flags |= LOOKUP_REVAL;
-+		putname(name);
-+	} while (retry_estale(error, try++));
- 	return error;
- }
+-	name = user_path_parent(dfd, pathname, &nd);
++	name = user_path_parent(dfd, pathname, &nd, 0);
+ 	if (IS_ERR(name))
+ 		return PTR_ERR(name);
  
+@@ -3830,13 +3835,13 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
+ 	struct getname_info *to;
+ 	int error;
+ 
+-	from = user_path_parent(olddfd, oldname, &oldnd);
++	from = user_path_parent(olddfd, oldname, &oldnd, 0);
+ 	if (IS_ERR(from)) {
+ 		error = PTR_ERR(from);
+ 		goto exit;
+ 	}
+ 
+-	to = user_path_parent(newdfd, newname, &newnd);
++	to = user_path_parent(newdfd, newname, &newnd, 0);
+ 	if (IS_ERR(to)) {
+ 		error = PTR_ERR(to);
+ 		goto exit1;
 -- 
 1.7.11.4
 
