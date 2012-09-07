@@ -1,107 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760706Ab2IGNjx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 09:39:53 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:64530 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760216Ab2IGNiX (ORCPT
+	id S1760668Ab2IGNju (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 09:39:50 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:63548 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760098Ab2IGNiX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Sep 2012 09:38:23 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: viro@zeniv.linux.org.uk
-Cc: eparis@redhat.com, linux-audit@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v1 05/10] audit: allow audit code to satisfy getname requests from its names_list
-Date: Fri,  7 Sep 2012 09:38:00 -0400
-Message-Id: <1347025085-20285-6-git-send-email-jlayton@redhat.com>
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: kernel-janitors@vger.kernel.org
+Subject: [PATCH] ../linux-next/drivers/media/pci/cx25821/cx25821-video-upstream-ch2.c: fix error return code
+Date: Fri,  7 Sep 2012 15:38:08 +0200
+Message-Id: <1347025088-11616-1-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1347025085-20285-1-git-send-email-jlayton@redhat.com>
-References: <1347025085-20285-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, if we call getname() on a userland string more than once,
-we'll get multiple copies of the string and multiple audit_names
-records.
+From: Peter Senna Tschudin <peter.senna@gmail.com>
 
-Add a function that will allow the audit_names code to satisfy getname
-requests using info from the audit_names list, avoiding a new allocation
-and audit_names records.
+Convert a nonnegative error return code to a negative one, as returned
+elsewhere in the function.
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
+
+// <smpl>
+(
+if@p1 (\(ret < 0\|ret != 0\))
+ { ... return ret; }
+|
+ret@p1 = 0
+)
+... when != ret = e1
+    when != &ret
+*if(...)
+{
+  ... when != ret = e2
+      when forall
+ return ret;
+}
+
+// </smpl>
+
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+
 ---
- include/linux/audit.h |  8 ++++++++
- kernel/auditsc.c      | 23 +++++++++++++++++++++++
- 2 files changed, 31 insertions(+)
+ drivers/media/pci/cx25821/cx25821-video-upstream-ch2.c |   15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/audit.h b/include/linux/audit.h
-index d361921..ea58de3 100644
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -469,6 +469,7 @@ extern void __audit_syscall_entry(int arch,
- 				  int major, unsigned long a0, unsigned long a1,
- 				  unsigned long a2, unsigned long a3);
- extern void __audit_syscall_exit(int ret_success, long ret_value);
-+extern struct getname_info *__audit_reusename(const __user char *uptr);
- extern void __audit_getname(struct getname_info *ginfo);
- extern void audit_putname(struct getname_info *ginfo);
- extern void __audit_inode(const char *name, const struct dentry *dentry,
-@@ -505,6 +506,12 @@ static inline void audit_syscall_exit(void *pt_regs)
- 		__audit_syscall_exit(success, return_code);
- 	}
- }
-+static inline struct getname_info *audit_reusename(const __user char *name)
-+{
-+	if (unlikely(!audit_dummy_context()))
-+		return __audit_reusename(name);
-+	return NULL;
-+}
- static inline void audit_getname(struct getname_info *name)
+diff --git a/../linux-next/drivers/media/pci/cx25821/cx25821-video-upstream-ch2.c b/drivers/media/pci/cx25821/cx25821-video-upstream-ch2.c
+index c8c94fb..273df94 100644
+--- a/../linux-next/drivers/media/pci/cx25821/cx25821-video-upstream-ch2.c
++++ b/drivers/media/pci/cx25821/cx25821-video-upstream-ch2.c
+@@ -704,7 +704,6 @@ int cx25821_vidupstream_init_ch2(struct cx25821_dev *dev, int channel_select,
  {
- 	if (unlikely(!audit_dummy_context()))
-@@ -642,6 +649,7 @@ extern int audit_signals;
- #define audit_syscall_entry(ta,a,b,c,d,e) do { ; } while (0)
- #define audit_syscall_exit(r) do { ; } while (0)
- #define audit_dummy_context() 1
-+#define audit_reusename(g) ({ NULL; })
- #define audit_getname(n) do { ; } while (0)
- #define audit_putname(n) do { ; } while (0)
- #define __audit_inode(n,d,p) do { ; } while (0)
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index 3ffb71a..22121bb 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -2034,6 +2034,29 @@ static struct audit_names *audit_alloc_name(struct audit_context *context,
- }
+ 	struct sram_channel *sram_ch;
+ 	u32 tmp;
+-	int retval = 0;
+ 	int err = 0;
+ 	int data_frame_size = 0;
+ 	int risc_buffer_size = 0;
+@@ -749,15 +748,19 @@ int cx25821_vidupstream_init_ch2(struct cx25821_dev *dev, int channel_select,
+ 		dev->_filename_ch2 = kmemdup(dev->input_filename_ch2,
+ 					     str_length + 1, GFP_KERNEL);
  
- /**
-+ * audit_reusename - fill out getname_info with info from existing entry
-+ * @uptr: userland ptr to pathname
-+ *
-+ * Search the audit_names list for the current audit context. If there is an
-+ * existing entry with a matching "uptr" then return the getname_info
-+ * associated with that audit_name. If not, return NULL.
-+ */
-+struct getname_info *
-+__audit_reusename(const __user char *uptr)
-+{
-+	struct audit_context *context = current->audit_context;
-+	struct audit_names *n;
-+
-+	list_for_each_entry(n, &context->names_list, list) {
-+		if (!n->ginfo)
-+			continue;
-+		if (n->ginfo->uptr == uptr)
-+			return n->ginfo;
-+	}
-+	return NULL;
-+}
-+
-+/**
-  * audit_getname - add a name to the list
-  * @name: name to add
-  *
--- 
-1.7.11.4
+-		if (!dev->_filename_ch2)
++		if (!dev->_filename_ch2) {
++			err = -ENOENT;
+ 			goto error;
++		}
+ 	} else {
+ 		str_length = strlen(dev->_defaultname_ch2);
+ 		dev->_filename_ch2 = kmemdup(dev->_defaultname_ch2,
+ 					     str_length + 1, GFP_KERNEL);
+ 
+-		if (!dev->_filename_ch2)
++		if (!dev->_filename_ch2) {
++			err = -ENOENT;
+ 			goto error;
++		}
+ 	}
+ 
+ 	/* Default if filename is empty string */
+@@ -773,7 +776,7 @@ int cx25821_vidupstream_init_ch2(struct cx25821_dev *dev, int channel_select,
+ 		}
+ 	}
+ 
+-	retval = cx25821_sram_channel_setup_upstream(dev, sram_ch,
++	err = cx25821_sram_channel_setup_upstream(dev, sram_ch,
+ 						dev->_line_size_ch2, 0);
+ 
+ 	/* setup fifo + format */
+@@ -783,9 +786,9 @@ int cx25821_vidupstream_init_ch2(struct cx25821_dev *dev, int channel_select,
+ 	dev->upstream_databuf_size_ch2 = data_frame_size * 2;
+ 
+ 	/* Allocating buffers and prepare RISC program */
+-	retval = cx25821_upstream_buffer_prepare_ch2(dev, sram_ch,
++	err = cx25821_upstream_buffer_prepare_ch2(dev, sram_ch,
+ 						dev->_line_size_ch2);
+-	if (retval < 0) {
++	if (err < 0) {
+ 		pr_err("%s: Failed to set up Video upstream buffers!\n",
+ 		       dev->name);
+ 		goto error;
 
