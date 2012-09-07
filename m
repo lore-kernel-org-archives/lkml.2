@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758182Ab2IGV3K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 17:29:10 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44955 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757507Ab2IGV3H convert rfc822-to-8bit (ORCPT
+	id S1757969Ab2IGVbL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 17:31:11 -0400
+Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:22326
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751599Ab2IGVbJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 17:29:07 -0400
-Content-Type: text/plain; charset="utf-8"
+	Fri, 7 Sep 2012 17:31:09 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202h1d1ahzz8275ch8275bhz2dh2a8h668h839hd24he5bhf0ah107ah1288h12a5h1155h)
+From: Timur Tabi <timur@freescale.com>
+To: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-next@vger.kernel.org>, <sfr@canb.auug.org.au>,
+        <rdunlap@xenotime.net>
+Subject: [PATCH][v2] netdev/phy: mdio-mux-mmioreg.c should include of_address.h
+Date: Fri, 7 Sep 2012 16:30:57 -0500
+Message-ID: <1347053457-24935-1-git-send-email-timur@freescale.com>
+X-Mailer: git-send-email 1.7.3.4
+Organization: Freescale Semiconductor
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Murali Karicheri <m-karicheri2@ti.com>, <dwmw2@infradead.org>,
-        <artem.bityutskiy@linux.intel.com>, <dbaryshkov@gmail.com>,
-        <computersforpeace@gmail.com>, <linux-mtd@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1346350624-27291-1-git-send-email-m-karicheri2@ti.com>
-Cc: Murali Karicheri <m-karicheri2@ti.com>
-References: <1346350624-27291-1-git-send-email-m-karicheri2@ti.com>
-Message-ID: <20120907212853.20289.86031@nucleus>
-User-Agent: alot/0.3.2+
-Subject: Re: [PATCH] mtd:nand:clk: preparation for switch to common clock framework
-Date: Fri, 07 Sep 2012 14:28:53 -0700
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Murali Karicheri (2012-08-30 11:17:04)
-> As a first step towards migrating davinci platforms to use common clock
-> framework, replace all instances of clk_enable() with clk_prepare_enable()
-> and clk_disable() with clk_disable_unprepare(). Until the platform is
-> switched to use the CONFIG_HAVE_CLK_PREPARE Kconfig variable, this just
-> adds a might_sleep() call and would work without any issues.
-> 
-> This will make it easy later to switch to common clk based implementation
-> of clk driver from DaVinci specific driver.
-> 
-> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+mdio-mux-mmioreg.c uses function of_address_to_resource(), which is defined
+in linux/of_address.h.  This fixes a compilation error:
 
-Acked-by: Mike Turquette <mturquette@linaro.org>
+drivers/net/phy/mdio-mux-mmioreg.c: In function 'mdio_mux_mmioreg_probe':
+drivers/net/phy/mdio-mux-mmioreg.c:83:2: error: implicit declaration of
+	function 'of_address_to_resource'
 
-> ---
->  drivers/mtd/nand/davinci_nand.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
-> index d94b03c..6b8cf27 100644
-> --- a/drivers/mtd/nand/davinci_nand.c
-> +++ b/drivers/mtd/nand/davinci_nand.c
-> @@ -656,7 +656,7 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
->                 goto err_clk;
->         }
->  
-> -       ret = clk_enable(info->clk);
-> +       ret = clk_prepare_enable(info->clk);
->         if (ret < 0) {
->                 dev_dbg(&pdev->dev, "unable to enable AEMIF clock, err %d\n",
->                         ret);
-> @@ -767,7 +767,7 @@ syndrome_done:
->  
->  err_scan:
->  err_timing:
-> -       clk_disable(info->clk);
-> +       clk_disable_unprepare(info->clk);
->  
->  err_clk_enable:
->         clk_put(info->clk);
-> @@ -804,7 +804,7 @@ static int __exit nand_davinci_remove(struct platform_device *pdev)
->  
->         nand_release(&info->mtd);
->  
-> -       clk_disable(info->clk);
-> +       clk_disable_unprepare(info->clk);
->         clk_put(info->clk);
->  
->         kfree(info);
-> -- 
-> 1.7.9.5
+Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+Signed-off-by: Timur Tabi <timur@freescale.com>
+
+---
+ drivers/net/phy/mdio-mux-mmioreg.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/net/phy/mdio-mux-mmioreg.c b/drivers/net/phy/mdio-mux-mmioreg.c
+index 098239a..9061ba6 100644
+--- a/drivers/net/phy/mdio-mux-mmioreg.c
++++ b/drivers/net/phy/mdio-mux-mmioreg.c
+@@ -12,6 +12,7 @@
+ 
+ #include <linux/platform_device.h>
+ #include <linux/device.h>
++#include <linux/of_address.h>
+ #include <linux/of_mdio.h>
+ #include <linux/module.h>
+ #include <linux/init.h>
+-- 
+1.7.3.4
+
+
