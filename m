@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932990Ab2IGOZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 10:25:27 -0400
-Received: from mail-yw0-f51.google.com ([209.85.213.51]:45894 "EHLO
-	mail-yw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933300Ab2IGOZT (ORCPT
+	id S933348Ab2IGOZq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 10:25:46 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:56420 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932251Ab2IGOZm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 10:25:19 -0400
+	Fri, 7 Sep 2012 10:25:42 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
         hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v6 02/20] vfs: make fstatat retry on ESTALE errors from getattr call
-Date: Fri,  7 Sep 2012 10:18:09 -0400
-Message-Id: <1347027507-20956-3-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v6 12/20] vfs: fix renameat to retry on ESTALE errors
+Date: Fri,  7 Sep 2012 10:18:19 -0400
+Message-Id: <1347027507-20956-13-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1347027507-20956-1-git-send-email-jlayton@redhat.com>
 References: <1347027507-20956-1-git-send-email-jlayton@redhat.com>
@@ -22,44 +22,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+...as always, rename is the messiest of the bunch. We have to track
+whether to retry or not via a separate flag since the error handling
+is already quite complex.
+
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/stat.c | 16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+ fs/namei.c | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/fs/stat.c b/fs/stat.c
-index b6ff118..d90258d 100644
---- a/fs/stat.c
-+++ b/fs/stat.c
-@@ -74,7 +74,8 @@ int vfs_fstatat(int dfd, const char __user *filename, struct kstat *stat,
- {
- 	struct path path;
- 	int error = -EINVAL;
--	int lookup_flags = 0;
+diff --git a/fs/namei.c b/fs/namei.c
+index 77c2b1055..010d428 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -3847,15 +3847,18 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
+ 	struct nameidata oldnd, newnd;
+ 	struct getname_info *from;
+ 	struct getname_info *to;
 +	unsigned int try = 0;
-+	unsigned int lookup_flags = 0;
++	bool should_retry = false;
+ 	int error;
  
- 	if ((flag & ~(AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT |
- 		      AT_EMPTY_PATH)) != 0)
-@@ -85,12 +86,15 @@ int vfs_fstatat(int dfd, const char __user *filename, struct kstat *stat,
- 	if (flag & AT_EMPTY_PATH)
- 		lookup_flags |= LOOKUP_EMPTY;
+-	from = user_path_parent(olddfd, oldname, &oldnd, 0);
++retry:
++	from = user_path_parent(olddfd, oldname, &oldnd, try);
+ 	if (IS_ERR(from)) {
+ 		error = PTR_ERR(from);
+ 		goto exit;
+ 	}
  
--	error = user_path_at(dfd, filename, lookup_flags, &path);
--	if (error)
--		goto out;
-+	do {
-+		error = user_path_at(dfd, filename, lookup_flags, &path);
-+		if (error)
-+			break;
- 
--	error = vfs_getattr(path.mnt, path.dentry, stat);
--	path_put(&path);
-+		error = vfs_getattr(path.mnt, path.dentry, stat);
-+		path_put(&path);
-+		lookup_flags |= LOOKUP_REVAL;
-+	} while (retry_estale(error, try++));
- out:
+-	to = user_path_parent(newdfd, newname, &newnd, 0);
++	to = user_path_parent(newdfd, newname, &newnd, try);
+ 	if (IS_ERR(to)) {
+ 		error = PTR_ERR(to);
+ 		goto exit1;
+@@ -3927,11 +3930,17 @@ exit3:
+ 	unlock_rename(new_dir, old_dir);
+ 	mnt_drop_write(oldnd.path.mnt);
+ exit2:
++	if (retry_estale(error, try++))
++		should_retry = true;
+ 	path_put(&newnd.path);
+ 	putname(to);
+ exit1:
+ 	path_put(&oldnd.path);
+ 	putname(from);
++	if (should_retry) {
++		should_retry = false;
++		goto retry;
++	}
+ exit:
  	return error;
  }
 -- 
