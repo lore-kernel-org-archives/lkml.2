@@ -1,197 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932660Ab2IGGOT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 02:14:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55224 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754442Ab2IGGOR (ORCPT
+	id S932215Ab2IGGOa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 02:14:30 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:55779 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932685Ab2IGGO1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 02:14:17 -0400
-Date: Thu, 6 Sep 2012 23:13:53 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-5jskfkuqvf2fi257zmni0ftz@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf test:
-  Add round trip test for sw and hw event names
-Git-Commit-ID: 8ad7013b252ba683055df19e657eb03d98f4f312
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 7 Sep 2012 02:14:27 -0400
+Message-ID: <504990BC.3010703@linux.vnet.ibm.com>
+Date: Fri, 07 Sep 2012 14:14:20 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: [PATCH 2/3] KVM: fix release error page
+References: <5049908A.7070501@linux.vnet.ibm.com>
+In-Reply-To: <5049908A.7070501@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 06 Sep 2012 23:13:59 -0700 (PDT)
+Content-Transfer-Encoding: 7bit
+x-cbid: 12090706-6102-0000-0000-000002311254
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8ad7013b252ba683055df19e657eb03d98f4f312
-Gitweb:     http://git.kernel.org/tip/8ad7013b252ba683055df19e657eb03d98f4f312
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Thu, 6 Sep 2012 13:11:18 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 6 Sep 2012 13:11:18 -0300
+This bug was triggered:
+[ 4220.198458] BUG: unable to handle kernel paging request at fffffffffffffffe
+[ 4220.203907] IP: [<ffffffff81104d85>] put_page+0xf/0x34
+......
+[ 4220.237326] Call Trace:
+[ 4220.237361]  [<ffffffffa03830d0>] kvm_arch_destroy_vm+0xf9/0x101 [kvm]
+[ 4220.237382]  [<ffffffffa036fe53>] kvm_put_kvm+0xcc/0x127 [kvm]
+[ 4220.237401]  [<ffffffffa03702bc>] kvm_vcpu_release+0x18/0x1c [kvm]
+[ 4220.237407]  [<ffffffff81145425>] __fput+0x111/0x1ed
+[ 4220.237411]  [<ffffffff8114550f>] ____fput+0xe/0x10
+[ 4220.237418]  [<ffffffff81063511>] task_work_run+0x5d/0x88
+[ 4220.237424]  [<ffffffff8104c3f7>] do_exit+0x2bf/0x7ca
 
-perf test: Add round trip test for sw and hw event names
+The test case:
 
-It basically traverses the hardware and software event name arrays
-creating an evlist with all events, then it uses perf_evsel__name to
-check that the name is the expected one.
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <fcntl.h>
+#include <unistd.h>
 
-With it I noticed this problem:
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/ioctl.h>
+#include <sys/mman.h>
 
-[root@sandy ~]# perf test 10
-10: roundtrip evsel->name check:invalid or unsupported event: 'CPU-migrations'
-Run 'perf list' for a list of valid events
- FAILED!
+#include <linux/kvm.h>
 
-Changed it to "cpu-migrations" in the software event arrays and it
-worked.
+#define die(fmt, args...)	do {	\
+	printf(fmt, ##args);		\
+	exit(-1);} while (0)
 
-This is to catch problems like the one reported by Joel Uckelman in
-http://permalink.gmane.org/gmane.linux.kernel.perf.user/1016
+static int create_vm(void)
+{
+	int sys_fd, vm_fd;
 
-Hardware cache events will be checked in the following patch.
+	sys_fd = open("/dev/kvm", O_RDWR);
+	if (sys_fd < 0)
+		die("open /dev/kvm fail.\n");
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-5jskfkuqvf2fi257zmni0ftz@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+	vm_fd = ioctl(sys_fd, KVM_CREATE_VM, 0);
+	if (vm_fd < 0)
+		die("KVM_CREATE_VM fail.\n");
+
+	return vm_fd;
+}
+
+static int create_vcpu(int vm_fd)
+{
+	int vcpu_fd;
+
+	vcpu_fd = ioctl(vm_fd, KVM_CREATE_VCPU, 0);
+	if (vcpu_fd < 0)
+		die("KVM_CREATE_VCPU ioctl.\n");
+	printf("Create vcpu.\n");
+	return vcpu_fd;
+}
+
+static void *vcpu_thread(void *arg)
+{
+	int vm_fd = (int)(long)arg;
+
+	create_vcpu(vm_fd);
+	return NULL;
+}
+
+int main(int argc, char *argv[])
+{
+	pthread_t thread;
+	int vm_fd;
+
+	(void)argc;
+	(void)argv;
+
+	vm_fd = create_vm();
+	pthread_create(&thread, NULL, vcpu_thread, (void *)(long)vm_fd);
+	printf("Exit.\n");
+	return 0;
+}
+
+It caused by release kvm->arch.ept_identity_map_addr which is the
+error page.
+
+The parent thread can send KILL signal to the vcpu thread when it was
+exiting which stops faulting pages and potentially allocating memory.
+So gfn_to_pfn/gfn_to_page may fail at this time
+
+Fixed by checking the page before it is used
+
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- tools/perf/builtin-test.c |   53 +++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/evsel.c   |    6 ++--
- tools/perf/util/evsel.h   |    6 +++-
- 3 files changed, 60 insertions(+), 5 deletions(-)
+ arch/x86/kvm/vmx.c |   19 ++++++++++++++++---
+ arch/x86/kvm/x86.c |   13 ++++++++++---
+ 2 files changed, 26 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index 381d5ab..ba94fbe 100644
---- a/tools/perf/builtin-test.c
-+++ b/tools/perf/builtin-test.c
-@@ -1092,6 +1092,55 @@ static int test__perf_pmu(void)
- 	return perf_pmu__test();
- }
- 
-+static int __perf_evsel__name_array_test(const char *names[], int nr_names)
-+{
-+	int i, err;
-+	struct perf_evsel *evsel;
-+        struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
-+
-+        if (evlist == NULL)
-+                return -ENOMEM;
-+
-+	for (i = 0; i < nr_names; ++i) {
-+		err = parse_events(evlist, names[i], 0);
-+		if (err) {
-+			pr_debug("failed to parse event '%s', err %d\n",
-+				 names[i], err);
-+			goto out_delete_evlist;
-+		}
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 248c2b4..ccea20a 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -3590,6 +3590,7 @@ static void seg_setup(int seg)
+
+ static int alloc_apic_access_page(struct kvm *kvm)
+ {
++	struct page *page;
+ 	struct kvm_userspace_memory_region kvm_userspace_mem;
+ 	int r = 0;
+
+@@ -3604,7 +3605,13 @@ static int alloc_apic_access_page(struct kvm *kvm)
+ 	if (r)
+ 		goto out;
+
+-	kvm->arch.apic_access_page = gfn_to_page(kvm, 0xfee00);
++	page = gfn_to_page(kvm, 0xfee00);
++	if (is_error_page(page)) {
++		r = -EFAULT;
++		goto out;
 +	}
 +
-+	err = 0;
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		if (strcmp(perf_evsel__name(evsel), names[evsel->idx])) {
-+			--err;
-+			pr_debug("%s != %s\n", perf_evsel__name(evsel), names[evsel->idx]);
-+		}
++	kvm->arch.apic_access_page = page;
+ out:
+ 	mutex_unlock(&kvm->slots_lock);
+ 	return r;
+@@ -3612,6 +3619,7 @@ out:
+
+ static int alloc_identity_pagetable(struct kvm *kvm)
+ {
++	struct page *page;
+ 	struct kvm_userspace_memory_region kvm_userspace_mem;
+ 	int r = 0;
+
+@@ -3627,8 +3635,13 @@ static int alloc_identity_pagetable(struct kvm *kvm)
+ 	if (r)
+ 		goto out;
+
+-	kvm->arch.ept_identity_pagetable = gfn_to_page(kvm,
+-			kvm->arch.ept_identity_map_addr >> PAGE_SHIFT);
++	page = gfn_to_page(kvm, kvm->arch.ept_identity_map_addr >> PAGE_SHIFT);
++	if (is_error_page(page)) {
++		r = -EFAULT;
++		goto out;
 +	}
 +
-+out_delete_evlist:
-+	perf_evlist__delete(evlist);
-+	return err;
-+}
-+
-+#define perf_evsel__name_array_test(names) \
-+	__perf_evsel__name_array_test(names, ARRAY_SIZE(names))
-+
-+static int perf_evsel__roundtrip_name_test(void)
-+{
-+	int err = 0, ret = 0;
-+
-+	err = perf_evsel__name_array_test(perf_evsel__hw_names);
-+	if (err)
-+		ret = err;
-+
-+	err = perf_evsel__name_array_test(perf_evsel__sw_names);
-+	if (err)
-+		ret = err;
-+
-+	return ret;
-+}
-+
- static struct test {
- 	const char *desc;
- 	int (*func)(void);
-@@ -1135,6 +1184,10 @@ static struct test {
- 		.func = dso__test_data,
- 	},
- 	{
-+		.desc = "roundtrip evsel->name check",
-+		.func = perf_evsel__roundtrip_name_test,
-+	},
-+	{
- 		.func = NULL,
- 	},
- };
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 7ff3c8f..06f7644 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -68,7 +68,7 @@ struct perf_evsel *perf_evsel__new(struct perf_event_attr *attr, int idx)
- 	return evsel;
++	kvm->arch.ept_identity_pagetable = page;
+ out:
+ 	mutex_unlock(&kvm->slots_lock);
+ 	return r;
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index d8fba22..d44edaa 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -5101,17 +5101,20 @@ static void post_kvm_run_save(struct kvm_vcpu *vcpu)
+ 			!kvm_event_needs_reinjection(vcpu);
  }
- 
--static const char *perf_evsel__hw_names[PERF_COUNT_HW_MAX] = {
-+const char *perf_evsel__hw_names[PERF_COUNT_HW_MAX] = {
- 	"cycles",
- 	"instructions",
- 	"cache-references",
-@@ -131,12 +131,12 @@ static int perf_evsel__hw_name(struct perf_evsel *evsel, char *bf, size_t size)
- 	return r + perf_evsel__add_modifiers(evsel, bf + r, size - r);
+
+-static void vapic_enter(struct kvm_vcpu *vcpu)
++static int vapic_enter(struct kvm_vcpu *vcpu)
+ {
+ 	struct kvm_lapic *apic = vcpu->arch.apic;
+ 	struct page *page;
+
+ 	if (!apic || !apic->vapic_addr)
+-		return;
++		return 0;
+
+ 	page = gfn_to_page(vcpu->kvm, apic->vapic_addr >> PAGE_SHIFT);
++	if (is_error_page(page))
++		return -EFAULT;
+
+ 	vcpu->arch.apic->vapic_page = page;
++	return 0;
  }
- 
--static const char *perf_evsel__sw_names[PERF_COUNT_SW_MAX] = {
-+const char *perf_evsel__sw_names[PERF_COUNT_SW_MAX] = {
- 	"cpu-clock",
- 	"task-clock",
- 	"page-faults",
- 	"context-switches",
--	"CPU-migrations",
-+	"cpu-migrations",
- 	"minor-faults",
- 	"major-faults",
- 	"alignment-faults",
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 94f6ba1..a3f562c 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -97,8 +97,10 @@ extern const char *perf_evsel__hw_cache[PERF_COUNT_HW_CACHE_MAX]
- 				       [PERF_EVSEL__MAX_ALIASES];
- extern const char *perf_evsel__hw_cache_op[PERF_COUNT_HW_CACHE_OP_MAX]
- 					  [PERF_EVSEL__MAX_ALIASES];
--const char *perf_evsel__hw_cache_result[PERF_COUNT_HW_CACHE_RESULT_MAX]
--				       [PERF_EVSEL__MAX_ALIASES];
-+extern const char *perf_evsel__hw_cache_result[PERF_COUNT_HW_CACHE_RESULT_MAX]
-+					      [PERF_EVSEL__MAX_ALIASES];
-+extern const char *perf_evsel__hw_names[PERF_COUNT_HW_MAX];
-+extern const char *perf_evsel__sw_names[PERF_COUNT_SW_MAX];
- int __perf_evsel__hw_cache_type_op_res_name(u8 type, u8 op, u8 result,
- 					    char *bf, size_t size);
- const char *perf_evsel__name(struct perf_evsel *evsel);
+
+ static void vapic_exit(struct kvm_vcpu *vcpu)
+@@ -5418,7 +5421,11 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
+ 	}
+
+ 	vcpu->srcu_idx = srcu_read_lock(&kvm->srcu);
+-	vapic_enter(vcpu);
++	r = vapic_enter(vcpu);
++	if (r) {
++		srcu_read_unlock(&kvm->srcu, vcpu->srcu_idx);
++		return r;
++	}
+
+ 	r = 1;
+ 	while (r > 0) {
+-- 
+1.7.7.6
+
