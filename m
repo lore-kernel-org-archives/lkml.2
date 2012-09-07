@@ -1,48 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757283Ab2IGBAd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 21:00:33 -0400
-Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:38930 "EHLO
-	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754613Ab2IGBAb (ORCPT
+	id S1757327Ab2IGBPw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 21:15:52 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55052 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752207Ab2IGBPu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 21:00:31 -0400
+	Thu, 6 Sep 2012 21:15:50 -0400
+Date: Thu, 6 Sep 2012 18:15:42 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Andreas Sturmlechner <andreas.sturmlechner@gmail.com>
+Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 3.4.10 i915 [GM45] regression
+Message-ID: <20120907011542.GA26688@kroah.com>
+References: <2372445.fuIXicT4H0@tux200s>
 MIME-Version: 1.0
-In-Reply-To: <20120907001927.20289.41627@nucleus>
-References: <1346415691-13371-1-git-send-email-ulf.hansson@stericsson.com>
- <1346415691-13371-2-git-send-email-ulf.hansson@stericsson.com>
- <20120831192906.31162.97714@nucleus> <CAPDyKFrS7tKu5AcjL7+R8V5Nvo0O+BVwc8HtGFqQGSf12wMioQ@mail.gmail.com>
- <20120907001927.20289.41627@nucleus>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Thu, 6 Sep 2012 18:00:10 -0700
-Message-ID: <CAJOA=zM-u5ss8ZYWFHg43V7r5B6TXhRN70=JUccNjrppx4fDyg@mail.gmail.com>
-Subject: Re: [PATCH 1/4] clk: Provide option for clk_get_rate to issue hw for
- new rate
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Ulf Hansson <ulf.hansson@stericsson.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Lee Jones <lee.jones@linaro.org>,
-        Philippe Begnic <philippe.begnic@st.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2372445.fuIXicT4H0@tux200s>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 6, 2012 at 5:19 PM, Mike Turquette <mturquette@ti.com> wrote:
-> I'll take this series into clk-next.
->
+On Fri, Sep 07, 2012 at 02:27:12AM +0200, Andreas Sturmlechner wrote:
+> Hello,
+> 
+> please revert commit 0d8957c8a90bbb5d34fab9a304459448a5131e06 - for some 
+> reason it breaks boot-up (screen stays blank) on my GM45 hardware despite >= 
+> 3.5 being fine.
+> 
+> See bug 54575 on freedesktop.org for a full description: 
+> https://bugs.freedesktop.org/show_bug.cgi?id=54575
+> 
+> No idea how far-spread or not this might be since I couldn't find any other 
+> reports of that kind.
 
-Oops, I forgot to ask about patch #3.  Which tree do you want that to
-go through?
+Can you cc: this to the people who wrote that patch?  That might help in
+figuring out what is wrong here...
 
-Thanks,
-Mike
+thanks,
 
-> Regards,
-> Mike
->
->> Kind regards
->> Ulf Hansson
+greg k-h
