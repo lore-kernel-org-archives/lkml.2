@@ -1,40 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760315Ab2IGJsc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 05:48:32 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:49618 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760239Ab2IGJsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 05:48:30 -0400
-Message-ID: <5049C221.4030003@parallels.com>
-Date: Fri, 7 Sep 2012 13:45:05 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1760324Ab2IGJwE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 05:52:04 -0400
+Received: from zose-mta15.web4all.fr ([176.31.217.11]:44084 "EHLO
+	zose-mta15.web4all.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760286Ab2IGJwB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 05:52:01 -0400
+Date: Fri, 7 Sep 2012 11:57:18 +0200 (CEST)
+From: =?utf-8?Q?Beno=C3=AEt_Th=C3=A9baudeau?= 
+	<benoit.thebaudeau@advansee.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: HACHIMI Samir <shachimi@adeneo-embedded.com>,
+        shawn guo <shawn.guo@linaro.org>,
+        thierry reding <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org, kernel@pengutronix.de,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Message-ID: <1500638147.3845571.1347011838934.JavaMail.root@advansee.com>
+In-Reply-To: <20120907074138.GN26594@pengutronix.de>
+Subject: Re: [PATCH 7/9] pwm i.MX: fix clock lookup
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
-        Dave Jones <davej@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v2] memcg: first step towards hierarchical controller
-References: <20120904143552.GB15683@dhcp22.suse.cz> <50461241.5010300@parallels.com> <20120904145414.GC15683@dhcp22.suse.cz> <50461610.30305@parallels.com> <20120904162501.GE15683@dhcp22.suse.cz> <504709D4.2010800@parallels.com> <20120905144942.GH5388@dhcp22.suse.cz> <20120905201238.GE13737@google.com> <20120906120623.GE22426@dhcp22.suse.cz> <50489270.7060108@parallels.com> <20120906121842.GG22426@dhcp22.suse.cz>
-In-Reply-To: <20120906121842.GG22426@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [88.188.188.98]
+X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Win)/7.2.0_GA_2669)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/06/2012 04:18 PM, Michal Hocko wrote:
->> Just so I understand it:
->> > 
->> > Michal clearly objected before folding his patch with my Kconfig patch.
->> > But is there still opposition to merge both?
-> I do not find the config option very much useful but if others feel it
-> really is I won't block it.
+On Friday, September 7, 2012 9:41:38 AM, Sascha Hauer wrote:
+> On Thu, Sep 06, 2012 at 09:09:42PM +0200, Benoît Thébaudeau wrote:
+> > On Thursday, September 6, 2012 8:42:56 PM, Sascha Hauer wrote:
+> > > On Thu, Sep 06, 2012 at 08:31:58PM +0200, Benoît Thébaudeau
+> > > wrote:
+> > > > On Thursday, September 6, 2012 2:48:13 PM, Sascha Hauer wrote:
+> > > > > 
+> > > > > +	int ret;
+> > > > > +
+> > > > > +	ret = clk_prepare_enable(imx->clk_ipg);
+> > > > > +	if (ret)
+> > > > > +		return ret;
+> > > > >  
+> > > > > -	return imx->config(chip, pwm, duty_ns, period_ns);
+> > > > > +	ret = imx->config(chip, pwm, duty_ns, period_ns);
+> > > > > +
+> > > > > +	clk_disable_unprepare(imx->clk_ipg);
+> > > > > +
+> > > > > +	return ret;
+> > > > >  }
+> > > > >  
+> > > > >  static int imx_pwm_enable(struct pwm_chip *chip, struct
+> > > > >  pwm_device
+> > > > >  *pwm)
+> > > > > @@ -169,7 +179,7 @@ static int imx_pwm_enable(struct pwm_chip
+> > > > > *chip,
+> > > > > struct pwm_device *pwm)
+> > > > >  	struct imx_chip *imx = to_imx_chip(chip);
+> > > > >  	int ret;
+> > > > >  
+> > > > > -	ret = clk_prepare_enable(imx->clk);
+> > > > > +	ret = clk_prepare_enable(imx->clk_per);
+> > > > >  	if (ret)
+> > > > >  		return ret;
+> > > > 
+> > > > Have you tested that this actually works on i.MX53?
+> > > > 
+> > > > I have tested it successfully on i.MX35 (with a few additions
+> > > > to
+> > > > platform code).
+> > > > But i.MX35 has a single bit controlling both PWM IPG and PER
+> > > > clock
+> > > > gates.
+> > > > 
+> > > > On i.MX53, there are 2 separate control bits for these. So, if
+> > > > ipg
+> > > > clk is
+> > > > strictly required to access PWM registers, even if per clk is
+> > > > enabled, this code
+> > > > should not work without adding
+> > > 
+> > > I tested this on i.MX53, but you're right, this seems to be
+> > > wrong.
+> > > I'll
+> > > recheck tomorrow.
+> > 
+> > I've performed a few more tests with bare register accesses in the
+> > bootloader to
+> > see how the PWM IP behaves.
+> > 
+> > On i.MX25, i.MX35 and i.MX51, read accesses always work, whatever
+> > the state of
+> > the IPG and PER clock gates.
+> > 
+> > On i.MX25 and i.MX51, write accesses always work, whatever the
+> > state of the IPG
+> > and PER clock gates.
+> > 
+> > On i.MX35, write accesses work if and only if the IPG and PER
+> > clocks are not
+> > gated off (single control bit for both).
 > 
-Tejun, what is your take on this?
+> Ok, I tested on i.MX53 and i.MX27.
+> 
+> On i.MX53 the registers are always accessible. I also measured with
+> an
+> oscilloscope that the ipg/per clock gates en/disable the PWM when
+> it's
+> configured for the corresponding clock.
+> 
+> On i.MX27 register accesses also work regardless of the clock gates.
+> Here we have a single clock gate which only gates the ipg clock.
+> 
+> btw the i.MX6 has a single gate per pwm which are described as "PWMx
+> clocks"
+> 
+> So it seems while not 100% correct the current code seems to be safe.
+
+Agreed.
+
+Best regards,
+Benoît
