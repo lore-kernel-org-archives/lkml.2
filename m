@@ -1,392 +1,514 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759880Ab2IGF5x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 01:57:53 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:43708 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759088Ab2IGF5v (ORCPT
+	id S1759959Ab2IGF6Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 01:58:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54946 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756671Ab2IGF6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 01:57:51 -0400
+	Fri, 7 Sep 2012 01:58:22 -0400
+Date: Thu, 6 Sep 2012 22:58:03 -0700
+From: tip-bot for David Ahern <dsahern@gmail.com>
+Message-ID: <tip-33d6aef5136075930f7e9a05175bf4f772d8428e@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, fweisbec@gmail.com,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, fweisbec@gmail.com, peterz@infradead.org,
+        dsahern@gmail.com, tglx@linutronix.de
+In-Reply-To: <1346005487-62961-4-git-send-email-dsahern@gmail.com>
+References: <1346005487-62961-4-git-send-email-dsahern@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf lock: Remove use of die and handle errors
+Git-Commit-ID: 33d6aef5136075930f7e9a05175bf4f772d8428e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20120907022434.GG16231@bbox>
-References: <1346832673-12512-1-git-send-email-minchan@kernel.org>
-	<1346832673-12512-2-git-send-email-minchan@kernel.org>
-	<20120905105611.GI11266@suse.de>
-	<20120906053112.GA16231@bbox>
-	<20120906082935.GN11266@suse.de>
-	<20120906090325.GO11266@suse.de>
-	<20120907022434.GG16231@bbox>
-Date: Fri, 7 Sep 2012 14:57:50 +0900
-X-Google-Sender-Auth: suaySDPcqJXdDx9wojS7RBPwNQM
-Message-ID: <CAH9JG2VOoA30q+3sjC4UbNFNv2Vn9KnPNNXRb+kYMKWXKHbPew@mail.gmail.com>
-Subject: Re: [PATCH 2/2] mm: support MIGRATE_DISCARD
-From: Kyungmin Park <kmpark@infradead.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, Rik van Riel <riel@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 06 Sep 2012 22:58:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Minchan,
+Commit-ID:  33d6aef5136075930f7e9a05175bf4f772d8428e
+Gitweb:     http://git.kernel.org/tip/33d6aef5136075930f7e9a05175bf4f772d8428e
+Author:     David Ahern <dsahern@gmail.com>
+AuthorDate: Sun, 26 Aug 2012 12:24:43 -0600
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 5 Sep 2012 17:19:38 -0300
 
-I tested Mel patch again with ClearPageActive(page). but after some
-testing, it's stall and can't return from
-reclaim_clean_pages_from_list(&cc.migratepages).
+perf lock: Remove use of die and handle errors
 
-Maybe it's related with unmap feature from yours?
-stall is not happened from your codes until now.
+Allows perf to clean up properly on exit.
 
-I'll test it more and report any issue if happened.
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1346005487-62961-4-git-send-email-dsahern@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-lock.c |  181 +++++++++++++++++++++++++++++++--------------
+ 1 files changed, 124 insertions(+), 57 deletions(-)
 
-Thank you,
-Kyungmin Park
-
-On 9/7/12, Minchan Kim <minchan@kernel.org> wrote:
-> On Thu, Sep 06, 2012 at 10:03:25AM +0100, Mel Gorman wrote:
->> On Thu, Sep 06, 2012 at 09:29:35AM +0100, Mel Gorman wrote:
->> > On Thu, Sep 06, 2012 at 02:31:12PM +0900, Minchan Kim wrote:
->> > > Hi Mel,
->> > >
->> > > On Wed, Sep 05, 2012 at 11:56:11AM +0100, Mel Gorman wrote:
->> > > > On Wed, Sep 05, 2012 at 05:11:13PM +0900, Minchan Kim wrote:
->> > > > > This patch introudes MIGRATE_DISCARD mode in migration.
->> > > > > It drops *clean cache pages* instead of migration so that
->> > > > > migration latency could be reduced by avoiding (memcpy + page
->> > > > > remapping).
->> > > > > It's useful for CMA because latency of migration is very important
->> > > > > rather
->> > > > > than eviction of background processes's workingset. In addition,
->> > > > > it needs
->> > > > > less free pages for migration targets so it could avoid memory
->> > > > > reclaiming
->> > > > > to get free pages, which is another factor increase latency.
->> > > > >
->> > > >
->> > > > Bah, this was released while I was reviewing the older version. I
->> > > > did
->> > > > not read this one as closely but I see the enum problems have gone
->> > > > away
->> > > > at least. I'd still prefer if CMA had an additional helper to
->> > > > discard
->> > > > some pages with shrink_page_list() and migrate the remaining pages
->> > > > with
->> > > > migrate_pages(). That would remove the need to add a
->> > > > MIGRATE_DISCARD
->> > > > migrate mode at all.
->> > >
->> > > I am not convinced with your point. What's the benefit on separating
->> > > reclaim and migration? For just removing MIGRATE_DISCARD mode?
->> >
->> > Maintainability. There are reclaim functions and there are migration
->> > functions. Your patch takes migrate_pages() and makes it partially a
->> > reclaim function mixing up the responsibilities of migrate.c and
->> > vmscan.c.
->> >
->> > > I don't think it's not bad because my implementation is very
->> > > simple(maybe
->> > > it's much simpler than separating reclaim and migration) and
->> > > could be used by others like memory-hotplug in future.
->> >
->> > They could also have used the helper function from CMA that takes a
->> > list
->> > of pages, reclaims some and migrates other.
->> >
->>
->> I also do not accept that your approach is inherently simpler than what I
->> proposed to you. This is not tested at all but it should be functionally
->> similar to both your patches except that it keeps the responsibility for
->> reclaim in vmscan.c
->>
->> Your diffstats are
->>
->> 8 files changed, 39 insertions(+), 36 deletions(-)
->> 3 files changed, 46 insertions(+), 4 deletions(-)
->>
->> Mine is
->>
->>  3 files changed, 32 insertions(+), 5 deletions(-)
->>
->> Fewer files changed and fewer lines inserted.
->>
->> ---8<---
->> mm: cma: Discard clean pages during contiguous allocation instead of
->> migration
->>
->> This patch drops clean cache pages instead of migration during
->> alloc_contig_range() to minimise allocation latency by reducing the
->> amount
->> of migration is necessary. It's useful for CMA because latency of
->> migration
->> is more important than evicting the background processes working set.
->>
->> Prototype-not-signed-off-but-feel-free-to-pick-up-and-test
->> ---
->>  mm/internal.h   |    1 +
->>  mm/page_alloc.c |    2 ++
->>  mm/vmscan.c     |   34 +++++++++++++++++++++++++++++-----
->>  3 files changed, 32 insertions(+), 5 deletions(-)
->>
->> diff --git a/mm/internal.h b/mm/internal.h
->> index b8c91b3..6d4bdf9 100644
->> --- a/mm/internal.h
->> +++ b/mm/internal.h
->> @@ -356,3 +356,4 @@ extern unsigned long vm_mmap_pgoff(struct file *,
->> unsigned long,
->>          unsigned long, unsigned long);
->>
->>  extern void set_pageblock_order(void);
->> +unsigned long reclaim_clean_pages_from_list(struct list_head
->> *page_list);
->> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->> index c66fb87..977bdb2 100644
->> --- a/mm/page_alloc.c
->> +++ b/mm/page_alloc.c
->> @@ -5670,6 +5670,8 @@ static int __alloc_contig_migrate_range(unsigned
->> long start, unsigned long end)
->>  			break;
->>  		}
->>
->> +		reclaim_clean_pages_from_list(&cc.migratepages);
->> +
->>  		ret = migrate_pages(&cc.migratepages,
->>  				    __alloc_contig_migrate_alloc,
->>  				    0, false, MIGRATE_SYNC);
->> diff --git a/mm/vmscan.c b/mm/vmscan.c
->> index 8d01243..ccf7bc2 100644
->> --- a/mm/vmscan.c
->> +++ b/mm/vmscan.c
->> @@ -703,7 +703,7 @@ static unsigned long shrink_page_list(struct list_head
->> *page_list,
->>  			goto keep;
->>
->>  		VM_BUG_ON(PageActive(page));
->> -		VM_BUG_ON(page_zone(page) != zone);
->> +		VM_BUG_ON(zone && page_zone(page) != zone);
->>
->>  		sc->nr_scanned++;
->>
->> @@ -817,7 +817,9 @@ static unsigned long shrink_page_list(struct list_head
->> *page_list,
->>  				 * except we already have the page isolated
->>  				 * and know it's dirty
->>  				 */
->> -				inc_zone_page_state(page, NR_VMSCAN_IMMEDIATE);
->> +				if (zone)
->> +					inc_zone_page_state(page,
->> +							NR_VMSCAN_IMMEDIATE);
->>  				SetPageReclaim(page);
->>
->>  				goto keep_locked;
->> @@ -947,7 +949,7 @@ keep:
->>  	 * back off and wait for congestion to clear because further reclaim
->>  	 * will encounter the same problem
->>  	 */
->> -	if (nr_dirty && nr_dirty == nr_congested && global_reclaim(sc))
->> +	if (zone && nr_dirty && nr_dirty == nr_congested && global_reclaim(sc))
->>  		zone_set_flag(zone, ZONE_CONGESTED);
->>
->>  	free_hot_cold_page_list(&free_pages, 1);
->> @@ -955,11 +957,33 @@ keep:
->>  	list_splice(&ret_pages, page_list);
->>  	count_vm_events(PGACTIVATE, pgactivate);
->>  	mem_cgroup_uncharge_end();
->> -	*ret_nr_dirty += nr_dirty;
->> -	*ret_nr_writeback += nr_writeback;
->> +	if (ret_nr_dirty)
->> +		*ret_nr_dirty += nr_dirty;
->> +	if (ret_nr_writeback)
->> +		*ret_nr_writeback += nr_writeback;
->>  	return nr_reclaimed;
->>  }
->>
->> +unsigned long reclaim_clean_pages_from_list(struct list_head *page_list)
->> +{
->> +	struct scan_control sc = {
->> +		.gfp_mask = GFP_KERNEL,
->> +		.priority = DEF_PRIORITY,
->> +	};
->> +	unsigned long ret;
->> +	struct page *page, *next;
->> +	LIST_HEAD(clean_pages);
->> +
->> +	list_for_each_entry_safe(page, next, page_list, lru) {
->> +		if (page_is_file_cache(page) && !PageDirty(page))
->> +			list_move(&page->lru, &clean_pages);
->> +	}
->> +
->> +	ret = shrink_page_list(&clean_pages, NULL, &sc, NULL, NULL);
->> +	list_splice(&clean_pages, page_list);
->> +	return ret;
->> +}
->> +
->
-> It's different with my point.
-> My intention is to free mapped clean pages as well as not-mapped's one.
->
-> How about this?
->
-> From 0f6986e943e55929b4d7b0220a1c24a6bae1a24d Mon Sep 17 00:00:00 2001
-> From: Minchan Kim <minchan@kernel.org>
-> Date: Fri, 7 Sep 2012 11:20:48 +0900
-> Subject: [PATCH] mm: cma: Discard clean pages during contiguous allocation
->  instead of migration
->
-> This patch introudes MIGRATE_DISCARD mode in migration.
-> It drops *clean cache pages* instead of migration so that
-> migration latency could be reduced by avoiding (memcpy + page remapping).
-> It's useful for CMA because latency of migration is very important rather
-> than eviction of background processes's workingset. In addition, it needs
-> less free pages for migration targets so it could avoid memory reclaiming
-> to get free pages, which is another factor increase latency.
->
-> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-> Cc: Michal Nazarewicz <mina86@mina86.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  mm/internal.h   |    2 ++
->  mm/page_alloc.c |    2 ++
->  mm/vmscan.c     |   42 ++++++++++++++++++++++++++++++++++++------
->  3 files changed, 40 insertions(+), 6 deletions(-)
->
-> diff --git a/mm/internal.h b/mm/internal.h
-> index 3314f79..be09a7e 100644
-> --- a/mm/internal.h
-> +++ b/mm/internal.h
-> @@ -355,3 +355,5 @@ extern unsigned long vm_mmap_pgoff(struct file *,
-> unsigned long,
->          unsigned long, unsigned long);
->
->  extern void set_pageblock_order(void);
-> +unsigned long reclaim_clean_pages_from_list(struct zone *zone,
-> +				struct list_head *page_list);
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index ba3100a..bf35e59 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -5668,6 +5668,8 @@ static int __alloc_contig_migrate_range(unsigned long
-> start, unsigned long end)
->  			break;
->  		}
->
-> +		reclaim_clean_pages_from_list(&cc.migratepages, cc.zone);
-> +
->  		ret = migrate_pages(&cc.migratepages,
->  				    __alloc_contig_migrate_alloc,
->  				    0, false, MIGRATE_SYNC);
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 8d01243..525355e 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -674,8 +674,10 @@ static enum page_references
-> page_check_references(struct page *page,
->  static unsigned long shrink_page_list(struct list_head *page_list,
->  				      struct zone *zone,
->  				      struct scan_control *sc,
-> +				      enum ttu_flags ttu_flags,
->  				      unsigned long *ret_nr_dirty,
-> -				      unsigned long *ret_nr_writeback)
-> +				      unsigned long *ret_nr_writeback,
-> +				      bool force_reclaim)
->  {
->  	LIST_HEAD(ret_pages);
->  	LIST_HEAD(free_pages);
-> @@ -689,10 +691,10 @@ static unsigned long shrink_page_list(struct list_head
-> *page_list,
->
->  	mem_cgroup_uncharge_start();
->  	while (!list_empty(page_list)) {
-> -		enum page_references references;
->  		struct address_space *mapping;
->  		struct page *page;
->  		int may_enter_fs;
-> +		enum page_references references = PAGEREF_RECLAIM;
->
->  		cond_resched();
->
-> @@ -758,7 +760,9 @@ static unsigned long shrink_page_list(struct list_head
-> *page_list,
->  			wait_on_page_writeback(page);
->  		}
->
-> -		references = page_check_references(page, sc);
-> +		if (!force_reclaim)
-> +			references = page_check_references(page, sc);
-> +
->  		switch (references) {
->  		case PAGEREF_ACTIVATE:
->  			goto activate_locked;
-> @@ -788,7 +792,7 @@ static unsigned long shrink_page_list(struct list_head
-> *page_list,
->  		 * processes. Try to unmap it here.
->  		 */
->  		if (page_mapped(page) && mapping) {
-> -			switch (try_to_unmap(page, TTU_UNMAP)) {
-> +			switch (try_to_unmap(page, ttu_flags)) {
->  			case SWAP_FAIL:
->  				goto activate_locked;
->  			case SWAP_AGAIN:
-> @@ -960,6 +964,32 @@ keep:
->  	return nr_reclaimed;
->  }
->
-> +unsigned long reclaim_clean_pages_from_list(struct zone *zone,
-> +					struct list_head *page_list)
-> +{
-> +	struct scan_control sc = {
-> +		.gfp_mask = GFP_KERNEL,
-> +		.priority = DEF_PRIORITY,
-> +		.may_unmap = 1,
-> +	};
-> +	unsigned long ret, dummy1, dummy2;
-> +	struct page *page, *next;
-> +	LIST_HEAD(clean_pages);
-> +
-> +	list_for_each_entry_safe(page, next, page_list, lru) {
-> +		if (page_is_file_cache(page) && !PageDirty(page)) {
-> +			ClearPageActive(page);
-> +			list_move(&page->lru, &clean_pages);
-> +		}
-> +	}
-> +
-> +	ret = shrink_page_list(&clean_pages, zone, &sc,
-> +				TTU_UNMAP|TTU_IGNORE_ACCESS,
-> +				&dummy1, &dummy2, true);
-> +	list_splice(&clean_pages, page_list);
-> +	return ret;
-> +}
-> +
->  /*
->   * Attempt to remove the specified page from its LRU.  Only take this page
->   * if it is of the appropriate PageActive status.  Pages which are being
-> @@ -1278,8 +1308,8 @@ shrink_inactive_list(unsigned long nr_to_scan, struct
-> lruvec *lruvec,
->  	if (nr_taken == 0)
->  		return 0;
->
-> -	nr_reclaimed = shrink_page_list(&page_list, zone, sc,
-> -						&nr_dirty, &nr_writeback);
-> +	nr_reclaimed = shrink_page_list(&page_list, zone, sc, TTU_UNMAP,
-> +					&nr_dirty, &nr_writeback, false);
->
->  	spin_lock_irq(&zone->lru_lock);
->
-> --
-> 1.7.9.5
->
-> --
-> Kind regards,
-> Minchan Kim
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
+diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
+index 585aae2..75153c8 100644
+--- a/tools/perf/builtin-lock.c
++++ b/tools/perf/builtin-lock.c
+@@ -161,8 +161,10 @@ static struct thread_stat *thread_stat_findnew_after_first(u32 tid)
+ 		return st;
+ 
+ 	st = zalloc(sizeof(struct thread_stat));
+-	if (!st)
+-		die("memory allocation failed\n");
++	if (!st) {
++		pr_err("memory allocation failed\n");
++		return NULL;
++	}
+ 
+ 	st->tid = tid;
+ 	INIT_LIST_HEAD(&st->seq_list);
+@@ -181,8 +183,10 @@ static struct thread_stat *thread_stat_findnew_first(u32 tid)
+ 	struct thread_stat *st;
+ 
+ 	st = zalloc(sizeof(struct thread_stat));
+-	if (!st)
+-		die("memory allocation failed\n");
++	if (!st) {
++		pr_err("memory allocation failed\n");
++		return NULL;
++	}
+ 	st->tid = tid;
+ 	INIT_LIST_HEAD(&st->seq_list);
+ 
+@@ -248,18 +252,20 @@ struct lock_key keys[] = {
+ 	{ NULL, NULL }
+ };
+ 
+-static void select_key(void)
++static int select_key(void)
+ {
+ 	int i;
+ 
+ 	for (i = 0; keys[i].name; i++) {
+ 		if (!strcmp(keys[i].name, sort_key)) {
+ 			compare = keys[i].key;
+-			return;
++			return 0;
+ 		}
+ 	}
+ 
+-	die("Unknown compare key:%s\n", sort_key);
++	pr_err("Unknown compare key: %s\n", sort_key);
++
++	return -1;
+ }
+ 
+ static void insert_to_result(struct lock_stat *st,
+@@ -324,7 +330,8 @@ static struct lock_stat *lock_stat_findnew(void *addr, const char *name)
+ 	return new;
+ 
+ alloc_failed:
+-	die("memory allocation failed\n");
++	pr_err("memory allocation failed\n");
++	return NULL;
+ }
+ 
+ static const char *input_name;
+@@ -356,16 +363,16 @@ struct trace_release_event {
+ };
+ 
+ struct trace_lock_handler {
+-	void (*acquire_event)(struct trace_acquire_event *,
++	int (*acquire_event)(struct trace_acquire_event *,
+ 			      const struct perf_sample *sample);
+ 
+-	void (*acquired_event)(struct trace_acquired_event *,
++	int (*acquired_event)(struct trace_acquired_event *,
+ 			       const struct perf_sample *sample);
+ 
+-	void (*contended_event)(struct trace_contended_event *,
++	int (*contended_event)(struct trace_contended_event *,
+ 				const struct perf_sample *sample);
+ 
+-	void (*release_event)(struct trace_release_event *,
++	int (*release_event)(struct trace_release_event *,
+ 			      const struct perf_sample *sample);
+ };
+ 
+@@ -379,8 +386,10 @@ static struct lock_seq_stat *get_seq(struct thread_stat *ts, void *addr)
+ 	}
+ 
+ 	seq = zalloc(sizeof(struct lock_seq_stat));
+-	if (!seq)
+-		die("Not enough memory\n");
++	if (!seq) {
++		pr_err("memory allocation failed\n");
++		return NULL;
++	}
+ 	seq->state = SEQ_STATE_UNINITIALIZED;
+ 	seq->addr = addr;
+ 
+@@ -403,7 +412,7 @@ enum acquire_flags {
+ 	READ_LOCK = 2,
+ };
+ 
+-static void
++static int
+ report_lock_acquire_event(struct trace_acquire_event *acquire_event,
+ 			  const struct perf_sample *sample)
+ {
+@@ -412,11 +421,18 @@ report_lock_acquire_event(struct trace_acquire_event *acquire_event,
+ 	struct lock_seq_stat *seq;
+ 
+ 	ls = lock_stat_findnew(acquire_event->addr, acquire_event->name);
++	if (!ls)
++		return -1;
+ 	if (ls->discard)
+-		return;
++		return 0;
+ 
+ 	ts = thread_stat_findnew(sample->tid);
++	if (!ts)
++		return -1;
++
+ 	seq = get_seq(ts, acquire_event->addr);
++	if (!seq)
++		return -1;
+ 
+ 	switch (seq->state) {
+ 	case SEQ_STATE_UNINITIALIZED:
+@@ -461,10 +477,10 @@ broken:
+ 	ls->nr_acquire++;
+ 	seq->prev_event_time = sample->time;
+ end:
+-	return;
++	return 0;
+ }
+ 
+-static void
++static int
+ report_lock_acquired_event(struct trace_acquired_event *acquired_event,
+ 			   const struct perf_sample *sample)
+ {
+@@ -475,16 +491,23 @@ report_lock_acquired_event(struct trace_acquired_event *acquired_event,
+ 	u64 contended_term;
+ 
+ 	ls = lock_stat_findnew(acquired_event->addr, acquired_event->name);
++	if (!ls)
++		return -1;
+ 	if (ls->discard)
+-		return;
++		return 0;
+ 
+ 	ts = thread_stat_findnew(sample->tid);
++	if (!ts)
++		return -1;
++
+ 	seq = get_seq(ts, acquired_event->addr);
++	if (!seq)
++		return -1;
+ 
+ 	switch (seq->state) {
+ 	case SEQ_STATE_UNINITIALIZED:
+ 		/* orphan event, do nothing */
+-		return;
++		return 0;
+ 	case SEQ_STATE_ACQUIRING:
+ 		break;
+ 	case SEQ_STATE_CONTENDED:
+@@ -515,10 +538,10 @@ report_lock_acquired_event(struct trace_acquired_event *acquired_event,
+ 	ls->nr_acquired++;
+ 	seq->prev_event_time = timestamp;
+ end:
+-	return;
++	return 0;
+ }
+ 
+-static void
++static int
+ report_lock_contended_event(struct trace_contended_event *contended_event,
+ 			    const struct perf_sample *sample)
+ {
+@@ -527,16 +550,23 @@ report_lock_contended_event(struct trace_contended_event *contended_event,
+ 	struct lock_seq_stat *seq;
+ 
+ 	ls = lock_stat_findnew(contended_event->addr, contended_event->name);
++	if (!ls)
++		return -1;
+ 	if (ls->discard)
+-		return;
++		return 0;
+ 
+ 	ts = thread_stat_findnew(sample->tid);
++	if (!ts)
++		return -1;
++
+ 	seq = get_seq(ts, contended_event->addr);
++	if (!seq)
++		return -1;
+ 
+ 	switch (seq->state) {
+ 	case SEQ_STATE_UNINITIALIZED:
+ 		/* orphan event, do nothing */
+-		return;
++		return 0;
+ 	case SEQ_STATE_ACQUIRING:
+ 		break;
+ 	case SEQ_STATE_RELEASED:
+@@ -559,10 +589,10 @@ report_lock_contended_event(struct trace_contended_event *contended_event,
+ 	ls->nr_contended++;
+ 	seq->prev_event_time = sample->time;
+ end:
+-	return;
++	return 0;
+ }
+ 
+-static void
++static int
+ report_lock_release_event(struct trace_release_event *release_event,
+ 			  const struct perf_sample *sample)
+ {
+@@ -571,11 +601,18 @@ report_lock_release_event(struct trace_release_event *release_event,
+ 	struct lock_seq_stat *seq;
+ 
+ 	ls = lock_stat_findnew(release_event->addr, release_event->name);
++	if (!ls)
++		return -1;
+ 	if (ls->discard)
+-		return;
++		return 0;
+ 
+ 	ts = thread_stat_findnew(sample->tid);
++	if (!ts)
++		return -1;
++
+ 	seq = get_seq(ts, release_event->addr);
++	if (!seq)
++		return -1;
+ 
+ 	switch (seq->state) {
+ 	case SEQ_STATE_UNINITIALIZED:
+@@ -609,7 +646,7 @@ free_seq:
+ 	list_del(&seq->list);
+ 	free(seq);
+ end:
+-	return;
++	return 0;
+ }
+ 
+ /* lock oriented handlers */
+@@ -623,13 +660,14 @@ static struct trace_lock_handler report_lock_ops  = {
+ 
+ static struct trace_lock_handler *trace_handler;
+ 
+-static void perf_evsel__process_lock_acquire(struct perf_evsel *evsel,
++static int perf_evsel__process_lock_acquire(struct perf_evsel *evsel,
+ 					     struct perf_sample *sample)
+ {
+ 	struct trace_acquire_event acquire_event;
+ 	struct event_format *event = evsel->tp_format;
+ 	void *data = sample->raw_data;
+ 	u64 tmp;		/* this is required for casting... */
++	int rc = 0;
+ 
+ 	tmp = raw_field_value(event, "lockdep_addr", data);
+ 	memcpy(&acquire_event.addr, &tmp, sizeof(void *));
+@@ -637,70 +675,84 @@ static void perf_evsel__process_lock_acquire(struct perf_evsel *evsel,
+ 	acquire_event.flag = (int)raw_field_value(event, "flag", data);
+ 
+ 	if (trace_handler->acquire_event)
+-		trace_handler->acquire_event(&acquire_event, sample);
++		rc = trace_handler->acquire_event(&acquire_event, sample);
++
++	return rc;
+ }
+ 
+-static void perf_evsel__process_lock_acquired(struct perf_evsel *evsel,
++static int perf_evsel__process_lock_acquired(struct perf_evsel *evsel,
+ 					      struct perf_sample *sample)
+ {
+ 	struct trace_acquired_event acquired_event;
+ 	struct event_format *event = evsel->tp_format;
+ 	void *data = sample->raw_data;
+ 	u64 tmp;		/* this is required for casting... */
++	int rc = 0;
+ 
+ 	tmp = raw_field_value(event, "lockdep_addr", data);
+ 	memcpy(&acquired_event.addr, &tmp, sizeof(void *));
+ 	acquired_event.name = (char *)raw_field_ptr(event, "name", data);
+ 
+-	if (trace_handler->acquire_event)
+-		trace_handler->acquired_event(&acquired_event, sample);
++	if (trace_handler->acquired_event)
++		rc = trace_handler->acquired_event(&acquired_event, sample);
++
++	return rc;
+ }
+ 
+-static void perf_evsel__process_lock_contended(struct perf_evsel *evsel,
++static int perf_evsel__process_lock_contended(struct perf_evsel *evsel,
+ 					       struct perf_sample *sample)
+ {
+ 	struct trace_contended_event contended_event;
+ 	struct event_format *event = evsel->tp_format;
+ 	void *data = sample->raw_data;
+ 	u64 tmp;		/* this is required for casting... */
++	int rc = 0;
+ 
+ 	tmp = raw_field_value(event, "lockdep_addr", data);
+ 	memcpy(&contended_event.addr, &tmp, sizeof(void *));
+ 	contended_event.name = (char *)raw_field_ptr(event, "name", data);
+ 
+-	if (trace_handler->acquire_event)
+-		trace_handler->contended_event(&contended_event, sample);
++	if (trace_handler->contended_event)
++		rc = trace_handler->contended_event(&contended_event, sample);
++
++	return rc;
+ }
+ 
+-static void perf_evsel__process_lock_release(struct perf_evsel *evsel,
++static int perf_evsel__process_lock_release(struct perf_evsel *evsel,
+ 					     struct perf_sample *sample)
+ {
+ 	struct trace_release_event release_event;
+ 	struct event_format *event = evsel->tp_format;
+ 	void *data = sample->raw_data;
+ 	u64 tmp;		/* this is required for casting... */
++	int rc = 0;
+ 
+ 	tmp = raw_field_value(event, "lockdep_addr", data);
+ 	memcpy(&release_event.addr, &tmp, sizeof(void *));
+ 	release_event.name = (char *)raw_field_ptr(event, "name", data);
+ 
+-	if (trace_handler->acquire_event)
+-		trace_handler->release_event(&release_event, sample);
++	if (trace_handler->release_event)
++		rc = trace_handler->release_event(&release_event, sample);
++
++	return rc;
+ }
+ 
+-static void perf_evsel__process_lock_event(struct perf_evsel *evsel,
++static int perf_evsel__process_lock_event(struct perf_evsel *evsel,
+ 					   struct perf_sample *sample)
+ {
+ 	struct event_format *event = evsel->tp_format;
++	int rc = 0;
+ 
+ 	if (!strcmp(event->name, "lock_acquire"))
+-		perf_evsel__process_lock_acquire(evsel, sample);
++		rc = perf_evsel__process_lock_acquire(evsel, sample);
+ 	if (!strcmp(event->name, "lock_acquired"))
+-		perf_evsel__process_lock_acquired(evsel, sample);
++		rc = perf_evsel__process_lock_acquired(evsel, sample);
+ 	if (!strcmp(event->name, "lock_contended"))
+-		perf_evsel__process_lock_contended(evsel, sample);
++		rc = perf_evsel__process_lock_contended(evsel, sample);
+ 	if (!strcmp(event->name, "lock_release"))
+-		perf_evsel__process_lock_release(evsel, sample);
++		rc = perf_evsel__process_lock_release(evsel, sample);
++
++	return rc;
+ }
+ 
+ static void print_bad_events(int bad, int total)
+@@ -802,14 +854,20 @@ static void dump_map(void)
+ 	}
+ }
+ 
+-static void dump_info(void)
++static int dump_info(void)
+ {
++	int rc = 0;
++
+ 	if (info_threads)
+ 		dump_threads();
+ 	else if (info_map)
+ 		dump_map();
+-	else
+-		die("Unknown type of information\n");
++	else {
++		rc = -1;
++		pr_err("Unknown type of information\n");
++	}
++
++	return rc;
+ }
+ 
+ static int process_sample_event(struct perf_tool *tool __used,
+@@ -826,8 +884,7 @@ static int process_sample_event(struct perf_tool *tool __used,
+ 		return -1;
+ 	}
+ 
+-	perf_evsel__process_lock_event(evsel, sample);
+-	return 0;
++	return perf_evsel__process_lock_event(evsel, sample);
+ }
+ 
+ static struct perf_tool eops = {
+@@ -839,8 +896,10 @@ static struct perf_tool eops = {
+ static int read_events(void)
+ {
+ 	session = perf_session__new(input_name, O_RDONLY, 0, false, &eops);
+-	if (!session)
+-		die("Initializing perf session failed\n");
++	if (!session) {
++		pr_err("Initializing perf session failed\n");
++		return -1;
++	}
+ 
+ 	return perf_session__process_events(session, &eops);
+ }
+@@ -857,13 +916,18 @@ static void sort_result(void)
+ 	}
+ }
+ 
+-static void __cmd_report(void)
++static int __cmd_report(void)
+ {
+ 	setup_pager();
+-	select_key();
+-	read_events();
++
++	if ((select_key() != 0) ||
++	    (read_events() != 0))
++		return -1;
++
+ 	sort_result();
+ 	print_result();
++
++	return 0;
+ }
+ 
+ static const char * const report_usage[] = {
+@@ -959,6 +1023,7 @@ static int __cmd_record(int argc, const char **argv)
+ int cmd_lock(int argc, const char **argv, const char *prefix __used)
+ {
+ 	unsigned int i;
++	int rc = 0;
+ 
+ 	symbol__init();
+ 	for (i = 0; i < LOCKHASH_SIZE; i++)
+@@ -993,11 +1058,13 @@ int cmd_lock(int argc, const char **argv, const char *prefix __used)
+ 		/* recycling report_lock_ops */
+ 		trace_handler = &report_lock_ops;
+ 		setup_pager();
+-		read_events();
+-		dump_info();
++		if (read_events() != 0)
++			rc = -1;
++		else
++			rc = dump_info();
+ 	} else {
+ 		usage_with_options(lock_usage, lock_options);
+ 	}
+ 
+-	return 0;
++	return rc;
+ }
