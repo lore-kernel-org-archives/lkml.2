@@ -1,116 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753302Ab2IGPRu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 11:17:50 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:51967 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751551Ab2IGPRt (ORCPT
+	id S1755932Ab2IGPW2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 11:22:28 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50031 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753833Ab2IGPWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 11:17:49 -0400
-Date: Fri, 7 Sep 2012 20:44:26 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/7] ptrace: Partly fix
- set_task_blockstep()->update_debugctlmsr() logic
-Message-ID: <20120907151426.GR30238@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120903152525.GA9028@redhat.com>
- <20120903152609.GA9071@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120903152609.GA9071@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 12090715-3568-0000-0000-0000026EE07D
+	Fri, 7 Sep 2012 11:22:22 -0400
+From: Seth Forshee <seth.forshee@canonical.com>
+To: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Cc: David Airlie <airlied@linux.ie>, Matthew Garrett <mjg@redhat.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Andreas Heider <andreas@meetr.de>,
+        Seth Forshee <seth.forshee@canonical.com>
+Subject: [PATCH 2/7] vga_switcheroo: Add helper function to get the active client
+Date: Fri,  7 Sep 2012 10:22:05 -0500
+Message-Id: <1347031330-19657-3-git-send-email-seth.forshee@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1347031330-19657-1-git-send-email-seth.forshee@canonical.com>
+References: <1347031330-19657-1-git-send-email-seth.forshee@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2012-09-03 17:26:09]:
+Add vga_switcheroo_get_active_client() to allow drivers to get the
+active video client. This will be used by drivers wishing to temporarily
+mux only the DDC to the inactive client.
 
-> Afaics the usage of update_debugctlmsr() and TIF_BLOCKSTEP in
-> step.c was always very wrong.
-> 
-> 1. update_debugctlmsr() was simply unneeded. The child sleeps
->    TASK_TRACED, __switch_to_xtra(next_p => child) should notice
->    TIF_BLOCKSTEP and set/clear DEBUGCTLMSR_BTF after resume if
->    needed.
-> 
-> 2. It is wrong. The state of DEBUGCTLMSR_BTF bit in CPU register
->    should always match the state of current's TIF_BLOCKSTEP bit.
-> 
-> 3. Even get_debugctlmsr() + update_debugctlmsr() itself does not
->    look right. Irq can change other bits in MSR_IA32_DEBUGCTLMSR
->    register or the caller can be preempted in between.
-> 
-> 4. It is not safe to play with TIF_BLOCKSTEP if task != current.
->    DEBUGCTLMSR_BTF and TIF_BLOCKSTEP should always match each
->    other if the task is running. The tracee is stopped but it
->    can be SIGKILL'ed right before set/clear_tsk_thread_flag().
-> 
-> However, now that uprobes uses user_enable_single_step(current)
-> we can't simply remove update_debugctlmsr(). So this patch adds
-> the additional "task == current" check and disables irqs to avoid
-> the race with interrupts/preemption.
-> 
-> Unfortunately this patch doesn't solve the last problem, we need
-> another fix. Probably we should teach ptrace_stop() to set/clear
-> single/block stepping after resume.
-> 
-> And afaics there is yet another problem: perf can play with
-> MSR_IA32_DEBUGCTLMSR from nmi, this obviously means that even
-> __switch_to_xtra() has problems.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  arch/x86/kernel/step.c |   14 +++++++++++++-
->  1 files changed, 13 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/step.c b/arch/x86/kernel/step.c
-> index 7a51498..f89cdc6 100644
-> --- a/arch/x86/kernel/step.c
-> +++ b/arch/x86/kernel/step.c
-> @@ -161,6 +161,16 @@ static void set_task_blockstep(struct task_struct *task, bool on)
->  {
->  	unsigned long debugctl;
-> 
-> +	/*
-> +	 * Ensure irq/preemption can't change debugctl in between.
-> +	 * Note also that both TIF_BLOCKSTEP and debugctl should
-> +	 * be changed atomically wrt preemption.
-> +	 * FIXME: this means that set/clear TIF_BLOCKSTEP is simply
-> +	 * wrong if task != current, SIGKILL can wakeup the stopped
-> +	 * tracee and set/clear can play with the running task, this
-> +	 * can confuse the next __switch_to_xtra().
-> +	 */
-> +	local_irq_disable();
->  	debugctl = get_debugctlmsr();
->  	if (on) {
->  		debugctl |= DEBUGCTLMSR_BTF;
-> @@ -169,7 +179,9 @@ static void set_task_blockstep(struct task_struct *task, bool on)
->  		debugctl &= ~DEBUGCTLMSR_BTF;
->  		clear_tsk_thread_flag(task, TIF_BLOCKSTEP);
->  	}
-> -	update_debugctlmsr(debugctl);
-> +	if (task == current)
-> +		update_debugctlmsr(debugctl);
-> +	local_irq_enable();
->  }
-> 
->  /*
-> 
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+---
+ drivers/gpu/vga/vga_switcheroo.c |   14 ++++++++++++++
+ include/linux/vga_switcheroo.h   |    2 ++
+ 2 files changed, 16 insertions(+)
 
-The changes look simple and neat. But I would prefer somebody with
-better x86 knowledgde comment on this.
-
+diff --git a/drivers/gpu/vga/vga_switcheroo.c b/drivers/gpu/vga/vga_switcheroo.c
+index ea6bcc2..e53f67d 100644
+--- a/drivers/gpu/vga/vga_switcheroo.c
++++ b/drivers/gpu/vga/vga_switcheroo.c
+@@ -205,6 +205,20 @@ find_active_client(struct list_head *head)
+ 	return NULL;
+ }
+ 
++struct pci_dev *vga_switcheroo_get_active_client(void)
++{
++	struct vga_switcheroo_client *client;
++	struct pci_dev *pdev = NULL;
++
++	mutex_lock(&vgasr_mutex);
++	client = find_active_client(&vgasr_priv.clients);
++	if (client)
++		pdev = client->pdev;
++	mutex_unlock(&vgasr_mutex);
++	return pdev;
++}
++EXPORT_SYMBOL(vga_switcheroo_get_active_client);
++
+ int vga_switcheroo_get_client_state(struct pci_dev *pdev)
+ {
+ 	struct vga_switcheroo_client *client;
+diff --git a/include/linux/vga_switcheroo.h b/include/linux/vga_switcheroo.h
+index b0d0839..e361858 100644
+--- a/include/linux/vga_switcheroo.h
++++ b/include/linux/vga_switcheroo.h
+@@ -61,6 +61,7 @@ void vga_switcheroo_unregister_handler(void);
+ 
+ int vga_switcheroo_process_delayed_switch(void);
+ 
++struct pci_dev *vga_switcheroo_get_active_client(void);
+ int vga_switcheroo_get_client_state(struct pci_dev *dev);
+ 
+ #else
+@@ -76,6 +77,7 @@ static inline int vga_switcheroo_register_audio_client(struct pci_dev *pdev,
+ 	int id, bool active) { return 0; }
+ static inline void vga_switcheroo_unregister_handler(void) {}
+ static inline int vga_switcheroo_process_delayed_switch(void) { return 0; }
++static inline struct pci_dev *vga_switcheroo_get_active_client(void) { return NULL; }
+ static inline int vga_switcheroo_get_client_state(struct pci_dev *dev) { return VGA_SWITCHEROO_ON; }
+ 
+ 
 -- 
-Thanks and Regards
-Srikar
+1.7.9.5
 
