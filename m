@@ -1,191 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760233Ab2IGJTN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 05:19:13 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:60375 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755052Ab2IGJTM (ORCPT
+	id S1760245Ab2IGJUE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 05:20:04 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:35506 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755052Ab2IGJUC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 05:19:12 -0400
-From: Benjamin Gaignard <benjamin.gaignard@linaro.org>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        ying.huang@intel.com
-Cc: Benjamin Gaignard <benjamin.gaignard@stericsson.com>
-Subject: [PATCH] genalloc: make possible to use a custom allocation algorithm
-Date: Fri,  7 Sep 2012 11:16:33 +0200
-Message-Id: <1347009393-8751-1-git-send-email-benjamin.gaignard@stericsson.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <[PATCH] genalloc: add best fit algorithm>
-References: <[PATCH] genalloc: add best fit algorithm>
+	Fri, 7 Sep 2012 05:20:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120907080319.GA19102@localhost>
+References: <CAA_GA1f=NvzNOpuKg7mO8TnvFXjtZDHBjBeXkSihV94eWRkncA@mail.gmail.com>
+	<20120808070449.GA19904@localhost>
+	<CAA_GA1fuEamnDoSk8ki-nXGY5k2t9BsPkfFaGmNPQ2A=MuV-Og@mail.gmail.com>
+	<20120824090324.GA3878@localhost>
+	<CAA_GA1dMk8TJ3Nv5vTRquBO3aRfdFbxpq9=+uVnF30tO3ymiSw@mail.gmail.com>
+	<20120904095654.GA12384@localhost>
+	<CAA_GA1cEhn6dKg2Q7fH4tJRJ2a+qryukHP84OKCm8Lb15phB8w@mail.gmail.com>
+	<20120907070705.GA18082@localhost>
+	<CAA_GA1eQ1WbnZDaSaLXhAo7Txt+v2WScDhF8_D3r0tHtZV8Xug@mail.gmail.com>
+	<20120907080319.GA19102@localhost>
+Date: Fri, 7 Sep 2012 17:20:01 +0800
+Message-ID: <CAA_GA1cgym-8HbJiXFbHdnpwZY4G9NfGZwK3CUYxmnEVvMCtaQ@mail.gmail.com>
+Subject: Re: BF561-EZKIT-SMP_defconfig build error in smp.c
+From: Bob Liu <lliubbo@gmail.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: uclinux-dist-devel@blackfin.uclinux.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Gaignard <benjamin.gaignard@stericsson.com>
+On Fri, Sep 7, 2012 at 4:03 PM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> Greetings,
+>
+> FYI, BF561-EZKIT-SMP_defconfig has this build error:
+>
+> kernel/built-in.o: In function `on_each_cpu mask':
+> kernel/smp.c:708: undefined reference to `smp_call_function_many'
+>
 
-This patch allow to use another algorithm than the default first-fit one.
-For example a custom algorithm could be used to manage alignment requirements.
+We have fixed this issue in our internal tree but haven't push to mainline.
+I'll update it soon, thank you.
 
-Add of best-fit algorithm function:
-most of the time best-fit is slower then first-fit but memory fragmentation is lower.
-Random buffer allocation/free tests don't show any arithmetic relation between
-allocation time and fragmentation but best-fit algorithm is sometime able to perform the allocation when first-fit can't.
-
-This new algorithm help to solve fragmentation issues on ESRAM shared by multiple
-hardware IP allocating and freeing dynamically memory region of various sizes.
-
-Signed-off-by: Benjamin Gaignard <benjamin.gaignard@stericsson.com>
----
- include/linux/genalloc.h |   15 ++++++++
- lib/genalloc.c           |   86 +++++++++++++++++++++++++++++++++++++++++++---
- 2 files changed, 97 insertions(+), 4 deletions(-)
-
-diff --git a/include/linux/genalloc.h b/include/linux/genalloc.h
-index 5e98eeb..b8570a7 100644
---- a/include/linux/genalloc.h
-+++ b/include/linux/genalloc.h
-@@ -36,6 +36,10 @@ struct gen_pool {
- 	spinlock_t lock;
- 	struct list_head chunks;	/* list of chunks in this pool */
- 	int min_alloc_order;		/* minimum allocation order */
-+
-+	unsigned long (*algo)(unsigned long *, unsigned long,
-+			unsigned long, unsigned int, void *);
-+	void *data;
- };
- 
- /*
-@@ -78,4 +82,15 @@ extern void gen_pool_for_each_chunk(struct gen_pool *,
- 	void (*)(struct gen_pool *, struct gen_pool_chunk *, void *), void *);
- extern size_t gen_pool_avail(struct gen_pool *);
- extern size_t gen_pool_size(struct gen_pool *);
-+
-+extern void gen_pool_set_algo(struct gen_pool *,
-+		unsigned long (*)(unsigned long *, unsigned long, unsigned long,
-+		unsigned int, void *), void *);
-+
-+extern unsigned long gen_pool_first_fit(unsigned long *, unsigned long,
-+		unsigned long, unsigned int, void *);
-+
-+extern unsigned long gen_pool_best_fit(unsigned long *, unsigned long,
-+			unsigned long, unsigned int, void *);
-+
- #endif /* __GENALLOC_H__ */
-diff --git a/lib/genalloc.c b/lib/genalloc.c
-index 6bc04aa..a0d73c8 100644
---- a/lib/genalloc.c
-+++ b/lib/genalloc.c
-@@ -152,6 +152,8 @@ struct gen_pool *gen_pool_create(int min_alloc_order, int nid)
- 		spin_lock_init(&pool->lock);
- 		INIT_LIST_HEAD(&pool->chunks);
- 		pool->min_alloc_order = min_alloc_order;
-+		pool->algo = gen_pool_first_fit;
-+		pool->data = NULL;
- 	}
- 	return pool;
- }
-@@ -255,8 +257,9 @@ EXPORT_SYMBOL(gen_pool_destroy);
-  * @size: number of bytes to allocate from the pool
-  *
-  * Allocate the requested number of bytes from the specified pool.
-- * Uses a first-fit algorithm. Can not be used in NMI handler on
-- * architectures without NMI-safe cmpxchg implementation.
-+ * Uses the pool allocation function (with first-fit algorithm by default).
-+ * Can not be used in NMI handler on architectures without
-+ * NMI-safe cmpxchg implementation.
-  */
- unsigned long gen_pool_alloc(struct gen_pool *pool, size_t size)
- {
-@@ -280,8 +283,8 @@ unsigned long gen_pool_alloc(struct gen_pool *pool, size_t size)
- 
- 		end_bit = (chunk->end_addr - chunk->start_addr) >> order;
- retry:
--		start_bit = bitmap_find_next_zero_area(chunk->bits, end_bit,
--						       start_bit, nbits, 0);
-+		start_bit = pool->algo(chunk->bits, end_bit, start_bit, nbits,
-+				pool->data);
- 		if (start_bit >= end_bit)
- 			continue;
- 		remain = bitmap_set_ll(chunk->bits, start_bit, nbits);
-@@ -400,3 +403,78 @@ size_t gen_pool_size(struct gen_pool *pool)
- 	return size;
- }
- EXPORT_SYMBOL_GPL(gen_pool_size);
-+
-+/**
-+ * gen_pool_set_algo - set the allocation algorithm
-+ * @pool: pool to change allocation algorithm
-+ * @priv: private data to be pass to algorithm function
-+ * @algo: custom algorithm function
-+ */
-+void gen_pool_set_algo(struct gen_pool *pool,
-+	unsigned long (*algo)(unsigned long *map, unsigned long size,
-+	unsigned long start, unsigned int nr, void *data), void *data)
-+{
-+	rcu_read_lock();
-+
-+	pool->algo = algo;
-+	if (!pool->algo)
-+		pool->algo = gen_pool_first_fit;
-+
-+	pool->data = data;
-+
-+	rcu_read_unlock();
-+}
-+EXPORT_SYMBOL(gen_pool_set_algo);
-+
-+/**
-+ * gen_pool_first_fit - find the first available region
-+ * of memory macthing the size requirement (no alignment constraint)
-+ * @map: The address to base the search on
-+ * @size: The bitmap size in bits
-+ * @start: The bitnumber to start searching at
-+ * @nr: The number of zeroed bits we're looking for
-+ * @data: additional data - unused
-+ */
-+unsigned long gen_pool_first_fit(unsigned long *map, unsigned long size,
-+		unsigned long start, unsigned int nr, void *data)
-+{
-+	return bitmap_find_next_zero_area(map, size, start, nr, 0);
-+}
-+EXPORT_SYMBOL(gen_pool_first_fit);
-+
-+/**
-+ * gen_pool_best_fit - find the best fiting region of memory
-+ * macthing the size requirement (no alignment constraint)
-+ * @map: The address to base the search on
-+ * @size: The bitmap size in bits
-+ * @start: The bitnumber to start searching at
-+ * @nr: The number of zeroed bits we're looking for
-+ * @data: additional data - unused
-+ *
-+ * Iterate over the bitmap to find the smaller region where
-+ * allocate the memory.
-+ */
-+unsigned long gen_pool_best_fit(unsigned long *map, unsigned long size,
-+		unsigned long start, unsigned int nr, void *data)
-+{
-+	unsigned long start_bit = size;
-+	unsigned long len = size + 1;
-+	unsigned long index;
-+
-+	index = bitmap_find_next_zero_area(map, size, start, nr, 0);
-+
-+	while (index < size) {
-+		int next_bit = find_next_bit(map, size, index + nr);
-+		if ((next_bit - index) < len) {
-+			len = next_bit - index;
-+			start_bit = index;
-+			if (len == nr)
-+				return start_bit;
-+		}
-+		index = bitmap_find_next_zero_area(map, size,
-+						   next_bit + 1, nr, 0);
-+	}
-+
-+	return start_bit;
-+}
-+EXPORT_SYMBOL(gen_pool_best_fit);
 -- 
-1.7.10
-
+Regards,
+--Bob
