@@ -1,87 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751501Ab2IGPix (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 11:38:53 -0400
-Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:35189 "EHLO
-	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750790Ab2IGPiv (ORCPT
+	id S1752230Ab2IGPjT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 11:39:19 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:43510 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155Ab2IGPjO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 11:38:51 -0400
-From: Felipe Balbi <balbi@ti.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: alan@linux.intel.com, Tony Lindgren <tony@atomide.com>,
-        Kevin Hilman <khilman@ti.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-serial@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Shubhrajyoti Datta <shubhrajyoti@ti.com>,
-        Sourav Poddar <sourav.poddar@ti.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH] serial: omap: fix compile breakage
-Date: Fri,  7 Sep 2012 18:34:19 +0300
-Message-Id: <1347032059-8901-1-git-send-email-balbi@ti.com>
-X-Mailer: git-send-email 1.7.12.rc3
-In-Reply-To: <20120907153136.GA8634@kroah.com>
-References: <20120907153136.GA8634@kroah.com>
+	Fri, 7 Sep 2012 11:39:14 -0400
+Date: Fri, 7 Sep 2012 08:30:22 -0700
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: liang xie <xieliang007@gmail.com>, a.p.zijlstra@chello.nl, mingo@elte.hu,
+        paulus@samba.org, balbi@ti.com, linux-perf-users@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] A trivial memory leak fix while calling system_path
+Message-ID: <20120907153022.GA19165@ghostprotocols.net>
+References: <CADu=CFpMKkAW5+=Us9J2GOxZTBDN91FTeteCgbyh8c7fsP837g@mail.gmail.com>
+ <87oblibb7r.fsf@sejong.aot.lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87oblibb7r.fsf@sejong.aot.lge.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-when rebasing patches on top of Greg's tty-next,
-it looks like automerge broke a few things which
-I didn't catch (for whatever reason I didn't
-have OMAP Serial enabled on .config) so I ended
-up breaking the build on Greg's tty-next branch.
+Em Fri, Sep 07, 2012 at 03:26:00PM +0900, Namhyung Kim escreveu:
+> On Fri, 7 Sep 2012 11:34:49 +0800, liang xie wrote:
+> > +	const char *exec_path = perf_exec_path();
+> >
+> > -	add_path(&new_path, perf_exec_path());
+> > +	add_path(&new_path, exec_path);
+> >  	add_path(&new_path, argv0_path);
+> >
+> >  	if (old_path)
+> > @@ -95,6 +96,7 @@ void setup_path(void)
+> >  	setenv("PATH", new_path.buf, 1);
+> >
+> >  	strbuf_release(&new_path);
+> > +	free((void *)exec_path);
+> >  }
+> 
+> The problem is that perf_exec_path() can return a non-dynamically
+> allocated string (e.g. command line argument or environment string) and
+> currently we cannot know where the returned string is came from.
 
-Fix the breakage by re-adding the three missing
-members on struct uart_omap_port.
+And that is just gross, ugh. Make it always return dynamically allocated
+string, not const, drop the cast on free and be done with it :-)
 
-Reported-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
----
+- Arnaldo
 
-Hi Greg,
-
-I just fetched your tree again and rebased again just to
-make sure. Everything is fine here, let me know if it
-still applies with fuzz.
-
-cheers
-
- arch/arm/plat-omap/include/plat/omap-serial.h | 4 ----
- drivers/tty/serial/omap-serial.c              | 4 ++++
- 2 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/arch/arm/plat-omap/include/plat/omap-serial.h b/arch/arm/plat-omap/include/plat/omap-serial.h
-index 3c9fd3e..a531149 100644
---- a/arch/arm/plat-omap/include/plat/omap-serial.h
-+++ b/arch/arm/plat-omap/include/plat/omap-serial.h
-@@ -105,8 +105,4 @@ struct uart_omap_dma {
- 	unsigned int		rx_timeout;
- };
- 
--
--	int			DTR_gpio;
--	int			DTR_inverted;
--	int			DTR_active;
- #endif /* __OMAP_SERIAL_H__ */
-diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-index cfd2094..0a6e78e 100644
---- a/drivers/tty/serial/omap-serial.c
-+++ b/drivers/tty/serial/omap-serial.c
-@@ -100,6 +100,10 @@ struct uart_omap_port {
- 	u8			wakeups_enabled;
- 	unsigned int		irq_pending:1;
- 
-+	int			DTR_gpio;
-+	int			DTR_inverted;
-+	int			DTR_active;
-+
- 	struct pm_qos_request	pm_qos_request;
- 	u32			latency;
- 	u32			calc_latency;
--- 
-1.7.12.rc3
-
+> It might cause much more troubles when you free that kind of string than
+> just leaking a couple of bytes IMHO.
+> 
+> Thanks,
+> Namhyung
+> 
+> >
+> >  static const char **prepare_perf_cmd(const char **argv)
+> > diff --git a/tools/perf/util/help.c b/tools/perf/util/help.c
+> > index 6f2975a..798f66d 100644
+> > --- a/tools/perf/util/help.c
+> > +++ b/tools/perf/util/help.c
+> > @@ -187,6 +187,7 @@ void load_command_list(const char *prefix,
+> >  		uniq(other_cmds);
+> >  	}
+> >  	exclude_cmds(other_cmds, main_cmds);
+> > +	free((void *)exec_path);
+> >  }
+> >
+> >  void list_commands(const char *title, struct cmdnames *main_cmds,
