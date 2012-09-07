@@ -1,105 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753388Ab2IGRvg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 13:51:36 -0400
-Received: from smtp141.iad.emailsrvr.com ([207.97.245.141]:43715 "EHLO
-	smtp141.iad.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751327Ab2IGRve convert rfc822-to-8bit (ORCPT
+	id S1754261Ab2IGRxC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 13:53:02 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:34756 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751327Ab2IGRxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 13:51:34 -0400
-X-Greylist: delayed 436 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Sep 2012 13:51:34 EDT
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Date: Fri, 7 Sep 2012 13:44:14 -0400
-Subject: [RFC] x86: mtrr: Constrain WB MTRR to max phys mem prior to cleanup
-Thread-Topic: [RFC] x86: mtrr: Constrain WB MTRR to max phys mem prior to
- cleanup
-Thread-Index: Ac2NIGYViUQRpnHiRN6LukyEf8GpvA==
-Message-ID: <1347039854.6288.8.camel@thor>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	Fri, 7 Sep 2012 13:53:00 -0400
+Subject: Re: [PATCH 3.6 1/2] target: remove pscsi_clear_cdb_lun
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, target-devel@vger.kernel.org
+In-Reply-To: <5049DFCB.1090100@redhat.com>
+References: <1346944410-19850-1-git-send-email-pbonzini@redhat.com>
+	 <1346944410-19850-2-git-send-email-pbonzini@redhat.com>
+	 <1346957885.4162.509.camel@haakon2.linux-iscsi.org>
+	 <50490CE7.2020806@redhat.com>
+	 <1346988173.4162.581.camel@haakon2.linux-iscsi.org>
+	 <5049DFCB.1090100@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 07 Sep 2012 10:52:58 -0700
+Message-ID: <1347040378.4162.623.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If BIOS maps all or most of the phys address space as write-back,
-regardless of the amount of actual RAM, then mtrr_cleanup may create
-superfluous MTRR entries, or may be unable to create an optimal map
-(or may use all MTRRs attempting to do so, thus making cleanup
-pointless). Ideally, WB MTRRs should not be used for physical memory
-addresses where memory does not exist (Intel SDM, Vol 3A, 11.11.2.1).
+On Fri, 2012-09-07 at 13:51 +0200, Paolo Bonzini wrote:
+> Il 07/09/2012 05:22, Nicholas A. Bellinger ha scritto:
+> > Care to respin..?  ;)
+> 
+> Sure, but I suppose this will be 3.7 material.
 
-For example, Dell Precision T5400 wkstn w/ rev. A04 BIOS constructs
-the following MTRR map for 10GB memory:
- kernel: [    0.000000] MTRR variable ranges enabled:
- kernel: [    0.000000]   0 base 0000000000 mask 2000000000 write-back
- kernel: [    0.000000]   1 base 00CFF00000 mask 3FFFF00000 uncachable
- kernel: [    0.000000]   2 base 00D0000000 mask 3FF0000000 uncachable
- kernel: [    0.000000]   3 base 00E0000000 mask 3FE0000000 uncachable
- kernel: [    0.000000]   4 base 1FF0000000 mask 3FF0000000 uncachable
- kernel: [    0.000000]   5 disabled
- kernel: [    0.000000]   6 disabled
- kernel: [    0.000000]   7 disabled
- kernel: [    0.000000] x86 PAT enabled: cpu 0 ......
- kernel: [    0.000000] original variable MTRRs
- kernel: [    0.000000] reg 0, base: 0GB, range: 128GB, type WB
- kernel: [    0.000000] reg 1, base: 3327MB, range: 1MB, type UC
- kernel: [    0.000000] reg 2, base: 3328MB, range: 256MB, type UC
- kernel: [    0.000000] reg 3, base: 3584MB, range: 512MB, type UC
- kernel: [    0.000000] reg 4, base: 130816MB, range: 256MB, type UC
- kernel: [    0.000000] total RAM covered: 130047M
+<nod>
 
-mtrr_cleanup cannot construct an optimal map for this configuration.
-Additionally, if the mtrr_gran_size/mtrr_chunk_size is specified,
-mtrr_cleanup will use all entries attempting to map the full 128GB
-phys address range.
+> Do you want an attribute too?
+> 
 
-If a WB MTRR entry which maps phys addr range [0, > max_pfn) exists,
-constrain the entry to [0, roundup_pow_of_two(max_pfn) ) prior to
-generating potential solutions. The example MTRR map is optimized to:
- kernel: [    0.000000] New variable MTRRs
- kernel: [    0.000000] reg 0, base: 0GB, range: 2GB, type WB
- kernel: [    0.000000] reg 1, base: 2GB, range: 1GB, type WB
- kernel: [    0.000000] reg 2, base: 3GB, range: 256MB, type WB
- kernel: [    0.000000] reg 3, base: 3327MB, range: 1MB, type UC
- kernel: [    0.000000] reg 4, base: 4GB, range: 4GB, type WB
- kernel: [    0.000000] reg 5, base: 8GB, range: 8GB, type WB
+Mmmmm, still undecided on that one.  I'd really like to avoid adding
+pSCSI specific backend attributes, so lets try first try disabling this
+logic for >= SCSI_3 devices and if folks run into problems we can
+consider smarter detection (say via some simple domain validation tests
+with pSCSI devices) or if it's really un-avoidable an new backend
+attribute to handle this for old hardware.
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- arch/x86/kernel/cpu/mtrr/cleanup.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+Thanks Paolo!
 
-diff --git a/arch/x86/kernel/cpu/mtrr/cleanup.c b/arch/x86/kernel/cpu/mtrr/cleanup.c
-index bdda2e6..ee399c3 100644
---- a/arch/x86/kernel/cpu/mtrr/cleanup.c
-+++ b/arch/x86/kernel/cpu/mtrr/cleanup.c
-@@ -714,6 +714,16 @@ int __init mtrr_cleanup(unsigned address_bits)
- 	if (mtrr_tom2)
- 		x_remove_size = (mtrr_tom2 >> PAGE_SHIFT) - x_remove_base;
- 
-+	/* Constrain a WB entry that maps entire phys addr space to max mem */
-+	for (i = 0; i < num_var_ranges; i++) {
-+		if (range_state[i].type == MTRR_TYPE_WRBACK &&
-+		    range_state[i].base_pfn == 0 &&
-+		    range_state[i].size_pfn > max_pfn) {
-+			range_state[i].size_pfn = roundup_pow_of_two(max_pfn);
-+			break;
-+		}
-+	}
-+
- 	nr_range = x86_get_mtrr_mem_range(range, 0, x_remove_base, x_remove_size);
- 	/*
- 	 * [0, 1M) should always be covered by var mtrr with WB
--- 
-1.7.5.4
 
