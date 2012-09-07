@@ -1,94 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754442Ab2IGEba (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 00:31:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:32812 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751795Ab2IGEb2 (ORCPT
+	id S1753145Ab2IGE3w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 00:29:52 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:51513 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512Ab2IGE3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 00:31:28 -0400
-From: Toshiaki Yamane <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org, Toshiaki Yamane <yamanetoshi@gmail.com>
-Subject: [PATCH 28/57] staging/rts_pstor: remove braces {} in sd.c (sd_tuning_tx)
-Date: Fri,  7 Sep 2012 13:31:19 +0900
-Message-Id: <1346992279-17284-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1346991387-16321-1-git-send-email-yamanetoshi@gmail.com>
-References: <1346991387-16321-1-git-send-email-yamanetoshi@gmail.com>
+	Fri, 7 Sep 2012 00:29:50 -0400
+Date: Fri, 7 Sep 2012 14:29:40 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Pekka Enberg <penberg@cs.helsinki.fi>,
+        Christoph Lameter <cl@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: boot problems due to the slab tree
+Message-Id: <20120907142940.5783c61bffcfd2344b5ade6d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__7_Sep_2012_14_29_40_+1000_G7m4eSS9lfnjLudh"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fixed below checkpatch warnings.
--WARNING: braces {} are not necessary for any arm of this statement
--WARNING: braces {} are not necessary for single statement blocks
+--Signature=_Fri__7_Sep_2012_14_29_40_+1000_G7m4eSS9lfnjLudh
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
----
- drivers/staging/rts_pstor/sd.c |   24 ++++++++++--------------
- 1 file changed, 10 insertions(+), 14 deletions(-)
+Hi all,
 
-diff --git a/drivers/staging/rts_pstor/sd.c b/drivers/staging/rts_pstor/sd.c
-index 9812c00..02139b4 100644
---- a/drivers/staging/rts_pstor/sd.c
-+++ b/drivers/staging/rts_pstor/sd.c
-@@ -1779,17 +1779,16 @@ static int sd_tuning_tx(struct rtsx_chip *chip)
- 	int (*tuning_cmd)(struct rtsx_chip *chip, u8 sample_point);
- 
- 	if (CHK_SD(sd_card)) {
--		if (CHK_SD_DDR50(sd_card)) {
-+		if (CHK_SD_DDR50(sd_card))
- 			tuning_cmd = sd_ddr_tuning_tx_cmd;
--		} else {
-+		else
- 			tuning_cmd = sd_sdr_tuning_tx_cmd;
--		}
-+
- 	} else {
--		if (CHK_MMC_DDR52(sd_card)) {
-+		if (CHK_MMC_DDR52(sd_card))
- 			tuning_cmd = sd_ddr_tuning_tx_cmd;
--		} else {
-+		else
- 			TRACE_RET(chip, STATUS_FAIL);
--		}
- 	}
- 
- 	for (i = 0; i < 3; i++) {
-@@ -1803,27 +1802,24 @@ static int sd_tuning_tx(struct rtsx_chip *chip)
- 			}
- 
- 			retval = tuning_cmd(chip, (u8)j);
--			if (retval == STATUS_SUCCESS) {
-+			if (retval == STATUS_SUCCESS)
- 				raw_phase_map[i] |= 1 << j;
--			}
- 		}
- 	}
- 
- 	phase_map = raw_phase_map[0] & raw_phase_map[1] & raw_phase_map[2];
--	for (i = 0; i < 3; i++) {
-+	for (i = 0; i < 3; i++)
- 		RTSX_DEBUGP("TX raw_phase_map[%d] = 0x%08x\n", i, raw_phase_map[i]);
--	}
-+
- 	RTSX_DEBUGP("TX phase_map = 0x%08x\n", phase_map);
- 
- 	final_phase = sd_search_final_phase(chip, phase_map, TUNE_TX);
--	if (final_phase == 0xFF) {
-+	if (final_phase == 0xFF)
- 		TRACE_RET(chip, STATUS_FAIL);
--	}
- 
- 	retval = sd_change_phase(chip, final_phase, TUNE_TX);
--	if (retval != STATUS_SUCCESS) {
-+	if (retval != STATUS_SUCCESS)
- 		TRACE_RET(chip, STATUS_FAIL);
--	}
- 
- 	return STATUS_SUCCESS;
- }
--- 
-1.7.9.5
+Due to the reported boot problems in next-20120906, I have used the slab
+tree from next-20120905 for today.
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__7_Sep_2012_14_29_40_+1000_G7m4eSS9lfnjLudh
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQSXg0AAoJEECxmPOUX5FEyzYQAJKstDDMRtfgD3QAHK5e5LxC
+U/x2G8UM6efoinDQBqL5wmO53BtzliNdHwaHaEB9zCvbaSL+C3pyIPs6wDdP/Nts
+G0bRGmdwl9mIgUHJ94Q79jJnu2ykfbLmEPFiCmWeJlUUWvvZvKZCSP7ceeHBL57m
+ZQzwsQlnviMMeN0Q/6MZSyvSaCM+tp//T8W2iKWy6q53Wmufo/KhbXX3Qx2yeNn5
+Sm5VEaeYlf7jm7wHBvHHlFpz8TpuZY+9LjHjWTGgmVyDQkDWkesTNN1tiTgp4W0d
+AltTqjEepZKYfGKcK6dxLxcOY2LZoLN7KbDf3f8S0duzyuOeo6X4th51k1egfW+l
+IwFMDW2l9BMia9xBthMuhI9qNJGa09mFgnBIerNbSNNdO1fa01ExL5wTkuEFvjeU
+cl/2bUQanSufu09QqPMpGw5/jV9M+d6im1YjBDCEHCOMzUrMxt/cgMFDZiw1K2Hb
+Gc4s+Ry9f2THTojglVK60nYcamvHygwzUOSinkLEgG6tXbt1Ej+QSjrGrH9+GFcm
+QkBFo2CgkhLFsP2aAUNuXCiHU1ddZE8PiV3n0BvevPWtEYBdGGujIgBLYahOsVMH
+AdFTD4MWYycPbtyxL1ARyutaG3MirZHZGb4cDEcIT/wZyU7Y/jGKJkWrO/R+p9am
+FzQUhkESylcDy8egRgeS
+=HMDJ
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__7_Sep_2012_14_29_40_+1000_G7m4eSS9lfnjLudh--
