@@ -1,65 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229Ab2IGTYs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 15:24:48 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:64180 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752887Ab2IGTYr (ORCPT
+	id S1756787Ab2IGT0G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 15:26:06 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56910 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754814Ab2IGT0B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 15:24:47 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH v3 08/31] arm64: CPU support
-Date: Fri, 7 Sep 2012 19:24:38 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com> <1347035226-18649-9-git-send-email-catalin.marinas@arm.com>
-In-Reply-To: <1347035226-18649-9-git-send-email-catalin.marinas@arm.com>
+	Fri, 7 Sep 2012 15:26:01 -0400
+Date: Fri, 7 Sep 2012 12:25:56 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH wq/for-3.6-fixes 3/3] workqueue: fix possible idle
+ worker depletion during CPU_ONLINE
+Message-ID: <20120907192556.GE9426@google.com>
+References: <20120906200647.GG29092@google.com>
+ <20120906200723.GH29092@google.com>
+ <20120906200802.GI29092@google.com>
+ <50495395.10407@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209071924.38430.arnd@arndb.de>
-X-Provags-ID: V02:K0:SAxb+wC5IU30yXSkYHnYVU00HctQQ5R86fjxknJ2d74
- c28FslPbg2qZcXf6bbgkKDlLqf0+lSuIbxSXggKHX5h4hCCXMW
- Ab/XnzzZS3b5uFXx9vUl/TjfTrM1/KftN5qvLbWzgVafsC+EUS
- 5C6OLZ/sY69XJAfBgld0tqJJyr7MOLb93NGsc1hgVp59RE0Gd9
- 0Lo+3BvOvq4zzJiY2m1seiBKIL//YqWOcUv9lyB7mpYUD78r77
- aYuV6P6ZP3bfCOSkO8Jh8Y2wrJQJWXb2GtF4Bm8Lv080AhRUal
- ovjr3IoV6fApGm11wGLAM/r9RvbLWEeQ1wIOFIJ/SUdqAqLuVC
- 1v7jFh3Cj8l0S8loAAEg=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50495395.10407@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 September 2012, Catalin Marinas wrote:
-> +
-> +#include <asm/cputable.h>
-> +
-> +extern unsigned long __cpu_setup(void);
-> +
-> +struct cpu_info __initdata cpu_table[] = {
-> +	{
-> +		.cpu_id_val	= 0x000f0000,
-> +		.cpu_id_mask	= 0x000f0000,
-> +		.cpu_name	= "AArch64 Processor",
-> +		.cpu_setup	= __cpu_setup,
-> +	},
-> +	{ /* Empty */ },
-> +};
+Hello, Lai.
 
-> +#define MAIR(attr, mt)	((attr) << ((mt) * 8))
-> +
-> +ENTRY(cpu_proc_init)
-> +	ret
-> +ENDPROC(cpu_proc_init)
-> +
-> +ENTRY(cpu_proc_fin)
-> +	ret
-> +ENDPROC(cpu_proc_fin)
+On Fri, Sep 07, 2012 at 09:53:25AM +0800, Lai Jiangshan wrote:
+> > This patch fixes the bug by releasing manager_mutexes before letting
+> > the rebound idle workers go.  This ensures that by the time idle
+> > workers check whether management is necessary, CPU_ONLINE already has
+> > released the positions.
+> 
+> This can't fix the problem.
+> 
+> +	gcwq_claim_management(gcwq);
+> +	spin_lock_irq(&gcwq->lock);
+> 
+> 
+> If manage_workers() happens between the two line, the problem occurs!.
 
+Indeed.  I was only looking at rebinding completion.  Hmmm... I
+suppose any simple solution is out of window at this point.  I guess
+we'll have to defer the fix to 3.7.  I reverted the posted patches.
 
-These seem to be leftovers from multi-cpu support that can be removed.
+> My non_manager_role_manager_mutex_unlock() approach has the same
+> idea: release manage_mutex before release gcwq->lock.  but
+> non_manager_role_manager_mutex_unlock() approach will detect the
+> fail reason of failing to grab manage_lock and go to sleep.
+> rebind_workers()/gcwq_unbind_fn() will release manage_mutex and then
+> wait up some before release gcwq->lock.
 
-	Arnd
+Can you please try to fit the text to 80 column?  It would be much
+easier to read.
+
+> A "release manage_mutex before release gcwq->lock" approach.(no one
+> likes it, I think)
+> 
+> 
+> /* claim manager positions of all pools */
+> static void gcwq_claim_management_and_lock(struct global_cwq *gcwq)
+> {
+> 	struct worker_pool *pool, *pool_fail;
+> 
+> again:
+> 	spin_lock_irq(&gcwq->lock);
+> 	for_each_worker_pool(pool, gcwq) {
+> 		if (!mutex_trylock(&pool->manager_mutex))
+> 			goto fail;
+> 	}
+> 	return;
+> 
+> fail: /* unlikely, because manage_workers() are very unlike path in my box */
+> 	
+> 	for_each_worker_pool(pool_fail, gcwq) {
+> 		if (pool_fail != pool)
+> 			mutex_unlock(&pool->manager_mutex);
+> 		else
+> 			break;
+> 	}
+> 	spin_unlock_irq(&gcwq->lock);
+> 	cpu_relax();
+> 	goto again;
+> }
+
+Yeah, that's kinda ugly and also has the potential to cause extended
+period of busy looping.  Let's think of something else.
+
+Thanks.
+
+-- 
+tejun
