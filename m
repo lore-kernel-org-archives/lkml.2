@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760456Ab2IGLVO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 07:21:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7921 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760315Ab2IGLVL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 07:21:11 -0400
-Message-ID: <5049D899.60705@redhat.com>
-Date: Fri, 07 Sep 2012 13:20:57 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>, fes@google.com, aarcange@redhat.com,
-        riel@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mikew@google.com, yinghan@google.com,
-        virtualization@lists.linux-foundation.org, yvugenfi@redhat.com,
-        vrozenfe@redhat.com
-Subject: Re: [PATCH] virtio-balloon spec: provide a version of the "silent
- deflate" feature that works
-References: <20120906084736.GF17656@redhat.com> <50486BB2.7070108@redhat.com> <20120906094442.GA22816@redhat.com> <50487382.8030303@redhat.com> <20120906105301.GC32325@redhat.com> <5048935A.8090308@redhat.com> <87wr06hg0l.fsf@rustcorp.com.au> <20120907054202.GA3452@redhat.com> <87vcfqfia1.fsf@rustcorp.com.au> <5049BE0E.6040202@redhat.com> <20120907105335.GB17211@redhat.com>
-In-Reply-To: <20120907105335.GB17211@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1760545Ab2IGLYA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 07:24:00 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:46519 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760367Ab2IGLXz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 07:23:55 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: eparis@redhat.com, viro@zeniv.linux.org.uk
+Cc: linux-audit@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bfields@fieldses.org
+Subject: [PATCH v6 00/10] audit: overhaul audit_names handling to allow for retrying on path-based syscalls
+Date: Fri,  7 Sep 2012 07:23:37 -0400
+Message-Id: <1347017027-17167-1-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 07/09/2012 12:53, Michael S. Tsirkin ha scritto:
-> Let us start with what is broken currently. Looking at
-> it very closely, I think the answer is nothing.
-> Even migration in qemu is not broken as you claimed initially.
+This patchset is another minor respin of the series that I posted June
+26th.
 
-Correct, migration would be broken as soon as QEMU starts using
-MUST_TELL_HOST.  I'm trying to think ahead, since we have many ideas
-floating around on the implementation of ballooning.
+The main impetus of this series to to allow the audit_names
+infrastructure to properly handle the situation where the lookup and
+operation on a path-based syscall is retried.
 
-If you implement the mlock/munlock trick, you must start using
-MUST_TELL_HOST in QEMU to advertise it to guests, and migration breaks.
+Along with that, there are a number of bugfixes in this patch, as well
+as a few minor optimizations.
 
-> Next, consider the interface proposed here. You defacto declare
-> all existing drivers buggy.
+This series is available via the "audit" branch of my git tree as well:
 
-No, only Windows (and it is buggy, it calls tell_host last).  Linux and
-BSD drivers do negotiate MUST_TELL_HOST, and are not buggy.
+    git://git.samba.org/jlayton/linux.git audit
 
-> This is a wrong thing to do.
-> You also use two feature bits for a single simple thing,
-> this is inelegant.
+I'd like to see this patchset go into 3.7 if at all possible.
 
-True, but the choice is:
+Eric Paris (1):
+  audit: make audit_compare_dname_path use parent_len helper
 
-1) add a once-only hack to QEMU that fixes migration of
-VIRTIO_BALLOON_F_MUST_TELL_HOST;
+Jeff Layton (9):
+  audit: remove unnecessary NULL ptr checks from do_path_lookup
+  audit: pass in dentry to audit_copy_inode wherever possible
+  audit: no need to walk list in audit_inode if name is NULL
+  audit: reverse arguments to audit_inode_child
+  audit: add a new "type" field to audit_names struct
+  audit: set the name_len in audit_inode for parent lookups
+  audit: remove dirlen argument to audit_compare_dname_path
+  audit: optimize audit_compare_dname_path
+  audit: overhaul __audit_inode_child to accomodate retrying
 
-2) always advertise VIRTIO_BALLOON_F_MUST_TELL_HOST.  If you do this,
-guests cannot use anymore silent deflate, which is a regression.
+ fs/btrfs/ioctl.c         |   2 +-
+ fs/namei.c               |  22 ++++-----
+ fs/open.c                |   4 +-
+ fs/xattr.c               |   8 ++--
+ include/linux/audit.h    |  36 +++++++++-----
+ include/linux/fsnotify.h |   8 ++--
+ ipc/mqueue.c             |   8 ++--
+ kernel/audit.h           |   7 ++-
+ kernel/audit_watch.c     |   3 +-
+ kernel/auditfilter.c     |  65 +++++++++++++++++---------
+ kernel/auditsc.c         | 119 +++++++++++++++++++++++++++++------------------
+ 11 files changed, 170 insertions(+), 112 deletions(-)
 
-3) use two bits.  One tells the device that the driver supports chatty
-deflate; one tells the driver that the device supports silent deflate.
+-- 
+1.7.11.4
 
-So in the end you do use two feature bits for two different things.
-Plus, both feature bits are "positive" and I'm happy.
-
-> Last, let us consider how existing feature can be used
-> in the hypervisor. If driver did not ack
-> MUST_TELL_HOST, it is *not* buggy but it means we can not
-> do munlock. This applies to current windows drivers.
-> If driver *did* ack MUST_TELL_HOST, we can munlock
-> and mlock back on leak.
-> Seems useful, driver support is already there,
-> so removing the MUST_TELL_HOST bit seems like a bad idea.
-
-Indeed, repurposing MUST_TELL_HOST to WILL_TELL_HOST is better than
-killing it.
-
-Paolo
