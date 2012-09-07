@@ -1,66 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932942Ab2IGKCT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 06:02:19 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:58764 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760313Ab2IGKCS (ORCPT
+	id S932960Ab2IGKYA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 06:24:00 -0400
+Received: from goliath.siemens.de ([192.35.17.28]:28459 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753717Ab2IGKX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 06:02:18 -0400
-Message-ID: <5049C5F1.3050301@in.ibm.com>
-Date: Fri, 07 Sep 2012 15:31:21 +0530
-From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Fri, 7 Sep 2012 06:23:58 -0400
+Message-ID: <5049CB36.4080000@siemens.com>
+Date: Fri, 07 Sep 2012 12:23:50 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: linuxppc-dev@lists.ozlabs.org, mahesh@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] [powerpc] Change memory_limit from phys_addr_t
- to unsigned long long
-References: <20120821113815.29282.4000.stgit@suzukikp.in.ibm.com> <20120821114225.29282.87841.stgit@suzukikp.in.ibm.com> <1346981712.2385.30.camel@pasglop>
-In-Reply-To: <1346981712.2385.30.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v6 11/12] KVM: introduce readonly memslot
+References: <5032F8FD.2020306@linux.vnet.ibm.com> <5032FA5B.5040308@linux.vnet.ibm.com>
+In-Reply-To: <5032FA5B.5040308@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-x-cbid: 12090710-5816-0000-0000-000004557B8D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/07/2012 07:05 AM, Benjamin Herrenschmidt wrote:
-> On Tue, 2012-08-21 at 17:12 +0530, Suzuki K. Poulose wrote:
->> There are some device-tree nodes, whose values are of type phys_addr_t.
->> The phys_addr_t is variable sized based on the CONFIG_PHSY_T_64BIT.
->>
->> Change these to a fixed unsigned long long for consistency.
->>
->> This patch does the change only for memory_limit.
->>
->> The following is a list of such variables which need the change:
->>
->>   1) kernel_end, crashk_size - in arch/powerpc/kernel/machine_kexec.c
->>
->>   2) (struct resource *)crashk_res.start - We could export a local static
->>      variable from machine_kexec.c.
->>
->> Changing the above values might break the kexec-tools. So, I will
->> fix kexec-tools first to handle the different sized values and then change
->>   the above.
->>
->> Suggested-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->> Signed-off-by: Suzuki K. Poulose <suzuki@in.ibm.com>
->> ---
->
-> Breaks the build on some configs (with 32-bit phys_addr_t):
+On 2012-08-21 05:02, Xiao Guangrong wrote:
+> In current code, if we map a readonly memory space from host to guest
+> and the page is not currently mapped in the host, we will get a fault
+> pfn and async is not allowed, then the vm will crash
+> 
+> We introduce readonly memory region to map ROM/ROMD to the guest, read access
+> is happy for readonly memslot, write access on readonly memslot will cause
+> KVM_EXIT_MMIO exit
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  Documentation/virtual/kvm/api.txt |   10 +++-
+>  arch/x86/include/asm/kvm.h        |    1 +
+>  arch/x86/kvm/mmu.c                |    9 ++++
+>  arch/x86/kvm/x86.c                |    1 +
+>  include/linux/kvm.h               |    6 ++-
+>  include/linux/kvm_host.h          |    7 +--
+>  virt/kvm/kvm_main.c               |   96 ++++++++++++++++++++++++++++++-------
+>  7 files changed, 102 insertions(+), 28 deletions(-)
+> 
+> diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+> index bf33aaa..b91bfd4 100644
+> --- a/Documentation/virtual/kvm/api.txt
+> +++ b/Documentation/virtual/kvm/api.txt
+> @@ -857,7 +857,8 @@ struct kvm_userspace_memory_region {
+>  };
+> 
+>  /* for kvm_memory_region::flags */
+> -#define KVM_MEM_LOG_DIRTY_PAGES  1UL
+> +#define KVM_MEM_LOG_DIRTY_PAGES	(1UL << 0)
+> +#define KVM_MEM_READONLY	(1UL << 1)
+> 
+>  This ioctl allows the user to create or modify a guest physical memory
+>  slot.  When changing an existing slot, it may be moved in the guest
+> @@ -873,9 +874,12 @@ It is recommended that the lower 21 bits of guest_phys_addr and userspace_addr
+>  be identical.  This allows large pages in the guest to be backed by large
+>  pages in the host.
+> 
+> -The flags field supports just one flag, KVM_MEM_LOG_DIRTY_PAGES, which
+> +The flags field supports two flag, KVM_MEM_LOG_DIRTY_PAGES, which
+>  instructs kvm to keep track of writes to memory within the slot.  See
+> -the KVM_GET_DIRTY_LOG ioctl.
+> +the KVM_GET_DIRTY_LOG ioctl. Another flag is KVM_MEM_READONLY when the
+> +KVM_CAP_READONLY_MEM capability, it indicates the guest memory is read-only,
+> +that means, guest is only allowed to read it.
 
-Sorry for that.
->
-> /home/benh/linux-powerpc-test/arch/powerpc/kernel/prom.c: In function
-> 'early_init_devtree':
-> /home/benh/linux-powerpc-test/arch/powerpc/kernel/prom.c:664:25: error:
-> comparison of distinct pointer types lacks a cast
->
-> I'm fixing that myself this time but please be more careful.
-Sure. Thanks Ben for fixing that.
+The last sentence requires some refactoring. :) How about: "The
+KVM_CAP_READONLY_MEM capability indicates the availability of the
+KVM_MEM_READONLY flag. When this flag is set for a memory region, KVM
+only allows read accesses."
 
-Suzuki
+> Writes will be posted to
+> +userspace as KVM_EXIT_MMIO exits.
+> 
+>  When the KVM_CAP_SYNC_MMU capability, changes in the backing of the memory
+>  region are automatically reflected into the guest.  For example, an mmap()
+> diff --git a/arch/x86/include/asm/kvm.h b/arch/x86/include/asm/kvm.h
+> index 246617e..521bf25 100644
+> --- a/arch/x86/include/asm/kvm.h
+> +++ b/arch/x86/include/asm/kvm.h
+> @@ -25,6 +25,7 @@
+>  #define __KVM_HAVE_DEBUGREGS
+>  #define __KVM_HAVE_XSAVE
+>  #define __KVM_HAVE_XCRS
+> +#define __KVM_HAVE_READONLY_MEM
+> 
+>  /* Architectural interrupt line count. */
+>  #define KVM_NR_INTERRUPTS 256
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index 5548971..8e312a2 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -2647,6 +2647,15 @@ static void kvm_send_hwpoison_signal(unsigned long address, struct task_struct *
+> 
+>  static int kvm_handle_bad_page(struct kvm_vcpu *vcpu, gfn_t gfn, pfn_t pfn)
+>  {
+> +	/*
+> +	 * Do not cache the mmio info caused by writing the readonly gfn
+> +	 * into the spte otherwise read access on readonly gfn also can
+> +	 * caused mmio page fault and treat it as mmio access.
+> +	 * Return 1 to tell kvm to emulate it.
+> +	 */
+> +	if (pfn == KVM_PFN_ERR_RO_FAULT)
+> +		return 1;
+> +
+>  	if (pfn == KVM_PFN_ERR_HWPOISON) {
+>  		kvm_send_hwpoison_signal(gfn_to_hva(vcpu->kvm, gfn), current);
+>  		return 0;
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 704680d..42bbf41 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -2175,6 +2175,7 @@ int kvm_dev_ioctl_check_extension(long ext)
+>  	case KVM_CAP_GET_TSC_KHZ:
+>  	case KVM_CAP_PCI_2_3:
+>  	case KVM_CAP_KVMCLOCK_CTRL:
+> +	case KVM_CAP_READONLY_MEM:
+>  		r = 1;
+>  		break;
+>  	case KVM_CAP_COALESCED_MMIO:
+> diff --git a/include/linux/kvm.h b/include/linux/kvm.h
+> index 2de335d..d808694 100644
+> --- a/include/linux/kvm.h
+> +++ b/include/linux/kvm.h
+> @@ -106,7 +106,8 @@ struct kvm_userspace_memory_region {
+>   * other bits are reserved for kvm internal use which are defined in
+>   * include/linux/kvm_host.h.
+>   */
+> -#define KVM_MEM_LOG_DIRTY_PAGES  1UL
+> +#define KVM_MEM_LOG_DIRTY_PAGES	(1UL << 0)
+> +#define KVM_MEM_READONLY	(1UL << 1)
+> 
+>  /* for KVM_IRQ_LINE */
+>  struct kvm_irq_level {
+> @@ -621,6 +622,9 @@ struct kvm_ppc_smmu_info {
+>  #define KVM_CAP_PPC_GET_SMMU_INFO 78
+>  #define KVM_CAP_S390_COW 79
+>  #define KVM_CAP_PPC_ALLOC_HTAB 80
+> +#ifdef __KVM_HAVE_READONLY_MEM
+> +#define KVM_CAP_READONLY_MEM 81
+> +#endif
 
+See the discussion on the userspace patches: The CAP, as userspace API,
+should really be defined unconditionally, kernel code should depend on
+__KVM_HAVE_READONLY_MEM or a to-be-introduced CONFIG_KVM_HAVE_xxx
+switch. This allows for cleaner userspace code.
+
+Jan
+
+-- 
+Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
+Corporate Competence Center Embedded Linux
