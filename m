@@ -1,82 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753388Ab2IGROm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 13:14:42 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:49556 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751327Ab2IGROj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 13:14:39 -0400
-Message-ID: <1347037964.31197.100.camel@falcor>
-Subject: Re: [PATCH 1/2] module: add syscall to load module from fd
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-security-module@vger.kernel.org
-Date: Fri, 07 Sep 2012 13:12:44 -0400
-In-Reply-To: <87ipbqhenn.fsf@rustcorp.com.au>
-References: <1346955201-8926-1-git-send-email-keescook@chromium.org>
-	 <87ipbqhenn.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12090717-3534-0000-0000-00000C600E43
+	id S1753247Ab2IGRS4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 13:18:56 -0400
+Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:11187
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751217Ab2IGRSy convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 13:18:54 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dIc89bh1432Izz1202hzzz2dh668h839h93fhd25hf0ah11b5h121eh1288h1155h)
+X-WSS-ID: 0M9ZPFC-01-LHZ-02
+X-M-MSG: 
+Date: Fri, 7 Sep 2012 19:18:45 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@kernel.org>, David Ahern <dsahern@gmail.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] perf, ibs: Check syscall attribute flags
+Message-ID: <20120907171845.GL8285@erda.amd.com>
+References: <1342826756-64663-1-git-send-email-dsahern@gmail.com>
+ <1342826756-64663-9-git-send-email-dsahern@gmail.com>
+ <20120906190238.GA29278@erda.amd.com>
+ <5048F6BF.70106@gmail.com>
+ <20120906195645.GD8285@erda.amd.com>
+ <20120907164114.GJ8285@erda.amd.com>
+ <1347036987.2124.3.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <1347036987.2124.3.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-07 at 09:45 +0930, Rusty Russell wrote:
-> Kees Cook <keescook@chromium.org> writes:
-> > Instead of (or in addition to) kernel module signing, being able to reason
-> > about the origin of a kernel module would be valuable in situations
-> > where an OS already trusts a specific file system, file, etc, due to
-> > things like security labels or an existing root of trust to a partition
-> > through things like dm-verity.
-> >
-> > This introduces a new syscall (currently only on x86), similar to
-> > init_module, that has only two arguments. The first argument is used as
-> > a file descriptor to the module and the second argument is a pointer to
-> > the NULL terminated string of module arguments.
+On 07.09.12 18:56:27, Peter Zijlstra wrote:
+
+> > +               .exclude_user   = 1,
+> > +               .exclude_kernel = 1,
+> > +               .exclude_hv     = 1,
+> > +               .exclude_idle   = 1,
+> > +               .exclude_host   = 1,
+> > +               .exclude_guest  = 1,
 > 
-> Thanks.  Minor comments follow:
+> Ideally we'd grow support for those using SVM entry/exit hooks though.
 
-Rusty, sorry for bringing this up again, but with Kees' new syscall,
-which passes in the file descriptor, appraising the integrity of kernel
-modules could be like appraising the integrity of any other file on the
-filesystem.  All that would be needed is a new security hook, which is
-needed in anycase for IMA measurement.
+Yes, I will look at this too. This patch is inteded for stable and
+urgent.
 
-The concerns with this approach, expressed in the past by David Howells,
-are that it requires IMA-appraisal to be enabled, extended attribute
-support, and changes to userspace tools.  Normally I wouldn't be too
-concerned about filesystems that don't support extended attributes, but
-the initramfs is currently cpio.  Perhaps this isn't an issue in
-anycase, as the initramfs would be appraised in the secure boot
-environment.
+> > +#define perf_flags(attr)       (*(&(attr)->read_format + 1))
+> 
+> 
+> Another anonymous union shouldn't hurt..
+> 
+> ---
+>  include/linux/perf_event.h | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index cc5e2cd..5df37a0 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -236,7 +236,9 @@ struct perf_event_attr {
+>  	__u64			sample_type;
+>  	__u64			read_format;
+>  
+> -	__u64			disabled       :  1, /* off by default        */
+> +	union {
+> +		__u64		flags;
+> +		__u64		disabled       :  1, /* off by default        */
+>  				inherit	       :  1, /* children inherit it   */
+>  				pinned	       :  1, /* must always be on PMU */
+>  				exclusive      :  1, /* only group on PMU     */
+> @@ -272,6 +274,7 @@ struct perf_event_attr {
+>  				exclude_callchain_user   : 1, /* exclude user callchains */
+>  
+>  				__reserved_1   : 41;
+> +	};
+>  
+>  	union {
+>  		__u32		wakeup_events;	  /* wakeup every n events */
 
-The first two concerns could be addressed by passing in a digital
-signature, which the new syscall supports. The signature could be stored
-as an extended attribute, appended to the kernel module or, as
-originally described by Dmitry, in a .sig file. Where/how the signature
-is stored would be left up to the distro's and userspace tool's
-discretion.
+I was thinking of this too. But this breaks existing code to compile
+since static initialization of struct perf_event_attr fails, e.g.:
 
-When EVM/IMA-appraisal is enabled, it would either appraise the kernel
-module based on the xattr, if available, or the supplied signature.
-Otherwise, without EVM/IMA-appraisal enabled, the stub hook would
-appraise the kernel module based on the supplied signature, calling
-integrity_digsig_verify() directly.
+ builtin-test.c:469:3: error: unknown field ‘watermark’ specified in initializer
 
-This method is a consistent and extensible approach to verifying the
-integrity of file data/metadata, including kernel modules. The only
-downside to this approach, I think, is that it requires changes to the
-userspace tool.
+-Robert
 
-thanks,
-
-Mimi
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
