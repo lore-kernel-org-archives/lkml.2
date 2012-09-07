@@ -1,225 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752223Ab2IGMz1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 08:55:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41449 "EHLO mx2.suse.de"
+	id S1752986Ab2IGM6L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 08:58:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48764 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751062Ab2IGMzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 08:55:25 -0400
-Date: Fri, 7 Sep 2012 13:55:19 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: JoonSoo Kim <js1304@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Chuck Lever <chuck.lever@oracle.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 1/4] slab: do ClearSlabPfmemalloc() for all pages of slab
-Message-ID: <20120907125519.GB11266@suse.de>
-References: <1346779479-1097-1-git-send-email-mgorman@suse.de>
- <1346779479-1097-2-git-send-email-mgorman@suse.de>
- <CAAmzW4M_3hVBfjqFLG=7iydkXeQPdCXRbRmkqUJD4vwo0eWVWQ@mail.gmail.com>
- <CAAmzW4MfFUH1Mi447sQvPNeae_BShEmbECUaK9eoX-8ughEdJw@mail.gmail.com>
+	id S1751317Ab2IGM6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 08:58:08 -0400
+Message-ID: <5049EF5B.3020607@draigBrady.com>
+Date: Fri, 07 Sep 2012 13:58:03 +0100
+From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <CAAmzW4MfFUH1Mi447sQvPNeae_BShEmbECUaK9eoX-8ughEdJw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jeff Layton <jlayton@poochiereds.net>
+CC: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] procfs: don't need a PATH_MAX allocation to hold a string
+ representation of an int
+References: <1347021293-19052-1-git-send-email-jlayton@redhat.com> <20120907084814.07a59c98@corrin.poochiereds.net>
+In-Reply-To: <20120907084814.07a59c98@corrin.poochiereds.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 07, 2012 at 03:05:39AM +0900, JoonSoo Kim wrote:
-> Correct Pekka's mail address and resend.
-> Sorry.
-> 
-> Add "Cc" to "Christoph Lameter" <cl@linux.com>
-> 
-> 2012/9/5 Mel Gorman <mgorman@suse.de>:
-> > Right now, we call ClearSlabPfmemalloc() for first page of slab when we
-> > clear SlabPfmemalloc flag. This is fine for most swap-over-network use
-> > cases as it is expected that order-0 pages are in use. Unfortunately it
-> > is possible that that __ac_put_obj() checks SlabPfmemalloc on a tail page
-> > and while this is harmless, it is sloppy. This patch ensures that the head
-> > page is always used.
-> >
-> > This problem was originally identified by Joonsoo Kim.
-> >
-> > [js1304@gmail.com: Original implementation and problem identification]
-> > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> > ---
-> >  mm/slab.c |    4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/mm/slab.c b/mm/slab.c
-> > index 811af03..d34a903 100644
-> > --- a/mm/slab.c
-> > +++ b/mm/slab.c
-> > @@ -1000,7 +1000,7 @@ static void *__ac_get_obj(struct kmem_cache *cachep, struct array_cache *ac,
-> >                 l3 = cachep->nodelists[numa_mem_id()];
-> >                 if (!list_empty(&l3->slabs_free) && force_refill) {
-> >                         struct slab *slabp = virt_to_slab(objp);
-> > -                       ClearPageSlabPfmemalloc(virt_to_page(slabp->s_mem));
-> > +                       ClearPageSlabPfmemalloc(virt_to_head_page(slabp->s_mem));
-> >                         clear_obj_pfmemalloc(&objp);
-> >                         recheck_pfmemalloc_active(cachep, ac);
-> >                         return objp;
-> 
-> We assume that slabp->s_mem's address is always in head page, so
-> "virt_to_head_page" is not needed.
-> 
+On 09/07/2012 01:48 PM, Jeff Layton wrote:
+> On Fri,  7 Sep 2012 08:34:53 -0400
+> Jeff Layton<jlayton@redhat.com>  wrote:
+>
+>> Signed-off-by: Jeff Layton<jlayton@redhat.com>
+>> ---
+>>   fs/proc/base.c | 5 +++--
+>>   1 file changed, 3 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/fs/proc/base.c b/fs/proc/base.c
+>> index 1b6c84c..58e801b 100644
+>> --- a/fs/proc/base.c
+>> +++ b/fs/proc/base.c
+>> @@ -2758,7 +2758,8 @@ static void *proc_self_follow_link(struct dentry *dentry, struct nameidata *nd)
+>>   	pid_t tgid = task_tgid_nr_ns(current, ns);
+>>   	char *name = ERR_PTR(-ENOENT);
+>>   	if (tgid) {
+>> -		name = __getname();
+>> +		/* 10 for max length of an int in decimal + NULL terminator */
+>> +		name = kmalloc(11, GFP_KERNEL);
+>
+> 		^^^^^
+> Bah...my mistake. This should be "12", since it's possible (though
+> unlikely) that this value could be negative. Is there a better way to
+> express "strlen of max representation of an int in decimal" ?
 
-Fair point. I thought it would be more "obvious" later that we really
-always intended to use the head page but it is unnecessary.
+See INT_BUFSIZE_BOUND() in:
+http://git.sv.gnu.org/gitweb/?p=gnulib.git;a=blob;f=lib/intprops.h;hb=HEAD
 
-> > @@ -1032,7 +1032,7 @@ static void *__ac_put_obj(struct kmem_cache *cachep, struct array_cache *ac,
-> >  {
-> >         if (unlikely(pfmemalloc_active)) {
-> >                 /* Some pfmemalloc slabs exist, check if this is one */
-> > -               struct page *page = virt_to_page(objp);
-> > +               struct page *page = virt_to_head_page(objp);
-> >                 if (PageSlabPfmemalloc(page))
-> >                         set_obj_pfmemalloc(&objp);
-> >         }
-> > --
-> > 1.7.9.2
-> >
-> 
-> If we always use head page, following suggestion is more good to me.
-> How about you?
-> 
-> diff --git a/mm/slab.c b/mm/slab.c
-> index f8b0d53..ce70989 100644
-> --- a/mm/slab.c
-> +++ b/mm/slab.c
-> @@ -1032,7 +1032,7 @@ static void *__ac_put_obj(struct kmem_cache
-> *cachep, struct array_cache *ac,
->  {
->         if (unlikely(pfmemalloc_active)) {
->                 /* Some pfmemalloc slabs exist, check if this is one */
-> -               struct page *page = virt_to_page(objp);
-> +               struct page *page = virt_to_head_page(objp);
->                 if (PageSlabPfmemalloc(page))
->                         set_obj_pfmemalloc(&objp);
->         }
-
-ok.
-
-> @@ -1921,10 +1921,9 @@ static void *kmem_getpages(struct kmem_cache
-> *cachep, gfp_t flags, int nodeid)
->                         NR_SLAB_UNRECLAIMABLE, nr_pages);
->         for (i = 0; i < nr_pages; i++) {
->                 __SetPageSlab(page + i);
-> -
-> -               if (page->pfmemalloc)
-> -                       SetPageSlabPfmemalloc(page + i);
->         }
-> +       if (page->pfmemalloc)
-> +               SetPageSlabPfmemalloc(page);
-> 
->         if (kmemcheck_enabled && !(cachep->flags & SLAB_NOTRACK)) {
->                 kmemcheck_alloc_shadow(page, cachep->gfporder, flags, nodeid);
-
-ok.
-
-> @@ -1943,26 +1942,26 @@ static void *kmem_getpages(struct kmem_cache
-> *cachep, gfp_t flags, int nodeid)
->   */
->  static void kmem_freepages(struct kmem_cache *cachep, void *addr)
->  {
-> -       unsigned long i = (1 << cachep->gfporder);
-> +       int nr_pages = (1 << cachep->gfporder);
-> +       int i;
->         struct page *page = virt_to_page(addr);
-> -       const unsigned long nr_freed = i;
-> 
->         kmemcheck_free_shadow(page, cachep->gfporder);
-> 
->         if (cachep->flags & SLAB_RECLAIM_ACCOUNT)
->                 sub_zone_page_state(page_zone(page),
-> -                               NR_SLAB_RECLAIMABLE, nr_freed);
-> +                               NR_SLAB_RECLAIMABLE, nr_pages);
->         else
->                 sub_zone_page_state(page_zone(page),
-> -                               NR_SLAB_UNRECLAIMABLE, nr_freed);
-> -       while (i--) {
-> -               BUG_ON(!PageSlab(page));
-> -               __ClearPageSlabPfmemalloc(page);
-> -               __ClearPageSlab(page);
-> -               page++;
-> +                               NR_SLAB_UNRECLAIMABLE, nr_pages);
-> +       for (i = 0; i < nr_pages; i++) {
-> +               BUG_ON(!PageSlab(page + i));
-> +               __ClearPageSlab(page + i);
->         }
-> +       __ClearPageSlabPfmemalloc(page);
-> +
->         if (current->reclaim_state)
-> -               current->reclaim_state->reclaimed_slab += nr_freed;
-> +               current->reclaim_state->reclaimed_slab += nr_pages;
->         free_pages((unsigned long)addr, cachep->gfporder);
->  }
-
-This churns code a lot more than is necessary. How about this as a
-replacement patch?
-
----8<---
-From: Joonsoo Kim <js1304@gmail.com>
-Subject: [PATCH] slab: do ClearSlabPfmemalloc() for all pages of slab
-
-Right now, we call ClearSlabPfmemalloc() for first page of slab when we
-clear SlabPfmemalloc flag. This is fine for most swap-over-network use
-cases as it is expected that order-0 pages are in use. Unfortunately it
-is possible that that __ac_put_obj() checks SlabPfmemalloc on a tail page
-and while this is harmless, it is sloppy. This patch ensures that the head
-page is always used.
-
-[mgorman@suse.de: Easier implementation, changelog cleanup]
-Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/slab.c |   12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
-
-diff --git a/mm/slab.c b/mm/slab.c
-index 811af03..590d52a 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -1032,7 +1032,7 @@ static void *__ac_put_obj(struct kmem_cache *cachep, struct array_cache *ac,
- {
- 	if (unlikely(pfmemalloc_active)) {
- 		/* Some pfmemalloc slabs exist, check if this is one */
--		struct page *page = virt_to_page(objp);
-+		struct page *page = virt_to_head_page(objp);
- 		if (PageSlabPfmemalloc(page))
- 			set_obj_pfmemalloc(&objp);
- 	}
-@@ -1919,12 +1919,10 @@ static void *kmem_getpages(struct kmem_cache *cachep, gfp_t flags, int nodeid)
- 	else
- 		add_zone_page_state(page_zone(page),
- 			NR_SLAB_UNRECLAIMABLE, nr_pages);
--	for (i = 0; i < nr_pages; i++) {
-+	for (i = 0; i < nr_pages; i++)
- 		__SetPageSlab(page + i);
--
--		if (page->pfmemalloc)
--			SetPageSlabPfmemalloc(page + i);
--	}
-+	if (page->pfmemalloc)
-+		SetPageSlabPfmemalloc(page);
- 
- 	if (kmemcheck_enabled && !(cachep->flags & SLAB_NOTRACK)) {
- 		kmemcheck_alloc_shadow(page, cachep->gfporder, flags, nodeid);
-@@ -1955,9 +1953,9 @@ static void kmem_freepages(struct kmem_cache *cachep, void *addr)
- 	else
- 		sub_zone_page_state(page_zone(page),
- 				NR_SLAB_UNRECLAIMABLE, nr_freed);
-+	__ClearPageSlabPfmemalloc(page);
- 	while (i--) {
- 		BUG_ON(!PageSlab(page));
--		__ClearPageSlabPfmemalloc(page);
- 		__ClearPageSlab(page);
- 		page++;
- 	}
+cheers,
+Pádraig.
