@@ -1,119 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758667Ab2IGWNm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 18:13:42 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58282 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757621Ab2IGWNG (ORCPT
+	id S1758575Ab2IGWN6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 18:13:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50446 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757375Ab2IGWNn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 18:13:06 -0400
-From: Kent Overstreet <koverstreet@google.com>
-To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com
-Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk
-Subject: [PATCH 1/2] block: Reorder struct bio_set
-Date: Fri,  7 Sep 2012 15:12:52 -0700
-Message-Id: <1347055973-11581-2-git-send-email-koverstreet@google.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1347055973-11581-1-git-send-email-koverstreet@google.com>
-References: <1347055973-11581-1-git-send-email-koverstreet@google.com>
+	Fri, 7 Sep 2012 18:13:43 -0400
+Date: Fri, 7 Sep 2012 15:13:41 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michel Lespinasse <walken@google.com>
+Cc: linux-mm@kvack.org, riel@redhat.com, peterz@infradead.org,
+        aarcange@redhat.com, hughd@google.com, daniel.santos@pobox.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/7] mm: interval tree updates
+Message-Id: <20120907151341.79cb5638.akpm@linux-foundation.org>
+In-Reply-To: <1346750457-12385-2-git-send-email-walken@google.com>
+References: <1346750457-12385-1-git-send-email-walken@google.com>
+	<1346750457-12385-2-git-send-email-walken@google.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is prep work for the next patch, which embeds a struct bio_list in
-struct bio_set.
+On Tue,  4 Sep 2012 02:20:51 -0700
+Michel Lespinasse <walken@google.com> wrote:
 
-Signed-off-by: Kent Overstreet <koverstreet@google.com>
-CC: Jens Axboe <axboe@kernel.dk>
----
- include/linux/bio.h | 66 ++++++++++++++++++++++++++---------------------------
- 1 file changed, 33 insertions(+), 33 deletions(-)
+> This commit updates the generic interval tree code that was
+> introduced in "mm: replace vma prio_tree with an interval tree".
+> 
+> Changes:
+> 
+> - fixed 'endpoing' typo noticed by Andrew Morton
+> 
+> - replaced include/linux/interval_tree_tmpl.h, which was used as a
+>   template (including it automatically defined the interval tree
+>   functions) with include/linux/interval_tree_generic.h, which only
+>   defines a preprocessor macro INTERVAL_TREE_DEFINE(), which itself
+>   defines the interval tree functions when invoked. Now that is a very
+>   long macro which is unfortunate, but it does make the usage sites
+>   (lib/interval_tree.c and mm/interval_tree.c) a bit nicer than previously.
+> 
+> - make use of RB_DECLARE_CALLBACKS() in the INTERVAL_TREE_DEFINE() macro,
+>   instead of duplicating that code in the interval tree template.
+> 
+> - replaced vma_interval_tree_add(), which was actually handling the
+>   nonlinear and interval tree cases, with vma_interval_tree_insert_after()
+>   which handles only the interval tree case and has an API that is more
+>   consistent with the other interval tree handling functions.
+>   The nonlinear case is now handled explicitly in kernel/fork.c dup_mmap().
+> 
+> Signed-off-by: Michel Lespinasse <walken@google.com>
+> ---
+>  include/linux/interval_tree_generic.h |  191 ++++++++++++++++++++++++++++
+>  include/linux/interval_tree_tmpl.h    |  219 ---------------------------------
 
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 52b9cbc..a2bfe3a 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -298,39 +298,6 @@ static inline int bio_associate_current(struct bio *bio) { return -ENOENT; }
- static inline void bio_disassociate_task(struct bio *bio) { }
- #endif	/* CONFIG_BLK_CGROUP */
- 
--/*
-- * bio_set is used to allow other portions of the IO system to
-- * allocate their own private memory pools for bio and iovec structures.
-- * These memory pools in turn all allocate from the bio_slab
-- * and the bvec_slabs[].
-- */
--#define BIO_POOL_SIZE 2
--#define BIOVEC_NR_POOLS 6
--#define BIOVEC_MAX_IDX	(BIOVEC_NR_POOLS - 1)
--
--struct bio_set {
--	struct kmem_cache *bio_slab;
--	unsigned int front_pad;
--
--	mempool_t *bio_pool;
--#if defined(CONFIG_BLK_DEV_INTEGRITY)
--	mempool_t *bio_integrity_pool;
--#endif
--	mempool_t *bvec_pool;
--};
--
--struct biovec_slab {
--	int nr_vecs;
--	char *name;
--	struct kmem_cache *slab;
--};
--
--/*
-- * a small number of entries is fine, not going to be performance critical.
-- * basically we just need to survive
-- */
--#define BIO_SPLIT_ENTRIES 2
--
- #ifdef CONFIG_HIGHMEM
- /*
-  * remember never ever reenable interrupts between a bvec_kmap_irq and
-@@ -505,6 +472,39 @@ static inline struct bio *bio_list_get(struct bio_list *bl)
- 	return bio;
- }
- 
-+/*
-+ * bio_set is used to allow other portions of the IO system to
-+ * allocate their own private memory pools for bio and iovec structures.
-+ * These memory pools in turn all allocate from the bio_slab
-+ * and the bvec_slabs[].
-+ */
-+#define BIO_POOL_SIZE 2
-+#define BIOVEC_NR_POOLS 6
-+#define BIOVEC_MAX_IDX	(BIOVEC_NR_POOLS - 1)
-+
-+struct bio_set {
-+	struct kmem_cache *bio_slab;
-+	unsigned int front_pad;
-+
-+	mempool_t *bio_pool;
-+#if defined(CONFIG_BLK_DEV_INTEGRITY)
-+	mempool_t *bio_integrity_pool;
-+#endif
-+	mempool_t *bvec_pool;
-+};
-+
-+struct biovec_slab {
-+	int nr_vecs;
-+	char *name;
-+	struct kmem_cache *slab;
-+};
-+
-+/*
-+ * a small number of entries is fine, not going to be performance critical.
-+ * basically we just need to survive
-+ */
-+#define BIO_SPLIT_ENTRIES 2
-+
- #if defined(CONFIG_BLK_DEV_INTEGRITY)
- 
- #define bip_vec_idx(bip, idx)	(&(bip->bip_vec[(idx)]))
--- 
-1.7.12
+Well that's a mess.  We create interval_tree_generic.h then four
+commits later it vanishes, never to return.  And I can't fold
+mm-interval-tree-updates.patch into
+mm-replace-vma-prio_tree-with-an-interval-tree.patch because
+rbtree-move-augmented-rbtree-functionality-to-rbtree_augmentedh.patch
+mucks with interval_tree_generic.h within those four commits.
 
+Ho hum.  I don't think I can be bothered untangling all this.
