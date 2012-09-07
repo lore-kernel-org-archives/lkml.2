@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470Ab2IGEck (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 00:32:40 -0400
+	id S1754061Ab2IGEdF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 00:33:05 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:43087 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751224Ab2IGEcj (ORCPT
+	with ESMTP id S1751702Ab2IGEdC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 00:32:39 -0400
+	Fri, 7 Sep 2012 00:33:02 -0400
 From: Toshiaki Yamane <yamanetoshi@gmail.com>
 To: Greg Kroah-Hartman <greg@kroah.com>
 Cc: linux-kernel@vger.kernel.org, Toshiaki Yamane <yamanetoshi@gmail.com>
-Subject: [PATCH 30/57] staging/rts_pstor: remove braces {} in sd.c (sd_ddr_tuning)
-Date: Fri,  7 Sep 2012 13:32:32 +0900
-Message-Id: <1346992352-17349-1-git-send-email-yamanetoshi@gmail.com>
+Subject: [PATCH 31/57] staging/rts_pstor: remove braces {} in sd.c (mmc_ddr_tuning)
+Date: Fri,  7 Sep 2012 13:32:56 +0900
+Message-Id: <1346992376-17381-1-git-send-email-yamanetoshi@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1346991387-16321-1-git-send-email-yamanetoshi@gmail.com>
 References: <1346991387-16321-1-git-send-email-yamanetoshi@gmail.com>
@@ -29,19 +29,19 @@ Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
  1 file changed, 4 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/staging/rts_pstor/sd.c b/drivers/staging/rts_pstor/sd.c
-index b623c9f..0871a5d 100644
+index 0871a5d..c22689c 100644
 --- a/drivers/staging/rts_pstor/sd.c
 +++ b/drivers/staging/rts_pstor/sd.c
-@@ -1845,26 +1845,22 @@ static int sd_ddr_tuning(struct rtsx_chip *chip)
+@@ -1872,26 +1872,22 @@ static int mmc_ddr_tuning(struct rtsx_chip *chip)
  
- 	if (!(chip->sd_ctl & SD_DDR_TX_PHASE_SET_BY_USER)) {
+ 	if (!(chip->sd_ctl & MMC_DDR_TX_PHASE_SET_BY_USER)) {
  		retval = sd_ddr_pre_tuning_tx(chip);
 -		if (retval != STATUS_SUCCESS) {
 +		if (retval != STATUS_SUCCESS)
  			TRACE_RET(chip, STATUS_FAIL);
 -		}
  	} else {
- 		retval = sd_change_phase(chip, (u8)chip->sd_ddr_tx_phase, TUNE_TX);
+ 		retval = sd_change_phase(chip, (u8)chip->mmc_ddr_tx_phase, TUNE_TX);
 -		if (retval != STATUS_SUCCESS) {
 +		if (retval != STATUS_SUCCESS)
  			TRACE_RET(chip, STATUS_FAIL);
@@ -54,7 +54,7 @@ index b623c9f..0871a5d 100644
  		TRACE_RET(chip, STATUS_FAIL);
 -	}
  
- 	if (!(chip->sd_ctl & SD_DDR_TX_PHASE_SET_BY_USER)) {
+ 	if (!(chip->sd_ctl & MMC_DDR_TX_PHASE_SET_BY_USER)) {
  		retval = sd_tuning_tx(chip);
 -		if (retval != STATUS_SUCCESS) {
 +		if (retval != STATUS_SUCCESS)
