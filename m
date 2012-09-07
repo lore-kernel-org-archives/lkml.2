@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933314Ab2IGMoA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 08:44:00 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56465 "EHLO
+	id S933332Ab2IGMoL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 08:44:11 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:56493 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933048Ab2IGMn6 (ORCPT
+	with ESMTP id S1753867Ab2IGMoF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 08:43:58 -0400
+	Fri, 7 Sep 2012 08:44:05 -0400
 From: Philipp Zabel <p.zabel@pengutronix.de>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Grant Likely <grant.likely@secretlab.ca>,
@@ -17,10 +17,13 @@ To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Huang Shijie <shijie8@gmail.com>,
         Dong Aisheng <dong.aisheng@linaro.org>, kernel@pengutronix.de,
         devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH v4 0/6] Add device tree support for on-chip SRAM 
-Date: Fri,  7 Sep 2012 14:43:42 +0200
-Message-Id: <1347021828-23034-1-git-send-email-p.zabel@pengutronix.de>
+Cc: Philipp Zabel <p.zabel@pengutronix.de>
+Subject: [PATCH v4 1/6] genalloc: add a global pool list, allow to find pools by phys address
+Date: Fri,  7 Sep 2012 14:43:43 +0200
+Message-Id: <1347021828-23034-2-git-send-email-p.zabel@pengutronix.de>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1347021828-23034-1-git-send-email-p.zabel@pengutronix.de>
+References: <1347021828-23034-1-git-send-email-p.zabel@pengutronix.de>
 X-SA-Exim-Connect-IP: 10.1.0.7
 X-SA-Exim-Mail-From: p.zabel@pengutronix.de
 X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
@@ -29,50 +32,143 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches add support to configure on-chip SRAM via device-tree
-node and to obtain the resulting genalloc pool from a phandle pointing
-at the node.
-This allows drivers to allocate SRAM with the genalloc API without
-hard-coding the genalloc pool address.
+This patch keeps all created pools in a global list and adds two
+functions that allow to retrieve the gen_pool pointer from a known
+physical address and from a device tree node.
 
-The on-chip SRAM on i.MX53 and i.MX6q is registered via device tree and
-changed to use the simple generic SRAM driver:
-
-		ocram: ocram@00900000 {
-			compatible = "fsl,imx-ocram", "sram";
-			reg = <0x00900000 0x3f000>;
- 		};
-
-A driver that needs to allocate SRAM buffers, like the video processing
-unit on i.MX53, can retrieve the genalloc pool from a phandle in the
-device tree using of_get_named_gen_pool(node, "iram", 0) from patch 1:
-
-		vpu@63ff4000 {
-			/* ... */
-			iram = <&ocram>;
- 		};
-
-Changes since v3:
- - Added devicetree binding documentation
- - Register platform driver early with postcore_initcall
- - Added optional SRAM clock support.
-
-regards
-Philipp
-
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+Reviewed-by: Shawn Guo <shawn.guo@linaro.org>
 ---
- Documentation/devicetree/bindings/misc/sram.txt |   17 ++++
- arch/arm/boot/dts/imx53.dtsi                    |    5 +
- arch/arm/boot/dts/imx6q.dtsi                    |    5 +
- arch/arm/mach-imx/clk-imx6q.c                   |    1 +
- arch/arm/plat-mxc/Kconfig                       |    4 -
- arch/arm/plat-mxc/Makefile                      |    1 -
- arch/arm/plat-mxc/include/mach/iram.h           |   41 --------
- arch/arm/plat-mxc/iram_alloc.c                  |   73 --------------
- drivers/misc/Kconfig                            |    9 ++
- drivers/misc/Makefile                           |    1 +
- drivers/misc/sram.c                             |  121 +++++++++++++++++++++++
- include/linux/genalloc.h                        |   14 +++
- lib/genalloc.c                                  |   67 +++++++++++++
- 13 files changed, 240 insertions(+), 119 deletions(-)
+ include/linux/genalloc.h |   14 ++++++++++
+ lib/genalloc.c           |   67 ++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 81 insertions(+)
+
+diff --git a/include/linux/genalloc.h b/include/linux/genalloc.h
+index 5e98eeb..d498c43 100644
+--- a/include/linux/genalloc.h
++++ b/include/linux/genalloc.h
+@@ -33,6 +33,7 @@
+  *  General purpose special memory pool descriptor.
+  */
+ struct gen_pool {
++	struct list_head next_pool;	/* pool in global list */
+ 	spinlock_t lock;
+ 	struct list_head chunks;	/* list of chunks in this pool */
+ 	int min_alloc_order;		/* minimum allocation order */
+@@ -78,4 +79,17 @@ extern void gen_pool_for_each_chunk(struct gen_pool *,
+ 	void (*)(struct gen_pool *, struct gen_pool_chunk *, void *), void *);
+ extern size_t gen_pool_avail(struct gen_pool *);
+ extern size_t gen_pool_size(struct gen_pool *);
++extern struct gen_pool *gen_pool_find_by_phys(phys_addr_t phys);
++
++struct device_node;
++#ifdef CONFIG_OF
++extern struct gen_pool *of_get_named_gen_pool(struct device_node *np,
++	const char *propname, int index);
++#else
++inline struct gen_pool *of_get_named_gen_pool(struct device_node *np,
++	const char *propname, int index)
++{
++	return NULL;
++}
++#endif
+ #endif /* __GENALLOC_H__ */
+diff --git a/lib/genalloc.c b/lib/genalloc.c
+index 6bc04aa..90699ac 100644
+--- a/lib/genalloc.c
++++ b/lib/genalloc.c
+@@ -34,6 +34,11 @@
+ #include <linux/rculist.h>
+ #include <linux/interrupt.h>
+ #include <linux/genalloc.h>
++#include <linux/of_address.h>
++#include <linux/of_device.h>
++
++static LIST_HEAD(pools);
++static DEFINE_SPINLOCK(list_lock);
+ 
+ static int set_bits_ll(unsigned long *addr, unsigned long mask_to_set)
+ {
+@@ -152,6 +157,9 @@ struct gen_pool *gen_pool_create(int min_alloc_order, int nid)
+ 		spin_lock_init(&pool->lock);
+ 		INIT_LIST_HEAD(&pool->chunks);
+ 		pool->min_alloc_order = min_alloc_order;
++		spin_lock(&list_lock);
++		list_add_rcu(&pool->next_pool, &pools);
++		spin_unlock(&list_lock);
+ 	}
+ 	return pool;
+ }
+@@ -234,6 +242,9 @@ void gen_pool_destroy(struct gen_pool *pool)
+ 	int order = pool->min_alloc_order;
+ 	int bit, end_bit;
+ 
++	spin_lock(&list_lock);
++	list_del_rcu(&pool->next_pool);
++	spin_unlock(&list_lock);
+ 	list_for_each_safe(_chunk, _next_chunk, &pool->chunks) {
+ 		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
+ 		list_del(&chunk->next_chunk);
+@@ -400,3 +411,59 @@ size_t gen_pool_size(struct gen_pool *pool)
+ 	return size;
+ }
+ EXPORT_SYMBOL_GPL(gen_pool_size);
++
++/**
++ * gen_pool_find_by_phys - find a pool by physical start address
++ * @phys: physical address as added with gen_pool_add_virt
++ *
++ * Returns the pool that contains the chunk starting at phys,
++ * or NULL if not found.
++ */
++struct gen_pool *gen_pool_find_by_phys(phys_addr_t phys)
++{
++	struct gen_pool *pool, *found = NULL;
++	struct gen_pool_chunk *chunk;
++
++	rcu_read_lock();
++	list_for_each_entry_rcu(pool, &pools, next_pool) {
++		list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk) {
++			if (phys == chunk->phys_addr) {
++				found = pool;
++				break;
++			}
++		}
++	}
++	rcu_read_unlock();
++
++	return found;
++}
++EXPORT_SYMBOL_GPL(gen_pool_find_by_phys);
++
++#ifdef CONFIG_OF
++/**
++ * of_get_named_gen_pool - find a pool by phandle property
++ * @np: device node
++ * @propname: property name containing phandle(s)
++ * @index: index into the phandle array
++ *
++ * Returns the pool that contains the chunk starting at the physical
++ * address of the device tree node pointed at by the phandle property,
++ * or NULL if not found.
++ */
++struct gen_pool *of_get_named_gen_pool(struct device_node *np,
++	const char *propname, int index)
++{
++	struct device_node *np_pool;
++	struct resource res;
++	int ret;
++
++	np_pool = of_parse_phandle(np, propname, index);
++	if (!np_pool)
++		return NULL;
++	ret = of_address_to_resource(np_pool, 0, &res);
++	if (ret < 0)
++		return NULL;
++	return gen_pool_find_by_phys((phys_addr_t) res.start);
++}
++EXPORT_SYMBOL_GPL(of_get_named_gen_pool);
++#endif /* CONFIG_OF */
+-- 
+1.7.10.4
 
