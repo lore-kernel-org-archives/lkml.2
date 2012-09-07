@@ -1,48 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755742Ab2IGTHa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 15:07:30 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:63507 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab2IGTH2 (ORCPT
+	id S1756056Ab2IGTJE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 15:09:04 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41301 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342Ab2IGTJA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 15:07:28 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH v3 02/31] arm64: Kernel booting and initialisation
-Date: Fri, 7 Sep 2012 19:07:21 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com> <1347035226-18649-3-git-send-email-catalin.marinas@arm.com>
-In-Reply-To: <1347035226-18649-3-git-send-email-catalin.marinas@arm.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209071907.21615.arnd@arndb.de>
-X-Provags-ID: V02:K0:q9MLOVZ8sFKdIpU2oU9+cfcljUBQ7eV8soCdwwvo+6M
- KlnlnGs22EbftOibvd+dTkoO/cwOiqT7Xg4LXE6vV0xD/EqQva
- zu8NjO+KDKt5unB8J5HST4QUGG5wXysFdv2nQdMxaQHYtS+QRb
- ULey+4v47t10qUqtN5C3je7pZUXXWd/ir8xhNaZY35HYBf6Lel
- bdvVxFBKQPz/ueHjd/ahkMzIgTS2geGdW6UCz8dWJ1WSMXitcA
- EaiUpo5KDE13UMZwMv33hyA6qbXxlpcPTCEoltbqpX94aMkXqW
- moY6OgoGShV6YauDAN2sGHhQgGirChFX+Z+UjcZttsJRffvbNd
- LDPSOabKKn8KVV2PHAHo=
+	Fri, 7 Sep 2012 15:09:00 -0400
+Message-ID: <1347044931.2124.5.camel@twins>
+Subject: Re: [PATCH 1/3] perf: use hrtimer for event multiplexing
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, ak@linux.intel.com,
+        zheng.z.yan@intel.com, robert.richter@amd.com
+Date: Fri, 07 Sep 2012 21:08:51 +0200
+In-Reply-To: <CABPqkBT=2H5WuWZ+uFq39XTTxniVvT6tEuaYDHvaV2VSbjBPDQ@mail.gmail.com>
+References: <1347028169-1983-1-git-send-email-eranian@google.com>
+	 <1347028169-1983-2-git-send-email-eranian@google.com>
+	 <1347032350.18408.88.camel@twins>
+	 <CABPqkBT=2H5WuWZ+uFq39XTTxniVvT6tEuaYDHvaV2VSbjBPDQ@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 September 2012, Catalin Marinas wrote:
-> 
-> The patch adds the kernel booting and the initial setup code.
-> Documentation/arm64/booting.txt describes the booting protocol on the
-> AArch64 Linux kernel. This is subject to change following the work on
-> boot standardisation, ACPI.
-> 
-> Signed-off-by: Will Deacon <will.deacon@arm.com>
-> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> Acked-by: Nicolas Pitre <nico@linaro.org>
-> Acked-by: Tony Lindgren <tony@atomide.com>
+On Fri, 2012-09-07 at 19:03 +0200, Stephane Eranian wrote:
+> I think having different intervals would be a good thing, especially for uncore.
+> But now, I am wondering how this could work without too much overhead.
+> Looks like you're suggesting arming multiple hrtimers if multiple PMU are
+> overcommitted. Is that right?
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Right, we shoulnd't have too many PMUs anyway, let alone over committed
+ones, so a timer per cpu per pmu should be fine.
+
+>  As opposed to having a PMU multiplier off of a
+> single per-cpu hrtimer.
