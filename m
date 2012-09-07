@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756182Ab2IGSdH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 14:33:07 -0400
-Received: from mga11.intel.com ([192.55.52.93]:27955 "EHLO mga11.intel.com"
+	id S1756318Ab2IGSdL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 14:33:11 -0400
+Received: from mga01.intel.com ([192.55.52.88]:11277 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755873Ab2IGSdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 14:33:03 -0400
+	id S1755873Ab2IGSdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 14:33:08 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,387,1344236400"; 
-   d="scan'208";a="219255214"
+   d="scan'208";a="219255251"
 From: Suresh Siddha <suresh.b.siddha@intel.com>
 To: hpa@zytor.com, mingo@kernel.org, torvalds@linux-foundation.org,
         andreas.herrmann3@amd.com, bp@amd64.org, robert.richter@amd.com
 Cc: linux-kernel@vger.kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: [PATCH 2/3] x86, fpu: enable eagerfpu by default for xsaveopt
-Date: Fri,  7 Sep 2012 11:31:42 -0700
-Message-Id: <1347042703-11128-2-git-send-email-suresh.b.siddha@intel.com>
+Subject: [PATCH 3/3] x86, fpu: move check_fpu() after alternative_instructions()
+Date: Fri,  7 Sep 2012 11:31:43 -0700
+Message-Id: <1347042703-11128-3-git-send-email-suresh.b.siddha@intel.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1347042703-11128-1-git-send-email-suresh.b.siddha@intel.com>
 References: <1347042703-11128-1-git-send-email-suresh.b.siddha@intel.com>
@@ -23,57 +23,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-xsaveopt/xrstor support optimized state save/restore by tracking the
-INIT state and MODIFIED state during context-switch.
-
-Enable eagerfpu by default for processors supporting xsaveopt.
-Can be disabled by passing "eagerfpu=off" boot parameter.
+use_eager_fpu() in kernel_fpu_begin/end() relies on the patched
+alternative instructions. So move check_fpu() which uses the
+kernel_fpu_begin/end() after alternative_instructions().
 
 Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
 ---
- Documentation/kernel-parameters.txt |    2 +-
- arch/x86/include/asm/cpufeature.h   |    1 +
- arch/x86/kernel/xsave.c             |    3 +++
- 3 files changed, 5 insertions(+), 1 deletions(-)
+ arch/x86/kernel/cpu/bugs.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 6273099..b21bcbd 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1835,7 +1835,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			enabling legacy floating-point and sse state.
- 
- 	eagerfpu=	[X86]
--			on	enable eager fpu restore
-+			on	enable eager fpu restore (default for xsaveopt)
- 			off	disable eager fpu restore
- 
- 	nohlt		[BUGS=ARM,SH] Tells the kernel that the sleep(SH) or
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index eb9f8d1..36c2dc4 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -298,6 +298,7 @@ extern const char * const x86_power_flags[32];
- #define cpu_has_xmm4_2		boot_cpu_has(X86_FEATURE_XMM4_2)
- #define cpu_has_x2apic		boot_cpu_has(X86_FEATURE_X2APIC)
- #define cpu_has_xsave		boot_cpu_has(X86_FEATURE_XSAVE)
-+#define cpu_has_xsaveopt	boot_cpu_has(X86_FEATURE_XSAVEOPT)
- #define cpu_has_osxsave		boot_cpu_has(X86_FEATURE_OSXSAVE)
- #define cpu_has_hypervisor	boot_cpu_has(X86_FEATURE_HYPERVISOR)
- #define cpu_has_pclmulqdq	boot_cpu_has(X86_FEATURE_PCLMULQDQ)
-diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-index 66369f4..a447a7c 100644
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -556,6 +556,9 @@ static void __init xstate_enable_boot_cpu(void)
- 	prepare_fx_sw_frame();
- 	setup_init_fpu_buf();
- 
-+	if (cpu_has_xsaveopt && !disable_eagerfpu)
-+		setup_force_cpu_cap(X86_FEATURE_EAGER_FPU);
+diff --git a/arch/x86/kernel/cpu/bugs.c b/arch/x86/kernel/cpu/bugs.c
+index c97bb7b..d0e910d 100644
+--- a/arch/x86/kernel/cpu/bugs.c
++++ b/arch/x86/kernel/cpu/bugs.c
+@@ -165,10 +165,15 @@ void __init check_bugs(void)
+ 	print_cpu_info(&boot_cpu_data);
+ #endif
+ 	check_config();
+-	check_fpu();
+ 	check_hlt();
+ 	check_popad();
+ 	init_utsname()->machine[1] =
+ 		'0' + (boot_cpu_data.x86 > 6 ? 6 : boot_cpu_data.x86);
+ 	alternative_instructions();
 +
- 	pr_info("enabled xstate_bv 0x%llx, cntxt size 0x%x\n",
- 		pcntxt_mask, xstate_size);
++	/*
++	 * kernel_fpu_begin/end() in check_fpu() relies on the patched
++	 * alternative instructions.
++	 */
++	check_fpu();
  }
 -- 
 1.7.6.5
