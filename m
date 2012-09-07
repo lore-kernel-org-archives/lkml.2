@@ -1,84 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752030Ab2IGMxp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 08:53:45 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:60295 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751205Ab2IGMxn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 08:53:43 -0400
-Date: Fri, 7 Sep 2012 14:53:28 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: guanxuetao@mprc.pku.edu.cn
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>, Mike Turquette <mturquette@linaro.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/6] unicore32: Add common clock support
-Message-ID: <20120907125328.GB29340@avionic-0098.mockup.avionic-design.de>
-References: <1346581273-7041-1-git-send-email-thierry.reding@avionic-design.de>
- <1346581273-7041-5-git-send-email-thierry.reding@avionic-design.de>
- <63272.162.105.203.8.1346920926.squirrel@mprc.pku.edu.cn>
+	id S1752223Ab2IGMz1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 08:55:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41449 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751062Ab2IGMzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 08:55:25 -0400
+Date: Fri, 7 Sep 2012 13:55:19 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: JoonSoo Kim <js1304@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Chuck Lever <chuck.lever@oracle.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH 1/4] slab: do ClearSlabPfmemalloc() for all pages of slab
+Message-ID: <20120907125519.GB11266@suse.de>
+References: <1346779479-1097-1-git-send-email-mgorman@suse.de>
+ <1346779479-1097-2-git-send-email-mgorman@suse.de>
+ <CAAmzW4M_3hVBfjqFLG=7iydkXeQPdCXRbRmkqUJD4vwo0eWVWQ@mail.gmail.com>
+ <CAAmzW4MfFUH1Mi447sQvPNeae_BShEmbECUaK9eoX-8ughEdJw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ADZbWkCsHQ7r3kzd"
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <63272.162.105.203.8.1346920926.squirrel@mprc.pku.edu.cn>
+In-Reply-To: <CAAmzW4MfFUH1Mi447sQvPNeae_BShEmbECUaK9eoX-8ughEdJw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:QGW2NLZzrRDL4mO8xHK+XzfdxTJVAabIxMyFcQT67bP
- 0ZeYT96BdocKg2P/TiScSR0/XmFrsRqQcZ2jNVmP6dHgIy7rxW
- OAn1t0eoC0HL6xR2mAEj1C4lK8dARq2+3f1K0ZeeGHIInBYaHi
- u2wt93yBTl6aZW87YqIbwYUiD2qr1oDqDSpklaG4NhquxzmJHl
- eBLvm++EVRpLa3QKHz7QHFSuc6nqpQx9R2tmLXXdaCT/3GZtPd
- +Hc4XFGprBU3SaNF+G/hkOdUuZnr8LHl+q3EBjG9VlGXLgunaJ
- vdZhfvVz64bh7HQwxCzKVQX/mn4D/X2GscexGqzh3hetXhRA2j
- Q+OvdmMVRnilL0yBcfhC5tPUbSUAiEb3N4IE+Hn4n+UpXi2N87
- aFADEB33MeHjceClSyqsCWHNox/RBXNT7Y=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---ADZbWkCsHQ7r3kzd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Thu, Sep 06, 2012 at 04:42:06PM +0800, guanxuetao@mprc.pku.edu.cn wrote:
-> > This commit adds support for the common clock framework to the Unicore32
-> > architecture.
+On Fri, Sep 07, 2012 at 03:05:39AM +0900, JoonSoo Kim wrote:
+> Correct Pekka's mail address and resend.
+> Sorry.
+> 
+> Add "Cc" to "Christoph Lameter" <cl@linux.com>
+> 
+> 2012/9/5 Mel Gorman <mgorman@suse.de>:
+> > Right now, we call ClearSlabPfmemalloc() for first page of slab when we
+> > clear SlabPfmemalloc flag. This is fine for most swap-over-network use
+> > cases as it is expected that order-0 pages are in use. Unfortunately it
+> > is possible that that __ac_put_obj() checks SlabPfmemalloc on a tail page
+> > and while this is harmless, it is sloppy. This patch ensures that the head
+> > page is always used.
 > >
-> > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
->=20
-> This patch can't work.
-> Could you disintegrate it into several small patches, so I could check it
-> out.
+> > This problem was originally identified by Joonsoo Kim.
+> >
+> > [js1304@gmail.com: Original implementation and problem identification]
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > ---
+> >  mm/slab.c |    4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/mm/slab.c b/mm/slab.c
+> > index 811af03..d34a903 100644
+> > --- a/mm/slab.c
+> > +++ b/mm/slab.c
+> > @@ -1000,7 +1000,7 @@ static void *__ac_get_obj(struct kmem_cache *cachep, struct array_cache *ac,
+> >                 l3 = cachep->nodelists[numa_mem_id()];
+> >                 if (!list_empty(&l3->slabs_free) && force_refill) {
+> >                         struct slab *slabp = virt_to_slab(objp);
+> > -                       ClearPageSlabPfmemalloc(virt_to_page(slabp->s_mem));
+> > +                       ClearPageSlabPfmemalloc(virt_to_head_page(slabp->s_mem));
+> >                         clear_obj_pfmemalloc(&objp);
+> >                         recheck_pfmemalloc_active(cachep, ac);
+> >                         return objp;
+> 
+> We assume that slabp->s_mem's address is always in head page, so
+> "virt_to_head_page" is not needed.
+> 
 
-I don't understand. How do you mean it can't work? Are you saying the
-patch doesn't build, or does the system no longer boot properly? I don't
-see how splitting it into smaller pieces is going to change anything
-about that. Splitting it up also isn't going to work very well.
-Conversion to the common clock framework is really all or nothing.
+Fair point. I thought it would be more "obvious" later that we really
+always intended to use the head page but it is unnecessary.
 
-Thierry
+> > @@ -1032,7 +1032,7 @@ static void *__ac_put_obj(struct kmem_cache *cachep, struct array_cache *ac,
+> >  {
+> >         if (unlikely(pfmemalloc_active)) {
+> >                 /* Some pfmemalloc slabs exist, check if this is one */
+> > -               struct page *page = virt_to_page(objp);
+> > +               struct page *page = virt_to_head_page(objp);
+> >                 if (PageSlabPfmemalloc(page))
+> >                         set_obj_pfmemalloc(&objp);
+> >         }
+> > --
+> > 1.7.9.2
+> >
+> 
+> If we always use head page, following suggestion is more good to me.
+> How about you?
+> 
+> diff --git a/mm/slab.c b/mm/slab.c
+> index f8b0d53..ce70989 100644
+> --- a/mm/slab.c
+> +++ b/mm/slab.c
+> @@ -1032,7 +1032,7 @@ static void *__ac_put_obj(struct kmem_cache
+> *cachep, struct array_cache *ac,
+>  {
+>         if (unlikely(pfmemalloc_active)) {
+>                 /* Some pfmemalloc slabs exist, check if this is one */
+> -               struct page *page = virt_to_page(objp);
+> +               struct page *page = virt_to_head_page(objp);
+>                 if (PageSlabPfmemalloc(page))
+>                         set_obj_pfmemalloc(&objp);
+>         }
 
---ADZbWkCsHQ7r3kzd
-Content-Type: application/pgp-signature
+ok.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+> @@ -1921,10 +1921,9 @@ static void *kmem_getpages(struct kmem_cache
+> *cachep, gfp_t flags, int nodeid)
+>                         NR_SLAB_UNRECLAIMABLE, nr_pages);
+>         for (i = 0; i < nr_pages; i++) {
+>                 __SetPageSlab(page + i);
+> -
+> -               if (page->pfmemalloc)
+> -                       SetPageSlabPfmemalloc(page + i);
+>         }
+> +       if (page->pfmemalloc)
+> +               SetPageSlabPfmemalloc(page);
+> 
+>         if (kmemcheck_enabled && !(cachep->flags & SLAB_NOTRACK)) {
+>                 kmemcheck_alloc_shadow(page, cachep->gfporder, flags, nodeid);
 
-iQIcBAEBAgAGBQJQSe5IAAoJEN0jrNd/PrOh3qkP/ioHS3fodQ78WnSoQK6fV7E1
-FZHWRqsXamCgmINnC5Xne3LGZkGEKLmpmG0xe69p0YY/KwJhrBpOQFf7gdji13N2
-sBBTq8micN5gPgobsVskqcX30cAEe4RQLv+vuEkEFv+viohNWwLuErLrcvv+1ecS
-p4AI12kRaIBnnlOuw6N9tcFuBJWr78Z7Dg/sIL/RbdzLOIHsDltJ0gFvFy7ZAy22
-FIAGPo7vqB0rsEs+zfeTfEHMTe52TNRbfiKLSgcO0EAqOaro2xZR8VzR/TTCQ7d5
-3xh4EtkqFKQjLEvd11YEECRYiUJ1pq8d95zla5UymkTWAaneGqjv3U/U7Rrfs4bz
-fINLrg9tlBWyTnP6xDreKKyjcFgGCMTQvErqTpfl2BBsSkzy57WpyLi15p1LEICy
-qCW8ujUpsWxaPX0Cs+Q4x5IJo35/tNC5iyRsYHJSmuW3xNHezcLUcRYhaEOXbUXU
-+4lZLqLJQuEmPE6Jrl2CZShZP+FPfbUUBf4XyqKWuXTsfj4vwe7olMzrlEZ1MPgj
-O9qcgugVknk90/vDzR7lzt9li422+lXBzExt4GKI80i8YtXOL6N1GpVugbs0O6xl
-cugZl5up4ICGMSqUg72fAzh+jKuhWgW25Ia6Tu+SSVAhoqSXaJX0jD/9np/RqMyN
-wnwSYoYN6xyNqG1VpXwG
-=UVfb
------END PGP SIGNATURE-----
+ok.
 
---ADZbWkCsHQ7r3kzd--
+> @@ -1943,26 +1942,26 @@ static void *kmem_getpages(struct kmem_cache
+> *cachep, gfp_t flags, int nodeid)
+>   */
+>  static void kmem_freepages(struct kmem_cache *cachep, void *addr)
+>  {
+> -       unsigned long i = (1 << cachep->gfporder);
+> +       int nr_pages = (1 << cachep->gfporder);
+> +       int i;
+>         struct page *page = virt_to_page(addr);
+> -       const unsigned long nr_freed = i;
+> 
+>         kmemcheck_free_shadow(page, cachep->gfporder);
+> 
+>         if (cachep->flags & SLAB_RECLAIM_ACCOUNT)
+>                 sub_zone_page_state(page_zone(page),
+> -                               NR_SLAB_RECLAIMABLE, nr_freed);
+> +                               NR_SLAB_RECLAIMABLE, nr_pages);
+>         else
+>                 sub_zone_page_state(page_zone(page),
+> -                               NR_SLAB_UNRECLAIMABLE, nr_freed);
+> -       while (i--) {
+> -               BUG_ON(!PageSlab(page));
+> -               __ClearPageSlabPfmemalloc(page);
+> -               __ClearPageSlab(page);
+> -               page++;
+> +                               NR_SLAB_UNRECLAIMABLE, nr_pages);
+> +       for (i = 0; i < nr_pages; i++) {
+> +               BUG_ON(!PageSlab(page + i));
+> +               __ClearPageSlab(page + i);
+>         }
+> +       __ClearPageSlabPfmemalloc(page);
+> +
+>         if (current->reclaim_state)
+> -               current->reclaim_state->reclaimed_slab += nr_freed;
+> +               current->reclaim_state->reclaimed_slab += nr_pages;
+>         free_pages((unsigned long)addr, cachep->gfporder);
+>  }
+
+This churns code a lot more than is necessary. How about this as a
+replacement patch?
+
+---8<---
+From: Joonsoo Kim <js1304@gmail.com>
+Subject: [PATCH] slab: do ClearSlabPfmemalloc() for all pages of slab
+
+Right now, we call ClearSlabPfmemalloc() for first page of slab when we
+clear SlabPfmemalloc flag. This is fine for most swap-over-network use
+cases as it is expected that order-0 pages are in use. Unfortunately it
+is possible that that __ac_put_obj() checks SlabPfmemalloc on a tail page
+and while this is harmless, it is sloppy. This patch ensures that the head
+page is always used.
+
+[mgorman@suse.de: Easier implementation, changelog cleanup]
+Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/slab.c |   12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
+
+diff --git a/mm/slab.c b/mm/slab.c
+index 811af03..590d52a 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -1032,7 +1032,7 @@ static void *__ac_put_obj(struct kmem_cache *cachep, struct array_cache *ac,
+ {
+ 	if (unlikely(pfmemalloc_active)) {
+ 		/* Some pfmemalloc slabs exist, check if this is one */
+-		struct page *page = virt_to_page(objp);
++		struct page *page = virt_to_head_page(objp);
+ 		if (PageSlabPfmemalloc(page))
+ 			set_obj_pfmemalloc(&objp);
+ 	}
+@@ -1919,12 +1919,10 @@ static void *kmem_getpages(struct kmem_cache *cachep, gfp_t flags, int nodeid)
+ 	else
+ 		add_zone_page_state(page_zone(page),
+ 			NR_SLAB_UNRECLAIMABLE, nr_pages);
+-	for (i = 0; i < nr_pages; i++) {
++	for (i = 0; i < nr_pages; i++)
+ 		__SetPageSlab(page + i);
+-
+-		if (page->pfmemalloc)
+-			SetPageSlabPfmemalloc(page + i);
+-	}
++	if (page->pfmemalloc)
++		SetPageSlabPfmemalloc(page);
+ 
+ 	if (kmemcheck_enabled && !(cachep->flags & SLAB_NOTRACK)) {
+ 		kmemcheck_alloc_shadow(page, cachep->gfporder, flags, nodeid);
+@@ -1955,9 +1953,9 @@ static void kmem_freepages(struct kmem_cache *cachep, void *addr)
+ 	else
+ 		sub_zone_page_state(page_zone(page),
+ 				NR_SLAB_UNRECLAIMABLE, nr_freed);
++	__ClearPageSlabPfmemalloc(page);
+ 	while (i--) {
+ 		BUG_ON(!PageSlab(page));
+-		__ClearPageSlabPfmemalloc(page);
+ 		__ClearPageSlab(page);
+ 		page++;
+ 	}
