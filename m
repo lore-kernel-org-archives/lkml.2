@@ -1,97 +1,307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247Ab2IGRS4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 13:18:56 -0400
-Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:11187
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751217Ab2IGRSy convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 13:18:54 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(zz98dIc89bh1432Izz1202hzzz2dh668h839h93fhd25hf0ah11b5h121eh1288h1155h)
-X-WSS-ID: 0M9ZPFC-01-LHZ-02
-X-M-MSG: 
-Date: Fri, 7 Sep 2012 19:18:45 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>, David Ahern <dsahern@gmail.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] perf, ibs: Check syscall attribute flags
-Message-ID: <20120907171845.GL8285@erda.amd.com>
-References: <1342826756-64663-1-git-send-email-dsahern@gmail.com>
- <1342826756-64663-9-git-send-email-dsahern@gmail.com>
- <20120906190238.GA29278@erda.amd.com>
- <5048F6BF.70106@gmail.com>
- <20120906195645.GD8285@erda.amd.com>
- <20120907164114.GJ8285@erda.amd.com>
- <1347036987.2124.3.camel@twins>
+	id S1753474Ab2IGRTH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 13:19:07 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:56994 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753283Ab2IGRTD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 13:19:03 -0400
+Message-ID: <504A2C7D.1090702@ti.com>
+Date: Fri, 7 Sep 2012 22:48:53 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120824 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <1347036987.2124.3.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: amd.com
+To: Prabhakar Lad <prabhakar.lad@ti.com>
+CC: <linux-arm-kernel@lists.infradead.org>,
+        dlos <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-kernel@vger.kernel.org>,
+        Manjunath Hadli <manjunath.hadli@ti.com>
+Subject: Re: [PATCH v2 2/2] ARM: da850/omap-l138: Add EVM specific code for
+ VPIF to work
+References: <1345471731-31678-1-git-send-email-prabhakar.lad@ti.com> <1345471731-31678-3-git-send-email-prabhakar.lad@ti.com>
+In-Reply-To: <1345471731-31678-3-git-send-email-prabhakar.lad@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07.09.12 18:56:27, Peter Zijlstra wrote:
+Hi Prabhakar,
 
-> > +               .exclude_user   = 1,
-> > +               .exclude_kernel = 1,
-> > +               .exclude_hv     = 1,
-> > +               .exclude_idle   = 1,
-> > +               .exclude_host   = 1,
-> > +               .exclude_guest  = 1,
+On 8/20/2012 7:38 PM, Prabhakar Lad wrote:
+> From: Manjunath Hadli <manjunath.hadli@ti.com>
 > 
-> Ideally we'd grow support for those using SVM entry/exit hooks though.
-
-Yes, I will look at this too. This patch is inteded for stable and
-urgent.
-
-> > +#define perf_flags(attr)       (*(&(attr)->read_format + 1))
+> Include the expander settings to select VPIF peripheral on
+> UI card and add registration call in EVM init. Also add platform
+> data to configure display and capture devices.
 > 
-> 
-> Another anonymous union shouldn't hurt..
-> 
+> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+> Cc: Sekhar Nori <nsekhar@ti.com>
 > ---
->  include/linux/perf_event.h | 5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
+>  arch/arm/mach-davinci/Kconfig           |    9 ++
+>  arch/arm/mach-davinci/board-da850-evm.c |  178 +++++++++++++++++++++++++++++++
+>  2 files changed, 187 insertions(+), 0 deletions(-)
 > 
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index cc5e2cd..5df37a0 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -236,7 +236,9 @@ struct perf_event_attr {
->  	__u64			sample_type;
->  	__u64			read_format;
+> diff --git a/arch/arm/mach-davinci/Kconfig b/arch/arm/mach-davinci/Kconfig
+> index ab99c3c..436b47c 100644
+> --- a/arch/arm/mach-davinci/Kconfig
+> +++ b/arch/arm/mach-davinci/Kconfig
+> @@ -186,6 +186,15 @@ config DA850_UI_RMII
+>  	  NOTE: Please take care while choosing this option, MII PHY will
+>  	  not be functional if RMII mode is selected.
 >  
-> -	__u64			disabled       :  1, /* off by default        */
-> +	union {
-> +		__u64		flags;
-> +		__u64		disabled       :  1, /* off by default        */
->  				inherit	       :  1, /* children inherit it   */
->  				pinned	       :  1, /* must always be on PMU */
->  				exclusive      :  1, /* only group on PMU     */
-> @@ -272,6 +274,7 @@ struct perf_event_attr {
->  				exclude_callchain_user   : 1, /* exclude user callchains */
+> +config DA850_UI_SD_VIDEO_PORT
+> +	bool "Video Port Interface"
+> +	help
+> +	  Say Y if you want to use Video Port Interface (VPIF) on the
+> +	  DA850/OMAP-L138 EVM. The Video decoders/encoders are found on the
+> +	  UI daughter card that is supplied with the EVM.
+
+> +	  NOTE: Please make sure to disable RMII and CLCD options when you
+> +	  select Video Port Interface.
+
+I thought you agreed to remove this note. CLCD is not present in
+mainline and RMII cannot be selected along with video because of the
+choice. So, the note is basically useless.
+
+> +
+>  endchoice
 >  
->  				__reserved_1   : 41;
-> +	};
+>  config DA850_WL12XX
+> diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+> index 0149fb4..cdbbced 100644
+> --- a/arch/arm/mach-davinci/board-da850-evm.c
+> +++ b/arch/arm/mach-davinci/board-da850-evm.c
+> @@ -45,6 +45,8 @@
+>  #include <mach/aemif.h>
+>  #include <mach/spi.h>
 >  
->  	union {
->  		__u32		wakeup_events;	  /* wakeup every n events */
+> +#include <media/tvp514x.h>
+> +
+>  #define DA850_EVM_PHY_ID		"davinci_mdio-0:00"
+>  #define DA850_LCD_PWR_PIN		GPIO_TO_PIN(2, 8)
+>  #define DA850_LCD_BL_PIN		GPIO_TO_PIN(2, 15)
+> @@ -121,6 +123,12 @@ static struct spi_board_info da850evm_spi_info[] = {
+>  	},
+>  };
+>  
+> +#define TVP5147_CH0		"tvp514x-0"
+> +#define TVP5147_CH1		"tvp514x-1"
+> +
+> +#define VPIF_STATUS		0x002c
+> +#define VPIF_STATUS_CLR		0x0030
+> +
+>  #ifdef CONFIG_MTD
+>  static void da850_evm_m25p80_notify_add(struct mtd_info *mtd)
+>  {
+> @@ -452,6 +460,15 @@ static void da850_evm_ui_keys_init(unsigned gpio)
+>  	}
+>  }
+>  
+> +#ifdef CONFIG_DA850_UI_SD_VIDEO_PORT
+> +static inline void da850_evm_setup_video_port(int video_sel)
+> +{
+> +	gpio_set_value_cansleep(video_sel, 0);
+> +}
+> +#else
+> +static inline void da850_evm_setup_video_port(int video_sel) { }
+> +#endif
+> +
+>  static int da850_evm_ui_expander_setup(struct i2c_client *client, unsigned gpio,
+>  						unsigned ngpio, void *c)
+>  {
+> @@ -497,6 +514,8 @@ static int da850_evm_ui_expander_setup(struct i2c_client *client, unsigned gpio,
+>  
+>  	da850_evm_setup_emac_rmii(sel_a);
+>  
+> +	da850_evm_setup_video_port(sel_c);
+> +
+>  	return 0;
+>  
+>  exp_setup_keys_fail:
+> @@ -1149,6 +1168,133 @@ static __init int da850_evm_init_cpufreq(void)
+>  static __init int da850_evm_init_cpufreq(void) { return 0; }
+>  #endif
+>  
+> +#if defined(CONFIG_DA850_UI_SD_VIDEO_PORT)
+> +
+> +/* VPIF capture configuration */
+> +static struct tvp514x_platform_data tvp5146_pdata = {
+> +	.clk_polarity = 0,
+> +	.hs_polarity = 1,
+> +	.vs_polarity = 1
 
-I was thinking of this too. But this breaks existing code to compile
-since static initialization of struct perf_event_attr fails, e.g.:
+A ',' needed at the end of above line. It will be nice to line up the
+initialization using tabs too.
 
- builtin-test.c:469:3: error: unknown field ‘watermark’ specified in initializer
+> +};
+> +
+> +#define TVP514X_STD_ALL (V4L2_STD_NTSC | V4L2_STD_PAL)
+> +
+> +static const struct vpif_input da850_ch0_inputs[] = {
+> +	{
+> +		.input = {
+> +			.index = 0,
+> +			.name = "Composite",
+> +			.type = V4L2_INPUT_TYPE_CAMERA,
+> +			.std = TVP514X_STD_ALL,
+> +		},
+> +		.subdev_name = TVP5147_CH0,
+> +	},
+> +};
+> +
+> +static const struct vpif_input da850_ch1_inputs[] = {
+> +	{
+> +		.input = {
+> +			.index = 0,
+> +			.name = "S-Video",
+> +			.type = V4L2_INPUT_TYPE_CAMERA,
+> +			.std = TVP514X_STD_ALL,
+> +		},
+> +		.subdev_name = TVP5147_CH1,
+> +	},
+> +};
+> +#endif
+> +
+> +static struct vpif_subdev_info da850_vpif_capture_sdev_info[] = {
+> +#if defined(CONFIG_DA850_UI_SD_VIDEO_PORT)
 
--Robert
+You agreed to get rid of these multiple ifdefs but you have not fixed that.
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+> +	{
+> +		.name	= TVP5147_CH0,
+> +		.board_info = {
+> +			I2C_BOARD_INFO("tvp5146", 0x5d),
+> +			.platform_data = &tvp5146_pdata,
+> +		},
+> +		.input = INPUT_CVBS_VI2B,
+> +		.output = OUTPUT_10BIT_422_EMBEDDED_SYNC,
+> +		.can_route = 1,
+> +		.vpif_if = {
+> +			.if_type = VPIF_IF_BT656,
+> +			.hd_pol = 1,
+> +			.vd_pol = 1,
+> +			.fid_pol = 0,
+> +		},
+> +	},
+> +	{
+> +		.name	= TVP5147_CH1,
+> +		.board_info = {
+> +			I2C_BOARD_INFO("tvp5146", 0x5c),
+> +			.platform_data = &tvp5146_pdata,
+> +		},
+> +		.input = INPUT_SVIDEO_VI2C_VI1C,
+> +		.output = OUTPUT_10BIT_422_EMBEDDED_SYNC,
+> +		.can_route = 1,
+> +		.vpif_if = {
+> +			.if_type = VPIF_IF_BT656,
+> +			.hd_pol = 1,
+> +			.vd_pol = 1,
+> +			.fid_pol = 0,
+> +		},
+> +	},
+> +#endif
+> +};
+> +
+> +static struct vpif_capture_config da850_vpif_capture_config = {
+> +	.subdev_info = da850_vpif_capture_sdev_info,
+> +	.subdev_count = ARRAY_SIZE(da850_vpif_capture_sdev_info),
+> +#if defined(CONFIG_DA850_UI_SD_VIDEO_PORT)
+> +	.chan_config[0] = {
+> +		.inputs = da850_ch0_inputs,
+> +		.input_count = ARRAY_SIZE(da850_ch0_inputs),
+> +	},
+> +	.chan_config[1] = {
+> +		.inputs = da850_ch1_inputs,
+> +		.input_count = ARRAY_SIZE(da850_ch1_inputs),
+> +	},
+> +#endif
+> +	.card_name      = "DA850/OMAP-L138 Video Capture",
+> +};
+> +
+> +/* VPIF display configuration */
+> +static struct vpif_subdev_info da850_vpif_subdev[] = {
+> +	{
+> +		.name	= "adv7343",
+> +		.board_info = {
+> +			I2C_BOARD_INFO("adv7343", 0x2a),
+> +		},
+> +	},
+> +};
+> +
+> +static const char const *vpif_output[] = {
+> +	"Composite",
+> +	"Component",
+> +	"S-Video",
+> +};
+> +
+> +static struct vpif_display_config da850_vpif_display_config = {
+> +	.subdevinfo	= da850_vpif_subdev,
+> +	.subdev_count	= ARRAY_SIZE(da850_vpif_subdev),
+> +	.output		= vpif_output,
+> +	.output_count	= ARRAY_SIZE(vpif_output),
+> +	.card_name	= "DA850/OMAP-L138 Video Display",
+> +};
+> +
+> +#if defined(CONFIG_VIDEO_DAVINCI_VPIF_DISPLAY) ||\
+> +		defined(CONFIG_VIDEO_DAVINCI_VPIF_DISPLAY_MODULE)
+> +#define HAS_VPIF_DISPLAY 1
+> +#else
+> +#define HAS_VPIF_DISPLAY 0
+> +#endif
+> +
+> +#if defined(CONFIG_VIDEO_DAVINCI_VPIF_CAPTURE) ||\
+> +		defined(CONFIG_VIDEO_DAVINCI_VPIF_CAPTURE_MODULE)
+> +#define HAS_VPIF_CAPTURE 1
+> +#else
+> +#define HAS_VPIF_CAPTURE 0
+> +#endif
+> +
+>  #ifdef CONFIG_DA850_WL12XX
+>  
+>  static void wl12xx_set_power(int index, bool power_on)
+> @@ -1375,6 +1521,38 @@ static __init void da850_evm_init(void)
+>  		pr_warning("da850_evm_init: suspend registration failed: %d\n",
+>  				ret);
+>  
+> +	if (HAS_VPIF_DISPLAY || HAS_VPIF_CAPTURE) {
+> +		ret = da850_register_vpif();
+> +		if (ret)
+> +			pr_warn("da850_evm_init: VPIF setup failed: %d\n", ret);
+> +	}
+> +
+> +	if (HAS_VPIF_CAPTURE) {
+> +		ret = davinci_cfg_reg_list(da850_vpif_capture_pins);
+> +		if (ret)
+> +			pr_warn(
+> +			"da850_evm_init: VPIF capture mux setup failed: %d\n",
+> +			ret);
+> +
+> +		ret = da850_register_vpif_capture(&da850_vpif_capture_config);
+> +		if (ret)
+> +			pr_warn(
+> +			"da850_evm_init: VPIF capture setup failed: %d\n", ret);
+> +	}
+> +
+> +	if (HAS_VPIF_DISPLAY) {
+> +		ret = davinci_cfg_reg_list(da850_vpif_display_pins);
+> +		if (ret)
+> +			pr_warn(
+> +			"da850_evm_init: VPIF display mux setup failed: %d\n",
+> +			ret);
+> +
+> +		ret = da850_register_vpif_display(&da850_vpif_display_config);
+> +		if (ret)
+> +			pr_warn(
+> +			"da850_evm_init: VPIF display setup failed: %d\n", ret);
+> +	}
+> +
 
+Registering the platform device only when driver is configured is not
+required. Platform device registration should just reflect what is
+present in the hardware. Removing this should also get rid of the ugly
+line breaks above.
+
+Thanks,
+Sekhar
