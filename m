@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655Ab2IGTK2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 15:10:28 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:55224 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756375Ab2IGTKW (ORCPT
+	id S1756723Ab2IGTKb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 15:10:31 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:52984 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756453Ab2IGTKY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 15:10:22 -0400
+	Fri, 7 Sep 2012 15:10:24 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH v3 04/31] arm64: MMU definitions
+Date: Fri, 7 Sep 2012 19:10:18 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com> <1347035226-18649-5-git-send-email-catalin.marinas@arm.com>
+In-Reply-To: <1347035226-18649-5-git-send-email-catalin.marinas@arm.com>
 MIME-Version: 1.0
-In-Reply-To: <1347044931.2124.5.camel@twins>
-References: <1347028169-1983-1-git-send-email-eranian@google.com>
-	<1347028169-1983-2-git-send-email-eranian@google.com>
-	<1347032350.18408.88.camel@twins>
-	<CABPqkBT=2H5WuWZ+uFq39XTTxniVvT6tEuaYDHvaV2VSbjBPDQ@mail.gmail.com>
-	<1347044931.2124.5.camel@twins>
-Date: Fri, 7 Sep 2012 21:10:20 +0200
-Message-ID: <CABPqkBSQwduG2bwz0DYP1HPf+4_SQOMhxTBSnKSX-CmATBa93A@mail.gmail.com>
-Subject: Re: [PATCH 1/3] perf: use hrtimer for event multiplexing
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, ak@linux.intel.com,
-        zheng.z.yan@intel.com, robert.richter@amd.com
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209071910.18527.arnd@arndb.de>
+X-Provags-ID: V02:K0:c0w1L0uknMlerf7d2ISL3jTeEZvvvN5CjpPokCy4P4j
+ vSH63GGQ7goNIW28fvApCf3W3EYsZdf8IOL4IMnw35bBqCpJKU
+ WXMDyD8qfBPLkbuRjMN3MoAu5cQkN7Yox3ge+wnNfWVE3wt3Xz
+ l3hH1r7FTF6p92qv9UH5FowbJ+oBGLbY+4kBDgJqLz5XhGUEhV
+ JGaviMdfzPtmJZajvFJaYZAmENIaDgKDzL41PjVgl299F0NQyk
+ aEogQwu89PjqSrligOWl9jdWQk9mS+9fpyOh612yHMtkI28XKj
+ shazKLNp0NVkexitp7yPdBc/VN0FpO9edRQu3nPEZDhGpLm42m
+ E3ELOudo7s4qyLHwA1wQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 7, 2012 at 9:08 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, 2012-09-07 at 19:03 +0200, Stephane Eranian wrote:
->> I think having different intervals would be a good thing, especially for uncore.
->> But now, I am wondering how this could work without too much overhead.
->> Looks like you're suggesting arming multiple hrtimers if multiple PMU are
->> overcommitted. Is that right?
->
-> Right, we shoulnd't have too many PMUs anyway, let alone over committed
-> ones, so a timer per cpu per pmu should be fine.
->
->>  As opposed to having a PMU multiplier off of a
->> single per-cpu hrtimer.
+On Friday 07 September 2012, Catalin Marinas wrote:
+> 
+> The virtual memory layout is described in
+> Documentation/arm64/memory.txt. This patch adds the MMU definitions for
+> the 4KB and 64KB translation table configurations. The SECTION_SIZE is
+> 2MB with 4KB page and 512MB with 64KB page configuration.
+> 
+> PHYS_OFFSET is calculated at run-time and stored in a variable (no
+> run-time code patching at this stage).
+> 
+> On the current implementation, both user and kernel address spaces are
+> 512G (39-bit) each with a maximum of 256G for the RAM linear mapping.
+> Linux uses 3 levels of translation tables with the 4K page configuration
+> and 2 levels with the 64K configuration. Extending the memory space
+> beyond 39-bit with the 4K pages or 42-bit with 64K pages requires an
+> additional level of translation tables.
+> 
+> The SPARSEMEM configuration is global to all AArch64 platforms and
+> allows for 1GB sections with SPARSEMEM_VMEMMAP enabled by default.
+> 
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
+> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> Acked-by: Tony Lindgren <tony@atomide.com>
 
-That's true. I started modifying my code to implement your suggestion.
-We'll see how it goes. Then we would have to export that mux interval
-via sysfs for each PMU.
+Acked-by: Arnd Bergmann <arnd@arndb.de>
