@@ -1,66 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753448Ab2IGQ2V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 12:28:21 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:34192 "EHLO
+	id S1753693Ab2IGQ2g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 12:28:36 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:34218 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751332Ab2IGQ1w (ORCPT
+	with ESMTP id S1751342Ab2IGQ1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Sep 2012 12:27:52 -0400
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH v3 03/31] arm64: Exception handling
-Date: Fri,  7 Sep 2012 17:26:38 +0100
-Message-Id: <1347035226-18649-4-git-send-email-catalin.marinas@arm.com>
+Subject: [PATCH v3 04/31] arm64: MMU definitions
+Date: Fri,  7 Sep 2012 17:26:39 +0100
+Message-Id: <1347035226-18649-5-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.9.111.gf3fb0
 In-Reply-To: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
 References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 07 Sep 2012 16:27:48.0628 (UTC) FILETIME=[B81BED40:01CD8D15]
-X-MC-Unique: 112090717275009401
+X-OriginalArrivalTime: 07 Sep 2012 16:27:49.0019 (UTC) FILETIME=[B85796B0:01CD8D15]
+X-MC-Unique: 112090717275013701
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q87GSZMf008340
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q87GSmgm008344
 
-The patch contains the exception entry code (kernel/entry.S), pt_regs
-structure and related accessors, undefined instruction trapping and
-stack tracing.
+The virtual memory layout is described in
+Documentation/arm64/memory.txt. This patch adds the MMU definitions for
+the 4KB and 64KB translation table configurations. The SECTION_SIZE is
+2MB with 4KB page and 512MB with 64KB page configuration.
 
-AArch64 Linux kernel (including kernel threads) runs in EL1 mode using
-the SP1 stack. The vectors don't have a fixed address, only alignment
-(2^11) requirements.
+PHYS_OFFSET is calculated at run-time and stored in a variable (no
+run-time code patching at this stage).
+
+On the current implementation, both user and kernel address spaces are
+512G (39-bit) each with a maximum of 256G for the RAM linear mapping.
+Linux uses 3 levels of translation tables with the 4K page configuration
+and 2 levels with the 64K configuration. Extending the memory space
+beyond 39-bit with the 4K pages or 42-bit with 64K pages requires an
+additional level of translation tables.
+
+The SPARSEMEM configuration is global to all AArch64 platforms and
+allows for 1GB sections with SPARSEMEM_VMEMMAP enabled by default.
 
 Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Acked-by: Tony Lindgren <tony@atomide.com>
 ---
- arch/arm64/include/asm/ptrace.h     |  212 +++++++++++
- arch/arm64/include/asm/stacktrace.h |   29 ++
- arch/arm64/include/asm/traps.h      |   30 ++
- arch/arm64/kernel/entry.S           |  695 +++++++++++++++++++++++++++++++++++
- arch/arm64/kernel/stacktrace.c      |  127 +++++++
- arch/arm64/kernel/traps.c           |  348 ++++++++++++++++++
- 6 files changed, 1441 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm64/include/asm/ptrace.h
- create mode 100644 arch/arm64/include/asm/stacktrace.h
- create mode 100644 arch/arm64/include/asm/traps.h
- create mode 100644 arch/arm64/kernel/entry.S
- create mode 100644 arch/arm64/kernel/stacktrace.c
- create mode 100644 arch/arm64/kernel/traps.c
+ Documentation/arm64/memory.txt                |   69 +++++
+ arch/arm64/include/asm/memory.h               |  144 +++++++++++
+ arch/arm64/include/asm/mmu.h                  |   27 ++
+ arch/arm64/include/asm/pgtable-2level-hwdef.h |   43 ++++
+ arch/arm64/include/asm/pgtable-2level-types.h |   60 +++++
+ arch/arm64/include/asm/pgtable-3level-hwdef.h |   50 ++++
+ arch/arm64/include/asm/pgtable-3level-types.h |   66 +++++
+ arch/arm64/include/asm/pgtable-hwdef.h        |   94 +++++++
+ arch/arm64/include/asm/pgtable.h              |  328 +++++++++++++++++++++++++
+ arch/arm64/include/asm/sparsemem.h            |   24 ++
+ 10 files changed, 905 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/arm64/memory.txt
+ create mode 100644 arch/arm64/include/asm/memory.h
+ create mode 100644 arch/arm64/include/asm/mmu.h
+ create mode 100644 arch/arm64/include/asm/pgtable-2level-hwdef.h
+ create mode 100644 arch/arm64/include/asm/pgtable-2level-types.h
+ create mode 100644 arch/arm64/include/asm/pgtable-3level-hwdef.h
+ create mode 100644 arch/arm64/include/asm/pgtable-3level-types.h
+ create mode 100644 arch/arm64/include/asm/pgtable-hwdef.h
+ create mode 100644 arch/arm64/include/asm/pgtable.h
+ create mode 100644 arch/arm64/include/asm/sparsemem.h
 
-diff --git a/arch/arm64/include/asm/ptrace.h b/arch/arm64/include/asm/ptrace.h
+diff --git a/Documentation/arm64/memory.txt b/Documentation/arm64/memory.txt
 new file mode 100644
-index 0000000..b0a2e1f
+index 0000000..7210af7
 --- /dev/null
-+++ b/arch/arm64/include/asm/ptrace.h
-@@ -0,0 +1,212 @@
++++ b/Documentation/arm64/memory.txt
+@@ -0,0 +1,69 @@
++		     Memory Layout on AArch64 Linux
++		     ==============================
++
++Author: Catalin Marinas <catalin.marinas@arm.com>
++Date  : 20 February 2012
++
++This document describes the virtual memory layout used by the AArch64
++Linux kernel. The architecture allows up to 4 levels of translation
++tables with a 4KB page size and up to 3 levels with a 64KB page size.
++
++AArch64 Linux uses 3 levels of translation tables with the 4KB page
++configuration, allowing 39-bit (512GB) virtual addresses for both user
++and kernel. With 64KB pages, only 2 levels of translation tables are
++used but the memory layout is the same.
++
++User addresses have bits 63:39 set to 0 while the kernel addresses have
++the same bits set to 1. TTBRx selection is given by bit 63 of the
++virtual address. The swapper_pg_dir contains only kernel (global)
++mappings while the user pgd contains only user (non-global) mappings.
++The swapper_pgd_dir address is written to TTBR1 and never written to
++TTBR0.
++
++
++AArch64 Linux memory layout:
++
++Start			End			Size		Use
++-----------------------------------------------------------------------
++0000000000000000	0000007fffffffff	 512GB		user
++
++ffffff8000000000	ffffffbbfffeffff	~240GB		vmalloc
++
++ffffffbbffff0000	ffffffbcffffffff	  64KB		[guard page]
++
++ffffffbc00000000	ffffffbdffffffff	   8GB		vmemmap
++
++ffffffbe00000000	ffffffbffbffffff	  ~8GB		[guard, future vmmemap]
++
++ffffffbffc000000	ffffffbfffffffff	  64MB		modules
++
++ffffffc000000000	ffffffffffffffff	 256GB		memory
++
++
++Translation table lookup with 4KB pages:
++
+++--------+--------+--------+--------+--------+--------+--------+--------+
++|63    56|55    48|47    40|39    32|31    24|23    16|15     8|7      0|
+++--------+--------+--------+--------+--------+--------+--------+--------+
++ |                 |         |         |         |         |
++ |                 |         |         |         |         v
++ |                 |         |         |         |   [11:0]  in-page offset
++ |                 |         |         |         +-> [20:12] L3 index
++ |                 |         |         +-----------> [29:21] L2 index
++ |                 |         +---------------------> [38:30] L1 index
++ |                 +-------------------------------> [47:39] L0 index (not used)
++ +-------------------------------------------------> [63] TTBR0/1
++
++
++Translation table lookup with 64KB pages:
++
+++--------+--------+--------+--------+--------+--------+--------+--------+
++|63    56|55    48|47    40|39    32|31    24|23    16|15     8|7      0|
+++--------+--------+--------+--------+--------+--------+--------+--------+
++ |                 |    |               |              |
++ |                 |    |               |              v
++ |                 |    |               |            [15:0]  in-page offset
++ |                 |    |               +----------> [28:16] L3 index
++ |                 |    +--------------------------> [41:29] L2 index (only 38:29 used)
++ |                 +-------------------------------> [47:42] L1 index (not used)
++ +-------------------------------------------------> [63] TTBR0/1
+diff --git a/arch/arm64/include/asm/memory.h b/arch/arm64/include/asm/memory.h
+new file mode 100644
+index 0000000..1cac16a
+--- /dev/null
++++ b/arch/arm64/include/asm/memory.h
+@@ -0,0 +1,144 @@
 +/*
-+ * Based on arch/arm/include/asm/ptrace.h
++ * Based on arch/arm/include/asm/memory.h
 + *
-+ * Copyright (C) 1996-2003 Russell King
++ * Copyright (C) 2000-2002 Russell King
 + * Copyright (C) 2012 ARM Ltd.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -74,207 +167,849 @@ index 0000000..b0a2e1f
 + *
 + * You should have received a copy of the GNU General Public License
 + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
++ * Note: this file should not be included by non-asm/.h files
 + */
-+#ifndef __ASM_PTRACE_H
-+#define __ASM_PTRACE_H
++#ifndef __ASM_MEMORY_H
++#define __ASM_MEMORY_H
 +
++#include <linux/compiler.h>
++#include <linux/const.h>
 +#include <linux/types.h>
-+
-+#include <asm/hwcap.h>
-+
-+#define PTRACE_GETREGS		12
-+#define PTRACE_SETREGS		13
-+#define PTRACE_GETFPSIMDREGS	14
-+#define PTRACE_SETFPSIMDREGS	15
-+/* PTRACE_ATTACH is 16 */
-+/* PTRACE_DETACH is 17 */
-+#define PTRACE_GET_THREAD_AREA	22
-+#define PTRACE_SET_SYSCALL	23
-+#define PTRACE_GETHBPREGS	29
-+#define PTRACE_SETHBPREGS	30
-+
-+/* AArch32-specific ptrace requests */
-+#define COMPAT_PTRACE_GETVFPREGS	27
-+#define COMPAT_PTRACE_SETVFPREGS	28
++#include <asm/sizes.h>
 +
 +/*
-+ * PSR bits
++ * Allow for constants defined here to be used from assembly code
++ * by prepending the UL suffix only with actual C code compilation.
 + */
-+#define PSR_MODE_EL0t	0x00000000
-+#define PSR_MODE_EL1t	0x00000004
-+#define PSR_MODE_EL1h	0x00000005
-+#define PSR_MODE_EL2t	0x00000008
-+#define PSR_MODE_EL2h	0x00000009
-+#define PSR_MODE_EL3t	0x0000000c
-+#define PSR_MODE_EL3h	0x0000000d
-+#define PSR_MODE_MASK	0x0000000f
-+
-+/* AArch32 CPSR bits */
-+#define PSR_MODE32_BIT		0x00000010
-+#define COMPAT_PSR_MODE_USR	0x00000010
-+#define COMPAT_PSR_T_BIT	0x00000020
-+#define COMPAT_PSR_IT_MASK	0x0600fc00	/* If-Then execution state mask */
-+
-+/* AArch64 SPSR bits */
-+#define PSR_F_BIT	0x00000040
-+#define PSR_I_BIT	0x00000080
-+#define PSR_A_BIT	0x00000100
-+#define PSR_D_BIT	0x00000200
-+#define PSR_Q_BIT	0x08000000
-+#define PSR_V_BIT	0x10000000
-+#define PSR_C_BIT	0x20000000
-+#define PSR_Z_BIT	0x40000000
-+#define PSR_N_BIT	0x80000000
++#define UL(x) _AC(x, UL)
 +
 +/*
-+ * Groups of PSR bits
++ * PAGE_OFFSET - the virtual address of the start of the kernel image.
++ * VA_BITS - the maximum number of bits for virtual addresses.
++ * TASK_SIZE - the maximum size of a user space task.
++ * TASK_UNMAPPED_BASE - the lower boundary of the mmap VM area.
++ * The module space lives between the addresses given by TASK_SIZE
++ * and PAGE_OFFSET - it must be within 128MB of the kernel text.
 + */
-+#define PSR_f		0xff000000	/* Flags		*/
-+#define PSR_s		0x00ff0000	/* Status		*/
-+#define PSR_x		0x0000ff00	/* Extension		*/
-+#define PSR_c		0x000000ff	/* Control		*/
++#define PAGE_OFFSET		UL(0xffffffc000000000)
++#define MODULES_END		(PAGE_OFFSET)
++#define MODULES_VADDR		(MODULES_END - SZ_64M)
++#define VA_BITS			(39)
++#define TASK_SIZE_64		(UL(1) << VA_BITS)
++
++#ifdef CONFIG_COMPAT
++#define TASK_SIZE_32		UL(0x100000000)
++#define TASK_SIZE		(test_thread_flag(TIF_32BIT) ? \
++				TASK_SIZE_32 : TASK_SIZE_64)
++#else
++#define TASK_SIZE		TASK_SIZE_64
++#endif /* CONFIG_COMPAT */
++
++#define TASK_UNMAPPED_BASE	(PAGE_ALIGN(TASK_SIZE / 4))
++
++#if TASK_SIZE_64 > MODULES_VADDR
++#error Top of 64-bit user space clashes with start of module space
++#endif
 +
 +/*
-+ * These are 'magic' values for PTRACE_PEEKUSR that return info about where a
-+ * process is located in memory.
++ * Physical vs virtual RAM address space conversion.  These are
++ * private definitions which should NOT be used outside memory.h
++ * files.  Use virt_to_phys/phys_to_virt/__pa/__va instead.
 + */
-+#define PT_TEXT_ADDR		0x10000
-+#define PT_DATA_ADDR		0x10004
-+#define PT_TEXT_END_ADDR	0x10008
++#define __virt_to_phys(x)	(((phys_addr_t)(x) - PAGE_OFFSET + PHYS_OFFSET))
++#define __phys_to_virt(x)	((unsigned long)((x) - PHYS_OFFSET + PAGE_OFFSET))
++
++/*
++ * Convert a physical address to a Page Frame Number and back
++ */
++#define	__phys_to_pfn(paddr)	((unsigned long)((paddr) >> PAGE_SHIFT))
++#define	__pfn_to_phys(pfn)	((phys_addr_t)(pfn) << PAGE_SHIFT)
++
++/*
++ * Convert a page to/from a physical address
++ */
++#define page_to_phys(page)	(__pfn_to_phys(page_to_pfn(page)))
++#define phys_to_page(phys)	(pfn_to_page(__phys_to_pfn(phys)))
++
++/*
++ * Memory types available.
++ */
++#define MT_DEVICE_nGnRnE	0
++#define MT_DEVICE_nGnRE		1
++#define MT_DEVICE_GRE		2
++#define MT_NORMAL_NC		3
++#define MT_NORMAL		4
 +
 +#ifndef __ASSEMBLY__
 +
-+/*
-+ * User structures for general purpose, floating point and debug registers.
-+ */
-+struct user_pt_regs {
-+	__u64		regs[31];
-+	__u64		sp;
-+	__u64		pc;
-+	__u64		pstate;
-+};
-+
-+struct user_fpsimd_state {
-+	__uint128_t	vregs[32];
-+	__u32		fpsr;
-+	__u32		fpcr;
-+};
-+
-+struct user_hwdebug_state {
-+	__u32		dbg_info;
-+	struct {
-+		__u64	addr;
-+		__u32	ctrl;
-+	}		dbg_regs[16];
-+};
-+
-+#ifdef __KERNEL__
-+
-+/* sizeof(struct user) for AArch32 */
-+#define COMPAT_USER_SZ	296
-+/* AArch32 uses x13 as the stack pointer... */
-+#define compat_sp	regs[13]
-+/* ... and x14 as the link register. */
-+#define compat_lr	regs[14]
++extern phys_addr_t		memstart_addr;
++/* PHYS_OFFSET - the physical address of the start of memory. */
++#define PHYS_OFFSET		({ memstart_addr; })
 +
 +/*
-+ * This struct defines the way the registers are stored on the stack during an
-+ * exception. Note that sizeof(struct pt_regs) has to be a multiple of 16 (for
-+ * stack alignment). struct user_pt_regs must form a prefix of struct pt_regs.
++ * PFNs are used to describe any physical page; this means
++ * PFN 0 == physical address 0.
++ *
++ * This is the PFN of the first RAM page in the kernel
++ * direct-mapped view.  We assume this is the first page
++ * of RAM in the mem_map as well.
 + */
-+struct pt_regs {
-+	union {
-+		struct user_pt_regs user_regs;
-+		struct {
-+			u64 regs[31];
-+			u64 sp;
-+			u64 pc;
-+			u64 pstate;
-+		};
-+	};
-+	u64 orig_x0;
-+	u64 syscallno;
-+};
-+
-+#define arch_has_single_step()	(1)
-+
-+#ifdef CONFIG_COMPAT
-+#define compat_thumb_mode(regs) \
-+	(((regs)->pstate & COMPAT_PSR_T_BIT))
-+#else
-+#define compat_thumb_mode(regs) (0)
-+#endif
-+
-+#define user_mode(regs)	\
-+	(((regs)->pstate & PSR_MODE_MASK) == PSR_MODE_EL0t)
-+
-+#define compat_user_mode(regs)	\
-+	(((regs)->pstate & (PSR_MODE32_BIT | PSR_MODE_MASK)) == \
-+	 (PSR_MODE32_BIT | PSR_MODE_EL0t))
-+
-+#define processor_mode(regs) \
-+	((regs)->pstate & PSR_MODE_MASK)
-+
-+#define interrupts_enabled(regs) \
-+	(!((regs)->pstate & PSR_I_BIT))
-+
-+#define fast_interrupts_enabled(regs) \
-+	(!((regs)->pstate & PSR_F_BIT))
-+
-+#define user_stack_pointer(regs) \
-+	((regs)->sp)
++#define PHYS_PFN_OFFSET	(PHYS_OFFSET >> PAGE_SHIFT)
 +
 +/*
-+ * Are the current registers suitable for user mode? (used to maintain
-+ * security in signal handlers)
++ * Note: Drivers should NOT use these.  They are the wrong
++ * translation for translating DMA addresses.  Use the driver
++ * DMA support - see dma-mapping.h.
 + */
-+static inline int valid_user_regs(struct user_pt_regs *regs)
++static inline phys_addr_t virt_to_phys(const volatile void *x)
 +{
-+	if (user_mode(regs) && (regs->pstate & PSR_I_BIT) == 0) {
-+		regs->pstate &= ~(PSR_F_BIT | PSR_A_BIT);
-+
-+		/* The T bit is reserved for AArch64 */
-+		if (!(regs->pstate & PSR_MODE32_BIT))
-+			regs->pstate &= ~COMPAT_PSR_T_BIT;
-+
-+		return 1;
-+	}
-+
-+	/*
-+	 * Force PSR to something logical...
-+	 */
-+	regs->pstate &= PSR_f | PSR_s | (PSR_x & ~PSR_A_BIT) | \
-+			COMPAT_PSR_T_BIT | PSR_MODE32_BIT;
-+
-+	if (!(regs->pstate & PSR_MODE32_BIT)) {
-+		regs->pstate &= ~COMPAT_PSR_T_BIT;
-+		regs->pstate |= PSR_MODE_EL0t;
-+	}
-+
-+	return 0;
++	return __virt_to_phys((unsigned long)(x));
 +}
 +
-+#define instruction_pointer(regs)	(regs)->pc
++static inline void *phys_to_virt(phys_addr_t x)
++{
++	return (void *)(__phys_to_virt(x));
++}
 +
-+#ifdef CONFIG_SMP
-+extern unsigned long profile_pc(struct pt_regs *regs);
-+#else
-+#define profile_pc(regs) instruction_pointer(regs)
++/*
++ * Drivers should NOT use these either.
++ */
++#define __pa(x)			__virt_to_phys((unsigned long)(x))
++#define __va(x)			((void *)__phys_to_virt((phys_addr_t)(x)))
++#define pfn_to_kaddr(pfn)	__va((pfn) << PAGE_SHIFT)
++
++/*
++ *  virt_to_page(k)	convert a _valid_ virtual address to struct page *
++ *  virt_addr_valid(k)	indicates whether a virtual address is valid
++ */
++#define ARCH_PFN_OFFSET		PHYS_PFN_OFFSET
++
++#define virt_to_page(kaddr)	pfn_to_page(__pa(kaddr) >> PAGE_SHIFT)
++#define	virt_addr_valid(kaddr)	(((void *)(kaddr) >= (void *)PAGE_OFFSET) && \
++				 ((void *)(kaddr) < (void *)high_memory))
++
 +#endif
 +
-+extern int aarch32_break_trap(struct pt_regs *regs);
++#include <asm-generic/memory_model.h>
 +
-+#endif /* __KERNEL__ */
++#endif
+diff --git a/arch/arm64/include/asm/mmu.h b/arch/arm64/include/asm/mmu.h
+new file mode 100644
+index 0000000..c72ad38
+--- /dev/null
++++ b/arch/arm64/include/asm/mmu.h
+@@ -0,0 +1,27 @@
++/*
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#ifndef __ASM_MMU_H
++#define __ASM_MMU_H
++
++typedef struct {
++	unsigned int id;
++	raw_spinlock_t id_lock;
++	void *vdso;
++} mm_context_t;
++
++#define ASID(mm)	((mm)->context.id & 0xffff)
++
++#endif
+diff --git a/arch/arm64/include/asm/pgtable-2level-hwdef.h b/arch/arm64/include/asm/pgtable-2level-hwdef.h
+new file mode 100644
+index 0000000..0a8ed3f
+--- /dev/null
++++ b/arch/arm64/include/asm/pgtable-2level-hwdef.h
+@@ -0,0 +1,43 @@
++/*
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#ifndef __ASM_PGTABLE_2LEVEL_HWDEF_H
++#define __ASM_PGTABLE_2LEVEL_HWDEF_H
++
++/*
++ * With LPAE and 64KB pages, there are 2 levels of page tables. Each level has
++ * 8192 entries of 8 bytes each, occupying a 64KB page. Levels 0 and 1 are not
++ * used. The 2nd level table (PGD for Linux) can cover a range of 4TB, each
++ * entry representing 512MB. The user and kernel address spaces are limited to
++ * 512GB and therefore we only use 1024 entries in the PGD.
++ */
++#define PTRS_PER_PTE		8192
++#define PTRS_PER_PGD		1024
++
++/*
++ * PGDIR_SHIFT determines the size a top-level page table entry can map.
++ */
++#define PGDIR_SHIFT		29
++#define PGDIR_SIZE		(_AC(1, UL) << PGDIR_SHIFT)
++#define PGDIR_MASK		(~(PGDIR_SIZE-1))
++
++/*
++ * section address mask and size definitions.
++ */
++#define SECTION_SHIFT		29
++#define SECTION_SIZE		(_AC(1, UL) << SECTION_SHIFT)
++#define SECTION_MASK		(~(SECTION_SIZE-1))
++
++#endif
+diff --git a/arch/arm64/include/asm/pgtable-2level-types.h b/arch/arm64/include/asm/pgtable-2level-types.h
+new file mode 100644
+index 0000000..3c3ca7d
+--- /dev/null
++++ b/arch/arm64/include/asm/pgtable-2level-types.h
+@@ -0,0 +1,60 @@
++/*
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#ifndef __ASM_PGTABLE_2LEVEL_TYPES_H
++#define __ASM_PGTABLE_2LEVEL_TYPES_H
++
++typedef u64 pteval_t;
++typedef u64 pgdval_t;
++typedef pgdval_t pmdval_t;
++
++#undef STRICT_MM_TYPECHECKS
++
++#ifdef STRICT_MM_TYPECHECKS
++
++/*
++ * These are used to make use of C type-checking..
++ */
++typedef struct { pteval_t pte; } pte_t;
++typedef struct { pgdval_t pgd; } pgd_t;
++typedef struct { pteval_t pgprot; } pgprot_t;
++
++#define pte_val(x)      ((x).pte)
++#define pgd_val(x)	((x).pgd)
++#define pgprot_val(x)   ((x).pgprot)
++
++#define __pte(x)        ((pte_t) { (x) } )
++#define __pgd(x)	((pgd_t) { (x) } )
++#define __pgprot(x)     ((pgprot_t) { (x) } )
++
++#else	/* !STRICT_MM_TYPECHECKS */
++
++typedef pteval_t pte_t;
++typedef pgdval_t pgd_t;
++typedef pteval_t pgprot_t;
++
++#define pte_val(x)	(x)
++#define pgd_val(x)	(x)
++#define pgprot_val(x)	(x)
++
++#define __pte(x)	(x)
++#define __pgd(x)	(x)
++#define __pgprot(x)	(x)
++
++#endif	/* STRICT_MM_TYPECHECKS */
++
++#include <asm-generic/pgtable-nopmd.h>
++
++#endif	/* __ASM_PGTABLE_2LEVEL_TYPES_H */
+diff --git a/arch/arm64/include/asm/pgtable-3level-hwdef.h b/arch/arm64/include/asm/pgtable-3level-hwdef.h
+new file mode 100644
+index 0000000..3dbf941
+--- /dev/null
++++ b/arch/arm64/include/asm/pgtable-3level-hwdef.h
+@@ -0,0 +1,50 @@
++/*
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#ifndef __ASM_PGTABLE_3LEVEL_HWDEF_H
++#define __ASM_PGTABLE_3LEVEL_HWDEF_H
++
++/*
++ * With LPAE and 4KB pages, there are 3 levels of page tables. Each level has
++ * 512 entries of 8 bytes each, occupying a 4K page. The first level table
++ * covers a range of 512GB, each entry representing 1GB. The user and kernel
++ * address spaces are limited to 512GB each.
++ */
++#define PTRS_PER_PTE		512
++#define PTRS_PER_PMD		512
++#define PTRS_PER_PGD		512
++
++/*
++ * PGDIR_SHIFT determines the size a top-level page table entry can map.
++ */
++#define PGDIR_SHIFT		30
++#define PGDIR_SIZE		(_AC(1, UL) << PGDIR_SHIFT)
++#define PGDIR_MASK		(~(PGDIR_SIZE-1))
++
++/*
++ * PMD_SHIFT determines the size a middle-level page table entry can map.
++ */
++#define PMD_SHIFT		21
++#define PMD_SIZE		(_AC(1, UL) << PMD_SHIFT)
++#define PMD_MASK		(~(PMD_SIZE-1))
++
++/*
++ * section address mask and size definitions.
++ */
++#define SECTION_SHIFT		21
++#define SECTION_SIZE		(_AC(1, UL) << SECTION_SHIFT)
++#define SECTION_MASK		(~(SECTION_SIZE-1))
++
++#endif
+diff --git a/arch/arm64/include/asm/pgtable-3level-types.h b/arch/arm64/include/asm/pgtable-3level-types.h
+new file mode 100644
+index 0000000..4489615
+--- /dev/null
++++ b/arch/arm64/include/asm/pgtable-3level-types.h
+@@ -0,0 +1,66 @@
++/*
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#ifndef __ASM_PGTABLE_3LEVEL_TYPES_H
++#define __ASM_PGTABLE_3LEVEL_TYPES_H
++
++typedef u64 pteval_t;
++typedef u64 pmdval_t;
++typedef u64 pgdval_t;
++
++#undef STRICT_MM_TYPECHECKS
++
++#ifdef STRICT_MM_TYPECHECKS
++
++/*
++ * These are used to make use of C type-checking..
++ */
++typedef struct { pteval_t pte; } pte_t;
++typedef struct { pmdval_t pmd; } pmd_t;
++typedef struct { pgdval_t pgd; } pgd_t;
++typedef struct { pteval_t pgprot; } pgprot_t;
++
++#define pte_val(x)      ((x).pte)
++#define pmd_val(x)      ((x).pmd)
++#define pgd_val(x)	((x).pgd)
++#define pgprot_val(x)   ((x).pgprot)
++
++#define __pte(x)        ((pte_t) { (x) } )
++#define __pmd(x)        ((pmd_t) { (x) } )
++#define __pgd(x)	((pgd_t) { (x) } )
++#define __pgprot(x)     ((pgprot_t) { (x) } )
++
++#else	/* !STRICT_MM_TYPECHECKS */
++
++typedef pteval_t pte_t;
++typedef pmdval_t pmd_t;
++typedef pgdval_t pgd_t;
++typedef pteval_t pgprot_t;
++
++#define pte_val(x)	(x)
++#define pmd_val(x)	(x)
++#define pgd_val(x)	(x)
++#define pgprot_val(x)	(x)
++
++#define __pte(x)	(x)
++#define __pmd(x)	(x)
++#define __pgd(x)	(x)
++#define __pgprot(x)	(x)
++
++#endif	/* STRICT_MM_TYPECHECKS */
++
++#include <asm-generic/pgtable-nopud.h>
++
++#endif	/* __ASM_PGTABLE_3LEVEL_TYPES_H */
+diff --git a/arch/arm64/include/asm/pgtable-hwdef.h b/arch/arm64/include/asm/pgtable-hwdef.h
+new file mode 100644
+index 0000000..0f3b458
+--- /dev/null
++++ b/arch/arm64/include/asm/pgtable-hwdef.h
+@@ -0,0 +1,94 @@
++/*
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#ifndef __ASM_PGTABLE_HWDEF_H
++#define __ASM_PGTABLE_HWDEF_H
++
++#ifdef CONFIG_ARM64_64K_PAGES
++#include <asm/pgtable-2level-hwdef.h>
++#else
++#include <asm/pgtable-3level-hwdef.h>
++#endif
++
++/*
++ * Hardware page table definitions.
++ *
++ * Level 2 descriptor (PMD).
++ */
++#define PMD_TYPE_MASK		(_AT(pmdval_t, 3) << 0)
++#define PMD_TYPE_FAULT		(_AT(pmdval_t, 0) << 0)
++#define PMD_TYPE_TABLE		(_AT(pmdval_t, 3) << 0)
++#define PMD_TYPE_SECT		(_AT(pmdval_t, 1) << 0)
++
++/*
++ * Section
++ */
++#define PMD_SECT_S		(_AT(pmdval_t, 3) << 8)
++#define PMD_SECT_AF		(_AT(pmdval_t, 1) << 10)
++#define PMD_SECT_NG		(_AT(pmdval_t, 1) << 11)
++#define PMD_SECT_XN		(_AT(pmdval_t, 1) << 54)
++
++/*
++ * AttrIndx[2:0] encoding (mapping attributes defined in the MAIR* registers).
++ */
++#define PMD_ATTRINDX(t)		(_AT(pmdval_t, (t)) << 2)
++#define PMD_ATTRINDX_MASK	(_AT(pmdval_t, 7) << 2)
++
++/*
++ * Level 3 descriptor (PTE).
++ */
++#define PTE_TYPE_MASK		(_AT(pteval_t, 3) << 0)
++#define PTE_TYPE_FAULT		(_AT(pteval_t, 0) << 0)
++#define PTE_TYPE_PAGE		(_AT(pteval_t, 3) << 0)
++#define PTE_USER		(_AT(pteval_t, 1) << 6)		/* AP[1] */
++#define PTE_RDONLY		(_AT(pteval_t, 1) << 7)		/* AP[2] */
++#define PTE_SHARED		(_AT(pteval_t, 3) << 8)		/* SH[1:0], inner shareable */
++#define PTE_AF			(_AT(pteval_t, 1) << 10)	/* Access Flag */
++#define PTE_NG			(_AT(pteval_t, 1) << 11)	/* nG */
++#define PTE_XN			(_AT(pteval_t, 1) << 54)	/* XN */
++
++/*
++ * AttrIndx[2:0] encoding (mapping attributes defined in the MAIR* registers).
++ */
++#define PTE_ATTRINDX(t)		(_AT(pteval_t, (t)) << 2)
++#define PTE_ATTRINDX_MASK	(_AT(pteval_t, 7) << 2)
++
++/*
++ * 40-bit physical address supported.
++ */
++#define PHYS_MASK_SHIFT		(40)
++#define PHYS_MASK		((UL(1) << PHYS_MASK_SHIFT) - 1)
++
++/*
++ * TCR flags.
++ */
++#define TCR_TxSZ(x)		(((UL(64) - (x)) << 16) | ((UL(64) - (x)) << 0))
++#define TCR_IRGN_NC		((UL(0) << 8) | (UL(0) << 24))
++#define TCR_IRGN_WBWA		((UL(1) << 8) | (UL(1) << 24))
++#define TCR_IRGN_WT		((UL(2) << 8) | (UL(2) << 24))
++#define TCR_IRGN_WBnWA		((UL(3) << 8) | (UL(3) << 24))
++#define TCR_IRGN_MASK		((UL(3) << 8) | (UL(3) << 24))
++#define TCR_ORGN_NC		((UL(0) << 10) | (UL(0) << 26))
++#define TCR_ORGN_WBWA		((UL(1) << 10) | (UL(1) << 26))
++#define TCR_ORGN_WT		((UL(2) << 10) | (UL(2) << 26))
++#define TCR_ORGN_WBnWA		((UL(3) << 10) | (UL(3) << 26))
++#define TCR_ORGN_MASK		((UL(3) << 10) | (UL(3) << 26))
++#define TCR_SHARED		((UL(3) << 12) | (UL(3) << 28))
++#define TCR_TG0_64K		(UL(1) << 14)
++#define TCR_TG1_64K		(UL(1) << 30)
++#define TCR_IPS_40BIT		(UL(2) << 32)
++#define TCR_ASID16		(UL(1) << 36)
++
++#endif
+diff --git a/arch/arm64/include/asm/pgtable.h b/arch/arm64/include/asm/pgtable.h
+new file mode 100644
+index 0000000..6981da0
+--- /dev/null
++++ b/arch/arm64/include/asm/pgtable.h
+@@ -0,0 +1,328 @@
++/*
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#ifndef __ASM_PGTABLE_H
++#define __ASM_PGTABLE_H
++
++#include <asm/proc-fns.h>
++
++#include <asm/memory.h>
++#include <asm/pgtable-hwdef.h>
++
++/*
++ * Software defined PTE bits definition.
++ */
++#define PTE_VALID		(_AT(pteval_t, 1) << 0)	/* pte_present() check */
++#define PTE_FILE		(_AT(pteval_t, 1) << 2)	/* only when !pte_present() */
++#define PTE_DIRTY		(_AT(pteval_t, 1) << 55)
++#define PTE_SPECIAL		(_AT(pteval_t, 1) << 56)
++
++/*
++ * VMALLOC and SPARSEMEM_VMEMMAP ranges.
++ */
++#define VMALLOC_START		UL(0xffffff8000000000)
++#define VMALLOC_END		(PAGE_OFFSET - UL(0x400000000) - SZ_64K)
++
++#define vmemmap			((struct page *)(VMALLOC_END + SZ_64K))
++
++#define FIRST_USER_ADDRESS	0
++
++#ifndef __ASSEMBLY__
++extern void __pte_error(const char *file, int line, unsigned long val);
++extern void __pmd_error(const char *file, int line, unsigned long val);
++extern void __pgd_error(const char *file, int line, unsigned long val);
++
++#define pte_ERROR(pte)		__pte_error(__FILE__, __LINE__, pte_val(pte))
++#ifndef CONFIG_ARM64_64K_PAGES
++#define pmd_ERROR(pmd)		__pmd_error(__FILE__, __LINE__, pmd_val(pmd))
++#endif
++#define pgd_ERROR(pgd)		__pgd_error(__FILE__, __LINE__, pgd_val(pgd))
++
++/*
++ * The pgprot_* and protection_map entries will be fixed up at runtime to
++ * include the cachable and bufferable bits based on memory policy, as well as
++ * any architecture dependent bits like global/ASID and SMP shared mapping
++ * bits.
++ */
++#define _PAGE_DEFAULT		PTE_TYPE_PAGE | PTE_AF
++
++extern pgprot_t pgprot_default;
++
++#define _MOD_PROT(p, b)	__pgprot(pgprot_val(p) | (b))
++
++#define PAGE_NONE		_MOD_PROT(pgprot_default, PTE_NG | PTE_XN | PTE_RDONLY)
++#define PAGE_SHARED		_MOD_PROT(pgprot_default, PTE_USER | PTE_NG | PTE_XN)
++#define PAGE_SHARED_EXEC	_MOD_PROT(pgprot_default, PTE_USER | PTE_NG)
++#define PAGE_COPY		_MOD_PROT(pgprot_default, PTE_USER | PTE_NG | PTE_XN | PTE_RDONLY)
++#define PAGE_COPY_EXEC		_MOD_PROT(pgprot_default, PTE_USER | PTE_NG | PTE_RDONLY)
++#define PAGE_READONLY		_MOD_PROT(pgprot_default, PTE_USER | PTE_NG | PTE_XN | PTE_RDONLY)
++#define PAGE_READONLY_EXEC	_MOD_PROT(pgprot_default, PTE_USER | PTE_NG | PTE_RDONLY)
++#define PAGE_KERNEL		_MOD_PROT(pgprot_default, PTE_XN | PTE_DIRTY)
++#define PAGE_KERNEL_EXEC	_MOD_PROT(pgprot_default, PTE_DIRTY)
++
++#define __PAGE_NONE		__pgprot(_PAGE_DEFAULT | PTE_NG | PTE_XN | PTE_RDONLY)
++#define __PAGE_SHARED		__pgprot(_PAGE_DEFAULT | PTE_USER | PTE_NG | PTE_XN)
++#define __PAGE_SHARED_EXEC	__pgprot(_PAGE_DEFAULT | PTE_USER | PTE_NG)
++#define __PAGE_COPY		__pgprot(_PAGE_DEFAULT | PTE_USER | PTE_NG | PTE_XN | PTE_RDONLY)
++#define __PAGE_COPY_EXEC	__pgprot(_PAGE_DEFAULT | PTE_USER | PTE_NG | PTE_RDONLY)
++#define __PAGE_READONLY		__pgprot(_PAGE_DEFAULT | PTE_USER | PTE_NG | PTE_XN | PTE_RDONLY)
++#define __PAGE_READONLY_EXEC	__pgprot(_PAGE_DEFAULT | PTE_USER | PTE_NG | PTE_RDONLY)
 +
 +#endif /* __ASSEMBLY__ */
 +
++#define __P000  __PAGE_NONE
++#define __P001  __PAGE_READONLY
++#define __P010  __PAGE_COPY
++#define __P011  __PAGE_COPY
++#define __P100  __PAGE_READONLY_EXEC
++#define __P101  __PAGE_READONLY_EXEC
++#define __P110  __PAGE_COPY_EXEC
++#define __P111  __PAGE_COPY_EXEC
++
++#define __S000  __PAGE_NONE
++#define __S001  __PAGE_READONLY
++#define __S010  __PAGE_SHARED
++#define __S011  __PAGE_SHARED
++#define __S100  __PAGE_READONLY_EXEC
++#define __S101  __PAGE_READONLY_EXEC
++#define __S110  __PAGE_SHARED_EXEC
++#define __S111  __PAGE_SHARED_EXEC
++
++#ifndef __ASSEMBLY__
++/*
++ * ZERO_PAGE is a global shared page that is always zero: used
++ * for zero-mapped memory areas etc..
++ */
++extern struct page *empty_zero_page;
++#define ZERO_PAGE(vaddr)	(empty_zero_page)
++
++#define pte_pfn(pte)		((pte_val(pte) & PHYS_MASK) >> PAGE_SHIFT)
++
++#define pfn_pte(pfn,prot)	(__pte(((phys_addr_t)(pfn) << PAGE_SHIFT) | pgprot_val(prot)))
++
++#define pte_none(pte)		(!pte_val(pte))
++#define pte_clear(mm,addr,ptep)	set_pte(ptep, __pte(0))
++#define pte_page(pte)		(pfn_to_page(pte_pfn(pte)))
++#define pte_offset_kernel(dir,addr)	(pmd_page_vaddr(*(dir)) + __pte_index(addr))
++
++#define pte_offset_map(dir,addr)	pte_offset_kernel((dir), (addr))
++#define pte_offset_map_nested(dir,addr)	pte_offset_kernel((dir), (addr))
++#define pte_unmap(pte)			do { } while (0)
++#define pte_unmap_nested(pte)		do { } while (0)
++
++/*
++ * The following only work if pte_present(). Undefined behaviour otherwise.
++ */
++#define pte_present(pte)	(pte_val(pte) & PTE_VALID)
++#define pte_dirty(pte)		(pte_val(pte) & PTE_DIRTY)
++#define pte_young(pte)		(pte_val(pte) & PTE_AF)
++#define pte_special(pte)	(pte_val(pte) & PTE_SPECIAL)
++#define pte_write(pte)		(!(pte_val(pte) & PTE_RDONLY))
++#define pte_exec(pte)		(!(pte_val(pte) & PTE_XN))
++
++#define pte_present_exec_user(pte) \
++	((pte_val(pte) & (PTE_VALID | PTE_USER | PTE_XN)) == \
++	 (PTE_VALID | PTE_USER))
++
++#define PTE_BIT_FUNC(fn,op) \
++static inline pte_t pte_##fn(pte_t pte) { pte_val(pte) op; return pte; }
++
++PTE_BIT_FUNC(wrprotect, |= PTE_RDONLY);
++PTE_BIT_FUNC(mkwrite,   &= ~PTE_RDONLY);
++PTE_BIT_FUNC(mkclean,   &= ~PTE_DIRTY);
++PTE_BIT_FUNC(mkdirty,   |= PTE_DIRTY);
++PTE_BIT_FUNC(mkold,     &= ~PTE_AF);
++PTE_BIT_FUNC(mkyoung,   |= PTE_AF);
++PTE_BIT_FUNC(mkspecial, |= PTE_SPECIAL);
++
++static inline void set_pte(pte_t *ptep, pte_t pte)
++{
++	*ptep = pte;
++}
++
++extern void __sync_icache_dcache(pte_t pteval);
++
++static inline void set_pte_at(struct mm_struct *mm, unsigned long addr,
++			      pte_t *ptep, pte_t pte)
++{
++	if (pte_present_exec_user(pte))
++		__sync_icache_dcache(pte);
++	set_pte(ptep, pte);
++}
++
++/*
++ * Huge pte definitions.
++ */
++#define pte_huge(pte)		((pte_val(pte) & PTE_TYPE_MASK) == PTE_TYPE_HUGEPAGE)
++#define pte_mkhuge(pte)		(__pte((pte_val(pte) & ~PTE_TYPE_MASK) | PTE_TYPE_HUGEPAGE))
++
++#define __pgprot_modify(prot,mask,bits)		\
++	__pgprot((pgprot_val(prot) & ~(mask)) | (bits))
++
++#define __HAVE_ARCH_PTE_SPECIAL
++
++/*
++ * Mark the prot value as uncacheable and unbufferable.
++ */
++#define pgprot_noncached(prot) \
++	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_DEVICE_nGnRnE))
++#define pgprot_writecombine(prot) \
++	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_DEVICE_GRE))
++#define pgprot_dmacoherent(prot) \
++	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_NORMAL_NC))
++#define __HAVE_PHYS_MEM_ACCESS_PROT
++struct file;
++extern pgprot_t phys_mem_access_prot(struct file *file, unsigned long pfn,
++				     unsigned long size, pgprot_t vma_prot);
++
++#define pmd_none(pmd)		(!pmd_val(pmd))
++#define pmd_present(pmd)	(pmd_val(pmd))
++
++#define pmd_bad(pmd)		(!(pmd_val(pmd) & 2))
++
++static inline void set_pmd(pmd_t *pmdp, pmd_t pmd)
++{
++	*pmdp = pmd;
++	dsb();
++}
++
++static inline void pmd_clear(pmd_t *pmdp)
++{
++	set_pmd(pmdp, __pmd(0));
++}
++
++static inline pte_t *pmd_page_vaddr(pmd_t pmd)
++{
++	return __va(pmd_val(pmd) & PHYS_MASK & (s32)PAGE_MASK);
++}
++
++#define pmd_page(pmd)		pfn_to_page(__phys_to_pfn(pmd_val(pmd) & PHYS_MASK))
++
++/*
++ * Conversion functions: convert a page and protection to a page entry,
++ * and a page entry and page directory to the page they refer to.
++ */
++#define mk_pte(page,prot)	pfn_pte(page_to_pfn(page),prot)
++
++#ifndef CONFIG_ARM64_64K_PAGES
++
++#define pud_none(pud)		(!pud_val(pud))
++#define pud_bad(pud)		(!(pud_val(pud) & 2))
++#define pud_present(pud)	(pud_val(pud))
++
++static inline void set_pud(pud_t *pudp, pud_t pud)
++{
++	*pudp = pud;
++	dsb();
++}
++
++static inline void pud_clear(pud_t *pudp)
++{
++	set_pud(pudp, __pud(0));
++}
++
++static inline pmd_t *pud_page_vaddr(pud_t pud)
++{
++	return __va(pud_val(pud) & PHYS_MASK & (s32)PAGE_MASK);
++}
++
++#endif	/* CONFIG_ARM64_64K_PAGES */
++
++/* to find an entry in a page-table-directory */
++#define pgd_index(addr)		(((addr) >> PGDIR_SHIFT) & (PTRS_PER_PGD - 1))
++
++#define pgd_offset(mm, addr)	((mm)->pgd+pgd_index(addr))
++
++/* to find an entry in a kernel page-table-directory */
++#define pgd_offset_k(addr)	pgd_offset(&init_mm, addr)
++
++/* Find an entry in the second-level page table.. */
++#ifndef CONFIG_ARM64_64K_PAGES
++#define pmd_index(addr)		(((addr) >> PMD_SHIFT) & (PTRS_PER_PMD - 1))
++static inline pmd_t *pmd_offset(pud_t *pud, unsigned long addr)
++{
++	return (pmd_t *)pud_page_vaddr(*pud) + pmd_index(addr);
++}
 +#endif
-diff --git a/arch/arm64/include/asm/stacktrace.h b/arch/arm64/include/asm/stacktrace.h
++
++/* Find an entry in the third-level page table.. */
++#define __pte_index(addr)	(((addr) >> PAGE_SHIFT) & (PTRS_PER_PTE - 1))
++
++static inline pte_t pte_modify(pte_t pte, pgprot_t newprot)
++{
++	const pteval_t mask = PTE_USER | PTE_XN | PTE_RDONLY;
++	pte_val(pte) = (pte_val(pte) & ~mask) | (pgprot_val(newprot) & mask);
++	return pte;
++}
++
++extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
++extern pgd_t idmap_pg_dir[PTRS_PER_PGD];
++
++#define SWAPPER_DIR_SIZE	(3 * PAGE_SIZE)
++#define IDMAP_DIR_SIZE		(2 * PAGE_SIZE)
++
++/*
++ * Encode and decode a swap entry:
++ *	bits 0-1:	present (must be zero)
++ *	bit  2:		PTE_FILE
++ *	bits 3-8:	swap type
++ *	bits 9-63:	swap offset
++ */
++#define __SWP_TYPE_SHIFT	3
++#define __SWP_TYPE_BITS		6
++#define __SWP_TYPE_MASK		((1 << __SWP_TYPE_BITS) - 1)
++#define __SWP_OFFSET_SHIFT	(__SWP_TYPE_BITS + __SWP_TYPE_SHIFT)
++
++#define __swp_type(x)		(((x).val >> __SWP_TYPE_SHIFT) & __SWP_TYPE_MASK)
++#define __swp_offset(x)		((x).val >> __SWP_OFFSET_SHIFT)
++#define __swp_entry(type,offset) ((swp_entry_t) { ((type) << __SWP_TYPE_SHIFT) | ((offset) << __SWP_OFFSET_SHIFT) })
++
++#define __pte_to_swp_entry(pte)	((swp_entry_t) { pte_val(pte) })
++#define __swp_entry_to_pte(swp)	((pte_t) { (swp).val })
++
++/*
++ * Ensure that there are not more swap files than can be encoded in the kernel
++ * the PTEs.
++ */
++#define MAX_SWAPFILES_CHECK() BUILD_BUG_ON(MAX_SWAPFILES_SHIFT > __SWP_TYPE_BITS)
++
++/*
++ * Encode and decode a file entry:
++ *	bits 0-1:	present (must be zero)
++ *	bit  2:		PTE_FILE
++ *	bits 3-63:	file offset / PAGE_SIZE
++ */
++#define pte_file(pte)		(pte_val(pte) & PTE_FILE)
++#define pte_to_pgoff(x)		(pte_val(x) >> 3)
++#define pgoff_to_pte(x)		__pte(((x) << 3) | PTE_FILE)
++
++#define PTE_FILE_MAX_BITS	61
++
++extern int kern_addr_valid(unsigned long addr);
++
++#include <asm-generic/pgtable.h>
++
++/*
++ * remap a physical page `pfn' of size `size' with page protection `prot'
++ * into virtual address `from'
++ */
++#define io_remap_pfn_range(vma,from,pfn,size,prot) \
++		remap_pfn_range(vma, from, pfn, size, prot)
++
++#define pgtable_cache_init() do { } while (0)
++
++#endif /* !__ASSEMBLY__ */
++
++#endif /* __ASM_PGTABLE_H */
+diff --git a/arch/arm64/include/asm/sparsemem.h b/arch/arm64/include/asm/sparsemem.h
 new file mode 100644
-index 0000000..7318f6d
+index 0000000..1be62bc
 --- /dev/null
-+++ b/arch/arm64/include/asm/stacktrace.h
-@@ -0,0 +1,29 @@
++++ b/arch/arm64/include/asm/sparsemem.h
+@@ -0,0 +1,24 @@
 +/*
 + * Copyright (C) 2012 ARM Ltd.
 + *
@@ -290,1242 +1025,13 @@ index 0000000..7318f6d
 + * You should have received a copy of the GNU General Public License
 + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
-+#ifndef __ASM_STACKTRACE_H
-+#define __ASM_STACKTRACE_H
++#ifndef __ASM_SPARSEMEM_H
++#define __ASM_SPARSEMEM_H
 +
-+struct stackframe {
-+	unsigned long fp;
-+	unsigned long sp;
-+	unsigned long pc;
-+};
-+
-+extern int unwind_frame(struct stackframe *frame);
-+extern void walk_stackframe(struct stackframe *frame,
-+			    int (*fn)(struct stackframe *, void *), void *data);
-+
-+#endif	/* __ASM_STACKTRACE_H */
-diff --git a/arch/arm64/include/asm/traps.h b/arch/arm64/include/asm/traps.h
-new file mode 100644
-index 0000000..10ca8ff
---- /dev/null
-+++ b/arch/arm64/include/asm/traps.h
-@@ -0,0 +1,30 @@
-+/*
-+ * Based on arch/arm/include/asm/traps.h
-+ *
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#ifndef __ASM_TRAP_H
-+#define __ASM_TRAP_H
-+
-+static inline int in_exception_text(unsigned long ptr)
-+{
-+	extern char __exception_text_start[];
-+	extern char __exception_text_end[];
-+
-+	return ptr >= (unsigned long)&__exception_text_start &&
-+	       ptr < (unsigned long)&__exception_text_end;
-+}
-+
-+#endif
-diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
-new file mode 100644
-index 0000000..ed2e58f
---- /dev/null
-+++ b/arch/arm64/kernel/entry.S
-@@ -0,0 +1,695 @@
-+/*
-+ * Low-level exception handling code
-+ *
-+ * Copyright (C) 2012 ARM Ltd.
-+ * Authors:	Catalin Marinas <catalin.marinas@arm.com>
-+ *		Will Deacon <will.deacon@arm.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/linkage.h>
-+
-+#include <asm/assembler.h>
-+#include <asm/asm-offsets.h>
-+#include <asm/errno.h>
-+#include <asm/thread_info.h>
-+#include <asm/unistd.h>
-+
-+/*
-+ * Bad Abort numbers
-+ *-----------------
-+ */
-+#define BAD_SYNC	0
-+#define BAD_IRQ		1
-+#define BAD_FIQ		2
-+#define BAD_ERROR	3
-+
-+	.macro	kernel_entry, el, regsize = 64
-+	sub	sp, sp, #S_FRAME_SIZE - S_LR	// room for LR, SP, SPSR, ELR
-+	.if	\regsize == 32
-+	mov	w0, w0				// zero upper 32 bits of x0
-+	.endif
-+	push	x28, x29
-+	push	x26, x27
-+	push	x24, x25
-+	push	x22, x23
-+	push	x20, x21
-+	push	x18, x19
-+	push	x16, x17
-+	push	x14, x15
-+	push	x12, x13
-+	push	x10, x11
-+	push	x8, x9
-+	push	x6, x7
-+	push	x4, x5
-+	push	x2, x3
-+	push	x0, x1
-+	.if	\el == 0
-+	mrs	x21, sp_el0
-+	.else
-+	add	x21, sp, #S_FRAME_SIZE
-+	.endif
-+	mrs	x22, elr_el1
-+	mrs	x23, spsr_el1
-+	stp	lr, x21, [sp, #S_LR]
-+	stp	x22, x23, [sp, #S_PC]
-+
-+	/*
-+	 * Set syscallno to -1 by default (overridden later if real syscall).
-+	 */
-+	.if	\el == 0
-+	mvn	x21, xzr
-+	str	x21, [sp, #S_SYSCALLNO]
-+	.endif
-+
-+	/*
-+	 * Registers that may be useful after this macro is invoked:
-+	 *
-+	 * x21 - aborted SP
-+	 * x22 - aborted PC
-+	 * x23 - aborted PSTATE
-+	*/
-+	.endm
-+
-+	.macro	kernel_exit, el, ret = 0
-+	ldp	x21, x22, [sp, #S_PC]		// load ELR, SPSR
-+	.if	\el == 0
-+	ldr	x23, [sp, #S_SP]		// load return stack pointer
-+	.endif
-+	.if	\ret
-+	ldr	x1, [sp, #S_X1]			// preserve x0 (syscall return)
-+	add	sp, sp, S_X2
-+	.else
-+	pop	x0, x1
-+	.endif
-+	pop	x2, x3				// load the rest of the registers
-+	pop	x4, x5
-+	pop	x6, x7
-+	pop	x8, x9
-+	msr	elr_el1, x21			// set up the return data
-+	msr	spsr_el1, x22
-+	.if	\el == 0
-+	msr	sp_el0, x23
-+	.endif
-+	pop	x10, x11
-+	pop	x12, x13
-+	pop	x14, x15
-+	pop	x16, x17
-+	pop	x18, x19
-+	pop	x20, x21
-+	pop	x22, x23
-+	pop	x24, x25
-+	pop	x26, x27
-+	pop	x28, x29
-+	ldr	lr, [sp], #S_FRAME_SIZE - S_LR	// load LR and restore SP
-+	eret					// return to kernel
-+	.endm
-+
-+	.macro	get_thread_info, rd
-+	mov	\rd, sp
-+	and	\rd, \rd, #~((1 << 13) - 1)	// top of 8K stack
-+	.endm
-+
-+/*
-+ * These are the registers used in the syscall handler, and allow us to
-+ * have in theory up to 7 arguments to a function - x0 to x6.
-+ *
-+ * x7 is reserved for the system call number in 32-bit mode.
-+ */
-+sc_nr	.req	x25		// number of system calls
-+scno	.req	x26		// syscall number
-+stbl	.req	x27		// syscall table pointer
-+tsk	.req	x28		// current thread_info
-+
-+/*
-+ * Interrupt handling.
-+ */
-+	.macro	irq_handler
-+	ldr	x1, handle_arch_irq
-+	mov	x0, sp
-+	blr	x1
-+	.endm
-+
-+	.text
-+
-+/*
-+ * Exception vectors.
-+ */
-+	.macro	ventry	label
-+	.align	7
-+	b	\label
-+	.endm
-+
-+	.align	11
-+ENTRY(vectors)
-+	ventry	el1_sync_invalid		// Synchronous EL1t
-+	ventry	el1_irq_invalid			// IRQ EL1t
-+	ventry	el1_fiq_invalid			// FIQ EL1t
-+	ventry	el1_error_invalid		// Error EL1t
-+
-+	ventry	el1_sync			// Synchronous EL1h
-+	ventry	el1_irq				// IRQ EL1h
-+	ventry	el1_fiq_invalid			// FIQ EL1h
-+	ventry	el1_error_invalid		// Error EL1h
-+
-+	ventry	el0_sync			// Synchronous 64-bit EL0
-+	ventry	el0_irq				// IRQ 64-bit EL0
-+	ventry	el0_fiq_invalid			// FIQ 64-bit EL0
-+	ventry	el0_error_invalid		// Error 64-bit EL0
-+
-+#ifdef CONFIG_COMPAT
-+	ventry	el0_sync_compat			// Synchronous 32-bit EL0
-+	ventry	el0_irq_compat			// IRQ 32-bit EL0
-+	ventry	el0_fiq_invalid_compat		// FIQ 32-bit EL0
-+	ventry	el0_error_invalid_compat	// Error 32-bit EL0
-+#else
-+	ventry	el0_sync_invalid		// Synchronous 32-bit EL0
-+	ventry	el0_irq_invalid			// IRQ 32-bit EL0
-+	ventry	el0_fiq_invalid			// FIQ 32-bit EL0
-+	ventry	el0_error_invalid		// Error 32-bit EL0
-+#endif
-+END(vectors)
-+
-+/*
-+ * Invalid mode handlers
-+ */
-+	.macro	inv_entry, el, reason, regsize = 64
-+	kernel_entry el, \regsize
-+	mov	x0, sp
-+	mov	x1, #\reason
-+	mrs	x2, esr_el1
-+	b	bad_mode
-+	.endm
-+
-+el0_sync_invalid:
-+	inv_entry 0, BAD_SYNC
-+ENDPROC(el0_sync_invalid)
-+
-+el0_irq_invalid:
-+	inv_entry 0, BAD_IRQ
-+ENDPROC(el0_irq_invalid)
-+
-+el0_fiq_invalid:
-+	inv_entry 0, BAD_FIQ
-+ENDPROC(el0_fiq_invalid)
-+
-+el0_error_invalid:
-+	inv_entry 0, BAD_ERROR
-+ENDPROC(el0_error_invalid)
-+
-+#ifdef CONFIG_COMPAT
-+el0_fiq_invalid_compat:
-+	inv_entry 0, BAD_FIQ, 32
-+ENDPROC(el0_fiq_invalid_compat)
-+
-+el0_error_invalid_compat:
-+	inv_entry 0, BAD_ERROR, 32
-+ENDPROC(el0_error_invalid_compat)
++#ifdef CONFIG_SPARSEMEM
++#define MAX_PHYSMEM_BITS	40
++#define SECTION_SIZE_BITS	30
 +#endif
 +
-+el1_sync_invalid:
-+	inv_entry 1, BAD_SYNC
-+ENDPROC(el1_sync_invalid)
-+
-+el1_irq_invalid:
-+	inv_entry 1, BAD_IRQ
-+ENDPROC(el1_irq_invalid)
-+
-+el1_fiq_invalid:
-+	inv_entry 1, BAD_FIQ
-+ENDPROC(el1_fiq_invalid)
-+
-+el1_error_invalid:
-+	inv_entry 1, BAD_ERROR
-+ENDPROC(el1_error_invalid)
-+
-+/*
-+ * EL1 mode handlers.
-+ */
-+	.align	6
-+el1_sync:
-+	kernel_entry 1
-+	mrs	x1, esr_el1			// read the syndrome register
-+	lsr	x24, x1, #26			// exception class
-+	cmp	x24, #0x25			// data abort in EL1
-+	b.eq	el1_da
-+	cmp	x24, #0x18			// configurable trap
-+	b.eq	el1_undef
-+	cmp	x24, #0x26			// stack alignment exception
-+	b.eq	el1_sp_pc
-+	cmp	x24, #0x22			// pc alignment exception
-+	b.eq	el1_sp_pc
-+	cmp	x24, #0x00			// unknown exception in EL1
-+	b.eq	el1_undef
-+	cmp	x24, #0x30			// debug exception in EL1
-+	b.ge	el1_dbg
-+	b	el1_inv
-+el1_da:
-+	/*
-+	 * Data abort handling
-+	 */
-+	mrs	x0, far_el1
-+	enable_dbg_if_not_stepping x2
-+	// re-enable interrupts if they were enabled in the aborted context
-+	tbnz	x23, #7, 1f			// PSR_I_BIT
-+	enable_irq
-+1:
-+	mov	x2, sp				// struct pt_regs
-+	bl	do_mem_abort
-+
-+	// disable interrupts before pulling preserved data off the stack
-+	disable_irq
-+	kernel_exit 1
-+el1_sp_pc:
-+	/*
-+	 * Stack or PC alignment exception handling
-+	 */
-+	mrs	x0, far_el1
-+	mov	x1, x25
-+	mov	x2, sp
-+	b	do_sp_pc_abort
-+el1_undef:
-+	/*
-+	 * Undefined instruction
-+	 */
-+	mov	x0, sp
-+	b	do_undefinstr
-+el1_dbg:
-+	/*
-+	 * Debug exception handling
-+	 */
-+	tbz	x24, #0, el1_inv		// EL1 only
-+	mrs	x0, far_el1
-+	mov	x2, sp				// struct pt_regs
-+	bl	do_debug_exception
-+
-+	kernel_exit 1
-+el1_inv:
-+	// TODO: add support for undefined instructions in kernel mode
-+	mov	x0, sp
-+	mov	x1, #BAD_SYNC
-+	mrs	x2, esr_el1
-+	b	bad_mode
-+ENDPROC(el1_sync)
-+
-+	.align	6
-+el1_irq:
-+	kernel_entry 1
-+	enable_dbg_if_not_stepping x0
-+#ifdef CONFIG_TRACE_IRQFLAGS
-+	bl	trace_hardirqs_off
 +#endif
-+#ifdef CONFIG_PREEMPT
-+	get_thread_info tsk
-+	ldr	x24, [tsk, #TI_PREEMPT]		// get preempt count
-+	add	x0, x24, #1			// increment it
-+	str	x0, [tsk, #TI_PREEMPT]
-+#endif
-+	irq_handler
-+#ifdef CONFIG_PREEMPT
-+	str	x24, [tsk, #TI_PREEMPT]		// restore preempt count
-+	cbnz	x24, 1f				// preempt count != 0
-+	ldr	x0, [tsk, #TI_FLAGS]		// get flags
-+	tbz	x0, #TIF_NEED_RESCHED, 1f	// needs rescheduling?
-+	bl	el1_preempt
-+1:
-+#endif
-+#ifdef CONFIG_TRACE_IRQFLAGS
-+	bl	trace_hardirqs_on
-+#endif
-+	kernel_exit 1
-+ENDPROC(el1_irq)
-+
-+#ifdef CONFIG_PREEMPT
-+el1_preempt:
-+	mov	x24, lr
-+1:	enable_dbg
-+	bl	preempt_schedule_irq		// irq en/disable is done inside
-+	ldr	x0, [tsk, #TI_FLAGS]		// get new tasks TI_FLAGS
-+	tbnz	x0, #TIF_NEED_RESCHED, 1b	// needs rescheduling?
-+	ret	x24
-+#endif
-+
-+/*
-+ * EL0 mode handlers.
-+ */
-+	.align	6
-+el0_sync:
-+	kernel_entry 0
-+	mrs	x25, esr_el1			// read the syndrome register
-+	lsr	x24, x25, #26			// exception class
-+	cmp	x24, #0x15			// SVC in 64-bit state
-+	b.eq	el0_svc
-+	adr	lr, ret_from_exception
-+	cmp	x24, #0x24			// data abort in EL0
-+	b.eq	el0_da
-+	cmp	x24, #0x20			// instruction abort in EL0
-+	b.eq	el0_ia
-+	cmp	x24, #0x07			// FP/ASIMD access
-+	b.eq	el0_fpsimd_acc
-+	cmp	x24, #0x2c			// FP/ASIMD exception
-+	b.eq	el0_fpsimd_exc
-+	cmp	x24, #0x18			// configurable trap
-+	b.eq	el0_undef
-+	cmp	x24, #0x26			// stack alignment exception
-+	b.eq	el0_sp_pc
-+	cmp	x24, #0x22			// pc alignment exception
-+	b.eq	el0_sp_pc
-+	cmp	x24, #0x00			// unknown exception in EL0
-+	b.eq	el0_undef
-+	cmp	x24, #0x30			// debug exception in EL0
-+	b.ge	el0_dbg
-+	b	el0_inv
-+
-+#ifdef CONFIG_COMPAT
-+	.align	6
-+el0_sync_compat:
-+	kernel_entry 0, 32
-+	mrs	x25, esr_el1			// read the syndrome register
-+	lsr	x24, x25, #26			// exception class
-+	cmp	x24, #0x11			// SVC in 32-bit state
-+	b.eq	el0_svc_compat
-+	adr	lr, ret_from_exception
-+	cmp	x24, #0x24			// data abort in EL0
-+	b.eq	el0_da
-+	cmp	x24, #0x20			// instruction abort in EL0
-+	b.eq	el0_ia
-+	cmp	x24, #0x07			// FP/ASIMD access
-+	b.eq	el0_fpsimd_acc
-+	cmp	x24, #0x28			// FP/ASIMD exception
-+	b.eq	el0_fpsimd_exc
-+	cmp	x24, #0x00			// unknown exception in EL0
-+	b.eq	el0_undef
-+	cmp	x24, #0x30			// debug exception in EL0
-+	b.ge	el0_dbg
-+	b	el0_inv
-+el0_svc_compat:
-+	/*
-+	 * AArch32 syscall handling
-+	 */
-+	adr	stbl, compat_sys_call_table	// load compat syscall table pointer
-+	uxtw	scno, w7			// syscall number in w7 (r7)
-+	mov     sc_nr, #__NR_compat_syscalls
-+	b	el0_svc_naked
-+
-+	.align	6
-+el0_irq_compat:
-+	kernel_entry 0, 32
-+	b	el0_irq_naked
-+#endif
-+
-+el0_da:
-+	/*
-+	 * Data abort handling
-+	 */
-+	mrs	x0, far_el1
-+	disable_step x1
-+	isb
-+	enable_dbg
-+	// enable interrupts before calling the main handler
-+	enable_irq
-+	mov	x1, x25
-+	mov	x2, sp
-+	b	do_mem_abort
-+el0_ia:
-+	/*
-+	 * Instruction abort handling
-+	 */
-+	mrs	x0, far_el1
-+	disable_step x1
-+	isb
-+	enable_dbg
-+	// enable interrupts before calling the main handler
-+	enable_irq
-+	orr	x1, x25, #1 << 24		// use reserved ISS bit for instruction aborts
-+	mov	x2, sp
-+	b	do_mem_abort
-+el0_fpsimd_acc:
-+	/*
-+	 * Floating Point or Advanced SIMD access
-+	 */
-+	mov	x0, x25
-+	mov	x1, sp
-+	b	do_fpsimd_acc
-+el0_fpsimd_exc:
-+	/*
-+	 * Floating Point or Advanced SIMD exception
-+	 */
-+	mov	x0, x25
-+	mov	x1, sp
-+	b	do_fpsimd_exc
-+el0_sp_pc:
-+	/*
-+	 * Stack or PC alignment exception handling
-+	 */
-+	mrs	x0, far_el1
-+	disable_step x1
-+	isb
-+	enable_dbg
-+	// enable interrupts before calling the main handler
-+	enable_irq
-+	mov	x1, x25
-+	mov	x2, sp
-+	b	do_sp_pc_abort
-+el0_undef:
-+	/*
-+	 * Undefined instruction
-+	 */
-+	mov	x0, sp
-+	b	do_undefinstr
-+el0_dbg:
-+	/*
-+	 * Debug exception handling
-+	 */
-+	tbnz	x24, #0, el0_inv		// EL0 only
-+	mrs	x0, far_el1
-+	disable_step x1
-+	mov	x1, x25
-+	mov	x2, sp
-+	b	do_debug_exception
-+el0_inv:
-+	mov	x0, sp
-+	mov	x1, #BAD_SYNC
-+	mrs	x2, esr_el1
-+	b	bad_mode
-+ENDPROC(el0_sync)
-+
-+	.align	6
-+el0_irq:
-+	kernel_entry 0
-+el0_irq_naked:
-+	disable_step x1
-+	isb
-+	enable_dbg
-+#ifdef CONFIG_TRACE_IRQFLAGS
-+	bl	trace_hardirqs_off
-+#endif
-+	get_thread_info tsk
-+#ifdef CONFIG_PREEMPT
-+	ldr	x24, [tsk, #TI_PREEMPT]		// get preempt count
-+	add	x23, x24, #1			// increment it
-+	str	x23, [tsk, #TI_PREEMPT]
-+#endif
-+	irq_handler
-+#ifdef CONFIG_PREEMPT
-+	ldr	x0, [tsk, #TI_PREEMPT]
-+	str	x24, [tsk, #TI_PREEMPT]
-+	cmp	x0, x23
-+	b.eq	1f
-+	mov	x1, #0
-+	str	x1, [x1]			// BUG
-+1:
-+#endif
-+#ifdef CONFIG_TRACE_IRQFLAGS
-+	bl	trace_hardirqs_on
-+#endif
-+	b	ret_to_user
-+ENDPROC(el0_irq)
-+
-+/*
-+ * This is the return code to user mode for abort handlers
-+ */
-+ENTRY(ret_from_exception)
-+	get_thread_info tsk
-+	b	ret_to_user
-+ENDPROC(ret_from_exception)
-+
-+/*
-+ * Register switch for AArch64. The callee-saved registers need to be saved
-+ * and restored. On entry:
-+ *   x0 = previous task_struct (must be preserved across the switch)
-+ *   x1 = next task_struct
-+ * Previous and next are guaranteed not to be the same.
-+ *
-+ */
-+ENTRY(cpu_switch_to)
-+	add	x8, x0, #THREAD_CPU_CONTEXT
-+	mov	x9, sp
-+	stp	x19, x20, [x8], #16		// store callee-saved registers
-+	stp	x21, x22, [x8], #16
-+	stp	x23, x24, [x8], #16
-+	stp	x25, x26, [x8], #16
-+	stp	x27, x28, [x8], #16
-+	stp	x29, x9, [x8], #16
-+	str	lr, [x8]
-+	add	x8, x1, #THREAD_CPU_CONTEXT
-+	ldp	x19, x20, [x8], #16		// restore callee-saved registers
-+	ldp	x21, x22, [x8], #16
-+	ldp	x23, x24, [x8], #16
-+	ldp	x25, x26, [x8], #16
-+	ldp	x27, x28, [x8], #16
-+	ldp	x29, x9, [x8], #16
-+	ldr	lr, [x8]
-+	mov	sp, x9
-+	ret
-+ENDPROC(cpu_switch_to)
-+
-+/*
-+ * This is the fast syscall return path.  We do as little as possible here,
-+ * and this includes saving x0 back into the kernel stack.
-+ */
-+ret_fast_syscall:
-+	disable_irq				// disable interrupts
-+	ldr	x1, [tsk, #TI_FLAGS]
-+	and	x2, x1, #_TIF_WORK_MASK
-+	cbnz	x2, fast_work_pending
-+	tbz	x1, #TIF_SINGLESTEP, fast_exit
-+	disable_dbg
-+	enable_step x2
-+fast_exit:
-+	kernel_exit 0, ret = 1
-+
-+/*
-+ * Ok, we need to do extra processing, enter the slow path.
-+ */
-+fast_work_pending:
-+	str	x0, [sp, #S_X0]			// returned x0
-+work_pending:
-+	tbnz	x1, #TIF_NEED_RESCHED, work_resched
-+	/* TIF_SIGPENDING or TIF_NOTIFY_RESUME case */
-+	ldr	x2, [sp, #S_PSTATE]
-+	mov	x0, sp				// 'regs'
-+	tst	x2, #PSR_MODE_MASK		// user mode regs?
-+	b.ne	no_work_pending			// returning to kernel
-+	bl	do_notify_resume
-+	b	ret_to_user
-+work_resched:
-+	enable_dbg
-+	bl	schedule
-+
-+/*
-+ * "slow" syscall return path.
-+ */
-+ENTRY(ret_to_user)
-+	disable_irq				// disable interrupts
-+	ldr	x1, [tsk, #TI_FLAGS]
-+	and	x2, x1, #_TIF_WORK_MASK
-+	cbnz	x2, work_pending
-+	tbz	x1, #TIF_SINGLESTEP, no_work_pending
-+	disable_dbg
-+	enable_step x2
-+no_work_pending:
-+	kernel_exit 0, ret = 0
-+ENDPROC(ret_to_user)
-+
-+/*
-+ * This is how we return from a fork.
-+ */
-+ENTRY(ret_from_fork)
-+	bl	schedule_tail
-+	get_thread_info tsk
-+	b	ret_to_user
-+ENDPROC(ret_from_fork)
-+
-+/*
-+ * SVC handler.
-+ */
-+	.align	6
-+ENTRY(el0_svc)
-+	adrp	stbl, sys_call_table		// load syscall table pointer
-+	uxtw	scno, w8			// syscall number in w8
-+	mov	sc_nr, #__NR_syscalls
-+el0_svc_naked:					// compat entry point
-+	stp	x0, scno, [sp, #S_ORIG_X0]	// save the original x0 and syscall number
-+	disable_step x16
-+	isb
-+	enable_dbg
-+	enable_irq
-+
-+	get_thread_info tsk
-+	ldr	x16, [tsk, #TI_FLAGS]		// check for syscall tracing
-+	tbnz	x16, #TIF_SYSCALL_TRACE, __sys_trace // are we tracing syscalls?
-+	adr	lr, ret_fast_syscall		// return address
-+	cmp     scno, sc_nr                     // check upper syscall limit
-+	b.hs	ni_sys
-+	ldr	x16, [stbl, scno, lsl #3]	// address in the syscall table
-+	br	x16				// call sys_* routine
-+ni_sys:
-+	mov	x0, sp
-+	b	do_ni_syscall
-+ENDPROC(el0_svc)
-+
-+	/*
-+	 * This is the really slow path.  We're going to be doing context
-+	 * switches, and waiting for our parent to respond.
-+	 */
-+__sys_trace:
-+	mov	x1, sp
-+	mov	w0, #0				// trace entry
-+	bl	syscall_trace
-+	adr	lr, __sys_trace_return		// return address
-+	uxtw	scno, w0			// syscall number (possibly new)
-+	mov	x1, sp				// pointer to regs
-+	cmp	scno, sc_nr			// check upper syscall limit
-+	b.hs	ni_sys
-+	ldp	x0, x1, [sp]			// restore the syscall args
-+	ldp	x2, x3, [sp, #S_X2]
-+	ldp	x4, x5, [sp, #S_X4]
-+	ldp	x6, x7, [sp, #S_X6]
-+	ldr	x16, [stbl, scno, lsl #3]	// address in the syscall table
-+	br	x16				// call sys_* routine
-+
-+__sys_trace_return:
-+	str	x0, [sp]			// save returned x0
-+	mov	x1, sp
-+	mov	w0, #1				// trace exit
-+	bl	syscall_trace
-+	b	ret_to_user
-+
-+/*
-+ * Special system call wrappers.
-+ */
-+ENTRY(sys_execve_wrapper)
-+	mov	x3, sp
-+	b	sys_execve
-+ENDPROC(sys_execve_wrapper)
-+
-+ENTRY(sys_clone_wrapper)
-+	mov	x5, sp
-+	b	sys_clone
-+ENDPROC(sys_clone_wrapper)
-+
-+ENTRY(sys_rt_sigreturn_wrapper)
-+	mov	x0, sp
-+	b	sys_rt_sigreturn
-+ENDPROC(sys_rt_sigreturn_wrapper)
-+
-+ENTRY(sys_sigaltstack_wrapper)
-+	ldr	x2, [sp, #S_SP]
-+	b	sys_sigaltstack
-+ENDPROC(sys_sigaltstack_wrapper)
-+
-+ENTRY(handle_arch_irq)
-+	.quad	0
-diff --git a/arch/arm64/kernel/stacktrace.c b/arch/arm64/kernel/stacktrace.c
-new file mode 100644
-index 0000000..d25459f
---- /dev/null
-+++ b/arch/arm64/kernel/stacktrace.c
-@@ -0,0 +1,127 @@
-+/*
-+ * Stack tracing support
-+ *
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#include <linux/kernel.h>
-+#include <linux/export.h>
-+#include <linux/sched.h>
-+#include <linux/stacktrace.h>
-+
-+#include <asm/stacktrace.h>
-+
-+/*
-+ * AArch64 PCS assigns the frame pointer to x29.
-+ *
-+ * A simple function prologue looks like this:
-+ * 	sub	sp, sp, #0x10
-+ *   	stp	x29, x30, [sp]
-+ *	mov	x29, sp
-+ *
-+ * A simple function epilogue looks like this:
-+ *	mov	sp, x29
-+ *	ldp	x29, x30, [sp]
-+ *	add	sp, sp, #0x10
-+ */
-+int unwind_frame(struct stackframe *frame)
-+{
-+	unsigned long high, low;
-+	unsigned long fp = frame->fp;
-+
-+	low  = frame->sp;
-+	high = ALIGN(low, THREAD_SIZE);
-+
-+	if (fp < low || fp > high || fp & 0xf)
-+		return -EINVAL;
-+
-+	frame->sp = fp + 0x10;
-+	frame->fp = *(unsigned long *)(fp);
-+	frame->pc = *(unsigned long *)(fp + 8);
-+
-+	return 0;
-+}
-+
-+void notrace walk_stackframe(struct stackframe *frame,
-+		     int (*fn)(struct stackframe *, void *), void *data)
-+{
-+	while (1) {
-+		int ret;
-+
-+		if (fn(frame, data))
-+			break;
-+		ret = unwind_frame(frame);
-+		if (ret < 0)
-+			break;
-+	}
-+}
-+EXPORT_SYMBOL(walk_stackframe);
-+
-+#ifdef CONFIG_STACKTRACE
-+struct stack_trace_data {
-+	struct stack_trace *trace;
-+	unsigned int no_sched_functions;
-+	unsigned int skip;
-+};
-+
-+static int save_trace(struct stackframe *frame, void *d)
-+{
-+	struct stack_trace_data *data = d;
-+	struct stack_trace *trace = data->trace;
-+	unsigned long addr = frame->pc;
-+
-+	if (data->no_sched_functions && in_sched_functions(addr))
-+		return 0;
-+	if (data->skip) {
-+		data->skip--;
-+		return 0;
-+	}
-+
-+	trace->entries[trace->nr_entries++] = addr;
-+
-+	return trace->nr_entries >= trace->max_entries;
-+}
-+
-+void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
-+{
-+	struct stack_trace_data data;
-+	struct stackframe frame;
-+
-+	data.trace = trace;
-+	data.skip = trace->skip;
-+
-+	if (tsk != current) {
-+		data.no_sched_functions = 1;
-+		frame.fp = thread_saved_fp(tsk);
-+		frame.sp = thread_saved_sp(tsk);
-+		frame.pc = thread_saved_pc(tsk);
-+	} else {
-+		register unsigned long current_sp asm("sp");
-+		data.no_sched_functions = 0;
-+		frame.fp = (unsigned long)__builtin_frame_address(0);
-+		frame.sp = current_sp;
-+		frame.pc = (unsigned long)save_stack_trace_tsk;
-+	}
-+
-+	walk_stackframe(&frame, save_trace, &data);
-+	if (trace->nr_entries < trace->max_entries)
-+		trace->entries[trace->nr_entries++] = ULONG_MAX;
-+}
-+
-+void save_stack_trace(struct stack_trace *trace)
-+{
-+	save_stack_trace_tsk(current, trace);
-+}
-+EXPORT_SYMBOL_GPL(save_stack_trace);
-+#endif
-diff --git a/arch/arm64/kernel/traps.c b/arch/arm64/kernel/traps.c
-new file mode 100644
-index 0000000..3883f84
---- /dev/null
-+++ b/arch/arm64/kernel/traps.c
-@@ -0,0 +1,348 @@
-+/*
-+ * Based on arch/arm/kernel/traps.c
-+ *
-+ * Copyright (C) 1995-2009 Russell King
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#include <linux/signal.h>
-+#include <linux/personality.h>
-+#include <linux/kallsyms.h>
-+#include <linux/spinlock.h>
-+#include <linux/uaccess.h>
-+#include <linux/hardirq.h>
-+#include <linux/kdebug.h>
-+#include <linux/module.h>
-+#include <linux/kexec.h>
-+#include <linux/delay.h>
-+#include <linux/init.h>
-+#include <linux/sched.h>
-+#include <linux/syscalls.h>
-+
-+#include <asm/atomic.h>
-+#include <asm/traps.h>
-+#include <asm/stacktrace.h>
-+#include <asm/exception.h>
-+#include <asm/system_misc.h>
-+
-+static const char *handler[]= {
-+	"Synchronous Abort",
-+	"IRQ",
-+	"FIQ",
-+	"Error"
-+};
-+
-+int show_unhandled_signals = 1;
-+
-+/*
-+ * Dump out the contents of some memory nicely...
-+ */
-+static void dump_mem(const char *lvl, const char *str, unsigned long bottom,
-+		     unsigned long top)
-+{
-+	unsigned long first;
-+	mm_segment_t fs;
-+	int i;
-+
-+	/*
-+	 * We need to switch to kernel mode so that we can use __get_user
-+	 * to safely read from kernel space.  Note that we now dump the
-+	 * code first, just in case the backtrace kills us.
-+	 */
-+	fs = get_fs();
-+	set_fs(KERNEL_DS);
-+
-+	printk("%s%s(0x%016lx to 0x%016lx)\n", lvl, str, bottom, top);
-+
-+	for (first = bottom & ~31; first < top; first += 32) {
-+		unsigned long p;
-+		char str[sizeof(" 12345678") * 8 + 1];
-+
-+		memset(str, ' ', sizeof(str));
-+		str[sizeof(str) - 1] = '\0';
-+
-+		for (p = first, i = 0; i < 8 && p < top; i++, p += 4) {
-+			if (p >= bottom && p < top) {
-+				unsigned int val;
-+				if (__get_user(val, (unsigned int *)p) == 0)
-+					sprintf(str + i * 9, " %08x", val);
-+				else
-+					sprintf(str + i * 9, " ????????");
-+			}
-+		}
-+		printk("%s%04lx:%s\n", lvl, first & 0xffff, str);
-+	}
-+
-+	set_fs(fs);
-+}
-+
-+static void dump_backtrace_entry(unsigned long where, unsigned long stack)
-+{
-+	print_ip_sym(where);
-+	if (in_exception_text(where))
-+		dump_mem("", "Exception stack", stack,
-+			 stack + sizeof(struct pt_regs));
-+}
-+
-+static void dump_instr(const char *lvl, struct pt_regs *regs)
-+{
-+	unsigned long addr = instruction_pointer(regs);
-+	mm_segment_t fs;
-+	char str[sizeof("00000000 ") * 5 + 2 + 1], *p = str;
-+	int i;
-+
-+	/*
-+	 * We need to switch to kernel mode so that we can use __get_user
-+	 * to safely read from kernel space.  Note that we now dump the
-+	 * code first, just in case the backtrace kills us.
-+	 */
-+	fs = get_fs();
-+	set_fs(KERNEL_DS);
-+
-+	for (i = -4; i < 1; i++) {
-+		unsigned int val, bad;
-+
-+		bad = __get_user(val, &((u32 *)addr)[i]);
-+
-+		if (!bad)
-+			p += sprintf(p, i == 0 ? "(%08x) " : "%08x ", val);
-+		else {
-+			p += sprintf(p, "bad PC value");
-+			break;
-+		}
-+	}
-+	printk("%sCode: %s\n", lvl, str);
-+
-+	set_fs(fs);
-+}
-+
-+static void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
-+{
-+	struct stackframe frame;
-+	const register unsigned long current_sp asm ("sp");
-+
-+	pr_debug("%s(regs = %p tsk = %p)\n", __func__, regs, tsk);
-+
-+	if (!tsk)
-+		tsk = current;
-+
-+	if (regs) {
-+		frame.fp = regs->regs[29];
-+		frame.sp = regs->sp;
-+		frame.pc = regs->pc;
-+	} else if (tsk == current) {
-+		frame.fp = (unsigned long)__builtin_frame_address(0);
-+		frame.sp = current_sp;
-+		frame.pc = (unsigned long)dump_backtrace;
-+	} else {
-+		/*
-+		 * task blocked in __switch_to
-+		 */
-+		frame.fp = thread_saved_fp(tsk);
-+		frame.sp = thread_saved_sp(tsk);
-+		frame.pc = thread_saved_pc(tsk);
-+	}
-+
-+	printk("Call trace:\n");
-+	while (1) {
-+		unsigned long where = frame.pc;
-+		int ret;
-+
-+		ret = unwind_frame(&frame);
-+		if (ret < 0)
-+			break;
-+		dump_backtrace_entry(where, frame.sp);
-+	}
-+}
-+
-+void dump_stack(void)
-+{
-+	dump_backtrace(NULL, NULL);
-+}
-+
-+EXPORT_SYMBOL(dump_stack);
-+
-+void show_stack(struct task_struct *tsk, unsigned long *sp)
-+{
-+	dump_backtrace(NULL, tsk);
-+	barrier();
-+}
-+
-+#ifdef CONFIG_PREEMPT
-+#define S_PREEMPT " PREEMPT"
-+#else
-+#define S_PREEMPT ""
-+#endif
-+#ifdef CONFIG_SMP
-+#define S_SMP " SMP"
-+#else
-+#define S_SMP ""
-+#endif
-+
-+static int __die(const char *str, int err, struct thread_info *thread,
-+		 struct pt_regs *regs)
-+{
-+	struct task_struct *tsk = thread->task;
-+	static int die_counter;
-+	int ret;
-+
-+	pr_emerg("Internal error: %s: %x [#%d]" S_PREEMPT S_SMP "\n",
-+		 str, err, ++die_counter);
-+
-+	/* trap and error numbers are mostly meaningless on ARM */
-+	ret = notify_die(DIE_OOPS, str, regs, err, 0, SIGSEGV);
-+	if (ret == NOTIFY_STOP)
-+		return ret;
-+
-+	print_modules();
-+	__show_regs(regs);
-+	pr_emerg("Process %.*s (pid: %d, stack limit = 0x%p)\n",
-+		 TASK_COMM_LEN, tsk->comm, task_pid_nr(tsk), thread + 1);
-+
-+	if (!user_mode(regs) || in_interrupt()) {
-+		dump_mem(KERN_EMERG, "Stack: ", regs->sp,
-+			 THREAD_SIZE + (unsigned long)task_stack_page(tsk));
-+		dump_backtrace(regs, tsk);
-+		dump_instr(KERN_EMERG, regs);
-+	}
-+
-+	return ret;
-+}
-+
-+static DEFINE_RAW_SPINLOCK(die_lock);
-+
-+/*
-+ * This function is protected against re-entrancy.
-+ */
-+void die(const char *str, struct pt_regs *regs, int err)
-+{
-+	struct thread_info *thread = current_thread_info();
-+	int ret;
-+
-+	oops_enter();
-+
-+	raw_spin_lock_irq(&die_lock);
-+	console_verbose();
-+	bust_spinlocks(1);
-+	ret = __die(str, err, thread, regs);
-+
-+	if (regs && kexec_should_crash(thread->task))
-+		crash_kexec(regs);
-+
-+	bust_spinlocks(0);
-+	add_taint(TAINT_DIE);
-+	raw_spin_unlock_irq(&die_lock);
-+	oops_exit();
-+
-+	if (in_interrupt())
-+		panic("Fatal exception in interrupt");
-+	if (panic_on_oops)
-+		panic("Fatal exception");
-+	if (ret != NOTIFY_STOP)
-+		do_exit(SIGSEGV);
-+}
-+
-+void arm64_notify_die(const char *str, struct pt_regs *regs,
-+		      struct siginfo *info, int err)
-+{
-+	if (user_mode(regs))
-+		force_sig_info(info->si_signo, info, current);
-+	else
-+		die(str, regs, err);
-+}
-+
-+asmlinkage void __exception do_undefinstr(struct pt_regs *regs)
-+{
-+	siginfo_t info;
-+	void __user *pc = (void __user *)instruction_pointer(regs);
-+
-+#ifdef CONFIG_COMPAT
-+	/* check for AArch32 breakpoint instructions */
-+	if (compat_user_mode(regs) && aarch32_break_trap(regs) == 0)
-+		return;
-+#endif
-+
-+	if (show_unhandled_signals) {
-+		pr_info("%s[%d]: undefined instruction: pc=%p\n",
-+			current->comm, task_pid_nr(current), pc);
-+		dump_instr(KERN_INFO, regs);
-+	}
-+
-+	info.si_signo = SIGILL;
-+	info.si_errno = 0;
-+	info.si_code  = ILL_ILLOPC;
-+	info.si_addr  = pc;
-+
-+	arm64_notify_die("Oops - undefined instruction", regs, &info, 0);
-+}
-+
-+long compat_arm_syscall(struct pt_regs *regs);
-+
-+asmlinkage long do_ni_syscall(struct pt_regs *regs)
-+{
-+#ifdef CONFIG_COMPAT
-+	long ret;
-+	if (is_compat_task()) {
-+		ret = compat_arm_syscall(regs);
-+		if (ret != -ENOSYS)
-+			return ret;
-+	}
-+#endif
-+
-+	if (show_unhandled_signals) {
-+		pr_info("%s[%d]: syscall %d\n", current->comm,
-+			task_pid_nr(current), (int)regs->syscallno);
-+		dump_instr("", regs);
-+		if (user_mode(regs))
-+			__show_regs(regs);
-+	}
-+
-+	return sys_ni_syscall();
-+}
-+
-+/*
-+ * bad_mode handles the impossible case in the exception vector.
-+ */
-+asmlinkage void bad_mode(struct pt_regs *regs, int reason, unsigned int esr)
-+{
-+	console_verbose();
-+
-+	pr_crit("Bad mode in %s handler detected, code 0x%08x\n",
-+		handler[reason], esr);
-+
-+	die("Oops - bad mode", regs, 0);
-+	local_irq_disable();
-+	panic("bad mode");
-+}
-+
-+void __pte_error(const char *file, int line, unsigned long val)
-+{
-+	printk("%s:%d: bad pte %016lx.\n", file, line, val);
-+}
-+
-+void __pmd_error(const char *file, int line, unsigned long val)
-+{
-+	printk("%s:%d: bad pmd %016lx.\n", file, line, val);
-+}
-+
-+void __pgd_error(const char *file, int line, unsigned long val)
-+{
-+	printk("%s:%d: bad pgd %016lx.\n", file, line, val);
-+}
-+
-+void __init trap_init(void)
-+{
-+	return;
-+}
 
