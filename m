@@ -1,58 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758301Ab2IGVbV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 17:31:21 -0400
-Received: from mga01.intel.com ([192.55.52.88]:5926 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751599Ab2IGVbN convert rfc822-to-8bit (ORCPT
+	id S1758199Ab2IGVdB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 17:33:01 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:41764 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757137Ab2IGVc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 17:31:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,387,1344236400"; 
-   d="scan'208";a="219568929"
-From: Andi Kleen <andi@firstfloor.org>
-To: james northrup <northrup.james@gmail.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Johannes Stezenbach <js@sig21.net>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
-        linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@openedhand.com>,
-        Roman Mamedov <rm@romanrm.ru>, chris.mason@fusionio.com,
-        Nitin Gupta <ngupta@vflare.org>, linux-btrfs@vger.kernel.org
-Subject: Re: [GIT PULL] Update LZO compression
-References: <50299142.2030504@oberhumer.com>
-	<20120814123937.GA14756@sig21.net> <502B8FE3.7080501@oberhumer.com>
-	<20120815144539.GA8300@sig21.net> <502C92C3.7090701@oberhumer.com>
-	<20120816150647.GA22010@sig21.net> <20120816232549.4d14a6aa@natsu>
-	<20120816175234.GL11413@one.firstfloor.org>
-	<CAMuHMdWK_Y=QwkgQD6K8tFBLaO04Fy0yVAzEpb2OYW6Ec0hGoA@mail.gmail.com>
-	<CAPkEcwgv6f5B+Mrw7kzrHcZ5JZ+Yr0o=bLdoFqCB-e4CLiVx5A@mail.gmail.com>
-Date: Fri, 07 Sep 2012 14:31:12 -0700
-In-Reply-To: <CAPkEcwgv6f5B+Mrw7kzrHcZ5JZ+Yr0o=bLdoFqCB-e4CLiVx5A@mail.gmail.com>
-	(james northrup's message of "Thu, 16 Aug 2012 11:55:06 -0700")
-Message-ID: <m2mx114j1b.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 7 Sep 2012 17:32:59 -0400
+Date: Fri, 07 Sep 2012 17:32:57 -0400 (EDT)
+Message-Id: <20120907.173257.685485936431214053.davem@davemloft.net>
+To: timur@freescale.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-next@vger.kernel.org, sfr@canb.auug.org.au, rdunlap@xenotime.net
+Subject: Re: [PATCH][v2] netdev/phy: mdio-mux-mmioreg.c should include
+ of_address.h
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1347053457-24935-1-git-send-email-timur@freescale.com>
+References: <1347053457-24935-1-git-send-email-timur@freescale.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-james northrup <northrup.james@gmail.com> writes:
+From: Timur Tabi <timur@freescale.com>
+Date: Fri, 7 Sep 2012 16:30:57 -0500
 
-> looks like ARM results are inconclusive from a lot of folks without bandwidth
-> to do a write-up, what about just plain STAGING status for ARM so the android
-> tweakers can beat on it for a while?  
+> mdio-mux-mmioreg.c uses function of_address_to_resource(), which is defined
+> in linux/of_address.h.  This fixes a compilation error:
+> 
+> drivers/net/phy/mdio-mux-mmioreg.c: In function 'mdio_mux_mmioreg_probe':
+> drivers/net/phy/mdio-mux-mmioreg.c:83:2: error: implicit declaration of
+> 	function 'of_address_to_resource'
+> 
+> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+> Signed-off-by: Timur Tabi <timur@freescale.com>
 
-Again staging doesn't really work for a core library, it's more
-for separate drivers.
-
-FWIW we did some tests and the new library seems to be generally faster
-on x86.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+Applied, thanks.
