@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932894Ab2IGJ3n (ORCPT <rfc822;w@1wt.eu>);
+	id S932978Ab2IGJ3q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 05:29:46 -0400
+Received: from mail-gw3.nixu.fi ([193.209.237.7]:52829 "EHLO mail-gw3.nixu.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932109Ab2IGJ3n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Sep 2012 05:29:43 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:46243 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755886Ab2IGJ3l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 05:29:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120905191657.GA15868@redhat.com>
-References: <1346680277-5887-1-git-send-email-sjur.brandeland@stericsson.com>
-	<20120903143018.GA5353@redhat.com>
-	<CAJK669bkHHMAPYMEr22-6uOwfgJv1uKTbzNBQVVCq=OooExC0g@mail.gmail.com>
-	<20120903202737.GD6181@redhat.com>
-	<87zk56e2xc.fsf@rustcorp.com.au>
-	<CAJK669bUXHqaDUZDNZ9i85pRKENUMS_RXw4z7BsSq7Hiw=OOfg@mail.gmail.com>
-	<20120905143558.GB10925@redhat.com>
-	<CAJK669bhVfgnxuF6wVtdnzs2bgiJ2HzgwfWw4uZ=EqTdm43Jow@mail.gmail.com>
-	<20120905191657.GA15868@redhat.com>
-Date: Fri, 7 Sep 2012 11:24:24 +0200
-Message-ID: <CAJK669bqRF6WiQ8=21pEyUB565i80CeN0eniWcPBxXNLCOcxXA@mail.gmail.com>
-Subject: Re: [RFC 1/2] virtio_console: Add support for DMA memory allocation
-From: =?UTF-8?Q?Sjur_Br=C3=A6ndeland?= <sjurbren@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Ohad Ben-Cohen <ohad@wizery.com>,
-        Amit Shah <amit.shah@redhat.com>, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        virtualization@lists.linux-foundation.org
-Content-Type: text/plain; charset=UTF-8
+From: Pasi Savanainen <pasi.savanainen@nixu.com>
+To: apw@canonical.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] checkpatch: check utf-8 content from a commit log when it's missing from charset
+Date: Fri,  7 Sep 2012 12:33:07 +0300
+Message-Id: <1347010387-4147-1-git-send-email-pasi.savanainen@nixu.com>
+X-Mailer: git-send-email 1.7.9.5
+Content-Type: text/plain; charset="us-ascii:utf-8"
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
+ definitions=2012-09-07_03:2012-09-06,2012-09-07,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=1
+ phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=6.0.2-1203120001 definitions=main-1209070036
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael.
+Check that a commit log doesn't contain UTF-8 when a mail header
+explicitly defines a different charset, like
+'Content-Type: text/plain; charset="us-ascii"'
 
->> Not just fail to work, the kernel will panic on the BUG_ON().
->> Remoteproc gets the virtio configuration from firmware loaded
->> from user space. So this type of problem might be triggered
->> for other virtio drivers as well.
->
-> how?
-...
->> Even if we fix this particular problem, the general problem
->> still exists: bogus virtio declarations in remoteproc's firmware
->> may cause BUG_ON().
->
-> which BUG_ON exactly?
+Signed-off-by: Pasi Savanainen <pasi.savanainen@nixu.com>
+---
+ scripts/checkpatch.pl |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
-I am afraid I have been barking up the wrong tree here.
-Please ignore my previous rambling about panics related
-to device features.
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index ca05ba2..5ae9188 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -1386,6 +1386,8 @@ sub process {
+ 	my $in_header_lines = 1;
+ 	my $in_commit_log = 0;		#Scanning lines before patch
+ 
++	my $non_utf8_charset = 0;
++
+ 	our @report = ();
+ 	our $cnt_lines = 0;
+ 	our $cnt_error = 0;
+@@ -1686,10 +1688,17 @@ sub process {
+ 			$in_commit_log = 1;
+ 		}
+ 
+-# Still not yet in a patch, check for any UTF-8
+-		if ($in_commit_log && $realfile =~ /^$/ &&
++# Check if there is UTF-8 in a commit log when a mail header has explicitly
++# declined it, i.e defined some charset where it is missing.
++		if ($in_header_lines &&
++		    $rawline =~ /^Content-Type:.+charset="(.+)".*$/ &&
++		    $1 !~ /utf-8/i) {
++			$non_utf8_charset = 1;
++		}
++
++		if ($in_commit_log && $non_utf8_charset && $realfile =~ /^$/ &&
+ 		    $rawline =~ /$NON_ASCII_UTF8/) {
+-			CHK("UTF8_BEFORE_PATCH",
++			WARN("UTF8_BEFORE_PATCH",
+ 			    "8-bit UTF-8 used in possible commit log\n" . $herecurr);
+ 		}
+ 
+-- 
+1.7.9.5
 
-I hit the  BUG() in virtio_check_driver_offered_feature():
-First I did not declare the feature because DMA was not set:
-static unsigned int features[] = {
-...
-#if VIRTIO_CONSOLE_HAS_DMA
-	VIRTIO_CONSOLE_F_DMA_MEM,
-#endif
-};
-
-and then in probe I checked if the feature was supported:
-	    virtio_has_feature(vdev, VIRTIO_CONSOLE_F_DMA_MEM)
-
-This triggered the BUG() in virtio_check_driver_offered_feature(),
-because the driver was asking for a unknown-feature.
-
-I can get avoid this by simply checking the devices feature bits directly
-instead of using virtio_has_feature().
-
-Regards,
-Sjur
