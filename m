@@ -1,142 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932602Ab2IGGNS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 02:13:18 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55206 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760094Ab2IGGNO (ORCPT
+	id S1759640Ab2IGGNm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 02:13:42 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:57573 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753306Ab2IGGNk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 02:13:14 -0400
-Date: Thu, 6 Sep 2012 23:12:57 -0700
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-831394bdd9dd3ac1661336505c7cbdfd786d8cd4@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, dsahern@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, dsahern@gmail.com,
-        tglx@linutronix.de
-In-Reply-To: <1346897446-16569-2-git-send-email-namhyung@kernel.org>
-References: <1346897446-16569-2-git-send-email-namhyung@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf header:
-  Prepare tracepoint events regardless of name
-Git-Commit-ID: 831394bdd9dd3ac1661336505c7cbdfd786d8cd4
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 7 Sep 2012 02:13:40 -0400
+Message-ID: <5049908A.7070501@linux.vnet.ibm.com>
+Date: Fri, 07 Sep 2012 14:13:30 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH 1/3] KVM: MMU: release noslot pfn on the fail path properly
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 06 Sep 2012 23:13:03 -0700 (PDT)
+Content-Transfer-Encoding: 7bit
+x-cbid: 12090706-9264-0000-0000-0000024A0AAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  831394bdd9dd3ac1661336505c7cbdfd786d8cd4
-Gitweb:     http://git.kernel.org/tip/831394bdd9dd3ac1661336505c7cbdfd786d8cd4
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Thu, 6 Sep 2012 11:10:46 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 6 Sep 2012 10:51:02 -0300
+We can not directly call kvm_release_pfn_clean to release the pfn
+since we can meet noslot pfn which is used to cache mmio info into
+spte
 
-perf header: Prepare tracepoint events regardless of name
+Introduce mmu_release_pfn_clean to do this kind of thing
 
-Current perf_evlist__set_tracepoint_names is a misnomer because it finds
-and sets correspoding event_format in addition to the name.  So skipping
-it when a event has set name already caused a trouble.
-
-Rename it and set name only a event doesn't have one.
-
-Reported-by: David Ahern <dsahern@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1346897446-16569-2-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- tools/perf/util/header.c |   36 ++++++++++++++++++++++--------------
- 1 files changed, 22 insertions(+), 14 deletions(-)
+ arch/x86/kvm/mmu.c         |   19 ++++++++++++++-----
+ arch/x86/kvm/paging_tmpl.h |    4 ++--
+ 2 files changed, 16 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 8b0b873..d07bc13 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -2295,33 +2295,39 @@ static int read_attr(int fd, struct perf_header *ph,
- 	return ret <= 0 ? -1 : 0;
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 399c177..3c10bca 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2432,6 +2432,16 @@ done:
+ 	return ret;
  }
- 
--static int perf_evsel__set_tracepoint_name(struct perf_evsel *evsel,
--					   struct pevent *pevent)
-+static int perf_evsel__prepare_tracepoint_event(struct perf_evsel *evsel,
-+						struct pevent *pevent)
- {
--	struct event_format *event = pevent_find_event(pevent,
--						       evsel->attr.config);
-+	struct event_format *event;
- 	char bf[128];
- 
-+	/* already prepared */
-+	if (evsel->tp_format)
-+		return 0;
+
++/*
++ * The primary user is page fault path which call it to properly
++ * release noslot_pfn.
++ */
++static void mmu_release_pfn_clean(pfn_t pfn)
++{
++	if (!is_error_pfn(pfn))
++		kvm_release_pfn_clean(pfn);
++}
 +
-+	event = pevent_find_event(pevent, evsel->attr.config);
- 	if (event == NULL)
- 		return -1;
- 
--	snprintf(bf, sizeof(bf), "%s:%s", event->system, event->name);
--	evsel->name = strdup(bf);
--	if (evsel->name == NULL)
--		return -1;
-+	if (!evsel->name) {
-+		snprintf(bf, sizeof(bf), "%s:%s", event->system, event->name);
-+		evsel->name = strdup(bf);
-+		if (evsel->name == NULL)
-+			return -1;
-+	}
- 
- 	evsel->tp_format = event;
+ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 			 unsigned pt_access, unsigned pte_access,
+ 			 int user_fault, int write_fault,
+@@ -2497,8 +2507,7 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 		}
+ 	}
+
+-	if (!is_error_pfn(pfn))
+-		kvm_release_pfn_clean(pfn);
++	mmu_release_pfn_clean(pfn);
+ }
+
+ static void nonpaging_new_cr3(struct kvm_vcpu *vcpu)
+@@ -2618,7 +2627,7 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
+ 					      1, ACC_ALL, iterator.sptep);
+ 			if (!sp) {
+ 				pgprintk("nonpaging_map: ENOMEM\n");
+-				kvm_release_pfn_clean(pfn);
++				mmu_release_pfn_clean(pfn);
+ 				return -ENOMEM;
+ 			}
+
+@@ -2882,7 +2891,7 @@ static int nonpaging_map(struct kvm_vcpu *vcpu, gva_t v, u32 error_code,
+
+ out_unlock:
+ 	spin_unlock(&vcpu->kvm->mmu_lock);
+-	kvm_release_pfn_clean(pfn);
++	mmu_release_pfn_clean(pfn);
  	return 0;
  }
- 
--static int perf_evlist__set_tracepoint_names(struct perf_evlist *evlist,
--					     struct pevent *pevent)
-+static int perf_evlist__prepare_tracepoint_events(struct perf_evlist *evlist,
-+						  struct pevent *pevent)
- {
- 	struct perf_evsel *pos;
- 
- 	list_for_each_entry(pos, &evlist->entries, node) {
--		if (pos->attr.type == PERF_TYPE_TRACEPOINT && !pos->name &&
--		    perf_evsel__set_tracepoint_name(pos, pevent))
-+		if (pos->attr.type == PERF_TYPE_TRACEPOINT &&
-+		    perf_evsel__prepare_tracepoint_event(pos, pevent))
- 			return -1;
- 	}
- 
-@@ -2409,7 +2415,8 @@ int perf_session__read_header(struct perf_session *session, int fd)
- 
- 	lseek(fd, header->data_offset, SEEK_SET);
- 
--	if (perf_evlist__set_tracepoint_names(session->evlist, session->pevent))
-+	if (perf_evlist__prepare_tracepoint_events(session->evlist,
-+						   session->pevent))
- 		goto out_delete_evlist;
- 
- 	header->frozen = 1;
-@@ -2643,7 +2650,8 @@ int perf_event__process_tracing_data(union perf_event *event,
- 	if (size_read + padding != size)
- 		die("tracing data size mismatch");
- 
--	perf_evlist__set_tracepoint_names(session->evlist, session->pevent);
-+	perf_evlist__prepare_tracepoint_events(session->evlist,
-+					       session->pevent);
- 
- 	return size_read + padding;
+
+@@ -3350,7 +3359,7 @@ static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa, u32 error_code,
+
+ out_unlock:
+ 	spin_unlock(&vcpu->kvm->mmu_lock);
+-	kvm_release_pfn_clean(pfn);
++	mmu_release_pfn_clean(pfn);
+ 	return 0;
  }
+
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index bf8c42b..f075259 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -544,7 +544,7 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
+ out_gpte_changed:
+ 	if (sp)
+ 		kvm_mmu_put_page(sp, it.sptep);
+-	kvm_release_pfn_clean(pfn);
++	mmu_release_pfn_clean(pfn);
+ 	return NULL;
+ }
+
+@@ -645,7 +645,7 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
+
+ out_unlock:
+ 	spin_unlock(&vcpu->kvm->mmu_lock);
+-	kvm_release_pfn_clean(pfn);
++	mmu_release_pfn_clean(pfn);
+ 	return 0;
+ }
+
+-- 
+1.7.7.6
+
