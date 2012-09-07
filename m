@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755474Ab2IHD0U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 23:26:20 -0400
-Received: from mga14.intel.com ([143.182.124.37]:28252 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751714Ab2IHD0Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 23:26:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,390,1344236400"; 
-   d="scan'208";a="190287464"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH RESEND] USB/host: Cleanup unneccessary irq disable code
-Thread-Topic: [PATCH RESEND] USB/host: Cleanup unneccessary irq disable code
-Thread-Index: AQHNjI8l1bhi80ax80i2oD2lS38uQZd/yaKQ
-Date: Sat, 8 Sep 2012 03:26:11 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A17B12B@SHSMSX101.ccr.corp.intel.com>
-References: <1347009599.1119.9.camel@cliu38-desktop-build>
-In-Reply-To: <1347009599.1119.9.camel@cliu38-desktop-build>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1751093Ab2IHEet (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 00:34:49 -0400
+Received: from [202.198.0.38] ([202.198.0.38]:4251 "EHLO jlau.edu.cn"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750813Ab2IHEer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Sep 2012 00:34:47 -0400
+X-Greylist: delayed 13955 seconds by postgrey-1.27 at vger.kernel.org; Sat, 08 Sep 2012 00:34:46 EDT
+Date: Sat, 08 Sep 2012 07:37:09 +0800
+From: "jlndxb" <jlndxb@jlau.edu.cn>
+Subject: Warning Account Will Expire In 2days!!!!!!!
 MIME-Version: 1.0
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8bit
+Message-ID: <WorldClient-F201209080737.AA37090159@jlau.edu.cn>
+X-Mailer: WorldClient 9.0.6
+X-Authenticated-Sender: jlndxb@jlau.edu.cn
+X-Spam-Processed: jlau.edu.cn, Sat, 08 Sep 2012 07:37:14 +0800
+	(not processed: message from valid local sender)
+X-Return-Path: jlndxb@jlau.edu.cn
+X-Envelope-From: jlndxb@jlau.edu.cn
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q883RHTH010584
+
+Dear Account Subscriber,
 
 
-> -----Original Message-----
-> From: Liu, Chuansheng
-> Sent: Friday, September 07, 2012 5:20 PM
-> To: gregkh@linuxfoundation.org
-> Cc: linux-kernel@vger.kernel.org
-> Subject: [PATCH RESEND] USB/host: Cleanup unneccessary irq disable code
-> 
-> Because the IRQF_DISABLED as the flag is now a NOOP and has been
-> deprecated and in hardirq context the interrupt is disabled.
-> 
-> so in usb/host code:
-> Removing the usage of flag IRQF_DISABLED;
-> Removing the calling local_irq save/restore actions in irq
-> handler usb_hcd_irq();
-> 
-> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-> Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Welcom to Webmail Account Center Upgrade And Maintenance . In order to 
+continue using our services you are require to update and re-comfirmed 
+your email account details as requested please click on the link below. 
+For us to  complete this update you are require to fill the account 
+form,you must reply to this email immediately
+and enter your account details as requested.
 
-Hi greg,
-This new patch is still not OK in a right format to apply? Please let me know, thanks.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+http://pastehtml.com/raw/ca6hzkwl7.html
+ 
+ 
+After following the instructions in the sheet, your account will not be 
+interrupted and will continue as normal. Thanks for your attention to 
+this request. We apologize for any inconveniences. Warning!!! Account 
+owner that refuses to update his/her account after 2days of receiving 
+this warning will lose his or her account permanently.
+
+
+Thank you for your understanding
+Warning Code: USJ4F5G7NBX
+Copyright ©2012 Webmail Helpdest Support Center.
+
+
