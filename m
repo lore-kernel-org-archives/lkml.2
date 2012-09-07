@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751551Ab2IGPbD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 11:31:03 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52113 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750703Ab2IGPa5 (ORCPT
+	id S1752155Ab2IGPbK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 11:31:10 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:50881 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750703Ab2IGPbE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 11:30:57 -0400
+	Fri, 7 Sep 2012 11:31:04 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: target-devel@vger.kernel.org, nab@linux-iscsi.org, hch@lst.de,
         roland@kernel.org
-Subject: [PATCH 01/11] target: go through normal processing for zero-length PSCSI commands
-Date: Fri,  7 Sep 2012 17:30:32 +0200
-Message-Id: <1347031842-2531-2-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH 03/11] target: fail REPORT LUNS with less than 16 bytes of payload
+Date: Fri,  7 Sep 2012 17:30:34 +0200
+Message-Id: <1347031842-2531-4-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.7.11.2
 In-Reply-To: <1347031842-2531-1-git-send-email-pbonzini@redhat.com>
 References: <1347031842-2531-1-git-send-email-pbonzini@redhat.com>
@@ -21,71 +21,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Right now, commands with a zero-size payload are skipped completely.
-This is wrong; such commands should be passed down to the device and
-processed normally.
+SPC says:
 
-For physical backends, this ignores completely things such as START
-STOP UNIT.  For virtual backends, we have a hack in place to clear a
-unit attention state on a zero-size REQUEST SENSE, but we still do
-not report errors properly on zero-length commands---out-of-bounds
-0-block reads and writes, too small parameter list lengths, etc.
+"The ALLOCATION LENGTH field is defined in 4.3.5.6. The allocation length
+should be at least 16.  Device servers compliant with SPC return CHECK
+CONDITION status, with the sense key set to ILLEGAL REQUEST, and the
+additional sense code set to INVALID FIELD IN CDB when the allocation
+length is less than 16 bytes".
 
-This patch fixes this for PSCSI.  Uses of transport_kmap_data_sg are
-guarded with a check for non-zero cmd->data_length; for all other
-commands a zero length is handled properly in pscsi_execute_cmd.
-The sole exception will be for now REPORT LUNS, which is handled
-through the normal SPC emulation.
+Testcase: sg_raw -r8 /dev/sdb a0 00 00 00 00 00 00 00 00 08 00 00
+    should fail with ILLEGAL REQUEST / INVALID FIELD IN CDB sense
+    does not fail without the patch
+    fails correctly with the patch
 
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- drivers/target/target_core_pscsi.c     |    8 ++++----
- drivers/target/target_core_transport.c |    4 +++-
- 2 files changed, 7 insertions(+), 5 deletions(-)
+ drivers/target/target_core_device.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/target/target_core_pscsi.c b/drivers/target/target_core_pscsi.c
-index c026ee3..682a581 100644
---- a/drivers/target/target_core_pscsi.c
-+++ b/drivers/target/target_core_pscsi.c
-@@ -688,11 +688,11 @@ static void pscsi_transport_complete(struct se_cmd *cmd, struct scatterlist *sg,
- 	 * Hack to make sure that Write-Protect modepage is set if R/O mode is
- 	 * forced.
- 	 */
-+	if (!cmd->se_deve || !cmd->data_length)
-+		goto after_mode_sense;
+diff --git a/drivers/target/target_core_device.c b/drivers/target/target_core_device.c
+index cf2c66f..9fc9a60 100644
+--- a/drivers/target/target_core_device.c
++++ b/drivers/target/target_core_device.c
+@@ -669,6 +669,13 @@ int target_report_luns(struct se_cmd *se_cmd)
+ 	unsigned char *buf;
+ 	u32 lun_count = 0, offset = 8, i;
+ 
++	if (se_cmd->data_length < 16) {
++		pr_warn("REPORT LUNS allocation length %u too small\n",
++			se_cmd->data_length);
++		se_cmd->scsi_sense_reason = TCM_INVALID_CDB_FIELD;
++		return -EINVAL;
++	}
 +
- 	if (((cdb[0] == MODE_SENSE) || (cdb[0] == MODE_SENSE_10)) &&
- 	     (status_byte(result) << 1) == SAM_STAT_GOOD) {
--		if (!cmd->se_deve)
--			goto after_mode_sense;
--
- 		if (cmd->se_deve->lun_flags & TRANSPORT_LUNFLAGS_READ_ONLY) {
- 			unsigned char *buf = transport_kmap_data_sg(cmd);
- 
-@@ -709,7 +709,7 @@ static void pscsi_transport_complete(struct se_cmd *cmd, struct scatterlist *sg,
- 	}
- after_mode_sense:
- 
--	if (sd->type != TYPE_TAPE)
-+	if (sd->type != TYPE_TAPE || !cmd->data_length)
- 		goto after_mode_select;
- 
- 	/*
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index 09028af..2e55aa9 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -2295,7 +2295,9 @@ int transport_generic_new_cmd(struct se_cmd *cmd)
- 	 * into the fabric for data transfers, go ahead and complete it right
- 	 * away.
- 	 */
--	if (!cmd->data_length) {
-+	if (!cmd->data_length &&
-+	    (cmd->se_dev->transport->transport_type != TRANSPORT_PLUGIN_PHBA_PDEV ||
-+	     cmd->t_task_cdb[0] == REPORT_LUNS) {
- 		spin_lock_irq(&cmd->t_state_lock);
- 		cmd->t_state = TRANSPORT_COMPLETE;
- 		cmd->transport_state |= CMD_T_ACTIVE;
+ 	buf = transport_kmap_data_sg(se_cmd);
+ 	if (!buf)
+ 		return -ENOMEM;
 -- 
 1.7.1
 
