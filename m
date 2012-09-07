@@ -1,246 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757891Ab2IGFwr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 01:52:47 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44111 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752075Ab2IGFwp (ORCPT
+	id S1759034Ab2IGFyD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 01:54:03 -0400
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:48485 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755490Ab2IGFx7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 01:52:45 -0400
-X-AuditID: 9c930179-b7cc4ae00000134d-78-50498bab889c
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 07/12] perf diff: Add ratio computation way to compare hist entries
-References: <1346946426-13496-1-git-send-email-jolsa@redhat.com>
-	<1346946426-13496-8-git-send-email-jolsa@redhat.com>
-Date: Fri, 07 Sep 2012 14:45:28 +0900
-In-Reply-To: <1346946426-13496-8-git-send-email-jolsa@redhat.com> (Jiri Olsa's
-	message of "Thu, 6 Sep 2012 17:47:01 +0200")
-Message-ID: <871uiecrnr.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 7 Sep 2012 01:53:59 -0400
+Date: Fri, 7 Sep 2012 08:49:34 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Kevin Hilman <khilman@deeprootsystems.com>
+Cc: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        linux-serial@vger.kernel.org, Sourav Poddar <sourav.poddar@ti.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Shubhrajyoti Datta <shubhrajyoti@ti.com>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        alan@linux.intel.com
+Subject: Re: [PATCH v4 00/21] OMAP UART Patches
+Message-ID: <20120907054932.GB3136@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <20120906122948.GC29202@arwen.pp.htv.fi>
+ <1346935540-1792-1-git-send-email-balbi@ti.com>
+ <87harahiv6.fsf@deeprootsystems.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DKU6Jbt7q3WqK7+M"
+Content-Disposition: inline
+In-Reply-To: <87harahiv6.fsf@deeprootsystems.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  6 Sep 2012 17:47:01 +0200, Jiri Olsa wrote:
-> Adding -c option to select computation method with the current
-> 'Delta' computation as default. Current posible values are of
-> this option are: 'delta' and 'ratio'.
->
-> Adding 'ratio' as new computation way to compare hist entries.
-> If specified the 'Ratio' column is displayed with value 'r'
-> computed as:
->
->   r = A->period / B->period
->
-> with:
->   - A/B being matching hist entry from first/second file specified
->     (or perf.data/perf.data.old) respectively.
->   - period being the hist entry period value
->
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Andi Kleen <andi@firstfloor.org>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> ---
->  tools/perf/Documentation/perf-diff.txt | 33 ++++++++++++++++++++++
->  tools/perf/builtin-diff.c              | 51 +++++++++++++++++++++++++++++++++-
->  tools/perf/ui/stdio/hist.c             | 13 +++++++++
->  tools/perf/util/hist.h                 |  1 +
->  4 files changed, 97 insertions(+), 1 deletion(-)
->
-> diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
-> index 6ce9585..8fff061 100644
-> --- a/tools/perf/Documentation/perf-diff.txt
-> +++ b/tools/perf/Documentation/perf-diff.txt
-> @@ -76,6 +76,39 @@ OPTIONS
->  --baseline-only::
->          Show only items with match in baseline.
->  
-> +-c::
-> +--compute::
-> +        Differential computation selection - delta,ratio (default is delta).
-> +        See COMPARISON METHODS section for more info.
-> +
-> +COMPARISON METHODS
-> +------------------
-> +delta
-> +~~~~~
-> +If specified the 'Delta' column is displayed with value 'd' computed as:
-> +
-> +  d = A->period_percent - B->period_percent
-> +
-> +with:
-> +  - A/B being matching hist entry from first/second file specified
-> +    (or perf.data/perf.data.old) respectively.
-> +
-> +  - period_percent being the % of the hist entry period value within
-> +    single data file
-> +
-> +ratio
-> +~~~~~
-> +If specified the 'Ratio' column is displayed with value 'r' computed as:
-> +
-> +  r = A->period / B->period
-> +
-> +with:
-> +  - A/B being matching hist entry from first/second file specified
-> +    (or perf.data/perf.data.old) respectively.
-> +
-> +  - period being the hist entry period value
-> +
-> +
->  SEE ALSO
->  --------
->  linkperf:perf-record[1]
-> diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-> index 46f4a10..cde08d4 100644
-> --- a/tools/perf/builtin-diff.c
-> +++ b/tools/perf/builtin-diff.c
-> @@ -27,6 +27,39 @@ static bool  force;
->  static bool show_displacement;
->  static bool show_baseline_only;
->  
-> +enum {
-> +	COMPUTE_DELTA,
-> +	COMPUTE_RATIO,
-> +	COMPUTE_MAX,
-> +};
-> +
-> +const char *compute_names[COMPUTE_MAX] = {
-> +	[COMPUTE_DELTA] = "delta",
-> +	[COMPUTE_RATIO] = "ratio",
-> +};
-> +
-> +static const char *compute_str;
-> +static int compute;
-> +
-> +static int setup_compute(void)
-> +{
-> +	unsigned i;
-> +
-> +	if (!compute_str) {
-> +		compute = COMPUTE_DELTA;
-> +		return 0;
-> +	}
-> +
-> +	for (i = 0; i < COMPUTE_MAX; i++)
-> +		if (!strcmp(compute_str, compute_names[i])) {
-> +			compute = i;
-> +			return 0;
-> +		}
-> +
-> +	pr_err("Failed to find valid compute string\n");
-> +	return -EINVAL;
-> +}
-> +
->  static int hists__add_entry(struct hists *self,
->  			    struct addr_location *al, u64 period)
->  {
-> @@ -263,6 +296,8 @@ static const struct option options[] = {
->  		    "Show position displacement relative to baseline"),
->  	OPT_BOOLEAN('b', "baseline-only", &show_baseline_only,
->  		    "Show only items with match in baseline"),
-> +	OPT_STRING('c', "compute", &compute_str, "delta,ratio (default delta)",
-> +		   "Entries differential computation selection"),
 
-Why not make it OPT_CALLBACK?
+--DKU6Jbt7q3WqK7+M
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-Namhyung
+Hi,
 
+On Thu, Sep 06, 2012 at 03:44:13PM -0700, Kevin Hilman wrote:
+> Felipe Balbi <balbi@ti.com> writes:
+>=20
+> > Hi guys,
+> >
+> > here's v4 of the omap uart patchset. No changes other than a rebase on =
+top of
+> > Greg's tty-next branch and Tony's Acked-by being added to a couple patc=
+hes
+> >
+> > Note: I'm resending the series with Vikram's Software Flow Control fix =
+anyway
+> > as it can just be ignored if it's decided it needs to go into this merge
+> > window.
+>=20
+> Sorry to be late to the party... just getting back from some time off.
+>=20
+> I'm assuming that this was not tested with PM, so decided I better do it
 
->  	OPT_BOOLEAN('D', "dump-raw-trace", &dump_trace,
->  		    "dump raw trace in ASCII"),
->  	OPT_BOOLEAN('f', "force", &force, "don't complain, do it"),
-> @@ -288,7 +323,18 @@ static void setup_ui_stdio(void)
->  {
->  	hists_stdio_column__register_idx(HISTC_BASELINE);
->  	hists_stdio_column__register_global();
-> -	hists_stdio_column__register_idx(HISTC_DELTA);
-> +
-> +	switch (compute) {
-> +	case COMPUTE_DELTA:
-> +		hists_stdio_column__register_idx(HISTC_DELTA);
-> +		break;
-> +	case COMPUTE_RATIO:
-> +		hists_stdio_column__register_idx(HISTC_RATIO);
-> +		break;
-> +	default:
-> +		BUG_ON(1);
-> +	};
-> +
->  	if (show_displacement)
->  		hists_stdio_column__register_idx(HISTC_DISPLACEMENT);
->  }
-> @@ -315,6 +361,9 @@ int cmd_diff(int argc, const char **argv, const char *prefix __used)
->  	if (symbol__init() < 0)
->  		return -1;
->  
-> +	if (setup_compute())
-> +		usage_with_options(diff_usage, options);
-> +
->  	setup_sorting(diff_usage, options);
->  	setup_ui_stdio();
->  	setup_pager();
-> diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-> index 48fb0b3..02ba1c7 100644
-> --- a/tools/perf/ui/stdio/hist.c
-> +++ b/tools/perf/ui/stdio/hist.c
-> @@ -31,6 +31,18 @@ hists_stdio_column__delta_snprintf(struct hist_entry *he, char *bf,
->  }
->  
->  static int
-> +hists_stdio_column__ratio_snprintf(struct hist_entry *he, char *bf,
-> +				   size_t size, unsigned int width __used)
-> +{
-> +	struct hist_entry *pair = he->pair;
-> +	double new_period = he->period;
-> +	double old_period = pair ? pair->period : 0;
-> +	double ratio = pair ? new_period / old_period : 0;
-> +
-> +	return percent_color_snprintf(bf, size, "%14.3F", ratio);
-> +}
-> +
-> +static int
->  hists_stdio_column__baseline_snprintf(struct hist_entry *he, char *bf,
->  				      size_t size, unsigned int width __used)
->  {
-> @@ -124,6 +136,7 @@ DEF_COLUMN(cpu_guest_us, HISTC_CPU_UTILIZATION_GUEST_US, 8, "guest us")
->  DEF_COLUMN(nr_samples, HISTC_NR_SAMPLES, 12, "Samples")
->  DEF_COLUMN(total_period, HISTC_TOTAL_PERIOD, 12, "Period")
->  DEF_COLUMN(delta, HISTC_DELTA, 8, "Delta")
-> +DEF_COLUMN(ratio, HISTC_RATIO, 14, "Ratio")
->  DEF_COLUMN(displacement, HISTC_DISPLACEMENT, 5, "Displ")
->  };
->  
-> diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-> index 36ff4c5..b24341d 100644
-> --- a/tools/perf/util/hist.h
-> +++ b/tools/perf/util/hist.h
-> @@ -46,6 +46,7 @@ enum hist_column {
->  	HISTC_NR_SAMPLES,
->  	HISTC_TOTAL_PERIOD,
->  	HISTC_DELTA,
-> +	HISTC_RATIO,
->  	HISTC_DISPLACEMENT,
->  
->  	/* sorted (hist_entry__sort_list) */
+you assumed wrong. See the previous versions of the series and you'll
+see I mention all the basic pm testing I did.
+
+> myself seeing that Greg is has already merge it.  To test, I merged
+> Greg's tty-next branch with v3.6-rc4 and did some PM testing.
+>=20
+> The bad news is that it doesn't even compile (see reply to [PATCH v4
+> 20/21]). =20
+
+yeah, that was an automerge issue when rebasing on greg's tty-next
+branch, plus me assuming omap serial was already enabled on my .config
+and not checking the compile output. Sent a patch now.
+
+> Also, there is a big WARNING on boot[1], which seems to be triggered by
+> a new check added for v3.6-rc3[2].  This appears to be introduced by
+> $SUBJECT series, because I don't see it on vanilla v3.6-rc4.
+>=20
+> The good news is that after hacking to fix up the compile problems,
+> basic PM testing seems to be fine: idle to retention and off as well as
+> suspend to retention and off work fine on 3430/n900, 3530/Overo,
+> 3730/OveroSTORM, 3730/Beagle-xM.
+>=20
+> Kevin
+>=20
+>=20
+> [1]
+> [    8.745666] WARNING: at /work/kernel/omap/pm/drivers/tty/tty_io.c:1420=
+ tty_init_dev+0x14c/0x17c()
+> [    8.755218] tty_init_dev: ttyO driver does not set tty->port. This wil=
+l crash the kernel later. Fix the driver!
+> [    8.765991] Modules linked in:
+> [    8.769287] [<c0013d90>] (unwind_backtrace+0x0/0xf0) from [<c0036eec>]=
+ (warn_slowpath_common+0x4c/0x64)
+> [    8.779327] [<c0036eec>] (warn_slowpath_common+0x4c/0x64) from [<c0036=
+f98>] (warn_slowpath_fmt+0x30/0x40)
+> [    8.789550] [<c0036f98>] (warn_slowpath_fmt+0x30/0x40) from [<c02c626c=
+>] (tty_init_dev+0x14c/0x17c)
+> [    8.799224] [<c02c626c>] (tty_init_dev+0x14c/0x17c) from [<c02c68a4>] =
+(tty_open+0x11c/0x52c)
+> [    8.808258] [<c02c68a4>] (tty_open+0x11c/0x52c) from [<c00f86ac>] (chr=
+dev_open+0x90/0x15c)
+> [    8.817108] [<c00f86ac>] (chrdev_open+0x90/0x15c) from [<c00f2b74>] (d=
+o_dentry_open+0x1e8/0x270)
+> [    8.826507] [<c00f2b74>] (do_dentry_open+0x1e8/0x270) from [<c00f2c30>=
+] (finish_open+0x34/0x4c)
+> [    8.835784] [<c00f2c30>] (finish_open+0x34/0x4c) from [<c0102028>] (do=
+_last.isra.21+0x5b0/0xbbc)
+> [    8.845184] [<c0102028>] (do_last.isra.21+0x5b0/0xbbc) from [<c01026dc=
+>] (path_openat+0xa8/0x44c)
+> [    8.854675] [<c01026dc>] (path_openat+0xa8/0x44c) from [<c0102d34>] (d=
+o_filp_open+0x2c/0x80)
+> [    8.863708] [<c0102d34>] (do_filp_open+0x2c/0x80) from [<c00f3b6c>] (d=
+o_sys_open+0xe8/0x184)
+> [    8.872711] [<c00f3b6c>] (do_sys_open+0xe8/0x184) from [<c000db20>] (r=
+et_fast_syscall+0x0/0x3c)
+> [    8.882019] ---[ end trace e9bf408c37051346 ]---
+
+This doesn't seem to be caused by $SUBJECT at all. See that we are
+calling uart_add_one_port() which will call tty_port_register_device()
+which, in turn, will call tty_port_link_device() and that will set
+driver->ports[index] correctly.
+
+Have you checked if this doesn't happen without my series before waving
+your blame hammer ? FWIW, that part of the code wasn't change by
+$SUBJECT at all.
+
+--=20
+balbi
+
+--DKU6Jbt7q3WqK7+M
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQSYrsAAoJEIaOsuA1yqREavoP/R0QnNP2EK2/otekNmK8UlRv
+Bp3veviNWtMya53uaXINu9J1udhsGBHU69cYGh7PVB4PGo/glqAhlgFQs15CV11R
+WtJyzPVPuVCi8PeGcnptiEYzmFOpgAicBoRR/vXX/Rh5eh5+Ht8ZID4YyfsEqRwI
+KQ4j/g4aplI2k1qke5FAzuKSgB2SHkKGmJA/KEbRAPh3+vuWDtnqTBMMCg8oXT17
+9dFbe6CSUPOefR2oRQXjzhcoysJ3ro+ysVuBbi5cmAMvKjDgLNJS2F//7YW85srI
+xmE8AOmmmz19uyIU+SFQwouinKEDmm6Ma0OAbozfimjfSMzIuq7CSTbUlcvFprOm
+5yTIQQh27pw4LhLh+ECQo//yais4gzII7npnQGcUxA3iZ966/z46QBJhfW2E/pSa
+aHoWlm+COeq2NCoJu1WXoR/eoXbnwPC6x/XcsyCAssl30TAr7XWsIYQc+GSf1o6B
+yOj6tv0NHMrnzcgJ+iYF3PThj+FqqRyY7QmzmMT3l5rbYpqSli9Hcj0qe09qlTG2
+feBYg8iF/vDpAaWXWQTjCM6YQJVuzfGYecdieXfsqkURG+SAtX9HxZuHQQiZ+yuH
+fyls3OrvrH8i+YoH/f4ysrSyxO/Tmh1mA8MZgnPOqMSWu4firES60bx0dvt+pRYa
+3zJ+YFZ1PyYH3c9WxOMP
+=zxNy
+-----END PGP SIGNATURE-----
+
+--DKU6Jbt7q3WqK7+M--
