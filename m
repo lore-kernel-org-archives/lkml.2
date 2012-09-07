@@ -1,132 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754367Ab2IGQ4B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 12:56:01 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:28183 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751280Ab2IGQz4 (ORCPT
+	id S1754408Ab2IGQ4g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 12:56:36 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38827 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752804Ab2IGQ4e convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 12:55:56 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19+QV5kWjvBrRetD1HWVBW+
-Date: Fri, 7 Sep 2012 09:55:53 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH 2/2] pinctrl: pinctrl-single: Add pinctrl-single,bits
- type of mux
-Message-ID: <20120907165553.GV1303@atomide.com>
-References: <1346835718-21325-1-git-send-email-peter.ujfalusi@ti.com>
- <1346835718-21325-3-git-send-email-peter.ujfalusi@ti.com>
- <20120906191019.GZ1303@atomide.com>
- <504A0F21.8080305@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <504A0F21.8080305@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 7 Sep 2012 12:56:34 -0400
+Message-ID: <1347036987.2124.3.camel@twins>
+Subject: Re: [PATCH] perf, ibs: Check syscall attribute flags
+From: Peter Zijlstra <peterz@infradead.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@kernel.org>, David Ahern <dsahern@gmail.com>,
+        linux-kernel@vger.kernel.org
+Date: Fri, 07 Sep 2012 18:56:27 +0200
+In-Reply-To: <20120907164114.GJ8285@erda.amd.com>
+References: <1342826756-64663-1-git-send-email-dsahern@gmail.com>
+	 <1342826756-64663-9-git-send-email-dsahern@gmail.com>
+	 <20120906190238.GA29278@erda.amd.com> <5048F6BF.70106@gmail.com>
+	 <20120906195645.GD8285@erda.amd.com> <20120907164114.GJ8285@erda.amd.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Ujfalusi <peter.ujfalusi@ti.com> [120907 08:13]:
-> On 09/06/2012 10:10 PM, Tony Lindgren wrote:
-> > 
-> > Is it now safe to assume that we always have width of three if
-> > pinctrl-single,bits is specified? The reason I'm asking is..
-> > 
-> >> @@ -657,18 +664,29 @@ static int pcs_parse_one_pinctrl_entry(struct pcs_device *pcs,
-> >>  {
-> >>  	struct pcs_func_vals *vals;
-> >>  	const __be32 *mux;
-> >> -	int size, rows, *pins, index = 0, found = 0, res = -ENOMEM;
-> >> +	int size, params, rows, *pins, index = 0, found = 0, res = -ENOMEM;
-> >>  	struct pcs_function *function;
-> >>  
-> >> -	mux = of_get_property(np, PCS_MUX_NAME, &size);
-> >> -	if ((!mux) || (size < sizeof(*mux) * 2)) {
-> >> -		dev_err(pcs->dev, "bad data for mux %s\n",
-> >> -			np->name);
-> >> +	mux = of_get_property(np, PCS_MUX_PINS_NAME, &size);
-> >> +	if (mux) {
-> >> +		params = 2;
-> >> +	} else {
-> >> +		mux = of_get_property(np, PCS_MUX_BITS_NAME, &size);
-> >> +		if (!mux) {
-> >> +			dev_err(pcs->dev, "no valid property for %s\n",
-> >> +				np->name);
-> >> +			return -EINVAL;
-> >> +		}
-> >> +		params = 3;
-> >> +	}
-> > 
-> > ..because here we could assume the default value for params is 2
-> > if pinctrl-single,pins is specified, and otherwise params is 3
-> > if pinctrl-single,bits is specified for the controller. That would
-> > avoid querying a potentially non-exiting property for each entry.
-> > 
-> >> @@ -686,6 +704,10 @@ static int pcs_parse_one_pinctrl_entry(struct pcs_device *pcs,
-> >>  		val = be32_to_cpup(mux + index++);
-> >>  		vals[found].reg = pcs->base + offset;
-> >>  		vals[found].val = val;
-> >> +		if (params == 3) {
-> >> +			val = be32_to_cpup(mux + index++);
-> >> +			vals[found].mask = val;
-> >> +		}
-> >>  
-> >>  		pin = pcs_get_pin_by_offset(pcs, offset);
-> >>  		if (pin < 0) {
-> > 
-> > Here params too would be then set during probe already.
+On Fri, 2012-09-07 at 18:41 +0200, Robert Richter wrote:
+> From 1d037614edef576da441936bd8c917d31f57b179 Mon Sep 17 00:00:00 2001
+> From: Robert Richter <robert.richter@amd.com>
+> Date: Wed, 25 Jul 2012 19:12:45 +0200
+> Subject: [PATCH] perf, ibs: Check syscall attribute flags
 > 
-> I'm afraid you lost me here...
-> We only know if the user specified the mux configuration with
-> pinctrl-single,pins or  pinctrl-single,bits in this function.
+> Current implementation simply ignores attribute flags. Thus, there is
+> no notification to userland of unsupported features. Check syscall's
+> attribute flags to let userland know if a feature is supported by the
+> kernel. This is also needed to distinguish between future kernels what
+> might support a feature.
+> 
+> Cc: <stable@vger.kernel.org> v3.5..
+> Signed-off-by: Robert Richter <robert.richter@amd.com>
+> ---
+>  arch/x86/kernel/cpu/perf_event_amd_ibs.c |   11 +++++++++++
+>  include/linux/perf_event.h               |    2 ++
+>  2 files changed, 13 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/perf_event_amd_ibs.c b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+> index 7bfb5be..0456061 100644
+> --- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+> +++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+> @@ -215,6 +215,14 @@ static int perf_ibs_init(struct perf_event *event)
+>         struct perf_ibs *perf_ibs;
+>         u64 max_cnt, config;
+>         int ret;
+> +       struct perf_event_attr notsupp = {
 
-Sorry right, yeah we don't know that at probe time currently.
+static const ?
 
-I'd like to have something that specifies the controller type so
-we don't need to mix two types of controllers and test for
-non-existing properties when parsing the pins.
+> +               .exclude_user   = 1,
+> +               .exclude_kernel = 1,
+> +               .exclude_hv     = 1,
+> +               .exclude_idle   = 1,
+> +               .exclude_host   = 1,
+> +               .exclude_guest  = 1,
 
-How about we require something specified for the pinctrl driver
-in the "one-bit-per-mux" case like pinctrl-single,bit-per-mux?
+Ideally we'd grow support for those using SVM entry/exit hooks though.
 
-And then in the pinctrl-single probe we set params = 3 if
-pinctrl-single,bit-per-mux is specified. And if no
-pinctrl-single,bit-per-mux is specified then set params = 2.
+> +       };
+>  
+>         perf_ibs = get_ibs_pmu(event->attr.type);
+>         if (perf_ibs) {
+> @@ -229,6 +237,9 @@ static int perf_ibs_init(struct perf_event *event)
+>         if (event->pmu != &perf_ibs->pmu)
+>                 return -ENOENT;
+>  
+> +       if (perf_flags(&event->attr) & perf_flags(&notsupp))
+> +               return -EINVAL;
+> +
+>         if (config & ~perf_ibs->config_mask)
+>                 return -EINVAL;
+>  
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index 28f9cee..c36a04f 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -304,6 +304,8 @@ struct perf_event_attr {
+>         __u32   __reserved_2;
+>  };
+>  
+> +#define perf_flags(attr)       (*(&(attr)->read_format + 1))
 
-That way pcs_parse_one_pinctrl_entry() can just test for params.
 
-Sorry I don't have a better name in mind than bit-per-mux..
+Another anonymous union shouldn't hurt..
+
+---
+ include/linux/perf_event.h | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index cc5e2cd..5df37a0 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -236,7 +236,9 @@ struct perf_event_attr {
+ 	__u64			sample_type;
+ 	__u64			read_format;
  
-> One thing I could do to make the code a bit better to look at is:
-> int params = 2;
-> 
-> mux = of_get_property(np, PCS_MUX_PINS_NAME, &size);
-> if (!mux) {
-> 	mux = of_get_property(np, PCS_MUX_BITS_NAME, &size);
-> 	if (!mux) {
-> 		dev_err(pcs->dev, "no valid property for %s\n",
-> 		np->name);
-> 		return -EINVAL;
-> 	}
-> 	params = 3;
-> }
-> 
-> This might make the code a bit more compact but at the same time one might
-> need to spend few more seconds to understand it.
+-	__u64			disabled       :  1, /* off by default        */
++	union {
++		__u64		flags;
++		__u64		disabled       :  1, /* off by default        */
+ 				inherit	       :  1, /* children inherit it   */
+ 				pinned	       :  1, /* must always be on PMU */
+ 				exclusive      :  1, /* only group on PMU     */
+@@ -272,6 +274,7 @@ struct perf_event_attr {
+ 				exclude_callchain_user   : 1, /* exclude user callchains */
+ 
+ 				__reserved_1   : 41;
++	};
+ 
+ 	union {
+ 		__u32		wakeup_events;	  /* wakeup every n events */
 
-Yes well there's no need to do of_get_property second guessing
-if we already know params from the pinctrl-single.c probe time.
-
-I think we're safe to assume that we don't need to mix parsing
-two different types of configuration for the same controller
-as they can always be set up as separate controllers.
-
-Regards,
-
-Tony
