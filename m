@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751531Ab2IGPtv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 11:49:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52699 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750703Ab2IGPtt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 11:49:49 -0400
-Date: Fri, 7 Sep 2012 17:50:57 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/7] uprobes: Do not (ab)use
-	TIF_SINGLESTEP/user_*_single_step() for single-stepping
-Message-ID: <20120907155057.GA1669@redhat.com>
-References: <20120903152525.GA9028@redhat.com> <20120903152613.GA9078@redhat.com> <20120907151111.GQ30238@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751443Ab2IGPwJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 11:52:09 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:60660 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750746Ab2IGPwF convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
+	Fri, 7 Sep 2012 11:52:05 -0400
+Message-Id: <504A347B0200007800099E92@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Fri, 07 Sep 2012 16:52:59 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Stefan Bader" <stefan.bader@canonical.com>
+Cc: "Matt Wilson" <msw@amazon.com>, "Justin M. Forbes" <jmforbes@linuxtx.org>,
+        <xen-devel@lists.xen.org>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH/RFC] Fix xsave bug on older Xen
+ hypervisors
+References: <1347018043-21252-1-git-send-email-stefan.bader@canonical.com>
+ <504A05B00200007800099C7B@nat28.tlf.novell.com>
+ <5049F4E9.9050306@canonical.com>
+ <504A1A950200007800099D4C@nat28.tlf.novell.com>
+ <20120907142251.GA20096@linuxtx.org>
+ <504A32800200007800099E40@nat28.tlf.novell.com>
+ <504A172B.5020005@canonical.com>
+In-Reply-To: <504A172B.5020005@canonical.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20120907151111.GQ30238@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/07, Srikar Dronamraju wrote:
->
-> Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+>>> On 07.09.12 at 17:47, Stefan Bader <stefan.bader@canonical.com> wrote:
+> On 07.09.2012 17:44, Jan Beulich wrote:
+>> All of this still doesn't provide evidence that a plain upstream
+>> kernel is actually having any problems in the first place. Further,
+>> if you say EC2 has a crippled hypervisor patch - is that patch
+>> available for looking at somewhere?
+> 
+> It was not a hypervisor patch. It was one for the guest. This was the hack:
 
-Thanks!
+So then why do you want to patch the upstream kernel? It won't
+make that hack go away, nor will it help any existing kernels.
 
-(and thanks, I'll fix the typo in 2/7 you pointed out)
-
-> >  void arch_uprobe_enable_step(struct arch_uprobe *auprobe)
-> >  {
-> > -	struct uprobe_task	*utask		= current->utask;
-> > -	struct arch_uprobe_task	*autask		= &utask->autask;
-> > +	struct task_struct *task = current;
->
-> Any particular reason to use task instead of current?
-
-No particular reason, and I think in this case asm will be the same.
-
-Please let me know if you prefer to remove this variable, I'll redo
-this patch.
-
-Oleg.
+Jan
 
