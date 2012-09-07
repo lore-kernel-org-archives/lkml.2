@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207Ab2IGBhU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Sep 2012 21:37:20 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37910 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755637Ab2IGBhR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Sep 2012 21:37:17 -0400
-Message-ID: <50494FC6.3050502@kernel.dk>
-Date: Thu, 06 Sep 2012 19:37:10 -0600
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Kent Overstreet <koverstreet@google.com>, linux-bcache@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com,
-        Alasdair Kergon <agk@redhat.com>, Neil Brown <neilb@suse.de>
-Subject: Re: [PATCH v10 0/8] Block cleanups
-References: <1346970902-10931-1-git-send-email-koverstreet@google.com> <20120906234805.GD9426@google.com>
-In-Reply-To: <20120906234805.GD9426@google.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757638Ab2IGBi2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Sep 2012 21:38:28 -0400
+Received: from gate.crashing.org ([63.228.1.57]:38203 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755637Ab2IGBi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Sep 2012 21:38:27 -0400
+Message-ID: <1346981712.2385.30.camel@pasglop>
+Subject: Re: [PATCH v2 1/2] [powerpc] Change memory_limit from phys_addr_t
+ to unsigned long long
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: "Suzuki K. Poulose" <suzuki@in.ibm.com>
+Cc: linuxppc-dev@lists.ozlabs.org, mahesh@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Date: Fri, 07 Sep 2012 11:35:12 +1000
+In-Reply-To: <20120821114225.29282.87841.stgit@suzukikp.in.ibm.com>
+References: <20120821113815.29282.4000.stgit@suzukikp.in.ibm.com>
+	 <20120821114225.29282.87841.stgit@suzukikp.in.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-09-06 17:48, Tejun Heo wrote:
-> Hello, guys.
+On Tue, 2012-08-21 at 17:12 +0530, Suzuki K. Poulose wrote:
+> There are some device-tree nodes, whose values are of type phys_addr_t.
+> The phys_addr_t is variable sized based on the CONFIG_PHSY_T_64BIT.
 > 
-> (cc'ing Jens, Alasdair and Neil)
+> Change these to a fixed unsigned long long for consistency.
 > 
-> On Thu, Sep 06, 2012 at 03:34:54PM -0700, Kent Overstreet wrote:
->> Screwed up the bio_reset() patch in the last patch series when I went to edit
->> the description, fixed that here.
->>
->> Only other change is the dm patch - made the front_pad conditional on
->> DM_TYPE_BIO_BASED.
->>
->> Kent Overstreet (8):
->>   block: Generalized bio pool freeing
->>   block: Ues bi_pool for bio_integrity_alloc()
->>   dm: Use bioset's front_pad for dm_rq_clone_bio_info
->>   block: Add bio_reset()
->>   pktcdvd: Switch to bio_kmalloc()
->>   block: Kill bi_destructor
->>   block: Consolidate bio_alloc_bioset(), bio_kmalloc()
->>   block: Add bio_clone_bioset(), bio_clone_kmalloc()
+> This patch does the change only for memory_limit.
 > 
-> This series looks good to me now.  If someone can ack the dm patch, I
-> think it's good to go.  Jens, what do you think?
+> The following is a list of such variables which need the change:
+> 
+>  1) kernel_end, crashk_size - in arch/powerpc/kernel/machine_kexec.c
+> 
+>  2) (struct resource *)crashk_res.start - We could export a local static
+>     variable from machine_kexec.c.
+> 
+> Changing the above values might break the kexec-tools. So, I will
+> fix kexec-tools first to handle the different sized values and then change
+>  the above.
+> 
+> Suggested-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Signed-off-by: Suzuki K. Poulose <suzuki@in.ibm.com>
+> ---
 
-Looks OK to me too. I'll run a quick perf test on this tomorrow, and get
-it queued up for 3.7 if it looks fine.
+Breaks the build on some configs (with 32-bit phys_addr_t):
 
-Kent, are to resend 3+5 to me?
+/home/benh/linux-powerpc-test/arch/powerpc/kernel/prom.c: In function
+'early_init_devtree':
+/home/benh/linux-powerpc-test/arch/powerpc/kernel/prom.c:664:25: error:
+comparison of distinct pointer types lacks a cast
 
--- 
-Jens Axboe
+I'm fixing that myself this time but please be more careful.
+
+Cheers,
+Ben.
+
 
