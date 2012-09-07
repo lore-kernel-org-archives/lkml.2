@@ -1,127 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754796Ab2IGPNZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 11:13:25 -0400
-Received: from na3sys009aog129.obsmtp.com ([74.125.149.142]:52900 "EHLO
-	na3sys009aog129.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753293Ab2IGPNW (ORCPT
+	id S1753974Ab2IGPOp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 11:14:45 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:39244 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750838Ab2IGPOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 11:13:22 -0400
-Message-ID: <504A0F21.8080305@ti.com>
-Date: Fri, 07 Sep 2012 18:13:37 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120903 Thunderbird/15.0
+	Fri, 7 Sep 2012 11:14:44 -0400
+Date: Fri, 7 Sep 2012 20:41:11 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/7] uprobes: Do not (ab)use
+ TIF_SINGLESTEP/user_*_single_step() for single-stepping
+Message-ID: <20120907151111.GQ30238@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120903152525.GA9028@redhat.com>
+ <20120903152613.GA9078@redhat.com>
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH 2/2] pinctrl: pinctrl-single: Add pinctrl-single,bits
- type of mux
-References: <1346835718-21325-1-git-send-email-peter.ujfalusi@ti.com> <1346835718-21325-3-git-send-email-peter.ujfalusi@ti.com> <20120906191019.GZ1303@atomide.com>
-In-Reply-To: <20120906191019.GZ1303@atomide.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120903152613.GA9078@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 12090715-0260-0000-0000-000001D067FA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
+* Oleg Nesterov <oleg@redhat.com> [2012-09-03 17:26:13]:
 
-On 09/06/2012 10:10 PM, Tony Lindgren wrote:
-> Hi Peter,
+> user_enable/disable_single_step() was designed for ptrace, it assumes
+> a single user and does unnecessary and wrong things for uprobes. For
+> example:
 > 
-> * Peter Ujfalusi <peter.ujfalusi@ti.com> [120905 02:02]:
->> With pinctrl-single,bits it is possible to update just part of the register
->> within the pinctrl-single,function-mask area.
->> This is useful when one register configures mmore than one pin's mux.
+> 	- arch_uprobe_enable_step() can't trust TIF_SINGLESTEP, an
+> 	  application itself can set X86_EFLAGS_TF which must be
+> 	  preserved after arch_uprobe_disable_step().
 > 
-> You have a typo here:                         ^^^^^
-
-Oh, I'll fix this up.
-
->> --- a/Documentation/devicetree/bindings/pinctrl/pinctrl-single.txt
->> +++ b/Documentation/devicetree/bindings/pinctrl/pinctrl-single.txt
->> @@ -31,6 +31,15 @@ device pinctrl register, and 0x118 contains the desired value of the
->>  pinctrl register. See the device example and static board pins example
->>  below for more information.
->>  
->> +In case when one register changes more than one pin's mux the
->> +pinctrl-single,bits can be used which takes three parameters:
->> +
->> +	pinctrl-single,bits = <0xdc 0x18, 0xff>;
->> +
->> +Where 0xdc is the offset from the pinctrl register base address for the
->> +device pinctrl register, 0x18 is the desired value, and 0xff is the sub mask to
->> +be used when applying this change to the register.
->> +
+> 	- we do not want to set TIF_SINGLESTEP/TIF_FORCED_TF in
+> 	  arch_uprobe_enable_step(), this only makes sense for ptrace.
 > 
-> Is it now safe to assume that we always have width of three if
-> pinctrl-single,bits is specified? The reason I'm asking is..
+> 	- otoh we leak TIF_SINGLESTEP if arch_uprobe_disable_step()
+> 	  doesn't do user_disable_single_step(), the application will
+> 	  be killed after the next syscall.
 > 
->> @@ -657,18 +664,29 @@ static int pcs_parse_one_pinctrl_entry(struct pcs_device *pcs,
->>  {
->>  	struct pcs_func_vals *vals;
->>  	const __be32 *mux;
->> -	int size, rows, *pins, index = 0, found = 0, res = -ENOMEM;
->> +	int size, params, rows, *pins, index = 0, found = 0, res = -ENOMEM;
->>  	struct pcs_function *function;
->>  
->> -	mux = of_get_property(np, PCS_MUX_NAME, &size);
->> -	if ((!mux) || (size < sizeof(*mux) * 2)) {
->> -		dev_err(pcs->dev, "bad data for mux %s\n",
->> -			np->name);
->> +	mux = of_get_property(np, PCS_MUX_PINS_NAME, &size);
->> +	if (mux) {
->> +		params = 2;
->> +	} else {
->> +		mux = of_get_property(np, PCS_MUX_BITS_NAME, &size);
->> +		if (!mux) {
->> +			dev_err(pcs->dev, "no valid property for %s\n",
->> +				np->name);
->> +			return -EINVAL;
->> +		}
->> +		params = 3;
->> +	}
+> 	- arch_uprobe_enable_step() does access_process_vm() we do
+> 	  not need/want.
 > 
-> ..because here we could assume the default value for params is 2
-> if pinctrl-single,pins is specified, and otherwise params is 3
-> if pinctrl-single,bits is specified for the controller. That would
-> avoid querying a potentially non-exiting property for each entry.
+> Change arch_uprobe_enable/disable_step() to set/clear X86_EFLAGS_TF
+> directly, this is much simpler and more correct. However, we need to
+> clear TIF_BLOCKSTEP/DEBUGCTLMSR_BTF before executing the probed insn,
+> add set_task_blockstep(false).
 > 
->> @@ -686,6 +704,10 @@ static int pcs_parse_one_pinctrl_entry(struct pcs_device *pcs,
->>  		val = be32_to_cpup(mux + index++);
->>  		vals[found].reg = pcs->base + offset;
->>  		vals[found].val = val;
->> +		if (params == 3) {
->> +			val = be32_to_cpup(mux + index++);
->> +			vals[found].mask = val;
->> +		}
->>  
->>  		pin = pcs_get_pin_by_offset(pcs, offset);
->>  		if (pin < 0) {
+> Note: with or without this patch, there is another (hopefully minor)
+> problem. A probed "pushf" insn can see the wrong X86_EFLAGS_TF set by
+> uprobes. Perhaps we should change _disable to update the stack, or
+> teach arch_uprobe_skip_sstep() to emulate this insn.
 > 
-> Here params too would be then set during probe already.
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-I'm afraid you lost me here...
-We only know if the user specified the mux configuration with
-pinctrl-single,pins or  pinctrl-single,bits in this function.
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-One thing I could do to make the code a bit better to look at is:
-int params = 2;
+> ---
+>  arch/x86/include/asm/processor.h |    2 ++
+>  arch/x86/kernel/step.c           |    2 +-
+>  arch/x86/kernel/uprobes.c        |   32 ++++++++++++++++++--------------
+>  3 files changed, 21 insertions(+), 15 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+> index d048cad..433d2e5 100644
+> --- a/arch/x86/include/asm/processor.h
+> +++ b/arch/x86/include/asm/processor.h
+> @@ -759,6 +759,8 @@ static inline void update_debugctlmsr(unsigned long debugctlmsr)
+>  	wrmsrl(MSR_IA32_DEBUGCTLMSR, debugctlmsr);
+>  }
+> 
+> +extern void set_task_blockstep(struct task_struct *task, bool on);
+> +
+>  /*
+>   * from system description table in BIOS. Mostly for MCA use, but
+>   * others may find it useful:
+> diff --git a/arch/x86/kernel/step.c b/arch/x86/kernel/step.c
+> index f89cdc6..cd3b243 100644
+> --- a/arch/x86/kernel/step.c
+> +++ b/arch/x86/kernel/step.c
+> @@ -157,7 +157,7 @@ static int enable_single_step(struct task_struct *child)
+>  	return 1;
+>  }
+> 
+> -static void set_task_blockstep(struct task_struct *task, bool on)
+> +void set_task_blockstep(struct task_struct *task, bool on)
+>  {
+>  	unsigned long debugctl;
+> 
+> diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+> index 309a0e0..3b4aae6 100644
+> --- a/arch/x86/kernel/uprobes.c
+> +++ b/arch/x86/kernel/uprobes.c
+> @@ -683,26 +683,30 @@ bool arch_uprobe_skip_sstep(struct arch_uprobe *auprobe, struct pt_regs *regs)
+> 
+>  void arch_uprobe_enable_step(struct arch_uprobe *auprobe)
+>  {
+> -	struct uprobe_task	*utask		= current->utask;
+> -	struct arch_uprobe_task	*autask		= &utask->autask;
+> +	struct task_struct *task = current;
 
-mux = of_get_property(np, PCS_MUX_PINS_NAME, &size);
-if (!mux) {
-	mux = of_get_property(np, PCS_MUX_BITS_NAME, &size);
-	if (!mux) {
-		dev_err(pcs->dev, "no valid property for %s\n",
-		np->name);
-		return -EINVAL;
-	}
-	params = 3;
-}
+Any particular reason to use task instead of current?
 
-This might make the code a bit more compact but at the same time one might
-need to spend few more seconds to understand it.
+> +	struct arch_uprobe_task	*autask	= &task->utask->autask;
+> +	struct pt_regs *regs = task_pt_regs(task);
+> 
+>  	autask->restore_flags = 0;
+> -	if (!test_tsk_thread_flag(current, TIF_SINGLESTEP) &&
+> -			!(auprobe->fixups & UPROBE_FIX_SETF))
+> +	if (!(regs->flags & X86_EFLAGS_TF) &&
+> +	    !(auprobe->fixups & UPROBE_FIX_SETF))
+>  		autask->restore_flags |= UPROBE_CLEAR_TF;
+> -	/*
+> -	 * The state of TIF_BLOCKSTEP is not saved. With the TF flag set we
+> -	 * would to examine the opcode and the flags to make it right. Without
+> -	 * TF block stepping makes no sense.
+> -	 */
+> -	user_enable_single_step(current);
+> +
+> +	regs->flags |= X86_EFLAGS_TF;
+> +	if (test_tsk_thread_flag(task, TIF_BLOCKSTEP))
+> +		set_task_blockstep(task, false);
+>  }
+> 
+>  void arch_uprobe_disable_step(struct arch_uprobe *auprobe)
+>  {
+> -	struct uprobe_task *utask		= current->utask;
+> -	struct arch_uprobe_task	*autask		= &utask->autask;
+> -
+> +	struct task_struct *task = current;
+> +	struct arch_uprobe_task	*autask	= &task->utask->autask;
+> +	struct pt_regs *regs = task_pt_regs(task);
+> +	/*
+> +	 * The state of TIF_BLOCKSTEP was not saved so we can get an extra
+> +	 * SIGTRAP if we do not clear TF. We need to examine the opcode to
+> +	 * make it right.
+> +	 */
+>  	if (autask->restore_flags & UPROBE_CLEAR_TF)
+> -		user_disable_single_step(current);
+> +		regs->flags &= ~X86_EFLAGS_TF;
+>  }
+> -- 
+> 1.5.5.1
+> 
 
-Regards,
-Péter
