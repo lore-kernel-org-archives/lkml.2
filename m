@@ -1,40 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758533Ab2IGJEO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 05:04:14 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:51517 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753240Ab2IGJEM (ORCPT
+	id S1760201Ab2IGJFA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 05:05:00 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56460 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756080Ab2IGJE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 05:04:12 -0400
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [RFC]fs: fsprivate data argument for get_block_t
-User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
-Date: Fri, 07 Sep 2012 13:04:08 +0400
-Message-ID: <87r4qejjav.fsf@openvz.org>
+	Fri, 7 Sep 2012 05:04:57 -0400
+Date: Fri, 7 Sep 2012 02:04:41 -0700
+From: tip-bot for Jan Beulich <JBeulich@suse.com>
+Message-ID: <tip-d4c9dbc61fe0ca042b835c6f234af12fa5f18310@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        jbeulich@suse.com, JBeulich@suse.com, alex.shi@intel.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        JBeulich@suse.com, jbeulich@suse.com, tglx@linutronix.de,
+        alex.shi@intel.com
+In-Reply-To: <5049B65C020000780009990C@nat28.tlf.novell.com>
+References: <5049B65C020000780009990C@nat28.tlf.novell.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] x86/mm: Fix range check in tlbflush debugfs interface
+Git-Commit-ID: d4c9dbc61fe0ca042b835c6f234af12fa5f18310
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 07 Sep 2012 02:04:47 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, I'm wonder why generic get_block_t callback has not fsprivate
-argument?
-Each filesystem implement it's own get_block_t callback.
-Each filesystem call generic functions which use callback from
-known context, but where is no good way to pass that context 
-to fs_specific_get_block callback.
-This result in situation where fs-specific data passed via 
-inode's data (xxx_inode->cur_get_block_data)
-All this means that inode's private pointer becomes implicit
-serialization point even if get_block() are allowed to be called
-concurrently.
+Commit-ID:  d4c9dbc61fe0ca042b835c6f234af12fa5f18310
+Gitweb:     http://git.kernel.org/tip/d4c9dbc61fe0ca042b835c6f234af12fa5f18310
+Author:     Jan Beulich <JBeulich@suse.com>
+AuthorDate: Fri, 7 Sep 2012 07:54:52 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Fri, 7 Sep 2012 10:56:02 +0200
 
-I'm going to add fsprivate argument, number of generic function which
-use get_block_t is not really huge, so the patch should be too big.
+x86/mm: Fix range check in tlbflush debugfs interface
 
-If some one has any objections why this shouldn't be done, please
-welcome. 
+Since the shift count settable there is used for shifting values
+of type "unsigned long", its value must not match or exceed
+BITS_PER_LONG (otherwise the shift operations are undefined).
 
+Similarly, the value must not be negative (but -1 must be
+permitted, as that's the value used to distinguish the case of
+the fine grained flushing being disabled).
 
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Cc: Alex Shi <alex.shi@intel.com>
+Link: http://lkml.kernel.org/r/5049B65C020000780009990C@nat28.tlf.novell.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/mm/tlb.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index 613cd83..a085c56 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -320,7 +320,7 @@ static ssize_t tlbflush_write_file(struct file *file,
+ 	if (kstrtos8(buf, 0, &shift))
+ 		return -EINVAL;
+ 
+-	if (shift > 64)
++	if (shift < -1 || shift >= BITS_PER_LONG)
+ 		return -EINVAL;
+ 
+ 	tlb_flushall_shift = shift;
