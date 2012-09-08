@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755678Ab2IHX0m (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 19:26:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63717 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754066Ab2IHX0K (ORCPT
+	id S1755636Ab2IHX0k (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 19:26:40 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59021 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754022Ab2IHX0D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 19:26:10 -0400
+	Sat, 8 Sep 2012 19:26:03 -0400
 From: Ming Lei <ming.lei@canonical.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Takashi Iwai <tiwai@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>
-Subject: [RFC PATCH 5/5] driver core: implement asynchorous probe() inside driver_register
-Date: Sun,  9 Sep 2012 07:25:20 +0800
-Message-Id: <1347146720-28596-6-git-send-email-ming.lei@canonical.com>
+Subject: [RFC PATCH 4/5] driver core: remove __must_check on declaration of driver_attach
+Date: Sun,  9 Sep 2012 07:25:19 +0800
+Message-Id: <1347146720-28596-5-git-send-email-ming.lei@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1347146720-28596-1-git-send-email-ming.lei@canonical.com>
 References: <1347146720-28596-1-git-send-email-ming.lei@canonical.com>
@@ -23,53 +23,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The check is not necessary since driver_attach should return 0
+always.
 
 Signed-off-by: Ming Lei <ming.lei@canonical.com>
 ---
- drivers/base/driver.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+ include/linux/device.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/base/driver.c b/drivers/base/driver.c
-index 9365076..67fb63c 100644
---- a/drivers/base/driver.c
-+++ b/drivers/base/driver.c
-@@ -15,6 +15,7 @@
- #include <linux/errno.h>
- #include <linux/slab.h>
- #include <linux/string.h>
-+#include <linux/async.h>
- #include "base.h"
+diff --git a/include/linux/device.h b/include/linux/device.h
+index 7222c0b..dbb5efd 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -858,7 +858,7 @@ static inline void *dev_get_platdata(const struct device *dev)
+ extern int __must_check device_bind_driver(struct device *dev);
+ extern void device_release_driver(struct device *dev);
+ extern int  __must_check device_attach(struct device *dev);
+-extern int __must_check driver_attach(struct device_driver *drv);
++extern int driver_attach(struct device_driver *drv);
+ extern int __must_check device_reprobe(struct device *dev);
  
- static struct device *next_device(struct klist_iter *i)
-@@ -153,6 +154,13 @@ static void driver_remove_groups(struct device_driver *drv,
- 			sysfs_remove_group(&drv->p->kobj, groups[i]);
- }
- 
-+static void async_driver_attach(void *data, async_cookie_t cookie)
-+{
-+	struct device_driver *drv = data;
-+
-+	driver_attach(drv);
-+}
-+
- /**
-  * driver_register - register driver with bus
-  * @drv: driver to register
-@@ -193,8 +201,12 @@ int __driver_register(struct device_driver *drv, int sync)
- 	kobject_uevent(&drv->p->kobj, KOBJ_ADD);
- 
- 	/* driver probe at the last minute */
--	if (drv->bus->p->drivers_autoprobe)
--		ret = driver_attach(drv);
-+	if (drv->bus->p->drivers_autoprobe) {
-+		if (sync)
-+			ret = driver_attach(drv);
-+		else
-+			async_schedule(async_driver_attach, drv);
-+	}
- 
- 	return ret;
- }
+ /*
 -- 
 1.7.9.5
 
