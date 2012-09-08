@@ -1,38 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760085Ab2IHB7R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 21:59:17 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:57899 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751487Ab2IHB7Q (ORCPT
+	id S1760258Ab2IHB7g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 21:59:36 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:58218 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759992Ab2IHB7d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 21:59:16 -0400
+	Fri, 7 Sep 2012 21:59:33 -0400
+Date: Fri, 7 Sep 2012 18:59:27 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Avi Kivity <avi@redhat.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        linux-pci@vger.kernel.org, Feng Tang <feng.tang@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH 1/2] PCI: Use local parameter pci_device_id for
+ pci_get_subsys/class()
+Message-ID: <20120908015927.GA29784@kroah.com>
+References: <20120731235705.GW2422@linux.vnet.ibm.com>
+ <1343779778.27983.73.camel@gandalf.stny.rr.com>
+ <20120801001811.GX2422@linux.vnet.ibm.com>
+ <20120801004319.GA7043@localhost>
+ <20120822025008.GA8066@localhost>
+ <20120822154908.2e6ef3c0@feng-i7>
+ <CAErSpo7HhdDi4EhbQZ-oZbsbGVvTfZW8MwKn7Tm+6B8jaQxLBg@mail.gmail.com>
+ <20120823154503.15a45b14@feng-i7>
+ <CAE9FiQVXj6sLEs0GiBnVsKAbms-Bnt06xYeT01MBtSjNqaqypA@mail.gmail.com>
+ <CAE9FiQU2sqXLyMg2KbdKQBaX8WDeagd=OmZ5ELhYgkUQ4b6jZA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <504AA2F9.5060502@cn.fujitsu.com>
-References: <1346750580-11352-1-git-send-email-gaowanlong@cn.fujitsu.com>
- <CAHGf_=o8VzFSF3kGK92bKgeWPJ4qOQ_NhCzXO-J_Ge22M7M20g@mail.gmail.com> <504AA2F9.5060502@cn.fujitsu.com>
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Fri, 7 Sep 2012 21:58:55 -0400
-X-Google-Sender-Auth: 3heyd7qoFOe65u9OQWI8KKklFxQ
-Message-ID: <CAHGf_=rPYAU6X2eXqyBxHV=PtguBceK=n_C89dTDbUk54-+6ww@mail.gmail.com>
-Subject: Re: [PATCH] mm: fix mmap overflow checking
-To: gaowanlong@cn.fujitsu.com
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        open@kvack.org,
-        "list@kvack.org:MEMORY MANAGEMENT" <linux-mm@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQU2sqXLyMg2KbdKQBaX8WDeagd=OmZ5ELhYgkUQ4b6jZA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> I've seen the exactly same patch from another fujitsu guys several
->> month ago. and as I pointed
->> out at that time, this line don't work when 32bit kernel + mmap2 syscall case.
->>
->> Please don't think do_mmap_pgoff() is for mmap(2) specific and read a
->> past thread before resend
->> a patch.
->
-> So, what's your opinion about this bug? How to fix it in your mind?
+On Fri, Sep 07, 2012 at 06:32:48PM -0700, Yinghai Lu wrote:
+> Greg,
+> 
+> Any reason for using kmalloc instead of local variable during your
+> rewriting pci search code?
+> 
+> commit 95247b57ed844511a212265b45cf9a919753aea1
+> Author: Greg Kroah-Hartman <gregkh@suse.de>
+> Date:   Wed Feb 13 11:03:58 2008 -0800
 
-Fix glibc instead of kernel.
+Seriously?  Something I wrote 4 years ago?  I really have no idea,
+sorry.
+
+greg k-h
