@@ -1,109 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752909Ab2IHJ3u (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 05:29:50 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:46957 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752647Ab2IHJ3F (ORCPT
+	id S1752945Ab2IHJcw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 05:32:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59727 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752615Ab2IHJcr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 05:29:05 -0400
-Message-ID: <504B0FDF.70004@kernel.org>
-Date: Sat, 08 Sep 2012 10:29:03 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Bryan Freed <bfreed@chromium.org>
-CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        grundler@chromium.org, ldewangan@nvidia.com, lars@metafoo.de,
-        gregkh@linuxfoundation.org, jic23@cam.ac.uk
-Subject: Re: [PATCH] iio: isl29018: Support fractional ALS scaling.
-References: <1346874953-22353-1-git-send-email-bfreed@chromium.org>
-In-Reply-To: <1346874953-22353-1-git-send-email-bfreed@chromium.org>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sat, 8 Sep 2012 05:32:47 -0400
+From: Ming Lei <ming.lei@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>
+Subject: [PATCH] firmware loader: fix compile warning when CONFIG_PM=n
+Date: Sat,  8 Sep 2012 17:32:30 +0800
+Message-Id: <1347096750-5176-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2012 08:55 PM, Bryan Freed wrote:
-> The Industrial IO framework supports scaling ADC values by fractions,
-> but most drivers default to using whole numbers.
-> This change turns on fractional scaling in the isl29018 driver.
-> 
-> Signed-off-by: Bryan Freed <bfreed@chromium.org>
+This patch replaces the previous macro of CONFIG_PM with
+CONFIG_PM_SLEEP becasue firmware cache is only used in
+system sleep situations.
 
-add to togreg branch of
-git://git.kernel.org/pub/scm/linux/kernel/git/jic23/iio.git
+Also this patch fixes the below compile warning when
+CONFIG_PM=n:
 
-Thanks
+	drivers/base/firmware_class.c:1147: warning: 'device_cache_fw_images'
+	defined but not used
+	drivers/base/firmware_class.c:1212: warning:
+	'device_uncache_fw_images_delay' defined but not used
 
-Technically doing integer + micro values is actually pretty common
-but having calibration scale is less so. Doesn't seem any harm in doing
-it here, though as calibscale is of an arbitary scaling itself, if it
-wasn't an abi change (which this is not) then I'd suggest just doing it
-as a 1000 * the original value.
+Reported-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+---
+ drivers/base/firmware_class.c |   33 ++++++++++++++++++++++-----------
+ 1 file changed, 22 insertions(+), 11 deletions(-)
 
-Still this does the job nicely so thanks!
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 95f6851..6e21080 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -96,7 +96,9 @@ struct firmware_cache {
+ 	/* firmware_buf instance will be added into the below list */
+ 	spinlock_t lock;
+ 	struct list_head head;
++	int state;
+ 
++#ifdef CONFIG_PM_SLEEP
+ 	/*
+ 	 * Names of firmware images which have been cached successfully
+ 	 * will be added into the below list so that device uncache
+@@ -106,13 +108,12 @@ struct firmware_cache {
+ 	spinlock_t name_lock;
+ 	struct list_head fw_names;
+ 
+-	int state;
+-
+ 	wait_queue_head_t wait_queue;
+ 	int cnt;
+ 	struct delayed_work work;
+ 
+ 	struct notifier_block   pm_notify;
++#endif
+ };
+ 
+ struct firmware_buf {
+@@ -622,6 +623,7 @@ static void fw_set_page_data(struct firmware_buf *buf, struct firmware *fw)
+ 		 (unsigned int)buf->size);
+ }
+ 
++#ifdef CONFIG_PM_SLEEP
+ static void fw_name_devm_release(struct device *dev, void *res)
+ {
+ 	struct fw_name_devm *fwn = res;
+@@ -670,6 +672,12 @@ static int fw_add_devm_name(struct device *dev, const char *name)
+ 
+ 	return 0;
+ }
++#else
++static int fw_add_devm_name(struct device *dev, const char *name)
++{
++	return 0;
++}
++#endif
+ 
+ static void _request_firmware_cleanup(const struct firmware **firmware_p)
+ {
+@@ -1046,6 +1054,7 @@ int uncache_firmware(const char *fw_name)
+ 	return -EINVAL;
+ }
+ 
++#ifdef CONFIG_PM_SLEEP
+ static struct fw_cache_entry *alloc_fw_cache_entry(const char *name)
+ {
+ 	struct fw_cache_entry *fce;
+@@ -1258,7 +1267,6 @@ static void device_uncache_fw_images_delay(unsigned long delay)
+ 			msecs_to_jiffies(delay));
+ }
+ 
+-#ifdef CONFIG_PM
+ static int fw_pm_notify(struct notifier_block *notify_block,
+ 			unsigned long mode, void *unused)
+ {
+@@ -1285,13 +1293,6 @@ static int fw_pm_notify(struct notifier_block *notify_block,
+ 
+ 	return 0;
+ }
+-#else
+-static int fw_pm_notify(struct notifier_block *notify_block,
+-			unsigned long mode, void *unused)
+-{
+-	return 0;
+-}
+-#endif
+ 
+ /* stop caching firmware once syscore_suspend is reached */
+ static int fw_suspend(void)
+@@ -1303,16 +1304,23 @@ static int fw_suspend(void)
+ static struct syscore_ops fw_syscore_ops = {
+ 	.suspend = fw_suspend,
+ };
++#else
++static int fw_cache_piggyback_on_request(const char *name)
++{
++	return 0;
++}
++#endif
+ 
+ static void __init fw_cache_init(void)
+ {
+ 	spin_lock_init(&fw_cache.lock);
+ 	INIT_LIST_HEAD(&fw_cache.head);
++	fw_cache.state = FW_LOADER_NO_CACHE;
+ 
++#ifdef CONFIG_PM_SLEEP
+ 	spin_lock_init(&fw_cache.name_lock);
+ 	INIT_LIST_HEAD(&fw_cache.fw_names);
+ 	fw_cache.cnt = 0;
+-	fw_cache.state = FW_LOADER_NO_CACHE;
+ 
+ 	init_waitqueue_head(&fw_cache.wait_queue);
+ 	INIT_DELAYED_WORK(&fw_cache.work,
+@@ -1322,6 +1330,7 @@ static void __init fw_cache_init(void)
+ 	register_pm_notifier(&fw_cache.pm_notify);
+ 
+ 	register_syscore_ops(&fw_syscore_ops);
++#endif
+ }
+ 
+ static int __init firmware_class_init(void)
+@@ -1332,8 +1341,10 @@ static int __init firmware_class_init(void)
+ 
+ static void __exit firmware_class_exit(void)
+ {
++#ifdef CONFIG_PM_SLEEP
+ 	unregister_syscore_ops(&fw_syscore_ops);
+ 	unregister_pm_notifier(&fw_cache.pm_notify);
++#endif
+ 	class_unregister(&firmware_class);
+ }
+ 
+-- 
+1.7.9.5
 
-Jonathan
-> ---
->  drivers/staging/iio/light/isl29018.c |   17 +++++++++++++++--
->  1 files changed, 15 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/staging/iio/light/isl29018.c b/drivers/staging/iio/light/isl29018.c
-> index 31d22f5..6ee5567 100644
-> --- a/drivers/staging/iio/light/isl29018.c
-> +++ b/drivers/staging/iio/light/isl29018.c
-> @@ -63,6 +63,7 @@ struct isl29018_chip {
->  	struct regmap		*regmap;
->  	struct mutex		lock;
->  	unsigned int		lux_scale;
-> +	unsigned int		lux_uscale;
->  	unsigned int		range;
->  	unsigned int		adc_bit;
->  	int			prox_scheme;
-> @@ -145,13 +146,22 @@ static int isl29018_read_sensor_input(struct isl29018_chip *chip, int mode)
->  static int isl29018_read_lux(struct isl29018_chip *chip, int *lux)
->  {
->  	int lux_data;
-> +	unsigned int data_x_range, lux_unshifted;
->  
->  	lux_data = isl29018_read_sensor_input(chip, COMMMAND1_OPMODE_ALS_ONCE);
->  
->  	if (lux_data < 0)
->  		return lux_data;
->  
-> -	*lux = (lux_data * chip->range * chip->lux_scale) >> chip->adc_bit;
-> +	/* To support fractional scaling, separate the unshifted lux
-> +	 * into two calculations: int scaling and micro-scaling.
-> +	 * lux_uscale ranges from 0-999999, so about 20 bits.  Split
-> +	 * the /1,000,000 in two to reduce the risk of over/underflow.
-> +	 */
-> +	data_x_range = lux_data * chip->range;
-> +	lux_unshifted = data_x_range * chip->lux_scale;
-> +	lux_unshifted += data_x_range / 1000 * chip->lux_uscale / 1000;
-> +	*lux = lux_unshifted >> chip->adc_bit;
->  
->  	return 0;
->  }
-> @@ -339,6 +349,8 @@ static int isl29018_write_raw(struct iio_dev *indio_dev,
->  	mutex_lock(&chip->lock);
->  	if (mask == IIO_CHAN_INFO_CALIBSCALE && chan->type == IIO_LIGHT) {
->  		chip->lux_scale = val;
-> +		/* With no write_raw_get_fmt(), val2 is a MICRO fraction. */
-> +		chip->lux_uscale = val2;
->  		ret = 0;
->  	}
->  	mutex_unlock(&chip->lock);
-> @@ -379,7 +391,8 @@ static int isl29018_read_raw(struct iio_dev *indio_dev,
->  	case IIO_CHAN_INFO_CALIBSCALE:
->  		if (chan->type == IIO_LIGHT) {
->  			*val = chip->lux_scale;
-> -			ret = IIO_VAL_INT;
-> +			*val2 = chip->lux_uscale;
-> +			ret = IIO_VAL_INT_PLUS_MICRO;
->  		}
->  		break;
->  	default:
-> 
