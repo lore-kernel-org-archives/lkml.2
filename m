@@ -1,61 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759722Ab2IHA4u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 20:56:50 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:57702 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758638Ab2IHA4t (ORCPT
+	id S1759906Ab2IHA5Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 20:57:24 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46195 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758638Ab2IHA5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 20:56:49 -0400
-Date: Fri, 7 Sep 2012 17:56:42 -0700
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCH 04/12] perf diff: Refactor diff displacement possition
- info
-Message-ID: <20120908005642.GE20401@ghostprotocols.net>
-References: <1346946426-13496-1-git-send-email-jolsa@redhat.com>
- <1346946426-13496-5-git-send-email-jolsa@redhat.com>
+	Fri, 7 Sep 2012 20:57:22 -0400
+Date: Sat, 8 Sep 2012 08:57:17 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: AnilKumar Ch <anilkumar@ti.com>
+Cc: linux-kernel@vger.kernel.org, axel.lin@gmail.com, lrg@ti.com
+Subject: Re: [PATCH] regulator: core: fix rdev->regmap NULL pointer
+Message-ID: <20120908005716.GH4438@opensource.wolfsonmicro.com>
+References: <1347030905-17722-1-git-send-email-anilkumar@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1346946426-13496-5-git-send-email-jolsa@redhat.com>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <1347030905-17722-1-git-send-email-anilkumar@ti.com>
+X-Cookie: Give him an evasive answer.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Sep 06, 2012 at 05:46:58PM +0200, Jiri Olsa escreveu:
-> @@ -150,6 +154,24 @@ static struct perf_evsel *evsel_match(struct perf_evsel *evsel,
->  	return NULL;
->  }
->  
-> +static void resort_evlist(struct perf_evlist *evlist, bool name)
+On Fri, Sep 07, 2012 at 08:45:05PM +0530, AnilKumar Ch wrote:
+> Fixes rdev->regmap NULL pointer if regmap for regulator device
+> is NULL. If it is NULL then get regmap for regulator device
+> from its parent (MFD).
+> 
+> Signed-off-by: AnilKumar Ch <anilkumar@ti.com>
 
-For consistency, please use:
-
-+static void perf_evlist__resort_hists(struct perf_evlist *evlist, bool name)
-
-> +{
-> +	struct perf_evsel *evsel;
-> +
-> +	list_for_each_entry(evsel, &evlist->entries, node) {
-> +		struct hists *hists = &evsel->hists;
-> +
-> +		hists__output_resort(hists);
-> +
-> +		/*
-> +		 * The hists__name_resort only sets possition
-> +		 * if name is false.
-> +		 */
-> +		if (name || ((!name) && show_displacement))
-> +			hists__name_resort(hists, name);
-
-- Arnaldo
+Applied with a rewritten commit message - this is adding a new feature,
+not fixing a problem (devices can always explicitly specify a regmap,
+this is just adding a new default option).  Thanks.
