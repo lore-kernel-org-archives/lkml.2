@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751778Ab2IHHbU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 03:31:20 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:48730 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751794Ab2IHHbA (ORCPT
+	id S1751323Ab2IHHb0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 03:31:26 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62784 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751809Ab2IHHbL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 03:31:00 -0400
+	Sat, 8 Sep 2012 03:31:11 -0400
 Subject: Re: [PATCH] [RFC]power: battery: Generic battery driver using IIO
 From: anish kumar <anish198519851985@gmail.com>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: linux-iio@vger.kernel.org, cbou@mail.ru, dwmw2@infradead.org,
-        linux-kernel@vger.kernel.org, lars@metafoo.de
-In-Reply-To: <5049A7B8.506@kernel.org>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: jic23@cam.ac.uk, linux-iio@vger.kernel.org, cbou@mail.ru,
+        dwmw2@infradead.org, linux-kernel@vger.kernel.org
+In-Reply-To: <5049B501.20604@metafoo.de>
 References: <1346600372-3284-1-git-send-email-anish198519851985@gmail.com>
-	 <5049A7B8.506@kernel.org>
+	 <5049B501.20604@metafoo.de>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 08 Sep 2012 12:40:18 +0530
-Message-ID: <1347088218.5051.152.camel@anish-Inspiron-N5050>
+Date: Sat, 08 Sep 2012 13:00:29 +0530
+Message-ID: <1347089429.5051.157.camel@anish-Inspiron-N5050>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -25,139 +25,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for your time.
-On Fri, 2012-09-07 at 08:52 +0100, Jonathan Cameron wrote:
-> On 02/09/12 16:39, anish kumar wrote:
+On Fri, 2012-09-07 at 10:49 +0200, Lars-Peter Clausen wrote:
+> On 09/02/2012 05:39 PM, anish kumar wrote:
 > > From: anish kumar <anish198519851985@gmail.com>
-> >
+> > 
 > > This patch is to use IIO to write a generic batttery driver.
-> battery
 > > There are some inherent assumptions here:
 > > 1.User is having both main battery and backup battery.
-> Seems rather like that could be easily enough relaxed or configured via
-> platform data?
-Yes
 > > 2.Both batteries use same channel to get the information.
-> Do you mean same actual channel (physical pin) or same ADC
-> (with appropriate mux etc)?
-As lars pointed out it would be better if we have multiple channels
-per battery.The channel what I am referring here is the name of 
-different channels which will be exported by adc driver to get
-voltage, current and power.
-> >
-> Mostly fine. There are a few corners I didn't understand as I don't
-> have time to dive into the battery framework in the near future. Will 
-> leave it up to those more familiar with that side of things!
+> > 
 > 
-> My only real issue is that it would be cleaner to do the individual
-> channels by name rather than a get all as you 'know' here how many
-> channels are expected.
-agreed.
+> Hi thanks for stepping up to take care of this and sorry for the late reply.
+Thanks to you.
 > 
-> Also don't release the IIO channels until you are actually finished
-> using them as holding them should prevent the ADC module from going away
-> underneath you (which is nasty :)
-agreed.
-> 
-> Sorry it took so long to get back to you on this.
-That is the biggest advantage of working in open-source.
-We can take our own time.
-> 
-> So what happened in 1985?
-Was hurrying to get an email id :)
-> 
-> Jonathan
 > > Signed-off-by: anish kumar <anish198519851985@gmail.com>
 > > ---
-> >   drivers/power/Kconfig                 |    8 +
-> >   drivers/power/Makefile                |    1 +
-> >   drivers/power/generic-battery.c       |  374 +++++++++++++++++++++++++++++++++
-> >   include/linux/power/generic-battery.h |   26 +++
-> >   4 files changed, 409 insertions(+), 0 deletions(-)
-> >   create mode 100644 drivers/power/generic-battery.c
-> >   create mode 100644 include/linux/power/generic-battery.h
-> >
-> > diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-> > index fcc1bb0..546e86b 100644
-> > --- a/drivers/power/Kconfig
-> > +++ b/drivers/power/Kconfig
-> > @@ -309,6 +309,14 @@ config AB8500_BATTERY_THERM_ON_BATCTRL
-> >   	help
-> >   	  Say Y to enable battery temperature measurements using
-> >   	  thermistor connected on BATCTRL ADC.
+> [...]
 > > +
-> > +config GENERIC_BATTERY
-> > +	tristate "Generic battery support using IIO"
-> > +	depends on IIO
-> > +	help
-> > +	  Say Y here to enable support for the generic battery driver
-> > +	  which uses IIO framework to read adc for it's main and backup
-> ADC
-> > +	  battery.
-> >   endif # POWER_SUPPLY
-> >
-> >   source "drivers/power/avs/Kconfig"
-> > diff --git a/drivers/power/Makefile b/drivers/power/Makefile
-> > index ee58afb..8284f9c 100644
-> > --- a/drivers/power/Makefile
-> > +++ b/drivers/power/Makefile
-> > @@ -45,3 +45,4 @@ obj-$(CONFIG_CHARGER_MAX8997)	+= max8997_charger.o
-> >   obj-$(CONFIG_CHARGER_MAX8998)	+= max8998_charger.o
-> >   obj-$(CONFIG_POWER_AVS)		+= avs/
-> >   obj-$(CONFIG_CHARGER_SMB347)	+= smb347-charger.o
-> > +obj-$(CONFIG_GENERIC_BATTERY)	+= generic-battery.o
-> > diff --git a/drivers/power/generic-battery.c b/drivers/power/generic-battery.c
-> > new file mode 100644
-> > index 0000000..33170b7
-> > --- /dev/null
-> > +++ b/drivers/power/generic-battery.c
-> > @@ -0,0 +1,374 @@
-> > +/*
-> > + * Generice battery driver code using IIO
-> Generic
-> > + * Copyright (C) 2012, Anish Kumar <anish198519851985@gmail.com>
-> > + * based on jz4740-battery.c
-> > + * based on s3c_adc_battery.c
-> > + *
-> > + * This file is subject to the terms and conditions of the GNU General Public
-> > + * License.  See the file COPYING in the main directory of this archive for
-> > + * more details.
-> > + *
-> bonus blank line to remove
-> > + */
-> > +
-> > +#include <linux/interrupt.h>
-> > +#include <linux/platform_device.h>
-> > +#include <linux/power_supply.h>
-> > +#include <linux/gpio.h>
-> > +#include <linux/err.h>
-> > +#include <linux/timer.h>
-> > +#include <linux/jiffies.h>
-> > +#include <linux/errno.h>
-> > +#include <linux/init.h>
-> > +#include <linux/module.h>
-> > +#include <linux/slab.h>
-> > +#include <linux/iio/consumer.h>
-> > +#include <linux/iio/types.h>
-> > +
-> > +#include <linux/power/generic-battery.h>
-> > +
-> > +#define BAT_POLL_INTERVAL		10000 /* ms */
-> > +#define JITTER_DELAY			500 /* ms */
-> Elements to make configurable?
-Yes probably make it platform data?
-> > +
-> > +enum BAT {
-> > +	MAIN_BAT = 0,
-> > +	BACKUP_BAT,
-> > +	BAT_MAX,
-> > +};
-> > +
-> Document this please. It's not immediately obvious what
-> channel_index is.
-This will be removed as we will be using only one device.
-> 
-> Why not just have a direct pointer to the correct channel?
 > > +struct generic_adc_bat {
 > > +	struct power_supply		psy;
 > > +	struct iio_channel		*channels;
@@ -165,7 +49,6 @@ This will be removed as we will be using only one device.
 > > +};
 > > +
 > > +struct generic_bat {
-> Spacing is a bit random in here
 > > +	struct generic_adc_bat bat[BAT_MAX];
 > > +	struct generic_platform_data	pdata;
 > > +	int				volt_value;
@@ -184,9 +67,21 @@ This will be removed as we will be using only one device.
 > > +		.psy.name = "backup-bat",
 > > +	},
 > > +};
+> 
+> This should be per device. I'd also just use one power_supply per device. If
+> somebody has multiple batteries in their system they can register multiple
+> devices. This should make the driver more flexible.
+Yes makes sense of having one driver/device and if someone has more
+devices to register than it can be done by registering multiple devices
+with different platform data.
+> 
 > > +
 > > +static struct delayed_work bat_work;
-> > +
+> 
+> This should also go into the generic_bat struct.
+right.
+> 
+>  +
 > > +static void generic_adc_bat_ext_power_changed(struct power_supply *psy)
 > > +{
 > > +	schedule_delayed_work(&bat_work,
@@ -205,13 +100,15 @@ This will be removed as we will be using only one device.
 > > +	POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN,
 > > +	POWER_SUPPLY_PROP_MODEL_NAME,
 > > +};
-> > +
-> > +static int charge_finished(struct generic_bat *bat)
-> > +{
-> > +	return bat->pdata.gpio_inverted ?
-> > +		!gpio_get_value(bat->pdata.gpio_charge_finished) :
-> > +		gpio_get_value(bat->pdata.gpio_charge_finished);
-> > +}
+> 
+> It probably make sense to create this at runtime, depending on which kind of
+> IIO channels are provided. E.g. for VOLTAGE_NOW/CURRENT_NOW.
+Yes, something like
+pdata->voltage_channel/pdata->current_channel/pdata->power_channel and
+if this property is set then register the VOLTAGE_NOW/CURRENT_NOW/POWER_
+property.
+> 
+> [...]
 > > +
 > > +static int generic_adc_bat_get_property(struct power_supply *psy,
 > > +		enum power_supply_property psp,
@@ -225,11 +122,6 @@ This will be removed as we will be using only one device.
 > > +	if (!strcmp(psy->name, "main-battery")) {
 > > +		adc_bat = container_of(psy,
 > > +					struct generic_adc_bat, psy);
-> This first statement is I think shared so move it out of the if / else
-This whole logic will change as we will be using only one device and
-if has user has multiple batteries then he can register multiple
-devices.
-> 
 > > +		bat = container_of(adc_bat,
 > > +				struct generic_bat, bat[MAIN_BAT]);
 > > +	} else if (!strcmp(psy->name, "backup-battery")) {
@@ -243,39 +135,20 @@ devices.
 > > +	}
 > > +
 > > +	if (!bat) {
-> 	> +		dev_err(psy->dev, "no battery infos ?!\n");
+> > +		dev_err(psy->dev, "no battery infos ?!\n");
 > > +		return -EINVAL;
-> > +	
+> > +	}
 > > +	ret = iio_read_channel_raw(&adc_bat->channels[adc_bat->channel_index],
 > > +			&iio_val);
 > > +	ret = iio_read_channel_scale(&adc_bat->channels[adc_bat->channel_index],
 > > +			&scaleint, &scalepart);
-> > +	if (ret < 0)
-> > +		return ret;
-> > +
-> A quick comment here on what the battery framework is expecting vs IIO
-> supplying would be good.  It may be that this particular output is one 
-> that we should lift over into the core rather than end up with multiple
-> drivers doing the same thing.
-I think for this we need to get all the channels supported by a
-particular adc device and once we get the information regarding the
-channel(current/voltage/power) supported we can find out "What
-information is exported about this channel which may include scale or
-raw adc value".This can be used to call the corresponding API's.
 > 
-> > +	switch (ret) {
-> > +	case IIO_VAL_INT:
-> > +		result = iio_val * scaleint;
-> > +		break;
-> > +	case IIO_VAL_INT_PLUS_MICRO:
-> > +		result = (s64)iio_val * (s64)scaleint +
-> > +			div_s64((s64)iio_val * (s64)scalepart, 1000000LL);
-> > +		break;
-> > +	case IIO_VAL_INT_PLUS_NANO:
-> > +		result = (s64)iio_val * (s64)scaleint +
-> > +			div_s64((s64)iio_val * (s64)scalepart, 1000000000LL);
-> > +		break;
-> > +	}
+> It would probably make sense to only sample if the attribute for
+> VOLTAGE_NOW/CURRENT_NOW property is read.
+right.
+> 
+> [...]
+> 
 > > +
 > > +	switch (psp) {
 > > +	case POWER_SUPPLY_PROP_STATUS:
@@ -297,9 +170,13 @@ raw adc value".This can be used to call the corresponding API's.
 > > +	case POWER_SUPPLY_PROP_CURRENT_NOW:
 > > +		val->intval = result;
 > > +		return 0;
-> why return from these and break from the later ones (to return much the 
-> same I think...)?
-my mistake.
+> 
+> also this will return the same value for VOLTAGE_NOW and CURRENT_NOW since
+> there is only one channel per battery. It might make sense to allow multiple
+> channels per battery, one reporting current one voltage and also one for power.
+absolutely makes sense.
+> 
+> 
 > > +	case POWER_SUPPLY_PROP_TECHNOLOGY:
 > > +		val->intval = bat->pdata.battery_info.technology;
 > > +		break;
@@ -321,119 +198,15 @@ my mistake.
 > > +	return ret;
 > > +}
 > > +
-> > +static void generic_adc_bat_work(struct work_struct *work)
-> > +{
-> > +	struct generic_bat *bat = &generic_bat;
-> > +	int is_charged;
-> > +	int is_plugged;
-> > +	static int was_plugged;
-> That's nasty. Prevents even the theoretical posibility of multiple 
-> copies of the driver. That should be in the device specific data.
-yes should be part of device specific data.
-> > +
-> > +	/* backup battery doesn't have current monitoring capability anyway */
-> Always or in this particular configuration?
-I was told by Anton Vorontsov.Anyway now this driver will be per device
-so shouldn't matter.
-> 
-> > +	is_plugged = power_supply_am_i_supplied(&bat->bat[MAIN_BAT].psy);
-> > +	bat->cable_plugged = is_plugged;
-> > +	if (is_plugged != was_plugged) {
-> > +		was_plugged = is_plugged;
-> > +		if (is_plugged)
-> > +			bat->status = POWER_SUPPLY_STATUS_CHARGING;
-> > +		else
-> > +			bat->status = POWER_SUPPLY_STATUS_DISCHARGING;
-> > +	} else {
-> > +		if ((bat->pdata.gpio_charge_finished >= 0) && is_plugged) {
-> > +			is_charged = charge_finished(&generic_bat);
-> > +			if (is_charged)
-> > +				bat->status = POWER_SUPPLY_STATUS_FULL;
-> > +			else
-> > +				bat->status = POWER_SUPPLY_STATUS_CHARGING;
-> > +		}
-> > +	}
-> > +
-> > +	power_supply_changed(&bat->bat[MAIN_BAT].psy);
-> > +}
-> > +
-> > +static irqreturn_t generic_adc_bat_charged(int irq, void *dev_id)
-> > +{
-> > +	schedule_delayed_work(&bat_work,
-> > +			msecs_to_jiffies(JITTER_DELAY));
-> > +	return IRQ_HANDLED;
-> > +}
+> [...]
 > > +
 > > +static int __devinit generic_adc_bat_probe(struct platform_device *pdev)
 > > +{
-> > +	struct generic_platform_data *pdata = pdev->dev.platform_data;
-> > +	struct iio_channel *channels;
-> > +	int num_channels = 0;
-> > +	int ret, i, j, k = 0;
-> > +	enum iio_chan_type type;
-> > +
-> > +	for (i = 0; i < ARRAY_SIZE(generic_bat.bat); i++) {
-> > +		generic_bat.bat[i].psy.type = POWER_SUPPLY_TYPE_BATTERY;
-> > +		generic_bat.bat[i].psy.properties =
-> > +					generic_adc_main_bat_props;
-> > +		generic_bat.bat[i].psy.num_properties =
-> > +					ARRAY_SIZE(generic_adc_main_bat_props);
-> > +		generic_bat.bat[i].psy.get_property =
-> > +					generic_adc_bat_get_property;
-> > +		generic_bat.bat[i].psy.external_power_changed =
-> > +					generic_adc_bat_ext_power_changed;
-> Could you do this with a static const array?  Looks like there is 
-> nothing dynamic in here and that would make for cleaner code to read. 
-> Given other elements of psy are clearly dynamic (dev pointer) you will 
-> have to memcpy the static version in which is tedious. Still easier
-> to read though in my view.
-> > +	}
-right.
-> > +
-> > +	generic_bat.volt_value = -1;
-> > +	generic_bat.cur_value = -1;
-> > +	generic_bat.cable_plugged = 0;
-> > +	generic_bat.status = POWER_SUPPLY_STATUS_DISCHARGING;
-> > +
-> > +	memcpy(&generic_bat.pdata, pdata, sizeof(struct generic_platform_data));
-> > +
-> Is there anything dynamic in the pdata?  If not it would be cleaner just 
-> to use a pointer to it rather than make a copy (I can't immediately spot 
-> anything but them I'm not familiar with the battery
-> side of things.
-We can just assign it to generic_bat so that it can be used in the
-relevant functions.Otherwise we need to use dev_set_drvdata and
-dev_get_drvdata. 
-> > +	for (i = 0; i < ARRAY_SIZE(generic_bat.bat); i++) {
-> > +		ret = power_supply_register(&pdev->dev,
-> > +				&generic_bat.bat[i].psy);
-> > +		if (ret)
-> > +			goto err_reg_main;
-> > +	}
-> > +
-> > +	channels = iio_channel_get_all(dev_name(&pdev->dev));
-> I would give these explicit names and get the two individual channels by 
-> name. I think it will give you cleaner code.
-Yes, now it will be based on pdata->voltage_channel,
-pdata->current_channel and so on.We will use this to get the channel.
-> > +	if (IS_ERR(channels)) {
-> > +		ret = PTR_ERR(channels);
-> > +		goto err_reg_backup;
-> > +	}
-> > +
-> > +	while (channels[num_channels].indio_dev)
-> > +		num_channels++;
-> > +
-> > +	for (i = 0; i < ARRAY_SIZE(generic_bat.bat); i++)
-> > +		generic_bat.bat[i].channels = kzalloc(sizeof(struct iio_channel)
-> > +							* BAT_MAX, GFP_KERNEL);
+> > +[...]
 > > +
 > > +	/* assuming main battery and backup battery is using the same channel */
 > > +	for (i = 0; i < num_channels; i++) {
 > > +		ret = iio_get_channel_type(&channels[i], &type);
-> Using named channels you should 'know' you have the correct type.  You 
-> can of course check if you don't trust your platform data though!
-right.
 > > +		if (ret < 0)
 > > +			goto err_gpio;
 > > +
@@ -445,11 +218,19 @@ right.
 > > +			k++;
 > > +		}
 > > +		continue;
+> 
+> continue at the end of a loop is a noop.
+right.
+> 
 > > +	}
 > > +
 > > +	INIT_DELAYED_WORK(&bat_work, generic_adc_bat_work);
 > > +
 > > +	if (pdata->gpio_charge_finished >= 0) {
+> 
+> gpio_is_valid
+right.
+> 
 > > +		ret = gpio_request(pdata->gpio_charge_finished, "charged");
 > > +		if (ret)
 > > +			goto err_gpio;
@@ -463,15 +244,16 @@ right.
 > > +	}
 > > +
 > > +	dev_info(&pdev->dev, "successfully loaded\n");
+> 
+> I'd remove that message.
+ok.
+> 
 > > +
 > > +	/* Schedule timer to check current status */
 > > +	schedule_delayed_work(&bat_work,
 > > +			msecs_to_jiffies(JITTER_DELAY));
 > > +
 > > +	iio_channel_release_all(channels);
-> Not if you want to prevent the adc driver from being removed from under 
-> you.  They should only be released in the driver removal.
-right.
 > > +
 > > +	return 0;
 > > +
@@ -484,27 +266,9 @@ right.
 > > +	return ret;
 > > +}
 > > +
-> > +static int generic_adc_bat_remove(struct platform_device *pdev)
-> > +{
-> > +	int i;
-> > +	struct generic_platform_data *pdata = pdev->dev.platform_data;
-> > +
-> > +	for (i = 0; i < ARRAY_SIZE(generic_bat.bat); i++)
-> > +		power_supply_unregister(&generic_bat.bat[i].psy);
 > 
-> You should release the IIO channels here when they are no longer needed.
-right.
-> > +
-> > +	if (pdata->gpio_charge_finished >= 0) {
-> I forget, is a gpio index of 0 definitely invalid?
-> > +		free_irq(gpio_to_irq(pdata->gpio_charge_finished), NULL);
-> > +		gpio_free(pdata->gpio_charge_finished);
-> > +	}
-> > +
-> > +	cancel_delayed_work(&bat_work);
-> > +
-> > +	return 0;
-> > +}
+> [...]
+> 
 > > +
 > > +#ifdef CONFIG_PM
 > > +static int generic_adc_bat_suspend(struct platform_device *pdev,
@@ -541,6 +305,10 @@ right.
 > > +	.remove		= generic_adc_bat_remove,
 > > +	.suspend	= generic_adc_bat_suspend,
 > > +	.resume		= generic_adc_bat_resume,
+> 
+> Use dev_pm_ops instead. Using the suspend and resume callbacks is deprecated.
+makes sense.
+> 
 > > +};
 > > +
 > > +module_platform_driver(generic_adc_bat_driver);
@@ -567,18 +335,17 @@ right.
 > > +
 > > +/**
 > > + * struct generic_platform_data - platform data for generic battery
-> A little inconsistent on capitalization.  (might as well do it now or
-> one of those people who delight in trivial patches will 'tidy' it
-> up for you :)
-I don't mind as it is a good start for people to get familiar with the 
-linux patch process.
-However I will address this valuable comments.
 > > + * @battery_info: Information about the battery
 > > + * @cal_charge: platform callback to calculate charge
 > > + * @gpio_charge_finished: GPIO number used for interrupts
 > > + * @gpio_inverted: Is the gpio inverted?
 > > + */
 > > +struct generic_platform_data {
+> 
+> The name might be a bit to generic ;) I'd go for
+> generic_battery_platform_data or iio_battery_platform_data.
+it will be iio_battery_platform_data.
+> 
 > > +	struct power_supply_info battery_info;
 > > +	int	(*cal_charge)(long);
 > > +	int	gpio_charge_finished;
@@ -586,7 +353,6 @@ However I will address this valuable comments.
 > > +};
 > > +
 > > +#endif /* GENERIC_BATTERY_H */
-> >
 > 
 
 
