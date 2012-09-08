@@ -1,251 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760141Ab2IHBzy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 21:55:54 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:48613 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751487Ab2IHBzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 21:55:51 -0400
-Message-ID: <1347069350.13424.28.camel@joe2Laptop>
-Subject: Re: [PATCH 0/5] dev_<level> and dynamic_debug cleanups
-From: Joe Perches <joe@perches.com>
-To: Jason Baron <jbaron@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jim Cromie <jim.cromie@gmail.com>, Kay Sievers <kay@vrfy.org>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 07 Sep 2012 18:55:50 -0700
-In-Reply-To: <20120907153542.GB18673@redhat.com>
-References: <cover.1345978012.git.joe@perches.com>
-	 <20120906175158.GB9786@redhat.com> <1346957026.13424.5.camel@joe2Laptop>
-	 <20120907145235.GA18673@redhat.com> <1347030721.13424.22.camel@joe2Laptop>
-	 <20120907153542.GB18673@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1760085Ab2IHB7R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 21:59:17 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:57899 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487Ab2IHB7Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 21:59:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <504AA2F9.5060502@cn.fujitsu.com>
+References: <1346750580-11352-1-git-send-email-gaowanlong@cn.fujitsu.com>
+ <CAHGf_=o8VzFSF3kGK92bKgeWPJ4qOQ_NhCzXO-J_Ge22M7M20g@mail.gmail.com> <504AA2F9.5060502@cn.fujitsu.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Fri, 7 Sep 2012 21:58:55 -0400
+X-Google-Sender-Auth: 3heyd7qoFOe65u9OQWI8KKklFxQ
+Message-ID: <CAHGf_=rPYAU6X2eXqyBxHV=PtguBceK=n_C89dTDbUk54-+6ww@mail.gmail.com>
+Subject: Re: [PATCH] mm: fix mmap overflow checking
+To: gaowanlong@cn.fujitsu.com
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        open@kvack.org,
+        "list@kvack.org:MEMORY MANAGEMENT" <linux-mm@kvack.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-07 at 11:35 -0400, Jason Baron wrote:
-> If nobody else thinks this patch is better, let's at least add a comment in
-> __dev_printk() and __netdev_printk() to fix dynamic debug, if these are changed.
+>> I've seen the exactly same patch from another fujitsu guys several
+>> month ago. and as I pointed
+>> out at that time, this line don't work when 32bit kernel + mmap2 syscall case.
+>>
+>> Please don't think do_mmap_pgoff() is for mmap(2) specific and read a
+>> past thread before resend
+>> a patch.
+>
+> So, what's your opinion about this bug? How to fix it in your mind?
 
-Or maybe make dynamic_emit_prefix a public function
-and move the __dynamic_<foo>_printk functions to
-nearby the __<foo>_printk functions so it's easier to
-see that changing one requires the other to change.
-
-Something like:
-
- drivers/base/core.c           |   34 +++++++++++++++++++
- include/linux/dynamic_debug.h |    2 +
- lib/dynamic_debug.c           |   74 +----------------------------------------
- net/core/dev.c                |   40 ++++++++++++++++++++++
- 4 files changed, 77 insertions(+), 73 deletions(-)
-
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 65f82e3..2b4f3e8 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -1948,6 +1948,40 @@ static int __dev_printk(const char *level, const struct device *dev,
- 			       dev_driver_string(dev), dev_name(dev), vaf);
- }
- 
-+#ifdef CONFIG_DYNAMIC_DEBUG
-+int __dynamic_dev_dbg(struct _ddebug *descriptor,
-+		      const struct device *dev, const char *fmt, ...)
-+{
-+	struct va_format vaf;
-+	va_list args;
-+	int res;
-+
-+	BUG_ON(!descriptor);
-+	BUG_ON(!fmt);
-+
-+	va_start(args, fmt);
-+
-+	vaf.fmt = fmt;
-+	vaf.va = &args;
-+
-+	if (!dev) {
-+		res = printk(KERN_DEBUG "(NULL device *): %pV", &vaf);
-+	} else {
-+		char buf[PREFIX_SIZE];
-+
-+		res = dev_printk_emit(7, dev, "%s%s %s: %pV",
-+				      dynamic_emit_prefix(descriptor, buf),
-+				      dev_driver_string(dev), dev_name(dev),
-+				      &vaf);
-+	}
-+
-+	va_end(args);
-+
-+	return res;
-+}
-+EXPORT_SYMBOL(__dynamic_dev_dbg);
-+#endif
-+
- int dev_printk(const char *level, const struct device *dev,
- 	       const char *fmt, ...)
- {
-diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
-index c18257b..8de7573 100644
---- a/include/linux/dynamic_debug.h
-+++ b/include/linux/dynamic_debug.h
-@@ -41,6 +41,8 @@ int ddebug_add_module(struct _ddebug *tab, unsigned int n,
- 
- #if defined(CONFIG_DYNAMIC_DEBUG)
- extern int ddebug_remove_module(const char *mod_name);
-+char *dynamic_emit_prefix(const struct _ddebug *desc, char *buf);
-+
- extern __printf(2, 3)
- int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...);
- 
-diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index e7f7d99..b9f1d22 100644
---- a/lib/dynamic_debug.c
-+++ b/lib/dynamic_debug.c
-@@ -516,7 +516,7 @@ static int remaining(int wrote)
- 	return 0;
- }
- 
--static char *dynamic_emit_prefix(const struct _ddebug *desc, char *buf)
-+char *dynamic_emit_prefix(const struct _ddebug *desc, char *buf)
- {
- 	int pos_after_tid;
- 	int pos = 0;
-@@ -572,78 +572,6 @@ int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
- }
- EXPORT_SYMBOL(__dynamic_pr_debug);
- 
--int __dynamic_dev_dbg(struct _ddebug *descriptor,
--		      const struct device *dev, const char *fmt, ...)
--{
--	struct va_format vaf;
--	va_list args;
--	int res;
--
--	BUG_ON(!descriptor);
--	BUG_ON(!fmt);
--
--	va_start(args, fmt);
--
--	vaf.fmt = fmt;
--	vaf.va = &args;
--
--	if (!dev) {
--		res = printk(KERN_DEBUG "(NULL device *): %pV", &vaf);
--	} else {
--		char buf[PREFIX_SIZE];
--
--		res = dev_printk_emit(7, dev, "%s%s %s: %pV",
--				      dynamic_emit_prefix(descriptor, buf),
--				      dev_driver_string(dev), dev_name(dev),
--				      &vaf);
--	}
--
--	va_end(args);
--
--	return res;
--}
--EXPORT_SYMBOL(__dynamic_dev_dbg);
--
--#ifdef CONFIG_NET
--
--int __dynamic_netdev_dbg(struct _ddebug *descriptor,
--			 const struct net_device *dev, const char *fmt, ...)
--{
--	struct va_format vaf;
--	va_list args;
--	int res;
--
--	BUG_ON(!descriptor);
--	BUG_ON(!fmt);
--
--	va_start(args, fmt);
--
--	vaf.fmt = fmt;
--	vaf.va = &args;
--
--	if (dev && dev->dev.parent) {
--		char buf[PREFIX_SIZE];
--
--		res = dev_printk_emit(7, dev->dev.parent,
--				      "%s%s %s %s: %pV",
--				      dynamic_emit_prefix(descriptor, buf),
--				      dev_driver_string(dev->dev.parent),
--				      dev_name(dev->dev.parent),
--				      netdev_name(dev), &vaf);
--	} else if (dev) {
--		res = printk(KERN_DEBUG "%s: %pV", netdev_name(dev), &vaf);
--	} else {
--		res = printk(KERN_DEBUG "(NULL net_device): %pV", &vaf);
--	}
--
--	va_end(args);
--
--	return res;
--}
--EXPORT_SYMBOL(__dynamic_netdev_dbg);
--
--#endif
--
- #define DDEBUG_STRING_SIZE 1024
- static __initdata char ddebug_setup_string[DDEBUG_STRING_SIZE];
- 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 8ad42fd..fc69703 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -6443,6 +6443,46 @@ static int __netdev_printk(const char *level, const struct net_device *dev,
- 	return r;
- }
- 
-+#ifdef CONFIG_DYNAMIC_DEBUG
-+
-+int __dynamic_netdev_dbg(struct _ddebug *descriptor,
-+			 const struct net_device *dev, const char *fmt, ...)
-+{
-+	struct va_format vaf;
-+	va_list args;
-+	int res;
-+
-+	BUG_ON(!descriptor);
-+	BUG_ON(!fmt);
-+
-+	va_start(args, fmt);
-+
-+	vaf.fmt = fmt;
-+	vaf.va = &args;
-+
-+	if (dev && dev->dev.parent) {
-+		char buf[PREFIX_SIZE];
-+
-+		res = dev_printk_emit(7, dev->dev.parent,
-+				      "%s%s %s %s: %pV",
-+				      dynamic_emit_prefix(descriptor, buf),
-+				      dev_driver_string(dev->dev.parent),
-+				      dev_name(dev->dev.parent),
-+				      netdev_name(dev), &vaf);
-+	} else if (dev) {
-+		res = printk(KERN_DEBUG "%s: %pV", netdev_name(dev), &vaf);
-+	} else {
-+		res = printk(KERN_DEBUG "(NULL net_device): %pV", &vaf);
-+	}
-+
-+	va_end(args);
-+
-+	return res;
-+}
-+EXPORT_SYMBOL(__dynamic_netdev_dbg);
-+
-+#endif
-+
- int netdev_printk(const char *level, const struct net_device *dev,
- 		  const char *format, ...)
- {
-
-
+Fix glibc instead of kernel.
