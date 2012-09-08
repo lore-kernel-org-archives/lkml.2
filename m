@@ -1,122 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754733Ab2IHOhm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 10:37:42 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45109 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753885Ab2IHOhl (ORCPT
+	id S1754790Ab2IHOmz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 10:42:55 -0400
+Received: from na3sys009aog131.obsmtp.com ([74.125.149.247]:54031 "EHLO
+	na3sys009aog131.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754435Ab2IHOmx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 10:37:41 -0400
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 05/12] perf diff: Refactor stdio ui data columns output
-References: <1346946426-13496-1-git-send-email-jolsa@redhat.com>
-	<1346946426-13496-6-git-send-email-jolsa@redhat.com>
-	<878vcmczjt.fsf@sejong.aot.lge.com>
-	<20120908123514.GA3408@krava.brq.redhat.com>
-	<20120908125059.GG20401@ghostprotocols.net>
-Date: Sat, 08 Sep 2012 23:37:31 +0900
-In-Reply-To: <20120908125059.GG20401@ghostprotocols.net> (Arnaldo Carvalho de
-	Melo's message of "Sat, 8 Sep 2012 05:50:59 -0700")
-Message-ID: <871uica8d0.fsf@kernel.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Sat, 8 Sep 2012 10:42:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <alpine.LFD.2.02.1209080950170.28681@xanadu.home>
+References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
+ <504B0D6B.9010908@ti.com> <alpine.LFD.2.02.1209080950170.28681@xanadu.home>
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Sat, 8 Sep 2012 20:12:31 +0530
+Message-ID: <CAMQu2gzEWf_T0MjOMZgDUiEUa8J5bEmmwHxQd61SCjSXe-==1Q@mail.gmail.com>
+Subject: Re: [PATCH v3 00/31] AArch64 Linux kernel port
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: Catalin Marinas <catalin.marinas@arm.com>, linux-arch@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
-
-On Sat, 8 Sep 2012 05:50:59 -0700, Arnaldo Carvalho de Melo wrote:
-> Em Sat, Sep 08, 2012 at 02:35:14PM +0200, Jiri Olsa escreveu:
->> On Fri, Sep 07, 2012 at 11:55:02AM +0900, Namhyung Kim wrote:
->> > Hi, Jiri
->> > 
->> > On Thu,  6 Sep 2012 17:46:59 +0200, Jiri Olsa wrote:
->> > > Currently for any of the data columns (like Overhead/Period..) in
->> > > stdio ui, there's separate code to print header/dots/value scattered
->> > > along the display code path.
->> > >
->> > > Adding hists_stdio_column struct to centralize all info needed
->> > > to print column header/dots/value.
->> > >
->> > > This change eases up addition for new columns, which is now mostly
->> > > matter only of adding new hists_stdio_column struct.
->> > 
->> > As you may know, I submitted a similar patchset few days ago for the
->> > same reason and it handles TUI/GTK cases as well.  I'm waiting for
->> > reviews.
->> 
->> ok, I'll rebase this to acme/tmp.perf/hpp
+On Sat, Sep 8, 2012 at 7:29 PM, Nicolas Pitre <nico@fluxnic.net> wrote:
+> On Sat, 8 Sep 2012, Santosh Shilimkar wrote:
 >
-> well, you can, but that one is buggy and you will not be able to test
-> 'perf diff' at all...
+>> Mostly I was looking at the series from SOC boot and CPU PM
+>> point of view and boot part seems to just fine.
+>>
+>> As per discussion at LPC, I have gone through the SMC
+>> proposal which ARM has published. In general the boot part
+>> with SMC seems to be doable and can be standardized across SOCs.
+>> The part which will be conflicting is the CPU power management.
+>> That seems to be the harder one and the document is at too
+>> infancy stage from the details point of view. Some bits about
+>> save, restore are related to switcher kind of architecture, which
+>> may not be the requirement for all the SoCs.
+>
+> I've reviewed an earlier draft of that document.  Although the examples
+> in the latest document appear to be geared towards switcher usage, my
+> suggestions to the ARM folks was to take into account the CPU hotplug
+> scenario instead.  The provided examples remained switcher centric, but
+> the API in the published document is now much more generic than it used
+> to be.  I think it should cover all usage scenarios now.
+>
+Thanks for the background Nicolas.
 
-I posted the fix right before, and you will also need patch below for
-fixing broken "baseline" output.
-
-
->From 8f2d9010979e244c6565f3a9134e7bfa61936e38 Mon Sep 17 00:00:00 2001
-From: Namhyung Kim <namhyung@kernel.org>
-Date: Sat, 8 Sep 2012 23:28:59 +0900
-Subject: [PATCH] perf hist: Fix perf diff baseline output
-
-When perf diff is running, the overhead field should print old hist
-entry's period as a baseline.
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/ui/hist.c |   23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
-
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 16dc486d02be..326f4e9e6911 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -21,6 +21,18 @@ static int hpp__width_overhead(struct perf_hpp *hpp __used)
- static int hpp__color_overhead(struct perf_hpp *hpp, struct hist_entry *he)
- {
- 	double percent = 100.0 * he->period / hpp->total_period;
-+
-+	if (hpp->ptr) {
-+		struct hists *old_hists = hpp->ptr;
-+		u64 total_period = old_hists->stats.total_period;
-+		u64 base_period = he->pair ? he->pair->period : 0;
-+
-+		if (total_period)
-+			percent = 100.0 * base_period / total_period;
-+		else
-+			percent = 0.0;
-+	}
-+
- 	return percent_color_snprintf(hpp->buf, hpp->size, "  %5.2f%%", percent);
- }
- 
-@@ -29,6 +41,17 @@ static int hpp__entry_overhead(struct perf_hpp *hpp, struct hist_entry *he)
- 	double percent = 100.0 * he->period / hpp->total_period;
- 	const char *fmt = symbol_conf.field_sep ? "%.2f" : "  %5.2f%%";
- 
-+	if (hpp->ptr) {
-+		struct hists *old_hists = hpp->ptr;
-+		u64 total_period = old_hists->stats.total_period;
-+		u64 base_period = he->pair ? he->pair->period : 0;
-+
-+		if (total_period)
-+			percent = 100.0 * base_period / total_period;
-+		else
-+			percent = 0.0;
-+	}
-+
- 	return scnprintf(hpp->buf, hpp->size, fmt, percent);
- }
- 
--- 
-1.7.9.2
-
+Regards,
+Santosh
