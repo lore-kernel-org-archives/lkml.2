@@ -1,87 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699Ab2IHIrO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 04:47:14 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:51010 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752481Ab2IHIrL (ORCPT
+	id S1752696Ab2IHJHN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 05:07:13 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:45916 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751917Ab2IHJHJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 04:47:11 -0400
-Date: Sat, 8 Sep 2012 14:13:45 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Andrew Theurer <habanero@linux.vnet.ibm.com>
-Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
-        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
-        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
-        Gleb Natapov <gleb@redhat.com>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [RFC][PATCH] Improving directed yield scalability for PLE
- handler
-Message-ID: <20120908084345.GU30238@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120718133717.5321.71347.sendpatchset@codeblue.in.ibm.com>
- <500D2162.8010209@redhat.com>
- <1347023509.10325.53.camel@oc6622382223.ibm.com>
- <504A37B0.7020605@linux.vnet.ibm.com>
- <1347046931.7332.51.camel@oc2024037011.ibm.com>
+	Sat, 8 Sep 2012 05:07:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1347046931.7332.51.camel@oc2024037011.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 12090808-8878-0000-0000-000003EDFF1A
+In-Reply-To: <1347065004-15306-4-git-send-email-irina.tirdea@intel.com>
+References: <1347065004-15306-1-git-send-email-irina.tirdea@intel.com>
+	<1347065004-15306-4-git-send-email-irina.tirdea@intel.com>
+Date: Sat, 8 Sep 2012 12:07:07 +0300
+X-Google-Sender-Auth: 6GAZuSkgbOCp8Hbh7mPIHn3io6k
+Message-ID: <CAOJsxLHCavYZQCOZP0nw0ig9uFx0wbR5UP23zKa0gXvmpFvNDg@mail.gmail.com>
+Subject: Re: [PATCH v2 03/12] perf tools: include __WORDSIZE definition
+From: Pekka Enberg <penberg@kernel.org>
+To: Irina Tirdea <irina.tirdea@gmail.com>
+Cc: mingo@redhat.com, acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
+        rostedt@goodmis.org, paulus@samba.org, dsahern@gmail.com,
+        namhyung.kim@lge.com, linux-kernel@vger.kernel.org,
+        Irina Tirdea <irina.tirdea@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> signed-off-by: Andrew Theurer <habanero@linux.vnet.ibm.com>
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index fbf1fd0..c767915 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -4844,6 +4844,9 @@ bool __sched yield_to(struct task_struct *p, bool
-> preempt)
-> 
->  again:
->  	p_rq = task_rq(p);
-> +	if (task_running(p_rq, p) || p->state || !(p_rq->curr->flags &
-> PF_VCPU)) {
-> +		goto out_no_unlock;
-> +	}
->  	double_rq_lock(rq, p_rq);
->  	while (task_rq(p) != p_rq) {
->  		double_rq_unlock(rq, p_rq);
-> @@ -4856,8 +4859,6 @@ again:
->  	if (curr->sched_class != p->sched_class)
->  		goto out;
-> 
-> -	if (task_running(p_rq, p) || p->state)
-> -		goto out;
+On Sat, Sep 8, 2012 at 3:43 AM, Irina Tirdea <irina.tirdea@gmail.com> wrote:
+> From: Irina Tirdea <irina.tirdea@intel.com>
+>
+> __WORDSIZE is GLibC-specific and is not defined on all systems or glibc
+> versions (e.g. Android's bionic does not define it).
+>
+> In file included from util/include/linux/bitmap.h:5:0,
+>                  from util/header.h:10,
+>                  from util/session.h:6,
+>                  from util/build-id.h:4,
+>                  from util/annotate.c:11:
+> util/include/linux/bitops.h: In function 'set_bit':
+> util/include/linux/bitops.h:25:12: error:
+> '__WORDSIZE' undeclared (first use in this function)
+> util/include/linux/bitops.h:25:12: note:
+> each undeclared identifier is reported only once for each function it appears in
+> util/include/linux/bitops.h:23:51: error:
+> parameter 'addr' set but not used [-Werror=unused-but-set-parameter]
+> util/include/linux/bitops.h: In function 'clear_bit':
+> util/include/linux/bitops.h:30:12: error:
+> '__WORDSIZE' undeclared (first use in this function)
+> util/include/linux/bitops.h:28:53: error:
+> parameter 'addr' set but not used [-Werror=unused-but-set-parameter]
+> In file included from util/header.h:10:0,
+>                  from util/session.h:6,
+>                  from util/build-id.h:4,
+>                  from util/annotate.c:11:
+> util/include/linux/bitmap.h: In function 'bitmap_zero':
+> util/include/linux/bitmap.h:22:6: error:
+> '__WORDSIZE' undeclared (first use in this function)
+>
+> Defining __WORDSIZE in perf's headers if it is not already defined.
+>
+> Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+> ---
+>  tools/perf/util/include/linux/bitops.h |    9 +++++++++
+>  1 file changed, 9 insertions(+)
+>
+> diff --git a/tools/perf/util/include/linux/bitops.h b/tools/perf/util/include/linux/bitops.h
+> index 587a230..91779ec 100644
+> --- a/tools/perf/util/include/linux/bitops.h
+> +++ b/tools/perf/util/include/linux/bitops.h
+> @@ -5,6 +5,15 @@
+>  #include <linux/compiler.h>
+>  #include <asm/hweight.h>
+>
+> +#ifndef __WORDSIZE
+> +#if defined(__x86_64__)
+> +# define __WORDSIZE 64
+> +#endif
+> +#if defined(__i386__) || defined(__arm__)
+> +# define __WORDSIZE 32
+> +#endif
+> +#endif
 
-Is it possible that by this time the current thread takes double rq
-lock, thread p could actually be running?  i.e is there merit to keep
-this check around even with your similar check above?
-
-> 
->  	yielded = curr->sched_class->yield_to_task(rq, p, preempt);
->  	if (yielded) {
-> @@ -4879,6 +4880,7 @@ again:
-> 
->  out:
->  	double_rq_unlock(rq, p_rq);
-> +out_no_unlock:
->  	local_irq_restore(flags);
-> 
->  	if (yielded)
-> 
-> 
-
--- 
-thanks and regards
-Srikar
-
+Why not use "sizeof(unsigned long) * 8" ?
