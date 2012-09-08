@@ -1,135 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760658Ab2IHCKR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 22:10:17 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41326 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760201Ab2IHCH0 (ORCPT
+	id S1752799Ab2IHDB3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 23:01:29 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:65320 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532Ab2IHDBX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 22:07:26 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Irina Tirdea <irina.tirdea@intel.com>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 12/13] perf tools: add NO_BACKTRACE for application self-debugging
-Date: Fri,  7 Sep 2012 23:07:11 -0300
-Message-Id: <1347070032-4161-13-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1347070032-4161-1-git-send-email-acme@infradead.org>
-References: <1347070032-4161-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 7 Sep 2012 23:01:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAErSpo7YZ75Q7zSfNPGONAwpMjr0MViBJH52uAOWjPuQYoTsAw@mail.gmail.com>
+References: <201209072328.30553.rjw@sisk.pl> <CAErSpo7-6PEEt+pDV-XRrfHVKDuw+_CbtKK-fEguyGhd_qapdw@mail.gmail.com>
+ <CAErSpo7YZ75Q7zSfNPGONAwpMjr0MViBJH52uAOWjPuQYoTsAw@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 7 Sep 2012 21:01:00 -0600
+Message-ID: <CAErSpo4edqxnLS0tnpE2TuDqZYUsB4tLZOadUwOG2twQhuNZ_g@mail.gmail.com>
+Subject: Re: [Resend][PATCH] pciehp: always implement resume
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Oliver Neukum <oliver@neukum.org>, linux-pci@vger.kernel.org,
+        Mark Lord <mlord@pobox.com>,
+        Kristen Carlson Accardi <kristen@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Irina Tirdea <irina.tirdea@intel.com>
+[fix Kristen's email addr]
 
-perf has support for self-debugging by defining dump_stack function.
-This function uses backtrace and backtrace_symbols functions defined as
-GNU extensions.
-
-In Android, bionic does not offer support for these functions and
-compilation will fail with the following error:
-
-target  C: libperf <= tools/perf/util/util.c
-tools/perf/util/util.c:4:22: fatal error: execinfo.h: No such file or directory
-compilation terminated.
-
-Add a compile-time option (NO_BACKTRACE) to enable or disable
-self-debugging functionality in perf. This can also help in debugging
-since it offers the possibility to turn on/off printing the backtrace.
-
-Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1347065004-15306-12-git-send-email-irina.tirdea@intel.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Makefile                 |    8 ++++++++
- tools/perf/config/feature-tests.mak |   14 ++++++++++++++
- tools/perf/util/util.c              |    6 ++++++
- 3 files changed, 28 insertions(+)
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index afd5075..3eda492 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -755,6 +755,14 @@ else
- 	endif
- endif
- 
-+ifdef NO_BACKTRACE
-+       BASIC_CFLAGS += -DNO_BACKTRACE
-+else
-+       ifneq ($(call try-cc,$(SOURCE_BACKTRACE),),y)
-+               BASIC_CFLAGS += -DNO_BACKTRACE
-+       endif
-+endif
-+
- ifdef ASCIIDOC8
- 	export ASCIIDOC8
- endif
-diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
-index 2f1156a..116690a 100644
---- a/tools/perf/config/feature-tests.mak
-+++ b/tools/perf/config/feature-tests.mak
-@@ -179,3 +179,17 @@ int main(void)
- }
- endef
- endif
-+
-+ifndef NO_BACKTRACE
-+define SOURCE_BACKTRACE
-+#include <execinfo.h>
-+#include <stdio.h>
-+
-+int main(void)
-+{
-+	backtrace(NULL, 0);
-+	backtrace_symbols(NULL, 0);
-+	return 0;
-+}
-+endef
-+endif
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index 1b8775c..2055cf3 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -1,7 +1,9 @@
- #include "../perf.h"
- #include "util.h"
- #include <sys/mman.h>
-+#ifndef NO_BACKTRACE
- #include <execinfo.h>
-+#endif
- #include <stdio.h>
- #include <stdlib.h>
- 
-@@ -163,6 +165,7 @@ size_t hex_width(u64 v)
- }
- 
- /* Obtain a backtrace and print it to stdout. */
-+#ifndef NO_BACKTRACE
- void dump_stack(void)
- {
- 	void *array[16];
-@@ -177,3 +180,6 @@ void dump_stack(void)
- 
- 	free(strings);
- }
-+#else
-+void dump_stack(void) {}
-+#endif
--- 
-1.7.9.2.358.g22243
-
+On Fri, Sep 7, 2012 at 5:33 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> +cc Mark & Kristen
+>
+> Commit cd2fe83a815 by Mark added the code we're changing here, so this
+> is your chance to speak up if we're not doing the right thing :)
+>
+> On Fri, Sep 7, 2012 at 4:28 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> On Fri, Sep 7, 2012 at 2:28 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>>> From: Oliver Neukum <oliver@neukum.org>
+>>> Subject: pciehp: always implement resume
+>>>
+>>> The driver by default ignores resume. On some laptops
+>>> that means that interrupts are not delivered after S3.
+>>> So card removals and insertions will not be handled. Requiring
+>>> a forced load isn't right.
+>>>
+>>> Signed-off-by: Oliver Neukum <oneukum@suse.de>
+>>> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+>>
+>> I applied this (with fixed From: email address and slightly modified
+>> changelog) to http://git.kernel.org/?p=linux/kernel/git/helgaas/pci.git;a=shortlog;h=refs/heads/pci/oliver-pciehp-resume
+>> and will merge it to "next" after Fengguang's build/smoke tests.
+>>
+>> Thanks!
+>>
+>> Bjorn
+>>
+>>> ---
+>>> drivers/pci/hotplug/pciehp_core.c |   28 ++++++++++++++--------------
+>>>  drivers/pci/hotplug/pciehp_core.c |   28 ++++++++++++++--------------
+>>>  1 file changed, 14 insertions(+), 14 deletions(-)
+>>>
+>>> Index: linux/drivers/pci/hotplug/pciehp_core.c
+>>> ===================================================================
+>>> --- linux.orig/drivers/pci/hotplug/pciehp_core.c
+>>> +++ linux/drivers/pci/hotplug/pciehp_core.c
+>>> @@ -300,24 +300,24 @@ static int pciehp_suspend (struct pcie_d
+>>>
+>>>  static int pciehp_resume (struct pcie_device *dev)
+>>>  {
+>>> +       struct controller *ctrl;
+>>> +       struct slot *slot;
+>>> +       u8 status;
+>>> +
+>>>         dev_info(&dev->device, "%s ENTRY\n", __func__);
+>>> -       if (pciehp_force) {
+>>> -               struct controller *ctrl = get_service_data(dev);
+>>> -               struct slot *slot;
+>>> -               u8 status;
+>>> +       ctrl = get_service_data(dev);
+>>>
+>>> -               /* reinitialize the chipset's event detection logic */
+>>> -               pcie_enable_notification(ctrl);
+>>> +       /* reinitialize the chipset's event detection logic */
+>>> +       pcie_enable_notification(ctrl);
+>>>
+>>> -               slot = ctrl->slot;
+>>> +       slot = ctrl->slot;
+>>>
+>>> -               /* Check if slot is occupied */
+>>> -               pciehp_get_adapter_status(slot, &status);
+>>> -               if (status)
+>>> -                       pciehp_enable_slot(slot);
+>>> -               else
+>>> -                       pciehp_disable_slot(slot);
+>>> -       }
+>>> +       /* Check if slot is occupied */
+>>> +       pciehp_get_adapter_status(slot, &status);
+>>> +       if (status)
+>>> +               pciehp_enable_slot(slot);
+>>> +       else
+>>> +               pciehp_disable_slot(slot);
+>>>         return 0;
+>>>  }
+>>>  #endif /* PM */
