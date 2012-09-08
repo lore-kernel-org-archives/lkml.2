@@ -1,69 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755464Ab2IHX0d (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 19:26:33 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63717 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753654Ab2IHXZl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 19:25:41 -0400
-From: Ming Lei <ming.lei@canonical.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Takashi Iwai <tiwai@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>
-Subject: [RFC PATCH 1/5] driver core: driver probe at the last minute in driver_register
-Date: Sun,  9 Sep 2012 07:25:16 +0800
-Message-Id: <1347146720-28596-2-git-send-email-ming.lei@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1347146720-28596-1-git-send-email-ming.lei@canonical.com>
-References: <1347146720-28596-1-git-send-email-ming.lei@canonical.com>
+	id S1754836Ab2IHX25 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 19:28:57 -0400
+Received: from a194-183.smtp-out.amazonses.com ([199.255.194.183]:62074 "EHLO
+	a194-183.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751298Ab2IHX24 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Sep 2012 19:28:56 -0400
+References: <CALF0-+VMtUPuLHg3CwDxFm-TjbN1=YavGO79Oo3GuymOLvikeA@mail.gmail.com> <00000139a801aba3-4616277c-d845-4b62-83ec-1a1950b05751-000000@email.amazonses.com> <CALF0-+U=sFgynE__V-XTN1SAgJHV_3VigRrdxuXFinbiWPg2oQ@mail.gmail.com>
+In-Reply-To: <CALF0-+U=sFgynE__V-XTN1SAgJHV_3VigRrdxuXFinbiWPg2oQ@mail.gmail.com>
+Mime-Version: 1.0 (1.0)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset=us-ascii
+Message-Id: <00000139a836e973-852a1b8d-cab0-4404-bf63-9164ec34cbe4-000000@email.amazonses.com>
+Cc: Pekka Enberg <penberg@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        JoonSoo Kim <js1304@gmail.com>, Tim Bird <tim.bird@am.sony.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Rientjes <rientjes@google.com>,
+        Glauber Costa <glommer@parallels.com>
+X-Mailer: iPad Mail (9B206)
+From: Christoph <cl@linux.com>
+Subject: Re: [PATCH v2 0/10] mm: SLxB cleaning and trace accuracy improvement
+Date: Sat, 8 Sep 2012 23:28:55 +0000
+To: Ezequiel Garcia <elezegarcia@gmail.com>
+X-SES-Outgoing: 199.255.194.183
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It should be correct to probe driver at the last minute in
-driver_register since it will be so in !auto_probe case and
-driver_register on no matched devices case.
+Please pull from pekkas tree on github or use next (check if the back and forth with patchset in and out has been resolved first).
 
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
----
- drivers/base/bus.c    |    5 -----
- drivers/base/driver.c |    4 ++++
- 2 files changed, 4 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/base/bus.c b/drivers/base/bus.c
-index 181ed26..00d841d 100644
---- a/drivers/base/bus.c
-+++ b/drivers/base/bus.c
-@@ -714,11 +714,6 @@ int bus_add_driver(struct device_driver *drv)
- 	if (error)
- 		goto out_unregister;
- 
--	if (drv->bus->p->drivers_autoprobe) {
--		error = driver_attach(drv);
--		if (error)
--			goto out_unregister;
--	}
- 	klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers);
- 	module_add_driver(drv->owner, drv);
- 
-diff --git a/drivers/base/driver.c b/drivers/base/driver.c
-index 974e301..27f4c85 100644
---- a/drivers/base/driver.c
-+++ b/drivers/base/driver.c
-@@ -191,6 +191,10 @@ int driver_register(struct device_driver *drv)
- 	}
- 	kobject_uevent(&drv->p->kobj, KOBJ_ADD);
- 
-+	/* driver probe at the last minute */
-+	if (drv->bus->p->drivers_autoprobe)
-+		ret = driver_attach(drv);
-+
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(driver_register);
--- 
-1.7.9.5
 
