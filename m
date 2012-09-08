@@ -1,30 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754772Ab2IHL5t (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 07:57:49 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4476 "EHLO
+	id S1754837Ab2IHL56 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 07:57:58 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3197 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754359Ab2IHL4m (ORCPT
+	with ESMTP id S1754654Ab2IHL4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 07:56:42 -0400
-X-Authority-Analysis: v=2.0 cv=VPlfbqzX c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=JqQ2eyqQkcYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=1q3Gf7XPKNEA:10 a=VwQbUJbxAAAA:8 a=pGLkceISAAAA:8 a=20KFwNOVAAAA:8 a=Z4Rwk6OoAAAA:8 a=PtDNVHqPAAAA:8 a=drOt6m5kAAAA:8 a=UPm3pfgAAAAA:8 a=uMbGErvHagTwsCRPU3sA:9 a=QEXdDO2ut3YA:10 a=MSl-tDqOz04A:10 a=jEp0ucaQiEUA:10 a=jbrJJM5MRmoA:10 a=wYE_KDyynt4A:10 a=mOio7EKfaG4A:10 a=jeBq3FmKZ4MA:10 a=BXu13ANRUyYBbsypKl0A:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Sat, 8 Sep 2012 07:56:47 -0400
+X-Authority-Analysis: v=2.0 cv=Hsb06jvS c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=V7U0AEkcqBsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=YNTcnsA3COkA:10 a=VwQbUJbxAAAA:8 a=QyXUC8HyAAAA:8 a=pGLkceISAAAA:8 a=oGMlB6cnAAAA:8 a=3nbZYyFuAAAA:8 a=GXSV7lqpVXBndYGrzy0A:9 a=QEXdDO2ut3YA:10 a=dGJ0OcVc7YAA:10 a=MSl-tDqOz04A:10 a=Zh68SRI7RUMA:10 a=CY6gl2JlH4YA:10 a=EvKJbDF4Ut8A:10 a=jeBq3FmKZ4MA:10 a=dCNhm0R6zkfBFY1V:21 a=W-BivuNGR85NnzcB:21 a=gKPduVHJWxI91vLObcsA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.115.198
-Message-Id: <20120908115640.529406610@goodmis.org>
+Message-Id: <20120908115641.539378227@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Sat, 08 Sep 2012 07:55:18 -0400
+Date: Sat, 08 Sep 2012 07:55:22 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: [PATCH 3/7] trace: Stop compiling in trace_clock unconditionally
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [PATCH 7/7] kprobes/x86: Fix to support jprobes on ftrace-based kprobe
 References: <20120908115515.211175517@goodmis.org>
-Content-Disposition: inline; filename=0003-trace-Stop-compiling-in-trace_clock-unconditionally.patch
+Content-Disposition: inline; filename=0007-kprobes-x86-Fix-to-support-jprobes-on-ftrace-based-k.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,89 +33,133 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-Commit 56449f437 "tracing: make the trace clocks available generally",
-in April 2009, made trace_clock available unconditionally, since
-CONFIG_X86_DS used it too.
+Fix kprobes/x86 to support jprobes on ftrace-based kprobes.
+Because of -mfentry support of ftrace, ftrace is now put
+on the beginning of function where jprobes are put.
 
-Commit faa4602e47 "x86, perf, bts, mm: Delete the never used BTS-ptrace cod=
-e",
-in March 2010, removed CONFIG_X86_DS, and now only CONFIG_RING_BUFFER (split
-out from CONFIG_TRACING for general use) has a dependency on trace_clock. S=
-o,
-only compile in trace_clock with CONFIG_RING_BUFFER or CONFIG_TRACING
-enabled.
+Originally ftrace-based kprobes doesn't support jprobe
+because it will change regs->ip and ftrace doesn't support
+changing IP and ftrace itself doesn't conflict jprobe.
+However, ftrace -mfentry support moves mcount call on the
+top of functions where jprobes are put. This means that
+jprobe always conflicts with ftrace-based kprobe and fails.
 
-Link: http://lkml.kernel.org/r/20120903024513.GA19583@leaf
+This patch allows ftrace-based kprobes to support jprobes
+by allowing to modify regs->ip and kprobes breakpoint
+handler also allows to skip singlestepping because there
+is a ftrace call (not an original instruction).
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
+Link: http://lkml.kernel.org/r/20120905143125.10329.90836.stgit@localhost.l=
+ocaldomain
+
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/Makefile       |    2 +-
- kernel/trace/Kconfig  |    5 +++++
- kernel/trace/Makefile |    6 +-----
- 3 files changed, 7 insertions(+), 6 deletions(-)
+ arch/x86/kernel/kprobes.c |   42 +++++++++++++++++++++++++++++-------------
+ kernel/kprobes.c          |    3 ---
+ 2 files changed, 29 insertions(+), 16 deletions(-)
 
-diff --git a/kernel/Makefile b/kernel/Makefile
-index c0cc67a..29d993b 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -98,7 +98,7 @@ obj-$(CONFIG_COMPAT_BINFMT_ELF) +=3D elfcore.o
- obj-$(CONFIG_BINFMT_ELF_FDPIC) +=3D elfcore.o
- obj-$(CONFIG_FUNCTION_TRACER) +=3D trace/
- obj-$(CONFIG_TRACING) +=3D trace/
--obj-$(CONFIG_X86_DS) +=3D trace/
-+obj-$(CONFIG_TRACE_CLOCK) +=3D trace/
- obj-$(CONFIG_RING_BUFFER) +=3D trace/
- obj-$(CONFIG_TRACEPOINTS) +=3D trace/
- obj-$(CONFIG_IRQ_WORK) +=3D irq_work.o
-diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
-index 9301a0e..4cea4f4 100644
---- a/kernel/trace/Kconfig
-+++ b/kernel/trace/Kconfig
-@@ -62,8 +62,12 @@ config HAVE_C_RECORDMCOUNT
- config TRACER_MAX_TRACE
- 	bool
+diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
+index f49f60c..b7c2a85 100644
+--- a/arch/x86/kernel/kprobes.c
++++ b/arch/x86/kernel/kprobes.c
+@@ -541,6 +541,8 @@ reenter_kprobe(struct kprobe *p, struct pt_regs *regs, =
+struct kprobe_ctlblk *kcb
+ 	return 1;
+ }
 =20
-+config TRACE_CLOCK
-+	bool
++static void __kprobes skip_singlestep(struct kprobe *p, struct pt_regs *re=
+gs,
++				      struct kprobe_ctlblk *kcb);
+ /*
+  * Interrupts are disabled on entry as trap3 is an interrupt gate and they
+  * remain disabled throughout this function.
+@@ -599,6 +601,12 @@ static int __kprobes kprobe_handler(struct pt_regs *re=
+gs)
+ 	} else if (kprobe_running()) {
+ 		p =3D __this_cpu_read(current_kprobe);
+ 		if (p->break_handler && p->break_handler(p, regs)) {
++#ifdef KPROBES_CAN_USE_FTRACE
++			if (kprobe_ftrace(p)) {
++				skip_singlestep(p, regs, kcb);
++				return 1;
++			}
++#endif
+ 			setup_singlestep(p, regs, kcb, 0);
+ 			return 1;
+ 		}
+@@ -1053,6 +1061,21 @@ int __kprobes longjmp_break_handler(struct kprobe *p=
+, struct pt_regs *regs)
+ }
+=20
+ #ifdef KPROBES_CAN_USE_FTRACE
++static void __kprobes skip_singlestep(struct kprobe *p, struct pt_regs *re=
+gs,
++				      struct kprobe_ctlblk *kcb)
++{
++	/*
++	 * Emulate singlestep (and also recover regs->ip)
++	 * as if there is a 5byte nop
++	 */
++	regs->ip =3D (unsigned long)p->addr + MCOUNT_INSN_SIZE;
++	if (unlikely(p->post_handler)) {
++		kcb->kprobe_status =3D KPROBE_HIT_SSDONE;
++		p->post_handler(p, regs, 0);
++	}
++	__this_cpu_write(current_kprobe, NULL);
++}
 +
- config RING_BUFFER
- 	bool
-+	select TRACE_CLOCK
+ /* Ftrace callback handler for kprobes */
+ void __kprobes kprobe_ftrace_handler(unsigned long ip, unsigned long paren=
+t_ip,
+ 				     struct ftrace_ops *ops, struct pt_regs *regs)
+@@ -1077,19 +1100,12 @@ void __kprobes kprobe_ftrace_handler(unsigned long =
+ip, unsigned long parent_ip,
 =20
- config FTRACE_NMI_ENTER
-        bool
-@@ -114,6 +118,7 @@ config TRACING
- 	select NOP_TRACER
- 	select BINARY_PRINTF
- 	select EVENT_TRACING
-+	select TRACE_CLOCK
-=20
- config GENERIC_TRACER
- 	bool
-diff --git a/kernel/trace/Makefile b/kernel/trace/Makefile
-index 8370908..d7e2068 100644
---- a/kernel/trace/Makefile
-+++ b/kernel/trace/Makefile
-@@ -19,11 +19,7 @@ endif
-=20
- CFLAGS_trace_events_filter.o :=3D -I$(src)
-=20
--#
--# Make the trace clocks available generally: it's infrastructure
--# relied on by ptrace for example:
--#
--obj-y +=3D trace_clock.o
-+obj-$(CONFIG_TRACE_CLOCK) +=3D trace_clock.o
-=20
- obj-$(CONFIG_FUNCTION_TRACER) +=3D libftrace.o
- obj-$(CONFIG_RING_BUFFER) +=3D ring_buffer.o
+ 		__this_cpu_write(current_kprobe, p);
+ 		kcb->kprobe_status =3D KPROBE_HIT_ACTIVE;
+-		if (p->pre_handler)
+-			p->pre_handler(p, regs);
+-
+-		if (unlikely(p->post_handler)) {
+-			/*
+-			 * Emulate singlestep (and also recover regs->ip)
+-			 * as if there is a 5byte nop
+-			 */
+-			regs->ip =3D ip + MCOUNT_INSN_SIZE;
+-			kcb->kprobe_status =3D KPROBE_HIT_SSDONE;
+-			p->post_handler(p, regs, 0);
+-		}
+-		__this_cpu_write(current_kprobe, NULL);
++		if (!p->pre_handler || !p->pre_handler(p, regs))
++			skip_singlestep(p, regs, kcb);
++		/*
++		 * If pre_handler returns !0, it sets regs->ip and
++		 * resets current kprobe.
++		 */
+ 	}
+ end:
+ 	local_irq_restore(flags);
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 35b4315..098f396 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -1418,9 +1418,6 @@ static __kprobes int check_kprobe_address_safe(struct=
+ kprobe *p,
+ 		/* Given address is not on the instruction boundary */
+ 		if ((unsigned long)p->addr !=3D ftrace_addr)
+ 			return -EILSEQ;
+-		/* break_handler (jprobe) can not work with ftrace */
+-		if (p->break_handler)
+-			return -EINVAL;
+ 		p->flags |=3D KPROBE_FLAG_FTRACE;
+ #else	/* !KPROBES_CAN_USE_FTRACE */
+ 		return -EINVAL;
 --=20
 1.7.10.4
 
@@ -129,19 +172,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJQSzJ4AAoJEIy3vGnGbaoALb8QAKxC7SXtIkxKSwPcpJvrwqUg
-wntotQBCfqXiLYsJh44gmQbsrlS15OXYXfGexVwchR9n0DyCrDWoqcpbuQ2dcvFW
-sS7qnnsRw1qLLuwBmZnkz5LwC4zXH1vh6cAU3OW2FVjVe8hcuS6EAKt+yuIzKosB
-lc2ewsUIWTxhTJFKkrgXXv26vlhWSUDoHVRXHiWCoya/lrpJLAAlfNGsZJhiivAO
-IPbNy8N5fRiMI5cRFQ2gIty0IX9n1xiFUF/7yW+TX12S6MDg1zQ5c+7XEQWKyHK7
-qiuMKMNgcx+EW1+vjyYGW3AM/iDzWcqJx961gEhK08LpM/0ZMW0FXGDT27rRd391
-/R6xVSogyTZQqgHEkgvdRifTpHDSyUuSfhyQ2dr8CMef4Xu20vMQMpFENVnF3JfP
-Jj43rNCYMRvvR//KKf7+2KqZf69A3mLxNrBu7AIqxn6rvBG17jg6KryzOG6Ne/86
-cUfJvI8ueLQBVHoYHSEtOk0zwdQKmc1Ybt610UFdYoOvk1tZAub9tGpK2BJNIBDT
-uHoAUnycSfKjeZPHXK4e/Qhp3Csp4I/ZEPzFAe4ChFx4/cKFKr92T+OS6U3HhhrW
-ZrawELs6ce0iCnlopxT3T5BjxDF9h3MD4Ti9/1nztrYTYKxLm7vuOGkqsHkpHVNx
-wD3d5GAa2LaDqnCoLgzA
-=t/Nx
+iQIcBAABAgAGBQJQSzJ5AAoJEIy3vGnGbaoA+QIQAOgCBmcxpcSGfiJ1kTRr8dIH
+OPctxeHcOqT15ELiW8vrQaRZ8x6jLHKK1CmbfecJGFI1mkRbQZ7ekYmB83D2rbdg
+wJRM0rvRoaebxTh1wOpiUpluoc28GJUVaqCmuQFQ6Go1PNdPsOfuMMep4h2NLj4E
+68NxD5Go6XEzLOv5xZjqkcdyrnheWddaSW5RYCN4czXwwyZjvDW8u4ysC674xWGK
+JA2ja1PtcLpfcnlO64liuVpBNPOwpwB0okG7b9UWe+MwZW5DAspcRnxecgolsSNB
+qSQ18dlSM6hGPX7z9AOj6yimVvNLHcxYjTChJKlLmOcE6u0tIRqefqj5joBW/Fx9
+q/Ekif+8OL2PsRq9+DZcbbe3GwXDcJIWG0yXToKuIWSAM7+AGSDDh6bGrmd36pR/
+8KxdgzyEEd7xfzN1HWeS8rWvFQG7Sji8P2kUxsqAt3XScaFkezhVxkAFKW88qI7q
+JgRrDnfFprXz+OSikNylE30bj89zvzDECYoALMLwcP49Wr890kUSV2+TohaVXwBP
+RtISEFpQo82c75lX8ae8A1DReJpyO1tatjRlJpPiU+D8zJnXy+agmDTouM88R3Sd
+dnK4uIzDJl2gD3zl9A3/ryJbc3Iv/aEnxUvjTYImQqTALN3KCyqvCkTH+JlCDWTt
+9NKVpZ6Q6gL/liA/R50G
+=bvbW
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
