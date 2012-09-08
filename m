@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755464Ab2IHDMs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 23:12:48 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:34878 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103Ab2IHDMp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 23:12:45 -0400
-Date: Sat, 8 Sep 2012 04:12:38 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Sourav Poddar <sourav.poddar@ti.com>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, b-cousson@ti.com, balbi@ti.com,
-        santosh.shilimkar@ti.com, sameo@linux.intel.com
-Subject: Re: [PATCHv2 1/4] mfd: smsc: Add support for smsc gpio io/keypad
- driver
-Message-ID: <20120908031237.GA31018@sirena.org.uk>
-References: <1346844964-24839-1-git-send-email-sourav.poddar@ti.com>
+	id S1755474Ab2IHD0U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 23:26:20 -0400
+Received: from mga14.intel.com ([143.182.124.37]:28252 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751714Ab2IHD0Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 23:26:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,390,1344236400"; 
+   d="scan'208";a="190287464"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH RESEND] USB/host: Cleanup unneccessary irq disable code
+Thread-Topic: [PATCH RESEND] USB/host: Cleanup unneccessary irq disable code
+Thread-Index: AQHNjI8l1bhi80ax80i2oD2lS38uQZd/yaKQ
+Date: Sat, 8 Sep 2012 03:26:11 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A17B12B@SHSMSX101.ccr.corp.intel.com>
+References: <1347009599.1119.9.camel@cliu38-desktop-build>
+In-Reply-To: <1347009599.1119.9.camel@cliu38-desktop-build>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346844964-24839-1-git-send-email-sourav.poddar@ti.com>
-X-Cookie: See store for details.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q883RHTH010584
 
-On Wed, Sep 05, 2012 at 05:06:04PM +0530, Sourav Poddar wrote:
 
-> +static struct regmap_config smsc_regmap_config = {
-> +		.reg_bits = 8,
-> +		.val_bits = 8,
-> +		.max_register = SMSC_MAX_REGISTER - 1;
+> -----Original Message-----
+> From: Liu, Chuansheng
+> Sent: Friday, September 07, 2012 5:20 PM
+> To: gregkh@linuxfoundation.org
+> Cc: linux-kernel@vger.kernel.org
+> Subject: [PATCH RESEND] USB/host: Cleanup unneccessary irq disable code
+> 
+> Because the IRQF_DISABLED as the flag is now a NOOP and has been
+> deprecated and in hardirq context the interrupt is disabled.
+> 
+> so in usb/host code:
+> Removing the usage of flag IRQF_DISABLED;
+> Removing the calling local_irq save/restore actions in irq
+> handler usb_hcd_irq();
+> 
+> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+> Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
-That max_register setup looks very odd...
-
-> +		.cache_type = REGCACHE_COMPRESSED,
-> +};
-
-Are you sure the compressed type is sensible?  It would normally only
-make sense with a large number of closely packed registers but this
-device has 8 bit register values.
-
-> +#ifdef CONFIG_OF
-> +	of_property_read_u32(node, "clock", &smsc->clk);
-> +#endif
-
-> +	ret = regmap_write(smsc->regmap, SMSC_CLK_CTRL, smsc->clk);
-> +	if (ret)
-> +		goto err;
-
-What happens on non-DT systems?
-
-> +static int smsc_i2c_remove(struct i2c_client *i2c)
-> +{
-> +	return 0;
-> +}
-
-Remove empty functions, though it's rather surprising that there's
-nothing at all to do here..  Normally an MFD would at least remove its
-children.
-
+Hi greg,
+This new patch is still not OK in a right format to apply? Please let me know, thanks.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
