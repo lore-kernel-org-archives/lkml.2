@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759763Ab2IHBYY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 21:24:24 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:61367 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758667Ab2IHBYX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 21:24:23 -0400
+	id S1759636Ab2IHB0x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 21:26:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33631 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755342Ab2IHB0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Sep 2012 21:26:52 -0400
+Date: Fri, 7 Sep 2012 22:26:41 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: "Shishkin, Alexander" <alexander.shishkin@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 07/12] rbtree: adjust root color in rb_insert_color()
+ only when necessary
+Message-ID: <20120908012641.GA2177@infradead.org>
+References: <1342139517-3451-1-git-send-email-walken@google.com>
+ <1342139517-3451-8-git-send-email-walken@google.com>
+ <50406F60.5040707@intel.com>
+ <CANN689EBA6yPk3pS-yXZ1-ticG7eU3mY1mWMWp2S3xhJ73ODFA@mail.gmail.com>
+ <20120831011541.ddf8ed78.akpm@linux-foundation.org>
+ <5040775C.3070205@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <1346842839.2461.13.camel@laptop>
-References: <CANg8OWLL6gzUpZuq8YT2bSbT5=EVWejbpCX0TM8dt7mKXyZ9Yg@mail.gmail.com>
- <1346842839.2461.13.camel@laptop>
-From: Irina Tirdea <irina.tirdea@gmail.com>
-Date: Sat, 8 Sep 2012 04:24:02 +0300
-Message-ID: <CANg8OWK8ee97D+SkR+7DzXdJLsDgViLO3QiAcXsBnU6F_cj5wA@mail.gmail.com>
-Subject: Re: [PATCH] perf bench: fix assert when NDEBUG is defined
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5040775C.3070205@intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Its valid (although admittedly dubious) to have BUG_ON with
-> side-effects.
->
-> The 'right' fix would be something like:
->
-> ---
->  #ifndef BUG_ON
-> +#ifdef NDEBUG
-> +#define BUG_ON(cond) do { if (cond) ; } while (0)
-> +#else
->  #define BUG_ON(cond) assert(!(cond))
->  #endif
-> +#endif
->
+Em Fri, Aug 31, 2012 at 11:35:40AM +0300, Adrian Hunter escreveu:
+> AFAICS tools/perf/util/include/linux is for fixing up the
+> differences between kernel headers and exported kernel headers.
+> Hence my change:
+> 
+> diff --git a/tools/perf/util/include/linux/rbtree.h b/tools/perf/util/include/linux/rbtree.h
+> index 7a243a1..2a030c5 100644
+> --- a/tools/perf/util/include/linux/rbtree.h
+> +++ b/tools/perf/util/include/linux/rbtree.h
+> @@ -1 +1,2 @@
+> +#include <stdbool.h>
+>  #include "../../../../include/linux/rbtree.h"
 
-This is indeed the right fix. I will use this approach, test it and resubmit.
+I applied this one now, thanks,
 
-Thanks,
-Irina
+- Arnaldo
