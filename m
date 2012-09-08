@@ -1,39 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753754Ab2IHK2Z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 06:28:25 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:33459 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753250Ab2IHK2X (ORCPT
+	id S1753945Ab2IHKcO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 06:32:14 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:45257 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753572Ab2IHKcL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 06:28:23 -0400
-Message-ID: <504B1DC3.1000604@redhat.com>
-Date: Sat, 08 Sep 2012 12:28:19 +0200
+	Sat, 8 Sep 2012 06:32:11 -0400
+Message-ID: <504B1EA6.8050304@redhat.com>
+Date: Sat, 08 Sep 2012 12:32:06 +0200
 From: Paolo Bonzini <pbonzini@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: Stefan Bader <stefan.bader@canonical.com>
-CC: Jan Beulich <JBeulich@suse.com>, Matt Wilson <msw@amazon.com>,
-        "Justin M. Forbes" <jmforbes@linuxtx.org>, xen-devel@lists.xen.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH/RFC] Fix xsave bug on older Xen hypervisors
-References: <1347018043-21252-1-git-send-email-stefan.bader@canonical.com> <504A05B00200007800099C7B@nat28.tlf.novell.com> <5049F4E9.9050306@canonical.com> <504A1A950200007800099D4C@nat28.tlf.novell.com> <20120907142251.GA20096@linuxtx.org> <504A32800200007800099E40@nat28.tlf.novell.com> <504A172B.5020005@canonical.com> <504A347B0200007800099E92@nat28.tlf.novell.com> <504A1D43.2050909@canonical.com>
-In-Reply-To: <504A1D43.2050909@canonical.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: "Michael S. Tsirkin" <mst@redhat.com>, fes@google.com, aarcange@redhat.com,
+        riel@redhat.com, kvm@vger.kernel.org, yvugenfi@redhat.com,
+        linux-kernel@vger.kernel.org, mikew@google.com, yinghan@google.com,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH] virtio-balloon spec: provide a version of the "silent
+ deflate" feature that works
+References: <1346917610-14568-1-git-send-email-pbonzini@redhat.com> <20120906084736.GF17656@redhat.com> <50486BB2.7070108@redhat.com> <20120906094442.GA22816@redhat.com> <50487382.8030303@redhat.com> <20120906105301.GC32325@redhat.com> <5048935A.8090308@redhat.com> <87wr06hg0l.fsf@rustcorp.com.au> <20120907054202.GA3452@redhat.com> <87vcfqfia1.fsf@rustcorp.com.au> <20120907104306.GA17211@redhat.com> <87sjatf6iv.fsf@rustcorp.com.au>
+In-Reply-To: <87sjatf6iv.fsf@rustcorp.com.au>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 07/09/2012 18:13, Stefan Bader ha scritto:
-> This would make it save again _if_ the HV failing to handle the writes to CR4
-> (which iirc the kernel code still does when the cpuid bit is set) does have at
-> least the patch to mask off the cpuid bits (the one Ian mentioned)
+Il 08/09/2012 07:06, Rusty Russell ha scritto:
+>> > Do we really know there are no hypervisors implementing it?
+> As much as can be known.  Qemu doesn't, lkvm doesn't.
+> 
 
-Given how old it is, that's very unlikely.  You can download CentOS 5.0
-from http://mirror.stanford.edu/yum/pub/centos/5/isos/x86_64/ or get the
-source RPM for the RHEL5.0 kernel (including the Xen hypervisor) at
-ftp://ftp.redhat.com/redhat/linux/enterprise/5Client/en/os/SRPMS/kernel-2.6.18-8.el5.src.rpm
+However, there are cases in which it would be nice to have it.
+Repurposing the bit to how it has been used so far (as a guest->host
+communication bit, not host->guest) is a better choice.
 
 Paolo
