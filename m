@@ -1,381 +1,433 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755480Ab2IHWJl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 18:09:41 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:37856 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753990Ab2IHWJe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 18:09:34 -0400
-X-Originating-IP: 217.70.178.138
-X-Originating-IP: 50.43.46.74
-Date: Sat, 8 Sep 2012 15:09:26 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Len Brown <lenb@kernel.org>, Matt Fleming <matt.fleming@intel.com>,
-        Olof Johansson <olof@lixom.net>, Matthew Garrett <mjg@redhat.com>,
-        David Howells <dhowells@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Jim Cromie <jim.cromie@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-acpi@vger.kernel.org
-Subject: [PATCHv3 4/4] efi: Fix the ACPI BGRT driver for images located in
- EFI boot services memory
-Message-ID: <ced9fa2da63a605cdd905f3e75d7e0bd33a2011d.1347141698.git.josh@joshtriplett.org>
-References: <cover.1347141698.git.josh@joshtriplett.org>
+	id S1755415Ab2IHWNp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 18:13:45 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:43932 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753947Ab2IHWNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Sep 2012 18:13:42 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH v3 1/2] PM / devfreq: add global PM QoS support
+Date: Sun, 9 Sep 2012 00:20:00 +0200
+User-Agent: KMail/1.13.6 (Linux/3.6.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        myungjoo.ham@gmail.com, kyungmin.park@samsung.com, khilman@ti.com,
+        markgross@thegnar.org, jean.pihet@newoldbits.com, mturquette@ti.com,
+        jonghwa3.lee@samsung.com
+References: <1346317203-7357-1-git-send-email-myungjoo.ham@samsung.com> <1346317203-7357-2-git-send-email-myungjoo.ham@samsung.com>
+In-Reply-To: <1346317203-7357-2-git-send-email-myungjoo.ham@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1347141698.git.josh@joshtriplett.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209090020.01038.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ACPI BGRT driver accesses the BIOS logo image when it initializes.
-However, ACPI 5.0 (which introduces the BGRT) recommends putting the
-logo image in EFI boot services memory, so that the OS can reclaim that
-memory.  Production systems follow this recommendation, breaking the
-ACPI BGRT driver.
+On Thursday, August 30, 2012, MyungJoo Ham wrote:
+> Even if the performance of a device is controlled properly with devfreq,
+> sometimes, we still need to get PM-QoS inputs in order to meet the
+> required performance.
+> 
+> In our testbed of Exynos4412, which has on-chip various DMA devices, the
+> memory interface and system bus are controlled according to their
+> utilization by devfreq. However, in some multimedia applications
+> including video-playing with MFC (multi-function codec) H/W and
+> photo/video-capturing with FIMC H/W, we have observed issues due to
+> insufficient DMA throughput or latency.
+> 
+> In such applications, there are deadlines: less than 16.6ms with 60Hz.
+> With shorter polling intervals (5 ~ 15ms), the frequencies fluctuate
+> within a frame and we get missing frames and distorted pictures.
+> With longer polling intervals (20 ~ 100ms), the response time is not
+> sufficient and we get distorted or broken images. In other words,
+> regardless of polling interval, we get poor results with hard-deadline
+> H/Ws. They, in fact, have a preset requirement on DMA throughput.
+> 
+> Thus, we need PM-QoS capabilities in devfreq. (Note that for general
+> user applications, devfreq for bus/memory works fine. They are not so
+> sensitive to tens of ms in performance increasing responses in general.
+> 
+> In order to express how to handle QoS requests in devfreq devices,
+> the devfreq device drivers only need to express the mappings of
+> QoS value and frequency pairs with QoS class along with
+> devfreq_add_device() call.
+> 
+> As a side effect of the implementation, which happens to be positive,
+> min/max freq is now enforced regardless of governor implementation.
 
-Move the bulk of the BGRT code to run during a new EFI late
-initialization phase, which occurs after switching EFI to virtual mode,
-and after initializing ACPI, but before freeing boot services memory.
-Copy the BIOS logo image to kernel memory at that point, and make it
-accessible to the BGRT driver.  Rework the existing ACPI BGRT driver to
-act as a simple wrapper exposing that image (and the properties from the
-BGRT) via sysfs.
+Can you please explain in a few words how this is supposed to work in
+practice?
 
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
----
- arch/x86/platform/efi/Makefile   |    1 +
- arch/x86/platform/efi/efi-bgrt.c |   76 ++++++++++++++++++++++++++++++++++++++
- arch/x86/platform/efi/efi.c      |    6 +++
- drivers/acpi/Kconfig             |    4 +-
- drivers/acpi/bgrt.c              |   76 +++++---------------------------------
- include/linux/efi-bgrt.h         |   21 +++++++++++
- include/linux/efi.h              |    2 +
- init/main.c                      |    4 +-
- 8 files changed, 120 insertions(+), 70 deletions(-)
- create mode 100644 arch/x86/platform/efi/efi-bgrt.c
- create mode 100644 include/linux/efi-bgrt.h
+> Tested on Exynos4412 machines with memory/bus frequencies and multimedia
+> H/W blocks. (camera, video decoding, and video encoding)
+> 
+> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-diff --git a/arch/x86/platform/efi/Makefile b/arch/x86/platform/efi/Makefile
-index 73b8be0..6db1cc4 100644
---- a/arch/x86/platform/efi/Makefile
-+++ b/arch/x86/platform/efi/Makefile
-@@ -1 +1,2 @@
- obj-$(CONFIG_EFI) 		+= efi.o efi_$(BITS).o efi_stub_$(BITS).o
-+obj-$(CONFIG_ACPI_BGRT) += efi-bgrt.o
-diff --git a/arch/x86/platform/efi/efi-bgrt.c b/arch/x86/platform/efi/efi-bgrt.c
-new file mode 100644
-index 0000000..f6a0c1b
---- /dev/null
-+++ b/arch/x86/platform/efi/efi-bgrt.c
-@@ -0,0 +1,76 @@
-+/*
-+ * Copyright 2012 Intel Corporation
-+ * Author: Josh Triplett <josh@joshtriplett.org>
-+ *
-+ * Based on the bgrt driver:
-+ * Copyright 2012 Red Hat, Inc <mjg@redhat.com>
-+ * Author: Matthew Garrett
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#include <linux/kernel.h>
-+#include <linux/acpi.h>
-+#include <linux/efi.h>
-+#include <linux/efi-bgrt.h>
-+
-+struct acpi_table_bgrt *bgrt_tab;
-+void *bgrt_image;
-+size_t bgrt_image_size;
-+
-+struct bmp_header {
-+	u16 id;
-+	u32 size;
-+} __packed;
-+
-+void efi_bgrt_init(void)
-+{
-+	acpi_status status;
-+	void __iomem *image;
-+	bool ioremapped = false;
-+	struct bmp_header bmp_header;
-+
-+	if (acpi_disabled)
-+		return;
-+
-+	status = acpi_get_table("BGRT", 0,
-+	                        (struct acpi_table_header **)&bgrt_tab);
-+	if (ACPI_FAILURE(status))
-+		return;
-+
-+	if (bgrt_tab->version != 1)
-+		return;
-+	if (bgrt_tab->image_type != 0 || !bgrt_tab->image_address)
-+		return;
-+
-+	image = efi_lookup_mapped_addr(bgrt_tab->image_address);
-+	if (!image) {
-+		image = ioremap(bgrt_tab->image_address, sizeof(bmp_header));
-+		ioremapped = true;
-+		if (!image)
-+			return;
-+	}
-+
-+	memcpy_fromio(&bmp_header, image, sizeof(bmp_header));
-+	if (ioremapped)
-+		iounmap(image);
-+	bgrt_image_size = bmp_header.size;
-+
-+	bgrt_image = kmalloc(bgrt_image_size, GFP_KERNEL);
-+	if (!bgrt_image)
-+		return;
-+
-+	if (ioremapped) {
-+		image = ioremap(bgrt_tab->image_address, bmp_header.size);
-+		if (!image) {
-+			kfree(bgrt_image);
-+			bgrt_image = NULL;
-+			return;
-+		}
-+	}
-+
-+	memcpy_fromio(bgrt_image, image, bgrt_image_size);
-+	if (ioremapped)
-+		iounmap(image);
-+}
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 90023d1..faa04f7 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -31,6 +31,7 @@
- #include <linux/kernel.h>
- #include <linux/init.h>
- #include <linux/efi.h>
-+#include <linux/efi-bgrt.h>
- #include <linux/export.h>
- #include <linux/bootmem.h>
- #include <linux/memblock.h>
-@@ -745,6 +746,11 @@ void __init efi_init(void)
- #endif
- }
- 
-+void __init efi_late_init(void)
-+{
-+	efi_bgrt_init();
-+}
-+
- void __init efi_set_executable(efi_memory_desc_t *md, bool executable)
- {
- 	u64 addr, npages;
-diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-index 8099895..119d58d 100644
---- a/drivers/acpi/Kconfig
-+++ b/drivers/acpi/Kconfig
-@@ -385,8 +385,8 @@ config ACPI_CUSTOM_METHOD
- 	  to override that restriction).
- 
- config ACPI_BGRT
--        tristate "Boottime Graphics Resource Table support"
--        default n
-+	bool "Boottime Graphics Resource Table support"
-+	depends on EFI
-         help
- 	  This driver adds support for exposing the ACPI Boottime Graphics
- 	  Resource Table, which allows the operating system to obtain
-diff --git a/drivers/acpi/bgrt.c b/drivers/acpi/bgrt.c
-index 6680df3..be60399 100644
---- a/drivers/acpi/bgrt.c
-+++ b/drivers/acpi/bgrt.c
-@@ -1,5 +1,6 @@
- /*
-  * Copyright 2012 Red Hat, Inc <mjg@redhat.com>
-+ * Copyright 2012 Intel Corporation
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-@@ -11,20 +12,10 @@
- #include <linux/init.h>
- #include <linux/device.h>
- #include <linux/sysfs.h>
--#include <linux/io.h>
--#include <acpi/acpi.h>
--#include <acpi/acpi_bus.h>
-+#include <linux/efi-bgrt.h>
- 
--static struct acpi_table_bgrt *bgrt_tab;
- static struct kobject *bgrt_kobj;
- 
--struct bmp_header {
--	u16 id;
--	u32 size;
--} __attribute ((packed));
--
--static struct bmp_header bmp_header;
--
- static ssize_t show_version(struct device *dev,
- 			    struct device_attribute *attr, char *buf)
- {
-@@ -63,18 +54,7 @@ static DEVICE_ATTR(yoffset, S_IRUGO, show_yoffset, NULL);
- static ssize_t show_image(struct file *file, struct kobject *kobj,
- 	       struct bin_attribute *attr, char *buf, loff_t off, size_t count)
- {
--	int size = attr->size;
--	void __iomem *image = attr->private;
--
--	if (off >= size) {
--		count = 0;
--	} else {
--		if (off + count > size)
--			count = size - off;
--
--		memcpy_fromio(buf, image+off, count);
--	}
--
-+	memcpy(buf, attr->private + off, count);
- 	return count;
- }
- 
-@@ -101,45 +81,18 @@ static struct attribute_group bgrt_attribute_group = {
- 
- static int __init bgrt_init(void)
- {
--	acpi_status status;
- 	int ret;
--	void __iomem *bgrt;
- 
--	if (acpi_disabled)
--		return -ENODEV;
--
--	status = acpi_get_table("BGRT", 0,
--				(struct acpi_table_header **)&bgrt_tab);
--
--	if (ACPI_FAILURE(status))
-+	if (!bgrt_image)
- 		return -ENODEV;
- 
- 	sysfs_bin_attr_init(&image_attr);
--
--	bgrt = ioremap(bgrt_tab->image_address, sizeof(struct bmp_header));
--
--	if (!bgrt) {
--		ret = -EINVAL;
--		goto out_err;
--	}
--
--	memcpy_fromio(&bmp_header, bgrt, sizeof(bmp_header));
--	image_attr.size = bmp_header.size;
--	iounmap(bgrt);
--
--	image_attr.private = ioremap(bgrt_tab->image_address, image_attr.size);
--
--	if (!image_attr.private) {
--		ret = -EINVAL;
--		goto out_err;
--	}
--
-+	image_attr.private = bgrt_image;
-+	image_attr.size = bgrt_image_size;
- 
- 	bgrt_kobj = kobject_create_and_add("bgrt", acpi_kobj);
--	if (!bgrt_kobj) {
--		ret = -EINVAL;
--		goto out_iounmap;
--	}
-+	if (!bgrt_kobj)
-+		return -EINVAL;
- 
- 	ret = sysfs_create_group(bgrt_kobj, &bgrt_attribute_group);
- 	if (ret)
-@@ -155,22 +108,11 @@ out_group:
- 	sysfs_remove_group(bgrt_kobj, &bgrt_attribute_group);
- out_kobject:
- 	kobject_put(bgrt_kobj);
--out_iounmap:
--	iounmap(image_attr.private);
--out_err:
- 	return ret;
- }
- 
--static void __exit bgrt_exit(void)
--{
--	iounmap(image_attr.private);
--	sysfs_remove_group(bgrt_kobj, &bgrt_attribute_group);
--	sysfs_remove_bin_file(bgrt_kobj, &image_attr);
--}
--
- module_init(bgrt_init);
--module_exit(bgrt_exit);
- 
--MODULE_AUTHOR("Matthew Garrett");
-+MODULE_AUTHOR("Matthew Garrett, Josh Triplett <josh@joshtriplett.org>");
- MODULE_DESCRIPTION("BGRT boot graphic support");
- MODULE_LICENSE("GPL");
-diff --git a/include/linux/efi-bgrt.h b/include/linux/efi-bgrt.h
-new file mode 100644
-index 0000000..051b21f
---- /dev/null
-+++ b/include/linux/efi-bgrt.h
-@@ -0,0 +1,21 @@
-+#ifndef _LINUX_EFI_BGRT_H
-+#define _LINUX_EFI_BGRT_H
-+
-+#ifdef CONFIG_ACPI_BGRT
-+
-+#include <linux/acpi.h>
-+
-+void efi_bgrt_init(void);
-+
-+/* The BGRT data itself; only valid if bgrt_image != NULL. */
-+extern void *bgrt_image;
-+extern size_t bgrt_image_size;
-+extern struct acpi_table_bgrt *bgrt_tab;
-+
-+#else /* !CONFIG_ACPI_BGRT */
-+
-+static inline void efi_bgrt_init(void) {}
-+
-+#endif /* !CONFIG_ACPI_BGRT */
-+
-+#endif /* _LINUX_EFI_BGRT_H */
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index 00aa5de..798bd1d 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -497,9 +497,11 @@ extern void efi_memmap_walk (efi_freemem_callback_t callback, void *arg);
- extern void efi_gettimeofday (struct timespec *ts);
- #ifdef CONFIG_X86
- extern void efi_enter_virtual_mode (void);	/* switch EFI to virtual mode, if possible */
-+extern void efi_late_init(void);
- extern void efi_free_boot_services(void);
- #else
- static void efi_enter_virtual_mode(void) {}
-+static void efi_late_init(void) {}
- static void efi_free_boot_services(void) {}
- #endif
- extern void __iomem *efi_lookup_mapped_addr(u64 phys_addr);
-diff --git a/init/main.c b/init/main.c
-index 78e5491..adb3f46 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -629,8 +629,10 @@ asmlinkage void __init start_kernel(void)
- 	acpi_early_init(); /* before LAPIC and SMP init */
- 	sfi_init_late();
- 
--	if (efi_enabled)
-+	if (efi_enabled) {
-+		efi_late_init();
- 		efi_free_boot_services();
-+	}
- 
- 	ftrace_init();
- 
--- 
-1.7.10.4
+I'm not entirely convinced yet, but a few comments follow.
+
+> ---
+> Changed from V2-resend
+> - Removed dependencies on global pm-qos class definitions
+> - Revised data structure handling pm-qos (being ready for dev-pm-qos)
+> 
+> Changes from V2
+> - Rebased
+> 
+> Changes from V1
+> - Error handling at devfreq_add_device()
+> - Handling pm_qos_max information
+> - Styly update
+> ---
+>  drivers/devfreq/devfreq.c |  127 +++++++++++++++++++++++++++++++++++++++++++--
+>  include/linux/devfreq.h   |   41 ++++++++++++++
+>  2 files changed, 164 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
+> index 00e326c..d74b382 100644
+> --- a/drivers/devfreq/devfreq.c
+> +++ b/drivers/devfreq/devfreq.c
+> @@ -25,6 +25,7 @@
+>  #include <linux/list.h>
+>  #include <linux/printk.h>
+>  #include <linux/hrtimer.h>
+> +#include <linux/pm_qos.h>
+>  #include "governor.h"
+>  
+>  static struct class *devfreq_class;
+> @@ -136,8 +137,13 @@ int update_devfreq(struct devfreq *devfreq)
+>  	 * List from the highest proiority
+>  	 * max_freq (probably called by thermal when it's too hot)
+>  	 * min_freq
+> +	 * qos_min_freq
+>  	 */
+>  
+> +	if (devfreq->qos_min_freq && freq < devfreq->qos_min_freq) {
+> +		freq = devfreq->qos_min_freq;
+> +		flags &= ~DEVFREQ_FLAG_LEAST_UPPER_BOUND; /* Use GLB */
+
+What exactly is the purpose of this last line?
+
+> +	}
+>  	if (devfreq->min_freq && freq < devfreq->min_freq) {
+>  		freq = devfreq->min_freq;
+>  		flags &= ~DEVFREQ_FLAG_LEAST_UPPER_BOUND; /* Use GLB */
+> @@ -164,12 +170,12 @@ int update_devfreq(struct devfreq *devfreq)
+>   * devfreq_notifier_call() - Notify that the device frequency requirements
+>   *			   has been changed out of devfreq framework.
+>   * @nb		the notifier_block (supposed to be devfreq->nb)
+> - * @type	not used
+> + * @val		not used.
+>   * @devp	not used
+>   *
+>   * Called by a notifier that uses devfreq->nb.
+>   */
+> -static int devfreq_notifier_call(struct notifier_block *nb, unsigned long type,
+> +static int devfreq_notifier_call(struct notifier_block *nb, unsigned long val,
+>  				 void *devp)
+>  {
+>  	struct devfreq *devfreq = container_of(nb, struct devfreq, nb);
+
+The above change is only a cleanup unrelated to the rest of modifications.
+Please push it separately (if you _really_ think it's necessary).
+
+> @@ -183,6 +189,49 @@ static int devfreq_notifier_call(struct notifier_block *nb, unsigned long type,
+>  }
+>  
+>  /**
+> + * devfreq_qos_notifier_call() -
+
+This looks like a missing kerneldoc comment?
+
+> + */
+> +static int devfreq_qos_notifier_call(struct notifier_block *nb,
+> +				     unsigned long value, void *devp)
+> +{
+> +	struct devfreq *devfreq = container_of(nb, struct devfreq, qos_nb);
+> +	int ret;
+> +	int i;
+> +	s32 default_value = PM_QOS_DEFAULT_VALUE;
+> +	struct devfreq_pm_qos_table *qos_list = devfreq->profile->qos_list;
+> +	bool qos_use_max = devfreq->profile->qos_use_max;
+> +
+> +	if (!qos_list)
+> +		return NOTIFY_DONE;
+> +
+> +	mutex_lock(&devfreq->lock);
+> +
+> +	if (value == default_value) {
+> +		devfreq->qos_min_freq = 0;
+> +		goto update;
+> +	}
+> +
+> +	for (i = 0; qos_list[i].freq; i++) {
+> +		/* QoS Met */
+> +		if ((qos_use_max && qos_list[i].qos_value >= value) ||
+> +		    (!qos_use_max && qos_list[i].qos_value <= value)) {
+> +			devfreq->qos_min_freq = qos_list[i].freq;
+> +			goto update;
+> +		}
+
+What about:
+
+if (qos_use_max) {
+	if (qos_list[i].qos_value < value)
+		continue;
+} else {
+	if (qos_list[i].qos_value > value)
+		continue;
+}
+devfreq->qos_min_freq = qos_list[i].freq;
+goto update;
+
+> +	}
+> +
+> +	/* Use the highest QoS freq */
+> +	if (i > 0)
+
+Given the sanity checks in devfreq_add_device(), this is always true.
+So perhaps you don't even need the "update" label?
+
+> +		devfreq->qos_min_freq = qos_list[i - 1].freq;
+> +
+> +update:
+> +	ret = update_devfreq(devfreq);
+> +	mutex_unlock(&devfreq->lock);
+> +
+> +	return ret;
+> +}
+> +
+> +/**
+>   * _remove_devfreq() - Remove devfreq from the device.
+>   * @devfreq:	the devfreq struct
+>   * @skip:	skip calling device_unregister().
+> @@ -219,6 +268,10 @@ static void _remove_devfreq(struct devfreq *devfreq, bool skip)
+>  
+>  	devfreq->being_removed = true;
+>  
+> +	if (devfreq->profile->qos_type)
+> +		pm_qos_remove_notifier(devfreq->profile->qos_type,
+> +				       &devfreq->qos_nb);
+> +
+>  	if (devfreq->profile->exit)
+>  		devfreq->profile->exit(devfreq->dev.parent);
+>  
+> @@ -390,7 +443,7 @@ struct devfreq *devfreq_add_device(struct device *dev,
+>  				   void *data)
+>  {
+>  	struct devfreq *devfreq;
+> -	int err = 0;
+> +	int err = 0, i;
+>  
+>  	if (!dev || !profile || !governor) {
+>  		dev_err(dev, "%s: Invalid parameters.\n", __func__);
+> @@ -429,6 +482,61 @@ struct devfreq *devfreq_add_device(struct device *dev,
+>  	devfreq->next_polling = devfreq->polling_jiffies
+>  			      = msecs_to_jiffies(devfreq->profile->polling_ms);
+>  	devfreq->nb.notifier_call = devfreq_notifier_call;
+> +	devfreq->qos_nb.notifier_call = devfreq_qos_notifier_call;
+> +
+> +	/* Check the sanity of qos_list/qos_type */
+
+Any chance to move the sanity checks below to a separate function?
+
+> +	if (profile->qos_type || profile->qos_list) {
+> +
+> +		if (WARN(!profile->qos_type || !profile->qos_list,
+> +			 "QoS requirement partially omitted for %s.\n",
+> +			 dev_name(dev))) {
+> +
+> +			err = -EINVAL;
+> +			goto err_dev;
+> +		}
+> +
+> +		if (WARN(!profile->qos_list[0].freq,
+> +			 "The first QoS requirement is the end of list for %s.\n",
+> +			 dev_name(dev))) {
+> +
+> +			err = -EINVAL;
+> +			goto err_dev;
+> +		}
+> +
+> +		for (i = 1; profile->qos_list[i].freq; i++) {
+> +			if (WARN(profile->qos_list[i].freq <=
+> +				 profile->qos_list[i - 1].freq,
+> +				 "%s's qos_list[].freq not sorted in the ascending order. ([%d]=%lu, [%d]=%lu)\n",
+> +				 dev_name(dev), i - 1,
+> +				 profile->qos_list[i - 1].freq, i,
+> +				 profile->qos_list[i].freq)) {
+> +
+> +				err = -EINVAL;
+> +				goto err_dev;
+> +			}
+> +
+> +			/*
+> +			 * If QoS type is throughput(PM_QOS_MAX)-like, qos_value
+> +			 * should be sorted in the ascending order.
+> +			 * If QoS type is latency(PM_QOS_MIN)-like, qos_value
+> +			 * should be sorted in the descending order.
+> +			 */
+> +			if (WARN((profile->qos_use_max &&
+> +				  profile->qos_list[i - 1].qos_value >
+> +				  profile->qos_list[i].qos_value) ||
+> +				 (!profile->qos_use_max &&
+> +				  profile->qos_list[i - 1].qos_value <
+> +				  profile->qos_list[i].qos_value),
+> +				 "%s's qos_list[].qos_value is not sorted according to its QoS class.\n",
+> +				 dev_name(dev))) {
+> +
+> +				err = -EINVAL;
+> +				goto err_dev;
+> +			}
+> +		}
+> +
+> +		pm_qos_add_notifier(profile->qos_type, &devfreq->qos_nb);
+
+What QoS types do you think could be used here?
+
+> +	}
+>  
+>  	devfreq->trans_table =	devm_kzalloc(dev, sizeof(unsigned int) *
+>  						devfreq->profile->max_state *
+> @@ -443,7 +551,7 @@ struct devfreq *devfreq_add_device(struct device *dev,
+>  	err = device_register(&devfreq->dev);
+>  	if (err) {
+>  		put_device(&devfreq->dev);
+> -		goto err_dev;
+> +		goto err_qos_add;
+>  	}
+>  
+>  	if (governor->init)
+> @@ -471,6 +579,9 @@ out:
+>  
+>  err_init:
+>  	device_unregister(&devfreq->dev);
+> +err_qos_add:
+> +	if (profile->qos_type || profile->qos_list)
+> +		pm_qos_remove_notifier(profile->qos_type, &devfreq->qos_nb);
+>  err_dev:
+>  	mutex_unlock(&devfreq->lock);
+>  	kfree(devfreq);
+> @@ -568,6 +679,13 @@ static ssize_t show_central_polling(struct device *dev,
+>  		       !to_devfreq(dev)->governor->no_central_polling);
+>  }
+>  
+> +static ssize_t show_qos_min_freq(struct device *dev,
+> +				 struct device_attribute *attr,
+> +				 char *buf)
+> +{
+> +	return sprintf(buf, "%lu\n", to_devfreq(dev)->qos_min_freq);
+> +}
+> +
+>  static ssize_t store_min_freq(struct device *dev, struct device_attribute *attr,
+>  			      const char *buf, size_t count)
+>  {
+> @@ -685,6 +803,7 @@ static struct device_attribute devfreq_attrs[] = {
+>  	       store_polling_interval),
+>  	__ATTR(min_freq, S_IRUGO | S_IWUSR, show_min_freq, store_min_freq),
+>  	__ATTR(max_freq, S_IRUGO | S_IWUSR, show_max_freq, store_max_freq),
+> +	__ATTR(qos_min_freq, S_IRUGO, show_qos_min_freq, NULL),
+>  	__ATTR(trans_stat, S_IRUGO, show_trans_table, NULL),
+>  	{ },
+>  };
+> diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
+> index 30dc0d8..d11db17 100644
+> --- a/include/linux/devfreq.h
+> +++ b/include/linux/devfreq.h
+> @@ -53,6 +53,21 @@ struct devfreq_dev_status {
+>  #define DEVFREQ_FLAG_LEAST_UPPER_BOUND		0x1
+>  
+>  /**
+> + * struct devfreq_pm_qos_table - An PM QoS requiement entry for devfreq dev.
+> + * @freq		Lowest frequency to meet the QoS requirement
+> + *			represented by qos_value. If freq=0, it means that
+> + *			this element is the last in the array.
+> + * @qos_value		The qos value defined in pm_qos_params.h
+
+pm_qos_params.h doesn't exist any more.  pm_qos.h only defines default values,
+so the meaning of the comment is kind of unclear.
+
+> + *
+> + * Note that the array of devfreq_pm_qos_table should be sorted by freq
+> + * in the ascending order except for the last element, which should be 0.
+> + */
+> +struct devfreq_pm_qos_table {
+> +	unsigned long freq; /* 0 if this is the last element */
+> +	s32 qos_value;
+> +};
+
+I like the idea of translating QoS values into frequencies.  However, I don't
+think it's always possible to figure out how a given global PM QoS value
+translates into a specific range of frequencies for the given devfreq
+structure.
+
+What method in particular did you use on your test system?
+
+> +
+> +/**
+>   * struct devfreq_dev_profile - Devfreq's user device profile
+>   * @initial_freq	The operating frequency when devfreq_add_device() is
+>   *			called.
+> @@ -71,11 +86,33 @@ struct devfreq_dev_status {
+>   *			from devfreq_remove_device() call. If the user
+>   *			has registered devfreq->nb at a notifier-head,
+>   *			this is the time to unregister it.
+> + * @qos_type		QoS Type (defined in pm_qos_params.h)
+> + *			0 (PM_QOS_RESERVED) if not used.
+> + * @qos_use_max		True: the highest QoS value is used (for QoS
+> + *			requirement of throughput, bandwidth, or similar)
+> + *			False: the lowest QoS value is used (for QoS
+> + *			requirement of latency, delay, or similar)
+> + * @enable_dev_pm_qos	dev_pm_qos is enabled using the qos_list.
+> + * @qos_list		Array of QoS requirements ending with .freq = 0
+> + *			NULL if not used. It should be either NULL or
+> + *			have a length > 1 with a first element effective.
+> + *			This QoS specification is shared by the global
+> + *			PM QoS (qos_type) and the per-dev PM QoS
+> + *			(enable_dev_pm_qos).
+> + *
+> + * Note that the array of qos_list should be sorted by freq
+> + * in the ascending order.
+>   */
+>  struct devfreq_dev_profile {
+>  	unsigned long initial_freq;
+>  	unsigned int polling_ms;
+>  
+> +	/* Optional QoS Handling Specification */
+> +	int qos_type; /* 0: No global PM-QoS support */
+> +	bool qos_use_max; /* true if "bandwidth"/"throughput"-like values */
+> +	bool enable_dev_pm_qos; /* False: No per-dev PM-QoS support */
+> +	struct devfreq_pm_qos_table *qos_list; /* QoS handling specification */
+> +
+>  	int (*target)(struct device *dev, unsigned long *freq, u32 flags);
+>  	int (*get_dev_status)(struct device *dev,
+>  			      struct devfreq_dev_status *stat);
+> @@ -139,6 +176,8 @@ struct devfreq_governor {
+>   *			order to prevent trying to remove the object multiple times.
+>   * @min_freq	Limit minimum frequency requested by user (0: none)
+>   * @max_freq	Limit maximum frequency requested by user (0: none)
+> + * @qos_nb	notifier block used to notify pm qos requests
+> + * @qos_min_freq	Limit minimum frequency requested by QoS
+>   *
+>   * This structure stores the devfreq information for a give device.
+>   *
+> @@ -167,6 +206,8 @@ struct devfreq {
+>  
+>  	unsigned long min_freq;
+>  	unsigned long max_freq;
+> +	struct notifier_block qos_nb;
+> +	unsigned long qos_min_freq;
+>  
+>  	/* information for device freqeuncy transition */
+>  	unsigned int total_trans;
+> 
+
+I think it would be better to fold [2/2] into [1/2] to avoid some unnecessary
+code churn.
+
+Thanks,
+Rafael
 
