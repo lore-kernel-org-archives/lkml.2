@@ -1,100 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760483Ab2IHCI0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 22:08:26 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46415 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760420Ab2IHCHe (ORCPT
+	id S1760357Ab2IHCH3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 22:07:29 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41321 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758667Ab2IHCHZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 22:07:34 -0400
+	Fri, 7 Sep 2012 22:07:25 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
         Namhyung Kim <namhyung@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 06/13] perf tools: Replace sort's standalone field_sep with symbol_conf.field_sep
-Date: Fri,  7 Sep 2012 23:07:05 -0300
-Message-Id: <1347070032-4161-7-git-send-email-acme@infradead.org>
+Subject: [PATCH 03/13] tools lib traceevent: Get rid of die() from pevent_register_event_handler
+Date: Fri,  7 Sep 2012 23:07:02 -0300
+Message-Id: <1347070032-4161-4-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1347070032-4161-1-git-send-email-acme@infradead.org>
 References: <1347070032-4161-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-The repsep_snprintf function was still using standalone field_sep, which
-not even set anymore.
+If memory allocation for handler fails, return gracefully instead of
+calling die().  Note that casts to void * are needed because gcc
+complained about discarding 'const' qualifier during implicit argument
+cast.
 
-Replacing it with 'symbol_conf.field_sep'.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1346946426-13496-3-git-send-email-jolsa@redhat.com
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1346986187-5170-2-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/sort.c |    6 ++----
- tools/perf/util/sort.h |    1 -
- 2 files changed, 2 insertions(+), 5 deletions(-)
+ tools/lib/traceevent/event-parse.c |   13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 0f5a0a4..7a2fbd8 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -12,8 +12,6 @@ int		sort__branch_mode = -1; /* -1 = means not set */
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index 6d5e759..17fd01d 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -5183,7 +5183,12 @@ int pevent_register_event_handler(struct pevent *pevent,
  
- enum sort_type	sort__first_dimension;
+  not_found:
+ 	/* Save for later use. */
+-	handle = malloc_or_die(sizeof(*handle));
++	handle = malloc(sizeof(*handle));
++	if (!handle) {
++		do_warning("Failed to allocate event handler");
++		return PEVENT_ERRNO__MEM_ALLOC_FAILED;
++	}
++
+ 	memset(handle, 0, sizeof(*handle));
+ 	handle->id = id;
+ 	if (event_name)
+@@ -5193,7 +5198,11 @@ int pevent_register_event_handler(struct pevent *pevent,
  
--char * field_sep;
--
- LIST_HEAD(hist_entry__sort_list);
+ 	if ((event_name && !handle->event_name) ||
+ 	    (sys_name && !handle->sys_name)) {
+-		die("Failed to allocate event/sys name");
++		do_warning("Failed to allocate event/sys name");
++		free((void *)handle->event_name);
++		free((void *)handle->sys_name);
++		free(handle);
++		return PEVENT_ERRNO__MEM_ALLOC_FAILED;
+ 	}
  
- static int repsep_snprintf(char *bf, size_t size, const char *fmt, ...)
-@@ -23,11 +21,11 @@ static int repsep_snprintf(char *bf, size_t size, const char *fmt, ...)
- 
- 	va_start(ap, fmt);
- 	n = vsnprintf(bf, size, fmt, ap);
--	if (field_sep && n > 0) {
-+	if (symbol_conf.field_sep && n > 0) {
- 		char *sep = bf;
- 
- 		while (1) {
--			sep = strchr(sep, *field_sep);
-+			sep = strchr(sep, *symbol_conf.field_sep);
- 			if (sep == NULL)
- 				break;
- 			*sep = '.';
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index e724b26..e459c98 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -32,7 +32,6 @@ extern const char default_sort_order[];
- extern int sort__need_collapse;
- extern int sort__has_parent;
- extern int sort__branch_mode;
--extern char *field_sep;
- extern struct sort_entry sort_comm;
- extern struct sort_entry sort_dso;
- extern struct sort_entry sort_sym;
+ 	handle->func = func;
 -- 
 1.7.9.2.358.g22243
 
