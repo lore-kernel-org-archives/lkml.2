@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752509Ab2IHIhd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 04:37:33 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53852 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752173Ab2IHIha (ORCPT
+	id S1752588Ab2IHIjT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 04:39:19 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:55880 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752388Ab2IHIjP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 04:37:30 -0400
-Date: Sat, 8 Sep 2012 01:34:41 -0700
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: anish kumar <anish198519851985@gmail.com>
-Cc: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
-        dwmw2@infradead.org, linux-kernel@vger.kernel.org, lars@metafoo.de
-Subject: Re: [PATCH] [RFC]power: battery: Generic battery driver using IIO
-Message-ID: <20120908083441.GA21856@lizard>
-References: <1346600372-3284-1-git-send-email-anish198519851985@gmail.com>
- <5049A7B8.506@kernel.org>
- <1347088218.5051.152.camel@anish-Inspiron-N5050>
+	Sat, 8 Sep 2012 04:39:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1347088218.5051.152.camel@anish-Inspiron-N5050>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120906222933.GR2448@linux.vnet.ibm.com>
+References: <5044692D.7080608@linux.vnet.ibm.com>
+	<5046B9EE.7000804@linux.vnet.ibm.com>
+	<0000013996b6f21d-d45be653-3111-4aef-b079-31dc673e6fd8-000000@email.amazonses.com>
+	<504812E7.3000700@linux.vnet.ibm.com>
+	<20120906222933.GR2448@linux.vnet.ibm.com>
+Date: Sat, 8 Sep 2012 11:39:14 +0300
+X-Google-Sender-Auth: n8Q23k7bKubHkpxcesqjLET3eYw
+Message-ID: <CAOJsxLFA1sk4KZkRuPL_giktSkFK_g7w-mGi_OEQ9fVXF2UVzw@mail.gmail.com>
+Subject: Re: [PATCH] slab: fix the DEADLOCK issue on l3 alien lock
+From: Pekka Enberg <penberg@kernel.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Matt Mackall <mpm@selenic.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 08, 2012 at 12:40:18PM +0530, anish kumar wrote:
-[...]
-> > > Signed-off-by: anish kumar <anish198519851985@gmail.com>
-> > So what happened in 1985?
-> Was hurrying to get an email id :)
+On Fri, Sep 7, 2012 at 1:29 AM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Thu, Sep 06, 2012 at 11:05:11AM +0800, Michael Wang wrote:
+>> On 09/05/2012 09:55 PM, Christoph Lameter wrote:
+>> > On Wed, 5 Sep 2012, Michael Wang wrote:
+>> >
+>> >> Since the cachep and cachep->slabp_cache's l3 alien are in the same lock class,
+>> >> fake report generated.
+>> >
+>> > Ahh... That is a key insight into why this occurs.
+>> >
+>> >> This should not happen since we already have init_lock_keys() which will
+>> >> reassign the lock class for both l3 list and l3 alien.
+>> >
+>> > Right. I was wondering why we still get intermitted reports on this.
+>> >
+>> >> This patch will invoke init_lock_keys() after we done enable_cpucache()
+>> >> instead of before to avoid the fake DEADLOCK report.
+>> >
+>> > Acked-by: Christoph Lameter <cl@linux.com>
+>>
+>> Thanks for your review.
+>>
+>> And add Paul to the cc list(my skills on mailing is really poor...).
+>
+> Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-I so much understand... ;-)
-
-Much thanks to Lars-Peter and Jonathan, saved me a lot of time reviewing
-the driver.
-
-Anish, the idea of generic IIO driver looks great, I'm impatiently
-waiting for a new revision!
-
-One suggestion: the file name says generic-battery, the code sometimes
-uses generic_adc_battery sometimes generic_battery. I'd suggest being
-consistent, and stick to one naming scheme. I'd prefer
-generic_adc_battery.
-
-Thanks!
-
-Anton.
+I'd also like to tag this for the stable tree to avoid bogus lockdep
+reports. How far back in release history should we queue this?
