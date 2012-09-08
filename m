@@ -1,142 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751617Ab2IHGAA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 02:00:00 -0400
-Received: from relay.parallels.com ([195.214.232.42]:38074 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902Ab2IHF76 convert rfc822-to-8bit (ORCPT
+	id S1751670Ab2IHHaZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 03:30:25 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:50295 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751323Ab2IHHaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 01:59:58 -0400
-Message-ID: <504ADED9.2020607@parallels.com>
-Date: Sat, 8 Sep 2012 08:59:53 +0300
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Sat, 8 Sep 2012 03:30:19 -0400
+Message-ID: <504AF27C.9090601@gmail.com>
+Date: Sat, 08 Sep 2012 09:23:40 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
 MIME-Version: 1.0
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: Jeff Layton <jlayton@redhat.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH v2] SUNRPC: check current nsproxy before set of node name
- on client creation
-References: <20120813113731.9629.31906.stgit@localhost.localdomain>  <20120813081054.0ee39037@corrin.poochiereds.net> <4FA345DA4F4AE44899BD2B03EEEC2FA908F90888@SACEXCMBX04-PRD.hq.netapp.com>
-In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA908F90888@SACEXCMBX04-PRD.hq.netapp.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+CC: Bryan Freed <bfreed@chromium.org>, John Stultz <john.stultz@linaro.org>,
+        linux-kernel@vger.kernel.org, keescook@chromium.org,
+        sboyd@codeaurora.org, gregkh@linuxfoundation.org,
+        Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH v6] pstore/ram: Add ramoops support for the Flattened
+ Device Tree.
+References: <1347042576-17675-1-git-send-email-bfreed@chromium.org> <20120908052907.GA4724@lizard>
+In-Reply-To: <20120908052907.GA4724@lizard>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-08.09.2012 01:32, Myklebust, Trond пишет:
-> On Mon, 2012-08-13 at 08:10 -0400, Jeff Layton wrote:
->> On Mon, 13 Aug 2012 15:37:31 +0400
->> Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
->>
->>> v2:
->>> 1) rpc_clnt_set_nodename() prototype updated.
->>> 2) fixed errors in comment.
->>>
->>> When child reaper exits, it can destroy mount namespace it belongs to, and if
->>> there are NFS mounts inside, then it will try to umount them. But in this
->>> point current->nsproxy is set to NULL and all namespaces will be destroyed one
->>> by one. I.e. we can't dereference current->nsproxy to obtain uts namespace.
->>>
->>> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
->>> ---
->>>   net/sunrpc/clnt.c |   16 +++++++++++++---
->>>   1 files changed, 13 insertions(+), 3 deletions(-)
->>>
->>> diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
->>> index 9a9676e..8fbcbc8 100644
->>> --- a/net/sunrpc/clnt.c
->>> +++ b/net/sunrpc/clnt.c
->>> @@ -277,8 +277,18 @@ void rpc_clients_notifier_unregister(void)
->>>   	return rpc_pipefs_notifier_unregister(&rpc_clients_block);
->>>   }
->>>   
->>> -static void rpc_clnt_set_nodename(struct rpc_clnt *clnt, const char *nodename)
->>> +static void rpc_clnt_set_nodename(struct rpc_clnt *clnt)
->>>   {
->>> +	const char *nodename;
->>> +
->>> +	/*
->>> +	 * We have to protect against dying child reaper, which has released
->>> +	 * its nsproxy already and is trying to destroy mount namespace.
->>> +	 */
->>> +	if (current->nsproxy == NULL)
->>> +		return;
->>> +
->>> +	nodename = utsname()->nodename;
->>>   	clnt->cl_nodelen = strlen(nodename);
->>>   	if (clnt->cl_nodelen > UNX_MAXNODENAME)
->>>   		clnt->cl_nodelen = UNX_MAXNODENAME;
->>> @@ -365,7 +375,7 @@ static struct rpc_clnt * rpc_new_client(const struct rpc_create_args *args, stru
->>>   	}
->>>   
->>>   	/* save the nodename */
->>> -	rpc_clnt_set_nodename(clnt, utsname()->nodename);
->>> +	rpc_clnt_set_nodename(clnt);
->>>   	rpc_register_client(clnt);
->>>   	return clnt;
->>>   
->>> @@ -524,7 +534,7 @@ rpc_clone_client(struct rpc_clnt *clnt)
->>>   	err = rpc_setup_pipedir(new, clnt->cl_program->pipe_dir_name);
->>>   	if (err != 0)
->>>   		goto out_no_path;
->>> -	rpc_clnt_set_nodename(new, utsname()->nodename);
->>> +	rpc_clnt_set_nodename(new);
->>>   	if (new->cl_auth)
->>>   		atomic_inc(&new->cl_auth->au_count);
->>>   	atomic_inc(&clnt->cl_count);
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Acked-by: Jeff Layton <jlayton@redhat.com>
-> OK, colour me confused (again).
-
-What color?
-
-> Why should a umount trigger an
-> rpc_create() or rpc_clone_client()?
-
-It calls nsm_create().
-Here is the trace (https://bugzilla.redhat.com/show_bug.cgi?id=830862, 
-comment 68):
-
-CR2: 0000000000000008
-Process mysqld
-
-Call Trace:
-? __schedule+0x3c7
-nsm_create+0x8b
-nsm_mon_unmon+0x64
-nlm_destroy_host_locked+0x6b
-nlmclnt_release_host+0x88
-nlmclnt_done+0x1a
-nfs_destroy_server+0x24
-nfs_free_server+0xce
-nfs_kill_super+0x34
-deactivate_locked_super+0x57
-deactivate_super+0x4e
-mntput_no_expire+0xcc
-mntput+0x26
-release_mounts+0x77
-put_mnt_ns+0x78
-free_nsproxy+0x1f
-switch_task_namespaces+0x50
-exit_task_namespaces+0x10
-do_exit+0x456
-do_group_exit+0x3f
-sys_exit_group+0x17
-system_call_fastpath+0x16
-RIP rpc_create+0x401 [sunrpc]
-Kernel panic - not syncing
-
-
-
-
+Il 08/09/2012 07:29, Anton Vorontsov ha scritto:
+> On Fri, Sep 07, 2012 at 11:29:36AM -0700, Bryan Freed wrote:
+>> When called with a non-zero of_node, fill out a new ramoops_platform_data
+>> with data from the specified Flattened Device Tree node.
+>> Update ramoops documentation with the new FDT interface.
+>> Update devicetree/binding documentation with pstore/ramoops.txt.
+>
+> Thanks for your work, Bryan! There were a few issues, I fixed
+> them myself but I need your confirmation if you're OK w/ all
+> the changes.
+>
+> First of, the Signed-off-by tag is missing, but I see it in v5.
+> I also see that v5 had an Ack from Kees Cook, you did not preserve it,
+> but generally it's a good idea to do so (if vX -> v(X+1) changes
+> aren't drastic).
+>
+> [...]
+>> +Optional properties:
+>> +- record-size: Specifies the size of each record in preserved memory.
+>> +- console-size: Specifies the size of the console log.
+>> +- ftrace-size: Specifies the size of the ftrace log.
+>> +- ecc-size: Specifies the size of each record's ECC buffer.
+>> +- dump-oops: Specifies to dump oops in addition to panics.
+>
+> Personally, I don't see how this fits into device tree. It doesn't
+> describe hardware, instead it's more a configuration stuff, which
+> usually we try to not put into the device tree.
+>
+> It would be better to have a sane defaults in ramoops, instead of
+> introducing more "virtual" stuff in the device tree. That is, feel
+> free to change defaults if they seem to be not enough for most your
+> setups.
+>
+> The only property that I see which is truly hardware-specific is
+> ecc-size. E.g. if we're pretty sure that a specific hw does not
+> need ecc, it's OK to avoid it. And some hw setups might require
+> bigger ECC sizes, so it's OK to have it in the device-tree.
+>
+>> static struct ramoops_platform_data * __init
+>> of_ramoops_platform_data(struct device *dev)
+>
+> You call this function from __devinit section, so using __init
+> is an error.
+>
+> WARNING: fs/pstore/ramoops.o(.devinit.text+0x37): Section mismatch in reference from the function ramoops_probe() to the function .init.text:of_ramoops_platform_data()
+> The function __devinit ramoops_probe() references
+>
+> I changed this to __devnit.
+>
+> [...]
+>> +	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
+>> +	if (pdata == NULL)
+>
+> I wonder why people prefer to not write !pdata, which is more
+> natural when reading the code.. :-)
 >
 
+I think it's the same for sizeof, it's much more readable
+sizeof(struct ramoops_platform_data).
+
+Marco
