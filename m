@@ -1,251 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760366Ab2IHAss (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 20:48:48 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:64377 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759697Ab2IHAqo (ORCPT
+	id S1760401Ab2IHAtH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 20:49:07 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:60932 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760375Ab2IHAs7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 20:46:44 -0400
-From: Irina Tirdea <irina.tirdea@gmail.com>
-To: mingo@redhat.com, acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
-        rostedt@goodmis.org
-Cc: paulus@samba.org, dsahern@gmail.com, namhyung.kim@lge.com,
-        linux-kernel@vger.kernel.org, Irina Tirdea <irina.tirdea@intel.com>
-Subject: [PATCH v2 04/12] perf tools: fix ALIGN redefinition in system headers
-Date: Sat,  8 Sep 2012 03:43:16 +0300
-Message-Id: <1347065004-15306-5-git-send-email-irina.tirdea@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1347065004-15306-1-git-send-email-irina.tirdea@intel.com>
-References: <1347065004-15306-1-git-send-email-irina.tirdea@intel.com>
+	Fri, 7 Sep 2012 20:48:59 -0400
+Date: Fri, 7 Sep 2012 17:48:54 -0700
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHSET RESEND 0/5] perf tools: Cleanup hist printing code (v4)
+Message-ID: <20120908004854.GD20401@ghostprotocols.net>
+References: <1346640790-17197-1-git-send-email-namhyung@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346640790-17197-1-git-send-email-namhyung@kernel.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Irina Tirdea <irina.tirdea@intel.com>
+Em Mon, Sep 03, 2012 at 11:53:05AM +0900, Namhyung Kim escreveu:
+> This is a cleanup and refactoring patchset for the hist printing code
+> by adding perf_hpp__format functions and perf_hpp.  I believe it makes
+> the code easy to maintain and to add new features like upcoming group
+> viewing and callchain accumulation.
 
-On some systems (e.g. Android), ALIGN is defined in system headers as ALIGN(p).
-The definition of ALIGN used in perf takes 2 parameters: ALIGN(x,a).
-This leads to redefinition conflicts.
+I applied this patch series to then get some patches from Jiri's 'perf
+diff' series, so that he can use what you did here, as you noticed the
+overlap when reviewing his series.
 
-Redefinition error on Android:
-In file included from util/include/linux/list.h:1:0,
-from util/callchain.h:5,
-from util/hist.h:6,
-from util/session.h:4,
-from util/build-id.h:4,
-from util/annotate.c:11:
-util/include/linux/kernel.h:11:0: error: "ALIGN" redefined [-Werror]
-bionic/libc/include/sys/param.h:38:0: note: this is the location of
-the previous definition
+But then 'perf diff' segfaults :-\
 
-Conflics with system defined ALIGN in Android:
-util/event.c: In function 'perf_event__synthesize_comm':
-util/event.c:115:32: error: macro "ALIGN" passed 2 arguments, but takes just 1
-util/event.c:115:9: error: 'ALIGN' undeclared (first use in this function)
-util/event.c:115:9: note: each undeclared identifier is reported only once for
-each function it appears in
+I left your patch series + with that overhead column fixlet at my tree,
+branch tmp.perf/hpp.
 
-In order to avoid this redefinition, ALIGN is renamed to PERF_ALIGN.
+The segfaults happens here:
 
-Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
----
- tools/perf/util/event.c                |   10 +++++-----
- tools/perf/util/event.h                |    2 +-
- tools/perf/util/header.c               |   16 ++++++++--------
- tools/perf/util/include/linux/kernel.h |    4 ++--
- tools/perf/util/session.c              |    4 ++--
- tools/perf/util/symbol.c               |    2 +-
- 6 files changed, 19 insertions(+), 19 deletions(-)
+Program received signal SIGSEGV, Segmentation fault.
+0x0000000000498837 in hpp__entry_delta (hpp=0x7fffffffdeb0, he=0xcd6310) at ui/hist.c:200
+200			old_percent = 100.0 * he->pair->period / old_total;
+Missing separate debuginfos, use: debuginfo-install atk-1.28.0-2.el6.x86_64 bzip2-libs-1.0.5-7.el6_0.x86_64 elfutils-libelf-0.152-1.el6.x86_64 elfutils-libs-0.152-1.el6.x86_64 expat-2.0.1-11.el6_2.x86_64 fontconfig-2.8.0-3.el6.x86_64 freetype-2.3.11-6.el6_2.9.x86_64 glib2-2.22.5-7.el6.x86_64 gtk2-2.18.9-10.el6.x86_64 libX11-1.3-2.el6.x86_64 libXau-1.0.5-1.el6.x86_64 libXcomposite-0.4.1-2.el6.x86_64 libXcursor-1.1.10-2.el6.x86_64 libXdamage-1.1.2-1.el6.x86_64 libXext-1.1-3.el6.x86_64 libXfixes-4.0.4-1.el6.x86_64 libXi-1.3-3.el6.x86_64 libXinerama-1.1-1.el6.x86_64 libXrandr-1.3.0-4.el6.x86_64 libXrender-0.9.5-1.el6.x86_64 libpng-1.2.49-1.el6_2.x86_64 libselinux-2.0.94-5.3.el6.x86_64 libxcb-1.5-1.el6.x86_64 nss-softokn-freebl-3.12.9-11.el6.x86_64 pango-1.28.1-3.el6_0.5.x86_64 perl-libs-5.10.1-127.el6.x86_64 pixman-0.18.4-1.el6_0.1.x86_64 xz-libs-4.999.9-0.3.beta.20091007git.el6.x86_64 zlib-1.2.3-27.el6.x86_64
+(gdb) p he->pair
+$1 = (struct hist_entry *) 0x0
 
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 84ff6f16..f7f4805 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -112,7 +112,7 @@ static pid_t perf_event__synthesize_comm(struct perf_tool *tool,
- 	event->comm.header.type = PERF_RECORD_COMM;
- 
- 	size = strlen(event->comm.comm) + 1;
--	size = ALIGN(size, sizeof(u64));
-+	size = PERF_ALIGN(size, sizeof(u64));
- 	memset(event->comm.comm + size, 0, machine->id_hdr_size);
- 	event->comm.header.size = (sizeof(event->comm) -
- 				(sizeof(event->comm.comm) - size) +
-@@ -145,7 +145,7 @@ static pid_t perf_event__synthesize_comm(struct perf_tool *tool,
- 					 sizeof(event->comm.comm));
- 
- 		size = strlen(event->comm.comm) + 1;
--		size = ALIGN(size, sizeof(u64));
-+		size = PERF_ALIGN(size, sizeof(u64));
- 		memset(event->comm.comm + size, 0, machine->id_hdr_size);
- 		event->comm.header.size = (sizeof(event->comm) -
- 					  (sizeof(event->comm.comm) - size) +
-@@ -228,7 +228,7 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 			size = strlen(execname);
- 			execname[size - 1] = '\0'; /* Remove \n */
- 			memcpy(event->mmap.filename, execname, size);
--			size = ALIGN(size, sizeof(u64));
-+			size = PERF_ALIGN(size, sizeof(u64));
- 			event->mmap.len -= event->mmap.start;
- 			event->mmap.header.size = (sizeof(event->mmap) -
- 					        (sizeof(event->mmap.filename) - size));
-@@ -282,7 +282,7 @@ int perf_event__synthesize_modules(struct perf_tool *tool,
- 		if (pos->dso->kernel)
- 			continue;
- 
--		size = ALIGN(pos->dso->long_name_len + 1, sizeof(u64));
-+		size = PERF_ALIGN(pos->dso->long_name_len + 1, sizeof(u64));
- 		event->mmap.header.type = PERF_RECORD_MMAP;
- 		event->mmap.header.size = (sizeof(event->mmap) -
- 				        (sizeof(event->mmap.filename) - size));
-@@ -494,7 +494,7 @@ int perf_event__synthesize_kernel_mmap(struct perf_tool *tool,
- 	map = machine->vmlinux_maps[MAP__FUNCTION];
- 	size = snprintf(event->mmap.filename, sizeof(event->mmap.filename),
- 			"%s%s", mmap_name, symbol_name) + 1;
--	size = ALIGN(size, sizeof(u64));
-+	size = PERF_ALIGN(size, sizeof(u64));
- 	event->mmap.header.type = PERF_RECORD_MMAP;
- 	event->mmap.header.size = (sizeof(event->mmap) -
- 			(sizeof(event->mmap.filename) - size) + machine->id_hdr_size);
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index 0e088d0..21b99e7 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -101,7 +101,7 @@ struct perf_sample {
- struct build_id_event {
- 	struct perf_event_header header;
- 	pid_t			 pid;
--	u8			 build_id[ALIGN(BUILD_ID_SIZE, sizeof(u64))];
-+	u8			 build_id[PERF_ALIGN(BUILD_ID_SIZE, sizeof(u64))];
- 	char			 filename[];
- };
- 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index d07bc13..974e758 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -129,7 +129,7 @@ static int do_write_string(int fd, const char *str)
- 	int ret;
- 
- 	olen = strlen(str) + 1;
--	len = ALIGN(olen, NAME_ALIGN);
-+	len = PERF_ALIGN(olen, NAME_ALIGN);
- 
- 	/* write len, incl. \0 */
- 	ret = do_write(fd, &len, sizeof(len));
-@@ -220,7 +220,7 @@ static int __dsos__write_buildid_table(struct list_head *head, pid_t pid,
- 		if (!pos->hit)
- 			continue;
- 		len = pos->long_name_len + 1;
--		len = ALIGN(len, NAME_ALIGN);
-+		len = PERF_ALIGN(len, NAME_ALIGN);
- 		memset(&b, 0, sizeof(b));
- 		memcpy(&b.build_id, pos->build_id, sizeof(pos->build_id));
- 		b.pid = pid;
-@@ -1532,7 +1532,7 @@ static int perf_header__read_build_ids_abi_quirk(struct perf_header *header,
- 	struct perf_session *session = container_of(header, struct perf_session, header);
- 	struct {
- 		struct perf_event_header   header;
--		u8			   build_id[ALIGN(BUILD_ID_SIZE, sizeof(u64))];
-+		u8			   build_id[PERF_ALIGN(BUILD_ID_SIZE, sizeof(u64))];
- 		char			   filename[0];
- 	} old_bev;
- 	struct build_id_event bev;
-@@ -2439,7 +2439,7 @@ int perf_event__synthesize_attr(struct perf_tool *tool,
- 	int err;
- 
- 	size = sizeof(struct perf_event_attr);
--	size = ALIGN(size, sizeof(u64));
-+	size = PERF_ALIGN(size, sizeof(u64));
- 	size += sizeof(struct perf_event_header);
- 	size += ids * sizeof(u64);
- 
-@@ -2537,7 +2537,7 @@ int perf_event__synthesize_event_type(struct perf_tool *tool,
- 
- 	ev.event_type.header.type = PERF_RECORD_HEADER_EVENT_TYPE;
- 	size = strlen(ev.event_type.event_type.name);
--	size = ALIGN(size, sizeof(u64));
-+	size = PERF_ALIGN(size, sizeof(u64));
- 	ev.event_type.header.size = sizeof(ev.event_type) -
- 		(sizeof(ev.event_type.event_type.name) - size);
- 
-@@ -2606,7 +2606,7 @@ int perf_event__synthesize_tracing_data(struct perf_tool *tool, int fd,
- 
- 	ev.tracing_data.header.type = PERF_RECORD_HEADER_TRACING_DATA;
- 	size = tdata->size;
--	aligned_size = ALIGN(size, sizeof(u64));
-+	aligned_size = PERF_ALIGN(size, sizeof(u64));
- 	padding = aligned_size - size;
- 	ev.tracing_data.header.size = sizeof(ev.tracing_data);
- 	ev.tracing_data.size = aligned_size;
-@@ -2637,7 +2637,7 @@ int perf_event__process_tracing_data(union perf_event *event,
- 
- 	size_read = trace_report(session->fd, &session->pevent,
- 				 session->repipe);
--	padding = ALIGN(size_read, sizeof(u64)) - size_read;
-+	padding = PERF_ALIGN(size_read, sizeof(u64)) - size_read;
- 
- 	if (read(session->fd, buf, padding) < 0)
- 		die("reading input file");
-@@ -2671,7 +2671,7 @@ int perf_event__synthesize_build_id(struct perf_tool *tool,
- 	memset(&ev, 0, sizeof(ev));
- 
- 	len = pos->long_name_len + 1;
--	len = ALIGN(len, NAME_ALIGN);
-+	len = PERF_ALIGN(len, NAME_ALIGN);
- 	memcpy(&ev.build_id.build_id, pos->build_id, sizeof(pos->build_id));
- 	ev.build_id.header.type = PERF_RECORD_HEADER_BUILD_ID;
- 	ev.build_id.header.misc = misc;
-diff --git a/tools/perf/util/include/linux/kernel.h b/tools/perf/util/include/linux/kernel.h
-index 466b51a..3805c75 100644
---- a/tools/perf/util/include/linux/kernel.h
-+++ b/tools/perf/util/include/linux/kernel.h
-@@ -8,8 +8,8 @@
- 
- #define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
- 
--#define ALIGN(x,a)		__ALIGN_MASK(x,(typeof(x))(a)-1)
--#define __ALIGN_MASK(x,mask)	(((x)+(mask))&~(mask))
-+#define PERF_ALIGN(x, a)	__PERF_ALIGN_MASK(x, (typeof(x))(a)-1)
-+#define __PERF_ALIGN_MASK(x, mask)	(((x)+(mask))&~(mask))
- 
- #ifndef offsetof
- #define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 9453758..3806ea4 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -527,7 +527,7 @@ static void perf_event__comm_swap(union perf_event *event, bool sample_id_all)
- 	if (sample_id_all) {
- 		void *data = &event->comm.comm;
- 
--		data += ALIGN(strlen(data) + 1, sizeof(u64));
-+		data += PERF_ALIGN(strlen(data) + 1, sizeof(u64));
- 		swap_sample_id_all(event, data);
- 	}
- }
-@@ -544,7 +544,7 @@ static void perf_event__mmap_swap(union perf_event *event,
- 	if (sample_id_all) {
- 		void *data = &event->mmap.filename;
- 
--		data += ALIGN(strlen(data) + 1, sizeof(u64));
-+		data += PERF_ALIGN(strlen(data) + 1, sizeof(u64));
- 		swap_sample_id_all(event, data);
- 	}
- }
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 753699a..ba85d4f 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1991,7 +1991,7 @@ int symbol__init(void)
- 	if (symbol_conf.initialized)
- 		return 0;
- 
--	symbol_conf.priv_size = ALIGN(symbol_conf.priv_size, sizeof(u64));
-+	symbol_conf.priv_size = PERF_ALIGN(symbol_conf.priv_size, sizeof(u64));
- 
- 	symbol__elf_init();
- 
--- 
-1.7.9.5
+Please try with:
 
+  perf record -a usleep 1
+  perf record -a usleep 1
+  perf diff
+
+it will use perf.data.old and perf.data and will segfault in that branch.
+
+- Arnaldo
