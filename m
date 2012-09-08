@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760627Ab2IHCJA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 22:09:00 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41336 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760329Ab2IHCH2 (ORCPT
+	id S1760554Ab2IHCIy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 22:08:54 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46408 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760343Ab2IHCH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Sep 2012 22:07:28 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Michel Lespinasse <walken@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+Cc: linux-kernel@vger.kernel.org, Irina Tirdea <irina.tirdea@intel.com>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 13/13] perf tools: Fix build for another rbtree.c change
-Date: Fri,  7 Sep 2012 23:07:12 -0300
-Message-Id: <1347070032-4161-14-git-send-email-acme@infradead.org>
+Subject: [PATCH 10/13] perf tools: replace mkostemp with mkstemp
+Date: Fri,  7 Sep 2012 23:07:09 -0300
+Message-Id: <1347070032-4161-11-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1347070032-4161-1-git-send-email-acme@infradead.org>
 References: <1347070032-4161-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+From: Irina Tirdea <irina.tirdea@intel.com>
 
-Fixes:
+The mkostemp function is only available in glibc. This leads to compile
+error in Android, since bionic is derived from BSD.
 
-../../lib/rbtree.c: In function 'rb_insert_color':
-../../lib/rbtree.c:95:9: error: 'true' undeclared (first use in this function)
-../../lib/rbtree.c:95:9: note: each undeclared identifier is reported only once for each function it appears in
-../../lib/rbtree.c: In function '__rb_erase_color':
-../../lib/rbtree.c:216:9: error: 'true' undeclared (first use in this function)
-../../lib/rbtree.c: In function 'rb_erase':
-../../lib/rbtree.c:368:2: error: unknown type name 'bool'
-make: *** [util/rbtree.o] Error 1
+Replacing mkostemp with mkstemp. mkstemp is available on both glibc and
+bionic.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org
-Link: http://lkml.kernel.org/r/50406F60.5040707@intel.com
+Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1347065004-15306-10-git-send-email-irina.tirdea@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/include/linux/rbtree.h |    1 +
- 1 file changed, 1 insertion(+)
+ tools/perf/util/dso-test-data.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/include/linux/rbtree.h b/tools/perf/util/include/linux/rbtree.h
-index 7a243a1..2a030c5 100644
---- a/tools/perf/util/include/linux/rbtree.h
-+++ b/tools/perf/util/include/linux/rbtree.h
-@@ -1 +1,2 @@
-+#include <stdbool.h>
- #include "../../../../include/linux/rbtree.h"
+diff --git a/tools/perf/util/dso-test-data.c b/tools/perf/util/dso-test-data.c
+index 541cdc7..c6caede 100644
+--- a/tools/perf/util/dso-test-data.c
++++ b/tools/perf/util/dso-test-data.c
+@@ -23,7 +23,7 @@ static char *test_file(int size)
+ 	int fd, i;
+ 	unsigned char *buf;
+ 
+-	fd = mkostemp(templ, O_CREAT|O_WRONLY|O_TRUNC);
++	fd = mkstemp(templ);
+ 
+ 	buf = malloc(size);
+ 	if (!buf) {
 -- 
 1.7.9.2.358.g22243
 
