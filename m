@@ -1,38 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755441Ab2IHWZL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 18:25:11 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:35176 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753375Ab2IHWZH (ORCPT
+	id S1755448Ab2IHW0Q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 18:26:16 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:52011 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753375Ab2IHW0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 18:25:07 -0400
-Date: Sat, 08 Sep 2012 18:25:04 -0400 (EDT)
-Message-Id: <20120908.182504.1746728709833661358.davem@davemloft.net>
-To: rostedt@goodmis.org
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        gregkh@linuxfoundation.org, sarah.a.sharp@linux.intel.com,
-        stable@vger.kernel.org
-Subject: Re: [BUG][3.4.10] Conflicts between initializing my USB devices
- and my IDE devices
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1347142965.4746.11.camel@gandalf.local.home>
-References: <1347142965.4746.11.camel@gandalf.local.home>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sat, 8 Sep 2012 18:26:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <1347116812-93646-1-git-send-email-dsahern@gmail.com>
+References: <1347116812-93646-1-git-send-email-dsahern@gmail.com>
+From: Irina Tirdea <irina.tirdea@gmail.com>
+Date: Sun, 9 Sep 2012 01:25:53 +0300
+Message-ID: <CANg8OWKiSEhQ0ZDjT6ao1D4a9wmKaJbKxn8-L61sZgejUJUvwQ@mail.gmail.com>
+Subject: Re: [PATCH 0/3] perf tool: basename cleanups
+To: David Ahern <dsahern@gmail.com>
+Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> Irina: Would you verify perf still compiles cleanly for Android. Thanks.
+>
 
-The IDE layer does not handle shared interrupts properly at all,
-and it never will be rearchitected to do so.
+With these 3 patches perf still compiles cleanly for Android.
+Thanks for making the changes.
 
-This is a well known issue.
-
-Please disable IDE in your configuration and use the PATA drivers
-instead, which are able to handle shared interrupts properly.
-
-Thanks.
+Irina
