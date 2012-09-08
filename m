@@ -1,63 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979Ab2IHNgf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 09:36:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38550 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751013Ab2IHNga (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 09:36:30 -0400
+	id S1754149Ab2IHNmc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 09:42:32 -0400
+Received: from mga01.intel.com ([192.55.52.88]:53867 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751013Ab2IHNm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Sep 2012 09:42:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,391,1344236400"; 
+   d="scan'208";a="219764441"
+Date: Sat, 8 Sep 2012 21:42:20 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Avi Kivity <avi@redhat.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        linux-pci@vger.kernel.org, Feng Tang <feng.tang@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH 1/2] PCI: Use local parameter pci_device_id for
+ pci_get_subsys/class()
+Message-ID: <20120908134220.GA24831@localhost>
+References: <20120731235705.GW2422@linux.vnet.ibm.com>
+ <1343779778.27983.73.camel@gandalf.stny.rr.com>
+ <20120801001811.GX2422@linux.vnet.ibm.com>
+ <20120801004319.GA7043@localhost>
+ <20120822025008.GA8066@localhost>
+ <20120822154908.2e6ef3c0@feng-i7>
+ <CAErSpo7HhdDi4EhbQZ-oZbsbGVvTfZW8MwKn7Tm+6B8jaQxLBg@mail.gmail.com>
+ <20120823154503.15a45b14@feng-i7>
+ <CAE9FiQVXj6sLEs0GiBnVsKAbms-Bnt06xYeT01MBtSjNqaqypA@mail.gmail.com>
+ <CAE9FiQU2sqXLyMg2KbdKQBaX8WDeagd=OmZ5ELhYgkUQ4b6jZA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAPM31RKVYpkc0oTJKjsdsvqBfif=Bovi3a6TE8qdOOpEYOC0Lw@mail.gmail.com>
-References: <20120904214602.GA9092@dhcp-172-17-108-109.mtv.corp.google.com>
-	<5047074D.1030104@parallels.com>
-	<20120905081439.GC3195@dhcp-172-17-108-109.mtv.corp.google.com>
-	<50470A87.1040701@parallels.com>
-	<20120905082947.GD3195@dhcp-172-17-108-109.mtv.corp.google.com>
-	<50470EBF.9070109@parallels.com>
-	<20120905084740.GE3195@dhcp-172-17-108-109.mtv.corp.google.com>
-	<1346835993.2600.9.camel@twins>
-	<20120905093204.GL3195@dhcp-172-17-108-109.mtv.corp.google.com>
-	<1346839487.2600.24.camel@twins>
-	<20120906204642.GN29092@google.com>
-	<CAPM31RKVYpkc0oTJKjsdsvqBfif=Bovi3a6TE8qdOOpEYOC0Lw@mail.gmail.com>
-Date: Sat, 8 Sep 2012 09:36:29 -0400
-Message-ID: <CAPhKKr8f6q=6m4T=-6PA8za-nMQMKy1HykAX-2NRaL9AZoPSjw@mail.gmail.com>
-Subject: Re: [RFC 0/5] forced comounts for cgroups.
-From: Dhaval Giani <dhaval.giani@gmail.com>
-To: Paul Turner <pjt@google.com>
-Cc: Tejun Heo <tj@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, linux-mm@kvack.org, davej@redhat.com,
-        ben@decadent.org.uk, lennart@poettering.net, kay.sievers@vrfy.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQU2sqXLyMg2KbdKQBaX8WDeagd=OmZ5ELhYgkUQ4b6jZA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 6, 2012 at 5:11 PM, Paul Turner <pjt@google.com> wrote:
-> On Thu, Sep 6, 2012 at 1:46 PM, Tejun Heo <tj@kernel.org> wrote:
->> Hello,
->>
->> cc'ing Dhaval and Frederic.  They were interested in the subject
->> before and Dhaval was pretty vocal about cpuacct having a separate
->> hierarchy (or at least granularity).
->
-> Really?  Time just has _not_ borne out this use-case.  I'll let Dhaval
-> make a case for this but he should expect violent objection.
->
+On Fri, Sep 07, 2012 at 06:32:48PM -0700, Yinghai Lu wrote:
 
-I am not objecting directly! I am aware of a few users who are (or at
-least were) using cpu and cpuacct separately because they want to be
-able to account without control. Having said that, there are tons of
-flaws in the current approach, because the accounting without control
-is just plain wrong. I have copied a few other folks who might be able
-to shed light on those users and if we should still consider them.
+> > with this one in pci/next pci config in /sys are not created.
+> >
+> > 10:~ # lspci -tv
+> > pcilib: Cannot open /sys/bus/pci/devices/0000:00:03.0/config
+> > lspci: Unable to read the standard configuration space header of
+> > device 0000:00:03.0
+> > pcilib: Cannot open /sys/bus/pci/devices/0000:00:02.0/config
+> > lspci: Unable to read the standard configuration space header of
+> > device 0000:00:02.0
+> > pcilib: Cannot open /sys/bus/pci/devices/0000:00:01.3/config
+> > lspci: Unable to read the standard configuration space header of
+> > device 0000:00:01.3
+> > pcilib: Cannot open /sys/bus/pci/devices/0000:00:01.1/config
+> > lspci: Unable to read the standard configuration space header of
+> > device 0000:00:01.1
+> > pcilib: Cannot open /sys/bus/pci/devices/0000:00:01.0/config
+> > lspci: Unable to read the standard configuration space header of
+> > device 0000:00:01.0
+> > pcilib: Cannot open /sys/bus/pci/devices/0000:00:00.0/config
+> > lspci: Unable to read the standard configuration space header of
+> > device 0000:00:00.0
+> > -[0000:00]-
+> >
+> > bisected to this commit
+> >
+> > ccee7d23102f5e5765ec24779c5b77472af8f79e is the first bad commit
+> > commit ccee7d23102f5e5765ec24779c5b77472af8f79e
+> > Author: Feng Tang <feng.tang@intel.com>
+> > Date:   Thu Aug 23 15:45:03 2012 +0800
+> >
+> >     PCI: Use pci_device_id on stack for pci_get_subsys/class() to avoid kmalloc
+> >
+> >     This fixes a kernel warning https://lkml.org/lkml/2012/7/31/682
+> >
+> >     pci_get_subsys() may get called in late system reboot stage, using
+> >     a sleepable kmalloc() sounds fragile and will cause a kernel warning
+> >     with my recent commmit 55c844a "x86/reboot: Fix a warning message
+> >     triggered by stop_other_cpus()" which disable local interrupt in
+> >     late system shutdown/reboot phase. Using a local parameter instead
+> >     will fix it and make it eligible for calling forom atomic context.
+> >
+> >     Do the same change for the pci_get_class() as suggested by Bjorn Helgaas
+> >
+> >     [bhelgaas: changelog]
+> >     Bisected-by: Fengguang Wu <fengguang.wu@intel.com>
+> >     Signed-off-by: Feng Tang <feng.tang@intel.com>
+> >     Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> >     Reviewed-by: Fengguang Wu <fengguang.wu@intel.com>
+> >
+> > :040000 040000 dee62a035816b73abc68e40de8f21c7349efc4cb
+> > 70b2a6258bffa1ab963bd650d8f5d02da774fbce M      drivers
+> >
+> > so the stack get overrun ?
+> >
+> > Bjorn, I think it is this one that cause lspci broken that I mentioned
+> > during meeting at San Diego.
 
-[And the lesser number of controllers, the better it is!]
+This makes lspci work again on my side. The caveat is, kzalloc() will
+zero out all data while the new local variable leaves some data
+uninitialized.
 
-Thanks!
-Dhaval
+diff --git a/drivers/pci/search.c b/drivers/pci/search.c
+index 78a08b1..9148b6e 100644
+--- a/drivers/pci/search.c
++++ b/drivers/pci/search.c
+@@ -245,7 +245,12 @@ struct pci_dev *pci_get_subsys(unsigned int vendor, unsigned int device,
+ 			       unsigned int ss_vendor, unsigned int ss_device,
+ 			       struct pci_dev *from)
+ {
+-	struct pci_device_id id;
++	struct pci_device_id id = {
++		.vendor = vendor,
++		.device = device,
++		.subvendor = ss_vendor,
++		.subdevice = ss_device,
++	};
+ 
+ 	/*
+ 	 * pci_find_subsys() can be called on the ide_setup() path,
+@@ -256,11 +261,6 @@ struct pci_dev *pci_get_subsys(unsigned int vendor, unsigned int device,
+ 	if (unlikely(no_pci_devices()))
+ 		return NULL;
+ 
+-	id.vendor = vendor;
+-	id.device = device;
+-	id.subvendor = ss_vendor;
+-	id.subdevice = ss_device;
+-
+ 	return pci_get_dev_by_id(&id, from);
+ }
+ 
+@@ -300,11 +300,14 @@ pci_get_device(unsigned int vendor, unsigned int device, struct pci_dev *from)
+  */
+ struct pci_dev *pci_get_class(unsigned int class, struct pci_dev *from)
+ {
+-	struct pci_device_id id;
+-
+-	id.vendor = id.device = id.subvendor = id.subdevice = PCI_ANY_ID;
+-	id.class_mask = PCI_ANY_ID;
+-	id.class = class;
++	struct pci_device_id id = {
++		.vendor = PCI_ANY_ID,
++		.device = PCI_ANY_ID,
++		.subvendor = PCI_ANY_ID,
++		.subdevice = PCI_ANY_ID,
++		.class_mask = PCI_ANY_ID,
++		.class = class,
++	};
+ 
+ 	return pci_get_dev_by_id(&id, from);
+ }
