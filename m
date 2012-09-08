@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696Ab2IHJHN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 05:07:13 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:45916 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751917Ab2IHJHJ (ORCPT
+	id S1752726Ab2IHJJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 05:09:57 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:49581 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751917Ab2IHJJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 05:07:09 -0400
+	Sat, 8 Sep 2012 05:09:56 -0400
 MIME-Version: 1.0
-In-Reply-To: <1347065004-15306-4-git-send-email-irina.tirdea@intel.com>
+In-Reply-To: <1347065004-15306-6-git-send-email-irina.tirdea@intel.com>
 References: <1347065004-15306-1-git-send-email-irina.tirdea@intel.com>
-	<1347065004-15306-4-git-send-email-irina.tirdea@intel.com>
-Date: Sat, 8 Sep 2012 12:07:07 +0300
-X-Google-Sender-Auth: 6GAZuSkgbOCp8Hbh7mPIHn3io6k
-Message-ID: <CAOJsxLHCavYZQCOZP0nw0ig9uFx0wbR5UP23zKa0gXvmpFvNDg@mail.gmail.com>
-Subject: Re: [PATCH v2 03/12] perf tools: include __WORDSIZE definition
+	<1347065004-15306-6-git-send-email-irina.tirdea@intel.com>
+Date: Sat, 8 Sep 2012 12:09:54 +0300
+X-Google-Sender-Auth: bdkLDb1BVilKZgyH1IOifge4JC0
+Message-ID: <CAOJsxLH_8h=GDaC=5MzjiFT1rfN5CHKpPX3PKDDHGubQpV1zuQ@mail.gmail.com>
+Subject: Re: [PATCH v2 05/12] perf tools: include basename for non-glibc systems
 From: Pekka Enberg <penberg@kernel.org>
 To: Irina Tirdea <irina.tirdea@gmail.com>
 Cc: mingo@redhat.com, acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
@@ -29,56 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On Sat, Sep 8, 2012 at 3:43 AM, Irina Tirdea <irina.tirdea@gmail.com> wrote:
 > From: Irina Tirdea <irina.tirdea@intel.com>
 >
-> __WORDSIZE is GLibC-specific and is not defined on all systems or glibc
-> versions (e.g. Android's bionic does not define it).
+> perf uses the glibc version of basename(), by defining _GNU_SOURCE, including
+> string.h and not including libgen.h. The glibc version of basename is better
+> than the POSIX version since it does not modify its argument.
 >
-> In file included from util/include/linux/bitmap.h:5:0,
->                  from util/header.h:10,
->                  from util/session.h:6,
->                  from util/build-id.h:4,
->                  from util/annotate.c:11:
-> util/include/linux/bitops.h: In function 'set_bit':
-> util/include/linux/bitops.h:25:12: error:
-> '__WORDSIZE' undeclared (first use in this function)
-> util/include/linux/bitops.h:25:12: note:
-> each undeclared identifier is reported only once for each function it appears in
-> util/include/linux/bitops.h:23:51: error:
-> parameter 'addr' set but not used [-Werror=unused-but-set-parameter]
-> util/include/linux/bitops.h: In function 'clear_bit':
-> util/include/linux/bitops.h:30:12: error:
-> '__WORDSIZE' undeclared (first use in this function)
-> util/include/linux/bitops.h:28:53: error:
-> parameter 'addr' set but not used [-Werror=unused-but-set-parameter]
-> In file included from util/header.h:10:0,
->                  from util/session.h:6,
->                  from util/build-id.h:4,
->                  from util/annotate.c:11:
-> util/include/linux/bitmap.h: In function 'bitmap_zero':
-> util/include/linux/bitmap.h:22:6: error:
-> '__WORDSIZE' undeclared (first use in this function)
+> Android has only one version of basename which is defined in libgen.h.
+> This version is the same as the glibc version.
 >
-> Defining __WORDSIZE in perf's headers if it is not already defined.
+> Error on Android:
+> util/annotate.c: In function 'symbol__annotate_printf':
+> util/annotate.c:503:3: error: implicit declaration of function 'basename'
+> [-Werror=implicit-function-declaration]
+> util/annotate.c:503:3: error: nested extern declaration of 'basename'
+> [-Werror=nested-externs]
+> util/annotate.c:503:14: error: assignment makes pointer from integer without
+> a cast [-Werror]
+>
+> On Android libgen.h should be included to define basename.
 >
 > Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
 > ---
->  tools/perf/util/include/linux/bitops.h |    9 +++++++++
->  1 file changed, 9 insertions(+)
+>  tools/perf/util/symbol.h |    3 +++
+>  1 file changed, 3 insertions(+)
 >
-> diff --git a/tools/perf/util/include/linux/bitops.h b/tools/perf/util/include/linux/bitops.h
-> index 587a230..91779ec 100644
-> --- a/tools/perf/util/include/linux/bitops.h
-> +++ b/tools/perf/util/include/linux/bitops.h
-> @@ -5,6 +5,15 @@
->  #include <linux/compiler.h>
->  #include <asm/hweight.h>
->
-> +#ifndef __WORDSIZE
-> +#if defined(__x86_64__)
-> +# define __WORDSIZE 64
-> +#endif
-> +#if defined(__i386__) || defined(__arm__)
-> +# define __WORDSIZE 32
-> +#endif
+> diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+> index fc4b1e6..d3b330c 100644
+> --- a/tools/perf/util/symbol.h
+> +++ b/tools/perf/util/symbol.h
+> @@ -10,6 +10,9 @@
+>  #include <linux/rbtree.h>
+>  #include <stdio.h>
+>  #include <byteswap.h>
+> +#if defined(__BIONIC__)
+> +#include <libgen.h>
 > +#endif
 
-Why not use "sizeof(unsigned long) * 8" ?
+It's safe to include <libgen.h> on glibc Linux systems as well, no? So
+there's no need to check for __BIONIC__.
