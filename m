@@ -1,80 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755264Ab2IHUtu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 16:49:50 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54649 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753114Ab2IHUts (ORCPT
+	id S1755314Ab2IHUuJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 16:50:09 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:37179 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753749Ab2IHUuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 16:49:48 -0400
-MIME-Version: 1.0
-Date: Sat, 8 Sep 2012 17:49:47 -0300
-Message-ID: <CALF0-+VMtUPuLHg3CwDxFm-TjbN1=YavGO79Oo3GuymOLvikeA@mail.gmail.com>
-Subject: [PATCH v2 0/10] mm: SLxB cleaning and trace accuracy improvement
+	Sat, 8 Sep 2012 16:50:05 -0400
 From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: Pekka Enberg <penberg@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Cc: JoonSoo Kim <js1304@gmail.com>, Tim Bird <tim.bird@am.sony.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        Glauber Costa <glommer@parallels.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Cc: Ezequiel Garcia <elezegarcia@gmail.com>, Pekka Enberg <penberg@kernel.org>
+Subject: [PATCH 03/10] mm, slab: Remove silly function slab_buffer_size()
+Date: Sat,  8 Sep 2012 17:47:52 -0300
+Message-Id: <1347137279-17568-3-git-send-email-elezegarcia@gmail.com>
+X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <1347137279-17568-1-git-send-email-elezegarcia@gmail.com>
+References: <1347137279-17568-1-git-send-email-elezegarcia@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+This function is seldom used, and can be simply replaced with cachep->size.
 
-This is the second spin of my patchset to clean SLxB and improve kmem
-trace events accuracy.
+Cc: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
+---
+ include/linux/slab_def.h |    5 -----
+ mm/slab.c                |   12 ++----------
+ 2 files changed, 2 insertions(+), 15 deletions(-)
 
-For this v2, the most relevant stuff is:
+diff --git a/include/linux/slab_def.h b/include/linux/slab_def.h
+index 36d7031..604ebc8 100644
+--- a/include/linux/slab_def.h
++++ b/include/linux/slab_def.h
+@@ -113,17 +113,12 @@ void *__kmalloc(size_t size, gfp_t flags);
+ #ifdef CONFIG_TRACING
+ extern void *kmem_cache_alloc_trace(size_t size,
+ 				    struct kmem_cache *cachep, gfp_t flags);
+-extern size_t slab_buffer_size(struct kmem_cache *cachep);
+ #else
+ static __always_inline void *
+ kmem_cache_alloc_trace(size_t size, struct kmem_cache *cachep, gfp_t flags)
+ {
+ 	return kmem_cache_alloc(cachep, flags);
+ }
+-static inline size_t slab_buffer_size(struct kmem_cache *cachep)
+-{
+-	return 0;
+-}
+ #endif
+ 
+ static __always_inline void *kmalloc(size_t size, gfp_t flags)
+diff --git a/mm/slab.c b/mm/slab.c
+index 3b4587b..53e41de 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -498,14 +498,6 @@ static void **dbg_userword(struct kmem_cache *cachep, void *objp)
+ 
+ #endif
+ 
+-#ifdef CONFIG_TRACING
+-size_t slab_buffer_size(struct kmem_cache *cachep)
+-{
+-	return cachep->size;
+-}
+-EXPORT_SYMBOL(slab_buffer_size);
+-#endif
+-
+ /*
+  * Do not go above this order unless 0 objects fit into the slab or
+  * overridden on the command line.
+@@ -3849,7 +3841,7 @@ kmem_cache_alloc_trace(size_t size, struct kmem_cache *cachep, gfp_t flags)
+ 	ret = __cache_alloc(cachep, flags, __builtin_return_address(0));
+ 
+ 	trace_kmalloc(_RET_IP_, ret,
+-		      size, slab_buffer_size(cachep), flags);
++		      size, cachep->size, flags);
+ 	return ret;
+ }
+ EXPORT_SYMBOL(kmem_cache_alloc_trace);
+@@ -3880,7 +3872,7 @@ void *kmem_cache_alloc_node_trace(size_t size,
+ 	ret = __cache_alloc_node(cachep, flags, nodeid,
+ 				  __builtin_return_address(0));
+ 	trace_kmalloc_node(_RET_IP_, ret,
+-			   size, slab_buffer_size(cachep),
++			   size, cachep->size,
+ 			   flags, nodeid);
+ 	return ret;
+ }
+-- 
+1.7.8.6
 
-I've dropped two patches that were not very well received:
-Namely this two are now gone:
-  mm, slob: Use only 'ret' variable for both slob object and returned pointer
-  mm, slob: Trace allocation failures consistently
-I believe consistency is important but perhaps this is just me being paranoid.
-
-There's a lot of dumb movement and renaming. This might seem stupid
-(and maybe it is) but it's necessary to create some common code between SLAB
-and SLUB, and then factor it out.
-
-Also, there's a patch to add a new option to disable gcc auto-inlining.
-I know we hate to add new options, but this is necessary to get
-accurate call site
-traces. Plus, the option is in "Kernel Hacking", so it's for kernel
-developers only.
-
-This work is part of CELF Workgroup Project:
-"Kernel_dynamic_memory_allocation_tracking_and_reduction" [1]
-
-Feedback, comments, suggestions are very welcome.
-
-Ezequiel Garcia (10):
- mm: Factor SLAB and SLUB common code
- mm, slub: Rename slab_alloc() -> slab_alloc_node() to match SLAB
- mm, slab: Rename __cache_alloc() -> slab_alloc()
- mm, slab: Match SLAB and SLUB kmem_cache_alloc_xxx_trace() prototype
- mm, slab: Replace 'caller' type, void* -> unsigned long
- mm, util: Use dup_user to duplicate user memory
- mm, slob: Add support for kmalloc_track_caller()
- mm, slab: Remove silly function slab_buffer_size()
- mm, slob: Use NUMA_NO_NODE instead of -1
- Makefile: Add option CONFIG_DISABLE_GCC_AUTOMATIC_INLINING
-
- Makefile                 |    4 ++
- include/linux/slab.h     |    6 ++-
- include/linux/slab_def.h |   14 ++---
- include/linux/slob_def.h |    6 ++-
- include/linux/slub_def.h |    2 +
- lib/Kconfig.debug        |   11 ++++
- mm/slab.c                |  122 +++++++++-------------------------------------
- mm/slab_common.c         |   57 +++++++++++++++++++++
- mm/slob.c                |   33 ++++++++++--
- mm/slub.c                |   55 +++------------------
- mm/util.c                |   11 +++-
- 11 files changed, 154 insertions(+), 167 deletions(-)
-
-Thanks!
-Ezequiel.
