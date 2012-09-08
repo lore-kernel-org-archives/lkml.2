@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755200Ab2IHWBf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 18:01:35 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:43945 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753264Ab2IHWBc (ORCPT
+	id S1755210Ab2IHWGw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 18:06:52 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:38128 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753701Ab2IHWGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 18:01:32 -0400
-Message-ID: <504BC038.2050608@lwfinger.net>
-Date: Sat, 08 Sep 2012 17:01:28 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120825 Thunderbird/15.0
+	Sat, 8 Sep 2012 18:06:50 -0400
+X-Originating-IP: 217.70.178.143
+X-Originating-IP: 50.43.46.74
+Date: Sat, 8 Sep 2012 15:06:41 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Len Brown <lenb@kernel.org>, Matt Fleming <matt.fleming@intel.com>,
+        Olof Johansson <olof@lixom.net>, Matthew Garrett <mjg@redhat.com>,
+        David Howells <dhowells@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-acpi@vger.kernel.org
+Subject: [PATCHv3 0/4] Fix ACPI BGRT support for images located in EFI boot
+ services memory
+Message-ID: <cover.1347141698.git.josh@joshtriplett.org>
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-pci@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        =?UTF-8?B?5p2O5pyd5piO?= <chaoming_li@realsil.com.cn>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Huang Ying <ying.huang@intel.com>
-Subject: Re: Question about failure in PCI power-state change
-References: <Pine.LNX.4.44L0.1209081747030.4838-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1209081747030.4838-100000@netrider.rowland.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/08/2012 04:50 PM, Alan Stern wrote:
-> On Sat, 8 Sep 2012, Rafael J. Wysocki wrote:
->
->> On Saturday, September 08, 2012, Bjorn Helgaas wrote:
->>> +cc Rafael, Huang, linux-pm
->>>
->>> On Fri, Sep 7, 2012 at 3:44 PM, Larry Finger <Larry.Finger@lwfinger.net> wrote:
->>>> Hi,
->>>>
->>>> On occasion when I unload and reload driver rtl8192ce, I get the message
->>>>
->>>> "Refused to change power state, currently in D3"
->>>>
->>>> I added additional info to the printk and discovered that it was trying to
->>>> change to state D0. The problem seems to occur when I have made a
->>>> connection, unloaded the driver, and reloaded it. If I do not make a
->>>> connection before unloading, then the problem is a lot less likely.
->>>>
->>>> This is with kernel 3.6-rc4 from wireless-testing. A Google search shows
->>>> that the problem is usually due to suspend/resume difficulties, but this
->>>> machine has not been suspended.
->>>>
->>>> I would appreciate any help that you might give in solving this issue.
->>
->> I think writing "on" to the /sys/devices/.../power/control attribute of the device
->> in question would help.
->
-> Are you suggesting that this particular wireless adapter is unable to
-> return to D0 from D3?
->
-> Larry, what happens if you try the suspend & resume your system while
-> there's a connection?  Does a similar error occur during the resume?
+The ACPI BGRT lets the OS access the BIOS logo image and its position on the
+screen at boot time, allowing it to maintain that image on the screen until
+ready to display something else, making boot more seamless.  This series fixes
+support for accessing the boot logo image via the BGRT when the BIOS stores it
+in EFI boot services memory, as recommended by the ACPI 5.0 spec.  Linux needs
+to copy the image out of boot services memory before reclaiming boot services
+memory.
 
-After I sent this request, I found an error in the removal process for this 
-particular adapter, which I suspect is the real source of the problem. That 
-difficulty is only found on the new variant of the card - the older one is OK. I 
-think the problem is that the adapter is left in some ill-defined state that can 
-only be cleared by doing a power reset. In that state, it is unable to return to D0.
+The first patch cleans up the existing x86-specific efi_enter_virtual_mode
+function to have a stub version on non-x86 platforms, to eliminate an ifdef in
+init/main.c.   The second patch refactors EFI initialization to defer freeing
+boot services memory until much later in the boot process, and in particular
+until after we have ACPI available.  The third patch adds a helper function to
+look up existing EFI boot services mappings, to avoid re-mapping them.  The
+fourth patch moves BGRT initialization to before the reclamation of boot
+services memory, copies the logo at that point, and reworks the existing BGRT
+driver to use that existing copy.
 
-This box has never been able to suspend/resume, thus I cannot answer the other 
-question.
+v2: Made the new internal function efi_unmap_memmap static.  Incorporated
+    feedback from H. Peter Anvin and Matt Fleming: added stubs for
+    x86-specific EFI functions called from init/main.c to eliminate the
+    corresponding ifdefs in start_kernel; deferred
+    efi_free_boot_services even later, to just before free_initmem.
 
-Thanks to all that responded. Once I clean up the other error, I will recontact 
-the list if the D3 => D0 problem persists.
+v3: Moved efi_free_boot_services back to right after EFI initialization, to
+    avoid a WARN from check_early_ioremap_leak about not calling
+    early_iounmap soon enough.
 
-Larry
+Josh Triplett (4):
+  efi: Add a stub for efi_enter_virtual_mode on non-x86
+  efi: Defer freeing boot services memory until after ACPI init
+  efi: Add a function to look up existing IO memory mappings
+  efi: Fix the ACPI BGRT driver for images located in EFI boot services
+    memory
 
+ arch/x86/platform/efi/Makefile   |    1 +
+ arch/x86/platform/efi/efi-bgrt.c |   76 ++++++++++++++++++++++++++++++++++++++
+ arch/x86/platform/efi/efi.c      |   65 +++++++++++++++++++++++++-------
+ drivers/acpi/Kconfig             |    4 +-
+ drivers/acpi/bgrt.c              |   76 +++++---------------------------------
+ include/linux/efi-bgrt.h         |   21 +++++++++++
+ include/linux/efi.h              |    9 +++++
+ init/main.c                      |    7 +++-
+ 8 files changed, 175 insertions(+), 84 deletions(-)
+ create mode 100644 arch/x86/platform/efi/efi-bgrt.c
+ create mode 100644 include/linux/efi-bgrt.h
+
+-- 
+1.7.10.4
 
