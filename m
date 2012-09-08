@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754404Ab2IHSXp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 14:23:45 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:33471 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752268Ab2IHSXm (ORCPT
+	id S1754512Ab2IHSeJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 14:34:09 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:59296 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752268Ab2IHSeD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 14:23:42 -0400
-Message-ID: <504B8CFE.5010005@ursulin.net>
-Date: Sat, 08 Sep 2012 19:22:54 +0100
-From: Tvrtko Ursulin <tvrtko@ursulin.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Sat, 8 Sep 2012 14:34:03 -0400
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: linux-cachefs@redhat.com, linux-kernel@vger.kernel.org
-Subject: fscache scheduling while atomic bugs under 3.4.10-rt18
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120908181107.GJ10788@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <1347124383-18723-1-git-send-email-laijs@cn.fujitsu.com>
+	<1347124383-18723-5-git-send-email-laijs@cn.fujitsu.com>
+	<20120908174044.GD10788@dhcp-172-17-108-109.mtv.corp.google.com>
+	<CACvQF53dj+fVdYf6uSPREGbtLTBvLcaqX1CJN6XVQOCPx3ttsA@mail.gmail.com>
+	<20120908175354.GH10788@dhcp-172-17-108-109.mtv.corp.google.com>
+	<CACvQF51edrK2LhPbEk6890uxANnLQGp8E2LsTi+dZGgn24y_zw@mail.gmail.com>
+	<20120908181107.GJ10788@dhcp-172-17-108-109.mtv.corp.google.com>
+Date: Sun, 9 Sep 2012 02:34:02 +0800
+Message-ID: <CACvQF51PY95Eg+DLhZ4ZRRNK0x9q+pOzrPfZbhTnPvk35j8PNg@mail.gmail.com>
+Subject: Re: [PATCH 4/7 V6] workqueue: fix idle worker depletion
+From: Lai Jiangshan <eag0628@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Sep 9, 2012 at 2:11 AM, Tejun Heo <tj@kernel.org> wrote:
+> On Sun, Sep 09, 2012 at 02:07:50AM +0800, Lai Jiangshan wrote:
+>> when we release gcwq->lock and then grab it, we leave a hole that things
+>> can be changed.
+>>
+>> I don't want to open a hole. if the hole has bug we have to fix it.
+>> if the hole has no bug, we have to add lot of comments to explain it.
+>>
+>> When I write this reply. I am thinking: is the hole  has bug if
+>> I release gcwq->lock here? result: no. But I don't want to add all things
+>> what I have thought as comments to explain there is no bug even when we
+>> open a hole. don't leave reviewers too much burden.
+>
+> We're already releasing gcwq->lock in maybe_create_worker().  That's
+> the reason why @ret is set to true.  In addition, we already released
+> the lock to grab manager_mutex.  So, you're not adding any burden.
+> Please reuse the busy rebinding mechanism.
+>
 
-Hi,
+in 3.6 busy_worker_rebind() handle WORKER_REBIND bit,
+not WORKER_UNBOUND bit.
 
-I get a lot of those and was wondering if it is a generic fscache issues 
-or in some way related to the RT patchset. Perhaps that the two do not 
-play well together?
+busy_worker_rebind() takes struct work_struct *work argument, we have to
+add new patch to add a helper and restruct it at first.
 
-Traces typically look like this:
+worker_maybe_bind_and_lock() 's mean is very clear here. busy_worker_rebind()
+seems for busy workers, manager is not busy workers.
 
-  BUG: scheduling while atomic: kworker/u:2/4151/0x00000002
-  Modules linked in: snd_usb_audio snd_hwdep snd_usbmidi_lib fuse 
-ip6table_filter ip6_tables ebtable_nat ebtables cachefiles 
-ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 
-xt_state nf_conntrack ipt_REJECT iptable_mangle xt_tcpudp iptable_filter 
-ip_tables x_tables bridge stp llc kvm_amd kvm autofs4 dm_crypt joydev 
-usbhid hid snd_ice1712 nfsd snd_ice17xx_ak4xxx bnep snd_ak4xxx_adda 
-snd_cs8427 snd_ac97_codec nfs bluetooth snd_pcm lockd fscache 
-auth_rpcgss snd_page_alloc nfs_acl ac97_bus binfmt_misc sunrpc snd_i2c 
-snd_mpu401_uart snd_seq_midi microcode snd_rawmidi snd_seq_midi_event 
-snd_seq snd_timer snd_seq_device snd psmouse soundcore ext4 
-firewire_ohci mbcache r8169 firewire_core jbd2 mii crc_itu_t pata_atiixp 
-fglrx(PO) i2c_piix4 it87 hwmon_vid raid10 raid456 async_pq async_xor xor 
-async_memcpy async_raid6_recov raid6_pq async_tx raid1 linear xfs raid0 
-ahci libahci
-  Pid: 4151, comm: kworker/u:2 Tainted: P           O 3.4.10-rt18 #1
-  Call Trace:
-   [<ffffffff813d8b0f>] __schedule_bug+0x43/0x45
-   [<ffffffff813ddcda>] __schedule+0x64a/0x680
-   [<ffffffff813de149>] schedule+0x29/0x80
-   [<ffffffff813deda7>] rt_spin_lock_slowlock+0x14b/0x1e4
-   [<ffffffff813df271>] rt_spin_lock+0x21/0x30
-   [<ffffffff81045520>] __queue_work+0x180/0x330
-   [<ffffffff8105644a>] ? ttwu_do_activate.constprop.76+0x4a/0x60
-   [<ffffffff8104571d>] queue_work_on+0x1d/0x30
-   [<ffffffff8104577e>] queue_work+0x2e/0x50
-   [<ffffffff81055c9b>] ? migrate_enable+0xcb/0x1b0
-   [<ffffffffa047aca5>] fscache_enqueue_object+0x65/0xd0 [fscache]
-   [<ffffffffa047b2d2>] fscache_object_work_func+0x342/0xa20 [fscache]
-   [<ffffffff81055c9b>] ? migrate_enable+0xcb/0x1b0
-   [<ffffffffa047af90>] ? fscache_drop_object+0x170/0x170 [fscache]
-   [<ffffffff81045a87>] process_one_work+0x117/0x3a0
-   [<ffffffff81045d34>] process_scheduled_works+0x24/0x40
-   [<ffffffff81046781>] worker_thread+0x271/0x340
-   [<ffffffff81046510>] ? manage_workers.isra.30+0x230/0x230
-   [<ffffffff8104bbde>] kthread+0x8e/0xa0
-   [<ffffffff810546f9>] ? finish_task_switch+0x49/0xf0
-   [<ffffffff813e1034>] kernel_thread_helper+0x4/0x10
-   [<ffffffff8104bb50>] ? __init_kthread_worker+0x50/0x50
-   [<ffffffff813e1030>] ? gs_change+0xb/0xb
-
-Thanks,
-
-Tvrtko
+>
+> --
+> tejun
