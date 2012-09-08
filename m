@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661Ab2IHRLs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 13:11:48 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:36187 "EHLO song.cn.fujitsu.com"
+	id S1754170Ab2IHRLl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 13:11:41 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:18308 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752527Ab2IHRLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 13:11:21 -0400
+	id S1752657Ab2IHRLW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Sep 2012 13:11:22 -0400
 X-IronPort-AV: E=Sophos;i="4.80,392,1344182400"; 
-   d="scan'208";a="5807477"
+   d="scan'208";a="5807479"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
 Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH 4/7 V6] workqueue: fix idle worker depletion
-Date: Sun, 9 Sep 2012 01:12:53 +0800
-Message-Id: <1347124383-18723-5-git-send-email-laijs@cn.fujitsu.com>
+Subject: [PATCH 6/7 V6] workqueue: new day don't need WORKER_REBIND for busy rebinding
+Date: Sun, 9 Sep 2012 01:12:55 +0800
+Message-Id: <1347124383-18723-7-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1347124383-18723-1-git-send-email-laijs@cn.fujitsu.com>
 References: <1347124383-18723-1-git-send-email-laijs@cn.fujitsu.com>
@@ -26,85 +26,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If hotplug code grabbed the manager_mutex and worker_thread try to create
-a worker, the manage_worker() will return false and worker_thread go to
-process work items. Now, on the CPU, all workers are processing work items,
-no idle_worker left/ready for managing. It breaks the concept of workqueue
-and it is bug.
+because old busy_worker_rebind_fn() have to wait until all idle worker finish.
+so we have to use two flags WORKER_UNBOUND and WORKER_REBIND to avoid
+prematurely clear all NOT_RUNNING bit when highly frequent offline/online.
 
-So when manage_worker() failed to grab the manager_mutex, it should
-release gcwq->lock and try again.
-
-After gcwq->lock is released, hotplug can happen. gcwq_unbind_fn() will
-do the right thing for manager via ->manager. But rebind_workers()
-can't rebind workers directly, worker rebind itself when it is noticed.
-
-Manager worker will be noticed by the bit of GCWQ_DISASSOCIATED and
-WORKER_UNBIND. Because the %UNBOUND bit of manager can't be cleared
-while it is managing workers. maybe_rebind_manager() will be noticed
-when rebind_workers() happens.
+but current code don't need to wait idle workers. so we don't need to
+use two flags, just one is enough. remove WORKER_REBIND from busy rebinding.
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- kernel/workqueue.c |   33 ++++++++++++++++++++++++++++++++-
- 1 files changed, 32 insertions(+), 1 deletions(-)
+ kernel/workqueue.c |    9 +--------
+ 1 files changed, 1 insertions(+), 8 deletions(-)
 
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index b203806..207b6a1 100644
+index d9765c4..4863162 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -2039,6 +2039,20 @@ static bool maybe_destroy_workers(struct worker_pool *pool)
- 	return ret;
+@@ -1639,7 +1639,7 @@ static void busy_worker_rebind_fn(struct work_struct *work)
+ 	struct global_cwq *gcwq = worker->pool->gcwq;
+ 
+ 	if (worker_maybe_bind_and_lock(worker))
+-		worker_clr_flags(worker, WORKER_REBIND);
++		worker_clr_flags(worker, WORKER_UNBOUND);
+ 
+ 	spin_unlock_irq(&gcwq->lock);
  }
+@@ -1692,13 +1692,6 @@ static void rebind_workers(struct global_cwq *gcwq)
+ 	for_each_busy_worker(worker, i, pos, gcwq) {
+ 		struct work_struct *rebind_work = &worker->rebind_work;
+ 		struct workqueue_struct *wq;
+-		unsigned long worker_flags = worker->flags;
+-
+-		/* morph UNBOUND to REBIND */
+-		worker_flags &= ~WORKER_UNBOUND;
+-		worker_flags |= WORKER_REBIND;
+-		/* ensure the wq_worker_sleeping() see the right flags */
+-		ACCESS_ONCE(worker->flags) = worker_flags;
  
-+/* does the manager need to be rebind after we just release gcwq->lock */
-+static void maybe_rebind_manager(struct worker *manager)
-+{
-+	struct global_cwq *gcwq = manager->pool->gcwq;
-+	bool assoc = !(gcwq->flags & GCWQ_DISASSOCIATED);
-+
-+	if (assoc && (manager->flags & WORKER_UNBOUND)) {
-+		spin_unlock_irq(&gcwq->lock);
-+
-+		if (worker_maybe_bind_and_lock(manager))
-+			worker_clr_flags(manager, WORKER_UNBOUND);
-+	}
-+}
-+
- /**
-  * manage_workers - manage worker pool
-  * @worker: self
-@@ -2062,12 +2076,29 @@ static bool maybe_destroy_workers(struct worker_pool *pool)
- static bool manage_workers(struct worker *worker)
- {
- 	struct worker_pool *pool = worker->pool;
-+	struct global_cwq *gcwq = pool->gcwq;
- 	bool ret = false;
- 
--	if (!mutex_trylock(&pool->manager_mutex))
-+	if (pool->manager)
- 		return ret;
- 
- 	pool->manager = worker;
-+	if (unlikely(!mutex_trylock(&pool->manager_mutex))) {
-+		/*
-+		 * Ouch! rebind_workers() or gcwq_unbind_fn() beats we.
-+		 * it can't return false here, otherwise it will lead to
-+		 * worker depletion. So we release gcwq->lock and then
-+		 * grab manager_mutex again.
-+		 */
-+		spin_unlock_irq(&gcwq->lock);
-+		mutex_lock(&pool->manager_mutex);
-+		spin_lock_irq(&gcwq->lock);
-+
-+		/* rebind_workers() can happen when we release gcwq->lock */
-+		maybe_rebind_manager(worker);
-+		ret = true;
-+	}
-+
- 	pool->flags &= ~POOL_MANAGE_WORKERS;
- 
- 	/*
+ 		if (test_and_set_bit(WORK_STRUCT_PENDING_BIT,
+ 				     work_data_bits(rebind_work)))
 -- 
 1.7.4.4
 
