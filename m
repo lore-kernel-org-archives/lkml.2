@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab2IHIeF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 04:34:05 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:51739 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752173Ab2IHId6 (ORCPT
+	id S1752509Ab2IHIhd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 04:37:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53852 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752173Ab2IHIha (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 04:33:58 -0400
-Message-ID: <504B0163.5070804@gmail.com>
-Date: Sat, 08 Sep 2012 10:27:15 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
+	Sat, 8 Sep 2012 04:37:30 -0400
+Date: Sat, 8 Sep 2012 01:34:41 -0700
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: anish kumar <anish198519851985@gmail.com>
+Cc: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
+        dwmw2@infradead.org, linux-kernel@vger.kernel.org, lars@metafoo.de
+Subject: Re: [PATCH] [RFC]power: battery: Generic battery driver using IIO
+Message-ID: <20120908083441.GA21856@lizard>
+References: <1346600372-3284-1-git-send-email-anish198519851985@gmail.com>
+ <5049A7B8.506@kernel.org>
+ <1347088218.5051.152.camel@anish-Inspiron-N5050>
 MIME-Version: 1.0
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-CC: Bryan Freed <bfreed@chromium.org>, John Stultz <john.stultz@linaro.org>,
-        linux-kernel@vger.kernel.org, keescook@chromium.org,
-        sboyd@codeaurora.org, gregkh@linuxfoundation.org,
-        Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH v6] pstore/ram: Add ramoops support for the Flattened
- Device Tree.
-References: <1347042576-17675-1-git-send-email-bfreed@chromium.org> <20120908052907.GA4724@lizard> <504AF27C.9090601@gmail.com> <20120908080607.GA22071@lizard>
-In-Reply-To: <20120908080607.GA22071@lizard>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1347088218.5051.152.camel@anish-Inspiron-N5050>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 08/09/2012 10:06, Anton Vorontsov ha scritto:
-> On Sat, Sep 08, 2012 at 09:23:40AM +0200, Marco Stornelli wrote: [...]
->>>> +	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
->>>> +   if (pdata == NULL)
->>>
->>> I wonder why people prefer to not write !pdata, which is more natural
->>> when reading the code.. :-)
->>
->> I think it's the same for sizeof, it's much more readable
->> sizeof(struct ramoops_platform_data).
->
-> Well, sizeof(struct...) is against Linux coding style.  And there are
-> good reasons for this rule, it's all in the CodingStyle file. Thus,
-> it's not about personal preferences. But speaking of personal
-> preferences, I don't find sizeof(struct...) more readable. :-)
->
-> Thanks!
-> Anton.
->
+On Sat, Sep 08, 2012 at 12:40:18PM +0530, anish kumar wrote:
+[...]
+> > > Signed-off-by: anish kumar <anish198519851985@gmail.com>
+> > So what happened in 1985?
+> Was hurrying to get an email id :)
 
-Yes, I know, but indeed it's only a personal preference as the check 
-==NULL instead of !pdata. :)
+I so much understand... ;-)
 
-Marco
+Much thanks to Lars-Peter and Jonathan, saved me a lot of time reviewing
+the driver.
+
+Anish, the idea of generic IIO driver looks great, I'm impatiently
+waiting for a new revision!
+
+One suggestion: the file name says generic-battery, the code sometimes
+uses generic_adc_battery sometimes generic_battery. I'd suggest being
+consistent, and stick to one naming scheme. I'd prefer
+generic_adc_battery.
+
+Thanks!
+
+Anton.
