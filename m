@@ -1,30 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755448Ab2IHW0Q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 18:26:16 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:52011 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753375Ab2IHW0O (ORCPT
+	id S1755280Ab2IHWas (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 18:30:48 -0400
+Received: from a194-183.smtp-out.amazonses.com ([199.255.194.183]:28456 "EHLO
+	a194-183.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753375Ab2IHWaq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 18:26:14 -0400
+	Sat, 8 Sep 2012 18:30:46 -0400
+Date: Sat, 8 Sep 2012 22:30:45 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Ezequiel Garcia <elezegarcia@gmail.com>
+cc: Pekka Enberg <penberg@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, JoonSoo Kim <js1304@gmail.com>,
+        Tim Bird <tim.bird@am.sony.com>, Steven Rostedt <rostedt@goodmis.org>,
+        David Rientjes <rientjes@google.com>,
+        Glauber Costa <glommer@parallels.com>
+Subject: Re: [PATCH v2 0/10] mm: SLxB cleaning and trace accuracy
+ improvement
+In-Reply-To: <CALF0-+VMtUPuLHg3CwDxFm-TjbN1=YavGO79Oo3GuymOLvikeA@mail.gmail.com>
+Message-ID: <00000139a801aba3-4616277c-d845-4b62-83ec-1a1950b05751-000000@email.amazonses.com>
+References: <CALF0-+VMtUPuLHg3CwDxFm-TjbN1=YavGO79Oo3GuymOLvikeA@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1347116812-93646-1-git-send-email-dsahern@gmail.com>
-References: <1347116812-93646-1-git-send-email-dsahern@gmail.com>
-From: Irina Tirdea <irina.tirdea@gmail.com>
-Date: Sun, 9 Sep 2012 01:25:53 +0300
-Message-ID: <CANg8OWKiSEhQ0ZDjT6ao1D4a9wmKaJbKxn8-L61sZgejUJUvwQ@mail.gmail.com>
-Subject: Re: [PATCH 0/3] perf tool: basename cleanups
-To: David Ahern <dsahern@gmail.com>
-Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.194.183
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Irina: Would you verify perf still compiles cleanly for Android. Thanks.
->
+On Sat, 8 Sep 2012, Ezequiel Garcia wrote:
 
-With these 3 patches perf still compiles cleanly for Android.
-Thanks for making the changes.
+> This is the second spin of my patchset to clean SLxB and improve kmem
+> trace events accuracy.
 
-Irina
+Please redo the patches on top of the patchsets that create
+mm/slab_common.c. You will be able to extract a lot more common code and
+help the goal of having as much common code as possible. PLease move as
+much as possible of the common functions into slab_common.c
+
