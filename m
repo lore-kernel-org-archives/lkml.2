@@ -1,75 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670Ab2IHOPq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 10:15:46 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:63524 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753757Ab2IHOPo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 10:15:44 -0400
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/7] perf: Enable function tracing for perf core
-References: <20120908115515.211175517@goodmis.org>
-	<20120908115640.032328533@goodmis.org>
-Date: Sat, 08 Sep 2012 23:15:37 +0900
-In-Reply-To: <20120908115640.032328533@goodmis.org> (Steven Rostedt's message
-	of "Sat, 08 Sep 2012 07:55:16 -0400")
-Message-ID: <87627oa9di.fsf@kernel.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S1754720Ab2IHOdQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 10:33:16 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:63349 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754117Ab2IHOdN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Sep 2012 10:33:13 -0400
+X-IronPort-AV: E=Sophos;i="4.80,391,1344236400"; 
+   d="scan'208";a="687249983"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+CC: Jeff Layton <jlayton@redhat.com>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH v2] SUNRPC: check current nsproxy before set of node
+ name on client creation
+Thread-Topic: [PATCH v2] SUNRPC: check current nsproxy before set of node
+ name on client creation
+Thread-Index: AQHNeUylwnVjh2tbW02Id+IcJKD75ZeAFAKAgAB9EYCAAI9kAA==
+Date: Sat, 8 Sep 2012 14:33:09 +0000
+Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA908F914D4@SACEXCMBX04-PRD.hq.netapp.com>
+References: <20120813113731.9629.31906.stgit@localhost.localdomain>
+	  <20120813081054.0ee39037@corrin.poochiereds.net>
+	 <4FA345DA4F4AE44899BD2B03EEEC2FA908F90888@SACEXCMBX04-PRD.hq.netapp.com>
+	 <504ADED9.2020607@parallels.com>
+In-Reply-To: <504ADED9.2020607@parallels.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.116]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <5D2A4604819E8E4EBF59B9360EA0265C@tahoe.netapp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q88EYFQo011512
 
-Hi Steve,
+On Sat, 2012-09-08 at 08:59 +0300, Stanislav Kinsbursky wrote:
+> 08.09.2012 01:32, Myklebust, Trond Ğ¿Ğ¸ÑˆĞµÑ‚:
+> > On Mon, 2012-08-13 at 08:10 -0400, Jeff Layton wrote:
+> >> On Mon, 13 Aug 2012 15:37:31 +0400
+> >> Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
+> >>
+> >>> v2:
+> >>> 1) rpc_clnt_set_nodename() prototype updated.
+> >>> 2) fixed errors in comment.
+> >>>
+> >>> When child reaper exits, it can destroy mount namespace it belongs to, and if
+> >>> there are NFS mounts inside, then it will try to umount them. But in this
+> >>> point current->nsproxy is set to NULL and all namespaces will be destroyed one
+> >>> by one. I.e. we can't dereference current->nsproxy to obtain uts namespace.
+> >>>
+> >>> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> >>> ---
+> >>>   net/sunrpc/clnt.c |   16 +++++++++++++---
+> >>>   1 files changed, 13 insertions(+), 3 deletions(-)
+> >>>
+> >>> diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
+> >>> index 9a9676e..8fbcbc8 100644
+> >>> --- a/net/sunrpc/clnt.c
+> >>> +++ b/net/sunrpc/clnt.c
+> >>> @@ -277,8 +277,18 @@ void rpc_clients_notifier_unregister(void)
+> >>>   	return rpc_pipefs_notifier_unregister(&rpc_clients_block);
+> >>>   }
+> >>>   
+> >>> -static void rpc_clnt_set_nodename(struct rpc_clnt *clnt, const char *nodename)
+> >>> +static void rpc_clnt_set_nodename(struct rpc_clnt *clnt)
+> >>>   {
+> >>> +	const char *nodename;
+> >>> +
+> >>> +	/*
+> >>> +	 * We have to protect against dying child reaper, which has released
+> >>> +	 * its nsproxy already and is trying to destroy mount namespace.
+> >>> +	 */
+> >>> +	if (current->nsproxy == NULL)
+> >>> +		return;
+> >>> +
+> >>> +	nodename = utsname()->nodename;
+> >>>   	clnt->cl_nodelen = strlen(nodename);
+> >>>   	if (clnt->cl_nodelen > UNX_MAXNODENAME)
+> >>>   		clnt->cl_nodelen = UNX_MAXNODENAME;
+> >>> @@ -365,7 +375,7 @@ static struct rpc_clnt * rpc_new_client(const struct rpc_create_args *args, stru
+> >>>   	}
+> >>>   
+> >>>   	/* save the nodename */
+> >>> -	rpc_clnt_set_nodename(clnt, utsname()->nodename);
+> >>> +	rpc_clnt_set_nodename(clnt);
+> >>>   	rpc_register_client(clnt);
+> >>>   	return clnt;
+> >>>   
+> >>> @@ -524,7 +534,7 @@ rpc_clone_client(struct rpc_clnt *clnt)
+> >>>   	err = rpc_setup_pipedir(new, clnt->cl_program->pipe_dir_name);
+> >>>   	if (err != 0)
+> >>>   		goto out_no_path;
+> >>> -	rpc_clnt_set_nodename(new, utsname()->nodename);
+> >>> +	rpc_clnt_set_nodename(new);
+> >>>   	if (new->cl_auth)
+> >>>   		atomic_inc(&new->cl_auth->au_count);
+> >>>   	atomic_inc(&clnt->cl_count);
+> >>>
+> >>> --
+> >>> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> >>> the body of a message to majordomo@vger.kernel.org
+> >>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >> Acked-by: Jeff Layton <jlayton@redhat.com>
+> > OK, colour me confused (again).
+> 
+> What color?
+> 
+> > Why should a umount trigger an
+> > rpc_create() or rpc_clone_client()?
+> 
+> It calls nsm_create().
+> Here is the trace (https://bugzilla.redhat.com/show_bug.cgi?id=830862, 
+> comment 68):
 
-It seems you missed From: line?
+Right, but if we're using NFSv3 lock monitoring, we know in advance that
+we're going to need an nsm call to localhost. Why can't we just cache
+the one that we used to start lock monitoring in the first place?
 
-Thanks,
-Namhyung
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-On Sat, 08 Sep 2012 07:55:16 -0400, Steven Rostedt wrote:
-> According to Steven R. there is no reason left to not support
-> function tracing for the perf core. This makes it easier to debug
-> perf.
->
-> Don't remove -pg for the x86 and generic perf core.
->
-> Link: http://lkml.kernel.org/r/1345306530-25665-2-git-send-email-andi@firstfloor.org
->
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  arch/x86/kernel/cpu/Makefile |    1 -
->  kernel/events/Makefile       |    4 ----
->  2 files changed, 5 deletions(-)
->
-> diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-> index d30a6a9..6a16725 100644
-> --- a/arch/x86/kernel/cpu/Makefile
-> +++ b/arch/x86/kernel/cpu/Makefile
-> @@ -5,7 +5,6 @@
->  # Don't trace early stages of a secondary CPU boot
->  ifdef CONFIG_FUNCTION_TRACER
->  CFLAGS_REMOVE_common.o = -pg
-> -CFLAGS_REMOVE_perf_event.o = -pg
->  endif
->  
->  # Make sure load_percpu_segment has no stackprotector
-> diff --git a/kernel/events/Makefile b/kernel/events/Makefile
-> index 103f5d1..a630994 100644
-> --- a/kernel/events/Makefile
-> +++ b/kernel/events/Makefile
-> @@ -1,7 +1,3 @@
-> -ifdef CONFIG_FUNCTION_TRACER
-> -CFLAGS_REMOVE_core.o = -pg
-> -endif
-> -
->  obj-y := core.o ring_buffer.o callchain.o
->  
->  obj-$(CONFIG_HAVE_HW_BREAKPOINT) += hw_breakpoint.o
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
