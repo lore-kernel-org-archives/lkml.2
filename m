@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760041Ab2IHArA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 20:47:00 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:64377 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759830Ab2IHAqy (ORCPT
+	id S1760186Ab2IHArH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 20:47:07 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:52347 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759867Ab2IHArA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 20:46:54 -0400
+	Fri, 7 Sep 2012 20:47:00 -0400
 From: Irina Tirdea <irina.tirdea@gmail.com>
 To: mingo@redhat.com, acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
         rostedt@goodmis.org
 Cc: paulus@samba.org, dsahern@gmail.com, namhyung.kim@lge.com,
         linux-kernel@vger.kernel.org, Irina Tirdea <irina.tirdea@intel.com>
-Subject: [PATCH v2 08/12] perf tools: fix no return in non-void function
-Date: Sat,  8 Sep 2012 03:43:20 +0300
-Message-Id: <1347065004-15306-9-git-send-email-irina.tirdea@intel.com>
+Subject: [PATCH v2 10/12] tools lib traceevent: replace mempcpy with memcpy
+Date: Sat,  8 Sep 2012 03:43:22 +0300
+Message-Id: <1347065004-15306-11-git-send-email-irina.tirdea@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1347065004-15306-1-git-send-email-irina.tirdea@intel.com>
 References: <1347065004-15306-1-git-send-email-irina.tirdea@intel.com>
@@ -24,37 +24,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Irina Tirdea <irina.tirdea@intel.com>
 
-thread_func in builtin-sched.c has an internal loop and never returns.
-The only return from this thread are BUG_ON calls in case return values
-are not 0.
+mempcpy is not supported by bionic in Android
+and will lead to compilation errors.
 
-The compiler on Android complains that the function needs to return a
-non-void value. Adding the noreturn function attribute to fix this error.
-
-Error in Android:
-target C: perf <= builtin-sched.c
-hardware/intel/linu/tools/perf/builtin-sched.c: In function 'thread_func':
-hardware/intel/linux/tools/perf/builtin-sched.c:476: error: no return
-statement in function returning non-void
+Replacing mempcpy with memcpy so it will work in Android.
 
 Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
 ---
- tools/perf/builtin-sched.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/lib/traceevent/event-parse.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index a25a023..1fecc95 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -439,7 +439,7 @@ static u64 get_cpu_usage_nsec_self(int fd)
- 	return runtime;
- }
- 
--static void *thread_func(void *ctx)
-+static __attribute__ ((noreturn)) void *thread_func(void *ctx)
- {
- 	struct task_desc *this_task = ctx;
- 	u64 cpu_usage_0, cpu_usage_1;
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index b5b4d80..c848fc3 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -4812,8 +4812,8 @@ int pevent_strerror(struct pevent *pevent, enum pevent_errno errnum,
+ 		msg = strerror_r(errnum, buf, buflen);
+ 		if (msg != buf) {
+ 			size_t len = strlen(msg);
+-			char *c = mempcpy(buf, msg, min(buflen-1, len));
+-			*c = '\0';
++			memcpy(buf, msg, min(buflen - 1, len));
++			*(buf + min(buflen - 1, len)) = '\0';
+ 		}
+ 		return 0;
+ 	}
 -- 
 1.7.9.5
 
