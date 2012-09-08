@@ -1,125 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122Ab2IHL2a (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 07:28:30 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:50647 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753572Ab2IHL22 (ORCPT
+	id S1754163Ab2IHLid (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 07:38:33 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39464 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753572Ab2IHLi2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 07:28:28 -0400
-Date: Sat, 8 Sep 2012 13:28:14 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Irina Tirdea <irina.tirdea@intel.com>, Jiri Olsa <jolsa@redhat.com>,
-        linux-mm@kvack.org, Michel Lespinasse <walken@google.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 00/13] perf/core improvements and fixes
-Message-ID: <20120908112814.GA21851@gmail.com>
-References: <1347070032-4161-1-git-send-email-acme@infradead.org>
+	Sat, 8 Sep 2012 07:38:28 -0400
+Date: Sat, 8 Sep 2012 04:38:02 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-9a2936878a198553a17d21d1e843aa574ad9fa38@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@kernel.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, tglx@linutronix.de, namhyung@kernel.org
+In-Reply-To: <1346982953-30824-1-git-send-email-namhyung@kernel.org>
+References: <1346982953-30824-1-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools: Ignore compiled python binaries
+Git-Commit-ID: 9a2936878a198553a17d21d1e843aa574ad9fa38
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1347070032-4161-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 08 Sep 2012 04:38:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  9a2936878a198553a17d21d1e843aa574ad9fa38
+Gitweb:     http://git.kernel.org/tip/9a2936878a198553a17d21d1e843aa574ad9fa38
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Fri, 7 Sep 2012 10:55:53 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Fri, 7 Sep 2012 12:10:58 -0300
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+perf tools: Ignore compiled python binaries
 
-> Hi Ingo,
-> 
-> 	Please consider pulling,
-> 
-> - Arnaldo
-> 
-> The following changes since commit 479d875835a49e849683743ec50c30b6a429696b:
-> 
->   Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2012-09-07 07:36:59 +0200)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
-> 
-> for you to fetch changes up to b155a09015135cf59ada8d48109ccbd9891c1b42:
-> 
->   perf tools: Fix build for another rbtree.c change (2012-09-07 22:21:59 -0300)
-> 
-> ----------------------------------------------------------------
-> perf/core improvements and fixes
-> 
->  . Fix build for another rbtree.c change, from Adrian Hunter.
-> 
->  . Fixes for perf to build on Android, from Irina Tirdea.
-> 
->  . Make 'perf diff' command work with evsel hists, from Jiri Olsa.
-> 
->  . Use the only field_sep var that is set up: symbol_conf.field_sep,
->    fix from Jiri Olsa.
-> 
->  . .gitignore compiled python binaries, from Namhyung Kim.
-> 
->  . Get rid of die() in more libtraceevent places, from Namhyung Kim.
-> 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> ----------------------------------------------------------------
-> Adrian Hunter (1):
->       perf tools: Fix build for another rbtree.c change
-> 
-> Irina Tirdea (6):
->       perf tools: include basename for non-glibc systems
->       perf tools: fix missing winsize definition
->       perf tools: include missing pthread.h header
->       perf tools: replace mkostemp with mkstemp
->       tools lib traceevent: replace mempcpy with memcpy
->       perf tools: add NO_BACKTRACE for application self-debugging
-> 
-> Jiri Olsa (2):
->       perf diff: Make diff command work with evsel hists
->       perf tools: Replace sort's standalone field_sep with symbol_conf.field_sep
-> 
-> Namhyung Kim (4):
->       perf tools: Ignore compiled python binaries
->       tools lib traceevent: Get rid of die() from pretty_print()
->       tools lib traceevent: Get rid of die() from pevent_register_event_handler
->       tools lib traceevent: Get rid of die() from pevent_register_print_function
-> 
->  tools/lib/traceevent/event-parse.c     |   86 +++++++++++++++++++++--------
->  tools/lib/traceevent/event-parse.h     |    3 +-
->  tools/perf/.gitignore                  |    2 +
->  tools/perf/Documentation/perf-diff.txt |    3 ++
->  tools/perf/Makefile                    |    8 +++
->  tools/perf/builtin-diff.c              |   93 +++++++++++++++++++++-----------
->  tools/perf/config/feature-tests.mak    |   14 +++++
->  tools/perf/perf.c                      |    1 +
->  tools/perf/util/annotate.h             |    1 +
->  tools/perf/util/dso-test-data.c        |    2 +-
->  tools/perf/util/evsel.h                |    7 +++
->  tools/perf/util/help.c                 |    1 +
->  tools/perf/util/include/linux/rbtree.h |    1 +
->  tools/perf/util/session.h              |    4 +-
->  tools/perf/util/sort.c                 |    6 +--
->  tools/perf/util/sort.h                 |    1 -
->  tools/perf/util/symbol.h               |    3 ++
->  tools/perf/util/top.h                  |    1 +
->  tools/perf/util/util.c                 |    6 +++
->  19 files changed, 180 insertions(+), 63 deletions(-)
+It prevents mindless git add from adding those files.
 
-Pulled, thanks a lot Arnaldo!
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1346982953-30824-1-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/.gitignore |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-	Ingo
+diff --git a/tools/perf/.gitignore b/tools/perf/.gitignore
+index 26b823b..8f8fbc2 100644
+--- a/tools/perf/.gitignore
++++ b/tools/perf/.gitignore
+@@ -21,3 +21,5 @@ config.mak
+ config.mak.autogen
+ *-bison.*
+ *-flex.*
++*.pyc
++*.pyo
