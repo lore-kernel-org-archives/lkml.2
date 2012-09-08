@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758133Ab2IGX43 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 19:56:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50910 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751877Ab2IGX42 (ORCPT
+	id S1758894Ab2IHAQy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 20:16:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61874 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755916Ab2IHAQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 19:56:28 -0400
-Date: Fri, 7 Sep 2012 16:56:26 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Fries <david@fries.net>
-Cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        Matthew Garrett <mjg@redhat.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: [PATCH] rtc_sysfs_show_hctosys 0 if resume failed
-Message-Id: <20120907165626.c9b842b1.akpm@linux-foundation.org>
-In-Reply-To: <20120826021931.GA20620@spacedout.fries.net>
-References: <20120826021931.GA20620@spacedout.fries.net>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 7 Sep 2012 20:16:53 -0400
+Date: Sat, 8 Sep 2012 09:16:43 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 2/2] mm: support MIGRATE_DISCARD
+Message-ID: <20120908001643.GA2538@barrios>
+References: <1346832673-12512-1-git-send-email-minchan@kernel.org>
+ <1346832673-12512-2-git-send-email-minchan@kernel.org>
+ <20120905105611.GI11266@suse.de>
+ <20120906053112.GA16231@bbox>
+ <20120906082935.GN11266@suse.de>
+ <20120906090325.GO11266@suse.de>
+ <20120907022434.GG16231@bbox>
+ <20120907082145.GV11266@suse.de>
+ <20120907093203.GX11266@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120907093203.GX11266@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 25 Aug 2012 21:19:31 -0500
-David Fries <david@fries.net> wrote:
-
-> Subject: [PATCH] rtc_sysfs_show_hctosys 0 if resume failed
-
-This doesn't make much sense.  Did you mean "rtc_sysfs_show_hctosys():
-display 0 if resume failed"?
-
-> The original rtc_sysfs_show_hctosys returnd 1 if this device was the
-> CONFIG_RTC_HCTOSYS_DEVICE device, a later patch checked
-> rtc_hctosys_ret from boot, this verifies boot do_settimeofday
-> succeeded, and sets rtc_hctosys_ret in resume to indicate when
-> adjusting the clock from resume fails.
+On Fri, Sep 07, 2012 at 10:32:03AM +0100, Mel Gorman wrote:
+> On Fri, Sep 07, 2012 at 09:21:45AM +0100, Mel Gorman wrote:
+> > 
+> > So other than the mix up of order parameters I think this should work.
+> > 
 > 
-> This uses only CONFIG_RTC_HCTOSYS_DEVICE for conditional compilation
-> instead of it and CONFIG_RTC_HCTOSYS.  rtc_hctosys_ret was moved to
-> class.c so rtc_hctosys can be removed with just a Kconfig change if
-> boot time setting isn't desired.
+> But I'd be wrong, isolated page accounting is not fixed up so it will
+> eventually hang on too_many_isolated. It turns out it is necessary
 
-And this makes my head spin.  What does the patch actually do?  I think
-it might fix a bug, but it's unclear what that bug is.
+Good spot.
 
-Can you please write a better changelog and title and resend?
+> to pass in zone after all. The following patch passed a high order
+> allocation stress test. To actually exercise the path I had compaction
+> call reclaim_clean_pages_from_list() in a separate debugging patch.
+> 
+> Minchan, can you test your CMA allocation latency test with this patch?
+> If the figures are satisfactory could you add them to the changelog and
+> consider replacing the MIGRATE_DISCARD pair of patches with this version
+> please?
 
-Sorry.
+Of course, I will do next week.
+Thanks!
+
+--
+Kind Regards,
+Minchan Kim
