@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755469Ab2IHUuY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 16:50:24 -0400
+	id S1755538Ab2IHUu2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 16:50:28 -0400
 Received: from mail-gh0-f174.google.com ([209.85.160.174]:49904 "EHLO
 	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755416Ab2IHUuS (ORCPT
+	with ESMTP id S1755464Ab2IHUuY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 16:50:18 -0400
+	Sat, 8 Sep 2012 16:50:24 -0400
 From: Ezequiel Garcia <elezegarcia@gmail.com>
 To: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
 Cc: Ezequiel Garcia <elezegarcia@gmail.com>, Pekka Enberg <penberg@kernel.org>,
         Christoph Lameter <cl@linux.com>
-Subject: [PATCH 08/10] mm, slab: Rename __cache_alloc() -> slab_alloc()
-Date: Sat,  8 Sep 2012 17:47:57 -0300
-Message-Id: <1347137279-17568-8-git-send-email-elezegarcia@gmail.com>
+Subject: [PATCH 10/10] mm: Factor SLAB and SLUB common code
+Date: Sat,  8 Sep 2012 17:47:59 -0300
+Message-Id: <1347137279-17568-10-git-send-email-elezegarcia@gmail.com>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1347137279-17568-1-git-send-email-elezegarcia@gmail.com>
 References: <1347137279-17568-1-git-send-email-elezegarcia@gmail.com>
@@ -21,83 +21,299 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch does not fix anything and its only goal is to
-produce common code between SLAB and SLUB.
+Several interfaces are now exactly the same in both SLAB and SLUB,
+and it's very easy to factor them out.
+To make this work slab_alloc() and slab_alloc_node() are made non-static.
+
+This has the benefit of putting most of the tracing code in mm/slab_common.c,
+making it harder to produce inconsistent trace behavior.
 
 Cc: Pekka Enberg <penberg@kernel.org>
 Cc: Christoph Lameter <cl@linux.com>
 Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
 ---
- mm/slab.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+ include/linux/slab_def.h |    2 +
+ include/linux/slub_def.h |    2 +
+ mm/slab.c                |   68 +--------------------------------------------
+ mm/slab_common.c         |   57 ++++++++++++++++++++++++++++++++++++++
+ mm/slub.c                |   49 +-------------------------------
+ 5 files changed, 65 insertions(+), 113 deletions(-)
 
+diff --git a/include/linux/slab_def.h b/include/linux/slab_def.h
+index e98caeb..021c162 100644
+--- a/include/linux/slab_def.h
++++ b/include/linux/slab_def.h
+@@ -107,6 +107,8 @@ struct cache_sizes {
+ };
+ extern struct cache_sizes malloc_sizes[];
+ 
++void *slab_alloc(struct kmem_cache *, gfp_t, unsigned long);
++void *slab_alloc_node(struct kmem_cache *, gfp_t, int, unsigned long);
+ void *kmem_cache_alloc(struct kmem_cache *, gfp_t);
+ void *__kmalloc(size_t size, gfp_t flags);
+ 
+diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
+index df448ad..d94f457 100644
+--- a/include/linux/slub_def.h
++++ b/include/linux/slub_def.h
+@@ -216,6 +216,8 @@ static __always_inline struct kmem_cache *kmalloc_slab(size_t size)
+ 	return kmalloc_caches[index];
+ }
+ 
++void *slab_alloc(struct kmem_cache *, gfp_t, unsigned long);
++void *slab_alloc_node(struct kmem_cache *, gfp_t, int, unsigned long);
+ void *kmem_cache_alloc(struct kmem_cache *, gfp_t);
+ void *__kmalloc(size_t size, gfp_t flags);
+ 
 diff --git a/mm/slab.c b/mm/slab.c
-index 47cb03c..57094ee 100644
+index 57094ee..d7f8466 100644
 --- a/mm/slab.c
 +++ b/mm/slab.c
-@@ -3560,7 +3560,7 @@ done:
+@@ -3559,7 +3559,7 @@ done:
+  *
   * Fallback to other node is possible if __GFP_THISNODE is not set.
   */
- static __always_inline void *
--__cache_alloc_node(struct kmem_cache *cachep, gfp_t flags, int nodeid,
-+slab_alloc_node(struct kmem_cache *cachep, gfp_t flags, int nodeid,
+-static __always_inline void *
++__always_inline void *
+ slab_alloc_node(struct kmem_cache *cachep, gfp_t flags, int nodeid,
  		   unsigned long caller)
  {
- 	unsigned long save_flags;
-@@ -3647,7 +3647,7 @@ __do_cache_alloc(struct kmem_cache *cachep, gfp_t flags)
+@@ -3646,7 +3646,7 @@ __do_cache_alloc(struct kmem_cache *cachep, gfp_t flags)
+ 
  #endif /* CONFIG_NUMA */
  
- static __always_inline void *
--__cache_alloc(struct kmem_cache *cachep, gfp_t flags, unsigned long caller)
-+slab_alloc(struct kmem_cache *cachep, gfp_t flags, unsigned long caller)
+-static __always_inline void *
++__always_inline void *
+ slab_alloc(struct kmem_cache *cachep, gfp_t flags, unsigned long caller)
  {
  	unsigned long save_flags;
- 	void *objp;
-@@ -3823,7 +3823,7 @@ static inline void __cache_free(struct kmem_cache *cachep, void *objp,
-  */
- void *kmem_cache_alloc(struct kmem_cache *cachep, gfp_t flags)
- {
--	void *ret = __cache_alloc(cachep, flags, _RET_IP_);
-+	void *ret = slab_alloc(cachep, flags, _RET_IP_);
+@@ -3813,71 +3813,7 @@ static inline void __cache_free(struct kmem_cache *cachep, void *objp,
+ 	ac_put_obj(cachep, ac, objp);
+ }
  
- 	trace_kmem_cache_alloc(_RET_IP_, ret,
- 			       cachep->object_size, cachep->size, flags);
-@@ -3838,7 +3838,7 @@ kmem_cache_alloc_trace(struct kmem_cache *cachep, gfp_t flags, size_t size)
- {
- 	void *ret;
- 
--	ret = __cache_alloc(cachep, flags, _RET_IP_);
-+	ret = slab_alloc(cachep, flags, _RET_IP_);
- 
- 	trace_kmalloc(_RET_IP_, ret,
- 		      size, cachep->size, flags);
-@@ -3850,7 +3850,7 @@ EXPORT_SYMBOL(kmem_cache_alloc_trace);
+-/**
+- * kmem_cache_alloc - Allocate an object
+- * @cachep: The cache to allocate from.
+- * @flags: See kmalloc().
+- *
+- * Allocate an object from this cache.  The flags are only relevant
+- * if the cache has no available objects.
+- */
+-void *kmem_cache_alloc(struct kmem_cache *cachep, gfp_t flags)
+-{
+-	void *ret = slab_alloc(cachep, flags, _RET_IP_);
+-
+-	trace_kmem_cache_alloc(_RET_IP_, ret,
+-			       cachep->object_size, cachep->size, flags);
+-
+-	return ret;
+-}
+-EXPORT_SYMBOL(kmem_cache_alloc);
+-
+-#ifdef CONFIG_TRACING
+-void *
+-kmem_cache_alloc_trace(struct kmem_cache *cachep, gfp_t flags, size_t size)
+-{
+-	void *ret;
+-
+-	ret = slab_alloc(cachep, flags, _RET_IP_);
+-
+-	trace_kmalloc(_RET_IP_, ret,
+-		      size, cachep->size, flags);
+-	return ret;
+-}
+-EXPORT_SYMBOL(kmem_cache_alloc_trace);
+-#endif
+-
  #ifdef CONFIG_NUMA
- void *kmem_cache_alloc_node(struct kmem_cache *cachep, gfp_t flags, int nodeid)
+-void *kmem_cache_alloc_node(struct kmem_cache *cachep, gfp_t flags, int nodeid)
+-{
+-	void *ret = slab_alloc_node(cachep, flags, nodeid, _RET_IP_);
+-
+-	trace_kmem_cache_alloc_node(_RET_IP_, ret,
+-				    cachep->object_size, cachep->size,
+-				    flags, nodeid);
+-
+-	return ret;
+-}
+-EXPORT_SYMBOL(kmem_cache_alloc_node);
+-
+-#ifdef CONFIG_TRACING
+-void *kmem_cache_alloc_node_trace(struct kmem_cache *cachep,
+-				  gfp_t flags,
+-				  int nodeid,
+-				  size_t size)
+-{
+-	void *ret;
+-
+-	ret = slab_alloc_node(cachep, flags, nodeid, _RET_IP);
+-
+-	trace_kmalloc_node(_RET_IP_, ret,
+-			   size, cachep->size,
+-			   flags, nodeid);
+-	return ret;
+-}
+-EXPORT_SYMBOL(kmem_cache_alloc_node_trace);
+-#endif
+-
+ static __always_inline void *
+ __do_kmalloc_node(size_t size, gfp_t flags, int node, unsigned long caller)
  {
--	void *ret = __cache_alloc_node(cachep, flags, nodeid, _RET_IP_);
-+	void *ret = slab_alloc_node(cachep, flags, nodeid, _RET_IP_);
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index 8cf8b49..5fc0da0 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -17,6 +17,7 @@
+ #include <asm/tlbflush.h>
+ #include <asm/page.h>
  
- 	trace_kmem_cache_alloc_node(_RET_IP_, ret,
- 				    cachep->object_size, cachep->size,
-@@ -3868,7 +3868,7 @@ void *kmem_cache_alloc_node_trace(struct kmem_cache *cachep,
++#include <trace/events/kmem.h>
+ #include "slab.h"
+ 
+ enum slab_state slab_state;
+@@ -113,6 +114,62 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size, size_t align
+ }
+ EXPORT_SYMBOL(kmem_cache_create);
+ 
++#if defined(CONFIG_SLAB) || defined(CONFIG_SLUB)
++/**
++ * kmem_cache_alloc - Allocate an object
++ * @cachep: The cache to allocate from.
++ * @flags: See kmalloc().
++ *
++ * Allocate an object from this cache.  The flags are only relevant
++ * if the cache has no available objects.
++ */
++void *kmem_cache_alloc(struct kmem_cache *s, gfp_t flags)
++{
++	void *ret = slab_alloc(s, flags, _RET_IP_);
++
++	trace_kmem_cache_alloc(_RET_IP_, ret, s->object_size, s->size, flags);
++
++	return ret;
++}
++EXPORT_SYMBOL(kmem_cache_alloc);
++
++#ifdef CONFIG_TRACING
++void *kmem_cache_alloc_trace(struct kmem_cache *s, gfp_t gfpflags, size_t size)
++{
++	void *ret = slab_alloc(s, gfpflags, _RET_IP_);
++	trace_kmalloc(_RET_IP_, ret, size, s->size, gfpflags);
++	return ret;
++}
++EXPORT_SYMBOL(kmem_cache_alloc_trace);
++#endif
++
++#ifdef CONFIG_NUMA
++void *kmem_cache_alloc_node(struct kmem_cache *s, gfp_t gfpflags, int node)
++{
++	void *ret = slab_alloc_node(s, gfpflags, node, _RET_IP_);
++
++	trace_kmem_cache_alloc_node(_RET_IP_, ret,
++				    s->object_size, s->size, gfpflags, node);
++
++	return ret;
++}
++EXPORT_SYMBOL(kmem_cache_alloc_node);
++
++#ifdef CONFIG_TRACING
++void *kmem_cache_alloc_node_trace(struct kmem_cache *s,
++				    gfp_t gfpflags,
++				    int node, size_t size)
++{
++	void *ret = slab_alloc_node(s, gfpflags, node, _RET_IP_);
++
++	trace_kmalloc_node(_RET_IP_, ret, size, s->size, gfpflags, node);
++	return ret;
++}
++EXPORT_SYMBOL(kmem_cache_alloc_node_trace);
++#endif /* CONFIG_TRACING */
++#endif /* CONFIG_NUMA */
++#endif /* CONFIG_SLAB || CONFIG_SLUB */
++
+ int slab_is_available(void)
  {
- 	void *ret;
+ 	return slab_state >= UP;
+diff --git a/mm/slub.c b/mm/slub.c
+index 786a181..fa0fb4a 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -2311,7 +2311,7 @@ new_slab:
+  *
+  * Otherwise we can simply pick the next object from the lockless free list.
+  */
+-static __always_inline void *slab_alloc_node(struct kmem_cache *s,
++__always_inline void *slab_alloc_node(struct kmem_cache *s,
+ 		gfp_t gfpflags, int node, unsigned long addr)
+ {
+ 	void **object;
+@@ -2381,31 +2381,13 @@ redo:
+ 	return object;
+ }
  
--	ret = __cache_alloc_node(cachep, flags, nodeid, _RET_IP);
-+	ret = slab_alloc_node(cachep, flags, nodeid, _RET_IP);
+-static __always_inline void *slab_alloc(struct kmem_cache *s,
++__always_inline void *slab_alloc(struct kmem_cache *s,
+ 		gfp_t gfpflags, unsigned long addr)
+ {
+ 	return slab_alloc_node(s, gfpflags, NUMA_NO_NODE, addr);
+ }
  
- 	trace_kmalloc_node(_RET_IP_, ret,
- 			   size, cachep->size,
-@@ -3931,7 +3931,7 @@ static __always_inline void *__do_kmalloc(size_t size, gfp_t flags,
- 	cachep = __find_general_cachep(size, flags);
- 	if (unlikely(ZERO_OR_NULL_PTR(cachep)))
- 		return cachep;
--	ret = __cache_alloc(cachep, flags, caller);
-+	ret = slab_alloc(cachep, flags, caller);
+-void *kmem_cache_alloc(struct kmem_cache *s, gfp_t gfpflags)
+-{
+-	void *ret = slab_alloc(s, gfpflags, _RET_IP_);
+-
+-	trace_kmem_cache_alloc(_RET_IP_, ret, s->object_size, s->size, gfpflags);
+-
+-	return ret;
+-}
+-EXPORT_SYMBOL(kmem_cache_alloc);
+-
+ #ifdef CONFIG_TRACING
+-void *kmem_cache_alloc_trace(struct kmem_cache *s, gfp_t gfpflags, size_t size)
+-{
+-	void *ret = slab_alloc(s, gfpflags, _RET_IP_);
+-	trace_kmalloc(_RET_IP_, ret, size, s->size, gfpflags);
+-	return ret;
+-}
+-EXPORT_SYMBOL(kmem_cache_alloc_trace);
+-
+ void *kmalloc_order_trace(size_t size, gfp_t flags, unsigned int order)
+ {
+ 	void *ret = kmalloc_order(size, flags, order);
+@@ -2415,33 +2397,6 @@ void *kmalloc_order_trace(size_t size, gfp_t flags, unsigned int order)
+ EXPORT_SYMBOL(kmalloc_order_trace);
+ #endif
  
- 	trace_kmalloc(caller, ret,
- 		      size, cachep->size, flags);
+-#ifdef CONFIG_NUMA
+-void *kmem_cache_alloc_node(struct kmem_cache *s, gfp_t gfpflags, int node)
+-{
+-	void *ret = slab_alloc_node(s, gfpflags, node, _RET_IP_);
+-
+-	trace_kmem_cache_alloc_node(_RET_IP_, ret,
+-				    s->object_size, s->size, gfpflags, node);
+-
+-	return ret;
+-}
+-EXPORT_SYMBOL(kmem_cache_alloc_node);
+-
+-#ifdef CONFIG_TRACING
+-void *kmem_cache_alloc_node_trace(struct kmem_cache *s,
+-				    gfp_t gfpflags,
+-				    int node, size_t size)
+-{
+-	void *ret = slab_alloc_node(s, gfpflags, node, _RET_IP_);
+-
+-	trace_kmalloc_node(_RET_IP_, ret,
+-			   size, s->size, gfpflags, node);
+-	return ret;
+-}
+-EXPORT_SYMBOL(kmem_cache_alloc_node_trace);
+-#endif
+-#endif
+-
+ /*
+  * Slow patch handling. This may still be called frequently since objects
+  * have a longer lifetime than the cpu slabs in most processing loads.
 -- 
 1.7.8.6
 
