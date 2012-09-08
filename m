@@ -1,67 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752781Ab2IHJSq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 05:18:46 -0400
-Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:38401 "EHLO
-	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752563Ab2IHJSm (ORCPT
+	id S1752909Ab2IHJ3u (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 05:29:50 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:46957 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752647Ab2IHJ3F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 05:18:42 -0400
-Message-ID: <504B0D6B.9010908@ti.com>
-Date: Sat, 08 Sep 2012 14:48:35 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Sat, 8 Sep 2012 05:29:05 -0400
+Message-ID: <504B0FDF.70004@kernel.org>
+Date: Sat, 08 Sep 2012 10:29:03 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v3 00/31] AArch64 Linux kernel port
-References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
-In-Reply-To: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Bryan Freed <bfreed@chromium.org>
+CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        grundler@chromium.org, ldewangan@nvidia.com, lars@metafoo.de,
+        gregkh@linuxfoundation.org, jic23@cam.ac.uk
+Subject: Re: [PATCH] iio: isl29018: Support fractional ALS scaling.
+References: <1346874953-22353-1-git-send-email-bfreed@chromium.org>
+In-Reply-To: <1346874953-22353-1-git-send-email-bfreed@chromium.org>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Catalin,
+On 09/05/2012 08:55 PM, Bryan Freed wrote:
+> The Industrial IO framework supports scaling ADC values by fractions,
+> but most drivers default to using whole numbers.
+> This change turns on fractional scaling in the isl29018 driver.
+> 
+> Signed-off-by: Bryan Freed <bfreed@chromium.org>
 
-On Friday 07 September 2012 09:56 PM, Catalin Marinas wrote:
-> This is the 3rd version of patches implementing Linux kernel support for
-> the 64-bit ARM architecture. Most of the review comments for the
-> previous release have been implemented. There are a few left (like
-> generic timer dts specification) but the main goal was to freeze the
-> user ABI.
->
-> The Linux kernel patches are available on this tree:
->
-Firstly thanks for clarifying the questions asked on the previous
-version and also for the update on the arch timer code.
+add to togreg branch of
+git://git.kernel.org/pub/scm/linux/kernel/git/jic23/iio.git
 
-Mostly I was looking at the series from SOC boot and CPU PM
-point of view and boot part seems to just fine.
+Thanks
 
-As per discussion at LPC, I have gone through the SMC
-proposal which ARM has published. In general the boot part
-with SMC seems to be doable and can be standardized across SOCs.
-The part which will be conflicting is the CPU power management.
-That seems to be the harder one and the document is at too
-infancy stage from the details point of view. Some bits about
-save, restore are related to switcher kind of architecture, which
-may not be the requirement for all the SoCs.
+Technically doing integer + micro values is actually pretty common
+but having calibration scale is less so. Doesn't seem any harm in doing
+it here, though as calibscale is of an arbitary scaling itself, if it
+wasn't an abi change (which this is not) then I'd suggest just doing it
+as a 1000 * the original value.
 
-Ofcourse the SMC discussion is not related to $subject series
-as such. Also the PM support for ARMv8 not seems be the scope
-of the series so the discussion can be parked aside till we
-need to talk about it. I have few more questions on the various
-MM attribute usage, exceptions and PL's but I will do some
-reading before asking those to you.
+Still this does the job nicely so thanks!
 
-For the series itself, feel free to add my ack if yo
-need one.
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-
-
-
-
-
+Jonathan
+> ---
+>  drivers/staging/iio/light/isl29018.c |   17 +++++++++++++++--
+>  1 files changed, 15 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/staging/iio/light/isl29018.c b/drivers/staging/iio/light/isl29018.c
+> index 31d22f5..6ee5567 100644
+> --- a/drivers/staging/iio/light/isl29018.c
+> +++ b/drivers/staging/iio/light/isl29018.c
+> @@ -63,6 +63,7 @@ struct isl29018_chip {
+>  	struct regmap		*regmap;
+>  	struct mutex		lock;
+>  	unsigned int		lux_scale;
+> +	unsigned int		lux_uscale;
+>  	unsigned int		range;
+>  	unsigned int		adc_bit;
+>  	int			prox_scheme;
+> @@ -145,13 +146,22 @@ static int isl29018_read_sensor_input(struct isl29018_chip *chip, int mode)
+>  static int isl29018_read_lux(struct isl29018_chip *chip, int *lux)
+>  {
+>  	int lux_data;
+> +	unsigned int data_x_range, lux_unshifted;
+>  
+>  	lux_data = isl29018_read_sensor_input(chip, COMMMAND1_OPMODE_ALS_ONCE);
+>  
+>  	if (lux_data < 0)
+>  		return lux_data;
+>  
+> -	*lux = (lux_data * chip->range * chip->lux_scale) >> chip->adc_bit;
+> +	/* To support fractional scaling, separate the unshifted lux
+> +	 * into two calculations: int scaling and micro-scaling.
+> +	 * lux_uscale ranges from 0-999999, so about 20 bits.  Split
+> +	 * the /1,000,000 in two to reduce the risk of over/underflow.
+> +	 */
+> +	data_x_range = lux_data * chip->range;
+> +	lux_unshifted = data_x_range * chip->lux_scale;
+> +	lux_unshifted += data_x_range / 1000 * chip->lux_uscale / 1000;
+> +	*lux = lux_unshifted >> chip->adc_bit;
+>  
+>  	return 0;
+>  }
+> @@ -339,6 +349,8 @@ static int isl29018_write_raw(struct iio_dev *indio_dev,
+>  	mutex_lock(&chip->lock);
+>  	if (mask == IIO_CHAN_INFO_CALIBSCALE && chan->type == IIO_LIGHT) {
+>  		chip->lux_scale = val;
+> +		/* With no write_raw_get_fmt(), val2 is a MICRO fraction. */
+> +		chip->lux_uscale = val2;
+>  		ret = 0;
+>  	}
+>  	mutex_unlock(&chip->lock);
+> @@ -379,7 +391,8 @@ static int isl29018_read_raw(struct iio_dev *indio_dev,
+>  	case IIO_CHAN_INFO_CALIBSCALE:
+>  		if (chan->type == IIO_LIGHT) {
+>  			*val = chip->lux_scale;
+> -			ret = IIO_VAL_INT;
+> +			*val2 = chip->lux_uscale;
+> +			ret = IIO_VAL_INT_PLUS_MICRO;
+>  		}
+>  		break;
+>  	default:
+> 
