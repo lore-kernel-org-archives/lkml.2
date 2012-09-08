@@ -1,118 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab2IHT5y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 15:57:54 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:63330 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365Ab2IHT5x (ORCPT
+	id S1755021Ab2IHUBo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 16:01:44 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:52338 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752789Ab2IHUBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 15:57:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <1347062045.26695.82.camel@sbsiddha-desk.sc.intel.com>
-References: <1340959739.2936.28.camel@lappy> <CA+1xoqdgKV_sEWvUbuxagL9JEc39ZFa6X9-acP7j-M7wvW6qbQ@mail.gmail.com>
- <CA+55aFzJCLxVP+WYJM-gq=aXx5gmdgwC7=_Gr2Tooj8q+Dz4dw@mail.gmail.com>
- <1347057778.26695.68.camel@sbsiddha-desk.sc.intel.com> <CA+55aFwW9Q+DM2gZy7r3JQJbrbMNR6sN+jewc2CY0i1wD_X=Tw@mail.gmail.com>
- <1347062045.26695.82.camel@sbsiddha-desk.sc.intel.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 8 Sep 2012 12:57:30 -0700
-X-Google-Sender-Auth: sxnCTS0STLzWRHa-txijM6a0y6A
-Message-ID: <CA+55aFzeKcV5hROLJE31dNi3SEs+s6o0LL=96Kh8QGHPx=aZnA@mail.gmail.com>
-Subject: Re: mtd: kernel BUG at arch/x86/mm/pat.c:279!
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, dwmw2@infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mtd@lists.infradead.org, linux-mm <linux-mm@kvack.org>,
-        Dave Jones <davej@redhat.com>
-Content-Type: multipart/mixed; boundary=20cf301e2d93bde88f04c936239f
+	Sat, 8 Sep 2012 16:01:42 -0400
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>, <linux-kernel@vger.kernel.org>
+Cc: Pekka Enberg <penberg@kernel.org>, tim.bird@am.sony.com,
+        Ingo Molnar <mingo@redhat.com>,
+        Ezequiel Garcia <elezegarcia@gmail.com>
+Subject: [PATCH v3] trace: Move trace event enable from fs_initcall to core_initcall
+Date: Sat,  8 Sep 2012 17:01:29 -0300
+Message-Id: <1347134489-15380-1-git-send-email-elezegarcia@gmail.com>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf301e2d93bde88f04c936239f
-Content-Type: text/plain; charset=ISO-8859-1
+This patch splits trace event initialization in two stages:
+ * ftrace enable
+ * sysfs event entry creation
 
-On Fri, Sep 7, 2012 at 4:54 PM, Suresh Siddha <suresh.b.siddha@intel.com> wrote:
->
-> Essentially the user is trying to mmap at a very large offset (from the
-> oops it appears "vma->vm_pgoff << PAGE_SHIFT + start" ends up to
-> "0xfffffffffffff000").
+This allows to capture trace events from an earlier point
+by using 'trace_event' kernel parameter and is important
+to trace boot-up allocations.
 
-Ok, Sasha confirmed that.
+Note that, in order to enable events at core_initcall,
+it's necessary to move init_ftrace_syscalls() from
+core_initcall to early_initcall.
 
-> So it appears that the condition "(vma->vm_end - vma->vm_start + off) >
-> len" might be false because of the wraparound? and doesn't return
-> -EINVAL.
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
+---
+Changes from v1:
+  * Rework code as requested by Steven.
 
-Ack.
+Changes from v2:
+  * Move init_ftrace_syscalls() to early_initcall, 
+    so syscalls self-test pass.
 
-Anyway, that means that the BUG_ON() is likely bogus, but so is the
-whole calling convention.
+ kernel/trace/trace_events.c   |  104 +++++++++++++++++++++++++++-------------
+ kernel/trace/trace_syscalls.c |    2 +-
+ 2 files changed, 71 insertions(+), 35 deletions(-)
 
-The 4kB range starting at 0xfffffffffffff000 sounds like a *valid*
-range, but that requires that we fix the calling convention to not
-have that "end" (exclusive) thing. It should either be "end"
-(inclusive), or just "len".
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 29111da..4eaf86e 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1199,6 +1199,31 @@ event_create_dir(struct ftrace_event_call *call, struct dentry *d_events,
+ 	return 0;
+ }
+ 
++static void event_remove(struct ftrace_event_call *call)
++{
++	ftrace_event_enable_disable(call, 0);
++	if (call->event.funcs)
++		__unregister_ftrace_event(&call->event);
++	list_del(&call->list);
++}
++
++static int event_init(struct ftrace_event_call *call)
++{
++	int ret = 0;
++
++	if (WARN_ON(!call->name))
++		return -EINVAL;
++
++	if (call->class->raw_init) {
++		ret = call->class->raw_init(call);
++		if (ret < 0 && ret != -ENOSYS)
++			pr_warn("Could not initialize trace events/%s\n",
++				call->name);
++	}
++
++	return ret;
++}
++
+ static int
+ __trace_add_event_call(struct ftrace_event_call *call, struct module *mod,
+ 		       const struct file_operations *id,
+@@ -1209,19 +1234,9 @@ __trace_add_event_call(struct ftrace_event_call *call, struct module *mod,
+ 	struct dentry *d_events;
+ 	int ret;
+ 
+-	/* The linker may leave blanks */
+-	if (!call->name)
+-		return -EINVAL;
+-
+-	if (call->class->raw_init) {
+-		ret = call->class->raw_init(call);
+-		if (ret < 0) {
+-			if (ret != -ENOSYS)
+-				pr_warning("Could not initialize trace events/%s\n",
+-					   call->name);
+-			return ret;
+-		}
+-	}
++	ret = event_init(call);
++	if (ret < 0)
++		return ret;
+ 
+ 	d_events = event_trace_events_dir();
+ 	if (!d_events)
+@@ -1272,13 +1287,10 @@ static void remove_subsystem_dir(const char *name)
+  */
+ static void __trace_remove_event_call(struct ftrace_event_call *call)
+ {
+-	ftrace_event_enable_disable(call, 0);
+-	if (call->event.funcs)
+-		__unregister_ftrace_event(&call->event);
+-	debugfs_remove_recursive(call->dir);
+-	list_del(&call->list);
++	event_remove(call);
+ 	trace_destroy_fields(call);
+ 	destroy_preds(call);
++	debugfs_remove_recursive(call->dir);
+ 	remove_subsystem_dir(call->class->system);
+ }
+ 
+@@ -1450,6 +1462,36 @@ static __init int setup_trace_event(char *str)
+ }
+ __setup("trace_event=", setup_trace_event);
+ 
++static __init int event_trace_enable(void)
++{
++	struct ftrace_event_call **iter, *call;
++	char *buf = bootup_event_buf;
++	char *token;
++	int ret;
++
++	for_each_event(iter, __start_ftrace_events, __stop_ftrace_events) {
++
++		call = *iter;
++		ret = event_init(call);
++		if (!ret)
++			list_add(&call->list, &ftrace_events);
++	}
++
++	while (true) {
++		token = strsep(&buf, ",");
++
++		if (!token)
++			break;
++		if (!*token)
++			continue;
++
++		ret = ftrace_set_clr_event(token, 1);
++		if (ret)
++			pr_warn("Failed to enable trace event: %s\n", token);
++	}
++	return 0;
++}
++
+ static __init int event_trace_init(void)
+ {
+ 	struct ftrace_event_call **call;
+@@ -1457,8 +1499,6 @@ static __init int event_trace_init(void)
+ 	struct dentry *entry;
+ 	struct dentry *d_events;
+ 	int ret;
+-	char *buf = bootup_event_buf;
+-	char *token;
+ 
+ 	d_tracer = tracing_init_dentry();
+ 	if (!d_tracer)
+@@ -1497,24 +1537,19 @@ static __init int event_trace_init(void)
+ 	if (trace_define_common_fields())
+ 		pr_warning("tracing: Failed to allocate common fields");
+ 
++	/*
++	 * Early initialization already enabled ftrace event.
++	 * Now it's only necessary to create the event directory.
++	 */
+ 	for_each_event(call, __start_ftrace_events, __stop_ftrace_events) {
+-		__trace_add_event_call(*call, NULL, &ftrace_event_id_fops,
++
++		ret = event_create_dir(*call, d_events,
++				       &ftrace_event_id_fops,
+ 				       &ftrace_enable_fops,
+ 				       &ftrace_event_filter_fops,
+ 				       &ftrace_event_format_fops);
+-	}
+-
+-	while (true) {
+-		token = strsep(&buf, ",");
+-
+-		if (!token)
+-			break;
+-		if (!*token)
+-			continue;
+-
+-		ret = ftrace_set_clr_event(token, 1);
+-		if (ret)
+-			pr_warning("Failed to enable trace event: %s\n", token);
++		if (ret < 0)
++			event_remove(*call);
+ 	}
+ 
+ 	ret = register_module_notifier(&trace_module_nb);
+@@ -1523,6 +1558,7 @@ static __init int event_trace_init(void)
+ 
+ 	return 0;
+ }
++core_initcall(event_trace_enable);
+ fs_initcall(event_trace_init);
+ 
+ #ifdef CONFIG_FTRACE_STARTUP_TEST
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 96fc733..07b4e5a 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -487,7 +487,7 @@ int __init init_ftrace_syscalls(void)
+ 
+ 	return 0;
+ }
+-core_initcall(init_ftrace_syscalls);
++early_initcall(init_ftrace_syscalls);
+ 
+ #ifdef CONFIG_PERF_EVENTS
+ 
+-- 
+1.7.8.6
 
-So it should either be start=0xfffffffffffff000 end=0xffffffffffffffff
-or it should be start=0xfffffffffffff000 len=0x1000.
-
-Or we need to say that we must never accept things at the end of the
-64-bit range.
-
-Whatever. Something like this (TOTALLY UNTESTED) attached patch should
-get the mtdchar overflows to go away, but it does *not* fix the fact
-that the MTRR start/end model is broken. It really is technically
-valid to have a resource_size_t range of 0xfffffffffffff000+0x1000,
-and right now it causes a BUG_ON() in pat.c.
-
-Suresh?
-
-                    Linus
-
---20cf301e2d93bde88f04c936239f
-Content-Type: application/octet-stream; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h6v4xtrj0
-
-IGRyaXZlcnMvbXRkL210ZGNoYXIuYyB8IDQ4ICsrKysrKysrKysrKysrKysrKysrKysrKysrKysr
-KysrKysrKysrKysrKy0tLS0tLQogMSBmaWxlIGNoYW5nZWQsIDQyIGluc2VydGlvbnMoKyksIDYg
-ZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZHJpdmVycy9tdGQvbXRkY2hhci5jIGIvZHJpdmVy
-cy9tdGQvbXRkY2hhci5jCmluZGV4IGYyZjQ4MmJlYzU3My4uODNkZDY4YjgwZThlIDEwMDY0NAot
-LS0gYS9kcml2ZXJzL210ZC9tdGRjaGFyLmMKKysrIGIvZHJpdmVycy9tdGQvbXRkY2hhci5jCkBA
-IC0xMTIzLDYgKzExMjMsMzMgQEAgc3RhdGljIHVuc2lnbmVkIGxvbmcgbXRkY2hhcl9nZXRfdW5t
-YXBwZWRfYXJlYShzdHJ1Y3QgZmlsZSAqZmlsZSwKIH0KICNlbmRpZgogCitzdGF0aWMgaW5saW5l
-IHVuc2lnbmVkIGxvbmcgZ2V0X3ZtX3NpemUoc3RydWN0IHZtX2FyZWFfc3RydWN0ICp2bWEpCit7
-CisJcmV0dXJuIHZtYS0+dm1fZW5kIC0gdm1hLT52bV9zdGFydDsKK30KKworc3RhdGljIGlubGlu
-ZSByZXNvdXJjZV9zaXplX3QgZ2V0X3ZtX29mZnNldChzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKnZt
-YSkKK3sKKwlyZXR1cm4gKHJlc291cmNlX3NpemVfdCkgdm1hLT52bV9wZ29mZiA8PCBQQUdFX1NI
-SUZUOworfQorCisvKgorICogU2V0IGEgbmV3IHZtIG9mZnNldC4KKyAqCisgKiBWZXJpZnkgdGhh
-dCB0aGUgaW5jb21pbmcgb2Zmc2V0IHJlYWxseSB3b3JrcyBhcyBhIHBhZ2Ugb2Zmc2V0LAorICog
-YW5kIHRoYXQgdGhlIG9mZnNldCBhbmQgc2l6ZSBmaXQgaW4gYSByZXNvdXJjZV9zaXplX3QuCisg
-Ki8KK3N0YXRpYyBpbmxpbnQgaW50IHNldF92bV9vZmZzZXQoc3RydWN0IHZtX2FyZWFfc3RydWN0
-ICp2bWEsIHJlc291cmNlX3NpemVfdCBvZmYpCit7CisJcGdvZmZfdCBwZ29mZiA9IG9mZiA+PiBQ
-QUdFX1NISUZUOworCWlmIChvZmYgIT0gKHJlc291cmNlX3NpemVfdCkgcGdvZmYgPDwgUEFHRV9T
-SElGVCkKKwkJcmV0dXJuIC1FSU5WQUw7CisJaWYgKG9mZiArIGdldF92bV9zaXplKHZtYSkgLSAx
-IDwgb2ZmKQorCQlyZXR1cm4gLUVJTlZBTDsKKwl2bWEtPnZtX3Bnb2ZmID0gcGdvZmY7CisJcmV0
-dXJuIDA7Cit9CisKIC8qCiAgKiBzZXQgdXAgYSBtYXBwaW5nIGZvciBzaGFyZWQgbWVtb3J5IHNl
-Z21lbnRzCiAgKi8KQEAgLTExMzIsMjAgKzExNTksMjkgQEAgc3RhdGljIGludCBtdGRjaGFyX21t
-YXAoc3RydWN0IGZpbGUgKmZpbGUsIHN0cnVjdCB2bV9hcmVhX3N0cnVjdCAqdm1hKQogCXN0cnVj
-dCBtdGRfZmlsZV9pbmZvICptZmkgPSBmaWxlLT5wcml2YXRlX2RhdGE7CiAJc3RydWN0IG10ZF9p
-bmZvICptdGQgPSBtZmktPm10ZDsKIAlzdHJ1Y3QgbWFwX2luZm8gKm1hcCA9IG10ZC0+cHJpdjsK
-LQl1bnNpZ25lZCBsb25nIHN0YXJ0OwotCXVuc2lnbmVkIGxvbmcgb2ZmOwotCXUzMiBsZW47CisJ
-cmVzb3VyY2Vfc2l6ZV90IHN0YXJ0LCBvZmY7CisJdW5zaWduZWQgbG9uZyBsZW4sIHZtYV9sZW47
-CiAKIAlpZiAobXRkLT50eXBlID09IE1URF9SQU0gfHwgbXRkLT50eXBlID09IE1URF9ST00pIHsK
-LQkJb2ZmID0gdm1hLT52bV9wZ29mZiA8PCBQQUdFX1NISUZUOworCQlvZmYgPSBnZXRfdm1fb2Zm
-c2V0KHZtYSk7CiAJCXN0YXJ0ID0gbWFwLT5waHlzOwogCQlsZW4gPSBQQUdFX0FMSUdOKChzdGFy
-dCAmIH5QQUdFX01BU0spICsgbWFwLT5zaXplKTsKIAkJc3RhcnQgJj0gUEFHRV9NQVNLOwotCQlp
-ZiAoKHZtYS0+dm1fZW5kIC0gdm1hLT52bV9zdGFydCArIG9mZikgPiBsZW4pCisJCXZtYV9sZW4g
-PSBnZXRfdm1fc2l6ZSh2bWEpOworCisJCS8qIE92ZXJmbG93IGluIG9mZitsZW4/ICovCisJCWlm
-ICh2bWFfbGVuICsgb2ZmIDwgb2ZmKQorCQkJcmV0dXJuIC1FSU5WQUw7CisJCS8qIERvZXMgaXQg
-Zml0IGluIHRoZSBtYXBwaW5nPyAqLworCQlpZiAodm1hX2xlbiArIG9mZiA+IGxlbikKIAkJCXJl
-dHVybiAtRUlOVkFMOwogCiAJCW9mZiArPSBzdGFydDsKLQkJdm1hLT52bV9wZ29mZiA9IG9mZiA+
-PiBQQUdFX1NISUZUOworCQkvKiBEaWQgdGhhdCBvdmVyZmxvdz8gKi8KKwkJaWYgKG9mZiA8IHN0
-YXJ0KQorCQkJcmV0dXJuIC1FSU5WQUw7CisJCWlmIChzZXRfdm1fb2Zmc2V0KHZtYSwgb2ZmKSA8
-IDApCisJCQlyZXR1cm4gLUVJTlZBTDsKIAkJdm1hLT52bV9mbGFncyB8PSBWTV9JTyB8IFZNX1JF
-U0VSVkVEOwogCiAjaWZkZWYgcGdwcm90X25vbmNhY2hlZAo=
---20cf301e2d93bde88f04c936239f--
