@@ -1,80 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755135Ab2IHUhw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 16:37:52 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36163 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752337Ab2IHUhD (ORCPT
+	id S1755058Ab2IHUsv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 16:48:51 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:43847 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753114Ab2IHUst convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 16:37:03 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Irina Tirdea <irina.tirdea@gmail.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 7/9] perf annotate: Make a copy of filename for passing to basename
-Date: Sat,  8 Sep 2012 17:36:52 -0300
-Message-Id: <1347136614-25598-8-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1347136614-25598-1-git-send-email-acme@infradead.org>
-References: <1347136614-25598-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Sat, 8 Sep 2012 16:48:49 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: myungjoo.ham@samsung.com
+Subject: Re: [PATCH] PM QoS: Add a metric : Bus Throughput.
+Date: Sat, 8 Sep 2012 22:55:02 +0200
+User-Agent: KMail/1.13.6 (Linux/3.6.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: =?euc-kr?q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
+        =?euc-kr?q?=C0=CC=C1=BE=C8=AD?= <jonghwa3.lee@samsung.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>
+References: <25039060.6131344561170907.JavaMail.weblogic@epml26>
+In-Reply-To: <25039060.6131344561170907.JavaMail.weblogic@epml26>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="euc-kr"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201209082255.02291.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Ahern <dsahern@gmail.com>
+On Friday, August 10, 2012, ÇÔ¸íÁÖ wrote:
+> > + Myungjoo Ham,
+> > 
+> > It used at devfreq. Mr. Ham can you explain it in detail?
+> > 
+> > Thank you,
+> > Kyungmin Park
+> > ,
+> > On 8/9/12, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > > On Wednesday, August 08, 2012, Jonghwa Lee wrote:
+> > >> Bus throughput metric is added to PM QoS in order to control the
+> > >> frequency of memory interfaces and busses with PM QoS.
+> > >>
+> > >> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+> > >> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> > >
+> > > I said some time ago I didn't want any new global PM QoS classes to be
+> > > added this way.
+> > >
+> > > Can you please post a driver patch using this new thing?
+> > >
+> > > Rafael
+> 
+> It'd be too early for V4L2 device driver QoS patches as they are undergoing
+> major updates and the previous QoS patches over they are now obsolete.
+> 
+> However, I've found that one QoS patch is still intact with the current one.
+> Here goes the example driver that uses Bus-Throughput for its operation.
+> (Fortunately, it is not V4L2, but DRM driver)
+> 
+> It is a G2D (2D graphics acceleration) device driver that gets command lists
+> from userspace and then process them via DMA. Many command lists finish even
+> before any DVFS mechanism may react while the response time of a command list
+> is still important for the user processes.
+> 
+> Here we go:
 
-The basename function may modify the string passed to it, so the string
-should not be marked const.
+Well, so my questions are:
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Acked-by: Pekka Enberg <penberg@kernel.org>
-Cc: Irina Tirdea <irina.tirdea@gmail.com>
-Cc: Pekka Enberg <penberg@kernel.org>
-Link: http://lkml.kernel.org/r/1347116812-93646-2-git-send-email-dsahern@gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/annotate.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
+> ---
+> diff --git a/drivers/gpu/drm/exynos/exynos_drm_g2d.c b/drivers/gpu/drm/exynos/exynos_drm_g2d.c
+> index d2d88f2..969b2c5 100644
+> --- a/drivers/gpu/drm/exynos/exynos_drm_g2d.c
+> +++ b/drivers/gpu/drm/exynos/exynos_drm_g2d.c
+> @@ -14,6 +14,7 @@
+>  #include <linux/interrupt.h>
+>  #include <linux/io.h>
+>  #include <linux/platform_device.h>
+> +#include <linux/pm_qos.h>
+>  #include <linux/pm_runtime.h>
+>  #include <linux/slab.h>
+>  #include <linux/workqueue.h>
+> @@ -135,6 +136,7 @@ struct g2d_data {
+>  	struct workqueue_struct		*g2d_workq;
+>  	struct work_struct		runqueue_work;
+>  	struct exynos_drm_subdrv	subdrv;
+> +	struct pm_qos_request_list	pm_qos;
+>  	bool				suspended;
+>  
+>  	/* cmdlist */
+> @@ -314,6 +316,9 @@ static void g2d_dma_start(struct g2d_data *g2d,
+>  	pm_runtime_get_sync(g2d->dev);
+>  	clk_enable(g2d->gate_clk);
+>  
+> +	/* 416MHz w/ 64b 30% saturating bus */
+> +	pm_qos_update_request(&g2d->pm_qos, 1000000);
+> +
 
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 51ef69c..04eafd3 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -984,7 +984,8 @@ int symbol__annotate_printf(struct symbol *sym, struct map *map, int evidx,
- 			    int context)
- {
- 	struct dso *dso = map->dso;
--	const char *filename = dso->long_name, *d_filename;
-+	char *filename;
-+	const char *d_filename;
- 	struct annotation *notes = symbol__annotation(sym);
- 	struct disasm_line *pos, *queue = NULL;
- 	u64 start = map__rip_2objdump(map, sym->start);
-@@ -992,6 +993,10 @@ int symbol__annotate_printf(struct symbol *sym, struct map *map, int evidx,
- 	int more = 0;
- 	u64 len;
- 
-+	filename = strdup(dso->long_name);
-+	if (!filename)
-+		return -ENOMEM;
-+
- 	if (full_paths)
- 		d_filename = filename;
- 	else
-@@ -1042,6 +1047,8 @@ int symbol__annotate_printf(struct symbol *sym, struct map *map, int evidx,
- 		}
- 	}
- 
-+	free(filename);
-+
- 	return more;
- }
- 
--- 
-1.7.1
+(1) What's the unit of that number and (2) why is it global?
 
+Rafael
