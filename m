@@ -1,169 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751241Ab2IHEpR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 00:45:17 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:50576 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902Ab2IHEpP (ORCPT
+	id S1751093Ab2IHFH7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 01:07:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52433 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813Ab2IHFH6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 00:45:15 -0400
+	Sat, 8 Sep 2012 01:07:58 -0400
+Date: Sat, 8 Sep 2012 00:07:52 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Dave Airlie <airlied@gmail.com>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        David Airlie <airlied@linux.ie>, Matthew Garrett <mjg@redhat.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Andreas Heider <andreas@meetr.de>
+Subject: Re: [PATCH 0/7] Fixes for hybrid graphics Apple machines
+Message-ID: <20120908050752.GA12477@ubuntu-mba51>
+Mail-Followup-To: Dave Airlie <airlied@gmail.com>,
+	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+	David Airlie <airlied@linux.ie>, Matthew Garrett <mjg@redhat.com>,
+	Daniel Vetter <daniel.vetter@ffwll.ch>,
+	Andreas Heider <andreas@meetr.de>
+References: <1347031330-19657-1-git-send-email-seth.forshee@canonical.com>
+ <CAPM=9tyHodSp0BCdU4Bz=95JXhiiswYRTAre6LyQjiV023UXCw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20120907232617.GA8439@google.com>
-References: <1346750457-12385-1-git-send-email-walken@google.com>
-	<1346750457-12385-2-git-send-email-walken@google.com>
-	<20120907151341.79cb5638.akpm@linux-foundation.org>
-	<CANN689HMxteeUT9q5BgKutEnNQF6sKv2n9ze11Z=wkOoC+XGqw@mail.gmail.com>
-	<20120907155514.3fad7887.akpm@linux-foundation.org>
-	<20120907232617.GA8439@google.com>
-Date: Sat, 8 Sep 2012 12:45:12 +0800
-Message-ID: <CAJd=RBC+AhTpLRqRLLHyZ-fhJahKyi5hFHQU5gimcf3NXfzoaw@mail.gmail.com>
-Subject: Re: [PATCH 1/7] mm: interval tree updates
-From: Hillf Danton <dhillf@gmail.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        riel@redhat.com, peterz@infradead.org, aarcange@redhat.com,
-        hughd@google.com, daniel.santos@pobox.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPM=9tyHodSp0BCdU4Bz=95JXhiiswYRTAre6LyQjiV023UXCw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Michel
+On Fri, Sep 07, 2012 at 10:35:04PM +0100, Dave Airlie wrote:
+> On Fri, Sep 7, 2012 at 4:22 PM, Seth Forshee <seth.forshee@canonical.com> wrote:
+> > Many hybrid graphics Apple laptops fail to set up LVDS on the secondary
+> > GPU due to missing or incorrect mode information for the panel at init
+> > time. The only way to get the LVDS mode on these machines is via the
+> > DDC, but this is muxed to the active GPU at boot. However, the graphics
+> > mux on these machines supports muxing the i2c idependently of the
+> > display, making it possible for the secondary graphics driver to read
+> > the EDID without a full display switch.
+> >
+> > In order to support this, these patches modify vga_switcheroo to allow
+> > muxing of the DDC idependently of the display. apple-gmux is updated to
+> > support this new functionality, and drm_get_edid() is modified to switch
+> > the DDC mux as needed.
+> >
+> > For this to work we also need to ensure that sufficient switcheroo
+> > suport is available before initializing the secondary GPU. This is done
+> > by adding any non-active GPUs that try to initialize before switcheroo
+> > is ready to a list and initializing these devices once switcheroo
+> > becomes ready. This behavior is restricted to Apple laptops to prevent
+> > causing problems on other machines.
+> 
+> I hate this idea, no delaying stuff. We either need to have some sort
+> of enforced ordering or make some stuff only work built-in.
+> 
+> But sticking things on a delayed list just in case seems wrong to me.
 
-Lets first see snippet in another work.
+I really don't like it either. My preferred solution would be to have
+i915 register the LVDS connector whenever we can reasonably expect that
+an LVDS panel might be present, then treat the panel as disconnected
+until we can get the mode information. I was headed down this path with
+the first patches I sent, but both Daniel and Matthew responded
+unfavorably to this approach.
 
-	https://lkml.org/lkml/2012/9/4/75
-	[PATCH 5/7] mm rmap: remove vma_address check for address inside vma
+Otherwise I'm open to suggestions on how enforcing the ordering of the
+device initializations. Forcing apple-gmux to be built-in or making i915
+depend on it might solve the problem, but I don't find either of these
+to be very desirable either.
 
-On Tue, Sep 4, 2012 at 5:20 PM, Michel Lespinasse <walken@google.com> wrote:
-> diff --git a/mm/rmap.c b/mm/rmap.c
-> index 9c61bf387fd1..28777412de62 100644
-> --- a/mm/rmap.c
-> +++ b/mm/rmap.c
-> @@ -510,22 +510,26 @@ void page_unlock_anon_vma(struct anon_vma *anon_vma)
->
->  /*
->   * At what user virtual address is page expected in @vma?
-> - * Returns virtual address or -EFAULT if page's index/offset is not
-> - * within the range mapped the @vma.
->   */
-> -inline unsigned long
-> -vma_address(struct page *page, struct vm_area_struct *vma)
-> +static inline unsigned long
-> +__vma_address(struct page *page, struct vm_area_struct *vma)
->  {
->         pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
-> -       unsigned long address;
->
->         if (unlikely(is_vm_hugetlb_page(vma)))
->                 pgoff = page->index << huge_page_order(page_hstate(page));
+Thanks,
+Seth
 
-The pgoff computation for huge page remains as it was.
-
-> -       address = vma->vm_start + ((pgoff - vma->vm_pgoff) << PAGE_SHIFT);
-> -       if (unlikely(address < vma->vm_start || address >= vma->vm_end)) {
-> -               /* page should be within @vma mapping range */
-> -               return -EFAULT;
-> -       }
-> +
-> +       return vma->vm_start + ((pgoff - vma->vm_pgoff) << PAGE_SHIFT);
-> +}
-> +
-> +inline unsigned long
-> +vma_address(struct page *page, struct vm_area_struct *vma)
-> +{
-> +       unsigned long address = __vma_address(page, vma);
-> +
-> +       /* page should be within @vma mapping range */
-> +       VM_BUG_ON(address < vma->vm_start || address >= vma->vm_end);
-> +
->         return address;
->  }
->
-
-Then lets see this work.
-
-
-On Sat, Sep 8, 2012 at 7:26 AM, Michel Lespinasse <walken@google.com> wrote:
-> -----------------------------8<-------------------------------------
-> From: Michel Lespinasse <walken@google.com>
-> Subject: mm: replace vma prio_tree with an interval tree
->
-> Implement an interval tree as a replacement for the VMA prio_tree.
-> The algorithms are similar to lib/interval_tree.c; however that code
-> can't be directly reused as the interval endpoints are not explicitly
-> stored in the VMA. So instead, the common algorithm is moved into
-> a template and the details (node type, how to get interval endpoints
-> from the node, etc) are filled in using the C preprocessor.
->
-> Once the interval tree functions are available, using them as a replacement
-> to the VMA prio tree is a relatively simple, mechanical job.
->
-> Signed-off-by: Michel Lespinasse <walken@google.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Hillf Danton <dhillf@gmail.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> Cc: David Woodhouse <dwmw2@infradead.org>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
-
-[...]
-
-> --- /dev/null
-> +++ b/mm/interval_tree.c
-> @@ -0,0 +1,59 @@
-> +/*
-> + * mm/interval_tree.c - interval tree for mapping->i_mmap
-> + *
-> + * Copyright (C) 2012, Michel Lespinasse <walken@google.com>
-> + *
-> + * This file is released under the GPL v2.
-> + */
-> +
-> +#include <linux/mm.h>
-> +#include <linux/fs.h>
-> +#include <linux/interval_tree_generic.h>
-> +
-> +static inline unsigned long vma_start_pgoff(struct vm_area_struct *v)
-> +{
-> +       return v->vm_pgoff;
-> +}
-> +
-> +static inline unsigned long vma_last_pgoff(struct vm_area_struct *v)
-> +{
-> +       return v->vm_pgoff + ((v->vm_end - v->vm_start) >> PAGE_SHIFT) - 1;
-> +}
-> +
-
-The pgoff computations are only for regular page, yes?
-
-> +INTERVAL_TREE_DEFINE(struct vm_area_struct, shared.linear.rb,
-> +                    unsigned long, shared.linear.rb_subtree_last,
-> +                    vma_start_pgoff, vma_last_pgoff,, vma_interval_tree)
-> +
-
-[...]
-
-> @@ -1547,7 +1545,6 @@ static int try_to_unmap_file(struct page *page, enum ttu_flags flags)
->         struct address_space *mapping = page->mapping;
->         pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
-
-What if page is huge?
-
->         struct vm_area_struct *vma;
-> -       struct prio_tree_iter iter;
->         int ret = SWAP_AGAIN;
->         unsigned long cursor;
->         unsigned long max_nl_cursor = 0;
-> @@ -1555,7 +1552,7 @@ static int try_to_unmap_file(struct page *page, enum ttu_flags flags)
->         unsigned int mapcount;
->
->         mutex_lock(&mapping->i_mmap_mutex);
-> -       vma_prio_tree_foreach(vma, &iter, &mapping->i_mmap, pgoff, pgoff) {
-> +       vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
->                 unsigned long address = vma_address(page, vma);
->                 if (address == -EFAULT)
->                         continue;
