@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759541Ab2IHAqR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 20:46:17 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:52817 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758667Ab2IHAqQ (ORCPT
+	id S1759655Ab2IHAqj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 20:46:39 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:63600 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758667Ab2IHAqh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 20:46:16 -0400
+	Fri, 7 Sep 2012 20:46:37 -0400
 From: Irina Tirdea <irina.tirdea@gmail.com>
 To: mingo@redhat.com, acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
         rostedt@goodmis.org
 Cc: paulus@samba.org, dsahern@gmail.com, namhyung.kim@lge.com,
         linux-kernel@vger.kernel.org, Irina Tirdea <irina.tirdea@intel.com>
-Subject: [PATCH v2 01/12] perf tools: include wrapper for magic.h
-Date: Sat,  8 Sep 2012 03:43:13 +0300
-Message-Id: <1347065004-15306-2-git-send-email-irina.tirdea@intel.com>
+Subject: [PATCH v2 02/12] perf tools: update types definitions for Android
+Date: Sat,  8 Sep 2012 03:43:14 +0300
+Message-Id: <1347065004-15306-3-git-send-email-irina.tirdea@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1347065004-15306-1-git-send-email-irina.tirdea@intel.com>
 References: <1347065004-15306-1-git-send-email-irina.tirdea@intel.com>
@@ -24,81 +24,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Irina Tirdea <irina.tirdea@intel.com>
 
-perf is currently including magic.h directly from the kernel. If the glibc
-magic.h is also included, this leads to warnings that the constants are
-redefined. This happens on some systems (e.g. Android).
+Some type definitions are missing from Android or are already defined in bionic
+and lead to redefinition errors.
 
-Redefinition errors on Android:
-In file included from util/util.h:79:0,
-                 from util/cache.h:5,
-                 from util/abspath.c:1:
-util/../../../include/linux/magic.h:5:0:
-error: "AFFS_SUPER_MAGIC" redefined [-Werror]
-bionic/libc/include/sys/vfs.h:53:0:
-note: this is the location of the previous definition
-util/../../../include/linux/magic.h:19:0:
-error: "EFS_SUPER_MAGIC" redefined [-Werror]
-bionic/libc/include/sys/vfs.h:61:0:
-note: this is the location of the previous definition
-util/../../../include/linux/magic.h:26:0:
-error: "HPFS_SUPER_MAGIC" redefined [-Werror]
-bionic/libc/include/sys/vfs.h:67:0:
-note: this is the location of the previous definition
+Android defines in types.h __le32. Since perf is wrapping <linux/types.h> with a
+local version, we need to define this constant in the local version too.
+Error in Android:
+In file included from bionic/libc/include/unistd.h:36:0,
+                 from external/perf/tools/perf/util/util.h:46,
+                 from external/perf/tools/perf/util/cache.h:5,
+                 from external/perf/tools/perf/util/abspath.c:1:
+bionic/libc/kernel/common/linux/capability.h:60:2:
+error: unknown type name '__le32'
 
-Only two constants from magic.h are used by perf (DEBUGFS_MAGIC and
-SYSFS_MAGIC). This fix provides a wrapper for magic.h that includes only
-these constants instead of including the kernel header file directly.
+roundup() definition is missing:
+util/symbol.c: In function 'symbols__fixup_end':
+util/symbol.c:106: warning: implicit declaration of function 'roundup'
+util/symbol.c:106: warning: nested extern declaration of 'roundup'
+
+__force macro defined in perf is also defined in libc which leads to
+redefinition errors. In order to avoid these, we guard these definition with
 
 Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
 ---
- tools/perf/Makefile                   |    1 +
- tools/perf/util/include/linux/magic.h |   12 ++++++++++++
- tools/perf/util/util.h                |    2 +-
- 3 files changed, 14 insertions(+), 1 deletion(-)
- create mode 100644 tools/perf/util/include/linux/magic.h
+ tools/perf/util/include/linux/compiler.h |    4 ++++
+ tools/perf/util/include/linux/kernel.h   |    9 +++++++++
+ tools/perf/util/include/linux/types.h    |    8 ++++++++
+ 3 files changed, 21 insertions(+)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index afd5075..25d2bab 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -264,6 +264,7 @@ LIB_H += util/include/linux/ctype.h
- LIB_H += util/include/linux/kernel.h
- LIB_H += util/include/linux/list.h
- LIB_H += util/include/linux/export.h
-+LIB_H += util/include/linux/magic.h
- LIB_H += util/include/linux/poison.h
- LIB_H += util/include/linux/prefetch.h
- LIB_H += util/include/linux/rbtree.h
-diff --git a/tools/perf/util/include/linux/magic.h b/tools/perf/util/include/linux/magic.h
-new file mode 100644
-index 0000000..58b64ed
---- /dev/null
-+++ b/tools/perf/util/include/linux/magic.h
-@@ -0,0 +1,12 @@
-+#ifndef _PERF_LINUX_MAGIC_H_
-+#define _PERF_LINUX_MAGIC_H_
-+
-+#ifndef DEBUGFS_MAGIC
-+#define DEBUGFS_MAGIC          0x64626720
+diff --git a/tools/perf/util/include/linux/compiler.h b/tools/perf/util/include/linux/compiler.h
+index 2dc8671..ce2367b 100644
+--- a/tools/perf/util/include/linux/compiler.h
++++ b/tools/perf/util/include/linux/compiler.h
+@@ -12,4 +12,8 @@
+ #define __used		__attribute__((__unused__))
+ #define __packed	__attribute__((__packed__))
+ 
++#ifndef __force
++#define __force
 +#endif
 +
-+#ifndef SYSFS_MAGIC
-+#define SYSFS_MAGIC            0x62656572
+ #endif
+diff --git a/tools/perf/util/include/linux/kernel.h b/tools/perf/util/include/linux/kernel.h
+index b6842c1..466b51a 100644
+--- a/tools/perf/util/include/linux/kernel.h
++++ b/tools/perf/util/include/linux/kernel.h
+@@ -46,6 +46,15 @@
+ 	_min1 < _min2 ? _min1 : _min2; })
+ #endif
+ 
++#ifndef roundup
++#define roundup(x, y) (                                \
++{                                                      \
++	const typeof(y) __y = y;		       \
++	(((x) + (__y - 1)) / __y) * __y;	       \
++}                                                      \
++)
 +#endif
 +
+ #ifndef BUG_ON
+ #define BUG_ON(cond) assert(!(cond))
+ #endif
+diff --git a/tools/perf/util/include/linux/types.h b/tools/perf/util/include/linux/types.h
+index 12de3b8..eb46478 100644
+--- a/tools/perf/util/include/linux/types.h
++++ b/tools/perf/util/include/linux/types.h
+@@ -3,6 +3,14 @@
+ 
+ #include <asm/types.h>
+ 
++#ifndef __bitwise
++#define __bitwise
 +#endif
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index 67a3713..70fa70b 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -70,7 +70,7 @@
- #include <sys/socket.h>
- #include <sys/ioctl.h>
- #include <inttypes.h>
--#include "../../../include/linux/magic.h"
-+#include <linux/magic.h>
- #include "types.h"
- #include <sys/ttydefaults.h>
++
++#ifndef __le32
++typedef __u32 __bitwise __le32;
++#endif
++
+ #define DECLARE_BITMAP(name,bits) \
+ 	unsigned long name[BITS_TO_LONGS(bits)]
  
 -- 
 1.7.9.5
