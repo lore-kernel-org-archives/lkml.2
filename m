@@ -1,135 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754720Ab2IHOdQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 10:33:16 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:63349 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754117Ab2IHOdN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 10:33:13 -0400
-X-IronPort-AV: E=Sophos;i="4.80,391,1344236400"; 
-   d="scan'208";a="687249983"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-CC: Jeff Layton <jlayton@redhat.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH v2] SUNRPC: check current nsproxy before set of node
- name on client creation
-Thread-Topic: [PATCH v2] SUNRPC: check current nsproxy before set of node
- name on client creation
-Thread-Index: AQHNeUylwnVjh2tbW02Id+IcJKD75ZeAFAKAgAB9EYCAAI9kAA==
-Date: Sat, 8 Sep 2012 14:33:09 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA908F914D4@SACEXCMBX04-PRD.hq.netapp.com>
-References: <20120813113731.9629.31906.stgit@localhost.localdomain>
-	  <20120813081054.0ee39037@corrin.poochiereds.net>
-	 <4FA345DA4F4AE44899BD2B03EEEC2FA908F90888@SACEXCMBX04-PRD.hq.netapp.com>
-	 <504ADED9.2020607@parallels.com>
-In-Reply-To: <504ADED9.2020607@parallels.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.116]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <5D2A4604819E8E4EBF59B9360EA0265C@tahoe.netapp.com>
+	id S1754863Ab2IHOeN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 10:34:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48550 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754760Ab2IHOd7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Sep 2012 10:33:59 -0400
+Message-ID: <504B574E.40907@gmail.com>
+Date: Sat, 08 Sep 2012 08:33:50 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
+To: Pekka Enberg <penberg@kernel.org>
+CC: Irina Tirdea <irina.tirdea@gmail.com>, mingo@redhat.com,
+        acme@ghostprotocols.net, a.p.zijlstra@chello.nl, rostedt@goodmis.org,
+        paulus@samba.org, namhyung.kim@lge.com, linux-kernel@vger.kernel.org,
+        Irina Tirdea <irina.tirdea@intel.com>
+Subject: Re: [PATCH v2 05/12] perf tools: include basename for non-glibc systems
+References: <1347065004-15306-1-git-send-email-irina.tirdea@intel.com> <1347065004-15306-6-git-send-email-irina.tirdea@intel.com> <CAOJsxLH_8h=GDaC=5MzjiFT1rfN5CHKpPX3PKDDHGubQpV1zuQ@mail.gmail.com>
+In-Reply-To: <CAOJsxLH_8h=GDaC=5MzjiFT1rfN5CHKpPX3PKDDHGubQpV1zuQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q88EYFQo011512
 
-On Sat, 2012-09-08 at 08:59 +0300, Stanislav Kinsbursky wrote:
-> 08.09.2012 01:32, Myklebust, Trond Ğ¿Ğ¸ÑˆĞµÑ‚:
-> > On Mon, 2012-08-13 at 08:10 -0400, Jeff Layton wrote:
-> >> On Mon, 13 Aug 2012 15:37:31 +0400
-> >> Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
-> >>
-> >>> v2:
-> >>> 1) rpc_clnt_set_nodename() prototype updated.
-> >>> 2) fixed errors in comment.
-> >>>
-> >>> When child reaper exits, it can destroy mount namespace it belongs to, and if
-> >>> there are NFS mounts inside, then it will try to umount them. But in this
-> >>> point current->nsproxy is set to NULL and all namespaces will be destroyed one
-> >>> by one. I.e. we can't dereference current->nsproxy to obtain uts namespace.
-> >>>
-> >>> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> >>> ---
-> >>>   net/sunrpc/clnt.c |   16 +++++++++++++---
-> >>>   1 files changed, 13 insertions(+), 3 deletions(-)
-> >>>
-> >>> diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
-> >>> index 9a9676e..8fbcbc8 100644
-> >>> --- a/net/sunrpc/clnt.c
-> >>> +++ b/net/sunrpc/clnt.c
-> >>> @@ -277,8 +277,18 @@ void rpc_clients_notifier_unregister(void)
-> >>>   	return rpc_pipefs_notifier_unregister(&rpc_clients_block);
-> >>>   }
-> >>>   
-> >>> -static void rpc_clnt_set_nodename(struct rpc_clnt *clnt, const char *nodename)
-> >>> +static void rpc_clnt_set_nodename(struct rpc_clnt *clnt)
-> >>>   {
-> >>> +	const char *nodename;
-> >>> +
-> >>> +	/*
-> >>> +	 * We have to protect against dying child reaper, which has released
-> >>> +	 * its nsproxy already and is trying to destroy mount namespace.
-> >>> +	 */
-> >>> +	if (current->nsproxy == NULL)
-> >>> +		return;
-> >>> +
-> >>> +	nodename = utsname()->nodename;
-> >>>   	clnt->cl_nodelen = strlen(nodename);
-> >>>   	if (clnt->cl_nodelen > UNX_MAXNODENAME)
-> >>>   		clnt->cl_nodelen = UNX_MAXNODENAME;
-> >>> @@ -365,7 +375,7 @@ static struct rpc_clnt * rpc_new_client(const struct rpc_create_args *args, stru
-> >>>   	}
-> >>>   
-> >>>   	/* save the nodename */
-> >>> -	rpc_clnt_set_nodename(clnt, utsname()->nodename);
-> >>> +	rpc_clnt_set_nodename(clnt);
-> >>>   	rpc_register_client(clnt);
-> >>>   	return clnt;
-> >>>   
-> >>> @@ -524,7 +534,7 @@ rpc_clone_client(struct rpc_clnt *clnt)
-> >>>   	err = rpc_setup_pipedir(new, clnt->cl_program->pipe_dir_name);
-> >>>   	if (err != 0)
-> >>>   		goto out_no_path;
-> >>> -	rpc_clnt_set_nodename(new, utsname()->nodename);
-> >>> +	rpc_clnt_set_nodename(new);
-> >>>   	if (new->cl_auth)
-> >>>   		atomic_inc(&new->cl_auth->au_count);
-> >>>   	atomic_inc(&clnt->cl_count);
-> >>>
-> >>> --
-> >>> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> >>> the body of a message to majordomo@vger.kernel.org
-> >>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >> Acked-by: Jeff Layton <jlayton@redhat.com>
-> > OK, colour me confused (again).
-> 
-> What color?
-> 
-> > Why should a umount trigger an
-> > rpc_create() or rpc_clone_client()?
-> 
-> It calls nsm_create().
-> Here is the trace (https://bugzilla.redhat.com/show_bug.cgi?id=830862, 
-> comment 68):
+On 9/8/12 3:09 AM, Pekka Enberg wrote:
+> It's safe to include <libgen.h> on glibc Linux systems as well, no? So
+> there's no need to check for __BIONIC__.
 
-Right, but if we're using NFSv3 lock monitoring, we know in advance that
-we're going to need an nsm call to localhost. Why can't we just cache
-the one that we used to start lock monitoring in the first place?
+Theoretically, yes. In reality compile fails in multiple places. 
+basename can modify the string passed to it and several places in perf 
+are passing a string marked const. Oops. I'll fix those places and 
+remove the BIONIC conditional for libgen.h
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+David
