@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754605Ab2IHTsH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 15:48:07 -0400
-Received: from mga02.intel.com ([134.134.136.20]:13728 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751397Ab2IHTsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 15:48:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,392,1344236400"; 
-   d="scan'208";a="199715023"
-From: Andi Kleen <andi@firstfloor.org>
-To: mmarek@suse.cz
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] Kbuild: use normal compression settings for tar*-pkg
-Date: Sat,  8 Sep 2012 12:47:59 -0700
-Message-Id: <1347133679-14641-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.6
+	id S1754939Ab2IHTsi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 15:48:38 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:57408 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754785Ab2IHTsX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Sep 2012 15:48:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <1346253275-12347-1-git-send-email-ogerlitz@mellanox.com>
+References: <1346253275-12347-1-git-send-email-ogerlitz@mellanox.com>
+Date: Sat, 8 Sep 2012 22:48:22 +0300
+Message-ID: <CAJZOPZKWfQ7J4i26mv-19v+T2hu_9vuYw72O_7BJ4wbSnUUAbg@mail.gmail.com>
+Subject: Re: [PATCH fixes/for-3.6 0/3] few more IB fixes for 3.6
+From: Or Gerlitz <or.gerlitz@gmail.com>
+To: Roland Dreier <roland@kernel.org>
+Cc: linux-rdma <linux-rdma@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Wed, Aug 29, 2012 at 6:14 PM, Or Gerlitz <ogerlitz@mellanox.com> wrote:
 
-For large kernel configurations (like a distribution kernel)
-targz-pkg takes a quite long time to just do the compression.
-I clocked it at 15+mins for a SUSE kernel like config on a fast
-system.  And tarxz and bzip2 are even slower.
+> Hi Roland,
+>
+> This short series include two more fixes from Shlomo to the newly
+> introduced IPoIB neighbour table, and a fix for Yishai that completes
+> the support for memory registration of up to 8TB.
 
-The main reason is that the script that is doing the taring sets
-the highest compression level (-9).  When I change it to just
-use the defaults the gzip time for the same kernel goes down
-to ~3 mins. I haven't tested xz and bzip, but I expect those
-to be much faster too.
+Roland,
 
-I'm not willing to wait that long for a small compression
-gain. So just change the script to use the defaults.
+AFAIK 3.6-rc5 should be out by tonight, these are fixes to known bugs
+in there which I sent you eleven days ago and didn't get any comment,
+could you get them in and/or react in some way?
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- scripts/package/buildtar |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+thanks,
 
-diff --git a/scripts/package/buildtar b/scripts/package/buildtar
-index 8a7b155..632377f 100644
---- a/scripts/package/buildtar
-+++ b/scripts/package/buildtar
-@@ -28,15 +28,15 @@ case "${1}" in
- 		file_ext=""
- 		;;
- 	targz-pkg)
--		compress="gzip -c9"
-+		compress="gzip"
- 		file_ext=".gz"
- 		;;
- 	tarbz2-pkg)
--		compress="bzip2 -c9"
-+		compress="bzip2"
- 		file_ext=".bz2"
- 		;;
- 	tarxz-pkg)
--		compress="xz -c9"
-+		compress="xz"
- 		file_ext=".xz"
- 		;;
- 	*)
--- 
-1.7.7.6
+Or.
 
+>
+> Shlomo Pongratz (2):
+>   IB/ipoib: Fix memory leak in the neigh table deletion flow
+>   IB/ipoib: Fix AB-BA deadlock when deleting neighbours
+>
+> Yishai Hadas (1):
+>   net/mlx4_core: Enable 8TB memory registration
+>
+>  drivers/infiniband/ulp/ipoib/ipoib.h           |    4 +-
+>  drivers/infiniband/ulp/ipoib/ipoib_main.c      |  101 +++++++++++------------
+>  drivers/infiniband/ulp/ipoib/ipoib_multicast.c |    2 -
+>  drivers/net/ethernet/mellanox/mlx4/icm.c       |   30 ++++---
+>  drivers/net/ethernet/mellanox/mlx4/icm.h       |   10 +-
+>  5 files changed, 74 insertions(+), 73 deletions(-)
