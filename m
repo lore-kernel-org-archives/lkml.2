@@ -1,52 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754596Ab2IHOML (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 10:12:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33203 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751855Ab2IHOMG convert rfc822-to-8bit (ORCPT
+	id S1754670Ab2IHOPq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 10:15:46 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:63524 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753757Ab2IHOPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 10:12:06 -0400
+	Sat, 8 Sep 2012 10:15:44 -0400
 From: Namhyung Kim <namhyung@kernel.org>
-To: Irina Tirdea <irina.tirdea@gmail.com>
-Cc: mingo@redhat.com, acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
-        rostedt@goodmis.org, paulus@samba.org, dsahern@gmail.com,
-        namhyung.kim@lge.com, linux-kernel@vger.kernel.org,
-        Irina Tirdea <irina.tirdea@intel.com>
-Subject: Re: [PATCH v3] perf bench: fix assert when NDEBUG is defined
-References: <1347082551-2394-1-git-send-email-irina.tirdea@intel.com>
-Date: Sat, 08 Sep 2012 23:11:57 +0900
-In-Reply-To: <1347082551-2394-1-git-send-email-irina.tirdea@intel.com> (Irina
-	Tirdea's message of "Sat, 8 Sep 2012 08:35:51 +0300")
-Message-ID: <87a9x0a9jm.fsf@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/7] perf: Enable function tracing for perf core
+References: <20120908115515.211175517@goodmis.org>
+	<20120908115640.032328533@goodmis.org>
+Date: Sat, 08 Sep 2012 23:15:37 +0900
+In-Reply-To: <20120908115640.032328533@goodmis.org> (Steven Rostedt's message
+	of "Sat, 08 Sep 2012 07:55:16 -0400")
+Message-ID: <87627oa9di.fsf@kernel.org>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat,  8 Sep 2012 08:35:51 +0300, Irina Tirdea wrote:
-> From: Irina Tirdea <irina.tirdea@intel.com>
->
-> When NDEBUG is defined, the assert macro will be expanded to nothing.
-> Some assert calls used in perf are also including some functionality
-> (e.g. system calls), not only validity checks. Therefore, if NDEBUG is
-> defined, this functionality will be removed along with the assert.
-> Perf also defines BUG_ON based on assert, so it has the same problem.
->
-> Define BUG_ON so that the condition will be executed when NDEBUG is defined.
-> Replace the assert statements that have these side effects with BUG_ON.
->
-> For defining BUG_ON, use "if (cond) {}" insted of "if (cond) ;" because in
-> the latter case build fails with "error: suggest braces around empty body in
-> an ‘if’ statement [-Werror=empty-body]"
->
-> Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+Hi Steve,
 
-Reviewed-by: Namhyung Kim <namhyung@kernel.org>
+It seems you missed From: line?
 
 Thanks,
 Namhyung
+
+On Sat, 08 Sep 2012 07:55:16 -0400, Steven Rostedt wrote:
+> According to Steven R. there is no reason left to not support
+> function tracing for the perf core. This makes it easier to debug
+> perf.
+>
+> Don't remove -pg for the x86 and generic perf core.
+>
+> Link: http://lkml.kernel.org/r/1345306530-25665-2-git-send-email-andi@firstfloor.org
+>
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  arch/x86/kernel/cpu/Makefile |    1 -
+>  kernel/events/Makefile       |    4 ----
+>  2 files changed, 5 deletions(-)
+>
+> diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
+> index d30a6a9..6a16725 100644
+> --- a/arch/x86/kernel/cpu/Makefile
+> +++ b/arch/x86/kernel/cpu/Makefile
+> @@ -5,7 +5,6 @@
+>  # Don't trace early stages of a secondary CPU boot
+>  ifdef CONFIG_FUNCTION_TRACER
+>  CFLAGS_REMOVE_common.o = -pg
+> -CFLAGS_REMOVE_perf_event.o = -pg
+>  endif
+>  
+>  # Make sure load_percpu_segment has no stackprotector
+> diff --git a/kernel/events/Makefile b/kernel/events/Makefile
+> index 103f5d1..a630994 100644
+> --- a/kernel/events/Makefile
+> +++ b/kernel/events/Makefile
+> @@ -1,7 +1,3 @@
+> -ifdef CONFIG_FUNCTION_TRACER
+> -CFLAGS_REMOVE_core.o = -pg
+> -endif
+> -
+>  obj-y := core.o ring_buffer.o callchain.o
+>  
+>  obj-$(CONFIG_HAVE_HW_BREAKPOINT) += hw_breakpoint.o
