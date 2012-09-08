@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314Ab2IHUuJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 16:50:09 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:37179 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753749Ab2IHUuF (ORCPT
+	id S1755445Ab2IHUuT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 16:50:19 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:49904 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754866Ab2IHUuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 16:50:05 -0400
+	Sat, 8 Sep 2012 16:50:12 -0400
 From: Ezequiel Garcia <elezegarcia@gmail.com>
 To: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
 Cc: Ezequiel Garcia <elezegarcia@gmail.com>, Pekka Enberg <penberg@kernel.org>
-Subject: [PATCH 03/10] mm, slab: Remove silly function slab_buffer_size()
-Date: Sat,  8 Sep 2012 17:47:52 -0300
-Message-Id: <1347137279-17568-3-git-send-email-elezegarcia@gmail.com>
+Subject: [PATCH 06/10] mm, slab: Replace 'caller' type, void* -> unsigned long
+Date: Sat,  8 Sep 2012 17:47:55 -0300
+Message-Id: <1347137279-17568-6-git-send-email-elezegarcia@gmail.com>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1347137279-17568-1-git-send-email-elezegarcia@gmail.com>
 References: <1347137279-17568-1-git-send-email-elezegarcia@gmail.com>
@@ -20,74 +20,226 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function is seldom used, and can be simply replaced with cachep->size.
+This allows to use _RET_IP_ instead of builtin_address(0), thus
+achiveing implementation consistency in all three allocators.
+Though maybe a nitpick, the real goal behind this patch is
+to be able to obtain common code between SLAB and SLUB.
 
 Cc: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
 ---
- include/linux/slab_def.h |    5 -----
- mm/slab.c                |   12 ++----------
- 2 files changed, 2 insertions(+), 15 deletions(-)
+ mm/slab.c |   50 ++++++++++++++++++++++++--------------------------
+ 1 files changed, 24 insertions(+), 26 deletions(-)
 
-diff --git a/include/linux/slab_def.h b/include/linux/slab_def.h
-index 36d7031..604ebc8 100644
---- a/include/linux/slab_def.h
-+++ b/include/linux/slab_def.h
-@@ -113,17 +113,12 @@ void *__kmalloc(size_t size, gfp_t flags);
- #ifdef CONFIG_TRACING
- extern void *kmem_cache_alloc_trace(size_t size,
- 				    struct kmem_cache *cachep, gfp_t flags);
--extern size_t slab_buffer_size(struct kmem_cache *cachep);
- #else
- static __always_inline void *
- kmem_cache_alloc_trace(size_t size, struct kmem_cache *cachep, gfp_t flags)
- {
- 	return kmem_cache_alloc(cachep, flags);
- }
--static inline size_t slab_buffer_size(struct kmem_cache *cachep)
--{
--	return 0;
--}
- #endif
- 
- static __always_inline void *kmalloc(size_t size, gfp_t flags)
 diff --git a/mm/slab.c b/mm/slab.c
-index 3b4587b..53e41de 100644
+index 53e41de..bc342d1 100644
 --- a/mm/slab.c
 +++ b/mm/slab.c
-@@ -498,14 +498,6 @@ static void **dbg_userword(struct kmem_cache *cachep, void *objp)
+@@ -3083,7 +3083,7 @@ static inline void verify_redzone_free(struct kmem_cache *cache, void *obj)
+ }
  
- #endif
+ static void *cache_free_debugcheck(struct kmem_cache *cachep, void *objp,
+-				   void *caller)
++				   unsigned long caller)
+ {
+ 	struct page *page;
+ 	unsigned int objnr;
+@@ -3103,7 +3103,7 @@ static void *cache_free_debugcheck(struct kmem_cache *cachep, void *objp,
+ 		*dbg_redzone2(cachep, objp) = RED_INACTIVE;
+ 	}
+ 	if (cachep->flags & SLAB_STORE_USER)
+-		*dbg_userword(cachep, objp) = caller;
++		*dbg_userword(cachep, objp) = (void *)caller;
  
--#ifdef CONFIG_TRACING
--size_t slab_buffer_size(struct kmem_cache *cachep)
--{
--	return cachep->size;
--}
--EXPORT_SYMBOL(slab_buffer_size);
--#endif
--
- /*
-  * Do not go above this order unless 0 objects fit into the slab or
-  * overridden on the command line.
-@@ -3849,7 +3841,7 @@ kmem_cache_alloc_trace(size_t size, struct kmem_cache *cachep, gfp_t flags)
- 	ret = __cache_alloc(cachep, flags, __builtin_return_address(0));
+ 	objnr = obj_to_index(cachep, slabp, objp);
+ 
+@@ -3116,7 +3116,7 @@ static void *cache_free_debugcheck(struct kmem_cache *cachep, void *objp,
+ 	if (cachep->flags & SLAB_POISON) {
+ #ifdef CONFIG_DEBUG_PAGEALLOC
+ 		if ((cachep->size % PAGE_SIZE)==0 && OFF_SLAB(cachep)) {
+-			store_stackinfo(cachep, objp, (unsigned long)caller);
++			store_stackinfo(cachep, objp, caller);
+ 			kernel_map_pages(virt_to_page(objp),
+ 					 cachep->size / PAGE_SIZE, 0);
+ 		} else {
+@@ -3269,7 +3269,7 @@ static inline void cache_alloc_debugcheck_before(struct kmem_cache *cachep,
+ 
+ #if DEBUG
+ static void *cache_alloc_debugcheck_after(struct kmem_cache *cachep,
+-				gfp_t flags, void *objp, void *caller)
++				gfp_t flags, void *objp, unsigned long caller)
+ {
+ 	if (!objp)
+ 		return objp;
+@@ -3286,7 +3286,7 @@ static void *cache_alloc_debugcheck_after(struct kmem_cache *cachep,
+ 		poison_obj(cachep, objp, POISON_INUSE);
+ 	}
+ 	if (cachep->flags & SLAB_STORE_USER)
+-		*dbg_userword(cachep, objp) = caller;
++		*dbg_userword(cachep, objp) = (void *)caller;
+ 
+ 	if (cachep->flags & SLAB_RED_ZONE) {
+ 		if (*dbg_redzone1(cachep, objp) != RED_INACTIVE ||
+@@ -3561,7 +3561,7 @@ done:
+  */
+ static __always_inline void *
+ __cache_alloc_node(struct kmem_cache *cachep, gfp_t flags, int nodeid,
+-		   void *caller)
++		   unsigned long caller)
+ {
+ 	unsigned long save_flags;
+ 	void *ptr;
+@@ -3647,7 +3647,7 @@ __do_cache_alloc(struct kmem_cache *cachep, gfp_t flags)
+ #endif /* CONFIG_NUMA */
+ 
+ static __always_inline void *
+-__cache_alloc(struct kmem_cache *cachep, gfp_t flags, void *caller)
++__cache_alloc(struct kmem_cache *cachep, gfp_t flags, unsigned long caller)
+ {
+ 	unsigned long save_flags;
+ 	void *objp;
+@@ -3783,7 +3783,7 @@ free_done:
+  * be in this state _before_ it is released.  Called with disabled ints.
+  */
+ static inline void __cache_free(struct kmem_cache *cachep, void *objp,
+-    void *caller)
++				unsigned long caller)
+ {
+ 	struct array_cache *ac = cpu_cache_get(cachep);
+ 
+@@ -3823,7 +3823,7 @@ static inline void __cache_free(struct kmem_cache *cachep, void *objp,
+  */
+ void *kmem_cache_alloc(struct kmem_cache *cachep, gfp_t flags)
+ {
+-	void *ret = __cache_alloc(cachep, flags, __builtin_return_address(0));
++	void *ret = __cache_alloc(cachep, flags, _RET_IP_);
+ 
+ 	trace_kmem_cache_alloc(_RET_IP_, ret,
+ 			       cachep->object_size, cachep->size, flags);
+@@ -3838,7 +3838,7 @@ kmem_cache_alloc_trace(size_t size, struct kmem_cache *cachep, gfp_t flags)
+ {
+ 	void *ret;
+ 
+-	ret = __cache_alloc(cachep, flags, __builtin_return_address(0));
++	ret = __cache_alloc(cachep, flags, _RET_IP_);
  
  	trace_kmalloc(_RET_IP_, ret,
--		      size, slab_buffer_size(cachep), flags);
-+		      size, cachep->size, flags);
- 	return ret;
- }
- EXPORT_SYMBOL(kmem_cache_alloc_trace);
-@@ -3880,7 +3872,7 @@ void *kmem_cache_alloc_node_trace(size_t size,
- 	ret = __cache_alloc_node(cachep, flags, nodeid,
- 				  __builtin_return_address(0));
+ 		      size, cachep->size, flags);
+@@ -3850,8 +3850,7 @@ EXPORT_SYMBOL(kmem_cache_alloc_trace);
+ #ifdef CONFIG_NUMA
+ void *kmem_cache_alloc_node(struct kmem_cache *cachep, gfp_t flags, int nodeid)
+ {
+-	void *ret = __cache_alloc_node(cachep, flags, nodeid,
+-				       __builtin_return_address(0));
++	void *ret = __cache_alloc_node(cachep, flags, nodeid, _RET_IP_);
+ 
+ 	trace_kmem_cache_alloc_node(_RET_IP_, ret,
+ 				    cachep->object_size, cachep->size,
+@@ -3869,8 +3868,8 @@ void *kmem_cache_alloc_node_trace(size_t size,
+ {
+ 	void *ret;
+ 
+-	ret = __cache_alloc_node(cachep, flags, nodeid,
+-				  __builtin_return_address(0));
++	ret = __cache_alloc_node(cachep, flags, nodeid, _RET_IP);
++
  	trace_kmalloc_node(_RET_IP_, ret,
--			   size, slab_buffer_size(cachep),
-+			   size, cachep->size,
+ 			   size, cachep->size,
  			   flags, nodeid);
- 	return ret;
+@@ -3880,7 +3879,7 @@ EXPORT_SYMBOL(kmem_cache_alloc_node_trace);
+ #endif
+ 
+ static __always_inline void *
+-__do_kmalloc_node(size_t size, gfp_t flags, int node, void *caller)
++__do_kmalloc_node(size_t size, gfp_t flags, int node, unsigned long caller)
+ {
+ 	struct kmem_cache *cachep;
+ 
+@@ -3893,21 +3892,20 @@ __do_kmalloc_node(size_t size, gfp_t flags, int node, void *caller)
+ #if defined(CONFIG_DEBUG_SLAB) || defined(CONFIG_TRACING)
+ void *__kmalloc_node(size_t size, gfp_t flags, int node)
+ {
+-	return __do_kmalloc_node(size, flags, node,
+-			__builtin_return_address(0));
++	return __do_kmalloc_node(size, flags, node, _RET_IP_);
  }
+ EXPORT_SYMBOL(__kmalloc_node);
+ 
+ void *__kmalloc_node_track_caller(size_t size, gfp_t flags,
+ 		int node, unsigned long caller)
+ {
+-	return __do_kmalloc_node(size, flags, node, (void *)caller);
++	return __do_kmalloc_node(size, flags, node, caller);
+ }
+ EXPORT_SYMBOL(__kmalloc_node_track_caller);
+ #else
+ void *__kmalloc_node(size_t size, gfp_t flags, int node)
+ {
+-	return __do_kmalloc_node(size, flags, node, NULL);
++	return __do_kmalloc_node(size, flags, node, 0);
+ }
+ EXPORT_SYMBOL(__kmalloc_node);
+ #endif /* CONFIG_DEBUG_SLAB || CONFIG_TRACING */
+@@ -3920,7 +3918,7 @@ EXPORT_SYMBOL(__kmalloc_node);
+  * @caller: function caller for debug tracking of the caller
+  */
+ static __always_inline void *__do_kmalloc(size_t size, gfp_t flags,
+-					  void *caller)
++					  unsigned long caller)
+ {
+ 	struct kmem_cache *cachep;
+ 	void *ret;
+@@ -3935,7 +3933,7 @@ static __always_inline void *__do_kmalloc(size_t size, gfp_t flags,
+ 		return cachep;
+ 	ret = __cache_alloc(cachep, flags, caller);
+ 
+-	trace_kmalloc((unsigned long) caller, ret,
++	trace_kmalloc(caller, ret,
+ 		      size, cachep->size, flags);
+ 
+ 	return ret;
+@@ -3945,20 +3943,20 @@ static __always_inline void *__do_kmalloc(size_t size, gfp_t flags,
+ #if defined(CONFIG_DEBUG_SLAB) || defined(CONFIG_TRACING)
+ void *__kmalloc(size_t size, gfp_t flags)
+ {
+-	return __do_kmalloc(size, flags, __builtin_return_address(0));
++	return __do_kmalloc(size, flags, _RET_IP_);
+ }
+ EXPORT_SYMBOL(__kmalloc);
+ 
+ void *__kmalloc_track_caller(size_t size, gfp_t flags, unsigned long caller)
+ {
+-	return __do_kmalloc(size, flags, (void *)caller);
++	return __do_kmalloc(size, flags, caller);
+ }
+ EXPORT_SYMBOL(__kmalloc_track_caller);
+ 
+ #else
+ void *__kmalloc(size_t size, gfp_t flags)
+ {
+-	return __do_kmalloc(size, flags, NULL);
++	return __do_kmalloc(size, flags, 0);
+ }
+ EXPORT_SYMBOL(__kmalloc);
+ #endif
+@@ -3979,7 +3977,7 @@ void kmem_cache_free(struct kmem_cache *cachep, void *objp)
+ 	debug_check_no_locks_freed(objp, cachep->object_size);
+ 	if (!(cachep->flags & SLAB_DEBUG_OBJECTS))
+ 		debug_check_no_obj_freed(objp, cachep->object_size);
+-	__cache_free(cachep, objp, __builtin_return_address(0));
++	__cache_free(cachep, objp, _RET_IP_);
+ 	local_irq_restore(flags);
+ 
+ 	trace_kmem_cache_free(_RET_IP_, objp);
+@@ -4010,7 +4008,7 @@ void kfree(const void *objp)
+ 	debug_check_no_locks_freed(objp, c->object_size);
+ 
+ 	debug_check_no_obj_freed(objp, c->object_size);
+-	__cache_free(c, (void *)objp, __builtin_return_address(0));
++	__cache_free(c, (void *)objp, _RET_IP_);
+ 	local_irq_restore(flags);
+ }
+ EXPORT_SYMBOL(kfree);
 -- 
 1.7.8.6
 
