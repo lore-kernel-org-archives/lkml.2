@@ -1,195 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759922Ab2IHB1p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Sep 2012 21:27:45 -0400
-Received: from SpacedOut.fries.net ([67.64.210.234]:50438 "EHLO
-	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758667Ab2IHB1n (ORCPT
+	id S1759965Ab2IHBcx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Sep 2012 21:32:53 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:63780 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487Ab2IHBcu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Sep 2012 21:27:43 -0400
-Date: Fri, 7 Sep 2012 20:26:50 -0500
-From: David Fries <david@fries.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        Matthew Garrett <mjg@redhat.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: [PATCH] rtc_sysfs_show_hctosys(): display 0 if resume failed
-Message-ID: <20120908012650.GA32326@spacedout.fries.net>
-References: <20120826021931.GA20620@spacedout.fries.net>
- <20120907165626.c9b842b1.akpm@linux-foundation.org>
+	Fri, 7 Sep 2012 21:32:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120907165626.c9b842b1.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.7 (SpacedOut.fries.net [127.0.0.1]); Fri, 07 Sep 2012 20:26:53 -0500 (CDT)
+In-Reply-To: <CAE9FiQVXj6sLEs0GiBnVsKAbms-Bnt06xYeT01MBtSjNqaqypA@mail.gmail.com>
+References: <5017D19B.5080806@redhat.com>
+	<1343738627.27983.30.camel@gandalf.stny.rr.com>
+	<5017D4AB.3090107@redhat.com>
+	<1343740419.27983.33.camel@gandalf.stny.rr.com>
+	<20120731234336.GA5526@localhost>
+	<1343778699.27983.70.camel@gandalf.stny.rr.com>
+	<20120731235705.GW2422@linux.vnet.ibm.com>
+	<1343779778.27983.73.camel@gandalf.stny.rr.com>
+	<20120801001811.GX2422@linux.vnet.ibm.com>
+	<20120801004319.GA7043@localhost>
+	<20120822025008.GA8066@localhost>
+	<20120822154908.2e6ef3c0@feng-i7>
+	<CAErSpo7HhdDi4EhbQZ-oZbsbGVvTfZW8MwKn7Tm+6B8jaQxLBg@mail.gmail.com>
+	<20120823154503.15a45b14@feng-i7>
+	<CAE9FiQVXj6sLEs0GiBnVsKAbms-Bnt06xYeT01MBtSjNqaqypA@mail.gmail.com>
+Date: Fri, 7 Sep 2012 18:32:48 -0700
+X-Google-Sender-Auth: cGKZ89xzZNVQMD3TEunjW92vJYw
+Message-ID: <CAE9FiQU2sqXLyMg2KbdKQBaX8WDeagd=OmZ5ELhYgkUQ4b6jZA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] PCI: Use local parameter pci_device_id for pci_get_subsys/class()
+From: Yinghai Lu <yinghai@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Avi Kivity <avi@redhat.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        linux-pci@vger.kernel.org, Feng Tang <feng.tang@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without this patch /sys/class/rtc/$CONFIG_RTC_HCTOSYS_DEVICE/hctosys
-contains a 1 (meaning "This rtc was used to initialize the system
-clock") even if setting the time by do_settimeofday() at bootup failed.
-The RTC can also be used to set the clock on resume, if it did 1,
-otherwise 0.  Previously there was no indication if the RTC was used
-to set the clock in resume.
+On Fri, Sep 7, 2012 at 6:00 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Thu, Aug 23, 2012 at 12:45 AM, Feng Tang <feng.tang@intel.com> wrote:
+>> From 57a28ee5e7662ca28ba4c793aa037d64bd082dee Mon Sep 17 00:00:00 2001
+>> From: Feng Tang <feng.tang@intel.com>
+>> Date: Wed, 22 Aug 2012 15:41:51 +0800
+>> Subject: [PATCH 1/2] PCI: Use local parameter pci_device_id for pci_get_subsys/class()
+>>
+>> This fixes a kernel warning https://lkml.org/lkml/2012/7/31/682
+>>
+>> pci_get_subsys() may get called in late system reboot stage, using
+>> a sleepable kmalloc() sounds fragile and will casue a kernel warning
+>> with my recent commmit 55c844a "x86/reboot: Fix a warning message
+>> triggered by stop_other_cpus()" which disable local interrupt in
+>> late system shutdown/reboot phase. Using a local parameter instead
+>> will fix it and make it eligible for calling forom atomic context.
+>>
+>> Do the same change for the pci_get_class() as suggeted by Bjorn Helgaas
+>>
+>> Bisected-by: Fengguang Wu <fengguang.wu@intel.com>
+>> Signed-off-by: Feng Tang <feng.tang@intel.com>
+>> Reviewed-by: Fengguang Wu <fengguang.wu@intel.com>
+>> ---
+>>  drivers/pci/search.c |   35 +++++++++++------------------------
+>>  1 files changed, 11 insertions(+), 24 deletions(-)
+>>
+>> diff --git a/drivers/pci/search.c b/drivers/pci/search.c
+>> index 993d4a0..78a08b1 100644
+>> --- a/drivers/pci/search.c
+>> +++ b/drivers/pci/search.c
+>> @@ -245,8 +245,7 @@ struct pci_dev *pci_get_subsys(unsigned int vendor, unsigned int device,
+>>                                unsigned int ss_vendor, unsigned int ss_device,
+>>                                struct pci_dev *from)
+>>  {
+>> -       struct pci_dev *pdev;
+>> -       struct pci_device_id *id;
+>> +       struct pci_device_id id;
+>>
+>>         /*
+>>          * pci_find_subsys() can be called on the ide_setup() path,
+>> @@ -257,18 +256,12 @@ struct pci_dev *pci_get_subsys(unsigned int vendor, unsigned int device,
+>>         if (unlikely(no_pci_devices()))
+>>                 return NULL;
+>>
+>> -       id = kzalloc(sizeof(*id), GFP_KERNEL);
+>> -       if (!id)
+>> -               return NULL;
+>> -       id->vendor = vendor;
+>> -       id->device = device;
+>> -       id->subvendor = ss_vendor;
+>> -       id->subdevice = ss_device;
+>> -
+>> -       pdev = pci_get_dev_by_id(id, from);
+>> -       kfree(id);
+>> +       id.vendor = vendor;
+>> +       id.device = device;
+>> +       id.subvendor = ss_vendor;
+>> +       id.subdevice = ss_device;
+>>
+>> -       return pdev;
+>> +       return pci_get_dev_by_id(&id, from);
+>>  }
+>>
+>>  /**
+>> @@ -307,19 +300,13 @@ pci_get_device(unsigned int vendor, unsigned int device, struct pci_dev *from)
+>>   */
+>>  struct pci_dev *pci_get_class(unsigned int class, struct pci_dev *from)
+>>  {
+>> -       struct pci_dev *dev;
+>> -       struct pci_device_id *id;
+>> +       struct pci_device_id id;
+>>
+>> -       id = kzalloc(sizeof(*id), GFP_KERNEL);
+>> -       if (!id)
+>> -               return NULL;
+>> -       id->vendor = id->device = id->subvendor = id->subdevice = PCI_ANY_ID;
+>> -       id->class_mask = PCI_ANY_ID;
+>> -       id->class = class;
+>> +       id.vendor = id.device = id.subvendor = id.subdevice = PCI_ANY_ID;
+>> +       id.class_mask = PCI_ANY_ID;
+>> +       id.class = class;
+>>
+>> -       dev = pci_get_dev_by_id(id, from);
+>> -       kfree(id);
+>> -       return dev;
+>> +       return pci_get_dev_by_id(&id, from);
+>>  }
+>>
+>>  /**
+>
+> with this one in pci/next pci config in /sys are not created.
+>
+> 10:~ # lspci -tv
+> pcilib: Cannot open /sys/bus/pci/devices/0000:00:03.0/config
+> lspci: Unable to read the standard configuration space header of
+> device 0000:00:03.0
+> pcilib: Cannot open /sys/bus/pci/devices/0000:00:02.0/config
+> lspci: Unable to read the standard configuration space header of
+> device 0000:00:02.0
+> pcilib: Cannot open /sys/bus/pci/devices/0000:00:01.3/config
+> lspci: Unable to read the standard configuration space header of
+> device 0000:00:01.3
+> pcilib: Cannot open /sys/bus/pci/devices/0000:00:01.1/config
+> lspci: Unable to read the standard configuration space header of
+> device 0000:00:01.1
+> pcilib: Cannot open /sys/bus/pci/devices/0000:00:01.0/config
+> lspci: Unable to read the standard configuration space header of
+> device 0000:00:01.0
+> pcilib: Cannot open /sys/bus/pci/devices/0000:00:00.0/config
+> lspci: Unable to read the standard configuration space header of
+> device 0000:00:00.0
+> -[0000:00]-
+>
+> bisected to this commit
+>
+> ccee7d23102f5e5765ec24779c5b77472af8f79e is the first bad commit
+> commit ccee7d23102f5e5765ec24779c5b77472af8f79e
+> Author: Feng Tang <feng.tang@intel.com>
+> Date:   Thu Aug 23 15:45:03 2012 +0800
+>
+>     PCI: Use pci_device_id on stack for pci_get_subsys/class() to avoid kmalloc
+>
+>     This fixes a kernel warning https://lkml.org/lkml/2012/7/31/682
+>
+>     pci_get_subsys() may get called in late system reboot stage, using
+>     a sleepable kmalloc() sounds fragile and will cause a kernel warning
+>     with my recent commmit 55c844a "x86/reboot: Fix a warning message
+>     triggered by stop_other_cpus()" which disable local interrupt in
+>     late system shutdown/reboot phase. Using a local parameter instead
+>     will fix it and make it eligible for calling forom atomic context.
+>
+>     Do the same change for the pci_get_class() as suggested by Bjorn Helgaas
+>
+>     [bhelgaas: changelog]
+>     Bisected-by: Fengguang Wu <fengguang.wu@intel.com>
+>     Signed-off-by: Feng Tang <feng.tang@intel.com>
+>     Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+>     Reviewed-by: Fengguang Wu <fengguang.wu@intel.com>
+>
+> :040000 040000 dee62a035816b73abc68e40de8f21c7349efc4cb
+> 70b2a6258bffa1ab963bd650d8f5d02da774fbce M      drivers
+>
+> so the stack get overrun ?
+>
+> Bjorn, I think it is this one that cause lspci broken that I mentioned
+> during meeting at San Diego.
+>
 
-This uses only CONFIG_RTC_HCTOSYS_DEVICE for conditional compilation
-instead of it and CONFIG_RTC_HCTOSYS to be more consistent.
-rtc_hctosys_ret was moved to class.c so class.c no longer depends on
-hctosys.c.
+Greg,
 
-Signed-off-by: David Fries <David@Fries.net>
-Cc: Matthew Garrett <mjg@redhat.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
+Any reason for using kmalloc instead of local variable during your
+rewriting pci search code?
 
-On Fri, Sep 07, 2012 at 04:56:26PM -0700, Andrew Morton wrote:
-> On Sat, 25 Aug 2012 21:19:31 -0500
-> David Fries <david@fries.net> wrote:
-> 
-> > Subject: [PATCH] rtc_sysfs_show_hctosys 0 if resume failed
-> 
-> This doesn't make much sense.  Did you mean "rtc_sysfs_show_hctosys():
-> display 0 if resume failed"?
+commit 95247b57ed844511a212265b45cf9a919753aea1
+Author: Greg Kroah-Hartman <gregkh@suse.de>
+Date:   Wed Feb 13 11:03:58 2008 -0800
 
-Sounds good, I was just trying to keep it short.
+    PCI: clean up search.c a lot
 
-> > The original rtc_sysfs_show_hctosys returnd 1 if this device was the
-> > CONFIG_RTC_HCTOSYS_DEVICE device, a later patch checked
-> > rtc_hctosys_ret from boot, this verifies boot do_settimeofday
-> > succeeded, and sets rtc_hctosys_ret in resume to indicate when
-> > adjusting the clock from resume fails.
-> > 
-> > This uses only CONFIG_RTC_HCTOSYS_DEVICE for conditional compilation
-> > instead of it and CONFIG_RTC_HCTOSYS.  rtc_hctosys_ret was moved to
-> > class.c so rtc_hctosys can be removed with just a Kconfig change if
-> > boot time setting isn't desired.
-> 
-> And this makes my head spin.  What does the patch actually do?  I think
-> it might fix a bug, but it's unclear what that bug is.
+    This cleans up the search.c file, now using the pci list of devices that
+    are created for the driver core, instead of relying on our separate list
+    of devices.  It's better to use the functions already created for this
+    kind of thing, instead of rolling our own all the time.
 
-Too much history apparently.  The obvious bug is
-the previous commit to rtc-sysfs.c
-d0ab4a4d5094e5d17b103dc5073529a04f00a469 
-failed to check if the clock set function succeeded at boot.
+    This work is done in anticipation of getting rid of that second list of
+    pci devices all together.
 
-This also includes the results of setting or not the system clock at
-the last resume operation instead of continuing to only return the
-boot clock set operation.
+    And it ends up saving code, always a nice benefit.
 
-My original goal came from the Nokia N900 2.6.28.10++ where the RTC
-was compiled as a module but Kconfig and Makefile rules required it to
-be compiled in to the kernel to use the RTC in resume, but that's not
-a code requirement, using the RTC at boot is independent of using the
-RTC at resume.  There I changed Kconfig and Makefile to continue
-compiling it as a module, not include the boot time set rtc-core.c and
-allow it to restore the RTC at resume.  I went to do the same upstream
-and found that the v3.0-rc1 kernel no longer allows the RTC core to be
-compiled as a module, but I saw these other issues, so I went ahead
-and wrote them up.  Currently the RTC is either never used to set the
-system time in the kernel, or it allows boot and resume.  I'm not sure
-if there is value of setting the time at boot but not resume, or at
-resume but not boot, but Kconfig/Makefile can support that (without a
-source code change with this patch).
+    This also removes one compiler warning for when CONFIG_PCI_LEGACY is
+    enabled as we no longer internally use the deprecated functions anymore.
 
-> Can you please write a better changelog and title and resend?
-> 
-> Sorry.
-
- drivers/rtc/class.c     |    5 ++++-
- drivers/rtc/hctosys.c   |    4 +---
- drivers/rtc/rtc-sysfs.c |    6 ++++++
- include/linux/rtc.h     |    2 +-
- 4 files changed, 12 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/rtc/class.c b/drivers/rtc/class.c
-index dc4c274..298f69a 100644
---- a/drivers/rtc/class.c
-+++ b/drivers/rtc/class.c
-@@ -39,7 +39,8 @@ static void rtc_device_release(struct device *dev)
-  */
- 
- static struct timespec old_rtc, old_system, old_delta;
--
-+/* Result of the last RTC to system clock attempt. */
-+int rtc_hctosys_ret = -ENODEV;
- 
- static int rtc_suspend(struct device *dev, pm_message_t mesg)
- {
-@@ -84,6 +85,7 @@ static int rtc_resume(struct device *dev)
- 	struct timespec		new_system, new_rtc;
- 	struct timespec		sleep_time;
- 
-+	rtc_hctosys_ret = -ENODEV;
- 	if (strcmp(dev_name(&rtc->dev), CONFIG_RTC_HCTOSYS_DEVICE) != 0)
- 		return 0;
- 
-@@ -117,6 +119,7 @@ static int rtc_resume(struct device *dev)
- 
- 	if (sleep_time.tv_sec >= 0)
- 		timekeeping_inject_sleeptime(&sleep_time);
-+	rtc_hctosys_ret = 0;
- 	return 0;
- }
- 
-diff --git a/drivers/rtc/hctosys.c b/drivers/rtc/hctosys.c
-index bc90b09..4aa60d7 100644
---- a/drivers/rtc/hctosys.c
-+++ b/drivers/rtc/hctosys.c
-@@ -22,8 +22,6 @@
-  * the best guess is to add 0.5s.
-  */
- 
--int rtc_hctosys_ret = -ENODEV;
--
- static int __init rtc_hctosys(void)
- {
- 	int err = -ENODEV;
-@@ -56,7 +54,7 @@ static int __init rtc_hctosys(void)
- 
- 	rtc_tm_to_time(&tm, &tv.tv_sec);
- 
--	do_settimeofday(&tv);
-+	err = do_settimeofday(&tv);
- 
- 	dev_info(rtc->dev.parent,
- 		"setting system clock to "
-diff --git a/drivers/rtc/rtc-sysfs.c b/drivers/rtc/rtc-sysfs.c
-index 380083c..b70e2bb 100644
---- a/drivers/rtc/rtc-sysfs.c
-+++ b/drivers/rtc/rtc-sysfs.c
-@@ -102,6 +102,12 @@ rtc_sysfs_set_max_user_freq(struct device *dev, struct device_attribute *attr,
- 	return n;
- }
- 
-+/**
-+ * rtc_sysfs_show_hctosys - indicate if the given RTC set the system time
-+ *
-+ * Returns 1 if the system clock was set by this RTC at the last
-+ * boot or resume event.
-+ */
- static ssize_t
- rtc_sysfs_show_hctosys(struct device *dev, struct device_attribute *attr,
- 		char *buf)
-diff --git a/include/linux/rtc.h b/include/linux/rtc.h
-index f071b39..20ec4d3 100644
---- a/include/linux/rtc.h
-+++ b/include/linux/rtc.h
-@@ -276,7 +276,7 @@ static inline bool is_leap_year(unsigned int year)
- 	return (!(year % 4) && (year % 100)) || !(year % 400);
- }
- 
--#ifdef CONFIG_RTC_HCTOSYS
-+#ifdef CONFIG_RTC_HCTOSYS_DEVICE
- extern int rtc_hctosys_ret;
- #else
- #define rtc_hctosys_ret -ENODEV
--- 
-1.7.2.5
-
+    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
