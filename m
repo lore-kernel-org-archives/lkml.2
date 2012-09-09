@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756402Ab2IIXg5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 19:36:57 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51060 "EHLO
+	id S1756619Ab2IIXiF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 19:38:05 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51064 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755293Ab2IIXPv (ORCPT
+	by vger.kernel.org with ESMTP id S1755570Ab2IIXPu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 19:15:51 -0400
-Message-Id: <20120909224155.647306922@decadent.org.uk>
+	Sun, 9 Sep 2012 19:15:50 -0400
+Message-Id: <20120909224154.984348034@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 09 Sep 2012 23:42:25 +0100
+Date: Sun, 09 Sep 2012 23:42:20 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mathias Krause <minipli@googlemail.com>,
-        Gerrit Renker <gerrit@erg.abdn.ac.uk>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 35/95] dccp: check ccid before dereferencing
+        alan@lxorguk.ukuu.org.uk, Miklos Szeredi <mszeredi@suse.cz>,
+        Valentin Avram <aval13@gmail.com>, Peter Moody <pmoody@google.com>,
+        Eric Paris <eparis@redhat.com>
+Subject: [ 30/95] audit: fix refcounting in audit-tree
 In-Reply-To: <20120909224150.641491654@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,44 +29,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-commit 276bdb82dedb290511467a5a4fdbe9f0b52dce6f upstream.
+commit a2140fc0cb0325bb6384e788edd27b9a568714e2 upstream.
 
-ccid_hc_rx_getsockopt() and ccid_hc_tx_getsockopt() might be called with
-a NULL ccid pointer leading to a NULL pointer dereference. This could
-lead to a privilege escalation if the attacker is able to map page 0 and
-prepare it with a fake ccid_ops pointer.
+Refcounting of fsnotify_mark in audit tree is broken.  E.g:
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Gerrit Renker <gerrit@erg.abdn.ac.uk>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+                              refcount
+create_chunk
+  alloc_chunk                 1
+  fsnotify_add_mark           2
+
+untag_chunk
+  fsnotify_get_mark           3
+  fsnotify_destroy_mark
+    audit_tree_freeing_mark   2
+  fsnotify_put_mark           1
+  fsnotify_put_mark           0
+  via destroy_list
+    fsnotify_mark_destroy    -1
+
+This was reported by various people as triggering Oops when stopping auditd.
+
+We could just remove the put_mark from audit_tree_freeing_mark() but that would
+break freeing via inode destruction.  So this patch simply omits a put_mark
+after calling destroy_mark or adds a get_mark before.
+
+The additional get_mark is necessary where there's no other put_mark after
+fsnotify_destroy_mark() since it assumes that the caller is holding a reference
+(or the inode is keeping the mark pinned, not the case here AFAICS).
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Reported-by: Valentin Avram <aval13@gmail.com>
+Reported-by: Peter Moody <pmoody@google.com>
+Acked-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/dccp/ccid.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/audit_tree.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/net/dccp/ccid.h b/net/dccp/ccid.h
-index 75c3582..fb85d37 100644
---- a/net/dccp/ccid.h
-+++ b/net/dccp/ccid.h
-@@ -246,7 +246,7 @@ static inline int ccid_hc_rx_getsockopt(struct ccid *ccid, struct sock *sk,
- 					u32 __user *optval, int __user *optlen)
- {
- 	int rc = -ENOPROTOOPT;
--	if (ccid->ccid_ops->ccid_hc_rx_getsockopt != NULL)
-+	if (ccid != NULL && ccid->ccid_ops->ccid_hc_rx_getsockopt != NULL)
- 		rc = ccid->ccid_ops->ccid_hc_rx_getsockopt(sk, optname, len,
- 						 optval, optlen);
- 	return rc;
-@@ -257,7 +257,7 @@ static inline int ccid_hc_tx_getsockopt(struct ccid *ccid, struct sock *sk,
- 					u32 __user *optval, int __user *optlen)
- {
- 	int rc = -ENOPROTOOPT;
--	if (ccid->ccid_ops->ccid_hc_tx_getsockopt != NULL)
-+	if (ccid != NULL && ccid->ccid_ops->ccid_hc_tx_getsockopt != NULL)
- 		rc = ccid->ccid_ops->ccid_hc_tx_getsockopt(sk, optname, len,
- 						 optval, optlen);
- 	return rc;
+diff --git a/kernel/audit_tree.c b/kernel/audit_tree.c
+index 69a5851..2b2ffff 100644
+--- a/kernel/audit_tree.c
++++ b/kernel/audit_tree.c
+@@ -250,7 +250,6 @@ static void untag_chunk(struct node *p)
+ 		spin_unlock(&hash_lock);
+ 		spin_unlock(&entry->lock);
+ 		fsnotify_destroy_mark(entry);
+-		fsnotify_put_mark(entry);
+ 		goto out;
+ 	}
+ 
+@@ -293,7 +292,6 @@ static void untag_chunk(struct node *p)
+ 	spin_unlock(&hash_lock);
+ 	spin_unlock(&entry->lock);
+ 	fsnotify_destroy_mark(entry);
+-	fsnotify_put_mark(entry);
+ 	goto out;
+ 
+ Fallback:
+@@ -332,6 +330,7 @@ static int create_chunk(struct inode *inode, struct audit_tree *tree)
+ 		spin_unlock(&hash_lock);
+ 		chunk->dead = 1;
+ 		spin_unlock(&entry->lock);
++		fsnotify_get_mark(entry);
+ 		fsnotify_destroy_mark(entry);
+ 		fsnotify_put_mark(entry);
+ 		return 0;
+@@ -412,6 +411,7 @@ static int tag_chunk(struct inode *inode, struct audit_tree *tree)
+ 		spin_unlock(&chunk_entry->lock);
+ 		spin_unlock(&old_entry->lock);
+ 
++		fsnotify_get_mark(chunk_entry);
+ 		fsnotify_destroy_mark(chunk_entry);
+ 
+ 		fsnotify_put_mark(chunk_entry);
+@@ -445,7 +445,6 @@ static int tag_chunk(struct inode *inode, struct audit_tree *tree)
+ 	spin_unlock(&old_entry->lock);
+ 	fsnotify_destroy_mark(old_entry);
+ 	fsnotify_put_mark(old_entry); /* pair to fsnotify_find mark_entry */
+-	fsnotify_put_mark(old_entry); /* and kill it */
+ 	return 0;
+ }
+ 
 
 
