@@ -1,38 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754772Ab2IITaH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 15:30:07 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:44640 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752216Ab2IITaF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 15:30:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <1347214667.7709.58.camel@deadeye.wl.decadent.org.uk>
-References: <5017A064.1030605@unicontrols.cz>
-	<5018AFA8.8070709@lougher.demon.co.uk>
-	<CAMuHMdXXP=iF8qiBydYGgaKUpTR=88Y7uUTf9uquA7cbwMeo7w@mail.gmail.com>
-	<1347214667.7709.58.camel@deadeye.wl.decadent.org.uk>
-Date: Sun, 9 Sep 2012 20:30:03 +0100
-Message-ID: <CAB3wodd5WP6x1eiEh0D1b4kU78J-V2bFPrmzKumaA9_7BukWSw@mail.gmail.com>
-Subject: Re: [Squashfs-devel] PROBLEM: mount empty SquashFS
-From: Phillip Lougher <phillip.lougher@gmail.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Phillip Lougher <phillip@lougher.demon.co.uk>,
-        Cyril Strejc <strejc@unicontrols.cz>, phillip@squashfs.org.uk,
-        squashfs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754778Ab2IIUDs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 16:03:48 -0400
+Received: from mga09.intel.com ([134.134.136.24]:33180 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754197Ab2IIUDr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Sep 2012 16:03:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,126,1344236400"; 
+   d="scan'208";a="200318663"
+From: Andi Kleen <andi@firstfloor.org>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH] compat_ioctl: Remove unused local typedef
+Date: Sun,  9 Sep 2012 13:03:43 -0700
+Message-Id: <1347221023-10841-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 9, 2012 at 7:17 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
->
-> I've queued this up for 3.2, thanks.
+From: Andi Kleen <ak@linux.intel.com>
 
-Thanks Ben
+gcc 4.8 always warns
 
-Phillip
-.
+fs/compat_ioctl.c: In function 'serial_struct_ioctl':
+fs/compat_ioctl.c:609:38: warning: typedef 'SS' locally defined but not used [-Wunused-local-typedefs]
+         typedef struct serial_struct SS;
+
+Indeed that typedef is unused, so just remove it.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ fs/compat_ioctl.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/fs/compat_ioctl.c b/fs/compat_ioctl.c
+index debdfe0..e6f11a3 100644
+--- a/fs/compat_ioctl.c
++++ b/fs/compat_ioctl.c
+@@ -606,7 +606,6 @@ struct serial_struct32 {
+ static int serial_struct_ioctl(unsigned fd, unsigned cmd,
+ 			struct serial_struct32 __user *ss32)
+ {
+-        typedef struct serial_struct SS;
+         typedef struct serial_struct32 SS32;
+         int err;
+         struct serial_struct ss;
+-- 
+1.7.7.6
+
