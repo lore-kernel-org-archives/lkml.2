@@ -1,141 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755457Ab2IIVcd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 17:32:33 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:60016 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754038Ab2IIVcb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 17:32:31 -0400
-Date: Sun, 9 Sep 2012 23:32:28 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: sgruszka@redhat.com, linux-wireless@vger.kernel.org,
-        johannes.berg@intel.com, wey-yi.w.guy@intel.com, ilw@linux.intel.com,
-        kernel list <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@osdl.org>, linux-mm@kvack.org
-Subject: iwl3945: order 5 allocation during ifconfig up; vm problem?
-Message-ID: <20120909213228.GA5538@elf.ucw.cz>
+	id S1755553Ab2IIVkW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 17:40:22 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:44427 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754939Ab2IIVkU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Sep 2012 17:40:20 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+Subject: Re: [PATCH 1/3] devfreq: core updates to support devices which can idle
+Date: Sun, 9 Sep 2012 23:46:39 +0200
+User-Agent: KMail/1.13.6 (Linux/3.6.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: mturquette@linaro.org, myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        patches@linaro.org, linaro-dev@lists.linaro.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1346682578-24312-1-git-send-email-rajagopal.venkat@linaro.org> <1346682578-24312-2-git-send-email-rajagopal.venkat@linaro.org>
+In-Reply-To: <1346682578-24312-2-git-send-email-rajagopal.venkat@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209092346.39877.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Monday, September 03, 2012, Rajagopal Venkat wrote:
+> Prepare devfreq core framework to support devices which
+> can idle. When device idleness is detected perhaps through
+> runtime-pm, need some mechanism to suspend devfreq load
+> monitoring and resume back when device is online. Present
+> code continues monitoring unless device is removed from
+> devfreq core.
+> 
+> This patch introduces following design changes,
+> 
+> - use per device work instead of global work to monitor device
+>   load. This enables suspend/resume of device devfreq and
+>   reduces monitoring code complexity.
+> - decouple delayed work based load monitoring logic from core
+>   by introducing helpers functions to be used by governors. This
+>   provides flexibility for governors either to use delayed work
+>   based monitoring functions or to implement their own mechanism.
+> - devfreq core interacts with governors via events to perform
+>   specific actions. These events include start/stop devfreq.
+>   This sets ground for adding suspend/resume events.
+> 
+> The devfreq apis are not modified and are kept intact.
+> 
+> Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
 
-On 3.6.0-rc2+, I tried to turn on the wireless, but got
+This one looks like a nice simplification.  I wonder if everyone in the CC list
+is fine with it?
 
-root@amd:~# ifconfig wlan0 10.0.0.6 up
-SIOCSIFFLAGS: Cannot allocate memory
-SIOCSIFFLAGS: Cannot allocate memory
-root@amd:~# 
+One remark below.
 
-It looks like it uses "a bit too big" allocations to allocate
-firmware...? Order five allocation....
+> ---
+>  drivers/devfreq/devfreq.c                 | 376 ++++++++++--------------------
+>  drivers/devfreq/governor.h                |   9 +
+>  drivers/devfreq/governor_performance.c    |  16 +-
+>  drivers/devfreq/governor_powersave.c      |  16 +-
+>  drivers/devfreq/governor_simpleondemand.c |  33 +++
+>  drivers/devfreq/governor_userspace.c      |  23 +-
+>  include/linux/devfreq.h                   |  31 +--
+>  7 files changed, 220 insertions(+), 284 deletions(-)
+> 
+> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
+> index b146d76..be524c7 100644
+> --- a/drivers/devfreq/devfreq.c
+> +++ b/drivers/devfreq/devfreq.c
+> @@ -30,17 +30,11 @@
+>  struct class *devfreq_class;
+>  
+>  /*
+> - * devfreq_work periodically monitors every registered device.
+> - * The minimum polling interval is one jiffy. The polling interval is
+> - * determined by the minimum polling period among all polling devfreq
+> - * devices. The resolution of polling interval is one jiffy.
+> + * devfreq core provides delayed work based load monitoring helper
+> + * functions. Governors can use these or can implement their own
+> + * monitoring mechanism.
+>   */
+> -static bool polling;
+>  static struct workqueue_struct *devfreq_wq;
+> -static struct delayed_work devfreq_work;
+> -
+> -/* wait removing if this is to be removed */
+> -static struct devfreq *wait_remove_device;
+>  
+>  /* The list of all device-devfreq */
+>  static LIST_HEAD(devfreq_list);
+> @@ -72,6 +66,8 @@ static struct devfreq *find_device_devfreq(struct device *dev)
+>  	return ERR_PTR(-ENODEV);
+>  }
+>  
+> +/* Load monitoring helper functions for governors use */
+> +
+>  /**
+>   * update_devfreq() - Reevaluate the device and configure frequency.
+>   * @devfreq:	the devfreq instance.
+> @@ -121,6 +117,90 @@ int update_devfreq(struct devfreq *devfreq)
+>  }
+>  
+>  /**
+> + * devfreq_monitor() - Periodically poll devfreq objects.
+> + * @work: the work struct used to run devfreq_monitor periodically.
+> + *
+> + */
+> +static void devfreq_monitor(struct work_struct *work)
+> +{
+> +	int err;
+> +	struct devfreq *devfreq = container_of(work,
+> +					struct devfreq, work.work);
+> +
+> +	mutex_lock(&devfreq->lock);
+> +	err = update_devfreq(devfreq);
+> +	mutex_unlock(&devfreq->lock);
+> +	if (err)
+> +		dev_err(&devfreq->dev, "dvfs failed with (%d) error\n", err);
+> +
+> +	queue_delayed_work(devfreq_wq, &devfreq->work,
+> +				msecs_to_jiffies(devfreq->profile->polling_ms));
+> +}
+> +
+> +/**
+> + * devfreq_monitor_start() - Start load monitoring of devfreq instance
+> + *			using default delayed work
+> + * @devfreq:	the devfreq instance.
+> + *
+> + * Returns 0 if monitoring started, non-zero otherwise.
+> + * Note: This function is exported for governors.
+> + */
+> +int devfreq_monitor_start(struct devfreq *devfreq)
+> +{
+> +	INIT_DEFERRABLE_WORK(&devfreq->work, devfreq_monitor);
+> +	return !queue_delayed_work(devfreq_wq, &devfreq->work,
+> +			msecs_to_jiffies(devfreq->profile->polling_ms));
+> +}
+> +
+> +/**
+> + * devfreq_monitor_stop() - Stop load monitoring of a devfreq instance
+> + * @devfreq:	the devfreq instance.
+> + *
+> + * Note: This function is exported for governors.
+> + */
+> +void devfreq_monitor_stop(struct devfreq *devfreq)
+> +{
+> +	cancel_delayed_work_sync(&devfreq->work);
+> +}
+> +
+> +/**
+> + * devfreq_monitor_suspend() - Suspend load monitoring of a devfreq instance
+> + * @devfreq:    the devfreq instance.
+> + *
+> + * Note: This function is exported for governors.
+> + */
 
-Hmm... then I did "echo 3  > /proc/sys/vm/drop_caches" and now the
-network works. Is it VM problem that it failed to allocate memory when
-it was freeable?
+It would be good to say in the kerneldoc comment what the idea is, because it
+is not particularly clear from the code.  In particular, why can't
+devfreq_monitor_suspend() be the same as devfreq_monitor_stop()?
 
-							Pavel
+> +int devfreq_monitor_suspend(struct devfreq *devfreq)
+> +{
+> +	int ret = -EPERM;
+> +
+> +	if (delayed_work_pending(&devfreq->work)) {
+> +		cancel_delayed_work_sync(&devfreq->work);
+> +		ret = 0;
+> +	}
+> +
+> +	return ret;
+> +}
+> +
+> +/**
+> + * devfreq_monitor_resume() - Resume load monitoring of a devfreq instance
+> + * @devfreq:    the devfreq instance.
+> + *
+> + * Returns 0 if monitoring re-started, non-zero otherwise.
+> + * Note: This function is exported for governors.
 
-iwl3945 0000:03:00.0: failed to allocate pci memory
-iwl3945 0000:03:00.0: Could not read microcode: -12
-firmware 0000:03:00.0: firmware_loading_store: vmap() failed
-iwl3945 0000:03:00.0: iwlwifi-3945-2.ucode firmware file req failed:
--2
-iwl3945 0000:03:00.0: Loaded firmware iwlwifi-3945-1.ucode, which is
-deprecated.  Please use API v2 instead.
-iwl3945 0000:03:00.0: loaded firmware version 15.32.2.9
-ifconfig: page allocation failure: order:5, mode:0x80d0
-Pid: 21116, comm: ifconfig Tainted: G        W    3.6.0-rc2+ #228
-Call Trace:
- [<c029ebf6>] warn_alloc_failed+0xb6/0x100
- [<c02a0321>] __alloc_pages_nodemask+0x4c1/0x6e0
- [<c020699c>] dma_generic_alloc_coherent+0x8c/0xc0
- [<c05c4d59>] il3945_mac_start+0x1269/0x1280
- [<c0206910>] ? dma_generic_free_coherent+0x30/0x30
- [<c0800f64>] ? packet_notifier+0xc4/0x1a0
- [<c088094c>] ieee80211_do_open+0x28c/0x840
- [<c087f399>] ? ieee80211_check_concurrent_iface+0x19/0x190
- [<c024c7ea>] ? raw_notifier_call_chain+0x1a/0x20
- [<c0880f3b>] ieee80211_open+0x3b/0x80
- [<c0769966>] __dev_open+0x96/0xf0
- [<c08c73a5>] ? _raw_spin_unlock_bh+0x25/0x30
- [<c076633d>] __dev_change_flags+0x7d/0x150
- [<c076988e>] dev_change_flags+0x1e/0x60
- [<c07d819d>] devinet_ioctl+0x69d/0x770
- [<c076b026>] ? dev_ioctl+0x336/0x740
- [<c07d959a>] inet_ioctl+0x9a/0xc0
- [<c0756a33>] sock_ioctl+0x63/0x240
- [<c07569d0>] ? sock_fasync+0x80/0x80
- [<c02d91a3>] do_vfs_ioctl+0x83/0x570
- [<c0223a50>] ? mm_fault_error+0x170/0x170
- [<c024ba86>] ? up_read+0x16/0x30
- [<c0223bcc>] ? do_page_fault+0x17c/0x3b0
- [<c02d96c9>] sys_ioctl+0x39/0x70
- [<c08c7c10>] sysenter_do_call+0x12/0x31
-Mem-Info:
-DMA per-cpu:
-CPU    0: hi:    0, btch:   1 usd:   0
-CPU    1: hi:    0, btch:   1 usd:   0
-Normal per-cpu:
-CPU    0: hi:  186, btch:  31 usd:  30
-CPU    1: hi:  186, btch:  31 usd:   0
-HighMem per-cpu:
-CPU    0: hi:  186, btch:  31 usd:   0
-CPU    1: hi:  186, btch:  31 usd:   0
-active_anon:250783 inactive_anon:118977 isolated_anon:0
- active_file:14686 inactive_file:13826 isolated_file:0
- unevictable:0 dirty:3050 writeback:0 unstable:0
- free:30113 slab_reclaimable:43820 slab_unreclaimable:34426
- mapped:11898 shmem:19084 pagetables:3043 bounce:0
-DMA free:1580kB min:64kB low:80kB high:96kB active_anon:0kB
-inactive_anon:0kB active_file:0kB inactive_file:0kB unevictable:0kB
-isolated(anon):0kB isolated(file):0kB present:15788kB mlocked:0kB
-dirty:0kB writeback:0kB mapped:0kB shmem:0kB slab_reclaimable:0kB
-slab_unreclaimable:0kB kernel_stack:0kB pagetables:0kB unstable:0kB
-bounce:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? yes
-lowmem_reserve[]: 0 864 2005 2005
-Normal free:115348kB min:3728kB low:4660kB high:5592kB
-active_anon:193616kB inactive_anon:192540kB active_file:19528kB
-inactive_file:12916kB unevictable:0kB isolated(anon):0kB
-isolated(file):0kB present:885072kB mlocked:0kB dirty:5388kB
-writeback:0kB mapped:9212kB shmem:29100kB slab_reclaimable:175280kB
-slab_unreclaimable:137704kB kernel_stack:6032kB pagetables:12172kB
-unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0
-all_unreclaimable? no
-lowmem_reserve[]: 0 0 9125 9125
-HighMem free:3524kB min:512kB low:1740kB high:2972kB
-active_anon:809516kB inactive_anon:283368kB active_file:39216kB
-inactive_file:42388kB unevictable:0kB isolated(anon):0kB
-isolated(file):0kB present:1168080kB mlocked:0kB dirty:6812kB
-writeback:0kB mapped:38380kB shmem:47236kB slab_reclaimable:0kB
-slab_unreclaimable:0kB kernel_stack:0kB pagetables:0kB unstable:0kB
-bounce:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
-lowmem_reserve[]: 0 0 0 0
-DMA: 1*4kB 1*8kB 0*16kB 1*32kB 2*64kB 1*128kB 1*256kB 0*512kB 1*1024kB
-0*2048kB 0*4096kB = 1580kB
-Normal: 4729*4kB 8354*8kB 1683*16kB 74*32kB 4*64kB 0*128kB 0*256kB
-0*512kB 0*1024kB 0*2048kB 0*4096kB = 115300kB
-HighMem: 537*4kB 118*8kB 27*16kB 0*32kB 0*64kB 0*128kB 0*256kB 0*512kB
-0*1024kB 0*2048kB 0*4096kB = 3524kB
-62305 total pagecache pages
-14672 pages in swap cache
-Swap cache stats: add 96156, delete 81484, find 3042279/3044117
-Free swap  = 480024kB
-Total swap = 779148kB
-521920 pages RAM
-294610 pages HighMem
-9083 pages reserved
-244243 pages shared
-450983 pages non-shared
-iwl3945 0000:03:00.0: failed to allocate pci memory
-iwl3945 0000:03:00.0: Could not read microcode: -12
+It would be good to explain the idea here too.
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> + */
+> +int devfreq_monitor_resume(struct devfreq *devfreq)
+> +{
+> +	int ret = -EPERM;
+> +
+> +	if (!delayed_work_pending(&devfreq->work)) {
+> +		ret = !queue_delayed_work(devfreq_wq, &devfreq->work,
+> +				msecs_to_jiffies(devfreq->profile->polling_ms));
+> +	}
+> +
+> +	return ret;
+> +}
+
+Thanks,
+Rafael
