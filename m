@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756221Ab2IIX0f (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 19:26:35 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51347 "EHLO
+	id S1756101Ab2IIXQj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 19:16:39 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51295 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756117Ab2IIXQm (ORCPT
+	by vger.kernel.org with ESMTP id S1756062Ab2IIXQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 19:16:42 -0400
-Message-Id: <20120909224158.159089877@decadent.org.uk>
+	Sun, 9 Sep 2012 19:16:33 -0400
+Message-Id: <20120909224201.057584373@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 09 Sep 2012 23:42:44 +0100
+Date: Sun, 09 Sep 2012 23:43:06 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Amerigo Wang <amwang@redhat.com>,
-        David Miller <davem@davemloft.net>
-Subject: [ 54/95] netconsole: remove a redundant netconsole_target_put()
+        alan@lxorguk.ukuu.org.uk,
+        Alexandre Bounine <alexandre.bounine@idt.com>,
+        Matt Porter <mporter@kernel.crashing.org>
+Subject: [ 76/95] rapidio/tsi721: fix unused variable compiler warning
 In-Reply-To: <20120909224150.641491654@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,39 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amerigo Wang <amwang@redhat.com>
+From: Alexandre Bounine <alexandre.bounine@idt.com>
 
-commit 72d3eb13b5c0abe7d63efac41f39c5b644c7bbaa upstream.
+commit 9a9a9a7adafe62a34de8b4fb48936c1c5f9bafa5 upstream.
 
-This netconsole_target_put() is obviously redundant, and it
-causes a kernel segfault when removing a bridge device which has
-netconsole running on it.
+Fix unused variable compiler warning when built with CONFIG_RAPIDIO_DEBUG
+option off.
 
-This is caused by:
+This patch is applicable to kernel versions starting from v3.2
 
-	commit 8d8fc29d02a33e4bd5f4fa47823c1fd386346093
-	Author: Amerigo Wang <amwang@redhat.com>
-	Date:   Thu May 19 21:39:10 2011 +0000
-
-	    netpoll: disable netpoll when enslave a device
-
-Cc: David Miller <davem@davemloft.net>
-Signed-off-by: Cong Wang <amwang@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: Matt Porter <mporter@kernel.crashing.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/netconsole.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/rapidio/devices/tsi721.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/net/netconsole.c
-+++ b/drivers/net/netconsole.c
-@@ -652,7 +652,6 @@ static int netconsole_netdev_event(struc
- 							  flags);
- 					dev_put(nt->np.dev);
- 					nt->np.dev = NULL;
--					netconsole_target_put(nt);
- 				}
- 				nt->enabled = 0;
- 				stopped = true;
+diff --git a/drivers/rapidio/devices/tsi721.c b/drivers/rapidio/devices/tsi721.c
+index c0d6a04..5d44252 100644
+--- a/drivers/rapidio/devices/tsi721.c
++++ b/drivers/rapidio/devices/tsi721.c
+@@ -2219,7 +2219,7 @@ static int __devinit tsi721_probe(struct pci_dev *pdev,
+ 				  const struct pci_device_id *id)
+ {
+ 	struct tsi721_device *priv;
+-	int i, cap;
++	int cap;
+ 	int err;
+ 	u32 regval;
+ 
+@@ -2239,12 +2239,15 @@ static int __devinit tsi721_probe(struct pci_dev *pdev,
+ 	priv->pdev = pdev;
+ 
+ #ifdef DEBUG
++	{
++	int i;
+ 	for (i = 0; i <= PCI_STD_RESOURCE_END; i++) {
+ 		dev_dbg(&pdev->dev, "res[%d] @ 0x%llx (0x%lx, 0x%lx)\n",
+ 			i, (unsigned long long)pci_resource_start(pdev, i),
+ 			(unsigned long)pci_resource_len(pdev, i),
+ 			pci_resource_flags(pdev, i));
+ 	}
++	}
+ #endif
+ 	/*
+ 	 * Verify BAR configuration
 
 
