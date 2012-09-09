@@ -1,108 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754197Ab2IIPim (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 11:38:42 -0400
-Received: from smtp-out-022.synserver.de ([212.40.185.22]:1270 "EHLO
-	smtp-out-022.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753964Ab2IIPil (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 11:38:41 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 23992
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: Damien Cassou <damien.cassou@lifl.fr>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH] fbdev: jz4740: Use devm_request_and_ioremap
-Date: Sun,  9 Sep 2012 17:38:41 +0200
-Message-Id: <1347205121-5551-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.7.2.5
+	id S1754240Ab2IIQGh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 12:06:37 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751075Ab2IIQGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Sep 2012 12:06:36 -0400
+Message-ID: <504CBE87.8010607@nod.at>
+Date: Sun, 09 Sep 2012 18:06:31 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120427 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org,
+        user-mode-linux-devel@lists.sourceforge.net,
+        linux-kbuild@vger.kernel.org
+Subject: Re: [uml-devel] [PATCH/RFC] um: Preinclude include/linux/kern_levels.h
+References: <1345140905-10209-1-git-send-email-geert@linux-m68k.org> <CAMuHMdVyWRGyTPbA9pL267XWnvBnbN77353WjF8Ovmd062NSwg@mail.gmail.com> <1347203365.2050.3.camel@joe2Laptop>
+In-Reply-To: <1347203365.2050.3.camel@joe2Laptop>
+X-Enigmail-Version: 1.4.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig64DBF06586464F5E7296D818"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_request_and_ioremap instead of request_mem_region + devm_ioremap.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig64DBF06586464F5E7296D818
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-This also fixes the following compile error introduced in commit b2ca7f4d
-("drivers/video/jz4740_fb.c: use devm_ functions"):
+Am 09.09.2012 17:09, schrieb Joe Perches:
+> On Sun, 2012-09-09 at 10:33 +0200, Geert Uytterhoeven wrote:
+>> Ping?
+>=20
+> Richard?  Are you going to pick up this patch?
+> It seems sensible.
+>=20
+> Geert, I suggest sending it directly to Linus as a fix
+> if Richard doesn't respond in a few days.
 
-drivers/video/jz4740_fb.c: In function 'jzfb_probe':
-	drivers/video/jz4740_fb.c:676:2: error: implicit declaration of function 'devm_ioremap'
-	drivers/video/jz4740_fb.c:676:13: warning: assignment makes pointer from integer without a cast
+I'll pick up.
+I'm still on vacation and therefore a bit slow. :)
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- drivers/video/jz4740_fb.c |   24 +++---------------------
- 1 files changed, 3 insertions(+), 21 deletions(-)
+Thanks,
+//richard
 
-diff --git a/drivers/video/jz4740_fb.c b/drivers/video/jz4740_fb.c
-index 7669770..b0df279 100644
---- a/drivers/video/jz4740_fb.c
-+++ b/drivers/video/jz4740_fb.c
-@@ -632,23 +632,10 @@ static int __devinit jzfb_probe(struct platform_device *pdev)
- 		return -ENXIO;
- 	}
- 
--	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!mem) {
--		dev_err(&pdev->dev, "Failed to get register memory resource\n");
--		return -ENXIO;
--	}
--
--	mem = request_mem_region(mem->start, resource_size(mem), pdev->name);
--	if (!mem) {
--		dev_err(&pdev->dev, "Failed to request register memory region\n");
--		return -EBUSY;
--	}
--
- 	fb = framebuffer_alloc(sizeof(struct jzfb), &pdev->dev);
- 	if (!fb) {
- 		dev_err(&pdev->dev, "Failed to allocate framebuffer device\n");
--		ret = -ENOMEM;
--		goto err_release_mem_region;
-+		return -ENOMEM;
- 	}
- 
- 	fb->fbops = &jzfb_ops;
-@@ -657,7 +644,6 @@ static int __devinit jzfb_probe(struct platform_device *pdev)
- 	jzfb = fb->par;
- 	jzfb->pdev = pdev;
- 	jzfb->pdata = pdata;
--	jzfb->mem = mem;
- 
- 	jzfb->ldclk = devm_clk_get(&pdev->dev, "lcd");
- 	if (IS_ERR(jzfb->ldclk)) {
-@@ -673,9 +659,9 @@ static int __devinit jzfb_probe(struct platform_device *pdev)
- 		goto err_framebuffer_release;
- 	}
- 
--	jzfb->base = devm_ioremap(&pdev->dev, mem->start, resource_size(mem));
-+	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	jzfb->base = devm_request_and_ioremap(&pdev->dev, mem);
- 	if (!jzfb->base) {
--		dev_err(&pdev->dev, "Failed to ioremap register memory region\n");
- 		ret = -EBUSY;
- 		goto err_framebuffer_release;
- 	}
-@@ -736,8 +722,6 @@ err_free_devmem:
- 	jzfb_free_devmem(jzfb);
- err_framebuffer_release:
- 	framebuffer_release(fb);
--err_release_mem_region:
--	release_mem_region(mem->start, resource_size(mem));
- 	return ret;
- }
- 
-@@ -750,8 +734,6 @@ static int __devexit jzfb_remove(struct platform_device *pdev)
- 	jz_gpio_bulk_free(jz_lcd_ctrl_pins, jzfb_num_ctrl_pins(jzfb));
- 	jz_gpio_bulk_free(jz_lcd_data_pins, jzfb_num_data_pins(jzfb));
- 
--	release_mem_region(jzfb->mem->start, resource_size(jzfb->mem));
--
- 	fb_dealloc_cmap(&jzfb->fb->cmap);
- 	jzfb_free_devmem(jzfb);
- 
--- 
-1.7.2.5
 
+--------------enig64DBF06586464F5E7296D818
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQEcBAEBAgAGBQJQTL6IAAoJEN9758yqZn9eFQoIAJn/9LWPPRIGNnmKte46phZn
+A6orLxdv4viC4mG9g4v4x/XM7hHubQzLG/YUu8f9H40J51nh7kDzuwz5oTXCZfXE
+kEuiIjfcWi7nTkJaRo/k6FZqwCDJFn4aFsitiJSM+eZ5IR8giXQTEn1vgbGvHk4K
+B0PUGLsQ2/vwX4vB0I/Zs5tcDdn5rOBgeemU8lf+U8QbKwFPt9p0Txa7TEbr2YGd
++nWupFk6UL9XQxPjTvLpswN+AAEZ422Bi3zbJRsVtMfgNUVQv0uq3RlyGcigwcBd
+7pAhIOR/80hCN45Fod/EcOhYexDBksot2iBadUYy7Ae5T2DON0taKNKvKeHn8N4=
+=iHTU
+-----END PGP SIGNATURE-----
+
+--------------enig64DBF06586464F5E7296D818--
