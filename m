@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754996Ab2IIUUG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 16:20:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47600 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754968Ab2IIUUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 16:20:03 -0400
-Date: Mon, 10 Sep 2012 01:49:47 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, ldv-project@ispras.ru,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH] virtio: console: fix error handling in init() function
-Message-ID: <20120909201947.GF16985@amit.redhat.com>
-References: <1346528977-23066-1-git-send-email-khoroshilov@ispras.ru>
+	id S1754982Ab2IIU0L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 16:26:11 -0400
+Received: from sd-mail-sa-01.sanoma.fi ([158.127.18.161]:54857 "EHLO
+	sd-mail-sa-01.sanoma.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754205Ab2IIU0J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Sep 2012 16:26:09 -0400
+Message-ID: <20120909232604.342762ujqb3iewow@www.81.fi>
+Date: Sun, 09 Sep 2012 23:26:04 +0300
+From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Romain Francoise <romain@orebokech.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Re: Linux 3.6-rc5
+References: <CA+55aFwnPfdyTTG6WTuhChomg=t9nSS18xracq3iQ3F5+PWOog@mail.gmail.com>
+ <87har7h84h.fsf@silenus.orebokech.com>
+ <20120909191958.GB9782@gondor.apana.org.au>
+In-Reply-To: <20120909191958.GB9782@gondor.apana.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
 Content-Disposition: inline
-In-Reply-To: <1346528977-23066-1-git-send-email-khoroshilov@ispras.ru>
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexey,
+Quoting Herbert Xu <herbert@gondor.apana.org.au>:
 
-On (Sat) 01 Sep 2012 [23:49:37], Alexey Khoroshilov wrote:
-> If register_virtio_driver() fails, virtio-ports class is not destroyed.
-> The patch adds error handling of register_virtio_driver().
-> 
-> Found by Linux Driver Verification project (linuxtesting.org).
-> 
-> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-> ---
->  drivers/char/virtio_console.c |   12 +++++++++++-
->  1 file changed, 11 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-> index cdf2f54..060a672 100644
-> --- a/drivers/char/virtio_console.c
-> +++ b/drivers/char/virtio_console.c
-> @@ -1941,7 +1941,17 @@ static int __init init(void)
->  	INIT_LIST_HEAD(&pdrvdata.consoles);
->  	INIT_LIST_HEAD(&pdrvdata.portdevs);
->  
-> -	return register_virtio_driver(&virtio_console);
-> +	err = register_virtio_driver(&virtio_console);
-> +	if (err < 0) {
-> +		pr_err("Error %d registering virtio driver\n", err);
-> +		goto free;
-> +	}
-> +	return 0;
-> +free:
-> +	if (pdrvdata.debugfs_dir)
-> +		debugfs_remove_recursive(pdrvdata.debugfs_dir);
-> +	class_destroy(pdrvdata.class);
-> +	return err;
->  }
->  
->  static void __exit fini(void)
+>
+> Can you try blacklisting/not loading sha1_ssse3 and aesni_intel
+> to see which one of them is causing this crash? Of course if you
+> can still reproduce this without loading either of them that would
+> also be interesting to know.
 
-Patch looks good.
+This triggers with aes-x86_64 and sha1_generic (and sha256 & sha512)  
+too, with following test added to tcrypt:
+         case 46:
+                 ret += tcrypt_test("authenc(hmac(sha1),cbc(aes))");
+                 ret += tcrypt_test("authenc(hmac(sha256),cbc(aes))");
+                 ret += tcrypt_test("authenc(hmac(sha512),cbc(aes))");
+                 break;
 
-Acked-by: Amit Shah <amit.shah@redhat.com>
+-Jussi
 
-Rusty, please pick this up.
+>
+> Thanks,
+> --
+> Email: Herbert Xu <herbert@gondor.apana.org.au>
+> Home Page: http://gondor.apana.org.au/~herbert/
+> PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-crypto" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
 
-Thanks,
-		Amit
+
+
