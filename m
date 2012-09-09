@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755951Ab2IIXQS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 19:16:18 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51200 "EHLO
+	id S1755922Ab2IIXQQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 19:16:16 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51193 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755863Ab2IIXQM (ORCPT
+	by vger.kernel.org with ESMTP id S1755853Ab2IIXQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 9 Sep 2012 19:16:12 -0400
-Message-Id: <20120909224203.153990066@decadent.org.uk>
+Message-Id: <20120909224201.319503363@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 09 Sep 2012 23:43:22 +0100
+Date: Sun, 09 Sep 2012 23:43:08 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Richard Ems <richard.ems@cape-horn-eng.com>
-Subject: [ 92/95] NFS: Fix Oopses in nfs_lookup_revalidate and  nfs4_lookup_revalidate
+        alan@lxorguk.ukuu.org.uk, Hugh Dickins <hughd@google.com>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: [ 78/95] block: replace __getblk_slow misfix by grow_dev_page fix
 In-Reply-To: <20120909224150.641491654@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,83 +28,202 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Hugh Dickins <hughd@google.com>
 
-Fix the following Oops in 3.5.1:
+commit 676ce6d5ca3098339c028d44fe0427d1566a4d2d upstream.
 
- BUG: unable to handle kernel NULL pointer dereference at 0000000000000038
- IP: [<ffffffffa03789cd>] nfs_lookup_revalidate+0x2d/0x480 [nfs]
- PGD 337c63067 PUD 0
- Oops: 0000 [#1] SMP
- CPU 5
- Modules linked in: nfs fscache nfsd lockd nfs_acl auth_rpcgss sunrpc af_packet binfmt_misc cpufreq_conservative cpufreq_userspace cpufreq_powersave dm_mod acpi_cpufreq mperf coretemp gpio_ich kvm_intel joydev kvm ioatdma hid_generic igb lpc_ich i7core_edac edac_core ptp serio_raw dca pcspkr i2c_i801 mfd_core sg pps_core usbhid crc32c_intel microcode button autofs4 uhci_hcd ttm drm_kms_helper drm i2c_algo_bit sysimgblt sysfillrect syscopyarea ehci_hcd usbcore usb_common scsi_dh_rdac scsi_dh_emc scsi_dh_hp_sw scsi_dh_alua scsi_dh edd fan ata_piix thermal processor thermal_sys
+Commit 91f68c89d8f3 ("block: fix infinite loop in __getblk_slow")
+is not good: a successful call to grow_buffers() cannot guarantee
+that the page won't be reclaimed before the immediate next call to
+__find_get_block(), which is why there was always a loop there.
 
- Pid: 30431, comm: java Not tainted 3.5.1-2-default #1 Supermicro X8DTT/X8DTT
- RIP: 0010:[<ffffffffa03789cd>]  [<ffffffffa03789cd>] nfs_lookup_revalidate+0x2d/0x480 [nfs]
- RSP: 0018:ffff8801b418bd38  EFLAGS: 00010292
- RAX: 00000000fffffff6 RBX: ffff88032016d800 RCX: 0000000000000020
- RDX: ffffffff00000000 RSI: 0000000000000000 RDI: ffff8801824a7b00
- RBP: ffff8801b418bdf8 R08: 7fffff0034323030 R09: fffffffff04c03ed
- R10: ffff8801824a7b00 R11: 0000000000000002 R12: ffff8801824a7b00
- R13: ffff8801824a7b00 R14: 0000000000000000 R15: ffff8803201725d0
- FS:  00002b53a46cb700(0000) GS:ffff88033fc20000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
- CR2: 0000000000000038 CR3: 000000020a426000 CR4: 00000000000007e0
- DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
- DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
- Process java (pid: 30431, threadinfo ffff8801b418a000, task ffff8801b5d20600)
- Stack:
-  ffff8801b418be44 ffff88032016d800 ffff8801b418bdf8 0000000000000000
-  ffff8801824a7b00 ffff8801b418bdd7 ffff8803201725d0 ffffffff8116a9c0
-  ffff8801b5c38dc0 0000000000000007 ffff88032016d800 0000000000000000
- Call Trace:
-  [<ffffffff8116a9c0>] lookup_dcache+0x80/0xe0
-  [<ffffffff8116aa43>] __lookup_hash+0x23/0x90
-  [<ffffffff8116b4a5>] lookup_one_len+0xc5/0x100
-  [<ffffffffa03869a3>] nfs_sillyrename+0xe3/0x210 [nfs]
-  [<ffffffff8116cadf>] vfs_unlink.part.25+0x7f/0xe0
-  [<ffffffff8116f22c>] do_unlinkat+0x1ac/0x1d0
-  [<ffffffff815717b9>] system_call_fastpath+0x16/0x1b
-  [<00002b5348b5f527>] 0x2b5348b5f526
- Code: ec 38 b8 f6 ff ff ff 4c 89 64 24 18 4c 89 74 24 28 49 89 fc 48 89 5c 24 08 48 89 6c 24 10 49 89 f6 4c 89 6c 24 20 4c 89 7c 24 30 <f6> 46 38 40 0f 85 d1 00 00 00 e8 c4 c4 df e0 48 8b 58 30 49 89
- RIP  [<ffffffffa03789cd>] nfs_lookup_revalidate+0x2d/0x480 [nfs]
-  RSP <ffff8801b418bd38>
- CR2: 0000000000000038
- ---[ end trace 845113ed191985dd ]---
+Yesterday I got "EXT4-fs error (device loop0): __ext4_get_inode_loc:3595:
+inode #19278: block 664: comm cc1: unable to read itable block" on console,
+which pointed to this commit.
 
-This Oops affects 3.5 kernels and older, and is due to lookup_one_len()
-calling down to the dentry revalidation code with a NULL pointer
-to struct nameidata.
+I've been trying to bisect for weeks, why kbuild-on-ext4-on-loop-on-tmpfs
+sometimes fails from a missing header file, under memory pressure on
+ppc G5.  I've never seen this on x86, and I've never seen it on 3.5-rc7
+itself, despite that commit being in there: bisection pointed to an
+irrelevant pinctrl merge, but hard to tell when failure takes between
+18 minutes and 38 hours (but so far it's happened quicker on 3.6-rc2).
 
-It is fixed upstream by commit 0b728e1911c (stop passing nameidata *
-to ->d_revalidate())
+(I've since found such __ext4_get_inode_loc errors in /var/log/messages
+from previous weeks: why the message never appeared on console until
+yesterday morning is a mystery for another day.)
 
-Reported-by: Richard Ems <richard.ems@cape-horn-eng.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Revert 91f68c89d8f3, restoring __getblk_slow() to how it was (plus
+a checkpatch nitfix).  Simplify the interface between grow_buffers()
+and grow_dev_page(), and avoid the infinite loop beyond end of device
+by instead checking init_page_buffers()'s end_block there (I presume
+that's more efficient than a repeated call to blkdev_max_block()),
+returning -ENXIO to __getblk_slow() in that case.
+
+And remove akpm's ten-year-old "__getblk() cannot fail ... weird"
+comment, but that is worrying: are all users of __getblk() really
+now prepared for a NULL bh beyond end of device, or will some oops??
+
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nfs/dir.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/buffer.c |   66 +++++++++++++++++++++++++++--------------------------------
+ 1 file changed, 30 insertions(+), 36 deletions(-)
 
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1103,7 +1103,7 @@ static int nfs_lookup_revalidate(struct
- 	struct nfs_fattr *fattr = NULL;
- 	int error;
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 9f6d2e4..58e2e7b 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -914,7 +914,7 @@ link_dev_buffers(struct page *page, struct buffer_head *head)
+ /*
+  * Initialise the state of a blockdev page's buffers.
+  */ 
+-static void
++static sector_t
+ init_page_buffers(struct page *page, struct block_device *bdev,
+ 			sector_t block, int size)
+ {
+@@ -936,33 +936,41 @@ init_page_buffers(struct page *page, struct block_device *bdev,
+ 		block++;
+ 		bh = bh->b_this_page;
+ 	} while (bh != head);
++
++	/*
++	 * Caller needs to validate requested block against end of device.
++	 */
++	return end_block;
+ }
  
--	if (nd->flags & LOOKUP_RCU)
-+	if (nd && (nd->flags & LOOKUP_RCU))
- 		return -ECHILD;
+ /*
+  * Create the page-cache page that contains the requested block.
+  *
+- * This is user purely for blockdev mappings.
++ * This is used purely for blockdev mappings.
+  */
+-static struct page *
++static int
+ grow_dev_page(struct block_device *bdev, sector_t block,
+-		pgoff_t index, int size)
++		pgoff_t index, int size, int sizebits)
+ {
+ 	struct inode *inode = bdev->bd_inode;
+ 	struct page *page;
+ 	struct buffer_head *bh;
++	sector_t end_block;
++	int ret = 0;		/* Will call free_more_memory() */
  
- 	parent = dget_parent(dentry);
-@@ -1508,7 +1508,7 @@ static int nfs_open_revalidate(struct de
- 	struct nfs_open_context *ctx;
- 	int openflags, ret = 0;
+ 	page = find_or_create_page(inode->i_mapping, index,
+ 		(mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS)|__GFP_MOVABLE);
+ 	if (!page)
+-		return NULL;
++		return ret;
  
--	if (nd->flags & LOOKUP_RCU)
-+	if (nd && (nd->flags & LOOKUP_RCU))
- 		return -ECHILD;
+ 	BUG_ON(!PageLocked(page));
  
- 	inode = dentry->d_inode;
+ 	if (page_has_buffers(page)) {
+ 		bh = page_buffers(page);
+ 		if (bh->b_size == size) {
+-			init_page_buffers(page, bdev, block, size);
+-			return page;
++			end_block = init_page_buffers(page, bdev,
++						index << sizebits, size);
++			goto done;
+ 		}
+ 		if (!try_to_free_buffers(page))
+ 			goto failed;
+@@ -982,14 +990,14 @@ grow_dev_page(struct block_device *bdev, sector_t block,
+ 	 */
+ 	spin_lock(&inode->i_mapping->private_lock);
+ 	link_dev_buffers(page, bh);
+-	init_page_buffers(page, bdev, block, size);
++	end_block = init_page_buffers(page, bdev, index << sizebits, size);
+ 	spin_unlock(&inode->i_mapping->private_lock);
+-	return page;
+-
++done:
++	ret = (block < end_block) ? 1 : -ENXIO;
+ failed:
+ 	unlock_page(page);
+ 	page_cache_release(page);
+-	return NULL;
++	return ret;
+ }
+ 
+ /*
+@@ -999,7 +1007,6 @@ failed:
+ static int
+ grow_buffers(struct block_device *bdev, sector_t block, int size)
+ {
+-	struct page *page;
+ 	pgoff_t index;
+ 	int sizebits;
+ 
+@@ -1023,22 +1030,14 @@ grow_buffers(struct block_device *bdev, sector_t block, int size)
+ 			bdevname(bdev, b));
+ 		return -EIO;
+ 	}
+-	block = index << sizebits;
++
+ 	/* Create a page with the proper size buffers.. */
+-	page = grow_dev_page(bdev, block, index, size);
+-	if (!page)
+-		return 0;
+-	unlock_page(page);
+-	page_cache_release(page);
+-	return 1;
++	return grow_dev_page(bdev, block, index, size, sizebits);
+ }
+ 
+ static struct buffer_head *
+ __getblk_slow(struct block_device *bdev, sector_t block, int size)
+ {
+-	int ret;
+-	struct buffer_head *bh;
+-
+ 	/* Size must be multiple of hard sectorsize */
+ 	if (unlikely(size & (bdev_logical_block_size(bdev)-1) ||
+ 			(size < 512 || size > PAGE_SIZE))) {
+@@ -1051,21 +1050,20 @@ __getblk_slow(struct block_device *bdev, sector_t block, int size)
+ 		return NULL;
+ 	}
+ 
+-retry:
+-	bh = __find_get_block(bdev, block, size);
+-	if (bh)
+-		return bh;
++	for (;;) {
++		struct buffer_head *bh;
++		int ret;
+ 
+-	ret = grow_buffers(bdev, block, size);
+-	if (ret == 0) {
+-		free_more_memory();
+-		goto retry;
+-	} else if (ret > 0) {
+ 		bh = __find_get_block(bdev, block, size);
+ 		if (bh)
+ 			return bh;
++
++		ret = grow_buffers(bdev, block, size);
++		if (ret < 0)
++			return NULL;
++		if (ret == 0)
++			free_more_memory();
+ 	}
+-	return NULL;
+ }
+ 
+ /*
+@@ -1321,10 +1319,6 @@ EXPORT_SYMBOL(__find_get_block);
+  * which corresponds to the passed block_device, block and size. The
+  * returned buffer has its reference count incremented.
+  *
+- * __getblk() cannot fail - it just keeps trying.  If you pass it an
+- * illegal block number, __getblk() will happily return a buffer_head
+- * which represents the non-existent block.  Very weird.
+- *
+  * __getblk() will lock up the machine if grow_dev_page's try_to_free_buffers()
+  * attempt is failing.  FIXME, perhaps?
+  */
 
 
