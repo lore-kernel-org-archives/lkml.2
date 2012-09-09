@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756562Ab2IIXVS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 19:21:18 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51552 "EHLO
+	id S1756608Ab2IIXVf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 19:21:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51561 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756438Ab2IIXRS (ORCPT
+	by vger.kernel.org with ESMTP id S1756451Ab2IIXRS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 9 Sep 2012 19:17:18 -0400
-Message-Id: <20120909224153.774684501@decadent.org.uk>
+Message-Id: <20120909224156.044758790@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 09 Sep 2012 23:42:11 +0100
+Date: Sun, 09 Sep 2012 23:42:28 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 21/95] ARM: 7489/1: errata: fix workaround for erratum #720789 on UP
- systems
+        alan@lxorguk.ukuu.org.uk, Yi Zou <yi.zou@intel.com>,
+        Andy Grover <agrover@redhat.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        "Open-FCoE.org" <devel@open-fcoe.org>
+Subject: [ 38/95] target: fix NULL pointer dereference bug alloc_page() fails to get
+ memory
 In-Reply-To: <20120909224150.641491654@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,45 +31,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Yi Zou <yi.zou@intel.com>
 
-commit 730a8128cd8978467eb1cf546b11014acb57d433 upstream.
+commit d0e27c88d795fb9647153063ec48051fd84e1731 upstream.
 
-Commit 5a783cbc4836 ("ARM: 7478/1: errata: extend workaround for erratum
- #720789") added workarounds for erratum #720789 to the range TLB
-invalidation functions with the observation that the erratum only
-affects SMP platforms. However, when running an SMP_ON_UP kernel on a
-uniprocessor platform we must take care to preserve the ASID as the
-workaround is not required.
+I am hitting this bug when the target is low in memory that fails the
+alloc_page() for the newly submitted command. This is a sort of off-by-one
+bug causing NULL pointer dereference in __free_page() since 'i' here is
+really the counter of total pages that have been successfully allocated here.
 
-This patch ensures that we don't set the ASID to 0 when flushing the TLB
-on such a system, preserving the original behaviour with the workaround
-disabled.
-
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Yi Zou <yi.zou@intel.com>
+Cc: Andy Grover <agrover@redhat.com>
+Cc: Nicholas Bellinger <nab@linux-iscsi.org>
+Cc: Open-FCoE.org <devel@open-fcoe.org>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/mm/tlb-v7.S |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/target/target_core_transport.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mm/tlb-v7.S b/arch/arm/mm/tlb-v7.S
-index c202113..ea94765 100644
---- a/arch/arm/mm/tlb-v7.S
-+++ b/arch/arm/mm/tlb-v7.S
-@@ -38,10 +38,10 @@ ENTRY(v7wbi_flush_user_tlb_range)
- 	dsb
- 	mov	r0, r0, lsr #PAGE_SHIFT		@ align address
- 	mov	r1, r1, lsr #PAGE_SHIFT
--#ifdef CONFIG_ARM_ERRATA_720789
--	mov	r3, #0
--#else
- 	asid	r3, r3				@ mask ASID
-+#ifdef CONFIG_ARM_ERRATA_720789
-+	ALT_SMP(W(mov)	r3, #0	)
-+	ALT_UP(W(nop)		)
- #endif
- 	orr	r0, r3, r0, lsl #PAGE_SHIFT	@ Create initial MVA
- 	mov	r1, r1, lsl #PAGE_SHIFT
+diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+index 0eaae23..a7589cc 100644
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -2294,9 +2294,9 @@ transport_generic_get_mem(struct se_cmd *cmd)
+ 	return 0;
+ 
+ out:
+-	while (i >= 0) {
+-		__free_page(sg_page(&cmd->t_data_sg[i]));
++	while (i > 0) {
+ 		i--;
++		__free_page(sg_page(&cmd->t_data_sg[i]));
+ 	}
+ 	kfree(cmd->t_data_sg);
+ 	cmd->t_data_sg = NULL;
 
 
