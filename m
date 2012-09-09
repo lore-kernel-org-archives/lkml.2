@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756241Ab2IIX32 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 19:29:28 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:53157 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755619Ab2IIX3Z (ORCPT
+	id S1756283Ab2IIX36 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 19:29:58 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51278 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756033Ab2IIXQb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 19:29:25 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Sun, 09 Sep 2012 19:29:24 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>, linux-arch@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 02/31] arm64: Kernel booting and initialisation
-In-reply-to: <20120909172046.GB31430@game.jcrosoft.org>
-Message-id: <alpine.LFD.2.02.1209091923180.28681@xanadu.home>
-References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
- <1347035226-18649-3-git-send-email-catalin.marinas@arm.com>
- <20120909172046.GB31430@game.jcrosoft.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Sun, 9 Sep 2012 19:16:31 -0400
+Message-Id: <20120909224159.216824033@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Sun, 09 Sep 2012 23:42:52 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Dave Airlie <airlied@redhat.com>
+Subject: [ 62/95] drm/radeon: fix use after free in ATRM bios reading code.
+In-Reply-To: <20120909224150.641491654@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 9 Sep 2012, Jean-Christophe PLAGNIOL-VILLARD wrote:
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-> On 17:26 Fri 07 Sep     , Catalin Marinas wrote:
-> > +4. Call the kernel image
-> > +------------------------
-> > +
-> > +Requirement: MANDATORY
-> > +
-> > +The decompressed kernel image contains a 32-byte header as follows:
-> > +
-> > +  u32 magic	= 0x14000008;	/* branch to stext, little-endian */
-> > +  u32 res0	= 0;		/* reserved */
-> > +  u64 text_offset;		/* Image load offset */
-> > +  u64 res1	= 0;		/* reserved */
-> > +  u64 res2	= 0;		/* reserved */
-> we need to have a magic to known it's a arm64 kernel
+------------------
 
-You have it: it's 0x14000008 at the beginning.
+From: Dave Airlie <airlied@redhat.com>
 
-> > +
-> > +The image must be placed at the specified offset (currently 0x80000)
-> > +from the start of the system RAM and called there. The start of the
-> > +system RAM must be aligned to 2MB.
-> can we drop this
+commit de47a9cd62771e3e78954d855d2304fbad4c5a44 upstream.
 
-Drop what?
-And why?
+Fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=45503
+
+Reported-and-Debugged-by: mlambda@gmail.com
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/gpu/drm/radeon/radeon_atpx_handler.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/radeon/radeon_atpx_handler.c b/drivers/gpu/drm/radeon/radeon_atpx_handler.c
+index 13ac63b..98724fc 100644
+--- a/drivers/gpu/drm/radeon/radeon_atpx_handler.c
++++ b/drivers/gpu/drm/radeon/radeon_atpx_handler.c
+@@ -59,8 +59,9 @@ static int radeon_atrm_call(acpi_handle atrm_handle, uint8_t *bios,
+ 
+ 	obj = (union acpi_object *)buffer.pointer;
+ 	memcpy(bios+offset, obj->buffer.pointer, obj->buffer.length);
++	len = obj->buffer.length;
+ 	kfree(buffer.pointer);
+-	return obj->buffer.length;
++	return len;
+ }
+ 
+ bool radeon_atrm_supported(struct pci_dev *pdev)
 
 
-Nicolas
