@@ -1,166 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753196Ab2IIIdJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 04:33:09 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:43882 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374Ab2IIIdD (ORCPT
+	id S1752268Ab2IIIkx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 04:40:53 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:45772 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751127Ab2IIIkv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 04:33:03 -0400
+	Sun, 9 Sep 2012 04:40:51 -0400
+Date: Sun, 9 Sep 2012 10:40:45 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Irina Tirdea <irina.tirdea@gmail.com>,
+        Irina Tirdea <irina.tirdea@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [GIT PULL 0/9] perf/core improvements and fixes
+Message-ID: <20120909084045.GA972@gmail.com>
+References: <1347136614-25598-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <1345140905-10209-1-git-send-email-geert@linux-m68k.org>
-References: <1345140905-10209-1-git-send-email-geert@linux-m68k.org>
-Date: Sun, 9 Sep 2012 10:33:01 +0200
-X-Google-Sender-Auth: kYgUN71PidFWjZEfIIB6O-WWJpY
-Message-ID: <CAMuHMdVyWRGyTPbA9pL267XWnvBnbN77353WjF8Ovmd062NSwg@mail.gmail.com>
-Subject: Re: [PATCH/RFC] um: Preinclude include/linux/kern_levels.h
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Richard Weinberger <richard@nod.at>, Joe Perches <joe@perches.com>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        linux-kbuild@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347136614-25598-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping?
 
-On Thu, Aug 16, 2012 at 8:15 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> The userspace part of UML uses the asm-offsets.h generator mechanism to
-> create definitions for UM_KERN_<LEVEL> that match the in-kernel
-> KERN_<LEVEL> constant definitions.
->
-> As of commit 04d2c8c83d0e3ac5f78aeede51babb3236200112 ("printk: convert
-> the format for KERN_<LEVEL> to a 2 byte pattern"), KERN_<LEVEL> is no
-> longer expanded to the literal '"<LEVEL>"', but to '"\001" "LEVEL"', i.e.
-> it contains two parts.
->
-> However, the combo of DEFINE_STR() in
-> arch/x86/um/shared/sysdep/kernel-offsets.h and sed-y in Kbuild doesn't
-> support string literals consisting of multiple parts. Hence for all
-> UM_KERN_<LEVEL> definitions, only the SOH character is retained in the actual
-> definition, while the remainder ends up in the comment. E.g. in
-> include/generated/asm-offsets.h we get
->
->     #define UM_KERN_INFO "\001" /* "6" KERN_INFO */
->
-> instead of
->
->     #define UM_KERN_INFO "\001" "6" /* KERN_INFO */
->
-> This causes spurious '^A' output in some kernel messages:
->
->     Calibrating delay loop... 4640.76 BogoMIPS (lpj=23203840)
->     pid_max: default: 32768 minimum: 301
->     Mount-cache hash table entries: 256
->     ^AChecking that host ptys support output SIGIO...Yes
->     ^AChecking that host ptys support SIGIO on close...No, enabling workaround
->     ^AUsing 2.6 host AIO
->     NET: Registered protocol family 16
->     bio: create slab <bio-0> at 0
->     Switching to clocksource itimer
->
-> To fix this:
->   - Move the mapping from UM_KERN_<LEVEL> to KERN_<LEVEL> from
->     arch/um/include/shared/common-offsets.h to
->     arch/um/include/shared/user.h, which is preincluded for all userspace
->     parts,
->   - Preinclude include/linux/kern_levels.h for all userspace parts, to
->     obtain the in-kernel KERN_<LEVEL> constant definitions. This doesn't
->     violate the kernel/userspace separation, as include/linux/kern_levels.h
->     is self-contained and doesn't expose any other kernel internals.
->   - Remove the now unused STR() and DEFINE_STR() macros.
->
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
-> We may convert all UM_KERN_* users to KERN_* and drop the extra defines?
-> ---
->  arch/um/include/shared/common-offsets.h    |   10 ----------
->  arch/um/include/shared/user.h              |   11 +++++++++++
->  arch/um/scripts/Makefile.rules             |    2 +-
->  arch/x86/um/shared/sysdep/kernel-offsets.h |    3 ---
->  4 files changed, 12 insertions(+), 14 deletions(-)
->
-> diff --git a/arch/um/include/shared/common-offsets.h b/arch/um/include/shared/common-offsets.h
-> index 40db8f7..2df313b 100644
-> --- a/arch/um/include/shared/common-offsets.h
-> +++ b/arch/um/include/shared/common-offsets.h
-> @@ -7,16 +7,6 @@ DEFINE(UM_KERN_PAGE_MASK, PAGE_MASK);
->  DEFINE(UM_KERN_PAGE_SHIFT, PAGE_SHIFT);
->  DEFINE(UM_NSEC_PER_SEC, NSEC_PER_SEC);
->
-> -DEFINE_STR(UM_KERN_EMERG, KERN_EMERG);
-> -DEFINE_STR(UM_KERN_ALERT, KERN_ALERT);
-> -DEFINE_STR(UM_KERN_CRIT, KERN_CRIT);
-> -DEFINE_STR(UM_KERN_ERR, KERN_ERR);
-> -DEFINE_STR(UM_KERN_WARNING, KERN_WARNING);
-> -DEFINE_STR(UM_KERN_NOTICE, KERN_NOTICE);
-> -DEFINE_STR(UM_KERN_INFO, KERN_INFO);
-> -DEFINE_STR(UM_KERN_DEBUG, KERN_DEBUG);
-> -DEFINE_STR(UM_KERN_CONT, KERN_CONT);
-> -
->  DEFINE(UM_ELF_CLASS, ELF_CLASS);
->  DEFINE(UM_ELFCLASS32, ELFCLASS32);
->  DEFINE(UM_ELFCLASS64, ELFCLASS64);
-> diff --git a/arch/um/include/shared/user.h b/arch/um/include/shared/user.h
-> index 4fa82c0..cef0685 100644
-> --- a/arch/um/include/shared/user.h
-> +++ b/arch/um/include/shared/user.h
-> @@ -26,6 +26,17 @@
->  extern void panic(const char *fmt, ...)
->         __attribute__ ((format (printf, 1, 2)));
->
-> +/* Requires preincluding include/linux/kern_levels.h */
-> +#define UM_KERN_EMERG  KERN_EMERG
-> +#define UM_KERN_ALERT  KERN_ALERT
-> +#define UM_KERN_CRIT   KERN_CRIT
-> +#define UM_KERN_ERR    KERN_ERR
-> +#define UM_KERN_WARNING        KERN_WARNING
-> +#define UM_KERN_NOTICE KERN_NOTICE
-> +#define UM_KERN_INFO   KERN_INFO
-> +#define UM_KERN_DEBUG  KERN_DEBUG
-> +#define UM_KERN_CONT   KERN_CONT
-> +
->  #ifdef UML_CONFIG_PRINTK
->  extern int printk(const char *fmt, ...)
->         __attribute__ ((format (printf, 1, 2)));
-> diff --git a/arch/um/scripts/Makefile.rules b/arch/um/scripts/Makefile.rules
-> index d50270d..15889df 100644
-> --- a/arch/um/scripts/Makefile.rules
-> +++ b/arch/um/scripts/Makefile.rules
-> @@ -8,7 +8,7 @@ USER_OBJS += $(filter %_user.o,$(obj-y) $(obj-m)  $(USER_SINGLE_OBJS))
->  USER_OBJS := $(foreach file,$(USER_OBJS),$(obj)/$(file))
->
->  $(USER_OBJS:.o=.%): \
-> -       c_flags = -Wp,-MD,$(depfile) $(USER_CFLAGS) -include user.h $(CFLAGS_$(basetarget).o)
-> +       c_flags = -Wp,-MD,$(depfile) $(USER_CFLAGS) -include $(srctree)/include/linux/kern_levels.h -include user.h $(CFLAGS_$(basetarget).o)
->
->  # These are like USER_OBJS but filter USER_CFLAGS through unprofile instead of
->  # using it directly.
-> diff --git a/arch/x86/um/shared/sysdep/kernel-offsets.h b/arch/x86/um/shared/sysdep/kernel-offsets.h
-> index 5868526..46a9df9 100644
-> --- a/arch/x86/um/shared/sysdep/kernel-offsets.h
-> +++ b/arch/x86/um/shared/sysdep/kernel-offsets.h
-> @@ -7,9 +7,6 @@
->  #define DEFINE(sym, val) \
->         asm volatile("\n->" #sym " %0 " #val : : "i" (val))
->
-> -#define STR(x) #x
-> -#define DEFINE_STR(sym, val) asm volatile("\n->" #sym " " STR(val) " " #val: : )
-> -
->  #define BLANK() asm volatile("\n->" : : )
->
->  #define OFFSET(sym, str, mem) \
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-Gr{oetje,eeting}s,
+> From: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> Hi Ingo,
+> 
+> 	Please consider pulling,
+> 
+> Thanks,
+> 
+> - Arnaldo
+> 
+> The following changes since commit ef34eb4da3eb62a1511592adf7c76d74faca0b14:
+> 
+>   Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2012-09-08 13:26:02 +0200)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
+> 
+> for you to fetch changes up to 6c7f631261064762a8ba1ee34fc2b76d117ef3fa:
+> 
+>   perf symbols: Remove BIONIC wrapper around libgen.h (2012-09-08 17:15:16 -0300)
+> 
+> ----------------------------------------------------------------
+> perf/core improvements and fixes
+> 
+> . Don't pass const char pointers to basename, so that we can unconditionally
+>   use libgen.h and thus avoid ifdef BIONIC lines, from David Ahern
+> 
+> . Fix assert/BUG_ON when NDEBUG is defined, from Irina Tirdea.
+> 
+> . Refactor hist formatting so that it can be reused with the GTK browser,
+>   From Namhyung Kim
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> David Ahern (3):
+>       perf annotate: Make a copy of filename for passing to basename
+>       perf probe: Make a copy of exec path for passing to basename
+>       perf symbols: Remove BIONIC wrapper around libgen.h
+> 
+> Irina Tirdea (1):
+>       perf bench: fix assert when NDEBUG is defined
+> 
+> Namhyung Kim (5):
+>       perf hists: Introduce perf_hpp for hist period printing
+>       perf hists: Handle field separator properly
+>       perf hists: Use perf_hpp__format->width to calculate the column widths
+>       perf hists browser: Use perf_hpp__format functions
+>       perf gtk/browser: Use perf_hpp__format functions
+> 
+>  tools/perf/Makefile                    |    2 +
+>  tools/perf/bench/sched-pipe.c          |    6 +-
+>  tools/perf/builtin-diff.c              |    1 +
+>  tools/perf/ui/browsers/hists.c         |   96 ++++++--
+>  tools/perf/ui/gtk/browser.c            |  101 +++++++--
+>  tools/perf/ui/gtk/gtk.h                |    1 +
+>  tools/perf/ui/gtk/setup.c              |    1 +
+>  tools/perf/ui/hist.c                   |  389 ++++++++++++++++++++++++++++++++
+>  tools/perf/ui/setup.c                  |    8 +-
+>  tools/perf/ui/stdio/hist.c             |  239 ++++----------------
+>  tools/perf/ui/tui/setup.c              |    4 +
+>  tools/perf/util/annotate.c             |    9 +-
+>  tools/perf/util/hist.c                 |   33 ---
+>  tools/perf/util/hist.h                 |   37 +++
+>  tools/perf/util/include/linux/kernel.h |    4 +
+>  tools/perf/util/probe-event.c          |   12 +-
+>  tools/perf/util/symbol.h               |    2 -
+>  17 files changed, 665 insertions(+), 280 deletions(-)
+>  create mode 100644 tools/perf/ui/hist.c
 
-                        Geert
+Pulled, thanks Arnaldo!
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+	Ingo
