@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135Ab2IIXQn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 19:16:43 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51299 "EHLO
+	id S1756221Ab2IIX0f (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 19:26:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51347 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756066Ab2IIXQd (ORCPT
+	by vger.kernel.org with ESMTP id S1756117Ab2IIXQm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 19:16:33 -0400
-Message-Id: <20120909224200.395448286@decadent.org.uk>
+	Sun, 9 Sep 2012 19:16:42 -0400
+Message-Id: <20120909224158.159089877@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 09 Sep 2012 23:43:01 +0100
+Date: Sun, 09 Sep 2012 23:42:44 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        Roel van Meer <roel.vanmeer@bokxing.nl>, Jens Axboe <axboe@kernel.dk>
-Subject: [ 71/95] cciss: fix incorrect scsi status reporting
+        alan@lxorguk.ukuu.org.uk, Amerigo Wang <amwang@redhat.com>,
+        David Miller <davem@davemloft.net>
+Subject: [ 54/95] netconsole: remove a redundant netconsole_target_put()
 In-Reply-To: <20120909224150.641491654@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,47 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+From: Amerigo Wang <amwang@redhat.com>
 
-commit b0cf0b118c90477d1a6811f2cd2307f6a5578362 upstream.
+commit 72d3eb13b5c0abe7d63efac41f39c5b644c7bbaa upstream.
 
-Delete code which sets SCSI status incorrectly as it's already been set
-correctly above this incorrect code.  The bug was introduced in 2009 by
-commit b0e15f6db111 ("cciss: fix typo that causes scsi status to be
-lost.")
+This netconsole_target_put() is obviously redundant, and it
+causes a kernel segfault when removing a bridge device which has
+netconsole running on it.
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-Reported-by: Roel van Meer <roel.vanmeer@bokxing.nl>
-Tested-by: Roel van Meer <roel.vanmeer@bokxing.nl>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+This is caused by:
+
+	commit 8d8fc29d02a33e4bd5f4fa47823c1fd386346093
+	Author: Amerigo Wang <amwang@redhat.com>
+	Date:   Thu May 19 21:39:10 2011 +0000
+
+	    netpoll: disable netpoll when enslave a device
+
+Cc: David Miller <davem@davemloft.net>
+Signed-off-by: Cong Wang <amwang@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/block/cciss_scsi.c |   11 +----------
- 1 file changed, 1 insertion(+), 10 deletions(-)
+ drivers/net/netconsole.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/block/cciss_scsi.c b/drivers/block/cciss_scsi.c
-index acda773..38aa6dd 100644
---- a/drivers/block/cciss_scsi.c
-+++ b/drivers/block/cciss_scsi.c
-@@ -763,16 +763,7 @@ static void complete_scsi_command(CommandList_struct *c, int timeout,
- 		{
- 			case CMD_TARGET_STATUS:
- 				/* Pass it up to the upper layers... */
--				if( ei->ScsiStatus)
--                		{
--#if 0
--                    			printk(KERN_WARNING "cciss: cmd %p "
--						"has SCSI Status = %x\n",
--						c, ei->ScsiStatus);
--#endif
--					cmd->result |= (ei->ScsiStatus << 1);
--                		}
--				else {  /* scsi status is zero??? How??? */
-+				if (!ei->ScsiStatus) {
- 					
- 	/* Ordinarily, this case should never happen, but there is a bug
- 	   in some released firmware revisions that allows it to happen
+--- a/drivers/net/netconsole.c
++++ b/drivers/net/netconsole.c
+@@ -652,7 +652,6 @@ static int netconsole_netdev_event(struc
+ 							  flags);
+ 					dev_put(nt->np.dev);
+ 					nt->np.dev = NULL;
+-					netconsole_target_put(nt);
+ 				}
+ 				nt->enabled = 0;
+ 				stopped = true;
 
 
