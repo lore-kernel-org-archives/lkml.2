@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756553Ab2IIXU5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 19:20:57 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51555 "EHLO
+	id S1756562Ab2IIXVS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 19:21:18 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51552 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756440Ab2IIXRT (ORCPT
+	by vger.kernel.org with ESMTP id S1756438Ab2IIXRS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 19:17:19 -0400
-Message-Id: <20120909224153.644601479@decadent.org.uk>
+	Sun, 9 Sep 2012 19:17:18 -0400
+Message-Id: <20120909224153.774684501@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 09 Sep 2012 23:42:10 +0100
+Date: Sun, 09 Sep 2012 23:42:11 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
         Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 20/95] ARM: 7488/1: mm: use 5 bits for swapfile type encoding
+Subject: [ 21/95] ARM: 7489/1: errata: fix workaround for erratum #720789 on UP
+ systems
 In-Reply-To: <20120909224150.641491654@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,47 +31,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Will Deacon <will.deacon@arm.com>
 
-commit f5f2025ef3e2cdb593707cbf87378761f17befbe upstream.
+commit 730a8128cd8978467eb1cf546b11014acb57d433 upstream.
 
-Page migration encodes the pfn in the offset field of a swp_entry_t.
-For LPAE, we support physical addresses of up to 36 bits (due to
-sparsemem limitations with the size of page flags), requiring 24 bits
-to represent a pfn. A further 3 bits are used to encode a swp_entry into
-a pte, leaving 5 bits for the type field. Furthermore, the core code
-defines MAX_SWAPFILES_SHIFT as 5, so the additional type bit does not
-get used.
+Commit 5a783cbc4836 ("ARM: 7478/1: errata: extend workaround for erratum
+ #720789") added workarounds for erratum #720789 to the range TLB
+invalidation functions with the observation that the erratum only
+affects SMP platforms. However, when running an SMP_ON_UP kernel on a
+uniprocessor platform we must take care to preserve the ASID as the
+workaround is not required.
 
-This patch reduces the width of the type field to 5 bits, allowing us
-to create up to 31 swapfiles of 64GB each.
+This patch ensures that we don't set the ASID to 0 when flushing the TLB
+on such a system, preserving the original behaviour with the workaround
+disabled.
 
-Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/include/asm/pgtable.h |    6 +++---
+ arch/arm/mm/tlb-v7.S |    6 +++---
  1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
-index d88f9f0..41dc31f 100644
---- a/arch/arm/include/asm/pgtable.h
-+++ b/arch/arm/include/asm/pgtable.h
-@@ -253,13 +253,13 @@ static inline pte_t pte_modify(pte_t pte, pgprot_t newprot)
-  *
-  *   3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1
-  *   1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
-- *   <--------------- offset --------------------> <- type --> 0 0 0
-+ *   <--------------- offset ----------------------> < type -> 0 0 0
-  *
-- * This gives us up to 63 swap files and 32GB per swap file.  Note that
-+ * This gives us up to 31 swap files and 64GB per swap file.  Note that
-  * the offset field is always non-zero.
-  */
- #define __SWP_TYPE_SHIFT	3
--#define __SWP_TYPE_BITS		6
-+#define __SWP_TYPE_BITS		5
- #define __SWP_TYPE_MASK		((1 << __SWP_TYPE_BITS) - 1)
- #define __SWP_OFFSET_SHIFT	(__SWP_TYPE_BITS + __SWP_TYPE_SHIFT)
- 
+diff --git a/arch/arm/mm/tlb-v7.S b/arch/arm/mm/tlb-v7.S
+index c202113..ea94765 100644
+--- a/arch/arm/mm/tlb-v7.S
++++ b/arch/arm/mm/tlb-v7.S
+@@ -38,10 +38,10 @@ ENTRY(v7wbi_flush_user_tlb_range)
+ 	dsb
+ 	mov	r0, r0, lsr #PAGE_SHIFT		@ align address
+ 	mov	r1, r1, lsr #PAGE_SHIFT
+-#ifdef CONFIG_ARM_ERRATA_720789
+-	mov	r3, #0
+-#else
+ 	asid	r3, r3				@ mask ASID
++#ifdef CONFIG_ARM_ERRATA_720789
++	ALT_SMP(W(mov)	r3, #0	)
++	ALT_UP(W(nop)		)
+ #endif
+ 	orr	r0, r3, r0, lsl #PAGE_SHIFT	@ Create initial MVA
+ 	mov	r1, r1, lsl #PAGE_SHIFT
 
 
