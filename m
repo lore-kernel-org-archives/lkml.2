@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756638Ab2IIXZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 19:25:26 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51392 "EHLO
+	id S1756674Ab2IIXZt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 19:25:49 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51391 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756194Ab2IIXQv (ORCPT
+	by vger.kernel.org with ESMTP id S1756188Ab2IIXQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 9 Sep 2012 19:16:51 -0400
-Message-Id: <20120909224152.322785974@decadent.org.uk>
+Message-Id: <20120909224157.499022629@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 09 Sep 2012 23:42:00 +0100
+Date: Sun, 09 Sep 2012 23:42:39 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Edwin Klein Mentink <e.kleinmentink@zonnet.nl>
-Subject: [ 10/95] xhci: Increase reset timeout for Renesas 720201 host.
+        alan@lxorguk.ukuu.org.uk,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        =?ISO-8859-15?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [ 49/95] USB: emi62: remove __devinit* from the struct usb_device_id table
 In-Reply-To: <20120909224150.641491654@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,47 +32,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit 22ceac191211cf6688b1bf6ecd93c8b6bf80ed9b upstream.
+commit 83957df21dd94655d2b026e0944a69ff37b83988 upstream.
 
-The NEC/Renesas 720201 xHCI host controller does not complete its reset
-within 250 milliseconds.  In fact, it takes about 9 seconds to reset the
-host controller, and 1 second for the host to be ready for doorbell
-rings.  Extend the reset and CNR polling timeout to 10 seconds each.
+This structure needs to always stick around, even if CONFIG_HOTPLUG
+is disabled, otherwise we can oops when trying to probe a device that
+was added after the structure is thrown away.
 
-This patch should be backported to kernels as old as 2.6.31, that
-contain the commit 66d4eadd8d067269ea8fead1a50fe87c2979a80d "USB: xhci:
-BIOS handoff and HW initialization."
+Thanks to Fengguang Wu and Bjørn Mork for tracking this issue down.
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: Edwin Klein Mentink <e.kleinmentink@zonnet.nl>
-[bwh: Backported to 3.2: result of second handshake call is returned directly]
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Reported-by: Bjørn Mork <bjorn@mork.no>
+CC: Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/host/xhci.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/usb/misc/emi62.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -163,7 +163,7 @@ int xhci_reset(struct xhci_hcd *xhci)
- 	xhci_writel(xhci, command, &xhci->op_regs->command);
- 
- 	ret = handshake(xhci, &xhci->op_regs->command,
--			CMD_RESET, 0, 250 * 1000);
-+			CMD_RESET, 0, 10 * 1000 * 1000);
- 	if (ret)
- 		return ret;
- 
-@@ -172,7 +172,8 @@ int xhci_reset(struct xhci_hcd *xhci)
- 	 * xHCI cannot write to any doorbells or operational registers other
- 	 * than status until the "Controller Not Ready" flag is cleared.
- 	 */
--	return handshake(xhci, &xhci->op_regs->status, STS_CNR, 0, 250 * 1000);
-+	return handshake(xhci, &xhci->op_regs->status,
-+			 STS_CNR, 0, 10 * 1000 * 1000);
+diff --git a/drivers/usb/misc/emi62.c b/drivers/usb/misc/emi62.c
+index ff08015..ae794b9 100644
+--- a/drivers/usb/misc/emi62.c
++++ b/drivers/usb/misc/emi62.c
+@@ -232,7 +232,7 @@ wraperr:
+ 	return err;
  }
  
- #ifdef CONFIG_PCI
+-static const struct usb_device_id id_table[] __devinitconst = {
++static const struct usb_device_id id_table[] = {
+ 	{ USB_DEVICE(EMI62_VENDOR_ID, EMI62_PRODUCT_ID) },
+ 	{ }                                             /* Terminating entry */
+ };
 
 
