@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756475Ab2IIXRT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 19:17:19 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51434 "EHLO
+	id S1756553Ab2IIXU5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 19:20:57 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51555 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756310Ab2IIXQ7 (ORCPT
+	by vger.kernel.org with ESMTP id S1756440Ab2IIXRT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 19:16:59 -0400
-Message-Id: <20120909224151.793640404@decadent.org.uk>
+	Sun, 9 Sep 2012 19:17:19 -0400
+Message-Id: <20120909224153.644601479@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 09 Sep 2012 23:41:56 +0100
+Date: Sun, 09 Sep 2012 23:42:10 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Idan Kedar <idank@tonian.com>,
-        Benny Halevy <bhalevy@tonian.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 06/95] pnfs: defer release of pages in layoutget
+        alan@lxorguk.ukuu.org.uk, Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 20/95] ARM: 7488/1: mm: use 5 bits for swapfile type encoding
 In-Reply-To: <20120909224150.641491654@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,203 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Idan Kedar <idank@tonian.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 8554116e17eef055d9dd58a94b3427cb2ad1c317 upstream.
+commit f5f2025ef3e2cdb593707cbf87378761f17befbe upstream.
 
-we have encountered a bug whereby reading a lot of files (copying
-fedora's /bin) from a pNFS mount and hitting Ctrl+C in the middle caused
-a general protection fault in xdr_shrink_bufhead. this function is
-called when decoding the response from LAYOUTGET. the decoding is done
-by a worker thread, and the caller of LAYOUTGET waits for the worker
-thread to complete.
+Page migration encodes the pfn in the offset field of a swp_entry_t.
+For LPAE, we support physical addresses of up to 36 bits (due to
+sparsemem limitations with the size of page flags), requiring 24 bits
+to represent a pfn. A further 3 bits are used to encode a swp_entry into
+a pte, leaving 5 bits for the type field. Furthermore, the core code
+defines MAX_SWAPFILES_SHIFT as 5, so the additional type bit does not
+get used.
 
-hitting Ctrl+C caused the synchronous wait to end and the next thing the
-caller does is to free the pages, so when the worker thread calls
-xdr_shrink_bufhead, the pages are gone. therefore, the cleanup of these
-pages has been moved to nfs4_layoutget_release.
+This patch reduces the width of the type field to 5 bits, allowing us
+to create up to 31 swapfiles of 64GB each.
 
-Signed-off-by: Idan Kedar <idank@tonian.com>
-Signed-off-by: Benny Halevy <bhalevy@tonian.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nfs/nfs4proc.c |   57 ++++++++++++++++++++++++++++++++++++++++++++++++++++-
- fs/nfs/pnfs.c     |   39 +-----------------------------------
- fs/nfs/pnfs.h     |    2 +-
- 3 files changed, 58 insertions(+), 40 deletions(-)
+ arch/arm/include/asm/pgtable.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -5769,11 +5769,58 @@ static void nfs4_layoutget_done(struct r
- 	dprintk("<-- %s\n", __func__);
- }
+diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
+index d88f9f0..41dc31f 100644
+--- a/arch/arm/include/asm/pgtable.h
++++ b/arch/arm/include/asm/pgtable.h
+@@ -253,13 +253,13 @@ static inline pte_t pte_modify(pte_t pte, pgprot_t newprot)
+  *
+  *   3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1
+  *   1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
+- *   <--------------- offset --------------------> <- type --> 0 0 0
++ *   <--------------- offset ----------------------> < type -> 0 0 0
+  *
+- * This gives us up to 63 swap files and 32GB per swap file.  Note that
++ * This gives us up to 31 swap files and 64GB per swap file.  Note that
+  * the offset field is always non-zero.
+  */
+ #define __SWP_TYPE_SHIFT	3
+-#define __SWP_TYPE_BITS		6
++#define __SWP_TYPE_BITS		5
+ #define __SWP_TYPE_MASK		((1 << __SWP_TYPE_BITS) - 1)
+ #define __SWP_OFFSET_SHIFT	(__SWP_TYPE_BITS + __SWP_TYPE_SHIFT)
  
-+static size_t max_response_pages(struct nfs_server *server)
-+{
-+	u32 max_resp_sz = server->nfs_client->cl_session->fc_attrs.max_resp_sz;
-+	return nfs_page_array_len(0, max_resp_sz);
-+}
-+
-+static void nfs4_free_pages(struct page **pages, size_t size)
-+{
-+	int i;
-+
-+	if (!pages)
-+		return;
-+
-+	for (i = 0; i < size; i++) {
-+		if (!pages[i])
-+			break;
-+		__free_page(pages[i]);
-+	}
-+	kfree(pages);
-+}
-+
-+static struct page **nfs4_alloc_pages(size_t size, gfp_t gfp_flags)
-+{
-+	struct page **pages;
-+	int i;
-+
-+	pages = kcalloc(size, sizeof(struct page *), gfp_flags);
-+	if (!pages) {
-+		dprintk("%s: can't alloc array of %zu pages\n", __func__, size);
-+		return NULL;
-+	}
-+
-+	for (i = 0; i < size; i++) {
-+		pages[i] = alloc_page(gfp_flags);
-+		if (!pages[i]) {
-+			dprintk("%s: failed to allocate page\n", __func__);
-+			nfs4_free_pages(pages, size);
-+			return NULL;
-+		}
-+	}
-+
-+	return pages;
-+}
-+
- static void nfs4_layoutget_release(void *calldata)
- {
- 	struct nfs4_layoutget *lgp = calldata;
-+	struct nfs_server *server = NFS_SERVER(lgp->args.inode);
-+	size_t max_pages = max_response_pages(server);
- 
- 	dprintk("--> %s\n", __func__);
-+	nfs4_free_pages(lgp->args.layout.pages, max_pages);
- 	put_nfs_open_context(lgp->args.ctx);
- 	kfree(calldata);
- 	dprintk("<-- %s\n", __func__);
-@@ -5785,9 +5832,10 @@ static const struct rpc_call_ops nfs4_la
- 	.rpc_release = nfs4_layoutget_release,
- };
- 
--int nfs4_proc_layoutget(struct nfs4_layoutget *lgp)
-+int nfs4_proc_layoutget(struct nfs4_layoutget *lgp, gfp_t gfp_flags)
- {
- 	struct nfs_server *server = NFS_SERVER(lgp->args.inode);
-+	size_t max_pages = max_response_pages(server);
- 	struct rpc_task *task;
- 	struct rpc_message msg = {
- 		.rpc_proc = &nfs4_procedures[NFSPROC4_CLNT_LAYOUTGET],
-@@ -5805,6 +5853,13 @@ int nfs4_proc_layoutget(struct nfs4_layo
- 
- 	dprintk("--> %s\n", __func__);
- 
-+	lgp->args.layout.pages = nfs4_alloc_pages(max_pages, gfp_flags);
-+	if (!lgp->args.layout.pages) {
-+		nfs4_layoutget_release(lgp);
-+		return -ENOMEM;
-+	}
-+	lgp->args.layout.pglen = max_pages * PAGE_SIZE;
-+
- 	lgp->res.layoutp = &lgp->args.layout;
- 	lgp->res.seq_res.sr_slot = NULL;
- 	task = rpc_run_task(&task_setup_data);
---- a/fs/nfs/pnfs.c
-+++ b/fs/nfs/pnfs.c
-@@ -575,9 +575,6 @@ send_layoutget(struct pnfs_layout_hdr *l
- 	struct nfs_server *server = NFS_SERVER(ino);
- 	struct nfs4_layoutget *lgp;
- 	struct pnfs_layout_segment *lseg = NULL;
--	struct page **pages = NULL;
--	int i;
--	u32 max_resp_sz, max_pages;
- 
- 	dprintk("--> %s\n", __func__);
- 
-@@ -586,20 +583,6 @@ send_layoutget(struct pnfs_layout_hdr *l
- 	if (lgp == NULL)
- 		return NULL;
- 
--	/* allocate pages for xdr post processing */
--	max_resp_sz = server->nfs_client->cl_session->fc_attrs.max_resp_sz;
--	max_pages = nfs_page_array_len(0, max_resp_sz);
--
--	pages = kcalloc(max_pages, sizeof(struct page *), gfp_flags);
--	if (!pages)
--		goto out_err_free;
--
--	for (i = 0; i < max_pages; i++) {
--		pages[i] = alloc_page(gfp_flags);
--		if (!pages[i])
--			goto out_err_free;
--	}
--
- 	lgp->args.minlength = PAGE_CACHE_SIZE;
- 	if (lgp->args.minlength > range->length)
- 		lgp->args.minlength = range->length;
-@@ -608,39 +591,19 @@ send_layoutget(struct pnfs_layout_hdr *l
- 	lgp->args.type = server->pnfs_curr_ld->id;
- 	lgp->args.inode = ino;
- 	lgp->args.ctx = get_nfs_open_context(ctx);
--	lgp->args.layout.pages = pages;
--	lgp->args.layout.pglen = max_pages * PAGE_SIZE;
- 	lgp->lsegpp = &lseg;
- 	lgp->gfp_flags = gfp_flags;
- 
- 	/* Synchronously retrieve layout information from server and
- 	 * store in lseg.
- 	 */
--	nfs4_proc_layoutget(lgp);
-+	nfs4_proc_layoutget(lgp, gfp_flags);
- 	if (!lseg) {
- 		/* remember that LAYOUTGET failed and suspend trying */
- 		set_bit(lo_fail_bit(range->iomode), &lo->plh_flags);
- 	}
- 
--	/* free xdr pages */
--	for (i = 0; i < max_pages; i++)
--		__free_page(pages[i]);
--	kfree(pages);
--
- 	return lseg;
--
--out_err_free:
--	/* free any allocated xdr pages, lgp as it's not used */
--	if (pages) {
--		for (i = 0; i < max_pages; i++) {
--			if (!pages[i])
--				break;
--			__free_page(pages[i]);
--		}
--		kfree(pages);
--	}
--	kfree(lgp);
--	return NULL;
- }
- 
- /* Initiates a LAYOUTRETURN(FILE) */
---- a/fs/nfs/pnfs.h
-+++ b/fs/nfs/pnfs.h
-@@ -162,7 +162,7 @@ extern int nfs4_proc_getdevicelist(struc
- 				   struct pnfs_devicelist *devlist);
- extern int nfs4_proc_getdeviceinfo(struct nfs_server *server,
- 				   struct pnfs_device *dev);
--extern int nfs4_proc_layoutget(struct nfs4_layoutget *lgp);
-+extern int nfs4_proc_layoutget(struct nfs4_layoutget *lgp, gfp_t gfp_flags);
- extern int nfs4_proc_layoutreturn(struct nfs4_layoutreturn *lrp);
- 
- /* pnfs.c */
 
 
