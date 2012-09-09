@@ -1,116 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751979Ab2IILyt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 07:54:49 -0400
-Received: from local.xorcom.com ([81.218.177.19]:31366 "EHLO local.xorcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751065Ab2IILyr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 07:54:47 -0400
-Date: Sun, 9 Sep 2012 14:54:44 +0300
-From: Tzafrir Cohen <tzafrir.cohen@xorcom.com>
-To: maximilian attems <max@stro.at>
-Cc: Michal Marek <mmarek@suse.cz>, Linux Kbuild <linux-kbuild@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] builddeb: remove unneeded explicit Architecture
-Message-ID: <20120909115444.GP18204@xorcom.com>
-References: <5040C112.70501@suse.cz>
- <20120905130528.GI18204@xorcom.com>
- <50475310.6000508@suse.cz>
- <20120905151422.GD12713@stro.at>
- <20120905164009.GM18204@xorcom.com>
- <20120905202604.GF28778@vostochny.stro.at>
- <20120906140004.GL19848@vostochny.stro.at>
- <20120906140416.GG28778@vostochny.stro.at>
- <20120906162143.GN18204@xorcom.com>
- <20120907000209.GA5993@stro.at>
+	id S1752223Ab2IIMMe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 08:12:34 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:3480 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065Ab2IIMMc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Sep 2012 08:12:32 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6829"; a="234558913"
+From: "Yaniv Gardi" <ygardi@codeaurora.org>
+To: "'Arnd Bergmann'" <arnd@arndb.de>
+Cc: <linux-mmc@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+References: <1343208766-8046-1-git-send-email-ygardi@codeaurora.org> <1343208766-8046-2-git-send-email-ygardi@codeaurora.org> <201207261336.32018.arnd@arndb.de>
+In-Reply-To: <201207261336.32018.arnd@arndb.de>
+Subject: RE: [PATCH v8 1/2] block: ioctl support for sanitize in eMMC 4.5
+Date: Sun, 9 Sep 2012 15:12:29 +0300
+Message-ID: <002e01cd8e84$639f6470$2ade2d50$@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120907000209.GA5993@stro.at>
-X-Forced-Service: Sadly Using Gmail [tm]
-Organization: Xorcom*
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQHDzz8EDiUYimLl7qXSy42bw/d2KwJkNgeQAMqiqvmXe/NMwA==
+Content-language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 07, 2012 at 02:02:09AM +0200, maximilian attems wrote:
-> On Thu, 06 Sep 2012, Tzafrir Cohen wrote:
-> >
-> > Works for the case I presented.
-> 
-> Michal please care to queue previous v2 patch with
-> Tested-by: Tzafrir Cohen <tzafrir.cohen@xorcom.com>
-> to kope with that cross building regression since
-> the linux headers got added to deb-pkg target.
-> 
-> > Now I remove the explicit setting of KBUILD_DEBRCH:
-> 
-> and here lies the error.
->  
-> >   $ rm -rf debian
-> >   $ make ARCH=arm KBUILD_IMAGE=uImage deb-pkg
-> > 
-> >   ...
-> > 
-> >   dpkg-gencontrol: error: current host architecture 'armhf' does not
-> >   appear in package's architecture list (armel)
-> > 
-> > My host architecture is amd64. This is actually the build architecture.
-> > dpkg-gencontrol uses Dpkg::Arch::get_host_arch().
-> > 
-> >   $ perl -MDpkg::Arch -e 'print Dpkg::Arch::get_host_arch()."\n"'
-> >   amd64
-> > 
-> >   $ CC=/usr/bi/narm-linux-gnueabi-gcc  perl -MDpkg::Arch -e 'print Dpkg::Arch::get_host_arch()."\n"'
-> >   armel
-> >   
-> >   $ CC=/usr/bin/arm-linux-gnueabihf-gcc  perl -MDpkg::Arch -e 'print Dpkg::Arch::get_host_arch()."\n"'
-> >   armhf
-> > 
-> >   $ DEB_HOST_ARCH=whatever perl -MDpkg::Arch -e 'print Dpkg::Arch::get_host_arch()."\n"'
-> >   whatever
-> > 
-> > Is it OK to use that perl one-liner as the default instead of the
-> > architecture guessing case?
-> 
-> In any case that would be a follow up, but I'm not fond of that perl/dpkg
-> magic plus supporting DEB_ variables. 
+I didn't quite understand everything that you meant in your mail, however I
+will try to explain briefly:
 
-This magic is lifted from current dpkg-gencontrol. Is there any better
-way to get it?
+SANITIZE replaces the need to issue REQ_SECURE as part of the REQ_DISCARD
+request. In this way DISCARD request finishes much faster (order of
+magnitude) and thus improves system performance. When the NVM content must
+be erased, the user may use SANITIZE to erase all unmapped sectors. 
 
-> I think for linux it is preferable
-> to have it based on UTS_MACHINE. Thus I think your testcases aren't valid,
+An example of usage is refurbished devices in which the carrier wants to
+erase NVM content (since the user used only DISCARDs), in this case the a
+SANITIZE operation will be triggered in the carrier labs from a dedicated
+application through IOCTL that goes directly to the device. Note that no
+change to the FS is required for such operation.
 
-Well, my current build script is:
+Hope that answers your comments.
 
-  #!/bin/sh
-  # YOu need to have one of the following unremmed to avoid a
-  # dpkg-gencontrol error:
-  export KBUILD_DEBARCH=armhf # Unrem this for armhf
-  #export DEB_HOST_ARCH=armel # Or this for armel
-  exec make ARCH=arm KBUILD_IMAGE=uImage deb-pkg "$@"
+Thanks,
+Yaniv
 
-Clearly on my build toolchain I must set DEB_HOST_ARCH in some cases. So
-DEB_ variables are already in there. Without it it will give me an error
-for trying to build 
+QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
+of Code Aurora Forum, hosted by The Linux Foundation
 
-> and also you neglected the following one:
-> make KBUILD_DEBARCH=i386 deb-pkg # i386 userland with amd64 linux
 
-I'm not sure I follow. If the packagees are to be installed on a i386
-system, they are all to be considered i386, right? The linux-image
-package as well. The same as
-http://packages.debian.org/sid/linux-image-amd64 (the i386 variant).
+= > -----Original Message-----
+= > From: linux-mmc-owner@vger.kernel.org [mailto:linux-mmc-
+= > owner@vger.kernel.org] On Behalf Of Arnd Bergmann
+= > Sent: Thursday, July 26, 2012 4:37 PM
+= > To: Yaniv Gardi
+= > Cc: linux-mmc@vger.kernel.org; linux-arm-msm@vger.kernel.org; open
+= > list
+= > Subject: Re: [PATCH v8 1/2] block: ioctl support for sanitize in eMMC
+4.5
+= > 
+= > On Wednesday 25 July 2012, Yaniv Gardi wrote:
+= > >
+= > > Adding a new ioctl to support sanitize operation in eMMC cards version
+= > > 4.5.
+= > > The sanitize ioctl support helps performing this operation via user
+= > > application.
+= > >
+= > > Signed-off-by: Yaniv Gardi <ygardi@codeaurora.org>
+= > >
+= > 
+= > Can you explain how you expect this to be called by a file system?
+= > We've debated this in the past and concluded that we probably want to do
+= > it at the same time as batched discard, but I don't see if the sanitize
+= > request should be sent for each FITRIM or whether we should better have
+= > a separate file system level ioctl. My feeling is that it would be more
+useful
+= > to call this feature through a file system level ioctl than through a
+block
+= > level ioctl, but I guess it makes sense to support both.
+= > 
+= > 	Arnd
+= > 
+= > --
+= > To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+the
+= > body of a message to majordomo@vger.kernel.org More majordomo info
+= > at  http://vger.kernel.org/majordomo-info.html
 
-Setting KBUILD_DEBARCH does not change the building of the files in any
-way. It only changes the package's metadata.
-
-Maybe set DEB_HOST_ARCH from KBUILD_DEBARCH if the latter was set?
-
--- 
-               Tzafrir Cohen
-icq#16849755              jabber:tzafrir.cohen@xorcom.com
-+972-50-7952406           mailto:tzafrir.cohen@xorcom.com
-http://www.xorcom.com  iax:guest@local.xorcom.com/tzafrir
