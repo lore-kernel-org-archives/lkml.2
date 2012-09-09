@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755739Ab2IIXP6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 19:15:58 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51043 "EHLO
+	id S1756010Ab2IIXQW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 19:16:22 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51201 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755469Ab2IIXPt (ORCPT
+	by vger.kernel.org with ESMTP id S1755866Ab2IIXQN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 19:15:49 -0400
-Message-Id: <20120909224155.118631523@decadent.org.uk>
+	Sun, 9 Sep 2012 19:16:13 -0400
+Message-Id: <20120909224201.712039032@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 09 Sep 2012 23:42:21 +0100
+Date: Sun, 09 Sep 2012 23:43:11 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Miklos Szeredi <mszeredi@suse.cz>,
-        "Richard W.M. Jones" <rjones@redhat.com>
-Subject: [ 31/95] vfs: canonicalize create mode in build_open_flags()
+        alan@lxorguk.ukuu.org.uk, Theodore Tso <tytso@mit.edu>,
+        Matt Mackall <mpm@selenic.com>
+Subject: [ 81/95] MAINTAINERS: Theodore Tso is taking over the random driver
 In-Reply-To: <20120909224150.641491654@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,42 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit e68726ff72cf7ba5e7d789857fcd9a75ca573f03 upstream.
+commit 330e0a01d54c2b8606c56816f99af6ebc58ec92c upstream.
 
-Userspace can pass weird create mode in open(2) that we canonicalize to
-"(mode & S_IALLUGO) | S_IFREG" in vfs_create().
+Matt Mackall stepped down as the /dev/random driver maintainer last
+year, so Theodore Ts'o is taking back the /dev/random driver.
 
-The problem is that we use the uncanonicalized mode before calling vfs_create()
-with unforseen consequences.
-
-So do the canonicalization early in build_open_flags().
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Tested-by: Richard W.M. Jones <rjones@redhat.com>
+Cc: Matt Mackall <mpm@selenic.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/open.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ MAINTAINERS |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/open.c b/fs/open.c
-index bc132e1..e1f2cdb 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -852,9 +852,10 @@ static inline int build_open_flags(int flags, umode_t mode, struct open_flags *o
- 	int lookup_flags = 0;
- 	int acc_mode;
+diff --git a/MAINTAINERS b/MAINTAINERS
+index eb22272..335c525 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -5634,7 +5634,7 @@ F:	Documentation/blockdev/ramdisk.txt
+ F:	drivers/block/brd.c
  
--	if (!(flags & O_CREAT))
--		mode = 0;
--	op->mode = mode;
-+	if (flags & O_CREAT)
-+		op->mode = (mode & S_IALLUGO) | S_IFREG;
-+	else
-+		op->mode = 0;
+ RANDOM NUMBER DRIVER
+-M:	Matt Mackall <mpm@selenic.com>
++M:	Theodore Ts'o" <tytso@mit.edu>
+ S:	Maintained
+ F:	drivers/char/random.c
  
- 	/* Must never be set by userspace */
- 	flags &= ~FMODE_NONOTIFY;
 
 
