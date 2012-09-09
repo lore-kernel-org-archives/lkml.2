@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756431Ab2IIXRQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 19:17:16 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51469 "EHLO
+	id S1756499Ab2IIXW1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 19:22:27 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51533 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756351Ab2IIXRG (ORCPT
+	by vger.kernel.org with ESMTP id S1756415Ab2IIXRP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 19:17:06 -0400
-Message-Id: <20120909224151.268014343@decadent.org.uk>
+	Sun, 9 Sep 2012 19:17:15 -0400
+Message-Id: <20120909224156.306915731@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 09 Sep 2012 23:41:52 +0100
+Date: Sun, 09 Sep 2012 23:42:30 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jeff Layton <jlayton@redhat.com>,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 02/95] nfs: tear down caches in nfs_init_writepagecache when allocation
- fails
+        alan@lxorguk.ukuu.org.uk, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 40/95] PM / Runtime: Fix rpm_resume() return value for power.no_callbacks
+ set
 In-Reply-To: <20120909224150.641491654@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,51 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 
-commit 3dd4765fce04c0b4af1e0bc4c0b10f906f95fabc upstream.
+commit 7f321c26c04807834fef4c524d2b21573423fc74 upstream.
 
-...and ensure that we tear down the nfs_commit_data cache too when
-unloading the module.
+For devices whose power.no_callbacks flag is set, rpm_resume()
+should return 1 if the device's parent is already active, so that
+the callers of pm_runtime_get() don't think that they have to wait
+for the device to resume (asynchronously) in that case (the core
+won't queue up an asynchronous resume in that case, so there's
+nothing to wait for anyway).
 
-Cc: Bryan Schumaker <bjschuma@netapp.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-[bwh: Backported to 3.2: drop the nfs_cdata_cachep cleanup; it doesn't exist]
+Modify the code accordingly (and make sure that an idle notification
+will be queued up on success, even if 1 is to be returned).
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nfs/write.c |   15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+ drivers/base/power/runtime.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/nfs/write.c
-+++ b/fs/nfs/write.c
-@@ -1742,12 +1742,12 @@ int __init nfs_init_writepagecache(void)
- 	nfs_wdata_mempool = mempool_create_slab_pool(MIN_POOL_WRITE,
- 						     nfs_wdata_cachep);
- 	if (nfs_wdata_mempool == NULL)
--		return -ENOMEM;
-+		goto out_destroy_write_cache;
+diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
+index 5989487..9891a85 100644
+--- a/drivers/base/power/runtime.c
++++ b/drivers/base/power/runtime.c
+@@ -584,6 +584,7 @@ static int rpm_resume(struct device *dev, int rpmflags)
+ 		    || dev->parent->power.runtime_status == RPM_ACTIVE) {
+ 			atomic_inc(&dev->parent->power.child_count);
+ 			spin_unlock(&dev->parent->power.lock);
++			retval = 1;
+ 			goto no_callback;	/* Assume success. */
+ 		}
+ 		spin_unlock(&dev->parent->power.lock);
+@@ -664,7 +665,7 @@ static int rpm_resume(struct device *dev, int rpmflags)
+ 	}
+ 	wake_up_all(&dev->power.wait_queue);
  
- 	nfs_commit_mempool = mempool_create_slab_pool(MIN_POOL_COMMIT,
- 						      nfs_wdata_cachep);
- 	if (nfs_commit_mempool == NULL)
--		return -ENOMEM;
-+		goto out_destroy_write_mempool;
+-	if (!retval)
++	if (retval >= 0)
+ 		rpm_idle(dev, RPM_ASYNC);
  
- 	/*
- 	 * NFS congestion size, scale with available memory.
-@@ -1770,6 +1770,12 @@ int __init nfs_init_writepagecache(void)
- 		nfs_congestion_kb = 256*1024;
- 
- 	return 0;
-+
-+out_destroy_write_mempool:
-+	mempool_destroy(nfs_wdata_mempool);
-+out_destroy_write_cache:
-+	kmem_cache_destroy(nfs_wdata_cachep);
-+	return -ENOMEM;
- }
- 
- void nfs_destroy_writepagecache(void)
+  out:
 
 
