@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932104Ab2IIXRc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 19:17:32 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51422 "EHLO
+	id S932083Ab2IIXRb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 19:17:31 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51484 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756171Ab2IIXQ5 (ORCPT
+	by vger.kernel.org with ESMTP id S1756367Ab2IIXRI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 19:16:57 -0400
-Message-Id: <20120909224151.530365445@decadent.org.uk>
+	Sun, 9 Sep 2012 19:17:08 -0400
+Message-Id: <20120909224151.136722090@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 09 Sep 2012 23:41:54 +0100
+Date: Sun, 09 Sep 2012 23:41:51 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andy Adamson <andros@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 04/95] NFSv4.1 fix page number calculation bug for filelayout decode
- buffers
+        alan@lxorguk.ukuu.org.uk, Cyrus Lien <cyrus.lien@canonical.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [ 01/95] HID: add ASUS AIO keyboard model AK1D
 In-Reply-To: <20120909224150.641491654@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,39 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Adamson <andros@netapp.com>
+From: Cyrus Lien <cyrus.lien@canonical.com>
 
-commit e5265a0c587423bbd21a6b39a572cecff16b9346 upstream.
+commit 2d8767bb421574dfcf48e4be0751ce7d8f73d5d7 upstream.
 
-Signed-off-by: Andy Adamson <andros@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Add Asus All-In-One PC keyboard model AK1D.
+
+BugLink: https://bugs.launchpad.net/bugs/1027789
+
+Signed-off-by: Cyrus Lien <cyrus.lien@canonical.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nfs/nfs4filelayoutdev.c |    2 +-
- fs/nfs/pnfs.c              |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/hid/hid-chicony.c |    1 +
+ drivers/hid/hid-core.c    |    1 +
+ drivers/hid/hid-ids.h     |    1 +
+ 3 files changed, 3 insertions(+)
 
---- a/fs/nfs/nfs4filelayoutdev.c
-+++ b/fs/nfs/nfs4filelayoutdev.c
-@@ -721,7 +721,7 @@ get_device_info(struct inode *inode, str
- 	 * GETDEVICEINFO's maxcount
- 	 */
- 	max_resp_sz = server->nfs_client->cl_session->fc_attrs.max_resp_sz;
--	max_pages = max_resp_sz >> PAGE_SHIFT;
-+	max_pages = nfs_page_array_len(0, max_resp_sz);
- 	dprintk("%s inode %p max_resp_sz %u max_pages %d\n",
- 		__func__, inode, max_resp_sz, max_pages);
+--- a/drivers/hid/hid-chicony.c
++++ b/drivers/hid/hid-chicony.c
+@@ -60,6 +60,7 @@ static int ch_input_mapping(struct hid_d
+ static const struct hid_device_id ch_devices[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_TACTICAL_PAD) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_WIRELESS2) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_AK1D) },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(hid, ch_devices);
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1398,6 +1398,7 @@ static const struct hid_device_id hid_ha
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_TACTICAL_PAD) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_WIRELESS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_WIRELESS2) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_AK1D) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHUNGHWAT, USB_DEVICE_ID_CHUNGHWAT_MULTITOUCH) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CREATIVELABS, USB_DEVICE_ID_PRODIKEYS_PCMIDI) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CVTOUCH, USB_DEVICE_ID_CVTOUCH_SCREEN) },
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -196,6 +196,7 @@
+ #define USB_DEVICE_ID_CHICONY_MULTI_TOUCH	0xb19d
+ #define USB_DEVICE_ID_CHICONY_WIRELESS	0x0618
+ #define USB_DEVICE_ID_CHICONY_WIRELESS2	0x1123
++#define USB_DEVICE_ID_CHICONY_AK1D	0x1125
  
---- a/fs/nfs/pnfs.c
-+++ b/fs/nfs/pnfs.c
-@@ -588,7 +588,7 @@ send_layoutget(struct pnfs_layout_hdr *l
- 
- 	/* allocate pages for xdr post processing */
- 	max_resp_sz = server->nfs_client->cl_session->fc_attrs.max_resp_sz;
--	max_pages = max_resp_sz >> PAGE_SHIFT;
-+	max_pages = nfs_page_array_len(0, max_resp_sz);
- 
- 	pages = kcalloc(max_pages, sizeof(struct page *), gfp_flags);
- 	if (!pages)
+ #define USB_VENDOR_ID_CHUNGHWAT		0x2247
+ #define USB_DEVICE_ID_CHUNGHWAT_MULTITOUCH	0x0001
 
 
