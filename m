@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755926Ab2IJAjd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 20:39:33 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56782 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755846Ab2IJAjc (ORCPT
+	id S1755949Ab2IJAlp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 20:41:45 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:30843 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755700Ab2IJAln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 20:39:32 -0400
-Date: Mon, 10 Sep 2012 01:39:13 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Mike Turquette <mturquette@ti.com>,
-        Greg Ungerer <gerg@uclinux.org>, Julia Lawall <julia.lawall@lip6.fr>,
-        Artem Bityutskiy <dedekind1@gmail.com>, linux-m68k@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] clk: Make the managed clk functions generically
-	available
-Message-ID: <20120910003913.GM13739@n2100.arm.linux.org.uk>
-References: <1347202862-1617-1-git-send-email-lars@metafoo.de> <20120909235059.GA2643@sirena.org.uk> <20120910001524.GL13739@n2100.arm.linux.org.uk> <20120910002020.GB16249@opensource.wolfsonmicro.com>
+	Sun, 9 Sep 2012 20:41:43 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 173.50.127.139
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/QyCcCkldDVbgcXnMHxRnV6YZQVkQD0iU=
+Date: Sun, 9 Sep 2012 15:56:10 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Lior Amsalem <alior@marvell.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Ben Dooks <ben.dooks@codethink.co.uk>, Andrew Lunn <andrew@lunn.ch>,
+        Rob Landley <rob@landley.net>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/9] pinctrl: mvebu: pinctrl driver core
+Message-ID: <20120909195610.GK4575@titan.lakedaemon.net>
+References: <CABJ1b_Tdr80DGqb-FRzwDbF3m7g6fBguk5GtRAfRUYx5Sqy_cA@mail.gmail.com>
+ <50366E44.4030606@wwwdotorg.org>
+ <50369305.6050304@gmail.com>
+ <50369FEE.8000003@wwwdotorg.org>
+ <5036B639.20608@gmail.com>
+ <5036F651.4020700@wwwdotorg.org>
+ <5038F50E.7030807@gmail.com>
+ <503AF8B4.1070206@wwwdotorg.org>
+ <CACRpkdYsPadKr1i8m5cCAFUUvJYUnLmc3j8evKM_6rPU5oGzRg@mail.gmail.com>
+ <50431871.1030507@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120910002020.GB16249@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <50431871.1030507@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 08:20:21AM +0800, Mark Brown wrote:
-> On Mon, Sep 10, 2012 at 01:15:24AM +0100, Russell King - ARM Linux wrote:
-> > Note that the patch system doesn't always return error messages anymore
-> > (it used to do that reliably, but as it's now a favourite target for
-> > spammers and was creating soo much backscatter, which was then filling
-> > my mailbox with bounces... that had to change.)
-> 
-> Hrm, that's not ideal.  It'd be nice if it were able to do something
-> like always reply if there were patch contents, or if it found things
-> like the KernelVersion line in there.  Obviously e-mail is also not time
-> guaranteed so deciding it's not responded (and then working out why it
-> did that) is going to be unreliable too.
+On Sun, Sep 02, 2012 at 10:27:29AM +0200, Sebastian Hesselbarth wrote:
+> there is a v3 of the patch under internal review right now.
 
-It tries to - if it finds what it thinks is a patch in the right place
-in the email.  If it doesn't think it found a patch then it won't reply.
-In other words, if you include a patch without a PATCH FOLLOWS or the ---
-commit message/diffstat break marker preceding it, it will ignore you.
+Sebastian,
 
-> I do recall seeing the patch in the database but it's not showing up any
-> more so perhaps I was thinking of a different patch.
+What is the status of v3?  I'd like to get it (and gpio, which depends
+on this work) in for v3.7, but it's getting close...
 
-Well, no patch ever gets deleted from the database... the only way even I
-can do that is to manually issue the SQL.
+thx,
 
-> OK, that's what I'd thought was going on - it was the fact that you'd
-> just acked the patch rather than asked for it to go to the patch tracker
-> or something which made me wonder if things had changed.
-
-I kind'a forgot because it's been soo long since I took any of those
-patches...
+Jason.
