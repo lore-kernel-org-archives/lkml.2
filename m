@@ -1,113 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752416Ab2IIHjH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 03:39:07 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:54139 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751880Ab2IIHjF (ORCPT
+	id S1753026Ab2IIHk2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 03:40:28 -0400
+Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:40157 "EHLO
+	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752701Ab2IIHkY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 03:39:05 -0400
-Date: Sun, 9 Sep 2012 00:38:27 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Arvydas Sidorenko <asido4@gmail.com>
-cc: Jeff Garzik <jgarzik@pobox.com>, Zheng Liu <wenqing.lz@taobao.com>,
-        linux-kernel@vger.kernel.org,
-        IDE/ATA development list <linux-ide@vger.kernel.org>
-Subject: Re: Storage related regression in linux-next 20120824
-In-Reply-To: <503BB4BB.4080307@gmail.com>
-Message-ID: <alpine.LSU.2.00.1209090012390.2416@eggly.anvils>
-References: <CA+6av4=uxu_q5U_46HtpUt=FSgbh3pZuAEY54J5_xK=MKWq-YQ@mail.gmail.com> <CAFtxgO536xEMjMw_D1u3utT1f1iy-6EsjcawdYvbocRxc=Wu=A@mail.gmail.com> <503BA2DB.9080704@gmail.com> <503BB4BB.4080307@gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Sun, 9 Sep 2012 03:40:24 -0400
+Date: Sun, 9 Sep 2012 10:40:17 +0300
+From: Sakari Ailus <sakari.ailus@iki.fi>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: Prabhakar Lad <prabhakar.lad@ti.com>, LMML <linux-media@vger.kernel.org>,
+        dlos <davinci-linux-open-source@linux.davincidsp.com>,
+        linux-kernel@vger.kernel.org, Manjunath Hadli <manjunath.hadli@ti.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-doc@vger.kernel.org, Hans Verkuil <hans.verkuil@cisco.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Rob Landley <rob@landley.net>
+Subject: Re: [PATCH v2] media: v4l2-ctrls: add control for test pattern
+Message-ID: <20120909074017.GF6834@valkosipuli.retiisi.org.uk>
+References: <1347007309-6913-1-git-send-email-prabhakar.lad@ti.com>
+ <504A3B03.4090600@iki.fi>
+ <201209081311.04861.hverkuil@xs4all.nl>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201209081311.04861.hverkuil@xs4all.nl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Aug 2012, Arvydas Sidorenko wrote:
-> On 08/27/2012 06:39 PM, Arvydas Sidorenko wrote:
-> > > Can you pastebin 'dmesg' and 'lspci'?  Did this occur only once, or is
-> > > it reproducible?
-> > > 
-> > >       Jeff
-> > It does happen every time when booting into -next 20120824.
+Hi Hans,
 
-I don't know what went into next-20120824 versus next-20120813 (which
-you reported to be good), but I'm seeing similar behaviour on PowerMac
-G5 on Thursday's mmotm based on next-20120907 - critical target error,
-root remounted read-only, the reboot with good kernel then has to fsck
-(although fsck doesn't find anything interesting to fix in my case).
-
-> > [   11.035530] sd 0:0:0:0: [sda]
-> > [   11.035533] Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
-> > [   11.035535] sd 0:0:0:0: [sda]
-> > [   11.035536] Sense Key : Illegal Request [current]
-> > [   11.035539] sd 0:0:0:0: [sda]
-> > [   11.035541] Add. Sense: Invalid field in cdb
-> > [   11.035543] sd 0:0:0:0: [sda] CDB:
-> > [   11.035544] Write(10): 2a 08 0b ad d1 78 00 00 08 00
-> > [   11.035550] end_request: critical target error, dev sda, sector
-> > 195940728
-> > [   11.035552] end_request: critical target error, dev sda, sector
-> > 195940728
-> > [   11.035557] Aborting journal on device sda4-8.
-> > [   11.046413] EXT4-fs error (device sda4): ext4_journal_start_sb:348:
-> > Detected aborted journal
-> > [   11.046418] EXT4-fs (sda4): Remounting filesystem read-only
+On Sat, Sep 08, 2012 at 01:11:04PM +0200, Hans Verkuil wrote:
+> On Fri September 7 2012 20:20:51 Sakari Ailus wrote:
+> > Hi Prabhakar,
 > > 
-> I believe the problem is in SCSI. Mode sense command catches my attention:
->     [    3.955397] sd 0:0:0:0: [sda] Mode Sense: 00 3a 00 10
-> All logs from older kernels has different mode page code: 00 3a 00 00
+> > Thanks for the patch!
+> > 
+> > Prabhakar Lad wrote:
+> > > From: Lad, Prabhakar <prabhakar.lad@ti.com>
+> > >
+> > > add V4L2_CID_TEST_PATTERN of type menu, which determines
+> > > the internal test pattern selected by the device.
+> > >
+> > > Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+> > > Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+> > > Cc: Sakari Ailus <sakari.ailus@iki.fi>
+> > > Cc: Hans Verkuil <hans.verkuil@cisco.com>
+> > > Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> > > Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+> > > Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> > > Cc: Hans de Goede <hdegoede@redhat.com>
+> > > Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> > > Cc: Rob Landley <rob@landley.net>
+> > > ---
+> > > This patches has one checkpatch warning for line over
+> > > 80 characters altough it can be avoided I have kept it
+> > > for consistency.
+> > >
+> > > Changes for v2:
+> > > 1: Included display devices in the description for test pattern
+> > >     as pointed by Hans.
+> > > 2: In the menu replaced 'Test Pattern Disabled' by 'Disabled' as
+> > >     pointed by Sylwester.
+> > > 3: Removed the test patterns from menu as the are hardware specific
+> > >     as pointed by Sakari.
+> > >
+> > >   Documentation/DocBook/media/v4l/controls.xml |   20 ++++++++++++++++++++
+> > >   drivers/media/v4l2-core/v4l2-ctrls.c         |    8 ++++++++
+> > >   include/linux/videodev2.h                    |    4 ++++
+> > >   3 files changed, 32 insertions(+), 0 deletions(-)
+> > >
+> > > diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
+> > > index ad873ea..173934e 100644
+> > > --- a/Documentation/DocBook/media/v4l/controls.xml
+> > > +++ b/Documentation/DocBook/media/v4l/controls.xml
+> > > @@ -4311,6 +4311,26 @@ interface and may change in the future.</para>
+> > >   	      </tbody>
+> > >   	    </entrytbl>
+> > >   	  </row>
+> > > +	  <row>
+> > > +	    <entry spanname="id"><constant>V4L2_CID_TEST_PATTERN</constant></entry>
+> > > +	    <entry>menu</entry>
+> > > +	  </row>
+> > > +	  <row id="v4l2-test-pattern">
+> > > +	    <entry spanname="descr"> The Capture/Display/Sensors have the capability
+> > > +	    to generate internal test patterns and this are hardware specific. This
+> > > +	    test patterns are used to test a device is properly working and can generate
+> > > +	    the desired waveforms that it supports.</entry>
+> > > +	  </row>
+> > > +	  <row>
+> > > +	    <entrytbl spanname="descr" cols="2">
+> > > +	      <tbody valign="top">
+> > > +	        <row>
+> > > +	         <entry><constant>V4L2_TEST_PATTERN_DISABLED</constant></entry>
+> > > +	          <entry>Test pattern generation is disabled</entry>
+> > > +	        </row>
+> > > +	      </tbody>
+> > > +	    </entrytbl>
+> > > +	  </row>
+> > >   	<row><entry></entry></row>
+> > >   	</tbody>
+> > >         </tgroup>
+> > > diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
+> > > index 8f2f40b..d731422 100644
+> > > --- a/drivers/media/v4l2-core/v4l2-ctrls.c
+> > > +++ b/drivers/media/v4l2-core/v4l2-ctrls.c
+> > > @@ -430,6 +430,10 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
+> > >   		"Advanced",
+> > >   		NULL,
+> > >   	};
+> > > +	static const char * const test_pattern[] = {
+> > > +		"Disabled",
+> > > +		NULL,
+> > > +	};
+> > >
+> > >   	switch (id) {
+> > >   	case V4L2_CID_MPEG_AUDIO_SAMPLING_FREQ:
+> > > @@ -509,6 +513,8 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
+> > >   		return jpeg_chroma_subsampling;
+> > >   	case V4L2_CID_DPCM_PREDICTOR:
+> > >   		return dpcm_predictor;
+> > > +	case V4L2_CID_TEST_PATTERN:
+> > > +		return test_pattern;
+> > 
+> > I think it's not necessary to define test_pattern (nor be prepared to 
+> > return it) since the menu is going to be device specific. So the driver 
+> > is responsible for all of the menu items. Such menus are created using 
+> > v4l2_ctrl_new_custom() instead of v4l2_ctrl_new_std_menu().
+> > 
+> > Looks good to me otherwise.
 > 
-> sg_modes from broken kernel shows DPOFUA set, which is 0x10th bit.
-> Anyone knowing SCSI better could tell if that might cause the problems?
+> I would suggest that we *do* make this a standard control, but the menu consists
+> of just one item: "Disabled". After creating the control you can just set the
+> ctrl->qmenu pointer to the device-specific menu. I like using standard controls
+> because they guarantee standard naming and type conventions. They are also
+> easier to use in an application.
 
-I think you know your way around SCSI/libata much better than I do.
+That's not quite enough. Also menu_skip_mask and max also need to be
+replaced. In a general case min as well. It's easy to do mistakes in that
+--- how about a separate function for doing that? It'd be also nice to be
+able to use the existing standardised menu item strings, but that's just an
+extra plus.
 
-I just bisected linux-next, and it comes down to the commit below, which
-introduces the regression for me, and I'm guessing for you also.  Maybe
-it can be fixed up to satisfy us, but otherwise will have to be reverted:
-we don't invert a default if it's going to break older working systems.
+However I think it's beyond this patch, which I think then is be fine w/o
+modifications. So on my behalf,
 
-A good workaround for me meanwhile is to add boot option "libata.fua=0":
-please try that (or reverting the commit) and let us know the result.
+Acked-by: Sakari Ailus <sakari.ailus@iki.fi>
 
-Thanks,
-Hugh
+Cheers,
 
-commit 91895b786e631ab47b618c901231f22b5a44115b
-Author: Zheng Liu <wenqing.lz@taobao.com>
-Date:   Tue May 8 11:24:03 2012 +0800
-
-    libata: enable SATA disk fua detection on default
-    
-    Currently, SATA disk fua detection is disabled on default because most of
-    devices don't support this feature at that time.  With the development of
-    technology, more and more SATA disks support this feature.  So now we can enable
-    this detection on default.
-    
-    Although fua detection is defined as a kernel module parameter, it is too hard
-    to set its value because it must be loaded and set before system starts up.
-    That needs to modify initrd file.  So it is inconvenient for administrator who
-    needs to manage a huge number of servers.
-    
-    Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
-    Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
-
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 5eee1c1..c3fbdca 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -135,9 +135,9 @@ int atapi_passthru16 = 1;
- module_param(atapi_passthru16, int, 0444);
- MODULE_PARM_DESC(atapi_passthru16, "Enable ATA_16 passthru for ATAPI devices (0=off, 1=on [default])");
- 
--int libata_fua = 0;
-+int libata_fua = 1;
- module_param_named(fua, libata_fua, int, 0444);
--MODULE_PARM_DESC(fua, "FUA support (0=off [default], 1=on)");
-+MODULE_PARM_DESC(fua, "FUA support (0=off, 1=on [default])");
- 
- static int ata_ignore_hpa;
- module_param_named(ignore_hpa, ata_ignore_hpa, int, 0644);
+-- 
+Sakari Ailus
+e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
