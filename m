@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932078Ab2IIXWF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 19:22:05 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51537 "EHLO
+	id S1756431Ab2IIXRQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 19:17:16 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51469 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756435Ab2IIXRR (ORCPT
+	by vger.kernel.org with ESMTP id S1756351Ab2IIXRG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 19:17:17 -0400
-Message-Id: <20120909224156.176504872@decadent.org.uk>
+	Sun, 9 Sep 2012 19:17:06 -0400
+Message-Id: <20120909224151.268014343@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 09 Sep 2012 23:42:29 +0100
+Date: Sun, 09 Sep 2012 23:41:52 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Theodore Tso <tytso@mit.edu>
-Subject: [ 39/95] ext4: fix long mount times on very big file systems
+        alan@lxorguk.ukuu.org.uk, Jeff Layton <jlayton@redhat.com>,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 02/95] nfs: tear down caches in nfs_init_writepagecache when allocation
+ fails
 In-Reply-To: <20120909224150.641491654@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,36 +30,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 0548bbb85337e532ca2ed697c3e9b227ff2ed4b4 upstream.
+commit 3dd4765fce04c0b4af1e0bc4c0b10f906f95fabc upstream.
 
-Commit 8aeb00ff85a: "ext4: fix overhead calculation used by
-ext4_statfs()" introduced a O(n**2) calculation which makes very large
-file systems take forever to mount.  Fix this with an optimization for
-non-bigalloc file systems.  (For bigalloc file systems the overhead
-needs to be set in the the superblock.)
+...and ensure that we tear down the nfs_commit_data cache too when
+unloading the module.
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Bryan Schumaker <bjschuma@netapp.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+[bwh: Backported to 3.2: drop the nfs_cdata_cachep cleanup; it doesn't exist]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ext4/super.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ fs/nfs/write.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 56bcaec..5984989 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -3120,6 +3120,10 @@ static int count_overhead(struct super_block *sb, ext4_group_t grp,
- 	ext4_group_t		i, ngroups = ext4_get_groups_count(sb);
- 	int			s, j, count = 0;
+--- a/fs/nfs/write.c
++++ b/fs/nfs/write.c
+@@ -1742,12 +1742,12 @@ int __init nfs_init_writepagecache(void)
+ 	nfs_wdata_mempool = mempool_create_slab_pool(MIN_POOL_WRITE,
+ 						     nfs_wdata_cachep);
+ 	if (nfs_wdata_mempool == NULL)
+-		return -ENOMEM;
++		goto out_destroy_write_cache;
  
-+	if (!EXT4_HAS_RO_COMPAT_FEATURE(sb, EXT4_FEATURE_RO_COMPAT_BIGALLOC))
-+		return (ext4_bg_has_super(sb, grp) + ext4_bg_num_gdb(sb, grp) +
-+			sbi->s_itb_per_group + 2);
+ 	nfs_commit_mempool = mempool_create_slab_pool(MIN_POOL_COMMIT,
+ 						      nfs_wdata_cachep);
+ 	if (nfs_commit_mempool == NULL)
+-		return -ENOMEM;
++		goto out_destroy_write_mempool;
+ 
+ 	/*
+ 	 * NFS congestion size, scale with available memory.
+@@ -1770,6 +1770,12 @@ int __init nfs_init_writepagecache(void)
+ 		nfs_congestion_kb = 256*1024;
+ 
+ 	return 0;
 +
- 	first_block = le32_to_cpu(sbi->s_es->s_first_data_block) +
- 		(grp * EXT4_BLOCKS_PER_GROUP(sb));
- 	last_block = first_block + EXT4_BLOCKS_PER_GROUP(sb) - 1;
++out_destroy_write_mempool:
++	mempool_destroy(nfs_wdata_mempool);
++out_destroy_write_cache:
++	kmem_cache_destroy(nfs_wdata_cachep);
++	return -ENOMEM;
+ }
+ 
+ void nfs_destroy_writepagecache(void)
 
 
