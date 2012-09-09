@@ -1,187 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800Ab2IIUKP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 16:10:15 -0400
-Received: from wren.arvixe.com ([50.97.138.99]:37921 "EHLO wren.arvixe.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754549Ab2IIUKM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 16:10:12 -0400
-X-Greylist: delayed 1936 seconds by postgrey-1.27 at vger.kernel.org; Sun, 09 Sep 2012 16:10:11 EDT
-From: Przemo Firszt <przemo@firszt.eu>
-To: dmitry.torokhov@gmail.com, rob@landley.net, pinglinux@gmail.com
-Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-input@vger.kernel.org, Przemo Firszt <przemo@firszt.eu>
-Subject: [PATCH] USB: input: wacom_sys.c: format OLED image in kernel
-Date: Sun,  9 Sep 2012 15:37:18 -0400
-Message-Id: <1347219438-2598-1-git-send-email-przemo@firszt.eu>
-X-Mailer: git-send-email 1.7.12
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - wren.arvixe.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - firszt.eu
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1754877Ab2IIULT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 16:11:19 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55440 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754809Ab2IIULO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Sep 2012 16:11:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LSU.2.00.1209090012390.2416@eggly.anvils>
+References: <CA+6av4=uxu_q5U_46HtpUt=FSgbh3pZuAEY54J5_xK=MKWq-YQ@mail.gmail.com>
+	<CAFtxgO536xEMjMw_D1u3utT1f1iy-6EsjcawdYvbocRxc=Wu=A@mail.gmail.com>
+	<503BA2DB.9080704@gmail.com>
+	<503BB4BB.4080307@gmail.com>
+	<alpine.LSU.2.00.1209090012390.2416@eggly.anvils>
+Date: Sun, 9 Sep 2012 22:11:13 +0200
+Message-ID: <CA+6av4=6WeLcde5me2FCpBtQJAOTtHZvf4pkMExgMW9agVNLWg@mail.gmail.com>
+Subject: Re: Storage related regression in linux-next 20120824
+From: Arvydas Sidorenko <asido4@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>, Zheng Liu <wenqing.lz@taobao.com>,
+        linux-kernel@vger.kernel.org,
+        "IDE/ATA development list" <linux-ide@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new way of handling Wacom Intuos4 family OLEDs.
-Previously the images had to be 'scrambled' by userland application. Now
-the 'scrambling' is done in the kernel module, so user space can send
-simple 64x32 pixels 4-bit grayscale (2 pixels per byte) 0,0 in top left corner
-images straight to a wacom OLED sysfs entry. An example:
+> I think you know your way around SCSI/libata much better than I do.
+>
+> I just bisected linux-next, and it comes down to the commit below, which
+> introduces the regression for me, and I'm guessing for you also.  Maybe
+> it can be fixed up to satisfy us, but otherwise will have to be reverted:
+> we don't invert a default if it's going to break older working systems.
+>
+> A good workaround for me meanwhile is to add boot option "libata.fua=0":
+> please try that (or reverting the commit) and let us know the result.
+>
+> Thanks,
+> Hugh
+>
+> commit 91895b786e631ab47b618c901231f22b5a44115b
+> Author: Zheng Liu <wenqing.lz@taobao.com>
+> Date:   Tue May 8 11:24:03 2012 +0800
+>
+>     libata: enable SATA disk fua detection on default
+>
+>     Currently, SATA disk fua detection is disabled on default because most of
+>     devices don't support this feature at that time.  With the development of
+>     technology, more and more SATA disks support this feature.  So now we can enable
+>     this detection on default.
+>
+>     Although fua detection is defined as a kernel module parameter, it is too hard
+>     to set its value because it must be loaded and set before system starts up.
+>     That needs to modify initrd file.  So it is inconvenient for administrator who
+>     needs to manage a huge number of servers.
+>
+>     Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
+>     Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+>
+> diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+> index 5eee1c1..c3fbdca 100644
+> --- a/drivers/ata/libata-core.c
+> +++ b/drivers/ata/libata-core.c
+> @@ -135,9 +135,9 @@ int atapi_passthru16 = 1;
+>  module_param(atapi_passthru16, int, 0444);
+>  MODULE_PARM_DESC(atapi_passthru16, "Enable ATA_16 passthru for ATAPI devices (0=off, 1=on [default])");
+>
+> -int libata_fua = 0;
+> +int libata_fua = 1;
+>  module_param_named(fua, libata_fua, int, 0444);
+> -MODULE_PARM_DESC(fua, "FUA support (0=off [default], 1=on)");
+> +MODULE_PARM_DESC(fua, "FUA support (0=off, 1=on [default])");
+>
+>  static int ata_ignore_hpa;
+>  module_param_named(ignore_hpa, ata_ignore_hpa, int, 0644);
 
-dd bs=1024 if=image_file \
-of=/sys/bus/usb/drivers/wacom/[DevNo]/wacom_led/button[No]_formattedimg \
-count=1
+Indeed, disabling FUA explicitly solved the issue on my disk as well.
+Hugh, what hard drive you have this issue on?
 
-This patch greatly simplifies user space preparation of the image.
-The raw image sysfs enties are still present to avoid breaking API.
+I believe there are two solutions:
+- Revert FUA default back to '0'
+- Start filling SATA drive blacklist in function:
+> static int ata_dev_supports_fua(u16 *id)
 
-Signed-off-by: Przemo Firszt <przemo@firszt.eu>
----
- Documentation/ABI/testing/sysfs-driver-wacom |  7 ++++
- drivers/input/tablet/wacom_sys.c             | 60 +++++++++++++++++++++++++---
- 2 files changed, 62 insertions(+), 5 deletions(-)
-
-diff --git a/Documentation/ABI/testing/sysfs-driver-wacom b/Documentation/ABI/testing/sysfs-driver-wacom
-index 7fc7810..5b369a3 100644
---- a/Documentation/ABI/testing/sysfs-driver-wacom
-+++ b/Documentation/ABI/testing/sysfs-driver-wacom
-@@ -93,3 +93,10 @@ Description:
- 		byte chunk encodes the image data for two consecutive lines on
- 		the display. The low nibble of each byte contains the first
- 		line, and the high nibble contains the second line.
-+
-+What:		/sys/bus/usb/devices/<busnum>-<devnum>:<cfg>.<intf>/wacom_led/button<n>_formattedimg
-+Date:		September 2012
-+Contact:	linux-input@vger.kernel.org
-+Description:
-+		A plain format entry to wacom OLED icons. 1024 byte, 64x32 pixel 4-bit gray image,
-+		2 pixels per byte, 0,0 in top left corner.
-diff --git a/drivers/input/tablet/wacom_sys.c b/drivers/input/tablet/wacom_sys.c
-index 0d3219f..19c668d 100644
---- a/drivers/input/tablet/wacom_sys.c
-+++ b/drivers/input/tablet/wacom_sys.c
-@@ -654,11 +654,30 @@ static int wacom_led_control(struct wacom *wacom)
- 
- 	return retval;
- }
-+static void wacom_scramble(__u8 *image)
-+{
-+	__u8 buf[1024];
-+	int x, y, i;
-+
-+	memcpy(buf, image , 1024);
-+
-+	for (y = 0; y < 16; y++) {
-+		for (x = 0; x < 32; x++) {
-+			i = (2 * x) + (64 * y);
-+			image[i] = (buf[63 - x + 64 * y] << 4) |
-+					 (0x0F & (buf[31 - x + 64 * y]));
-+			image[i + 1] = (0xF0 & buf[63 - x + 64 * y]) |
-+					 (buf[31 - x + 64 * y] >> 4);
-+		}
-+	}
-+}
- 
--static int wacom_led_putimage(struct wacom *wacom, int button_id, const void *img)
-+static int wacom_led_putimage(struct wacom *wacom, int button_id,
-+				 const void *img, int f)
- {
- 	unsigned char *buf;
- 	int i, retval;
-+	__u8 p[1024];
- 
- 	buf = kzalloc(259, GFP_KERNEL);
- 	if (!buf)
-@@ -672,11 +691,16 @@ static int wacom_led_putimage(struct wacom *wacom, int button_id, const void *im
- 	if (retval < 0)
- 		goto out;
- 
-+	memcpy(p, img , 1024);
-+
-+	if (f)
-+		wacom_scramble(p);
-+
- 	buf[0] = WAC_CMD_ICON_XFER;
- 	buf[1] = button_id & 0x07;
- 	for (i = 0; i < 4; i++) {
- 		buf[2] = i;
--		memcpy(buf + 3, img + i * 256, 256);
-+		memcpy(buf + 3, p + i * 256, 256);
- 
- 		retval = wacom_set_report(wacom->intf, 0x03, WAC_CMD_ICON_XFER,
- 					  buf, 259, WAC_CMD_RETRIES);
-@@ -772,7 +796,7 @@ DEVICE_LUMINANCE_ATTR(status1, hlv);
- DEVICE_LUMINANCE_ATTR(buttons, img_lum);
- 
- static ssize_t wacom_button_image_store(struct device *dev, int button_id,
--					const char *buf, size_t count)
-+					const char *buf, size_t count, int f)
- {
- 	struct wacom *wacom = dev_get_drvdata(dev);
- 	int err;
-@@ -782,7 +806,7 @@ static ssize_t wacom_button_image_store(struct device *dev, int button_id,
- 
- 	mutex_lock(&wacom->lock);
- 
--	err = wacom_led_putimage(wacom, button_id, buf);
-+	err = wacom_led_putimage(wacom, button_id, buf, f);
- 
- 	mutex_unlock(&wacom->lock);
- 
-@@ -793,7 +817,7 @@ static ssize_t wacom_button_image_store(struct device *dev, int button_id,
- static ssize_t wacom_btnimg##BUTTON_ID##_store(struct device *dev,	\
- 	struct device_attribute *attr, const char *buf, size_t count)	\
- {									\
--	return wacom_button_image_store(dev, BUTTON_ID, buf, count);	\
-+	return wacom_button_image_store(dev, BUTTON_ID, buf, count, 0);	\
- }									\
- static DEVICE_ATTR(button##BUTTON_ID##_rawimg, S_IWUSR,			\
- 		   NULL, wacom_btnimg##BUTTON_ID##_store)
-@@ -807,6 +831,24 @@ DEVICE_BTNIMG_ATTR(5);
- DEVICE_BTNIMG_ATTR(6);
- DEVICE_BTNIMG_ATTR(7);
- 
-+#define DEVICE_BTNIMG_FORMATTED_ATTR(BUTTON_ID)				\
-+static ssize_t wacom_btnimg##BUTTON_ID##_store_formatted(struct device *dev,\
-+	struct device_attribute *attr, const char *buf, size_t count)	\
-+{									\
-+	return wacom_button_image_store(dev, BUTTON_ID, buf, count, 1);	\
-+}									\
-+static DEVICE_ATTR(button##BUTTON_ID##_formattedimg, S_IWUSR,		\
-+		   NULL, wacom_btnimg##BUTTON_ID##_store_formatted)
-+
-+DEVICE_BTNIMG_FORMATTED_ATTR(0);
-+DEVICE_BTNIMG_FORMATTED_ATTR(1);
-+DEVICE_BTNIMG_FORMATTED_ATTR(2);
-+DEVICE_BTNIMG_FORMATTED_ATTR(3);
-+DEVICE_BTNIMG_FORMATTED_ATTR(4);
-+DEVICE_BTNIMG_FORMATTED_ATTR(5);
-+DEVICE_BTNIMG_FORMATTED_ATTR(6);
-+DEVICE_BTNIMG_FORMATTED_ATTR(7);
-+
- static struct attribute *cintiq_led_attrs[] = {
- 	&dev_attr_status_led0_select.attr,
- 	&dev_attr_status_led1_select.attr,
-@@ -831,6 +873,14 @@ static struct attribute *intuos4_led_attrs[] = {
- 	&dev_attr_button5_rawimg.attr,
- 	&dev_attr_button6_rawimg.attr,
- 	&dev_attr_button7_rawimg.attr,
-+	&dev_attr_button0_formattedimg.attr,
-+	&dev_attr_button1_formattedimg.attr,
-+	&dev_attr_button2_formattedimg.attr,
-+	&dev_attr_button3_formattedimg.attr,
-+	&dev_attr_button4_formattedimg.attr,
-+	&dev_attr_button5_formattedimg.attr,
-+	&dev_attr_button6_formattedimg.attr,
-+	&dev_attr_button7_formattedimg.attr,
- 	NULL
- };
- 
--- 
-1.7.12
-
+Arvydas
