@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756313Ab2IIXgE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 19:36:04 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51109 "EHLO
+	id S1755685Ab2IIXPy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 19:15:54 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51041 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755674Ab2IIXPz (ORCPT
+	by vger.kernel.org with ESMTP id S1754805Ab2IIXPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 19:15:55 -0400
-Message-Id: <20120909224155.382316171@decadent.org.uk>
+	Sun, 9 Sep 2012 19:15:48 -0400
+Message-Id: <20120909224154.830412469@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 09 Sep 2012 23:42:23 +0100
+Date: Sun, 09 Sep 2012 23:42:19 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Bart Van Assche <bvanassche@acm.org>,
-        Joseph Glanville <joseph.glanville@orionvm.com.au>,
-        David Dillow <dillowda@ornl.gov>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [ 33/95] IB/srp: Fix a race condition
+        alan@lxorguk.ukuu.org.uk, Miklos Szeredi <mszeredi@suse.cz>,
+        Eric Paris <eparis@redhat.com>
+Subject: [ 29/95] audit: dont free_chunk() after fsnotify_add_mark()
 In-Reply-To: <20120909224150.641491654@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,161 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bart Van Assche <bvanassche@acm.org>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-commit 220329916c72ee3d54ae7262b215a050f04a18fc upstream.
+commit 0fe33aae0e94b4097dd433c9399e16e17d638cd8 upstream.
 
-Avoid a crash caused by the scmnd->scsi_done(scmnd) call in
-srp_process_rsp() being invoked with scsi_done == NULL.  This can
-happen if a reply is received during or after a command abort.
+Don't do free_chunk() after fsnotify_add_mark().  That one does a delayed unref
+via the destroy list and this results in use-after-free.
 
-Reported-by: Joseph Glanville <joseph.glanville@orionvm.com.au>
-Reference: http://marc.info/?l=linux-rdma&m=134314367801595
-Acked-by: David Dillow <dillowda@ornl.gov>
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Acked-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/infiniband/ulp/srp/ib_srp.c |   87 +++++++++++++++++++++++++----------
- 1 file changed, 63 insertions(+), 24 deletions(-)
+ kernel/audit_tree.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/infiniband/ulp/srp/ib_srp.c b/drivers/infiniband/ulp/srp/ib_srp.c
-index bcbf22e..1b5b0c7 100644
---- a/drivers/infiniband/ulp/srp/ib_srp.c
-+++ b/drivers/infiniband/ulp/srp/ib_srp.c
-@@ -586,24 +586,62 @@ static void srp_unmap_data(struct scsi_cmnd *scmnd,
- 			scmnd->sc_data_direction);
- }
+diff --git a/kernel/audit_tree.c b/kernel/audit_tree.c
+index 3a5ca58..69a5851 100644
+--- a/kernel/audit_tree.c
++++ b/kernel/audit_tree.c
+@@ -259,7 +259,7 @@ static void untag_chunk(struct node *p)
  
--static void srp_remove_req(struct srp_target_port *target,
--			   struct srp_request *req, s32 req_lim_delta)
-+/**
-+ * srp_claim_req - Take ownership of the scmnd associated with a request.
-+ * @target: SRP target port.
-+ * @req: SRP request.
-+ * @scmnd: If NULL, take ownership of @req->scmnd. If not NULL, only take
-+ *         ownership of @req->scmnd if it equals @scmnd.
-+ *
-+ * Return value:
-+ * Either NULL or a pointer to the SCSI command the caller became owner of.
-+ */
-+static struct scsi_cmnd *srp_claim_req(struct srp_target_port *target,
-+				       struct srp_request *req,
-+				       struct scsi_cmnd *scmnd)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&target->lock, flags);
-+	if (!scmnd) {
-+		scmnd = req->scmnd;
-+		req->scmnd = NULL;
-+	} else if (req->scmnd == scmnd) {
-+		req->scmnd = NULL;
-+	} else {
-+		scmnd = NULL;
-+	}
-+	spin_unlock_irqrestore(&target->lock, flags);
-+
-+	return scmnd;
-+}
-+
-+/**
-+ * srp_free_req() - Unmap data and add request to the free request list.
-+ */
-+static void srp_free_req(struct srp_target_port *target,
-+			 struct srp_request *req, struct scsi_cmnd *scmnd,
-+			 s32 req_lim_delta)
- {
- 	unsigned long flags;
- 
--	srp_unmap_data(req->scmnd, target, req);
-+	srp_unmap_data(scmnd, target, req);
-+
- 	spin_lock_irqsave(&target->lock, flags);
- 	target->req_lim += req_lim_delta;
--	req->scmnd = NULL;
- 	list_add_tail(&req->list, &target->free_reqs);
- 	spin_unlock_irqrestore(&target->lock, flags);
- }
- 
- static void srp_reset_req(struct srp_target_port *target, struct srp_request *req)
- {
--	req->scmnd->result = DID_RESET << 16;
--	req->scmnd->scsi_done(req->scmnd);
--	srp_remove_req(target, req, 0);
-+	struct scsi_cmnd *scmnd = srp_claim_req(target, req, NULL);
-+
-+	if (scmnd) {
-+		scmnd->result = DID_RESET << 16;
-+		scmnd->scsi_done(scmnd);
-+		srp_free_req(target, req, scmnd, 0);
-+	}
- }
- 
- static int srp_reconnect_target(struct srp_target_port *target)
-@@ -1073,11 +1111,18 @@ static void srp_process_rsp(struct srp_target_port *target, struct srp_rsp *rsp)
- 		complete(&target->tsk_mgmt_done);
- 	} else {
- 		req = &target->req_ring[rsp->tag];
--		scmnd = req->scmnd;
--		if (!scmnd)
-+		scmnd = srp_claim_req(target, req, NULL);
-+		if (!scmnd) {
- 			shost_printk(KERN_ERR, target->scsi_host,
- 				     "Null scmnd for RSP w/tag %016llx\n",
- 				     (unsigned long long) rsp->tag);
-+
-+			spin_lock_irqsave(&target->lock, flags);
-+			target->req_lim += be32_to_cpu(rsp->req_lim_delta);
-+			spin_unlock_irqrestore(&target->lock, flags);
-+
-+			return;
-+		}
- 		scmnd->result = rsp->status;
- 
- 		if (rsp->flags & SRP_RSP_FLAG_SNSVALID) {
-@@ -1092,7 +1137,9 @@ static void srp_process_rsp(struct srp_target_port *target, struct srp_rsp *rsp)
- 		else if (rsp->flags & (SRP_RSP_FLAG_DIOVER | SRP_RSP_FLAG_DIUNDER))
- 			scsi_set_resid(scmnd, be32_to_cpu(rsp->data_in_res_cnt));
- 
--		srp_remove_req(target, req, be32_to_cpu(rsp->req_lim_delta));
-+		srp_free_req(target, req, scmnd,
-+			     be32_to_cpu(rsp->req_lim_delta));
-+
- 		scmnd->host_scribble = NULL;
- 		scmnd->scsi_done(scmnd);
+ 	fsnotify_duplicate_mark(&new->mark, entry);
+ 	if (fsnotify_add_mark(&new->mark, new->mark.group, new->mark.i.inode, NULL, 1)) {
+-		free_chunk(new);
++		fsnotify_put_mark(&new->mark);
+ 		goto Fallback;
  	}
-@@ -1631,25 +1678,17 @@ static int srp_abort(struct scsi_cmnd *scmnd)
- {
- 	struct srp_target_port *target = host_to_target(scmnd->device->host);
- 	struct srp_request *req = (struct srp_request *) scmnd->host_scribble;
--	int ret = SUCCESS;
  
- 	shost_printk(KERN_ERR, target->scsi_host, "SRP abort called\n");
+@@ -322,7 +322,7 @@ static int create_chunk(struct inode *inode, struct audit_tree *tree)
  
--	if (!req || target->qp_in_error)
-+	if (!req || target->qp_in_error || !srp_claim_req(target, req, scmnd))
- 		return FAILED;
--	if (srp_send_tsk_mgmt(target, req->index, scmnd->device->lun,
--			      SRP_TSK_ABORT_TASK))
--		return FAILED;
--
--	if (req->scmnd) {
--		if (!target->tsk_mgmt_status) {
--			srp_remove_req(target, req, 0);
--			scmnd->result = DID_ABORT << 16;
--		} else
--			ret = FAILED;
--	}
-+	srp_send_tsk_mgmt(target, req->index, scmnd->device->lun,
-+			  SRP_TSK_ABORT_TASK);
-+	srp_free_req(target, req, scmnd, 0);
-+	scmnd->result = DID_ABORT << 16;
+ 	entry = &chunk->mark;
+ 	if (fsnotify_add_mark(entry, audit_tree_group, inode, NULL, 0)) {
+-		free_chunk(chunk);
++		fsnotify_put_mark(entry);
+ 		return -ENOSPC;
+ 	}
  
--	return ret;
-+	return SUCCESS;
- }
- 
- static int srp_reset_device(struct scsi_cmnd *scmnd)
+@@ -396,7 +396,7 @@ static int tag_chunk(struct inode *inode, struct audit_tree *tree)
+ 	fsnotify_duplicate_mark(chunk_entry, old_entry);
+ 	if (fsnotify_add_mark(chunk_entry, chunk_entry->group, chunk_entry->i.inode, NULL, 1)) {
+ 		spin_unlock(&old_entry->lock);
+-		free_chunk(chunk);
++		fsnotify_put_mark(chunk_entry);
+ 		fsnotify_put_mark(old_entry);
+ 		return -ENOSPC;
+ 	}
 
 
