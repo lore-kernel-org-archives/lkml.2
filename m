@@ -1,67 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754982Ab2IIU0L (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 16:26:11 -0400
-Received: from sd-mail-sa-01.sanoma.fi ([158.127.18.161]:54857 "EHLO
-	sd-mail-sa-01.sanoma.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754205Ab2IIU0J (ORCPT
+	id S1755033Ab2IIU2Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 16:28:25 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:52674 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754548Ab2IIU2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 16:26:09 -0400
-Message-ID: <20120909232604.342762ujqb3iewow@www.81.fi>
-Date: Sun, 09 Sep 2012 23:26:04 +0300
-From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Romain Francoise <romain@orebokech.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Re: Linux 3.6-rc5
-References: <CA+55aFwnPfdyTTG6WTuhChomg=t9nSS18xracq3iQ3F5+PWOog@mail.gmail.com>
- <87har7h84h.fsf@silenus.orebokech.com>
- <20120909191958.GB9782@gondor.apana.org.au>
-In-Reply-To: <20120909191958.GB9782@gondor.apana.org.au>
+	Sun, 9 Sep 2012 16:28:23 -0400
+Message-ID: <504CFBE3.401@pobox.com>
+Date: Sun, 09 Sep 2012 16:28:19 -0400
+From: Jeff Garzik <jgarzik@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
+To: Arvydas Sidorenko <asido4@gmail.com>
+CC: Hugh Dickins <hughd@google.com>, Zheng Liu <wenqing.lz@taobao.com>,
+        linux-kernel@vger.kernel.org,
+        IDE/ATA development list <linux-ide@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: Storage related regression in linux-next 20120824
+References: <CA+6av4=uxu_q5U_46HtpUt=FSgbh3pZuAEY54J5_xK=MKWq-YQ@mail.gmail.com> <CAFtxgO536xEMjMw_D1u3utT1f1iy-6EsjcawdYvbocRxc=Wu=A@mail.gmail.com> <503BA2DB.9080704@gmail.com> <503BB4BB.4080307@gmail.com> <alpine.LSU.2.00.1209090012390.2416@eggly.anvils> <CA+6av4=6WeLcde5me2FCpBtQJAOTtHZvf4pkMExgMW9agVNLWg@mail.gmail.com>
+In-Reply-To: <CA+6av4=6WeLcde5me2FCpBtQJAOTtHZvf4pkMExgMW9agVNLWg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Herbert Xu <herbert@gondor.apana.org.au>:
-
+On 09/09/2012 04:11 PM, Arvydas Sidorenko wrote:
+>> I think you know your way around SCSI/libata much better than I do.
+>>
+>> I just bisected linux-next, and it comes down to the commit below, which
+>> introduces the regression for me, and I'm guessing for you also.  Maybe
+>> it can be fixed up to satisfy us, but otherwise will have to be reverted:
+>> we don't invert a default if it's going to break older working systems.
+>>
+>> A good workaround for me meanwhile is to add boot option "libata.fua=0":
+>> please try that (or reverting the commit) and let us know the result.
+>>
+>> Thanks,
+>> Hugh
+>>
+>> commit 91895b786e631ab47b618c901231f22b5a44115b
+>> Author: Zheng Liu <wenqing.lz@taobao.com>
+>> Date:   Tue May 8 11:24:03 2012 +0800
+>>
+>>      libata: enable SATA disk fua detection on default
+>>
+>>      Currently, SATA disk fua detection is disabled on default because most of
+>>      devices don't support this feature at that time.  With the development of
+>>      technology, more and more SATA disks support this feature.  So now we can enable
+>>      this detection on default.
+>>
+>>      Although fua detection is defined as a kernel module parameter, it is too hard
+>>      to set its value because it must be loaded and set before system starts up.
+>>      That needs to modify initrd file.  So it is inconvenient for administrator who
+>>      needs to manage a huge number of servers.
+>>
+>>      Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
+>>      Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+>>
+>> diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+>> index 5eee1c1..c3fbdca 100644
+>> --- a/drivers/ata/libata-core.c
+>> +++ b/drivers/ata/libata-core.c
+>> @@ -135,9 +135,9 @@ int atapi_passthru16 = 1;
+>>   module_param(atapi_passthru16, int, 0444);
+>>   MODULE_PARM_DESC(atapi_passthru16, "Enable ATA_16 passthru for ATAPI devices (0=off, 1=on [default])");
+>>
+>> -int libata_fua = 0;
+>> +int libata_fua = 1;
+>>   module_param_named(fua, libata_fua, int, 0444);
+>> -MODULE_PARM_DESC(fua, "FUA support (0=off [default], 1=on)");
+>> +MODULE_PARM_DESC(fua, "FUA support (0=off, 1=on [default])");
+>>
+>>   static int ata_ignore_hpa;
+>>   module_param_named(ignore_hpa, ata_ignore_hpa, int, 0644);
 >
-> Can you try blacklisting/not loading sha1_ssse3 and aesni_intel
-> to see which one of them is causing this crash? Of course if you
-> can still reproduce this without loading either of them that would
-> also be interesting to know.
-
-This triggers with aes-x86_64 and sha1_generic (and sha256 & sha512)  
-too, with following test added to tcrypt:
-         case 46:
-                 ret += tcrypt_test("authenc(hmac(sha1),cbc(aes))");
-                 ret += tcrypt_test("authenc(hmac(sha256),cbc(aes))");
-                 ret += tcrypt_test("authenc(hmac(sha512),cbc(aes))");
-                 break;
-
--Jussi
-
+> Indeed, disabling FUA explicitly solved the issue on my disk as well.
+> Hugh, what hard drive you have this issue on?
 >
-> Thanks,
-> --
-> Email: Herbert Xu <herbert@gondor.apana.org.au>
-> Home Page: http://gondor.apana.org.au/~herbert/
-> PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-crypto" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
+> I believe there are two solutions:
+> - Revert FUA default back to '0'
+> - Start filling SATA drive blacklist in function:
+
+I think the right thing to do for release is disable it (again), then we 
+can try again later with better logic.
+
+I'll send Linus a patch to disable.
+
+It is entirely possible that this is a software problem, where we 
+missing some detail turning on FUA (thereby engaging some less traveled 
+core block layer machinery), or even a remote possibility of triggering 
+a filesystem bug.
+
+	Jeff
+
+
 
 
 
