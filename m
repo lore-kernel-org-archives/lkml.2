@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753383Ab2III5r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 04:57:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46499 "EHLO
+	id S1753322Ab2III6k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 04:58:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46511 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751654Ab2III5p (ORCPT
+	with ESMTP id S1751654Ab2III6j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 04:57:45 -0400
-Date: Sun, 9 Sep 2012 01:57:26 -0700
+	Sun, 9 Sep 2012 04:58:39 -0400
+Date: Sun, 9 Sep 2012 01:58:21 -0700
 From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-f5951d56a2ab4181b96806a4746895aaa5a3d72e@git.kernel.org>
+Message-ID: <tip-12ceaded6b276c13d905cf09f0c1a1322022ea58@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, tglx@linutronix.de
+        penberg@kernel.org, namhyung.kim@lge.com, namhyung@kernel.org,
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, tglx@linutronix.de, namhyung@kernel.org
-In-Reply-To: <1346640790-17197-5-git-send-email-namhyung@kernel.org>
-References: <1346640790-17197-5-git-send-email-namhyung@kernel.org>
+        penberg@kernel.org, namhyung.kim@lge.com, tglx@linutronix.de,
+        namhyung@kernel.org
+In-Reply-To: <1346640790-17197-6-git-send-email-namhyung@kernel.org>
+References: <1346640790-17197-6-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf hists browser: Use perf_hpp__format functions
-Git-Commit-ID: f5951d56a2ab4181b96806a4746895aaa5a3d72e
+Subject: [tip:perf/core] perf gtk/browser: Use perf_hpp__format functions
+Git-Commit-ID: 12ceaded6b276c13d905cf09f0c1a1322022ea58
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,59 +31,68 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 09 Sep 2012 01:57:33 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 09 Sep 2012 01:58:27 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f5951d56a2ab4181b96806a4746895aaa5a3d72e
-Gitweb:     http://git.kernel.org/tip/f5951d56a2ab4181b96806a4746895aaa5a3d72e
+Commit-ID:  12ceaded6b276c13d905cf09f0c1a1322022ea58
+Gitweb:     http://git.kernel.org/tip/12ceaded6b276c13d905cf09f0c1a1322022ea58
 Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Mon, 3 Sep 2012 11:53:09 +0900
+AuthorDate: Mon, 3 Sep 2012 11:53:10 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Sat, 8 Sep 2012 13:20:13 -0300
+CommitDate: Sat, 8 Sep 2012 13:20:21 -0300
 
-perf hists browser: Use perf_hpp__format functions
+perf gtk/browser: Use perf_hpp__format functions
 
-Override hpp->color functions for TUI. Because line coloring is done
-outside of the function, it just sets the percent value and pass it.
+Now we can support color using pango markup with this change.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Pekka Enberg <penberg@kernel.org>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1346640790-17197-5-git-send-email-namhyung@kernel.org
-[ committer note: Keep previous layout by showing the overhead at column 1 ]
+Link: http://lkml.kernel.org/r/1346640790-17197-6-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/browsers/hists.c |   96 ++++++++++++++++++++++++++++++----------
- tools/perf/ui/tui/setup.c      |    4 ++
- 2 files changed, 77 insertions(+), 23 deletions(-)
+ tools/perf/ui/gtk/browser.c |  101 ++++++++++++++++++++++++++++++++++++-------
+ tools/perf/ui/gtk/gtk.h     |    1 +
+ tools/perf/ui/gtk/setup.c   |    1 +
+ 3 files changed, 87 insertions(+), 16 deletions(-)
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 81bd8c2..5a5739b 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -28,6 +28,8 @@ struct hist_browser {
- 	bool		     has_symbols;
- };
- 
-+extern void hist_browser__init_hpp(void);
-+
- static int hists__browser_title(struct hists *hists, char *bf, size_t size,
- 				const char *ev_name);
- 
-@@ -563,14 +565,47 @@ static int hist_browser__show_callchain(struct hist_browser *browser,
- 	return row - first_row;
+diff --git a/tools/perf/ui/gtk/browser.c b/tools/perf/ui/gtk/browser.c
+index 26b5b65..3c16ab5 100644
+--- a/tools/perf/ui/gtk/browser.c
++++ b/tools/perf/ui/gtk/browser.c
+@@ -36,6 +36,57 @@ static void perf_gtk__resize_window(GtkWidget *window)
+ 	gtk_window_resize(GTK_WINDOW(window), width, height);
  }
  
-+#define HPP__COLOR_FN(_name, _field)					\
-+static int hist_browser__hpp_color_ ## _name(struct perf_hpp *hpp,	\
-+					     struct hist_entry *he)	\
-+{									\
-+	double percent = 100.0 * he->_field / hpp->total_period;	\
-+	*(double *)hpp->ptr = percent;					\
-+	return scnprintf(hpp->buf, hpp->size, "%5.2f%%", percent);	\
++static const char *perf_gtk__get_percent_color(double percent)
++{
++	if (percent >= MIN_RED)
++		return "<span fgcolor='red'>";
++	if (percent >= MIN_GREEN)
++		return "<span fgcolor='dark green'>";
++	return NULL;
++}
++
++#define HPP__COLOR_FN(_name, _field)						\
++static int perf_gtk__hpp_color_ ## _name(struct perf_hpp *hpp,			\
++					 struct hist_entry *he)			\
++{										\
++	double percent = 100.0 * he->_field / hpp->total_period;		\
++	const char *markup;							\
++	int ret = 0;								\
++										\
++	markup = perf_gtk__get_percent_color(percent);				\
++	if (markup)								\
++		ret += scnprintf(hpp->buf, hpp->size, "%s", markup);		\
++	ret += scnprintf(hpp->buf + ret, hpp->size - ret, "%5.2f%%", percent); 	\
++	if (markup)								\
++		ret += scnprintf(hpp->buf + ret, hpp->size - ret, "</span>"); 	\
++										\
++	return ret;								\
 +}
 +
 +HPP__COLOR_FN(overhead, period)
@@ -92,126 +103,134 @@ index 81bd8c2..5a5739b 100644
 +
 +#undef HPP__COLOR_FN
 +
-+void hist_browser__init_hpp(void)
++void perf_gtk__init_hpp(void)
 +{
 +	perf_hpp__init(false, false);
 +
 +	perf_hpp__format[PERF_HPP__OVERHEAD].color =
-+				hist_browser__hpp_color_overhead;
++				perf_gtk__hpp_color_overhead;
 +	perf_hpp__format[PERF_HPP__OVERHEAD_SYS].color =
-+				hist_browser__hpp_color_overhead_sys;
++				perf_gtk__hpp_color_overhead_sys;
 +	perf_hpp__format[PERF_HPP__OVERHEAD_US].color =
-+				hist_browser__hpp_color_overhead_us;
++				perf_gtk__hpp_color_overhead_us;
 +	perf_hpp__format[PERF_HPP__OVERHEAD_GUEST_SYS].color =
-+				hist_browser__hpp_color_overhead_guest_sys;
++				perf_gtk__hpp_color_overhead_guest_sys;
 +	perf_hpp__format[PERF_HPP__OVERHEAD_GUEST_US].color =
-+				hist_browser__hpp_color_overhead_guest_us;
++				perf_gtk__hpp_color_overhead_guest_us;
 +}
 +
- static int hist_browser__show_entry(struct hist_browser *browser,
- 				    struct hist_entry *entry,
- 				    unsigned short row)
+ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
  {
- 	char s[256];
- 	double percent;
--	int printed = 0;
--	int width = browser->b.width - 6; /* The percentage */
-+	int i, printed = 0;
-+	int width = browser->b.width - 1;
- 	char folded_sign = ' ';
- 	bool current_entry = ui_browser__is_current_entry(&browser->b, row);
- 	off_t row_offset = entry->row_offset;
-@@ -586,35 +621,50 @@ static int hist_browser__show_entry(struct hist_browser *browser,
- 	}
+ 	GType col_types[MAX_COLUMNS];
+@@ -43,15 +94,25 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
+ 	struct sort_entry *se;
+ 	GtkListStore *store;
+ 	struct rb_node *nd;
+-	u64 total_period;
+ 	GtkWidget *view;
+-	int col_idx;
++	int i, col_idx;
+ 	int nr_cols;
++	char s[512];
++
++	struct perf_hpp hpp = {
++		.buf		= s,
++		.size		= sizeof(s),
++		.total_period	= hists->stats.total_period,
++	};
  
- 	if (row_offset == 0) {
--		hist_entry__sort_snprintf(entry, s, sizeof(s), browser->hists);
--		percent = (entry->period * 100.0) / browser->hists->stats.total_period;
-+		struct perf_hpp hpp = {
-+			.buf		= s,
-+			.size		= sizeof(s),
-+			.total_period	= browser->hists->stats.total_period,
-+		};
+ 	nr_cols = 0;
  
--		ui_browser__set_percent_color(&browser->b, percent, current_entry);
--		ui_browser__gotorc(&browser->b, row, 0);
--		if (symbol_conf.use_callchain) {
--			slsmg_printf("%c ", folded_sign);
--			width -= 2;
--		}
-+		ui_browser__gotorc(&browser->b, row, 1);
+-	/* The percentage column */
+-	col_types[nr_cols++] = G_TYPE_STRING;
++	for (i = 0; i < PERF_HPP__MAX_INDEX; i++) {
++		if (!perf_hpp__format[i].cond)
++			continue;
++
++		col_types[nr_cols++] = G_TYPE_STRING;
++	}
  
--		slsmg_printf(" %5.2f%%", percent);
+ 	list_for_each_entry(se, &hist_entry__sort_list, list) {
+ 		if (se->elide)
+@@ -68,11 +129,17 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
+ 
+ 	col_idx = 0;
+ 
+-	/* The percentage column */
+-	gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view),
+-						    -1, "Overhead (%)",
+-						    renderer, "text",
+-						    col_idx++, NULL);
++	for (i = 0; i < PERF_HPP__MAX_INDEX; i++) {
++		if (!perf_hpp__format[i].cond)
++			continue;
++
++		perf_hpp__format[i].header(&hpp);
++
++		gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view),
++							    -1, s,
++							    renderer, "markup",
++							    col_idx++, NULL);
++	}
+ 
+ 	list_for_each_entry(se, &hist_entry__sort_list, list) {
+ 		if (se->elide)
+@@ -88,13 +155,9 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
+ 
+ 	g_object_unref(GTK_TREE_MODEL(store));
+ 
+-	total_period = hists->stats.total_period;
+-
+ 	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
+ 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+ 		GtkTreeIter iter;
+-		double percent;
+-		char s[512];
+ 
+ 		if (h->filtered)
+ 			continue;
+@@ -103,11 +166,17 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
+ 
+ 		col_idx = 0;
+ 
+-		percent = (h->period * 100.0) / total_period;
 +		for (i = 0; i < PERF_HPP__MAX_INDEX; i++) {
 +			if (!perf_hpp__format[i].cond)
 +				continue;
  
--		/* The scroll bar isn't being used */
--		if (!browser->b.navkeypressed)
--			width += 1;
-+			if (i) {
-+				slsmg_printf("  ");
-+				width -= 2;
-+			}
+-		snprintf(s, ARRAY_SIZE(s), "%.2f", percent);
++			if (perf_hpp__format[i].color)
++				perf_hpp__format[i].color(&hpp, h);
++			else
++				perf_hpp__format[i].entry(&hpp, h);
  
--		if (!current_entry || !browser->b.navkeypressed)
--			ui_browser__set_color(&browser->b, HE_COLORSET_NORMAL);
-+			if (perf_hpp__format[i].color) {
-+				hpp.ptr = &percent;
-+				/* It will set percent for us. See HPP__COLOR_FN above. */
-+				width -= perf_hpp__format[i].color(&hpp, entry);
+-		gtk_list_store_set(store, &iter, col_idx++, s, -1);
++			gtk_list_store_set(store, &iter, col_idx++, s, -1);
++		}
  
--		if (symbol_conf.show_nr_samples) {
--			slsmg_printf(" %11u", entry->nr_events);
--			width -= 12;
--		}
-+				ui_browser__set_percent_color(&browser->b, percent, current_entry);
-+
-+				if (i == 0 && symbol_conf.use_callchain) {
-+					slsmg_printf("%c ", folded_sign);
-+					width -= 2;
-+				}
-+
-+				slsmg_printf("%s", s);
+ 		list_for_each_entry(se, &hist_entry__sort_list, list) {
+ 			if (se->elide)
+diff --git a/tools/perf/ui/gtk/gtk.h b/tools/perf/ui/gtk/gtk.h
+index 793cb61..687af0b 100644
+--- a/tools/perf/ui/gtk/gtk.h
++++ b/tools/perf/ui/gtk/gtk.h
+@@ -30,6 +30,7 @@ struct perf_gtk_context *perf_gtk__activate_context(GtkWidget *window);
+ int perf_gtk__deactivate_context(struct perf_gtk_context **ctx);
  
--		if (symbol_conf.show_total_period) {
--			slsmg_printf(" %12" PRIu64, entry->period);
--			width -= 13;
-+				if (!current_entry || !browser->b.navkeypressed)
-+					ui_browser__set_color(&browser->b, HE_COLORSET_NORMAL);
-+			} else {
-+				width -= perf_hpp__format[i].entry(&hpp, entry);
-+				slsmg_printf("%s", s);
-+			}
- 		}
+ void perf_gtk__init_helpline(void);
++void perf_gtk__init_hpp(void);
  
-+		/* The scroll bar isn't being used */
-+		if (!browser->b.navkeypressed)
-+			width += 1;
-+
-+		hist_entry__sort_snprintf(entry, s, sizeof(s), browser->hists);
- 		slsmg_write_nstring(s, width);
- 		++row;
- 		++printed;
-diff --git a/tools/perf/ui/tui/setup.c b/tools/perf/ui/tui/setup.c
-index 4c936e0..4dc0887 100644
---- a/tools/perf/ui/tui/setup.c
-+++ b/tools/perf/ui/tui/setup.c
-@@ -15,6 +15,8 @@ static volatile int ui__need_resize;
- 
- extern struct perf_error_ops perf_tui_eops;
- 
-+extern void hist_browser__init_hpp(void);
-+
- void ui__refresh_dimensions(bool force)
+ #ifndef HAVE_GTK_INFO_BAR
+ static inline GtkWidget *perf_gtk__setup_info_bar(void)
+diff --git a/tools/perf/ui/gtk/setup.c b/tools/perf/ui/gtk/setup.c
+index ec1ee26..2642943 100644
+--- a/tools/perf/ui/gtk/setup.c
++++ b/tools/perf/ui/gtk/setup.c
+@@ -8,6 +8,7 @@ int perf_gtk__init(void)
  {
- 	if (force || ui__need_resize) {
-@@ -124,6 +126,8 @@ int ui__init(void)
- 	signal(SIGTERM, ui__signal);
- 
- 	perf_error__register(&perf_tui_eops);
-+
-+	hist_browser__init_hpp();
- out:
- 	return err;
+ 	perf_error__register(&perf_gtk_eops);
+ 	perf_gtk__init_helpline();
++	perf_gtk__init_hpp();
+ 	return gtk_init_check(NULL, NULL) ? 0 : -1;
  }
+ 
