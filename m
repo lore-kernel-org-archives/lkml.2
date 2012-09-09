@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756264Ab2IIX1p (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 19:27:45 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51304 "EHLO
+	id S1756196Ab2IIX1n (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 19:27:43 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51300 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756072Ab2IIXQf (ORCPT
+	by vger.kernel.org with ESMTP id S1756068Ab2IIXQe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 19:16:35 -0400
-Message-Id: <20120909224158.952745341@decadent.org.uk>
+	Sun, 9 Sep 2012 19:16:34 -0400
+Message-Id: <20120909224200.524032792@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 09 Sep 2012 23:42:50 +0100
+Date: Sun, 09 Sep 2012 23:43:02 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Igor Murzov <intergalactic.anonymous@gmail.com>,
-        Igor Murzov <e-mail@date.by>, Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 60/95] drm/radeon: fix invalid memory access in radeon_atrm_get_bios()
+        alan@lxorguk.ukuu.org.uk, Michal Hocko <mhocko@suse.cz>,
+        Larry Woodman <lwoodman@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
+        Hillf Danton <dhillf@gmail.com>
+Subject: [ 72/95] mm: hugetlbfs: correctly populate shared pmd
 In-Reply-To: <20120909224150.641491654@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,103 +32,171 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Igor Murzov <intergalactic.anonymous@gmail.com>
+From: Michal Hocko <mhocko@suse.cz>
 
-commit a3f83ab1a717c0e6c2f59a4cfdaa10707cc35c55 upstream.
+commit eb48c071464757414538c68a6033c8f8c15196f8 upstream.
 
-At a boot time I observed following bug:
+Each page mapped in a process's address space must be correctly
+accounted for in _mapcount.  Normally the rules for this are
+straightforward but hugetlbfs page table sharing is different.  The page
+table pages at the PMD level are reference counted while the mapcount
+remains the same.
 
- BUG: unable to handle kernel paging request at ffff8800a4244000
- IP: [<ffffffff81275b5b>] memcpy+0xb/0x120
- PGD 1816063 PUD 1fe7d067 PMD 1ff9f067 PTE 80000000a4244160
- Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
- CPU 0
- Modules linked in: btusb bluetooth brcmsmac brcmutil crc8 cordic b43 radeon(+)
-  mac80211 cfg80211 ttm ohci_hcd drm_kms_helper rfkill drm ssb agpgart mmc_core
-  sp5100_tco video battery ac thermal processor rtc_cmos thermal_sys snd_hda_codec_hdmi
-  joydev snd_hda_codec_conexant button bcma pcmcia snd_hda_intel snd_hda_codec
-  snd_hwdep snd_pcm shpchp pcmcia_core k8temp snd_timer atl1c snd psmouse hwmon
-  i2c_piix4 i2c_algo_bit soundcore evdev i2c_core ehci_hcd sg serio_raw snd_page_alloc
-  loop btrfs
+If this accounting is wrong, it causes bugs like this one reported by
+Larry Woodman:
 
- Pid: 1008, comm: modprobe Not tainted 3.3.0-rc1 #21 LENOVO 20046                           /AMD CRB
- RIP: 0010:[<ffffffff81275b5b>]  [<ffffffff81275b5b>] memcpy+0xb/0x120
- RSP: 0018:ffff8800aa72db00  EFLAGS: 00010246
- RAX: ffff8800a4150000 RBX: 0000000000001000 RCX: 0000000000000087
- RDX: 0000000000000000 RSI: ffff8800a4244000 RDI: ffff8800a4150bc8
- RBP: ffff8800aa72db78 R08: 0000000000000010 R09: ffffffff8174bbec
- R10: ffffffff812ee010 R11: 0000000000000001 R12: 0000000000001000
- R13: 0000000000010000 R14: ffff8800a4140000 R15: ffff8800aaba1800
- FS:  00007ff9a3bd4720(0000) GS:ffff8800afa00000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
- CR2: ffff8800a4244000 CR3: 00000000a9c18000 CR4: 00000000000006f0
- DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
- DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
- Process modprobe (pid: 1008, threadinfo ffff8800aa72c000, task ffff8800aa0e4000)
- Stack:
-  ffffffffa04e7c7b 0000000000000001 0000000000010000 ffff8800aa72db28
-  ffffffff00000001 0000000000001000 ffffffff8113cbef 0000000000000020
-  ffff8800a4243420 ffff880000000002 ffff8800aa72db08 ffff8800a9d42000
- Call Trace:
-  [<ffffffffa04e7c7b>] ? radeon_atrm_get_bios_chunk+0x8b/0xd0 [radeon]
-  [<ffffffff8113cbef>] ? kmalloc_order_trace+0x3f/0xb0
-  [<ffffffffa04a9298>] radeon_get_bios+0x68/0x2f0 [radeon]
-  [<ffffffffa04c7a30>] rv770_init+0x40/0x280 [radeon]
-  [<ffffffffa047d740>] radeon_device_init+0x560/0x600 [radeon]
-  [<ffffffffa047ef4f>] radeon_driver_load_kms+0xaf/0x170 [radeon]
-  [<ffffffffa043cdde>] drm_get_pci_dev+0x18e/0x2c0 [drm]
-  [<ffffffffa04e7e95>] radeon_pci_probe+0xad/0xb5 [radeon]
-  [<ffffffff81296c5f>] local_pci_probe+0x5f/0xd0
-  [<ffffffff81297418>] pci_device_probe+0x88/0xb0
-  [<ffffffff813417aa>] ? driver_sysfs_add+0x7a/0xb0
-  [<ffffffff813418d8>] really_probe+0x68/0x180
-  [<ffffffff81341be5>] driver_probe_device+0x45/0x70
-  [<ffffffff81341cb3>] __driver_attach+0xa3/0xb0
-  [<ffffffff81341c10>] ? driver_probe_device+0x70/0x70
-  [<ffffffff813400ce>] bus_for_each_dev+0x5e/0x90
-  [<ffffffff8134172e>] driver_attach+0x1e/0x20
-  [<ffffffff81341298>] bus_add_driver+0xc8/0x280
-  [<ffffffff813422c6>] driver_register+0x76/0x140
-  [<ffffffff812976d6>] __pci_register_driver+0x66/0xe0
-  [<ffffffffa043d021>] drm_pci_init+0x111/0x120 [drm]
-  [<ffffffff8133c67a>] ? vga_switcheroo_register_handler+0x3a/0x60
-  [<ffffffffa0229000>] ? 0xffffffffa0228fff
-  [<ffffffffa02290ec>] radeon_init+0xec/0xee [radeon]
-  [<ffffffff810002f2>] do_one_initcall+0x42/0x180
-  [<ffffffff8109d8d2>] sys_init_module+0x92/0x1e0
-  [<ffffffff815407a9>] system_call_fastpath+0x16/0x1b
- Code: 58 2a 43 50 88 43 4e 48 83 c4 08 5b c9 c3 66 90 e8 cb fd ff ff eb
-  e6 90 90 90 90 90 90 90 90 90 48 89 f8 89 d1 c1 e9 03 83 e2 07 <f3> 48
-  a5 89 d1 f3 a4 c3 20 48 83 ea 20 4c 8b 06 4c 8b 4e 08 4c
- RIP  [<ffffffff81275b5b>] memcpy+0xb/0x120
-  RSP <ffff8800aa72db00>
- CR2: ffff8800a4244000
- ---[ end trace fcffa1599cf56382 ]---
+  kernel BUG at mm/filemap.c:135!
+  invalid opcode: 0000 [#1] SMP
+  CPU 22
+  Modules linked in: bridge stp llc sunrpc binfmt_misc dcdbas microcode pcspkr acpi_pad acpi]
+  Pid: 18001, comm: mpitest Tainted: G        W    3.3.0+ #4 Dell Inc. PowerEdge R620/07NDJ2
+  RIP: 0010:[<ffffffff8112cfed>]  [<ffffffff8112cfed>] __delete_from_page_cache+0x15d/0x170
+  Process mpitest (pid: 18001, threadinfo ffff880428972000, task ffff880428b5cc20)
+  Call Trace:
+    delete_from_page_cache+0x40/0x80
+    truncate_hugepages+0x115/0x1f0
+    hugetlbfs_evict_inode+0x18/0x30
+    evict+0x9f/0x1b0
+    iput_final+0xe3/0x1e0
+    iput+0x3e/0x50
+    d_kill+0xf8/0x110
+    dput+0xe2/0x1b0
+    __fput+0x162/0x240
 
-Call to acpi_evaluate_object() not always returns 4096 bytes chunks,
-on my system it can return 2048 bytes chunk, so pass the length of
-retrieved chunk to memcpy(), not the length of the recieving buffer.
+During fork(), copy_hugetlb_page_range() detects if huge_pte_alloc()
+shared page tables with the check dst_pte == src_pte.  The logic is if
+the PMD page is the same, they must be shared.  This assumes that the
+sharing is between the parent and child.  However, if the sharing is
+with a different process entirely then this check fails as in this
+diagram:
 
-Signed-off-by: Igor Murzov <e-mail@date.by>
-Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+  parent
+    |
+    ------------>pmd
+                 src_pte----------> data page
+                                        ^
+  other--------->pmd--------------------|
+                  ^
+  child-----------|
+                 dst_pte
+
+For this situation to occur, it must be possible for Parent and Other to
+have faulted and failed to share page tables with each other.  This is
+possible due to the following style of race.
+
+  PROC A                                          PROC B
+  copy_hugetlb_page_range                         copy_hugetlb_page_range
+    src_pte == huge_pte_offset                      src_pte == huge_pte_offset
+    !src_pte so no sharing                          !src_pte so no sharing
+
+  (time passes)
+
+  hugetlb_fault                                   hugetlb_fault
+    huge_pte_alloc                                  huge_pte_alloc
+      huge_pmd_share                                 huge_pmd_share
+        LOCK(i_mmap_mutex)
+        find nothing, no sharing
+        UNLOCK(i_mmap_mutex)
+                                                      LOCK(i_mmap_mutex)
+                                                      find nothing, no sharing
+                                                      UNLOCK(i_mmap_mutex)
+      pmd_alloc                                       pmd_alloc
+      LOCK(instantiation_mutex)
+      fault
+      UNLOCK(instantiation_mutex)
+                                                  LOCK(instantiation_mutex)
+                                                  fault
+                                                  UNLOCK(instantiation_mutex)
+
+These two processes are not poing to the same data page but are not
+sharing page tables because the opportunity was missed.  When either
+process later forks, the src_pte == dst pte is potentially insufficient.
+As the check falls through, the wrong PTE information is copied in
+(harmless but wrong) and the mapcount is bumped for a page mapped by a
+shared page table leading to the BUG_ON.
+
+This patch addresses the issue by moving pmd_alloc into huge_pmd_share
+which guarantees that the shared pud is populated in the same critical
+section as pmd.  This also means that huge_pte_offset test in
+huge_pmd_share is serialized correctly now which in turn means that the
+success of the sharing will be higher as the racing tasks see the pud
+and pmd populated together.
+
+Race identified and changelog written mostly by Mel Gorman.
+
+{akpm@linux-foundation.org: attempt to make the huge_pmd_share() comment comprehensible, clean up coding style]
+Reported-by: Larry Woodman <lwoodman@redhat.com>
+Tested-by: Larry Woodman <lwoodman@redhat.com>
+Reviewed-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: David Gibson <david@gibson.dropbear.id.au>
+Cc: Ken Chen <kenchen@google.com>
+Cc: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: Hillf Danton <dhillf@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/radeon/radeon_atpx_handler.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/mm/hugetlbpage.c |   21 ++++++++++++++++-----
+ 1 file changed, 16 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_atpx_handler.c b/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-index 9d95792..c666a5b 100644
---- a/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-+++ b/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-@@ -58,7 +58,7 @@ static int radeon_atrm_call(acpi_handle atrm_handle, uint8_t *bios,
- 	}
- 
- 	obj = (union acpi_object *)buffer.pointer;
--	memcpy(bios+offset, obj->buffer.pointer, len);
-+	memcpy(bios+offset, obj->buffer.pointer, obj->buffer.length);
- 	kfree(buffer.pointer);
- 	return len;
+diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
+index f6679a7..b91e485 100644
+--- a/arch/x86/mm/hugetlbpage.c
++++ b/arch/x86/mm/hugetlbpage.c
+@@ -56,9 +56,16 @@ static int vma_shareable(struct vm_area_struct *vma, unsigned long addr)
  }
+ 
+ /*
+- * search for a shareable pmd page for hugetlb.
++ * Search for a shareable pmd page for hugetlb. In any case calls pmd_alloc()
++ * and returns the corresponding pte. While this is not necessary for the
++ * !shared pmd case because we can allocate the pmd later as well, it makes the
++ * code much cleaner. pmd allocation is essential for the shared case because
++ * pud has to be populated inside the same i_mmap_mutex section - otherwise
++ * racing tasks could either miss the sharing (see huge_pte_offset) or select a
++ * bad pmd for sharing.
+  */
+-static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
++static pte_t *
++huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
+ {
+ 	struct vm_area_struct *vma = find_vma(mm, addr);
+ 	struct address_space *mapping = vma->vm_file->f_mapping;
+@@ -68,9 +75,10 @@ static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
+ 	struct vm_area_struct *svma;
+ 	unsigned long saddr;
+ 	pte_t *spte = NULL;
++	pte_t *pte;
+ 
+ 	if (!vma_shareable(vma, addr))
+-		return;
++		return (pte_t *)pmd_alloc(mm, pud, addr);
+ 
+ 	mutex_lock(&mapping->i_mmap_mutex);
+ 	vma_prio_tree_foreach(svma, &iter, &mapping->i_mmap, idx, idx) {
+@@ -97,7 +105,9 @@ static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
+ 		put_page(virt_to_page(spte));
+ 	spin_unlock(&mm->page_table_lock);
+ out:
++	pte = (pte_t *)pmd_alloc(mm, pud, addr);
+ 	mutex_unlock(&mapping->i_mmap_mutex);
++	return pte;
+ }
+ 
+ /*
+@@ -142,8 +152,9 @@ pte_t *huge_pte_alloc(struct mm_struct *mm,
+ 		} else {
+ 			BUG_ON(sz != PMD_SIZE);
+ 			if (pud_none(*pud))
+-				huge_pmd_share(mm, addr, pud);
+-			pte = (pte_t *) pmd_alloc(mm, pud, addr);
++				pte = huge_pmd_share(mm, addr, pud);
++			else
++				pte = (pte_t *)pmd_alloc(mm, pud, addr);
+ 		}
+ 	}
+ 	BUG_ON(pte && !pte_none(*pte) && !pte_huge(*pte));
 
 
