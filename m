@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756769Ab2IIXjh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 19:39:37 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51047 "EHLO
+	id S1756740Ab2IIXjf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 19:39:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51051 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755483Ab2IIXPt (ORCPT
+	by vger.kernel.org with ESMTP id S1755489Ab2IIXPt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 9 Sep 2012 19:15:49 -0400
-Message-Id: <20120909224152.583178513@decadent.org.uk>
+Message-Id: <20120909224154.564568187@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 09 Sep 2012 23:42:02 +0100
+Date: Sun, 09 Sep 2012 23:42:17 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Denis Turischev <denis@compulab.co.il>
-Subject: [ 12/95] xhci: Switch PPT ports to EHCI on shutdown.
+        alan@lxorguk.ukuu.org.uk,
+        Christoph Bumiller <e0425955@student.tuwien.ac.at>,
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: [ 27/95] drm/nvd0/disp: mask off high 16 bit of negative cursor x-coordinate
 In-Reply-To: <20120909224150.641491654@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,111 +29,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Christoph Bumiller <e0425955@student.tuwien.ac.at>
 
-commit e95829f474f0db3a4d940cae1423783edd966027 upstream.
+commit af5e7d84b0ec45b2b614b0d6e3657cbdceaa21f9 upstream.
 
-The Intel desktop boards DH77EB and DH77DF have a hardware issue that
-can be worked around by BIOS.  If the USB ports are switched to xHCI on
-shutdown, the xHCI host will send a spurious interrupt, which will wake
-the system.  Some BIOS will work around this, but not all.
-
-The bug can be avoided if the USB ports are switched back to EHCI on
-shutdown.  The Intel Windows driver switches the ports back to EHCI, so
-change the Linux xHCI driver to do the same.
-
-Unfortunately, we can't tell the two effected boards apart from other
-working motherboards, because the vendors will change the DMI strings
-for the DH77EB and DH77DF boards to their own custom names.  One example
-is Compulab's mini-desktop, the Intense-PC.  Instead, key off the
-Panther Point xHCI host PCI vendor and device ID, and switch the ports
-over for all PPT xHCI hosts.
-
-The only impact this will have on non-effected boards is to add a couple
-hundred milliseconds delay on boot when the BIOS has to switch the ports
-over from EHCI to xHCI.
-
-This patch should be backported to kernels as old as 3.0, that contain
-the commit 69e848c2090aebba5698a1620604c7dccb448684 "Intel xhci: Support
-EHCI/xHCI port switching."
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: Denis Turischev <denis@compulab.co.il>
-Tested-by: Denis Turischev <denis@compulab.co.il>
+Signed-off-by: Christoph Bumiller <e0425955@student.tuwien.ac.at>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+[bwh: Backported to 3.2: register value is in the local 'data' variable]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/host/pci-quirks.c |    7 +++++++
- drivers/usb/host/pci-quirks.h |    1 +
- drivers/usb/host/xhci-pci.c   |    9 +++++++++
- drivers/usb/host/xhci.c       |    3 +++
- drivers/usb/host/xhci.h       |    1 +
- 5 files changed, 21 insertions(+)
+ drivers/gpu/drm/nouveau/nvd0_display.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -800,6 +800,13 @@ void usb_enable_xhci_ports(struct pci_de
- }
- EXPORT_SYMBOL_GPL(usb_enable_xhci_ports);
- 
-+void usb_disable_xhci_ports(struct pci_dev *xhci_pdev)
-+{
-+	pci_write_config_dword(xhci_pdev, USB_INTEL_USB3_PSSEN, 0x0);
-+	pci_write_config_dword(xhci_pdev, USB_INTEL_XUSB2PR, 0x0);
-+}
-+EXPORT_SYMBOL_GPL(usb_disable_xhci_ports);
-+
- /**
-  * PCI Quirks for xHCI.
-  *
---- a/drivers/usb/host/pci-quirks.h
-+++ b/drivers/usb/host/pci-quirks.h
-@@ -10,6 +10,7 @@ void usb_amd_quirk_pll_disable(void);
- void usb_amd_quirk_pll_enable(void);
- bool usb_is_intel_switchable_xhci(struct pci_dev *pdev);
- void usb_enable_xhci_ports(struct pci_dev *xhci_pdev);
-+void usb_disable_xhci_ports(struct pci_dev *xhci_pdev);
- #else
- static inline void usb_amd_quirk_pll_disable(void) {}
- static inline void usb_amd_quirk_pll_enable(void) {}
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -90,6 +90,15 @@ static void xhci_pci_quirks(struct devic
- 		xhci->quirks |= XHCI_EP_LIMIT_QUIRK;
- 		xhci->limit_active_eps = 64;
- 		xhci->quirks |= XHCI_SW_BW_CHECKING;
-+		/*
-+		 * PPT desktop boards DH77EB and DH77DF will power back on after
-+		 * a few seconds of being shutdown.  The fix for this is to
-+		 * switch the ports from xHCI to EHCI on shutdown.  We can't use
-+		 * DMI information to find those particular boards (since each
-+		 * vendor will change the board name), so we have to key off all
-+		 * PPT chipsets.
-+		 */
-+		xhci->quirks |= XHCI_SPURIOUS_REBOOT;
- 	}
- 	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
- 			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -648,6 +648,9 @@ void xhci_shutdown(struct usb_hcd *hcd)
+--- a/drivers/gpu/drm/nouveau/nvd0_display.c
++++ b/drivers/gpu/drm/nouveau/nvd0_display.c
+@@ -472,7 +472,7 @@ static int
+ nvd0_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
  {
- 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
+ 	struct nouveau_crtc *nv_crtc = nouveau_crtc(crtc);
+-	const u32 data = (y << 16) | x;
++	const u32 data = (y << 16) | (x & 0xffff);
  
-+	if (xhci->quirks && XHCI_SPURIOUS_REBOOT)
-+		usb_disable_xhci_ports(to_pci_dev(hcd->self.controller));
-+
- 	spin_lock_irq(&xhci->lock);
- 	xhci_halt(xhci);
- 	spin_unlock_irq(&xhci->lock);
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1471,6 +1471,7 @@ struct xhci_hcd {
- #define	XHCI_SW_BW_CHECKING	(1 << 8)
- #define XHCI_AMD_0x96_HOST	(1 << 9)
- #define XHCI_TRUST_TX_LENGTH	(1 << 10)
-+#define XHCI_SPURIOUS_REBOOT	(1 << 13)
- 	unsigned int		num_active_eps;
- 	unsigned int		limit_active_eps;
- 	/* There are two roothubs to keep track of bus suspend info for */
+ 	nv_wr32(crtc->dev, 0x64d084 + (nv_crtc->index * 0x1000), data);
+ 	nv_wr32(crtc->dev, 0x64d080 + (nv_crtc->index * 0x1000), 0x00000000);
 
 
