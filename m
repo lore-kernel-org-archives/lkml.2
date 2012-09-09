@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756098Ab2IIXbu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 19:31:50 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51215 "EHLO
+	id S1756000Ab2IIXbs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 19:31:48 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51216 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755770Ab2IIXQO (ORCPT
+	by vger.kernel.org with ESMTP id S1755889Ab2IIXQO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 9 Sep 2012 19:16:14 -0400
-Message-Id: <20120909224201.973656589@decadent.org.uk>
+Message-Id: <20120909224201.580292462@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 09 Sep 2012 23:43:13 +0100
+Date: Sun, 09 Sep 2012 23:43:10 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tony Luck <tony.luck@intel.com>,
-        Theodore Tso <tytso@mit.edu>
-Subject: [ 83/95] dmi: Feed DMI table to /dev/random driver
+        alan@lxorguk.ukuu.org.uk,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        "Theodore Tso" <tytso@mit.edu>, Matt Mackall <mpm@selenic.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Greg Kroah-Hartman <greg@kroah.com>
+Subject: [ 80/95] drivers/char/random.c: fix boot id uniqueness race
 In-Reply-To: <20120909224150.641491654@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,40 +31,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Luck <tony.luck@intel.com>
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 
-commit d114a33387472555188f142ed8e98acdb8181c6d upstream.
+commit 44e4360fa3384850d65dd36fb4e6e5f2f112709b upstream.
 
-Send the entire DMI (SMBIOS) table to the /dev/random driver to
-help seed its pools.
+/proc/sys/kernel/random/boot_id can be read concurrently by userspace
+processes.  If two (or more) user-space processes concurrently read
+boot_id when sysctl_bootid is not yet assigned, a race can occur making
+boot_id differ between the reads.  Because the whole point of the boot id
+is to be unique across a kernel execution, fix this by protecting this
+operation with a spinlock.
 
-Signed-off-by: Tony Luck <tony.luck@intel.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Given that this operation is not frequently used, hitting the spinlock
+on each call should not be an issue.
+
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Matt Mackall <mpm@selenic.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Greg Kroah-Hartman <greg@kroah.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/firmware/dmi_scan.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/char/random.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
-index 153980b..b298158 100644
---- a/drivers/firmware/dmi_scan.c
-+++ b/drivers/firmware/dmi_scan.c
-@@ -6,6 +6,7 @@
- #include <linux/dmi.h>
- #include <linux/efi.h>
- #include <linux/bootmem.h>
-+#include <linux/random.h>
- #include <asm/dmi.h>
- 
- /*
-@@ -111,6 +112,8 @@ static int __init dmi_walk_early(void (*decode)(const struct dmi_header *,
- 
- 	dmi_table(buf, dmi_len, dmi_num, decode, NULL);
- 
-+	add_device_randomness(buf, dmi_len);
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index 54ca8b2..4ec04a7 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -1260,10 +1260,15 @@ static int proc_do_uuid(ctl_table *table, int write,
+ 	uuid = table->data;
+ 	if (!uuid) {
+ 		uuid = tmp_uuid;
+-		uuid[8] = 0;
+-	}
+-	if (uuid[8] == 0)
+ 		generate_random_uuid(uuid);
++	} else {
++		static DEFINE_SPINLOCK(bootid_spinlock);
 +
- 	dmi_iounmap(buf, dmi_len);
- 	return 0;
- }
++		spin_lock(&bootid_spinlock);
++		if (!uuid[8])
++			generate_random_uuid(uuid);
++		spin_unlock(&bootid_spinlock);
++	}
+ 
+ 	sprintf(buf, "%pU", uuid);
+ 
 
 
