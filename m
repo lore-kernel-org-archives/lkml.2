@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756740Ab2IIXjf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 19:39:35 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51051 "EHLO
+	id S1756695Ab2IIXje (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 19:39:34 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51049 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755489Ab2IIXPt (ORCPT
+	by vger.kernel.org with ESMTP id S1755488Ab2IIXPt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 9 Sep 2012 19:15:49 -0400
-Message-Id: <20120909224154.564568187@decadent.org.uk>
+Message-Id: <20120909224155.780107957@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 09 Sep 2012 23:42:17 +0100
+Date: Sun, 09 Sep 2012 23:42:26 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Christoph Bumiller <e0425955@student.tuwien.ac.at>,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [ 27/95] drm/nvd0/disp: mask off high 16 bit of negative cursor x-coordinate
+        alan@lxorguk.ukuu.org.uk, NeilBrown <neilb@suse.de>
+Subject: [ 36/95] md: Dont truncate size at 4TB for RAID0 and Linear
 In-Reply-To: <20120909224150.641491654@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,28 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Bumiller <e0425955@student.tuwien.ac.at>
+From: NeilBrown <neilb@suse.de>
 
-commit af5e7d84b0ec45b2b614b0d6e3657cbdceaa21f9 upstream.
+commit 667a5313ecd7308d79629c0738b0db588b0b0a4e upstream.
 
-Signed-off-by: Christoph Bumiller <e0425955@student.tuwien.ac.at>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
-[bwh: Backported to 3.2: register value is in the local 'data' variable]
+commit 27a7b260f71439c40546b43588448faac01adb93
+   md: Fix handling for devices from 2TB to 4TB in 0.90 metadata.
+
+changed 0.90 metadata handling to truncated size to 4TB as that is
+all that 0.90 can record.
+However for RAID0 and Linear, 0.90 doesn't need to record the size, so
+this truncation is not needed and causes working arrays to become too small.
+
+So avoid the truncation for RAID0 and Linear
+
+This bug was introduced in 3.1 and is suitable for any stable kernels
+from then onwards.
+As the offending commit was tagged for 'stable', any stable kernel
+that it was applied to should also get this patch.  That includes
+at least 2.6.32, 2.6.33 and 3.0. (Thanks to Ben Hutchings for
+providing that list).
+
+Signed-off-by: Neil Brown <neilb@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/nouveau/nvd0_display.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/md.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/nouveau/nvd0_display.c
-+++ b/drivers/gpu/drm/nouveau/nvd0_display.c
-@@ -472,7 +472,7 @@ static int
- nvd0_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
- {
- 	struct nouveau_crtc *nv_crtc = nouveau_crtc(crtc);
--	const u32 data = (y << 16) | x;
-+	const u32 data = (y << 16) | (x & 0xffff);
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index fcd0987..3f6203a 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -1108,8 +1108,11 @@ static int super_90_load(struct md_rdev *rdev, struct md_rdev *refdev, int minor
+ 			ret = 0;
+ 	}
+ 	rdev->sectors = rdev->sb_start;
+-	/* Limit to 4TB as metadata cannot record more than that */
+-	if (rdev->sectors >= (2ULL << 32))
++	/* Limit to 4TB as metadata cannot record more than that.
++	 * (not needed for Linear and RAID0 as metadata doesn't
++	 * record this size)
++	 */
++	if (rdev->sectors >= (2ULL << 32) && sb->level >= 1)
+ 		rdev->sectors = (2ULL << 32) - 2;
  
- 	nv_wr32(crtc->dev, 0x64d084 + (nv_crtc->index * 0x1000), data);
- 	nv_wr32(crtc->dev, 0x64d080 + (nv_crtc->index * 0x1000), 0x00000000);
+ 	if (rdev->sectors < ((sector_t)sb->size) * 2 && sb->level >= 1)
+@@ -1400,7 +1403,7 @@ super_90_rdev_size_change(struct md_rdev *rdev, sector_t num_sectors)
+ 	/* Limit to 4TB as metadata cannot record more than that.
+ 	 * 4TB == 2^32 KB, or 2*2^32 sectors.
+ 	 */
+-	if (num_sectors >= (2ULL << 32))
++	if (num_sectors >= (2ULL << 32) && rdev->mddev->level >= 1)
+ 		num_sectors = (2ULL << 32) - 2;
+ 	md_super_write(rdev->mddev, rdev, rdev->sb_start, rdev->sb_size,
+ 		       rdev->sb_page);
 
 
