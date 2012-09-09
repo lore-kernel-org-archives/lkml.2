@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756608Ab2IIXVf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 19:21:35 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51561 "EHLO
+	id S1756581Ab2IIXVd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 19:21:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51554 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756451Ab2IIXRS (ORCPT
+	by vger.kernel.org with ESMTP id S1756437Ab2IIXRS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 9 Sep 2012 19:17:18 -0400
-Message-Id: <20120909224156.044758790@decadent.org.uk>
+Message-Id: <20120909224153.511255892@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 09 Sep 2012 23:42:28 +0100
+Date: Sun, 09 Sep 2012 23:42:09 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Yi Zou <yi.zou@intel.com>,
-        Andy Grover <agrover@redhat.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        "Open-FCoE.org" <devel@open-fcoe.org>
-Subject: [ 38/95] target: fix NULL pointer dereference bug alloc_page() fails to get
- memory
+        alan@lxorguk.ukuu.org.uk, Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 19/95] ARM: 7483/1: vfp: only advertise VFPv4 in hwcaps if CONFIG_VFPv3 is
+ enabled
 In-Reply-To: <20120909224150.641491654@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,40 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yi Zou <yi.zou@intel.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit d0e27c88d795fb9647153063ec48051fd84e1731 upstream.
+commit 3d9fb0038a9b02febb01efc79a4a5d97f1822a90 upstream.
 
-I am hitting this bug when the target is low in memory that fails the
-alloc_page() for the newly submitted command. This is a sort of off-by-one
-bug causing NULL pointer dereference in __free_page() since 'i' here is
-really the counter of total pages that have been successfully allocated here.
+VFPv4 support depends on the VFPv3 context save/restore code, so only
+advertise support in the hwcaps if the kernel can actually handle it.
 
-Signed-off-by: Yi Zou <yi.zou@intel.com>
-Cc: Andy Grover <agrover@redhat.com>
-Cc: Nicholas Bellinger <nab@linux-iscsi.org>
-Cc: Open-FCoE.org <devel@open-fcoe.org>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/target/target_core_transport.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/vfp/vfpmodule.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index 0eaae23..a7589cc 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -2294,9 +2294,9 @@ transport_generic_get_mem(struct se_cmd *cmd)
- 	return 0;
- 
- out:
--	while (i >= 0) {
--		__free_page(sg_page(&cmd->t_data_sg[i]));
-+	while (i > 0) {
- 		i--;
-+		__free_page(sg_page(&cmd->t_data_sg[i]));
+diff --git a/arch/arm/vfp/vfpmodule.c b/arch/arm/vfp/vfpmodule.c
+index fb849d0..c834b32 100644
+--- a/arch/arm/vfp/vfpmodule.c
++++ b/arch/arm/vfp/vfpmodule.c
+@@ -719,8 +719,10 @@ static int __init vfp_init(void)
+ 			if ((fmrx(MVFR1) & 0x000fff00) == 0x00011100)
+ 				elf_hwcap |= HWCAP_NEON;
+ #endif
++#ifdef CONFIG_VFPv3
+ 			if ((fmrx(MVFR1) & 0xf0000000) == 0x10000000)
+ 				elf_hwcap |= HWCAP_VFPv4;
++#endif
+ 		}
  	}
- 	kfree(cmd->t_data_sg);
- 	cmd->t_data_sg = NULL;
+ 	return 0;
 
 
