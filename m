@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756000Ab2IIXbs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 19:31:48 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51216 "EHLO
+	id S1755881Ab2IIXQM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 19:16:12 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51144 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755889Ab2IIXQO (ORCPT
+	by vger.kernel.org with ESMTP id S1755753Ab2IIXQB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 19:16:14 -0400
-Message-Id: <20120909224201.580292462@decadent.org.uk>
+	Sun, 9 Sep 2012 19:16:01 -0400
+Message-Id: <20120909224203.419624475@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 09 Sep 2012 23:43:10 +0100
+Date: Sun, 09 Sep 2012 23:43:24 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        "Theodore Tso" <tytso@mit.edu>, Matt Mackall <mpm@selenic.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Greg Kroah-Hartman <greg@kroah.com>
-Subject: [ 80/95] drivers/char/random.c: fix boot id uniqueness race
+        alan@lxorguk.ukuu.org.uk, Phillip Lougher <phillip@squashfs.org.uk>
+Subject: [ 94/95] Squashfs: fix mount time sanity check for corrupted superblock
 In-Reply-To: <20120909224150.641491654@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,54 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+From: Phillip Lougher <phillip@squashfs.org.uk>
 
-commit 44e4360fa3384850d65dd36fb4e6e5f2f112709b upstream.
+commit cc37f75a9ffbbfcb1c3297534f293c8284e3c5a6 upstream.
 
-/proc/sys/kernel/random/boot_id can be read concurrently by userspace
-processes.  If two (or more) user-space processes concurrently read
-boot_id when sysctl_bootid is not yet assigned, a race can occur making
-boot_id differ between the reads.  Because the whole point of the boot id
-is to be unique across a kernel execution, fix this by protecting this
-operation with a spinlock.
+A Squashfs filesystem containing nothing but an empty directory,
+although unusual and ultimately pointless, is still valid.
 
-Given that this operation is not frequently used, hitting the spinlock
-on each call should not be an issue.
+The directory_table >= next_table sanity check rejects these
+filesystems as invalid because the directory_table is empty and
+equal to next_table.
 
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Matt Mackall <mpm@selenic.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Greg Kroah-Hartman <greg@kroah.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Phillip Lougher <phillip@squashfs.org.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/char/random.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ fs/squashfs/super.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 54ca8b2..4ec04a7 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -1260,10 +1260,15 @@ static int proc_do_uuid(ctl_table *table, int write,
- 	uuid = table->data;
- 	if (!uuid) {
- 		uuid = tmp_uuid;
--		uuid[8] = 0;
--	}
--	if (uuid[8] == 0)
- 		generate_random_uuid(uuid);
-+	} else {
-+		static DEFINE_SPINLOCK(bootid_spinlock);
-+
-+		spin_lock(&bootid_spinlock);
-+		if (!uuid[8])
-+			generate_random_uuid(uuid);
-+		spin_unlock(&bootid_spinlock);
-+	}
+diff --git a/fs/squashfs/super.c b/fs/squashfs/super.c
+index 2da1715..4619247 100644
+--- a/fs/squashfs/super.c
++++ b/fs/squashfs/super.c
+@@ -290,7 +290,7 @@ handle_fragments:
  
- 	sprintf(buf, "%pU", uuid);
- 
+ check_directory_table:
+ 	/* Sanity check directory_table */
+-	if (msblk->directory_table >= next_table) {
++	if (msblk->directory_table > next_table) {
+ 		err = -EINVAL;
+ 		goto failed_mount;
+ 	}
 
 
