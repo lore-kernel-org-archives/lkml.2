@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756019Ab2IIXcu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 19:32:50 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51189 "EHLO
+	id S1755912Ab2IIXdM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 19:33:12 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51185 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755851Ab2IIXQL (ORCPT
+	by vger.kernel.org with ESMTP id S1755269Ab2IIXQK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 19:16:11 -0400
-Message-Id: <20120909224201.188568696@decadent.org.uk>
+	Sun, 9 Sep 2012 19:16:10 -0400
+Message-Id: <20120909224202.893071204@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 09 Sep 2012 23:43:07 +0100
+Date: Sun, 09 Sep 2012 23:43:20 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Glauber Costa <glommer@parallels.com>,
-        Michal Hocko <mhocko@suse.cz>
-Subject: [ 77/95] fs/buffer.c: remove BUG() in possible but rare condition
+        alan@lxorguk.ukuu.org.uk, Jason Wessel <jason.wessel@windriver.com>,
+        Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 90/95] pmac_zilog,kdb: Fix console poll hook to return instead of loop
 In-Reply-To: <20120909224150.641491654@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,54 +29,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Glauber Costa <glommer@parallels.com>
+From: Jason Wessel <jason.wessel@windriver.com>
 
-commit 61065a30af8df4b8989c2ac7a1f4b4034e4df2d5 upstream.
+commit 38f8eefccf3a23c4058a570fa2938a4f553cf8e0 upstream.
 
-While stressing the kernel with with failing allocations today, I hit the
-following chain of events:
+kdb <-> kgdb transitioning does not work properly with this UART
+driver because the get character routine loops indefinitely as opposed
+to returning NO_POLL_CHAR per the expectation of the KDB I/O driver
+API.
 
-alloc_page_buffers():
+The symptom is a kernel hang when trying to switch debug modes.
 
-	bh = alloc_buffer_head(GFP_NOFS);
-	if (!bh)
-		goto no_grow; <= path taken
-
-grow_dev_page():
-        bh = alloc_page_buffers(page, size, 0);
-        if (!bh)
-                goto failed;  <= taken, consequence of the above
-
-and then the failed path BUG()s the kernel.
-
-The failure is inserted a litte bit artificially, but even then, I see no
-reason why it should be deemed impossible in a real box.
-
-Even though this is not a condition that we expect to see around every
-time, failed allocations are expected to be handled, and BUG() sounds just
-too much.  As a matter of fact, grow_dev_page() can return NULL just fine
-in other circumstances, so I propose we just remove it, then.
-
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/buffer.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/tty/serial/pmac_zilog.c |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 36d6665..351e18e 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -985,7 +985,6 @@ grow_dev_page(struct block_device *bdev, sector_t block,
- 	return page;
+diff --git a/drivers/tty/serial/pmac_zilog.c b/drivers/tty/serial/pmac_zilog.c
+index 654755a..333c8d0 100644
+--- a/drivers/tty/serial/pmac_zilog.c
++++ b/drivers/tty/serial/pmac_zilog.c
+@@ -1348,10 +1348,16 @@ static int pmz_verify_port(struct uart_port *port, struct serial_struct *ser)
+ static int pmz_poll_get_char(struct uart_port *port)
+ {
+ 	struct uart_pmac_port *uap = (struct uart_pmac_port *)port;
++	int tries = 2;
  
- failed:
--	BUG();
- 	unlock_page(page);
- 	page_cache_release(page);
- 	return NULL;
+-	while ((read_zsreg(uap, R0) & Rx_CH_AV) == 0)
+-		udelay(5);
+-	return read_zsdata(uap);
++	while (tries) {
++		if ((read_zsreg(uap, R0) & Rx_CH_AV) != 0)
++			return read_zsdata(uap);
++		if (tries--)
++			udelay(5);
++	}
++
++	return NO_POLL_CHAR;
+ }
+ 
+ static void pmz_poll_put_char(struct uart_port *port, unsigned char c)
 
 
