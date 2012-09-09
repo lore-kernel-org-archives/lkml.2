@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756619Ab2IIXiF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 19:38:05 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51064 "EHLO
+	id S1756526Ab2IIXiD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 19:38:03 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51072 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755570Ab2IIXPu (ORCPT
+	by vger.kernel.org with ESMTP id S1755594Ab2IIXPu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 9 Sep 2012 19:15:50 -0400
-Message-Id: <20120909224154.984348034@decadent.org.uk>
+Message-Id: <20120909224152.850216383@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 09 Sep 2012 23:42:20 +0100
+Date: Sun, 09 Sep 2012 23:42:04 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Miklos Szeredi <mszeredi@suse.cz>,
-        Valentin Avram <aval13@gmail.com>, Peter Moody <pmoody@google.com>,
-        Eric Paris <eparis@redhat.com>
-Subject: [ 30/95] audit: fix refcounting in audit-tree
+        alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        =?ISO-8859-15?q?Thomas=20Sch=C3=A4fer?= <tschaefer@t-online.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 14/95] USB: option: Add Vodafone/Huawei K5005 support
 In-Reply-To: <20120909224150.641491654@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,88 +30,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit a2140fc0cb0325bb6384e788edd27b9a568714e2 upstream.
+commit 4cbbb039a9719fb3bba73d255c6a95bc6dc6428b upstream.
 
-Refcounting of fsnotify_mark in audit tree is broken.  E.g:
-
-                              refcount
-create_chunk
-  alloc_chunk                 1
-  fsnotify_add_mark           2
-
-untag_chunk
-  fsnotify_get_mark           3
-  fsnotify_destroy_mark
-    audit_tree_freeing_mark   2
-  fsnotify_put_mark           1
-  fsnotify_put_mark           0
-  via destroy_list
-    fsnotify_mark_destroy    -1
-
-This was reported by various people as triggering Oops when stopping auditd.
-
-We could just remove the put_mark from audit_tree_freeing_mark() but that would
-break freeing via inode destruction.  So this patch simply omits a put_mark
-after calling destroy_mark or adds a get_mark before.
-
-The additional get_mark is necessary where there's no other put_mark after
-fsnotify_destroy_mark() since it assumes that the caller is holding a reference
-(or the inode is keeping the mark pinned, not the case here AFAICS).
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Reported-by: Valentin Avram <aval13@gmail.com>
-Reported-by: Peter Moody <pmoody@google.com>
-Acked-by: Eric Paris <eparis@redhat.com>
+Tested-by: Thomas Schäfer <tschaefer@t-online.de>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/audit_tree.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/usb/serial/option.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/kernel/audit_tree.c b/kernel/audit_tree.c
-index 69a5851..2b2ffff 100644
---- a/kernel/audit_tree.c
-+++ b/kernel/audit_tree.c
-@@ -250,7 +250,6 @@ static void untag_chunk(struct node *p)
- 		spin_unlock(&hash_lock);
- 		spin_unlock(&entry->lock);
- 		fsnotify_destroy_mark(entry);
--		fsnotify_put_mark(entry);
- 		goto out;
- 	}
- 
-@@ -293,7 +292,6 @@ static void untag_chunk(struct node *p)
- 	spin_unlock(&hash_lock);
- 	spin_unlock(&entry->lock);
- 	fsnotify_destroy_mark(entry);
--	fsnotify_put_mark(entry);
- 	goto out;
- 
- Fallback:
-@@ -332,6 +330,7 @@ static int create_chunk(struct inode *inode, struct audit_tree *tree)
- 		spin_unlock(&hash_lock);
- 		chunk->dead = 1;
- 		spin_unlock(&entry->lock);
-+		fsnotify_get_mark(entry);
- 		fsnotify_destroy_mark(entry);
- 		fsnotify_put_mark(entry);
- 		return 0;
-@@ -412,6 +411,7 @@ static int tag_chunk(struct inode *inode, struct audit_tree *tree)
- 		spin_unlock(&chunk_entry->lock);
- 		spin_unlock(&old_entry->lock);
- 
-+		fsnotify_get_mark(chunk_entry);
- 		fsnotify_destroy_mark(chunk_entry);
- 
- 		fsnotify_put_mark(chunk_entry);
-@@ -445,7 +445,6 @@ static int tag_chunk(struct inode *inode, struct audit_tree *tree)
- 	spin_unlock(&old_entry->lock);
- 	fsnotify_destroy_mark(old_entry);
- 	fsnotify_put_mark(old_entry); /* pair to fsnotify_find mark_entry */
--	fsnotify_put_mark(old_entry); /* and kill it */
- 	return 0;
- }
- 
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -151,6 +151,7 @@ static void option_instat_callback(struc
+ #define HUAWEI_PRODUCT_E14AC			0x14AC
+ #define HUAWEI_PRODUCT_K3806			0x14AE
+ #define HUAWEI_PRODUCT_K4605			0x14C6
++#define HUAWEI_PRODUCT_K5005			0x14C8
+ #define HUAWEI_PRODUCT_K3770			0x14C9
+ #define HUAWEI_PRODUCT_K3771			0x14CA
+ #define HUAWEI_PRODUCT_K4510			0x14CB
+@@ -692,6 +693,9 @@ static const struct usb_device_id option
+ 		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4605, 0xff, 0x01, 0x31) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4605, 0xff, 0x01, 0x32) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K5005, 0xff, 0x01, 0x31) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K5005, 0xff, 0x01, 0x32) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K5005, 0xff, 0x01, 0x33) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x31) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x32) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3771, 0xff, 0x02, 0x31) },
 
 
