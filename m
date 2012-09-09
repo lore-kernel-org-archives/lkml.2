@@ -1,86 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754427Ab2IIUoM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 16:44:12 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:43464 "EHLO
+	id S1755074Ab2IIUux (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 16:50:53 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:42728 "EHLO
 	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751340Ab2IIUoK (ORCPT
+	with ESMTP id S1752239Ab2IIUuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 16:44:10 -0400
+	Sun, 9 Sep 2012 16:50:51 -0400
+Message-ID: <504D0127.5080807@pobox.com>
+Date: Sun, 09 Sep 2012 16:50:47 -0400
+From: Jeff Garzik <jgarzik@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <1347223280-29847-1-git-send-email-geert@linux-m68k.org>
-References: <1347223280-29847-1-git-send-email-geert@linux-m68k.org>
-Date: Sun, 9 Sep 2012 22:44:09 +0200
-X-Google-Sender-Auth: RLOMWiR5rBjGKoGrYpNS-8yv8-Q
-Message-ID: <CAMuHMdVDJLKsa=H63hwsNL1DJtuX+YF=ZN5AAo7NvYbFX2itTg@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.6-rc5
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-kernel@vger.kernel.org
-Cc: linuxppc-dev@lists.ozlabs.org
-Content-Type: text/plain; charset=UTF-8
+To: Hugh Dickins <hughd@google.com>
+CC: Arvydas Sidorenko <asido4@gmail.com>, Zheng Liu <wenqing.lz@taobao.com>,
+        linux-kernel@vger.kernel.org,
+        IDE/ATA development list <linux-ide@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: Storage related regression in linux-next 20120824
+References: <CA+6av4=uxu_q5U_46HtpUt=FSgbh3pZuAEY54J5_xK=MKWq-YQ@mail.gmail.com> <CAFtxgO536xEMjMw_D1u3utT1f1iy-6EsjcawdYvbocRxc=Wu=A@mail.gmail.com> <503BA2DB.9080704@gmail.com> <503BB4BB.4080307@gmail.com> <alpine.LSU.2.00.1209090012390.2416@eggly.anvils> <CA+6av4=6WeLcde5me2FCpBtQJAOTtHZvf4pkMExgMW9agVNLWg@mail.gmail.com> <504CFBE3.401@pobox.com> <CANsGZ6aPB6ZjTmUJ=xeLY68iV5V9ghGGAQrp9KvJcyC0d-ARUg@mail.gmail.com>
+In-Reply-To: <CANsGZ6aPB6ZjTmUJ=xeLY68iV5V9ghGGAQrp9KvJcyC0d-ARUg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 9, 2012 at 10:41 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> JFYI, when comparing v3.6-rc5 to v3.6-rc4[3], the summaries are:
->   - build errors: +15/-4
+On 09/09/2012 04:36 PM, Hugh Dickins wrote:
+> On Sun, Sep 9, 2012 at 1:28 PM, Jeff Garzik <jgarzik@pobox.com> wrote:
+>> I'll send Linus a patch to disable.
+>
+> Thanks, but no, the change in question hasn't reached Linus yet, it's
+> just a linux-next or mmotm thing - isn't it?
 
-  + arch/powerpc/platforms/512x/mpc512x_shared.c: error:
-'FSL_DIU_PORT_DVI' undeclared (first use in this function):  => 189:9
-  + arch/powerpc/platforms/512x/mpc512x_shared.c: error: 'enum
-fsl_diu_monitor_port' declared inside parameter list [-Werror]:  =>
-70:9, 84:9, 88:36
-  + arch/powerpc/platforms/512x/mpc512x_shared.c: error: 'return' with
-a value, in function returning void [-Werror]:  => 189:2
-  + arch/powerpc/platforms/512x/mpc512x_shared.c: error: function
-declaration isn't a prototype [-Werror=strict-prototypes]:  => 69:5,
-88:6, 83:6, 187:1
-  + arch/powerpc/platforms/512x/mpc512x_shared.c: error: its scope is
-only this definition or declaration, which is probably not what you
-want [-Werror]:  => 70:9
-  + arch/powerpc/platforms/512x/mpc512x_shared.c: error: parameter 1
-('port') has incomplete type:  => 187:54, 83:56, 88:57, 69:56
-  + arch/powerpc/platforms/512x/mpc512x_shared.c: error: return type
-is an incomplete type:  => 187:1
-  + arch/powerpc/sysdev/mpic.c: error: case label does not reduce to
-an integer constant:  => 890:9, 898:9, 886:9, 894:9
-  + arch/powerpc/sysdev/mv64x60_dev.c: error: assignment makes pointer
-from integer without a cast [-Werror]:  => 253:11
-  + arch/powerpc/sysdev/mv64x60_dev.c: error: implicit declaration of
-function 'of_get_mac_address' [-Werror=implicit-function-declaration]:
- => 253:2
-  + arch/powerpc/sysdev/tsi108_dev.c: error: assignment makes pointer
-from integer without a cast [-Werror]:  => 107:12
-  + arch/powerpc/sysdev/tsi108_dev.c: error: implicit declaration of
-function 'of_get_mac_address' [-Werror=implicit-function-declaration]:
- => 107:3
+Yep, libata-dev#upstream.  Sorry, got my own branches confused for a 
+second there.
 
-powerpc-randconfig (it was a good random config today ;-)
+	Jeff
 
-  + error: fore200e.c: relocation truncated to fit: R_PPC64_REL24
-against symbol `_restgpr0_23' defined in .text.save.restore section in
-arch/powerpc/lib/built-in.o:  => (.text+0x1ff8134)
-  + error: fore200e.c: relocation truncated to fit: R_PPC64_REL24
-against symbol `_restgpr0_25' defined in .text.save.restore section in
-arch/powerpc/lib/built-in.o:  => (.text+0x1ff884c)
-  + error: fore200e.c: relocation truncated to fit: R_PPC64_REL24
-against symbol `_savegpr0_27' defined in .text.save.restore section in
-arch/powerpc/lib/built-in.o:  => (.text+0x1ff8e54)
 
-powerpc-allyesconfig
 
-> [1] http://kisskb.ellerman.id.au/kisskb/head/5400/ (all 116 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/5381/ (all 116 configs)
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
