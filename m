@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756321Ab2IIX2i (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 19:28:38 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51275 "EHLO
+	id S1756117Ab2IIX2g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 19:28:36 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51284 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755619Ab2IIXQc (ORCPT
+	by vger.kernel.org with ESMTP id S1756044Ab2IIXQc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 9 Sep 2012 19:16:32 -0400
-Message-Id: <20120909224159.351398970@decadent.org.uk>
+Message-Id: <20120909224158.820153827@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 09 Sep 2012 23:42:53 +0100
+Date: Sun, 09 Sep 2012 23:42:49 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 63/95] drm/radeon: split ATRM support out from the ATPX handler (v3)
+Subject: [ 59/95] drm/radeon: convert radeon vfct code to use acpi_get_table_with_size
 In-Reply-To: <20120909224150.641491654@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,248 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit c61e2775873f603148e8e998a938721b7d222d24 upstream.
+commit 7c3906d04a4587dceaa78cc1ae6b14e6454ee02a upstream.
 
-There are systems that use ATRM, but not ATPX.
-
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=41265
-
-V2: fix #ifdefs as per Greg's comments
-V3: fix it harder
+Allows us to verify the table size.
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/radeon/radeon.h              |   15 -----
- drivers/gpu/drm/radeon/radeon_atpx_handler.c |   56 +-----------------
- drivers/gpu/drm/radeon/radeon_bios.c         |   80 ++++++++++++++++++++++++--
- 3 files changed, 77 insertions(+), 74 deletions(-)
+ drivers/gpu/drm/radeon/radeon_bios.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
-index 9930419..59a1531 100644
---- a/drivers/gpu/drm/radeon/radeon.h
-+++ b/drivers/gpu/drm/radeon/radeon.h
-@@ -142,21 +142,6 @@ struct radeon_device;
- /*
-  * BIOS.
-  */
--#define ATRM_BIOS_PAGE 4096
--
--#if defined(CONFIG_VGA_SWITCHEROO)
--bool radeon_atrm_supported(struct pci_dev *pdev);
--int radeon_atrm_get_bios_chunk(uint8_t *bios, int offset, int len);
--#else
--static inline bool radeon_atrm_supported(struct pci_dev *pdev)
--{
--	return false;
--}
--
--static inline int radeon_atrm_get_bios_chunk(uint8_t *bios, int offset, int len){
--	return -EINVAL;
--}
--#endif
- bool radeon_get_bios(struct radeon_device *rdev);
- 
- 
-diff --git a/drivers/gpu/drm/radeon/radeon_atpx_handler.c b/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-index 98724fc..2a2cf0b 100644
---- a/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-+++ b/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-@@ -30,57 +30,8 @@ static struct radeon_atpx_priv {
- 	/* handle for device - and atpx */
- 	acpi_handle dhandle;
- 	acpi_handle atpx_handle;
--	acpi_handle atrm_handle;
- } radeon_atpx_priv;
- 
--/* retrieve the ROM in 4k blocks */
--static int radeon_atrm_call(acpi_handle atrm_handle, uint8_t *bios,
--			    int offset, int len)
--{
--	acpi_status status;
--	union acpi_object atrm_arg_elements[2], *obj;
--	struct acpi_object_list atrm_arg;
--	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL};
--
--	atrm_arg.count = 2;
--	atrm_arg.pointer = &atrm_arg_elements[0];
--
--	atrm_arg_elements[0].type = ACPI_TYPE_INTEGER;
--	atrm_arg_elements[0].integer.value = offset;
--
--	atrm_arg_elements[1].type = ACPI_TYPE_INTEGER;
--	atrm_arg_elements[1].integer.value = len;
--
--	status = acpi_evaluate_object(atrm_handle, NULL, &atrm_arg, &buffer);
--	if (ACPI_FAILURE(status)) {
--		printk("failed to evaluate ATRM got %s\n", acpi_format_exception(status));
--		return -ENODEV;
--	}
--
--	obj = (union acpi_object *)buffer.pointer;
--	memcpy(bios+offset, obj->buffer.pointer, obj->buffer.length);
--	len = obj->buffer.length;
--	kfree(buffer.pointer);
--	return len;
--}
--
--bool radeon_atrm_supported(struct pci_dev *pdev)
--{
--	/* get the discrete ROM only via ATRM */
--	if (!radeon_atpx_priv.atpx_detected)
--		return false;
--
--	if (radeon_atpx_priv.dhandle == DEVICE_ACPI_HANDLE(&pdev->dev))
--		return false;
--	return true;
--}
--
--
--int radeon_atrm_get_bios_chunk(uint8_t *bios, int offset, int len)
--{
--	return radeon_atrm_call(radeon_atpx_priv.atrm_handle, bios, offset, len);
--}
--
- static int radeon_atpx_get_version(acpi_handle handle)
- {
- 	acpi_status status;
-@@ -198,7 +149,7 @@ static int radeon_atpx_power_state(enum vga_switcheroo_client_id id,
- 
- static bool radeon_atpx_pci_probe_handle(struct pci_dev *pdev)
- {
--	acpi_handle dhandle, atpx_handle, atrm_handle;
-+	acpi_handle dhandle, atpx_handle;
- 	acpi_status status;
- 
- 	dhandle = DEVICE_ACPI_HANDLE(&pdev->dev);
-@@ -209,13 +160,8 @@ static bool radeon_atpx_pci_probe_handle(struct pci_dev *pdev)
- 	if (ACPI_FAILURE(status))
- 		return false;
- 
--	status = acpi_get_handle(dhandle, "ATRM", &atrm_handle);
--	if (ACPI_FAILURE(status))
--		return false;
--
- 	radeon_atpx_priv.dhandle = dhandle;
- 	radeon_atpx_priv.atpx_handle = atpx_handle;
--	radeon_atpx_priv.atrm_handle = atrm_handle;
- 	return true;
- }
- 
 diff --git a/drivers/gpu/drm/radeon/radeon_bios.c b/drivers/gpu/drm/radeon/radeon_bios.c
-index ab0b2f7..d306cc8 100644
+index a32232f..ab0b2f7 100644
 --- a/drivers/gpu/drm/radeon/radeon_bios.c
 +++ b/drivers/gpu/drm/radeon/radeon_bios.c
-@@ -99,16 +99,81 @@ static bool radeon_read_bios(struct radeon_device *rdev)
- 	return true;
- }
- 
-+#ifdef CONFIG_ACPI
- /* ATRM is used to get the BIOS on the discrete cards in
-  * dual-gpu systems.
-  */
-+/* retrieve the ROM in 4k blocks */
-+#define ATRM_BIOS_PAGE 4096
-+/**
-+ * radeon_atrm_call - fetch a chunk of the vbios
-+ *
-+ * @atrm_handle: acpi ATRM handle
-+ * @bios: vbios image pointer
-+ * @offset: offset of vbios image data to fetch
-+ * @len: length of vbios image data to fetch
-+ *
-+ * Executes ATRM to fetch a chunk of the discrete
-+ * vbios image on PX systems (all asics).
-+ * Returns the length of the buffer fetched.
-+ */
-+static int radeon_atrm_call(acpi_handle atrm_handle, uint8_t *bios,
-+			    int offset, int len)
-+{
-+	acpi_status status;
-+	union acpi_object atrm_arg_elements[2], *obj;
-+	struct acpi_object_list atrm_arg;
-+	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL};
-+
-+	atrm_arg.count = 2;
-+	atrm_arg.pointer = &atrm_arg_elements[0];
-+
-+	atrm_arg_elements[0].type = ACPI_TYPE_INTEGER;
-+	atrm_arg_elements[0].integer.value = offset;
-+
-+	atrm_arg_elements[1].type = ACPI_TYPE_INTEGER;
-+	atrm_arg_elements[1].integer.value = len;
-+
-+	status = acpi_evaluate_object(atrm_handle, NULL, &atrm_arg, &buffer);
-+	if (ACPI_FAILURE(status)) {
-+		printk("failed to evaluate ATRM got %s\n", acpi_format_exception(status));
-+		return -ENODEV;
-+	}
-+
-+	obj = (union acpi_object *)buffer.pointer;
-+	memcpy(bios+offset, obj->buffer.pointer, obj->buffer.length);
-+	len = obj->buffer.length;
-+	kfree(buffer.pointer);
-+	return len;
-+}
-+
- static bool radeon_atrm_get_bios(struct radeon_device *rdev)
+@@ -482,13 +482,12 @@ static bool radeon_acpi_vfct_bios(struct radeon_device *rdev)
  {
- 	int ret;
- 	int size = 256 * 1024;
- 	int i;
-+	struct pci_dev *pdev = NULL;
-+	acpi_handle dhandle, atrm_handle;
-+	acpi_status status;
-+	bool found = false;
+ 	bool ret = false;
+ 	struct acpi_table_header *hdr;
+-	/* acpi_get_table_with_size is not exported :( */
+-	acpi_size tbl_size = 0x7fffffff;
++	acpi_size tbl_size;
+ 	UEFI_ACPI_VFCT *vfct;
+ 	GOP_VBIOS_CONTENT *vbios;
+ 	VFCT_IMAGE_HEADER *vhdr;
  
--	if (!radeon_atrm_supported(rdev->pdev))
-+	/* ATRM is for the discrete card only */
-+	if (rdev->flags & RADEON_IS_IGP)
-+		return false;
-+
-+	while ((pdev = pci_get_class(PCI_CLASS_DISPLAY_VGA << 8, pdev)) != NULL) {
-+		dhandle = DEVICE_ACPI_HANDLE(&pdev->dev);
-+		if (!dhandle)
-+			continue;
-+
-+		status = acpi_get_handle(dhandle, "ATRM", &atrm_handle);
-+		if (!ACPI_FAILURE(status)) {
-+			found = true;
-+			break;
-+		}
-+	}
-+
-+	if (!found)
+-	if (!ACPI_SUCCESS(acpi_get_table("VFCT", 1, &hdr)))
++	if (!ACPI_SUCCESS(acpi_get_table_with_size("VFCT", 1, &hdr, &tbl_size)))
  		return false;
+ 	if (tbl_size < sizeof(UEFI_ACPI_VFCT)) {
+ 		DRM_ERROR("ACPI VFCT table present but broken (too short #1)\n");
+@@ -525,7 +524,6 @@ static bool radeon_acpi_vfct_bios(struct radeon_device *rdev)
+ 	ret = !!rdev->bios;
  
- 	rdev->bios = kmalloc(size, GFP_KERNEL);
-@@ -118,9 +183,10 @@ static bool radeon_atrm_get_bios(struct radeon_device *rdev)
- 	}
- 
- 	for (i = 0; i < size / ATRM_BIOS_PAGE; i++) {
--		ret = radeon_atrm_get_bios_chunk(rdev->bios,
--						 (i * ATRM_BIOS_PAGE),
--						 ATRM_BIOS_PAGE);
-+		ret = radeon_atrm_call(atrm_handle,
-+				       rdev->bios,
-+				       (i * ATRM_BIOS_PAGE),
-+				       ATRM_BIOS_PAGE);
- 		if (ret < ATRM_BIOS_PAGE)
- 			break;
- 	}
-@@ -131,6 +197,12 @@ static bool radeon_atrm_get_bios(struct radeon_device *rdev)
- 	}
- 	return true;
+ out_unmap:
+-	/* uh, no idea what to do here... */
+ 	return ret;
  }
-+#else
-+static inline bool radeon_atrm_get_bios(struct radeon_device *rdev)
-+{
-+	return false;
-+}
-+#endif
- 
- static bool ni_read_disabled_bios(struct radeon_device *rdev)
- {
+ #else
 
 
