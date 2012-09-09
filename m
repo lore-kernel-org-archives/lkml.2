@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754043Ab2IIO5g (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 10:57:36 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:38868 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752989Ab2IIO5f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 10:57:35 -0400
+	id S1754068Ab2IIO70 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 10:59:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53680 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752989Ab2IIO7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Sep 2012 10:59:25 -0400
+Message-ID: <504CAEC7.9000807@redhat.com>
+Date: Sun, 09 Sep 2012 17:59:19 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <1346425339-17138-1-git-send-email-linux@roeck-us.net>
-References: <1346425339-17138-1-git-send-email-linux@roeck-us.net>
-Date: Sun, 9 Sep 2012 16:57:34 +0200
-X-Google-Sender-Auth: kKLae3wO4-cDpMspCy4TCZOdl0c
-Message-ID: <CAMuHMdWT2xKzOY9t05mYTMjmk=-V_XQQ8mZc69eQyrDN99hMuw@mail.gmail.com>
-Subject: Re: [PATCH v4] linux/kernel.h: Fix DIV_ROUND_CLOSEST to support
- negative dividends
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jean Delvare <khali@linux-fr.org>,
-        lm-sensors@lm-sensors.org
-Content-Type: text/plain; charset=UTF-8
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] KVM: tsc deadline timer works only when hrtimer high
+ resolution configured
+References: <DE8DF0795D48FD4CA783C40EC829233531F0E4@SHSMSX101.ccr.corp.intel.com> <5048AC08.5050100@redhat.com> <DE8DF0795D48FD4CA783C40EC8292335322311@SHSMSX101.ccr.corp.intel.com> <504CA787.2000905@redhat.com> <DE8DF0795D48FD4CA783C40EC8292335323599@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC8292335323599@SHSMSX101.ccr.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 31, 2012 at 5:02 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> DIV_ROUND_CLOSEST returns a bad result for negative dividends:
->         DIV_ROUND_CLOSEST(-2, 2) = 0
->
-> Most of the time this does not matter. However, in the hardware monitoring
-> subsystem, DIV_ROUND_CLOSEST is sometimes used on integers which can be
-> negative (such as temperatures).
+On 09/09/2012 05:54 PM, Liu, Jinsong wrote:
+>> 
+>> hrtimers is an intrusive feature, I don't think we should force-enable
+>> it.  Please change it to a depends on.
+> 
+> Hmm, if it changed as
+> config KVM
+> 	depends on HIGH_RES_TIMERS
+> The item 'Kernel-based Virtual Machine (KVM) support (NEW)' even didn't appear to user when make menuconfig (when HIGH_RES_TIMERS disable)
+> 
+> Is it good? I just have a little concern here:)
 
-This seems to cause 3 new warnings in my m68k builds of v3.6-rc5:
+It's not good, but that's what we have.
 
-drivers/hwmon/mcp3021.c:76: warning: comparison is always true due to
-limited range of data type
-drivers/ide/ide-cd.c:1158: warning: comparison is always true due to
-limited range of data type
-drivers/ide/ide-cd.c:1159: warning: comparison is always true due to
-limited range of data type
+It's okay to force-enable low-impact features (like preempt notifies).
 
-$ m68k-linux-gnu-gcc -v
-Using built-in specs.
-Target: m68k-linux-gnu
-Configured with: ../src/configure -v --enable-languages=c,c++
---prefix=/usr --enable-shared --with-system-zlib --libexecdir=/usr/lib
---without-included-gettext --enable-threads=posix --enable-nls
---with-gxx-include-dir=/usr/m68k-linux-gnu/include/c++/4.1.2
---program-suffix=-4.1 --enable-__cxa_atexit --enable-clocale=gnu
---enable-libstdcxx-debug --disable-libssp --disable-werror
---enable-checking=release --program-prefix=m68k-linux-gnu-
---includedir=/usr/m68k-linux-gnu/include --build=x86_64-linux-gnu
---host=x86_64-linux-gnu --target=m68k-linux-gnu
-Thread model: posix
-gcc version 4.1.2 20061115 (prerelease) (Ubuntu 4.1.1-21)
+hrimers, on the other hand, change kernel behaviour quite deeply.
 
-Gr{oetje,eeting}s,
+Maybe over time someone will fix the config tools to unhide features
+that can be enabled by turning on a dependency.
 
-                        Geert
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+error compiling committee.c: too many arguments to function
