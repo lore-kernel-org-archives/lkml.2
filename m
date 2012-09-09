@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756260Ab2IIXa0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 19:30:26 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51269 "EHLO
+	id S1756120Ab2IIXaY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 19:30:24 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51271 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756013Ab2IIXQa (ORCPT
+	by vger.kernel.org with ESMTP id S1756025Ab2IIXQa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 9 Sep 2012 19:16:30 -0400
-Message-Id: <20120909224200.661637374@decadent.org.uk>
+Message-Id: <20120909224159.746258188@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 09 Sep 2012 23:43:03 +0100
+Date: Sun, 09 Sep 2012 23:42:56 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Robin Holt <holt@sgi.com>
-Subject: [ 73/95] drivers/misc/sgi-xp/xpc_uv.c: SGI XPC fails to load when cpu 0 is
- out of IRQ resources
+        alan@lxorguk.ukuu.org.uk, "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 66/95] svcrpc: fix BUG() in svc_tcp_clear_pages
 In-Reply-To: <20120909224150.641491654@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,168 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robin Holt <holt@sgi.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 7838f994b4fceff24c343f4e26a6cf4393869579 upstream.
+commit be1e44441a560c43c136a562d49a1c9623c91197 upstream.
 
-On many of our larger systems, CPU 0 has had all of its IRQ resources
-consumed before XPC loads.  Worst cases on machines with multiple 10
-GigE cards and multiple IB cards have depleted the entire first socket
-of IRQs.
+Examination of svc_tcp_clear_pages shows that it assumes sk_tcplen is
+consistent with sk_pages[] (in particular, sk_pages[n] can't be NULL if
+sk_tcplen would lead us to expect n pages of data).
 
-This patch makes selecting the node upon which IRQs are allocated (as
-well as all the other GRU Message Queue structures) specifiable as a
-module load param and has a default behavior of searching all nodes/cpus
-for an available resources.
+svc_tcp_restore_pages zeroes out sk_pages[] while leaving sk_tcplen.
+This is OK, since both functions are serialized by XPT_BUSY.  However,
+that means the inconsistency must be repaired before dropping XPT_BUSY.
 
-[akpm@linux-foundation.org: fix build: include cpu.h and module.h]
-Signed-off-by: Robin Holt <holt@sgi.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Therefore we should be ensuring that svc_tcp_save_pages repairs the
+problem before exiting svc_tcp_recv_record on error.
+
+Symptoms were a BUG() in svc_tcp_clear_pages.
+
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/misc/sgi-xp/xpc_uv.c |   84 ++++++++++++++++++++++++++++++++----------
- 1 file changed, 65 insertions(+), 19 deletions(-)
+ net/sunrpc/svcsock.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/misc/sgi-xp/xpc_uv.c b/drivers/misc/sgi-xp/xpc_uv.c
-index 87b251a..b9e2000 100644
---- a/drivers/misc/sgi-xp/xpc_uv.c
-+++ b/drivers/misc/sgi-xp/xpc_uv.c
-@@ -18,6 +18,8 @@
- #include <linux/interrupt.h>
- #include <linux/delay.h>
- #include <linux/device.h>
-+#include <linux/cpu.h>
-+#include <linux/module.h>
- #include <linux/err.h>
- #include <linux/slab.h>
- #include <asm/uv/uv_hub.h>
-@@ -59,6 +61,8 @@ static struct xpc_heartbeat_uv *xpc_heartbeat_uv;
- 					 XPC_NOTIFY_MSG_SIZE_UV)
- #define XPC_NOTIFY_IRQ_NAME		"xpc_notify"
- 
-+static int xpc_mq_node = -1;
-+
- static struct xpc_gru_mq_uv *xpc_activate_mq_uv;
- static struct xpc_gru_mq_uv *xpc_notify_mq_uv;
- 
-@@ -109,11 +113,8 @@ xpc_get_gru_mq_irq_uv(struct xpc_gru_mq_uv *mq, int cpu, char *irq_name)
- #if defined CONFIG_X86_64
- 	mq->irq = uv_setup_irq(irq_name, cpu, mq->mmr_blade, mq->mmr_offset,
- 			UV_AFFINITY_CPU);
--	if (mq->irq < 0) {
--		dev_err(xpc_part, "uv_setup_irq() returned error=%d\n",
--			-mq->irq);
-+	if (mq->irq < 0)
- 		return mq->irq;
--	}
- 
- 	mq->mmr_value = uv_read_global_mmr64(mmr_pnode, mq->mmr_offset);
- 
-@@ -238,8 +239,9 @@ xpc_create_gru_mq_uv(unsigned int mq_size, int cpu, char *irq_name,
- 	mq->mmr_blade = uv_cpu_to_blade_id(cpu);
- 
- 	nid = cpu_to_node(cpu);
--	page = alloc_pages_exact_node(nid, GFP_KERNEL | __GFP_ZERO | GFP_THISNODE,
--				pg_order);
-+	page = alloc_pages_exact_node(nid,
-+				      GFP_KERNEL | __GFP_ZERO | GFP_THISNODE,
-+				      pg_order);
- 	if (page == NULL) {
- 		dev_err(xpc_part, "xpc_create_gru_mq_uv() failed to alloc %d "
- 			"bytes of memory on nid=%d for GRU mq\n", mq_size, nid);
-@@ -1731,9 +1733,50 @@ static struct xpc_arch_operations xpc_arch_ops_uv = {
- 	.notify_senders_of_disconnect = xpc_notify_senders_of_disconnect_uv,
- };
- 
-+static int
-+xpc_init_mq_node(int nid)
-+{
-+	int cpu;
-+
-+	get_online_cpus();
-+
-+	for_each_cpu(cpu, cpumask_of_node(nid)) {
-+		xpc_activate_mq_uv =
-+			xpc_create_gru_mq_uv(XPC_ACTIVATE_MQ_SIZE_UV, nid,
-+					     XPC_ACTIVATE_IRQ_NAME,
-+					     xpc_handle_activate_IRQ_uv);
-+		if (!IS_ERR(xpc_activate_mq_uv))
-+			break;
-+	}
-+	if (IS_ERR(xpc_activate_mq_uv)) {
-+		put_online_cpus();
-+		return PTR_ERR(xpc_activate_mq_uv);
-+	}
-+
-+	for_each_cpu(cpu, cpumask_of_node(nid)) {
-+		xpc_notify_mq_uv =
-+			xpc_create_gru_mq_uv(XPC_NOTIFY_MQ_SIZE_UV, nid,
-+					     XPC_NOTIFY_IRQ_NAME,
-+					     xpc_handle_notify_IRQ_uv);
-+		if (!IS_ERR(xpc_notify_mq_uv))
-+			break;
-+	}
-+	if (IS_ERR(xpc_notify_mq_uv)) {
-+		xpc_destroy_gru_mq_uv(xpc_activate_mq_uv);
-+		put_online_cpus();
-+		return PTR_ERR(xpc_notify_mq_uv);
-+	}
-+
-+	put_online_cpus();
-+	return 0;
-+}
-+
- int
- xpc_init_uv(void)
- {
-+	int nid;
-+	int ret = 0;
-+
- 	xpc_arch_ops = xpc_arch_ops_uv;
- 
- 	if (sizeof(struct xpc_notify_mq_msghdr_uv) > XPC_MSG_HDR_MAX_SIZE) {
-@@ -1742,21 +1785,21 @@ xpc_init_uv(void)
- 		return -E2BIG;
- 	}
- 
--	xpc_activate_mq_uv = xpc_create_gru_mq_uv(XPC_ACTIVATE_MQ_SIZE_UV, 0,
--						  XPC_ACTIVATE_IRQ_NAME,
--						  xpc_handle_activate_IRQ_uv);
--	if (IS_ERR(xpc_activate_mq_uv))
--		return PTR_ERR(xpc_activate_mq_uv);
-+	if (xpc_mq_node < 0)
-+		for_each_online_node(nid) {
-+			ret = xpc_init_mq_node(nid);
- 
--	xpc_notify_mq_uv = xpc_create_gru_mq_uv(XPC_NOTIFY_MQ_SIZE_UV, 0,
--						XPC_NOTIFY_IRQ_NAME,
--						xpc_handle_notify_IRQ_uv);
--	if (IS_ERR(xpc_notify_mq_uv)) {
--		xpc_destroy_gru_mq_uv(xpc_activate_mq_uv);
--		return PTR_ERR(xpc_notify_mq_uv);
--	}
-+			if (!ret)
-+				break;
-+		}
-+	else
-+		ret = xpc_init_mq_node(xpc_mq_node);
- 
--	return 0;
-+	if (ret < 0)
-+		dev_err(xpc_part, "xpc_init_mq_node() returned error=%d\n",
-+			-ret);
-+
-+	return ret;
- }
- 
- void
-@@ -1765,3 +1808,6 @@ xpc_exit_uv(void)
- 	xpc_destroy_gru_mq_uv(xpc_notify_mq_uv);
- 	xpc_destroy_gru_mq_uv(xpc_activate_mq_uv);
- }
-+
-+module_param(xpc_mq_node, int, 0);
-+MODULE_PARM_DESC(xpc_mq_node, "Node number on which to allocate message queues.");
+diff --git a/net/sunrpc/svcsock.c b/net/sunrpc/svcsock.c
+index 18bc130..998aa8c 100644
+--- a/net/sunrpc/svcsock.c
++++ b/net/sunrpc/svcsock.c
+@@ -1129,9 +1129,9 @@ static int svc_tcp_recvfrom(struct svc_rqst *rqstp)
+ 	if (len >= 0)
+ 		svsk->sk_tcplen += len;
+ 	if (len != want) {
++		svc_tcp_save_pages(svsk, rqstp);
+ 		if (len < 0 && len != -EAGAIN)
+ 			goto err_other;
+-		svc_tcp_save_pages(svsk, rqstp);
+ 		dprintk("svc: incomplete TCP record (%d of %d)\n",
+ 			svsk->sk_tcplen, svsk->sk_reclen);
+ 		goto err_noclose;
 
 
