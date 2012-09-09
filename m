@@ -1,57 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755697Ab2IIXva (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 19:51:30 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:37588 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755469Ab2IIXv2 (ORCPT
+	id S1755672Ab2IIX6n (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 19:58:43 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:59741 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752923Ab2IIX6m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 19:51:28 -0400
-Date: Mon, 10 Sep 2012 00:50:59 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Mike Turquette <mturquette@ti.com>, Russell King <linux@arm.linux.org.uk>,
-        Greg Ungerer <gerg@uclinux.org>, Julia Lawall <julia.lawall@lip6.fr>,
-        Artem Bityutskiy <dedekind1@gmail.com>, linux-m68k@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] clk: Make the managed clk functions generically
- available
-Message-ID: <20120909235059.GA2643@sirena.org.uk>
-References: <1347202862-1617-1-git-send-email-lars@metafoo.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347202862-1617-1-git-send-email-lars@metafoo.de>
-X-Cookie: A fool and his money are soon popular.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	Sun, 9 Sep 2012 19:58:42 -0400
+Date: Mon, 10 Sep 2012 09:58:33 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Brown <davidb@codeaurora.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: Adding 'msm' tree to linux-next.
+Message-Id: <20120910095833.c2387ab0b7f3bb1ae9dae885@canb.auug.org.au>
+In-Reply-To: <20120907220404.GA5904@codeaurora.org>
+References: <20120907220404.GA5904@codeaurora.org>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__10_Sep_2012_09_58_33_+1000_Yw7/RxcHvQJ2Q9Sk"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 09, 2012 at 05:01:02PM +0200, Lars-Peter Clausen wrote:
+--Signature=_Mon__10_Sep_2012_09_58_33_+1000_Yw7/RxcHvQJ2Q9Sk
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> The managed clk functions are currently only available when the generic clk
-> lookup framework is build. But the managed clk functions are merely wrappers
-> around clk_get and clk_put and do not depend on any specifics of the generic
-> lookup functions and there are still quite a few custom implementations of the
-> clk API. So make the managed functions available whenever the clk API is
-> implemented.
+Hi David,
 
-> The patch also removes the custom implementation of devm_clk_get for the
-> coldfire platform.
+On Fri, 7 Sep 2012 15:04:04 -0700 David Brown <davidb@codeaurora.org> wrote:
+>
+> I'd like to add the msm soc tree to Linux next.
+>=20
+>   git://git.kernel.org/pub/scm/linux/kernel/git/davidb/linux-msm.git for-=
+next
+>=20
+> I had removed it when the creation of the ARM SoC tree, but now that
+> msm is getting a bit more active, I'd like to get it included in next
+> to get it in a bit earlier.
 
-I posted a patch for this (clk: Move devm_ APIs out of clkdev into
-HAVE_CLK) towards the end of the last release cycle and I think reposted
-it since and it had been sent to the patch tracker too (though I can't
-find any record of anything except the submission mail now).  It would
-be *really* good to get this merged.
+Added from today.
 
-Who's looking after clkdev these days?  Mike doesn't seem to take
-patches as he's expecting Russell to take them which was happening for a
-while but I'm not sure that's the case any more, especially given
-Russell's followup here.  Due to the patch tracker the usual things for
-following up on unapplied patches don't work terribly well, it's much
-less likely that it's just an oversight there.
+Thanks for adding your subsystem tree as a participant of linux-next.  As
+you may know, this is not a judgment of your code.  The purpose of
+linux-next is for integration testing and to lower the impact of
+conflicts between subsystems in the next merge window.=20
+
+You will need to ensure that the patches/commits in your tree/series have
+been:
+     * submitted under GPL v2 (or later) and include the Contributor's
+	Signed-off-by,
+     * posted to the relevant mailing list,
+     * reviewed by you (or another maintainer of your subsystem tree),
+     * successfully unit tested, and=20
+     * destined for the current or next Linux merge window.
+
+Basically, this should be just what you would send to Linus (or ask him
+to fetch).  It is allowed to be rebased if you deem it necessary.
+
+--=20
+Cheers,
+Stephen Rothwell=20
+sfr@canb.auug.org.au
+
+Legal Stuff:
+By participating in linux-next, your subsystem tree contributions are
+public and will be included in the linux-next trees.  You may be sent
+e-mail messages indicating errors or other issues when the
+patches/commits from your subsystem tree are merged and tested in
+linux-next.  These messages may also be cross-posted to the linux-next
+mailing list, the linux-kernel mailing list, etc.  The linux-next tree
+project and IBM (my employer) make no warranties regarding the linux-next
+project, the testing procedures, the results, the e-mails, etc.  If you
+don't agree to these ground rules, let me know and I'll remove your tree
+from participation in linux-next.
+
+--Signature=_Mon__10_Sep_2012_09_58_33_+1000_Yw7/RxcHvQJ2Q9Sk
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQTS0pAAoJEECxmPOUX5FEnOkP/27FIE4ToChfclzjahUYmSTx
+qWUIxGSA+tQGnuTw/MwbA1/p8yRNHbO5WOwZHddZJv9JQ6iSg3Rx70T8x+Wz7MFr
+rix3Vv2TqAdNRhMtMVOZ1q4oftkk/y9BPqtAiYvddwpSdM5pS92PIjd2jRhmiZo2
+yBSBm6hkYi5oWUbV08ZCteXbLfcEiBk/YLeyVV5+PRTaKK6VCmxkIOTcUWmGYayt
+/ILtCudF05tUOTTZ+tynprNrd4CRhIusITKo8VfoH+Uj2R9x5py58DAS1ERLWXKV
+/+UykoA2MpRUKvUZRqZepCTQ4KM4PuK6VqrtVdaZRigGc95Q2kaMUkn0I1q4P2wV
+oGqVDLvHadqBkAAEf66YDKVp6W18dceu7AdcA/dYZvY+Uw5ZGhA7XH5P+Fz09Y54
+0RB0hQm/Wl/qyY1L3cgHqZ7ecOA+iQmTQTtlsOdazYUUupvvFMIMh90CSrEDue5O
+DySw5BYT+z5ODc8aE5he+JlfQAWKZEwEewh1Elm1N7UJW8Sg8m3a+H+DPNfkd643
+Noni+dJHug+9MvS2E1Rjx8p2WdCEhKDRoI0XBe6msENcgRUdUyeCm1J7X/aN0cKR
+youyPV6zgSDwO7PBqg/YcgwKEeATZH8+28C21nY6Q58+mb87i4Fu+AeBwsM5TjHj
+l7ZqmyD3arofh2Bbf2kM
+=raXD
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__10_Sep_2012_09_58_33_+1000_Yw7/RxcHvQJ2Q9Sk--
