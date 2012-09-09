@@ -1,87 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495Ab2IIVzo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 17:55:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40719 "EHLO mx1.redhat.com"
+	id S1755587Ab2IIVz7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 17:55:59 -0400
+Received: from ares07.inai.de ([5.9.24.206]:49686 "EHLO seven.medozas.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754330Ab2IIVzn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 17:55:43 -0400
-Message-ID: <504D109C.8000803@redhat.com>
-Date: Sun, 09 Sep 2012 23:56:44 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1754782Ab2IIVz5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Sep 2012 17:55:57 -0400
+Date: Sun, 9 Sep 2012 23:55:55 +0200 (CEST)
+From: Jan Engelhardt <jengelh@inai.de>
+To: Michal Marek <mmarek@suse.cz>
+cc: Tzafrir Cohen <tzafrir.cohen@xorcom.com>,
+        Linux Kbuild <linux-kbuild@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        maximilian attems <max@stro.at>
+Subject: Re: [PATCH] Add mach-specific includes
+In-Reply-To: <5040BFF3.6050705@suse.cz>
+Message-ID: <alpine.LNX.2.01.1209092355160.22738@frira.zrqbmnf.qr>
+References: <1344764843-2179-1-git-send-email-tzafrir.cohen@xorcom.com> <5040BFF3.6050705@suse.cz>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
 MIME-Version: 1.0
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-CC: kernel-janitors@vger.kernel.org, Julia.Lawall@lip6.fr,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 14/14] drivers/media/usb/gspca/cpia1.c: fix error return
- code
-References: <1346945041-26676-14-git-send-email-peter.senna@gmail.com>
-In-Reply-To: <1346945041-26676-14-git-send-email-peter.senna@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-Applied to my gspca tree and included in my pull-req for 3.7 which I just send out.
+On Friday 2012-08-31 15:45, Michal Marek wrote:
+>>  # Build header package
+>>  (cd $srctree; find . -name Makefile\* -o -name Kconfig\* -o -name \*.pl > "$objtree/debian/hdrsrcfiles")
+>>  (cd $srctree; find arch/$SRCARCH/include include scripts -type f >> "$objtree/debian/hdrsrcfiles")
+>> +if echo arch/$SRCARCH/mach-*/include | grep q -v '*'; then
+>
+>This should probably be grep -q, but it's quite ugly anyway.
 
-Thanks,
-
-Hans
-
-
-On 09/06/2012 05:24 PM, Peter Senna Tschudin wrote:
-> From: Peter Senna Tschudin <peter.senna@gmail.com>
->
-> Convert a nonnegative error return code to a negative one, as returned
-> elsewhere in the function.
->
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
->
-> // <smpl>
-> (
-> if@p1 (\(ret < 0\|ret != 0\))
->   { ... return ret; }
-> |
-> ret@p1 = 0
-> )
-> ... when != ret = e1
->      when != &ret
-> *if(...)
-> {
->    ... when != ret = e2
->        when forall
->   return ret;
-> }
->
-> // </smpl>
->
-> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
->
-> ---
->   drivers/media/usb/gspca/cpia1.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/media/usb/gspca/cpia1.c b/drivers/media/usb/gspca/cpia1.c
-> index 2499a88..b3ba47d 100644
-> --- a/drivers/media/usb/gspca/cpia1.c
-> +++ b/drivers/media/usb/gspca/cpia1.c
-> @@ -751,7 +751,7 @@ static int goto_high_power(struct gspca_dev *gspca_dev)
->   	if (signal_pending(current))
->   		return -EINTR;
->
-> -	do_command(gspca_dev, CPIA_COMMAND_GetCameraStatus, 0, 0, 0, 0);
-> +	ret = do_command(gspca_dev, CPIA_COMMAND_GetCameraStatus, 0, 0, 0, 0);
->   	if (ret)
->   		return ret;
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Use of -q should probably be preferred to >/dev/null,
+because with the latter, you will still pay the price
+of printf.
