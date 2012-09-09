@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932083Ab2IIXRb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 19:17:31 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51484 "EHLO
+	id S932065Ab2IIXR3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 19:17:29 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51461 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756367Ab2IIXRI (ORCPT
+	by vger.kernel.org with ESMTP id S1756183Ab2IIXRF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 19:17:08 -0400
-Message-Id: <20120909224151.136722090@decadent.org.uk>
+	Sun, 9 Sep 2012 19:17:05 -0400
+Message-Id: <20120909224151.399876153@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 09 Sep 2012 23:41:51 +0100
+Date: Sun, 09 Sep 2012 23:41:53 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Cyrus Lien <cyrus.lien@canonical.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 01/95] HID: add ASUS AIO keyboard model AK1D
+        alan@lxorguk.ukuu.org.uk, Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 03/95] NFS: Use kcalloc() when allocating arrays
 In-Reply-To: <20120909224150.641491654@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,53 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cyrus Lien <cyrus.lien@canonical.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 2d8767bb421574dfcf48e4be0751ce7d8f73d5d7 upstream.
+commit 7d9dea915fe333357912bce2d624ee848dfbd890 upstream.
 
-Add Asus All-In-One PC keyboard model AK1D.
-
-BugLink: https://bugs.launchpad.net/bugs/1027789
-
-Signed-off-by: Cyrus Lien <cyrus.lien@canonical.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/hid/hid-chicony.c |    1 +
- drivers/hid/hid-core.c    |    1 +
- drivers/hid/hid-ids.h     |    1 +
- 3 files changed, 3 insertions(+)
+ fs/nfs/blocklayout/extents.c |    2 +-
+ fs/nfs/pnfs.c                |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/hid/hid-chicony.c
-+++ b/drivers/hid/hid-chicony.c
-@@ -60,6 +60,7 @@ static int ch_input_mapping(struct hid_d
- static const struct hid_device_id ch_devices[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_TACTICAL_PAD) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_WIRELESS2) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_AK1D) },
- 	{ }
- };
- MODULE_DEVICE_TABLE(hid, ch_devices);
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1398,6 +1398,7 @@ static const struct hid_device_id hid_ha
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_TACTICAL_PAD) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_WIRELESS) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_WIRELESS2) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_AK1D) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHUNGHWAT, USB_DEVICE_ID_CHUNGHWAT_MULTITOUCH) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_CREATIVELABS, USB_DEVICE_ID_PRODIKEYS_PCMIDI) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_CVTOUCH, USB_DEVICE_ID_CVTOUCH_SCREEN) },
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -196,6 +196,7 @@
- #define USB_DEVICE_ID_CHICONY_MULTI_TOUCH	0xb19d
- #define USB_DEVICE_ID_CHICONY_WIRELESS	0x0618
- #define USB_DEVICE_ID_CHICONY_WIRELESS2	0x1123
-+#define USB_DEVICE_ID_CHICONY_AK1D	0x1125
+diff --git a/fs/nfs/blocklayout/extents.c b/fs/nfs/blocklayout/extents.c
+index 1abac09..1f9a603 100644
+--- a/fs/nfs/blocklayout/extents.c
++++ b/fs/nfs/blocklayout/extents.c
+@@ -147,7 +147,7 @@ static int _preload_range(struct pnfs_inval_markings *marks,
+ 	count = (int)(end - start) / (int)tree->mtt_step_size;
  
- #define USB_VENDOR_ID_CHUNGHWAT		0x2247
- #define USB_DEVICE_ID_CHUNGHWAT_MULTITOUCH	0x0001
+ 	/* Pre-malloc what memory we might need */
+-	storage = kmalloc(sizeof(*storage) * count, GFP_NOFS);
++	storage = kcalloc(count, sizeof(*storage), GFP_NOFS);
+ 	if (!storage)
+ 		return -ENOMEM;
+ 	for (i = 0; i < count; i++) {
+diff --git a/fs/nfs/pnfs.c b/fs/nfs/pnfs.c
+index 17149a4..9292787 100644
+--- a/fs/nfs/pnfs.c
++++ b/fs/nfs/pnfs.c
+@@ -590,7 +590,7 @@ send_layoutget(struct pnfs_layout_hdr *lo,
+ 	max_resp_sz = server->nfs_client->cl_session->fc_attrs.max_resp_sz;
+ 	max_pages = max_resp_sz >> PAGE_SHIFT;
+ 
+-	pages = kzalloc(max_pages * sizeof(struct page *), gfp_flags);
++	pages = kcalloc(max_pages, sizeof(struct page *), gfp_flags);
+ 	if (!pages)
+ 		goto out_err_free;
+ 
 
 
