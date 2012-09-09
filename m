@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756452Ab2IIXjP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 19:39:15 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51056 "EHLO
+	id S1756769Ab2IIXjh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 19:39:37 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51047 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755543Ab2IIXPu (ORCPT
+	by vger.kernel.org with ESMTP id S1755483Ab2IIXPt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 19:15:50 -0400
-Message-Id: <20120909224154.433633240@decadent.org.uk>
+	Sun, 9 Sep 2012 19:15:49 -0400
+Message-Id: <20120909224152.583178513@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 09 Sep 2012 23:42:16 +0100
+Date: Sun, 09 Sep 2012 23:42:02 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Lorenzo Bianconi <lorenzo.bianconi83@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 26/95] ath9k: fix decrypt_error initialization in ath_rx_tasklet()
+        alan@lxorguk.ukuu.org.uk, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Denis Turischev <denis@compulab.co.il>
+Subject: [ 12/95] xhci: Switch PPT ports to EHCI on shutdown.
 In-Reply-To: <20120909224150.641491654@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,53 +28,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lorenzo Bianconi <lorenzo.bianconi83@gmail.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit e1352fde5682ab1bdd2a9e5d75c22d1fe210ef77 upstream.
+commit e95829f474f0db3a4d940cae1423783edd966027 upstream.
 
-ath_rx_tasklet() calls ath9k_rx_skb_preprocess() and ath9k_rx_skb_postprocess()
-in a loop over the received frames. The decrypt_error flag is
-initialized to false
-just outside ath_rx_tasklet() loop. ath9k_rx_accept(), called by
-ath9k_rx_skb_preprocess(),
-only sets decrypt_error to true and never to false.
-Then ath_rx_tasklet() calls ath9k_rx_skb_postprocess() and passes
-decrypt_error to it.
-So, after a decryption error, in ath9k_rx_skb_postprocess(), we can
-have a leftover value
-from another processed frame. In that case, the frame will not be marked with
-RX_FLAG_DECRYPTED even if it is decrypted correctly.
-When using CCMP encryption this issue can lead to connection stuck
-because of CCMP
-PN corruption and a waste of CPU time since mac80211 tries to decrypt an already
-deciphered frame with ieee80211_aes_ccm_decrypt.
-Fix the issue initializing decrypt_error flag at the begging of the
-ath_rx_tasklet() loop.
+The Intel desktop boards DH77EB and DH77DF have a hardware issue that
+can be worked around by BIOS.  If the USB ports are switched to xHCI on
+shutdown, the xHCI host will send a spurious interrupt, which will wake
+the system.  Some BIOS will work around this, but not all.
 
-Signed-off-by: Lorenzo Bianconi <lorenzo.bianconi83@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+The bug can be avoided if the USB ports are switched back to EHCI on
+shutdown.  The Intel Windows driver switches the ports back to EHCI, so
+change the Linux xHCI driver to do the same.
+
+Unfortunately, we can't tell the two effected boards apart from other
+working motherboards, because the vendors will change the DMI strings
+for the DH77EB and DH77DF boards to their own custom names.  One example
+is Compulab's mini-desktop, the Intense-PC.  Instead, key off the
+Panther Point xHCI host PCI vendor and device ID, and switch the ports
+over for all PPT xHCI hosts.
+
+The only impact this will have on non-effected boards is to add a couple
+hundred milliseconds delay on boot when the BIOS has to switch the ports
+over from EHCI to xHCI.
+
+This patch should be backported to kernels as old as 3.0, that contain
+the commit 69e848c2090aebba5698a1620604c7dccb448684 "Intel xhci: Support
+EHCI/xHCI port switching."
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: Denis Turischev <denis@compulab.co.il>
+Tested-by: Denis Turischev <denis@compulab.co.il>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/ath/ath9k/recv.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/host/pci-quirks.c |    7 +++++++
+ drivers/usb/host/pci-quirks.h |    1 +
+ drivers/usb/host/xhci-pci.c   |    9 +++++++++
+ drivers/usb/host/xhci.c       |    3 +++
+ drivers/usb/host/xhci.h       |    1 +
+ 5 files changed, 21 insertions(+)
 
---- a/drivers/net/wireless/ath/ath9k/recv.c
-+++ b/drivers/net/wireless/ath/ath9k/recv.c
-@@ -1782,7 +1782,6 @@ int ath_rx_tasklet(struct ath_softc *sc,
- 	struct ieee80211_hw *hw = sc->hw;
- 	struct ieee80211_hdr *hdr;
- 	int retval;
--	bool decrypt_error = false;
- 	struct ath_rx_status rs;
- 	enum ath9k_rx_qtype qtype;
- 	bool edma = !!(ah->caps.hw_caps & ATH9K_HW_CAP_EDMA);
-@@ -1804,6 +1803,7 @@ int ath_rx_tasklet(struct ath_softc *sc,
- 	tsf_lower = tsf & 0xffffffff;
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -800,6 +800,13 @@ void usb_enable_xhci_ports(struct pci_de
+ }
+ EXPORT_SYMBOL_GPL(usb_enable_xhci_ports);
  
- 	do {
-+		bool decrypt_error = false;
- 		/* If handling rx interrupt and flush is in progress => exit */
- 		if ((sc->sc_flags & SC_OP_RXFLUSH) && (flush == 0))
- 			break;
++void usb_disable_xhci_ports(struct pci_dev *xhci_pdev)
++{
++	pci_write_config_dword(xhci_pdev, USB_INTEL_USB3_PSSEN, 0x0);
++	pci_write_config_dword(xhci_pdev, USB_INTEL_XUSB2PR, 0x0);
++}
++EXPORT_SYMBOL_GPL(usb_disable_xhci_ports);
++
+ /**
+  * PCI Quirks for xHCI.
+  *
+--- a/drivers/usb/host/pci-quirks.h
++++ b/drivers/usb/host/pci-quirks.h
+@@ -10,6 +10,7 @@ void usb_amd_quirk_pll_disable(void);
+ void usb_amd_quirk_pll_enable(void);
+ bool usb_is_intel_switchable_xhci(struct pci_dev *pdev);
+ void usb_enable_xhci_ports(struct pci_dev *xhci_pdev);
++void usb_disable_xhci_ports(struct pci_dev *xhci_pdev);
+ #else
+ static inline void usb_amd_quirk_pll_disable(void) {}
+ static inline void usb_amd_quirk_pll_enable(void) {}
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -90,6 +90,15 @@ static void xhci_pci_quirks(struct devic
+ 		xhci->quirks |= XHCI_EP_LIMIT_QUIRK;
+ 		xhci->limit_active_eps = 64;
+ 		xhci->quirks |= XHCI_SW_BW_CHECKING;
++		/*
++		 * PPT desktop boards DH77EB and DH77DF will power back on after
++		 * a few seconds of being shutdown.  The fix for this is to
++		 * switch the ports from xHCI to EHCI on shutdown.  We can't use
++		 * DMI information to find those particular boards (since each
++		 * vendor will change the board name), so we have to key off all
++		 * PPT chipsets.
++		 */
++		xhci->quirks |= XHCI_SPURIOUS_REBOOT;
+ 	}
+ 	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
+ 			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -648,6 +648,9 @@ void xhci_shutdown(struct usb_hcd *hcd)
+ {
+ 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
+ 
++	if (xhci->quirks && XHCI_SPURIOUS_REBOOT)
++		usb_disable_xhci_ports(to_pci_dev(hcd->self.controller));
++
+ 	spin_lock_irq(&xhci->lock);
+ 	xhci_halt(xhci);
+ 	spin_unlock_irq(&xhci->lock);
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -1471,6 +1471,7 @@ struct xhci_hcd {
+ #define	XHCI_SW_BW_CHECKING	(1 << 8)
+ #define XHCI_AMD_0x96_HOST	(1 << 9)
+ #define XHCI_TRUST_TX_LENGTH	(1 << 10)
++#define XHCI_SPURIOUS_REBOOT	(1 << 13)
+ 	unsigned int		num_active_eps;
+ 	unsigned int		limit_active_eps;
+ 	/* There are two roothubs to keep track of bus suspend info for */
 
 
