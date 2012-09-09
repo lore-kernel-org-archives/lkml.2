@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755644Ab2IIXPw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 19:15:52 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51042 "EHLO
+	id S1756507Ab2IIXhA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 19:37:00 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51079 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755421Ab2IIXPs (ORCPT
+	by vger.kernel.org with ESMTP id S1755610Ab2IIXPv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 19:15:48 -0400
-Message-Id: <20120909224152.452842247@decadent.org.uk>
+	Sun, 9 Sep 2012 19:15:51 -0400
+Message-Id: <20120909224152.978903694@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 09 Sep 2012 23:42:01 +0100
+Date: Sun, 09 Sep 2012 23:42:05 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        "Gary E. Miller" <gem@rellim.com>
-Subject: [ 11/95] xhci: Add Etron XHCI_TRUST_TX_LENGTH quirk.
+        alan@lxorguk.ukuu.org.uk,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Henrik Rydberg <rydberg@bitmath.se>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 15/95] USB: add USB_VENDOR_AND_INTERFACE_INFO() macro
 In-Reply-To: <20120909224150.641491654@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,47 +31,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 
-commit 5cb7df2b2d3afee7638b3ef23a5bcb89c6f07bd9 upstream.
+commit d81a5d1956731c453b85c141458d4ff5d6cc5366 upstream.
 
-Gary reports that with recent kernels, he notices more xHCI driver
-warnings:
+A lot of Broadcom Bluetooth devices provides vendor specific interface
+class and we are getting flooded by patches adding new device support.
+This change will help us enable support for any other Broadcom with vendor
+specific device that arrives in the future.
 
-xhci_hcd 0000:03:00.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
+Only the product id changes for those devices, so this macro would be
+perfect for us:
 
-We think his Etron xHCI host controller may have the same buggy behavior
-as the Fresco Logic xHCI host.  When a short transfer is received, the
-host will mark the transfer as successfully completed when it should be
-marking it with a short completion.
+{ USB_VENDOR_AND_INTERFACE_INFO(0x0a5c, 0xff, 0x01, 0x01) }
 
-Fix this by turning on the XHCI_TRUST_TX_LENGTH quirk when the Etron
-host is discovered.  Note that Gary has revision 1, but if Etron fixes
-this bug in future revisions, the quirk will have no effect.
-
-This patch should be backported to kernels as old as 2.6.36, that
-contain a backported version of commit
-1530bbc6272d9da1e39ef8e06190d42c13a02733 "xhci: Add new short TX quirk
-for Fresco Logic host."
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: Gary E. Miller <gem@rellim.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Acked-by: Henrik Rydberg <rydberg@bitmath.se>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/host/xhci-pci.c |    1 +
- 1 file changed, 1 insertion(+)
+ include/linux/usb.h |   21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
-diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
-index 18b231b..92eaff6 100644
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -99,6 +99,7 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
- 			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
- 		xhci->quirks |= XHCI_RESET_ON_RESUME;
- 		xhci_dbg(xhci, "QUIRK: Resetting on resume\n");
-+		xhci->quirks |= XHCI_TRUST_TX_LENGTH;
- 	}
- 	if (pdev->vendor == PCI_VENDOR_ID_VIA)
- 		xhci->quirks |= XHCI_RESET_ON_RESUME;
+diff --git a/include/linux/usb.h b/include/linux/usb.h
+index 873956b..30d1ae3 100644
+--- a/include/linux/usb.h
++++ b/include/linux/usb.h
+@@ -861,6 +861,27 @@ static inline int usb_make_path(struct usb_device *dev, char *buf, size_t size)
+ 	.bInterfaceSubClass = (sc), \
+ 	.bInterfaceProtocol = (pr)
+ 
++/**
++ * USB_VENDOR_AND_INTERFACE_INFO - describe a specific usb vendor with a class of usb interfaces
++ * @vend: the 16 bit USB Vendor ID
++ * @cl: bInterfaceClass value
++ * @sc: bInterfaceSubClass value
++ * @pr: bInterfaceProtocol value
++ *
++ * This macro is used to create a struct usb_device_id that matches a
++ * specific vendor with a specific class of interfaces.
++ *
++ * This is especially useful when explicitly matching devices that have
++ * vendor specific bDeviceClass values, but standards-compliant interfaces.
++ */
++#define USB_VENDOR_AND_INTERFACE_INFO(vend, cl, sc, pr) \
++	.match_flags = USB_DEVICE_ID_MATCH_INT_INFO \
++		| USB_DEVICE_ID_MATCH_VENDOR, \
++	.idVendor = (vend), \
++	.bInterfaceClass = (cl), \
++	.bInterfaceSubClass = (sc), \
++	.bInterfaceProtocol = (pr)
++
+ /* ----------------------------------------------------------------------- */
+ 
+ /* Stuff for dynamic usb ids */
 
 
