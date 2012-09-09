@@ -1,43 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755074Ab2IIUux (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 16:50:53 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:42728 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752239Ab2IIUuv (ORCPT
+	id S1755238Ab2IIUyL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 16:54:11 -0400
+Received: from sd-mail-sa-01.sanoma.fi ([158.127.18.161]:38894 "EHLO
+	sd-mail-sa-01.sanoma.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752216Ab2IIUyI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 16:50:51 -0400
-Message-ID: <504D0127.5080807@pobox.com>
-Date: Sun, 09 Sep 2012 16:50:47 -0400
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Sun, 9 Sep 2012 16:54:08 -0400
+Message-ID: <20120909235404.747466tf3h2pbf48@www.81.fi>
+Date: Sun, 09 Sep 2012 23:54:04 +0300
+From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Romain Francoise <romain@orebokech.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Re: Linux 3.6-rc5
+References: <CA+55aFwnPfdyTTG6WTuhChomg=t9nSS18xracq3iQ3F5+PWOog@mail.gmail.com>
+ <87har7h84h.fsf@silenus.orebokech.com>
+ <20120909155424.862635h7ncykg9s0@www.81.fi>
+ <CA+55aFyM52LaD_fF+dwjF1aKKeVCpHpBVqAQeEAZLB+Mnrgsig@mail.gmail.com>
+ <20120909185358.GA9782@gondor.apana.org.au>
+In-Reply-To: <20120909185358.GA9782@gondor.apana.org.au>
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Arvydas Sidorenko <asido4@gmail.com>, Zheng Liu <wenqing.lz@taobao.com>,
-        linux-kernel@vger.kernel.org,
-        IDE/ATA development list <linux-ide@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Storage related regression in linux-next 20120824
-References: <CA+6av4=uxu_q5U_46HtpUt=FSgbh3pZuAEY54J5_xK=MKWq-YQ@mail.gmail.com> <CAFtxgO536xEMjMw_D1u3utT1f1iy-6EsjcawdYvbocRxc=Wu=A@mail.gmail.com> <503BA2DB.9080704@gmail.com> <503BB4BB.4080307@gmail.com> <alpine.LSU.2.00.1209090012390.2416@eggly.anvils> <CA+6av4=6WeLcde5me2FCpBtQJAOTtHZvf4pkMExgMW9agVNLWg@mail.gmail.com> <504CFBE3.401@pobox.com> <CANsGZ6aPB6ZjTmUJ=xeLY68iV5V9ghGGAQrp9KvJcyC0d-ARUg@mail.gmail.com>
-In-Reply-To: <CANsGZ6aPB6ZjTmUJ=xeLY68iV5V9ghGGAQrp9KvJcyC0d-ARUg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2012 04:36 PM, Hugh Dickins wrote:
-> On Sun, Sep 9, 2012 at 1:28 PM, Jeff Garzik <jgarzik@pobox.com> wrote:
->> I'll send Linus a patch to disable.
+Quoting Herbert Xu <herbert@gondor.apana.org.au>:
+
+> On Sun, Sep 09, 2012 at 08:35:56AM -0700, Linus Torvalds wrote:
+>> On Sun, Sep 9, 2012 at 5:54 AM, Jussi Kivilinna
+>> <jussi.kivilinna@mbnet.fi> wrote:
+>> >
+>> > Does reverting e46e9a46386bca8e80a6467b5c643dc494861896 help?
+>> >
+>> > That commit added crypto selftest for authenc(hmac(sha1),cbc(aes)) in 3.6,
+>> > and probably made this bug visible (but not directly causing it).
+>>
+>> So Romain said it does - where do we go from here? Revert testing it,
+>> or fix the authenc() case? I'd prefer the fix..
 >
-> Thanks, but no, the change in question hasn't reached Linus yet, it's
-> just a linux-next or mmotm thing - isn't it?
+> I'm working on this right now.  If we don't get anywhere in a
+> couple of days we can revert the test vector patch.
+>
 
-Yep, libata-dev#upstream.  Sorry, got my own branches confused for a 
-second there.
+It seems that authenc is chaining empty assoc scatterlist, which causes
+BUG_ON(!sg->length) set off in crypto/scatterwalk.c.
 
-	Jeff
+Following fixes the bug and self-test passes, but not sure if it's correct
+(note, copy-paste to 'broken' email client, most likely does not apply etc):
 
+diff --git a/crypto/authenc.c b/crypto/authenc.c
+index 5ef7ba6..2373af5 100644
+--- a/crypto/authenc.c
++++ b/crypto/authenc.c
+@@ -336,7 +336,7 @@ static int crypto_authenc_genicv(struct  
+aead_request *req, u8 *iv,
+                 cryptlen += ivsize;
+         }
+
+-       if (sg_is_last(assoc)) {
++       if (req->assoclen > 0 && sg_is_last(assoc)) {
+                 authenc_ahash_fn = crypto_authenc_ahash;
+                 sg_init_table(asg, 2);
+                 sg_set_page(asg, sg_page(assoc), assoc->length,  
+assoc->offset);
+
+
+Also does crypto_authenc_iverify() need same fix?
+
+-Jussi
+
+> Cheers,
+> --
+> Email: Herbert Xu <herbert@gondor.apana.org.au>
+> Home Page: http://gondor.apana.org.au/~herbert/
+> PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+>
+>
 
 
 
