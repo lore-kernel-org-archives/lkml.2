@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755912Ab2IIXdM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 19:33:12 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51185 "EHLO
+	id S1756151Ab2IIXd3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 19:33:29 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51173 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755269Ab2IIXQK (ORCPT
+	by vger.kernel.org with ESMTP id S1755823Ab2IIXQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 19:16:10 -0400
-Message-Id: <20120909224202.893071204@decadent.org.uk>
+	Sun, 9 Sep 2012 19:16:09 -0400
+Message-Id: <20120909224202.499750447@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 09 Sep 2012 23:43:20 +0100
+Date: Sun, 09 Sep 2012 23:43:17 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jason Wessel <jason.wessel@windriver.com>,
-        Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 90/95] pmac_zilog,kdb: Fix console poll hook to return instead of loop
+        alan@lxorguk.ukuu.org.uk, Asias He <asias@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [ 87/95] virtio-blk: Call del_gendisk() before disable guest kick
 In-Reply-To: <20120909224150.641491654@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,48 +29,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wessel <jason.wessel@windriver.com>
+From: Asias He <asias@redhat.com>
 
-commit 38f8eefccf3a23c4058a570fa2938a4f553cf8e0 upstream.
+commit 02e2b124943648fba0a2ccee5c3656a5653e0151 upstream.
 
-kdb <-> kgdb transitioning does not work properly with this UART
-driver because the get character routine loops indefinitely as opposed
-to returning NO_POLL_CHAR per the expectation of the KDB I/O driver
-API.
+del_gendisk() might not return due to failing to remove the
+/sys/block/vda/serial sysfs entry when another thread (udev) is
+trying to read it.
 
-The symptom is a kernel hang when trying to switch debug modes.
+virtblk_remove()
+  vdev->config->reset() : guest will not kick us through interrupt
+    del_gendisk()
+      device_del()
+        kobject_del(): got stuck, sysfs entry ref count non zero
 
-Cc: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+sysfs_open_file(): user space process read /sys/block/vda/serial
+   sysfs_get_active() : got sysfs entry ref count
+      dev_attr_show()
+        virtblk_serial_show()
+           blk_execute_rq() : got stuck, interrupt is disabled
+                              request cannot be finished
+
+This patch fixes it by calling del_gendisk() before we disable guest's
+interrupt so that the request sent in virtblk_serial_show() will be
+finished and del_gendisk() will success.
+
+This fixes another race in hot-unplug process.
+
+It is save to call del_gendisk(vblk->disk) before
+flush_work(&vblk->config_work) which might access vblk->disk, because
+vblk->disk is not freed until put_disk(vblk->disk).
+
+Cc: virtualization@lists.linux-foundation.org
+Cc: kvm@vger.kernel.org
+Signed-off-by: Asias He <asias@redhat.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/tty/serial/pmac_zilog.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ drivers/block/virtio_blk.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/tty/serial/pmac_zilog.c b/drivers/tty/serial/pmac_zilog.c
-index 654755a..333c8d0 100644
---- a/drivers/tty/serial/pmac_zilog.c
-+++ b/drivers/tty/serial/pmac_zilog.c
-@@ -1348,10 +1348,16 @@ static int pmz_verify_port(struct uart_port *port, struct serial_struct *ser)
- static int pmz_poll_get_char(struct uart_port *port)
- {
- 	struct uart_pmac_port *uap = (struct uart_pmac_port *)port;
-+	int tries = 2;
+diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+index 693187d..1bed517 100644
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -584,13 +584,13 @@ static void __devexit virtblk_remove(struct virtio_device *vdev)
+ 	vblk->config_enable = false;
+ 	mutex_unlock(&vblk->config_lock);
  
--	while ((read_zsreg(uap, R0) & Rx_CH_AV) == 0)
--		udelay(5);
--	return read_zsdata(uap);
-+	while (tries) {
-+		if ((read_zsreg(uap, R0) & Rx_CH_AV) != 0)
-+			return read_zsdata(uap);
-+		if (tries--)
-+			udelay(5);
-+	}
++	del_gendisk(vblk->disk);
 +
-+	return NO_POLL_CHAR;
- }
+ 	/* Stop all the virtqueues. */
+ 	vdev->config->reset(vdev);
  
- static void pmz_poll_put_char(struct uart_port *port, unsigned char c)
+ 	flush_work(&vblk->config_work);
+ 
+-	del_gendisk(vblk->disk);
+-
+ 	/* Abort requests dispatched to driver. */
+ 	spin_lock_irqsave(&vblk->lock, flags);
+ 	while ((vbr = virtqueue_detach_unused_buf(vblk->vq))) {
 
 
