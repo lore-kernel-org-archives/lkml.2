@@ -1,77 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755223Ab2IIAna (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Sep 2012 20:43:30 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:62675 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192Ab2IIAn1 (ORCPT
+	id S1751865Ab2IIB0A (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Sep 2012 21:26:00 -0400
+Received: from server505f.appriver.com ([98.129.35.10]:2290 "EHLO
+	server505.appriver.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751013Ab2IIBZ7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Sep 2012 20:43:27 -0400
-From: Ben Minerds <puzzleduck@gmail.com>
-To: balbi@ti.com
-Cc: puzzleduck@gmail.com, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] usb: gadget: Conform with checkpatch -3 warnings, 1 error
-Date: Sun,  9 Sep 2012 10:50:35 +1000
-Message-Id: <1347151835-19028-1-git-send-email-puzzleduck@gmail.com>
-X-Mailer: git-send-email 1.7.2.5
+	Sat, 8 Sep 2012 21:25:59 -0400
+X-Note-AR-ScanTimeLocal: 9/8/2012 8:25:58 PM
+X-Policy: GLOBAL - coraid.com
+X-Policy: GLOBAL - coraid.com
+X-Policy: GLOBAL - coraid.com
+X-Primary: ecashin@coraid.com
+X-Note: This Email was scanned by AppRiver SecureTide
+X-ALLOW: @coraid.com ALLOWED
+X-Virus-Scan: V-
+X-Note: Spam Tests Failed: 
+X-Country-Path: UNKNOWN->UNITED STATES->UNITED STATES
+X-Note-Sending-IP: 98.129.35.1
+X-Note-Reverse-DNS: smtp.exg5.exghost.com
+X-Note-Return-Path: ecashin@coraid.com
+X-Note: User Rule Hits: 
+X-Note: Global Rule Hits: G285 G286 G287 G288 G292 G293 G304 G395 
+X-Note: Encrypt Rule Hits: 
+X-Note: Mail Class: ALLOWEDSENDER
+X-Note: Headers Injected
+From: Ed Cashin <ecashin@coraid.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
+Date: Sat, 8 Sep 2012 20:25:53 -0500
+Subject: Re: [patch] aoe: cleanup an allocation a bit
+Thread-Topic: [patch] aoe: cleanup an allocation a bit
+Thread-Index: Ac2OKg+2t3mAOyUWR36tdexkKBydzw==
+Message-ID: <F3A3DC24-1380-447B-AA94-A5FADB8D6E43@coraid.com>
+References: <20120908095921.GD608@elgon.mountain>
+In-Reply-To: <20120908095921.GD608@elgon.mountain>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed 3 checkpatch.sh warnings and 1 error in
-drivers/usb/gadget/serial.c.
--sizeof brackets x2
--remove initialise to 0
--pr_warning to pr_warn
+Looks OK to me, thanks.
 
-Signed-off-by: Ben Minerds <puzzleduck@gmail.com>
----
- drivers/usb/gadget/serial.c |    9 ++++-----
- 1 files changed, 4 insertions(+), 5 deletions(-)
+On Sep 7, 2012, at 11:59 PM, "Dan Carpenter" <dan.carpenter@oracle.com> wrote:
 
-diff --git a/drivers/usb/gadget/serial.c b/drivers/usb/gadget/serial.c
-index 665c074..af69cd2 100644
---- a/drivers/usb/gadget/serial.c
-+++ b/drivers/usb/gadget/serial.c
-@@ -101,9 +101,8 @@ static struct usb_device_descriptor device_desc = {
- };
- 
- static struct usb_otg_descriptor otg_descriptor = {
--	.bLength =		sizeof otg_descriptor,
-+	.bLength =		sizeof(otg_descriptor),
- 	.bDescriptorType =	USB_DT_OTG,
--
- 	/* REVISIT SRP-only hardware is possible, although
- 	 * it would not be called "OTG" ...
- 	 */
-@@ -127,7 +126,7 @@ static bool use_acm = true;
- module_param(use_acm, bool, 0);
- MODULE_PARM_DESC(use_acm, "Use CDC ACM, default=yes");
- 
--static bool use_obex = false;
-+static bool use_obex;
- module_param(use_obex, bool, 0);
- MODULE_PARM_DESC(use_obex, "Use CDC OBEX, default=no");
- 
-@@ -175,7 +174,7 @@ static int __init gs_bind(struct usb_composite_dev *cdev)
- 	 */
- 
- 	/* device description: manufacturer, product */
--	snprintf(manufacturer, sizeof manufacturer, "%s %s with %s",
-+	snprintf(manufacturer, sizeof(manufacturer), "%s %s with %s",
- 		init_utsname()->sysname, init_utsname()->release,
- 		gadget->name);
- 	status = usb_string_id(cdev);
-@@ -212,7 +211,7 @@ static int __init gs_bind(struct usb_composite_dev *cdev)
- 		 * things like configuration and altsetting numbering
- 		 * can need hardware-specific attention though.
- 		 */
--		pr_warning("gs_bind: controller '%s' not recognized\n",
-+		pr_warn("gs_bind: controller '%s' not recognized\n",
- 			gadget->name);
- 		device_desc.bcdDevice =
- 			cpu_to_le16(GS_VERSION_NUM | 0x0099);
--- 
-1.7.2.5
-
+> We changed this recently so we can just use kzalloc() here instead of
+> kcalloc(1, ...).  Kernel style prefers sizeof(*t) over sizeof *t.  The
+> kfree(t) is a no-op now as well so that can be removed.
+> 
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> ---
+> Only applies to linux-next.
+> 
+> diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
+> index 5461faa..c0adbbd 100644
+> --- a/drivers/block/aoe/aoecmd.c
+> +++ b/drivers/block/aoe/aoecmd.c
+> @@ -1255,9 +1255,8 @@ addtgt(struct aoedev *d, char *addr, ulong nframes)
+>            "aoe: device addtgt failure; too many targets\n");
+>        return NULL;
+>    }
+> -    t = kcalloc(1, sizeof *t, GFP_ATOMIC);
+> +    t = kzalloc(sizeof(*t), GFP_ATOMIC);
+>    if (!t) {
+> -        kfree(t);
+>        printk(KERN_INFO "aoe: cannot allocate memory to add target\n");
+>        return NULL;
+>    }
