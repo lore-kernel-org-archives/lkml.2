@@ -1,54 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753507Ab2IIOQm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 10:16:42 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:64500 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab2IIOQl (ORCPT
+	id S1753817Ab2IIOXP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 10:23:15 -0400
+Received: from stringer.orebokech.com ([88.190.240.207]:41756 "EHLO
+	stringer.orebokech.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752199Ab2IIOXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 10:16:41 -0400
-From: Sasha Levin <levinsasha928@gmail.com>
-To: ccaulfie@redhat.com, teigland@redhat.com
-Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org, davej@redhat.com,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH] dlm: check the maximum size of a request from user
-Date: Sun,  9 Sep 2012 16:16:58 +0200
-Message-Id: <1347200218-3697-1-git-send-email-levinsasha928@gmail.com>
-X-Mailer: git-send-email 1.7.12
+	Sun, 9 Sep 2012 10:23:13 -0400
+From: Romain Francoise <romain@orebokech.com>
+To: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: Re: Linux 3.6-rc5
+Organization: orebokech dot com
+References: <CA+55aFwnPfdyTTG6WTuhChomg=t9nSS18xracq3iQ3F5+PWOog@mail.gmail.com>
+	<87har7h84h.fsf@silenus.orebokech.com>
+	<20120909155424.862635h7ncykg9s0@www.81.fi>
+Date: Sun, 09 Sep 2012 16:23:11 +0200
+In-Reply-To: <20120909155424.862635h7ncykg9s0@www.81.fi> (Jussi Kivilinna's
+	message of "Sun, 09 Sep 2012 15:54:24 +0300")
+Message-ID: <87wr038ecw.fsf@silenus.orebokech.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-device_write only checks whether the request size is big enough, but it doesn't
-check if the size is too big.
+Jussi Kivilinna <jussi.kivilinna@mbnet.fi> writes:
 
-At that point, it also tries to allocate as much memory as the user has requested
-even if it's too much. This can lead to OOM killer kicking in, or memory corruption
-if (count + 1) overflows.
+> Does reverting e46e9a46386bca8e80a6467b5c643dc494861896 help?
 
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
----
- fs/dlm/user.c | 7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/fs/dlm/user.c b/fs/dlm/user.c
-index eb4ed9b..7ff4985 100644
---- a/fs/dlm/user.c
-+++ b/fs/dlm/user.c
-@@ -503,6 +503,13 @@ static ssize_t device_write(struct file *file, const char __user *buf,
- #endif
- 		return -EINVAL;
- 
-+#ifdef CONFIG_COMPAT
-+	if (count > sizeof(struct dlm_write_request32) + DLM_RESNAME_MAXLEN)
-+#else
-+	if (count > sizeof(struct dlm_write_request) + DLM_RESNAME_MAXLEN)
-+#endif
-+		return -EINVAL;
-+
- 	kbuf = kzalloc(count + 1, GFP_NOFS);
- 	if (!kbuf)
- 		return -ENOMEM;
--- 
-1.7.12
-
+It does, thanks.
