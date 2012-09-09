@@ -1,79 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754205Ab2IIQRu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 12:17:50 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:58346 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751075Ab2IIQRs (ORCPT
+	id S1754409Ab2IIQSd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 12:18:33 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:40446 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751075Ab2IIQSW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 12:17:48 -0400
-X-Originating-IP: 108.223.40.66
-Date: Sun, 9 Sep 2012 09:17:59 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jean Delvare <khali@linux-fr.org>,
-        lm-sensors@lm-sensors.org
-Subject: Re: [PATCH v4] linux/kernel.h: Fix DIV_ROUND_CLOSEST to support
- negative dividends
-Message-ID: <20120909161759.GA7998@roeck-us.net>
-References: <1346425339-17138-1-git-send-email-linux@roeck-us.net>
- <CAMuHMdWT2xKzOY9t05mYTMjmk=-V_XQQ8mZc69eQyrDN99hMuw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdWT2xKzOY9t05mYTMjmk=-V_XQQ8mZc69eQyrDN99hMuw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 9 Sep 2012 12:18:22 -0400
+From: Fabio Baltieri <fabio.baltieri@gmail.com>
+To: Kurt Van Dijck <kurt.van.dijck@eia.be>
+Cc: Oliver Hartkopp <socketcan@hartkopp.net>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Wolfgang Grandegger <wg@grandegger.com>, linux-kernel@vger.kernel.org,
+        linux-can@vger.kernel.org, Fabio Baltieri <fabio.baltieri@gmail.com>
+Subject: [PATCH v2] can: rename LED trigger name on netdev renames
+Date: Sun,  9 Sep 2012 18:17:44 +0200
+Message-Id: <1347207464-2002-1-git-send-email-fabio.baltieri@gmail.com>
+X-Mailer: git-send-email 1.7.10.3
+In-Reply-To: <20120907071934.GB37685@macbook.local>
+References: <20120907071934.GB37685@macbook.local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 09, 2012 at 04:57:34PM +0200, Geert Uytterhoeven wrote:
-> On Fri, Aug 31, 2012 at 5:02 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> > DIV_ROUND_CLOSEST returns a bad result for negative dividends:
-> >         DIV_ROUND_CLOSEST(-2, 2) = 0
-> >
-> > Most of the time this does not matter. However, in the hardware monitoring
-> > subsystem, DIV_ROUND_CLOSEST is sometimes used on integers which can be
-> > negative (such as temperatures).
-> 
-> This seems to cause 3 new warnings in my m68k builds of v3.6-rc5:
-> 
-> drivers/hwmon/mcp3021.c:76: warning: comparison is always true due to
-> limited range of data type
-> drivers/ide/ide-cd.c:1158: warning: comparison is always true due to
-> limited range of data type
-> drivers/ide/ide-cd.c:1159: warning: comparison is always true due to
-> limited range of data type
-> 
-> $ m68k-linux-gnu-gcc -v
-> Using built-in specs.
-> Target: m68k-linux-gnu
-> Configured with: ../src/configure -v --enable-languages=c,c++
-> --prefix=/usr --enable-shared --with-system-zlib --libexecdir=/usr/lib
-> --without-included-gettext --enable-threads=posix --enable-nls
-> --with-gxx-include-dir=/usr/m68k-linux-gnu/include/c++/4.1.2
-> --program-suffix=-4.1 --enable-__cxa_atexit --enable-clocale=gnu
-> --enable-libstdcxx-debug --disable-libssp --disable-werror
-> --enable-checking=release --program-prefix=m68k-linux-gnu-
-> --includedir=/usr/m68k-linux-gnu/include --build=x86_64-linux-gnu
-> --host=x86_64-linux-gnu --target=m68k-linux-gnu
-> Thread model: posix
-> gcc version 4.1.2 20061115 (prerelease) (Ubuntu 4.1.1-21)
-> 
-Hi Gert,
+From: Kurt Van Dijck <kurt.van.dijck@eia.be>
 
-The "always true" condition is on purpose to cause the compiler to optimize the
-expression away. I don't see the warnings myself, on none of the targets I am
-building (x86, ppc, arm, mips), but then I am using much more recent compiler
-versions. Odd is that you only see the warnings on "u16" and not elsewhere.
+The LED trigger name for CAN devices is based on the initial
+CAN device name, but does never change. The LED trigger name
+is not guaranteed to be unique in case of hotplugging CAN devices.
 
-I don't immediately see the warnings with a more recent m68k compiler (4.6.3),
-nor with any other target (x86, ppc, arm, mips) in my nightly builds.
-Can you send me your configuration ?
-Also, do you know where I can find the Ubuntu/Debian package for your compiler
-version, by any chance ?
+This patch tries to address this problem by modifying the
+LED trigger name according to the CAN device name when
+the latter changes.
 
-Thanks,
-Guenter
+This patch is meant as illustration only.
+In case of VCAN device rename, a segmentation fault will occur.
+
+v1 - Kurt Van Dijck
+v2 - Fabio Baltieri
+- remove rename blocking if trigger is bound
+- use led-subsystem function for the actual rename (still WiP)
+- call init/exit functions from dev.c
+
+Signed-off-by: Kurt Van Dijck <kurt.van.dijck@eia.be>
+Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
+---
+
+Hi Kurt,
+
+I like the can_priv_safe() idea, so I allowed myself to write a v2 of your
+patch (hope you are ok with that - let me know if you think I should just post
+a diff) to address the other issues I found and bring back the discussion.
+
+So, that's what I changed:
+
+- remove device rename blocking if trigger is bound: I don't think it's needed
+  as we can just rename the trigger and everyone should be happy.  Besides that
+  I don't like the idea of using list lock outside led-triggers.
+
+- use led_trigger_rename_static to rename the LED: the actual implementation is
+  a locked strcpy to prevent races, I just posted the patch in the linux-leds
+  mailing list, so this patch depends on wether that would be accepted.
+  Link: http://marc.info/?l=linux-kernel&m=134720454513067&w=2
+
+- call init/exit functions from dev.c: that fixes builds as a module.  I also
+  renamed functions to can_led_notifier_{init,exit} to avoid confusion with
+  devm_can_led_init.
+
+- left a TODO marker for you for a candev-safe v3 version :-)
+
+As this is starting to look like a jam of patches, I pushed my working branch,
+based upon Marc's can-next/led-trigger on:
+
+git://github.com/fabiobaltieri/linux.git can-leds-devel
+
+Let me know what you think of it.
+
+Fabio
+
+ drivers/net/can/dev.c   |  5 +++++
+ drivers/net/can/led.c   | 46 ++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/can/led.h |  9 +++++++++
+ 3 files changed, 60 insertions(+)
+
+diff --git a/drivers/net/can/dev.c b/drivers/net/can/dev.c
+index 963e2cc..f738841 100644
+--- a/drivers/net/can/dev.c
++++ b/drivers/net/can/dev.c
+@@ -25,6 +25,7 @@
+ #include <linux/can.h>
+ #include <linux/can/dev.h>
+ #include <linux/can/netlink.h>
++#include <linux/can/led.h>
+ #include <net/rtnetlink.h>
+ 
+ #define MOD_DESC "CAN device driver interface"
+@@ -799,6 +800,8 @@ static __init int can_dev_init(void)
+ {
+ 	int err;
+ 
++	can_led_notifier_init();
++
+ 	err = rtnl_link_register(&can_link_ops);
+ 	if (!err)
+ 		printk(KERN_INFO MOD_DESC "\n");
+@@ -810,6 +813,8 @@ module_init(can_dev_init);
+ static __exit void can_dev_exit(void)
+ {
+ 	rtnl_link_unregister(&can_link_ops);
++
++	can_led_notifier_exit();
+ }
+ module_exit(can_dev_exit);
+ 
+diff --git a/drivers/net/can/led.c b/drivers/net/can/led.c
+index eaa14ac..43ebd47 100644
+--- a/drivers/net/can/led.c
++++ b/drivers/net/can/led.c
+@@ -12,6 +12,7 @@
+ #include <linux/slab.h>
+ #include <linux/netdevice.h>
+ #include <linux/can/dev.h>
++#include <linux/if_arp.h>
+ 
+ #include <linux/can/led.h>
+ 
+@@ -87,3 +88,48 @@ void devm_can_led_init(struct net_device *netdev)
+ 	devres_add(&netdev->dev, res);
+ }
+ EXPORT_SYMBOL_GPL(devm_can_led_init);
++
++/*
++ * NETDEV rename notifier to rename the associated led triggers too
++ */
++static int can_led_notifier(struct notifier_block *nb, unsigned long msg,
++			void *data)
++{
++	struct net_device *netdev = (struct net_device *)data;
++	struct can_priv *priv = netdev_priv(netdev);
++	char name[CAN_LED_NAME_SZ];
++
++	if (!net_eq(dev_net(netdev), &init_net))
++		return NOTIFY_DONE;
++
++	if (netdev->type != ARPHRD_CAN)
++		return NOTIFY_DONE;
++
++	if (msg != NETDEV_CHANGENAME)
++		return NOTIFY_DONE;
++
++	/* TODO: make sure we are can-dev safe */
++
++	snprintf(name, sizeof(name), "%s-tx", netdev->name);
++	led_trigger_rename_static(name, priv->tx_led_trig);
++
++	snprintf(name, sizeof(name), "%s-rx", netdev->name);
++	led_trigger_rename_static(name, priv->rx_led_trig);
++
++	return NOTIFY_DONE;
++}
++
++/* notifier block for netdevice event */
++static struct notifier_block can_netdev_notifier __read_mostly = {
++	.notifier_call = can_led_notifier,
++};
++
++int __init can_led_notifier_init(void)
++{
++	return register_netdevice_notifier(&can_netdev_notifier);
++}
++
++void __exit can_led_notifier_exit(void)
++{
++	unregister_netdevice_notifier(&can_netdev_notifier);
++}
+diff --git a/include/linux/can/led.h b/include/linux/can/led.h
+index 12d5549..9c1167b 100644
+--- a/include/linux/can/led.h
++++ b/include/linux/can/led.h
+@@ -26,6 +26,8 @@ enum can_led_event {
+ 
+ void can_led_event(struct net_device *netdev, enum can_led_event event);
+ void devm_can_led_init(struct net_device *netdev);
++int __init can_led_notifier_init(void);
++void __exit can_led_notifier_exit(void);
+ 
+ #else
+ 
+@@ -36,6 +38,13 @@ static inline void can_led_event(struct net_device *netdev,
+ static inline void devm_can_led_init(struct net_device *netdev)
+ {
+ }
++static inline int can_led_notifier_init(void)
++{
++	return 0;
++}
++static inline void can_led_notifier_exit(void)
++{
++}
+ 
+ #endif
+ 
+-- 
+1.7.11.rc1.9.gf623ca1.dirty
+
