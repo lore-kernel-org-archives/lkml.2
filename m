@@ -1,151 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932119Ab2IJQDc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 12:03:32 -0400
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:44546 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757539Ab2IJQDa (ORCPT
+	id S1758025Ab2IJQEP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 12:04:15 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:51739 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757998Ab2IJQEL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 12:03:30 -0400
-Date: Mon, 10 Sep 2012 18:58:57 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Felipe Balbi <balbi@ti.com>, Vaibhav Hiremath <hvaibhav@ti.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, rob@landley.net, b-cousson@ti.com,
-        linux@arm.linux.org.uk, gregkh@linuxfoundation.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        Paul Walmsley <paul@pwsan.com>
-Subject: Re: [PATCH 1/3] arm: omap: hwmod: add a new addr space in otg for
- writing to control module
-Message-ID: <20120910155855.GE7464@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1346943331-18120-1-git-send-email-kishon@ti.com>
- <1346943331-18120-2-git-send-email-kishon@ti.com>
- <5048C2A2.2020104@ti.com>
- <20120906171301.GC17754@arwen.pp.htv.fi>
- <20120906171803.GA30717@arwen.pp.htv.fi>
- <20120906195607.GB1303@atomide.com>
+	Mon, 10 Sep 2012 12:04:11 -0400
+Message-ID: <504E0F5D.7040803@xenotime.net>
+Date: Mon, 10 Sep 2012 09:03:41 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jTMWTj4UTAEmbWeb"
-Content-Disposition: inline
-In-Reply-To: <20120906195607.GB1303@atomide.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
+        Mike Lockwood <lockwood@android.com>
+Subject: [PATCH -next] staging: fix ccg build when NET is not enabled
+References: <20120910172407.c5ad953c008165fcd862bd3c@canb.auug.org.au>
+In-Reply-To: <20120910172407.c5ad953c008165fcd862bd3c@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Randy Dunlap <rdunlap@xenotime.net>
 
---jTMWTj4UTAEmbWeb
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Fix build errors in ccg when CONFIG_NET is not enabled
+by adding "depends on NET":
 
-Hi,
+ERROR: "netif_carrier_on" [drivers/staging/ccg/g_ccg.ko] undefined!
+ERROR: "netif_carrier_off" [drivers/staging/ccg/g_ccg.ko] undefined!
+ERROR: "skb_realloc_headroom" [drivers/staging/ccg/g_ccg.ko] undefined!
+ERROR: "skb_trim" [drivers/staging/ccg/g_ccg.ko] undefined!
+ERROR: "netif_rx" [drivers/staging/ccg/g_ccg.ko] undefined!
+ERROR: "ethtool_op_get_link" [drivers/staging/ccg/g_ccg.ko] undefined!
+ERROR: "free_netdev" [drivers/staging/ccg/g_ccg.ko] undefined!
+ERROR: "register_netdev" [drivers/staging/ccg/g_ccg.ko] undefined!
+ERROR: "skb_push" [drivers/staging/ccg/g_ccg.ko] undefined!
+ERROR: "skb_pull" [drivers/staging/ccg/g_ccg.ko] undefined!
+ERROR: "dev_kfree_skb_any" [drivers/staging/ccg/g_ccg.ko] undefined!
+ERROR: "skb_queue_tail" [drivers/staging/ccg/g_ccg.ko] undefined!
+ERROR: "__alloc_skb" [drivers/staging/ccg/g_ccg.ko] undefined!
+ERROR: "eth_type_trans" [drivers/staging/ccg/g_ccg.ko] undefined!
+ERROR: "eth_validate_addr" [drivers/staging/ccg/g_ccg.ko] undefined!
+ERROR: "skb_dequeue" [drivers/staging/ccg/g_ccg.ko] undefined!
+ERROR: "unregister_netdev" [drivers/staging/ccg/g_ccg.ko] undefined!
+ERROR: "__netif_schedule" [drivers/staging/ccg/g_ccg.ko] undefined!
+ERROR: "skb_put" [drivers/staging/ccg/g_ccg.ko] undefined!
+ERROR: "eth_mac_addr" [drivers/staging/ccg/g_ccg.ko] undefined!
+ERROR: "dev_get_stats" [drivers/staging/ccg/g_ccg.ko] undefined!
+ERROR: "alloc_etherdev_mqs" [drivers/staging/ccg/g_ccg.ko] undefined!
 
-On Thu, Sep 06, 2012 at 12:56:07PM -0700, Tony Lindgren wrote:
-> * Felipe Balbi <balbi@ti.com> [120906 10:23]:
-> > Hi,
-> >=20
-> > On Thu, Sep 06, 2012 at 08:13:03PM +0300, Felipe Balbi wrote:
-> > > Hi,
-> > >=20
-> > > On Thu, Sep 06, 2012 at 09:04:58PM +0530, Vaibhav Hiremath wrote:
-> > > >=20
-> > > >=20
-> > > > On 9/6/2012 8:25 PM, Kishon Vijay Abraham I wrote:
-> > > > > The mailbox register for usb otg in omap is present in control mo=
-dule.
-> > > > > On detection of any events VBUS or ID, this register should be wr=
-itten
-> > > > > to send the notification to musb core.
-> > > > >=20
-> > > > > Till we have a separate control module driver to write to control=
- module,
-> > > > > omap2430 will handle the register writes to control module by its=
-elf. So
-> > > > > a new address space to represent this control module register is =
-added
-> > > > > to usb_otg_hs.
-> > > > >=20
-> > > > > Cc: Benoit Cousson <b-cousson@ti.com>
-> > > > > Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> > > > > ---
-> > > > >  arch/arm/mach-omap2/omap_hwmod_44xx_data.c |    5 +++++
-> > > > >  1 file changed, 5 insertions(+)
-> > > > >=20
-> > > > > diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/ar=
-m/mach-omap2/omap_hwmod_44xx_data.c
-> > > > > index 242aee4..02341bc 100644
-> > > > > --- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-> > > > > +++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-> > > > > @@ -5890,6 +5890,11 @@ static struct omap_hwmod_addr_space omap44=
-xx_usb_otg_hs_addrs[] =3D {
-> > > > >  		.pa_end		=3D 0x4a0ab003,
-> > > > >  		.flags		=3D ADDR_TYPE_RT
-> > > > >  	},
-> > > > > +	{
-> > > > > +		.pa_start	=3D 0x4a00233c,
-> > > > > +		.pa_end		=3D 0x4a00233f,
-> > > > > +		.flags		=3D ADDR_TYPE_RT
-> > > > > +	},
-> > > >=20
-> > > > I do not have any objection/comment here, but I believe this is con=
-trol
-> > > > module address space required for USB module, right?
-> > > > I am not sure this is right way of accessing control module space.
-> > > > Actually Control Module Access required for drivers is one of the
-> > > > blocking issue we have currently.
-> > > >=20
-> > > > Also there was some effort put up by 'Konstantine' to convert Contr=
-ol
-> > > > module to MFD driver, I haven't seen any further update on it. But =
-it
-> > > > would be good to check with him.
-> > >=20
-> > > this was an agreement with Benoit since we already lost a couple merge
-> > > windows for this patchset. We agreed to wait until -rc4 for SCM driver
-> > > and if it wasn't ready, we'd go ahead with this and SCM author would =
-fix
-> > > it up on a patch converting users to new SCM driver.
-> >=20
-> > Tony, can I get your Acked-by to this patch so I can take it together
-> > with the rest of the series ? Thanks
-> >=20
-> > ps: I'll apply this to my 'musb' branch which is immutable, so it's safe
-> > to merge it into your tree once I apply.
->=20
-> It would be best if this got acked by Benoit and Paul as they may
-> have some other patches queued up. I'll ack if they ack ;)
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Greg Kroah-Hartmann <gregkh@linuxfoundation.org>
+Cc: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+Cc: Mike Lockwood <lockwood@android.com>
+---
+ drivers/staging/ccg/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Benoit, care to ack this patch ???
-
---=20
-balbi
-
---jTMWTj4UTAEmbWeb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQTg4/AAoJEIaOsuA1yqRE7zAP/RO0b4XBvSmE8x5gLybuuBBr
-roR9MNm8mQQFSPY3ZtyRBeIp8DeUUDsyUnNx30mtdSZ0k+hcWCknxhpApcJCGxy0
-TrSEvhTZUJuClmj9uw8l01yTQhgyp2xiwln46NSqGwa/TyOewMDD4SoyiWFED3Xu
-mHGQXcc+GeVRJqlZwqKCu26YiVrWem5kK1hTBIL+bInhwOTEaL7CluToHT0ckMk3
-/GBnDh7UHPPdMajP/VkcTth3F0+DO5nhK8b57AOJmwrUu4aPvxeEqwSvIB65efEl
-rz0AaHkgyu0GaHPpnZflYcy2O4N3ce4/839j/W16wyxAHNjQJuixvFw9UBQnKUvo
-m3d7WR1ENLFJpCmouIdHnOYjzlZ3JGtMaFurco0KH8iy0vncKfGh/nLQrxm0XoGD
-yyCZ2NWwGj9oV9VoicVyX5Mm+8wQu6FEArF4zdSxUT2US4EOhtB5PatmaDvdNn8o
-FX96lQHqCCvMbPWcHbJXN+0/IL3LKsPuEpjI/T7VRQTGUEcylnczZlNEjalJShwQ
-ALRiEpHA7kFhBGdep6mGWpYoGMxYjZzF/nsgNT3XxzKfDrGf2uHnR/UyorcEjlnC
-bEbzKYXsc/7FraPhct6fW0g361FqAdAIS0MWIUj5MbZ79NNgwJdVLaJ3j65B2wPX
-DcYlQew45jmaJO8KwbTL
-=z0wz
------END PGP SIGNATURE-----
-
---jTMWTj4UTAEmbWeb--
+--- linux-next-20120910.orig/drivers/staging/ccg/Kconfig
++++ linux-next-20120910/drivers/staging/ccg/Kconfig
+@@ -2,7 +2,7 @@ if USB_GADGET
+ 
+ config USB_G_CCG
+ 	tristate "Configurable Composite Gadget (STAGING)"
+-	depends on STAGING && BLOCK && !USB_ZERO && !USB_ZERO_HNPTEST && !USB_AUDIO && !GADGET_UAC1 && !USB_ETH && !USB_ETH_RNDIS && !USB_ETH_EEM && !USB_G_NCM && !USB_GADGETFS && !USB_FUNCTIONFS && !USB_FUNCTIONFS_ETH && !USB_FUNCTIONFS_RNDIS && !USB_FUNCTIONFS_GENERIC && !USB_FILE_STORAGE && !USB_FILE_STORAGE_TEST && !USB_MASS_STORAGE && !USB_G_SERIAL && !USB_MIDI_GADGET && !USB_G_PRINTER && !USB_CDC_COMPOSITE && !USB_G_NOKIA && !USB_G_ACM_MS && !USB_G_MULTI && !USB_G_MULTI_RNDIS && !USB_G_MULTI_CDC && !USB_G_HID && !USB_G_DBGP && !USB_G_WEBCAM
++	depends on STAGING && BLOCK && NET && !USB_ZERO && !USB_ZERO_HNPTEST && !USB_AUDIO && !GADGET_UAC1 && !USB_ETH && !USB_ETH_RNDIS && !USB_ETH_EEM && !USB_G_NCM && !USB_GADGETFS && !USB_FUNCTIONFS && !USB_FUNCTIONFS_ETH && !USB_FUNCTIONFS_RNDIS && !USB_FUNCTIONFS_GENERIC && !USB_FILE_STORAGE && !USB_FILE_STORAGE_TEST && !USB_MASS_STORAGE && !USB_G_SERIAL && !USB_MIDI_GADGET && !USB_G_PRINTER && !USB_CDC_COMPOSITE && !USB_G_NOKIA && !USB_G_ACM_MS && !USB_G_MULTI && !USB_G_MULTI_RNDIS && !USB_G_MULTI_CDC && !USB_G_HID && !USB_G_DBGP && !USB_G_WEBCAM
+ 	help
+ 	  The Configurable Composite Gadget supports multiple USB
+ 	  functions: acm, mass storage, rndis and FunctionFS.
