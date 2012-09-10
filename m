@@ -1,97 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756776Ab2IJB4K (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 21:56:10 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:19495 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756700Ab2IJB4C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 21:56:02 -0400
-X-IronPort-AV: E=Sophos;i="4.80,396,1344182400"; 
-   d="scan'208";a="5810196"
-Message-ID: <504D4A08.7090602@cn.fujitsu.com>
-Date: Mon, 10 Sep 2012 10:01:44 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1756816Ab2IJB4P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 21:56:15 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49444 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756700Ab2IJB4M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Sep 2012 21:56:12 -0400
+Date: Mon, 10 Sep 2012 09:56:01 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Yunfan Zhang <yfzhang@marvell.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] regulator: Fairchild fan53555 support
+Message-ID: <20120910015559.GA18071@opensource.wolfsonmicro.com>
+References: <4737A960563B524DA805CA602BE04B3064CC590645@SC-VEXCH2.marvell.com>
 MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
-        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
-        cl@linux.com, minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com
-Subject: Re: [RFC v8 PATCH 00/20] memory-hotplug: hot-remove physical memory
-References: <1346148027-24468-1-git-send-email-wency@cn.fujitsu.com> <20120831134956.fec0f681.akpm@linux-foundation.org> <504D467D.2080201@jp.fujitsu.com>
-In-Reply-To: <504D467D.2080201@jp.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/10 09:55:29,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/10 09:55:30,
-	Serialize complete at 2012/09/10 09:55:30
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4737A960563B524DA805CA602BE04B3064CC590645@SC-VEXCH2.marvell.com>
+X-Cookie: Long life is in store for you.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 09/10/2012 09:46 AM, Yasuaki Ishimatsu Wrote:
-> Hi Wen,
-> 
-> 2012/09/01 5:49, Andrew Morton wrote:
->> On Tue, 28 Aug 2012 18:00:07 +0800
->> wency@cn.fujitsu.com wrote:
->>
->>> This patch series aims to support physical memory hot-remove.
->>
->> Have you had much review and testing feedback yet?
->>
->>> The patches can free/remove the following things:
->>>
->>>    - acpi_memory_info                          : [RFC PATCH 4/19]
->>>    - /sys/firmware/memmap/X/{end, start, type} : [RFC PATCH 8/19]
->>>    - iomem_resource                            : [RFC PATCH 9/19]
->>>    - mem_section and related sysfs files       : [RFC PATCH 10-11,
->>> 13-16/19]
->>>    - page table of removed memory              : [RFC PATCH 12/19]
->>>    - node and related sysfs files              : [RFC PATCH 18-19/19]
->>>
->>> If you find lack of function for physical memory hot-remove, please
->>> let me
->>> know.
->>
-> 
->> I doubt if many people have hardware which permits physical memory
->> removal?  How would you suggest that people with regular hardware can
->> test these chagnes?
-> 
-> How do you test the patch? As Andrew says, for hot-removing memory,
-> we need a particular hardware. I think so too. So many people may want
-> to know how to test the patch.
-> If we apply following patch to kvm guest, can we hot-remove memory on
-> kvm guest?
-> 
-> http://lists.gnu.org/archive/html/qemu-devel/2012-07/msg01389.html
+On Sat, Sep 08, 2012 at 03:52:18AM -0700, Yunfan Zhang wrote:
+> This driver supports Fairchild FAN53555 Digitally Programmable
+> TinyBuck Regulator. The FAN53555 is a step-down switching voltage
+> regulator that delivers a digitally programmable output from an
+> input voltage supply of 2.5V to 5.5V. The output voltage is
+> programmed through an I2C interface.
 
-Yes, if we apply this patchset, we can test hot-remove memory on kvm guest.
-But that patchset doesn't implement _PS3, so there is some restriction.
-
-Thanks
-Wen Congyang
-
-> 
-> Thanks,
-> Yasuaki Ishimatsu
-> 
->>
->>> Known problems:
->>> 1. memory can't be offlined when CONFIG_MEMCG is selected.
->>
->> That's quite a problem!  Do you have a description of why this is the
->> case, and a plan for fixing it?
->>
-> 
-> 
-> 
-
+Applied, thanks.
