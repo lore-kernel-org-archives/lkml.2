@@ -1,104 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758244Ab2IJTNm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 15:13:42 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:55762 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758189Ab2IJTNl (ORCPT
+	id S1758269Ab2IJTNz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 15:13:55 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:52161 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758189Ab2IJTNw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 15:13:41 -0400
-Message-ID: <504E3B0F.6060108@linux.vnet.ibm.com>
-Date: Tue, 11 Sep 2012 00:40:07 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Srikar Dronamraju <srikar@linux.vnet.ibm.com>, habanero@linux.vnet.ibm.com,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
-        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
-        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
-        Gleb Natapov <gleb@redhat.com>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
-Subject: Re: [RFC][PATCH] Improving directed yield scalability for PLE handler
-References: <20120718133717.5321.71347.sendpatchset@codeblue.in.ibm.com> <500D2162.8010209@redhat.com> <1347023509.10325.53.camel@oc6622382223.ibm.com> <504A37B0.7020605@linux.vnet.ibm.com> <1347046931.7332.51.camel@oc2024037011.ibm.com> <20120908084345.GU30238@linux.vnet.ibm.com> <1347283005.10325.55.camel@oc6622382223.ibm.com> <1347293035.2124.22.camel@twins>	 <20120910165653.GA28033@linux.vnet.ibm.com> <1347297124.2124.42.camel@twins>
-In-Reply-To: <1347297124.2124.42.camel@twins>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 10 Sep 2012 15:13:52 -0400
+Date: Mon, 10 Sep 2012 20:18:10 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>,
+        Arve =?UTF-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+        Colin Cross <ccross@android.com>, Brian Swetland <swetland@google.com>,
+        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com,
+        kgdb-bugreport@lists.sourceforge.net, linux-serial@vger.kernel.org
+Subject: Re: [PATCH 06/14] tty/serial/core: Introduce poll_init callback
+Message-ID: <20120910201810.409a58ea@pyramind.ukuu.org.uk>
+In-Reply-To: <20120910175725.GA13673@lizard>
+References: <20120910040802.GA1261@lizard>
+	<20120910041335.GF29537@lizard>
+	<20120910121320.03c9dfc7@pyramind.ukuu.org.uk>
+	<20120910175725.GA13673@lizard>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-x-cbid: 12091019-5490-0000-0000-0000021C8DEB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2012 10:42 PM, Peter Zijlstra wrote:
-> On Mon, 2012-09-10 at 22:26 +0530, Srikar Dronamraju wrote:
->>> +static bool __yield_to_candidate(struct task_struct *curr, struct task_struct *p)
->>> +{
->>> +     if (!curr->sched_class->yield_to_task)
->>> +             return false;
->>> +
->>> +     if (curr->sched_class != p->sched_class)
->>> +             return false;
->>
->>
->> Peter,
->>
->> Should we also add a check if the runq has a skip buddy (as pointed out
->> by Raghu) and return if the skip buddy is already set.
->
-> Oh right, I missed that suggestion.. the performance improvement went
-> from 81% to 139% using this, right?
->
-> It might make more sense to keep that separate, outside of this
-> function, since its not a strict prerequisite.
->
->>>
->>> +     if (task_running(p_rq, p) || p->state)
->>> +             return false;
->>> +
->>> +     return true;
->>> +}
->
->
->>> @@ -4323,6 +4340,10 @@ bool __sched yield_to(struct task_struct *p,
->> bool preempt)
->>>        rq = this_rq();
->>>
->>>   again:
->>> +     /* optimistic test to avoid taking locks */
->>> +     if (!__yield_to_candidate(curr, p))
->>> +             goto out_irq;
->>> +
->
-> So add something like:
->
-> 	/* Optimistic, if we 'raced' with another yield_to(), don't bother */
-> 	if (p_rq->cfs_rq->skip)
-> 		goto out_irq;
->>
->>
->>>        p_rq = task_rq(p);
->>>        double_rq_lock(rq, p_rq);
->>
->>
-> But I do have a question on this optimization though,.. Why do we check
-> p_rq->cfs_rq->skip and not rq->cfs_rq->skip ?
->
-> That is, I'd like to see this thing explained a little better.
->
-> Does it go something like: p_rq is the runqueue of the task we'd like to
-> yield to, rq is our own, they might be the same. If we have a ->skip,
-> there's nothing we can do about it, OTOH p_rq having a ->skip and
-> failing the yield_to() simply means us picking the next VCPU thread,
-> which might be running on an entirely different cpu (rq) and could
-> succeed?
->
+> > What stops a parallel open or close changing ASYNC_INITIALIZED after you
+> > test and before you lock ?
+> 
+> Yeah, I should do the whole thing under the mutex.
 
-Yes, That is the intention (mean checking  p_rq->cfs->skip). Though we
-may be overdoing this check in the scenario when multiple vcpus of same
-VM pinned to same CPU.
+Can you use test_bit() as well. I'm trying to gradually push all the code
+that way so people habitually use set_bit() and we don't get any (more)
+races where some compile situations and architectures otherwise create
 
-I am testing the above patch. Hope to be able to get back with the
-results tomorrow.
+	load to register
+	register ored with constant
+	write back
 
+> Not related to this particular issue, but the fact that close() can powerdown
+> the hardware is quite bad. Today it is always possible to use open,close
+> sequence on /dev/ttyXXXX, and polling would break if close() deinitializes the
+> hardware (e.g. via uart_change_pm()).
+
+One of the long term goals of tty_port has always ben to have an object
+with the lifetime of the physical port so this kind of thing can be fixed.
+
+> In console= case, serial core handles the issue via uart_console(), checking if
+> the port is used for console, preventing it to power down the hardware. We can
+> do the same, or make tty_find_polling_driver() refcount individual ports/lines.
+> But the issue is orthogonal to this particular patch, although needs to be
+> fixed some day.
+
+Agreed - however you'll need a separate refcount than the main tty one
+for this, because we still need to do a hangup() on the final "tty" close
+even if the hardware is 'pinned' for a debugger.
+
+Alan
