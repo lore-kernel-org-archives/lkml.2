@@ -1,60 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757431Ab2IJPHX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 11:07:23 -0400
-Received: from shutemov.name ([176.9.204.213]:58626 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751485Ab2IJPHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 11:07:18 -0400
-Date: Mon, 10 Sep 2012 18:07:47 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 10/10] thp: implement refcounting for huge zero page
-Message-ID: <20120910150747.GA23556@shutemov.name>
-References: <1347282813-21935-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1347282813-21935-11-git-send-email-kirill.shutemov@linux.intel.com>
- <1347285759.1234.1645.camel@edumazet-glaptop>
- <20120910144438.GA31697@otc-wbsnb-06>
- <1347289079.1234.1706.camel@edumazet-glaptop>
+	id S1753324Ab2IJPJQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 11:09:16 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47571 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751674Ab2IJPJM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 11:09:12 -0400
+Date: Mon, 10 Sep 2012 17:09:08 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]NEXT:staging "winbond" Fix typos.
+Message-ID: <20120910150907.GB27388@elf.ucw.cz>
+References: <1346684762-8008-1-git-send-email-justinmattock@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1347289079.1234.1706.camel@edumazet-glaptop>
+In-Reply-To: <1346684762-8008-1-git-send-email-justinmattock@gmail.com>
+X-Warning: Reading this can be dangerous to your mental health.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 04:57:59PM +0200, Eric Dumazet wrote:
-> On Mon, 2012-09-10 at 17:44 +0300, Kirill A. Shutemov wrote:
+On Mon 2012-09-03 08:06:02, Justin P. Mattock wrote:
+> From: "Justin P. Mattock" <justinmattock@gmail.com>
 > 
-> 
-> > Yes, disabling preemption before alloc_pages() and enabling after
-> > atomic_set() looks reasonable. Thanks.
-> 
-> In fact, as alloc_pages(GFP_TRANSHUGE | __GFP_ZERO, HPAGE_PMD_ORDER);
-> might sleep, it would be better to disable preemption after calling it :
+>  Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-Yeah, I've alread thought about that. :)
-
-> zero_page = alloc_pages(GFP_TRANSHUGE | __GFP_ZERO, HPAGE_PMD_ORDER);
-> if (!zero_page)
-> 	return 0;
-> preempt_disable();
-> if (cmpxchg(&huge_zero_pfn, 0, page_to_pfn(zero_page))) {
-> 	preempt_enable();
-> 	__free_page(zero_page);
-> 	goto retry;
-> }
-> atomic_set(&huge_zero_refcount, 2);
-> preempt_enable();
-> 
-> 
+ACK.
 
 -- 
- Kirill A. Shutemov
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
