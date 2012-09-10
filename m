@@ -1,64 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757990Ab2IJXGt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 19:06:49 -0400
+	id S1758069Ab2IJXHB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 19:07:01 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:39365 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755123Ab2IJXGs (ORCPT
+	with ESMTP id S1757539Ab2IJXG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 19:06:48 -0400
-Date: Mon, 10 Sep 2012 16:06:43 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, device-mapper development <dm-devel@redhat.com>,
-        david@fromorbit.com, linux-kernel@vger.kernel.org,
-        linux-bcache@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
-        bharrosh@panasas.com, Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [dm-devel] [PATCH 2/2] block: Avoid deadlocks with bio
- allocation by stacking drivers
-Message-ID: <20120910230643.GC19739@google.com>
-References: <20120910002810.GA23241@moria.home.lan>
- <20120910172210.GC14103@google.com>
- <20120910202435.GG16360@google.com>
- <20120910204010.GA32310@google.com>
- <20120910213349.GH16360@google.com>
- <20120910213710.GA7677@google.com>
- <20120910215633.GA19739@google.com>
- <20120910220910.GB7677@google.com>
- <20120910225057.GA10477@agk-dp.fab.redhat.com>
- <CAOS58YO5puV2iPhwe0vbyEydPnR=eWPStNRm=xEpMeo-TMHCaw@mail.gmail.com>
+	Mon, 10 Sep 2012 19:06:58 -0400
+Date: Mon, 10 Sep 2012 16:06:54 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Lars Ellenberg <lars.ellenberg@linbit.com>
+Cc: Philipp Reisner <philipp.reisner@linbit.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
+        drbd-dev@lists.linbit.com, Kent Overstreet <koverstreet@google.com>,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [Drbd-dev] FLUSH/FUA documentation & code discrepancy
+Message-ID: <20120910230654.GF7677@google.com>
+References: <8439412.RChiDciQdh@fat-tyre>
+ <20120904224620.GB9092@dhcp-172-17-108-109.mtv.corp.google.com>
+ <3029802.oqG0dEY71l@fat-tyre>
+ <20120905084915.GF3195@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120905100724.GA27527@soda.linbit>
+ <20120906212952.GP29092@google.com>
+ <20120907084221.GD7028@soda.linbit>
+ <20120910225442.GE7677@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOS58YO5puV2iPhwe0vbyEydPnR=eWPStNRm=xEpMeo-TMHCaw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120910225442.GE7677@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 04:01:01PM -0700, Tejun Heo wrote:
-> Hello,
+Hello, again.
+
+cc'ing Kent and Vivek.  The original thread is at
+
+  http://thread.gmane.org/gmane.linux.network.drbd.devel/2130
+
+On Mon, Sep 10, 2012 at 03:54:42PM -0700, Tejun Heo wrote:
+> > We can possibly work around that by introducing an additional submitter thread,
+> > or at least our own list where we queue assembled bios until the lower
+> > level device queue drains.
+> > 
+> > But we'd rather have the elevator see the FLUSH/FUA,
+> > and treat them as at least a soft barrier/reorder boundary.
+> > 
+> > I may be wrong here, but all the necessary bits for this seem to be in
+> > place already, if the information would even reach the elevator in one
+> > way or other, and not be completely stripped away early.
+> > 
+> > What would you rather see, the elevator recognizing reorder boundaries?
+> > Or additional higher level queueing and extra thread/work queue/whatever?
+> > 
+> > Both are fine with me, I'm just asking for an opinion.
 > 
-> On Mon, Sep 10, 2012 at 3:50 PM, Alasdair G Kergon <agk@redhat.com> wrote:
-> >> >     Note that this doesn't do anything for allocation from other mempools.
-> >
-> > Note that dm has several cases of this, so this patch should not be used with
-> > dm yet.  Mikulas is studying those cases to see whether anything like this
-> > might be feasible/sensible or not.
-> 
-> IIUC, Kent posted a patch which converts all of them to use front-pad
-> (there's no reason not to, really). This better come after that but
-> it's not like this is gonna break something which isn't broken now.
+> First of all, using FLUSH/FUA for such purpose is an error-prone
+> abuse.  You're trying to exploit an implementation detail which may
+> change at any time.  I think what you want is to be able to specify
+> REQ_SOFTBARRIER on bio submission, which shouldn't be too hard but I'm
+> still lost why this is necessary.  Can you please explain it a bit
+> more?
 
-Not all, I only did the easy one - you know how dm has all those crazy
-abstraction layers? They've got multiple per bio allocations because of
-that; the core dm code does one, and then some other code takes that
-struct dm_io* and allocates its own state pointing to that (which then
-points to the original bio...)
+The problem with exposing REQ_SOFTBARRIER at bio submission is that it
+would require block layer not to reorder bios while passing through
+stacked adrivers until it reaches a rq-based driver.  I *suspect* this
+has been true until now but Kent's pending patch to fix possible
+deadlock issue breaks that.
 
-So front_pad should still work, but you need to have say dm_crypt pass
-the amount of front pad it needs to the core dm code when it creates the
-bio_set, and then dm crypt can use container_of(struct dm_io) and embed
-like everything does that use the bio_set front pad.
+  http://thread.gmane.org/gmane.linux.kernel.bcache.devel/1017/focus=1356250
 
-*I'm probably misremembering all the names.
+As for what the resolution should be, urgh... I don't know. :(
+
+Thanks.
+
+-- 
+tejun
