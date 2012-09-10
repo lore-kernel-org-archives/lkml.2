@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758001Ab2IJPwy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 11:52:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58234 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757547Ab2IJPwv (ORCPT
+	id S932108Ab2IJPzh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 11:55:37 -0400
+Received: from relay.parallels.com ([195.214.232.42]:54075 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752470Ab2IJPzg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 11:52:51 -0400
-Message-ID: <504E0CC9.1040905@redhat.com>
-Date: Mon, 10 Sep 2012 17:52:41 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Mon, 10 Sep 2012 11:55:36 -0400
+Message-ID: <504E0D76.5060905@parallels.com>
+Date: Mon, 10 Sep 2012 19:55:34 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        avi@redhat.com, Sasha Levin <levinsasha928@gmail.com>,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH v2 2/2] virtio-ring: Allocate indirect buffers from cache
- when possible
-References: <1346159043-16446-1-git-send-email-levinsasha928@gmail.com> <1346159043-16446-2-git-send-email-levinsasha928@gmail.com> <20120828132032.GB2039@redhat.com> <503CC904.3050207@gmail.com> <20120829110748.GB5970@redhat.com> <503E2F27.5060904@gmail.com> <20120829153833.GE7407@redhat.com> <503E4873.6060607@gmail.com> <871uigj747.fsf@rustcorp.com.au> <20120906050257.GA17656@redhat.com>
-In-Reply-To: <20120906050257.GA17656@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+CC: Jeff Layton <jlayton@redhat.com>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH v2] SUNRPC: check current nsproxy before set of node name
+ on client creation
+References: <20120813113731.9629.31906.stgit@localhost.localdomain>     <20120813081054.0ee39037@corrin.poochiereds.net>    <4FA345DA4F4AE44899BD2B03EEEC2FA908F90888@SACEXCMBX04-PRD.hq.netapp.com>    <504ADED9.2020607@parallels.com>   <4FA345DA4F4AE44899BD2B03EEEC2FA908F914D4@SACEXCMBX04-PRD.hq.netapp.com>   <504DA833.60301@parallels.com>  <4FA345DA4F4AE44899BD2B03EEEC2FA908F9547B@SACEXCMBX04-PRD.hq.netapp.com>  <504E0930.5050408@parallels.com> <4FA345DA4F4AE44899BD2B03EEEC2FA908F96556@SACEXCMBX04-PRD.hq.netapp.com>
+In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA908F96556@SACEXCMBX04-PRD.hq.netapp.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 06/09/2012 07:02, Michael S. Tsirkin ha scritto:
->> > It might be worth just unconditionally having a cache for the 2
->> > descriptor case.  This is what I get with qemu tap, though for some
->> > reason the device features don't have guest or host CSUM, so my setup is
->> > probably screwed:
-> Yes without checksum net core always linearizes packets, so yes it is
-> screwed.
-> For -net, skb always allocates space for 17 frags + linear part so
-> it seems sane to do same in virtio core, and allocate, for -net,
-> up to max_frags + 1 from cache.
-> We can adjust it: no _SG -> 2 otherwise 18.
-> 
-> Not sure about other drivers, maybe really use 2 there for now.
+10.09.2012 19:41, Myklebust, Trond пишет:
+> On Mon, 2012-09-10 at 19:37 +0400, Stanislav Kinsbursky wrote:
+>> Hi, Trond.
+>> So, if I understand you right, we can create rpc client (or increase usage
+>> counter) on NSMPROC_MON call and destroy (or decrease usage counter) on
+>> NSMPROC_UNMON call.
+>> Will this solution works?
+>
+> The rpc client(s) will need to be per-net-namespace, which complicates
+> matters a little bit, but yes, creation at NSMPROC_MON, and destruction
+> at NSMPROC_UNMON should work.
+>
 
-2 should also be good for virtio-blk and virtio-scsi 4KB random rw
-workloads.
+Not really. We already have per-net Lockd data. So, adding one more 
+reference-counted rpc client doesn't look that complicated.
+Ok, thanks. I'll try to implement this.
 
-Paolo
-
+-- 
+Best regards,
+Stanislav Kinsbursky
