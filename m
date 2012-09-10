@@ -1,85 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757084Ab2IJN6O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 09:58:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58803 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752862Ab2IJN6K (ORCPT
+	id S1757199Ab2IJOAT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 10:00:19 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:37158 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755849Ab2IJOAQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 09:58:10 -0400
-Date: Mon, 10 Sep 2012 10:58:04 -0300
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: Andreas Sturmlechner <andreas.sturmlechner@gmail.com>,
-        stable@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Re: 3.4.10 i915 [GM45] regression
-Message-ID: <20120910135803.GB2972@herton-Z68MA-D2H-B3>
-References: <2372445.fuIXicT4H0@tux200s>
- <20120907011542.GA26688@kroah.com>
- <2329337.9aFzn0oRxF@tux200s>
- <CAKMK7uHqk1x4dM9ZA0usskNoArR6eTFmEtVw+_juzVq1NeYg+A@mail.gmail.com>
+	Mon, 10 Sep 2012 10:00:16 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: "Steven J. Magnani" <steve@digidescorp.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
+        bfields@fieldses.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH v2 1/5] fat: allocate persistent inode numbers
+References: <1346774264-8031-1-git-send-email-linkinjeon@gmail.com>
+	<20120904161747.GJ23464@ZenIV.linux.org.uk>
+	<CAKYAXd_wTxqbC-UxYimCkZtvSddx=f3FG0hoiEY_doMjoxkKog@mail.gmail.com>
+	<87harc34d9.fsf@devron.myhome.or.jp>
+	<CAKYAXd-8aztDe1QiFT=NSQX8J+h_FM+cAWwo+Q+fUQHpNGTctw@mail.gmail.com>
+	<87y5knz6l5.fsf@devron.myhome.or.jp>
+	<CAKYAXd_mxq26bhRYd-YM9OBjYMO12TD4wHxm6PqHBLjgGFHaZg@mail.gmail.com>
+	<CAKYAXd-QtSYy4SQErVTXrxcv=YhFzhOm3PKpj=HoZKmpAG7vGQ@mail.gmail.com>
+	<1347020137.2223.13.camel@iscandar.digidescorp.com>
+	<87oblfpmnb.fsf@devron.myhome.or.jp>
+	<87k3w3ph8d.fsf@devron.myhome.or.jp>
+	<CAKYAXd-k4yVV3h8k0kcFMsyGnOVckYRjXi8fkZrLtjuWVi7Eqw@mail.gmail.com>
+Date: Mon, 10 Sep 2012 23:00:02 +0900
+In-Reply-To: <CAKYAXd-k4yVV3h8k0kcFMsyGnOVckYRjXi8fkZrLtjuWVi7Eqw@mail.gmail.com>
+	(Namjae Jeon's message of "Mon, 10 Sep 2012 21:03:46 +0900")
+Message-ID: <87har6kmfx.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKMK7uHqk1x4dM9ZA0usskNoArR6eTFmEtVw+_juzVq1NeYg+A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 07, 2012 at 11:37:27AM +0200, Daniel Vetter wrote:
-> On Fri, Sep 7, 2012 at 3:57 AM, Andreas Sturmlechner
-> <andreas.sturmlechner@gmail.com> wrote:
-> >> On Fri, Sep 07, 2012 at 02:27:12AM +0200, Andreas Sturmlechner wrote:
-> >> > Hello,
-> >> >
-> >> > please revert commit 0d8957c8a90bbb5d34fab9a304459448a5131e06 - for some
-> >> > reason it breaks boot-up (screen stays blank) on my GM45 hardware despite
-> >> > >= 3.5 being fine.
-> >> >
-> >> > See bug 54575 on freedesktop.org for a full description:
-> >> > https://bugs.freedesktop.org/show_bug.cgi?id=54575
-> >> >
-> >> > No idea how far-spread or not this might be since I couldn't find any
-> >> > other reports of that kind.
-> >>
-> >> Can you cc: this to the people who wrote that patch?  That might help in
-> >> figuring out what is wrong here...
-> 
-> drm/i915 cat-herder here - I have no idea what's going on :( Things
-> seem to work on 3.5, I haven't gotten any regression reports for gm45
-> on 3.5 (and these boxes are rather popular). And all the people who
-> reported issues with this patch on 3.4 had no such problems on 3.5
-> (with the same patch applied).
-> 
-> And I've looked again at the patches in that area and don't see what
-> could be missing. Hence I guess we should just revert this patch from
-> 3.4.
+Namjae Jeon <linkinjeon@gmail.com> writes:
 
-Couldn't it be that it happens because 3.4 doesn't have commits
-b7884eb45ec98c0d34c7f49005ae9d4b4b4e38f6 and
-f01db988ef6f6c70a6cc36ee71e4a98a68901229 applied? May be they are needed
-after all.
+> Yes, It is  true(current VFAT of -mm tree is not stable). Although we
+> set lookupcache=none while mounting, ESTALE error can still occur in
+> rename case.
+> So there still remain ESTALE error issue from rename case on current -mm tree.
+> plz See the step as the following
+> 1. on client write to file.
+> 2. on client, move/rename file.
+> 3. on server, do drop_caches. etc to somehow evict indoe number so
+> that it gets new inode number
+> 4. on client, resume the program to write to file. write will fail
+> (write: Stale NFS file handle)
 
-Andreas, also make sure your hardware in the bios is configured within
-the memory types supported by GM45 (DDR2-667/800, DDR3-800/1066, from
-Intel website listed specifications). I had a similar problem on a G41
-machine with same commit, with a pair of DDR3-1333 memory installed it
-was configured to run at 1333, but the chipset only supports up to 1066,
-when I forced it back to DDR3-1066 in the bios, the problem vanished.
-"Funny" that commit 0d8957c8a9 triggered the issue reliably.
+Since rename() will be disabled on stable ino patches, this will be
+unfixable, so rather maybe it is worse.
 
-> 
-> Thanks, Daniel
-> -- 
-> Daniel Vetter
-> daniel.vetter@ffwll.ch - +41 (0) 79 364 57 48 - http://blog.ffwll.ch
-> --
-> To unsubscribe from this list: send the line "unsubscribe stable" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Did you checked why it returns -ESTALE?  Or rename() issue also is
+unfixable on -mm?
 
+> And ......
+> If we mount NFS with lookupcache=none, FAT file lookup performance is
+> severely dropped.
+> LOOKUP performance is very poor on slow network and slow device. I do
+> not recommend to disable lookup cache on NFS.
+> And that is why reconstructing inode is already implemented in other
+> filesystem (e.g. EXT4, XFS etc..)
+> Currently lookupcache is enabled by default in NFS, it means users
+> already have disclosed and experienced ESTALE issues on NFS over VFAT.
+>
+> I agree wth you to make NFS over VFAT read-only filesystem to avoid all issues.
+> Eventually we can make it writable with rename limitation when we
+> decide that it is pretty stable in mainline.
+> So, I suggest to add 'nfs_ro' mount option instead of 'nfs' option.
+
+-mm seems to be more stable than I thought. As he said, sounds like
+rename() is an only known issue on -mm, true?
+
+And are you tried https://lkml.org/lkml/2012/6/29/381 patches? It sounds
+like to improve performance by enabling lookupcache. I'd like to be
+knowing the critical reason we have to replace it.
+
+Thanks.
 -- 
-[]'s
-Herton
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
