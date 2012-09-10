@@ -1,120 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753593Ab2IJWJw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 18:09:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55917 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751046Ab2IJWJu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 18:09:50 -0400
-Date: Tue, 11 Sep 2012 01:11:11 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Sjur =?iso-8859-1?Q?Br=E6ndeland?= <sjurbren@gmail.com>,
-        Amit Shah <amit.shah@redhat.com>, linux-kernel@vger.kernel.org,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [RFC 1/2] virtio_console: Add support for DMA memory allocation
-Message-ID: <20120910221111.GA21854@redhat.com>
-References: <1346680277-5887-1-git-send-email-sjur.brandeland@stericsson.com>
- <20120903143018.GA5353@redhat.com>
- <CAJK669bkHHMAPYMEr22-6uOwfgJv1uKTbzNBQVVCq=OooExC0g@mail.gmail.com>
- <20120903202737.GD6181@redhat.com>
- <CAJK669ZvnnG6fGOog-Z47B7xqyn9hcx5dAD7S--+2PSgE+hrLA@mail.gmail.com>
- <20120904135022.GI9805@redhat.com>
- <CAJK669Z1UYakBWartChfoeKL_eU5=GFZMGhH8R_Q-difVm0ygQ@mail.gmail.com>
- <20120904185541.GB3602@redhat.com>
- <87k3w7j49i.fsf@rustcorp.com.au>
- <20120906052735.GB17656@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120906052735.GB17656@redhat.com>
+	id S1752165Ab2IJWRs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 18:17:48 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:36164 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751489Ab2IJWRq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 18:17:46 -0400
+From: Irina Tirdea <irina.tirdea@gmail.com>
+To: mingo@redhat.com, acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
+        rostedt@goodmis.org
+Cc: paulus@samba.org, dsahern@gmail.com, namhyung.kim@lge.com,
+        linux-kernel@vger.kernel.org, Irina Tirdea <irina.tirdea@intel.com>
+Subject: [PATCH v3 0/6] Porting perf to Android
+Date: Tue, 11 Sep 2012 01:14:57 +0300
+Message-Id: <1347315303-29906-1-git-send-email-irina.tirdea@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 06, 2012 at 08:27:35AM +0300, Michael S. Tsirkin wrote:
-> On Thu, Sep 06, 2012 at 11:34:25AM +0930, Rusty Russell wrote:
-> > "Michael S. Tsirkin" <mst@redhat.com> writes:
-> > > On Tue, Sep 04, 2012 at 06:58:47PM +0200, Sjur Brændeland wrote:
-> > >> Hi Michael,
-> > >> 
-> > >> > Exactly. Though if we just fail load it will be much less code.
-> > >> >
-> > >> > Generally, using a feature bit for this is a bit of a problem though:
-> > >> > normally driver is expected to be able to simply ignore
-> > >> > a feature bit. In this case driver is required to
-> > >> > do something so a feature bit is not a good fit.
-> > >> > I am not sure what the right thing to do is.
-> > >> 
-> > >> I see - so in order to avoid the binding between driver and device
-> > >> there are two options I guess. Either make virtio_dev_match() or
-> > >> virtcons_probe() fail. Neither of them seems like the obvious choice.
-> > >> 
-> > >> Maybe adding a check for VIRTIO_CONSOLE_F_DMA_MEM match
-> > >> between device and driver in virtcons_probe() is the lesser evil?
-> > >> 
-> > >> Regards,
-> > >> Sjur
-> > >
-> > > A simplest thing to do is change dev id. rusty?
-> > 
-> > For generic usage, this is correct.  But my opinion is that fallback on
-> > feature non-ack is quality-of-implementation issue: great to have, but
-> > there are cases where you just want to fail with "you're too old".
-> > 
-> > And in this case, an old system simply will never work.  So it's a
-> > question of how graceful the failure is.
-> > 
-> > Can your userspace loader can refuse to proceed if the driver doesn't
-> > ack the bits?  If so, it's simpler than a whole new ID.
-> > 
-> > Cheers,
-> > Rusty.
-> 
-> Yes but how can it signal guest that it will never proceed?
-> 
-> Also grep for BUG_ON in core found this:
-> 
->        drv->remove(dev);
-> 
->        /* Driver should have reset device. */
->        BUG_ON(dev->config->get_status(dev));
-> 
-> I think below is what Sjur refers to.
-> I think below is a good idea for 3.6. Thoughts?
-> 
-> --->
-> 
-> virtio: don't crash when device is buggy
-> 
-> Because of a sanity check in virtio_dev_remove, a buggy device can crash
-> kernel.  And in case of rproc it's userspace so it's not a good idea.
-> We are unloading a driver so how bad can it be?
-> Be less aggressive in handling this error: if it's a driver bug,
-> warning once should be enough.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> 
-> --
+This is version 3 for the patches to port perf to Android.
+The patches are on top of current perf/core branch of the tip tree.
 
-Rusty?
+Changes for v3:
+() update patch 3 according to suggestions from Pekka and Peter
+() update patch 6 to replace __used definitions from newly merged code
+() add ack from Pekka
 
-> diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
-> index c3b3f7f..1e8659c 100644
-> --- a/drivers/virtio/virtio.c
-> +++ b/drivers/virtio/virtio.c
-> @@ -159,7 +159,7 @@ static int virtio_dev_remove(struct device *_d)
->  	drv->remove(dev);
->  
->  	/* Driver should have reset device. */
-> -	BUG_ON(dev->config->get_status(dev));
-> +	WARN_ON_ONCE(dev->config->get_status(dev));
->  
->  	/* Acknowledge the device's existence again. */
->  	add_status(dev, VIRTIO_CONFIG_S_ACKNOWLEDGE);
-> 
-> -- 
-> MST
+Changes for v2:
+() dropped the patch that replaced on_exit with at_exit. 
+A better solution is the one in Bernhard's patch [1]
+() dropped one patch and removed unecessary code from patch 02 after
+the removal of unneeded network header files [2]
+() added two more patches in order to build perf in Android (patches 10 and 11)
+() fixed whitespace anc checkpatch issues for patch 12
+() make sure all patches are in txt form and will apply properly
+
+[1] https://lkml.org/lkml/2012/8/23/316
+[2] https://lkml.org/lkml/2012/8/29/150
+
+Irina Tirdea (6):
+  perf tools: include wrapper for magic.h
+  perf tools: update types definitions for Android
+  perf tools: include __WORDSIZE definition
+  perf tools: fix ALIGN redefinition in system headers
+  perf tools: fix no return in non-void function
+  perf tools: Use __maybe_used for unused variables
+
+ tools/lib/traceevent/event-parse.c                 |    8 +-
+ tools/lib/traceevent/event-parse.h                 |    4 +-
+ tools/perf/Makefile                                |    1 +
+ tools/perf/bench/bench.h                           |    3 +-
+ tools/perf/bench/mem-memcpy.c                      |    2 +-
+ tools/perf/bench/mem-memset.c                      |    2 +-
+ tools/perf/bench/sched-messaging.c                 |    2 +-
+ tools/perf/bench/sched-pipe.c                      |    6 +-
+ tools/perf/builtin-annotate.c                      |    2 +-
+ tools/perf/builtin-bench.c                         |    2 +-
+ tools/perf/builtin-buildid-cache.c                 |    7 +-
+ tools/perf/builtin-buildid-list.c                  |    3 +-
+ tools/perf/builtin-diff.c                          |    4 +-
+ tools/perf/builtin-evlist.c                        |    2 +-
+ tools/perf/builtin-help.c                          |    2 +-
+ tools/perf/builtin-inject.c                        |   24 +++--
+ tools/perf/builtin-kmem.c                          |   22 ++--
+ tools/perf/builtin-kvm.c                           |    2 +-
+ tools/perf/builtin-list.c                          |    2 +-
+ tools/perf/builtin-lock.c                          |    4 +-
+ tools/perf/builtin-probe.c                         |   24 ++---
+ tools/perf/builtin-record.c                        |   10 +-
+ tools/perf/builtin-report.c                        |   11 +-
+ tools/perf/builtin-sched.c                         |   69 +++++++------
+ tools/perf/builtin-script.c                        |   29 +++---
+ tools/perf/builtin-stat.c                          |   40 ++++---
+ tools/perf/builtin-test.c                          |    9 +-
+ tools/perf/builtin-timechart.c                     |   30 +++---
+ tools/perf/builtin-top.c                           |    7 +-
+ tools/perf/ui/browser.c                            |    7 +-
+ tools/perf/ui/browsers/annotate.c                  |    6 +-
+ tools/perf/ui/gtk/browser.c                        |    5 +-
+ tools/perf/ui/gtk/setup.c                          |    2 +-
+ tools/perf/ui/gtk/util.c                           |    4 +-
+ tools/perf/ui/helpline.c                           |    2 +-
+ tools/perf/ui/helpline.h                           |    8 +-
+ tools/perf/ui/hist.c                               |   21 ++--
+ tools/perf/ui/tui/setup.c                          |    4 +-
+ tools/perf/util/alias.c                            |    3 +-
+ tools/perf/util/annotate.c                         |    6 +-
+ tools/perf/util/annotate.h                         |   13 +--
+ tools/perf/util/build-id.c                         |   11 +-
+ tools/perf/util/cache.h                            |    6 +-
+ tools/perf/util/callchain.c                        |    6 +-
+ tools/perf/util/cgroup.c                           |    4 +-
+ tools/perf/util/config.c                           |    6 +-
+ tools/perf/util/debug.h                            |    9 +-
+ tools/perf/util/event.c                            |   29 +++---
+ tools/perf/util/event.h                            |    2 +-
+ tools/perf/util/header.c                           |  109 +++++++++++---------
+ tools/perf/util/help.c                             |    3 +-
+ tools/perf/util/hist.c                             |    2 +-
+ tools/perf/util/hist.h                             |   32 +++---
+ tools/perf/util/include/linux/bitops.h             |    4 +
+ tools/perf/util/include/linux/compiler.h           |    8 +-
+ tools/perf/util/include/linux/kernel.h             |   13 ++-
+ tools/perf/util/include/linux/magic.h              |   12 +++
+ tools/perf/util/include/linux/types.h              |    8 ++
+ tools/perf/util/intlist.c                          |    4 +-
+ tools/perf/util/map.h                              |    2 +-
+ tools/perf/util/parse-events-test.c                |    6 +-
+ tools/perf/util/parse-events.c                     |    7 +-
+ tools/perf/util/parse-events.l                     |    2 +-
+ tools/perf/util/parse-events.y                     |    4 +-
+ tools/perf/util/parse-options.c                    |    3 +-
+ tools/perf/util/perf_regs.h                        |    2 +-
+ tools/perf/util/pmu.y                              |    6 +-
+ tools/perf/util/probe-event.c                      |   21 ++--
+ tools/perf/util/probe-finder.c                     |    4 +-
+ tools/perf/util/python.c                           |    8 +-
+ .../perf/util/scripting-engines/trace-event-perl.c |    8 +-
+ .../util/scripting-engines/trace-event-python.c    |   10 +-
+ tools/perf/util/session.c                          |   54 +++++-----
+ tools/perf/util/sort.c                             |   14 ++-
+ tools/perf/util/symbol-minimal.c                   |   28 ++---
+ tools/perf/util/symbol.c                           |    4 +-
+ tools/perf/util/symbol.h                           |    7 +-
+ tools/perf/util/trace-event-parse.c                |    4 +-
+ tools/perf/util/trace-event-scripting.c            |   33 +++---
+ tools/perf/util/unwind.c                           |   36 ++++---
+ tools/perf/util/unwind.h                           |   11 +-
+ tools/perf/util/util.h                             |    2 +-
+ tools/perf/util/wrapper.c                          |    3 +-
+ 83 files changed, 545 insertions(+), 416 deletions(-)
+ create mode 100644 tools/perf/util/include/linux/magic.h
+
+-- 
+1.7.9.5
+
