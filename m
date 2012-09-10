@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757965Ab2IJScZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 14:32:25 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:42577 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757709Ab2IJScX (ORCPT
+	id S932112Ab2IJSfO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 14:35:14 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62494 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757587Ab2IJSfL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 14:32:23 -0400
-Date: Mon, 10 Sep 2012 11:29:41 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Samuel Iglesias =?iso-8859-1?Q?Gons=E1lvez?= 
-	<siglesias@igalia.com>
-Cc: devel@driverdev.osuosl.org, Jens Taprogge <jens.taprogge@taprogge.org>,
-        linux-kernel@vger.kernel.org, industrypack-devel@lists.sourceforge.net
-Subject: Re: [PATCH 01/20] Staging: ipack/bridges/tpci200: Put the TPCI200
- control registers into a struct.
-Message-ID: <20120910182941.GA25400@kroah.com>
-References: <1347267118-9580-1-git-send-email-siglesias@igalia.com>
+	Mon, 10 Sep 2012 14:35:11 -0400
+Date: Mon, 10 Sep 2012 11:35:06 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Khalid Aziz <khalid.aziz@hp.com>
+Cc: Mike Waychison <mikew@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Matthew Garrett <mjg@redhat.com>,
+        Kees Cook <keescook@chromium.org>,
+        "gong.chen@linux.intel.com" <gong.chen@linux.intel.com>,
+        khalid@gonehiking.org
+Subject: Re: [PATCH v2] Add missing attributes to EFI variable attribute
+ print out from sysfs
+Message-ID: <20120910183506.GA25975@kroah.com>
+References: <20120713174216.GA10445@hp.com>
+ <CAGTjWtDyGrVuBXZzdDfbS961cRSQY7eZaEbb9E8HACk5-imiuQ@mail.gmail.com>
+ <CAGTjWtAPKXfA7pOqWEfK2i_HbrtA6_w7+ezZyCo4NG1gBSEhwg@mail.gmail.com>
+ <20120910180335.GA26021@kroah.com>
+ <1347300789.4393.27.camel@lyra>
+ <20120910181855.GA26404@kroah.com>
+ <20120910182914.GA12076@ldl.usa.hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1347267118-9580-1-git-send-email-siglesias@igalia.com>
+In-Reply-To: <20120910182914.GA12076@ldl.usa.hp.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 10:51:39AM +0200, Samuel Iglesias Gonsálvez wrote:
-> From: Jens Taprogge <jens.taprogge@taprogge.org>
+On Mon, Sep 10, 2012 at 12:29:14PM -0600, Khalid Aziz wrote:
+> Some of the EFI variable attributes are missing from print out from
+> /sys/firmware/efi/vars/*/attributes. This patch adds those in. It also
+> updates code to use pre-defined constants for masking current value
+> of attributes.
 > 
-> This saves us from a little pointer arithmetic and cleans up the code a bit.
-> 
-> Signed-off-by: Jens Taprogge <jens.taprogge@taprogge.org>
-> Signed-off-by: Samuel Iglesias Gonsálvez <siglesias@igalia.com>
+> Signed-off-by: Khalid Aziz <khalid.aziz@hp.com>
+> Reviewed-by: Kees Cook <keescook@chromium.org>
+> Acked-by: Matthew Garrett <mjg@redhat.com>
+> Cc: stable@vger.kernel.org
 > ---
->  drivers/staging/ipack/bridges/tpci200.c |   28 +++++++---------------------
->  drivers/staging/ipack/bridges/tpci200.h |   21 +++++++++++++--------
->  2 files changed, 20 insertions(+), 29 deletions(-)
+>  drivers/firmware/efivars.c |   17 ++++++++++++++---
+>  1 file changed, 14 insertions(+), 3 deletions(-)
+> diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+> index 47408e8..d10c987 100644
 
-This patch doesn't apply to my tree for some reason.
+Ah, so close...
 
-Also, all of your patches are in base64 mode, which makes it impossible
-for me to fix them up by hand for issues like this.
+What's with the "Re:" in the Subject"?
 
-Care to redo your series, and fix your email client, and resend them?
+And what happened to the extra line that should be after the diffstat
+and before the "diff --" line?
 
-thanks,
+Third time's a charm?
 
 greg k-h
