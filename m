@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758193Ab2IJXH2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 19:07:28 -0400
-Received: from mga03.intel.com ([143.182.124.21]:25829 "EHLO mga03.intel.com"
+	id S1758059Ab2IJXJc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 19:09:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58990 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755123Ab2IJXHM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 19:07:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,400,1344236400"; 
-   d="scan'208";a="191104304"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH RESEND] USB/host: Cleanup unneccessary irq disable code
-Thread-Topic: [PATCH RESEND] USB/host: Cleanup unneccessary irq disable code
-Thread-Index: AQHNj3+8NrsaPyLWXkq5y7fK1RYEOJeEMngA
-Date: Mon, 10 Sep 2012 23:07:08 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A17BFF0@SHSMSX101.ccr.corp.intel.com>
-References: <1347009599.1119.9.camel@cliu38-desktop-build>
- <20120910180857.GA12223@kroah.com>
-In-Reply-To: <20120910180857.GA12223@kroah.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757284Ab2IJXJa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 19:09:30 -0400
+Date: Tue, 11 Sep 2012 00:09:17 +0100
+From: Alasdair G Kergon <agk@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Kent Overstreet <koverstreet@google.com>, axboe@kernel.dk,
+        device-mapper development <dm-devel@redhat.com>, david@fromorbit.com,
+        linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
+        Mikulas Patocka <mpatocka@redhat.com>, bharrosh@panasas.com,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [dm-devel] [PATCH 2/2] block: Avoid deadlocks with bio
+	allocation by stacking drivers
+Message-ID: <20120910230917.GB10477@agk-dp.fab.redhat.com>
+Mail-Followup-To: Tejun Heo <tj@kernel.org>,
+	Kent Overstreet <koverstreet@google.com>, axboe@kernel.dk,
+	device-mapper development <dm-devel@redhat.com>,
+	david@fromorbit.com, linux-kernel@vger.kernel.org,
+	linux-bcache@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
+	bharrosh@panasas.com, Vivek Goyal <vgoyal@redhat.com>
+References: <20120910002810.GA23241@moria.home.lan> <20120910172210.GC14103@google.com> <20120910202435.GG16360@google.com> <20120910204010.GA32310@google.com> <20120910213349.GH16360@google.com> <20120910213710.GA7677@google.com> <20120910215633.GA19739@google.com> <20120910220910.GB7677@google.com> <20120910225057.GA10477@agk-dp.fab.redhat.com> <CAOS58YO5puV2iPhwe0vbyEydPnR=eWPStNRm=xEpMeo-TMHCaw@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOS58YO5puV2iPhwe0vbyEydPnR=eWPStNRm=xEpMeo-TMHCaw@mail.gmail.com>
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: 64 Baker Street, 4th floor, London,
+	W1U 7DF.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-> > Acked-by: Alan Stern <stern@rowland.harvard.edu>
-> > ---
-> >  drivers/usb/core/hcd.c       |   15 ---------------
-> >  drivers/usb/host/ehci-ls1x.c |    2 +-
-> >  drivers/usb/host/ohci-xls.c  |    2 +-
-> >  3 files changed, 2 insertions(+), 17 deletions(-)
-> 
-> This fails to apply to my usb-next branch for some odd reason, please
-> refresh it and resend.
-> 
-> thanks,
-> 
-> greg k-h
+On Mon, Sep 10, 2012 at 04:01:01PM -0700, Tejun Heo wrote:
+> IIUC, Kent posted a patch which converts all of them to use front-pad
 
-Has resent, refresh the code base and sent with evolution client, wish it is OK, thanks.
+The only patch I saw posted here only handles one of the easier cases so far.
+
+The others are a bit trickier and probably involve a decision about which way to
+change an in-kernel dm interface.
+
+Alasdair
+
