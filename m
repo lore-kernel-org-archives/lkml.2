@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755912Ab2IJIkW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 04:40:22 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:59169 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752532Ab2IJIkL (ORCPT
+	id S1755984Ab2IJIk0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 04:40:26 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:63133 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752932Ab2IJIkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 04:40:11 -0400
+	Mon, 10 Sep 2012 04:40:07 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
@@ -21,9 +21,9 @@ Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Stephen Warren <swarren@wwwdotorg.org>,
         devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v3 3/9] pinctrl: mvebu: kirkwood pinctrl driver
-Date: Mon, 10 Sep 2012 10:39:40 +0200
-Message-Id: <1347266386-16229-4-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH v3 2/9] pinctrl: mvebu: dove pinctrl driver
+Date: Mon, 10 Sep 2012 10:39:39 +0200
+Message-Id: <1347266386-16229-3-git-send-email-sebastian.hesselbarth@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1347266386-16229-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1345623750-10645-1-git-send-email-sebastian.hesselbarth@gmail.com>
@@ -32,7 +32,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a SoC specific pinctrl driver for Marvell Kirkwood SoCs
+This patch adds a SoC specific pinctrl driver for Marvell Dove SoCs
 plus DT binding documentation. This driver will use the mvebu pinctrl
 driver core.
 
@@ -41,10 +41,9 @@ Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 v2:
 - restructured pinctrl/Kconfig to hide pinctrl driver as it will be
   always selected by arch/arm/mach-mvebu/Kconfig
-- use enum for kirkwood variants instead of defines
-
-v3:
-- moved variant specific data to DT match struct
+- cleaned pinctrl-dove and replaced 'magic numbers' by defines
+- use devm_clk_get for (now optional) pdma clock and add to required
+  properties in devicetree binding documentation
 
 Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
@@ -64,308 +63,101 @@ Cc: linux-doc@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org
 ---
- .../bindings/pinctrl/marvell,kirkwood-pinctrl.txt  |  279 ++++++++++++
+ .../bindings/pinctrl/marvell,dove-pinctrl.txt      |   72 +++
  drivers/pinctrl/Kconfig                            |    4 +
  drivers/pinctrl/Makefile                           |    1 +
- drivers/pinctrl/pinctrl-kirkwood.c                 |  473 ++++++++++++++++++++
- 4 files changed, 757 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/pinctrl/marvell,kirkwood-pinctrl.txt
- create mode 100644 drivers/pinctrl/pinctrl-kirkwood.c
+ drivers/pinctrl/pinctrl-dove.c                     |  622 ++++++++++++++++++++
+ 4 files changed, 699 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/marvell,dove-pinctrl.txt
+ create mode 100644 drivers/pinctrl/pinctrl-dove.c
 
-diff --git a/Documentation/devicetree/bindings/pinctrl/marvell,kirkwood-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/marvell,kirkwood-pinctrl.txt
+diff --git a/Documentation/devicetree/bindings/pinctrl/marvell,dove-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/marvell,dove-pinctrl.txt
 new file mode 100644
-index 0000000..361bccb
+index 0000000..a648aaa
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/pinctrl/marvell,kirkwood-pinctrl.txt
-@@ -0,0 +1,279 @@
-+* Marvell Kirkwood SoC pinctrl driver for mpp
++++ b/Documentation/devicetree/bindings/pinctrl/marvell,dove-pinctrl.txt
+@@ -0,0 +1,72 @@
++* Marvell Dove SoC pinctrl driver for mpp
 +
 +Please refer to marvell,mvebu-pinctrl.txt in this directory for common binding
 +part and usage.
 +
 +Required properties:
-+- compatible: "marvell,88f6180-pinctrl",
-+              "marvell,88f6190-pinctrl", "marvell,88f6192-pinctrl",
-+              "marvell,88f6281-pinctrl", "marvell,88f6282-pinctrl"
-+
-+This driver supports all kirkwood variants, i.e. 88f6180, 88f619x, and 88f628x.
++- compatible: "marvell,dove-pinctrl"
++- clocks: (optional) phandle of pdma clock
 +
 +Available mpp pins/groups and functions:
 +Note: brackets (x) are not part of the mpp name for marvell,function and given
 +only for more detailed description in this document.
 +
-+* Marvell Kirkwood 88f6180
-+
 +name          pins     functions
 +================================================================================
-+mpp0          0        gpio, nand(io2), spi(cs)
-+mpp1          1        gpo, nand(io3), spi(mosi)
-+mpp2          2        gpo, nand(io4), spi(sck)
-+mpp3          3        gpo, nand(io5), spi(miso)
-+mpp4          4        gpio, nand(io6), uart0(rxd), ptp(clk)
-+mpp5          5        gpo, nand(io7), uart0(txd), ptp(trig)
-+mpp6          6        sysrst(out), spi(mosi), ptp(trig)
-+mpp7          7        gpo, pex(rsto), spi(cs), ptp(trig)
-+mpp8          8        gpio, twsi0(sda), uart0(rts), uart1(rts), ptp(clk),
-+                       mii(col)
-+mpp9          9        gpio, twsi(sck), uart0(cts), uart1(cts), ptp(evreq),
-+                       mii(crs)
-+mpp10         10       gpo, spi(sck), uart0(txd), ptp(trig)
-+mpp11         11       gpio, spi(miso), uart0(rxd), ptp(clk), ptp-1(evreq),
-+                       ptp-2(trig)
-+mpp12         12       gpo, sdio(clk)
-+mpp13         13       gpio, sdio(cmd), uart1(txd)
-+mpp14         14       gpio, sdio(d0), uart1(rxd), mii(col)
-+mpp15         15       gpio, sdio(d1), uart0(rts), uart1(txd)
-+mpp16         16       gpio, sdio(d2), uart0(cts), uart1(rxd), mii(crs)
-+mpp17         17       gpio, sdio(d3)
-+mpp18         18       gpo, nand(io0)
-+mpp19         19       gpo, nand(io1)
-+mpp20         20       gpio, mii(rxerr)
-+mpp21         21       gpio, audio(spdifi)
-+mpp22         22       gpio, audio(spdifo)
-+mpp23         23       gpio, audio(rmclk)
-+mpp24         24       gpio, audio(bclk)
-+mpp25         25       gpio, audio(sdo)
-+mpp26         26       gpio, audio(lrclk)
-+mpp27         27       gpio, audio(mclk)
-+mpp28         28       gpio, audio(sdi)
-+mpp29         29       gpio, audio(extclk)
++mpp0          0        gpio, pmu, uart2(rts), sdio0(cd), lcd0(pwm)
++mpp1          1        gpio, pmu, uart2(cts), sdio0(wp), lcd1(pwm)
++mpp2          2        gpio, pmu, uart2(txd), sdio0(buspwr), sata(prsnt),
++                       uart1(rts)
++mpp3          3        gpio, pmu, uart2(rxd), sdio0(ledctrl), sata(act),
++                       uart1(cts), lcd-spi(cs1)
++mpp4          4        gpio, pmu, uart3(rts), sdio1(cd), spi1(miso)
++mpp5          5        gpio, pmu, uart3(cts), sdio1(wp), spi1(cs)
++mpp6          6        gpio, pmu, uart3(txd), sdio1(buspwr), spi1(mosi)
++mpp7          7        gpio, pmu, uart3(rxd), sdio1(ledctrl), spi1(sck)
++mpp8          8        gpio, pmu, watchdog(rstout)
++mpp9          9        gpio, pmu, pex1(clkreq)
++mpp10         10       gpio, pmu, ssp(sclk)
++mpp11         11       gpio, pmu, sata(prsnt), sata-1(act), sdio0(ledctrl),
++                       sdio1(ledctrl), pex0(clkreq)
++mpp12         12       gpio, pmu, uart2(rts), audio0(extclk), sdio1(cd), sata(act)
++mpp13         13       gpio, pmu, uart2(cts), audio1(extclk), sdio1(wp),
++                       ssp(extclk)
++mpp14         14       gpio, pmu, uart2(txd), sdio1(buspwr), ssp(rxd)
++mpp15         15       gpio, pmu, uart2(rxd), sdio1(ledctrl), ssp(sfrm)
++mpp16         16       gpio, uart3(rts), sdio0(cd), ac97(sdi1), lcd-spi(cs1)
++mpp17         17       gpio, uart3(cts), sdio0(wp), ac97(sdi2), twsi(sda),
++                       ac97-1(sysclko)
++mpp18         18       gpio, uart3(txd), sdio0(buspwr), ac97(sdi3), lcd0(pwm)
++mpp19         19       gpio, uart3(rxd), sdio0(ledctrl), twsi(sck)
++mpp20         20       gpio, sdio0(cd), sdio1(cd), spi1(miso), lcd-spi(miso),
++                       ac97(sysclko)
++mpp21         21       gpio, sdio0(wp), sdio1(wp), spi1(cs), lcd-spi(cs0),
++                       uart1(cts), ssp(sfrm)
++mpp22         22       gpio, sdio0(buspwr), sdio1(buspwr), spi1(mosi),
++                       lcd-spi(mosi), uart1(cts), ssp(txd)
++mpp23         23       gpio, sdio0(ledctrl), sdio1(ledctrl), spi1(sck),
++                       lcd-spi(sck), ssp(sclk)
++mpp_camera    24-39    gpio, camera
++mpp_sdio0     40-45    gpio, sdio0
++mpp_sdio1     46-51    gpio, sdio1
++mpp_audio1    52-57    gpio, i2s1/spdifo, i2s1, spdifo, twsi, ssp/spdifo, ssp,
++                       ssp/twsi
++mpp_spi0      58-61    gpio, spi0
++mpp_uart1     62-63    gpio, uart1
++mpp_nand      64-71    gpo, nand
++audio0        -        i2s, ac97
++twsi          -        none, opt1, opt2, opt3
 +
-+* Marvell Kirkwood 88f6190
-+
-+name          pins     functions
-+================================================================================
-+mpp0          0        gpio, nand(io2), spi(cs)
-+mpp1          1        gpo, nand(io3), spi(mosi)
-+mpp2          2        gpo, nand(io4), spi(sck)
-+mpp3          3        gpo, nand(io5), spi(miso)
-+mpp4          4        gpio, nand(io6), uart0(rxd), ptp(clk)
-+mpp5          5        gpo, nand(io7), uart0(txd), ptp(trig), sata0(act)
-+mpp6          6        sysrst(out), spi(mosi), ptp(trig)
-+mpp7          7        gpo, pex(rsto), spi(cs), ptp(trig)
-+mpp8          8        gpio, twsi0(sda), uart0(rts), uart1(rts), ptp(clk),
-+                       mii(col), mii-1(rxerr)
-+mpp9          9        gpio, twsi(sck), uart0(cts), uart1(cts), ptp(evreq),
-+                       mii(crs), sata0(prsnt)
-+mpp10         10       gpo, spi(sck), uart0(txd), ptp(trig)
-+mpp11         11       gpio, spi(miso), uart0(rxd), ptp(clk), ptp-1(evreq),
-+                       ptp-2(trig), sata0(act)
-+mpp12         12       gpo, sdio(clk)
-+mpp13         13       gpio, sdio(cmd), uart1(txd)
-+mpp14         14       gpio, sdio(d0), uart1(rxd), mii(col)
-+mpp15         15       gpio, sdio(d1), uart0(rts), uart1(txd), sata0(act)
-+mpp16         16       gpio, sdio(d2), uart0(cts), uart1(rxd), mii(crs)
-+mpp17         17       gpio, sdio(d3), sata0(prsnt)
-+mpp18         18       gpo, nand(io0)
-+mpp19         19       gpo, nand(io1)
-+mpp20         20       gpio, ge1(txd0)
-+mpp21         21       gpio, ge1(txd1), sata0(act)
-+mpp22         22       gpio, ge1(txd2)
-+mpp23         23       gpio, ge1(txd3), sata0(prsnt)
-+mpp24         24       gpio, ge1(rxd0)
-+mpp25         25       gpio, ge1(rxd1)
-+mpp26         26       gpio, ge1(rxd2)
-+mpp27         27       gpio, ge1(rxd3)
-+mpp28         28       gpio, ge1(col)
-+mpp29         29       gpio, ge1(txclk)
-+mpp30         30       gpio, ge1(rxclk)
-+mpp31         31       gpio, ge1(rxclk)
-+mpp32         32       gpio, ge1(txclko)
-+mpp33         33       gpo, ge1(txclk)
-+mpp34         34       gpio, ge1(txen)
-+mpp35         35       gpio, ge1(rxerr), sata0(act), mii(rxerr)
-+
-+* Marvell Kirkwood 88f6192
-+
-+name          pins     functions
-+================================================================================
-+mpp0          0        gpio, nand(io2), spi(cs)
-+mpp1          1        gpo, nand(io3), spi(mosi)
-+mpp2          2        gpo, nand(io4), spi(sck)
-+mpp3          3        gpo, nand(io5), spi(miso)
-+mpp4          4        gpio, nand(io6), uart0(rxd), ptp(clk), sata1(act)
-+mpp5          5        gpo, nand(io7), uart0(txd), ptp(trig), sata0(act)
-+mpp6          6        sysrst(out), spi(mosi), ptp(trig)
-+mpp7          7        gpo, pex(rsto), spi(cs), ptp(trig)
-+mpp8          8        gpio, twsi0(sda), uart0(rts), uart1(rts), ptp(clk),
-+                       mii(col), mii-1(rxerr), sata1(prsnt)
-+mpp9          9        gpio, twsi(sck), uart0(cts), uart1(cts), ptp(evreq),
-+                       mii(crs), sata0(prsnt)
-+mpp10         10       gpo, spi(sck), uart0(txd), ptp(trig), sata1(act)
-+mpp11         11       gpio, spi(miso), uart0(rxd), ptp(clk), ptp-1(evreq),
-+                       ptp-2(trig), sata0(act)
-+mpp12         12       gpo, sdio(clk)
-+mpp13         13       gpio, sdio(cmd), uart1(txd)
-+mpp14         14       gpio, sdio(d0), uart1(rxd), mii(col), sata1(prsnt)
-+mpp15         15       gpio, sdio(d1), uart0(rts), uart1(txd), sata0(act)
-+mpp16         16       gpio, sdio(d2), uart0(cts), uart1(rxd), mii(crs),
-+                       sata1(act)
-+mpp17         17       gpio, sdio(d3), sata0(prsnt)
-+mpp18         18       gpo, nand(io0)
-+mpp19         19       gpo, nand(io1)
-+mpp20         20       gpio, ge1(txd0), ts(mp0), tdm(tx0ql), audio(spdifi),
-+                       sata1(act)
-+mpp21         21       gpio, ge1(txd1), sata0(act), ts(mp1), tdm(rx0ql),
-+                       audio(spdifo)
-+mpp22         22       gpio, ge1(txd2), ts(mp2), tdm(tx2ql), audio(rmclk),
-+                       sata1(prsnt)
-+mpp23         23       gpio, ge1(txd3), sata0(prsnt), ts(mp3), tdm(rx2ql),
-+                       audio(bclk)
-+mpp24         24       gpio, ge1(rxd0), ts(mp4), tdm(spi-cs0), audio(sdo)
-+mpp25         25       gpio, ge1(rxd1), ts(mp5), tdm(spi-sck), audio(lrclk)
-+mpp26         26       gpio, ge1(rxd2), ts(mp6), tdm(spi-miso), audio(mclk)
-+mpp27         27       gpio, ge1(rxd3), ts(mp7), tdm(spi-mosi), audio(sdi)
-+mpp28         28       gpio, ge1(col), ts(mp8), tdm(int), audio(extclk)
-+mpp29         29       gpio, ge1(txclk), ts(mp9), tdm(rst)
-+mpp30         30       gpio, ge1(rxclk), ts(mp10), tdm(pclk)
-+mpp31         31       gpio, ge1(rxclk), ts(mp11), tdm(fs)
-+mpp32         32       gpio, ge1(txclko), ts(mp12), tdm(drx)
-+mpp33         33       gpo, ge1(txclk), tdm(drx)
-+mpp34         34       gpio, ge1(txen), tdm(spi-cs1)
-+mpp35         35       gpio, ge1(rxerr), sata0(act), mii(rxerr), tdm(tx0ql)
-+
-+* Marvell Kirkwood 88f6281
-+
-+name          pins     functions
-+================================================================================
-+mpp0          0        gpio, nand(io2), spi(cs)
-+mpp1          1        gpo, nand(io3), spi(mosi)
-+mpp2          2        gpo, nand(io4), spi(sck)
-+mpp3          3        gpo, nand(io5), spi(miso)
-+mpp4          4        gpio, nand(io6), uart0(rxd), ptp(clk), sata1(act)
-+mpp5          5        gpo, nand(io7), uart0(txd), ptp(trig), sata0(act)
-+mpp6          6        sysrst(out), spi(mosi), ptp(trig)
-+mpp7          7        gpo, pex(rsto), spi(cs), ptp(trig)
-+mpp8          8        gpio, twsi0(sda), uart0(rts), uart1(rts), ptp(clk),
-+                       mii(col), mii-1(rxerr), sata1(prsnt)
-+mpp9          9        gpio, twsi(sck), uart0(cts), uart1(cts), ptp(evreq),
-+                       mii(crs), sata0(prsnt)
-+mpp10         10       gpo, spi(sck), uart0(txd), ptp(trig), sata1(act)
-+mpp11         11       gpio, spi(miso), uart0(rxd), ptp(clk), ptp-1(evreq),
-+                       ptp-2(trig), sata0(act)
-+mpp12         12       gpio, sdio(clk)
-+mpp13         13       gpio, sdio(cmd), uart1(txd)
-+mpp14         14       gpio, sdio(d0), uart1(rxd), mii(col), sata1(prsnt)
-+mpp15         15       gpio, sdio(d1), uart0(rts), uart1(txd), sata0(act)
-+mpp16         16       gpio, sdio(d2), uart0(cts), uart1(rxd), mii(crs),
-+                       sata1(act)
-+mpp17         17       gpio, sdio(d3), sata0(prsnt)
-+mpp18         18       gpo, nand(io0)
-+mpp19         19       gpo, nand(io1)
-+mpp20         20       gpio, ge1(txd0), ts(mp0), tdm(tx0ql), audio(spdifi),
-+                       sata1(act)
-+mpp21         21       gpio, ge1(txd1), sata0(act), ts(mp1), tdm(rx0ql),
-+                       audio(spdifo)
-+mpp22         22       gpio, ge1(txd2), ts(mp2), tdm(tx2ql), audio(rmclk),
-+                       sata1(prsnt)
-+mpp23         23       gpio, ge1(txd3), sata0(prsnt), ts(mp3), tdm(rx2ql),
-+                       audio(bclk)
-+mpp24         24       gpio, ge1(rxd0), ts(mp4), tdm(spi-cs0), audio(sdo)
-+mpp25         25       gpio, ge1(rxd1), ts(mp5), tdm(spi-sck), audio(lrclk)
-+mpp26         26       gpio, ge1(rxd2), ts(mp6), tdm(spi-miso), audio(mclk)
-+mpp27         27       gpio, ge1(rxd3), ts(mp7), tdm(spi-mosi), audio(sdi)
-+mpp28         28       gpio, ge1(col), ts(mp8), tdm(int), audio(extclk)
-+mpp29         29       gpio, ge1(txclk), ts(mp9), tdm(rst)
-+mpp30         30       gpio, ge1(rxclk), ts(mp10), tdm(pclk)
-+mpp31         31       gpio, ge1(rxclk), ts(mp11), tdm(fs)
-+mpp32         32       gpio, ge1(txclko), ts(mp12), tdm(drx)
-+mpp33         33       gpo, ge1(txclk), tdm(drx)
-+mpp34         34       gpio, ge1(txen), tdm(spi-cs1), sata1(act)
-+mpp35         35       gpio, ge1(rxerr), sata0(act), mii(rxerr), tdm(tx0ql)
-+mpp36         36       gpio, ts(mp0), tdm(spi-cs1), audio(spdifi)
-+mpp37         37       gpio, ts(mp1), tdm(tx2ql), audio(spdifo)
-+mpp38         38       gpio, ts(mp2), tdm(rx2ql), audio(rmclk)
-+mpp39         39       gpio, ts(mp3), tdm(spi-cs0), audio(bclk)
-+mpp40         40       gpio, ts(mp4), tdm(spi-sck), audio(sdo)
-+mpp41         41       gpio, ts(mp5), tdm(spi-miso), audio(lrclk)
-+mpp42         42       gpio, ts(mp6), tdm(spi-mosi), audio(mclk)
-+mpp43         43       gpio, ts(mp7), tdm(int), audio(sdi)
-+mpp44         44       gpio, ts(mp8), tdm(rst), audio(extclk)
-+mpp45         45       gpio, ts(mp9), tdm(pclk)
-+mpp46         46       gpio, ts(mp10), tdm(fs)
-+mpp47         47       gpio, ts(mp11), tdm(drx)
-+mpp48         48       gpio, ts(mp12), tdm(dtx)
-+mpp49         49       gpio, ts(mp9), tdm(rx0ql), ptp(clk)
-+
-+* Marvell Kirkwood 88f6282
-+
-+name          pins     functions
-+================================================================================
-+mpp0          0        gpio, nand(io2), spi(cs)
-+mpp1          1        gpo, nand(io3), spi(mosi)
-+mpp2          2        gpo, nand(io4), spi(sck)
-+mpp3          3        gpo, nand(io5), spi(miso)
-+mpp4          4        gpio, nand(io6), uart0(rxd), sata1(act), lcd(hsync)
-+mpp5          5        gpo, nand(io7), uart0(txd), sata0(act), lcd(vsync)
-+mpp6          6        sysrst(out), spi(mosi)
-+mpp7          7        gpo, spi(cs), lcd(pwm)
-+mpp8          8        gpio, twsi0(sda), uart0(rts), uart1(rts), mii(col),
-+                       mii-1(rxerr), sata1(prsnt)
-+mpp9          9        gpio, twsi(sck), uart0(cts), uart1(cts), mii(crs),
-+                       sata0(prsnt)
-+mpp10         10       gpo, spi(sck), uart0(txd), sata1(act)
-+mpp11         11       gpio, spi(miso), uart0(rxd), sata0(act)
-+mpp12         12       gpo, sdio(clk), audio(spdifo), spi(mosi), twsi(sda)
-+mpp13         13       gpio, sdio(cmd), uart1(txd), audio(rmclk), lcd(pwm)
-+mpp14         14       gpio, sdio(d0), uart1(rxd), mii(col), sata1(prsnt),
-+                       audio(spdifi), audio-1(sdi)
-+mpp15         15       gpio, sdio(d1), uart0(rts), uart1(txd), sata0(act),
-+                       spi(cs)
-+mpp16         16       gpio, sdio(d2), uart0(cts), uart1(rxd), mii(crs),
-+                       sata1(act), lcd(extclk)
-+mpp17         17       gpio, sdio(d3), sata0(prsnt), sata1(act), twsi1(sck)
-+mpp18         18       gpo, nand(io0), pex(clkreq)
-+mpp19         19       gpo, nand(io1)
-+mpp20         20       gpio, ge1(txd0), ts(mp0), tdm(tx0ql), audio(spdifi),
-+                       sata1(act), lcd(d0)
-+mpp21         21       gpio, ge1(txd1), sata0(act), ts(mp1), tdm(rx0ql),
-+                       audio(spdifo), lcd(d1)
-+mpp22         22       gpio, ge1(txd2), ts(mp2), tdm(tx2ql), audio(rmclk),
-+                       sata1(prsnt), lcd(d2)
-+mpp23         23       gpio, ge1(txd3), sata0(prsnt), ts(mp3), tdm(rx2ql),
-+                       audio(bclk), lcd(d3)
-+mpp24         24       gpio, ge1(rxd0), ts(mp4), tdm(spi-cs0), audio(sdo),
-+                       lcd(d4)
-+mpp25         25       gpio, ge1(rxd1), ts(mp5), tdm(spi-sck), audio(lrclk),
-+                       lcd(d5)
-+mpp26         26       gpio, ge1(rxd2), ts(mp6), tdm(spi-miso), audio(mclk),
-+                       lcd(d6)
-+mpp27         27       gpio, ge1(rxd3), ts(mp7), tdm(spi-mosi), audio(sdi),
-+                       lcd(d7)
-+mpp28         28       gpio, ge1(col), ts(mp8), tdm(int), audio(extclk),
-+                       lcd(d8)
-+mpp29         29       gpio, ge1(txclk), ts(mp9), tdm(rst), lcd(d9)
-+mpp30         30       gpio, ge1(rxclk), ts(mp10), tdm(pclk), lcd(d10)
-+mpp31         31       gpio, ge1(rxclk), ts(mp11), tdm(fs), lcd(d11)
-+mpp32         32       gpio, ge1(txclko), ts(mp12), tdm(drx), lcd(d12)
-+mpp33         33       gpo, ge1(txclk), tdm(drx), lcd(d13)
-+mpp34         34       gpio, ge1(txen), tdm(spi-cs1), sata1(act), lcd(d14)
-+mpp35         35       gpio, ge1(rxerr), sata0(act), mii(rxerr), tdm(tx0ql),
-+                       lcd(d15)
-+mpp36         36       gpio, ts(mp0), tdm(spi-cs1), audio(spdifi), twsi1(sda)
-+mpp37         37       gpio, ts(mp1), tdm(tx2ql), audio(spdifo), twsi1(sck)
-+mpp38         38       gpio, ts(mp2), tdm(rx2ql), audio(rmclk), lcd(d18)
-+mpp39         39       gpio, ts(mp3), tdm(spi-cs0), audio(bclk), lcd(d19)
-+mpp40         40       gpio, ts(mp4), tdm(spi-sck), audio(sdo), lcd(d20)
-+mpp41         41       gpio, ts(mp5), tdm(spi-miso), audio(lrclk), lcd(d21)
-+mpp42         42       gpio, ts(mp6), tdm(spi-mosi), audio(mclk), lcd(d22)
-+mpp43         43       gpio, ts(mp7), tdm(int), audio(sdi), lcd(d23)
-+mpp44         44       gpio, ts(mp8), tdm(rst), audio(extclk), lcd(clk)
-+mpp45         45       gpio, ts(mp9), tdm(pclk), lcd(e)
-+mpp46         46       gpio, ts(mp10), tdm(fs), lcd(hsync)
-+mpp47         47       gpio, ts(mp11), tdm(drx), lcd(vsync)
-+mpp48         48       gpio, ts(mp12), tdm(dtx), lcd(d16)
-+mpp49         49       gpo, tdm(rx0ql), pex(clkreq), lcd(d17)
++Notes:
++* group "mpp_audio1" allows the following functions and gpio pins:
++  - gpio          : gpio on pins 52-57
++  - i2s1/spdifo   : audio1 i2s on pins 52-55 and spdifo on 57, no gpios
++  - i2s1          : audio1 i2s on pins 52-55, gpio on pins 56,57
++  - spdifo        : spdifo on pin 57, gpio on pins 52-55
++  - twsi          : twsi on pins 56,57, gpio on pins 52-55
++  - ssp/spdifo    : ssp on pins 52-55, spdifo on pin 57, no gpios
++  - ssp           : ssp on pins 52-55, gpio on pins 56,57
++  - ssp/twsi      : ssp on pins 52-55, twsi on pins 56,57, no gpios
++* group "audio0" internally muxes i2s0 or ac97 controller to the dedicated
++  audio0 pins.
++* group "twsi" internally muxes twsi controller to the dedicated or option pins.
 diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
-index f15eba4..31c0bba 100644
+index 20bfdc3..f15eba4 100644
 --- a/drivers/pinctrl/Kconfig
 +++ b/drivers/pinctrl/Kconfig
-@@ -155,6 +155,10 @@ config PINCTRL_DOVE
- 	bool
- 	select PINCTRL_MVEBU
+@@ -151,6 +151,10 @@ config PINCTRL_MVEBU
+ 	select PINMUX
+ 	select PINCONF
  
-+config PINCTRL_KIRKWOOD
++config PINCTRL_DOVE
 +	bool
 +	select PINCTRL_MVEBU
 +
@@ -373,24 +165,24 @@ index f15eba4..31c0bba 100644
  
  endmenu
 diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
-index d1327df..3006294 100644
+index 007ed32..d1327df 100644
 --- a/drivers/pinctrl/Makefile
 +++ b/drivers/pinctrl/Makefile
-@@ -31,5 +31,6 @@ obj-$(CONFIG_PINCTRL_U300)	+= pinctrl-u300.o
+@@ -30,5 +30,6 @@ obj-$(CONFIG_PINCTRL_TEGRA30)	+= pinctrl-tegra30.o
+ obj-$(CONFIG_PINCTRL_U300)	+= pinctrl-u300.o
  obj-$(CONFIG_PINCTRL_COH901)	+= pinctrl-coh901.o
  obj-$(CONFIG_PINCTRL_MVEBU)	+= pinctrl-mvebu.o
- obj-$(CONFIG_PINCTRL_DOVE)	+= pinctrl-dove.o
-+obj-$(CONFIG_PINCTRL_KIRKWOOD)	+= pinctrl-kirkwood.o
++obj-$(CONFIG_PINCTRL_DOVE)	+= pinctrl-dove.o
  
  obj-$(CONFIG_PLAT_SPEAR)	+= spear/
-diff --git a/drivers/pinctrl/pinctrl-kirkwood.c b/drivers/pinctrl/pinctrl-kirkwood.c
+diff --git a/drivers/pinctrl/pinctrl-dove.c b/drivers/pinctrl/pinctrl-dove.c
 new file mode 100644
-index 0000000..63c58be
+index 0000000..cb31b63
 --- /dev/null
-+++ b/drivers/pinctrl/pinctrl-kirkwood.c
-@@ -0,0 +1,473 @@
++++ b/drivers/pinctrl/pinctrl-dove.c
+@@ -0,0 +1,622 @@
 +/*
-+ * Marvell Kirkwood pinctrl driver based on mvebu pinctrl core
++ * Marvell Dove pinctrl driver based on mvebu pinctrl core
 + *
 + * Author: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 + *
@@ -404,6 +196,7 @@ index 0000000..63c58be
 +#include <linux/init.h>
 +#include <linux/io.h>
 +#include <linux/module.h>
++#include <linux/bitops.h>
 +#include <linux/platform_device.h>
 +#include <linux/clk.h>
 +#include <linux/of.h>
@@ -412,455 +205,603 @@ index 0000000..63c58be
 +
 +#include "pinctrl-mvebu.h"
 +
-+#define V(f6180, f6190, f6192, f6281, f6282)		\
-+	((f6180 << 0) | (f6190 << 1) | (f6192 << 2) |	\
-+	 (f6281 << 3) | (f6282 << 4))
++#define DOVE_SB_REGS_VIRT_BASE		0xfde00000
++#define DOVE_MPP_VIRT_BASE		(DOVE_SB_REGS_VIRT_BASE | 0xd0200)
++#define DOVE_PMU_MPP_GENERAL_CTRL	(DOVE_MPP_VIRT_BASE + 0x10)
++#define  DOVE_AU0_AC97_SEL		BIT(16)
++#define DOVE_GLOBAL_CONFIG_1		(DOVE_SB_REGS_VIRT_BASE | 0xe802C)
++#define  DOVE_TWSI_ENABLE_OPTION1	BIT(7)
++#define DOVE_GLOBAL_CONFIG_2		(DOVE_SB_REGS_VIRT_BASE | 0xe8030)
++#define  DOVE_TWSI_ENABLE_OPTION2	BIT(20)
++#define  DOVE_TWSI_ENABLE_OPTION3	BIT(21)
++#define  DOVE_TWSI_OPTION3_GPIO		BIT(22)
++#define DOVE_SSP_CTRL_STATUS_1		(DOVE_SB_REGS_VIRT_BASE | 0xe8034)
++#define  DOVE_SSP_ON_AU1		BIT(0)
++#define DOVE_MPP_GENERAL_VIRT_BASE	(DOVE_SB_REGS_VIRT_BASE | 0xe803c)
++#define  DOVE_AU1_SPDIFO_GPIO_EN	BIT(1)
++#define  DOVE_NAND_GPIO_EN		BIT(0)
++#define DOVE_GPIO_LO_VIRT_BASE		(DOVE_SB_REGS_VIRT_BASE | 0xd0400)
++#define DOVE_MPP_CTRL4_VIRT_BASE	(DOVE_GPIO_LO_VIRT_BASE + 0x40)
++#define  DOVE_SPI_GPIO_SEL		BIT(5)
++#define  DOVE_UART1_GPIO_SEL		BIT(4)
++#define  DOVE_AU1_GPIO_SEL		BIT(3)
++#define  DOVE_CAM_GPIO_SEL		BIT(2)
++#define  DOVE_SD1_GPIO_SEL		BIT(1)
++#define  DOVE_SD0_GPIO_SEL		BIT(0)
 +
-+enum kirkwood_variant {
-+	VARIANT_MV88F6180 = V(1, 0, 0, 0, 0),
-+	VARIANT_MV88F6190 = V(0, 1, 0, 0, 0),
-+	VARIANT_MV88F6192 = V(0, 0, 1, 0, 0),
-+	VARIANT_MV88F6281 = V(0, 0, 0, 1, 0),
-+	VARIANT_MV88F6282 = V(0, 0, 0, 0, 1),
++#define MPPS_PER_REG	8
++#define MPP_BITS	4
++#define MPP_MASK	0xf
++
++#define CONFIG_PMU	BIT(4)
++
++static int dove_pmu_mpp_ctrl_get(struct mvebu_mpp_ctrl *ctrl,
++				 unsigned long *config)
++{
++	unsigned off = (ctrl->pid / MPPS_PER_REG) * MPP_BITS;
++	unsigned shift = (ctrl->pid % MPPS_PER_REG) * MPP_BITS;
++	unsigned long pmu = readl(DOVE_PMU_MPP_GENERAL_CTRL);
++	unsigned long mpp = readl(DOVE_MPP_VIRT_BASE + off);
++
++	if (pmu & (1 << ctrl->pid))
++		*config = CONFIG_PMU;
++	else
++		*config = (mpp >> shift) & MPP_MASK;
++	return 0;
++}
++
++static int dove_pmu_mpp_ctrl_set(struct mvebu_mpp_ctrl *ctrl,
++				 unsigned long config)
++{
++	unsigned off = (ctrl->pid / MPPS_PER_REG) * MPP_BITS;
++	unsigned shift = (ctrl->pid % MPPS_PER_REG) * MPP_BITS;
++	unsigned long pmu = readl(DOVE_PMU_MPP_GENERAL_CTRL);
++	unsigned long mpp = readl(DOVE_MPP_VIRT_BASE + off);
++
++	if (config == CONFIG_PMU)
++		writel(pmu | (1 << ctrl->pid), DOVE_PMU_MPP_GENERAL_CTRL);
++	else {
++		writel(pmu & ~(1 << ctrl->pid), DOVE_PMU_MPP_GENERAL_CTRL);
++		mpp &= ~(MPP_MASK << shift);
++		mpp |= config << shift;
++		writel(mpp, DOVE_MPP_VIRT_BASE + off);
++	}
++	return 0;
++}
++
++static int dove_mpp4_ctrl_get(struct mvebu_mpp_ctrl *ctrl,
++			      unsigned long *config)
++{
++	unsigned long mpp4 = readl(DOVE_MPP_CTRL4_VIRT_BASE);
++	unsigned long mask;
++
++	switch (ctrl->pid) {
++	case 24: /* mpp_camera */
++		mask = DOVE_CAM_GPIO_SEL;
++		break;
++	case 40: /* mpp_sdio0 */
++		mask = DOVE_SD0_GPIO_SEL;
++		break;
++	case 46: /* mpp_sdio1 */
++		mask = DOVE_SD1_GPIO_SEL;
++		break;
++	case 58: /* mpp_spi0 */
++		mask = DOVE_SPI_GPIO_SEL;
++		break;
++	case 62: /* mpp_uart1 */
++		mask = DOVE_UART1_GPIO_SEL;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	*config = ((mpp4 & mask) != 0);
++
++	return 0;
++}
++
++static int dove_mpp4_ctrl_set(struct mvebu_mpp_ctrl *ctrl,
++			      unsigned long config)
++{
++	unsigned long mpp4 = readl(DOVE_MPP_CTRL4_VIRT_BASE);
++	unsigned long mask;
++
++	switch (ctrl->pid) {
++	case 24: /* mpp_camera */
++		mask = DOVE_CAM_GPIO_SEL;
++		break;
++	case 40: /* mpp_sdio0 */
++		mask = DOVE_SD0_GPIO_SEL;
++		break;
++	case 46: /* mpp_sdio1 */
++		mask = DOVE_SD1_GPIO_SEL;
++		break;
++	case 58: /* mpp_spi0 */
++		mask = DOVE_SPI_GPIO_SEL;
++		break;
++	case 62: /* mpp_uart1 */
++		mask = DOVE_UART1_GPIO_SEL;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	mpp4 &= ~mask;
++	if (config)
++		mpp4 |= mask;
++
++	writel(mpp4, DOVE_MPP_CTRL4_VIRT_BASE);
++
++	return 0;
++}
++
++static int dove_nand_ctrl_get(struct mvebu_mpp_ctrl *ctrl,
++			      unsigned long *config)
++{
++	unsigned long gmpp = readl(DOVE_MPP_GENERAL_VIRT_BASE);
++
++	*config = ((gmpp & DOVE_NAND_GPIO_EN) != 0);
++
++	return 0;
++}
++
++static int dove_nand_ctrl_set(struct mvebu_mpp_ctrl *ctrl,
++			      unsigned long config)
++{
++	unsigned long gmpp = readl(DOVE_MPP_GENERAL_VIRT_BASE);
++
++	gmpp &= ~DOVE_NAND_GPIO_EN;
++	if (config)
++		gmpp |= DOVE_NAND_GPIO_EN;
++
++	writel(gmpp, DOVE_MPP_GENERAL_VIRT_BASE);
++
++	return 0;
++}
++
++static int dove_audio0_ctrl_get(struct mvebu_mpp_ctrl *ctrl,
++				unsigned long *config)
++{
++	unsigned long pmu = readl(DOVE_PMU_MPP_GENERAL_CTRL);
++
++	*config = ((pmu & DOVE_AU0_AC97_SEL) != 0);
++
++	return 0;
++}
++
++static int dove_audio0_ctrl_set(struct mvebu_mpp_ctrl *ctrl,
++				unsigned long config)
++{
++	unsigned long pmu = readl(DOVE_PMU_MPP_GENERAL_CTRL);
++
++	pmu &= ~DOVE_AU0_AC97_SEL;
++	if (config)
++		pmu |= DOVE_AU0_AC97_SEL;
++	writel(pmu, DOVE_PMU_MPP_GENERAL_CTRL);
++
++	return 0;
++}
++
++static int dove_audio1_ctrl_get(struct mvebu_mpp_ctrl *ctrl,
++				unsigned long *config)
++{
++	unsigned long mpp4 = readl(DOVE_MPP_CTRL4_VIRT_BASE);
++	unsigned long sspc1 = readl(DOVE_SSP_CTRL_STATUS_1);
++	unsigned long gmpp = readl(DOVE_MPP_GENERAL_VIRT_BASE);
++	unsigned long gcfg2 = readl(DOVE_GLOBAL_CONFIG_2);
++
++	*config = 0;
++	if (mpp4 & DOVE_AU1_GPIO_SEL)
++		*config |= BIT(3);
++	if (sspc1 & DOVE_SSP_ON_AU1)
++		*config |= BIT(2);
++	if (gmpp & DOVE_AU1_SPDIFO_GPIO_EN)
++		*config |= BIT(1);
++	if (gcfg2 & DOVE_TWSI_OPTION3_GPIO)
++		*config |= BIT(0);
++
++	/* SSP/TWSI only if I2S1 not set*/
++	if ((*config & BIT(3)) == 0)
++		*config &= ~(BIT(2) | BIT(0));
++	/* TWSI only if SPDIFO not set*/
++	if ((*config & BIT(1)) == 0)
++		*config &= ~BIT(0);
++	return 0;
++}
++
++static int dove_audio1_ctrl_set(struct mvebu_mpp_ctrl *ctrl,
++				unsigned long config)
++{
++	unsigned long mpp4 = readl(DOVE_MPP_CTRL4_VIRT_BASE);
++	unsigned long sspc1 = readl(DOVE_SSP_CTRL_STATUS_1);
++	unsigned long gmpp = readl(DOVE_MPP_GENERAL_VIRT_BASE);
++	unsigned long gcfg2 = readl(DOVE_GLOBAL_CONFIG_2);
++
++	if (config & BIT(0))
++		gcfg2 |= DOVE_TWSI_OPTION3_GPIO;
++	if (config & BIT(1))
++		gmpp |= DOVE_AU1_SPDIFO_GPIO_EN;
++	if (config & BIT(2))
++		sspc1 |= DOVE_SSP_ON_AU1;
++	if (config & BIT(3))
++		mpp4 |= DOVE_AU1_GPIO_SEL;
++
++	writel(mpp4, DOVE_MPP_CTRL4_VIRT_BASE);
++	writel(sspc1, DOVE_SSP_CTRL_STATUS_1);
++	writel(gmpp, DOVE_MPP_GENERAL_VIRT_BASE);
++	writel(gcfg2, DOVE_GLOBAL_CONFIG_2);
++
++	return 0;
++}
++
++/* mpp[52:57] gpio pins depend heavily on current config;
++ * gpio_req does not try to mux in gpio capabilities to not
++ * break other functions. If you require all mpps as gpio
++ * enforce gpio setting by pinctrl mapping.
++ */
++static int dove_audio1_ctrl_gpio_req(struct mvebu_mpp_ctrl *ctrl, u8 pid)
++{
++	unsigned long config;
++
++	dove_audio1_ctrl_get(ctrl, &config);
++
++	switch (config) {
++	case 0x02: /* i2s1 : gpio[56:57] */
++	case 0x0e: /* ssp  : gpio[56:57] */
++		if (pid >= 56)
++			return 0;
++		return -ENOTSUPP;
++	case 0x08: /* spdifo : gpio[52:55] */
++	case 0x0b: /* twsi   : gpio[52:55] */
++		if (pid <= 55)
++			return 0;
++		return -ENOTSUPP;
++	case 0x0a: /* all gpio */
++		return 0;
++	/* 0x00 : i2s1/spdifo : no gpio */
++	/* 0x0c : ssp/spdifo  : no gpio */
++	/* 0x0f : ssp/twsi    : no gpio */
++	}
++	return -ENOTSUPP;
++}
++
++/* mpp[52:57] has gpio pins capable of in and out */
++static int dove_audio1_ctrl_gpio_dir(struct mvebu_mpp_ctrl *ctrl, u8 pid,
++				bool input)
++{
++	if (pid < 52 || pid > 57)
++		return -ENOTSUPP;
++	return 0;
++}
++
++static int dove_twsi_ctrl_get(struct mvebu_mpp_ctrl *ctrl,
++			      unsigned long *config)
++{
++	unsigned long gcfg1 = readl(DOVE_GLOBAL_CONFIG_1);
++	unsigned long gcfg2 = readl(DOVE_GLOBAL_CONFIG_2);
++
++	*config = 0;
++	if (gcfg1 & DOVE_TWSI_ENABLE_OPTION1)
++		*config = 1;
++	else if (gcfg2 & DOVE_TWSI_ENABLE_OPTION2)
++		*config = 2;
++	else if (gcfg2 & DOVE_TWSI_ENABLE_OPTION3)
++		*config = 3;
++
++	return 0;
++}
++
++static int dove_twsi_ctrl_set(struct mvebu_mpp_ctrl *ctrl,
++				unsigned long config)
++{
++	unsigned long gcfg1 = readl(DOVE_GLOBAL_CONFIG_1);
++	unsigned long gcfg2 = readl(DOVE_GLOBAL_CONFIG_2);
++
++	gcfg1 &= ~DOVE_TWSI_ENABLE_OPTION1;
++	gcfg2 &= ~(DOVE_TWSI_ENABLE_OPTION2 | DOVE_TWSI_ENABLE_OPTION2);
++
++	switch (config) {
++	case 1:
++		gcfg1 |= DOVE_TWSI_ENABLE_OPTION1;
++		break;
++	case 2:
++		gcfg2 |= DOVE_TWSI_ENABLE_OPTION2;
++		break;
++	case 3:
++		gcfg2 |= DOVE_TWSI_ENABLE_OPTION3;
++		break;
++	}
++
++	writel(gcfg1, DOVE_GLOBAL_CONFIG_1);
++	writel(gcfg2, DOVE_GLOBAL_CONFIG_2);
++
++	return 0;
++}
++
++static struct mvebu_mpp_ctrl dove_mpp_controls[] = {
++	MPP_FUNC_CTRL(0, 0, "mpp0", dove_pmu_mpp_ctrl),
++	MPP_FUNC_CTRL(1, 1, "mpp1", dove_pmu_mpp_ctrl),
++	MPP_FUNC_CTRL(2, 2, "mpp2", dove_pmu_mpp_ctrl),
++	MPP_FUNC_CTRL(3, 3, "mpp3", dove_pmu_mpp_ctrl),
++	MPP_FUNC_CTRL(4, 4, "mpp4", dove_pmu_mpp_ctrl),
++	MPP_FUNC_CTRL(5, 5, "mpp5", dove_pmu_mpp_ctrl),
++	MPP_FUNC_CTRL(6, 6, "mpp6", dove_pmu_mpp_ctrl),
++	MPP_FUNC_CTRL(7, 7, "mpp7", dove_pmu_mpp_ctrl),
++	MPP_FUNC_CTRL(8, 8, "mpp8", dove_pmu_mpp_ctrl),
++	MPP_FUNC_CTRL(9, 9, "mpp9", dove_pmu_mpp_ctrl),
++	MPP_FUNC_CTRL(10, 10, "mpp10", dove_pmu_mpp_ctrl),
++	MPP_FUNC_CTRL(11, 11, "mpp11", dove_pmu_mpp_ctrl),
++	MPP_FUNC_CTRL(12, 12, "mpp12", dove_pmu_mpp_ctrl),
++	MPP_FUNC_CTRL(13, 13, "mpp13", dove_pmu_mpp_ctrl),
++	MPP_FUNC_CTRL(14, 14, "mpp14", dove_pmu_mpp_ctrl),
++	MPP_FUNC_CTRL(15, 15, "mpp15", dove_pmu_mpp_ctrl),
++	MPP_REG_CTRL(16, 23),
++	MPP_FUNC_CTRL(24, 39, "mpp_camera", dove_mpp4_ctrl),
++	MPP_FUNC_CTRL(40, 45, "mpp_sdio0", dove_mpp4_ctrl),
++	MPP_FUNC_CTRL(46, 51, "mpp_sdio1", dove_mpp4_ctrl),
++	MPP_FUNC_GPIO_CTRL(52, 57, "mpp_audio1", dove_audio1_ctrl),
++	MPP_FUNC_CTRL(58, 61, "mpp_spi0", dove_mpp4_ctrl),
++	MPP_FUNC_CTRL(62, 63, "mpp_uart1", dove_mpp4_ctrl),
++	MPP_FUNC_CTRL(64, 71, "mpp_nand", dove_nand_ctrl),
++	MPP_FUNC_CTRL(72, 72, "audio0", dove_audio0_ctrl),
++	MPP_FUNC_CTRL(73, 73, "twsi", dove_twsi_ctrl),
 +};
 +
-+static struct mvebu_mpp_mode mv88f6xxx_mpp_modes[] = {
++static struct mvebu_mpp_mode dove_mpp_modes[] = {
 +	MPP_MODE(0,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "nand", "io2",     V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "spi", "cs",       V(1, 1, 1, 1, 1))),
++		MPP_FUNCTION(0x00, "gpio", NULL),
++		MPP_FUNCTION(0x02, "uart2", "rts"),
++		MPP_FUNCTION(0x03, "sdio0", "cd"),
++		MPP_FUNCTION(0x0f, "lcd0", "pwm"),
++		MPP_FUNCTION(0x10, "pmu", NULL)),
 +	MPP_MODE(1,
-+		MPP_VAR_FUNCTION(0x0, "gpo", NULL,       V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "nand", "io3",     V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "spi", "mosi",     V(1, 1, 1, 1, 1))),
++		MPP_FUNCTION(0x00, "gpio", NULL),
++		MPP_FUNCTION(0x02, "uart2", "cts"),
++		MPP_FUNCTION(0x03, "sdio0", "wp"),
++		MPP_FUNCTION(0x0f, "lcd1", "pwm"),
++		MPP_FUNCTION(0x10, "pmu", NULL)),
 +	MPP_MODE(2,
-+		MPP_VAR_FUNCTION(0x0, "gpo", NULL,       V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "nand", "io4",     V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "spi", "sck",      V(1, 1, 1, 1, 1))),
++		MPP_FUNCTION(0x00, "gpio", NULL),
++		MPP_FUNCTION(0x01, "sata", "prsnt"),
++		MPP_FUNCTION(0x02, "uart2", "txd"),
++		MPP_FUNCTION(0x03, "sdio0", "buspwr"),
++		MPP_FUNCTION(0x04, "uart1", "rts"),
++		MPP_FUNCTION(0x10, "pmu", NULL)),
 +	MPP_MODE(3,
-+		MPP_VAR_FUNCTION(0x0, "gpo", NULL,       V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "nand", "io5",     V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "spi", "miso",     V(1, 1, 1, 1, 1))),
++		MPP_FUNCTION(0x00, "gpio", NULL),
++		MPP_FUNCTION(0x01, "sata", "act"),
++		MPP_FUNCTION(0x02, "uart2", "rxd"),
++		MPP_FUNCTION(0x03, "sdio0", "ledctrl"),
++		MPP_FUNCTION(0x04, "uart1", "cts"),
++		MPP_FUNCTION(0x0f, "lcd-spi", "cs1"),
++		MPP_FUNCTION(0x10, "pmu", NULL)),
 +	MPP_MODE(4,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "nand", "io6",     V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "uart0", "rxd",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x5, "sata1", "act",    V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "hsync",    V(0, 0, 0, 0, 1)),
-+		MPP_VAR_FUNCTION(0xd, "ptp", "clk",      V(1, 1, 1, 1, 0))),
++		MPP_FUNCTION(0x00, "gpio", NULL),
++		MPP_FUNCTION(0x02, "uart3", "rts"),
++		MPP_FUNCTION(0x03, "sdio1", "cd"),
++		MPP_FUNCTION(0x04, "spi1", "miso"),
++		MPP_FUNCTION(0x10, "pmu", NULL)),
 +	MPP_MODE(5,
-+		MPP_VAR_FUNCTION(0x0, "gpo", NULL,       V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "nand", "io7",     V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "uart0", "txd",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "ptp", "trig",     V(1, 1, 1, 1, 0)),
-+		MPP_VAR_FUNCTION(0x5, "sata0", "act",    V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "vsync",    V(0, 0, 0, 0, 1))),
++		MPP_FUNCTION(0x00, "gpio", NULL),
++		MPP_FUNCTION(0x02, "uart3", "cts"),
++		MPP_FUNCTION(0x03, "sdio1", "wp"),
++		MPP_FUNCTION(0x04, "spi1", "cs"),
++		MPP_FUNCTION(0x10, "pmu", NULL)),
 +	MPP_MODE(6,
-+		MPP_VAR_FUNCTION(0x0, "sysrst", "out",   V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "spi", "mosi",     V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "ptp", "trig",     V(1, 1, 1, 1, 0))),
++		MPP_FUNCTION(0x00, "gpio", NULL),
++		MPP_FUNCTION(0x02, "uart3", "txd"),
++		MPP_FUNCTION(0x03, "sdio1", "buspwr"),
++		MPP_FUNCTION(0x04, "spi1", "mosi"),
++		MPP_FUNCTION(0x10, "pmu", NULL)),
 +	MPP_MODE(7,
-+		MPP_VAR_FUNCTION(0x0, "gpo", NULL,       V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "pex", "rsto",     V(1, 1, 1, 1, 0)),
-+		MPP_VAR_FUNCTION(0x2, "spi", "cs",       V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ptp", "trig",     V(1, 1, 1, 1, 0)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "pwm",      V(0, 0, 0, 0, 1))),
++		MPP_FUNCTION(0x00, "gpio", NULL),
++		MPP_FUNCTION(0x02, "uart3", "rxd"),
++		MPP_FUNCTION(0x03, "sdio1", "ledctrl"),
++		MPP_FUNCTION(0x04, "spi1", "sck"),
++		MPP_FUNCTION(0x10, "pmu", NULL)),
 +	MPP_MODE(8,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "twsi0", "sda",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "uart0", "rts",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "uart1", "rts",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "mii-1", "rxerr",  V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x5, "sata1", "prsnt",  V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xc, "ptp", "clk",      V(1, 1, 1, 1, 0)),
-+		MPP_VAR_FUNCTION(0xd, "mii", "col",      V(1, 1, 1, 1, 1))),
++		MPP_FUNCTION(0x00, "gpio", NULL),
++		MPP_FUNCTION(0x01, "watchdog", "rstout"),
++		MPP_FUNCTION(0x10, "pmu", NULL)),
 +	MPP_MODE(9,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "twsi0", "sck",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "uart0", "cts",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "uart1", "cts",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x5, "sata0", "prsnt",  V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xc, "ptp", "evreq",    V(1, 1, 1, 1, 0)),
-+		MPP_VAR_FUNCTION(0xd, "mii", "crs",      V(1, 1, 1, 1, 1))),
++		MPP_FUNCTION(0x00, "gpio", NULL),
++		MPP_FUNCTION(0x05, "pex1", "clkreq"),
++		MPP_FUNCTION(0x10, "pmu", NULL)),
 +	MPP_MODE(10,
-+		MPP_VAR_FUNCTION(0x0, "gpo", NULL,       V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "spi", "sck",      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0X3, "uart0", "txd",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x5, "sata1", "act",    V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xc, "ptp", "trig",     V(1, 1, 1, 1, 0))),
++		MPP_FUNCTION(0x00, "gpio", NULL),
++		MPP_FUNCTION(0x05, "ssp", "sclk"),
++		MPP_FUNCTION(0x10, "pmu", NULL)),
 +	MPP_MODE(11,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "spi", "miso",     V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "uart0", "rxd",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "ptp-1", "evreq",  V(1, 1, 1, 1, 0)),
-+		MPP_VAR_FUNCTION(0xc, "ptp-2", "trig",   V(1, 1, 1, 1, 0)),
-+		MPP_VAR_FUNCTION(0xd, "ptp", "clk",      V(1, 1, 1, 1, 0)),
-+		MPP_VAR_FUNCTION(0x5, "sata0", "act",    V(0, 1, 1, 1, 1))),
++		MPP_FUNCTION(0x00, "gpio", NULL),
++		MPP_FUNCTION(0x01, "sata", "prsnt"),
++		MPP_FUNCTION(0x02, "sata-1", "act"),
++		MPP_FUNCTION(0x03, "sdio0", "ledctrl"),
++		MPP_FUNCTION(0x04, "sdio1", "ledctrl"),
++		MPP_FUNCTION(0x05, "pex0", "clkreq"),
++		MPP_FUNCTION(0x10, "pmu", NULL)),
 +	MPP_MODE(12,
-+		MPP_VAR_FUNCTION(0x0, "gpo", NULL,       V(1, 1, 1, 0, 1)),
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 0, 0, 1, 0)),
-+		MPP_VAR_FUNCTION(0x1, "sdio", "clk",     V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xa, "audio", "spdifo", V(0, 0, 0, 0, 1)),
-+		MPP_VAR_FUNCTION(0xb, "spi", "mosi",     V(0, 0, 0, 0, 1)),
-+		MPP_VAR_FUNCTION(0xd, "twsi1", "sda",    V(0, 0, 0, 0, 1))),
++		MPP_FUNCTION(0x00, "gpio", NULL),
++		MPP_FUNCTION(0x01, "sata", "act"),
++		MPP_FUNCTION(0x02, "uart2", "rts"),
++		MPP_FUNCTION(0x03, "audio0", "extclk"),
++		MPP_FUNCTION(0x04, "sdio1", "cd"),
++		MPP_FUNCTION(0x10, "pmu", NULL)),
 +	MPP_MODE(13,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "sdio", "cmd",     V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "uart1", "txd",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xa, "audio", "rmclk",  V(0, 0, 0, 0, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "pwm",      V(0, 0, 0, 0, 1))),
++		MPP_FUNCTION(0x00, "gpio", NULL),
++		MPP_FUNCTION(0x02, "uart2", "cts"),
++		MPP_FUNCTION(0x03, "audio1", "extclk"),
++		MPP_FUNCTION(0x04, "sdio1", "wp"),
++		MPP_FUNCTION(0x05, "ssp", "extclk"),
++		MPP_FUNCTION(0x10, "pmu", NULL)),
 +	MPP_MODE(14,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "sdio", "d0",      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "uart1", "rxd",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "sata1", "prsnt",  V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xa, "audio", "spdifi", V(0, 0, 0, 0, 1)),
-+		MPP_VAR_FUNCTION(0xb, "audio-1", "sdi",  V(0, 0, 0, 0, 1)),
-+		MPP_VAR_FUNCTION(0xd, "mii", "col",      V(1, 1, 1, 1, 1))),
++		MPP_FUNCTION(0x00, "gpio", NULL),
++		MPP_FUNCTION(0x02, "uart2", "txd"),
++		MPP_FUNCTION(0x04, "sdio1", "buspwr"),
++		MPP_FUNCTION(0x05, "ssp", "rxd"),
++		MPP_FUNCTION(0x10, "pmu", NULL)),
 +	MPP_MODE(15,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "sdio", "d1",      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "uart0", "rts",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "uart1", "txd",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "sata0", "act",    V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "spi", "cs",       V(0, 0, 0, 0, 1))),
++		MPP_FUNCTION(0x00, "gpio", NULL),
++		MPP_FUNCTION(0x02, "uart2", "rxd"),
++		MPP_FUNCTION(0x04, "sdio1", "ledctrl"),
++		MPP_FUNCTION(0x05, "ssp", "sfrm"),
++		MPP_FUNCTION(0x10, "pmu", NULL)),
 +	MPP_MODE(16,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "sdio", "d2",      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "uart0", "cts",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "uart1", "rxd",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "sata1", "act",    V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "extclk",   V(0, 0, 0, 0, 1)),
-+		MPP_VAR_FUNCTION(0xd, "mii", "crs",      V(1, 1, 1, 1, 1))),
++		MPP_FUNCTION(0x00, "gpio", NULL),
++		MPP_FUNCTION(0x02, "uart3", "rts"),
++		MPP_FUNCTION(0x03, "sdio0", "cd"),
++		MPP_FUNCTION(0x04, "lcd-spi", "cs1"),
++		MPP_FUNCTION(0x05, "ac97", "sdi1")),
 +	MPP_MODE(17,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "sdio", "d3",      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "sata0", "prsnt",  V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xa, "sata1", "act",    V(0, 0, 0, 0, 1)),
-+		MPP_VAR_FUNCTION(0xd, "twsi1", "sck",    V(0, 0, 0, 0, 1))),
++		MPP_FUNCTION(0x00, "gpio", NULL),
++		MPP_FUNCTION(0x01, "ac97-1", "sysclko"),
++		MPP_FUNCTION(0x02, "uart3", "cts"),
++		MPP_FUNCTION(0x03, "sdio0", "wp"),
++		MPP_FUNCTION(0x04, "twsi", "sda"),
++		MPP_FUNCTION(0x05, "ac97", "sdi2")),
 +	MPP_MODE(18,
-+		MPP_VAR_FUNCTION(0x0, "gpo", NULL,       V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "nand", "io0",     V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "pex", "clkreq",   V(0, 0, 0, 0, 1))),
++		MPP_FUNCTION(0x00, "gpio", NULL),
++		MPP_FUNCTION(0x02, "uart3", "txd"),
++		MPP_FUNCTION(0x03, "sdio0", "buspwr"),
++		MPP_FUNCTION(0x04, "lcd0", "pwm"),
++		MPP_FUNCTION(0x05, "ac97", "sdi3")),
 +	MPP_MODE(19,
-+		MPP_VAR_FUNCTION(0x0, "gpo", NULL,       V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "nand", "io1",     V(1, 1, 1, 1, 1))),
++		MPP_FUNCTION(0x00, "gpio", NULL),
++		MPP_FUNCTION(0x02, "uart3", "rxd"),
++		MPP_FUNCTION(0x03, "sdio0", "ledctrl"),
++		MPP_FUNCTION(0x04, "twsi", "sck")),
 +	MPP_MODE(20,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp0",       V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "tx0ql",    V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "txd0",     V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "spdifi", V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x5, "sata1", "act",    V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d0",       V(0, 0, 0, 0, 1)),
-+		MPP_VAR_FUNCTION(0xc, "mii", "rxerr",    V(1, 0, 0, 0, 0))),
++		MPP_FUNCTION(0x00, "gpio", NULL),
++		MPP_FUNCTION(0x01, "ac97", "sysclko"),
++		MPP_FUNCTION(0x02, "lcd-spi", "miso"),
++		MPP_FUNCTION(0x03, "sdio1", "cd"),
++		MPP_FUNCTION(0x05, "sdio0", "cd"),
++		MPP_FUNCTION(0x06, "spi1", "miso")),
 +	MPP_MODE(21,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp1",       V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "rx0ql",    V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "txd1",     V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "spdifi", V(1, 0, 0, 0, 0)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "spdifo", V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x5, "sata0", "act",    V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d1",       V(0, 0, 0, 0, 1))),
++		MPP_FUNCTION(0x00, "gpio", NULL),
++		MPP_FUNCTION(0x01, "uart1", "rts"),
++		MPP_FUNCTION(0x02, "lcd-spi", "cs0"),
++		MPP_FUNCTION(0x03, "sdio1", "wp"),
++		MPP_FUNCTION(0x04, "ssp", "sfrm"),
++		MPP_FUNCTION(0x05, "sdio0", "wp"),
++		MPP_FUNCTION(0x06, "spi1", "cs")),
 +	MPP_MODE(22,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp2",       V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "tx2ql",    V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "txd2",     V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "spdifo", V(1, 0, 0, 0, 0)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "rmclk",  V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x5, "sata1", "prsnt",  V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d2",       V(0, 0, 0, 0, 1))),
++		MPP_FUNCTION(0x00, "gpio", NULL),
++		MPP_FUNCTION(0x01, "uart1", "cts"),
++		MPP_FUNCTION(0x02, "lcd-spi", "mosi"),
++		MPP_FUNCTION(0x03, "sdio1", "buspwr"),
++		MPP_FUNCTION(0x04, "ssp", "txd"),
++		MPP_FUNCTION(0x05, "sdio0", "buspwr"),
++		MPP_FUNCTION(0x06, "spi1", "mosi")),
 +	MPP_MODE(23,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp3",       V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "rx2ql",    V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "txd3",     V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "rmclk",  V(1, 0, 0, 0, 0)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "bclk",   V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x5, "sata0", "prsnt",  V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d3",       V(0, 0, 0, 0, 1))),
++		MPP_FUNCTION(0x00, "gpio", NULL),
++		MPP_FUNCTION(0x02, "lcd-spi", "sck"),
++		MPP_FUNCTION(0x03, "sdio1", "ledctrl"),
++		MPP_FUNCTION(0x04, "ssp", "sclk"),
++		MPP_FUNCTION(0x05, "sdio0", "ledctrl"),
++		MPP_FUNCTION(0x06, "spi1", "sck")),
 +	MPP_MODE(24,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp4",       V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "spi-cs0",  V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "rxd0",     V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "bclk",   V(1, 0, 0, 0, 0)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "sdo",    V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d4",       V(0, 0, 0, 0, 1))),
-+	MPP_MODE(25,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp5",       V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "spi-sck",  V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "rxd1",     V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "sdo",    V(1, 0, 0, 0, 0)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "lrclk",  V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d5",       V(0, 0, 0, 0, 1))),
-+	MPP_MODE(26,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp6",       V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "spi-miso", V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "rxd2",     V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "lrclk",  V(1, 0, 0, 0, 0)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "mclk",   V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d6",       V(0, 0, 0, 0, 1))),
-+	MPP_MODE(27,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp7",       V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "spi-mosi", V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "rxd3",     V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "mclk",   V(1, 0, 0, 0, 0)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "sdi",    V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d7",       V(0, 0, 0, 0, 1))),
-+	MPP_MODE(28,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp8",       V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "int",      V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "col",      V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "sdi",    V(1, 0, 0, 0, 0)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "extclk", V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d8",       V(0, 0, 0, 0, 1))),
-+	MPP_MODE(29,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp9",       V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "rst",      V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "txclk",    V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "extclk", V(1, 0, 0, 0, 0)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d9",       V(0, 0, 0, 0, 1))),
-+	MPP_MODE(30,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp10",      V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "pclk",     V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "rxctl",    V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d10",      V(0, 0, 0, 0, 1))),
-+	MPP_MODE(31,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp11",      V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "fs",       V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "rxclk",    V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d11",      V(0, 0, 0, 0, 1))),
-+	MPP_MODE(32,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp12",      V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "drx",      V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "txclko",   V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d12",      V(0, 0, 0, 0, 1))),
-+	MPP_MODE(33,
-+		MPP_VAR_FUNCTION(0x0, "gpo", NULL,       V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "dtx",      V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "txctl",    V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d13",      V(0, 0, 0, 0, 1))),
-+	MPP_MODE(34,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "spi-cs1",  V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "txen",     V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x5, "sata1", "act",    V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d14",      V(0, 0, 0, 0, 1))),
-+	MPP_MODE(35,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "tx0ql",    V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "rxerr",    V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x5, "sata0", "act",    V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d15",      V(0, 0, 0, 0, 1)),
-+		MPP_VAR_FUNCTION(0xc, "mii", "rxerr",    V(0, 1, 1, 1, 1))),
-+	MPP_MODE(36,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp0",       V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "spi-cs1",  V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "spdifi", V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "twsi1", "sda",    V(0, 0, 0, 0, 1))),
-+	MPP_MODE(37,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp1",       V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "tx2ql",    V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "spdifo", V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "twsi1", "sck",    V(0, 0, 0, 0, 1))),
-+	MPP_MODE(38,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp2",       V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "rx2ql",    V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "rmclk",  V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d18",      V(0, 0, 0, 0, 1))),
-+	MPP_MODE(39,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp3",       V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "spi-cs0",  V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "bclk",   V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d19",      V(0, 0, 0, 0, 1))),
++		MPP_FUNCTION(0x00, "camera", NULL),
++		MPP_FUNCTION(0x01, "gpio", NULL)),
 +	MPP_MODE(40,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp4",       V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "spi-sck",  V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "sdo",    V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d20",      V(0, 0, 0, 0, 1))),
-+	MPP_MODE(41,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp5",       V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "spi-miso", V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "lrclk",  V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d21",      V(0, 0, 0, 0, 1))),
-+	MPP_MODE(42,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp6",       V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "spi-mosi", V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "mclk",   V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d22",      V(0, 0, 0, 0, 1))),
-+	MPP_MODE(43,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp7",       V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "int",      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "sdi",    V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d23",      V(0, 0, 0, 0, 1))),
-+	MPP_MODE(44,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp8",       V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "rst",      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "extclk", V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "clk",      V(0, 0, 0, 0, 1))),
-+	MPP_MODE(45,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp9",       V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "pclk",     V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "e",        V(0, 0, 0, 0, 1))),
++		MPP_FUNCTION(0x00, "sdio0", NULL),
++		MPP_FUNCTION(0x01, "gpio", NULL)),
 +	MPP_MODE(46,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp10",      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "fs",       V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "hsync",    V(0, 0, 0, 0, 1))),
-+	MPP_MODE(47,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp11",      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "drx",      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "vsync",    V(0, 0, 0, 0, 1))),
-+	MPP_MODE(48,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp12",      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "dtx",      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d16",      V(0, 0, 0, 0, 1))),
-+	MPP_MODE(49,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 0, 0, 1, 0)),
-+		MPP_VAR_FUNCTION(0x0, "gpo", NULL,       V(0, 0, 0, 0, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp9",       V(0, 0, 0, 1, 0)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "rx0ql",    V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x5, "ptp", "clk",      V(0, 0, 0, 1, 0)),
-+		MPP_VAR_FUNCTION(0xa, "pex", "clkreq",   V(0, 0, 0, 0, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d17",      V(0, 0, 0, 0, 1))),
++		MPP_FUNCTION(0x00, "sdio1", NULL),
++		MPP_FUNCTION(0x01, "gpio", NULL)),
++	MPP_MODE(52,
++		MPP_FUNCTION(0x00, "i2s1/spdifo", NULL),
++		MPP_FUNCTION(0x02, "i2s1", NULL),
++		MPP_FUNCTION(0x08, "spdifo", NULL),
++		MPP_FUNCTION(0x0a, "gpio", NULL),
++		MPP_FUNCTION(0x0b, "twsi", NULL),
++		MPP_FUNCTION(0x0c, "ssp/spdifo", NULL),
++		MPP_FUNCTION(0x0e, "ssp", NULL),
++		MPP_FUNCTION(0x0f, "ssp/twsi", NULL)),
++	MPP_MODE(58,
++		MPP_FUNCTION(0x00, "spi0", NULL),
++		MPP_FUNCTION(0x01, "gpio", NULL)),
++	MPP_MODE(62,
++		MPP_FUNCTION(0x00, "uart1", NULL),
++		MPP_FUNCTION(0x01, "gpio", NULL)),
++	MPP_MODE(64,
++		MPP_FUNCTION(0x00, "nand", NULL),
++		MPP_FUNCTION(0x01, "gpo", NULL)),
++	MPP_MODE(72,
++		MPP_FUNCTION(0x00, "i2s", NULL),
++		MPP_FUNCTION(0x01, "ac97", NULL)),
++	MPP_MODE(73,
++		MPP_FUNCTION(0x00, "none", NULL),
++		MPP_FUNCTION(0x01, "opt1", NULL),
++		MPP_FUNCTION(0x02, "opt2", NULL),
++		MPP_FUNCTION(0x03, "opt3", NULL)),
 +};
 +
-+static struct mvebu_mpp_ctrl mv88f6180_mpp_controls[] = {
-+	MPP_REG_CTRL(0, 29),
-+};
-+
-+static struct pinctrl_gpio_range mv88f6180_gpio_ranges[] = {
-+	MPP_GPIO_RANGE(0, 0, 0, 30),
-+};
-+
-+static struct mvebu_mpp_ctrl mv88f619x_mpp_controls[] = {
-+	MPP_REG_CTRL(0, 35),
-+};
-+
-+static struct pinctrl_gpio_range mv88f619x_gpio_ranges[] = {
++static struct pinctrl_gpio_range dove_mpp_gpio_ranges[] = {
 +	MPP_GPIO_RANGE(0,  0,  0, 32),
-+	MPP_GPIO_RANGE(1, 32, 32,  4),
++	MPP_GPIO_RANGE(1, 32, 32, 32),
++	MPP_GPIO_RANGE(2, 64, 64,  8),
 +};
 +
-+static struct mvebu_mpp_ctrl mv88f628x_mpp_controls[] = {
-+	MPP_REG_CTRL(0, 49),
++static struct mvebu_pinctrl_soc_info dove_pinctrl_info = {
++	.controls = dove_mpp_controls,
++	.ncontrols = ARRAY_SIZE(dove_mpp_controls),
++	.modes = dove_mpp_modes,
++	.nmodes = ARRAY_SIZE(dove_mpp_modes),
++	.gpioranges = dove_mpp_gpio_ranges,
++	.ngpioranges = ARRAY_SIZE(dove_mpp_gpio_ranges),
++	.variant = 0,
 +};
 +
-+static struct pinctrl_gpio_range mv88f628x_gpio_ranges[] = {
-+	MPP_GPIO_RANGE(0,  0,  0, 32),
-+	MPP_GPIO_RANGE(1, 32, 32, 18),
-+};
++static struct clk *clk;
 +
-+static struct mvebu_pinctrl_soc_info mv88f6180_soc_info = {
-+	.variant = VARIANT_MV88F6180,
-+	.controls = mv88f6180_mpp_controls,
-+	.ncontrols = ARRAY_SIZE(mv88f6180_mpp_controls),
-+	.modes = mv88f6xxx_mpp_modes,
-+	.nmodes = ARRAY_SIZE(mv88f6xxx_mpp_modes),
-+	.gpioranges = mv88f6180_gpio_ranges,
-+	.ngpioranges = ARRAY_SIZE(mv88f6180_gpio_ranges),
-+};
-+
-+static struct mvebu_pinctrl_soc_info mv88f6190_soc_info = {
-+	.variant = VARIANT_MV88F6190,
-+	controls = mv88f619x_mpp_controls,
-+	ncontrols = ARRAY_SIZE(mv88f619x_mpp_controls),
-+	modes = mv88f6xxx_mpp_modes,
-+	nmodes = ARRAY_SIZE(mv88f6xxx_mpp_modes),
-+	gpioranges = mv88f619x_gpio_ranges,
-+	ngpioranges = ARRAY_SIZE(mv88f619x_gpio_ranges),
-+};
-+
-+static struct mvebu_pinctrl_soc_info mv88f6192_soc_info = {
-+	.variant = VARIANT_MV88F6192,
-+	.controls = mv88f619x_mpp_controls,
-+	.ncontrols = ARRAY_SIZE(mv88f619x_mpp_controls),
-+	.modes = mv88f6xxx_mpp_modes,
-+	.nmodes = ARRAY_SIZE(mv88f6xxx_mpp_modes),
-+	.gpioranges = mv88f619x_gpio_ranges,
-+	.ngpioranges = ARRAY_SIZE(mv88f619x_gpio_ranges),
-+};
-+
-+static struct mvebu_pinctrl_soc_info mv88f6281_soc_info = {
-+	.variant = VARIANT_MV88F6281,
-+	.controls = mv88f628x_mpp_controls,
-+	.ncontrols = ARRAY_SIZE(mv88f628x_mpp_controls),
-+	.modes = mv88f6xxx_mpp_modes,
-+	.nmodes = ARRAY_SIZE(mv88f6xxx_mpp_modes),
-+	.gpioranges = mv88f628x_gpio_ranges,
-+	.ngpioranges = ARRAY_SIZE(mv88f628x_gpio_ranges),
-+};
-+
-+static struct mvebu_pinctrl_soc_info mv88f6282_soc_info = {
-+	.variant = VARIANT_MV88F6282,
-+	.controls = mv88f628x_mpp_controls,
-+	.ncontrols = ARRAY_SIZE(mv88f628x_mpp_controls),
-+	.modes = mv88f6xxx_mpp_modes,
-+	.nmodes = ARRAY_SIZE(mv88f6xxx_mpp_modes),
-+	.gpioranges = mv88f628x_gpio_ranges,
-+	.ngpioranges = ARRAY_SIZE(mv88f628x_gpio_ranges),
-+};
-+
-+static struct of_device_id kirkwood_pinctrl_of_match[] __devinitdata = {
-+	{ .compatible = "marvell,88f6180-pinctrl", .data = mv88f6180_soc_info },
-+	{ .compatible = "marvell,88f6190-pinctrl", .data = mv88f6190_soc_info },
-+	{ .compatible = "marvell,88f6192-pinctrl", .data = mv88f6192_soc_info },
-+	{ .compatible = "marvell,88f6281-pinctrl", .data = mv88f6281_soc_info },
-+	{ .compatible = "marvell,88f6282-pinctrl", .data = mv88f6282_soc_info },
++static struct of_device_id dove_pinctrl_of_match[] __devinitdata = {
++	{ .compatible = "marvell,dove-pinctrl", .data = &dove_pinctrl_info },
 +	{ }
 +};
 +
-+static int __devinit kirkwood_pinctrl_probe(struct platform_device *pdev)
++static int __devinit dove_pinctrl_probe(struct platform_device *pdev)
 +{
-+	struct mvebu_pinctrl_soc_info *soc = &kirkwood_pinctrl_info;
 +	const struct of_device_id *match =
-+		of_match_device(kirkwood_pinctrl_of_match, &pdev->dev);
-+	pdev->dev.platform_data = match->data;
++		of_match_device(dove_pinctrl_of_match, &pdev->dev);
++
++	if (match)
++		pdev->dev.platform_data = match->data;
++
++	/*
++	 * General MPP Configuration Register is part of pdma registers.
++	 * grab clk to make sure it is ticking.
++	 */
++	clk = devm_clk_get(&pdev->dev, NULL);
++	if (!IS_ERR(clk))
++		clk_prepare_enable(clk);
++
 +	return mvebu_pinctrl_probe(pdev);
 +}
 +
-+static int __devexit kirkwood_pinctrl_remove(struct platform_device *pdev)
++static int __devexit dove_pinctrl_remove(struct platform_device *pdev)
 +{
-+	return mvebu_pinctrl_remove(pdev);
++	int ret;
++
++	ret = mvebu_pinctrl_remove(pdev);
++	if (!IS_ERR(clk))
++		clk_disable_unprepare(clk);
++	return ret;
 +}
 +
-+static struct platform_driver kirkwood_pinctrl_driver = {
++static struct platform_driver dove_pinctrl_driver = {
 +	.driver = {
-+		.name = "kirkwood-pinctrl",
++		.name = "dove-pinctrl",
 +		.owner = THIS_MODULE,
-+		.of_match_table = of_match_ptr(kirkwood_pinctrl_of_match),
++		.of_match_table = of_match_ptr(dove_pinctrl_of_match),
 +	},
-+	.probe = kirkwood_pinctrl_probe,
-+	.remove = __devexit_p(kirkwood_pinctrl_remove),
++	.probe = dove_pinctrl_probe,
++	.remove = __devexit_p(dove_pinctrl_remove),
 +};
 +
-+module_platform_driver(kirkwood_pinctrl_driver);
++module_platform_driver(dove_pinctrl_driver);
 +
 +MODULE_AUTHOR("Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>");
-+MODULE_DESCRIPTION("Marvell Kirkwood pinctrl driver");
++MODULE_DESCRIPTION("Marvell Dove pinctrl driver");
 +MODULE_LICENSE("GPL v2");
 -- 
 1.7.10.4
