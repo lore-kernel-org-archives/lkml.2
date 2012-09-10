@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272Ab2IJVM0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 17:12:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42222 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751272Ab2IJVMY (ORCPT
+	id S1753149Ab2IJVSN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 17:18:13 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57402 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752444Ab2IJVSM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 17:12:24 -0400
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 16/20] HID: Only dump input if someone is listening
-Date: Mon, 10 Sep 2012 14:12:19 -0700
-Message-ID: <5556929.93aC5q4087@dtor-d630.eng.vmware.com>
-User-Agent: KMail/4.8.5 (Linux/3.5.3-1.fc17.x86_64; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <alpine.LNX.2.00.1209102248250.22683@pobox.suse.cz>
-References: <1346528835-363-1-git-send-email-rydberg@euromail.se> <20120910190226.GA877@polaris.bitmath.org> <alpine.LNX.2.00.1209102248250.22683@pobox.suse.cz>
+	Mon, 10 Sep 2012 17:18:12 -0400
+Date: Mon, 10 Sep 2012 22:17:57 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-arch@vger.kernel.org, Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 31/31] arm64: MAINTAINERS update
+Message-ID: <20120910211757.GD31998@n2100.arm.linux.org.uk>
+References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com> <1347035226-18649-32-git-send-email-catalin.marinas@arm.com> <20120909163156.GA31430@game.jcrosoft.org> <alpine.LFD.2.02.1209101355000.28681@xanadu.home>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1209101355000.28681@xanadu.home>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, September 10, 2012 10:49:13 PM Jiri Kosina wrote:
-> On Mon, 10 Sep 2012, Henrik Rydberg wrote:
-> > > how do you want to handle this? I am fine with all the HID changes. So
-> > > either I can take it through my tree and add your Sigoff to the Input
-> > > patches (if you are fine with those), or vice versa (or take this
-> > > through
-> > > git branches, i.e. you apply the Input bits, I fetch that branch, and
-> > > apply the rest on top of it).
-> > 
-> > I went ahead and pushed the (updated) branch to my for-next, to get
-> > some integration coverage. It is that time. Jiri, I added your
-> > Acked-by on the hid patches for now, hope that is alright.
+On Mon, Sep 10, 2012 at 01:57:57PM -0400, Nicolas Pitre wrote:
+> On Sun, 9 Sep 2012, Jean-Christophe PLAGNIOL-VILLARD wrote:
 > 
-> Yes, it is, thanks Henrik.
+> > On 17:27 Fri 07 Sep     , Catalin Marinas wrote:
+> > > This patch updates the MAINTAINERS file for the AArch64 Linux kernel
+> > > port.
+> > > 
+> > > Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> > > Acked-by: Tony Lindgren <tony@atomide.com>
+> > > Acked-by: Arnd Bergmann <arnd@arndb.de>
+> > > ---
+> > >  MAINTAINERS |    6 ++++++
+> > >  1 files changed, 6 insertions(+), 0 deletions(-)
+> > > 
+> > > diff --git a/MAINTAINERS b/MAINTAINERS
+> > > index fdc0119..de368a5 100644
+> > > --- a/MAINTAINERS
+> > > +++ b/MAINTAINERS
+> > > @@ -1209,6 +1209,12 @@ S:	Maintained
+> > >  F:	arch/arm/mach-pxa/z2.c
+> > >  F:	arch/arm/mach-pxa/include/mach/z2.h
+> > >  
+> > > +ARM64 PORT (AARCH64 ARCHITECTURE)
+> > > +M:	Catalin Marinas <catalin.marinas@arm.com>
+> > we should put Russell too
 > 
-> Dmitry, I can pull the whole lot into my tree once you Ack/Signoff the
-> input patches, if you wish.
+> He is not maintaining the ARM64 code.
 
-Yes, let me try to go through the patches tonight and I'll let yo know...
-
--- 
-Dmitry
+And, let's say the rest of it - it doesn't take much inteligence to work
+out what that means for me personally.
