@@ -1,28 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755694Ab2IJQo4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 12:44:56 -0400
+	id S1755910Ab2IJQp2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 12:45:28 -0400
 Received: from mail-ee0-f46.google.com ([74.125.83.46]:37240 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753272Ab2IJQoy (ORCPT
+	with ESMTP id S1753272Ab2IJQpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 12:44:54 -0400
-Date: Mon, 10 Sep 2012 17:44:49 +0100
+	Mon, 10 Sep 2012 12:45:24 -0400
+Date: Mon, 10 Sep 2012 17:45:20 +0100
 From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
         arnd@arndb.de, broonie@opensource.wolfsonmicro.com,
-        ola.o.lilja@stericsson.com, roger.xr.nilsson@stericsson.com,
         alsa-devel@alsa-project.org
-Subject: Re: [PATCH 05/17] ASoC: Ux500: Minor coding layout changes
-Message-ID: <20120910164448.GD24506@gmail.com>
-References: <1345816913-4113-1-git-send-email-lee.jones@linaro.org>
- <1345816913-4113-6-git-send-email-lee.jones@linaro.org>
+Subject: Re: [PATCH 06/22] ASoC: Ux500: Enable ux500 MSP driver for Device
+ Tree
+Message-ID: <20120910164518.GE24506@gmail.com>
+References: <1344527268-5964-1-git-send-email-lee.jones@linaro.org>
+ <1344527268-5964-7-git-send-email-lee.jones@linaro.org>
+ <CACRpkdb09UnPj6xV-rNxoeUS2yPLurA+n6zygWEA3_7OQfb0nA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1345816913-4113-6-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <CACRpkdb09UnPj6xV-rNxoeUS2yPLurA+n6zygWEA3_7OQfb0nA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,51 +32,23 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Ola poke.
 
-On Fri, Aug 24, 2012 at 03:01:41PM +0100, Lee Jones wrote:
-> Includes removal of duplicate debug print affirming entry into
-> the probe function, an unnecessary line break of a coding line
-> <80 chars and a white space change (unintentional tab).
+On Tue, Aug 14, 2012 at 10:55:59AM +0200, Linus Walleij wrote:
+> On Thu, Aug 9, 2012 at 5:47 PM, Lee Jones <lee.jones@linaro.org> wrote:
 > 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  sound/soc/ux500/mop500.c |    7 ++-----
->  1 file changed, 2 insertions(+), 5 deletions(-)
+> > Register both parts of the MSP driver from Device Tree so that they
+> > are probed when Device Tree is enabled. Also, as there is platform
+> > data involved, we ensure that there is allocated memory to place the
+> > configuration into and that the correct information is extracted from
+> > the DT binary.
+> >
+> > CC: alsa-devel@alsa-project.org
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
 > 
-> diff --git a/sound/soc/ux500/mop500.c b/sound/soc/ux500/mop500.c
-> index 6840df7..356611d 100644
-> --- a/sound/soc/ux500/mop500.c
-> +++ b/sound/soc/ux500/mop500.c
-> @@ -88,8 +88,6 @@ static int __devinit mop500_probe(struct platform_device *pdev)
->  	struct device_node *np = pdev->dev.of_node;
->  	int ret;
->  
-> -	pr_debug("%s: Enter.\n", __func__);
-> -
->  	dev_dbg(&pdev->dev, "%s: Enter.\n", __func__);
->  
->  	mop500_card.dev = &pdev->dev;
-> @@ -117,8 +115,7 @@ static int __devinit mop500_probe(struct platform_device *pdev)
->  	ret = snd_soc_register_card(&mop500_card);
->  	if (ret)
->  		dev_err(&pdev->dev,
-> -			"Error: snd_soc_register_card failed (%d)!\n",
-> -			ret);
-> +			"Error: snd_soc_register_card failed (%d)!\n", ret);
->  
->  	return ret;
->  }
-> @@ -131,7 +128,7 @@ static int __devexit mop500_remove(struct platform_device *pdev)
->  
->  	snd_soc_unregister_card(mop500_card);
->  	mop500_ab8500_remove(mop500_card);
-> -	
-> +
->  	return 0;
->  }
->  
-> -- 
-> 1.7.9.5
+> Looks like it's doing what's intended...
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
 > 
+> Yours,
+> Linus Walleij
 
 -- 
 Lee Jones
