@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756680Ab2IJNtU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 09:49:20 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:60369 "EHLO
+	id S1756842Ab2IJNv7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 09:51:59 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:49857 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752121Ab2IJNtT (ORCPT
+	with ESMTP id S1752490Ab2IJNv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 09:49:19 -0400
+	Mon, 10 Sep 2012 09:51:57 -0400
 From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 00/19] First HREF Device Tree enablement patch-set
-Date: Mon, 10 Sep 2012 13:49:08 +0000
+To: Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH v3 17/31] arm64: System calls handling
+Date: Mon, 10 Sep 2012 13:51:52 +0000
 User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
-        linus.walleij@stericsson.com
-References: <1347016499-29354-1-git-send-email-lee.jones@linaro.org> <201209101013.16697.arnd@arndb.de> <CACRpkdbPwiaF8tfEE7NNd_KE3VGtVx-pPwL-HObhh3fRYXqH=g@mail.gmail.com>
-In-Reply-To: <CACRpkdbPwiaF8tfEE7NNd_KE3VGtVx-pPwL-HObhh3fRYXqH=g@mail.gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com> <201209071943.37184.arnd@arndb.de> <20120910095619.GA27042@arm.com>
+In-Reply-To: <20120910095619.GA27042@arm.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201209101349.08857.arnd@arndb.de>
-X-Provags-ID: V02:K0:FVwr2tmnECAGW8Lj7/Z9GTvibC+W/BVhHyYXAjwxT7/
- 0T7kmWtgmHXjTUn34LhzHJ9X33SN8UAskYa7ZNKx6m1lX6/OVX
- 92oC4t2yAIWAaeAUHj3R7WTGP+9ITEr2gXVq1LWKvhPQLpI9WO
- zLGzeJkUBPFxIwRNiRcMDsVfwKY3g0OFkMH3LfUigJxvNiWmQK
- L45K3hgDgiQPuyXSataF2gJd0I9Ge9/u7HGJFwHAsVY22F4x1G
- anQUSzyPml6sOXgBXg6p/2E89Fm8hrRVXuFp0tS7qbzKCo/rzV
- 4ZMoVNJrKvLpsj2ZzHlhhcE/5260ltp/kFJRxOtihmDHxB9VCw
- A2yAgtlqoILpCqLZgZrg=
+Message-Id: <201209101351.52902.arnd@arndb.de>
+X-Provags-ID: V02:K0:0+9ywwCJjcFu/ONCs8ZI3AeyjUcM/YBxA4dzvabC6oR
+ BwEIsG5SnzsiLHvRGh/SBEmkpnbSSUJsu1yZnMOHFyWThu2AR4
+ EfYPR2c/r7LvvJQtFO2H6UKtu0Q9rTC91SSlzUedeFeDAyUL92
+ dTzZiyFxB97f5hloDNcNM+4zcdo2fYxSPZBaECk4OnHmSvAYWs
+ 7ypOMYXGCEW37FAyr1VvW+2I9XHgOFq8+Mq7c8slGLPeTdaoyf
+ jBqPNcYwerPaIzrT8fvzRnmh1hjLaEZEea4KVlKBHiBOPSgjGl
+ 8eKUaSN+XE8ahHI0ifNW1iqIhrYxOrZTfJ0GvlXBLPH2QEXvb/
+ xKVOZh8pEIyT0F1BfTCc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 10 September 2012, Linus Walleij wrote:
-> > When the driver offers
-> > two ways of probing a device, this lets us change from one way to
-> > the other without going through a phase where we use neither of them
-> > or (worse) both at the same time.
+On Monday 10 September 2012, Catalin Marinas wrote:
+> Yes, I've seen these but since Al's patches are not in mainline, I don't
+> want to add additional dependencies to the arm64 patches (currently
+> based on 3.6-rc4). Once they get into mainline, I'll add a patch that
+> converts arm64 to the generic functions above.
 > 
-> Maybe unrelated, but as usual it works as long as there are no
-> DMA channels or callback functions :-/
-> 
-> The MMC, PL022 patches in this patch set: both need
-> AUXDATA and DT data simultaneously due to DMA channels
-> and callbacks passed in as AUXDATA.
+> For kernel_execve(), I think I can simplify it further and not rely on
+> Al's patches (similar to other architectures doing an SVC from kernel):
 
-Yes, that's another discussion. When this happens, we obviously
-keep the platform data (or add a new version of it), but I'd still
-use one patch to add the node to the device tree and simultaneously
-add the auxdata and remove the static device registration.
+Hmm, I thought one of the reasons for Al to do his series was to discourage
+people from doing syscalls from kernel space, but I may be misremembering
+things. Al?
 
 	Arnd
