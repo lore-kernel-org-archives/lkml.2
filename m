@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751895Ab2IJRDi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 13:03:38 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:64594 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750935Ab2IJRDg (ORCPT
+	id S1752490Ab2IJRIj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 13:08:39 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:55308 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751495Ab2IJRIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 13:03:36 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+/I6CWaCaXrhAJmSJ7gFVt
-Date: Mon, 10 Sep 2012 10:03:32 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Benoit Cousson <b-cousson@ti.com>
-Cc: Matt Porter <mporter@ti.com>, Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Vaibhav Hiremath <hvaibhav@ti.com>
-Subject: Re: [PATCH] ARM: dts: AM33XX: fix gpio node numbering to match
- hardware
-Message-ID: <20120910170332.GX1303@atomide.com>
-References: <1347294020-22661-1-git-send-email-mporter@ti.com>
- <504E168C.6060603@ti.com>
+	Mon, 10 Sep 2012 13:08:37 -0400
+Message-ID: <504E1E19.9050106@linaro.org>
+Date: Mon, 10 Sep 2012 10:06:33 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <504E168C.6060603@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: BUG: soft lockup - CPU#1 stuck for 1024s!
+References: <20120909075927.GA13058@localhost>
+In-Reply-To: <20120909075927.GA13058@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12091017-5518-0000-0000-00000789E142
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Benoit Cousson <b-cousson@ti.com> [120910 09:35]:
-> + Tony
-> 
-> Hi Matt,
-> 
-> 30 minutes too late for my pull request :-(
-> 
-> There are a couple of am33xx patches under discussion, so I'll take them
-> and send a for_3.7/dts-part2 pull request if this is not too late for Tony.
+On 09/09/2012 12:59 AM, Fengguang Wu wrote:
+> Hi John,
+>
+> The below lockup warning pops up very occasionally in kvm guest
+> kernels and it's bisected down to
+>
+>          commit 2a8c0883c3cfffcc148ea606e2a4e7453cd75e73
+>          Author: John Stultz <john.stultz@linaro.org>
+>          Date:   Fri Jul 13 01:21:56 2012 -0400
+>
+>              time: Move xtime_nsec adjustment underflow handling timekeeping_adjust
+>
+> [    8.340327] Freeing unused kernel memory: 460k freed
+> [ 1107.515496] [sched_delayed] sched: RT throttling activated
+> [ 1107.516439] BUG: soft lockup - CPU#1 stuck for 1024s! [swapper/1:0]
 
-Yes please do, it' hard to say when exactly we need to stop merging,
-but probably we still have a bit more time.
 
-Regards,
+Thanks so much for sending this. One detail I'm curious about is that 
+these kernels from the Bug messages seem to be v3.6-rc1 or earlier.
 
-Tony
+Ingo had a fix 1d17d17484d40f2d5b35c79518597a2b25296996 ("time: Fix 
+adjustment cleanup bug in timekeeping_adjust") that landed in 3.6-rc2
+
+Has this issue actually been seen on a 3.6-rc2+ kernel?
+
+thanks
+-john
+
