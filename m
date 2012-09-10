@@ -1,42 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194Ab2IJH22 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 03:28:28 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:41043
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751260Ab2IJH2Y (ORCPT
+	id S1754333Ab2IJHcs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 03:32:48 -0400
+Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:40323 "EHLO
+	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751004Ab2IJHco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 03:28:24 -0400
-Date: Mon, 10 Sep 2012 03:28:20 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, target-devel@vger.kernel.org,
-        nab@linux-iscsi.org, hch@lst.de, roland@kernel.org
-Subject: Re: [PATCH 00/11] lots of fixes for zero allocation length
-Message-ID: <20120910072820.GA26052@infradead.org>
-References: <1347031842-2531-1-git-send-email-pbonzini@redhat.com>
+	Mon, 10 Sep 2012 03:32:44 -0400
+Date: Mon, 10 Sep 2012 10:32:38 +0300
+From: Sakari Ailus <sakari.ailus@iki.fi>
+To: Prabhakar Lad <prabhakar.lad@ti.com>
+Cc: LMML <linux-media@vger.kernel.org>,
+        dlos <davinci-linux-open-source@linux.davincidsp.com>,
+        linux-kernel@vger.kernel.org, Manjunath Hadli <manjunath.hadli@ti.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-doc@vger.kernel.org, Hans Verkuil <hans.verkuil@cisco.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Rob Landley <rob@landley.net>
+Subject: Re: [PATCH v5] media: v4l2-ctrls: add control for dpcm predictor
+Message-ID: <20120910073238.GH6834@valkosipuli.retiisi.org.uk>
+References: <1347256675-13391-1-git-send-email-prabhakar.lad@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1347031842-2531-1-git-send-email-pbonzini@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <1347256675-13391-1-git-send-email-prabhakar.lad@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 07, 2012 at 05:30:31PM +0200, Paolo Bonzini wrote:
-> Here are the fixes for zero-length commands, that ultimately let
-> all command go through normal processing, even if they have
-> zero length.
-> 
-> The first patch is for PSCSI, the others are for IBLOCK and friends.
-> I tried to order them so that the safest come first.  So for 3.6 you
-> could choose to stop at patch 1, 2, 3 or 6, or not apply anything
-> at all.
-> 
-> Testcases included in each patch, when relevant.
+Hi Prabhakar,
 
-Can you please submit them for the scsi testsuite?
+On Mon, Sep 10, 2012 at 11:27:55AM +0530, Prabhakar Lad wrote:
+...
+> +	  <row id="v4l2-dpcm-predictor">
+> +	    <entry spanname="descr"> Differential pulse-code modulation (DPCM) compression can
+> +	    be used to compress the samples into fewer bits than they would otherwise require.
+> +	    This is done by calculating the difference between consecutive samples and outputting
+> +	    the difference which in average is much smaller than the values of the samples
+> +	    themselves since there is generally lots of correlation between adjacent pixels. In
+> +	    decompression the original samples are reconstructed. The process isn't lossless as
+> +	    the encoded sample size in bits is less than the original.
+> +
+> +	    <para>Formats using DPCM compression include <xref linkend="pixfmt-srggb10dpcm8" />.</para>
+> +
+> +	    <para>This control is used to select the predictor used to encode the samples.</para>
+> +
+> +	    <para>The main difference between the simple and the advanced predictors is image quality,
+> +	    with advanced predictor supposed to produce better quality images as a result. Simple
+> +	    predictor can be used e.g. for testing purposes. For more information about DPCM see <ulink
+> +	    url="http://en.wikipedia.org/wiki/Differential_pulse-code_modulation">Wikipedia</ulink>.</para>
 
+Could you fit the above text (description of the control) at 80 characters
+per line? With that change,
+
+Acked-by: Sakari Ailus <sakari.ailus@iki.fi>
+
+Kind regards,
+
+-- 
+Sakari Ailus
+e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
