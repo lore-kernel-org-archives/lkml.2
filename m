@@ -1,61 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756186Ab2IJBXr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 21:23:47 -0400
-Received: from mga01.intel.com ([192.55.52.88]:27183 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756029Ab2IJBXq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 21:23:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,396,1344236400"; 
-   d="scan'208";a="220058177"
-Date: Mon, 10 Sep 2012 09:23:42 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [signal] WARNING: at kernel/lockdep.c:2623
- trace_hardirqs_off_caller()
-Message-ID: <20120910012342.GA28439@localhost>
-References: <20120910004753.GB27699@localhost>
- <20120910010706.GA28067@localhost>
- <20120910011332.GN13973@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120910011332.GN13973@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756272Ab2IJBeM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 21:34:12 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:59040 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753313Ab2IJBeL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Sep 2012 21:34:11 -0400
+Date: Mon, 10 Sep 2012 11:33:59 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jiri Kosina <jikos@jikos.cz>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>, Marek Vasut <marex@denx.de>
+Subject: linux-next: manual merge of the hid tree with Linus' tree
+Message-Id: <20120910113359.ddc30b010fcd73f00c993d23@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__10_Sep_2012_11_33_59_+1000_RFpO_H/YSS5okRWU"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 02:13:32AM +0100, Al Viro wrote:
-> On Mon, Sep 10, 2012 at 09:07:07AM +0800, Fengguang Wu wrote:
-> > Not sure if it's an unrelated warning, but anyway.
-> > 
-> > commit: c2865bb326476f031ce7121e876c656cdc12c894 [13/18] x86, um/x86: switch to generic sys_execve and kernel_execve
-> 
-> [commit in experimental-kernel_thread, not one in execve2/for-next/master]
-> 
-> Again, experimental-kernel_thread is build-only for now.  Is there any
+--Signature=_Mon__10_Sep_2012_11_33_59_+1000_RFpO_H/YSS5okRWU
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-OK.
+Hi Jiri,
 
-> regular way to tell your script that it should be either skipped or
-> only build-tested?
+Today's linux-next merge of the hid tree got a conflict in
+drivers/hid/usbhid/hid-quirks.c between commit 67ddbb3e6568 ("HID: add
+NOGET quirk for Eaton Ellipse MAX UPS") from Linus' tree and commit
+2843b673d034 ("HID: add quirk for Freescale i.MX28 ROM recovery") from
+the hid tree.
 
-The build for the entire branch will be auto skipped if any of its
-commits has this line in the changelog:
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary (no action is required).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Dont-Auto-Build
+diff --cc drivers/hid/usbhid/hid-quirks.c
+index 991e85c,9af530e..0000000
+--- a/drivers/hid/usbhid/hid-quirks.c
++++ b/drivers/hid/usbhid/hid-quirks.c
+@@@ -70,7 -70,7 +70,8 @@@ static const struct hid_blacklist=20
+  	{ USB_VENDOR_ID_CH, USB_DEVICE_ID_CH_AXIS_295, HID_QUIRK_NOGET },
+  	{ USB_VENDOR_ID_DMI, USB_DEVICE_ID_DMI_ENC, HID_QUIRK_NOGET },
+  	{ USB_VENDOR_ID_ELO, USB_DEVICE_ID_ELO_TS2700, HID_QUIRK_NOGET },
++ 	{ USB_VENDOR_ID_FREESCALE, USB_DEVICE_ID_FREESCALE_MX28, HID_QUIRK_NOGET=
+ },
+ +	{ USB_VENDOR_ID_MGE, USB_DEVICE_ID_MGE_UPS, HID_QUIRK_NOGET },
+  	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN, HID_Q=
+UIRK_NO_INIT_REPORTS },
+  	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN1, HID_=
+QUIRK_NO_INIT_REPORTS },
+  	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN2, HID_=
+QUIRK_NO_INIT_REPORTS },
 
-Perhaps we can do a similar
+--Signature=_Mon__10_Sep_2012_11_33_59_+1000_RFpO_H/YSS5okRWU
+Content-Type: application/pgp-signature
 
-Dont-Auto-Boot
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-to skip the boot tests.
+iQIcBAEBCAAGBQJQTUOHAAoJEECxmPOUX5FEdK8QAKgAXkVeG5sdXTyudMnU45ew
+zJDaWuoUdOKML4+M5D1vkA24pC17/nSNFEl3OtnBOQudPBA/rhOjZdQdEfIkTC5o
+mp6X5N7hjTPoBLTnUnBUg1sCKJ7K5st4kFNtqNkIiZF2g4giJL5oJm+Oqh4JUngf
+sFOkt/IvwA8FywU6IeSRP3DdD+r+p1WdQSM2zhA5VViLYz08EPVzM8u4pqdowWrA
+CtDVinU63l5g/YmrMQ0oNTVOv/O8oRKK+ES3Z35QQOH6R5PTnrmAUAKseDEDsSVg
+QHqRVOUeuWqIPigF0fHK9m+vUMuug8/6rk+1GU4Tx99pJQUzsfJNug7DS4A1hEuN
+ldGIf/xQ17G0nQ2VVndkTe9xpXxKp1PNN7PvmJ5ChZa71ytIothL5I7mwbIqAL9p
+XJb0NHlr51Dp3PDNk6IwwmlmhYH1prjYSnyrlkBm7cZUGt56aGd0YamQ5QrVXh7H
+vLgq1u5sW9TAe32cJzWCPZT7tP0rBnee0xlSWd0QjFrAuPRahzh/MbBD+0wIGGVo
+LFbaZGnMS6JFnkmJ2ze10jYVcvGbT198tsApbSy2//0KbJcLnFxoIquRM2piQza0
+Su/P3nL/a4qiFwLpQPMMvlX/hPdPR7QaYkc5CEzZTva2XKKXdCqrix8QgurhWwKa
+RAO1MV6IfuGIs12COBGq
+=dEl1
+-----END PGP SIGNATURE-----
 
-Or I can simply blacklist any branches matching *experimental* and
-skip both build/boot tests for them.
-
-Thanks,
-Fengguang
+--Signature=_Mon__10_Sep_2012_11_33_59_+1000_RFpO_H/YSS5okRWU--
