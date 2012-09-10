@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939Ab2IJItI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 04:49:08 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:40761 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751338Ab2IJItE (ORCPT
+	id S1756000Ab2IJIuN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 04:50:13 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:47345 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751338Ab2IJIuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 04:49:04 -0400
+	Mon, 10 Sep 2012 04:50:12 -0400
 MIME-Version: 1.0
-In-Reply-To: <1347016499-29354-3-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1347016499-29354-4-git-send-email-lee.jones@linaro.org>
 References: <1347016499-29354-1-git-send-email-lee.jones@linaro.org>
-	<1347016499-29354-3-git-send-email-lee.jones@linaro.org>
-Date: Mon, 10 Sep 2012 01:49:03 -0700
-Message-ID: <CACRpkdZAv9HDZWHPcsWP5VcH5hSiV3qeZLDPusaK2n8ffaKmvw@mail.gmail.com>
-Subject: Re: [PATCH 02/19] ARM: ux500: Add UART support to the HREF Device Tree
+	<1347016499-29354-4-git-send-email-lee.jones@linaro.org>
+Date: Mon, 10 Sep 2012 01:50:10 -0700
+Message-ID: <CACRpkda2dYTtXjgaoY1ujWLkx+iG6SdJkz=jPPcKU=bHkP_Y=g@mail.gmail.com>
+Subject: Re: [PATCH 03/19] ARM: ux500: Pass SDI DMA information though
+ AUX_DATA to MMCI
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -26,10 +27,14 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Fri, Sep 7, 2012 at 1:14 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-> Here we add three nodes enabling UART support on the HREF hardware
-> reference board.
+> There are four SDIs on the HREF, as opposed to the original two
+> enabled on Snowball. To get them working we have to pass their DMA
+> information in the same was as we need with the other two.
 >
 > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+
+Yeah this will all go away once we get our precious DMA DT
+bindings.
 
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
