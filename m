@@ -1,52 +1,498 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757496Ab2IJSMI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 14:12:08 -0400
+	id S1757573Ab2IJSMN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 14:12:13 -0400
 Received: from mga02.intel.com ([134.134.136.20]:29484 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756649Ab2IJSMF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 14:12:05 -0400
+	id S1756649Ab2IJSMI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 14:12:08 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,398,1344236400"; 
-   d="scan'208";a="191253080"
+   d="scan'208";a="191253092"
 From: Suresh Siddha <suresh.b.siddha@intel.com>
 To: hpa@zytor.com, mingo@kernel.org, torvalds@linux-foundation.org,
         andreas.herrmann3@amd.com, bp@amd64.org, robert.richter@amd.com
 Cc: linux-kernel@vger.kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: [PATCH v2 0/5] eagerfpu patches for tip/x86/fpu
-Date: Mon, 10 Sep 2012 11:11:00 -0700
-Message-Id: <1347300665-6209-1-git-send-email-suresh.b.siddha@intel.com>
+Subject: [PATCH v2 1/5] x86, fpu: decouple non-lazy/eager fpu restore from xsave
+Date: Mon, 10 Sep 2012 11:11:01 -0700
+Message-Id: <1347300665-6209-2-git-send-email-suresh.b.siddha@intel.com>
 X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <1347300665-6209-1-git-send-email-suresh.b.siddha@intel.com>
+References: <1347300665-6209-1-git-send-email-suresh.b.siddha@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v2 version of the previous patchset https://lkml.org/lkml/2012/9/7/548
-that decouples eagerfpu into a synthetic cpuid feature.
+Decouple non-lazy/eager fpu restore policy from the existence of the xsave
+feature. Introduce a synthetic CPUID flag to represent the eagerfpu
+policy. "eagerfpu=on" boot paramter will enable the policy.
 
-changes from v1:
-* Made "eagerfpu=" boot parameter tri-state
-* removed the cpu_has_xmm check in the fx_finit (not related to eagerfpu
-  per-say, but this patchset touches that area of code).
-
-Suresh Siddha (5):
-  x86, fpu: decouple non-lazy/eager fpu restore from xsave
-  x86, fpu: enable eagerfpu by default for xsaveopt
-  x86, fpu: move check_fpu() after alternative_instructions()
-  x86, fpu: make eagerfpu= boot param tri-state
-  x86, fpu: remove cpu_has_xmm check in the fx_finit()
-
- Documentation/kernel-parameters.txt |    6 ++
- arch/x86/include/asm/cpufeature.h   |    3 +
- arch/x86/include/asm/fpu-internal.h |   53 ++++++++++++++------
- arch/x86/kernel/cpu/bugs.c          |    7 ++-
+Requested-by: H. Peter Anvin <hpa@zytor.com>
+Requested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+---
+ Documentation/kernel-parameters.txt |    4 ++
+ arch/x86/include/asm/cpufeature.h   |    2 +
+ arch/x86/include/asm/fpu-internal.h |   54 ++++++++++++++++------
  arch/x86/kernel/cpu/common.c        |    2 -
- arch/x86/kernel/i387.c              |   25 +++------
+ arch/x86/kernel/i387.c              |   25 +++-------
  arch/x86/kernel/process.c           |    2 +-
  arch/x86/kernel/traps.c             |    2 +-
- arch/x86/kernel/xsave.c             |   95 ++++++++++++++++++++++++-----------
- 9 files changed, 129 insertions(+), 66 deletions(-)
+ arch/x86/kernel/xsave.c             |   87 +++++++++++++++++++++++------------
+ 8 files changed, 112 insertions(+), 66 deletions(-)
 
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index a92c5eb..6273099 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1834,6 +1834,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			and restore using xsave. The kernel will fallback to
+ 			enabling legacy floating-point and sse state.
+ 
++	eagerfpu=	[X86]
++			on	enable eager fpu restore
++			off	disable eager fpu restore
++
+ 	nohlt		[BUGS=ARM,SH] Tells the kernel that the sleep(SH) or
+ 			wfi(ARM) instruction doesn't work correctly and not to
+ 			use it. This is also useful when using JTAG debugger.
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index 340ee49..eb9f8d1 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -97,6 +97,7 @@
+ #define X86_FEATURE_EXTD_APICID	(3*32+26) /* has extended APICID (8 bits) */
+ #define X86_FEATURE_AMD_DCM     (3*32+27) /* multi-node processor */
+ #define X86_FEATURE_APERFMPERF	(3*32+28) /* APERFMPERF */
++#define X86_FEATURE_EAGER_FPU	(3*32+29) /* "eagerfpu" Non lazy FPU restore */
+ 
+ /* Intel-defined CPU features, CPUID level 0x00000001 (ecx), word 4 */
+ #define X86_FEATURE_XMM3	(4*32+ 0) /* "pni" SSE-3 */
+@@ -303,6 +304,7 @@ extern const char * const x86_power_flags[32];
+ #define cpu_has_perfctr_core	boot_cpu_has(X86_FEATURE_PERFCTR_CORE)
+ #define cpu_has_cx8		boot_cpu_has(X86_FEATURE_CX8)
+ #define cpu_has_cx16		boot_cpu_has(X86_FEATURE_CX16)
++#define cpu_has_eager_fpu	boot_cpu_has(X86_FEATURE_EAGER_FPU)
+ 
+ #if defined(CONFIG_X86_INVLPG) || defined(CONFIG_X86_64)
+ # define cpu_has_invlpg		1
+diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
+index e31cc6e..df023b4 100644
+--- a/arch/x86/include/asm/fpu-internal.h
++++ b/arch/x86/include/asm/fpu-internal.h
+@@ -38,6 +38,7 @@ int ia32_setup_frame(int sig, struct k_sigaction *ka,
+ 
+ extern unsigned int mxcsr_feature_mask;
+ extern void fpu_init(void);
++extern void eager_fpu_init(void);
+ 
+ DECLARE_PER_CPU(struct task_struct *, fpu_owner_task);
+ 
+@@ -84,6 +85,11 @@ static inline int is_x32_frame(void)
+ 
+ #define X87_FSW_ES (1 << 7)	/* Exception Summary */
+ 
++static __always_inline __pure bool use_eager_fpu(void)
++{
++	return static_cpu_has(X86_FEATURE_EAGER_FPU);
++}
++
+ static __always_inline __pure bool use_xsaveopt(void)
+ {
+ 	return static_cpu_has(X86_FEATURE_XSAVEOPT);
+@@ -99,6 +105,14 @@ static __always_inline __pure bool use_fxsr(void)
+         return static_cpu_has(X86_FEATURE_FXSR);
+ }
+ 
++static inline void fx_finit(struct i387_fxsave_struct *fx)
++{
++	memset(fx, 0, xstate_size);
++	fx->cwd = 0x37f;
++	if (cpu_has_xmm)
++		fx->mxcsr = MXCSR_DEFAULT;
++}
++
+ extern void __sanitize_i387_state(struct task_struct *);
+ 
+ static inline void sanitize_i387_state(struct task_struct *tsk)
+@@ -291,13 +305,13 @@ static inline void __thread_set_has_fpu(struct task_struct *tsk)
+ static inline void __thread_fpu_end(struct task_struct *tsk)
+ {
+ 	__thread_clear_has_fpu(tsk);
+-	if (!use_xsave())
++	if (!use_eager_fpu())
+ 		stts();
+ }
+ 
+ static inline void __thread_fpu_begin(struct task_struct *tsk)
+ {
+-	if (!use_xsave())
++	if (!use_eager_fpu())
+ 		clts();
+ 	__thread_set_has_fpu(tsk);
+ }
+@@ -327,10 +341,14 @@ static inline void drop_fpu(struct task_struct *tsk)
+ 
+ static inline void drop_init_fpu(struct task_struct *tsk)
+ {
+-	if (!use_xsave())
++	if (!use_eager_fpu())
+ 		drop_fpu(tsk);
+-	else
+-		xrstor_state(init_xstate_buf, -1);
++	else {
++		if (use_xsave())
++			xrstor_state(init_xstate_buf, -1);
++		else
++			fxrstor_checking(&init_xstate_buf->i387);
++	}
+ }
+ 
+ /*
+@@ -370,7 +388,7 @@ static inline fpu_switch_t switch_fpu_prepare(struct task_struct *old, struct ta
+ 	 * If the task has used the math, pre-load the FPU on xsave processors
+ 	 * or if the past 5 consecutive context-switches used math.
+ 	 */
+-	fpu.preload = tsk_used_math(new) && (use_xsave() ||
++	fpu.preload = tsk_used_math(new) && (use_eager_fpu() ||
+ 					     new->fpu_counter > 5);
+ 	if (__thread_has_fpu(old)) {
+ 		if (!__save_init_fpu(old))
+@@ -383,14 +401,14 @@ static inline fpu_switch_t switch_fpu_prepare(struct task_struct *old, struct ta
+ 			new->fpu_counter++;
+ 			__thread_set_has_fpu(new);
+ 			prefetch(new->thread.fpu.state);
+-		} else if (!use_xsave())
++		} else if (!use_eager_fpu())
+ 			stts();
+ 	} else {
+ 		old->fpu_counter = 0;
+ 		old->thread.fpu.last_cpu = ~0;
+ 		if (fpu.preload) {
+ 			new->fpu_counter++;
+-			if (!use_xsave() && fpu_lazy_restore(new, cpu))
++			if (!use_eager_fpu() && fpu_lazy_restore(new, cpu))
+ 				fpu.preload = 0;
+ 			else
+ 				prefetch(new->thread.fpu.state);
+@@ -452,6 +470,14 @@ static inline void user_fpu_begin(void)
+ 	preempt_enable();
+ }
+ 
++static inline void __save_fpu(struct task_struct *tsk)
++{
++	if (use_xsave())
++		xsave_state(&tsk->thread.fpu.state->xsave, -1);
++	else
++		fpu_fxsave(&tsk->thread.fpu);
++}
++
+ /*
+  * These disable preemption on their own and are safe
+  */
+@@ -459,8 +485,8 @@ static inline void save_init_fpu(struct task_struct *tsk)
+ {
+ 	WARN_ON_ONCE(!__thread_has_fpu(tsk));
+ 
+-	if (use_xsave()) {
+-		xsave_state(&tsk->thread.fpu.state->xsave, -1);
++	if (use_eager_fpu()) {
++		__save_fpu(tsk);
+ 		return;
+ 	}
+ 
+@@ -526,11 +552,9 @@ static inline void fpu_free(struct fpu *fpu)
+ 
+ static inline void fpu_copy(struct task_struct *dst, struct task_struct *src)
+ {
+-	if (use_xsave()) {
+-		struct xsave_struct *xsave = &dst->thread.fpu.state->xsave;
+-
+-		memset(&xsave->xsave_hdr, 0, sizeof(struct xsave_hdr_struct));
+-		xsave_state(xsave, -1);
++	if (use_eager_fpu()) {
++		memset(&dst->thread.fpu.state->xsave, 0, xstate_size);
++		__save_fpu(dst);
+ 	} else {
+ 		struct fpu *dfpu = &dst->thread.fpu;
+ 		struct fpu *sfpu = &src->thread.fpu;
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 6b9333b..db7dd8f 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -1264,7 +1264,6 @@ void __cpuinit cpu_init(void)
+ 	dbg_restore_debug_regs();
+ 
+ 	fpu_init();
+-	xsave_init();
+ 
+ 	raw_local_save_flags(kernel_eflags);
+ 
+@@ -1319,6 +1318,5 @@ void __cpuinit cpu_init(void)
+ 	dbg_restore_debug_regs();
+ 
+ 	fpu_init();
+-	xsave_init();
+ }
+ #endif
+diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+index 5285574..6782e39 100644
+--- a/arch/x86/kernel/i387.c
++++ b/arch/x86/kernel/i387.c
+@@ -22,9 +22,8 @@
+ /*
+  * Were we in an interrupt that interrupted kernel mode?
+  *
+- * For now, on xsave platforms we will return interrupted
+- * kernel FPU as not-idle. TBD: As we use non-lazy FPU restore
+- * for xsave platforms, ideally we can change the return value
++ * For now, with eagerfpu we will return interrupted kernel FPU
++ * state as not-idle. TBD: Ideally we can change the return value
+  * to something like __thread_has_fpu(current). But we need to
+  * be careful of doing __thread_clear_has_fpu() before saving
+  * the FPU etc for supporting nested uses etc. For now, take
+@@ -38,7 +37,7 @@
+  */
+ static inline bool interrupted_kernel_fpu_idle(void)
+ {
+-	if (use_xsave())
++	if (use_eager_fpu())
+ 		return 0;
+ 
+ 	return !__thread_has_fpu(current) &&
+@@ -84,7 +83,7 @@ void kernel_fpu_begin(void)
+ 		__save_init_fpu(me);
+ 		__thread_clear_has_fpu(me);
+ 		/* We do 'stts()' in kernel_fpu_end() */
+-	} else if (!use_xsave()) {
++	} else if (!use_eager_fpu()) {
+ 		this_cpu_write(fpu_owner_task, NULL);
+ 		clts();
+ 	}
+@@ -93,7 +92,7 @@ EXPORT_SYMBOL(kernel_fpu_begin);
+ 
+ void kernel_fpu_end(void)
+ {
+-	if (use_xsave())
++	if (use_eager_fpu())
+ 		math_state_restore();
+ 	else
+ 		stts();
+@@ -122,7 +121,6 @@ static void __cpuinit mxcsr_feature_mask_init(void)
+ {
+ 	unsigned long mask = 0;
+ 
+-	clts();
+ 	if (cpu_has_fxsr) {
+ 		memset(&fx_scratch, 0, sizeof(struct i387_fxsave_struct));
+ 		asm volatile("fxsave %0" : : "m" (fx_scratch));
+@@ -131,7 +129,6 @@ static void __cpuinit mxcsr_feature_mask_init(void)
+ 			mask = 0x0000ffbf;
+ 	}
+ 	mxcsr_feature_mask &= mask;
+-	stts();
+ }
+ 
+ static void __cpuinit init_thread_xstate(void)
+@@ -185,9 +182,8 @@ void __cpuinit fpu_init(void)
+ 		init_thread_xstate();
+ 
+ 	mxcsr_feature_mask_init();
+-	/* clean state in init */
+-	current_thread_info()->status = 0;
+-	clear_used_math();
++	xsave_init();
++	eager_fpu_init();
+ }
+ 
+ void fpu_finit(struct fpu *fpu)
+@@ -198,12 +194,7 @@ void fpu_finit(struct fpu *fpu)
+ 	}
+ 
+ 	if (cpu_has_fxsr) {
+-		struct i387_fxsave_struct *fx = &fpu->state->fxsave;
+-
+-		memset(fx, 0, xstate_size);
+-		fx->cwd = 0x37f;
+-		if (cpu_has_xmm)
+-			fx->mxcsr = MXCSR_DEFAULT;
++		fx_finit(&fpu->state->fxsave);
+ 	} else {
+ 		struct i387_fsave_struct *fp = &fpu->state->fsave;
+ 		memset(fp, 0, xstate_size);
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index c21e30f..dc3567e 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -156,7 +156,7 @@ void flush_thread(void)
+ 	 * Free the FPU state for non xsave platforms. They get reallocated
+ 	 * lazily at the first use.
+ 	 */
+-	if (!use_xsave())
++	if (!use_eager_fpu())
+ 		free_thread_xstate(tsk);
+ }
+ 
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index ac7d527..4f4aba0 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -630,7 +630,7 @@ EXPORT_SYMBOL_GPL(math_state_restore);
+ dotraplinkage void __kprobes
+ do_device_not_available(struct pt_regs *regs, long error_code)
+ {
+-	BUG_ON(use_xsave());
++	BUG_ON(use_eager_fpu());
+ 
+ #ifdef CONFIG_MATH_EMULATION
+ 	if (read_cr0() & X86_CR0_EM) {
+diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
+index 55bf571..66369f4 100644
+--- a/arch/x86/kernel/xsave.c
++++ b/arch/x86/kernel/xsave.c
+@@ -399,7 +399,7 @@ int __restore_xstate_sig(void __user *buf, void __user *buf_fx, int size)
+ 			set_used_math();
+ 		}
+ 
+-		if (use_xsave())
++		if (use_eager_fpu())
+ 			math_state_restore();
+ 
+ 		return err;
+@@ -449,29 +449,11 @@ static void prepare_fx_sw_frame(void)
+  */
+ static inline void xstate_enable(void)
+ {
+-	clts();
+ 	set_in_cr4(X86_CR4_OSXSAVE);
+ 	xsetbv(XCR_XFEATURE_ENABLED_MASK, pcntxt_mask);
+ }
+ 
+ /*
+- * This is same as math_state_restore(). But use_xsave() is not yet
+- * patched to use math_state_restore().
+- */
+-static inline void init_restore_xstate(void)
+-{
+-	init_fpu(current);
+-	__thread_fpu_begin(current);
+-	xrstor_state(init_xstate_buf, -1);
+-}
+-
+-static inline void xstate_enable_ap(void)
+-{
+-	xstate_enable();
+-	init_restore_xstate();
+-}
+-
+-/*
+  * Record the offsets and sizes of different state managed by the xsave
+  * memory layout.
+  */
+@@ -499,17 +481,20 @@ static void __init setup_xstate_features(void)
+ /*
+  * setup the xstate image representing the init state
+  */
+-static void __init setup_xstate_init(void)
++static void __init setup_init_fpu_buf(void)
+ {
+-	setup_xstate_features();
+-
+ 	/*
+ 	 * Setup init_xstate_buf to represent the init state of
+ 	 * all the features managed by the xsave
+ 	 */
+ 	init_xstate_buf = alloc_bootmem_align(xstate_size,
+ 					      __alignof__(struct xsave_struct));
+-	init_xstate_buf->i387.mxcsr = MXCSR_DEFAULT;
++	fx_finit(&init_xstate_buf->i387);
++
++	if (!cpu_has_xsave)
++		return;
++
++	setup_xstate_features();
+ 
+ 	/*
+ 	 * Init all the features state with header_bv being 0x0
+@@ -522,6 +507,17 @@ static void __init setup_xstate_init(void)
+ 	xsave_state(init_xstate_buf, -1);
+ }
+ 
++static int disable_eagerfpu;
++static int __init eager_fpu_setup(char *s)
++{
++	if (!strcmp(s, "on"))
++		setup_force_cpu_cap(X86_FEATURE_EAGER_FPU);
++	else if (!strcmp(s, "off"))
++		disable_eagerfpu = 1;
++	return 1;
++}
++__setup("eagerfpu=", eager_fpu_setup);
++
+ /*
+  * Enable and initialize the xsave feature.
+  */
+@@ -558,15 +554,10 @@ static void __init xstate_enable_boot_cpu(void)
+ 
+ 	update_regset_xstate_info(xstate_size, pcntxt_mask);
+ 	prepare_fx_sw_frame();
+-
+-	setup_xstate_init();
++	setup_init_fpu_buf();
+ 
+ 	pr_info("enabled xstate_bv 0x%llx, cntxt size 0x%x\n",
+ 		pcntxt_mask, xstate_size);
+-
+-	current->thread.fpu.state =
+-	     alloc_bootmem_align(xstate_size, __alignof__(struct xsave_struct));
+-	init_restore_xstate();
+ }
+ 
+ /*
+@@ -585,6 +576,42 @@ void __cpuinit xsave_init(void)
+ 		return;
+ 
+ 	this_func = next_func;
+-	next_func = xstate_enable_ap;
++	next_func = xstate_enable;
+ 	this_func();
+ }
++
++static inline void __init eager_fpu_init_bp(void)
++{
++	current->thread.fpu.state =
++	    alloc_bootmem_align(xstate_size, __alignof__(struct xsave_struct));
++	if (!init_xstate_buf)
++		setup_init_fpu_buf();
++}
++
++void __cpuinit eager_fpu_init(void)
++{
++	static __refdata void (*boot_func)(void) = eager_fpu_init_bp;
++
++	clear_used_math();
++	current_thread_info()->status = 0;
++	if (!cpu_has_eager_fpu) {
++		stts();
++		return;
++	}
++
++	if (boot_func) {
++		boot_func();
++		boot_func = NULL;
++	}
++
++	/*
++	 * This is same as math_state_restore(). But use_xsave() is
++	 * not yet patched to use math_state_restore().
++	 */
++	init_fpu(current);
++	__thread_fpu_begin(current);
++	if (cpu_has_xsave)
++		xrstor_state(init_xstate_buf, -1);
++	else
++		fxrstor_checking(&init_xstate_buf->i387);
++}
 -- 
 1.7.6.5
 
