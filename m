@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754982Ab2IJOuU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 10:50:20 -0400
-Received: from shutemov.name ([176.9.204.213]:58619 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752540Ab2IJOuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 10:50:17 -0400
-Date: Mon, 10 Sep 2012 17:50:48 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 10/10] thp: implement refcounting for huge zero page
-Message-ID: <20120910145048.GA23448@shutemov.name>
-References: <1347282813-21935-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1347282813-21935-11-git-send-email-kirill.shutemov@linux.intel.com>
- <1347285759.1234.1645.camel@edumazet-glaptop>
- <20120910144438.GA31697@otc-wbsnb-06>
- <1347288487.1234.1692.camel@edumazet-glaptop>
+	id S1756951Ab2IJOvA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 10:51:00 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:57578 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753100Ab2IJOu6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 10:50:58 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Nicolas Pitre <nico@fluxnic.net>
+Subject: Re: [PATCH v3 02/31] arm64: Kernel booting and initialisation
+Date: Mon, 10 Sep 2012 14:48:20 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com> <201209101353.34325.arnd@arndb.de> <alpine.LFD.2.02.1209101007160.28681@xanadu.home>
+In-Reply-To: <alpine.LFD.2.02.1209101007160.28681@xanadu.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347288487.1234.1692.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209101448.20745.arnd@arndb.de>
+X-Provags-ID: V02:K0:mbFtyC3So4zSz3YpoVZDy862LbMZ2XDRwy1gjN6/jhT
+ Achq/F8uWq+3Pmv+aWbLa4gYZaRGeJ54Df4K6tfVlux93wJ0B1
+ NcBSa04x/+4yvKjTPV5HVJ6HQpXYrRJ3R2O+N8K1DvqbmmLHGB
+ yqlryhnW+CwgKISunwYe8p7WnNIab69mitUz+Yt/jr7IIzM7wF
+ zUU+lYw/CRy0Kpr0WVAccrnDP+rQkcYItGnWYJmlB0in00qkL7
+ ogRegTEcOo8F0HfEd0/7C6HpL8Dq5KvNk4mN9CrzUdN/n0KJzX
+ Om7vdrH6xfVNrH1x0oGn0faVsgenCTHQPoZ+jC99f5/xJPFsiV
+ i1MaTqkWIYyqOYGUEz7w=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 04:48:07PM +0200, Eric Dumazet wrote:
-> On Mon, 2012-09-10 at 17:44 +0300, Kirill A. Shutemov wrote:
-> > On Mon, Sep 10, 2012 at 04:02:39PM +0200, Eric Dumazet wrote:
-> > > On Mon, 2012-09-10 at 16:13 +0300, Kirill A. Shutemov wrote:
-> > > > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> > > > 
-> > > > H. Peter Anvin doesn't like huge zero page which sticks in memory forever
-> > > > after the first allocation. Here's implementation of lockless refcounting
-> > > > for huge zero page.
-> > > > 
-> > > ...
-> > > 
-> > > > +static unsigned long get_huge_zero_page(void)
-> > > > +{
-> > > > +	struct page *zero_page;
-> > > > +retry:
-> > > > +	if (likely(atomic_inc_not_zero(&huge_zero_refcount)))
-> > > > +		return ACCESS_ONCE(huge_zero_pfn);
-> > > > +
-> > > > +	zero_page = alloc_pages(GFP_TRANSHUGE | __GFP_ZERO, HPAGE_PMD_ORDER);
-> > > > +	if (!zero_page)
-> > > > +		return 0;
-> > > > +	if (cmpxchg(&huge_zero_pfn, 0, page_to_pfn(zero_page))) {
-> > > > +		__free_page(zero_page);
-> > > > +		goto retry;
-> > > > +	}
-> > > 
-> > > This might break if preemption can happen here ?
-> > > 
-> > > The second thread might loop forever because huge_zero_refcount is 0,
-> > > and huge_zero_pfn not zero.
-> > 
-> > I fail to see why the second thread might loop forever. Long time yes, but
-> > forever?
-> > 
-> > Yes, disabling preemption before alloc_pages() and enabling after
-> > atomic_set() looks reasonable. Thanks.
+On Monday 10 September 2012, Nicolas Pitre wrote:
+> On Mon, 10 Sep 2012, Arnd Bergmann wrote:
+> > On Monday 10 September 2012, Catalin Marinas wrote:
+> > > On Mon, Sep 10, 2012 at 06:53:39AM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> > I think a bunch of other architectures can have relocatable kernels, which
+> > is useful e.g. for kdump. It does imply a small runtime cost and may have
+> > other disadvantages though.
 > 
-> If you have one online cpu, and the second thread is real time or
-> something like that, it wont give cpu back to preempted thread.
+> Relocatable in physical space is what kdump actually needs, and that's 
+> what we already have here (as well as on ARM32 for that matter with 
+> CONFIG_ARM_PATCH_PHYS_VIRT).  Relocatable in the virtual space is costly 
+> and we shouldn't need to go there.
 
-Okay, I see. I'll update the patch.
+Ah, I see. I thought that the other architectures (powerpc and x86)
+doing this were actually building with -fPIC, but they do the same
+kind of early patching that we do.
 
--- 
- Kirill A. Shutemov
+	Arnd
