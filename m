@@ -1,91 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757616Ab2IJSNO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 14:13:14 -0400
-Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:38264 "EHLO
-	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757152Ab2IJSNL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 14:13:11 -0400
-Subject: Re: [PATCH v2] Add missing attributes to EFI variable attribute
- print out from sysfs
-From: Khalid Aziz <khalid.aziz@hp.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Mike Waychison <mikew@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tony Luck <tony.luck@intel.com>, Matthew Garrett <mjg@redhat.com>,
-        Kees Cook <keescook@chromium.org>,
-        "gong.chen@linux.intel.com" <gong.chen@linux.intel.com>,
-        khalid@gonehiking.org
-In-Reply-To: <20120910180335.GA26021@kroah.com>
-References: <20120713174216.GA10445@hp.com>
-	 <CAGTjWtDyGrVuBXZzdDfbS961cRSQY7eZaEbb9E8HACk5-imiuQ@mail.gmail.com>
-	 <CAGTjWtAPKXfA7pOqWEfK2i_HbrtA6_w7+ezZyCo4NG1gBSEhwg@mail.gmail.com>
-	 <20120910180335.GA26021@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 10 Sep 2012 12:13:09 -0600
-Message-ID: <1347300789.4393.27.camel@lyra>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1757518Ab2IJSQg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 14:16:36 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:42984 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751077Ab2IJSQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 14:16:35 -0400
+Date: Mon, 10 Sep 2012 20:16:14 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: hpa@zytor.com, mingo@kernel.org, torvalds@linux-foundation.org,
+        andreas.herrmann3@amd.com, bp@amd64.org, robert.richter@amd.com,
+        linux-kernel@vger.kernel.org,
+        =?iso-8859-1?Q?Andr=E9?= Przywara <andre.przywara@amd.com>
+Subject: Re: [PATCH v2 0/5] eagerfpu patches for tip/x86/fpu
+Message-ID: <20120910181614.GE4365@aftab.osrc.amd.com>
+References: <1347300665-6209-1-git-send-email-suresh.b.siddha@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347300665-6209-1-git-send-email-suresh.b.siddha@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-09-10 at 11:03 -0700, Greg KH wrote:
-> On Mon, Sep 10, 2012 at 01:59:18PM -0400, Mike Waychison wrote:
-> > On Mon, Sep 10, 2012 at 1:55 PM, Mike Waychison <mikew@google.com> wrote:
-> > > Greg,
-> > >
-> > > Can you please pick this patch up in one of your trees?
-> > 
-> > Resend using a good email addy for gregkh :)
-> 
-> Can someone resend it in a format that I can apply it in?  I can't find
-> the original anymore, sorry.
-> 
-> greg k-h
+On Mon, Sep 10, 2012 at 11:11:00AM -0700, Suresh Siddha wrote:
 
-Some of the EFI variable attributes are missing from print out from
-/sys/firmware/efi/vars/*/attributes. This patch adds those in. It also
-updates code to use pre-defined constants for masking current value
-of attributes.
++ Andre.
 
-Signed-off-by: Khalid Aziz <khalid.aziz@hp.com>
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index 47408e8..d10c987 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -435,12 +435,23 @@ efivar_attr_read(struct efivar_entry *entry, char *buf)
- 	if (status != EFI_SUCCESS)
- 		return -EIO;
- 
--	if (var->Attributes & 0x1)
-+	if (var->Attributes & EFI_VARIABLE_NON_VOLATILE)
- 		str += sprintf(str, "EFI_VARIABLE_NON_VOLATILE\n");
--	if (var->Attributes & 0x2)
-+	if (var->Attributes & EFI_VARIABLE_BOOTSERVICE_ACCESS)
- 		str += sprintf(str, "EFI_VARIABLE_BOOTSERVICE_ACCESS\n");
--	if (var->Attributes & 0x4)
-+	if (var->Attributes & EFI_VARIABLE_RUNTIME_ACCESS)
- 		str += sprintf(str, "EFI_VARIABLE_RUNTIME_ACCESS\n");
-+	if (var->Attributes & EFI_VARIABLE_HARDWARE_ERROR_RECORD)
-+		str += sprintf(str, "EFI_VARIABLE_HARDWARE_ERROR_RECORD\n");
-+	if (var->Attributes & EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS)
-+		str += sprintf(str,
-+			"EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS\n");
-+	if (var->Attributes &
-+			EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS)
-+		str += sprintf(str,
-+			"EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS\n");
-+	if (var->Attributes & EFI_VARIABLE_APPEND_WRITE)
-+		str += sprintf(str, "EFI_VARIABLE_APPEND_WRITE\n");
- 	return str - buf;
- }
- 
---
-1.7.9.5
+> v2 version of the previous patchset https://lkml.org/lkml/2012/9/7/548
+> that decouples eagerfpu into a synthetic cpuid feature.
+> 
+> changes from v1:
+> * Made "eagerfpu=" boot parameter tri-state
+> * removed the cpu_has_xmm check in the fx_finit (not related to eagerfpu
+>   per-say, but this patchset touches that area of code).
+> 
+> Suresh Siddha (5):
+>   x86, fpu: decouple non-lazy/eager fpu restore from xsave
+>   x86, fpu: enable eagerfpu by default for xsaveopt
+>   x86, fpu: move check_fpu() after alternative_instructions()
+>   x86, fpu: make eagerfpu= boot param tri-state
+>   x86, fpu: remove cpu_has_xmm check in the fx_finit()
+> 
+>  Documentation/kernel-parameters.txt |    6 ++
+>  arch/x86/include/asm/cpufeature.h   |    3 +
+>  arch/x86/include/asm/fpu-internal.h |   53 ++++++++++++++------
+>  arch/x86/kernel/cpu/bugs.c          |    7 ++-
+>  arch/x86/kernel/cpu/common.c        |    2 -
+>  arch/x86/kernel/i387.c              |   25 +++------
+>  arch/x86/kernel/process.c           |    2 +-
+>  arch/x86/kernel/traps.c             |    2 +-
+>  arch/x86/kernel/xsave.c             |   95 ++++++++++++++++++++++++-----------
+>  9 files changed, 129 insertions(+), 66 deletions(-)
+> 
+> -- 
+> 1.7.6.5
+> 
+> 
 
 -- 
-Khalid Aziz <khalid.aziz@hp.com>
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
