@@ -1,134 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932283Ab2IJT5F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 15:57:05 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:17225 "EHLO
+	id S932253Ab2IJT5E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 15:57:04 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:17216 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758232Ab2IJT46 (ORCPT
+	with ESMTP id S932195Ab2IJT46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Sep 2012 15:56:58 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
         stefano.stabellini@eu.citrix.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 10/10] xen/swiotlb: Depending on after_bootmem is not correct.
-Date: Mon, 10 Sep 2012 15:46:07 -0400
-Message-Id: <1347306367-28669-11-git-send-email-konrad.wilk@oracle.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: [PATCH 06/10] xen/swiotlb: Use the swiotlb_late_init_with_tbl to init Xen-SWIOTLB late when PV PCI is used.
+Date: Mon, 10 Sep 2012 15:46:03 -0400
+Message-Id: <1347306367-28669-7-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1347306367-28669-1-git-send-email-konrad.wilk@oracle.com>
 References: <1347306367-28669-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When PCI IOMMUs are initialized it is after after_bootmem but
-before a lot of "other" subsystems are initialized. As such
-the check for after_bootmem is incorrect and we should
-just use a parameter to define whether we are early or late.
+With this patch we provide the functionality to initialize the
+Xen-SWIOTLB late in the bootup cycle - specifically for
+Xen PCI-frontend. We still will work if the user had
+supplied 'iommu=soft' on the Linux command line.
 
-This solves this bootup problem:
-
-__ex_table already sorted, skipping sortM
-Initializing CPU#0
-Warning: only able to allocate 1 MB for software IO TLB
-Xen-SWIOTLB: Lowering to 2MB
-Warning: only able to allocate 1 MB for software IO TLB
-Xen-SWIOTLB: Lowering to 2MB
-Warning: only able to allocate 1 MB for software IO TLB
-Xen-SWIOTLB: Lowering to 2MB
-Warning: only able to allocate 1 MB for software IO TLB
-Cannot allocate Xen-SWIOTLB buffer (rc:-12)
-
+CC: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+[v1: Fix smatch warnings]
+[v2: Added check for xen_swiotlb]
+[v3: Rebased with new xen-swiotlb changes]
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/xen/pci-swiotlb-xen.c |    4 ++--
- drivers/xen/swiotlb-xen.c      |   11 ++++++-----
- include/xen/swiotlb-xen.h      |    2 +-
- 3 files changed, 9 insertions(+), 8 deletions(-)
+ arch/x86/include/asm/xen/swiotlb-xen.h |    2 +
+ arch/x86/xen/pci-swiotlb-xen.c         |   22 ++++++++++++++-
+ drivers/xen/swiotlb-xen.c              |   48 +++++++++++++++++++++++++------
+ include/xen/swiotlb-xen.h              |    2 +-
+ 4 files changed, 62 insertions(+), 12 deletions(-)
 
+diff --git a/arch/x86/include/asm/xen/swiotlb-xen.h b/arch/x86/include/asm/xen/swiotlb-xen.h
+index 1be1ab7..ee52fca 100644
+--- a/arch/x86/include/asm/xen/swiotlb-xen.h
++++ b/arch/x86/include/asm/xen/swiotlb-xen.h
+@@ -5,10 +5,12 @@
+ extern int xen_swiotlb;
+ extern int __init pci_xen_swiotlb_detect(void);
+ extern void __init pci_xen_swiotlb_init(void);
++extern int pci_xen_swiotlb_init_late(void);
+ #else
+ #define xen_swiotlb (0)
+ static inline int __init pci_xen_swiotlb_detect(void) { return 0; }
+ static inline void __init pci_xen_swiotlb_init(void) { }
++static inline int pci_xen_swiotlb_init_late(void) { return -ENXIO; }
+ #endif
+ 
+ #endif /* _ASM_X86_SWIOTLB_XEN_H */
 diff --git a/arch/x86/xen/pci-swiotlb-xen.c b/arch/x86/xen/pci-swiotlb-xen.c
-index fc0c78f..1608244 100644
+index 1c17227..406f9c4 100644
 --- a/arch/x86/xen/pci-swiotlb-xen.c
 +++ b/arch/x86/xen/pci-swiotlb-xen.c
-@@ -69,7 +69,7 @@ int __init pci_xen_swiotlb_detect(void)
- void __init pci_xen_swiotlb_init(void)
- {
- 	if (xen_swiotlb) {
--		xen_swiotlb_init(1);
-+		xen_swiotlb_init(1, true /* early */);
- 		dma_ops = &xen_swiotlb_dma_ops;
+@@ -12,7 +12,7 @@
+ #include <asm/iommu.h>
+ #include <asm/dma.h>
+ #endif
+-
++#include <linux/export.h>
+ int xen_swiotlb __read_mostly;
  
- 		/* Make sure ACS will be enabled */
-@@ -84,7 +84,7 @@ int pci_xen_swiotlb_init_late(void)
- 	if (xen_swiotlb)
- 		return 0;
- 
--	rc = xen_swiotlb_init(1);
-+	rc = xen_swiotlb_init(1, false /* late */);
- 	if (rc)
- 		return rc;
- 
+ static struct dma_map_ops xen_swiotlb_dma_ops = {
+@@ -76,6 +76,26 @@ void __init pci_xen_swiotlb_init(void)
+ 		pci_request_acs();
+ 	}
+ }
++
++int pci_xen_swiotlb_init_late(void)
++{
++	int rc;
++
++	if (xen_swiotlb)
++		return 0;
++
++	rc = xen_swiotlb_init(1);
++	if (rc)
++		return rc;
++
++	dma_ops = &xen_swiotlb_dma_ops;
++	/* Make sure ACS will be enabled */
++	pci_request_acs();
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(pci_xen_swiotlb_init_late);
++
+ IOMMU_INIT_FINISH(pci_xen_swiotlb_detect,
+ 		  0,
+ 		  pci_xen_swiotlb_init,
 diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index 6f81994..7443e19 100644
+index 701b103..f0825cb 100644
 --- a/drivers/xen/swiotlb-xen.c
 +++ b/drivers/xen/swiotlb-xen.c
-@@ -176,7 +176,7 @@ static const char *xen_swiotlb_error(enum xen_swiotlb_err err)
+@@ -176,9 +176,9 @@ static const char *xen_swiotlb_error(enum xen_swiotlb_err err)
  	}
  	return "";
  }
--int __ref xen_swiotlb_init(int verbose)
-+int __ref xen_swiotlb_init(int verbose, bool early)
+-void __init xen_swiotlb_init(int verbose)
++int __ref xen_swiotlb_init(int verbose)
  {
- 	unsigned long bytes, order;
+-	unsigned long bytes;
++	unsigned long bytes, order;
  	int rc = -ENOMEM;
-@@ -190,7 +190,7 @@ retry:
+ 	enum xen_swiotlb_err m_ret = XEN_SWIOTLB_UNKNOWN;
+ 	unsigned int repeat = 3;
+@@ -186,10 +186,28 @@ void __init xen_swiotlb_init(int verbose)
+ 	xen_io_tlb_nslabs = swiotlb_nr_tbl();
+ retry:
+ 	bytes = xen_set_nslabs(xen_io_tlb_nslabs);
++	order = get_order(xen_io_tlb_nslabs << IO_TLB_SHIFT);
  	/*
  	 * Get IO TLB memory from any location.
  	 */
--	if (!after_bootmem)
-+	if (early)
- 		xen_io_tlb_start = alloc_bootmem_pages(PAGE_ALIGN(bytes));
- 	else {
- #define SLABS_PER_PAGE (1 << (PAGE_SHIFT - IO_TLB_SHIFT))
-@@ -220,7 +220,7 @@ retry:
+-	xen_io_tlb_start = alloc_bootmem_pages(PAGE_ALIGN(bytes));
++	if (!after_bootmem)
++		xen_io_tlb_start = alloc_bootmem_pages(PAGE_ALIGN(bytes));
++	else {
++#define SLABS_PER_PAGE (1 << (PAGE_SHIFT - IO_TLB_SHIFT))
++#define IO_TLB_MIN_SLABS ((1<<20) >> IO_TLB_SHIFT)
++		while ((SLABS_PER_PAGE << order) > IO_TLB_MIN_SLABS) {
++			xen_io_tlb_start = (void *)__get_free_pages(__GFP_NOWARN, order);
++			if (xen_io_tlb_start)
++				break;
++			order--;
++		}
++		if (order != get_order(bytes)) {
++			pr_warn("Warning: only able to allocate %ld MB "
++				"for software IO TLB\n", (PAGE_SIZE << order) >> 20);
++			xen_io_tlb_nslabs = SLABS_PER_PAGE << order;
++			bytes = xen_io_tlb_nslabs << IO_TLB_SHIFT;
++		}
++	}
+ 	if (!xen_io_tlb_start) {
+ 		m_ret = XEN_SWIOTLB_ENOMEM;
+ 		goto error;
+@@ -202,14 +220,21 @@ retry:
  			       bytes,
  			       xen_io_tlb_nslabs);
  	if (rc) {
--		if (!after_bootmem)
-+		if (early)
- 			free_bootmem(__pa(xen_io_tlb_start), PAGE_ALIGN(bytes));
- 		else {
- 			free_pages((unsigned long)xen_io_tlb_start, order);
-@@ -230,7 +230,8 @@ retry:
+-		free_bootmem(__pa(xen_io_tlb_start), PAGE_ALIGN(bytes));
++		if (!after_bootmem)
++			free_bootmem(__pa(xen_io_tlb_start), PAGE_ALIGN(bytes));
++		else {
++			free_pages((unsigned long)xen_io_tlb_start, order);
++			xen_io_tlb_start = NULL;
++		}
+ 		m_ret = XEN_SWIOTLB_EFIXUP;
  		goto error;
  	}
  	start_dma_addr = xen_virt_to_bus(xen_io_tlb_start);
--	if (!after_bootmem)
-+	rc = 0;
-+	if (early)
- 		swiotlb_init_with_tbl(xen_io_tlb_start, xen_io_tlb_nslabs, verbose);
- 	else
- 		rc = swiotlb_late_init_with_tbl(xen_io_tlb_start, xen_io_tlb_nslabs);
-@@ -244,7 +245,7 @@ error:
+-	swiotlb_init_with_tbl(xen_io_tlb_start, xen_io_tlb_nslabs, verbose);
+-
+-	return;
++	if (!after_bootmem)
++		swiotlb_init_with_tbl(xen_io_tlb_start, xen_io_tlb_nslabs, verbose);
++	else
++		rc = swiotlb_late_init_with_tbl(xen_io_tlb_start, xen_io_tlb_nslabs);
++	return rc;
+ error:
+ 	if (repeat--) {
+ 		xen_io_tlb_nslabs = max(1024UL, /* Min is 2MB */
+@@ -218,10 +243,13 @@ error:
+ 		      (xen_io_tlb_nslabs << IO_TLB_SHIFT) >> 20);
  		goto retry;
  	}
- 	pr_err("%s (rc:%d)", xen_swiotlb_error(m_ret), rc);
--	if (!after_bootmem)
-+	if (early)
- 		panic("%s (rc:%d)", xen_swiotlb_error(m_ret), rc);
- 	else
- 		free_pages((unsigned long)xen_io_tlb_start, order);
+-	xen_raw_printk("%s (rc:%d)", xen_swiotlb_error(m_ret), rc);
+-	panic("%s (rc:%d)", xen_swiotlb_error(m_ret), rc);
++	pr_err("%s (rc:%d)", xen_swiotlb_error(m_ret), rc);
++	if (!after_bootmem)
++		panic("%s (rc:%d)", xen_swiotlb_error(m_ret), rc);
++	else
++		free_pages((unsigned long)xen_io_tlb_start, order);
++	return rc;
+ }
+-
+ void *
+ xen_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
+ 			   dma_addr_t *dma_handle, gfp_t flags,
 diff --git a/include/xen/swiotlb-xen.h b/include/xen/swiotlb-xen.h
-index a0db2b7..de8bcc6 100644
+index 4f4d449..f26f9f3 100644
 --- a/include/xen/swiotlb-xen.h
 +++ b/include/xen/swiotlb-xen.h
 @@ -3,7 +3,7 @@
  
  #include <linux/swiotlb.h>
  
--extern int xen_swiotlb_init(int verbose);
-+extern int xen_swiotlb_init(int verbose, bool early);
+-extern void xen_swiotlb_init(int verbose);
++extern int xen_swiotlb_init(int verbose);
  
  extern void
  *xen_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
