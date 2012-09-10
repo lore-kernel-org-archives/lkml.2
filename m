@@ -1,171 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932177Ab2IJTxq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 15:53:46 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:53595 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752010Ab2IJTxp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 15:53:45 -0400
-Date: Mon, 10 Sep 2012 21:53:38 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 6/6] cputime: Make finegrained irqtime accounting
- generally available
-Message-ID: <20120910195324.GA19268@somewhere>
-References: <1347306193-21080-1-git-send-email-fweisbec@gmail.com>
- <1347306193-21080-7-git-send-email-fweisbec@gmail.com>
+	id S1757249Ab2IJT4K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 15:56:10 -0400
+Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:41131 "EHLO
+	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754070Ab2IJT4G convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 15:56:06 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av4EAFFFTlBtgrJV/2dsb2JhbABFhge1ToEIgiEBBSMELyMQJQImAgIUJSQTiBSobJJ+gSGKC4UEMmADlVyJNIZqgmiBWQ
+Date: Mon, 10 Sep 2012 21:55:58 +0200
+From: Kurt Van Dijck <kurt.van.dijck@eia.be>
+To: Fabio Baltieri <fabio.baltieri@gmail.com>
+Cc: Oliver Hartkopp <socketcan@hartkopp.net>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Wolfgang Grandegger <wg@grandegger.com>, linux-kernel@vger.kernel.org,
+        linux-can@vger.kernel.org
+Subject: [PATCH v2] can: export a safe netdev_priv wrapper for candev
+Message-ID: <20120910195558.GA546@vandijck-laurijssen.be>
+Mail-Followup-To: Fabio Baltieri <fabio.baltieri@gmail.com>,
+	Oliver Hartkopp <socketcan@hartkopp.net>,
+	Marc Kleine-Budde <mkl@pengutronix.de>,
+	Wolfgang Grandegger <wg@grandegger.com>,
+	linux-kernel@vger.kernel.org, linux-can@vger.kernel.org
+References: <20120907071934.GB37685@macbook.local>
+ <1347207464-2002-1-git-send-email-fabio.baltieri@gmail.com>
+ <20120910142507.GA11000@vandijck-laurijssen.be>
+ <20120910182929.GC2006@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1347306193-21080-7-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20120910182929.GC2006@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 09:43:13PM +0200, Frederic Weisbecker wrote:
-> There is no known reason for this option to be unavailable on other
-> archs than x86. They just need to call enable_sched_clock_irqtime()
-> if they have a sufficiently finegrained clock to make it working.
-> 
-> Move it to the general option and let the user choose between
-> it and pure tick based or virtual cputime accounting.
-> 
-> Note that virtual cputime accounting already performs a finegrained
-> irqtime accounting. CONFIG_IRQ_TIME_ACCOUNTING is a kind of middle ground
-> between tick and virtual based accounting. So CONFIG_IRQ_TIME_ACCOUNTING
-> and CONFIG_VIRT_CPU_ACCOUNTING are mutually exclusive choices.
-> 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Tony Luck <tony.luck@intel.com>
-> Cc: Fenghua Yu <fenghua.yu@intel.com>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> ---
->  arch/Kconfig     |    6 ++++++
->  arch/x86/Kconfig |   12 +-----------
->  init/Kconfig     |   30 +++++++++++++++++++++++++++++-
->  3 files changed, 36 insertions(+), 12 deletions(-)
-> 
-> diff --git a/arch/Kconfig b/arch/Kconfig
-> index f78de57..101c31a 100644
-> --- a/arch/Kconfig
-> +++ b/arch/Kconfig
-> @@ -284,4 +284,10 @@ config SECCOMP_FILTER
->  config HAVE_VIRT_CPU_ACCOUNTING
->  	bool
->  
-> +config HAVE_IRQ_TIME_ACCOUNTING
-> +	bool
-> +	help
-> +	  Archs need to ensure they use a high enough resolution clock to
-> +	  support irq time accounting and then call enable_sched_clock_irqtime().
-> +
->  source "kernel/gcov/Kconfig"
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index 8ec3a1a..b86833a 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -97,6 +97,7 @@ config X86
->  	select KTIME_SCALAR if X86_32
->  	select GENERIC_STRNCPY_FROM_USER
->  	select GENERIC_STRNLEN_USER
-> +	select HAVE_IRQ_TIME_ACCOUNTING
->  
->  config INSTRUCTION_DECODER
->  	def_bool (KPROBES || PERF_EVENTS || UPROBES)
-> @@ -796,17 +797,6 @@ config SCHED_MC
->  	  making when dealing with multi-core CPU chips at a cost of slightly
->  	  increased overhead in some places. If unsure say N here.
->  
-> -config IRQ_TIME_ACCOUNTING
-> -	bool "Fine granularity task level IRQ time accounting"
-> -	default n
-> -	---help---
-> -	  Select this option to enable fine granularity task irq time
-> -	  accounting. This is done by reading a timestamp on each
-> -	  transitions between softirq and hardirq state, so there can be a
-> -	  small performance impact.
-> -
-> -	  If in doubt, say N here.
-> -
->  source "kernel/Kconfig.preempt"
->  
->  config X86_UP_APIC
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 2c5aa34..054114e 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -326,10 +326,25 @@ source "kernel/time/Kconfig"
->  
->  menu "CPU/Task time and stats accounting"
->  
-> +choice
-> +	prompt "Cputime accounting"
-> +	default TICK_CPU_ACCOUNTING if !PPC64
-> +	default VIRT_CPU_ACCOUNTING if PPC64
-> +
-> +# Kind of a stub config for the pure tick based cputime accounting
-> +config TICK_CPU_ACCOUNTING
-> +	bool "Simple tick based cputime accounting"
-> +	depends on !S390
-> +	help
-> +	  This is the basic tick based cputime accounting that maintains
-> +	  statistics about user, system and idle time spent on per jiffies
-> +	  granularity.
-> +
-> +	  If unsure, say Y.
-> +
->  config VIRT_CPU_ACCOUNTING
->  	bool "Deterministic task and CPU time accounting"
->  	depends on HAVE_VIRT_CPU_ACCOUNTING
-> -	default y if PPC64
->  	help
->  	  Select this option to enable more accurate task and CPU time
->  	  accounting.  This is done by reading a CPU counter on each
-> @@ -339,6 +354,19 @@ config VIRT_CPU_ACCOUNTING
->  	  this also enables accounting of stolen time on logically-partitioned
->  	  systems.
->  
-> +config IRQ_TIME_ACCOUNTING
-> +	bool "Fine granularity task level IRQ time accounting"
-> +	depends on !S390 && HAVE_IRQ_TIME_ACCOUNTING
+can: export a safe netdev_priv wrapper for candev
 
-As Russell King pointed me, I don't need the !S390 here because it doesn't
-select HAVE_IRQ_TIME_ACCOUNT anyway. I'll fix this. Just waiting for more
-reviews before sending a v2.
+In net_device notifier calls, it was impossible to determine
+if a CAN device is based on candev in a safe way.
+This patch adds such test in order to access candev storage
+from within those notifiers.
 
-Thanks.
+Signed-off-by: Kurt Van Dijck <kurt.van.dijck@eia.be>
+Acked-by: Oliver Hartkopp <socketcan@hartkopp.net>
 
-
-> +	help
-> +	  Select this option to enable fine granularity task irq time
-> +	  accounting. This is done by reading a timestamp on each
-> +	  transitions between softirq and hardirq state, so there can be a
-> +	  small performance impact.
-> +
-> +	  If in doubt, say N here.
-> +
-> +endchoice
-> +
->  config BSD_PROCESS_ACCT
->  	bool "BSD Process Accounting"
->  	help
-> -- 
-> 1.7.5.4
-> 
+diff --git a/drivers/net/can/dev.c b/drivers/net/can/dev.c
+index 963e2cc..5112cf3 100644
+--- a/drivers/net/can/dev.c
++++ b/drivers/net/can/dev.c
+@@ -795,6 +795,19 @@ void unregister_candev(struct net_device *dev)
+ }
+ EXPORT_SYMBOL_GPL(unregister_candev);
+ 
++/*
++ * Test if a network device is a candev based device
++ * and return the can_priv* if so.
++ */
++struct can_priv *safe_candev_priv(struct net_device *dev)
++{
++	if ((dev->type != ARPHRD_CAN) || (dev->rtnl_link_ops != &can_link_ops))
++		return NULL;
++
++	return netdev_priv(dev);
++}
++EXPORT_SYMBOL_GPL(safe_candev_priv);
++
+ static __init int can_dev_init(void)
+ {
+ 	int err;
+diff --git a/include/linux/can/dev.h b/include/linux/can/dev.h
+index 7747d9b..fb0ab65 100644
+--- a/include/linux/can/dev.h
++++ b/include/linux/can/dev.h
+@@ -106,6 +106,9 @@ u8 can_len2dlc(u8 len);
+ struct net_device *alloc_candev(int sizeof_priv, unsigned int echo_skb_max);
+ void free_candev(struct net_device *dev);
+ 
++/* a candev safe wrapper around netdev_priv */
++struct can_priv *safe_candev_priv(struct net_device *dev);
++
+ int open_candev(struct net_device *dev);
+ void close_candev(struct net_device *dev);
+ 
