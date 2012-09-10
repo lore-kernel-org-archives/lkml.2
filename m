@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757305Ab2IJKuO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 06:50:14 -0400
-Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:55435 "EHLO
-	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757066Ab2IJKqM (ORCPT
+	id S1757263Ab2IJK5K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 06:57:10 -0400
+Received: from na3sys009aog128.obsmtp.com ([74.125.149.141]:45402 "EHLO
+	na3sys009aog128.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757210Ab2IJK5H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 06:46:12 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Dmitry Torokhov <dtor@mail.ru>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: Tero Kristo <t-kristo@ti.com>, alsa-devel@alsa-project.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, Benoit Cousson <b-cousson@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v4 01/14] MFD: twl4030-audio: Clean up MODULE_* and platform_driver part
-Date: Mon, 10 Sep 2012 13:46:19 +0300
-Message-Id: <1347273992-9107-2-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1347273992-9107-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1347273992-9107-1-git-send-email-peter.ujfalusi@ti.com>
+	Mon, 10 Sep 2012 06:57:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.02.1209101215300.2724@ionos>
+References: <20120910165127.37dd07f3@notabene.brown> <alpine.LFD.2.02.1209101215300.2724@ionos>
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Mon, 10 Sep 2012 16:26:45 +0530
+Message-ID: <CAMQu2gzp1mieitAtDWB8Uud97gFQjH7eZ-bDZ2kMBLejAx4qMQ@mail.gmail.com>
+Subject: Re: Seeking clarity on IRQCHIP_MASK_ON_SUSPEND
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: NeilBrown <neilb@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        lkml <linux-kernel@vger.kernel.org>, linux-omap@vger.kernel.org,
+        Kevin Hilman <khilman@deeprootsystems.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Place the MODULE_* lines in the same block and add MODULE_DESCRIPTION.
-Rearange the platform_driver structure at the same time.
+Thomas,
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- drivers/mfd/twl4030-audio.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+On Mon, Sep 10, 2012 at 3:58 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Mon, 10 Sep 2012, NeilBrown wrote:
+>>
+>> The IRQCHIP_MASK_ON_SUSPEND flag seems to be hard to use correctly, so either
+>> I'm understanding it wrongly, or it could be made easier to use.
+>> If the first case, I'm hoping that some improvement to documentation might
+>> result.  If the second, then maybe we can fix the code.
+> ...
+>> Is anyone able to give a definitive answer on this?  Should
+>> IRQCHIP_MASK_ON_SUSPEND be removed?
+>
+> The whole point of IRQCHIP_MASK_ON_SUSPEND is to deal with hardware
+> designed by geniuses.
+>
+> Most SoCs have a way to mark the interrupts which serve as a wake up
+> source as such. All other interrupts are magically "masked" on entry
+> to suspend.
+>
+Just to support this, IRQCHIP_MASK_ON_SUSPEND does work with quite
+a few ARM platforms too. OMAP already uses it in mainline and I have
+seen patches for U500 and Tegra SOCs. Most of these usages are with
+IRQ chips who doesn't have any driver run time PM supported and
+the IRQ CHIP itself is shutdown when the CPU/CPU cluster gets
+power down. So as far as functionality concerned with the flag,
+it does what it suppose to do.
 
-diff --git a/drivers/mfd/twl4030-audio.c b/drivers/mfd/twl4030-audio.c
-index 838ce4e..ac04b4f 100644
---- a/drivers/mfd/twl4030-audio.c
-+++ b/drivers/mfd/twl4030-audio.c
-@@ -250,18 +250,18 @@ static int __devexit twl4030_audio_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
--MODULE_ALIAS("platform:twl4030-audio");
--
- static struct platform_driver twl4030_audio_driver = {
--	.probe		= twl4030_audio_probe,
--	.remove		= __devexit_p(twl4030_audio_remove),
- 	.driver		= {
- 		.owner	= THIS_MODULE,
- 		.name	= "twl4030-audio",
- 	},
-+	.probe		= twl4030_audio_probe,
-+	.remove		= __devexit_p(twl4030_audio_remove),
- };
- 
- module_platform_driver(twl4030_audio_driver);
- 
- MODULE_AUTHOR("Peter Ujfalusi <peter.ujfalusi@ti.com>");
-+MODULE_DESCRIPTION("TWL4030 audio block MFD driver");
- MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:twl4030-audio");
--- 
-1.7.12
+> Now there is hardware which is missing such a control, so we need to
+> mask the non wakeup interrupts right before going into suspend.
+>
+> That's what IRQCHIP_MASK_ON_SUSPEND does. Not more, not less. See
+> commit d209a699a0b for more ugly details.
+>
+> You might be looking for a different functionality. Can you explain
+> what you need?
+>
+Neil's email came from a discussion on the usage of this flag for
+OMAP GPIO irqchip which I proposed. With the flag, when the
+lazy check_irq routine is called, the GPIO driver is runtime suspended
+and hence the late mask/unmask calls take abort(clocks are already gated).
+GPIO IRQCHIP is secondary IRQCHIP connected to 1 interrupt line
+per bank(32 GPIOs) to the primary interrupt controller IRQCHIP.
 
+Hope this gives bit more clarity to the discussed problem.
+
+Regards
+Santosh
