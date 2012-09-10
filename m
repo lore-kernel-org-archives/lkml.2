@@ -1,146 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757113Ab2IJLF5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 07:05:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50109 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755939Ab2IJLF4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 07:05:56 -0400
-Date: Mon, 10 Sep 2012 13:05:50 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: akpm@linux-foundation.org, kamezawa.hiroyu@jp.fujitsu.com,
-        minchan@kernel.org, shangw@linux.vnet.ibm.com, yinghai@kernel.org,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: + mm-memblock-reduce-overhead-in-binary-search.patch added to
- -mm tree
-Message-ID: <20120910110550.GA17437@dhcp22.suse.cz>
-References: <20120907235058.A33F75C0219@hpza9.eem.corp.google.com>
- <20120910082035.GA13035@dhcp22.suse.cz>
- <20120910094604.GA7365@hacker.(null)>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120910094604.GA7365@hacker.(null)>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757265Ab2IJLHJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 07:07:09 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:51414 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756749Ab2IJLHG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 07:07:06 -0400
+Date: Mon, 10 Sep 2012 12:11:05 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>,
+        Arve =?UTF-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+        Colin Cross <ccross@android.com>, Brian Swetland <swetland@google.com>,
+        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com,
+        kgdb-bugreport@lists.sourceforge.net, linux-serial@vger.kernel.org
+Subject: Re: [PATCH 10/14] tty/serial: Add kgdb_nmi driver
+Message-ID: <20120910121105.724f982f@pyramind.ukuu.org.uk>
+In-Reply-To: <20120910041412.GJ29537@lizard>
+References: <20120910040802.GA1261@lizard>
+	<20120910041412.GJ29537@lizard>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 10-09-12 17:46:04, Wanpeng Li wrote:
-> On Mon, Sep 10, 2012 at 10:22:39AM +0200, Michal Hocko wrote:
-> >[Sorry for the late reply]
-> >
-> >On Fri 07-09-12 16:50:57, Andrew Morton wrote:
-> >> 
-> >> The patch titled
-> >>      Subject: mm/memblock: reduce overhead in binary search
-> >> has been added to the -mm tree.  Its filename is
-> >>      mm-memblock-reduce-overhead-in-binary-search.patch
-> >> 
-> >> Before you just go and hit "reply", please:
-> >>    a) Consider who else should be cc'ed
-> >>    b) Prefer to cc a suitable mailing list as well
-> >>    c) Ideally: find the original patch on the mailing list and do a
-> >>       reply-to-all to that, adding suitable additional cc's
-> >> 
-> >> *** Remember to use Documentation/SubmitChecklist when testing your code ***
-> >> 
-> >> The -mm tree is included into linux-next and is updated
-> >> there every 3-4 working days
-> >> 
-> >> ------------------------------------------------------
-> >> From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> >> Subject: mm/memblock: reduce overhead in binary search
-> >> 
-> >> When checking that the indicated address belongs to the memory region, the
-> >> memory regions are checked one by one through a binary search, which will
-> >> be time consuming.
-> >
-> >How many blocks do you have that O(long) is that time consuming?
-> >
-> >> If the indicated address isn't in the memory region, then we needn't do
-> >> the time-consuming search.  
-> >
-> >How often does this happen?
-> >
-> >> Add a check on the indicated address for that purpose.
-> >
-> >We have 2 users of this function. One is exynos_sysmmu_enable and the
-> >other pfn_valid for unicore32. The first one doesn't seem to be used
-> >anywhere (as per git grep). The other one could benefit from it but it
-> >would be nice to hear about how much it really helps becuase if the
-> >address is (almost) never outside of start,end DRAM bounds then you just
-> >add a pointless check.
-> >Besides that, if this kind of optimization is really worth, why don't we
-> >do the same thing for memblock_is_reserved and memblock_is_region_memory
-> >as well?
-> 
-> As Yinghai said,
-> 
-> BIOS could have reserved some ranges, and those ranges are not overlapped by 
-> RAM. and so those range will not be in memory and reserved array.
-> 
-> later kernel will probe some range, and reserved those range, so those
-> range get inserted into reserved array. reserved and memory array is
-> different.
+On Sun, 9 Sep 2012 21:14:12 -0700
+Anton Vorontsov <anton.vorontsov@linaro.org> wrote:
 
-OK. Thanks for the clarification. The main question remains, though. Is
-this worth for memblock_is_memory?
+> This special driver makes it possible to temporary use NMI debugger port
+> as a normal console by issuing 'nmi_console' command (assuming that the
+> port is attached to KGDB).
 
-> >So, while the patch seems correct, I do not see how much it helps while
-> >it definitely adds a code to maintain.
-> >
-> >> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> >> Cc: Michal Hocko <mhocko@suse.cz>
-> >> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> >> Cc: Minchan Kim <minchan@kernel.org>
-> >> Cc: Gavin Shan <shangw@linux.vnet.ibm.com>
-> >> Cc: Yinghai Lu <yinghai@kernel.org>
-> >> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> >> ---
-> >> 
-> >>  mm/memblock.c |    5 +++++
-> >>  1 file changed, 5 insertions(+)
-> >> 
-> >> diff -puN mm/memblock.c~mm-memblock-reduce-overhead-in-binary-search mm/memblock.c
-> >> --- a/mm/memblock.c~mm-memblock-reduce-overhead-in-binary-search
-> >> +++ a/mm/memblock.c
-> >> @@ -888,6 +888,11 @@ int __init memblock_is_reserved(phys_add
-> >>  
-> >>  int __init_memblock memblock_is_memory(phys_addr_t addr)
-> >>  {
-> >> +
-> >> +	if (unlikely(addr < memblock_start_of_DRAM() ||
-> >> +		addr >= memblock_end_of_DRAM()))
-> >> +		return 0;
-> >> +
-> >>  	return memblock_search(&memblock.memory, addr) != -1;
-> >>  }
-> >>  
-> >> _
-> >> 
-> >> Patches currently in -mm which might be from liwanp@linux.vnet.ibm.com are
-> >> 
-> >> mm-mmu_notifier-init-notifier-if-necessary.patch
-> >> mm-vmscan-fix-error-number-for-failed-kthread.patch
-> >> mm-memblock-reduce-overhead-in-binary-search.patch
-> >> mm-memblock-rename-get_allocated_memblock_reserved_regions_info.patch
-> >> mm-memblock-use-existing-interface-to-set-nid.patch
-> >> mm-memblock-cleanup-early_node_map-related-comments.patch
-> >> 
-> >
-> >-- 
-> >Michal Hocko
-> >SUSE Labs
-> >
-> >--
-> >To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> >the body to majordomo@kvack.org.  For more info on Linux MM,
-> >see: http://www.linux-mm.org/ .
-> >Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+No ref counting, no tty port, no compliance with the tty behaviour.
+Concept looks fine but it needs porting to reflect a kernel newer than
+about 2.6.18 8)
 
--- 
-Michal Hocko
-SUSE Labs
+I would take a quick look at the tty_port helpers and also check v -next
+which makes the tty_port mandatory. That'll pretty much cover your needs
+for locking, semantics and the like.
+
+Alan
