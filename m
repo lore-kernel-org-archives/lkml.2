@@ -1,52 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523Ab2IJE5U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 00:57:20 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:58198 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751259Ab2IJE5T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 00:57:19 -0400
+	id S1751935Ab2IJFOr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 01:14:47 -0400
+Received: from ares07.inai.de ([5.9.24.206]:54463 "EHLO seven.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751294Ab2IJFOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 01:14:45 -0400
+Date: Mon, 10 Sep 2012 07:14:41 +0200 (CEST)
+From: Jan Engelhardt <jengelh@inai.de>
+To: Paul Bolle <pebolle@tiscali.nl>
+cc: Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] brd: RAM block module is called 'brd'
+In-Reply-To: <1345561837.4564.24.camel@x61.thuisdomein>
+Message-ID: <alpine.LNX.2.01.1209100711380.22738@frira.zrqbmnf.qr>
+References: <1345561837.4564.24.camel@x61.thuisdomein>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
 MIME-Version: 1.0
-Date: Mon, 10 Sep 2012 12:57:18 +0800
-Message-ID: <CAPgLHd-NJFJQsAwGXwVzA_FcN8HOvkeYJLDy9s5dqGLLo9sVRw@mail.gmail.com>
-Subject: [PATCH] configfs: move the dereference below the NULL test
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: jlbec@evilplan.org
-Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-The dereference should be moved below the NULL test.
+On Tuesday 2012-08-21 17:10, Paul Bolle wrote:
+>
+>2) "modinfo rd" doesn't work. Apparently one needs to feed modinfo the
+>actual module name and not an alias. Is that by design?
 
-spatch with a semantic match is used to found this.
-(http://coccinelle.lip6.fr/)
+I would say so, because you can call
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- fs/configfs/dir.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+	modprobe --resolve-alias rd
 
-diff --git a/fs/configfs/dir.c b/fs/configfs/dir.c
-index 7414ae2..3f15991 100644
---- a/fs/configfs/dir.c
-+++ b/fs/configfs/dir.c
-@@ -1037,10 +1037,11 @@ static int configfs_dump(struct configfs_dirent *sd, int level)
- static int configfs_depend_prep(struct dentry *origin,
- 				struct config_item *target)
- {
--	struct configfs_dirent *child_sd, *sd = origin->d_fsdata;
-+	struct configfs_dirent *child_sd, *sd;
- 	int ret = 0;
- 
--	BUG_ON(!origin || !sd);
-+	BUG_ON(!origin || !origin->d_fsdata);
-+	sd = origin->d_fsdata;
- 
- 	if (sd->s_element == target)  /* Boo-yah */
- 		goto out;
-
+to figure out the actual module to any given string. If this
+modprobe call returns nothing, you know you found the terminal name.
