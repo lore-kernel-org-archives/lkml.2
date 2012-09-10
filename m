@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756475Ab2IJI55 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 04:57:57 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:62513 "EHLO song.cn.fujitsu.com"
+	id S1756791Ab2IJI6I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 04:58:08 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:15798 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754588Ab2IJI5x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 04:57:53 -0400
+	id S1756307Ab2IJI55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 04:57:57 -0400
 X-IronPort-AV: E=Sophos;i="4.80,397,1344182400"; 
-   d="scan'208";a="5814150"
+   d="scan'208";a="5814154"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
         LKML <linux-kernel@vger.kernel.org>, x86 maintainers <x86@kernel.org>
@@ -17,9 +17,9 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Rusty Russell <rusty@rustcorp.com.au>,
         Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [V4 PATCH 04/26] node: cleanup node_state_attr
-Date: Mon, 10 Sep 2012 16:58:56 +0800
-Message-Id: <1347267558-6707-5-git-send-email-laijs@cn.fujitsu.com>
+Subject: [V4 PATCH 07/26] procfs: use N_MEMORY instead N_HIGH_MEMORY
+Date: Mon, 10 Sep 2012 16:58:59 +0800
+Message-Id: <1347267558-6707-8-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1347267558-6707-1-git-send-email-laijs@cn.fujitsu.com>
 References: <1347267558-6707-1-git-send-email-laijs@cn.fujitsu.com>
@@ -32,54 +32,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-use [index] = init_value
-use N_xxxxx instead of hardcode.
+N_HIGH_MEMORY stands for the nodes that has normal or high memory.
+N_MEMORY stands for the nodes that has any memory.
 
-Make it more readability and easy to add new state.
+The code here need to handle with the nodes which have memory, we should
+use N_MEMORY instead.
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Acked-by: Hillf Danton <dhillf@gmail.com>
 ---
- drivers/base/node.c |   20 ++++++++++----------
- 1 files changed, 10 insertions(+), 10 deletions(-)
+ fs/proc/kcore.c    |    2 +-
+ fs/proc/task_mmu.c |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/base/node.c b/drivers/base/node.c
-index af1a177..5d7731e 100644
---- a/drivers/base/node.c
-+++ b/drivers/base/node.c
-@@ -614,23 +614,23 @@ static ssize_t show_node_state(struct device *dev,
- 	{ __ATTR(name, 0444, show_node_state, NULL), state }
+diff --git a/fs/proc/kcore.c b/fs/proc/kcore.c
+index 86c67ee..e96d4f1 100644
+--- a/fs/proc/kcore.c
++++ b/fs/proc/kcore.c
+@@ -249,7 +249,7 @@ static int kcore_update_ram(void)
+ 	/* Not inialized....update now */
+ 	/* find out "max pfn" */
+ 	end_pfn = 0;
+-	for_each_node_state(nid, N_HIGH_MEMORY) {
++	for_each_node_state(nid, N_MEMORY) {
+ 		unsigned long node_end;
+ 		node_end  = NODE_DATA(nid)->node_start_pfn +
+ 			NODE_DATA(nid)->node_spanned_pages;
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 4540b8f..ed3d381 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -1080,7 +1080,7 @@ static struct page *can_gather_numa_stats(pte_t pte, struct vm_area_struct *vma,
+ 		return NULL;
  
- static struct node_attr node_state_attr[] = {
--	_NODE_ATTR(possible, N_POSSIBLE),
--	_NODE_ATTR(online, N_ONLINE),
--	_NODE_ATTR(has_normal_memory, N_NORMAL_MEMORY),
--	_NODE_ATTR(has_cpu, N_CPU),
-+	[N_POSSIBLE] = _NODE_ATTR(possible, N_POSSIBLE),
-+	[N_ONLINE] = _NODE_ATTR(online, N_ONLINE),
-+	[N_NORMAL_MEMORY] = _NODE_ATTR(has_normal_memory, N_NORMAL_MEMORY),
- #ifdef CONFIG_HIGHMEM
--	_NODE_ATTR(has_high_memory, N_HIGH_MEMORY),
-+	[N_HIGH_MEMORY] = _NODE_ATTR(has_high_memory, N_HIGH_MEMORY),
- #endif
-+	[N_CPU] = _NODE_ATTR(has_cpu, N_CPU),
- };
+ 	nid = page_to_nid(page);
+-	if (!node_isset(nid, node_states[N_HIGH_MEMORY]))
++	if (!node_isset(nid, node_states[N_MEMORY]))
+ 		return NULL;
  
- static struct attribute *node_state_attrs[] = {
--	&node_state_attr[0].attr.attr,
--	&node_state_attr[1].attr.attr,
--	&node_state_attr[2].attr.attr,
--	&node_state_attr[3].attr.attr,
-+	&node_state_attr[N_POSSIBLE].attr.attr,
-+	&node_state_attr[N_ONLINE].attr.attr,
-+	&node_state_attr[N_NORMAL_MEMORY].attr.attr,
- #ifdef CONFIG_HIGHMEM
--	&node_state_attr[4].attr.attr,
-+	&node_state_attr[N_HIGH_MEMORY].attr.attr,
- #endif
-+	&node_state_attr[N_CPU].attr.attr,
- 	NULL
- };
+ 	return page;
+@@ -1232,7 +1232,7 @@ static int show_numa_map(struct seq_file *m, void *v, int is_pid)
+ 	if (md->writeback)
+ 		seq_printf(m, " writeback=%lu", md->writeback);
  
+-	for_each_node_state(n, N_HIGH_MEMORY)
++	for_each_node_state(n, N_MEMORY)
+ 		if (md->node[n])
+ 			seq_printf(m, " N%d=%lu", n, md->node[n]);
+ out:
 -- 
 1.7.1
 
