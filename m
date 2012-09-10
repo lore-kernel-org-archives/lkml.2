@@ -1,170 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752269Ab2IJGUv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 02:20:51 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:32811 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751420Ab2IJGUr (ORCPT
+	id S1752568Ab2IJGZF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 02:25:05 -0400
+Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:28039
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750706Ab2IJGZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 02:20:47 -0400
+	Mon, 10 Sep 2012 02:25:03 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 5
+X-BigFish: VS5(z616jzzz1202h1d1ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah107ah1288h12a5h1155h)
+From: Huang Shijie <b32955@freescale.com>
+To: <dwmw2@infradead.org>
+CC: <dedekind1@gmail.com>, <computersforpeace@gmail.com>,
+        <shmulik.ladkani@gmail.com>, <mikedunn@newsguy.com>,
+        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Huang Shijie <b32955@freescale.com>
+Subject: [PATCH 2/2] mtd: add helpers to get the supportted ONFI timing mode
+Date: Mon, 10 Sep 2012 14:01:11 +0800
+Message-ID: <1347256871-18339-2-git-send-email-b32955@freescale.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1347256871-18339-1-git-send-email-b32955@freescale.com>
+References: <1347256871-18339-1-git-send-email-b32955@freescale.com>
 MIME-Version: 1.0
-In-Reply-To: <201209092351.18297.rjw@sisk.pl>
-References: <1346682578-24312-1-git-send-email-rajagopal.venkat@linaro.org>
-	<1346682578-24312-3-git-send-email-rajagopal.venkat@linaro.org>
-	<201209092351.18297.rjw@sisk.pl>
-Date: Mon, 10 Sep 2012 11:50:46 +0530
-Message-ID: <CA+Z25wXEs4-wit9Tytq+WDA=hcasLjBx+Y5JSYpgVhwQ=Gt1uA@mail.gmail.com>
-Subject: Re: [PATCH 2/3] devfreq: Add suspend and resume apis
-From: Rajagopal Venkat <rajagopal.venkat@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: mturquette@linaro.org, myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        patches@linaro.org, linaro-dev@lists.linaro.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 September 2012 03:21, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Monday, September 03, 2012, Rajagopal Venkat wrote:
->> Add devfreq suspend/resume apis for devfreq users. This patch
->> supports suspend and resume of devfreq load monitoring, required
->> for devices which can idle.
->>
->> Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
->
-> I'd call the new functions devfreq_dev_suspend() and devfreq_dev_resume(),
-> respectively, because the names you're using currently suggest that the
-> device itself is suspended/resumed, which isn't the case.
+add onfi_get_async_timing_mode() to get the supportted asynchronous
+timing mode.
 
-devfreq_add_device() and devfreq_remove_device() are two existing APIs.
+add onfi_get_sync_timing_mode() to get the supportted synchronous
+timing mode.
 
-I did follow same naming pattern to maintain uniformity and introduced
-devfreq_suspend_device() and devfreq_resume_device() functions.
+Also add the neccessary macros : the timing modes.
 
-Do you suggest to follow devfreq_dev_xxx pattern even for existing APIs?
+Signed-off-by: Huang Shijie <b32955@freescale.com>
+---
+ include/linux/mtd/nand.h |   20 ++++++++++++++++++++
+ 1 files changed, 20 insertions(+), 0 deletions(-)
 
->
-> Thanks,
-> Rafael
->
->
->> ---
->>  drivers/devfreq/devfreq.c                 | 26 ++++++++++++++++++++++++++
->>  drivers/devfreq/governor.h                |  2 ++
->>  drivers/devfreq/governor_simpleondemand.c |  9 +++++++++
->>  include/linux/devfreq.h                   | 12 ++++++++++++
->>  4 files changed, 49 insertions(+)
->>
->> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
->> index be524c7..3a5f126 100644
->> --- a/drivers/devfreq/devfreq.c
->> +++ b/drivers/devfreq/devfreq.c
->> @@ -365,6 +365,32 @@ int devfreq_remove_device(struct devfreq *devfreq)
->>  }
->>  EXPORT_SYMBOL(devfreq_remove_device);
->>
->> +/**
->> + * devfreq_suspend_device() - Suspend devfreq of a device.
->> + * @devfreq  the devfreq instance to be suspended
->> + */
->> +int devfreq_suspend_device(struct devfreq *devfreq)
->> +{
->> +     if (!devfreq)
->> +             return -EINVAL;
->> +
->> +     return devfreq->governor->event_handler(devfreq, DEVFREQ_GOV_SUSPEND);
->> +}
->> +EXPORT_SYMBOL(devfreq_suspend_device);
->> +
->> +/**
->> + * devfreq_resume_device() - Resume devfreq of a device.
->> + * @devfreq  the devfreq instance to be resumed
->> + */
->> +int devfreq_resume_device(struct devfreq *devfreq)
->> +{
->> +     if (!devfreq)
->> +             return -EINVAL;
->> +
->> +     return devfreq->governor->event_handler(devfreq, DEVFREQ_GOV_RESUME);
->> +}
->> +EXPORT_SYMBOL(devfreq_resume_device);
->> +
->>  static ssize_t show_governor(struct device *dev,
->>                            struct device_attribute *attr, char *buf)
->>  {
->> diff --git a/drivers/devfreq/governor.h b/drivers/devfreq/governor.h
->> index 4a86af7..7dbbdfc 100644
->> --- a/drivers/devfreq/governor.h
->> +++ b/drivers/devfreq/governor.h
->> @@ -22,6 +22,8 @@
->>  #define DEVFREQ_GOV_START                    0x1
->>  #define DEVFREQ_GOV_STOP                     0x2
->>  #define DEVFREQ_GOV_INTERVAL                 0x3
->> +#define DEVFREQ_GOV_SUSPEND                  0x4
->> +#define DEVFREQ_GOV_RESUME                   0x5
->>
->>  /* Caution: devfreq->lock must be locked before calling update_devfreq */
->>  extern int update_devfreq(struct devfreq *devfreq);
->> diff --git a/drivers/devfreq/governor_simpleondemand.c b/drivers/devfreq/governor_simpleondemand.c
->> index 9802bf9..35b8e8e 100644
->> --- a/drivers/devfreq/governor_simpleondemand.c
->> +++ b/drivers/devfreq/governor_simpleondemand.c
->> @@ -113,6 +113,15 @@ int devfreq_simple_ondemand_handler(struct devfreq *devfreq,
->>               else
->>                       ret = devfreq_monitor_resume(devfreq);
->>               break;
->> +
->> +     case DEVFREQ_GOV_SUSPEND:
->> +             ret = devfreq_monitor_suspend(devfreq);
->> +             break;
->> +
->> +     case DEVFREQ_GOV_RESUME:
->> +             ret = devfreq_monitor_resume(devfreq);
->> +             break;
->> +
->>       default:
->>               break;
->>       }
->> diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
->> index 7a11c3e..7c7e179 100644
->> --- a/include/linux/devfreq.h
->> +++ b/include/linux/devfreq.h
->> @@ -155,6 +155,8 @@ extern struct devfreq *devfreq_add_device(struct device *dev,
->>                                 const struct devfreq_governor *governor,
->>                                 void *data);
->>  extern int devfreq_remove_device(struct devfreq *devfreq);
->> +extern int devfreq_suspend_device(struct devfreq *devfreq);
->> +extern int devfreq_resume_device(struct devfreq *devfreq);
->>
->>  /* Helper functions for devfreq user device driver with OPP. */
->>  extern struct opp *devfreq_recommended_opp(struct device *dev,
->> @@ -208,6 +210,16 @@ static int devfreq_remove_device(struct devfreq *devfreq)
->>       return 0;
->>  }
->>
->> +static int devfreq_suspend_device(struct devfreq *devfreq)
->> +{
->> +     return 0;
->> +}
->> +
->> +static int devfreq_resume_device(struct devfreq *devfreq)
->> +{
->> +     return 0;
->> +}
->> +
->>  static struct opp *devfreq_recommended_opp(struct device *dev,
->>                                          unsigned long *freq, u32 flags)
->>  {
->>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
+diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
+index 641794c..83b85a1 100644
+--- a/include/linux/mtd/nand.h
++++ b/include/linux/mtd/nand.h
+@@ -231,6 +231,14 @@ typedef enum {
+ /* Keep gcc happy */
+ struct nand_chip;
+ 
++/* ONFI timing mode, used in both asynchronous and synchronous mode */
++#define ONFI_TIMING_MODE_0	(1 << 0)
++#define ONFI_TIMING_MODE_1	(1 << 1)
++#define ONFI_TIMING_MODE_2	(1 << 2)
++#define ONFI_TIMING_MODE_3	(1 << 3)
++#define ONFI_TIMING_MODE_4	(1 << 4)
++#define ONFI_TIMING_MODE_5	(1 << 5)
++
+ /* ONFI feature address */
+ #define ONFI_FEATURE_ADDR_TIMING_MODE	0x1
+ 
+@@ -682,4 +690,16 @@ struct platform_nand_chip *get_platform_nandchip(struct mtd_info *mtd)
+ 	return chip->priv;
+ }
+ 
++/* return the supported asynchronous timing mode. */
++static inline int onfi_get_async_timing_mode(struct nand_chip *chip)
++{
++	return le16_to_cpu(chip->onfi_params.async_timing_mode);
++}
++
++/* return the supported synchronous timing mode. */
++static inline int onfi_get_sync_timing_mode(struct nand_chip *chip)
++{
++	return le16_to_cpu(chip->onfi_params.src_sync_timing_mode);
++}
++
+ #endif /* __LINUX_MTD_NAND_H */
 -- 
-Regards,
-Rajagopal
+1.7.0.4
+
+
