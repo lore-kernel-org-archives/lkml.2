@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756861Ab2IJJ0d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 05:26:33 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:57197 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756585Ab2IJJ02 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 05:26:28 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q8A9PhIY001435, This message is released by code: ctaloc0852
-Message-ID: <504DB217.6000808@realsil.com.cn>
-Date: Mon, 10 Sep 2012 17:25:43 +0800
-From: wwang <wei_wang@realsil.com.cn>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1756460Ab2IJJ1y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 05:27:54 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:56342 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754623Ab2IJJ1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 05:27:53 -0400
+Message-ID: <504DB28D.3070005@ti.com>
+Date: Mon, 10 Sep 2012 14:57:41 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120824 Thunderbird/15.0
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: "cjb@laptop.org" <cjb@laptop.org>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "arnd@arndb.de" <arnd@arndb.de>, "oakad@yahoo.com" <oakad@yahoo.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bp@alien8.de" <bp@alien8.de>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: Re: [PATCH v5 0/3] Add modules to support realtek PCIE card reader
-References: <cover.1347256563.git.wei_wang@realsil.com.cn> <20120910092107.GI19396@mwanda>
-In-Reply-To: <20120910092107.GI19396@mwanda>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 8bit
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+CC: Prabhakar Lad <prabhakar.lad@ti.com>,
+        dlos <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 2/2] ARM: da850/omap-l138: Add EVM specific code for
+ VPIF to work
+References: <1345471731-31678-1-git-send-email-prabhakar.lad@ti.com> <1345471731-31678-3-git-send-email-prabhakar.lad@ti.com> <504A2C7D.1090702@ti.com> <CA+V-a8sGhrTLJnthX+nZESvJfaHFTV=x06eXjQOwwCZwGBxkPQ@mail.gmail.com>
+In-Reply-To: <CA+V-a8sGhrTLJnthX+nZESvJfaHFTV=x06eXjQOwwCZwGBxkPQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2012年09月10日 17:21, Dan Carpenter 写道:
-> These don't apply on top of linux-next.  What do they apply on?
->
-> regards,
-> dan carpenter
->
-Hi Dan:
+Hi Prabhakar,
 
-These can be applied on torvalds's linux tree, tag v3.6-rc5, that is:
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=tag;h=refs/tags/v3.6-rc5
+On 9/7/2012 11:04 PM, Prabhakar Lad wrote:
+> On Fri, Sep 7, 2012 at 10:48 PM, Sekhar Nori <nsekhar@ti.com> wrote:
 
-BR,
-wwang
+>>> +static struct vpif_subdev_info da850_vpif_capture_sdev_info[] = {
+>>> +#if defined(CONFIG_DA850_UI_SD_VIDEO_PORT)
+>>
+>> You agreed to get rid of these multiple ifdefs but you have not fixed that.
+>>
+> I have merged the top one, at later stage when we go  ahead and add sensor
+> support then we would have require to have define two
+> da850_vpif_capture_sdev_info
+> so to avoid it I have kept this one.
+
+Lets get to that when we actually add sensor support. It might make
+sense then. Right now, there is no reason to have them.
+
+Thanks,
+Sekhar
