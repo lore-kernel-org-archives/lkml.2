@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757144Ab2IJJBd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 05:01:33 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:57428 "EHLO song.cn.fujitsu.com"
+	id S1757117Ab2IJJBb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 05:01:31 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:20577 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756972Ab2IJJAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756666Ab2IJJAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Sep 2012 05:00:15 -0400
 X-IronPort-AV: E=Sophos;i="4.80,397,1344182400"; 
-   d="scan'208";a="5814207"
+   d="scan'208";a="5814208"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
         LKML <linux-kernel@vger.kernel.org>, x86 maintainers <x86@kernel.org>
@@ -17,9 +17,9 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Rusty Russell <rusty@rustcorp.com.au>,
         Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [V4 PATCH 12/26] hugetlb: use N_MEMORY instead N_HIGH_MEMORY
-Date: Mon, 10 Sep 2012 16:59:04 +0800
-Message-Id: <1347267558-6707-13-git-send-email-laijs@cn.fujitsu.com>
+Subject: [V4 PATCH 18/26] hotplug: update nodemasks management
+Date: Mon, 10 Sep 2012 16:59:10 +0800
+Message-Id: <1347267558-6707-19-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1347267558-6707-1-git-send-email-laijs@cn.fujitsu.com>
 References: <1347267558-6707-1-git-send-email-laijs@cn.fujitsu.com>
@@ -32,128 +32,148 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-N_HIGH_MEMORY stands for the nodes that has normal or high memory.
-N_MEMORY stands for the nodes that has any memory.
-
-The code here need to handle with the nodes which have memory, we should
-use N_MEMORY instead.
+update nodemasks management for N_MEMORY
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Acked-by: Hillf Danton <dhillf@gmail.com>
 ---
- drivers/base/node.c |    2 +-
- mm/hugetlb.c        |   24 ++++++++++++------------
- 2 files changed, 13 insertions(+), 13 deletions(-)
+ Documentation/memory-hotplug.txt |    5 +++-
+ include/linux/memory.h           |    1 +
+ mm/memory_hotplug.c              |   49 +++++++++++++++++++++++++++++++++----
+ 3 files changed, 48 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/base/node.c b/drivers/base/node.c
-index 5d7731e..4c3aa7c 100644
---- a/drivers/base/node.c
-+++ b/drivers/base/node.c
-@@ -227,7 +227,7 @@ static node_registration_func_t __hugetlb_unregister_node;
- static inline bool hugetlb_register_node(struct node *node)
- {
- 	if (__hugetlb_register_node &&
--			node_state(node->dev.id, N_HIGH_MEMORY)) {
-+			node_state(node->dev.id, N_MEMORY)) {
- 		__hugetlb_register_node(node);
- 		return true;
- 	}
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index bc72712..a254dfb 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -1052,7 +1052,7 @@ static void return_unused_surplus_pages(struct hstate *h,
- 	 * on-line nodes with memory and will handle the hstate accounting.
- 	 */
- 	while (nr_pages--) {
--		if (!free_pool_huge_page(h, &node_states[N_HIGH_MEMORY], 1))
-+		if (!free_pool_huge_page(h, &node_states[N_MEMORY], 1))
- 			break;
- 	}
+diff --git a/Documentation/memory-hotplug.txt b/Documentation/memory-hotplug.txt
+index 6e6cbc7..70bc1c7 100644
+--- a/Documentation/memory-hotplug.txt
++++ b/Documentation/memory-hotplug.txt
+@@ -378,6 +378,7 @@ struct memory_notify {
+        unsigned long start_pfn;
+        unsigned long nr_pages;
+        int status_change_nid_normal;
++       int status_change_nid_high;
+        int status_change_nid;
  }
-@@ -1175,14 +1175,14 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
- int __weak alloc_bootmem_huge_page(struct hstate *h)
- {
- 	struct huge_bootmem_page *m;
--	int nr_nodes = nodes_weight(node_states[N_HIGH_MEMORY]);
-+	int nr_nodes = nodes_weight(node_states[N_MEMORY]);
  
- 	while (nr_nodes) {
- 		void *addr;
+@@ -385,7 +386,9 @@ start_pfn is start_pfn of online/offline memory.
+ nr_pages is # of pages of online/offline memory.
+ status_change_nid_normal is set node id when N_NORMAL_MEMORY of nodemask
+ is (will be) set/clear, if this is -1, then nodemask status is not changed.
+-status_change_nid is set node id when N_HIGH_MEMORY of nodemask is (will be)
++status_change_nid_high is set node id when N_HIGH_MEMORY of nodemask
++is (will be) set/clear, if this is -1, then nodemask status is not changed.
++status_change_nid is set node id when N_MEMORY of nodemask is (will be)
+ set/clear. It means a new(memoryless) node gets new memory by online and a
+ node loses all memory. If this is -1, then nodemask status is not changed.
+ If status_changed_nid* >= 0, callback should create/discard structures for the
+diff --git a/include/linux/memory.h b/include/linux/memory.h
+index 6b9202b..8089e49 100644
+--- a/include/linux/memory.h
++++ b/include/linux/memory.h
+@@ -54,6 +54,7 @@ struct memory_notify {
+ 	unsigned long start_pfn;
+ 	unsigned long nr_pages;
+ 	int status_change_nid_normal;
++	int status_change_nid_high;
+ 	int status_change_nid;
+ };
  
- 		addr = __alloc_bootmem_node_nopanic(
- 				NODE_DATA(hstate_next_node_to_alloc(h,
--						&node_states[N_HIGH_MEMORY])),
-+						&node_states[N_MEMORY])),
- 				huge_page_size(h), huge_page_size(h), 0);
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 8c3bcf6..d2b0158 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -462,7 +462,7 @@ static void check_nodemasks_changes_online(unsigned long nr_pages,
+ 	int nid = zone_to_nid(zone);
+ 	enum zone_type zone_last = ZONE_NORMAL;
  
- 		if (addr) {
-@@ -1254,7 +1254,7 @@ static void __init hugetlb_hstate_alloc_pages(struct hstate *h)
- 			if (!alloc_bootmem_huge_page(h))
- 				break;
- 		} else if (!alloc_fresh_huge_page(h,
--					 &node_states[N_HIGH_MEMORY]))
-+					 &node_states[N_MEMORY]))
- 			break;
- 	}
- 	h->max_huge_pages = i;
-@@ -1522,7 +1522,7 @@ static ssize_t nr_hugepages_store_common(bool obey_mempolicy,
- 		if (!(obey_mempolicy &&
- 				init_nodemask_of_mempolicy(nodes_allowed))) {
- 			NODEMASK_FREE(nodes_allowed);
--			nodes_allowed = &node_states[N_HIGH_MEMORY];
-+			nodes_allowed = &node_states[N_MEMORY];
- 		}
- 	} else if (nodes_allowed) {
- 		/*
-@@ -1532,11 +1532,11 @@ static ssize_t nr_hugepages_store_common(bool obey_mempolicy,
- 		count += h->nr_huge_pages - h->nr_huge_pages_node[nid];
- 		init_nodemask_of_node(nodes_allowed, nid);
- 	} else
--		nodes_allowed = &node_states[N_HIGH_MEMORY];
-+		nodes_allowed = &node_states[N_MEMORY];
+-	if (N_HIGH_MEMORY == N_NORMAL_MEMORY)
++	if (N_MEMORY == N_NORMAL_MEMORY)
+ 		zone_last = ZONE_MOVABLE;
  
- 	h->max_huge_pages = set_max_huge_pages(h, count, nodes_allowed);
+ 	if (zone_idx(zone) <= zone_last && !node_state(nid, N_NORMAL_MEMORY))
+@@ -470,7 +470,20 @@ static void check_nodemasks_changes_online(unsigned long nr_pages,
+ 	else
+ 		arg->status_change_nid_normal = -1;
  
--	if (nodes_allowed != &node_states[N_HIGH_MEMORY])
-+	if (nodes_allowed != &node_states[N_MEMORY])
- 		NODEMASK_FREE(nodes_allowed);
+-	if (!node_state(nid, N_HIGH_MEMORY))
++#ifdef CONFIG_HIGHMEM
++	zone_last = ZONE_HIGH;
++	if (N_MEMORY == N_HIGH_MEMORY)
++		zone_last = ZONE_MOVABLE;
++
++	if (zone_idx(zone) <= zone_last && !node_state(nid, N_HIGH_MEMORY))
++		arg->status_change_nid_high = nid;
++	else
++		arg->status_change_nid_high = -1;
++#else
++	arg->status_change_nid_high = arg->status_change_nid_normal;
++#endif
++
++	if (!node_state(nid, N_MEMORY))
+ 		arg->status_change_nid = nid;
+ 	else
+ 		arg->status_change_nid = -1;
+@@ -481,7 +494,10 @@ static void set_nodemasks(int node, struct memory_notify *arg)
+ 	if (arg->status_change_nid_normal >= 0)
+ 		node_set_state(node, N_NORMAL_MEMORY);
  
- 	return len;
-@@ -1839,7 +1839,7 @@ static void hugetlb_register_all_nodes(void)
- {
- 	int nid;
+-	node_set_state(node, N_HIGH_MEMORY);
++	if (arg->status_change_nid_high >= 0)
++		node_set_state(node, N_HIGH_MEMORY);
++
++	node_set_state(node, N_MEMORY);
+ }
  
--	for_each_node_state(nid, N_HIGH_MEMORY) {
-+	for_each_node_state(nid, N_MEMORY) {
- 		struct node *node = &node_devices[nid];
- 		if (node->dev.id == nid)
- 			hugetlb_register_node(node);
-@@ -1934,8 +1934,8 @@ void __init hugetlb_add_hstate(unsigned order)
- 	for (i = 0; i < MAX_NUMNODES; ++i)
- 		INIT_LIST_HEAD(&h->hugepage_freelists[i]);
- 	INIT_LIST_HEAD(&h->hugepage_activelist);
--	h->next_nid_to_alloc = first_node(node_states[N_HIGH_MEMORY]);
--	h->next_nid_to_free = first_node(node_states[N_HIGH_MEMORY]);
-+	h->next_nid_to_alloc = first_node(node_states[N_MEMORY]);
-+	h->next_nid_to_free = first_node(node_states[N_MEMORY]);
- 	snprintf(h->name, HSTATE_NAME_LEN, "hugepages-%lukB",
- 					huge_page_size(h)/1024);
- 	/*
-@@ -2030,11 +2030,11 @@ static int hugetlb_sysctl_handler_common(bool obey_mempolicy,
- 		if (!(obey_mempolicy &&
- 			       init_nodemask_of_mempolicy(nodes_allowed))) {
- 			NODEMASK_FREE(nodes_allowed);
--			nodes_allowed = &node_states[N_HIGH_MEMORY];
-+			nodes_allowed = &node_states[N_MEMORY];
- 		}
- 		h->max_huge_pages = set_max_huge_pages(h, tmp, nodes_allowed);
  
--		if (nodes_allowed != &node_states[N_HIGH_MEMORY])
-+		if (nodes_allowed != &node_states[N_MEMORY])
- 			NODEMASK_FREE(nodes_allowed);
- 	}
- out:
+@@ -900,7 +916,7 @@ static void check_nodemasks_changes_offline(unsigned long nr_pages,
+ 	unsigned long present_pages = 0;
+ 	enum zone_type zt, zone_last = ZONE_NORMAL;
+ 
+-	if (N_HIGH_MEMORY == N_NORMAL_MEMORY)
++	if (N_MEMORY == N_NORMAL_MEMORY)
+ 		zone_last = ZONE_MOVABLE;
+ 
+ 	for (zt = 0; zt <= zone_last; zt++)
+@@ -910,6 +926,21 @@ static void check_nodemasks_changes_offline(unsigned long nr_pages,
+ 	else
+ 		arg->status_change_nid_normal = -1;
+ 
++#ifdef CONIG_HIGHMEM
++	zone_last = ZONE_HIGH;
++	if (N_MEMORY == N_HIGH_MEMORY)
++		zone_last = ZONE_MOVABLE;
++
++	for (; zt <= zone_last; zt++)
++		present_pages += pgdat->node_zones[zt].present_pages;
++	if (zone_idx(zone) <= zone_last && nr_pages >= present_pages)
++		arg->status_change_nid_high = zone_to_nid(zone);
++	else
++		arg->status_change_nid_high = -1;
++#else
++	arg->status_change_nid_high = arg->status_change_nid_normal;
++#endif
++
+ 	zone_last = ZONE_MOVABLE;
+ 	for (; zt <= zone_last; zt++)
+ 		present_pages += pgdat->node_zones[zt].present_pages;
+@@ -924,11 +955,17 @@ static void clear_nodemasks(int node, struct memory_notify *arg)
+ 	if (arg->status_change_nid_normal >= 0)
+ 		node_clear_state(node, N_NORMAL_MEMORY);
+ 
+-	if (N_HIGH_MEMORY == N_NORMAL_MEMORY)
++	if (N_MEMORY == N_NORMAL_MEMORY)
+ 		return;
+ 
+-	if (arg->status_change_nid >= 0)
++	if (arg->status_change_nid_high >= 0)
+ 		node_clear_state(node, N_HIGH_MEMORY);
++
++	if (N_MEMORY == N_HIGH_MEMORY)
++		return;
++
++	if (arg->status_change_nid >= 0)
++		node_clear_state(node, N_MEMORY);
+ }
+ 
+ static int __ref offline_pages(unsigned long start_pfn,
 -- 
 1.7.1
 
