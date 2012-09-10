@@ -1,122 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757004Ab2IJNXi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 09:23:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50484 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752642Ab2IJNXg convert rfc822-to-8bit (ORCPT
+	id S1756885Ab2IJNZS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 09:25:18 -0400
+Received: from www.linutronix.de ([62.245.132.108]:49933 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751263Ab2IJNZP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 09:23:36 -0400
-Date: Mon, 10 Sep 2012 09:23:28 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: =?ISO-8859-1?B?UOFkcmFpZw==?= Brady <P@draigBrady.com>,
-        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] procfs: don't need a PATH_MAX allocation to hold a
- string representation of an int
-Message-ID: <20120910092328.0251144c@corrin.poochiereds.net>
-In-Reply-To: <20120907194416.GB4633@fieldses.org>
-References: <1347021293-19052-1-git-send-email-jlayton@redhat.com>
-	<20120907084814.07a59c98@corrin.poochiereds.net>
-	<5049EF5B.3020607@draigBrady.com>
-	<20120907194416.GB4633@fieldses.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 10 Sep 2012 09:25:15 -0400
+Date: Mon, 10 Sep 2012 15:25:10 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+cc: NeilBrown <neilb@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        lkml <linux-kernel@vger.kernel.org>, linux-omap@vger.kernel.org,
+        Kevin Hilman <khilman@deeprootsystems.com>
+Subject: Re: Seeking clarity on IRQCHIP_MASK_ON_SUSPEND
+In-Reply-To: <CAMQu2gzp1mieitAtDWB8Uud97gFQjH7eZ-bDZ2kMBLejAx4qMQ@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1209101524040.2724@ionos>
+References: <20120910165127.37dd07f3@notabene.brown> <alpine.LFD.2.02.1209101215300.2724@ionos> <CAMQu2gzp1mieitAtDWB8Uud97gFQjH7eZ-bDZ2kMBLejAx4qMQ@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 Sep 2012 15:44:16 -0400
-"J. Bruce Fields" <bfields@fieldses.org> wrote:
+On Mon, 10 Sep 2012, Shilimkar, Santosh wrote:
+> Thomas,
+> 
+> On Mon, Sep 10, 2012 at 3:58 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > On Mon, 10 Sep 2012, NeilBrown wrote:
+> >>
+> >> The IRQCHIP_MASK_ON_SUSPEND flag seems to be hard to use correctly, so either
+> >> I'm understanding it wrongly, or it could be made easier to use.
+> >> If the first case, I'm hoping that some improvement to documentation might
+> >> result.  If the second, then maybe we can fix the code.
+> > ...
+> >> Is anyone able to give a definitive answer on this?  Should
+> >> IRQCHIP_MASK_ON_SUSPEND be removed?
+> >
+> > The whole point of IRQCHIP_MASK_ON_SUSPEND is to deal with hardware
+> > designed by geniuses.
+> >
+> > Most SoCs have a way to mark the interrupts which serve as a wake up
+> > source as such. All other interrupts are magically "masked" on entry
+> > to suspend.
+> >
+> Just to support this, IRQCHIP_MASK_ON_SUSPEND does work with quite
+> a few ARM platforms too. OMAP already uses it in mainline and I have
+> seen patches for U500 and Tegra SOCs. Most of these usages are with
+> IRQ chips who doesn't have any driver run time PM supported and
+> the IRQ CHIP itself is shutdown when the CPU/CPU cluster gets
+> power down. So as far as functionality concerned with the flag,
+> it does what it suppose to do.
+> 
+> > Now there is hardware which is missing such a control, so we need to
+> > mask the non wakeup interrupts right before going into suspend.
+> >
+> > That's what IRQCHIP_MASK_ON_SUSPEND does. Not more, not less. See
+> > commit d209a699a0b for more ugly details.
+> >
+> > You might be looking for a different functionality. Can you explain
+> > what you need?
+> >
+> Neil's email came from a discussion on the usage of this flag for
+> OMAP GPIO irqchip which I proposed. With the flag, when the
+> lazy check_irq routine is called, the GPIO driver is runtime suspended
+> and hence the late mask/unmask calls take abort(clocks are already gated).
+> GPIO IRQCHIP is secondary IRQCHIP connected to 1 interrupt line
+> per bank(32 GPIOs) to the primary interrupt controller IRQCHIP.
 
-> On Fri, Sep 07, 2012 at 01:58:03PM +0100, Pádraig Brady wrote:
-> > On 09/07/2012 01:48 PM, Jeff Layton wrote:
-> > >On Fri,  7 Sep 2012 08:34:53 -0400
-> > >Jeff Layton<jlayton@redhat.com>  wrote:
-> > >
-> > >>Signed-off-by: Jeff Layton<jlayton@redhat.com>
-> > >>---
-> > >>  fs/proc/base.c | 5 +++--
-> > >>  1 file changed, 3 insertions(+), 2 deletions(-)
-> > >>
-> > >>diff --git a/fs/proc/base.c b/fs/proc/base.c
-> > >>index 1b6c84c..58e801b 100644
-> > >>--- a/fs/proc/base.c
-> > >>+++ b/fs/proc/base.c
-> > >>@@ -2758,7 +2758,8 @@ static void *proc_self_follow_link(struct dentry *dentry, struct nameidata *nd)
-> > >>  	pid_t tgid = task_tgid_nr_ns(current, ns);
-> > >>  	char *name = ERR_PTR(-ENOENT);
-> > >>  	if (tgid) {
-> > >>-		name = __getname();
-> > >>+		/* 10 for max length of an int in decimal + NULL terminator */
-> > >>+		name = kmalloc(11, GFP_KERNEL);
-> > >
-> > >		^^^^^
-> > >Bah...my mistake. This should be "12", since it's possible (though
-> > >unlikely) that this value could be negative. Is there a better way to
-> > >express "strlen of max representation of an int in decimal" ?
-> 
-> It'd be nice to have something--I've run across similar mistakes
-> recently.
-> 
-> > 
-> > See INT_BUFSIZE_BOUND() in:
-> > http://git.sv.gnu.org/gitweb/?p=gnulib.git;a=blob;f=lib/intprops.h;hb=HEAD
-> 
-> My lame attempt follows.  It's simpler than Pádraig's but possibly also
-> stupider.
-> 
-> --b.
-> 
-> commit 15e8c46104e0c1dd6a76d09b55563b6f83b61667
-> Author: J. Bruce Fields <bfields@redhat.com>
-> Date:   Wed Aug 15 17:41:47 2012 -0400
-> 
->     strings: helper for maximum decimal encoding of an unsigned integer
->     
->     I've seen a couple examples recently where we've gotten this wrong.
->     Maybe something like this would help?
->     
->     Suggested-by: Jim Rees <rees@umich.edu>
->     Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-> 
-> diff --git a/include/linux/string.h b/include/linux/string.h
-> index ffe0442..3674cf5 100644
-> --- a/include/linux/string.h
-> +++ b/include/linux/string.h
-> @@ -126,6 +126,12 @@ extern void argv_free(char **argv);
->  extern bool sysfs_streq(const char *s1, const char *s2);
->  extern int strtobool(const char *s, bool *res);
->  
-> +/*
-> + * length of the decimal representation of an unsigned integer.  Just an
-> + * approximation, but it's right for types of size 1 to 26 bytes:
-> + */
-> +#define base10len(i) (sizeof(i) * 24 / 10 + 1)
-> +
->  #ifdef CONFIG_BINARY_PRINTF
->  int vbin_printf(u32 *bin_buf, size_t size, const char *fmt, va_list args);
->  int bstr_printf(char *buf, size_t size, const char *fmt, const u32 *bin_buf);
-> diff --git a/net/sunrpc/cache.c b/net/sunrpc/cache.c
-> index 2afd2a8..1dcd2b3 100644
-> --- a/net/sunrpc/cache.c
-> +++ b/net/sunrpc/cache.c
-> @@ -1409,7 +1409,7 @@ static ssize_t read_flush(struct file *file, char __user *buf,
->  			  size_t count, loff_t *ppos,
->  			  struct cache_detail *cd)
->  {
-> -	char tbuf[20];
-> +	char tbuf[base10len(unsigned long) + 2];
->  	unsigned long p = *ppos;
->  	size_t len;
->  
+So for this thing you need a IRQCHIP_MASK_BEFORE_SUSPEND variant? 
 
-Thanks Bruce and Pádraig...
-
-Bruce, are you planning to push that patch for 3.7? If so, I'll base
-mine on top of yours...
-
--- 
-Jeff Layton <jlayton@redhat.com>
