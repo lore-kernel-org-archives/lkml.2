@@ -1,33 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752540Ab2IJHsy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 03:48:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35248 "EHLO mx1.redhat.com"
+	id S1752888Ab2IJHyA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 03:54:00 -0400
+Received: from mga03.intel.com ([143.182.124.21]:43486 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750957Ab2IJHsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 03:48:51 -0400
-Message-ID: <504D9B57.9040606@redhat.com>
-Date: Mon, 10 Sep 2012 09:48:39 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: linux-kernel@vger.kernel.org, target-devel@vger.kernel.org,
-        nab@linux-iscsi.org, hch@lst.de, roland@kernel.org
-Subject: Re: [PATCH 00/11] lots of fixes for zero allocation length
-References: <1347031842-2531-1-git-send-email-pbonzini@redhat.com> <20120910072820.GA26052@infradead.org>
-In-Reply-To: <20120910072820.GA26052@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1750991Ab2IJHx5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 03:53:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,396,1344236400"; 
+   d="scan'208";a="190784684"
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+To: eranian@google.com, a.p.zijlstra@chello.nl, mingo@elte.hu,
+        andi@firstfloor.org, jolsa@redhat.com, linux-kernel@vger.kernel.org
+Subject: [RFC PATCH 1/3] perf: Add cpumask for uncore pmu
+Date: Mon, 10 Sep 2012 15:53:48 +0800
+Message-Id: <1347263631-23175-1-git-send-email-zheng.z.yan@intel.com>
+X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 10/09/2012 09:28, Christoph Hellwig ha scritto:
->> > Testcases included in each patch, when relevant.
-> Can you please submit them for the scsi testsuite?
-> 
+Hi,
 
-Yes, will do.
+This patchset add a cpumask file to the uncore pmu sysfs directory.
+If user doesn't explicitly specify CPU list, perf-stat only collects
+uncore events on CPUs listed in the cpumask file.
 
-Paolo
+As Stephane suggested, make perf-stat recognize wildcard in pmu name.
+So we can easily measure event on all uncore boxes of same type.
+	
+Any comment is appreciated.
+Thank you
+
