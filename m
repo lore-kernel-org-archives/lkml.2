@@ -1,158 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755022Ab2IJCeu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 22:34:50 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44275 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753292Ab2IJCer convert rfc822-to-8bit (ORCPT
+	id S1755176Ab2IJCl6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 22:41:58 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:50400 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751258Ab2IJCl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 22:34:47 -0400
-From: "Kaneshige, Kenji" <kaneshige.kenji@jp.fujitsu.com>
-To: "Indoh, Takao" <indou.takao@jp.fujitsu.com>,
-        "vgoyal@redhat.com" <vgoyal@redhat.com>
-CC: "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "hbabu@us.ibm.com" <hbabu@us.ibm.com>,
-        "Ishii, Hironobu" <ishii.hironobu@jp.fujitsu.com>,
-        "martin.wilck@ts.fujitsu.com" <martin.wilck@ts.fujitsu.com>
-Subject: RE: [RFC][PATCH] Reset PCIe devices to address DMA problem on kdump
- with iommu
-Thread-Topic: [RFC][PATCH] Reset PCIe devices to address DMA problem on
- kdump with iommu
-Thread-Index: AQHNcWshux+i/ugmYU6XzbvpSogZp5dHYZeAgAQ9MoCAAQ6HAIAuhvIAgAHu0rA=
-Date: Mon, 10 Sep 2012 02:34:42 +0000
-Message-ID: <4A338DB2991D2A44B9A44B8718AECF650A4AA6BF@G01JPEXMBYT03>
-References: <501BB4EF.7080909@jp.fujitsu.com>
- <20120803114643.GA28330@redhat.com> <501F4877.5050605@jp.fujitsu.com>
- <20120806203902.GH25559@redhat.com> <50473306.1070803@jp.fujitsu.com>
-In-Reply-To: <50473306.1070803@jp.fujitsu.com>
-Accept-Language: en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-securitypolicycheck: OK by SHieldMailChecker v1.7.4
-x-originating-ip: [10.124.134.168]
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	Sun, 9 Sep 2012 22:41:57 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 173.50.127.139
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18Lq07gP5wluvzE5hHjtKnEFJl74iHADOI=
+Date: Sun, 9 Sep 2012 22:41:50 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, Rabeeh Khoury <rabeeh@solid-run.com>,
+        Maen Suleiman <maen@marvell.com>, Olof Johansson <olof@lixom.net>,
+        Ian Molton <ian.molton@codethink.co.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 0/6] ARM: dove: DT support for Marvell Dove
+Message-ID: <20120910024149.GU4575@titan.lakedaemon.net>
+References: <1344681326-17946-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1345050455-32643-1-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345050455-32643-1-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-pci-owner@vger.kernel.org
-> [mailto:linux-pci-owner@vger.kernel.org] On Behalf Of Takao Indoh
-> Sent: Wednesday, September 05, 2012 8:10 PM
-> To: vgoyal@redhat.com
-> Cc: kexec@lists.infradead.org; linux-kernel@vger.kernel.org;
-> linux-pci@vger.kernel.org; bhelgaas@google.com; hbabu@us.ibm.com; Ishii,
-> Hironobu/石井 宏延; martin.wilck@ts.fujitsu.com
-> Subject: Re: [RFC][PATCH] Reset PCIe devices to address DMA problem on kdump
-> with iommu
+On Wed, Aug 15, 2012 at 07:07:29PM +0200, Sebastian Hesselbarth wrote:
+> This patch set adds DT support for Marvell Dove SoC and three boards
+> equipped with this SoC. The work is based on device tree support for
+> Marvell Orion based SoCs introduced in 3.6-rc1.
 > 
-> (2012/08/07 5:39), Vivek Goyal wrote:
-> > On Mon, Aug 06, 2012 at 01:30:47PM +0900, Takao Indoh wrote:
-> >> Hi Vivek,
-> >>
-> >> (2012/08/03 20:46), Vivek Goyal wrote:
-> >>> On Fri, Aug 03, 2012 at 08:24:31PM +0900, Takao Indoh wrote:
-> >>>> Hi all,
-> >>>>
-> >>>> This patch adds kernel parameter "reset_pcie_devices" which resets
-> PCIe
-> >>>> devices at boot time to address DMA problem on kdump with iommu. When
-> >>>> this parameter is specified, a hot reset is triggered on each PCIe
-> root
-> >>>> port and downstream port to reset its downstream endpoint.
-> >>>
-> >>> Hi Takao,
-> >>>
-> >>> Why not use existing "reset_devices" parameter instead of introducing
-> >>> a new one?
-> >>
-> >> "reset_devices" is used for each driver to reset their own device, and
-> >> this patch resets all devices forcibly, so I thought they were different
-> >> things.
-> >
-> > Yes reset_devices currently is used for driver to reset its device. I
-> > thought one could very well extend its reach to reset pci express devices
-> > at bus level.
-> >
-> > Having them separate is not going to be much useful from kdump
-> > perspective. We will end up passing both reset_devices and
-> > reset_pcie_devices to second kernel whill lead to bus level reset as well
-> > as device level reset.
-> >
-> > Ideal situation would be that somehow detect that bus level reset has
-> been
-> > done and skip device level reset (assuming bus level reset obviates the
-> > need of device level reset, please correct me if that's not the case).
-> >
-> > After pcie reset, can we store the state in a variable and drivers can
-> > use that variable to check if PCIe level reset was done or not. If yes,
-> > skip device level reset (Assuming driver knows that device is on a
-> > PCIe slot).
-> >
-> > In that case we will not have to introduce new kernel command line, and
-> > also avoid double reset?
+> The first three patches move mach-dove closer to Marvell Kirkwood's
+> setup code by unifying the clock setup routines, adding clock gating
+> control, and support for Marvell's crypto engine to mach-dove.
 > 
-> I found a problem when testing my patch on some machines.
+> Patches 4 and 5 add a generic DT machine descriptor to mach-dove and
+> corresponding DT descriptors for the SoC and already supported boards.
 > 
-> Originally there are two problems in kdump kernel when iommu is enabled;
-> DMAR error and PCI SERR. I thought they are fixed by my patch, but I
-> noticed that PCI SERR is still detected after applying the patch. It
-> seems that something happens when Interrupt Remapping is initialized in
-> kdump kernel.
+> Finally, the last patch adds a DT descriptor for the SolidRun CuBox,
+> a plug computer based on Marvell Dove.
+> 
+> This patch set relies on a DT support patch for sdhci-dove that has
+> been accepted on mmc-next for 3.7 as commit
+> b2293055c1e1200acbb46523976852d1686fdfa4.
+> 
+> Changes:
+> v2: removed clk_prepare_enable for tclk and updated subsequent patches
+> v3: fixed a typo in clk_gate name for pex0
+>     removed device name macros from clk gate names
+> 
+> Sebastian Hesselbarth (6):
+>   ARM: dove: unify clock setup
+>   ARM: dove: add clock gating control
+>   ARM: dove: add crypto engine
+>   ARM: dove: add device tree based machine descriptor
+>   ARM: dove: add device tree descriptors
+>   ARM: dove: SolidRun CuBox DT
+> 
+>  arch/arm/boot/dts/dove-cm-a510.dts   |   38 +++++++++
+>  arch/arm/boot/dts/dove-cubox.dts     |   42 +++++++++
+>  arch/arm/boot/dts/dove-dove-db.dts   |   38 +++++++++
+>  arch/arm/boot/dts/dove.dtsi          |  143 +++++++++++++++++++++++++++++++
+>  arch/arm/mach-dove/Kconfig           |    7 ++
+>  arch/arm/mach-dove/Makefile.boot     |    4 +
+>  arch/arm/mach-dove/common.c          |  156 +++++++++++++++++++++++++++++++---
+>  arch/arm/mach-dove/include/mach/pm.h |   54 ++++++++----
+>  8 files changed, 452 insertions(+), 30 deletions(-)
+>  create mode 100644 arch/arm/boot/dts/dove-cm-a510.dts
+>  create mode 100644 arch/arm/boot/dts/dove-cubox.dts
+>  create mode 100644 arch/arm/boot/dts/dove-dove-db.dts
+>  create mode 100644 arch/arm/boot/dts/dove.dtsi
+> 
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-I'm not sure, but I guess the PCI SERR might be caused as follows.
+Whole series applied to:
 
-- The 1st kernel enables interrupt remapping. The MSI(-X) address and
-  data registers of PCI devices are programmed in remappable format.
+git://git.infradead.org/users/jcooper/linux.git kirkwood/boards
 
-- At the beginning of 2nd kernel, interrupt remapping is still active.
-  And then it is disabled by enable_IR() function for initialization.
+thx,
 
-- PCI device generate an interrupt. At this moment, interrupt remapping
-  is not enabled yet. On the other hand, MSI(-X) address and data of this
-  interrupt is in remappable format because those are programmed by 1st
-  kernel. I guess this might be a cause of PCI SERR.
-
-I guess clearing command register or disabling MSI before interrupt
-remapping initialization in 2nd kernel might solve the PCI SERR problem.
-
-Regards,
-Kenji Kaneshige
-
-
-> 
-> Therefore resetting devices has to be done before enable_IR() is
-> called. I have three ideas for it.
-> 
->   (i) Resetting devices in 1st kernel(panic kernel)
->   We can reset devices before jumping into 2nd kernel. Of course it may
->   be dangerous to scan pci device tree and call PCI functions in panic'd
->   kernel. Beforehand we need to collect device information so that only
->   minimal code could run on panic.
-> 
->   (ii) Resetting devices in purgatory
->   It seems to be be appropriate place to do this, but I'm not sure
->   where I can save/restore PCI config when resetting devices in
->   purgatory.
-> 
->   (iii) Resetting devices in 2nd kernel(kdump kernel)
->   Important point is to do reset before enable_IR() is called as I wrote
->   above. I think I should add new function to do reset into
->   arch/x86/pci/early.c and call it in setup_arch like
->   early_dump_pci_devices() or early_quirks().
-> 
-> Any comments?
-> 
-> Thanks,
-> Takao Indoh
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Jason.
