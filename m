@@ -1,94 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088Ab2IJGCi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 02:02:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29985 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751208Ab2IJGCe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 02:02:34 -0400
-Date: Mon, 10 Sep 2012 09:03:59 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: fes@google.com, aarcange@redhat.com, riel@redhat.com, yvugenfi@redhat.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org, mikew@google.com,
-        yinghan@google.com, virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH] virtio-balloon spec: provide a version of the "silent
- deflate" feature that works
-Message-ID: <20120910060359.GB16819@redhat.com>
-References: <20120907105335.GB17211@redhat.com>
- <5049D899.60705@redhat.com>
- <20120907121712.GA17397@redhat.com>
- <5049E717.8080307@redhat.com>
- <20120907124432.GB17397@redhat.com>
- <5049FEDD.40303@redhat.com>
- <20120907142545.GC17397@redhat.com>
- <504A0858.4080508@redhat.com>
- <20120908222221.GA20588@redhat.com>
- <504D7F95.9070700@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <504D7F95.9070700@redhat.com>
+	id S1751443Ab2IJGOk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 02:14:40 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:56766 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750718Ab2IJGOi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 02:14:38 -0400
+Date: Mon, 10 Sep 2012 16:14:28 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mike Turquette <mturquette@ti.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Loic PALLARDY <loic.pallardy@st.com>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: linux-next: manual merge of the clk tree with the arm-soc tree
+Message-Id: <20120910161428.879618aea62e5be6340ed93c@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__10_Sep_2012_16_14_28_+1000_h=pcJN5oisagaknX"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 07:50:13AM +0200, Paolo Bonzini wrote:
-> Il 09/09/2012 00:22, Michael S. Tsirkin ha scritto:
-> >> Almost.  One is "the guest, if really needed, can tell the host of
-> >> pages".  If not negotiated, and the host does not support it, the host
-> >> must break the guest (e.g. fail to offer any virtqueues).
-> > 
-> > There is no way in spec to break the guest.
-> > You can not fail to offer virtqueues.
-> 
-> You can always return 0 for the first queue.
+--Signature=_Mon__10_Sep_2012_16_14_28_+1000_h=pcJN5oisagaknX
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I don't think guest drivers recover gracefully from this.
-Do they?
+Hi Mike,
 
-> > Besides, there is no guarantee that virtqueue setup
-> > happens after feature negotiation.
-> 
-> It is the only way that makes sense though (unless the guest would write
-> 0 for its features).
->  Should we change that?
+Today's linux-next merge of the clk tree got a conflict in
+arch/arm/mach-ux500/clock.c between commit 79964bcd792f ("ARM: ux500:
+Correct Ux500 family names usage") from the arm-soc tree and commit
+ebc96db7632f ("ARM: ux500: Switch to use common clock framework") from
+the clk tree.
 
-Not sure.  This was not always the case. Further
-setup can fail with e.g ENOMEM and
-driver could retry with a set of more conservative features.
+The latter removed the file so I did that - there may be more fixup
+required.
 
-I do think it would be nice to add a generic way for device to
-notify guest about an internal failure.
-This can only happen after DRIVER_OK status is written though,
-and since existing drivers do not expect such failure, it might
-be too late.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> >> The other is "the guest, though, would prefer not to do so".  It is
-> >> different because the guest can proceed in a fallback mode even if the
-> >> host doesn't offer it.
-> > 
-> > I think I get what your proposed SILENT means what I do not get
-> > is the motivation. It looks like a premature optimization to me.
-> 
-> The motivation is to let the driver choose between two behaviors: the
-> current one where ballooning is only done on request, and a more
-> aggressive one.
+--Signature=_Mon__10_Sep_2012_16_14_28_+1000_h=pcJN5oisagaknX
+Content-Type: application/pgp-signature
 
-Yes but why is being silent any good? Optimization?
-Any data to show that it will help some workload?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-...
+iQIcBAEBCAAGBQJQTYVEAAoJEECxmPOUX5FEsIwP/2hFaRn8Vi6kJNA1+GeinZFV
+xYwsiwuwhZ2iP+h68GVm6GZBIXDigKXMH9CW2GqlCNXoLErbpnx8SnRdVbZbQ7Qi
+RDJT/b9pJOEDtYN8tIcc1LQW6NG9FS32zhkTgGyu0abWMlSlIbqFqhRpcdLzNhY8
+UNIXTfOZGsReQ+O6QEg2cdUPzpqU4JpR4yApbyjiSDQ6YbvIp3K4IeSgPIhtrpHo
+G06mioMtJPZdha9B9DD8J43dabCiu0KZClnk+kSZ25yVb9arqp1vvYvSod7xFr3r
+ts9r5fY94Xbwwc7XvPy37KXjaBu2C8UNxS/z0F+O0PHvi2FOdRSBH5CrYqFSWeqe
+Nuw3ZJIvtUa1RnZcC3sXZ6UOqrPyRjW9wTcQjcwwQgCYDeB7mjtHVMSt8DWx74hB
+gRjUPLEmjmuvxODmxziP8k6LgvzPPOqDU0bhFNzxI4wcz+94kBDw2mPzeJb2vfFP
+i98GgTAUHxDEXVXmpqNeqtlZgjIVrq/yCdLkIs/HWDndBHTzXqIjlUgxEWyjSnQh
+zDla7npif7j1kShnAWpw3BtX+2XOXV+jqghzAQxe/5T5UhioHuIoh98wetRBMA5N
+km7s5STxtYtSEvNq5Sz9UPxEK1wI9rR6VYz2WcbHUhfXl5r7Pwk0gB3ggcMNLCf/
+FtUxuyeu9RaD4jRNjyiH
+=xp1O
+-----END PGP SIGNATURE-----
 
-> > OK so TELL says *when* to notify host, SILENT if set allows guest
-> > to skip leak notifications? In this case TELL should just be ignored
-> > when SILENT is set.
-> 
-> Yeah, that was my first idea.  However, there are existing drivers that
-> ignore SILENT, so that would not be 100% exact.
-
-Not sure I follow the logic.
-They don't ack SILENT so that would be 100% exact.
-
--- 
-MST
+--Signature=_Mon__10_Sep_2012_16_14_28_+1000_h=pcJN5oisagaknX--
