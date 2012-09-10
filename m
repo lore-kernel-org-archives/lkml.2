@@ -1,41 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753155Ab2IJQel (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 12:34:41 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38874 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751905Ab2IJQek convert rfc822-to-8bit (ORCPT
+	id S1753486Ab2IJQeq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 12:34:46 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:36200 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751905Ab2IJQen (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 12:34:40 -0400
-Message-ID: <1347294866.2124.28.camel@twins>
-Subject: Re: [RFC PATCH 1/3] perf: Add cpumask for uncore pmu
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: eranian@google.com, mingo@elte.hu, andi@firstfloor.org, jolsa@redhat.com,
-        linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-Date: Mon, 10 Sep 2012 18:34:26 +0200
-In-Reply-To: <1347263631-23175-1-git-send-email-zheng.z.yan@intel.com>
-References: <1347263631-23175-1-git-send-email-zheng.z.yan@intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 10 Sep 2012 12:34:43 -0400
+Message-ID: <504E168C.6060603@ti.com>
+Date: Mon, 10 Sep 2012 18:34:20 +0200
+From: Benoit Cousson <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Matt Porter <mporter@ti.com>
+CC: Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Vaibhav Hiremath <hvaibhav@ti.com>,
+        "tony@atomide.com" <tony@atomide.com>
+Subject: Re: [PATCH] ARM: dts: AM33XX: fix gpio node numbering to match hardware
+References: <1347294020-22661-1-git-send-email-mporter@ti.com>
+In-Reply-To: <1347294020-22661-1-git-send-email-mporter@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-09-10 at 15:53 +0800, Yan, Zheng wrote:
-> Hi,
-> 
-> This patchset add a cpumask file to the uncore pmu sysfs directory.
-> If user doesn't explicitly specify CPU list, perf-stat only collects
-> uncore events on CPUs listed in the cpumask file.
-> 
-> As Stephane suggested, make perf-stat recognize wildcard in pmu name.
-> So we can easily measure event on all uncore boxes of same type.
-> 	
-> Any comment is appreciated.
++ Tony
 
-You forgot to CC acme who maintains the tools side.. Anyway, I think it
-all looks ok, Arnaldo see anything dubious in there?
+Hi Matt,
+
+30 minutes too late for my pull request :-(
+
+There are a couple of am33xx patches under discussion, so I'll take them
+and send a for_3.7/dts-part2 pull request if this is not too late for Tony.
+
+On 09/10/2012 06:20 PM, Matt Porter wrote:
+> On AM33xx, the datasheet and TRM refer to four GPIO instances that
+> are 0-based, GPIO0-3.
+
+Or maybe you should just update the spec to use a 1-based GPIO number
+like OMAP :-)
+
+Regards,
+Benoit
+
+
+> 
+> Signed-off-by: Matt Porter <mporter@ti.com>
+> ---
+>  arch/arm/boot/dts/am33xx.dtsi |    8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+> index bb31bff..1369bfc 100644
+> --- a/arch/arm/boot/dts/am33xx.dtsi
+> +++ b/arch/arm/boot/dts/am33xx.dtsi
+> @@ -62,7 +62,7 @@
+>  			reg = <0x48200000 0x1000>;
+>  		};
+>  
+> -		gpio1: gpio@44e07000 {
+> +		gpio0: gpio@44e07000 {
+>  			compatible = "ti,omap4-gpio";
+>  			ti,hwmods = "gpio1";
+>  			gpio-controller;
+> @@ -74,7 +74,7 @@
+>  			interrupts = <96>;
+>  		};
+>  
+> -		gpio2: gpio@4804c000 {
+> +		gpio1: gpio@4804c000 {
+>  			compatible = "ti,omap4-gpio";
+>  			ti,hwmods = "gpio2";
+>  			gpio-controller;
+> @@ -86,7 +86,7 @@
+>  			interrupts = <98>;
+>  		};
+>  
+> -		gpio3: gpio@481ac000 {
+> +		gpio2: gpio@481ac000 {
+>  			compatible = "ti,omap4-gpio";
+>  			ti,hwmods = "gpio3";
+>  			gpio-controller;
+> @@ -98,7 +98,7 @@
+>  			interrupts = <32>;
+>  		};
+>  
+> -		gpio4: gpio@481ae000 {
+> +		gpio3: gpio@481ae000 {
+>  			compatible = "ti,omap4-gpio";
+>  			ti,hwmods = "gpio4";
+>  			gpio-controller;
+> 
+
