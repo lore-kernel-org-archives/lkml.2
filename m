@@ -1,90 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555Ab2IJIa1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 04:30:27 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:49601 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751594Ab2IJIaY (ORCPT
+	id S1755672Ab2IJIai (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 04:30:38 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:59597 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751594Ab2IJIae (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 04:30:24 -0400
-Message-ID: <504DA513.2060004@linux.vnet.ibm.com>
-Date: Mon, 10 Sep 2012 16:30:11 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Mon, 10 Sep 2012 04:30:34 -0400
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>, linux-raid@vger.kernel.org
-CC: neilb@suse.de, "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 1/3] raid: replace	list_for_each_continue_rcu with new
- interface
-References: <502CB924.10200@linux.vnet.ibm.com> <502DC999.1040407@linux.vnet.ibm.com> <5036D00F.2040009@linux.vnet.ibm.com>
-In-Reply-To: <5036D00F.2040009@linux.vnet.ibm.com>
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <20120910075838.GE6749@opensource.wolfsonmicro.com>
+References: <4737A960563B524DA805CA602BE04B3064CC590795@SC-VEXCH2.marvell.com>
+ <CAF+7xWky1N=LHd01aiewEVEhNNLNnuBHHqCBsTHhVd_SbPMjaA@mail.gmail.com> <20120910075838.GE6749@opensource.wolfsonmicro.com>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Mon, 10 Sep 2012 16:30:13 +0800
+Message-ID: <CAF+7xWm+r4zKMcK1Zi-QThG0YL-9KQa6iwNCiLbmvLUu65rVyA@mail.gmail.com>
+Subject: Re: [PATCH] regulator: fan53555: remove vsel_max not used
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Yunfan Zhang <yfzhang@marvell.com>, Liam Girdwood <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12091008-5140-0000-0000-0000020D8CBF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/24/2012 08:51 AM, Michael Wang wrote:
-> On 08/17/2012 12:33 PM, Michael Wang wrote:
->> From: Michael Wang <wangyun@linux.vnet.ibm.com>
->>
->> This patch replaces list_for_each_continue_rcu() with
->> list_for_each_entry_continue_rcu() to save a few lines
->> of code and allow removing list_for_each_continue_rcu().
->>
-> 
-> Hi, Neil
-> 
-> Could I get some comments on this patch?
+2012/9/10 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> On Mon, Sep 10, 2012 at 11:53:55AM +0800, Axel Lin wrote:
+>> 2012/9/10 Yunfan Zhang <yfzhang@marvell.com>:
+>> > The max voltage will be bounded by min_uV, uV_step and n_voltages, so
+>> > remove it to avoid confusing.
+>
+> Applied, thanks.
+>
+>> Acked-by: Axel Lin <axel.lin@gmail.com>
+>
+> I think you meant to say Reviewed-by here - Acked mostly just means that
+Ah.. yes. should be Reviewed-by here.
 
-Hi, Neil
+> you're OK with the patch being applied, it's not really saying anything
+> strong about the patch having been properly reviewed.
 
-Could I get some comments?
-
-And please forgive and warn me if this patch has came to the wrong
-place...I get the address from get_maintainer.
-
-Regards,
-Michael Wang
-
-> 
-> Regards,
-> Michael Wang
-> 
->> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
->> ---
->>  drivers/md/bitmap.c |    9 +++------
->>  1 files changed, 3 insertions(+), 6 deletions(-)
->>
->> diff --git a/drivers/md/bitmap.c b/drivers/md/bitmap.c
->> index 15dbe03..b160828 100644
->> --- a/drivers/md/bitmap.c
->> +++ b/drivers/md/bitmap.c
->> @@ -163,20 +163,17 @@ static struct md_rdev *next_active_rdev(struct md_rdev *rdev, struct mddev *mdde
->>  	 * As devices are only added or removed when raid_disk is < 0 and
->>  	 * nr_pending is 0 and In_sync is clear, the entries we return will
->>  	 * still be in the same position on the list when we re-enter
->> -	 * list_for_each_continue_rcu.
->> +	 * list_for_each_entry_continue_rcu.
->>  	 */
->> -	struct list_head *pos;
->>  	rcu_read_lock();
->>  	if (rdev == NULL)
->>  		/* start at the beginning */
->> -		pos = &mddev->disks;
->> +		rdev = list_entry_rcu(&mddev->disks, struct md_rdev, same_set);
->>  	else {
->>  		/* release the previous rdev and start from there. */
->>  		rdev_dec_pending(rdev, mddev);
->> -		pos = &rdev->same_set;
->>  	}
->> -	list_for_each_continue_rcu(pos, &mddev->disks) {
->> -		rdev = list_entry(pos, struct md_rdev, same_set);
->> +	list_for_each_entry_continue_rcu(rdev, &mddev->disks, same_set) {
->>  		if (rdev->raid_disk >= 0 &&
->>  		    !test_bit(Faulty, &rdev->flags)) {
->>  			/* this is a usable devices */
->>
-> 
-
+Thanks for the clarification.
+Axel
