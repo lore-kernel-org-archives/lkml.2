@@ -1,85 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757761Ab2IJSWJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 14:22:09 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:38496 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495Ab2IJSWG (ORCPT
+	id S1757816Ab2IJSYL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 14:24:11 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:52548 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757480Ab2IJSYJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 14:22:06 -0400
-X-RZG-AUTH: :P2MHfkW8eP4Mre39l357AZT/I7AY/7nT2yrT1q0ngWNsKR9Dbc7nsXB+5kzFuK6ZQo8=
-X-RZG-CLASS-ID: mo00
-Message-ID: <504E2FCB.3040304@hartkopp.net>
-Date: Mon, 10 Sep 2012 20:22:03 +0200
-From: Oliver Hartkopp <socketcan@hartkopp.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.6esrpre) Gecko/20120817 Icedove/10.0.6
+	Mon, 10 Sep 2012 14:24:09 -0400
+Message-ID: <504E3046.9080103@wwwdotorg.org>
+Date: Mon, 10 Sep 2012 12:24:06 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-To: Fabio Baltieri <fabio.baltieri@gmail.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Wolfgang Grandegger <wg@grandegger.com>, linux-kernel@vger.kernel.org,
-        linux-can@vger.kernel.org, Kurt Van Dijck <kurt.van.dijck@eia.be>
-Subject: Re: [PATCH] can: export a safe netdev_priv wrapper for candev
-References: <20120907071934.GB37685@macbook.local> <1347207464-2002-1-git-send-email-fabio.baltieri@gmail.com> <20120910142507.GA11000@vandijck-laurijssen.be>
-In-Reply-To: <20120910142507.GA11000@vandijck-laurijssen.be>
-Content-Type: text/plain; charset=UTF-8
+To: Hiroshi Doyu <hdoyu@nvidia.com>,
+        "joerg.roedel@amd.com" <joerg.roedel@amd.com>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [v2 1/1] iommu/tegra: smmu: Use debugfs_create_dir for directory
+References: <20120809155624.b781edae9efa7c51faf6c31c@nvidia.com><1345009652-13408-1-git-send-email-hdoyu@nvidia.com><502BCA9E.5090206@wwwdotorg.org> <20120904.095134.292349834288373260.hdoyu@nvidia.com>
+In-Reply-To: <20120904.095134.292349834288373260.hdoyu@nvidia.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10.09.2012 16:25, Kurt Van Dijck wrote:
-
-> can: export a safe netdev_priv wrapper for candev
+On 09/04/2012 12:51 AM, Hiroshi Doyu wrote:
+> Stephen Warren <swarren@wwwdotorg.org> wrote @ Wed, 15 Aug 2012 18:13:18 +0200:
 > 
-> In net_device notifier calls, it was impossible to determine
-> if a CAN device is based on candev in a safe way.
-> This patch adds such test in order to access candev storage
-> from within those notifiers.
+>> On 08/14/2012 11:47 PM, Hiroshi Doyu wrote:
+>>> The commit c3b1a35 "debugfs: make sure that debugfs_create_file() gets
+>>> used only for regulars" doesn't allow to use debugfs_create_file() for
+>>> dir. Keep debugfs data in smmu_device instead of directory's i_private.
+>>>
+>>> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+>>
+>> Tested-by: Stephen Warren <swarren@wwwdotorg.org>
+>>
+>> Since this fixes a BUG during kernel boot, it'd be great if this could
+>> be applied ASAP unless there are significant issues with it.
 > 
-> Signed-off-by: Kurt Van Dijck <kurt.van.dijck@eia.be>
-> 
-> diff --git a/drivers/net/can/dev.c b/drivers/net/can/dev.c
-> index 963e2cc..6c1e704 100644
-> --- a/drivers/net/can/dev.c
-> +++ b/drivers/net/can/dev.c
-> @@ -795,6 +795,18 @@ void unregister_candev(struct net_device *dev)
->  }
->  EXPORT_SYMBOL_GPL(unregister_candev);
->  
-> +/*
-> + * Test if a network device is a candev based device
-> + * and return the can_priv* if so.
-> + */
-> +struct can_priv *safe_candev_priv(struct net_device *dev)
-> +{
-> +	if ((dev->type != ARPHRD_CAN) || (dev->rtnl_link_ops != &can_link_ops))
-> +		return NULL;
+> Joerg, any chance to get this in?
 
-
-Nice idea!
-
-Acked-by: Oliver Hartkopp <socketcan@hartkopp.net>
-
-> +
-> +	return netdev_priv(dev);
-> +}
-> +
->  static __init int can_dev_init(void)
->  {
->  	int err;
-> diff --git a/include/linux/can/dev.h b/include/linux/can/dev.h
-> index 7747d9b..fb0ab65 100644
-> --- a/include/linux/can/dev.h
-> +++ b/include/linux/can/dev.h
-> @@ -106,6 +106,9 @@ u8 can_len2dlc(u8 len);
->  struct net_device *alloc_candev(int sizeof_priv, unsigned int echo_skb_max);
->  void free_candev(struct net_device *dev);
->  
-> +/* a candev safe wrapper around netdev_priv */
-> +struct can_priv *safe_candev_priv(struct net_device *dev);
-> +
->  int open_candev(struct net_device *dev);
->  void close_candev(struct net_device *dev);
->  
-
-
+Joerg, could you please apply this patch ASAP? Currently, Tegra won't
+boot in linux-next without it. Alternatively, would you like me to take
+the patch through the Tegra tree? Thanks.
