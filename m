@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756851Ab2IJJRg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 05:17:36 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:46787 "EHLO mail.skyhub.de"
+	id S1755119Ab2IJJTl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 05:19:41 -0400
+Received: from skyrme.org ([193.175.80.135]:56242 "EHLO skyrme.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753441Ab2IJJRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 05:17:33 -0400
-Date: Mon, 10 Sep 2012 11:17:32 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Mikael Pettersson <mikpe@it.uu.se>
-Cc: Adko Branil <adkobranil@yahoo.com>, Jeff Garzik <jgarzik@pobox.com>,
-        linux-ide <linux-ide@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: HDD problem, software bug, bios bug, or hardware ?
-Message-ID: <20120910091732.GB4431@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Mikael Pettersson <mikpe@it.uu.se>,
-	Adko Branil <adkobranil@yahoo.com>, Jeff Garzik <jgarzik@pobox.com>,
-	linux-ide <linux-ide@vger.kernel.org>,
-	lkml <linux-kernel@vger.kernel.org>
-References: <1345901771.8871.YahooMailNeo@web124706.mail.ne1.yahoo.com>
- <20120826130152.GA20021@liondog.tnic>
- <1346086872.65665.YahooMailNeo@web124704.mail.ne1.yahoo.com>
- <20120827215952.GA18719@liondog.tnic>
- <1346259574.81504.YahooMailNeo@web124706.mail.ne1.yahoo.com>
- <20120830095808.GB24680@liondog.tnic>
- <1346325007.23643.YahooMailNeo@web124706.mail.ne1.yahoo.com>
- <20547.48101.900727.735398@pilspetsen.it.uu.se>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20547.48101.900727.735398@pilspetsen.it.uu.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751866Ab2IJJTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 05:19:39 -0400
+Date: 10 Sep 2012 09:19:35 +0000
+Message-Id: <1347268775-25253-1-git-send-email-oskar@scara.com>
+From: "Oskar Schirmer" <oskar@scara.com>
+To: "Uwe Kleine-Koenig" <u.kleine-koenig@pengutronix.de>
+Cc: "Sascha Hauer" <kernel@pengutronix.de>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "Oskar Schirmer" <oskar@scara.com>
+Subject: [PATCH] serial/imx: fix IMX UART macro usage to reflect correct
+X-Mailer: git-send-email 1.6.0.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 02, 2012 at 10:04:53PM +0200, Mikael Pettersson wrote:
-> pdc_hard_reset_port needs to serialize because hard reset has to flip
-> a port-specific bit in a controller register that's shared by all
-> ports, so it takes the host lock. But now an interrupt occurs during
-> the hard reset, and pdc_interrupt also has to take the host lock. (I
-> don't know why the interrupt occurs, hotplug events are supposed to
-> have been masked by ->freeze before ->hardreset. It might come from a
-> different device, my test machine has multiple ATA controllers from
-> different vendors, and some of them do share IRQ.)
+Platform dependant UART data refers to MX31 macro for MX35 machines.
+For all other machines, macro usage matches machine type.
 
-This sounds very fishy - could it be the hardware raising a spurious IRQ
-or something although it shouldn't?
+Though this compiles out to the same result, it looks much like
+a typo, so fix it to use the right macros instead.
 
-Thanks.
+Signed-off-by: Oskar Schirmer <oskar@scara.com>
+---
+ arch/arm/plat-mxc/devices/platform-imx-uart.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/arch/arm/plat-mxc/devices/platform-imx-uart.c b/arch/arm/plat-mxc/devices/platform-imx-uart.c
+index 2020d84..d390f00 100644
+--- a/arch/arm/plat-mxc/devices/platform-imx-uart.c
++++ b/arch/arm/plat-mxc/devices/platform-imx-uart.c
+@@ -87,7 +87,7 @@ const struct imx_imx_uart_1irq_data imx31_imx_uart_data[] __initconst = {
+ #ifdef CONFIG_SOC_IMX35
+ const struct imx_imx_uart_1irq_data imx35_imx_uart_data[] __initconst = {
+ #define imx35_imx_uart_data_entry(_id, _hwid)				\
+-	imx_imx_uart_1irq_data_entry(MX31, _id, _hwid, SZ_16K)
++	imx_imx_uart_1irq_data_entry(MX35, _id, _hwid, SZ_16K)
+ 	imx35_imx_uart_data_entry(0, 1),
+ 	imx35_imx_uart_data_entry(1, 2),
+ 	imx35_imx_uart_data_entry(2, 3),
 -- 
-Regards/Gruss,
-    Boris.
+1.7.9.5
+
