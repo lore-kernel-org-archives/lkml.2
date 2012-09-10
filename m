@@ -1,133 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932191Ab2IJTkm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 15:40:42 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:37406 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752586Ab2IJTkk (ORCPT
+	id S932164Ab2IJTnZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 15:43:25 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:58064 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932107Ab2IJTnX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 15:40:40 -0400
-Message-ID: <504E4234.9090300@wwwdotorg.org>
-Date: Mon, 10 Sep 2012 13:40:36 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Daniel Mack <zonque@gmail.com>
-CC: devicetree-discuss@lists.ozlabs.org, lrg@ti.com,
-        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] regulator: gpio-regulator: add DT bindings
-References: <1347289429-18713-1-git-send-email-zonque@gmail.com>
-In-Reply-To: <1347289429-18713-1-git-send-email-zonque@gmail.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Sep 2012 15:43:23 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 0/6] cputime: More cleanups
+Date: Mon, 10 Sep 2012 21:43:07 +0200
+Message-Id: <1347306193-21080-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2012 09:03 AM, Daniel Mack wrote:
-> Add DT bindings for the gpio-regulator driver and some documentation on
-> how to use it.
+Hi,
 
-> +++ b/Documentation/devicetree/bindings/regulator/gpio-regulator.txt
-> @@ -0,0 +1,58 @@
-> +Device tree bindings for GPIO controlled voltages
-> +
-> +Voltage or current regulators on boards that are controlled by GPIOs can
-> +be used by the gpio-regulator driver.
-> +
-> +Required properties:
-> +
-> + - "compatible":	must be set to "gpio-regulator"
-> + - "regulator-name": 	must be set to a string describing the name of this
-> +			regulator.
+More cleanups for the cputime code.
 
-I'd expect the "gpios" property to be listed here.
+Tested on x86 and built-tested only on ia64, powerpc and s390.
 
-> +Optional properties:
-> +
-> + - "startup-delay":		Start-up time in microseconds
-> + - "enable-high":		Polarity of enable GPIO. Active high if
-> +				defined, otherwise active low
+This is pullable from:
 
-fixed-regulator.txt already has an "enable-active-high" property; it'd
-be nice to be consistent.
+git://github.com/fweisbec/linux-dynticks.git
+	cputime/cleanups (based on tip:sched/core)
+	
 
-> + - "enabled-at-boot":		If set, the regulator has been enabled at boot
-> +				time
+Frederic Weisbecker (6):
+  cputime: Use a proper subsystem naming for vtime related APIs
+  vtime: Consolidate system/idle context detection
+  ia64: Consolidate user vtime accounting
+  ia64: Reuse system and user vtime accounting functions on task switch
+  cputime: Gather time/stats accounting config options into a single
+    menu
+  cputime: Make finegrained irqtime accounting generally available
 
-Isn't that regulator-boot-on, as defined in regulator.txt that you
-mentioned?
+ arch/Kconfig                    |    6 ++
+ arch/ia64/kernel/time.c         |   64 +++++++++---------
+ arch/powerpc/kernel/time.c      |   53 ++++++++------
+ arch/s390/include/asm/cputime.h |    3 +
+ arch/s390/kernel/vtime.c        |    6 +-
+ arch/x86/Kconfig                |   12 +---
+ include/linux/hardirq.h         |    8 +-
+ include/linux/kernel_stat.h     |    6 +-
+ include/linux/kvm_host.h        |    4 +-
+ init/Kconfig                    |  146 ++++++++++++++++++++++++---------------
+ kernel/sched/core.c             |    2 +-
+ kernel/sched/cputime.c          |   34 ++++++++-
+ kernel/softirq.c                |    6 +-
+ 13 files changed, 209 insertions(+), 141 deletions(-)
 
-> + - "regulator-type-voltage":	The regulator controls a voltage
-> + - "regulator-type-current":	The regulator controls a current
+-- 
+1.7.5.4
 
-I wonder if it'd be better to differentiate this using different
-compatible values instead?
-
-> + - "states":			An array of possible states, describing the
-> +				GPIO states to reach a given value
-> +	- "value":		The value of the state, in microvolts or
-> +				microamperes
-
-A name like "microvolts", "voltage", "microamps", or "current" might be
-more descriptive here.
-
-> +	- "gpios":		bitfield of gpio target-states for the value
-> +				The n-th bit in the bitfield describes the
-> +				state of the n-th GPIO from the gpios-array
-
-"gpios" sounds like the name of a property that defines which GPIOs are
-used, rather than the value of those GPIOs. Perhaps "gpio-values" instead?
-
-Actually, I wonder if we really even need to represent that values
-explicitly; rather than have a big set of nodes, perhaps you can instead
-have a single property that lists the voltage (or current) that each
-combination of GPIO values gives; something like:
-
-reg_gpio {
-    ...
-    gpios = <&ggpio 23 0 &gpio 24 0>;
-    voltages = <0 1000000 2000000 3000000>;
-};
-
-(As inspiration for that, I looked at
-Documentation/devicetree/bindings/net/mdio-mux-gpio.txt which doesn't
-have a property defining the value of the GPIOs for each combination,
-but rather a node per valid combination).
-
-Perhaps represent and invalid GPIO combination with 0xffffffff?
-
-> +Also, all properties described in
-> +Documentation/devicetree/bindings/regulator/regulator.txt are supported as
-> +well.
-> +
-> +Example:
-> +
-> +	reg_gpio {
-> +		compatible = "gpio-regulator";
-> +		regulator-name = "voltage";
-> +		regulator-enable-high;
-> +		regulator-type-voltage;
-> +		regulator-min-microvolt = <3300000>;
-> +		regulator-max-microvolt = <3300000>;
-> +		regulator-always-on;
-> +
-> +		gpios = <&gpio 23 0>;
-> +
-> +		states {
-> +			state-on {
-> +				value = <3300000>;
-> +				gpios = <0x1>;
-> +			};
-> +
-> +			state-off {
-> +				value = <0>;
-> +				gpios = <0x0>;
-> +			};
-> +		};
-> +	};
-
-That particular example only has on/off states, and so might be better
-covered using the existing fixed-regulator, with optional GPIO control.
-Perhaps an example using 2 GPIOs for 4 voltage states would be more useful?
