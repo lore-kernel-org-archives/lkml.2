@@ -1,16 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438Ab2IJWbc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 18:31:32 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45186 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751208Ab2IJWba (ORCPT
+	id S1756982Ab2IJWeD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 18:34:03 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33815 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753931Ab2IJWeA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 18:31:30 -0400
-Date: Mon, 10 Sep 2012 15:31:25 -0700
+	Mon, 10 Sep 2012 18:34:00 -0400
+Date: Mon, 10 Sep 2012 15:33:55 -0700
 From: Tejun Heo <tj@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Michal Hocko <mhocko@suse.cz>, Li Zefan <lizf@cn.fujitsu.com>,
+To: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org
+Cc: Michal Hocko <mhocko@suse.cz>, Li Zefan <lizefan@huawei.com>,
         Glauber Costa <glommer@parallels.com>,
         Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
@@ -19,16 +20,21 @@ Cc: Michal Hocko <mhocko@suse.cz>, Li Zefan <lizf@cn.fujitsu.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Neil Horman <nhorman@tuxdriver.com>,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH RFC cgroup/for-3.7] cgroup: mark subsystems with broken
- hierarchy support and whine if cgroups are nested for them
-Message-ID: <20120910223125.GC7677@google.com>
+Subject: [PATCH REPOST RFC cgroup/for-3.7] cgroup: mark subsystems with
+ broken hierarchy support and whine if cgroups are nested for them
+Message-ID: <20120910223355.GD7677@google.com>
+References: <20120910223125.GC7677@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20120910223125.GC7677@google.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+(forgot cc'ing containers / cgroups mailing lists and used the old
+ address for Li.  Reposting.  Sorry for the noise.)
 
 Currently, cgroup hierarchy support is a mess.  cpu related subsystems
 behave correctly - configuration, accounting and control on a parent
@@ -64,7 +70,7 @@ later on.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Li Zefan <lizefan@huawei.com>
 Cc: Glauber Costa <glommer@parallels.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Paul Turner <pjt@google.com>
