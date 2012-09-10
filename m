@@ -1,100 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755630Ab2IJNQf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 09:16:35 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:40994 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067Ab2IJNQb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 09:16:31 -0400
-Date: Mon, 10 Sep 2012 09:16:03 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Gao feng <gaofeng@cn.fujitsu.com>, eric.dumazet@gmail.com,
-        davem@davemloft.net, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, mark.d.rustad@intel.com,
-        john.r.fastabend@intel.com, lizefan@huawei.com
-Subject: Re: [PATCH] net, cgroup: Fix boot failure due to iteration of
- uninitialized list
-Message-ID: <20120910131603.GA29742@hmsreliant.think-freely.org>
-References: <20120719162532.23505.85946.stgit@srivatsabhat.in.ibm.com>
- <500CA599.6030907@cn.fujitsu.com>
- <20120723114057.GA16518@hmsreliant.think-freely.org>
- <504DB2EE.2030700@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <504DB2EE.2030700@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+	id S1756623Ab2IJNRa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 09:17:30 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:43786 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753263Ab2IJNRX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 09:17:23 -0400
+Subject: Re: [RFC][PATCH] Improving directed yield scalability for PLE
+ handler
+From: Andrew Theurer <habanero@linux.vnet.ibm.com>
+Reply-To: habanero@linux.vnet.ibm.com
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
+        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>
+In-Reply-To: <20120908084345.GU30238@linux.vnet.ibm.com>
+References: <20120718133717.5321.71347.sendpatchset@codeblue.in.ibm.com>
+	 <500D2162.8010209@redhat.com>
+	 <1347023509.10325.53.camel@oc6622382223.ibm.com>
+	 <504A37B0.7020605@linux.vnet.ibm.com>
+	 <1347046931.7332.51.camel@oc2024037011.ibm.com>
+	 <20120908084345.GU30238@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Mon, 10 Sep 2012 08:16:45 -0500
+Message-ID: <1347283005.10325.55.camel@oc6622382223.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12091013-5930-0000-0000-00000BDC50F5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 02:59:18PM +0530, Srivatsa S. Bhat wrote:
-> On 07/23/2012 05:10 PM, Neil Horman wrote:
-> > On Mon, Jul 23, 2012 at 09:15:05AM +0800, Gao feng wrote:
-> >> 于 2012年07月20日 00:27, Srivatsa S. Bhat 写道:
-> >>> After commit ef209f15 (net: cgroup: fix access the unallocated memory in
-> >>> netprio cgroup), boot fails with the following NULL pointer dereference:
-> >>>
-> [...]
-> >>> Call Trace:
-> >>>  [<ffffffff81b1cb78>] cgroup_init_subsys+0x83/0x169
-> >>>  [<ffffffff81b1ce13>] cgroup_init+0x36/0x119
-> >>>  [<ffffffff81affef7>] start_kernel+0x3ba/0x3ef
-> >>>  [<ffffffff81aff95b>] ? kernel_init+0x27b/0x27b
-> >>>  [<ffffffff81aff356>] x86_64_start_reservations+0x131/0x136
-> >>>  [<ffffffff81aff45e>] x86_64_start_kernel+0x103/0x112
-> >>> RIP  [<ffffffff8145e8d6>] cgrp_create+0xf6/0x190
-> >>>  RSP <ffffffff81a01ea8>
-> >>> CR2: 0000000000000698
-> >>> ---[ end trace a7919e7f17c0a725 ]---
-> >>> Kernel panic - not syncing: Attempted to kill the idle task!
-> >>>
-> >>> The code corresponds to:
-> >>>
-> >>> update_netdev_tables():
-> >>>         for_each_netdev(&init_net, dev) {
-> >>>                 map = rtnl_dereference(dev->priomap);  <---- HERE
-> >>>
-> >>>
-> >>> The list head is initialized in netdev_init(), which is called much
-> >>> later than cgrp_create(). So the problem is that we are calling
-> >>> update_netdev_tables() way too early (in cgrp_create()), which will
-> >>> end up traversing the not-yet-circular linked list. So at some point,
-> >>> the dev pointer will become NULL and hence dev->priomap becomes an
-> >>> invalid access.
-> >>>
-> >>> To fix this, just remove the update_netdev_tables() function entirely,
-> >>> since it appears that write_update_netdev_table() will handle things
-> >>> just fine.
-> >>
-> >> The reason I add update_netdev_tables in cgrp_create is to avoid additional
-> >> bound checkings when we accessing the dev->priomap.priomap.
-> >>
-> >> Eric,can we revert this commit 91c68ce2b26319248a32d7baa1226f819d283758 now?
-> >> I think it's safe enough to access priomap without bound check.
-> >>
+On Sat, 2012-09-08 at 14:13 +0530, Srikar Dronamraju wrote:
 > > 
-> > I think its probably safe, yes, but lets leave it there for just a bit.  Its not
-> > hurting anything, and I'd like to look into getting Srivatsa' patch in first.
+> > signed-off-by: Andrew Theurer <habanero@linux.vnet.ibm.com>
+> > 
+> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> > index fbf1fd0..c767915 100644
+> > --- a/kernel/sched/core.c
+> > +++ b/kernel/sched/core.c
+> > @@ -4844,6 +4844,9 @@ bool __sched yield_to(struct task_struct *p, bool
+> > preempt)
+> > 
+> >  again:
+> >  	p_rq = task_rq(p);
+> > +	if (task_running(p_rq, p) || p->state || !(p_rq->curr->flags &
+> > PF_VCPU)) {
+> > +		goto out_no_unlock;
+> > +	}
+> >  	double_rq_lock(rq, p_rq);
+> >  	while (task_rq(p) != p_rq) {
+> >  		double_rq_unlock(rq, p_rq);
+> > @@ -4856,8 +4859,6 @@ again:
+> >  	if (curr->sched_class != p->sched_class)
+> >  		goto out;
+> > 
+> > -	if (task_running(p_rq, p) || p->state)
+> > -		goto out;
 > 
-> Hi Neil,
-> 
-> Did you get around to look into this again?
-> 
-I haven't looked at it specifically no, I apologize.  That said I think the
-other changes that went in back in that time frame have had time to soak, and
-looking at the way we current update the priomap table, I think its safe for us
-to remove the update_netdev_table call and definition.  If you repost your
-patch, I'll ack it. 
+> Is it possible that by this time the current thread takes double rq
+> lock, thread p could actually be running?  i.e is there merit to keep
+> this check around even with your similar check above?
 
-Thanks!
-Neil
+I think that's a good idea.  I'll add that back in.
+> 
+> > 
+> >  	yielded = curr->sched_class->yield_to_task(rq, p, preempt);
+> >  	if (yielded) {
+> > @@ -4879,6 +4880,7 @@ again:
+> > 
+> >  out:
+> >  	double_rq_unlock(rq, p_rq);
+> > +out_no_unlock:
+> >  	local_irq_restore(flags);
+> > 
+> >  	if (yielded)
+> > 
+> > 
+> 
 
-> Regards,
-> Srivatsa S. Bhat
-> 
-> 
+-Andrew Theurer
+
+
