@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756155Ab2IJBVj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 21:21:39 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38375 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756029Ab2IJBVh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 21:21:37 -0400
-Date: Sun, 9 Sep 2012 18:21:02 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk
-Subject: Re: [PATCH 0/9] Prep work for immutable bio vecs
-Message-ID: <20120910012101.GB23241@moria.home.lan>
-References: <1347058760-30794-1-git-send-email-koverstreet@google.com>
- <20120908194115.GC12773@dhcp-172-17-108-109.mtv.corp.google.com>
+	id S1756186Ab2IJBXr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 21:23:47 -0400
+Received: from mga01.intel.com ([192.55.52.88]:27183 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756029Ab2IJBXq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Sep 2012 21:23:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,396,1344236400"; 
+   d="scan'208";a="220058177"
+Date: Mon, 10 Sep 2012 09:23:42 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [signal] WARNING: at kernel/lockdep.c:2623
+ trace_hardirqs_off_caller()
+Message-ID: <20120910012342.GA28439@localhost>
+References: <20120910004753.GB27699@localhost>
+ <20120910010706.GA28067@localhost>
+ <20120910011332.GN13973@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120908194115.GC12773@dhcp-172-17-108-109.mtv.corp.google.com>
+In-Reply-To: <20120910011332.GN13973@ZenIV.linux.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 08, 2012 at 12:41:15PM -0700, Tejun Heo wrote:
-> Hello, Kent.
+On Mon, Sep 10, 2012 at 02:13:32AM +0100, Al Viro wrote:
+> On Mon, Sep 10, 2012 at 09:07:07AM +0800, Fengguang Wu wrote:
+> > Not sure if it's an unrelated warning, but anyway.
+> > 
+> > commit: c2865bb326476f031ce7121e876c656cdc12c894 [13/18] x86, um/x86: switch to generic sys_execve and kernel_execve
 > 
-> On Fri, Sep 07, 2012 at 03:59:11PM -0700, Kent Overstreet wrote:
-> > Random assortment of refactoring and trivial cleanups.
-> > 
-> > Immutable bio vecs and efficient bio splitting require auditing and removing
-> > pretty much all bi_idx uses, among other things.
-> > 
-> > The reason is that with immutable bio vecs we can't use the bvec array
-> > directly; if we have a partially completed bvec, that'll be indicated with a
-> > field in struct bvec_iter (which gets embedded in struct bio) - bi_bvec_done.
-> > 
-> > bio_for_each_segments() will handle this transparently, so code needs to be
-> > converted to use it or some other generic accessor.
-> > 
-> > Also, bio splitting means that when a driver gets a bio, bi_idx and
-> > bi_bvec_done may both be nonzero. Again, just need to use generic accessors.
+> [commit in experimental-kernel_thread, not one in execve2/for-next/master]
 > 
-> There are three pending patchsets and I don't know how they're
-> supposed to come together.  Please explain on which tree the patches
-> are based and how they stack and preferably provide a git branch.
+> Again, experimental-kernel_thread is build-only for now.  Is there any
 
-Both of the new ones depend on the block cleanups series, but they
-shouldn't depend on each other (bar perhaps some trivial merge
-conflicts in bio.h)
+OK.
 
-Git repo - block_stuff branch on http://evilpiepirate.org/git/linux-bcache.git/
+> regular way to tell your script that it should be either skipped or
+> only build-tested?
+
+The build for the entire branch will be auto skipped if any of its
+commits has this line in the changelog:
+
+Dont-Auto-Build
+
+Perhaps we can do a similar
+
+Dont-Auto-Boot
+
+to skip the boot tests.
+
+Or I can simply blacklist any branches matching *experimental* and
+skip both build/boot tests for them.
+
+Thanks,
+Fengguang
