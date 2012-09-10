@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757260Ab2IJOCc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 10:02:32 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:41263 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756958Ab2IJOCb (ORCPT
+	id S1757313Ab2IJOCq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 10:02:46 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:46334 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757068Ab2IJOCo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 10:02:31 -0400
-Date: Mon, 10 Sep 2012 15:01:48 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 17/31] arm64: System calls handling
-Message-ID: <20120910140148.GD27042@arm.com>
-References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
- <201209071943.37184.arnd@arndb.de>
- <20120910095619.GA27042@arm.com>
- <201209101351.52902.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201209101351.52902.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 10 Sep 2012 10:02:44 -0400
+Subject: Re: [PATCH v2 10/10] thp: implement refcounting for huge zero page
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+In-Reply-To: <1347282813-21935-11-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1347282813-21935-1-git-send-email-kirill.shutemov@linux.intel.com>
+	 <1347282813-21935-11-git-send-email-kirill.shutemov@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 10 Sep 2012 16:02:39 +0200
+Message-ID: <1347285759.1234.1645.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 02:51:52PM +0100, Arnd Bergmann wrote:
-> On Monday 10 September 2012, Catalin Marinas wrote:
-> > Yes, I've seen these but since Al's patches are not in mainline, I don't
-> > want to add additional dependencies to the arm64 patches (currently
-> > based on 3.6-rc4). Once they get into mainline, I'll add a patch that
-> > converts arm64 to the generic functions above.
-> > 
-> > For kernel_execve(), I think I can simplify it further and not rely on
-> > Al's patches (similar to other architectures doing an SVC from kernel):
+On Mon, 2012-09-10 at 16:13 +0300, Kirill A. Shutemov wrote:
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 > 
-> Hmm, I thought one of the reasons for Al to do his series was to discourage
-> people from doing syscalls from kernel space, but I may be misremembering
-> things. Al?
+> H. Peter Anvin doesn't like huge zero page which sticks in memory forever
+> after the first allocation. Here's implementation of lockless refcounting
+> for huge zero page.
+> 
+...
 
-If that was the aim, I'm happy to change the code similar to the
-arch/arm one. But as I said I would wait until Al's patches get into
-mainline.
+> +static unsigned long get_huge_zero_page(void)
+> +{
+> +	struct page *zero_page;
+> +retry:
+> +	if (likely(atomic_inc_not_zero(&huge_zero_refcount)))
+> +		return ACCESS_ONCE(huge_zero_pfn);
+> +
+> +	zero_page = alloc_pages(GFP_TRANSHUGE | __GFP_ZERO, HPAGE_PMD_ORDER);
+> +	if (!zero_page)
+> +		return 0;
+> +	if (cmpxchg(&huge_zero_pfn, 0, page_to_pfn(zero_page))) {
+> +		__free_page(zero_page);
+> +		goto retry;
+> +	}
 
--- 
-Catalin
+This might break if preemption can happen here ?
+
+The second thread might loop forever because huge_zero_refcount is 0,
+and huge_zero_pfn not zero.
+
+If preemption already disabled, a comment would be nice.
+
+
+> +
+> +	/* We take additional reference here. It will be put back by shinker */
+
+typo : shrinker
+
+> +	atomic_set(&huge_zero_refcount, 2);
+> +	return ACCESS_ONCE(huge_zero_pfn);
+> +}
+> +
+
+
+
