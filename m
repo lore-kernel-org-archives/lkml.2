@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754833Ab2IJIKT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 04:10:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41388 "EHLO mx1.redhat.com"
+	id S1754082Ab2IJIWd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 04:22:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31902 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751345Ab2IJIKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 04:10:15 -0400
-Message-ID: <504DA064.3070402@redhat.com>
-Date: Mon, 10 Sep 2012 11:10:12 +0300
+	id S1751345Ab2IJIWb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 04:22:31 -0400
+Message-ID: <504DA343.9080602@redhat.com>
+Date: Mon, 10 Sep 2012 11:22:27 +0300
 From: Avi Kivity <avi@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-To: "Liu, Jinsong" <jinsong.liu@intel.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] KVM: tsc deadline timer works only when hrtimer high
- resolution configured
-References: <DE8DF0795D48FD4CA783C40EC829233531F0E4@SHSMSX101.ccr.corp.intel.com> <5048AC08.5050100@redhat.com> <DE8DF0795D48FD4CA783C40EC8292335322311@SHSMSX101.ccr.corp.intel.com> <504CA787.2000905@redhat.com> <DE8DF0795D48FD4CA783C40EC8292335323599@SHSMSX101.ccr.corp.intel.com> <504CAEC7.9000807@redhat.com> <DE8DF0795D48FD4CA783C40EC82923353235C7@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923353235C7@SHSMSX101.ccr.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 1/3] KVM: MMU: release noslot pfn on the fail path properly
+References: <5049908A.7070501@linux.vnet.ibm.com>
+In-Reply-To: <5049908A.7070501@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2012 06:10 PM, Liu, Jinsong wrote:
-> Avi Kivity wrote:
->> On 09/09/2012 05:54 PM, Liu, Jinsong wrote:
->>>> 
->>>> hrtimers is an intrusive feature, I don't think we should
->>>> force-enable it.  Please change it to a depends on.
->>> 
->>> Hmm, if it changed as
->>> config KVM
->>> 	depends on HIGH_RES_TIMERS
->>> The item 'Kernel-based Virtual Machine (KVM) support (NEW)' even
->>> didn't appear to user when make menuconfig (when HIGH_RES_TIMERS
->>> disable)  
->>> 
->>> Is it good? I just have a little concern here:)
->> 
->> It's not good, but that's what we have.
->> 
->> It's okay to force-enable low-impact features (like preempt notifies).
->> 
->> hrimers, on the other hand, change kernel behaviour quite deeply.
->> 
->> Maybe over time someone will fix the config tools to unhide features
->> that can be enabled by turning on a dependency.
+On 09/07/2012 09:13 AM, Xiao Guangrong wrote:
+> We can not directly call kvm_release_pfn_clean to release the pfn
+> since we can meet noslot pfn which is used to cache mmio info into
+> spte
 > 
-> OK, updated as attached.
+> Introduce mmu_release_pfn_clean to do this kind of thing
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  arch/x86/kvm/mmu.c         |   19 ++++++++++++++-----
+>  arch/x86/kvm/paging_tmpl.h |    4 ++--
+>  2 files changed, 16 insertions(+), 7 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index 399c177..3c10bca 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -2432,6 +2432,16 @@ done:
+>  	return ret;
+>  }
+> 
+> +/*
+> + * The primary user is page fault path which call it to properly
+> + * release noslot_pfn.
+> + */
+> +static void mmu_release_pfn_clean(pfn_t pfn)
+> +{
+> +	if (!is_error_pfn(pfn))
+> +		kvm_release_pfn_clean(pfn);
+> +}
+> +
 
-Thanks, applied.
+Too many APIs, each slightly different.  How do I know which one to call?
+
+Please change kvm_release_pfn_*() instead, calling some arch hook (or
+even #ifdef CONFIG_KVM_HAS_FAST_MMIO) to check for the special case.
+
+
 
 
 -- 
