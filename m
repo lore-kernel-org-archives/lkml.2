@@ -1,76 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756195Ab2IJJXh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 05:23:37 -0400
-Received: from smtp-out-022.synserver.de ([212.40.185.22]:1163 "EHLO
-	smtp-out-022.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752281Ab2IJJXe (ORCPT
+	id S1756386Ab2IJJ0V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 05:26:21 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:36858 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752540Ab2IJJ0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 05:23:34 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 27644
-Message-ID: <504DB1B8.4020608@metafoo.de>
-Date: Mon, 10 Sep 2012 11:24:08 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.6esrpre) Gecko/20120817 Icedove/10.0.6
+	Mon, 10 Sep 2012 05:26:17 -0400
+Message-ID: <504DB22F.4020609@linux.vnet.ibm.com>
+Date: Mon, 10 Sep 2012 17:26:07 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-To: "Kim, Milo" <Milo.Kim@ti.com>
-CC: Jonathan Cameron <jic23@kernel.org>, Jonathan Cameron <jic23@cam.ac.uk>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] iio: inkern: add error case in iio_channel_get()
-References: <A874F61F95741C4A9BA573A70FE3998F41EF45EB@DQHE02.ent.ti.com>
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F41EF45EB@DQHE02.ent.ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2] KVM: trace the events of mmu_notifier
+References: <50499123.70609@linux.vnet.ibm.com> <504DAE34.1060402@redhat.com>
+In-Reply-To: <504DAE34.1060402@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+x-cbid: 12091009-5564-0000-0000-00000465E1CC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2012 10:02 AM, Kim, Milo wrote:
->  The datasheet name is defined in the IIO driver.
->  On the other hand, the adc_channel_label is configured in
->  the platform machine side.
->  If the datasheet name is not matched with any adc_channel_label,
->  the iio_channel_get() should be returned as error for preventing
->  using invalid IIO channel data.
+On 09/10/2012 05:09 PM, Avi Kivity wrote:
+> On 09/07/2012 09:16 AM, Xiao Guangrong wrote:
+>> mmu_notifier is the interface to broadcast the mm events to KVM, the
+>> tracepoints introduced in this patch can trace all these events, it is
+>> very helpful for us to notice and fix the bug caused by mm
 > 
->  Moreover, this patch detects NULL pointer dereference problem at early time.
->  In general, the IIO driver just accesses to any member of the iio_chan_spec
->  in own xxx_read_raw() function.
->  If the iio_chan_spec is invalid pointer, NULL dereference problem may occur
->  such like 'iio_chan_spec->channel' or 'iio_chan_spec->type'.
->  If the iio_channel_get() gets failed in the IIO consumer,
->  then no read_raw() operation proceeds.
-> 
-> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
-> ---
->  drivers/iio/inkern.c |    6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
-> index 1faa240..a5caf6b 100644
-> --- a/drivers/iio/inkern.c
-> +++ b/drivers/iio/inkern.c
-> @@ -136,11 +136,15 @@ struct iio_channel *iio_channel_get(const char *name, const char *channel_name)
->  
->  	channel->indio_dev = c->indio_dev;
->  
-> -	if (c->map->adc_channel_label)
-> +	if (c->map->adc_channel_label) {
->  		channel->channel =
->  			iio_chan_spec_from_name(channel->indio_dev,
->  						c->map->adc_channel_label);
->  
-> +		if (channel->channel == NULL)
-> +			return ERR_PTR(-ENODEV);
+> There is nothing kvm specific here.  Perhaps this can be made generic
+> (with a mm parameter so we can filter by process).
 
-This introduces a memory leak. You need to free channel before returning.
-
-> +	}
-> +
->  	return channel;
->  }
->  EXPORT_SYMBOL_GPL(iio_channel_get);
+Hmm, i would like to put these tracepoints in the mmu-lock then we can clearly
+know the sequence between mm and kvm mmu. It is useful for us to detect the
+issue/race between them.
 
