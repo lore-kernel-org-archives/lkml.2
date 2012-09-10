@@ -1,57 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab2IJOnW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 10:43:22 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25387 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753034Ab2IJOnV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 10:43:21 -0400
-X-Authority-Analysis: v=2.0 cv=Vb91zSV9 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=JBLNcV8zRgkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=B2NTZjWQ9qwA:10 a=2_GR34GhAEWsWnWph5IA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1347288200.10751.17.camel@gandalf.local.home>
-Subject: Re: [PATCH 1/7] perf: Enable function tracing for perf core
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>
-Date: Mon, 10 Sep 2012 10:43:20 -0400
-In-Reply-To: <20120908130646.GA2122@somewhere.redhat.com>
-References: <20120908115515.211175517@goodmis.org>
-	 <20120908115640.032328533@goodmis.org>
-	 <20120908130646.GA2122@somewhere.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754130Ab2IJOoQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 10:44:16 -0400
+Received: from mga01.intel.com ([192.55.52.88]:10559 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753034Ab2IJOoP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 10:44:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,398,1344236400"; 
+   d="asc'?scan'208";a="220088370"
+Date: Mon, 10 Sep 2012 17:44:38 +0300
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: Re: [PATCH v2 10/10] thp: implement refcounting for huge zero page
+Message-ID: <20120910144438.GA31697@otc-wbsnb-06>
+References: <1347282813-21935-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1347282813-21935-11-git-send-email-kirill.shutemov@linux.intel.com>
+ <1347285759.1234.1645.camel@edumazet-glaptop>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3MwIy2ne0vdjdPXF"
+Content-Disposition: inline
+In-Reply-To: <1347285759.1234.1645.camel@edumazet-glaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-09-08 at 15:06 +0200, Frederic Weisbecker wrote:
-> On Sat, Sep 08, 2012 at 07:55:16AM -0400, Steven Rostedt wrote:
-> > According to Steven R. there is no reason left to not support
-> > function tracing for the perf core. This makes it easier to debug
-> > perf.
-> > 
-> > Don't remove -pg for the x86 and generic perf core.
-> 
-> Actually, perf can use function tracing. A good reason for disabling
-> function tracing in perf is to avoid the overhead of recursive function
-> tracing, even though we are protected against tracing re-entrancy, this
-> still result in some overhead.
 
-Yes, but perf shouldn't do a full function trace. It should be filtering
-on what functions it wants to trace, and if it needs to, we can easily
-make it not trace its own functions.
+--3MwIy2ne0vdjdPXF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I've been thinking about adding function tracing into the trace
-directory. As there's been several times I wanted it. The only files
-that really shouldn't be traced in there is ftrace.c, trace_function.c
-and trace_function_graph.c. The rest I believe is fair game.
+On Mon, Sep 10, 2012 at 04:02:39PM +0200, Eric Dumazet wrote:
+> On Mon, 2012-09-10 at 16:13 +0300, Kirill A. Shutemov wrote:
+> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> >=20
+> > H. Peter Anvin doesn't like huge zero page which sticks in memory forev=
+er
+> > after the first allocation. Here's implementation of lockless refcounti=
+ng
+> > for huge zero page.
+> >=20
+> ...
+>=20
+> > +static unsigned long get_huge_zero_page(void)
+> > +{
+> > +	struct page *zero_page;
+> > +retry:
+> > +	if (likely(atomic_inc_not_zero(&huge_zero_refcount)))
+> > +		return ACCESS_ONCE(huge_zero_pfn);
+> > +
+> > +	zero_page =3D alloc_pages(GFP_TRANSHUGE | __GFP_ZERO, HPAGE_PMD_ORDER=
+);
+> > +	if (!zero_page)
+> > +		return 0;
+> > +	if (cmpxchg(&huge_zero_pfn, 0, page_to_pfn(zero_page))) {
+> > +		__free_page(zero_page);
+> > +		goto retry;
+> > +	}
+>=20
+> This might break if preemption can happen here ?
+>=20
+> The second thread might loop forever because huge_zero_refcount is 0,
+> and huge_zero_pfn not zero.
 
--- Steve
+I fail to see why the second thread might loop forever. Long time yes, but
+forever?
 
+Yes, disabling preemption before alloc_pages() and enabling after
+atomic_set() looks reasonable. Thanks.
 
+>=20
+> If preemption already disabled, a comment would be nice.
+>=20
+>=20
+> > +
+> > +	/* We take additional reference here. It will be put back by shinker =
+*/
+>=20
+> typo : shrinker
+
+Thx.
+
+> > +	atomic_set(&huge_zero_refcount, 2);
+> > +	return ACCESS_ONCE(huge_zero_pfn);
+> > +}
+> > +
+>=20
+>=20
+>=20
+
+--=20
+ Kirill A. Shutemov
+
+--3MwIy2ne0vdjdPXF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQTfzWAAoJEAd+omnVudOMnMoQAK+JYB2wxNHp9jOcWZl8Tqhn
+fOB9vDh2PpJca5q7gYDlCHYt8y0JOC/nflDZS/CdaKpztlyszqrkFcAeH0jbhQEc
+2rDntfM+riieZPQFvyIRxruQu65P4vooXhzTB/1PqBzOq9F2PblHLxtyVYg9N9V3
+P0T/4HicTRbaJS4bwKno9Nm69LbV/Qjqspel2EiH9tpTQa+8JD7EelB/ziqzs/Hk
+/5SVVqzwdElHOEd2eqvUPRPvy7/SyG6q7Ar1QRu3Oq5KbmJsN6xWM9XhiUyinNGA
+sm6GKfEMZ3LQDZL3I71ud18GgyPiPJdl44K2j4DoRvLwouxpRtKF3RjyDMUaQKHy
+XDVqfiDdZtF3hix8SppCoTYntLHxLtXXduBp1y4DRt/Mg6hr1zDGort/VaOLB/iq
+3WNGJSyPpC0SZ7Ev0dCa4aUIutfx8SuIK8HZYszkPJqzWJgAkrfripCrIHqKM2au
+0YXXwkJvcDZ/mNhOX2Pt1dBqzfXv73rU6MCb5XxO3MczSU9lzpeEblob7HHVpSt1
+/AX6u3WIIt/EUJE+8M+DyLuh2MUaAvD+g7PUap/4BPlbsiHLToHFnrwU/1+oC4h3
+AP4rOKHdjJFQJjOXFS0/AHjZi4RZIC44M/NHHfPF5cbaaSF/54JBiLi/uS+hZLTh
+QKX9Z5uVrW41+6FkKH1h
+=pLyw
+-----END PGP SIGNATURE-----
+
+--3MwIy2ne0vdjdPXF--
