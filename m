@@ -1,79 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757053Ab2IJKqI (ORCPT <rfc822;w@1wt.eu>);
+	id S1757124Ab2IJKqP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 06:46:15 -0400
+Received: from na3sys009aog138.obsmtp.com ([74.125.149.19]:45444 "EHLO
+	na3sys009aog138.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757042Ab2IJKqI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Sep 2012 06:46:08 -0400
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:36459
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756865Ab2IJKpm convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 06:45:42 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -8
-X-BigFish: VS-8(zz98dI9371I936eI542M1432Izz1202h1d1ahzzz2dh2a8h668h839h8e2h8e3h944hd25hf0ah107ah1220h1288h12a5h12a9hbe9i1155h)
-From: Xie Shaohui-B21989 <B21989@freescale.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-CC: Kumar Gala <galak@kernel.crashing.org>,
-        "jgarzik@pobox.com" <jgarzik@pobox.com>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bhartiya Anju-B07263 <B07263@freescale.com>
-Subject: RE: [PATCH][v3] sata_fsl: add workaround for data length mismatch
- on freescale V2 controller
-Thread-Topic: [PATCH][v3] sata_fsl: add workaround for data length mismatch
- on freescale V2 controller
-Thread-Index: AQHNjORPB5kQ40wCmke3GsqlYeOPg5d/JTuAgAO4lvCAANhkgP//rinQ
-Date: Mon, 10 Sep 2012 10:45:37 +0000
-Message-ID: <ED492CCEAF882048BC2237DE806547C9079D9FCF@039-SN2MPN1-012.039d.mgd.msft.net>
-References: <1347012095-4404-1-git-send-email-Shaohui.Xie@freescale.com>
- <82046C25-828E-4E0F-9F86-8E038AE5C93C@kernel.crashing.org>
- <ED492CCEAF882048BC2237DE806547C9079D9AB9@039-SN2MPN1-012.039d.mgd.msft.net>
- <504DBF3D.2000102@mvista.com>
-In-Reply-To: <504DBF3D.2000102@mvista.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.193.20.41]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Dmitry Torokhov <dtor@mail.ru>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>
+Cc: Tero Kristo <t-kristo@ti.com>, alsa-devel@alsa-project.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, Benoit Cousson <b-cousson@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v4 00/14] MFD/ASoC/Input: twl4030-audio submodule DT support
+Date: Mon, 10 Sep 2012 13:46:18 +0300
+Message-Id: <1347273992-9107-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Sergei Shtylyov [mailto:sshtylyov@mvista.com]
-> Sent: Monday, September 10, 2012 6:22 PM
-> To: Xie Shaohui-B21989
-> Cc: Kumar Gala; jgarzik@pobox.com; linux-ide@vger.kernel.org; linuxppc-
-> dev@lists.ozlabs.org; linux-kernel@vger.kernel.org; Bhartiya Anju-B07263
-> Subject: Re: [PATCH][v3] sata_fsl: add workaround for data length
-> mismatch on freescale V2 controller
-> 
-> Hello.
-> 
-> On 10-09-2012 6:53, Xie Shaohui-B21989 wrote:
-> 
-> >>> +	/* Workaround for data length mismatch errata */
-> >>> +	if (unlikely(hstatus & INT_ON_DATA_LENGTH_MISMATCH)) {
-> >>> +		for (tag = 0; tag < ATA_MAX_QUEUE; tag++) {
-> >>> +			qc = ata_qc_from_tag(ap, tag);
-> >>> +			if (qc && ata_is_atapi(qc->tf.protocol)) {
-> >>> +				u32 hcontrol;
-> >>> +#define HCONTROL_CLEAR_ERROR	(1 << 27)
-> 
-> >> shouldn't we have this #define be part of the enum that the other
-> >> HCONTROL_ bits/flags are part of?
-> 
-> > [S.H] do you mean this?
-> 
->     Apparently not. He said *enum*, not #define.
+Hello,
 
-[S.H] OK. Thank you for the clarification.
+Generated on top of:
+git.kernel.org/pub/scm/linux/kernel/git/broonie/sound.git topic/omap
 
+Changes since v3:
+- Added Acked-by from Tony and Dmitry
+- Removed #ifdef around of_find_node_by_name() in the drivers
 
-Best Regards, 
-Shaohui Xie
+Changed since v2:
+- Added commit message to patch 2 (as Tero requested it)
+- Fixed patch 6 (dt: Add empty...) since the previous patch caused x86_64 build
+  to fail due to missing struct before device_node.
+
+Changes since v1:
+- Get the MCLK frequencey from twl-core driver (via new API)
+- hs_extmute_disable_level parameter has been removed
+- empty of_find_node_by_name() in of.h for !CONFIG_OF builds
+
+Mark: the extmute GPIO handling (when it is used) remained in the codec driver
+for now. I can think more on how to add support for this type of mute control.
+If you can point me to other codec needing this it would help on designing
+something which is common enough for other users.
+
+As for now I have a separate series to add GPIO controlled output amps (hp/spk).
+I will send that to review soon. Currently this piece of code does not work when
+booted with device tree since I have done it on n900 which has the GPIO numbers
+as defines. I need to revisit the aproach on how to do it in a dynamic way.
+
+Introl mail from v1:
+
+The following series adds DT support for the twl4030 audio submodule which
+provides audio codec and vibra functionality.
+
+The MFD core driver is probed via DT, it will create the needed child devices
+based on the provided information in the DT blob.
+Child drivers (vibra, ASoC codec) will parse the core's node if needed to get
+the needed parameters for their configuration.
+
+In the ASoC codec driver the hs_extmute callback (which was used to toggle a
+GPIO line) has been removed. The codec driver will receive the GPIO number
+(if it is needed on the platform).
+
+If the series is OK (and no objections from the maintainers), it would be good
+if this can go via audio. Changed files are well contained within the
+twl4030-audio stack so I do not expect merge issues later.
+
+The series has been tested on BeagleBoard (with the McBSP DT series, and with
+the upcoming DT audio support for BeagleBoard).
+
+Regards,
+Peter
+---
+Peter Ujfalusi (14):
+  MFD: twl4030-audio: Clean up MODULE_* and platform_driver part
+  MFD: twl4030-audio: Convert to use devm_kzalloc
+  MFD: twl4030-audio: Rearange and clean-up the probe function
+  MFD: twl-core: Add API to query the HFCLK rate
+  MFD: twl4030-audio: Get audio MCLK via twl-core API instead of pdata
+  dt: Add empty of_find_node_by_name() function
+  MFD: twl4030-audio: Add DT support
+  Input: twl4030-vibra: Support for DT booted kernel
+  ASoC: twl4030: Move hs_extmute GPIO handling to driver
+  ARM: OMAP/ASoC: Zoom2: Let the codec to handle the hs_extmute GPIO
+  ASoC/MFD: twl4030: Remove set_hs_extmute callback from platform data
+  ASoC: twl4030: Convert to use devm_kzalloc
+  ASoC: twl4030: Add pointer to pdata within the private data
+  ASoC: twl4030: Support for DT booted kernel
+
+ .../devicetree/bindings/mfd/twl4030-audio.txt      |  46 +++++++++
+ arch/arm/mach-omap2/board-zoom-peripherals.c       |   9 +-
+ arch/arm/mach-omap2/include/mach/board-zoom.h      |   2 -
+ drivers/input/misc/twl4030-vibra.c                 |  18 +++-
+ drivers/mfd/twl-core.c                             |  32 +++++++
+ drivers/mfd/twl4030-audio.c                        | 105 ++++++++++++++-------
+ include/linux/i2c/twl.h                            |   3 +-
+ include/linux/of.h                                 |   6 ++
+ sound/soc/codecs/twl4030.c                         | 101 ++++++++++++++++----
+ sound/soc/omap/zoom2.c                             |   4 -
+ 10 files changed, 255 insertions(+), 71 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/twl4030-audio.txt
+
+-- 
+1.7.12
 
