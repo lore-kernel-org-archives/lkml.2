@@ -1,97 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758279Ab2IJXbS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 19:31:18 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:13612 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751460Ab2IJXbQ (ORCPT
+	id S1758356Ab2IJXcH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 19:32:07 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:40350 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758322Ab2IJXcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 19:31:16 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Mon, 10 Sep 2012 19:31:14 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-arch@vger.kernel.org, Catalin Marinas <catalin.marinas@arm.com>,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 31/31] arm64: MAINTAINERS update
-In-reply-to: <20120910211757.GD31998@n2100.arm.linux.org.uk>
-Message-id: <alpine.LFD.2.02.1209101834530.28681@xanadu.home>
-References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
- <1347035226-18649-32-git-send-email-catalin.marinas@arm.com>
- <20120909163156.GA31430@game.jcrosoft.org>
- <alpine.LFD.2.02.1209101355000.28681@xanadu.home>
- <20120910211757.GD31998@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 10 Sep 2012 19:32:04 -0400
+Date: Mon, 10 Sep 2012 16:31:59 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Lars Ellenberg <lars.ellenberg@linbit.com>,
+        Philipp Reisner <philipp.reisner@linbit.com>,
+        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@lst.de>, drbd-dev@lists.linbit.com,
+        Vivek Goyal <vgoyal@redhat.com>, NeilBrown <neilb@suse.de>
+Subject: Re: [Drbd-dev] FLUSH/FUA documentation & code discrepancy
+Message-ID: <20120910233159.GE19739@google.com>
+References: <8439412.RChiDciQdh@fat-tyre>
+ <20120904224620.GB9092@dhcp-172-17-108-109.mtv.corp.google.com>
+ <3029802.oqG0dEY71l@fat-tyre>
+ <20120905084915.GF3195@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120905100724.GA27527@soda.linbit>
+ <20120906212952.GP29092@google.com>
+ <20120907084221.GD7028@soda.linbit>
+ <20120910225442.GE7677@google.com>
+ <20120910230654.GF7677@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120910230654.GF7677@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Sep 2012, Russell King - ARM Linux wrote:
+cc'ing Neil
 
-> On Mon, Sep 10, 2012 at 01:57:57PM -0400, Nicolas Pitre wrote:
-> > On Sun, 9 Sep 2012, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> > 
-> > > On 17:27 Fri 07 Sep     , Catalin Marinas wrote:
-> > > > This patch updates the MAINTAINERS file for the AArch64 Linux kernel
-> > > > port.
-> > > > 
-> > > > Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> > > > Acked-by: Tony Lindgren <tony@atomide.com>
-> > > > Acked-by: Arnd Bergmann <arnd@arndb.de>
-> > > > ---
-> > > >  MAINTAINERS |    6 ++++++
-> > > >  1 files changed, 6 insertions(+), 0 deletions(-)
-> > > > 
-> > > > diff --git a/MAINTAINERS b/MAINTAINERS
-> > > > index fdc0119..de368a5 100644
-> > > > --- a/MAINTAINERS
-> > > > +++ b/MAINTAINERS
-> > > > @@ -1209,6 +1209,12 @@ S:	Maintained
-> > > >  F:	arch/arm/mach-pxa/z2.c
-> > > >  F:	arch/arm/mach-pxa/include/mach/z2.h
-> > > >  
-> > > > +ARM64 PORT (AARCH64 ARCHITECTURE)
-> > > > +M:	Catalin Marinas <catalin.marinas@arm.com>
-> > > we should put Russell too
-> > 
-> > He is not maintaining the ARM64 code.
+On Mon, Sep 10, 2012 at 04:06:54PM -0700, Tejun Heo wrote:
+> Hello, again.
 > 
-> And, let's say the rest of it - it doesn't take much inteligence to work
-> out what that means for me personally.
+> cc'ing Kent and Vivek.  The original thread is at
+> 
+>   http://thread.gmane.org/gmane.linux.network.drbd.devel/2130
+> 
+> On Mon, Sep 10, 2012 at 03:54:42PM -0700, Tejun Heo wrote:
+> > > We can possibly work around that by introducing an additional submitter thread,
+> > > or at least our own list where we queue assembled bios until the lower
+> > > level device queue drains.
+> > > 
+> > > But we'd rather have the elevator see the FLUSH/FUA,
+> > > and treat them as at least a soft barrier/reorder boundary.
+> > > 
+> > > I may be wrong here, but all the necessary bits for this seem to be in
+> > > place already, if the information would even reach the elevator in one
+> > > way or other, and not be completely stripped away early.
+> > > 
+> > > What would you rather see, the elevator recognizing reorder boundaries?
+> > > Or additional higher level queueing and extra thread/work queue/whatever?
+> > > 
+> > > Both are fine with me, I'm just asking for an opinion.
+> > 
+> > First of all, using FLUSH/FUA for such purpose is an error-prone
+> > abuse.  You're trying to exploit an implementation detail which may
+> > change at any time.  I think what you want is to be able to specify
+> > REQ_SOFTBARRIER on bio submission, which shouldn't be too hard but I'm
+> > still lost why this is necessary.  Can you please explain it a bit
+> > more?
+> 
+> The problem with exposing REQ_SOFTBARRIER at bio submission is that it
+> would require block layer not to reorder bios while passing through
+> stacked adrivers until it reaches a rq-based driver.  I *suspect* this
+> has been true until now but Kent's pending patch to fix possible
+> deadlock issue breaks that.
 
-For the record, let me state out loud what I think.
+Yeah, you might be right about that. I think Neil Brown would know
+better than I if this ordering was ever explicitly broken.
 
-I truly think that the core ARM code is a nice piece of art, and this is 
-because of your technical excellence and good taste with code.  The ARM 
-ecosystem is wide and varied, and keeping it from morphing into a horrid 
-mess is a thankless challenge.  We as a community certainly don't say 
-this very often if at all, but we certainly owe you a big "thank you" 
-for the excellent work you did so far, and I hope you'll go on with it 
-for quite some time yet. In any case, no one with excellent coding 
-skills such as yours is ever going to lack work and opportunities in 
-this community.
+But I don't think anything else is relying on that kind of ordering any
+more.
 
-Even x86, despite its long history in the Linux kernel, is less 
-fragmented and diversified than the ARM architecture.  For better or 
-worse, the ARM Ltd business model is different from Intel's.  That might 
-be good for the ARM market share and vendor differentiation, but this is 
-far from the ideal scenario for kernel developers.  I said it in the 
-past and I'll say it again: X86 is peanuts in comparison.
-
-Yet, X86 has 3 listed maintainers according to the MAINTAINERS file.  
-ARM has only one.  AS far as I can see, no one is crazy enough to be 
-maintainer for two or more architectures.
-
-Unless you were to give up on the ARM 32 bit maintenance, I don't see 
-how you could be able to maintain both ARM and ARM64 at the same time 
-without losing your sanity or sacrificing on the quality of the code you 
-contribute. .  Fortunately, Catalin is willing to maintain the ARM64 
-port and he appears pretty motivated as well.  Unless he does screw up, 
-we should let him bear this weight.
-
-
-Nicolas
+>   http://thread.gmane.org/gmane.linux.kernel.bcache.devel/1017/focus=1356250
+> 
+> As for what the resolution should be, urgh... I don't know. :(
