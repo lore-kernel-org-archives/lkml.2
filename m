@@ -1,94 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756791Ab2IJCJr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 22:09:47 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:58940 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756399Ab2IJCJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 22:09:37 -0400
-X-IronPort-AV: E=Sophos;i="4.80,396,1344182400"; 
-   d="scan'208";a="5810271"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH 2/2 V7 for-3.6-fixes] workqueue: fix idle worker depletion
-Date: Mon, 10 Sep 2012 10:11:25 +0800
-Message-Id: <1347243085-2510-2-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1347243085-2510-1-git-send-email-laijs@cn.fujitsu.com>
-References: <1347243085-2510-1-git-send-email-laijs@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/10 10:09:04,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/10 10:09:05,
-	Serialize complete at 2012/09/10 10:09:05
+	id S1756729Ab2IJCOn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 22:14:43 -0400
+Received: from nm2-vm4.bullet.mail.ne1.yahoo.com ([98.138.91.162]:39251 "HELO
+	nm2-vm4.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753292Ab2IJCOm convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Sep 2012 22:14:42 -0400
+X-Greylist: delayed 325 seconds by postgrey-1.27 at vger.kernel.org; Sun, 09 Sep 2012 22:14:41 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 115939.59352.bm@omp1011.mail.ne1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=G7Fq7y3f6WnmKy3qY6NKhyMP+IljT5Xqq4dTFzt/bresvIBUoFH2ossVBsyDP5HHsRSpTlJCG9pgTQwMil6th3JT2PWGH/GGu6XGpsEn+Rrsgop2V79LtGHQkv7q+koAgRDKnJgttn72RNMYHlOFprFz/kcq553PHNoosTqrh6w=;
+X-YMail-OSG: I1EqTE0VM1kJj98FaKaLl7tWf31U8lnMhALvga8BJ5PyTBp
+ Es19QNz8TUjjKoYWx9and6GAL8T4ZprJ6SIkKapKnad2HroO_HHfbQoKWW15
+ ofmQ8w3jyGIVvTI_UR5W4ZenZ.UwWynuvRMIZ.ji17UHZqGmTGretJrsUV.E
+ LVXSzOBrMzyBOb89hRUZvT9Y21m9mD6MBzy0WzTUUwLEP7nVMa4xI2vN.r5G
+ 0H6.1lnc2BeXxrAOvHiaTN0iEM5NC5n5jimF9E5V5mG44Ok0Z_dGk7hzO1y_
+ NRnMKXpRxA7nglqsQFYX32_xEz1yWBqiXhb87EuoMIuGhLaOMcVIPZ0UFzUK
+ .m3ZisGqkaF3lMuVKNaS6JTDdeHNApGCQuqFdrpoa5NG0L_I.DMEYybPwG2z
+ Rq9RANCL4FklMLp4-
+X-Mailer: YahooMailWebService/0.8.121.416
+Message-ID: <1347242955.93873.YahooMailNeo@web121901.mail.ne1.yahoo.com>
+Date: Sun, 9 Sep 2012 19:09:15 -0700 (PDT)
+From: Leonard Pinkard <leonard.pinkard@yahoo.com>
+Reply-To: Leonard Pinkard <leonard.pinkard@yahoo.com>
+Subject: Non compliant banking transfer in your account.
+To: "linka1608@gmail.com" <linka1608@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If hotplug code grabbed the manager_mutex and worker_thread try to create
-a worker, the manage_worker() will return false and worker_thread go to
-process work items. Now, on the CPU, all workers are processing work items,
-no idle_worker left/ready for managing. It breaks the concept of workqueue
-and it is bug.
-
-So when manage_worker() failed to grab the manager_mutex, it should
-release gcwq->lock and then grab manager_mutex.
-
-After gcwq->lock is released, hotplug can happen. but the hoplug code
-can't unbind/rebind the manager, so the manager should try to rebind
-itself unconditionaly, if it fails, unbind itself.
-
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- kernel/workqueue.c |   31 ++++++++++++++++++++++++++++++-
- 1 files changed, 30 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 383548e..74434c8 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1825,10 +1825,39 @@ static bool manage_workers(struct worker *worker)
- 	struct worker_pool *pool = worker->pool;
- 	bool ret = false;
- 
--	if (!mutex_trylock(&pool->manager_mutex))
-+	if (pool->flags & POOL_MANAGING_WORKERS)
- 		return ret;
- 
- 	pool->flags |= POOL_MANAGING_WORKERS;
-+
-+	if (unlikely(!mutex_trylock(&pool->manager_mutex))) {
-+		/*
-+		 * Ouch! rebind_workers() or gcwq_unbind_fn() beats it.
-+		 * it can't return false here, otherwise it will lead to
-+		 * worker depletion. So we release gcwq->lock and then
-+		 * grab manager_mutex again.
-+		 */
-+		spin_unlock_irq(&pool->gcwq->lock);
-+		mutex_lock(&pool->manager_mutex);
-+
-+		/*
-+		 * The hotplug had happened after the previous releasing
-+		 * of gcwq->lock. So we can't assume that this worker is
-+		 * still associated or not. And we have to try to rebind it
-+		 * via worker_maybe_bind_and_lock(). If it returns false,
-+		 * we can conclude that the whole gcwq is disassociated,
-+		 * and we must unbind this worker. (hotplug code can't
-+		 * unbind/rebind the manager, because hotplug code can't
-+		 * iterate the manager)
-+		 */
-+		if (worker_maybe_bind_and_lock(worker))
-+			worker->flags &= ~WORKER_UNBOUND;
-+		else
-+			worker->flags |= WORKER_UNBOUND;
-+
-+		ret = true;
-+	}
-+
- 	pool->flags &= ~POOL_MANAGE_WORKERS;
- 
- 	/*
--- 
-1.7.4.4
-
+__http://ḑϲòᾕṉ.?ẽḣȃᾑ
