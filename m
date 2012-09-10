@@ -1,199 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757553Ab2IJMEi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 08:04:38 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:36080 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751200Ab2IJMEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 08:04:33 -0400
-From: Prabhakar Lad <prabhakar.lad@ti.com>
-To: LMML <linux-media@vger.kernel.org>
-CC: dlos <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-kernel@vger.kernel.org>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        <linux-doc@vger.kernel.org>, Hans Verkuil <hans.verkuil@cisco.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Rob Landley <rob@landley.net>
-Subject: [PATCH v6] media: v4l2-ctrls: add control for dpcm predictor
-Date: Mon, 10 Sep 2012 17:33:44 +0530
-Message-ID: <1347278624-5296-1-git-send-email-prabhakar.lad@ti.com>
-X-Mailer: git-send-email 1.7.0.4
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1757557Ab2IJMFa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 08:05:30 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:50115 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753047Ab2IJMF3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 08:05:29 -0400
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        Antony Pavlov <antonynpavlov@gmail.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Maarten ter Huurne <maarten@treewalker.org>
+Subject: [PATCH v2 0/3] MIPS: JZ4740: Move PWM driver to PWM framework
+Date: Mon, 10 Sep 2012 14:05:16 +0200
+Message-Id: <1347278719-15276-1-git-send-email-thierry.reding@avionic-design.de>
+X-Mailer: git-send-email 1.7.12
+X-Provags-ID: V02:K0:n+yP6mng7YgOvO61oGfh2jjrxo260QIM+tPDlygG/98
+ J67g1c5PE5Msj1DDC976bof1oI7FQ2UXb4WFDo1FUkukY0KI1Q
+ In0cvla3RbhQVcy7yTXpeRbiOn6+ou5DK7QuncEpdn6+OxLhy9
+ CMBhu3l4AJQCI7sVHBmXmqXstKsDtEXCtDQzmMKg8OgNvqds/S
+ w8jM8bk0ai26JWcsT9Kjhr4z/vpeBaL1WpLUtdxbxDcmaQNCPa
+ AJ5be4EPcUbuW1X5zDW2fa2XLHAaVOW57mRbxeTFKFyLm50/md
+ AZcwiusW6IYlUawCUCYM3EX/+3sX1R8P+szHBSFK6UnBhneFXW
+ flchSr83+qGQjA0dEkNt9xFAnEy1rSKzaf4EABE405n0xM0Gd5
+ Ox53IgzlbKYyeW347QPgrV0sLNkXJQiZII9l18RgZ5iwI5wmTU
+ AE81H
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.lad@ti.com>
+Hi,
 
-add V4L2_CID_DPCM_PREDICTOR control of type menu, which
-determines the dpcm predictor. The predictor can be either
-simple or advanced.
+This small series fixes a build error due to a circular header
+dependency, exports the timer API so it can be used outside of
+the arch/mips/jz4740 tree and finally moves and converts the
+JZ4740 PWM driver to the PWM framework.
 
-Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
-Acked-by: Sakari Ailus <sakari.ailus@iki.fi>
-Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: Hans de Goede <hdegoede@redhat.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Rob Landley <rob@landley.net>
----
-This patches has one checkpatch warning for line over
-80 characters altough it can be avoided I have kept it
-for consistency.
+Note that I don't have any hardware to test this on, so I had to
+rely on compile tests only. Patches 1 and 2 should probably go
+through the MIPS tree, while I can take patch 3 through the PWM
+tree. It touches a couple of files in arch/mips but the changes
+are unlikely to cause conflicts.
 
-Changes for v6:
-1: Fitted the description within 80 characters per line,
-   pointed by Sakari.
+Thierry
 
-Changes for v5:
-1: Changed the control's name to 'Simple' and  'Advanced'
-   as pointed by Sakari.
-2: Changed the description of DPCM. Thanks to Sakari for
-   providing the description.
+Thierry Reding (3):
+  MIPS: JZ4740: Break circular header dependency
+  MIPS: JZ4740: Export timer API
+  pwm: Add Ingenic JZ4740 support
 
-Changes for v4:
-1: Aligned the description to fit appropriately in the
-   para tag, pointed by Sylwester.
+ arch/mips/include/asm/mach-jz4740/irq.h      |   5 +
+ arch/mips/include/asm/mach-jz4740/platform.h |   1 +
+ arch/mips/include/asm/mach-jz4740/timer.h    | 113 ++++++++++++++
+ arch/mips/jz4740/Kconfig                     |   3 -
+ arch/mips/jz4740/Makefile                    |   2 +-
+ arch/mips/jz4740/board-qi_lb60.c             |   1 +
+ arch/mips/jz4740/irq.h                       |  23 ---
+ arch/mips/jz4740/platform.c                  |   6 +
+ arch/mips/jz4740/pwm.c                       | 177 ---------------------
+ arch/mips/jz4740/time.c                      |   2 +-
+ arch/mips/jz4740/timer.c                     |   4 +-
+ arch/mips/jz4740/timer.h                     | 136 -----------------
+ drivers/pwm/Kconfig                          |  12 +-
+ drivers/pwm/Makefile                         |   1 +
+ drivers/pwm/pwm-jz4740.c                     | 221 +++++++++++++++++++++++++++
+ 15 files changed, 363 insertions(+), 344 deletions(-)
+ delete mode 100644 arch/mips/jz4740/irq.h
+ delete mode 100644 arch/mips/jz4740/pwm.c
+ delete mode 100644 arch/mips/jz4740/timer.h
+ create mode 100644 drivers/pwm/pwm-jz4740.c
 
-Changes for v3:
-1: Added better explanation for DPCM, pointed by Hans.
-
-Changes for v2:
-1: Added documentaion in controls.xml pointed by Sylwester.
-2: Chnaged V4L2_DPCM_PREDICTOR_ADVANCE to V4L2_DPCM_PREDICTOR_ADVANCED
-   pointed by Sakari.
-
- Documentation/DocBook/media/v4l/controls.xml |   48 +++++++++++++++++++++++++-
- drivers/media/v4l2-core/v4l2-ctrls.c         |    9 +++++
- include/linux/videodev2.h                    |    5 +++
- 3 files changed, 61 insertions(+), 1 deletions(-)
-
-diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
-index 93b9c68..f0fb08d 100644
---- a/Documentation/DocBook/media/v4l/controls.xml
-+++ b/Documentation/DocBook/media/v4l/controls.xml
-@@ -4267,7 +4267,53 @@ interface and may change in the future.</para>
- 	    pixels / second.
- 	    </entry>
- 	  </row>
--	  <row><entry></entry></row>
-+	  <row>
-+	    <entry spanname="id">
-+	      <constant>V4L2_CID_DPCM_PREDICTOR</constant>
-+	    </entry>
-+	    <entry>menu</entry>
-+	  </row>
-+	  <row id="v4l2-dpcm-predictor">
-+	    <entry spanname="descr"> Differential pulse-code modulation (DPCM)
-+	    compression can be used to compress the samples into fewer bits
-+	    than they would otherwise require. This is done by calculating the
-+	    difference between consecutive samples and outputting the
-+	    difference which in average is much smaller than the values of the
-+	    samples themselves since there is generally lots of correlation
-+	    between adjacent pixels. In decompression the original samples are
-+	    reconstructed. The process isn't lossless as the encoded sample
-+	    size in bits is less than the original.
-+
-+	    <para>Formats using DPCM compression include
-+	    <xref linkend="pixfmt-srggb10dpcm8" />.</para>
-+
-+	    <para>This control is used to select the predictor used to encode
-+	    the samples.</para>
-+
-+	    <para>The main difference between the simple and the advanced
-+	    predictors is image quality, with advanced predictor supposed to
-+	    produce better quality images as a result. Simple predictor can be
-+	    used e.g. for testing purposes. For more information about DPCM see
-+	    <ulink url=
-+	    "http://en.wikipedia.org/wiki/Differential_pulse-code_modulation">
-+	    Wikipedia</ulink>.</para>
-+	    </entry>
-+	  </row>
-+	  <row>
-+	    <entrytbl spanname="descr" cols="2">
-+	      <tbody valign="top">
-+	        <row>
-+	         <entry><constant>V4L2_DPCM_PREDICTOR_SIMPLE</constant></entry>
-+	          <entry>Predictor type is simple</entry>
-+	        </row>
-+	        <row>
-+	          <entry><constant>V4L2_DPCM_PREDICTOR_ADVANCED</constant></entry>
-+	          <entry>Predictor type is advanced</entry>
-+	        </row>
-+	      </tbody>
-+	    </entrytbl>
-+	  </row>
-+	<row><entry></entry></row>
- 	</tbody>
-       </tgroup>
-       </table>
-diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
-index b6a2ee7..8f2f40b 100644
---- a/drivers/media/v4l2-core/v4l2-ctrls.c
-+++ b/drivers/media/v4l2-core/v4l2-ctrls.c
-@@ -425,6 +425,11 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
- 		"Gray",
- 		NULL,
- 	};
-+	static const char * const dpcm_predictor[] = {
-+		"Simple",
-+		"Advanced",
-+		NULL,
-+	};
- 
- 	switch (id) {
- 	case V4L2_CID_MPEG_AUDIO_SAMPLING_FREQ:
-@@ -502,6 +507,8 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
- 		return mpeg4_profile;
- 	case V4L2_CID_JPEG_CHROMA_SUBSAMPLING:
- 		return jpeg_chroma_subsampling;
-+	case V4L2_CID_DPCM_PREDICTOR:
-+		return dpcm_predictor;
- 
- 	default:
- 		return NULL;
-@@ -732,6 +739,7 @@ const char *v4l2_ctrl_get_name(u32 id)
- 	case V4L2_CID_IMAGE_PROC_CLASS:		return "Image Processing Controls";
- 	case V4L2_CID_LINK_FREQ:		return "Link Frequency";
- 	case V4L2_CID_PIXEL_RATE:		return "Pixel Rate";
-+	case V4L2_CID_DPCM_PREDICTOR:		return "DPCM Predictor";
- 
- 	default:
- 		return NULL;
-@@ -832,6 +840,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
- 	case V4L2_CID_ISO_SENSITIVITY_AUTO:
- 	case V4L2_CID_EXPOSURE_METERING:
- 	case V4L2_CID_SCENE_MODE:
-+	case V4L2_CID_DPCM_PREDICTOR:
- 		*type = V4L2_CTRL_TYPE_MENU;
- 		break;
- 	case V4L2_CID_LINK_FREQ:
-diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
-index 6d6dfa7..ca9fb78 100644
---- a/include/linux/videodev2.h
-+++ b/include/linux/videodev2.h
-@@ -2000,6 +2000,11 @@ enum v4l2_jpeg_chroma_subsampling {
- 
- #define V4L2_CID_LINK_FREQ			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 1)
- #define V4L2_CID_PIXEL_RATE			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 2)
-+#define V4L2_CID_DPCM_PREDICTOR			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 3)
-+enum v4l2_dpcm_predictor {
-+	V4L2_DPCM_PREDICTOR_SIMPLE	= 0,
-+	V4L2_DPCM_PREDICTOR_ADVANCED	= 1,
-+};
- 
- /*
-  *	T U N I N G
 -- 
-1.7.0.4
+1.7.12
 
