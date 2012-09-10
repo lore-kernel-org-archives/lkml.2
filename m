@@ -1,163 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758075Ab2IJQKe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 12:10:34 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:49212 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758014Ab2IJQKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 12:10:32 -0400
-From: Thomas Lendacky <tahm@linux.vnet.ibm.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, avi@redhat.com, kvm@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] virtio-ring: Allocate indirect buffers from cache when possible
-Date: Mon, 10 Sep 2012 11:01:06 -0500
-Message-ID: <3011045.XPVFy0hMGs@tomlt1.ibmoffice.com>
-User-Agent: KMail/4.8.5 (Linux/3.4.9-2.fc16.i686.PAE; KDE/4.8.5; i686; ; )
-In-Reply-To: <87txvahfv3.fsf@rustcorp.com.au>
-References: <1346159043-16446-2-git-send-email-levinsasha928@gmail.com> <20120906084526.GE17656@redhat.com> <87txvahfv3.fsf@rustcorp.com.au>
+	id S1758057Ab2IJQMl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 12:12:41 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45868 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754372Ab2IJQMj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 12:12:39 -0400
+Date: Mon, 10 Sep 2012 17:11:59 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v3 02/31] arm64: Kernel booting and initialisation
+Message-ID: <20120910161159.GH27042@arm.com>
+References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
+ <1347035226-18649-3-git-send-email-catalin.marinas@arm.com>
+ <20120909172046.GB31430@game.jcrosoft.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12091016-7182-0000-0000-0000028EB972
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120909172046.GB31430@game.jcrosoft.org>
+Thread-Topic: [PATCH v3 02/31] arm64: Kernel booting and initialisation
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, September 07, 2012 09:19:04 AM Rusty Russell wrote:
-> "Michael S. Tsirkin" <mst@redhat.com> writes:
-> > On Thu, Sep 06, 2012 at 05:27:23PM +0930, Rusty Russell wrote:
-> >> "Michael S. Tsirkin" <mst@redhat.com> writes:
-> >> > Yes without checksum net core always linearizes packets, so yes it is
-> >> > screwed.
-> >> > For -net, skb always allocates space for 17 frags + linear part so
-> >> > it seems sane to do same in virtio core, and allocate, for -net,
-> >> > up to max_frags + 1 from cache.
-> >> > We can adjust it: no _SG -> 2 otherwise 18.
-> >> 
-> >> But I thought it used individual buffers these days?
-> > 
-> > Yes for receive, no for transmit. That's probably why
-> > we should have the threshold per vq, not per device, BTW.
-> 
-> Can someone actually run with my histogram patch and see what the real
-> numbers are?
+On Sun, Sep 09, 2012 at 06:20:46PM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> On 17:26 Fri 07 Sep     , Catalin Marinas wrote:
+> > +The device tree blob (dtb) must be no bigger than 2 megabytes in size
+> > +and placed at a 2-megabyte boundary within the first 512 megabytes from
+> > +the start of the kernel image. This is to allow the kernel to map the
+> > +blob using a single section mapping in the initial page tables.
+> why do you want to restrict the DT to be less tahn 2MiB?
 
-Somehow some HTML got in my first reply, resending...
+That's a restriction due on the initial memory map. At some point we may
+add support in head.S to parse the dtb and extract the size information.
+Not critical at this stage.
 
-I ran some TCP_RR and TCP_STREAM sessions, both host-to-guest and
-guest-to-host, with a form of the histogram patch applied against a
-RHEL6.3 kernel. The histogram values were reset after each test.
+> > +Before jumping into the kernel, the following conditions must be met:
+> > +
+> > +- Quiesce all DMA capable devices so that memory does not get
+> > +  corrupted by bogus network packets or disk data.  This will save
+> > +  you many hours of debug.
+> > +
+> > +- Primary CPU general-purpose register settings
+> > +  x0 = physical address of device tree blob (dtb) in system RAM.
+> > +  x1 = 0 (reserved for future use)
+> > +  x2 = 0 (reserved for future use)
+> > +  x3 = 0 (reserved for future use)
+> > +
+> > +- CPU mode
+> > +  All forms of interrupts must be masked in PSTATE.DAIF (Debug, SError,
+> > +  IRQ and FIQ).
+> > +  The CPU must be in either EL2 (RECOMMENDED in order to have access to
+> > +  the virtualisation extensions) or non-secure EL1.
+> > +
+> > +- Caches, MMUs
+> > +  The MMU must be off.
+> > +  Instruction cache may be on or off.
+> > +  Data cache must be off and invalidated.
+> > +  External caches (if present) must be configured and disabled.
+> > +
+> > +- Architected timers
+> > +  CNTFRQ must be programmed with the timer frequency.
+> > +  If entering the kernel at EL1, CNTHCTL_EL2 must have EL1PCTEN (bit 0)
+> > +  set where available.
+> can you explain why?
 
-Here are the results:
+Otherwise the kernel cannot access the generic timer registers (it is
+described in the AArch64 exception model which isn't public yet).
 
-60 session TCP_RR from host-to-guest with 256 byte request and 256 byte
-response for 60 seconds:
+> > +- The primary CPU must jump directly to the first instruction of the
+> > +  kernel image.  The device tree blob passed by this CPU must contain
+> > +  for each CPU node:
+> > +
+> > +    1. An 'enable-method' property. Currently, the only supported value
+> > +       for this field is the string "spin-table".
+> > +
+> > +    2. A 'cpu-release-addr' property identifying a 64-bit,
+> > +       zero-initialised memory location.
+> > +
+> > +  It is expected that the bootloader will generate these device tree
+> > +  properties and insert them into the blob prior to kernel entry.
+> > +
+> > +- Any secondary CPUs must spin outside of the kernel in a reserved area
+> > +  of memory (communicated to the kernel by a /memreserve/ region in the
+> > +  device tree) polling their cpu-release-addr location, which must be
+> > +  contained in the reserved region.  A wfe instruction may be inserted
+> > +  to reduce the overhead of the busy-loop and a sev will be issued by
+> > +  the primary CPU.  When a read of the location pointed to by the
+> > +  cpu-release-addr returns a non-zero value, the CPU must jump directly
+> > +  to this value.
+> do you plan AMP boot?
 
-Queue histogram for virtio1:
-Size distribution for input (max=7818456):
- 1: 7818456 ################################################################
-Size distribution for output (max=7816698):
- 2: 149     
- 3: 7816698 ################################################################
- 4: 2       
- 5: 1       
-Size distribution for control (max=1):
- 0: 0
+What do you mean by AMP?
 
+If you only want to use 3 CPUs out of 4 for example, you change the FDT
+information that gets passed to the kernel accordingly. So the kernel
+wouldn't touch the 4th one.
 
-4 session TCP_STREAM from host-to-guest with 4K message size for 60 seconds:
-
-Queue histogram for virtio1:
-Size distribution for input (max=16050941):
- 1: 16050941 ################################################################
-Size distribution for output (max=1877796):
- 2: 1877796 ################################################################
- 3: 5       
-Size distribution for control (max=1):
- 0: 0
-
-4 session TCP_STREAM from host-to-guest with 16K message size for 60 seconds:
-
-Queue histogram for virtio1:
-Size distribution for input (max=16831151):
- 1: 16831151 ################################################################
-Size distribution for output (max=1923965):
- 2: 1923965 ################################################################
- 3: 5       
-Size distribution for control (max=1):
- 0: 0
-
-4 session TCP_STREAM from guest-to-host with 4K message size for 60 seconds:
-
-Queue histogram for virtio1:
-Size distribution for input (max=1316069):
- 1: 1316069 ################################################################
-Size distribution for output (max=879213):
- 2: 24      
- 3: 24097   #
- 4: 23176   #
- 5: 3412    
- 6: 4446    
- 7: 4663    
- 8: 4195    
- 9: 3772    
-10: 3388    
-11: 3666    
-12: 2885    
-13: 2759    
-14: 2997    
-15: 3060    
-16: 2651    
-17: 2235    
-18: 92721   ######  
-19: 879213  ################################################################
-Size distribution for control (max=1):
- 0: 0
-
-4 session TCP_STREAM from guest-to-host with 16K message size for 60 seconds:
-
-Queue histogram for virtio1:
-Size distribution for input (max=1428590):
- 1: 1428590 ################################################################
-Size distribution for output (max=957774):
- 2: 20
- 3: 54955   ###
- 4: 34281   ##
- 5: 2967
- 6: 3394
- 7: 9400
- 8: 3061
- 9: 3397
-10: 3258
-11: 3275
-12: 3147
-13: 2876
-14: 2747
-15: 2832
-16: 2013
-17: 1670
-18: 100369  ######
-19: 957774  ################################################################
-Size distribution for control (max=1):
- 0: 0
-
-Thanks,
-Tom
-
-> 
-> I'm not convinced that the ideal 17-buffer case actually happens as much
-> as we think.  And if it's not happening with this netperf test, we're
-> testing the wrong thing.
-> 
-> Thanks,
-> Rusty.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+-- 
+Catalin
