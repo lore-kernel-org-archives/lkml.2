@@ -1,66 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755582Ab2IJQlA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 12:41:00 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:51992 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753265Ab2IJQka (ORCPT
+	id S1754294Ab2IJQnl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 12:43:41 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:33462 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752013Ab2IJQnj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 12:40:30 -0400
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        peterz@infradead.org
-Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Gleb Natapov <gleb@redhat.com>, Avi Kivity <avi@redhat.com>
-Subject: [PATCH 2/3] perf: require exclude_guest to use PEBS - kernel side enforcement
-Date: Mon, 10 Sep 2012 10:40:15 -0600
-Message-Id: <1347295216-1202-3-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1347295216-1202-1-git-send-email-dsahern@gmail.com>
-References: <1347295216-1202-1-git-send-email-dsahern@gmail.com>
+	Mon, 10 Sep 2012 12:43:39 -0400
+Date: Mon, 10 Sep 2012 17:43:34 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, broonie@opensource.wolfsonmicro.com,
+        ola.o.lilja@stericsson.com, roger.xr.nilsson@stericsson.com,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH 07/17] Documentation: Define the MSP Driver Device Tree
+ bindings
+Message-ID: <20120910164333.GB24506@gmail.com>
+References: <1345816913-4113-1-git-send-email-lee.jones@linaro.org>
+ <1345816913-4113-8-git-send-email-lee.jones@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1345816913-4113-8-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <peterz@infradead.org>
+Ola poke.
 
-See https://lkml.org/lkml/2012/7/9/298
+On Fri, Aug 24, 2012 at 03:01:43PM +0100, Lee Jones wrote:
+> Here we add the required documentation for the new Device Tree
+> bindings pertaining to the MSP CPU-side DAI Driver.
+> 
+> CC: alsa-devel@alsa-project.org
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  .../devicetree/bindings/sound/ux500-msp.txt        |   43 ++++++++++++++++++++
+>  1 file changed, 43 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/sound/ux500-msp.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/sound/ux500-msp.txt b/Documentation/devicetree/bindings/sound/ux500-msp.txt
+> new file mode 100644
+> index 0000000..99acd9c
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/sound/ux500-msp.txt
+> @@ -0,0 +1,43 @@
+> +* ux500 MSP (CPU-side Digital Audio Interface)
+> +
+> +Required properties:
+> + - compatible       :"stericsson,ux500-msp-i2s"
+> + - reg              : Physical base address and length of the device's registers.
+> +
+> +Optional properties:
+> + - interrupts       : The interrupt output from the device.
+> + - interrupt-parent : The parent interrupt controller.
+> + - <name>-supply    : Phandle to the regulator <name> supply
+> +
+> +Example:
+> +
+> +	sound {
+> +		compatible = "stericsson,snd-soc-mop500";
+> +
+> +		stericsson,platform-pcm-dma = <&pcm>;
+> +		stericsson,cpu-dai = <&msp1 &msp3>;
+> +		stericsson,audio-codec = <&codec>;
+> +	};
+> +
+> +	pcm: ux500-pcm {
+> +		compatible = "stericsson,ux500-pcm";
+> +	};
+> +
+> +	msp1: msp@80124000 {
+> +		compatible = "stericsson,ux500-msp-i2s";
+> +		reg = <0x80124000 0x1000>;
+> +		interrupts = <0 62 0x4>;
+> +		v-ape-supply = <&db8500_vape_reg>;
+> +	};
+> +
+> +	msp3: msp@80125000 {
+> +		compatible = "stericsson,ux500-msp-i2s";
+> +		reg = <0x80125000 0x1000>;
+> +		interrupts = <0 62 0x4>;
+> +		v-ape-supply = <&db8500_vape_reg>;
+> +	};
+> +
+> +	codec: ab8500-codec {
+> +		compatible = "stericsson,ab8500-codec";
+> +		stericsson,earpeice-cmv = <950>; /* Units in mV. */
+> +	};
+> -- 
+> 1.7.9.5
+> 
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Robert Richter <robert.richter@amd.com>
-Cc: Gleb Natapov <gleb@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>
----
- arch/x86/kernel/cpu/perf_event.c |    6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 915b876..4bc96c5 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -338,6 +338,9 @@ int x86_setup_perfctr(struct perf_event *event)
- 		/* BTS is currently only allowed for user-mode. */
- 		if (!attr->exclude_kernel)
- 			return -EOPNOTSUPP;
-+
-+		if (!attr->exclude_guest)
-+			return -EOPNOTSUPP;
- 	}
- 
- 	hwc->config |= config;
-@@ -380,6 +383,9 @@ int x86_pmu_hw_config(struct perf_event *event)
- 	if (event->attr.precise_ip) {
- 		int precise = 0;
- 
-+		if (!event->attr.exclude_guest)
-+				return -EOPNOTSUPP;
-+
- 		/* Support for constant skid */
- 		if (x86_pmu.pebs_active && !x86_pmu.pebs_broken) {
- 			precise++;
 -- 
-1.7.10.1
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
