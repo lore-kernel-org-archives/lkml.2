@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379Ab2IJQkc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 12:40:32 -0400
+	id S1755074Ab2IJQkk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 12:40:40 -0400
 Received: from mail-ie0-f174.google.com ([209.85.223.174]:56923 "EHLO
 	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753058Ab2IJQk2 (ORCPT
+	with ESMTP id S1753058Ab2IJQkc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 12:40:28 -0400
+	Mon, 10 Sep 2012 12:40:32 -0400
 From: David Ahern <dsahern@gmail.com>
 To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
         peterz@infradead.org
 Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Gleb Natapov <gleb@redhat.com>, Avi Kivity <avi@redhat.com>
-Subject: [PATCH 1/3] perf tool: precise mode requires exclude_guest
-Date: Mon, 10 Sep 2012 10:40:14 -0600
-Message-Id: <1347295216-1202-2-git-send-email-dsahern@gmail.com>
+        Robert Richter <robert.richter@amd.com>
+Subject: [PATCH 3/3] perf tool: give user better message if precise is not supported
+Date: Mon, 10 Sep 2012 10:40:16 -0600
+Message-Id: <1347295216-1202-4-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1347295216-1202-1-git-send-email-dsahern@gmail.com>
 References: <1347295216-1202-1-git-send-email-dsahern@gmail.com>
@@ -23,35 +22,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PEBS cannot be used with guest mode. See:
-   https://lkml.org/lkml/2012/7/9/264
+Platforms (e.g., VM's) without support for precise mode get a confusing
+error message. e.g.,
+$ perf record -e cycles:p -a -- sleep 1
 
-If user adds :p modifier set exclude_guest as well.
+  Error: sys_perf_event_open() syscall returned with 95 (Operation not
+  supported).  /bin/dmesg may provide additional information.
+
+  No hardware sampling interrupt available. No APIC? If so then you can
+  boot the kernel with the "lapic" boot parameter to force-enable it.
+  sleep: Terminated
+
+which is not clear that precise mode might be the root problem. With this
+patch:
+
+$ perf record -e cycles:p -fo /tmp/perf.data -- sleep 1
+  Error:
+  'precise' request not supported. Try removing 'p' modifier
+  sleep: Terminated
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Robert Richter <robert.richter@amd.com>
-Cc: Gleb Natapov <gleb@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>
 ---
- tools/perf/util/parse-events.c |    3 +++
- 1 file changed, 3 insertions(+)
+ tools/perf/builtin-record.c |    5 +++++
+ tools/perf/builtin-top.c    |    4 ++++
+ 2 files changed, 9 insertions(+)
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index a031ee1..f2c02b2 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -694,6 +694,9 @@ static int get_event_modifier(struct event_modifier *mod, char *str,
- 			eH = 0;
- 		} else if (*str == 'p') {
- 			precise++;
-+			/* use of precise requires exclude_guest */
-+			if (!exclude_GH)
-+				eG = 1;
- 		} else
- 			break;
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 7b8b891..ccf529b 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -294,6 +294,11 @@ try_again:
+ 					  perf_evsel__name(pos));
+ 				rc = -err;
+ 				goto out;
++			} else if ((err == ENOTSUP) && (attr->precise_ip)) {
++				ui__error("\'precise\' request not supported. "
++					  "Try removing 'p' modifier\n");
++				rc = -err;
++				goto out;
+ 			}
  
+ 			printf("\n");
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 0513aaa..0d3653b 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -975,6 +975,10 @@ try_again:
+ 				ui__error("Too many events are opened.\n"
+ 					    "Try again after reducing the number of events\n");
+ 				goto out_err;
++			} else if ((err == ENOTSUP) && (attr->precise_ip)) {
++				ui__error("\'precise\' request not supported. "
++					  "Try removing 'p' modifier\n");
++				goto out_err;
+ 			}
+ 
+ 			ui__error("The sys_perf_event_open() syscall "
 -- 
 1.7.10.1
 
