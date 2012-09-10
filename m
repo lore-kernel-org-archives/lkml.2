@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754333Ab2IJHcs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 03:32:48 -0400
-Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:40323 "EHLO
-	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751004Ab2IJHco (ORCPT
+	id S1755026Ab2IJHkX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 03:40:23 -0400
+Received: from mail3-184.sinamail.sina.com.cn ([202.108.3.184]:2570 "EHLO
+	mail3-184.sinamail.sina.com.cn" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751289Ab2IJHkW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 03:32:44 -0400
-Date: Mon, 10 Sep 2012 10:32:38 +0300
-From: Sakari Ailus <sakari.ailus@iki.fi>
-To: Prabhakar Lad <prabhakar.lad@ti.com>
-Cc: LMML <linux-media@vger.kernel.org>,
-        dlos <davinci-linux-open-source@linux.davincidsp.com>,
-        linux-kernel@vger.kernel.org, Manjunath Hadli <manjunath.hadli@ti.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-doc@vger.kernel.org, Hans Verkuil <hans.verkuil@cisco.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Rob Landley <rob@landley.net>
-Subject: Re: [PATCH v5] media: v4l2-ctrls: add control for dpcm predictor
-Message-ID: <20120910073238.GH6834@valkosipuli.retiisi.org.uk>
-References: <1347256675-13391-1-git-send-email-prabhakar.lad@ti.com>
+	Mon, 10 Sep 2012 03:40:22 -0400
+X-Originating-IP: [116.5.182.49]
+X-Auth-ID: suxtds@sina.com
+X-Rcptcnt: gt3
+X-Rcptcnt: gt10
+Message-ID: <20120910154959541831@sina.com>
+From: "ojmaj" <suxtds@sina.com>
+To: <market@jiahepaper.cn>, <nyzf@163.com>, <okn9@163.com>, <s329@163.com>,
+        <sheng.jun22@yahoo.com.cn>, <ajxqxxjll@163.com>,
+        <linux-kernel@vger.kernel.org>, <tycci126@126.com>,
+        <zhaoruiking@126.com>
+Subject: =?utf-8?B?6ams6ZOt5ZCv?=
+Date: Mon, 10 Sep 2012 15:49:50 +0800
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347256675-13391-1-git-send-email-prabhakar.lad@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="utf-8"
+X-Priority: 1
+X-mailer: Xtotcqnuy 2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8A7eWOI016289
 
-Hi Prabhakar,
 
-On Mon, Sep 10, 2012 at 11:27:55AM +0530, Prabhakar Lad wrote:
-...
-> +	  <row id="v4l2-dpcm-predictor">
-> +	    <entry spanname="descr"> Differential pulse-code modulation (DPCM) compression can
-> +	    be used to compress the samples into fewer bits than they would otherwise require.
-> +	    This is done by calculating the difference between consecutive samples and outputting
-> +	    the difference which in average is much smaller than the values of the samples
-> +	    themselves since there is generally lots of correlation between adjacent pixels. In
-> +	    decompression the original samples are reconstructed. The process isn't lossless as
-> +	    the encoded sample size in bits is less than the original.
-> +
-> +	    <para>Formats using DPCM compression include <xref linkend="pixfmt-srggb10dpcm8" />.</para>
-> +
-> +	    <para>This control is used to select the predictor used to encode the samples.</para>
-> +
-> +	    <para>The main difference between the simple and the advanced predictors is image quality,
-> +	    with advanced predictor supposed to produce better quality images as a result. Simple
-> +	    predictor can be used e.g. for testing purposes. For more information about DPCM see <ulink
-> +	    url="http://en.wikipedia.org/wiki/Differential_pulse-code_modulation">Wikipedia</ulink>.</para>
-
-Could you fit the above text (description of the control) at 80 characters
-per line? With that change,
-
-Acked-by: Sakari Ailus <sakari.ailus@iki.fi>
-
-Kind regards,
-
--- 
-Sakari Ailus
-e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
+┌─┬─┬─┬─┬─┬─┬─┐
+│　┆　┆Ｑ┆联┆１┆，┆优│
+│　┆　┆Ｑ┆系┆３┆先┆惠│
+│　┆　┆：┆人┆６┆认┆开│
+│　┆　┆１┆：┆１┆证┆具│
+│　┆　┆１┆　┆３┆后┆企│
+│　┆　┆３┆　┆０┆付┆业│
+│　┆　┆４┆王┆０┆款┆发│
+│　┆　┆８┆︵┆５┆！┆票│
+│　┆　┆９┆先┆９┆　┆，│
+│　┆　┆１┆生┆１┆　┆收│
+│　┆　┆５┆︶┆８┆手┆费│
+│　┆　┆７┆　┆　┆机┆较│
+│　┆　┆８┆　┆　┆：┆低│
+└─┴─┴─┴─┴─┴─┴─┘
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
