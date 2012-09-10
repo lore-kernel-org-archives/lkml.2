@@ -1,81 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932071Ab2IJLEX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 07:04:23 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:41850 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752480Ab2IJLEV convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Mon, 10 Sep 2012 07:04:21 -0400
-Message-Id: <504DE550020000780009A258@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Mon, 10 Sep 2012 12:04:16 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86-64: adjust types of temporaries used by
- ffs()/fls()/fls64()
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1757113Ab2IJLF5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 07:05:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50109 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755939Ab2IJLF4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 07:05:56 -0400
+Date: Mon, 10 Sep 2012 13:05:50 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: akpm@linux-foundation.org, kamezawa.hiroyu@jp.fujitsu.com,
+        minchan@kernel.org, shangw@linux.vnet.ibm.com, yinghai@kernel.org,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: + mm-memblock-reduce-overhead-in-binary-search.patch added to
+ -mm tree
+Message-ID: <20120910110550.GA17437@dhcp22.suse.cz>
+References: <20120907235058.A33F75C0219@hpza9.eem.corp.google.com>
+ <20120910082035.GA13035@dhcp22.suse.cz>
+ <20120910094604.GA7365@hacker.(null)>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20120910094604.GA7365@hacker.(null)>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 64-bit special cases of the former two (the thrird one is 64-bit
-only anyway) don't need to use "long" temporaries, as the result will
-always fit in a 32-bit variable, and the functions return plain "int".
-This avoids a few REX prefixes, i.e. minimally reduces code size.
+On Mon 10-09-12 17:46:04, Wanpeng Li wrote:
+> On Mon, Sep 10, 2012 at 10:22:39AM +0200, Michal Hocko wrote:
+> >[Sorry for the late reply]
+> >
+> >On Fri 07-09-12 16:50:57, Andrew Morton wrote:
+> >> 
+> >> The patch titled
+> >>      Subject: mm/memblock: reduce overhead in binary search
+> >> has been added to the -mm tree.  Its filename is
+> >>      mm-memblock-reduce-overhead-in-binary-search.patch
+> >> 
+> >> Before you just go and hit "reply", please:
+> >>    a) Consider who else should be cc'ed
+> >>    b) Prefer to cc a suitable mailing list as well
+> >>    c) Ideally: find the original patch on the mailing list and do a
+> >>       reply-to-all to that, adding suitable additional cc's
+> >> 
+> >> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> >> 
+> >> The -mm tree is included into linux-next and is updated
+> >> there every 3-4 working days
+> >> 
+> >> ------------------------------------------------------
+> >> From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> >> Subject: mm/memblock: reduce overhead in binary search
+> >> 
+> >> When checking that the indicated address belongs to the memory region, the
+> >> memory regions are checked one by one through a binary search, which will
+> >> be time consuming.
+> >
+> >How many blocks do you have that O(long) is that time consuming?
+> >
+> >> If the indicated address isn't in the memory region, then we needn't do
+> >> the time-consuming search.  
+> >
+> >How often does this happen?
+> >
+> >> Add a check on the indicated address for that purpose.
+> >
+> >We have 2 users of this function. One is exynos_sysmmu_enable and the
+> >other pfn_valid for unicore32. The first one doesn't seem to be used
+> >anywhere (as per git grep). The other one could benefit from it but it
+> >would be nice to hear about how much it really helps becuase if the
+> >address is (almost) never outside of start,end DRAM bounds then you just
+> >add a pointless check.
+> >Besides that, if this kind of optimization is really worth, why don't we
+> >do the same thing for memblock_is_reserved and memblock_is_region_memory
+> >as well?
+> 
+> As Yinghai said,
+> 
+> BIOS could have reserved some ranges, and those ranges are not overlapped by 
+> RAM. and so those range will not be in memory and reserved array.
+> 
+> later kernel will probe some range, and reserved those range, so those
+> range get inserted into reserved array. reserved and memory array is
+> different.
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
+OK. Thanks for the clarification. The main question remains, though. Is
+this worth for memblock_is_memory?
 
----
- arch/x86/include/asm/bitops.h |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+> >So, while the patch seems correct, I do not see how much it helps while
+> >it definitely adds a code to maintain.
+> >
+> >> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> >> Cc: Michal Hocko <mhocko@suse.cz>
+> >> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> >> Cc: Minchan Kim <minchan@kernel.org>
+> >> Cc: Gavin Shan <shangw@linux.vnet.ibm.com>
+> >> Cc: Yinghai Lu <yinghai@kernel.org>
+> >> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> >> ---
+> >> 
+> >>  mm/memblock.c |    5 +++++
+> >>  1 file changed, 5 insertions(+)
+> >> 
+> >> diff -puN mm/memblock.c~mm-memblock-reduce-overhead-in-binary-search mm/memblock.c
+> >> --- a/mm/memblock.c~mm-memblock-reduce-overhead-in-binary-search
+> >> +++ a/mm/memblock.c
+> >> @@ -888,6 +888,11 @@ int __init memblock_is_reserved(phys_add
+> >>  
+> >>  int __init_memblock memblock_is_memory(phys_addr_t addr)
+> >>  {
+> >> +
+> >> +	if (unlikely(addr < memblock_start_of_DRAM() ||
+> >> +		addr >= memblock_end_of_DRAM()))
+> >> +		return 0;
+> >> +
+> >>  	return memblock_search(&memblock.memory, addr) != -1;
+> >>  }
+> >>  
+> >> _
+> >> 
+> >> Patches currently in -mm which might be from liwanp@linux.vnet.ibm.com are
+> >> 
+> >> mm-mmu_notifier-init-notifier-if-necessary.patch
+> >> mm-vmscan-fix-error-number-for-failed-kthread.patch
+> >> mm-memblock-reduce-overhead-in-binary-search.patch
+> >> mm-memblock-rename-get_allocated_memblock_reserved_regions_info.patch
+> >> mm-memblock-use-existing-interface-to-set-nid.patch
+> >> mm-memblock-cleanup-early_node_map-related-comments.patch
+> >> 
+> >
+> >-- 
+> >Michal Hocko
+> >SUSE Labs
+> >
+> >--
+> >To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> >the body to majordomo@kvack.org.  For more info on Linux MM,
+> >see: http://www.linux-mm.org/ .
+> >Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
 
---- 3.6-rc5/arch/x86/include/asm/bitops.h
-+++ 3.6-rc5-x86_64-bsf-bsr-types/arch/x86/include/asm/bitops.h
-@@ -417,10 +417,9 @@ static inline int ffs(int x)
- 	 * We cannot do this on 32 bits because at the very least some
- 	 * 486 CPUs did not behave this way.
- 	 */
--	long tmp = -1;
- 	asm("bsfl %1,%0"
- 	    : "=r" (r)
--	    : "rm" (x), "0" (tmp));
-+	    : "rm" (x), "0" (-1));
- #elif defined(CONFIG_X86_CMOV)
- 	asm("bsfl %1,%0\n\t"
- 	    "cmovzl %2,%0"
-@@ -459,10 +458,9 @@ static inline int fls(int x)
- 	 * We cannot do this on 32 bits because at the very least some
- 	 * 486 CPUs did not behave this way.
- 	 */
--	long tmp = -1;
- 	asm("bsrl %1,%0"
- 	    : "=r" (r)
--	    : "rm" (x), "0" (tmp));
-+	    : "rm" (x), "0" (-1));
- #elif defined(CONFIG_X86_CMOV)
- 	asm("bsrl %1,%0\n\t"
- 	    "cmovzl %2,%0"
-@@ -490,13 +488,13 @@ static inline int fls(int x)
- #ifdef CONFIG_X86_64
- static __always_inline int fls64(__u64 x)
- {
--	long bitpos = -1;
-+	int bitpos = -1;
- 	/*
- 	 * AMD64 says BSRQ won't clobber the dest reg if x==0; Intel64 says the
- 	 * dest reg is undefined if x==0, but their CPU architect says its
- 	 * value is written to set it to the same as before.
- 	 */
--	asm("bsrq %1,%0"
-+	asm("bsrq %1,%q0"
- 	    : "+r" (bitpos)
- 	    : "rm" (x));
- 	return bitpos + 1;
-
-
-
+-- 
+Michal Hocko
+SUSE Labs
