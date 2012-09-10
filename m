@@ -1,92 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587Ab2IJNnh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 09:43:37 -0400
-Received: from mail.windriver.com ([147.11.1.11]:59799 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366Ab2IJNnf (ORCPT
+	id S1756680Ab2IJNtU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 09:49:20 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:60369 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752121Ab2IJNtT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 09:43:35 -0400
-Message-ID: <504DEE1D.3040704@windriver.com>
-Date: Mon, 10 Sep 2012 09:41:49 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Mon, 10 Sep 2012 09:49:19 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 00/19] First HREF Device Tree enablement patch-set
+Date: Mon, 10 Sep 2012 13:49:08 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
+        linus.walleij@stericsson.com
+References: <1347016499-29354-1-git-send-email-lee.jones@linaro.org> <201209101013.16697.arnd@arndb.de> <CACRpkdbPwiaF8tfEE7NNd_KE3VGtVx-pPwL-HObhh3fRYXqH=g@mail.gmail.com>
+In-Reply-To: <CACRpkdbPwiaF8tfEE7NNd_KE3VGtVx-pPwL-HObhh3fRYXqH=g@mail.gmail.com>
 MIME-Version: 1.0
-To: <raghu.prabhu13@gmail.com>
-CC: <jeremy@goop.org>, <mingo@redhat.com>, <x86@kernel.org>,
-        Raghavendra D Prabhu <rprabhu@wnohang.net>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        liu chuansheng <chuansheng.liu@intel.com>,
-        Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] IRQ: Add a check for uninitialized irqs.
-References: <9250ef1afde6ddd2bab613bd847ad54adc014bac.1347218449.git.rprabhu@wnohang.net>
-In-Reply-To: <9250ef1afde6ddd2bab613bd847ad54adc014bac.1347218449.git.rprabhu@wnohang.net>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+Message-Id: <201209101349.08857.arnd@arndb.de>
+X-Provags-ID: V02:K0:FVwr2tmnECAGW8Lj7/Z9GTvibC+W/BVhHyYXAjwxT7/
+ 0T7kmWtgmHXjTUn34LhzHJ9X33SN8UAskYa7ZNKx6m1lX6/OVX
+ 92oC4t2yAIWAaeAUHj3R7WTGP+9ITEr2gXVq1LWKvhPQLpI9WO
+ zLGzeJkUBPFxIwRNiRcMDsVfwKY3g0OFkMH3LfUigJxvNiWmQK
+ L45K3hgDgiQPuyXSataF2gJd0I9Ge9/u7HGJFwHAsVY22F4x1G
+ anQUSzyPml6sOXgBXg6p/2E89Fm8hrRVXuFp0tS7qbzKCo/rzV
+ 4ZMoVNJrKvLpsj2ZzHlhhcE/5260ltp/kFJRxOtihmDHxB9VCw
+ A2yAgtlqoILpCqLZgZrg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12-09-09 03:25 PM, raghu.prabhu13@gmail.com wrote:
-> From: Raghavendra D Prabhu <rprabhu@wnohang.net>
+On Monday 10 September 2012, Linus Walleij wrote:
+> > When the driver offers
+> > two ways of probing a device, this lets us change from one way to
+> > the other without going through a phase where we use neither of them
+> > or (worse) both at the same time.
 > 
-> Errors like "do_IRQ: 0.84 No Irq handler for vector (irq -1)" have been reported
-> earlier filling up the console/logs. So this adds a condition to check for
-
-Reported by who, and where, and on what hardware, and under what
-circumstances?
-
-You are adding another if statement to the hot path of do_IRQ just
-to mask some random unknown symptom. instead of trying to understand
-(and then solve) what the real breakage is.  Which is not the right
-approach.
-
-Paul.
---
-
-> uninitialized irqs so that it exits early and doesn't proceed further. Also, irq
-> is made a signed integer, since if it is not mapped to a vector, it will be
-> assigned -1 which will be UINT_MAX otherwise.
+> Maybe unrelated, but as usual it works as long as there are no
+> DMA channels or callback functions :-/
 > 
-> Signed-off-by: Raghavendra D Prabhu <rprabhu@wnohang.net>
-> ---
->  arch/x86/kernel/irq.c | 13 ++++++++-----
->  1 file changed, 8 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-> index d44f782..ddba63a 100644
-> --- a/arch/x86/kernel/irq.c
-> +++ b/arch/x86/kernel/irq.c
-> @@ -184,21 +184,24 @@ unsigned int __irq_entry do_IRQ(struct pt_regs *regs)
->  
->  	/* high bit used in ret_from_ code  */
->  	unsigned vector = ~regs->orig_ax;
-> -	unsigned irq;
-> +	int irq;
->  
->  	irq_enter();
->  	exit_idle();
->  
-> -	irq = __this_cpu_read(vector_irq[vector]);
-> +	if (unlikely((irq = __this_cpu_read(vector_irq[vector])) == -1)) {
-> +		pr_emerg_ratelimited("IRQ handler not setup for vector %u", vector);
-> +		goto err_exit;
-> +	}
->  
->  	if (!handle_irq(irq, regs)) {
->  		ack_APIC_irq();
->  
-> -		if (printk_ratelimit())
-> -			pr_emerg("%s: %d.%d No irq handler for vector (irq %d)\n",
-> -				__func__, smp_processor_id(), vector, irq);
-> +		pr_emerg_ratelimited("%s: %d.%d No irq handler for vector (irq %u)\n",
-> +			__func__, smp_processor_id(), vector, irq);
->  	}
->  
-> +err_exit:
->  	irq_exit();
->  
->  	set_irq_regs(old_regs);
-> 
+> The MMC, PL022 patches in this patch set: both need
+> AUXDATA and DT data simultaneously due to DMA channels
+> and callbacks passed in as AUXDATA.
+
+Yes, that's another discussion. When this happens, we obviously
+keep the platform data (or add a new version of it), but I'd still
+use one patch to add the node to the device tree and simultaneously
+add the auxdata and remove the static device registration.
+
+	Arnd
