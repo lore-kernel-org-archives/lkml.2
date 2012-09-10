@@ -1,76 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932328Ab2IJTqG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 15:46:06 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:58064 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932225Ab2IJTnq (ORCPT
+	id S1758583Ab2IJTuw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 15:50:52 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60010 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758528Ab2IJTuu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 15:43:46 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 4/6] ia64: Reuse system and user vtime accounting functions on task switch
-Date: Mon, 10 Sep 2012 21:43:11 +0200
-Message-Id: <1347306193-21080-5-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1347306193-21080-1-git-send-email-fweisbec@gmail.com>
-References: <1347306193-21080-1-git-send-email-fweisbec@gmail.com>
+	Mon, 10 Sep 2012 15:50:50 -0400
+Date: Mon, 10 Sep 2012 15:51:57 -0400
+From: Matt Porter <mporter@ti.com>
+To: Benoit Cousson <b-cousson@ti.com>
+Cc: Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Vaibhav Hiremath <hvaibhav@ti.com>,
+        "tony@atomide.com" <tony@atomide.com>
+Subject: Re: [PATCH] ARM: dts: AM33XX: fix gpio node numbering to match
+ hardware
+Message-ID: <20120910195156.GK27758@beef>
+References: <1347294020-22661-1-git-send-email-mporter@ti.com>
+ <504E168C.6060603@ti.com>
+ <20120910165210.GJ27758@beef>
+ <504E1C69.30602@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <504E1C69.30602@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To avoid code duplication.
+On Mon, Sep 10, 2012 at 06:59:21PM +0200, Benoit Cousson wrote:
+> On 09/10/2012 06:52 PM, Matt Porter wrote:
+> > On Mon, Sep 10, 2012 at 06:34:20PM +0200, Benoit Cousson wrote:
+> >> + Tony
+> >>
+> >> Hi Matt,
+> >>
+> >> 30 minutes too late for my pull request :-(
+> >>
+> >> There are a couple of am33xx patches under discussion, so I'll take them
+> >> and send a for_3.7/dts-part2 pull request if this is not too late for Tony.
+> > 
+> > Yeah, believe me, I did a faceplant when I saw your pull request come by
+> > at the same time I discovered this issue. ;) In particular, AnilKumar's
+> > user leds patch would need to be adjusted for this change. I can
+> > resubmit with the user leds dts changes adjusted as well if that
+> > discussion comes to a conclusion and his patches accepted.
+> 
+> Yeah, I was wondering if the gpios label were already used somewhere.
+> I've just added this patch on top of my current series.
+> So you or Anil should just post the missing patches whenever they'll be
+> available and accepted.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
----
- arch/ia64/kernel/time.c |   11 +++--------
- 1 files changed, 3 insertions(+), 8 deletions(-)
+Ok, I went ahead and posted a series that applies to your for_3.7/dts
+branch and Anil's series. That's assuming his v7 series is taken "as
+is" after the leds-gpio/pinctrl discussion comes to conclusion. I see
+Tony acked it aside from that discussion.
 
-diff --git a/arch/ia64/kernel/time.c b/arch/ia64/kernel/time.c
-index 351df58..80ff9ac 100644
---- a/arch/ia64/kernel/time.c
-+++ b/arch/ia64/kernel/time.c
-@@ -104,20 +104,15 @@ void vtime_task_switch(struct task_struct *prev)
- {
- 	struct thread_info *pi = task_thread_info(prev);
- 	struct thread_info *ni = task_thread_info(current);
--	cputime_t delta_stime;
--	__u64 now;
--
--	now = ia64_get_itc();
- 
--	delta_stime = cycle_to_cputime(pi->ac_stime + (now - pi->ac_stamp));
- 	if (idle_task(smp_processor_id()) != prev)
--		account_system_time(prev, 0, delta_stime, delta_stime);
-+		vtime_account_system(prev);
- 	else
--		account_idle_time(delta_stime);
-+		vtime_account_idle(prev);
- 
- 	vtime_account_user(prev);
- 
--	pi->ac_stamp = ni->ac_stamp = now;
-+	pi->ac_stamp = ni->ac_stamp;
- 	ni->ac_stime = ni->ac_utime = 0;
- }
- 
--- 
-1.7.5.4
+Thanks,
+Matt
 
+> 
+> >> On 09/10/2012 06:20 PM, Matt Porter wrote:
+> >>> On AM33xx, the datasheet and TRM refer to four GPIO instances that
+> >>> are 0-based, GPIO0-3.
+> >>
+> >> Or maybe you should just update the spec to use a 1-based GPIO number
+> >> like OMAP :-)
+> > 
+> > I am powerless here. :)
+> 
+> That's too bad :-(
+> 
+> Benoit
+> 
+> > 
+> > -Matt
+> > 
+> >>> Signed-off-by: Matt Porter <mporter@ti.com>
+> >>> ---
+> >>>  arch/arm/boot/dts/am33xx.dtsi |    8 ++++----
+> >>>  1 file changed, 4 insertions(+), 4 deletions(-)
+> >>>
+> >>> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+> >>> index bb31bff..1369bfc 100644
+> >>> --- a/arch/arm/boot/dts/am33xx.dtsi
+> >>> +++ b/arch/arm/boot/dts/am33xx.dtsi
+> >>> @@ -62,7 +62,7 @@
+> >>>  			reg = <0x48200000 0x1000>;
+> >>>  		};
+> >>>  
+> >>> -		gpio1: gpio@44e07000 {
+> >>> +		gpio0: gpio@44e07000 {
+> >>>  			compatible = "ti,omap4-gpio";
+> >>>  			ti,hwmods = "gpio1";
+> >>>  			gpio-controller;
+> >>> @@ -74,7 +74,7 @@
+> >>>  			interrupts = <96>;
+> >>>  		};
+> >>>  
+> >>> -		gpio2: gpio@4804c000 {
+> >>> +		gpio1: gpio@4804c000 {
+> >>>  			compatible = "ti,omap4-gpio";
+> >>>  			ti,hwmods = "gpio2";
+> >>>  			gpio-controller;
+> >>> @@ -86,7 +86,7 @@
+> >>>  			interrupts = <98>;
+> >>>  		};
+> >>>  
+> >>> -		gpio3: gpio@481ac000 {
+> >>> +		gpio2: gpio@481ac000 {
+> >>>  			compatible = "ti,omap4-gpio";
+> >>>  			ti,hwmods = "gpio3";
+> >>>  			gpio-controller;
+> >>> @@ -98,7 +98,7 @@
+> >>>  			interrupts = <32>;
+> >>>  		};
+> >>>  
+> >>> -		gpio4: gpio@481ae000 {
+> >>> +		gpio3: gpio@481ae000 {
+> >>>  			compatible = "ti,omap4-gpio";
+> >>>  			ti,hwmods = "gpio4";
+> >>>  			gpio-controller;
+> >>>
+> >>
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
