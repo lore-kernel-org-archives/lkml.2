@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757262Ab2IJO6H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 10:58:07 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:55442 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753067Ab2IJO6E (ORCPT
+	id S1757293Ab2IJPAO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 11:00:14 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:51102 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752121Ab2IJPAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 10:58:04 -0400
-Subject: Re: [PATCH v2 10/10] thp: implement refcounting for huge zero page
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-In-Reply-To: <20120910144438.GA31697@otc-wbsnb-06>
-References: <1347282813-21935-1-git-send-email-kirill.shutemov@linux.intel.com>
-	 <1347282813-21935-11-git-send-email-kirill.shutemov@linux.intel.com>
-	 <1347285759.1234.1645.camel@edumazet-glaptop>
-	 <20120910144438.GA31697@otc-wbsnb-06>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 10 Sep 2012 16:57:59 +0200
-Message-ID: <1347289079.1234.1706.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Sep 2012 11:00:12 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Mon, 10 Sep 2012 11:00:07 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 02/31] arm64: Kernel booting and initialisation
+In-reply-to: <201209101448.20745.arnd@arndb.de>
+Message-id: <alpine.LFD.2.02.1209101053320.28681@xanadu.home>
+References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
+ <201209101353.34325.arnd@arndb.de>
+ <alpine.LFD.2.02.1209101007160.28681@xanadu.home>
+ <201209101448.20745.arnd@arndb.de>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-09-10 at 17:44 +0300, Kirill A. Shutemov wrote:
+On Mon, 10 Sep 2012, Arnd Bergmann wrote:
+
+> On Monday 10 September 2012, Nicolas Pitre wrote:
+> > On Mon, 10 Sep 2012, Arnd Bergmann wrote:
+> > > On Monday 10 September 2012, Catalin Marinas wrote:
+> > > > On Mon, Sep 10, 2012 at 06:53:39AM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> > > I think a bunch of other architectures can have relocatable kernels, which
+> > > is useful e.g. for kdump. It does imply a small runtime cost and may have
+> > > other disadvantages though.
+> > 
+> > Relocatable in physical space is what kdump actually needs, and that's 
+> > what we already have here (as well as on ARM32 for that matter with 
+> > CONFIG_ARM_PATCH_PHYS_VIRT).  Relocatable in the virtual space is costly 
+> > and we shouldn't need to go there.
+> 
+> Ah, I see. I thought that the other architectures (powerpc and x86)
+> doing this were actually building with -fPIC, but they do the same
+> kind of early patching that we do.
+
+This being said, on ARM we don't take advantage of this physically 
+relocatable attribute with kdump.  Granted, PATCH_PHYS_VIRT was 
+introduced after kdump support, therefore the kernel had to be copied at 
+its expected physical location after the memory content there had been 
+preserved.  These days the only thing that kdump would need to do is to 
+just boot the kdump kernel in place with its reserved memory range and 
+let it ioremap the previous kernel's memory for analysis.
 
 
-> Yes, disabling preemption before alloc_pages() and enabling after
-> atomic_set() looks reasonable. Thanks.
-
-In fact, as alloc_pages(GFP_TRANSHUGE | __GFP_ZERO, HPAGE_PMD_ORDER);
-might sleep, it would be better to disable preemption after calling it :
-
-zero_page = alloc_pages(GFP_TRANSHUGE | __GFP_ZERO, HPAGE_PMD_ORDER);
-if (!zero_page)
-	return 0;
-preempt_disable();
-if (cmpxchg(&huge_zero_pfn, 0, page_to_pfn(zero_page))) {
-	preempt_enable();
-	__free_page(zero_page);
-	goto retry;
-}
-atomic_set(&huge_zero_refcount, 2);
-preempt_enable();
-
-
+Nicolas
