@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756402Ab2IJIvt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 04:51:49 -0400
-Received: from smtp4.mundo-r.com ([212.51.32.151]:27136 "EHLO
+	id S1756629Ab2IJIvq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 04:51:46 -0400
+Received: from smtp4.mundo-r.com ([212.51.32.151]:45294 "EHLO
 	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756329Ab2IJIvF (ORCPT
+	with ESMTP id S1756352Ab2IJIvG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 04:51:05 -0400
+	Mon, 10 Sep 2012 04:51:06 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ap8CAHGoTVBbdWObgWdsb2JhbABFhge1SiIBARYmJ4IhAQUjBAsBNBIQJQImAgJXBhOIFKgVkjuBIY8WgRIDlV2TBQ
+X-IronPort-Anti-Spam-Result: Ap8CAHGoTVBbdWObgWdsb2JhbABFhge1SiIBARYmJ4IhAQUjBAsBNBIQJQImAgJXBhOIFKgVkjuBIY8WgRIDlV2JM4lS
 X-IronPort-AV: E=Sophos;i="4.80,397,1344204000"; 
-   d="scan'208";a="949262512"
+   d="scan'208";a="949262515"
 From: =?UTF-8?q?Samuel=20Iglesias=20Gons=C3=A1lvez?= 
 	<siglesias@igalia.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -18,9 +18,9 @@ Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         industrypack-devel@lists.sourceforge.net,
         =?UTF-8?q?Samuel=20Iglesias=20Gons=C3=A1lvez?= 
 	<siglesias@igalia.com>
-Subject: [PATCH 16/20] Staging: ipack: unregister devices when uninstall the carrier device.
-Date: Mon, 10 Sep 2012 10:51:54 +0200
-Message-Id: <1347267118-9580-16-git-send-email-siglesias@igalia.com>
+Subject: [PATCH 17/20] Staging: ipack/bridges/tpci200: delete ipack_device_unregister calls when exiting
+Date: Mon, 10 Sep 2012 10:51:55 +0200
+Message-Id: <1347267118-9580-17-git-send-email-siglesias@igalia.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1347267118-9580-1-git-send-email-siglesias@igalia.com>
 References: <1347267118-9580-1-git-send-email-siglesias@igalia.com>
@@ -31,38 +31,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Find the IP modules that are plugged to the carrier and unregister them.
+As the ipack_bus_unregister() takes care of unregistering the devices plugged
+in the carrier, it is not needed to do it in the carrier driver.
 
 Signed-off-by: Samuel Iglesias Gonsálvez <siglesias@igalia.com>
 ---
- drivers/staging/ipack/ipack.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/staging/ipack/bridges/tpci200.c |    7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
-diff --git a/drivers/staging/ipack/ipack.c b/drivers/staging/ipack/ipack.c
-index b368a26..bf6a36d 100644
---- a/drivers/staging/ipack/ipack.c
-+++ b/drivers/staging/ipack/ipack.c
-@@ -228,8 +228,20 @@ struct ipack_bus_device *ipack_bus_register(struct device *parent, int slots,
- }
- EXPORT_SYMBOL_GPL(ipack_bus_register);
+diff --git a/drivers/staging/ipack/bridges/tpci200.c b/drivers/staging/ipack/bridges/tpci200.c
+index 293456b..12f2ca6 100644
+--- a/drivers/staging/ipack/bridges/tpci200.c
++++ b/drivers/staging/ipack/bridges/tpci200.c
+@@ -610,11 +610,6 @@ static int tpci200_reset_timeout(struct ipack_device *dev)
  
-+static int ipack_unregister_bus_member(struct device *dev, void *data)
-+{
-+	struct ipack_device *idev = to_ipack_dev(dev);
-+	struct ipack_bus_device *bus = data;
-+
-+	if (idev->bus_nr == bus->bus_nr)
-+		ipack_device_unregister(idev);
-+
-+	return 1;
-+}
-+
- int ipack_bus_unregister(struct ipack_bus_device *bus)
+ static void tpci200_uninstall(struct tpci200_board *tpci200)
  {
-+	bus_for_each_dev(&ipack_bus_type, NULL, bus, ipack_unregister_bus_member);
- 	ida_simple_remove(&ipack_ida, bus->bus_nr);
- 	kfree(bus);
- 	return 0;
+-	int i;
+-
+-	for (i = 0; i < TPCI200_NB_SLOT; i++)
+-		ipack_device_unregister(tpci200->slots[i].dev);
+-
+ 	tpci200_unregister(tpci200);
+ 	kfree(tpci200->slots);
+ }
+@@ -751,8 +746,8 @@ out_err_info:
+ 
+ static void __tpci200_pci_remove(struct tpci200_board *tpci200)
+ {
+-	tpci200_uninstall(tpci200);
+ 	ipack_bus_unregister(tpci200->info->ipack_bus);
++	tpci200_uninstall(tpci200);
+ 
+ 	kfree(tpci200->info);
+ 	kfree(tpci200);
 -- 
 1.7.10.4
 
