@@ -1,62 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757117Ab2IJRxc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 13:53:32 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:55413 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756963Ab2IJRxa (ORCPT
+	id S1757187Ab2IJR4M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 13:56:12 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38681 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757110Ab2IJR4K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 13:53:30 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Mon, 10 Sep 2012 13:53:30 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v3 00/31] AArch64 Linux kernel port
-In-reply-to: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
-Message-id: <alpine.LFD.2.02.1209101339270.28681@xanadu.home>
-References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 10 Sep 2012 13:56:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120713174216.GA10445@hp.com>
+References: <20120713174216.GA10445@hp.com>
+From: Mike Waychison <mikew@google.com>
+Date: Mon, 10 Sep 2012 13:55:49 -0400
+Message-ID: <CAGTjWtDyGrVuBXZzdDfbS961cRSQY7eZaEbb9E8HACk5-imiuQ@mail.gmail.com>
+Subject: Re: [PATCH v2] Add missing attributes to EFI variable attribute print
+ out from sysfs
+To: Khalid Aziz <khalid.aziz@hp.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Matthew Garrett <mjg@redhat.com>,
+        Kees Cook <keescook@chromium.org>,
+        "gong.chen@linux.intel.com" <gong.chen@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 Sep 2012, Catalin Marinas wrote:
+Greg,
 
-> This is the 3rd version of patches implementing Linux kernel support for
-> the 64-bit ARM architecture. Most of the review comments for the
-> previous release have been implemented. There are a few left (like
-> generic timer dts specification) but the main goal was to freeze the
-> user ABI.
-> 
-> The Linux kernel patches are available on this tree:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git upstream
-> 
-> Main changes since the previous version:
-> - ptrace interface now using regsets for TLS and hardware debug
->   registers.
-> - sys_personality fixes. PER_LINUX is the default for all tasks (32 or
->   64-bit) and there is no compat_sys_personality defined.
-> - Kconfig clean-up (unused symbols, AARCH32_EMULATION removed in favour
->   of COMPAT).
-> - Clean-up of the __cpuc_* function prefixes.
-> - CPU information table implemented in C rather than assembly.
-> - __bad_* function calls replaced with BUILD_BUG.
-> - Inline get_user/put_user (code cleaner, slightly bigger kernel Image).
-> - DMA API implementation simplified, defaulting to swiotlb. It will be
->   extended as hardware becomes available.
-> - Arch-specific code in the generic timer patch moved to arch/arm64/.
-> - Comment fixes and clarifications.
+Can you please pick this patch up in one of your trees?
 
-For those patches in this series I didn't comment on already:
+Thanks!
 
-Acked-by: Nicolas Pitre <nico@linaro.org>
+Mike Waychison
 
-Small nit: please s/nico@cam.org/nico@fluxnic.net/.
-
-
-Nicolas
+On Fri, Jul 13, 2012 at 1:42 PM, Khalid Aziz <khalid.aziz@hp.com> wrote:
+> Some of the EFI variable attributes are missing from print out from
+> /sys/firmware/efi/vars/*/attributes. This patch adds those in. It also
+> updates code to use pre-defined constants for masking current value
+> of attributes.
+>
+> Signed-off-by: Khalid Aziz <khalid.aziz@hp.com>
+> Cc: stable@vger.kernel.org
+> ---
+>  drivers/firmware/efivars.c |   17 ++++++++++++++---
+>  1 file changed, 14 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+> index 47408e8..d10c987 100644
+> --- a/drivers/firmware/efivars.c
+> +++ b/drivers/firmware/efivars.c
+> @@ -435,12 +435,23 @@ efivar_attr_read(struct efivar_entry *entry, char *buf)
+>         if (status != EFI_SUCCESS)
+>                 return -EIO;
+>
+> -       if (var->Attributes & 0x1)
+> +       if (var->Attributes & EFI_VARIABLE_NON_VOLATILE)
+>                 str += sprintf(str, "EFI_VARIABLE_NON_VOLATILE\n");
+> -       if (var->Attributes & 0x2)
+> +       if (var->Attributes & EFI_VARIABLE_BOOTSERVICE_ACCESS)
+>                 str += sprintf(str, "EFI_VARIABLE_BOOTSERVICE_ACCESS\n");
+> -       if (var->Attributes & 0x4)
+> +       if (var->Attributes & EFI_VARIABLE_RUNTIME_ACCESS)
+>                 str += sprintf(str, "EFI_VARIABLE_RUNTIME_ACCESS\n");
+> +       if (var->Attributes & EFI_VARIABLE_HARDWARE_ERROR_RECORD)
+> +               str += sprintf(str, "EFI_VARIABLE_HARDWARE_ERROR_RECORD\n");
+> +       if (var->Attributes & EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS)
+> +               str += sprintf(str,
+> +                       "EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS\n");
+> +       if (var->Attributes &
+> +                       EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS)
+> +               str += sprintf(str,
+> +                       "EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS\n");
+> +       if (var->Attributes & EFI_VARIABLE_APPEND_WRITE)
+> +               str += sprintf(str, "EFI_VARIABLE_APPEND_WRITE\n");
+>         return str - buf;
+>  }
+>
+> --
+> 1.7.9.5
+>
+> --
+> Khalid Aziz
+> khalid.aziz@hp.com
