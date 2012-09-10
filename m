@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757877Ab2IJNLC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 09:11:02 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:55103 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756969Ab2IJNLA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 09:11:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <1347016499-29354-19-git-send-email-lee.jones@linaro.org>
-References: <1347016499-29354-1-git-send-email-lee.jones@linaro.org>
-	<1347016499-29354-19-git-send-email-lee.jones@linaro.org>
-Date: Mon, 10 Sep 2012 06:10:59 -0700
-Message-ID: <CACRpkdYbWEq5mhTcewmxEpcivXkVyQS_56QRU67G40zcRXnUCA@mail.gmail.com>
-Subject: Re: [PATCH 18/19] gpio: Provide the tc3589x GPIO expander driver with
- an IRQ domain
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757942Ab2IJNN2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 09:13:28 -0400
+Received: from mga14.intel.com ([143.182.124.37]:63889 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756958Ab2IJNNY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 09:13:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,398,1344236400"; 
+   d="scan'208";a="143329103"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org
+Cc: Andi Kleen <ak@linux.intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH v2 08/10] thp: setup huge zero page on non-write page fault
+Date: Mon, 10 Sep 2012 16:13:31 +0300
+Message-Id: <1347282813-21935-9-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1347282813-21935-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1347282813-21935-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 7, 2012 at 1:14 PM, Lee Jones <lee.jones@linaro.org> wrote:
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-> In preparation for Device Tree enablement all IRQ controllers
-> should control their own IRQ domain. This patch provides just
-> that for the tc3589x GPIO expander.
->
-> CC: Grant Likely <grant.likely@secretlab.ca>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+All code paths seems covered. Now we can map huge zero page on read page
+fault.
 
-Looks very good again,
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ mm/huge_memory.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-I presume you will want to push the whole shebang through
-ARM SoC, but if that doesn't work out I am very tempted to
-apply this patch to the GPIO tree immediately so it lands
-in v3.7.
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 995894f..c788445 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -750,6 +750,16 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			return VM_FAULT_OOM;
+ 		if (unlikely(khugepaged_enter(vma)))
+ 			return VM_FAULT_OOM;
++		if (!(flags & FAULT_FLAG_WRITE)) {
++			pgtable_t pgtable;
++			pgtable = pte_alloc_one(mm, haddr);
++			if (unlikely(!pgtable))
++				goto out;
++			spin_lock(&mm->page_table_lock);
++			set_huge_zero_page(pgtable, mm, vma, haddr, pmd);
++			spin_unlock(&mm->page_table_lock);
++			return 0;
++		}
+ 		page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
+ 					  vma, haddr, numa_node_id(), 0);
+ 		if (unlikely(!page)) {
+-- 
+1.7.7.6
 
-Yours,
-Linus Walleij
