@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757400Ab2IJPHJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 11:07:09 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:48220 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753060Ab2IJPHE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 11:07:04 -0400
+	id S1757431Ab2IJPHX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 11:07:23 -0400
+Received: from shutemov.name ([176.9.204.213]:58626 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751485Ab2IJPHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 11:07:18 -0400
+Date: Mon, 10 Sep 2012 18:07:47 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 10/10] thp: implement refcounting for huge zero page
+Message-ID: <20120910150747.GA23556@shutemov.name>
+References: <1347282813-21935-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1347282813-21935-11-git-send-email-kirill.shutemov@linux.intel.com>
+ <1347285759.1234.1645.camel@edumazet-glaptop>
+ <20120910144438.GA31697@otc-wbsnb-06>
+ <1347289079.1234.1706.camel@edumazet-glaptop>
 MIME-Version: 1.0
-In-Reply-To: <87d31ufy47.fsf@rustcorp.com.au>
-References: <1346955201-8926-1-git-send-email-keescook@chromium.org>
-	<87ipbqhenn.fsf@rustcorp.com.au>
-	<1347037964.31197.100.camel@falcor>
-	<CAGXu5jKvg9Dhu-PLCZkPazSTFSngg5nzU6Ss4CZ2qaHZ7rugXA@mail.gmail.com>
-	<87d31ufy47.fsf@rustcorp.com.au>
-Date: Mon, 10 Sep 2012 08:07:03 -0700
-X-Google-Sender-Auth: 45WApp2Y6WWu5Sp5vlUClCK3YI4
-Message-ID: <CAGXu5jK7g2_W_cb8-JQV_f0EdUhbVkcaOR3KECHoC8nnrMzTCw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] module: add syscall to load module from fd
-From: Kees Cook <keescook@chromium.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-security-module@vger.kernel.org,
-        Chris Wright <chrisw@sous-sol.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347289079.1234.1706.camel@edumazet-glaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 9, 2012 at 6:46 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> Kees Cook <keescook@chromium.org> writes:
->> On Fri, Sep 7, 2012 at 10:12 AM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
->>> This method is a consistent and extensible approach to verifying the
->>> integrity of file data/metadata, including kernel modules. The only
->>> downside to this approach, I think, is that it requires changes to the
->>> userspace tool.
->>
->> I'm fine with this -- it's an expected change that I'll pursue with
->> glibc, kmod, etc. Without the userspace changes, nothing will use the
->> new syscall. :) I've already got kmod (and older module-init-tools)
->> patched to do this locally.
->
-> A syscall is the right way to do this.  But does it need to be done?
->
-> 1) Do the LSM guys really want this hook?
+On Mon, Sep 10, 2012 at 04:57:59PM +0200, Eric Dumazet wrote:
+> On Mon, 2012-09-10 at 17:44 +0300, Kirill A. Shutemov wrote:
+> 
+> 
+> > Yes, disabling preemption before alloc_pages() and enabling after
+> > atomic_set() looks reasonable. Thanks.
+> 
+> In fact, as alloc_pages(GFP_TRANSHUGE | __GFP_ZERO, HPAGE_PMD_ORDER);
+> might sleep, it would be better to disable preemption after calling it :
 
-The LSM hook half has already been acked by Serge and Eric, and I want
-to use it in Yama as well.
+Yeah, I've alread thought about that. :)
 
-> 2) Do we have a userspace which uses it?
-
-Chrome OS will be using it; I have patches for kmod and
-module-init-tools already.
-
-> If yes to both, and noone comes up with any creative complaints, I will
-> take the patch.
-
-Sound good; thanks!
-
--Kees
+> zero_page = alloc_pages(GFP_TRANSHUGE | __GFP_ZERO, HPAGE_PMD_ORDER);
+> if (!zero_page)
+> 	return 0;
+> preempt_disable();
+> if (cmpxchg(&huge_zero_pfn, 0, page_to_pfn(zero_page))) {
+> 	preempt_enable();
+> 	__free_page(zero_page);
+> 	goto retry;
+> }
+> atomic_set(&huge_zero_refcount, 2);
+> preempt_enable();
+> 
+> 
 
 -- 
-Kees Cook
-Chrome OS Security
+ Kirill A. Shutemov
