@@ -1,108 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690Ab2IJHEU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 03:04:20 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:39596 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751240Ab2IJHES (ORCPT
+	id S1753161Ab2IJHEZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 03:04:25 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:40834 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752870Ab2IJHEV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 03:04:18 -0400
-Date: Mon, 10 Sep 2012 17:04:09 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel Cotey <puff65537@bansheeslibrary.com>
-Subject: linux-next: build failure after merge of the final tree (staging
- tree related)
-Message-Id: <20120910170409.59b71819008bc527130d3987@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__10_Sep_2012_17_04_09_+1000_iL=TXtVvVyyqcbAN"
+	Mon, 10 Sep 2012 03:04:21 -0400
+MIME-Version: 1.0
+In-Reply-To: <201209100000.25104.rjw@sisk.pl>
+References: <1346682578-24312-1-git-send-email-rajagopal.venkat@linaro.org>
+	<1346682578-24312-4-git-send-email-rajagopal.venkat@linaro.org>
+	<201209100000.25104.rjw@sisk.pl>
+Date: Mon, 10 Sep 2012 12:34:20 +0530
+Message-ID: <CA+Z25wW4g=J=YdWs63e1EzE1162MF6UxXy0kr-UiLDwhS=e3pQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] devfreq: Add current freq callback in device profile
+From: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: mturquette@linaro.org, myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        patches@linaro.org, linaro-dev@lists.linaro.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__10_Sep_2012_17_04_09_+1000_iL=TXtVvVyyqcbAN
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 10 September 2012 03:30, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Monday, September 03, 2012, Rajagopal Venkat wrote:
+>> Devfreq returns governor predicted frequency as current
+>> frequency via sysfs interface. But device may not support
+>> all frequencies that governor predicts.
+>
+> Do you have any examples, even out of the tree?
+The exynos4_bus.c devfreq driver supports five opps. But the ondemand
+governor can suggest any frequency between min and max(assuming
+policy is set). As per design, governors only need to provide recommended
+frequency and the corresponding driver will interpret it correctly.
 
-Hi all,
+So, the governor recommended frequency and the frequency at which
+device is running could be different. This patch attempts to add new sysfs
+node for exposing device current running frequency.
+>
+>> Its driver
+>> responsibility to maintain current frequency at which device
+>> is operating. Add a callback in device profile to fix this.
+>
+> Obviously, there are no users of this callback in the tree right now, so it
+> may not be regarded as a fix.  I'd rather say it's a new mechanism for
+> drivers to use if their current frequencies differ from the governor-selected
+> ones.
+Ok. It will be updated in next version.
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+>
+>> Also add a new sysfs node to expose governor predicted next
+>> target frequency.
+>>
+>> Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+>> ---
+>>  Documentation/ABI/testing/sysfs-class-devfreq |  7 +++++++
+>>  drivers/devfreq/devfreq.c                     | 14 ++++++++++++++
+>>  include/linux/devfreq.h                       |  3 +++
+>>  3 files changed, 24 insertions(+)
+>>
+>> diff --git a/Documentation/ABI/testing/sysfs-class-devfreq b/Documentation/ABI/testing/sysfs-class-devfreq
+>> index 23d78b5..9df5205 100644
+>> --- a/Documentation/ABI/testing/sysfs-class-devfreq
+>> +++ b/Documentation/ABI/testing/sysfs-class-devfreq
+>> @@ -21,6 +21,13 @@ Description:
+>>               The /sys/class/devfreq/.../cur_freq shows the current
+>>               frequency of the corresponding devfreq object.
+>>
+>> +What:                /sys/class/devfreq/.../target_freq
+>> +Date:                September 2012
+>> +Contact:     MyungJoo Ham <myungjoo.ham@samsung.com>
+>
+> It's a bit odd to add someone else as a contact for interfaces that you're
+> introducing.  I'd need MyungJoo Ham's ACK for that.
+>
+>> +Description:
+>> +             The /sys/class/devfreq/.../target_freq shows the next governor
+>> +             predicted target frequency of the corresponding devfreq object.
+>> +
+>>  What:                /sys/class/devfreq/.../central_polling
+>>  Date:                September 2011
+>>  Contact:     MyungJoo Ham <myungjoo.ham@samsung.com>
+>> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
+>> index 3a5f126..55e9046 100644
+>> --- a/drivers/devfreq/devfreq.c
+>> +++ b/drivers/devfreq/devfreq.c
+>> @@ -400,6 +400,19 @@ static ssize_t show_governor(struct device *dev,
+>>  static ssize_t show_freq(struct device *dev,
+>>                        struct device_attribute *attr, char *buf)
+>>  {
+>> +     unsigned long freq;
+>> +     struct devfreq *devfreq = to_devfreq(dev);
+>> +
+>> +     if (devfreq->profile->get_cur_freq)
+>> +             if (!devfreq->profile->get_cur_freq(devfreq->dev.parent, &freq))
+>
+> That should be
+>
+> +       if (devfreq->profile->get_cur_freq
+> +           && !devfreq->profile->get_cur_freq(devfreq->dev.parent, &freq))
+Done.
 
-drivers/staging/silicom/bypasslib/built-in.o: In function `.is_bypass':
-(.text+0x3254): multiple definition of `.is_bypass'
-drivers/staging/silicom/bpctl_mod.o:(.text+0x1d938): first defined here
-drivers/staging/silicom/bypasslib/built-in.o: In function `is_bypass':
-(.opd+0x480): multiple definition of `is_bypass'
-drivers/staging/silicom/bpctl_mod.o:(.opd+0x15f0): first defined here
+>
+>> +                     return sprintf(buf, "%lu\n", freq);
+>> +
+>
+> Moreover, I suppose it should fall back to the current behavior if
+> .get_cur_freq() is not present.
+Agree. Done.
 
-Caused by commit 7040e556c90a ("staging: add Silicom Bypass driver").
+>
+>> +     return sprintf(buf, "<unknown>");
+>> +}
+>> +
+>> +static ssize_t show_target_freq(struct device *dev,
+>> +                     struct device_attribute *attr, char *buf)
+>> +{
+>>       return sprintf(buf, "%lu\n", to_devfreq(dev)->previous_freq);
+>>  }
+>>
+>> @@ -503,6 +516,7 @@ static ssize_t show_max_freq(struct device *dev, struct device_attribute *attr,
+>>  static struct device_attribute devfreq_attrs[] = {
+>>       __ATTR(governor, S_IRUGO, show_governor, NULL),
+>>       __ATTR(cur_freq, S_IRUGO, show_freq, NULL),
+>> +     __ATTR(target_freq, S_IRUGO, show_target_freq, NULL),
+>>       __ATTR(polling_interval, S_IRUGO | S_IWUSR, show_polling_interval,
+>>              store_polling_interval),
+>>       __ATTR(min_freq, S_IRUGO | S_IWUSR, show_min_freq, store_min_freq),
+>> diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
+>> index 7c7e179..d12ed41 100644
+>> --- a/include/linux/devfreq.h
+>> +++ b/include/linux/devfreq.h
+>> @@ -66,6 +66,8 @@ struct devfreq_dev_status {
+>>   *                   explained above with "DEVFREQ_FLAG_*" macros.
+>>   * @get_dev_status   The device should provide the current performance
+>>   *                   status to devfreq, which is used by governors.
+>> + * @get_cur_freq     The device should provide the current frequency
+>> + *                   at which it is operating.
+>>   * @exit             An optional callback that is called when devfreq
+>>   *                   is removing the devfreq object due to error or
+>>   *                   from devfreq_remove_device() call. If the user
+>> @@ -79,6 +81,7 @@ struct devfreq_dev_profile {
+>>       int (*target)(struct device *dev, unsigned long *freq, u32 flags);
+>>       int (*get_dev_status)(struct device *dev,
+>>                             struct devfreq_dev_status *stat);
+>> +     int (*get_cur_freq)(struct device *dev, unsigned long *freq);
+>>       void (*exit)(struct device *dev);
+>>  };
+>
+> Thanks,
+> Rafael
 
-I added this patch to disable the driver:
 
-=46rom 884437b30775214e9f34696adb2be2f24f1e6df7 Mon Sep 17 00:00:00 2001
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 10 Sep 2012 17:01:05 +1000
-Subject: [PATCH] staging: disable Silicom Bypass driver
 
-due to build breakage:
-
-rivers/staging/silicom/bypasslib/built-in.o: In function `.is_bypass':
-(.text+0x3254): multiple definition of `.is_bypass'
-drivers/staging/silicom/bpctl_mod.o:(.text+0x1d938): first defined here
-drivers/staging/silicom/bypasslib/built-in.o: In function `is_bypass':
-(.opd+0x480): multiple definition of `is_bypass'
-drivers/staging/silicom/bpctl_mod.o:(.opd+0x15f0): first defined here
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/staging/silicom/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/staging/silicom/Kconfig b/drivers/staging/silicom/Kcon=
-fig
-index 3493ee8..1914844 100644
---- a/drivers/staging/silicom/Kconfig
-+++ b/drivers/staging/silicom/Kconfig
-@@ -6,6 +6,7 @@ config NET_VENDOR_SILICOM
- 	bool "Silicom devices"
- 	default y
- 	depends on (SSB_POSSIBLE && HAS_DMA) || PCI=20
-+	depends on BROKEN
- 	---help---
- 	  If you have a network card (Ethernet) belonging to this class,
- 	  say Y.
---=20
-1.7.10.280.gaa39
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__10_Sep_2012_17_04_09_+1000_iL=TXtVvVyyqcbAN
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQTZDpAAoJEECxmPOUX5FEnmMP/3kIXo88tEjIkCovBwT4mzvp
-Hd4zLA7JLZXyRwkw+8ibzl+OT0Gm16AreWsmo9vdly7wt7sPWUG6SbvwYmr7bJL3
-F8AQtYgZLplmYjd3LscRh9jIASa+qBqqWI6PKx/fKMFhJvo6cuX2XyhdlbAq4Zjl
-T0cA6vx2A0QoqObJkZu18n6RAiknjAg6DEurcd/inhTiVZXVZEkuUZmA4MXoROzi
-nac8ao6H3h0ApE1sxe5M9Sii2/42Tu6faM9i4kofMib6+yyQMLeK8kMzOhWLG/Ry
-OkFBoQNwNgCBiEy/zrN0xHlsu3Eu/EBFktQZKxsHkNOtPl6d1/x3aQ/e2AVTpI1V
-/ZcdhuryX3rapHuPVXGXVDRF4cbtnpu3kxzi1HiNrpHpTkKMc9HB9eytSx3f/BqO
-PabmCWNwMJWajNvgnEoubpZnwuEm5yJGqiHiJuYR2fBCOdqkrfJEc2Z3+XzNZ8VL
-zrpwTWc4YWklprPHm80noLbjgLLVfNv++Tvt5v83K3/MIyYkYGl1SGaXk+AyhCAq
-le6VtiXtF/Lji+7Wh9eJ0ufIxEA8MGLc6U+ESRT49ZRThhIz92n2+CxWjcI7ZnQI
-fJktAoFFjrj15KE2pBn8bmusCoFG2PQqnU9XW+oejLnYFDoFHapPAxQCtkrWxTKs
-YXO/Nb6BfP57yq4lpsPb
-=jNtO
------END PGP SIGNATURE-----
-
---Signature=_Mon__10_Sep_2012_17_04_09_+1000_iL=TXtVvVyyqcbAN--
+-- 
+Regards,
+Rajagopal
