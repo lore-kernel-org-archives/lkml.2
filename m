@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757050Ab2IJNxR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 09:53:17 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:64822 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752050Ab2IJNxQ (ORCPT
+	id S932081Ab2IJNxo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 09:53:44 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:54016 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756884Ab2IJNxl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 09:53:16 -0400
-MIME-Version: 1.0
-X-Originating-IP: [89.139.9.91]
-In-Reply-To: <81C3A93C17462B4BBD7E272753C1057923B9DB3227@EXDCVYMBSTM005.EQ1STM.local>
-References: <81C3A93C17462B4BBD7E272753C1057923B924C92D@EXDCVYMBSTM005.EQ1STM.local>
- <CAK=WgbZLjQVYFHcTkb+nDpYZx3qkWp=wQmOqOpMHCxroceTNpg@mail.gmail.com> <81C3A93C17462B4BBD7E272753C1057923B9DB3227@EXDCVYMBSTM005.EQ1STM.local>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Mon, 10 Sep 2012 16:52:55 +0300
-Message-ID: <CAK=WgbaK_k=d8Qcz5VfXndkPPSgp-ZbFYZ-kV5BDPNgDJvX_6A@mail.gmail.com>
-Subject: Re: Remoteproc: Translating between host and device addresses.
-To: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
+	Mon, 10 Sep 2012 09:53:41 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH v3 02/31] arm64: Kernel booting and initialisation
+Date: Mon, 10 Sep 2012 13:53:34 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        Nicolas Pitre <nico@fluxnic.net>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com> <20120910055339.GC31430@game.jcrosoft.org> <20120910125137.GC27042@arm.com>
+In-Reply-To: <20120910125137.GC27042@arm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209101353.34325.arnd@arndb.de>
+X-Provags-ID: V02:K0:n7C225yDkWMnb2Azt/HBIfA8+gRG+66a9UCk4rGvEdM
+ F57OqxfISA4SOJPZSaXjGuZ2U1gohrxKLW8G0FCw4TlSoo3681
+ T3YGGpZU75kGTYJlTaQI5xWlr0M61hcxJxz+UG6WsbcSK3CJz8
+ 4+nOxEO+V90pOJA4lGC3yHVqfdFQFSgZnDnnjwQjSS7m0DtJKu
+ 8pi1sxE184FI+t99KATgVOt5E9U4lByXsflCUDzpb7Vu3BsGEO
+ wOKGx6CzZ1DFSFsA0Cvz2Ix/WOSxWCjkYhlmxOSNuNTGAh7JqF
+ TK6loapNmMh5zYcetFvOKOXJ8u1MQE/UeI8CyYjpM3lXlnLEYn
+ rfFzdxQ9cAyxV7Kwlpc8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sjur,
+On Monday 10 September 2012, Catalin Marinas wrote:
+> On Mon, Sep 10, 2012 at 06:53:39AM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> > On 19:29 Sun 09 Sep     , Nicolas Pitre wrote:
+> > > On Sun, 9 Sep 2012, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> > > > On 17:26 Fri 07 Sep     , Catalin Marinas wrote:
+> > > > > +The image must be placed at the specified offset (currently 0x80000)
+> > > > > +from the start of the system RAM and called there. The start of the
+> > > > > +system RAM must be aligned to 2MB.
+> > > > can we drop this
+> > > 
+> > > Drop what?
+> > > And why?
+> > This contrain the must be loadable at any address
+> 
+> You can't easily load the kernel image at any address, unless it can
+> relocate itself and you have a way to specify PHYS_OFFSET. We don't want
+> a compile-time PHYS_OFFSET, the kernel detects it at boot time based on
+> the load address.
 
-On Mon, Sep 10, 2012 at 4:07 PM, Sjur BRENDELAND
-<sjur.brandeland@stericsson.com> wrote:
-> But the vring descriptor table will still contain the host's physical address for the
-> buffers, right?
-> So how can the device then find the device-address of these buffers if we don't
-> use an IOMMU and have no address translation from host-physical-address
-> to device-address?
+I think a bunch of other architectures can have relocatable kernels, which
+is useful e.g. for kdump. It does imply a small runtime cost and may have
+other disadvantages though.
 
-Sorry, you're asking very specific questions about something no one
-implemented nor really designed yet :)
-
-Do you have a specific problem you're trying to address ?
-
-I'd be happy to help.
-
-Thanks,
-Ohad.
+	Arnd
