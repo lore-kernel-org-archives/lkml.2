@@ -1,253 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757989Ab2IJPqz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 11:46:55 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:27301 "EHLO mailhub1.si.c-s.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757547Ab2IJPqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 11:46:52 -0400
-Date: Mon, 10 Sep 2012 17:45:49 +0200
-Message-Id: <201209101545.q8AFjn7u021483@localhost.localdomain>
-From: Christophe Leroy <christophe.leroy@c-s.fr>
-To: David S Miller <davem@davemloft.net>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] lxt PHY: Support for the buggy LXT973 rev A2
+	id S932097Ab2IJPvT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 11:51:19 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45067 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757547Ab2IJPvP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 11:51:15 -0400
+Date: Mon, 10 Sep 2012 16:50:33 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 17/31] arm64: System calls handling
+Message-ID: <20120910155033.GF27042@arm.com>
+References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
+ <201209101351.52902.arnd@arndb.de>
+ <20120910140148.GD27042@arm.com>
+ <201209101424.21344.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201209101424.21344.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds proper handling of the buggy revision A2 of LXT973 phy, adding
-precautions linked to ERRATA Item 4:
+On Mon, Sep 10, 2012 at 03:24:21PM +0100, Arnd Bergmann wrote:
+> On Monday 10 September 2012, Catalin Marinas wrote:
+> > 
+> > On Mon, Sep 10, 2012 at 02:51:52PM +0100, Arnd Bergmann wrote:
+> > > On Monday 10 September 2012, Catalin Marinas wrote:
+> > > > Yes, I've seen these but since Al's patches are not in mainline, I don't
+> > > > want to add additional dependencies to the arm64 patches (currently
+> > > > based on 3.6-rc4). Once they get into mainline, I'll add a patch that
+> > > > converts arm64 to the generic functions above.
+> > > > 
+> > > > For kernel_execve(), I think I can simplify it further and not rely on
+> > > > Al's patches (similar to other architectures doing an SVC from kernel):
+> > > 
+> > > Hmm, I thought one of the reasons for Al to do his series was to discourage
+> > > people from doing syscalls from kernel space, but I may be misremembering
+> > > things. Al?
+> > 
+> > If that was the aim, I'm happy to change the code similar to the
+> > arch/arm one. But as I said I would wait until Al's patches get into
+> > mainline.
+> 
+> Ok. Another point: I wouldn't be too worried about dependencies for new
+> code, because it's not possible to bisect through your series anyway
+> (one needs all the patches before anything starts working really),
+> so from my point of view you could also write your code in a way that
+> expects Al's patches to get merged first.
 
-Item 4: MDIO Interface and Repeated Polling
-Problem: Repeated polling of odd-numbered registers via the MDIO interface
-	randomly returns the contents of the previous even register.
-Implication: Managed applications may not obtain the correct register contents
-	when a particular register is monitored for device status.
-Workaround: None.
-Status: This erratum has been previously fixed (in rev A3)
+It's not about bisectability but rather a way to test the branch that I
+publish. On its own, my branch wouldn't even compile. Anyway, here's the
+update (tested on a local branch with Al's execve2 branch merged):
 
 
-Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+arm64: Switch to generic sys_execve/kernel_execve
 
-diff -u linux-3.5-vanilla/drivers/net/phy/lxt.c linux-3.5/drivers/net/phy/lxt.c
---- linux-3.5-vanilla/drivers/net/phy/lxt.c	2012-07-21 22:58:29.000000000 +0200
-+++ linux-3.5/drivers/net/phy/lxt.c	2012-09-07 18:08:54.000000000 +0200
-@@ -7,6 +7,10 @@
-  *
-  * Copyright (c) 2004 Freescale Semiconductor, Inc.
-  *
-+ * Copyright (c) 2010 CSSI
-+ *
-+ * Added support for buggy LXT973 rev A2
-+ *
-  * This program is free software; you can redistribute  it and/or modify it
-  * under  the terms of  the GNU General  Public License as published by the
-  * Free Software Foundation;  either version 2 of the  License, or (at your
-@@ -54,8 +58,12 @@
- #define MII_LXT971_ISR		19  /* Interrupt Status Register */
+This patch converts the arm64 port to use the generic sys_execve and
+kernel_execve() functions. It introduces the ret_from_kernel_execve()
+function for starting the new user context and removes the
+(compat_)sys_execve_wrapper() functions.
+
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+
+diff --git a/arch/arm64/include/asm/syscalls.h b/arch/arm64/include/asm/syscalls.h
+index 09ff335..81680a0 100644
+--- a/arch/arm64/include/asm/syscalls.h
++++ b/arch/arm64/include/asm/syscalls.h
+@@ -23,9 +23,6 @@
+ /*
+  * System call wrappers implemented in kernel/entry.S.
+  */
+-asmlinkage long sys_execve_wrapper(const char __user *filename,
+-				   const char __user *const __user *argv,
+-				   const char __user *const __user *envp);
+ asmlinkage long sys_clone_wrapper(unsigned long clone_flags,
+ 				  unsigned long newsp,
+ 				  void __user *parent_tid,
+diff --git a/arch/arm64/include/asm/unistd.h b/arch/arm64/include/asm/unistd.h
+index fe18a68..948cfb1 100644
+--- a/arch/arm64/include/asm/unistd.h
++++ b/arch/arm64/include/asm/unistd.h
+@@ -24,4 +24,7 @@
+ #include <asm/unistd32.h>
+ #endif
  
- /* register definitions for the 973 */
--#define MII_LXT973_PCR 16 /* Port Configuration Register */
-+#define MII_LXT973_PCR		16 /* Port Configuration Register */
- #define PCR_FIBER_SELECT 1
-+#define MII_LXT973_SFR		27  /* Special Function Register */
++#define __ARCH_WANT_SYS_EXECVE
++#define __ARCH_WANT_KERNEL_EXECVE
 +
-+#define PHYDEV_PRIV_FIBER	1
-+#define PHYDEV_PRIV_REVA2	2
+ #endif /* __ASM_UNISTD_H */
+diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
+index 38cf853..5e0b28c 100644
+--- a/arch/arm64/kernel/entry.S
++++ b/arch/arm64/kernel/entry.S
+@@ -592,7 +592,7 @@ work_resched:
+ /*
+  * "slow" syscall return path.
+  */
+-ENTRY(ret_to_user)
++ret_to_user:
+ 	disable_irq				// disable interrupts
+ 	ldr	x1, [tsk, #TI_FLAGS]
+ 	and	x2, x1, #_TIF_WORK_MASK
+@@ -614,6 +614,22 @@ ENTRY(ret_from_fork)
+ ENDPROC(ret_from_fork)
  
- MODULE_DESCRIPTION("Intel LXT PHY driver");
- MODULE_AUTHOR("Andy Fleming");
-@@ -99,6 +107,9 @@
- 	return err;
- }
- 
-+/* register definitions for the 973 */
-+#define MII_LXT973_PCR 16 /* Port Configuration Register */
-+#define PCR_FIBER_SELECT 1
- 
- static int lxt971_ack_interrupt(struct phy_device *phydev)
- {
-@@ -122,9 +133,141 @@
- 	return err;
- }
- 
-+/*
-+ * ERRATA on LXT973
+ /*
++ * ret_from_kernel_execve(struct pt_regs *normal, struct pt_regs *new)
 + *
-+ * Item 4: MDIO Interface and Repeated Polling
-+ * Problem: Repeated polling of odd-numbered registers via the MDIO interface randomly returns the
-+ * 	contents of the previous even register.
-+ * Implication: Managed applications may not obtain the correct register contents when a particular
-+ * 	register is monitored for device status.
-+ * Workaround: None.
-+ * Status: This erratum has been previously fixed (in rev A3)
-+ *
++ * Turn a kernel thread into a user process.
 + */
++ENTRY(ret_from_kernel_execve)
++	str	xzr, [x1, #S_X0]		// returning 0
++	mov	x2, #-1
++	str	x2, [x1, #S_SYSCALLNO]		// not a syscall
++	mov	x2, #S_FRAME_SIZE
++	bl	memmove				// copy regs to the normal location
++	get_thread_info tsk
++	mov	sp, x0				// normal pt_regs
++	b	ret_to_user
++ENDPROC(ret_from_kernel_execve)
 +
-+static int lxt973a2_update_link(struct phy_device *phydev)
-+{
-+	int status;
-+	int control;
-+	int retry = 8; /* we try 8 times */
-+
-+	/* Do a fake read */
-+	status = phy_read(phydev, MII_BMSR);
-+
-+	if (status < 0)
-+		return status;
-+
-+	control = phy_read(phydev, MII_BMCR);
-+	if (control < 0)
-+		return control;
-+
-+	do {
-+		/* Read link and autonegotiation status */
-+		status = phy_read(phydev, MII_BMSR);
-+	} while (status>=0 && retry-- && status == control);
-+
-+	if (status < 0)
-+		return status;
-+
-+	if ((status & BMSR_LSTATUS) == 0)
-+		phydev->link = 0;
-+	else
-+		phydev->link = 1;
-+
-+	return 0;
-+}
-+
-+int lxt973a2_read_status(struct phy_device *phydev)
-+{
-+	int adv;
-+	int err;
-+	int lpa;
-+	int lpagb = 0;
-+
-+	/* Update the link, but return if there was an error */
-+	err = lxt973a2_update_link(phydev);
-+	if (err)
-+		return err;
-+
-+	if (AUTONEG_ENABLE == phydev->autoneg) {
-+		int retry = 1;
-+		
-+		adv = phy_read(phydev, MII_ADVERTISE);
-+
-+		if (adv < 0)
-+			return adv;
-+
-+		do {
-+			lpa = phy_read(phydev, MII_LPA);
-+
-+			if (lpa < 0)
-+				return lpa;
-+
-+			/* If both registers are equal, it is suspect but not impossible, hence a new try */	
-+		} while (lpa == adv && retry--);
-+
-+		lpa &= adv;
-+
-+		phydev->speed = SPEED_10;
-+		phydev->duplex = DUPLEX_HALF;
-+		phydev->pause = phydev->asym_pause = 0;
-+
-+		if (lpagb & (LPA_1000FULL | LPA_1000HALF)) {
-+			phydev->speed = SPEED_1000;
-+
-+			if (lpagb & LPA_1000FULL)
-+				phydev->duplex = DUPLEX_FULL;
-+		} else if (lpa & (LPA_100FULL | LPA_100HALF)) {
-+			phydev->speed = SPEED_100;
-+
-+			if (lpa & LPA_100FULL)
-+				phydev->duplex = DUPLEX_FULL;
-+		} else
-+			if (lpa & LPA_10FULL)
-+				phydev->duplex = DUPLEX_FULL;
-+
-+		if (phydev->duplex == DUPLEX_FULL){
-+			phydev->pause = lpa & LPA_PAUSE_CAP ? 1 : 0;
-+			phydev->asym_pause = lpa & LPA_PAUSE_ASYM ? 1 : 0;
-+		}
-+	} else {
-+		int bmcr = phy_read(phydev, MII_BMCR);
-+
-+		if (bmcr < 0)
-+			return bmcr;
-+
-+		if (bmcr & BMCR_FULLDPLX)
-+			phydev->duplex = DUPLEX_FULL;
-+		else
-+			phydev->duplex = DUPLEX_HALF;
-+
-+		if (bmcr & BMCR_SPEED1000)
-+			phydev->speed = SPEED_1000;
-+		else if (bmcr & BMCR_SPEED100)
-+			phydev->speed = SPEED_100;
-+		else
-+			phydev->speed = SPEED_10;
-+
-+		phydev->pause = phydev->asym_pause = 0;
-+	}
-+
-+	return 0;
-+}
-+
-+static int lxt973_read_status(struct phy_device *phydev)
-+{
-+	return (int)phydev->priv&PHYDEV_PRIV_REVA2 ? lxt973a2_read_status(phydev) : genphy_read_status(phydev);
-+}
-+
- static int lxt973_probe(struct phy_device *phydev)
- {
- 	int val = phy_read(phydev, MII_LXT973_PCR);
-+	int priv = 0;
-+
-+	phydev->priv = NULL;
-+
-+	if (val<0) return val;
- 
- 	if (val & PCR_FIBER_SELECT) {
- 		/*
-@@ -136,17 +279,24 @@
- 		val &= ~BMCR_ANENABLE;
- 		phy_write(phydev, MII_BMCR, val);
- 		/* Remember that the port is in fiber mode. */
--		phydev->priv = lxt973_probe;
--	} else {
--		phydev->priv = NULL;
-+		priv |= PHYDEV_PRIV_FIBER;
- 	}
-+	val = phy_read(phydev, MII_PHYSID2);
-+
-+	if (val<0) return val;
-+
-+	if ((val & 0xf) == 0) { /* rev A2 */
-+		dev_info(&phydev->dev, " LXT973 revision A2 has bugs\n");
-+		priv |= PHYDEV_PRIV_REVA2;
-+	}
-+	phydev->priv = (void*)priv;
- 	return 0;
++/*
+  * SVC handler.
+  */
+ 	.align	6
+@@ -671,11 +687,6 @@ __sys_trace_return:
+ /*
+  * Special system call wrappers.
+  */
+-ENTRY(sys_execve_wrapper)
+-	mov	x3, sp
+-	b	sys_execve
+-ENDPROC(sys_execve_wrapper)
+-
+ ENTRY(sys_clone_wrapper)
+ 	mov	x5, sp
+ 	b	sys_clone
+diff --git a/arch/arm64/kernel/sys.c b/arch/arm64/kernel/sys.c
+index 905fcfb..9c77c0b 100644
+--- a/arch/arm64/kernel/sys.c
++++ b/arch/arm64/kernel/sys.c
+@@ -41,70 +41,6 @@ asmlinkage long sys_clone(unsigned long clone_flags, unsigned long newsp,
+ 	return do_fork(clone_flags, newsp, regs, 0, parent_tidptr, child_tidptr);
  }
  
- static int lxt973_config_aneg(struct phy_device *phydev)
- {
- 	/* Do nothing if port is in fiber mode. */
--	return phydev->priv ? 0 : genphy_config_aneg(phydev);
-+	return (int)phydev->priv&PHYDEV_PRIV_FIBER ? 0 : genphy_config_aneg(phydev);
+-/*
+- * sys_execve() executes a new program.
+- */
+-asmlinkage long sys_execve(const char __user *filenamei,
+-			   const char __user *const __user *argv,
+-			   const char __user *const __user *envp,
+-			   struct pt_regs *regs)
+-{
+-	long error;
+-	char * filename;
+-
+-	filename = getname(filenamei);
+-	error = PTR_ERR(filename);
+-	if (IS_ERR(filename))
+-		goto out;
+-	error = do_execve(filename, argv, envp, regs);
+-	putname(filename);
+-out:
+-	return error;
+-}
+-
+-int kernel_execve(const char *filename,
+-		  const char *const argv[],
+-		  const char *const envp[])
+-{
+-	struct pt_regs regs;
+-	int ret;
+-
+-	memset(&regs, 0, sizeof(struct pt_regs));
+-	ret = do_execve(filename,
+-			(const char __user *const __user *)argv,
+-			(const char __user *const __user *)envp, &regs);
+-	if (ret < 0)
+-		goto out;
+-
+-	/*
+-	 * Save argc to the register structure for userspace.
+-	 */
+-	regs.regs[0] = ret;
+-
+-	/*
+-	 * We were successful.  We won't be returning to our caller, but
+-	 * instead to user space by manipulating the kernel stack.
+-	 */
+-	asm(	"add	x0, %0, %1\n\t"
+-		"mov	x1, %2\n\t"
+-		"mov	x2, %3\n\t"
+-		"bl	memmove\n\t"	/* copy regs to top of stack */
+-		"mov	x27, #0\n\t"	/* not a syscall */
+-		"mov	x28, %0\n\t"	/* thread structure */
+-		"mov	sp, x0\n\t"	/* reposition stack pointer */
+-		"b	ret_to_user"
+-		:
+-		: "r" (current_thread_info()),
+-		  "Ir" (THREAD_START_SP - sizeof(regs)),
+-		  "r" (&regs),
+-		  "Ir" (sizeof(regs))
+-		: "x0", "x1", "x2", "x27", "x28", "x30", "memory");
+-
+- out:
+-	return ret;
+-}
+-EXPORT_SYMBOL(kernel_execve);
+-
+ asmlinkage long sys_mmap(unsigned long addr, unsigned long len,
+ 			 unsigned long prot, unsigned long flags,
+ 			 unsigned long fd, off_t off)
+@@ -118,7 +54,6 @@ asmlinkage long sys_mmap(unsigned long addr, unsigned long len,
+ /*
+  * Wrappers to pass the pt_regs argument.
+  */
+-#define sys_execve		sys_execve_wrapper
+ #define sys_clone		sys_clone_wrapper
+ #define sys_rt_sigreturn	sys_rt_sigreturn_wrapper
+ #define sys_sigaltstack		sys_sigaltstack_wrapper
+diff --git a/arch/arm64/kernel/sys32.S b/arch/arm64/kernel/sys32.S
+index 5e4dc93..903ba9d 100644
+--- a/arch/arm64/kernel/sys32.S
++++ b/arch/arm64/kernel/sys32.S
+@@ -36,11 +36,6 @@ compat_sys_vfork_wrapper:
+ 	b	compat_sys_vfork
+ ENDPROC(compat_sys_vfork_wrapper)
+ 
+-compat_sys_execve_wrapper:
+-	mov	x3, sp
+-	b	compat_sys_execve
+-ENDPROC(compat_sys_execve_wrapper)
+-
+ compat_sys_clone_wrapper:
+ 	mov	x5, sp
+ 	b	compat_sys_clone
+@@ -152,7 +147,7 @@ ENDPROC(compat_sys_fanotify_mark_wrapper)
+  */
+ #define sys_fork		compat_sys_fork_wrapper
+ #define sys_open		compat_sys_open
+-#define sys_execve		compat_sys_execve_wrapper
++#define sys_execve		compat_sys_execve
+ #define sys_lseek		compat_sys_lseek_wrapper
+ #define sys_mount		compat_sys_mount
+ #define sys_ptrace		compat_sys_ptrace
+diff --git a/arch/arm64/kernel/sys_compat.c b/arch/arm64/kernel/sys_compat.c
+index 967e92f..d77ba8e 100644
+--- a/arch/arm64/kernel/sys_compat.c
++++ b/arch/arm64/kernel/sys_compat.c
+@@ -51,24 +51,6 @@ asmlinkage int compat_sys_vfork(struct pt_regs *regs)
+ 		       regs, 0, NULL, NULL);
  }
  
- static struct phy_driver lxt970_driver = {
-@@ -184,7 +334,10 @@
- 	.flags		= 0,
- 	.probe		= lxt973_probe,
- 	.config_aneg	= lxt973_config_aneg,
--	.read_status	= genphy_read_status,
-+	.read_status	= lxt973_read_status,
-+	.suspend	= genphy_suspend,
-+	.resume		= genphy_resume,
-+	.isolate	= genphy_isolate,
- 	.driver 	= { .owner = THIS_MODULE,},
- };
- 
+-asmlinkage int compat_sys_execve(const char __user *filenamei,
+-				 compat_uptr_t argv, compat_uptr_t envp,
+-				 struct pt_regs *regs)
+-{
+-	int error;
+-	char * filename;
+-
+-	filename = getname(filenamei);
+-	error = PTR_ERR(filename);
+-	if (IS_ERR(filename))
+-		goto out;
+-	error = compat_do_execve(filename, compat_ptr(argv), compat_ptr(envp),
+-				 regs);
+-	putname(filename);
+-out:
+-	return error;
+-}
+-
+ asmlinkage int compat_sys_sched_rr_get_interval(compat_pid_t pid,
+ 						struct compat_timespec __user *interval)
+ {
