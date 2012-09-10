@@ -1,83 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751428Ab2IJFp1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 01:45:27 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:40945 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750753Ab2IJFpX (ORCPT
+	id S1751497Ab2IJFuW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 01:50:22 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:55614 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750940Ab2IJFuT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 01:45:23 -0400
-Date: Mon, 10 Sep 2012 15:45:12 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        John Crispin <blogic@openwrt.org>, Ralf Baechle <ralf@linux-mips.org>
-Subject: linux-next: manual merge of the samsung tree with the mips tree
-Message-Id: <20120910154512.d344ad91fc81caa90ebb05ba@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__10_Sep_2012_15_45_12_+1000_xfT3etD15odJKzOi"
+	Mon, 10 Sep 2012 01:50:19 -0400
+Message-ID: <504D7F95.9070700@redhat.com>
+Date: Mon, 10 Sep 2012 07:50:13 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: fes@google.com, aarcange@redhat.com, riel@redhat.com, yvugenfi@redhat.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org, mikew@google.com,
+        yinghan@google.com, virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH] virtio-balloon spec: provide a version of the "silent
+ deflate" feature that works
+References: <87vcfqfia1.fsf@rustcorp.com.au> <5049BE0E.6040202@redhat.com> <20120907105335.GB17211@redhat.com> <5049D899.60705@redhat.com> <20120907121712.GA17397@redhat.com> <5049E717.8080307@redhat.com> <20120907124432.GB17397@redhat.com> <5049FEDD.40303@redhat.com> <20120907142545.GC17397@redhat.com> <504A0858.4080508@redhat.com> <20120908222221.GA20588@redhat.com>
+In-Reply-To: <20120908222221.GA20588@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__10_Sep_2012_15_45_12_+1000_xfT3etD15odJKzOi
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Il 09/09/2012 00:22, Michael S. Tsirkin ha scritto:
+>> Almost.  One is "the guest, if really needed, can tell the host of
+>> pages".  If not negotiated, and the host does not support it, the host
+>> must break the guest (e.g. fail to offer any virtqueues).
+> 
+> There is no way in spec to break the guest.
+> You can not fail to offer virtqueues.
 
-Hi Kukjin,
+You can always return 0 for the first queue.
 
-Today's linux-next merge of the samsung tree got a conflict in
-drivers/pinctrl/Makefile between commit 3fa68afc3d77 ("OF: pinctrl: MIPS:
-lantiq: implement lantiq/xway pinctrl support") from the mips tree and
-commit 30574f0db1b1 ("pinctrl: add samsung pinctrl and gpiolib driver")
-from the samsung tree.
+> Besides, there is no guarantee that virtqueue setup
+> happens after feature negotiation.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary (no action is required).
+It is the only way that makes sense though (unless the guest would write
+0 for its features).  Should we change that?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+>> The other is "the guest, though, would prefer not to do so".  It is
+>> different because the guest can proceed in a fallback mode even if the
+>> host doesn't offer it.
+> 
+> I think I get what your proposed SILENT means what I do not get
+> is the motivation. It looks like a premature optimization to me.
 
-diff --cc drivers/pinctrl/Makefile
-index 26a86c7,6a88113..0000000
---- a/drivers/pinctrl/Makefile
-+++ b/drivers/pinctrl/Makefile
-@@@ -33,7 -29,7 +33,9 @@@ obj-$(CONFIG_PINCTRL_TEGRA20)	+=3D pinctr
-  obj-$(CONFIG_PINCTRL_TEGRA30)	+=3D pinctrl-tegra30.o
-  obj-$(CONFIG_PINCTRL_U300)	+=3D pinctrl-u300.o
-  obj-$(CONFIG_PINCTRL_COH901)	+=3D pinctrl-coh901.o
- +obj-$(CONFIG_PINCTRL_XWAY)	+=3D pinctrl-xway.o
- +obj-$(CONFIG_PINCTRL_LANTIQ)	+=3D pinctrl-lantiq.o
-+ obj-$(CONFIG_PINCTRL_SAMSUNG)	+=3D pinctrl-samsung.o
-+ obj-$(CONFIG_PINCTRL_EXYNOS4)	+=3D pinctrl-exynos.o
- =20
-  obj-$(CONFIG_PLAT_SPEAR)	+=3D spear/
+The motivation is to let the driver choose between two behaviors: the
+current one where ballooning is only done on request, and a more
+aggressive one.
 
---Signature=_Mon__10_Sep_2012_15_45_12_+1000_xfT3etD15odJKzOi
-Content-Type: application/pgp-signature
+> The spec is pretty clear that if guest acks feature it
+> is a contract that dictates behaviour.
+> If it doesn't it is either ignored or just informative
+> depending on feature.
+> 
+>> You could negotiate VIRTIO_BLK_F_TOPOLOGY
+>> and end up never reading the fields; you could negotiate
+>> VIRTIO_NET_F_GUEST_ANNOUNCE and never send a guest announcement.
+> 
+> Block example is just informative. It does not need to be
+> negotiated even to be used. But last example is wrong.
+> If you ack GUEST_ANNOUNCE hypervisor assumes guest will
+> announce self, if guest does not do it this break migration.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+It is wrong indeed, sorry.
 
-iQIcBAEBCAAGBQJQTX5oAAoJEECxmPOUX5FE2mkP/RBUYv4+X7PYz1zlVgJP61ZN
-CR/hMuVuI+CgV2AZw99Nz4BOwoc5nPDiCvXPOgVtqb/63hh7rwDrhJTioJyIvEgR
-zrAyO6FDKPejbLTlcr4ivr8DRUi1mX88kdSk5HFBjocUlNkh6NI5seVVMoj3ep5p
-7GMgBkYQOTCc/iAl0C8urgjKx3lbjpMnDQGBOVvvKnj9xAA6wdqDaBKzEOgYAF77
-PSN1QA27UPwZWZQk636MmWbtitmY4jOMVZNFvmA9IbHlx2SYi1Qq+tXaSTOTJ8AO
-l1R83DBpyeaJvyf+VCfafxS0n8SC4G+MIeoRcZ/Si3I8WHR9aWnr+FacNXZyQotR
-SJezI399nPD11lYHmlN+MQ/ZsKtfTC0pF/VY3d3pM9r4g2YuN/KRytl1e4EyBysr
-VCK3JTMkBXK9eCvG+rbDrTK+P3m5/mI6MvpKCniyICuiqvPKVOhIPUi/JyJelKA0
-RboGB89f09hOih0pJ0h17nmnZPAPr/vZhnhtu8mFrIbNtVYj/XegLzeLANDHUhaX
-9xfBj0iThWuO5UzelOwtbumh2PpuiA3g3rnyJpQ3asauUuF/EVkQQ42g+YM1lpij
-JQ/keeVqjYEN5Ns6PCV4MDVZZxAnYKyKxYzVet7BPldAxxvVYuMuG8oJ3VqfKw0w
-GbZkU1lLpANXS+NgXCLb
-=Fix+
------END PGP SIGNATURE-----
+Better example: the driver can negotiate VIRTIO_NET_F_CTRL_RX and never
+set promiscuous mode.  The device has to obey if it does.
 
---Signature=_Mon__10_Sep_2012_15_45_12_+1000_xfT3etD15odJKzOi--
+Similarly, if you set VIRTIO_BALLOON_F_SILENT_DEFLATE and only do chatty
+deflate later, that's fine.  If you do silent deflate, and the device
+negotiated the feature, it has to work.
+
+>> Delaying or avoiding is the same in the end.  The spec says it well: "In
+>> this case, deflation advice is merely a courtesy".
+> 
+> So it looks like we don't need a new bit to leak in atomic ctx.
+> Just do not ack MUST_TELL_HOST and delay telling host to a wq.
+> IMO we should not add random stuff to spec like this just because it
+> seems like a good idea.
+
+But this way you have to choose all-or-none.  If the host cannot do
+silent deflate, you cannot balloon anymore, not even in the normal
+"cooperative" mode.
+
+> OK so TELL says *when* to notify host, SILENT if set allows guest
+> to skip leak notifications? In this case TELL should just be ignored
+> when SILENT is set.
+
+Yeah, that was my first idea.  However, there are existing drivers that
+ignore SILENT, so that would not be 100% exact.
+
+> IMHO, renaming is fine since there is confusion.
+> But WILL_TELL is also not all that clear imho.
+
+> I think the confusion is that TELL_HOST seems to
+> imply we can avoid telling host at all.
+> How about being explicit?
+> 
+> VIRTIO_BALLOON_F_HOST_ACK_BEFORE_DEFLATE
+
+Makes sense.
+
+Paolo
