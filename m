@@ -1,190 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932251Ab2IJTnw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 15:43:52 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:58064 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932195Ab2IJTnt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 15:43:49 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 5/6] cputime: Gather time/stats accounting config options into a single menu
-Date: Mon, 10 Sep 2012 21:43:12 +0200
-Message-Id: <1347306193-21080-6-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1347306193-21080-1-git-send-email-fweisbec@gmail.com>
-References: <1347306193-21080-1-git-send-email-fweisbec@gmail.com>
+	id S932267Ab2IJToG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 15:44:06 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:46291 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932183Ab2IJToB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 15:44:01 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Aaron Lu <aaron.lu@intel.com>, Len Brown <lenb@kernel.org>
+Subject: [PATCH] ACPI / PM: Infer parent power state from child if unknown
+Date: Mon, 10 Sep 2012 21:50:22 +0200
+User-Agent: KMail/1.13.6 (Linux/3.6.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org,
+        Aaron Lu <aaron.lwe@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+References: <1346053126-7646-1-git-send-email-aaron.lu@intel.com> <201209072032.55469.rjw@sisk.pl> <20120910003805.GA1590@mint-spring.sh.intel.com>
+In-Reply-To: <20120910003805.GA1590@mint-spring.sh.intel.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209102150.22738.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This debloats a bit the general config menu and make these
-config options easier to find.
+It turns out that there are ACPI BIOSes defining device objects with
+_PSx and without either _PSC or _PRx.  For devices corresponding to
+those ACPI objetcs __acpi_bus_get_power() returns ACPI_STATE_UNKNOWN
+and their initial power states are regarded as unknown as a result.
+If such a device is a parent of another power-manageable device, the
+child cannot be put into a low-power state through ACPI, because
+__acpi_bus_set_power() refuses to change power states of devices
+whose parents' power states are unknown.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
+To work around this problem, observe that the ACPI power state of
+a device cannot be higher-power (lower-number) than the power state
+of its parent.  Thus, if the device's _PSC method or the
+configuration of its power resources indicates that the device is
+in D0, the device's parent has to be in D0 as well.  Consequently,
+if the parent's power state is unknown when we've just learned that
+its child's power state is D0, we can safely set the parent's
+power.state field to ACPI_STATE_D0.
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Reviewed-by: Aaron Lu <aaron.lu@intel.com>
 ---
- init/Kconfig |  116 ++++++++++++++++++++++++++++++----------------------------
- 1 files changed, 60 insertions(+), 56 deletions(-)
 
-diff --git a/init/Kconfig b/init/Kconfig
-index c40d0fb..2c5aa34 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -267,6 +267,65 @@ config POSIX_MQUEUE_SYSCTL
- 	depends on SYSCTL
- 	default y
- 
-+config FHANDLE
-+	bool "open by fhandle syscalls"
-+	select EXPORTFS
-+	help
-+	  If you say Y here, a user level program will be able to map
-+	  file names to handle and then later use the handle for
-+	  different file system operations. This is useful in implementing
-+	  userspace file servers, which now track files using handles instead
-+	  of names. The handle would remain the same even if file names
-+	  get renamed. Enables open_by_handle_at(2) and name_to_handle_at(2)
-+	  syscalls.
-+
-+config AUDIT
-+	bool "Auditing support"
-+	depends on NET
-+	help
-+	  Enable auditing infrastructure that can be used with another
-+	  kernel subsystem, such as SELinux (which requires this for
-+	  logging of avc messages output).  Does not do system-call
-+	  auditing without CONFIG_AUDITSYSCALL.
-+
-+config AUDITSYSCALL
-+	bool "Enable system-call auditing support"
-+	depends on AUDIT && (X86 || PPC || S390 || IA64 || UML || SPARC64 || SUPERH || (ARM && AEABI && !OABI_COMPAT))
-+	default y if SECURITY_SELINUX
-+	help
-+	  Enable low-overhead system-call auditing infrastructure that
-+	  can be used independently or with another kernel subsystem,
-+	  such as SELinux.
-+
-+config AUDIT_WATCH
-+	def_bool y
-+	depends on AUDITSYSCALL
-+	select FSNOTIFY
-+
-+config AUDIT_TREE
-+	def_bool y
-+	depends on AUDITSYSCALL
-+	select FSNOTIFY
-+
-+config AUDIT_LOGINUID_IMMUTABLE
-+	bool "Make audit loginuid immutable"
-+	depends on AUDIT
-+	help
-+	  The config option toggles if a task setting its loginuid requires
-+	  CAP_SYS_AUDITCONTROL or if that task should require no special permissions
-+	  but should instead only allow setting its loginuid if it was never
-+	  previously set.  On systems which use systemd or a similar central
-+	  process to restart login services this should be set to true.  On older
-+	  systems in which an admin would typically have to directly stop and
-+	  start processes this should be set to false.  Setting this to true allows
-+	  one to drop potentially dangerous capabilites from the login tasks,
-+	  but may not be backwards compatible with older init systems.
-+
-+source "kernel/irq/Kconfig"
-+source "kernel/time/Kconfig"
-+
-+menu "CPU/Task time and stats accounting"
-+
- config VIRT_CPU_ACCOUNTING
- 	bool "Deterministic task and CPU time accounting"
- 	depends on HAVE_VIRT_CPU_ACCOUNTING
-@@ -305,18 +364,6 @@ config BSD_PROCESS_ACCT_V3
- 	  for processing it. A preliminary version of these tools is available
- 	  at <http://www.gnu.org/software/acct/>.
- 
--config FHANDLE
--	bool "open by fhandle syscalls"
--	select EXPORTFS
--	help
--	  If you say Y here, a user level program will be able to map
--	  file names to handle and then later use the handle for
--	  different file system operations. This is useful in implementing
--	  userspace file servers, which now track files using handles instead
--	  of names. The handle would remain the same even if file names
--	  get renamed. Enables open_by_handle_at(2) and name_to_handle_at(2)
--	  syscalls.
--
- config TASKSTATS
- 	bool "Export task/process statistics through netlink (EXPERIMENTAL)"
- 	depends on NET
-@@ -359,50 +406,7 @@ config TASK_IO_ACCOUNTING
- 
- 	  Say N if unsure.
- 
--config AUDIT
--	bool "Auditing support"
--	depends on NET
--	help
--	  Enable auditing infrastructure that can be used with another
--	  kernel subsystem, such as SELinux (which requires this for
--	  logging of avc messages output).  Does not do system-call
--	  auditing without CONFIG_AUDITSYSCALL.
--
--config AUDITSYSCALL
--	bool "Enable system-call auditing support"
--	depends on AUDIT && (X86 || PPC || S390 || IA64 || UML || SPARC64 || SUPERH || (ARM && AEABI && !OABI_COMPAT))
--	default y if SECURITY_SELINUX
--	help
--	  Enable low-overhead system-call auditing infrastructure that
--	  can be used independently or with another kernel subsystem,
--	  such as SELinux.
--
--config AUDIT_WATCH
--	def_bool y
--	depends on AUDITSYSCALL
--	select FSNOTIFY
--
--config AUDIT_TREE
--	def_bool y
--	depends on AUDITSYSCALL
--	select FSNOTIFY
--
--config AUDIT_LOGINUID_IMMUTABLE
--	bool "Make audit loginuid immutable"
--	depends on AUDIT
--	help
--	  The config option toggles if a task setting its loginuid requires
--	  CAP_SYS_AUDITCONTROL or if that task should require no special permissions
--	  but should instead only allow setting its loginuid if it was never
--	  previously set.  On systems which use systemd or a similar central
--	  process to restart login services this should be set to true.  On older
--	  systems in which an admin would typically have to directly stop and
--	  start processes this should be set to false.  Setting this to true allows
--	  one to drop potentially dangerous capabilites from the login tasks,
--	  but may not be backwards compatible with older init systems.
--
--source "kernel/irq/Kconfig"
--source "kernel/time/Kconfig"
-+endmenu # "CPU/Task time and stats accounting"
- 
- menu "RCU Subsystem"
- 
--- 
-1.7.5.4
+Hi Len,
 
+I suppose we can put this one into -stable.
+
+Thanks,
+Rafael
+
+---
+ drivers/acpi/bus.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+Index: linux/drivers/acpi/bus.c
+===================================================================
+--- linux.orig/drivers/acpi/bus.c
++++ linux/drivers/acpi/bus.c
+@@ -228,7 +228,16 @@ static int __acpi_bus_get_power(struct a
+ 		result = psc;
+ 	}
+ 	/* The test below covers ACPI_STATE_UNKNOWN too. */
+-	if (result <= ACPI_STATE_D2) {
++	if (result == ACPI_STATE_D0) {
++		/*
++		 * If we were unsure about the device parent's power state up to
++		 * this point, the fact that the device is in D0 implies that
++		 * the parent has to be in D0 too.
++		 */
++		if (device->parent
++		    && device->parent->power.state == ACPI_STATE_UNKNOWN)
++			device->parent->power.state = ACPI_STATE_D0;
++	} else if (result <= ACPI_STATE_D2) {
+ 	  ; /* Do nothing. */
+ 	} else if (device->power.flags.power_resources) {
+ 		int error = acpi_power_get_inferred_state(device, &result);
