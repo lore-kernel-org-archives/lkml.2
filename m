@@ -1,152 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757527Ab2IJLzA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 07:55:00 -0400
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:59475 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752609Ab2IJLy4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 07:54:56 -0400
-Message-ID: <504DD532.4040400@ti.com>
-Date: Mon, 10 Sep 2012 14:55:30 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120903 Thunderbird/15.0
+	id S932097Ab2IJLzV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 07:55:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54660 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757522Ab2IJLzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 07:55:17 -0400
+Date: Mon, 10 Sep 2012 13:55:15 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: akpm@linux-foundation.org, kamezawa.hiroyu@jp.fujitsu.com,
+        minchan@kernel.org, shangw@linux.vnet.ibm.com, yinghai@kernel.org,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: + mm-memblock-reduce-overhead-in-binary-search.patch added to
+ -mm tree
+Message-ID: <20120910115514.GC17437@dhcp22.suse.cz>
+References: <20120907235058.A33F75C0219@hpza9.eem.corp.google.com>
+ <20120910082035.GA13035@dhcp22.suse.cz>
+ <20120910094604.GA7365@hacker.(null)>
+ <20120910110550.GA17437@dhcp22.suse.cz>
+ <20120910113051.GA15193@hacker.(null)>
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH 2/2] pinctrl: pinctrl-single: Add pinctrl-single,bits
- type of mux
-References: <1346835718-21325-1-git-send-email-peter.ujfalusi@ti.com> <1346835718-21325-3-git-send-email-peter.ujfalusi@ti.com> <20120906191019.GZ1303@atomide.com> <504A0F21.8080305@ti.com> <20120907165553.GV1303@atomide.com>
-In-Reply-To: <20120907165553.GV1303@atomide.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120910113051.GA15193@hacker.(null)>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/07/2012 07:55 PM, Tony Lindgren wrote:
-> * Peter Ujfalusi <peter.ujfalusi@ti.com> [120907 08:13]:
->> On 09/06/2012 10:10 PM, Tony Lindgren wrote:
->>>
->>> Is it now safe to assume that we always have width of three if
->>> pinctrl-single,bits is specified? The reason I'm asking is..
->>>
->>>> @@ -657,18 +664,29 @@ static int pcs_parse_one_pinctrl_entry(struct pcs_device *pcs,
->>>>  {
->>>>  	struct pcs_func_vals *vals;
->>>>  	const __be32 *mux;
->>>> -	int size, rows, *pins, index = 0, found = 0, res = -ENOMEM;
->>>> +	int size, params, rows, *pins, index = 0, found = 0, res = -ENOMEM;
->>>>  	struct pcs_function *function;
->>>>  
->>>> -	mux = of_get_property(np, PCS_MUX_NAME, &size);
->>>> -	if ((!mux) || (size < sizeof(*mux) * 2)) {
->>>> -		dev_err(pcs->dev, "bad data for mux %s\n",
->>>> -			np->name);
->>>> +	mux = of_get_property(np, PCS_MUX_PINS_NAME, &size);
->>>> +	if (mux) {
->>>> +		params = 2;
->>>> +	} else {
->>>> +		mux = of_get_property(np, PCS_MUX_BITS_NAME, &size);
->>>> +		if (!mux) {
->>>> +			dev_err(pcs->dev, "no valid property for %s\n",
->>>> +				np->name);
->>>> +			return -EINVAL;
->>>> +		}
->>>> +		params = 3;
->>>> +	}
->>>
->>> ..because here we could assume the default value for params is 2
->>> if pinctrl-single,pins is specified, and otherwise params is 3
->>> if pinctrl-single,bits is specified for the controller. That would
->>> avoid querying a potentially non-exiting property for each entry.
->>>
->>>> @@ -686,6 +704,10 @@ static int pcs_parse_one_pinctrl_entry(struct pcs_device *pcs,
->>>>  		val = be32_to_cpup(mux + index++);
->>>>  		vals[found].reg = pcs->base + offset;
->>>>  		vals[found].val = val;
->>>> +		if (params == 3) {
->>>> +			val = be32_to_cpup(mux + index++);
->>>> +			vals[found].mask = val;
->>>> +		}
->>>>  
->>>>  		pin = pcs_get_pin_by_offset(pcs, offset);
->>>>  		if (pin < 0) {
->>>
->>> Here params too would be then set during probe already.
->>
->> I'm afraid you lost me here...
->> We only know if the user specified the mux configuration with
->> pinctrl-single,pins or  pinctrl-single,bits in this function.
+On Mon 10-09-12 19:30:51, Wanpeng Li wrote:
+> On Mon, Sep 10, 2012 at 01:05:50PM +0200, Michal Hocko wrote:
+> >On Mon 10-09-12 17:46:04, Wanpeng Li wrote:
+> >> On Mon, Sep 10, 2012 at 10:22:39AM +0200, Michal Hocko wrote:
+> >> >[Sorry for the late reply]
+> >> >
+> >> >On Fri 07-09-12 16:50:57, Andrew Morton wrote:
+> >> >> 
+> >> >> The patch titled
+> >> >>      Subject: mm/memblock: reduce overhead in binary search
+> >> >> has been added to the -mm tree.  Its filename is
+> >> >>      mm-memblock-reduce-overhead-in-binary-search.patch
+> >> >> 
+> >> >> Before you just go and hit "reply", please:
+> >> >>    a) Consider who else should be cc'ed
+> >> >>    b) Prefer to cc a suitable mailing list as well
+> >> >>    c) Ideally: find the original patch on the mailing list and do a
+> >> >>       reply-to-all to that, adding suitable additional cc's
+> >> >> 
+> >> >> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> >> >> 
+> >> >> The -mm tree is included into linux-next and is updated
+> >> >> there every 3-4 working days
+> >> >> 
+> >> >> ------------------------------------------------------
+> >> >> From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> >> >> Subject: mm/memblock: reduce overhead in binary search
+> >> >> 
+> >> >> When checking that the indicated address belongs to the memory region, the
+> >> >> memory regions are checked one by one through a binary search, which will
+> >> >> be time consuming.
+> >> >
+> >> >How many blocks do you have that O(long) is that time consuming?
+> >> >
+> >> >> If the indicated address isn't in the memory region, then we needn't do
+> >> >> the time-consuming search.  
+> >> >
+> >> >How often does this happen?
+> >> >
+> >> >> Add a check on the indicated address for that purpose.
+> >> >
+> >> >We have 2 users of this function. One is exynos_sysmmu_enable and the
+> >> >other pfn_valid for unicore32. The first one doesn't seem to be used
+> >> >anywhere (as per git grep). The other one could benefit from it but it
+> >> >would be nice to hear about how much it really helps becuase if the
+> >> >address is (almost) never outside of start,end DRAM bounds then you just
+> >> >add a pointless check.
+> >> >Besides that, if this kind of optimization is really worth, why don't we
+> >> >do the same thing for memblock_is_reserved and memblock_is_region_memory
+> >> >as well?
+> >> 
+> >> As Yinghai said,
+> >> 
+> >> BIOS could have reserved some ranges, and those ranges are not overlapped by 
+> >> RAM. and so those range will not be in memory and reserved array.
+> >> 
+> >> later kernel will probe some range, and reserved those range, so those
+> >> range get inserted into reserved array. reserved and memory array is
+> >> different.
+> >
+> >OK. Thanks for the clarification. The main question remains, though. Is
+> >this worth for memblock_is_memory?
 > 
-> Sorry right, yeah we don't know that at probe time currently.
-> 
-> I'd like to have something that specifies the controller type so
-> we don't need to mix two types of controllers and test for
-> non-existing properties when parsing the pins.
-> 
-> How about we require something specified for the pinctrl driver
-> in the "one-bit-per-mux" case like pinctrl-single,bit-per-mux?
-> 
-> And then in the pinctrl-single probe we set params = 3 if
-> pinctrl-single,bit-per-mux is specified. And if no
-> pinctrl-single,bit-per-mux is specified then set params = 2.
-> 
-> That way pcs_parse_one_pinctrl_entry() can just test for params.
-> 
-> Sorry I don't have a better name in mind than bit-per-mux..
+> There are many call sites need to call pfn_valid, how can you guarantee all
+> the addrs are between memblock_start_of_DRAM() and memblock_end_of_DRAM(), 
+> if not can this reduce possible overhead ? 
 
-I'm not sure if this would make things more prone to error or make the DTS or
-the code more clean in any ways.
+That was my question. I hoped for an answer in the patch description. I
+am really not familiar with unicore32 which is the only user now.
 
-Both pinctrl-single,pins and pinctrl-single,bits works on top of the same
-pinctrl-single area.
-In most cases we are going to use pinctrl-single,pins for the mux
-configuration and only in few places we need to fall back to pinctrl-single,bits.
+> I add unlikely which means that this will not happen frequently. :-)
 
-With this patch we will have maximum of two query to find out which type is
-used, while if we add the 'bit-per-mux' property we will always have need to
-have two of_get_property() call to figure out what is used.
-IMHO in this way we could also have copy-paste errors coming at us when adding
-the mux configurations for the pins and at the end we also need to do same
-safety/sanity checks if the user really provided the correct type with
-correlation to the 'bit-per-mux'.
-
-This would just complicate the code.
-The existence of pinctrl-single,pins or pinctrl-single,bits property alone
-gives enough information for the number of parameters.
-
->  
->> One thing I could do to make the code a bit better to look at is:
->> int params = 2;
->>
->> mux = of_get_property(np, PCS_MUX_PINS_NAME, &size);
->> if (!mux) {
->> 	mux = of_get_property(np, PCS_MUX_BITS_NAME, &size);
->> 	if (!mux) {
->> 		dev_err(pcs->dev, "no valid property for %s\n",
->> 		np->name);
->> 		return -EINVAL;
->> 	}
->> 	params = 3;
->> }
->>
->> This might make the code a bit more compact but at the same time one might
->> need to spend few more seconds to understand it.
-> 
-> Yes well there's no need to do of_get_property second guessing
-> if we already know params from the pinctrl-single.c probe time.
-> 
-> I think we're safe to assume that we don't need to mix parsing
-> two different types of configuration for the same controller
-> as they can always be set up as separate controllers.
-> 
-> Regards,
-> 
-> Tony
-> 
-
-
+unlikely doesn't help much in this case. You would be doing the test for
+every pfn_valid invocation anyway. So the main question is. Do you want
+to optimize for something that doesn't happen often when it adds a cost
+(not a big one but still) for the more probable cases?
+I would say yes if we clearly see that the exceptional case really pays
+off. Nothing in the changelog convinces me about that.
 -- 
-Péter
+Michal Hocko
+SUSE Labs
