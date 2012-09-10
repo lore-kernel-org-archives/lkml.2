@@ -1,40 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638Ab2IJH7S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 03:59:18 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51762 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750900Ab2IJH7Q (ORCPT
+	id S1753176Ab2IJH7e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 03:59:34 -0400
+Received: from smtprelay04.ispgateway.de ([80.67.31.32]:43570 "EHLO
+	smtprelay04.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752932Ab2IJH7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 03:59:16 -0400
-Date: Mon, 10 Sep 2012 15:58:41 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: Yunfan Zhang <yfzhang@marvell.com>, Liam Girdwood <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] regulator: fan53555: remove vsel_max not used
-Message-ID: <20120910075838.GE6749@opensource.wolfsonmicro.com>
-References: <4737A960563B524DA805CA602BE04B3064CC590795@SC-VEXCH2.marvell.com>
- <CAF+7xWky1N=LHd01aiewEVEhNNLNnuBHHqCBsTHhVd_SbPMjaA@mail.gmail.com>
+	Mon, 10 Sep 2012 03:59:32 -0400
+X-Greylist: delayed 370 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Sep 2012 03:59:32 EDT
+Message-ID: <504D9C70.5000102@ladisch.de>
+Date: Mon, 10 Sep 2012 09:53:20 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120824 Thunderbird/15.0
 MIME-Version: 1.0
+To: shuah.khan@hp.com
+CC: LKML <linux-kernel@vger.kernel.org>, shuahkhan@gmail.com,
+        linux1394-devel@lists.sf.net
+Subject: Re: [RFC] DMA mapping error check analysis
+References: <1346595257.4377.5.camel@lorien2> <1347033200.2603.19.camel@lorien2>
+In-Reply-To: <1347033200.2603.19.camel@lorien2>
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAF+7xWky1N=LHd01aiewEVEhNNLNnuBHHqCBsTHhVd_SbPMjaA@mail.gmail.com>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: bGludXgta2VybmVsQGNsLmRvbWFpbmZhY3Rvcnkta3VuZGUuZGU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 11:53:55AM +0800, Axel Lin wrote:
-> 2012/9/10 Yunfan Zhang <yfzhang@marvell.com>:
-> > The max voltage will be bounded by min_uV, uV_step and n_voltages, so
-> > remove it to avoid confusing.
+Shuah Khan wrote:
+> I analyzed all calls to dma_map_single() and dma_map_page() in the
+> kernel, to see if callers check for mapping errors, before using the
+> returned address.
+>
+> The goal of this analysis is to find drivers that currently do not
+> check dma mapping errors, and fix them.
+>
+> I documented the results of this analysis:
+>
+> http://linuxdriverproject.org/mediawiki/index.php/DMA_Mapping_Error_Analysis
 
-Applied, thanks.
+> File Name                  # of calls  Status 	
+> drivers/firewire/core-iso.c   1        Unmap Broken
+> drivers/firewire/ohci.c       1        Unmap Broken
 
-> Acked-by: Axel Lin <axel.lin@gmail.com>
+In ohci.c, ar_context_release() takes care of cleanup.
 
-I think you meant to say Reviewed-by here - Acked mostly just means that
-you're OK with the patch being applied, it's not really saying anything
-strong about the patch having been properly reviewed.
+In core-iso.c, on failure, the callers are responsible to call
+fw_iso_buffer_destroy() eventually.  (ioctl_create_iso_context()
+doesn't do this correctly if it's called multiple times.)
+
+
+Regards,
+Clemens
