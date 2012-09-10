@@ -1,61 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756603Ab2IJBmh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 21:42:37 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:53513 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755905Ab2IJBmg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 21:42:36 -0400
-X-AuditID: 9c930197-b7b93ae0000028a7-69-504d45899736
-From: Namhyung Kim <namhyung@kernel.org>
-To: Feng Tang <feng.tang@intel.com>
-Cc: acme@redhat.com, mingo@elte.hu, a.p.zijlstra@chello.nl,
-        andi@firstfloor.org, dsahern@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/7] perf ui/browser: Add browser for perf script
-References: <1347007349-3102-1-git-send-email-feng.tang@intel.com>
-Date: Mon, 10 Sep 2012 10:35:32 +0900
-In-Reply-To: <1347007349-3102-1-git-send-email-feng.tang@intel.com> (Feng
-	Tang's message of "Fri, 7 Sep 2012 16:42:22 +0800")
-Message-ID: <87ehmabqxn.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S932067Ab2IJBrJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 21:47:09 -0400
+Received: from ares07.inai.de ([5.9.24.206]:51326 "EHLO seven.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755905Ab2IJBrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Sep 2012 21:47:07 -0400
+Date: Mon, 10 Sep 2012 03:47:04 +0200 (CEST)
+From: Jan Engelhardt <jengelh@inai.de>
+To: Miklos Szeredi <miklos@szeredi.hu>
+cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hch@infradead.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        apw@canonical.com, nbd@openwrt.org, neilb@suse.de, hramrach@centrum.cz,
+        jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu, ricwheeler@gmail.com,
+        dhowells@redhat.com, hpj@urpla.net, sedat.dilek@googlemail.com,
+        penberg@kernel.org, goran.cetusic@gmail.com, romain@orebokech.com,
+        mszeredi@suse.cz
+Subject: Re: [PATCH 07/13] overlay: overlay filesystem documentation
+In-Reply-To: <1345045700-9062-8-git-send-email-miklos@szeredi.hu>
+Message-ID: <alpine.LNX.2.01.1209100333290.22738@frira.zrqbmnf.qr>
+References: <1345045700-9062-1-git-send-email-miklos@szeredi.hu> <1345045700-9062-8-git-send-email-miklos@szeredi.hu>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Feng,
 
-On Fri,  7 Sep 2012 16:42:22 +0800, Feng Tang wrote:
-> Hi Arnaldo and all,
->
-> This is a patch set mainly to add a browser for perf script, which
-> will be integrated into the main hists and annotation browser.
->
-> Patch 1-4 are some preparation for adding the script
-> patch 5 introduce the script browser
-> patch 6-7 integrate the browser to hists browser and annotation browser
->
-> The patches are on top of current perf/core branch of your git tree. 
-> Please help to review. 
->
-> Namhyung,
->
-> Many thanks for providing many good comments for the v1 patch sets. In
-> this v2, I addressed most of those comments, for the suggestion to use
-> browser for "perf script -l", I'll handle it later, and would post the
-> v2 first for review.
->
-> Changelog:
-> 	Since v1:
-> 	* Add filter for scripts can't be run in script browser
-> 	* Fix some bugs about buffer handling and error check 
+On Wednesday 2012-08-15 17:48, Miklos Szeredi wrote:
+>[...]
+>+This is most obvious from the 'st_dev' field returned by stat(2).
+>+
+>+While directories will report an st_dev from the overlay-filesystem,
+>+all non-directory objects will report an st_dev from the lower or
+>+upper filesystem that is providing the object.
 
-For whole series,
+That would seem to render `rsync --one-filesystem` unusable?
+(or similar options in other tools)
 
-Reviewed-by: Namhyung Kim <namhyung@kernel.org>
 
-Thanks for your work!
-Namhyung
