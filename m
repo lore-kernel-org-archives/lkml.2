@@ -1,96 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756351Ab2IJR2p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 13:28:45 -0400
-Received: from mailout10.t-online.de ([194.25.134.21]:33923 "EHLO
-	mailout10.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752056Ab2IJR2m convert rfc822-to-8bit (ORCPT
+	id S1756623Ab2IJR3Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 13:29:24 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:9393 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752056Ab2IJR3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 13:28:42 -0400
-X-Greylist: delayed 1020 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Sep 2012 13:28:42 EDT
-From: Thomas =?iso-8859-1?q?Sch=E4fer?= <tschaefer@t-online.de>
-To: Ben Hutchings <ben@decadent.org.uk>
-Subject: Re: [ 34/95] USB: option: add ZTE K5006-Z
-Date: Mon, 10 Sep 2012 19:11:27 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.20-desktop; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?iso-8859-1?q?Bj=F8rn_Mork?= <bjorn@mork.no>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-References: <20120909224155.514234762@decadent.org.uk>
-In-Reply-To: <20120909224155.514234762@decadent.org.uk>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201209101911.27928.tschaefer@t-online.de>
-X-ID: S8EFNkZQrhKZSy5Yi8M6kzFEt56i06oCrIzNInl77Cx2ahNM0iU82lnNWaf0t9SQ-b
-X-TOI-MSGID: 48ade4d5-d7dd-438e-aefa-a61b1c9f1de4
+	Mon, 10 Sep 2012 13:29:22 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Mon, 10 Sep 2012 13:29:21 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 09/31] arm64: Cache maintenance routines
+In-reply-to: <20120910164815.GB8238@arm.com>
+Message-id: <alpine.LFD.2.02.1209101322140.28681@xanadu.home>
+References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
+ <1347035226-18649-10-git-send-email-catalin.marinas@arm.com>
+ <201209071928.09999.arnd@arndb.de> <20120910164815.GB8238@arm.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 10. September 2012 um 00:42:24 schrieb Ben Hutchings:
-> 3.2-stable review patch.  If anyone has any objections, please let me know.
+On Mon, 10 Sep 2012, Catalin Marinas wrote:
 
-
-
-referring to
-
-http://www.spinics.net/lists/linux-usb/msg70131.html
-
-it should not be done with ff ff ff
-
-
-Thomas
-
-
-
-
-
-
-
+> On Fri, Sep 07, 2012 at 08:28:09PM +0100, Arnd Bergmann wrote:
+> > On Friday 07 September 2012, Catalin Marinas wrote:
+> > > +
+> > > +/*
+> > > + *	dmac_inv_range(start,end)
+> > 
+> > all of these appear to be unused now. Can you remove them?
 > 
-> ------------------
-> 
-> From: Bjørn Mork <bjorn@mork.no>
-> 
-> commit f1b5c997e68533df1f96dcd3068a231bca495603 upstream.
-> 
-> The ZTE (Vodafone) K5006-Z use the following
-> interface layout:
-> 
-> 00 DIAG
-> 01 secondary
-> 02 modem
-> 03 networkcard
-> 04 storage
-> 
-> Ignoring interface #3 which is handled by the qmi_wwan
-> driver.
-> 
-> Cc: Thomas Schäfer <tschaefer@t-online.de>
-> Signed-off-by: Bjørn Mork <bjorn@mork.no>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> ---
->  drivers/usb/serial/option.c |    2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-> index 9930628..cc40f47 100644
-> --- a/drivers/usb/serial/option.c
-> +++ b/drivers/usb/serial/option.c
-> @@ -886,6 +886,8 @@ static const struct usb_device_id option_ids[] = {
->  	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1010, 0xff, 0xff, 
-0xff),
->  	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
->  	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1012, 0xff, 0xff, 0xff)
-> }, +	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1018, 0xff, 0xff,
-> 0xff), +	  .driver_info = (kernel_ulong_t)&net_intf3_blacklist },
->  	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1057, 0xff, 0xff, 0xff)
-> }, { USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1058, 0xff, 0xff,
-> 0xff) }, { USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1059, 0xff,
-> 0xff, 0xff) },
+> They aren't currently used but I expect some partners to make use of
+> them on their private development. I could drop them from the upstream
+> branch temporarily.
 
+Depends.  If your expectation from those partners is a real probability 
+then it is best to keep a skeleton in place for them to use, otherwise 
+they might get ... creative.  If this is just wild speculation then you 
+should drop it.
+
+
+Nicolas
