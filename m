@@ -1,120 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755754Ab2IJIoD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 04:44:03 -0400
-Received: from relay.parallels.com ([195.214.232.42]:53280 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752932Ab2IJIn6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 04:43:58 -0400
-Message-ID: <504DA833.60301@parallels.com>
-Date: Mon, 10 Sep 2012 12:43:31 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: Jeff Layton <jlayton@redhat.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH v2] SUNRPC: check current nsproxy before set of node name
- on client creation
-References: <20120813113731.9629.31906.stgit@localhost.localdomain>   <20120813081054.0ee39037@corrin.poochiereds.net>  <4FA345DA4F4AE44899BD2B03EEEC2FA908F90888@SACEXCMBX04-PRD.hq.netapp.com>  <504ADED9.2020607@parallels.com> <4FA345DA4F4AE44899BD2B03EEEC2FA908F914D4@SACEXCMBX04-PRD.hq.netapp.com>
-In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA908F914D4@SACEXCMBX04-PRD.hq.netapp.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+	id S1755781Ab2IJIpB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 04:45:01 -0400
+Received: from mga09.intel.com ([134.134.136.24]:41480 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751338Ab2IJIo6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 04:44:58 -0400
+Message-Id: <84c8a8$5m6f27@orsmga001.jf.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,396,1344236400"; 
+   d="scan'208";a="191052871"
+From: chris@chris-wilson.co.uk
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: net/ipv4/route.c:645 suspicious rcu_dereference_check() usage!
+Date: Mon, 10 Sep 2012 09:44:38 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-08.09.2012 18:33, Myklebust, Trond пишет:
-> On Sat, 2012-09-08 at 08:59 +0300, Stanislav Kinsbursky wrote:
->> 08.09.2012 01:32, Myklebust, Trond пишет:
->>> On Mon, 2012-08-13 at 08:10 -0400, Jeff Layton wrote:
->>>> On Mon, 13 Aug 2012 15:37:31 +0400
->>>> Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
->>>>
->>>>> v2:
->>>>> 1) rpc_clnt_set_nodename() prototype updated.
->>>>> 2) fixed errors in comment.
->>>>>
->>>>> When child reaper exits, it can destroy mount namespace it belongs to, and if
->>>>> there are NFS mounts inside, then it will try to umount them. But in this
->>>>> point current->nsproxy is set to NULL and all namespaces will be destroyed one
->>>>> by one. I.e. we can't dereference current->nsproxy to obtain uts namespace.
->>>>>
->>>>> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
->>>>> ---
->>>>>    net/sunrpc/clnt.c |   16 +++++++++++++---
->>>>>    1 files changed, 13 insertions(+), 3 deletions(-)
->>>>>
->>>>> diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
->>>>> index 9a9676e..8fbcbc8 100644
->>>>> --- a/net/sunrpc/clnt.c
->>>>> +++ b/net/sunrpc/clnt.c
->>>>> @@ -277,8 +277,18 @@ void rpc_clients_notifier_unregister(void)
->>>>>    	return rpc_pipefs_notifier_unregister(&rpc_clients_block);
->>>>>    }
->>>>>
->>>>> -static void rpc_clnt_set_nodename(struct rpc_clnt *clnt, const char *nodename)
->>>>> +static void rpc_clnt_set_nodename(struct rpc_clnt *clnt)
->>>>>    {
->>>>> +	const char *nodename;
->>>>> +
->>>>> +	/*
->>>>> +	 * We have to protect against dying child reaper, which has released
->>>>> +	 * its nsproxy already and is trying to destroy mount namespace.
->>>>> +	 */
->>>>> +	if (current->nsproxy == NULL)
->>>>> +		return;
->>>>> +
->>>>> +	nodename = utsname()->nodename;
->>>>>    	clnt->cl_nodelen = strlen(nodename);
->>>>>    	if (clnt->cl_nodelen > UNX_MAXNODENAME)
->>>>>    		clnt->cl_nodelen = UNX_MAXNODENAME;
->>>>> @@ -365,7 +375,7 @@ static struct rpc_clnt * rpc_new_client(const struct rpc_create_args *args, stru
->>>>>    	}
->>>>>
->>>>>    	/* save the nodename */
->>>>> -	rpc_clnt_set_nodename(clnt, utsname()->nodename);
->>>>> +	rpc_clnt_set_nodename(clnt);
->>>>>    	rpc_register_client(clnt);
->>>>>    	return clnt;
->>>>>
->>>>> @@ -524,7 +534,7 @@ rpc_clone_client(struct rpc_clnt *clnt)
->>>>>    	err = rpc_setup_pipedir(new, clnt->cl_program->pipe_dir_name);
->>>>>    	if (err != 0)
->>>>>    		goto out_no_path;
->>>>> -	rpc_clnt_set_nodename(new, utsname()->nodename);
->>>>> +	rpc_clnt_set_nodename(new);
->>>>>    	if (new->cl_auth)
->>>>>    		atomic_inc(&new->cl_auth->au_count);
->>>>>    	atomic_inc(&clnt->cl_count);
->>>>>
->>>>> --
->>>>> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
->>>>> the body of a message to majordomo@vger.kernel.org
->>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>> Acked-by: Jeff Layton <jlayton@redhat.com>
->>> OK, colour me confused (again).
->>
->> What color?
->>
->>> Why should a umount trigger an
->>> rpc_create() or rpc_clone_client()?
->>
->> It calls nsm_create().
->> Here is the trace (https://bugzilla.redhat.com/show_bug.cgi?id=830862,
->> comment 68):
->
-> Right, but if we're using NFSv3 lock monitoring, we know in advance that
-> we're going to need an nsm call to localhost. Why can't we just cache
-> the one that we used to start lock monitoring in the first place?
->
+I've not seen this reported yet, so here's a warning that happens
+occasionally:
 
-Do you suggest to cache the call or the client for the call?
+[192979.475833] 
+[192979.475840] ===============================
+[192979.475841] [ INFO: suspicious RCU usage. ]
+[192979.475844] 3.6.0-rc2+ #33 Not tainted
+[192979.475846] -------------------------------
+[192979.475848] net/ipv4/route.c:645 suspicious rcu_dereference_check() usage!
+[192979.475850] 
+[192979.475850] other info that might help us debug this:
+[192979.475850] 
+[192979.475853] 
+[192979.475853] rcu_scheduler_active = 1, debug_locks = 0
+[192979.475856] 2 locks held by firefox-bin/4634:
+[192979.475858]  #0:  (slock-AF_INET){+.-...}, at: [<ffffffff814261b4>] release_sock+0x34/0x1e0
+[192979.475870]  #1:  (fnhe_lock){+.-...}, at: [<ffffffff81461c94>] update_or_create_fnhe.isra.30+0x44/0x480
+[192979.475878] 
+[192979.475878] stack backtrace:
+[192979.475881] Pid: 4634, comm: firefox-bin Not tainted 3.6.0-rc2+ #33
+[192979.475883] Call Trace:
+[192979.475891]  [<ffffffff810903cd>] lockdep_rcu_suspicious+0xfd/0x130
+[192979.475895]  [<ffffffff81461e8e>] update_or_create_fnhe.isra.30+0x23e/0x480
+[192979.475899]  [<ffffffff814624ba>] __ip_rt_update_pmtu.isra.31+0x6a/0xb0
+[192979.475903]  [<ffffffff81465038>] ip_rt_update_pmtu+0x48/0xd0
+[192979.475907]  [<ffffffff814759b1>] inet_csk_update_pmtu+0x31/0x80
+[192979.475912]  [<ffffffff8148b663>] tcp_v4_mtu_reduced+0x33/0xd0
+[192979.475915]  [<ffffffff814888be>] tcp_release_cb+0x5e/0xb0
+[192979.475919]  [<ffffffff81426289>] release_sock+0x109/0x1e0
+[192979.475922]  [<ffffffff81479037>] tcp_sendmsg+0x527/0x1030
+[192979.475927]  [<ffffffff814a4d9d>] inet_sendmsg+0xed/0x240
+[192979.475931]  [<ffffffff814a4cb0>] ? inet_autobind+0x70/0x70
+[192979.475934]  [<ffffffff81424e8a>] ? sock_update_classid+0xaa/0x370
+[192979.475937]  [<ffffffff81424eb8>] ? sock_update_classid+0xd8/0x370
+[192979.475941]  [<ffffffff8141ee1b>] sock_sendmsg+0xab/0xe0
+[192979.475946]  [<ffffffff814222be>] sys_sendto+0x11e/0x160
+[192979.475951]  [<ffffffff8153e547>] ? sysret_check+0x1b/0x56
+[192979.475956]  [<ffffffff8125849e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+[192979.475960]  [<ffffffff8153e522>] system_call_fastpath+0x16/0x1b
 
 -- 
-Best regards,
-Stanislav Kinsbursky
+Chris Wilson, Intel Open Source Technology Centre
