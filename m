@@ -1,90 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753060Ab2IJRKK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 13:10:10 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:25291 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751366Ab2IJRKI (ORCPT
+	id S1753224Ab2IJRLT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 13:11:19 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49024 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751947Ab2IJRLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 13:10:08 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18UJisIBTSvRB1cLxLFUwks
-Date: Mon, 10 Sep 2012 10:10:03 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH 2/2] pinctrl: pinctrl-single: Add pinctrl-single,bits
- type of mux
-Message-ID: <20120910171002.GY1303@atomide.com>
-References: <1346835718-21325-1-git-send-email-peter.ujfalusi@ti.com>
- <1346835718-21325-3-git-send-email-peter.ujfalusi@ti.com>
- <20120906191019.GZ1303@atomide.com>
- <504A0F21.8080305@ti.com>
- <20120907165553.GV1303@atomide.com>
- <504DD532.4040400@ti.com>
+	Mon, 10 Sep 2012 13:11:18 -0400
+Date: Mon, 10 Sep 2012 10:11:13 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH wq/for-3.6-fixes 2/2] workqueue: fix possible idle worker
+ depletion across CPU hotplug
+Message-ID: <20120910171113.GB14103@google.com>
+References: <1347243085-2510-1-git-send-email-laijs@cn.fujitsu.com>
+ <1347243085-2510-2-git-send-email-laijs@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <504DD532.4040400@ti.com>
+In-Reply-To: <1347243085-2510-2-git-send-email-laijs@cn.fujitsu.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Ujfalusi <peter.ujfalusi@ti.com> [120910 04:55]:
-> On 09/07/2012 07:55 PM, Tony Lindgren wrote:
-> > 
-> > I'd like to have something that specifies the controller type so
-> > we don't need to mix two types of controllers and test for
-> > non-existing properties when parsing the pins.
-> > 
-> > How about we require something specified for the pinctrl driver
-> > in the "one-bit-per-mux" case like pinctrl-single,bit-per-mux?
-> > 
-> > And then in the pinctrl-single probe we set params = 3 if
-> > pinctrl-single,bit-per-mux is specified. And if no
-> > pinctrl-single,bit-per-mux is specified then set params = 2.
-> > 
-> > That way pcs_parse_one_pinctrl_entry() can just test for params.
-> > 
-> > Sorry I don't have a better name in mind than bit-per-mux..
-> 
-> I'm not sure if this would make things more prone to error or make the DTS or
-> the code more clean in any ways.
-> 
-> Both pinctrl-single,pins and pinctrl-single,bits works on top of the same
-> pinctrl-single area.
-> In most cases we are going to use pinctrl-single,pins for the mux
-> configuration and only in few places we need to fall back to pinctrl-single,bits.
+>From ee378aa49b594da9bda6a2c768cc5b2ad585f911 Mon Sep 17 00:00:00 2001
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+Date: Mon, 10 Sep 2012 10:03:44 -0700
 
-What about hardware that has tons of one-bit-per-mux type of registers?
-Then we end up trying to find the non-existing property potentially
-hundreds of times as the pinctrl-single,pins is never specified.
+To simplify both normal and CPU hotplug paths, worker management is
+prevented while CPU hoplug is in progress.  This is achieved by CPU
+hotplug holding the same exclusion mechanism used by workers to ensure
+there's only one manager per pool.
+
+If someone else seems to be performing the manager role, workers
+proceed to execute work items.  CPU hotplug using the same mechanism
+can lead to idle worker depletion because all workers could proceed to
+execute work items while CPU hotplug is in progress and CPU hotplug
+itself wouldn't actually perform the worker management duty - it
+doesn't guarantee that there's an idle worker left when it releases
+management.
+
+This idle worker depletion, under extreme circumstances, can break
+forward-progress guarantee and thus lead to deadlock.
+
+This patch fixes the bug by using separate mechanisms for manager
+exclusion among workers and hotplug exclusion.  For manager exclusion,
+POOL_MANAGING_WORKERS which was restored by the previous patch is
+used.  pool->manager_mutex is now only used for exclusion between the
+elected manager and CPU hotplug.  The elected manager won't proceed
+without holding pool->manager_mutex.
+
+This ensures that the worker which won the manager position can't skip
+managing while CPU hotplug is in progress.  It will block on
+manager_mutex and perform management after CPU hotplug is complete.
+
+Note that hotplug may happen while waiting for manager_mutex.  A
+manager isn't either on idle or busy list and thus the hoplug code
+can't unbind/rebind it.  Make the manager handle its own un/rebinding.
+
+tj: Updated comment and description.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+Applied to wq/for-3.6-fixes w/ comment and patch description updated.
+Sorry about hacking up your comment / description but this is a tricky
+issue and I thought a bit more verbosity is a good idea.
+
+Thanks a lot for fixing the issue and the persistence!
+
+ kernel/workqueue.c |   37 ++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 36 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 383548e..1e1373b 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1825,10 +1825,45 @@ static bool manage_workers(struct worker *worker)
+ 	struct worker_pool *pool = worker->pool;
+ 	bool ret = false;
  
-> With this patch we will have maximum of two query to find out which type is
-> used, while if we add the 'bit-per-mux' property we will always have need to
-> have two of_get_property() call to figure out what is used.
-> IMHO in this way we could also have copy-paste errors coming at us when adding
-> the mux configurations for the pins and at the end we also need to do same
-> safety/sanity checks if the user really provided the correct type with
-> correlation to the 'bit-per-mux'.
+-	if (!mutex_trylock(&pool->manager_mutex))
++	if (pool->flags & POOL_MANAGING_WORKERS)
+ 		return ret;
+ 
+ 	pool->flags |= POOL_MANAGING_WORKERS;
++
++	/*
++	 * To simplify both worker management and CPU hotplug, hold off
++	 * management while hotplug is in progress.  CPU hotplug path can't
++	 * grab %POOL_MANAGING_WORKERS to achieve this because that can
++	 * lead to idle worker depletion (all become busy thinking someone
++	 * else is managing) which in turn can result in deadlock under
++	 * extreme circumstances.  Use @pool->manager_mutex to synchronize
++	 * manager against CPU hotplug.
++	 *
++	 * manager_mutex would always be free unless CPU hotplug is in
++	 * progress.  trylock first without dropping @gcwq->lock.
++	 */
++	if (unlikely(!mutex_trylock(&pool->manager_mutex))) {
++		spin_unlock_irq(&pool->gcwq->lock);
++		mutex_lock(&pool->manager_mutex);
++		/*
++		 * CPU hotplug could have happened while we were waiting
++		 * for manager_mutex.  Hotplug itself can't handle us
++		 * because manager isn't either on idle or busy list, and
++		 * @gcwq's state and ours could have deviated.
++		 *
++		 * As hotplug is now excluded via manager_mutex, we can
++		 * simply try to bind.  It will succeed or fail depending
++		 * on @gcwq's current state.  Try it and adjust
++		 * %WORKER_UNBOUND accordingly.
++		 */
++		if (worker_maybe_bind_and_lock(worker))
++			worker->flags &= ~WORKER_UNBOUND;
++		else
++			worker->flags |= WORKER_UNBOUND;
++
++		ret = true;
++	}
++
+ 	pool->flags &= ~POOL_MANAGE_WORKERS;
+ 
+ 	/*
+-- 
+1.7.7.3
 
-Well I think we should specify the binding for the type of the controller,
-not mix different types of bindings for the same controller. So we should
-probably have something just like address-cells, gpio-cells and
-interrupt-cells, although in this case it would be specific to pinctrl-single
-only and not be called cells.
-
-> This would just complicate the code.
-> The existence of pinctrl-single,pins or pinctrl-single,bits property alone
-> gives enough information for the number of parameters.
-
-Yes but we don't want to allow mixing different kind of registers within
-the same controller, they should be specified as separate controllers.
-
-Regards,
-
-Tony
