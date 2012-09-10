@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752102Ab2IJRBK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 13:01:10 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35067 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046Ab2IJRBH (ORCPT
+	id S1751895Ab2IJRDi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 13:03:38 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:64594 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750935Ab2IJRDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 13:01:07 -0400
-Message-ID: <504E1CD0.8040306@gmail.com>
-Date: Mon, 10 Sep 2012 11:01:04 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Mon, 10 Sep 2012 13:03:36 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+/I6CWaCaXrhAJmSJ7gFVt
+Date: Mon, 10 Sep 2012 10:03:32 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Benoit Cousson <b-cousson@ti.com>
+Cc: Matt Porter <mporter@ti.com>, Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Vaibhav Hiremath <hvaibhav@ti.com>
+Subject: Re: [PATCH] ARM: dts: AM33XX: fix gpio node numbering to match
+ hardware
+Message-ID: <20120910170332.GX1303@atomide.com>
+References: <1347294020-22661-1-git-send-email-mporter@ti.com>
+ <504E168C.6060603@ti.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        Robert Richter <robert.richter@amd.com>
-Subject: Re: [PATCH 0/3] perf: precise mode and exclude_guest
-References: <1347295216-1202-1-git-send-email-dsahern@gmail.com> <1347296241.2124.32.camel@twins>
-In-Reply-To: <1347296241.2124.32.camel@twins>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <504E168C.6060603@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/10/12 10:57 AM, Peter Zijlstra wrote:
-> On Mon, 2012-09-10 at 10:40 -0600, David Ahern wrote:
->> Hopefully thi wraps up the precise mode-exclude_guest dependency.
->> I'm sure someone will let me know if I screwed up the attribution
->> in the second patch.
->
->
-> I'll wait with applying until we have the IBS stuff sorted, other than
-> that, thanks for collecting this..
->
+* Benoit Cousson <b-cousson@ti.com> [120910 09:35]:
+> + Tony
+> 
+> Hi Matt,
+> 
+> 30 minutes too late for my pull request :-(
+> 
+> There are a couple of am33xx patches under discussion, so I'll take them
+> and send a for_3.7/dts-part2 pull request if this is not too late for Tony.
 
-Robert recently confirmed that this series should not have an impact on 
-AMD as it currently stands -- exclude attributes are ignored. And then 
-his patch to require they be unset works fine with the first patch in 
-this set because of the existing EINVAL fallback handling in perf-record 
-and perf-top.
+Yes please do, it' hard to say when exactly we need to stop merging,
+but probably we still have a bit more time.
 
-Did you have something else in mind that needs to be done?
+Regards,
 
-David
+Tony
