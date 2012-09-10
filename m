@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756885Ab2IJNZS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 09:25:18 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49933 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751263Ab2IJNZP (ORCPT
+	id S1757043Ab2IJN0B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 09:26:01 -0400
+Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:60568 "EHLO
+	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753047Ab2IJNZ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 09:25:15 -0400
-Date: Mon, 10 Sep 2012 15:25:10 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-cc: NeilBrown <neilb@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        lkml <linux-kernel@vger.kernel.org>, linux-omap@vger.kernel.org,
-        Kevin Hilman <khilman@deeprootsystems.com>
-Subject: Re: Seeking clarity on IRQCHIP_MASK_ON_SUSPEND
-In-Reply-To: <CAMQu2gzp1mieitAtDWB8Uud97gFQjH7eZ-bDZ2kMBLejAx4qMQ@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1209101524040.2724@ionos>
-References: <20120910165127.37dd07f3@notabene.brown> <alpine.LFD.2.02.1209101215300.2724@ionos> <CAMQu2gzp1mieitAtDWB8Uud97gFQjH7eZ-bDZ2kMBLejAx4qMQ@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 10 Sep 2012 09:25:57 -0400
+Date: Mon, 10 Sep 2012 16:21:26 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Ben Minerds <puzzleduck@gmail.com>
+Cc: balbi@ti.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: gadget: Conform with checkpatch -3 warnings, 1 error
+Message-ID: <20120910132125.GE20569@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <1347151835-19028-1-git-send-email-puzzleduck@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XuV1QlJbYrcVoo+x"
+Content-Disposition: inline
+In-Reply-To: <1347151835-19028-1-git-send-email-puzzleduck@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Sep 2012, Shilimkar, Santosh wrote:
-> Thomas,
-> 
-> On Mon, Sep 10, 2012 at 3:58 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > On Mon, 10 Sep 2012, NeilBrown wrote:
-> >>
-> >> The IRQCHIP_MASK_ON_SUSPEND flag seems to be hard to use correctly, so either
-> >> I'm understanding it wrongly, or it could be made easier to use.
-> >> If the first case, I'm hoping that some improvement to documentation might
-> >> result.  If the second, then maybe we can fix the code.
-> > ...
-> >> Is anyone able to give a definitive answer on this?  Should
-> >> IRQCHIP_MASK_ON_SUSPEND be removed?
-> >
-> > The whole point of IRQCHIP_MASK_ON_SUSPEND is to deal with hardware
-> > designed by geniuses.
-> >
-> > Most SoCs have a way to mark the interrupts which serve as a wake up
-> > source as such. All other interrupts are magically "masked" on entry
-> > to suspend.
-> >
-> Just to support this, IRQCHIP_MASK_ON_SUSPEND does work with quite
-> a few ARM platforms too. OMAP already uses it in mainline and I have
-> seen patches for U500 and Tegra SOCs. Most of these usages are with
-> IRQ chips who doesn't have any driver run time PM supported and
-> the IRQ CHIP itself is shutdown when the CPU/CPU cluster gets
-> power down. So as far as functionality concerned with the flag,
-> it does what it suppose to do.
-> 
-> > Now there is hardware which is missing such a control, so we need to
-> > mask the non wakeup interrupts right before going into suspend.
-> >
-> > That's what IRQCHIP_MASK_ON_SUSPEND does. Not more, not less. See
-> > commit d209a699a0b for more ugly details.
-> >
-> > You might be looking for a different functionality. Can you explain
-> > what you need?
-> >
-> Neil's email came from a discussion on the usage of this flag for
-> OMAP GPIO irqchip which I proposed. With the flag, when the
-> lazy check_irq routine is called, the GPIO driver is runtime suspended
-> and hence the late mask/unmask calls take abort(clocks are already gated).
-> GPIO IRQCHIP is secondary IRQCHIP connected to 1 interrupt line
-> per bank(32 GPIOs) to the primary interrupt controller IRQCHIP.
 
-So for this thing you need a IRQCHIP_MASK_BEFORE_SUSPEND variant? 
+--XuV1QlJbYrcVoo+x
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Sun, Sep 09, 2012 at 10:50:35AM +1000, Ben Minerds wrote:
+> Removed 3 checkpatch.sh warnings and 1 error in
+> drivers/usb/gadget/serial.c.
+> -sizeof brackets x2
+> -remove initialise to 0
+> -pr_warning to pr_warn
+>=20
+> Signed-off-by: Ben Minerds <puzzleduck@gmail.com>
+
+please rebase this on my gadget branch ;-)
+
+--=20
+balbi
+
+--XuV1QlJbYrcVoo+x
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQTelVAAoJEIaOsuA1yqREJEgP/iSLcsJJuPAXIPvDkR9DpDaV
+1vU8croPpSE5N/qs3rSLi1Za1o8oGA1yUUwqllhw9YKeEMWdryf02pAlPmqN+mVn
+E7NjQN/SE+0NxFxeoPRq9+xPqHVpGorJQUHxUmsMi4du7MM4eC3a66WDKB/O2Z6H
+BEAq8XALAbQj3/07TARgpgs7pQsHj7/5E8H7+HP1KoaCJ+263DAlA/ena8ocTQ5p
+52S5GsyZ+QnEGcnKPxWNLBPCCak4F3D/Q0HqV78I2wYP3NP33DwDEY8j9rYdY5xQ
+JhVxj4ocyxAoXeC2iUQVjcFGIXP4umlTrlUmGm+hPaHknrM5JDdx4U0AdnjQ/04n
+ztGVFNVbKCiwoPUaKlhuBqdyYx76kxzc20Z8JZarNyJIgRTMA1Tck3I9lMlnnOUQ
+HKspU8wTQKFIAcs5zCfz7hBDK7YrRee9EAWENgX6dcvPtEp9LvKWsm4eOg/JJNGX
+OLlPRQaFsFWFCWsAR+tGlTk4Vn8B+kZGO+NM5PETccEVpt+OM1OnyB36UySu8MLp
+VJ2jQK9iaHrJhBbQAdGBb8wM14bf47LZ7BQgpUIf9I3nRZoVllZPA4qHVYXO6rnD
+z22zxQTS8rfD1pX+tuVy7ygrUOByZvk3M4BmgjkgzxCLjLBsOcgLnlw9Ok+Bl11u
+m8EP3RpztRP5ikbdS3CJ
+=DsA9
+-----END PGP SIGNATURE-----
+
+--XuV1QlJbYrcVoo+x--
