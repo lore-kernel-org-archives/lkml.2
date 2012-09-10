@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758059Ab2IJXJc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 19:09:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58990 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757284Ab2IJXJa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 19:09:30 -0400
-Date: Tue, 11 Sep 2012 00:09:17 +0100
-From: Alasdair G Kergon <agk@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Kent Overstreet <koverstreet@google.com>, axboe@kernel.dk,
-        device-mapper development <dm-devel@redhat.com>, david@fromorbit.com,
-        linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>, bharrosh@panasas.com,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [dm-devel] [PATCH 2/2] block: Avoid deadlocks with bio
-	allocation by stacking drivers
-Message-ID: <20120910230917.GB10477@agk-dp.fab.redhat.com>
-Mail-Followup-To: Tejun Heo <tj@kernel.org>,
-	Kent Overstreet <koverstreet@google.com>, axboe@kernel.dk,
-	device-mapper development <dm-devel@redhat.com>,
-	david@fromorbit.com, linux-kernel@vger.kernel.org,
-	linux-bcache@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
-	bharrosh@panasas.com, Vivek Goyal <vgoyal@redhat.com>
-References: <20120910002810.GA23241@moria.home.lan> <20120910172210.GC14103@google.com> <20120910202435.GG16360@google.com> <20120910204010.GA32310@google.com> <20120910213349.GH16360@google.com> <20120910213710.GA7677@google.com> <20120910215633.GA19739@google.com> <20120910220910.GB7677@google.com> <20120910225057.GA10477@agk-dp.fab.redhat.com> <CAOS58YO5puV2iPhwe0vbyEydPnR=eWPStNRm=xEpMeo-TMHCaw@mail.gmail.com>
+	id S1758135Ab2IJXKc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 19:10:32 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57345 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757284Ab2IJXKb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 19:10:31 -0400
+Date: Mon, 10 Sep 2012 16:10:05 -0700
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, eranian@google.com, mingo@elte.hu,
+        andi@firstfloor.org, jolsa@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 1/3] perf: Add cpumask for uncore pmu
+Message-ID: <20120910231005.GA29169@ghostprotocols.net>
+References: <1347263631-23175-1-git-send-email-zheng.z.yan@intel.com>
+ <1347294866.2124.28.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOS58YO5puV2iPhwe0vbyEydPnR=eWPStNRm=xEpMeo-TMHCaw@mail.gmail.com>
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: 64 Baker Street, 4th floor, London,
-	W1U 7DF.
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1347294866.2124.28.camel@twins>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 04:01:01PM -0700, Tejun Heo wrote:
-> IIUC, Kent posted a patch which converts all of them to use front-pad
+Em Mon, Sep 10, 2012 at 06:34:26PM +0200, Peter Zijlstra escreveu:
+> On Mon, 2012-09-10 at 15:53 +0800, Yan, Zheng wrote:
+> > This patchset add a cpumask file to the uncore pmu sysfs directory.
+> > If user doesn't explicitly specify CPU list, perf-stat only collects
+> > uncore events on CPUs listed in the cpumask file.
 
-The only patch I saw posted here only handles one of the easier cases so far.
+> > As Stephane suggested, make perf-stat recognize wildcard in pmu name.
+> > So we can easily measure event on all uncore boxes of same type.
 
-The others are a bit trickier and probably involve a decision about which way to
-change an in-kernel dm interface.
+> > Any comment is appreciated.
+ 
+> You forgot to CC acme who maintains the tools side.. Anyway, I think it
+> all looks ok, Arnaldo see anything dubious in there?
 
-Alasdair
+I'll look at that tomorrow, when my caffeine level is high and the other
+substance is down, thanks.
 
+- Arnaldo
+
+P.S. thanks for pointing the (l)userlevel part, much appreciated.
