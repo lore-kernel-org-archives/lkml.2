@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751443Ab2IJGOk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 02:14:40 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:56766 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750718Ab2IJGOi (ORCPT
+	id S1751672Ab2IJGRM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 02:17:12 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48742 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790Ab2IJGRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 02:14:38 -0400
-Date: Mon, 10 Sep 2012 16:14:28 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mike Turquette <mturquette@ti.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Loic PALLARDY <loic.pallardy@st.com>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: linux-next: manual merge of the clk tree with the arm-soc tree
-Message-Id: <20120910161428.879618aea62e5be6340ed93c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__10_Sep_2012_16_14_28_+1000_h=pcJN5oisagaknX"
+	Mon, 10 Sep 2012 02:17:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120909224155.647306922@decadent.org.uk>
+References: <20120909224150.641491654@decadent.org.uk>
+	<20120909224155.647306922@decadent.org.uk>
+Date: Mon, 10 Sep 2012 08:17:06 +0200
+Message-ID: <CA+rthh8Z8panzcLT9baQd=qEvywfJcQVk1wCnHJ_PCBu=Rn5Tw@mail.gmail.com>
+Subject: Re: [ 35/95] dccp: check ccid before dereferencing
+From: Mathias Krause <minipli@googlemail.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Gerrit Renker <gerrit@erg.abdn.ac.uk>,
+        "David S. Miller" <davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__10_Sep_2012_16_14_28_+1000_h=pcJN5oisagaknX
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Ben,
 
-Hi Mike,
+On Mon, Sep 10, 2012 at 12:42 AM, Ben Hutchings <ben@decadent.org.uk> wrote:
+> 3.2-stable review patch.  If anyone has any objections, please let me know.
 
-Today's linux-next merge of the clk tree got a conflict in
-arch/arm/mach-ux500/clock.c between commit 79964bcd792f ("ARM: ux500:
-Correct Ux500 family names usage") from the arm-soc tree and commit
-ebc96db7632f ("ARM: ux500: Switch to use common clock framework") from
-the clk tree.
+No objections, but could you please consider including the following
+commits, too?:
 
-The latter removed the file so I did that - there may be more fixup
-required.
+  e862f1a atm: fix info leak in getsockopt(SO_ATMPVC)
+  3c0c5cf atm: fix info leak via getsockname()
+  e15ca9a Bluetooth: HCI - Fix info leak in getsockopt(HCI_FILTER)
+  3f68ba0 Bluetooth: HCI - Fix info leak via getsockname()
+  9ad2de4 Bluetooth: RFCOMM - Fix info leak in getsockopt(BT_SECURITY)
+  f9432c5 Bluetooth: RFCOMM - Fix info leak in ioctl(RFCOMMGETDEVLIST)
+  9344a97 Bluetooth: RFCOMM - Fix info leak via getsockname()
+  792039c Bluetooth: L2CAP - Fix info leak via getsockname()
+  04d4fbc l2tp: fix info leak via getsockname()
+  3592aae llc: fix info leak via getsockname()
+  7b07f8e dccp: fix info leak via getsockopt(DCCP_SOCKOPT_CCID_TX_INFO)
+  2d8a041 ipvs: fix info leak in getsockopt(IP_VS_SO_GET_TIMEOUT)
+  43da5f2 net: fix info leak in compat dev_ifconf()
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Those were not CCed to stable but David wanted to queue them anyway. See
 
---Signature=_Mon__10_Sep_2012_16_14_28_+1000_h=pcJN5oisagaknX
-Content-Type: application/pgp-signature
+  http://marc.info/?l=linux-kernel&m=134509201708293&w=2
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQTYVEAAoJEECxmPOUX5FEsIwP/2hFaRn8Vi6kJNA1+GeinZFV
-xYwsiwuwhZ2iP+h68GVm6GZBIXDigKXMH9CW2GqlCNXoLErbpnx8SnRdVbZbQ7Qi
-RDJT/b9pJOEDtYN8tIcc1LQW6NG9FS32zhkTgGyu0abWMlSlIbqFqhRpcdLzNhY8
-UNIXTfOZGsReQ+O6QEg2cdUPzpqU4JpR4yApbyjiSDQ6YbvIp3K4IeSgPIhtrpHo
-G06mioMtJPZdha9B9DD8J43dabCiu0KZClnk+kSZ25yVb9arqp1vvYvSod7xFr3r
-ts9r5fY94Xbwwc7XvPy37KXjaBu2C8UNxS/z0F+O0PHvi2FOdRSBH5CrYqFSWeqe
-Nuw3ZJIvtUa1RnZcC3sXZ6UOqrPyRjW9wTcQjcwwQgCYDeB7mjtHVMSt8DWx74hB
-gRjUPLEmjmuvxODmxziP8k6LgvzPPOqDU0bhFNzxI4wcz+94kBDw2mPzeJb2vfFP
-i98GgTAUHxDEXVXmpqNeqtlZgjIVrq/yCdLkIs/HWDndBHTzXqIjlUgxEWyjSnQh
-zDla7npif7j1kShnAWpw3BtX+2XOXV+jqghzAQxe/5T5UhioHuIoh98wetRBMA5N
-km7s5STxtYtSEvNq5Sz9UPxEK1wI9rR6VYz2WcbHUhfXl5r7Pwk0gB3ggcMNLCf/
-FtUxuyeu9RaD4jRNjyiH
-=xp1O
------END PGP SIGNATURE-----
-
---Signature=_Mon__10_Sep_2012_16_14_28_+1000_h=pcJN5oisagaknX--
+Thanks,
+Mathias
