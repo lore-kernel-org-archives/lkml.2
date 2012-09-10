@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757239Ab2IJR6J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 13:58:09 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:15392 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753740Ab2IJR6G (ORCPT
+	id S1757293Ab2IJR6h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 13:58:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58654 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757199Ab2IJR6f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 13:58:06 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Mon, 10 Sep 2012 13:57:57 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>, linux-arch@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 31/31] arm64: MAINTAINERS update
-In-reply-to: <20120909163156.GA31430@game.jcrosoft.org>
-Message-id: <alpine.LFD.2.02.1209101355000.28681@xanadu.home>
-References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
- <1347035226-18649-32-git-send-email-catalin.marinas@arm.com>
- <20120909163156.GA31430@game.jcrosoft.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 10 Sep 2012 13:58:35 -0400
+Date: Mon, 10 Sep 2012 10:56:01 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>,
+        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+        Colin Cross <ccross@android.com>, Brian Swetland <swetland@google.com>,
+        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com,
+        kgdb-bugreport@lists.sourceforge.net, linux-serial@vger.kernel.org
+Subject: Re: [PATCH 09/14] tty/serial/amba-pl011: Implement clear_irqs
+ callback
+Message-ID: <20120910175601.GA13164@lizard>
+References: <20120910040802.GA1261@lizard>
+ <20120910041404.GI29537@lizard>
+ <20120910121702.550b8a90@pyramind.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120910121702.550b8a90@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 9 Sep 2012, Jean-Christophe PLAGNIOL-VILLARD wrote:
+On Mon, Sep 10, 2012 at 12:17:02PM +0100, Alan Cox wrote:
+[...]
+> > +static void pl011_clear_irqs(struct uart_port *port)
+> > +{
+> > +	struct uart_amba_port *uap = (struct uart_amba_port *)port;
+> > +	unsigned char __iomem *regs = uap->port.membase;
+> > +
+> > +	writew(readw(regs + UART011_MIS), regs + UART011_ICR);
+> > +	/*
+> > +	 * There is no way to clear TXIM, this is "ready to transmit IRQ", so
+> > +	 * we simply mask it. ops->start_tx will unmask it.
+> > +	 */
+> 
+> Not if you race here with the transmit start it won't.
 
-> On 17:27 Fri 07 Sep     , Catalin Marinas wrote:
-> > This patch updates the MAINTAINERS file for the AArch64 Linux kernel
-> > port.
-> > 
-> > Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> > Acked-by: Tony Lindgren <tony@atomide.com>
-> > Acked-by: Arnd Bergmann <arnd@arndb.de>
-> > ---
-> >  MAINTAINERS |    6 ++++++
-> >  1 files changed, 6 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/MAINTAINERS b/MAINTAINERS
-> > index fdc0119..de368a5 100644
-> > --- a/MAINTAINERS
-> > +++ b/MAINTAINERS
-> > @@ -1209,6 +1209,12 @@ S:	Maintained
-> >  F:	arch/arm/mach-pxa/z2.c
-> >  F:	arch/arm/mach-pxa/include/mach/z2.h
-> >  
-> > +ARM64 PORT (AARCH64 ARCHITECTURE)
-> > +M:	Catalin Marinas <catalin.marinas@arm.com>
-> we should put Russell too
+True, the race is possible. But I guess there will be no harm: only non-polling
+code uses ->start_tx(), but then we don't care, the port is used for NMI
+debugger, so the worst that can happen, is that we'll get another NMI just
+after the race, and so we'll mask it again.
 
-He is not maintaining the ARM64 code.
+And once we release the port from KDB, we never call this function anymore
+(since normal IRQ routine will be called instead).
 
+I guess I need to add some commens about this.
 
-Nicolas
+Thanks!
