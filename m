@@ -1,81 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751208Ab2IJFf6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 01:35:58 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:34165 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750753Ab2IJFf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 01:35:57 -0400
-Date: Mon, 10 Sep 2012 06:35:54 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1209100633180.14013@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751428Ab2IJFp1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 01:45:27 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:40945 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750753Ab2IJFpX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 01:45:23 -0400
+Date: Mon, 10 Sep 2012 15:45:12 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        John Crispin <blogic@openwrt.org>, Ralf Baechle <ralf@linux-mips.org>
+Subject: linux-next: manual merge of the samsung tree with the mips tree
+Message-Id: <20120910154512.d344ad91fc81caa90ebb05ba@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__10_Sep_2012_15_45_12_+1000_xfT3etD15odJKzOi"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Mon__10_Sep_2012_15_45_12_+1000_xfT3etD15odJKzOi
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi Linus,
+Hi Kukjin,
 
-just noticed I hadn't send these out, nothing majorly urgent, I know AMD 
-guys have some regression fixes coming soon,
+Today's linux-next merge of the samsung tree got a conflict in
+drivers/pinctrl/Makefile between commit 3fa68afc3d77 ("OF: pinctrl: MIPS:
+lantiq: implement lantiq/xway pinctrl support") from the mips tree and
+commit 30574f0db1b1 ("pinctrl: add samsung pinctrl and gpiolib driver")
+from the samsung tree.
 
-This contains:
-2 nouveau fixes so it loads on the retina MBP systems properly,
-2 vmwgfx fixes to load the driver earlier, and allow distros config it
-1 error->debug fix in ast
-and Keith was playing with 32-on-64 and decided we may as well stick the 
-compat ioctl in all the drivers. It fixes udl for him.
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary (no action is required).
 
-Dave.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-The following changes since commit 4cbe5a555fa58a79b6ecbb6c531b8bab0650778d:
+diff --cc drivers/pinctrl/Makefile
+index 26a86c7,6a88113..0000000
+--- a/drivers/pinctrl/Makefile
++++ b/drivers/pinctrl/Makefile
+@@@ -33,7 -29,7 +33,9 @@@ obj-$(CONFIG_PINCTRL_TEGRA20)	+=3D pinctr
+  obj-$(CONFIG_PINCTRL_TEGRA30)	+=3D pinctrl-tegra30.o
+  obj-$(CONFIG_PINCTRL_U300)	+=3D pinctrl-u300.o
+  obj-$(CONFIG_PINCTRL_COH901)	+=3D pinctrl-coh901.o
+ +obj-$(CONFIG_PINCTRL_XWAY)	+=3D pinctrl-xway.o
+ +obj-$(CONFIG_PINCTRL_LANTIQ)	+=3D pinctrl-lantiq.o
++ obj-$(CONFIG_PINCTRL_SAMSUNG)	+=3D pinctrl-samsung.o
++ obj-$(CONFIG_PINCTRL_EXYNOS4)	+=3D pinctrl-exynos.o
+ =20
+  obj-$(CONFIG_PLAT_SPEAR)	+=3D spear/
 
-  Linux 3.6-rc4 (2012-09-01 10:39:58 -0700)
+--Signature=_Mon__10_Sep_2012_15_45_12_+1000_xfT3etD15odJKzOi
+Content-Type: application/pgp-signature
 
-are available in the git repository at:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-  git://people.freedesktop.org/~airlied/linux.git drm-fixes
+iQIcBAEBCAAGBQJQTX5oAAoJEECxmPOUX5FE2mkP/RBUYv4+X7PYz1zlVgJP61ZN
+CR/hMuVuI+CgV2AZw99Nz4BOwoc5nPDiCvXPOgVtqb/63hh7rwDrhJTioJyIvEgR
+zrAyO6FDKPejbLTlcr4ivr8DRUi1mX88kdSk5HFBjocUlNkh6NI5seVVMoj3ep5p
+7GMgBkYQOTCc/iAl0C8urgjKx3lbjpMnDQGBOVvvKnj9xAA6wdqDaBKzEOgYAF77
+PSN1QA27UPwZWZQk636MmWbtitmY4jOMVZNFvmA9IbHlx2SYi1Qq+tXaSTOTJ8AO
+l1R83DBpyeaJvyf+VCfafxS0n8SC4G+MIeoRcZ/Si3I8WHR9aWnr+FacNXZyQotR
+SJezI399nPD11lYHmlN+MQ/ZsKtfTC0pF/VY3d3pM9r4g2YuN/KRytl1e4EyBysr
+VCK3JTMkBXK9eCvG+rbDrTK+P3m5/mI6MvpKCniyICuiqvPKVOhIPUi/JyJelKA0
+RboGB89f09hOih0pJ0h17nmnZPAPr/vZhnhtu8mFrIbNtVYj/XegLzeLANDHUhaX
+9xfBj0iThWuO5UzelOwtbumh2PpuiA3g3rnyJpQ3asauUuF/EVkQQ42g+YM1lpij
+JQ/keeVqjYEN5Ns6PCV4MDVZZxAnYKyKxYzVet7BPldAxxvVYuMuG8oJ3VqfKw0w
+GbZkU1lLpANXS+NgXCLb
+=Fix+
+-----END PGP SIGNATURE-----
 
-for you to fetch changes up to c4903429a92be60e6fe59868924a65eca4cd1a38:
-
-  drm/vmwgfx: add MODULE_DEVICE_TABLE so vmwgfx loads at boot (2012-09-07 13:25:34 +1000)
-
-----------------------------------------------------------------
-Ben Skeggs (2):
-      drm/nvd0/disp: hopefully fix selection of 6/8bpc mode on DP outputs
-      drm/nv50-/gpio: initialise to vbios defaults during init
-
-Dave Airlie (4):
-      Merge branch 'drm-nouveau-fixes' of git://anongit.freedesktop.org/nouveau/linux-2.6 into drm-fixes
-      drm/ast: drop debug level on error printk
-      drm/vmwgfx: allow a kconfig option to choose if fbcon is enabled
-      drm/vmwgfx: add MODULE_DEVICE_TABLE so vmwgfx loads at boot
-
-Keith Packard (1):
-      drm: use drm_compat_ioctl for 32-bit apps
-
- drivers/gpu/drm/ast/ast_drv.c           |    3 +++
- drivers/gpu/drm/ast/ast_mode.c          |    2 +-
- drivers/gpu/drm/cirrus/cirrus_drv.c     |    3 +++
- drivers/gpu/drm/exynos/exynos_drm_drv.c |    3 +++
- drivers/gpu/drm/i810/i810_dma.c         |    3 +++
- drivers/gpu/drm/i810/i810_drv.c         |    3 +++
- drivers/gpu/drm/mgag200/mgag200_drv.c   |    3 +++
- drivers/gpu/drm/nouveau/nv50_gpio.c     |    3 +++
- drivers/gpu/drm/nouveau/nvd0_display.c  |    4 ++--
- drivers/gpu/drm/savage/savage_drv.c     |    3 +++
- drivers/gpu/drm/sis/sis_drv.c           |    3 +++
- drivers/gpu/drm/tdfx/tdfx_drv.c         |    3 +++
- drivers/gpu/drm/udl/udl_drv.c           |    3 +++
- drivers/gpu/drm/via/via_drv.c           |    3 +++
- drivers/gpu/drm/vmwgfx/Kconfig          |    8 ++++++++
- drivers/gpu/drm/vmwgfx/vmwgfx_drv.c     |    3 ++-
- 16 files changed, 49 insertions(+), 4 deletions(-)
+--Signature=_Mon__10_Sep_2012_15_45_12_+1000_xfT3etD15odJKzOi--
