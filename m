@@ -1,71 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754593Ab2IJIhz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 04:37:55 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:49764 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752638Ab2IJIhx (ORCPT
+	id S1752387Ab2IJIkI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 04:40:08 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:56833 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752532Ab2IJIkB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 04:37:53 -0400
-Message-ID: <504DA6D6.5030704@linux.vnet.ibm.com>
-Date: Mon, 10 Sep 2012 16:37:42 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 1/3] KVM: MMU: release noslot pfn on the fail path properly
-References: <5049908A.7070501@linux.vnet.ibm.com> <504DA343.9080602@redhat.com>
-In-Reply-To: <504DA343.9080602@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12091008-8256-0000-0000-0000041AAD80
+	Mon, 10 Sep 2012 04:40:01 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v3 0/9] pinctrl: mvebu: pinctrl driver
+Date: Mon, 10 Sep 2012 10:39:37 +0200
+Message-Id: <1347266386-16229-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1345623750-10645-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1345623750-10645-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2012 04:22 PM, Avi Kivity wrote:
-> On 09/07/2012 09:13 AM, Xiao Guangrong wrote:
->> We can not directly call kvm_release_pfn_clean to release the pfn
->> since we can meet noslot pfn which is used to cache mmio info into
->> spte
->>
->> Introduce mmu_release_pfn_clean to do this kind of thing
->>
->> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->> ---
->>  arch/x86/kvm/mmu.c         |   19 ++++++++++++++-----
->>  arch/x86/kvm/paging_tmpl.h |    4 ++--
->>  2 files changed, 16 insertions(+), 7 deletions(-)
->>
->> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
->> index 399c177..3c10bca 100644
->> --- a/arch/x86/kvm/mmu.c
->> +++ b/arch/x86/kvm/mmu.c
->> @@ -2432,6 +2432,16 @@ done:
->>  	return ret;
->>  }
->>
->> +/*
->> + * The primary user is page fault path which call it to properly
->> + * release noslot_pfn.
->> + */
->> +static void mmu_release_pfn_clean(pfn_t pfn)
->> +{
->> +	if (!is_error_pfn(pfn))
->> +		kvm_release_pfn_clean(pfn);
->> +}
->> +
-> 
-> Too many APIs, each slightly different.  How do I know which one to call?
+This patch set adds a core pinctrl driver for Marvell MVEBU SoCs and
+SoC specific stubs for Armada 370, Armada XP, Dove, and Kirkwood.
+The SoC specific stubs use the pinctrl-mvebu core driver that handles
+pinctrl API and register accesses for common pinctrl registers.
 
-It is only used in mmu and it is a static function.
+As especially Dove has some pinctrl registers that do not match the
+common pinctrl register layout the core driver has been extended by
+some callbacks to allow uncommon Dove pinctrl registers.
 
-> 
-> Please change kvm_release_pfn_*() instead, calling some arch hook (or
-> even #ifdef CONFIG_KVM_HAS_FAST_MMIO) to check for the special case.
+DT binding documentation is added for all supported SoCs but as
+Dove and Kirkwood are not yet ready for full DT support, the pinctrl
+driver is only activated for Armada 370 and XP.
 
-We only need to call it on page fault path. If we change the common API
-other x86 components have to suffer from it.
+The driver has been tested on Dove, 88f6281 variant of Kirkwood,
+Armada 370, and XP.
+
+Changelog:
+v2:
+- rebased on git://git.infradead.org/users/jcooper/linux.git boards-for-3.7
+- removed arch/arm/*/Kconfig patches that enable PINCTRL_ on MACH_MVEBU
+  (those will be sent as a different patch set)
+- reworked patches wrt reviews from Andrew Lunn and Linus Walleij
+
+v3:
+- parse functions from SoC specific pin groups instead of DT node
+- move kirkwood variants to DT match data
+- respect Armada XP variant in DTs
+- cleaned whitespaces in DTs
+- rebased to jcooper/boards-for-v3.7-v2
+
+Sebastian Hesselbarth (3):
+  pinctrl: mvebu: pinctrl driver core
+  pinctrl: mvebu: dove pinctrl driver
+  pinctrl: mvebu: kirkwood pinctrl driver
+
+Thomas Petazzoni (6):
+  pinctrl: mvebu: add pinctrl driver for Armada 370
+  pinctrl: mvebu: add pinctrl driver for Armada XP
+  ARM: mvebu: add pinctrl device in DT for Armada 370/XP SoCs
+  ARM: mvebu: Add pinctrl support to Armada XP SoCs
+  ARM: mvebu: Add pinctrl support to Armada 370 SoC
+  ARM: mvebu: adjust Armada XP evaluation board DTS
+
+ .../pinctrl/marvell,armada-370-pinctrl.txt         |   95 +++
+ .../bindings/pinctrl/marvell,armada-xp-pinctrl.txt |  100 +++
+ .../bindings/pinctrl/marvell,dove-pinctrl.txt      |   72 ++
+ .../bindings/pinctrl/marvell,kirkwood-pinctrl.txt  |  279 ++++++++
+ .../bindings/pinctrl/marvell,mvebu-pinctrl.txt     |   45 ++
+ arch/arm/Kconfig                                   |    1 +
+ arch/arm/boot/dts/armada-370-xp.dtsi               |    7 +
+ arch/arm/boot/dts/armada-370.dtsi                  |    4 +
+ arch/arm/boot/dts/armada-xp-db.dts                 |    4 +-
+ arch/arm/boot/dts/armada-xp-mv78230.dtsi           |   27 +
+ arch/arm/boot/dts/armada-xp-mv78260.dtsi           |   27 +
+ arch/arm/boot/dts/armada-xp-mv78460.dtsi           |   27 +
+ drivers/pinctrl/Kconfig                            |   22 +
+ drivers/pinctrl/Makefile                           |    5 +
+ drivers/pinctrl/pinctrl-armada-370.c               |  421 ++++++++++++
+ drivers/pinctrl/pinctrl-armada-xp.c                |  468 +++++++++++++
+ drivers/pinctrl/pinctrl-dove.c                     |  622 +++++++++++++++++
+ drivers/pinctrl/pinctrl-kirkwood.c                 |  473 +++++++++++++
+ drivers/pinctrl/pinctrl-mvebu.c                    |  705 ++++++++++++++++++++
+ drivers/pinctrl/pinctrl-mvebu.h                    |  192 ++++++
+ 20 files changed, 3594 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/marvell,armada-370-pinctrl.txt
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/marvell,armada-xp-pinctrl.txt
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/marvell,dove-pinctrl.txt
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/marvell,kirkwood-pinctrl.txt
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/marvell,mvebu-pinctrl.txt
+ create mode 100644 arch/arm/boot/dts/armada-xp-mv78230.dtsi
+ create mode 100644 arch/arm/boot/dts/armada-xp-mv78260.dtsi
+ create mode 100644 arch/arm/boot/dts/armada-xp-mv78460.dtsi
+ create mode 100644 drivers/pinctrl/pinctrl-armada-370.c
+ create mode 100644 drivers/pinctrl/pinctrl-armada-xp.c
+ create mode 100644 drivers/pinctrl/pinctrl-dove.c
+ create mode 100644 drivers/pinctrl/pinctrl-kirkwood.c
+ create mode 100644 drivers/pinctrl/pinctrl-mvebu.c
+ create mode 100644 drivers/pinctrl/pinctrl-mvebu.h
+---
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Rob Landley <rob@landley.net>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Lior Amsalem <alior@marvell.com>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Ben Dooks <ben.dooks@codethink.co.uk>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: linux-doc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+-- 
+1.7.10.4
 
