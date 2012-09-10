@@ -1,120 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756619Ab2IJRAl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 13:00:41 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:51971 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751788Ab2IJRAi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 13:00:38 -0400
-Message-ID: <504E1C69.30602@ti.com>
-Date: Mon, 10 Sep 2012 18:59:21 +0200
-From: Benoit Cousson <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1754131Ab2IJRAj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 13:00:39 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:37997 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751226Ab2IJRAh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 13:00:37 -0400
+Date: Mon, 10 Sep 2012 22:26:53 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: habanero@linux.vnet.ibm.com,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
+        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
+Subject: Re: [RFC][PATCH] Improving directed yield scalability for PLE
+ handler
+Message-ID: <20120910165653.GA28033@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120718133717.5321.71347.sendpatchset@codeblue.in.ibm.com>
+ <500D2162.8010209@redhat.com>
+ <1347023509.10325.53.camel@oc6622382223.ibm.com>
+ <504A37B0.7020605@linux.vnet.ibm.com>
+ <1347046931.7332.51.camel@oc2024037011.ibm.com>
+ <20120908084345.GU30238@linux.vnet.ibm.com>
+ <1347283005.10325.55.camel@oc6622382223.ibm.com>
+ <1347293035.2124.22.camel@twins>
 MIME-Version: 1.0
-To: Matt Porter <mporter@ti.com>
-CC: Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Vaibhav Hiremath <hvaibhav@ti.com>,
-        "tony@atomide.com" <tony@atomide.com>
-Subject: Re: [PATCH] ARM: dts: AM33XX: fix gpio node numbering to match hardware
-References: <1347294020-22661-1-git-send-email-mporter@ti.com> <504E168C.6060603@ti.com> <20120910165210.GJ27758@beef>
-In-Reply-To: <20120910165210.GJ27758@beef>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1347293035.2124.22.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 12091017-2674-0000-0000-000005EDDD20
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2012 06:52 PM, Matt Porter wrote:
-> On Mon, Sep 10, 2012 at 06:34:20PM +0200, Benoit Cousson wrote:
->> + Tony
->>
->> Hi Matt,
->>
->> 30 minutes too late for my pull request :-(
->>
->> There are a couple of am33xx patches under discussion, so I'll take them
->> and send a for_3.7/dts-part2 pull request if this is not too late for Tony.
+* Peter Zijlstra <peterz@infradead.org> [2012-09-10 18:03:55]:
+
+> On Mon, 2012-09-10 at 08:16 -0500, Andrew Theurer wrote:
+> > > > @@ -4856,8 +4859,6 @@ again:
+> > > >     if (curr->sched_class != p->sched_class)
+> > > >             goto out;
+> > > > 
+> > > > -   if (task_running(p_rq, p) || p->state)
+> > > > -           goto out;
+> > > 
+> > > Is it possible that by this time the current thread takes double rq
+> > > lock, thread p could actually be running?  i.e is there merit to keep
+> > > this check around even with your similar check above?
+> > 
+> > I think that's a good idea.  I'll add that back in. 
 > 
-> Yeah, believe me, I did a faceplant when I saw your pull request come by
-> at the same time I discovered this issue. ;) In particular, AnilKumar's
-> user leds patch would need to be adjusted for this change. I can
-> resubmit with the user leds dts changes adjusted as well if that
-> discussion comes to a conclusion and his patches accepted.
-
-Yeah, I was wondering if the gpios label were already used somewhere.
-I've just added this patch on top of my current series.
-So you or Anil should just post the missing patches whenever they'll be
-available and accepted.
-
->> On 09/10/2012 06:20 PM, Matt Porter wrote:
->>> On AM33xx, the datasheet and TRM refer to four GPIO instances that
->>> are 0-based, GPIO0-3.
->>
->> Or maybe you should just update the spec to use a 1-based GPIO number
->> like OMAP :-)
+> Right, it needs to still be there, the test before acquiring p_rq is an
+> optimistic test to avoid work, but you have to still test it once you
+> acquire p_rq since the rest of the code relies on this not being so.
 > 
-> I am powerless here. :)
-
-That's too bad :-(
-
-Benoit
-
+> How about something like this instead.. ?
 > 
-> -Matt
+> ---
+>  kernel/sched/core.c | 35 ++++++++++++++++++++++++++---------
+>  1 file changed, 26 insertions(+), 9 deletions(-)
 > 
->>> Signed-off-by: Matt Porter <mporter@ti.com>
->>> ---
->>>  arch/arm/boot/dts/am33xx.dtsi |    8 ++++----
->>>  1 file changed, 4 insertions(+), 4 deletions(-)
->>>
->>> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
->>> index bb31bff..1369bfc 100644
->>> --- a/arch/arm/boot/dts/am33xx.dtsi
->>> +++ b/arch/arm/boot/dts/am33xx.dtsi
->>> @@ -62,7 +62,7 @@
->>>  			reg = <0x48200000 0x1000>;
->>>  		};
->>>  
->>> -		gpio1: gpio@44e07000 {
->>> +		gpio0: gpio@44e07000 {
->>>  			compatible = "ti,omap4-gpio";
->>>  			ti,hwmods = "gpio1";
->>>  			gpio-controller;
->>> @@ -74,7 +74,7 @@
->>>  			interrupts = <96>;
->>>  		};
->>>  
->>> -		gpio2: gpio@4804c000 {
->>> +		gpio1: gpio@4804c000 {
->>>  			compatible = "ti,omap4-gpio";
->>>  			ti,hwmods = "gpio2";
->>>  			gpio-controller;
->>> @@ -86,7 +86,7 @@
->>>  			interrupts = <98>;
->>>  		};
->>>  
->>> -		gpio3: gpio@481ac000 {
->>> +		gpio2: gpio@481ac000 {
->>>  			compatible = "ti,omap4-gpio";
->>>  			ti,hwmods = "gpio3";
->>>  			gpio-controller;
->>> @@ -98,7 +98,7 @@
->>>  			interrupts = <32>;
->>>  		};
->>>  
->>> -		gpio4: gpio@481ae000 {
->>> +		gpio3: gpio@481ae000 {
->>>  			compatible = "ti,omap4-gpio";
->>>  			ti,hwmods = "gpio4";
->>>  			gpio-controller;
->>>
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index c46a011..c9ecab2 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -4300,6 +4300,23 @@ void __sched yield(void)
+>  }
+>  EXPORT_SYMBOL(yield);
+>  
+> +/*
+> + * Tests preconditions required for sched_class::yield_to().
+> + */
+> +static bool __yield_to_candidate(struct task_struct *curr, struct task_struct *p)
+> +{
+> +	if (!curr->sched_class->yield_to_task)
+> +		return false;
+> +
+> +	if (curr->sched_class != p->sched_class)
+> +		return false;
+
+
+Peter, 
+
+Should we also add a check if the runq has a skip buddy (as pointed out
+by Raghu) and return if the skip buddy is already set.  Something akin
+to 
+
+	if (p_rq->cfs_rq->skip)
+		return false;
+
+So if somebody has already acquired a double run queue lock and almost
+set the next buddy, we dont need to take run queue lock and also avoid
+overwriting the already set skip buddy.
+
+> +
+> +	if (task_running(p_rq, p) || p->state)
+> +		return false;
+> +
+> +	return true;
+> +}
+> +
+>  /**
+>   * yield_to - yield the current processor to another thread in
+>   * your thread group, or accelerate that thread toward the
+> @@ -4323,6 +4340,10 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
+>  	rq = this_rq();
+>  
+>  again:
+> +	/* optimistic test to avoid taking locks */
+> +	if (!__yield_to_candidate(curr, p))
+> +		goto out_irq;
+> +
+>  	p_rq = task_rq(p);
+>  	double_rq_lock(rq, p_rq);
+>  	while (task_rq(p) != p_rq) {
+> @@ -4330,14 +4351,9 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
+>  		goto again;
+>  	}
+>  
+> -	if (!curr->sched_class->yield_to_task)
+> -		goto out;
+> -
+> -	if (curr->sched_class != p->sched_class)
+> -		goto out;
+> -
+> -	if (task_running(p_rq, p) || p->state)
+> -		goto out;
+> +	/* validate state, holding p_rq ensures p's state cannot change */
+> +	if (!__yield_to_candidate(curr, p))
+> +		goto out_unlock;
+>  
+>  	yielded = curr->sched_class->yield_to_task(rq, p, preempt);
+>  	if (yielded) {
+> @@ -4350,8 +4366,9 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
+>  			resched_task(p_rq->curr);
+>  	}
+>  
+> -out:
+> +out_unlock:
+>  	double_rq_unlock(rq, p_rq);
+> +out_irq:
+>  	local_irq_restore(flags);
+>  
+>  	if (yielded)
+> 
 
