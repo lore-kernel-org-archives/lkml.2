@@ -1,74 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757539Ab2IJL7U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 07:59:20 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:45298 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752609Ab2IJL7T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 07:59:19 -0400
-X-AuditID: cbfee61a-b7fba6d000007d5f-6a-504dd6106f45
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Linus Walleij'" <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH] gpio: samsung: use pr_* instead of printk
-Date: Mon, 10 Sep 2012 20:59:11 +0900
-Message-id: <002f01cd8f4b$b1100a30$13301e90$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac2PS7D9uTpuD7DZR028eY/Axy3aBg==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMLMWRmVeSWpSXmKPExsVy+t9jAV2Ba74BBlM/sVtc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6MXZc5Cto5K56fPc7ewLiZvYuRk0NCwETiwua5zBC2mMSFe+vZ
-	uhi5OIQEFjFKrDnUygrhzGaSmHbuNCtIFZuAmsSXL4fBukUEYiRuT7jE0sXIwcEs4CJxdJoI
-	SFhYwEpixqRFYCUsAqoSq27fBGvlFbCVmHr+PxOELSjxY/I9FhCbWUBLYv3O40wQtrzE5jVv
-	mUFGSgioSzz6qwuxSU9i4+VjUOUiEvtevGOcwCgwC8mkWUgmzUIyaRaSlgWMLKsYRVMLkguK
-	k9JzDfWKE3OLS/PS9ZLzczcxgoPymdQOxpUNFocYBTgYlXh4H5r5BgixJpYVV+YeYpTgYFYS
-	4f2zFyjEm5JYWZValB9fVJqTWnyIUZqDRUmc1+mcXYCQQHpiSWp2ampBahFMlomDU6qBUcFr
-	0v8vChZ/HNgz7j/Y4iZ/e4rPMm3OXe9YfxbaiNpNV5jNaNm85rFQs0vkg/bvjS4FnOeP2Dw7
-	xD1xyj3GLzsfPZOP5iu/UGJp6yy7V/7vUUPPLa4Pd3hNmZxbum9O2nPuOLOYuY+Y5fl25IjO
-	uHFoL9+37Sq3zxvtlgibcOyJkvRBZYkbM5VYijMSDbWYi4oTAS/ycN9GAgAA
+	id S1757493Ab2IJMBW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 08:01:22 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:39703 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756867Ab2IJMBV convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Mon, 10 Sep 2012 08:01:21 -0400
+Message-Id: <504DF2AC020000780009A2DF@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Mon, 10 Sep 2012 13:01:16 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] adjust spin lock inlining Kconfig options
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch uses pr_* instead of printk.
+Break out the DEBUG_SPINLOCK dependency (requires moving up
+UNINLINE_SPIN_UNLOCK, as this was the only one in that block not
+depending on that option).
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+Avoid putting values not selected into the resulting .config - they are
+not useful for anything, make the output less legible, and just consume
+space: Use "depends on" rather than directly setting the default from
+the combined dependency values.
+
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+
 ---
- drivers/gpio/gpio-samsung.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ kernel/Kconfig.locks |  103 +++++++++++++++++++++++++++++++--------------------
+ 1 file changed, 63 insertions(+), 40 deletions(-)
 
-diff --git a/drivers/gpio/gpio-samsung.c b/drivers/gpio/gpio-samsung.c
-index ba126cc..e38d990 100644
---- a/drivers/gpio/gpio-samsung.c
-+++ b/drivers/gpio/gpio-samsung.c
-@@ -45,7 +45,7 @@
- #ifndef DEBUG_GPIO
- #define gpio_dbg(x...) do { } while (0)
- #else
--#define gpio_dbg(x...) printk(KERN_DEBUG x)
-+#define gpio_dbg(x...) pr_debug(x)
- #endif
+--- 3.6-rc5/kernel/Kconfig.locks
++++ 3.6-rc5-kconfig-cleanup-locks/kernel/Kconfig.locks
+@@ -87,6 +87,9 @@ config ARCH_INLINE_WRITE_UNLOCK_IRQ
+ config ARCH_INLINE_WRITE_UNLOCK_IRQRESTORE
+ 	bool
  
- int samsung_gpio_setpull_updown(struct samsung_gpio_chip *chip,
-@@ -926,10 +926,10 @@ static void __init samsung_gpiolib_add(struct samsung_gpio_chip *chip)
- #ifdef CONFIG_PM
- 	if (chip->pm != NULL) {
- 		if (!chip->pm->save || !chip->pm->resume)
--			printk(KERN_ERR "gpio: %s has missing PM functions\n",
-+			pr_err("gpio: %s has missing PM functions\n",
- 			       gc->label);
- 	} else
--		printk(KERN_ERR "gpio: %s has no PM function\n", gc->label);
-+		pr_err("gpio: %s has no PM function\n", gc->label);
- #endif
++config UNINLINE_SPIN_UNLOCK
++	bool
++
+ #
+ # lock_* functions are inlined when:
+ #   - DEBUG_SPINLOCK=n and GENERIC_LOCKBREAK=n and ARCH_INLINE_*LOCK=y
+@@ -103,100 +106,120 @@ config ARCH_INLINE_WRITE_UNLOCK_IRQRESTO
+ #   - DEBUG_SPINLOCK=n and ARCH_INLINE_*LOCK=y
+ #
  
- 	/* gpiochip_add() prints own failure message on error. */
--- 
-1.7.1
++if !DEBUG_SPINLOCK
++
+ config INLINE_SPIN_TRYLOCK
+-	def_bool !DEBUG_SPINLOCK && ARCH_INLINE_SPIN_TRYLOCK
++	def_bool y
++	depends on ARCH_INLINE_SPIN_TRYLOCK
+ 
+ config INLINE_SPIN_TRYLOCK_BH
+-	def_bool !DEBUG_SPINLOCK && ARCH_INLINE_SPIN_TRYLOCK_BH
++	def_bool y
++	depends on ARCH_INLINE_SPIN_TRYLOCK_BH
+ 
+ config INLINE_SPIN_LOCK
+-	def_bool !DEBUG_SPINLOCK && !GENERIC_LOCKBREAK && ARCH_INLINE_SPIN_LOCK
++	def_bool y
++	depends on !GENERIC_LOCKBREAK && ARCH_INLINE_SPIN_LOCK
+ 
+ config INLINE_SPIN_LOCK_BH
+-	def_bool !DEBUG_SPINLOCK && !GENERIC_LOCKBREAK && \
+-		 ARCH_INLINE_SPIN_LOCK_BH
++	def_bool y
++	depends on !GENERIC_LOCKBREAK && ARCH_INLINE_SPIN_LOCK_BH
+ 
+ config INLINE_SPIN_LOCK_IRQ
+-	def_bool !DEBUG_SPINLOCK && !GENERIC_LOCKBREAK && \
+-		 ARCH_INLINE_SPIN_LOCK_IRQ
++	def_bool y
++	depends on !GENERIC_LOCKBREAK && ARCH_INLINE_SPIN_LOCK_IRQ
+ 
+ config INLINE_SPIN_LOCK_IRQSAVE
+-	def_bool !DEBUG_SPINLOCK && !GENERIC_LOCKBREAK && \
+-		 ARCH_INLINE_SPIN_LOCK_IRQSAVE
+-
+-config UNINLINE_SPIN_UNLOCK
+-	bool
++	def_bool y
++	depends on !GENERIC_LOCKBREAK && ARCH_INLINE_SPIN_LOCK_IRQSAVE
+ 
+ config INLINE_SPIN_UNLOCK_BH
+-	def_bool !DEBUG_SPINLOCK && ARCH_INLINE_SPIN_UNLOCK_BH
++	def_bool y
++	depends on ARCH_INLINE_SPIN_UNLOCK_BH
+ 
+ config INLINE_SPIN_UNLOCK_IRQ
+-	def_bool !DEBUG_SPINLOCK && (!PREEMPT || ARCH_INLINE_SPIN_UNLOCK_BH)
++	def_bool y
++	depends on !PREEMPT || ARCH_INLINE_SPIN_UNLOCK_BH
+ 
+ config INLINE_SPIN_UNLOCK_IRQRESTORE
+-	def_bool !DEBUG_SPINLOCK && ARCH_INLINE_SPIN_UNLOCK_IRQRESTORE
++	def_bool y
++	depends on ARCH_INLINE_SPIN_UNLOCK_IRQRESTORE
+ 
+ 
+ config INLINE_READ_TRYLOCK
+-	def_bool !DEBUG_SPINLOCK && ARCH_INLINE_READ_TRYLOCK
++	def_bool y
++	depends on ARCH_INLINE_READ_TRYLOCK
+ 
+ config INLINE_READ_LOCK
+-	def_bool !DEBUG_SPINLOCK && !GENERIC_LOCKBREAK && ARCH_INLINE_READ_LOCK
++	def_bool y
++	depends on !GENERIC_LOCKBREAK && ARCH_INLINE_READ_LOCK
+ 
+ config INLINE_READ_LOCK_BH
+-	def_bool !DEBUG_SPINLOCK && !GENERIC_LOCKBREAK && \
+-		 ARCH_INLINE_READ_LOCK_BH
++	def_bool y
++	depends on !GENERIC_LOCKBREAK && ARCH_INLINE_READ_LOCK_BH
+ 
+ config INLINE_READ_LOCK_IRQ
+-	def_bool !DEBUG_SPINLOCK && !GENERIC_LOCKBREAK && \
+-		 ARCH_INLINE_READ_LOCK_IRQ
++	def_bool y
++	depends on !GENERIC_LOCKBREAK && ARCH_INLINE_READ_LOCK_IRQ
+ 
+ config INLINE_READ_LOCK_IRQSAVE
+-	def_bool !DEBUG_SPINLOCK && !GENERIC_LOCKBREAK && \
+-		 ARCH_INLINE_READ_LOCK_IRQSAVE
++	def_bool y
++	depends on !GENERIC_LOCKBREAK && ARCH_INLINE_READ_LOCK_IRQSAVE
+ 
+ config INLINE_READ_UNLOCK
+-	def_bool !DEBUG_SPINLOCK && (!PREEMPT || ARCH_INLINE_READ_UNLOCK)
++	def_bool y
++	depends on !PREEMPT || ARCH_INLINE_READ_UNLOCK
+ 
+ config INLINE_READ_UNLOCK_BH
+-	def_bool !DEBUG_SPINLOCK && ARCH_INLINE_READ_UNLOCK_BH
++	def_bool y
++	depends on ARCH_INLINE_READ_UNLOCK_BH
+ 
+ config INLINE_READ_UNLOCK_IRQ
+-	def_bool !DEBUG_SPINLOCK && (!PREEMPT || ARCH_INLINE_READ_UNLOCK_BH)
++	def_bool y
++	depends on !PREEMPT || ARCH_INLINE_READ_UNLOCK_BH
+ 
+ config INLINE_READ_UNLOCK_IRQRESTORE
+-	def_bool !DEBUG_SPINLOCK && ARCH_INLINE_READ_UNLOCK_IRQRESTORE
++	def_bool y
++	depends on ARCH_INLINE_READ_UNLOCK_IRQRESTORE
+ 
+ 
+ config INLINE_WRITE_TRYLOCK
+-	def_bool !DEBUG_SPINLOCK && ARCH_INLINE_WRITE_TRYLOCK
++	def_bool y
++	depends on ARCH_INLINE_WRITE_TRYLOCK
+ 
+ config INLINE_WRITE_LOCK
+-	def_bool !DEBUG_SPINLOCK && !GENERIC_LOCKBREAK && ARCH_INLINE_WRITE_LOCK
++	def_bool y
++	depends on !GENERIC_LOCKBREAK && ARCH_INLINE_WRITE_LOCK
+ 
+ config INLINE_WRITE_LOCK_BH
+-	def_bool !DEBUG_SPINLOCK && !GENERIC_LOCKBREAK && \
+-		 ARCH_INLINE_WRITE_LOCK_BH
++	def_bool y
++	depends on !GENERIC_LOCKBREAK && ARCH_INLINE_WRITE_LOCK_BH
+ 
+ config INLINE_WRITE_LOCK_IRQ
+-	def_bool !DEBUG_SPINLOCK && !GENERIC_LOCKBREAK && \
+-		 ARCH_INLINE_WRITE_LOCK_IRQ
++	def_bool y
++	depends on !GENERIC_LOCKBREAK && ARCH_INLINE_WRITE_LOCK_IRQ
+ 
+ config INLINE_WRITE_LOCK_IRQSAVE
+-	def_bool !DEBUG_SPINLOCK && !GENERIC_LOCKBREAK && \
+-		 ARCH_INLINE_WRITE_LOCK_IRQSAVE
++	def_bool y
++	depends on !GENERIC_LOCKBREAK && ARCH_INLINE_WRITE_LOCK_IRQSAVE
+ 
+ config INLINE_WRITE_UNLOCK
+-	def_bool !DEBUG_SPINLOCK && (!PREEMPT || ARCH_INLINE_WRITE_UNLOCK)
++	def_bool y
++	depends on !PREEMPT || ARCH_INLINE_WRITE_UNLOCK
+ 
+ config INLINE_WRITE_UNLOCK_BH
+-	def_bool !DEBUG_SPINLOCK && ARCH_INLINE_WRITE_UNLOCK_BH
++	def_bool y
++	depends on ARCH_INLINE_WRITE_UNLOCK_BH
+ 
+ config INLINE_WRITE_UNLOCK_IRQ
+-	def_bool !DEBUG_SPINLOCK && (!PREEMPT || ARCH_INLINE_WRITE_UNLOCK_BH)
++	def_bool y
++	depends on !PREEMPT || ARCH_INLINE_WRITE_UNLOCK_BH
+ 
+ config INLINE_WRITE_UNLOCK_IRQRESTORE
+-	def_bool !DEBUG_SPINLOCK && ARCH_INLINE_WRITE_UNLOCK_IRQRESTORE
++	def_bool y
++	depends on ARCH_INLINE_WRITE_UNLOCK_IRQRESTORE
++
++endif
+ 
+ config MUTEX_SPIN_ON_OWNER
+-	def_bool SMP && !DEBUG_MUTEXES
++	def_bool y
++	depends on SMP && !DEBUG_MUTEXES
 
 
