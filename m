@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757381Ab2IJSLm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 14:11:42 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:50906 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470Ab2IJSLl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 14:11:41 -0400
-Date: Mon, 10 Sep 2012 11:08:58 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Chuansheng Liu <chuansheng.liu@intel.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] USB/host: Cleanup unneccessary irq disable code
-Message-ID: <20120910180857.GA12223@kroah.com>
-References: <1347009599.1119.9.camel@cliu38-desktop-build>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347009599.1119.9.camel@cliu38-desktop-build>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757496Ab2IJSMI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 14:12:08 -0400
+Received: from mga02.intel.com ([134.134.136.20]:29484 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756649Ab2IJSMF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 14:12:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,398,1344236400"; 
+   d="scan'208";a="191253080"
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+To: hpa@zytor.com, mingo@kernel.org, torvalds@linux-foundation.org,
+        andreas.herrmann3@amd.com, bp@amd64.org, robert.richter@amd.com
+Cc: linux-kernel@vger.kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: [PATCH v2 0/5] eagerfpu patches for tip/x86/fpu
+Date: Mon, 10 Sep 2012 11:11:00 -0700
+Message-Id: <1347300665-6209-1-git-send-email-suresh.b.siddha@intel.com>
+X-Mailer: git-send-email 1.7.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 07, 2012 at 05:19:59PM +0800, Chuansheng Liu wrote:
-> Because the IRQF_DISABLED as the flag is now a NOOP and has been
-> deprecated and in hardirq context the interrupt is disabled.
-> 
-> so in usb/host code:
-> Removing the usage of flag IRQF_DISABLED;
-> Removing the calling local_irq save/restore actions in irq
-> handler usb_hcd_irq();
-> 
-> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-> Acked-by: Alan Stern <stern@rowland.harvard.edu>
-> ---
->  drivers/usb/core/hcd.c       |   15 ---------------
->  drivers/usb/host/ehci-ls1x.c |    2 +-
->  drivers/usb/host/ohci-xls.c  |    2 +-
->  3 files changed, 2 insertions(+), 17 deletions(-)
+v2 version of the previous patchset https://lkml.org/lkml/2012/9/7/548
+that decouples eagerfpu into a synthetic cpuid feature.
 
-This fails to apply to my usb-next branch for some odd reason, please
-refresh it and resend.
+changes from v1:
+* Made "eagerfpu=" boot parameter tri-state
+* removed the cpu_has_xmm check in the fx_finit (not related to eagerfpu
+  per-say, but this patchset touches that area of code).
 
-thanks,
+Suresh Siddha (5):
+  x86, fpu: decouple non-lazy/eager fpu restore from xsave
+  x86, fpu: enable eagerfpu by default for xsaveopt
+  x86, fpu: move check_fpu() after alternative_instructions()
+  x86, fpu: make eagerfpu= boot param tri-state
+  x86, fpu: remove cpu_has_xmm check in the fx_finit()
 
-greg k-h
+ Documentation/kernel-parameters.txt |    6 ++
+ arch/x86/include/asm/cpufeature.h   |    3 +
+ arch/x86/include/asm/fpu-internal.h |   53 ++++++++++++++------
+ arch/x86/kernel/cpu/bugs.c          |    7 ++-
+ arch/x86/kernel/cpu/common.c        |    2 -
+ arch/x86/kernel/i387.c              |   25 +++------
+ arch/x86/kernel/process.c           |    2 +-
+ arch/x86/kernel/traps.c             |    2 +-
+ arch/x86/kernel/xsave.c             |   95 ++++++++++++++++++++++++-----------
+ 9 files changed, 129 insertions(+), 66 deletions(-)
+
+-- 
+1.7.6.5
+
