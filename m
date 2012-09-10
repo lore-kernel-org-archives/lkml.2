@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756572Ab2IJVmw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 17:42:52 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:41165 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755750Ab2IJVmv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 17:42:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <1347288296.2124.12.camel@twins>
-References: <1347065004-15306-1-git-send-email-irina.tirdea@intel.com>
- <1347065004-15306-4-git-send-email-irina.tirdea@intel.com>
- <CAOJsxLHCavYZQCOZP0nw0ig9uFx0wbR5UP23zKa0gXvmpFvNDg@mail.gmail.com>
- <CANg8OW+iuqnc-_daWDSXymYNKnr0YEoa_3310YvYJAUF_vCTnQ@mail.gmail.com> <1347288296.2124.12.camel@twins>
-From: Irina Tirdea <irina.tirdea@gmail.com>
-Date: Tue, 11 Sep 2012 00:42:29 +0300
-Message-ID: <CANg8OW+E9vnOpJtp3jQEQr+f+ZGERTTTvQyvNK48ifm+kOJB+Q@mail.gmail.com>
-Subject: Re: [PATCH v2 03/12] perf tools: include __WORDSIZE definition
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Pekka Enberg <penberg@kernel.org>, mingo@redhat.com,
-        acme@ghostprotocols.net, rostedt@goodmis.org, paulus@samba.org,
-        dsahern@gmail.com, namhyung.kim@lge.com, linux-kernel@vger.kernel.org,
-        Irina Tirdea <irina.tirdea@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756741Ab2IJVn3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 17:43:29 -0400
+Received: from mga03.intel.com ([143.182.124.21]:52047 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755750Ab2IJVn1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 17:43:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,400,1344236400"; 
+   d="scan'208";a="191072262"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, alan@linux.intel.com, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next 1/3] mei: add error messages for open count errors
+Date: Tue, 11 Sep 2012 00:43:20 +0300
+Message-Id: <1347313402-24606-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 5:44 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Sun, 2012-09-09 at 01:19 +0300, Irina Tirdea wrote:
->> >> +#ifndef __WORDSIZE
->> >> +#if defined(__x86_64__)
->> >> +# define __WORDSIZE 64
->> >> +#endif
->> >> +#if defined(__i386__) || defined(__arm__)
->> >> +# define __WORDSIZE 32
->> >> +#endif
->> >> +#endif
->> >
->> > Why not use "sizeof(unsigned long) * 8" ?
->>
->> I tried to do it this, but the compilation crashes because this value
->> is tested in an #if:
->>
->> target  C: libperf <= tools/perf/util/annotate.c
->> In file included from tools/perf/util/include/linux/bitmap.h:5:0,
->>                  from tools/perf/util/header.h:10,
->>                  from tools/perf/util/session.h:6,
->>                  from tools/perf/util/build-id.h:4,
->>                  from tools/perf/util/annotate.c:11:
->> tools/perf/util/include/linux/bitops.h: In function '__ffs':
->> tools/perf/util/include/linux/bitops.h:62:5: warning: "sizeof" is not
->> defined [-Wundef]
->> tools/perf/util/include/linux/bitops.h:62:5: error: missing binary
->> operator before token "("
->
-> Use either: __SIZEOF_LONG__ (8) or __LP64__ (1)
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+ drivers/misc/mei/main.c |   10 ++++++++--
+ 1 files changed, 8 insertions(+), 2 deletions(-)
 
-Thanks! Using __SIZEOF_LONG__ works. I'll update the patch.
+diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
+index ae2cd0d..e8b0858 100644
+--- a/drivers/misc/mei/main.c
++++ b/drivers/misc/mei/main.c
+@@ -239,12 +239,18 @@ static int mei_open(struct inode *inode, struct file *file)
+ 		goto out_unlock;
+ 	}
+ 	err = -EMFILE;
+-	if (dev->open_handle_count >= MEI_MAX_OPEN_HANDLE_COUNT)
++	if (dev->open_handle_count >= MEI_MAX_OPEN_HANDLE_COUNT) {
++		dev_err(&dev->pdev->dev, "open_handle_count exceded %d",
++			MEI_MAX_OPEN_HANDLE_COUNT);
+ 		goto out_unlock;
++	}
+ 
+ 	cl_id = find_first_zero_bit(dev->host_clients_map, MEI_CLIENTS_MAX);
+-	if (cl_id >= MEI_CLIENTS_MAX)
++	if (cl_id >= MEI_CLIENTS_MAX) {
++		dev_err(&dev->pdev->dev, "client_id exceded %d",
++				MEI_CLIENTS_MAX) ;
+ 		goto out_unlock;
++	}
+ 
+ 	cl->host_client_id  = cl_id;
+ 
+-- 
+1.7.4.4
 
-Thanks,
-Irina
