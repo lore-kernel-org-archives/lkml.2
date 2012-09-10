@@ -1,130 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224Ab2IJRLT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 13:11:19 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49024 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751947Ab2IJRLS (ORCPT
+	id S1753242Ab2IJRMV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 13:12:21 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46800 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752100Ab2IJRMT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 13:11:18 -0400
-Date: Mon, 10 Sep 2012 10:11:13 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH wq/for-3.6-fixes 2/2] workqueue: fix possible idle worker
- depletion across CPU hotplug
-Message-ID: <20120910171113.GB14103@google.com>
-References: <1347243085-2510-1-git-send-email-laijs@cn.fujitsu.com>
- <1347243085-2510-2-git-send-email-laijs@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347243085-2510-2-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 10 Sep 2012 13:12:19 -0400
+Message-ID: <1347297124.2124.42.camel@twins>
+Subject: Re: [RFC][PATCH] Improving directed yield scalability for PLE
+ handler
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: habanero@linux.vnet.ibm.com,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
+        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
+Date: Mon, 10 Sep 2012 19:12:04 +0200
+In-Reply-To: <20120910165653.GA28033@linux.vnet.ibm.com>
+References: <20120718133717.5321.71347.sendpatchset@codeblue.in.ibm.com>
+	 <500D2162.8010209@redhat.com>
+	 <1347023509.10325.53.camel@oc6622382223.ibm.com>
+	 <504A37B0.7020605@linux.vnet.ibm.com>
+	 <1347046931.7332.51.camel@oc2024037011.ibm.com>
+	 <20120908084345.GU30238@linux.vnet.ibm.com>
+	 <1347283005.10325.55.camel@oc6622382223.ibm.com>
+	 <1347293035.2124.22.camel@twins>
+	 <20120910165653.GA28033@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From ee378aa49b594da9bda6a2c768cc5b2ad585f911 Mon Sep 17 00:00:00 2001
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-Date: Mon, 10 Sep 2012 10:03:44 -0700
+On Mon, 2012-09-10 at 22:26 +0530, Srikar Dronamraju wrote:
+> > +static bool __yield_to_candidate(struct task_struct *curr, struct task_struct *p)
+> > +{
+> > +     if (!curr->sched_class->yield_to_task)
+> > +             return false;
+> > +
+> > +     if (curr->sched_class != p->sched_class)
+> > +             return false;
+> 
+> 
+> Peter, 
+> 
+> Should we also add a check if the runq has a skip buddy (as pointed out
+> by Raghu) and return if the skip buddy is already set. 
 
-To simplify both normal and CPU hotplug paths, worker management is
-prevented while CPU hoplug is in progress.  This is achieved by CPU
-hotplug holding the same exclusion mechanism used by workers to ensure
-there's only one manager per pool.
+Oh right, I missed that suggestion.. the performance improvement went
+from 81% to 139% using this, right?
 
-If someone else seems to be performing the manager role, workers
-proceed to execute work items.  CPU hotplug using the same mechanism
-can lead to idle worker depletion because all workers could proceed to
-execute work items while CPU hotplug is in progress and CPU hotplug
-itself wouldn't actually perform the worker management duty - it
-doesn't guarantee that there's an idle worker left when it releases
-management.
+It might make more sense to keep that separate, outside of this
+function, since its not a strict prerequisite.
 
-This idle worker depletion, under extreme circumstances, can break
-forward-progress guarantee and thus lead to deadlock.
+> > 
+> > +     if (task_running(p_rq, p) || p->state)
+> > +             return false;
+> > +
+> > +     return true;
+> > +} 
 
-This patch fixes the bug by using separate mechanisms for manager
-exclusion among workers and hotplug exclusion.  For manager exclusion,
-POOL_MANAGING_WORKERS which was restored by the previous patch is
-used.  pool->manager_mutex is now only used for exclusion between the
-elected manager and CPU hotplug.  The elected manager won't proceed
-without holding pool->manager_mutex.
 
-This ensures that the worker which won the manager position can't skip
-managing while CPU hotplug is in progress.  It will block on
-manager_mutex and perform management after CPU hotplug is complete.
+> > @@ -4323,6 +4340,10 @@ bool __sched yield_to(struct task_struct *p,
+> bool preempt)
+> >       rq = this_rq();
+> >  
+> >  again:
+> > +     /* optimistic test to avoid taking locks */
+> > +     if (!__yield_to_candidate(curr, p))
+> > +             goto out_irq;
+> > +
 
-Note that hotplug may happen while waiting for manager_mutex.  A
-manager isn't either on idle or busy list and thus the hoplug code
-can't unbind/rebind it.  Make the manager handle its own un/rebinding.
+So add something like:
 
-tj: Updated comment and description.
+	/* Optimistic, if we 'raced' with another yield_to(), don't bother */
+	if (p_rq->cfs_rq->skip)
+		goto out_irq;
+> 
+> 
+> >       p_rq = task_rq(p);
+> >       double_rq_lock(rq, p_rq);
+> 
+> 
+But I do have a question on this optimization though,.. Why do we check
+p_rq->cfs_rq->skip and not rq->cfs_rq->skip ?
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
-Applied to wq/for-3.6-fixes w/ comment and patch description updated.
-Sorry about hacking up your comment / description but this is a tricky
-issue and I thought a bit more verbosity is a good idea.
+That is, I'd like to see this thing explained a little better.
 
-Thanks a lot for fixing the issue and the persistence!
+Does it go something like: p_rq is the runqueue of the task we'd like to
+yield to, rq is our own, they might be the same. If we have a ->skip,
+there's nothing we can do about it, OTOH p_rq having a ->skip and
+failing the yield_to() simply means us picking the next VCPU thread,
+which might be running on an entirely different cpu (rq) and could
+succeed?
 
- kernel/workqueue.c |   37 ++++++++++++++++++++++++++++++++++++-
- 1 files changed, 36 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 383548e..1e1373b 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1825,10 +1825,45 @@ static bool manage_workers(struct worker *worker)
- 	struct worker_pool *pool = worker->pool;
- 	bool ret = false;
- 
--	if (!mutex_trylock(&pool->manager_mutex))
-+	if (pool->flags & POOL_MANAGING_WORKERS)
- 		return ret;
- 
- 	pool->flags |= POOL_MANAGING_WORKERS;
-+
-+	/*
-+	 * To simplify both worker management and CPU hotplug, hold off
-+	 * management while hotplug is in progress.  CPU hotplug path can't
-+	 * grab %POOL_MANAGING_WORKERS to achieve this because that can
-+	 * lead to idle worker depletion (all become busy thinking someone
-+	 * else is managing) which in turn can result in deadlock under
-+	 * extreme circumstances.  Use @pool->manager_mutex to synchronize
-+	 * manager against CPU hotplug.
-+	 *
-+	 * manager_mutex would always be free unless CPU hotplug is in
-+	 * progress.  trylock first without dropping @gcwq->lock.
-+	 */
-+	if (unlikely(!mutex_trylock(&pool->manager_mutex))) {
-+		spin_unlock_irq(&pool->gcwq->lock);
-+		mutex_lock(&pool->manager_mutex);
-+		/*
-+		 * CPU hotplug could have happened while we were waiting
-+		 * for manager_mutex.  Hotplug itself can't handle us
-+		 * because manager isn't either on idle or busy list, and
-+		 * @gcwq's state and ours could have deviated.
-+		 *
-+		 * As hotplug is now excluded via manager_mutex, we can
-+		 * simply try to bind.  It will succeed or fail depending
-+		 * on @gcwq's current state.  Try it and adjust
-+		 * %WORKER_UNBOUND accordingly.
-+		 */
-+		if (worker_maybe_bind_and_lock(worker))
-+			worker->flags &= ~WORKER_UNBOUND;
-+		else
-+			worker->flags |= WORKER_UNBOUND;
-+
-+		ret = true;
-+	}
-+
- 	pool->flags &= ~POOL_MANAGE_WORKERS;
- 
- 	/*
--- 
-1.7.7.3
 
