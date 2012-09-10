@@ -1,106 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758015Ab2IJT45 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 15:56:57 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:17191 "EHLO
+	id S1758528Ab2IJT7R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 15:59:17 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:17203 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752570Ab2IJT4z (ORCPT
+	with ESMTP id S1757081Ab2IJT44 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 15:56:55 -0400
+	Mon, 10 Sep 2012 15:56:56 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
         stefano.stabellini@eu.citrix.com
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 05/10] xen/swiotlb: Move the error strings to its own function.
-Date: Mon, 10 Sep 2012 15:46:02 -0400
-Message-Id: <1347306367-28669-6-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 08/10] xen/swiotlb: Remove functions not needed anymore.
+Date: Mon, 10 Sep 2012 15:46:05 -0400
+Message-Id: <1347306367-28669-9-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1347306367-28669-1-git-send-email-konrad.wilk@oracle.com>
 References: <1347306367-28669-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-That way we can more easily reuse those errors when using the
-late SWIOTLB init.
+Sparse warns us off:
+drivers/xen/swiotlb-xen.c:506:1: warning: symbol 'xen_swiotlb_map_sg' was not declared. Should it be static?
+drivers/xen/swiotlb-xen.c:534:1: warning: symbol 'xen_swiotlb_unmap_sg' was not declared. Should it be static?
+
+and it looks like we do not need this function at all.
 
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/xen/swiotlb-xen.c |   35 +++++++++++++++++++++++++++--------
- 1 files changed, 27 insertions(+), 8 deletions(-)
+ drivers/xen/swiotlb-xen.c |   16 ----------------
+ include/xen/swiotlb-xen.h |    9 ---------
+ 2 files changed, 0 insertions(+), 25 deletions(-)
 
 diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index a2aad6e..701b103 100644
+index f0825cb..6f81994 100644
 --- a/drivers/xen/swiotlb-xen.c
 +++ b/drivers/xen/swiotlb-xen.c
-@@ -154,11 +154,33 @@ static unsigned long xen_set_nslabs(unsigned long nr_tbl)
- 
- 	return xen_io_tlb_nslabs << IO_TLB_SHIFT;
+@@ -514,14 +514,6 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
  }
-+
-+enum xen_swiotlb_err {
-+	XEN_SWIOTLB_UNKNOWN = 0,
-+	XEN_SWIOTLB_ENOMEM,
-+	XEN_SWIOTLB_EFIXUP
-+};
-+
-+static const char *xen_swiotlb_error(enum xen_swiotlb_err err)
-+{
-+	switch (err) {
-+	case XEN_SWIOTLB_ENOMEM:
-+		return "Cannot allocate Xen-SWIOTLB buffer\n";
-+	case XEN_SWIOTLB_EFIXUP:
-+		return "Failed to get contiguous memory for DMA from Xen!\n"\
-+		    "You either: don't have the permissions, do not have"\
-+		    " enough free memory under 4GB, or the hypervisor memory"\
-+		    " is too fragmented!";
-+	default:
-+		break;
-+	}
-+	return "";
-+}
- void __init xen_swiotlb_init(int verbose)
- {
- 	unsigned long bytes;
- 	int rc = -ENOMEM;
--	char *m = NULL;
-+	enum xen_swiotlb_err m_ret = XEN_SWIOTLB_UNKNOWN;
- 	unsigned int repeat = 3;
+ EXPORT_SYMBOL_GPL(xen_swiotlb_map_sg_attrs);
  
- 	xen_io_tlb_nslabs = swiotlb_nr_tbl();
-@@ -169,7 +191,7 @@ retry:
- 	 */
- 	xen_io_tlb_start = alloc_bootmem_pages(PAGE_ALIGN(bytes));
- 	if (!xen_io_tlb_start) {
--		m = "Cannot allocate Xen-SWIOTLB buffer!\n";
-+		m_ret = XEN_SWIOTLB_ENOMEM;
- 		goto error;
- 	}
- 	xen_io_tlb_end = xen_io_tlb_start + bytes;
-@@ -181,10 +203,7 @@ retry:
- 			       xen_io_tlb_nslabs);
- 	if (rc) {
- 		free_bootmem(__pa(xen_io_tlb_start), PAGE_ALIGN(bytes));
--		m = "Failed to get contiguous memory for DMA from Xen!\n"\
--		    "You either: don't have the permissions, do not have"\
--		    " enough free memory under 4GB, or the hypervisor memory"\
--		    "is too fragmented!";
-+		m_ret = XEN_SWIOTLB_EFIXUP;
- 		goto error;
- 	}
- 	start_dma_addr = xen_virt_to_bus(xen_io_tlb_start);
-@@ -199,8 +218,8 @@ error:
- 		      (xen_io_tlb_nslabs << IO_TLB_SHIFT) >> 20);
- 		goto retry;
- 	}
--	xen_raw_printk("%s (rc:%d)", m, rc);
--	panic("%s (rc:%d)", m, rc);
-+	xen_raw_printk("%s (rc:%d)", xen_swiotlb_error(m_ret), rc);
-+	panic("%s (rc:%d)", xen_swiotlb_error(m_ret), rc);
+-int
+-xen_swiotlb_map_sg(struct device *hwdev, struct scatterlist *sgl, int nelems,
+-		   enum dma_data_direction dir)
+-{
+-	return xen_swiotlb_map_sg_attrs(hwdev, sgl, nelems, dir, NULL);
+-}
+-EXPORT_SYMBOL_GPL(xen_swiotlb_map_sg);
+-
+ /*
+  * Unmap a set of streaming mode DMA translations.  Again, cpu read rules
+  * concerning calls here are the same as for swiotlb_unmap_page() above.
+@@ -542,14 +534,6 @@ xen_swiotlb_unmap_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
  }
+ EXPORT_SYMBOL_GPL(xen_swiotlb_unmap_sg_attrs);
  
- void *
+-void
+-xen_swiotlb_unmap_sg(struct device *hwdev, struct scatterlist *sgl, int nelems,
+-		     enum dma_data_direction dir)
+-{
+-	return xen_swiotlb_unmap_sg_attrs(hwdev, sgl, nelems, dir, NULL);
+-}
+-EXPORT_SYMBOL_GPL(xen_swiotlb_unmap_sg);
+-
+ /*
+  * Make physical memory consistent for a set of streaming mode DMA translations
+  * after a transfer.
+diff --git a/include/xen/swiotlb-xen.h b/include/xen/swiotlb-xen.h
+index f26f9f3..a0db2b7 100644
+--- a/include/xen/swiotlb-xen.h
++++ b/include/xen/swiotlb-xen.h
+@@ -23,15 +23,6 @@ extern dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
+ extern void xen_swiotlb_unmap_page(struct device *hwdev, dma_addr_t dev_addr,
+ 				   size_t size, enum dma_data_direction dir,
+ 				   struct dma_attrs *attrs);
+-/*
+-extern int
+-xen_swiotlb_map_sg(struct device *hwdev, struct scatterlist *sg, int nents,
+-		   enum dma_data_direction dir);
+-
+-extern void
+-xen_swiotlb_unmap_sg(struct device *hwdev, struct scatterlist *sg, int nents,
+-		     enum dma_data_direction dir);
+-*/
+ extern int
+ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
+ 			 int nelems, enum dma_data_direction dir,
 -- 
 1.7.7.6
 
