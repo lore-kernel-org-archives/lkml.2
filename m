@@ -1,80 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932148Ab2IJSNG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 14:13:06 -0400
-Received: from mga02.intel.com ([134.134.136.20]:29484 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757503Ab2IJSMK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 14:12:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,398,1344236400"; 
-   d="scan'208";a="191253101"
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-To: hpa@zytor.com, mingo@kernel.org, torvalds@linux-foundation.org,
-        andreas.herrmann3@amd.com, bp@amd64.org, robert.richter@amd.com
-Cc: linux-kernel@vger.kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: [PATCH v2 2/5] x86, fpu: enable eagerfpu by default for xsaveopt
-Date: Mon, 10 Sep 2012 11:11:02 -0700
-Message-Id: <1347300665-6209-3-git-send-email-suresh.b.siddha@intel.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1347300665-6209-1-git-send-email-suresh.b.siddha@intel.com>
-References: <1347300665-6209-1-git-send-email-suresh.b.siddha@intel.com>
+	id S1757616Ab2IJSNO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 14:13:14 -0400
+Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:38264 "EHLO
+	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757152Ab2IJSNL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 14:13:11 -0400
+Subject: Re: [PATCH v2] Add missing attributes to EFI variable attribute
+ print out from sysfs
+From: Khalid Aziz <khalid.aziz@hp.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Mike Waychison <mikew@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Matthew Garrett <mjg@redhat.com>,
+        Kees Cook <keescook@chromium.org>,
+        "gong.chen@linux.intel.com" <gong.chen@linux.intel.com>,
+        khalid@gonehiking.org
+In-Reply-To: <20120910180335.GA26021@kroah.com>
+References: <20120713174216.GA10445@hp.com>
+	 <CAGTjWtDyGrVuBXZzdDfbS961cRSQY7eZaEbb9E8HACk5-imiuQ@mail.gmail.com>
+	 <CAGTjWtAPKXfA7pOqWEfK2i_HbrtA6_w7+ezZyCo4NG1gBSEhwg@mail.gmail.com>
+	 <20120910180335.GA26021@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 10 Sep 2012 12:13:09 -0600
+Message-ID: <1347300789.4393.27.camel@lyra>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-xsaveopt/xrstor support optimized state save/restore by tracking the
-INIT state and MODIFIED state during context-switch.
+On Mon, 2012-09-10 at 11:03 -0700, Greg KH wrote:
+> On Mon, Sep 10, 2012 at 01:59:18PM -0400, Mike Waychison wrote:
+> > On Mon, Sep 10, 2012 at 1:55 PM, Mike Waychison <mikew@google.com> wrote:
+> > > Greg,
+> > >
+> > > Can you please pick this patch up in one of your trees?
+> > 
+> > Resend using a good email addy for gregkh :)
+> 
+> Can someone resend it in a format that I can apply it in?  I can't find
+> the original anymore, sorry.
+> 
+> greg k-h
 
-Enable eagerfpu by default for processors supporting xsaveopt.
-Can be disabled by passing "eagerfpu=off" boot parameter.
+Some of the EFI variable attributes are missing from print out from
+/sys/firmware/efi/vars/*/attributes. This patch adds those in. It also
+updates code to use pre-defined constants for masking current value
+of attributes.
 
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
----
- Documentation/kernel-parameters.txt |    2 +-
- arch/x86/include/asm/cpufeature.h   |    1 +
- arch/x86/kernel/xsave.c             |    3 +++
- 3 files changed, 5 insertions(+), 1 deletions(-)
-
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 6273099..b21bcbd 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1835,7 +1835,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			enabling legacy floating-point and sse state.
+Signed-off-by: Khalid Aziz <khalid.aziz@hp.com>
+diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+index 47408e8..d10c987 100644
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -435,12 +435,23 @@ efivar_attr_read(struct efivar_entry *entry, char *buf)
+ 	if (status != EFI_SUCCESS)
+ 		return -EIO;
  
- 	eagerfpu=	[X86]
--			on	enable eager fpu restore
-+			on	enable eager fpu restore (default for xsaveopt)
- 			off	disable eager fpu restore
- 
- 	nohlt		[BUGS=ARM,SH] Tells the kernel that the sleep(SH) or
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index eb9f8d1..36c2dc4 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -298,6 +298,7 @@ extern const char * const x86_power_flags[32];
- #define cpu_has_xmm4_2		boot_cpu_has(X86_FEATURE_XMM4_2)
- #define cpu_has_x2apic		boot_cpu_has(X86_FEATURE_X2APIC)
- #define cpu_has_xsave		boot_cpu_has(X86_FEATURE_XSAVE)
-+#define cpu_has_xsaveopt	boot_cpu_has(X86_FEATURE_XSAVEOPT)
- #define cpu_has_osxsave		boot_cpu_has(X86_FEATURE_OSXSAVE)
- #define cpu_has_hypervisor	boot_cpu_has(X86_FEATURE_HYPERVISOR)
- #define cpu_has_pclmulqdq	boot_cpu_has(X86_FEATURE_PCLMULQDQ)
-diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-index 66369f4..a447a7c 100644
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -556,6 +556,9 @@ static void __init xstate_enable_boot_cpu(void)
- 	prepare_fx_sw_frame();
- 	setup_init_fpu_buf();
- 
-+	if (cpu_has_xsaveopt && !disable_eagerfpu)
-+		setup_force_cpu_cap(X86_FEATURE_EAGER_FPU);
-+
- 	pr_info("enabled xstate_bv 0x%llx, cntxt size 0x%x\n",
- 		pcntxt_mask, xstate_size);
+-	if (var->Attributes & 0x1)
++	if (var->Attributes & EFI_VARIABLE_NON_VOLATILE)
+ 		str += sprintf(str, "EFI_VARIABLE_NON_VOLATILE\n");
+-	if (var->Attributes & 0x2)
++	if (var->Attributes & EFI_VARIABLE_BOOTSERVICE_ACCESS)
+ 		str += sprintf(str, "EFI_VARIABLE_BOOTSERVICE_ACCESS\n");
+-	if (var->Attributes & 0x4)
++	if (var->Attributes & EFI_VARIABLE_RUNTIME_ACCESS)
+ 		str += sprintf(str, "EFI_VARIABLE_RUNTIME_ACCESS\n");
++	if (var->Attributes & EFI_VARIABLE_HARDWARE_ERROR_RECORD)
++		str += sprintf(str, "EFI_VARIABLE_HARDWARE_ERROR_RECORD\n");
++	if (var->Attributes & EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS)
++		str += sprintf(str,
++			"EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS\n");
++	if (var->Attributes &
++			EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS)
++		str += sprintf(str,
++			"EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS\n");
++	if (var->Attributes & EFI_VARIABLE_APPEND_WRITE)
++		str += sprintf(str, "EFI_VARIABLE_APPEND_WRITE\n");
+ 	return str - buf;
  }
+ 
+--
+1.7.9.5
+
 -- 
-1.7.6.5
+Khalid Aziz <khalid.aziz@hp.com>
 
