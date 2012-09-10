@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752962Ab2IJOf1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 10:35:27 -0400
-Received: from mailbigip.dreamhost.com ([208.97.132.5]:39721 "EHLO
-	homiemail-a4.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751470Ab2IJOfX (ORCPT
+	id S1753553Ab2IJOgc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 10:36:32 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:46268 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751422Ab2IJOg3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 10:35:23 -0400
-Message-ID: <1347287719.2561.14.camel@offbook>
-Subject: [PATCH v2] lib: gcd: prevent possible div by 0
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: Eric Dumazet <eric.dumazet@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
-Date: Mon, 10 Sep 2012 16:35:19 +0200
-Organization: GNU
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Sep 2012 10:36:29 -0400
+Message-ID: <1347287780.2124.10.camel@twins>
+Subject: Re: Linux 3.6-rc4
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Sasha Levin <levinsasha928@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Mon, 10 Sep 2012 16:36:20 +0200
+In-Reply-To: <CA+55aFwh5kUDC_5-_4_TkqnQU73sotAkOs166ag4R3Fx8VKffw@mail.gmail.com>
+References: <CA+55aFzJWwBPgqp_QquhncpRqLXHRh0m9hHPh94Ujzd1d7kMDQ@mail.gmail.com>
+	 <20120904154412.GA14321@redhat.com> <504A3527.9070104@gmail.com>
+	 <CA+55aFwh5kUDC_5-_4_TkqnQU73sotAkOs166ag4R3Fx8VKffw@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Account for all properties when a and/or b are 0:
-gcd(0, 0) = 0
-gcd(a, 0) = a
-gcd(0, b) = b
+On Fri, 2012-09-07 at 11:39 -0700, Linus Torvalds wrote:
+> Al? Please look into this. I'm not entirely sure what's going on, but
+> lockdep complains about this:
+> 
+>  Possible interrupt unsafe locking scenario:
+> 
+>        CPU0                    CPU1
+>        ----                    ----
+>   lock(&(&p->alloc_lock)->rlock);
+>                                local_irq_disable();
+>                                lock(&(&new_timer->it_lock)->rlock);
+>                                lock(tasklist_lock);
+>   <Interrupt>
+>     lock(&(&new_timer->it_lock)->rlock);
+> 
+>  *** DEADLOCK ***
+> 
+> and it looks real. IOW, if I read that right, we have the task_lock ->
+> it_lock dependency through exit_itimers(), and then we have the
+> tasklist_lock -> task_lock dependency everywhere else. So now it_lock
+> -> tasklist_lock becomes a deadlock. 
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Davidlohr Bueso <dave@gnu.org>
----
-V2: simplified checking with b = 0 (Eric)
+Agreed, I've got the following series from Oleg queued to solve this:
 
- lib/gcd.c |    3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/lib/gcd.c b/lib/gcd.c
-index cce4f3c..3657f12 100644
---- a/lib/gcd.c
-+++ b/lib/gcd.c
-@@ -9,6 +9,9 @@ unsigned long gcd(unsigned long a, unsigned long b)
- 
- 	if (a < b)
- 		swap(a, b);
-+
-+	if (!b)
-+		return a;
- 	while ((r = a % b) != 0) {
- 		a = b;
- 		b = r;
--- 
-1.7.9.5
-
+ http://marc.info/?l=linux-kernel&m=134600821828491&w=2
 
 
