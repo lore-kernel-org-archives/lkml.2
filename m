@@ -1,390 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753987Ab2IJHNJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 03:13:09 -0400
-Received: from mga10.intel.com ([192.55.52.92]:23996 "EHLO
-	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751040Ab2IJHNF (ORCPT
+	id S1754298Ab2IJHNW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 03:13:22 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41648 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883Ab2IJHNR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 03:13:05 -0400
+	Mon, 10 Sep 2012 03:13:17 -0400
+Message-ID: <504D9308.2080708@gmail.com>
+Date: Mon, 10 Sep 2012 16:13:12 +0900
+From: gshark <gshark.jeong@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <20120816013434.872.8115.stgit@warthog.procyon.org.uk>
-References: <20120816013405.872.42381.stgit@warthog.procyon.org.uk>
-	<20120816013434.872.8115.stgit@warthog.procyon.org.uk>
-Date: Mon, 10 Sep 2012 10:13:02 +0300
-Message-ID: <CALLzPKbsp0EnZMTmfWtjfctsZn+YAurA_5W=hqzy1kHuxiCGng@mail.gmail.com>
-Subject: Re: [PATCH 02/25] MPILIB: Provide count_leading/trailing_zeros()
- based on arch functions
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>
-Cc: rusty@rustcorp.com.au, zohar@linux.vnet.ibm.com, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Richard Purdie <rpurdie@rpsys.net>, Daniel Jeong <daniel.jeong@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] backlight: add new lm3639 backlight driver
+References: <1347246964-28332-1-git-send-email-gshark.jeong@gmail.com> <504D7A8E.1090005@xenotime.net>
+In-Reply-To: <504D7A8E.1090005@xenotime.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 4:34 AM, David Howells <dhowells@redhat.com> wrote:
-> Provide count_leading/trailing_zeros() macros based on extant arch bit scanning
-> functions rather than reimplementing from scratch in MPILIB.
->
-> Whilst we're at it, turn count_foo_zeros(n, x) into n = count_foo_zeros(x).
->
-> Also move the definition to asm-generic as other people may be interested in
-> using it.
->
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> Cc: David S. Miller <davem@davemloft.net>
-> Cc: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-> Cc: Arnd Bergmann <arnd@arndb.com>
 
-Hi James,
+LM3639 has not only pins for backlihgt but also pins for LEDs. So it 
+uses functions in led_class and led_core file.
+When I see your config file, "randconig", you set CONFIG_NEW_LEDS=y but 
+you didn't set CONFIG_LEDS_CLASS.
+We need to set CONFIG_NEW_LEDS and CONFIG_LEDS_CLASS both to compile it.
+To fix it, I added  two reverse dependencies "select NEW_LEDS" and 
+"select CONFIG_LEDS_CLASS".
 
-Can you please apply this?
+2012년 09월 10일 14:28, Randy Dunlap 쓴 글:
+> On 09/09/2012 08:16 PM, G.Shark Jeong wrote:
+>
+>> From: "G.Shark Jeong" <gshark.jeong@gmail.com>
+>>
+>> This driver is a general version for LM3639 backlgiht driver chip of TI.
+>>
+>> Put NEW_LEDS and LEDS_CLASS into Kconfig file to reduce additional configuration works in LEDs.
+>>
+>> www.ti.com
+>
+> eh?
+>
+>> Signed-off-by: G.Shark Jeong <gshark.jeong@gmail.com>
+>
+> Linus has asked patch committers to use Reported-by when appropriate.
+>
+> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+> Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+>
+>
+>> ---
+>>   drivers/video/backlight/Kconfig |    2 ++
+>>   1 files changed, 2 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
+>> index 2ed68bd..e6c78cd 100644
+>> --- a/drivers/video/backlight/Kconfig
+>> +++ b/drivers/video/backlight/Kconfig
+>> @@ -356,6 +356,8 @@ config BACKLIGHT_LM3639
+>>   	tristate "Backlight Driver for LM3639"
+>>   	depends on BACKLIGHT_CLASS_DEVICE && I2C
+>>   	select REGMAP_I2C
+>> +	select NEW_LEDS
+>> +	select LEDS_CLASS
+>>   	help
+>>   	  This supports TI LM3639 Backlight + 1.5A Flash LED Driver
+>>   
+>
+>
 
-
-Acked-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-
-
-> ---
->
->  include/asm-generic/bitops/count_zeros.h |   57 ++++++++++++
->  lib/mpi/longlong.h                       |  138 ------------------------------
->  lib/mpi/mpi-bit.c                        |    2
->  lib/mpi/mpi-pow.c                        |    4 -
->  4 files changed, 62 insertions(+), 139 deletions(-)
->  create mode 100644 include/asm-generic/bitops/count_zeros.h
->
->
-> diff --git a/include/asm-generic/bitops/count_zeros.h b/include/asm-generic/bitops/count_zeros.h
-> new file mode 100644
-> index 0000000..97520d2
-> --- /dev/null
-> +++ b/include/asm-generic/bitops/count_zeros.h
-> @@ -0,0 +1,57 @@
-> +/* Count leading and trailing zeros functions
-> + *
-> + * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
-> + * Written by David Howells (dhowells@redhat.com)
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public Licence
-> + * as published by the Free Software Foundation; either version
-> + * 2 of the Licence, or (at your option) any later version.
-> + */
-> +
-> +#ifndef _ASM_GENERIC_BITOPS_COUNT_ZEROS_H_
-> +#define _ASM_GENERIC_BITOPS_COUNT_ZEROS_H_
-> +
-> +#include <asm/bitops.h>
-> +
-> +/**
-> + * count_leading_zeros - Count the number of zeros from the MSB back
-> + * @x: The value
-> + *
-> + * Count the number of leading zeros from the MSB going towards the LSB in @x.
-> + *
-> + * If the MSB of @x is set, the result is 0.
-> + * If only the LSB of @x is set, then the result is BITS_PER_LONG-1.
-> + * If @x is 0 then the result is COUNT_LEADING_ZEROS_0.
-> + */
-> +static inline int count_leading_zeros(unsigned long x)
-> +{
-> +       if (sizeof(x) == 4)
-> +               return BITS_PER_LONG - fls(x);
-> +       else
-> +               return BITS_PER_LONG - fls64(x);
-> +}
-> +
-> +#define COUNT_LEADING_ZEROS_0 BITS_PER_LONG
-> +
-> +/**
-> + * count_trailing_zeros - Count the number of zeros from the LSB forwards
-> + * @x: The value
-> + *
-> + * Count the number of trailing zeros from the LSB going towards the MSB in @x.
-> + *
-> + * If the LSB of @x is set, the result is 0.
-> + * If only the MSB of @x is set, then the result is BITS_PER_LONG-1.
-> + * If @x is 0 then the result is COUNT_TRAILING_ZEROS_0.
-> + */
-> +static inline int count_trailing_zeros(unsigned long x)
-> +{
-> +#define COUNT_TRAILING_ZEROS_0 (-1)
-> +
-> +       if (sizeof(x) == 4)
-> +               return ffs(x);
-> +       else
-> +               return (x != 0) ? __ffs(x) : COUNT_TRAILING_ZEROS_0;
-> +}
-> +
-> +#endif /* _ASM_GENERIC_BITOPS_COUNT_ZEROS_H_ */
-> diff --git a/lib/mpi/longlong.h b/lib/mpi/longlong.h
-> index 29f9862..678ce4f 100644
-> --- a/lib/mpi/longlong.h
-> +++ b/lib/mpi/longlong.h
-> @@ -19,6 +19,8 @@
->   * the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
->   * MA 02111-1307, USA. */
->
-> +#include <asm-generic/bitops/count_zeros.h>
-> +
->  /* You have to define the following before including this file:
->   *
->   * UWtype -- An unsigned type, default type for operations (typically a "word")
-> @@ -146,12 +148,6 @@ do { \
->         : "1" ((USItype)(n1)), \
->                 "r" ((USItype)(n0)), \
->                 "r" ((USItype)(d)))
-> -
-> -#define count_leading_zeros(count, x) \
-> -       __asm__ ("clz %0,%1" \
-> -       : "=r" ((USItype)(count)) \
-> -       : "r" ((USItype)(x)))
-> -#define COUNT_LEADING_ZEROS_0 32
->  #endif /* __a29k__ */
->
->  #if defined(__alpha) && W_TYPE_SIZE == 64
-> @@ -298,11 +294,6 @@ extern UDItype __udiv_qrnnd();
->         : "1" ((USItype)(nh)), \
->                 "0" ((USItype)(nl)), \
->                 "g" ((USItype)(d)))
-> -#define count_leading_zeros(count, x) \
-> -       __asm__ ("bsch/1 %1,%0" \
-> -       : "=g" (count) \
-> -       : "g" ((USItype)(x)), \
-> -            "0" ((USItype)0))
->  #endif
->
->  /***************************************
-> @@ -354,27 +345,6 @@ do { USItype __r; \
->  } while (0)
->  extern USItype __udiv_qrnnd();
->  #endif /* LONGLONG_STANDALONE */
-> -#define count_leading_zeros(count, x) \
-> -do { \
-> -       USItype __tmp; \
-> -       __asm__ ( \
-> -       "ldi             1,%0\n" \
-> -       "extru,=        %1,15,16,%%r0  ; Bits 31..16 zero?\n" \
-> -       "extru,tr       %1,15,16,%1    ; No.  Shift down, skip add.\n" \
-> -       "ldo            16(%0),%0      ; Yes.   Perform add.\n" \
-> -       "extru,=        %1,23,8,%%r0   ; Bits 15..8 zero?\n" \
-> -       "extru,tr       %1,23,8,%1     ; No.  Shift down, skip add.\n" \
-> -       "ldo            8(%0),%0       ; Yes.   Perform add.\n" \
-> -       "extru,=        %1,27,4,%%r0   ; Bits 7..4 zero?\n" \
-> -       "extru,tr       %1,27,4,%1     ; No.  Shift down, skip add.\n" \
-> -       "ldo            4(%0),%0       ; Yes.   Perform add.\n" \
-> -       "extru,=        %1,29,2,%%r0   ; Bits 3..2 zero?\n" \
-> -       "extru,tr       %1,29,2,%1     ; No.  Shift down, skip add.\n" \
-> -       "ldo            2(%0),%0       ; Yes.   Perform add.\n" \
-> -       "extru          %1,30,1,%1     ; Extract bit 1.\n" \
-> -       "sub            %0,%1,%0       ; Subtract it.              " \
-> -       : "=r" (count), "=r" (__tmp) : "1" (x)); \
-> -} while (0)
->  #endif /* hppa */
->
->  /***************************************
-> @@ -457,15 +427,6 @@ do { \
->         : "0" ((USItype)(n0)), \
->              "1" ((USItype)(n1)), \
->              "rm" ((USItype)(d)))
-> -#define count_leading_zeros(count, x) \
-> -do { \
-> -       USItype __cbtmp; \
-> -       __asm__ ("bsrl %1,%0" \
-> -       : "=r" (__cbtmp) : "rm" ((USItype)(x))); \
-> -       (count) = __cbtmp ^ 31; \
-> -} while (0)
-> -#define count_trailing_zeros(count, x) \
-> -       __asm__ ("bsfl %1,%0" : "=r" (count) : "rm" ((USItype)(x)))
->  #ifndef UMUL_TIME
->  #define UMUL_TIME 40
->  #endif
-> @@ -536,15 +497,6 @@ do { \
->              "dI" ((USItype)(d))); \
->         (r) = __rq.__i.__l; (q) = __rq.__i.__h; \
->  } while (0)
-> -#define count_leading_zeros(count, x) \
-> -do { \
-> -       USItype __cbtmp; \
-> -       __asm__ ("scanbit %1,%0" \
-> -       : "=r" (__cbtmp) \
-> -       : "r" ((USItype)(x))); \
-> -       (count) = __cbtmp ^ 31; \
-> -} while (0)
-> -#define COUNT_LEADING_ZEROS_0 (-32)    /* sic */
->  #if defined(__i960mx)          /* what is the proper symbol to test??? */
->  #define rshift_rhlc(r, h, l, c) \
->  do { \
-> @@ -603,11 +555,6 @@ do { \
->         : "0" ((USItype)(n0)), \
->              "1" ((USItype)(n1)), \
->              "dmi" ((USItype)(d)))
-> -#define count_leading_zeros(count, x) \
-> -       __asm__ ("bfffo %1{%b2:%b2},%0" \
-> -       : "=d" ((USItype)(count)) \
-> -       : "od" ((USItype)(x)), "n" (0))
-> -#define COUNT_LEADING_ZEROS_0 32
->  #else /* not mc68020 */
->  #define umul_ppmm(xh, xl, a, b) \
->  do { USItype __umul_tmp1, __umul_tmp2; \
-> @@ -664,15 +611,6 @@ do { USItype __umul_tmp1, __umul_tmp2; \
->              "rJ" ((USItype)(bh)), \
->              "rJ" ((USItype)(al)), \
->              "rJ" ((USItype)(bl)))
-> -#define count_leading_zeros(count, x) \
-> -do { \
-> -       USItype __cbtmp; \
-> -       __asm__ ("ff1 %0,%1" \
-> -       : "=r" (__cbtmp) \
-> -       : "r" ((USItype)(x))); \
-> -       (count) = __cbtmp ^ 31; \
-> -} while (0)
-> -#define COUNT_LEADING_ZEROS_0 63       /* sic */
->  #if defined(__m88110__)
->  #define umul_ppmm(wh, wl, u, v) \
->  do { \
-> @@ -779,12 +717,6 @@ do { \
->         : "0" (__xx.__ll), \
->              "g" ((USItype)(d))); \
->         (r) = __xx.__i.__l; (q) = __xx.__i.__h; })
-> -#define count_trailing_zeros(count, x) \
-> -do { \
-> -       __asm__("ffsd      %2,%0" \
-> -       : "=r"((USItype) (count)) \
-> -       : "0"((USItype) 0), "r"((USItype) (x))); \
-> -       } while (0)
->  #endif /* __ns32000__ */
->
->  /***************************************
-> @@ -855,11 +787,6 @@ do { \
->                 "rI" ((USItype)(al)), \
->                 "r" ((USItype)(bl))); \
->  } while (0)
-> -#define count_leading_zeros(count, x) \
-> -       __asm__ ("{cntlz|cntlzw} %0,%1" \
-> -       : "=r" ((USItype)(count)) \
-> -       : "r" ((USItype)(x)))
-> -#define COUNT_LEADING_ZEROS_0 32
->  #if defined(_ARCH_PPC)
->  #define umul_ppmm(ph, pl, m0, m1) \
->  do { \
-> @@ -1001,19 +928,6 @@ do { \
->  } while (0)
->  #define UMUL_TIME 20
->  #define UDIV_TIME 200
-> -#define count_leading_zeros(count, x) \
-> -do { \
-> -       if ((x) >= 0x10000) \
-> -               __asm__ ("clz     %0,%1" \
-> -               : "=r" ((USItype)(count)) \
-> -               : "r" ((USItype)(x) >> 16)); \
-> -       else { \
-> -               __asm__ ("clz   %0,%1" \
-> -               : "=r" ((USItype)(count)) \
-> -               : "r" ((USItype)(x))); \
-> -               (count) += 16; \
-> -       } \
-> -} while (0)
->  #endif /* RT/ROMP */
->
->  /***************************************
-> @@ -1142,13 +1056,6 @@ do { \
->         "rI" ((USItype)(d)) \
->         : "%g1" __AND_CLOBBER_CC)
->  #define UDIV_TIME 37
-> -#define count_leading_zeros(count, x) \
-> -       __asm__ ("scan %1,0,%0" \
-> -       : "=r" ((USItype)(x)) \
-> -       : "r" ((USItype)(count)))
-> -/* Early sparclites return 63 for an argument of 0, but they warn that future
-> -       implementations might change this.  Therefore, leave COUNT_LEADING_ZEROS_0
-> -       undefined.  */
->  #endif /* __sparclite__ */
->  #endif /* __sparc_v8__ */
->         /* Default to sparc v7 versions of umul_ppmm and udiv_qrnnd.  */
-> @@ -1454,47 +1361,6 @@ do { \
->  #define udiv_qrnnd __udiv_qrnnd_c
->  #endif
->
-> -#undef count_leading_zeros
-> -#if !defined(count_leading_zeros)
-> -       extern
-> -#ifdef __STDC__
-> -                       const
-> -#endif
-> -                       unsigned char __clz_tab[];
-> -#define count_leading_zeros(count, x) \
-> -do { \
-> -       UWtype __xr = (x); \
-> -       UWtype __a; \
-> -       \
-> -       if (W_TYPE_SIZE <= 32) { \
-> -               __a = __xr < ((UWtype) 1 << 2*__BITS4) \
-> -               ? (__xr < ((UWtype) 1 << __BITS4) ? 0 : __BITS4) \
-> -               : (__xr < ((UWtype) 1 << 3*__BITS4) ?  2*__BITS4 : 3*__BITS4); \
-> -       } \
-> -       else { \
-> -               for (__a = W_TYPE_SIZE - 8; __a > 0; __a -= 8) \
-> -                       if (((__xr >> __a) & 0xff) != 0) \
-> -                               break; \
-> -       } \
-> -       \
-> -       (count) = W_TYPE_SIZE - (__clz_tab[__xr >> __a] + __a); \
-> -} while (0)
-> -       /* This version gives a well-defined value for zero. */
-> -#define COUNT_LEADING_ZEROS_0 W_TYPE_SIZE
-> -#endif
-> -
-> -#if !defined(count_trailing_zeros)
-> -/* Define count_trailing_zeros using count_leading_zeros.  The latter might be
-> -       defined in asm, but if it is not, the C version above is good enough.  */
-> -#define count_trailing_zeros(count, x) \
-> -do { \
-> -       UWtype __ctz_x = (x); \
-> -       UWtype __ctz_c; \
-> -       count_leading_zeros(__ctz_c, __ctz_x & -__ctz_x); \
-> -       (count) = W_TYPE_SIZE - 1 - __ctz_c; \
-> -} while (0)
-> -#endif
-> -
->  #ifndef UDIV_NEEDS_NORMALIZATION
->  #define UDIV_NEEDS_NORMALIZATION 0
->  #endif
-> diff --git a/lib/mpi/mpi-bit.c b/lib/mpi/mpi-bit.c
-> index 5687248..503537e 100644
-> --- a/lib/mpi/mpi-bit.c
-> +++ b/lib/mpi/mpi-bit.c
-> @@ -45,7 +45,7 @@ unsigned mpi_get_nbits(MPI a)
->         if (a->nlimbs) {
->                 mpi_limb_t alimb = a->d[a->nlimbs - 1];
->                 if (alimb)
-> -                       count_leading_zeros(n, alimb);
-> +                       n = count_leading_zeros(alimb);
->                 else
->                         n = BITS_PER_MPI_LIMB;
->                 n = BITS_PER_MPI_LIMB - n + (a->nlimbs - 1) * BITS_PER_MPI_LIMB;
-> diff --git a/lib/mpi/mpi-pow.c b/lib/mpi/mpi-pow.c
-> index 67f3e79..5464c87 100644
-> --- a/lib/mpi/mpi-pow.c
-> +++ b/lib/mpi/mpi-pow.c
-> @@ -77,7 +77,7 @@ int mpi_powm(MPI res, MPI base, MPI exp, MPI mod)
->         mp = mp_marker = mpi_alloc_limb_space(msize);
->         if (!mp)
->                 goto enomem;
-> -       count_leading_zeros(mod_shift_cnt, mod->d[msize - 1]);
-> +       mod_shift_cnt = count_leading_zeros(mod->d[msize - 1]);
->         if (mod_shift_cnt)
->                 mpihelp_lshift(mp, mod->d, msize, mod_shift_cnt);
->         else
-> @@ -169,7 +169,7 @@ int mpi_powm(MPI res, MPI base, MPI exp, MPI mod)
->
->                 i = esize - 1;
->                 e = ep[i];
-> -               count_leading_zeros(c, e);
-> +               c = count_leading_zeros(e);
->                 e = (e << c) << 1;      /* shift the exp bits to the left, lose msb */
->                 c = BITS_PER_MPI_LIMB - 1 - c;
->
->
