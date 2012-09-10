@@ -1,47 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758369Ab2IJT20 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 15:28:26 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:40409 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758337Ab2IJT2Z (ORCPT
+	id S1758482Ab2IJTgr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 15:36:47 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:40834 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758445Ab2IJTgq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 15:28:25 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Mon, 10 Sep 2012 21:28:04 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Clemens Ladisch <clemens@ladisch.de>
-Cc: shuah.khan@hp.com, LKML <linux-kernel@vger.kernel.org>,
-        linux1394-devel@lists.sf.net, shuahkhan@gmail.com
-Subject: Re: [RFC] DMA mapping error check analysis
-Message-ID: <20120910212804.30342e41@stein>
-In-Reply-To: <504E267A.8060307@ladisch.de>
-References: <1346595257.4377.5.camel@lorien2>
-	<1347033200.2603.19.camel@lorien2>
-	<504D9C70.5000102@ladisch.de>
-	<1347290775.3071.1.camel@lorien2>
-	<20120910191739.77d59f65@stein>
-	<504E267A.8060307@ladisch.de>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Sep 2012 15:36:46 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: bhelgaas@google.com
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jirislaby@gmail.com, Feng Tang <feng.tang@intel.com>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: [PATCH 1/1] PCI: fix on-stack pci_device_id's
+Date: Mon, 10 Sep 2012 21:36:41 +0200
+Message-Id: <1347305801-7712-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.11.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sep 10 Clemens Ladisch wrote:
-> fw_iso_buffer_map_dma() maps as many pages as it can, and saves in
-> ->page_count_mapped how many pages need unmapping.
-> 
-> When fw_iso_buffer_map_dma() fails, ioctl_create_iso_context() does _not_
-> call fw_iso_buffer_destroy() but takes care to not change the cdev's
-> state in any other way.  So ioctl_create_iso_context() can be called
-> again and will then call fw_iso_buffer_map_dma(), which will happily
-> map the pages a second time, overwriting the previous mapped addresses.
+Commit "PCI: Use pci_device_id on stack for pci_get_subsys/class() to
+avoid kmalloc" changed heap allocations to on-stack variables, but it
+did not add initialization of other than set members. This causes
+random failures during bootup wherever pci device is needed to be
+found. Hence the boot just hangs or panics.
 
-Indeed; thank you.  I make a note to fix this when I get some time.
+This patches fixes it by setting the content of pci_device_id directly
+in the initializer.
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Feng Tang <feng.tang@intel.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>
+---
+ drivers/pci/search.c | 25 ++++++++++++++-----------
+ 1 file changed, 14 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/pci/search.c b/drivers/pci/search.c
+index 00d486a..bf969ba 100644
+--- a/drivers/pci/search.c
++++ b/drivers/pci/search.c
+@@ -243,12 +243,12 @@ struct pci_dev *pci_get_subsys(unsigned int vendor, unsigned int device,
+ 			       unsigned int ss_vendor, unsigned int ss_device,
+ 			       struct pci_dev *from)
+ {
+-	struct pci_device_id id;
+-
+-	id.vendor = vendor;
+-	id.device = device;
+-	id.subvendor = ss_vendor;
+-	id.subdevice = ss_device;
++	struct pci_device_id id = {
++		.vendor = vendor,
++		.device = device,
++		.subvendor = ss_vendor,
++		.subdevice = ss_device,
++	};
+ 
+ 	return pci_get_dev_by_id(&id, from);
+ }
+@@ -289,11 +289,14 @@ pci_get_device(unsigned int vendor, unsigned int device, struct pci_dev *from)
+  */
+ struct pci_dev *pci_get_class(unsigned int class, struct pci_dev *from)
+ {
+-	struct pci_device_id id;
+-
+-	id.vendor = id.device = id.subvendor = id.subdevice = PCI_ANY_ID;
+-	id.class_mask = PCI_ANY_ID;
+-	id.class = class;
++	struct pci_device_id id = {
++		.vendor = PCI_ANY_ID,
++		.device = PCI_ANY_ID,
++		.subvendor = PCI_ANY_ID,
++		.subdevice = PCI_ANY_ID,
++		.class_mask = PCI_ANY_ID,
++		.class = class,
++	};
+ 
+ 	return pci_get_dev_by_id(&id, from);
+ }
 -- 
-Stefan Richter
--=====-===-- =--= -=-=-
-http://arcgraph.de/sr/
+1.7.11.5
+
+
