@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932198Ab2IJTnb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 15:43:31 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:62816 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932171Ab2IJTn1 (ORCPT
+	id S932214Ab2IJTnm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 15:43:42 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:58064 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932171Ab2IJTnj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 15:43:27 -0400
+	Mon, 10 Sep 2012 15:43:39 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>, Tony Luck <tony.luck@intel.com>,
         Fenghua Yu <fenghua.yu@intel.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Paul Mackerras <paulus@samba.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
         Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 1/6] cputime: Use a proper subsystem naming for vtime related APIs
-Date: Mon, 10 Sep 2012 21:43:08 +0200
-Message-Id: <1347306193-21080-2-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 2/6] vtime: Consolidate system/idle context detection
+Date: Mon, 10 Sep 2012 21:43:09 +0200
+Message-Id: <1347306193-21080-3-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1347306193-21080-1-git-send-email-fweisbec@gmail.com>
 References: <1347306193-21080-1-git-send-email-fweisbec@gmail.com>
@@ -27,299 +27,231 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use a naming based on vtime as a prefix for virtual based
-cputime accounting APIs:
+Move the code that finds out to which context we account the
+cputime into generic layer.
 
-- account_system_vtime() -> vtime_account()
-- account_switch_vtime() -> vtime_task_switch()
+Archs that consider the whole time spent in the idle task as idle
+time (ia64, powerpc) can rely on the generic vtime_account()
+and implement vtime_account_system() and vtime_account_idle(),
+letting the generic code to decide when to call which API.
 
-It makes it easier to allow for further declension such
-as vtime_account_system(), vtime_account_idle(), ... if we
-want to find out the context we account to from generic code.
-
-This also make it better to know on which subsystem these APIs
-refer to.
+Archs that have their own meaning of idle time, such as s390
+that only considers the time spent in CPU low power mode as idle
+time, can just override vtime_account().
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Tony Luck <tony.luck@intel.com>
 Cc: Fenghua Yu <fenghua.yu@intel.com>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
 Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Peter Zijlstra <peterz@infradead.org>
 ---
- arch/ia64/kernel/time.c     |    6 +++---
- arch/powerpc/kernel/time.c  |   10 +++++-----
- arch/s390/kernel/vtime.c    |    6 +++---
- include/linux/hardirq.h     |    8 ++++----
- include/linux/kernel_stat.h |    4 ++--
- include/linux/kvm_host.h    |    4 ++--
- kernel/sched/core.c         |    2 +-
- kernel/sched/cputime.c      |    8 ++++----
- kernel/softirq.c            |    6 +++---
- 9 files changed, 27 insertions(+), 27 deletions(-)
+ arch/ia64/kernel/time.c         |   25 +++++++++++---------
+ arch/powerpc/kernel/time.c      |   47 +++++++++++++++++++++++---------------
+ arch/s390/include/asm/cputime.h |    3 ++
+ include/linux/kernel_stat.h     |    2 +
+ kernel/sched/cputime.c          |   26 +++++++++++++++++++++
+ 5 files changed, 73 insertions(+), 30 deletions(-)
 
 diff --git a/arch/ia64/kernel/time.c b/arch/ia64/kernel/time.c
-index 6247197..16bb6ed 100644
+index 16bb6ed..01cd43e 100644
 --- a/arch/ia64/kernel/time.c
 +++ b/arch/ia64/kernel/time.c
-@@ -88,7 +88,7 @@ extern cputime_t cycle_to_cputime(u64 cyc);
-  * accumulated times to the current process, and to prepare accounting on
-  * the next process.
-  */
--void account_switch_vtime(struct task_struct *prev)
-+void vtime_task_switch(struct task_struct *prev)
- {
- 	struct thread_info *pi = task_thread_info(prev);
- 	struct thread_info *ni = task_thread_info(current);
-@@ -116,7 +116,7 @@ void account_switch_vtime(struct task_struct *prev)
+@@ -116,29 +116,32 @@ void vtime_task_switch(struct task_struct *prev)
   * Account time for a transition between system, hard irq or soft irq state.
   * Note that this function is called with interrupts enabled.
   */
--void account_system_vtime(struct task_struct *tsk)
-+void vtime_account(struct task_struct *tsk)
+-void vtime_account(struct task_struct *tsk)
++static cputime_t vtime_delta(struct task_struct *tsk)
  {
  	struct thread_info *ti = task_thread_info(tsk);
- 	unsigned long flags;
-@@ -138,7 +138,7 @@ void account_system_vtime(struct task_struct *tsk)
+-	unsigned long flags;
+ 	cputime_t delta_stime;
+ 	__u64 now;
  
- 	local_irq_restore(flags);
+-	local_irq_save(flags);
+-
+ 	now = ia64_get_itc();
+ 
+ 	delta_stime = cycle_to_cputime(ti->ac_stime + (now - ti->ac_stamp));
+-	if (irq_count() || idle_task(smp_processor_id()) != tsk)
+-		account_system_time(tsk, 0, delta_stime, delta_stime);
+-	else
+-		account_idle_time(delta_stime);
+ 	ti->ac_stime = 0;
+-
+ 	ti->ac_stamp = now;
+ 
+-	local_irq_restore(flags);
++	return delta_stime;
++}
++
++void vtime_account_system(struct task_struct *tsk)
++{
++	cputime_t delta = vtime_delta(tsk);
++
++	account_system_time(tsk, 0, delta, delta);
++}
++
++void vtime_account_idle(struct task_struct *tsk)
++{
++	account_idle_time(vtime_delta(tsk));
  }
--EXPORT_SYMBOL_GPL(account_system_vtime);
-+EXPORT_SYMBOL_GPL(vtime_account);
+-EXPORT_SYMBOL_GPL(vtime_account);
  
  /*
   * Called from the timer interrupt handler to charge accumulated user time
 diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
-index 49da7f0..39899d7 100644
+index 39899d7..29b6d3e 100644
 --- a/arch/powerpc/kernel/time.c
 +++ b/arch/powerpc/kernel/time.c
-@@ -291,7 +291,7 @@ static inline u64 calculate_stolen_time(u64 stop_tb)
+@@ -291,13 +291,12 @@ static inline u64 calculate_stolen_time(u64 stop_tb)
   * Account time for a transition between system, hard irq
   * or soft irq state.
   */
--void account_system_vtime(struct task_struct *tsk)
-+void vtime_account(struct task_struct *tsk)
+-void vtime_account(struct task_struct *tsk)
++static u64 vtime_delta(struct task_struct *tsk,
++			u64 *sys_scaled, u64 *stolen)
  {
- 	u64 now, nowscaled, delta, deltascaled;
- 	unsigned long flags;
-@@ -343,14 +343,14 @@ void account_system_vtime(struct task_struct *tsk)
+-	u64 now, nowscaled, delta, deltascaled;
+-	unsigned long flags;
+-	u64 stolen, udelta, sys_scaled, user_scaled;
++	u64 now, nowscaled, deltascaled;
++	u64 udelta, delta, user_scaled;
+ 
+-	local_irq_save(flags);
+ 	now = mftb();
+ 	nowscaled = read_spurr(now);
+ 	get_paca()->system_time += now - get_paca()->starttime;
+@@ -305,7 +304,7 @@ void vtime_account(struct task_struct *tsk)
+ 	deltascaled = nowscaled - get_paca()->startspurr;
+ 	get_paca()->startspurr = nowscaled;
+ 
+-	stolen = calculate_stolen_time(now);
++	*stolen = calculate_stolen_time(now);
+ 
+ 	delta = get_paca()->system_time;
+ 	get_paca()->system_time = 0;
+@@ -322,28 +321,38 @@ void vtime_account(struct task_struct *tsk)
+ 	 * the user ticks get saved up in paca->user_time_scaled to be
+ 	 * used by account_process_tick.
+ 	 */
+-	sys_scaled = delta;
++	*sys_scaled = delta;
+ 	user_scaled = udelta;
+ 	if (deltascaled != delta + udelta) {
+ 		if (udelta) {
+-			sys_scaled = deltascaled * delta / (delta + udelta);
+-			user_scaled = deltascaled - sys_scaled;
++			*sys_scaled = deltascaled * delta / (delta + udelta);
++			user_scaled = deltascaled - *sys_scaled;
+ 		} else {
+-			sys_scaled = deltascaled;
++			*sys_scaled = deltascaled;
+ 		}
  	}
- 	local_irq_restore(flags);
+ 	get_paca()->user_time_scaled += user_scaled;
+ 
+-	if (in_interrupt() || idle_task(smp_processor_id()) != tsk) {
+-		account_system_time(tsk, 0, delta, sys_scaled);
+-		if (stolen)
+-			account_steal_time(stolen);
+-	} else {
+-		account_idle_time(delta + stolen);
+-	}
+-	local_irq_restore(flags);
++	return delta;
++}
++
++void vtime_account_system(struct task_struct *tsk)
++{
++	u64 delta, sys_scaled, stolen;
++
++	delta = vtime_delta(tsk, &sys_scaled, &stolen);
++	account_system_time(tsk, 0, delta, sys_scaled);
++	if (stolen)
++		account_steal_time(stolen);
++}
++
++void vtime_account_idle(struct task_struct *tsk)
++{
++	u64 delta, sys_scaled, stolen;
++
++	delta = vtime_delta(tsk, &sys_scaled, &stolen);
++	account_idle_time(delta + stolen);
  }
--EXPORT_SYMBOL_GPL(account_system_vtime);
-+EXPORT_SYMBOL_GPL(vtime_account);
+-EXPORT_SYMBOL_GPL(vtime_account);
  
  /*
   * Transfer the user and system times accumulated in the paca
-  * by the exception entry and exit code to the generic process
-  * user and system time records.
-  * Must be called with interrupts disabled.
-- * Assumes that account_system_vtime() has been called recently
-+ * Assumes that vtime_account() has been called recently
-  * (i.e. since the last entry from usermode) so that
-  * get_paca()->user_time_scaled is up to date.
-  */
-@@ -366,9 +366,9 @@ void account_process_tick(struct task_struct *tsk, int user_tick)
- 	account_user_time(tsk, utime, utimescaled);
- }
+diff --git a/arch/s390/include/asm/cputime.h b/arch/s390/include/asm/cputime.h
+index 8709bde..023d5ae 100644
+--- a/arch/s390/include/asm/cputime.h
++++ b/arch/s390/include/asm/cputime.h
+@@ -12,6 +12,9 @@
+ #include <linux/spinlock.h>
+ #include <asm/div64.h>
  
--void account_switch_vtime(struct task_struct *prev)
-+void vtime_task_switch(struct task_struct *prev)
- {
--	account_system_vtime(prev);
-+	vtime_account(prev);
- 	account_process_tick(prev, 0);
- }
++
++#define __ARCH_HAS_VTIME_ACCOUNT
++
+ /* We want to use full resolution of the CPU timer: 2**-12 micro-seconds. */
  
-diff --git a/arch/s390/kernel/vtime.c b/arch/s390/kernel/vtime.c
-index 449ac22..cb5093c 100644
---- a/arch/s390/kernel/vtime.c
-+++ b/arch/s390/kernel/vtime.c
-@@ -99,7 +99,7 @@ static int do_account_vtime(struct task_struct *tsk, int hardirq_offset)
- 	return virt_timer_forward(user + system);
- }
- 
--void account_switch_vtime(struct task_struct *prev)
-+void vtime_task_switch(struct task_struct *prev)
- {
- 	struct thread_info *ti;
- 
-@@ -122,7 +122,7 @@ void account_process_tick(struct task_struct *tsk, int user_tick)
-  * Update process times based on virtual cpu times stored by entry.S
-  * to the lowcore fields user_timer, system_timer & steal_clock.
-  */
--void account_system_vtime(struct task_struct *tsk)
-+void vtime_account(struct task_struct *tsk)
- {
- 	struct thread_info *ti = task_thread_info(tsk);
- 	u64 timer, system;
-@@ -138,7 +138,7 @@ void account_system_vtime(struct task_struct *tsk)
- 
- 	virt_timer_forward(system);
- }
--EXPORT_SYMBOL_GPL(account_system_vtime);
-+EXPORT_SYMBOL_GPL(vtime_account);
- 
- void __kprobes vtime_stop_cpu(void)
- {
-diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
-index 305f23c..cab3da3 100644
---- a/include/linux/hardirq.h
-+++ b/include/linux/hardirq.h
-@@ -132,11 +132,11 @@ extern void synchronize_irq(unsigned int irq);
- struct task_struct;
- 
- #if !defined(CONFIG_VIRT_CPU_ACCOUNTING) && !defined(CONFIG_IRQ_TIME_ACCOUNTING)
--static inline void account_system_vtime(struct task_struct *tsk)
-+static inline void vtime_account(struct task_struct *tsk)
- {
- }
- #else
--extern void account_system_vtime(struct task_struct *tsk);
-+extern void vtime_account(struct task_struct *tsk);
- #endif
- 
- #if defined(CONFIG_TINY_RCU) || defined(CONFIG_TINY_PREEMPT_RCU)
-@@ -162,7 +162,7 @@ extern void rcu_nmi_exit(void);
-  */
- #define __irq_enter()					\
- 	do {						\
--		account_system_vtime(current);		\
-+		vtime_account(current);		\
- 		add_preempt_count(HARDIRQ_OFFSET);	\
- 		trace_hardirq_enter();			\
- 	} while (0)
-@@ -178,7 +178,7 @@ extern void irq_enter(void);
- #define __irq_exit()					\
- 	do {						\
- 		trace_hardirq_exit();			\
--		account_system_vtime(current);		\
-+		vtime_account(current);		\
- 		sub_preempt_count(HARDIRQ_OFFSET);	\
- 	} while (0)
- 
+ typedef unsigned long long __nocast cputime_t;
 diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
-index bbe5d15..ca0944b 100644
+index ca0944b..36d12f0 100644
 --- a/include/linux/kernel_stat.h
 +++ b/include/linux/kernel_stat.h
-@@ -131,9 +131,9 @@ extern void account_steal_ticks(unsigned long ticks);
- extern void account_idle_ticks(unsigned long ticks);
+@@ -132,6 +132,8 @@ extern void account_idle_ticks(unsigned long ticks);
  
  #ifdef CONFIG_VIRT_CPU_ACCOUNTING
--extern void account_switch_vtime(struct task_struct *prev);
-+extern void vtime_task_switch(struct task_struct *prev);
+ extern void vtime_task_switch(struct task_struct *prev);
++extern void vtime_account_system(struct task_struct *tsk);
++extern void vtime_account_idle(struct task_struct *tsk);
  #else
--static inline void account_switch_vtime(struct task_struct *prev) { }
-+static inline void vtime_task_switch(struct task_struct *prev) { }
+ static inline void vtime_task_switch(struct task_struct *prev) { }
  #endif
- 
- #endif /* _LINUX_KERNEL_STAT_H */
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index b70b48b..8a59e0a 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -685,7 +685,7 @@ static inline int kvm_deassign_device(struct kvm *kvm,
- static inline void kvm_guest_enter(void)
- {
- 	BUG_ON(preemptible());
--	account_system_vtime(current);
-+	vtime_account(current);
- 	current->flags |= PF_VCPU;
- 	/* KVM does not hold any references to rcu protected data when it
- 	 * switches CPU into a guest mode. In fact switching to a guest mode
-@@ -699,7 +699,7 @@ static inline void kvm_guest_enter(void)
- 
- static inline void kvm_guest_exit(void)
- {
--	account_system_vtime(current);
-+	vtime_account(current);
- 	current->flags &= ~PF_VCPU;
- }
- 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index c46a011..fc62423 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1796,7 +1796,7 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
- 	 *		Manfred Spraul <manfred@colorfullife.com>
- 	 */
- 	prev_state = prev->state;
--	account_switch_vtime(prev);
-+	vtime_task_switch(prev);
- 	finish_arch_switch(prev);
- #ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
- 	local_irq_disable();
 diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 372692b..53f5b12 100644
+index 53f5b12..a453795 100644
 --- a/kernel/sched/cputime.c
 +++ b/kernel/sched/cputime.c
-@@ -10,11 +10,11 @@
- 
- /*
-  * There are no locks covering percpu hardirq/softirq time.
-- * They are only modified in account_system_vtime, on corresponding CPU
-+ * They are only modified in vtime_account, on corresponding CPU
-  * with interrupts disabled. So, writes are safe.
-  * They are read and saved off onto struct rq in update_rq_clock().
-  * This may result in other CPU reading this CPU's irq time and can
-- * race with irq/account_system_vtime on this CPU. We would either get old
-+ * race with irq/vtime_account on this CPU. We would either get old
-  * or new value with a side effect of accounting a slice of irq time to wrong
-  * task when irq is in progress while we read rq->clock. That is a worthy
-  * compromise in place of having locks on each irq in account_system_time.
-@@ -43,7 +43,7 @@ DEFINE_PER_CPU(seqcount_t, irq_time_seq);
-  * Called before incrementing preempt_count on {soft,}irq_enter
-  * and before decrementing preempt_count on {soft,}irq_exit.
-  */
--void account_system_vtime(struct task_struct *curr)
-+void vtime_account(struct task_struct *curr)
- {
- 	unsigned long flags;
- 	s64 delta;
-@@ -73,7 +73,7 @@ void account_system_vtime(struct task_struct *curr)
- 	irq_time_write_end();
- 	local_irq_restore(flags);
+@@ -432,6 +432,32 @@ void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+ 	*ut = cputime.utime;
+ 	*st = cputime.stime;
  }
--EXPORT_SYMBOL_GPL(account_system_vtime);
++
++/*
++ * Archs that account the whole time spent in the idle task
++ * (outside irq) as idle time can rely on this and just implement
++ * vtime_account_system() and vtime_account_idle(). Archs that
++ * have other meaning of the idle time (s390 only includes the
++ * time spent by the CPU when it's in low power mode) must override
++ * vtime_account().
++ */
++#ifndef __ARCH_HAS_VTIME_ACCOUNT
++void vtime_account(struct task_struct *tsk)
++{
++	unsigned long flags;
++
++	local_irq_save(flags);
++
++	if (in_interrupt() || is_idle_task(tsk))
++		vtime_account_system(tsk);
++	else
++		vtime_account_idle(tsk);
++
++	local_irq_restore(flags);
++}
 +EXPORT_SYMBOL_GPL(vtime_account);
++#endif /* __ARCH_HAS_VTIME_ACCOUNT */
++
+ #else
  
- static int irqtime_account_hi_update(void)
- {
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index b73e681..d55e315 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -220,7 +220,7 @@ asmlinkage void __do_softirq(void)
- 	current->flags &= ~PF_MEMALLOC;
- 
- 	pending = local_softirq_pending();
--	account_system_vtime(current);
-+	vtime_account(current);
- 
- 	__local_bh_disable((unsigned long)__builtin_return_address(0),
- 				SOFTIRQ_OFFSET);
-@@ -271,7 +271,7 @@ restart:
- 
- 	lockdep_softirq_exit();
- 
--	account_system_vtime(current);
-+	vtime_account(current);
- 	__local_bh_enable(SOFTIRQ_OFFSET);
- 	tsk_restore_flags(current, old_flags, PF_MEMALLOC);
- }
-@@ -340,7 +340,7 @@ static inline void invoke_softirq(void)
-  */
- void irq_exit(void)
- {
--	account_system_vtime(current);
-+	vtime_account(current);
- 	trace_hardirq_exit();
- 	sub_preempt_count(IRQ_EXIT_OFFSET);
- 	if (!in_interrupt() && local_softirq_pending())
+ #ifndef nsecs_to_cputime
 -- 
 1.7.5.4
 
