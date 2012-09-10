@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757757Ab2IJNH1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 09:07:27 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:42925
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751229Ab2IJNHZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 09:07:25 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(zz98dI1432Izz1202h1d1ahzzz2dh668h839h944hd25hf0ah11b5h121eh1220h1288h12a5h12a9h1155h)
-X-WSS-ID: 0MA4XS2-02-8B5-02
-X-M-MSG: 
-Date: Mon, 10 Sep 2012 15:07:00 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: David Ahern <dsahern@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH] perf, ibs: Check syscall attribute flags
-Message-ID: <20120910130700.GS8285@erda.amd.com>
-References: <1342826756-64663-1-git-send-email-dsahern@gmail.com>
- <1342826756-64663-9-git-send-email-dsahern@gmail.com>
- <20120906190238.GA29278@erda.amd.com>
- <5048F6BF.70106@gmail.com>
- <20120906195645.GD8285@erda.amd.com>
- <20120907164114.GJ8285@erda.amd.com>
- <504A25DB.2030100@gmail.com>
- <20120907170700.GK8285@erda.amd.com>
- <504A2ADC.4050703@gmail.com>
- <504A2CD3.9060204@gmail.com>
+	id S1757791Ab2IJNIM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 09:08:12 -0400
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:45978 "EHLO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751839Ab2IJNIH convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 09:08:07 -0400
+From: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?iso-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>
+Date: Mon, 10 Sep 2012 15:07:55 +0200
+Subject: RE: Remoteproc: Translating between host and device addresses.
+Thread-Topic: Remoteproc: Translating between host and device addresses.
+Thread-Index: Ac2PUrMvtXHAYkcXRhGh40DQPTUFgQAAHKrg
+Message-ID: <81C3A93C17462B4BBD7E272753C1057923B9DB3227@EXDCVYMBSTM005.EQ1STM.local>
+References: <81C3A93C17462B4BBD7E272753C1057923B924C92D@EXDCVYMBSTM005.EQ1STM.local>
+ <CAK=WgbZLjQVYFHcTkb+nDpYZx3qkWp=wQmOqOpMHCxroceTNpg@mail.gmail.com>
+In-Reply-To: <CAK=WgbZLjQVYFHcTkb+nDpYZx3qkWp=wQmOqOpMHCxroceTNpg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <504A2CD3.9060204@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07.09.12 11:20:19, David Ahern wrote:
-> I see now... intel returns ENOTSUP if exclude_guest is not set, amd 
-> returns EINVAL if it is set.
+Hi Ohad,
+
+> > One way for the device to figure out the translation between
+> > host-physical and device-address is to peek into some CarveOut
+> > resource entry and compute this translation. Because a CarveOut
+> > resource entry contains both the host-physical-address and the
+> > device address for the same memory location. But this feels
+> > like a workaround, shouldn't we make a more explicit way of
+> > communicating this mapping between host-physical and device
+> > addresses?
 > 
-> For the AMD case the fallback_missing_features code kicks in for 
-> perf-top and perf-record; I just need to fix up the pr_debug for that case.
+> Yes, we should. The plan is, when relevant, to switch to the
+> IOMMU-based DMA API to allocate device addresses (by programming the
+> IOMMUs automatically), and stop sending physical addresses remotely.
 
-It is EOPNOTSUP. I preferred returning EOPNOTSUP too. But then I saw
-that fallback code is implemented to work mostly with EINVAL. It seems
-to be the default answer to a syscall. ;)
+But the vring descriptor table will still contain the host's physical address for the
+buffers, right?
+So how can the device then find the device-address of these buffers if we don't 
+use an IOMMU and have no address translation from host-physical-address 
+to device-address?
 
-There are several pieces of code in perf that implement fallback code,
-it's hard to find it all and this already caused some bugs in the
-past. I was looking at this to unify it, but it was too much effort.
+> For OMAP, btw, we will still provide those device->physical
+> translation resource entries, because OMAP4 has a few remote
+> components that access the host-physical memory directly.
 
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Thanks,
+Sjur
