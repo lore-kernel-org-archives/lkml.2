@@ -1,63 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755781Ab2IJIpB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 04:45:01 -0400
-Received: from mga09.intel.com ([134.134.136.24]:41480 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751338Ab2IJIo6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 04:44:58 -0400
-Message-Id: <84c8a8$5m6f27@orsmga001.jf.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,396,1344236400"; 
-   d="scan'208";a="191052871"
-From: chris@chris-wilson.co.uk
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: net/ipv4/route.c:645 suspicious rcu_dereference_check() usage!
-Date: Mon, 10 Sep 2012 09:44:38 +0100
+	id S1752861Ab2IJIqr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 04:46:47 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:35015 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751338Ab2IJIqo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 04:46:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+M3ks7mYF1q3VOgA65V5DOj_1-MFDnqweoM+UMA_YHveOm+rw@mail.gmail.com>
+References: <1347009393-8751-1-git-send-email-benjamin.gaignard@stericsson.com>
+	<1347240876.28607.26.camel@yhuang-dev>
+	<CA+M3ks7mYF1q3VOgA65V5DOj_1-MFDnqweoM+UMA_YHveOm+rw@mail.gmail.com>
+Date: Mon, 10 Sep 2012 10:46:43 +0200
+Message-ID: <CA+M3ks6G1+gYQAEPfEpfLEDUi+ktKtVisF9vU_Kf=kahv-M_fQ@mail.gmail.com>
+Subject: Re: [PATCH] genalloc: make possible to use a custom allocation algorithm
+From: Benjamin Gaignard <benjamin.gaignard@linaro.org>
+To: Huang Ying <ying.huang@intel.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Benjamin Gaignard <benjamin.gaignard@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've not seen this reported yet, so here's a warning that happens
-occasionally:
+>From e790af0773193c3c7e5950ab74fa5e1e29204ad5 Mon Sep 17 00:00:00 2001
+From: Benjamin Gaignard <benjamin.gaignard@stericsson.com>
+Date: Mon, 10 Sep 2012 10:11:05 +0200
+Subject: [PATCH] genalloc: make possible to use a custom allocation algorithm
 
-[192979.475833] 
-[192979.475840] ===============================
-[192979.475841] [ INFO: suspicious RCU usage. ]
-[192979.475844] 3.6.0-rc2+ #33 Not tainted
-[192979.475846] -------------------------------
-[192979.475848] net/ipv4/route.c:645 suspicious rcu_dereference_check() usage!
-[192979.475850] 
-[192979.475850] other info that might help us debug this:
-[192979.475850] 
-[192979.475853] 
-[192979.475853] rcu_scheduler_active = 1, debug_locks = 0
-[192979.475856] 2 locks held by firefox-bin/4634:
-[192979.475858]  #0:  (slock-AF_INET){+.-...}, at: [<ffffffff814261b4>] release_sock+0x34/0x1e0
-[192979.475870]  #1:  (fnhe_lock){+.-...}, at: [<ffffffff81461c94>] update_or_create_fnhe.isra.30+0x44/0x480
-[192979.475878] 
-[192979.475878] stack backtrace:
-[192979.475881] Pid: 4634, comm: firefox-bin Not tainted 3.6.0-rc2+ #33
-[192979.475883] Call Trace:
-[192979.475891]  [<ffffffff810903cd>] lockdep_rcu_suspicious+0xfd/0x130
-[192979.475895]  [<ffffffff81461e8e>] update_or_create_fnhe.isra.30+0x23e/0x480
-[192979.475899]  [<ffffffff814624ba>] __ip_rt_update_pmtu.isra.31+0x6a/0xb0
-[192979.475903]  [<ffffffff81465038>] ip_rt_update_pmtu+0x48/0xd0
-[192979.475907]  [<ffffffff814759b1>] inet_csk_update_pmtu+0x31/0x80
-[192979.475912]  [<ffffffff8148b663>] tcp_v4_mtu_reduced+0x33/0xd0
-[192979.475915]  [<ffffffff814888be>] tcp_release_cb+0x5e/0xb0
-[192979.475919]  [<ffffffff81426289>] release_sock+0x109/0x1e0
-[192979.475922]  [<ffffffff81479037>] tcp_sendmsg+0x527/0x1030
-[192979.475927]  [<ffffffff814a4d9d>] inet_sendmsg+0xed/0x240
-[192979.475931]  [<ffffffff814a4cb0>] ? inet_autobind+0x70/0x70
-[192979.475934]  [<ffffffff81424e8a>] ? sock_update_classid+0xaa/0x370
-[192979.475937]  [<ffffffff81424eb8>] ? sock_update_classid+0xd8/0x370
-[192979.475941]  [<ffffffff8141ee1b>] sock_sendmsg+0xab/0xe0
-[192979.475946]  [<ffffffff814222be>] sys_sendto+0x11e/0x160
-[192979.475951]  [<ffffffff8153e547>] ? sysret_check+0x1b/0x56
-[192979.475956]  [<ffffffff8125849e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[192979.475960]  [<ffffffff8153e522>] system_call_fastpath+0x16/0x1b
+This patch allow to use another algorithm than the default first-fit one.
+For example a custom algorithm could be used to manage alignment requirements.
 
+Add of best-fit algorithm function:
+most of the time best-fit is slower then first-fit but memory
+fragmentation is lower.
+Random buffer allocation/free tests don't show any arithmetic relation between
+allocation time and fragmentation but best-fit algorithm is sometime
+able to perform the allocation when first-fit can't.
+
+This new algorithm help to solve fragmentation issues on ESRAM shared
+by multiple
+hardware IP allocating and freeing dynamically memory region of various sizes.
+
+Signed-off-by: Benjamin Gaignard <benjamin.gaignard@stericsson.com>
+---
+ include/linux/genalloc.h |   15 ++++++++
+ lib/genalloc.c           |   90 +++++++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 101 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/genalloc.h b/include/linux/genalloc.h
+index 5e98eeb..f72a0a0 100644
+--- a/include/linux/genalloc.h
++++ b/include/linux/genalloc.h
+@@ -36,6 +36,10 @@ struct gen_pool {
+ 	spinlock_t lock;
+ 	struct list_head chunks;	/* list of chunks in this pool */
+ 	int min_alloc_order;		/* minimum allocation order */
++
++	unsigned long (*algo)(unsigned long *, unsigned long,
++			unsigned long, unsigned int, void *);
++	void *data;
+ };
+
+ /*
+@@ -78,4 +82,15 @@ extern void gen_pool_for_each_chunk(struct gen_pool *,
+ 	void (*)(struct gen_pool *, struct gen_pool_chunk *, void *), void *);
+ extern size_t gen_pool_avail(struct gen_pool *);
+ extern size_t gen_pool_size(struct gen_pool *);
++
++extern void gen_pool_set_algo(struct gen_pool *,
++		unsigned long (*)(unsigned long *, unsigned long, unsigned long,
++		unsigned int, void *), void *);
++
++extern unsigned long gen_pool_first_fit(unsigned long *, unsigned long,
++		unsigned long, unsigned int, void *);
++
++extern unsigned long gen_pool_best_fit(unsigned long *, unsigned long,
++		unsigned long, unsigned int, void *);
++
+ #endif /* __GENALLOC_H__ */
+diff --git a/lib/genalloc.c b/lib/genalloc.c
+index 6bc04aa..9583dae 100644
+--- a/lib/genalloc.c
++++ b/lib/genalloc.c
+@@ -152,6 +152,8 @@ struct gen_pool *gen_pool_create(int
+min_alloc_order, int nid)
+ 		spin_lock_init(&pool->lock);
+ 		INIT_LIST_HEAD(&pool->chunks);
+ 		pool->min_alloc_order = min_alloc_order;
++		pool->algo = gen_pool_first_fit;
++		pool->data = NULL;
+ 	}
+ 	return pool;
+ }
+@@ -255,8 +257,9 @@ EXPORT_SYMBOL(gen_pool_destroy);
+  * @size: number of bytes to allocate from the pool
+  *
+  * Allocate the requested number of bytes from the specified pool.
+- * Uses a first-fit algorithm. Can not be used in NMI handler on
+- * architectures without NMI-safe cmpxchg implementation.
++ * Uses the pool allocation function (with first-fit algorithm by default).
++ * Can not be used in NMI handler on architectures without
++ * NMI-safe cmpxchg implementation.
+  */
+ unsigned long gen_pool_alloc(struct gen_pool *pool, size_t size)
+ {
+@@ -280,8 +283,8 @@ unsigned long gen_pool_alloc(struct gen_pool
+*pool, size_t size)
+
+ 		end_bit = (chunk->end_addr - chunk->start_addr) >> order;
+ retry:
+-		start_bit = bitmap_find_next_zero_area(chunk->bits, end_bit,
+-						       start_bit, nbits, 0);
++		start_bit = pool->algo(chunk->bits, end_bit, start_bit, nbits,
++				pool->data);
+ 		if (start_bit >= end_bit)
+ 			continue;
+ 		remain = bitmap_set_ll(chunk->bits, start_bit, nbits);
+@@ -400,3 +403,82 @@ size_t gen_pool_size(struct gen_pool *pool)
+ 	return size;
+ }
+ EXPORT_SYMBOL_GPL(gen_pool_size);
++
++/**
++ * gen_pool_set_algo - set the allocation algorithm
++ * @pool: pool to change allocation algorithm
++ * @algo: custom algorithm function
++ * @data: additional data used by @algo
++ *
++ * Call @algo for each memory allocation in the pool.
++ * If @algo is NULL use gen_pool_first_fit as default
++ * memory allocation function.
++ */
++void gen_pool_set_algo(struct gen_pool *pool,
++	unsigned long (*algo)(unsigned long *map, unsigned long size,
++	unsigned long start, unsigned int nr, void *data), void *data)
++{
++	rcu_read_lock();
++
++	pool->algo = algo;
++	if (!pool->algo)
++		pool->algo = gen_pool_first_fit;
++
++	pool->data = data;
++
++	rcu_read_unlock();
++}
++EXPORT_SYMBOL(gen_pool_set_algo);
++
++/**
++ * gen_pool_first_fit - find the first available region
++ * of memory macthing the size requirement (no alignment constraint)
++ * @map: The address to base the search on
++ * @size: The bitmap size in bits
++ * @start: The bitnumber to start searching at
++ * @nr: The number of zeroed bits we're looking for
++ * @data: additional data - unused
++ */
++unsigned long gen_pool_first_fit(unsigned long *map, unsigned long size,
++		unsigned long start, unsigned int nr, void *data)
++{
++	return bitmap_find_next_zero_area(map, size, start, nr, 0);
++}
++EXPORT_SYMBOL(gen_pool_first_fit);
++
++/**
++ * gen_pool_best_fit - find the best fiting region of memory
++ * macthing the size requirement (no alignment constraint)
++ * @map: The address to base the search on
++ * @size: The bitmap size in bits
++ * @start: The bitnumber to start searching at
++ * @nr: The number of zeroed bits we're looking for
++ * @data: additional data - unused
++ *
++ * Iterate over the bitmap to find the smallest free region
++ * which we can allocate the memory.
++ */
++unsigned long gen_pool_best_fit(unsigned long *map, unsigned long size,
++		unsigned long start, unsigned int nr, void *data)
++{
++	unsigned long start_bit = size;
++	unsigned long len = size + 1;
++	unsigned long index;
++
++	index = bitmap_find_next_zero_area(map, size, start, nr, 0);
++
++	while (index < size) {
++		int next_bit = find_next_bit(map, size, index + nr);
++		if ((next_bit - index) < len) {
++			len = next_bit - index;
++			start_bit = index;
++			if (len == nr)
++				return start_bit;
++		}
++		index = bitmap_find_next_zero_area(map, size,
++						   next_bit + 1, nr, 0);
++	}
++
++	return start_bit;
++}
++EXPORT_SYMBOL(gen_pool_best_fit);
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+1.7.10
