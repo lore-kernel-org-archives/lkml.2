@@ -1,125 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754130Ab2IJOoQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 10:44:16 -0400
-Received: from mga01.intel.com ([192.55.52.88]:10559 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753034Ab2IJOoP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 10:44:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,398,1344236400"; 
-   d="asc'?scan'208";a="220088370"
-Date: Mon, 10 Sep 2012 17:44:38 +0300
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: Re: [PATCH v2 10/10] thp: implement refcounting for huge zero page
-Message-ID: <20120910144438.GA31697@otc-wbsnb-06>
-References: <1347282813-21935-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1347282813-21935-11-git-send-email-kirill.shutemov@linux.intel.com>
- <1347285759.1234.1645.camel@edumazet-glaptop>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3MwIy2ne0vdjdPXF"
-Content-Disposition: inline
-In-Reply-To: <1347285759.1234.1645.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754261Ab2IJOpS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 10:45:18 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44046 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751872Ab2IJOpO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 10:45:14 -0400
+Message-ID: <1347288296.2124.12.camel@twins>
+Subject: Re: [PATCH v2 03/12] perf tools: include __WORDSIZE definition
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Irina Tirdea <irina.tirdea@gmail.com>
+Cc: Pekka Enberg <penberg@kernel.org>, mingo@redhat.com,
+        acme@ghostprotocols.net, rostedt@goodmis.org, paulus@samba.org,
+        dsahern@gmail.com, namhyung.kim@lge.com, linux-kernel@vger.kernel.org,
+        Irina Tirdea <irina.tirdea@intel.com>
+Date: Mon, 10 Sep 2012 16:44:56 +0200
+In-Reply-To: <CANg8OW+iuqnc-_daWDSXymYNKnr0YEoa_3310YvYJAUF_vCTnQ@mail.gmail.com>
+References: <1347065004-15306-1-git-send-email-irina.tirdea@intel.com>
+	 <1347065004-15306-4-git-send-email-irina.tirdea@intel.com>
+	 <CAOJsxLHCavYZQCOZP0nw0ig9uFx0wbR5UP23zKa0gXvmpFvNDg@mail.gmail.com>
+	 <CANg8OW+iuqnc-_daWDSXymYNKnr0YEoa_3310YvYJAUF_vCTnQ@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 2012-09-09 at 01:19 +0300, Irina Tirdea wrote:
+> >> +#ifndef __WORDSIZE
+> >> +#if defined(__x86_64__)
+> >> +# define __WORDSIZE 64
+> >> +#endif
+> >> +#if defined(__i386__) || defined(__arm__)
+> >> +# define __WORDSIZE 32
+> >> +#endif
+> >> +#endif
+> >
+> > Why not use "sizeof(unsigned long) * 8" ?
+> 
+> I tried to do it this, but the compilation crashes because this value
+> is tested in an #if:
+> 
+> target  C: libperf <= tools/perf/util/annotate.c
+> In file included from tools/perf/util/include/linux/bitmap.h:5:0,
+>                  from tools/perf/util/header.h:10,
+>                  from tools/perf/util/session.h:6,
+>                  from tools/perf/util/build-id.h:4,
+>                  from tools/perf/util/annotate.c:11:
+> tools/perf/util/include/linux/bitops.h: In function '__ffs':
+> tools/perf/util/include/linux/bitops.h:62:5: warning: "sizeof" is not
+> defined [-Wundef]
+> tools/perf/util/include/linux/bitops.h:62:5: error: missing binary
+> operator before token "("
 
---3MwIy2ne0vdjdPXF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Mon, Sep 10, 2012 at 04:02:39PM +0200, Eric Dumazet wrote:
-> On Mon, 2012-09-10 at 16:13 +0300, Kirill A. Shutemov wrote:
-> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> >=20
-> > H. Peter Anvin doesn't like huge zero page which sticks in memory forev=
-er
-> > after the first allocation. Here's implementation of lockless refcounti=
-ng
-> > for huge zero page.
-> >=20
-> ...
->=20
-> > +static unsigned long get_huge_zero_page(void)
-> > +{
-> > +	struct page *zero_page;
-> > +retry:
-> > +	if (likely(atomic_inc_not_zero(&huge_zero_refcount)))
-> > +		return ACCESS_ONCE(huge_zero_pfn);
-> > +
-> > +	zero_page =3D alloc_pages(GFP_TRANSHUGE | __GFP_ZERO, HPAGE_PMD_ORDER=
-);
-> > +	if (!zero_page)
-> > +		return 0;
-> > +	if (cmpxchg(&huge_zero_pfn, 0, page_to_pfn(zero_page))) {
-> > +		__free_page(zero_page);
-> > +		goto retry;
-> > +	}
->=20
-> This might break if preemption can happen here ?
->=20
-> The second thread might loop forever because huge_zero_refcount is 0,
-> and huge_zero_pfn not zero.
-
-I fail to see why the second thread might loop forever. Long time yes, but
-forever?
-
-Yes, disabling preemption before alloc_pages() and enabling after
-atomic_set() looks reasonable. Thanks.
-
->=20
-> If preemption already disabled, a comment would be nice.
->=20
->=20
-> > +
-> > +	/* We take additional reference here. It will be put back by shinker =
-*/
->=20
-> typo : shrinker
-
-Thx.
-
-> > +	atomic_set(&huge_zero_refcount, 2);
-> > +	return ACCESS_ONCE(huge_zero_pfn);
-> > +}
-> > +
->=20
->=20
->=20
-
---=20
- Kirill A. Shutemov
-
---3MwIy2ne0vdjdPXF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQTfzWAAoJEAd+omnVudOMnMoQAK+JYB2wxNHp9jOcWZl8Tqhn
-fOB9vDh2PpJca5q7gYDlCHYt8y0JOC/nflDZS/CdaKpztlyszqrkFcAeH0jbhQEc
-2rDntfM+riieZPQFvyIRxruQu65P4vooXhzTB/1PqBzOq9F2PblHLxtyVYg9N9V3
-P0T/4HicTRbaJS4bwKno9Nm69LbV/Qjqspel2EiH9tpTQa+8JD7EelB/ziqzs/Hk
-/5SVVqzwdElHOEd2eqvUPRPvy7/SyG6q7Ar1QRu3Oq5KbmJsN6xWM9XhiUyinNGA
-sm6GKfEMZ3LQDZL3I71ud18GgyPiPJdl44K2j4DoRvLwouxpRtKF3RjyDMUaQKHy
-XDVqfiDdZtF3hix8SppCoTYntLHxLtXXduBp1y4DRt/Mg6hr1zDGort/VaOLB/iq
-3WNGJSyPpC0SZ7Ev0dCa4aUIutfx8SuIK8HZYszkPJqzWJgAkrfripCrIHqKM2au
-0YXXwkJvcDZ/mNhOX2Pt1dBqzfXv73rU6MCb5XxO3MczSU9lzpeEblob7HHVpSt1
-/AX6u3WIIt/EUJE+8M+DyLuh2MUaAvD+g7PUap/4BPlbsiHLToHFnrwU/1+oC4h3
-AP4rOKHdjJFQJjOXFS0/AHjZi4RZIC44M/NHHfPF5cbaaSF/54JBiLi/uS+hZLTh
-QKX9Z5uVrW41+6FkKH1h
-=pLyw
------END PGP SIGNATURE-----
-
---3MwIy2ne0vdjdPXF--
+Use either: __SIZEOF_LONG__ (8) or __LP64__ (1) 
