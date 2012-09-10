@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754082Ab2IJHLA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 03:11:00 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:46896 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752898Ab2IJHK5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 03:10:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120910.024751.2110848839896025221.davem@davemloft.net>
-References: <20120909224150.641491654@decadent.org.uk>
-	<20120909224155.647306922@decadent.org.uk>
-	<CA+rthh8Z8panzcLT9baQd=qEvywfJcQVk1wCnHJ_PCBu=Rn5Tw@mail.gmail.com>
-	<20120910.024751.2110848839896025221.davem@davemloft.net>
-Date: Mon, 10 Sep 2012 09:10:56 +0200
-Message-ID: <CA+rthh_LtfxRVzRe2UuBbQkD4aFvqFRMDExkC64b4dRfnzKf1w@mail.gmail.com>
-Subject: Re: [ 35/95] dccp: check ccid before dereferencing
-From: Mathias Krause <minipli@googlemail.com>
-To: David Miller <davem@davemloft.net>
-Cc: ben@decadent.org.uk, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, gerrit@erg.abdn.ac.uk
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753798Ab2IJHLl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 03:11:41 -0400
+Received: from mga11.intel.com ([192.55.52.93]:54476 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751497Ab2IJHLh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 03:11:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,396,1344236400"; 
+   d="scan'208";a="220137257"
+From: Alex Shi <alex.shi@intel.com>
+To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] sched: trigger_load_balance clean up
+Date: Mon, 10 Sep 2012 15:10:59 +0800
+Message-Id: <1347261059-24747-2-git-send-email-alex.shi@intel.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1347261059-24747-1-git-send-email-alex.shi@intel.com>
+References: <1347261059-24747-1-git-send-email-alex.shi@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 8:47 AM, David Miller <davem@davemloft.net> wrote:
-> From: Mathias Krause <minipli@googlemail.com>
-> Date: Mon, 10 Sep 2012 08:17:06 +0200
->
->> Hi Ben,
->>
->> On Mon, Sep 10, 2012 at 12:42 AM, Ben Hutchings <ben@decadent.org.uk> wrote:
->>> 3.2-stable review patch.  If anyone has any objections, please let me know.
->>
->> No objections, but could you please consider including the following
->> commits, too?:
->
-> They will be included when I next push my networking -stable queue to
-> the stable maintainers, and no sooner.
->
-> You never need to ask if and when a networking patch will be submitted
-> to stable, my pending queue is always available for you to inspect
-> here:
->
-> http://patchwork.ozlabs.org/bundle/davem/stable/?state=*
+Remove a redundant check for on_null_domain(cpu), and rerange the code
+that make it more readable.
 
-Thanks for clarifying this and the pointer to the queue! I wasn't aware of it.
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ kernel/sched/fair.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-Mathias
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 5bbc4bf..529092d 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4934,11 +4934,13 @@ static inline int on_null_domain(int cpu)
+ void trigger_load_balance(struct rq *rq, int cpu)
+ {
+ 	/* Don't need to rebalance while attached to NULL domain */
+-	if (time_after_eq(jiffies, rq->next_balance) &&
+-	    likely(!on_null_domain(cpu)))
++	if (unlikely(on_null_domain(cpu)))
++		return;
++
++	if (time_after_eq(jiffies, rq->next_balance))
+ 		raise_softirq(SCHED_SOFTIRQ);
+ #ifdef CONFIG_NO_HZ
+-	if (nohz_kick_needed(rq, cpu) && likely(!on_null_domain(cpu)))
++	if (nohz_kick_needed(rq, cpu))
+ 		nohz_balancer_kick(cpu);
+ #endif
+ }
+-- 
+1.7.5.4
+
