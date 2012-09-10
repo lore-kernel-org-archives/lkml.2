@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932235Ab2IJTnq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 15:43:46 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:62816 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932213Ab2IJTnn (ORCPT
+	id S932251Ab2IJTnw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 15:43:52 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:58064 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932195Ab2IJTnt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 15:43:43 -0400
+	Mon, 10 Sep 2012 15:43:49 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>, Tony Luck <tony.luck@intel.com>,
@@ -17,9 +17,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>, Tony Luck <tony.luck@intel.com>,
         Heiko Carstens <heiko.carstens@de.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 3/6] ia64: Consolidate user vtime accounting
-Date: Mon, 10 Sep 2012 21:43:10 +0200
-Message-Id: <1347306193-21080-4-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 5/6] cputime: Gather time/stats accounting config options into a single menu
+Date: Mon, 10 Sep 2012 21:43:12 +0200
+Message-Id: <1347306193-21080-6-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1347306193-21080-1-git-send-email-fweisbec@gmail.com>
 References: <1347306193-21080-1-git-send-email-fweisbec@gmail.com>
@@ -27,8 +27,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Factorize the code that accounts user time into a
-single function to avoid code duplication.
+This debloats a bit the general config menu and make these
+config options easier to find.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Tony Luck <tony.luck@intel.com>
@@ -41,69 +41,150 @@ Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Peter Zijlstra <peterz@infradead.org>
 ---
- arch/ia64/kernel/time.c |   28 +++++++++++++++-------------
- 1 files changed, 15 insertions(+), 13 deletions(-)
+ init/Kconfig |  116 ++++++++++++++++++++++++++++++----------------------------
+ 1 files changed, 60 insertions(+), 56 deletions(-)
 
-diff --git a/arch/ia64/kernel/time.c b/arch/ia64/kernel/time.c
-index 01cd43e..351df58 100644
---- a/arch/ia64/kernel/time.c
-+++ b/arch/ia64/kernel/time.c
-@@ -83,6 +83,18 @@ static struct clocksource *itc_clocksource;
+diff --git a/init/Kconfig b/init/Kconfig
+index c40d0fb..2c5aa34 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -267,6 +267,65 @@ config POSIX_MQUEUE_SYSCTL
+ 	depends on SYSCTL
+ 	default y
  
- extern cputime_t cycle_to_cputime(u64 cyc);
- 
-+static void vtime_account_user(struct task_struct *tsk)
-+{
-+	cputime_t delta_utime;
-+	struct thread_info *ti = task_thread_info(tsk);
++config FHANDLE
++	bool "open by fhandle syscalls"
++	select EXPORTFS
++	help
++	  If you say Y here, a user level program will be able to map
++	  file names to handle and then later use the handle for
++	  different file system operations. This is useful in implementing
++	  userspace file servers, which now track files using handles instead
++	  of names. The handle would remain the same even if file names
++	  get renamed. Enables open_by_handle_at(2) and name_to_handle_at(2)
++	  syscalls.
 +
-+	if (ti->ac_utime) {
-+		delta_utime = cycle_to_cputime(ti->ac_utime);
-+		account_user_time(tsk, delta_utime, delta_utime);
-+		ti->ac_utime = 0;
-+	}
-+}
++config AUDIT
++	bool "Auditing support"
++	depends on NET
++	help
++	  Enable auditing infrastructure that can be used with another
++	  kernel subsystem, such as SELinux (which requires this for
++	  logging of avc messages output).  Does not do system-call
++	  auditing without CONFIG_AUDITSYSCALL.
 +
- /*
-  * Called from the context switch with interrupts disabled, to charge all
-  * accumulated times to the current process, and to prepare accounting on
-@@ -92,7 +104,7 @@ void vtime_task_switch(struct task_struct *prev)
- {
- 	struct thread_info *pi = task_thread_info(prev);
- 	struct thread_info *ni = task_thread_info(current);
--	cputime_t delta_stime, delta_utime;
-+	cputime_t delta_stime;
- 	__u64 now;
++config AUDITSYSCALL
++	bool "Enable system-call auditing support"
++	depends on AUDIT && (X86 || PPC || S390 || IA64 || UML || SPARC64 || SUPERH || (ARM && AEABI && !OABI_COMPAT))
++	default y if SECURITY_SELINUX
++	help
++	  Enable low-overhead system-call auditing infrastructure that
++	  can be used independently or with another kernel subsystem,
++	  such as SELinux.
++
++config AUDIT_WATCH
++	def_bool y
++	depends on AUDITSYSCALL
++	select FSNOTIFY
++
++config AUDIT_TREE
++	def_bool y
++	depends on AUDITSYSCALL
++	select FSNOTIFY
++
++config AUDIT_LOGINUID_IMMUTABLE
++	bool "Make audit loginuid immutable"
++	depends on AUDIT
++	help
++	  The config option toggles if a task setting its loginuid requires
++	  CAP_SYS_AUDITCONTROL or if that task should require no special permissions
++	  but should instead only allow setting its loginuid if it was never
++	  previously set.  On systems which use systemd or a similar central
++	  process to restart login services this should be set to true.  On older
++	  systems in which an admin would typically have to directly stop and
++	  start processes this should be set to false.  Setting this to true allows
++	  one to drop potentially dangerous capabilites from the login tasks,
++	  but may not be backwards compatible with older init systems.
++
++source "kernel/irq/Kconfig"
++source "kernel/time/Kconfig"
++
++menu "CPU/Task time and stats accounting"
++
+ config VIRT_CPU_ACCOUNTING
+ 	bool "Deterministic task and CPU time accounting"
+ 	depends on HAVE_VIRT_CPU_ACCOUNTING
+@@ -305,18 +364,6 @@ config BSD_PROCESS_ACCT_V3
+ 	  for processing it. A preliminary version of these tools is available
+ 	  at <http://www.gnu.org/software/acct/>.
  
- 	now = ia64_get_itc();
-@@ -103,10 +115,7 @@ void vtime_task_switch(struct task_struct *prev)
- 	else
- 		account_idle_time(delta_stime);
- 
--	if (pi->ac_utime) {
--		delta_utime = cycle_to_cputime(pi->ac_utime);
--		account_user_time(prev, delta_utime, delta_utime);
--	}
-+	vtime_account_user(prev);
- 
- 	pi->ac_stamp = ni->ac_stamp = now;
- 	ni->ac_stime = ni->ac_utime = 0;
-@@ -149,14 +158,7 @@ void vtime_account_idle(struct task_struct *tsk)
-  */
- void account_process_tick(struct task_struct *p, int user_tick)
- {
--	struct thread_info *ti = task_thread_info(p);
--	cputime_t delta_utime;
+-config FHANDLE
+-	bool "open by fhandle syscalls"
+-	select EXPORTFS
+-	help
+-	  If you say Y here, a user level program will be able to map
+-	  file names to handle and then later use the handle for
+-	  different file system operations. This is useful in implementing
+-	  userspace file servers, which now track files using handles instead
+-	  of names. The handle would remain the same even if file names
+-	  get renamed. Enables open_by_handle_at(2) and name_to_handle_at(2)
+-	  syscalls.
 -
--	if (ti->ac_utime) {
--		delta_utime = cycle_to_cputime(ti->ac_utime);
--		account_user_time(p, delta_utime, delta_utime);
--		ti->ac_utime = 0;
--	}
-+	vtime_account_user(p);
- }
+ config TASKSTATS
+ 	bool "Export task/process statistics through netlink (EXPERIMENTAL)"
+ 	depends on NET
+@@ -359,50 +406,7 @@ config TASK_IO_ACCOUNTING
  
- #endif /* CONFIG_VIRT_CPU_ACCOUNTING */
+ 	  Say N if unsure.
+ 
+-config AUDIT
+-	bool "Auditing support"
+-	depends on NET
+-	help
+-	  Enable auditing infrastructure that can be used with another
+-	  kernel subsystem, such as SELinux (which requires this for
+-	  logging of avc messages output).  Does not do system-call
+-	  auditing without CONFIG_AUDITSYSCALL.
+-
+-config AUDITSYSCALL
+-	bool "Enable system-call auditing support"
+-	depends on AUDIT && (X86 || PPC || S390 || IA64 || UML || SPARC64 || SUPERH || (ARM && AEABI && !OABI_COMPAT))
+-	default y if SECURITY_SELINUX
+-	help
+-	  Enable low-overhead system-call auditing infrastructure that
+-	  can be used independently or with another kernel subsystem,
+-	  such as SELinux.
+-
+-config AUDIT_WATCH
+-	def_bool y
+-	depends on AUDITSYSCALL
+-	select FSNOTIFY
+-
+-config AUDIT_TREE
+-	def_bool y
+-	depends on AUDITSYSCALL
+-	select FSNOTIFY
+-
+-config AUDIT_LOGINUID_IMMUTABLE
+-	bool "Make audit loginuid immutable"
+-	depends on AUDIT
+-	help
+-	  The config option toggles if a task setting its loginuid requires
+-	  CAP_SYS_AUDITCONTROL or if that task should require no special permissions
+-	  but should instead only allow setting its loginuid if it was never
+-	  previously set.  On systems which use systemd or a similar central
+-	  process to restart login services this should be set to true.  On older
+-	  systems in which an admin would typically have to directly stop and
+-	  start processes this should be set to false.  Setting this to true allows
+-	  one to drop potentially dangerous capabilites from the login tasks,
+-	  but may not be backwards compatible with older init systems.
+-
+-source "kernel/irq/Kconfig"
+-source "kernel/time/Kconfig"
++endmenu # "CPU/Task time and stats accounting"
+ 
+ menu "RCU Subsystem"
+ 
 -- 
 1.7.5.4
 
