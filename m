@@ -1,81 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756088Ab2IJIkn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 04:40:43 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56939 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751801Ab2IJIki (ORCPT
+	id S1756045Ab2IJIkb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 04:40:31 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:39355 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755939Ab2IJIk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 04:40:38 -0400
-Date: Mon, 10 Sep 2012 09:40:25 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Chanho Min <chanho0207@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        David Howells <dhowells@redhat.com>, Nicolas Pitre <nico@linaro.org>
-Subject: Re: [PATCH] ARM: Fix build warning in do_alignment.
-Message-ID: <20120910084025.GP13739@n2100.arm.linux.org.uk>
-References: <CAOAMb1CTk1_dQAUiHy5ch=UxN7vSe0of81KcKbjPjCFqR9e9tw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOAMb1CTk1_dQAUiHy5ch=UxN7vSe0of81KcKbjPjCFqR9e9tw@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 10 Sep 2012 04:40:26 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v3 9/9] ARM: mvebu: adjust Armada XP evaluation board DTS
+Date: Mon, 10 Sep 2012 10:39:46 +0200
+Message-Id: <1347266386-16229-10-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1347266386-16229-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1345623750-10645-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1347266386-16229-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 12:25:15PM +0900, Chanho Min wrote:
-> Fix the following build warning:
-> 
-> arch/arm/mm/alignment.c: In function 'do_alignment':
-> arch/arm/mm/alignment.c:327:15: warning: 'offset.un' may be used
-> uninitialized in this function [-Wuninitialized]
-> arch/arm/mm/alignment.c:749:21: note: 'offset.un' was declared here
-> 
-> Signed-off-by: Chanho Min <chanho.min@lge.com>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-The compiler is being silly - notice that it is saying "may" not "is".
-In this case, it will not be uninitialized prior to use.
+The Armada XP evaluation board is based on the MV78460 Armava XP
+SoC. Now that we have separate .dtsi files for the three different
+SoCs of the Armada XP family, use the appropriate one as include for
+the Armada XP evaluation board .dts file.
 
-What it's caused by is do_alignment_t32_to_handler(), and its assignment
-through a pointer of this variable.  You can see that this is the cause
-because the patch below fixes the warning.
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+---
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Rob Landley <rob@landley.net>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Lior Amsalem <alior@marvell.com>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Ben Dooks <ben.dooks@codethink.co.uk>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: linux-doc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+---
+ arch/arm/boot/dts/armada-xp-db.dts |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-It's all about whether gcc can prove that the variable is or is not
-assigned.  It has one warning for the 'provably not assigned' case, and
-another for the 'can't prove that it is always assigned' case.
-
-Anyway, normally we don't fix warnings where the compiler is wrong (but
-we encourage the compiler guys to fix the compiler instead.)
-
- arch/arm/mm/alignment.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/arch/arm/mm/alignment.c b/arch/arm/mm/alignment.c
-index 6d6790e..5ce7733 100644
---- a/arch/arm/mm/alignment.c
-+++ b/arch/arm/mm/alignment.c
-@@ -699,7 +699,6 @@ do_alignment_t32_to_handler(unsigned long *pinstr, struct pt_regs *regs,
- 	unsigned long instr = *pinstr;
- 	u16 tinst1 = (instr >> 16) & 0xffff;
- 	u16 tinst2 = instr & 0xffff;
--	poffset->un = 0;
+diff --git a/arch/arm/boot/dts/armada-xp-db.dts b/arch/arm/boot/dts/armada-xp-db.dts
+index f97040d..b1fc728 100644
+--- a/arch/arm/boot/dts/armada-xp-db.dts
++++ b/arch/arm/boot/dts/armada-xp-db.dts
+@@ -14,11 +14,11 @@
+  */
  
- 	switch (tinst1 & 0xffe0) {
- 	/* A6.3.5 Load/Store multiple */
-@@ -854,9 +853,10 @@ do_alignment(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
- 		break;
+ /dts-v1/;
+-/include/ "armada-xp.dtsi"
++/include/ "armada-xp-mv78460.dtsi"
  
- 	case 0x08000000:	/* ldm or stm, or thumb-2 32bit instruction */
--		if (thumb2_32b)
-+		if (thumb2_32b) {
-+			offset.un = 0;
- 			handler = do_alignment_t32_to_handler(&instr, regs, &offset);
--		else
-+		} else
- 			handler = do_alignment_ldmstm;
- 		break;
+ / {
+ 	model = "Marvell Armada XP Evaluation Board";
+-	compatible = "marvell,axp-db", "marvell,armadaxp", "marvell,armada-370-xp";
++	compatible = "marvell,axp-db", "marvell,armadaxp-mv78460", "marvell,armadaxp", "marvell,armada-370-xp";
  
+ 	chosen {
+ 		bootargs = "console=ttyS0,115200 earlyprintk";
+-- 
+1.7.10.4
 
