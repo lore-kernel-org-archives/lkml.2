@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757450Ab2IJLLV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 07:11:21 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34091 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757076Ab2IJLLR (ORCPT
+	id S1757441Ab2IJLMY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 07:12:24 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:51450 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757076Ab2IJLMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 07:11:17 -0400
-Date: Mon, 10 Sep 2012 13:11:13 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: sgruszka@redhat.com, linux-wireless@vger.kernel.org,
-        johannes.berg@intel.com, wey-yi.w.guy@intel.com, ilw@linux.intel.com,
-        Andrew Morton <akpm@osdl.org>, Mel Gorman <mgorman@suse.de>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: iwl3945: order 5 allocation during ifconfig up; vm problem?
-Message-ID: <20120910111113.GA25159@elf.ucw.cz>
-References: <20120909213228.GA5538@elf.ucw.cz>
- <alpine.DEB.2.00.1209091539530.16930@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1209091539530.16930@chino.kir.corp.google.com>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 10 Sep 2012 07:12:19 -0400
+Date: Mon, 10 Sep 2012 12:16:24 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>,
+        Arve =?UTF-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+        Colin Cross <ccross@android.com>, Brian Swetland <swetland@google.com>,
+        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com,
+        kgdb-bugreport@lists.sourceforge.net, linux-serial@vger.kernel.org
+Subject: Re: [PATCH 08/14] tty/serial/kgdboc: Add and wire up clear_irqs
+ callback
+Message-ID: <20120910121624.226c1a88@pyramind.ukuu.org.uk>
+In-Reply-To: <20120910041357.GH29537@lizard>
+References: <20120910040802.GA1261@lizard>
+	<20120910041357.GH29537@lizard>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 2012-09-09 15:40:55, David Rientjes wrote:
-> On Sun, 9 Sep 2012, Pavel Machek wrote:
-> 
-> > On 3.6.0-rc2+, I tried to turn on the wireless, but got
-> > 
-> > root@amd:~# ifconfig wlan0 10.0.0.6 up
-> > SIOCSIFFLAGS: Cannot allocate memory
-> > SIOCSIFFLAGS: Cannot allocate memory
-> > root@amd:~# 
-> > 
-> > It looks like it uses "a bit too big" allocations to allocate
-> > firmware...? Order five allocation....
-> > 
-> > Hmm... then I did "echo 3  > /proc/sys/vm/drop_caches" and now the
-> > network works. Is it VM problem that it failed to allocate memory when
-> > it was freeable?
-> > 
-> 
-> Do you have CONFIG_COMPACTION enabled?
+> serial port, the CPU receives NMI exception, and we fall into KDB shell.
+> So, it is our "debug console", and it is able to interrupt (and thus
+> debug) even IRQ handlers themselves.
 
-Yes:
 
-pavel@amd:/data/l/linux-good$ zgrep CONFIG_COMPACTION /proc/config.gz 
-CONFIG_COMPACTION=y
-								Pavel
+You seem to have an assumption of single core here. What happens if the
+NMI hits CPU #0 and the serial IRQ hits CPU #1 simultaneously ?
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Alan
