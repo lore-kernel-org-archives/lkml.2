@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753935Ab2IJEwj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 00:52:39 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:35463 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750718Ab2IJEwi (ORCPT
+	id S1753523Ab2IJE5U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 00:57:20 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:58198 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751259Ab2IJE5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 00:52:38 -0400
+	Mon, 10 Sep 2012 00:57:19 -0400
 MIME-Version: 1.0
-Date: Mon, 10 Sep 2012 12:52:37 +0800
-Message-ID: <CAPgLHd_VmPgv4z4ecRHwcAqdFsM5Q00MMOnYsT4p5dg4gfx82Q@mail.gmail.com>
-Subject: [PATCH] memstick: move the dereference below the NULL test
+Date: Mon, 10 Sep 2012 12:57:18 +0800
+Message-ID: <CAPgLHd-NJFJQsAwGXwVzA_FcN8HOvkeYJLDy9s5dqGLLo9sVRw@mail.gmail.com>
+Subject: [PATCH] configfs: move the dereference below the NULL test
 From: Wei Yongjun <weiyj.lk@gmail.com>
-To: maximlevitsky@gmail.com
+To: jlbec@evilplan.org
 Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,29 +28,25 @@ spatch with a semantic match is used to found this.
 
 Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
- drivers/memstick/host/r592.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/configfs/dir.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/memstick/host/r592.c b/drivers/memstick/host/r592.c
-index 29b2172..a7c5b31 100644
---- a/drivers/memstick/host/r592.c
-+++ b/drivers/memstick/host/r592.c
-@@ -454,7 +454,7 @@ static int r592_transfer_fifo_pio(struct r592_device *dev)
- /* Executes one TPC (data is read/written from small or large fifo) */
- static void r592_execute_tpc(struct r592_device *dev)
+diff --git a/fs/configfs/dir.c b/fs/configfs/dir.c
+index 7414ae2..3f15991 100644
+--- a/fs/configfs/dir.c
++++ b/fs/configfs/dir.c
+@@ -1037,10 +1037,11 @@ static int configfs_dump(struct configfs_dirent *sd, int level)
+ static int configfs_depend_prep(struct dentry *origin,
+ 				struct config_item *target)
  {
--	bool is_write = dev->req->tpc >= MS_TPC_SET_RW_REG_ADRS;
-+	bool is_write;
- 	int len, error;
- 	u32 status, reg;
+-	struct configfs_dirent *child_sd, *sd = origin->d_fsdata;
++	struct configfs_dirent *child_sd, *sd;
+ 	int ret = 0;
  
-@@ -463,6 +463,7 @@ static void r592_execute_tpc(struct r592_device *dev)
- 		return;
- 	}
+-	BUG_ON(!origin || !sd);
++	BUG_ON(!origin || !origin->d_fsdata);
++	sd = origin->d_fsdata;
  
-+	is_write = dev->req->tpc >= MS_TPC_SET_RW_REG_ADRS;
- 	len = dev->req->long_data ?
- 		dev->req->sg.length : dev->req->data_len;
- 
-
+ 	if (sd->s_element == target)  /* Boo-yah */
+ 		goto out;
 
