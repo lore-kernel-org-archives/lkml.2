@@ -1,99 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932418Ab2IJUdO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 16:33:14 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:42366 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932385Ab2IJUdJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 16:33:09 -0400
-Message-ID: <504E4E7E.30608@zankel.net>
-Date: Mon, 10 Sep 2012 22:33:02 +0200
-From: czankel <chris@zankel.net>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S932431Ab2IJUeB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 16:34:01 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:46440 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932152Ab2IJUd7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 16:33:59 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+Subject: Re: [PATCH 1/3] devfreq: core updates to support devices which can idle
+Date: Mon, 10 Sep 2012 22:40:17 +0200
+User-Agent: KMail/1.13.6 (Linux/3.6.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: mturquette@linaro.org, myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        patches@linaro.org, linaro-dev@lists.linaro.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1346682578-24312-1-git-send-email-rajagopal.venkat@linaro.org> <201209092346.39877.rjw@sisk.pl> <CA+Z25wW1RoqiWNa1K8Gox+MX4jHuRRo0RPTijXWLTiz0iKnRXw@mail.gmail.com>
+In-Reply-To: <CA+Z25wW1RoqiWNa1K8Gox+MX4jHuRRo0RPTijXWLTiz0iKnRXw@mail.gmail.com>
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 4/4] xtensa: Setup CROSS_COMPILE at the top
-References: <1336855148-18817-1-git-send-email-geert@linux-m68k.org> <1336855148-18817-4-git-send-email-geert@linux-m68k.org> <CAMuHMdXi9+vRk2R61qnzGg7p9e7p9DR1C_Ozw6MFCv+YqhSpVg@mail.gmail.com>
-In-Reply-To: <CAMuHMdXi9+vRk2R61qnzGg7p9e7p9DR1C_Ozw6MFCv+YqhSpVg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201209102240.17916.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/9/12 10:20 AM, Geert Uytterhoeven wrote:
-> On Sat, May 12, 2012 at 10:39 PM, Geert Uytterhoeven
-> <geert@linux-m68k.org>  wrote:
->> CROSS_COMPILE must be setup before using e.g. cc-option (and a few other
->> as-*, cc-*, ld-* macros), else they will check against the wrong compiler
->> when cross-compiling, and may invoke the cross compiler with wrong or
->> suboptimal compiler options.
->>
->> Signed-off-by: Geert Uytterhoeven<geert@linux-m68k.org>
->> Cc: Chris Zankel<chris@zankel.net>
->>
->> Ping?
-Acked-by: Chris Zankel <chris@zankel.net>
+On Monday, September 10, 2012, Rajagopal Venkat wrote:
+> On 10 September 2012 03:16, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Monday, September 03, 2012, Rajagopal Venkat wrote:
+> >> Prepare devfreq core framework to support devices which
+> >> can idle. When device idleness is detected perhaps through
+> >> runtime-pm, need some mechanism to suspend devfreq load
+> >> monitoring and resume back when device is online. Present
+> >> code continues monitoring unless device is removed from
+> >> devfreq core.
+> >>
+> >> This patch introduces following design changes,
+> >>
+> >> - use per device work instead of global work to monitor device
+> >>   load. This enables suspend/resume of device devfreq and
+> >>   reduces monitoring code complexity.
+> >> - decouple delayed work based load monitoring logic from core
+> >>   by introducing helpers functions to be used by governors. This
+> >>   provides flexibility for governors either to use delayed work
+> >>   based monitoring functions or to implement their own mechanism.
+> >> - devfreq core interacts with governors via events to perform
+> >>   specific actions. These events include start/stop devfreq.
+> >>   This sets ground for adding suspend/resume events.
+> >>
+> >> The devfreq apis are not modified and are kept intact.
+> >>
+> >> Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+> >
+> > This one looks like a nice simplification.  I wonder if everyone in the CC list
+> > is fine with it?
+> >
+> > One remark below.
+> >
+> >> ---
+> >>  drivers/devfreq/devfreq.c                 | 376 ++++++++++--------------------
+> >>  drivers/devfreq/governor.h                |   9 +
+> >>  drivers/devfreq/governor_performance.c    |  16 +-
+> >>  drivers/devfreq/governor_powersave.c      |  16 +-
+> >>  drivers/devfreq/governor_simpleondemand.c |  33 +++
+> >>  drivers/devfreq/governor_userspace.c      |  23 +-
+> >>  include/linux/devfreq.h                   |  31 +--
+> >>  7 files changed, 220 insertions(+), 284 deletions(-)
+> >>
+> >> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
+> >> index b146d76..be524c7 100644
+> >> --- a/drivers/devfreq/devfreq.c
+> >> +++ b/drivers/devfreq/devfreq.c
+> >> @@ -30,17 +30,11 @@
+> >>  struct class *devfreq_class;
+> >>
+> >>  /*
+> >> - * devfreq_work periodically monitors every registered device.
+> >> - * The minimum polling interval is one jiffy. The polling interval is
+> >> - * determined by the minimum polling period among all polling devfreq
+> >> - * devices. The resolution of polling interval is one jiffy.
+> >> + * devfreq core provides delayed work based load monitoring helper
+> >> + * functions. Governors can use these or can implement their own
+> >> + * monitoring mechanism.
+> >>   */
+> >> -static bool polling;
+> >>  static struct workqueue_struct *devfreq_wq;
+> >> -static struct delayed_work devfreq_work;
+> >> -
+> >> -/* wait removing if this is to be removed */
+> >> -static struct devfreq *wait_remove_device;
+> >>
+> >>  /* The list of all device-devfreq */
+> >>  static LIST_HEAD(devfreq_list);
+> >> @@ -72,6 +66,8 @@ static struct devfreq *find_device_devfreq(struct device *dev)
+> >>       return ERR_PTR(-ENODEV);
+> >>  }
+> >>
+> >> +/* Load monitoring helper functions for governors use */
+> >> +
+> >>  /**
+> >>   * update_devfreq() - Reevaluate the device and configure frequency.
+> >>   * @devfreq: the devfreq instance.
+> >> @@ -121,6 +117,90 @@ int update_devfreq(struct devfreq *devfreq)
+> >>  }
+> >>
+> >>  /**
+> >> + * devfreq_monitor() - Periodically poll devfreq objects.
+> >> + * @work: the work struct used to run devfreq_monitor periodically.
+> >> + *
+> >> + */
+> >> +static void devfreq_monitor(struct work_struct *work)
+> >> +{
+> >> +     int err;
+> >> +     struct devfreq *devfreq = container_of(work,
+> >> +                                     struct devfreq, work.work);
+> >> +
+> >> +     mutex_lock(&devfreq->lock);
+> >> +     err = update_devfreq(devfreq);
+> >> +     mutex_unlock(&devfreq->lock);
+> >> +     if (err)
+> >> +             dev_err(&devfreq->dev, "dvfs failed with (%d) error\n", err);
+> >> +
+> >> +     queue_delayed_work(devfreq_wq, &devfreq->work,
+> >> +                             msecs_to_jiffies(devfreq->profile->polling_ms));
+> >> +}
+> >> +
+> >> +/**
+> >> + * devfreq_monitor_start() - Start load monitoring of devfreq instance
+> >> + *                   using default delayed work
+> >> + * @devfreq: the devfreq instance.
+> >> + *
+> >> + * Returns 0 if monitoring started, non-zero otherwise.
+> >> + * Note: This function is exported for governors.
+> >> + */
+> >> +int devfreq_monitor_start(struct devfreq *devfreq)
+> >> +{
+> >> +     INIT_DEFERRABLE_WORK(&devfreq->work, devfreq_monitor);
+> >> +     return !queue_delayed_work(devfreq_wq, &devfreq->work,
+> >> +                     msecs_to_jiffies(devfreq->profile->polling_ms));
+> >> +}
+> >> +
+> >> +/**
+> >> + * devfreq_monitor_stop() - Stop load monitoring of a devfreq instance
+> >> + * @devfreq: the devfreq instance.
+> >> + *
+> >> + * Note: This function is exported for governors.
+> >> + */
+> >> +void devfreq_monitor_stop(struct devfreq *devfreq)
+> >> +{
+> >> +     cancel_delayed_work_sync(&devfreq->work);
+> >> +}
+> >> +
+> >> +/**
+> >> + * devfreq_monitor_suspend() - Suspend load monitoring of a devfreq instance
+> >> + * @devfreq:    the devfreq instance.
+> >> + *
+> >> + * Note: This function is exported for governors.
+> >> + */
+> >
+> > It would be good to say in the kerneldoc comment what the idea is, because it
+> > is not particularly clear from the code.  In particular, why can't
+> > devfreq_monitor_suspend() be the same as devfreq_monitor_stop()?
+> Ok. Kerneldoc comment will be added here.
+> 
+> The idea is,
+> devfreq_monitor_suspend() - called to suspend device devfreq during device
+> idleness.
+> 
+> devfreq_monitor_stop() - called when device is removed from the devfreq
+> framework.
+> 
+> Though these two functions can be same, intentionally I kept them separate
+> to provide hooks for collecting transition statistics.
 
+In that case it looks like there is a race below:
 
->>
->> ---
->>   arch/xtensa/Makefile |   24 ++++++++++++------------
->>   1 files changed, 12 insertions(+), 12 deletions(-)
->>
->> diff --git a/arch/xtensa/Makefile b/arch/xtensa/Makefile
->> index 7608559..d41f9ed 100644
->> --- a/arch/xtensa/Makefile
->> +++ b/arch/xtensa/Makefile
->> @@ -21,6 +21,18 @@ variant-$(CONFIG_XTENSA_VARIANT_LINUX_CUSTOM)        := custom
->>   VARIANT = $(variant-y)
->>   export VARIANT
->>
->> +# Test for cross compiling
->> +
->> +ifneq ($(VARIANT),)
->> +  COMPILE_ARCH = $(shell uname -m)
->> +
->> +  ifneq ($(COMPILE_ARCH), xtensa)
->> +    ifndef CROSS_COMPILE
->> +      CROSS_COMPILE = xtensa_$(VARIANT)-
->> +    endif
->> +  endif
->> +endif
->> +
->>   # Platform configuration
->>
->>   platform-$(CONFIG_XTENSA_PLATFORM_XT2000)      := xt2000
->> @@ -54,18 +66,6 @@ KBUILD_DEFCONFIG := iss_defconfig
->>
->>   core-$(CONFIG_EMBEDDED_RAMDISK)        += arch/xtensa/boot/ramdisk/
->>
->> -# Test for cross compiling
->> -
->> -ifneq ($(VARIANT),)
->> -  COMPILE_ARCH = $(shell uname -m)
->> -
->> -  ifneq ($(COMPILE_ARCH), xtensa)
->> -    ifndef CROSS_COMPILE
->> -      CROSS_COMPILE = xtensa_$(VARIANT)-
->> -    endif
->> -  endif
->> -endif
->> -
->>   # Only build variant and/or platform if it includes a Makefile
->>
->>   buildvar := $(shell test -a $(srctree)/arch/xtensa/variants/$(VARIANT)/Makefile&&  echo arch/xtensa/variants/$(VARIANT)/)
-> Gr{oetje,eeting}s,
->
->                          Geert
->
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
->
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                  -- Linus Torvalds
+> >> +int devfreq_monitor_suspend(struct devfreq *devfreq)
+> >> +{
+> >> +     int ret = -EPERM;
+> >> +
+> >> +     if (delayed_work_pending(&devfreq->work)) {
 
+Don't you need to check the timer here too?  It is possible that the work
+isn't pending yet, but the timer has already been set.
+
+> >> +             cancel_delayed_work_sync(&devfreq->work);
+> >> +             ret = 0;
+> >> +     }
+> >> +
+> >> +     return ret;
+> >> +}
+
+BTW, why do you want to return -EPERM on error?
+
+Rafael
