@@ -1,79 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756260Ab2IJNPa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 09:15:30 -0400
-Received: from mga14.intel.com ([143.182.124.37]:63889 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752380Ab2IJNNW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 09:13:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,398,1344236400"; 
-   d="scan'208";a="190878325"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org
-Cc: Andi Kleen <ak@linux.intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH v2 02/10] thp: zap_huge_pmd(): zap huge zero pmd
-Date: Mon, 10 Sep 2012 16:13:25 +0300
-Message-Id: <1347282813-21935-3-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1347282813-21935-1-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1347282813-21935-1-git-send-email-kirill.shutemov@linux.intel.com>
+	id S1755630Ab2IJNQf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 09:16:35 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:40994 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067Ab2IJNQb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 09:16:31 -0400
+Date: Mon, 10 Sep 2012 09:16:03 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Gao feng <gaofeng@cn.fujitsu.com>, eric.dumazet@gmail.com,
+        davem@davemloft.net, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, mark.d.rustad@intel.com,
+        john.r.fastabend@intel.com, lizefan@huawei.com
+Subject: Re: [PATCH] net, cgroup: Fix boot failure due to iteration of
+ uninitialized list
+Message-ID: <20120910131603.GA29742@hmsreliant.think-freely.org>
+References: <20120719162532.23505.85946.stgit@srivatsabhat.in.ibm.com>
+ <500CA599.6030907@cn.fujitsu.com>
+ <20120723114057.GA16518@hmsreliant.think-freely.org>
+ <504DB2EE.2030700@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <504DB2EE.2030700@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+On Mon, Sep 10, 2012 at 02:59:18PM +0530, Srivatsa S. Bhat wrote:
+> On 07/23/2012 05:10 PM, Neil Horman wrote:
+> > On Mon, Jul 23, 2012 at 09:15:05AM +0800, Gao feng wrote:
+> >> 于 2012年07月20日 00:27, Srivatsa S. Bhat 写道:
+> >>> After commit ef209f15 (net: cgroup: fix access the unallocated memory in
+> >>> netprio cgroup), boot fails with the following NULL pointer dereference:
+> >>>
+> [...]
+> >>> Call Trace:
+> >>>  [<ffffffff81b1cb78>] cgroup_init_subsys+0x83/0x169
+> >>>  [<ffffffff81b1ce13>] cgroup_init+0x36/0x119
+> >>>  [<ffffffff81affef7>] start_kernel+0x3ba/0x3ef
+> >>>  [<ffffffff81aff95b>] ? kernel_init+0x27b/0x27b
+> >>>  [<ffffffff81aff356>] x86_64_start_reservations+0x131/0x136
+> >>>  [<ffffffff81aff45e>] x86_64_start_kernel+0x103/0x112
+> >>> RIP  [<ffffffff8145e8d6>] cgrp_create+0xf6/0x190
+> >>>  RSP <ffffffff81a01ea8>
+> >>> CR2: 0000000000000698
+> >>> ---[ end trace a7919e7f17c0a725 ]---
+> >>> Kernel panic - not syncing: Attempted to kill the idle task!
+> >>>
+> >>> The code corresponds to:
+> >>>
+> >>> update_netdev_tables():
+> >>>         for_each_netdev(&init_net, dev) {
+> >>>                 map = rtnl_dereference(dev->priomap);  <---- HERE
+> >>>
+> >>>
+> >>> The list head is initialized in netdev_init(), which is called much
+> >>> later than cgrp_create(). So the problem is that we are calling
+> >>> update_netdev_tables() way too early (in cgrp_create()), which will
+> >>> end up traversing the not-yet-circular linked list. So at some point,
+> >>> the dev pointer will become NULL and hence dev->priomap becomes an
+> >>> invalid access.
+> >>>
+> >>> To fix this, just remove the update_netdev_tables() function entirely,
+> >>> since it appears that write_update_netdev_table() will handle things
+> >>> just fine.
+> >>
+> >> The reason I add update_netdev_tables in cgrp_create is to avoid additional
+> >> bound checkings when we accessing the dev->priomap.priomap.
+> >>
+> >> Eric,can we revert this commit 91c68ce2b26319248a32d7baa1226f819d283758 now?
+> >> I think it's safe enough to access priomap without bound check.
+> >>
+> > 
+> > I think its probably safe, yes, but lets leave it there for just a bit.  Its not
+> > hurting anything, and I'd like to look into getting Srivatsa' patch in first.
+> 
+> Hi Neil,
+> 
+> Did you get around to look into this again?
+> 
+I haven't looked at it specifically no, I apologize.  That said I think the
+other changes that went in back in that time frame have had time to soak, and
+looking at the way we current update the priomap table, I think its safe for us
+to remove the update_netdev_table call and definition.  If you repost your
+patch, I'll ack it. 
 
-We don't have a real page to zap in huge zero page case. Let's just
-clear pmd and remove it from tlb.
+Thanks!
+Neil
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- mm/huge_memory.c |   27 +++++++++++++++++----------
- 1 files changed, 17 insertions(+), 10 deletions(-)
-
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 88e0a7a..9dcb9e6 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1071,16 +1071,23 @@ int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
- 		struct page *page;
- 		pgtable_t pgtable;
- 		pgtable = get_pmd_huge_pte(tlb->mm);
--		page = pmd_page(*pmd);
--		pmd_clear(pmd);
--		tlb_remove_pmd_tlb_entry(tlb, pmd, addr);
--		page_remove_rmap(page);
--		VM_BUG_ON(page_mapcount(page) < 0);
--		add_mm_counter(tlb->mm, MM_ANONPAGES, -HPAGE_PMD_NR);
--		VM_BUG_ON(!PageHead(page));
--		tlb->mm->nr_ptes--;
--		spin_unlock(&tlb->mm->page_table_lock);
--		tlb_remove_page(tlb, page);
-+		if (is_huge_zero_pmd(*pmd)) {
-+			pmd_clear(pmd);
-+			tlb_remove_pmd_tlb_entry(tlb, pmd, addr);
-+			tlb->mm->nr_ptes--;
-+			spin_unlock(&tlb->mm->page_table_lock);
-+		} else {
-+			page = pmd_page(*pmd);
-+			pmd_clear(pmd);
-+			tlb_remove_pmd_tlb_entry(tlb, pmd, addr);
-+			page_remove_rmap(page);
-+			VM_BUG_ON(page_mapcount(page) < 0);
-+			add_mm_counter(tlb->mm, MM_ANONPAGES, -HPAGE_PMD_NR);
-+			VM_BUG_ON(!PageHead(page));
-+			tlb->mm->nr_ptes--;
-+			spin_unlock(&tlb->mm->page_table_lock);
-+			tlb_remove_page(tlb, page);
-+		}
- 		pte_free(tlb->mm, pgtable);
- 		ret = 1;
- 	}
--- 
-1.7.7.6
-
+> Regards,
+> Srivatsa S. Bhat
+> 
+> 
