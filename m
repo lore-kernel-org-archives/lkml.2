@@ -1,75 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754716Ab2IJJq7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 05:46:59 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:57712 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751034Ab2IJJq4 (ORCPT
+	id S1751816Ab2IJJvK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 05:51:10 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:57541 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751200Ab2IJJvH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 05:46:56 -0400
-Subject: Re: net/ipv4/route.c:645 suspicious rcu_dereference_check() usage!
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: chris@chris-wilson.co.uk
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <84c8a8$5m6f27@orsmga001.jf.intel.com>
-References: <84c8a8$5m6f27@orsmga001.jf.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 10 Sep 2012 11:46:51 +0200
-Message-ID: <1347270411.1234.1360.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Sep 2012 05:51:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <1347016499-29354-5-git-send-email-lee.jones@linaro.org>
+References: <1347016499-29354-1-git-send-email-lee.jones@linaro.org>
+	<1347016499-29354-5-git-send-email-lee.jones@linaro.org>
+Date: Mon, 10 Sep 2012 02:51:04 -0700
+Message-ID: <CACRpkdYHd+oDMiwwodkPAMkFW0h4t+7-EzpoJ9jkkpSLgankow@mail.gmail.com>
+Subject: Re: [PATCH 04/19] ARM: ux500: Add SDI (MMC) support to the HREF
+ Device Tree
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Per Forlin <per.forlin@stericsson.com>,
+        Johan Rudholm <johan.rudholm@stericsson.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, Loic Pallardy <loic.pallardy@stericsson.com>,
+        Gabriel FERNANDEZ <gabriel.fernandez@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-09-10 at 09:44 +0100, chris@chris-wilson.co.uk wrote:
-> I've not seen this reported yet, so here's a warning that happens
-> occasionally:
-> 
-> [192979.475833] 
-> [192979.475840] ===============================
-> [192979.475841] [ INFO: suspicious RCU usage. ]
-> [192979.475844] 3.6.0-rc2+ #33 Not tainted
-> [192979.475846] -------------------------------
-> [192979.475848] net/ipv4/route.c:645 suspicious rcu_dereference_check() usage!
-> [192979.475850] 
-> [192979.475850] other info that might help us debug this:
-> [192979.475850] 
-> [192979.475853] 
-> [192979.475853] rcu_scheduler_active = 1, debug_locks = 0
-> [192979.475856] 2 locks held by firefox-bin/4634:
-> [192979.475858]  #0:  (slock-AF_INET){+.-...}, at: [<ffffffff814261b4>] release_sock+0x34/0x1e0
-> [192979.475870]  #1:  (fnhe_lock){+.-...}, at: [<ffffffff81461c94>] update_or_create_fnhe.isra.30+0x44/0x480
-> [192979.475878] 
-> [192979.475878] stack backtrace:
-> [192979.475881] Pid: 4634, comm: firefox-bin Not tainted 3.6.0-rc2+ #33
-> [192979.475883] Call Trace:
-> [192979.475891]  [<ffffffff810903cd>] lockdep_rcu_suspicious+0xfd/0x130
-> [192979.475895]  [<ffffffff81461e8e>] update_or_create_fnhe.isra.30+0x23e/0x480
-> [192979.475899]  [<ffffffff814624ba>] __ip_rt_update_pmtu.isra.31+0x6a/0xb0
-> [192979.475903]  [<ffffffff81465038>] ip_rt_update_pmtu+0x48/0xd0
-> [192979.475907]  [<ffffffff814759b1>] inet_csk_update_pmtu+0x31/0x80
-> [192979.475912]  [<ffffffff8148b663>] tcp_v4_mtu_reduced+0x33/0xd0
-> [192979.475915]  [<ffffffff814888be>] tcp_release_cb+0x5e/0xb0
-> [192979.475919]  [<ffffffff81426289>] release_sock+0x109/0x1e0
-> [192979.475922]  [<ffffffff81479037>] tcp_sendmsg+0x527/0x1030
-> [192979.475927]  [<ffffffff814a4d9d>] inet_sendmsg+0xed/0x240
-> [192979.475931]  [<ffffffff814a4cb0>] ? inet_autobind+0x70/0x70
-> [192979.475934]  [<ffffffff81424e8a>] ? sock_update_classid+0xaa/0x370
-> [192979.475937]  [<ffffffff81424eb8>] ? sock_update_classid+0xd8/0x370
-> [192979.475941]  [<ffffffff8141ee1b>] sock_sendmsg+0xab/0xe0
-> [192979.475946]  [<ffffffff814222be>] sys_sendto+0x11e/0x160
-> [192979.475951]  [<ffffffff8153e547>] ? sysret_check+0x1b/0x56
-> [192979.475956]  [<ffffffff8125849e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-> [192979.475960]  [<ffffffff8153e522>] system_call_fastpath+0x16/0x1b
-> 
+On Fri, Sep 7, 2012 at 1:14 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-Probably already fixed in commit c5ae7d41927d (ipv4: must use rcu
-protection while calling fib_lookup)
+I really want Ulf, Per or Johan to have a look at this, so Cc:ing them..
 
-3.6.0-rc2 is quite old for a dev kernel ;)
+> +               // External Micro SD slot
 
-Thanks
+Are C99 comments OK in DTS files?
+Else /* comment like that */
+(See Documentation/CodingStyle)
+Ah well, nitpick, I don't care really.
 
+> +               sdi@80126000 {
 
+Not just sdi@ please, these have names in the current
+board code that comes from the DB8500 reference manual.
+
+In this case 80120000 is the per1 (peripheral group one),
+and offset 6000 in that group is SDI0.
+
+So the quick fix is to name it like:
+
+sdi0_per1@80126000
+
+But basically we have a deeper problem here. I think the
+ux500 Device Tree should be arranged after peripheral
+block so it actually reflects the hardware (yeah, a big
+fat sorry for not realizing that before....)
+
+So it should *actually* be like:
+
+per_group_1 {
+    sdi0@80126000 {
+    };
+};
+
+per_group_2 {
+    sdi4@80114000 {
+    };
+    sdi1@80118000 {
+    };
+    sdi3@80119000 {
+    };
+};
+
+Then I do not know if it's also possible to use the
+peripheral group offsets for the registers? Can you do
+this thing and have it working?
+
+per_group_1 {
+    reg = <0x80110000 0x10000>;
+    sdi0@80126000 {
+        reg = <0x6000 0x10000>;
+    };
+};
+
+I.e. so getting the regs for sdi0 would give 0x80116000?
+
+Any of the above proper solutions require a heavy patch
+on the SoC .dtsi pushing all peripherals to their
+peripheral group to go in first of course.
+
+> +                       arm,primecell-periphid = <0x10480180>;
+> +                       max-frequency = <50000000>;
+> +                       bus-width = <8>;
+
+Isn't *THIS* (sdi0) the one which is 4 bits? (SD cards only have 4
+lines...)
+
+> +                       mmc-cap-sd-highspeed;
+> +                       mmc-cap-mmc-highspeed;
+> +                       vmmc-supply = <&ab8500_ldo_aux3_reg>;
+> +
+> +                       #gpio-cells = <1>;
+
+Arnd already complained about this...
+
+> +                       cd-gpios  = <&gpio2 31 0x4>; // 95
+
+95? 95 what? Lightning McQueen?
+http://en.wikipedia.org/wiki/Lightning_McQueen
+
+Elaborate or drop ;-)
+
+> +
+> +                       status = "okay";
+> +               };
+> +
+> +               // WLAN SDIO channel
+> +               sdi@80118000 {
+> +                       arm,primecell-periphid = <0x10480180>;
+> +                       max-frequency = <50000000>;
+> +                       bus-width = <4>;
+
+Isn't this 8 bit capable?
+
+> +
+> +                       status = "okay";
+> +               };
+> +
+> +               // PoP:ed eMMC
+> +               sdi@80005000 {
+> +                       arm,primecell-periphid = <0x10480180>;
+> +                       max-frequency = <50000000>;
+> +                       bus-width = <8>;
+> +                       mmc-cap-mmc-highspeed;
+> +
+> +                       status = "okay";
+> +               };
+> +
+> +               // On-board eMMC
+> +               sdi@80114000 {
+> +                       arm,primecell-periphid = <0x10480180>;
+> +                       max-frequency = <50000000>;
+> +                       bus-width = <8>;
+> +                       mmc-cap-mmc-highspeed;
+> +                       vmmc-supply = <&ab8500_ldo_aux2_reg>;
+> +
+> +                       status = "okay";
+> +               };
+>         };
+>  };
+
+Inspecting board-mop500-sdi.c I see missing pieces that gets me
+worried about whether this device tree even works, and which
+I am sure has regressions in highly demanding usecases because
+these things are there for a reason:
+
+- .sigdir is defined with some flags for the MMCI platform data
+  for sdi0 (SD card), and no DT bindings are available for it.
+  I think Ulf had a patch for pushing this into the driver that will
+  need to go in first.
+
+- SDI0 has a callback .ios_handler that I guess must be passed
+  in using platform data. If you don't have this, level-shifting
+  cards will not be run at optimal voltage, symptom: you cannot
+  gear up signals level and will get bad blocks at some high
+  speeds on some cards.
+
+(The .ocr_mask is surplus though!)
+
+I really think the above needs to be resolved (preferrably
+by pusing some of Ulfs MMCI patches) before we can move
+on with MMC DT.
+
+Yours,
+Linus Walleij
