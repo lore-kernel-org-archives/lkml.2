@@ -1,70 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757401Ab2IJSAF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 14:00:05 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:55727 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757252Ab2IJR77 (ORCPT
+	id S1757334Ab2IJSDm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 14:03:42 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50202 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751669Ab2IJSDl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 13:59:59 -0400
-Date: Mon, 10 Sep 2012 10:57:25 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>,
-        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-        Colin Cross <ccross@android.com>, Brian Swetland <swetland@google.com>,
-        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com,
-        kgdb-bugreport@lists.sourceforge.net, linux-serial@vger.kernel.org
-Subject: Re: [PATCH 06/14] tty/serial/core: Introduce poll_init callback
-Message-ID: <20120910175725.GA13673@lizard>
-References: <20120910040802.GA1261@lizard>
- <20120910041335.GF29537@lizard>
- <20120910121320.03c9dfc7@pyramind.ukuu.org.uk>
+	Mon, 10 Sep 2012 14:03:41 -0400
+Date: Mon, 10 Sep 2012 11:03:35 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Mike Waychison <mikew@google.com>
+Cc: Khalid Aziz <khalid.aziz@hp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Matthew Garrett <mjg@redhat.com>,
+        Kees Cook <keescook@chromium.org>,
+        "gong.chen@linux.intel.com" <gong.chen@linux.intel.com>
+Subject: Re: [PATCH v2] Add missing attributes to EFI variable attribute
+ print out from sysfs
+Message-ID: <20120910180335.GA26021@kroah.com>
+References: <20120713174216.GA10445@hp.com>
+ <CAGTjWtDyGrVuBXZzdDfbS961cRSQY7eZaEbb9E8HACk5-imiuQ@mail.gmail.com>
+ <CAGTjWtAPKXfA7pOqWEfK2i_HbrtA6_w7+ezZyCo4NG1gBSEhwg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120910121320.03c9dfc7@pyramind.ukuu.org.uk>
+In-Reply-To: <CAGTjWtAPKXfA7pOqWEfK2i_HbrtA6_w7+ezZyCo4NG1gBSEhwg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 12:13:20PM +0100, Alan Cox wrote:
-> > +	tport = &state->port;
-> > +	if (!(tport->flags & ASYNC_INITIALIZED) && port->ops->poll_init) {
-> > +		mutex_lock(&tport->mutex);
-> > +		ret = port->ops->poll_init(port);
-> > +		/*
-> > +		 * We don't set ASYNCB_INITIALIZED as we only initialized the
-> > +		 * hw, e.g. state->xmit is still uninitialized.
-> > +		 */
-> > +		mutex_unlock(&tport->mutex);
-> > +		if (ret)
-> > +			return ret;
-> > +	}
+On Mon, Sep 10, 2012 at 01:59:18PM -0400, Mike Waychison wrote:
+> On Mon, Sep 10, 2012 at 1:55 PM, Mike Waychison <mikew@google.com> wrote:
+> > Greg,
+> >
+> > Can you please pick this patch up in one of your trees?
 > 
-> What stops a parallel open or close changing ASYNC_INITIALIZED after you
-> test and before you lock ?
+> Resend using a good email addy for gregkh :)
 
-Yeah, I should do the whole thing under the mutex.
+Can someone resend it in a format that I can apply it in?  I can't find
+the original anymore, sorry.
 
-Not related to this particular issue, but the fact that close() can powerdown
-the hardware is quite bad. Today it is always possible to use open,close
-sequence on /dev/ttyXXXX, and polling would break if close() deinitializes the
-hardware (e.g. via uart_change_pm()).
-
-In console= case, serial core handles the issue via uart_console(), checking if
-the port is used for console, preventing it to power down the hardware. We can
-do the same, or make tty_find_polling_driver() refcount individual ports/lines.
-But the issue is orthogonal to this particular patch, although needs to be
-fixed some day.
-
-Thanks!
-
-Anton.
+greg k-h
