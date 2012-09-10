@@ -1,143 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757516Ab2IJPhZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 11:37:25 -0400
-Received: from relay.parallels.com ([195.214.232.42]:49703 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077Ab2IJPhX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 11:37:23 -0400
-Message-ID: <504E0930.5050408@parallels.com>
-Date: Mon, 10 Sep 2012 19:37:20 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1757687Ab2IJPiA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 11:38:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49114 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753650Ab2IJPh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 11:37:58 -0400
+Date: Mon, 10 Sep 2012 12:37:47 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: David Ahern <dsahern@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf, ibs: Check syscall attribute flags
+Message-ID: <20120910153746.GA20931@infradead.org>
+References: <1342826756-64663-9-git-send-email-dsahern@gmail.com>
+ <20120906190238.GA29278@erda.amd.com>
+ <5048F6BF.70106@gmail.com>
+ <20120906195645.GD8285@erda.amd.com>
+ <20120907164114.GJ8285@erda.amd.com>
+ <504A25DB.2030100@gmail.com>
+ <20120907170700.GK8285@erda.amd.com>
+ <504A2ADC.4050703@gmail.com>
+ <504A2CD3.9060204@gmail.com>
+ <20120910130700.GS8285@erda.amd.com>
 MIME-Version: 1.0
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: Jeff Layton <jlayton@redhat.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH v2] SUNRPC: check current nsproxy before set of node name
- on client creation
-References: <20120813113731.9629.31906.stgit@localhost.localdomain>    <20120813081054.0ee39037@corrin.poochiereds.net>   <4FA345DA4F4AE44899BD2B03EEEC2FA908F90888@SACEXCMBX04-PRD.hq.netapp.com>   <504ADED9.2020607@parallels.com>  <4FA345DA4F4AE44899BD2B03EEEC2FA908F914D4@SACEXCMBX04-PRD.hq.netapp.com>  <504DA833.60301@parallels.com> <4FA345DA4F4AE44899BD2B03EEEC2FA908F9547B@SACEXCMBX04-PRD.hq.netapp.com>
-In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA908F9547B@SACEXCMBX04-PRD.hq.netapp.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120910130700.GS8285@erda.amd.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-10.09.2012 19:27, Myklebust, Trond пишет:
-> On Mon, 2012-09-10 at 12:43 +0400, Stanislav Kinsbursky wrote:
->> 08.09.2012 18:33, Myklebust, Trond пишет:
->>> On Sat, 2012-09-08 at 08:59 +0300, Stanislav Kinsbursky wrote:
->>>> 08.09.2012 01:32, Myklebust, Trond пишет:
->>>>> On Mon, 2012-08-13 at 08:10 -0400, Jeff Layton wrote:
->>>>>> On Mon, 13 Aug 2012 15:37:31 +0400
->>>>>> Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
->>>>>>
->>>>>>> v2:
->>>>>>> 1) rpc_clnt_set_nodename() prototype updated.
->>>>>>> 2) fixed errors in comment.
->>>>>>>
->>>>>>> When child reaper exits, it can destroy mount namespace it belongs to, and if
->>>>>>> there are NFS mounts inside, then it will try to umount them. But in this
->>>>>>> point current->nsproxy is set to NULL and all namespaces will be destroyed one
->>>>>>> by one. I.e. we can't dereference current->nsproxy to obtain uts namespace.
->>>>>>>
->>>>>>> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
->>>>>>> ---
->>>>>>>     net/sunrpc/clnt.c |   16 +++++++++++++---
->>>>>>>     1 files changed, 13 insertions(+), 3 deletions(-)
->>>>>>>
->>>>>>> diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
->>>>>>> index 9a9676e..8fbcbc8 100644
->>>>>>> --- a/net/sunrpc/clnt.c
->>>>>>> +++ b/net/sunrpc/clnt.c
->>>>>>> @@ -277,8 +277,18 @@ void rpc_clients_notifier_unregister(void)
->>>>>>>     	return rpc_pipefs_notifier_unregister(&rpc_clients_block);
->>>>>>>     }
->>>>>>>
->>>>>>> -static void rpc_clnt_set_nodename(struct rpc_clnt *clnt, const char *nodename)
->>>>>>> +static void rpc_clnt_set_nodename(struct rpc_clnt *clnt)
->>>>>>>     {
->>>>>>> +	const char *nodename;
->>>>>>> +
->>>>>>> +	/*
->>>>>>> +	 * We have to protect against dying child reaper, which has released
->>>>>>> +	 * its nsproxy already and is trying to destroy mount namespace.
->>>>>>> +	 */
->>>>>>> +	if (current->nsproxy == NULL)
->>>>>>> +		return;
->>>>>>> +
->>>>>>> +	nodename = utsname()->nodename;
->>>>>>>     	clnt->cl_nodelen = strlen(nodename);
->>>>>>>     	if (clnt->cl_nodelen > UNX_MAXNODENAME)
->>>>>>>     		clnt->cl_nodelen = UNX_MAXNODENAME;
->>>>>>> @@ -365,7 +375,7 @@ static struct rpc_clnt * rpc_new_client(const struct rpc_create_args *args, stru
->>>>>>>     	}
->>>>>>>
->>>>>>>     	/* save the nodename */
->>>>>>> -	rpc_clnt_set_nodename(clnt, utsname()->nodename);
->>>>>>> +	rpc_clnt_set_nodename(clnt);
->>>>>>>     	rpc_register_client(clnt);
->>>>>>>     	return clnt;
->>>>>>>
->>>>>>> @@ -524,7 +534,7 @@ rpc_clone_client(struct rpc_clnt *clnt)
->>>>>>>     	err = rpc_setup_pipedir(new, clnt->cl_program->pipe_dir_name);
->>>>>>>     	if (err != 0)
->>>>>>>     		goto out_no_path;
->>>>>>> -	rpc_clnt_set_nodename(new, utsname()->nodename);
->>>>>>> +	rpc_clnt_set_nodename(new);
->>>>>>>     	if (new->cl_auth)
->>>>>>>     		atomic_inc(&new->cl_auth->au_count);
->>>>>>>     	atomic_inc(&clnt->cl_count);
->>>>>>>
->>>>>>> --
->>>>>>> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
->>>>>>> the body of a message to majordomo@vger.kernel.org
->>>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>>>> Acked-by: Jeff Layton <jlayton@redhat.com>
->>>>> OK, colour me confused (again).
->>>>
->>>> What color?
->>>>
->>>>> Why should a umount trigger an
->>>>> rpc_create() or rpc_clone_client()?
->>>>
->>>> It calls nsm_create().
->>>> Here is the trace (https://bugzilla.redhat.com/show_bug.cgi?id=830862,
->>>> comment 68):
->>>
->>> Right, but if we're using NFSv3 lock monitoring, we know in advance that
->>> we're going to need an nsm call to localhost. Why can't we just cache
->>> the one that we used to start lock monitoring in the first place?
->>>
->>
->> Do you suggest to cache the call or the client for the call?
->
-> Hi Stanislav,
->
-> Sorry, I agree that the above was unclear. My intention was to suggest
-> that we should cache a reference to the rpc client that we used to
-> connect to rpc.statd when initiating lock monitoring.
->
-> Basically, I'm suggesting that we should do something similar to the
-> rpcbind rpc_client caching scheme in net/sunrpc/rpcb_clnt.c.
->
+Em Mon, Sep 10, 2012 at 03:07:00PM +0200, Robert Richter escreveu:
+> On 07.09.12 11:20:19, David Ahern wrote:
+> > I see now... intel returns ENOTSUP if exclude_guest is not set, amd 
+> > returns EINVAL if it is set.
 
-Hi, Trond.
-So, if I understand you right, we can create rpc client (or increase usage 
-counter) on NSMPROC_MON call and destroy (or decrease usage counter) on 
-NSMPROC_UNMON call.
-Will this solution works?
+> > For the AMD case the fallback_missing_features code kicks in for 
+> > perf-top and perf-record; I just need to fix up the pr_debug for that case.
 
-> Cheers
->    Trond
->
+> It is EOPNOTSUP. I preferred returning EOPNOTSUP too. But then I saw
+> that fallback code is implemented to work mostly with EINVAL. It seems
+> to be the default answer to a syscall. ;)
 
+> There are several pieces of code in perf that implement fallback code,
+> it's hard to find it all and this already caused some bugs in the
+> past. I was looking at this to unify it, but it was too much effort.
 
--- 
-Best regards,
-Stanislav Kinsbursky
+Indeed these all need to be moved to perf_ev{sel,list}__open, its
+something I meant to do long ago, will try again to consolidate that.
+
+- Arnaldo
