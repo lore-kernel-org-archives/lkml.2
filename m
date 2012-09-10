@@ -1,44 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755672Ab2IJIai (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 04:30:38 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:59597 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751594Ab2IJIae (ORCPT
+	id S1755489Ab2IJIbn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 04:31:43 -0400
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:36737 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751594Ab2IJIbl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 04:30:34 -0400
+	Mon, 10 Sep 2012 04:31:41 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
+        Patrice Chotard <patrice.chotard@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] pinctrl/nomadik : add MC1_a_2 pin MC1 function group list
+Date: Mon, 10 Sep 2012 10:31:14 +0200
+Message-ID: <1347265874-3342-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <20120910075838.GE6749@opensource.wolfsonmicro.com>
-References: <4737A960563B524DA805CA602BE04B3064CC590795@SC-VEXCH2.marvell.com>
- <CAF+7xWky1N=LHd01aiewEVEhNNLNnuBHHqCBsTHhVd_SbPMjaA@mail.gmail.com> <20120910075838.GE6749@opensource.wolfsonmicro.com>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Mon, 10 Sep 2012 16:30:13 +0800
-Message-ID: <CAF+7xWm+r4zKMcK1Zi-QThG0YL-9KQa6iwNCiLbmvLUu65rVyA@mail.gmail.com>
-Subject: Re: [PATCH] regulator: fan53555: remove vsel_max not used
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Yunfan Zhang <yfzhang@marvell.com>, Liam Girdwood <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/9/10 Mark Brown <broonie@opensource.wolfsonmicro.com>:
-> On Mon, Sep 10, 2012 at 11:53:55AM +0800, Axel Lin wrote:
->> 2012/9/10 Yunfan Zhang <yfzhang@marvell.com>:
->> > The max voltage will be bounded by min_uV, uV_step and n_voltages, so
->> > remove it to avoid confusing.
->
-> Applied, thanks.
->
->> Acked-by: Axel Lin <axel.lin@gmail.com>
->
-> I think you meant to say Reviewed-by here - Acked mostly just means that
-Ah.. yes. should be Reviewed-by here.
+From: Patrice Chotard <patrice.chotard@stericsson.com>
 
-> you're OK with the patch being applied, it's not really saying anything
-> strong about the patch having been properly reviewed.
+Another possible pin configuration for the MC1 pin group.
 
-Thanks for the clarification.
-Axel
+Signed-off-by: Patrice Chotard <patrice.chotard@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/pinctrl/pinctrl-nomadik-db8500.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/pinctrl/pinctrl-nomadik-db8500.c b/drivers/pinctrl/pinctrl-nomadik-db8500.c
+index a39fb7a..ec6209d 100644
+--- a/drivers/pinctrl/pinctrl-nomadik-db8500.c
++++ b/drivers/pinctrl/pinctrl-nomadik-db8500.c
+@@ -465,6 +465,8 @@ static const unsigned mc4_a_1_pins[] = { DB8500_PIN_AH24, DB8500_PIN_AG25,
+ static const unsigned mc1_a_1_pins[] = { DB8500_PIN_AH16, DB8500_PIN_AG15,
+ 	DB8500_PIN_AJ15, DB8500_PIN_AG14, DB8500_PIN_AF13, DB8500_PIN_AG13,
+ 	DB8500_PIN_AH15 };
++static const unsigned mc1_a_2_pins[] = { DB8500_PIN_AH16, DB8500_PIN_AJ15,
++	DB8500_PIN_AG14, DB8500_PIN_AF13, DB8500_PIN_AG13,DB8500_PIN_AH15 };
+ static const unsigned mc1dir_a_1_pins[] = { DB8500_PIN_AH13, DB8500_PIN_AG12,
+ 	DB8500_PIN_AH12, DB8500_PIN_AH11 };
+ static const unsigned hsir_a_1_pins[] = { DB8500_PIN_AG10, DB8500_PIN_AH10,
+@@ -641,6 +643,7 @@ static const struct nmk_pingroup nmk_db8500_groups[] = {
+ 	DB8500_PIN_GROUP(msp2_a_1, NMK_GPIO_ALT_A),
+ 	DB8500_PIN_GROUP(mc4_a_1, NMK_GPIO_ALT_A),
+ 	DB8500_PIN_GROUP(mc1_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(mc1_a_2, NMK_GPIO_ALT_A),
+ 	DB8500_PIN_GROUP(hsir_a_1, NMK_GPIO_ALT_A),
+ 	DB8500_PIN_GROUP(hsit_a_1, NMK_GPIO_ALT_A),
+ 	DB8500_PIN_GROUP(hsit_a_2, NMK_GPIO_ALT_A),
+@@ -768,7 +771,7 @@ DB8500_FUNC_GROUPS(ipgpio, "ipgpio0_a_1", "ipgpio1_a_1", "ipgpio7_b_1",
+ /* MSP2 can not invert the RX/TX pins but has the optional SCK pin */
+ DB8500_FUNC_GROUPS(msp2, "msp2sck_a_1", "msp2_a_1");
+ DB8500_FUNC_GROUPS(mc4, "mc4_a_1", "mc4rstn_c_1");
+-DB8500_FUNC_GROUPS(mc1, "mc1_a_1", "mc1dir_a_1");
++DB8500_FUNC_GROUPS(mc1, "mc1_a_1", "mc1_a_2", "mc1dir_a_1");
+ DB8500_FUNC_GROUPS(hsi, "hsir_a_1", "hsit_a_1", "hsit_a_2");
+ DB8500_FUNC_GROUPS(clkout, "clkout_a_1", "clkout_a_2", "clkout_c_1");
+ DB8500_FUNC_GROUPS(usb, "usb_a_1");
+-- 
+1.7.11.3
+
