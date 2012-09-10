@@ -1,102 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752962Ab2IJRJA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 13:09:00 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52771 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752095Ab2IJRI7 (ORCPT
+	id S1753060Ab2IJRKK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 13:10:10 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:25291 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751366Ab2IJRKI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 13:08:59 -0400
-Date: Mon, 10 Sep 2012 10:08:54 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH wq/for-3.6-fixes 1/2] workqueue: restore
- POOL_MANAGING_WORKERS
-Message-ID: <20120910170854.GA14103@google.com>
-References: <1347243085-2510-1-git-send-email-laijs@cn.fujitsu.com>
+	Mon, 10 Sep 2012 13:10:08 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18UJisIBTSvRB1cLxLFUwks
+Date: Mon, 10 Sep 2012 10:10:03 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH 2/2] pinctrl: pinctrl-single: Add pinctrl-single,bits
+ type of mux
+Message-ID: <20120910171002.GY1303@atomide.com>
+References: <1346835718-21325-1-git-send-email-peter.ujfalusi@ti.com>
+ <1346835718-21325-3-git-send-email-peter.ujfalusi@ti.com>
+ <20120906191019.GZ1303@atomide.com>
+ <504A0F21.8080305@ti.com>
+ <20120907165553.GV1303@atomide.com>
+ <504DD532.4040400@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1347243085-2510-1-git-send-email-laijs@cn.fujitsu.com>
+In-Reply-To: <504DD532.4040400@ti.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 552a37e9360a293cd20e7f8ff1fb326a244c5f1e Mon Sep 17 00:00:00 2001
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-Date: Mon, 10 Sep 2012 10:03:33 -0700
+* Peter Ujfalusi <peter.ujfalusi@ti.com> [120910 04:55]:
+> On 09/07/2012 07:55 PM, Tony Lindgren wrote:
+> > 
+> > I'd like to have something that specifies the controller type so
+> > we don't need to mix two types of controllers and test for
+> > non-existing properties when parsing the pins.
+> > 
+> > How about we require something specified for the pinctrl driver
+> > in the "one-bit-per-mux" case like pinctrl-single,bit-per-mux?
+> > 
+> > And then in the pinctrl-single probe we set params = 3 if
+> > pinctrl-single,bit-per-mux is specified. And if no
+> > pinctrl-single,bit-per-mux is specified then set params = 2.
+> > 
+> > That way pcs_parse_one_pinctrl_entry() can just test for params.
+> > 
+> > Sorry I don't have a better name in mind than bit-per-mux..
+> 
+> I'm not sure if this would make things more prone to error or make the DTS or
+> the code more clean in any ways.
+> 
+> Both pinctrl-single,pins and pinctrl-single,bits works on top of the same
+> pinctrl-single area.
+> In most cases we are going to use pinctrl-single,pins for the mux
+> configuration and only in few places we need to fall back to pinctrl-single,bits.
 
-This patch restores POOL_MANAGING_WORKERS which was replaced by
-pool->manager_mutex by 6037315269 "workqueue: use mutex for global_cwq
-manager exclusion".
-
-There's a subtle idle worker depletion bug across CPU hotplug events
-and we need to distinguish an actual manager and CPU hotplug
-preventing management.  POOL_MANAGING_WORKERS will be used for the
-former and manager_mutex the later.
-
-This patch just lays POOL_MANAGING_WORKERS on top of the existing
-manager_mutex and doesn't introduce any synchronization changes.  The
-next patch will update it.
-
-Note that this patch fixes a non-critical anomaly where
-too_many_workers() may return %true spuriously while CPU hotplug is in
-progress.  While the issue could schedule idle timer spuriously, it
-didn't trigger any actual misbehavior.
-
-tj: Rewrote patch description.
-
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
-Applied to wq/for-3.6-fixes with rewritten patch description to
-explain why it's being restored (to fix idle worker depletion across
-CPU hotplug).
-
-Thanks!
-
- kernel/workqueue.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index dc7b845..383548e 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -66,6 +66,7 @@ enum {
+What about hardware that has tons of one-bit-per-mux type of registers?
+Then we end up trying to find the non-existing property potentially
+hundreds of times as the pinctrl-single,pins is never specified.
  
- 	/* pool flags */
- 	POOL_MANAGE_WORKERS	= 1 << 0,	/* need to manage workers */
-+	POOL_MANAGING_WORKERS   = 1 << 1,       /* managing workers */
- 
- 	/* worker flags */
- 	WORKER_STARTED		= 1 << 0,	/* started */
-@@ -652,7 +653,7 @@ static bool need_to_manage_workers(struct worker_pool *pool)
- /* Do we have too many workers and should some go away? */
- static bool too_many_workers(struct worker_pool *pool)
- {
--	bool managing = mutex_is_locked(&pool->manager_mutex);
-+	bool managing = pool->flags & POOL_MANAGING_WORKERS;
- 	int nr_idle = pool->nr_idle + managing; /* manager is considered idle */
- 	int nr_busy = pool->nr_workers - nr_idle;
- 
-@@ -1827,6 +1828,7 @@ static bool manage_workers(struct worker *worker)
- 	if (!mutex_trylock(&pool->manager_mutex))
- 		return ret;
- 
-+	pool->flags |= POOL_MANAGING_WORKERS;
- 	pool->flags &= ~POOL_MANAGE_WORKERS;
- 
- 	/*
-@@ -1836,6 +1838,7 @@ static bool manage_workers(struct worker *worker)
- 	ret |= maybe_destroy_workers(pool);
- 	ret |= maybe_create_worker(pool);
- 
-+	pool->flags &= ~POOL_MANAGING_WORKERS;
- 	mutex_unlock(&pool->manager_mutex);
- 	return ret;
- }
--- 
-1.7.7.3
+> With this patch we will have maximum of two query to find out which type is
+> used, while if we add the 'bit-per-mux' property we will always have need to
+> have two of_get_property() call to figure out what is used.
+> IMHO in this way we could also have copy-paste errors coming at us when adding
+> the mux configurations for the pins and at the end we also need to do same
+> safety/sanity checks if the user really provided the correct type with
+> correlation to the 'bit-per-mux'.
 
+Well I think we should specify the binding for the type of the controller,
+not mix different types of bindings for the same controller. So we should
+probably have something just like address-cells, gpio-cells and
+interrupt-cells, although in this case it would be specific to pinctrl-single
+only and not be called cells.
+
+> This would just complicate the code.
+> The existence of pinctrl-single,pins or pinctrl-single,bits property alone
+> gives enough information for the number of parameters.
+
+Yes but we don't want to allow mixing different kind of registers within
+the same controller, they should be specified as separate controllers.
+
+Regards,
+
+Tony
