@@ -1,93 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754591Ab2IJRWS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 13:22:18 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37624 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752683Ab2IJRWQ (ORCPT
+	id S1755033Ab2IJRXs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 13:23:48 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:46584 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753734Ab2IJRXr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 13:22:16 -0400
-Date: Mon, 10 Sep 2012 10:22:10 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk, Vivek Goyal <vgoyal@redhat.com>,
-        Mikulas Patocka <mpatocka@redhat.com>, bharrosh@panasas.com,
-        david@fromorbit.com
-Subject: Re: [PATCH 2/2] block: Avoid deadlocks with bio allocation by
- stacking drivers
-Message-ID: <20120910172210.GC14103@google.com>
-References: <1347055973-11581-1-git-send-email-koverstreet@google.com>
- <1347055973-11581-3-git-send-email-koverstreet@google.com>
- <20120908193641.GB12773@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120910002810.GA23241@moria.home.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120910002810.GA23241@moria.home.lan>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 10 Sep 2012 13:23:47 -0400
+Message-ID: <1347297816.2124.48.camel@twins>
+Subject: Re: [PATCH 1/3] perf tool: precise mode requires exclude_guest
+From: Peter Zijlstra <peterz@infradead.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Gleb Natapov <gleb@redhat.com>, Avi Kivity <avi@redhat.com>
+Date: Mon, 10 Sep 2012 19:23:36 +0200
+In-Reply-To: <1347295216-1202-2-git-send-email-dsahern@gmail.com>
+References: <1347295216-1202-1-git-send-email-dsahern@gmail.com>
+	 <1347295216-1202-2-git-send-email-dsahern@gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Kent.
+On Mon, 2012-09-10 at 10:40 -0600, David Ahern wrote:
+> PEBS cannot be used with guest mode. See:
+>    https://lkml.org/lkml/2012/7/9/264
 
-On Sun, Sep 09, 2012 at 05:28:10PM -0700, Kent Overstreet wrote:
-> > > +	while ((bio = bio_list_pop(current->bio_list)))
-> > > +		bio_list_add(bio->bi_pool == bs ? &punt : &nopunt, bio);
-> > > +
-> > > +	*current->bio_list = nopunt;
-> > 
-> > Why this is necessary needs explanation and it's done in rather
-> > unusual way.  I suppose the weirdness is from bio_list API
-> > restriction?
+Expanding and not relying on external stuff is so much better.
+
+So in particular you want something like:
+
+"Intel PEBS in VT-x context uses the DS address as a guest linear
+address, even though its programmed by the host as a host linear
+address. This either results in guest memory corruption and or the
+hardware faulting and 'crashing' the virtual machine
+
+Therefore we have to disable PEBS on VT-x enter and re-enable on VT-x
+exit, enforcing a strict exclude_guest.
+
+AMB IBS does work but doesn't currently support exclude_* at all,
+setting an exclude_* bit will make it fail.
+
+ ... explain how one can use IBS if we auto-fallback to !precise ..."
+
+Hmm ?
+
+> If user adds :p modifier set exclude_guest as well.
 > 
-> It's because bio_lists are singly linked, so deleting an entry from the
-> middle of the list would be a real pain - just much cleaner/simpler to
-> do it this way.
-
-Yeah, I wonder how benefical that singly linked list is.  Eh well...
-
-> > Wouldn't the following be better?
-> > 
-> > 	p = mempool_alloc(bs->bi_pool, gfp_mask);
-> > 	if (unlikely(!p) && gfp_mask != saved_gfp) {
-> > 		punt_bios_to_rescuer(bs);
-> > 		p = mempool_alloc(bs->bi_pool, saved_gfp);
-> > 	}
+> Signed-off-by: David Ahern <dsahern@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Robert Richter <robert.richter@amd.com>
+> Cc: Gleb Natapov <gleb@redhat.com>
+> Cc: Avi Kivity <avi@redhat.com>
+> ---
+>  tools/perf/util/parse-events.c |    3 +++
+>  1 file changed, 3 insertions(+)
 > 
-> That'd require duplicating the error handling in two different places -
-> once for the initial allocation, once for the bvec allocation. And I
-> really hate that writing code that does
-> 
-> alloc_something()
-> if (fail) {
-> 	alloc_something_again()
-> }
-> 
-> it just screams ugly to me.
+> diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+> index a031ee1..f2c02b2 100644
+> --- a/tools/perf/util/parse-events.c
+> +++ b/tools/perf/util/parse-events.c
+> @@ -694,6 +694,9 @@ static int get_event_modifier(struct event_modifier *mod, char *str,
+>  			eH = 0;
+>  		} else if (*str == 'p') {
+>  			precise++;
+> +			/* use of precise requires exclude_guest */
+> +			if (!exclude_GH)
+> +				eG = 1;
+>  		} else
+>  			break;
+>  
 
-I don't know.  That at least represents what's going on and goto'ing
-back and forth is hardly pretty.  Sometimes the code gets much uglier
-/ unwieldy and we have to live with gotos.  Here, that doesn't seem to
-be the case.
-
-> +static void punt_bios_to_rescuer(struct bio_set *bs)
-> +{
-> +	struct bio_list punt, nopunt;
-> +	struct bio *bio;
-> +
-> +	/*
-> +	 * Don't want to punt all bios on current->bio_list; if there was a bio
-> +	 * on there for a stacking driver higher up in the stack, processing it
-> +	 * could require allocating bios from this bio_set, and we don't want to
-> +	 * do that from our own rescuer.
-
-Hmmm... isn't it more like we "must" process only the bios which are
-from this bio_set to have any kind of forward-progress guarantee?  The
-above sounds like it's just something undesirable.
-
-Thanks.
-
--- 
-tejun
