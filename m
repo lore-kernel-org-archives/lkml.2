@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756059Ab2IJKXA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 06:23:00 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:63327 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751533Ab2IJKW4 (ORCPT
+	id S1756260Ab2IJKZU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 06:25:20 -0400
+Received: from na3sys009aog128.obsmtp.com ([74.125.149.141]:52419 "EHLO
+	na3sys009aog128.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753242Ab2IJKZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 06:22:56 -0400
-Message-ID: <504DBF3D.2000102@mvista.com>
-Date: Mon, 10 Sep 2012 14:21:49 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120824 Thunderbird/15.0
+	Mon, 10 Sep 2012 06:25:18 -0400
 MIME-Version: 1.0
-To: Xie Shaohui-B21989 <B21989@freescale.com>
-CC: Kumar Gala <galak@kernel.crashing.org>,
-        "jgarzik@pobox.com" <jgarzik@pobox.com>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bhartiya Anju-B07263 <B07263@freescale.com>
-Subject: Re: [PATCH][v3] sata_fsl: add workaround for data length mismatch
- on freescale V2 controller
-References: <1347012095-4404-1-git-send-email-Shaohui.Xie@freescale.com> <82046C25-828E-4E0F-9F86-8E038AE5C93C@kernel.crashing.org> <ED492CCEAF882048BC2237DE806547C9079D9AB9@039-SN2MPN1-012.039d.mgd.msft.net>
-In-Reply-To: <ED492CCEAF882048BC2237DE806547C9079D9AB9@039-SN2MPN1-012.039d.mgd.msft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120908101724.GB28448@n2100.arm.linux.org.uk>
+References: <CADysL2YwpyuhgzwF6djObZQTpgdHCsLp=K7NsCJth6wAXuFV=A@mail.gmail.com>
+	<20120908101724.GB28448@n2100.arm.linux.org.uk>
+Date: Mon, 10 Sep 2012 15:55:17 +0530
+Message-ID: <CADysL2YTmqrEbKfbqwGWaajWqHR7njViu=47zLh89rU76gq8Cg@mail.gmail.com>
+Subject: Re: [PATCH v4 2/2] OMAP:IOMMU:flush L1 and L2 caches
+From: "Gupta, Ramesh" <grgupta@ti.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, tony@atomide.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hi Russell,
 
-On 10-09-2012 6:53, Xie Shaohui-B21989 wrote:
 
->>> +	/* Workaround for data length mismatch errata */
->>> +	if (unlikely(hstatus & INT_ON_DATA_LENGTH_MISMATCH)) {
->>> +		for (tag = 0; tag < ATA_MAX_QUEUE; tag++) {
->>> +			qc = ata_qc_from_tag(ap, tag);
->>> +			if (qc && ata_is_atapi(qc->tf.protocol)) {
->>> +				u32 hcontrol;
->>> +#define HCONTROL_CLEAR_ERROR	(1 << 27)
+On Sat, Sep 8, 2012 at 3:47 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Thu, Jul 05, 2012 at 10:50:24AM +0530, Gupta, Ramesh wrote:
+>>  static void flush_iopgd_range(u32 *first, u32 *last)
+>>  {
+>> -     /* FIXME: L2 cache should be taken care of if it exists */
+>> -     do {
+>> -             asm("mcr        p15, 0, %0, c7, c10, 1 @ flush_pgd"
+>> -                 : : "r" (first));
+>> -             first += L1_CACHE_BYTES / sizeof(*first);
+>> -     } while (first <= last);
+>> +     flush_iommu_mem(first, last);
+>> +     outer_flush_range(virt_to_phys(first), virt_to_phys(last));
+>
+> I think this would be safer if these operated on an area rather than a
+> range - which means taking a start plus size.
+>
+>         phys_addr_t phys = virt_to_phys(start);
+>
+>         iommu_flush_area(start, size);
+>         outer_flush_range(phys, phys + size);
+>
+> is safer than the above if virt_to_phys() is non-linear.
 
->> shouldn't we have this #define be part of the enum that the other
->> HCONTROL_ bits/flags are part of?
+Agree, I will use the area.
 
-> [S.H] do you mean this?
+>
+>>               *iopgd = virt_to_phys(iopte) | IOPGD_TABLE;
+>> -             flush_iopgd_range(iopgd, iopgd);
+>> +             flush_iopgd_range(iopgd, iopgd + 1);
+>
+> And operating on a start + size also makes this kind of stuff clearer.
 
-    Apparently not. He said *enum*, not #define.
+Sure, I will cleanup this and send an updated patch series.
 
-> #ifdef SATA_FSL_XXX_ERRATUAM
 
-    We don't need that at all.
+Thank you for the inputs.
 
-> #define HCONTROL_CLEAR_ERROR	(1 << 27)
-> #endif
-
-MBR, Sergei
-
+Best regards
+Ramesh Gupta G
