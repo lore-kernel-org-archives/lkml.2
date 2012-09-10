@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757994Ab2IJPn5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 11:43:57 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:53226 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757590Ab2IJPnv (ORCPT
+	id S1757976Ab2IJPpd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 11:45:33 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:60962 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757699Ab2IJPpb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 11:43:51 -0400
+	Mon, 10 Sep 2012 11:45:31 -0400
 MIME-Version: 1.0
-In-Reply-To: <1347266386-16229-6-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1347266386-16229-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1345623750-10645-1-git-send-email-sebastian.hesselbarth@gmail.com>
 	<1347266386-16229-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1347266386-16229-6-git-send-email-sebastian.hesselbarth@gmail.com>
-Date: Mon, 10 Sep 2012 08:43:50 -0700
-Message-ID: <CACRpkdY7HpW_DCUfQtcZ9MuKTRmc9B1Ja67GcftFszOkRK_KFA@mail.gmail.com>
-Subject: Re: [PATCH v3 5/9] pinctrl: mvebu: add pinctrl driver for Armada XP
+Date: Mon, 10 Sep 2012 08:45:30 -0700
+Message-ID: <CACRpkda0AxcwqeBy2rZXRymq5iYxbdYWQsHtALHMObYqTaKyKw@mail.gmail.com>
+Subject: Re: [PATCH v3 0/9] pinctrl: mvebu: pinctrl driver
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
@@ -36,17 +35,14 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On Mon, Sep 10, 2012 at 1:39 AM, Sebastian Hesselbarth
 <sebastian.hesselbarth@gmail.com> wrote:
 
-> From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
->
-> This pinctrl driver is not a full-blown pinctrl driver from scratch:
-> it relies on the common pinctrl-mvebu driver, which is used for all
-> Marvell EBU SoCs.
->
-> Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> ---
-> v2: replaced variant with enum and used bitops.h
+> This patch set adds a core pinctrl driver for Marvell MVEBU SoCs and
+> SoC specific stubs for Armada 370, Armada XP, Dove, and Kirkwood.
+> The SoC specific stubs use the pinctrl-mvebu core driver that handles
+> pinctrl API and register accesses for common pinctrl registers.
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+This all looks good now, will this be pushed through some ARM SoC
+tree along with Marvell changes or do you want me to take it all
+through the pinctrl tree?
 
 Yours,
 Linus Walleij
