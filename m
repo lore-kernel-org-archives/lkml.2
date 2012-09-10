@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757936Ab2IJSaM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 14:30:12 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45772 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757820Ab2IJSaJ (ORCPT
+	id S1757965Ab2IJScZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 14:32:25 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:42577 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757709Ab2IJScX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 14:30:09 -0400
+	Mon, 10 Sep 2012 14:32:23 -0400
+Date: Mon, 10 Sep 2012 11:29:41 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Samuel Iglesias =?iso-8859-1?Q?Gons=E1lvez?= 
+	<siglesias@igalia.com>
+Cc: devel@driverdev.osuosl.org, Jens Taprogge <jens.taprogge@taprogge.org>,
+        linux-kernel@vger.kernel.org, industrypack-devel@lists.sourceforge.net
+Subject: Re: [PATCH 01/20] Staging: ipack/bridges/tpci200: Put the TPCI200
+ control registers into a struct.
+Message-ID: <20120910182941.GA25400@kroah.com>
+References: <1347267118-9580-1-git-send-email-siglesias@igalia.com>
 MIME-Version: 1.0
-In-Reply-To: <504E2B98.3010007@redhat.com>
-References: <1340742778-11282-1-git-send-email-fes@google.com>
- <20120910090521.GB18544@redhat.com> <CAGTjWtBa5jW6+y1k6zZmD9TUNHBgv8WRbO_iy7huY_dJSumStw@mail.gmail.com>
- <504E2B98.3010007@redhat.com>
-From: Mike Waychison <mikew@google.com>
-Date: Mon, 10 Sep 2012 14:29:48 -0400
-Message-ID: <CAGTjWtDmS8Tjw1nWr8sw=u6KuBfDOmcdBnvcZpDDf32FW1_KrA@mail.gmail.com>
-Subject: Re: [PATCH] Add a page cache-backed balloon device driver.
-To: Rik van Riel <riel@redhat.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, Frank Swiderski <fes@google.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        virtualization@lists.linux-foundation.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kvm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1347267118-9580-1-git-send-email-siglesias@igalia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 2:04 PM, Rik van Riel <riel@redhat.com> wrote:
-> On 09/10/2012 01:37 PM, Mike Waychison wrote:
->>
->> On Mon, Sep 10, 2012 at 5:05 AM, Michael S. Tsirkin <mst@redhat.com>
->> wrote:
->
->
->>> Also can you pls answer Avi's question?
->>> How is overcommit managed?
->>
->>
->> Overcommit in our deployments is managed using memory cgroups on the
->> host.  This allows us to have very directed policies as to how
->> competing VMs on a host may overcommit.
->
->
-> How do your memory cgroups lead to guests inflating their balloons?
+On Mon, Sep 10, 2012 at 10:51:39AM +0200, Samuel Iglesias Gonsálvez wrote:
+> From: Jens Taprogge <jens.taprogge@taprogge.org>
+> 
+> This saves us from a little pointer arithmetic and cleans up the code a bit.
+> 
+> Signed-off-by: Jens Taprogge <jens.taprogge@taprogge.org>
+> Signed-off-by: Samuel Iglesias Gonsálvez <siglesias@igalia.com>
+> ---
+>  drivers/staging/ipack/bridges/tpci200.c |   28 +++++++---------------------
+>  drivers/staging/ipack/bridges/tpci200.h |   21 +++++++++++++--------
+>  2 files changed, 20 insertions(+), 29 deletions(-)
 
-The control loop that is driving the cgroup on the host can still move
-the balloon target page count causing the balloon in the guest to try
-and inflate.  This allows the host to effectively slowly grow the
-balloon in the guest, allowing reclaim of guest free memory, followed
-by guest page cache (and memory on the host system).  This can then be
-compared with the subsequent growth (as this balloon setup allows the
-guest to grow as it sees fit), which in effect gives us a memory
-pressure indicator on the host, allowing it to back-off shrinking the
-guest if the guest balloon quickly deflates.
+This patch doesn't apply to my tree for some reason.
 
-The net effect is an opportunistic release of memory from the guest
-back to the host, and the ability to quickly grow a VM's memory
-footprint as the workload within it requires.
+Also, all of your patches are in base64 mode, which makes it impossible
+for me to fix them up by hand for issues like this.
 
-This dynamic memory sizing of VMs is much more in line with what we
-can expect from native tasks today (and which is what our resource
-management systems are designed to handle).
+Care to redo your series, and fix your email client, and resend them?
+
+thanks,
+
+greg k-h
