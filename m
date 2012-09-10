@@ -1,109 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757652Ab2IJMQc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 08:16:32 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:60098 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757286Ab2IJMQb convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Mon, 10 Sep 2012 08:16:31 -0400
-Message-Id: <504DF63A020000780009A30B@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Mon, 10 Sep 2012 13:16:26 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <linus.walleij@linaro.org>, <grant.likely@secretlab.ca>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] allow gpiolib to be a module
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1757677Ab2IJMSa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 08:18:30 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:43770 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757286Ab2IJMS3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 08:18:29 -0400
+Message-ID: <504DDAAB.7090001@gmail.com>
+Date: Mon, 10 Sep 2012 14:18:51 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120902 Thunderbird/15.0
+MIME-Version: 1.0
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: torvalds@linux-foundation.org, tj@kernel.org, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org, ebiederm@xmission.com, josh@joshtriplett.org,
+        David.Laight@ACULAB.COM, palves@redhat.com, rmallon@gmail.com,
+        bfields@fieldses.org
+Subject: Re: [PATCH v4] hashtable: introduce a small and naive hashtable
+References: <1347195123-5210-1-git-send-email-levinsasha928@gmail.com> <20120910024813.GA32008@Krystal>
+In-Reply-To: <20120910024813.GA32008@Krystal>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without ARCH_REQUIRE_GPIOLIB there's no reason to force this code, when
-enabled, to always be built into the kernel, which requires only minor
-Makefile and source code adjustments.
+On 09/10/2012 04:48 AM, Mathieu Desnoyers wrote:
+> * Sasha Levin (levinsasha928@gmail.com) wrote:
+>> +#define hash_init(hashtable)							\
+>> +({										\
+>> +	int __i;								\
+>> +										\
+>> +	for (__i = 0; __i < HASH_BITS(hashtable); __i++)			\
+>> +		INIT_HLIST_HEAD(hashtable + __i);				\
+> 
+> I suspect that hashtable will be a pointer, and you use the "+" operator
+> to do an offset on this pointer. Any thought on using:
+> 
+>             INIT_HLIST_HEAD(&hashtable[__i]);
+> 
+> instead ? It would provide the same result, but would ensure that the
+> user is indeed passing a pointer, and not an integer.
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
+It also looks nicer :)
 
----
- drivers/gpio/Kconfig       |    2 +-
- drivers/gpio/Makefile      |    3 ++-
- drivers/gpio/gpiolib.c     |   15 +++++++++++++++
- include/asm-generic/gpio.h |    3 ++-
- 4 files changed, 20 insertions(+), 3 deletions(-)
+> Also, why isn't it a static inline ? I'm probably missing something. If
+> there is a reason why it needs to stay a #define, please document it in
+> the comment.
 
---- 3.6-rc5/drivers/gpio/Kconfig
-+++ 3.6-rc5-gpiolib-module/drivers/gpio/Kconfig
-@@ -33,7 +33,7 @@ config ARCH_REQUIRE_GPIOLIB
- 
- 
- menuconfig GPIOLIB
--	bool "GPIO Support"
-+	tristate "GPIO Support"
- 	depends on ARCH_WANT_OPTIONAL_GPIOLIB || ARCH_REQUIRE_GPIOLIB
- 	select GENERIC_GPIO
- 	help
---- 3.6-rc5/drivers/gpio/Makefile
-+++ 3.6-rc5-gpiolib-module/drivers/gpio/Makefile
-@@ -2,7 +2,8 @@
- 
- ccflags-$(CONFIG_DEBUG_GPIO)	+= -DDEBUG
- 
--obj-$(CONFIG_GPIOLIB)		+= gpiolib.o devres.o
-+gpio-lib-y			:= gpiolib.o devres.o
-+obj-$(CONFIG_GPIOLIB)		+= gpio-lib.o
- obj-$(CONFIG_OF_GPIO)		+= gpiolib-of.o
- 
- # Device drivers. Generally keep list sorted alphabetically
---- 3.6-rc5/drivers/gpio/gpiolib.c
-+++ 3.6-rc5-gpiolib-module/drivers/gpio/gpiolib.c
-@@ -1003,7 +1003,9 @@ static int __init gpiolib_sysfs_init(voi
- 
- 	return status;
- }
-+#ifndef MODULE
- postcore_initcall(gpiolib_sysfs_init);
-+#endif
- 
- #else
- static inline int gpiochip_export(struct gpio_chip *chip)
-@@ -1832,6 +1834,19 @@ static int __init gpiolib_debugfs_init(v
- 				NULL, NULL, &gpiolib_operations);
- 	return 0;
- }
-+#ifndef MODULE
- subsys_initcall(gpiolib_debugfs_init);
-+#endif
- 
- #endif	/* DEBUG_FS */
-+
-+#ifdef MODULE
-+int __init gpiolib_init(void)
-+{
-+	return gpiolib_sysfs_init() ?: gpiolib_debugfs_init();
-+}
-+module_init(gpiolib_init);
-+
-+MODULE_DESCRIPTION("GPIO library");
-+MODULE_LICENSE("GPL");
-+#endif
---- 3.6-rc5/include/asm-generic/gpio.h
-+++ 3.6-rc5-gpiolib-module/include/asm-generic/gpio.h
-@@ -4,9 +4,10 @@
- #include <linux/kernel.h>
- #include <linux/types.h>
- #include <linux/errno.h>
-+#include <linux/kconfig.h>
- #include <linux/of.h>
- 
--#ifdef CONFIG_GPIOLIB
-+#if IS_ENABLED(CONFIG_GPIOLIB)
- 
- #include <linux/compiler.h>
- 
+It's a define because it needs to get the size of the hashtable.
+
+I'll document that.
 
 
-
+Thanks,
+Sasha
