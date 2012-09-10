@@ -1,209 +1,327 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757779Ab2IJMiP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 08:38:15 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:33700 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757745Ab2IJMh3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 08:37:29 -0400
-Message-ID: <504DDECB.9040508@ti.com>
-Date: Mon, 10 Sep 2012 18:06:27 +0530
-From: Manjunath Hadli <manjunath.hadli@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Hans Verkuil <hverkuil@xs4all.nl>
-CC: Prabhakar Lad <prabhakar.lad@ti.com>, LMML <linux-media@vger.kernel.org>,
-        dlos <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-kernel@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        <linux-doc@vger.kernel.org>, Hans Verkuil <hans.verkuil@cisco.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Rob Landley <rob@landley.net>
-Subject: Re: [PATCH] media: v4l2-ctrl: add a helper fucntion to modify the
- menu
-References: <1347278256-4560-1-git-send-email-prabhakar.lad@ti.com> <201209101413.12955.hverkuil@xs4all.nl>
-In-Reply-To: <201209101413.12955.hverkuil@xs4all.nl>
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 7bit
+	id S1757755Ab2IJMj3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 08:39:29 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:38018 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751152Ab2IJMjZ convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Mon, 10 Sep 2012 08:39:25 -0400
+Message-Id: <504DFB98020000780009A32A@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Mon, 10 Sep 2012 13:39:20 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH 3/4] x86/xor: add alternative SSE implementation only
+ prefetching once per 64-byte line
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hans,
+On CPUs with 64-byte last level cache lines, the yields roughly 10%
+better performance, independent of CPU vendor or specific model (as far
+as I was able to test).
 
-Thanks for the review.
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
 
-On Monday 10 September 2012 05:43 PM, Hans Verkuil wrote:
-> On Mon September 10 2012 13:57:36 Prabhakar Lad wrote:
->> From: Lad, Prabhakar <prabhakar.lad@ti.com>
->>
->> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
->> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
->> Cc: Hans Verkuil <hans.verkuil@cisco.com>
->> Cc: Sakari Ailus <sakari.ailus@iki.fi>
->> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
->> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
->> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
->> Cc: Hans de Goede <hdegoede@redhat.com>
->> Cc: Kyungmin Park <kyungmin.park@samsung.com>
->> Cc: Rob Landley <rob@landley.net>
->> ---
->>  Documentation/video4linux/v4l2-controls.txt |   26 +++++++++++++++++++++++++
->>  drivers/media/v4l2-core/v4l2-ctrls.c        |   28 +++++++++++++++++++++++++++
->>  include/media/v4l2-ctrls.h                  |   14 +++++++++++++
->>  3 files changed, 68 insertions(+), 0 deletions(-)
->>
->> diff --git a/Documentation/video4linux/v4l2-controls.txt b/Documentation/video4linux/v4l2-controls.txt
->> index 43da22b..54a9539 100644
->> --- a/Documentation/video4linux/v4l2-controls.txt
->> +++ b/Documentation/video4linux/v4l2-controls.txt
->> @@ -196,6 +196,32 @@ the error code at the end. Saves a lot of repetitive error checking.
->>  It is recommended to add controls in ascending control ID order: it will be
->>  a bit faster that way.
->>  
->> +2.1) Changing the menu of a standard control:
->> +There are suitations when the control is standard but the menu items may be
->> +device specific, in such cases the framework provides the helper to do that.
-> 
-> The "Menu Controls" section in this file would be a better place to add this.
-> 
-Ok.
+---
+ arch/x86/include/asm/xor.h    |  176 ++++++++++++++++++++++++++++++++++++++++++
+ arch/x86/include/asm/xor_32.h |   23 ++---
+ arch/x86/include/asm/xor_64.h |   10 --
+ 3 files changed, 191 insertions(+), 18 deletions(-)
 
->> +
->> +struct v4l2_ctrl * v4l2_ctrl_modify_menu(struct v4l2_ctrl *ctrl,
->> +	const char * const *qmenu, s32 min, s32 max,
->> +	u32 menu_skip_mask, s32 def);
->> +
->> +This helper, function is used to modify the menu, min, max, mask and
->> +the default value to set.
->> +Example for usage:
->> +	static const char * const test_pattern[] = {
->> +		"Disabled",
->> +		"Vertical Bars",
->> +		"Vertical Bars",
->> +		"Solid Black",
->> +		"Solid White",
->> +		NULL
->> +	};
->> +	struct v4l2_ctrl *test_pattern_ctrl =
->> +		v4l2_ctrl_new_std_menu(&foo->ctrl_handler, &foo_ctrl_ops,
->> +			V4L2_CID_TEST_PATTERN, V4L2_TEST_PATTERN_DISABLED, 0,
->> +			V4L2_TEST_PATTERN_DISABLED);
->> +
->> +	v4l2_ctrl_modify_menu(test_pattern_ctrl, test_pattern, 0, 5, 0x3, 0);
->> +
->>  3) Optionally force initial control setup:
->>  
->>  	v4l2_ctrl_handler_setup(&foo->ctrl_handler);
->> diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
->> index d731422..ac0fb28 100644
->> --- a/drivers/media/v4l2-core/v4l2-ctrls.c
->> +++ b/drivers/media/v4l2-core/v4l2-ctrls.c
->> @@ -2666,3 +2666,31 @@ unsigned int v4l2_ctrl_poll(struct file *file, struct poll_table_struct *wait)
->>  	return 0;
->>  }
->>  EXPORT_SYMBOL(v4l2_ctrl_poll);
->> +
->> +/* Helper function for standard menu controls to modify the menu */
->> +struct v4l2_ctrl *v4l2_ctrl_modify_menu(struct v4l2_ctrl *ctrl,
->> +					 const char * const *qmenu, s32 min,
-> 
-> The minimum is always 0 for menu controls, so this argument should be
-> removed. It's not part of v4l2_ctrl_new_std_menu either.
-> 
-> There is no need to return the pointer here, so just set the return to void.
-> 
-Ok.
+--- 3.6-rc5-x86-xor.orig/arch/x86/include/asm/xor.h
++++ 3.6-rc5-x86-xor/arch/x86/include/asm/xor.h
+@@ -107,6 +107,14 @@ do {						\
+ #define XO2(x, y)	"	xorps "OFFS(x)"(%[p3]), %%xmm"#y"	;\n"
+ #define XO3(x, y)	"	xorps "OFFS(x)"(%[p4]), %%xmm"#y"	;\n"
+ #define XO4(x, y)	"	xorps "OFFS(x)"(%[p5]), %%xmm"#y"	;\n"
++#define NOP(x)
++
++#define BLK64(pf, op, i)				\
++		pf(i)					\
++		op(i, 0)				\
++			op(i + 1, 1)			\
++				op(i + 2, 2)		\
++					op(i + 3, 3)
+ 
+ static void XOR_ALIGN_STACK
+ xor_sse_2(unsigned long bytes, unsigned long *p1, unsigned long *p2)
+@@ -161,6 +169,41 @@ xor_sse_2(unsigned long bytes, unsigned
+ }
+ 
+ static void XOR_ALIGN_STACK
++xor_sse_2_pf64(unsigned long bytes, unsigned long *p1, unsigned long *p2)
++{
++	unsigned long cr0, lines = bytes >> 8;
++	char xmm_save[16*4] __aligned(XOR_ALIGN);
++
++	XMMS_SAVE;
++
++	asm volatile(
++#undef BLOCK
++#define BLOCK(i)			\
++		BLK64(PF0, LD, i)	\
++		BLK64(PF1, XO1, i)	\
++		BLK64(NOP, ST, i)	\
++
++	" .align 32			;\n"
++	" 1:                            ;\n"
++
++		BLOCK(0)
++		BLOCK(4)
++		BLOCK(8)
++		BLOCK(12)
++
++	"       add %[inc], %[p1]       ;\n"
++	"       add %[inc], %[p2]       ;\n"
++	"       dec %[cnt]              ;\n"
++	"       jnz 1b                  ;\n"
++	: [cnt] "+r" (lines),
++	  [p1] "+r" (p1), [p2] "+r" (p2)
++	: [inc] XOR_CONSTANT_CONSTRAINT (256UL)
++	: "memory");
++
++	XMMS_RESTORE;
++}
++
++static void XOR_ALIGN_STACK
+ xor_sse_3(unsigned long bytes, unsigned long *p1, unsigned long *p2,
+ 	  unsigned long *p3)
+ {
+@@ -221,6 +264,44 @@ xor_sse_3(unsigned long bytes, unsigned
+ }
+ 
+ static void XOR_ALIGN_STACK
++xor_sse_3_pf64(unsigned long bytes, unsigned long *p1, unsigned long *p2,
++	       unsigned long *p3)
++{
++	unsigned long cr0, lines = bytes >> 8;
++	char xmm_save[16*4] __aligned(XOR_ALIGN);
++
++	XMMS_SAVE;
++
++	asm volatile(
++#undef BLOCK
++#define BLOCK(i)			\
++		BLK64(PF0, LD, i)	\
++		BLK64(PF1, XO1, i)	\
++		BLK64(PF2, XO2, i)	\
++		BLK64(NOP, ST, i)	\
++
++	" .align 32			;\n"
++	" 1:                            ;\n"
++
++		BLOCK(0)
++		BLOCK(4)
++		BLOCK(8)
++		BLOCK(12)
++
++	"       add %[inc], %[p1]       ;\n"
++	"       add %[inc], %[p2]       ;\n"
++	"       add %[inc], %[p3]       ;\n"
++	"       dec %[cnt]              ;\n"
++	"       jnz 1b                  ;\n"
++	: [cnt] "+r" (lines),
++	  [p1] "+r" (p1), [p2] "+r" (p2), [p3] "+r" (p3)
++	: [inc] XOR_CONSTANT_CONSTRAINT (256UL)
++	: "memory");
++
++	XMMS_RESTORE;
++}
++
++static void XOR_ALIGN_STACK
+ xor_sse_4(unsigned long bytes, unsigned long *p1, unsigned long *p2,
+ 	  unsigned long *p3, unsigned long *p4)
+ {
+@@ -288,6 +369,46 @@ xor_sse_4(unsigned long bytes, unsigned
+ }
+ 
+ static void XOR_ALIGN_STACK
++xor_sse_4_pf64(unsigned long bytes, unsigned long *p1, unsigned long *p2,
++	       unsigned long *p3, unsigned long *p4)
++{
++	unsigned long cr0, lines = bytes >> 8;
++	char xmm_save[16*4] __aligned(XOR_ALIGN);
++
++	XMMS_SAVE;
++
++	asm volatile(
++#undef BLOCK
++#define BLOCK(i)			\
++		BLK64(PF0, LD, i)	\
++		BLK64(PF1, XO1, i)	\
++		BLK64(PF2, XO2, i)	\
++		BLK64(PF3, XO3, i)	\
++		BLK64(NOP, ST, i)	\
++
++	" .align 32			;\n"
++	" 1:                            ;\n"
++
++		BLOCK(0)
++		BLOCK(4)
++		BLOCK(8)
++		BLOCK(12)
++
++	"       add %[inc], %[p1]       ;\n"
++	"       add %[inc], %[p2]       ;\n"
++	"       add %[inc], %[p3]       ;\n"
++	"       add %[inc], %[p4]       ;\n"
++	"       dec %[cnt]              ;\n"
++	"       jnz 1b                  ;\n"
++	: [cnt] "+r" (lines), [p1] "+r" (p1),
++	  [p2] "+r" (p2), [p3] "+r" (p3), [p4] "+r" (p4)
++	: [inc] XOR_CONSTANT_CONSTRAINT (256UL)
++	: "memory");
++
++	XMMS_RESTORE;
++}
++
++static void XOR_ALIGN_STACK
+ xor_sse_5(unsigned long bytes, unsigned long *p1, unsigned long *p2,
+ 	  unsigned long *p3, unsigned long *p4, unsigned long *p5)
+ {
+@@ -361,12 +482,64 @@ xor_sse_5(unsigned long bytes, unsigned
+ 	XMMS_RESTORE;
+ }
+ 
++static void XOR_ALIGN_STACK
++xor_sse_5_pf64(unsigned long bytes, unsigned long *p1, unsigned long *p2,
++	       unsigned long *p3, unsigned long *p4, unsigned long *p5)
++{
++	unsigned long cr0, lines = bytes >> 8;
++	char xmm_save[16*4] __aligned(XOR_ALIGN);
++
++	XMMS_SAVE;
++
++	asm volatile(
++#undef BLOCK
++#define BLOCK(i)			\
++		BLK64(PF0, LD, i)	\
++		BLK64(PF1, XO1, i)	\
++		BLK64(PF2, XO2, i)	\
++		BLK64(PF3, XO3, i)	\
++		BLK64(PF4, XO4, i)	\
++		BLK64(NOP, ST, i)	\
++
++	" .align 32			;\n"
++	" 1:                            ;\n"
++
++		BLOCK(0)
++		BLOCK(4)
++		BLOCK(8)
++		BLOCK(12)
++
++	"       add %[inc], %[p1]       ;\n"
++	"       add %[inc], %[p2]       ;\n"
++	"       add %[inc], %[p3]       ;\n"
++	"       add %[inc], %[p4]       ;\n"
++	"       add %[inc], %[p5]       ;\n"
++	"       dec %[cnt]              ;\n"
++	"       jnz 1b                  ;\n"
++	: [cnt] "+r" (lines), [p1] "+r" (p1), [p2] "+r" (p2),
++	  [p3] "+r" (p3), [p4] "+r" (p4), [p5] "+r" (p5)
++	: [inc] XOR_CONSTANT_CONSTRAINT (256UL)
++	: "memory");
++
++	XMMS_RESTORE;
++}
++
++static struct xor_block_template xor_block_sse_pf64 = {
++	.name = "prefetch64-sse",
++	.do_2 = xor_sse_2_pf64,
++	.do_3 = xor_sse_3_pf64,
++	.do_4 = xor_sse_4_pf64,
++	.do_5 = xor_sse_5_pf64,
++};
++
+ #undef LD
+ #undef XO1
+ #undef XO2
+ #undef XO3
+ #undef XO4
+ #undef ST
++#undef NOP
++#undef BLK64
+ #undef BLOCK
+ 
+ #undef XOR_ALIGN_STACK
+@@ -380,4 +553,7 @@ xor_sse_5(unsigned long bytes, unsigned
+ # include "xor_64.h"
+ #endif
+ 
++#define XOR_SELECT_TEMPLATE(FASTEST) \
++	AVX_SELECT(FASTEST)
++
+ #endif /* _ASM_X86_XOR_H */
+--- 3.6-rc5-x86-xor.orig/arch/x86/include/asm/xor_32.h
++++ 3.6-rc5-x86-xor/arch/x86/include/asm/xor_32.h
+@@ -543,26 +543,25 @@ static struct xor_block_template xor_blo
+ /* Also try the generic routines.  */
+ #include <asm-generic/xor.h>
+ 
++/* We force the use of the SSE xor block because it can write around L2.
++   We may also be able to load into the L1 only depending on how the cpu
++   deals with a load to a line that is being prefetched.  */
+ #undef XOR_TRY_TEMPLATES
+ #define XOR_TRY_TEMPLATES				\
+ do {							\
+-	xor_speed(&xor_block_8regs);			\
+-	xor_speed(&xor_block_8regs_p);			\
+-	xor_speed(&xor_block_32regs);			\
+-	xor_speed(&xor_block_32regs_p);			\
+ 	AVX_XOR_SPEED;					\
+-	if (cpu_has_xmm)				\
++	if (cpu_has_xmm) {				\
+ 		xor_speed(&xor_block_pIII_sse);		\
+-	if (cpu_has_mmx) {				\
++		xor_speed(&xor_block_sse_pf64);		\
++	} else if (cpu_has_mmx) {			\
+ 		xor_speed(&xor_block_pII_mmx);		\
+ 		xor_speed(&xor_block_p5_mmx);		\
++	} else {					\
++		xor_speed(&xor_block_8regs);		\
++		xor_speed(&xor_block_8regs_p);		\
++		xor_speed(&xor_block_32regs);		\
++		xor_speed(&xor_block_32regs_p);		\
+ 	}						\
+ } while (0)
+ 
+-/* We force the use of the SSE xor block because it can write around L2.
+-   We may also be able to load into the L1 only depending on how the cpu
+-   deals with a load to a line that is being prefetched.  */
+-#define XOR_SELECT_TEMPLATE(FASTEST)			\
+-	AVX_SELECT(cpu_has_xmm ? &xor_block_pIII_sse : FASTEST)
+-
+ #endif /* _ASM_X86_XOR_32_H */
+--- 3.6-rc5-x86-xor.orig/arch/x86/include/asm/xor_64.h
++++ 3.6-rc5-x86-xor/arch/x86/include/asm/xor_64.h
+@@ -13,17 +13,15 @@ static struct xor_block_template xor_blo
+ /* Also try the AVX routines */
+ #include "xor_avx.h"
+ 
++/* We force the use of the SSE xor block because it can write around L2.
++   We may also be able to load into the L1 only depending on how the cpu
++   deals with a load to a line that is being prefetched.  */
+ #undef XOR_TRY_TEMPLATES
+ #define XOR_TRY_TEMPLATES			\
+ do {						\
+ 	AVX_XOR_SPEED;				\
++	xor_speed(&xor_block_sse_pf64);		\
+ 	xor_speed(&xor_block_sse);		\
+ } while (0)
+ 
+-/* We force the use of the SSE xor block because it can write around L2.
+-   We may also be able to load into the L1 only depending on how the cpu
+-   deals with a load to a line that is being prefetched.  */
+-#define XOR_SELECT_TEMPLATE(FASTEST) \
+-	AVX_SELECT(&xor_block_sse)
+-
+ #endif /* _ASM_X86_XOR_64_H */
 
->> +					 s32 max, u32 menu_skip_mask, s32 def)
->> +{
->> +	if (ctrl->type != V4L2_CTRL_TYPE_MENU)
->> +		return NULL;
->> +
->> +	if (qmenu == NULL)
->> +		return NULL;
-> 
-> Change this to:
-> 
-> 	if (WARN_ON(ctrl->type != V4L2_CTRL_TYPE_MENU || qmenu == NULL))
-> 		return;
-> 
-Ok.
-
->> +
->> +	/* Determine if it is standard menu control */
->> +	if (!v4l2_ctrl_get_menu(ctrl->id))
->> +		return NULL;
-> 
-> This test can be removed. Why should we prohibit calling this function for
-> non-standard controls?
-> 
-Any how how if its custom control, the menu will be provided by user
-itself, so why would he fell the necessity of this function ? But
-providing an option wont harm I'll remove it.
-
->> +
->> +	if ((def > max) || (max < min))
->> +		return NULL;
-> 
-> Also replace with if (WARN_ON(def < 0 || def > max)).
-> 
-> All these errors are driver errors and so should just report it in the kernel
-> log and then bail out.
->
-Ok.
-
->> +
->> +	ctrl->qmenu = qmenu;
->> +	ctrl->minimum = min;
-> 
-> No need to set minimum. It's already 0.
-> 
-Ok.
-
-Regards,
---Prabhakar Lad
-
->> +	ctrl->maximum = max;
->> +	ctrl->menu_skip_mask = menu_skip_mask;
->> +	ctrl->cur.val = ctrl->val = ctrl->default_value = def;
->> +
->> +	return ctrl;
->> +}
->> +EXPORT_SYMBOL(v4l2_ctrl_modify_menu);
->> diff --git a/include/media/v4l2-ctrls.h b/include/media/v4l2-ctrls.h
->> index 776605f..5b0ea04 100644
->> --- a/include/media/v4l2-ctrls.h
->> +++ b/include/media/v4l2-ctrls.h
->> @@ -488,6 +488,20 @@ static inline void v4l2_ctrl_unlock(struct v4l2_ctrl *ctrl)
->>  	mutex_unlock(ctrl->handler->lock);
->>  }
->>  
->> +/**
->> + * v4l2_ctrl_modify_menu() - Modify the menu. This function is used when the
->> + * control is standard but the menu is specific to device.
->> + * @ctrl:		The control to change the menu.
->> + * @qmenu:		The menu to which control will point to.
->> + * @min:		Minimum value of the control.
->> + * @max:		Maximum valur of the control.
->> + * @menu_skip_mask:	The control's skip mask for menu controls.
->> + * @def:		The default value for control.
->> + */
->> +struct v4l2_ctrl *v4l2_ctrl_modify_menu(struct v4l2_ctrl *ctrl,
->> +					 const char * const *qmenu, s32 min,
->> +					 s32 max, u32 menu_skip_mask, s32 def);
->> +
->>  /** v4l2_ctrl_g_ctrl() - Helper function to get the control's value from within a driver.
->>    * @ctrl:	The control.
->>    *
->>
-> 
-> Regards,
-> 
-> 	Hans
-> 
 
