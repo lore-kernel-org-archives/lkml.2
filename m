@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753019Ab2IJEPe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 00:15:34 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40143 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752177Ab2IJEPa (ORCPT
+	id S1751052Ab2IJEPv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 00:15:51 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45322 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751448Ab2IJEPq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 00:15:30 -0400
-Date: Sun, 9 Sep 2012 21:12:57 -0700
+	Mon, 10 Sep 2012 00:15:46 -0400
+Date: Sun, 9 Sep 2012 21:13:08 -0700
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Russell King <linux@arm.linux.org.uk>,
@@ -20,8 +20,8 @@ Cc: Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
         linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, kernel-team@android.com,
         kgdb-bugreport@lists.sourceforge.net, linux-serial@vger.kernel.org
-Subject: [PATCH 03/14] kernel/debug: Mask KGDB NMI upon entry
-Message-ID: <20120910041257.GC29537@lizard>
+Subject: [PATCH 04/14] kdb: Implement disable_nmi command
+Message-ID: <20120910041308.GD29537@lizard>
 References: <20120910040802.GA1261@lizard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -32,117 +32,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new arch callback should manage NMIs that usually cause KGDB to
-enter. That is, not all NMIs should be enabled/disabled, but only
-those that issue kgdb_handle_exception().
+This command disables NMI-entry. If NMI source has been previously shared
+with a serial console ("debug port"), this effectively releases the port
+from KDB exclusive use, and makes the console available for normal use.
 
-We must mask it as serial-line interrupt can be used as an NMI, so
-if the original KGDB-entry cause was say a breakpoint, then every
-input to KDB console will cause KGDB to reenter, which we don't want.
+Of course, NMI can be reenabled, enable_nmi modparam is used for that:
+
+	echo 1 > /sys/module/kdb/parameters/enable_nmi
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- include/linux/kgdb.h      | 23 +++++++++++++++++++++++
- kernel/debug/debug_core.c | 36 +++++++++++++++++++++++++++++++++---
- 2 files changed, 56 insertions(+), 3 deletions(-)
+ kernel/debug/kdb/kdb_main.c | 29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
 
-diff --git a/include/linux/kgdb.h b/include/linux/kgdb.h
-index c4d2fc1..3b111a6 100644
---- a/include/linux/kgdb.h
-+++ b/include/linux/kgdb.h
-@@ -221,6 +221,29 @@ extern int kgdb_arch_remove_breakpoint(struct kgdb_bkpt *bpt);
-  */
- extern void kgdb_arch_late(void);
- 
-+/**
-+ *	kgdb_arch_enable_nmi - Enable or disable KGDB-entry NMI
-+ *	@on: Flag to either enable or disable an NMI
-+ *
-+ *	This is an architecture-specific "back-end" for kgdb_enable_nmi(). The
-+ *	call does not count disable/enable requests, do not use it directly.
-+ */
-+extern void kgdb_arch_enable_nmi(bool on);
-+
-+/**
-+ *	kgdb_enable_nmi - Enable or disable KGDB-entry NMI
-+ *	@on: Flag to either enable or disable an NMI
-+ *
-+ *	This function manages NMIs that usually cause KGDB to enter. That is,
-+ *	not all NMIs should be enabled or disabled, but only those that issue
-+ *	kgdb_handle_exception().
-+ *
-+ *	The call counts disable requests, and thus allows to nest disables.
-+ *	But trying to enable already enabled NMI is an error. The call returns
-+ *	1 if NMI has been actually enabled after the call, and a value <= 0 if
-+ *	it is still disabled.
-+ */
-+extern int kgdb_enable_nmi(bool on);
- 
- /**
-  * struct kgdb_arch - Describe architecture specific values.
-diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
-index 0557f24..b621d1e 100644
---- a/kernel/debug/debug_core.c
-+++ b/kernel/debug/debug_core.c
-@@ -214,6 +214,30 @@ int __weak kgdb_skipexception(int exception, struct pt_regs *regs)
+diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
+index 31df170..9fadff1 100644
+--- a/kernel/debug/kdb/kdb_main.c
++++ b/kernel/debug/kdb/kdb_main.c
+@@ -21,6 +21,7 @@
+ #include <linux/smp.h>
+ #include <linux/utsname.h>
+ #include <linux/vmalloc.h>
++#include <linux/atomic.h>
+ #include <linux/module.h>
+ #include <linux/mm.h>
+ #include <linux/init.h>
+@@ -2107,6 +2108,32 @@ static int kdb_dmesg(int argc, const char **argv)
  	return 0;
  }
- 
-+void __weak kgdb_arch_enable_nmi(bool on)
+ #endif /* CONFIG_PRINTK */
++
++/* Make sure we balance enable/disable calls, must disable first. */
++static atomic_t kdb_nmi_disabled;
++
++static int kdb_disable_nmi(int argc, const char *argv[])
 +{
++	if (atomic_read(&kdb_nmi_disabled))
++		return 0;
++	atomic_set(&kdb_nmi_disabled, 1);
++	kgdb_enable_nmi(0);
++	return 0;
 +}
 +
-+int kgdb_enable_nmi(bool on)
++static int kdb_param_enable_nmi(const char *val, const struct kernel_param *kp)
 +{
-+	static atomic_t cnt;
-+	int ret;
-+
-+	ret = atomic_add_return(on ? 1 : -1, &cnt);
-+	if (ret > 1 && on) {
-+		/*
-+		 * There should be only one instance that calls this function
-+		 * in "enable, disable" order. All other users must call
-+		 * disable first, then enable. If not, something is wrong.
-+		 */
-+		WARN_ON(1);
-+		return 1;
-+	}
-+
-+	kgdb_arch_enable_nmi(ret > 0);
-+	return ret;
++	if (!atomic_add_unless(&kdb_nmi_disabled, -1, 0))
++		return -EINVAL;
++	kgdb_enable_nmi(1);
++	return 0;
 +}
++
++static const struct kernel_param_ops kdb_param_ops_enable_nmi = {
++	.set = kdb_param_enable_nmi,
++};
++module_param_cb(enable_nmi, &kdb_param_ops_enable_nmi, NULL, 0600);
 +
  /*
-  * Some architectures need cache flushes when we set/clear a
-  * breakpoint:
-@@ -672,6 +696,9 @@ kgdb_handle_exception(int evector, int signo, int ecode, struct pt_regs *regs)
- {
- 	struct kgdb_state kgdb_var;
- 	struct kgdb_state *ks = &kgdb_var;
-+	int ret = 0;
-+
-+	kgdb_enable_nmi(0);
- 
- 	ks->cpu			= raw_smp_processor_id();
- 	ks->ex_vector		= evector;
-@@ -681,11 +708,14 @@ kgdb_handle_exception(int evector, int signo, int ecode, struct pt_regs *regs)
- 	ks->linux_regs		= regs;
- 
- 	if (kgdb_reenter_check(ks))
--		return 0; /* Ouch, double exception ! */
-+		goto out; /* Ouch, double exception ! */
- 	if (kgdb_info[ks->cpu].enter_kgdb != 0)
--		return 0;
-+		goto out;
- 
--	return kgdb_cpu_enter(ks, regs, DCPU_WANT_MASTER);
-+	ret = kgdb_cpu_enter(ks, regs, DCPU_WANT_MASTER);
-+out:
-+	kgdb_enable_nmi(1);
-+	return ret;
- }
- 
- int kgdb_nmicallback(int cpu, void *regs)
+  * kdb_cpu - This function implements the 'cpu' command.
+  *	cpu	[<cpunum>]
+@@ -2851,6 +2878,8 @@ static void __init kdb_inittab(void)
+ 	kdb_register_repeat("dmesg", kdb_dmesg, "[lines]",
+ 	  "Display syslog buffer", 0, KDB_REPEAT_NONE);
+ #endif
++	kdb_register_repeat("disable_nmi", kdb_disable_nmi, "",
++	  "Disable NMI entry to KDB", 0, KDB_REPEAT_NONE);
+ 	kdb_register_repeat("defcmd", kdb_defcmd, "name \"usage\" \"help\"",
+ 	  "Define a set of commands, down to endefcmd", 0, KDB_REPEAT_NONE);
+ 	kdb_register_repeat("kill", kdb_kill, "<-signal> <pid>",
 -- 
 1.7.11.5
 
