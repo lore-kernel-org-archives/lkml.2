@@ -1,125 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753767Ab2IJROg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 13:14:36 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:53077 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752593Ab2IJROd (ORCPT
+	id S1754418Ab2IJRSG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 13:18:06 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:32950 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751355Ab2IJRSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 13:14:33 -0400
-Message-ID: <504E1FE5.6090502@linaro.org>
-Date: Mon, 10 Sep 2012 10:14:13 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, xen-devel@lists.xensource.com,
-        linaro-dev@lists.linaro.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-pm@vger.kernel.org, linux-acpi@vger.kernel.org, lenb@kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        mingo@kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        richardcochran@gmail.com, prarit@redhat.com,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: CONFIG_NO_HZ + CONFIG_CPU_IDLE freeze the system (Was Re: [PATCH]
- acpi : remove power from acpi_processor_cx structure)
-References: <1343164349-28550-1-git-send-email-daniel.lezcano@linaro.org> <201209062204.11288.rjw@sisk.pl> <50490920.9070204@linaro.org> <201209062318.42874.rjw@sisk.pl> <504A02BD.4000805@linaro.org> <504A2D73.3010702@linaro.org> <504A68A0.7010907@linaro.org>
-In-Reply-To: <504A68A0.7010907@linaro.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Mon, 10 Sep 2012 13:18:04 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Mon, 10 Sep 2012 19:17:39 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: shuah.khan@hp.com
+Cc: Clemens Ladisch <clemens@ladisch.de>, LKML <linux-kernel@vger.kernel.org>,
+        linux1394-devel@lists.sf.net, shuahkhan@gmail.com
+Subject: Re: [RFC] DMA mapping error check analysis
+Message-ID: <20120910191739.77d59f65@stein>
+In-Reply-To: <1347290775.3071.1.camel@lorien2>
+References: <1346595257.4377.5.camel@lorien2>
+	<1347033200.2603.19.camel@lorien2>
+	<504D9C70.5000102@ladisch.de>
+	<1347290775.3071.1.camel@lorien2>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12091017-4242-0000-0000-000002DA6C09
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/07/2012 02:35 PM, Daniel Lezcano wrote:
-> On 09/07/2012 07:22 PM, John Stultz wrote:
->> On 09/07/2012 07:20 AM, Daniel Lezcano wrote:
->>> On 09/06/2012 11:18 PM, Rafael J. Wysocki wrote:
->>>> On Thursday, September 06, 2012, Daniel Lezcano wrote:
->>>>> On 09/06/2012 10:04 PM, Rafael J. Wysocki wrote:
->>>>>> On Thursday, September 06, 2012, Daniel Lezcano wrote:
->>>>>>> On 09/06/2012 09:54 AM, Daniel Lezcano wrote:
->>>>>>> I fall into this issue because NETCONSOLE is set, disabling it
->>>>>>> allowed
->>>>>>> me to go further.
->>>>>>>
->>>>>>> Unfortunately I am facing to some random freeze on the system which
->>>>>>> seems to be related to CONFIG_NO_HZ=y and CONFIG_CPU_IDLE=y.
->>>>>>>
->>>>>>> Disabling one of them, make the freezes to disappear.
->>>>>>>
->>>>>>> Is it a known issue ?
->>>>>> Well, there are systems having problems with this configuration,
->>>>>> but they
->>>>>> should be exceptional.  What system is that?
->>>>> It is a laptop T61p with a Core 2 Duo T9500. Nothing exceptional I
->>>>> believe. Maybe someone got the same issue ?
->>>> Is it a regression for you?
->>> Yes, I think so. The issue appears between v3.5 and v3.6-rc1.
->>>
->>> It is not easy to reproduce but after taking some time to dig, it seems
->>> to appear with this commit:
->>>
->>> 1e75fa8be9fb61e1af46b5b3b176347a4c958ca1 is the first bad commit
->>> commit 1e75fa8be9fb61e1af46b5b3b176347a4c958ca1
->>> Author: John Stultz <john.stultz@linaro.org>
->>> Date:   Fri Jul 13 01:21:53 2012 -0400
->>>
->>>       time: Condense timekeeper.xtime into xtime_sec
->>>
->>>       The timekeeper struct has a xtime_nsec, which keeps the
->>>       sub-nanosecond remainder.  This ends up being somewhat
->>>       duplicative of the timekeeper.xtime.tv_nsec value, and we
->>>       have to do extra work to keep them apart, copying the full
->>>       nsec portion out and back in over and over.
->>>
->>>       This patch simplifies some of the logic by taking the timekeeper
->>>       xtime value and splitting it into timekeeper.xtime_sec and
->>>       reuses the timekeeper.xtime_nsec for the sub-second portion
->>>       (stored in higher res shifted nanoseconds).
->>>
->>>       This simplifies some of the accumulation logic. And will
->>>       allow for more accurate timekeeping once the vsyscall code
->>>       is updated to use the shifted nanosecond remainder.
->>>
->>>       Signed-off-by: John Stultz <john.stultz@linaro.org>
->>>       Reviewed-by: Ingo Molnar <mingo@kernel.org>
->>>       Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
->>>       Cc: Richard Cochran <richardcochran@gmail.com>
->>>       Cc: Prarit Bhargava <prarit@redhat.com>
->>>       Link:
->>> http://lkml.kernel.org/r/1342156917-25092-5-git-send-email-john.stultz@linaro.org
->>>
->>>       Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
->>>
->>> :040000 040000 4d6541ac1f6075d7adee1eef494b31a0cbda0934
->>> dc5708bc738af695f092bf822809b13a1da104b6 M    kernel
->>>
->>> How to reproduce: with a laptop T61p, with a Core 2 Duo. I boot the
->>> kernel in busybox and wait some minutes before writing something in the
->>> console. At this moment, nothing appears to the console but the
->>> characters are echo'ed several seconds later (could be 1, 5, or 10 secs
->>> or more).
->>>
->>> That happens when CONFIG_CPU_IDLE and CONFIG_NO_HZ are set. Disabling
->>> one of them, the issue does not appear.
->> Thanks for bisecting this down and the heads up!
->>
->> Right off I can't see what might be causing this.  Bunch of questions:
->>
->> Is this a 32 or 64 bit kernel?
-> It is a 32 bit kernel.
+On Sep 10 Shuah Khan wrote:
+> 
+> > >
+> > > http://linuxdriverproject.org/mediawiki/index.php/DMA_Mapping_Error_Analysis
+> > 
+> > > File Name                  # of calls  Status 	
+> > > drivers/firewire/core-iso.c   1        Unmap Broken
+> > > drivers/firewire/ohci.c       1        Unmap Broken
+> > 
+> > In ohci.c, ar_context_release() takes care of cleanup.
+> > 
+> > In core-iso.c, on failure, the callers are responsible to call
+> > fw_iso_buffer_destroy() eventually.  (ioctl_create_iso_context()
+> > doesn't do this correctly if it's called multiple times.)
+> > 
+> 
+> Thanks. I updated the page with your comments. I moved ohci.c to Good
+> status and left core-iso.c in Unmap Broken in case
+> ioctl_create_iso_context() case is worth fixing.
 
-Thanks for your answers! Has this has been seen on 3.6-rc4+ kernels? 
-There were a few casting fixes that landed in 3.6-rc4 that would affect 
-32bit systems.
+I don't see what could go wrong if ioctl_create_iso_context() is called
+multiple times.  But I wrote the current (= v3.5-rc1) serialization code in
+it, hence am blind for mistakes which are my own.  So anyboy who spots an
+actual problem please describe it, or even better send a patch.
 
-In the meantime, I'll try to reproduce on my T61. If you could send me 
-your .config, I'd appreciate it.
-
-thanks!
--john
-
+(Hmm, fw_device_op_mmap()'s fail: path is executed outside the
+client->lock protected section.  That might be a problem.  I need to look
+further into it.)
+-- 
+Stefan Richter
+-=====-===-- =--= -=-=-
+http://arcgraph.de/sr/
