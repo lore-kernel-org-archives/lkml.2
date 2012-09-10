@@ -1,68 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758085Ab2IJQO7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 12:14:59 -0400
-Received: from mx2.fusionio.com ([66.114.96.31]:41763 "EHLO mx2.fusionio.com"
+	id S1758087Ab2IJQRd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 12:17:33 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:48989 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754372Ab2IJQO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 12:14:57 -0400
-X-ASG-Debug-ID: 1347293696-0421b53eae66280001-xx1T2L
-X-Barracuda-Envelope-From: JBacik@fusionio.com
-Date: Mon, 10 Sep 2012 12:14:54 -0400
-From: Josef Bacik <jbacik@fusionio.com>
-To: Wang Sheng-Hui <shhuiw@gmail.com>
-CC: "Chris L. Mason" <clmason@fusionio.com>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] btrfs: fix disk-io.c/btrfs_read_dev_super with
- BTRFS_SUPER_MIRROR_MAX to control the loops
-Message-ID: <20120910161454.GA2270@localhost.localdomain>
-X-ASG-Orig-Subj: Re: [PATCH] btrfs: fix disk-io.c/btrfs_read_dev_super with
- BTRFS_SUPER_MIRROR_MAX to control the loops
-References: <504D8AEB.9090401@gmail.com>
+	id S1754372Ab2IJQRa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 12:17:30 -0400
+Message-ID: <504E127F.6020406@ti.com>
+Date: Mon, 10 Sep 2012 18:17:03 +0200
+From: Benoit Cousson <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <504D8AEB.9090401@gmail.com>
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1347293696
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.108166
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+To: <balbi@ti.com>
+CC: Tony Lindgren <tony@atomide.com>, Vaibhav Hiremath <hvaibhav@ti.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>, <grant.likely@secretlab.ca>,
+        <rob.herring@calxeda.com>, <rob@landley.net>, <linux@arm.linux.org.uk>,
+        <gregkh@linuxfoundation.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>, Paul Walmsley <paul@pwsan.com>
+Subject: Re: [PATCH 1/3] arm: omap: hwmod: add a new addr space in otg for
+ writing to control module
+References: <1346943331-18120-1-git-send-email-kishon@ti.com> <1346943331-18120-2-git-send-email-kishon@ti.com> <5048C2A2.2020104@ti.com> <20120906171301.GC17754@arwen.pp.htv.fi> <20120906171803.GA30717@arwen.pp.htv.fi> <20120906195607.GB1303@atomide.com> <20120910155855.GE7464@arwen.pp.htv.fi>
+In-Reply-To: <20120910155855.GE7464@arwen.pp.htv.fi>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 12:38:35AM -0600, Wang Sheng-Hui wrote:
-> To check the duplicated super blocks, use BTRFS_SUPER_MIRROR_MAX
-> as the loops limit.
-> 
-> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
-> ---
->  fs/btrfs/disk-io.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-> index 22e98e0..a431144 100644
-> --- a/fs/btrfs/disk-io.c
-> +++ b/fs/btrfs/disk-io.c
-> @@ -2723,7 +2723,7 @@ struct buffer_head *btrfs_read_dev_super(struct block_device *bdev)
->  	 * So, we need to add a special mount option to scan for
->  	 * later supers, using BTRFS_SUPER_MIRROR_MAX instead
->  	 */
-> -	for (i = 0; i < 1; i++) {
-> +	for (i = 0; i < BTRFS_SUPER_MIRROR_MAX; i++) {
->  		bytenr = btrfs_sb_offset(i);
->  		if (bytenr + 4096 >= i_size_read(bdev->bd_inode))
->  			break;
+Hi Felipe,
 
-We don't want to do this, it should be left for -o recovery or some such mount
-option.  Thanks,
+On 09/10/2012 05:58 PM, Felipe Balbi wrote:
+> Hi,
+> 
+> On Thu, Sep 06, 2012 at 12:56:07PM -0700, Tony Lindgren wrote:
+>> * Felipe Balbi <balbi@ti.com> [120906 10:23]:
+>>> Hi,
+>>>
+>>> On Thu, Sep 06, 2012 at 08:13:03PM +0300, Felipe Balbi wrote:
+>>>> Hi,
+>>>>
+>>>> On Thu, Sep 06, 2012 at 09:04:58PM +0530, Vaibhav Hiremath wrote:
+>>>>>
+>>>>>
+>>>>> On 9/6/2012 8:25 PM, Kishon Vijay Abraham I wrote:
+>>>>>> The mailbox register for usb otg in omap is present in control module.
+>>>>>> On detection of any events VBUS or ID, this register should be written
+>>>>>> to send the notification to musb core.
+>>>>>>
+>>>>>> Till we have a separate control module driver to write to control module,
+>>>>>> omap2430 will handle the register writes to control module by itself. So
+>>>>>> a new address space to represent this control module register is added
+>>>>>> to usb_otg_hs.
+>>>>>>
+>>>>>> Cc: Benoit Cousson <b-cousson@ti.com>
+>>>>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>>>>>> ---
+>>>>>>  arch/arm/mach-omap2/omap_hwmod_44xx_data.c |    5 +++++
+>>>>>>  1 file changed, 5 insertions(+)
+>>>>>>
+>>>>>> diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+>>>>>> index 242aee4..02341bc 100644
+>>>>>> --- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+>>>>>> +++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+>>>>>> @@ -5890,6 +5890,11 @@ static struct omap_hwmod_addr_space omap44xx_usb_otg_hs_addrs[] = {
+>>>>>>  		.pa_end		= 0x4a0ab003,
+>>>>>>  		.flags		= ADDR_TYPE_RT
+>>>>>>  	},
+>>>>>> +	{
+>>>>>> +		.pa_start	= 0x4a00233c,
+>>>>>> +		.pa_end		= 0x4a00233f,
+>>>>>> +		.flags		= ADDR_TYPE_RT
+>>>>>> +	},
+>>>>>
+>>>>> I do not have any objection/comment here, but I believe this is control
+>>>>> module address space required for USB module, right?
+>>>>> I am not sure this is right way of accessing control module space.
+>>>>> Actually Control Module Access required for drivers is one of the
+>>>>> blocking issue we have currently.
+>>>>>
+>>>>> Also there was some effort put up by 'Konstantine' to convert Control
+>>>>> module to MFD driver, I haven't seen any further update on it. But it
+>>>>> would be good to check with him.
+>>>>
+>>>> this was an agreement with Benoit since we already lost a couple merge
+>>>> windows for this patchset. We agreed to wait until -rc4 for SCM driver
+>>>> and if it wasn't ready, we'd go ahead with this and SCM author would fix
+>>>> it up on a patch converting users to new SCM driver.
+>>>
+>>> Tony, can I get your Acked-by to this patch so I can take it together
+>>> with the rest of the series ? Thanks
+>>>
+>>> ps: I'll apply this to my 'musb' branch which is immutable, so it's safe
+>>> to merge it into your tree once I apply.
+>>
+>> It would be best if this got acked by Benoit and Paul as they may
+>> have some other patches queued up. I'll ack if they ack ;)
+> 
+> Benoit, care to ack this patch ???
 
-Josef
+Gosh, that's hard to ack something like that :-)
+
+But considering that the control module driver is not there yet, I have
+no choice but accepting that one if we want to have the functionality
+we've been waiting for years.
+
+Could you just update the patch with a big disclaimer on top of the
+address range to explain that this should not belong here and will be
+removed ASAP, when the proper driver will be done.
+
+Then you sign the patch with your blood and that should be fine for me :-).
+
+Thanks,
+Benoit
+
