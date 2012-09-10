@@ -1,68 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756822Ab2IJPLj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 11:11:39 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:33800 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752593Ab2IJPLi (ORCPT
+	id S1757419Ab2IJPMR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 11:12:17 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:42695 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754070Ab2IJPML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 11:11:38 -0400
+	Mon, 10 Sep 2012 11:12:11 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAN1soZzTnzD-X+jZqBW6efY9uP+puZ0qX_=EWuBzDeFhmO9vCw@mail.gmail.com>
-References: <1344364969-32489-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-	<201208071946.52211.arnd@arndb.de>
-	<CAN1soZzTnzD-X+jZqBW6efY9uP+puZ0qX_=EWuBzDeFhmO9vCw@mail.gmail.com>
-Date: Mon, 10 Sep 2012 23:11:37 +0800
-Message-ID: <CAN1soZz250zdGXoXKbQU1VsMWkmcVwWa7qowwCbF-QTSfabBZg@mail.gmail.com>
-Subject: Re: [PATCH 1/7] mfd: max8925: Move _IO resources out of ioport_ioresource
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Russell King <rmk@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAEOSq-PV+7c2nvu3uauOLJcV7WKa1jmd-df0a1H0qY5K4CM5MA@mail.gmail.com>
+References: <CAEOSq-O3SfuAEhMsjX1y1ZgQuWBKef+XZzMR1b4yJhKhaRdymA@mail.gmail.com>
+ <20120907060552.GL26709@S2101-09.ap.freescale.net> <CAEOSq-PV+7c2nvu3uauOLJcV7WKa1jmd-df0a1H0qY5K4CM5MA@mail.gmail.com>
+From: Matt Sealey <matt@genesi-usa.com>
+Date: Mon, 10 Sep 2012 10:11:48 -0500
+Message-ID: <CAKGA1bnug8nqcideOBZyLQZmiVo=G5L3aRHq4k4SNZyH132Y=g@mail.gmail.com>
+Subject: Re: Tracking down suspend/resume ext3/mmc issues on imx233
+To: Mike Thompson <mpthompson@gmail.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>,
+        Linux-Arm-Kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-ext4@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 8, 2012 at 11:20 PM, Haojian Zhuang
-<haojian.zhuang@gmail.com> wrote:
-> On Wed, Aug 8, 2012 at 3:46 AM, Arnd Bergmann <arnd@arndb.de> wrote:
->> On Tuesday 07 August 2012, Mark Brown wrote:
->>> The removal of mach/io.h from most ARM platforms also set the range of
->>> valid IO ports to be empty for most platforms when previously any 32
->>> bit integer had been valid. This makes it impossible to add IO resources
->>> as the added range is smaller than that of the root resource for IO ports.
->>>
->>> Since we're not really using IO memory at all fix this by defining our
->>> own root resource outside the normal tree and make that the parent of
->>> all IO resources. This also ensures we won't conflict with read IO ports
->>> if we ever run on a platform which happens to use them.
->>>
->>> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
->>> Cc: stable@vger.kernel.org (v3.4+)
->>
->> (whole series)
->>
->> Acked-by: Arnd Bergmann <arnd@arndb.de>
->>
-> Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
-> Tested-by: Haojian Zhuang <haojian.zhuang@gmail.com>
+Wouldn't it be better if the root filesystem was marked as
+non-removable in the device tree - or in the case of a truly removable
+card, just marked in the MMC subsystem - and the MMC subsystem skipped
+the "it could be removed" for suspend/resume operations?
+
+Whether you can or you cannot remove an SD memory device or eMMC
+controller, having an option that marked "DANGEROUS" that says "MMC
+layer will assume that all cards stayed in their respective slots
+during the suspend" implies that on a system such as the
+numbering-more-than-I-can-count embedded devices here with eMMC and
+any number greater than zero SD card slots (most of them having at
+least two), ALL of them are treated as unsafe resume, when in fact
+only one of them might be.
+
+My use cases here are usually boot from eMMC or boot from external SD
+card (Snowball, Efika MX but one SD card slot is usually not needed to
+go through the unsafe-resume process, all FSL i.MX boards since MX51
+Babbage through the new MX6 boards, Pandaboard, Beagleboard). Just
+because it's possible to boot from external, removable SD card
+shouldn't mean we all have to configure our kernels explicitly to go
+through a strange and unusual path for suspend and resume which leaves
+ALL cards 'mounted' unecessarily over suspend/resume, especially in
+the common case where eMMC is also not the ONLY boot medium (PATA,
+SATA, non-eMMC flash) and eMMC or SD *MAY* only be the root filesystem
+(as opposed to *WILL*)
+
+??
+
+-- 
+Matt Sealey <matt@genesi-usa.com>
+Product Development Analyst, Genesi USA, Inc.
+
+
+On Sat, Sep 8, 2012 at 11:17 AM, Mike Thompson <mpthompson@gmail.com> wrote:
+> I figured the source of my problem.  Normally, the Linux kernel will
+> treat mmc cards as removed during suspend.  This is in case the card
+> is swapped by the user during the suspend.  However, on the OLinuXino
+> the mmc device is the root file system  If the Linux kernel treats the
+> mmc card as removed the frozen tasks with open file handles to the
+> root filesystem device (such as the journal tasks) will fail when they
+> are thawed during resume.  This is the problem I was seeing.
 >
-> And I also attached my 3 patches for 88pm860x since the old self-defined
-> IORESOURCE_IO should be changed to register offset (IORESOURCE_REG).
-> Otherwise, it still fails in my platform.
+> Fortunately, there is already a specific kernel config setting
+> CONFIG_MMC_UNSAFE_RESUME that needs to be set for systems such as the
+> OLinuXino that uses the mmc device for the root filesystem.  I
+> overlooked this config setting and spent half a day trying to figure
+> out the source of the file system errors on resume.  Next time I'll do
+> a better job of looking through related config settings before trying
+> to debug an issue that is probably already dealt with.
 >
-> Regards
-> Haojian
-
-Hi Samuel,
-
-Is it OK to merge Mark's patch and my patch into your MFD tree for v3.7?
-
-You can also find those patches in git://github.com/hzhuang1/linux.git
-mfd_pmic branch
-
-Best Regards
-Haojian
+> Mike
+>
+> On Thu, Sep 6, 2012 at 11:05 PM, Shawn Guo <shawn.guo@linaro.org> wrote:
+>> Copy a few more lists to get wider audience ...
+>>
+>> Regards,
+>> Shawn
+>>
+>> On Thu, Sep 06, 2012 at 10:03:35PM -0700, Mike Thompson wrote:
+>>> I'm working on adding power management support for the imx233 on
+>>> 3.6-rc2.  In general I'm working on porting the pm.c file from the
+>>> Freescale 2.6.35 kernel for both "standby" and "mem" suspend/resume.
+>>> I'm making pretty good progress on porting the code, but I'm running
+>>> into an issue outside the immediate code I'm working on.
+>>>
+>>> ...
+>>>
+>>> The first reported error is in the ext3 filesystem buffer code where
+>>> the file system buffers aren't being filled by the underlying block
+>>> device.  At least that's how I'm interpreting the portion of the ext3
+>>> file system code that is failing.  However, the mmc device is
+>>> correctly reporting finding p1 and p2 partitions on the device which
+>>> it would indicate the partition data is being read from the SD card.
+>>>
+>>> I'm hoping others might have suggestions on how I should go about
+>>> tracking down why the ext3 file system can no longer read from the mmc
+>>> device upon resume.  For instance, useful places to put some tracing
+>>> code to understand what might be failing, or how to determine what
+>>> differences there might be before suspend and after resume that might
+>>> point to the failure.
+>>>
+>>> Thanks,
+>>>
+>>> Mike Thompson
+>>>
+>>> _______________________________________________
+>>> linux-arm-kernel mailing list
+>>> linux-arm-kernel@lists.infradead.org
+>>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
