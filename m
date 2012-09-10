@@ -1,85 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758103Ab2IJSwq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 14:52:46 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:28001 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754347Ab2IJSwo (ORCPT
+	id S1758123Ab2IJSxw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 14:53:52 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:15959 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754347Ab2IJSxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 14:52:44 -0400
-Date: Mon, 10 Sep 2012 12:52:42 -0600
-From: Khalid Aziz <khalid.aziz@hp.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Mike Waychison <mikew@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tony Luck <tony.luck@intel.com>, Matthew Garrett <mjg@redhat.com>,
-        Kees Cook <keescook@chromium.org>,
-        "gong.chen@linux.intel.com" <gong.chen@linux.intel.com>,
-        khalid@gonehiking.org
-Subject: [PATCH v2 RESEND] Add missing attributes to EFI variable attribute
- print out from sysfs
-Message-ID: <20120910185242.GA12627@ldl.usa.hp.com>
-References: <20120713174216.GA10445@hp.com>
- <CAGTjWtDyGrVuBXZzdDfbS961cRSQY7eZaEbb9E8HACk5-imiuQ@mail.gmail.com>
- <CAGTjWtAPKXfA7pOqWEfK2i_HbrtA6_w7+ezZyCo4NG1gBSEhwg@mail.gmail.com>
- <20120910180335.GA26021@kroah.com>
- <1347300789.4393.27.camel@lyra>
- <20120910181855.GA26404@kroah.com>
- <20120910182914.GA12076@ldl.usa.hp.com>
- <20120910183506.GA25975@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120910183506.GA25975@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 10 Sep 2012 14:53:51 -0400
+Message-ID: <1347302891.4732.257.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] hpwdt: Fix kdump issue in hpwdt
+From: Toshi Kani <toshi.kani@hp.com>
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
+        thomas.mingarelli@hp.com, stable@vger.kernel.org, lisa.mitchell@hp.com
+Date: Mon, 10 Sep 2012 12:48:11 -0600
+In-Reply-To: <20120910184847.GC27604@spo001.leaseweb.com>
+References: <1346093544-12007-1-git-send-email-toshi.kani@hp.com>
+	 <20120910184847.GC27604@spo001.leaseweb.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some of the EFI variable attributes are missing from print out from
-/sys/firmware/efi/vars/*/attributes. This patch adds those in. It also
-updates code to use pre-defined constants for masking current value
-of attributes.
+On Mon, 2012-09-10 at 20:48 +0200, Wim Van Sebroeck wrote:
+> Hi Toshi,
+> 
+> > kdump can be interrupted by watchdog timer when the timer is left
+> > activated on the crash kernel. Changed the hpwdt driver to disable
+> > watchdog timer at boot-time. This assures that watchdog timer is
+> > disabled until /dev/watchdog is opened, and prevents watchdog timer
+> > to be left running on the crash kernel.
+> > 
+> > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> > Tested-by: Lisa Mitchell <lisa.mitchell@hp.com>
+> > Cc: stable@vger.kernel.org 
+> > ---
+> >  drivers/watchdog/hpwdt.c |    3 +++
+> >  1 files changed, 3 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
+> > index 1eff743..ae60406 100644
+> > --- a/drivers/watchdog/hpwdt.c
+> > +++ b/drivers/watchdog/hpwdt.c
+> > @@ -814,6 +814,9 @@ static int __devinit hpwdt_init_one(struct pci_dev *dev,
+> >  	hpwdt_timer_reg = pci_mem_addr + 0x70;
+> >  	hpwdt_timer_con = pci_mem_addr + 0x72;
+> >  
+> > +	/* Make sure that timer is disabled until /dev/watchdog is opened */
+> > +	hpwdt_stop();
+> > +
+> >  	/* Make sure that we have a valid soft_margin */
+> >  	if (hpwdt_change_timer(soft_margin))
+> >  		hpwdt_change_timer(DEFAULT_MARGIN);
+> 
+> Added to linux-watchdog-next .
 
-Signed-off-by: Khalid Aziz <khalid.aziz@hp.com>
-Reviewed-by: Kees Cook <keescook@chromium.org>
-Acked-by: Matthew Garrett <mjg@redhat.com>
-Cc: stable@vger.kernel.org
----
- drivers/firmware/efivars.c |   17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+Great!  Thanks Wim!
+-Toshi
 
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index 47408e8..d10c987 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -435,12 +435,23 @@ efivar_attr_read(struct efivar_entry *entry, char *buf)
- 	if (status != EFI_SUCCESS)
- 		return -EIO;
- 
--	if (var->Attributes & 0x1)
-+	if (var->Attributes & EFI_VARIABLE_NON_VOLATILE)
- 		str += sprintf(str, "EFI_VARIABLE_NON_VOLATILE\n");
--	if (var->Attributes & 0x2)
-+	if (var->Attributes & EFI_VARIABLE_BOOTSERVICE_ACCESS)
- 		str += sprintf(str, "EFI_VARIABLE_BOOTSERVICE_ACCESS\n");
--	if (var->Attributes & 0x4)
-+	if (var->Attributes & EFI_VARIABLE_RUNTIME_ACCESS)
- 		str += sprintf(str, "EFI_VARIABLE_RUNTIME_ACCESS\n");
-+	if (var->Attributes & EFI_VARIABLE_HARDWARE_ERROR_RECORD)
-+		str += sprintf(str, "EFI_VARIABLE_HARDWARE_ERROR_RECORD\n");
-+	if (var->Attributes & EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS)
-+		str += sprintf(str,
-+			"EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS\n");
-+	if (var->Attributes &
-+			EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS)
-+		str += sprintf(str,
-+			"EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS\n");
-+	if (var->Attributes & EFI_VARIABLE_APPEND_WRITE)
-+		str += sprintf(str, "EFI_VARIABLE_APPEND_WRITE\n");
- 	return str - buf;
- }
- 
---
-1.7.9.5
+
+> 
+> Kind regards,
+> Wim.
+> 
+
 
