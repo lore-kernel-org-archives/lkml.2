@@ -1,77 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758025Ab2IJQEP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 12:04:15 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:51739 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757998Ab2IJQEL (ORCPT
+	id S1758041Ab2IJQEZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 12:04:25 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51066 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758016Ab2IJQEO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 12:04:11 -0400
-Message-ID: <504E0F5D.7040803@xenotime.net>
-Date: Mon, 10 Sep 2012 09:03:41 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        Mike Lockwood <lockwood@android.com>
-Subject: [PATCH -next] staging: fix ccg build when NET is not enabled
-References: <20120910172407.c5ad953c008165fcd862bd3c@canb.auug.org.au>
-In-Reply-To: <20120910172407.c5ad953c008165fcd862bd3c@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Mon, 10 Sep 2012 12:04:14 -0400
+Message-ID: <1347293035.2124.22.camel@twins>
+Subject: Re: [RFC][PATCH] Improving directed yield scalability for PLE
+ handler
+From: Peter Zijlstra <peterz@infradead.org>
+To: habanero@linux.vnet.ibm.com
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
+        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
+Date: Mon, 10 Sep 2012 18:03:55 +0200
+In-Reply-To: <1347283005.10325.55.camel@oc6622382223.ibm.com>
+References: <20120718133717.5321.71347.sendpatchset@codeblue.in.ibm.com>
+	 <500D2162.8010209@redhat.com>
+	 <1347023509.10325.53.camel@oc6622382223.ibm.com>
+	 <504A37B0.7020605@linux.vnet.ibm.com>
+	 <1347046931.7332.51.camel@oc2024037011.ibm.com>
+	 <20120908084345.GU30238@linux.vnet.ibm.com>
+	 <1347283005.10325.55.camel@oc6622382223.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+On Mon, 2012-09-10 at 08:16 -0500, Andrew Theurer wrote:
+> > > @@ -4856,8 +4859,6 @@ again:
+> > >     if (curr->sched_class != p->sched_class)
+> > >             goto out;
+> > > 
+> > > -   if (task_running(p_rq, p) || p->state)
+> > > -           goto out;
+> > 
+> > Is it possible that by this time the current thread takes double rq
+> > lock, thread p could actually be running?  i.e is there merit to keep
+> > this check around even with your similar check above?
+> 
+> I think that's a good idea.  I'll add that back in. 
 
-Fix build errors in ccg when CONFIG_NET is not enabled
-by adding "depends on NET":
+Right, it needs to still be there, the test before acquiring p_rq is an
+optimistic test to avoid work, but you have to still test it once you
+acquire p_rq since the rest of the code relies on this not being so.
 
-ERROR: "netif_carrier_on" [drivers/staging/ccg/g_ccg.ko] undefined!
-ERROR: "netif_carrier_off" [drivers/staging/ccg/g_ccg.ko] undefined!
-ERROR: "skb_realloc_headroom" [drivers/staging/ccg/g_ccg.ko] undefined!
-ERROR: "skb_trim" [drivers/staging/ccg/g_ccg.ko] undefined!
-ERROR: "netif_rx" [drivers/staging/ccg/g_ccg.ko] undefined!
-ERROR: "ethtool_op_get_link" [drivers/staging/ccg/g_ccg.ko] undefined!
-ERROR: "free_netdev" [drivers/staging/ccg/g_ccg.ko] undefined!
-ERROR: "register_netdev" [drivers/staging/ccg/g_ccg.ko] undefined!
-ERROR: "skb_push" [drivers/staging/ccg/g_ccg.ko] undefined!
-ERROR: "skb_pull" [drivers/staging/ccg/g_ccg.ko] undefined!
-ERROR: "dev_kfree_skb_any" [drivers/staging/ccg/g_ccg.ko] undefined!
-ERROR: "skb_queue_tail" [drivers/staging/ccg/g_ccg.ko] undefined!
-ERROR: "__alloc_skb" [drivers/staging/ccg/g_ccg.ko] undefined!
-ERROR: "eth_type_trans" [drivers/staging/ccg/g_ccg.ko] undefined!
-ERROR: "eth_validate_addr" [drivers/staging/ccg/g_ccg.ko] undefined!
-ERROR: "skb_dequeue" [drivers/staging/ccg/g_ccg.ko] undefined!
-ERROR: "unregister_netdev" [drivers/staging/ccg/g_ccg.ko] undefined!
-ERROR: "__netif_schedule" [drivers/staging/ccg/g_ccg.ko] undefined!
-ERROR: "skb_put" [drivers/staging/ccg/g_ccg.ko] undefined!
-ERROR: "eth_mac_addr" [drivers/staging/ccg/g_ccg.ko] undefined!
-ERROR: "dev_get_stats" [drivers/staging/ccg/g_ccg.ko] undefined!
-ERROR: "alloc_etherdev_mqs" [drivers/staging/ccg/g_ccg.ko] undefined!
+How about something like this instead.. ?
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Greg Kroah-Hartmann <gregkh@linuxfoundation.org>
-Cc: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Cc: Mike Lockwood <lockwood@android.com>
 ---
- drivers/staging/ccg/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/sched/core.c | 35 ++++++++++++++++++++++++++---------
+ 1 file changed, 26 insertions(+), 9 deletions(-)
 
---- linux-next-20120910.orig/drivers/staging/ccg/Kconfig
-+++ linux-next-20120910/drivers/staging/ccg/Kconfig
-@@ -2,7 +2,7 @@ if USB_GADGET
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index c46a011..c9ecab2 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4300,6 +4300,23 @@ void __sched yield(void)
+ }
+ EXPORT_SYMBOL(yield);
  
- config USB_G_CCG
- 	tristate "Configurable Composite Gadget (STAGING)"
--	depends on STAGING && BLOCK && !USB_ZERO && !USB_ZERO_HNPTEST && !USB_AUDIO && !GADGET_UAC1 && !USB_ETH && !USB_ETH_RNDIS && !USB_ETH_EEM && !USB_G_NCM && !USB_GADGETFS && !USB_FUNCTIONFS && !USB_FUNCTIONFS_ETH && !USB_FUNCTIONFS_RNDIS && !USB_FUNCTIONFS_GENERIC && !USB_FILE_STORAGE && !USB_FILE_STORAGE_TEST && !USB_MASS_STORAGE && !USB_G_SERIAL && !USB_MIDI_GADGET && !USB_G_PRINTER && !USB_CDC_COMPOSITE && !USB_G_NOKIA && !USB_G_ACM_MS && !USB_G_MULTI && !USB_G_MULTI_RNDIS && !USB_G_MULTI_CDC && !USB_G_HID && !USB_G_DBGP && !USB_G_WEBCAM
-+	depends on STAGING && BLOCK && NET && !USB_ZERO && !USB_ZERO_HNPTEST && !USB_AUDIO && !GADGET_UAC1 && !USB_ETH && !USB_ETH_RNDIS && !USB_ETH_EEM && !USB_G_NCM && !USB_GADGETFS && !USB_FUNCTIONFS && !USB_FUNCTIONFS_ETH && !USB_FUNCTIONFS_RNDIS && !USB_FUNCTIONFS_GENERIC && !USB_FILE_STORAGE && !USB_FILE_STORAGE_TEST && !USB_MASS_STORAGE && !USB_G_SERIAL && !USB_MIDI_GADGET && !USB_G_PRINTER && !USB_CDC_COMPOSITE && !USB_G_NOKIA && !USB_G_ACM_MS && !USB_G_MULTI && !USB_G_MULTI_RNDIS && !USB_G_MULTI_CDC && !USB_G_HID && !USB_G_DBGP && !USB_G_WEBCAM
- 	help
- 	  The Configurable Composite Gadget supports multiple USB
- 	  functions: acm, mass storage, rndis and FunctionFS.
++/*
++ * Tests preconditions required for sched_class::yield_to().
++ */
++static bool __yield_to_candidate(struct task_struct *curr, struct task_struct *p)
++{
++	if (!curr->sched_class->yield_to_task)
++		return false;
++
++	if (curr->sched_class != p->sched_class)
++		return false;
++
++	if (task_running(p_rq, p) || p->state)
++		return false;
++
++	return true;
++}
++
+ /**
+  * yield_to - yield the current processor to another thread in
+  * your thread group, or accelerate that thread toward the
+@@ -4323,6 +4340,10 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
+ 	rq = this_rq();
+ 
+ again:
++	/* optimistic test to avoid taking locks */
++	if (!__yield_to_candidate(curr, p))
++		goto out_irq;
++
+ 	p_rq = task_rq(p);
+ 	double_rq_lock(rq, p_rq);
+ 	while (task_rq(p) != p_rq) {
+@@ -4330,14 +4351,9 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
+ 		goto again;
+ 	}
+ 
+-	if (!curr->sched_class->yield_to_task)
+-		goto out;
+-
+-	if (curr->sched_class != p->sched_class)
+-		goto out;
+-
+-	if (task_running(p_rq, p) || p->state)
+-		goto out;
++	/* validate state, holding p_rq ensures p's state cannot change */
++	if (!__yield_to_candidate(curr, p))
++		goto out_unlock;
+ 
+ 	yielded = curr->sched_class->yield_to_task(rq, p, preempt);
+ 	if (yielded) {
+@@ -4350,8 +4366,9 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
+ 			resched_task(p_rq->curr);
+ 	}
+ 
+-out:
++out_unlock:
+ 	double_rq_unlock(rq, p_rq);
++out_irq:
+ 	local_irq_restore(flags);
+ 
+ 	if (yielded)
+
