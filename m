@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757931Ab2IJM4X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 08:56:23 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:63878 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756973Ab2IJM4U (ORCPT
+	id S1757947Ab2IJM6n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 08:58:43 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:59005 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757762Ab2IJM6m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 08:56:20 -0400
+	Mon, 10 Sep 2012 08:58:42 -0400
 MIME-Version: 1.0
-In-Reply-To: <1347016499-29354-14-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1347016499-29354-15-git-send-email-lee.jones@linaro.org>
 References: <1347016499-29354-1-git-send-email-lee.jones@linaro.org>
-	<1347016499-29354-14-git-send-email-lee.jones@linaro.org>
-Date: Mon, 10 Sep 2012 05:56:19 -0700
-Message-ID: <CACRpkdYEXWbLN_HA98+HWu8HXH1Z=Sd_W=o5mnCxJJyJPMR_0A@mail.gmail.com>
-Subject: Re: [PATCH 13/19] ARM: ux500: Stop registering I2C sub-devices for
- HREF when DT is enabled
+	<1347016499-29354-15-git-send-email-lee.jones@linaro.org>
+Date: Mon, 10 Sep 2012 05:58:41 -0700
+Message-ID: <CACRpkdareUHDsM9Dhh6oFFQ0xgk1n+R--zbGB8wDzWfqUQU8Nw@mail.gmail.com>
+Subject: Re: [PATCH 14/19] ARM: ux500: Apply tc3589x's GPIO/IRQ properties to
+ HREF's DT
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -27,14 +27,21 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Fri, Sep 7, 2012 at 1:14 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-> Here we remove all calls to register I2C sub-devices from platform
-> code when Device Tree is enabled. Instead the I2C driver will parse
-> the Device Tree for them.
+> This patch ensures the tc3589x and tc3598x-gpio devices are
+> rightfully given interrupt controller status. We also describe
+> the tc3598x-gpio GPIO expander in full and specify it as a GPIO
+> controller. Finally we reference that the external MMC slot's
+> Card Detection GPIO on the HREF is located on the tc3598x-gpio
+> expander.
 >
 > Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
+This should come after the enablement patches instead of
+before them, right? (Or be merged into them even as
+we've discussed.)
+
+Apart from that it looks good,
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
-(But you need the deps in place first, of course.)
 
 Yours,
 Linus Walleij
