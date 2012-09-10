@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757625Ab2IJMG0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 08:06:26 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36931 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751200Ab2IJMGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 08:06:22 -0400
-Message-ID: <504DD7B5.40908@ti.com>
-Date: Mon, 10 Sep 2012 17:36:13 +0530
-From: Prabhakar Lad <prabhakar.lad@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Sekhar Nori <nsekhar@ti.com>
-CC: Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        dlos <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 2/2] ARM: da850/omap-l138: Add EVM specific code for
- VPIF to work
-References: <1345471731-31678-1-git-send-email-prabhakar.lad@ti.com> <1345471731-31678-3-git-send-email-prabhakar.lad@ti.com> <504A2C7D.1090702@ti.com> <CA+V-a8sGhrTLJnthX+nZESvJfaHFTV=x06eXjQOwwCZwGBxkPQ@mail.gmail.com> <504DB28D.3070005@ti.com>
-In-Reply-To: <504DB28D.3070005@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	id S1757521Ab2IJMK0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 08:10:26 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:65440 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752033Ab2IJMKY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 08:10:24 -0400
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: NeilBrown <neilb@suse.de>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>, Felipe Balbi <balbi@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/2] mfd: twl: Move PWM driver to PWM framework
+Date: Mon, 10 Sep 2012 14:10:18 +0200
+Message-Id: <1347279020-15596-1-git-send-email-thierry.reding@avionic-design.de>
+X-Mailer: git-send-email 1.7.12
+X-Provags-ID: V02:K0:qYg8Z0G/N7ou7eWS2Hc4YGnw4IN/WPEbjlJ4w+MMc3f
+ cvGlg/ZcuoLF19ZGLt8cw03rvcocp7vZdIMsaZSKMr9t4SxCs/
+ VSwN9WAEgpRNuDHyPU2qfPJuUEPPn1iXTZwRNInE1Ttf0cYjrP
+ J6pIyPBirTHu5cAVEZbqLGCv1vp9D6XI/0t3o/Rl/TwXQ4OIWd
+ Mr5c/+MQFcQz0qg1elM42jq9DCTJK1C3LpLLMp7fdQPV6syRte
+ pSjK5G/2dFHnGoFVZgOU0N8NKGbPetQ6/+Sza8KHJX7KWt7Yod
+ L0ulgy6+uNVFXlXGIAoVnhuoH5D+UchiseGFgjjbv4diT5C5MY
+ 2iAjx57RnHuZvetfrqYrbwoED+Y5nZgwxQFdDEVBXhad07CS+H
+ 6EY8vZLyLoBPy2UoTmk7B2QkoAWNu16dSjHpCMkwDS/x7/XCmV
+ 6sQJ6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sekhar,
+Hi,
 
-On Monday 10 September 2012 02:57 PM, Sekhar Nori wrote:
-> Hi Prabhakar,
-> 
-> On 9/7/2012 11:04 PM, Prabhakar Lad wrote:
->> On Fri, Sep 7, 2012 at 10:48 PM, Sekhar Nori <nsekhar@ti.com> wrote:
-> 
->>>> +static struct vpif_subdev_info da850_vpif_capture_sdev_info[] = {
->>>> +#if defined(CONFIG_DA850_UI_SD_VIDEO_PORT)
->>>
->>> You agreed to get rid of these multiple ifdefs but you have not fixed that.
->>>
->> I have merged the top one, at later stage when we go  ahead and add sensor
->> support then we would have require to have define two
->> da850_vpif_capture_sdev_info
->> so to avoid it I have kept this one.
-> 
-> Lets get to that when we actually add sensor support. It might make
-> sense then. Right now, there is no reason to have them.
-> 
-Ok I'll fix it for v3.
+This mini series replaces the twl_has_*() macros by the equivalent
+standard IS_ENABLED() macro and moves the PWM driver to the PWM
+framework.
 
-Regards,
---Prabhakar
+I'll take the second patch through the PWM tree but would like to have
+some Acked-bys from people that know and have the hardware and can
+verify that I haven't broken anything.
 
-> Thanks,
-> Sekhar
-> 
+Thierry
+
+Thierry Reding (2):
+  mfd: twl: Replace twl_has_*() macros by IS_ENABLED()
+  pwm: Move TWL6030 PWM driver to PWM framework
+
+ drivers/mfd/Kconfig       |  10 ---
+ drivers/mfd/Makefile      |   1 -
+ drivers/mfd/twl-core.c    | 124 ++++++++-----------------------
+ drivers/mfd/twl6030-pwm.c | 165 -----------------------------------------
+ drivers/pwm/Kconfig       |   9 +++
+ drivers/pwm/Makefile      |   1 +
+ drivers/pwm/pwm-twl6030.c | 184 ++++++++++++++++++++++++++++++++++++++++++++++
+ 7 files changed, 226 insertions(+), 268 deletions(-)
+ delete mode 100644 drivers/mfd/twl6030-pwm.c
+ create mode 100644 drivers/pwm/pwm-twl6030.c
+
+-- 
+1.7.12
 
