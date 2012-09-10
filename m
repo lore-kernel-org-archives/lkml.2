@@ -1,79 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756749Ab2IJRb7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 13:31:59 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35761 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752001Ab2IJRb5 (ORCPT
+	id S1756869Ab2IJRdp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 13:33:45 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:34323 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754581Ab2IJRdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 13:31:57 -0400
-X-Sasl-enc: SEG+d3oiwrskGCsbW1E3+yQ2iAU9T7oO9u66yd6N6Cvu 1347298314
-Date: Mon, 10 Sep 2012 10:31:53 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel Cotey <puff65537@bansheeslibrary.com>
-Subject: Re: linux-next: build failure after merge of the final tree (staging
- tree related)
-Message-ID: <20120910173153.GA25033@kroah.com>
-References: <20120910170409.59b71819008bc527130d3987@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120910170409.59b71819008bc527130d3987@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 10 Sep 2012 13:33:43 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6830"; a="232625226"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 11/9] ARM: msm: Allow 8960 and 8660 to compile together
+Date: Mon, 10 Sep 2012 10:33:09 -0700
+Message-Id: <1347298389-12567-2-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.12.176.g3fc0e4c.dirty
+In-Reply-To: <1347298389-12567-1-git-send-email-sboyd@codeaurora.org>
+References: <1347298389-12567-1-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1346873339-10927-1-git-send-email-sboyd@codeaurora.org>
+References: <1346873339-10927-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 05:04:09PM +1000, Stephen Rothwell wrote:
-> Hi all,
-> 
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
-> 
-> drivers/staging/silicom/bypasslib/built-in.o: In function `.is_bypass':
-> (.text+0x3254): multiple definition of `.is_bypass'
-> drivers/staging/silicom/bpctl_mod.o:(.text+0x1d938): first defined here
-> drivers/staging/silicom/bypasslib/built-in.o: In function `is_bypass':
-> (.opd+0x480): multiple definition of `is_bypass'
-> drivers/staging/silicom/bpctl_mod.o:(.opd+0x15f0): first defined here
-> 
-> Caused by commit 7040e556c90a ("staging: add Silicom Bypass driver").
-> 
-> I added this patch to disable the driver:
-> 
-> From 884437b30775214e9f34696adb2be2f24f1e6df7 Mon Sep 17 00:00:00 2001
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Mon, 10 Sep 2012 17:01:05 +1000
-> Subject: [PATCH] staging: disable Silicom Bypass driver
-> 
-> due to build breakage:
-> 
-> rivers/staging/silicom/bypasslib/built-in.o: In function `.is_bypass':
-> (.text+0x3254): multiple definition of `.is_bypass'
-> drivers/staging/silicom/bpctl_mod.o:(.text+0x1d938): first defined here
-> drivers/staging/silicom/bypasslib/built-in.o: In function `is_bypass':
-> (.opd+0x480): multiple definition of `is_bypass'
-> drivers/staging/silicom/bpctl_mod.o:(.opd+0x15f0): first defined here
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  drivers/staging/silicom/Kconfig |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/staging/silicom/Kconfig b/drivers/staging/silicom/Kconfig
-> index 3493ee8..1914844 100644
-> --- a/drivers/staging/silicom/Kconfig
-> +++ b/drivers/staging/silicom/Kconfig
-> @@ -6,6 +6,7 @@ config NET_VENDOR_SILICOM
->  	bool "Silicom devices"
->  	default y
->  	depends on (SSB_POSSIBLE && HAS_DMA) || PCI 
-> +	depends on BROKEN
+Modify the Kconfig to allow the MSM 8660 and MSM 8960 targets to
+compile together in the same build. As long as one of these two
+targets is selected the choice menu used to select which SoC to
+support will be hidden. Deselecting both of these targets will
+reintroduce the choice menu, and allow users to select targets
+that must be compiled in isolation.
 
-I think forcing this driver to be a module will resolve this issue.
-It seems to be quite a common problem for most staging drivers when they
-first land in the tree, sorry for not catching this one.
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ arch/arm/mach-msm/Kconfig | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-greg k-h
+diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
+index b2740c8..7902de15 100644
+--- a/arch/arm/mach-msm/Kconfig
++++ b/arch/arm/mach-msm/Kconfig
+@@ -1,8 +1,12 @@
+ if ARCH_MSM
+ 
++comment "Qualcomm MSM SoC Type"
++	depends on (ARCH_MSM8X60 || ARCH_MSM8960)
++
+ choice
+ 	prompt "Qualcomm MSM SoC Type"
+ 	default ARCH_MSM7X00A
++	depends on !(ARCH_MSM8X60 || ARCH_MSM8960)
+ 
+ config ARCH_MSM7X00A
+ 	bool "MSM7x00A / MSM7x01A"
+@@ -36,6 +40,8 @@ config ARCH_QSD8X50
+ 	select GPIO_MSM_V1
+ 	select MSM_PROC_COMM
+ 
++endchoice
++
+ config ARCH_MSM8X60
+ 	bool "MSM8X60"
+ 	select ARCH_MSM_SCORPIONMP
+@@ -57,8 +63,6 @@ config ARCH_MSM8960
+ 	select MSM_SCM if SMP
+ 	select USE_OF
+ 
+-endchoice
+-
+ config MSM_HAS_DEBUG_UART_HS
+ 	bool
+ 
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
