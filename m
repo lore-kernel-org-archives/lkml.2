@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758339Ab2IJXfK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 19:35:10 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49140 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757916Ab2IJXfH (ORCPT
+	id S1758395Ab2IJXla (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 19:41:30 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:60874 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756499Ab2IJXl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 19:35:07 -0400
-Date: Mon, 10 Sep 2012 16:35:02 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>, axboe@kernel.dk,
-        device-mapper development <dm-devel@redhat.com>, david@fromorbit.com,
-        linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>, bharrosh@panasas.com,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [dm-devel] [PATCH 2/2] block: Avoid deadlocks with bio
- allocation by stacking drivers
-Message-ID: <20120910233502.GH7677@google.com>
-References: <20120910172210.GC14103@google.com>
- <20120910202435.GG16360@google.com>
- <20120910204010.GA32310@google.com>
- <20120910213349.GH16360@google.com>
- <20120910213710.GA7677@google.com>
- <20120910215633.GA19739@google.com>
- <20120910220910.GB7677@google.com>
- <20120910225057.GA10477@agk-dp.fab.redhat.com>
- <CAOS58YO5puV2iPhwe0vbyEydPnR=eWPStNRm=xEpMeo-TMHCaw@mail.gmail.com>
- <20120910230917.GB10477@agk-dp.fab.redhat.com>
+	Mon, 10 Sep 2012 19:41:29 -0400
+X-Sasl-enc: p6eDuJ5GuzS6GoA5ommKBi9gKLS0jlMn3bp5d/QWX3CX 1347320488
+Date: Mon, 10 Sep 2012 16:38:49 -0700
+From: Greg KH <greg@kroah.com>
+To: Evgeniy Polyakov <zbr@ioremap.net>
+Cc: Raphael Assenat <raph@8d.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] 1-Wire: Add support for the maxim ds1825 temperature
+ sensor
+Message-ID: <20120910233849.GA25405@kroah.com>
+References: <20120816165639.GB22993@renkinjitsu.usine.8d.com>
+ <20120818094818.GA11844@ioremap.net>
+ <20120905210758.GD27262@kroah.com>
+ <20120906182524.GA5237@ioremap.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120910230917.GB10477@agk-dp.fab.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120906182524.GA5237@ioremap.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Alasdair.
-
-On Tue, Sep 11, 2012 at 12:09:17AM +0100, Alasdair G Kergon wrote:
-> On Mon, Sep 10, 2012 at 04:01:01PM -0700, Tejun Heo wrote:
-> > IIUC, Kent posted a patch which converts all of them to use front-pad
+On Thu, Sep 06, 2012 at 10:25:24PM +0400, Evgeniy Polyakov wrote:
+> Hi
 > 
-> The only patch I saw posted here only handles one of the easier cases so far.
+> On Wed, Sep 05, 2012 at 02:07:58PM -0700, Greg KH (greg@kroah.com) wrote:
+> > > Greg, please pull it into your tree
+> > > Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+> > 
+> > I can't seem to find the original patch here, can someone please resend
+> > it to me, with Evgeniy's ack added to it so I can apply it?
 > 
-> The others are a bit trickier and probably involve a decision about which way to
-> change an in-kernel dm interface.
+> Here is patchwork link
+> Do you need it with my ack?
+> 
+> https://patchwork.kernel.org/patch/1272361/
 
-Ah, I see.  Thought that was full conversion.  I still think this is
-the right direction to be headed tho.  Using multiple mempools from
-the stacking drivers is way too fragile and difficult to verify and
-debug.  Would it be difficult to convert dm drivers to collect size
-requirements and use front-pad for all per-bio data?
+That link doesn't have a signed-off-by: from the original author.
 
-Thanks.
+Raphael, can you resend this to me with your signed-off-by: and
+Evgeniy's acked-by added?
 
--- 
-tejun
+thanks,
+
+greg k-h
