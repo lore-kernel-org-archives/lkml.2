@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756351Ab2IJDUU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Sep 2012 23:20:20 -0400
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:36452 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755074Ab2IJDUR (ORCPT
+	id S1756499Ab2IJDVK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Sep 2012 23:21:10 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:41639 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755074Ab2IJDVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Sep 2012 23:20:17 -0400
-From: Yunfan Zhang <yfzhang@marvell.com>
-To: Axel Lin <axel.lin@gmail.com>
-CC: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Sun, 9 Sep 2012 20:17:55 -0700
-Subject: RE: regulator: fan53555: vsel_max does not match with the max
- voltage?
-Thread-Topic: regulator: fan53555: vsel_max does not match with the max
- voltage?
-Thread-Index: Ac2PASFGgAKtLhVnSZGhzYbmE4JqjgAAS4Kg
-Message-ID: <4737A960563B524DA805CA602BE04B3064CC59077C@SC-VEXCH2.marvell.com>
-References: <1347246319.6908.1.camel@phoenix>
-In-Reply-To: <1347246319.6908.1.camel@phoenix>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-CN, en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Sun, 9 Sep 2012 23:21:08 -0400
+Date: Mon, 10 Sep 2012 13:20:58 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the regulator tree
+Message-Id: <20120910132058.81db87c7fb4b524072207220@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__10_Sep_2012_13_20_58_+1000_ceROa31n=bz_1Qiw"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8A3KPv0015596
 
-> -----Original Message-----
-> From: Axel Lin [mailto:axel.lin@gmail.com]
-> Sent: 2012Âπ¥9Êúà10Êó• 11:05
-> To: Yunfan Zhang
-> Cc: Liam Girdwood; Mark Brown; linux-kernel@vger.kernel.org
-> Subject: regulator: fan53555: vsel_max does not match with the max voltage?
-> 
-> Hi Yunfan,
-> Just found below issue while reading the code:
-> 
-> For FAN53555_CHIP_ID_04,
->         di->vsel_min = 603000;
->         di->vsel_max = 1411000;
->         di->vsel_step = 12826;
-> volt[63] = 1411038
-> 
-> Then volt[63] is greater than the vsel_max now.
-> This looks does not make sense.
+--Signature=_Mon__10_Sep_2012_13_20_58_+1000_ceROa31n=bz_1Qiw
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Axel, Thanks for your findings! 
-Yes, the volt[63] is GT the vsel_max. Actually vsel_max is not used... The max voltage will be bounded by desc->n_voltages. I will make a patch to remove it to avoid confusing. Thanks a lot!
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Hi all,
+
+After merging the regulator tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
+
+ERROR: "regulator_allow_bypass" [drivers/extcon/extcon-arizona.ko] undefine=
+d!
+
+Caused by commit e6647c416e4f ("extcon: arizona: Use bypass mode for MICVDD=
+").
+
+I have used the regulator tree from next-20120907 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__10_Sep_2012_13_20_58_+1000_ceROa31n=bz_1Qiw
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQTVyaAAoJEECxmPOUX5FECOAP/ApTVfwx1QMAWwATytbiIzsh
+3MvYxc3LPIAVy0Rwl1nwm2Hi1JT6Nhq13f5RFXtZWCWuPHA1GkG2o441jNhyLiPn
+HAFvnztvbClGuBdTbQvP7JKXOKfevVZEPbl067enV/vH+rSJfbFn+5Yy13rL607Q
+cUMLqkqTlUTsRMxvmWfWuNEXVuIl9U7JJOt9hhHNpe7pMu6j55B6IZFhPNwkBh5o
+QiI6CFtn44durtSvXVqEH6F3kl5xxAI6kOqLjwYdzY8UJ2CNiF6oXgPe6qAvB9ax
+ExG/xpq3MMadZNQI30msaa3jz2+gC4LokHZ0xdMyxM6pYaC0jfXg8hwegYTS+GQG
+TmsEBMdgdn3MCdIX9PTL6qr+wyot0yHNH773fXKeW6v65hhtUgX3Il7xqjSHTVI9
+kvTR1/kaK0XNIreL329xXtyPmzLaIJXS59Mrstzoz+KzLjba/lm9MC8caNUNp/m1
+3B1lovi0FJtonJEAGwnqbcGNWXcBfJy3oOAHHkUlWlPEQh4usEqRnvsmfrOwYkdx
+7O/aYjeQMycZJbHYCbEuBdGl6a4S1zHUejVhPIMPahLl47X7zm21GlnOW6pKzUkt
+a6CIuUyHz7jONP6FAyh2rs+VS5ryKoclmwJ7pmKZnF2ZOVGE58QFavgqqousOVjK
+p2IqmCrG8lpC/31wgPPe
+=iXNn
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__10_Sep_2012_13_20_58_+1000_ceROa31n=bz_1Qiw--
