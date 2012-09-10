@@ -1,71 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757489Ab2IJLMo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 07:12:44 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:51459 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757285Ab2IJLMk (ORCPT
+	id S1757452Ab2IJLNl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 07:13:41 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:59212 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757174Ab2IJLNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 07:12:40 -0400
-Date: Mon, 10 Sep 2012 12:17:02 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>,
-        Arve =?UTF-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-        Colin Cross <ccross@android.com>, Brian Swetland <swetland@google.com>,
-        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com,
-        kgdb-bugreport@lists.sourceforge.net, linux-serial@vger.kernel.org
-Subject: Re: [PATCH 09/14] tty/serial/amba-pl011: Implement clear_irqs
- callback
-Message-ID: <20120910121702.550b8a90@pyramind.ukuu.org.uk>
-In-Reply-To: <20120910041404.GI29537@lizard>
-References: <20120910040802.GA1261@lizard>
-	<20120910041404.GI29537@lizard>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 10 Sep 2012 07:13:37 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [RESEND PATCH v2] nohz: fix idle ticks in cpu summary line of
+ /proc/stat
+To: tglx@linutronix.de, mhocko@suse.cz
+Cc: schwidefsky@de.ibm.com, deepthi@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com
+Date: Mon, 10 Sep 2012 16:43:09 +0530
+Message-ID: <20120910111157.3940.68948.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+x-cbid: 12091011-3864-0000-0000-0000048F4ECE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 9 Sep 2012 21:14:04 -0700
-Anton Vorontsov <anton.vorontsov@linaro.org> wrote:
+From: Michal Hocko <mhocko@suse.cz>
 
-> It's all pretty straightforward, except for TXIM interrupt. The interrupt
-> has meaning "ready to transmit", so it's almost always raised, and the
-> only way to silence it is to mask it. But that's OK, ops->start_tx will
-> unmask it.
-> 
-> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-> ---
->  drivers/tty/serial/amba-pl011.c | 13 +++++++++++++
->  1 file changed, 13 insertions(+)
-> 
-> diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
-> index 88e2df2..7522d97 100644
-> --- a/drivers/tty/serial/amba-pl011.c
-> +++ b/drivers/tty/serial/amba-pl011.c
-> @@ -1308,6 +1308,18 @@ static void pl011_put_poll_char(struct uart_port *port,
->  	writew(ch, uap->port.membase + UART01x_DR);
->  }
->  
-> +static void pl011_clear_irqs(struct uart_port *port)
-> +{
-> +	struct uart_amba_port *uap = (struct uart_amba_port *)port;
-> +	unsigned char __iomem *regs = uap->port.membase;
-> +
-> +	writew(readw(regs + UART011_MIS), regs + UART011_ICR);
-> +	/*
-> +	 * There is no way to clear TXIM, this is "ready to transmit IRQ", so
-> +	 * we simply mask it. ops->start_tx will unmask it.
-> +	 */
+Git commit 09a1d34f8535ecf9 "nohz: Make idle/iowait counter update
+conditional" introduced a bug in regard to cpu hotplug. The effect is
+that the number of idle ticks in the cpu summary line in /proc/stat is
+still counting ticks for offline cpus.
 
-Not if you race here with the transmit start it won't.
+Reproduction is easy, just start a workload that keeps all cpus busy,
+switch off one or more cpus and then watch the idle field in top.
+On a dual-core with one cpu 100% busy and one offline cpu you will get
+something like this:
+
+%Cpu(s): 48.7 us,  1.3 sy,  0.0 ni, 50.0 id,  0.0 wa,  0.0 hi,  0.0 si,
+%0.0 st
+
+The problem is that an offline cpu still has ts->idle_active == 1.
+To fix this we should make sure that the cpu is online when calling
+get_cpu_idle_time_us and get_cpu_iowait_time_us.
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: stable@vger.kernel.org
+Reported-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+[srivatsa.bhat@linux.vnet.ibm.com: Rebased to current mainline]
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
+
+Hi Thomas,
+
+This is a resend of the patch posted by Michal at [1]. Martin had explained
+the importance of this patch for fixing the bug for x86 case in [2]. (The s390
+fix is already upstream, commit id cb85a6ed67e9). Could you kindly consider
+taking this fix?
+
+[1]. http://thread.gmane.org/gmane.linux.kernel/1265374/focus=1266457
+[2]. http://thread.gmane.org/gmane.linux.kernel/1265374/focus=1276336
+
+ fs/proc/stat.c |   14 ++++++++++----
+ 1 files changed, 10 insertions(+), 4 deletions(-)
+
+diff --git a/fs/proc/stat.c b/fs/proc/stat.c
+index 64c3b31..e296572 100644
+--- a/fs/proc/stat.c
++++ b/fs/proc/stat.c
+@@ -45,10 +45,13 @@ static cputime64_t get_iowait_time(int cpu)
+ 
+ static u64 get_idle_time(int cpu)
+ {
+-	u64 idle, idle_time = get_cpu_idle_time_us(cpu, NULL);
++	u64 idle, idle_time = -1ULL;
++
++	if (cpu_online(cpu))
++		idle_time = get_cpu_idle_time_us(cpu, NULL);
+ 
+ 	if (idle_time == -1ULL)
+-		/* !NO_HZ so we can rely on cpustat.idle */
++		/* !NO_HZ or cpu offline so we can rely on cpustat.idle */
+ 		idle = kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE];
+ 	else
+ 		idle = usecs_to_cputime64(idle_time);
+@@ -58,10 +61,13 @@ static u64 get_idle_time(int cpu)
+ 
+ static u64 get_iowait_time(int cpu)
+ {
+-	u64 iowait, iowait_time = get_cpu_iowait_time_us(cpu, NULL);
++	u64 iowait, iowait_time = -1ULL;
++
++	if (cpu_online(cpu))
++		iowait_time = get_cpu_iowait_time_us(cpu, NULL);
+ 
+ 	if (iowait_time == -1ULL)
+-		/* !NO_HZ so we can rely on cpustat.iowait */
++		/* !NO_HZ or cpu offline so we can rely on cpustat.iowait */
+ 		iowait = kcpustat_cpu(cpu).cpustat[CPUTIME_IOWAIT];
+ 	else
+ 		iowait = usecs_to_cputime64(iowait_time);
+
