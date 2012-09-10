@@ -1,91 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757025Ab2IJLYt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 07:24:49 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:52576 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751328Ab2IJLYs convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Mon, 10 Sep 2012 07:24:48 -0400
-Message-Id: <504DEA1B020000780009A277@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Mon, 10 Sep 2012 12:24:43 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86: prefer tzcnt over bsf
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1757160Ab2IJL3e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 07:29:34 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:59848 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751774Ab2IJL3b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 07:29:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <201209101013.16697.arnd@arndb.de>
+References: <1347016499-29354-1-git-send-email-lee.jones@linaro.org>
+	<201209071358.38598.arnd@arndb.de>
+	<CACRpkdZ-QpHzeEBO=RFVe-8S2DG4-thhwW9iVbAMXZrOe-FnAw@mail.gmail.com>
+	<201209101013.16697.arnd@arndb.de>
+Date: Mon, 10 Sep 2012 04:29:29 -0700
+Message-ID: <CACRpkdbPwiaF8tfEE7NNd_KE3VGtVx-pPwL-HObhh3fRYXqH=g@mail.gmail.com>
+Subject: Re: [PATCH 00/19] First HREF Device Tree enablement patch-set
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
+        linus.walleij@stericsson.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Following a relatively recent compiler change, make use of the fact
-that for non-zero input BSF and TZCNT produce the same result, and that
-CPUs not knowing of TZCNT will treat the instruction as BSF (i.e.
-ignore what looks like a REP prefix to them). The assumption here is
-that TZCNT would never have worse performance than BSF.
+On Mon, Sep 10, 2012 at 3:13 AM, Arnd Bergmann <arnd@arndb.de> wrote:
 
-For the moment, only do this when the respective generic-CPU option is
-selected (as there are no specific-CPU options covering the CPUs
-supporting TZCNT), and don't do that when size optimization was
-requested.
+> I think it's fine to do the device driver conversion separately
+> from the platform changes, but doing that properly means that the
+> platform changes should only go in after the drivers have changed.
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
+OK, in the diffstat we're discussing we have this:
 
----
- arch/x86/include/asm/bitops.h |   19 +++++++++++++++++--
- 1 file changed, 17 insertions(+), 2 deletions(-)
+ drivers/gpio/gpio-tc3589x.c            |  120 +++++++++++++++++++--------
+ drivers/i2c/busses/i2c-nomadik.c       |    4 +
+ drivers/mfd/mfd-core.c                 |   10 ++-
+ drivers/mfd/tc3589x.c                  |  112 +++++++++++++++++++------
+ include/linux/mfd/tc3589x.h            |    1 +
 
---- 3.6-rc5/arch/x86/include/asm/bitops.h
-+++ 3.6-rc5-x86-bsf-tzcnt/arch/x86/include/asm/bitops.h
-@@ -347,6 +347,19 @@ static int test_bit(int nr, const volati
- 	 ? constant_test_bit((nr), (addr))	\
- 	 : variable_test_bit((nr), (addr)))
- 
-+#if (defined(CONFIG_X86_GENERIC) || defined(CONFIG_GENERIC_CPU)) \
-+    && !defined(CONFIG_CC_OPTIMIZE_FOR_SIZE)
-+/*
-+ * Since BSF and TZCNT have sufficiently similar semantics for the purposes
-+ * for which we use them here, BMI-capable hardware will decode the prefixed
-+ * variant as 'tzcnt ...' and may execute that faster than 'bsf ...', while
-+ * older hardware will ignore the REP prefix and decode it as 'bsf ...'.
-+ */
-+# define BSF_PREFIX "rep;"
-+#else
-+# define BSF_PREFIX
-+#endif
-+
- /**
-  * __ffs - find first set bit in word
-  * @word: The word to search
-@@ -355,7 +368,7 @@ static int test_bit(int nr, const volati
-  */
- static inline unsigned long __ffs(unsigned long word)
- {
--	asm("bsf %1,%0"
-+	asm(BSF_PREFIX "bsf %1,%0"
- 		: "=r" (word)
- 		: "rm" (word));
- 	return word;
-@@ -369,12 +382,14 @@ static inline unsigned long __ffs(unsign
-  */
- static inline unsigned long ffz(unsigned long word)
- {
--	asm("bsf %1,%0"
-+	asm(BSF_PREFIX "bsf %1,%0"
- 		: "=r" (word)
- 		: "r" (~word));
- 	return word;
- }
- 
-+#undef BSF_PREFIX
-+
- /*
-  * __fls: find last set bit in word
-  * @word: The word to search
+> Inside of the platform code, I absolutely think we should change the
+> board file and the dts file simultaneously.
 
+Sure, no problem. But this patch series might have a title
+problem, as it is not isolated to the platform code at all.
 
+> When the driver offers
+> two ways of probing a device, this lets us change from one way to
+> the other without going through a phase where we use neither of them
+> or (worse) both at the same time.
 
+Maybe unrelated, but as usual it works as long as there are no
+DMA channels or callback functions :-/
+
+The MMC, PL022 patches in this patch set: both need
+AUXDATA and DT data simultaneously due to DMA channels
+and callbacks passed in as AUXDATA.
+
+Yours,
+Linus Walleij
