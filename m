@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757075Ab2IJRwT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 13:52:19 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:36689 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754070Ab2IJRwR (ORCPT
+	id S1757117Ab2IJRxc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 13:53:32 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:55413 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756963Ab2IJRxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 13:52:17 -0400
-Message-ID: <504E28CE.6020103@wwwdotorg.org>
-Date: Mon, 10 Sep 2012 11:52:14 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Krzysztof Halasa <khc@pm.waw.pl>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        lkml <linux-kernel@vger.kernel.org>,
-        ARM kernel mailing list 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Another tree for "next"
-References: <m3obli3j7a.fsf@intrepid.localdomain> <20120910100144.dcbe2715cde0fea51345a354@canb.auug.org.au> <m31ui9g4ff.fsf@intrepid.localdomain>
-In-Reply-To: <m31ui9g4ff.fsf@intrepid.localdomain>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Sep 2012 13:53:30 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Mon, 10 Sep 2012 13:53:30 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v3 00/31] AArch64 Linux kernel port
+In-reply-to: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
+Message-id: <alpine.LFD.2.02.1209101339270.28681@xanadu.home>
+References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2012 11:42 AM, Krzysztof Halasa wrote:
-> Stephen Rothwell <sfr@canb.auug.org.au> writes:
+On Fri, 7 Sep 2012, Catalin Marinas wrote:
+
+> This is the 3rd version of patches implementing Linux kernel support for
+> the 64-bit ARM architecture. Most of the review comments for the
+> previous release have been implemented. There are a few left (like
+> generic timer dts specification) but the main goal was to freeze the
+> user ABI.
 > 
->>> could you please add the following to your "next" tree?
->>>
->>> git://git.kernel.org/pub/scm/linux/kernel/git/chris/linux.git  branch: next
+> The Linux kernel patches are available on this tree:
 > 
->> Could you be a bit more clear about what will be in that tree, please?
->> Also when you repost this request, please post it a bit more widely among
->> other people/lists who may be interested in this work.  Remember that
->> linux-next is really only for stuff that is ready for Linus to pull into
->> the next merge window (or bug fixes).  Also, would this tree be pulled
->> directly by Linus, or via some other tree?
+> git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git upstream
 > 
-> My plan is to merge all the stuff I'm (eventually) working on in the
-> above tree. For now - mostly IXP4xx (ARM CPU etc.) stuff which goes to
-> Linus
+> Main changes since the previous version:
+> - ptrace interface now using regsets for TLS and hardware debug
+>   registers.
+> - sys_personality fixes. PER_LINUX is the default for all tasks (32 or
+>   64-bit) and there is no compat_sys_personality defined.
+> - Kconfig clean-up (unused symbols, AARCH32_EMULATION removed in favour
+>   of COMPAT).
+> - Clean-up of the __cpuc_* function prefixes.
+> - CPU information table implemented in C rather than assembly.
+> - __bad_* function calls replaced with BUILD_BUG.
+> - Inline get_user/put_user (code cleaner, slightly bigger kernel Image).
+> - DMA API implementation simplified, defaulting to swiotlb. It will be
+>   extended as hardware becomes available.
+> - Arch-specific code in the generic timer patch moved to arch/arm64/.
+> - Comment fixes and clarifications.
 
-ARM-SoC-related pull requests should be sent to the arm-soc tree, who
-will then aggregate all the ARM-SoC-related changes and issue pull
-requests to Linus.
+For those patches in this series I didn't comment on already:
 
-That is, arm@kernel.org, plus the Linux ARM kernel list CC'd.
+Acked-by: Nicolas Pitre <nico@linaro.org>
 
-The patches would also need to be sent to the Linux ARM kernel list (and
-any other relevant lists) before being applied to your tree.
+Small nit: please s/nico@cam.org/nico@fluxnic.net/.
 
-ARM core changes would likely go through Russell King's tree, perhaps
-depending on what dependencies they have.
+
+Nicolas
