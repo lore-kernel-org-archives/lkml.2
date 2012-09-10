@@ -1,99 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752047Ab2IJGpp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 02:45:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19412 "EHLO mx1.redhat.com"
+	id S1752690Ab2IJGqD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 02:46:03 -0400
+Received: from bitmer.com ([213.157.87.50]:47236 "EHLO bitmer.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751064Ab2IJGpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 02:45:41 -0400
-Date: Mon, 10 Sep 2012 09:47:05 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: fes@google.com, aarcange@redhat.com, riel@redhat.com, yvugenfi@redhat.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org, mikew@google.com,
-        yinghan@google.com, virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH] virtio-balloon spec: provide a version of the "silent
- deflate" feature that works
-Message-ID: <20120910064705.GB17949@redhat.com>
-References: <20120907121712.GA17397@redhat.com>
- <5049E717.8080307@redhat.com>
- <20120907124432.GB17397@redhat.com>
- <5049FEDD.40303@redhat.com>
- <20120907142545.GC17397@redhat.com>
- <504A0858.4080508@redhat.com>
- <20120908222221.GA20588@redhat.com>
- <504D7F95.9070700@redhat.com>
- <20120910060359.GB16819@redhat.com>
- <504D8AD1.6050006@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <504D8AD1.6050006@redhat.com>
+	id S1752164Ab2IJGp6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 02:45:58 -0400
+Date: Mon, 10 Sep 2012 09:45:58 +0300
+From: Jarkko Nikula <jarkko.nikula@bitmer.com>
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: linux-watchdog@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jarkko.nikula@jollamobile.com
+Subject: Re: [PATCH v2] watchdog: omap_wdt: convert to new watchdog core
+Message-Id: <20120910094558.b4e569e67505d3f61bead2d5@bitmer.com>
+In-Reply-To: <1347127441-23125-1-git-send-email-aaro.koskinen@iki.fi>
+References: <1347127441-23125-1-git-send-email-aaro.koskinen@iki.fi>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 08:38:09AM +0200, Paolo Bonzini wrote:
-> Il 10/09/2012 08:03, Michael S. Tsirkin ha scritto:
-> > On Mon, Sep 10, 2012 at 07:50:13AM +0200, Paolo Bonzini wrote:
-> >> Il 09/09/2012 00:22, Michael S. Tsirkin ha scritto:
-> >>>> Almost.  One is "the guest, if really needed, can tell the host of
-> >>>> pages".  If not negotiated, and the host does not support it, the host
-> >>>> must break the guest (e.g. fail to offer any virtqueues).
-> >>>
-> >>> There is no way in spec to break the guest.
-> >>> You can not fail to offer virtqueues.
-> >>
-> >> You can always return 0 for the first queue.
-> > 
-> > I don't think guest drivers recover gracefully from this.
-> > Do they?
+On Sat,  8 Sep 2012 21:04:01 +0300
+Aaro Koskinen <aaro.koskinen@iki.fi> wrote:
+
+> Convert omap_wdt to new watchdog core. On OMAP boards, there are usually
+> multiple watchdogs. Since the new watchdog core supports multiple
+> watchdogs, all watchdog drivers used on OMAP should be converted.
 > 
-> No, that's the point ("break the guest" is really "break the driver").
-
-You can just stop VM then. No need for a side channel.
-
-...
-
-> >>>> The other is "the guest, though, would prefer not to do so".  It is
-> >>>> different because the guest can proceed in a fallback mode even if the
-> >>>> host doesn't offer it.
-> >>>
-> >>> I think I get what your proposed SILENT means what I do not get
-> >>> is the motivation. It looks like a premature optimization to me.
-> >>
-> >> The motivation is to let the driver choose between two behaviors: the
-> >> current one where ballooning is only done on request, and a more
-> >> aggressive one.
-> > 
-> > Yes but why is being silent any good? Optimization?
-> > Any data to show that it will help some workload?
+> The legacy watchdog device node is still created, so this should not
+> break existing users.
 > 
-> Idle guests can move cache pages to the balloon.  You can overcommit
-> more aggressively, because the host can madvise away a lot more memory.
-
-IMHO this feature needs more thought. E.g. how will this work with assignment?
-If we build something let's build it in a way that plays nicely
-with other features.
-
-> >>> OK so TELL says *when* to notify host, SILENT if set allows guest
-> >>> to skip leak notifications? In this case TELL should just be ignored
-> >>> when SILENT is set.
-> >>
-> >> Yeah, that was my first idea.  However, there are existing drivers that
-> >> ignore SILENT, so that would not be 100% exact.
-> > 
-> > Not sure I follow the logic.
-> > They don't ack SILENT so that would be 100% exact.
+> Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+> ---
 > 
-> Hmm, then I'm not sure I follow yours.  We agreed that delaying
-> notifications or skipping them is really the same thing, right?
+> v2: Fix a bug in the first version of the patch: __omap_wdt_disable()
+> in probe was mistakenly moved outside PM runtime calls. This caused a
+> crash as device was probably accessed with some clocks off. Thanks to
+> Jarkko Nikula <jarkko.nikula@bitmer.com> for reporting this.
 > 
-> I think we're just stuck in a linguistic problem, with "must not" being
-> wrong and "does not have to" being too verbose.  Calling it
-> VIRTIO_BALLOON_F_SILENT_DEFLATE was a workaround for this, but perhaps
-> it adds more confusion.
+>  drivers/watchdog/Kconfig    |    1 +
+>  drivers/watchdog/omap_wdt.c |  266 ++++++++++++++++++-------------------------
+>  2 files changed, 114 insertions(+), 153 deletions(-)
 > 
-> Paolo
-
-Looks like it does :)
+Tested-by: Jarkko Nikula <jarkko.nikula@jollamobile.com>
