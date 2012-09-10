@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756683Ab2IJIvw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 04:51:52 -0400
-Received: from smtp4.mundo-r.com ([212.51.32.151]:24804 "EHLO
+	id S1756402Ab2IJIvt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 04:51:49 -0400
+Received: from smtp4.mundo-r.com ([212.51.32.151]:27136 "EHLO
 	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756300Ab2IJIvF (ORCPT
+	with ESMTP id S1756329Ab2IJIvF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Sep 2012 04:51:05 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqcCAHGoTVBbdWObgWdsb2JhbABFhUBHtUoiAQEWJieCIQEFIwQLAUYQJQImAgJXBhOIFKgVkjuBIY8WgRIDlV2TBQ
+X-IronPort-Anti-Spam-Result: Ap8CAHGoTVBbdWObgWdsb2JhbABFhge1SiIBARYmJ4IhAQUjBAsBNBIQJQImAgJXBhOIFKgVkjuBIY8WgRIDlV2TBQ
 X-IronPort-AV: E=Sophos;i="4.80,397,1344204000"; 
-   d="scan'208";a="949262510"
+   d="scan'208";a="949262512"
 From: =?UTF-8?q?Samuel=20Iglesias=20Gons=C3=A1lvez?= 
 	<siglesias@igalia.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -18,9 +18,9 @@ Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         industrypack-devel@lists.sourceforge.net,
         =?UTF-8?q?Samuel=20Iglesias=20Gons=C3=A1lvez?= 
 	<siglesias@igalia.com>
-Subject: [PATCH 15/20] Staging: ipack/devices/ipoctal: free the IRQ.
-Date: Mon, 10 Sep 2012 10:51:53 +0200
-Message-Id: <1347267118-9580-15-git-send-email-siglesias@igalia.com>
+Subject: [PATCH 16/20] Staging: ipack: unregister devices when uninstall the carrier device.
+Date: Mon, 10 Sep 2012 10:51:54 +0200
+Message-Id: <1347267118-9580-16-git-send-email-siglesias@igalia.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1347267118-9580-1-git-send-email-siglesias@igalia.com>
 References: <1347267118-9580-1-git-send-email-siglesias@igalia.com>
@@ -31,26 +31,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As the IRQ was requested by the driver, it should free it also.
+Find the IP modules that are plugged to the carrier and unregister them.
 
 Signed-off-by: Samuel Iglesias Gonsálvez <siglesias@igalia.com>
 ---
- drivers/staging/ipack/devices/ipoctal.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/staging/ipack/ipack.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/drivers/staging/ipack/devices/ipoctal.c b/drivers/staging/ipack/devices/ipoctal.c
-index 272832f..35513d9 100644
---- a/drivers/staging/ipack/devices/ipoctal.c
-+++ b/drivers/staging/ipack/devices/ipoctal.c
-@@ -803,6 +803,8 @@ static void __ipoctal_remove(struct ipoctal *ipoctal)
- {
- 	int i;
+diff --git a/drivers/staging/ipack/ipack.c b/drivers/staging/ipack/ipack.c
+index b368a26..bf6a36d 100644
+--- a/drivers/staging/ipack/ipack.c
++++ b/drivers/staging/ipack/ipack.c
+@@ -228,8 +228,20 @@ struct ipack_bus_device *ipack_bus_register(struct device *parent, int slots,
+ }
+ EXPORT_SYMBOL_GPL(ipack_bus_register);
  
-+	ipoctal->dev->bus->ops->free_irq(ipoctal->dev);
++static int ipack_unregister_bus_member(struct device *dev, void *data)
++{
++	struct ipack_device *idev = to_ipack_dev(dev);
++	struct ipack_bus_device *bus = data;
 +
- 	for (i = 0; i < NR_CHANNELS; i++) {
- 		tty_unregister_device(ipoctal->tty_drv, i);
- 		tty_port_free_xmit_buf(&ipoctal->tty_port[i]);
++	if (idev->bus_nr == bus->bus_nr)
++		ipack_device_unregister(idev);
++
++	return 1;
++}
++
+ int ipack_bus_unregister(struct ipack_bus_device *bus)
+ {
++	bus_for_each_dev(&ipack_bus_type, NULL, bus, ipack_unregister_bus_member);
+ 	ida_simple_remove(&ipack_ida, bus->bus_nr);
+ 	kfree(bus);
+ 	return 0;
 -- 
 1.7.10.4
 
