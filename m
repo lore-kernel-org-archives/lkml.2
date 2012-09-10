@@ -1,54 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757252Ab2IJOA4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 10:00:56 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:34773 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755849Ab2IJOAy (ORCPT
+	id S1757275Ab2IJOBT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 10:01:19 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:54218 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756958Ab2IJOBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 10:00:54 -0400
-Date: Mon, 10 Sep 2012 17:00:18 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: wwang <wei_wang@realsil.com.cn>
-Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "oakad@yahoo.com" <oakad@yahoo.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "bp@alien8.de" <bp@alien8.de>, "cjb@laptop.org" <cjb@laptop.org>
-Subject: Re: [PATCH v5 0/3] Add modules to support realtek PCIE card reader
-Message-ID: <20120910140018.GJ19396@mwanda>
-References: <cover.1347256563.git.wei_wang@realsil.com.cn>
- <20120910092107.GI19396@mwanda>
- <504DB217.6000808@realsil.com.cn>
+	Mon, 10 Sep 2012 10:01:17 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Rajanikanth HV <rajanikanth.hv@linaro.org>
+Subject: Re: mfd: Implement devicetree support for AB8500 Btemp
+Date: Mon, 10 Sep 2012 14:01:06 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        "Rajanikanth H.V" <rajanikanth.hv@stericsson.com>,
+        linus.walleij@stericsson.com, STEricsson_nomadik_linux@list.st.com,
+        linaro-dev@lists.linaro.org, Patch Tracking <patches@linaro.org>
+References: <CAB4BAktQz5MY_AHHWUAhRp7HtEzC3v8uFbP0enx1b7ibJLoZ4Q@mail.gmail.com>
+In-Reply-To: <CAB4BAktQz5MY_AHHWUAhRp7HtEzC3v8uFbP0enx1b7ibJLoZ4Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <504DB217.6000808@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209101401.06859.arnd@arndb.de>
+X-Provags-ID: V02:K0:VvHB0ALhO10c+TJ7j1M7EhgfXJlWLtE8pPMWxHlJEUt
+ HWgxGv7yBID3xbqLCc4QppYWAyTeTE3ecXHZswG+/ircXED/yf
+ I4YsoDgem9sSdF/AGHXz/WaBKhrJY1Zos5uwfHp7K7pJPHR644
+ BYHYVt0G0tIv1Os8l6QtNqw0aHS0SSVgBaDD9liuDa2Lr+KzHa
+ FJXrNPd+x7CVdZtXvUb50hR0sRRKi8Gykm6WUy4NQwFQx+NPOs
+ Qz1vwgRi7v+wrBIed8LNdM0EpiA61cMKIuKp7rob+Cpc+7trlI
+ hlEHjLrvC1BE9eDvgO7YS7ixssx/8d17D85US5j9p/TbCIECfk
+ RSwHkNEKIVjUDgoCIJ78=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 05:25:43PM +0800, wwang wrote:
-> 于 2012年09月10日 17:21, Dan Carpenter 写道:
-> > These don't apply on top of linux-next.  What do they apply on?
-> >
-> > regards,
-> > dan carpenter
-> >
-> Hi Dan:
-> 
-> These can be applied on torvalds's linux tree, tag v3.6-rc5, that is:
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=tag;h=refs/tags/v3.6-rc5
-> 
+On Monday 10 September 2012, Rajanikanth HV wrote:
+> +
+> +supplied-to:
+> +       This is a logical binding w.r.t power supply event change
+> +       across energy-management-module drivers where in the
+> +       runtime battery properties are shared along with uevent
+> +       notification.
+> +       ref: di->btemp_psy.external_power_changed =
+> +               ab8500_btemp_external_power_changed;
+> +               ab8500_btemp.c
+> +
+> +       Need for this property:
+> +               btemp, fg and charger updates power-supply properties
+> +               based on the events listed above.
+> +               Event handler invokes power supply change notifier
+> +               which in-turn invokes registered power supply class call-back
+> +               based on the 'supplied_to' string.
+> +               ref:
+> +               power_supply_changed_work(..) ./drivers/power/power_supply_core.c
+> +
+> +       example:
+> +       ab8500-btemp {
+> +               /* Other enery management module */
+> +               supplied-to = "ab8500_chargalg", "ab8500_fg";
+> +               num_supplicants = <2>;
+> +       };
+> +
 
-My bad.  My tree wasn't clean.  Sorry for the noise.
+This looks like you're doing things the opposite way from everyone else.
+Normally, each device uses phandles to refer to other objects it depends
+on (gpio lines, regulators, clocks, interrupts, ...), rather than listing
+things that depend on it.
 
-regards,
-dan carpenter
+Can you turn this around to be more like the others?
 
+Note also that device tree identifiers should use '-' as a word separator,
+not '_', and that a binding document should specify the exact set of
+possible values. If the properties contain strings, please list every
+valid string.
+
+> +               thermister-internal-to-battery = <1>;
+> +               li_ion_9100_battery = <0>;
+
+Boolean properties should be empty when enabled and not present when
+disabled. In this example, one would just write
+
+		thermister-internal-to-battery;
+
+
+	Arnd
