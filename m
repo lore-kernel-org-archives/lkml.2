@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757263Ab2IJK5K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 06:57:10 -0400
-Received: from na3sys009aog128.obsmtp.com ([74.125.149.141]:45402 "EHLO
-	na3sys009aog128.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757210Ab2IJK5H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 06:57:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1209101215300.2724@ionos>
-References: <20120910165127.37dd07f3@notabene.brown> <alpine.LFD.2.02.1209101215300.2724@ionos>
-From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Date: Mon, 10 Sep 2012 16:26:45 +0530
-Message-ID: <CAMQu2gzp1mieitAtDWB8Uud97gFQjH7eZ-bDZ2kMBLejAx4qMQ@mail.gmail.com>
-Subject: Re: Seeking clarity on IRQCHIP_MASK_ON_SUSPEND
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: NeilBrown <neilb@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        lkml <linux-kernel@vger.kernel.org>, linux-omap@vger.kernel.org,
-        Kevin Hilman <khilman@deeprootsystems.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932071Ab2IJLEX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 07:04:23 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:41850 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752480Ab2IJLEV convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Mon, 10 Sep 2012 07:04:21 -0400
+Message-Id: <504DE550020000780009A258@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Mon, 10 Sep 2012 12:04:16 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86-64: adjust types of temporaries used by
+ ffs()/fls()/fls64()
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas,
+The 64-bit special cases of the former two (the thrird one is 64-bit
+only anyway) don't need to use "long" temporaries, as the result will
+always fit in a 32-bit variable, and the functions return plain "int".
+This avoids a few REX prefixes, i.e. minimally reduces code size.
 
-On Mon, Sep 10, 2012 at 3:58 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Mon, 10 Sep 2012, NeilBrown wrote:
->>
->> The IRQCHIP_MASK_ON_SUSPEND flag seems to be hard to use correctly, so either
->> I'm understanding it wrongly, or it could be made easier to use.
->> If the first case, I'm hoping that some improvement to documentation might
->> result.  If the second, then maybe we can fix the code.
-> ...
->> Is anyone able to give a definitive answer on this?  Should
->> IRQCHIP_MASK_ON_SUSPEND be removed?
->
-> The whole point of IRQCHIP_MASK_ON_SUSPEND is to deal with hardware
-> designed by geniuses.
->
-> Most SoCs have a way to mark the interrupts which serve as a wake up
-> source as such. All other interrupts are magically "masked" on entry
-> to suspend.
->
-Just to support this, IRQCHIP_MASK_ON_SUSPEND does work with quite
-a few ARM platforms too. OMAP already uses it in mainline and I have
-seen patches for U500 and Tegra SOCs. Most of these usages are with
-IRQ chips who doesn't have any driver run time PM supported and
-the IRQ CHIP itself is shutdown when the CPU/CPU cluster gets
-power down. So as far as functionality concerned with the flag,
-it does what it suppose to do.
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
 
-> Now there is hardware which is missing such a control, so we need to
-> mask the non wakeup interrupts right before going into suspend.
->
-> That's what IRQCHIP_MASK_ON_SUSPEND does. Not more, not less. See
-> commit d209a699a0b for more ugly details.
->
-> You might be looking for a different functionality. Can you explain
-> what you need?
->
-Neil's email came from a discussion on the usage of this flag for
-OMAP GPIO irqchip which I proposed. With the flag, when the
-lazy check_irq routine is called, the GPIO driver is runtime suspended
-and hence the late mask/unmask calls take abort(clocks are already gated).
-GPIO IRQCHIP is secondary IRQCHIP connected to 1 interrupt line
-per bank(32 GPIOs) to the primary interrupt controller IRQCHIP.
+---
+ arch/x86/include/asm/bitops.h |   10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
-Hope this gives bit more clarity to the discussed problem.
+--- 3.6-rc5/arch/x86/include/asm/bitops.h
++++ 3.6-rc5-x86_64-bsf-bsr-types/arch/x86/include/asm/bitops.h
+@@ -417,10 +417,9 @@ static inline int ffs(int x)
+ 	 * We cannot do this on 32 bits because at the very least some
+ 	 * 486 CPUs did not behave this way.
+ 	 */
+-	long tmp = -1;
+ 	asm("bsfl %1,%0"
+ 	    : "=r" (r)
+-	    : "rm" (x), "0" (tmp));
++	    : "rm" (x), "0" (-1));
+ #elif defined(CONFIG_X86_CMOV)
+ 	asm("bsfl %1,%0\n\t"
+ 	    "cmovzl %2,%0"
+@@ -459,10 +458,9 @@ static inline int fls(int x)
+ 	 * We cannot do this on 32 bits because at the very least some
+ 	 * 486 CPUs did not behave this way.
+ 	 */
+-	long tmp = -1;
+ 	asm("bsrl %1,%0"
+ 	    : "=r" (r)
+-	    : "rm" (x), "0" (tmp));
++	    : "rm" (x), "0" (-1));
+ #elif defined(CONFIG_X86_CMOV)
+ 	asm("bsrl %1,%0\n\t"
+ 	    "cmovzl %2,%0"
+@@ -490,13 +488,13 @@ static inline int fls(int x)
+ #ifdef CONFIG_X86_64
+ static __always_inline int fls64(__u64 x)
+ {
+-	long bitpos = -1;
++	int bitpos = -1;
+ 	/*
+ 	 * AMD64 says BSRQ won't clobber the dest reg if x==0; Intel64 says the
+ 	 * dest reg is undefined if x==0, but their CPU architect says its
+ 	 * value is written to set it to the same as before.
+ 	 */
+-	asm("bsrq %1,%0"
++	asm("bsrq %1,%q0"
+ 	    : "+r" (bitpos)
+ 	    : "rm" (x));
+ 	return bitpos + 1;
 
-Regards
-Santosh
+
+
