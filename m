@@ -1,63 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849Ab2IJKNx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 06:13:53 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:55142 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755191Ab2IJKNT (ORCPT
+	id S1755734Ab2IJKSO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 06:18:14 -0400
+Received: from relay.parallels.com ([195.214.232.42]:60945 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085Ab2IJKSK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 06:13:19 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 00/19] First HREF Device Tree enablement patch-set
-Date: Mon, 10 Sep 2012 10:13:16 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
-        linus.walleij@stericsson.com
-References: <1347016499-29354-1-git-send-email-lee.jones@linaro.org> <201209071358.38598.arnd@arndb.de> <CACRpkdZ-QpHzeEBO=RFVe-8S2DG4-thhwW9iVbAMXZrOe-FnAw@mail.gmail.com>
-In-Reply-To: <CACRpkdZ-QpHzeEBO=RFVe-8S2DG4-thhwW9iVbAMXZrOe-FnAw@mail.gmail.com>
+	Mon, 10 Sep 2012 06:18:10 -0400
+Message-ID: <504DBE81.7030004@parallels.com>
+Date: Mon, 10 Sep 2012 14:18:41 +0400
+From: "Maxim V. Patlasov" <mpatlasov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120824 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209101013.16697.arnd@arndb.de>
-X-Provags-ID: V02:K0:U/udp+kIbHa8XSzFxhmSRWHF5v/RWkntmwfxJtllc8+
- A876i4CySA/U219V2cvVRu6XdapkV0OlqEMOWA52a4k0PMpTE6
- nk5CqIjUBn0bN499mz8mvirzxcUFW568xurkrnitoPvFEBETVu
- VtX0PvACu5FKbsCUfs4O6aSumtrwusm9aaoxoBsM65jkyigq7j
- kfHmGUzMc0ayNAJrM6NeD3HJmmMq1ls+jESew+sh0pNNNulj67
- YFesjcwjZrc/DtKH63DCV+2hB/lbOEaQLhuN8i4OIqZGRiPqJ8
- ckDf46gxJiCHziCZLSkuzn+xL3Pb8FbJKzL1UwPq+45BdF5c4j
- HMViNnWWuj7wVMEzuOHs=
+To: <miklos@szeredi.hu>
+CC: "fuse-devel@lists.sourceforge.net" <fuse-devel@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH 0/6] fuse: allocate req->pages[] dynamically
+References: <20120907172536.1343.80497.stgit@maximpc.sw.ru>
+In-Reply-To: <20120907172536.1343.80497.stgit@maximpc.sw.ru>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 10 September 2012, Linus Walleij wrote:
-> Basically that was at a point when we were changing a lot of
-> subsystem trees with DT patches that were merged in out-of-order
-> fashion.
-> 
-> Then it's better to have the DT changes to be pushed
-> separately at the end of the merge window after all subtrees
-> with dependent changes are merged. (Or even in the next merge
-> window if there is no hurry, but we always seem to be in a hurry...)
-> 
-> If all the changes are in the same subtree (like ARM SoC with
-> ACKs from all over the place where needed) you can do it
-> this way instead, and I agree it looks better.
+Hi,
 
-I think we're talking about different things:
+I noticed that 'Signed-off-by' is missed in my patches. Very sorry for 
+inconvenience. I'll be more careful next time.
 
-I think it's fine to do the device driver conversion separately
-from the platform changes, but doing that properly means that the
-platform changes should only go in after the drivers have changed.
+Thanks,
+Maxim
 
-Inside of the platform code, I absolutely think we should change the
-board file and the dts file simultaneously. When the driver offers
-two ways of probing a device, this lets us change from one way to
-the other without going through a phase where we use neither of them
-or (worse) both at the same time.
-
-	Arnd
+09/07/2012 09:40 PM, Maxim Patlasov пишет:
+> Hi,
+>
+> Currently, any fuse request always includes inline pages[] array of
+> FUSE_MAX_PAGES_PER_REQ elements. This is the waste of memory because
+> in many cases smaller size would suffice.
+> ...
