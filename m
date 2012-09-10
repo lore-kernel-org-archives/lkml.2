@@ -1,180 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756721Ab2IJIyt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 04:54:49 -0400
-Received: from smtp4.mundo-r.com ([212.51.32.151]:24804 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755815Ab2IJIuz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 04:50:55 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ap8CAHGoTVBbdWObgWdsb2JhbABFhge1SiIBARYmJ4IgAQEFIwQLAUYQIAUCJgICVwYTiBSoFZI7gSGPFoESA5VdkwU
-X-IronPort-AV: E=Sophos;i="4.80,397,1344204000"; 
-   d="scan'208";a="949262490"
-From: =?UTF-8?q?Samuel=20Iglesias=20Gons=C3=A1lvez?= 
-	<siglesias@igalia.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        industrypack-devel@lists.sourceforge.net,
-        Jens Taprogge <jens.taprogge@taprogge.org>,
-        =?UTF-8?q?Samuel=20Iglesias=20Gons=C3=A1lvez?= 
-	<siglesias@igalia.com>
-Subject: [PATCH 03/20] Staging: ipack/bridges/tpci200: provide new callbacks to tpci200
-Date: Mon, 10 Sep 2012 10:51:41 +0200
-Message-Id: <1347267118-9580-3-git-send-email-siglesias@igalia.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1347267118-9580-1-git-send-email-siglesias@igalia.com>
-References: <1347267118-9580-1-git-send-email-siglesias@igalia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1756181Ab2IJI5g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 04:57:36 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:63420 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752202Ab2IJI5d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 04:57:33 -0400
+X-IronPort-AV: E=Sophos;i="4.80,397,1344182400"; 
+   d="scan'208";a="5814144"
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, x86 maintainers <x86@kernel.org>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        Yinghai Lu <yinghai@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [V4 PATCH 00/26] memory,numa: introduce MOVABLE-dedicated node and online_movable for hotplug
+Date: Mon, 10 Sep 2012 16:58:52 +0800
+Message-Id: <1347267558-6707-1-git-send-email-laijs@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.4.4
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/10 16:56:59,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/10 16:56:59,
+	Serialize complete at 2012/09/10 16:56:59
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jens Taprogge <jens.taprogge@taprogge.org>
+	A) Introduction:
 
-Provide get_clockrate, set_clockrate, get_error, get_timeout and reset_timeout
-callbacks.
+This patchset adds MOVABLE-dedicated node and online_movable for memory-management.
 
-Signed-off-by: Jens Taprogge <jens.taprogge@taprogge.org>
-Signed-off-by: Samuel Iglesias Gonsálvez <siglesias@igalia.com>
----
- drivers/staging/ipack/bridges/tpci200.c |  107 +++++++++++++++++++++++++++++++
- 1 file changed, 107 insertions(+)
+It is used for anti-fragmentation(hugepage, big-order allocation...),
+hot-removal-of-memory(virtualization, power-conserve, move memory between systems
+to make better utilities of memories).
 
-diff --git a/drivers/staging/ipack/bridges/tpci200.c b/drivers/staging/ipack/bridges/tpci200.c
-index 4383953..861b00d 100644
---- a/drivers/staging/ipack/bridges/tpci200.c
-+++ b/drivers/staging/ipack/bridges/tpci200.c
-@@ -14,6 +14,20 @@
- #include <linux/module.h>
- #include "tpci200.h"
- 
-+static u16 tpci200_status_timeout[] = {
-+	TPCI200_A_TIMEOUT,
-+	TPCI200_B_TIMEOUT,
-+	TPCI200_C_TIMEOUT,
-+	TPCI200_D_TIMEOUT,
-+};
-+
-+static u16 tpci200_status_error[] = {
-+	TPCI200_A_ERROR,
-+	TPCI200_B_ERROR,
-+	TPCI200_C_ERROR,
-+	TPCI200_D_ERROR,
-+};
-+
- static struct ipack_bus_ops tpci200_bus_ops;
- 
- static int tpci200_slot_unregister(struct ipack_device *dev);
-@@ -507,6 +521,94 @@ out_unlock:
- 	return res;
- }
- 
-+static int tpci200_get_clockrate(struct ipack_device *dev)
-+{
-+	struct tpci200_board *tpci200 = check_slot(dev);
-+	__le16 __iomem *addr;
-+
-+	if (!tpci200)
-+		return -ENODEV;
-+
-+	addr = &tpci200->info->interface_regs->control[dev->slot];
-+	return (ioread16(addr) & TPCI200_CLK32) ? 32 : 8;
-+}
-+
-+static int tpci200_set_clockrate(struct ipack_device *dev, int mherz)
-+{
-+	struct tpci200_board *tpci200 = check_slot(dev);
-+	__le16 __iomem *addr;
-+	u16 reg;
-+
-+	if (!tpci200)
-+		return -ENODEV;
-+
-+	addr = &tpci200->info->interface_regs->control[dev->slot];
-+
-+	/* Ensure the control register is not changed by another task after we
-+	 * have read it. */
-+	mutex_lock(&tpci200->mutex);
-+	reg = ioread16(addr);
-+	switch (mherz) {
-+	case 8:
-+		reg &= ~(TPCI200_CLK32); break;
-+	case 32:
-+		reg |= TPCI200_CLK32; break;
-+	default:
-+		mutex_unlock(&tpci200->mutex);
-+		return -EINVAL;
-+	}
-+	iowrite16(reg, addr);
-+	mutex_unlock(&tpci200->mutex);
-+	return 0;
-+}
-+
-+static int tpci200_get_error(struct ipack_device *dev)
-+{
-+	struct tpci200_board *tpci200 = check_slot(dev);
-+	__le16 __iomem *addr;
-+	u16 mask;
-+
-+	if (!tpci200)
-+		return -ENODEV;
-+
-+	addr = &tpci200->info->interface_regs->status;
-+	mask = tpci200_status_error[dev->slot];
-+	return (ioread16(addr) & mask) ? 1 : 0;
-+}
-+
-+static int tpci200_get_timeout(struct ipack_device *dev)
-+{
-+	struct tpci200_board *tpci200 = check_slot(dev);
-+	__le16 __iomem *addr;
-+	u16 mask;
-+
-+	if (!tpci200)
-+		return -ENODEV;
-+
-+	addr = &tpci200->info->interface_regs->status;
-+	mask = tpci200_status_timeout[dev->slot];
-+
-+	return (ioread16(addr) & mask) ? 1 : 0;
-+}
-+
-+static int tpci200_reset_timeout(struct ipack_device *dev)
-+{
-+	struct tpci200_board *tpci200 = check_slot(dev);
-+	__le16 __iomem *addr;
-+	u16 mask;
-+
-+	if (!tpci200)
-+		return -ENODEV;
-+
-+	addr = &tpci200->info->interface_regs->status;
-+	mask = tpci200_status_timeout[dev->slot];
-+
-+	iowrite16(mask, addr);
-+	return 0;
-+}
-+
-+
-+
- static void tpci200_uninstall(struct tpci200_board *tpci200)
- {
- 	int i;
-@@ -524,6 +626,11 @@ static struct ipack_bus_ops tpci200_bus_ops = {
- 	.request_irq = tpci200_request_irq,
- 	.free_irq = tpci200_free_irq,
- 	.remove_device = tpci200_slot_unregister,
-+	.get_clockrate = tpci200_get_clockrate,
-+	.set_clockrate = tpci200_set_clockrate,
-+	.get_error     = tpci200_get_error,
-+	.get_timeout   = tpci200_get_timeout,
-+	.reset_timeout = tpci200_reset_timeout,
- };
- 
- static int tpci200_install(struct tpci200_board *tpci200)
--- 
-1.7.10.4
+This patchset is based on 650470d1da17c20bf9700f9446775a01cbda52c3 of newest tip tree.
+
+	B) User Interface:
+
+When users(big system manager) need config some node/memory as MOVABLE:
+	1 Use kernelcore_max_addr=XX when boot
+	2 Use movable_online hotplug action when running
+We may introduce some more convenient interface, such as
+	movable_node=NODE_LIST boot option.
+
+	C) Patches
+
+Patch1-3      Fix problems of the current code.(all related with hotplug)
+Patch4        cleanup for node_state_attr
+Patch5        introduce N_MEMORY
+Patch6-18     use N_MEMORY instead N_HIGH_MEMORY.
+              The patches are separated by subsystem,
+              *these conversions was(must be) checked carefully*.
+              Patch18 also changes the node_states initialization
+Patch19       Add config to allow MOVABLE-dedicated node
+Patch20-24    Add kernelcore_max_addr
+Patch25,26       Add online_movable and online_kernel
+
+
+	D) changes
+change V4-v3
+	rebase.
+	online_movable/online_kernel can create a zone from empty
+	or empyt a zone
+
+change V3-v2:
+	Proper nodemask management
+
+change V2-V1:
+
+The original V1 patchset of MOVABLE-dedicated node is here:
+http://comments.gmane.org/gmane.linux.kernel.mm/78122
+
+The new V2 adds N_MEMORY and a notion of "MOVABLE-dedicated node".
+And fix some related problems.
+
+The orignal V1 patchset of "add online_movable" is here:
+https://lkml.org/lkml/2012/7/4/145
+
+The new V2 discards the MIGRATE_HOTREMOVE approach, and use a more straight
+implementation(only 1 patch).
+Lai Jiangshan (22):
+  page_alloc.c: don't subtract unrelated memmap from zone's present
+    pages
+  memory_hotplug: fix missing nodemask management
+  slub, hotplug: ignore unrelated node's hot-adding and hot-removing
+  node: cleanup node_state_attr
+  node_states: introduce N_MEMORY
+  cpuset: use N_MEMORY instead N_HIGH_MEMORY
+  procfs: use N_MEMORY instead N_HIGH_MEMORY
+  memcontrol: use N_MEMORY instead N_HIGH_MEMORY
+  oom: use N_MEMORY instead N_HIGH_MEMORY
+  mm,migrate: use N_MEMORY instead N_HIGH_MEMORY
+  mempolicy: use N_MEMORY instead N_HIGH_MEMORY
+  hugetlb: use N_MEMORY instead N_HIGH_MEMORY
+  vmstat: use N_MEMORY instead N_HIGH_MEMORY
+  kthread: use N_MEMORY instead N_HIGH_MEMORY
+  init: use N_MEMORY instead N_HIGH_MEMORY
+  vmscan: use N_MEMORY instead N_HIGH_MEMORY
+  page_alloc: use N_MEMORY instead N_HIGH_MEMORY change the node_states
+    initialization
+  hotplug: update nodemasks management
+  numa: add CONFIG_MOVABLE_NODE for movable-dedicated node
+  page_alloc: add kernelcore_max_addr
+  mm, memory-hotplug: add online_movable and online_kernel
+  memory_hotplug: handle empty zone when online_movable/online_kernel
+
+Yasuaki Ishimatsu (4):
+  x86: get pg_data_t's memory from other node
+  x86: use memblock_set_current_limit() to set memblock.current_limit
+  memblock: limit memory address from memblock
+  memblock: compare current_limit with end variable at
+    memblock_find_in_range_node()
+
+ Documentation/cgroups/cpusets.txt   |    2 +-
+ Documentation/kernel-parameters.txt |    9 ++
+ Documentation/memory-hotplug.txt    |   24 +++-
+ arch/x86/kernel/setup.c             |    4 +-
+ arch/x86/mm/init_64.c               |    4 +-
+ arch/x86/mm/numa.c                  |    8 +-
+ drivers/base/memory.c               |   19 ++-
+ drivers/base/node.c                 |   28 +++--
+ fs/proc/kcore.c                     |    2 +-
+ fs/proc/task_mmu.c                  |    4 +-
+ include/linux/cpuset.h              |    2 +-
+ include/linux/memblock.h            |    1 +
+ include/linux/memory.h              |    2 +
+ include/linux/memory_hotplug.h      |   13 ++-
+ include/linux/nodemask.h            |    5 +
+ init/main.c                         |    2 +-
+ kernel/cpuset.c                     |   32 ++--
+ kernel/kthread.c                    |    2 +-
+ mm/Kconfig                          |    8 +
+ mm/hugetlb.c                        |   24 ++--
+ mm/memblock.c                       |   10 +-
+ mm/memcontrol.c                     |   18 ++--
+ mm/memory_hotplug.c                 |  271 ++++++++++++++++++++++++++++++++---
+ mm/mempolicy.c                      |   12 +-
+ mm/migrate.c                        |    2 +-
+ mm/oom_kill.c                       |    2 +-
+ mm/page_alloc.c                     |   96 ++++++++-----
+ mm/page_cgroup.c                    |    2 +-
+ mm/slub.c                           |    4 +-
+ mm/vmscan.c                         |    4 +-
+ mm/vmstat.c                         |    4 +-
+ 31 files changed, 476 insertions(+), 144 deletions(-)
 
