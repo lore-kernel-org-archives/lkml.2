@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757429Ab2IJWvN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 18:51:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46761 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752861Ab2IJWvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 18:51:11 -0400
-Date: Mon, 10 Sep 2012 23:50:57 +0100
-From: Alasdair G Kergon <agk@redhat.com>
-To: Kent Overstreet <koverstreet@google.com>, axboe@kernel.dk,
-        device-mapper development <dm-devel@redhat.com>, david@fromorbit.com,
-        linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>, bharrosh@panasas.com,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [dm-devel] [PATCH 2/2] block: Avoid deadlocks with bio
-	allocation by stacking drivers
-Message-ID: <20120910225057.GA10477@agk-dp.fab.redhat.com>
-Mail-Followup-To: Kent Overstreet <koverstreet@google.com>, axboe@kernel.dk,
-	device-mapper development <dm-devel@redhat.com>,
-	david@fromorbit.com, linux-kernel@vger.kernel.org,
-	linux-bcache@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
-	bharrosh@panasas.com, Vivek Goyal <vgoyal@redhat.com>
-References: <1347055973-11581-3-git-send-email-koverstreet@google.com> <20120908193641.GB12773@dhcp-172-17-108-109.mtv.corp.google.com> <20120910002810.GA23241@moria.home.lan> <20120910172210.GC14103@google.com> <20120910202435.GG16360@google.com> <20120910204010.GA32310@google.com> <20120910213349.GH16360@google.com> <20120910213710.GA7677@google.com> <20120910215633.GA19739@google.com> <20120910220910.GB7677@google.com>
+	id S1757464Ab2IJWyo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 18:54:44 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:62544 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753766Ab2IJWym (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 18:54:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120910220910.GB7677@google.com>
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: 64 Baker Street, 4th floor, London,
-	W1U 7DF.
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1346630607.3170.31.camel@offbook>
+References: <1346630607.3170.31.camel@offbook>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 10 Sep 2012 16:54:19 -0600
+Message-ID: <CAErSpo7FAZvpWvhYCPUL8X1LBKmArUg3BYuCthwcKTeHR4nu+w@mail.gmail.com>
+Subject: Re: [PATCH 3/5] PCI: hotplug: remove acpi_bus_generate_proc_event
+To: dave@gnu.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Len Brown <lenb@kernel.org>,
+        linux-pci@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 03:09:10PM -0700, Tejun Heo wrote:
-> On Mon, Sep 10, 2012 at 02:56:33PM -0700, Kent Overstreet wrote:
-> > commit df7e63cbffa3065fcc4ba2b9a93418d7c7312243
-> > Author: Kent Overstreet <koverstreet@google.com>
-> > Date:   Mon Sep 10 14:33:46 2012 -0700
-> > 
-> >     block: Avoid deadlocks with bio allocation by stacking drivers
+On Sun, Sep 2, 2012 at 6:03 PM, Davidlohr Bueso <dave@gnu.org> wrote:
+> Calling this function no longer makes sense as /proc/acpi/event
+> is being removed.
+>
+> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
 
-> >     Note that this doesn't do anything for allocation from other mempools.
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
 
-Note that dm has several cases of this, so this patch should not be used with
-dm yet.  Mikulas is studying those cases to see whether anything like this
-might be feasible/sensible or not.
+I assume this series will be applied as a group somewhere other than
+the PCI tree.  Let me know if you need me to do anything more than ack
+this one.
 
-> I'm still a bit scared but think this is correct.
->  Acked-by: Tejun Heo <tj@kernel.org>
- 
-Alasdair
-
+> ---
+>  drivers/pci/hotplug/acpiphp_ibm.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/pci/hotplug/acpiphp_ibm.c b/drivers/pci/hotplug/acpiphp_ibm.c
+> index c35e8ad..5394fff 100644
+> --- a/drivers/pci/hotplug/acpiphp_ibm.c
+> +++ b/drivers/pci/hotplug/acpiphp_ibm.c
+> @@ -270,7 +270,6 @@ static void ibm_handle_events(acpi_handle handle, u32 event, void *context)
+>
+>         if (subevent == 0x80) {
+>                 dbg("%s: generationg bus event\n", __func__);
+> -               acpi_bus_generate_proc_event(note->device, note->event, detail);
+>                 acpi_bus_generate_netlink_event(note->device->pnp.device_class,
+>                                                   dev_name(&note->device->dev),
+>                                                   note->event, detail);
+> --
+> 1.7.4.1
+>
+>
+>
+>
