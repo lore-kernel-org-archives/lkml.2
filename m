@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754418Ab2IJRSG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 13:18:06 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:32950 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355Ab2IJRSE (ORCPT
+	id S1753464Ab2IJRSW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 13:18:22 -0400
+Received: from stringer.orebokech.com ([88.190.240.207]:44576 "EHLO
+	stringer.orebokech.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754626Ab2IJRST (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 13:18:04 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Mon, 10 Sep 2012 19:17:39 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: shuah.khan@hp.com
-Cc: Clemens Ladisch <clemens@ladisch.de>, LKML <linux-kernel@vger.kernel.org>,
-        linux1394-devel@lists.sf.net, shuahkhan@gmail.com
-Subject: Re: [RFC] DMA mapping error check analysis
-Message-ID: <20120910191739.77d59f65@stein>
-In-Reply-To: <1347290775.3071.1.camel@lorien2>
-References: <1346595257.4377.5.camel@lorien2>
-	<1347033200.2603.19.camel@lorien2>
-	<504D9C70.5000102@ladisch.de>
-	<1347290775.3071.1.camel@lorien2>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Sep 2012 13:18:19 -0400
+From: Romain Francoise <romain@orebokech.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Mathias Krause <minipli@googlemail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Re: Linux 3.6-rc5
+Organization: orebokech dot com
+References: <CA+55aFwnPfdyTTG6WTuhChomg=t9nSS18xracq3iQ3F5+PWOog@mail.gmail.com>
+	<87har7h84h.fsf@silenus.orebokech.com>
+	<20120909191958.GB9782@gondor.apana.org.au>
+	<20120909200910.GA11919@r00tworld.net>
+	<20120909210000.GA10293@gondor.apana.org.au>
+Date: Mon, 10 Sep 2012 19:18:17 +0200
+In-Reply-To: <20120909210000.GA10293@gondor.apana.org.au> (Herbert Xu's
+	message of "Sun, 9 Sep 2012 14:00:00 -0700")
+Message-ID: <878vchdcfa.fsf@silenus.orebokech.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sep 10 Shuah Khan wrote:
-> 
-> > >
-> > > http://linuxdriverproject.org/mediawiki/index.php/DMA_Mapping_Error_Analysis
-> > 
-> > > File Name                  # of calls  Status 	
-> > > drivers/firewire/core-iso.c   1        Unmap Broken
-> > > drivers/firewire/ohci.c       1        Unmap Broken
-> > 
-> > In ohci.c, ar_context_release() takes care of cleanup.
-> > 
-> > In core-iso.c, on failure, the callers are responsible to call
-> > fw_iso_buffer_destroy() eventually.  (ioctl_create_iso_context()
-> > doesn't do this correctly if it's called multiple times.)
-> > 
-> 
-> Thanks. I updated the page with your comments. I moved ohci.c to Good
-> status and left core-iso.c in Unmap Broken in case
-> ioctl_create_iso_context() case is worth fixing.
+Herbert Xu <herbert@gondor.apana.org.au> writes:
 
-I don't see what could go wrong if ioctl_create_iso_context() is called
-multiple times.  But I wrote the current (= v3.5-rc1) serialization code in
-it, hence am blind for mistakes which are my own.  So anyboy who spots an
-actual problem please describe it, or even better send a patch.
+> Thanks! I think this patch should fix the problem.  Can someone
+> please confirm this?
 
-(Hmm, fw_device_op_mmap()'s fail: path is executed outside the
-client->lock protected section.  That might be a problem.  I need to look
-further into it.)
--- 
-Stefan Richter
--=====-===-- =--= -=-=-
-http://arcgraph.de/sr/
+Works for me as well, thanks!
+
+> crypto: authenc - Fix crash with zero-length assoc data
+>
+> The authenc code doesn't deal with zero-length associated data
+> correctly and ends up constructing a zero-length sg entry which
+> causes a crash when it's fed into the crypto system.
+>
+> This patch fixes this by avoiding the code-path that triggers
+> the SG construction if we have no associated data.
+>
+> This isn't the most optimal fix as it means that we'll end up
+> using the fallback code-path even when we could still execute
+> the digest function.  However, this isn't a big deal as nobody
+> but the test path would supply zero-length associated data.
+>
+> Reported-by: Romain Francoise <romain@orebokech.com>
+> Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+
+Feel free to change this to:
+
+Reported-and-tested-by: Romain Francoise <romain@orebokech.com>
