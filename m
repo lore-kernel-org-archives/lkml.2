@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757344Ab2IKRng (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 13:43:36 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:63341 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755368Ab2IKRnY (ORCPT
+	id S1753337Ab2IKRjj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 13:39:39 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:33184 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852Ab2IKRjh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 13:43:24 -0400
-Date: Tue, 11 Sep 2012 10:43:19 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        Glauber Costa <glommer@parallels.com>,
-        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
-        "Serge E. Hallyn" <serue@us.ibm.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [PATCH REPOST RFC cgroup/for-3.7] cgroup: mark subsystems with
- broken hierarchy support and whine if cgroups are nested for them
-Message-ID: <20120911174319.GO7677@google.com>
-References: <20120910223125.GC7677@google.com>
- <20120910223355.GD7677@google.com>
- <504F30DB.60808@huawei.com>
- <20120911170837.GM7677@google.com>
+	Tue, 11 Sep 2012 13:39:37 -0400
+From: Cyril Chemparathy <cyril@ti.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+CC: <arnd@arndb.de>, <catalin.marinas@arm.com>, <grant.likely@secretlab.ca>,
+        <nico@linaro.org>, <linux@arm.linux.org.uk>, <will.deacon@arm.com>,
+        Cyril Chemparathy <cyril@ti.com>, Vitaly Andrianov <vitalya@ti.com>
+Subject: [PATCH v3 12/17] ARM: LPAE: define ARCH_LOW_ADDRESS_LIMIT for bootmem
+Date: Tue, 11 Sep 2012 13:39:10 -0400
+Message-ID: <1347385155-11643-13-git-send-email-cyril@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1347385155-11643-1-git-send-email-cyril@ti.com>
+References: <1347385155-11643-1-git-send-email-cyril@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120911170837.GM7677@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This patch adds an architecture defined override for ARCH_LOW_ADDRESS_LIMIT.
+On PAE systems, the absence of this override causes bootmem to incorrectly
+limit itself to 32-bit addressable physical memory.
 
-On Tue, Sep 11, 2012 at 10:08:37AM -0700, Tejun Heo wrote:
-> > So isn't cpuset broken too? child cpuset's cpu mask isn't necessary a subset
-> > of the parent's if the cpu_exclusive flag is not set.
-> 
-> Heh, didn't even look at that.  Just assumed it was in the same boat
-> w/ cpu{acct}.  Will take a look.
+Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
+---
+ arch/arm/include/asm/memory.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Hmm... Looked at it and I don't think hierarchy support is broken w/
-or w/o exclusive.  Can you please elaborate?
-
-Thanks.
-
+diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
+index 0643454..73caaeb 100644
+--- a/arch/arm/include/asm/memory.h
++++ b/arch/arm/include/asm/memory.h
+@@ -307,6 +307,8 @@ static inline __deprecated void *bus_to_virt(unsigned long x)
+ #define virt_to_page(kaddr)	pfn_to_page(__pa(kaddr) >> PAGE_SHIFT)
+ #define virt_addr_valid(kaddr)	((unsigned long)(kaddr) >= PAGE_OFFSET && (unsigned long)(kaddr) < (unsigned long)high_memory)
+ 
++#define ARCH_LOW_ADDRESS_LIMIT		PHYS_MASK
++
+ #endif
+ 
+ #include <asm-generic/memory_model.h>
 -- 
-tejun
+1.7.9.5
+
