@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757146Ab2IKXZl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 19:25:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56953 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753881Ab2IKXZj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 19:25:39 -0400
-Date: Tue, 11 Sep 2012 16:25:36 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: David Rientjes <rientjes@google.com>, sgruszka@redhat.com,
-        linux-wireless@vger.kernel.org, johannes.berg@intel.com,
-        wey-yi.w.guy@intel.com, ilw@linux.intel.com,
-        Andrew Morton <akpm@osdl.org>, Mel Gorman <mgorman@suse.de>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: iwl3945: order 5 allocation during ifconfig up; vm problem?
-Message-Id: <20120911162536.bd5171a1.akpm@linux-foundation.org>
-In-Reply-To: <20120910111113.GA25159@elf.ucw.cz>
-References: <20120909213228.GA5538@elf.ucw.cz>
-	<alpine.DEB.2.00.1209091539530.16930@chino.kir.corp.google.com>
-	<20120910111113.GA25159@elf.ucw.cz>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1759169Ab2IKXZt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 19:25:49 -0400
+Received: from mga01.intel.com ([192.55.52.88]:34531 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758885Ab2IKXZr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 19:25:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,407,1344236400"; 
+   d="scan'208";a="220939139"
+Date: Wed, 12 Sep 2012 07:25:37 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Vivek Trivedi <t.vivek@samsung.com>
+Subject: Re: [PATCH 1/2] writeback: add dirty_background_time per bdi variable
+Message-ID: <20120911232537.GA13210@localhost>
+References: <1346083274-3510-1-git-send-email-linkinjeon@gmail.com>
+ <20120911014025.GA22077@localhost>
+ <CAKYAXd_VucTrf=TeezrU28+Ja+41TAFCY3zfuBGvoMO9FXNB1A@mail.gmail.com>
+ <CAKYAXd_Zdb_3rqwgf03To+DPw-wFXUGW-5km7KVaiJSymEuGMg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKYAXd_Zdb_3rqwgf03To+DPw-wFXUGW-5km7KVaiJSymEuGMg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Sep 2012 13:11:13 +0200
-Pavel Machek <pavel@ucw.cz> wrote:
-
-> On Sun 2012-09-09 15:40:55, David Rientjes wrote:
-> > On Sun, 9 Sep 2012, Pavel Machek wrote:
-> > 
-> > > On 3.6.0-rc2+, I tried to turn on the wireless, but got
-> > > 
-> > > root@amd:~# ifconfig wlan0 10.0.0.6 up
-> > > SIOCSIFFLAGS: Cannot allocate memory
-> > > SIOCSIFFLAGS: Cannot allocate memory
-> > > root@amd:~# 
-> > > 
-> > > It looks like it uses "a bit too big" allocations to allocate
-> > > firmware...? Order five allocation....
-> > > 
-> > > Hmm... then I did "echo 3  > /proc/sys/vm/drop_caches" and now the
-> > > network works. Is it VM problem that it failed to allocate memory when
-> > > it was freeable?
-> > > 
-> > 
-> > Do you have CONFIG_COMPACTION enabled?
+On Wed, Sep 12, 2012 at 08:12:40AM +0900, Namjae Jeon wrote:
+> >>
+> >> To be frank, no realistic NFS servers will use USB disk as backing
+> >> storage. So that rational for reducing "initial" delays is weak.
+> >> Continuous write performance to HDD is much more important. Do you
+> >> have numbers for that?
+> >
+> > Actually, we use USB HDD and USB Flash devices at NFS server.
+> > There can be other similar users as well. So it might be useful to
+> > provide this tuning feature other.
+> > As default value is zero, it is disabled by default and it should not
+> > impact normal writeback.
+> >
+> > I will share large file writes test result on NFS client on USB HDD
+> > with/without tuning with patch.
+> Hi. Wu.
+> I share 1GB continous write test result.
 > 
-> Yes:
+> -> create a 1000 MB file
+> For continuous write - create 1 GB file
 > 
-> pavel@amd:/data/l/linux-good$ zgrep CONFIG_COMPACTION /proc/config.gz 
-> CONFIG_COMPACTION=y
+>  RecSize   WriteSpeed
+> 10485760   10.47MB/sec
+>  1048576   10.35MB/sec
+>   524288   10.48MB/sec
+>   262144   10.48MB/sec
+>   131072   10.52MB/sec
+>    65536   10.56MB/sec
+>    32768   10.64MB/sec
+>    16384   10.31MB/sec
+>     8192   10.52MB/sec
+>     4096   10.45MB/sec
+> 
+> I will update changelog in patch.
 
-Asking for a 256k allocation is pretty crazy - this is an operating
-system kernel, not a userspace application.
+Thanks! What's the server side setting and can you give a comparison
+of different background writeback thresholds? This is this patch's
+target use cases, after all.
 
-I'm wondering if this is due to a recent change, but I'm having trouble
-working out where the allocation call site is.
+Thanks,
+Fengguang
