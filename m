@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754934Ab2IKNju (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 09:39:50 -0400
-Received: from skyrme.org ([193.175.80.135]:57712 "EHLO skyrme.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753957Ab2IKNjs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 09:39:48 -0400
-Date: 11 Sep 2012 13:39:44 +0000
-Message-ID: <20120911133944.GA2537@curry>
-From: "Oskar Schirmer" <oskar@scara.com>
-To: "Wim Van Sebroeck" <wim@iguana.be>
-Cc: "Oskar Schirmer" <oskar@scara.com>, "Sascha Hauer" <kernel@pengutronix.de>,
-        linux-kernel@vger.kernel.org, "Wolfram Sang" <w.sang@pengutronix.de>,
-        " Andrew Morton" <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2] watchdog/imx2+: add support for pretimeout interrupt functionality
-References: <1338460658-16067-1-git-send-email-oskar@scara.com> <1347357652-23601-1-git-send-email-oskar@scara.com> <20120911110021.GG27604@spo001.leaseweb.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120911110021.GG27604@spo001.leaseweb.com>
-User-Agent: Mutt/1.4.2.3i
-Organisation: www.embedded-group.de
+	id S1755650Ab2IKNlg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 09:41:36 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:63965 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754682Ab2IKNle (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 09:41:34 -0400
+Date: Tue, 11 Sep 2012 15:40:56 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Arnd Bergmann <arnd@arndb.de>
+cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        "Wolfram Sang (embedded platforms)" <w.sang@pengutronix.de>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Chris Ball <cjb@laptop.org>, David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Javier Martin <javier.martin@vista-silicon.com>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [PATCH 04/16] ARM: imx: move platform_data definitions
+In-Reply-To: <1347368390-31252-4-git-send-email-arnd@arndb.de>
+Message-ID: <Pine.LNX.4.64.1209111538000.22084@axis700.grange>
+References: <1347368350-31212-1-git-send-email-arnd@arndb.de>
+ <1347368390-31252-1-git-send-email-arnd@arndb.de>
+ <1347368390-31252-4-git-send-email-arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:PBCdstt3bPWirIvGbmdvLz8+ZsceXONNSFNBBHALWNM
+ wvGjmWwVwFsGV0u2K4mWNF+MVJYkUAhvoUpg7ieSywAyoQXJGN
+ kyg+4tmEThBUKBzVkiIkWKOmsF4j6bmj7OVxFeYBGuiPjmorhJ
+ SfzKawebf/VQk+aQv7RkGONPL7barfk2FGBMeg4XD5mt0498KV
+ LVA6TslQRprgTZgRNHYguVlUT2Fk+DX2orhSiQ2uqEDY+KpiEG
+ 7KAV5UPjHA6hoz79X/XncsiDbUIkppCtFFqP4JGrznuood+FuN
+ QN5gadaFYmBYyh3xzXDLFsk0jGagYpcu3m92B4J4YpzY64PvMc
+ 0x7Y+T+aLQDdBUylNrOe9oKsznWa6a57g9GpFjxw7k3esz9mfq
+ mjN2ZHh0MUTqw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wim,
+Hi Arnd
 
-On Tue, Sep 11, 2012 at 13:00:21 +0200, Wim Van Sebroeck wrote:
-> Hi Oskar,
-> 
-> > This watchdog device provides pretimeout facilities:
-> > Set some timeout value and get informed about imminent
-> > watchdog activity thru interrupt.
-> > 
-> > Allow user to wait for this interrupt thru poll(2),
-> > and to clear it thru read(2).
-> > 
-> > Signed-off-by: Oskar Schirmer <oskar@scara.com>
-> > Cc: Wim Van Sebroeck <wim@iguana.be>
-> > Cc: Wolfram Sang <w.sang@pengutronix.de>
-> > Cc: Sascha Hauer <kernel@pengutronix.de>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> 
-> I have a problem with the read and poll.
-> We had "read()" in the past so we have a possible issue here (different function but userspace apps could still use the old read)...
-> Can you explain what the read and poll does and where you want to use it.
+It probably wouldn't be very difficult to also include 
+arch/arm/plat-mxc/include/mach/ipu.h in this your patch, but you can also 
+leave it for later. Just to make sure it's not something that would make 
+your future patching more complicated.
 
-To wait for some hardware event without blocking,
-poll is used, primarily in places where it's about
-data transmission. Ioctl would be an alternative
-for cases without data transmission, but poll is
-more generic.
-
-Events causing pollin to return usually provide
-data for read access, or, where no data is involved,
-at least allow to clear the event thru read.
-
-Now, checking current kernel for precedent, there
-is only one driver that comes with pretimeouts: ipmi_watchdog.
-It allows to set/get pretimeout, wait for it thru poll,
-and clear it's occurence thru read.
-
-So the obvious approach is to have a similar api for
-the imx watchdog, as well, to avoid conflicting designs
-right away.
-
-Documentation does introduce set/get pretimeout, but
-does not define how to detect and clear events.
-Actually it does not define any meaning of poll or read.
-Maybe this should be added.
-
-For the past use of read, could You point me to where
-imx2_wdt.c did have it?
-
-There are watchdog drivers around that do implement a
-read function, most of them to read temperature values.
-Temperature sensor and watchdog are quite
-different functionalities, so even where provided by
-a single piece of hardware they probably should go
-along two distinct drivers to make it a clean design.
-
-Grüße,
-  Oskar
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
