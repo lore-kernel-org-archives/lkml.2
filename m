@@ -1,125 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753071Ab2IKWRo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 18:17:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56655 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751208Ab2IKWRl (ORCPT
+	id S1752322Ab2IKWSk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 18:18:40 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:54630 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966Ab2IKWSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 18:17:41 -0400
-Date: Tue, 11 Sep 2012 15:17:39 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org,
-        Alex Kelly <alex.page.kelly@gmail.com>
-Subject: Re: mmotm 2012-09-06-16-46 uploaded (fs/binfmt_aout)
-Message-Id: <20120911151739.cb5f2f4b.akpm@linux-foundation.org>
-In-Reply-To: <504A8707.8080507@xenotime.net>
-References: <20120906234735.1B54B20004E@hpza10.eem.corp.google.com>
-	<504A8707.8080507@xenotime.net>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 11 Sep 2012 18:18:38 -0400
+Message-ID: <504FB8BA.1010703@wwwdotorg.org>
+Date: Tue, 11 Sep 2012 16:18:34 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 2/9] pinctrl: mvebu: dove pinctrl driver
+References: <1345623750-10645-1-git-send-email-sebastian.hesselbarth@gmail.com> <1347266386-16229-1-git-send-email-sebastian.hesselbarth@gmail.com> <1347266386-16229-3-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1347266386-16229-3-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 07 Sep 2012 16:45:11 -0700
-Randy Dunlap <rdunlap@xenotime.net> wrote:
+On 09/10/2012 02:39 AM, Sebastian Hesselbarth wrote:
+> This patch adds a SoC specific pinctrl driver for Marvell Dove SoCs
+> plus DT binding documentation. This driver will use the mvebu pinctrl
+> driver core.
 
-> On 09/06/2012 04:47 PM, akpm@linux-foundation.org wrote:
-> 
-> > The mm-of-the-moment snapshot 2012-09-06-16-46 has been uploaded to
-> > 
-> >    http://www.ozlabs.org/~akpm/mmotm/
-> > 
-> 
-> 
-> when CONFIG_COREDUMP is not enabled:
-> 
-> ERROR: "dump_seek" [fs/binfmt_aout.ko] undefined!
-> ERROR: "dump_write" [fs/binfmt_aout.ko] undefined!
+> diff --git a/drivers/pinctrl/pinctrl-dove.c b/drivers/pinctrl/pinctrl-dove.c
 
-Thanks.  I guess we make aout_core_dump() disappear if
-CONFIG_COREDUMP=n.
+> +static int dove_mpp4_ctrl_get(struct mvebu_mpp_ctrl *ctrl,
+> +			      unsigned long *config)
+> +{
+> +	unsigned long mpp4 = readl(DOVE_MPP_CTRL4_VIRT_BASE);
+> +	unsigned long mask;
+> +
+> +	switch (ctrl->pid) {
+> +	case 24: /* mpp_camera */
+> +		mask = DOVE_CAM_GPIO_SEL;
+> +		break;
+> +	case 40: /* mpp_sdio0 */
+> +		mask = DOVE_SD0_GPIO_SEL;
+> +		break;
+> +	case 46: /* mpp_sdio1 */
+> +		mask = DOVE_SD1_GPIO_SEL;
+> +		break;
+> +	case 58: /* mpp_spi0 */
+> +		mask = DOVE_SPI_GPIO_SEL;
+> +		break;
+> +	case 62: /* mpp_uart1 */
+> +		mask = DOVE_UART1_GPIO_SEL;
+> +		break;
+> +	default:
+> +		return -EINVAL;
+> +	}
 
---- a/fs/binfmt_aout.c~coredump-make-core-dump-functionality-optional-fix-fix
-+++ a/fs/binfmt_aout.c
-@@ -32,31 +32,8 @@
- 
- static int load_aout_binary(struct linux_binprm *, struct pt_regs * regs);
- static int load_aout_library(struct file*);
--static int aout_core_dump(struct coredump_params *cprm);
--
--static struct linux_binfmt aout_format = {
--	.module		= THIS_MODULE,
--	.load_binary	= load_aout_binary,
--	.load_shlib	= load_aout_library,
--	.core_dump	= aout_core_dump,
--	.min_coredump	= PAGE_SIZE
--};
--
--#define BAD_ADDR(x)	((unsigned long)(x) >= TASK_SIZE)
--
--static int set_brk(unsigned long start, unsigned long end)
--{
--	start = PAGE_ALIGN(start);
--	end = PAGE_ALIGN(end);
--	if (end > start) {
--		unsigned long addr;
--		addr = vm_brk(start, end - start);
--		if (BAD_ADDR(addr))
--			return addr;
--	}
--	return 0;
--}
- 
-+#ifdef CONFIG_COREDUMP
- /*
-  * Routine writes a core dump image in the current directory.
-  * Currently only a stub-function.
-@@ -66,7 +43,6 @@ static int set_brk(unsigned long start, 
-  * field, which also makes sure the core-dumps won't be recursive if the
-  * dumping of the process results in another error..
-  */
--
- static int aout_core_dump(struct coredump_params *cprm)
- {
- 	struct file *file = cprm->file;
-@@ -135,6 +111,32 @@ end_coredump:
- 	set_fs(fs);
- 	return has_dumped;
- }
-+#else
-+#define aout_core_dump NULL
-+#endif
-+
-+static struct linux_binfmt aout_format = {
-+	.module		= THIS_MODULE,
-+	.load_binary	= load_aout_binary,
-+	.load_shlib	= load_aout_library,
-+	.core_dump	= aout_core_dump,
-+	.min_coredump	= PAGE_SIZE
-+};
-+
-+#define BAD_ADDR(x)	((unsigned long)(x) >= TASK_SIZE)
-+
-+static int set_brk(unsigned long start, unsigned long end)
-+{
-+	start = PAGE_ALIGN(start);
-+	end = PAGE_ALIGN(end);
-+	if (end > start) {
-+		unsigned long addr;
-+		addr = vm_brk(start, end - start);
-+		if (BAD_ADDR(addr))
-+			return addr;
-+	}
-+	return 0;
-+}
- 
- /*
-  * create_aout_tables() parses the env- and arg-strings in new user
-_
+Wouldn't it be better to use #defines instead of the constants in the
+case statements, and also share those #defines with:
 
+
+> +static struct mvebu_mpp_ctrl dove_mpp_controls[] = {
+> +	MPP_FUNC_CTRL(0, 0, "mpp0", dove_pmu_mpp_ctrl),
+                      ^^^^
+
+> +static struct mvebu_mpp_mode dove_mpp_modes[] = {
+> +	MPP_MODE(0,
+                 ^^
