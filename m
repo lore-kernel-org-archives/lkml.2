@@ -1,150 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757836Ab2IKCkp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 22:40:45 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:21696 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753206Ab2IKCkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 22:40:43 -0400
-X-IronPort-AV: E=Sophos;i="4.80,401,1344182400"; 
-   d="scan'208";a="5817317"
-Message-ID: <504EA601.5010704@cn.fujitsu.com>
-Date: Tue, 11 Sep 2012 10:46:25 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1757982Ab2IKCk4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 22:40:56 -0400
+Received: from smtp-fw-4101.amazon.com ([72.21.198.25]:1048 "EHLO
+	smtp-fw-4101.amazon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757915Ab2IKCkv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 22:40:51 -0400
+X-IronPort-AV: E=Sophos;i="4.80,401,1344211200"; 
+   d="scan'208";a="794515465"
+Date: Mon, 10 Sep 2012 19:40:47 -0700
+From: Matt Wilson <msw@amazon.com>
+To: "Justin M. Forbes" <jmforbes@linuxtx.org>
+CC: Jan Beulich <JBeulich@suse.com>, Stefan Bader <stefan.bader@canonical.com>,
+        <xen-devel@lists.xen.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH/RFC] Fix xsave bug on older Xen hypervisors
+Message-ID: <20120911024047.GA7620@u002268147cd4502c336d.ant.amazon.com>
+References: <1347018043-21252-1-git-send-email-stefan.bader@canonical.com>
+ <504A05B00200007800099C7B@nat28.tlf.novell.com>
+ <5049F4E9.9050306@canonical.com>
+ <504A1A950200007800099D4C@nat28.tlf.novell.com>
+ <20120907142251.GA20096@linuxtx.org>
+ <504A32800200007800099E40@nat28.tlf.novell.com>
+ <1347033622.2980.12.camel@fedora64.linuxtx.org>
 MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
-        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
-        cl@linux.com, minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com
-Subject: Re: [RFC v9 PATCH 05/21] memory-hotplug: check whether memory is
- present or not
-References: <1346837155-534-1-git-send-email-wency@cn.fujitsu.com> <1346837155-534-6-git-send-email-wency@cn.fujitsu.com> <504E9EBE.1040403@cn.fujitsu.com> <504EA0F7.5090805@jp.fujitsu.com>
-In-Reply-To: <504EA0F7.5090805@jp.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/11 10:40:06,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/11 10:40:07,
-	Serialize complete at 2012/09/11 10:40:07
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1347033622.2980.12.camel@fedora64.linuxtx.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 09/11/2012 10:24 AM, Yasuaki Ishimatsu Wrote:
-> Hi Wen,
+On Fri, Sep 07, 2012 at 11:00:22AM -0500, Justin M. Forbes wrote:
+> On Fri, 2012-09-07 at 16:44 +0100, Jan Beulich wrote:
+> > 
+> > All of this still doesn't provide evidence that a plain upstream
+> > kernel is actually having any problems in the first place. Further,
+> > if you say EC2 has a crippled hypervisor patch - is that patch
+> > available for looking at somewhere?
 > 
-> 2012/09/11 11:15, Wen Congyang wrote:
->> Hi, ishimatsu
->>
->> At 09/05/2012 05:25 PM, wency@cn.fujitsu.com Wrote:
->>> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->>>
->>> If system supports memory hot-remove, online_pages() may online
->>> removed pages.
->>> So online_pages() need to check whether onlining pages are present or
->>> not.
->>
->> Because we use memory_block_change_state() to hotremoving memory, I think
->> this patch can be removed. What do you think?
-> 
-> Pleae teach me detals a little more. If we use memory_block_change_state(),
-> does the conflict never occur? Why?
+> Yes, I can verify that a plain upstream kernel has problems in the first
+> place, which is why we are carrying a patch to simply disable xsave all
+> together in the pv guest.
+> EC2 is not carrying a patch to cripple the hypervisor, there was an old
+> xen bug that makes all this fail.  The correct fix for that bug is to
+> patch the hypervisor, but they have not done so. Upstream xen has had
+> the fix for quite some time, but that doesn't change the fact that a lot
+> of xen guest usage these days is on EC2.  This is no different than
+> putting in a quirk to work around a firmware bug in common use.
 
-I misunderstand sth, please ignore it.
+I've done some testing and have results that indicate otherwise. The
+out-of-tree xen_write_cr4() patch is not needed as of 2.6.39. I tested
+3.2.21 on a machine that has XSAVE capabilities:
 
-Wen Congyang
+[ec2-user@ip-10-160-18-80 ~]$ cpuid -1 -i | grep -i xsave/xstor
+      XSAVE/XSTOR states                      = true
+      OS-enabled XSAVE/XSTOR                  = false
 
-> 
-> Thansk,
-> Yasuaki Ishimatsu
-> 
->> Thanks
->> Wen Congyang
->>
->>>
->>> CC: David Rientjes <rientjes@google.com>
->>> CC: Jiang Liu <liuj97@gmail.com>
->>> CC: Len Brown <len.brown@intel.com>
->>> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->>> CC: Paul Mackerras <paulus@samba.org>
->>> CC: Christoph Lameter <cl@linux.com>
->>> Cc: Minchan Kim <minchan.kim@gmail.com>
->>> CC: Andrew Morton <akpm@linux-foundation.org>
->>> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->>> CC: Wen Congyang <wency@cn.fujitsu.com>
->>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->>> ---
->>>   include/linux/mmzone.h |   19 +++++++++++++++++++
->>>   mm/memory_hotplug.c    |   13 +++++++++++++
->>>   2 files changed, 32 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
->>> index 2daa54f..ac3ae30 100644
->>> --- a/include/linux/mmzone.h
->>> +++ b/include/linux/mmzone.h
->>> @@ -1180,6 +1180,25 @@ void sparse_init(void);
->>>   #define sparse_index_init(_sec, _nid)  do {} while (0)
->>>   #endif /* CONFIG_SPARSEMEM */
->>>
->>> +#ifdef CONFIG_SPARSEMEM
->>> +static inline int pfns_present(unsigned long pfn, unsigned long
->>> nr_pages)
->>> +{
->>> +    int i;
->>> +    for (i = 0; i < nr_pages; i++) {
->>> +        if (pfn_present(pfn + i))
->>> +            continue;
->>> +        else
->>> +            return -EINVAL;
->>> +    }
->>> +    return 0;
->>> +}
->>> +#else
->>> +static inline int pfns_present(unsigned long pfn, unsigned long
->>> nr_pages)
->>> +{
->>> +    return 0;
->>> +}
->>> +#endif /* CONFIG_SPARSEMEM*/
->>> +
->>>   #ifdef CONFIG_NODES_SPAN_OTHER_NODES
->>>   bool early_pfn_in_nid(unsigned long pfn, int nid);
->>>   #else
->>> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
->>> index 49f7747..299747d 100644
->>> --- a/mm/memory_hotplug.c
->>> +++ b/mm/memory_hotplug.c
->>> @@ -467,6 +467,19 @@ int __ref online_pages(unsigned long pfn,
->>> unsigned long nr_pages)
->>>       struct memory_notify arg;
->>>
->>>       lock_memory_hotplug();
->>> +    /*
->>> +     * If system supports memory hot-remove, the memory may have been
->>> +     * removed. So we check whether the memory has been removed or not.
->>> +     *
->>> +     * Note: When CONFIG_SPARSEMEM is defined, pfns_present() become
->>> +     *       effective. If CONFIG_SPARSEMEM is not defined,
->>> pfns_present()
->>> +     *       always returns 0.
->>> +     */
->>> +    ret = pfns_present(pfn, nr_pages);
->>> +    if (ret) {
->>> +        unlock_memory_hotplug();
->>> +        return ret;
->>> +    }
->>>       arg.start_pfn = pfn;
->>>       arg.nr_pages = nr_pages;
->>>       arg.status_change_nid = -1;
->>
-> 
-> 
-> 
+on an older hypervisor build:
 
+[ec2-user@ip-10-160-18-80 ~]$ cat /sys/hypervisor/version/major
+3
+[ec2-user@ip-10-160-18-80 ~]$ cat /sys/hypervisor/version/minor
+0
+
+and it boots without a problem. This patch correctly detects that the
+hypervisor supports XSAVE by testing for OSXSAVE:
+
+commit 947ccf9c3c30307b774af3666ee74fcd9f47f646
+Author:     Shan Haitao <haitao.shan@intel.com>
+AuthorDate: Tue Nov 9 11:43:36 2010 -0800
+Commit:     Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CommitDate: Wed Apr 6 08:31:13 2011 -0400
+
+    xen: Allow PV-OPS kernel to detect whether XSAVE is supported
+    
+    Xen fails to mask XSAVE from the cpuid feature, despite not historically
+    supporting guest use of XSAVE.  However, now that XSAVE support has been
+    added to Xen, we need to reliably detect its presence.
+    
+    The most reliable way to do this is to look at the OSXSAVE feature in
+    cpuid which is set iff the OS (Xen, in this case), has set
+    CR4.OSXSAVE.
+
+Matt
