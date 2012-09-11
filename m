@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932370Ab2IKA3L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 20:29:11 -0400
+	id S1758773Ab2IKA3I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 20:29:08 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:48873 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757963Ab2IKAWp (ORCPT
+	with ESMTP id S1758645Ab2IKAWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 20:22:45 -0400
+	Mon, 10 Sep 2012 20:22:47 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com
 Cc: axboe@kernel.dk, Kent Overstreet <koverstreet@google.com>, tj@kernel.org,
         neilb@suse.de
-Subject: [PATCH v2 02/26] block: Add bio_advance()
-Date: Mon, 10 Sep 2012 17:22:13 -0700
-Message-Id: <1347322957-25260-3-git-send-email-koverstreet@google.com>
+Subject: [PATCH v2 04/26] md: Convert md_trim_bio() to use bio_advance()
+Date: Mon, 10 Sep 2012 17:22:15 -0700
+Message-Id: <1347322957-25260-5-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1347322957-25260-1-git-send-email-koverstreet@google.com>
 References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
@@ -22,83 +22,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is prep work for immutable bio vecs; we first want to centralize
-where bvecs are modified.
-
-Next two patches convert some existing code to use this function.
-
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 CC: Jens Axboe <axboe@kernel.dk>
+CC: NeilBrown <neilb@suse.de>
 ---
- fs/bio.c            | 41 +++++++++++++++++++++++++++++++++++++++++
- include/linux/bio.h |  2 ++
- 2 files changed, 43 insertions(+)
+ drivers/md/md.c | 19 +++++--------------
+ 1 file changed, 5 insertions(+), 14 deletions(-)
 
-diff --git a/fs/bio.c b/fs/bio.c
-index 4783e31..07587c0 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -750,6 +750,47 @@ int bio_add_page(struct bio *bio, struct page *page, unsigned int len,
- }
- EXPORT_SYMBOL(bio_add_page);
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index 7a2b079..51ce48c 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -190,25 +190,16 @@ void md_trim_bio(struct bio *bio, int offset, int size)
+ 	struct bio_vec *bvec;
+ 	int sofar = 0;
  
-+/**
-+ * bio_advance - increment/complete a bio by some number of bytes
-+ * @bio:	bio to advance
-+ * @bytes:	number of bytes to complete
-+ *
-+ * This updates bi_sector, bi_size and bi_idx; if the number of bytes to
-+ * complete doesn't align with a bvec boundary, then bv_len and bv_offset will
-+ * be updated on the last bvec as well.
-+ *
-+ * @bio will then represent the remaining, uncompleted portion of the io.
-+ */
-+void bio_advance(struct bio *bio, unsigned bytes)
-+{
-+	if (bio_integrity(bio))
-+		bio_integrity_advance(bio, bytes);
-+
-+	bio->bi_sector += bytes >> 0;
-+	bio->bi_size -= bytes;
-+
-+	if (!bio->bi_size)
-+		return;
-+
-+	while (bytes) {
-+		if (unlikely(bio->bi_idx >= bio->bi_vcnt)) {
-+			printk(KERN_ERR "%s: bio idx %d >= vcnt %d\n",
-+			       __func__, bio->bi_idx, bio->bi_vcnt);
-+			break;
-+		}
-+
-+		if (bytes >= bio_iovec(bio)->bv_len) {
-+			bytes -= bio_iovec(bio)->bv_len;
-+			bio->bi_idx++;
-+		} else {
-+			bio_iovec(bio)->bv_len -= bytes;
-+			bio_iovec(bio)->bv_offset += bytes;
-+			bytes = 0;
-+		}
-+	}
-+}
-+EXPORT_SYMBOL(bio_advance);
-+
- struct bio_map_data {
- 	struct bio_vec *iovecs;
- 	struct sg_iovec *sgvecs;
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 7873465..6763cdf 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -248,6 +248,8 @@ extern void bio_endio(struct bio *, int);
- struct request_queue;
- extern int bio_phys_segments(struct request_queue *, struct bio *);
+-	size <<= 9;
+ 	if (offset == 0 && size == bio->bi_size)
+ 		return;
  
-+void bio_advance(struct bio *, unsigned);
-+
- extern void bio_init(struct bio *);
- extern void bio_reset(struct bio *);
+-	bio->bi_sector += offset;
+-	bio->bi_size = size;
+-	offset <<= 9;
+ 	clear_bit(BIO_SEG_VALID, &bio->bi_flags);
  
+-	while (bio->bi_idx < bio->bi_vcnt &&
+-	       bio->bi_io_vec[bio->bi_idx].bv_len <= offset) {
+-		/* remove this whole bio_vec */
+-		offset -= bio->bi_io_vec[bio->bi_idx].bv_len;
+-		bio->bi_idx++;
+-	}
+-	if (bio->bi_idx < bio->bi_vcnt) {
+-		bio->bi_io_vec[bio->bi_idx].bv_offset += offset;
+-		bio->bi_io_vec[bio->bi_idx].bv_len -= offset;
+-	}
++	bio_advance(bio, offset << 9);
++
++	size <<= 9;
++	bio->bi_size = size;
++
+ 	/* avoid any complications with bi_idx being non-zero*/
+ 	if (bio->bi_idx) {
+ 		memmove(bio->bi_io_vec, bio->bi_io_vec+bio->bi_idx,
 -- 
 1.7.12
 
