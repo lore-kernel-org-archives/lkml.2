@@ -1,96 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758713Ab2IKKqJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 06:46:09 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:45087 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753451Ab2IKKqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 06:46:07 -0400
-X-IronPort-AV: E=Sophos;i="4.80,404,1344182400"; 
-   d="scan'208";a="5822588"
-Message-ID: <504F07ED.3070502@cn.fujitsu.com>
-Date: Tue, 11 Sep 2012 17:44:13 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1758745Ab2IKKqz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 06:46:55 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:52493 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753451Ab2IKKqx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 06:46:53 -0400
+Date: Tue, 11 Sep 2012 12:46:35 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Bill Huang <bilhuang@nvidia.com>
+Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        Xin Xie <xxie@nvidia.com>, "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
+        "jhovold@gmail.com" <jhovold@gmail.com>,
+        "kyle.manna@fuel7.com" <kyle.manna@fuel7.com>,
+        Rhyland Klein <rklein@nvidia.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/2] mfd: dt: add power off support for Tegra20/Tegra30
+Message-ID: <20120911104635.GB28904@avionic-0098.mockup.avionic-design.de>
+References: <1345424876-4365-1-git-send-email-bilhuang@nvidia.com>
+ <A7051F87A141B744BCAF487D48E5B3BDF5BBE83B1A@HKMAIL02.nvidia.com>
 MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, x86 maintainers <x86@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Yinghai Lu <yinghai@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "'FNST-Wen Congyang'" <wency@cn.fujitsu.com>
-Subject: [V4 PATCH 27/27] memory,hotplug: Don't modify the zone_start_pfn
- outside of zone_span_writelock()
-References: <1347267558-6707-1-git-send-email-laijs@cn.fujitsu.com> <504E8874.5020605@jp.fujitsu.com>
-In-Reply-To: <504E8874.5020605@jp.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/11 17:41:44,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/11 17:41:48,
-	Serialize complete at 2012/09/11 17:41:48
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KFztAG8eRSV9hGtP"
+Content-Disposition: inline
+In-Reply-To: <A7051F87A141B744BCAF487D48E5B3BDF5BBE83B1A@HKMAIL02.nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:lrHpN4mWGItTYgE9Xeg1cS2Eae05+SJueGoy+PDdwR3
+ mAvQezokMMPpRsMJc+DgIIS7LjjqrwwzH5/NnPY2N/AHLWZ6It
+ +Qxgl/SwiKIXPllvXfcT3DNcAra5MEfKGWsQ1qubJPC6FrwzTE
+ 98SiXF39ByVwwLoF3ARpcDEKK8EFXkUSUJD8H0mVbj0LKaNYto
+ OBwsgGkm/SRZMILxH2K25ISLjsKQo78otxJEWWed/y+S4YS5Kg
+ Dgwrk3XhrUG4OoD3/saaPRNadcBg4kGwawycSiwPfRXWU/HIGv
+ H9oJnHaOWuUQqPdRCSHx2vw3YYXNpsG4UtNmd/zR1L7lDiFBlO
+ dAHiSF+R7yKdHMjNVj41tLem/R9IAIwEjHgNKeSgV//Q6UvJtH
+ Bv7GP4i87gZCCAXa+8F/XN7mZwsge4qnJE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2012 08:40 AM, Yasuaki Ishimatsu wrote:
-> Hi Lai,
-> 
-> Using memory_online to hot-added node's memory, the following kernel messages
-> were shown. Is this a known issue?
 
-Fixed.
+--KFztAG8eRSV9hGtP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Subject: Don't modify the zone_start_pfn outside of zone_span_writelock()
+On Tue, Sep 11, 2012 at 06:25:14PM +0800, Bill Huang wrote:
+> Hi all,=20
+>=20
+> Could somebody review this?
 
-Original __add_zone() and new online_movable/online_kernel
-maybe call sleep-able init_currently_empty_zone() to init wait_table,
+Given that I haven't been able to test yet (due to time constraints)
+with PM_SLEEP_SMP enabled, I don't want to give you a Tested-by, but the
+code looks okay to me, so for both patches:
 
-but this function also modifies the zone_start_pfn without lock. 
-so we move this code out, and ensure the modification of zone_start_pfn is done
-with zone_span_writelock() held or booting.
+Reviewed-by: Thierry Reding <thierry.reding@avionic-design.de>
 
-Since zone_start_pfn is not modified by init_currently_empty_zone()
-grow_zone_span() needs to be updated to be aware of empty zone.
+--KFztAG8eRSV9hGtP
+Content-Type: application/pgp-signature
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Reported-by: Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>
-Tested-by: Wen Congyang <wency@cn.fujitsu.com>
----
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 3ad25f9..c26a4ea 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -201,7 +201,7 @@ static void grow_zone_span(struct zone *zone, unsigned long start_pfn,
- 	zone_span_writelock(zone);
- 
- 	old_zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
--	if (start_pfn < zone->zone_start_pfn)
-+	if (!zone->zone_start_pfn || start_pfn < zone->zone_start_pfn)
- 		zone->zone_start_pfn = start_pfn;
- 
- 	zone->spanned_pages = max(old_zone_end_pfn, end_pfn) -
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 009ac28..637b4f8 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -3991,8 +3991,6 @@ int __meminit init_currently_empty_zone(struct zone *zone,
- 		return ret;
- 	pgdat->nr_zones = zone_idx(zone) + 1;
- 
--	zone->zone_start_pfn = zone_start_pfn;
--
- 	mminit_dprintk(MMINIT_TRACE, "memmap_init",
- 			"Initialising map node %d zone %lu pfns %lu -> %lu\n",
- 			pgdat->node_id,
-@@ -4459,6 +4457,7 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
- 		ret = init_currently_empty_zone(zone, zone_start_pfn,
- 						size, MEMMAP_EARLY);
- 		BUG_ON(ret);
-+		zone->zone_start_pfn = zone_start_pfn;
- 		memmap_init(size, nid, j, zone_start_pfn);
- 		zone_start_pfn += size;
- 	}
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQTxaLAAoJEN0jrNd/PrOhMrAP/3TFBm/FzXFsRyBM/mz16nQN
+dVHPyIUTpkCt5sJW9/c+WDkJFOsx0yYrIIV9GsGxXFsPMn766svA8IFmihZmYrSG
+ckWJovr+fEcOCOqsddAQ/GgW16WrVrshkSDPJFrlWzszvt6PdAQQkY9h+FgZXHE4
+qDKFgpStkjmBahzyEG0BZrBexcvCq/X/QOfgSQpvl17rqnWdSBmxzVWEfODYveOW
+zkjJ/Q7SYlaO58ncuDrp0ERRePzfbgZkHZSyp62BqRbQZ5QvGAdLWaDqTnwnTvmL
+4MuD1VpqCOo2hbtVfpuKM7HspVUvWwbUMFQvrhxAOaHoDkdqj8F2reCEeLF5paCI
+T6pZ1R6Lpuy7aRyHQI19NO2dLvAp9hDK1saHGE9S5YXRyq9qXnxso73kpaVGxacw
+kj8/y7avVGBO8VxUXHm4S0dSGFKFW9uMVf8Nej45C6ujPrdqPDaa8qjK8jXc4Iq6
+Tw7bQNY14w6k/IVC6IR78WjvVSEO+08762C9kkube2dUy0lWXYlH0R7ffSWAHIH8
+bFDHhVUhWk1jL0evIIHiLRhyu10VpRSOyMU3xlCRGt1Rpwxy7CcVHmfwAZaF39BP
+WFFNIHoAE9ZTdzJ8veh8X4mZWxHkCXanh03gbEK9xGmYi5Kz9vjBhSKCK63/4vfF
+D/hzEKEzf8Vlu5reNX4U
+=Bn20
+-----END PGP SIGNATURE-----
+
+--KFztAG8eRSV9hGtP--
