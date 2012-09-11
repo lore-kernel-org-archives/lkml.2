@@ -1,48 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754361Ab2IKGIi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 02:08:38 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49181 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751908Ab2IKGIg (ORCPT
+	id S1755126Ab2IKGKe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 02:10:34 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62026 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751251Ab2IKGKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 02:08:36 -0400
-Message-ID: <504ED55F.9060701@gmail.com>
-Date: Tue, 11 Sep 2012 16:08:31 +1000
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Jingoo Han <jg1.han@samsung.com>
-CC: "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Linus Walleij'" <linus.walleij@linaro.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] gpio: samsung: use pr_* instead of printk
-References: <002f01cd8f4b$b1100a30$13301e90$%han@samsung.com>
-In-Reply-To: <002f01cd8f4b$b1100a30$13301e90$%han@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Sep 2012 02:10:33 -0400
+From: Hideki EIRAKU <hdk@igel.co.jp>
+To: Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Simon Horman <horms@verge.net.au>
+Cc: linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Katsuya MATSUBARA <matsu@igel.co.jp>,
+        Damian Hobson-Garcia <dhobsong@igel.co.jp>,
+        Hideki EIRAKU <hdk@igel.co.jp>
+Subject: [PATCH v3 0/2] Renesas IPMMU driver for sh7372
+Date: Tue, 11 Sep 2012 15:10:12 +0900
+Message-Id: <1347343814-32299-1-git-send-email-hdk@igel.co.jp>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09/12 21:59, Jingoo Han wrote:
-> This patch uses pr_* instead of printk.
-> 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com> --- 
-> drivers/gpio/gpio-samsung.c |    6 +++--- 1 files changed, 3
-> insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/gpio/gpio-samsung.c
-> b/drivers/gpio/gpio-samsung.c index ba126cc..e38d990 100644 ---
-> a/drivers/gpio/gpio-samsung.c +++ b/drivers/gpio/gpio-samsung.c @@
-> -45,7 +45,7 @@ #ifndef DEBUG_GPIO #define gpio_dbg(x...) do { } while
-> (0) #else -#define gpio_dbg(x...) printk(KERN_DEBUG x) +#define
-> gpio_dbg(x...) pr_debug(x)
+This is the Renesas IPMMU driver, IOMMU API implementation and IPMMU
+device support for sh7372 (AP4EVB and Mackerel).
 
-This is a functional change since pr_debug compiles away to nothing
-unless DEBUG is defined, so now you need to define both DEBUG and
-DEBUG_GPIO for this to print.
+The IPMMU module supports the MMU function and the PMB function.  The
+MMU function provides address translation by pagetable compatible with
+ARMv6.  The PMB function provides address translation including
+tile-linear translation.  This is implementation of the MMU function.
 
-A better fix would be to just replace calls to gpio_dbg with pr_debug.
+v3:
+- Rebased on 3.6-rc5.
+- Simplify configs.  SHMOBILE_IPMMU is now selected by setting
+  SHMOBILE_IOMMU.
+- Remove weak symbols.
+- Use drvdata to store private driver data.
+- Make a function for writing to a register of IPMMU.
+- Add a lock to accessing the tlb_enabled member.
+- Make unmap work correctly with size larger than map size.
+- Free L2 page table when 1MiB page is mapped or unmapped.
+- Add VEU devices as IP blocks on the ICB.
+v2:
+- Rebased on v3.6-rc1.
+- Make variable names clear.
+- Page table size can now be selected by config.
 
-~Ryan
+Hideki EIRAKU (2):
+  iommu/shmobile: Add iommu driver for Renesas IPMMU modules
+  ARM: mach-shmobile: sh7372: Add IPMMU device
+
+ arch/arm/mach-shmobile/Kconfig              |    6 +
+ arch/arm/mach-shmobile/Makefile             |    3 +
+ arch/arm/mach-shmobile/board-ap4evb.c       |    5 +
+ arch/arm/mach-shmobile/board-mackerel.c     |    5 +
+ arch/arm/mach-shmobile/include/mach/ipmmu.h |   16 ++
+ arch/arm/mach-shmobile/ipmmu.c              |  150 +++++++++++
+ arch/arm/mach-shmobile/setup-sh7372.c       |   26 ++
+ drivers/iommu/Kconfig                       |   36 +++
+ drivers/iommu/Makefile                      |    1 +
+ drivers/iommu/shmobile-iommu.c              |  372 +++++++++++++++++++++++++++
+ 10 files changed, 620 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-shmobile/include/mach/ipmmu.h
+ create mode 100644 arch/arm/mach-shmobile/ipmmu.c
+ create mode 100644 drivers/iommu/shmobile-iommu.c
+
