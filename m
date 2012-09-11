@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758003Ab2IKW6n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 18:58:43 -0400
-Received: from ovro.ovro.caltech.edu ([192.100.16.2]:51244 "EHLO
-	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755563Ab2IKW6T (ORCPT
+	id S1754848Ab2IKXCj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 19:02:39 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:16193 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750934Ab2IKXCi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 18:58:19 -0400
-From: "Ira W. Snyder" <iws@ovro.caltech.edu>
-To: linux-kernel@vger.kernel.org
-Cc: linux-can@vger.kernel.org, sameo@linux.intel.com,
-        "Ira W. Snyder" <iws@ovro.caltech.edu>
-Subject: [PATCH 1/2] mfd/janz-cmodio: fix MODULBus number sysfs entry
-Date: Tue, 11 Sep 2012 15:58:14 -0700
-Message-Id: <1347404295-7985-2-git-send-email-iws@ovro.caltech.edu>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1347404295-7985-1-git-send-email-iws@ovro.caltech.edu>
-References: <1347404295-7985-1-git-send-email-iws@ovro.caltech.edu>
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (ovro.ovro.caltech.edu); Tue, 11 Sep 2012 15:58:16 -0700 (PDT)
+	Tue, 11 Sep 2012 19:02:38 -0400
+From: T Makphaibulchoke <tmac@hp.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        matt.fleming@intel.com, keithp@keithp.com,
+        linux-kernel@vger.kernel.org
+Cc: T Makphaibulchoke <tmac@hp.com>
+Subject: [PATCH] x86/platform/efi/efi_64.c: fix problem in efi_ioremap in case of a failure in init_memory_mapping.
+Date: Tue, 11 Sep 2012 17:02:34 -0600
+Message-Id: <1347404554-16975-1-git-send-email-tmac@hp.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ira W. Snyder" <iws@ovro.caltech.edu>
+In the case that init_memory_mapping failed, returning a NULL, simply return.
+An attempt to recursively invoke efi_io_remap could result in mapping of a
+wrong range, 0 to size + physaddr, instead of the intended physaddr to
+physaddr + size - 1 range.
 
-Revision 1.0 of the Janz CMOD-IO Carrier Board does not contain zeroes
-in the top 4 bits of the modulbus_num (int_enable) register. Mask off
-the unused bits so that the correct value is displayed in sysfs.
-
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
+Signed-off-by: T Makphaibulchoke <tmac@hp.com>
 ---
- drivers/mfd/janz-cmodio.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/platform/efi/efi_64.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mfd/janz-cmodio.c b/drivers/mfd/janz-cmodio.c
-index 2ea9998..32d0efd 100644
---- a/drivers/mfd/janz-cmodio.c
-+++ b/drivers/mfd/janz-cmodio.c
-@@ -216,7 +216,7 @@ static int __devinit cmodio_pci_probe(struct pci_dev *dev,
- 	}
+diff --git a/arch/x86/platform/efi/efi_64.c b/arch/x86/platform/efi/efi_64.c
+index ac3aa54..5d032e9 100644
+--- a/arch/x86/platform/efi/efi_64.c
++++ b/arch/x86/platform/efi/efi_64.c
+@@ -90,6 +90,14 @@ void __iomem *__init efi_ioremap(unsigned long phys_addr, unsigned long size,
+ 		return ioremap(phys_addr, size);
  
- 	/* Read the hex switch on the carrier board */
--	priv->hex = ioread8(&priv->ctrl->int_enable);
-+	priv->hex = ioread8(&priv->ctrl->int_enable) & 0x0f;
- 
- 	/* Add the MODULbus number (hex switch value) to the device's sysfs */
- 	ret = sysfs_create_group(&dev->dev.kobj, &cmodio_sysfs_attr_group);
+ 	last_map_pfn = init_memory_mapping(phys_addr, phys_addr + size);
++
++	if (!last_map_pfn) {
++		/* Do not try to rmmap again in case of a failure */
++		pr_warn("%s: mapping of 0x%lx(0x%lx) failed.\n",
++			__func__, phys_addr, size);
++		return NULL;
++	}
++
+ 	if ((last_map_pfn << PAGE_SHIFT) < phys_addr + size) {
+ 		unsigned long top = last_map_pfn << PAGE_SHIFT;
+ 		efi_ioremap(top, size - (top - phys_addr), type);
 -- 
-1.7.8.6
+1.7.1
 
