@@ -1,77 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757130Ab2IKJQi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 05:16:38 -0400
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:52631 "EHLO
-	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751244Ab2IKJQg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 05:16:36 -0400
+	id S1757440Ab2IKJSb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 05:18:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4215 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751244Ab2IKJSa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 05:18:30 -0400
+Message-ID: <504F01DE.20505@redhat.com>
+Date: Tue, 11 Sep 2012 12:18:22 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <504F0053.6000808@ti.com>
-References: <1347345381-4390-1-git-send-email-kishon@ti.com>
-	<504EF587.3080903@ti.com>
-	<CAAe_U6JoW36bWSamHkRV66JX5fZ3QkLQv=4XJr-MuaFgaRjOaA@mail.gmail.com>
-	<504F0053.6000808@ti.com>
-Date: Tue, 11 Sep 2012 14:46:35 +0530
-Message-ID: <CAAe_U6Kanxmvw5mWzGQ-7Jig6K75FA7UwxUipKfp4gURtntrRg@mail.gmail.com>
-Subject: Re: [PATCH v2 0/3] arm/dts: omap: add dt data for MUSB
-From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-To: Benoit Cousson <b-cousson@ti.com>
-Cc: tony@atomide.com, balbi@ti.com, linux@arm.linux.org.uk,
-        rob.herring@calxeda.com, grant.likely@secretlab.ca, rnayak@ti.com,
-        hvaibhav@ti.com, peter.ujfalusi@ti.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v6 12/12] KVM: indicate readonly access fault
+References: <5032F8FD.2020306@linux.vnet.ibm.com> <5032FA78.9040405@linux.vnet.ibm.com> <5034CB60.30107@redhat.com> <5034D4E3.2080801@linux.vnet.ibm.com> <5048AE96.3050909@redhat.com> <5049C4D7.50101@linux.vnet.ibm.com> <20120910223140.GA24275@amt.cnet>
+In-Reply-To: <20120910223140.GA24275@amt.cnet>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 09/11/2012 01:31 AM, Marcelo Tosatti wrote:
+> On Fri, Sep 07, 2012 at 05:56:39PM +0800, Xiao Guangrong wrote:
+>> On 09/06/2012 10:09 PM, Avi Kivity wrote:
+>> > On 08/22/2012 03:47 PM, Xiao Guangrong wrote:
+>> >> On 08/22/2012 08:06 PM, Avi Kivity wrote:
+>> >>> On 08/21/2012 06:03 AM, Xiao Guangrong wrote:
+>> >>>> Introduce write_readonly_mem in mmio-exit-info to indicate this exit is
+>> >>>> caused by write access on readonly memslot
+>> >>>
+>> >>> Please document this in chapter 5 of apic.txt.
+>> >>>
+>> >>
+>> >> Okay, please review this one.
+>> >>
+>> >> Subject: [PATCH v6 12/12] KVM: indicate readonly access fault
+>> >>
+>> >> Introduce write_readonly_mem in mmio-exit-info to indicate this exit is
+>> >> caused by write access on readonly memslot
+>> >>
+>> > 
+>> > I'm not sure whether this indication can be trusted by userspace.  By
+>> > the time userspace gets to process this, the slot may no longer exist,
+>> > or it may be writable.
+>> 
+>> The case of deleting memslot is ok, because userspace just skips this fault
+>> if no readonly mem or no fault handler can be found.
+>> 
+>> Switching memslot from readonly to writable sounds strange, i agree with you
+>> that this flag is untrusty under this case.
+>> 
+>> Marcelo, any comments?
+> 
+> The same can happen with slot deletion, for example. 
+> 
+> Userspace (which performed the modification which can result in faults
+> to non-existant/read-only/.../new-tag memslot), must handle the faults 
+> properly or avoid the possibility for reference to memslot information 
+> from the past.
+> 
+> I think its worthwhile to add a note about this in the API
+> documentation: "The user of this interface is responsible for handling 
+> references to stale memslot information, either by handling
+> exit notifications which reference stale memslot information or not
+> allowing these notifications to exist by stopping all vcpus in userspace
+> before performing modifications to the memslots map".
 
-On Tue, Sep 11, 2012 at 2:41 PM, Benoit Cousson <b-cousson@ti.com> wrote:
-> On 09/11/2012 10:44 AM, ABRAHAM, KISHON VIJAY wrote:
->> Hi Benoit,
->>
->> On Tue, Sep 11, 2012 at 1:55 PM, Benoit Cousson <b-cousson@ti.com> wrote:
->>> On 09/11/2012 08:36 AM, Kishon Vijay Abraham I wrote:
->>>> No major change from the previous version. Just removed the
->>>> omap-usb2 dt data and sent that as a separate patch.
->>>
->>> Well, I think you'd better keep them in the same series :-)
->>>
->>>> Rebased on
->>>> git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git musb
->>>
->>> Since it is DTS stuf, you should rebase that on top of the latest
->>> lo/devel-dt branch. All the latest DTS patches an in there for 3.7.
->>
->> The ocp2scp data is not in linux-omap :-( And omap-usb2 has to be a
->> child of ocp2scp. So I used arm-soc tree to which ocp2scp stuff was
->> pulled into.
->
-> Mmm, but from what tree? It did not go through Tony?
-> What arm-soc branch exactly?
+Or we can drop the new interface and rely on userspace to perform the
+lookup under its own locking rules.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git for-next
-(or) ocp2scp
+It's slow, but writes to ROM or ROM/device are rare anyway.
 
-Thanks
-Kishon
->
-> In that case we need to merge Tony's devel-dt into arm-soc to have a
-> common base or ask Tony to rebase on top of arm-soc.
->
-> I added a bunch of change inside OMAP4.dtsi, so we can expect some nice
-> conflicts.
-> That's why it is better to push DTS patches using a single channel.
->
->
-> Tony,
-> What will make more sense to avoid merge conflict later?
->
->
-> Regards,
-> Benoit
->
->
+
+-- 
+error compiling committee.c: too many arguments to function
