@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759398Ab2IKXff (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 19:35:35 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:53795 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759039Ab2IKXfd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 19:35:33 -0400
+	id S1757461Ab2IKXle (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 19:41:34 -0400
+Received: from mga01.intel.com ([192.55.52.88]:13236 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751484Ab2IKXlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 19:41:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,407,1344236400"; 
+   d="scan'208";a="220944876"
+Date: Wed, 12 Sep 2012 07:41:30 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: BUG: soft lockup - CPU#1 stuck for 1024s!
+Message-ID: <20120911234130.GA13382@localhost>
+References: <20120909075927.GA13058@localhost>
+ <504E1E19.9050106@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <1346800307-11041-1-git-send-email-Jiang.Wang@riverbed.com>
-References: <1346800307-11041-1-git-send-email-Jiang.Wang@riverbed.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 11 Sep 2012 17:35:11 -0600
-Message-ID: <CAErSpo7vu0uS=06Dr82-LZ3KBzxaje6fV+H=Foi-bD1c6mUcFA@mail.gmail.com>
-Subject: Re: [PATCH 1/1] pci-iov: Fix warnings when CONFIG_PCI_IOV is enabled
-To: Jiang Wang <Jiang.Wang@riverbed.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        clala@riverbed.com, Francis.St.Amant@riverbed.com,
-        Jiang Wang <jwang@riverbed.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <504E1E19.9050106@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 4, 2012 at 5:11 PM, Jiang Wang <Jiang.Wang@riverbed.com> wrote:
-> When CONFIG_PCI_IOV is enabled, the kernel will call sriov_init().
-> This function tries to allocate virtual resources even if the
-> virtual function of a PCI devive is not enabled by the BIOS.
->
-> This sometimes causes following warning messages during boot up:
-> pci 0000:02:00.0: BAR 9: can't allocate mem resource [0x000000-0x3fffff]
-> pci 0000:02:00.0: BAR 7: can't allocate mem resource [0x000000-0x03ffff]
->
-> Tested on three Mitac motherboards.
->
-> Signed-off-by: Jiang Wang <jwang@riverbed.com>
-> ---
->  drivers/pci/iov.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
-> index 6554e1a..0ca8cb2 100644
-> --- a/drivers/pci/iov.c
-> +++ b/drivers/pci/iov.c
-> @@ -441,7 +441,8 @@ static int sriov_init(struct pci_dev *dev, int pos)
->         if (ctrl & PCI_SRIOV_CTRL_VFE) {
->                 pci_write_config_word(dev, pos + PCI_SRIOV_CTRL, 0);
->                 ssleep(1);
-> -       }
-> +       } else
-> +               return 0;
+On Mon, Sep 10, 2012 at 10:06:33AM -0700, John Stultz wrote:
+> On 09/09/2012 12:59 AM, Fengguang Wu wrote:
+> >Hi John,
+> >
+> >The below lockup warning pops up very occasionally in kvm guest
+> >kernels and it's bisected down to
+> >
+> >         commit 2a8c0883c3cfffcc148ea606e2a4e7453cd75e73
+> >         Author: John Stultz <john.stultz@linaro.org>
+> >         Date:   Fri Jul 13 01:21:56 2012 -0400
+> >
+> >             time: Move xtime_nsec adjustment underflow handling timekeeping_adjust
+> >
+> >[    8.340327] Freeing unused kernel memory: 460k freed
+> >[ 1107.515496] [sched_delayed] sched: RT throttling activated
+> >[ 1107.516439] BUG: soft lockup - CPU#1 stuck for 1024s! [swapper/1:0]
+> 
+> 
+> Thanks so much for sending this. One detail I'm curious about is
+> that these kernels from the Bug messages seem to be v3.6-rc1 or
+> earlier.
+> 
+> Ingo had a fix 1d17d17484d40f2d5b35c79518597a2b25296996 ("time: Fix
+> adjustment cleanup bug in timekeeping_adjust") that landed in
+> 3.6-rc2
+> 
+> Has this issue actually been seen on a 3.6-rc2+ kernel?
 
-But this would mean that Linux can't *ever* enable VFs unless the BIOS
-enabled them, right?  I don't think that's what we want -- there's
-code in sriov_enable() to turn on VFE, assuming we have enough
-resources for the VFs.
+Nope. I tested -rc5 for 10000+ boots and it's obviously free from the bug.
+Sorry for the noise!
 
-It's certainly possible that the BIOS didn't allocate large enough
-apertures in the bridges leading to the SR-IOV device to accommodate
-all the VFs, and Linux may not be smart enough to enlarge them.  And
-probably our warning messages in that case are not very enlightening.
-
-Bjorn
-
->         pci_read_config_word(dev, pos + PCI_SRIOV_TOTAL_VF, &total);
->         if (!total)
-> --
-> 1.7.1
->
+Thanks,
+Fengguang
