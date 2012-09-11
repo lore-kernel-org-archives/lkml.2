@@ -1,189 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755674Ab2IKWgk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 18:36:40 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:39268 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753469Ab2IKWgh (ORCPT
+	id S1754550Ab2IKWnm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 18:43:42 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:51240 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751502Ab2IKWnl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 18:36:37 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: stable@vger.kernel.org
-Cc: John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prarit Bhargava <prarit@redhat.com>, Zhouping Liu <zliu@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/3] 3.2.y: time: Improve sanity checking of timekeeping inputs
-Date: Tue, 11 Sep 2012 18:35:24 -0400
-Message-Id: <1347402926-34813-2-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1347402926-34813-1-git-send-email-john.stultz@linaro.org>
-References: <1347402926-34813-1-git-send-email-john.stultz@linaro.org>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12091122-7606-0000-0000-00000393A2F9
+	Tue, 11 Sep 2012 18:43:41 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgwKAJW9T1B5LPyM/2dsb2JhbABFulADgQSBCIIgAQEEATocIwULCAMVAy4UDRgDFh6HfgMJBbJMDYlTFIoZY26CGYI/YAOUCoFUixaFCIJ4
+Date: Wed, 12 Sep 2012 08:43:37 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: raghu.prabhu13@gmail.com
+Cc: xfs@oss.sgi.com, Raghavendra D Prabhu <rprabhu@wnohang.net>,
+        Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] Add ratelimited printk for different alert levels
+Message-ID: <20120911224337.GF11511@dastard>
+References: <cover.1347396641.git.rprabhu@wnohang.net>
+ <ef779779fdfb84c7c1216b374216246d4de83233.1347396641.git.rprabhu@wnohang.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ef779779fdfb84c7c1216b374216246d4de83233.1347396641.git.rprabhu@wnohang.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a -stable backport of 4e8b14526ca7fb046a81c94002c1c43b6fdf0e9b
+On Wed, Sep 12, 2012 at 03:43:22AM +0530, raghu.prabhu13@gmail.com wrote:
+> From: Raghavendra D Prabhu <rprabhu@wnohang.net>
+> 
+> Ratelimited printk will be useful in printing xfs messages which are otherwise
+> not required to be printed always due to their high rate (to prevent kernel ring
+> buffer from overflowing), while at the same time required to be printed.
+> 
+> Signed-off-by: Raghavendra D Prabhu <rprabhu@wnohang.net>
+> ---
+>  fs/xfs/xfs_message.h | 28 ++++++++++++++++++++++++++++
+>  1 file changed, 28 insertions(+)
+> 
+> diff --git a/fs/xfs/xfs_message.h b/fs/xfs/xfs_message.h
+> index 56dc0c1..87999a5 100644
+> --- a/fs/xfs/xfs_message.h
+> +++ b/fs/xfs/xfs_message.h
+> @@ -1,6 +1,8 @@
+>  #ifndef __XFS_MESSAGE_H
+>  #define __XFS_MESSAGE_H 1
+>  
+> +#include <linux/ratelimit.h>
+> +
 
-Unexpected behavior could occur if the time is set to a value large
-enough to overflow a 64bit ktime_t (which is something larger then the
-year 2262).
+Include this in xfs_linux.h rather than here.
 
-Also unexpected behavior could occur if large negative offsets are
-injected via adjtimex.
+>  struct xfs_mount;
+>  
+>  extern __printf(2, 3)
+> @@ -30,6 +32,32 @@ void xfs_debug(const struct xfs_mount *mp, const char *fmt, ...)
+>  }
+>  #endif
+>  
+> +#define xfs_printk_ratelimited(xfs_printk, dev, fmt, ...)		\
+> +do {									\
+> +	static DEFINE_RATELIMIT_STATE(_rs,				\
+> +				      DEFAULT_RATELIMIT_INTERVAL,	\
+> +				      DEFAULT_RATELIMIT_BURST);		\
+> +	if (__ratelimit(&_rs))						\
+> +		xfs_printk(dev, fmt, ##__VA_ARGS__);			\
+> +} while (0)
 
-So this patch improves the sanity check timekeeping inputs by
-improving the timespec_valid() check, and then makes better use of
-timespec_valid() to make sure we don't set the time to an invalid
-negative value or one that overflows ktime_t.
+Use "func" not xfs_printk here. xfs_printk looks too much like a
+real function name (indeed, we already have __xfs_printk) rather
+than a macro parameter.
 
-Note: This does not protect from setting the time close to overflowing
-ktime_t and then letting natural accumulation cause the overflow.
+> +#define xfs_emerg_ratelimited(dev, fmt, ...)				\
+> +	xfs_printk_ratelimited(xfs_emerg, dev, fmt, ##__VA_ARGS__)
+> +#define xfs_alert_ratelimited(dev, fmt, ...)				\
+> +	xfs_printk_ratelimited(xfs_alert, dev, fmt, ##__VA_ARGS__)
+> +#define xfs_crit_ratelimited(dev, fmt, ...)				\
+> +	xfs_printk_ratelimited(xfs_crit, dev, fmt, ##__VA_ARGS__)
+> +#define xfs_err_ratelimited(dev, fmt, ...)				\
+> +	xfs_printk_ratelimited(xfs_err, dev, fmt, ##__VA_ARGS__)
+> +#define xfs_warn_ratelimited(dev, fmt, ...)				\
+> +	xfs_printk_ratelimited(xfs_warn, dev, fmt, ##__VA_ARGS__)
+> +#define xfs_notice_ratelimited(dev, fmt, ...)				\
+> +	xfs_printk_ratelimited(xfs_notice, dev, fmt, ##__VA_ARGS__)
+> +#define xfs_info_ratelimited(dev, fmt, ...)				\
+> +	xfs_printk_ratelimited(xfs_info, dev, fmt, ##__VA_ARGS__)
+> +#define xfs_dbg_ratelimited(dev, fmt, ...)				\
+> +	xfs_printk_ratelimited(xfs_dbg, dev, fmt, ##__VA_ARGS__)
 
-Reported-by: CAI Qian <caiqian@redhat.com>
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Zhouping Liu <zliu@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/1344454580-17031-1-git-send-email-john.stultz@linaro.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- include/linux/ktime.h     |    7 -------
- include/linux/time.h      |   22 ++++++++++++++++++++--
- kernel/time/timekeeping.c |   26 ++++++++++++++++++++++++--
- 3 files changed, 44 insertions(+), 11 deletions(-)
+Here's the problem with adding macros that aren't used. xfs_dbg
+does not exist - the function is xfs_debug(). The compiler won't
+catch that until the macro is used, so only add the macros which are
+needed for this patch series.
 
-diff --git a/include/linux/ktime.h b/include/linux/ktime.h
-index 603bec2..06177ba10 100644
---- a/include/linux/ktime.h
-+++ b/include/linux/ktime.h
-@@ -58,13 +58,6 @@ union ktime {
- 
- typedef union ktime ktime_t;		/* Kill this */
- 
--#define KTIME_MAX			((s64)~((u64)1 << 63))
--#if (BITS_PER_LONG == 64)
--# define KTIME_SEC_MAX			(KTIME_MAX / NSEC_PER_SEC)
--#else
--# define KTIME_SEC_MAX			LONG_MAX
--#endif
--
- /*
-  * ktime_t definitions when using the 64-bit scalar representation:
-  */
-diff --git a/include/linux/time.h b/include/linux/time.h
-index b306178..c8f7233 100644
---- a/include/linux/time.h
-+++ b/include/linux/time.h
-@@ -107,11 +107,29 @@ static inline struct timespec timespec_sub(struct timespec lhs,
- 	return ts_delta;
- }
- 
-+#define KTIME_MAX			((s64)~((u64)1 << 63))
-+#if (BITS_PER_LONG == 64)
-+# define KTIME_SEC_MAX			(KTIME_MAX / NSEC_PER_SEC)
-+#else
-+# define KTIME_SEC_MAX			LONG_MAX
-+#endif
-+
- /*
-  * Returns true if the timespec is norm, false if denorm:
-  */
--#define timespec_valid(ts) \
--	(((ts)->tv_sec >= 0) && (((unsigned long) (ts)->tv_nsec) < NSEC_PER_SEC))
-+static inline bool timespec_valid(const struct timespec *ts)
-+{
-+	/* Dates before 1970 are bogus */
-+	if (ts->tv_sec < 0)
-+		return false;
-+	/* Can't have more nanoseconds then a second */
-+	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
-+		return false;
-+	/* Disallow values that could overflow ktime_t */
-+	if ((unsigned long long)ts->tv_sec >= KTIME_SEC_MAX)
-+		return false;
-+	return true;
-+}
- 
- extern void read_persistent_clock(struct timespec *ts);
- extern void read_boot_clock(struct timespec *ts);
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 03e67d4..36440c88 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -382,7 +382,7 @@ int do_settimeofday(const struct timespec *tv)
- 	struct timespec ts_delta;
- 	unsigned long flags;
- 
--	if ((unsigned long)tv->tv_nsec >= NSEC_PER_SEC)
-+	if (!timespec_valid(tv))
- 		return -EINVAL;
- 
- 	write_seqlock_irqsave(&xtime_lock, flags);
-@@ -417,6 +417,8 @@ EXPORT_SYMBOL(do_settimeofday);
- int timekeeping_inject_offset(struct timespec *ts)
- {
- 	unsigned long flags;
-+	struct timespec tmp;
-+	int ret = 0;
- 
- 	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
- 		return -EINVAL;
-@@ -425,9 +427,16 @@ int timekeeping_inject_offset(struct timespec *ts)
- 
- 	timekeeping_forward_now();
- 
-+	tmp = timespec_add(xtime,  *ts);
-+	if (!timespec_valid(&tmp)) {
-+		ret = -EINVAL;
-+		goto error;
-+	}
-+
- 	xtime = timespec_add(xtime, *ts);
- 	wall_to_monotonic = timespec_sub(wall_to_monotonic, *ts);
- 
-+error: /* even if we error out, we forwarded the time, so call update */
- 	timekeeping_update(true);
- 
- 	write_sequnlock_irqrestore(&xtime_lock, flags);
-@@ -435,7 +444,7 @@ int timekeeping_inject_offset(struct timespec *ts)
- 	/* signal hrtimers about time change */
- 	clock_was_set();
- 
--	return 0;
-+	return ret;
- }
- EXPORT_SYMBOL(timekeeping_inject_offset);
- 
-@@ -582,7 +591,20 @@ void __init timekeeping_init(void)
- 	struct timespec now, boot;
- 
- 	read_persistent_clock(&now);
-+	if (!timespec_valid(&now)) {
-+		pr_warn("WARNING: Persistent clock returned invalid value!\n"
-+			"         Check your CMOS/BIOS settings.\n");
-+		now.tv_sec = 0;
-+		now.tv_nsec = 0;
-+	}
-+
- 	read_boot_clock(&boot);
-+	if (!timespec_valid(&boot)) {
-+		pr_warn("WARNING: Boot clock returned invalid value!\n"
-+			"         Check your CMOS/BIOS settings.\n");
-+		boot.tv_sec = 0;
-+		boot.tv_nsec = 0;
-+	}
- 
- 	write_seqlock_irqsave(&xtime_lock, flags);
- 
+Cheers,
+
+Dave.
 -- 
-1.7.9.5
-
+Dave Chinner
+david@fromorbit.com
