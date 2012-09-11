@@ -1,96 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758675Ab2IKVg7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 17:36:59 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:48474 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757768Ab2IKVg5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 17:36:57 -0400
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [RFC] memory-hotplug: remove MIGRATE_ISOLATE from free_area->free_list
-In-Reply-To: <20120911010336.GC14205@bbox>
-Organization: http://mina86.com/
-References: <1346830033-32069-1-git-send-email-minchan@kernel.org> <xa1t1uigpefc.fsf@mina86.com> <20120906020850.GA31615@bbox> <xa1tipbr9uie.fsf@mina86.com> <20120911010336.GC14205@bbox>
-User-Agent: Notmuch/0.14+22~g8bdc16b (http://notmuchmail.org) Emacs/24.2.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-Date: Tue, 11 Sep 2012 23:36:48 +0200
-Message-ID: <xa1tr4q8w8b3.fsf@mina86.com>
+	id S1758312Ab2IKVo4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 17:44:56 -0400
+Received: from fieldses.org ([174.143.236.118]:60328 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751835Ab2IKVox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 17:44:53 -0400
+Date: Tue, 11 Sep 2012 17:44:50 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Andy Whitcroft <apw@canonical.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/2] issues with NFS filesystems as lower layer
+Message-ID: <20120911214450.GB28418@fieldses.org>
+References: <1346946994-21286-1-git-send-email-apw@canonical.com>
+ <CAJfpegsCQKX==v-8NqO5tLDsEed7KhBFWpoeWLDjxT1vuMSokg@mail.gmail.com>
+ <20120907193825.GA4633@fieldses.org>
+ <87ipbkxoq3.fsf@tucsk.pomaz.szeredi.hu>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87ipbkxoq3.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+On Tue, Sep 11, 2012 at 10:56:52PM +0200, Miklos Szeredi wrote:
+> "J. Bruce Fields" <bfields@fieldses.org> writes:
+> 
+> >> > Secondly when using an NFSv3 R/O lower layer the filesystem permissions
+> >> > check refuses permission to write to the inode which prevents us from
+> >> > copying it up even though we have a writable upper layer.  (With an ext4
+> >> > lower layer the inode check will succeed if the inode  is writable even
+> >> > if the filesystem is not.)  It is not clear what the right solution is
+> >> > here.  One approach is to check the inode permissions only (avoiding the
+> >> > filesystem specific permissions op), but it is not clear we can rely on
+> >> > these for all underlying filesystems.  Perhaps this check should only be
+> >> > used for NFS.
+> >
+> > Then couldn't you for example end up circumventing ACLs on the
+> > underlying file to access data cached by reads from another user on the
+> > same system?
+> 
+> Ignoring ACL's should always give less access, isn't that right?
 
-On Tue, Sep 11 2012, Minchan Kim wrote:
-> I saw two bug report about MIGRATE_ISOALTE type and NR_FREE_PAGES account=
-ing
-> mistmatch problem until now and I think we can meet more problems
-> in the near future without solving it.
->
-> Maybe, [1] would be a solution but I really don't like to add new branch
-> in hotpath, even MIGRATE_ISOLATE used very rarely.
-> so, my patch is inpired. If there is another good idea that avoid
-> new branch in hotpath and solve the fundamental problem, I will drop this
-> patch.
->
-> [1] http://permalink.gmane.org/gmane.linux.kernel.mm/85199.
+Not necessarily.
 
-Well...  I am still not convinced.
+(It's up to the server--and if anything servers probably want to err on
+the side of returning mode bits that are an upper, not a lower, bound on
+the permissions.)
 
-Than again you clearly have put some thought into it and, more
-importantly, I'm not the one deciding whether this gets merged or
-not, anyway. ;)
+> > Is it possible to arrange that the check for a readonly filesystem be
+> > done only by the vfs and not also by ->permission?
+> 
+> You'd need to modify NFS servers for that to work, no?  It's possible
+> but not practical.
 
---=20
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
-..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
- (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
---=-=-=
-Content-Type: multipart/signed; boundary="==-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+Oh, OK, I guess I assumed you were dealing with an NFS filesystem that
+had been mounted readonly on the NFS client.
 
---==-=-=
-Content-Type: text/plain
+If it's a read-write mount of a filesystem that's read-only on the
+server side: well, there is at least an error for that case: the server
+should return NFSERR_ROFS, and you should see EROFS--could you do the
+copy-up only in the case you get that error?
 
+--b.
 
---==-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQT67wAAoJECBgQBJQdR/0+cIQAIE1nwegXCV6WY+kBW/I6o16
-07xXNU1XkGZhB37+6ysSWP4fJvj+8vUZXSgM9v1+5SK8KpvMLk+vL7QcRh3vyGBJ
-PG7hQSBnjgjl6HF6pDTQugXrH9/CwqBsxb8QUGklZXUBCZPm0wj1oxkWlGVRrVRX
-I8evcHOuu8KsfMsPsptRoTBCN/hM9sHmOiBrYn1/+YwiyB0x0v7jp5PJvvHbgcF4
-/Rf4JUF8P0YXLed5ru8Ux/uUuHnGa0OOWpxPB9d1KoKZleduvZrn51hl95mNR8mn
-yNBl186ExrAfvJUgKmuthQqQx+E/fOHeC6vSBDlsq6bV0MNP8TTpcSNrhbugG6K+
-j8oKlk8uEq2fFFDf6pzVOn/Zt0phiiHp2U5UylGQgdsMQnFc1E6xGd1/1o4x2e6M
-Al0MLsdeK8OXDIFTwfjSgLXeQUVp6pNs5zhixNzpHkDVRd01WL6XoW9HJscbxfQi
-RxBvUhqBzKIEOndC2pGodnuMWUouD5CKy05SucKLxqAGhQGzp24/f80p37+ujW2f
-/dUsIS78VYRNyEc06zWh+GSArmE6NEsm//Uj9c208a4PJfTtM5iN92Jcx7KPKK0X
-OhycJTHr8Mx+02he0aAuGpLp2UgNaiObSThJq2/9MsqDNaprVHuaVgKoO0WTmPl+
-okzgHxzvxJM8SApJoDwP
-=NV0O
------END PGP SIGNATURE-----
---==-=-=--
-
---=-=-=--
+> 
+> Thanks,
+> Miklos
+> 
+> 
+> 
+> >
+> > --b.
+> >
+> >> > Perhaps it needs to be a mount option.  The second patch
+> >> > (for discussion) following this email implements this, using the inode
+> >> > permissions when the lowerlayer is read-only.  This seems to work as
+> >> > expected in my limited testing.
+> >> 
+> >> I fear that will create an inconsistency between the read-only and the
+> >> non-read-only case, even though both should behave the same.
+> >> 
+> >> I think the cleanest would be to create a mount option to always use
+> >> generic_permission (on both the lower and the upper fs).  That would
+> >> give us two, slightly different, operating modes but each would be
+> >> self consistent.
+> >> 
+> >> Thanks,
+> >> Miklos
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
